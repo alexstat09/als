@@ -212,6 +212,11 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
     return '';
   }
 
+  function isGymPage() {
+    const p = (window.location.pathname || '').toLowerCase();
+    return p.endsWith('gym.html');
+  }
+
   function injectStyleAndHTML() {
     if (document.getElementById('topbar') || document.getElementById('bottombar')) return;
     if (!shouldShowChrome()) return;
@@ -222,14 +227,16 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
     const topWrap = document.createElement('div');
     topWrap.innerHTML = topbarHtml.trim();
     document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
-    const bottomWrap = document.createElement('div');
-    bottomWrap.innerHTML = bottombarHtml.trim();
-    document.body.appendChild(bottomWrap.firstChild);
-    const active = currentPageKey();
-    document.querySelectorAll('.bottombar-tab').forEach((t) => {
-      t.classList.toggle('active', t.getAttribute('data-page') === active);
-    });
-    document.body.classList.add('has-bottombar');
+    if (!isGymPage()) {
+      const bottomWrap = document.createElement('div');
+      bottomWrap.innerHTML = bottombarHtml.trim();
+      document.body.appendChild(bottomWrap.firstChild);
+      const active = currentPageKey();
+      document.querySelectorAll('.bottombar-tab').forEach((t) => {
+        t.classList.toggle('active', t.getAttribute('data-page') === active);
+      });
+      document.body.classList.add('has-bottombar');
+    }
   }
 
   function calendarDateKey() {
