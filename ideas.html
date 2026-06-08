@@ -631,33 +631,33 @@ function init() {
     });
   }
 
-  // Seed dashboard roadmap ideas (one-time)
+  // Ensure roadmap ideas always exist (adds any that are missing by title)
   (function seedRoadmap() {
-    const FLAG = 'ideas_seeded_roadmap_v2';
-    if (localStorage.getItem(FLAG)) return;
     const roadmap = [
-      {text:'Morning Briefing page',note:'Opens at wake-up — today\'s plan, yesterday\'s nutrition score, WHOOP recovery, first coffee time. One page, everything needed to start the day.',category:'goals'},
-      {text:'Strong app CSV import',note:'Pull full workout history into the gym tracker. See PRs, volume trends, progressive overload automatically.',category:'fitness'},
+      {text:'Morning Briefing page',note:'Opens at 7am — today\'s plan, yesterday\'s nutrition score, WHOOP recovery, first coffee time. One page, everything you need to start the day.',category:'goals'},
+      {text:'Strong CSV import',note:'Pull your full workout history into the gym tracker. See PRs, volume trends, progressive overload automatically.',category:'fitness'},
       {text:'Body measurements tracker',note:'Log chest, waist, arms, legs over time. More accurate than scale weight for seeing body recomp.',category:'fitness'},
-      {text:'Barcode scanner for food',note:'Use phone camera + Open Food Facts (free API) to scan packaged food — auto-fills nutrition. No typing.',category:'health'},
-      {text:'Habit tracker',note:'Daily checkboxes: train / hit protein / sleep 7h+ / no alcohol / morning walk. Streaks. Ties into daily debrief.',category:'goals'},
-      {text:'Weekly Review page',note:'Every Sunday — weight trend, avg calories vs target, workouts completed, sleep avg, top ideas. One clean overview.',category:'goals'},
-      {text:'Meal planner',note:'Build a week of meals that hit macro targets. Generate a shopping list automatically.',category:'health'},
-      {text:'Browser push notifications',note:'Remind: log weight, hit protein, caffeine cutoff approaching, drink water. All free, no server needed.',category:'lifestyle'},
-      {text:'Supplement timing visual',note:'In Health — visual timeline showing WHEN to take each supplement. Creatine post-workout, Vitamin D with food, etc.',category:'health'},
-      {text:'Intermittent fasting timer',note:'Shows eating window, time left, last meal. Ties into nutrition data and WHOOP sleep end time.',category:'health'},
-      {text:'Finance: bill calendar',note:'Monthly view of when bills hit, upcoming expenses, no-spend day tracking.',category:'finance'},
-      {text:'PR board in Fitness',note:'Dedicated section showing all-time heaviest lifts. Updates automatically as new sessions are logged.',category:'fitness'}
+      {text:'Barcode scanner for food',note:'Use your phone camera + Open Food Facts (free API) to scan packaged food — auto-fills nutrition. No typing.',category:'health'},
+      {text:'Habit tracker',note:'Daily checkboxes: train / hit protein / sleep 7h+ / no alcohol / morning walk. Streaks. Ties into debrief.',category:'goals'},
+      {text:'Weekly Review page',note:'Every Sunday — weight trend, avg calories vs target, workouts completed, sleep avg, top ideas added. One clean overview.',category:'goals'},
+      {text:'Meal planner',note:'Build a week of meals that hit your macro targets. Generate a shopping list from it.',category:'health'},
+      {text:'Browser push notifications',note:'Remind you: log weight, hit protein, caffeine cutoff approaching, drink water. All free, no server needed.',category:'lifestyle'},
+      {text:'Supplement timing page',note:'In Health — visual timeline showing WHEN to take each supplement (e.g. creatine post-workout, vitamin D with food).',category:'health'},
+      {text:'Intermittent fasting timer',note:'If you fast — shows eating window, time left, last meal. Ties into nutrition data.',category:'health'},
+      {text:'Finance: bill calendar',note:'Monthly view of when bills are due, upcoming expenses, no-spend days.',category:'finance'},
+      {text:'PR board in Fitness',note:'Dedicated section showing your all-time heaviest lifts. Updates automatically as you log.',category:'fitness'}
     ];
     load();
+    const existing = new Set(ideas.map(i => i.text));
     const now = new Date();
+    let added = 0;
     roadmap.forEach((r, i) => {
+      if (existing.has(r.text)) return;
       const d = new Date(now); d.setSeconds(d.getSeconds() - i);
-      ideas.push({id: Date.now() - i*100, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
+      ideas.push({id: Date.now() - i*100 - Math.random()*50, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
+      added++;
     });
-    save();
-    localStorage.setItem(FLAG, '1');
-    rerender();
+    if (added > 0) { save(); rerender(); }
   })();
 }
 
