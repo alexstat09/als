@@ -1023,8 +1023,80 @@ img, video, canvas, svg { max-width: 100%; }
 .wt-input-row { margin-top: 14px; }
 .wt-input-top {
   display: grid; grid-template-columns: 1fr auto auto;
-  align-items: center; gap: 10px;
+  align-items: center; gap: 10px; margin-bottom: 8px;
 }
+.wt-date-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.wt-date-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3); white-space: nowrap;
+}
+.wt-date-input {
+  flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-1); font-family: inherit;
+  font-size: 13px; padding: 7px 10px; outline: none;
+  transition: border-color 0.2s; color-scheme: dark;
+}
+.wt-date-input:focus { border-color: rgba(110,231,183,0.4); }
+.wt-today-btn {
+  padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+  color: var(--text-3); cursor: pointer; font-family: inherit;
+  white-space: nowrap; transition: all 0.15s;
+}
+.wt-today-btn:hover { background: rgba(110,231,183,0.10); color: var(--good); border-color: rgba(110,231,183,0.3); }
+
+/* Weight History list */
+.wt-history { margin-top: 18px; }
+.wt-history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.wt-history-title {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.wt-history-list {
+  max-height: 260px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  padding-right: 2px;
+}
+.wt-history-list::-webkit-scrollbar { width: 4px; }
+.wt-history-list::-webkit-scrollbar-track { background: transparent; }
+.wt-history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.wt-history-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.15s;
+}
+.wt-history-row:hover { background: rgba(255,255,255,0.05); }
+.wt-history-row.today-row { border-color: rgba(110,231,183,0.25); background: rgba(110,231,183,0.05); }
+.wt-history-date {
+  flex: 1; font-size: 13px; color: var(--text-2); font-family: inherit;
+}
+.wt-history-val {
+  font-size: 15px; font-weight: 700; color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+.wt-history-delta {
+  font-size: 11px; font-family: monospace; min-width: 42px; text-align: right;
+}
+.wt-history-delta.up   { color: var(--warn); }
+.wt-history-delta.down { color: var(--good); }
+.wt-history-edit-wrap { display: flex; gap: 4px; }
+.wt-h-btn {
+  padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+  color: var(--text-3); cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.wt-h-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-1); }
+.wt-h-btn.del:hover { background: rgba(255,107,107,0.12); color: #FF6B6B; border-color: rgba(255,107,107,0.3); }
+.wt-history-empty { font-size: 12px; color: var(--text-3); font-style: italic; padding: 10px 0; text-align: center; }
 .wt-input {
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--border);
@@ -1340,12 +1412,20 @@ img, video, canvas, svg { max-width: 100%; }
       </div>
 
       <div class="wt-input-row" id="wtInputRow">
+        <div class="wt-date-row">
+          <span class="wt-date-label">Date</span>
+          <input type="date" class="wt-date-input" id="wtDateInput">
+          <button class="wt-today-btn" id="wtTodayBtn">Today</button>
+        </div>
         <div class="wt-input-top">
-          <input type="number" step="0.1" class="wt-input" id="wtInput" placeholder="Enter weight" inputmode="decimal" aria-label="Today's weight">
+          <input type="number" step="0.1" class="wt-input" id="wtInput" placeholder="Enter weight" inputmode="decimal" aria-label="Weight">
           <span class="wt-unit-static" id="wtUnitStatic">kg</span>
           <button class="wt-save-btn" id="wtSaveBtn">Save</button>
         </div>
       </div>
+
+      <!-- Weight History -->
+      <div class="wt-history" id="wtHistory"></div>
     </div>
 
     <button class="wt-progress-link" id="wtProgressLink" type="button" aria-label="Open progress photos">
@@ -2654,13 +2734,88 @@ img, video, canvas, svg { max-width: 100%; }
 
   let wtEntries = wtLoad();
 
+  function wtGetSelectedDate() {
+    const v = $('wtDateInput') && $('wtDateInput').value;
+    return v ? v : wtDateKey(new Date());
+  }
+
   function wtSaveEntry(weight) {
-    const key = wtDateKey(new Date());
+    const key = wtGetSelectedDate();
     const existing = wtEntries.find(e => e.dateKey === key);
     if (existing) existing.weight = weight;
-    else { wtEntries.push({ dateKey: key, weight }); wtEntries.sort((a,b) => a.dateKey.localeCompare(b.dateKey)); }
+    else { wtEntries.push({ dateKey: key, weight }); }
+    wtEntries.sort((a,b) => a.dateKey.localeCompare(b.dateKey));
     wtSave(wtEntries);
     wtRender();
+  }
+
+  function wtDeleteEntry(key) {
+    wtEntries = wtEntries.filter(e => e.dateKey !== key);
+    wtSave(wtEntries);
+    wtRender();
+  }
+
+  function wtEditEntry(key) {
+    const entry = wtEntries.find(e => e.dateKey === key);
+    if (!entry) return;
+    if ($('wtDateInput')) $('wtDateInput').value = key;
+    if ($('wtInput')) { $('wtInput').value = entry.weight.toFixed(1); $('wtInput').focus(); $('wtInput').select(); }
+    // Make input visible if it was locked
+    $('wtLocked').classList.add('hidden');
+    $('wtInputRow').classList.remove('hidden');
+  }
+
+  function wtRenderHistory() {
+    const el = $('wtHistory');
+    if (!el) return;
+    const u = state.units;
+    const todayKey = wtDateKey(new Date());
+    // Show most recent first
+    const sorted = [...wtEntries].sort((a,b) => b.dateKey.localeCompare(a.dateKey));
+
+    if (!sorted.length) {
+      el.innerHTML = '';
+      return;
+    }
+
+    const rows = sorted.map((entry, i) => {
+      const prev = sorted[i + 1];
+      let deltaHtml = '';
+      if (prev) {
+        const diff = entry.weight - prev.weight;
+        const sign = diff > 0 ? '+' : '';
+        const cls  = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+        deltaHtml = `<span class="wt-history-delta ${cls}">${sign}${diff.toFixed(1)}</span>`;
+      }
+      const isToday = entry.dateKey === todayKey;
+      const label   = isToday ? 'Today' : wtFmtDateLabel(entry.dateKey);
+      return `
+      <div class="wt-history-row ${isToday ? 'today-row' : ''}">
+        <span class="wt-history-date">${label}</span>
+        <span class="wt-history-val">${entry.weight.toFixed(1)} ${u}</span>
+        ${deltaHtml}
+        <div class="wt-history-edit-wrap">
+          <button class="wt-h-btn" data-wedit="${entry.dateKey}">Edit</button>
+          <button class="wt-h-btn del" data-wdel="${entry.dateKey}">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="wt-history-header">
+        <span class="wt-history-title">All Weigh-ins (${sorted.length})</span>
+      </div>
+      <div class="wt-history-list">${rows}</div>`;
+  }
+
+  function wtFmtDateLabel(key) {
+    const [y,m,d] = key.split('-').map(Number);
+    const date = new Date(y, m-1, d);
+    const now  = new Date();
+    const diff = Math.floor((new Date(wtDateKey(now)) - new Date(key)) / 86400000);
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7)  return date.toLocaleDateString([],{weekday:'long'});
+    return date.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
   }
 
   function wtRender() {
@@ -2702,6 +2857,11 @@ img, video, canvas, svg { max-width: 100%; }
       $('wtComp').classList.add('hidden');
     }
     wtRenderStreak();
+    wtRenderHistory();
+
+    // Init date input to today if empty
+    const di = $('wtDateInput');
+    if (di && !di.value) di.value = todayKey;
   }
 
   // Streak — consecutive days ending at today (or yesterday if today
@@ -2936,6 +3096,8 @@ img, video, canvas, svg { max-width: 100%; }
     const v = parseFloat($('wtInput').value);
     if (isNaN(v) || v <= 0) return;
     wtSaveEntry(v);
+    // Reset date back to today after saving a past entry
+    if ($('wtDateInput')) $('wtDateInput').value = wtDateKey(new Date());
   });
   $('wtInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $('wtSaveBtn').click();
@@ -2945,7 +3107,26 @@ img, video, canvas, svg { max-width: 100%; }
     $('wtInputRow').classList.remove('hidden');
     const todayEntry = wtEntries.find(e => e.dateKey === wtDateKey(new Date()));
     if (todayEntry) $('wtInput').value = todayEntry.weight.toFixed(1);
+    if ($('wtDateInput')) $('wtDateInput').value = wtDateKey(new Date());
     $('wtInput').focus(); $('wtInput').select();
+  });
+
+  // Today button resets date picker to today
+  $('wtTodayBtn').addEventListener('click', () => {
+    if ($('wtDateInput')) $('wtDateInput').value = wtDateKey(new Date());
+    $('wtInput').focus();
+  });
+
+  // History: edit + delete via event delegation
+  document.getElementById('wtHistory').addEventListener('click', e => {
+    const editBtn = e.target.closest('[data-wedit]');
+    if (editBtn) { wtEditEntry(editBtn.dataset.wedit); return; }
+    const delBtn = e.target.closest('[data-wdel]');
+    if (delBtn) {
+      const key = delBtn.dataset.wdel;
+      const label = key === wtDateKey(new Date()) ? 'today' : key;
+      if (confirm('Delete weigh-in for ' + label + '?')) wtDeleteEntry(key);
+    }
   });
 
   // ============================================================
