@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Nutrition</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+<style>
+/* ── DESIGN TOKENS ─────────────────────────────────── */
+:root {
+  --text-primary:   #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary:  #76746E;
+  --success: #6BE3A4;
+  --warning: #F2C063;
+  --danger:  #FF6B6B;
+  --font:      -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --col-protein: #7DD3FC;
+  --col-carbs:   #F2C063;
+  --col-fat:     #FF8C69;
+  --col-cut:     #FF6B6B;
+  --col-bulk:    #6BE3A4;
+  --col-maintain:#7DD3FC;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #050506; color: var(--text-secondary); font-family: var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+body { min-height: 100vh; position: relative; overflow-x: hidden; padding: max(28px, env(safe-area-inset-top)) 20px 80px; }
+
+/* drifting glow */
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(circle at 82% 14%, rgba(124,184,122,0.13), transparent 45%),
+              radial-gradient(circle at 18% 90%, rgba(180,180,200,0.06), transparent 50%);
+  filter: blur(40px); pointer-events: none; z-index: -2;
+  animation: drift 36s ease-in-out infinite alternate;
+}
+/* dot texture */
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 3px 3px; pointer-events: none; z-index: -1;
+}
+@keyframes drift { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-22px,14px,0); } }
+
+/* ── PAGE LAYOUT ───────────────────────────────────── */
+.page { max-width: 1100px; margin: 0 auto; }
+
+.dash-title {
+  margin: 0 0 14px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg,#FFFFFF 0%,#C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+.section { margin-top: 8px; }
+.section-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary); display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.section-title::before { content: ''; width: 18px; height: 1px; background: var(--text-tertiary); opacity: 0.6; }
+.section-title::after  { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg,rgba(255,255,255,0.08),transparent); }
+
+/* ── GLASS CARD ────────────────────────────────────── */
+.gm-card {
+  position: relative; background: rgba(255,255,255,0.04); border-radius: 16px;
+  padding: 20px; margin-bottom: 14px;
+  backdrop-filter: blur(24px) saturate(1.2); -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45); overflow: hidden;
+}
+
+/* ── §1 TODAY ──────────────────────────────────────── */
+.today-top {
+  display: grid; grid-template-columns: 148px 1fr; gap: 20px; align-items: center;
+}
+@media (max-width: 520px) { .today-top { grid-template-columns: 1fr; } }
+
+/* Calorie ring */
+.cal-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cal-ring-svg  { position: relative; width: 132px; height: 132px; }
+.cal-ring-svg svg { width: 100%; height: 100%; display: block; }
+.cal-ring-inner {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.cal-num   { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; color: var(--text-primary); line-height: 1; }
+.cal-denom { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.cal-rem   { font-size: 11px; font-weight: 600; }
+.cal-rem.over { color: var(--danger); }
+.cal-rem.ok   { color: var(--text-tertiary); }
+
+/* Macro arcs — vertical stack */
+.macro-arcs { display: flex; flex-direction: column; gap: 10px; }
+.macro-arc-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.macro-arc-svg { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
+.macro-arc-svg svg { width: 100%; height: 100%; display: block; }
+.macro-arc-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.macro-arc-val   { font-size: 11px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
+.macro-arc-info  { flex: 1; }
+.macro-arc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
+.macro-arc-sub   { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 1px; }
+
+/* Goal badge */
+.goal-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; border: 1px solid currentColor; opacity: 0.9;
+  transition: opacity 0.15s;
+}
+.goal-badge:hover { opacity: 1; }
+.goal-badge.cut     { color: var(--col-cut);     background: rgba(255,107,107,0.12); }
+.goal-badge.mini_cut{ color: var(--col-cut);     background: rgba(255,140,105,0.12); }
+.goal-badge.bulk    { color: var(--col-bulk);    background: rgba(107,227,164,0.12); }
+.goal-badge.maintain{ color: var(--col-maintain);background: rgba(125,211,252,0.12); }
+
+/* today-right = arcs + WHOOP banner stacked */
+.today-right { display: flex; flex-direction: column; gap: 12px; }
+.today-right-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+
+/* WHOOP banner */
+.whoop-banner {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; font-size: 12px; color: var(--text-secondary);
+}
+.whoop-banner strong { color: var(--text-primary); }
+
+/* Protein per meal row */
+.ppm-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 0 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.ppm-hint { font-size: 10px; color: var(--text-tertiary); letter-spacing: 0.04em; width: 100%; margin-bottom: 4px; }
+.ppm-dot {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 64px;
+}
+.ppm-dot-circle {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  border: 2px solid;
+}
+.ppm-dot-circle.green  { color: var(--success); border-color: var(--success);   background: rgba(107,227,164,0.10); }
+.ppm-dot-circle.amber  { color: var(--warning); border-color: var(--warning);   background: rgba(242,192,99,0.10); }
+.ppm-dot-circle.grey   { color: var(--text-tertiary); border-color: rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); }
+.ppm-dot-label { font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.06em; }
+
+/* Footer chips */
+.footer-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 12px; }
+.fchip {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06);
+  min-width: 80px;
+}
+.fchip-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.fchip-val   { font-size: 13px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ── §2 MEALS ──────────────────────────────────────── */
+.meal-card {
+  background: rgba(255,255,255,0.04); border-radius: 14px; margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.07); overflow: hidden;
+}
+.meal-header {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: background 0.15s;
+}
+.meal-header:hover { background: rgba(255,255,255,0.03); }
+.meal-emoji { font-size: 18px; flex-shrink: 0; }
+.meal-name  { font-size: 14px; font-weight: 700; color: var(--text-primary); flex: 1; }
+.meal-macros { display: flex; gap: 6px; }
+.mmacro {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+}
+.meal-kcal { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 600; margin-left: 4px; }
+.meal-chevron { color: var(--text-tertiary); font-size: 11px; transition: transform 0.2s; }
+.meal-card.open .meal-chevron { transform: rotate(180deg); }
+
+.meal-body { display: none; padding: 0 16px 14px; }
+.meal-card.open .meal-body { display: block; }
+
+.meal-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.meal-item:last-of-type { border-bottom: none; }
+.mi-name   { flex: 1; font-size: 13px; color: var(--text-primary); }
+.mi-portion{ font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); margin-top: 1px; }
+.mi-kcal   { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 600; flex-shrink: 0; }
+.mi-macros { display: flex; gap: 4px; }
+.mi-m { font-family: var(--font-mono); font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-tertiary); }
+.mi-del { border: 0; background: transparent; color: var(--text-tertiary); font-size: 17px; cursor: pointer; padding: 0 2px; opacity: 0.45; transition: opacity 0.15s, color 0.15s; }
+.meal-item:hover .mi-del { opacity: 1; }
+.mi-del:hover { color: var(--danger); }
+
+.mps-warn { display: flex; align-items: center; gap: 6px; margin: 8px 0 4px; padding: 7px 10px; border-radius: 8px; background: rgba(242,192,99,0.08); border: 1px solid rgba(242,192,99,0.18); font-size: 11px; color: var(--warning); }
+.meal-empty { font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 10px 0 6px; }
+.meal-add-btn {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 10px;
+  padding: 8px 14px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04); color: var(--text-secondary);
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.meal-add-btn:hover { background: rgba(255,255,255,0.08); }
+
+/* ── §3 MACROS & MICROS ────────────────────────────── */
+.tab-toggle { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab-btn {
+  padding: 6px 16px; border-radius: 7px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; font-family: inherit;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.03);
+  color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
+}
+.tab-btn.active { background: rgba(255,255,255,0.10); color: var(--text-primary); border-color: rgba(255,255,255,0.20); }
+
+.macro-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.mbar-label  { font-size: 12px; color: var(--text-secondary); width: 96px; flex-shrink: 0; }
+.mbar-track  { flex: 1; height: 7px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.mbar-fill   { height: 100%; border-radius: 99px; transition: width 0.4s ease, background 0.3s; }
+.mbar-values { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); width: 80px; flex-shrink: 0; text-align: right; }
+.mbar-pct    { font-family: var(--font-mono); font-size: 10px; width: 34px; flex-shrink: 0; text-align: right; }
+
+.quality-score-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.qs-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.06em; }
+.qs-num   { font-size: 24px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.micro-section-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); margin: 14px 0 8px; }
+.micro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.micro-cell { padding: 10px 12px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; }
+.micro-name { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 4px; }
+.micro-vals { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.micro-got  { font-size: 13px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.micro-rda  { font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.micro-bar-track { height: 4px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.micro-bar-fill  { height: 100%; border-radius: 99px; background: var(--text-tertiary); transition: width 0.4s; }
+.micro-bar-fill.done { background: var(--success); }
+.micro-bar-fill.over { background: var(--danger); }
+.micros-empty { font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 16px 0; text-align: center; }
+
+/* ── §4 PROGRESS ───────────────────────────────────── */
+.progress-chart-wrap { border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.14); margin-bottom: 14px; }
+.progress-chart-wrap svg { display: block; width: 100%; height: 130px; }
+
+.checkin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.checkin-input {
+  flex: 1; min-width: 100px; padding: 10px 13px;
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 10px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color 0.2s;
+}
+.checkin-input::placeholder { color: var(--text-tertiary); }
+.checkin-input:focus { border-color: rgba(255,255,255,0.28); }
+.checkin-btn {
+  padding: 10px 18px; border: 0; border-radius: 10px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.checkin-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.checkin-streak { font-size: 11px; color: var(--text-tertiary); }
+
+.adaptive-tdee-card {
+  padding: 14px; border-radius: 12px; margin-bottom: 12px;
+  background: rgba(107,227,164,0.06); border: 1px solid rgba(107,227,164,0.18);
+}
+.atd-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--success); margin-bottom: 6px; }
+.atd-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.atd-use   {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px;
+  padding: 5px 12px; border-radius: 7px; border: 1px solid rgba(107,227,164,0.3);
+  background: rgba(107,227,164,0.08); color: var(--success);
+  font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+.phase-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 4px; }
+.phase-badge {
+  padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,0.05); color: var(--text-primary);
+}
+.phase-warn { font-size: 11px; color: var(--warning); }
+.lbm-note   { font-size: 11px; color: var(--text-tertiary); }
+
+.trend-warn-card {
+  padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
+  background: rgba(255,107,107,0.06); border: 1px solid rgba(255,107,107,0.20);
+  font-size: 13px; color: var(--danger); line-height: 1.5;
+}
+
+/* ── §5 LOG FOOD ───────────────────────────────────── */
+.meal-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.meal-chip {
+  padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04);
+  color: var(--text-tertiary); cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.meal-chip.active { background: rgba(255,255,255,0.12); color: var(--text-primary); border-color: rgba(255,255,255,0.24); }
+
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 14px; pointer-events: none; }
+.search-input {
+  width: 100%; padding: 11px 14px 11px 36px;
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-input:focus { border-color: rgba(255,255,255,0.28); }
+
+.suggested-row { margin-bottom: 12px; }
+.suggested-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+.suggested-grid  { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
+@media (min-width: 600px) { .suggested-grid { grid-template-columns: repeat(4,1fr); } }
+
+.recent-row { margin-bottom: 12px; }
+.recent-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+.recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.recent-chip {
+  padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04);
+  color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.recent-chip:hover { background: rgba(255,255,255,0.08); }
+
+.food-grid {
+  display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+  gap: 7px; max-height: 320px; overflow-y: auto; margin-bottom: 14px;
+}
+.food-grid::-webkit-scrollbar { width: 4px; }
+.food-grid::-webkit-scrollbar-track { background: transparent; }
+.food-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+.food-btn {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 11px; border-radius: 10px;
+  background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07);
+  color: var(--text-secondary); cursor: pointer; text-align: left;
+  font-family: inherit; transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+.food-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.14); }
+.fb-top    { display: flex; align-items: center; justify-content: space-between; }
+.fb-emoji  { font-size: 18px; line-height: 1; }
+.fb-badge  { font-size: 13px; }
+.fb-name   { font-size: 11px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.fb-kcal   { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.fb-macros { font-size: 9.5px; color: var(--text-tertiary); font-family: var(--font-mono); }
+
+.custom-form { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); }
+.custom-form label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); display: flex; flex-direction: column; gap: 4px; }
+.custom-form label.wide { flex: 2; min-width: 120px; }
+.custom-form label.narrow { flex: 1; min-width: 64px; }
+.custom-form input {
+  padding: 8px 10px; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  font-family: inherit; font-size: 13px; outline: none; transition: border-color 0.2s;
+}
+.custom-form input:focus { border-color: rgba(255,255,255,0.24); }
+.custom-form input::placeholder { color: var(--text-tertiary); }
+.custom-save-btn {
+  align-self: flex-end; padding: 9px 16px; border: 0; border-radius: 9px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 12px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.1s, filter 0.15s; flex-shrink: 0;
+}
+.custom-save-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ── §6 INSIGHTS ───────────────────────────────────── */
+.insight-chart-wrap { border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.14); margin-bottom: 16px; position: relative; }
+.insight-chart-wrap svg { display: block; width: 100%; height: 130px; }
+.insight-tooltip {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  background: #1A1A1B; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px; padding: 8px 12px; font-size: 11px; pointer-events: none;
+  white-space: nowrap; z-index: 10;
+}
+.insight-tooltip strong { color: var(--text-primary); }
+
+.insight-tiles { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+@media (max-width: 520px) { .insight-tiles { grid-template-columns: 1fr 1fr; } }
+.insight-tile { padding: 14px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+.it-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+.it-val   { font-size: 20px; font-weight: 700; color: var(--text-primary); line-height: 1.1; margin-bottom: 2px; }
+.it-sub   { font-size: 11px; color: var(--text-tertiary); line-height: 1.4; }
+
+.refeed-card {
+  padding: 14px; border-radius: 12px; margin-bottom: 14px;
+  background: rgba(125,211,252,0.06); border: 1px solid rgba(125,211,252,0.18);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+.refeed-text { font-size: 13px; color: var(--text-secondary); }
+.refeed-btn  {
+  padding: 7px 14px; border: 1px solid rgba(125,211,252,0.35);
+  border-radius: 8px; background: rgba(125,211,252,0.08);
+  color: var(--col-maintain); font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+
+.tip-card {
+  padding: 14px 16px; border-radius: 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.tip-icon  { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tip-text  { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+.tip-text strong { color: var(--text-primary); }
+
+/* ── SLIDE-UP SHEETS ───────────────────────────────── */
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity 0.28s;
+}
+.sheet-backdrop.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  background: #0F0F10; border-top: 1px solid rgba(255,255,255,0.10);
+  border-radius: 20px 20px 0 0;
+  padding: 6px 20px max(28px, env(safe-area-inset-bottom));
+  max-height: 92vh; overflow-y: auto;
+  transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.22,1,0.36,1);
+}
+.sheet.open { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 10px auto 18px; }
+.sheet-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 18px; }
+
+/* Portion sheet */
+.ps-food-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.ps-food-emoji  { font-size: 36px; }
+.ps-food-name   { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+.ps-food-kcal   { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+.ps-portion-row { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
+.ps-portion-input {
+  flex: 1; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px; background: rgba(0,0,0,0.30);
+  color: var(--text-primary); font-family: var(--font-mono); font-size: 18px; font-weight: 700;
+  outline: none; text-align: center; transition: border-color 0.2s;
+}
+.ps-portion-input:focus { border-color: rgba(255,255,255,0.32); }
+.ps-unit-select {
+  padding: 12px 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary); font-family: inherit;
+  font-size: 14px; outline: none; cursor: pointer;
+}
+
+.ps-preview {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px;
+}
+.ps-preview-cell { text-align: center; padding: 10px 6px; background: rgba(255,255,255,0.035); border-radius: 10px; }
+.ps-pval { font-size: 18px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
+.ps-plabel { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 3px; }
+.ps-micros-note { font-size: 11px; color: var(--text-tertiary); margin-bottom: 16px; line-height: 1.5; }
+
+.ps-log-btn {
+  width: 100%; padding: 14px; border: 0; border-radius: 13px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.ps-log-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* Settings sheet */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 400px) { .settings-grid { grid-template-columns: 1fr; } }
+.sf { display: flex; flex-direction: column; gap: 6px; }
+.sf.full { grid-column: span 2; }
+.sf label { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); }
+.sf input, .sf select {
+  padding: 10px 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 10px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.sf input:focus, .sf select:focus { border-color: rgba(255,255,255,0.28); }
+.sf select option { background: #1A1A1B; }
+.goal-radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.goal-radio-btn {
+  padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04); color: var(--text-tertiary);
+  font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.goal-radio-btn.sel-cut      { color: var(--col-cut);     border-color: var(--col-cut);     background: rgba(255,107,107,0.12); }
+.goal-radio-btn.sel-mini_cut { color: var(--col-cut);     border-color: var(--col-cut);     background: rgba(255,140,105,0.12); }
+.goal-radio-btn.sel-bulk     { color: var(--col-bulk);    border-color: var(--col-bulk);    background: rgba(107,227,164,0.12); }
+.goal-radio-btn.sel-maintain { color: var(--col-maintain);border-color: var(--col-maintain);background: rgba(125,211,252,0.12); }
+.settings-save-btn {
+  margin-top: 20px; width: 100%; padding: 14px; border: 0; border-radius: 13px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.settings-save-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ── MISC ──────────────────────────────────────────── */
+.empty-hint { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 18px 0; }
+
+@media (max-width: 480px) {
+  body { padding: max(20px, env(safe-area-inset-top)) 14px 70px; }
+  .gm-card { padding: 16px; }
+  .food-grid { grid-template-columns: repeat(2,1fr); }
+  .ps-preview { grid-template-columns: repeat(3,1fr); }
+  .macro-bar-row { gap: 6px; }
+  .mbar-label { width: 72px; font-size: 11px; }
+  .mbar-values { width: 60px; font-size: 9px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="dash-title">Nutrition</h1>
+
+  <!-- §1 TODAY -->
+  <div class="section">
+    <div class="section-title">Today</div>
+    <div class="gm-card" id="todayCard"><div class="empty-hint">Loading…</div></div>
+  </div>
+
+  <!-- §2 MEALS -->
+  <div class="section">
+    <div class="section-title">Meals</div>
+    <div id="mealsContainer"></div>
+  </div>
+
+  <!-- §3 MACROS & MICROS -->
+  <div class="section">
+    <div class="section-title">Macros &amp; Micros</div>
+    <div class="gm-card"><div id="macrosMicrosCard"><div class="empty-hint">Loading…</div></div></div>
+  </div>
+
+  <!-- §4 PROGRESS -->
+  <div class="section">
+    <div class="section-title">Progress</div>
+    <div class="gm-card" id="progressCard"><div class="empty-hint">Loading…</div></div>
+  </div>
+
+  <!-- §5 LOG FOOD -->
+  <div class="section">
+    <div class="section-title">Log Food</div>
+    <div class="gm-card" id="logFoodCard"><div class="empty-hint">Loading…</div></div>
+  </div>
+
+  <!-- §6 INSIGHTS -->
+  <div class="section">
+    <div class="section-title">Insights</div>
+    <div class="gm-card" id="insightsCard"><div class="empty-hint">Loading…</div></div>
+  </div>
+</div>
+
+<!-- PORTION SHEET -->
+<div class="sheet-backdrop" id="portionBackdrop"></div>
+<div class="sheet" id="portionSheet">
+  <div class="sheet-handle"></div>
+  <div id="portionSheetBody"></div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet-backdrop" id="settingsBackdrop"></div>
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div id="settingsSheetBody"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ── FOOD DATABASE (per 100 g unless noted) ─────────── */
+const FOODS = [
+  // ── Proteins ──
+  {name:'Chicken Breast',emoji:'🍗',kcal:165,p:31,c:0,f:3.6,fiber:0,sugar:0,satFat:1,sodium:74,servingG:150,servingLabel:'150g breast',micros:{b6:0.9,b12:0.3,zinc:1.0,selenium:22,potassium:256}},
+  {name:'Salmon Fillet',emoji:'🐟',kcal:208,p:20,c:0,f:13,fiber:0,sugar:0,satFat:3.1,sodium:59,servingG:150,servingLabel:'150g fillet',micros:{vitD:11,b12:3.2,b6:0.8,potassium:363,selenium:36}},
+  {name:'Whole Egg',emoji:'🥚',kcal:155,p:13,c:1.1,f:11,fiber:0,sugar:1.1,satFat:3.3,sodium:124,servingG:50,servingLabel:'1 large egg',micros:{vitD:2,b12:0.9,selenium:27,vitA:160}},
+  {name:'Egg White',emoji:'🥚',kcal:52,p:11,c:0.7,f:0.2,fiber:0,sugar:0.7,satFat:0,sodium:166,servingG:33,servingLabel:'1 white',micros:{b2:0.4,selenium:9}},
+  {name:'Greek Yogurt (plain)',emoji:'🥛',kcal:59,p:10,c:3.6,f:0.4,fiber:0,sugar:3.2,satFat:0.3,sodium:36,servingG:200,servingLabel:'200g',micros:{calcium:110,b12:0.75,b2:0.25,potassium:141}},
+  {name:'Cottage Cheese',emoji:'🧀',kcal:98,p:11,c:3.4,f:4.3,fiber:0,sugar:2.7,satFat:1.7,sodium:364,servingG:150,servingLabel:'150g',micros:{calcium:83,b12:0.4,selenium:11}},
+  {name:'Tuna (canned, water)',emoji:'🐟',kcal:116,p:26,c:0,f:1,fiber:0,sugar:0,satFat:0.3,sodium:50,servingG:165,servingLabel:'1 can (165g)',micros:{b12:2.5,selenium:90,b6:0.9,potassium:176}},
+  {name:'Lean Beef Mince 5%',emoji:'🥩',kcal:136,p:21,c:0,f:5,fiber:0,sugar:0,satFat:2.1,sodium:72,servingG:150,servingLabel:'150g',micros:{iron:2.6,zinc:4.8,b12:2.5,b6:0.4}},
+  {name:'Turkey Breast',emoji:'🦃',kcal:135,p:30,c:0,f:1,fiber:0,sugar:0,satFat:0.4,sodium:63,servingG:150,servingLabel:'150g',micros:{b6:0.9,b12:0.3,selenium:32,zinc:2.3}},
+  {name:'Tofu (firm)',emoji:'🟡',kcal:76,p:8,c:1.9,f:4.2,fiber:0.3,sugar:0.7,satFat:0.7,sodium:7,servingG:150,servingLabel:'150g',micros:{calcium:350,iron:2.7,zinc:1.4,magnesium:37}},
+  {name:'Tempeh',emoji:'🟤',kcal:192,p:19,c:9.4,f:11,fiber:0,sugar:0,satFat:2.2,sodium:9,servingG:100,servingLabel:'100g',micros:{iron:2.7,zinc:1.7,magnesium:70,calcium:111}},
+  {name:'Whey Protein',emoji:'💪',kcal:400,p:80,c:10,f:6.7,fiber:0,sugar:6.7,satFat:2.2,sodium:267,servingG:30,servingLabel:'1 scoop (30g)',micros:{calcium:267,b12:1.0}},
+  {name:'Casein Protein',emoji:'💪',kcal:400,p:80,c:13.3,f:3.3,fiber:0,sugar:6.7,satFat:1.7,sodium:667,servingG:30,servingLabel:'1 scoop (30g)',micros:{calcium:1667}},
+  {name:'Chickpeas (canned)',emoji:'🫘',kcal:139,p:7.5,c:22,f:2.4,fiber:7.6,sugar:3.9,satFat:0.3,sodium:400,servingG:150,servingLabel:'150g',micros:{iron:2.9,b9:172,zinc:1.5,magnesium:48,potassium:293}},
+  {name:'Lentils (cooked)',emoji:'🫘',kcal:116,p:9,c:20,f:0.4,fiber:7.9,sugar:1.8,satFat:0.1,sodium:2,servingG:200,servingLabel:'200g cooked',micros:{iron:3.3,b9:181,magnesium:36,potassium:365,zinc:1.3}},
+  {name:'Black Beans (cooked)',emoji:'🫘',kcal:132,p:8.9,c:24,f:0.5,fiber:8.7,sugar:0.3,satFat:0.1,sodium:1,servingG:150,servingLabel:'150g cooked',micros:{iron:2.1,b9:128,magnesium:60,potassium:355}},
+  {name:'Edamame',emoji:'🫛',kcal:121,p:11,c:8.9,f:5.2,fiber:5.2,sugar:2.2,satFat:0.7,sodium:6,servingG:150,servingLabel:'150g',micros:{iron:2.3,b9:311,magnesium:64,potassium:436,vitK:26}},
+  {name:'Skyr',emoji:'🥛',kcal:63,p:11,c:4,f:0.2,fiber:0,sugar:4,satFat:0.1,sodium:45,servingG:200,servingLabel:'200g',micros:{calcium:135,b12:0.6,b2:0.2}},
+  {name:'Quark',emoji:'🥛',kcal:64,p:12,c:4,f:0.2,fiber:0,sugar:4,satFat:0.1,sodium:39,servingG:200,servingLabel:'200g',micros:{calcium:95,b12:0.5}},
+  {name:'Shrimp',emoji:'🍤',kcal:99,p:24,c:0.2,f:0.3,fiber:0,sugar:0,satFat:0.1,sodium:111,servingG:150,servingLabel:'150g',micros:{selenium:38,b12:1.3,zinc:1.6,iron:0.5}},
+  // ── Carbs ──
+  {name:'Rolled Oats',emoji:'🥣',kcal:379,p:13.5,c:68,f:6.9,fiber:10.6,sugar:0,satFat:1.2,sodium:2,servingG:80,servingLabel:'80g dry',micros:{magnesium:138,iron:4.7,zinc:3.6,b1:0.76,selenium:34}},
+  {name:'Brown Rice (cooked)',emoji:'🍚',kcal:123,p:2.7,c:26,f:1,fiber:1.8,sugar:0.4,satFat:0.2,sodium:1,servingG:200,servingLabel:'200g cooked',micros:{magnesium:44,b6:0.15,selenium:9}},
+  {name:'White Rice (cooked)',emoji:'🍚',kcal:130,p:2.7,c:28,f:0.3,fiber:0.4,sugar:0,satFat:0.1,sodium:1,servingG:200,servingLabel:'200g cooked',micros:{selenium:7}},
+  {name:'Quinoa (cooked)',emoji:'🌾',kcal:120,p:4.4,c:22,f:1.9,fiber:2.8,sugar:0.9,satFat:0.2,sodium:7,servingG:185,servingLabel:'185g cooked',micros:{magnesium:64,iron:1.5,zinc:1.1,b9:42}},
+  {name:'Whole Wheat Bread',emoji:'🍞',kcal:247,p:13,c:41,f:3.4,fiber:6,sugar:5,satFat:0.5,sodium:400,servingG:28,servingLabel:'1 slice (28g)',micros:{iron:2.5,magnesium:76,b1:0.4,selenium:30}},
+  {name:'White Bread',emoji:'🍞',kcal:265,p:9,c:49,f:3.2,fiber:2.7,sugar:5,satFat:0.7,sodium:490,servingG:28,servingLabel:'1 slice (28g)',micros:{b1:0.2,iron:1.4}},
+  {name:'Sweet Potato (baked)',emoji:'🍠',kcal:86,p:1.6,c:20,f:0.1,fiber:3,sugar:4.2,satFat:0,sodium:55,servingG:150,servingLabel:'1 medium (150g)',micros:{vitA:709,potassium:337,vitC:19,b6:0.29}},
+  {name:'White Potato (boiled)',emoji:'🥔',kcal:87,p:1.9,c:20,f:0.1,fiber:1.8,sugar:1.3,satFat:0,sodium:5,servingG:180,servingLabel:'1 medium (180g)',micros:{potassium:421,vitC:13,b6:0.3}},
+  {name:'Whole Wheat Pasta',emoji:'🍝',kcal:124,p:5.3,c:23.6,f:1,fiber:3.9,sugar:0.6,satFat:0.2,sodium:3,servingG:200,servingLabel:'200g cooked',micros:{magnesium:42,iron:1.4,selenium:26}},
+  {name:'White Pasta (cooked)',emoji:'🍝',kcal:131,p:5,c:25,f:1.1,fiber:1.8,sugar:0.6,satFat:0.2,sodium:1,servingG:200,servingLabel:'200g cooked',micros:{selenium:22}},
+  {name:'Banana',emoji:'🍌',kcal:89,p:1.1,c:23,f:0.3,fiber:2.6,sugar:12,satFat:0.1,sodium:1,servingG:118,servingLabel:'1 medium (118g)',micros:{potassium:358,b6:0.37,vitC:8.7,magnesium:27}},
+  {name:'Apple',emoji:'🍎',kcal:52,p:0.3,c:14,f:0.2,fiber:2.4,sugar:10,satFat:0,sodium:1,servingG:182,servingLabel:'1 medium (182g)',micros:{vitC:4.6,potassium:107}},
+  {name:'Blueberries',emoji:'🫐',kcal:57,p:0.7,c:14,f:0.3,fiber:2.4,sugar:10,satFat:0,sodium:1,servingG:150,servingLabel:'150g',micros:{vitC:9.7,vitK:19}},
+  {name:'Strawberries',emoji:'🍓',kcal:32,p:0.7,c:7.7,f:0.3,fiber:2,sugar:4.9,satFat:0,sodium:1,servingG:150,servingLabel:'150g',micros:{vitC:59,b9:24,potassium:153}},
+  {name:'Orange',emoji:'🍊',kcal:47,p:0.9,c:12,f:0.1,fiber:2.4,sugar:9.4,satFat:0,sodium:0,servingG:131,servingLabel:'1 medium (131g)',micros:{vitC:53,b9:30,potassium:181}},
+  {name:'Rice Cakes',emoji:'🫓',kcal:387,p:8,c:81,f:2.8,fiber:1,sugar:0,satFat:0.6,sodium:30,servingG:9,servingLabel:'1 cake (9g)',micros:{}},
+  {name:'Bagel',emoji:'🥯',kcal:272,p:10,c:56,f:1.7,fiber:2.3,sugar:5,satFat:0.3,sodium:536,servingG:98,servingLabel:'1 bagel (98g)',micros:{iron:3.2,b1:0.5}},
+  {name:'Granola',emoji:'🥣',kcal:471,p:9,c:64,f:20,fiber:5.3,sugar:24,satFat:3.6,sodium:32,servingG:60,servingLabel:'60g',micros:{iron:3.4,magnesium:52}},
+  // ── Fats / Dairy ──
+  {name:'Avocado',emoji:'🥑',kcal:160,p:2,c:8.5,f:14.7,fiber:6.7,sugar:0.7,satFat:2.1,sodium:7,servingG:150,servingLabel:'½ large (150g)',micros:{potassium:485,b9:81,vitK:21,vitC:10,vitE:2.7,magnesium:29}},
+  {name:'Almonds',emoji:'🌰',kcal:579,p:21,c:22,f:50,fiber:12.5,sugar:4.4,satFat:3.8,sodium:1,servingG:30,servingLabel:'30g handful',micros:{magnesium:270,vitE:7.3,calcium:264,zinc:3.1}},
+  {name:'Walnuts',emoji:'🌰',kcal:654,p:15,c:14,f:65,fiber:6.7,sugar:2.6,satFat:6.1,sodium:2,servingG:30,servingLabel:'30g handful',micros:{magnesium:45,b6:0.5,b9:98}},
+  {name:'Peanut Butter',emoji:'🥜',kcal:588,p:25,c:20,f:50,fiber:6,sugar:9,satFat:10,sodium:459,servingG:32,servingLabel:'2 tbsp (32g)',micros:{magnesium:168,zinc:2.9,b3:13.3,vitE:9.1}},
+  {name:'Almond Butter',emoji:'🥜',kcal:614,p:21,c:19,f:56,fiber:10,sugar:4.4,satFat:4.3,sodium:4,servingG:32,servingLabel:'2 tbsp (32g)',micros:{magnesium:270,vitE:7.3,calcium:264}},
+  {name:'Olive Oil',emoji:'🫒',kcal:884,p:0,c:0,f:100,fiber:0,sugar:0,satFat:13.8,sodium:2,servingG:14,servingLabel:'1 tbsp (14g)',micros:{vitE:14,vitK:60}},
+  {name:'Cheddar Cheese',emoji:'🧀',kcal:402,p:25,c:1.3,f:33,fiber:0,sugar:0.5,satFat:21,sodium:621,servingG:30,servingLabel:'30g slice',micros:{calcium:720,b12:0.8,vitA:265,zinc:2.8}},
+  {name:'Whole Milk',emoji:'🥛',kcal:61,p:3.2,c:4.8,f:3.3,fiber:0,sugar:4.8,satFat:1.9,sodium:44,servingG:240,servingLabel:'1 cup (240ml)',micros:{calcium:113,vitD:1,b12:0.4,potassium:150}},
+  {name:'Semi-Skimmed Milk',emoji:'🥛',kcal:50,p:3.4,c:5,f:1.8,fiber:0,sugar:5,satFat:1.1,sodium:43,servingG:240,servingLabel:'1 cup (240ml)',micros:{calcium:120,vitD:1,b12:0.45}},
+  {name:'Almond Milk (unsw.)',emoji:'🥛',kcal:15,p:0.6,c:0.6,f:1.2,fiber:0.3,sugar:0,satFat:0.1,sodium:65,servingG:240,servingLabel:'1 cup (240ml)',micros:{vitD:2.5,calcium:450,vitE:6.3}},
+  {name:'Mozzarella',emoji:'🧀',kcal:280,p:28,c:2.2,f:17,fiber:0,sugar:1,satFat:11,sodium:627,servingG:85,servingLabel:'85g ball',micros:{calcium:505,b12:0.7,zinc:2.9}},
+  {name:'Feta Cheese',emoji:'🧀',kcal:264,p:14,c:4.1,f:21,fiber:0,sugar:4.1,satFat:14.9,sodium:1116,servingG:50,servingLabel:'50g',micros:{calcium:493,b12:0.69}},
+  {name:'Chia Seeds',emoji:'🌱',kcal:486,p:17,c:42,f:31,fiber:34,sugar:0,satFat:3.3,sodium:16,servingG:28,servingLabel:'2 tbsp (28g)',micros:{calcium:631,magnesium:335,iron:7.7,potassium:407}},
+  {name:'Flax Seeds',emoji:'🌱',kcal:534,p:18,c:29,f:42,fiber:27,sugar:1.6,satFat:3.7,sodium:30,servingG:14,servingLabel:'1 tbsp (14g)',micros:{magnesium:392,b1:1.64,b9:87,potassium:813}},
+  {name:'Pumpkin Seeds',emoji:'🌱',kcal:559,p:30,c:11,f:49,fiber:6,sugar:1.4,satFat:8.7,sodium:7,servingG:30,servingLabel:'30g',micros:{magnesium:534,zinc:7.6,iron:3.3,potassium:919}},
+  // ── Vegetables ──
+  {name:'Broccoli',emoji:'🥦',kcal:34,p:2.8,c:6.6,f:0.4,fiber:2.6,sugar:1.7,satFat:0.1,sodium:33,servingG:150,servingLabel:'150g',micros:{vitC:89,vitK:101,b9:63,calcium:47,potassium:316}},
+  {name:'Spinach',emoji:'🥬',kcal:23,p:2.9,c:3.6,f:0.4,fiber:2.2,sugar:0.4,satFat:0.1,sodium:79,servingG:100,servingLabel:'100g',micros:{vitA:469,vitC:28,iron:2.7,b9:194,magnesium:79,vitK:483,potassium:558,calcium:99}},
+  {name:'Kale',emoji:'🥬',kcal:49,p:4.3,c:8.8,f:0.9,fiber:3.6,sugar:2.3,satFat:0.1,sodium:38,servingG:100,servingLabel:'100g',micros:{vitA:241,vitC:120,vitK:817,calcium:150,magnesium:47,iron:1.5}},
+  {name:'Carrots',emoji:'🥕',kcal:41,p:0.9,c:10,f:0.2,fiber:2.8,sugar:4.7,satFat:0,sodium:69,servingG:100,servingLabel:'100g',micros:{vitA:835,vitC:5.9,potassium:320}},
+  {name:'Cucumber',emoji:'🥒',kcal:16,p:0.7,c:3.6,f:0.1,fiber:0.5,sugar:1.7,satFat:0,sodium:2,servingG:150,servingLabel:'½ large (150g)',micros:{vitK:16,potassium:147}},
+  {name:'Tomato',emoji:'🍅',kcal:18,p:0.9,c:3.9,f:0.2,fiber:1.2,sugar:2.6,satFat:0,sodium:5,servingG:123,servingLabel:'1 medium (123g)',micros:{vitC:14,vitK:10,potassium:237}},
+  {name:'Red Bell Pepper',emoji:'🫑',kcal:31,p:1,c:6,f:0.3,fiber:2.1,sugar:4.2,satFat:0,sodium:4,servingG:149,servingLabel:'1 medium (149g)',micros:{vitC:128,vitA:157,b6:0.29,b9:46}},
+  {name:'Zucchini',emoji:'🥒',kcal:17,p:1.2,c:3.1,f:0.3,fiber:1,sugar:2.5,satFat:0.1,sodium:8,servingG:150,servingLabel:'150g',micros:{vitC:17,potassium:261,b9:24}},
+  {name:'Mushrooms',emoji:'🍄',kcal:22,p:3.1,c:3.3,f:0.3,fiber:1,sugar:2,satFat:0,sodium:5,servingG:100,servingLabel:'100g',micros:{b2:0.4,b3:3.6,selenium:9.3,potassium:318}},
+  {name:'Asparagus',emoji:'🌿',kcal:20,p:2.2,c:3.7,f:0.1,fiber:2.1,sugar:1.9,satFat:0,sodium:2,servingG:134,servingLabel:'8 spears (134g)',micros:{vitK:56,b9:70,vitC:5.6,vitA:76}},
+  // ── Treats ──
+  {name:'Pizza (margherita)',emoji:'🍕',kcal:266,p:11,c:33,f:10,fiber:2.3,sugar:3.6,satFat:4.5,sodium:598,servingG:107,servingLabel:'1 slice (107g)',micros:{calcium:188,b12:0.4}},
+  {name:'Cheeseburger',emoji:'🍔',kcal:303,p:17,c:24,f:13,fiber:1,sugar:5,satFat:6,sodium:791,servingG:113,servingLabel:'1 burger (113g)',micros:{iron:2.5,calcium:140,b12:1.5}},
+  {name:'French Fries (medium)',emoji:'🍟',kcal:312,p:3.4,c:41,f:15,fiber:3.5,sugar:0.3,satFat:2.3,sodium:283,servingG:117,servingLabel:'medium (117g)',micros:{potassium:564}},
+  {name:'Potato Chips (28g)',emoji:'🥔',kcal:149,p:1.9,c:14.8,f:9.5,fiber:1.2,sugar:0.1,satFat:1.5,sodium:149,servingG:28,servingLabel:'28g bag',micros:{}},
+  {name:'Dark Chocolate 85%',emoji:'🍫',kcal:598,p:7.9,c:46,f:43,fiber:11,sugar:24,satFat:25,sodium:20,servingG:30,servingLabel:'30g (3 squares)',micros:{magnesium:228,iron:11.9,zinc:3.3,potassium:715}},
+  {name:'Milk Chocolate',emoji:'🍫',kcal:535,p:7.7,c:59,f:30,fiber:3.4,sugar:52,satFat:18,sodium:79,servingG:30,servingLabel:'30g',micros:{calcium:189,magnesium:63}},
+  {name:'Vanilla Ice Cream',emoji:'🍦',kcal:207,p:3.5,c:24,f:11,fiber:0.7,sugar:21,satFat:6.8,sodium:80,servingG:132,servingLabel:'1 large scoop',micros:{calcium:128,b12:0.5}},
+  {name:'Cola (330ml)',emoji:'🥤',kcal:139,p:0,c:35,f:0,fiber:0,sugar:35,satFat:0,sodium:45,servingG:330,servingLabel:'330ml can',micros:{}},
+  {name:'Croissant',emoji:'🥐',kcal:406,p:8.2,c:46,f:21,fiber:2.6,sugar:11,satFat:11.6,sodium:375,servingG:75,servingLabel:'1 croissant (75g)',micros:{b1:0.3}},
+  {name:'Doughnut (glazed)',emoji:'🍩',kcal:452,p:4.9,c:51,f:25,fiber:1.5,sugar:26,satFat:6.4,sodium:326,servingG:75,servingLabel:'1 doughnut (75g)',micros:{}},
+  // ── Packaged ──
+  {name:'Protein Bar',emoji:'🍫',kcal:333,p:33.3,c:36.7,f:11.7,fiber:5,sugar:13.3,satFat:5,sodium:333,servingG:60,servingLabel:'1 bar (60g)',micros:{calcium:167,iron:3.3,b12:0.8}},
+  {name:'Granola Bar',emoji:'🍪',kcal:404,p:8.5,c:61.7,f:14.9,fiber:4.3,sugar:25.5,satFat:3.2,sodium:223,servingG:47,servingLabel:'1 bar (47g)',micros:{}},
+  {name:'Greek Yogurt (flavoured)',emoji:'🥛',kcal:100,p:5.3,c:14,f:2.7,fiber:0,sugar:12,satFat:1.7,sodium:60,servingG:150,servingLabel:'150g pot',micros:{calcium:130,b12:0.5}},
+  {name:'Instant Oatmeal Packet',emoji:'🥣',kcal:379,p:13,c:68,f:6.5,fiber:10,sugar:1,satFat:1.2,sodium:109,servingG:45,servingLabel:'1 packet (45g)',micros:{iron:22,b1:1.1}},
+  {name:'Chicken Rice Ready Meal',emoji:'🍱',kcal:130,p:8,c:18,f:3,fiber:1.5,sugar:2,satFat:0.8,sodium:600,servingG:300,servingLabel:'300g meal',micros:{b12:0.5,b6:0.3}},
+  {name:'Protein Shake (premade)',emoji:'🥤',kcal:160,p:25,c:8,f:3,fiber:1,sugar:5,satFat:1,sodium:200,servingG:350,servingLabel:'350ml bottle',micros:{calcium:250,b12:0.8}}
+];
+
+/* ── MICRO RDAs ─────────────────────────────────────── */
+const RDA = {
+  vitA:900,vitC:90,vitD:15,vitE:15,vitK:120,
+  b1:1.2,b2:1.3,b3:16,b6:1.7,b9:400,b12:2.4,
+  calcium:1000,iron:8,magnesium:400,phosphorus:700,
+  potassium:3500,zinc:11,selenium:55
+};
+const RDA_UNIT = {
+  vitA:'µg',vitC:'mg',vitD:'µg',vitE:'mg',vitK:'µg',
+  b1:'mg',b2:'mg',b3:'mg',b6:'mg',b9:'µg',b12:'µg',
+  calcium:'mg',iron:'mg',magnesium:'mg',phosphorus:'mg',
+  potassium:'mg',zinc:'mg',selenium:'µg'
+};
+const RDA_NAME = {
+  vitA:'Vitamin A',vitC:'Vitamin C',vitD:'Vitamin D',vitE:'Vitamin E',vitK:'Vitamin K',
+  b1:'B1 Thiamine',b2:'B2 Riboflavin',b3:'B3 Niacin',b6:'B6',b9:'B9 Folate',b12:'B12',
+  calcium:'Calcium',iron:'Iron',magnesium:'Magnesium',phosphorus:'Phosphorus',
+  potassium:'Potassium',zinc:'Zinc',selenium:'Selenium'
+};
+const FAT_SOLUBLE = new Set(['vitA','vitD','vitE','vitK']);
+const SODIUM_LIMIT = 2300;
+const SUGAR_LIMIT  = 50;
+const ACTIVITY_MULT = {sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};
+const MEAL_INFO = {
+  breakfast:{label:'Breakfast',emoji:'☀️'},
+  lunch:    {label:'Lunch',    emoji:'🌤️'},
+  dinner:   {label:'Dinner',   emoji:'🌙'},
+  snacks:   {label:'Snacks',   emoji:'🍎'}
+};
+
+/* ── STATE ──────────────────────────────────────────── */
+let profile = {heightCm:175,age:22,sex:'m',activityLevel:'moderate',goal:'cut',bodyFatPct:null,weeklyWeightHistory:[],phaseStartDate:null,tdeeOverride:null};
+let logs    = [];   // today only
+let custom  = [];
+let history = [];   // nut:history last 90 days
+let whoop   = {strain:0,recovery:null};
+let weightKg = 70;
+let targets  = {};
+let openMeals = {breakfast:true,lunch:false,dinner:false,snacks:false};
+let macroTab  = 'MACROS';
+let logMeal   = 'breakfast';
+let foodQuery = '';
+let sheetFidx = -1;   // index into allFoods() for portion sheet
+let sheetG    = 100;
+let sheetUnit = 'serving';
+let insightDay = null;
+
+/* JS continued in next part */
+</script>
+</body>
+</html>
