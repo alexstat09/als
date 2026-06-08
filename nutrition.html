@@ -615,6 +615,59 @@ body::after {
   padding: 24px 20px; text-align: center;
   font-size: 13px; color: var(--text-tertiary); font-style: italic;
 }
+
+/* ── Quick Entry ───────────────────────────────────── */
+.import-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+.import-tab {
+  padding: 7px 16px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase; font-family: inherit;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.03);
+  color: var(--text-tertiary); cursor: pointer; transition: all 0.15s;
+}
+.import-tab.active { background: rgba(255,255,255,0.10); color: var(--text-primary); border-color: rgba(255,255,255,0.22); }
+
+.quick-entry-grid {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 14px;
+}
+@media (min-width: 500px) { .quick-entry-grid { grid-template-columns: repeat(4,1fr); } }
+.qe-field { display: flex; flex-direction: column; gap: 5px; }
+.qe-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.qe-input {
+  padding: 11px 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 10px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 16px; font-weight: 700;
+  outline: none; text-align: center; transition: border-color 0.2s;
+  -moz-appearance: textfield;
+}
+.qe-input::-webkit-outer-spin-button,
+.qe-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qe-input:focus { border-color: rgba(255,255,255,0.30); }
+.qe-input::placeholder { font-size: 13px; font-weight: 400; color: var(--text-tertiary); }
+
+.qe-optional-row {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px;
+}
+.qe-optional-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px; grid-column: 1/-1;
+}
+.qe-import-btn {
+  width: 100%; padding: 13px; border: 0; border-radius: 11px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.qe-import-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.qe-meal-section { margin-bottom: 12px; }
+.qe-meal-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.qe-meal-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
 </style>
 </head>
 <body>
@@ -1167,6 +1220,7 @@ function barColor(p, isLimit) {
   if (isLimit) return p >= 100 ? '#FF6B6B' : p >= 85 ? '#F2C063' : '#6BE3A4';
   return p > 100 ? '#FF6B6B' : p >= 85 ? '#F2C063' : '#6BE3A4';
 }
+function id(s) { return document.getElementById(s); }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -2008,43 +2062,157 @@ function handleMFPFile(file) {
 }
 
 /* ── MFP Import render ──────────────────────────────── */
+let importTab = 'quick';   // 'quick' | 'csv'
+
 function renderImport() {
   const el = document.getElementById('mfpImportZone');
   if (!el) return;
+
+  // If already imported, show status bar
   if (mfpImported && logs.length > 0) {
     const tot = calcDayTotals();
     el.innerHTML = `
       <div class="mfp-status">
         <span class="mfp-status-text">
-          ✅ <strong>MFP imported</strong> — ${logs.length} item${logs.length!==1?'s':''} ·
-          ${r0(tot.kcal)} kcal · ${r0(tot.p)}g P · ${r0(tot.c)}g C · ${r0(tot.f)}g F
+          ✅ <strong>Imported</strong> — ${r0(tot.kcal)} kcal ·
+          ${r0(tot.p)}g protein · ${r0(tot.c)}g carbs · ${r0(tot.f)}g fat
         </span>
-        <button class="mfp-clear-btn" id="mfpClearBtn">Clear &amp; re-import</button>
+        <button class="mfp-clear-btn" id="mfpClearBtn">Clear &amp; re-enter</button>
       </div>`;
+    return;
+  }
+
+  const tabsHtml = `
+    <div class="import-tabs">
+      <button class="import-tab ${importTab==='quick'?'active':''}" data-itab="quick">✏️ Quick Entry</button>
+      <button class="import-tab ${importTab==='csv'?'active':''}"   data-itab="csv">📂 CSV File</button>
+    </div>`;
+
+  let bodyHtml = '';
+
+  if (importTab === 'quick') {
+    bodyHtml = `
+      <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 14px;line-height:1.6;">
+        Open MFP → tap <strong style="color:var(--text-primary)">Diary</strong> → scroll to the bottom → you'll see your daily totals. Type them in below.
+      </p>
+
+      <div style="margin-bottom:10px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Daily Totals</div>
+      <div class="quick-entry-grid">
+        <div class="qe-field"><label class="qe-label">Calories</label><input class="qe-input" id="qeKcal" type="number" min="0" placeholder="e.g. 2100"></div>
+        <div class="qe-field"><label class="qe-label">Protein (g)</label><input class="qe-input" id="qeP" type="number" min="0" placeholder="e.g. 160"></div>
+        <div class="qe-field"><label class="qe-label">Carbs (g)</label><input class="qe-input" id="qeC" type="number" min="0" placeholder="e.g. 240"></div>
+        <div class="qe-field"><label class="qe-label">Fat (g)</label><input class="qe-input" id="qeF" type="number" min="0" placeholder="e.g. 70"></div>
+      </div>
+
+      <div style="margin-bottom:10px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Optional extras (from MFP Nutrients view)</div>
+      <div class="qe-optional-row">
+        <div class="qe-field"><label class="qe-label">Fiber (g)</label><input class="qe-input" id="qeFiber" type="number" min="0" placeholder="—"></div>
+        <div class="qe-field"><label class="qe-label">Sugar (g)</label><input class="qe-input" id="qeSugar" type="number" min="0" placeholder="—"></div>
+        <div class="qe-field"><label class="qe-label">Sodium (mg)</label><input class="qe-input" id="qeSodium" type="number" min="0" placeholder="—"></div>
+      </div>
+
+      <div style="margin-bottom:12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Breakdown by meal (optional — for MPS tracking)</div>
+      ${['breakfast','lunch','dinner','snacks'].map(meal => `
+        <div class="qe-meal-section">
+          <div class="qe-meal-label">${MEAL_INFO[meal].emoji} ${MEAL_INFO[meal].label}</div>
+          <div class="qe-meal-row">
+            <div class="qe-field"><label class="qe-label">kcal</label><input class="qe-input" id="qe_${meal}_kcal" type="number" min="0" placeholder="—"></div>
+            <div class="qe-field"><label class="qe-label">P g</label><input class="qe-input" id="qe_${meal}_p" type="number" min="0" placeholder="—"></div>
+            <div class="qe-field"><label class="qe-label">C g</label><input class="qe-input" id="qe_${meal}_c" type="number" min="0" placeholder="—"></div>
+            <div class="qe-field"><label class="qe-label">F g</label><input class="qe-input" id="qe_${meal}_f" type="number" min="0" placeholder="—"></div>
+          </div>
+        </div>`).join('')}
+
+      <button class="qe-import-btn" id="qeImportBtn">Generate Debrief →</button>`;
   } else {
-    el.innerHTML = `
+    bodyHtml = `
+      <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 14px;line-height:1.6;">
+        On <strong style="color:var(--text-primary)">myfitnesspal.com</strong> (desktop browser only):<br>
+        Log in → <strong style="color:var(--text-primary)">Food</strong> → <strong style="color:var(--text-primary)">View Full Diary</strong> → scroll to bottom → <strong style="color:var(--text-primary)">Export to Spreadsheet</strong>. Drop the CSV here.
+      </p>
       <div class="mfp-zone" id="mfpDropZone">
         <input type="file" id="mfpFileInput" accept=".csv,.txt">
         <div class="mfp-zone-icon">📂</div>
-        <div class="mfp-zone-title">Drop your MyFitnessPal CSV here</div>
-        <div class="mfp-zone-sub">
-          In MFP: go to <strong>Diary</strong> → click the date → <strong>Export to Spreadsheet</strong><br>
-          Drop the downloaded file here or click to browse.
-        </div>
-        <div class="mfp-zone-hint">Supports both summary and full food-log formats</div>
+        <div class="mfp-zone-title">Drop CSV file here or tap to browse</div>
+        <div class="mfp-zone-hint">Works on desktop — mobile MFP app doesn't have CSV export</div>
       </div>`;
+  }
+
+  el.innerHTML = tabsHtml + bodyHtml;
+
+  // Attach drop zone listeners if CSV tab
+  if (importTab === 'csv') {
     const zone  = document.getElementById('mfpDropZone');
     const input = document.getElementById('mfpFileInput');
     if (zone) {
       zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
       zone.addEventListener('dragleave', ()=> zone.classList.remove('drag-over'));
-      zone.addEventListener('drop', e => {
-        e.preventDefault(); zone.classList.remove('drag-over');
-        handleMFPFile(e.dataTransfer.files[0]);
-      });
+      zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleMFPFile(e.dataTransfer.files[0]); });
     }
     if (input) input.addEventListener('change', e => handleMFPFile(e.target.files[0]));
   }
+}
+
+function applyQuickEntry() {
+  const gn = id => parseFloat(document.getElementById(id) && document.getElementById(id).value) || 0;
+  const totalKcal  = gn('qeKcal');
+  const totalP     = gn('qeP');
+  const totalC     = gn('qeC');
+  const totalF     = gn('qeF');
+  const totalFiber = gn('qeFiber');
+  const totalSugar = gn('qeSugar');
+  const totalSodium= gn('qeSodium');
+
+  if (!totalKcal && !totalP) {
+    alert('Enter at least Calories and Protein to generate your debrief.'); return;
+  }
+
+  // Check if meal breakdown was entered
+  const meals = ['breakfast','lunch','dinner','snacks'];
+  const hasMeals = meals.some(m => gn(`qe_${m}_kcal`) > 0 || gn(`qe_${m}_p`) > 0);
+
+  logs = [];
+  if (hasMeals) {
+    // Create one log entry per meal
+    meals.forEach(meal => {
+      const k = gn(`qe_${meal}_kcal`);
+      const p = gn(`qe_${meal}_p`);
+      const c = gn(`qe_${meal}_c`);
+      const f = gn(`qe_${meal}_f`);
+      if (k > 0 || p > 0) {
+        logs.push({
+          id: Date.now() + Math.random(), meal,
+          foodName: `${MEAL_INFO[meal].label} (MFP)`,
+          emoji: MEAL_INFO[meal].emoji,
+          portionLabel: 'from MyFitnessPal',
+          portionG: 0, kcal: k, p, c, f,
+          fiber: 0, sugar: 0, satFat: 0, sodium: 0, micros: {},
+          ts: new Date().toISOString()
+        });
+      }
+    });
+    // Distribute fiber/sugar/sodium into first meal
+    if (logs.length > 0) {
+      logs[0].fiber  = totalFiber;
+      logs[0].sugar  = totalSugar;
+      logs[0].sodium = totalSodium;
+    }
+  } else {
+    // Single entry for the whole day
+    logs.push({
+      id: Date.now(), meal: 'breakfast',
+      foodName: 'Today\'s Food (MFP)',
+      emoji: '🍽️', portionLabel: 'from MyFitnessPal',
+      portionG: 0,
+      kcal: totalKcal, p: totalP, c: totalC, f: totalF,
+      fiber: totalFiber, sugar: totalSugar, satFat: 0, sodium: totalSodium,
+      micros: {}, ts: new Date().toISOString()
+    });
+  }
+
+  mfpImported = true;
+  saveLogs();
+  rerender();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2438,6 +2606,11 @@ function initEvents() {
     if (e.target.id === 'mfpClearBtn') {
       logs = []; mfpImported = false; saveLogs(); rerender(); return;
     }
+    // Import tab switch
+    const itab = e.target.closest('[data-itab]');
+    if (itab) { importTab = itab.dataset.itab; renderImport(); return; }
+    // Quick entry submit
+    if (e.target.id === 'qeImportBtn') { applyQuickEntry(); return; }
 
     // Food buttons → open portion sheet
     const fb = e.target.closest('.food-btn, .recent-chip');
