@@ -946,6 +946,14 @@ img, video, canvas, svg { max-width: 100%; }
 .wt-dot { fill: var(--good); stroke: var(--bg-card); stroke-width: 1.5; }
 .wt-dot-today { fill: #fff; stroke: var(--good); stroke-width: 2.5; filter: drop-shadow(0 0 4px rgba(110,231,183,0.9)); }
 .wt-xlabel { font-size: 9px; fill: rgba(255,255,255,0.28); font-family: var(--font-mono); }
+.wt-crosshair { stroke: rgba(255,255,255,0.22); stroke-width: 1; stroke-dasharray: 3 3; }
+.wt-tip-bg { fill: rgba(8,8,10,0.94); }
+.wt-tip-date { fill: rgba(255,255,255,0.50); font-size: 9px; font-family: var(--font-mono); }
+.wt-tip-weight { fill: #fff; font-size: 12px; font-weight: 700; font-family: var(--font-mono); }
+.wt-tip-dot { fill: #fff; stroke: var(--good); stroke-width: 2.5; }
+.wt-minmax-min { font-size: 9px; font-family: var(--font-mono); fill: rgba(110,231,183,0.80); }
+.wt-minmax-max { font-size: 9px; font-family: var(--font-mono); fill: rgba(255,107,107,0.80); }
+.wt-chart { cursor: crosshair; }
 .wt-meta {
   text-align: center; font-size: 11px; color: var(--text-3);
   margin-top: 6px;
@@ -1417,6 +1425,15 @@ img, video, canvas, svg { max-width: 100%; }
           <line class="wt-grid" x1="0" y1="110" x2="320" y2="110"></line>
           <g id="wtChartContent"></g>
           <g id="wtXLabels"></g>
+          <!-- tooltip layer — always on top -->
+          <rect id="wtHit" x="0" y="0" width="320" height="115" fill="transparent"/>
+          <g id="wtTip" style="display:none" pointer-events="none">
+            <line id="wtTipLine" class="wt-crosshair" x1="0" y1="18" x2="0" y2="112"/>
+            <circle id="wtTipDot" r="4" class="wt-tip-dot" cx="0" cy="0"/>
+            <rect id="wtTipBg" x="0" y="0" width="72" height="34" rx="5" class="wt-tip-bg"/>
+            <text id="wtTipDate" x="0" y="0" class="wt-tip-date"></text>
+            <text id="wtTipWeight" x="0" y="0" class="wt-tip-weight"></text>
+          </g>
         </svg>
         <div class="wt-meta" id="wtMeta">0 entries</div>
       </div>
@@ -2995,9 +3012,12 @@ img, video, canvas, svg { max-width: 100%; }
   }
 
   let wtRange = 30;
+  let wtChartPoints = [];
+  let wtChartRecent = [];
 
   function wtRenderChart() {
     const recent = wtRange === 0 ? wtEntries : wtEntries.slice(-wtRange);
+    wtChartPoints = []; wtChartRecent = recent;
     if (recent.length < 2) return;
     const weights = recent.map(e => e.weight);
     const min = Math.min.apply(null, weights);
@@ -3009,6 +3029,7 @@ img, video, canvas, svg { max-width: 100%; }
     const xFor = (i) => recent.length === 1 ? xRight : xLeft + (i / (recent.length - 1)) * xRange;
     const yFor = (w) => yBot - ((w - yMin) / (yMax - yMin)) * yRange;
     const points = recent.map((e, i) => ({ x: xFor(i), y: yFor(e.weight), e }));
+    wtChartPoints = points;
     const linePath = wtSmoothPath(points);
     const areaPath = linePath + ' L ' + points[points.length-1].x.toFixed(2) + ' ' + yBot + ' L ' + points[0].x.toFixed(2) + ' ' + yBot + ' Z';
     const avgPoints = recent.map((_, i) => {
@@ -3031,6 +3052,16 @@ img, video, canvas, svg { max-width: 100%; }
     } else {
       const last = points[points.length - 1];
       html += '<circle class="wt-dot-today" cx="' + last.x.toFixed(2) + '" cy="' + last.y.toFixed(2) + '" r="5"/>';
+    }
+    // Min / max callout labels
+    if (recent.length >= 7) {
+      const minIdx = weights.indexOf(min);
+      const maxIdx = weights.indexOf(max);
+      const minP = points[minIdx], maxP = points[maxIdx];
+      const minAnchor = minIdx === 0 ? 'start' : minIdx === recent.length-1 ? 'end' : 'middle';
+      const maxAnchor = maxIdx === 0 ? 'start' : maxIdx === recent.length-1 ? 'end' : 'middle';
+      html += '<text class="wt-minmax-min" x="' + minP.x.toFixed(1) + '" y="' + Math.min(107, minP.y + 13).toFixed(1) + '" text-anchor="' + minAnchor + '">' + min.toFixed(1) + '</text>';
+      html += '<text class="wt-minmax-max" x="' + maxP.x.toFixed(1) + '" y="' + Math.max(14, maxP.y - 5).toFixed(1) + '" text-anchor="' + maxAnchor + '">' + max.toFixed(1) + '</text>';
     }
     $('wtChartContent').innerHTML = html;
     $('wtYAxisMax').textContent = yMax.toFixed(1);
@@ -3221,6 +3252,48 @@ img, video, canvas, svg { max-width: 100%; }
       + ' · ' + freqStr
       + (strengthRatios.length ? '' : ' (no lift data)');
   }
+
+  // Chart tooltip (hover + touch)
+  (function() {
+    const svg = document.querySelector('.wt-chart');
+    if (!svg) return;
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function toSvgX(cx, cy) {
+      try {
+        const pt = svg.createSVGPoint();
+        pt.x = cx; pt.y = cy;
+        return pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+      } catch(e) { return -1; }
+    }
+    function nearest(sx) {
+      if (!wtChartPoints.length) return -1;
+      let bi = 0, bd = Infinity;
+      wtChartPoints.forEach((p, i) => { const d = Math.abs(p.x - sx); if (d < bd) { bd = d; bi = i; } });
+      return bi;
+    }
+    function show(cx, cy) {
+      const i = nearest(toSvgX(cx, cy));
+      if (i < 0) return;
+      const p = wtChartPoints[i], e = wtChartRecent[i];
+      const ds = MONTHS[new Date(e.dateKey + 'T00:00:00').getMonth()] + ' ' + new Date(e.dateKey + 'T00:00:00').getDate();
+      const ws = e.weight.toFixed(1) + ' ' + (state.units || 'kg');
+      const bw = 72, bh = 34, pad = 7;
+      let bx = p.x + pad; if (bx + bw > 314) bx = p.x - bw - pad;
+      const by = Math.max(4, Math.min(p.y - bh / 2, 108 - bh));
+      document.getElementById('wtTipLine').setAttribute('x1', p.x); document.getElementById('wtTipLine').setAttribute('x2', p.x);
+      document.getElementById('wtTipDot').setAttribute('cx', p.x); document.getElementById('wtTipDot').setAttribute('cy', p.y);
+      document.getElementById('wtTipBg').setAttribute('x', bx); document.getElementById('wtTipBg').setAttribute('y', by);
+      document.getElementById('wtTipDate').setAttribute('x', bx + 8); document.getElementById('wtTipDate').setAttribute('y', by + 13); document.getElementById('wtTipDate').textContent = ds;
+      document.getElementById('wtTipWeight').setAttribute('x', bx + 8); document.getElementById('wtTipWeight').setAttribute('y', by + 27); document.getElementById('wtTipWeight').textContent = ws;
+      document.getElementById('wtTip').style.display = '';
+    }
+    function hide() { document.getElementById('wtTip').style.display = 'none'; }
+    svg.addEventListener('mousemove', e => show(e.clientX, e.clientY));
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', e => { e.preventDefault(); show(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    svg.addEventListener('touchmove',  e => { e.preventDefault(); show(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    svg.addEventListener('touchend', hide);
+  })();
 
   // Range selector
   document.querySelectorAll('[data-wrange]').forEach(btn => {
