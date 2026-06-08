@@ -617,9 +617,39 @@ function initEvents() {
   });
 }
 
+/* ── SEED ───────────────────────────────────────────── */
+const ROADMAP = [
+  {text:'Morning Briefing page',note:'Opens at 7am — today\'s plan, yesterday\'s nutrition score, WHOOP recovery, first coffee time. One page, everything you need to start the day.',category:'goals'},
+  {text:'Strong CSV import',note:'Pull your full workout history into the gym tracker. See PRs, volume trends, progressive overload automatically.',category:'fitness'},
+  {text:'Body measurements tracker',note:'Log chest, waist, arms, legs over time. More accurate than scale weight for seeing body recomp.',category:'fitness'},
+  {text:'Barcode scanner for food',note:'Use your phone camera + Open Food Facts (free API) to scan packaged food — auto-fills nutrition. No typing.',category:'health'},
+  {text:'Habit tracker',note:'Daily checkboxes: train / hit protein / sleep 7h+ / no alcohol / morning walk. Streaks. Ties into debrief.',category:'goals'},
+  {text:'Weekly Review page',note:'Every Sunday — weight trend, avg calories vs target, workouts completed, sleep avg, top ideas added. One clean overview.',category:'goals'},
+  {text:'Meal planner',note:'Build a week of meals that hit your macro targets. Generate a shopping list from it.',category:'health'},
+  {text:'Browser push notifications',note:'Remind you: log weight, hit protein, caffeine cutoff approaching, drink water. All free, no server needed.',category:'lifestyle'},
+  {text:'Supplement timing page',note:'In Health — visual timeline showing WHEN to take each supplement (e.g. creatine post-workout, vitamin D with food).',category:'health'},
+  {text:'Intermittent fasting timer',note:'If you fast — shows eating window, time left, last meal. Ties into nutrition data.',category:'health'},
+  {text:'Finance: bill calendar',note:'Monthly view of when bills are due, upcoming expenses, no-spend days.',category:'finance'},
+  {text:'PR board in Fitness',note:'Dedicated section showing your all-time heaviest lifts. Updates automatically as you log.',category:'fitness'}
+];
+
+function ensureRoadmap() {
+  const existing = new Set(ideas.map(i => i.text));
+  const now = new Date();
+  let added = 0;
+  ROADMAP.forEach((r, i) => {
+    if (existing.has(r.text)) return;
+    const d = new Date(now); d.setSeconds(d.getSeconds() - i);
+    ideas.push({id: Date.now() - i*100 - Math.random()*50, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
+    added++;
+  });
+  if (added > 0) { save(); rerender(); }
+}
+
 /* ── INIT ───────────────────────────────────────────── */
 function init() {
   load();
+  ensureRoadmap();
   rerender();
   initEvents();
 
@@ -627,38 +657,9 @@ function init() {
     window.initCloudSync({
       appKey: 'ideas',
       syncedKeys: ['ideas:items'],
-      onApplied: () => { load(); rerender(); }
+      onApplied: () => { load(); ensureRoadmap(); rerender(); }
     });
   }
-
-  // Ensure roadmap ideas always exist (adds any that are missing by title)
-  (function seedRoadmap() {
-    const roadmap = [
-      {text:'Morning Briefing page',note:'Opens at 7am — today\'s plan, yesterday\'s nutrition score, WHOOP recovery, first coffee time. One page, everything you need to start the day.',category:'goals'},
-      {text:'Strong CSV import',note:'Pull your full workout history into the gym tracker. See PRs, volume trends, progressive overload automatically.',category:'fitness'},
-      {text:'Body measurements tracker',note:'Log chest, waist, arms, legs over time. More accurate than scale weight for seeing body recomp.',category:'fitness'},
-      {text:'Barcode scanner for food',note:'Use your phone camera + Open Food Facts (free API) to scan packaged food — auto-fills nutrition. No typing.',category:'health'},
-      {text:'Habit tracker',note:'Daily checkboxes: train / hit protein / sleep 7h+ / no alcohol / morning walk. Streaks. Ties into debrief.',category:'goals'},
-      {text:'Weekly Review page',note:'Every Sunday — weight trend, avg calories vs target, workouts completed, sleep avg, top ideas added. One clean overview.',category:'goals'},
-      {text:'Meal planner',note:'Build a week of meals that hit your macro targets. Generate a shopping list from it.',category:'health'},
-      {text:'Browser push notifications',note:'Remind you: log weight, hit protein, caffeine cutoff approaching, drink water. All free, no server needed.',category:'lifestyle'},
-      {text:'Supplement timing page',note:'In Health — visual timeline showing WHEN to take each supplement (e.g. creatine post-workout, vitamin D with food).',category:'health'},
-      {text:'Intermittent fasting timer',note:'If you fast — shows eating window, time left, last meal. Ties into nutrition data.',category:'health'},
-      {text:'Finance: bill calendar',note:'Monthly view of when bills are due, upcoming expenses, no-spend days.',category:'finance'},
-      {text:'PR board in Fitness',note:'Dedicated section showing your all-time heaviest lifts. Updates automatically as you log.',category:'fitness'}
-    ];
-    load();
-    const existing = new Set(ideas.map(i => i.text));
-    const now = new Date();
-    let added = 0;
-    roadmap.forEach((r, i) => {
-      if (existing.has(r.text)) return;
-      const d = new Date(now); d.setSeconds(d.getSeconds() - i);
-      ideas.push({id: Date.now() - i*100 - Math.random()*50, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
-      added++;
-    });
-    if (added > 0) { save(); rerender(); }
-  })();
 }
 
 document.addEventListener('DOMContentLoaded', init);
