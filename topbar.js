@@ -164,30 +164,35 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
 
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
-  <a href="index.html" class="bottombar-tab" data-page="main">
-    <span class="bottombar-tab-icon">🏠</span><span>Main</span>
+  <a href="index.html"     class="bottombar-tab" data-page="hub">
+    <span class="bottombar-tab-icon">🏠</span><span>Hub</span>
   </a>
-  <a href="health.html" class="bottombar-tab" data-page="health">
-    <span class="bottombar-tab-icon">💊</span><span>Health</span>
+  <a href="main.html"      class="bottombar-tab" data-page="goals">
+    <span class="bottombar-tab-icon">🎯</span><span>Goals</span>
   </a>
-  <a href="gym.html" class="bottombar-tab" data-page="fitness">
+  <a href="gym.html"       class="bottombar-tab" data-page="fitness">
     <span class="bottombar-tab-icon">💪</span><span>Fitness</span>
+  </a>
+  <a href="nutrition.html" class="bottombar-tab" data-page="nutrition">
+    <span class="bottombar-tab-icon">🥗</span><span>Food</span>
+  </a>
+  <a href="ideas.html"     class="bottombar-tab" data-page="ideas">
+    <span class="bottombar-tab-icon">💡</span><span>Ideas</span>
   </a>
 </nav>`;
 
-  function isFinancePage() {
-    const p = (window.location.pathname || '').toLowerCase();
-    return p.endsWith('/finance.html') || p.endsWith('finance.html');
-  }
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
-  function shouldShowChrome() { return !isFinancePage() && !isEmbedded(); }
+  function shouldShowChrome() { return !isEmbedded(); }
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('health.html')) return 'health';
-    if (p.endsWith('gym.html')) return 'fitness';
-    return 'main';
+    if (p.endsWith('index.html') || p === '/' || p.endsWith('/')) return 'hub';
+    if (p.endsWith('main.html'))      return 'goals';
+    if (p.endsWith('gym.html'))       return 'fitness';
+    if (p.endsWith('nutrition.html')) return 'nutrition';
+    if (p.endsWith('ideas.html'))     return 'ideas';
+    return '';
   }
 
   function injectStyleAndHTML() {

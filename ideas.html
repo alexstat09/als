@@ -630,6 +630,35 @@ function init() {
       onApplied: () => { load(); rerender(); }
     });
   }
+
+  // Seed dashboard roadmap ideas (one-time)
+  (function seedRoadmap() {
+    const FLAG = 'ideas_seeded_roadmap_v1';
+    if (localStorage.getItem(FLAG)) return;
+    const roadmap = [
+      {text:'Morning Briefing page',note:'Opens at wake-up — today\'s plan, yesterday\'s nutrition score, WHOOP recovery, first coffee time. One page, everything needed to start the day.',category:'goals'},
+      {text:'Strong app CSV import',note:'Pull full workout history into the gym tracker. See PRs, volume trends, progressive overload automatically.',category:'fitness'},
+      {text:'Body measurements tracker',note:'Log chest, waist, arms, legs over time. More accurate than scale weight for seeing body recomp.',category:'fitness'},
+      {text:'Barcode scanner for food',note:'Use phone camera + Open Food Facts (free API) to scan packaged food — auto-fills nutrition. No typing.',category:'health'},
+      {text:'Habit tracker',note:'Daily checkboxes: train / hit protein / sleep 7h+ / no alcohol / morning walk. Streaks. Ties into daily debrief.',category:'goals'},
+      {text:'Weekly Review page',note:'Every Sunday — weight trend, avg calories vs target, workouts completed, sleep avg, top ideas. One clean overview.',category:'goals'},
+      {text:'Meal planner',note:'Build a week of meals that hit macro targets. Generate a shopping list automatically.',category:'health'},
+      {text:'Browser push notifications',note:'Remind: log weight, hit protein, caffeine cutoff approaching, drink water. All free, no server needed.',category:'lifestyle'},
+      {text:'Supplement timing visual',note:'In Health — visual timeline showing WHEN to take each supplement. Creatine post-workout, Vitamin D with food, etc.',category:'health'},
+      {text:'Intermittent fasting timer',note:'Shows eating window, time left, last meal. Ties into nutrition data and WHOOP sleep end time.',category:'health'},
+      {text:'Finance: bill calendar',note:'Monthly view of when bills hit, upcoming expenses, no-spend day tracking.',category:'finance'},
+      {text:'PR board in Fitness',note:'Dedicated section showing all-time heaviest lifts. Updates automatically as new sessions are logged.',category:'fitness'}
+    ];
+    load();
+    const now = new Date();
+    roadmap.forEach((r, i) => {
+      const d = new Date(now); d.setSeconds(d.getSeconds() - i);
+      ideas.push({id: Date.now() - i*100, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
+    });
+    save();
+    localStorage.setItem(FLAG, '1');
+    rerender();
+  })();
 }
 
 document.addEventListener('DOMContentLoaded', init);
