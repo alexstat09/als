@@ -726,7 +726,1433 @@ let sheetG    = 100;
 let sheetUnit = 'serving';
 let insightDay = null;
 
-/* JS continued in next part */
+/* ══════════════════════════════════════════════════════
+   PART 3 — ENGINE: load · save · TDEE · helpers
+   ══════════════════════════════════════════════════════ */
+
+/* ── Persist helpers ────────────────────────────────── */
+function loadLogs() {
+  try { logs = JSON.parse(localStorage.getItem('nut:logs')) || []; } catch(e) { logs = []; }
+  const dawn = new Date(); dawn.setHours(0,0,0,0);
+  logs = logs.filter(l => new Date(l.ts) >= dawn);
+}
+function saveLogs() { localStorage.setItem('nut:logs', JSON.stringify(logs)); }
+
+function loadCustom() {
+  try { custom = JSON.parse(localStorage.getItem('nut:custom')) || []; } catch(e) { custom = []; }
+}
+function saveCustom() { localStorage.setItem('nut:custom', JSON.stringify(custom)); }
+
+function loadProfile() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nut:profile'));
+    if (saved) profile = Object.assign(profile, saved);
+  } catch(e) {}
+  // Pull weight from po-water if available
+  try {
+    const pw = JSON.parse(localStorage.getItem('po_water_v1')) || {};
+    const w  = (pw.profile || {}).weightKg;
+    if (w) weightKg = pw.weightUnit === 'lb' ? w / 2.20462 : +w;
+    // Profile weight overrides if explicitly saved in nut:profile
+    if (profile.weightKg) weightKg = profile.weightUnit === 'lb'
+      ? profile.weightKg / 2.20462 : +profile.weightKg;
+  } catch(e) {}
+}
+function saveProfile() { localStorage.setItem('nut:profile', JSON.stringify(profile)); }
+
+function loadHistory() {
+  try { history = JSON.parse(localStorage.getItem('nut:history')) || []; } catch(e) { history = []; }
+}
+function saveHistory() { localStorage.setItem('nut:history', JSON.stringify(history)); }
+
+/* Write today's summary into history (called on check-in + visibilitychange) */
+function commitTodayToHistory(overrideWeight) {
+  const today = todayStr();
+  const t = calcDayTotals();
+  const existing = history.find(h => h.date === today);
+  const entry = {
+    date: today,
+    kcal: Math.round(t.kcal),
+    p: Math.round(t.p),
+    c: Math.round(t.c),
+    f: Math.round(t.f),
+    weight: overrideWeight != null ? overrideWeight
+          : existing ? existing.weight : null
+  };
+  if (existing) Object.assign(existing, entry);
+  else history.push(entry);
+  history = history.slice(-90);   // keep last 90 days
+  saveHistory();
+}
+
+/* ── WHOOP ──────────────────────────────────────────── */
+async function loadWhoop() {
+  let tokens;
+  try { tokens = JSON.parse(localStorage.getItem('whoop_tokens_v1')); } catch(e) { return; }
+  if (!tokens || !tokens.access_token) return;
+
+  async function tryFetch(tok) {
+    try {
+      const r = await fetch('/api/whoop-data', { headers: { Authorization: 'Bearer ' + tok } });
+      if (r.status === 401) return 401;
+      return r.ok ? r.json() : null;
+    } catch(e) { return null; }
+  }
+
+  let data = await tryFetch(tokens.access_token);
+  if (data === 401) {
+    try {
+      const rr = await fetch('/api/whoop-refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token })
+      });
+      if (rr.ok) {
+        const nt = await rr.json();
+        localStorage.setItem('whoop_tokens_v1', JSON.stringify(nt));
+        data = await tryFetch(nt.access_token);
+      }
+    } catch(e) { return; }
+  }
+  if (!data || data === 401) return;
+
+  if (data.recovery && data.recovery.recovery_score != null)
+    whoop.recovery = data.recovery.recovery_score;
+  if (data.strain && data.strain.score != null)
+    whoop.strain = data.strain.score;
+  // Also accept flat structure some proxy endpoints return
+  if (data.recovery_score != null) whoop.recovery = data.recovery_score;
+  if (data.strain_score   != null) whoop.strain   = data.strain_score;
+}
+
+/* ── TDEE & targets engine ──────────────────────────── */
+function calcTargets() {
+  const kg  = weightKg || 70;
+  const cm  = profile.heightCm || 175;
+  const age = profile.age || 22;
+  const sex = profile.sex || 'm';
+  const act = profile.activityLevel || 'moderate';
+  const goal = profile.goal || 'cut';
+
+  // Mifflin-St Jeor BMR
+  const bmr = sex === 'f'
+    ? 10*kg + 6.25*cm - 5*age - 161
+    : 10*kg + 6.25*cm - 5*age + 5;
+
+  // TDEE
+  let tdee = bmr * (ACTIVITY_MULT[act] || 1.55);
+  if (whoop.strain > 0) tdee += (whoop.strain / 21) * 350;
+  if (profile.tdeeOverride) tdee = profile.tdeeOverride;
+
+  // Lean mass (if BF% known)
+  const bf   = profile.bodyFatPct;
+  const leanKg = bf ? kg * (1 - bf / 100) : null;
+
+  // Calorie target by goal
+  let calTarget;
+  if      (goal === 'cut')      calTarget = Math.max(bmr + 200, Math.max(tdee * 0.75, tdee - 500));
+  else if (goal === 'mini_cut') calTarget = Math.max(bmr + 200, tdee - 300);
+  else if (goal === 'bulk')     calTarget = tdee + 250;
+  else                          calTarget = tdee;             // maintain
+  calTarget = Math.round(calTarget / 50) * 50;
+
+  // Macro targets
+  let proteinG, fatG;
+  if (goal === 'cut' || goal === 'mini_cut') {
+    proteinG = leanKg ? leanKg * 2.6 : kg * 2.4;
+    fatG     = Math.max(40, kg * 0.8);
+  } else if (goal === 'bulk') {
+    proteinG = kg * 1.8;
+    fatG     = kg * 1.0;
+  } else {
+    proteinG = kg * 1.6;
+    fatG     = kg * 0.9;
+  }
+  const carbG  = Math.max(0, (calTarget - proteinG * 4 - fatG * 9) / 4);
+  const fiberG = Math.round(calTarget / 1000 * 14);
+
+  // Ceiling drops on low WHOOP recovery
+  let calCeiling = calTarget;
+  if (whoop.recovery != null && whoop.recovery < 55) {
+    calCeiling = Math.round(tdee / 50) * 50;  // eat at maintenance
+  }
+
+  targets = {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    kcal: calTarget,
+    kcalCeiling: calCeiling,
+    p:    Math.round(proteinG),
+    c:    Math.round(carbG),
+    f:    Math.round(fatG),
+    fiber: fiberG,
+    sugar: SUGAR_LIMIT,
+    sodium: SODIUM_LIMIT,
+    leanKg: leanKg ? +leanKg.toFixed(1) : null,
+    burnEstimate: whoop.strain > 0 ? Math.round((whoop.strain / 21) * 350) : 0
+  };
+}
+
+/* ── Adaptive TDEE (≥7 days weight history) ─────────── */
+function calcAdaptiveTDEE() {
+  const withW = history.filter(h => h.weight != null && h.kcal > 0)
+                       .sort((a,b) => a.date.localeCompare(b.date))
+                       .slice(-21);
+  if (withW.length < 7) return null;
+  const first = withW[0], last = withW[withW.length - 1];
+  const days  = (new Date(last.date) - new Date(first.date)) / 86400000;
+  if (days < 6) return null;
+  const avgKcal = withW.reduce((s,h) => s + h.kcal, 0) / withW.length;
+  const weightChange = last.weight - first.weight;          // kg (neg = loss)
+  const realTDEE = avgKcal - (weightChange * 7700 / days);
+  return Math.round(realTDEE);
+}
+
+/* Weight trend: kg/week via linear regression */
+function calcWeightTrend() {
+  const wh = (profile.weeklyWeightHistory || [])
+    .slice(-14).filter(w => w.kg != null);
+  if (wh.length < 4) return null;
+  const n = wh.length;
+  let sx=0, sy=0, sxy=0, sx2=0;
+  wh.forEach((pt,i) => { sx+=i; sy+=pt.kg; sxy+=i*pt.kg; sx2+=i*i; });
+  return ((n*sxy - sx*sy) / (n*sx2 - sx*sx)) * 7;   // kg / week
+}
+
+/* Days since last refeed (for cut/mini_cut) */
+function daysSinceRefeed() {
+  const sorted = [...history].sort((a,b) => a.date.localeCompare(b.date));
+  let count = 0;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const h = sorted[i];
+    if (!h.kcal) continue;
+    if (h.kcal >= targets.tdee * 0.93) break;   // refeed = ≥93% TDEE
+    count++;
+  }
+  return count;
+}
+
+/* Days into current phase */
+function phaseDay() {
+  if (!profile.phaseStartDate) return null;
+  const start = new Date(profile.phaseStartDate);
+  const now   = new Date();
+  return Math.max(1, Math.round((now - start) / 86400000));
+}
+
+/* ── Data aggregators ───────────────────────────────── */
+function allFoods() { return [...FOODS, ...custom]; }
+
+function calcDayTotals() {
+  return logs.reduce((acc, l) => {
+    acc.kcal  += l.kcal  || 0;
+    acc.p     += l.p     || 0;
+    acc.c     += l.c     || 0;
+    acc.f     += l.f     || 0;
+    acc.fiber += l.fiber || 0;
+    acc.sugar += l.sugar || 0;
+    acc.satFat+= l.satFat|| 0;
+    acc.sodium+= l.sodium|| 0;
+    if (l.micros) Object.entries(l.micros).forEach(([k,v]) => {
+      acc.micros[k] = (acc.micros[k]||0) + v;
+    });
+    return acc;
+  }, {kcal:0,p:0,c:0,f:0,fiber:0,sugar:0,satFat:0,sodium:0,micros:{}});
+}
+
+function mealTotals(meal) {
+  return logs.filter(l => l.meal === meal).reduce(
+    (a,l) => ({kcal:a.kcal+l.kcal, p:a.p+l.p, c:a.c+l.c, f:a.f+l.f}),
+    {kcal:0,p:0,c:0,f:0}
+  );
+}
+
+function currentMealByTime() {
+  const h = new Date().getHours();
+  if (h < 10) return 'breakfast';
+  if (h < 14) return 'lunch';
+  if (h < 17) return 'snacks';
+  return 'dinner';
+}
+
+/* Scale food nutrients from per-100g to portionG */
+function portionNutrition(food, grams) {
+  const scale = grams / 100;
+  const m = {};
+  Object.entries(food.micros || {}).forEach(([k,v]) => { m[k] = +(v * scale).toFixed(3); });
+  return {
+    kcal:   +((food.kcal  ||0)*scale).toFixed(1),
+    p:      +((food.p     ||0)*scale).toFixed(1),
+    c:      +((food.c     ||0)*scale).toFixed(1),
+    f:      +((food.f     ||0)*scale).toFixed(1),
+    fiber:  +((food.fiber ||0)*scale).toFixed(1),
+    sugar:  +((food.sugar ||0)*scale).toFixed(1),
+    satFat: +((food.satFat||0)*scale).toFixed(1),
+    sodium: +((food.sodium||0)*scale).toFixed(1),
+    micros: m
+  };
+}
+
+/* Convert portion input (number + unit) → grams */
+function unitToGrams(food, qty, unit) {
+  const conversions = {
+    g:       qty,
+    oz:      qty * 28.35,
+    tbsp:    qty * 15,
+    tsp:     qty * 5,
+    cup:     qty * (food.cupG || 240),
+    piece:   qty * (food.servingG || 100),
+    serving: qty * (food.servingG || 100)
+  };
+  return conversions[unit] || qty;
+}
+
+/* Top-3 micros a food provides (relative to RDA, scaled to portion) */
+function topMicros(food, grams) {
+  const scale = grams / 100;
+  return Object.entries(food.micros || {})
+    .filter(([k]) => RDA[k])
+    .map(([k,v]) => ({ key: k, pct: (v * scale) / RDA[k] * 100 }))
+    .sort((a,b) => b.pct - a.pct)
+    .slice(0, 3);
+}
+
+/* Recent foods (last 10 unique names) */
+function recentFoodNames() {
+  const seen = new Set(), out = [];
+  const allH = [...history.flatMap(h => []), ...logs].reverse();
+  // Walk today's logs backwards, then history entries are summarised —
+  // instead use nut:logs stored across days: re-read raw
+  try {
+    const raw = JSON.parse(localStorage.getItem('nut:logs')) || [];
+    [...raw].reverse().forEach(l => {
+      if (!seen.has(l.foodName) && seen.size < 10) { seen.add(l.foodName); out.push(l.foodName); }
+    });
+  } catch(e) {}
+  return out;
+}
+
+/* Suggested foods for current goal */
+function suggestedFoods() {
+  const t   = targets;
+  const tot = calcDayTotals();
+  const pPct = t.p   > 0 ? tot.p   / t.p   : 1;
+  const cPct = t.c   > 0 ? tot.c   / t.c   : 1;
+  const fPct = t.f   > 0 ? tot.f   / t.f   : 1;
+  // Find most-lacking macro
+  const minPct = Math.min(pPct, cPct, fPct);
+  const af = allFoods();
+  let scored;
+  if (minPct === pPct) {
+    // Need protein → rank by p/kcal
+    scored = af.map((fd,i) => ({i, score: fd.kcal > 0 ? fd.p / fd.kcal : 0}));
+  } else if (minPct === cPct) {
+    // Need carbs → rank by c/kcal
+    scored = af.map((fd,i) => ({i, score: fd.kcal > 0 ? fd.c / fd.kcal : 0}));
+  } else {
+    // Need fat → rank by f/kcal
+    scored = af.map((fd,i) => ({i, score: fd.kcal > 0 ? fd.f / fd.kcal : 0}));
+  }
+  return scored.sort((a,b) => b.score - a.score).slice(0,4).map(s => ({food:af[s.i], fidx:s.i}));
+}
+
+/* ── Formatting helpers ─────────────────────────────── */
+function r1(n)  { return Math.round(n * 10) / 10; }
+function r0(n)  { return Math.round(n); }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+}
+function pct(val, max) { return max > 0 ? Math.min(200, val / max * 100) : 0; }
+function barColor(p, isLimit) {
+  // isLimit = true means going over is BAD (sodium, sugar)
+  if (isLimit) return p >= 100 ? '#FF6B6B' : p >= 85 ? '#F2C063' : '#6BE3A4';
+  return p > 100 ? '#FF6B6B' : p >= 85 ? '#F2C063' : '#6BE3A4';
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function goalLabel(g) {
+  return {cut:'CUT',mini_cut:'MINI-CUT',bulk:'BULK',maintain:'MAINTAIN'}[g] || g.toUpperCase();
+}
+function goalClass(g) { return g || 'cut'; }
+
+/* ══════════════════════════════════════════════════════
+   PART 4 — RENDER: Today · Meals · Macros & Micros
+   ══════════════════════════════════════════════════════ */
+
+/* ── §1 Today ───────────────────────────────────────── */
+const CAL_R = 54, CAL_C = +(2 * Math.PI * CAL_R).toFixed(2); // 339.29
+const MAC_R = 22, MAC_C = +(2 * Math.PI * MAC_R).toFixed(2); // 138.23
+
+function arcOffset(val, max, circ) {
+  const p = max > 0 ? Math.min(1, val / max) : 0;
+  return +(circ * (1 - p)).toFixed(2);
+}
+function ringColor(val, max) {
+  const p = max > 0 ? val / max * 100 : 0;
+  if (p >= 90 && p <= 110) return '#6BE3A4';
+  if (p >= 70 && p <= 125) return '#F2C063';
+  return '#FF6B6B';
+}
+
+function renderToday() {
+  const tot = calcDayTotals();
+  const t   = targets;
+  const rem = t.kcal - tot.kcal;
+  const calColor = ringColor(tot.kcal, t.kcal);
+  const calOff   = arcOffset(tot.kcal, t.kcal, CAL_C);
+
+  // Macro arcs
+  const macros = [
+    {key:'p', label:'Protein', val:r0(tot.p),  max:t.p, unit:'g', color:'var(--col-protein)'},
+    {key:'c', label:'Carbs',   val:r0(tot.c),  max:t.c, unit:'g', color:'var(--col-carbs)'},
+    {key:'f', label:'Fat',     val:r0(tot.f),  max:t.f, unit:'g', color:'var(--col-fat)'}
+  ];
+  const macroArcsHtml = macros.map(m => {
+    const off = arcOffset(m.val, m.max, MAC_C);
+    return `
+    <div class="macro-arc-row">
+      <div class="macro-arc-svg">
+        <svg viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="${MAC_R}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>
+          <circle cx="28" cy="28" r="${MAC_R}" fill="none" stroke="${m.color}" stroke-width="5"
+            stroke-linecap="round" stroke-dasharray="${MAC_C}" stroke-dashoffset="${off}"
+            transform="rotate(-90 28 28)"/>
+        </svg>
+        <div class="macro-arc-center">
+          <span class="macro-arc-val" style="color:${m.color}">${m.val}</span>
+        </div>
+      </div>
+      <div class="macro-arc-info">
+        <div class="macro-arc-label">${m.label}</div>
+        <div class="macro-arc-sub">${m.val}/${m.max}g</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Protein per meal dots
+  const ppmHtml = Object.entries(MEAL_INFO).map(([meal, info]) => {
+    const mp = r0(mealTotals(meal).p);
+    const cls = mp >= 30 ? 'green' : mp >= 15 ? 'amber' : 'grey';
+    return `<div class="ppm-dot">
+      <div class="ppm-dot-circle ${cls}">${mp}</div>
+      <div class="ppm-dot-label">${info.emoji}</div>
+    </div>`;
+  }).join('');
+
+  // WHOOP banner
+  const whoopHtml = t.burnEstimate > 0 ? `
+    <div class="whoop-banner">
+      🔥 Burned <strong>~${t.burnEstimate} kcal</strong> from training
+      &nbsp;·&nbsp; Net: <strong>${r0(tot.kcal - t.burnEstimate)} kcal</strong>
+    </div>` : '';
+
+  // Water from po-water
+  let waterHtml = '—';
+  try {
+    const pw = JSON.parse(localStorage.getItem('po_water_v1')) || {};
+    const bottles = pw.todayBottles || pw.count || 0;
+    const ml = Math.round(bottles * (pw.bottleMl || 500));
+    const target = Math.round(weightKg * 35);
+    waterHtml = `${ml} / ${target} ml`;
+  } catch(e) {}
+
+  document.getElementById('todayCard').innerHTML = `
+    <div class="today-top">
+      <!-- Calorie ring -->
+      <div class="cal-ring-wrap">
+        <div class="cal-ring-svg">
+          <svg viewBox="0 0 132 132">
+            <defs>
+              <filter id="calGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle cx="66" cy="66" r="${CAL_R}" fill="none"
+              stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+            <circle cx="66" cy="66" r="${CAL_R}" fill="none"
+              stroke="${calColor}" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="${CAL_C}" stroke-dashoffset="${calOff}"
+              transform="rotate(-90 66 66)" filter="url(#calGlow)"/>
+          </svg>
+          <div class="cal-ring-inner">
+            <span class="cal-num">${r0(tot.kcal)}</span>
+            <span class="cal-denom">/ ${t.kcal} kcal</span>
+            <span class="cal-rem ${rem < 0 ? 'over' : 'ok'}">
+              ${rem < 0 ? r0(-rem)+' over' : r0(rem)+' left'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: macro arcs + goal badge -->
+      <div class="today-right">
+        <div class="today-right-top">
+          <div class="macro-arcs">${macroArcsHtml}</div>
+          <button class="goal-badge ${goalClass(profile.goal)}" id="goalBadgeBtn">
+            ${goalLabel(profile.goal)}
+          </button>
+        </div>
+        ${whoopHtml}
+      </div>
+    </div>
+
+    <!-- Protein per meal row -->
+    <div class="ppm-row">
+      <div class="ppm-hint">30g per meal → muscle protein synthesis threshold</div>
+      ${ppmHtml}
+    </div>
+
+    <!-- Footer chips -->
+    <div class="footer-chips">
+      <div class="fchip">
+        <span class="fchip-label">Fiber</span>
+        <span class="fchip-val">${r1(tot.fiber)} / ${t.fiber}g</span>
+      </div>
+      <div class="fchip">
+        <span class="fchip-label">Sugar</span>
+        <span class="fchip-val" style="color:${tot.sugar > 50 ? 'var(--danger)' : 'var(--text-primary)'}">
+          ${r1(tot.sugar)} / ${t.sugar}g
+        </span>
+      </div>
+      <div class="fchip">
+        <span class="fchip-label">Sodium</span>
+        <span class="fchip-val" style="color:${tot.sodium > 2300 ? 'var(--danger)' : 'var(--text-primary)'}">
+          ${r0(tot.sodium)} / 2300mg
+        </span>
+      </div>
+      <div class="fchip">
+        <span class="fchip-label">Water 💧</span>
+        <span class="fchip-val">${waterHtml}</span>
+      </div>
+    </div>`;
+}
+
+/* ── §2 Meals ───────────────────────────────────────── */
+function renderMeals() {
+  const showMPS = profile.goal === 'cut' || profile.goal === 'mini_cut' || profile.goal === 'bulk';
+
+  const html = Object.entries(MEAL_INFO).map(([meal, info]) => {
+    const mt   = mealTotals(meal);
+    const items = logs.filter(l => l.meal === meal);
+    const isOpen = !!openMeals[meal];
+
+    const itemsHtml = items.length === 0
+      ? `<div class="meal-empty">Nothing yet — tap + Add food below.</div>`
+      : items.map(log => `
+        <div class="meal-item">
+          <div style="flex:1;min-width:0">
+            <div class="mi-name">${esc(log.foodName)}</div>
+            <div class="mi-portion">${esc(log.portionLabel)}</div>
+          </div>
+          <div class="mi-macros">
+            <span class="mi-m" style="color:var(--col-protein)">${r0(log.p)}P</span>
+            <span class="mi-m" style="color:var(--col-carbs)">${r0(log.c)}C</span>
+            <span class="mi-m" style="color:var(--col-fat)">${r0(log.f)}F</span>
+          </div>
+          <span class="mi-kcal">${r0(log.kcal)}</span>
+          <button class="mi-del" data-lid="${log.id}">×</button>
+        </div>`).join('');
+
+    const mpsWarn = showMPS && mt.p < 30 && items.length > 0
+      ? `<div class="mps-warn">⚠ ${r0(mt.p)}g protein — below the 30g MPS threshold</div>` : '';
+
+    return `
+    <div class="meal-card ${isOpen ? 'open' : ''}" data-meal="${meal}">
+      <div class="meal-header" data-meal="${meal}">
+        <span class="meal-emoji">${info.emoji}</span>
+        <span class="meal-name">${info.label}</span>
+        <div class="meal-macros">
+          <span class="mmacro" style="color:var(--col-protein)">${r0(mt.p)}P</span>
+          <span class="mmacro" style="color:var(--col-carbs)">${r0(mt.c)}C</span>
+          <span class="mmacro" style="color:var(--col-fat)">${r0(mt.f)}F</span>
+        </div>
+        <span class="meal-kcal">${r0(mt.kcal)} kcal</span>
+        <span class="meal-chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        ${mpsWarn}
+        ${itemsHtml}
+        <button class="meal-add-btn" data-addmeal="${meal}">+ Add food</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('mealsContainer').innerHTML = html;
+}
+
+/* ── §3 Macros & Micros ─────────────────────────────── */
+function renderMacrosMicros() {
+  const tot = calcDayTotals();
+  const t   = targets;
+
+  const tabToggle = `
+    <div class="tab-toggle">
+      <button class="tab-btn ${macroTab==='MACROS'?'active':''}" data-tab="MACROS">Macros</button>
+      <button class="tab-btn ${macroTab==='MICROS'?'active':''}" data-tab="MICROS">Micros</button>
+    </div>`;
+
+  let body = '';
+  if (macroTab === 'MACROS') {
+    const rows = [
+      {label:'Calories',  val:r0(tot.kcal),  max:t.kcal,   unit:'kcal', limit:false},
+      {label:'Protein',   val:r1(tot.p),     max:t.p,      unit:'g',    limit:false},
+      {label:'Carbs',     val:r1(tot.c),     max:t.c,      unit:'g',    limit:false},
+      {label:'Fat',       val:r1(tot.f),     max:t.f,      unit:'g',    limit:false},
+      {label:'Fiber',     val:r1(tot.fiber), max:t.fiber,  unit:'g',    limit:false},
+      {label:'Sugar',     val:r1(tot.sugar), max:t.sugar,  unit:'g',    limit:true },
+      {label:'Sat Fat',   val:r1(tot.satFat),max:20,       unit:'g',    limit:true },
+      {label:'Sodium',    val:r0(tot.sodium),max:t.sodium, unit:'mg',   limit:true }
+    ];
+    const barsHtml = rows.map(row => {
+      const p   = pct(row.val, row.max);
+      const col = barColor(p, row.limit);
+      return `
+      <div class="macro-bar-row">
+        <span class="mbar-label">${row.label}</span>
+        <div class="mbar-track">
+          <div class="mbar-fill" style="width:${Math.min(100,p).toFixed(1)}%;background:${col}"></div>
+        </div>
+        <span class="mbar-values">${row.val}/${row.max}${row.unit}</span>
+        <span class="mbar-pct" style="color:${col}">${r0(p)}%</span>
+      </div>`;
+    }).join('');
+
+    // Macro quality score
+    const pPct    = t.p     > 0 ? Math.min(1, tot.p     / t.p)     : 0;
+    const fibPct  = t.fiber > 0 ? Math.min(1, tot.fiber / t.fiber) : 0;
+    const mKeys   = Object.keys(RDA).filter(k => tot.micros[k]);
+    const microPct = mKeys.length > 0
+      ? mKeys.reduce((s,k) => s + Math.min(1, (tot.micros[k]||0) / RDA[k]), 0) / mKeys.length : 0;
+    const sugarOK  = tot.sugar  <= SUGAR_LIMIT  ? 1 : Math.max(0, 1 - (tot.sugar / SUGAR_LIMIT  - 1));
+    const sodiumOK = tot.sodium <= SODIUM_LIMIT ? 1 : Math.max(0, 1 - (tot.sodium / SODIUM_LIMIT - 1));
+    const qualityScore = r0(
+      pPct * 40 + fibPct * 20 + microPct * 20 + sugarOK * 10 + sodiumOK * 10
+    );
+    const qColor = qualityScore >= 70 ? '#6BE3A4' : qualityScore >= 45 ? '#F2C063' : '#FF6B6B';
+
+    body = barsHtml + `
+      <div class="quality-score-row">
+        <span class="qs-label">Diet Quality Score</span>
+        <span class="qs-num" style="color:${qColor}">${qualityScore}</span>
+      </div>`;
+  } else {
+    // MICROS tab
+    const vitKeys = ['vitA','vitC','vitD','vitE','vitK','b1','b2','b3','b6','b9','b12'];
+    const minKeys = ['calcium','iron','magnesium','phosphorus','potassium','zinc','selenium'];
+    const hasMicros = Object.keys(tot.micros).length > 0;
+
+    if (!hasMicros) {
+      body = `<div class="micros-empty">Log some foods to see your micronutrient breakdown.</div>`;
+    } else {
+      function microSection(title, keys) {
+        const cells = keys.filter(k => tot.micros[k] > 0).map(k => {
+          const got  = tot.micros[k] || 0;
+          const rda  = RDA[k];
+          const p    = rda ? Math.min(200, got / rda * 100) : 0;
+          const col  = FAT_SOLUBLE.has(k) && p > 200 ? 'over'
+                     : p >= 80 ? 'done' : '';
+          const disp = got < 1 ? got.toFixed(2) : got < 10 ? r1(got) : r0(got);
+          return `
+          <div class="micro-cell">
+            <div class="micro-name">${RDA_NAME[k]||k}</div>
+            <div class="micro-vals">
+              <span class="micro-got">${disp}</span>
+              <span class="micro-rda">/ ${rda} ${RDA_UNIT[k]||''}</span>
+            </div>
+            <div class="micro-bar-track">
+              <div class="micro-bar-fill ${col}" style="width:${Math.min(100,p).toFixed(1)}%"></div>
+            </div>
+          </div>`;
+        }).join('');
+        return cells ? `<div class="micro-section-label">${title}</div><div class="micro-grid">${cells}</div>` : '';
+      }
+      body = microSection('Vitamins', vitKeys) + microSection('Minerals', minKeys);
+    }
+  }
+
+  document.getElementById('macrosMicrosCard').innerHTML = tabToggle + body;
+}
+
+/* ══════════════════════════════════════════════════════
+   PART 5 — RENDER: Progress · Log Food · Insights
+   ══════════════════════════════════════════════════════ */
+
+/* ── §4 Progress ────────────────────────────────────── */
+function renderProgress() {
+  const wh    = (profile.weeklyWeightHistory || []).slice(-14);
+  const trend = calcWeightTrend();
+  const goalRate = (profile.goal==='bulk') ? 0.25 : -0.5;   // kg/week
+  const pd    = phaseDay();
+  const rTDEE = calcAdaptiveTDEE();
+  const unit  = profile.weightUnit === 'lb' ? 'lb' : 'kg';
+
+  // Weight chart SVG (560 × 120)
+  let chartHtml = '';
+  if (wh.length >= 2) {
+    const W=560, H=100, PAD=12;
+    const withW = wh.filter(w => w.kg != null);
+    const allVals = withW.map(w => w.kg);
+    const minW = Math.min(...allVals) - 1;
+    const maxW = Math.max(...allVals) + 1;
+    const xOf  = i => PAD + (i / (wh.length - 1)) * (W - PAD*2);
+    const yOf  = v => PAD + (1 - (v - minW) / (maxW - minW)) * (H - PAD*2);
+
+    // Goal-rate line from first weigh-in
+    let goalLineHtml = '';
+    if (withW.length >= 2) {
+      const firstIdx = wh.findIndex(w => w.kg != null);
+      const firstVal = wh[firstIdx].kg;
+      const x0 = xOf(firstIdx), x1 = xOf(wh.length - 1);
+      const goalEnd = firstVal + goalRate * (wh.length - 1 - firstIdx) / 7;
+      const y0 = yOf(firstVal), y1 = yOf(goalEnd);
+      goalLineHtml = `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
+        stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>`;
+    }
+
+    // Line path
+    const pts = withW.map(w => {
+      const i = wh.indexOf(w);
+      return `${xOf(i).toFixed(1)},${yOf(w.kg).toFixed(1)}`;
+    });
+    const pathD = 'M' + pts.join(' L');
+
+    // Dots
+    const dotsHtml = withW.map(w => {
+      const i = wh.indexOf(w);
+      return `<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(w.kg).toFixed(1)}" r="3.5"
+        fill="var(--success)" stroke="#050506" stroke-width="1.5"/>`;
+    }).join('');
+
+    chartHtml = `
+    <div class="progress-chart-wrap">
+      <svg viewBox="0 0 ${W} ${H+20}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(107,227,164,0.18)"/>
+            <stop offset="100%" stop-color="rgba(107,227,164,0.01)"/>
+          </linearGradient>
+        </defs>
+        ${goalLineHtml}
+        <path d="${pathD} L${xOf(withW.length-1).toFixed(1)},${(H-PAD).toFixed(1)} L${xOf(0).toFixed(1)},${(H-PAD).toFixed(1)} Z"
+          fill="url(#wGrad)"/>
+        <path d="${pathD}" fill="none" stroke="#6BE3A4" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+        ${dotsHtml}
+        <text x="${PAD}" y="${H+15}" font-size="9" fill="rgba(255,255,255,0.28)" font-family="ui-monospace,monospace">${wh[0]&&wh[0].date?wh[0].date.slice(5):''}</text>
+        <text x="${W-PAD}" y="${H+15}" font-size="9" fill="rgba(255,255,255,0.28)" text-anchor="end" font-family="ui-monospace,monospace">Today</text>
+        <text x="${(W/2).toFixed(0)}" y="${H+15}" font-size="9" fill="rgba(255,255,255,0.20)" text-anchor="middle" font-family="ui-monospace,monospace">- - - goal rate</text>
+      </svg>
+    </div>`;
+  } else {
+    chartHtml = `<div class="empty-hint" style="padding:20px 0">Log your weight below to see your trend chart.</div>`;
+  }
+
+  // Trend warning
+  let trendWarnHtml = '';
+  if (trend != null) {
+    const losing = trend < 0;
+    if (profile.goal === 'cut' || profile.goal === 'mini_cut') {
+      const pctPerWeek = Math.abs(trend) / weightKg * 100;
+      if (pctPerWeek > 1.0)
+        trendWarnHtml = `<div class="trend-warn-card">⚠ Losing ${Math.abs(trend).toFixed(2)} kg/week — above 1% body weight. Risk of muscle loss. Add 150–200 kcal.</div>`;
+    } else if (profile.goal === 'bulk') {
+      if (trend > 0.5)
+        trendWarnHtml = `<div class="trend-warn-card">⚠ Gaining ${trend.toFixed(2)} kg/week — above 0.5 kg. Reduce by 150 kcal or add cardio.</div>`;
+    }
+  }
+
+  // Adaptive TDEE card
+  let adaptiveHtml = '';
+  if (rTDEE != null && Math.abs(rTDEE - targets.tdee) > 150) {
+    adaptiveHtml = `
+    <div class="adaptive-tdee-card">
+      <div class="atd-title">Adaptive TDEE</div>
+      <div class="atd-body">Based on your actual weight trend, your real TDEE is
+        <strong>~${rTDEE} kcal/day</strong> vs your calculated ${targets.tdee} kcal.
+        ${rTDEE > targets.tdee ? 'You burn more than estimated — you can eat a bit more.' : 'You burn less than estimated — tighten up slightly.'}
+      </div>
+      <button class="atd-use" id="useAdaptiveTDEE" data-rtdee="${rTDEE}">Use ${rTDEE} kcal →</button>
+    </div>`;
+  }
+
+  // Phase timer & LBM
+  let phaseHtml = '';
+  if (pd) {
+    const goalName = goalLabel(profile.goal);
+    let phaseWarn = '';
+    if ((profile.goal==='cut'||profile.goal==='mini_cut') && pd > 70)
+      phaseWarn = `<span class="phase-warn">Consider a 1–2 week diet break to restore hormones.</span>`;
+    if (profile.goal==='bulk' && pd > 112)
+      phaseWarn = `<span class="phase-warn">16+ weeks bulking — time to assess and consider cutting.</span>`;
+    const lbmNote = targets.leanKg
+      ? `<span class="lbm-note">Lean mass: <strong>${targets.leanKg} kg</strong></span>` : '';
+    phaseHtml = `
+    <div class="phase-row">
+      <span class="phase-badge">Day ${pd} of ${goalName}</span>
+      ${phaseWarn}${lbmNote}
+    </div>`;
+  }
+
+  // Check-in row
+  const streak = (() => {
+    let s = 0;
+    const today = todayStr();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      if (ds === today) { if((profile.weeklyWeightHistory||[]).some(w=>w.date===ds)) s++; else break; }
+      else { if((profile.weeklyWeightHistory||[]).some(w=>w.date===ds)) s++; else break; }
+    }
+    return s;
+  })();
+
+  document.getElementById('progressCard').innerHTML = `
+    ${trendWarnHtml}
+    ${chartHtml}
+    ${adaptiveHtml}
+    <div class="checkin-row">
+      <input class="checkin-input" id="weightInput" type="number" step="0.1"
+        placeholder="Today's weight (${unit})…">
+      <button class="checkin-btn" id="logWeightBtn">Log weight</button>
+      ${streak > 0 ? `<span class="checkin-streak">🔥 ${streak}-day streak</span>` : ''}
+    </div>
+    ${phaseHtml}`;
+}
+
+/* ── §5 Log Food ────────────────────────────────────── */
+function renderLogFood() {
+  const af  = allFoods();
+  const q   = foodQuery.toLowerCase();
+  const filtered = q ? af.filter(fd => fd.name.toLowerCase().includes(q)) : af;
+  const suggested = suggestedFoods();
+  const recents   = recentFoodNames();
+
+  // Meal chips
+  const chipsHtml = Object.entries(MEAL_INFO).map(([meal, info]) =>
+    `<button class="meal-chip ${logMeal===meal?'active':''}" data-chipmeal="${meal}">
+      ${info.emoji} ${info.label}
+    </button>`
+  ).join('');
+
+  // Suggested foods
+  const suggestedHtml = suggested.length ? `
+    <div class="suggested-row">
+      <div class="suggested-label">Best for your goal right now</div>
+      <div class="suggested-grid">
+        ${suggested.map(({food, fidx}) => foodBtnHtml(food, fidx)).join('')}
+      </div>
+    </div>` : '';
+
+  // Recent foods
+  const recentHtml = recents.length ? `
+    <div class="recent-row">
+      <div class="recent-label">Recent</div>
+      <div class="recent-chips">
+        ${recents.map(name => {
+          const i = af.findIndex(f => f.name === name);
+          return i >= 0 ? `<button class="recent-chip" data-fidx="${i}">${esc(name)}</button>` : '';
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  // Food grid
+  const gridHtml = filtered.length
+    ? filtered.map((fd, rawI) => {
+        const i = af.indexOf(fd);
+        return foodBtnHtml(fd, i);
+      }).join('')
+    : `<div class="empty-hint" style="grid-column:1/-1">No foods match "${esc(foodQuery)}"</div>`;
+
+  document.getElementById('logFoodCard').innerHTML = `
+    <div class="meal-chips">${chipsHtml}</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="foodSearch" type="text"
+        placeholder="Search 85+ foods…" autocomplete="off" value="${esc(foodQuery)}">
+    </div>
+    ${suggestedHtml}
+    ${recentHtml}
+    <div class="food-grid" id="foodGrid">${gridHtml}</div>
+    <div class="custom-form" id="customForm">
+      <label class="wide">Name<input type="text" id="cfName" placeholder="e.g. Protein Shake"></label>
+      <label class="narrow">kcal<input type="number" id="cfKcal" placeholder="0" min="0"></label>
+      <label class="narrow">P (g)<input type="number" id="cfP" placeholder="0" min="0"></label>
+      <label class="narrow">C (g)<input type="number" id="cfC" placeholder="0" min="0"></label>
+      <label class="narrow">F (g)<input type="number" id="cfF" placeholder="0" min="0"></label>
+      <button class="custom-save-btn" id="customSaveBtn">+ Add</button>
+    </div>`;
+}
+
+function foodBtnHtml(food, fidx) {
+  const isHiPro = food.kcal > 0 && (food.p / food.kcal) > 0.25;
+  return `
+  <button class="food-btn" data-fidx="${fidx}">
+    <div class="fb-top">
+      <span class="fb-emoji">${food.emoji||'🍽️'}</span>
+      ${isHiPro ? '<span class="fb-badge" title="High protein efficiency">💪</span>' : ''}
+    </div>
+    <div class="fb-name">${esc(food.name)}</div>
+    <div class="fb-kcal">${r0(food.kcal * food.servingG / 100)} kcal</div>
+    <div class="fb-macros">${r0(food.p * food.servingG/100)}P · ${r0(food.c * food.servingG/100)}C · ${r0(food.f * food.servingG/100)}F</div>
+  </button>`;
+}
+
+/* ── §6 Insights ────────────────────────────────────── */
+function renderInsights() {
+  // Build last 7 days
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const h  = history.find(e => e.date === ds);
+    days.push({
+      label: d.toLocaleDateString([],{weekday:'short'}),
+      kcal:  h ? h.kcal : (i===0 ? r0(calcDayTotals().kcal) : 0),
+      p:     h ? h.p    : (i===0 ? r0(calcDayTotals().p)    : 0),
+      hasData: !!h || i===0
+    });
+  }
+
+  // Dual bar chart SVG
+  const W=560, H=110, PAD_T=8, PAD_B=22;
+  const chartH = H - PAD_T - PAD_B;
+  const groupW = (W - 20) / 7;
+  const barW   = (groupW - 10) / 2;
+  const maxKcal = Math.max(targets.kcal * 1.2, ...days.map(d=>d.kcal));
+  const maxP    = Math.max(targets.p * 1.2, ...days.map(d=>d.p));
+
+  const targetY = (PAD_T + (1 - targets.kcal/maxKcal) * chartH).toFixed(1);
+
+  const bars = days.map((day,i) => {
+    const x   = 10 + i * groupW;
+    const kPct = maxKcal > 0 ? day.kcal / maxKcal : 0;
+    const pPct = maxP    > 0 ? day.p    / maxP    : 0;
+    const kH   = (kPct * chartH).toFixed(1);
+    const pH   = (pPct * chartH).toFixed(1);
+    const kY   = (PAD_T + chartH - kH).toFixed(1);
+    const pY   = (PAD_T + chartH - pH).toFixed(1);
+    const kColor = day.kcal >= targets.kcal * 0.9 && day.kcal <= targets.kcal * 1.1
+      ? '#6BE3A4' : day.kcal >= targets.kcal * 0.7 ? '#F2C063' : '#76746E';
+    return `
+      <rect x="${x.toFixed(1)}" y="${kY}" width="${barW.toFixed(1)}" height="${kH}"
+        fill="${day.hasData ? kColor : 'rgba(255,255,255,0.06)'}" rx="2" opacity="0.85"
+        class="insight-bar" data-day="${i}"/>
+      <rect x="${(x+barW+2).toFixed(1)}" y="${pY}" width="${barW.toFixed(1)}" height="${pH}"
+        fill="${day.hasData ? 'rgba(125,211,252,0.7)' : 'rgba(255,255,255,0.04)'}" rx="2"
+        class="insight-bar" data-day="${i}"/>
+      <text x="${(x + groupW/2).toFixed(1)}" y="${H+2}" font-size="9"
+        fill="rgba(255,255,255,0.35)" text-anchor="middle" font-family="ui-monospace,monospace">
+        ${day.label}
+      </text>`;
+  }).join('');
+
+  const chartSvg = `
+  <div class="insight-chart-wrap" id="insightChartWrap">
+    <svg viewBox="0 0 ${W} ${H+16}" preserveAspectRatio="none" id="insightSvg">
+      <line x1="10" y1="${targetY}" x2="${W-10}" y2="${targetY}"
+        stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="12" y="${(parseFloat(targetY)-3).toFixed(1)}" font-size="8"
+        fill="rgba(255,255,255,0.3)" font-family="ui-monospace,monospace">target</text>
+      ${bars}
+    </svg>
+    <div id="insightTooltip" class="insight-tooltip" style="display:none"></div>
+  </div>`;
+
+  // Stat tiles
+  const protStreak = (() => {
+    let s=0;
+    for (let i=0;i<30;i++) {
+      const d=new Date(); d.setDate(d.getDate()-i);
+      const ds=d.toISOString().split('T')[0];
+      const h=history.find(e=>e.date===ds);
+      const p= i===0 ? calcDayTotals().p : h ? h.p : 0;
+      if(p >= targets.p * 0.8) s++; else break;
+    }
+    return s;
+  })();
+
+  const weekKcals = days.filter(d=>d.hasData).map(d=>d.kcal);
+  const avgKcal   = weekKcals.length ? r0(weekKcals.reduce((a,b)=>a+b,0)/weekKcals.length) : 0;
+  const kcalDelta = avgKcal - targets.kcal;
+  const deltaColor = Math.abs(kcalDelta) < 100 ? 'var(--success)' : kcalDelta > 0 ? 'var(--danger)' : 'var(--warning)';
+
+  const bestDay = days.reduce((best, day, i) => {
+    if (!day.hasData) return best;
+    const kp = targets.kcal > 0 ? day.kcal/targets.kcal*100 : 0;
+    const pp = targets.p    > 0 ? day.p   /targets.p   *100 : 0;
+    const cp = targets.c    > 0 ? (history.find(h=>h.date===new Date(Date.now()-i*86400000).toISOString().split('T')[0])||{}).c||0 / targets.c * 100 : 0;
+    const ok = kp>=80&&kp<=110 && pp>=80;
+    return ok && (best.idx===-1 || day.kcal > best.kcal) ? {idx:i,label:day.label,kcal:day.kcal} : best;
+  }, {idx:-1,label:'—',kcal:0});
+
+  const tilesHtml = `
+  <div class="insight-tiles">
+    <div class="insight-tile">
+      <div class="it-label">Protein Streak</div>
+      <div class="it-val">${protStreak > 0 ? protStreak+'d' : '0d'} ${protStreak>=3?'🔥':''}</div>
+      <div class="it-sub">Days ≥80% protein target</div>
+    </div>
+    <div class="insight-tile">
+      <div class="it-label">Avg Calories</div>
+      <div class="it-val">${avgKcal} kcal</div>
+      <div class="it-sub" style="color:${deltaColor}">
+        ${kcalDelta >= 0 ? '+' : ''}${kcalDelta} vs target
+      </div>
+    </div>
+    <div class="insight-tile">
+      <div class="it-label">Best Macro Day</div>
+      <div class="it-val">${bestDay.idx >= 0 ? bestDay.label : '—'}</div>
+      <div class="it-sub">All macros 80–110% ✓</div>
+    </div>
+  </div>`;
+
+  // Refeed card (cut only)
+  let refeedHtml = '';
+  const cutDays = daysSinceRefeed();
+  if ((profile.goal==='cut'||profile.goal==='mini_cut') && cutDays >= 5) {
+    refeedHtml = `
+    <div class="refeed-card">
+      <div class="refeed-text">
+        <strong>${cutDays} consecutive cut days</strong> — a refeed tomorrow will restore leptin and performance.
+      </div>
+      <button class="refeed-btn" id="refeedBtn">Schedule Refeed ↗</button>
+    </div>`;
+  }
+
+  // Personalised tip
+  const tip = buildTip();
+
+  document.getElementById('insightsCard').innerHTML =
+    chartSvg + tilesHtml + refeedHtml +
+    `<div class="tip-card"><span class="tip-icon">${tip.icon}</span>
+     <span class="tip-text">${tip.html}</span></div>`;
+}
+
+function buildTip() {
+  const tot = calcDayTotals();
+  const t   = targets;
+  const trend = calcWeightTrend();
+
+  if (whoop.recovery != null && whoop.recovery < 55)
+    return {icon:'⚠️', html:`WHOOP recovery is <strong>${r0(whoop.recovery)}%</strong> — eat at maintenance today (${t.tdee} kcal). Deep deficits on low-HRV days extend recovery time.`};
+
+  if ((profile.goal==='cut'||profile.goal==='mini_cut') && trend != null && trend < -(weightKg*0.01))
+    return {icon:'⚠️', html:`You're losing <strong>${Math.abs(trend).toFixed(2)} kg/wk</strong> — above safe rate. Add 150–200 kcal to protect muscle mass.`};
+
+  if (profile.goal==='cut' && trend != null && Math.abs(trend) < 0.05) {
+    const staleDays = history.filter(h=>h.weight!=null).slice(-10);
+    if (staleDays.length >= 10) {
+      const change = Math.abs(staleDays[staleDays.length-1].weight - staleDays[0].weight);
+      if (change < 0.2) return {icon:'📉', html:`Weight has stalled for 10+ days. Drop <strong>100–150 kcal</strong> from carbs or add a 20-min cardio session.`};
+    }
+  }
+  if (profile.goal==='bulk' && trend != null && trend < 0.05)
+    return {icon:'📈', html:`Weight isn't moving. Add <strong>100–150 kcal</strong> (prefer carbs around training) to resume lean gains.`};
+
+  if (t.p > 0 && tot.p < t.p * 0.6) {
+    const af = allFoods();
+    const top2 = af.filter(f=>f.kcal>0 && f.p/f.kcal>0.25).sort((a,b)=>b.p/b.kcal-a.p/a.kcal).slice(0,2);
+    const suggest = top2.map(f=>`<strong>${f.name}</strong>`).join(' or ');
+    return {icon:'💪', html:`Only <strong>${r0(tot.p)}g</strong> protein so far. Need ${r0(t.p - tot.p)}g more. Try ${suggest||'chicken, tuna, or Greek yogurt'}.`};
+  }
+  if (t.fiber > 0 && tot.fiber < t.fiber * 0.4)
+    return {icon:'🥦', html:`Fiber is low (<strong>${r1(tot.fiber)}g</strong> of ${t.fiber}g target). Add broccoli, lentils, or oats to your next meal.`};
+  if (tot.sodium > 2300 * 0.9)
+    return {icon:'💧', html:`Sodium is high (<strong>${r0(tot.sodium)}mg</strong>). Drink extra water and eat potassium-rich foods like banana or potato to balance.`};
+
+  const pd = phaseDay();
+  const msg = pd ? ` — Day ${pd} of your ${goalLabel(profile.goal).toLowerCase()} phase.` : '.';
+  return {icon:'🎯', html:`You're on track${msg} Keep hitting your protein and you'll see results.`};
+}
+
+/* ══════════════════════════════════════════════════════
+   PART 6 — SHEETS · EVENTS · INIT · SYNC
+   ══════════════════════════════════════════════════════ */
+
+/* ── Master rerender ────────────────────────────────── */
+function rerender() {
+  calcTargets();
+  renderToday();
+  renderMeals();
+  renderMacrosMicros();
+  renderProgress();
+  renderLogFood();
+  renderInsights();
+}
+
+/* ── Portion sheet ──────────────────────────────────── */
+function openPortionSheet(fidx) {
+  sheetFidx = fidx;
+  const food = allFoods()[fidx];
+  if (!food) return;
+  sheetG    = food.servingG || 100;
+  sheetUnit = 'serving';
+  renderPortionSheet(food);
+  document.getElementById('portionBackdrop').classList.add('open');
+  document.getElementById('portionSheet').classList.add('open');
+}
+function closePortionSheet() {
+  document.getElementById('portionBackdrop').classList.remove('open');
+  document.getElementById('portionSheet').classList.remove('open');
+}
+
+function renderPortionSheet(food) {
+  const nutr  = portionNutrition(food, sheetG);
+  const top3  = topMicros(food, sheetG);
+  const microsNote = top3.length
+    ? 'Good source of: ' + top3.map(m => `<strong>${RDA_NAME[m.key]||m.key}</strong> (${r0(m.pct)}% RDA)`).join(', ')
+    : '';
+
+  document.getElementById('portionSheetBody').innerHTML = `
+    <div class="ps-food-header">
+      <span class="ps-food-emoji">${food.emoji||'🍽️'}</span>
+      <div>
+        <div class="ps-food-name">${esc(food.name)}</div>
+        <div class="ps-food-kcal">${r0(food.kcal)} kcal / 100g · serving: ${food.servingLabel||food.servingG+'g'}</div>
+      </div>
+    </div>
+    <div class="ps-portion-row">
+      <input class="ps-portion-input" id="psQty" type="number" min="0.1" step="0.5" value="${sheetUnit==='serving'?1:sheetG}">
+      <select class="ps-unit-select" id="psUnit">
+        <option value="serving" ${sheetUnit==='serving'?'selected':''}>serving</option>
+        <option value="g"       ${sheetUnit==='g'?'selected':''}>g</option>
+        <option value="oz"      ${sheetUnit==='oz'?'selected':''}>oz</option>
+        <option value="cup"     ${sheetUnit==='cup'?'selected':''}>cup</option>
+        <option value="tbsp"    ${sheetUnit==='tbsp'?'selected':''}>tbsp</option>
+        <option value="piece"   ${sheetUnit==='piece'?'selected':''}>piece</option>
+      </select>
+    </div>
+    <div class="ps-preview">
+      <div class="ps-preview-cell"><div class="ps-pval" id="psKcal">${r0(nutr.kcal)}</div><div class="ps-plabel">kcal</div></div>
+      <div class="ps-preview-cell"><div class="ps-pval" style="color:var(--col-protein)" id="psP">${r1(nutr.p)}</div><div class="ps-plabel">protein g</div></div>
+      <div class="ps-preview-cell"><div class="ps-pval" style="color:var(--col-carbs)"   id="psC">${r1(nutr.c)}</div><div class="ps-plabel">carbs g</div></div>
+      <div class="ps-preview-cell"><div class="ps-pval" style="color:var(--col-fat)"     id="psF">${r1(nutr.f)}</div><div class="ps-plabel">fat g</div></div>
+      <div class="ps-preview-cell"><div class="ps-pval" id="psFiber">${r1(nutr.fiber)}</div><div class="ps-plabel">fiber g</div></div>
+      <div class="ps-preview-cell"><div class="ps-pval" id="psSodium">${r0(nutr.sodium)}</div><div class="ps-plabel">sodium mg</div></div>
+    </div>
+    ${microsNote ? `<div class="ps-micros-note">${microsNote}</div>` : ''}
+    <button class="ps-log-btn" id="psLogBtn">Log to ${MEAL_INFO[logMeal].label}</button>`;
+
+  // Live update on qty/unit change
+  document.getElementById('psQty').addEventListener('input', updatePortionPreview);
+  document.getElementById('psUnit').addEventListener('change', updatePortionPreview);
+}
+
+function updatePortionPreview() {
+  const food = allFoods()[sheetFidx];
+  if (!food) return;
+  const qty  = parseFloat(document.getElementById('psQty').value) || 1;
+  const unit = document.getElementById('psUnit').value;
+  sheetUnit  = unit;
+  sheetG     = unitToGrams(food, qty, unit);
+  const nutr = portionNutrition(food, sheetG);
+  document.getElementById('psKcal').textContent   = r0(nutr.kcal);
+  document.getElementById('psP').textContent      = r1(nutr.p);
+  document.getElementById('psC').textContent      = r1(nutr.c);
+  document.getElementById('psF').textContent      = r1(nutr.f);
+  document.getElementById('psFiber').textContent  = r1(nutr.fiber);
+  document.getElementById('psSodium').textContent = r0(nutr.sodium);
+}
+
+function logPortionedFood() {
+  const food  = allFoods()[sheetFidx];
+  if (!food) return;
+  const qty   = parseFloat(document.getElementById('psQty').value) || 1;
+  const unit  = document.getElementById('psUnit').value;
+  const grams = unitToGrams(food, qty, unit);
+  const nutr  = portionNutrition(food, grams);
+  const label = `${qty} ${unit} (${r0(grams)}g)`;
+  logs.push({
+    id: Date.now(), meal: logMeal,
+    foodName: food.name, emoji: food.emoji||'🍽️',
+    portionLabel: label, portionG: grams,
+    kcal: nutr.kcal, p: nutr.p, c: nutr.c, f: nutr.f,
+    fiber: nutr.fiber, sugar: nutr.sugar, satFat: nutr.satFat,
+    sodium: nutr.sodium, micros: nutr.micros,
+    ts: new Date().toISOString()
+  });
+  saveLogs();
+  closePortionSheet();
+  rerender();
+}
+
+/* ── Settings sheet ─────────────────────────────────── */
+function openSettingsSheet() {
+  renderSettingsSheet();
+  document.getElementById('settingsBackdrop').classList.add('open');
+  document.getElementById('settingsSheet').classList.add('open');
+}
+function closeSettingsSheet() {
+  document.getElementById('settingsBackdrop').classList.remove('open');
+  document.getElementById('settingsSheet').classList.remove('open');
+}
+function renderSettingsSheet() {
+  const goals = [{v:'cut',l:'Cut'},{v:'mini_cut',l:'Mini-Cut'},{v:'bulk',l:'Bulk'},{v:'maintain',l:'Maintain'}];
+  const goalBtns = goals.map(g =>
+    `<button class="goal-radio-btn ${profile.goal===g.v?'sel-'+g.v:''}" data-goalset="${g.v}">${g.l}</button>`
+  ).join('');
+  document.getElementById('settingsSheetBody').innerHTML = `
+    <div class="sheet-title">Settings</div>
+    <div class="settings-grid">
+      <div class="sf full">
+        <label>Goal</label>
+        <div class="goal-radio-row" id="goalRadioRow">${goalBtns}</div>
+      </div>
+      <div class="sf">
+        <label>Activity Level</label>
+        <select id="setActivity">
+          ${['sedentary','light','moderate','active','very_active'].map(a=>
+            `<option value="${a}" ${profile.activityLevel===a?'selected':''}>${a.replace('_',' ')}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div class="sf"><label>Sex</label>
+        <select id="setSex">
+          <option value="m" ${profile.sex==='m'?'selected':''}>Male</option>
+          <option value="f" ${profile.sex==='f'?'selected':''}>Female</option>
+        </select>
+      </div>
+      <div class="sf"><label>Height (cm)</label>
+        <input type="number" id="setHeight" value="${profile.heightCm||175}" min="100" max="250">
+      </div>
+      <div class="sf"><label>Age</label>
+        <input type="number" id="setAge" value="${profile.age||22}" min="14" max="100">
+      </div>
+      <div class="sf"><label>Body Fat % (optional)</label>
+        <input type="number" id="setBf" value="${profile.bodyFatPct||''}" min="3" max="60" placeholder="e.g. 15">
+      </div>
+      <div class="sf"><label>Phase Start Date</label>
+        <input type="date" id="setPhase" value="${profile.phaseStartDate||''}">
+      </div>
+      <div class="sf"><label>TDEE Override (optional)</label>
+        <input type="number" id="setTDEE" value="${profile.tdeeOverride||''}" placeholder="leave blank = auto">
+      </div>
+    </div>
+    <button class="settings-save-btn" id="settingsSaveBtn">Save & Recalculate</button>`;
+
+  // Goal radio buttons inside sheet
+  document.getElementById('goalRadioRow').addEventListener('click', e => {
+    const btn = e.target.closest('[data-goalset]');
+    if (!btn) return;
+    profile.goal = btn.dataset.goalset;
+    document.querySelectorAll('[data-goalset]').forEach(b => {
+      b.className = 'goal-radio-btn ' + (profile.goal===b.dataset.goalset ? 'sel-'+b.dataset.goalset : '');
+    });
+  });
+}
+
+function saveSettings() {
+  profile.activityLevel  = document.getElementById('setActivity').value;
+  profile.sex            = document.getElementById('setSex').value;
+  profile.heightCm       = parseFloat(document.getElementById('setHeight').value) || 175;
+  profile.age            = parseInt(document.getElementById('setAge').value,10)   || 22;
+  const bf = parseFloat(document.getElementById('setBf').value);
+  profile.bodyFatPct     = isNaN(bf) ? null : bf;
+  const ph = document.getElementById('setPhase').value;
+  profile.phaseStartDate = ph || null;
+  const to = parseFloat(document.getElementById('setTDEE').value);
+  profile.tdeeOverride   = isNaN(to) ? null : to;
+  saveProfile();
+  closeSettingsSheet();
+  rerender();
+}
+
+/* ── Log weight ─────────────────────────────────────── */
+function logWeight(val) {
+  if (!val || isNaN(val)) return;
+  const kg = profile.weightUnit === 'lb' ? val / 2.20462 : val;
+  weightKg = kg;
+  const today = todayStr();
+  const wh = profile.weeklyWeightHistory || [];
+  const existing = wh.find(w => w.date === today);
+  if (existing) existing.kg = +kg.toFixed(2);
+  else wh.push({ date: today, kg: +kg.toFixed(2) });
+  profile.weeklyWeightHistory = wh.slice(-60);
+  saveProfile();
+  commitTodayToHistory(+kg.toFixed(2));
+  rerender();
+}
+
+/* ── Delete log entry ───────────────────────────────── */
+function deleteLog(id) {
+  logs = logs.filter(l => String(l.id) !== String(id));
+  saveLogs();
+  rerender();
+}
+
+/* ── Event delegation ───────────────────────────────── */
+function initEvents() {
+  const body = document.body;
+
+  body.addEventListener('click', e => {
+    // Food buttons → open portion sheet
+    const fb = e.target.closest('.food-btn, .recent-chip');
+    if (fb) {
+      const fidx = parseInt(fb.dataset.fidx, 10);
+      if (!isNaN(fidx)) { logMeal = logMeal || currentMealByTime(); openPortionSheet(fidx); return; }
+    }
+
+    // Log portion
+    if (e.target.id === 'psLogBtn') { logPortionedFood(); return; }
+
+    // Close portion sheet
+    if (e.target.id === 'portionBackdrop') { closePortionSheet(); return; }
+
+    // Close settings sheet
+    if (e.target.id === 'settingsBackdrop') { closeSettingsSheet(); return; }
+
+    // Goal badge → open settings
+    if (e.target.id === 'goalBadgeBtn' || e.target.closest('#goalBadgeBtn')) {
+      openSettingsSheet(); return;
+    }
+
+    // Settings save
+    if (e.target.id === 'settingsSaveBtn') { saveSettings(); return; }
+
+    // Meal header toggle
+    const mh = e.target.closest('.meal-header');
+    if (mh) {
+      const meal = mh.dataset.meal;
+      openMeals[meal] = !openMeals[meal];
+      renderMeals(); return;
+    }
+
+    // Add food to meal → scroll to log section + preselect meal
+    const am = e.target.closest('[data-addmeal]');
+    if (am) {
+      logMeal = am.dataset.addmeal;
+      document.getElementById('logFoodCard').scrollIntoView({behavior:'smooth', block:'start'});
+      renderLogFood(); return;
+    }
+
+    // Meal chip (log food section)
+    const mc = e.target.closest('[data-chipmeal]');
+    if (mc) { logMeal = mc.dataset.chipmeal; renderLogFood(); return; }
+
+    // Delete log item
+    const dl = e.target.closest('[data-lid]');
+    if (dl) { deleteLog(dl.dataset.lid); return; }
+
+    // Macro/Micro tab
+    const tb = e.target.closest('[data-tab]');
+    if (tb) { macroTab = tb.dataset.tab; renderMacrosMicros(); return; }
+
+    // Log weight button
+    if (e.target.id === 'logWeightBtn') {
+      const v = parseFloat(document.getElementById('weightInput').value);
+      logWeight(v); return;
+    }
+
+    // Use adaptive TDEE
+    const ua = e.target.closest('#useAdaptiveTDEE');
+    if (ua) { profile.tdeeOverride = parseInt(ua.dataset.rtdee, 10); saveProfile(); rerender(); return; }
+
+    // Refeed button
+    if (e.target.id === 'refeedBtn') {
+      alert('Refeed day scheduled! Tomorrow\'s calorie target will be ' + targets.tdee + ' kcal with extra carbs.');
+      return;
+    }
+
+    // Insight bars tooltip
+    const ib = e.target.closest('.insight-bar');
+    if (ib) {
+      const dayIdx = parseInt(ib.dataset.day, 10);
+      const days = [];
+      for (let i=6;i>=0;i--) {
+        const d=new Date(); d.setDate(d.getDate()-i);
+        const ds=d.toISOString().split('T')[0];
+        const h=history.find(e=>e.date===ds);
+        days.push({label:d.toLocaleDateString([],{weekday:'long'}), kcal:h?h.kcal:(i===0?r0(calcDayTotals().kcal):0), p:h?h.p:(i===0?r0(calcDayTotals().p):0)});
+      }
+      const day = days[dayIdx];
+      const tt  = document.getElementById('insightTooltip');
+      if (tt) {
+        tt.style.display = 'block';
+        tt.innerHTML = `<strong>${day.label}</strong> · ${day.kcal} kcal · ${day.p}g protein`;
+        setTimeout(() => { tt.style.display='none'; }, 2500);
+      }
+      return;
+    }
+  });
+
+  // Food search
+  body.addEventListener('input', e => {
+    if (e.target.id === 'foodSearch') { foodQuery = e.target.value; renderLogFood(); }
+  });
+
+  // Custom food save
+  body.addEventListener('click', e => {
+    if (e.target.id === 'customSaveBtn') {
+      const name = (document.getElementById('cfName').value||'').trim();
+      const kcal = parseFloat(document.getElementById('cfKcal').value)||0;
+      const p    = parseFloat(document.getElementById('cfP').value)||0;
+      const c    = parseFloat(document.getElementById('cfC').value)||0;
+      const f    = parseFloat(document.getElementById('cfF').value)||0;
+      if (!name || !kcal) return;
+      const fd = {name, emoji:'🍽️', kcal, p, c, f, fiber:0, sugar:0, satFat:0, sodium:0, servingG:100, servingLabel:'100g', micros:{}};
+      custom.push(fd);
+      saveCustom();
+      document.getElementById('cfName').value = '';
+      document.getElementById('cfKcal').value = '';
+      document.getElementById('cfP').value = '';
+      document.getElementById('cfC').value = '';
+      document.getElementById('cfF').value = '';
+      renderLogFood();
+    }
+  });
+
+  // Weight input: press Enter to log
+  body.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'weightInput') {
+      const v = parseFloat(e.target.value);
+      logWeight(v);
+    }
+  });
+
+  // Save history on page hide
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') commitTodayToHistory(null);
+  });
+}
+
+/* ── Init ───────────────────────────────────────────── */
+async function init() {
+  loadLogs();
+  loadCustom();
+  loadProfile();
+  loadHistory();
+  await loadWhoop();
+
+  // Default open = current meal
+  Object.keys(openMeals).forEach(m => openMeals[m] = false);
+  openMeals[currentMealByTime()] = true;
+  logMeal = currentMealByTime();
+
+  rerender();
+  initEvents();
+
+  // Refresh every minute
+  setInterval(rerender, 60000);
+
+  // Cloud sync
+  if (window.initCloudSync) {
+    window.initCloudSync({
+      appKey: 'nutrition',
+      syncedKeys: ['nut:logs','nut:custom','nut:profile','nut:history'],
+      onApplied: () => {
+        loadLogs(); loadCustom(); loadProfile(); loadHistory();
+        rerender();
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+})(); // end IIFE
 </script>
 </body>
 </html>
