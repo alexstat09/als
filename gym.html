@@ -911,9 +911,23 @@ img, video, canvas, svg { max-width: 100%; }
   border-radius: 12px; margin-bottom: 4px;
 }
 
-.wt-chart-wrap { position: relative; margin: 16px 0 8px; }
+.wt-chart-wrap { position: relative; margin: 12px 0 8px; }
+.wt-range-row {
+  display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 10px;
+}
+.wt-range-btn {
+  padding: 4px 13px; border-radius: 99px; font-size: 11px; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04);
+  color: var(--text-3); cursor: pointer; font-family: var(--font-mono);
+  transition: all 0.15s; letter-spacing: 0.06em;
+  -webkit-tap-highlight-color: transparent;
+}
+.wt-range-btn.active {
+  background: rgba(110,231,183,0.15); border-color: rgba(110,231,183,0.35);
+  color: var(--good);
+}
 .wt-chart-yaxis {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 36px;
+  position: absolute; left: 0; top: 0; bottom: 22px; width: 36px;
   display: flex; flex-direction: column; justify-content: space-between;
   padding: 4px 0;
 }
@@ -922,18 +936,19 @@ img, video, canvas, svg { max-width: 100%; }
   font-family: var(--font-mono);
 }
 .wt-chart {
-  height: 130px; display: block;
+  height: 165px; display: block;
   margin-left: 36px; width: calc(100% - 36px);
 }
-.wt-grid { stroke: rgba(255,255,255,0.05); stroke-width: 1; }
+.wt-grid { stroke: rgba(255,255,255,0.06); stroke-width: 1; }
 .wt-area { fill: url(#wtFill); }
-.wt-line { fill: none; stroke: var(--good); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.wt-avg-line { fill: none; stroke: rgba(110,231,183,0.45); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.6; }
+.wt-line { fill: none; stroke: url(#wtLineGrad); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.wt-avg-line { fill: none; stroke: rgba(110,231,183,0.40); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.7; }
 .wt-dot { fill: var(--good); stroke: var(--bg-card); stroke-width: 1.5; }
-.wt-dot-today { fill: #fff; stroke: var(--good); stroke-width: 2; }
+.wt-dot-today { fill: #fff; stroke: var(--good); stroke-width: 2.5; filter: drop-shadow(0 0 4px rgba(110,231,183,0.9)); }
+.wt-xlabel { font-size: 9px; fill: rgba(255,255,255,0.28); font-family: var(--font-mono); }
 .wt-meta {
   text-align: center; font-size: 11px; color: var(--text-3);
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .wt-legend {
   display: flex; justify-content: center; gap: 18px; margin-top: 10px;
@@ -1364,22 +1379,33 @@ img, video, canvas, svg { max-width: 100%; }
       <div class="wt-empty" id="wtEmpty">Log your first weight to start tracking.</div>
 
       <div class="wt-chart-wrap hidden" id="wtChartWrap">
+        <div class="wt-range-row">
+          <button class="wt-range-btn active" data-wrange="30">30D</button>
+          <button class="wt-range-btn" data-wrange="90">3M</button>
+          <button class="wt-range-btn" data-wrange="0">ALL</button>
+        </div>
         <div class="wt-chart-yaxis">
           <span id="wtYAxisMax">—</span>
           <span id="wtYAxisMin">—</span>
         </div>
-        <svg class="wt-chart" viewBox="0 0 320 130" preserveAspectRatio="none">
+        <svg class="wt-chart" viewBox="0 0 320 150" preserveAspectRatio="none">
           <defs>
             <linearGradient id="wtFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.25"/>
+              <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.28"/>
+              <stop offset="80%" stop-color="#6ee7b7" stop-opacity="0.04"/>
               <stop offset="100%" stop-color="#6ee7b7" stop-opacity="0"/>
             </linearGradient>
-            <filter id="wtGlow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="wtLineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#6ee7b7" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="wtGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           </defs>
           <line class="wt-grid" x1="0" y1="20" x2="320" y2="20"></line>
           <line class="wt-grid" x1="0" y1="65" x2="320" y2="65"></line>
           <line class="wt-grid" x1="0" y1="110" x2="320" y2="110"></line>
           <g id="wtChartContent"></g>
+          <g id="wtXLabels"></g>
         </svg>
         <div class="wt-meta" id="wtMeta">0 entries</div>
       </div>
@@ -2957,21 +2983,23 @@ img, video, canvas, svg { max-width: 100%; }
     }
   }
 
+  let wtRange = 30;
+
   function wtRenderChart() {
-    const recent = wtEntries.slice(-30);
+    const recent = wtRange === 0 ? wtEntries : wtEntries.slice(-wtRange);
+    if (recent.length < 2) return;
     const weights = recent.map(e => e.weight);
     const min = Math.min.apply(null, weights);
     const max = Math.max.apply(null, weights);
-    const pad = Math.max((max - min) * 0.15, 0.5);
+    const pad = Math.max((max - min) * 0.18, 0.4);
     const yMin = min - pad, yMax = max + pad;
-    const xLeft = 8, xRight = 312, yTop = 20, yBot = 110;
+    const xLeft = 4, xRight = 316, yTop = 20, yBot = 110;
     const xRange = xRight - xLeft, yRange = yBot - yTop;
     const xFor = (i) => recent.length === 1 ? xRight : xLeft + (i / (recent.length - 1)) * xRange;
     const yFor = (w) => yBot - ((w - yMin) / (yMax - yMin)) * yRange;
-    const points = recent.map((e, i) => ({ x: xFor(i), y: yFor(e.weight) }));
+    const points = recent.map((e, i) => ({ x: xFor(i), y: yFor(e.weight), e }));
     const linePath = wtSmoothPath(points);
-    const areaPath = linePath + ' L ' + points[points.length - 1].x.toFixed(2) + ' ' + yBot + ' L ' + points[0].x.toFixed(2) + ' ' + yBot + ' Z';
-    // 7d moving avg
+    const areaPath = linePath + ' L ' + points[points.length-1].x.toFixed(2) + ' ' + yBot + ' L ' + points[0].x.toFixed(2) + ' ' + yBot + ' Z';
     const avgPoints = recent.map((_, i) => {
       const start = Math.max(0, i - 6);
       const win = recent.slice(start, i + 1);
@@ -2982,15 +3010,35 @@ img, video, canvas, svg { max-width: 100%; }
     let html = '<path class="wt-avg-line" d="' + avgPath + '"></path>'
              + '<path class="wt-area" d="' + areaPath + '"></path>'
              + '<path class="wt-line" filter="url(#wtGlow)" d="' + linePath + '"></path>';
-    points.forEach((p, i) => {
-      const cls = (i === points.length - 1) ? 'wt-dot-today' : 'wt-dot';
-      const r = (i === points.length - 1) ? 5 : 3;
-      html += '<circle class="' + cls + '" cx="' + p.x.toFixed(2) + '" cy="' + p.y.toFixed(2) + '" r="' + r + '"/>';
-    });
+    const showDots = recent.length <= 60;
+    if (showDots) {
+      points.forEach((p, i) => {
+        const last = i === points.length - 1;
+        const r = last ? 5 : 2.5;
+        html += '<circle class="' + (last ? 'wt-dot-today' : 'wt-dot') + '" cx="' + p.x.toFixed(2) + '" cy="' + p.y.toFixed(2) + '" r="' + r + '"/>';
+      });
+    } else {
+      const last = points[points.length - 1];
+      html += '<circle class="wt-dot-today" cx="' + last.x.toFixed(2) + '" cy="' + last.y.toFixed(2) + '" r="5"/>';
+    }
     $('wtChartContent').innerHTML = html;
     $('wtYAxisMax').textContent = yMax.toFixed(1);
     $('wtYAxisMin').textContent = yMin.toFixed(1);
-    $('wtMeta').textContent = wtEntries.length + ' ' + (wtEntries.length === 1 ? 'entry' : 'entries') + ' · last ' + recent.length + ' days';
+    const rangeLabel = wtRange === 0 ? 'all time' : 'last ' + recent.length + ' days';
+    $('wtMeta').textContent = wtEntries.length + ' entries · ' + rangeLabel + ' · ' + min.toFixed(1) + '→' + max.toFixed(1);
+    // X-axis date labels
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const labelCount = Math.min(4, recent.length);
+    let labelsHtml = '';
+    for (let li = 0; li < labelCount; li++) {
+      const idx = labelCount === 1 ? 0 : Math.round(li / (labelCount - 1) * (recent.length - 1));
+      const x = xFor(idx);
+      const d = new Date(recent[idx].dateKey + 'T00:00:00');
+      const label = MONTHS[d.getMonth()] + ' ' + d.getDate();
+      const anchor = li === 0 ? 'start' : li === labelCount - 1 ? 'end' : 'middle';
+      labelsHtml += '<text class="wt-xlabel" x="' + x.toFixed(1) + '" y="130" text-anchor="' + anchor + '">' + label + '</text>';
+    }
+    $('wtXLabels').innerHTML = labelsHtml;
   }
 
   function wtRenderDelta() {
@@ -3162,6 +3210,15 @@ img, video, canvas, svg { max-width: 100%; }
       + ' · ' + freqStr
       + (strengthRatios.length ? '' : ' (no lift data)');
   }
+
+  // Range selector
+  document.querySelectorAll('[data-wrange]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wtRange = parseInt(btn.dataset.wrange, 10);
+      document.querySelectorAll('[data-wrange]').forEach(b => b.classList.toggle('active', b === btn));
+      if (wtEntries.length >= 2) wtRenderChart();
+    });
+  });
 
   // Wire weight UI
   $('wtSaveBtn').addEventListener('click', () => {
