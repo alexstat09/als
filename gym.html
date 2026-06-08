@@ -2733,10 +2733,8 @@ img, video, canvas, svg { max-width: 100%; }
     return d;
   }
 
-  // ── One-time seed of historical weigh-ins ──────────
+  // ── Seed historical weigh-ins (adds any missing by dateKey) ──
   (function seedWeightHistory() {
-    const SEED_FLAG = 'po_coach_weights_seeded_v1';
-    if (localStorage.getItem(SEED_FLAG)) return;
     const seed = [
       {dateKey:'2026-02-08',weight:69.6},{dateKey:'2026-02-09',weight:69.6},
       {dateKey:'2026-02-10',weight:69.7},{dateKey:'2026-02-11',weight:69.9},
@@ -2800,10 +2798,13 @@ img, video, canvas, svg { max-width: 100%; }
     ];
     let existing = [];
     try { existing = JSON.parse(localStorage.getItem('po_coach_weights')) || []; } catch(e) {}
-    seed.forEach(s => { if (!existing.find(e => e.dateKey === s.dateKey)) existing.push(s); });
-    existing.sort((a,b) => a.dateKey.localeCompare(b.dateKey));
-    localStorage.setItem('po_coach_weights', JSON.stringify(existing));
-    localStorage.setItem(SEED_FLAG, '1');
+    const existingKeys = new Set(existing.map(e => e.dateKey));
+    let added = 0;
+    seed.forEach(s => { if (!existingKeys.has(s.dateKey)) { existing.push(s); added++; } });
+    if (added > 0) {
+      existing.sort((a,b) => a.dateKey.localeCompare(b.dateKey));
+      localStorage.setItem('po_coach_weights', JSON.stringify(existing));
+    }
   })();
   // ── End seed ────────────────────────────────────────
 
