@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Ideas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+<style>
+:root {
+  --text-primary:   #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary:  #76746E;
+  --success: #6BE3A4;
+  --warning: #F2C063;
+  --danger:  #FF6B6B;
+  --font:      -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:#050506; color:var(--text-secondary); font-family:var(--font); -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%; }
+body { min-height:100vh; position:relative; overflow-x:hidden; padding:max(28px,env(safe-area-inset-top)) 20px 80px; }
+
+body::before {
+  content:''; position:fixed; inset:0;
+  background: radial-gradient(circle at 75% 10%, rgba(167,139,250,0.14), transparent 45%),
+              radial-gradient(circle at 20% 85%, rgba(180,180,200,0.06), transparent 50%);
+  filter:blur(40px); pointer-events:none; z-index:-2;
+  animation:drift 36s ease-in-out infinite alternate;
+}
+body::after {
+  content:''; position:fixed; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,0.014) 1px,transparent 1px);
+  background-size:3px 3px; pointer-events:none; z-index:-1;
+}
+@keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
+
+.page { max-width:1100px; margin:0 auto; }
+
+.dash-title {
+  margin:0 0 6px; font-size:28px; font-weight:700; letter-spacing:-0.025em;
+  background:linear-gradient(180deg,#FFFFFF 0%,#C7C4BC 120%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+@media(max-width:480px){ .dash-title{font-size:22px} }
+
+/* ── STATS ROW ─────────────────────────────────────── */
+.stats-row {
+  display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;
+}
+.stat-chip {
+  display:flex; align-items:center; gap:7px;
+  padding:7px 13px; border-radius:99px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+  font-size:12px; color:var(--text-secondary);
+}
+.stat-chip strong { color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.stat-chip .chip-icon { font-size:14px; }
+
+/* ── ADD FORM ──────────────────────────────────────── */
+.add-card {
+  background:rgba(255,255,255,0.04); border-radius:16px;
+  border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(24px) saturate(1.2);
+  -webkit-backdrop-filter:blur(24px) saturate(1.2);
+  padding:18px; margin-bottom:18px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.add-top { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
+.add-textarea {
+  flex:1; resize:none; padding:12px 14px;
+  background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.10);
+  border-radius:12px; color:var(--text-primary);
+  font-family:inherit; font-size:15px; line-height:1.5; outline:none;
+  transition:border-color 0.2s; min-height:48px; max-height:160px;
+  overflow:hidden; field-sizing:content;
+}
+.add-textarea::placeholder { color:var(--text-tertiary); }
+.add-textarea:focus { border-color:rgba(167,139,250,0.5); }
+.add-submit {
+  padding:12px 18px; border:0; border-radius:12px;
+  background:linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color:#0A0A0B; font-family:inherit; font-size:14px; font-weight:700;
+  cursor:pointer; flex-shrink:0; align-self:flex-start;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px rgba(0,0,0,0.35);
+  transition:transform 0.1s,filter 0.15s;
+}
+.add-submit:hover { filter:brightness(1.06); transform:translateY(-1px); }
+.add-submit:active { transform:translateY(0); }
+
+.add-bottom { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.cat-select-row { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+.cat-pill {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 12px; border-radius:99px;
+  font-size:12px; font-weight:600; cursor:pointer;
+  border:1.5px solid transparent;
+  background:rgba(255,255,255,0.04);
+  color:var(--text-tertiary); transition:all 0.15s;
+  font-family:inherit;
+}
+.cat-pill.active {
+  background:rgba(var(--cat-rgb),0.14);
+  border-color:rgba(var(--cat-rgb),0.45);
+  color:rgb(var(--cat-rgb));
+}
+.note-input {
+  flex:1; min-width:180px; padding:9px 12px;
+  background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; color:var(--text-primary);
+  font-family:inherit; font-size:13px; outline:none;
+  transition:border-color 0.2s;
+}
+.note-input::placeholder { color:var(--text-tertiary); }
+.note-input:focus { border-color:rgba(255,255,255,0.22); }
+
+/* ── FILTER BAR ────────────────────────────────────── */
+.filter-bar {
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;
+}
+.search-wrap { position:relative; flex:1; min-width:180px; }
+.search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--text-tertiary); pointer-events:none; }
+.search-input {
+  width:100%; padding:9px 12px 9px 33px;
+  background:rgba(0,0,0,0.24); border:1px solid rgba(255,255,255,0.09);
+  border-radius:10px; color:var(--text-primary);
+  font-family:inherit; font-size:13px; outline:none;
+  transition:border-color 0.2s;
+}
+.search-input::placeholder { color:var(--text-tertiary); }
+.search-input:focus { border-color:rgba(255,255,255,0.22); }
+.filter-chip {
+  padding:6px 12px; border-radius:99px; font-size:11px; font-weight:700;
+  border:1.5px solid rgba(255,255,255,0.10); background:rgba(255,255,255,0.03);
+  color:var(--text-tertiary); cursor:pointer; font-family:inherit;
+  transition:all 0.15s; white-space:nowrap;
+}
+.filter-chip.active {
+  background:rgba(var(--cat-rgb),0.12);
+  border-color:rgba(var(--cat-rgb),0.40);
+  color:rgb(var(--cat-rgb));
+}
+.filter-chip.all.active {
+  --cat-rgb:167,139,250;
+  background:rgba(167,139,250,0.12);
+  border-color:rgba(167,139,250,0.40);
+  color:rgb(167,139,250);
+}
+
+/* ── IDEAS GRID ────────────────────────────────────── */
+.ideas-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:14px; align-items:start;
+  margin-bottom:24px;
+}
+
+/* ── IDEA CARD ─────────────────────────────────────── */
+.idea-card {
+  position:relative;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-left:3px solid rgba(var(--cat-rgb),0.6);
+  border-radius:14px; padding:16px;
+  backdrop-filter:blur(24px) saturate(1.2);
+  -webkit-backdrop-filter:blur(24px) saturate(1.2);
+  box-shadow:0 4px 20px rgba(0,0,0,0.35);
+  transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.35s ease;
+  animation:cardIn 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+.idea-card:hover {
+  transform:translateY(-3px);
+  box-shadow:0 12px 36px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--cat-rgb),0.25);
+  border-left-color:rgba(var(--cat-rgb),1);
+}
+.idea-card.pinned {
+  border-color:rgba(var(--cat-rgb),0.30);
+  background:rgba(var(--cat-rgb),0.04);
+}
+.idea-card.done-card {
+  opacity:0.5; border-left-color:rgba(107,227,164,0.4);
+}
+.idea-card.done-card:hover { opacity:0.75; }
+
+/* Card glow on hover */
+.idea-card::before {
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  background:radial-gradient(circle at 50% 0%,rgba(var(--cat-rgb),0.06),transparent 70%);
+  opacity:0; transition:opacity 0.25s; pointer-events:none;
+}
+.idea-card:hover::before { opacity:1; }
+
+.card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.card-badges { display:flex; align-items:center; gap:6px; }
+.cat-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 8px; border-radius:99px; font-size:10px; font-weight:700;
+  letter-spacing:0.06em; text-transform:uppercase;
+  background:rgba(var(--cat-rgb),0.12); color:rgb(var(--cat-rgb));
+  border:1px solid rgba(var(--cat-rgb),0.22);
+}
+.pin-badge {
+  font-size:12px; opacity:0.7;
+}
+.done-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  padding:3px 8px; border-radius:99px; font-size:10px; font-weight:700;
+  background:rgba(107,227,164,0.12); color:var(--success);
+  border:1px solid rgba(107,227,164,0.25);
+}
+.card-date { font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); white-space:nowrap; }
+
+.card-text {
+  font-size:15px; font-weight:700; color:var(--text-primary);
+  line-height:1.4; margin-bottom:8px; letter-spacing:-0.01em;
+}
+.idea-card.done-card .card-text { text-decoration:line-through; text-decoration-color:rgba(255,255,255,0.3); }
+
+.card-note {
+  font-size:12px; color:var(--text-tertiary); line-height:1.55;
+  margin-bottom:12px; white-space:pre-wrap;
+}
+
+.card-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05); }
+.card-left-actions { display:flex; gap:6px; }
+
+.action-btn {
+  padding:5px 11px; border-radius:7px; font-size:11px; font-weight:700;
+  border:1px solid rgba(255,255,255,0.10); background:rgba(255,255,255,0.04);
+  color:var(--text-tertiary); cursor:pointer; font-family:inherit;
+  transition:all 0.15s; display:flex; align-items:center; gap:4px;
+}
+.action-btn:hover { background:rgba(255,255,255,0.08); color:var(--text-primary); }
+.action-btn.done-btn:hover { background:rgba(107,227,164,0.12); color:var(--success); border-color:rgba(107,227,164,0.3); }
+.action-btn.undo-btn:hover { background:rgba(242,192,99,0.12); color:var(--warning); border-color:rgba(242,192,99,0.3); }
+.action-btn.pin-btn.pinned { color:rgb(var(--cat-rgb)); border-color:rgba(var(--cat-rgb),0.3); background:rgba(var(--cat-rgb),0.08); }
+.action-btn.del-btn:hover { background:rgba(255,107,107,0.12); color:var(--danger); border-color:rgba(255,107,107,0.3); }
+
+/* ── DONE SECTION ──────────────────────────────────── */
+.done-section { margin-top:8px; }
+.done-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  cursor:pointer; user-select:none; -webkit-user-select:none;
+}
+.done-title {
+  font-size:10.5px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-tertiary); display:flex; align-items:center; gap:10px;
+}
+.done-title::before { content:''; width:18px; height:1px; background:var(--text-tertiary); opacity:0.6; }
+.done-title::after  { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,255,255,0.08),transparent); }
+.done-count {
+  padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700;
+  background:rgba(107,227,164,0.12); color:var(--success);
+  border:1px solid rgba(107,227,164,0.2);
+}
+.done-chevron { color:var(--text-tertiary); font-size:11px; transition:transform 0.2s; margin-left:auto; }
+.done-header.open .done-chevron { transform:rotate(180deg); }
+.done-grid { display:none; }
+.done-grid.open { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+
+/* ── EMPTY STATE ───────────────────────────────────── */
+.empty-state {
+  grid-column:1/-1; text-align:center; padding:40px 20px;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.empty-icon { font-size:40px; opacity:0.4; }
+.empty-text { font-size:14px; color:var(--text-tertiary); }
+.empty-sub  { font-size:12px; color:var(--text-tertiary); opacity:0.7; }
+
+/* ── RESPONSIVE ────────────────────────────────────── */
+@media(max-width:480px){
+  body { padding:max(20px,env(safe-area-inset-top)) 14px 70px; }
+  .ideas-grid,.done-grid.open { grid-template-columns:1fr; }
+  .add-bottom { flex-direction:column; align-items:flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="dash-title">Ideas</h1>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Add form -->
+  <div class="add-card">
+    <div class="add-top">
+      <textarea class="add-textarea" id="addText" placeholder="What's the idea?&#10;Press Enter to add…" rows="1"></textarea>
+      <button class="add-submit" id="addBtn">+ Add</button>
+    </div>
+    <div class="add-bottom">
+      <div class="cat-select-row" id="catSelectRow"></div>
+      <input class="note-input" id="addNote" type="text" placeholder="Add a note… (optional)">
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filterBar"></div>
+
+  <!-- Active ideas grid -->
+  <div class="ideas-grid" id="ideasGrid"></div>
+
+  <!-- Done section -->
+  <div class="done-section">
+    <div class="done-header" id="doneHeader">
+      <div class="done-title">Completed</div>
+      <span class="done-count" id="doneCount">0</span>
+      <span class="done-chevron">▾</span>
+    </div>
+    <div class="done-grid" id="doneGrid"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ── CATEGORIES ─────────────────────────────────────── */
+const CATS = {
+  general:  { label:'General',  emoji:'💡', rgb:'242,192,99'   },
+  goals:    { label:'Goals',    emoji:'🎯', rgb:'107,227,164'  },
+  fitness:  { label:'Fitness',  emoji:'🏋️', rgb:'125,211,252'  },
+  finance:  { label:'Finance',  emoji:'💰', rgb:'251,191,36'   },
+  learning: { label:'Learning', emoji:'🧠', rgb:'167,139,250'  },
+  creative: { label:'Creative', emoji:'🎨', rgb:'244,114,182'  },
+  health:   { label:'Health',   emoji:'🏥', rgb:'52,211,153'   },
+  lifestyle:{ label:'Lifestyle',emoji:'☕', rgb:'251,146,60'   },
+};
+
+/* ── STATE ──────────────────────────────────────────── */
+let ideas    = [];
+let addCat   = 'general';
+let filterCat= 'all';
+let searchQ  = '';
+let doneOpen = false;
+
+/* ── PERSIST ────────────────────────────────────────── */
+function load() {
+  try { ideas = JSON.parse(localStorage.getItem('ideas:items')) || []; } catch(e){ ideas=[]; }
+}
+function save() {
+  localStorage.setItem('ideas:items', JSON.stringify(ideas));
+  if (window.initCloudSync) return; // cloud sync handles push
+}
+
+/* ── CRUD ───────────────────────────────────────────── */
+function addIdea() {
+  const text = document.getElementById('addText').value.trim();
+  if (!text) return;
+  const note = document.getElementById('addNote').value.trim();
+  ideas.unshift({
+    id: Date.now(),
+    text, note,
+    category: addCat,
+    done: false,
+    pinned: false,
+    createdAt: new Date().toISOString(),
+    doneAt: null
+  });
+  save();
+  document.getElementById('addText').value = '';
+  document.getElementById('addNote').value = '';
+  rerender();
+}
+
+function markDone(id) {
+  const idea = ideas.find(i => i.id === id);
+  if (!idea) return;
+  idea.done   = true;
+  idea.doneAt = new Date().toISOString();
+  idea.pinned = false;
+  save(); rerender();
+}
+
+function undoIdea(id) {
+  const idea = ideas.find(i => i.id === id);
+  if (!idea) return;
+  idea.done = false; idea.doneAt = null;
+  save(); rerender();
+}
+
+function togglePin(id) {
+  const idea = ideas.find(i => i.id === id);
+  if (!idea) return;
+  idea.pinned = !idea.pinned;
+  save(); rerender();
+}
+
+function deleteIdea(id) {
+  ideas = ideas.filter(i => i.id !== id);
+  save(); rerender();
+}
+
+/* ── RENDER ─────────────────────────────────────────── */
+function rerender() {
+  renderStats();
+  renderCatSelect();
+  renderFilterBar();
+  renderGrid();
+  renderDone();
+}
+
+/* Stats row */
+function renderStats() {
+  const total  = ideas.filter(i => !i.done).length;
+  const done   = ideas.filter(i =>  i.done).length;
+  const today  = ideas.filter(i => i.createdAt && i.createdAt.startsWith(todayStr())).length;
+  const streak = calcStreak();
+
+  document.getElementById('statsRow').innerHTML = [
+    `<div class="stat-chip"><span class="chip-icon">💡</span><span>Active: <strong>${total}</strong></span></div>`,
+    `<div class="stat-chip"><span class="chip-icon">✅</span><span>Completed: <strong>${done}</strong></span></div>`,
+    today > 0 ? `<div class="stat-chip"><span class="chip-icon">✨</span><span>Added today: <strong>${today}</strong></span></div>` : '',
+    streak >= 2 ? `<div class="stat-chip"><span class="chip-icon">🔥</span><span>Idea streak: <strong>${streak}d</strong></span></div>` : '',
+  ].join('');
+}
+
+/* Category selector (in add form) */
+function renderCatSelect() {
+  document.getElementById('catSelectRow').innerHTML = Object.entries(CATS).map(([key, cat]) =>
+    `<button class="cat-pill ${addCat===key?'active':''}" style="--cat-rgb:${cat.rgb}" data-addcat="${key}">
+       ${cat.emoji} ${cat.label}
+     </button>`
+  ).join('');
+}
+
+/* Filter bar */
+function renderFilterBar() {
+  const allActive = filterCat === 'all';
+  let html = `
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" type="text"
+        placeholder="Search ideas…" value="${esc(searchQ)}" autocomplete="off">
+    </div>
+    <button class="filter-chip all ${allActive?'active':''}" data-fcat="all">All</button>`;
+  // Only show categories that have at least one idea
+  Object.entries(CATS).forEach(([key, cat]) => {
+    const has = ideas.some(i => i.category === key && !i.done);
+    if (!has && filterCat !== key) return;
+    html += `<button class="filter-chip ${filterCat===key?'active':''}"
+      style="--cat-rgb:${cat.rgb}" data-fcat="${key}">${cat.emoji} ${cat.label}</button>`;
+  });
+  document.getElementById('filterBar').innerHTML = html;
+  const si = document.getElementById('searchInput');
+  if (si) si.addEventListener('input', e => { searchQ = e.target.value; renderGrid(); renderDone(); });
+}
+
+/* Active ideas grid */
+function renderGrid() {
+  const el = document.getElementById('ideasGrid');
+  let list = ideas.filter(i => !i.done);
+
+  if (filterCat !== 'all') list = list.filter(i => i.category === filterCat);
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    list = list.filter(i => i.text.toLowerCase().includes(q) || (i.note||'').toLowerCase().includes(q));
+  }
+
+  // Pinned first, then newest
+  list.sort((a,b) => (b.pinned ? 1:0) - (a.pinned ? 1:0) || new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">💭</div>
+      <div class="empty-text">${searchQ ? 'No ideas match "'+esc(searchQ)+'"' : filterCat !== 'all' ? 'No '+CATS[filterCat].label+' ideas yet' : 'No ideas yet'}</div>
+      <div class="empty-sub">${searchQ ? '' : 'Type something above and hit Add.'}</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(idea => cardHtml(idea, false)).join('');
+}
+
+/* Done ideas grid */
+function renderDone() {
+  const el     = document.getElementById('doneGrid');
+  const header = document.getElementById('doneHeader');
+  const count  = document.getElementById('doneCount');
+
+  let list = ideas.filter(i => i.done);
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    list = list.filter(i => i.text.toLowerCase().includes(q) || (i.note||'').toLowerCase().includes(q));
+  }
+  list.sort((a,b) => new Date(b.doneAt||b.createdAt) - new Date(a.doneAt||a.createdAt));
+
+  count.textContent = list.length;
+  header.className  = 'done-header' + (doneOpen ? ' open' : '');
+  el.className      = 'done-grid'   + (doneOpen ? ' open' : '');
+
+  el.innerHTML = list.length
+    ? list.map(idea => cardHtml(idea, true)).join('')
+    : `<div class="empty-state" style="grid-column:1/-1">
+         <div class="empty-icon">🏆</div>
+         <div class="empty-text">No completed ideas yet.</div>
+       </div>`;
+}
+
+/* Build card HTML */
+function cardHtml(idea, isDone) {
+  const cat  = CATS[idea.category] || CATS.general;
+  const date = isDone && idea.doneAt ? 'Done ' + fmtDate(idea.doneAt) : fmtDate(idea.createdAt);
+
+  const pinBtn = !isDone
+    ? `<button class="action-btn pin-btn ${idea.pinned?'pinned':''}" data-pid="${idea.id}" title="${idea.pinned?'Unpin':'Pin'}">
+         ${idea.pinned ? '📌 Pinned' : '📌 Pin'}
+       </button>` : '';
+
+  const doneUndoBtn = isDone
+    ? `<button class="action-btn undo-btn" data-uid="${idea.id}">↩ Reopen</button>`
+    : `<button class="action-btn done-btn" data-did="${idea.id}">✓ Done</button>`;
+
+  return `
+  <div class="idea-card ${isDone?'done-card':''} ${idea.pinned?'pinned':''}"
+       style="--cat-rgb:${cat.rgb}">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge" style="--cat-rgb:${cat.rgb}">${cat.emoji} ${cat.label}</span>
+        ${idea.pinned && !isDone ? '<span class="pin-badge">📌</span>' : ''}
+        ${isDone ? '<span class="done-badge">✓ Done</span>' : ''}
+      </div>
+      <span class="card-date">${date}</span>
+    </div>
+    <div class="card-text">${esc(idea.text)}</div>
+    ${idea.note ? `<div class="card-note">${esc(idea.note)}</div>` : ''}
+    <div class="card-actions">
+      <div class="card-left-actions">
+        ${pinBtn}
+        ${doneUndoBtn}
+      </div>
+      <button class="action-btn del-btn" data-delid="${idea.id}">✕</button>
+    </div>
+  </div>`;
+}
+
+/* ── HELPERS ────────────────────────────────────────── */
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d   = new Date(iso);
+  const now = new Date();
+  const diff= Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'Today ' + d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  if (diff === 1) return 'Yesterday';
+  if (diff <  7) return diff + 'd ago';
+  return d.toLocaleDateString([],{month:'short',day:'numeric'});
+}
+
+function calcStreak() {
+  const days = new Set(ideas.map(i => i.createdAt && i.createdAt.split('T')[0]).filter(Boolean));
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    if (days.has(d.toISOString().split('T')[0])) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── EVENTS ─────────────────────────────────────────── */
+function initEvents() {
+  // Add button
+  document.getElementById('addBtn').addEventListener('click', addIdea);
+
+  // Textarea: Enter to submit (Shift+Enter = newline)
+  document.getElementById('addText').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addIdea(); }
+  });
+
+  // Done section toggle
+  document.getElementById('doneHeader').addEventListener('click', () => {
+    doneOpen = !doneOpen; renderDone();
+  });
+
+  // Event delegation for all card buttons + category + filter
+  document.body.addEventListener('click', e => {
+    // Category select (add form)
+    const ac = e.target.closest('[data-addcat]');
+    if (ac) { addCat = ac.dataset.addcat; renderCatSelect(); return; }
+
+    // Filter chip
+    const fc = e.target.closest('[data-fcat]');
+    if (fc) { filterCat = fc.dataset.fcat; renderGrid(); renderFilterBar(); return; }
+
+    // Mark done
+    const dd = e.target.closest('[data-did]');
+    if (dd) { markDone(parseInt(dd.dataset.did,10)); return; }
+
+    // Undo / reopen
+    const ud = e.target.closest('[data-uid]');
+    if (ud) { undoIdea(parseInt(ud.dataset.uid,10)); return; }
+
+    // Pin
+    const pd = e.target.closest('[data-pid]');
+    if (pd) { togglePin(parseInt(pd.dataset.pid,10)); return; }
+
+    // Delete
+    const dl = e.target.closest('[data-delid]');
+    if (dl) {
+      if (confirm('Delete this idea?')) deleteIdea(parseInt(dl.dataset.delid,10));
+      return;
+    }
+  });
+}
+
+/* ── INIT ───────────────────────────────────────────── */
+function init() {
+  load();
+  rerender();
+  initEvents();
+
+  if (window.initCloudSync) {
+    window.initCloudSync({
+      appKey: 'ideas',
+      syncedKeys: ['ideas:items'],
+      onApplied: () => { load(); rerender(); }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
