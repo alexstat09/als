@@ -131,6 +131,23 @@ html, body { -webkit-text-size-adjust: 100%; }
   overscroll-behavior: contain;
 }
 body.topbar-modal-open { overflow: hidden; touch-action: none; }
+/* ── PAGE TRANSITIONS ─────────────────────────────────── */
+body { animation: _tbIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes _tbIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes _tbOut { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-7px); } }
+body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-events:none; }
+/* scan line */
+.tb-scan {
+  position: fixed; left:0; right:0; height:1px; z-index:9999; pointer-events:none;
+  background: linear-gradient(90deg, transparent, rgba(125,211,252,0.4), transparent);
+  animation: _tbScan 0.75s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes _tbScan {
+  0%   { top:0;    opacity:0; }
+  6%   { opacity:1; }
+  90%  { opacity:0.25; }
+  100% { top:100vh; opacity:0; }
+}
 @media (max-width: 480px) {
   .modal-bg, .po-modal-bg {
     padding: 0 !important;
@@ -336,6 +353,27 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     sync();
   }
 
+  function initTransitions() {
+    // Scan line on every page enter
+    const scan = document.createElement('div');
+    scan.className = 'tb-scan';
+    document.body.appendChild(scan);
+    setTimeout(() => scan.remove(), 800);
+
+    // Intercept internal links — fade out then navigate
+    document.addEventListener('click', function (e) {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('http') ||
+          href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (a.target === '_blank') return;
+      e.preventDefault();
+      document.body.classList.add('tb-out');
+      setTimeout(() => { window.location.href = href; }, 170);
+    });
+  }
+
   function boot() {
     injectStyleAndHTML();
     const btn = document.getElementById('topbarWaterAdd');
@@ -343,6 +381,7 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     render();
     lockGestures();
     startModalLock();
+    initTransitions();
     window.addEventListener('storage', render);
     window.addEventListener('focus', render);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
