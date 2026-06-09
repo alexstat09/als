@@ -1146,69 +1146,33 @@ img, video, canvas, svg { max-width: 100%; }
 }
 
 /* Progress link */
-.wt-progress-link {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--bg-card);
-  border: 1px solid rgba(110,231,183,0.10);
-  border-radius: 16px;
-  padding: 18px 20px;
-  color: var(--text-1);
-  margin-top: 12px; cursor: pointer; width: 100%;
-  font-family: inherit; text-align: left;
-  transition: border-color 0.2s, transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.wt-progress-link:hover { border-color: rgba(110,231,183,0.25); }
-.wt-progress-link:active { transform: scale(0.99); }
-.wt-progress-label {
-  font-size: 11px; letter-spacing: 0.20em; font-weight: 600;
-  color: var(--text-3); margin-bottom: 4px;
-}
-.wt-progress-count { font-size: 14px; font-weight: 500; }
-.wt-progress-arrow { color: var(--good); font-size: 20px; }
 
-/* Overlay */
+/* Progress photos — inline section (no overlay/modal) */
 .wt-overlay {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  z-index: 100; overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  margin-bottom: 22px;
 }
-.wt-overlay.is-open { transform: translateY(0); }
 .wt-overlay-inner {
-  max-width: 720px; margin: 0 auto;
-  padding: 24px 20px 40px;
+  padding: 0;
 }
 .wt-overlay-h {
-  display: flex; align-items: center; gap: 14px;
-  margin-bottom: 22px;
-}
-.wt-back {
-  width: 40px; height: 40px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--text-1); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-family: inherit;
-  -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 .wt-overlay-title {
-  font-size: 26px; font-weight: 600; letter-spacing: -0.015em;
+  font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+  color: rgba(125,211,252,0.5);
 }
 .wt-overlay-actions {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-bottom: 22px;
+  display: flex; gap: 8px;
 }
 .wt-overlay-action {
-  height: 50px; border-radius: 12px; border: none;
-  font-family: inherit; font-size: 14px; font-weight: 600;
+  height: 36px; padding: 0 14px; border-radius: 10px; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
 }
 .wt-overlay-primary { background: var(--good); color: #000; }
 .wt-overlay-secondary {
@@ -1388,9 +1352,34 @@ img, video, canvas, svg { max-width: 100%; }
 <body>
 
 <div class="po-shell">
-  <div class="po-nav-row">
-    <a href="index.html" class="po-back-link">← Hub</a>
+  <div class="jv-hdr">
+    <a href="index.html" class="jv-hub-link">← HUB</a>
+    <span class="jv-hdr-sep">·</span>
+    <span>ALS·02</span>
+    <span class="jv-hdr-sep">◈</span>
+    <span>FITNESS MODULE</span>
+    <span class="jv-hdr-sp"></span>
+    <span class="jv-hdr-stat"><span class="jv-dot"></span>ONLINE</span>
   </div>
+
+  <!-- Progress photos — inline at top, always visible -->
+  <div class="wt-overlay" id="wtOverlay">
+    <div class="wt-overlay-inner">
+      <div class="wt-overlay-h">
+        <div class="wt-overlay-title">PROGRESS PHOTOS</div>
+        <div class="wt-overlay-actions">
+          <button class="wt-overlay-action wt-overlay-secondary" id="wtFromLibraryBtn">Library</button>
+          <button class="wt-overlay-action wt-overlay-primary" id="wtTakePhotoBtn">Take Photo</button>
+        </div>
+      </div>
+      <input type="file" id="wtFileCamera" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="wtFileLibrary" accept="image/*" style="display:none">
+      <div class="wt-photo-grid" id="wtPhotoGrid">
+        <div class="wt-photo-empty">No photos yet · tap Take Photo to start</div>
+      </div>
+    </div>
+  </div>
+
   <button class="po-day-pill" type="button" id="dayPill" title="Tap to switch the day filter to today's split">
     <span class="po-day-date" id="dayPillDate">—</span>
     <span class="po-day-sep">·</span>
@@ -1497,34 +1486,6 @@ img, video, canvas, svg { max-width: 100%; }
       <div class="wt-history" id="wtHistory"></div>
     </div>
 
-    <button class="wt-progress-link" id="wtProgressLink" type="button" aria-label="Open progress photos">
-      <div>
-        <div class="wt-progress-label">PROGRESS PHOTOS</div>
-        <div class="wt-progress-count" id="wtProgressCount">0 photos</div>
-      </div>
-      <span class="wt-progress-arrow">→</span>
-    </button>
-  </div>
-
-  <!-- Progress photos overlay -->
-  <div class="wt-overlay" id="wtOverlay" aria-hidden="true">
-    <div class="wt-overlay-inner">
-      <div class="wt-overlay-h">
-        <button class="wt-back" id="wtBack" aria-label="Back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <div class="wt-overlay-title">Progress</div>
-      </div>
-      <div class="wt-overlay-actions">
-        <button class="wt-overlay-action wt-overlay-primary" id="wtTakePhotoBtn">Take Photo</button>
-        <button class="wt-overlay-action wt-overlay-secondary" id="wtFromLibraryBtn">From Library</button>
-      </div>
-      <input type="file" id="wtFileCamera" accept="image/*" capture="environment" style="display:none">
-      <input type="file" id="wtFileLibrary" accept="image/*" style="display:none">
-      <div class="wt-photo-grid" id="wtPhotoGrid">
-        <div class="wt-photo-empty">No photos yet · tap Take Photo to start</div>
-      </div>
-    </div>
   </div>
 
   <!-- Camera modal -->
@@ -1583,15 +1544,6 @@ img, video, canvas, svg { max-width: 100%; }
 
   </div>
 
-  <div class="jv-hdr">
-    <a href="index.html" class="jv-hub-link">← HUB</a>
-    <span class="jv-hdr-sep">·</span>
-    <span>ALS·02</span>
-    <span class="jv-hdr-sep">◈</span>
-    <span>FITNESS MODULE</span>
-    <span class="jv-hdr-sp"></span>
-    <span class="jv-hdr-stat"><span class="jv-dot"></span>ONLINE</span>
-  </div>
   <div class="po-header">
     <h1 class="po-title" id="appTitle">Progressive Overload Coach</h1>
     <button class="po-icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
@@ -3496,31 +3448,6 @@ img, video, canvas, svg { max-width: 100%; }
     r.readAsDataURL(file);
   }
 
-  function lockBodyScroll() {
-    const sy = window.scrollY;
-    document.body.dataset.scrollY = sy;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${sy}px`;
-    document.body.style.width = '100%';
-  }
-  function unlockBodyScroll() {
-    const sy = parseFloat(document.body.dataset.scrollY || 0);
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    delete document.body.dataset.scrollY;
-    window.scrollTo(0, sy);
-  }
-
-  $('wtProgressLink').addEventListener('click', () => {
-    photosRender();
-    $('wtOverlay').classList.add('is-open');
-    lockBodyScroll();
-  });
-  $('wtBack').addEventListener('click', () => {
-    $('wtOverlay').classList.remove('is-open');
-    unlockBodyScroll();
-  });
 
   // Take Photo: try in-browser camera, fall back to file input
   let camStream = null;
