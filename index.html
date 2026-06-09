@@ -430,6 +430,61 @@ body::after {
   font-family: var(--font-mono); font-size: 10px;
   color: rgba(255,255,255,0.18); margin-top: 8px; letter-spacing: 0.06em;
 }
+
+/* Backup ready sheet */
+.vault-sheet {
+  display: none; margin-top: 14px;
+  border: 1px solid rgba(107,227,164,0.22);
+  border-radius: 14px;
+  background: rgba(107,227,164,0.04);
+  padding: 18px 18px 14px;
+  animation: vsFadeIn .25s ease both;
+}
+@keyframes vsFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.vault-sheet.visible { display: block; }
+.vault-sheet-title {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(107,227,164,0.7); margin-bottom: 4px;
+}
+.vault-sheet-stats {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.vault-sheet-tip {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.35); margin-bottom: 14px; line-height: 1.6;
+}
+.vault-sheet-actions {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.vault-sheet-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 16px; border-radius: 9px; border: 1px solid;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+  transition: all .18s; -webkit-tap-highlight-color: transparent;
+}
+.vault-sheet-btn-copy {
+  background: rgba(107,227,164,0.08); border-color: rgba(107,227,164,0.3);
+  color: rgba(107,227,164,0.85);
+}
+.vault-sheet-btn-copy:hover { background: rgba(107,227,164,0.15); border-color: rgba(107,227,164,0.55); }
+.vault-sheet-btn-share {
+  background: rgba(125,211,252,0.06); border-color: rgba(125,211,252,0.22);
+  color: rgba(125,211,252,0.7);
+}
+.vault-sheet-btn-share:hover { background: rgba(125,211,252,0.12); border-color: rgba(125,211,252,0.4); }
+.vault-sheet-btn-dismiss {
+  background: transparent; border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3);
+}
+.vault-sheet-copy-confirm {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(107,227,164,0.7); margin-top: 10px;
+  display: none; letter-spacing: 0.08em;
+}
+.vault-sheet-copy-confirm.visible { display: block; }
 @media(max-width:440px){ .vault-wrap { padding: 0 14px; } }
 </style>
 </head>
@@ -554,10 +609,23 @@ body::after {
   <div class="vault-row">
     <button class="vault-btn vault-btn-export" id="vaultExport">↓ Export Backup</button>
     <label class="vault-btn vault-btn-import" for="vaultFile">↑ Restore Backup</label>
-    <input type="file" id="vaultFile" accept="application/json,.json" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
+    <input type="file" id="vaultFile" accept="application/json,.json,text/plain" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
     <span class="vault-status" id="vaultStatus"></span>
   </div>
   <div class="vault-meta" id="vaultMeta"></div>
+
+  <!-- Backup ready sheet -->
+  <div class="vault-sheet" id="vaultSheet">
+    <div class="vault-sheet-title">◈ Backup Ready</div>
+    <div class="vault-sheet-stats" id="vaultSheetStats">—</div>
+    <div class="vault-sheet-tip" id="vaultSheetTip">Tap Copy, then paste into Notes or email it to yourself.</div>
+    <div class="vault-sheet-actions">
+      <button class="vault-sheet-btn vault-sheet-btn-copy" id="vaultSheetCopy">⊕ Copy to Clipboard</button>
+      <button class="vault-sheet-btn vault-sheet-btn-share" id="vaultSheetShare">↑ Share as File</button>
+      <button class="vault-sheet-btn vault-sheet-btn-dismiss" id="vaultSheetDismiss">Dismiss</button>
+    </div>
+    <div class="vault-sheet-copy-confirm" id="vaultCopyConfirm">✓ Copied — paste it somewhere safe</div>
+  </div>
 </div>
 
 <script>
@@ -811,48 +879,81 @@ setInterval(renderIntelFeed, 60000);
     el.textContent = keys.length + ' keys · ~' + fmtBytes(bytes) + ' stored';
   }
 
-  /* Export */
-  document.getElementById('vaultExport').addEventListener('click', async () => {
+  /* Build the backup JSON once, store it for the sheet to use */
+  let _backupJson = null;
+  let _backupDate = null;
+  let _backupFileName = null;
+
+  function buildBackup() {
     const keys = allKeys();
     const data = { _version: 1, _exported: new Date().toISOString(), _keys: keys.length };
     keys.forEach(k => { data[k] = localStorage.getItem(k); });
-    const json = JSON.stringify(data, null, 2);
-    const date = new Date().toISOString().slice(0, 10);
-    const fileName = 'als-backup-' + date + '.json';
+    _backupJson     = JSON.stringify(data, null, 2);
+    _backupDate     = new Date().toISOString().slice(0, 10);
+    _backupFileName = 'als-backup-' + _backupDate + '.json';
+    return { keys, data };
+  }
+
+  /* Show backup-ready sheet */
+  document.getElementById('vaultExport').addEventListener('click', () => {
+    const { keys } = buildBackup();
+    let bytes = 0;
+    keys.forEach(k => { bytes += (_backupJson.length * 0.5) / keys.length; });
+    bytes = _backupJson.length;
+    const sheet = document.getElementById('vaultSheet');
+    document.getElementById('vaultSheetStats').textContent =
+      keys.length + ' data keys · ' + fmtBytes(bytes);
+    document.getElementById('vaultCopyConfirm').classList.remove('visible');
+    sheet.classList.add('visible');
+    sheet.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  document.getElementById('vaultSheetDismiss').addEventListener('click', () => {
+    document.getElementById('vaultSheet').classList.remove('visible');
+    _backupJson = null;
+  });
+
+  /* Copy to clipboard */
+  document.getElementById('vaultSheetCopy').addEventListener('click', async () => {
+    if (!_backupJson) return;
+    try {
+      await navigator.clipboard.writeText(_backupJson);
+      document.getElementById('vaultCopyConfirm').classList.add('visible');
+      document.getElementById('vaultSheetTip').textContent =
+        'Paste it into Notes, iCloud, or email it to yourself. To restore, tap ↑ Restore Backup and paste it into a .json file.';
+    } catch {
+      setStatus('Clipboard blocked — try Share as File', 'warn');
+    }
+  });
+
+  /* Share as File */
+  document.getElementById('vaultSheetShare').addEventListener('click', async () => {
+    if (!_backupJson) return;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOS) {
-      /* iOS: Web Share API only — blob downloads open a dead tab on iOS */
-      if (navigator.share) {
-        try {
-          const f = new File([json], fileName, { type: 'text/plain' });
-          if (navigator.canShare && navigator.canShare({ files: [f] })) {
-            await navigator.share({ files: [f], title: 'ALS Backup ' + date });
-            setStatus('✓ Shared — save to Files or Notes', 'ok');
-            return;
-          }
-        } catch (e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      /* iOS share not available — clipboard */
+    if (isIOS && navigator.share) {
       try {
-        await navigator.clipboard.writeText(json);
-        setStatus('✓ Copied — paste into Notes, save as .json', 'ok');
-      } catch {
-        setStatus('Open on desktop to download backup', 'warn');
+        const f = new File([_backupJson], _backupFileName, { type: 'text/plain' });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) {
+          await navigator.share({ files: [f], title: 'ALS Backup ' + _backupDate });
+          document.getElementById('vaultSheet').classList.remove('visible');
+          setStatus('✓ Shared — save to Files or Notes', 'ok');
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
       }
+      setStatus('Share unavailable — use Copy instead', 'warn');
       return;
     }
-
-    /* Desktop / Android: blob anchor download */
-    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    /* Desktop / Android blob download */
+    const url = URL.createObjectURL(new Blob([_backupJson], { type: 'application/json' }));
     const a = document.createElement('a');
-    a.href = url; a.download = fileName;
+    a.href = url; a.download = _backupFileName;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 10000);
+    document.getElementById('vaultSheet').classList.remove('visible');
     setStatus('✓ Backup downloaded', 'ok');
   });
 
