@@ -367,7 +367,7 @@ function updateClock() {
   document.getElementById('hubEyebrow').textContent = 'SYSTEM ONLINE  ·  ALL MODULES READY';
 }
 updateClock();
-setInterval(updateClock, 5000);
+setInterval(updateClock, 60000);
 
 /* ── Live tile data ─────────────────────────────── */
 function todayKey() {
@@ -422,9 +422,9 @@ function liveData() {
 
   /* Goals — from main.html goal count */
   try {
-    const gm = JSON.parse(localStorage.getItem('gm:today'))||{};
-    const total = (gm.goals||[]).length;
-    const done  = (gm.goals||[]).filter(g=>g.done).length;
+    const goals = JSON.parse(localStorage.getItem('goals:'+tk))||[];
+    const total = goals.length;
+    const done  = goals.filter(g=>g.done).length;
     set('livMain', total>0 ? done+' / '+total+' goals done' : 'Set your goals');
   } catch(e){ set('livMain', 'Daily plan'); }
 
@@ -437,9 +437,12 @@ function liveData() {
 
   /* Finance */
   try {
-    const fin = JSON.parse(localStorage.getItem('finance_v1'))||{};
-    const nw  = fin.netWorth || fin.totalAssets || null;
-    set('livFinance', nw!=null ? '€'+Math.round(nw).toLocaleString() : 'View dashboard');
+    let nwTotal = 0;
+    ['bank','stocks','crypto','other'].forEach(c => {
+      (JSON.parse(localStorage.getItem('nw:'+c))||[]).forEach(it => { nwTotal += Number(it.amount)||0; });
+    });
+    const cur = JSON.parse(localStorage.getItem('nw_currency')) || 'CHF';
+    set('livFinance', nwTotal>0 ? cur+' '+Math.round(nwTotal).toLocaleString() : 'View dashboard');
   } catch(e){ set('livFinance','View dashboard'); }
 
   renderStatus();
@@ -479,9 +482,27 @@ function renderStatus() {
   } catch(e){}
 
   try {
+    const goals = JSON.parse(localStorage.getItem('goals:'+todayKey()))||[];
+    if(goals.length>0){
+      const done = goals.filter(g=>g.done).length;
+      const cls  = done===goals.length?'good':done>0?'warn':'idle';
+      chips.push({cls, html:'🎯 Goals <strong>'+done+'/'+goals.length+'</strong>'});
+    }
+  } catch(e){}
+
+  try {
     const ideas = JSON.parse(localStorage.getItem('ideas:items'))||[];
     const n = ideas.filter(i=>!i.done).length;
     if(n>0) chips.push({cls:'idle', html:'💡 <strong>'+n+'</strong> active idea'+(n!==1?'s':'')});
+  } catch(e){}
+
+  try {
+    let nwTotal = 0;
+    ['bank','stocks','crypto','other'].forEach(c => {
+      (JSON.parse(localStorage.getItem('nw:'+c))||[]).forEach(it => { nwTotal += Number(it.amount)||0; });
+    });
+    const cur = JSON.parse(localStorage.getItem('nw_currency')) || 'CHF';
+    if(nwTotal>0) chips.push({cls:'good', html:'📊 Net Worth <strong>'+cur+' '+Math.round(nwTotal).toLocaleString()+'</strong>'});
   } catch(e){}
 
   document.getElementById('statusStrip').innerHTML = chips.map(c=>
