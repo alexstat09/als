@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
+<script src="insights.js" defer></script>
 <script src="topbar.js" defer></script>
 <style>
 :root {
@@ -285,6 +286,87 @@ body::after {
   .hub-header { padding-left:14px; padding-right:14px; }
   .status-strip { padding:0 14px; }
 }
+
+/* ── INTELLIGENCE FEED ────────────────────────────── */
+.intel-wrap {
+  padding: 0 20px; max-width: 1100px; margin: 24px auto 0;
+}
+.intel-hdr {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.intel-hdr-label {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(125,211,252,0.45);
+}
+.intel-hdr-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(125,211,252,0.18), transparent);
+}
+.intel-hdr-ts {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.18); white-space: nowrap;
+}
+.intel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.intel-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  animation: intelIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes intelIn {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:none; }
+}
+.intel-card.type-positive { border-color: rgba(107,227,164,0.18); }
+.intel-card.type-warning  { border-color: rgba(242,192,99,0.18); }
+.intel-card.type-info     { border-color: rgba(125,211,252,0.12); }
+.intel-card.type-neutral  { border-color: rgba(255,255,255,0.08); }
+.intel-icon {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  font-family: var(--font-mono);
+}
+.type-positive .intel-icon { background: rgba(107,227,164,0.12); color: #6EE7B7; }
+.type-warning  .intel-icon { background: rgba(242,192,99,0.12);  color: #F2C063; }
+.type-info     .intel-icon { background: rgba(125,211,252,0.10); color: #7DD3FC; }
+.type-neutral  .intel-icon { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); }
+.intel-body { flex: 1; min-width: 0; }
+.intel-title {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  letter-spacing: -0.01em; margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.intel-detail {
+  font-size: 11px; color: var(--text-tertiary);
+  font-family: var(--font-mono); letter-spacing: 0.02em;
+}
+.intel-mod {
+  font-size: 9px; font-family: var(--font-mono); font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: rgba(255,255,255,0.2); align-self: flex-start;
+  padding-top: 1px; white-space: nowrap;
+}
+.intel-empty {
+  grid-column: 1/-1; text-align: center; padding: 28px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: rgba(255,255,255,0.2); letter-spacing: 0.1em;
+}
+@media(max-width:440px){
+  .intel-wrap { padding: 0 14px; }
+  .intel-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -384,6 +466,18 @@ body::after {
       <div class="tile-footer"><span class="tile-sub">Capture &amp; organise</span><span class="tile-arrow">→</span></div>
     </a>
 
+  </div>
+</div>
+
+<!-- ── INTELLIGENCE FEED ──────────────────────── -->
+<div class="intel-wrap" id="intelWrap">
+  <div class="intel-hdr">
+    <span class="intel-hdr-label">◈ Intelligence Feed</span>
+    <div class="intel-hdr-line"></div>
+    <span class="intel-hdr-ts" id="intelTs">—</span>
+  </div>
+  <div class="intel-grid" id="intelGrid">
+    <div class="intel-empty">Analysing your data…</div>
   </div>
 </div>
 
@@ -563,6 +657,50 @@ function renderStatus() {
 
 liveData();
 setInterval(liveData, 30000);
+
+/* ── Intelligence Feed ──────────────────────── */
+function renderIntelFeed() {
+  if (!window.ALS || !window.ALS.generateInsights) return;
+  const insights = window.ALS.generateInsights();
+  const grid = document.getElementById('intelGrid');
+  const ts   = document.getElementById('intelTs');
+  if (!grid) return;
+
+  const now = new Date();
+  ts.textContent = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:false });
+
+  const modLabel = {
+    goals:'GOALS', fitness:'FITNESS', caffeine:'CAFFEINE',
+    nutrition:'NUTRITION', health:'HEALTH', ideas:'IDEAS',
+    finance:'FINANCE', cross:'SYSTEM'
+  };
+
+  if (insights.length === 0) {
+    grid.innerHTML = '<div class="intel-empty">NO SIGNALS — LOG DATA TO SEE INSIGHTS</div>';
+    return;
+  }
+
+  const top = insights.slice(0, 8);
+  grid.innerHTML = top.map((ins, i) => `
+    <div class="intel-card type-${ins.type}" style="animation-delay:${i * 0.06}s">
+      <div class="intel-icon">${ins.icon}</div>
+      <div class="intel-body">
+        <div class="intel-title">${ins.title}</div>
+        <div class="intel-detail">${ins.detail}</div>
+      </div>
+      <div class="intel-mod">${modLabel[ins.module] || ins.module.toUpperCase()}</div>
+    </div>
+  `).join('');
+}
+
+/* Wait for insights.js to load (it's deferred), then render */
+if (window.ALS && window.ALS.generateInsights) {
+  renderIntelFeed();
+} else {
+  window.addEventListener('load', renderIntelFeed);
+}
+setInterval(renderIntelFeed, 60000);
+
 })();
 </script>
 </body>

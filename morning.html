@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Morning Briefing · ALS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="insights.js" defer></script>
 <script src="topbar.js" defer></script>
 <style>
 /* ── TOKENS ────────────────────────────────────────── */
@@ -397,6 +398,32 @@ body::after {
   display:inline-block;
 }
 .mb-back:hover { color:var(--cyan); border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.04); }
+
+/* ── Signals panel ─────────────────────────────────── */
+.mb-panel-signals { --accent-rgb:167,139,250; grid-column:1/-1; }
+.mb-panel-signals .mb-panel-label { color:rgba(167,139,250,.45); }
+.mb-panel-signals .mb-corner { border-color:rgba(167,139,250,0.35); }
+.mb-sig-list { display:flex; flex-direction:column; gap:8px; }
+.mb-sig-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:9px 11px; border-radius:9px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+}
+.mb-sig-item.sig-positive { border-color:rgba(107,227,164,.15); }
+.mb-sig-item.sig-warning  { border-color:rgba(242,192,99,.15); }
+.mb-sig-item.sig-info     { border-color:rgba(125,211,252,.10); }
+.mb-sig-icon {
+  font-size:11px; font-family:ui-monospace,monospace; font-weight:700;
+  min-width:22px; text-align:center; padding-top:1px;
+}
+.sig-positive .mb-sig-icon { color:#6EE7B7; }
+.sig-warning  .mb-sig-icon { color:#F2C063; }
+.sig-info     .mb-sig-icon { color:#7DD3FC; }
+.sig-neutral  .mb-sig-icon { color:rgba(255,255,255,.4); }
+.mb-sig-body { flex:1; }
+.mb-sig-title { font-size:12px; font-weight:600; color:#e8e6e0; margin-bottom:1px; }
+.mb-sig-detail { font-size:10px; font-family:ui-monospace,monospace; color:rgba(255,255,255,.3); letter-spacing:.04em; }
 </style>
 </head>
 <body>
@@ -477,6 +504,7 @@ body::after {
         <span class="mb-panel-label">INTEL</span>
       </div>
       <div class="mb-intel-row"><span class="mb-intel-key">NET WORTH</span><span class="mb-intel-val" id="intelNW">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">WORKOUTS THIS WEEK</span><span class="mb-intel-val" id="intelWorkouts">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">IDEAS PIPELINE</span><span class="mb-intel-val" id="intelIdeas">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">GOAL STREAK</span><span class="mb-intel-val" id="intelStreak">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">DAY OF YEAR</span><span class="mb-intel-val" id="intelDay">—</span></div>
@@ -529,8 +557,24 @@ body::after {
       <div class="mb-sys-row">
         <span class="mb-sys-icon">💊</span>
         <span class="mb-sys-name">HEALTH STACK</span>
-        <div class="mb-sys-bar-wrap"></div>
+        <div class="mb-sys-bar-wrap"><div class="mb-sys-bar mb-sys-bar-nut" id="sysStackBar"></div></div>
         <span class="mb-sys-val" id="sysStackVal">—</span>
+      </div>
+    </div>
+
+    <!-- signals -->
+    <div class="mb-panel mb-panel-signals">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">◈</span>
+        <span class="mb-panel-label">INTELLIGENCE SIGNALS</span>
+      </div>
+      <div class="mb-sig-list" id="mbSigList">
+        <div class="mb-sig-item sig-neutral">
+          <span class="mb-sig-icon">·</span>
+          <div class="mb-sig-body"><div class="mb-sig-title">Log data to see signals</div></div>
+        </div>
       </div>
     </div>
 
@@ -746,7 +790,13 @@ function loadSystems(){
   /* health stack */
   try{
     const stack=JSON.parse(localStorage.getItem('stack:items'))||[];
-    set('sysStackVal', stack.length>0 ? stack.length+' tracked' : '—');
+    const taken=JSON.parse(localStorage.getItem('stack:taken:'+todayKey()))||{};
+    const takenN=Object.keys(taken).length;
+    if(stack.length>0){
+      const pct=Math.round(takenN/stack.length*100);
+      setBar('sysStackBar', pct);
+      set('sysStackVal', takenN+' / '+stack.length);
+    } else { set('sysStackVal','—'); }
   } catch(e){ set('sysStackVal','—'); }
 }
 
@@ -761,6 +811,18 @@ function loadIntel(){
     const cur=JSON.parse(localStorage.getItem('nw_currency'))||'CHF';
     set('intelNW', total>0 ? cur+' '+Math.round(total).toLocaleString() : '—');
   } catch(e){ set('intelNW','—'); }
+
+  /* workouts this week */
+  try{
+    let sessions=0;
+    for(let i=0;i<7;i++){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const log=JSON.parse(localStorage.getItem('po_coach_logs:'+key))||[];
+      if(log.length>0) sessions++;
+    }
+    set('intelWorkouts', sessions+' session'+(sessions!==1?'s':''));
+  } catch(e){ set('intelWorkouts','—'); }
 
   /* ideas */
   try{
@@ -780,6 +842,24 @@ function loadIntel(){
 }
 
 function isLeapYear(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+
+/* ── Intelligence Signals ─────────────────────────── */
+function loadSignals(){
+  if(!window.ALS || !window.ALS.generateInsights) return;
+  const list=document.getElementById('mbSigList');
+  if(!list) return;
+  const insights=window.ALS.generateInsights().slice(0,5);
+  if(!insights.length) return;
+  list.innerHTML=insights.map(ins=>`
+    <div class="mb-sig-item sig-${ins.type}">
+      <span class="mb-sig-icon">${ins.icon}</span>
+      <div class="mb-sig-body">
+        <div class="mb-sig-title">${ins.title}</div>
+        <div class="mb-sig-detail">${ins.detail}</div>
+      </div>
+    </div>
+  `).join('');
+}
 
 /* ── Quote ────────────────────────────────────────── */
 const QUOTES=[
@@ -814,6 +894,8 @@ function boot(){
   loadSystems();
   loadIntel();
   loadQuote();
+  if(window.ALS && window.ALS.generateInsights){ loadSignals(); }
+  else { window.addEventListener('load', loadSignals); }
 
   const greetPre=document.getElementById('mbGreetPre');
   if(greetPre) greetPre.textContent=greetPhrase();
