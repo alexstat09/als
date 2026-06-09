@@ -3496,14 +3496,30 @@ img, video, canvas, svg { max-width: 100%; }
     r.readAsDataURL(file);
   }
 
+  function lockBodyScroll() {
+    const sy = window.scrollY;
+    document.body.dataset.scrollY = sy;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${sy}px`;
+    document.body.style.width = '100%';
+  }
+  function unlockBodyScroll() {
+    const sy = parseFloat(document.body.dataset.scrollY || 0);
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    delete document.body.dataset.scrollY;
+    window.scrollTo(0, sy);
+  }
+
   $('wtProgressLink').addEventListener('click', () => {
     photosRender();
     $('wtOverlay').classList.add('is-open');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
   });
   $('wtBack').addEventListener('click', () => {
     $('wtOverlay').classList.remove('is-open');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
   });
 
   // Take Photo: try in-browser camera, fall back to file input
