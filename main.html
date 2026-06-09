@@ -601,6 +601,59 @@ body::after {
   .gm-card { padding: 16px; }
   .gm-progress-num { font-size: 36px; }
 }
+
+/* ── Goal Completion Heatmap ─────────────────────── */
+.heat-wrap { overflow: hidden; }
+.heat-month-row { position: relative; height: 14px; margin-left: 26px; margin-bottom: 3px; }
+.heat-month-lbl {
+  position: absolute; font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; white-space: nowrap;
+}
+.heat-body { display: flex; gap: 4px; }
+.heat-day-labels {
+  display: grid; grid-template-rows: repeat(7, 11px); gap: 2px;
+  flex-shrink: 0; width: 22px;
+}
+.heat-day-labels span {
+  font-size: 8px; color: var(--text-tertiary);
+  font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  display: flex; align-items: center; line-height: 1;
+}
+.heat-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-columns: 11px;
+  grid-auto-flow: column;
+  gap: 2px;
+  overflow-x: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.heat-grid::-webkit-scrollbar { display: none; }
+.heat-cell {
+  width: 11px; height: 11px; border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  cursor: pointer; flex-shrink: 0;
+}
+.heat-cell.l1 { background: rgba(124,184,122,0.28); }
+.heat-cell.l2 { background: rgba(124,184,122,0.58); }
+.heat-cell.l3 { background: rgba(124,184,122,0.92); box-shadow: 0 0 3px rgba(124,184,122,0.45); }
+.heat-cell.lx { background: rgba(255,107,107,0.28); }
+.heat-cell.heat-future { background: rgba(255,255,255,0.03); cursor: default; pointer-events: none; }
+.heat-legend { display: flex; align-items: center; gap: 3px; margin-top: 8px; justify-content: flex-end; }
+.heat-legend-txt { font-size: 9px; color: var(--text-tertiary); font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+.heat-legend .heat-cell { cursor: default; pointer-events: none; }
+.heat-stats { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.heat-stat { font-size: 11px; color: var(--text-tertiary); }
+.heat-stat strong { color: var(--text-primary); font-weight: 700; }
+.heat-tip {
+  position: fixed; z-index: 9999;
+  background: rgba(10,10,14,0.96); border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 8px; padding: 7px 11px; font-size: 11px;
+  color: var(--text-primary); pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6); display: none;
+}
 </style>
 </head>
 <body>
@@ -707,6 +760,38 @@ body::after {
       </div>
     </div>
   </div>
+
+  <div class="section">
+    <div class="section-title">Completion History</div>
+    <div class="gm-card">
+      <div class="heat-wrap">
+        <div class="heat-month-row" id="heatMonths"></div>
+        <div class="heat-body">
+          <div class="heat-day-labels">
+            <span></span>
+            <span>Mon</span>
+            <span></span>
+            <span>Wed</span>
+            <span></span>
+            <span>Fri</span>
+            <span></span>
+          </div>
+          <div class="heat-grid" id="heatGrid"></div>
+        </div>
+        <div class="heat-legend">
+          <span class="heat-legend-txt">Less</span>
+          <div class="heat-cell"></div>
+          <div class="heat-cell l1"></div>
+          <div class="heat-cell l2"></div>
+          <div class="heat-cell l3"></div>
+          <span class="heat-legend-txt">More</span>
+        </div>
+        <div class="heat-stats" id="heatStats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="heat-tip" id="heatTip"></div>
 
 </div>
 
@@ -1308,19 +1393,120 @@ body::after {
     loadTomorrow
   );
 
+  // ---------- Heatmap ----------
+  function renderHeatmap() {
+    const grid     = document.getElementById('heatGrid');
+    const monthsEl = document.getElementById('heatMonths');
+    const statsEl  = document.getElementById('heatStats');
+    const tip      = document.getElementById('heatTip');
+    if (!grid) return;
+
+    const WEEKS = 18;
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Start from the Sunday WEEKS weeks ago
+    const dow = today.getDay(); // 0=Sun
+    const start = new Date(today);
+    start.setDate(today.getDate() - dow - (WEEKS - 1) * 7);
+
+    const CELL_W = 13; // 11px cell + 2px gap
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    let html = '';
+    let prevMonth = -1;
+    const monthMarks = [];
+    let totalDays = 0, doneDays = 0, perfectDays = 0, missedDays = 0;
+
+    const d = new Date(start);
+    for (let week = 0; week < WEEKS; week++) {
+      for (let wd = 0; wd < 7; wd++) {
+        const isFuture = d > today;
+        const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+
+        if (wd === 0 && d.getMonth() !== prevMonth) {
+          monthMarks.push({ month: d.getMonth(), col: week });
+          prevMonth = d.getMonth();
+        }
+
+        if (isFuture) {
+          html += '<div class="heat-cell heat-future"></div>';
+        } else {
+          const goals = getGoals('goals:' + key);
+          const total = goals.length;
+          const done  = goals.filter(g => g.done).length;
+          let cls = 'heat-cell';
+          if (total === 0) {
+            /* no goals logged — gray */
+          } else {
+            totalDays++;
+            const rate = done / total;
+            if (done === 0)   { cls += ' lx'; missedDays++; }
+            else if (rate < 0.5) { cls += ' l1'; doneDays++; }
+            else if (rate < 1)   { cls += ' l2'; doneDays++; }
+            else                 { cls += ' l3'; perfectDays++; doneDays++; }
+          }
+          const mo = MONTHS[d.getMonth()];
+          const dayLabel = total === 0 ? 'No goals' : done + '/' + total + ' done';
+          const wdNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          html += '<div class="' + cls + '" data-k="' + key + '" data-lbl="' + wdNames[wd] + ' ' + mo + ' ' + d.getDate() + ' — ' + dayLabel + '"></div>';
+        }
+        d.setDate(d.getDate() + 1);
+      }
+    }
+
+    grid.innerHTML = html;
+
+    // Month labels
+    monthsEl.innerHTML = monthMarks.map(m =>
+      '<span class="heat-month-lbl" style="left:' + (m.col * CELL_W) + 'px">' + MONTHS[m.month] + '</span>'
+    ).join('');
+
+    // Stats row
+    const pct = totalDays > 0 ? Math.round((perfectDays / totalDays) * 100) : 0;
+    statsEl.innerHTML =
+      '<div class="heat-stat"><strong>' + perfectDays + '</strong> perfect days</div>' +
+      '<div class="heat-stat"><strong>' + pct + '%</strong> completion rate</div>' +
+      (missedDays > 0 ? '<div class="heat-stat"><strong>' + missedDays + '</strong> missed</div>' : '');
+
+    // Tooltip: mouse
+    grid.addEventListener('mouseover', e => {
+      const cell = e.target.closest('[data-lbl]');
+      if (!cell) { tip.style.display = 'none'; return; }
+      tip.textContent = cell.dataset.lbl;
+      const r = cell.getBoundingClientRect();
+      tip.style.display = 'block';
+      tip.style.left = Math.max(4, Math.min(r.left - 4, window.innerWidth - 180)) + 'px';
+      tip.style.top  = (r.top - 34) + 'px';
+    });
+    grid.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+
+    // Tooltip: touch
+    grid.addEventListener('touchstart', e => {
+      const cell = e.target.closest('[data-lbl]');
+      if (!cell) return;
+      tip.textContent = cell.dataset.lbl;
+      const r = cell.getBoundingClientRect();
+      tip.style.display = 'block';
+      tip.style.left = Math.max(4, Math.min(r.left - 4, window.innerWidth - 180)) + 'px';
+      tip.style.top  = (r.top - 34) + 'px';
+    }, { passive: true });
+    document.addEventListener('touchend', () => { tip.style.display = 'none'; }, { passive: true });
+  }
+
   // ---------- Boot ----------
   rollover();
   processStreak();
   loadToday();
   loadTomorrow();
   renderStreak();
+  renderHeatmap();
   updateDayRing();
   setInterval(updateDayRing, 60 * 1000);
   startTicker();
 
   // Re-render when storage changes from another tab (or our bridged parent).
   window.addEventListener('storage', () => {
-    loadToday(); loadTomorrow(); renderStreak();
+    loadToday(); loadTomorrow(); renderStreak(); renderHeatmap();
   });
 })();
 </script>
