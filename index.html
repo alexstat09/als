@@ -811,32 +811,48 @@ setInterval(renderIntelFeed, 60000);
     el.textContent = keys.length + ' keys · ~' + fmtBytes(bytes) + ' stored';
   }
 
-  /* Export — uses Web Share API on iOS (only way to actually save a file),
-     falls back to anchor-download on desktop */
+  /* Export */
   document.getElementById('vaultExport').addEventListener('click', async () => {
-    try {
-      const keys = allKeys();
-      const data = { _version: 1, _exported: new Date().toISOString(), _keys: keys.length };
-      keys.forEach(k => { data[k] = localStorage.getItem(k); });
-      const json = JSON.stringify(data, null, 2);
-      const date = new Date().toISOString().slice(0, 10);
-      const fileName = 'als-backup-' + date + '.json';
-      const file = new File([json], fileName, { type: 'application/json' });
+    const keys = allKeys();
+    const data = { _version: 1, _exported: new Date().toISOString(), _keys: keys.length };
+    keys.forEach(k => { data[k] = localStorage.getItem(k); });
+    const json = JSON.stringify(data, null, 2);
+    const date = new Date().toISOString().slice(0, 10);
+    const fileName = 'als-backup-' + date + '.json';
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'ALS Dashboard Backup' });
-        setStatus('✓ Backup shared', 'ok');
-      } else {
-        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-        const a = document.createElement('a');
-        a.href = url; a.download = fileName;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setStatus('✓ Backup downloaded', 'ok');
+    /* Try 1: Web Share with text/plain file — iOS accepts this MIME type */
+    if (navigator.share) {
+      try {
+        const f = new File([json], fileName, { type: 'text/plain' });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) {
+          await navigator.share({ files: [f], title: 'ALS Dashboard Backup ' + date });
+          setStatus('✓ Backup shared — save to Files or Notes', 'ok');
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        /* fall through to next method */
       }
+    }
+
+    /* Try 2: Anchor download (desktop / Android) */
+    try {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus('✓ Backup downloaded', 'ok');
+      return;
+    } catch (e) { /* fall through */ }
+
+    /* Try 3: Copy to clipboard (last resort) */
+    try {
+      await navigator.clipboard.writeText(json);
+      setStatus('✓ Copied — paste into a text file and save as .json', 'ok');
     } catch (e) {
-      if (e.name !== 'AbortError') setStatus('Export failed: ' + e.message, 'err');
+      setStatus('Export unavailable — try on desktop Safari or Chrome', 'warn');
     }
   });
 
