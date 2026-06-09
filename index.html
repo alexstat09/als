@@ -618,7 +618,7 @@ body::after {
   <div class="vault-sheet" id="vaultSheet">
     <div class="vault-sheet-title">◈ Backup Ready</div>
     <div class="vault-sheet-stats" id="vaultSheetStats">—</div>
-    <div class="vault-sheet-tip" id="vaultSheetTip">Tap Copy, then paste into Notes or email it to yourself.</div>
+    <div class="vault-sheet-tip" id="vaultSheetTip">iOS: tap ↑ Share as File → then "Save to Files" in the share menu. Desktop: file downloads automatically.</div>
     <div class="vault-sheet-actions">
       <button class="vault-sheet-btn vault-sheet-btn-copy" id="vaultSheetCopy">⊕ Copy to Clipboard</button>
       <button class="vault-sheet-btn vault-sheet-btn-share" id="vaultSheetShare">↑ Share as File</button>
@@ -890,7 +890,7 @@ setInterval(renderIntelFeed, 60000);
     keys.forEach(k => { data[k] = localStorage.getItem(k); });
     _backupJson     = JSON.stringify(data, null, 2);
     _backupDate     = new Date().toISOString().slice(0, 10);
-    _backupFileName = 'als-backup-' + _backupDate + '.json';
+    _backupFileName = 'als-backup-' + _backupDate + '.txt';
     return { keys, data };
   }
 
@@ -946,8 +946,8 @@ setInterval(renderIntelFeed, 60000);
       setStatus('Share unavailable — use Copy instead', 'warn');
       return;
     }
-    /* Desktop / Android blob download */
-    const url = URL.createObjectURL(new Blob([_backupJson], { type: 'application/json' }));
+    /* Desktop / Android blob download — octet-stream forces download, not inline view */
+    const url = URL.createObjectURL(new Blob([_backupJson], { type: 'application/octet-stream' }));
     const a = document.createElement('a');
     a.href = url; a.download = _backupFileName;
     document.body.appendChild(a); a.click();
