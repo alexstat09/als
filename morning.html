@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#030304">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Morning Briefing · ALS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="topbar.js" defer></script>
+<style>
+/* ── TOKENS ────────────────────────────────────────── */
+:root {
+  --bg:      #030304;
+  --cyan:    #7DD3FC;
+  --green:   #6BE3A4;
+  --amber:   #F2C063;
+  --red:     #FF6B6B;
+  --text-1:  #FAFAFA;
+  --text-2:  #B8B6B0;
+  --text-3:  #76746E;
+  --font:    -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+  --mono:    ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+
+/* ── RESET ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text-2);
+  font-family:var(--font); -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%; }
+body { min-height:100vh; overflow-x:hidden; }
+a { text-decoration:none; color:inherit; }
+
+/* ── BACKGROUND ────────────────────────────────────── */
+/* ambient glow */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 70% 45% at 65% -5%,  rgba(125,211,252,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at -10% 85%, rgba(107,227,164,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 55% at 110% 110%,rgba(167,139,250,0.04) 0%, transparent 50%);
+  animation: ambBreath 14s ease-in-out infinite alternate;
+}
+@keyframes ambBreath { 0%{opacity:.7} 100%{opacity:1} }
+
+/* dot texture */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,0.013) 1px, transparent 1px);
+  background-size:3px 3px;
+}
+
+/* radar rings */
+.mb-radar {
+  position:fixed; top:50%; left:50%;
+  width:700px; height:700px;
+  margin-top:-350px; margin-left:-350px;
+  pointer-events:none; z-index:0;
+}
+.mb-radar circle { vector-effect:non-scaling-stroke; }
+
+/* radar sweep arm */
+.mb-radar-sweep-wrap {
+  position:fixed; top:50%; left:50%;
+  width:700px; height:700px;
+  margin-top:-350px; margin-left:-350px;
+  border-radius:50%; pointer-events:none; z-index:0;
+  overflow:hidden;
+}
+.mb-radar-sweep {
+  width:100%; height:100%; border-radius:50%;
+  background:conic-gradient(
+    from 0deg,
+    transparent 290deg,
+    rgba(125,211,252,0.018) 320deg,
+    rgba(125,211,252,0.06)  352deg,
+    rgba(125,211,252,0.025) 360deg
+  );
+  animation:radarSpin 6s linear infinite;
+}
+@keyframes radarSpin { to { transform:rotate(360deg); } }
+
+/* ── SHELL ─────────────────────────────────────────── */
+.mb-shell {
+  position:relative; z-index:1;
+  max-width:680px; margin:0 auto;
+  padding:16px 20px 32px;
+}
+
+/* ── SYSTEM HEADER ─────────────────────────────────── */
+.mb-sysline {
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.2em; text-transform:uppercase;
+  color:rgba(125,211,252,0.4);
+  margin-bottom:24px;
+  opacity:0; transform:translateY(6px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.mb-sysline.visible { opacity:1; transform:none; }
+.mb-sysline-sep { color:rgba(125,211,252,0.2); }
+.mb-sysline-spacer { flex:1; }
+.mb-status-dot {
+  display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--green); margin-right:5px;
+  box-shadow:0 0 6px rgba(107,227,164,.9);
+  animation:dotPulse 2.4s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%,100%{box-shadow:0 0 4px rgba(107,227,164,.7)}
+  50%{box-shadow:0 0 10px rgba(107,227,164,1),0 0 18px rgba(107,227,164,.4)}
+}
+.mb-sysline-status { display:flex; align-items:center; color:rgba(107,227,164,.6); }
+
+/* ── CLOCK ─────────────────────────────────────────── */
+.mb-clock-wrap {
+  text-align:center; margin-bottom:28px;
+  opacity:0; transform:translateY(8px);
+  transition:opacity .5s .1s ease, transform .5s .1s ease;
+}
+.mb-clock-wrap.visible { opacity:1; transform:none; }
+.mb-clock {
+  font-family:var(--mono); font-size:clamp(52px,14vw,80px);
+  font-weight:800; letter-spacing:-0.03em;
+  color:var(--text-1);
+  background:linear-gradient(135deg, #FFFFFF 0%, rgba(125,211,252,.9) 55%, rgba(107,227,164,.8) 100%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent;
+  line-height:1;
+  text-shadow:none;
+  filter:drop-shadow(0 0 20px rgba(125,211,252,.25));
+}
+.mb-date {
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:0.22em; text-transform:uppercase;
+  color:rgba(125,211,252,0.45); margin-top:6px;
+}
+
+/* ── GREETING ──────────────────────────────────────── */
+.mb-greeting-wrap {
+  text-align:center; margin-bottom:28px;
+}
+.mb-greeting-pre {
+  font-family:var(--mono); font-size:clamp(11px,2.4vw,13px);
+  font-weight:700; letter-spacing:0.28em; text-transform:uppercase;
+  color:rgba(125,211,252,0.5); margin-bottom:4px;
+  opacity:0; transform:translateY(6px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.mb-greeting-pre.visible { opacity:1; transform:none; }
+.mb-greeting-name {
+  font-size:clamp(36px,9vw,58px); font-weight:900;
+  letter-spacing:-0.04em; line-height:1;
+  color:var(--text-1); min-height:1.1em;
+}
+.mb-cursor {
+  display:inline-block; width:3px; height:.85em;
+  background:var(--cyan); vertical-align:middle;
+  animation:blink .75s step-end infinite; margin-left:2px;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── DIVIDER ───────────────────────────────────────── */
+.mb-divider {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:24px;
+  opacity:0; transition:opacity .4s ease;
+}
+.mb-divider.visible { opacity:1; }
+.mb-div-line {
+  flex:1; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(125,211,252,.2), transparent);
+}
+.mb-div-text {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.22em; text-transform:uppercase;
+  color:rgba(125,211,252,.35); white-space:nowrap;
+}
+
+/* ── PANELS GRID ───────────────────────────────────── */
+.mb-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:20px;
+}
+@media(max-width:520px) {
+  .mb-grid { grid-template-columns:1fr; }
+}
+
+/* ── PANEL BASE ────────────────────────────────────── */
+.mb-panel {
+  position:relative; border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  padding:14px 16px 15px;
+  opacity:0; transform:translateY(10px);
+  transition:opacity .45s ease, transform .45s ease,
+             border-color .2s ease, box-shadow .2s ease;
+}
+.mb-panel.visible { opacity:1; transform:none; }
+.mb-panel:hover {
+  border-color:rgba(125,211,252,0.15);
+  box-shadow:0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(125,211,252,.06);
+}
+
+/* mission panel spans both columns */
+.mb-panel-mission {
+  grid-column:1 / -1;
+}
+
+/* ── CORNER BRACKETS ───────────────────────────────── */
+.mb-corner {
+  position:absolute; width:9px; height:9px;
+  border-color:rgba(125,211,252,0.35); border-style:solid;
+}
+.mb-corner.tl { top:0;  left:0;  border-width:1px 0 0 1px; }
+.mb-corner.tr { top:0;  right:0; border-width:1px 1px 0 0; }
+.mb-corner.bl { bottom:0; left:0;  border-width:0 0 1px 1px; }
+.mb-corner.br { bottom:0; right:0; border-width:0 1px 1px 0; }
+
+/* ── PANEL HEAD ────────────────────────────────────── */
+.mb-panel-head {
+  display:flex; align-items:center; gap:6px;
+  margin-bottom:12px;
+}
+.mb-panel-icon { font-size:13px; line-height:1; }
+.mb-panel-label {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.2em; text-transform:uppercase;
+  color:rgba(125,211,252,.45); flex:1;
+}
+.mb-streak {
+  font-family:var(--mono); font-size:11px; font-weight:700;
+  color:var(--amber); letter-spacing:0.04em;
+}
+
+/* ── PHYSICAL PANEL ────────────────────────────────── */
+.mb-panel-physical { --accent-rgb:125,211,252; }
+.mb-weight-big {
+  font-family:var(--mono); font-size:32px; font-weight:800;
+  color:var(--text-1); letter-spacing:-0.03em; line-height:1;
+  margin-bottom:4px;
+  text-shadow:0 0 20px rgba(125,211,252,.3);
+}
+.mb-weight-trend {
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:0.04em; margin-bottom:10px;
+}
+.mb-weight-trend.up   { color:var(--red); }
+.mb-weight-trend.down { color:var(--green); }
+.mb-weight-trend.flat { color:var(--text-3); }
+
+.mb-sparkline {
+  width:100%; height:36px; display:block; margin-bottom:8px;
+  overflow:visible;
+}
+.spk-area { fill:url(#spkGrad); }
+.spk-line { fill:none; stroke:var(--cyan); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.spk-dot  { fill:var(--cyan); }
+
+.mb-weight-logged {
+  font-family:var(--mono); font-size:10px; color:var(--text-3);
+  letter-spacing:0.05em;
+}
+
+/* ── MISSION PANEL ─────────────────────────────────── */
+.mb-panel-mission { --accent-rgb:107,227,164; }
+.mb-panel-mission .mb-panel-label { color:rgba(107,227,164,.45); }
+.mb-panel-mission .mb-corner { border-color:rgba(107,227,164,0.35); }
+
+.mb-goals-list {
+  display:flex; flex-direction:column; gap:7px; margin-bottom:12px;
+}
+.mb-goal-row {
+  display:flex; align-items:center; gap:10px;
+}
+.mb-goal-circle {
+  width:14px; height:14px; border-radius:50%; flex-shrink:0;
+  border:1.5px solid rgba(107,227,164,0.4);
+  display:flex; align-items:center; justify-content:center;
+}
+.mb-goal-circle.done {
+  border-color:var(--green); background:rgba(107,227,164,0.15);
+}
+.mb-goal-circle.done::after {
+  content:''; width:5px; height:5px; border-radius:50%;
+  background:var(--green);
+}
+.mb-goal-text {
+  font-size:13px; color:var(--text-2); flex:1; line-height:1.35;
+}
+.mb-goal-text.done {
+  color:var(--text-3); text-decoration:line-through; text-decoration-color:rgba(255,255,255,0.2);
+}
+.mb-goal-empty {
+  font-family:var(--mono); font-size:11px; color:var(--text-3);
+  letter-spacing:0.04em; padding:8px 0;
+}
+.mb-link { color:var(--green); border-bottom:1px solid rgba(107,227,164,0.3); }
+
+.mb-goals-bar-wrap {
+  display:flex; align-items:center; gap:10px;
+}
+.mb-goals-bar {
+  flex:1; height:3px; border-radius:2px;
+  background:rgba(107,227,164,0.12);
+  overflow:hidden; position:relative;
+}
+.mb-goals-bar::after {
+  content:''; position:absolute; inset-block:0; left:0;
+  background:linear-gradient(90deg,var(--green),rgba(125,211,252,0.8));
+  border-radius:2px;
+  width:var(--pct, 0%);
+  transition:width 1s cubic-bezier(0.34,1.56,0.64,1) .8s;
+}
+.mb-goals-bar-label {
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  color:rgba(107,227,164,.6); white-space:nowrap; letter-spacing:0.06em;
+}
+
+/* ── SYSTEMS PANEL ─────────────────────────────────── */
+.mb-panel-systems { --accent-rgb:125,211,252; }
+.mb-sys-row {
+  display:flex; align-items:center; gap:8px; margin-bottom:10px;
+}
+.mb-sys-row:last-child { margin-bottom:0; }
+.mb-sys-icon { font-size:13px; flex-shrink:0; line-height:1; }
+.mb-sys-name {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.15em; color:var(--text-3); width:72px; flex-shrink:0;
+}
+.mb-sys-bar-wrap {
+  flex:1; height:3px; border-radius:2px;
+  background:rgba(255,255,255,0.06); overflow:hidden; position:relative;
+}
+.mb-sys-bar {
+  height:100%; border-radius:2px; width:0%;
+  transition:width 1s cubic-bezier(0.34,1.56,0.64,1) .9s;
+}
+.mb-sys-bar-water { background:linear-gradient(90deg,#60A5FA,#7DD3FC); }
+.mb-sys-bar-caf   { background:linear-gradient(90deg,#C9A36B,#F2C063); }
+.mb-sys-bar-nut   { background:linear-gradient(90deg,#6BE3A4,#7DD3FC); }
+.mb-sys-val {
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  color:var(--text-2); white-space:nowrap; min-width:48px; text-align:right;
+  letter-spacing:0.02em;
+}
+
+/* ── INTEL PANEL ───────────────────────────────────── */
+.mb-panel-intel { --accent-rgb:242,192,99; }
+.mb-panel-intel .mb-panel-label { color:rgba(242,192,99,.45); }
+.mb-panel-intel .mb-corner { border-color:rgba(242,192,99,0.35); }
+
+.mb-intel-row {
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:12px; margin-bottom:9px;
+}
+.mb-intel-row:last-child { margin-bottom:0; }
+.mb-intel-key {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.17em; text-transform:uppercase; color:var(--text-3);
+  white-space:nowrap;
+}
+.mb-intel-val {
+  font-family:var(--mono); font-size:12px; font-weight:700;
+  color:var(--text-1); letter-spacing:0.04em;
+  text-shadow:0 0 12px rgba(242,192,99,.2);
+}
+
+/* ── QUOTE ─────────────────────────────────────────── */
+.mb-quote {
+  text-align:center; padding:16px 0 8px;
+  font-family:var(--mono); font-size:10px; font-weight:600;
+  letter-spacing:0.18em; text-transform:uppercase;
+  color:rgba(125,211,252,.28);
+  opacity:0; transition:opacity .6s ease;
+}
+.mb-quote.visible { opacity:1; }
+
+/* ── BACK LINK ─────────────────────────────────────── */
+.mb-back-wrap {
+  text-align:center; padding-bottom:16px;
+  opacity:0; transition:opacity .6s .1s ease;
+}
+.mb-back-wrap.visible { opacity:1; }
+.mb-back {
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  letter-spacing:0.18em; text-transform:uppercase;
+  color:rgba(125,211,252,.35);
+  border:1px solid rgba(125,211,252,.12);
+  padding:8px 18px; border-radius:6px;
+  transition:color .2s, border-color .2s, background .2s;
+  display:inline-block;
+}
+.mb-back:hover { color:var(--cyan); border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.04); }
+</style>
+</head>
+<body>
+
+<!-- radar bg -->
+<svg class="mb-radar" viewBox="0 0 700 700" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="350" cy="350" r="120" fill="none" stroke="rgba(125,211,252,0.05)" stroke-width="1"/>
+  <circle cx="350" cy="350" r="220" fill="none" stroke="rgba(125,211,252,0.035)" stroke-width="1"/>
+  <circle cx="350" cy="350" r="320" fill="none" stroke="rgba(125,211,252,0.022)" stroke-width="1"/>
+  <line x1="350" y1="30" x2="350" y2="670" stroke="rgba(125,211,252,0.02)" stroke-width="0.5"/>
+  <line x1="30" y1="350" x2="670" y2="350" stroke="rgba(125,211,252,0.02)" stroke-width="0.5"/>
+</svg>
+<div class="mb-radar-sweep-wrap" aria-hidden="true">
+  <div class="mb-radar-sweep"></div>
+</div>
+
+<!-- shell -->
+<div class="mb-shell">
+
+  <!-- system status header -->
+  <div class="mb-sysline" id="mbSysline">
+    <span>ALS·01</span>
+    <span class="mb-sysline-sep">◈</span>
+    <span>MORNING BRIEFING</span>
+    <span class="mb-sysline-spacer"></span>
+    <span class="mb-sysline-status"><span class="mb-status-dot"></span>NOMINAL</span>
+  </div>
+
+  <!-- clock -->
+  <div class="mb-clock-wrap" id="mbClockWrap">
+    <div class="mb-clock" id="mbClock">00:00:00</div>
+    <div class="mb-date"  id="mbDate">—</div>
+  </div>
+
+  <!-- greeting -->
+  <div class="mb-greeting-wrap">
+    <div class="mb-greeting-pre" id="mbGreetPre">—</div>
+    <div class="mb-greeting-name" id="mbGreetName"><span class="mb-cursor"></span></div>
+  </div>
+
+  <!-- divider -->
+  <div class="mb-divider" id="mbDivider">
+    <span class="mb-div-line"></span>
+    <span class="mb-div-text">BRIEFING START</span>
+    <span class="mb-div-line"></span>
+  </div>
+
+  <!-- panels -->
+  <div class="mb-grid">
+
+    <!-- physical -->
+    <div class="mb-panel mb-panel-physical">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">⚖</span>
+        <span class="mb-panel-label">PHYSICAL STATUS</span>
+      </div>
+      <div class="mb-weight-big"   id="mbWeight">—</div>
+      <div class="mb-weight-trend" id="mbWeightTrend">—</div>
+      <svg class="mb-sparkline" id="mbSparkline" viewBox="0 0 120 36" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="spkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(125,211,252,0.28)"/>
+            <stop offset="100%" stop-color="rgba(125,211,252,0)"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="mb-weight-logged" id="mbWeightLogged">—</div>
+    </div>
+
+    <!-- intel -->
+    <div class="mb-panel mb-panel-intel">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">◇</span>
+        <span class="mb-panel-label">INTEL</span>
+      </div>
+      <div class="mb-intel-row"><span class="mb-intel-key">NET WORTH</span><span class="mb-intel-val" id="intelNW">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">IDEAS PIPELINE</span><span class="mb-intel-val" id="intelIdeas">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">GOAL STREAK</span><span class="mb-intel-val" id="intelStreak">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">DAY OF YEAR</span><span class="mb-intel-val" id="intelDay">—</span></div>
+    </div>
+
+    <!-- mission — spans full width -->
+    <div class="mb-panel mb-panel-mission">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">🎯</span>
+        <span class="mb-panel-label">TODAY'S MISSION</span>
+        <span class="mb-streak" id="mbStreak" style="display:none">🔥 <span id="mbStreakN">0</span></span>
+      </div>
+      <div class="mb-goals-list" id="mbGoalsList">
+        <div class="mb-goal-empty">No mission set · <a href="main.html" class="mb-link">Set goals →</a></div>
+      </div>
+      <div class="mb-goals-bar-wrap" id="mbGoalsBarWrap" style="display:none">
+        <div class="mb-goals-bar" id="mbGoalsBar"></div>
+        <span class="mb-goals-bar-label" id="mbGoalsBarLabel">0/0</span>
+      </div>
+    </div>
+
+    <!-- systems -->
+    <div class="mb-panel mb-panel-systems" style="grid-column:1/-1">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">◈</span>
+        <span class="mb-panel-label">SYSTEMS STATUS</span>
+      </div>
+      <div class="mb-sys-row">
+        <span class="mb-sys-icon">💧</span>
+        <span class="mb-sys-name">HYDRATION</span>
+        <div class="mb-sys-bar-wrap"><div class="mb-sys-bar mb-sys-bar-water" id="sysWaterBar"></div></div>
+        <span class="mb-sys-val" id="sysWaterVal">—</span>
+      </div>
+      <div class="mb-sys-row">
+        <span class="mb-sys-icon">☕</span>
+        <span class="mb-sys-name">CAFFEINE</span>
+        <div class="mb-sys-bar-wrap"><div class="mb-sys-bar mb-sys-bar-caf" id="sysCafBar"></div></div>
+        <span class="mb-sys-val" id="sysCafVal">—</span>
+      </div>
+      <div class="mb-sys-row">
+        <span class="mb-sys-icon">🥗</span>
+        <span class="mb-sys-name">NUTRITION</span>
+        <div class="mb-sys-bar-wrap"><div class="mb-sys-bar mb-sys-bar-nut" id="sysNutBar"></div></div>
+        <span class="mb-sys-val" id="sysNutVal">—</span>
+      </div>
+      <div class="mb-sys-row">
+        <span class="mb-sys-icon">💊</span>
+        <span class="mb-sys-name">HEALTH STACK</span>
+        <div class="mb-sys-bar-wrap"></div>
+        <span class="mb-sys-val" id="sysStackVal">—</span>
+      </div>
+    </div>
+
+  </div><!-- /mb-grid -->
+
+  <!-- quote -->
+  <div class="mb-quote" id="mbQuote"></div>
+
+  <!-- back -->
+  <div class="mb-back-wrap" id="mbBackWrap">
+    <a href="index.html" class="mb-back">← RETURN TO HUB</a>
+  </div>
+
+</div><!-- /mb-shell -->
+
+<script>
+(function(){
+'use strict';
+
+/* ── Helpers ──────────────────────────────────────── */
+function todayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dawn(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function dayOfYear(){
+  const now=new Date(), start=new Date(now.getFullYear(),0,0);
+  return Math.floor((now-start)/86400000);
+}
+function fmtRelDate(key){
+  const d=new Date(key+'T00:00:00');
+  const diff=Math.round((new Date()-d)/86400000);
+  if(diff===0) return 'logged today';
+  if(diff===1) return 'logged yesterday';
+  return 'logged '+diff+'d ago';
+}
+
+/* ── Clock ────────────────────────────────────────── */
+function startClock(){
+  const clockEl=document.getElementById('mbClock');
+  const dateEl=document.getElementById('mbDate');
+  function tick(){
+    const now=new Date();
+    const hh=String(now.getHours()).padStart(2,'0');
+    const mm=String(now.getMinutes()).padStart(2,'0');
+    const ss=String(now.getSeconds()).padStart(2,'0');
+    if(clockEl) clockEl.textContent=hh+':'+mm+':'+ss;
+    if(dateEl){
+      const wd=['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][now.getDay()];
+      const mo=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getMonth()];
+      dateEl.textContent=wd+'  ·  '+String(now.getDate()).padStart(2,'0')+' '+mo+' '+now.getFullYear();
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ── Typewriter ───────────────────────────────────── */
+function typewriter(el, text, speed, cb){
+  let i=0;
+  const cursor=document.createElement('span');
+  cursor.className='mb-cursor';
+  el.innerHTML='';
+  el.appendChild(cursor);
+  function next(){
+    if(i<text.length){
+      el.insertBefore(document.createTextNode(text[i]),cursor);
+      i++;
+      setTimeout(next, speed+(Math.random()*30-15));
+    } else {
+      setTimeout(()=>{ cursor.remove(); if(cb) cb(); }, 400);
+    }
+  }
+  next();
+}
+
+/* ── Greeting phrase ──────────────────────────────── */
+function greetPhrase(){
+  const h=new Date().getHours();
+  if(h<5)  return 'WORKING LATE,';
+  if(h<12) return 'GOOD MORNING,';
+  if(h<17) return 'GOOD AFTERNOON,';
+  if(h<21) return 'GOOD EVENING,';
+  return 'GOOD NIGHT,';
+}
+
+/* ── Physical ─────────────────────────────────────── */
+function loadPhysical(){
+  try{
+    const wts=(JSON.parse(localStorage.getItem('po_coach_weights'))||[]);
+    if(!wts.length){ set('mbWeight','—'); set('mbWeightLogged','No weigh-ins yet'); return; }
+    const last=wts[wts.length-1];
+    set('mbWeight', last.weight+' kg');
+    set('mbWeightLogged', fmtRelDate(last.dateKey));
+
+    /* trend vs 7-day avg */
+    const recent=wts.slice(-7);
+    if(recent.length>=2){
+      const prev=recent.slice(0,-1).reduce((s,e)=>s+e.weight,0)/(recent.length-1);
+      const diff=(last.weight-prev).toFixed(1);
+      const el=document.getElementById('mbWeightTrend');
+      if(+diff<-0.05){
+        el.textContent='↓ '+Math.abs(diff)+' kg vs 7d avg';
+        el.className='mb-weight-trend down';
+      } else if(+diff>0.05){
+        el.textContent='↑ +'+diff+' kg vs 7d avg';
+        el.className='mb-weight-trend up';
+      } else {
+        el.textContent='→ Stable vs 7d avg';
+        el.className='mb-weight-trend flat';
+      }
+    }
+
+    /* sparkline */
+    renderSparkline(wts.slice(-9));
+  } catch(e){ set('mbWeight','—'); }
+}
+
+function renderSparkline(pts){
+  const svg=document.getElementById('mbSparkline');
+  if(!svg||!pts.length) return;
+  const weights=pts.map(p=>p.weight);
+  const min=Math.min(...weights), max=Math.max(...weights);
+  const range=max-min||1;
+  const n=weights.length;
+  const W=120, H=32, pad=3;
+  const coords=weights.map((w,i)=>{
+    const x=n===1?W/2:pad+(W-pad*2)*i/(n-1);
+    const y=H-(pad+(H-pad*2)*(w-min)/range);
+    return [x,y];
+  });
+  const poly=coords.map(c=>c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const areaPath='M '+coords[0][0].toFixed(1)+' '+H+' L '+
+    coords.map(c=>c[0].toFixed(1)+' '+c[1].toFixed(1)).join(' L ')+
+    ' L '+coords[coords.length-1][0].toFixed(1)+' '+H+' Z';
+  svg.innerHTML=`
+    <defs>
+      <linearGradient id="spkGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(125,211,252,0.28)"/>
+        <stop offset="100%" stop-color="rgba(125,211,252,0)"/>
+      </linearGradient>
+    </defs>
+    <path class="spk-area" d="${areaPath}"/>
+    <polyline class="spk-line" points="${poly}"/>
+    <circle class="spk-dot" cx="${coords[coords.length-1][0].toFixed(1)}" cy="${coords[coords.length-1][1].toFixed(1)}" r="2.2"/>
+  `;
+}
+
+/* ── Mission ──────────────────────────────────────── */
+function loadMission(){
+  try{
+    const goals=JSON.parse(localStorage.getItem('goals:'+todayKey()))||[];
+    const streak=JSON.parse(localStorage.getItem('goal_streak_v1'))||{count:0};
+
+    if(streak.count>0){
+      const el=document.getElementById('mbStreak');
+      if(el){ el.style.display=''; document.getElementById('mbStreakN').textContent=streak.count; }
+    }
+
+    if(!goals.length) return;
+    const done=goals.filter(g=>g.done).length;
+    const listEl=document.getElementById('mbGoalsList');
+    listEl.innerHTML=goals.map(g=>`
+      <div class="mb-goal-row">
+        <div class="mb-goal-circle${g.done?' done':''}"></div>
+        <span class="mb-goal-text${g.done?' done':''}">${escHtml(g.text||'')}</span>
+      </div>`).join('');
+
+    const barWrap=document.getElementById('mbGoalsBarWrap');
+    if(barWrap){
+      barWrap.style.display='flex';
+      const pct=Math.round(done/goals.length*100);
+      const bar=document.getElementById('mbGoalsBar');
+      if(bar) bar.style.setProperty('--pct',pct+'%');
+      set('mbGoalsBarLabel', done+' / '+goals.length+' complete');
+    }
+  } catch(e){}
+}
+
+/* ── Systems ──────────────────────────────────────── */
+function loadSystems(){
+  /* water */
+  try{
+    const pw=JSON.parse(localStorage.getItem('po_water_v1'))||{};
+    const done=(pw.logs||{})[todayKey()]||0;
+    const wKg=pw.weightUnit==='lb'?(pw.profile?.weightKg||75)/2.20462:(pw.profile?.weightKg||75);
+    const total=Math.max(1,Math.ceil(wKg*35/(pw.bottleMl||500)));
+    const pct=Math.min(100,Math.round(done/total*100));
+    setBar('sysWaterBar',pct);
+    set('sysWaterVal', done+' / '+total);
+  } catch(e){ set('sysWaterVal','—'); }
+
+  /* caffeine */
+  try{
+    const logs=(JSON.parse(localStorage.getItem('caf:logs'))||[]).filter(l=>new Date(l.ts)>=dawn());
+    const mg=logs.reduce((s,l)=>s+l.mg,0);
+    const pct=Math.min(100,Math.round(mg/400*100));
+    setBar('sysCafBar',pct);
+    set('sysCafVal', mg>0 ? mg+' mg' : '0 mg');
+  } catch(e){ set('sysCafVal','—'); }
+
+  /* nutrition */
+  try{
+    const logs=(JSON.parse(localStorage.getItem('nut:logs'))||[]).filter(l=>new Date(l.ts)>=dawn());
+    const kcal=Math.round(logs.reduce((s,l)=>s+(l.kcal||0),0));
+    const prof=JSON.parse(localStorage.getItem('nut:profile'))||{};
+    const target=prof.kcalTarget||2400;
+    const pct=Math.min(100,Math.round(kcal/target*100));
+    setBar('sysNutBar',pct);
+    set('sysNutVal', kcal>0 ? kcal+' kcal' : '0 kcal');
+  } catch(e){ set('sysNutVal','—'); }
+
+  /* health stack */
+  try{
+    const stack=JSON.parse(localStorage.getItem('stack:items'))||[];
+    set('sysStackVal', stack.length>0 ? stack.length+' tracked' : '—');
+  } catch(e){ set('sysStackVal','—'); }
+}
+
+/* ── Intel ────────────────────────────────────────── */
+function loadIntel(){
+  /* net worth */
+  try{
+    let total=0;
+    ['bank','stocks','crypto','other'].forEach(c=>{
+      (JSON.parse(localStorage.getItem('nw:'+c))||[]).forEach(it=>{ total+=Number(it.amount)||0; });
+    });
+    const cur=JSON.parse(localStorage.getItem('nw_currency'))||'CHF';
+    set('intelNW', total>0 ? cur+' '+Math.round(total).toLocaleString() : '—');
+  } catch(e){ set('intelNW','—'); }
+
+  /* ideas */
+  try{
+    const ideas=JSON.parse(localStorage.getItem('ideas:items'))||[];
+    const active=ideas.filter(i=>!i.done).length;
+    set('intelIdeas', active+' active');
+  } catch(e){ set('intelIdeas','—'); }
+
+  /* streak */
+  try{
+    const s=JSON.parse(localStorage.getItem('goal_streak_v1'))||{count:0};
+    set('intelStreak', s.count>0 ? s.count+' day'+(s.count!==1?'s':'') : '0 days');
+  } catch(e){ set('intelStreak','—'); }
+
+  /* day of year */
+  set('intelDay', dayOfYear()+' of '+(isLeapYear(new Date().getFullYear())?366:365));
+}
+
+function isLeapYear(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+
+/* ── Quote ────────────────────────────────────────── */
+const QUOTES=[
+  'DISCIPLINE IS THE BRIDGE BETWEEN GOALS AND ACCOMPLISHMENT.',
+  'EVERY DAY IS A NEW MISSION. EXECUTE.',
+  'SMALL WINS COMPOUND. SHOW UP DAILY.',
+  'THE SYSTEM WORKS WHEN YOU WORK THE SYSTEM.',
+  'MOMENTUM IS BUILT ONE REP AT A TIME.',
+  'CLEAR MIND. STRONG BODY. SHARP FOCUS.',
+  'WHAT YOU DO TODAY IS YOUR LEGACY TOMORROW.',
+  'ELITE PERFORMANCE IS A DAILY CHOICE.',
+  'SYSTEMS BEAT GOALS. HABITS BEAT MOTIVATION.',
+  'CONTROL WHAT YOU CAN. IGNORE THE REST.',
+  'DATA DOESN\'T LIE. TRACK EVERYTHING.',
+  'PROGRESS IS INVISIBLE UNTIL IT ISN\'T.',
+];
+function loadQuote(){
+  const q=QUOTES[dayOfYear()%QUOTES.length];
+  set('mbQuote', '◈  '+q+'  ◈');
+}
+
+/* ── DOM helpers ──────────────────────────────────── */
+function set(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt||''; }
+function setBar(id,pct){ const el=document.getElementById(id); if(el) el.style.width=pct+'%'; }
+function escHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* ── Boot sequence ────────────────────────────────── */
+function boot(){
+  startClock();
+  loadPhysical();
+  loadMission();
+  loadSystems();
+  loadIntel();
+  loadQuote();
+
+  const greetPre=document.getElementById('mbGreetPre');
+  if(greetPre) greetPre.textContent=greetPhrase();
+
+  /* staggered reveal */
+  setTimeout(()=>{ document.getElementById('mbSysline').classList.add('visible'); }, 120);
+  setTimeout(()=>{ document.getElementById('mbClockWrap').classList.add('visible'); }, 260);
+  setTimeout(()=>{
+    if(greetPre) greetPre.classList.add('visible');
+  }, 440);
+  setTimeout(()=>{
+    const nameEl=document.getElementById('mbGreetName');
+    if(nameEl){
+      typewriter(nameEl,'ALEX.',75,()=>{
+        document.getElementById('mbDivider').classList.add('visible');
+        const panels=document.querySelectorAll('.mb-panel');
+        panels.forEach((p,i)=>setTimeout(()=>p.classList.add('visible'), i*130));
+        const after=panels.length*130+280;
+        setTimeout(()=>{
+          document.getElementById('mbQuote').classList.add('visible');
+          document.getElementById('mbBackWrap').classList.add('visible');
+        }, after);
+      });
+    }
+  }, 640);
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',boot,{once:true});
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>
