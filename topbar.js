@@ -140,7 +140,7 @@ html, body { -webkit-text-size-adjust: 100%; }
 .modal-bg, .modal, .po-modal-bg, .po-modal, .wt-overlay, .wt-viewer {
   overscroll-behavior: contain;
 }
-body.topbar-modal-open { overflow: hidden; touch-action: none; }
+body.topbar-modal-open { overflow: hidden; }
 /* ── PAGE TRANSITIONS ─────────────────────────────────── */
 body { animation: _tbIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
 @keyframes _tbIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
