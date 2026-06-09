@@ -672,6 +672,69 @@ body::after {
   color: var(--text-tertiary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
 }
 .qe-meal-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+
+/* ── MFP Paste Tab ──────────────────────────────────── */
+.mfp-paste-area {
+  width: 100%; min-height: 150px; padding: 14px;
+  background: rgba(0,0,0,0.30); border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px; color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
+  resize: vertical; outline: none; margin-bottom: 10px;
+  transition: border-color 0.2s; display: block;
+}
+.mfp-paste-area:focus { border-color: rgba(124,184,122,0.45); }
+.mfp-paste-area::placeholder { color: var(--text-tertiary); font-family: var(--font); font-size: 13px; line-height: 1.5; }
+.mfp-parse-btn {
+  width: 100%; padding: 13px; border-radius: 11px; margin-bottom: 12px;
+  background: rgba(124,184,122,0.12); border: 1px solid rgba(124,184,122,0.30);
+  color: #7CB87A; font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.mfp-parse-btn:hover { background: rgba(124,184,122,0.22); border-color: rgba(124,184,122,0.55); }
+.mfp-preview {
+  background: rgba(0,0,0,0.20); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; padding: 16px; margin-bottom: 12px;
+}
+.mfp-preview-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 12px; font-family: var(--font-mono);
+}
+.mfp-preview-macros {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px;
+}
+.mfp-macro-chip { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 8px; text-align: center; border: 1px solid rgba(255,255,255,0.07); }
+.mfp-macro-val { font-size: 20px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
+.mfp-macro-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 4px; }
+.mfp-macro-chip.kcal .mfp-macro-val { color: #FAFAFA; }
+.mfp-macro-chip.prot .mfp-macro-val { color: var(--col-protein); }
+.mfp-macro-chip.carb .mfp-macro-val { color: var(--col-carbs); }
+.mfp-macro-chip.fat  .mfp-macro-val { color: var(--col-fat); }
+.mfp-micro-section-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px;
+}
+.mfp-micro-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+@media (max-width: 400px) { .mfp-micro-grid { grid-template-columns: repeat(2,1fr); } }
+.mfp-micro-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 10px; }
+.mfp-micro-val { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.mfp-micro-lbl { font-size: 9px; color: var(--text-tertiary); margin-top: 2px; }
+.mfp-apply-btn {
+  width: 100%; padding: 14px; border: 0; border-radius: 11px;
+  background: linear-gradient(180deg,#FFFFFF 0%,#E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35);
+  transition: transform 0.1s, filter 0.15s;
+}
+.mfp-apply-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.mfp-parse-err {
+  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25);
+  border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #FF6B6B;
+  line-height: 1.6; margin-bottom: 10px;
+}
+.mfp-meals-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-bottom: 14px; }
+.mfp-meal-chip { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 8px 10px; }
+.mfp-meal-chip-name { font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
+.mfp-meal-chip-nums { font-size: 11px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -2070,7 +2133,8 @@ function handleMFPFile(file) {
 }
 
 /* ── MFP Import render ──────────────────────────────── */
-let importTab = 'quick';   // 'quick' | 'csv'
+let importTab = 'paste';   // 'paste' | 'csv'
+let _parsedMFP = null;     // last parsed result from paste tab
 
 function renderImport() {
   const el = document.getElementById('mfpImportZone');
@@ -2092,46 +2156,20 @@ function renderImport() {
 
   const tabsHtml = `
     <div class="import-tabs">
-      <button class="import-tab ${importTab==='quick'?'active':''}" data-itab="quick">✏️ Quick Entry</button>
+      <button class="import-tab ${importTab==='paste'?'active':''}" data-itab="paste">📋 Paste from MFP</button>
       <button class="import-tab ${importTab==='csv'?'active':''}"   data-itab="csv">📂 CSV File</button>
     </div>`;
 
   let bodyHtml = '';
 
-  if (importTab === 'quick') {
+  if (importTab === 'paste') {
     bodyHtml = `
-      <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 14px;line-height:1.6;">
-        Open MFP → tap <strong style="color:var(--text-primary)">Diary</strong> → scroll to the bottom → you'll see your daily totals. Type them in below.
+      <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 12px;line-height:1.6;">
+        In MFP app → <strong style="color:var(--text-primary)">Nutrition</strong> tab → select all &amp; copy. Or copy your diary totals. Paste everything below — even messy text works.
       </p>
-
-      <div style="margin-bottom:10px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Daily Totals</div>
-      <div class="quick-entry-grid">
-        <div class="qe-field"><label class="qe-label">Calories</label><input class="qe-input" id="qeKcal" type="number" min="0" placeholder="e.g. 2100"></div>
-        <div class="qe-field"><label class="qe-label">Protein (g)</label><input class="qe-input" id="qeP" type="number" min="0" placeholder="e.g. 160"></div>
-        <div class="qe-field"><label class="qe-label">Carbs (g)</label><input class="qe-input" id="qeC" type="number" min="0" placeholder="e.g. 240"></div>
-        <div class="qe-field"><label class="qe-label">Fat (g)</label><input class="qe-input" id="qeF" type="number" min="0" placeholder="e.g. 70"></div>
-      </div>
-
-      <div style="margin-bottom:10px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Optional extras (from MFP Nutrients view)</div>
-      <div class="qe-optional-row">
-        <div class="qe-field"><label class="qe-label">Fiber (g)</label><input class="qe-input" id="qeFiber" type="number" min="0" placeholder="—"></div>
-        <div class="qe-field"><label class="qe-label">Sugar (g)</label><input class="qe-input" id="qeSugar" type="number" min="0" placeholder="—"></div>
-        <div class="qe-field"><label class="qe-label">Sodium (mg)</label><input class="qe-input" id="qeSodium" type="number" min="0" placeholder="—"></div>
-      </div>
-
-      <div style="margin-bottom:12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);">Breakdown by meal (optional — for MPS tracking)</div>
-      ${['breakfast','lunch','dinner','snacks'].map(meal => `
-        <div class="qe-meal-section">
-          <div class="qe-meal-label">${MEAL_INFO[meal].emoji} ${MEAL_INFO[meal].label}</div>
-          <div class="qe-meal-row">
-            <div class="qe-field"><label class="qe-label">kcal</label><input class="qe-input" id="qe_${meal}_kcal" type="number" min="0" placeholder="—"></div>
-            <div class="qe-field"><label class="qe-label">P g</label><input class="qe-input" id="qe_${meal}_p" type="number" min="0" placeholder="—"></div>
-            <div class="qe-field"><label class="qe-label">C g</label><input class="qe-input" id="qe_${meal}_c" type="number" min="0" placeholder="—"></div>
-            <div class="qe-field"><label class="qe-label">F g</label><input class="qe-input" id="qe_${meal}_f" type="number" min="0" placeholder="—"></div>
-          </div>
-        </div>`).join('')}
-
-      <button class="qe-import-btn" id="qeImportBtn">Generate Debrief →</button>`;
+      <textarea class="mfp-paste-area" id="mfpPasteArea" placeholder="Paste MFP text here…&#10;&#10;Example:&#10;Calories 2,100&#10;Carbohydrates 240g&#10;Fat 65g&#10;Protein 165g&#10;Fiber 28g&#10;Sodium 2,400mg"></textarea>
+      <div id="mfpParseResult"></div>
+      <button class="mfp-parse-btn" id="mfpParseBtn">◈ Parse Nutrition</button>`;
   } else {
     bodyHtml = `
       <p style="font-size:12px;color:var(--text-tertiary);margin:0 0 14px;line-height:1.6;">
@@ -2159,6 +2197,163 @@ function renderImport() {
     }
     if (input) input.addEventListener('change', e => handleMFPFile(e.target.files[0]));
   }
+
+  // Paste tab: auto-parse after paste, and wire parse button
+  if (importTab === 'paste') {
+    const ta = document.getElementById('mfpPasteArea');
+    if (ta) {
+      ta.addEventListener('paste', () => setTimeout(runMFPParse, 80));
+      ta.addEventListener('input', () => { if (_parsedMFP) _parsedMFP = null; });
+    }
+  }
+}
+
+/* ── MFP text parser ──────────────────────────────── */
+function parseMFPText(raw) {
+  if (!raw || !raw.trim()) return null;
+
+  // Remove thousands commas: "2,100" → "2100"
+  const text = raw.replace(/(\d),(\d{3})/g, '$1$2');
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Find a number after a label on the same line, or on the very next line
+  function grab(pats) {
+    for (let i = 0; i < lines.length; i++) {
+      const low = lines[i].toLowerCase().replace(/,/g, '');
+      for (const pat of pats) {
+        const re = new RegExp(pat, 'i');
+        if (re.test(low)) {
+          // number on same line?
+          const sameNum = low.match(/(\d+(?:\.\d+)?)\s*(?:g|mg|mcg|%|kcal|cal)?(?:\s|$|\/)/);
+          if (sameNum) return parseFloat(sameNum[1]);
+          // number on next line?
+          if (i + 1 < lines.length) {
+            const nxt = lines[i+1].replace(/,/g, '').match(/^(\d+(?:\.\d+)?)/);
+            if (nxt) return parseFloat(nxt[1]);
+          }
+        }
+      }
+    }
+    // Fallback: try inline regex on full text
+    for (const pat of pats) {
+      const re = new RegExp(pat + '[\\s:=\\t,/]*(\\d+(?:\\.\\d+)?)', 'i');
+      const m = text.match(re);
+      if (m) return parseFloat(m[1]);
+    }
+    return 0;
+  }
+
+  const r = {
+    kcal: grab(['calori', 'energy', '\\bkcal\\b', '\\bcal\\b']),
+    p:    grab(['protein']),
+    c:    grab(['carbohydrate', 'total carb', '\\bcarbs\\b']),
+    f:    grab(['total fat', '\\bfat\\b']),
+    fiber:       grab(['dietary fiber', 'fiber', 'fibre']),
+    sugar:       grab(['total sugar', 'sugars', 'sugar']),
+    sodium:      grab(['sodium']),
+    cholesterol: grab(['cholesterol']),
+    potassium:   grab(['potassium']),
+    satFat:      grab(['saturated fat', 'sat\\.? fat']),
+    transFat:    grab(['trans fat', 'trans-fat']),
+    vitA:        grab(['vitamin a', 'vit\\.? a(?!c)']),
+    vitC:        grab(['vitamin c', 'vit\\.? c']),
+    vitD:        grab(['vitamin d', 'vit\\.? d']),
+    vitB12:      grab(['vitamin b-?12', 'b-?12', 'cobalamin']),
+    calcium:     grab(['calcium']),
+    iron:        grab(['\\biron\\b']),
+    magnesium:   grab(['magnesium']),
+    zinc:        grab(['\\bzinc\\b']),
+  };
+
+  // Require at least calories or protein to consider a valid parse
+  if (!r.kcal && !r.p) return null;
+  return r;
+}
+
+function runMFPParse() {
+  const ta  = document.getElementById('mfpPasteArea');
+  const out = document.getElementById('mfpParseResult');
+  if (!ta || !out) return;
+
+  const parsed = parseMFPText(ta.value);
+  if (!parsed) {
+    out.innerHTML = `<div class="mfp-parse-err">
+      Couldn't find nutrition data. Make sure you copy from MFP's <strong>Nutrition</strong> tab or your diary totals row, then try again.
+    </div>`;
+    _parsedMFP = null;
+    return;
+  }
+
+  _parsedMFP = parsed;
+
+  const g = v => v > 0 ? `${Math.round(v)}g` : '—';
+  const mg = v => v > 0 ? `${Math.round(v)}mg` : null;
+  const pct = v => v > 0 ? `${Math.round(v)}%` : null;
+
+  const micros = [
+    { lbl: 'Fiber',       val: g(parsed.fiber) },
+    { lbl: 'Sugar',       val: g(parsed.sugar) },
+    { lbl: 'Sodium',      val: mg(parsed.sodium) },
+    { lbl: 'Cholesterol', val: mg(parsed.cholesterol) },
+    { lbl: 'Potassium',   val: mg(parsed.potassium) },
+    { lbl: 'Sat. Fat',    val: g(parsed.satFat) },
+    { lbl: 'Trans Fat',   val: g(parsed.transFat) },
+    { lbl: 'Calcium',     val: pct(parsed.calcium) || mg(parsed.calcium) },
+    { lbl: 'Iron',        val: pct(parsed.iron) || mg(parsed.iron) },
+    { lbl: 'Magnesium',   val: mg(parsed.magnesium) || g(parsed.magnesium) },
+    { lbl: 'Zinc',        val: mg(parsed.zinc) || g(parsed.zinc) },
+    { lbl: 'Vit A',       val: pct(parsed.vitA) },
+    { lbl: 'Vit C',       val: pct(parsed.vitC) },
+    { lbl: 'Vit D',       val: pct(parsed.vitD) || mg(parsed.vitD) },
+    { lbl: 'Vit B12',     val: pct(parsed.vitB12) || mg(parsed.vitB12) },
+  ].filter(m => m.val && m.val !== '—' && m.val !== null);
+
+  const microsHtml = micros.length > 0 ? `
+    <div class="mfp-micro-section-lbl">Micronutrients</div>
+    <div class="mfp-micro-grid">
+      ${micros.map(m => `
+        <div class="mfp-micro-item">
+          <div class="mfp-micro-val">${m.val}</div>
+          <div class="mfp-micro-lbl">${m.lbl}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  out.innerHTML = `
+    <div class="mfp-preview">
+      <div class="mfp-preview-title">◈ Parsed — does this look right?</div>
+      <div class="mfp-preview-macros">
+        <div class="mfp-macro-chip kcal"><div class="mfp-macro-val">${Math.round(parsed.kcal)||'—'}</div><div class="mfp-macro-lbl">kcal</div></div>
+        <div class="mfp-macro-chip prot"><div class="mfp-macro-val">${g(parsed.p)}</div><div class="mfp-macro-lbl">protein</div></div>
+        <div class="mfp-macro-chip carb"><div class="mfp-macro-val">${g(parsed.c)}</div><div class="mfp-macro-lbl">carbs</div></div>
+        <div class="mfp-macro-chip fat"><div class="mfp-macro-val">${g(parsed.f)}</div><div class="mfp-macro-lbl">fat</div></div>
+      </div>
+      ${microsHtml}
+    </div>
+    <button class="mfp-apply-btn" id="mfpApplyBtn">✓ Apply to Today</button>`;
+}
+
+function applyPasteEntry() {
+  if (!_parsedMFP) return;
+  const d = _parsedMFP;
+  logs = [{
+    id: Date.now(), meal: 'breakfast',
+    foodName: "Today's Food (MFP)",
+    emoji: '🍽️', portionLabel: 'from MyFitnessPal',
+    portionG: 0,
+    kcal: d.kcal, p: d.p, c: d.c, f: d.f,
+    fiber: d.fiber, sugar: d.sugar, satFat: d.satFat || 0, sodium: d.sodium,
+    micros: {
+      cholesterol: d.cholesterol, potassium: d.potassium,
+      vitA: d.vitA, vitC: d.vitC, vitD: d.vitD, vitB12: d.vitB12,
+      calcium: d.calcium, iron: d.iron, magnesium: d.magnesium, zinc: d.zinc,
+      transFat: d.transFat,
+    },
+    ts: new Date().toISOString()
+  }];
+  mfpImported = true;
+  _parsedMFP = null;
+  saveLogs();
+  rerender();
 }
 
 function applyQuickEntry() {
@@ -2616,8 +2811,9 @@ function initEvents() {
     // Import tab switch
     const itab = e.target.closest('[data-itab]');
     if (itab) { importTab = itab.dataset.itab; renderImport(); return; }
-    // Quick entry submit
-    if (e.target.id === 'qeImportBtn') { applyQuickEntry(); return; }
+    // Paste tab: parse button and apply button
+    if (e.target.id === 'mfpParseBtn') { runMFPParse(); return; }
+    if (e.target.id === 'mfpApplyBtn') { applyPasteEntry(); return; }
 
     // Food buttons → open portion sheet
     const fb = e.target.closest('.food-btn, .recent-chip');
