@@ -367,6 +367,70 @@ body::after {
   .intel-wrap { padding: 0 14px; }
   .intel-grid { grid-template-columns: 1fr; }
 }
+
+/* ── DATA VAULT ──────────────────────────────────── */
+.vault-wrap {
+  padding: 0 20px; max-width: 1100px; margin: 20px auto 0;
+}
+.vault-hdr {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.vault-hdr-label {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+}
+.vault-hdr-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+}
+.vault-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.vault-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 9px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  cursor: pointer; border: 1px solid; transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.vault-btn-export {
+  background: rgba(107,227,164,0.06);
+  border-color: rgba(107,227,164,0.22);
+  color: rgba(107,227,164,0.75);
+}
+.vault-btn-export:hover {
+  background: rgba(107,227,164,0.12);
+  border-color: rgba(107,227,164,0.45);
+  color: #6EE7B7;
+  box-shadow: 0 0 14px rgba(107,227,164,0.1);
+}
+.vault-btn-import {
+  background: rgba(125,211,252,0.05);
+  border-color: rgba(125,211,252,0.18);
+  color: rgba(125,211,252,0.6);
+}
+.vault-btn-import:hover {
+  background: rgba(125,211,252,0.10);
+  border-color: rgba(125,211,252,0.38);
+  color: #7DD3FC;
+  box-shadow: 0 0 14px rgba(125,211,252,0.1);
+}
+.vault-status {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.3); letter-spacing: 0.08em;
+  transition: color .3s;
+}
+.vault-status.ok   { color: rgba(107,227,164,0.7); }
+.vault-status.warn { color: rgba(242,192,99,0.7); }
+.vault-status.err  { color: rgba(255,107,107,0.7); }
+.vault-meta {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.18); margin-top: 8px; letter-spacing: 0.06em;
+}
+@media(max-width:440px){ .vault-wrap { padding: 0 14px; } }
 </style>
 </head>
 <body>
@@ -479,6 +543,21 @@ body::after {
   <div class="intel-grid" id="intelGrid">
     <div class="intel-empty">Analysing your data…</div>
   </div>
+</div>
+
+<!-- ── DATA VAULT ──────────────────────────────── -->
+<div class="vault-wrap">
+  <div class="vault-hdr">
+    <span class="vault-hdr-label">◈ Data Vault</span>
+    <div class="vault-hdr-line"></div>
+  </div>
+  <div class="vault-row">
+    <button class="vault-btn vault-btn-export" id="vaultExport">↓ Export Backup</button>
+    <button class="vault-btn vault-btn-import" id="vaultImport">↑ Restore Backup</button>
+    <input type="file" id="vaultFile" accept=".json" style="display:none">
+    <span class="vault-status" id="vaultStatus"></span>
+  </div>
+  <div class="vault-meta" id="vaultMeta"></div>
 </div>
 
 <script>
@@ -700,6 +779,93 @@ if (window.ALS && window.ALS.generateInsights) {
   window.addEventListener('load', renderIntelFeed);
 }
 setInterval(renderIntelFeed, 60000);
+
+/* ── Data Vault ─────────────────────────────────── */
+(function () {
+  const EXCLUDE = ['topbar_water_rendered', 'debug'];
+
+  function allKeys() {
+    return Object.keys(localStorage).filter(k => !EXCLUDE.includes(k));
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function setStatus(msg, cls) {
+    const el = document.getElementById('vaultStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'vault-status' + (cls ? ' ' + cls : '');
+    if (cls === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'vault-status'; }, 4000);
+  }
+
+  function updateMeta() {
+    const el = document.getElementById('vaultMeta');
+    if (!el) return;
+    const keys = allKeys();
+    let bytes = 0;
+    keys.forEach(k => { bytes += (localStorage.getItem(k) || '').length * 2; });
+    el.textContent = keys.length + ' keys · ~' + fmtBytes(bytes) + ' stored';
+  }
+
+  /* Export */
+  document.getElementById('vaultExport').addEventListener('click', () => {
+    try {
+      const keys = allKeys();
+      const data = { _version: 1, _exported: new Date().toISOString(), _keys: keys.length };
+      keys.forEach(k => { data[k] = localStorage.getItem(k); });
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const date = new Date().toISOString().slice(0, 10);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'als-backup-' + date + '.json';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus('✓ Backup downloaded', 'ok');
+    } catch (e) {
+      setStatus('Export failed: ' + e.message, 'err');
+    }
+  });
+
+  /* Import */
+  document.getElementById('vaultImport').addEventListener('click', () => {
+    document.getElementById('vaultFile').click();
+  });
+
+  document.getElementById('vaultFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data._version || !data._exported) {
+          setStatus('Invalid backup file', 'err'); return;
+        }
+        const skip = ['_version', '_exported', '_keys'];
+        let restored = 0;
+        Object.keys(data).forEach(k => {
+          if (skip.includes(k)) return;
+          localStorage.setItem(k, data[k]);
+          restored++;
+        });
+        setStatus('✓ Restored ' + restored + ' keys — reload to see changes', 'ok');
+        updateMeta();
+        e.target.value = '';
+      } catch (err) {
+        setStatus('Restore failed: ' + err.message, 'err');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  updateMeta();
+})();
 
 })();
 </script>
