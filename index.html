@@ -553,8 +553,8 @@ body::after {
   </div>
   <div class="vault-row">
     <button class="vault-btn vault-btn-export" id="vaultExport">↓ Export Backup</button>
-    <button class="vault-btn vault-btn-import" id="vaultImport">↑ Restore Backup</button>
-    <input type="file" id="vaultFile" accept=".json" style="display:none">
+    <label class="vault-btn vault-btn-import" for="vaultFile">↑ Restore Backup</label>
+    <input type="file" id="vaultFile" accept="application/json,.json" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
     <span class="vault-status" id="vaultStatus"></span>
   </div>
   <div class="vault-meta" id="vaultMeta"></div>
@@ -811,54 +811,59 @@ setInterval(renderIntelFeed, 60000);
     el.textContent = keys.length + ' keys · ~' + fmtBytes(bytes) + ' stored';
   }
 
-  /* Export */
-  document.getElementById('vaultExport').addEventListener('click', () => {
+  /* Export — uses Web Share API on iOS (only way to actually save a file),
+     falls back to anchor-download on desktop */
+  document.getElementById('vaultExport').addEventListener('click', async () => {
     try {
       const keys = allKeys();
       const data = { _version: 1, _exported: new Date().toISOString(), _keys: keys.length };
       keys.forEach(k => { data[k] = localStorage.getItem(k); });
       const json = JSON.stringify(data, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url  = URL.createObjectURL(blob);
       const date = new Date().toISOString().slice(0, 10);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'als-backup-' + date + '.json';
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setStatus('✓ Backup downloaded', 'ok');
+      const fileName = 'als-backup-' + date + '.json';
+      const file = new File([json], fileName, { type: 'application/json' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'ALS Dashboard Backup' });
+        setStatus('✓ Backup shared', 'ok');
+      } else {
+        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setStatus('✓ Backup downloaded', 'ok');
+      }
     } catch (e) {
-      setStatus('Export failed: ' + e.message, 'err');
+      if (e.name !== 'AbortError') setStatus('Export failed: ' + e.message, 'err');
     }
   });
 
-  /* Import */
-  document.getElementById('vaultImport').addEventListener('click', () => {
-    document.getElementById('vaultFile').click();
-  });
-
+  /* Import — label points to file input directly (no JS .click() needed, iOS-safe) */
   document.getElementById('vaultFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setStatus('Reading file…');
     const reader = new FileReader();
+    reader.onerror = () => setStatus('Could not read file — try exporting again', 'err');
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target.result);
         if (!data._version || !data._exported) {
-          setStatus('Invalid backup file', 'err'); return;
+          setStatus('Not a valid ALS backup file', 'err'); return;
         }
         const skip = ['_version', '_exported', '_keys'];
         let restored = 0;
         Object.keys(data).forEach(k => {
           if (skip.includes(k)) return;
-          localStorage.setItem(k, data[k]);
-          restored++;
+          try { localStorage.setItem(k, data[k]); restored++; } catch {}
         });
         setStatus('✓ Restored ' + restored + ' keys — reload to see changes', 'ok');
         updateMeta();
         e.target.value = '';
       } catch (err) {
-        setStatus('Restore failed: ' + err.message, 'err');
+        setStatus('Restore failed — file may be corrupted', 'err');
       }
     };
     reader.readAsText(file);
