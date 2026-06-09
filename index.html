@@ -819,41 +819,41 @@ setInterval(renderIntelFeed, 60000);
     const json = JSON.stringify(data, null, 2);
     const date = new Date().toISOString().slice(0, 10);
     const fileName = 'als-backup-' + date + '.json';
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    /* Try 1: Web Share with text/plain file — iOS accepts this MIME type */
-    if (navigator.share) {
-      try {
-        const f = new File([json], fileName, { type: 'text/plain' });
-        if (navigator.canShare && navigator.canShare({ files: [f] })) {
-          await navigator.share({ files: [f], title: 'ALS Dashboard Backup ' + date });
-          setStatus('✓ Backup shared — save to Files or Notes', 'ok');
-          return;
+    if (isIOS) {
+      /* iOS: Web Share API only — blob downloads open a dead tab on iOS */
+      if (navigator.share) {
+        try {
+          const f = new File([json], fileName, { type: 'text/plain' });
+          if (navigator.canShare && navigator.canShare({ files: [f] })) {
+            await navigator.share({ files: [f], title: 'ALS Backup ' + date });
+            setStatus('✓ Shared — save to Files or Notes', 'ok');
+            return;
+          }
+        } catch (e) {
+          if (e.name === 'AbortError') return;
         }
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-        /* fall through to next method */
       }
-    }
-
-    /* Try 2: Anchor download (desktop / Android) */
-    try {
-      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = fileName;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setStatus('✓ Backup downloaded', 'ok');
+      /* iOS share not available — clipboard */
+      try {
+        await navigator.clipboard.writeText(json);
+        setStatus('✓ Copied — paste into Notes, save as .json', 'ok');
+      } catch {
+        setStatus('Open on desktop to download backup', 'warn');
+      }
       return;
-    } catch (e) { /* fall through */ }
-
-    /* Try 3: Copy to clipboard (last resort) */
-    try {
-      await navigator.clipboard.writeText(json);
-      setStatus('✓ Copied — paste into a text file and save as .json', 'ok');
-    } catch (e) {
-      setStatus('Export unavailable — try on desktop Safari or Chrome', 'warn');
     }
+
+    /* Desktop / Android: blob anchor download */
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setStatus('✓ Backup downloaded', 'ok');
   });
 
   /* Import — label points to file input directly (no JS .click() needed, iOS-safe) */
