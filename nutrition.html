@@ -2212,61 +2212,93 @@ function renderImport() {
 function parseMFPText(raw) {
   if (!raw || !raw.trim()) return null;
 
-  // Remove thousands commas: "2,100" → "2100"
-  const text = raw.replace(/(\d),(\d{3})/g, '$1$2');
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  // Strip thousands commas
+  const clean = t => t.replace(/(\d),(\d{3})/g, '$1$2');
+  const allLines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
-  // Find a number after a label on the same line, or on the very next line
-  function grab(pats) {
-    for (let i = 0; i < lines.length; i++) {
-      const low = lines[i].toLowerCase().replace(/,/g, '');
+  // Prefer the Totals section if it exists; otherwise scan everything
+  // Use LAST occurrence so full-diary pastes give us the daily total, not the first food item
+  const totalIdx = allLines.findIndex(l => /^(?:daily\s+)?totals?\s*$/i.test(l));
+  const scanLines = totalIdx >= 0 ? allLines.slice(totalIdx, totalIdx + 40) : allLines;
+
+  // Extract first number from a string, ignoring leading non-numeric chars
+  function num(s) {
+    const m = clean(s).match(/(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+
+  // Scan lines and keep updating result → naturally returns the LAST occurrence
+  function grab(pats, src) {
+    let result = 0;
+    for (let i = 0; i < src.length; i++) {
+      const low = clean(src[i]).toLowerCase();
+      let matched = false;
       for (const pat of pats) {
-        const re = new RegExp(pat, 'i');
-        if (re.test(low)) {
-          // number on same line?
-          const sameNum = low.match(/(\d+(?:\.\d+)?)\s*(?:g|mg|mcg|%|kcal|cal)?(?:\s|$|\/)/);
-          if (sameNum) return parseFloat(sameNum[1]);
-          // number on next line?
-          if (i + 1 < lines.length) {
-            const nxt = lines[i+1].replace(/,/g, '').match(/^(\d+(?:\.\d+)?)/);
-            if (nxt) return parseFloat(nxt[1]);
-          }
-        }
+        if (new RegExp(pat, 'i').test(low)) { matched = true; break; }
+      }
+      if (!matched) continue;
+      // Try to get number from same line after the label
+      const afterLabel = low.replace(new RegExp(pats[0], 'i'), '');
+      const n = num(afterLabel) || num(low);
+      if (n) { result = n; continue; }
+      // Number might be on the very next line (e.g. MFP stacked format)
+      if (i + 1 < src.length) {
+        const nxt = num(src[i + 1]);
+        if (nxt) { result = nxt; i++; }
       }
     }
-    // Fallback: try inline regex on full text
-    for (const pat of pats) {
-      const re = new RegExp(pat + '[\\s:=\\t,/]*(\\d+(?:\\.\\d+)?)', 'i');
-      const m = text.match(re);
-      if (m) return parseFloat(m[1]);
+    // If nothing found in preferred section, try the whole text as fallback
+    if (!result && src !== allLines) {
+      for (const pat of pats) {
+        const re = new RegExp(pat + '[\\s:•·/]*(\\d+(?:\\.\\d+)?)', 'i');
+        const m = clean(raw).match(re);
+        // Use matchAll to get the LAST occurrence
+        const all = [...clean(raw).matchAll(new RegExp(pat + '[\\s:•·/]*(\\d+(?:\\.\\d+)?)', 'gi'))];
+        if (all.length) { result = parseFloat(all[all.length - 1][1]); break; }
+      }
     }
-    return 0;
+    return result;
+  }
+
+  // Also scan inline bullet/pipe formats: "Calories 2100 • Protein 165g • Carbs 240g"
+  // Pull the LAST inline match for each nutrient
+  function grabInline(pats) {
+    let result = 0;
+    for (const pat of pats) {
+      const re = new RegExp(pat + '[\\s:•·,/]*(\\d+(?:\\.\\d+)?)', 'gi');
+      const all = [...clean(raw).matchAll(re)];
+      if (all.length) { result = parseFloat(all[all.length - 1][1]); break; }
+    }
+    return result;
+  }
+
+  function best(pats) {
+    return grab(pats, scanLines) || grabInline(pats);
   }
 
   const r = {
-    kcal: grab(['calori', 'energy', '\\bkcal\\b', '\\bcal\\b']),
-    p:    grab(['protein']),
-    c:    grab(['carbohydrate', 'total carb', '\\bcarbs\\b']),
-    f:    grab(['total fat', '\\bfat\\b']),
-    fiber:       grab(['dietary fiber', 'fiber', 'fibre']),
-    sugar:       grab(['total sugar', 'sugars', 'sugar']),
-    sodium:      grab(['sodium']),
-    cholesterol: grab(['cholesterol']),
-    potassium:   grab(['potassium']),
-    satFat:      grab(['saturated fat', 'sat\\.? fat']),
-    transFat:    grab(['trans fat', 'trans-fat']),
-    vitA:        grab(['vitamin a', 'vit\\.? a(?!c)']),
-    vitC:        grab(['vitamin c', 'vit\\.? c']),
-    vitD:        grab(['vitamin d', 'vit\\.? d']),
-    vitB12:      grab(['vitamin b-?12', 'b-?12', 'cobalamin']),
-    calcium:     grab(['calcium']),
-    iron:        grab(['\\biron\\b']),
-    magnesium:   grab(['magnesium']),
-    zinc:        grab(['\\bzinc\\b']),
+    kcal: best(['calori(?:es)?', 'energy', '\\bkcal\\b']),
+    p:    best(['protein']),
+    c:    best(['carbohydrate', 'total carb', '\\bcarbs?\\b']),
+    f:    best(['total fat', '(?<![a-z])fat(?![a-z])']),
+    fiber:       best(['dietary fiber', 'total fiber', 'fiber', 'fibre']),
+    sugar:       best(['total sugar', 'sugars?']),
+    sodium:      best(['sodium']),
+    cholesterol: best(['cholesterol']),
+    potassium:   best(['potassium']),
+    satFat:      best(['saturated fat', 'sat\\.? fat']),
+    transFat:    best(['trans.?fat']),
+    vitA:        best(['vitamin a(?!c)', 'vit a(?!c)']),
+    vitC:        best(['vitamin c', 'vit c']),
+    vitD:        best(['vitamin d', 'vit d']),
+    vitB12:      best(['b-?12', 'cobalamin']),
+    calcium:     best(['calcium']),
+    iron:        best(['\\biron\\b']),
+    magnesium:   best(['magnesium']),
+    zinc:        best(['\\bzinc\\b']),
   };
 
-  // Require at least calories or protein to consider a valid parse
-  if (!r.kcal && !r.p) return null;
+  if (!r.kcal && !r.p && !r.c) return null;
   return r;
 }
 
@@ -2278,7 +2310,7 @@ function runMFPParse() {
   const parsed = parseMFPText(ta.value);
   if (!parsed) {
     out.innerHTML = `<div class="mfp-parse-err">
-      Couldn't find nutrition data. Make sure you copy from MFP's <strong>Nutrition</strong> tab or your diary totals row, then try again.
+      Couldn't read the numbers — the format might be unusual. Try copying just the <strong>Totals row</strong> at the bottom of your diary (long-press that row), or the <strong>Nutrition summary screen</strong> in MFP. Even just "Calories 2100 Protein 165g Carbs 240g Fat 65g" pasted here will work.
     </div>`;
     _parsedMFP = null;
     return;
