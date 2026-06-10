@@ -1196,76 +1196,7 @@ setInterval(liveData, 30000);
   }
 })();
 
-/* ── iOS Shortcut setup modal ────────────────── */
-(function () {
-  var bg          = document.getElementById('scModalBg');
-  var trigger     = document.getElementById('scTriggerBtn');
-  var closeBtn    = document.getElementById('scModalClose');
-  var urlEl       = document.getElementById('scUrl');
-  var copyBtn     = document.getElementById('scUrlCopy');
-  var timeInput   = document.getElementById('scAlarmTime');
-  var saveTimeBtn = document.getElementById('scSaveTime');
-  var timeSaved   = document.getElementById('scTimeSaved');
-  var timeDisplay = document.getElementById('scTimeDisplay');
-
-  if (!bg || !trigger) return;
-
-  // Build morning URL
-  var path = window.location.pathname.replace(/\/[^\/]*$/, '/');
-  var morningUrl = window.location.origin + path + 'morning.html';
-  if (urlEl) urlEl.textContent = morningUrl;
-
-  function fmt12(val) {
-    var parts = val.split(':');
-    var h = parseInt(parts[0], 10);
-    var m = parseInt(parts[1], 10);
-    var ampm = h >= 12 ? 'PM' : 'AM';
-    var h12 = h % 12 || 12;
-    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
-  }
-
-  function updateTimeDisplay(val) {
-    var label = fmt12(val);
-    if (timeDisplay) timeDisplay.textContent = label;
-    trigger.textContent = '⏰ ' + label + ' reminder';
-  }
-
-  var saved = localStorage.getItem('morning:alarmTime') || '07:00';
-  if (timeInput) timeInput.value = saved;
-  updateTimeDisplay(saved);
-
-  function openModal()  { bg.style.display = 'flex'; }
-  function closeModal() { bg.style.display = 'none'; }
-
-  trigger.addEventListener('click', openModal);
-  if (closeBtn) closeBtn.addEventListener('click', closeModal);
-  bg.addEventListener('click', function(e) { if (e.target === bg) closeModal(); });
-
-  if (saveTimeBtn && timeInput) {
-    saveTimeBtn.addEventListener('click', function() {
-      var val = timeInput.value;
-      if (!val) return;
-      localStorage.setItem('morning:alarmTime', val);
-      updateTimeDisplay(val);
-      if (timeSaved) {
-        timeSaved.textContent = '✓ Saved — update step 3 in Shortcuts to match';
-        setTimeout(function() { if (timeSaved) timeSaved.textContent = ''; }, 3000);
-      }
-    });
-  }
-
-  if (copyBtn && urlEl) {
-    copyBtn.addEventListener('click', function() {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(urlEl.textContent).then(function() {
-          copyBtn.textContent = '✓ Copied';
-          copyBtn.classList.add('copied');
-          setTimeout(function() { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
-        }).catch(function(e) { /* blocked */ });
-      }
-    });
-  }
-})();
+/* shortcut modal wired in separate script below */
 
 /* ── Intelligence Feed ──────────────────────── */
 function renderIntelFeed() {
@@ -1562,6 +1493,91 @@ setInterval(renderIntelFeed, 60000);
   updateMeta();
 })();
 
+})();
+</script>
+
+<script>
+/* ── Shortcut reminder modal — fully isolated ── */
+(function() {
+  var bg      = document.getElementById('scModalBg');
+  var trigger = document.getElementById('scTriggerBtn');
+  if (!bg || !trigger) return;
+
+  var urlEl       = document.getElementById('scUrl');
+  var copyBtn     = document.getElementById('scUrlCopy');
+  var closeBtn    = document.getElementById('scModalClose');
+  var timeInput   = document.getElementById('scAlarmTime');
+  var saveBtn     = document.getElementById('scSaveTime');
+  var savedLbl    = document.getElementById('scTimeSaved');
+  var timeDisplay = document.getElementById('scTimeDisplay');
+
+  /* Build the morning.html URL for this deployment */
+  var base = window.location.href.replace(/\/[^\/]*(\?.*)?$/, '/');
+  var morningUrl = base + 'morning.html';
+  if (urlEl) urlEl.textContent = morningUrl;
+
+  /* 12-hour display */
+  function fmt12(v) {
+    var p = v.split(':'), h = +p[0], m = +p[1];
+    return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'AM' : 'PM');
+  }
+  function applyTime(v) {
+    var lbl = fmt12(v);
+    if (timeDisplay) timeDisplay.textContent = lbl;
+    trigger.textContent = '⏰ ' + lbl + ' reminder';
+  }
+
+  var saved = localStorage.getItem('morning:alarmTime') || '07:00';
+  if (timeInput) timeInput.value = saved;
+  applyTime(saved);
+
+  /* Open / close */
+  trigger.addEventListener('click', function() { bg.style.display = 'flex'; });
+  if (closeBtn) closeBtn.addEventListener('click', function() { bg.style.display = 'none'; });
+  bg.addEventListener('click', function(e) { if (e.target === bg) bg.style.display = 'none'; });
+
+  /* Save time */
+  if (saveBtn && timeInput) {
+    saveBtn.addEventListener('click', function() {
+      var v = timeInput.value;
+      if (!v) return;
+      localStorage.setItem('morning:alarmTime', v);
+      applyTime(v);
+      if (savedLbl) {
+        savedLbl.textContent = '✓ Saved — update step 3 in Shortcuts to match';
+        setTimeout(function() { savedLbl.textContent = ''; }, 3000);
+      }
+    });
+  }
+
+  /* Copy URL */
+  if (copyBtn && urlEl) {
+    copyBtn.addEventListener('click', function() {
+      var txt = urlEl.textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(function() {
+          copyBtn.textContent = '✓ Copied';
+          copyBtn.style.color = '#6BE3A4';
+          setTimeout(function() {
+            copyBtn.textContent = 'Copy';
+            copyBtn.style.color = '';
+          }, 2000);
+        }).catch(function() {});
+      } else {
+        /* Fallback: select the text */
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyBtn.textContent = '✓ Copied';
+        setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000);
+      }
+    });
+  }
 })();
 </script>
 </body>
