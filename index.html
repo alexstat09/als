@@ -538,10 +538,9 @@ body::after {
 
 .sc-modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-  z-index: 200; display: none; align-items: flex-end; justify-content: center;
+  z-index: 9999; display: none; align-items: flex-end; justify-content: center;
   padding-bottom: env(safe-area-inset-bottom);
 }
-.sc-modal-bg.open { display: flex; }
 .sc-modal {
   background: #0E0E10; border: 1px solid rgba(255,255,255,0.10);
   border-radius: 20px 20px 0 0; padding: 24px 20px 32px;
@@ -1199,61 +1198,71 @@ setInterval(liveData, 30000);
 
 /* ── iOS Shortcut setup modal ────────────────── */
 (function () {
-  const bg          = document.getElementById('scModalBg');
-  const trigger     = document.getElementById('scTriggerBtn');
-  const closeBtn    = document.getElementById('scModalClose');
-  const urlEl       = document.getElementById('scUrl');
-  const copyBtn     = document.getElementById('scUrlCopy');
-  const timeInput   = document.getElementById('scAlarmTime');
-  const saveTimeBtn = document.getElementById('scSaveTime');
-  const timeSaved   = document.getElementById('scTimeSaved');
-  const timeDisplay = document.getElementById('scTimeDisplay');
+  var bg          = document.getElementById('scModalBg');
+  var trigger     = document.getElementById('scTriggerBtn');
+  var closeBtn    = document.getElementById('scModalClose');
+  var urlEl       = document.getElementById('scUrl');
+  var copyBtn     = document.getElementById('scUrlCopy');
+  var timeInput   = document.getElementById('scAlarmTime');
+  var saveTimeBtn = document.getElementById('scSaveTime');
+  var timeSaved   = document.getElementById('scTimeSaved');
+  var timeDisplay = document.getElementById('scTimeDisplay');
 
-  const morningUrl = window.location.origin +
-    window.location.pathname.replace(/\/[^/]*$/, '/') + 'morning.html';
+  if (!bg || !trigger) return;
+
+  // Build morning URL
+  var path = window.location.pathname.replace(/\/[^\/]*$/, '/');
+  var morningUrl = window.location.origin + path + 'morning.html';
   if (urlEl) urlEl.textContent = morningUrl;
 
-  // Load saved time
-  const saved = localStorage.getItem('morning:alarmTime') || '07:00';
+  function fmt12(val) {
+    var parts = val.split(':');
+    var h = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    var h12 = h % 12 || 12;
+    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
+  }
+
+  function updateTimeDisplay(val) {
+    var label = fmt12(val);
+    if (timeDisplay) timeDisplay.textContent = label;
+    trigger.textContent = '⏰ ' + label + ' reminder';
+  }
+
+  var saved = localStorage.getItem('morning:alarmTime') || '07:00';
   if (timeInput) timeInput.value = saved;
   updateTimeDisplay(saved);
 
-  function fmt12(val) {
-    const [h, m] = val.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12  = h % 12 || 12;
-    return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
-  }
-  function updateTimeDisplay(val) {
-    if (timeDisplay) timeDisplay.textContent = fmt12(val);
-    if (trigger) trigger.textContent = '⏰ ' + fmt12(val) + ' reminder';
-  }
+  function openModal()  { bg.style.display = 'flex'; }
+  function closeModal() { bg.style.display = 'none'; }
+
+  trigger.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  bg.addEventListener('click', function(e) { if (e.target === bg) closeModal(); });
 
   if (saveTimeBtn && timeInput) {
-    saveTimeBtn.addEventListener('click', () => {
-      const val = timeInput.value;
+    saveTimeBtn.addEventListener('click', function() {
+      var val = timeInput.value;
       if (!val) return;
       localStorage.setItem('morning:alarmTime', val);
       updateTimeDisplay(val);
       if (timeSaved) {
         timeSaved.textContent = '✓ Saved — update step 3 in Shortcuts to match';
-        setTimeout(() => { if (timeSaved) timeSaved.textContent = ''; }, 3000);
+        setTimeout(function() { if (timeSaved) timeSaved.textContent = ''; }, 3000);
       }
     });
   }
 
-  if (trigger)  trigger.addEventListener('click',  () => bg && bg.classList.add('open'));
-  if (closeBtn) closeBtn.addEventListener('click', () => bg && bg.classList.remove('open'));
-  if (bg)       bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
-
   if (copyBtn && urlEl) {
-    copyBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(urlEl.textContent);
-        copyBtn.textContent = '✓ Copied';
-        copyBtn.classList.add('copied');
-        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
-      } catch { /* clipboard blocked */ }
+    copyBtn.addEventListener('click', function() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(urlEl.textContent).then(function() {
+          copyBtn.textContent = '✓ Copied';
+          copyBtn.classList.add('copied');
+          setTimeout(function() { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
+        }).catch(function(e) { /* blocked */ });
+      }
     });
   }
 })();
