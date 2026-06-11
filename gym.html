@@ -1347,6 +1347,7 @@ img, video, canvas, svg { max-width: 100%; }
 .po-back-link:hover { color: rgba(255,255,255,0.85); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
 </head>
 <body>
@@ -1482,11 +1483,6 @@ img, video, canvas, svg { max-width: 100%; }
         </div>
       </div>
 
-      <!-- Sync status — outside wtInputRow so it stays visible after saving -->
-      <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
-        <div id="pcSyncStatus" style="font-size:11px;font-family:monospace;flex:1;color:rgba(255,255,255,0.45);">● sync ready</div>
-        <button id="pcForceSyncBtn" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:4px 10px;color:rgba(255,255,255,0.5);font-family:monospace;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Force Sync</button>
-      </div>
 
       <!-- Weight History -->
       <div class="wt-history" id="wtHistory"></div>
@@ -3895,9 +3891,18 @@ img, video, canvas, svg { max-width: 100%; }
     } catch (_) {}
   }
 
-  // Initial sync: connect Supabase, pull current state, subscribe to
-  // realtime updates so other devices' changes appear instantly.
+  // Expose rerender so sync.js onApplied can refresh the UI
+  window._gymRerender = function() {
+    try { state = loadState(); } catch(e) {}
+    try { wtEntries = wtLoad(); } catch(e) {}
+    try { renderAll(); } catch(e) {}
+    try { wtRender(); } catch(e) {}
+    try { photosRender(); } catch(e) {}
+  };
+
+  // Old custom sync disabled — sync.js handles this now
   (async function pcInitCloudSync() {
+    return;
     if (!window.supabase || !SUPABASE_URL || !SUPABASE_KEY) {
       pcSetSyncStatus('Sync unavailable: supabase library not loaded', true);
       return;
@@ -3931,14 +3936,18 @@ img, video, canvas, svg { max-width: 100%; }
       .subscribe();
   })();
 
-  document.addEventListener('focusout', () => {
-    setTimeout(pcApplyPendingIfReady, 0);
-  }, true);
-  window.addEventListener('pagehide', pcFlushPushOnUnload);
-  window.addEventListener('beforeunload', pcFlushPushOnUnload);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pcFlushPushOnUnload();
-  });
+  // Wire sync.js after it loads (it's deferred, fires after this script)
+  setTimeout(function() {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: 'po-coach',
+      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'],
+      syncedPrefixes: ['po_coach_logs:'],
+      onApplied: function() {
+        if (typeof window._gymRerender === 'function') window._gymRerender();
+      }
+    });
+  }, 0);
 })();
 </script>
 
