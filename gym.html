@@ -3940,20 +3940,24 @@ img, video, canvas, svg { max-width: 100%; }
 </script>
 
 <script>
-/* ── Gym sync — direct fetch, no supabase-js dependency ── */
+/* ── Gym sync — merge-first, never loses weight entries ── */
 (function () {
-  var URL  = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
-  var KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
-  var AKEY = 'po-coach';
+  var SB_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
+  var SB_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+  var APP_KEY = 'po-coach';
   var KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
 
-  function isGym(k) {
+  function hdrs() {
+    return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+  }
+
+  function isGymKey(k) {
     if (!k) return false;
     for (var i = 0; i < KEYS.length; i++) if (k === KEYS[i]) return true;
     return k.indexOf('po_coach_logs:') === 0;
   }
 
-  function collect() {
+  function readLocal() {
     var out = {};
     for (var i = 0; i < KEYS.length; i++) {
       var v = localStorage.getItem(KEYS[i]);
@@ -3969,62 +3973,95 @@ img, video, canvas, svg { max-width: 100%; }
     return out;
   }
 
-  function push() {
-    var state = collect();
-    fetch(URL + '?on_conflict=key', {
-      method: 'POST',
-      headers: {
-        'apikey': KEY, 'Authorization': 'Bearer ' + KEY,
-        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ key: AKEY, data: state, updated_at: new Date().toISOString() })
-    }).catch(function() {});
+  /* Union two weight arrays by dateKey — local entry wins on conflict */
+  function mergeWeights(local, remote) {
+    var map = {};
+    var r = Array.isArray(remote) ? remote : [];
+    var l = Array.isArray(local)  ? local  : [];
+    for (var i = 0; i < r.length; i++) if (r[i] && r[i].dateKey) map[r[i].dateKey] = r[i];
+    for (var j = 0; j < l.length; j++) if (l[j] && l[j].dateKey) map[l[j].dateKey] = l[j];
+    var result = [];
+    for (var dk in map) if (Object.prototype.hasOwnProperty.call(map, dk)) result.push(map[dk]);
+    result.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0; });
+    return result;
+  }
+
+  /* Merge remote into local: union weights, keep local for everything else */
+  function mergeData(local, remote) {
+    if (!remote || typeof remote !== 'object') return local;
+    var merged = {};
+    var lk = Object.keys(local);
+    for (var i = 0; i < lk.length; i++) merged[lk[i]] = local[lk[i]];
+    var rk = Object.keys(remote);
+    for (var j = 0; j < rk.length; j++) {
+      var k = rk[j];
+      if (k === 'po_coach_weights') {
+        merged[k] = mergeWeights(local[k], remote[k]);
+      } else if (!(k in merged)) {
+        merged[k] = remote[k];
+      }
+    }
+    return merged;
   }
 
   var suppressed = false;
-  var pushTimer;
-  var lastPullJson = null;
+  var pushTimer = null;
+  var lastSyncJson = null;
 
-  function pull() {
-    fetch(URL + '?key=eq.' + AKEY + '&select=data', {
-      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(rows) {
-      if (!Array.isArray(rows) || !rows[0] || !rows[0].data) return;
-      var remote = rows[0].data;
-      var remoteJson = JSON.stringify(remote);
-      if (remoteJson === lastPullJson) return;
-      lastPullJson = remoteJson;
-      var changed = false;
-      suppressed = true;
-      try {
-        var rkeys = Object.keys(remote);
-        for (var i = 0; i < rkeys.length; i++) {
-          var k = rkeys[i];
-          var incoming = JSON.stringify(remote[k]);
-          if (localStorage.getItem(k) !== incoming) {
-            localStorage.setItem(k, incoming);
-            changed = true;
-          }
-        }
-      } finally { suppressed = false; }
-      if (changed && typeof window._gymRerender === 'function') window._gymRerender();
-    })
-    .catch(function() {});
+  function applyToLocal(data) {
+    var changed = false;
+    suppressed = true;
+    try {
+      var keys = Object.keys(data);
+      for (var i = 0; i < keys.length; i++) {
+        var v = JSON.stringify(data[keys[i]]);
+        if (localStorage.getItem(keys[i]) !== v) { localStorage.setItem(keys[i], v); changed = true; }
+      }
+    } finally { suppressed = false; }
+    return changed;
   }
 
-  var _prev = localStorage.setItem.bind(localStorage);
+  function pushData(data) {
+    fetch(SB_URL + '?on_conflict=key', {
+      method: 'POST',
+      headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
+      body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() })
+    }).catch(function() {});
+  }
+
+  /* Pull → merge → push merged → render if changed */
+  function syncNow() {
+    fetch(SB_URL + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
+      .then(function(r) { return r.json(); })
+      .then(function(rows) {
+        var remote = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
+        var local = readLocal();
+        var merged = mergeData(local, remote);
+        var mergedJson = JSON.stringify(merged);
+        var changed = applyToLocal(merged);
+        if (mergedJson !== lastSyncJson) {
+          lastSyncJson = mergedJson;
+          pushData(merged);
+        }
+        if (changed && typeof window._gymRerender === 'function') {
+          try { window._gymRerender(); } catch(e) {}
+        }
+      })
+      .catch(function() {});
+  }
+
+  /* Override setItem so local changes push to Supabase automatically */
+  var _origSet = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function(k, v) {
-    _prev(k, v);
-    if (!suppressed && isGym(k)) {
+    _origSet(k, v);
+    if (!suppressed && isGymKey(k)) {
       clearTimeout(pushTimer);
-      pushTimer = setTimeout(push, 500);
+      pushTimer = setTimeout(function() { pushData(readLocal()); }, 500);
     }
   };
 
-  pull();
-  setInterval(pull, 15000);
+  syncNow();
+  setInterval(syncNow, 15000);
 })();
 </script>
 
