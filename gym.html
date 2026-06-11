@@ -1480,7 +1480,10 @@ img, video, canvas, svg { max-width: 100%; }
           <span class="wt-unit-static" id="wtUnitStatic">kg</span>
           <button class="wt-save-btn" id="wtSaveBtn">Save</button>
         </div>
-        <div id="pcSyncStatus" style="display:none;font-size:11px;font-family:monospace;padding:4px 2px;margin-top:4px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <div id="pcSyncStatus" style="font-size:11px;font-family:monospace;flex:1;color:rgba(255,255,255,0.45);">● sync ready</div>
+          <button id="pcForceSyncBtn" onclick="pcForcePush()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:4px 10px;color:rgba(255,255,255,0.5);font-family:monospace;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Force Sync</button>
+        </div>
       </div>
 
       <!-- Weight History -->
@@ -3804,6 +3807,31 @@ img, video, canvas, svg { max-width: 100%; }
     el.style.display = 'block';
   }
 
+  async function pcForcePush() {
+    if (!pcSupa) {
+      pcSetSyncStatus('Error: Supabase not loaded', true);
+      return;
+    }
+    const state = pcCollectState();
+    pcSetSyncStatus('↑ Forcing sync…', false);
+    try {
+      const { error } = await pcSupa
+        .from('app_state')
+        .upsert(
+          { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
+      if (!error) {
+        pcLastSyncedJson = JSON.stringify(state);
+        pcSetSyncStatus('✓ Force sync done — check Supabase timestamp now', false);
+      } else {
+        pcSetSyncStatus('Error: ' + (error.message || JSON.stringify(error)), true);
+      }
+    } catch (e) {
+      pcSetSyncStatus('Error: ' + (e && e.message ? e.message : String(e)), true);
+    }
+  }
+
   async function pcPushNow() {
     if (!pcSupa) {
       pcSetSyncStatus('Sync error: Supabase not loaded — check internet connection', true);
@@ -3811,7 +3839,10 @@ img, video, canvas, svg { max-width: 100%; }
     }
     const state = pcCollectState();
     const json = JSON.stringify(state);
-    if (json === pcLastSyncedJson) return;
+    if (json === pcLastSyncedJson) {
+      pcSetSyncStatus('· No changes to push', false);
+      return;
+    }
     pcSetSyncStatus('↑ Syncing…', false);
     try {
       const { error } = await pcSupa
