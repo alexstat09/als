@@ -1480,6 +1480,7 @@ img, video, canvas, svg { max-width: 100%; }
           <span class="wt-unit-static" id="wtUnitStatic">kg</span>
           <button class="wt-save-btn" id="wtSaveBtn">Save</button>
         </div>
+        <div id="pcSyncStatus" style="display:none;font-size:11px;font-family:monospace;padding:4px 2px;margin-top:4px;"></div>
       </div>
 
       <!-- Weight History -->
@@ -3795,11 +3796,23 @@ img, video, canvas, svg { max-width: 100%; }
     }
   }
 
+  function pcSetSyncStatus(msg, isErr) {
+    const el = document.getElementById('pcSyncStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isErr ? '#FB7185' : '#6BE3A4';
+    el.style.display = 'block';
+  }
+
   async function pcPushNow() {
-    if (!pcSupa) return;
+    if (!pcSupa) {
+      pcSetSyncStatus('Sync error: Supabase not loaded — check internet connection', true);
+      return;
+    }
     const state = pcCollectState();
     const json = JSON.stringify(state);
     if (json === pcLastSyncedJson) return;
+    pcSetSyncStatus('↑ Syncing…', false);
     try {
       const { error } = await pcSupa
         .from('app_state')
@@ -3807,8 +3820,15 @@ img, video, canvas, svg { max-width: 100%; }
           { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
         );
-      if (!error) pcLastSyncedJson = json;
-    } catch (_) {}
+      if (!error) {
+        pcLastSyncedJson = json;
+        pcSetSyncStatus('✓ Synced', false);
+      } else {
+        pcSetSyncStatus('Sync error: ' + (error.message || JSON.stringify(error)), true);
+      }
+    } catch (e) {
+      pcSetSyncStatus('Sync error: ' + (e && e.message ? e.message : String(e)), true);
+    }
   }
 
   function pcSchedulePush() {
@@ -3843,7 +3863,10 @@ img, video, canvas, svg { max-width: 100%; }
   // Initial sync: connect Supabase, pull current state, subscribe to
   // realtime updates so other devices' changes appear instantly.
   (async function pcInitCloudSync() {
-    if (!window.supabase || !SUPABASE_URL || !SUPABASE_KEY) return;
+    if (!window.supabase || !SUPABASE_URL || !SUPABASE_KEY) {
+      pcSetSyncStatus('Sync unavailable: supabase library not loaded', true);
+      return;
+    }
     // Skip if the placeholder values are still in place (local-only mode)
     if (SUPABASE_URL.indexOf('PASTE-') === 0 || SUPABASE_KEY.indexOf('PASTE-') === 0) return;
     pcSupa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
