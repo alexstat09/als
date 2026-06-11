@@ -1347,7 +1347,6 @@ img, video, canvas, svg { max-width: 100%; }
 .po-back-link:hover { color: rgba(255,255,255,0.85); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
 </head>
 <body>
@@ -3937,17 +3936,95 @@ img, video, canvas, svg { max-width: 100%; }
   })();
 
   // Wire sync.js after it loads (it's deferred, fires after this script)
-  setTimeout(function() {
-    if (typeof initCloudSync !== 'function') return;
-    initCloudSync({
-      appKey: 'po-coach',
-      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'],
-      syncedPrefixes: ['po_coach_logs:'],
-      onApplied: function() {
-        if (typeof window._gymRerender === 'function') window._gymRerender();
+})();
+</script>
+
+<script>
+/* ── Gym sync — direct fetch, no supabase-js dependency ── */
+(function () {
+  var URL  = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
+  var KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+  var AKEY = 'po-coach';
+  var KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+
+  function isGym(k) {
+    if (!k) return false;
+    for (var i = 0; i < KEYS.length; i++) if (k === KEYS[i]) return true;
+    return k.indexOf('po_coach_logs:') === 0;
+  }
+
+  function collect() {
+    var out = {};
+    for (var i = 0; i < KEYS.length; i++) {
+      var v = localStorage.getItem(KEYS[i]);
+      if (v != null) { try { out[KEYS[i]] = JSON.parse(v); } catch(e) { out[KEYS[i]] = v; } }
+    }
+    for (var j = 0; j < localStorage.length; j++) {
+      var k = localStorage.key(j);
+      if (k && k.indexOf('po_coach_logs:') === 0) {
+        var lv = localStorage.getItem(k);
+        if (lv != null) { try { out[k] = JSON.parse(lv); } catch(e) { out[k] = lv; } }
       }
-    });
-  }, 0);
+    }
+    return out;
+  }
+
+  function push() {
+    var state = collect();
+    fetch(URL + '?on_conflict=key', {
+      method: 'POST',
+      headers: {
+        'apikey': KEY, 'Authorization': 'Bearer ' + KEY,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key: AKEY, data: state, updated_at: new Date().toISOString() })
+    }).catch(function() {});
+  }
+
+  var suppressed = false;
+  var pushTimer;
+  var lastPullJson = null;
+
+  function pull() {
+    fetch(URL + '?key=eq.' + AKEY + '&select=data', {
+      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!Array.isArray(rows) || !rows[0] || !rows[0].data) return;
+      var remote = rows[0].data;
+      var remoteJson = JSON.stringify(remote);
+      if (remoteJson === lastPullJson) return;
+      lastPullJson = remoteJson;
+      var changed = false;
+      suppressed = true;
+      try {
+        var rkeys = Object.keys(remote);
+        for (var i = 0; i < rkeys.length; i++) {
+          var k = rkeys[i];
+          var incoming = JSON.stringify(remote[k]);
+          if (localStorage.getItem(k) !== incoming) {
+            localStorage.setItem(k, incoming);
+            changed = true;
+          }
+        }
+      } finally { suppressed = false; }
+      if (changed && typeof window._gymRerender === 'function') window._gymRerender();
+    })
+    .catch(function() {});
+  }
+
+  var _prev = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v) {
+    _prev(k, v);
+    if (!suppressed && isGym(k)) {
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(push, 500);
+    }
+  };
+
+  pull();
+  setInterval(pull, 15000);
 })();
 </script>
 
