@@ -3670,282 +3670,44 @@ img, video, canvas, svg { max-width: 100%; }
   const SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
   const APP_KEY = 'po-coach';
-  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
-
+  // pcSupa is initialized below — used by uploadPhotoToStorage
   let pcSupa = null;
-  let pcPushTimer = null;
-  let pcSuppressSync = false;
-  let pcPendingRemote = null;
-  // JSON of the last state we sent or received — used to ignore
-  // realtime echoes of our own pushes so we don't infinite-loop.
-  let pcLastSyncedJson = null;
+  (async function () {
+    if (!window.supabase) return;
+    pcSupa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  })();
 
-  const _pcOrigSet = localStorage.setItem.bind(localStorage);
-  const _pcOrigRemove = localStorage.removeItem.bind(localStorage);
-  // Wrap setItem/removeItem so a sync-side error can NEVER prevent the
-  // underlying write from happening. The original call always runs;
-  // any error in the sync scheduling is swallowed.
-  localStorage.setItem = function(k, v) {
-    _pcOrigSet(k, v);
-    try {
-      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) pcSchedulePush();
-    } catch (e) {}
-  };
-  localStorage.removeItem = function(k) {
-    _pcOrigRemove(k);
-    try {
-      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) pcSchedulePush();
-    } catch (e) {}
-  };
-
-  function pcCollectState() {
-    const out = {};
-    for (const k of PC_SYNCED_KEYS) {
-      const v = localStorage.getItem(k);
-      if (v == null) continue;
-      try {
-        let val = JSON.parse(v);
-        if (k === 'po_coach_photos' && Array.isArray(val)) {
-          val = val
-            .filter((p) => p && p.url)
-            .map((p) => ({ id: p.id, url: p.url, dateKey: p.dateKey, weight: p.weight }));
-        }
-        out[k] = val;
-      } catch {}
-    }
-    return out;
-  }
-
-  function pcIsUserEditing() {
-    const ae = document.activeElement;
-    if (!ae) return false;
-    const tag = ae.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
-    return false;
-  }
-
-  function pcRerender() {
-    // Reload every closure variable that mirrors a synced localStorage
-    // key — otherwise renderAll/wtRender/photosRender would read stale
-    // in-memory copies from before the remote pull.
-    try { state = loadState(); } catch {}
-    try { wtEntries = wtLoad(); } catch {}
-    // Re-apply seed so cloud sync can never wipe historical weigh-ins
-    (function() {
-      const keys = new Set(wtEntries.map(e => e.dateKey));
-      let added = 0;
-      WT_SEED.forEach(s => { if (!keys.has(s.dateKey)) { wtEntries.push(s); added++; } });
-      if (added > 0) {
-        wtEntries.sort((a,b) => a.dateKey.localeCompare(b.dateKey));
-        _pcOrigSet(WT_KEY, JSON.stringify(wtEntries));
-        setTimeout(pcSchedulePush, 0);
-      }
-    })();
-    try {
-      const raw = localStorage.getItem(PHOTO_KEY);
-      photos = raw ? JSON.parse(raw) : [];
-    } catch { photos = []; }
-    try { renderAll(); } catch {}
-    try { wtRender(); } catch {}
-    try { photosRender(); } catch {}
-  }
-
-  function pcApplyRemoteState(remote) {
-    if (!remote || typeof remote !== 'object') return false;
-    pcSuppressSync = true;
-    let changed = false;
-    try {
-      for (const k of PC_SYNCED_KEYS) {
-        if (k === 'po_coach_photos') {
-          let localPhotos = [];
-          try { localPhotos = JSON.parse(localStorage.getItem(k) || '[]'); } catch {}
-          const remotePhotos = Array.isArray(remote[k]) ? remote[k] : [];
-          const remoteIds = new Set(remotePhotos.map((p) => p && p.id));
-          const localOnly = localPhotos.filter((p) => p && !p.url && !remoteIds.has(p.id));
-          const merged = [...remotePhotos, ...localOnly];
-          const incoming = JSON.stringify(merged);
-          if (localStorage.getItem(k) !== incoming) {
-            try { _pcOrigSet(k, incoming); changed = true; } catch {}
-          }
-          continue;
-        }
-        if (k in remote) {
-          const incoming = JSON.stringify(remote[k]);
-          const local = localStorage.getItem(k);
-          if (local !== incoming) { try { _pcOrigSet(k, incoming); changed = true; } catch {} }
-        } else if (localStorage.getItem(k) != null) {
-          try { _pcOrigRemove(k); changed = true; } catch {}
-        }
-      }
-    } finally {
-      pcSuppressSync = false;
-    }
-    if (changed) { try { pcRerender(); } catch (e) {} }
-    return changed;
-  }
-
-  function pcMaybeApplyRemote(remote) {
-    if (pcIsUserEditing()) { pcPendingRemote = remote; return; }
-    pcApplyRemoteState(remote);
-  }
-
-  function pcApplyPendingIfReady() {
-    if (pcPendingRemote && !pcIsUserEditing()) {
-      const r = pcPendingRemote;
-      pcPendingRemote = null;
-      pcApplyRemoteState(r);
-    }
-  }
-
-  function pcSetSyncStatus(msg, isErr) {
-    const el = document.getElementById('pcSyncStatus');
-    if (!el) return;
-    el.textContent = msg;
-    el.style.color = isErr ? '#FB7185' : '#6BE3A4';
-    el.style.display = 'block';
-  }
-
-  async function pcForcePush() {
-    if (!pcSupa) {
-      pcSetSyncStatus('Error: Supabase not loaded', true);
-      return;
-    }
-    const state = pcCollectState();
-    pcSetSyncStatus('↑ Forcing sync…', false);
-    try {
-      const { error } = await pcSupa
-        .from('app_state')
-        .upsert(
-          { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
-          { onConflict: 'key' }
-        );
-      if (!error) {
-        pcLastSyncedJson = JSON.stringify(state);
-        pcSetSyncStatus('✓ Force sync done — check Supabase timestamp now', false);
-      } else {
-        pcSetSyncStatus('Error: ' + (error.message || JSON.stringify(error)), true);
-      }
-    } catch (e) {
-      pcSetSyncStatus('Error: ' + (e && e.message ? e.message : String(e)), true);
-    }
-  }
-
-  async function pcPushNow() {
-    if (!pcSupa) {
-      pcSetSyncStatus('Sync error: Supabase not loaded — check internet connection', true);
-      return;
-    }
-    const state = pcCollectState();
-    const json = JSON.stringify(state);
-    if (json === pcLastSyncedJson) {
-      pcSetSyncStatus('· No changes to push', false);
-      return;
-    }
-    pcSetSyncStatus('↑ Syncing…', false);
-    try {
-      const { error } = await pcSupa
-        .from('app_state')
-        .upsert(
-          { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
-          { onConflict: 'key' }
-        );
-      if (!error) {
-        pcLastSyncedJson = json;
-        pcSetSyncStatus('✓ Synced', false);
-      } else {
-        pcSetSyncStatus('Sync error: ' + (error.message || JSON.stringify(error)), true);
-      }
-    } catch (e) {
-      pcSetSyncStatus('Sync error: ' + (e && e.message ? e.message : String(e)), true);
-    }
-  }
-
-  function pcSchedulePush() {
-    if (pcSuppressSync) return;
-    clearTimeout(pcPushTimer);
-    pcPushTimer = setTimeout(pcPushNow, 250);
-  }
-
-  // Backup push on unload via fetch keepalive so a fast refresh
-  // doesn't lose the latest change before the debounced push fires.
-  function pcFlushPushOnUnload() {
-    if (!pcSupa) return;
-    const state = pcCollectState();
-    const json = JSON.stringify(state);
-    if (json === pcLastSyncedJson) return;
-    try {
-      fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates',
-        },
-        body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() }),
-        keepalive: true,
-      }).catch(() => {});
-      pcLastSyncedJson = json;
-    } catch (_) {}
-  }
-
-  // Expose rerender so sync.js onApplied can refresh the UI
+  // Expose rerender so the external gym sync script can refresh the UI
   window._gymRerender = function() {
     try { state = loadState(); } catch(e) {}
     try { wtEntries = wtLoad(); } catch(e) {}
+    // Re-apply seed so sync can never wipe historical weigh-ins
+    (function() {
+      const keys = new Set(wtEntries.map(function(e) { return e.dateKey; }));
+      let added = 0;
+      WT_SEED.forEach(function(s) { if (!keys.has(s.dateKey)) { wtEntries.push(s); added++; } });
+      if (added > 0) {
+        wtEntries.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
+        try { localStorage.setItem(WT_KEY, JSON.stringify(wtEntries)); } catch(e) {}
+      }
+    })();
+    try { photos = JSON.parse(localStorage.getItem(PHOTO_KEY) || '[]'); } catch(e) { photos = []; }
     try { renderAll(); } catch(e) {}
     try { wtRender(); } catch(e) {}
     try { photosRender(); } catch(e) {}
   };
-
-  // Old custom sync disabled — sync.js handles this now
-  (async function pcInitCloudSync() {
-    return;
-    if (!window.supabase || !SUPABASE_URL || !SUPABASE_KEY) {
-      pcSetSyncStatus('Sync unavailable: supabase library not loaded', true);
-      return;
-    }
-    // Skip if the placeholder values are still in place (local-only mode)
-    if (SUPABASE_URL.indexOf('PASTE-') === 0 || SUPABASE_KEY.indexOf('PASTE-') === 0) return;
-    pcSupa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    try {
-      const { data, error } = await pcSupa
-        .from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
-      if (!error && data && data.data && Object.keys(data.data).length > 0) {
-        pcLastSyncedJson = JSON.stringify(data.data);
-        pcMaybeApplyRemote(data.data);
-      } else if (Object.keys(pcCollectState()).length > 0) {
-        pcSchedulePush();
-      }
-    } catch (_) {}
-    pcSupa.channel('app_state_' + APP_KEY)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'app_state',
-        filter: 'key=eq.' + APP_KEY,
-      }, (payload) => {
-        if (!payload.new || !payload.new.data) return;
-        const incoming = JSON.stringify(payload.new.data);
-        if (incoming === pcLastSyncedJson) return; // echo of our own push
-        pcLastSyncedJson = incoming;
-        pcMaybeApplyRemote(payload.new.data);
-      })
-      .subscribe();
-  })();
-
-  // Wire sync.js after it loads (it's deferred, fires after this script)
 })();
 </script>
 
 <script>
-/* ── Gym sync — merge-first, never loses weight entries ── */
+/* ── Gym sync: merge-first, Realtime, never loses weight entries ── */
 (function () {
-  var SB_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
-  var SB_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+  'use strict';
+  var REST    = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
+  var SB_BASE = 'https://oiyvadqfldwbjroiknjc.supabase.co';
+  var SB_KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
   var APP_KEY = 'po-coach';
-  var KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+  var KEYS    = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
 
   function hdrs() {
     return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
@@ -3973,76 +3735,74 @@ img, video, canvas, svg { max-width: 100%; }
     return out;
   }
 
-  /* Union two weight arrays by dateKey — local entry wins on conflict */
-  function mergeWeights(local, remote) {
+  /* Union weight arrays by dateKey — local entry wins same-date conflict */
+  function mergeWeights(loc, rem) {
     var map = {};
-    var r = Array.isArray(remote) ? remote : [];
-    var l = Array.isArray(local)  ? local  : [];
+    var r = Array.isArray(rem) ? rem : [];
+    var l = Array.isArray(loc) ? loc : [];
     for (var i = 0; i < r.length; i++) if (r[i] && r[i].dateKey) map[r[i].dateKey] = r[i];
     for (var j = 0; j < l.length; j++) if (l[j] && l[j].dateKey) map[l[j].dateKey] = l[j];
-    var result = [];
-    for (var dk in map) if (Object.prototype.hasOwnProperty.call(map, dk)) result.push(map[dk]);
-    result.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0; });
-    return result;
+    var out = [];
+    for (var dk in map) if (Object.prototype.hasOwnProperty.call(map, dk)) out.push(map[dk]);
+    out.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0; });
+    return out;
   }
 
-  /* Merge remote into local: union weights, keep local for everything else */
-  function mergeData(local, remote) {
-    if (!remote || typeof remote !== 'object') return local;
-    var merged = {};
-    var lk = Object.keys(local);
-    for (var i = 0; i < lk.length; i++) merged[lk[i]] = local[lk[i]];
-    var rk = Object.keys(remote);
+  /* Merge remote into local — union weights, local wins for every other key */
+  function mergeData(loc, rem) {
+    if (!rem || typeof rem !== 'object') return loc;
+    var m = {};
+    var lk = Object.keys(loc);
+    for (var i = 0; i < lk.length; i++) m[lk[i]] = loc[lk[i]];
+    var rk = Object.keys(rem);
     for (var j = 0; j < rk.length; j++) {
       var k = rk[j];
-      if (k === 'po_coach_weights') {
-        merged[k] = mergeWeights(local[k], remote[k]);
-      } else if (!(k in merged)) {
-        merged[k] = remote[k];
-      }
+      if (k === 'po_coach_weights') { m[k] = mergeWeights(loc[k], rem[k]); }
+      else if (!(k in m))           { m[k] = rem[k]; }
     }
-    return merged;
+    return m;
   }
 
   var suppressed = false;
-  var pushTimer = null;
-  var lastSyncJson = null;
+  var pushTimer  = null;
+  var lastJson   = null;
 
-  function applyToLocal(data) {
+  /* Write merged data to localStorage without triggering another push */
+  function applyLocal(data) {
     var changed = false;
     suppressed = true;
     try {
       var keys = Object.keys(data);
       for (var i = 0; i < keys.length; i++) {
         var v = JSON.stringify(data[keys[i]]);
-        if (localStorage.getItem(keys[i]) !== v) { localStorage.setItem(keys[i], v); changed = true; }
+        if (localStorage.getItem(keys[i]) !== v) { _origSet(keys[i], v); changed = true; }
       }
     } finally { suppressed = false; }
     return changed;
   }
 
-  function pushData(data) {
-    fetch(SB_URL + '?on_conflict=key', {
+  /* Push current local state to Supabase (keepalive=true for pagehide) */
+  function push(keepalive) {
+    var data = readLocal();
+    fetch(REST + '?on_conflict=key', {
       method: 'POST',
       headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() }),
+      keepalive: !!keepalive
     }).catch(function() {});
   }
 
-  /* Pull → merge → push merged → render if changed */
+  /* Pull from Supabase → merge → push merged → rerender if changed */
   function syncNow() {
-    fetch(SB_URL + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
+    fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
-        var remote = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
-        var local = readLocal();
-        var merged = mergeData(local, remote);
-        var mergedJson = JSON.stringify(merged);
-        var changed = applyToLocal(merged);
-        if (mergedJson !== lastSyncJson) {
-          lastSyncJson = mergedJson;
-          pushData(merged);
-        }
+        var remote  = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
+        var local   = readLocal();
+        var merged  = mergeData(local, remote);
+        var mJson   = JSON.stringify(merged);
+        var changed = applyLocal(merged);
+        if (mJson !== lastJson) { lastJson = mJson; push(false); }
         if (changed && typeof window._gymRerender === 'function') {
           try { window._gymRerender(); } catch(e) {}
         }
@@ -4050,18 +3810,58 @@ img, video, canvas, svg { max-width: 100%; }
       .catch(function() {});
   }
 
-  /* Override setItem so local changes push to Supabase automatically */
+  /* Apply an incoming Realtime payload — same merge logic */
+  function applyRealtime(remote) {
+    if (!remote || typeof remote !== 'object') return;
+    var remJson = JSON.stringify(remote);
+    if (remJson === lastJson) return; // our own echo
+    var local   = readLocal();
+    var merged  = mergeData(local, remote);
+    var mJson   = JSON.stringify(merged);
+    var changed = applyLocal(merged);
+    if (mJson !== remJson) { /* local had extra data — push the union */ lastJson = mJson; push(false); }
+    else                   { lastJson = remJson; }
+    if (changed && typeof window._gymRerender === 'function') {
+      try { window._gymRerender(); } catch(e) {}
+    }
+  }
+
+  /* Capture the real localStorage.setItem BEFORE any other override */
   var _origSet = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function(k, v) {
     _origSet(k, v);
     if (!suppressed && isGymKey(k)) {
       clearTimeout(pushTimer);
-      pushTimer = setTimeout(function() { pushData(readLocal()); }, 500);
+      pushTimer = setTimeout(function() { push(false); }, 400);
     }
   };
 
+  /* Emergency push when page is hidden/closed — keepalive survives tab close */
+  function emergencyPush() { push(true); }
+  window.addEventListener('beforeunload', emergencyPush);
+  window.addEventListener('pagehide',     emergencyPush);
+  /* Also push when app comes back to foreground (iOS PWA) */
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') syncNow();
+  });
+
+  /* Initial sync + 15s polling */
   syncNow();
   setInterval(syncNow, 15000);
+
+  /* Supabase Realtime — instant updates on the receiving device */
+  if (window.supabase) {
+    try {
+      var rt = window.supabase.createClient(SB_BASE, SB_KEY);
+      rt.channel('gym_realtime')
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + APP_KEY
+        }, function(payload) {
+          if (payload && payload.new && payload.new.data) applyRealtime(payload.new.data);
+        })
+        .subscribe();
+    } catch(e) {}
+  }
 })();
 </script>
 
