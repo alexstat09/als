@@ -1016,11 +1016,12 @@ function liveData() {
     set('livIdeas', active+' active · '+done+' done');
   } catch(e){ set('livIdeas',''); }
 
-  /* Fitness — last weigh-in */
+  /* Fitness — last workout */
   try {
-    const wts = JSON.parse(localStorage.getItem('po_coach_weights'))||[];
-    const last = wts[wts.length-1];
-    set('livFit', last ? last.weight+' kg · '+fmtRelDate(last.dateKey) : 'No weigh-in yet');
+    const done = JSON.parse(localStorage.getItem('po_coach_workout_done'))||{};
+    const days = Object.keys(done).filter(k=>done[k]).sort();
+    const lastDay = days[days.length-1];
+    set('livFit', lastDay ? 'Last workout · '+fmtRelDate(lastDay) : 'No workout logged yet');
   } catch(e){ set('livFit',''); }
 
   /* Goals */
