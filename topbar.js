@@ -78,6 +78,16 @@
   transition: background 0.15s;
 }
 .topbar-finance-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.topbar-back {
+  display: inline-flex; align-items: center;
+  padding: 8px 12px; border-radius: 10px; border: none;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.65); font-family: inherit;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.topbar-back:active { background: rgba(255,255,255,0.12); color: #fff; }
 .topbar-finance-icon {
   font-size: 20px; line-height: 1;
   filter: grayscale(100%) brightness(1.4); opacity: 0.85;
@@ -177,6 +187,8 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
 
   const topbarHtml = `
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
+  <button class="topbar-back" id="topbarBack" aria-label="Go back" type="button" style="display:none">← Back</button>
+  <div style="flex:1"></div>
   <div class="topbar-water-wrap">
     <a href="health.html#water" class="topbar-water-pill" id="topbarWater" aria-label="Water progress">
       <span class="topbar-pill-dot"></span>
@@ -246,6 +258,18 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
         t.classList.toggle('active', t.getAttribute('data-page') === active);
       });
       document.body.classList.add('has-bottombar');
+    }
+    // Show back button on every page except the hub
+    const backBtn = document.getElementById('topbarBack');
+    if (backBtn) {
+      const isHub = currentPageKey() === 'hub';
+      if (!isHub) {
+        backBtn.style.display = 'inline-flex';
+        backBtn.addEventListener('click', () => {
+          if (history.length > 1) { history.back(); }
+          else { window.location.href = 'index.html'; }
+        });
+      }
     }
   }
 
