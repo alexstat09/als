@@ -767,11 +767,18 @@
     }
 
     /* ── Boot ─────────────────────────────────────────── */
-    renderWeight();
-    renderSupps();
-    renderWater();
-    renderCaffeine();
-    renderNutrition();
+    function renderAllSections() {
+      renderWeight();
+      renderSupps();
+      renderWater();
+      renderCaffeine();
+      renderNutrition();
+    }
+    renderAllSections();
+
+    // Exposed so pocoach-sync.js can refresh the weight UI when a
+    // weigh-in arrives from another device via Realtime/polling.
+    window._bodyRerender = renderAllSections;
 
     // Re-render all sections when returning from another page / iOS resume
     document.addEventListener('visibilitychange', () => {
@@ -794,5 +801,9 @@
     });
   })();
   </script>
+
+  <!-- Cross-device sync for weigh-ins (shared with gym.html) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pocoach-sync.js"></script>
 </body>
 </html>
