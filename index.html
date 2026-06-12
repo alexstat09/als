@@ -14,6 +14,7 @@
 <script src="insights.js" defer></script>
 <script src="xp.js" defer></script>
 <script src="topbar.js" defer></script>
+<link rel="stylesheet" href="aurora.css">
 <style>
 :root {
   --text-primary:   #FAFAFA;
@@ -752,15 +753,59 @@ body::after {
 }
 .xp-ms-show-more:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
 </style>
+<style>
+  /* ════ AURORA hub overlay ════ */
+  .hub-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .hub-header-text{ flex:1; min-width:0; }
+  .hub-header .nova{ width:64px; height:64px; flex-shrink:0; margin-top:6px; }
+
+  .hub-eyebrow{ color:rgba(52,226,176,0.7) !important; }
+  .hub-greeting{
+    font-family:var(--au-serif) !important; font-style:italic; font-weight:400 !important;
+    font-size:clamp(30px,6.4vw,46px) !important; line-height:1.04 !important; letter-spacing:-.01em;
+    background:linear-gradient(120deg,#F4F1EA 0%, #34E2B0 52%, #9B8CFF 100%) !important;
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .hub-sub{ color:rgba(244,241,234,0.34); }
+
+  .hub-briefing-btn{ color:rgba(52,226,176,0.8); border-color:rgba(52,226,176,0.2); background:rgba(52,226,176,0.05); }
+  .hub-briefing-btn::before{ background:radial-gradient(circle at 30% 50%, rgba(52,226,176,0.07),transparent 65%); }
+  .hub-briefing-btn:hover{ color:#34E2B0; border-color:rgba(52,226,176,0.4); box-shadow:0 0 18px rgba(52,226,176,0.14); }
+  .hub-briefing-pulse{ background:#34E2B0 !important; box-shadow:0 0 6px rgba(52,226,176,0.9) !important; }
+
+  /* Tiles → aurora hues, serif titles, no emoji */
+  .tile-fitness{ --accent-rgb:52,226,176; }
+  .tile-body{ --accent-rgb:24,200,192; }
+  .tile-ideas{ --accent-rgb:155,140,255; }
+  .tile-emoji{ display:none !important; }
+  .tile-title{ font-family:var(--au-serif) !important; font-style:italic; font-weight:400 !important; letter-spacing:-.01em; color:var(--au-ivory); }
+  .tile.big .tile-title{ font-size:30px !important; }
+</style>
 </head>
-<body>
+<body class="au-mood-hot" id="root">
 <div class="scan-line"></div>
 
 <!-- GREETING HEADER -->
 <div class="hub-header">
-  <div class="hub-eyebrow" id="hubEyebrow">SYSTEM ONLINE</div>
-  <h1 class="hub-greeting" id="hubGreeting">Good morning, Alex.</h1>
-  <div class="hub-sub" id="hubSub">—</div>
+  <div class="hub-header-text">
+    <div class="hub-eyebrow" id="hubEyebrow">SYSTEM ONLINE</div>
+    <h1 class="hub-greeting" id="hubGreeting">Good morning, Alex.</h1>
+    <div class="hub-sub" id="hubSub">—</div>
+  </div>
+  <div class="nova" id="nova" aria-hidden="true">
+    <svg viewBox="0 0 100 100">
+      <defs><linearGradient id="novaGradHub" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/>
+      </linearGradient></defs>
+      <g class="nova-glow">
+        <rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#novaGradHub)" opacity="0.95"/>
+        <circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/>
+        <circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/>
+        <circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/>
+        <circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>
+      </g>
+    </svg>
+  </div>
 </div>
 
 <!-- MORNING BRIEFING LAUNCH -->
@@ -1502,6 +1547,37 @@ setInterval(renderIntelFeed, 60000);
       }
     });
   }
+})();
+</script>
+
+<!-- Nova: reactive mood glow on the hub (reads your real data) -->
+<script>
+(function () {
+  function ls(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
+  function tk(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function update(){
+    var root = document.getElementById('root'); if(!root) return;
+    var h = new Date().getHours();
+    var wts = ls('po_coach_weights') || [];
+    var wToday = Array.isArray(wts) && wts.some(function(e){ return e && e.dateKey === tk(); });
+    var pw = ls('po_water_v1') || {};
+    var wc = ((pw.logs||{})[tk()]) || 0;
+    var dawn = new Date(); dawn.setHours(0,0,0,0);
+    var caf = (ls('caf:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.mg||0); }, 0);
+    var kcal = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
+    var logged = (wToday?1:0) + (wc>0?1:0) + (caf>0?1:0) + (kcal>0?1:0);
+    var mood = 'calm';
+    if (h < 12 && logged === 0) mood = 'low';
+    else if (caf >= 400)        mood = 'alert';
+    else if (logged >= 3)       mood = 'hot';
+    else if (wToday)            mood = 'hot';
+    root.classList.remove('au-mood-calm','au-mood-hot','au-mood-alert','au-mood-low');
+    root.classList.add('au-mood-' + mood);
+  }
+  update();
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) update(); });
+  window.addEventListener('focus', update);
+  setInterval(update, 30000);
 })();
 </script>
 </body>
