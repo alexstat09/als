@@ -1,0 +1,198 @@
+/* ════════════════════════════════════════════════════════════════
+   AURORA — ALS Dashboard design system
+   A living, reactive dark aesthetic: Instrument Serif italic headlines,
+   monospace telemetry labels, glass panels, and a signature emerald→teal
+   →violet glow that breathes and shifts with the user's state.
+
+   Usage: link this file, put class="au-bg" on <body>, and compose with
+   the .au-* component classes below. Per-context glow is driven by the
+   --au-glow-c variable (defaults to emerald) so the same components can
+   react to mood/status.
+   ════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  /* Signature aurora palette */
+  --au-emerald: #34E2B0;
+  --au-teal:    #18C8C0;
+  --au-violet:  #9B8CFF;
+  --au-amber:   #F2C063;
+  --au-rose:    #FF6B8B;
+
+  --au-canvas:  #050507;
+  --au-ivory:   #F4F1EA;
+  --au-dim:     rgba(244,241,234,0.58);
+  --au-faint:   rgba(244,241,234,0.34);
+  --au-line:    rgba(255,255,255,0.08);
+  --au-glass:   rgba(255,255,255,0.035);
+
+  --au-gradient: linear-gradient(120deg, var(--au-emerald), var(--au-teal) 46%, var(--au-violet));
+  --au-glow-c:   var(--au-emerald);   /* reactive glow color — override to shift mood */
+  --au-glow-rgb: 52,226,176;
+
+  --au-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --au-mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --au-sans:  -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── Living aurora canvas ─────────────────────────────────────── */
+.au-bg {
+  background: var(--au-canvas);
+  color: var(--au-dim);
+  font-family: var(--au-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.au-bg::before {
+  content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(38% 30% at 18% 10%,  rgba(52,226,176,0.18), transparent 60%),
+    radial-gradient(34% 28% at 84% 20%,  rgba(24,200,192,0.15), transparent 60%),
+    radial-gradient(42% 36% at 60% 94%,  rgba(155,140,255,0.14), transparent 62%);
+  filter: blur(24px);
+  animation: auDrift 20s ease-in-out infinite alternate, auBreath 9s ease-in-out infinite;
+}
+.au-bg::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+@keyframes auDrift  { 0% { transform: translate3d(-2%,-1%,0) scale(1); } 100% { transform: translate3d(2%,1%,0) scale(1.06); } }
+@keyframes auBreath { 0%,100% { opacity: 0.78; } 50% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .au-bg::before, .au-glow::after, .au-btn, .au-eyebrow .au-dot, .nova { animation: none !important; }
+}
+
+/* ── Headlines (serif italic — the signature) ─────────────────── */
+.au-display {
+  font-family: var(--au-serif); font-style: italic; font-weight: 400;
+  color: var(--au-ivory); line-height: 1.03; letter-spacing: -0.01em;
+  font-size: clamp(32px, 7.5vw, 56px);
+}
+.au-display-sm {
+  font-family: var(--au-serif); font-style: italic; font-weight: 400;
+  color: var(--au-ivory); line-height: 1.1; letter-spacing: -0.005em;
+  font-size: clamp(20px, 4.6vw, 27px);
+}
+.au-serif-accent { color: var(--au-glow-c); }
+
+/* ── Eyebrow / telemetry micro-label ──────────────────────────── */
+.au-eyebrow {
+  font-family: var(--au-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.24em; text-transform: uppercase; color: var(--au-faint);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.au-eyebrow .au-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--au-glow-c); box-shadow: 0 0 8px var(--au-glow-c);
+  animation: auPulse 2.4s ease-in-out infinite;
+}
+.au-sep { color: var(--au-faint); opacity: 0.6; }
+@keyframes auPulse {
+  0%,100% { box-shadow: 0 0 6px rgba(var(--au-glow-rgb),0.6); }
+  50%     { box-shadow: 0 0 14px var(--au-glow-c), 0 0 26px rgba(var(--au-glow-rgb),0.4); }
+}
+
+/* ── Glass card ───────────────────────────────────────────────── */
+.au-card {
+  position: relative; background: var(--au-glass); border: 1px solid var(--au-line);
+  border-radius: 18px; padding: 18px; overflow: hidden;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+.au-card::before {
+  content: ''; position: absolute; top: 0; left: 8%; right: 8%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(52,226,176,0.5), rgba(155,140,255,0.4), transparent);
+}
+.au-card:hover {
+  border-color: rgba(var(--au-glow-rgb),0.22); transform: translateY(-2px);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.5), 0 0 44px rgba(var(--au-glow-rgb),0.07);
+}
+
+/* ── Living glow utility (the reactive soul) ──────────────────── */
+.au-glow { position: relative; z-index: 0; }
+.au-glow::after {
+  content: ''; position: absolute; inset: -28%; z-index: -1; border-radius: inherit;
+  background: var(--au-gradient); background-size: 220% 220%;
+  filter: blur(40px); opacity: 0.38; animation: auFlow 8s ease infinite;
+}
+@keyframes auFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.au-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; cursor: pointer; font-family: var(--au-sans); font-size: 14px; font-weight: 700;
+  padding: 12px 22px; border-radius: 999px; color: #04130D;
+  background: var(--au-gradient); background-size: 170% 170%;
+  box-shadow: 0 6px 24px rgba(var(--au-glow-rgb),0.28);
+  transition: transform 0.15s, box-shadow 0.25s, background-position 0.6s;
+}
+.au-btn:hover  { background-position: 100% 50%; box-shadow: 0 8px 34px rgba(var(--au-glow-rgb),0.46); transform: translateY(-1px); }
+.au-btn:active { transform: translateY(0); }
+
+.au-btn-ghost {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  font-family: var(--au-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 9px 16px; border-radius: 999px; color: var(--au-dim);
+  background: rgba(255,255,255,0.04); border: 1px solid var(--au-line);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.au-btn-ghost:hover { color: var(--au-ivory); border-color: rgba(var(--au-glow-rgb),0.4); }
+
+/* ── Amber tag (AI estimate / status) ─────────────────────────── */
+.au-tag {
+  display: inline-flex; align-items: center; gap: 5px; font-family: var(--au-mono);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px; color: var(--au-amber);
+  background: rgba(242,192,99,0.12); border: 1px solid rgba(242,192,99,0.32);
+}
+
+/* ── Conversational italic voice ──────────────────────────────── */
+.au-says { font-family: var(--au-serif); font-style: italic; font-size: 18px; line-height: 1.42; color: var(--au-dim); }
+.au-says strong { color: var(--au-ivory); font-weight: 400; }
+
+/* ── Score ring (conic gauge) ─────────────────────────────────── */
+.au-ring {
+  --p: 50; width: 96px; height: 96px; border-radius: 50%; position: relative;
+  background: conic-gradient(var(--au-glow-c) calc(var(--p) * 1%), rgba(255,255,255,0.06) 0);
+  display: grid; place-items: center; box-shadow: 0 0 26px rgba(var(--au-glow-rgb),0.32);
+}
+.au-ring::before { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--au-canvas); }
+.au-ring-val { position: relative; font-family: var(--au-mono); font-weight: 700; font-size: 23px; color: var(--au-ivory); line-height: 1; }
+.au-ring-unit { position: relative; font-family: var(--au-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--au-faint); text-transform: uppercase; margin-top: 2px; }
+
+/* ── Node-step progress (onboarding / journey) ────────────────── */
+.au-steps { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.au-step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; position: relative; }
+.au-step::after {
+  content: ''; position: absolute; top: 15px; left: 50%; width: 100%; height: 2px;
+  background: rgba(255,255,255,0.1); z-index: 0;
+}
+.au-step:last-child::after { display: none; }
+.au-step.done::after { background: var(--au-glow-c); box-shadow: 0 0 8px rgba(var(--au-glow-rgb),0.5); }
+.au-step-node {
+  width: 32px; height: 32px; border-radius: 50%; position: relative; z-index: 1;
+  display: grid; place-items: center; font-size: 13px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--au-line); color: var(--au-faint);
+}
+.au-step.done .au-step-node { color: var(--au-ivory); border-color: rgba(var(--au-glow-rgb),0.5); }
+.au-step.active .au-step-node {
+  background: var(--au-glow-c); color: #04130D; border-color: transparent;
+  box-shadow: 0 0 18px var(--au-glow-c), 0 0 36px rgba(var(--au-glow-rgb),0.5);
+}
+.au-step-lbl { font-family: var(--au-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--au-faint); text-align: center; }
+.au-step.active .au-step-lbl { color: var(--au-ivory); }
+
+/* ── Nova mascot (cross-page companion) ───────────────────────── */
+.nova { width: 88px; height: 88px; position: relative; animation: novaFloat 5s ease-in-out infinite; }
+.nova svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nova .nova-glow { filter: drop-shadow(0 0 14px var(--au-glow-c)) drop-shadow(0 0 30px rgba(var(--au-glow-rgb),0.45)); transition: filter 0.6s; }
+.nova .nova-eye { transform-origin: center; animation: novaBlink 5.5s infinite; }
+@keyframes novaFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-7px) rotate(1deg); } }
+@keyframes novaBlink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+
+/* Mood states — drive the whole glow system by overriding the reactive vars */
+.au-mood-calm  { --au-glow-c: var(--au-teal);    --au-glow-rgb: 24,200,192; }
+.au-mood-hot   { --au-glow-c: var(--au-emerald); --au-glow-rgb: 52,226,176; }
+.au-mood-alert { --au-glow-c: var(--au-violet);  --au-glow-rgb: 155,140,255; }
+.au-mood-low   { --au-glow-c: var(--au-amber);   --au-glow-rgb: 242,192,99; }
