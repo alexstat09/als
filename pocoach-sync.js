@@ -50,13 +50,25 @@
     return out;
   }
 
-  /* Union weight arrays by dateKey — local entry wins same-date conflict */
+  /* Union weight arrays by dateKey. For a same-date conflict the entry with
+     the NEWER edit timestamp (e.ts, ms epoch) wins — this is what prevents
+     split-brain: a stale device can no longer clobber a fresh edit from
+     another device just because it happens to sync last. Legacy entries have
+     no ts (treated as 0); on a true tie the later-considered (local) wins,
+     preserving the old behaviour for historical data. */
   function mergeWeights(loc, rem) {
     var map = {};
     var r = Array.isArray(rem) ? rem : [];
     var l = Array.isArray(loc) ? loc : [];
-    for (var i = 0; i < r.length; i++) if (r[i] && r[i].dateKey) map[r[i].dateKey] = r[i];
-    for (var j = 0; j < l.length; j++) if (l[j] && l[j].dateKey) map[l[j].dateKey] = l[j];
+    function consider(e) {
+      if (!e || !e.dateKey) return;
+      var cur = map[e.dateKey];
+      if (!cur) { map[e.dateKey] = e; return; }
+      var curTs = +cur.ts || 0, newTs = +e.ts || 0;
+      if (newTs >= curTs) map[e.dateKey] = e; // newer edit wins; tie → local (considered last)
+    }
+    for (var i = 0; i < r.length; i++) consider(r[i]); // remote first
+    for (var j = 0; j < l.length; j++) consider(l[j]); // then local
     var out = [];
     for (var dk in map) if (Object.prototype.hasOwnProperty.call(map, dk)) out.push(map[dk]);
     out.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0; });
