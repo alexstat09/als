@@ -200,8 +200,8 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
   <a href="gym.html"       class="bottombar-tab" data-page="fitness">
     <span class="bottombar-tab-icon">💪</span><span>Fitness</span>
   </a>
-  <a href="nutrition.html" class="bottombar-tab" data-page="nutrition">
-    <span class="bottombar-tab-icon">🥗</span><span>Food</span>
+  <a href="body.html" class="bottombar-tab" data-page="body">
+    <span class="bottombar-tab-icon">🫀</span><span>Body</span>
   </a>
   <a href="ideas.html"     class="bottombar-tab" data-page="ideas">
     <span class="bottombar-tab-icon">💡</span><span>Ideas</span>
