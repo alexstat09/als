@@ -872,11 +872,19 @@ img, video, canvas, svg { max-width: 100%; }
   color: var(--text-3); font-size: 12px; font-style: italic;
 }
 
+/* Weight tracker hidden in normal fitness view; revealed by JS in weight-only mode */
+.wt-section { display: none; margin-bottom: 22px; }
+/* Weight-only view: hide all workout UI, show weight tracker */
+body.weight-only-mode .po-day-pill,
+body.weight-only-mode .po-header,
+body.weight-only-mode .po-filters,
+body.weight-only-mode .po-sub-section { display: none !important; }
+body.weight-only-mode .wt-section { display: block; }
+
 /* ============================================================
    WEIGHT TRACKER + PROGRESS PHOTOS — scoped under .wt-* so the
    styles can't leak into the rest of the app.
    ============================================================ */
-.wt-section { margin-bottom: 22px; }
 .wt-divider {
   display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
 }
@@ -1387,7 +1395,7 @@ img, video, canvas, svg { max-width: 100%; }
   </button>
 
   <!-- WEIGHT + PROGRESS PHOTOS (weight tracking moved to body.html) -->
-  <div class="wt-section" style="display:none">
+  <div class="wt-section" id="wtSection">
     <div class="wt-divider"><span>WEIGHT</span></div>
 
     <div class="wt-card">
@@ -3863,6 +3871,13 @@ img, video, canvas, svg { max-width: 100%; }
     } catch(e) {}
   }
 })();
+</script>
+
+<script>
+/* Weight-only mode: activated when gym.html?weight-only=1 */
+if (new URLSearchParams(location.search).get('weight-only') === '1') {
+  document.body.classList.add('weight-only-mode');
+}
 </script>
 
 </body>

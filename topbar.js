@@ -266,8 +266,13 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
       if (!isHub) {
         backBtn.style.display = 'inline-flex';
         backBtn.addEventListener('click', () => {
-          if (history.length > 1) { history.back(); }
-          else { window.location.href = 'index.html'; }
+          const prev = sessionStorage.getItem('_tbPrev');
+          if (prev) {
+            sessionStorage.removeItem('_tbPrev');
+            window.location.href = prev;
+          } else {
+            window.location.href = 'index.html';
+          }
         });
       }
     }
@@ -410,6 +415,7 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
           href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
       if (a.target === '_blank') return;
       e.preventDefault();
+      sessionStorage.setItem('_tbPrev', window.location.href);
       document.body.classList.add('tb-out');
       setTimeout(() => { window.location.href = href; }, 170);
     });
