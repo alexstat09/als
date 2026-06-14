@@ -233,6 +233,7 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60; return h?h+':'+pad(m)+':'+pad(s):m+':'+pad(s); }
 function relDate(dk){ var d=new Date(dk+'T00:00:00'); var diff=Math.round((new Date()-d)/86400000); if(diff<=0)return'Today'; if(diff===1)return'Yesterday'; if(diff<7)return diff+' days ago'; return d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}); }
 
+var TPL_VERSION = 2;
 var SEED_EX = [
   ['inclinebench-smith','Incline Bench Press (Smith Machine)','Chest'],
   ['chestfly','Chest Fly','Chest'],
@@ -241,36 +242,59 @@ var SEED_EX = [
   ['latpulldown','Lat Pulldown (Machine)','Back'],
   ['tbarrow','T Bar Row','Back'],
   ['seatedrow','Seated Row (Machine)','Back'],
+  ['seatedrow-cable','Seated Row (Cable)','Back'],
   ['shoulderpress-m','Shoulder Press (Machine)','Shoulders'],
+  ['shoulderpress-plate','Shoulder Press (Plate Loaded)','Shoulders'],
   ['arnoldpress','Arnold Press (Dumbbell)','Shoulders'],
   ['lateralraise-cable','Lateral Raise (Cable)','Shoulders'],
   ['lateralraise-db','Lateral Raise (Dumbbell)','Shoulders'],
+  ['lateralraise-m','Lateral Raise (Machine)','Shoulders'],
   ['reversefly-cable','Reverse Fly (Cable)','Shoulders'],
+  ['reversefly-m','Reverse Fly (Machine)','Shoulders'],
   ['bicepcurl-m','Bicep Curl (Machine)','Arms'],
   ['hammercurl','Hammer Curl (Dumbbell)','Arms'],
+  ['inclinecurl-db','Incline Curl (Dumbbell)','Arms'],
   ['preachercurl-m','Preacher Curl (Machine)','Arms'],
   ['closegrip-bench','Bench Press - Close Grip (Barbell)','Arms'],
   ['tricepsext','Triceps Extension','Arms'],
   ['tricepsext-cable','Triceps Extension (Cable)','Arms'],
+  ['tricepsext-m','Triceps Extension (Machine)','Arms'],
   ['legpress','Leg Press','Legs'],
   ['hacksquat','Hack Squat','Legs'],
   ['seatedlegcurl','Seated Leg Curl (Machine)','Legs'],
   ['legext','Leg Extension (Machine)','Legs'],
   ['hipabductor','Hip Abductor (Machine)','Legs'],
   ['standingcalf','Standing Calf Raise (Machine)','Legs'],
+  ['seatedcalf-plate','Seated Calf Raise (Plate Loaded)','Legs'],
   ['cycling','Cycling (Indoor)','Cardio']
 ];
-var SEED_FOLDERS = [ {id:'f-ul',name:'Upper / Lower'}, {id:'f-cb',name:'Chest·Back / Arms·Shoulders'} ];
+var SEED_FOLDERS = [ {id:'f-ul',name:'Upper / Lower'}, {id:'f-ppl',name:'PPL split'} ];
 var SEED_TPLS = [
-  {id:'t-cb1',folderId:'f-cb',name:'Chest + Back',items:[['chestfly',3],['latpulldown',2],['inclinebench-smith',2],['tbarrow',2],['reversefly-cable',2],['cycling',1]]},
-  {id:'t-cb2',folderId:'f-cb',name:'Arms + Shoulders',items:[['shoulderpress-m',2],['lateralraise-cable',2],['bicepcurl-m',2],['hammercurl',3],['closegrip-bench',2],['tricepsext',2],['cycling',1]]},
-  {id:'t-ub',folderId:'f-ul',name:'Upper (B)',items:[['inclinebench-smith',2],['latpulldown',2],['tbarrow',1],['chestfly',2],['shoulderpress-m',2],['closegrip-bench',2],['preachercurl-m',2],['tricepsext',2],['hammercurl',2],['lateralraise-db',4]]},
-  {id:'t-lc',folderId:'f-ul',name:'Lower (C)',items:[['legpress',2],['seatedlegcurl',2],['legext',2],['hipabductor',2],['standingcalf',2],['cycling',1]]}
+  {id:'tpl-ua',folderId:'f-ul',name:'Upper (A)',items:[['chestpress-m',2],['seatedrow',2],['chestfly',2],['tbarrow',1],['lateralraise-cable',2],['tricepsext-m',2],['preachercurl-m',2],['tricepsext',2],['inclinecurl-db',2],['reversefly-cable',2]]},
+  {id:'tpl-la',folderId:'f-ul',name:'Lower (A)',items:[['seatedlegcurl',2],['hacksquat',2],['legext',2],['seatedcalf-plate',2],['hipabductor',2],['cycling',1]]},
+  {id:'tpl-ub',folderId:'f-ul',name:'Upper (B)',items:[['inclinebench-smith',2],['latpulldown',2],['tbarrow',1],['chestfly',2],['shoulderpress-m',2],['closegrip-bench',2],['preachercurl-m',2],['tricepsext',2],['hammercurl',2],['lateralraise-db',4]]},
+  {id:'tpl-lb',folderId:'f-ul',name:'Lower (B)',items:[['seatedlegcurl',2],['legpress',2],['legext',2],['hipabductor',2],['standingcalf',2],['cycling',1]]},
+  {id:'tpl-uc',folderId:'f-ul',name:'Upper (C)',items:[['tricepsext',2],['tricepsext-cable',2],['preachercurl-m',3],['inclinebench-smith',2],['lateralraise-m',3],['tbarrow',2],['shoulderpress-plate',2],['cycling',1]]},
+  {id:'tpl-lc',folderId:'f-ul',name:'Lower (C)',items:[['legpress',2],['seatedlegcurl',2],['legext',2],['hipabductor',2],['standingcalf',2],['cycling',1]]},
+  {id:'tpl-bt',folderId:'f-ppl',name:'Back + Triceps',items:[['latpulldown',3],['seatedrow-cable',2],['tbarrow',2],['tricepsext',2],['closegrip-bench',2],['tricepsext-cable',2],['cycling',1]]},
+  {id:'tpl-ls',folderId:'f-ppl',name:'Legs + Shoulders',items:[['legpress',2],['legext',3],['seatedlegcurl',3],['lateralraise-m',3],['shoulderpress-m',2],['reversefly-m',2]]},
+  {id:'tpl-cb',folderId:'f-ppl',name:'Chest + Biceps',items:[['inclinebench-smith',3],['chestfly',2],['chestpress-m',2],['preachercurl-m',2],['inclinecurl-db',2],['hammercurl',2],['cycling',1]]}
 ];
+function buildTpls(){ return SEED_TPLS.map(function(t){return {id:t.id,folderId:t.folderId,name:t.name,items:t.items.map(function(it){return {exId:it[0],sets:it[1]};})};}); }
 function seed(){
-  if(!ls('po_exercises',null)) save('po_exercises', SEED_EX.map(function(e){return {id:e[0],name:e[1],muscle:e[2]};}));
-  if(!ls('po_tpl_folders',null)) save('po_tpl_folders', SEED_FOLDERS.slice());
-  if(!ls('po_templates',null)) save('po_templates', SEED_TPLS.map(function(t){return {id:t.id,folderId:t.folderId,name:t.name,items:t.items.map(function(it){return {exId:it[0],sets:it[1]};})};}));
+  // exercises: merge canonical into existing (never lose customs)
+  var ex=ls('po_exercises',null);
+  if(!ex){ save('po_exercises', SEED_EX.map(function(e){return {id:e[0],name:e[1],muscle:e[2]};})); }
+  else { var ids={}; ex.forEach(function(e){ids[e.id]=1;}); var added=false; SEED_EX.forEach(function(e){ if(!ids[e[0]]){ ex.push({id:e[0],name:e[1],muscle:e[2]}); added=true; } }); if(added) save('po_exercises',ex); }
+  // templates + folders: reseed to canonical on version bump
+  if(ls('po_tpl_version',0) < TPL_VERSION){
+    save('po_tpl_folders', SEED_FOLDERS.slice());
+    save('po_templates', buildTpls());
+    save('po_tpl_version', TPL_VERSION);
+  } else {
+    if(!ls('po_tpl_folders',null)) save('po_tpl_folders', SEED_FOLDERS.slice());
+    if(!ls('po_templates',null)) save('po_templates', buildTpls());
+  }
   if(!ls('po_workouts',null)) save('po_workouts', []);
 }
 seed();
