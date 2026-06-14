@@ -325,7 +325,7 @@ function renderActive(){
   var a=getActive(); if(!a){ go('home'); return; }
   var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl">'+esc(a.name)+'</div></div>'+
     '<div style="display:flex;align-items:center;gap:10px;"><button type="button" class="w-cancel" onclick="cancelActive()">✕ Discard</button><button class="w-finish" onclick="finishActive()">Finish</button></div></div>';
-  html+='<button type="button" class="w-restcfg" onclick="openRestConfig()">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
+  html+='<button type="button" class="w-restcfg" data-act="rest-config">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
   if(!a.entries.length){ html+='<div class="w-empty">No exercises yet.</div>'; }
   a.entries.forEach(function(en,ei){
     html+='<div class="w-card"><div class="w-ex" style="border:none;padding:0 0 4px;">'+
@@ -497,12 +497,12 @@ window.openRestConfig=function(){
   var cur=restDefault(); var presets=[60,90,120,150,180,210,240,300];
   var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">Rest between sets</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
     '<div class="w-sheet-sub">Starts automatically when you check off a set</div>'+
-    '<div class="w-presets">'+presets.map(function(s){return '<button class="w-preset'+(s===cur?' on':'')+'" onclick="pickRest('+s+')">'+fmtDur(s)+'</button>';}).join('')+'</div>'+
-    '<button class="w-btn-ghost" style="margin-top:10px;" onclick="customRest()">Custom…</button>';
+    '<div class="w-presets">'+presets.map(function(s){return '<button type="button" class="w-preset'+(s===cur?' on':'')+'" data-act="rest-pick" data-val="'+s+'">'+fmtDur(s)+'</button>';}).join('')+'</div>'+
+    '<button type="button" class="w-btn-ghost" style="margin-top:10px;" data-act="rest-custom">Custom…</button>';
   openSheet(html);
 };
-window.pickRest=function(s){ save('po_rest_default', s); closeSheet(); if(view==='active') render(); };
-window.customRest=function(){ var m=prompt('Rest time in seconds:', String(restDefault())); if(m==null)return; var v=parseInt(m,10); if(isNaN(v)||v<5){ alert('Enter at least 5 seconds.'); return; } save('po_rest_default', v); closeSheet(); if(view==='active') render(); };
+window.pickRest=function(s){ s=parseInt(s,10); if(!s||s<5)return; save('po_rest_default', s); if(restInt){ restLeft=s; showRest(); } closeSheet(); render(); };
+window.customRest=function(){ var m=prompt('Rest time in seconds:', String(restDefault())); if(m==null)return; var v=parseInt(m,10); if(isNaN(v)||v<5){ alert('Enter at least 5 seconds.'); return; } save('po_rest_default', v); if(restInt){ restLeft=v; showRest(); } closeSheet(); render(); };
 
 /* SHEET */
 function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; }
@@ -517,6 +517,16 @@ window.finishActive=finishActive; window.cancelActive=cancelActive; window.pickE
 if(getActive()) view='active';
 render();
 window.addEventListener('storage', function(){ if(view!=='active') render(); });
+
+/* Bulletproof tap handling via delegation (iOS-safe — one listener on document) */
+document.addEventListener('click', function(ev){
+  var t = ev.target && ev.target.closest ? ev.target.closest('[data-act]') : null;
+  if(!t) return;
+  var act = t.getAttribute('data-act');
+  if(act==='rest-config')      window.openRestConfig();
+  else if(act==='rest-pick')   window.pickRest(t.getAttribute('data-val'));
+  else if(act==='rest-custom') window.customRest();
+});
 })();
 </script>
 </body>
