@@ -81,6 +81,7 @@
     .supp-name{ font-size:13px; font-weight:600; color:var(--au-ivory); flex:1; line-height:1.3; }
     .supp-item.taken .supp-name{ color:var(--au-dim); text-decoration:line-through; }
     .supp-dose{ font-size:11px; color:var(--au-faint); font-family:var(--au-mono); }
+    .supp-why{ font-size:11px; color:var(--au-dim); font-style:italic; font-family:var(--au-serif); line-height:1.35; margin-top:4px; max-width:42ch; }
     .supp-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); text-align:center; padding:8px 0; }
 
     /* ── Water ────────────────────────────────────── */
@@ -361,14 +362,16 @@
         return;
       }
 
-      const takenCount = items.filter(i => !!taken[i.id]).length;
-      const pct = items.length > 0 ? (takenCount / items.length) * 100 : 0;
+      // "occasional" items are only-if-needed — don't count them in the daily goal
+      const dailyItems = items.filter(i => (i.window || 'anytime') !== 'occasional');
+      const takenCount = dailyItems.filter(i => !!taken[i.id]).length;
+      const pct = dailyItems.length > 0 ? (takenCount / dailyItems.length) * 100 : 0;
 
-      const WINDOWS = ['morning','lunch','afternoon','evening','night','anytime'];
-      const LABELS  = {morning:'Morning',lunch:'Midday',afternoon:'Afternoon',evening:'Evening',night:'Night',anytime:'Anytime'};
+      const WINDOWS = ['morning','lunch','afternoon','evening','night','anytime','occasional'];
+      const LABELS  = {morning:'Morning',lunch:'Midday',afternoon:'Afternoon',evening:'Evening',night:'Night',anytime:'Anytime',occasional:'Occasional · only if needed'};
 
       let html = `<div class="supp-progress">
-        <span>${takenCount}/${items.length} taken</span>
+        <span>${takenCount}/${dailyItems.length} taken</span>
         <div class="supp-prog-bar-wrap">
           <div class="supp-prog-bar" style="width:${pct.toFixed(1)}%"></div>
         </div>
@@ -378,6 +381,7 @@
         const group = items.filter(i => (i.window || 'anytime') === win);
         if (!group.length) return;
         html += `<div class="supp-group"><div class="supp-group-title">${LABELS[win]}</div>`;
+        const isOcc = win === 'occasional';
         group.forEach(item => {
           const isTaken = !!taken[item.id];
           html += `<div class="supp-item${isTaken?' taken':''}">
@@ -385,6 +389,7 @@
             <div>
               <div class="supp-name">${esc(item.name)}</div>
               ${item.dose ? `<div class="supp-dose">${esc(item.dose)}</div>` : ''}
+              ${isOcc && item.note ? `<div class="supp-why">${esc(item.note)}</div>` : ''}
             </div>
           </div>`;
         });
