@@ -613,20 +613,20 @@ function initEvents() {
 
     // Mark done
     const dd = e.target.closest('[data-did]');
-    if (dd) { markDone(parseInt(dd.dataset.did,10)); return; }
+    if (dd) { markDone(Number(dd.dataset.did)); return; }
 
     // Undo / reopen
     const ud = e.target.closest('[data-uid]');
-    if (ud) { undoIdea(parseInt(ud.dataset.uid,10)); return; }
+    if (ud) { undoIdea(Number(ud.dataset.uid)); return; }
 
     // Pin
     const pd = e.target.closest('[data-pid]');
-    if (pd) { togglePin(parseInt(pd.dataset.pid,10)); return; }
+    if (pd) { togglePin(Number(pd.dataset.pid)); return; }
 
     // Delete
     const dl = e.target.closest('[data-delid]');
     if (dl) {
-      if (confirm('Delete this idea?')) deleteIdea(parseInt(dl.dataset.delid,10));
+      if (confirm('Delete this idea?')) deleteIdea(Number(dl.dataset.delid));
       return;
     }
   });
@@ -655,7 +655,7 @@ function ensureRoadmap() {
   ROADMAP.forEach((r, i) => {
     if (existing.has(r.text)) return;
     const d = new Date(now); d.setSeconds(d.getSeconds() - i);
-    ideas.push({id: Date.now() - i*100 - Math.random()*50, text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
+    ideas.push({id: Math.floor(Date.now() - i*100 - Math.random()*50), text: r.text, note: r.note, category: r.category, done: false, pinned: false, createdAt: d.toISOString(), doneAt: null});
     added++;
   });
   if (added > 0) { save(); rerender(); }
