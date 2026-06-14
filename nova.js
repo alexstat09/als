@@ -1,8 +1,9 @@
 /* ════════════════════════════════════════════════════════════════
-   Nova — floating cross-page companion.
-   Self-injects a fixed, mood-reactive Nova into any page that includes it
-   (the inner pages; the hub & Body have their own inline Nova in the hero).
-   Its glow shifts with the day's logged data, exactly like the hero Nova.
+   Nova — floating cross-page companion (level 2).
+   Self-injects a fixed, mood-reactive Nova into any page that includes it.
+   - Glow + aura shift with the day's logged data (low/calm/hot/alert).
+   - Idle "life": occasional look-around.
+   - Tap-to-talk: Nova speaks a real, data-driven line in its serif voice.
    Reads localStorage only — never writes, never touches page logic.
    ════════════════════════════════════════════════════════════════ */
 (function () {
@@ -13,7 +14,8 @@
   function ls(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
   function tk(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
-  function mood(){
+  /* Pull today's signals once, reused for mood + message */
+  function signals(){
     var h = new Date().getHours();
     var wts = ls('po_coach_weights') || [];
     var wToday = Array.isArray(wts) && wts.some(function(e){ return e && e.dateKey === tk(); });
@@ -21,15 +23,33 @@
     var wc = ((pw.logs||{})[tk()]) || 0;
     var dawn = new Date(); dawn.setHours(0,0,0,0);
     var caf = (ls('caf:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.mg||0); }, 0);
-    var kcal = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
+    var nut = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; });
+    var kcal = nut.reduce(function(s,l){ return s + (l.kcal||0); }, 0);
     var logged = (wToday?1:0) + (wc>0?1:0) + (caf>0?1:0) + (kcal>0?1:0);
-    if (h < 12 && logged === 0) return 'low';
-    if (caf >= 400)             return 'alert';
-    if (logged >= 3)            return 'hot';
-    if (wToday)                 return 'hot';
+    return { h:h, wToday:wToday, wc:wc, caf:caf, kcal:kcal, mealCount:nut.length, logged:logged };
+  }
+
+  function mood(s){
+    if (s.h < 12 && s.logged === 0) return 'low';
+    if (s.caf >= 400)               return 'alert';
+    if (s.logged >= 3)              return 'hot';
+    if (s.wToday)                   return 'hot';
     return 'calm';
   }
 
+  /* A real, contextual line — Nova's voice (no emoji, on-brand) */
+  function message(s){
+    if (s.caf >= 400) return 'That’s ' + s.caf + 'mg of caffeine today — ease off and drink some water.';
+    if (s.h < 12 && s.logged === 0) return 'Morning. Let’s start the day — a weigh-in, or your first water?';
+    if (!s.wToday && s.h >= 9) return 'No weigh-in yet today. Want to log it?';
+    if (s.wc > 0 && s.wc < 4) return 'You’re at ' + s.wc + ' so far on water — keep it flowing.';
+    if (s.logged >= 3) return 'You’re on top of it today. I’m proud of you.';
+    if (s.mealCount === 0 && s.h >= 13) return 'Nothing logged for food yet — don’t forget to eat.';
+    if (s.wToday && s.logged < 3) return 'Weight’s in. A few more things to log when you’re ready.';
+    return 'Everything’s looking steady. I’m right here if you need me.';
+  }
+
+  /* ── Build Nova ── */
   var fab = document.createElement('div');
   fab.id = 'novaFab';
   fab.setAttribute('aria-label', 'Nova');
@@ -47,18 +67,54 @@
       '</g>' +
     '</svg>';
 
-  function setMood(){ fab.className = 'nova-fab nova au-mood-' + mood(); }
-  setMood();
+  var bubble = document.createElement('div');
+  bubble.className = 'nova-bubble';
+  bubble.setAttribute('aria-live', 'polite');
+
+  var hideTimer = null;
+  function setMoodClass(){ fab.className = 'nova-fab nova au-mood-' + mood(signals()); }
+
+  function speak(){
+    var s = signals();
+    bubble.className = 'nova-bubble au-mood-' + mood(s);
+    bubble.textContent = message(s);
+    // force reflow then show (so transition runs even if re-tapped)
+    void bubble.offsetWidth;
+    bubble.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hide, 5200);
+  }
+  function hide(){ bubble.classList.remove('show'); }
 
   fab.addEventListener('click', function(){
     fab.classList.add('nova-poke');
     setTimeout(function(){ fab.classList.remove('nova-poke'); }, 600);
+    if (bubble.classList.contains('show')) hide(); else speak();
   });
 
-  function mount(){ if (document.body && !document.getElementById('novaFab')) document.body.appendChild(fab); }
+  function lookAround(){
+    fab.classList.add('nova-look');
+    setTimeout(function(){ fab.classList.remove('nova-look'); }, 1500);
+  }
+
+  function mount(){
+    if (!document.body || document.getElementById('novaFab')) return;
+    document.body.appendChild(fab);
+    document.body.appendChild(bubble);
+    setMoodClass();
+    // gentle intro once per session (not on every page navigation)
+    try {
+      if (!sessionStorage.getItem('nova_greeted')) {
+        sessionStorage.setItem('nova_greeted', '1');
+        setTimeout(speak, 1600);
+      }
+    } catch(e) { setTimeout(speak, 1600); }
+    // idle life
+    setInterval(function(){ if (!document.hidden && Math.random() < 0.5) lookAround(); }, 14000);
+  }
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 
-  document.addEventListener('visibilitychange', function(){ if (!document.hidden) setMood(); });
-  window.addEventListener('focus', setMood);
-  setInterval(setMood, 30000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) setMoodClass(); });
+  window.addEventListener('focus', setMoodClass);
+  setInterval(setMoodClass, 30000);
 })();
