@@ -16,7 +16,17 @@
   var SB_BASE = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   var SB_KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
   var APP_KEY = 'po-coach';
-  var KEYS    = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+  var KEYS    = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos',
+                 'po_tpl_folders', 'po_templates', 'po_exercises', 'po_workouts'];
+  /* Array keys merged by union-of-id (never lose templates/history across devices) */
+  var ID_UNION = { po_tpl_folders: 1, po_templates: 1, po_exercises: 1, po_workouts: 1 };
+  function mergeById(loc, rem) {
+    var map = {}, r = Array.isArray(rem) ? rem : [], l = Array.isArray(loc) ? loc : [];
+    for (var i = 0; i < r.length; i++) if (r[i] && r[i].id != null) map[r[i].id] = r[i];
+    for (var j = 0; j < l.length; j++) if (l[j] && l[j].id != null) map[l[j].id] = l[j]; // local wins same id
+    var out = []; for (var k in map) if (Object.prototype.hasOwnProperty.call(map, k)) out.push(map[k]);
+    return out;
+  }
 
   function hdrs() {
     return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
@@ -85,6 +95,7 @@
     for (var j = 0; j < rk.length; j++) {
       var k = rk[j];
       if (k === 'po_coach_weights') { m[k] = mergeWeights(loc[k], rem[k]); }
+      else if (ID_UNION[k])         { m[k] = mergeById(loc[k], rem[k]); }
       else if (!(k in m))           { m[k] = rem[k]; }
     }
     return m;
