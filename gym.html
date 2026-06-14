@@ -197,7 +197,7 @@
 
 <div class="w-wrap" id="wWrap"></div>
 
-<div class="w-sheet-bg" id="wSheetBg" onclick="closeSheet()"></div>
+<div class="w-sheet-bg" id="wSheetBg" onclick="sheetBgClose()"></div>
 <div class="w-sheet" id="wSheet"></div>
 
 <div class="w-modal-bg" id="wModalBg" data-act="rest-close"></div>
@@ -704,6 +704,7 @@ function openRestModal(){
   if(si) si.value=pad(cur%60);
   document.getElementById('wModalBg').classList.add('on');
   document.getElementById('wModal').classList.add('on');
+  restOpenedAt=Date.now();
   setTimeout(function(){ if(mi){ try{ mi.focus(); mi.select(); }catch(e){} } },260);
 }
 function closeRestModal(){ var b=document.getElementById('wModalBg'),m=document.getElementById('wModal'); if(b)b.classList.remove('on'); if(m)m.classList.remove('on'); }
@@ -712,8 +713,10 @@ function restSetFromInputs(){ var m=parseInt((document.getElementById('wRmMin')|
 window.openRestConfig=openRestModal;
 
 /* SHEET */
-function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; }
+var sheetOpenedAt=0, restOpenedAt=0;
+function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; sheetOpenedAt=Date.now(); }
 window.closeSheet=function(){ document.getElementById('wSheetBg').classList.remove('on'); document.getElementById('wSheet').classList.remove('on'); };
+window.sheetBgClose=function(){ if(Date.now()-sheetOpenedAt<450) return; window.closeSheet(); }; /* ignore the iOS ghost-click that lands on the backdrop right after opening */
 
 /* nav exports */
 window.go=function(v){ closeSheet(); view=v; render(); window.scrollTo(0,0); };
@@ -733,7 +736,7 @@ document.addEventListener('click', function(ev){
   if(act==='rest-config')      openRestModal();
   else if(act==='rest-pick')   applyRest(t.getAttribute('data-val'));
   else if(act==='rest-set')    restSetFromInputs();
-  else if(act==='rest-close')  closeRestModal();
+  else if(act==='rest-close'){ if(Date.now()-restOpenedAt>=450) closeRestModal(); }
   else if(act==='rest-adj')    window.restAdjust(t.getAttribute('data-val'));
   else if(act==='rest-skip')   removeRest();
   else if(act==='go')          go(t.getAttribute('data-val'));

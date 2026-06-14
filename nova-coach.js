@@ -174,10 +174,12 @@
   '.nc-good{border-left-color:#34E2B0;} .nc-push{border-left-color:#F2C063;} .nc-warn{border-left-color:#FF6B8B;} .nc-info{border-left-color:#9B8CFF;}'+
   '.nc-foot{font-family:var(--au-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--au-faint);text-align:center;margin-top:14px;line-height:1.5;}';
 
+  var ncOpenedAt=0;
   function ensureDOM(){
     if(document.getElementById('ncSheet')) return;
     var st=document.createElement('style'); st.textContent=CSS; document.head.appendChild(st);
-    var bg=document.createElement('div'); bg.id='ncBg'; bg.className='nc-bg'; bg.addEventListener('click', close);
+    var bg=document.createElement('div'); bg.id='ncBg'; bg.className='nc-bg';
+    bg.addEventListener('click', function(){ if(Date.now()-ncOpenedAt>=450) close(); }); /* ignore iOS ghost-click on open */
     var sh=document.createElement('div'); sh.id='ncSheet'; sh.className='nc-sheet';
     document.body.appendChild(bg); document.body.appendChild(sh);
   }
@@ -196,7 +198,7 @@
       '<div class="nc-headline">'+esc(b.headline)+'</div>'+
       b.cards.map(cardHTML).join('')+
       '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>';
-    document.getElementById('ncBg').classList.add('on'); sh.classList.add('on'); sh.scrollTop=0;
+    document.getElementById('ncBg').classList.add('on'); sh.classList.add('on'); sh.scrollTop=0; ncOpenedAt=Date.now();
     var x=document.getElementById('ncX'); if(x) x.addEventListener('click', close);
   }
   function close(){ var b=document.getElementById('ncBg'),s=document.getElementById('ncSheet'); if(b)b.classList.remove('on'); if(s)s.classList.remove('on'); }
