@@ -8,13 +8,13 @@
   // ── Level table ───────────────────────────────────────
   const LEVELS = [
     { n: 1, min: 0,    title: 'Recruit',    color: '#76746E' },
-    { n: 2, min: 150,  title: 'Operative',  color: '#7DD3FC' },
-    { n: 3, min: 400,  title: 'Agent',      color: '#7CB87A' },
+    { n: 2, min: 150,  title: 'Operative',  color: '#18C8C0' },
+    { n: 3, min: 400,  title: 'Agent',      color: '#34E2B0' },
     { n: 4, min: 800,  title: 'Specialist', color: '#F2C063' },
-    { n: 5, min: 1400, title: 'Commander',  color: '#C084FC' },
-    { n: 6, min: 2200, title: 'Director',   color: '#FB923C' },
-    { n: 7, min: 3200, title: 'Phantom',    color: '#38BDF8' },
-    { n: 8, min: 4500, title: 'Legend',     color: '#6EE7B7' },
+    { n: 5, min: 1400, title: 'Commander',  color: '#9B8CFF' },
+    { n: 6, min: 2200, title: 'Director',   color: '#5EEAD4' },
+    { n: 7, min: 3200, title: 'Phantom',    color: '#C4B5FD' },
+    { n: 8, min: 4500, title: 'Legend',     color: '#F4F1EA' },
   ];
 
   // ── Milestone definitions ────────────────────────────

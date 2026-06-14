@@ -782,6 +782,35 @@ body::after {
   .tile-emoji{ display:none !important; }
   .tile-title{ font-family:var(--au-serif) !important; font-style:italic; font-weight:400 !important; letter-spacing:-.01em; color:var(--au-ivory); }
   .tile.big .tile-title{ font-size:30px !important; }
+
+  /* ── Gamification (Agent Status) AURORA polish ── */
+  .xp-title{ font-family:var(--au-serif) !important; font-style:italic !important; font-weight:400 !important; letter-spacing:-.01em !important; }
+  .xp-hdr-right{ display:flex; align-items:center; gap:8px; }
+  .xp-streak{
+    font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.06em;
+    padding:4px 9px; border-radius:20px; color:#F2C063;
+    background:rgba(242,192,99,0.1); border:1px solid rgba(242,192,99,0.3);
+    white-space:nowrap;
+  }
+  .xp-ms-chip{ border-radius:12px !important; }
+
+  /* Level-up celebration modal */
+  .xp-levelup{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    background:rgba(3,4,6,0.62); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+    opacity:0; transition:opacity .35s ease; pointer-events:none;
+  }
+  .xp-levelup.show{ opacity:1; pointer-events:auto; }
+  .xp-levelup-card{
+    text-align:center; padding:30px 38px; border-radius:22px;
+    background:rgba(9,11,15,0.92); border:1px solid rgba(52,226,176,0.4);
+    box-shadow:0 0 70px rgba(52,226,176,0.28), 0 20px 60px rgba(0,0,0,0.6);
+    transform:scale(.88) translateY(8px); transition:transform .42s cubic-bezier(.34,1.56,.64,1);
+  }
+  .xp-levelup.show .xp-levelup-card{ transform:none; }
+  .xp-levelup-eyebrow{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.3em; color:#34E2B0; }
+  .xp-levelup-title{ font-family:var(--au-serif); font-style:italic; font-size:clamp(34px,9vw,46px); color:#F4F1EA; margin:10px 0 6px; line-height:1; }
+  .xp-levelup-sub{ font-family:var(--au-mono); font-size:11px; letter-spacing:.1em; color:rgba(244,241,234,0.5); text-transform:uppercase; }
 </style>
 </head>
 <body class="au-mood-hot" id="root">
@@ -941,7 +970,10 @@ body::after {
   <div class="xp-card" id="xpCard">
     <div class="xp-hdr">
       <span class="xp-hdr-label">◈ Agent Status</span>
-      <span class="xp-level-badge" id="xpBadge">LVL —</span>
+      <div class="xp-hdr-right">
+        <span class="xp-streak" id="xpStreak" style="display:none"></span>
+        <span class="xp-level-badge" id="xpBadge">LVL —</span>
+      </div>
     </div>
     <div class="xp-title-row">
       <span class="xp-title" id="xpTitle">—</span>
@@ -1246,10 +1278,48 @@ function renderIntelFeed() {
   `).join('');
 }
 
+/* ── Level-up celebration ───────────────────────── */
+function celebrateLevelUp(level) {
+  const el = document.createElement('div');
+  el.className = 'xp-levelup';
+  el.innerHTML =
+    '<div class="xp-levelup-card">' +
+      '<div class="xp-levelup-eyebrow">◈ LEVEL UP</div>' +
+      '<div class="xp-levelup-title">' + level.title + '</div>' +
+      '<div class="xp-levelup-sub">Level ' + level.level + ' · ' + level.xp.toLocaleString() + ' XP</div>' +
+    '</div>';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  // Nova celebrates too
+  const nova = document.getElementById('nova');
+  if (nova) { nova.classList.add('nova-poke'); setTimeout(() => nova.classList.remove('nova-poke'), 700); }
+  const close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); };
+  el.addEventListener('click', close);
+  setTimeout(close, 5000);
+}
+
 /* ── Agent Status (XP / Gamification) ───────────── */
 function renderAgentStatus() {
   if (!window.ALS || !window.ALS.XP) return;
-  const { level, milestones, thisWeek, lastWeek } = window.ALS.XP.compute();
+  const { data, level, milestones, thisWeek, lastWeek } = window.ALS.XP.compute();
+
+  // Streak chip
+  const streakEl = document.getElementById('xpStreak');
+  if (streakEl) {
+    if (data && data.streak >= 2) {
+      streakEl.textContent = '⚡ ' + data.streak + '-day streak';
+      streakEl.style.display = '';
+    } else {
+      streakEl.style.display = 'none';
+    }
+  }
+
+  // Level-up celebration (per-device, fires only when crossing a threshold)
+  try {
+    const prev = parseInt(localStorage.getItem('als_last_level') || '0', 10);
+    if (prev && level.level > prev) celebrateLevelUp(level);
+    localStorage.setItem('als_last_level', String(level.level));
+  } catch (e) { /* skip */ }
 
   // Dynamic accent from level color
   const hex  = level.color;
