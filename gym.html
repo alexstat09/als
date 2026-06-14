@@ -105,6 +105,15 @@
   .w-rest-time{font-family:var(--au-mono);font-size:20px;font-weight:700;color:rgb(var(--au-glow-rgb));min-width:58px;}
   .w-rest-lbl{font-family:var(--au-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);flex:1;}
   .w-rest-btn{font-family:var(--au-mono);font-size:11px;font-weight:700;color:var(--au-dim);background:rgba(255,255,255,.06);border:1px solid var(--au-line);border-radius:8px;padding:7px 11px;cursor:pointer;}
+  .w-rest.done{border-color:rgba(52,226,176,.7);box-shadow:0 0 34px rgba(52,226,176,.35);}
+  .w-rest.done .w-rest-lbl{color:rgb(var(--au-glow-rgb));}
+
+  /* rest config */
+  .w-restcfg{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-bottom:14px;font-family:var(--au-mono);font-size:11px;letter-spacing:.04em;color:var(--au-faint);background:rgba(255,255,255,.04);border:1px solid var(--au-line);border-radius:12px;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .w-restcfg b{color:rgb(var(--au-glow-rgb));font-size:13px;}
+  .w-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px;}
+  .w-preset{padding:15px 6px;border-radius:12px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-ivory);font-family:var(--au-mono);font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .w-preset.on{background:rgb(var(--au-glow-rgb));color:#04130D;border-color:transparent;box-shadow:0 0 16px rgba(var(--au-glow-rgb),.4);}
 
   /* history */
   .w-hist{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:15px 16px;margin-bottom:11px;}
@@ -316,6 +325,7 @@ function renderActive(){
   var a=getActive(); if(!a){ go('home'); return; }
   var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl">'+esc(a.name)+'</div></div>'+
     '<div style="display:flex;align-items:center;gap:10px;"><button class="w-cancel" onclick="cancelActive()">Cancel</button><button class="w-finish" onclick="finishActive()">Finish</button></div></div>';
+  html+='<div class="w-restcfg" onclick="openRestConfig()">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</div>';
   if(!a.entries.length){ html+='<div class="w-empty">No exercises yet.</div>'; }
   a.entries.forEach(function(en,ei){
     html+='<div class="w-card"><div class="w-ex" style="border:none;padding:0 0 4px;">'+
@@ -475,12 +485,24 @@ window.saveTpl=function(){
 };
 window.deleteTpl=function(){ if(!confirm('Delete this template?'))return; var list=templates().filter(function(x){return x.id!==window.__editTpl.id;}); save('po_templates',list); closeSheet(); go('home'); };
 
-/* REST TIMER */
+/* REST TIMER — default 3:00, change anytime, saved */
 var restInt=null, restLeft=0;
-function startRest(){ restLeft=120; showRest(); clearInterval(restInt); restInt=setInterval(function(){ restLeft--; if(restLeft<=0){ restSkip(); return; } showRest(); },1000); }
-function showRest(){ var bar=document.getElementById('wRest'); bar.classList.add('on'); document.getElementById('wRestTime').textContent=fmtDur(restLeft); }
+function restDefault(){ var v=ls('po_rest_default',180); return (typeof v==='number'&&v>0)?v:180; }
+function startRest(){ restLeft=restDefault(); showRest(); clearInterval(restInt); restInt=setInterval(function(){ restLeft--; if(restLeft<=0){ restDone(); return; } showRest(); },1000); }
+function showRest(){ var bar=document.getElementById('wRest'); if(!bar)return; bar.classList.add('on'); bar.classList.remove('done'); document.getElementById('wRestTime').textContent=fmtDur(restLeft); }
+function restDone(){ clearInterval(restInt); var b=document.getElementById('wRest'); if(b){ b.classList.add('on','done'); document.getElementById('wRestTime').textContent='0:00'; } try{ if(navigator.vibrate) navigator.vibrate([300,120,300]); }catch(e){} setTimeout(function(){ var x=document.getElementById('wRest'); if(x) x.classList.remove('on','done'); },2600); }
 window.restAdjust=function(d){ restLeft=Math.max(5,restLeft+d); showRest(); };
-window.restSkip=function(){ clearInterval(restInt); var b=document.getElementById('wRest'); if(b)b.classList.remove('on'); };
+window.restSkip=function(){ clearInterval(restInt); var b=document.getElementById('wRest'); if(b)b.classList.remove('on','done'); };
+window.openRestConfig=function(){
+  var cur=restDefault(); var presets=[60,90,120,150,180,210,240,300];
+  var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">Rest between sets</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<div class="w-sheet-sub">Starts automatically when you check off a set</div>'+
+    '<div class="w-presets">'+presets.map(function(s){return '<button class="w-preset'+(s===cur?' on':'')+'" onclick="pickRest('+s+')">'+fmtDur(s)+'</button>';}).join('')+'</div>'+
+    '<button class="w-btn-ghost" style="margin-top:10px;" onclick="customRest()">Custom…</button>';
+  openSheet(html);
+};
+window.pickRest=function(s){ save('po_rest_default', s); closeSheet(); if(view==='active') render(); };
+window.customRest=function(){ var m=prompt('Rest time in seconds:', String(restDefault())); if(m==null)return; var v=parseInt(m,10); if(isNaN(v)||v<5){ alert('Enter at least 5 seconds.'); return; } save('po_rest_default', v); closeSheet(); if(view==='active') render(); };
 
 /* SHEET */
 function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; }
