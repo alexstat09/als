@@ -89,7 +89,8 @@
   fab.addEventListener('click', function(){
     fab.classList.add('nova-poke');
     setTimeout(function(){ fab.classList.remove('nova-poke'); }, 600);
-    if (bubble.classList.contains('show')) hide(); else speak();
+    if (window.NovaCoach) { hide(); window.NovaCoach.open(); }
+    else if (bubble.classList.contains('show')) hide(); else speak();
   });
 
   function lookAround(){
