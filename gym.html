@@ -115,6 +115,26 @@
   .w-preset{padding:15px 6px;border-radius:12px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-ivory);font-family:var(--au-mono);font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .w-preset.on{background:rgb(var(--au-glow-rgb));color:#04130D;border-color:transparent;box-shadow:0 0 16px rgba(var(--au-glow-rgb),.4);}
 
+  /* compact rest popup */
+  .w-modal-bg{position:fixed;inset:0;z-index:70;background:rgba(3,4,6,.55);opacity:0;pointer-events:none;transition:opacity .18s;}
+  .w-modal-bg.on{opacity:1;pointer-events:auto;}
+  .w-modal{position:fixed;z-index:71;left:50%;top:40%;transform:translate(-50%,-50%) scale(.92);width:min(320px,86vw);
+    background:#0c0e13;border:1px solid rgba(var(--au-glow-rgb),.32);border-radius:20px;padding:22px 20px;
+    box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(var(--au-glow-rgb),.12);
+    opacity:0;pointer-events:none;transition:opacity .18s,transform .26s cubic-bezier(.34,1.5,.5,1);text-align:center;}
+  .w-modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .w-modal-title{font-family:var(--au-serif);font-style:italic;font-size:23px;color:var(--au-ivory);}
+  .w-modal-sub{font-family:var(--au-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin:3px 0 18px;}
+  .w-modal-time{display:flex;align-items:flex-start;justify-content:center;gap:8px;margin-bottom:16px;}
+  .w-modal-col{display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .w-modal-in{width:84px;background:rgba(255,255,255,.05);border:1px solid var(--au-line);border-radius:14px;padding:14px 4px;color:var(--au-ivory);font-family:var(--au-mono);font-size:38px;font-weight:700;text-align:center;outline:none;-webkit-appearance:none;}
+  .w-modal-in:focus{border-color:rgba(var(--au-glow-rgb),.6);background:rgba(var(--au-glow-rgb),.06);}
+  .w-modal-unit{font-family:var(--au-mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--au-faint);}
+  .w-modal-colon{font-family:var(--au-mono);font-size:34px;font-weight:700;color:var(--au-faint);line-height:1.6;}
+  .w-modal-quick{display:flex;gap:6px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;}
+  .w-modal-chip{font-family:var(--au-mono);font-size:11px;font-weight:700;color:var(--au-dim);background:rgba(255,255,255,.05);border:1px solid var(--au-line);border-radius:999px;padding:7px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .w-modal-chip:active{background:rgba(var(--au-glow-rgb),.2);color:var(--au-ivory);}
+
   /* history */
   .w-hist{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:15px 16px;margin-bottom:11px;}
   .w-hist-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
@@ -156,6 +176,25 @@
 
 <div class="w-sheet-bg" id="wSheetBg" onclick="closeSheet()"></div>
 <div class="w-sheet" id="wSheet"></div>
+
+<div class="w-modal-bg" id="wModalBg" data-act="rest-close"></div>
+<div class="w-modal" id="wModal">
+  <div class="w-modal-title">Rest between sets</div>
+  <div class="w-modal-sub">Set your own time</div>
+  <div class="w-modal-time">
+    <div class="w-modal-col"><input id="wRmMin" class="w-modal-in" type="number" inputmode="numeric" min="0" max="30" value="3"><span class="w-modal-unit">min</span></div>
+    <span class="w-modal-colon">:</span>
+    <div class="w-modal-col"><input id="wRmSec" class="w-modal-in" type="number" inputmode="numeric" min="0" max="59" value="00"><span class="w-modal-unit">sec</span></div>
+  </div>
+  <div class="w-modal-quick">
+    <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="60">1:00</button>
+    <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="90">1:30</button>
+    <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="120">2:00</button>
+    <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="180">3:00</button>
+    <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="240">4:00</button>
+  </div>
+  <button type="button" class="w-btn" data-act="rest-set">Set</button>
+</div>
 
 <script src="pocoach-sync.js?v=2"></script>
 <script src="nova.js" defer></script>
@@ -493,16 +532,19 @@ function showRest(){ var bar=document.getElementById('wRest'); if(!bar)return; b
 function restDone(){ clearInterval(restInt); var b=document.getElementById('wRest'); if(b){ b.classList.add('on','done'); document.getElementById('wRestTime').textContent='0:00'; } try{ if(navigator.vibrate) navigator.vibrate([300,120,300]); }catch(e){} setTimeout(function(){ var x=document.getElementById('wRest'); if(x) x.classList.remove('on','done'); },2600); }
 window.restAdjust=function(d){ restLeft=Math.max(5,restLeft+d); showRest(); };
 window.restSkip=function(){ clearInterval(restInt); var b=document.getElementById('wRest'); if(b)b.classList.remove('on','done'); };
-window.openRestConfig=function(){
-  var cur=restDefault(); var presets=[60,90,120,150,180,210,240,300];
-  var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">Rest between sets</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
-    '<div class="w-sheet-sub">Starts automatically when you check off a set</div>'+
-    '<div class="w-presets">'+presets.map(function(s){return '<button type="button" class="w-preset'+(s===cur?' on':'')+'" data-act="rest-pick" data-val="'+s+'">'+fmtDur(s)+'</button>';}).join('')+'</div>'+
-    '<button type="button" class="w-btn-ghost" style="margin-top:10px;" data-act="rest-custom">Custom…</button>';
-  openSheet(html);
-};
-window.pickRest=function(s){ s=parseInt(s,10); if(!s||s<5)return; save('po_rest_default', s); if(restInt){ restLeft=s; showRest(); } closeSheet(); render(); };
-window.customRest=function(){ var m=prompt('Rest time in seconds:', String(restDefault())); if(m==null)return; var v=parseInt(m,10); if(isNaN(v)||v<5){ alert('Enter at least 5 seconds.'); return; } save('po_rest_default', v); if(restInt){ restLeft=v; showRest(); } closeSheet(); render(); };
+function openRestModal(){
+  var cur=restDefault();
+  var mi=document.getElementById('wRmMin'), si=document.getElementById('wRmSec');
+  if(mi) mi.value=Math.floor(cur/60);
+  if(si) si.value=pad(cur%60);
+  document.getElementById('wModalBg').classList.add('on');
+  document.getElementById('wModal').classList.add('on');
+  setTimeout(function(){ if(mi){ try{ mi.focus(); mi.select(); }catch(e){} } },260);
+}
+function closeRestModal(){ var b=document.getElementById('wModalBg'),m=document.getElementById('wModal'); if(b)b.classList.remove('on'); if(m)m.classList.remove('on'); }
+function applyRest(sec){ sec=parseInt(sec,10); if(isNaN(sec)||sec<5) sec=5; save('po_rest_default',sec); if(restInt){ restLeft=sec; showRest(); } closeRestModal(); render(); }
+function restSetFromInputs(){ var m=parseInt((document.getElementById('wRmMin')||{}).value,10)||0; var s=parseInt((document.getElementById('wRmSec')||{}).value,10)||0; applyRest(m*60+s); }
+window.openRestConfig=openRestModal;
 
 /* SHEET */
 function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; }
@@ -523,9 +565,10 @@ document.addEventListener('click', function(ev){
   var t = ev.target && ev.target.closest ? ev.target.closest('[data-act]') : null;
   if(!t) return;
   var act = t.getAttribute('data-act');
-  if(act==='rest-config')      window.openRestConfig();
-  else if(act==='rest-pick')   window.pickRest(t.getAttribute('data-val'));
-  else if(act==='rest-custom') window.customRest();
+  if(act==='rest-config')      openRestModal();
+  else if(act==='rest-pick')   applyRest(t.getAttribute('data-val'));
+  else if(act==='rest-set')    restSetFromInputs();
+  else if(act==='rest-close')  closeRestModal();
 });
 })();
 </script>
