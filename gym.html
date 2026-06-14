@@ -154,6 +154,17 @@
   .w-prstat{font-family:var(--au-mono);font-size:10px;color:var(--au-faint);text-transform:uppercase;letter-spacing:.05em;}
   .w-prstat b{display:block;color:var(--au-ivory);font-size:19px;letter-spacing:-.01em;margin-bottom:2px;}
   .w-chartcap{display:flex;justify-content:space-between;font-family:var(--au-mono);font-size:9px;letter-spacing:.05em;color:var(--au-faint);text-transform:uppercase;margin-top:6px;}
+  /* weekly volume by muscle */
+  .w-vol-card{position:relative;background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:16px 17px;margin-bottom:14px;overflow:hidden;}
+  .w-vol-card::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--au-glow-rgb),.5),transparent);}
+  .w-vol-hd{font-family:var(--au-serif);font-style:italic;font-size:19px;color:var(--au-ivory);}
+  .w-vol-sub{font-family:var(--au-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--au-faint);margin:3px 0 15px;}
+  .w-vol-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+  .w-vol-row:last-child{margin-bottom:0;}
+  .w-vol-name{font-family:var(--au-mono);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--au-dim);width:78px;flex-shrink:0;}
+  .w-vol-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
+  .w-vol-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+  .w-vol-val{font-family:var(--au-mono);font-size:11px;font-weight:700;color:var(--au-ivory);width:50px;text-align:right;}
 
   /* history */
   .w-hist{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:15px 16px;margin-bottom:11px;}
@@ -510,11 +521,31 @@ function miniSpark(vals){
   var v=vals.slice(-12);
   return '<div class="w-spark">'+v.map(function(x,i){var h=Math.round((x-min)/range*26+4);return '<div class="w-spark-b'+(i===v.length-1?' last':'')+'" style="height:'+h+'px"></div>';}).join('')+'</div>';
 }
+var MUSCLE_TARGETS=[['Chest',14],['Back',16],['Shoulders',12],['Arms',12],['Legs',18],['Core',9]];
+function weekRange(){ var t=new Date(); t.setHours(0,0,0,0); var dow=(t.getDay()+6)%7; var s=new Date(t); s.setDate(t.getDate()-dow); return {start:dateKey(s), end:dateKey(t)}; }
+function weekVolume(){
+  var r=weekRange(), c={};
+  workouts().forEach(function(w){ if(w.date>=r.start && w.date<=r.end){ (w.entries||[]).forEach(function(en){ var m=(exById(en.exId).muscle)||en.muscle||'Other'; c[m]=(c[m]||0)+((en.sets&&en.sets.length)||0); }); } });
+  return c;
+}
+function renderVolume(){
+  var c=weekVolume();
+  var rows=MUSCLE_TARGETS.map(function(mt){
+    var m=mt[0], tgt=mt[1], n=c[m]||0;
+    var col = n>=tgt ? '#34E2B0' : n>=tgt*0.6 ? '#F2C063' : '#FF6B8B';
+    var pct = Math.min(100, Math.round(n/tgt*100)); if(n>0&&pct<7)pct=7;
+    return '<div class="w-vol-row"><span class="w-vol-name">'+m+'</span><div class="w-vol-track"><div class="w-vol-fill" style="width:'+pct+'%;background:'+col+';box-shadow:0 0 10px '+col+'66;"></div></div><span class="w-vol-val">'+n+'/'+tgt+'</span></div>';
+  }).join('');
+  var cardio=c['Cardio']||0;
+  if(cardio) rows+='<div class="w-vol-row"><span class="w-vol-name">Cardio</span><div class="w-vol-track"><div class="w-vol-fill" style="width:100%;background:#9B8CFF;box-shadow:0 0 10px #9B8CFF66;"></div></div><span class="w-vol-val">'+cardio+'</span></div>';
+  return '<div class="w-vol-card"><div class="w-vol-hd">This week’s volume</div><div class="w-vol-sub">Working sets per muscle &middot; hit the target to grow</div>'+rows+'</div>';
+}
 function renderStats(){
   view='stats';
   var html='<div class="w-hero"><div><div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>FITNESS</div><h1 class="w-hero-title">Progress.</h1></div>'+novaSvg()+'</div>'+segHTML('stats');
   var ids=trainedExIds();
   if(!ids.length){ html+='<div class="w-empty">Log a few workouts and your strength progress shows up here.</div>'; W.innerHTML=html; return; }
+  html+=renderVolume();
   ids.sort(function(a,b){ var ha=exHistory(a),hb=exHistory(b); var da=ha.length?ha[ha.length-1].date:''; var db=hb.length?hb[hb.length-1].date:''; return db<da?-1:db>da?1:0; });
   ids.forEach(function(id){
     var h=exHistory(id); if(!h.length)return;
