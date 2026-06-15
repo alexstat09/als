@@ -188,6 +188,25 @@
   .w-vol-fill{height:100%;border-radius:4px;transition:width .5s ease;}
   .w-vol-val{font-family:var(--au-mono);font-size:11px;font-weight:700;color:var(--au-ivory);width:50px;text-align:right;}
 
+  /* workout-complete celebration */
+  .w-done{position:relative;}
+  .w-done-hero{text-align:center;padding:4px 0 2px;position:relative;}
+  .w-done-hero .nova{width:78px;height:78px;margin:0 auto 8px;}
+  .w-done-eyebrow{font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(var(--au-glow-rgb),.85);}
+  .w-done-title{font-family:var(--au-serif);font-style:italic;font-weight:400;font-size:clamp(32px,9vw,44px);color:var(--au-ivory);line-height:1.02;letter-spacing:-.01em;margin:5px 0 3px;}
+  .w-done-name{font-family:var(--au-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-faint);}
+  .w-done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0 4px;}
+  .w-done-tile{position:relative;background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:15px 8px 13px;text-align:center;overflow:hidden;animation:wTileIn .55s cubic-bezier(.16,1,.3,1) both;}
+  .w-done-tile::before{content:'';position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 0%,rgba(var(--au-glow-rgb),.18),transparent 72%);pointer-events:none;}
+  .w-done-tile:nth-child(2){animation-delay:.09s;} .w-done-tile:nth-child(3){animation-delay:.18s;}
+  .w-done-tile b{position:relative;display:block;font-family:var(--au-mono);font-size:21px;font-weight:700;color:var(--au-ivory);letter-spacing:-.02em;line-height:1.1;}
+  .w-done-tile.pr b{color:var(--au-amber);}
+  .w-done-tile span{position:relative;font-family:var(--au-mono);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--au-faint);}
+  @keyframes wTileIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  .w-confetti{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none;z-index:3;overflow:visible;}
+  .w-confetti i{position:absolute;top:0;width:7px;height:12px;border-radius:2px;opacity:0;animation:wConf 1.6s cubic-bezier(.2,.6,.4,1) forwards;}
+  @keyframes wConf{0%{opacity:0;transform:translateY(-14px) rotate(0deg);}12%{opacity:1;}100%{opacity:0;transform:translateY(260px) rotate(460deg);}}
+
   /* history */
   .w-hist{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:15px 16px;margin-bottom:11px;}
   .w-hist-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
@@ -258,7 +277,7 @@ function pad(n){ return String(n).padStart(2,'0'); }
 function dateKey(d){ d=d||new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60; return h?h+':'+pad(m)+':'+pad(s):m+':'+pad(s); }
-function relDate(dk){ var d=new Date(dk+'T00:00:00'); var diff=Math.round((new Date()-d)/86400000); if(diff<=0)return'Today'; if(diff===1)return'Yesterday'; if(diff<7)return diff+' days ago'; return d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}); }
+function relDate(dk){ var d=new Date(dk+'T00:00:00'); var today=new Date(); today.setHours(0,0,0,0); var diff=Math.round((today-d)/86400000); if(diff<=0)return'Today'; if(diff===1)return'Yesterday'; if(diff<7)return diff+' days ago'; return d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}); }
 
 var TPL_VERSION = 3;
 var SEED_EX = [
@@ -698,27 +717,37 @@ window.saveSessionAsTemplate=function(){ var s=window.__lastSession; if(!s)retur
 function showSummary(s, srcTpl, changed){
   window.__lastSession=s;
   var prNames=s.prs.map(function(id){return exById(id).name;});
-  var html='<div class="w-sheet-grip"></div>'+
-    '<div class="w-sheet-hd"><div class="w-sheet-title">Workout complete</div><button class="w-x" onclick="closeSheet();go(\'home\')">✕</button></div>'+
-    '<div class="w-sheet-sub">'+esc(s.name)+' · '+relDate(s.date)+'</div>'+
-    '<div class="w-card"><div class="w-hist-stats" style="margin:0;">'+
-      '<div class="w-hist-stat"><b>'+fmtDur(s.durationSec)+'</b><br>Duration</div>'+
-      '<div class="w-hist-stat"><b>'+s.volume.toLocaleString()+' kg</b><br>Volume</div>'+
-      '<div class="w-hist-stat pr"><b>'+s.prs.length+'</b><br>PRs</div></div></div>';
-  if(prNames.length){ html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:8px;">🏆 New personal records</div>'+prNames.map(function(n){return '<div class="w-hist-row"><span class="nm">'+esc(n)+'</span></div>';}).join('')+'</div>'; }
-  html+=histExerciseRows(s);
+  var COLORS=['#34E2B0','#18C8C0','#9B8CFF','#F2C063'];
+  var nConf=prNames.length?22:12, conf='';
+  for(var i=0;i<nConf;i++){ conf+='<i style="left:'+Math.round(Math.random()*100)+'%;background:'+COLORS[i%4]+';animation-delay:'+(Math.random()*0.5).toFixed(2)+'s;"></i>'; }
+  var headline = prNames.length ? (prNames.length+' new PR'+(prNames.length>1?'s':'')+'.') : (s.volume>=4000?'Strong work.':'That’s logged.');
+  var setCount=0; (s.entries||[]).forEach(function(e){ setCount+=(e.sets||[]).length; });
+  var html='<div class="w-done"><div class="w-confetti">'+conf+'</div>'+
+    '<button class="w-x" style="position:absolute;top:6px;right:6px;z-index:4;" onclick="closeSheet();go(\'home\')">✕</button>'+
+    '<div class="w-done-hero">'+novaSvg()+
+      '<div class="w-done-eyebrow">Workout complete &middot; '+relDate(s.date)+'</div>'+
+      '<div class="w-done-title">'+esc(headline)+'</div>'+
+      '<div class="w-done-name">'+esc(s.name)+' &middot; '+setCount+' sets</div></div>'+
+    '<div class="w-done-stats">'+
+      '<div class="w-done-tile"><b>'+fmtDur(s.durationSec)+'</b><span>Duration</span></div>'+
+      '<div class="w-done-tile"><b>'+s.volume.toLocaleString()+'</b><span>kg volume</span></div>'+
+      '<div class="w-done-tile'+(s.prs.length?' pr':'')+'"><b>'+s.prs.length+'</b><span>'+(s.prs.length===1?'PR':'PRs')+'</span></div></div>';
+  if(prNames.length){ html+='<div class="w-card" style="margin-top:14px;"><div class="w-ex-muscle" style="margin-bottom:8px;color:var(--au-amber);">&#127942; New personal records</div>'+prNames.map(function(n){return '<div class="w-hist-row"><span class="nm">'+esc(n)+'</span><span class="bs" style="color:var(--au-amber);">★ PR</span></div>';}).join('')+'</div>'; }
+  html+='<div class="w-card" style="margin-top:14px;"><div class="w-ex-muscle" style="margin-bottom:8px;">Session log</div>'+histExerciseRows(s)+'</div>';
   if(changed && srcTpl){
-    html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:4px;">You changed this workout</div>'+
+    html+='<div class="w-card" style="margin-top:14px;"><div class="w-ex-muscle" style="margin-bottom:4px;">You changed this workout</div>'+
       '<div class="w-ex-last" style="margin:0 0 10px;">Your &ldquo;'+esc(srcTpl.name)+'&rdquo; template is untouched. Keep these changes?</div>'+
       '<button class="w-btn" onclick="updateTplFromSession()">Update &ldquo;'+esc(srcTpl.name)+'&rdquo;</button>'+
       '<button class="w-btn-ghost" style="margin-top:8px;" onclick="saveSessionAsTemplate()">Save as a new template</button></div>';
   } else if(changed && !srcTpl){
-    html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:4px;">Save this as a template?</div>'+
+    html+='<div class="w-card" style="margin-top:14px;"><div class="w-ex-muscle" style="margin-bottom:4px;">Save this as a template?</div>'+
       '<div class="w-ex-last" style="margin:0 0 10px;">Reuse this exact workout next time in one tap.</div>'+
       '<button class="w-btn-ghost" onclick="saveSessionAsTemplate()">Save as a template</button></div>';
   }
-  html+='<button class="w-btn" style="margin-top:16px;" onclick="closeSheet();go(\'home\')">Done</button>';
+  html+='<button class="w-btn" style="margin-top:16px;" onclick="closeSheet();go(\'home\')">Done &#8594; back to home</button>';
+  html+='</div>';
   openSheet(html);
+  try{ if(navigator.vibrate) navigator.vibrate(prNames.length?[40,60,40,60,80]:[30]); }catch(e){}
 }
 
 /* HISTORY */
