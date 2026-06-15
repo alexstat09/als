@@ -263,6 +263,7 @@
     <button type="button" class="w-modal-chip" data-act="rest-pick" data-val="240">4:00</button>
   </div>
   <button type="button" class="w-btn" data-act="rest-set">Set</button>
+  <button type="button" class="w-btn-ghost" id="wNotifEnable" data-act="notif-enable" style="margin-top:10px;display:none;">&#128276; Alert me when rest ends</button>
 </div>
 
 <script src="pocoach-sync.js?v=2"></script>
@@ -1005,7 +1006,8 @@ function restTick(){
   if(!r.doneAt){ r.doneAt=Date.now(); var a=getActive(); if(a){ a.rest=r; setActive(a); } }
   if(Date.now()-(r.doneAt||Date.now())>=4000) clearRest();
 }
-function clearRest(){ clearInterval(restInt); restInt=null; var a=getActive(); if(a&&a.rest){ a.rest=null; setActive(a); } if(view==='active') render(); }
+function swMsg(m){ try{ if(navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(m); }catch(e){} }
+function clearRest(){ clearInterval(restInt); restInt=null; swMsg({type:'cancel-rest'}); var a=getActive(); if(a&&a.rest){ a.rest=null; setActive(a); } if(view==='active') render(); }
 function removeRest(){ clearRest(); }
 function restSkip(){ clearInterval(restInt); restInt=null; } /* finish/cancel path — active is cleared right after */
 window.restAdjust=function(d){ var a=getActive(); if(!a||!a.rest)return; a.rest.endAt=Math.max(Date.now()+5000, a.rest.endAt+(parseInt(d,10)||0)*1000); a.rest.doneAt=null; restAlerted=false; setActive(a); var el=document.getElementById('wRestTime'); if(el) el.textContent=fmtDur(restLeftSecs()); var bar=document.getElementById('wRestInline'); if(bar) bar.classList.remove('done'); ensureRest(); };
@@ -1014,6 +1016,8 @@ function openRestModal(){
   var mi=document.getElementById('wRmMin'), si=document.getElementById('wRmSec');
   if(mi) mi.value=Math.floor(cur/60);
   if(si) si.value=pad(cur%60);
+  var nb=document.getElementById('wNotifEnable');
+  if(nb) nb.style.display = ('Notification' in window && Notification.permission!=='granted') ? '' : 'none';
   document.getElementById('wModalBg').classList.add('on');
   document.getElementById('wModal').classList.add('on');
   restOpenedAt=Date.now();
@@ -1043,8 +1047,15 @@ window.deleteWorkout=function(id){ if(!confirm('Delete this workout permanently?
 if(getActive()) view='active';
 render();
 window.addEventListener('storage', function(){ if(view!=='active') render(); });
-/* iOS freezes JS when backgrounded — on return, rebuild so timers re-sync from wall-clock */
-document.addEventListener('visibilitychange', function(){ if(!document.hidden && view==='active' && getActive()) render(); });
+/* iOS freezes JS when backgrounded — hand the rest end-time to the service worker
+   so it can fire the "rest complete" notification; on return, rebuild so the
+   wall-clock timers re-sync. */
+function restHandoff(){ if(view!=='active')return; var r=getRest(); if(r && (r.endAt-Date.now())>500) swMsg({type:'schedule-rest', endAt:r.endAt}); }
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ restHandoff(); }
+  else { swMsg({type:'cancel-rest'}); if(view==='active' && getActive()) render(); }
+});
+window.addEventListener('pagehide', restHandoff);
 window.addEventListener('focus', function(){ if(view==='active' && getActive()) render(); });
 
 /* Swipe a set row right→left to delete it (Strong-style) */
@@ -1080,6 +1091,7 @@ document.addEventListener('click', function(ev){
   else if(act==='rest-close'){ if(Date.now()-restOpenedAt>=450) closeRestModal(); }
   else if(act==='rest-adj')    window.restAdjust(t.getAttribute('data-val'));
   else if(act==='rest-skip')   removeRest();
+  else if(act==='notif-enable'){ requestNotify(); var nb=document.getElementById('wNotifEnable'); if(nb) nb.style.display='none'; }
   else if(act==='go')          go(t.getAttribute('data-val'));
   else if(act==='ex-progress') exerciseProgress(t.getAttribute('data-val'));
   else if(act==='close-sheet') closeSheet();

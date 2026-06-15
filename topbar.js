@@ -421,7 +421,19 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
     });
   }
 
+  function registerServiceWorker() {
+    // Offline support + rest-timer notifications (Pillar 5). Top window only.
+    try {
+      if ('serviceWorker' in navigator && window.self === window.top) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function () {});
+        });
+      }
+    } catch (e) {}
+  }
+
   function boot() {
+    registerServiceWorker();
     injectStyleAndHTML();
     const btn = document.getElementById('topbarWaterAdd');
     if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); addWater(); });
