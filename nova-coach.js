@@ -55,6 +55,159 @@
     return cand ? ((exMap[cand.id]||{}).name||cand.id) : null;
   }
 
+  /* ════════ CROSS-DOMAIN CORRELATIONS — the magic ════════
+     Aligns every domain by day, then surfaces ONLY patterns with
+     enough data and a real effect. Never invents a trend. */
+  function pearson(xs, ys){
+    var n=xs.length; if(n<3) return 0;
+    var sx=0,sy=0,sxx=0,syy=0,sxy=0;
+    for(var i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; sxx+=xs[i]*xs[i]; syy+=ys[i]*ys[i]; sxy+=xs[i]*ys[i]; }
+    var cov=sxy-sx*sy/n, vx=sxx-sx*sx/n, vy=syy-sy*sy/n;
+    if(vx<=0||vy<=0) return 0;
+    return cov/Math.sqrt(vx*vy);
+  }
+  function avg(a){ return a.length ? a.reduce(function(s,v){return s+v;},0)/a.length : 0; }
+  /* Compare two groups; return means only if the effect is large enough
+     (Cohen's d) and both groups are big enough — so random noise on small
+     samples never reads as a real pattern. */
+  function groupSig(A, B, minN, minD){
+    if(A.length<minN || B.length<minN) return null;
+    var a=avg(A), b=avg(B);
+    function vv(arr,m){ if(arr.length<2) return 0; var s=0; for(var i=0;i<arr.length;i++){ var x=arr[i]-m; s+=x*x; } return s/(arr.length-1); }
+    var sp=Math.sqrt(((A.length-1)*vv(A,a)+(B.length-1)*vv(B,b))/Math.max(1,A.length+B.length-2));
+    var d = sp>0 ? (a-b)/sp : (a===b?0:(a>b?9:-9));
+    if(Math.abs(d)<minD) return null;
+    return { a:a, b:b, d:d };
+  }
+  function addDays(key, n){ var p=key.split('-').map(Number); var d=new Date(p[0],p[1]-1,p[2]); d.setDate(d.getDate()+n); return dk(d); }
+  function isoWeek(key){
+    var p=key.split('-').map(Number); var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));
+    var day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3);
+    var firstThu=new Date(Date.UTC(d.getUTCFullYear(),0,4));
+    var wk=1+Math.round(((d-firstThu)/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7);
+    return d.getUTCFullYear()+'-W'+pad(wk);
+  }
+
+  function proteinTarget(){ return Math.round((((ls('po_water_v1',{})||{}).profile||{}).weightKg||75)*2); }
+
+  /* One record per day, every domain aligned by date key. */
+  function dayRecords(){
+    var byDay={};
+    function rec(k){ return byDay[k]||(byDay[k]={key:k}); }
+    (ls('sleep:logs',[])||[]).forEach(function(e){ if(!e||!e.dateKey) return; var r=rec(e.dateKey);
+      if(e.hours>0) r.sleepHours=e.hours; if(e.quality!=null) r.sleepQuality=e.quality; if(e.energy!=null) r.energy=e.energy;
+      var rv=(e.recovery!=null)?e.recovery:recoveryScore(e); if(rv!=null) r.recovery=rv; });
+    (ls('po_coach_weights',[])||[]).forEach(function(e){ if(e&&e.dateKey&&typeof e.weight==='number') rec(e.dateKey).weight=e.weight; });
+    (ls('po_workouts',[])||[]).forEach(function(w){ if(!w||!w.date) return; var r=rec(w.date); r.trained=true; r.volume=(r.volume||0)+(w.volume||0); if(w.prs&&w.prs.length) r.pr=true; });
+    (ls('nut:logs',[])||[]).forEach(function(l){ if(!l||!l.ts) return; var r=rec(dk(new Date(l.ts))); r.protein=(r.protein||0)+(l.p||0); r.kcal=(r.kcal||0)+(l.kcal||0); });
+    (ls('caf:logs',[])||[]).forEach(function(l){ if(!l||!l.ts) return; var d=new Date(l.ts); var r=rec(dk(d)); r.caf=(r.caf||0)+(l.mg||0); if(d.getHours()>=16) r.cafLate=(r.cafLate||0)+(l.mg||0); });
+    return byDay;
+  }
+
+  function correlations(){
+    var byDay=dayRecords();
+    var keys=Object.keys(byDay).sort();
+    var out=[];
+
+    // 1) Late caffeine (after 4pm) → next morning's sleep quality
+    (function(){
+      var withLate=[], without=[];
+      keys.forEach(function(k){ var next=byDay[addDays(k,1)]; if(!next || next.sleepQuality==null) return;
+        ((byDay[k].cafLate||0)>=80 ? withLate : without).push(next.sleepQuality); });
+      var g1=groupSig(withLate, without, 4, 0.7);
+      if(g1 && (g1.b-g1.a)>=0.5) out.push({strength:Math.min(0.92,0.74+(g1.b-g1.a)*0.06), tone:'warn',
+          title:'Late caffeine is costing you sleep',
+          detail:'After caffeine past 4pm your sleep quality averages '+g1.a.toFixed(1)+'/5, versus '+g1.b.toFixed(1)+'/5 on clean nights. Keep coffee to the morning and you sleep — and lift — better.',
+          line:'I spotted it: caffeine after 4pm drops your sleep to '+g1.a.toFixed(1)+'/5 (vs '+g1.b.toFixed(1)+'). Keep the coffee to mornings.', href:'sleep.html'});
+    })();
+
+    // 2) Recovery → training volume (same-day)
+    (function(){
+      var xs=[], ys=[];
+      keys.forEach(function(k){ var r=byDay[k]; if(r.trained && r.recovery!=null && r.volume>0){ xs.push(r.recovery); ys.push(r.volume); } });
+      if(xs.length>=16){ var rr=pearson(xs,ys);
+        if(rr>=0.7) out.push({strength:0.55+rr*0.25, tone:'good',
+          title:'You train harder when you’re recovered',
+          detail:'Across '+xs.length+' sessions your training volume climbs with your recovery score. Protect your sleep and the hard work follows on its own.',
+          line:'Your biggest sessions follow your best-recovered mornings — sleep is quietly driving your gains.', href:'sleep.html'}); }
+    })();
+
+    // 3) PR days vs ordinary sessions — recovery gap
+    (function(){
+      var prRec=[], otherRec=[];
+      keys.forEach(function(k){ var r=byDay[k]; if(!r.trained||r.recovery==null) return; (r.pr?prRec:otherRec).push(r.recovery); });
+      var g3=groupSig(prRec, otherRec, 6, 1.2);
+      if(g3 && (g3.a-g3.b)>=14 && otherRec.length>=10) out.push({strength:0.8, tone:'good',
+          title:'Your PRs land on well-rested days',
+          detail:'On days you set a PR, recovery averaged '+Math.round(g3.a)+'/100 — versus '+Math.round(g3.b)+' on your other sessions. Wake up recovered? That’s the day to chase a record.',
+          line:'Your PRs come on your well-rested days (recovery '+Math.round(g3.a)+' vs '+Math.round(g3.b)+'). Big lift coming? Sleep first.', href:'sleep.html'});
+    })();
+
+    // 4) Protein → weekly weight change (recomp signal). Uses each week's
+    //    AVERAGE weight (smooths daily scale noise) and the change vs the
+    //    previous qualified week, so a real trend — not jitter — is needed.
+    (function(){
+      var wk={}, target=proteinTarget();
+      keys.forEach(function(k){ var w=isoWeek(k); var o=wk[w]||(wk[w]={prot:[], wts:[]});
+        if(byDay[k].protein>0) o.prot.push(byDay[k].protein); if(byDay[k].weight!=null) o.wts.push(byDay[k].weight); });
+      var summary=[];
+      Object.keys(wk).sort().forEach(function(w){ var o=wk[w]; if(o.prot.length>=3 && o.wts.length>=3) summary.push({prot:avg(o.prot), wt:avg(o.wts)}); });
+      var hit=[], miss=[];
+      for(var i=1;i<summary.length;i++){ var change=summary[i].wt - summary[i-1].wt;
+        (summary[i].prot>=target*0.9 ? hit : miss).push(change); }
+      var g4=groupSig(hit, miss, 5, 1.2);
+      if(g4 && (g4.b-g4.a)>=0.3) out.push({strength:0.62, tone:'good',
+          title:'Protein weeks are leaner weeks',
+          detail:'In weeks you average ~'+target+'g protein your weight moves '+g4.a.toFixed(1)+'kg week-on-week; in weeks you don’t, '+(g4.b>0?'+':'')+g4.b.toFixed(1)+'kg. Protein is doing the recomp.',
+          line:'When you hit your protein, your weight trends down ('+g4.a.toFixed(1)+'kg/wk vs '+(g4.b>0?'+':'')+g4.b.toFixed(1)+'). Keep loading it.', href:'nutrition.html'});
+    })();
+
+    // 5) Sleep hours → morning energy
+    (function(){
+      var xs=[], ys=[];
+      keys.forEach(function(k){ var r=byDay[k]; if(r.sleepHours>0 && r.energy!=null){ xs.push(r.sleepHours); ys.push(r.energy); } });
+      if(xs.length>=16){ var rr=pearson(xs,ys);
+        if(rr>=0.7) out.push({strength:0.5+rr*0.2, tone:'info',
+          title:'More sleep, more energy',
+          detail:'Your morning energy tracks your sleep across '+xs.length+' mornings. The nights you get a real 8h, the next day feels it.',
+          line:'The pattern’s clear — more sleep, more energy the next day. Protect that bedtime.', href:'sleep.html'}); }
+    })();
+
+    out.sort(function(a,b){ return b.strength-a.strength; });
+    return out;
+  }
+
+  /* ════════ WEEKLY LETTER FROM NOVA — memory & reflection ════════ */
+  function weeklyLetter(){
+    var byDay=dayRecords();
+    var today=new Date(), keys=[];
+    for(var i=6;i>=0;i--){ var d=new Date(today); d.setDate(d.getDate()-i); keys.push(dk(d)); }
+    var workoutsN=0, vol=0, prs=0, recVals=[], sleepVals=[], protVals=[], days=0;
+    keys.forEach(function(k){ var r=byDay[k]; if(!r) return; days++;
+      if(r.trained){ workoutsN++; vol+=r.volume||0; } if(r.pr) prs++;
+      if(r.recovery!=null) recVals.push(r.recovery); if(r.sleepHours>0) sleepVals.push(r.sleepHours); if(r.protein>0) protVals.push(r.protein); });
+    if(workoutsN===0 && !recVals.length && !sleepVals.length) return null; // nothing to reflect on yet
+
+    // weight change across the window (first vs last logged inside it)
+    var inWin=keys.map(function(k){ return byDay[k]&&byDay[k].weight!=null ? {k:k,w:byDay[k].weight} : null; }).filter(Boolean);
+    var wDelta=(inWin.length>=2) ? (inWin[inWin.length-1].w - inWin[0].w) : null;
+
+    var u=(ls('po_coach_v1',{})||{}).units||'kg';
+    var lines=[];
+    if(workoutsN) lines.push('You trained '+workoutsN+' time'+(workoutsN>1?'s':'')+' and moved '+Math.round(vol).toLocaleString()+' '+u+' of total volume'+(prs?' — with '+prs+' new PR'+(prs>1?'s':''):'')+'. '+(prs?'That’s real, measurable progress.':'Consistency like that is what compounds.'));
+    else lines.push('No sessions logged this week. No guilt — just get one in. Momentum is easier to keep than to rebuild.');
+    if(sleepVals.length) lines.push('You averaged '+avg(sleepVals).toFixed(1)+'h of sleep'+(recVals.length?' and a recovery score of '+Math.round(avg(recVals))+'/100':'')+'. '+(avg(sleepVals)>=8?'That’s the foundation everything else is built on — keep it.':'A little more sleep is the cheapest gain available to you.'));
+    if(wDelta!=null && Math.abs(wDelta)>=0.1) lines.push('Your weight '+(wDelta<0?'came down ':'ticked up ')+Math.abs(wDelta).toFixed(1)+' '+u+' this week'+(protVals.length?', on ~'+Math.round(avg(protVals))+'g protein a day':'')+'. '+(wDelta<0?'Recomp is working — lean out, hold the muscle.':'Fine if you meant to; worth a glance if not.'));
+    lines.push('You’re 17 and building the body — and the discipline — most people never do. I’m watching it happen. Let’s make next week even better.');
+    return { title:'Your week, from Nova', body:lines, line:'I wrote you a letter about your week — tap to read it.' };
+  }
+
+  function todaysGoals(){
+    var g=ls('goals:'+dk(),[])||[]; if(!Array.isArray(g)||!g.length) return null;
+    var done=g.filter(function(x){return x&&x.done;}).length;
+    return { total:g.length, done:done };
+  }
+
   function gather(){
     var now=new Date(), h=now.getHours(), today=dk();
     var workouts=ls('po_workouts',[])||[];
@@ -185,6 +338,20 @@
       cards.push({p:38,tone:'info',title:'Supplements pending',detail:d.suppTaken+' of '+d.suppTotal+' taken today.',
         line:'A few supplements still to take today ('+d.suppTaken+'/'+d.suppTotal+').',href:'body.html'});
 
+    // Cross-domain patterns Nova has spotted across your whole life — the magic.
+    var cors=correlations();
+    cors.slice(0,2).forEach(function(c){
+      cards.push({ p:76+Math.round((c.strength||0)*7), tone:c.tone, insight:true,
+        title:c.title, detail:c.detail, line:c.line, href:c.href });
+    });
+
+    // Memory: the goals he set himself today.
+    var gl=todaysGoals();
+    if(gl && gl.done<gl.total && d.h>=11)
+      cards.push({p:44,tone:'info',title:'Your goals for today',
+        detail:gl.done+' of '+gl.total+' done. Close the loop on what you set out to do — future you is counting on it.',
+        line:gl.done+'/'+gl.total+' goals done today — let’s finish what you started.',href:'main.html'});
+
     if(!cards.length) cards.push({p:10,tone:'good',title:'You are on top of it',
       detail:'Nothing urgent — everything is tracking well. Consistency like this is exactly what builds the best version of you.',
       line:'Everything is on track today. Consistency is your superpower — keep going.'});
@@ -215,6 +382,13 @@
   '.nc-card-d{font-size:12.5px;color:var(--au-dim);line-height:1.42;}'+
   '.nc-card-go{font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--au-glow-rgb));margin-top:7px;}'+
   '.nc-good{border-left-color:#34E2B0;} .nc-push{border-left-color:#F2C063;} .nc-warn{border-left-color:#FF6B8B;} .nc-info{border-left-color:#9B8CFF;}'+
+  '.nc-card-eyebrow{font-family:var(--au-mono);font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgb(var(--au-glow-rgb));margin-bottom:5px;}'+
+  '.nc-insight{border-left-color:#9B8CFF;background:linear-gradient(180deg,rgba(155,140,255,.07),var(--au-glass));}'+
+  '.nc-letter{position:relative;border:1px solid rgba(var(--au-glow-rgb),.32);border-radius:16px;padding:16px 17px;margin-bottom:14px;background:linear-gradient(180deg,rgba(var(--au-glow-rgb),.08),rgba(255,255,255,.02));}'+
+  '.nc-letter-eyebrow{font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgb(var(--au-glow-rgb));margin-bottom:6px;}'+
+  '.nc-letter-title{font-family:var(--au-serif);font-style:italic;font-size:22px;color:var(--au-ivory);margin-bottom:11px;line-height:1.1;}'+
+  '.nc-letter-p{font-family:var(--au-serif);font-style:italic;font-size:15px;line-height:1.5;color:var(--au-dim);margin-bottom:9px;}'+
+  '.nc-letter-p:last-child{margin-bottom:0;color:var(--au-ivory);}'+
   '.nc-foot{font-family:var(--au-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--au-faint);text-align:center;margin-top:14px;line-height:1.5;}';
 
   var ncOpenedAt=0;
@@ -229,7 +403,19 @@
   function cardHTML(c){
     var go = c.href ? '<div class="nc-card-go">Tap to open &rarr;</div>' : '';
     var attr = c.href ? ' data-nc-go="'+c.href+'"' : '';
-    return '<div class="nc-card nc-'+c.tone+'"'+attr+'><div class="nc-card-t">'+esc(c.title)+'</div><div class="nc-card-d">'+esc(c.detail)+'</div>'+go+'</div>';
+    var eyebrow = c.insight ? '<div class="nc-card-eyebrow">✦ Pattern Nova spotted</div>' : '';
+    return '<div class="nc-card nc-'+c.tone+(c.insight?' nc-insight':'')+'"'+attr+'>'+eyebrow+'<div class="nc-card-t">'+esc(c.title)+'</div><div class="nc-card-d">'+esc(c.detail)+'</div>'+go+'</div>';
+  }
+  /* Weekly letter — shown once per ISO week (first open of a new week). */
+  function letterHTMLIfDue(){
+    try{
+      var nowWk=isoWeek(dk());
+      if(localStorage.getItem('nova_letter_week')===nowWk) return '';
+      var L=weeklyLetter(); if(!L) return '';
+      localStorage.setItem('nova_letter_week', nowWk);
+      return '<div class="nc-letter"><div class="nc-letter-eyebrow">A letter from Nova</div><div class="nc-letter-title">'+esc(L.title)+'</div>'+
+        L.body.map(function(p){ return '<div class="nc-letter-p">'+esc(p)+'</div>'; }).join('')+'</div>';
+    }catch(e){ return ''; }
   }
   function open(){
     ensureDOM();
@@ -239,6 +425,7 @@
     sh.innerHTML='<div class="nc-grip"></div>'+
       '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow">NOVA &middot; YOUR COACH</div><div class="nc-greet">'+esc(b.greeting)+', Alex.</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
       '<div class="nc-headline">'+esc(b.headline)+'</div>'+
+      letterHTMLIfDue()+
       b.cards.map(cardHTML).join('')+
       '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>';
     document.getElementById('ncBg').classList.add('on'); sh.classList.add('on'); sh.scrollTop=0; ncOpenedAt=Date.now();
@@ -246,7 +433,7 @@
   }
   function close(){ var b=document.getElementById('ncBg'),s=document.getElementById('ncSheet'); if(b)b.classList.remove('on'); if(s)s.classList.remove('on'); }
 
-  window.NovaCoach={ open:open, close:close, brief:build };
+  window.NovaCoach={ open:open, close:close, brief:build, correlations:correlations, letter:weeklyLetter };
 
   /* tap any Nova avatar anywhere → open the coach; tap a card with a target → go */
   document.addEventListener('click', function(ev){

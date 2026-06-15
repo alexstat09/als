@@ -67,6 +67,12 @@
       '</g>' +
     '</svg>';
 
+  // Alert badge — pulses when Nova has something worth your attention.
+  var badge = document.createElement('span');
+  badge.id = 'novaBadge';
+  badge.className = 'nova-badge';
+  fab.appendChild(badge);
+
   var bubble = document.createElement('div');
   bubble.className = 'nova-bubble';
   bubble.setAttribute('aria-live', 'polite');
@@ -84,12 +90,61 @@
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hide, 5200);
   }
+  function bubbleSpeak(text){
+    var s = signals();
+    bubble.className = 'nova-bubble au-mood-' + mood(s);
+    bubble.textContent = text;
+    void bubble.offsetWidth;
+    bubble.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hide, 6800);
+  }
   function hide(){ bubble.classList.remove('show'); }
+
+  /* ── Proactive intelligence (no tap required) ───────────────── */
+  function briefLine(fallback){
+    try { if (window.NovaCoach && window.NovaCoach.brief) { var b = window.NovaCoach.brief(); if (b && b.headline) return b.headline; } } catch(e){}
+    return fallback;
+  }
+  function sleptToday(){ return (ls('sleep:logs')||[]).some(function(e){ return e && e.dateKey===tk() && (e.hours>0 || e.quality!=null); }); }
+  function trainedToday(){ return (ls('po_workouts')||[]).some(function(w){ return w && w.date===tk(); }); }
+  function isoWk(){ var d=new Date(); var day=(d.getDay()+6)%7; var x=new Date(d); x.setDate(d.getDate()-day+3); var f=new Date(x.getFullYear(),0,4); var w=1+Math.round(((x-f)/86400000 - 3 + ((f.getDay()+6)%7))/7); return x.getFullYear()+'-W'+String(w).padStart(2,'0'); }
+  function letterDue(){ try { return !!(window.NovaCoach && window.NovaCoach.letter && window.NovaCoach.letter() && localStorage.getItem('nova_letter_week')!==isoWk()); } catch(e){ return false; } }
+
+  function urgent(){
+    var h = new Date().getHours();
+    if (h>=6 && h<12 && !sleptToday()) return true;       // morning: sleep not logged
+    if (letterDue()) return true;                          // unread weekly letter
+    try { if (window.NovaCoach && window.NovaCoach.brief) { var b = window.NovaCoach.brief(); if (b && b.cards && b.cards[0] && b.cards[0].p>=80) return true; } } catch(e){}
+    return false;
+  }
+  function updateBadge(){ if (badge) badge.style.display = urgent() ? 'block' : 'none'; }
+
+  function eveningLine(){
+    if (trainedToday()) return 'Good work today — you trained and showed up. Now get real sleep and let it pay you back.';
+    var s = signals();
+    if (s.logged>=3) return 'Solid day of staying on top of things. Wind down, hydrate, aim for an early night.';
+    return 'Winding down. Log what’s left when you can, then rest — tomorrow is built on tonight’s sleep.';
+  }
+  function proactive(){
+    var h = new Date().getHours(), t = tk();
+    if (h>=5 && h<12 && !ls('nova_morning:'+t)) {
+      try { localStorage.setItem('nova_morning:'+t, '1'); } catch(e){}
+      setTimeout(function(){ bubbleSpeak(sleptToday() ? briefLine(message(signals())) : 'Morning, Alex. How did you sleep? Tap me to log it.'); }, 1500);
+      return true;
+    }
+    if (h>=20 && !ls('nova_evening:'+t)) {
+      try { localStorage.setItem('nova_evening:'+t, '1'); } catch(e){}
+      setTimeout(function(){ bubbleSpeak(eveningLine()); }, 1500);
+      return true;
+    }
+    return false;
+  }
 
   fab.addEventListener('click', function(){
     fab.classList.add('nova-poke');
     setTimeout(function(){ fab.classList.remove('nova-poke'); }, 600);
-    if (window.NovaCoach) { hide(); window.NovaCoach.open(); }
+    if (window.NovaCoach) { hide(); window.NovaCoach.open(); setTimeout(updateBadge, 100); }
     else if (bubble.classList.contains('show')) hide(); else speak();
   });
 
@@ -103,19 +158,26 @@
     document.body.appendChild(fab);
     document.body.appendChild(bubble);
     setMoodClass();
-    // gentle intro once per session (not on every page navigation)
-    try {
-      if (!sessionStorage.getItem('nova_greeted')) {
-        sessionStorage.setItem('nova_greeted', '1');
-        setTimeout(speak, 1600);
-      }
-    } catch(e) { setTimeout(speak, 1600); }
+    updateBadge();
+    // Proactive: morning check-in / evening reflection (once per day each).
+    var fired = false;
+    try { fired = proactive(); } catch(e){}
+    // Otherwise, a gentle once-per-session intro.
+    if (!fired) {
+      try {
+        if (!sessionStorage.getItem('nova_greeted')) {
+          sessionStorage.setItem('nova_greeted', '1');
+          setTimeout(speak, 1600);
+        }
+      } catch(e) { setTimeout(speak, 1600); }
+    }
     // idle life
     setInterval(function(){ if (!document.hidden && Math.random() < 0.5) lookAround(); }, 14000);
   }
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 
-  document.addEventListener('visibilitychange', function(){ if (!document.hidden) setMoodClass(); });
-  window.addEventListener('focus', setMoodClass);
-  setInterval(setMoodClass, 30000);
+  function tick(){ setMoodClass(); updateBadge(); }
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) tick(); });
+  window.addEventListener('focus', tick);
+  setInterval(tick, 30000);
 })();
