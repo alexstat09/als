@@ -1,0 +1,44 @@
+// Schedules a delayed Web Push for when the rest timer ends, using QStash
+// (Upstash) to call /api/fire-push at the right second — works even when the
+// app is fully closed. Returns the QStash messageId so the client can cancel.
+function readBody(req) {
+  if (req.body && typeof req.body === 'object') return req.body;
+  try { return JSON.parse(req.body || '{}'); } catch (e) { return {}; }
+}
+
+module.exports = async function (req, res) {
+  if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  try {
+    const body = readBody(req);
+    const subscription = body.subscription;
+    const endAt = +body.endAt || 0;
+    if (!subscription || !endAt) { res.status(400).json({ error: 'missing subscription/endAt' }); return; }
+
+    const token = process.env.QSTASH_TOKEN;
+    if (!token) { res.status(200).json({ skipped: 'QStash not configured' }); return; }
+
+    const delaySec = Math.max(1, Math.round((endAt - Date.now()) / 1000));
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const dest = proto + '://' + host + '/api/fire-push';
+
+    const r = await fetch('https://qstash.upstash.io/v2/publish/' + encodeURIComponent(dest), {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Upstash-Delay': delaySec + 's'
+      },
+      body: JSON.stringify({
+        subscription: subscription,
+        title: body.title || 'Rest complete 💪',
+        body: body.body || 'Time for your next set.',
+        tag: 'als-rest'
+      })
+    });
+    const j = await r.json().catch(function () { return {}; });
+    res.status(200).json({ messageId: j.messageId || null });
+  } catch (e) {
+    res.status(200).json({ error: String((e && e.message) || e) });
+  }
+};

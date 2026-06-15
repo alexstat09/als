@@ -267,6 +267,7 @@
 </div>
 
 <script src="pocoach-sync.js?v=2"></script>
+<script src="push.js" defer></script>
 <script src="nova.js" defer></script>
 <script>
 (function(){
@@ -574,10 +575,10 @@ function openTpl(id){
 }
 
 /* ACTIVE WORKOUT */
-function startEmpty(){ requestNotify(); ensureAudio(); setActive({ id:uid(), name:'Quick Workout', templateId:null, startedAt:new Date().toISOString(), entries:[] }); go('active'); }
+function startEmpty(){ if(window.ALSPush){ window.ALSPush.enable(); } else requestNotify(); ensureAudio(); setActive({ id:uid(), name:'Quick Workout', templateId:null, startedAt:new Date().toISOString(), entries:[] }); go('active'); }
 function startFromTpl(id){
   var t=templates().find(function(x){return x.id===id;}); if(!t)return;
-  requestNotify(); ensureAudio();
+  if(window.ALSPush){ window.ALSPush.enable(); } else requestNotify(); ensureAudio();
   var entries=t.items.map(function(it){
     var ex=exById(it.exId); var le=lastEntryFor(it.exId); var tm=isTime(ex); var sets=[];
     for(var i=0;i<it.sets;i++){ var prev = le && le.sets[i];
@@ -1006,8 +1007,7 @@ function restTick(){
   if(!r.doneAt){ r.doneAt=Date.now(); var a=getActive(); if(a){ a.rest=r; setActive(a); } }
   if(Date.now()-(r.doneAt||Date.now())>=4000) clearRest();
 }
-function swMsg(m){ try{ if(navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(m); }catch(e){} }
-function clearRest(){ clearInterval(restInt); restInt=null; swMsg({type:'cancel-rest'}); var a=getActive(); if(a&&a.rest){ a.rest=null; setActive(a); } if(view==='active') render(); }
+function clearRest(){ clearInterval(restInt); restInt=null; if(window.ALSPush) window.ALSPush.cancelRest(); var a=getActive(); if(a&&a.rest){ a.rest=null; setActive(a); } if(view==='active') render(); }
 function removeRest(){ clearRest(); }
 function restSkip(){ clearInterval(restInt); restInt=null; } /* finish/cancel path — active is cleared right after */
 window.restAdjust=function(d){ var a=getActive(); if(!a||!a.rest)return; a.rest.endAt=Math.max(Date.now()+5000, a.rest.endAt+(parseInt(d,10)||0)*1000); a.rest.doneAt=null; restAlerted=false; setActive(a); var el=document.getElementById('wRestTime'); if(el) el.textContent=fmtDur(restLeftSecs()); var bar=document.getElementById('wRestInline'); if(bar) bar.classList.remove('done'); ensureRest(); };
@@ -1047,13 +1047,13 @@ window.deleteWorkout=function(id){ if(!confirm('Delete this workout permanently?
 if(getActive()) view='active';
 render();
 window.addEventListener('storage', function(){ if(view!=='active') render(); });
-/* iOS freezes JS when backgrounded — hand the rest end-time to the service worker
-   so it can fire the "rest complete" notification; on return, rebuild so the
-   wall-clock timers re-sync. */
-function restHandoff(){ if(view!=='active')return; var r=getRest(); if(r && (r.endAt-Date.now())>500) swMsg({type:'schedule-rest', endAt:r.endAt}); }
+/* iOS freezes JS when backgrounded — so when you leave mid-rest we ask the
+   server to push you a "rest complete" alert at the end-time (fires even with
+   the app closed). On return we cancel it and rebuild so the timers re-sync. */
+function restHandoff(){ if(view!=='active')return; var r=getRest(); if(r && (r.endAt-Date.now())>1500 && window.ALSPush) window.ALSPush.scheduleRest(r.endAt); }
 document.addEventListener('visibilitychange', function(){
   if(document.hidden){ restHandoff(); }
-  else { swMsg({type:'cancel-rest'}); if(view==='active' && getActive()) render(); }
+  else { if(window.ALSPush) window.ALSPush.cancelRest(); if(view==='active' && getActive()) render(); }
 });
 window.addEventListener('pagehide', restHandoff);
 window.addEventListener('focus', function(){ if(view==='active' && getActive()) render(); });
@@ -1091,7 +1091,7 @@ document.addEventListener('click', function(ev){
   else if(act==='rest-close'){ if(Date.now()-restOpenedAt>=450) closeRestModal(); }
   else if(act==='rest-adj')    window.restAdjust(t.getAttribute('data-val'));
   else if(act==='rest-skip')   removeRest();
-  else if(act==='notif-enable'){ requestNotify(); var nb=document.getElementById('wNotifEnable'); if(nb) nb.style.display='none'; }
+  else if(act==='notif-enable'){ if(window.ALSPush){ window.ALSPush.enable().then(function(){ var nb=document.getElementById('wNotifEnable'); if(nb) nb.style.display='none'; }); } else { requestNotify(); var nb2=document.getElementById('wNotifEnable'); if(nb2) nb2.style.display='none'; } }
   else if(act==='go')          go(t.getAttribute('data-val'));
   else if(act==='ex-progress') exerciseProgress(t.getAttribute('data-val'));
   else if(act==='close-sheet') closeSheet();

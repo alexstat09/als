@@ -74,27 +74,19 @@ self.addEventListener('fetch', function (e) {
   );
 });
 
-/* ── Rest-timer background notification ──────────────────────────
-   The page posts {type:'schedule-rest', endAt} when it backgrounds
-   mid-rest, and {type:'cancel-rest'} when rest is resumed/skipped. */
-var restTimer = null;
-self.addEventListener('message', function (e) {
-  var d = e.data || {};
-  if (d.type === 'schedule-rest') {
-    if (restTimer) { clearTimeout(restTimer); restTimer = null; }
-    var delay = Math.max(0, (d.endAt || 0) - Date.now());
-    restTimer = setTimeout(function () {
-      restTimer = null;
-      self.registration.showNotification('Rest complete 💪', {
-        body: 'Time for your next set.',
-        tag: 'als-rest', renotify: true,
-        icon: 'icon-192.png', badge: 'icon-192.png',
-        vibrate: [300, 140, 300]
-      });
-    }, delay);
-  } else if (d.type === 'cancel-rest') {
-    if (restTimer) { clearTimeout(restTimer); restTimer = null; }
-  }
+/* ── Web Push: show the notification the server sent ─────────────
+   Used for the rest-timer alert (delivered at the rest end-time even
+   when the app is closed) and, later, daily reminders. */
+self.addEventListener('push', function (e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; }
+  catch (err) { try { data = { body: e.data.text() }; } catch (_) {} }
+  e.waitUntil(self.registration.showNotification(data.title || 'ALS Dashboard', {
+    body: data.body || '',
+    tag: data.tag || 'als', renotify: true,
+    icon: 'icon-192.png', badge: 'icon-192.png',
+    vibrate: [300, 140, 300]
+  }));
 });
 
 self.addEventListener('notificationclick', function (e) {
