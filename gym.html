@@ -91,6 +91,25 @@
   .w-check.on{background:rgb(var(--au-glow-rgb));color:#04130D;border-color:transparent;box-shadow:0 0 14px rgba(var(--au-glow-rgb),.5);}
   .w-addset{font-family:var(--au-mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--au-glow-rgb));background:rgba(var(--au-glow-rgb),.08);border:1px solid rgba(var(--au-glow-rgb),.25);border-radius:8px;padding:8px;width:100%;cursor:pointer;margin-top:4px;-webkit-tap-highlight-color:transparent;}
 
+  /* per-exercise tools (reorder / remove) */
+  .w-ex-tools{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+  .w-itool{width:30px;height:30px;border-radius:8px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-dim);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;}
+  .w-itool:active{background:rgba(255,255,255,.1);}
+  .w-itool.del{color:var(--au-rose);}
+  /* per-side toggle */
+  .w-side{font-family:var(--au-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:7px 11px;border-radius:999px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-faint);cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;}
+  .w-side.on{background:rgba(155,140,255,.16);border-color:rgba(155,140,255,.5);color:#9B8CFF;}
+  /* per-exercise note */
+  .w-note{display:block;width:100%;background:rgba(255,255,255,.03);border:1px dashed var(--au-line);border-radius:9px;padding:8px 11px;color:var(--au-dim);font-family:var(--au-serif);font-style:italic;font-size:13px;outline:none;margin:2px 0 9px;}
+  .w-note:focus{border-color:rgba(var(--au-glow-rgb),.5);color:var(--au-ivory);background:rgba(255,255,255,.05);}
+  .w-note::placeholder{color:var(--au-faint);}
+  /* swipe-to-delete a set */
+  .w-set-wrap{position:relative;overflow:hidden;border-radius:10px;margin-bottom:7px;}
+  .w-set-wrap .w-set{margin-bottom:0;background:#0a0c11;border-radius:10px;padding:5px 6px;position:relative;z-index:1;transition:transform .18s ease;}
+  .w-set-wrap .w-set.swiping{transition:none;}
+  .w-set-del{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;background:linear-gradient(90deg,rgba(255,107,139,.15),rgba(255,107,139,.92));color:#240007;font-family:var(--au-mono);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:10px;}
+  .w-hist-note{font-family:var(--au-serif);font-style:italic;font-size:11.5px;color:var(--au-faint);padding:1px 0 5px;}
+
   /* active header */
   .w-active-bar{position:sticky;top:0;z-index:5;background:rgba(7,8,11,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--au-line);margin:-22px -16px 16px;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .w-timer{font-family:var(--au-mono);font-size:22px;font-weight:700;color:var(--au-ivory);letter-spacing:-.02em;}
@@ -269,7 +288,12 @@ var SEED_EX = [
   ['hipabductor','Hip Abductor (Machine)','Legs'],
   ['standingcalf','Standing Calf Raise (Machine)','Legs'],
   ['seatedcalf-plate','Seated Calf Raise (Plate Loaded)','Legs'],
-  ['cycling','Cycling (Indoor)','Cardio']
+  ['cycling','Cycling (Indoor)','Cardio','time'],
+  ['treadmill','Treadmill','Cardio','time'],
+  ['stairmaster','Stairmaster','Cardio','time'],
+  ['rowing-erg','Rowing (Machine)','Cardio','time'],
+  ['incline-walk','Incline Walk','Cardio','time'],
+  ['plank','Plank','Core','time']
 ];
 var SEED_FOLDERS = [ {id:'f-cbas',name:'Chest·Back / Arms·Shoulders / U·L'}, {id:'f-ul',name:'Upper / Lower'}, {id:'f-ppl',name:'PPL split'} ];
 var SEED_TPLS = [
@@ -291,8 +315,15 @@ function buildTpls(){ return SEED_TPLS.map(function(t){return {id:t.id,folderId:
 function seed(){
   // exercises: merge canonical into existing (never lose customs)
   var ex=ls('po_exercises',null);
-  if(!ex){ save('po_exercises', SEED_EX.map(function(e){return {id:e[0],name:e[1],muscle:e[2]};})); }
-  else { var ids={}; ex.forEach(function(e){ids[e.id]=1;}); var added=false; SEED_EX.forEach(function(e){ if(!ids[e[0]]){ ex.push({id:e[0],name:e[1],muscle:e[2]}); added=true; } }); if(added) save('po_exercises',ex); }
+  if(!ex){ save('po_exercises', SEED_EX.map(function(e){return {id:e[0],name:e[1],muscle:e[2],kind:e[3]||'weight'};})); }
+  else {
+    var byId={}; ex.forEach(function(e){byId[e.id]=e;}); var changed=false;
+    SEED_EX.forEach(function(e){
+      if(!byId[e[0]]){ ex.push({id:e[0],name:e[1],muscle:e[2],kind:e[3]||'weight'}); changed=true; }
+      else if(e[3] && !byId[e[0]].kind){ byId[e[0]].kind=e[3]; changed=true; } // backfill time-kind onto existing
+    });
+    if(changed) save('po_exercises',ex);
+  }
   // templates + folders: reseed to canonical on version bump
   if(ls('po_tpl_version',0) < TPL_VERSION){
     save('po_tpl_folders', SEED_FOLDERS.slice());
@@ -307,7 +338,15 @@ function seed(){
 seed();
 
 function exercises(){ return ls('po_exercises',[]); }
-function exById(id){ return exercises().find(function(e){return e.id===id;}) || {id:id,name:id,muscle:''}; }
+function exById(id){ return exercises().find(function(e){return e.id===id;}) || {id:id,name:id,muscle:'',kind:'weight'}; }
+/* time-based (cardio / holds) = log duration, not kg×reps */
+function isTime(o){ return o && (o.kind==='time' || o.muscle==='Cardio'); }
+function parseTime(str){ str=String(str==null?'':str).trim(); if(!str) return 0;
+  if(str.indexOf(':')!==-1){ var p=str.split(':'); return (parseInt(p[0],10)||0)*60 + (parseInt(p[1],10)||0); }
+  return Math.round((parseFloat(str.replace(',','.'))||0)*60); } // bare number = minutes
+function fmtMMSS(secs){ secs=Math.max(0,Math.round(secs||0)); return Math.floor(secs/60)+':'+pad(secs%60); }
+/* accept "70.5" or "70,5" from any decimal keypad */
+function numVal(v){ var n=parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(n)?'':n; }
 function folders(){ return ls('po_tpl_folders',[]); }
 function templates(){ return ls('po_templates',[]); }
 function workouts(){ return ls('po_workouts',[]); }
@@ -402,14 +441,16 @@ function openTpl(id){
 }
 
 /* ACTIVE WORKOUT */
-function startEmpty(){ setActive({ id:uid(), name:'Quick Workout', templateId:null, startedAt:new Date().toISOString(), entries:[] }); go('active'); }
+function startEmpty(){ requestNotify(); ensureAudio(); setActive({ id:uid(), name:'Quick Workout', templateId:null, startedAt:new Date().toISOString(), entries:[] }); go('active'); }
 function startFromTpl(id){
   var t=templates().find(function(x){return x.id===id;}); if(!t)return;
+  requestNotify(); ensureAudio();
   var entries=t.items.map(function(it){
-    var le=lastEntryFor(it.exId); var sets=[];
-    for(var i=0;i<it.sets;i++){ var prev = le && le.sets[i]; sets.push({ kg: prev?prev.kg:'', reps: prev?prev.reps:'', done:false }); }
-    var ex=exById(it.exId);
-    return { exId:it.exId, name:ex.name, muscle:ex.muscle, sets:sets };
+    var ex=exById(it.exId); var le=lastEntryFor(it.exId); var tm=isTime(ex); var sets=[];
+    for(var i=0;i<it.sets;i++){ var prev = le && le.sets[i];
+      if(tm) sets.push({ secs: prev&&prev.secs?prev.secs:'', done:false });
+      else sets.push({ kg: prev?prev.kg:'', reps: prev?prev.reps:'', done:false }); }
+    return { exId:it.exId, name:ex.name, muscle:ex.muscle, kind:tm?'time':'weight', note:'', perSide:false, sets:sets };
   });
   setActive({ id:uid(), name:t.name, templateId:id, startedAt:new Date().toISOString(), entries:entries });
   closeSheet(); go('active');
@@ -423,56 +464,102 @@ function renderActive(){
   var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl">'+esc(a.name)+'</div></div>'+
     '<div style="display:flex;align-items:center;gap:10px;"><button type="button" class="w-cancel" onclick="cancelActive()">✕ Discard</button><button class="w-finish" onclick="finishActive()">Finish</button></div></div>';
   html+='<button type="button" class="w-restcfg" data-act="rest-config">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
-  if(!a.entries.length){ html+='<div class="w-empty">No exercises yet.</div>'; }
+  if(!a.entries.length){ html+='<div class="w-empty">No exercises yet. Add one below.</div>'; }
   a.entries.forEach(function(en,ei){
-    var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
-    var doneMax=0; en.sets.forEach(function(s){ if(s.done){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
-    html+='<div class="w-card"><div class="w-ex" style="border:none;padding:0 0 4px;">'+
+    var tm=isTime(en);
+    html+='<div class="w-card">';
+    html+='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
       '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
-      '<div class="w-ex-main"><div class="w-ex-name">'+esc(en.name)+'</div><div class="w-ex-muscle">'+esc(en.muscle)+'</div></div>'+
-      '<button class="w-mini w-del" onclick="removeEx('+ei+')">remove</button></div>';
-    if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
-    else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
-    html+='<div class="w-set-head"><span>SET</span><span>KG</span><span>REPS</span><span></span></div>';
-    en.sets.forEach(function(s,si){
-      var v=e1rm(s.kg,s.reps);
-      var beat = s.done && v>0 && (allTime>0 ? v>allTime : (v>=doneMax));
-      html+='<div class="w-set'+(s.done?' done':'')+(beat?' beat':'')+'">'+
-        '<span class="w-set-num">'+(si+1)+'</span>'+
-        '<input class="w-in" type="number" inputmode="decimal" placeholder="0" value="'+(s.kg!==''&&s.kg!=null?s.kg:'')+'" oninput="setVal('+ei+','+si+',\'kg\',this.value)">'+
-        '<input class="w-in" type="number" inputmode="numeric" placeholder="0" value="'+(s.reps!==''&&s.reps!=null?s.reps:'')+'" oninput="setVal('+ei+','+si+',\'reps\',this.value)">'+
-        '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')" title="'+(beat?'New PR!':'')+'">'+(beat?'★':'✓')+'</button></div>';
-    });
+      '<div class="w-ex-main"><div class="w-ex-name">'+esc(en.name)+'</div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
+      '<div class="w-ex-tools">'+
+        (ei>0?'<button type="button" class="w-itool" onclick="moveEx('+ei+',-1)" aria-label="Move up">&#9650;</button>':'')+
+        (ei<a.entries.length-1?'<button type="button" class="w-itool" onclick="moveEx('+ei+',1)" aria-label="Move down">&#9660;</button>':'')+
+        '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
+      '</div></div>';
+    html+='<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="setNote('+ei+',this.value)">';
+    if(tm){
+      var lastT=lastTimeFor(en.exId);
+      html+='<div class="w-target">'+(lastT?'Last time <b>'+fmtMMSS(lastT)+'</b> &middot; beat it':'Log your time — minutes (e.g. 20) or mm:ss.')+'</div>';
+      html+='<div class="w-set-head" style="grid-template-columns:38px 1fr 44px;"><span>SET</span><span>TIME · MIN:SEC</span><span></span></div>';
+      en.sets.forEach(function(s,si){
+        html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
+          '<div class="w-set'+(s.done?' done':'')+'" style="grid-template-columns:38px 1fr 44px;">'+
+          '<span class="w-set-num">'+(si+1)+'</span>'+
+          '<input class="w-in" type="text" inputmode="text" placeholder="0:00" value="'+(s.secs?fmtMMSS(s.secs):'')+'" onchange="setTime('+ei+','+si+',this.value)">'+
+          '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')">✓</button></div></div>';
+      });
+    } else {
+      var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
+      var doneMax=0; en.sets.forEach(function(s){ if(s.done){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
+      if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
+      else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
+      html+='<button type="button" class="w-side'+(en.perSide?' on':'')+'" onclick="togglePerSide('+ei+')">'+(en.perSide?'✓ Per side (each hand counts double)':'＋ Per side / single-arm?')+'</button>';
+      html+='<div class="w-set-head"><span>SET</span><span>'+(en.perSide?'KG/SIDE':'KG')+'</span><span>REPS</span><span></span></div>';
+      en.sets.forEach(function(s,si){
+        var v=e1rm(s.kg,s.reps);
+        var beat = s.done && v>0 && (allTime>0 ? v>allTime : (v>=doneMax));
+        html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
+          '<div class="w-set'+(s.done?' done':'')+(beat?' beat':'')+'">'+
+          '<span class="w-set-num">'+(si+1)+'</span>'+
+          '<input class="w-in" type="text" inputmode="decimal" placeholder="0" value="'+(s.kg!==''&&s.kg!=null?s.kg:'')+'" oninput="setVal('+ei+','+si+',\'kg\',this.value)">'+
+          '<input class="w-in" type="text" inputmode="numeric" placeholder="0" value="'+(s.reps!==''&&s.reps!=null?s.reps:'')+'" oninput="setVal('+ei+','+si+',\'reps\',this.value)">'+
+          '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')" title="'+(beat?'New PR!':'')+'">'+(beat?'★':'✓')+'</button></div></div>';
+      });
+    }
     html+='<button class="w-addset" onclick="addSet('+ei+')">&#65291; Add set</button>';
-    if(restRunning() && ei===restCardIdx) html+=restInlineHTML();
+    if(restRunning() && ei===restCardIndex()) html+=restInlineHTML();
     html+='</div>';
   });
   html+='<button class="w-btn-ghost" style="margin-top:6px;" onclick="pickExercise(addExToActive)">&#65291; Add exercise</button>';
   W.innerHTML=html;
   startTimer();
+  if(getActive() && getActive().rest) ensureRest();
 }
 function startTimer(){
   clearInterval(timerInt);
   function tick(){ var a=getActive(); if(!a){clearInterval(timerInt);return;} var el=document.getElementById('wTimer'); if(el) el.textContent=fmtDur((Date.now()-new Date(a.startedAt).getTime())/1000); }
   tick(); timerInt=setInterval(tick,1000);
 }
-function setVal(ei,si,field,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si][field]= val===''?'':(+val); setActive(a); }
-function toggleSet(ei,si){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si]; s.done=!s.done; setActive(a); if(s.done){ restStart(ei); } else if(restCardIdx===ei){ clearInterval(restInt); restInt=null; restCardIdx=-1; } render(); }
-function addSet(ei){ var a=getActive(); if(!a)return; var sets=a.entries[ei].sets; var last=sets[sets.length-1]||{kg:'',reps:''}; sets.push({kg:last.kg,reps:last.reps,done:false}); setActive(a); render(); }
+function setVal(ei,si,field,val){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si];
+  if(field==='kg') s.kg = (val===''?'':numVal(val));
+  else s.reps = (val===''?'':(parseInt(val,10)||0));
+  setActive(a); }
+function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); render(); }
+function setNote(ei,val){ var a=getActive(); if(!a)return; a.entries[ei].note=val; setActive(a); } /* no re-render — keep focus */
+function togglePerSide(ei){ var a=getActive(); if(!a)return; a.entries[ei].perSide=!a.entries[ei].perSide; setActive(a); render(); }
+function moveEx(ei,dir){ var a=getActive(); if(!a)return; var j=ei+dir; if(j<0||j>=a.entries.length)return; var t=a.entries[ei]; a.entries[ei]=a.entries[j]; a.entries[j]=t; setActive(a); render(); }
+function toggleSet(ei,si){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si]; s.done=!s.done;
+  if(s.done){ ensureAudio(); setActive(a); restStart(ei); }
+  else { if(a.rest && a.rest.ei===ei){ a.rest=null; clearInterval(restInt); restInt=null; } setActive(a); }
+  render(); }
+function addSet(ei){ var a=getActive(); if(!a)return; var en=a.entries[ei]; var sets=en.sets; var last=sets[sets.length-1];
+  if(isTime(en)) sets.push({ secs:(last&&last.secs)?last.secs:'', done:false });
+  else sets.push({ kg:last?last.kg:'', reps:last?last.reps:'', done:false });
+  setActive(a); render(); }
+function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); render(); }
 function removeEx(ei){ var a=getActive(); if(!a)return; if(!confirm('Remove '+a.entries[ei].name+' from this workout?'))return; a.entries.splice(ei,1); setActive(a); render(); }
-function addExToActive(ex){ var a=getActive(); if(!a)return; a.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,sets:[{kg:'',reps:'',done:false}]}); setActive(a); closeSheet(); render(); }
+function lastTimeFor(exId){ var le=lastEntryFor(exId); if(!le)return 0; var m=0; (le.sets||[]).forEach(function(s){ if((s.secs||0)>m)m=s.secs; }); return m; }
+function addExToActive(ex){ var a=getActive(); if(!a)return; var tm=isTime(ex);
+  a.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',note:'',perSide:false,sets:[ tm?{secs:'',done:false}:{kg:'',reps:'',done:false} ]});
+  setActive(a); closeSheet(); render(); }
 function cancelActive(){ if(!confirm('Discard this workout? Nothing will be saved.'))return; clearInterval(timerInt); restSkip(); save('po_active',null); go('home'); }
 
 function finishActive(){
   var a=getActive(); if(!a)return;
   var entries=[]; var volume=0; var prExs=[];
   a.entries.forEach(function(en){
+    if(isTime(en)){
+      var ds=en.sets.filter(function(s){return s.done && (s.secs||0)>0;});
+      if(!ds.length) return;
+      entries.push({exId:en.exId,name:en.name,muscle:en.muscle,kind:'time',note:en.note||'',sets:ds.map(function(s){return {secs:s.secs,done:true};})});
+      return;
+    }
     var doneSets=en.sets.filter(function(s){return s.done && (+s.reps||0)>0;});
     if(!doneSets.length) return;
-    var prevBest=bestE1rmFor(en.exId,a.id); var thisBest=0;
-    doneSets.forEach(function(s){ volume+=(+s.kg||0)*(+s.reps||0); var v=e1rm(s.kg,s.reps); if(v>thisBest)thisBest=v; });
+    var prevBest=bestE1rmFor(en.exId,a.id); var thisBest=0; var mult=en.perSide?2:1;
+    doneSets.forEach(function(s){ volume+=(+s.kg||0)*(+s.reps||0)*mult; var v=e1rm(s.kg,s.reps); if(v>thisBest)thisBest=v; });
     if(thisBest>prevBest && prevBest>0) prExs.push(en.exId);
-    entries.push({exId:en.exId,name:en.name,muscle:en.muscle,sets:doneSets.map(function(s){return {kg:+s.kg||0,reps:+s.reps||0,done:true};})});
+    entries.push({exId:en.exId,name:en.name,muscle:en.muscle,kind:'weight',perSide:!!en.perSide,note:en.note||'',sets:doneSets.map(function(s){return {kg:+s.kg||0,reps:+s.reps||0,done:true};})});
   });
   if(!entries.length){ if(!confirm('No sets were checked off. Discard this workout?'))return; save('po_active',null); clearInterval(timerInt); restSkip(); go('home'); return; }
   var dur=(Date.now()-new Date(a.startedAt).getTime())/1000;
@@ -481,10 +568,22 @@ function finishActive(){
   var hist=workouts(); hist.unshift(session); save('po_workouts',hist);
   var done=ls('po_coach_workout_done',{})||{}; done[dk]=new Date().toISOString(); save('po_coach_workout_done',done);
   save('po_coach_logs:'+dk, entries.map(function(e){return {exId:e.exId,name:e.name,sets:e.sets};}));
+  var srcTpl = session.templateId ? templates().find(function(x){return x.id===session.templateId;}) : null;
+  var changed = tplDiffers(srcTpl, entries);
   save('po_active',null); clearInterval(timerInt); restSkip();
-  showSummary(session);
+  showSummary(session, srcTpl, changed);
 }
-function showSummary(s){
+/* did the workout deviate from the template it started from? */
+function tplDiffers(tpl, entries){
+  if(!tpl) return entries.length>0;
+  if((tpl.items||[]).length!==entries.length) return true;
+  for(var i=0;i<entries.length;i++){ if(tpl.items[i].exId!==entries[i].exId) return true; if((tpl.items[i].sets||0)!==entries[i].sets.length) return true; }
+  return false;
+}
+window.updateTplFromSession=function(){ var s=window.__lastSession; if(!s||!s.templateId)return; var list=templates(); var idx=list.findIndex(function(x){return x.id===s.templateId;}); if(idx<0){alert('That template no longer exists.');return;} list[idx].items=s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};}); save('po_templates',list); closeSheet(); go('home'); };
+window.saveSessionAsTemplate=function(){ var s=window.__lastSession; if(!s)return; var name=prompt('Name this template:', (s.name && s.name!=='Quick Workout') ? s.name : ''); if(!name||!name.trim())return; var t={id:uid(),folderId:(folders()[0]||{}).id||null,name:name.trim(),items:s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};})}; var list=templates(); list.push(t); save('po_templates',list); closeSheet(); go('home'); };
+function showSummary(s, srcTpl, changed){
+  window.__lastSession=s;
   var prNames=s.prs.map(function(id){return exById(id).name;});
   var html='<div class="w-sheet-grip"></div>'+
     '<div class="w-sheet-hd"><div class="w-sheet-title">Workout complete</div><button class="w-x" onclick="closeSheet();go(\'home\')">✕</button></div>'+
@@ -495,6 +594,16 @@ function showSummary(s){
       '<div class="w-hist-stat pr"><b>'+s.prs.length+'</b><br>PRs</div></div></div>';
   if(prNames.length){ html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:8px;">🏆 New personal records</div>'+prNames.map(function(n){return '<div class="w-hist-row"><span class="nm">'+esc(n)+'</span></div>';}).join('')+'</div>'; }
   html+=histExerciseRows(s);
+  if(changed && srcTpl){
+    html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:4px;">You changed this workout</div>'+
+      '<div class="w-ex-last" style="margin:0 0 10px;">Your &ldquo;'+esc(srcTpl.name)+'&rdquo; template is untouched. Keep these changes?</div>'+
+      '<button class="w-btn" onclick="updateTplFromSession()">Update &ldquo;'+esc(srcTpl.name)+'&rdquo;</button>'+
+      '<button class="w-btn-ghost" style="margin-top:8px;" onclick="saveSessionAsTemplate()">Save as a new template</button></div>';
+  } else if(changed && !srcTpl){
+    html+='<div class="w-card"><div class="w-ex-muscle" style="margin-bottom:4px;">Save this as a template?</div>'+
+      '<div class="w-ex-last" style="margin:0 0 10px;">Reuse this exact workout next time in one tap.</div>'+
+      '<button class="w-btn-ghost" onclick="saveSessionAsTemplate()">Save as a template</button></div>';
+  }
   html+='<button class="w-btn" style="margin-top:16px;" onclick="closeSheet();go(\'home\')">Done</button>';
   openSheet(html);
 }
@@ -507,7 +616,7 @@ function renderHistory(){
   html+=segHTML('history');
   if(!ws.length){ html+='<div class="w-empty">No workouts logged yet.<br>Start one and it’ll show up here.</div>'; W.innerHTML=html; return; }
   ws.forEach(function(s){
-    html+='<div class="w-hist"><div class="w-hist-top"><span class="w-hist-name">'+esc(s.name)+'</span><span class="w-hist-date">'+relDate(s.date)+'</span></div>'+
+    html+='<div class="w-hist"><div class="w-hist-top"><span class="w-hist-name">'+esc(s.name)+'</span><span style="display:flex;align-items:center;gap:8px;"><span class="w-hist-date">'+relDate(s.date)+'</span><button type="button" class="w-itool del" style="width:26px;height:26px;font-size:11px;" onclick="deleteWorkout(\''+s.id+'\')" aria-label="Delete workout">✕</button></span></div>'+
       '<div class="w-hist-stats">'+
         '<span class="w-hist-stat"><b>'+fmtDur(s.durationSec)+'</b> time</span>'+
         '<span class="w-hist-stat"><b>'+(s.volume||0).toLocaleString()+'</b> kg</span>'+
@@ -518,9 +627,14 @@ function renderHistory(){
 }
 function histExerciseRows(s){
   return (s.entries||[]).map(function(en){
+    var noteHtml = en.note?'<div class="w-hist-note">&ldquo;'+esc(en.note)+'&rdquo;</div>':'';
+    if(en.kind==='time' || isTime(en)){
+      var tot=0; (en.sets||[]).forEach(function(x){tot+=x.secs||0;});
+      return '<div class="w-hist-row"><span class="nm">'+esc(en.name)+'</span><span class="bs">'+fmtMMSS(tot)+'</span></div>'+noteHtml;
+    }
     var best=null; en.sets.forEach(function(x){ if(!best||(+x.kg||0)>(+best.kg||0))best=x; });
-    var bs = best?((best.kg||0)+'kg × '+(best.reps||0)):'—';
-    return '<div class="w-hist-row"><span class="nm">'+en.sets.length+' × '+esc(en.name)+'</span><span class="bs">'+esc(bs)+'</span></div>';
+    var bs = best?((best.kg||0)+'kg × '+(best.reps||0)+(en.perSide?'/side':'')):'—';
+    return '<div class="w-hist-row"><span class="nm">'+en.sets.length+' × '+esc(en.name)+'</span><span class="bs">'+esc(bs)+'</span></div>'+noteHtml;
   }).join('');
 }
 
@@ -662,6 +776,8 @@ function renderEditor(){
     var ex=exById(it.exId);
     html+='<div class="w-ex"><div class="w-ex-main"><div class="w-ex-name">'+esc(ex.name)+'</div><div class="w-ex-muscle">'+esc(ex.muscle)+'</div>'+
       '<div class="w-row-actions"><span class="w-stepper"><button onclick="edSets('+i+',-1)">−</button><span>'+it.sets+'×</span><button onclick="edSets('+i+',1)">&#65291;</button></span>'+
+      (i>0?'<button type="button" class="w-itool" onclick="edMove('+i+',-1)" aria-label="Move up">&#9650;</button>':'')+
+      (i<t.items.length-1?'<button type="button" class="w-itool" onclick="edMove('+i+',1)" aria-label="Move down">&#9660;</button>':'')+
       '<button class="w-mini w-del" onclick="edRemove('+i+')">remove</button></div></div></div>';
   });
   html+='<button class="w-btn-ghost" style="margin-top:8px;" onclick="pickExercise(edAddEx)">&#65291; Add exercise</button>';
@@ -670,6 +786,7 @@ function renderEditor(){
   openSheet(html);
 }
 window.edSets=function(i,d){ var t=window.__editTpl; t.items[i].sets=Math.max(1,t.items[i].sets+d); renderEditor(); };
+window.edMove=function(i,d){ var t=window.__editTpl; var j=i+d; if(j<0||j>=t.items.length)return; var tmp=t.items[i]; t.items[i]=t.items[j]; t.items[j]=tmp; renderEditor(); };
 window.edRemove=function(i){ window.__editTpl.items.splice(i,1); renderEditor(); };
 window.edAddEx=function(ex){ window.__editTpl.items.push({exId:ex.id,sets:3}); renderEditor(); };
 window.saveTpl=function(){
@@ -683,25 +800,44 @@ window.saveTpl=function(){
 };
 window.deleteTpl=function(){ if(!confirm('Delete this template?'))return; var list=templates().filter(function(x){return x.id!==window.__editTpl.id;}); save('po_templates',list); closeSheet(); go('home'); };
 
-/* REST TIMER — default 3:00, change anytime, saved */
-var restInt=null, restLeft=0, restCardIdx=-1;
+/* REST TIMER — wall-clock based (survives backgrounding + reload), default 3:00.
+   State lives on po_active.rest = {endAt, ei, doneAt} so it can't drift or freeze. */
+var restInt=null, restAlerted=false, _actx=null;
 function restDefault(){ var v=ls('po_rest_default',180); return (typeof v==='number'&&v>0)?v:180; }
-function restRunning(){ return restInt!==null; }
+function getRest(){ var a=getActive(); return a?a.rest:null; }
+function restRunning(){ return !!getRest(); }
+function restCardIndex(){ var r=getRest(); return r?r.ei:-1; }
+function restLeftSecs(){ var r=getRest(); if(!r)return 0; return Math.max(0,Math.round((r.endAt-Date.now())/1000)); }
 function restInlineHTML(){
-  return '<div class="w-rest-inline" id="wRestInline">'+
-    '<span class="w-rest-time" id="wRestTime">'+fmtDur(restLeft)+'</span>'+
-    '<span class="w-rest-lbl">Rest</span>'+
+  var left=restLeftSecs(); var done=left<=0;
+  return '<div class="w-rest-inline'+(done?' done':'')+'" id="wRestInline">'+
+    '<span class="w-rest-time" id="wRestTime">'+(done?'Done!':fmtDur(left))+'</span>'+
+    '<span class="w-rest-lbl">'+(done?'Next set':'Rest')+'</span>'+
     '<button type="button" class="w-rest-btn" data-act="rest-adj" data-val="-15">&minus;15</button>'+
     '<button type="button" class="w-rest-btn" data-act="rest-adj" data-val="15">+15</button>'+
-    '<button type="button" class="w-rest-btn" data-act="rest-skip">Skip</button></div>';
+    '<button type="button" class="w-rest-btn" data-act="rest-skip">'+(done?'Done':'Skip')+'</button></div>';
 }
-function updateRestText(){ var el=document.getElementById('wRestTime'); if(el) el.textContent=fmtDur(Math.max(0,restLeft)); }
-function restStart(ei){ restCardIdx=ei; restLeft=restDefault(); clearInterval(restInt); restInt=setInterval(restTick,1000); }
-function restTick(){ restLeft--; if(restLeft<=0){ restDone(); return; } updateRestText(); }
-function restDone(){ clearInterval(restInt); restInt=null; restLeft=0; var el=document.getElementById('wRestTime'); if(el) el.textContent='0:00'; var bar=document.getElementById('wRestInline'); if(bar) bar.classList.add('done'); try{ if(navigator.vibrate) navigator.vibrate([300,120,300]); }catch(e){} setTimeout(function(){ restCardIdx=-1; if(view==='active') render(); },2200); }
-function removeRest(){ clearInterval(restInt); restInt=null; restCardIdx=-1; if(view==='active') render(); }
-function restSkip(){ clearInterval(restInt); restInt=null; restCardIdx=-1; } /* stop without re-render (used on finish/cancel) */
-window.restAdjust=function(d){ if(!restRunning())return; restLeft=Math.max(5,restLeft+(parseInt(d,10)||0)); updateRestText(); };
+function ensureAudio(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx&&_actx.state==='suspended')_actx.resume(); }catch(e){} }
+function beep(){ try{ if(!_actx)return; var c=_actx,t=c.currentTime;
+  [0,0.28].forEach(function(off){ var o=c.createOscillator(),g=c.createGain(); o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.3,t+off+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.22); o.start(t+off); o.stop(t+off+0.24); }); }catch(e){} }
+function restAlert(){ restAlerted=true; try{ if(navigator.vibrate) navigator.vibrate([300,140,300]); }catch(e){} beep();
+  try{ if('Notification' in window && Notification.permission==='granted') new Notification('Rest complete 💪',{body:'Time for your next set.',tag:'als-rest',renotify:true}); }catch(e){} }
+function restStart(ei){ var a=getActive(); if(!a)return; a.rest={endAt:Date.now()+restDefault()*1000, ei:ei}; restAlerted=false; setActive(a); ensureRest(); }
+function ensureRest(){ clearInterval(restInt); restInt=setInterval(restTick,250); }
+function restTick(){
+  var r=getRest(); if(!r){ clearInterval(restInt); restInt=null; return; }
+  var left=restLeftSecs(); var el=document.getElementById('wRestTime');
+  if(left>0){ if(el) el.textContent=fmtDur(left); return; }
+  if(el) el.textContent='Done!'; var bar=document.getElementById('wRestInline'); if(bar) bar.classList.add('done');
+  if(!restAlerted) restAlert();
+  if(!r.doneAt){ r.doneAt=Date.now(); var a=getActive(); if(a){ a.rest=r; setActive(a); } }
+  if(Date.now()-(r.doneAt||Date.now())>=4000) clearRest();
+}
+function clearRest(){ clearInterval(restInt); restInt=null; var a=getActive(); if(a&&a.rest){ a.rest=null; setActive(a); } if(view==='active') render(); }
+function removeRest(){ clearRest(); }
+function restSkip(){ clearInterval(restInt); restInt=null; } /* finish/cancel path — active is cleared right after */
+window.restAdjust=function(d){ var a=getActive(); if(!a||!a.rest)return; a.rest.endAt=Math.max(Date.now()+5000, a.rest.endAt+(parseInt(d,10)||0)*1000); a.rest.doneAt=null; restAlerted=false; setActive(a); var el=document.getElementById('wRestTime'); if(el) el.textContent=fmtDur(restLeftSecs()); var bar=document.getElementById('wRestInline'); if(bar) bar.classList.remove('done'); ensureRest(); };
 function openRestModal(){
   var cur=restDefault();
   var mi=document.getElementById('wRmMin'), si=document.getElementById('wRmSec');
@@ -713,7 +849,7 @@ function openRestModal(){
   setTimeout(function(){ if(mi){ try{ mi.focus(); mi.select(); }catch(e){} } },260);
 }
 function closeRestModal(){ var b=document.getElementById('wModalBg'),m=document.getElementById('wModal'); if(b)b.classList.remove('on'); if(m)m.classList.remove('on'); }
-function applyRest(sec){ sec=parseInt(sec,10); if(isNaN(sec)||sec<5) sec=5; save('po_rest_default',sec); if(restRunning()){ restLeft=sec; updateRestText(); } closeRestModal(); render(); }
+function applyRest(sec){ sec=parseInt(sec,10); if(isNaN(sec)||sec<5) sec=5; save('po_rest_default',sec); var a=getActive(); if(a&&a.rest){ a.rest.endAt=Date.now()+sec*1000; a.rest.doneAt=null; restAlerted=false; setActive(a); ensureRest(); } closeRestModal(); render(); }
 function restSetFromInputs(){ var m=parseInt((document.getElementById('wRmMin')||{}).value,10)||0; var s=parseInt((document.getElementById('wRmSec')||{}).value,10)||0; applyRest(m*60+s); }
 window.openRestConfig=openRestModal;
 
@@ -724,14 +860,43 @@ window.closeSheet=function(){ document.getElementById('wSheetBg').classList.remo
 window.sheetBgClose=function(){ if(Date.now()-sheetOpenedAt<450) return; window.closeSheet(); }; /* ignore the iOS ghost-click that lands on the backdrop right after opening */
 
 /* nav exports */
+function requestNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
+
 window.go=function(v){ closeSheet(); view=v; render(); window.scrollTo(0,0); };
 window.openTpl=openTpl; window.startFromTpl=startFromTpl; window.startEmpty=startEmpty; window.resumeActive=resumeActive;
 window.editTemplate=editTemplate; window.setVal=setVal; window.toggleSet=toggleSet; window.addSet=addSet; window.removeEx=removeEx;
 window.finishActive=finishActive; window.cancelActive=cancelActive; window.pickExercise=pickExercise; window.addExToActive=addExToActive;
+window.setTime=setTime; window.setNote=setNote; window.togglePerSide=togglePerSide; window.moveEx=moveEx; window.removeSet=removeSet;
+window.deleteWorkout=function(id){ if(!confirm('Delete this workout permanently?'))return; var list=workouts().filter(function(w){return w.id!==id;}); save('po_workouts',list); render(); };
 
 if(getActive()) view='active';
 render();
 window.addEventListener('storage', function(){ if(view!=='active') render(); });
+/* iOS freezes JS when backgrounded — on return, rebuild so timers re-sync from wall-clock */
+document.addEventListener('visibilitychange', function(){ if(!document.hidden && view==='active' && getActive()) render(); });
+window.addEventListener('focus', function(){ if(view==='active' && getActive()) render(); });
+
+/* Swipe a set row right→left to delete it (Strong-style) */
+var _sw={el:null,x0:0,y0:0,on:false,dx:0,ei:-1,si:-1};
+W.addEventListener('touchstart', function(e){
+  var wrap=e.target.closest?e.target.closest('.w-set-wrap'):null; if(!wrap)return;
+  if(e.target.closest('.w-check'))return;            /* let the check button work */
+  var t=e.touches[0]; _sw.el=wrap.querySelector('.w-set'); _sw.x0=t.clientX; _sw.y0=t.clientY; _sw.on=false; _sw.dx=0;
+  _sw.ei=+wrap.getAttribute('data-ei'); _sw.si=+wrap.getAttribute('data-si');
+}, {passive:true});
+W.addEventListener('touchmove', function(e){
+  if(!_sw.el)return; var t=e.touches[0]; var dx=t.clientX-_sw.x0, dy=t.clientY-_sw.y0;
+  if(!_sw.on){ if(Math.abs(dx)>10 && Math.abs(dx)>Math.abs(dy)+4){ _sw.on=true; _sw.el.classList.add('swiping'); var ae=document.activeElement; if(ae&&ae.blur)ae.blur(); } else { if(Math.abs(dy)>12) _sw.el=null; return; } }
+  e.preventDefault();
+  _sw.dx=Math.max(-140,Math.min(0,dx));
+  _sw.el.style.transform='translateX('+_sw.dx+'px)';
+}, {passive:false});
+function _swEnd(){ if(!_sw.el)return; var el=_sw.el, ei=_sw.ei, si=_sw.si, on=_sw.on, dx=_sw.dx; el.classList.remove('swiping'); _sw.el=null; _sw.on=false;
+  if(on && dx<-70){ el.style.transform='translateX(-110%)'; setTimeout(function(){ removeSet(ei,si); },140); }
+  else { el.style.transform=''; }
+}
+W.addEventListener('touchend', _swEnd, {passive:true});
+W.addEventListener('touchcancel', _swEnd, {passive:true});
 
 /* Bulletproof tap handling via delegation (iOS-safe — one listener on document) */
 document.addEventListener('click', function(ev){
