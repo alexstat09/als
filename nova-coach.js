@@ -20,6 +20,22 @@
 
   var MT={Chest:14,Back:16,Shoulders:12,Arms:12,Legs:18,Core:9};
 
+  /* Recovery score — mirrors sleep.html so Nova reads the same number */
+  function clampN(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  var RECOMP=[
+    {key:'hours',w:0.30,s:function(v){return clampN(100-Math.abs(v-8.5)*13,0,100);}},
+    {key:'quality',w:0.20,s:function(v){return (v-1)/4*100;}},
+    {key:'soreness',w:0.18,s:function(v){return (5-v)/4*100;}},
+    {key:'energy',w:0.14,s:function(v){return (v-1)/4*100;}},
+    {key:'stress',w:0.10,s:function(v){return (5-v)/4*100;}},
+    {key:'mood',w:0.08,s:function(v){return (v-1)/4*100;}}
+  ];
+  function recoveryScore(e){
+    if(!e) return null; var sum=0,wsum=0;
+    RECOMP.forEach(function(c){ var v=e[c.key]; if(v==null||(c.key==='hours'&&!(v>0))) return; sum+=clampN(c.s(v),0,100)*c.w; wsum+=c.w; });
+    return wsum ? Math.round(sum/wsum) : null;
+  }
+
   function stalledLift(workouts, exMap){
     var byEx={};
     workouts.slice().sort(function(a,b){return (a.startedAt||'')<(b.startedAt||'')?-1:1;}).forEach(function(w){
@@ -72,9 +88,19 @@
     var lastPR=(lastW && lastW.date===today && lastW.prs && lastW.prs.length) ? lastW.prs.map(function(id){return (exMap[id]||{}).name||id;}) : [];
     var stalled=stalledLift(workouts, exMap);
 
+    /* ── Sleep & recovery ── */
+    var sleepLogs=(ls('sleep:logs',[])||[]).filter(function(e){return e&&e.dateKey;}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
+    var sleepToday=null; for(var si=0;si<sleepLogs.length;si++){ if(sleepLogs[si].dateKey===today){ sleepToday=sleepLogs[si]; break; } }
+    var recToday=recoveryScore(sleepToday);
+    var lastNight = sleepLogs.filter(function(e){return e.hours>0;}).slice(-1)[0] || null;
+    var avgRec=null; var rcut=dk(new Date(Date.now()-7*86400000));
+    var recVals=sleepLogs.filter(function(e){ return e.dateKey>rcut; }).map(function(e){ return e.recovery!=null?e.recovery:recoveryScore(e); }).filter(function(v){ return v!=null; });
+    if(recVals.length) avgRec=Math.round(recVals.reduce(function(a,b){return a+b;},0)/recVals.length);
+
     return {now:now,h:h,today:today,workouts:workouts,vol:vol,daysSince:daysSince,wToday:wToday,wTrend:wTrend,
       wCount:wCount,wTarget:wTarget,caf:caf,kcal:kcal,prot:prot,protTarget:protTarget,nutCount:nut.length,
-      suppTaken:suppTaken,suppTotal:dailySupps.length,lastPR:lastPR,stalled:stalled,hasWorkouts:workouts.length>0};
+      suppTaken:suppTaken,suppTotal:dailySupps.length,lastPR:lastPR,stalled:stalled,hasWorkouts:workouts.length>0,
+      recToday:recToday,sleepToday:sleepToday,lastNight:lastNight,avgRec:avgRec,hasSleep:sleepLogs.length>0};
   }
 
   function build(){
@@ -84,6 +110,23 @@
     if(d.lastPR.length) cards.push({p:96,tone:'good',title:'New PR today',
       detail:'You beat your best on '+d.lastPR.slice(0,2).join(', ')+'. That is exactly how you grow.',
       line:'You hit a PR today on '+d.lastPR[0]+' — that is real progress. Proud of you.'});
+
+    /* ── Recovery: the keystone that gates how hard to train ── */
+    if(d.recToday!=null){
+      if(d.recToday<45) cards.push({p:92,tone:'warn',title:'Recovery is low ('+d.recToday+'/100)',
+        detail:'You are depleted today — short sleep, soreness or stress. Go light, do mobility, or rest. Growth happens when you recover.',
+        line:'Recovery is only '+d.recToday+' today — go light or rest. You grow when you recover, not when you grind.',href:'sleep.html'});
+      else if(d.recToday<65) cards.push({p:74,tone:'info',title:'Recovery is moderate ('+d.recToday+'/100)',
+        detail:'A little run-down. Train, but keep it sensible — hit your main lifts and skip the junk volume.',
+        line:'Recovery is '+d.recToday+' today — train, but keep it moderate and hit the lifts that matter.',href:'sleep.html'});
+      else cards.push({p:64,tone:'good',title:'Recovery is strong ('+d.recToday+'/100)',
+        detail:'You are well recovered'+(d.lastNight?' on '+ (Math.round(d.lastNight.hours*10)/10) +'h sleep':'')+'. This is the day to push hard and chase a PR.',
+        line:'Recovery is '+d.recToday+' today — you are primed. Push hard and chase a PR.',href:'gym.html'});
+    } else if(!d.sleepToday && d.h>=6 && d.h<14){
+      cards.push({p:62,tone:'info',title:'How did you sleep?',
+        detail:'Log last night and a 10-second morning check-in — I will turn it into a recovery score that tells you how hard to train today.',
+        line:'Tell me how you slept — I will turn it into a recovery score and tell you how hard to train.',href:'sleep.html'});
+    }
 
     if(d.hasWorkouts){
       var behind=[];
@@ -148,7 +191,7 @@
 
     cards.sort(function(a,b){ return b.p-a.p; });
     var g=d.h<5?'Still up':d.h<12?'Good morning':d.h<18?'Good afternoon':'Good evening';
-    var mood = d.lastPR.length?'hot':d.caf>=400?'alert':(d.daysSince!=null&&d.daysSince>=3)?'low':'calm';
+    var mood = d.lastPR.length?'hot':(d.recToday!=null&&d.recToday<45)?'alert':(d.recToday!=null&&d.recToday>=82)?'hot':d.caf>=400?'alert':(d.daysSince!=null&&d.daysSince>=3)?'low':'calm';
     return { greeting:g, headline:cards[0].line, cards:cards, mood:mood };
   }
 

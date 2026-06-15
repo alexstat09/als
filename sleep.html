@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Sleep &amp; Recovery · ALS</title>
+  <meta name="theme-color" content="#050507">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { min-height:100%; }
+    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .sl-hero{ max-width:600px; margin:0 auto; padding:24px 18px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .sl-hero-eyebrow{ margin-bottom:12px; }
+    .sl-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6vw,32px); line-height:1.1; letter-spacing:-.01em; max-width:22ch; }
+    .sl-hero .nova{ flex-shrink:0; width:74px; height:74px; margin-top:2px; }
+
+    /* ── Page wrap + cards ────────────────────────── */
+    .sl-wrap{ padding:14px 18px; display:flex; flex-direction:column; gap:14px; max-width:600px; margin:0 auto; }
+    .sl-sec{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); transition:border-color .25s, box-shadow .25s; }
+    .sl-sec::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
+    .sl-sec:hover{ border-color:rgba(var(--sec-rgb),.22); box-shadow:0 14px 44px rgba(0,0,0,.45), 0 0 36px rgba(var(--sec-rgb),.06); }
+    .sl-sec-hdr{ display:flex; align-items:center; gap:10px; padding:15px 18px 12px; border-bottom:1px solid var(--au-line); }
+    .sl-sec-dot{ width:7px; height:7px; border-radius:50%; background:rgb(var(--sec-rgb)); box-shadow:0 0 10px rgba(var(--sec-rgb),.8); flex-shrink:0; }
+    .sl-sec-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:22px; color:var(--au-ivory); flex:1; line-height:1; }
+    .sl-sec-note{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; transition:color .25s; }
+    .sl-sec-note.saved{ color:rgb(var(--sec-rgb)); }
+    .sl-sec-body{ padding:16px 18px; }
+
+    /* ── Recovery card ────────────────────────────── */
+    .rec-main{ display:flex; align-items:center; gap:18px; }
+    .rec-ring-wrap{ position:relative; width:116px; height:116px; flex-shrink:0; }
+    .rec-ring-wrap svg{ transform:rotate(-90deg); }
+    .rec-ring-inner{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .rec-score{ font-family:var(--au-mono); font-size:34px; font-weight:700; color:var(--au-ivory); line-height:1; letter-spacing:-.03em; }
+    .rec-score-lbl{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; }
+    .rec-right{ flex:1; min-width:0; }
+    .rec-verdict{ font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); line-height:1.05; }
+    .rec-advice{ font-size:12.5px; color:var(--au-dim); line-height:1.45; margin-top:7px; }
+    .rec-bars{ margin-top:16px; display:flex; flex-direction:column; gap:9px; }
+    .rec-bar-row{ display:flex; align-items:center; gap:10px; }
+    .rec-bar-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); width:74px; flex-shrink:0; }
+    .rec-bar-track{ flex:1; height:6px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+    .rec-bar-fill{ height:100%; border-radius:3px; transition:width .5s ease; }
+    .rec-bar-v{ font-family:var(--au-mono); font-size:10px; color:var(--au-dim); width:30px; text-align:right; flex-shrink:0; }
+    .rec-empty{ font-family:var(--au-serif); font-style:italic; font-size:16px; color:var(--au-dim); line-height:1.5; text-align:center; padding:8px 4px; }
+
+    /* ── Sleep log (times) ────────────────────────── */
+    .sl-times{ display:flex; align-items:stretch; gap:10px; margin-bottom:6px; }
+    .sl-time-box{ flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.28); border-radius:14px; padding:11px 13px; transition:border-color .2s; }
+    .sl-time-box:focus-within{ border-color:rgba(var(--sec-rgb),.6); }
+    .sl-time-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-bottom:5px; }
+    .sl-time-in{ width:100%; background:transparent; border:none; outline:none; color:var(--au-ivory); font-family:var(--au-mono); font-size:21px; font-weight:700; letter-spacing:-.01em; -webkit-appearance:none; }
+    .sl-time-in::-webkit-calendar-picker-indicator{ filter:invert(1); opacity:.45; }
+    .sl-dur{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:78px; text-align:center; }
+    .sl-dur-val{ font-family:var(--au-mono); font-size:23px; font-weight:700; color:rgb(var(--sec-rgb)); line-height:1; }
+    .sl-dur-lbl{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    /* ── Scale pills (quality + check-in) ─────────── */
+    .sl-metric{ margin-top:16px; }
+    .sl-metric:first-child{ margin-top:0; }
+    .sl-metric-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+    .sl-metric-name{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-dim); }
+    .sl-metric-cur{ font-family:var(--au-serif); font-style:italic; font-size:14px; color:rgb(var(--sec-rgb)); }
+    .sl-scale{ display:flex; gap:7px; }
+    .sl-pill{ flex:1; padding:11px 0; border-radius:12px; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-faint); font-family:var(--au-mono); font-size:15px; font-weight:700; cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+    .sl-pill:active{ transform:scale(.94); }
+    .sl-pill.on{ background:rgba(var(--sec-rgb),.18); border-color:rgba(var(--sec-rgb),.6); color:rgb(var(--sec-rgb)); box-shadow:0 0 14px rgba(var(--sec-rgb),.3); }
+    .sl-scale-ends{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--au-faint); }
+
+    /* ── Trends ───────────────────────────────────── */
+    .sl-stats{ display:flex; gap:18px; margin-bottom:16px; }
+    .sl-stat-val{ font-family:var(--au-mono); font-size:24px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1; }
+    .sl-stat-val small{ font-size:12px; color:var(--au-faint); font-weight:700; }
+    .sl-stat-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; }
+    .sl-spark{ display:flex; align-items:flex-end; gap:4px; height:52px; }
+    .sl-spark-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+    .sl-spark-bar{ width:100%; border-radius:4px 4px 0 0; background:rgba(var(--sec-rgb),.28); min-height:3px; transition:height .4s ease; }
+    .sl-spark-bar.today{ background:rgb(var(--sec-rgb)); box-shadow:0 0 10px rgba(var(--sec-rgb),.6); }
+    .sl-spark-lbl{ font-family:var(--au-mono); font-size:8px; color:var(--au-faint); }
+    .sl-spark-cap{ display:flex; justify-content:space-between; font-family:var(--au-mono); font-size:9px; letter-spacing:.05em; color:var(--au-faint); text-transform:uppercase; margin-top:8px; }
+    .sl-nights{ display:flex; flex-direction:column; gap:1px; margin-top:14px; }
+    .sl-night{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .sl-night:last-child{ border-bottom:none; }
+    .sl-night-day{ font-family:var(--au-mono); font-size:11px; color:var(--au-dim); width:52px; flex-shrink:0; }
+    .sl-night-hrs{ font-family:var(--au-mono); font-size:13px; font-weight:700; color:var(--au-ivory); }
+    .sl-night-q{ font-size:11px; color:var(--au-faint); font-family:var(--au-serif); font-style:italic; flex:1; }
+    .sl-night-rec{ font-family:var(--au-mono); font-size:11px; font-weight:700; padding:2px 9px; border-radius:7px; }
+    .sl-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); text-align:center; padding:10px 0; }
+  </style>
+</head>
+<body data-page="sleep" class="au-bg au-mood-alert" id="root">
+
+  <!-- Hero -->
+  <div class="sl-hero">
+    <div>
+      <div class="au-eyebrow sl-hero-eyebrow"><span class="au-dot"></span>SLEEP &amp; RECOVERY<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
+      <p class="sl-hero-line" id="novaSays">How did you sleep?</p>
+    </div>
+    <div class="nova" id="nova" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs><linearGradient id="novaGradSleep" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#9B8CFF"/><stop offset="100%" stop-color="#18C8C0"/>
+        </linearGradient></defs>
+        <g class="nova-glow">
+          <rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#novaGradSleep)" opacity="0.95"/>
+          <circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/>
+          <circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/>
+          <circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/>
+          <circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="sl-wrap">
+
+    <!-- Recovery score (flagship) -->
+    <section class="sl-sec" id="recSec" style="--sec-rgb:155,140,255">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Recovery</span><span class="sl-sec-note" id="recNote">TODAY</span></div>
+      <div class="sl-sec-body" id="recBody"></div>
+    </section>
+
+    <!-- Last night's sleep -->
+    <section class="sl-sec" style="--sec-rgb:155,140,255">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Last night</span><span class="sl-sec-note" id="sleepNote">AUTO-SAVED</span></div>
+      <div class="sl-sec-body" id="sleepBody"></div>
+    </section>
+
+    <!-- Morning check-in -->
+    <section class="sl-sec" style="--sec-rgb:24,200,192">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">This morning</span><span class="sl-sec-note" id="checkNote">AUTO-SAVED</span></div>
+      <div class="sl-sec-body" id="checkBody"></div>
+    </section>
+
+    <!-- Trends -->
+    <section class="sl-sec" style="--sec-rgb:52,226,176">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Trends</span><span class="sl-sec-note">LAST 14 NIGHTS</span></div>
+      <div class="sl-sec-body" id="trendBody"></div>
+    </section>
+
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var KEY = 'sleep:logs';
+
+    /* ── Helpers ──────────────────────────────────── */
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function today(){ return dateKey(new Date()); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function lsSave(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    function getLogs(){ var a = ls(KEY); return Array.isArray(a) ? a : []; }
+    function entryFor(dk){
+      var logs = getLogs();
+      for (var i=0;i<logs.length;i++){ if (logs[i] && logs[i].dateKey === dk) return logs[i]; }
+      return null;
+    }
+    function todayEntry(){ return entryFor(today()) || { id:'sl-'+today(), dateKey:today() }; }
+
+    /* hours between bed (HH:MM) and wake (HH:MM), wrapping past midnight */
+    function calcHours(bed, wake){
+      if (!bed || !wake) return null;
+      var b = bed.split(':'), w = wake.split(':');
+      var bm = (+b[0])*60 + (+b[1]), wm = (+w[0])*60 + (+w[1]);
+      var diff = wm - bm; if (diff <= 0) diff += 1440;
+      return Math.round(diff / 60 * 100) / 100;
+    }
+    function fmtHM(hours){
+      if (hours == null) return '—';
+      var h = Math.floor(hours), m = Math.round((hours - h) * 60);
+      if (m === 60){ h += 1; m = 0; }
+      return h + 'h' + (m ? ' ' + m + 'm' : '');
+    }
+
+    /* ── Recovery scoring (the soul of the page) ───── */
+    // Each component → 0..100, then a weighted average over the
+    // components that are actually present. Stress & soreness are
+    // inverted (higher input = worse).
+    var COMP = [
+      { key:'hours',    w:0.30, label:'Sleep',    score:function(v){ return clamp(100 - Math.abs(v - 8.5) * 13, 0, 100); } },
+      { key:'quality',  w:0.20, label:'Quality',  score:function(v){ return (v - 1) / 4 * 100; } },
+      { key:'soreness', w:0.18, label:'Freshness',score:function(v){ return (5 - v) / 4 * 100; } },
+      { key:'energy',   w:0.14, label:'Energy',   score:function(v){ return (v - 1) / 4 * 100; } },
+      { key:'stress',   w:0.10, label:'Calm',     score:function(v){ return (5 - v) / 4 * 100; } },
+      { key:'mood',     w:0.08, label:'Mood',     score:function(v){ return (v - 1) / 4 * 100; } }
+    ];
+    function recovery(e){
+      if (!e) return null;
+      var sum = 0, wsum = 0, parts = [];
+      COMP.forEach(function(c){
+        var v = e[c.key];
+        if (v == null || (c.key === 'hours' && !(v > 0))) return;
+        var s = clamp(c.score(v), 0, 100);
+        sum += s * c.w; wsum += c.w;
+        parts.push({ label:c.label, score:Math.round(s) });
+      });
+      if (!wsum) return null;
+      return { score: Math.round(sum / wsum), parts: parts, n: parts.length };
+    }
+    function verdictFor(score){
+      if (score >= 82) return { mood:'hot',   rgb:'52,226,176',  word:'Primed',    advice:'You’re fully recovered — attack a hard session and chase a PR.' };
+      if (score >= 65) return { mood:'calm',  rgb:'24,200,192',  word:'Recovered', advice:'Good to go. Train as planned and push your working sets.' };
+      if (score >= 45) return { mood:'low',   rgb:'242,192,99',  word:'Run-down',  advice:'Train, but keep it moderate — hit your lifts, skip the grind sets.' };
+      return                  { mood:'alert', rgb:'255,107,139', word:'Depleted',  advice:'Go light or rest. Recovery is when you actually grow — respect it.' };
+    }
+
+    /* ── Save a field on today’s entry ───────────── */
+    function flashNote(id){
+      var n = document.getElementById(id); if (!n) return;
+      var was = n.textContent; n.textContent = 'SAVED ✓'; n.classList.add('saved');
+      clearTimeout(n._t); n._t = setTimeout(function(){ n.textContent = was; n.classList.remove('saved'); }, 1100);
+    }
+    function setField(field, value, noteId){
+      var dk = today();
+      var logs = getLogs();
+      var idx = -1;
+      for (var i=0;i<logs.length;i++){ if (logs[i] && logs[i].dateKey === dk){ idx = i; break; } }
+      var e = idx >= 0 ? logs[idx] : { id:'sl-'+dk, dateKey:dk };
+      e[field] = value;
+      if (field === 'bed' || field === 'wake') e.hours = calcHours(e.bed, e.wake);
+      var r = recovery(e);
+      e.recovery = r ? r.score : null;
+      e.ts = Date.now();
+      if (idx >= 0) logs[idx] = e; else logs.push(e);
+      lsSave(KEY, logs);
+      if (noteId) flashNote(noteId);
+      renderAll();
+    }
+
+    /* ══════════ RECOVERY CARD ══════════ */
+    function barColor(s){ return s >= 70 ? '#34E2B0' : s >= 45 ? '#F2C063' : '#FF6B8B'; }
+    function renderRecovery(){
+      var e = entryFor(today());
+      var r = recovery(e);
+      var sec = document.getElementById('recSec');
+      var body = document.getElementById('recBody');
+
+      if (!r){
+        sec.style.setProperty('--sec-rgb', '155,140,255');
+        body.innerHTML = '<p class="rec-empty">Log last night’s sleep and a quick morning check-in below — Nova will read them into a recovery score that tells you how hard to train today.</p>';
+        return;
+      }
+
+      var v = verdictFor(r.score);
+      sec.style.setProperty('--sec-rgb', v.rgb);
+
+      var R = 50, C = 2 * Math.PI * R;
+      var off = C - (r.score / 100) * C;
+
+      var bars = r.parts.map(function(p){
+        return '<div class="rec-bar-row"><span class="rec-bar-lbl">' + p.label + '</span>' +
+          '<div class="rec-bar-track"><div class="rec-bar-fill" style="width:' + p.score + '%;background:' + barColor(p.score) + '"></div></div>' +
+          '<span class="rec-bar-v">' + p.score + '</span></div>';
+      }).join('');
+
+      body.innerHTML =
+        '<div class="rec-main">' +
+          '<div class="rec-ring-wrap">' +
+            '<svg width="116" height="116" viewBox="0 0 116 116">' +
+              '<circle cx="58" cy="58" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>' +
+              '<circle cx="58" cy="58" r="' + R + '" fill="none" stroke="rgb(' + v.rgb + ')" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + C.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" style="filter:drop-shadow(0 0 8px rgba(' + v.rgb + ',.6));transition:stroke-dashoffset .6s ease"/>' +
+            '</svg>' +
+            '<div class="rec-ring-inner"><div class="rec-score">' + r.score + '</div><div class="rec-score-lbl">Recovery</div></div>' +
+          '</div>' +
+          '<div class="rec-right"><div class="rec-verdict">' + v.word + '.</div><div class="rec-advice">' + v.advice + '</div></div>' +
+        '</div>' +
+        '<div class="rec-bars">' + bars + '</div>';
+    }
+
+    /* ══════════ SLEEP LOG CARD ══════════ */
+    function renderSleep(){
+      var e = todayEntry();
+      var hrs = (e.hours != null) ? e.hours : calcHours(e.bed, e.wake);
+      var qLabels = ['', 'Terrible', 'Poor', 'OK', 'Good', 'Great'];
+
+      var pills = '';
+      for (var i=1;i<=5;i++){
+        pills += '<button type="button" class="sl-pill' + (e.quality === i ? ' on' : '') + '" data-metric="quality" data-val="' + i + '">' + i + '</button>';
+      }
+
+      document.getElementById('sleepBody').innerHTML =
+        '<div class="sl-times">' +
+          '<div class="sl-time-box"><div class="sl-time-lbl">Bedtime</div><input type="time" class="sl-time-in" id="slBed" value="' + (e.bed || '') + '"></div>' +
+          '<div class="sl-dur"><div class="sl-dur-val">' + fmtHM(hrs) + '</div><div class="sl-dur-lbl">Asleep</div></div>' +
+          '<div class="sl-time-box"><div class="sl-time-lbl">Woke up</div><input type="time" class="sl-time-in" id="slWake" value="' + (e.wake || '') + '"></div>' +
+        '</div>' +
+        '<div class="sl-metric">' +
+          '<div class="sl-metric-top"><span class="sl-metric-name">Sleep quality</span><span class="sl-metric-cur">' + (e.quality ? qLabels[e.quality] : '—') + '</span></div>' +
+          '<div class="sl-scale" data-scale="quality">' + pills + '</div>' +
+          '<div class="sl-scale-ends"><span>Terrible</span><span>Great</span></div>' +
+        '</div>';
+
+      var bed = document.getElementById('slBed'), wake = document.getElementById('slWake');
+      bed.addEventListener('change', function(){ setField('bed', bed.value, 'sleepNote'); });
+      wake.addEventListener('change', function(){ setField('wake', wake.value, 'sleepNote'); });
+    }
+
+    /* ══════════ MORNING CHECK-IN CARD ══════════ */
+    var CHECK = [
+      { key:'energy',   name:'Energy',   low:'Drained',  high:'Buzzing', labels:['','Drained','Low','OK','Good','Buzzing'] },
+      { key:'mood',     name:'Mood',     low:'Low',      high:'Great',   labels:['','Low','Meh','OK','Good','Great'] },
+      { key:'stress',   name:'Stress',   low:'Calm',     high:'Stressed',labels:['','Calm','Settled','OK','Tense','Stressed'] },
+      { key:'soreness', name:'Soreness', low:'Fresh',    high:'Wrecked', labels:['','Fresh','Slight','Some','Sore','Wrecked'] }
+    ];
+    function renderCheck(){
+      var e = todayEntry();
+      var html = CHECK.map(function(m){
+        var cur = e[m.key] ? m.labels[e[m.key]] : '—';
+        var pills = '';
+        for (var i=1;i<=5;i++){
+          pills += '<button type="button" class="sl-pill' + (e[m.key] === i ? ' on' : '') + '" data-metric="' + m.key + '" data-val="' + i + '">' + i + '</button>';
+        }
+        return '<div class="sl-metric">' +
+          '<div class="sl-metric-top"><span class="sl-metric-name">' + m.name + '</span><span class="sl-metric-cur">' + cur + '</span></div>' +
+          '<div class="sl-scale" data-scale="' + m.key + '">' + pills + '</div>' +
+          '<div class="sl-scale-ends"><span>' + m.low + '</span><span>' + m.high + '</span></div>' +
+        '</div>';
+      }).join('');
+      document.getElementById('checkBody').innerHTML = html;
+    }
+
+    /* Delegated pill taps (iOS-reliable) for quality + check-in */
+    document.addEventListener('click', function(ev){
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.sl-pill') : null;
+      if (!btn) return;
+      var metric = btn.getAttribute('data-metric');
+      var val = +btn.getAttribute('data-val');
+      if (!metric || !val) return;
+      var e = todayEntry();
+      var noteId = metric === 'quality' ? 'sleepNote' : 'checkNote';
+      // tapping the active value clears it (toggle off)
+      setField(metric, e[metric] === val ? null : val, noteId);
+    });
+
+    /* ══════════ TRENDS CARD ══════════ */
+    function renderTrends(){
+      var logs = getLogs().filter(function(e){ return e && e.dateKey; })
+                          .sort(function(a,b){ return a.dateKey < b.dateKey ? -1 : 1; });
+      var el = document.getElementById('trendBody');
+
+      var slept = logs.filter(function(e){ return e.hours > 0; });
+      if (!slept.length){
+        el.innerHTML = '<p class="sl-empty">Your sleep &amp; recovery history will grow here night by night.</p>';
+        return;
+      }
+
+      // 7-day averages
+      function avg7(field){
+        var cut = dateKey(new Date(Date.now() - 7 * 86400000));
+        var vals = logs.filter(function(e){ return e.dateKey > cut && e[field] != null && (field !== 'hours' || e.hours > 0); })
+                       .map(function(e){ return e[field]; });
+        if (!vals.length) return null;
+        return vals.reduce(function(a,b){ return a + b; }, 0) / vals.length;
+      }
+      var avgH = avg7('hours'), avgR = avg7('recovery');
+
+      // last-14 sleep-hours sparkline
+      var view = slept.slice(-14);
+      var vals = view.map(function(e){ return e.hours; });
+      var max = Math.max.apply(null, vals.concat([8])), min = Math.min.apply(null, vals.concat([0]));
+      var range = (max - min) || 1;
+      var tod = today();
+      var bars = view.map(function(e){
+        var h = Math.round(((e.hours - min) / range) * 44 + 8);
+        var isT = e.dateKey === tod;
+        var d = new Date(e.dateKey + 'T00:00:00');
+        return '<div class="sl-spark-col"><div class="sl-spark-bar' + (isT ? ' today' : '') + '" style="height:' + h + 'px" title="' + e.dateKey + ': ' + fmtHM(e.hours) + '"></div><div class="sl-spark-lbl">' + ['S','M','T','W','T','F','S'][d.getDay()] + '</div></div>';
+      }).join('');
+
+      // recent nights list (latest 6)
+      var qLabels = ['', 'terrible', 'poor', 'ok', 'good', 'great'];
+      function recBadge(s){
+        if (s == null) return '<span class="sl-night-rec" style="color:var(--au-faint);background:rgba(255,255,255,.05)">—</span>';
+        var c = s >= 70 ? '52,226,176' : s >= 45 ? '242,192,99' : '255,107,139';
+        return '<span class="sl-night-rec" style="color:rgb(' + c + ');background:rgba(' + c + ',.14)">' + s + '</span>';
+      }
+      var nights = slept.slice(-6).reverse().map(function(e){
+        var d = new Date(e.dateKey + 'T00:00:00');
+        var day = e.dateKey === tod ? 'Today' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()] + ' ' + d.getDate();
+        return '<div class="sl-night">' +
+          '<span class="sl-night-day">' + day + '</span>' +
+          '<span class="sl-night-hrs">' + fmtHM(e.hours) + '</span>' +
+          '<span class="sl-night-q">' + (e.quality ? qLabels[e.quality] + ' sleep' : '') + '</span>' +
+          recBadge(e.recovery != null ? e.recovery : (recovery(e) ? recovery(e).score : null)) +
+        '</div>';
+      }).join('');
+
+      el.innerHTML =
+        '<div class="sl-stats">' +
+          '<div><div class="sl-stat-val">' + (avgH != null ? fmtHM(avgH) : '—') + '</div><div class="sl-stat-lbl">7-day sleep</div></div>' +
+          '<div><div class="sl-stat-val">' + (avgR != null ? Math.round(avgR) : '—') + '<small> / 100</small></div><div class="sl-stat-lbl">7-day recovery</div></div>' +
+          '<div><div class="sl-stat-val">' + slept.length + '</div><div class="sl-stat-lbl">nights logged</div></div>' +
+        '</div>' +
+        '<div class="sl-spark">' + bars + '</div>' +
+        '<div class="sl-spark-cap"><span>' + view[0].dateKey.slice(5) + '</span><span>hours asleep</span><span>Today</span></div>' +
+        '<div class="sl-nights">' + nights + '</div>';
+    }
+
+    /* ── Nova hero: reactive line + page mood ─────── */
+    function updateNova(){
+      var root = document.getElementById('root'); if (!root) return;
+      var dd = new Date(), h = dd.getHours();
+      var dEl = document.getElementById('heroDate');
+      if (dEl) dEl.textContent = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dd.getDay()] + ' ' + dd.getDate();
+
+      var e = entryFor(today());
+      var r = recovery(e);
+      var mood, line;
+      if (r){
+        var v = verdictFor(r.score);
+        mood = v.mood;
+        if (r.score >= 82)      line = 'Recovery’s at ' + r.score + '. You’re primed — go chase a PR.';
+        else if (r.score >= 65) line = 'Recovery’s at ' + r.score + '. Solid — train as planned today.';
+        else if (r.score >= 45) line = 'Recovery’s at ' + r.score + '. A bit run-down — keep it moderate.';
+        else                    line = 'Recovery’s at ' + r.score + '. You’re depleted — go light or rest today.';
+      } else {
+        mood = 'alert';
+        line = h < 11 ? 'Morning, Alex. How did you sleep?' : 'Log last night to see your recovery.';
+      }
+      root.classList.remove('au-mood-calm','au-mood-hot','au-mood-alert','au-mood-low');
+      root.classList.add('au-mood-' + mood);
+      var ns = document.getElementById('novaSays'); if (ns) ns.textContent = line;
+    }
+
+    /* ── Boot ─────────────────────────────────────── */
+    function renderAll(){
+      renderRecovery();
+      renderSleep();
+      renderCheck();
+      renderTrends();
+      updateNova();
+    }
+    renderAll();
+
+    // Refreshed by cloud sync when data arrives from another device
+    window._sleepRerender = renderAll;
+
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) renderAll(); });
+    window.addEventListener('storage', renderAll);
+    window.addEventListener('focus', renderAll);
+  })();
+  </script>
+
+  <!-- Cross-device cloud sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      function start(){
+        if (typeof initCloudSync !== 'function'){ setTimeout(start, 200); return; }
+        initCloudSync({
+          appKey: 'sleep',
+          syncedKeys: ['sleep:logs'],
+          onApplied: function(){ if (window._sleepRerender) window._sleepRerender(); }
+        });
+      }
+      start();
+    });
+  </script>
+
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js" defer></script>
+</body>
+</html>
