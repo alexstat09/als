@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Identity · ALS</title>
+  <meta name="theme-color" content="#050507">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { min-height:100%; }
+    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    /* Hero */
+    .id-hero{ max-width:600px; margin:0 auto; padding:24px 18px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .id-hero-eyebrow{ margin-bottom:12px; }
+    .id-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6vw,32px); line-height:1.1; letter-spacing:-.01em; max-width:22ch; }
+    .id-hero .nova{ flex-shrink:0; width:74px; height:74px; margin-top:2px; }
+
+    .id-wrap{ padding:14px 18px; display:flex; flex-direction:column; gap:14px; max-width:600px; margin:0 auto; }
+    .id-sec{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+    .id-sec::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
+    .id-sec-hdr{ display:flex; align-items:center; gap:10px; padding:15px 18px 12px; border-bottom:1px solid var(--au-line); }
+    .id-sec-dot{ width:7px; height:7px; border-radius:50%; background:rgb(var(--sec-rgb)); box-shadow:0 0 10px rgba(var(--sec-rgb),.8); flex-shrink:0; }
+    .id-sec-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:22px; color:var(--au-ivory); flex:1; line-height:1; }
+    .id-sec-act{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); background:none; border:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .id-sec-act:active{ color:rgb(var(--sec-rgb)); }
+    .id-sec-body{ padding:16px 18px; }
+
+    /* North Star */
+    .ns-statement{ font-family:var(--au-serif); font-style:italic; font-size:22px; line-height:1.3; color:var(--au-ivory); }
+    .ns-statement .lead{ color:rgb(var(--sec-rgb)); }
+    .ns-why{ font-size:13px; color:var(--au-dim); line-height:1.55; margin-top:12px; font-family:var(--au-serif); font-style:italic; }
+    .ns-why b{ font-family:var(--au-mono); font-style:normal; font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); display:block; margin-bottom:4px; }
+    .ns-principles{ display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+    .ns-chip{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.05em; padding:6px 11px; border-radius:999px; color:rgb(var(--sec-rgb)); background:rgba(var(--sec-rgb),.1); border:1px solid rgba(var(--sec-rgb),.3); }
+    .ns-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); line-height:1.5; }
+    .id-field-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin:14px 0 6px; }
+    .id-field-lbl:first-child{ margin-top:0; }
+    .id-input, .id-textarea{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:12px; padding:11px 13px; color:var(--au-ivory); font-family:var(--au-sans); font-size:15px; line-height:1.5; outline:none; resize:vertical; }
+    .id-textarea{ font-family:var(--au-serif); font-style:italic; min-height:70px; }
+    .id-input:focus, .id-textarea:focus{ border-color:rgba(var(--sec-rgb),.55); background:rgba(255,255,255,.06); }
+    .id-input::placeholder, .id-textarea::placeholder{ color:var(--au-faint); font-style:normal; font-family:var(--au-sans); }
+    .id-btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; font-family:var(--au-sans); font-size:14px; font-weight:700; padding:12px 20px; border-radius:999px; color:#04130D; background:rgb(var(--sec-rgb)); box-shadow:0 4px 18px rgba(var(--sec-rgb),.3); -webkit-tap-highlight-color:transparent; }
+    .id-btn:active{ opacity:.8; }
+    .id-btn-ghost{ font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-dim); background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:999px; padding:11px 16px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .id-edit-actions{ display:flex; gap:8px; margin-top:14px; }
+
+    /* Habits */
+    .hb-prog{ display:flex; align-items:center; gap:9px; margin-bottom:14px; font-family:var(--au-mono); font-size:11px; color:var(--au-dim); }
+    .hb-prog-bar{ flex:1; height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+    .hb-prog-fill{ height:100%; border-radius:3px; background:rgb(var(--sec-rgb)); box-shadow:0 0 10px rgba(var(--sec-rgb),.5); transition:width .3s; }
+    .hb-item{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .hb-item:last-child{ border-bottom:none; }
+    .hb-check{ width:30px; height:30px; border-radius:9px; flex-shrink:0; border:1.5px solid rgba(var(--sec-rgb),.45); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:rgb(var(--sec-rgb)); transition:all .15s; -webkit-tap-highlight-color:transparent; }
+    .hb-check.on{ background:rgba(var(--sec-rgb),.2); border-color:rgba(var(--sec-rgb),.75); box-shadow:0 0 14px rgba(var(--sec-rgb),.4); }
+    .hb-main{ flex:1; min-width:0; }
+    .hb-name{ font-size:14.5px; font-weight:600; color:var(--au-ivory); line-height:1.25; }
+    .hb-item.done .hb-name{ color:var(--au-dim); }
+    .hb-week{ display:flex; gap:3px; margin-top:6px; }
+    .hb-dot{ width:11px; height:11px; border-radius:3px; background:rgba(255,255,255,.07); }
+    .hb-dot.on{ background:rgb(var(--sec-rgb)); box-shadow:0 0 6px rgba(var(--sec-rgb),.5); }
+    .hb-dot.today{ outline:1.5px solid rgba(var(--sec-rgb),.6); outline-offset:1px; }
+    .hb-streak{ font-family:var(--au-mono); font-size:12px; font-weight:700; color:var(--au-amber); white-space:nowrap; flex-shrink:0; }
+    .hb-streak.cold{ color:var(--au-faint); }
+    .hb-del{ background:none; border:none; color:var(--au-faint); font-size:15px; cursor:pointer; padding:4px 6px; line-height:1; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+    .hb-del:active{ color:var(--au-rose); }
+    .hb-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); text-align:center; padding:6px 0 12px; }
+    .hb-add{ display:flex; gap:8px; margin-top:14px; }
+    .hb-add .id-input{ flex:1; }
+
+    /* Journal */
+    .jr-prompt{ font-family:var(--au-serif); font-style:italic; font-size:14px; color:rgb(var(--sec-rgb)); margin-bottom:12px; line-height:1.4; }
+    .jr-saved{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); transition:color .25s; }
+    .jr-saved.on{ color:rgb(var(--sec-rgb)); }
+    .jr-hist{ margin-top:6px; display:flex; flex-direction:column; }
+    .jr-entry{ padding:12px 0; border-top:1px solid rgba(255,255,255,.05); }
+    .jr-entry-date{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-bottom:5px; }
+    .jr-entry-text{ font-family:var(--au-serif); font-style:italic; font-size:14px; color:var(--au-dim); line-height:1.5; }
+    .jr-entry-grat{ font-size:12px; color:var(--au-faint); margin-top:6px; line-height:1.45; }
+    .jr-entry-grat b{ color:rgb(var(--sec-rgb)); font-family:var(--au-mono); font-style:normal; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+    .jr-hist-title{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-top:18px; }
+  </style>
+</head>
+<body data-page="identity" class="au-bg au-mood-alert" id="root">
+
+  <div class="id-hero">
+    <div>
+      <div class="au-eyebrow id-hero-eyebrow"><span class="au-dot"></span>IDENTITY<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
+      <p class="id-hero-line" id="novaSays">Who are you becoming?</p>
+    </div>
+    <div class="nova" id="nova" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs><linearGradient id="novaGradId" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#9B8CFF"/><stop offset="100%" stop-color="#34E2B0"/>
+        </linearGradient></defs>
+        <g class="nova-glow">
+          <rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#novaGradId)" opacity="0.95"/>
+          <circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/>
+          <circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/>
+          <circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/>
+          <circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="id-wrap">
+
+    <!-- North Star -->
+    <section class="id-sec" style="--sec-rgb:155,140,255">
+      <div class="id-sec-hdr"><span class="id-sec-dot"></span><span class="id-sec-title">North Star</span><button class="id-sec-act" id="nsEditBtn">Edit</button></div>
+      <div class="id-sec-body" id="nsBody"></div>
+    </section>
+
+    <!-- Habits -->
+    <section class="id-sec" style="--sec-rgb:52,226,176">
+      <div class="id-sec-hdr"><span class="id-sec-dot"></span><span class="id-sec-title">Habits</span><span class="id-sec-act" id="hbCount"></span></div>
+      <div class="id-sec-body" id="hbBody"></div>
+    </section>
+
+    <!-- Journal -->
+    <section class="id-sec" style="--sec-rgb:24,200,192">
+      <div class="id-sec-hdr"><span class="id-sec-dot"></span><span class="id-sec-title">Journal</span><span class="id-sec-act jr-saved" id="jrSaved">Auto-saved</span></div>
+      <div class="id-sec-body" id="jrBody"></div>
+    </section>
+
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function today(){ return dateKey(new Date()); }
+    function ls(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+    function lsSave(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function uid(p){ return (p||'')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+    function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||18); }catch(e){} }
+
+    function habits(){ var a=ls('habits:list',[]); return Array.isArray(a)?a:[]; }
+    function habitLog(){ var o=ls('habits:log',{}); return (o && typeof o==='object' && !Array.isArray(o))?o:{}; }
+    function journal(){ var a=ls('journal:entries',[]); return Array.isArray(a)?a:[]; }
+    function northStar(){ var o=ls('identity:northstar',{}); return (o && typeof o==='object')?o:{}; }
+
+    /* ── NORTH STAR ── */
+    var nsEditing=false, nsDraft=null;
+    function renderNorthStar(){
+      var el=document.getElementById('nsBody'); var ns=northStar();
+      var btn=document.getElementById('nsEditBtn');
+      if(nsEditing){
+        btn.textContent=''; btn.style.display='none';
+        var d=nsDraft||{};
+        el.innerHTML=
+          '<div class="id-field-lbl">The person I’m becoming</div>'+
+          '<textarea class="id-textarea" id="nsStatement" placeholder="e.g. A disciplined, strong, calm 17-year-old who shows up every day.">'+esc(d.statement||'')+'</textarea>'+
+          '<div class="id-field-lbl">Why it matters</div>'+
+          '<textarea class="id-textarea" id="nsWhy" placeholder="What’s the deeper reason behind it?">'+esc(d.why||'')+'</textarea>'+
+          '<div class="id-field-lbl">Principles I live by (comma separated)</div>'+
+          '<input class="id-input" id="nsPrinciples" placeholder="Discipline, Honesty, Patience" value="'+esc((d.principles||[]).join(', '))+'">'+
+          '<div class="id-edit-actions"><button class="id-btn" id="nsSaveBtn">Save</button><button class="id-btn-ghost" id="nsCancelBtn">Cancel</button></div>';
+        return;
+      }
+      btn.style.display=''; btn.textContent = (ns.statement||ns.why||(ns.principles&&ns.principles.length)) ? 'Edit' : '';
+      if(!ns.statement && !ns.why && !(ns.principles&&ns.principles.length)){
+        el.innerHTML='<p class="ns-empty">Define who you’re becoming — the person, the why, the principles. Nova will hold you to it.</p>'+
+          '<div class="id-edit-actions"><button class="id-btn" id="nsStartBtn">Set my North Star</button></div>';
+        return;
+      }
+      var html='';
+      if(ns.statement) html+='<div class="ns-statement"><span class="lead">I’m becoming</span> '+esc(ns.statement)+'</div>';
+      if(ns.why) html+='<div class="ns-why"><b>Why</b>'+esc(ns.why)+'</div>';
+      if(ns.principles && ns.principles.length) html+='<div class="ns-principles">'+ns.principles.map(function(p){return '<span class="ns-chip">'+esc(p)+'</span>';}).join('')+'</div>';
+      el.innerHTML=html;
+    }
+    function nsStartEdit(){ nsEditing=true; nsDraft=JSON.parse(JSON.stringify(northStar())); renderNorthStar(); var s=document.getElementById('nsStatement'); if(s) s.focus(); }
+    function nsSave(){
+      var st=(document.getElementById('nsStatement')||{}).value||'';
+      var wy=(document.getElementById('nsWhy')||{}).value||'';
+      var pr=((document.getElementById('nsPrinciples')||{}).value||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+      lsSave('identity:northstar',{ statement:st.trim(), why:wy.trim(), principles:pr, ts:Date.now() });
+      nsEditing=false; nsDraft=null; renderAll();
+    }
+    function nsCancel(){ nsEditing=false; nsDraft=null; renderNorthStar(); }
+
+    /* ── HABITS ── */
+    function habitDoneOn(id,k,log){ return !!(log[k] && log[k][id]); }
+    function habitStreak(id){
+      var log=habitLog(); var streak=0; var c=new Date();
+      if(!habitDoneOn(id,dateKey(c),log)) c.setDate(c.getDate()-1); // today not done yet doesn't break streak
+      while(habitDoneOn(id,dateKey(c),log)){ streak++; c.setDate(c.getDate()-1); }
+      return streak;
+    }
+    function renderHabits(){
+      var el=document.getElementById('hbBody'); var list=habits(); var log=habitLog(); var k=today();
+      var doneToday=list.filter(function(h){return habitDoneOn(h.id,k,log);}).length;
+      document.getElementById('hbCount').textContent = list.length ? doneToday+'/'+list.length : '';
+      var html='';
+      if(list.length){
+        var pct=list.length?Math.round(doneToday/list.length*100):0;
+        html+='<div class="hb-prog"><span>'+doneToday+' of '+list.length+' today</span><div class="hb-prog-bar"><div class="hb-prog-fill" style="width:'+pct+'%"></div></div></div>';
+      }
+      if(!list.length){ html+='<p class="hb-empty">No habits yet. Add the daily disciplines that build the person above.</p>'; }
+      else {
+        list.forEach(function(h){
+          var done=habitDoneOn(h.id,k,log); var streak=habitStreak(h.id);
+          var dots='';
+          for(var i=6;i>=0;i--){ var dd=new Date(); dd.setDate(dd.getDate()-i); var dk=dateKey(dd); var on=habitDoneOn(h.id,dk,log); dots+='<span class="hb-dot'+(on?' on':'')+(i===0?' today':'')+'"></span>'; }
+          html+='<div class="hb-item'+(done?' done':'')+'">'+
+            '<button class="hb-check'+(done?' on':'')+'" data-act="hb-toggle" data-id="'+esc(h.id)+'">'+(done?'✓':'')+'</button>'+
+            '<div class="hb-main"><div class="hb-name">'+esc(h.name)+'</div><div class="hb-week">'+dots+'</div></div>'+
+            '<span class="hb-streak'+(streak>0?'':' cold')+'">'+(streak>0?'🔥 '+streak:'—')+'</span>'+
+            '<button class="hb-del" data-act="hb-del" data-id="'+esc(h.id)+'" aria-label="Delete habit">×</button>'+
+          '</div>';
+        });
+      }
+      html+='<div class="hb-add"><input class="id-input" id="hbNew" placeholder="New habit…" enterkeyhint="done"><button class="id-btn" data-act="hb-add">Add</button></div>';
+      el.innerHTML=html;
+    }
+    function addHabit(){
+      var inp=document.getElementById('hbNew'); var name=(inp&&inp.value||'').trim(); if(!name) return;
+      var list=habits(); list.push({ id:uid('h-'), name:name, createdAt:Date.now() }); lsSave('habits:list',list);
+      renderHabits(); var n=document.getElementById('hbNew'); if(n){ n.value=''; n.focus(); }
+    }
+    function toggleHabit(id){
+      var log=habitLog(); var k=today(); if(!log[k]) log[k]={};
+      if(log[k][id]){ delete log[k][id]; } else { log[k][id]=1; buzz(18); }
+      if(Object.keys(log[k]).length===0) delete log[k];
+      lsSave('habits:log',log); renderHabits(); updateNova();
+    }
+    function delHabit(id){
+      var h=habits().find(function(x){return x.id===id;}); if(!h) return;
+      if(!confirm('Delete “'+h.name+'”? Its history stays in your log.')) return;
+      lsSave('habits:list', habits().filter(function(x){return x.id!==id;})); renderHabits();
+    }
+
+    /* ── JOURNAL ── */
+    var jrSaveTimer=null;
+    function todayEntry(){ return journal().find(function(e){return e.dateKey===today();}) || null; }
+    function flashSaved(){ var s=document.getElementById('jrSaved'); if(!s)return; s.textContent='Saved ✓'; s.classList.add('on'); clearTimeout(s._t); s._t=setTimeout(function(){ s.textContent='Auto-saved'; s.classList.remove('on'); },1100); }
+    function saveJournalField(field,val){
+      var arr=journal(); var k=today(); var e=arr.find(function(x){return x.dateKey===k;});
+      if(!e){ e={ id:'j-'+k, dateKey:k, reflection:'', gratitude:'', ts:Date.now() }; arr.push(e); }
+      e[field]=val; e.ts=Date.now(); lsSave('journal:entries',arr);
+      clearTimeout(jrSaveTimer); jrSaveTimer=setTimeout(flashSaved, 400);
+    }
+    var JR_PROMPTS=['What did you do today toward who you’re becoming?','Where did you show discipline today?','What would make tomorrow a win?','What are you grateful for right now?'];
+    function renderJournal(){
+      var el=document.getElementById('jrBody'); var e=todayEntry();
+      var prompt=JR_PROMPTS[(new Date().getDate())%JR_PROMPTS.length];
+      var html='<div class="jr-prompt">“'+prompt+'”</div>'+
+        '<div class="id-field-lbl">Today’s reflection</div>'+
+        '<textarea class="id-textarea" id="jrReflection" placeholder="A few honest lines about today…"></textarea>'+
+        '<div class="id-field-lbl">Grateful for</div>'+
+        '<textarea class="id-textarea" id="jrGratitude" placeholder="Three things, big or small…" style="min-height:56px;"></textarea>';
+      var past=journal().filter(function(x){return x.dateKey!==today() && ((x.reflection&&x.reflection.trim())||(x.gratitude&&x.gratitude.trim()));})
+                        .sort(function(a,b){return a.dateKey<b.dateKey?1:-1;}).slice(0,8);
+      if(past.length){
+        html+='<div class="jr-hist-title">Past entries</div><div class="jr-hist">';
+        past.forEach(function(x){
+          var d=new Date(x.dateKey+'T00:00:00');
+          var label=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+          html+='<div class="jr-entry"><div class="jr-entry-date">'+label+'</div>'+
+            (x.reflection&&x.reflection.trim()?'<div class="jr-entry-text">'+esc(x.reflection)+'</div>':'')+
+            (x.gratitude&&x.gratitude.trim()?'<div class="jr-entry-grat"><b>Grateful</b> '+esc(x.gratitude)+'</div>':'')+
+          '</div>';
+        });
+        html+='</div>';
+      }
+      el.innerHTML=html;
+      // set values via property (avoids attribute-escaping issues) + wire input
+      var refl=document.getElementById('jrReflection'), grat=document.getElementById('jrGratitude');
+      if(refl){ refl.value=(e&&e.reflection)||''; refl.addEventListener('input', function(){ saveJournalField('reflection', refl.value); }); }
+      if(grat){ grat.value=(e&&e.gratitude)||''; grat.addEventListener('input', function(){ saveJournalField('gratitude', grat.value); }); }
+    }
+
+    /* ── NOVA hero ── */
+    function updateNova(){
+      var root=document.getElementById('root'); if(!root) return;
+      var dd=new Date(), h=dd.getHours();
+      var de=document.getElementById('heroDate'); if(de) de.textContent=['SUN','MON','TUE','WED','THU','FRI','SAT'][dd.getDay()]+' '+dd.getDate();
+      var ns=northStar(); var list=habits(); var log=habitLog(); var k=today();
+      var doneToday=list.filter(function(x){return habitDoneOn(x.id,k,log);}).length;
+      var journaled=!!(todayEntry() && ((todayEntry().reflection||'').trim()||(todayEntry().gratitude||'').trim()));
+      var mood, line;
+      if(!ns.statement){ mood='alert'; line='Start with your North Star — who are you becoming?'; }
+      else if(list.length && doneToday===list.length && journaled){ mood='hot'; line='Every habit done and journaled. This is exactly who you said you’d be.'; }
+      else if(list.length && doneToday===list.length){ mood='hot'; line='All habits done today. Strong. A line in the journal and you’re complete.'; }
+      else if(list.length){ mood='calm'; line=doneToday+' of '+list.length+' habits done — '+(h>=18?'finish the day strong.':'keep showing up.'); }
+      else { mood='calm'; line='Add the daily habits that build the person you described.'; }
+      root.classList.remove('au-mood-calm','au-mood-hot','au-mood-alert','au-mood-low');
+      root.classList.add('au-mood-'+mood);
+      var nsv=document.getElementById('novaSays'); if(nsv) nsv.textContent=line;
+    }
+
+    /* ── boot ── */
+    function renderAll(){ renderNorthStar(); renderHabits(); renderJournal(); updateNova(); }
+    renderAll();
+    window._identityRerender = renderAll;
+
+    document.addEventListener('click', function(ev){
+      var t=ev.target && ev.target.closest ? ev.target.closest('[data-act],#nsEditBtn,#nsStartBtn,#nsSaveBtn,#nsCancelBtn') : null;
+      if(!t) return;
+      var act=t.getAttribute('data-act');
+      if(t.id==='nsEditBtn'||t.id==='nsStartBtn') return nsStartEdit();
+      if(t.id==='nsSaveBtn') return nsSave();
+      if(t.id==='nsCancelBtn') return nsCancel();
+      if(act==='hb-toggle') return toggleHabit(t.getAttribute('data-id'));
+      if(act==='hb-del') return delHabit(t.getAttribute('data-id'));
+      if(act==='hb-add') return addHabit();
+    });
+    document.addEventListener('keydown', function(ev){ if(ev.key==='Enter' && ev.target && ev.target.id==='hbNew'){ ev.preventDefault(); addHabit(); } });
+
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden && !nsEditing) renderAll(); });
+    window.addEventListener('focus', function(){ if(!nsEditing) renderAll(); });
+  })();
+  </script>
+
+  <!-- Cross-device cloud sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      function start(){
+        if (typeof initCloudSync !== 'function'){ setTimeout(start, 200); return; }
+        initCloudSync({
+          appKey: 'identity',
+          syncedKeys: ['identity:northstar','habits:list','habits:log','journal:entries'],
+          onApplied: function(){ if (window._identityRerender) window._identityRerender(); }
+        });
+      }
+      start();
+    });
+  </script>
+
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js" defer></script>
+</body>
+</html>

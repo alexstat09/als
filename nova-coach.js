@@ -186,7 +186,8 @@
     keys.forEach(function(k){ var r=byDay[k]; if(!r) return; days++;
       if(r.trained){ workoutsN++; vol+=r.volume||0; } if(r.pr) prs++;
       if(r.recovery!=null) recVals.push(r.recovery); if(r.sleepHours>0) sleepVals.push(r.sleepHours); if(r.protein>0) protVals.push(r.protein); });
-    if(workoutsN===0 && !recVals.length && !sleepVals.length) return null; // nothing to reflect on yet
+    var _hasIdentity = ((ls('habits:list',[])||[]).length>0) || !!((ls('identity:northstar',{})||{}).statement);
+    if(workoutsN===0 && !recVals.length && !sleepVals.length && !_hasIdentity) return null; // nothing to reflect on yet
 
     // weight change across the window (first vs last logged inside it)
     var inWin=keys.map(function(k){ return byDay[k]&&byDay[k].weight!=null ? {k:k,w:byDay[k].weight} : null; }).filter(Boolean);
@@ -198,6 +199,13 @@
     else lines.push('No sessions logged this week. No guilt — just get one in. Momentum is easier to keep than to rebuild.');
     if(sleepVals.length) lines.push('You averaged '+avg(sleepVals).toFixed(1)+'h of sleep'+(recVals.length?' and a recovery score of '+Math.round(avg(recVals))+'/100':'')+'. '+(avg(sleepVals)>=8?'That’s the foundation everything else is built on — keep it.':'A little more sleep is the cheapest gain available to you.'));
     if(wDelta!=null && Math.abs(wDelta)>=0.1) lines.push('Your weight '+(wDelta<0?'came down ':'ticked up ')+Math.abs(wDelta).toFixed(1)+' '+u+' this week'+(protVals.length?', on ~'+Math.round(avg(protVals))+'g protein a day':'')+'. '+(wDelta<0?'Recomp is working — lean out, hold the muscle.':'Fine if you meant to; worth a glance if not.'));
+    // Habits consistency this week
+    var hbList=ls('habits:list',[])||[], hbLog=ls('habits:log',{})||{};
+    if(hbList.length){ var hbDays=0, comp=0; keys.forEach(function(k){ if(hbLog[k] && Object.keys(hbLog[k]).length){ hbDays++; comp+=Object.keys(hbLog[k]).length; } });
+      lines.push('On your habits, you showed up '+hbDays+' of 7 days ('+comp+' done). '+(hbDays>=5?'That consistency is the whole game.':'Aim to close them daily — that is where identity is built.')); }
+    // North Star reminder
+    var ns=ls('identity:northstar',{})||{};
+    if(ns && ns.statement) lines.push('And remember who you’re becoming: '+ns.statement+'. Everything above was a vote for that.');
     lines.push('You’re 17 and building the body — and the discipline — most people never do. I’m watching it happen. Let’s make next week even better.');
     return { title:'Your week, from Nova', body:lines, line:'I wrote you a letter about your week — tap to read it.' };
   }
@@ -250,9 +258,20 @@
     var recVals=sleepLogs.filter(function(e){ return e.dateKey>rcut; }).map(function(e){ return e.recovery!=null?e.recovery:recoveryScore(e); }).filter(function(v){ return v!=null; });
     if(recVals.length) avgRec=Math.round(recVals.reduce(function(a,b){return a+b;},0)/recVals.length);
 
+    /* ── Identity: habits, journal, north star ── */
+    var hbList=ls('habits:list',[])||[]; var hbLog=ls('habits:log',{})||{};
+    var hbToday=(hbLog[today]&&typeof hbLog[today]==='object')?hbLog[today]:{};
+    var habitsTotal=hbList.length; var habitsDone=hbList.filter(function(hh){return hbToday[hh.id];}).length;
+    var topStreak=0, topStreakName='';
+    hbList.forEach(function(hh){ var s=0,c=new Date(); if(!(hbLog[dk(c)]&&hbLog[dk(c)][hh.id])) c.setDate(c.getDate()-1); while(hbLog[dk(c)]&&hbLog[dk(c)][hh.id]){ s++; c.setDate(c.getDate()-1); } if(s>topStreak){ topStreak=s; topStreakName=hh.name; } });
+    var jToday=(ls('journal:entries',[])||[]).find(function(e){ return e&&e.dateKey===today; });
+    var journaledToday=!!(jToday && (((jToday.reflection||'').trim())||((jToday.gratitude||'').trim())));
+    var northStar=ls('identity:northstar',{})||{};
+
     return {now:now,h:h,today:today,workouts:workouts,vol:vol,daysSince:daysSince,wToday:wToday,wTrend:wTrend,
       wCount:wCount,wTarget:wTarget,caf:caf,kcal:kcal,prot:prot,protTarget:protTarget,nutCount:nut.length,
       suppTaken:suppTaken,suppTotal:dailySupps.length,lastPR:lastPR,stalled:stalled,hasWorkouts:workouts.length>0,
+      habitsTotal:habitsTotal,habitsDone:habitsDone,topStreak:topStreak,topStreakName:topStreakName,journaledToday:journaledToday,northStar:northStar,
       recToday:recToday,sleepToday:sleepToday,lastNight:lastNight,avgRec:avgRec,hasSleep:sleepLogs.length>0};
   }
 
@@ -344,6 +363,20 @@
       cards.push({ p:76+Math.round((c.strength||0)*7), tone:c.tone, insight:true,
         title:c.title, detail:c.detail, line:c.line, href:c.href });
     });
+
+    // Identity: habits, streaks, journal — Nova holding you to who you said you'd be.
+    if(d.topStreak>=7)
+      cards.push({p:50,tone:'good',title:d.topStreakName+' — '+d.topStreak+'-day streak',
+        detail:'You’ve kept it '+d.topStreak+' days straight. That’s identity, not motivation. Don’t break the chain.',
+        line:d.topStreakName+' is on a '+d.topStreak+'-day streak — that is who you are now. Keep the chain alive.',href:'identity.html'});
+    if(d.habitsTotal>0 && d.habitsDone<d.habitsTotal && d.h>=17)
+      cards.push({p:54,tone:'push',title:'Habits: '+d.habitsDone+'/'+d.habitsTotal+' today',
+        detail:(d.habitsTotal-d.habitsDone)+' left. These daily reps build the person on your North Star — close them out before bed.',
+        line:'You’ve got '+(d.habitsTotal-d.habitsDone)+' habit'+((d.habitsTotal-d.habitsDone)>1?'s':'')+' left today — finish them, that is the discipline compounding.',href:'identity.html'});
+    if(!d.journaledToday && d.h>=20)
+      cards.push({p:36,tone:'info',title:'No journal entry yet',
+        detail:'Two honest lines on today — what you did, what you’re grateful for — keeps you in touch with who you’re becoming.',
+        line:'You have not journaled today — a couple of honest lines before bed.',href:'identity.html'});
 
     // Memory: the goals he set himself today.
     var gl=todaysGoals();

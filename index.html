@@ -277,6 +277,7 @@ body::after {
 .tile-ideas     { --accent-rgb:167,139,250; }
 .tile-body      { --accent-rgb:251,113,133; }
 .tile-sleep     { --accent-rgb:155,140,255; }
+.tile-identity  { --accent-rgb:155,140,255; }
 
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
@@ -700,6 +701,7 @@ body::after {
   .tile-body{ --accent-rgb:24,200,192; }
   .tile-ideas{ --accent-rgb:155,140,255; }
   .tile-sleep{ --accent-rgb:155,140,255; }
+  .tile-identity{ --accent-rgb:155,140,255; }
   .tile-trends{ --accent-rgb:52,226,176; }
   .tile-emoji{ display:none !important; }
   .tile-title{ font-family:var(--au-serif) !important; font-style:italic; font-weight:400 !important; letter-spacing:-.01em; color:var(--au-ivory); }
@@ -884,8 +886,16 @@ body::after {
       <div class="tile-footer"><span class="tile-sub">Sleep &amp; recovery score</span><span class="tile-arrow">→</span></div>
     </a>
 
+    <a class="tile tile-identity wide" href="identity.html">
+      <div class="tile-top"><span class="tile-num">·07</span><span class="tile-emoji">🧭</span></div>
+      <div class="tile-spacer"></div>
+      <div class="tile-live" id="livIdentity">—</div>
+      <div class="tile-title">Identity</div>
+      <div class="tile-footer"><span class="tile-sub">North Star · habits · journal</span><span class="tile-arrow">→</span></div>
+    </a>
+
     <a class="tile tile-trends wide" href="trends.html">
-      <div class="tile-top"><span class="tile-num">·07</span><span class="tile-emoji">📈</span></div>
+      <div class="tile-top"><span class="tile-num">·08</span><span class="tile-emoji">📈</span></div>
       <div class="tile-spacer"></div>
       <div class="tile-live" id="livTrends">—</div>
       <div class="tile-title">Trends</div>
@@ -1038,6 +1048,18 @@ function liveData() {
     const wts = JSON.parse(localStorage.getItem('po_coach_weights'))||[];
     set('livTrends', Array.isArray(wts)&&wts.length ? wts.length+' weigh-ins tracked' : 'Start tracking');
   } catch(e){ set('livTrends',''); }
+
+  /* Identity — habits done today or North Star prompt */
+  try {
+    const t = (()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    const hl = JSON.parse(localStorage.getItem('habits:list'))||[];
+    const lg = JSON.parse(localStorage.getItem('habits:log'))||{};
+    const ns = JSON.parse(localStorage.getItem('identity:northstar'))||{};
+    const doneT = (Array.isArray(hl)?hl:[]).filter(h=> lg[t] && lg[t][h.id]).length;
+    if (Array.isArray(hl) && hl.length) set('livIdentity', doneT+' / '+hl.length+' habits today');
+    else if (ns && ns.statement) set('livIdentity', 'Add your daily habits');
+    else set('livIdentity', 'Define your North Star');
+  } catch(e){ set('livIdentity','North Star · habits · journal'); }
 
   /* Sleep — today's recovery score or last night */
   try {
