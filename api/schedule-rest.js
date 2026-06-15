@@ -21,8 +21,9 @@ module.exports = async function (req, res) {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto = req.headers['x-forwarded-proto'] || 'https';
     const dest = proto + '://' + host + '/api/fire-push';
+    const qstash = (process.env.QSTASH_URL || 'https://qstash.upstash.io').replace(/\/+$/, '');
 
-    const r = await fetch('https://qstash.upstash.io/v2/publish/' + encodeURIComponent(dest), {
+    const r = await fetch(qstash + '/v2/publish/' + encodeURIComponent(dest), {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token,

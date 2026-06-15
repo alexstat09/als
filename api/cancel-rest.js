@@ -12,7 +12,8 @@ module.exports = async function (req, res) {
     const id = body.messageId;
     const token = process.env.QSTASH_TOKEN;
     if (!id || !token) { res.status(200).json({ skipped: true }); return; }
-    await fetch('https://qstash.upstash.io/v2/messages/' + encodeURIComponent(id), {
+    const qstash = (process.env.QSTASH_URL || 'https://qstash.upstash.io').replace(/\/+$/, '');
+    await fetch(qstash + '/v2/messages/' + encodeURIComponent(id), {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + token }
     });
