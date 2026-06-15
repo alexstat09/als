@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Weight · ALS</title>
+  <meta name="theme-color" content="#050507">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { min-height:100%; }
+    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); --sec-rgb:52,226,176; }
+    .hidden{ display:none !important; }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .wp-hero{ max-width:600px; margin:0 auto; padding:24px 18px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .wp-hero-eyebrow{ margin-bottom:12px; }
+    .wp-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6vw,32px); line-height:1.1; letter-spacing:-.01em; max-width:22ch; }
+    .wp-hero .nova{ flex-shrink:0; width:74px; height:74px; margin-top:2px; }
+
+    .wp-wrap{ padding:14px 18px; display:flex; flex-direction:column; gap:14px; max-width:600px; margin:0 auto; }
+
+    /* ── Glass card ───────────────────────────────── */
+    .wt-card{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:20px 18px 18px; }
+    .wt-card::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
+
+    .wt-row{ display:flex; align-items:baseline; gap:8px; }
+    .wt-num{ font-family:var(--au-mono); font-size:48px; font-weight:700; letter-spacing:-.03em; line-height:1; color:var(--au-ivory); font-variant-numeric:tabular-nums; }
+    .wt-unit{ font-size:16px; color:var(--au-faint); font-family:var(--au-mono); }
+    .wt-delta{ font-family:var(--au-mono); font-size:13px; font-weight:700; margin-top:8px; font-variant-numeric:tabular-nums; }
+    .wt-delta.up{ color:var(--au-amber); } .wt-delta.down{ color:var(--au-emerald); }
+    .wt-streak{ color:var(--au-emerald); font-size:13px; font-weight:600; margin-top:8px; display:inline-flex; align-items:center; gap:6px; }
+    .wt-empty{ text-align:center; padding:26px 16px; color:var(--au-dim); font-family:var(--au-serif); font-style:italic; font-size:15px; border:1px dashed var(--au-line); border-radius:14px; margin-top:12px; }
+
+    /* ── Chart ────────────────────────────────────── */
+    .wt-chart-wrap{ position:relative; margin:16px 0 6px; }
+    .wt-range-row{ display:flex; gap:6px; justify-content:flex-end; margin-bottom:10px; }
+    .wt-range-btn{ padding:5px 14px; border-radius:99px; font-size:11px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-faint); cursor:pointer; font-family:var(--au-mono); transition:all .15s; letter-spacing:.06em; -webkit-tap-highlight-color:transparent; }
+    .wt-range-btn.active{ background:rgba(var(--sec-rgb),.15); border-color:rgba(var(--sec-rgb),.4); color:rgb(var(--sec-rgb)); }
+    .wt-chart-yaxis{ position:absolute; left:0; top:34px; bottom:30px; width:34px; display:flex; flex-direction:column; justify-content:space-between; padding:4px 0; pointer-events:none; }
+    .wt-chart-yaxis span{ font-size:10px; color:var(--au-faint); font-family:var(--au-mono); }
+    .wt-chart{ height:170px; display:block; margin-left:34px; width:calc(100% - 34px); cursor:crosshair; touch-action:none; }
+    .wt-grid{ stroke:rgba(255,255,255,.06); stroke-width:1; }
+    .wt-area{ fill:url(#wtFill); }
+    .wt-line{ fill:none; stroke:url(#wtLineGrad); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+    .wt-avg-line{ fill:none; stroke:rgba(var(--sec-rgb),.42); stroke-width:1.5; stroke-dasharray:4 3; opacity:.75; }
+    .wt-dot{ fill:rgb(var(--sec-rgb)); stroke:#080a0e; stroke-width:1.5; }
+    .wt-dot-today{ fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.5; filter:drop-shadow(0 0 4px rgba(var(--sec-rgb),.9)); }
+    .wt-xlabel{ font-size:9px; fill:rgba(255,255,255,.30); font-family:var(--au-mono); }
+    .wt-crosshair{ stroke:rgba(255,255,255,.28); stroke-width:1; stroke-dasharray:3 3; }
+    .wt-tip-bg{ fill:rgba(8,8,10,.95); stroke:rgba(var(--sec-rgb),.4); stroke-width:1; }
+    .wt-tip-date{ fill:rgba(255,255,255,.55); font-size:9px; font-family:var(--au-mono); }
+    .wt-tip-weight{ fill:#fff; font-size:12px; font-weight:700; font-family:var(--au-mono); }
+    .wt-tip-dot{ fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.5; }
+    .wt-minmax-min{ font-size:9px; font-family:var(--au-mono); fill:rgba(var(--sec-rgb),.85); }
+    .wt-minmax-max{ font-size:9px; font-family:var(--au-mono); fill:rgba(255,107,139,.85); }
+    .wt-meta{ text-align:center; font-size:11px; color:var(--au-faint); font-family:var(--au-mono); margin-top:8px; }
+    .wt-legend{ display:flex; justify-content:center; gap:18px; margin-top:10px; }
+    .wt-legend-item{ display:inline-flex; align-items:center; gap:6px; font-size:9px; letter-spacing:.16em; font-weight:700; color:var(--au-faint); font-family:var(--au-mono); }
+    .wt-legend-dot{ width:14px; height:2px; background:rgb(var(--sec-rgb)); border-radius:1px; }
+    .wt-legend-dot-avg{ background:transparent; border-top:2px dashed rgba(var(--sec-rgb),.45); height:2px; }
+    .wt-tap-hint{ text-align:center; font-size:10px; color:var(--au-faint); font-family:var(--au-mono); letter-spacing:.08em; margin-top:6px; }
+
+    /* ── Logged-today lock ────────────────────────── */
+    .wt-locked{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; padding:12px 14px; border-radius:14px; background:rgba(var(--sec-rgb),.06); border:1px solid rgba(var(--sec-rgb),.22); }
+    .wt-locked-info{ display:flex; align-items:center; gap:11px; }
+    .wt-locked-check{ width:30px; height:30px; background:rgba(var(--sec-rgb),.14); color:rgb(var(--sec-rgb)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .wt-locked-label{ font-size:10px; letter-spacing:.14em; font-weight:700; color:var(--au-faint); font-family:var(--au-mono); margin-bottom:2px; }
+    .wt-locked-value{ font-size:16px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); }
+    .wt-edit-btn{ background:transparent; border:1px solid rgba(var(--sec-rgb),.35); color:rgb(var(--sec-rgb)); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; padding:8px 16px; border-radius:999px; -webkit-tap-highlight-color:transparent; }
+    .wt-edit-btn:active{ opacity:.7; }
+
+    /* ── Input row ────────────────────────────────── */
+    .wt-input-row{ margin-top:16px; }
+    .wt-date-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+    .wt-date-label{ font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; font-family:var(--au-mono); }
+    .wt-date-input{ flex:1; min-width:120px; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:10px; color:var(--au-ivory); font-family:var(--au-mono); font-size:13px; padding:9px 11px; outline:none; transition:border-color .2s; color-scheme:dark; }
+    .wt-date-input:focus{ border-color:rgba(var(--sec-rgb),.5); }
+    .wt-today-btn{ padding:9px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-dim); cursor:pointer; font-family:var(--au-mono); white-space:nowrap; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+    .wt-today-btn:active{ background:rgba(var(--sec-rgb),.12); color:rgb(var(--sec-rgb)); }
+    .wt-input-top{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px; }
+    .wt-input-field{ position:relative; }
+    .wt-input{ width:100%; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.3); border-radius:12px; color:var(--au-ivory); font-family:var(--au-mono); font-size:20px; font-weight:700; padding:12px 46px 12px 14px; outline:none; text-align:center; -webkit-appearance:none; }
+    .wt-input:focus{ border-color:rgba(var(--sec-rgb),.6); }
+    .wt-unit-static{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--au-faint); font-size:13px; font-family:var(--au-mono); pointer-events:none; }
+    .wt-save-btn{ background:rgb(var(--sec-rgb)); color:#04130D; border:none; border-radius:12px; padding:12px 22px; font-family:var(--au-sans); font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 18px rgba(var(--sec-rgb),.3); -webkit-tap-highlight-color:transparent; }
+    .wt-save-btn:active{ opacity:.8; }
+
+    /* ── History list ─────────────────────────────── */
+    .wt-history{ margin-top:20px; }
+    .wt-history-title{ font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); font-family:var(--au-mono); margin-bottom:10px; }
+    .wt-history-list{ max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px; overscroll-behavior:contain; }
+    .wt-history-list::-webkit-scrollbar{ width:4px; }
+    .wt-history-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:2px; }
+    .wt-history-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:11px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); }
+    .wt-history-row.today-row{ border-color:rgba(var(--sec-rgb),.28); background:rgba(var(--sec-rgb),.05); }
+    .wt-history-date{ flex:1; font-size:13px; color:var(--au-dim); }
+    .wt-history-val{ font-size:15px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); font-variant-numeric:tabular-nums; }
+    .wt-history-delta{ font-size:11px; font-family:var(--au-mono); min-width:42px; text-align:right; }
+    .wt-history-delta.up{ color:var(--au-amber); } .wt-history-delta.down{ color:var(--au-emerald); }
+    .wt-history-edit-wrap{ display:flex; gap:5px; }
+    .wt-h-btn{ padding:5px 9px; border-radius:7px; font-size:11px; font-weight:700; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:var(--au-faint); cursor:pointer; font-family:var(--au-sans); -webkit-tap-highlight-color:transparent; }
+    .wt-h-btn:active{ background:rgba(255,255,255,.09); color:var(--au-ivory); }
+    .wt-h-btn.del:active{ background:rgba(255,107,139,.14); color:#FF6B8B; }
+  </style>
+</head>
+<body data-page="weight" class="au-bg au-mood-hot" id="root">
+
+  <div class="wp-hero">
+    <div>
+      <div class="au-eyebrow wp-hero-eyebrow"><span class="au-dot"></span>WEIGHT<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
+      <p class="wp-hero-line" id="novaSays">Every weigh-in, tracked.</p>
+    </div>
+    <div class="nova" id="nova" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs><linearGradient id="novaGradWt" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#18C8C0"/>
+        </linearGradient></defs>
+        <g class="nova-glow">
+          <rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#novaGradWt)" opacity="0.95"/>
+          <circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/>
+          <circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/>
+          <circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/>
+          <circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="wp-wrap">
+    <div class="wt-card">
+      <div class="wt-row">
+        <span class="wt-num" id="wtNum">&mdash;</span>
+        <span class="wt-unit" id="wtUnit">kg</span>
+      </div>
+      <div class="wt-delta hidden" id="wtDelta"></div>
+      <div class="wt-streak hidden" id="wtStreak">🔥<span id="wtStreakNum">0 day streak</span></div>
+
+      <div class="wt-empty" id="wtEmpty">Log your first weight to start tracking.</div>
+
+      <div class="wt-chart-wrap hidden" id="wtChartWrap">
+        <div class="wt-range-row">
+          <button type="button" class="wt-range-btn active" data-wrange="30">30D</button>
+          <button type="button" class="wt-range-btn" data-wrange="90">3M</button>
+          <button type="button" class="wt-range-btn" data-wrange="0">ALL</button>
+        </div>
+        <div class="wt-chart-yaxis">
+          <span id="wtYAxisMax">&mdash;</span>
+          <span id="wtYAxisMin">&mdash;</span>
+        </div>
+        <svg class="wt-chart" viewBox="0 0 320 150" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="wtFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34E2B0" stop-opacity="0.28"/>
+              <stop offset="80%" stop-color="#34E2B0" stop-opacity="0.04"/>
+              <stop offset="100%" stop-color="#34E2B0" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="wtLineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#18C8C0" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="#34E2B0" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="wtGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <line class="wt-grid" x1="0" y1="20" x2="320" y2="20"></line>
+          <line class="wt-grid" x1="0" y1="65" x2="320" y2="65"></line>
+          <line class="wt-grid" x1="0" y1="110" x2="320" y2="110"></line>
+          <g id="wtChartContent"></g>
+          <g id="wtXLabels"></g>
+          <rect id="wtHit" x="0" y="0" width="320" height="115" fill="transparent"/>
+          <g id="wtTip" style="display:none" pointer-events="none">
+            <line id="wtTipLine" class="wt-crosshair" x1="0" y1="18" x2="0" y2="112"/>
+            <circle id="wtTipDot" r="4" class="wt-tip-dot" cx="0" cy="0"/>
+            <rect id="wtTipBg" x="0" y="0" width="74" height="34" rx="6" class="wt-tip-bg"/>
+            <text id="wtTipDate" x="0" y="0" class="wt-tip-date"></text>
+            <text id="wtTipWeight" x="0" y="0" class="wt-tip-weight"></text>
+          </g>
+        </svg>
+        <div class="wt-meta" id="wtMeta">0 entries</div>
+        <div class="wt-legend" id="wtLegend">
+          <span class="wt-legend-item"><span class="wt-legend-dot"></span>DAILY</span>
+          <span class="wt-legend-item"><span class="wt-legend-dot wt-legend-dot-avg"></span>7-DAY AVG</span>
+        </div>
+        <div class="wt-tap-hint">Tap or drag the chart to read any day</div>
+      </div>
+
+      <div class="wt-locked hidden" id="wtLocked">
+        <div class="wt-locked-info">
+          <span class="wt-locked-check">✓</span>
+          <div>
+            <div class="wt-locked-label">LOGGED TODAY</div>
+            <div class="wt-locked-value" id="wtLockedValue">&mdash; kg</div>
+          </div>
+        </div>
+        <button type="button" class="wt-edit-btn" id="wtEditBtn">Edit</button>
+      </div>
+
+      <div class="wt-input-row" id="wtInputRow">
+        <div class="wt-date-row">
+          <span class="wt-date-label">Date</span>
+          <input type="date" class="wt-date-input" id="wtDateInput">
+          <button type="button" class="wt-today-btn" id="wtTodayBtn">Today</button>
+        </div>
+        <div class="wt-input-top">
+          <div class="wt-input-field">
+            <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" class="wt-input" id="wtInput" placeholder="0.0" aria-label="Weight">
+            <span class="wt-unit-static" id="wtUnitStatic">kg</span>
+          </div>
+          <button type="button" class="wt-save-btn" id="wtSaveBtn">Save</button>
+        </div>
+      </div>
+
+      <div class="wt-history" id="wtHistory"></div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var WT_KEY = 'po_coach_weights';
+    function $(id){ return document.getElementById(id); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function units(){ return (ls('po_coach_v1') || {}).units || 'kg'; }
+
+    function wtDateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function wtParseKey(key){ var p=key.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+    function wtLoad(){
+      try{ var raw=localStorage.getItem(WT_KEY); var arr=raw?JSON.parse(raw):[];
+        return Array.isArray(arr) ? arr.filter(function(e){return e&&e.dateKey&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);}) : [];
+      }catch(e){ return []; }
+    }
+    function wtSave(arr){ try{ localStorage.setItem(WT_KEY, JSON.stringify(arr)); }catch(e){} }
+    /* Accept "70.5" or "70,5" — iOS decimal pads differ by locale. */
+    function parseWeight(s){ return parseFloat(String(s == null ? '' : s).trim().replace(',', '.')); }
+
+    function wtSmoothPath(points){
+      if(!points.length) return '';
+      if(points.length===1) return 'M '+points[0].x+' '+points[0].y;
+      var d='M '+points[0].x.toFixed(2)+' '+points[0].y.toFixed(2);
+      for(var i=1;i<points.length;i++){
+        var prev=points[i-1], curr=points[i];
+        var cx=(prev.x+curr.x)/2;
+        d+=' Q '+cx.toFixed(2)+' '+prev.y.toFixed(2)+', '+cx.toFixed(2)+' '+((prev.y+curr.y)/2).toFixed(2);
+        d+=' T '+curr.x.toFixed(2)+' '+curr.y.toFixed(2);
+      }
+      return d;
+    }
+
+    var wtEntries = wtLoad();
+    var wtRange = 30;
+    var wtChartPoints = [];
+    var wtChartRecent = [];
+    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function wtGetSelectedDate(){ var v=$('wtDateInput')&&$('wtDateInput').value; return v?v:wtDateKey(new Date()); }
+
+    function wtSaveEntry(weight){
+      var key=wtGetSelectedDate();
+      var existing=wtEntries.find(function(e){return e.dateKey===key;});
+      if(existing){ existing.weight=weight; existing.ts=Date.now(); }
+      else { wtEntries.push({ dateKey:key, weight:weight, ts:Date.now() }); }
+      wtEntries.sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);});
+      wtSave(wtEntries);
+      wtRender();
+    }
+    function wtDeleteEntry(key){ wtEntries=wtEntries.filter(function(e){return e.dateKey!==key;}); wtSave(wtEntries); wtRender(); }
+    function wtEditEntry(key){
+      var entry=wtEntries.find(function(e){return e.dateKey===key;});
+      if(!entry) return;
+      if($('wtDateInput')) $('wtDateInput').value=key;
+      $('wtLocked').classList.add('hidden');
+      $('wtInputRow').classList.remove('hidden');
+      if($('wtInput')){ $('wtInput').value=entry.weight.toFixed(1); $('wtInput').focus(); $('wtInput').select(); }
+    }
+
+    function wtFmtDateLabel(key){
+      var p=key.split('-').map(Number); var date=new Date(p[0],p[1]-1,p[2]);
+      var diff=Math.floor((new Date(wtDateKey(new Date())) - new Date(key))/86400000);
+      if(diff===1) return 'Yesterday';
+      if(diff<7) return date.toLocaleDateString([],{weekday:'long'});
+      return date.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+    }
+
+    function wtRenderHistory(){
+      var el=$('wtHistory'); if(!el) return;
+      var u=units();
+      var todayKey=wtDateKey(new Date());
+      var sorted=wtEntries.slice().sort(function(a,b){return b.dateKey.localeCompare(a.dateKey);});
+      if(!sorted.length){ el.innerHTML=''; return; }
+      var rows=sorted.map(function(entry,i){
+        var prev=sorted[i+1]; var deltaHtml='';
+        if(prev){ var diff=entry.weight-prev.weight; var sign=diff>0?'+':''; var cls=diff>0?'up':diff<0?'down':'';
+          deltaHtml='<span class="wt-history-delta '+cls+'">'+sign+diff.toFixed(1)+'</span>'; }
+        var isToday=entry.dateKey===todayKey;
+        var label=isToday?'Today':wtFmtDateLabel(entry.dateKey);
+        return '<div class="wt-history-row '+(isToday?'today-row':'')+'">'+
+          '<span class="wt-history-date">'+label+'</span>'+
+          '<span class="wt-history-val">'+entry.weight.toFixed(1)+' '+u+'</span>'+
+          deltaHtml+
+          '<div class="wt-history-edit-wrap">'+
+            '<button type="button" class="wt-h-btn" data-wedit="'+entry.dateKey+'">Edit</button>'+
+            '<button type="button" class="wt-h-btn del" data-wdel="'+entry.dateKey+'">✕</button>'+
+          '</div></div>';
+      }).join('');
+      el.innerHTML='<div class="wt-history-title">All Weigh-ins ('+sorted.length+')</div><div class="wt-history-list">'+rows+'</div>';
+    }
+
+    function wtRenderDelta(){
+      var last=wtEntries[wtEntries.length-1];
+      var lastDate=wtParseKey(last.dateKey);
+      var cutoff=new Date(lastDate); cutoff.setDate(cutoff.getDate()-7);
+      var baseline=wtEntries.find(function(e){return wtParseKey(e.dateKey)>=cutoff;}) || wtEntries[0];
+      var diff=last.weight-baseline.weight;
+      var el=$('wtDelta');
+      if(Math.abs(diff)<0.05){ el.classList.add('hidden'); return; }
+      var arrow=diff>0?'↑':'↓'; var sign=diff>0?'+':'−';
+      el.textContent=arrow+' '+sign+Math.abs(diff).toFixed(1)+' '+units()+' · last 7d';
+      el.classList.toggle('up', diff>0); el.classList.toggle('down', diff<0);
+      el.classList.remove('hidden');
+    }
+
+    function wtRenderStreak(){
+      var el=$('wtStreak'); var streak=0; var cursor=new Date();
+      if(!wtEntries.find(function(e){return e.dateKey===wtDateKey(cursor);})) cursor.setDate(cursor.getDate()-1);
+      while(wtEntries.find(function(e){return e.dateKey===wtDateKey(cursor);})){ streak++; cursor.setDate(cursor.getDate()-1); }
+      if(streak>=2){ $('wtStreakNum').textContent=streak+' day streak'; el.classList.remove('hidden'); }
+      else el.classList.add('hidden');
+    }
+
+    function wtRenderChart(){
+      var recent = wtRange===0 ? wtEntries : wtEntries.slice(-wtRange);
+      wtChartPoints=[]; wtChartRecent=recent;
+      if(recent.length<2) return;
+      var weights=recent.map(function(e){return e.weight;});
+      var min=Math.min.apply(null,weights), max=Math.max.apply(null,weights);
+      var pad=Math.max((max-min)*0.18, 0.4);
+      var yMin=min-pad, yMax=max+pad;
+      var xLeft=4, xRight=316, yTop=20, yBot=110;
+      var xRange=xRight-xLeft, yRange=yBot-yTop;
+      var xFor=function(i){ return recent.length===1?xRight:xLeft+(i/(recent.length-1))*xRange; };
+      var yFor=function(w){ return yBot-((w-yMin)/(yMax-yMin))*yRange; };
+      var points=recent.map(function(e,i){ return { x:xFor(i), y:yFor(e.weight), e:e }; });
+      wtChartPoints=points;
+      var linePath=wtSmoothPath(points);
+      var areaPath=linePath+' L '+points[points.length-1].x.toFixed(2)+' '+yBot+' L '+points[0].x.toFixed(2)+' '+yBot+' Z';
+      var avgPoints=recent.map(function(_,i){
+        var start=Math.max(0,i-6); var win=recent.slice(start,i+1);
+        var avg=win.reduce(function(s,p){return s+p.weight;},0)/win.length;
+        return { x:xFor(i), y:yFor(avg) };
+      });
+      var avgPath=wtSmoothPath(avgPoints);
+      var html='<path class="wt-avg-line" d="'+avgPath+'"></path>'
+             +'<path class="wt-area" d="'+areaPath+'"></path>'
+             +'<path class="wt-line" filter="url(#wtGlow)" d="'+linePath+'"></path>';
+      var showDots=recent.length<=60;
+      if(showDots){
+        points.forEach(function(p,i){ var last=i===points.length-1; var r=last?5:2.5;
+          html+='<circle class="'+(last?'wt-dot-today':'wt-dot')+'" cx="'+p.x.toFixed(2)+'" cy="'+p.y.toFixed(2)+'" r="'+r+'"/>'; });
+      } else {
+        var lp=points[points.length-1];
+        html+='<circle class="wt-dot-today" cx="'+lp.x.toFixed(2)+'" cy="'+lp.y.toFixed(2)+'" r="5"/>';
+      }
+      if(recent.length>=7){
+        var minIdx=weights.indexOf(min), maxIdx=weights.indexOf(max);
+        var minP=points[minIdx], maxP=points[maxIdx];
+        var minAnchor=minIdx===0?'start':minIdx===recent.length-1?'end':'middle';
+        var maxAnchor=maxIdx===0?'start':maxIdx===recent.length-1?'end':'middle';
+        html+='<text class="wt-minmax-min" x="'+minP.x.toFixed(1)+'" y="'+Math.min(107,minP.y+13).toFixed(1)+'" text-anchor="'+minAnchor+'">'+min.toFixed(1)+'</text>';
+        html+='<text class="wt-minmax-max" x="'+maxP.x.toFixed(1)+'" y="'+Math.max(14,maxP.y-5).toFixed(1)+'" text-anchor="'+maxAnchor+'">'+max.toFixed(1)+'</text>';
+      }
+      $('wtChartContent').innerHTML=html;
+      $('wtYAxisMax').textContent=yMax.toFixed(1);
+      $('wtYAxisMin').textContent=yMin.toFixed(1);
+      var rangeLabel=wtRange===0?'all time':'last '+recent.length+' days';
+      $('wtMeta').textContent=wtEntries.length+' entries · '+rangeLabel+' · '+min.toFixed(1)+'→'+max.toFixed(1);
+      var labelCount=Math.min(4,recent.length); var labelsHtml='';
+      for(var li=0;li<labelCount;li++){
+        var idx=labelCount===1?0:Math.round(li/(labelCount-1)*(recent.length-1));
+        var x=xFor(idx); var d=new Date(recent[idx].dateKey+'T00:00:00');
+        var label=MONTHS[d.getMonth()]+' '+d.getDate();
+        var anchor=li===0?'start':li===labelCount-1?'end':'middle';
+        labelsHtml+='<text class="wt-xlabel" x="'+x.toFixed(1)+'" y="130" text-anchor="'+anchor+'">'+label+'</text>';
+      }
+      $('wtXLabels').innerHTML=labelsHtml;
+    }
+
+    function wtRender(){
+      var last=wtEntries[wtEntries.length-1]||null;
+      var todayKey=wtDateKey(new Date());
+      var todayEntry=wtEntries.find(function(e){return e.dateKey===todayKey;});
+      var u=units();
+      $('wtUnit').textContent=u; $('wtUnitStatic').textContent=u;
+      $('wtNum').textContent=last?last.weight.toFixed(1):'—';
+
+      if(todayEntry){
+        $('wtEmpty').classList.add('hidden');
+        $('wtLockedValue').textContent=todayEntry.weight.toFixed(1)+' '+u;
+        $('wtLocked').classList.remove('hidden');
+        $('wtInputRow').classList.add('hidden');
+      } else {
+        if(wtEntries.length===0) $('wtEmpty').classList.remove('hidden'); else $('wtEmpty').classList.add('hidden');
+        $('wtLocked').classList.add('hidden');
+        $('wtInputRow').classList.remove('hidden');
+      }
+
+      if(wtEntries.length>=2){
+        $('wtChartWrap').classList.remove('hidden');
+        wtRenderChart(); wtRenderDelta();
+      } else {
+        $('wtChartWrap').classList.add('hidden');
+        $('wtDelta').classList.add('hidden');
+      }
+      wtRenderStreak();
+      wtRenderHistory();
+
+      var di=$('wtDateInput'); if(di && !di.value) di.value=todayKey;
+      updateNova(last, todayEntry);
+    }
+
+    /* ── Nova hero ── */
+    function updateNova(last, todayEntry){
+      var dd=new Date();
+      var de=$('heroDate'); if(de) de.textContent=['SUN','MON','TUE','WED','THU','FRI','SAT'][dd.getDay()]+' '+dd.getDate();
+      var ns=$('novaSays'); if(!ns) return;
+      if(!last){ ns.textContent='Log your first weight to start tracking.'; return; }
+      if(todayEntry){ ns.textContent='Logged today at '+todayEntry.weight.toFixed(1)+' '+units()+'. Nice and consistent.'; return; }
+      ns.textContent='Last weigh-in: '+last.weight.toFixed(1)+' '+units()+'. Drop today’s in below.';
+    }
+
+    /* ── Chart tooltip (tap + drag) ── */
+    (function(){
+      var svg=document.querySelector('.wt-chart'); if(!svg) return;
+      function toSvgX(cx){ try{ var pt=svg.createSVGPoint(); pt.x=cx; pt.y=0; return pt.matrixTransform(svg.getScreenCTM().inverse()).x; }catch(e){ return -1; } }
+      function nearest(sx){ if(!wtChartPoints.length) return -1; var bi=0,bd=Infinity; wtChartPoints.forEach(function(p,i){ var d=Math.abs(p.x-sx); if(d<bd){bd=d;bi=i;} }); return bi; }
+      function show(cx){
+        var i=nearest(toSvgX(cx)); if(i<0) return;
+        var p=wtChartPoints[i], e=wtChartRecent[i];
+        var dd=new Date(e.dateKey+'T00:00:00');
+        var ds=MONTHS[dd.getMonth()]+' '+dd.getDate();
+        var ws=e.weight.toFixed(1)+' '+units();
+        var bw=74, bh=34, padg=7;
+        var bx=p.x+padg; if(bx+bw>314) bx=p.x-bw-padg;
+        var by=Math.max(4, Math.min(p.y-bh/2, 108-bh));
+        $('wtTipLine').setAttribute('x1',p.x); $('wtTipLine').setAttribute('x2',p.x);
+        $('wtTipDot').setAttribute('cx',p.x); $('wtTipDot').setAttribute('cy',p.y);
+        $('wtTipBg').setAttribute('x',bx); $('wtTipBg').setAttribute('y',by);
+        $('wtTipDate').setAttribute('x',bx+8); $('wtTipDate').setAttribute('y',by+13); $('wtTipDate').textContent=ds;
+        $('wtTipWeight').setAttribute('x',bx+8); $('wtTipWeight').setAttribute('y',by+27); $('wtTipWeight').textContent=ws;
+        $('wtTip').style.display='';
+      }
+      function hide(){ $('wtTip').style.display='none'; }
+      svg.addEventListener('mousemove', function(e){ show(e.clientX); });
+      svg.addEventListener('mouseleave', hide);
+      svg.addEventListener('touchstart', function(e){ e.preventDefault(); show(e.touches[0].clientX); }, { passive:false });
+      svg.addEventListener('touchmove',  function(e){ e.preventDefault(); show(e.touches[0].clientX); }, { passive:false });
+      svg.addEventListener('touchend', hide);
+    })();
+
+    /* ── Range selector ── */
+    document.querySelectorAll('[data-wrange]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        wtRange=parseInt(btn.dataset.wrange,10);
+        document.querySelectorAll('[data-wrange]').forEach(function(b){ b.classList.toggle('active', b===btn); });
+        if(wtEntries.length>=2) wtRenderChart();
+      });
+    });
+
+    /* ── Add / edit wiring ── */
+    function doSave(){
+      var v=parseWeight($('wtInput').value);
+      if(isNaN(v) || v<=0 || v>500) return;
+      wtSaveEntry(Math.round(v*10)/10);
+      $('wtInput').value='';
+      if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date());
+    }
+    $('wtSaveBtn').addEventListener('click', doSave);
+    $('wtInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
+    /* keep only digits + a single separator as the user types */
+    $('wtInput').addEventListener('input', function(){
+      var clean=this.value.replace(/[^0-9.,]/g,'').replace(/([.,]).*?([.,])/g,'$1');
+      if(clean!==this.value) this.value=clean;
+    });
+    $('wtTodayBtn').addEventListener('click', function(){ if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date()); });
+    $('wtEditBtn').addEventListener('click', function(){
+      $('wtLocked').classList.add('hidden'); $('wtInputRow').classList.remove('hidden');
+      var todayEntry=wtEntries.find(function(e){return e.dateKey===wtDateKey(new Date());});
+      if(todayEntry) $('wtInput').value=todayEntry.weight.toFixed(1);
+      $('wtInput').focus();
+    });
+
+    /* delegated edit/delete on history rows (iOS-reliable) */
+    $('wtHistory').addEventListener('click', function(ev){
+      var ed=ev.target.closest('[data-wedit]'); var dl=ev.target.closest('[data-wdel]');
+      if(ed){ wtEditEntry(ed.getAttribute('data-wedit')); return; }
+      if(dl){ var k=dl.getAttribute('data-wdel'); if(confirm('Delete this weigh-in?')) wtDeleteEntry(k); }
+    });
+
+    /* ── Boot ── */
+    wtRender();
+    window._weightRerender = function(){ wtEntries=wtLoad(); wtRender(); };
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ wtEntries=wtLoad(); wtRender(); } });
+    window.addEventListener('focus', function(){ wtEntries=wtLoad(); wtRender(); });
+    window.addEventListener('storage', function(){ wtEntries=wtLoad(); wtRender(); });
+  })();
+  </script>
+
+  <!-- Cross-device sync for weigh-ins (shared with gym.html + body.html) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pocoach-sync.js?v=2"></script>
+
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js" defer></script>
+</body>
+</html>

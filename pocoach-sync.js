@@ -36,6 +36,7 @@
   function fireRerender() {
     if (typeof window._gymRerender === 'function')  { try { window._gymRerender(); }  catch(e) {} }
     if (typeof window._bodyRerender === 'function') { try { window._bodyRerender(); } catch(e) {} }
+    if (typeof window._weightRerender === 'function') { try { window._weightRerender(); } catch(e) {} }
   }
 
   function isGymKey(k) {

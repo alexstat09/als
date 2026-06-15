@@ -58,7 +58,7 @@
     .wt-save-btn{ background:rgb(var(--sec-rgb)); color:#04130D; box-shadow:0 4px 18px rgba(var(--sec-rgb),.3); }
     .wt-edit-btn:active, .wt-save-btn:active{ opacity:.75; }
     .wt-input-row{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
-    .wt-input{ flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.3); border-radius:12px; padding:11px 14px; color:var(--au-ivory); font-family:var(--au-mono); font-size:20px; font-weight:700; text-align:center; outline:none; -webkit-appearance:none; }
+    .wt-input{ flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.3); border-radius:12px; padding:11px 14px; color:var(--au-ivory); font-family:var(--au-mono); font-size:20px; font-weight:700; text-align:center; outline:none; -webkit-appearance:none; }
     .wt-input:focus{ border-color:rgba(var(--sec-rgb),.65); }
     .wt-no-entry{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); margin-bottom:14px; }
     .wt-spark{ display:flex; align-items:flex-end; gap:4px; height:38px; margin-top:6px; }
@@ -178,7 +178,7 @@
 
     <!-- Weight -->
     <section class="bp-sec" style="--sec-rgb:52,226,176">
-      <div class="bp-sec-hdr"><span class="bp-sec-dot"></span><span class="bp-sec-title">Weight</span><a href="trends.html" class="bp-sec-link">Full view &rarr;</a></div>
+      <div class="bp-sec-hdr"><span class="bp-sec-dot"></span><span class="bp-sec-title">Weight</span><a href="weight.html" class="bp-sec-link">Full view &rarr;</a></div>
       <div class="bp-sec-body" id="wtBody"></div>
     </section>
 
@@ -287,13 +287,13 @@
           <button class="wt-edit-btn" id="wtEditBtn">Edit</button>
         </div>`;
         html += `<div class="wt-input-row hidden" id="wtInputRow">
-          <input type="number" class="wt-input" id="wtInput" value="${todayEntry.weight.toFixed(1)}" step="0.1" inputmode="decimal">
+          <input type="text" class="wt-input" id="wtInput" value="${todayEntry.weight.toFixed(1)}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done">
           <button class="wt-save-btn" id="wtSaveBtn">Save</button>
         </div>`;
       } else {
         html += `<p class="wt-no-entry">No entry yet today</p>`;
         html += `<div class="wt-input-row" id="wtInputRow">
-          <input type="number" class="wt-input" id="wtInput" placeholder="0.0" step="0.1" inputmode="decimal">
+          <input type="text" class="wt-input" id="wtInput" placeholder="0.0" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done">
           <button class="wt-save-btn" id="wtSaveBtn">Save</button>
         </div>`;
       }
@@ -331,18 +331,25 @@
       }
       if (saveBtn) {
         const doSave = () => {
-          const v = parseFloat(inp.value);
-          if (isNaN(v) || v <= 0) return;
+          // Accept "70.5" or "70,5" — iOS decimal pads vary by locale.
+          const v = parseFloat(String(inp.value).trim().replace(',', '.'));
+          if (isNaN(v) || v <= 0 || v > 500) return;
+          const w = Math.round(v * 10) / 10;
           const idx = entries.findIndex(e => e.dateKey === tod);
-          if (idx >= 0) { entries[idx].weight = v; entries[idx].ts = Date.now(); }
-          else entries.push({ dateKey: tod, weight: v, ts: Date.now() });
+          if (idx >= 0) { entries[idx].weight = w; entries[idx].ts = Date.now(); }
+          else entries.push({ dateKey: tod, weight: w, ts: Date.now() });
           entries.sort((a,b) => a.dateKey.localeCompare(b.dateKey));
           lsSave(KEY, entries);
           renderWeight();
           updateSnap();
         };
         saveBtn.addEventListener('click', doSave);
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') doSave(); });
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+        // Keep only digits and a single separator while typing.
+        inp.addEventListener('input', () => {
+          const clean = inp.value.replace(/[^0-9.,]/g, '').replace(/([.,]).*?([.,])/g, '$1');
+          if (clean !== inp.value) inp.value = clean;
+        });
       }
 
       updateSnap();
