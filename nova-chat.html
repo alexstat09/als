@@ -50,7 +50,9 @@
     .nv-row.me{flex-direction:row-reverse;}
     .nv-av{flex:none;width:30px;height:30px;}
     .nv-av .nova{width:30px;height:30px;}
-    .nv-bub{position:relative;max-width:78%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;}
+    .nv-bub{position:relative;max-width:78%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.55;overflow-wrap:break-word;}
+    .nv-bub .nv-text{display:block;}
+    .nv-bub strong{font-weight:700;}
     .nv-row.nova .nv-bub{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:5px;color:#F4F1EA;backdrop-filter:blur(6px);}
     .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.16),rgba(24,200,192,.10));border:1px solid rgba(52,226,176,.28);border-bottom-right-radius:5px;color:#F4F1EA;}
     .nv-name-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-bottom:5px;}
@@ -139,6 +141,9 @@
       return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>';
     }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    // Render Nova's reply as readable HTML: escape, bold **x**, real line breaks.
+    function fmtNova(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); }
+    function fmtUser(s){ return esc(s).replace(/\n/g,'<br>'); }
     function atBottom(){ return scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 120; }
     function toBottom(force){ if(force||atBottom()) scroll.scrollTop = scroll.scrollHeight; }
 
@@ -157,8 +162,8 @@
       var inner = '';
       if(role !== 'user') inner += '<div class="nv-av">'+novaSVG()+'</div>';
       var body = role === 'user'
-        ? '<div class="nv-bub">'+esc(text)+'</div>'
-        : '<div class="nv-bub"><div class="nv-name-lbl">Nova</div><span class="nv-text">'+(streaming?'':esc(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
+        ? '<div class="nv-bub">'+fmtUser(text)+'</div>'
+        : '<div class="nv-bub"><div class="nv-name-lbl">Nova</div><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
       inner += body;
       row.innerHTML = inner;
       scroll.appendChild(row);
@@ -178,7 +183,7 @@
       var think = row.querySelector('.nv-think');
       if(think) think.parentNode.removeChild(think);
       if(!t) return;
-      t.innerHTML = esc(text) + (done ? '' : '<span class="nv-cursor"></span>');
+      t.innerHTML = fmtNova(text) + (done ? '' : '<span class="nv-cursor"></span>');
     }
 
     function setBusy(on){
