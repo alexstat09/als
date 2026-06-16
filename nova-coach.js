@@ -400,8 +400,25 @@
   var CSS =
   '.nc-bg{position:fixed;inset:0;z-index:80;background:rgba(3,4,6,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s;}'+
   '.nc-bg.on{opacity:1;pointer-events:auto;}'+
-  '.nc-sheet{position:fixed;left:50%;top:50%;z-index:81;width:min(540px,92vw);max-height:88vh;overflow-y:auto;background:linear-gradient(180deg,#0b0e13,#080a0e);border:1px solid rgba(var(--au-glow-rgb),.3);border-radius:24px;padding:20px 18px 22px;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.9);transition:opacity .2s ease, transform .34s cubic-bezier(.34,1.55,.45,1);box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 80px rgba(var(--au-glow-rgb),.12);-webkit-overflow-scrolling:touch;}'+
-  '.nc-sheet.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}'+
+  '.nc-sheet{position:fixed;left:50%;top:50%;z-index:81;width:min(540px,92vw);background:linear-gradient(180deg,#0b0e13,#080a0e);border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;opacity:0;pointer-events:none;transform:translate(-50%,-47%) scale(.93);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.14);overflow:hidden;}'+
+  '.nc-sheet.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
+  '@keyframes nc-breathe{0%,100%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.12);}50%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 130px rgba(var(--au-glow-rgb),.24);}}'+
+  '.nc-scroll{position:relative;z-index:1;max-height:86vh;overflow-y:auto;padding:20px 18px 22px;-webkit-overflow-scrolling:touch;}'+
+  '.nc-sheet::before{content:"";position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(var(--au-glow-rgb),.06) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--au-glow-rgb),.06) 1px,transparent 1px);background-size:34px 34px;pointer-events:none;-webkit-mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);}'+
+  '.nc-corner{position:absolute;z-index:3;width:17px;height:17px;border:2px solid rgb(var(--au-glow-rgb));opacity:0;transition:opacity .45s .25s;pointer-events:none;filter:drop-shadow(0 0 4px rgba(var(--au-glow-rgb),.7));}'+
+  '.nc-sheet.on .nc-corner{opacity:.85;}'+
+  '.nc-corner.tl{top:10px;left:10px;border-right:none;border-bottom:none;border-top-left-radius:5px;}'+
+  '.nc-corner.tr{top:10px;right:10px;border-left:none;border-bottom:none;border-top-right-radius:5px;}'+
+  '.nc-corner.bl{bottom:10px;left:10px;border-right:none;border-top:none;border-bottom-left-radius:5px;}'+
+  '.nc-corner.br{bottom:10px;right:10px;border-left:none;border-top:none;border-bottom-right-radius:5px;}'+
+  '.nc-scan{position:absolute;left:0;right:0;top:0;z-index:2;height:150px;pointer-events:none;opacity:0;background:linear-gradient(180deg,transparent,rgba(var(--au-glow-rgb),.14) 55%,rgba(var(--au-glow-rgb),.5));}'+
+  '.nc-sheet.on .nc-scan{animation:nc-sweep 1.15s ease-out .1s 1;}'+
+  '@keyframes nc-sweep{0%{transform:translateY(-170px);opacity:0;}22%{opacity:.85;}100%{transform:translateY(92vh);opacity:0;}}'+
+  '.nc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:rgb(var(--au-glow-rgb));box-shadow:0 0 7px rgb(var(--au-glow-rgb));margin-right:6px;vertical-align:middle;animation:nc-blink 1.4s ease-in-out infinite;}'+
+  '@keyframes nc-blink{0%,100%{opacity:1;}50%{opacity:.2;}}'+
+  '.nc-headline{position:relative;}'+
+  '.nc-headline::after{content:"";position:absolute;left:2px;bottom:5px;height:2px;width:0;background:linear-gradient(90deg,rgb(var(--au-glow-rgb)),transparent);border-radius:2px;transition:width .6s ease .3s;}'+
+  '.nc-sheet.on .nc-headline::after{width:54px;}'+
   '.nc-grip{display:none;}'+
   '.nc-head{display:flex;align-items:center;gap:13px;margin-bottom:12px;}'+
   '.nc-head .nova{width:54px;height:54px;flex-shrink:0;}'+
@@ -455,12 +472,14 @@
     var b=build();
     var sh=document.getElementById('ncSheet');
     sh.className='nc-sheet au-mood-'+b.mood;
-    sh.innerHTML='<div class="nc-grip"></div>'+
-      '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow">NOVA &middot; YOUR COACH</div><div class="nc-greet">'+esc(b.greeting)+', Alex.</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
+    sh.innerHTML='<span class="nc-corner tl"></span><span class="nc-corner tr"></span><span class="nc-corner bl"></span><span class="nc-corner br"></span><div class="nc-scan"></div>'+
+      '<div class="nc-scroll">'+
+      '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow"><span class="nc-dot"></span>NOVA &middot; COACH ONLINE</div><div class="nc-greet">'+esc(b.greeting)+', Alex.</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
       '<div class="nc-headline">'+esc(b.headline)+'</div>'+
       letterHTMLIfDue()+
       b.cards.map(cardHTML).join('')+
-      '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>';
+      '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>'+
+      '</div>';
     document.getElementById('ncBg').classList.add('on'); sh.classList.add('on'); sh.scrollTop=0; ncOpenedAt=Date.now();
     var x=document.getElementById('ncX'); if(x) x.addEventListener('click', close);
   }
