@@ -41,7 +41,7 @@ Then **redeploy** (Deployments → ⋯ → Redeploy, or push any commit).
 ## Notes
 - The conversation is stored locally on the device (`nova:chat:v1`) — tap **Clear**
   to wipe it.
-- The chat function has a 60s max duration so streamed replies always finish.
+- Gemini Flash streams replies in a few seconds, well within the function limit.
 - Nova never writes to your data — she reads it to advise you.
 - **Want to upgrade to Claude later?** The backend is provider-agnostic — the
   data brief + persona are the same. Swapping `/api/nova-chat` to the Anthropic
