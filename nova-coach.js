@@ -398,12 +398,12 @@
   function novaSVG(){ return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="ncNv" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#ncNv)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>'; }
 
   var CSS =
-  '.nc-bg{position:fixed;inset:0;z-index:80;background:rgba(3,4,6,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s;}'+
+  '.nc-bg{position:fixed;inset:0;z-index:80;background:rgba(3,4,6,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s;display:flex;align-items:center;justify-content:center;padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));}'+
   '.nc-bg.on{opacity:1;pointer-events:auto;}'+
-  '.nc-sheet{position:fixed;left:50%;top:50%;z-index:81;width:min(540px,92vw);background:linear-gradient(180deg,#0b0e13,#080a0e);border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;opacity:0;pointer-events:none;transform:translate(-50%,-47%) scale(.93);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.14);overflow:hidden;}'+
-  '.nc-sheet.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
+  '.nc-sheet{position:relative;z-index:81;width:min(540px,100%);max-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#0b0e13,#080a0e);border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.14);overflow:hidden;}'+
+  '.nc-bg.on .nc-sheet{opacity:1;transform:translateY(0) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
   '@keyframes nc-breathe{0%,100%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.12);}50%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 130px rgba(var(--au-glow-rgb),.24);}}'+
-  '.nc-scroll{position:relative;z-index:1;max-height:86vh;overflow-y:auto;padding:20px 18px 22px;-webkit-overflow-scrolling:touch;}'+
+  '.nc-scroll{position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;padding:20px 18px 22px;-webkit-overflow-scrolling:touch;}'+
   '.nc-sheet::before{content:"";position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(var(--au-glow-rgb),.06) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--au-glow-rgb),.06) 1px,transparent 1px);background-size:34px 34px;pointer-events:none;-webkit-mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);}'+
   '.nc-corner{position:absolute;z-index:3;width:17px;height:17px;border:2px solid rgb(var(--au-glow-rgb));opacity:0;transition:opacity .45s .25s;pointer-events:none;filter:drop-shadow(0 0 4px rgba(var(--au-glow-rgb),.7));}'+
   '.nc-sheet.on .nc-corner{opacity:.85;}'+
@@ -448,9 +448,10 @@
     if(document.getElementById('ncSheet')) return;
     var st=document.createElement('style'); st.textContent=CSS; document.head.appendChild(st);
     var bg=document.createElement('div'); bg.id='ncBg'; bg.className='nc-bg';
-    bg.addEventListener('click', function(){ if(Date.now()-ncOpenedAt>=450) close(); }); /* ignore iOS ghost-click on open */
+    /* close only when tapping the backdrop itself, not the sheet; ignore iOS ghost-click on open */
+    bg.addEventListener('click', function(e){ if(e.target===bg && Date.now()-ncOpenedAt>=450) close(); });
     var sh=document.createElement('div'); sh.id='ncSheet'; sh.className='nc-sheet';
-    document.body.appendChild(bg); document.body.appendChild(sh);
+    bg.appendChild(sh); document.body.appendChild(bg);
   }
   function cardHTML(c){
     var go = c.href ? '<div class="nc-card-go">Tap to open &rarr;</div>' : '';
