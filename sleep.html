@@ -237,7 +237,23 @@
       if (idx >= 0) logs[idx] = e; else logs.push(e);
       lsSave(KEY, logs);
       if (noteId) flashNote(noteId);
-      renderAll();
+      // Editing a time input? Refresh only the derived UI — rebuilding
+      // #sleepBody here would destroy the <input type=time> mid-pick (on iOS
+      // that drops the value / closes the wheel, so the time won't stick).
+      if (field === 'bed' || field === 'wake') refreshDerived();
+      else renderAll();
+    }
+
+    // Update everything that depends on the entry WITHOUT touching the bed/wake
+    // inputs (so an in-progress time pick isn't interrupted).
+    function refreshDerived(){
+      var e = todayEntry();
+      var hrs = (e.hours != null) ? e.hours : calcHours(e.bed, e.wake);
+      var durEl = document.querySelector('#sleepBody .sl-dur-val');
+      if (durEl) durEl.textContent = fmtHM(hrs);
+      renderRecovery();
+      renderTrends();
+      updateNova();
     }
 
     /* ══════════ RECOVERY CARD ══════════ */
