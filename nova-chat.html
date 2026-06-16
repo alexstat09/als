@@ -51,9 +51,7 @@
        bubble collapsed it to one-word-per-line min-content width.) */
     .nv-row{position:relative;margin-bottom:16px;animation:nv-rise .35s cubic-bezier(.2,.7,.3,1);}
     @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-    .nv-row.nova{padding-left:40px;}
-    .nv-av{position:absolute;left:0;bottom:0;width:30px;height:30px;}
-    .nv-av .nova{width:30px;height:30px;}
+    .nv-av{display:none;}
     /* BLOCK bubbles capped by max-width: they take their width from the row and
        wrap inside — block boxes can't shrink to min-content, so no
        one-word-per-line is possible. Auto margin handles left/right alignment. */
@@ -107,7 +105,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">Neural link · online</span> &middot; build 12</div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">Neural link · online</span> &middot; build 13</div>
       </div>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
@@ -169,7 +167,6 @@
       var row = document.createElement('div');
       row.className = 'nv-row ' + (role === 'user' ? 'me' : 'nova');
       var inner = '';
-      if(role !== 'user') inner += '<span class="nv-av">'+novaSVG()+'</span>';
       var body = role === 'user'
         ? '<div class="nv-bub">'+fmtUser(text)+'</div>'
         : '<div class="nv-bub"><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
@@ -239,6 +236,7 @@
       history.push({ role:'assistant', content:acc });
       save(history);
       setBusy(false);
+      try { var _b=row.querySelector('.nv-bub'); document.getElementById('nvStatus').textContent='bub'+(_b?_b.offsetWidth:0)+' row'+row.offsetWidth+' scr'+scroll.offsetWidth; } catch(e){}
       toBottom();
       input.focus();
     }
