@@ -30,7 +30,18 @@
     if (sample && typeof sample === 'object' && idOf(sample)) {
       var map = {};
       for (var i = 0; i < r.length; i++) { var idr = idOf(r[i]); if (idr) map[idr] = r[i]; }
-      for (var j = 0; j < l.length; j++) { var idl = idOf(l[j]); if (idl) map[idl] = l[j]; } // local wins same id
+      for (var j = 0; j < l.length; j++) {
+        var idl = idOf(l[j]); if (!idl) continue;
+        var ex = map[idl];
+        // Same id on both sides: if either carries an edit timestamp, keep the
+        // NEWER edit (tie → local) so concurrent same-record edits converge
+        // instead of ping-ponging. No ts info → local wins (original behaviour).
+        if (ex && typeof ex === 'object' && typeof l[j] === 'object' && (('ts' in ex) || ('ts' in l[j]))) {
+          if ((+l[j].ts || 0) >= (+ex.ts || 0)) map[idl] = l[j];
+        } else {
+          map[idl] = l[j];
+        }
+      }
       var out = [];
       for (var key in map) { if (!Object.prototype.hasOwnProperty.call(map, key)) continue; if (tomb && tomb[key]) continue; out.push(map[key]); }
       return out;

@@ -57,7 +57,9 @@
     .sl-time-box{ flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.28); border-radius:14px; padding:11px 13px; transition:border-color .2s; }
     .sl-time-box:focus-within{ border-color:rgba(var(--sec-rgb),.6); }
     .sl-time-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-bottom:5px; }
-    .sl-time-in{ width:100%; background:transparent; border:none; outline:none; color:var(--au-ivory); font-family:var(--au-mono); font-size:21px; font-weight:700; letter-spacing:-.01em; -webkit-appearance:none; }
+    /* NB: do NOT set -webkit-appearance:none here — it breaks the native time
+       picker on iOS (the field won't open / value won't stick). */
+    .sl-time-in{ width:100%; background:transparent; border:none; outline:none; color:var(--au-ivory); -webkit-text-fill-color:var(--au-ivory); font-family:var(--au-mono); font-size:21px; font-weight:700; letter-spacing:-.01em; min-height:26px; }
     .sl-time-in::-webkit-calendar-picker-indicator{ filter:invert(1); opacity:.45; }
     .sl-dur{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:78px; text-align:center; }
     .sl-dur-val{ font-family:var(--au-mono); font-size:23px; font-weight:700; color:rgb(var(--sec-rgb)); line-height:1; }
@@ -320,8 +322,14 @@
         '</div>';
 
       var bed = document.getElementById('slBed'), wake = document.getElementById('slWake');
-      bed.addEventListener('change', function(){ setField('bed', bed.value, 'sleepNote'); });
-      wake.addEventListener('change', function(){ setField('wake', wake.value, 'sleepNote'); });
+      // Listen to both: iOS fires 'input' as the wheel turns and 'change' on
+      // commit; only save once the field actually holds a value.
+      function bind(el, field){
+        function save(){ if (el.value) setField(field, el.value, 'sleepNote'); }
+        el.addEventListener('change', save);
+        el.addEventListener('input', save);
+      }
+      bind(bed, 'bed'); bind(wake, 'wake');
     }
 
     /* ══════════ MORNING CHECK-IN CARD ══════════ */
