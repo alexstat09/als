@@ -31,23 +31,28 @@
       .catch(function(){ _vapid = ''; return _vapid; });
   }
 
+  // Last reason enable() resolved false — so callers can show a precise message.
+  var _lastErr = '';
+  function lastError(){ return _lastErr; }
+
   // Request permission + subscribe. Resolves true only when fully subscribed.
   function enable(){
-    if (!supported()) return Promise.resolve(false);
+    _lastErr = '';
+    if (!supported()) { _lastErr = 'unsupported'; return Promise.resolve(false); }
     return Notification.requestPermission().then(function(p){
-      if (p !== 'granted') return false;
+      if (p !== 'granted') { _lastErr = 'permission-' + p; return false; }
       return navigator.serviceWorker.ready.then(function(reg){
         return reg.pushManager.getSubscription().then(function(sub){
           if (sub){ lss('als_push_sub', JSON.stringify(sub)); return true; }
           return getVapidKey().then(function(key){
-            if (!key) return false; // backend not configured yet
+            if (!key) { _lastErr = 'no-vapid'; return false; } // backend not configured yet
             return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(key) })
               .then(function(s){ lss('als_push_sub', JSON.stringify(s)); return true; })
-              .catch(function(){ return false; });
+              .catch(function(e){ _lastErr = 'subscribe-failed: ' + ((e && e.message) || e); return false; });
           });
         });
       });
-    }).catch(function(){ return false; });
+    }).catch(function(e){ _lastErr = 'error: ' + ((e && e.message) || e); return false; });
   }
 
   function scheduleRest(endAt){
@@ -73,5 +78,5 @@
     } catch(e){}
   }
 
-  window.ALSPush = { supported: supported, enabled: enabled, enable: enable, scheduleRest: scheduleRest, cancelRest: cancelRest };
+  window.ALSPush = { supported: supported, enabled: enabled, enable: enable, lastError: lastError, scheduleRest: scheduleRest, cancelRest: cancelRest };
 })();

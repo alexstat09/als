@@ -225,7 +225,19 @@
         if (!window.ALSPush || !window.ALSPush.supported()) { setStatus('Push isn’t available here — open the installed app on your phone.', 'warn'); return; }
         setStatus('Asking permission…');
         window.ALSPush.enable().then(function (ok) {
-          if (!ok) { setStatus('Permission denied or not set up yet.', 'err'); return; }
+          if (!ok) {
+            var why = (window.ALSPush.lastError && window.ALSPush.lastError()) || '';
+            var msg = 'Couldn’t enable.';
+            if (why.indexOf('permission-denied') === 0) msg = 'Notifications are blocked. On iPhone: Settings ▸ Notifications ▸ this app ▸ Allow — or delete & re-add it to the Home Screen, then retry.';
+            else if (why.indexOf('permission-default') === 0) msg = 'You didn’t tap Allow — flip it on again and choose Allow.';
+            else if (why === 'no-vapid') msg = 'Push backend isn’t configured (VAPID key missing).';
+            else if (why.indexOf('subscribe-failed') === 0) msg = 'Couldn’t subscribe — fully close the app and reopen from the Home Screen icon, then retry.';
+            else if (why === 'unsupported') msg = 'Push isn’t available here — open the installed app on your phone.';
+            else if (why) msg = 'Couldn’t enable — ' + why;
+            setStatus(msg, 'err');
+            mSwitch.setAttribute('aria-checked', 'false');
+            return;
+          }
           prefs.enabled = true; prefs.tz = tz();
           return registerSubscription().then(function () {
             return writeRow(PREFS_KEY, prefs).then(function () {
