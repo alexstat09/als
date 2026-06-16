@@ -45,15 +45,17 @@
 
     /* ── messages ─────────────────────────────── */
     .nv-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:20px 16px 8px;display:flex;flex-direction:column;gap:16px;}
-    /* inline-block bubbles so they size to their text and wrap normally
-       (flex items here collapsed to one-word-per-line min-content width) */
-    .nv-row{max-width:100%;animation:nv-rise .35s cubic-bezier(.2,.7,.3,1);}
+    /* inline-block bubbles with the avatar pulled OUT of the line (absolute) so
+       the bubble's only content is inline text — identical sizing to the user
+       bubble, which wraps correctly. (Block children inside a shrink-to-fit
+       bubble collapsed it to one-word-per-line min-content width.) */
+    .nv-row{position:relative;max-width:100%;animation:nv-rise .35s cubic-bezier(.2,.7,.3,1);}
     @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-    .nv-row.nova{text-align:left;}
+    .nv-row.nova{text-align:left;padding-left:40px;}
     .nv-row.me{text-align:right;}
-    .nv-av{display:inline-block;vertical-align:bottom;width:30px;height:30px;margin-right:8px;}
+    .nv-av{position:absolute;left:0;bottom:0;width:30px;height:30px;}
     .nv-av .nova{width:30px;height:30px;}
-    .nv-bub{display:inline-block;vertical-align:bottom;text-align:left;position:relative;max-width:78%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.55;overflow-wrap:break-word;}
+    .nv-bub{display:inline-block;text-align:left;position:relative;max-width:78%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.55;overflow-wrap:break-word;}
     .nv-bub .nv-text{display:block;}
     .nv-bub strong{font-weight:700;}
     .nv-row.nova .nv-bub{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:5px;color:#F4F1EA;backdrop-filter:blur(6px);}
@@ -163,10 +165,10 @@
       var row = document.createElement('div');
       row.className = 'nv-row ' + (role === 'user' ? 'me' : 'nova');
       var inner = '';
-      if(role !== 'user') inner += '<div class="nv-av">'+novaSVG()+'</div>';
+      if(role !== 'user') inner += '<span class="nv-av">'+novaSVG()+'</span>';
       var body = role === 'user'
         ? '<div class="nv-bub">'+fmtUser(text)+'</div>'
-        : '<div class="nv-bub"><div class="nv-name-lbl">Nova</div><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
+        : '<div class="nv-bub"><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
       inner += body;
       row.innerHTML = inner;
       scroll.appendChild(row);
