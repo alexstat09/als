@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════
-// Conversational Nova — the crown jewel (free brain: Google Gemini).
-// A streaming proxy to the Gemini API. The API key stays server-side.
+// Conversational Nova — the crown jewel (free brain: Groq / Llama).
+// A streaming proxy to the Groq API. The API key stays server-side.
 // On every turn Nova is grounded in Alex's real, up-to-the-minute data
 // (read from Supabase via _supa.js) so she answers like a coach who
 // actually knows him. Streams Gemini's response straight to the browser
@@ -10,8 +10,10 @@
 'use strict';
 var supa = require('./_supa');
 
-var GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':streamGenerateContent?alt=sse';
+// Groq: free API, fast, available worldwide (incl. Switzerland, where Gemini's
+// free tier is not offered — limit:0). OpenAI-compatible Chat Completions API.
+var GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function localParts(tz) {
@@ -161,10 +163,10 @@ module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).end('POST only'); return; }
 
-  var key = (process.env.GEMINI_API_KEY || '').trim();
+  var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) {
     res.status(200).setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end("Nova's brain isn't connected yet — add a free GEMINI_API_KEY in Vercel and redeploy, then I'll be able to talk properly. (See NOVA_SETUP.md.)");
+    res.end("Nova's brain isn't connected yet — add a free GROQ_API_KEY in Vercel and redeploy, then I'll be able to talk properly. (See NOVA_SETUP.md.)");
     return;
   }
 
@@ -178,18 +180,20 @@ module.exports = async function (req, res) {
   var brief;
   try { brief = await buildBrief(tz); } catch (e) { brief = '(data temporarily unavailable)'; }
 
-  // Gemini request: system_instruction + alternating user/model contents.
+  // Groq (OpenAI-compatible): system message + the conversation.
   var payload = {
-    systemInstruction: { parts: [{ text: systemPrompt(brief) }] },
-    contents: messages.map(function (m) { return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }; }),
-    generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
+    model: GROQ_MODEL,
+    messages: [{ role: 'system', content: systemPrompt(brief) }].concat(messages),
+    max_tokens: 1024,
+    temperature: 0.85,
+    stream: true
   };
 
   var upstream;
   try {
-    upstream = await fetch(GEMINI_URL, {
+    upstream = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
+      headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
       body: JSON.stringify(payload)
     });
   } catch (e) {
@@ -203,25 +207,23 @@ module.exports = async function (req, res) {
   res.setHeader('X-Accel-Buffering', 'no');
 
   if (!upstream.ok || !upstream.body) {
-    var detail = '';
-    try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
     if (upstream.status === 429) {
-      res.end("[429-DIAG model=" + GEMINI_MODEL + "] " + detail);
+      res.end("I'm getting a lot of requests right now — give me a minute and ask me again. 🌿");
       return;
     }
+    var detail = '';
+    try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
     res.end('Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.');
     return;
   }
 
-  // Parse Gemini's SSE (?alt=sse → `data: {json}` lines) and forward text deltas.
+  // Parse Groq's SSE (`data: {json}` lines, OpenAI shape) → forward text deltas.
   var decoder = new TextDecoder();
   var buf = '';
   function emit(obj) {
-    var cands = obj && obj.candidates;
-    if (!cands || !cands[0]) return;
-    var parts = cands[0].content && cands[0].content.parts;
-    if (!parts) return;
-    for (var i = 0; i < parts.length; i++) { if (typeof parts[i].text === 'string') res.write(parts[i].text); }
+    var ch = obj && obj.choices;
+    if (!ch || !ch[0] || !ch[0].delta) return;
+    if (typeof ch[0].delta.content === 'string') res.write(ch[0].delta.content);
   }
   try {
     for await (var chunk of upstream.body) {
