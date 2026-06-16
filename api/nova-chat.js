@@ -203,12 +203,12 @@ module.exports = async function (req, res) {
   res.setHeader('X-Accel-Buffering', 'no');
 
   if (!upstream.ok || !upstream.body) {
-    if (upstream.status === 429) {
-      res.end("I've hit my free-tier limit for a moment — give me ~30 seconds and ask me again. 🌿");
-      return;
-    }
     var detail = '';
     try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
+    if (upstream.status === 429) {
+      res.end("[429-DIAG model=" + GEMINI_MODEL + "] " + detail);
+      return;
+    }
     res.end('Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.');
     return;
   }
