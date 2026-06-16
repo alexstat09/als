@@ -16,7 +16,7 @@ var CORE = [
   'ideas.html', 'finance.html', 'morning.html', 'po-water.html',
   'aurora.css', 'aurora-page.css', 'jarvis.css',
   'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'pocoach-sync.js',
-  'insights.js', 'xp.js', 'lock.js',
+  'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'icon.svg', 'apple-touch-icon.png'
 ];
 

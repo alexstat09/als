@@ -50,5 +50,31 @@ You should get a **"Rest complete 💪"** notification with sound. Tap it to jum
   so QStash never retry-storms.
 - If push ever misbehaves, removing the env vars disables it cleanly — the app
   falls back to the in-app beep with no errors.
-- Daily reminders (8am weigh-in, protein, caffeine cutoff, "no training in 3
-  days") will reuse this same setup via a scheduled job — a later add-on.
+
+## Daily smart reminders (built on the same backend)
+The Hub has a **Daily Reminders** card. Flip it on (grant permission on your
+phone if asked) and you’ll get nudges that fire **with the app closed**:
+
+| Reminder | Default time | Only fires when… |
+|----------|--------------|------------------|
+| Weigh-in ⚖️         | 12pm | you haven’t logged a weight today |
+| Training nudge 💪    | 2pm  | it’s been 3+ days since your last session |
+| Protein check 🍗     | 7pm  | you’re below ~70% of your protein target |
+| Caffeine cutoff ☕️   | 2pm  | you’ve logged any caffeine today |
+| Evening wind-down 🧭 | 10pm | habits aren’t closed or you haven’t journaled |
+
+Each fires at most once a day. Toggle any of them off on the card, and tap the
+green time chip on any row to change when it fires (saved instantly, synced).
+
+**How it works:** turning reminders on stores your push subscription + prefs in
+Supabase and auto-creates an hourly **QStash schedule** that calls
+`/api/run-reminders`. That function works out your *local* hour (DST-safe via
+your timezone), reads your synced data, and only sends a reminder that’s both
+due this hour **and** actually relevant. No extra setup beyond the 4 env vars
+above — it reuses the same VAPID + QStash you already configured.
+
+- Times are stored in your timezone; the schedule runs hourly so it self-corrects
+  across daylight-saving without any change.
+- Tap **“Send a test nudge”** on the card to confirm it lands on your phone.
+- Reminders read these Supabase rows: `po-coach` (weight/workouts), `nutrition`,
+  `caffeine`, `identity` (habits/journal), `health` (body weight → protein target).
