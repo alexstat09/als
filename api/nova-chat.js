@@ -10,7 +10,7 @@
 'use strict';
 var supa = require('./_supa');
 
-var GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+var GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':streamGenerateContent?alt=sse';
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -203,6 +203,10 @@ module.exports = async function (req, res) {
   res.setHeader('X-Accel-Buffering', 'no');
 
   if (!upstream.ok || !upstream.body) {
+    if (upstream.status === 429) {
+      res.end("I've hit my free-tier limit for a moment — give me ~30 seconds and ask me again. 🌿");
+      return;
+    }
     var detail = '';
     try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
     res.end('Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.');
