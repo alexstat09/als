@@ -1,16 +1,17 @@
 // ════════════════════════════════════════════════════════════════
-// Conversational Nova — the crown jewel.
-// A streaming proxy to the Claude API (claude-opus-4-8). The Anthropic
-// key stays server-side. On every turn Nova is grounded in Alex's real,
-// up-to-the-minute data (read from Supabase via _supa.js) so she answers
-// like a coach who actually knows him — not a generic chatbot.
-// Streams Claude's response straight back to the browser as plain text.
+// Conversational Nova — the crown jewel (free brain: Google Gemini).
+// A streaming proxy to the Gemini API. The API key stays server-side.
+// On every turn Nova is grounded in Alex's real, up-to-the-minute data
+// (read from Supabase via _supa.js) so she answers like a coach who
+// actually knows him. Streams Gemini's response straight to the browser
+// as plain text. Provider-agnostic by design — the data brief + persona
+// below would work behind any model; only the call section is Gemini-specific.
 // ════════════════════════════════════════════════════════════════
 'use strict';
 var supa = require('./_supa');
 
-var ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-var MODEL = 'claude-opus-4-8';
+var GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':streamGenerateContent?alt=sse';
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function localParts(tz) {
@@ -45,7 +46,6 @@ async function buildBrief(tz) {
   var L = [];
   L.push('ALEX — live snapshot, ' + lp.weekday + ' ' + today + ' (his local time, hour ' + lp.hour + ').');
 
-  // Weight + trend
   var weights = (poc['po_coach_weights'] || []).filter(function (e) { return e && e.dateKey && typeof e.weight === 'number'; })
     .sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
   var units = (poc['po_coach_v1'] || {}).units || 'kg';
@@ -57,7 +57,6 @@ async function buildBrief(tz) {
     L.push('Weight: ' + last.weight + units + ' (last logged ' + last.dateKey + '), ' + (dl <= 0 ? 'down ' + Math.abs(dl) : 'up ' + dl) + units + ' over ~7 days. Weighed in today: ' + (last.dateKey === today ? 'yes' : 'NO'));
   } else L.push('Weight: none logged yet.');
 
-  // Training
   var exMap = {}; (poc['po_exercises'] || []).forEach(function (e) { if (e) exMap[e.id] = e; });
   var workouts = (poc['po_workouts'] || []).filter(function (w) { return w && w.date; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   if (workouts.length) {
@@ -72,7 +71,6 @@ async function buildBrief(tz) {
     L.push('Training: ' + wkSessions + ' session' + (wkSessions === 1 ? '' : 's') + ' in last 7 days; last workout ' + (since === 0 ? 'today' : since + ' day' + (since === 1 ? '' : 's') + ' ago') + (recentPRs.length ? '; recent PRs: ' + recentPRs.slice(0, 4).join(', ') : '') + '.');
   } else L.push('Training: no workouts logged yet.');
 
-  // Sleep & recovery
   var sleepLogs = (slp['sleep:logs'] || []).filter(function (e) { return e && e.dateKey; }).sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
   if (sleepLogs.length) {
     var lastN = sleepLogs.filter(function (e) { return e.hours > 0; }).slice(-1)[0];
@@ -85,22 +83,18 @@ async function buildBrief(tz) {
       (avgRec != null ? '; 7-day avg recovery ' + Math.round(avgRec) + '/100' : '') + '.');
   } else L.push('Sleep: nothing logged yet (his #1 untracked lever).');
 
-  // Nutrition today
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || (weights.length ? weights[weights.length - 1].weight : 75);
   var protTarget = Math.round(weightKg * 2);
   var prot = 0, kcal = 0, meals = 0;
   (nut['nut:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) { prot += (l.p || 0); kcal += (l.kcal || 0); meals++; } });
   L.push('Nutrition today: ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(kcal) + ' kcal, ' + meals + ' meals logged.');
 
-  // Caffeine today
   var cafToday = 0; (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) cafToday += (l.mg || 0); });
   L.push('Caffeine today: ' + Math.round(cafToday) + 'mg.');
 
-  // Water today
   var water = hlt['po_water_v1'] || {}; var wlogs = (water.logs && typeof water.logs === 'object') ? water.logs : {};
   if (Object.keys(wlogs).length) L.push('Water today: ' + (wlogs[today] || 0) + ' logged.');
 
-  // Identity: habits, streaks, journal, north star
   var hbList = idn['habits:list'] || [], hbLog = idn['habits:log'] || {};
   if (hbList.length) {
     var hbToday = hbLog[today] || {}, done = hbList.filter(function (h) { return h && hbToday[h.id]; }).length;
@@ -120,7 +114,6 @@ async function buildBrief(tz) {
   var ns = idn['identity:northstar'] || {};
   if (ns && ns.statement) L.push('His North Star: "' + ns.statement + '".');
 
-  // Goals today
   var goals = gls['goals:' + today] || [];
   if (Array.isArray(goals) && goals.length) {
     var gdone = goals.filter(function (g) { return g && g.done; }).length;
@@ -168,10 +161,10 @@ module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).end('POST only'); return; }
 
-  var key = (process.env.ANTHROPIC_API_KEY || '').trim();
+  var key = (process.env.GEMINI_API_KEY || '').trim();
   if (!key) {
     res.status(200).setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end("Nova's brain isn't connected yet — add an ANTHROPIC_API_KEY in Vercel and redeploy, then I'll be able to talk properly. (See NOVA_SETUP.md.)");
+    res.end("Nova's brain isn't connected yet — add a free GEMINI_API_KEY in Vercel and redeploy, then I'll be able to talk properly. (See NOVA_SETUP.md.)");
     return;
   }
 
@@ -185,19 +178,18 @@ module.exports = async function (req, res) {
   var brief;
   try { brief = await buildBrief(tz); } catch (e) { brief = '(data temporarily unavailable)'; }
 
+  // Gemini request: system_instruction + alternating user/model contents.
   var payload = {
-    model: MODEL,
-    max_tokens: 1024,
-    stream: true,
-    system: systemPrompt(brief),
-    messages: messages
+    systemInstruction: { parts: [{ text: systemPrompt(brief) }] },
+    contents: messages.map(function (m) { return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }; }),
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
   };
 
   var upstream;
   try {
-    upstream = await fetch(ANTHROPIC_URL, {
+    upstream = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
       body: JSON.stringify(payload)
     });
   } catch (e) {
@@ -217,22 +209,29 @@ module.exports = async function (req, res) {
     return;
   }
 
-  // Parse Anthropic's SSE and forward only the text deltas to the browser.
+  // Parse Gemini's SSE (?alt=sse → `data: {json}` lines) and forward text deltas.
   var decoder = new TextDecoder();
   var buf = '';
+  function emit(obj) {
+    var cands = obj && obj.candidates;
+    if (!cands || !cands[0]) return;
+    var parts = cands[0].content && cands[0].content.parts;
+    if (!parts) return;
+    for (var i = 0; i < parts.length; i++) { if (typeof parts[i].text === 'string') res.write(parts[i].text); }
+  }
   try {
     for await (var chunk of upstream.body) {
       buf += decoder.decode(chunk, { stream: true });
       var nl;
       while ((nl = buf.indexOf('\n')) >= 0) {
         var line = buf.slice(0, nl); buf = buf.slice(nl + 1);
-        if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1); // strip \r
+        if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
         if (line.indexOf('data:') !== 0) continue;
         var data = line.slice(5).trim();
         if (!data || data === '[DONE]') continue;
         var ev; try { ev = JSON.parse(data); } catch (e) { continue; }
-        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') res.write(ev.delta.text);
-        else if (ev.type === 'error') res.write('\n\n[Nova error: ' + ((ev.error && ev.error.message) || 'unknown') + ']');
+        if (ev.error) { res.write('\n\n[Nova error: ' + (ev.error.message || 'unknown') + ']'); continue; }
+        emit(ev);
       }
     }
   } catch (e) {
