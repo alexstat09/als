@@ -42,13 +42,33 @@
     return Notification.requestPermission().then(function(p){
       if (p !== 'granted') { _lastErr = 'permission-' + p; return false; }
       return navigator.serviceWorker.ready.then(function(reg){
-        return reg.pushManager.getSubscription().then(function(sub){
-          if (sub){ lss('als_push_sub', JSON.stringify(sub)); return true; }
-          return getVapidKey().then(function(key){
-            if (!key) { _lastErr = 'no-vapid'; return false; } // backend not configured yet
-            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(key) })
-              .then(function(s){ lss('als_push_sub', JSON.stringify(s)); return true; })
-              .catch(function(e){ _lastErr = 'subscribe-failed: ' + ((e && e.message) || e); return false; });
+        return getVapidKey().then(function(key){
+          if (!key) { _lastErr = 'no-vapid'; return false; } // backend not configured yet
+          var appKey = b64ToU8(key);
+          function subscribe(){
+            return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey })
+              .then(function(s){ lss('als_push_sub', JSON.stringify(s)); return true; });
+          }
+          // Does an existing subscription use this same VAPID key?
+          function sameKey(sub){
+            try {
+              var ek = sub && sub.options && sub.options.applicationServerKey; if (!ek) return false;
+              var a = new Uint8Array(ek); if (a.length !== appKey.length) return false;
+              for (var i = 0; i < a.length; i++) if (a[i] !== appKey[i]) return false;
+              return true;
+            } catch (e) { return false; }
+          }
+          return reg.pushManager.getSubscription().then(function(existing){
+            if (existing && sameKey(existing)) { lss('als_push_sub', JSON.stringify(existing)); return true; }
+            // Drop a stale/mismatched sub first, then subscribe fresh.
+            var clear = existing ? existing.unsubscribe().catch(function(){}) : Promise.resolve();
+            return clear.then(subscribe).catch(function(e1){
+              // iOS push-service errors are often transient — clear & retry once.
+              return reg.pushManager.getSubscription()
+                .then(function(s){ return s ? s.unsubscribe().catch(function(){}) : null; })
+                .then(subscribe)
+                .catch(function(e2){ _lastErr = 'subscribe-failed: ' + ((e2 && e2.message) || e2); try { console.warn('[ALSPush] subscribe failed', e1, e2); } catch (e) {} return false; });
+            });
           });
         });
       });

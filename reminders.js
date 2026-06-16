@@ -231,7 +231,7 @@
             if (why.indexOf('permission-denied') === 0) msg = 'Notifications are blocked. On iPhone: Settings ▸ Notifications ▸ this app ▸ Allow — or delete & re-add it to the Home Screen, then retry.';
             else if (why.indexOf('permission-default') === 0) msg = 'You didn’t tap Allow — flip it on again and choose Allow.';
             else if (why === 'no-vapid') msg = 'Push backend isn’t configured (VAPID key missing).';
-            else if (why.indexOf('subscribe-failed') === 0) msg = 'Couldn’t subscribe — fully close the app and reopen from the Home Screen icon, then retry.';
+            else if (why.indexOf('subscribe-failed') === 0) msg = 'iOS refused the subscription: ' + why.replace('subscribe-failed: ', '') + ' — make sure you’re on Wi-Fi/data, then retry.';
             else if (why === 'unsupported') msg = 'Push isn’t available here — open the installed app on your phone.';
             else if (why) msg = 'Couldn’t enable — ' + why;
             setStatus(msg, 'err');
