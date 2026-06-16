@@ -112,7 +112,7 @@ module.exports = async function (req, res) {
 
     var prefs = await supa.readRow('push:prefs');
     if (prefs.enabled === false) { res.status(200).json({ skipped: 'reminders off' }); return; }
-    var tz = prefs.tz || 'Europe/Zurich';
+    var tz = prefs.tz || 'Europe/Athens';
     var lp = localParts(tz);
 
     var subsRow = await supa.readRow('push:subscriptions');

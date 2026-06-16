@@ -55,7 +55,7 @@
     });
     return out;
   }
-  function tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Zurich'; } catch (e) { return 'Europe/Zurich'; } }
+  function tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Athens'; } catch (e) { return 'Europe/Athens'; } }
 
   // Store this device's subscription in the shared subs map (keyed by endpoint).
   function registerSubscription() {

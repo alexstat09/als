@@ -3,15 +3,15 @@
 // A streaming proxy to the Groq API. The API key stays server-side.
 // On every turn Nova is grounded in Alex's real, up-to-the-minute data
 // (read from Supabase via _supa.js) so she answers like a coach who
-// actually knows him. Streams Gemini's response straight to the browser
+// actually knows him. Streams the model's response straight to the browser
 // as plain text. Provider-agnostic by design — the data brief + persona
-// below would work behind any model; only the call section is Gemini-specific.
+// below would work behind any model; only the call section is provider-specific.
 // ════════════════════════════════════════════════════════════════
 'use strict';
 var supa = require('./_supa');
 
-// Groq: free API, fast, available worldwide (incl. Switzerland, where Gemini's
-// free tier is not offered — limit:0). OpenAI-compatible Chat Completions API.
+// Groq: free API, fast, available worldwide (incl. the EEA/Greece, where
+// Gemini's free tier is not offered — limit:0). OpenAI-compatible API.
 var GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -174,7 +174,7 @@ module.exports = async function (req, res) {
   var messages = cleanMessages(body.messages);
   if (!messages.length) { res.status(400).json({ error: 'no messages' }); return; }
 
-  var tz = 'Europe/Zurich';
+  var tz = 'Europe/Athens';
   try { var prefs = await supa.readRow('push:prefs'); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
 
   var brief;
