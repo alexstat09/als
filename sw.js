@@ -9,7 +9,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = 'als-v15';
+var CACHE = 'als-v16';
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -45,31 +45,19 @@ self.addEventListener('fetch', function (e) {
   try { url = new URL(req.url); } catch (err) { return; }
   if (url.origin !== self.location.origin) return; // leave Supabase / CDN / fonts to the network
 
-  var isNav = req.mode === 'navigate' || (req.headers.get('accept') || '').indexOf('text/html') !== -1;
-
-  if (isNav) {
-    // network-first: freshest page when online, cached shell when offline
-    e.respondWith(
-      fetch(req).then(function (res) {
-        var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        return res;
-      }).catch(function () {
-        return caches.match(req).then(function (r) { return r || caches.match('index.html'); });
-      })
-    );
-    return;
-  }
-
-  // static assets: stale-while-revalidate
+  // Network-first for EVERYTHING same-origin: always fresh code online, cache
+  // only as an offline fallback. (Stale-while-revalidate was serving old JS/CSS
+  // for an extra load each deploy — the source of the "still cached" issues.)
   e.respondWith(
-    caches.match(req).then(function (cached) {
-      var net = fetch(req).then(function (res) {
-        if (res && res.status === 200 && res.type === 'basic') {
-          var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      }).catch(function () { return cached; });
-      return cached || net;
+    fetch(req).then(function (res) {
+      if (res && res.status === 200 && res.type === 'basic') {
+        var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req).then(function (r) {
+        return r || (req.mode === 'navigate' ? caches.match('index.html') : undefined);
+      });
     })
   );
 });
