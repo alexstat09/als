@@ -9,11 +9,11 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = 'als-v4';
+var CACHE = 'als-v5';
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
-  'ideas.html', 'finance.html', 'morning.html', 'po-water.html',
+  'ideas.html', 'finance.html', 'morning.html', 'po-water.html', 'nova-chat.html',
   'aurora.css', 'aurora-page.css', 'jarvis.css',
   'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'pocoach-sync.js',
   'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js',

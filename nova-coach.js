@@ -419,6 +419,8 @@
   '.nc-headline{position:relative;}'+
   '.nc-headline::after{content:"";position:absolute;left:2px;bottom:5px;height:2px;width:0;background:linear-gradient(90deg,rgb(var(--au-glow-rgb)),transparent);border-radius:2px;transition:width .6s ease .3s;}'+
   '.nc-sheet.on .nc-headline::after{width:54px;}'+
+  '.nc-talk{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 16px;padding:14px;border-radius:14px;text-decoration:none;font-family:var(--au-sans,-apple-system);font-size:14.5px;font-weight:700;letter-spacing:.01em;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);box-shadow:0 6px 22px rgba(var(--au-glow-rgb),.28);transition:transform .14s;-webkit-tap-highlight-color:transparent;}'+
+  '.nc-talk:active{transform:translateY(1px);}'+
   '.nc-grip{display:none;}'+
   '.nc-head{display:flex;align-items:center;gap:13px;margin-bottom:12px;}'+
   '.nc-head .nova{width:54px;height:54px;flex-shrink:0;}'+
@@ -475,6 +477,7 @@
     sh.innerHTML='<span class="nc-corner tl"></span><span class="nc-corner tr"></span><span class="nc-corner bl"></span><span class="nc-corner br"></span><div class="nc-scan"></div>'+
       '<div class="nc-scroll">'+
       '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow"><span class="nc-dot"></span>NOVA &middot; COACH ONLINE</div><div class="nc-greet">'+esc(b.greeting)+', Alex.</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
+      '<a class="nc-talk" href="nova-chat.html">&#10022; Talk to me</a>'+
       '<div class="nc-headline">'+esc(b.headline)+'</div>'+
       letterHTMLIfDue()+
       b.cards.map(cardHTML).join('')+
