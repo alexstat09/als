@@ -398,10 +398,13 @@
   function novaSVG(){ return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="ncNv" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#ncNv)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>'; }
 
   var CSS =
-  '.nc-bg{position:fixed;inset:0;z-index:80;background:rgba(3,4,6,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s;display:flex;align-items:center;justify-content:center;padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));}'+
-  '.nc-bg.on{opacity:1;pointer-events:auto;}'+
-  '.nc-sheet{position:relative;z-index:81;width:min(540px,100%);max-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#0b0e13,#080a0e);border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.14);overflow:hidden;}'+
-  '.nc-bg.on .nc-sheet{opacity:1;transform:translateY(0) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
+  /* Native <dialog> in the top layer — centered by the browser, immune to any
+     ancestor transform/filter (which break position:fixed). Bulletproof on
+     iPhone + laptop. */
+  'dialog.nc-sheet{position:fixed;inset:0;margin:auto;z-index:81;width:min(540px,calc(100% - 28px));max-width:min(540px,calc(100% - 28px));max-height:88vh;max-height:88dvh;padding:0;border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;background:linear-gradient(180deg,#0b0e13,#080a0e);color:inherit;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.14);opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);}'+
+  'dialog.nc-sheet[open]{display:flex;flex-direction:column;}'+
+  'dialog.nc-sheet.on{opacity:1;transform:translateY(0) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
+  'dialog.nc-sheet::backdrop{background:rgba(3,4,6,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}'+
   '@keyframes nc-breathe{0%,100%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 90px rgba(var(--au-glow-rgb),.12);}50%{box-shadow:0 30px 80px rgba(0,0,0,.66),0 0 130px rgba(var(--au-glow-rgb),.24);}}'+
   '.nc-scroll{position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;padding:20px 18px 22px;-webkit-overflow-scrolling:touch;}'+
   '.nc-sheet::before{content:"";position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(var(--au-glow-rgb),.06) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--au-glow-rgb),.06) 1px,transparent 1px);background-size:34px 34px;pointer-events:none;-webkit-mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);}'+
@@ -447,11 +450,11 @@
   function ensureDOM(){
     if(document.getElementById('ncSheet')) return;
     var st=document.createElement('style'); st.textContent=CSS; document.head.appendChild(st);
-    var bg=document.createElement('div'); bg.id='ncBg'; bg.className='nc-bg';
-    /* close only when tapping the backdrop itself, not the sheet; ignore iOS ghost-click on open */
-    bg.addEventListener('click', function(e){ if(e.target===bg && Date.now()-ncOpenedAt>=450) close(); });
-    var sh=document.createElement('div'); sh.id='ncSheet'; sh.className='nc-sheet';
-    bg.appendChild(sh); document.body.appendChild(bg);
+    var dlg=document.createElement('dialog'); dlg.id='ncSheet'; dlg.className='nc-sheet';
+    /* click on the ::backdrop (target is the dialog itself) closes; ignore iOS ghost-click on open */
+    dlg.addEventListener('click', function(e){ if(e.target===dlg && Date.now()-ncOpenedAt>=450) close(); });
+    dlg.addEventListener('cancel', function(e){ e.preventDefault(); close(); }); /* Esc key */
+    document.body.appendChild(dlg);
   }
   function cardHTML(c){
     var go = c.href ? '<div class="nc-card-go">Tap to open &rarr;</div>' : '';
@@ -484,10 +487,17 @@
       b.cards.map(cardHTML).join('')+
       '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>'+
       '</div>';
-    document.getElementById('ncBg').classList.add('on'); sh.classList.add('on'); sh.scrollTop=0; ncOpenedAt=Date.now();
+    try { if(sh.showModal){ if(!sh.open) sh.showModal(); } else { sh.setAttribute('open',''); } } catch(e){ sh.setAttribute('open',''); }
+    ncOpenedAt=Date.now();
+    requestAnimationFrame(function(){ sh.classList.add('on'); });
+    var scr=sh.querySelector('.nc-scroll'); if(scr) scr.scrollTop=0;
     var x=document.getElementById('ncX'); if(x) x.addEventListener('click', close);
   }
-  function close(){ var b=document.getElementById('ncBg'),s=document.getElementById('ncSheet'); if(b)b.classList.remove('on'); if(s)s.classList.remove('on'); }
+  function close(){
+    var s=document.getElementById('ncSheet'); if(!s) return;
+    s.classList.remove('on');
+    setTimeout(function(){ try { if(s.open && s.close) s.close(); else s.removeAttribute('open'); } catch(e){ s.removeAttribute('open'); } }, 200);
+  }
 
   window.NovaCoach={ open:open, close:close, brief:build, correlations:correlations, letter:weeklyLetter };
 
