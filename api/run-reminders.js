@@ -106,8 +106,8 @@ module.exports = async function (req, res) {
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured' }); return; }
     webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:nobody@example.com',
-      process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY
+      (process.env.VAPID_SUBJECT || 'mailto:nobody@example.com').trim(),
+      (process.env.VAPID_PUBLIC_KEY || '').trim(), (process.env.VAPID_PRIVATE_KEY || '').trim()
     );
 
     var prefs = await supa.readRow('push:prefs');

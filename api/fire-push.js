@@ -16,10 +16,12 @@ module.exports = async function (req, res) {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       res.status(200).json({ error: 'VAPID not configured' }); return;
     }
+    // Trim env values — a stray newline/space (common when pasting into the
+    // dashboard) in the subject or keys makes the push service reject the send.
     webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:nobody@example.com',
-      process.env.VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
+      (process.env.VAPID_SUBJECT || 'mailto:nobody@example.com').trim(),
+      (process.env.VAPID_PUBLIC_KEY || '').trim(),
+      (process.env.VAPID_PRIVATE_KEY || '').trim()
     );
     const payload = JSON.stringify({
       title: body.title || 'ALS Dashboard',
