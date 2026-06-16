@@ -44,24 +44,19 @@
     .nv-clear:active{color:#F4F1EA;}
 
     /* ── messages ─────────────────────────────── */
-    .nv-scroll{flex:1;display:block!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:20px 16px 8px;}
-    /* inline-block bubbles with the avatar pulled OUT of the line (absolute) so
-       the bubble's only content is inline text — identical sizing to the user
-       bubble, which wraps correctly. (Block children inside a shrink-to-fit
-       bubble collapsed it to one-word-per-line min-content width.) */
-    .nv-row{display:block!important;width:100%!important;max-width:100%!important;box-sizing:border-box;position:relative;margin-bottom:16px;animation:nv-rise .35s cubic-bezier(.2,.7,.3,1);}
+    .nv-scroll{flex:1;display:block!important;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:18px 14px 12px;}
+    /* Full-width rows (forced, so they never shrink-wrap); bubbles hug their
+       text via inline-block and align left (Nova) / right (you). */
+    .nv-row{display:block!important;width:100%!important;box-sizing:border-box;position:relative;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
     @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
     .nv-av{display:none;}
-    /* BLOCK bubbles capped by max-width: they take their width from the row and
-       wrap inside — block boxes can't shrink to min-content, so no
-       one-word-per-line is possible. Auto margin handles left/right alignment. */
-    .nv-bub{display:block;width:auto;max-width:80%;min-width:55%;position:relative;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.55;overflow-wrap:break-word;white-space:normal;}
-    .nv-row.nova .nv-bub{margin-right:auto;}
-    .nv-row.me .nv-bub{margin-left:auto;}
+    .nv-row.nova{text-align:left;}
+    .nv-row.me{text-align:right;}
+    .nv-bub{display:inline-block;max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:15px;line-height:1.5;overflow-wrap:break-word;}
     .nv-bub .nv-text{display:inline;}
     .nv-bub strong{font-weight:700;}
-    .nv-row.nova .nv-bub{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:5px;color:#F4F1EA;}
-    .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.16),rgba(24,200,192,.10));border:1px solid rgba(52,226,176,.28);border-bottom-right-radius:5px;color:#F4F1EA;}
+    .nv-row.nova .nv-bub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:6px;color:#F4F1EA;}
+    .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.18),rgba(24,200,192,.11));border:1px solid rgba(52,226,176,.3);border-bottom-right-radius:6px;color:#F4F1EA;}
     .nv-name-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-bottom:5px;}
     .nv-cursor{display:inline-block;width:7px;height:15px;margin-left:2px;background:#34E2B0;vertical-align:-2px;border-radius:1px;animation:nv-caret .9s step-end infinite;box-shadow:0 0 6px rgba(52,226,176,.7);}
     @keyframes nv-caret{0%,100%{opacity:1;}50%{opacity:0;}}
@@ -105,7 +100,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">Neural link · online</span> &middot; build 14</div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">Neural link · online</span></div>
       </div>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
@@ -236,7 +231,6 @@
       history.push({ role:'assistant', content:acc });
       save(history);
       setBusy(false);
-      try { var _b=row.querySelector('.nv-bub'); document.getElementById('nvStatus').textContent='bub'+(_b?_b.offsetWidth:0)+' row'+row.offsetWidth+' scr'+scroll.offsetWidth; } catch(e){}
       toBottom();
       input.focus();
     }
