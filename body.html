@@ -678,6 +678,19 @@
   <!-- Cross-device sync for weigh-ins (shared with gym.html) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pocoach-sync.js?v=2"></script>
+  <!-- Water lives in the 'health' row and caffeine in the 'caffeine' row.
+       body.html logs both, so it must sync those rows too (same engine, same
+       rows as health.html / caffeine.html) — otherwise water/caffeine logged
+       here never leave the device. pocoach-sync above still owns weights. -->
+  <script src="sync.js"></script>
+  <script>
+    (function () {
+      if (typeof window.initCloudSync !== 'function') return;
+      function rerender(){ if (typeof window._bodyRerender === 'function') { try { window._bodyRerender(); } catch (e) {} } }
+      window.initCloudSync({ appKey: 'health',   syncedKeys: ['stack:items', 'stack:low', 'po_water_v1'], syncedPrefixes: ['stack:taken:'], onApplied: rerender });
+      window.initCloudSync({ appKey: 'caffeine', syncedKeys: ['caf:logs', 'caf:custom'], onApplied: rerender });
+    })();
+  </script>
 
   <!-- Nova: time-aware greeting + reactive mood glow (reads your real data) -->
   <script>
