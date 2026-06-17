@@ -109,7 +109,10 @@ async function usdaSearch(q, key) {
 }
 
 // ── ranking ──────────────────────────────────────────────────────
-function toks(s) { return String(s || '').toLowerCase().split(/[^a-z0-9À-ɏͰ-Ͽἀ-῿]+/).filter(Boolean); }
+// fold case + strip Greek/Latin diacritics + normalize final sigma, so
+// "σολομος"=="σολομός", "ριζι"=="ρύζι" (Greeks routinely type without accents)
+function fold(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ς/g, 'σ'); }
+function toks(s) { return fold(s).split(/[^a-z0-9α-ω]+/).filter(Boolean); }
 // coarse tier so the cleanest generics always sit above branded clutter:
 //  0 = USDA pure staple (Foundation/SR Legacy raw/cooked)  1 = USDA prepared
 //  (FNDDS)  2 = un-branded OFF  3 = branded
