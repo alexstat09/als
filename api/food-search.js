@@ -34,9 +34,10 @@ function offRow(p) {
   };
 }
 async function offSearch(q) {
-  // legacy CGI search, sorted by scan popularity so well-filled real products win
+  // legacy CGI free-text search (no sort_by — it returns empty for some terms;
+  // our own relevance+completeness ranking orders the results instead)
   var url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) +
-    '&search_simple=1&action=process&json=1&page_size=50&sort_by=unique_scans_n' +
+    '&search_simple=1&action=process&json=1&page_size=50' +
     '&fields=code,product_name,product_name_en,generic_name,brands,serving_quantity,nutriments';
   var r = await fetch(url, { headers: { 'User-Agent': 'ALS-Dashboard/1.0 (personal)' } });
   if (!r.ok) return [];
