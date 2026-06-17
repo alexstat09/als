@@ -240,7 +240,7 @@
 
     function per100From(o){ return {kcal:o.kcal||0,p:o.p||0,c:o.c||0,f:o.f||0,fiber:o.fiber||0,sugar:o.sugar||0,sodium:o.sodium||0,satfat:o.satfat||0}; }
     function searchResultToFood(r){ return {name:r.name,brand:r.brand||'',per100:per100From(r),servingG:r.servingG||0,source:r.source}; }
-    function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai'}; }
+    function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai',confidence:(typeof a.confidence==='number'?a.confidence:null)}; }
     function scaleEntry(food,grams,meal){
       var k=grams/100,p=food.per100;
       return {id:uid(),ts:Date.now(),dateKey:viewDate,meal:meal||'Snacks',name:food.name+(food.brand?' ('+food.brand+')':''),grams:grams,source:food.source||'manual',
@@ -278,12 +278,13 @@
 
     var sheet=document.getElementById('addSheet'), shBody=document.getElementById('shBody'), shTabs=document.getElementById('shTabs');
     var curMeal='Snacks', curTab='describe', pickFood=null, pickMeal='Snacks', scanner=null;
-    var TABS=[['describe','AI Describe'],['search','Search'],['recent','Recent'],['custom','Custom'],['meals','Meals'],['scan','Scan']];
+    var editMeal=null, portionTarget='diary', mealItemEdit=-1; // meal-builder state
+    var TABS=[['describe','AI Describe'],['photo','Photo'],['search','Search'],['recent','Recent'],['custom','Custom'],['meals','Meals'],['scan','Scan']];
 
-    function openSheet(meal){ curMeal=meal||'Snacks'; pickMeal=curMeal; curTab='describe'; pickEditId=null; renderTabs(); renderTab();
+    function openSheet(meal){ curMeal=meal||'Snacks'; pickMeal=curMeal; curTab='describe'; pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; renderTabs(); renderTab();
       document.getElementById('shTitle').textContent='Add to '+curMeal;
       try{ if(!sheet.open) sheet.showModal(); }catch(e){ sheet.setAttribute('open',''); } }
-    function closeSheet(){ stopScan(); pickEditId=null; try{ if(sheet.open) sheet.close(); else sheet.removeAttribute('open'); }catch(e){} }
+    function closeSheet(){ stopScan(); pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; try{ if(sheet.open) sheet.close(); else sheet.removeAttribute('open'); }catch(e){} }
     function renderTabs(){ shTabs.innerHTML=TABS.map(function(t){ return '<button type="button" class="sh-tab'+(t[0]===curTab?' on':'')+'" data-act="tab" data-tab="'+t[0]+'">'+t[1]+'</button>'; }).join(''); }
     function setTab(t){ stopScan(); curTab=t; renderTabs(); renderTab(); }
 
@@ -291,10 +292,11 @@
 
     function renderTab(){
       if(curTab==='describe') shBody.innerHTML='<textarea class="sh-in" id="aiText" placeholder="What did you eat?  e.g. chicken gyros pita with tzatziki, or 2 eggs and toast"></textarea><div class="sh-hint">Nova estimates the macros from your description — fastest way to log anything, even Greek food not in any database.</div><button type="button" class="sh-btn" data-act="ai-go">Estimate with Nova</button>';
+      else if(curTab==='photo') shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Snap or pick a photo of your plate — Nova identifies the food and estimates the macros. Best for restaurant/homemade meals with no barcode.</div><button type="button" class="sh-btn" data-act="photo-pick">📷 Take / choose a photo</button><input type="file" accept="image/*" capture="environment" id="mealPhoto" style="display:none"><div class="sh-hint">A photo estimate is a ballpark — portion size is guessed from the image, so adjust the grams after.</div>';
       else if(curTab==='search') shBody.innerHTML='<input class="sh-in" id="qIn" placeholder="Search foods…" autocomplete="off"><button type="button" class="sh-btn ghost" data-act="search-go" style="margin-top:10px;">Search</button><div id="searchRes"></div>';
       else if(curTab==='recent'){ var rf=recentFoods(); window._rf=rf; shBody.innerHTML=rf.length?rf.map(function(f,i){return resRow(f.name,'',r0(f.per100.kcal)+' kcal /100g · '+(f.source||'').toUpperCase(),'recent',i);}).join(''):'<div class="sh-msg">Your recent foods will show here once you log a few.</div>'; }
       else if(curTab==='custom'){ var c=ls(CUSTOM,[]); shBody.innerHTML='<button type="button" class="sh-btn" data-act="custom-new">+ Create custom food</button>'+(c.length?c.map(function(f,i){return resRow(f.name,f.brand||'',r0(f.kcal)+' kcal /100g','custom',i);}).join(''):'<div class="sh-msg">No custom foods yet. Create one and reuse it forever.</div>'); }
-      else if(curTab==='meals'){ var m=ls(MEALSK,[]); shBody.innerHTML='<button type="button" class="sh-btn" data-act="meal-save">+ Save '+curMeal+' as a meal</button>'+(m.length?m.map(function(ml,i){var kc=ml.items.reduce(function(s,e){return s+(e.kcal||0);},0);return resRow(ml.name,ml.items.length+' items','+'+r0(kc)+' kcal','savedmeal',i);}).join(''):'<div class="sh-msg">Save a day’s meal once, re-add it in one tap.</div>'); }
+      else if(curTab==='meals'){ if(editMeal){ renderMealEditor(); return; } var m=ls(MEALSK,[]); if(!Array.isArray(m))m=[]; shBody.innerHTML='<button type="button" class="sh-btn" data-act="meal-create">+ Create a new meal</button><button type="button" class="sh-btn ghost" data-act="meal-save" style="margin-top:8px;">Save this '+esc(curMeal)+' as a meal</button>'+(m.length?m.map(function(ml,i){var kc=(ml.items||[]).reduce(function(s,e){return s+(e.kcal||0);},0);return '<div class="res" data-act="pick" data-kind="savedmeal" data-i="'+i+'"><div class="res-main"><div class="res-name">'+esc(ml.name||'Meal')+'</div><div class="res-sub">'+(ml.items||[]).length+' items · +'+r0(kc)+' kcal · tap to log</div></div><button type="button" data-act="meal-edit" data-i="'+i+'" style="flex:none;font-family:var(--au-mono,ui-monospace);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:rgb(var(--nu));background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:6px 10px;cursor:pointer;">Edit</button></div>';}).join(''):'<div class="sh-msg">No saved meals yet. Create one, or save a day’s meal.</div>'); }
       else if(curTab==='scan'){ shBody.innerHTML='<div id="scanRegion"></div><div class="sh-hint">Point at a barcode. Or type the number:</div><input class="sh-in" id="bcIn" inputmode="numeric" placeholder="Barcode number" style="margin-top:8px;"><button type="button" class="sh-btn ghost" data-act="bc-go" style="margin-top:10px;">Look up barcode</button>'; startScan(); }
     }
 
@@ -306,6 +308,27 @@
           if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t estimate — add the GROQ key, or use Search.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; return; }
           showPortion(aiToFood(j), j.grams||100);
         }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div>'; });
+    }
+    function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
+    function compressImage(file, cb){
+      try{ var img=new Image(), url=URL.createObjectURL(file);
+        img.onload=function(){ var max=768, w=img.width||1, h=img.height||1, sc=Math.min(1,max/Math.max(w,h)); var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
+          var cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; cv.getContext('2d').drawImage(img,0,0,cw,ch);
+          try{ URL.revokeObjectURL(url); }catch(e){} try{ cb(cv.toDataURL('image/jpeg',0.7)); }catch(e){ cb(null); } };
+        img.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} cb(null); };
+        img.src=url;
+      }catch(e){ cb(null); }
+    }
+    function photoGo(file){
+      if(!file) return; shBody.innerHTML='<div class="sh-spin">Nova is analysing your photo…</div>';
+      compressImage(file, function(dataUrl){
+        if(!dataUrl){ shBody.innerHTML='<div class="sh-msg">Couldn’t read that image — try another.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="photo">Back</button>'; return; }
+        fetch('/api/meal-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl})})
+          .then(function(r){return r.json();}).then(function(j){
+            if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t read the photo — try AI Describe.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="photo">Back</button>'; return; }
+            showPortion(aiToFood(j), j.grams||100);
+          }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="photo">Back</button>'; });
+      });
     }
     function searchGo(){
       var q=((document.getElementById('qIn')||{}).value||'').trim(); if(!q) return;
@@ -343,11 +366,12 @@
       shBody.innerHTML=
         '<div class="pp-name">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</div>'+
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
+        ((food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 12px;color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust grams below to refine</div>':'')+
         '<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>'+
         (food.servingG?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 serving ≈ '+r0(food.servingG)+'g — <a href="javascript:void(0)" data-act="pp-serv" style="color:rgb(var(--nu))">use serving</a></div>':'')+
         '<div class="pp-preview" id="ppPrev"></div>'+
-        '<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>'+
-        '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':'Add to '+esc(pickMeal))+'</button>';
+        (portionTarget==='meal'?'':'<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
+        '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>';
       ppPreview();
       var gi=document.getElementById('ppG'); if(gi) gi.addEventListener('input',ppPreview);
     }
@@ -379,8 +403,25 @@
     }
     function addSavedMeal(ml){
       var a=getLogs();
-      ml.items.forEach(function(it){ var e={}; for(var k in it) e[k]=it[k]; e.id=uid(); e.ts=Date.now(); e.dateKey=viewDate; e.meal=curMeal; a.push(e); });
+      (ml.items||[]).forEach(function(it){ var e={}; for(var k in it) e[k]=it[k]; e.id=uid(); e.ts=Date.now(); e.dateKey=viewDate; e.meal=curMeal; a.push(e); });
       saveLogs(a); renderAll(); closeSheet();
+    }
+
+    // ── Meal builder/editor (create & edit your own meals, MFP-style) ──
+    function mealIsSaved(id){ return (ls(MEALSK,[])||[]).some(function(m){ return m&&m.id===id; }); }
+    function readMealName(){ var el=document.getElementById('mealName'); if(el&&editMeal) editMeal.name=(el.value||'').trim(); }
+    function gotoMealEditor(){ curTab='meals'; renderTabs(); renderMealEditor(); }
+    function renderMealEditor(){
+      var m=editMeal; if(!m){ setTab('meals'); return; }
+      if(!Array.isArray(m.items)) m.items=[];
+      var kc=m.items.reduce(function(s,e){return s+(e.kcal||0);},0), saved=mealIsSaved(m.id);
+      var html='<input class="sh-in" id="mealName" placeholder="Meal name" value="'+esc(m.name||'')+'" style="margin-bottom:6px">';
+      html+='<div class="pp-sub">'+r0(kc)+' kcal · '+m.items.length+' item'+(m.items.length===1?'':'s')+' · tap an item to edit grams</div>';
+      html+=m.items.length?m.items.map(function(it,i){ return '<div class="entry"><div class="entry-main" data-act="meal-item-edit" data-i="'+i+'"><div class="entry-name">'+esc(it.name)+'</div><div class="entry-sub">'+r0(it.grams)+'g · '+r0(it.p)+'P '+r0(it.c)+'C '+r0(it.f)+'F</div></div><span class="entry-kcal">'+r0(it.kcal)+'</span><button type="button" class="entry-del" data-act="meal-item-del" data-i="'+i+'">&#10005;</button></div>'; }).join(''):'<div class="sh-msg">No items yet — tap “Add food”.</div>';
+      html+='<button type="button" class="sh-btn ghost" data-act="meal-add-food" style="margin-top:12px;">+ Add food</button>';
+      html+='<button type="button" class="sh-btn" data-act="meal-done" style="margin-top:8px;">Save meal</button>';
+      html+='<button type="button" class="sh-btn ghost" data-act="'+(saved?'meal-delete':'meal-cancel')+'" style="margin-top:8px;color:#FF8FA3;border-color:rgba(255,107,139,.3)">'+(saved?'Delete meal':'Cancel')+'</button>';
+      shBody.innerHTML=html;
     }
 
     document.addEventListener('click', function(ev){
@@ -395,11 +436,20 @@
       else if(act==='sheet-close'){ closeSheet(); }
       else if(act==='tab'){ setTab(el.getAttribute('data-tab')); }
       else if(act==='ai-go'){ aiGo(); }
+      else if(act==='photo-pick'){ photoPick(); }
       else if(act==='search-go'){ searchGo(); }
       else if(act==='bc-go'){ bcGo(); }
       else if(act==='custom-new'){ customNew(); }
       else if(act==='custom-save'){ customSave(); }
       else if(act==='meal-save'){ mealSave(); }
+      else if(act==='meal-create'){ editMeal={id:uid(),name:'',items:[]}; gotoMealEditor(); }
+      else if(act==='meal-edit'){ var mle=ls(MEALSK,[])[+el.getAttribute('data-i')]; if(mle){ editMeal=JSON.parse(JSON.stringify(mle)); if(!Array.isArray(editMeal.items)) editMeal.items=[]; gotoMealEditor(); } }
+      else if(act==='meal-add-food'){ readMealName(); portionTarget='meal'; mealItemEdit=-1; setTab('search'); }
+      else if(act==='meal-item-edit'){ if(!editMeal) return; readMealName(); var iti=+el.getAttribute('data-i'), it=editMeal.items[iti]; if(it){ var gk=it.grams||100,kk=100/gk; portionTarget='meal'; mealItemEdit=iti; showPortion({name:it.name,brand:'',per100:{kcal:(it.kcal||0)*kk,p:(it.p||0)*kk,c:(it.c||0)*kk,f:(it.f||0)*kk,fiber:(it.fiber||0)*kk,sugar:(it.sugar||0)*kk,sodium:(it.sodium||0)*kk,satfat:(it.satfat||0)*kk},source:it.source||'manual',servingG:it.grams}, it.grams); } }
+      else if(act==='meal-item-del'){ if(!editMeal) return; readMealName(); editMeal.items.splice(+el.getAttribute('data-i'),1); renderMealEditor(); }
+      else if(act==='meal-done'){ if(!editMeal) return; readMealName(); if(!editMeal.name) editMeal.name='My meal'; var arr=ls(MEALSK,[]); if(!Array.isArray(arr))arr=[]; var found=false; for(var mi=0;mi<arr.length;mi++){ if(arr[mi]&&arr[mi].id===editMeal.id){ arr[mi]=editMeal; found=true; break; } } if(!found) arr.unshift(editMeal); save(MEALSK,arr); editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-delete'){ if(!editMeal) return; var arr2=(ls(MEALSK,[])||[]).filter(function(x){return !(x&&x.id===editMeal.id);}); save(MEALSK,arr2); editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-cancel'){ editMeal=null; portionTarget='diary'; setTab('meals'); }
       else if(act==='pick'){
         var kind=el.getAttribute('data-kind'), i=+el.getAttribute('data-i');
         if(kind==='search'){ var f=window._sr[i]; showPortion(searchResultToFood(f), f.servingG||100); }
@@ -409,8 +459,11 @@
       }
       else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood.servingG){ gi.value=r0(pickFood.servingG); ppPreview(); } }
       else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab&&!pickEditId) ab.textContent='Add to '+pickMeal; }
-      else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return; var wasEdit=!!pickEditId; if(pickEditId){ delEntry(pickEditId); pickEditId=null; } if(!wasEdit && pickFood.source==='ai') saveLocalFood(pickFood); addEntry(scaleEntry(pickFood,gg,pickMeal)); closeSheet(); }
+      else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return;
+        if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(pickFood.source==='ai') saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
+        var wasEdit=!!pickEditId; if(pickEditId){ delEntry(pickEditId); pickEditId=null; } if(!wasEdit && pickFood.source==='ai') saveLocalFood(pickFood); addEntry(scaleEntry(pickFood,gg,pickMeal)); closeSheet(); }
     });
+    document.addEventListener('change', function(e){ if(e.target&&e.target.id==='mealPhoto'){ var f=e.target.files&&e.target.files[0]; try{ e.target.value=''; }catch(x){} if(f) photoGo(f); } });
     sheet.addEventListener('click', function(e){ if(e.target===sheet) closeSheet(); });
     sheet.addEventListener('cancel', function(e){ e.preventDefault(); closeSheet(); });
 
