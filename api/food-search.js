@@ -33,16 +33,29 @@ function offRow(p) {
     barcode: clip(p.code, 20), source: 'off'
   };
 }
-async function offSearch(q) {
-  // legacy CGI free-text search (no sort_by — it returns empty for some terms;
-  // our own relevance+completeness ranking orders the results instead)
-  var url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) +
-    '&search_simple=1&action=process&json=1&page_size=50' +
-    '&fields=code,product_name,product_name_en,generic_name,brands,serving_quantity,nutriments';
+var OFF_FIELDS = 'code,product_name,product_name_en,generic_name,brands,serving_quantity,nutriments';
+function offClean(rows) { return rows.map(offRow).filter(function (x) { return x && (x.kcal || x.p || x.c || x.f); }); }
+// Modern search-a-licious (Elasticsearch) — fast + reliable, the primary path.
+async function offSAL(q) {
+  var url = 'https://search.openfoodfacts.org/search?q=' + encodeURIComponent(q) + '&page_size=50&fields=' + OFF_FIELDS;
   var r = await fetch(url, { headers: { 'User-Agent': 'ALS-Dashboard/1.0 (personal)' } });
   if (!r.ok) return [];
   var j = await r.json();
-  return (j.products || []).map(offRow).filter(function (x) { return x && (x.kcal || x.p || x.c || x.f); });
+  return offClean(j.hits || []);
+}
+// Legacy CGI free-text search — fallback only (rate-limited/flaky under load).
+async function offCGI(q) {
+  var url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) +
+    '&search_simple=1&action=process&json=1&page_size=50&fields=' + OFF_FIELDS;
+  var r = await fetch(url, { headers: { 'User-Agent': 'ALS-Dashboard/1.0 (personal)' } });
+  if (!r.ok) return [];
+  var j = await r.json();
+  return offClean(j.products || []);
+}
+async function offSearch(q) {
+  var a = await offSAL(q).catch(function () { return []; });
+  if (a && a.length) return a;
+  return await offCGI(q).catch(function () { return []; });
 }
 async function offBarcode(code) {
   var r = await fetch('https://world.openfoodfacts.org/api/v0/product/' + encodeURIComponent(code) + '.json',
