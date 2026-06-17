@@ -302,12 +302,30 @@
 
     function aiGo(){
       var t=((document.getElementById('aiText')||{}).value||'').trim(); if(!t) return;
-      shBody.innerHTML='<div class="sh-spin">Nova is estimating…</div>';
-      fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
-        .then(function(r){return r.json();}).then(function(j){
-          if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t estimate — add the GROQ key, or use Search.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; return; }
-          showPortion(aiToFood(j), j.grams||100);
-        }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div>'; });
+      shBody.innerHTML='<div class="sh-spin">Nova is checking the database &amp; estimating…</div>';
+      var qToks=nfToks(t);
+      // Run BOTH: the real food database (OFF/USDA — exact label data) AND the AI
+      // estimate. If the DB has the actual product, offer it first; estimate is the fallback.
+      Promise.all([
+        fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch('/api/food-search?q='+encodeURIComponent(t)).then(function(r){return r.json();}).catch(function(){return {results:[]};})
+      ]).then(function(res){
+        var ai=res[0], dbAll=((res[1]&&res[1].results)||[]);
+        // keep DB hits that genuinely overlap the description (>=2 distinctive query tokens)
+        var hits=dbAll.filter(function(f){ var hay=nfToks((f.name||'')+' '+(f.brand||'')); var n=0; qToks.forEach(function(q){ if(q.length>=3 && hay.some(function(x){return x===q||x.indexOf(q)===0||q.indexOf(x)===0;})) n++; }); return n>=2; }).slice(0,5);
+        var aiOk = ai && !ai.error;
+        if(hits.length){
+          window._sr=hits; window._aiEstimate = aiOk?ai:null;
+          var rows=hits.map(function(f,i){ var tag=f.source==='core'?'✓ Verified':(f.brand?esc(f.brand):'Generic'); return resRow(f.name,f.brand,tag+' · '+r0(f.kcal)+' kcal /100g','search',i); }).join('');
+          shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Real label matches from the food database — tap the exact product:</div>'+rows+
+            (aiOk?'<button type="button" class="sh-btn ghost" data-act="ai-use-estimate" style="margin-top:12px;">None of these — use Nova’s estimate ('+r0(ai.kcal)+' kcal)</button>':'')+
+            '<button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Edit description</button>';
+        } else if(aiOk){
+          showPortion(aiToFood(ai), ai.grams||100);
+        } else {
+          shBody.innerHTML='<div class="sh-msg">'+esc((ai&&ai.message)||'Couldn’t find or estimate that — try Search or a barcode.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>';
+        }
+      }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
     function compressImage(file, cb){
@@ -437,6 +455,7 @@
       else if(act==='sheet-close'){ closeSheet(); }
       else if(act==='tab'){ setTab(el.getAttribute('data-tab')); }
       else if(act==='ai-go'){ aiGo(); }
+      else if(act==='ai-use-estimate'){ if(window._aiEstimate) showPortion(aiToFood(window._aiEstimate), window._aiEstimate.grams||100); }
       else if(act==='photo-pick'){ photoPick(); }
       else if(act==='search-go'){ searchGo(); }
       else if(act==='bc-go'){ bcGo(); }
