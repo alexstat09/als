@@ -86,13 +86,16 @@ function usdaRow(food) {
     p: usdaNutr(food, ['203', '1003']), c: usdaNutr(food, ['205', '1005']), f: usdaNutr(food, ['204', '1004']),
     fiber: usdaNutr(food, ['291', '1079']), sugar: usdaNutr(food, ['269', '2000']),
     sodium: Math.round(usdaNutr(food, ['307', '1093'])), satfat: usdaNutr(food, ['606', '1258']),
-    barcode: clip(food.gtinUpc, 20), source: 'usda'
+    barcode: clip(food.gtinUpc, 20), source: 'usda', dataType: food.dataType || '', generic: true
   };
 }
+// Only the GENERIC whole/prepared-food datasets (raw/cooked staples) — NOT
+// Branded; OFF already covers packaged products, and branded clutter is exactly
+// what we want to push down.
 async function usdaSearch(q, key) {
   var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + encodeURIComponent(key) +
     '&query=' + encodeURIComponent(q) + '&pageSize=25' +
-    '&dataType=' + encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS),Branded');
+    '&dataType=' + encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)');
   var r = await fetch(url);
   if (!r.ok) return [];
   var j = await r.json();
@@ -101,6 +104,12 @@ async function usdaSearch(q, key) {
 
 // ── ranking ──────────────────────────────────────────────────────
 function toks(s) { return String(s || '').toLowerCase().split(/[^a-z0-9À-ɏͰ-Ͽἀ-῿]+/).filter(Boolean); }
+// coarse tier so generic whole foods always sit above branded clutter:
+//   0 = USDA generic (raw/cooked staples)  1 = un-branded OFF  2 = branded
+function tier(row) {
+  if (row.generic) return 0;
+  return row.brand ? 2 : 1;
+}
 function score(row, qToks, qPhrase) {
   var hay = (row.name + ' ' + (row.brand || '')).toLowerCase();
   var nTok = toks(row.name);
@@ -153,7 +162,11 @@ module.exports = async function (req, res) {
     var dedup = Object.keys(byKey).map(function (k) { return byKey[k]; });
 
     var qToks = toks(q), qPhrase = q.toLowerCase();
-    dedup.sort(function (a, b) { return score(b, qToks, qPhrase) - score(a, qToks, qPhrase); });
+    dedup.sort(function (a, b) {
+      var ta = tier(a), tb = tier(b);
+      if (ta !== tb) return ta - tb;                       // generics before branded
+      return score(b, qToks, qPhrase) - score(a, qToks, qPhrase);
+    });
 
     res.status(200).json({ results: dedup.slice(0, 40), sources: key ? ['off', 'usda'] : ['off'] });
   } catch (e) {
