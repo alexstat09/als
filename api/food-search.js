@@ -117,15 +117,29 @@ function tier(row) {
 }
 // processed/composite prefixes that should never beat the plain staple
 var STOP_PREFIX = { snacks: 1, lunchmeat: 1, candies: 1, babyfood: 1, beverages: 1, restaurant: 1, sauce: 1, soup: 1 };
+// processing words — present anywhere, lightly demote so plain raw/cooked cuts win
+var PROCESSED = { breaded: 1, tenders: 1, nuggets: 1, roll: 1, deli: 1, canned: 1, paste: 1, powder: 1, dehydrated: 1, dried: 1, fried: 1, flavored: 1, mix: 1, smoked: 1, cured: 1 };
+// query tokens appear as a contiguous run in the name tokens (punctuation-tolerant)
+function tokenPhrase(nTok, qToks) {
+  if (qToks.length < 2) return false;
+  for (var i = 0; i + qToks.length <= nTok.length; i++) {
+    var ok = true;
+    for (var j = 0; j < qToks.length; j++) { if (nTok[i + j] !== qToks[j]) { ok = false; break; } }
+    if (ok) return true;
+  }
+  return false;
+}
 function score(row, qToks, qPhrase) {
   var hay = (row.name + ' ' + (row.brand || '')).toLowerCase();
   var nTok = toks(row.name);
-  var s = 0, hit = 0;
+  var s = 0, hit = 0, proc = 0;
   qToks.forEach(function (t) { if (hay.indexOf(t) !== -1) { s += 10; hit++; } });
   if (hit === qToks.length) s += 12;                       // all query words present
-  if (hay.indexOf(qPhrase) !== -1) s += 16;                // exact phrase
+  if (hay.indexOf(qPhrase) !== -1 || tokenPhrase(nTok, qToks)) s += 16; // phrase (punctuation-tolerant)
   if (nTok[0] && qToks.indexOf(nTok[0]) !== -1) s += 30;   // name STARTS with the food → pure staple
   if (nTok[0] && STOP_PREFIX[nTok[0]]) s -= 25;            // "Snacks,"/"Lunchmeat," → demote
+  nTok.forEach(function (t) { if (PROCESSED[t]) proc++; });
+  s -= Math.min(14, proc * 6);                             // plain cuts beat processed forms
   s += ((row.kcal > 0) + (row.p > 0) + (row.c > 0) + (row.f > 0)) * 3; // data completeness
   if (row.source === 'usda' && !row.brand) s += 4;         // clean generic whole foods
   s -= Math.min(6, Math.floor(hay.length / 22));           // prefer concise names over noise
