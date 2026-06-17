@@ -336,8 +336,8 @@
       fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
         .then(function(r){return r.json();}).then(function(j){
           if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Web search couldn’t find it — try a barcode, or the estimate.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; return; }
-          if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t find that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
-          showPortion(aiToFood(j), j.grams||100);
+          if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t confirm that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
+          var wf=aiToFood(j); wf.webSource=j.source||''; showPortion(wf, j.grams||100);
         }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Search timed out — try again, or scan the barcode.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
@@ -399,6 +399,7 @@
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
         ((food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust grams below to refine</div>':'')+
         ((food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'')+
+        (food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'')+
         '<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>'+
         (food.servingG?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 serving ≈ '+r0(food.servingG)+'g — <a href="javascript:void(0)" data-act="pp-serv" style="color:rgb(var(--nu))">use serving</a></div>':'')+
         '<div class="pp-preview" id="ppPrev"></div>'+
