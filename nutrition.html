@@ -291,7 +291,7 @@
     function resRow(name,brand,sub,kind,i){ return '<div class="res" data-act="pick" data-kind="'+kind+'" data-i="'+i+'"><div class="res-main"><div class="res-name">'+esc(name)+(brand?' <span style="opacity:.5">'+esc(brand)+'</span>':'')+'</div><div class="res-sub">'+esc(sub)+'</div></div></div>'; }
 
     function renderTab(){
-      if(curTab==='describe') shBody.innerHTML='<textarea class="sh-in" id="aiText" placeholder="What did you eat?  e.g. chicken gyros pita with tzatziki, or 2 eggs and toast"></textarea><div class="sh-hint">Nova estimates the macros from your description — fastest way to log anything, even Greek food not in any database.</div><button type="button" class="sh-btn" data-act="ai-go">Estimate with Nova</button>';
+      if(curTab==='describe') shBody.innerHTML='<textarea class="sh-in" id="aiText" placeholder="What did you eat?  e.g. chicken gyros pita with tzatziki, or 2 eggs and toast"></textarea><div class="sh-hint">Nova estimates the macros from your description — fastest way to log anything, even Greek food not in any database.</div><button type="button" class="sh-btn" data-act="ai-go">Estimate with Nova</button><button type="button" class="sh-btn ghost" data-act="web-go" style="margin-top:8px;">🔍 Find the exact product online</button><div class="sh-hint">Web search reads the real product label — slower (a few seconds), best for a specific branded item like a protein or bar.</div>';
       else if(curTab==='photo') shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Snap or pick a photo of your plate — Nova identifies the food and estimates the macros. Best for restaurant/homemade meals with no barcode.</div><button type="button" class="sh-btn" data-act="photo-pick">📷 Take / choose a photo</button><input type="file" accept="image/*" capture="environment" id="mealPhoto" style="display:none"><div class="sh-hint">A photo estimate is a ballpark — portion size is guessed from the image, so adjust the grams after.</div>';
       else if(curTab==='search') shBody.innerHTML='<input class="sh-in" id="qIn" placeholder="Search foods…" autocomplete="off"><button type="button" class="sh-btn ghost" data-act="search-go" style="margin-top:10px;">Search</button><div id="searchRes"></div>';
       else if(curTab==='recent'){ var rf=recentFoods(); window._rf=rf; shBody.innerHTML=rf.length?rf.map(function(f,i){return resRow(f.name,'',r0(f.per100.kcal)+' kcal /100g · '+(f.source||'').toUpperCase(),'recent',i);}).join(''):'<div class="sh-msg">Your recent foods will show here once you log a few.</div>'; }
@@ -302,6 +302,7 @@
 
     function aiGo(){
       var t=((document.getElementById('aiText')||{}).value||'').trim(); if(!t) return;
+      window._lastDescribe=t;
       shBody.innerHTML='<div class="sh-spin">Nova is checking the database &amp; estimating…</div>';
       var qToks=nfToks(t);
       // Run BOTH: the real food database (OFF/USDA — exact label data) AND the AI
@@ -319,6 +320,7 @@
           var rows=hits.map(function(f,i){ var tag=f.source==='core'?'✓ Verified':(f.brand?esc(f.brand):'Generic'); return resRow(f.name,f.brand,tag+' · '+r0(f.kcal)+' kcal /100g','search',i); }).join('');
           shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Real label matches from the food database — tap the exact product:</div>'+rows+
             (aiOk?'<button type="button" class="sh-btn ghost" data-act="ai-use-estimate" style="margin-top:12px;">None of these — use Nova’s estimate ('+r0(ai.kcal)+' kcal)</button>':'')+
+            '<button type="button" class="sh-btn ghost" data-act="web-go" style="margin-top:8px;">🔍 Search the web for the exact macros</button>'+
             '<button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Edit description</button>';
         } else if(aiOk){
           showPortion(aiToFood(ai), ai.grams||100);
@@ -326,6 +328,17 @@
           shBody.innerHTML='<div class="sh-msg">'+esc((ai&&ai.message)||'Couldn’t find or estimate that — try Search or a barcode.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>';
         }
       }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; });
+    }
+    function webGo(){
+      var t=((document.getElementById('aiText')||{}).value||'').trim() || window._lastDescribe || ''; if(!t) return;
+      window._lastDescribe=t;
+      shBody.innerHTML='<div class="sh-spin">Searching the web for the exact product…</div>';
+      fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
+        .then(function(r){return r.json();}).then(function(j){
+          if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Web search couldn’t find it — try a barcode, or the estimate.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; return; }
+          if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t find that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
+          showPortion(aiToFood(j), j.grams||100);
+        }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Search timed out — try again, or scan the barcode.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
     function compressImage(file, cb){
@@ -456,6 +469,8 @@
       else if(act==='tab'){ setTab(el.getAttribute('data-tab')); }
       else if(act==='ai-go'){ aiGo(); }
       else if(act==='ai-use-estimate'){ if(window._aiEstimate) showPortion(aiToFood(window._aiEstimate), window._aiEstimate.grams||100); }
+      else if(act==='web-go'){ webGo(); }
+      else if(act==='web-use-estimate'){ if(window._webEstimate) showPortion(aiToFood(window._webEstimate), window._webEstimate.grams||100); }
       else if(act==='photo-pick'){ photoPick(); }
       else if(act==='search-go'){ searchGo(); }
       else if(act==='bc-go'){ bcGo(); }
