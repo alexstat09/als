@@ -52,7 +52,24 @@ var BENCH = [
   'ground beef','κιμας','flank steak','συκωτι','veal liver','turkey bacon','egg yolk',
   'kiwi','pineapple','μανταρινι','garlic','σκορδο','tomato paste','πελτες','brazil nuts',
   'zero ketchup','sweet chilli','pizza','burrito','kfc','cheeseburger','monster energy',
-  'banana','blueberries','honey','olive oil','avocado','sweet potato','whey','tuna'
+  'banana','blueberries','honey','olive oil','avocado','sweet potato','whey','tuna',
+  // session-3 expansion probes (English + unaccented Greek)
+  'nutella','μερεντα','mars','snickers','kitkat','twix','milka','toblerone','m&ms',
+  'croissant','κρουασαν','donut','brownie','cheesecake','tiramisu','μπακλαβας','baklava',
+  'γαλακτομπουρεκο','λουκουμαδες','ρυζογαλο','χαλβας','παστελι','μελομακαρονα','popcorn',
+  'πατατακια','potato chips','doritos','pretzels','γαριδακια','mayonnaise','μαγιονεζα',
+  'mustard','μουσταρδα','pesto','soy sauce','μαρμελαδα','ταραμοσαλατα','μελιτζανοσαλατα',
+  'τυροκαφτερη','μουσακας','moussaka','παστιτσιο','γεμιστα','ντολμαδες','φασολαδα','briam',
+  'χορτα','σαγανακι','falafel','φαλαφελ','σουτζουκακια','κεφτεδες','μπιφτεκι','λουκανικο',
+  'σαλαμι','ζαμπον','προσουτο','μορταδελα','hot dog','nuggets','σνιτσελ','μυδια','γαυρος',
+  'σκουμπρι','smoked salmon','cashews','πιστακια','φουντουκια','ηλιοσποροι','chia','λιναροσπορος',
+  'gouda','γραβιερα','κασερι','ανθοτυρο','ρικοτα','cream cheese','σοκολατουχο γαλα','γαλα αμυγδαλου',
+  'oat milk','pear','αχλαδι','peach','ροδακινο','βερικοκο','κερασια','συκο',
+  'μανγκο','σταφιδες','σμεουρα','πεπονι','κουνουπιδι','λαχανο','σπαραγγια','πρασο','παντζαρι','μπαμιες',
+  'αγκιναρα','ροκα','κολοκυθα','αρακας','γιγαντες','φαβα','μαυρα φασολια','πλιγουρι','κριθαρι','ροδι',
+  'μπαγκετα','wrap','κρακερ','κριτσινια','παξιμαδι','σιμιγδαλι','cornflakes','muesli','rice cakes',
+  'cola','κοκα κολα','χυμος πορτοκαλι','orange juice','sprite','fanta','φραπε','καφες','cappuccino',
+  'ζεστη σοκολατα','milkshake','gatorade','sugar','ζαχαρη','maple syrup'
 ];
 function coverage(){ var m=[]; BENCH.forEach(function(q){ if (!coreHit(q)) m.push('  MISS: "'+q+'"'); }); return m; }
 

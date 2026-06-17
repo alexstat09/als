@@ -237,5 +237,188 @@ module.exports = [
 
   // ── Drinks ──────────────────────────────────────────────────────
   { name: 'Energy drink, zero', alias: 'monster energy ultra zero ενεργειακό ποτό', kcal: 3, p: 0, c: 0.5, f: 0, sodium: 80, s: 500 },
-  { name: 'Energy drink', alias: 'energy drink red bull ενεργειακό ποτό', kcal: 45, p: 0, c: 11, f: 0, sugar: 11, sodium: 40, s: 250 }
+  { name: 'Energy drink', alias: 'energy drink red bull ενεργειακό ποτό', kcal: 45, p: 0, c: 11, f: 0, sugar: 11, sodium: 40, s: 250 },
+
+  // ════════════════════════════════════════════════════════════════
+  // Expansion 2026-06-17 (session 3) — proactive supermarket + Greek-
+  // cuisine sweep: the foods Alex is LIKELY to eat next based on his
+  // profile (Greek teen, recomp, big sweet tooth, shops Lidl/Sklavenitis
+  // /Carrefour/AB). Generic catch-alls per category. All kcal reconciled.
+  // ════════════════════════════════════════════════════════════════
+
+  // ── Cereal / breakfast ──────────────────────────────────────────
+  { name: 'Corn flakes', alias: 'κορν φλέικς cornflakes δημητριακά kellogg', kcal: 357, p: 7.5, c: 84, f: 0.9, fiber: 3, sugar: 8, sodium: 660, s: 30 },
+  { name: 'Muesli', alias: 'μούσλι muesli δημητριακά', kcal: 365, p: 10, c: 66, f: 6, fiber: 7, sugar: 16, sodium: 30, s: 45 },
+  { name: 'Frosted flakes', alias: 'frosties δημητριακά ζάχαρη', kcal: 375, p: 4.5, c: 91, f: 0.6, fiber: 2, sugar: 37, sodium: 480, s: 30 },
+  { name: 'Pancakes', alias: 'τηγανίτες pancakes', kcal: 227, p: 6, c: 28, f: 9, fiber: 1, sugar: 6, sodium: 380, satfat: 2, s: 80 },
+  { name: 'Waffle', alias: 'βάφλα waffle', kcal: 291, p: 7, c: 33, f: 14, sugar: 8, sodium: 420, satfat: 3, s: 75 },
+  { name: 'Croissant', alias: 'κρουασάν croissant', kcal: 406, p: 8, c: 46, f: 21, fiber: 2.6, sugar: 11, sodium: 470, satfat: 12, s: 60 },
+  { name: 'Rice cakes', alias: 'ρυζογκοφρέτες rice cakes', kcal: 387, p: 8, c: 82, f: 3, fiber: 4, sodium: 30, s: 9 },
+  { name: 'Semolina, dry', alias: 'σιμιγδάλι semolina', kcal: 360, p: 12, c: 73, f: 1, fiber: 3.9, sodium: 1, s: 40 },
+
+  // ── Cheese / dairy (additional) ─────────────────────────────────
+  { name: 'Anthotyro / myzithra', alias: 'ανθότυρο μυζήθρα anthotyro greek whey cheese', kcal: 130, p: 11, c: 4, f: 8, sodium: 90, satfat: 5, s: 50 },
+  { name: 'Graviera cheese', alias: 'γραβιέρα graviera τυρί', kcal: 405, p: 27, c: 1, f: 32, sodium: 700, satfat: 20, s: 30 },
+  { name: 'Kasseri cheese', alias: 'κασέρι kasseri τυρί', kcal: 375, p: 25, c: 1, f: 30, sodium: 800, satfat: 19, s: 30 },
+  { name: 'Gouda cheese', alias: 'γκούντα gouda edam τυρί', kcal: 356, p: 25, c: 2.2, f: 27, sodium: 819, satfat: 18, s: 30 },
+  { name: 'Cream cheese', alias: 'τυρί κρέμα cream cheese', kcal: 342, p: 6, c: 5, f: 34, sugar: 3, sodium: 320, satfat: 20, s: 30 },
+  { name: 'Ricotta cheese', alias: 'ρικότα ricotta', kcal: 174, p: 11, c: 3, f: 13, sugar: 0.3, sodium: 84, satfat: 8, s: 50 },
+  { name: 'Sour cream', alias: 'ξινή κρέμα sour cream', kcal: 198, p: 2.4, c: 4.6, f: 19, sugar: 3.5, sodium: 40, satfat: 11, s: 30 },
+  { name: 'Heavy cream', alias: 'κρέμα γάλακτος heavy whipping cream', kcal: 340, p: 2.1, c: 2.8, f: 36, sugar: 2.8, sodium: 27, satfat: 23, s: 30 },
+  { name: 'Chocolate milk', alias: 'σοκολατούχο γάλα chocolate milk', kcal: 83, p: 3.2, c: 10.3, f: 3, sugar: 9.5, sodium: 60, satfat: 1.8, s: 250 },
+  { name: 'Almond milk, unsweetened', alias: 'γάλα αμυγδάλου almond milk φυτικό', kcal: 15, p: 0.5, c: 0.3, f: 1.2, sodium: 60, s: 250 },
+  { name: 'Oat milk', alias: 'γάλα βρώμης oat milk φυτικό', kcal: 45, p: 1, c: 6.6, f: 1.5, sugar: 4, sodium: 60, s: 250 },
+  { name: 'Soy milk', alias: 'γάλα σόγιας soy milk φυτικό', kcal: 43, p: 3.3, c: 1.8, f: 1.8, sugar: 1, sodium: 50, s: 250 },
+
+  // ── Meat / deli (additional) ────────────────────────────────────
+  { name: 'Chicken wings, cooked', alias: 'φτερούγες κοτόπουλο chicken wings buffalo', kcal: 290, p: 27, c: 0, f: 20, sodium: 90, satfat: 5.5, s: 100 },
+  { name: 'Chicken drumstick, cooked', alias: 'μπουτάκι κοτόπουλο drumstick', kcal: 172, p: 28, c: 0, f: 6, sodium: 90, satfat: 1.6, s: 100 },
+  { name: 'Pork sausage, cooked', alias: 'λουκάνικο sausage χωριάτικο', kcal: 300, p: 18, c: 2, f: 25, sodium: 800, satfat: 9, s: 80 },
+  { name: 'Salami', alias: 'σαλάμι salami αλλαντικά', kcal: 336, p: 22, c: 1, f: 27, sodium: 1700, satfat: 10, s: 30 },
+  { name: 'Ham, sliced', alias: 'ζαμπόν ham γαλοπούλα χοιρινό αλλαντικά', kcal: 145, p: 18, c: 1.5, f: 7, sodium: 1100, satfat: 2.5, s: 30 },
+  { name: 'Prosciutto / cured ham', alias: 'προσούτο prosciutto παρμα', kcal: 195, p: 27, c: 0.4, f: 9, sodium: 2300, satfat: 3.2, s: 30 },
+  { name: 'Mortadella', alias: 'μορταδέλα mortadella αλλαντικά', kcal: 311, p: 16, c: 3, f: 25, sodium: 1200, satfat: 9, s: 30 },
+  { name: 'Hot dog / frankfurter', alias: 'λουκάνικο φρανκφούρτης hot dog', kcal: 290, p: 10, c: 4, f: 26, sodium: 900, satfat: 9, s: 50 },
+  { name: 'Meatballs (keftedes)', alias: 'κεφτέδες keftedes meatballs', kcal: 230, p: 18, c: 8, f: 14, sodium: 400, satfat: 5, s: 120 },
+  { name: 'Burger patty (bifteki), cooked', alias: 'μπιφτέκι burger patty κεφτές', kcal: 250, p: 26, c: 0, f: 16, sodium: 300, satfat: 6, s: 120 },
+  { name: 'Soutzoukakia', alias: 'σουτζουκάκια smyrna meatballs', kcal: 220, p: 14, c: 8, f: 15, sodium: 450, satfat: 5, s: 120 },
+  { name: 'Chicken nuggets', alias: 'κοτομπουκιές nuggets κοτόπουλο', kcal: 290, p: 15, c: 16, f: 18, fiber: 1, sodium: 500, satfat: 3.5, s: 100 },
+  { name: 'Schnitzel (breaded)', alias: 'σνίτσελ schnitzel πανέ κοτόπουλο', kcal: 270, p: 18, c: 15, f: 15, fiber: 1, sodium: 450, satfat: 3.5, s: 150 },
+
+  // ── Fish / seafood (additional) ─────────────────────────────────
+  { name: 'Mussels, cooked', alias: 'μύδια mussels', kcal: 172, p: 24, c: 7, f: 4.6, sodium: 369, satfat: 0.9, s: 100 },
+  { name: 'Anchovies / gavros', alias: 'γαύρος αντζούγιες anchovies', kcal: 131, p: 20, c: 0, f: 5, sodium: 104, satfat: 1.3, s: 80 },
+  { name: 'Smoked salmon', alias: 'καπνιστός σολομός smoked salmon', kcal: 117, p: 18, c: 0, f: 4.3, sodium: 1700, satfat: 0.9, s: 50 },
+  { name: 'Mackerel, cooked', alias: 'σκουμπρί mackerel', kcal: 262, p: 24, c: 0, f: 18, sodium: 83, satfat: 4.2, s: 120 },
+  { name: 'Fish fingers', alias: 'ψαροκροκέτες fish fingers sticks', kcal: 220, p: 12, c: 19, f: 11, fiber: 1, sodium: 400, satfat: 2, s: 90 },
+
+  // ── Legumes / grains (additional) ───────────────────────────────
+  { name: 'Gigantes / butter beans, cooked', alias: 'γίγαντες ελέφαντες butter beans', kcal: 115, p: 7, c: 20, f: 0.5, fiber: 7, sodium: 4, s: 200 },
+  { name: 'Fava / split peas, cooked', alias: 'φάβα split peas yellow', kcal: 116, p: 8, c: 21, f: 0.4, fiber: 8, sodium: 5, s: 150 },
+  { name: 'Peas, cooked', alias: 'αρακάς πιζέλια peas', kcal: 84, p: 5.4, c: 14, f: 0.4, fiber: 5, sugar: 5, sodium: 3, s: 150 },
+  { name: 'Sweetcorn', alias: 'καλαμπόκι corn sweetcorn', kcal: 96, p: 3.4, c: 21, f: 1.5, fiber: 2.4, sugar: 4.5, sodium: 15, s: 150 },
+  { name: 'Black beans, cooked', alias: 'μαύρα φασόλια black beans', kcal: 132, p: 8.9, c: 24, f: 0.5, fiber: 8.7, sodium: 2, s: 200 },
+  { name: 'Kidney beans, cooked', alias: 'κόκκινα φασόλια kidney beans', kcal: 127, p: 8.7, c: 23, f: 0.5, fiber: 6.4, sodium: 2, s: 200 },
+  { name: 'Bulgur, cooked', alias: 'πλιγούρι bulgur', kcal: 83, p: 3, c: 19, f: 0.2, fiber: 4.5, sodium: 5, s: 150 },
+  { name: 'Barley, cooked', alias: 'κριθάρι barley', kcal: 123, p: 2.3, c: 28, f: 0.4, fiber: 3.8, sodium: 3, s: 150 },
+  { name: 'Baguette / French bread', alias: 'μπαγκέτα baguette french bread', kcal: 270, p: 9, c: 52, f: 2.5, fiber: 2.5, sodium: 580, s: 50 },
+  { name: 'Tortilla wrap', alias: 'τορτίγια wrap tortilla', kcal: 310, p: 8, c: 50, f: 8, fiber: 3, sodium: 600, satfat: 3, s: 60 },
+  { name: 'Crackers', alias: 'κράκερ crackers cream', kcal: 430, p: 9, c: 70, f: 12, fiber: 3, sodium: 700, satfat: 3, s: 25 },
+  { name: 'Breadsticks (kritsinia)', alias: 'κριτσίνια breadsticks grissini', kcal: 410, p: 12, c: 72, f: 8, fiber: 4, sodium: 700, satfat: 1.5, s: 30 },
+  { name: 'Rusks / paximadi', alias: 'παξιμάδι ντάκος rusks κρητικό', kcal: 350, p: 11, c: 66, f: 5, fiber: 6, sodium: 500, s: 40 },
+
+  // ── Fruit (additional) ──────────────────────────────────────────
+  { name: 'Pear', alias: 'αχλάδι pear', kcal: 57, p: 0.4, c: 15, f: 0.1, fiber: 3.1, sugar: 10, sodium: 1, s: 170 },
+  { name: 'Peach', alias: 'ροδάκινο peach nectarine νεκταρίνι', kcal: 39, p: 0.9, c: 10, f: 0.3, fiber: 1.5, sugar: 8, sodium: 0, s: 150 },
+  { name: 'Apricot', alias: 'βερίκοκο apricot', kcal: 48, p: 1.4, c: 11, f: 0.4, fiber: 2, sugar: 9, sodium: 1, s: 35 },
+  { name: 'Cherries', alias: 'κεράσια cherries', kcal: 63, p: 1.1, c: 16, f: 0.2, fiber: 2.1, sugar: 13, sodium: 0, s: 100 },
+  { name: 'Plum', alias: 'δαμάσκηνο plum', kcal: 46, p: 0.7, c: 11, f: 0.3, fiber: 1.4, sugar: 10, sodium: 0, s: 65 },
+  { name: 'Fig', alias: 'σύκο fig', kcal: 74, p: 0.8, c: 19, f: 0.3, fiber: 2.9, sugar: 16, sodium: 1, s: 50 },
+  { name: 'Melon', alias: 'πεπόνι melon cantaloupe', kcal: 34, p: 0.8, c: 8, f: 0.2, fiber: 0.9, sugar: 8, sodium: 16, s: 150 },
+  { name: 'Pomegranate', alias: 'ρόδι pomegranate', kcal: 83, p: 1.7, c: 19, f: 1.2, fiber: 4, sugar: 14, sodium: 3, s: 100 },
+  { name: 'Mango', alias: 'μάνγκο mango', kcal: 60, p: 0.8, c: 15, f: 0.4, fiber: 1.6, sugar: 14, sodium: 1, s: 150 },
+  { name: 'Raspberries', alias: 'σμέουρα raspberries βατόμουρα', kcal: 52, p: 1.2, c: 12, f: 0.7, fiber: 6.5, sugar: 4.4, sodium: 1, s: 100 },
+  { name: 'Raisins', alias: 'σταφίδες raisins', kcal: 299, p: 3.1, c: 79, f: 0.5, fiber: 3.7, sugar: 59, sodium: 11, s: 30 },
+
+  // ── Vegetables (additional) ─────────────────────────────────────
+  { name: 'Cauliflower', alias: 'κουνουπίδι cauliflower', kcal: 25, p: 1.9, c: 5, f: 0.3, fiber: 2, sugar: 1.9, sodium: 30, s: 100 },
+  { name: 'Cabbage', alias: 'λάχανο cabbage', kcal: 25, p: 1.3, c: 6, f: 0.1, fiber: 2.5, sugar: 3.2, sodium: 18, s: 100 },
+  { name: 'Asparagus', alias: 'σπαράγγια asparagus', kcal: 20, p: 2.2, c: 3.9, f: 0.1, fiber: 2.1, sugar: 1.9, sodium: 2, s: 100 },
+  { name: 'Leek', alias: 'πράσο leek', kcal: 61, p: 1.5, c: 14, f: 0.3, fiber: 1.8, sugar: 3.9, sodium: 20, s: 80 },
+  { name: 'Beetroot', alias: 'παντζάρι beetroot beets', kcal: 43, p: 1.6, c: 10, f: 0.2, fiber: 2.8, sugar: 7, sodium: 78, s: 100 },
+  { name: 'Okra', alias: 'μπάμιες okra', kcal: 33, p: 1.9, c: 7, f: 0.2, fiber: 3.2, sugar: 1.5, sodium: 7, s: 100 },
+  { name: 'Artichoke', alias: 'αγκινάρα artichoke', kcal: 47, p: 3.3, c: 11, f: 0.2, fiber: 5.4, sugar: 1, sodium: 94, s: 120 },
+  { name: 'Arugula / rocket', alias: 'ρόκα arugula rocket', kcal: 25, p: 2.6, c: 3.7, f: 0.7, fiber: 1.6, sugar: 2, sodium: 27, s: 30 },
+  { name: 'Pumpkin / squash', alias: 'κολοκύθα pumpkin squash', kcal: 26, p: 1, c: 6.5, f: 0.1, fiber: 0.5, sugar: 2.8, sodium: 1, s: 100 },
+  { name: 'Sweetcorn, canned', alias: 'καλαμπόκι κονσέρβα canned corn', kcal: 81, p: 2.5, c: 18, f: 0.8, fiber: 2, sugar: 5, sodium: 220, s: 150 },
+  { name: 'Pickles', alias: 'πίκλες τουρσί pickles gherkins', kcal: 11, p: 0.3, c: 2.3, f: 0.2, fiber: 1, sodium: 800, s: 30 },
+  { name: 'Sun-dried tomatoes', alias: 'λιαστές ντομάτες sun dried tomatoes', kcal: 258, p: 14, c: 55, f: 3, fiber: 12, sugar: 38, sodium: 270, s: 30 },
+
+  // ── Nuts / seeds (additional) ───────────────────────────────────
+  { name: 'Cashews', alias: 'κάσιους cashews', kcal: 553, p: 18, c: 30, f: 44, fiber: 3.3, sugar: 6, sodium: 12, satfat: 8, s: 28 },
+  { name: 'Pistachios', alias: 'φιστίκια αιγίνης πιστάκια pistachios', kcal: 560, p: 20, c: 28, f: 45, fiber: 10, sugar: 8, sodium: 1, satfat: 5.5, s: 28 },
+  { name: 'Hazelnuts', alias: 'φουντούκια hazelnuts', kcal: 628, p: 15, c: 17, f: 61, fiber: 10, sugar: 4, sodium: 0, satfat: 4.5, s: 28 },
+  { name: 'Sunflower seeds', alias: 'ηλιόσποροι sunflower seeds', kcal: 584, p: 21, c: 20, f: 51, fiber: 9, sugar: 2.6, sodium: 9, satfat: 4.5, s: 28 },
+  { name: 'Pumpkin seeds', alias: 'πασατέμπο κολοκυθόσποροι pumpkin seeds', kcal: 559, p: 30, c: 11, f: 49, fiber: 6, sodium: 7, satfat: 8.7, s: 28 },
+  { name: 'Chia seeds', alias: 'σπόροι chia seeds τσία', kcal: 486, p: 17, c: 42, f: 31, fiber: 34, sugar: 0, sodium: 16, satfat: 3.3, s: 15 },
+  { name: 'Flax seeds', alias: 'λιναρόσπορος flax seeds linseed', kcal: 534, p: 18, c: 29, f: 42, fiber: 27, sugar: 1.5, sodium: 30, satfat: 3.7, s: 15 },
+  { name: 'Mixed nuts', alias: 'ανάμεικτοι ξηροί καρποί mixed nuts', kcal: 607, p: 20, c: 21, f: 54, fiber: 7, sugar: 4, sodium: 5, satfat: 8, s: 30 },
+
+  // ── Sweets / desserts (his lane — expanded) ─────────────────────
+  { name: 'Hazelnut chocolate spread (Nutella)', alias: 'nutella μερέντα πραλίνα chocolate hazelnut spread', kcal: 539, p: 6, c: 57, f: 31, sugar: 57, sodium: 41, satfat: 11, s: 20 },
+  { name: 'Donut, glazed', alias: 'ντόνατ donut λουκουμάς γλασέ', kcal: 452, p: 4.9, c: 51, f: 25, sugar: 23, sodium: 370, satfat: 11, s: 60 },
+  { name: 'Brownie', alias: 'μπράουνι brownie', kcal: 466, p: 6, c: 64, f: 21, sugar: 44, sodium: 280, satfat: 6, s: 60 },
+  { name: 'Chocolate cake', alias: 'σοκολατένιο κέικ chocolate cake τούρτα', kcal: 371, p: 5, c: 50, f: 17, sugar: 35, sodium: 300, satfat: 5, s: 90 },
+  { name: 'Cheesecake', alias: 'τσιζκέικ cheesecake', kcal: 321, p: 5.5, c: 26, f: 22, sugar: 22, sodium: 320, satfat: 12, s: 100 },
+  { name: 'Tiramisu', alias: 'τιραμισού tiramisu', kcal: 283, p: 4.5, c: 30, f: 16, sugar: 22, sodium: 90, satfat: 9, s: 100 },
+  { name: 'Baklava', alias: 'μπακλαβάς baklava', kcal: 430, p: 6, c: 45, f: 26, fiber: 2, sugar: 30, sodium: 200, satfat: 8, s: 80 },
+  { name: 'Galaktoboureko', alias: 'γαλακτομπούρεκο custard pie', kcal: 230, p: 4, c: 33, f: 9, sugar: 22, sodium: 120, satfat: 4, s: 120 },
+  { name: 'Loukoumades', alias: 'λουκουμάδες honey puffs', kcal: 350, p: 4, c: 52, f: 14, sugar: 25, sodium: 200, satfat: 3, s: 100 },
+  { name: 'Rice pudding (rizogalo)', alias: 'ρυζόγαλο rice pudding', kcal: 130, p: 3.5, c: 22, f: 3, sugar: 14, sodium: 50, satfat: 1.8, s: 150 },
+  { name: 'Halva', alias: 'χαλβάς halva ταχινιού', kcal: 469, p: 12, c: 54, f: 22, fiber: 4, sugar: 42, sodium: 195, satfat: 4, s: 40 },
+  { name: 'Pasteli (sesame bar)', alias: 'παστέλι sesame honey bar', kcal: 470, p: 11, c: 52, f: 24, fiber: 5, sugar: 42, sodium: 10, satfat: 3.5, s: 30 },
+  { name: 'Bougatsa', alias: 'μπουγάτσα cream pie', kcal: 270, p: 5, c: 28, f: 15, sugar: 10, sodium: 250, satfat: 7, s: 120 },
+  { name: 'Tsoureki', alias: 'τσουρέκι sweet brioche bread', kcal: 330, p: 9, c: 54, f: 9, sugar: 18, sodium: 200, satfat: 4, s: 60 },
+  { name: 'Melomakarona', alias: 'μελομακάρονα honey cookies', kcal: 420, p: 4, c: 55, f: 21, sugar: 30, sodium: 150, satfat: 3, s: 40 },
+  { name: 'Popcorn', alias: 'ποπκόρν popcorn', kcal: 387, p: 13, c: 78, f: 4, fiber: 15, sodium: 8, s: 30 },
+  { name: 'Marshmallow', alias: 'ζαχαρωτά marshmallow', kcal: 318, p: 1.8, c: 81, f: 0.2, sugar: 58, sodium: 80, s: 30 },
+  { name: 'Petit beurre biscuits', alias: 'πτι μπερ μπισκότα petit beurre biscuits παπαδοπούλου', kcal: 460, p: 7, c: 72, f: 15, sugar: 24, sodium: 350, satfat: 7, s: 25 },
+  { name: 'Digestive biscuits', alias: 'ντάιτζεστιβ digestive biscuits μπισκότα', kcal: 471, p: 7, c: 63, f: 21, fiber: 3, sugar: 17, sodium: 600, satfat: 9, s: 30 },
+  { name: 'Cereal / energy bar', alias: 'μπάρα δημητριακών cereal energy bar', kcal: 380, p: 6, c: 65, f: 10, fiber: 5, sugar: 25, sodium: 150, satfat: 4, s: 35 },
+
+  // ── Candy bars / branded chocolate ──────────────────────────────
+  { name: 'Mars bar', alias: 'mars bar σοκολάτα', kcal: 449, p: 3.8, c: 70, f: 17, sugar: 60, sodium: 150, satfat: 8, s: 51 },
+  { name: 'Snickers', alias: 'snickers σοκολάτα', kcal: 488, p: 9, c: 57, f: 24, sugar: 50, sodium: 230, satfat: 9, s: 50 },
+  { name: 'Twix', alias: 'twix σοκολάτα', kcal: 495, p: 4.7, c: 64, f: 24, sugar: 49, sodium: 210, satfat: 14, s: 50 },
+  { name: 'Bounty', alias: 'bounty καρύδα σοκολάτα', kcal: 477, p: 4, c: 58, f: 26, sugar: 47, sodium: 130, satfat: 19, s: 57 },
+  { name: 'KitKat', alias: 'kitkat γκοφρέτα σοκολάτα', kcal: 518, p: 6.5, c: 61, f: 27, sugar: 49, sodium: 70, satfat: 16, s: 41 },
+  { name: 'Milka chocolate', alias: 'milka σοκολάτα γάλακτος', kcal: 530, p: 6.6, c: 58, f: 30, sugar: 57, sodium: 110, satfat: 18, s: 25 },
+  { name: 'M&Ms', alias: 'm&ms σοκολατάκια smarties', kcal: 492, p: 4.6, c: 71, f: 21, sugar: 65, sodium: 70, satfat: 13, s: 45 },
+  { name: 'Toblerone', alias: 'toblerone σοκολάτα', kcal: 525, p: 5.6, c: 60, f: 29, sugar: 58, sodium: 80, satfat: 17, s: 35 },
+
+  // ── Savory snacks / chips ───────────────────────────────────────
+  { name: 'Potato chips', alias: 'πατατάκια chips crisps lays', kcal: 536, p: 7, c: 53, f: 35, fiber: 4, sodium: 525, satfat: 3.5, s: 30 },
+  { name: 'Tortilla chips / nachos', alias: 'νατσος doritos tortilla chips', kcal: 497, p: 7, c: 63, f: 24, fiber: 4, sodium: 400, satfat: 3, s: 30 },
+  { name: 'Pretzels', alias: 'πρέτζελ pretzels', kcal: 380, p: 10, c: 80, f: 3, fiber: 3, sodium: 1200, s: 30 },
+  { name: 'Cheese puffs', alias: 'γαριδάκια cheese puffs τσιπς', kcal: 540, p: 6, c: 50, f: 35, sodium: 800, satfat: 4, s: 25 },
+
+  // ── Condiments / sauces / dips (additional) ─────────────────────
+  { name: 'Mayonnaise', alias: 'μαγιονέζα mayonnaise', kcal: 680, p: 1, c: 1, f: 75, sodium: 600, satfat: 11, s: 15 },
+  { name: 'Mustard', alias: 'μουστάρδα mustard', kcal: 66, p: 4, c: 5, f: 3.3, fiber: 2, sodium: 1100, s: 10 },
+  { name: 'BBQ sauce', alias: 'σάλτσα bbq barbecue', kcal: 172, p: 1, c: 41, f: 0.6, sugar: 33, sodium: 800, s: 20 },
+  { name: 'Soy sauce', alias: 'σάλτσα σόγιας soy sauce', kcal: 53, p: 8, c: 5, f: 0.1, sodium: 5500, s: 15 },
+  { name: 'Pesto', alias: 'πέστο pesto', kcal: 430, p: 5, c: 6, f: 43, sodium: 800, satfat: 7, s: 20 },
+  { name: 'Salad dressing / vinaigrette', alias: 'σος σαλάτας dressing vinaigrette', kcal: 290, p: 0.5, c: 8, f: 29, sugar: 5, sodium: 600, satfat: 4, s: 20 },
+  { name: 'Jam / marmalade', alias: 'μαρμελάδα jam marmalade', kcal: 250, p: 0.4, c: 65, f: 0.1, sugar: 49, sodium: 30, s: 20 },
+  { name: 'Maple syrup', alias: 'σιρόπι σφενδάμου maple syrup', kcal: 260, p: 0, c: 67, f: 0.1, sugar: 60, sodium: 12, s: 20 },
+  { name: 'Sugar', alias: 'ζάχαρη sugar', kcal: 387, p: 0, c: 100, f: 0, sugar: 100, sodium: 0, s: 5 },
+  { name: 'Taramosalata', alias: 'ταραμοσαλάτα taramosalata fish roe dip', kcal: 480, p: 4, c: 8, f: 49, sodium: 700, satfat: 6, s: 50 },
+  { name: 'Melitzanosalata', alias: 'μελιτζανοσαλάτα eggplant dip', kcal: 230, p: 1.5, c: 8, f: 21, fiber: 3, sodium: 400, satfat: 3, s: 50 },
+  { name: 'Tirokafteri (spicy cheese dip)', alias: 'τυροκαφτερή ktipiti spicy feta dip', kcal: 270, p: 7, c: 5, f: 25, sodium: 700, satfat: 12, s: 50 },
+
+  // ── Greek cooked / prepared dishes (additional) ─────────────────
+  { name: 'Moussaka', alias: 'μουσακάς moussaka', kcal: 170, p: 8, c: 10, f: 11, fiber: 1.5, sodium: 380, satfat: 4.5, s: 250 },
+  { name: 'Pastitsio', alias: 'παστίτσιο pastitsio', kcal: 180, p: 9, c: 16, f: 9, fiber: 1.2, sodium: 380, satfat: 4, s: 250 },
+  { name: 'Gemista (stuffed vegetables)', alias: 'γεμιστά stuffed peppers tomatoes', kcal: 110, p: 2.5, c: 16, f: 4.5, fiber: 2.5, sodium: 300, satfat: 0.7, s: 200 },
+  { name: 'Dolmades (stuffed vine leaves)', alias: 'ντολμάδες dolmades sarma', kcal: 150, p: 2.5, c: 18, f: 8, fiber: 2.5, sodium: 500, satfat: 1.2, s: 100 },
+  { name: 'Fasolada (bean soup)', alias: 'φασολάδα bean soup', kcal: 90, p: 4.5, c: 14, f: 2.5, fiber: 4, sodium: 350, satfat: 0.4, s: 300 },
+  { name: 'Briam (roasted vegetables)', alias: 'μπριάμ briam roasted vegetables', kcal: 95, p: 1.8, c: 11, f: 5, fiber: 3, sodium: 250, satfat: 0.8, s: 200 },
+  { name: 'Horta (boiled greens)', alias: 'χόρτα βραστά boiled wild greens', kcal: 60, p: 3, c: 6, f: 3, fiber: 3, sodium: 80, satfat: 0.5, s: 200 },
+  { name: 'Saganaki (fried cheese)', alias: 'σαγανάκι fried cheese', kcal: 350, p: 20, c: 8, f: 27, sodium: 900, satfat: 14, s: 80 },
+  { name: 'Falafel', alias: 'φαλάφελ falafel', kcal: 333, p: 13, c: 32, f: 18, fiber: 5, sodium: 290, satfat: 2.4, s: 100 },
+
+  // ── Drinks (additional) ─────────────────────────────────────────
+  { name: 'Orange juice', alias: 'χυμός πορτοκάλι orange juice', kcal: 45, p: 0.7, c: 10.4, f: 0.2, sugar: 8.4, sodium: 1, s: 250 },
+  { name: 'Apple juice', alias: 'χυμός μήλο apple juice', kcal: 46, p: 0.1, c: 11, f: 0.1, sugar: 9.6, sodium: 4, s: 250 },
+  { name: 'Cola', alias: 'κόκα κόλα coca cola soft drink αναψυκτικό', kcal: 42, p: 0, c: 10.6, f: 0, sugar: 10.6, sodium: 4, s: 330 },
+  { name: 'Cola / soda, zero', alias: 'coke zero light diet αναψυκτικό χωρίς ζάχαρη', kcal: 1, p: 0, c: 0, f: 0, sodium: 10, s: 330 },
+  { name: 'Sprite / lemon-lime soda', alias: 'sprite seven up lemonade αναψυκτικό', kcal: 38, p: 0, c: 9.5, f: 0, sugar: 9.5, sodium: 10, s: 330 },
+  { name: 'Fanta / orange soda', alias: 'fanta πορτοκαλάδα orange soda', kcal: 45, p: 0, c: 11, f: 0, sugar: 11, sodium: 10, s: 330 },
+  { name: 'Iced tea', alias: 'παγωμένο τσάι ice tea', kcal: 30, p: 0, c: 7.5, f: 0, sugar: 7, sodium: 5, s: 330 },
+  { name: 'Frappe / iced coffee (w/ milk & sugar)', alias: 'φραπέ freddo iced coffee καφές', kcal: 45, p: 1, c: 8, f: 1, sugar: 7, sodium: 20, s: 300 },
+  { name: 'Cappuccino / latte', alias: 'καπουτσίνο latte coffee καφές', kcal: 55, p: 3, c: 6, f: 2, sugar: 5, sodium: 40, satfat: 1.2, s: 240 },
+  { name: 'Coffee, black', alias: 'καφές espresso filter black coffee', kcal: 2, p: 0.1, c: 0, f: 0, sodium: 5, s: 200 },
+  { name: 'Hot chocolate', alias: 'ζεστή σοκολάτα hot chocolate ρόφημα', kcal: 90, p: 3, c: 14, f: 2.5, sugar: 12, sodium: 90, satfat: 1.5, s: 250 },
+  { name: 'Milkshake', alias: 'μιλκσέικ milkshake', kcal: 112, p: 3.5, c: 18, f: 3, sugar: 16, sodium: 80, satfat: 1.9, s: 300 },
+  { name: 'Sports drink', alias: 'gatorade powerade sports drink ισοτονικό', kcal: 24, p: 0, c: 6, f: 0, sugar: 6, sodium: 45, s: 500 }
 ];
