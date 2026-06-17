@@ -20,11 +20,14 @@ function num(v, max) {
 }
 
 var SYS = [
-  'You are a precise nutrition estimator for a fitness app. You are shown a PHOTO of food the user is about to eat.',
-  'Identify the foods on the plate and estimate the TOTAL nutrition for the WHOLE portion visible (not per 100g). Judge portion size from the image using normal plate/utensil references.',
+  'You estimate the nutrition of food from a PHOTO for a fitness tracker.',
+  'Identifying the foods is usually easy. The HARD part is portion WEIGHT, and vision models like you SYSTEMATICALLY OVERESTIMATE grams — so be deliberately conservative and lean to the LOWER end of what looks plausible.',
+  'Method: list each distinct food; count the discrete pieces you can see; multiply by a realistic per-unit weight using these reference weights:',
+  '1 slice of bread/toast ~35g (a slice of sourdough ~45g); 1 egg ~50g; 1 medium banana ~120g; 1 apple ~180g; 1 cooked chicken breast ~150g; 1 cup cooked rice or pasta ~180g; 1 tbsp oil/butter ~14g; 1 tbsp nut butter ~16g; a small handful of nuts ~25g; 1 medium potato ~150g; a typical restaurant meat portion ~150-220g; 1 cup milk/yogurt ~245g.',
+  'Do NOT inflate. A normal home plate of a single food is usually 80-250g total, not more, unless the photo clearly shows an unusually large serving. Two slices of bread is ~80-90g, NOT 200g+.',
   'Return ONLY a single minified JSON object, no prose, with exactly these keys:',
-  '{"name": short label of the meal, "grams": total weight in g (integer), "kcal": calories, "p": protein g, "c": carbs g, "f": fat g, "fiber": g, "sugar": g, "sodium": mg, "satfat": g, "confidence": 0..1}',
-  'All numbers, no units in values. confidence reflects how sure you are given image clarity and portion ambiguity. If unsure, give your best single estimate (never refuse).'
+  '{"name": short meal label, "items":[{"name": food, "grams": int}], "grams": total g (the sum of items), "kcal": total calories, "p": protein g, "c": carbs g, "f": fat g, "fiber": g, "sugar": g, "sodium": mg, "satfat": g, "confidence": 0..1}',
+  'All numbers, no units in values. Set confidence HONESTLY to reflect portion uncertainty: for most photos it should be 0.3-0.6 because exact grams cannot be known from an image — only use above 0.7 when portions are genuinely clear. Never refuse; give your best conservative estimate.'
 ].join(' ');
 
 module.exports = async function (req, res) {
@@ -48,8 +51,8 @@ module.exports = async function (req, res) {
         { type: 'image_url', image_url: { url: image } }
       ] }
     ],
-    max_tokens: 400,
-    temperature: 0.3,
+    max_tokens: 500,
+    temperature: 0.2,
     response_format: { type: 'json_object' }
   };
 
@@ -76,9 +79,22 @@ module.exports = async function (req, res) {
   }
   if (!obj || typeof obj !== 'object') { res.status(200).json({ error: 'parse', message: 'Could not read the photo clearly — try AI Describe.' }); return; }
 
+  var items = [];
+  if (Array.isArray(obj.items)) {
+    obj.items.slice(0, 12).forEach(function (it) {
+      if (!it) return;
+      var nm = (it.name || '').toString().trim().slice(0, 48);
+      var g = Math.round(num(it.grams, 5000));
+      if (nm && g > 0) items.push({ name: nm, grams: g });
+    });
+  }
+  var itemsSum = items.reduce(function (s, x) { return s + x.grams; }, 0);
+  var totalG = itemsSum > 0 ? itemsSum : (Math.round(num(obj.grams, 5000)) || 100);
+
   res.status(200).json({
     name: (obj.name || 'Photo meal').toString().slice(0, 80),
-    grams: Math.max(1, Math.round(num(obj.grams, 5000)) || 100),
+    items: items,
+    grams: Math.max(1, totalG),
     kcal: Math.round(num(obj.kcal, 10000)),
     p: num(obj.p, 1000), c: num(obj.c, 2000), f: num(obj.f, 1000),
     fiber: num(obj.fiber, 500), sugar: num(obj.sugar, 1000),

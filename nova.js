@@ -155,6 +155,10 @@
 
   function mount(){
     if (!document.body || document.getElementById('novaFab')) return;
+    // If the page already shows its own Nova avatar (e.g. a header crystal),
+    // don't add the floating FAB too — that's the "double Nova". Tapping the
+    // page's avatar already opens the coach.
+    if (document.querySelector('#nova,[data-nova]')) return;
     document.body.appendChild(fab);
     document.body.appendChild(bubble);
     setMoodClass();

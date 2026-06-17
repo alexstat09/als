@@ -240,7 +240,7 @@
 
     function per100From(o){ return {kcal:o.kcal||0,p:o.p||0,c:o.c||0,f:o.f||0,fiber:o.fiber||0,sugar:o.sugar||0,sodium:o.sodium||0,satfat:o.satfat||0}; }
     function searchResultToFood(r){ return {name:r.name,brand:r.brand||'',per100:per100From(r),servingG:r.servingG||0,source:r.source}; }
-    function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai',confidence:(typeof a.confidence==='number'?a.confidence:null)}; }
+    function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai',confidence:(typeof a.confidence==='number'?a.confidence:null),items:(Array.isArray(a.items)?a.items:null)}; }
     function scaleEntry(food,grams,meal){
       var k=grams/100,p=food.per100;
       return {id:uid(),ts:Date.now(),dateKey:viewDate,meal:meal||'Snacks',name:food.name+(food.brand?' ('+food.brand+')':''),grams:grams,source:food.source||'manual',
@@ -366,7 +366,8 @@
       shBody.innerHTML=
         '<div class="pp-name">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</div>'+
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
-        ((food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 12px;color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust grams below to refine</div>':'')+
+        ((food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust grams below to refine</div>':'')+
+        ((food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'')+
         '<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>'+
         (food.servingG?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 serving ≈ '+r0(food.servingG)+'g — <a href="javascript:void(0)" data-act="pp-serv" style="color:rgb(var(--nu))">use serving</a></div>':'')+
         '<div class="pp-preview" id="ppPrev"></div>'+
