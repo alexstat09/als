@@ -12,6 +12,8 @@
 // ════════════════════════════════════════════════════════════════
 'use strict';
 
+var CORE = require('./_core-foods.js');
+
 function n(v) { var x = typeof v === 'number' ? v : parseFloat(v); return isFinite(x) && x >= 0 ? Math.round(x * 10) / 10 : 0; }
 function clip(s, len) { return (s == null ? '' : String(s)).trim().slice(0, len || 90); }
 function withTimeout(p, ms) { return Promise.race([p, new Promise(function (res) { setTimeout(function () { res(null); }, ms || 8500); })]); }
@@ -112,6 +114,7 @@ function toks(s) { return String(s || '').toLowerCase().split(/[^a-z0-9À-ɏͰ-�
 //  0 = USDA pure staple (Foundation/SR Legacy raw/cooked)  1 = USDA prepared
 //  (FNDDS)  2 = un-branded OFF  3 = branded
 function tier(row) {
+  if (row.core) return -1;                                 // verified core staples always first
   if (row.generic) { var dt = row.dataType || ''; return (dt === 'Foundation' || dt === 'SR Legacy') ? 0 : 1; }
   return row.brand ? 3 : 2;
 }
@@ -132,6 +135,23 @@ function tokenPhrase(nTok, qToks) {
     if (ok) return true;
   }
   return false;
+}
+// match the verified core list: every query token must equal (by prefix) a
+// token of the name or its aliases — so "egg" hits "Egg, whole" but not "eggplant"
+function coreSearch(q) {
+  var qt = toks(q); if (!qt.length) return [];
+  var out = [];
+  CORE.forEach(function (cf) {
+    var nt = toks(cf.name + ' ' + (cf.alias || ''));
+    var ok = qt.every(function (t) { return nt.some(function (x) { return tokEq(x, t); }); });
+    if (ok) out.push({
+      name: cf.name, brand: '', per: '100g', servingG: cf.s || 0,
+      kcal: cf.kcal, p: cf.p, c: cf.c, f: cf.f,
+      fiber: cf.fiber || 0, sugar: cf.sugar || 0, sodium: cf.sodium || 0, satfat: cf.satfat || 0,
+      source: 'core', generic: true, core: true
+    });
+  });
+  return out;
 }
 function score(row, qToks, qPhrase) {
   var hay = (row.name + ' ' + (row.brand || '')).toLowerCase();
@@ -172,7 +192,7 @@ module.exports = async function (req, res) {
 
   try {
     var lists = await Promise.all(tasks);
-    var out = [];
+    var out = coreSearch(q);                               // verified staples first
     lists.forEach(function (l) { (l || []).forEach(function (x) { if (x) out.push(x); }); });
 
     // de-dup by normalized name+brand (keep the most complete copy)
@@ -181,6 +201,8 @@ module.exports = async function (req, res) {
       var k = (x.name + '|' + x.brand).toLowerCase().replace(/\s+/g, ' ').trim();
       var prev = byKey[k];
       if (!prev) { byKey[k] = x; return; }
+      if (prev.core) return;                               // never override a verified staple
+      if (x.core) { byKey[k] = x; return; }
       var cx = (x.kcal > 0) + (x.p > 0) + (x.c > 0) + (x.f > 0) + (x.fiber > 0) + (x.sodium > 0);
       var cp = (prev.kcal > 0) + (prev.p > 0) + (prev.c > 0) + (prev.f > 0) + (prev.fiber > 0) + (prev.sodium > 0);
       if (cx > cp) byKey[k] = x;
@@ -194,7 +216,7 @@ module.exports = async function (req, res) {
       return score(b, qToks, qPhrase) - score(a, qToks, qPhrase);
     });
 
-    res.status(200).json({ results: dedup.slice(0, 40), sources: key ? ['off', 'usda'] : ['off'] });
+    res.status(200).json({ results: dedup.slice(0, 40), sources: ['core'].concat(key ? ['off', 'usda'] : ['off']) });
   } catch (e) {
     res.status(200).json({ results: [], error: String((e && e.message) || e) });
   }
