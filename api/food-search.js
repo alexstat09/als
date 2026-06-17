@@ -17,20 +17,23 @@ function clip(s, len) { return (s == null ? '' : String(s)).trim().slice(0, len 
 function withTimeout(p, ms) { return Promise.race([p, new Promise(function (res) { setTimeout(function () { res(null); }, ms || 8500); })]); }
 
 // ── Open Food Facts ──────────────────────────────────────────────
-function offRow(p) {
-  if (!p) return null;
-  var nu = p.nutriments || {};
-  var name = clip(p.product_name || p.product_name_en || p.generic_name);
+function deriveKcal(kcal, p, c, f) { return (!kcal && (p || c || f)) ? Math.round(4 * p + 4 * c + 9 * f) : kcal; }
+function offRow(prod) {
+  if (!prod) return null;
+  var nu = prod.nutriments || {};
+  var name = clip(prod.product_name || prod.product_name_en || prod.generic_name);
   if (!name) return null;
   var kcal = nu['energy-kcal_100g'];
   if (kcal == null && nu['energy_100g'] != null) kcal = nu['energy_100g'] / 4.184; // kJ→kcal fallback
+  var p = n(nu.proteins_100g), c = n(nu.carbohydrates_100g), f = n(nu.fat_100g);
+  kcal = deriveKcal(Math.round(n(kcal)), p, c, f);
   return {
-    name: name, brand: clip(p.brands, 40), per: '100g',
-    servingG: n(p.serving_quantity) || 0,
-    kcal: Math.round(n(kcal)), p: n(nu.proteins_100g), c: n(nu.carbohydrates_100g), f: n(nu.fat_100g),
+    name: name, brand: clip(prod.brands, 40), per: '100g',
+    servingG: n(prod.serving_quantity) || 0,
+    kcal: kcal, p: p, c: c, f: f,
     fiber: n(nu.fiber_100g), sugar: n(nu.sugars_100g),
     sodium: Math.round(n(nu.sodium_100g) * 1000), satfat: n(nu['saturated-fat_100g']),
-    barcode: clip(p.code, 20), source: 'off'
+    barcode: clip(prod.code, 20), source: 'off'
   };
 }
 var OFF_FIELDS = 'code,product_name,product_name_en,generic_name,brands,serving_quantity,nutriments';
@@ -79,11 +82,12 @@ function usdaNutr(food, numbers) {
 function usdaRow(food) {
   var name = clip(food.description);
   if (!name) return null;
+  var p = usdaNutr(food, ['203', '1003']), c = usdaNutr(food, ['205', '1005']), f = usdaNutr(food, ['204', '1004']);
+  var kcal = deriveKcal(Math.round(usdaNutr(food, ['208', '1008'])), p, c, f); // some USDA rows omit energy
   return {
     name: name, brand: clip(food.brandOwner || food.brandName, 40), per: '100g',
     servingG: n(food.servingSize) || 0,
-    kcal: Math.round(usdaNutr(food, ['208', '1008'])),
-    p: usdaNutr(food, ['203', '1003']), c: usdaNutr(food, ['205', '1005']), f: usdaNutr(food, ['204', '1004']),
+    kcal: kcal, p: p, c: c, f: f,
     fiber: usdaNutr(food, ['291', '1079']), sugar: usdaNutr(food, ['269', '2000']),
     sodium: Math.round(usdaNutr(food, ['307', '1093'])), satfat: usdaNutr(food, ['606', '1258']),
     barcode: clip(food.gtinUpc, 20), source: 'usda', dataType: food.dataType || '', generic: true
@@ -94,7 +98,7 @@ function usdaRow(food) {
 // what we want to push down.
 async function usdaSearch(q, key) {
   var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + encodeURIComponent(key) +
-    '&query=' + encodeURIComponent(q) + '&pageSize=25' +
+    '&query=' + encodeURIComponent(q) + '&pageSize=50' +
     '&dataType=' + encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)');
   var r = await fetch(url);
   if (!r.ok) return [];
@@ -104,12 +108,15 @@ async function usdaSearch(q, key) {
 
 // ── ranking ──────────────────────────────────────────────────────
 function toks(s) { return String(s || '').toLowerCase().split(/[^a-z0-9À-ɏͰ-Ͽἀ-῿]+/).filter(Boolean); }
-// coarse tier so generic whole foods always sit above branded clutter:
-//   0 = USDA generic (raw/cooked staples)  1 = un-branded OFF  2 = branded
+// coarse tier so the cleanest generics always sit above branded clutter:
+//  0 = USDA pure staple (Foundation/SR Legacy raw/cooked)  1 = USDA prepared
+//  (FNDDS)  2 = un-branded OFF  3 = branded
 function tier(row) {
-  if (row.generic) return 0;
-  return row.brand ? 2 : 1;
+  if (row.generic) { var dt = row.dataType || ''; return (dt === 'Foundation' || dt === 'SR Legacy') ? 0 : 1; }
+  return row.brand ? 3 : 2;
 }
+// processed/composite prefixes that should never beat the plain staple
+var STOP_PREFIX = { snacks: 1, lunchmeat: 1, candies: 1, babyfood: 1, beverages: 1, restaurant: 1, sauce: 1, soup: 1 };
 function score(row, qToks, qPhrase) {
   var hay = (row.name + ' ' + (row.brand || '')).toLowerCase();
   var nTok = toks(row.name);
@@ -117,7 +124,8 @@ function score(row, qToks, qPhrase) {
   qToks.forEach(function (t) { if (hay.indexOf(t) !== -1) { s += 10; hit++; } });
   if (hit === qToks.length) s += 12;                       // all query words present
   if (hay.indexOf(qPhrase) !== -1) s += 16;                // exact phrase
-  if (nTok[0] && qToks.indexOf(nTok[0]) !== -1) s += 6;    // name starts with a query word
+  if (nTok[0] && qToks.indexOf(nTok[0]) !== -1) s += 30;   // name STARTS with the food → pure staple
+  if (nTok[0] && STOP_PREFIX[nTok[0]]) s -= 25;            // "Snacks,"/"Lunchmeat," → demote
   s += ((row.kcal > 0) + (row.p > 0) + (row.c > 0) + (row.f > 0)) * 3; // data completeness
   if (row.source === 'usda' && !row.brand) s += 4;         // clean generic whole foods
   s -= Math.min(6, Math.floor(hay.length / 22));           // prefer concise names over noise
