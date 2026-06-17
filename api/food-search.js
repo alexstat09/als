@@ -98,7 +98,7 @@ function usdaRow(food) {
 // what we want to push down.
 async function usdaSearch(q, key) {
   var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + encodeURIComponent(key) +
-    '&query=' + encodeURIComponent(q) + '&pageSize=50' +
+    '&query=' + encodeURIComponent(q) + '&pageSize=30' +
     '&dataType=' + encodeURIComponent('Foundation,SR Legacy,Survey (FNDDS)');
   var r = await fetch(url);
   if (!r.ok) return [];
@@ -167,8 +167,8 @@ module.exports = async function (req, res) {
   if (!q) { res.status(400).json({ error: 'no query' }); return; }
 
   var key = (process.env.USDA_API_KEY || '').trim();
-  var tasks = [withTimeout(offSearch(q).catch(function () { return []; }))];
-  if (key) tasks.push(withTimeout(usdaSearch(q, key).catch(function () { return []; })));
+  var tasks = [withTimeout(offSearch(q).catch(function () { return []; }), 8500)];
+  if (key) tasks.push(withTimeout(usdaSearch(q, key).catch(function () { return []; }), 11000)); // USDA is slower
 
   try {
     var lists = await Promise.all(tasks);
