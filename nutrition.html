@@ -342,10 +342,21 @@
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
     function compressImage(file, cb){
+      // Shrink + re-encode to a SMALL JPEG data URL. Steps quality/size down
+      // until the payload is safely under the server limit (avoids 413 on big
+      // phone photos). Normal photos pass the first step with no quality loss.
       try{ var img=new Image(), url=URL.createObjectURL(file);
-        img.onload=function(){ var max=768, w=img.width||1, h=img.height||1, sc=Math.min(1,max/Math.max(w,h)); var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
-          var cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; cv.getContext('2d').drawImage(img,0,0,cw,ch);
-          try{ URL.revokeObjectURL(url); }catch(e){} try{ cb(cv.toDataURL('image/jpeg',0.7)); }catch(e){ cb(null); } };
+        img.onload=function(){
+          try{
+            var W=img.naturalWidth||img.width||1, H=img.naturalHeight||img.height||1;
+            function render(maxDim,q){ var sc=Math.min(1,maxDim/Math.max(W,H)); var cw=Math.max(1,Math.round(W*sc)), ch=Math.max(1,Math.round(H*sc));
+              var cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; cv.getContext('2d').drawImage(img,0,0,cw,ch); return cv.toDataURL('image/jpeg',q); }
+            var steps=[[768,0.7],[640,0.6],[512,0.5],[420,0.42]], out=null;
+            for(var i=0;i<steps.length;i++){ try{ out=render(steps[i][0],steps[i][1]); }catch(e){ out=null; } if(out && out.length<=1400000) break; }
+            try{ URL.revokeObjectURL(url); }catch(e){}
+            cb((out && out.length<=3500000)?out:null); // hard ceiling well under the platform limit
+          }catch(e){ try{ URL.revokeObjectURL(url); }catch(x){} cb(null); }
+        };
         img.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} cb(null); };
         img.src=url;
       }catch(e){ cb(null); }
