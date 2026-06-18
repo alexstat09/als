@@ -130,7 +130,9 @@
     </div>
 
     <div class="card sum" id="sumCard"></div>
+    <div class="card" id="coachCard" style="padding:14px 16px;"></div>
     <div class="card" id="energyCard" style="padding:14px 16px;"></div>
+    <div class="card" id="trendsCard" style="padding:14px 16px;"></div>
     <div id="diary"></div>
   </div>
 
@@ -189,13 +191,37 @@
     // Adaptive maintenance from intake + weight trend (cached per render to avoid recompute).
     function tdeeNow(){ if(!window.ALSTDEE) return null; try{ return window.ALSTDEE.compute(getLogs(), ls('po_coach_weights',[])||[], {weightKg:weightKg()}); }catch(e){ return null; } }
     function targets(){
-      var p=ls(PROFILE,{})||{}, w=weightKg();
+      var p=ls(PROFILE,{})||{}, w=weightKg(), goal=p.goal||'maintain';
       var kcal=p.calTarget; // explicit manual override always wins
-      if(!kcal){ var r=tdeeNow(); if(r&&r.ok&&window.ALSTDEE) kcal=window.ALSTDEE.recommend(r.tdee, p.goal||'maintain', {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}); }
+      if(!kcal){ var r=tdeeNow(); if(r&&r.ok&&window.ALSTDEE) kcal=window.ALSTDEE.recommend(r.tdee, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}); }
       if(!kcal) kcal=Math.round(w*32); // fallback until adaptive data exists
-      var prot=p.proteinTarget||Math.round(w*2), fat=Math.round(w*0.9);
+      // personalized, goal-aware macros: more protein on a cut to spare muscle;
+      // fat held at a hormone-safe floor; carbs fill the rest.
+      var pPerKg = goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
+      var prot=p.proteinTarget||Math.round(w*pPerKg);
+      var fat=p.fatTarget||Math.max(Math.round(w*0.8), Math.round(kcal*0.25/9));
       var carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
-      return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14) };
+      return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14), goal:goal };
+    }
+    // Daily score 0–100: calorie adherence (both-sided) + protein + fiber.
+    function dayScore(t,tg){
+      if(!tg.kcal||t.kcal<=0) return null;
+      var d=Math.abs(t.kcal/tg.kcal-1);
+      var calSc=d<=0.05?100:Math.max(0,100-(d-0.05)*250);
+      var protSc=tg.p?Math.min(100,t.p/tg.p*100):100;
+      var fibSc=tg.fiber?Math.min(100,t.fiber/tg.fiber*100):100;
+      return Math.max(0,Math.min(100,Math.round(calSc*0.45+protSc*0.4+fibSc*0.15)));
+    }
+    // Time-aware "do this now".
+    function nextAction(t,tg){
+      var h=new Date().getHours(), remK=tg.kcal-t.kcal, remP=tg.p-t.p;
+      if(t.kcal<=0) return h<11?'Start your day — log breakfast (lead with protein).':'Nothing logged yet — get a solid meal in and log it.';
+      if(remP>30 && h>=17) return 'You’re '+r0(remP)+'g short on protein — a shake or Greek yogurt closes the gap.';
+      if(remK<-tg.kcal*0.08) return 'You’re '+r0(-remK)+' kcal over target — ease off, hydrate, maybe a walk.';
+      if(remK>tg.kcal*0.35 && h>=19) return 'Big gap left ('+r0(remK)+' kcal) — eat a real meal, don’t undereat into the night.';
+      if(remP<=10 && Math.abs(remK)<=tg.kcal*0.1) return 'Dialed in — protein hit and calories on target. Great day.';
+      if(remK>0) return r0(remK)+' kcal and '+r0(Math.max(0,remP))+'g protein to go — plan your next meal.';
+      return 'On target for today — keep it steady.';
     }
     function renderEnergy(){
       var el=document.getElementById('energyCard'); if(!el) return;
@@ -236,6 +262,44 @@
       return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
     }
 
+    function renderCoach(){
+      var el=document.getElementById('coachCard'); if(!el) return;
+      if(viewDate!==today()){ el.style.display='none'; return; } // today only
+      el.style.display='';
+      var t=dayTotals(viewDate), tg=targets(), sc=dayScore(t,tg);
+      var col=sc>=85?'#34E2B0':(sc>=65?'#E8C66B':(sc>=40?'#F0A66B':'#FF6B8B'));
+      var lbl=sc>=85?'Dialed in':(sc>=65?'Solid':(sc>=40?'Getting there':'Let’s build it'));
+      var action=nextAction(t,tg);
+      el.innerHTML='<div style="display:flex;align-items:center;gap:14px">'+
+        '<div style="flex:none;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid '+col+';background:rgba(255,255,255,.03)"><div style="font-size:20px;font-weight:800;color:'+col+';font-family:var(--au-mono,ui-monospace);line-height:1">'+(sc==null?'—':sc)+'</div></div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-family:var(--au-mono,ui-monospace);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:'+col+';margin-bottom:4px">'+(sc==null?'Today':lbl+' · day score')+'</div>'+
+          '<div style="font-size:13px;color:#F4F1EA;line-height:1.45">'+esc(action)+'</div>'+
+        '</div></div>';
+    }
+    function renderTrends(){
+      var el=document.getElementById('trendsCard'); if(!el) return;
+      var tg=targets(), days=[];
+      for(var i=6;i>=0;i--){ var d=new Date(); d.setDate(d.getDate()-i); var dk=dateKey(d); var tot=dayTotals(dk); days.push({kcal:tot.kcal,p:tot.p,d:d}); }
+      var logged=days.filter(function(x){return x.kcal>0;});
+      if(!logged.length){ el.style.display='none'; return; }
+      el.style.display='';
+      var avgK=Math.round(logged.reduce(function(a,b){return a+b.kcal;},0)/logged.length);
+      var avgP=Math.round(logged.reduce(function(a,b){return a+b.p;},0)/logged.length);
+      var onT=logged.filter(function(x){return tg.kcal&&Math.abs(x.kcal/tg.kcal-1)<=0.1;}).length;
+      var maxK=Math.max(tg.kcal||0, days.reduce(function(m,x){return Math.max(m,x.kcal);},0))||1;
+      var bars=days.map(function(x){
+        var hPct=Math.round(x.kcal/maxK*100);
+        var on=tg.kcal&&x.kcal>0&&Math.abs(x.kcal/tg.kcal-1)<=0.1;
+        var over=tg.kcal&&x.kcal>tg.kcal*1.1;
+        var col=x.kcal===0?'rgba(255,255,255,.08)':(on?'rgb(var(--nu))':(over?'#FF6B8B':'rgba(155,140,255,.85)'));
+        var dn=['S','M','T','W','T','F','S'][x.d.getDay()];
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end"><div style="width:100%;max-width:24px;height:'+Math.max(3,Math.round(hPct*0.5))+'px;background:'+col+';border-radius:4px 4px 2px 2px"></div><div style="font-size:8.5px;color:rgba(244,241,234,.4);font-family:var(--au-mono,ui-monospace)">'+dn+'</div></div>';
+      }).join('');
+      el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div style="font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5)">7-Day Trend</div><div style="font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.35)">'+onT+'/'+logged.length+' on target</div></div>'+
+        '<div style="display:flex;gap:6px;align-items:flex-end;height:60px;margin-bottom:11px">'+bars+'</div>'+
+        '<div style="display:flex;gap:16px;font-size:11px;color:rgba(244,241,234,.55)"><span>avg <b style="color:#F4F1EA">'+avgK+'</b> kcal</span><span>avg <b style="color:#F4F1EA">'+avgP+'g</b> protein</span><span>target <b style="color:rgb(var(--nu))">'+tg.kcal+'</b></span></div>';
+    }
     function renderSummary(){
       var t=dayTotals(viewDate), tg=targets();
       var pct=Math.max(0,Math.min(1,tg.kcal?t.kcal/tg.kcal:0)), R=46, C=2*Math.PI*R, off=C-pct*C;
@@ -267,7 +331,7 @@
     function renderAll(){
       document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
       document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
-      renderSummary(); renderEnergy(); renderDiary();
+      renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderDiary();
     }
     window._nutRerender=renderAll;
 
