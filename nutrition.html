@@ -329,16 +329,24 @@
         }
       }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; });
     }
+    function webFallback(t, why){
+      shBody.innerHTML='<div class="sh-spin">'+(why?esc(why)+' — ':'')+'getting Nova’s estimate…</div>';
+      fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
+        .then(function(r){return r.json();}).then(function(j){
+          if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t estimate — try Search or a barcode.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; return; }
+          showPortion(aiToFood(j), j.grams||100);
+        }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; });
+    }
     function webGo(){
       var t=((document.getElementById('aiText')||{}).value||'').trim() || window._lastDescribe || ''; if(!t) return;
       window._lastDescribe=t;
       shBody.innerHTML='<div class="sh-spin">Searching the web for the exact product…</div>';
       fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
         .then(function(r){return r.json();}).then(function(j){
-          if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Web search couldn’t find it — try a barcode, or the estimate.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; return; }
+          if(!j||j.error){ webFallback(t, (j&&j.message)||'Web search unavailable'); return; }
           if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t confirm that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
           var wf=aiToFood(j); wf.webSource=j.source||''; showPortion(wf, j.grams||100);
-        }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Search timed out — try again, or scan the barcode.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; });
+        }).catch(function(){ webFallback(t, 'Web search timed out'); });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
     function compressImage(file, cb){

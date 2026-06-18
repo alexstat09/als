@@ -6,7 +6,9 @@
 // macros. Reuses GROQ_API_KEY. Model env-overridable (GROQ_WEB_MODEL).
 // ════════════════════════════════════════════════════════════════
 'use strict';
-var GROQ_MODEL = process.env.GROQ_WEB_MODEL || 'groq/compound';
+// compound-mini keeps the request small enough for the free tier (the full
+// compound model pulls more web content and can hit Groq's 413 request limit).
+var GROQ_MODEL = process.env.GROQ_WEB_MODEL || 'groq/compound-mini';
 var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 function readBody(req) {
@@ -46,7 +48,7 @@ module.exports = async function (req, res) {
   var payload = {
     model: GROQ_MODEL,
     messages: [{ role: 'system', content: SYS }, { role: 'user', content: 'Find the official nutrition label for: ' + text }],
-    max_tokens: 900,
+    max_tokens: 512,
     temperature: 0.1
   };
 
@@ -62,6 +64,7 @@ module.exports = async function (req, res) {
   if (!r.ok) {
     var d = ''; try { var ej = await r.json(); d = (ej && ej.error && ej.error.message) || ''; } catch (e) {}
     if (r.status === 429) { res.status(200).json({ error: 'rate', message: 'Busy for a moment — try again in a few seconds.' }); return; }
+    if (r.status === 413) { res.status(200).json({ error: 'too-large', message: 'Web search pulled too much data for the free tier.' }); return; }
     res.status(200).json({ error: 'upstream', status: r.status, message: d || 'Web model unavailable — set GROQ_WEB_MODEL or use the estimate.' }); return;
   }
 
