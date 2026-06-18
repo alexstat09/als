@@ -62,7 +62,7 @@
         var btn = mode==='signup'?nw:go, orig = btn.textContent;
         go.disabled=true; nw.disabled=true; btn.textContent='…'; err.textContent='';
         function reset(){ go.disabled=false; nw.disabled=false; btn.textContent=orig; }
-        var pr; try{ pr = mode==='signup'? client.auth.signUp({email:e,password:p}) : client.auth.signInWithPassword({email:e,password:p}); }
+        var pr; try{ pr = mode==='signup'? client.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin}}) : client.auth.signInWithPassword({email:e,password:p}); }
         catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; reset(); return; }
         Promise.resolve(pr).then(function(res){
           if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; reset(); return; }
