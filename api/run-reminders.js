@@ -64,7 +64,14 @@ var REMINDERS = [
       if (c.habitsLeft > 0 && !c.journaledToday) return c.habitsLeft + ' habit' + (c.habitsLeft > 1 ? 's' : '') + ' left and no journal yet — finish strong.';
       if (c.habitsLeft > 0) return c.habitsLeft + ' habit' + (c.habitsLeft > 1 ? 's' : '') + ' left to close out today.';
       return 'Two honest lines on today before bed — what you did, what you’re grateful for.';
-    } }
+    } },
+
+  // Opt-in. Fires ~1h before the bedtime derived from the sleep profile.
+  { id: 'winddown', defHour: 22, title: 'Wind down 🌙',
+    cond: function () { return true; },
+    body: function (c) { return c.bedtimeTarget
+      ? ('Aim to be in bed by ' + c.bedtimeTarget + ' for ' + c.sleepNeed + 'h — wind down now: screens off, lights low.')
+      : 'Start winding down — screens off, lights low. Sleep is your #1 lever.'; } }
 ];
 
 // Pull the user's data rows and reduce to the few facts the reminders need.
@@ -124,17 +131,33 @@ module.exports = async function (req, res) {
     var sent = state.sent || {};
     var prefR = prefs.reminders || {};
 
+    // Wind-down: derive its hour (and the body's bedtime) from the sleep profile.
+    var sleepProf = (await supa.readRow('sleep'))['sleep:profile'] || {};
+    var bedtimeTarget = null, sleepNeed = sleepProf.need;
+    if (sleepProf.wakeTime && typeof sleepProf.need === 'number') {
+      var wp = sleepProf.wakeTime.split(':'); var wm = (+wp[0]) * 60 + (+wp[1]);
+      var bm = (((wm - Math.round(sleepProf.need * 60)) % 1440) + 1440) % 1440;
+      bedtimeTarget = pad(Math.floor(bm / 60)) + ':' + pad(bm % 60);
+    }
+    function reminderHour(r) {
+      var pr = prefR[r.id] || {};
+      if (pr.hour != null) return pr.hour;
+      if (r.id === 'winddown' && bedtimeTarget != null) { var bh = parseInt(bedtimeTarget.split(':')[0], 10); return ((bh - 1) % 24 + 24) % 24; }
+      return r.defHour;
+    }
+
     // Which reminders are scheduled for this local hour and not yet sent today?
     var due = REMINDERS.filter(function (r) {
       var pr = prefR[r.id] || {};
-      if (pr.on === false) return false;
-      var hour = (pr.hour != null) ? pr.hour : r.defHour;
-      return hour === lp.hour && sent[r.id] !== lp.dateKey;
+      if (r.id === 'winddown') { if (pr.on !== true) return false; }   // opt-in
+      else if (pr.on === false) return false;
+      return reminderHour(r) === lp.hour && sent[r.id] !== lp.dateKey;
     });
     if (!due.length) { res.status(200).json({ checked: true, tz: tz, hour: lp.hour, due: 0 }); return; }
 
     // Only pay for the data read when something might fire.
     var ctx = await buildContext(tz, lp.dateKey);
+    ctx.bedtimeTarget = bedtimeTarget; ctx.sleepNeed = sleepNeed;
     var toSend = due.filter(function (r) { try { return r.cond(ctx); } catch (e) { return false; } });
 
     var fired = [], dead = {};
