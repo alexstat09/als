@@ -39,31 +39,36 @@
     function settle(){ settled=true; try{ clearTimeout(killTimer); }catch(e){} }
     function killOverlay(){ settle(); try{ ov.remove(); }catch(e){} try{ document.documentElement.style.overflow=''; }catch(e){} }
     function done(session){ settle(); window.ALSAuth={user:(session&&session.user)||null,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; try{ov.remove();}catch(e){} try{document.documentElement.style.overflow='';}catch(e){} }
-    function showLogin(mode){
-      settle(); mode=mode||'login';
+    function showLogin(){
+      settle();
       ov.innerHTML=wrapHTML('<div style="width:100%;max-width:340px">'+
-        '<div style="text-align:center;margin-bottom:22px"><div style="font-family:Georgia,serif;font-style:italic;font-size:30px;color:#F4F1EA">AURORA</div><div style="font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-top:6px">'+(mode==='signup'?'Create your account':'Welcome back')+'</div></div>'+
+        '<div style="text-align:center;margin-bottom:22px"><div style="font-family:Georgia,serif;font-style:italic;font-size:30px;color:#F4F1EA">AURORA</div><div style="font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-top:6px">Your private dashboard</div></div>'+
         '<input id="alsEm" type="email" inputmode="email" autocomplete="username" placeholder="Email" style="width:100%;padding:13px 15px;margin-bottom:10px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
-        '<input id="alsPw" type="password" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" placeholder="Password" style="width:100%;padding:13px 15px;margin-bottom:6px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
-        '<div id="alsErr" style="min-height:16px;font-size:12px;color:#FF8FA3;margin:4px 2px 8px"></div>'+
-        '<button id="alsGo" type="button" style="width:100%;padding:14px;border-radius:13px;border:none;font-size:15px;font-weight:700;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);cursor:pointer">'+(mode==='signup'?'Create account':'Log in')+'</button>'+
-        '<div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(244,241,234,.5)">'+(mode==='signup'?'Have an account? ':'First time here? ')+'<a id="alsTog" href="javascript:void(0)" style="color:rgb(52,226,176)">'+(mode==='signup'?'Log in':'Create account')+'</a></div>'+
+        '<input id="alsPw" type="password" autocomplete="current-password" placeholder="Password" style="width:100%;padding:13px 15px;margin-bottom:6px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
+        '<div id="alsErr" style="min-height:16px;font-size:12px;color:#FF8FA3;margin:4px 2px 10px;line-height:1.4"></div>'+
+        '<button id="alsGo" type="button" style="width:100%;padding:14px;margin-bottom:9px;border-radius:13px;border:none;font-size:15px;font-weight:700;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);cursor:pointer">Log in</button>'+
+        '<button id="alsNew" type="button" style="width:100%;padding:13px;border-radius:13px;border:1px solid rgba(52,226,176,.4);background:rgba(255,255,255,.04);font-size:14px;font-weight:700;color:#F4F1EA;cursor:pointer">Create account</button>'+
+        '<div style="text-align:center;margin-top:14px;font-size:11.5px;color:rgba(244,241,234,.4);line-height:1.5">First time? Enter an email + password and tap <b style="color:rgba(244,241,234,.6)">Create account</b>.</div>'+
       '</div>');
-      var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), err=ov.querySelector('#alsErr'), tog=ov.querySelector('#alsTog');
-      tog.addEventListener('click',function(){ showLogin(mode==='signup'?'login':'signup'); });
-      function submit(){
-        var e=(em.value||'').trim(), p=pw.value||''; if(!e||!p){ err.style.color='#FF8FA3'; err.textContent='Enter your email and password.'; return; }
-        go.disabled=true; go.textContent='…'; err.textContent='';
+      var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), nw=ov.querySelector('#alsNew'), err=ov.querySelector('#alsErr');
+      function submit(mode){
+        var e=(em.value||'').trim(), p=pw.value||'';
+        if(!e||!p){ err.style.color='#FF8FA3'; err.textContent='Enter your email and password first.'; return; }
+        if(mode==='signup' && p.length<6){ err.style.color='#FF8FA3'; err.textContent='Password must be at least 6 characters.'; return; }
+        var btn = mode==='signup'?nw:go, orig = btn.textContent;
+        go.disabled=true; nw.disabled=true; btn.textContent='…'; err.textContent='';
+        function reset(){ go.disabled=false; nw.disabled=false; btn.textContent=orig; }
         var pr; try{ pr = mode==='signup'? client.auth.signUp({email:e,password:p}) : client.auth.signInWithPassword({email:e,password:p}); }
-        catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); return; }
+        catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; reset(); return; }
         Promise.resolve(pr).then(function(res){
-          if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); return; }
-          if(mode==='signup' && (!res||!res.data || !res.data.session)){ err.style.color='#34E2B0'; err.textContent='Account created — confirm via the email we sent, then log in.'; go.disabled=false; go.textContent='Log in'; return; }
+          if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; reset(); return; }
+          if(mode==='signup' && (!res||!res.data||!res.data.session)){ err.style.color='#34E2B0'; err.textContent='Account created — check your email to confirm, then tap Log in.'; reset(); return; }
           location.reload();
-        }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); });
+        }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; reset(); });
       }
-      go.addEventListener('click',submit);
-      pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit(); });
+      go.addEventListener('click',function(){ submit('login'); });
+      nw.addEventListener('click',function(){ submit('signup'); });
+      pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit('login'); });
       setTimeout(function(){ try{ em.focus(); }catch(e){} }, 60);
     }
 
