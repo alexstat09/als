@@ -1,10 +1,11 @@
-// Shared Supabase REST helpers for the serverless reminder engine.
+// Shared Supabase REST helpers for the serverless reminder engine + Nova brief.
 // Files in /api prefixed with "_" are NOT turned into routes by Vercel, so this
-// is a private library. Uses the same publishable key the client syncs with
-// (SELECT/INSERT/UPDATE granted; DELETE is not — we only ever upsert + read).
+// is a private library. Prefers the SERVICE-ROLE key (server-only, bypasses RLS)
+// so cron/Nova keep working once row-level security is on; falls back to the
+// publishable key when the service role isn't configured.
 'use strict';
 var SUPABASE_URL = (process.env.SUPABASE_URL || 'https://oiyvadqfldwbjroiknjc.supabase.co').replace(/\/+$/, '');
-var SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+var SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
 
 function headers(extra) {
   var h = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
