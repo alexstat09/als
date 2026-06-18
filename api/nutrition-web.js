@@ -26,23 +26,42 @@ function num(v, max) {
 function r0(n) { return Math.round(n); }
 function domainOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
 
-// ── 1. web search (Tavily) — we cap result count + snippet length ──
+// ── 1. web search (Tavily) — advanced depth + full page content so we get the
+// real nutrition table, not just a marketing snippet. We still cap size below. ──
 async function webSearch(q, key) {
   var r = await fetch(TAVILY_URL, {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ api_key: key, query: q, search_depth: 'basic', max_results: 6, include_answer: true })
+    body: JSON.stringify({ api_key: key, query: q, search_depth: 'advanced', chunks_per_source: 3, max_results: 5, include_answer: 'advanced', include_raw_content: true })
   });
   if (!r.ok) return null;
   return await r.json();
 }
+// Pull the nutrition-dense window out of a page's content (the bit with the
+// "per 100g / energy / protein" table), so the model reads real numbers.
+function nutWindow(content) {
+  if (!content) return '';
+  content = String(content);
+  if (content.length <= 900) return content;
+  var lc = content.toLowerCase();
+  var kw = ['per 100', 'per100', 'typical values', 'nutrition', 'energy', 'kcal', 'calorie', 'protein', 'carbohydrate', 'of which', 'sugars', 'saturate', 'fibre', 'fiber', 'sodium', 'salt', 'serving'];
+  var best = -1, bestScore = 0;
+  for (var i = 0; i < content.length; i += 140) {
+    var seg = lc.slice(i, i + 760), sc = 0;
+    for (var j = 0; j < kw.length; j++) { if (seg.indexOf(kw[j]) !== -1) sc++; }
+    if (sc > bestScore) { bestScore = sc; best = i; }
+  }
+  if (best < 0 || bestScore < 2) return content.slice(0, 500);
+  return content.slice(Math.max(0, best - 120), best + 820);
+}
 function buildContext(tj) {
   var parts = [], cites = [];
-  if (tj.answer) parts.push('SUMMARY: ' + String(tj.answer).slice(0, 900));
-  (tj.results || []).slice(0, 6).forEach(function (res) {
+  if (tj.answer) parts.push('SUMMARY: ' + String(tj.answer).slice(0, 1200));
+  (tj.results || []).slice(0, 5).forEach(function (res) {
     var dom = domainOf(res.url); if (dom) cites.push(dom);
-    parts.push('[' + (dom || 'web') + '] ' + String(res.title || '').slice(0, 130) + ' — ' + String(res.content || '').replace(/\s+/g, ' ').slice(0, 600));
+    var body = nutWindow(res.raw_content || res.content || '');
+    parts.push('[' + (dom || 'web') + '] ' + String(res.title || '').slice(0, 130) + ' — ' + body.replace(/\s+/g, ' '));
   });
-  return { text: parts.join('\n').slice(0, 4200), cites: cites };
+  return { text: parts.join('\n').slice(0, 7000), cites: cites };
 }
 
 var SYS = [
@@ -50,6 +69,7 @@ var SYS = [
   'Use ONLY numbers present in the results — never invent. Read values PER 100 g (or per 100 ml). Also note one labelled serving size in grams.',
   'Reply with ONLY a single minified JSON object — no prose — exactly these keys:',
   '{"name": full product name incl. brand, "source": the website domain the numbers came from, "serving_g": one serving in grams, "per100": {"kcal":,"p":,"c":,"f":,"fiber":,"sugar":,"sodium":mg,"satfat":}, "found": true ONLY if the results actually contain the product\'s nutrition numbers else false, "confidence": 0..1}',
+  'If a label only shows PER SERVING values, convert them to per 100 g using the stated serving size.',
   'All numbers, no units. per100 is PER 100g. If the results do not contain real nutrition data for this product, set found=false and give a conservative estimate.'
 ].join(' ');
 
@@ -68,7 +88,7 @@ module.exports = async function (req, res) {
   // 1) search the web ourselves (small, controlled context → no 413)
   var ctx = null;
   try {
-    var tj = await webSearch(text + ' nutrition facts label per 100g calories protein carbs fat', tavKey);
+    var tj = await webSearch(text + ' nutritional information per 100g energy protein carbohydrate fat', tavKey);
     if (tj) ctx = buildContext(tj);
   } catch (e) { /* fall through */ }
   if (!ctx || !ctx.text) { res.status(200).json({ error: 'no-results', message: 'Web search found nothing usable — try a barcode or the estimate.' }); return; }
