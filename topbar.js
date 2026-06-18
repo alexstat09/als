@@ -15,47 +15,62 @@
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
 
   // ── Privacy gate: require a login so Supabase RLS can protect the data.
-  // Fail-OPEN on any error so a gate glitch can never lock the user out; the
-  // real protection is RLS server-side — this just provides the session + UI. ──
+  // Built so it can NEVER leave a stuck black screen: within ~3s it always shows
+  // either the app (if signed in) or a working login form. Fail-open on errors. ──
   (function authGate(){
+    if(window.__alsAuthGate) return; window.__alsAuthGate=1;
+    var client;
     try{
-      if(window.__alsAuthGate) return; window.__alsAuthGate=1;
-      if(!window.supabase || !window.supabase.createClient) return; // lib missing → fail open
-      var mount=document.body||document.documentElement;
-      var ov=document.createElement('div'); ov.id='alsAuth';
-      ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#050507;color:#F4F1EA;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,system-ui,sans-serif;';
-      ov.innerHTML='<div style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4)">Securing…</div>';
-      mount.appendChild(ov); document.documentElement.style.overflow='hidden';
-      var client=window.__alsAuthClient||(window.__alsAuthClient=window.supabase.createClient(TOPBAR_SUPABASE_URL,TOPBAR_SUPABASE_KEY));
-      function done(session){ window.ALSAuth={user:session.user,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; try{ov.remove();}catch(e){} document.documentElement.style.overflow=''; }
-      function showLogin(mode){
-        mode=mode||'login';
-        ov.innerHTML='<div style="width:100%;max-width:340px">'+
-          '<div style="text-align:center;margin-bottom:22px"><div style="font-family:Georgia,serif;font-style:italic;font-size:30px;color:#F4F1EA">AURORA</div><div style="font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-top:6px">'+(mode==='signup'?'Create your account':'Welcome back')+'</div></div>'+
-          '<input id="alsEm" type="email" inputmode="email" autocomplete="username" placeholder="Email" style="width:100%;padding:13px 15px;margin-bottom:10px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
-          '<input id="alsPw" type="password" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" placeholder="Password" style="width:100%;padding:13px 15px;margin-bottom:6px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
-          '<div id="alsErr" style="min-height:16px;font-size:12px;color:#FF8FA3;margin:4px 2px 8px"></div>'+
-          '<button id="alsGo" type="button" style="width:100%;padding:14px;border-radius:13px;border:none;font-size:15px;font-weight:700;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);cursor:pointer">'+(mode==='signup'?'Create account':'Log in')+'</button>'+
-          '<div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(244,241,234,.5)">'+(mode==='signup'?'Have an account? ':'First time here? ')+'<a id="alsTog" href="javascript:void(0)" style="color:rgb(52,226,176)">'+(mode==='signup'?'Log in':'Create account')+'</a></div>'+
-        '</div>';
-        var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), err=ov.querySelector('#alsErr'), tog=ov.querySelector('#alsTog');
-        tog.addEventListener('click',function(){ showLogin(mode==='signup'?'login':'signup'); });
-        function submit(){
-          var e=(em.value||'').trim(), p=pw.value||''; if(!e||!p){ err.style.color='#FF8FA3'; err.textContent='Enter your email and password.'; return; }
-          go.disabled=true; go.textContent='…'; err.textContent='';
-          var pr = mode==='signup'? client.auth.signUp({email:e,password:p}) : client.auth.signInWithPassword({email:e,password:p});
-          pr.then(function(res){
-            if(res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); return; }
-            if(mode==='signup' && (!res.data || !res.data.session)){ err.style.color='#34E2B0'; err.textContent='Account created — confirm via the email we sent, then log in.'; go.disabled=false; go.textContent='Log in'; return; }
-            location.reload();
-          }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); });
-        }
-        go.addEventListener('click',submit);
-        pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit(); });
-        setTimeout(function(){ try{ em.focus(); }catch(e){} }, 60);
+      if(!window.supabase || !window.supabase.createClient) return; // lib missing → app runs normally
+      client=window.__alsAuthClient||(window.__alsAuthClient=window.supabase.createClient(TOPBAR_SUPABASE_URL,TOPBAR_SUPABASE_KEY));
+      if(!client || !client.auth) return;
+    }catch(e){ return; } // client init failed → fail open, no overlay
+
+    var ov=document.createElement('div'); ov.id='alsAuth';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#050507;color:#F4F1EA;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,system-ui,sans-serif;';
+    ov.innerHTML='<div style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4)">Securing…</div>';
+    (document.body||document.documentElement).appendChild(ov);
+    document.documentElement.style.overflow='hidden';
+
+    var settled=false;
+    function settle(){ settled=true; try{ clearTimeout(killTimer); }catch(e){} }
+    function killOverlay(){ settle(); try{ ov.remove(); }catch(e){} try{ document.documentElement.style.overflow=''; }catch(e){} }
+    function done(session){ settle(); window.ALSAuth={user:(session&&session.user)||null,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; try{ov.remove();}catch(e){} try{document.documentElement.style.overflow='';}catch(e){} }
+    function showLogin(mode){
+      settle(); mode=mode||'login';
+      ov.innerHTML='<div style="width:100%;max-width:340px">'+
+        '<div style="text-align:center;margin-bottom:22px"><div style="font-family:Georgia,serif;font-style:italic;font-size:30px;color:#F4F1EA">AURORA</div><div style="font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-top:6px">'+(mode==='signup'?'Create your account':'Welcome back')+'</div></div>'+
+        '<input id="alsEm" type="email" inputmode="email" autocomplete="username" placeholder="Email" style="width:100%;padding:13px 15px;margin-bottom:10px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
+        '<input id="alsPw" type="password" autocomplete="'+(mode==='signup'?'new-password':'current-password')+'" placeholder="Password" style="width:100%;padding:13px 15px;margin-bottom:6px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
+        '<div id="alsErr" style="min-height:16px;font-size:12px;color:#FF8FA3;margin:4px 2px 8px"></div>'+
+        '<button id="alsGo" type="button" style="width:100%;padding:14px;border-radius:13px;border:none;font-size:15px;font-weight:700;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);cursor:pointer">'+(mode==='signup'?'Create account':'Log in')+'</button>'+
+        '<div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(244,241,234,.5)">'+(mode==='signup'?'Have an account? ':'First time here? ')+'<a id="alsTog" href="javascript:void(0)" style="color:rgb(52,226,176)">'+(mode==='signup'?'Log in':'Create account')+'</a></div>'+
+      '</div>';
+      var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), err=ov.querySelector('#alsErr'), tog=ov.querySelector('#alsTog');
+      tog.addEventListener('click',function(){ showLogin(mode==='signup'?'login':'signup'); });
+      function submit(){
+        var e=(em.value||'').trim(), p=pw.value||''; if(!e||!p){ err.style.color='#FF8FA3'; err.textContent='Enter your email and password.'; return; }
+        go.disabled=true; go.textContent='…'; err.textContent='';
+        var pr; try{ pr = mode==='signup'? client.auth.signUp({email:e,password:p}) : client.auth.signInWithPassword({email:e,password:p}); }
+        catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); return; }
+        Promise.resolve(pr).then(function(res){
+          if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); return; }
+          if(mode==='signup' && (!res||!res.data || !res.data.session)){ err.style.color='#34E2B0'; err.textContent='Account created — confirm via the email we sent, then log in.'; go.disabled=false; go.textContent='Log in'; return; }
+          location.reload();
+        }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; go.disabled=false; go.textContent=(mode==='signup'?'Create account':'Log in'); });
       }
-      client.auth.getSession().then(function(r){ var s=r&&r.data&&r.data.session; if(s) done(s); else showLogin('login'); }).catch(function(){ try{ov.remove();}catch(e){} document.documentElement.style.overflow=''; });
-    }catch(e){ /* fail-open: never lock the user out due to a gate bug */ }
+      go.addEventListener('click',submit);
+      pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit(); });
+      setTimeout(function(){ try{ em.focus(); }catch(e){} }, 60);
+    }
+
+    // Hard safety: if the session check stalls, fall through to the login form
+    // (never a stuck "Securing…"/black screen).
+    var killTimer=setTimeout(function(){ if(!settled) showLogin('login'); }, 3000);
+
+    var gp; try{ gp=client.auth.getSession(); }catch(e){ showLogin('login'); return; }
+    Promise.resolve(gp).then(function(r){ var s=r&&r.data&&r.data.session; if(s) done(s); else showLogin('login'); })
+      .catch(function(){ showLogin('login'); });
   })();
 
   // -------- CSS --------
