@@ -26,19 +26,23 @@
       if(!client || !client.auth) return;
     }catch(e){ return; } // client init failed → fail open, no overlay
 
-    var ov=document.createElement('div'); ov.id='alsAuth';
-    // scroll container (not flex-centered) so the form is never clipped off-screen
-    // when the keyboard opens; an inner min-height wrapper centers it when it fits.
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#050507;color:#F4F1EA;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:-apple-system,system-ui,sans-serif;';
+    // Native <dialog> in the TOP LAYER — immune to ancestor transform/filter that
+    // breaks position:fixed (the page backgrounds use transforms). Fills the
+    // viewport and scrolls internally so the form is never clipped off-frame.
+    var ov=document.createElement('dialog'); ov.id='alsAuth';
+    ov.style.cssText='position:fixed;inset:0;width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:100dvh;margin:0;padding:0;border:0;z-index:99999;background:#050507;color:#F4F1EA;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:-apple-system,system-ui,sans-serif;';
+    ov.addEventListener('cancel',function(e){ e.preventDefault(); }); // Esc must not dismiss the gate
     function wrapHTML(inner){ return '<div style="min-height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:max(32px,env(safe-area-inset-top)) 22px max(32px,env(safe-area-inset-bottom));">'+inner+'</div>'; }
+    function closeOv(){ try{ if(ov.open&&ov.close) ov.close(); }catch(e){} try{ ov.remove(); }catch(e){} try{ document.documentElement.style.overflow=''; }catch(e){} }
     ov.innerHTML=wrapHTML('<div style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4)">Securing…</div>');
     (document.body||document.documentElement).appendChild(ov);
+    try{ if(ov.showModal) ov.showModal(); else { ov.setAttribute('open',''); ov.style.display='block'; } }catch(e){ try{ ov.setAttribute('open',''); ov.style.display='block'; }catch(e2){} }
     document.documentElement.style.overflow='hidden';
 
     var settled=false;
     function settle(){ settled=true; try{ clearTimeout(killTimer); }catch(e){} }
-    function killOverlay(){ settle(); try{ ov.remove(); }catch(e){} try{ document.documentElement.style.overflow=''; }catch(e){} }
-    function done(session){ settle(); window.ALSAuth={user:(session&&session.user)||null,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; try{ov.remove();}catch(e){} try{document.documentElement.style.overflow='';}catch(e){} }
+    function killOverlay(){ settle(); closeOv(); }
+    function done(session){ settle(); window.ALSAuth={user:(session&&session.user)||null,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; closeOv(); }
     function showLogin(){
       settle();
       ov.innerHTML=wrapHTML('<div style="width:100%;max-width:340px">'+
