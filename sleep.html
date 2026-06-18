@@ -96,6 +96,45 @@
     .sl-night-q{ font-size:11px; color:var(--au-faint); font-family:var(--au-serif); font-style:italic; flex:1; }
     .sl-night-rec{ font-family:var(--au-mono); font-size:11px; font-weight:700; padding:2px 9px; border-radius:7px; }
     .sl-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); text-align:center; padding:10px 0; }
+
+    /* ── Sleep/wake buttons + in-progress hero ────── */
+    .sl-acts{ display:flex; gap:9px; margin-bottom:15px; }
+    .sl-act{ flex:1; padding:14px 8px; border-radius:14px; border:1px solid var(--au-line); background:rgba(255,255,255,.05); color:var(--au-ivory); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; line-height:1.3; text-align:center; transition:transform .12s, border-color .2s, background .2s; -webkit-tap-highlight-color:transparent; }
+    .sl-act:active{ transform:scale(.96); }
+    .sl-act.prim{ border-color:rgba(var(--sec-rgb),.55); background:rgba(var(--sec-rgb),.16); }
+    .sl-act small{ display:block; font-weight:400; font-size:10.5px; opacity:.7; margin-top:2px; }
+    .sl-now{ text-align:center; padding:14px 10px 18px; }
+    .sl-now-moon{ font-size:34px; line-height:1; filter:drop-shadow(0 0 12px rgba(var(--sec-rgb),.5)); animation:sl-breathe 4s ease-in-out infinite; }
+    @keyframes sl-breathe{ 0%,100%{ opacity:.85; transform:scale(1); } 50%{ opacity:1; transform:scale(1.06); } }
+    .sl-now-since{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); margin-top:10px; }
+    .sl-now-el{ font-family:var(--au-mono); font-size:13px; color:rgb(var(--sec-rgb)); margin-top:4px; letter-spacing:.02em; }
+    .sl-now-cancel{ display:inline-block; margin-top:14px; font-family:var(--au-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); background:none; border:none; cursor:pointer; }
+
+    /* ── Bedtime target ───────────────────────────── */
+    .sl-target{ display:flex; align-items:center; gap:9px; padding:11px 13px; margin-bottom:14px; border-radius:13px; background:rgba(var(--sec-rgb),.08); border:1px solid rgba(var(--sec-rgb),.2); cursor:pointer; }
+    .sl-target-ico{ font-size:17px; }
+    .sl-target-txt{ flex:1; font-size:12.5px; color:var(--au-dim); line-height:1.4; }
+    .sl-target-txt b{ color:var(--au-ivory); font-weight:700; }
+    .sl-target-edit{ font-family:var(--au-mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:rgb(var(--sec-rgb)); }
+    .sl-edit-row{ display:flex; gap:10px; align-items:flex-end; padding:12px 0 4px; }
+    .sl-edit-box{ flex:1; }
+    .sl-edit-box label{ display:block; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-bottom:5px; }
+    .sl-edit-box input, .sl-edit-box select{ width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.3); border-radius:11px; padding:9px 11px; color:var(--au-ivory); -webkit-text-fill-color:var(--au-ivory); font-family:var(--au-mono); font-size:15px; font-weight:700; outline:none; }
+
+    /* ── Recovery delta + peak glow ───────────────── */
+    .rec-delta{ display:inline-block; font-family:var(--au-mono); font-size:10px; font-weight:700; margin-top:6px; padding:2px 8px; border-radius:7px; }
+    .rec-train{ font-size:11.5px; color:var(--au-faint); line-height:1.4; margin-top:8px; font-style:italic; font-family:var(--au-serif); }
+    .rec-ring-wrap.peak::after{ content:''; position:absolute; inset:-6px; border-radius:50%; box-shadow:0 0 26px 4px rgba(var(--sec-rgb),.45); animation:sl-peak 2.2s ease-in-out infinite; pointer-events:none; }
+    @keyframes sl-peak{ 0%,100%{ opacity:.4; } 50%{ opacity:.9; } }
+
+    /* ── Insights (in Trends) ─────────────────────── */
+    .sl-ins{ display:flex; gap:10px; margin-bottom:14px; }
+    .sl-ins-card{ flex:1; background:rgba(255,255,255,.04); border:1px solid var(--au-line); border-radius:13px; padding:11px 12px; }
+    .sl-ins-v{ font-family:var(--au-mono); font-size:20px; font-weight:700; color:var(--au-ivory); line-height:1; letter-spacing:-.02em; }
+    .sl-ins-v small{ font-size:11px; color:var(--au-faint); }
+    .sl-ins-l{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--au-faint); margin-top:6px; line-height:1.3; }
+    .sl-takeaway{ font-family:var(--au-serif); font-style:italic; font-size:14.5px; color:var(--au-ivory); line-height:1.45; padding:12px 14px; margin-bottom:14px; border-radius:13px; background:rgba(var(--sec-rgb),.07); border-left:2px solid rgb(var(--sec-rgb)); }
+    .sl-streak{ font-family:var(--au-mono); font-size:9px; }
   </style>
 </head>
 <body data-page="sleep" class="au-bg au-mood-alert" id="root">
@@ -283,6 +322,39 @@
       renderAll();
     }
 
+    /* ── Profile, bedtime target, insights, haptics ── */
+    var PROF = 'sleep:profile', editingTarget = false;
+    function getProfile(){ var p = ls(PROF) || {}; return { wakeTime: p.wakeTime || '07:00', need: (typeof p.need === 'number' ? p.need : 8.5) }; }
+    function saveProfile(p){ lsSave(PROF, p); }
+    function targetBed(){ var pr = getProfile(); var w = pr.wakeTime.split(':'); var wm = (+w[0]) * 60 + (+w[1]); var bm = (((wm - Math.round(pr.need * 60)) % 1440) + 1440) % 1440; return pad(Math.floor(bm / 60)) + ':' + pad(bm % 60); }
+    function buzz(ms){ try{ if (navigator.vibrate) navigator.vibrate(ms || 12); }catch(e){} }
+    function daysBetween(a, b){ var pa = a.split('-').map(Number), pb = b.split('-').map(Number); return Math.round((Date.UTC(pa[0],pa[1]-1,pa[2]) - Date.UTC(pb[0],pb[1]-1,pb[2])) / 86400000); }
+    function elapsedStr(ms){ var m = Math.max(0, Math.round(ms / 60000)); var h = Math.floor(m / 60); return (h ? h + 'h ' : '') + (m % 60) + 'm'; }
+    function daysSinceTrained(){ var w = ls('po_workouts'); if (!Array.isArray(w)) return null; var ds = w.filter(function(x){ return x && x.date; }).map(function(x){ return x.date; }).sort(); return ds.length ? daysBetween(today(), ds[ds.length - 1]) : null; }
+    function recoveryOf(dk){ var r = recovery(entryFor(dk)); return r ? r.score : null; }
+    function sleepInsights(){
+      var logs = getLogs().filter(function(e){ return e && e.dateKey; }).sort(function(a,b){ return a.dateKey < b.dateKey ? -1 : 1; });
+      var need = getProfile().need;
+      var cut = dateKey(new Date(Date.now() - 7 * 86400000));
+      var wk = logs.filter(function(e){ return e.dateKey > cut && e.hours > 0; });
+      var debt = wk.reduce(function(s,e){ return s + (need - e.hours); }, 0);
+      var beds = logs.slice(-10).filter(function(e){ return e.bed; }).map(function(e){ var p = e.bed.split(':'); var mm = (+p[0]) * 60 + (+p[1]); if (mm < 720) mm += 1440; return mm; });
+      var consistency = null, spread = null;
+      if (beds.length >= 3){
+        var mean = beds.reduce(function(a,b){ return a + b; }, 0) / beds.length;
+        var std = Math.sqrt(beds.reduce(function(a,b){ return a + (b - mean) * (b - mean); }, 0) / beds.length);
+        spread = Math.round(std);
+        consistency = Math.round(clamp(100 - Math.max(0, std - 15) * 0.8, 0, 100));
+      }
+      var have = {}; logs.forEach(function(e){ if (e.hours > 0) have[e.dateKey] = 1; });
+      var streak = 0, cur = new Date();
+      if (!have[dateKey(cur)]) cur = new Date(Date.now() - 86400000);
+      while (have[dateKey(cur)]){ streak++; cur = new Date(cur.getTime() - 86400000); }
+      var recent = logs.slice(-14).filter(function(e){ return e.hours > 0; }), best = null;
+      recent.forEach(function(e){ var sc = e.recovery != null ? e.recovery : recoveryOf(e.dateKey); var k = sc != null ? sc : e.hours; if (!best || k > best.key) best = { e: e, key: k, sc: sc }; });
+      return { debt: debt, weekNights: wk.length, consistency: consistency, spread: spread, streak: streak, best: best, need: need };
+    }
+
     /* ══════════ RECOVERY CARD ══════════ */
     function barColor(s){ return s >= 70 ? '#34E2B0' : s >= 45 ? '#F2C063' : '#FF6B8B'; }
     function renderRecovery(){
@@ -309,16 +381,29 @@
           '<span class="rec-bar-v">' + p.score + '</span></div>';
       }).join('');
 
+      var yScore = recoveryOf(dateKey(new Date(Date.now() - 86400000)));
+      var delta = (yScore != null) ? r.score - yScore : null, deltaHtml = '';
+      if (delta != null && delta !== 0){ var up = delta > 0, dc = up ? '52,226,176' : '255,107,139'; deltaHtml = '<span class="rec-delta" style="color:rgb(' + dc + ');background:rgba(' + dc + ',.14)">' + (up ? '▲ ' : '▼ ') + Math.abs(delta) + ' vs yesterday</span>'; }
+      else if (delta === 0){ deltaHtml = '<span class="rec-delta" style="color:var(--au-faint);background:rgba(255,255,255,.06)">even with yesterday</span>'; }
+
+      var dst = daysSinceTrained(), trainHtml = '';
+      if (dst != null){
+        if (r.score >= 65 && dst >= 2) trainHtml = 'You haven’t trained in ' + dst + ' days and you’re recovered — go earn it today.';
+        else if (r.score >= 65 && dst <= 1) trainHtml = (dst === 0 ? 'Recovered even after training today' : 'Recovered the day after training') + ' — your engine’s running well.';
+        else if (r.score < 45 && dst === 0) trainHtml = 'You trained today and you’re depleted — food and an early night tonight.';
+        else if (r.score < 45) trainHtml = 'Low recovery — a rest day or easy walk pays off more than grinding.';
+      }
+
       body.innerHTML =
         '<div class="rec-main">' +
-          '<div class="rec-ring-wrap">' +
+          '<div class="rec-ring-wrap' + (r.score >= 85 ? ' peak' : '') + '">' +
             '<svg width="116" height="116" viewBox="0 0 116 116">' +
               '<circle cx="58" cy="58" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>' +
               '<circle cx="58" cy="58" r="' + R + '" fill="none" stroke="rgb(' + v.rgb + ')" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + C.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" style="filter:drop-shadow(0 0 8px rgba(' + v.rgb + ',.6));transition:stroke-dashoffset .6s ease"/>' +
             '</svg>' +
             '<div class="rec-ring-inner"><div class="rec-score">' + r.score + '</div><div class="rec-score-lbl">Recovery</div></div>' +
           '</div>' +
-          '<div class="rec-right"><div class="rec-verdict">' + v.word + '.</div><div class="rec-advice">' + v.advice + '</div></div>' +
+          '<div class="rec-right"><div class="rec-verdict">' + v.word + '.</div>' + deltaHtml + '<div class="rec-advice">' + v.advice + '</div>' + (trainHtml ? '<div class="rec-train">' + trainHtml + '</div>' : '') + '</div>' +
         '</div>' +
         '<div class="rec-bars">' + bars + '</div>';
     }
@@ -326,26 +411,49 @@
     /* ══════════ SLEEP LOG CARD ══════════ */
     function renderSleep(){
       var e = todayEntry();
-      var hrs = (e.hours != null) ? e.hours : calcHours(e.bed, e.wake);
-      var qLabels = ['', 'Terrible', 'Poor', 'OK', 'Good', 'Great'];
+      var body = document.getElementById('sleepBody');
+      var pend = getPending();
 
-      var pills = '';
-      for (var i=1;i<=5;i++){
-        pills += '<button type="button" class="sl-pill' + (e.quality === i ? ' on' : '') + '" data-metric="quality" data-val="' + i + '">' + i + '</button>';
+      // STATE A — a sleep is in progress: calm hero, no ambiguity.
+      if (pend){
+        body.innerHTML =
+          '<div class="sl-now">' +
+            '<div class="sl-now-moon">🌙</div>' +
+            '<div class="sl-now-since">Sleeping since ' + hm(pend.at) + '</div>' +
+            '<div class="sl-now-el" id="slElapsed">' + elapsedStr(Date.now() - pend.at) + ' so far</div>' +
+            '<div class="sl-acts" style="margin:16px 0 4px"><button type="button" class="sl-act prim" data-sleep-act="woke">☀️ I woke up<small>logs ' + hm(pend.at) + ' → now</small></button></div>' +
+            '<button type="button" class="sl-now-cancel" data-sleep-act="cancel">cancel · I’m not actually asleep</button>' +
+          '</div>';
+        return;
       }
 
-      var pend = getPending();
-      var bBase = 'flex:1;padding:13px 8px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#F4F1EA;font-size:13px;font-weight:700;cursor:pointer;line-height:1.3;text-align:center;';
-      var bPrim = 'flex:1;padding:13px 8px;border-radius:13px;border:1px solid rgba(52,226,176,.5);background:rgba(52,226,176,.16);color:#F4F1EA;font-size:13px;font-weight:700;cursor:pointer;line-height:1.3;text-align:center;';
-      var btnRow = '<div style="display:flex;gap:8px;margin-bottom:14px">' +
-        (pend
-          ? '<button type="button" data-sleep-act="cancel" style="' + bBase + 'opacity:.85">😴 Since ' + hm(pend.at) + '<br><span style="font-weight:400;font-size:10.5px;opacity:.7">tap to cancel</span></button>'
-          : '<button type="button" data-sleep-act="sleep" style="' + bBase + '">😴 Going to sleep</button>') +
-        '<button type="button" data-sleep-act="woke" style="' + bPrim + '">☀️ I woke up' + (pend ? '<br><span style="font-weight:400;font-size:10.5px;opacity:.75">' + hm(pend.at) + ' → now</span>' : '') + '</button>' +
+      // STATE B/C — bedtime target, quick buttons, manual times, quality.
+      var hrs = (e.hours != null) ? e.hours : calcHours(e.bed, e.wake);
+      var qLabels = ['', 'Terrible', 'Poor', 'OK', 'Good', 'Great'];
+      var pills = '';
+      for (var i=1;i<=5;i++) pills += '<button type="button" class="sl-pill' + (e.quality === i ? ' on' : '') + '" data-metric="quality" data-val="' + i + '">' + i + '</button>';
+
+      var pr = getProfile(), tb = targetBed(), targetHtml;
+      if (editingTarget){
+        targetHtml = '<div class="sl-edit-row">' +
+          '<div class="sl-edit-box"><label>Wake by</label><input type="time" id="slWakeGoal" value="' + pr.wakeTime + '"></div>' +
+          '<div class="sl-edit-box"><label>Sleep need</label><select id="slNeed">' +
+            [7,7.5,8,8.5,9,9.5].map(function(n){ return '<option value="' + n + '"' + (n === pr.need ? ' selected' : '') + '>' + n + 'h</option>'; }).join('') +
+          '</select></div>' +
+          '<button type="button" class="sl-act prim" style="flex:0 0 auto;padding:10px 16px" data-sleep-act="target-save">Save</button>' +
+        '</div>';
+      } else {
+        var hit = (hrs != null && hrs > 0) ? (hrs >= pr.need - 0.25 ? ' · hit it last night ✓' : ' · last night ' + fmtHM(hrs)) : '';
+        targetHtml = '<div class="sl-target" data-sleep-act="target-edit"><span class="sl-target-ico">🎯</span><span class="sl-target-txt">In bed by <b>' + tb + '</b> for <b>' + pr.need + 'h</b> before your ' + pr.wakeTime + ' wake' + hit + '</span><span class="sl-target-edit">Edit</span></div>';
+      }
+
+      var acts = '<div class="sl-acts">' +
+        '<button type="button" class="sl-act" data-sleep-act="sleep">😴 Going to sleep</button>' +
+        '<button type="button" class="sl-act prim" data-sleep-act="woke">☀️ I woke up</button>' +
       '</div>';
 
-      document.getElementById('sleepBody').innerHTML =
-        btnRow +
+      body.innerHTML =
+        targetHtml + acts +
         '<div class="sl-times">' +
           '<div class="sl-time-box"><div class="sl-time-lbl">Bedtime</div><input type="time" class="sl-time-in" id="slBed" value="' + (e.bed || '') + '"></div>' +
           '<div class="sl-dur"><div class="sl-dur-val">' + fmtHM(hrs) + '</div><div class="sl-dur-lbl">Asleep</div></div>' +
@@ -358,13 +466,7 @@
         '</div>';
 
       var bed = document.getElementById('slBed'), wake = document.getElementById('slWake');
-      // Listen to both: iOS fires 'input' as the wheel turns and 'change' on
-      // commit; only save once the field actually holds a value.
-      function bind(el, field){
-        function save(){ if (el.value) setField(field, el.value, 'sleepNote'); }
-        el.addEventListener('change', save);
-        el.addEventListener('input', save);
-      }
+      function bind(el, field){ function save(){ if (el.value) setField(field, el.value, 'sleepNote'); } el.addEventListener('change', save); el.addEventListener('input', save); }
       bind(bed, 'bed'); bind(wake, 'wake');
     }
 
@@ -399,20 +501,27 @@
       var metric = btn.getAttribute('data-metric');
       var val = +btn.getAttribute('data-val');
       if (!metric || !val) return;
-      var e = todayEntry();
+      var e = todayEntry(); buzz();
       var noteId = metric === 'quality' ? 'sleepNote' : 'checkNote';
       // tapping the active value clears it (toggle off)
       setField(metric, e[metric] === val ? null : val, noteId);
     });
 
-    /* One-tap sleep / wake / cancel buttons */
+    /* Sleep buttons + bedtime-target settings */
     document.addEventListener('click', function(ev){
       var b = ev.target && ev.target.closest ? ev.target.closest('[data-sleep-act]') : null;
       if (!b) return;
-      var act = b.getAttribute('data-sleep-act');
+      var act = b.getAttribute('data-sleep-act'); buzz();
       if (act === 'sleep') goSleep();
       else if (act === 'woke') wokeUp();
       else if (act === 'cancel') cancelSleep();
+      else if (act === 'target-edit'){ editingTarget = true; renderSleep(); }
+      else if (act === 'target-save'){
+        var wg = document.getElementById('slWakeGoal'), nd = document.getElementById('slNeed'), prof = getProfile();
+        if (wg && wg.value) prof.wakeTime = wg.value;
+        if (nd && nd.value) prof.need = parseFloat(nd.value) || prof.need;
+        saveProfile(prof); editingTarget = false; renderSleep();
+      }
     });
 
     /* ══════════ TRENDS CARD ══════════ */
@@ -468,7 +577,32 @@
         '</div>';
       }).join('');
 
+      // ── Insights: sleep debt (7d), bedtime consistency, logging streak ──
+      var ins = sleepInsights();
+      var debtV, debtL;
+      if (!ins.weekNights){ debtV = '—'; debtL = 'sleep debt'; }
+      else if (ins.debt > 0.5){ debtV = '−' + (Math.round(ins.debt * 10) / 10) + 'h'; debtL = 'debt this week'; }
+      else if (ins.debt < -0.5){ debtV = '+' + (Math.round(-ins.debt * 10) / 10) + 'h'; debtL = 'surplus this week'; }
+      else { debtV = 'on&nbsp;target'; debtL = 'this week'; }
+      var consV = ins.consistency != null ? (ins.consistency + '<small> /100</small>') : '—';
+      var insHtml = '<div class="sl-ins">' +
+        '<div class="sl-ins-card"><div class="sl-ins-v">' + debtV + '</div><div class="sl-ins-l">' + debtL + '</div></div>' +
+        '<div class="sl-ins-card"><div class="sl-ins-v">' + consV + '</div><div class="sl-ins-l">' + (ins.consistency != null ? 'consistency ±' + ins.spread + 'm' : 'consistency') + '</div></div>' +
+        '<div class="sl-ins-card"><div class="sl-ins-v">' + ins.streak + '<small> 🔥</small></div><div class="sl-ins-l">night streak</div></div>' +
+      '</div>';
+      var bestDay = '';
+      if (ins.best){ var bd = new Date(ins.best.e.dateKey + 'T00:00:00'); bestDay = ins.best.e.dateKey === today() ? 'tonight' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][bd.getDay()]; }
+      var takeaway;
+      if (ins.streak >= 7 && ins.consistency != null && ins.consistency >= 75) takeaway = 'Locked in — ' + ins.streak + ' nights straight with steady timing. This is exactly how recovery compounds.';
+      else if (ins.debt > 2) takeaway = 'You’re ' + (Math.round(ins.debt * 10) / 10) + 'h down this week — an earlier night tonight will lift tomorrow’s recovery.';
+      else if (ins.consistency != null && ins.consistency < 50) takeaway = 'Your bedtime swings ±' + ins.spread + ' min — steadier timing lifts recovery more than an extra 20 minutes in bed.';
+      else if (ins.best && ins.best.sc != null && ins.best.sc >= 80) takeaway = 'Your best night was ' + bestDay + ' — ' + fmtHM(ins.best.e.hours) + ', recovery ' + ins.best.sc + '. Worth repeating.';
+      else if (ins.debt < -1) takeaway = 'Banking surplus sleep this week — nice. Keep the rhythm going.';
+      else takeaway = 'Steady week. Keep stacking consistent nights — it’s the highest-leverage lever you’ve got.';
+      var takeHtml = '<div class="sl-takeaway">' + takeaway + '</div>';
+
       el.innerHTML =
+        insHtml + takeHtml +
         '<div class="sl-stats">' +
           '<div><div class="sl-stat-val">' + (avgH != null ? fmtHM(avgH) : '—') + '</div><div class="sl-stat-lbl">7-day sleep</div></div>' +
           '<div><div class="sl-stat-val">' + (avgR != null ? Math.round(avgR) : '—') + '<small> / 100</small></div><div class="sl-stat-lbl">7-day recovery</div></div>' +
@@ -515,6 +649,9 @@
     }
     renderAll();
 
+    // Live "X so far" while a sleep is in progress.
+    setInterval(function(){ var p = getPending(); var el = document.getElementById('slElapsed'); if (p && el) el.textContent = elapsedStr(Date.now() - p.at) + ' so far'; }, 30000);
+
     // Refreshed by cloud sync when data arrives from another device
     window._sleepRerender = renderAll;
 
@@ -533,7 +670,7 @@
         if (typeof initCloudSync !== 'function'){ setTimeout(start, 200); return; }
         initCloudSync({
           appKey: 'sleep',
-          syncedKeys: ['sleep:logs'],
+          syncedKeys: ['sleep:logs', 'sleep:profile'],
           onApplied: function(){ if (window._sleepRerender) window._sleepRerender(); }
         });
       }
