@@ -343,7 +343,7 @@
       shBody.innerHTML='<div class="sh-spin">Searching the web for the exact product…</div>';
       fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
         .then(function(r){return r.json();}).then(function(j){
-          if(!j||j.error){ webFallback(t, (j&&j.message)||'Web search unavailable'); return; }
+          if(!j||j.error){ if(j&&(j.error==='no-search'||j.error==='no-key')){ shBody.innerHTML='<div class="sh-msg">'+esc(j.message)+'</div><button type="button" class="sh-btn" data-act="web-fallback">Use Nova’s estimate instead</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; } else { webFallback(t, (j&&j.message)||'Web search unavailable'); } return; }
           if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t confirm that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
           var wf=aiToFood(j); wf.webSource=j.source||''; showPortion(wf, j.grams||100);
         }).catch(function(){ webFallback(t, 'Web search timed out'); });
@@ -490,6 +490,7 @@
       else if(act==='ai-go'){ aiGo(); }
       else if(act==='ai-use-estimate'){ if(window._aiEstimate) showPortion(aiToFood(window._aiEstimate), window._aiEstimate.grams||100); }
       else if(act==='web-go'){ webGo(); }
+      else if(act==='web-fallback'){ webFallback(window._lastDescribe||'', ''); }
       else if(act==='web-use-estimate'){ if(window._webEstimate) showPortion(aiToFood(window._webEstimate), window._webEstimate.grams||100); }
       else if(act==='photo-pick'){ photoPick(); }
       else if(act==='search-go'){ searchGo(); }

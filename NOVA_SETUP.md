@@ -38,6 +38,26 @@ Then **redeploy** (Deployments → ⋯ → Redeploy, or push any commit).
 - Ask anything: *"How should I train today?"*, *"Am I on track with my recomp?"*,
   *"Why's my sleep off this week?"*, *"Give me a pep talk."*
 
+## Nutrition: "🔍 Find the exact product online" (optional, FREE)
+The AI Describe tab has a web-search button that finds a *specific branded
+product's real label* online. It works in two reliable steps: we run the web
+search ourselves (so the request stays small — no "request too large" errors),
+then a fast model reads only those results and extracts the per-100g label,
+which we validate against the macros and scale to your serving. The source
+domain is shown ("✓ Verified from …").
+
+To enable it, add **one free key** (no credit card):
+1. Go to **https://tavily.com** → sign up → copy your API key (`tvly-...`).
+2. Vercel → **als** → Settings → Environment Variables (Production):
+
+| Name | Value |
+|------|-------|
+| `TAVILY_API_KEY` | the `tvly-...` key (free tier: 1000 searches/month) |
+
+Then redeploy. (Parsing reuses your existing `GROQ_API_KEY`.) Until it's added,
+the web button cleanly offers Nova's estimate instead — nothing breaks.
+*(Optional)* `GROQ_WEB_PARSE_MODEL` overrides the parsing model.
+
 ## Notes
 - The conversation is stored locally on the device (`nova:chat:v1`) — tap **Clear**
   to wipe it.
