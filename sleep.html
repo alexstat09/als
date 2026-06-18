@@ -258,6 +258,31 @@
       updateNova();
     }
 
+    /* ── One-tap sleep / wake buttons. Pending bedtime is kept LOCAL (not synced)
+       since it's transient; the finished entry is filed under the wake day via
+       setField (calcHours wraps past midnight), so a 23:30→07:00 night lands on
+       the morning's date automatically. ── */
+    var PEND = 'sleep:pending';
+    function hm(ts){ var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    function getPending(){ var p = ls(PEND); return (p && typeof p.at === 'number') ? p : null; }
+    function goSleep(){ lsSave(PEND, { at: Date.now() }); flashNote('sleepNote'); renderAll(); }
+    function cancelSleep(){ try{ localStorage.removeItem(PEND); }catch(e){} renderAll(); }
+    function wokeUp(){
+      var now = Date.now(), p = getPending();
+      if (p){
+        var dur = (now - p.at) / 3600000;
+        try{ localStorage.removeItem(PEND); }catch(e){}
+        if (dur >= 0.33 && dur <= 16){            // a real night → pair bedtime + wake
+          setField('bed', hm(p.at), null);
+          setField('wake', hm(now), 'sleepNote');
+          renderAll();
+          return;
+        }
+      }
+      setField('wake', hm(now), 'sleepNote');      // no usable bedtime → log wake, set bedtime manually
+      renderAll();
+    }
+
     /* ══════════ RECOVERY CARD ══════════ */
     function barColor(s){ return s >= 70 ? '#34E2B0' : s >= 45 ? '#F2C063' : '#FF6B8B'; }
     function renderRecovery(){
@@ -309,7 +334,18 @@
         pills += '<button type="button" class="sl-pill' + (e.quality === i ? ' on' : '') + '" data-metric="quality" data-val="' + i + '">' + i + '</button>';
       }
 
+      var pend = getPending();
+      var bBase = 'flex:1;padding:13px 8px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#F4F1EA;font-size:13px;font-weight:700;cursor:pointer;line-height:1.3;text-align:center;';
+      var bPrim = 'flex:1;padding:13px 8px;border-radius:13px;border:1px solid rgba(52,226,176,.5);background:rgba(52,226,176,.16);color:#F4F1EA;font-size:13px;font-weight:700;cursor:pointer;line-height:1.3;text-align:center;';
+      var btnRow = '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+        (pend
+          ? '<button type="button" data-sleep-act="cancel" style="' + bBase + 'opacity:.85">😴 Since ' + hm(pend.at) + '<br><span style="font-weight:400;font-size:10.5px;opacity:.7">tap to cancel</span></button>'
+          : '<button type="button" data-sleep-act="sleep" style="' + bBase + '">😴 Going to sleep</button>') +
+        '<button type="button" data-sleep-act="woke" style="' + bPrim + '">☀️ I woke up' + (pend ? '<br><span style="font-weight:400;font-size:10.5px;opacity:.75">' + hm(pend.at) + ' → now</span>' : '') + '</button>' +
+      '</div>';
+
       document.getElementById('sleepBody').innerHTML =
+        btnRow +
         '<div class="sl-times">' +
           '<div class="sl-time-box"><div class="sl-time-lbl">Bedtime</div><input type="time" class="sl-time-in" id="slBed" value="' + (e.bed || '') + '"></div>' +
           '<div class="sl-dur"><div class="sl-dur-val">' + fmtHM(hrs) + '</div><div class="sl-dur-lbl">Asleep</div></div>' +
@@ -367,6 +403,16 @@
       var noteId = metric === 'quality' ? 'sleepNote' : 'checkNote';
       // tapping the active value clears it (toggle off)
       setField(metric, e[metric] === val ? null : val, noteId);
+    });
+
+    /* One-tap sleep / wake / cancel buttons */
+    document.addEventListener('click', function(ev){
+      var b = ev.target && ev.target.closest ? ev.target.closest('[data-sleep-act]') : null;
+      if (!b) return;
+      var act = b.getAttribute('data-sleep-act');
+      if (act === 'sleep') goSleep();
+      else if (act === 'woke') wokeUp();
+      else if (act === 'cancel') cancelSleep();
     });
 
     /* ══════════ TRENDS CARD ══════════ */
