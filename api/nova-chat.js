@@ -87,9 +87,19 @@ async function buildBrief(tz) {
 
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || (weights.length ? weights[weights.length - 1].weight : 75);
   var protTarget = Math.round(weightKg * 2);
-  var prot = 0, kcal = 0, meals = 0;
-  (nut['nut:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) { prot += (l.p || 0); kcal += (l.kcal || 0); meals++; } });
-  L.push('Nutrition today: ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(kcal) + ' kcal, ' + meals + ' meals logged.');
+  var prot = 0, kcal = 0, carb = 0, fat = 0, items = 0, byMeal = {};
+  (nut['nut:logs'] || []).forEach(function (l) {
+    if (l && l.ts && tsToDateKey(l.ts, tz) === today) {
+      prot += (l.p || 0); kcal += (l.kcal || 0); carb += (l.c || 0); fat += (l.f || 0); items++;
+      var m = l.meal || 'Other'; if (!byMeal[m]) byMeal[m] = [];
+      byMeal[m].push((l.name || 'food') + ' ' + Math.round(l.grams || 0) + 'g (' + Math.round(l.kcal || 0) + 'kcal/' + Math.round(l.p || 0) + 'p)');
+    }
+  });
+  L.push('Nutrition today: ' + Math.round(kcal) + ' kcal, ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(carb) + 'g carbs, ' + Math.round(fat) + 'g fat, ' + items + ' items.');
+  if (items) {
+    var lines = []; Object.keys(byMeal).forEach(function (m) { lines.push(m + ': ' + byMeal[m].slice(0, 12).join(', ')); });
+    L.push('What he actually ate today — ' + lines.join(' | ') + '.');
+  } else L.push('No food logged yet today.');
 
   var cafToday = 0; (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) cafToday += (l.mg || 0); });
   L.push('Caffeine today: ' + Math.round(cafToday) + 'mg.');

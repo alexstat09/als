@@ -126,7 +126,7 @@
     if (!appKey || !window.supabase) return;
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
-    let supa = null, pushTimer = null, suppress = false, lastJson = null;
+    let supa = null, pushTimer = null, suppress = false, lastJson = null, lastPushAt = 0;
     const TOMB_KEY = '__synctomb__' + appKey;
 
     const origSet = localStorage.setItem.bind(localStorage);
@@ -227,12 +227,18 @@
       const body = pushBody(r.merged, r.tomb);
       const json = JSON.stringify(body);
       if (json !== lastJson) {
-        lastJson = json;
+        lastJson = json; lastPushAt = Date.now();
         try { await supa.from('app_state').upsert({ key: appKey, data: body, updated_at: new Date().toISOString() }, { onConflict: 'key' }); } catch (e) {}
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
     function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
+    // Direct API so a page can force a deletion tombstone + immediate push
+    // (belt-and-suspenders beyond the setItem interception).
+    window.ALSSync = {
+      flush: function () { schedulePush(); },
+      drop: function (key, id) { try { if (!matches(key)) return; var t = loadTomb(); if (!t[key]) t[key] = {}; t[key]['id:' + id] = Date.now(); saveTomb(t); schedulePush(); } catch (e) {} }
+    };
 
     // Incoming realtime change from another device.
     function applyRealtime(remoteData) {
@@ -242,7 +248,7 @@
       const body = pushBody(r.merged, r.tomb);
       const json = JSON.stringify(body);
       if (json !== lastJson) {
-        lastJson = json;
+        lastJson = json; lastPushAt = Date.now();
         // local held data the payload lacked — push the union back
         try { supa.from('app_state').upsert({ key: appKey, data: body, updated_at: new Date().toISOString() }, { onConflict: 'key' }); } catch (e) {}
       }
@@ -279,7 +285,9 @@
         }, function (payload) {
           if (!payload.new || !payload.new.data) return;
           const incoming = JSON.stringify(payload.new.data);
-          if (incoming === lastJson) return; // our own echo
+          // skip our own echo: exact match, OR within a few seconds of our push
+          // (Supabase jsonb re-orders keys so the string compare often misses).
+          if (incoming === lastJson || (Date.now() - lastPushAt < 4000)) return;
           applyRealtime(payload.new.data);
         })
         .subscribe();

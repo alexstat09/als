@@ -247,7 +247,7 @@
         kcal:r0(p.kcal*k),p:r1(p.p*k),c:r1(p.c*k),f:r1(p.f*k),fiber:r1(p.fiber*k),sugar:r1(p.sugar*k),sodium:r0(p.sodium*k),satfat:r1(p.satfat*k)};
     }
     function addEntry(e){ var a=getLogs(); a.push(e); saveLogs(a); renderAll(); }
-    function delEntry(id){ saveLogs(getLogs().filter(function(e){return e.id!==id;})); renderAll(); }
+    function delEntry(id){ saveLogs(getLogs().filter(function(e){return e.id!==id;})); try{ if(window.ALSSync){ window.ALSSync.drop('nut:logs', id); window.ALSSync.flush(); } }catch(e){} renderAll(); }
 
     function recentFoods(){
       var seen={}, out=[];
@@ -511,7 +511,7 @@
       else if(act==='meal-item-edit'){ if(!editMeal) return; readMealName(); var iti=+el.getAttribute('data-i'), it=editMeal.items[iti]; if(it){ var gk=it.grams||100,kk=100/gk; portionTarget='meal'; mealItemEdit=iti; showPortion({name:it.name,brand:'',per100:{kcal:(it.kcal||0)*kk,p:(it.p||0)*kk,c:(it.c||0)*kk,f:(it.f||0)*kk,fiber:(it.fiber||0)*kk,sugar:(it.sugar||0)*kk,sodium:(it.sodium||0)*kk,satfat:(it.satfat||0)*kk},source:it.source||'manual',servingG:it.grams}, it.grams); } }
       else if(act==='meal-item-del'){ if(!editMeal) return; readMealName(); editMeal.items.splice(+el.getAttribute('data-i'),1); renderMealEditor(); }
       else if(act==='meal-done'){ if(!editMeal) return; readMealName(); if(!editMeal.name) editMeal.name='My meal'; var arr=ls(MEALSK,[]); if(!Array.isArray(arr))arr=[]; var found=false; for(var mi=0;mi<arr.length;mi++){ if(arr[mi]&&arr[mi].id===editMeal.id){ arr[mi]=editMeal; found=true; break; } } if(!found) arr.unshift(editMeal); save(MEALSK,arr); editMeal=null; portionTarget='diary'; setTab('meals'); }
-      else if(act==='meal-delete'){ if(!editMeal) return; var arr2=(ls(MEALSK,[])||[]).filter(function(x){return !(x&&x.id===editMeal.id);}); save(MEALSK,arr2); editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-delete'){ if(!editMeal) return; var delId=editMeal.id; var arr2=(ls(MEALSK,[])||[]).filter(function(x){return !(x&&x.id===delId);}); save(MEALSK,arr2); try{ if(window.ALSSync){ window.ALSSync.drop('nut:meals', delId); window.ALSSync.flush(); } }catch(e){} editMeal=null; portionTarget='diary'; setTab('meals'); }
       else if(act==='meal-cancel'){ editMeal=null; portionTarget='diary'; setTab('meals'); }
       else if(act==='pick'){
         var kind=el.getAttribute('data-kind'), i=+el.getAttribute('data-i');
