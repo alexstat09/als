@@ -130,6 +130,7 @@
     </div>
 
     <div class="card sum" id="sumCard"></div>
+    <div class="card" id="energyCard" style="padding:14px 16px;"></div>
     <div id="diary"></div>
   </div>
 
@@ -141,6 +142,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="sync.js" defer></script>
+  <script src="tdee.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script>
   (function(){
@@ -184,11 +186,42 @@
       var ws=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
       return ws.length ? ws[ws.length-1].weight : 75;
     }
+    // Adaptive maintenance from intake + weight trend (cached per render to avoid recompute).
+    function tdeeNow(){ if(!window.ALSTDEE) return null; try{ return window.ALSTDEE.compute(getLogs(), ls('po_coach_weights',[])||[], {weightKg:weightKg()}); }catch(e){ return null; } }
     function targets(){
       var p=ls(PROFILE,{})||{}, w=weightKg();
-      var kcal=p.calTarget||Math.round(w*32), prot=p.proteinTarget||Math.round(w*2), fat=Math.round(w*0.9);
+      var kcal=p.calTarget; // explicit manual override always wins
+      if(!kcal){ var r=tdeeNow(); if(r&&r.ok&&window.ALSTDEE) kcal=window.ALSTDEE.recommend(r.tdee, p.goal||'maintain', {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}); }
+      if(!kcal) kcal=Math.round(w*32); // fallback until adaptive data exists
+      var prot=p.proteinTarget||Math.round(w*2), fat=Math.round(w*0.9);
       var carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
       return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14) };
+    }
+    function renderEnergy(){
+      var el=document.getElementById('energyCard'); if(!el) return;
+      if(!window.ALSTDEE){ el.style.display='none'; return; }
+      el.style.display='';
+      var p=ls(PROFILE,{})||{}, w=weightKg(), goal=p.goal||'maintain';
+      var chips=['cut','maintain','bulk'].map(function(g){ var on=g===goal; var lbl=g.charAt(0).toUpperCase()+g.slice(1);
+        return '<button type="button" data-act="goal" data-goal="'+g+'" style="flex:1;padding:8px 4px;border-radius:11px;border:1px solid '+(on?'rgb(var(--nu))':'rgba(255,255,255,.12)')+';background:'+(on?'rgba(52,226,176,.16)':'rgba(255,255,255,.04)')+';color:#F4F1EA;font-size:12px;font-weight:700;cursor:pointer;">'+lbl+'</button>'; }).join('');
+      var hdr='<div style="font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5);margin-bottom:8px">Adaptive Energy</div>';
+      var r=tdeeNow();
+      if(r&&r.ok){
+        var tgt=window.ALSTDEE.recommend(r.tdee, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek});
+        var wc=r.weeklyWeightChange, tcol=wc<-0.05?'#34E2B0':(wc>0.05?'#9B8CFF':'rgba(244,241,234,.6)');
+        var conf=r.confidence>=0.8?'high':(r.confidence>=0.6?'good':'building');
+        el.innerHTML=hdr.replace('</div>',' · '+conf+' confidence ('+r.intakeDays+'d)</div>')+
+          '<div style="display:flex;gap:14px;align-items:baseline;margin-bottom:11px;flex-wrap:wrap">'+
+          '<div><div style="font-size:22px;font-weight:800;color:#F4F1EA;font-family:var(--au-mono,ui-monospace)">'+r.tdee+'</div><div style="font-size:10px;color:rgba(244,241,234,.45)">maintenance</div></div>'+
+          '<div><div style="font-size:16px;font-weight:700;color:'+tcol+';font-family:var(--au-mono,ui-monospace)">'+(wc>0?'+':'')+wc+' kg/wk</div><div style="font-size:10px;color:rgba(244,241,234,.45)">trend</div></div>'+
+          '<div style="margin-left:auto;text-align:right"><div style="font-size:20px;font-weight:800;color:rgb(var(--nu));font-family:var(--au-mono,ui-monospace)">'+tgt+'</div><div style="font-size:10px;color:rgba(244,241,234,.45)">daily target</div></div></div>'+
+          '<div style="display:flex;gap:6px">'+chips+'</div>';
+      } else {
+        var reason=(r&&r.reason)||'Log daily and weigh in';
+        el.innerHTML=hdr+
+          '<div style="font-size:13px;color:rgba(244,241,234,.6);line-height:1.5;margin-bottom:11px">Nova is learning your true maintenance from intake + weight trend. <b style="color:#F4F1EA">'+esc(reason)+'</b>, weigh in across ~a week, and your adaptive target unlocks here.</div>'+
+          '<div style="display:flex;gap:6px">'+chips+'</div>';
+      }
     }
     function dayTotals(dk){
       var t={kcal:0,p:0,c:0,f:0,fiber:0,sugar:0,sodium:0,satfat:0};
@@ -234,7 +267,7 @@
     function renderAll(){
       document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
       document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
-      renderSummary(); renderDiary();
+      renderSummary(); renderEnergy(); renderDiary();
     }
     window._nutRerender=renderAll;
 
@@ -489,6 +522,7 @@
       if(act==='day-prev'){ var p=viewDate.split('-').map(Number); viewDate=dateKey(new Date(p[0],p[1]-1,p[2]-1)); renderAll(); }
       else if(act==='day-next'){ var q=viewDate.split('-').map(Number); var nd=dateKey(new Date(q[0],q[1]-1,q[2]+1)); if(nd<=today()){ viewDate=nd; renderAll(); } }
       else if(act==='day-today'){ viewDate=today(); renderAll(); }
+      else if(act==='goal'){ var pr=ls(PROFILE,{})||{}; pr.goal=el.getAttribute('data-goal'); save(PROFILE,pr); renderAll(); }
       else if(act==='add'){ openSheet(el.getAttribute('data-meal')); }
       else if(act==='del'){ ev.stopPropagation(); delEntry(el.getAttribute('data-id')); }
       else if(act==='edit'){ var e=getLogs().filter(function(x){return x.id===el.getAttribute('data-id');})[0]; if(e){ openSheet(e.meal||'Snacks'); pickEditId=e.id; var g=e.grams||100,k=100/g; showPortion({name:e.name,brand:'',per100:{kcal:(e.kcal||0)*k,p:(e.p||0)*k,c:(e.c||0)*k,f:(e.f||0)*k,fiber:(e.fiber||0)*k,sugar:(e.sugar||0)*k,sodium:(e.sodium||0)*k,satfat:(e.satfat||0)*k},source:e.source}, e.grams); } }

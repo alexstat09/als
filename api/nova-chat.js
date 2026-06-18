@@ -101,6 +101,18 @@ async function buildBrief(tz) {
     L.push('What he actually ate today — ' + lines.join(' | ') + '.');
   } else L.push('No food logged yet today.');
 
+  // Adaptive TDEE — learned maintenance + recommended target (self-corrects logging error)
+  try {
+    var TDEE = require('../tdee.js');
+    var todayNum = Math.floor(Date.parse(today + 'T00:00:00Z') / 86400000);
+    var tres = TDEE.compute(nut['nut:logs'] || [], weights || [], { weightKg: weightKg, todayNum: todayNum });
+    if (tres && tres.ok) {
+      var ngoal = ((nut['nut:profile'] || {}).goal) || 'maintain';
+      var ntgt = TDEE.recommend(tres.tdee, ngoal, { weightKg: weightKg });
+      L.push('Adaptive energy: maintenance ≈ ' + tres.tdee + ' kcal (learned from ' + tres.intakeDays + 'd intake + weight trend ' + (tres.weeklyWeightChange > 0 ? '+' : '') + tres.weeklyWeightChange + ' kg/wk). Goal ' + ngoal + ' → recommended ~' + ntgt + ' kcal/day. Use these real numbers when advising on calories.');
+    }
+  } catch (e) {}
+
   var cafToday = 0; (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) cafToday += (l.mg || 0); });
   L.push('Caffeine today: ' + Math.round(cafToday) + 'mg.');
 
