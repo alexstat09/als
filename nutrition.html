@@ -239,7 +239,7 @@
     window._nutRerender=renderAll;
 
     function per100From(o){ return {kcal:o.kcal||0,p:o.p||0,c:o.c||0,f:o.f||0,fiber:o.fiber||0,sugar:o.sugar||0,sodium:o.sodium||0,satfat:o.satfat||0}; }
-    function searchResultToFood(r){ return {name:r.name,brand:r.brand||'',per100:per100From(r),servingG:r.servingG||0,source:r.source}; }
+    function searchResultToFood(r){ return {name:r.name,brand:r.brand||'',per100:per100From(r),servingG:r.servingG||0,source:r.source,servingName:r.servingName||'',packageG:r.packageG||0,servingsPer:r.servingsPer||0}; }
     function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai',confidence:(typeof a.confidence==='number'?a.confidence:null),items:(Array.isArray(a.items)?a.items:null)}; }
     function scaleEntry(food,grams,meal){
       var k=grams/100,p=food.per100;
@@ -345,7 +345,7 @@
         .then(function(r){return r.json();}).then(function(j){
           if(!j||j.error){ if(j&&(j.error==='no-search'||j.error==='no-key')){ shBody.innerHTML='<div class="sh-msg">'+esc(j.message)+'</div><button type="button" class="sh-btn" data-act="web-fallback">Use Nova’s estimate instead</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; } else { webFallback(t, (j&&j.message)||'Web search unavailable'); } return; }
           if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t confirm that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
-          var wf=aiToFood(j); wf.webSource=j.source||''; showPortion(wf, j.grams||100);
+          var wf=aiToFood(j); wf.webSource=j.source||''; wf.servingName=j.serving_name||''; wf.packageG=j.package_g||0; wf.servingsPer=j.servings_per_container||0; showPortion(wf, j.grams||100);
         }).catch(function(){ webFallback(t, 'Web search timed out'); });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
@@ -413,19 +413,26 @@
     function showPortion(food,defG){
       pickFood=food; pickMeal=curMeal;
       var g=Math.round(defG||food.servingG||100); if(!g) g=100;
+      var hasS=food.servingG>0;
+      var unit=(food.servingName||'serving'), unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
+      var sv=hasS?(Math.round(g/food.servingG*10)/10):0;
+      var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
+      var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
+      var srcLine=food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'';
+      var serRow=hasS?'<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppServ" inputmode="decimal" value="'+sv+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>':'';
+      var gRow='<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>';
+      var info=hasS?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 '+esc(unit)+' = '+r0(food.servingG)+'g'+(food.packageG>food.servingG?' · whole pack '+r0(food.packageG)+'g':'')+(food.servingsPer>1?' · '+(Math.round(food.servingsPer*10)/10)+'/pack':'')+'</div>':'';
       shBody.innerHTML=
         '<div class="pp-name">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</div>'+
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
-        ((food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust grams below to refine</div>':'')+
-        ((food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'')+
-        (food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'')+
-        '<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>'+
-        (food.servingG?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 serving ≈ '+r0(food.servingG)+'g — <a href="javascript:void(0)" data-act="pp-serv" style="color:rgb(var(--nu))">use serving</a></div>':'')+
+        confLine+itemsLine+srcLine+serRow+gRow+info+
         '<div class="pp-preview" id="ppPrev"></div>'+
         (portionTarget==='meal'?'':'<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
         '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>';
+      var gi=document.getElementById('ppG'), si=document.getElementById('ppServ');
+      if(gi) gi.addEventListener('input', function(){ if(si&&pickFood.servingG){ var gg=parseFloat((gi.value||'').replace(',','.'))||0; si.value=gg>0?(Math.round(gg/pickFood.servingG*10)/10):''; } ppPreview(); });
+      if(si) si.addEventListener('input', function(){ if(gi&&pickFood.servingG){ var s2=parseFloat((si.value||'').replace(',','.'))||0; gi.value=s2>0?Math.round(s2*pickFood.servingG):''; } ppPreview(); });
       ppPreview();
-      var gi=document.getElementById('ppG'); if(gi) gi.addEventListener('input',ppPreview);
     }
     function ppGrams(){ var v=parseFloat((((document.getElementById('ppG')||{}).value)||'').replace(',','.')); return (isFinite(v)&&v>0)?v:0; }
     function ppPreview(){

@@ -20,6 +20,8 @@ function withTimeout(p, ms) { return Promise.race([p, new Promise(function (res)
 
 // ── Open Food Facts ──────────────────────────────────────────────
 function deriveKcal(kcal, p, c, f) { return (!kcal && (p || c || f)) ? Math.round(4 * p + 4 * c + 9 * f) : kcal; }
+// pull a household unit word ("bar","slice","scoop"…) out of a serving-size string
+function servUnit(s) { var m = String(s || '').toLowerCase().match(/\b(bar|slice|scoop|piece|cookie|biscuit|can|bottle|cup|sachet|pot|pouch|container|pack|tablet|capsule|square|ball|wrap|roll|bun|stick|egg)s?\b/); return m ? m[1] : ''; }
 function offRow(prod) {
   if (!prod) return null;
   var nu = prod.nutriments || {};
@@ -32,13 +34,14 @@ function offRow(prod) {
   return {
     name: name, brand: clip(prod.brands, 40), per: '100g',
     servingG: n(prod.serving_quantity) || 0,
+    servingName: servUnit(prod.serving_size), packageG: n(prod.product_quantity) || 0,
     kcal: kcal, p: p, c: c, f: f,
     fiber: n(nu.fiber_100g), sugar: n(nu.sugars_100g),
     sodium: Math.round(n(nu.sodium_100g) * 1000), satfat: n(nu['saturated-fat_100g']),
     barcode: clip(prod.code, 20), source: 'off'
   };
 }
-var OFF_FIELDS = 'code,product_name,product_name_en,generic_name,brands,serving_quantity,nutriments';
+var OFF_FIELDS = 'code,product_name,product_name_en,generic_name,brands,serving_quantity,serving_size,product_quantity,nutriments';
 function offClean(rows) { return rows.map(offRow).filter(function (x) { return x && (x.kcal || x.p || x.c || x.f); }); }
 // Modern search-a-licious (Elasticsearch) — fast + reliable, the primary path.
 async function offSAL(q) {
@@ -89,6 +92,7 @@ function usdaRow(food) {
   return {
     name: name, brand: clip(food.brandOwner || food.brandName, 40), per: '100g',
     servingG: n(food.servingSize) || 0,
+    servingName: servUnit(food.householdServingFullText), packageG: 0,
     kcal: kcal, p: p, c: c, f: f,
     fiber: usdaNutr(food, ['291', '1079']), sugar: usdaNutr(food, ['269', '2000']),
     sodium: Math.round(usdaNutr(food, ['307', '1093'])), satfat: usdaNutr(food, ['606', '1258']),

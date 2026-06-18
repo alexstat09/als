@@ -68,7 +68,7 @@ var SYS = [
   'You are given REAL web search results about a food product. Extract its official nutrition facts from them.',
   'Use ONLY numbers present in the results — never invent. Read values PER 100 g (or per 100 ml). Also note one labelled serving size in grams.',
   'Reply with ONLY a single minified JSON object — no prose — exactly these keys:',
-  '{"name": full product name incl. brand, "source": the website domain the numbers came from, "serving_g": one serving in grams, "per100": {"kcal":,"p":,"c":,"f":,"fiber":,"sugar":,"sodium":mg,"satfat":}, "found": true ONLY if the results actually contain the product\'s nutrition numbers else false, "confidence": 0..1}',
+  '{"name": full product name incl. brand, "source": the website domain the numbers came from, "serving_g": one serving in grams, "serving_name": the unit word for ONE serving e.g. "bar"/"scoop"/"slice"/"piece"/"biscuit"/"can"/"cup" (else "serving"), "package_g": total grams of the whole product/package if stated else 0, "servings_per_container": servings per package if stated else 0, "per100": {"kcal":,"p":,"c":,"f":,"fiber":,"sugar":,"sodium":mg,"satfat":}, "found": true ONLY if the results actually contain the product\'s nutrition numbers else false, "confidence": 0..1}',
   'If a label only shows PER SERVING values, convert them to per 100 g using the stated serving size.',
   'All numbers, no units. per100 is PER 100g. If the results do not contain real nutrition data for this product, set found=false and give a conservative estimate.'
 ].join(' ');
@@ -133,9 +133,11 @@ module.exports = async function (req, res) {
   var k = serv / 100;
   var source = (obj.source || ctx.cites[0] || '').toString().replace(/^https?:\/\//, '').replace(/\/.*$/, '').slice(0, 48);
 
+  var servName = (obj.serving_name || '').toString().toLowerCase().replace(/[^a-z ]/g, '').trim().slice(0, 16);
   res.status(200).json({
     name: (obj.name || text).toString().slice(0, 90),
     source: source, found: found, confidence: conf, grams: serv,
+    serving_name: servName, package_g: r0(num(obj.package_g, 50000)), servings_per_container: num(obj.servings_per_container, 999),
     kcal: r0(kcal100 * k),
     p: num(P * k, 1000), c: num(C * k, 2000), f: num(F * k, 1000),
     fiber: num(num(p100.fiber, 100) * k, 500), sugar: num(num(p100.sugar, 100) * k, 1000),
