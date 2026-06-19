@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Weekly Review · ALS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="topbar.js" defer></script>
+<script src="tdee.js" defer></script>
+<link rel="stylesheet" href="aurora.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:#050507;color:#F4F1EA;-webkit-font-smoothing:antialiased;}
+  body{font-family:var(--au-sans,-apple-system,system-ui,sans-serif);min-height:100vh;overflow-x:hidden;}
+  /* living aurora backdrop (violet-led — the evening/reflection bookend to morning) */
+  body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(38% 30% at 80% 8%, rgba(155,140,255,.16), transparent 60%),
+      radial-gradient(34% 28% at 14% 22%, rgba(24,200,192,.12), transparent 60%),
+      radial-gradient(42% 36% at 55% 96%, rgba(52,226,176,.10), transparent 62%);
+    filter:blur(24px);animation:wkBreathe 14s ease-in-out infinite alternate;}
+  @keyframes wkBreathe{0%{opacity:.75}100%{opacity:1}}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.013) 1px,transparent 1px);background-size:3px 3px;}
+
+  .wk-shell{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:18px 18px 40px;}
+
+  /* header */
+  .wk-back{display:inline-flex;align-items:center;gap:7px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.4);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:8px;padding:8px 13px;text-decoration:none;transition:color .2s,border-color .2s;}
+  .wk-back:active{color:#F4F1EA;border-color:rgba(155,140,255,.4);}
+  .wk-eyebrow{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:rgba(155,140,255,.6);margin:22px 0 4px;display:flex;align-items:center;gap:8px;}
+  .wk-eyebrow .wk-dot{width:5px;height:5px;border-radius:50%;background:#9B8CFF;box-shadow:0 0 7px #9B8CFF;animation:wkBlink 2.4s ease-in-out infinite;}
+  @keyframes wkBlink{0%,100%{opacity:1}50%{opacity:.3}}
+  .wk-title{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(34px,9vw,52px);line-height:1.02;color:#F4F1EA;letter-spacing:-.01em;}
+  .wk-range{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.45);margin-top:8px;}
+
+  /* cards */
+  .wk-card{position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 17px;margin-top:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease;}
+  .wk-card.in{opacity:1;transform:none;}
+  .wk-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .wk-card-ic{font-size:14px;line-height:1;}
+  .wk-card-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.5);flex:1;}
+  .wk-card-tag{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.04em;}
+
+  /* Nova letter */
+  .wk-letter{background:linear-gradient(150deg,rgba(155,140,255,.1),rgba(52,226,176,.05));border-color:rgba(155,140,255,.2);}
+  .wk-letter .wk-card-lbl{color:rgba(155,140,255,.7);}
+  .wk-letter-body p{font-size:14.5px;line-height:1.62;color:#E9E6DF;margin-bottom:11px;}
+  .wk-letter-body p:last-child{margin-bottom:0;}
+  .wk-letter-sig{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:17px;color:#9B8CFF;margin-top:6px;}
+
+  /* stat grid */
+  .wk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+  @media(max-width:540px){.wk-grid{grid-template-columns:1fr;}}
+  .wk-grid .wk-card{margin-top:0;}
+  .wk-big{font-family:var(--au-mono,ui-monospace,monospace);font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;color:#F4F1EA;}
+  .wk-big .u{font-size:14px;color:rgba(244,241,234,.5);font-weight:600;}
+  .wk-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;letter-spacing:.06em;color:rgba(244,241,234,.45);margin-top:5px;}
+  .wk-delta{font-family:var(--au-mono,ui-monospace,monospace);font-size:12px;font-weight:700;margin-top:9px;}
+  .wk-delta.good{color:#34E2B0;} .wk-delta.bad{color:#FF6B8B;} .wk-delta.flat{color:rgba(244,241,234,.45);}
+  .wk-row2{display:flex;gap:18px;flex-wrap:wrap;margin-top:11px;}
+  .wk-row2 .k{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.4);}
+  .wk-row2 .v{font-family:var(--au-mono,ui-monospace,monospace);font-size:15px;font-weight:700;color:#F4F1EA;line-height:1.1;}
+  .wk-spark{width:100%;height:34px;display:block;margin-top:10px;overflow:visible;}
+  .wk-muscles{display:flex;flex-direction:column;gap:7px;margin-top:11px;}
+  .wk-mrow{display:flex;align-items:center;gap:9px;}
+  .wk-mname{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.45);width:64px;flex:none;}
+  .wk-mbar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;}
+  .wk-mbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#34E2B0,#18C8C0);width:0;transition:width .9s cubic-bezier(.34,1.56,.64,1) .3s;}
+  .wk-mval{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;font-weight:700;color:rgba(244,241,234,.7);width:48px;text-align:right;flex:none;}
+  .wk-empty{font-size:13px;color:rgba(244,241,234,.4);line-height:1.5;}
+  .wk-empty a{color:#9B8CFF;border-bottom:1px solid rgba(155,140,255,.4);text-decoration:none;}
+
+  /* focus */
+  .wk-focus{background:linear-gradient(135deg,rgba(52,226,176,.1),rgba(155,140,255,.06));border-color:rgba(52,226,176,.22);}
+  .wk-focus .wk-card-lbl{color:rgba(52,226,176,.8);}
+  .wk-focus-text{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(18px,4.6vw,22px);line-height:1.32;color:#F4F1EA;}
+</style>
+</head>
+<body id="root" class="au-mood-calm">
+
+<div class="wk-shell">
+  <a class="wk-back" href="index.html">&#8592; HUB</a>
+
+  <div class="wk-eyebrow"><span class="wk-dot"></span>WEEKLY REVIEW</div>
+  <div class="wk-title">Your week</div>
+  <div class="wk-range" id="wkRange">—</div>
+
+  <!-- Nova's letter -->
+  <div class="wk-card wk-letter" id="wkLetterCard" style="display:none">
+    <div class="wk-card-hd"><span class="wk-card-ic">✦</span><span class="wk-card-lbl" id="wkLetterTitle">A letter from Nova</span></div>
+    <div class="wk-letter-body" id="wkLetterBody"></div>
+    <div class="wk-letter-sig">— Nova</div>
+  </div>
+
+  <div class="wk-grid">
+    <!-- Weight -->
+    <div class="wk-card" id="cardWeight">
+      <div class="wk-card-hd"><span class="wk-card-ic">⚖</span><span class="wk-card-lbl">Weight</span></div>
+      <div id="wkWeightBody"><div class="wk-empty">—</div></div>
+    </div>
+    <!-- Nutrition -->
+    <div class="wk-card" id="cardNut">
+      <div class="wk-card-hd"><span class="wk-card-ic">🍽</span><span class="wk-card-lbl">Nutrition</span></div>
+      <div id="wkNutBody"><div class="wk-empty">—</div></div>
+    </div>
+    <!-- Training -->
+    <div class="wk-card" id="cardTrain" style="grid-column:1/-1">
+      <div class="wk-card-hd"><span class="wk-card-ic">💪</span><span class="wk-card-lbl">Training</span></div>
+      <div id="wkTrainBody"><div class="wk-empty">—</div></div>
+    </div>
+    <!-- Sleep -->
+    <div class="wk-card" id="cardSleep">
+      <div class="wk-card-hd"><span class="wk-card-ic">🌙</span><span class="wk-card-lbl">Sleep &amp; Recovery</span></div>
+      <div id="wkSleepBody"><div class="wk-empty">—</div></div>
+    </div>
+    <!-- Consistency -->
+    <div class="wk-card" id="cardCons">
+      <div class="wk-card-hd"><span class="wk-card-ic">🔥</span><span class="wk-card-lbl">Consistency</span></div>
+      <div id="wkConsBody"><div class="wk-empty">—</div></div>
+    </div>
+  </div>
+
+  <!-- Next week focus -->
+  <div class="wk-card wk-focus" id="wkFocusCard">
+    <div class="wk-card-hd"><span class="wk-card-ic">▸</span><span class="wk-card-lbl">Next week — one focus</span></div>
+    <div class="wk-focus-text" id="wkFocusText">—</div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+function p2(n){ return n<10?'0'+n:''+n; }
+function dkOf(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+function todayKey(){ return dkOf(new Date()); }
+function avg(a){ return a.length? a.reduce(function(s,v){return s+v;},0)/a.length : null; }
+function r1(n){ return Math.round(n*10)/10; }
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// trailing 7-day window (today back to today-6)
+var windowKeys=[]; (function(){ var t=new Date(); for(var i=6;i>=0;i--){ var d=new Date(t); d.setDate(d.getDate()-i); windowKeys.push(dkOf(d)); } })();
+var startKey=windowKeys[0], endKey=windowKeys[windowKeys.length-1];
+function inWindow(k){ return k>=startKey && k<=endKey; }
+
+function set(id,html){ var el=document.getElementById(id); if(el) el.innerHTML=html; }
+
+/* ── range label ─────────────────────────── */
+(function(){
+  var s=startKey.split('-').map(Number), e=endKey.split('-').map(Number);
+  var sD=new Date(s[0],s[1]-1,s[2]), eD=new Date(e[0],e[1]-1,e[2]);
+  set('wkRange', DOW[sD.getDay()]+' '+sD.getDate()+' '+MON[sD.getMonth()]+'  —  '+DOW[eD.getDay()]+' '+eD.getDate()+' '+MON[eD.getMonth()]);
+})();
+
+/* ── Weight ──────────────────────────────── */
+function loadWeight(){
+  var w=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number'&&e.dateKey;}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
+  var u=(ls('po_coach_v1',{})||{}).units||'kg';
+  if(!w.length){ set('wkWeightBody','<div class="wk-empty">No weigh-ins yet. <a href="weight.html">Log your weight →</a></div>'); return; }
+  var inWin=w.filter(function(e){return inWindow(e.dateKey);});
+  var last=w[w.length-1];
+  var delta=null; if(inWin.length>=2) delta=r1(inWin[inWin.length-1].weight-inWin[0].weight);
+  var dCls=delta==null?'flat':(delta<-0.05?'good':(delta>0.05?'bad':'flat'));
+  var dTxt=delta==null?'Only one weigh-in this week':((delta>0?'↑ +':(delta<0?'↓ ':'→ '))+(delta!==0?Math.abs(delta):'0')+' '+u+' this week');
+  var spk=sparkline(w.slice(-10).map(function(e){return e.weight;}));
+  set('wkWeightBody',
+    '<div class="wk-big">'+last.weight+' <span class="u">'+u+'</span></div>'+
+    '<div class="wk-sub">'+inWin.length+' weigh-in'+(inWin.length===1?'':'s')+' this week</div>'+
+    spk+
+    '<div class="wk-delta '+dCls+'">'+dTxt+'</div>');
+}
+function sparkline(vals){
+  if(vals.length<2) return '';
+  var min=Math.min.apply(null,vals), max=Math.max.apply(null,vals), rng=(max-min)||1, n=vals.length, W=120,H=30,pad=3;
+  var pts=vals.map(function(v,i){ var x=pad+(W-pad*2)*i/(n-1); var y=H-(pad+(H-pad*2)*(v-min)/rng); return [x,y]; });
+  var poly=pts.map(function(c){return r1(c[0])+','+r1(c[1]);}).join(' ');
+  var area='M '+r1(pts[0][0])+' '+H+' L '+pts.map(function(c){return r1(c[0])+' '+r1(c[1]);}).join(' L ')+' L '+r1(pts[n-1][0])+' '+H+' Z';
+  return '<svg class="wk-spark" viewBox="0 0 120 30" preserveAspectRatio="none">'+
+    '<defs><linearGradient id="wkSpkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(155,140,255,.3)"/><stop offset="100%" stop-color="rgba(155,140,255,0)"/></linearGradient></defs>'+
+    '<path d="'+area+'" fill="url(#wkSpkG)"/>'+
+    '<polyline points="'+poly+'" fill="none" stroke="#9B8CFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<circle cx="'+r1(pts[n-1][0])+'" cy="'+r1(pts[n-1][1])+'" r="2.3" fill="#9B8CFF"/></svg>';
+}
+
+/* ── Nutrition ───────────────────────────── */
+var _nutAvgKcal=null,_nutAvgProt=null,_nutTarget=null;
+function loadNut(){
+  var logs=ls('nut:logs',[])||[];
+  var byDay={};
+  logs.forEach(function(l){ if(!l) return; var dk=l.dateKey||null; if(!dk||!inWindow(dk)) return;
+    var d=byDay[dk]||(byDay[dk]={kcal:0,p:0}); d.kcal+=l.kcal||0; d.p+=l.p||0; });
+  var days=Object.keys(byDay);
+  if(!days.length){ set('wkNutBody','<div class="wk-empty">No food logged this week. <a href="nutrition.html">Start logging →</a></div>'); return; }
+  var kArr=days.map(function(k){return byDay[k].kcal;}), pArr=days.map(function(k){return byDay[k].p;});
+  var avgK=Math.round(avg(kArr)), avgP=Math.round(avg(pArr));
+  _nutAvgKcal=avgK; _nutAvgProt=avgP;
+  // adaptive target
+  var prof=ls('nut:profile',{})||{}, wkg=weightKg(), goal=prof.goal||'maintain', tgt=prof.calTarget;
+  if(!tgt && window.ALSTDEE){ try{ var r=window.ALSTDEE.compute(logs, ls('po_coach_weights',[])||[], {weightKg:wkg}); if(r&&r.ok) tgt=window.ALSTDEE.recommend(r.tdee,goal,{weightKg:wkg,rateKgPerWeek:prof.rateKgPerWeek}); }catch(e){} }
+  if(!tgt) tgt=Math.round(wkg*32);
+  _nutTarget=tgt;
+  var onTarget=days.filter(function(k){ return Math.abs(byDay[k].kcal/tgt-1)<=0.10; }).length;
+  set('wkNutBody',
+    '<div class="wk-big">'+avgK+' <span class="u">kcal/day</span></div>'+
+    '<div class="wk-sub">avg over '+days.length+' logged day'+(days.length===1?'':'s')+' · target '+tgt+'</div>'+
+    '<div class="wk-row2"><div><div class="k">Avg protein</div><div class="v">'+avgP+'g</div></div>'+
+    '<div><div class="k">Days on target</div><div class="v">'+onTarget+'/'+days.length+'</div></div></div>');
+}
+function weightKg(){
+  var w=(((ls('po_water_v1',{})||{}).profile)||{}).weightKg; if(w) return w;
+  var ws=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
+  return ws.length?ws[ws.length-1].weight:75;
+}
+
+/* ── Training ────────────────────────────── */
+var _sessions=0,_avgSleep=null;
+var MTARGET={Chest:14,Back:16,Shoulders:12,Arms:12,Legs:18,Core:9};
+function loadTrain(){
+  var workouts=(ls('po_workouts',[])||[]).filter(function(w){return w&&w.date&&inWindow(w.date);});
+  if(!workouts.length){ set('wkTrainBody','<div class="wk-empty">No workouts logged this week. <a href="gym.html">Open Fitness →</a></div>'); return; }
+  _sessions=workouts.length;
+  var vol=0,prs=0,muscle={};
+  workouts.forEach(function(w){ vol+=w.volume||0; prs+=(w.prs&&w.prs.length)||0;
+    (w.entries||[]).forEach(function(en){ if(en&&en.muscle) muscle[en.muscle]=(muscle[en.muscle]||0)+((en.sets||[]).length); }); });
+  var u=(ls('po_coach_v1',{})||{}).units||'kg';
+  var order=Object.keys(muscle).sort(function(a,b){return muscle[b]-muscle[a];});
+  var bars=order.map(function(m){ var t=MTARGET[m]||12, pct=Math.min(100,Math.round(muscle[m]/t*100));
+    return '<div class="wk-mrow"><span class="wk-mname">'+m+'</span><span class="wk-mbar"><i style="width:'+pct+'%"></i></span><span class="wk-mval">'+muscle[m]+'/'+t+'</span></div>'; }).join('');
+  set('wkTrainBody',
+    '<div class="wk-row2"><div><div class="k">Sessions</div><div class="v">'+_sessions+'</div></div>'+
+    '<div><div class="k">Total volume</div><div class="v">'+Math.round(vol).toLocaleString()+' '+u+'</div></div>'+
+    '<div><div class="k">New PRs</div><div class="v">'+prs+'</div></div></div>'+
+    (bars?'<div class="wk-muscles">'+bars+'</div>':''));
+}
+
+/* ── Sleep ───────────────────────────────── */
+function loadSleep(){
+  var logs=(ls('sleep:logs',[])||[]).filter(function(e){return e&&e.dateKey&&inWindow(e.dateKey);});
+  var hrs=logs.filter(function(e){return e.hours>0;}).map(function(e){return e.hours;});
+  var rec=logs.filter(function(e){return e.recovery!=null;}).map(function(e){return e.recovery;});
+  if(!hrs.length && !rec.length){ set('wkSleepBody','<div class="wk-empty">No sleep logged this week. <a href="sleep.html">Log sleep →</a></div>'); return; }
+  var aH=hrs.length?avg(hrs):null; _avgSleep=aH;
+  var aR=rec.length?Math.round(avg(rec)):null;
+  var fmt=aH==null?'—':(Math.floor(aH)+'h'+(Math.round((aH-Math.floor(aH))*60)?' '+Math.round((aH-Math.floor(aH))*60)+'m':''));
+  set('wkSleepBody',
+    '<div class="wk-big">'+fmt+'</div>'+
+    '<div class="wk-sub">avg over '+hrs.length+' night'+(hrs.length===1?'':'s')+'</div>'+
+    '<div class="wk-row2">'+(aR!=null?'<div><div class="k">Avg recovery</div><div class="v">'+aR+'/100</div></div>':'')+
+    '<div><div class="k">Nights logged</div><div class="v">'+hrs.length+'/7</div></div></div>');
+}
+
+/* ── Consistency (habits + goals + ideas) ── */
+function loadCons(){
+  var hbList=ls('habits:list',[])||[], hbLog=ls('habits:log',{})||{};
+  var parts=[];
+  if(hbList.length){
+    var showed=0,done=0;
+    windowKeys.forEach(function(k){ var day=hbLog[k]; if(day && Object.keys(day).length){ showed++; done+=Object.keys(day).length; } });
+    parts.push('<div><div class="k">Habit days</div><div class="v">'+showed+'/7</div></div>');
+    parts.push('<div><div class="k">Habits done</div><div class="v">'+done+'</div></div>');
+  }
+  // goal days fully complete
+  var goalDays=0,goalSet=0;
+  windowKeys.forEach(function(k){ var g=ls('goals:'+k,null); if(Array.isArray(g)&&g.length){ goalSet++; if(g.every(function(x){return x&&x.done;})) goalDays++; } });
+  if(goalSet) parts.push('<div><div class="k">Goal days hit</div><div class="v">'+goalDays+'/'+goalSet+'</div></div>');
+  // ideas captured this week (id = creation ms)
+  var ideas=ls('ideas:items',[])||[]; var startMs=new Date(startKey+'T00:00:00').getTime();
+  var added=ideas.filter(function(i){ return i && typeof i.id==='number' && i.id>=startMs; }).length;
+  if(added) parts.push('<div><div class="k">Ideas captured</div><div class="v">'+added+'</div></div>');
+
+  if(!parts.length){ set('wkConsBody','<div class="wk-empty">Build habits in <a href="identity.html">Identity</a> to track consistency here.</div>'); return; }
+  set('wkConsBody','<div class="wk-row2" style="margin-top:0">'+parts.join('')+'</div>');
+}
+
+/* ── Nova's letter (reuse the coach engine) ── */
+function loadLetter(){
+  if(!window.NovaCoach || !window.NovaCoach.letter) return false;
+  var L; try{ L=window.NovaCoach.letter(); }catch(e){ L=null; }
+  if(!L || !L.body || !L.body.length) return true; // engine ready but nothing to say
+  document.getElementById('wkLetterTitle').textContent=L.title||'A letter from Nova';
+  document.getElementById('wkLetterBody').innerHTML=L.body.map(function(s){ return '<p>'+esc(s)+'</p>'; }).join('');
+  var card=document.getElementById('wkLetterCard'); card.style.display='';
+  requestAnimationFrame(function(){ card.classList.add('in'); });
+  return true;
+}
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+
+/* ── Next-week focus ─────────────────────── */
+function loadFocus(){
+  var prof=ls('nut:profile',{})||{}, goal=prof.goal||'maintain';
+  var msg;
+  if(_nutTarget && _nutAvgProt!=null && _nutAvgProt < weightKg()*1.6)
+    msg='Protein was light (~'+_nutAvgProt+'g/day). Make hitting it your one non-negotiable next week — it’s the recomp lever.';
+  else if(_sessions<3)
+    msg='Only '+_sessions+' session'+(_sessions===1?'':'s')+' logged. Lock in 3–4 next week; the volume is what builds you.';
+  else if(_avgSleep!=null && _avgSleep<7.5)
+    msg='Sleep averaged '+r1(_avgSleep)+'h. Protect your bedtime — it’s the cheapest gain you’ve got.';
+  else if(_nutAvgKcal && _nutTarget && _nutAvgKcal>_nutTarget*1.12 && goal==='cut')
+    msg='Calories ran ~'+Math.round(_nutAvgKcal-_nutTarget)+' over target on a cut. Tighten portions a notch and let the trend do the work.';
+  else
+    msg='You’re stacking weeks. Keep the inputs steady — training, protein, sleep — and let it compound.';
+  set('wkFocusText', esc(msg));
+}
+
+/* ── Boot + staggered reveal ─────────────── */
+function boot(){
+  loadWeight(); loadNut(); loadTrain(); loadSleep(); loadCons(); loadFocus();
+  var letterReady=loadLetter();
+  if(!letterReady){ var tries=0, iv=setInterval(function(){ tries++; if(loadLetter()||tries>20) clearInterval(iv); }, 200); }
+  var cards=[document.getElementById('cardWeight'),document.getElementById('cardNut'),document.getElementById('cardTrain'),document.getElementById('cardSleep'),document.getElementById('cardCons'),document.getElementById('wkFocusCard')];
+  cards.forEach(function(c,i){ if(c) setTimeout(function(){ c.classList.add('in'); }, 140+i*90); });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
+})();
+</script>
+<script src="nova.js" defer></script>
+<script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
