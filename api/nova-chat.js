@@ -34,6 +34,7 @@ function tsToDateKey(ts, tz) {
 function daysBetween(a, b) { var x = a.split('-').map(Number), y = b.split('-').map(Number); return Math.round((Date.UTC(x[0], x[1] - 1, x[2]) - Date.UTC(y[0], y[1] - 1, y[2])) / 86400000); }
 function avg(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : null; }
 function r1(n) { return Math.round(n * 10) / 10; }
+function dayLbl(dk) { var p = dk.split('-').map(Number); var dt = new Date(Date.UTC(p[0], p[1] - 1, p[2])); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getUTCDay()] + ' ' + p[2]; }
 
 // Build the compact, factual brief that grounds Nova in Alex's life today.
 async function buildBrief(tz) {
@@ -57,6 +58,10 @@ async function buildBrief(tz) {
     for (var i = 0; i < weights.length; i++) { if (weights[i].dateKey <= cutoff) base = weights[i]; }
     var dl = r1(last.weight - base.weight);
     L.push('Weight: ' + last.weight + units + ' (last logged ' + last.dateKey + '), ' + (dl <= 0 ? 'down ' + Math.abs(dl) : 'up ' + dl) + units + ' over ~7 days. Weighed in today: ' + (last.dateKey === today ? 'yes' : 'NO'));
+    if (weights.length > 1) {
+      var wser = weights.slice(-14).map(function (w) { return w.dateKey.slice(5) + ':' + w.weight; });
+      L.push('Weight series (oldest→newest, MM-DD:' + units + '): ' + wser.join(', ') + '. Daily swings are mostly water — judge real change by the multi-day trend, not a single day.');
+    }
   } else L.push('Weight: none logged yet.');
 
   var exMap = {}; (poc['po_exercises'] || []).forEach(function (e) { if (e) exMap[e.id] = e; });
@@ -97,20 +102,25 @@ async function buildBrief(tz) {
   var protTarget = (nut['nut:profile'] || {}).proteinTarget || Math.round(weightKg * (nGoal === 'cut' ? 2.2 : (nGoal === 'bulk' ? 1.8 : 2.0)));
   var dailyTarget = (nut['nut:profile'] || {}).calTarget || Math.round(weightKg * 32); // refined by adaptive block below if data allows
   var fiberTarget = Math.round(dailyTarget / 1000 * 14);
-  var prot = 0, kcal = 0, carb = 0, fat = 0, fiber = 0, items = 0, byMeal = {};
-  // entries carry both ts and dateKey; match on dateKey so back-logged days are correct.
+  // Per-day nutrition from ALL logs → real history (today, yesterday, this week),
+  // not just a today snapshot. Match by dateKey, fall back to ts.
+  var nutByDay = {};
   (nut['nut:logs'] || []).forEach(function (l) {
-    if (l && ((l.dateKey && l.dateKey === today) || (!l.dateKey && l.ts && tsToDateKey(l.ts, tz) === today))) {
-      prot += (l.p || 0); kcal += (l.kcal || 0); carb += (l.c || 0); fat += (l.f || 0); fiber += (l.fiber || 0); items++;
-      var m = l.meal || 'Other'; if (!byMeal[m]) byMeal[m] = [];
-      byMeal[m].push((l.name || 'food') + ' ' + Math.round(l.grams || 0) + 'g (' + Math.round(l.kcal || 0) + 'kcal/' + Math.round(l.p || 0) + 'p)');
-    }
+    if (!l) return;
+    var dkk = l.dateKey || (l.ts ? tsToDateKey(l.ts, tz) : null);
+    if (!dkk) return;
+    var d = nutByDay[dkk] || (nutByDay[dkk] = { kcal: 0, p: 0, c: 0, f: 0, fiber: 0, sodium: 0, sugar: 0, items: 0, byMeal: {} });
+    d.kcal += (l.kcal || 0); d.p += (l.p || 0); d.c += (l.c || 0); d.f += (l.f || 0); d.fiber += (l.fiber || 0); d.sodium += (l.sodium || 0); d.sugar += (l.sugar || 0); d.items++;
+    var m = l.meal || 'Other'; if (!d.byMeal[m]) d.byMeal[m] = [];
+    d.byMeal[m].push((l.name || 'food') + ' ' + Math.round(l.grams || 0) + 'g (' + Math.round(l.kcal || 0) + 'kcal/' + Math.round(l.p || 0) + 'p)');
   });
-  L.push('Nutrition today: ' + Math.round(kcal) + ' kcal, ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(carb) + 'g carbs, ' + Math.round(fat) + 'g fat, ' + Math.round(fiber) + 'g fiber, ' + items + ' items.');
+  var todayN = nutByDay[today] || { kcal: 0, p: 0, c: 0, f: 0, fiber: 0, sodium: 0, items: 0, byMeal: {} };
+  var prot = todayN.p, kcal = todayN.kcal, carb = todayN.c, fat = todayN.f, fiber = todayN.fiber, items = todayN.items;
+  L.push('Nutrition today: ' + Math.round(kcal) + ' kcal, ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(carb) + 'g carbs, ' + Math.round(fat) + 'g fat, ' + Math.round(fiber) + 'g fiber, ' + Math.round(todayN.sodium) + 'mg sodium, ' + items + ' items.');
   if (items) {
-    var lines = []; Object.keys(byMeal).forEach(function (m) { lines.push(m + ': ' + byMeal[m].slice(0, 12).join(', ')); });
+    var lines = []; Object.keys(todayN.byMeal).forEach(function (m) { lines.push(m + ': ' + todayN.byMeal[m].slice(0, 12).join(', ')); });
     L.push('What he actually ate today — ' + lines.join(' | ') + '.');
-  } else L.push('No food logged yet today.');
+  } else L.push('Nothing logged yet today.');
 
   // Adaptive TDEE — learned maintenance + recommended target (self-corrects logging error)
   try {
@@ -135,6 +145,23 @@ async function buildBrief(tz) {
     var fibSc = fiberTarget ? Math.min(100, fiber / fiberTarget * 100) : 100;
     var dayScore = Math.max(0, Math.min(100, Math.round(calSc * 0.45 + protSc * 0.4 + fibSc * 0.15)));
     L.push('Vs today\'s targets: ' + (remK >= 0 ? remK + ' kcal left' : Math.abs(remK) + ' kcal OVER') + ', ' + (remP > 0 ? remP + 'g protein still to hit' : 'protein hit') + '. Day score so far: ' + dayScore + '/100.');
+  }
+
+  // Yesterday in full + the last week of intake — this is what lets Nova explain
+  // weight changes and trends instead of being blind to the past.
+  var yKey = tsToDateKey(Date.now() - 86400000, tz), yRec = nutByDay[yKey];
+  if (yRec && yRec.items) {
+    var ylines = []; Object.keys(yRec.byMeal).forEach(function (m) { ylines.push(m + ': ' + yRec.byMeal[m].slice(0, 14).join(', ')); });
+    L.push('YESTERDAY (' + yKey + '): ' + Math.round(yRec.kcal) + ' kcal, ' + Math.round(yRec.p) + 'g protein, ' + Math.round(yRec.c) + 'g carbs, ' + Math.round(yRec.f) + 'g fat, ' + Math.round(yRec.sodium) + 'mg sodium. Foods — ' + ylines.join(' | ') + '.');
+  } else L.push('Yesterday (' + yKey + '): no food logged.');
+  var recentLines = [], kArr = [], pArr = [];
+  for (var dd = 1; dd <= 7; dd++) {
+    var rk = tsToDateKey(Date.now() - dd * 86400000, tz), rr = nutByDay[rk];
+    if (rr && rr.items) { recentLines.push('  ' + dayLbl(rk) + ': ' + Math.round(rr.kcal) + ' kcal / ' + Math.round(rr.p) + 'g P / ' + Math.round(rr.c) + 'g C / ' + Math.round(rr.sodium) + 'mg Na'); kArr.push(rr.kcal); pArr.push(rr.p); }
+  }
+  if (recentLines.length) {
+    L.push('Daily intake, last 7 days (most recent first):\n' + recentLines.join('\n'));
+    L.push('7-day average: ' + Math.round(avg(kArr)) + ' kcal, ' + Math.round(avg(pArr)) + 'g protein (over ' + recentLines.length + ' logged day' + (recentLines.length === 1 ? '' : 's') + ').');
   }
 
   var cafToday = 0, lastCafTs = 0;
@@ -203,6 +230,9 @@ function systemPrompt(brief) {
     '• Lead with the single highest-leverage thing. When he asks something open ("what should I do today?", "am I on track?"), open with the one move that matters most right now given the data, then briefly why.',
     "• Gate intensity by recovery: if he's run-down/depleted, steer him to rest or go light; if primed, tell him to push and chase a PR. If a muscle is well under its weekly volume target, point it out.",
     '• Be proactive: if you see something off in the data even when he didn\'t ask (no food logged by afternoon, caffeine late, weigh-in missed, a habit streak about to break), mention it.',
+    '• You have his FULL recent history below — today, YESTERDAY\'s exact foods, the last 7 days of intake (calories/protein/carbs/sodium) and his day-by-day weight series. USE IT. When he asks about yesterday or a weight change, read the actual days and answer with specifics; never say you can\'t see the past — it is right there.',
+    '',
+    'WEIGHT-CHANGE LITERACY (use this whenever he mentions a gain, spike or drop): day-to-day scale weight is mostly WATER, not fat. A 0.5–1.5 kg overnight jump is normal and usually comes from a high-carb or high-sodium day (every gram of stored glycogen holds ~3g of water), a large food volume still in the gut, dehydration rebound, training-induced muscle inflammation, or bowel/hormonal timing. True fat gain needs a real surplus — about 7700 kcal per kg — so gaining a full kg of fat overnight is physically impossible. When he flags a spike: look at his actual last 1–3 days of calories, carbs and sodium below, name the most likely water-driven cause in plain terms, reassure him it is not fat if his 7-day weight average is not climbing, and only raise genuine concern if the multi-day trend is clearly rising. Never let one day spook either of you.',
     '',
     'VOICE: warm, sharp, direct — a trusted older brother who happens to be an elite coach. Encouraging but honest; celebrate real wins, call out drift without lecturing or moralizing. Talk like a real person, never a corporate assistant. Keep it tight — usually 2–5 sentences; only write a longer structured plan if he explicitly asks for one. Plain conversational text — no markdown headings or bullet dumps unless asked. Emojis rare and natural.',
     '',
