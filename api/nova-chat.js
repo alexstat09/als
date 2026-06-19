@@ -42,9 +42,9 @@ async function buildBrief(tz) {
   var rows = await Promise.all([
     supa.readRow('po-coach'), supa.readRow('nutrition'), supa.readRow('caffeine'),
     supa.readRow('identity'), supa.readRow('health'), supa.readRow('sleep'),
-    supa.readRow('goals')
+    supa.readRow('goals'), supa.readRow('ideas')
   ]);
-  var poc = rows[0], nut = rows[1], caf = rows[2], idn = rows[3], hlt = rows[4], slp = rows[5], gls = rows[6];
+  var poc = rows[0], nut = rows[1], caf = rows[2], idn = rows[3], hlt = rows[4], slp = rows[5], gls = rows[6], ide = rows[7];
   var L = [];
   L.push('ALEX — live snapshot, ' + lp.weekday + ' ' + today + ' (his local time, hour ' + lp.hour + ').');
 
@@ -71,6 +71,13 @@ async function buildBrief(tz) {
       w.prs.forEach(function (id) { var n = (exMap[id] || {}).name || id; if (recentPRs.indexOf(n) < 0) recentPRs.push(n); });
     });
     L.push('Training: ' + wkSessions + ' session' + (wkSessions === 1 ? '' : 's') + ' in last 7 days; last workout ' + (since === 0 ? 'today' : since + ' day' + (since === 1 ? '' : 's') + ' ago') + (recentPRs.length ? '; recent PRs: ' + recentPRs.slice(0, 4).join(', ') : '') + '.');
+    // Weekly volume per muscle (working sets) — the lever for his recomp.
+    var muscleSets = {};
+    workouts.filter(function (w) { return w.date > weekCut; }).forEach(function (w) {
+      (w.entries || []).forEach(function (en) { if (en && en.muscle) muscleSets[en.muscle] = (muscleSets[en.muscle] || 0) + ((en.sets || []).length); });
+    });
+    var splitArr = Object.keys(muscleSets).sort(function (a, b) { return muscleSets[b] - muscleSets[a]; }).map(function (m) { return m + ' ' + muscleSets[m]; });
+    if (splitArr.length) L.push('Weekly volume (working sets/muscle): ' + splitArr.join(', ') + '. Rough weekly targets: Chest 14, Back 16, Shoulders 12, Arms 12, Legs 18, Core 9 — flag any muscle well under.');
   } else L.push('Training: no workouts logged yet.');
 
   var sleepLogs = (slp['sleep:logs'] || []).filter(function (e) { return e && e.dateKey; }).sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
@@ -86,16 +93,20 @@ async function buildBrief(tz) {
   } else L.push('Sleep: nothing logged yet (his #1 untracked lever).');
 
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || (weights.length ? weights[weights.length - 1].weight : 75);
-  var protTarget = Math.round(weightKg * 2);
-  var prot = 0, kcal = 0, carb = 0, fat = 0, items = 0, byMeal = {};
+  var nGoal = ((nut['nut:profile'] || {}).goal) || 'maintain';
+  var protTarget = (nut['nut:profile'] || {}).proteinTarget || Math.round(weightKg * (nGoal === 'cut' ? 2.2 : (nGoal === 'bulk' ? 1.8 : 2.0)));
+  var dailyTarget = (nut['nut:profile'] || {}).calTarget || Math.round(weightKg * 32); // refined by adaptive block below if data allows
+  var fiberTarget = Math.round(dailyTarget / 1000 * 14);
+  var prot = 0, kcal = 0, carb = 0, fat = 0, fiber = 0, items = 0, byMeal = {};
+  // entries carry both ts and dateKey; match on dateKey so back-logged days are correct.
   (nut['nut:logs'] || []).forEach(function (l) {
-    if (l && l.ts && tsToDateKey(l.ts, tz) === today) {
-      prot += (l.p || 0); kcal += (l.kcal || 0); carb += (l.c || 0); fat += (l.f || 0); items++;
+    if (l && ((l.dateKey && l.dateKey === today) || (!l.dateKey && l.ts && tsToDateKey(l.ts, tz) === today))) {
+      prot += (l.p || 0); kcal += (l.kcal || 0); carb += (l.c || 0); fat += (l.f || 0); fiber += (l.fiber || 0); items++;
       var m = l.meal || 'Other'; if (!byMeal[m]) byMeal[m] = [];
       byMeal[m].push((l.name || 'food') + ' ' + Math.round(l.grams || 0) + 'g (' + Math.round(l.kcal || 0) + 'kcal/' + Math.round(l.p || 0) + 'p)');
     }
   });
-  L.push('Nutrition today: ' + Math.round(kcal) + ' kcal, ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(carb) + 'g carbs, ' + Math.round(fat) + 'g fat, ' + items + ' items.');
+  L.push('Nutrition today: ' + Math.round(kcal) + ' kcal, ' + Math.round(prot) + 'g protein (target ~' + protTarget + 'g), ' + Math.round(carb) + 'g carbs, ' + Math.round(fat) + 'g fat, ' + Math.round(fiber) + 'g fiber, ' + items + ' items.');
   if (items) {
     var lines = []; Object.keys(byMeal).forEach(function (m) { lines.push(m + ': ' + byMeal[m].slice(0, 12).join(', ')); });
     L.push('What he actually ate today — ' + lines.join(' | ') + '.');
@@ -107,17 +118,46 @@ async function buildBrief(tz) {
     var todayNum = Math.floor(Date.parse(today + 'T00:00:00Z') / 86400000);
     var tres = TDEE.compute(nut['nut:logs'] || [], weights || [], { weightKg: weightKg, todayNum: todayNum });
     if (tres && tres.ok) {
-      var ngoal = ((nut['nut:profile'] || {}).goal) || 'maintain';
-      var ntgt = TDEE.recommend(tres.tdee, ngoal, { weightKg: weightKg });
-      L.push('Adaptive energy: maintenance ≈ ' + tres.tdee + ' kcal (learned from ' + tres.intakeDays + 'd intake + weight trend ' + (tres.weeklyWeightChange > 0 ? '+' : '') + tres.weeklyWeightChange + ' kg/wk). Goal ' + ngoal + ' → recommended ~' + ntgt + ' kcal/day. Use these real numbers when advising on calories.');
+      var ntgt = TDEE.recommend(tres.tdee, nGoal, { weightKg: weightKg });
+      dailyTarget = ntgt; fiberTarget = Math.round(dailyTarget / 1000 * 14);
+      L.push('Adaptive energy: maintenance ≈ ' + tres.tdee + ' kcal (learned from ' + tres.intakeDays + 'd intake + weight trend ' + (tres.weeklyWeightChange > 0 ? '+' : '') + tres.weeklyWeightChange + ' kg/wk). Goal ' + nGoal + ' → recommended ~' + ntgt + ' kcal/day. Use these real numbers when advising on calories.');
+    } else {
+      L.push('Adaptive energy: still learning his true maintenance (' + ((tres && tres.reason) || 'needs more logged days') + '). Using ~' + dailyTarget + ' kcal as a working target. Goal: ' + nGoal + '.');
     }
   } catch (e) {}
 
-  var cafToday = 0; (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) cafToday += (l.mg || 0); });
-  L.push('Caffeine today: ' + Math.round(cafToday) + 'mg.');
+  // Where he stands vs today's targets right now + a 0–100 day score.
+  if (items) {
+    var remK = dailyTarget - kcal, remP = protTarget - prot;
+    var dd = Math.abs(kcal / dailyTarget - 1);
+    var calSc = dd <= 0.05 ? 100 : Math.max(0, 100 - (dd - 0.05) * 250);
+    var protSc = protTarget ? Math.min(100, prot / protTarget * 100) : 100;
+    var fibSc = fiberTarget ? Math.min(100, fiber / fiberTarget * 100) : 100;
+    var dayScore = Math.max(0, Math.min(100, Math.round(calSc * 0.45 + protSc * 0.4 + fibSc * 0.15)));
+    L.push('Vs today\'s targets: ' + (remK >= 0 ? remK + ' kcal left' : Math.abs(remK) + ' kcal OVER') + ', ' + (remP > 0 ? remP + 'g protein still to hit' : 'protein hit') + '. Day score so far: ' + dayScore + '/100.');
+  }
+
+  var cafToday = 0, lastCafTs = 0;
+  (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) { cafToday += (l.mg || 0); if (l.ts > lastCafTs) lastCafTs = l.ts; } });
+  var cafLine = 'Caffeine today: ' + Math.round(cafToday) + 'mg (sensible daily ceiling ~400mg).';
+  if (lastCafTs) {
+    var ct = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(lastCafTs));
+    cafLine += ' Last dose ' + ct + (parseInt(ct.slice(0, 2), 10) >= 16 ? ' — that\'s late; caffeine has a ~5–6h half-life and can blunt tonight\'s sleep.' : '.');
+  }
+  L.push(cafLine);
 
   var water = hlt['po_water_v1'] || {}; var wlogs = (water.logs && typeof water.logs === 'object') ? water.logs : {};
-  if (Object.keys(wlogs).length) L.push('Water today: ' + (wlogs[today] || 0) + ' logged.');
+  var bottleMl = water.bottleMl || 500, wTarget = Math.max(1, Math.ceil(weightKg * 35 / bottleMl)), wDone = wlogs[today] || 0;
+  L.push('Water today: ' + wDone + '/' + wTarget + ' servings (~' + Math.round(wDone * bottleMl / 1000 * 10) / 10 + 'L of ~' + Math.round(wTarget * bottleMl / 1000 * 10) / 10 + 'L target).');
+
+  // Supplement stack — what's done vs still pending today (daily ones only).
+  var stack = hlt['stack:items'] || [], takenToday = hlt['stack:taken:' + today] || {};
+  if (Array.isArray(stack) && stack.length) {
+    var dailySupps = stack.filter(function (s) { return s && s.ordered !== false && s.window !== 'occasional'; });
+    var suppTaken = dailySupps.filter(function (s) { return takenToday[s.id]; }).length;
+    var suppMissing = dailySupps.filter(function (s) { return !takenToday[s.id]; }).map(function (s) { return String(s.name || '').split(' (')[0]; });
+    L.push('Supplements: ' + suppTaken + '/' + dailySupps.length + ' daily taken' + (suppMissing.length ? '; still to take: ' + suppMissing.slice(0, 8).join(', ') : ' — full stack done') + '.');
+  }
 
   var hbList = idn['habits:list'] || [], hbLog = idn['habits:log'] || {};
   if (hbList.length) {
@@ -144,18 +184,31 @@ async function buildBrief(tz) {
     L.push("Today's goals: " + gdone + '/' + goals.length + ' done' + (gdone < goals.length ? ' — open: ' + goals.filter(function (g) { return g && !g.done; }).map(function (g) { return g.text || g.title; }).filter(Boolean).slice(0, 4).join('; ') : '') + '.');
   }
 
+  var ideas = (ide['ideas:items'] || []).filter(Boolean);
+  if (ideas.length) {
+    var ideasOpen = ideas.filter(function (i) { return !i.done; }).length;
+    L.push('Ideas backlog: ' + ideasOpen + ' open of ' + ideas.length + '.');
+  }
+
   return L.join('\n');
 }
 
 function systemPrompt(brief) {
   return [
-    "You are Nova — Alex's personal AI coach and companion, built into his life-tracking dashboard. Alex is 17 and doing a body recomposition (building strength and size while leaning out). You know him well and you genuinely care about him.",
+    "You are Nova — Alex's personal AI coach and companion, built into his life-tracking dashboard. Alex is 17 and doing a body recomposition: building strength and muscle while leaning out. You know him better than anyone because you can see his whole life below — his training, sleep, recovery, nutrition, supplements, caffeine, hydration, habits, goals and weight, updated in real time. You genuinely care about him and your job is to make him better.",
     '',
-    'Voice: warm, sharp, and direct — like a trusted older friend who happens to be an elite coach. Encouraging but honest; you celebrate real wins and call out drift without lecturing. You talk like a person, not a corporate assistant. Keep replies tight — usually 2–5 sentences. Use his real numbers from the data below to make advice concrete. Plain conversational text, no markdown headings or bullet dumps unless he asks for a plan. Emojis only occasionally, never forced.',
+    'HOW YOU HELP — this is the whole point, do it every time:',
+    '• Be specific and use his real numbers. Not "eat more protein" — say "you\'re at 92g, ~58 short of your 150g target; a scoop of whey and Greek yogurt closes it."',
+    '• Connect the dots across domains — that is your superpower. Sleep ↔ training readiness, caffeine timing ↔ sleep, protein/calories ↔ weight trend, training volume ↔ recovery, missed supplements ↔ goals. Surface links he wouldn\'t notice himself.',
+    '• Lead with the single highest-leverage thing. When he asks something open ("what should I do today?", "am I on track?"), open with the one move that matters most right now given the data, then briefly why.',
+    "• Gate intensity by recovery: if he's run-down/depleted, steer him to rest or go light; if primed, tell him to push and chase a PR. If a muscle is well under its weekly volume target, point it out.",
+    '• Be proactive: if you see something off in the data even when he didn\'t ask (no food logged by afternoon, caffeine late, weigh-in missed, a habit streak about to break), mention it.',
     '',
-    'Ground every answer in his live data below. Reference specific numbers when relevant ("you\'re at 90g protein, ~60 short of target"). Never invent data you don\'t have — if something isn\'t tracked, say so and nudge him to log it. For general fitness/nutrition/mindset questions beyond his data, answer as the knowledgeable coach you are. If he\'s clearly run-down (low recovery), steer him to rest; if primed, push him. You can\'t change his data — you advise, motivate, and explain.',
+    'VOICE: warm, sharp, direct — a trusted older brother who happens to be an elite coach. Encouraging but honest; celebrate real wins, call out drift without lecturing or moralizing. Talk like a real person, never a corporate assistant. Keep it tight — usually 2–5 sentences; only write a longer structured plan if he explicitly asks for one. Plain conversational text — no markdown headings or bullet dumps unless asked. Emojis rare and natural.',
     '',
-    '=== HIS LIVE DATA ===',
+    "RULES: Ground every answer in the live data below. Never invent numbers you don't have — if something isn't logged, say so plainly and nudge him to track it (you literally can't coach blind). For general fitness/nutrition/mindset questions beyond his data, answer as the expert coach you are. He's 17 — keep advice safe and sane (no extreme cuts, no hormones/PEDs; supplements stay sensible). You advise, motivate and explain; you can't edit his data yourself, so when action is needed, tell him exactly what to log or do.",
+    '',
+    '=== HIS LIVE DATA (this is real, current, and yours to use) ===',
     brief,
     '=== END DATA ==='
   ].join('\n');
@@ -207,7 +260,7 @@ module.exports = async function (req, res) {
     model: GROQ_MODEL,
     messages: [{ role: 'system', content: systemPrompt(brief) }].concat(messages),
     max_tokens: 1024,
-    temperature: 0.85,
+    temperature: 0.7,
     stream: true
   };
 

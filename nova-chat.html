@@ -251,6 +251,25 @@
       history = []; save(history); renderAll();
     });
 
+    // ── iOS keyboard fix ───────────────────────────────
+    // height:100% refers to the LAYOUT viewport, which doesn't shrink when the
+    // on-screen keyboard opens — so the composer slid behind the keyboard and
+    // the messages bunched/overlapped. Pin the app to the VISUAL viewport instead.
+    var app = document.querySelector('.nv-app');
+    function fitViewport(){
+      var vv = window.visualViewport; if(!vv) return;
+      app.style.height = vv.height + 'px';
+      app.style.transform = (vv.offsetTop ? 'translateY(' + vv.offsetTop + 'px)' : 'none');
+      toBottom(true);
+    }
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', fitViewport);
+      window.visualViewport.addEventListener('scroll', fitViewport);
+      fitViewport();
+    }
+    window.addEventListener('orientationchange', function(){ setTimeout(fitViewport, 250); });
+    input.addEventListener('focus', function(){ setTimeout(fitViewport, 300); });
+
     renderAll();
     setTimeout(function(){ if(window.innerWidth > 640) input.focus(); }, 200);
   })();
