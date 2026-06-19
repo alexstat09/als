@@ -9,6 +9,7 @@
 <title>Morning Briefing · ALS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="insights.js" defer></script>
+<script src="tdee.js" defer></script>
 <script src="topbar.js" defer></script>
 <style>
 /* ── TOKENS ────────────────────────────────────────── */
@@ -446,6 +447,57 @@ body::after {
   .mb-panel-physical{ --accent-rgb:52,226,176; }
   .mb-panel-systems{ --accent-rgb:24,200,192; }
   .mb-panel-signals{ --accent-rgb:155,140,255; }
+
+  /* ── PRIMARY DIRECTIVE ─────────────────────────── */
+  .mb-directive{
+    position:relative; margin:0 0 22px; padding:16px 18px;
+    border-radius:14px;
+    background:linear-gradient(135deg, rgba(52,226,176,.08), rgba(155,140,255,.06));
+    border:1px solid rgba(52,226,176,.18);
+    box-shadow:0 0 0 1px rgba(52,226,176,.05), 0 10px 36px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(8px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .mb-directive.visible{ opacity:1; transform:none; }
+  .mb-directive-eyebrow{
+    font-family:var(--mono); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase;
+    color:rgba(52,226,176,.8); display:block; margin-bottom:6px;
+  }
+  .mb-directive-text{
+    font-family:"Instrument Serif",Georgia,serif; font-style:italic;
+    font-size:clamp(18px,4.6vw,23px); line-height:1.3; color:#F4F1EA;
+  }
+  .mb-directive-text a{ color:#34E2B0; border-bottom:1px solid rgba(52,226,176,.4); }
+
+  /* ── RECOVERY PANEL ────────────────────────────── */
+  .mb-panel-recovery{ --accent-rgb:155,140,255; }
+  .mb-panel-recovery .mb-panel-label{ color:rgba(155,140,255,.5); }
+  .mb-panel-recovery .mb-corner{ border-color:rgba(155,140,255,.35); }
+  .mb-rec-top{ display:flex; align-items:center; gap:14px; margin-bottom:9px; }
+  .mb-rec-score{
+    flex:none; width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--rec-col,#9B8CFF); background:rgba(255,255,255,.03);
+    font-family:var(--mono); font-size:19px; font-weight:800; color:var(--rec-col,#9B8CFF);
+    line-height:1;
+  }
+  .mb-rec-meta{ flex:1; min-width:0; }
+  .mb-rec-word{ font-family:"Instrument Serif",Georgia,serif; font-style:italic; font-size:20px; color:var(--rec-col,#F4F1EA); line-height:1.1; }
+  .mb-rec-hours{ font-family:var(--mono); font-size:11px; color:var(--text-3); letter-spacing:.04em; margin-top:2px; }
+  .mb-rec-advice{ font-size:12px; color:var(--text-2); line-height:1.45; }
+  .mb-rec-empty{ font-size:13px; color:var(--text-2); line-height:1.5; }
+  .mb-rec-empty a{ color:#9B8CFF; border-bottom:1px solid rgba(155,140,255,.35); }
+
+  /* ── FUEL PANEL ────────────────────────────────── */
+  .mb-panel-fuel{ --accent-rgb:52,226,176; }
+  .mb-fuel-row{ display:flex; gap:16px; align-items:baseline; margin-bottom:9px; flex-wrap:wrap; }
+  .mb-fuel-big{ font-family:var(--mono); font-size:30px; font-weight:800; color:var(--text-1); line-height:1; letter-spacing:-.02em; text-shadow:0 0 18px rgba(52,226,176,.28); }
+  .mb-fuel-sub{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-3); margin-top:3px; }
+  .mb-fuel-prot{ font-family:var(--mono); font-size:18px; font-weight:700; color:#9B8CFF; line-height:1; }
+  .mb-fuel-goal{ margin-left:auto; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(52,226,176,.75); border:1px solid rgba(52,226,176,.25); padding:4px 9px; border-radius:7px; align-self:center; }
+  .mb-fuel-note{ font-family:var(--mono); font-size:10px; color:var(--text-3); letter-spacing:.03em; line-height:1.5; }
+  .mb-fuel-note b{ color:var(--text-2); }
 </style>
 </head>
 <body>
@@ -493,8 +545,40 @@ body::after {
     <span class="mb-div-line"></span>
   </div>
 
+  <!-- primary directive -->
+  <div class="mb-directive" id="mbDirective">
+    <span class="mb-directive-eyebrow">▸ DO THIS NOW</span>
+    <div class="mb-directive-text" id="mbDirectiveText">Booting systems…</div>
+  </div>
+
   <!-- panels -->
   <div class="mb-grid">
+
+    <!-- recovery / last night -->
+    <div class="mb-panel mb-panel-recovery">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">🌙</span>
+        <span class="mb-panel-label">RECOVERY · LAST NIGHT</span>
+      </div>
+      <div id="mbRecBody">
+        <div class="mb-rec-empty">—</div>
+      </div>
+    </div>
+
+    <!-- today's fuel -->
+    <div class="mb-panel mb-panel-fuel">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon">🔥</span>
+        <span class="mb-panel-label">TODAY'S FUEL</span>
+      </div>
+      <div id="mbFuelBody">
+        <div class="mb-fuel-note">—</div>
+      </div>
+    </div>
 
     <!-- physical -->
     <div class="mb-panel mb-panel-physical">
@@ -525,11 +609,11 @@ body::after {
         <span class="mb-panel-icon">◇</span>
         <span class="mb-panel-label">INTEL</span>
       </div>
-      <div class="mb-intel-row"><span class="mb-intel-key">NET WORTH</span><span class="mb-intel-val" id="intelNW">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">LAST TRAINED</span><span class="mb-intel-val" id="intelTrained">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">WORKOUTS THIS WEEK</span><span class="mb-intel-val" id="intelWorkouts">—</span></div>
-      <div class="mb-intel-row"><span class="mb-intel-key">IDEAS PIPELINE</span><span class="mb-intel-val" id="intelIdeas">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">FIRST COFFEE</span><span class="mb-intel-val" id="intelCoffee">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">GOAL STREAK</span><span class="mb-intel-val" id="intelStreak">—</span></div>
-      <div class="mb-intel-row"><span class="mb-intel-key">DAY OF YEAR</span><span class="mb-intel-val" id="intelDay">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">NET WORTH</span><span class="mb-intel-val" id="intelNW">—</span></div>
     </div>
 
     <!-- mission — spans full width -->
@@ -846,21 +930,33 @@ function loadIntel(){
     set('intelWorkouts', sessions+' session'+(sessions!==1?'s':''));
   } catch(e){ set('intelWorkouts','—'); }
 
-  /* ideas */
+  /* last trained — scan back for the most recent logged session */
   try{
-    const ideas=JSON.parse(localStorage.getItem('ideas:items'))||[];
-    const active=ideas.filter(i=>!i.done).length;
-    set('intelIdeas', active+' active');
-  } catch(e){ set('intelIdeas','—'); }
+    let since=null;
+    for(let i=0;i<60;i++){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const log=JSON.parse(localStorage.getItem('po_coach_logs:'+key))||[];
+      if(log.length>0){ since=i; break; }
+    }
+    set('intelTrained', since==null ? '60+ days' : (since===0?'Today':(since===1?'Yesterday':since+' days ago')));
+  } catch(e){ set('intelTrained','—'); }
+
+  /* first coffee today */
+  try{
+    const logs=(JSON.parse(localStorage.getItem('caf:logs'))||[]).filter(l=>new Date(l.ts)>=dawn());
+    if(logs.length){
+      const first=logs.reduce((a,b)=>a.ts<b.ts?a:b);
+      const d=new Date(first.ts);
+      set('intelCoffee', String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
+    } else { set('intelCoffee', 'Not yet'); }
+  } catch(e){ set('intelCoffee','—'); }
 
   /* streak */
   try{
     const s=JSON.parse(localStorage.getItem('goal_streak_v1'))||{count:0};
     set('intelStreak', s.count>0 ? s.count+' day'+(s.count!==1?'s':'') : '0 days');
   } catch(e){ set('intelStreak','—'); }
-
-  /* day of year */
-  set('intelDay', dayOfYear()+' of '+(isLeapYear(new Date().getFullYear())?366:365));
 }
 
 function isLeapYear(y){ return (y%4===0&&y%100!==0)||y%400===0; }
@@ -903,6 +999,188 @@ function loadQuote(){
   set('mbQuote', '◈  '+q+'  ◈');
 }
 
+/* ── Recovery (mirrors sleep.html) ────────────────── */
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+const SLEEP_COMP=[
+  { key:'hours',    w:0.30, score:v=>clamp(100-Math.abs(v-8.5)*13,0,100) },
+  { key:'quality',  w:0.20, score:v=>(v-1)/4*100 },
+  { key:'soreness', w:0.18, score:v=>(5-v)/4*100 },
+  { key:'energy',   w:0.14, score:v=>(v-1)/4*100 },
+  { key:'stress',   w:0.10, score:v=>(5-v)/4*100 },
+  { key:'mood',     w:0.08, score:v=>(v-1)/4*100 }
+];
+function recoveryScore(e){
+  if(!e) return null;
+  let sum=0,wsum=0;
+  SLEEP_COMP.forEach(c=>{
+    const v=e[c.key];
+    if(v==null||(c.key==='hours'&&!(v>0))) return;
+    sum+=clamp(c.score(v),0,100)*c.w; wsum+=c.w;
+  });
+  if(!wsum) return null;
+  return Math.round(sum/wsum);
+}
+function sleepVerdict(s){
+  if(s>=82) return { col:'#34E2B0', word:'Primed',    advice:'Fully recovered — attack a hard session and chase a PR.' };
+  if(s>=65) return { col:'#18C8C0', word:'Recovered', advice:'Good to go. Train as planned and push your working sets.' };
+  if(s>=45) return { col:'#F2C063', word:'Run-down',  advice:'Train, but keep it moderate — hit your lifts, skip the grind sets.' };
+  return            { col:'#FF6B8B', word:'Depleted',  advice:'Go light or rest. Recovery is when you grow — respect it.' };
+}
+function fmtHM(h){ if(h==null) return '—'; let hh=Math.floor(h), m=Math.round((h-hh)*60); if(m===60){hh++;m=0;} return hh+'h'+(m?' '+m+'m':''); }
+// last night's entry: today's wake-day record, else most recent
+function lastNight(){
+  try{
+    const logs=JSON.parse(localStorage.getItem('sleep:logs'))||[];
+    if(!logs.length) return null;
+    const tk=todayKey();
+    let e=logs.find(l=>l&&l.dateKey===tk);
+    if(!e){ e=logs.slice().sort((a,b)=>(a.dateKey<b.dateKey?1:-1))[0]; if(e) e=Object.assign({_stale:true},e); }
+    return e||null;
+  }catch(e){ return null; }
+}
+let _recScore=null; // cached for the directive
+function loadRecovery(){
+  const body=document.getElementById('mbRecBody'); if(!body) return;
+  const e=lastNight();
+  if(!e || !(e.hours>0)){
+    body.innerHTML='<div class="mb-rec-empty">No sleep logged yet. <a href="sleep.html">Log last night →</a><br>so I can calibrate today.</div>';
+    return;
+  }
+  const s=recoveryScore(e); _recScore=s;
+  const staleNote=e._stale?' · last entry':'';
+  if(s==null){
+    body.innerHTML='<div class="mb-rec-empty">Slept '+fmtHM(e.hours)+staleNote+'. <a href="sleep.html">Rate it →</a> to get a recovery read.</div>';
+    return;
+  }
+  const v=sleepVerdict(s);
+  body.innerHTML=
+    '<div class="mb-rec-top">'+
+      '<div class="mb-rec-score" style="--rec-col:'+v.col+'">'+s+'</div>'+
+      '<div class="mb-rec-meta">'+
+        '<div class="mb-rec-word" style="--rec-col:'+v.col+'">'+v.word+'</div>'+
+        '<div class="mb-rec-hours">'+fmtHM(e.hours)+' slept'+staleNote+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="mb-rec-advice">'+v.advice+'</div>';
+}
+
+/* ── Today's fuel (adaptive, mirrors nutrition.html) ── */
+function bodyWeightKg(){
+  try{
+    const w=(((JSON.parse(localStorage.getItem('po_water_v1'))||{}).profile)||{}).weightKg; if(w) return w;
+    const ws=(JSON.parse(localStorage.getItem('po_coach_weights'))||[]).filter(e=>e&&typeof e.weight==='number').sort((a,b)=>a.dateKey<b.dateKey?-1:1);
+    return ws.length?ws[ws.length-1].weight:75;
+  }catch(e){ return 75; }
+}
+function nutTargets(){
+  const prof=JSON.parse(localStorage.getItem('nut:profile'))||{};
+  const w=bodyWeightKg(), goal=prof.goal||'maintain';
+  let kcal=prof.calTarget, adaptive=null;
+  if(window.ALSTDEE){
+    try{ adaptive=window.ALSTDEE.compute(JSON.parse(localStorage.getItem('nut:logs'))||[], JSON.parse(localStorage.getItem('po_coach_weights'))||[], {weightKg:w}); }catch(e){}
+    if(!kcal && adaptive && adaptive.ok) kcal=window.ALSTDEE.recommend(adaptive.tdee, goal, {weightKg:w, rateKgPerWeek:prof.rateKgPerWeek});
+  }
+  if(!kcal) kcal=Math.round(w*32);
+  const pPerKg=goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
+  const prot=prof.proteinTarget||Math.round(w*pPerKg);
+  const fiber=Math.round(kcal/1000*14);
+  return { kcal, p:prot, fiber, goal, adaptive };
+}
+function dayTotalsKey(key){
+  const t={kcal:0,p:0,fiber:0};
+  (JSON.parse(localStorage.getItem('nut:logs'))||[]).forEach(e=>{
+    if(e&&e.dateKey===key){ t.kcal+=e.kcal||0; t.p+=e.p||0; t.fiber+=e.fiber||0; }
+  });
+  return t;
+}
+function nutScore(t,tg){
+  if(!tg.kcal||t.kcal<=0) return null;
+  const d=Math.abs(t.kcal/tg.kcal-1);
+  const calSc=d<=0.05?100:Math.max(0,100-(d-0.05)*250);
+  const protSc=tg.p?Math.min(100,t.p/tg.p*100):100;
+  const fibSc=tg.fiber?Math.min(100,t.fiber/tg.fiber*100):100;
+  return Math.max(0,Math.min(100,Math.round(calSc*0.45+protSc*0.4+fibSc*0.15)));
+}
+function ydayKey(){ const d=new Date(); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+let _fuelTg=null;
+function loadFuel(){
+  const body=document.getElementById('mbFuelBody'); if(!body) return;
+  const tg=nutTargets(); _fuelTg=tg;
+  const goalLbl=tg.goal.charAt(0).toUpperCase()+tg.goal.slice(1);
+  let note;
+  if(tg.adaptive && tg.adaptive.ok){
+    const conf=tg.adaptive.confidence>=0.8?'high':(tg.adaptive.confidence>=0.6?'good':'building');
+    const wc=tg.adaptive.weeklyWeightChange;
+    note='Adaptive · maintenance <b>'+tg.adaptive.tdee+'</b> · trend '+(wc>0?'+':'')+wc+' kg/wk · '+conf+' confidence';
+  } else {
+    note=(tg.adaptive&&tg.adaptive.reason?tg.adaptive.reason+' to unlock adaptive targets.':'Estimated from bodyweight — log food to calibrate.');
+  }
+  const yt=dayTotalsKey(ydayKey()), ysc=nutScore(yt,tg);
+  const yLine=ysc==null?'' :
+    '<div class="mb-fuel-note" style="margin-top:7px">Yesterday’s nutrition score: <b style="color:'+(ysc>=85?'#34E2B0':(ysc>=65?'#E8C66B':(ysc>=40?'#F0A66B':'#FF6B8B')))+'">'+ysc+'</b>/100</div>';
+  body.innerHTML=
+    '<div class="mb-fuel-row">'+
+      '<div><div class="mb-fuel-big">'+tg.kcal+'</div><div class="mb-fuel-sub">kcal target</div></div>'+
+      '<div><div class="mb-fuel-prot">'+tg.p+'g</div><div class="mb-fuel-sub">protein</div></div>'+
+      '<div class="mb-fuel-goal">'+goalLbl+'</div>'+
+    '</div>'+
+    '<div class="mb-fuel-note">'+note+'</div>'+yLine;
+}
+
+/* ── Primary directive — the single most important move ── */
+function loadDirective(){
+  const el=document.getElementById('mbDirectiveText'); if(!el) return;
+  const h=new Date().getHours();
+  const r0=n=>Math.round(n);
+  let msg=null;
+
+  // 1) recovery gates the whole day
+  if(_recScore!=null){
+    if(_recScore<45) msg='Recovery is low ('+_recScore+'). Go light or take a rest day — that’s where the growth happens.';
+    else if(_recScore>=82 && h<20) msg='You’re primed ('+_recScore+'). Today’s the day — train hard and chase a PR.';
+  }
+  // 2) no sleep logged in the morning
+  if(!msg && h<14){
+    const ln=lastNight();
+    if(!ln || !(ln.hours>0)) msg='Start by logging last night’s sleep — it calibrates everything else. <a href="sleep.html">Log it →</a>';
+  }
+  // 3) nutrition — time-aware
+  if(!msg && _fuelTg){
+    const t=dayTotalsKey(todayKey()), tg=_fuelTg;
+    const remK=tg.kcal-t.kcal, remP=tg.p-t.p;
+    if(t.kcal<=0){
+      msg=h<11?'Lead with protein at breakfast and log it — set the tone for the day.':'Nothing logged yet — get a solid meal in and log it.';
+    } else if(remP>30 && h>=17){
+      msg='You’re '+r0(remP)+'g short on protein — a shake or Greek yogurt closes the gap.';
+    } else if(remK<-tg.kcal*0.08){
+      msg='You’re '+r0(-remK)+' kcal over — ease off, hydrate, maybe a walk.';
+    } else if(remK>tg.kcal*0.35 && h>=19){
+      msg='Big gap left ('+r0(remK)+' kcal) — eat a real meal, don’t undereat into the night.';
+    }
+  }
+  // 4) goals
+  if(!msg){
+    try{
+      const goals=JSON.parse(localStorage.getItem('goals:'+todayKey()))||[];
+      const left=goals.filter(g=>!g.done);
+      if(goals.length && left.length) msg=left.length+' mission'+(left.length!==1?'s':'')+' left today — knock out “'+escHtml(left[0].text||'the first one')+'” next.';
+      else if(goals.length && !left.length) msg='Every mission complete. Outstanding — protect the streak.';
+    }catch(e){}
+  }
+  // 5) hydration nudge
+  if(!msg){
+    try{
+      const pw=JSON.parse(localStorage.getItem('po_water_v1'))||{};
+      const done=(pw.logs||{})[todayKey()]||0;
+      const wKg=pw.profile?.weightKg||75;
+      const total=Math.max(1,Math.ceil(wKg*35/(pw.bottleMl||500)));
+      if(h>=13 && done<total*0.4) msg='Behind on water ('+done+'/'+total+') — knock back a glass now.';
+    }catch(e){}
+  }
+  if(!msg) msg='Systems nominal. Stay consistent and let the data compound.';
+  el.innerHTML=msg;
+}
+
 /* ── DOM helpers ──────────────────────────────────── */
 function set(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt||''; }
 function setBar(id,pct){ const el=document.getElementById(id); if(el) el.style.width=pct+'%'; }
@@ -916,10 +1194,13 @@ function boot(){
     _td.getFullYear()+'-'+_p2(_td.getMonth()+1)+'-'+_p2(_td.getDate()));
 
   startClock();
+  loadRecovery();
+  loadFuel();
   loadPhysical();
   loadMission();
   loadSystems();
   loadIntel();
+  loadDirective();
   loadQuote();
   if(window.ALS && window.ALS.generateInsights){ loadSignals(); }
   else { window.addEventListener('load', loadSignals); }
@@ -938,6 +1219,7 @@ function boot(){
     if(nameEl){
       typewriter(nameEl,'ALEX.',75,()=>{
         document.getElementById('mbDivider').classList.add('visible');
+        setTimeout(()=>{ const d=document.getElementById('mbDirective'); if(d) d.classList.add('visible'); }, 120);
         const panels=document.querySelectorAll('.mb-panel');
         panels.forEach((p,i)=>setTimeout(()=>p.classList.add('visible'), i*130));
         const after=panels.length*130+280;
