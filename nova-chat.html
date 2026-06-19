@@ -12,8 +12,11 @@
   <link rel="stylesheet" href="aurora.css">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    html,body{height:100%;overflow:hidden;}
-    body{background:#050507;color:#F4F1EA;font-family:var(--au-sans,-apple-system,system-ui,sans-serif);position:relative;}
+    /* Lock the layout viewport completely so iOS can't scroll/shift the page when
+       the keyboard opens (that focus-scroll was what bunched the messages). The
+       app's real height comes from --app-h, set live from window.visualViewport. */
+    html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;}
+    body{position:fixed;inset:0;background:#050507;color:#F4F1EA;font-family:var(--au-sans,-apple-system,system-ui,sans-serif);touch-action:none;}
 
     /* living HUD backdrop */
     body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -27,7 +30,7 @@
       -webkit-mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);}
     @keyframes nv-breathe{0%,100%{opacity:.85;}50%{opacity:1;}}
 
-    .nv-app{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;max-width:760px;margin:0 auto;}
+    .nv-app{position:relative;z-index:1;display:flex;flex-direction:column;height:var(--app-h,100%);max-width:760px;margin:0 auto;}
 
     /* ── header ───────────────────────────────── */
     .nv-top{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
@@ -44,7 +47,7 @@
     .nv-clear:active{color:#F4F1EA;}
 
     /* ── messages ─────────────────────────────── */
-    .nv-scroll{flex:1 1 auto;min-height:0;display:block!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:18px 14px 12px;}
+    .nv-scroll{flex:1 1 auto;min-height:0;display:block!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;padding:18px 14px 12px;}
     /* Full-width rows (forced, so they never shrink-wrap); bubbles hug their
        text via inline-block and align left (Nova) / right (you). */
     .nv-row{display:flex!important;width:100%!important;box-sizing:border-box;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
@@ -100,7 +103,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">Neural link · online</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v42</span></div>
       </div>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
@@ -121,6 +124,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
+    var BUILD = 'v42'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
@@ -190,7 +194,7 @@
     function setBusy(on){
       busy = on;
       sendBtn.disabled = on || !input.value.trim();
-      status.textContent = on ? 'Thinking…' : 'Neural link · online';
+      status.textContent = on ? 'Thinking…' : 'online · ' + BUILD;
       root.classList.toggle('nv-live', on);
     }
 
@@ -251,24 +255,29 @@
       history = []; save(history); renderAll();
     });
 
-    // ── iOS keyboard fix ───────────────────────────────
-    // height:100% refers to the LAYOUT viewport, which doesn't shrink when the
-    // on-screen keyboard opens — so the composer slid behind the keyboard and
-    // the messages bunched/overlapped. Pin the app to the VISUAL viewport instead.
-    var app = document.querySelector('.nv-app');
-    function fitViewport(){
-      var vv = window.visualViewport; if(!vv) return;
-      app.style.height = vv.height + 'px';
-      app.style.transform = (vv.offsetTop ? 'translateY(' + vv.offsetTop + 'px)' : 'none');
+    // ── Bulletproof iOS-PWA viewport sizing ─────────────
+    // The layout viewport is locked (body:fixed). The app's height is driven
+    // entirely by the VISUAL viewport via --app-h, so when the keyboard opens
+    // the whole app shrinks to the space above it — composer included — and the
+    // message list never bunches behind the keyboard. window.scrollTo(0,0)
+    // defeats iOS's focus-scroll, the real cause of the "all together" overlap.
+    var docEl = document.documentElement;
+    function setAppH(){
+      var vv = window.visualViewport;
+      var h = vv ? vv.height : window.innerHeight;
+      docEl.style.setProperty('--app-h', h + 'px');
+      window.scrollTo(0,0);
       toBottom(true);
     }
     if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', fitViewport);
-      window.visualViewport.addEventListener('scroll', fitViewport);
-      fitViewport();
+      window.visualViewport.addEventListener('resize', setAppH);
+      window.visualViewport.addEventListener('scroll', setAppH);
     }
-    window.addEventListener('orientationchange', function(){ setTimeout(fitViewport, 250); });
-    input.addEventListener('focus', function(){ setTimeout(fitViewport, 300); });
+    window.addEventListener('resize', setAppH);
+    window.addEventListener('orientationchange', function(){ setTimeout(setAppH, 250); });
+    input.addEventListener('focus', function(){ setTimeout(setAppH, 100); setTimeout(setAppH, 350); });
+    input.addEventListener('blur', function(){ setTimeout(setAppH, 100); });
+    setAppH();
 
     renderAll();
     setTimeout(function(){ if(window.innerWidth > 640) input.focus(); }, 200);
