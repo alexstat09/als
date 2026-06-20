@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Nova · ALS</title>
@@ -30,7 +30,12 @@
       -webkit-mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);}
     @keyframes nv-breathe{0%,100%{opacity:.85;}50%{opacity:1;}}
 
-    .nv-app{position:relative;z-index:1;display:flex;flex-direction:column;height:var(--app-h,100%);max-width:760px;margin:0 auto;}
+    /* CSS GRID layout (not flex): three explicit rows — header / scroll / composer.
+       Grid tracks are non-overlapping by definition, so the messages can never
+       pile onto each other even if the height math glitches. minmax(0,1fr) lets
+       the middle track shrink below its content size so it actually scrolls —
+       the deterministic cousin of the flex min-height:0 trick that kept failing. */
+    .nv-app{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:var(--app-h,100dvh);max-width:760px;margin:0 auto;overflow:hidden;}
 
     /* ── header ───────────────────────────────── */
     .nv-top{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
@@ -47,7 +52,7 @@
     .nv-clear:active{color:#F4F1EA;}
 
     /* ── messages ─────────────────────────────── */
-    .nv-scroll{flex:1 1 auto;min-height:0;display:block!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;padding:18px 14px 12px;}
+    .nv-scroll{min-height:0;height:100%;display:block!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:18px 14px 12px;}
     /* Full-width rows (forced, so they never shrink-wrap); bubbles hug their
        text via inline-block and align left (Nova) / right (you). */
     .nv-row{display:flex!important;width:100%!important;box-sizing:border-box;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
@@ -103,7 +108,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v42</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v44</span></div>
       </div>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
@@ -124,7 +129,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v42'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v44'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',

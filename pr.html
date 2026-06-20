@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PR Board · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --pr-accent:#FFC857; --pr-accent-rgb:255,200,87; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .pr-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .pr-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--pr-accent-rgb),.8); margin-bottom:11px; }
+    .pr-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(25px,6.4vw,34px); line-height:1.06; letter-spacing:-.01em; }
+    .pr-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; max-width:34ch; line-height:1.45; }
+    .pr-trophy{ flex:none; width:62px; height:62px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:30px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--pr-accent-rgb),.22), rgba(var(--pr-accent-rgb),.04));
+      border:1px solid rgba(var(--pr-accent-rgb),.3); box-shadow:0 0 30px rgba(var(--pr-accent-rgb),.12); }
+
+    /* ── Snapshot bar ─────────────────────────────── */
+    .pr-snap{ max-width:600px; margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr);
+      background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px;
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+    .pr-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
+    .pr-snap-i:last-child{ border-right:none; }
+    .pr-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .pr-snap-v small{ font-size:10px; font-weight:600; color:var(--au-dim); }
+    .pr-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    /* ── Wrap & groups ────────────────────────────── */
+    .pr-wrap{ max-width:600px; margin:0 auto; padding:18px 18px; display:flex; flex-direction:column; gap:22px; }
+    .pr-group-hd{ display:flex; align-items:center; gap:9px; margin-bottom:11px; }
+    .pr-group-dot{ width:7px; height:7px; border-radius:50%; background:rgba(var(--pr-accent-rgb),.85); box-shadow:0 0 8px rgba(var(--pr-accent-rgb),.6); }
+    .pr-group-name{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
+    .pr-group-line{ flex:1; height:1px; background:var(--au-line); }
+
+    .pr-card{ position:relative; background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:16px; padding:15px 16px; margin-bottom:11px; overflow:hidden; }
+    .pr-card.fresh{ border-color:rgba(var(--pr-accent-rgb),.4); box-shadow:0 0 0 1px rgba(var(--pr-accent-rgb),.1), 0 10px 30px rgba(0,0,0,.35); }
+    .pr-card::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,rgba(var(--pr-accent-rgb),.0),rgba(var(--pr-accent-rgb),.55),rgba(var(--pr-accent-rgb),.0)); opacity:0; transition:opacity .2s; }
+    .pr-card.fresh::before{ opacity:1; }
+    .pr-card-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .pr-ex-name{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); line-height:1.15; }
+    .pr-new{ flex:none; font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#04130D; background:var(--pr-accent); padding:3px 7px; border-radius:6px; }
+    .pr-card-main{ display:flex; align-items:flex-end; gap:14px; margin-top:12px; }
+    .pr-big{ flex:none; }
+    .pr-big-v{ font-family:var(--au-mono); font-weight:800; font-size:30px; letter-spacing:-.03em; color:#fff; line-height:1; }
+    .pr-big-v small{ font-size:14px; font-weight:600; color:var(--au-dim); margin-left:2px; }
+    .pr-big-l{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(var(--pr-accent-rgb),.85); margin-top:5px; }
+    .pr-stats{ flex:1; display:flex; flex-direction:column; gap:6px; padding-bottom:2px; }
+    .pr-stat{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; }
+    .pr-stat-k{ color:var(--au-faint); font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+    .pr-stat-v{ color:var(--au-ivory); font-weight:600; font-variant-numeric:tabular-nums; }
+    .pr-date{ margin-top:11px; font-family:var(--au-mono); font-size:10px; color:var(--au-faint); letter-spacing:.04em; }
+
+    /* ── Empty state ──────────────────────────────── */
+    .pr-empty{ max-width:480px; margin:40px auto; text-align:center; padding:0 24px; }
+    .pr-empty-ico{ font-size:46px; margin-bottom:14px; opacity:.85; }
+    .pr-empty h2{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:23px; color:var(--au-ivory); margin-bottom:10px; }
+    .pr-empty p{ font-size:14px; color:var(--au-dim); line-height:1.5; margin-bottom:20px; }
+    .pr-cta{ display:inline-block; text-decoration:none; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+      color:#04130D; background:var(--pr-accent); padding:12px 22px; border-radius:12px; box-shadow:0 8px 24px rgba(var(--pr-accent-rgb),.25); }
+    .pr-foot{ max-width:600px; margin:6px auto 0; padding:0 18px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="pr-hero">
+    <div>
+      <div class="pr-eyebrow">All-time bests</div>
+      <div class="pr-hero-line">Personal Records</div>
+      <div class="pr-hero-sub" id="prSub">Your heaviest lifts, pulled live from every workout you've logged.</div>
+    </div>
+    <div class="pr-trophy" aria-hidden="true">🏆</div>
+  </header>
+
+  <div class="pr-snap" id="prSnap" hidden>
+    <div class="pr-snap-i"><div class="pr-snap-v" id="snLifts">0</div><div class="pr-snap-l">Lifts</div></div>
+    <div class="pr-snap-i"><div class="pr-snap-v" id="snHeavy">—</div><div class="pr-snap-l">Heaviest</div></div>
+    <div class="pr-snap-i"><div class="pr-snap-v" id="snE1rm">—</div><div class="pr-snap-l">Best e1RM</div></div>
+    <div class="pr-snap-i"><div class="pr-snap-v" id="snTon">—</div><div class="pr-snap-l">Lifetime</div></div>
+  </div>
+
+  <main class="pr-wrap" id="prWrap"></main>
+  <div class="pr-foot" id="prFoot" hidden></div>
+
+  <script src="sync.js" defer></script>
+  <script src="pocoach-sync.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    function ls(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    // Epley estimated 1RM — identical to gym.html so PRs agree across pages.
+    function e1rm(w,r){ return (+w||0)*(1+(+r||0)/30); }
+    function round(n){ return Math.round(n*10)/10; }
+    function fmtKg(n){ var r=round(n); return (r%1===0? r.toFixed(0): r.toFixed(1)); }
+    function fmtDate(d){ if(!d) return ''; var p=d.split('-'); if(p.length<3) return d;
+      var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return (+p[2])+' '+m[(+p[1])-1]+' '+p[0]; }
+    function daysAgo(d){ if(!d) return 1e9; var t=new Date(d+'T00:00:00').getTime(); if(isNaN(t)) return 1e9; return Math.floor((Date.now()-t)/864e5); }
+
+    // Muscle grouping order (anything unknown falls to "Other").
+    var GROUPS = [
+      { key:'chest',     name:'Chest',     match:['chest','pec'] },
+      { key:'back',      name:'Back',      match:['back','lat','trap','row','pull'] },
+      { key:'shoulders', name:'Shoulders', match:['shoulder','delt'] },
+      { key:'legs',      name:'Legs',      match:['leg','quad','ham','glute','calf','squat'] },
+      { key:'arms',      name:'Arms',      match:['arm','bicep','tricep','curl','forearm'] },
+      { key:'core',      name:'Core',      match:['core','ab','oblique'] }
+    ];
+    function groupFor(muscle){
+      var m = String(muscle||'').toLowerCase();
+      for(var i=0;i<GROUPS.length;i++){ for(var j=0;j<GROUPS[i].match.length;j++){ if(m.indexOf(GROUPS[i].match[j])>-1) return GROUPS[i].key; } }
+      return 'other';
+    }
+
+    function compute(){
+      var ws = ls('po_workouts',[]) || [];
+      var byEx = {}, tonnage = 0;
+      ws.forEach(function(w){
+        if(!w) return;
+        var date = w.date || (w.startedAt? String(w.startedAt).slice(0,10) : '');
+        (w.entries||[]).forEach(function(en){
+          if(!en || en.kind==='time') return;                 // skip timed/cardio entries
+          var id = en.exId || en.name; if(!id) return;
+          (en.sets||[]).forEach(function(s){
+            if(!s || s.done===false) return;                  // only completed sets count
+            var kg=+s.kg||0, reps=+s.reps||0;
+            if(kg<=0 || reps<=0) return;
+            tonnage += kg*reps;
+            var rec = byEx[id] || (byEx[id]={ name:en.name||id, muscle:en.muscle||'',
+              e:0,ekg:0,ereps:0,edate:'', hkg:0,hreps:0,hdate:'', vol:0,volkg:0,volreps:0,voldate:'', last:'' });
+            if(en.name) rec.name=en.name; if(en.muscle) rec.muscle=en.muscle;
+            var est=e1rm(kg,reps);
+            if(est>rec.e){ rec.e=est; rec.ekg=kg; rec.ereps=reps; rec.edate=date; }      // best estimated 1RM
+            if(kg>rec.hkg){ rec.hkg=kg; rec.hreps=reps; rec.hdate=date; }                 // heaviest weight moved
+            var v=kg*reps; if(v>rec.vol){ rec.vol=v; rec.volkg=kg; rec.volreps=reps; rec.voldate=date; } // biggest set volume
+            if(date>rec.last) rec.last=date;
+          });
+        });
+      });
+      return { list:Object.keys(byEx).map(function(k){ return byEx[k]; }), tonnage:tonnage };
+    }
+
+    function card(r){
+      var fresh = daysAgo(r.edate) <= 21;
+      var h =
+        '<div class="pr-card'+(fresh?' fresh':'')+'">'+
+          '<div class="pr-card-top"><div class="pr-ex-name">'+esc(r.name)+'</div>'+
+            (fresh?'<span class="pr-new">New PR</span>':'')+'</div>'+
+          '<div class="pr-card-main">'+
+            '<div class="pr-big"><div class="pr-big-v">'+fmtKg(r.e)+'<small>kg</small></div><div class="pr-big-l">est. 1RM</div></div>'+
+            '<div class="pr-stats">'+
+              '<div class="pr-stat"><span class="pr-stat-k">Heaviest</span><span class="pr-stat-v">'+fmtKg(r.hkg)+'kg × '+r.hreps+'</span></div>'+
+              '<div class="pr-stat"><span class="pr-stat-k">Best set</span><span class="pr-stat-v">'+fmtKg(r.volkg)+'kg × '+r.volreps+'</span></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="pr-date">PR set '+fmtDate(r.edate)+' · last trained '+fmtDate(r.last)+'</div>'+
+        '</div>';
+      return h;
+    }
+
+    function render(){
+      var wrap = document.getElementById('prWrap');
+      var data = compute(), list = data.list;
+      if(!list.length){
+        document.getElementById('prSnap').hidden = true;
+        wrap.innerHTML =
+          '<div class="pr-empty"><div class="pr-empty-ico">🏋️</div>'+
+          '<h2>No PRs yet</h2>'+
+          '<p>Log a workout with weights in the Fitness tracker and your all-time bests will appear here automatically — every lift, every record.</p>'+
+          '<a class="pr-cta" href="gym.html">Open Fitness →</a></div>';
+        return;
+      }
+
+      // Snapshot
+      var maxH=0, maxE=0;
+      list.forEach(function(r){ if(r.hkg>maxH) maxH=r.hkg; if(r.e>maxE) maxE=r.e; });
+      document.getElementById('prSnap').hidden = false;
+      document.getElementById('snLifts').textContent = list.length;
+      document.getElementById('snHeavy').innerHTML = fmtKg(maxH)+'<small>kg</small>';
+      document.getElementById('snE1rm').innerHTML = fmtKg(maxE)+'<small>kg</small>';
+      var ton = data.tonnage;
+      document.getElementById('snTon').innerHTML = (ton>=1000? fmtKg(ton/1000)+'<small>t</small>' : Math.round(ton)+'<small>kg</small>');
+
+      // Group + sort (strongest lift first within each muscle)
+      var buckets = {};
+      list.forEach(function(r){ var g=groupFor(r.muscle); (buckets[g]=buckets[g]||[]).push(r); });
+      var order = GROUPS.map(function(g){ return g; }).concat([{key:'other',name:'Other'}]);
+      var html = '';
+      order.forEach(function(g){
+        var arr = buckets[g.key]; if(!arr || !arr.length) return;
+        arr.sort(function(a,b){ return b.e-a.e; });
+        html += '<section><div class="pr-group-hd"><span class="pr-group-dot"></span>'+
+          '<span class="pr-group-name">'+esc(g.name)+'</span><span class="pr-group-line"></span></div>'+
+          arr.map(card).join('')+'</section>';
+      });
+      wrap.innerHTML = html;
+
+      var foot = document.getElementById('prFoot');
+      foot.hidden = false;
+      foot.textContent = 'Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)). Records update automatically as you log.';
+    }
+
+    // Cross-device: pocoach-sync.js calls this when remote workout data arrives.
+    window._prRerender = render;
+    document.addEventListener('DOMContentLoaded', render);
+    render();
+  })();
+  </script>
+</body>
+</html>
