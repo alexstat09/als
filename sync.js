@@ -78,7 +78,7 @@
       } else if (lv === undefined) out[key] = rv;
       else if (rv === undefined) out[key] = lv;
       else if (Array.isArray(lv) && Array.isArray(rv)) out[key] = mergeArray(lv, rv, null);
-      else if (isPlainObj(lv) && isPlainObj(rv)) out[key] = mergeObject(lv, rv);
+      else if (isPlainObj(lv) && isPlainObj(rv)) out[key] = (('_ts' in lv) || ('_ts' in rv)) ? (((+lv._ts || 0) >= (+rv._ts || 0)) ? lv : rv) : mergeObject(lv, rv);
       else out[key] = rv; // scalar conflict → remote wins (converges)
     }
     return out;
@@ -88,7 +88,13 @@
     if (lv === undefined) return rv;
     if (rv === undefined) return lv;
     if (Array.isArray(lv) && Array.isArray(rv)) return mergeArray(lv, rv, tombForKey);
-    if (isPlainObj(lv) && isPlainObj(rv)) return mergeObject(lv, rv);
+    if (isPlainObj(lv) && isPlainObj(rv)) {
+      // Settings objects opt into LAST-WRITE-WINS by carrying a _ts stamp, so a
+      // fresh user edit (e.g. nutrition goal cut/maintain/bulk) is NOT reverted
+      // by the older remote copy on the next pull. Without _ts → deep merge.
+      if (('_ts' in lv) || ('_ts' in rv)) return ((+lv._ts || 0) >= (+rv._ts || 0)) ? lv : rv;
+      return mergeObject(lv, rv);
+    }
     return rv;
   }
 
