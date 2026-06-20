@@ -85,7 +85,7 @@
 
       <div style="margin-top:14px">
         <div class="im-toggle on" id="tgDiary" data-tg="diary"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Backfill the food diary</div><div class="im-toggle-s">Adds every day/meal/food to Nutrition · unlocks accurate Adaptive TDEE</div></div></div>
-        <div class="im-toggle on" id="tgFoods" data-tg="foods"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Add foods you eat often to search</div><div class="im-toggle-s">Saved separately from the verified core foods</div></div></div>
+        <div class="im-toggle on" id="tgFoods" data-tg="foods"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Add every food you've logged to search</div><div class="im-toggle-s">All your foods become searchable · saved separately from the verified core</div></div></div>
         <div class="im-toggle on" id="tgMeals" data-tg="meals"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Create saved meals from your repeats</div><div class="im-toggle-s">Powers the Meal Planner + shopping list</div></div></div>
       </div>
 
@@ -174,17 +174,27 @@
     }
 
     // ── derive foods (per-100g) and recurring meals ───────────────
+    // Every unique food becomes searchable. Gram-based foods get an accurate
+    // per-100g (median across all the times you logged them); foods only ever
+    // logged by count (e.g. "3 cookie") keep their per-serving macros and the
+    // serving stays in the name so they're still findable + re-loggable.
     function extractFoods(entries, minCount){
       var g={};
       entries.forEach(function(e){ var k=norm(e.baseName); if(!k) return;
-        if(!g[k]) g[k]={name:e.baseName, count:0, samples:[]};
+        if(!g[k]) g[k]={name:e.baseName, dispName:e.name, count:0, samples:[], any:e};
         g[k].count++; if(e.isGram && e.grams>0) g[k].samples.push(e);
       });
       var out=[];
-      Object.keys(g).forEach(function(k){ var f=g[k]; if(f.count<minCount || !f.samples.length) return;
-        function p100(field){ return median(f.samples.map(function(e){ return e[field]/e.grams*100; })); }
-        out.push({ name:f.name, count:f.count, servingG:Math.round(median(f.samples.map(function(e){return e.grams;}))),
-          per100:{ kcal:p100('kcal'), p:p100('p'), c:p100('c'), f:p100('f'), fiber:p100('fiber'), sugar:p100('sugar'), sodium:p100('sodium') } });
+      Object.keys(g).forEach(function(k){ var f=g[k]; if(f.count<minCount) return;
+        if(f.samples.length){
+          var per=function(field){ return median(f.samples.map(function(e){ return e[field]/e.grams*100; })); };
+          out.push({ name:f.name, count:f.count, gram:true, servingG:Math.round(median(f.samples.map(function(e){return e.grams;}))),
+            per100:{ kcal:per('kcal'), p:per('p'), c:per('c'), f:per('f'), fiber:per('fiber'), sugar:per('sugar'), sodium:per('sodium') } });
+        } else {
+          var e=f.any;
+          out.push({ name:f.dispName, count:f.count, gram:false, servingG:0,
+            per100:{ kcal:e.kcal, p:e.p, c:e.c, f:e.f, fiber:e.fiber, sugar:e.sugar, sodium:e.sodium } });
+        }
       });
       out.sort(function(a,b){return b.count-a.count;});
       return out;
@@ -221,7 +231,7 @@
       var have={}; logs.forEach(function(e){ if(e&&e.id) have[e.id]=1; });
       newCount=0; dupCount=0;
       parsed.entries.forEach(function(e){ if(have[e.id]) dupCount++; else newCount++; });
-      foodList=extractFoods(parsed.entries,2);
+      foodList=extractFoods(parsed.entries,1);
       // foods not already in custom
       var cust=ls('nut:custom',[]); if(!Array.isArray(cust)) cust=[]; var haveF={}; cust.forEach(function(f){ if(f&&f.name)haveF[norm(f.name)]=1; });
       var newFoods=foodList.filter(function(f){ return !haveF[norm(f.name)]; });
