@@ -182,6 +182,12 @@
       <div class="bp-sec-body" id="wtBody"></div>
     </section>
 
+    <!-- Measurements -->
+    <section class="bp-sec" style="--sec-rgb:24,200,192">
+      <div class="bp-sec-hdr"><span class="bp-sec-dot"></span><span class="bp-sec-title">Measurements</span><a href="measure.html" class="bp-sec-link">Full view &rarr;</a></div>
+      <div class="bp-sec-body" id="measBody"></div>
+    </section>
+
     <!-- Supplements -->
     <section class="bp-sec" style="--sec-rgb:155,140,255">
       <div class="bp-sec-hdr"><span class="bp-sec-dot"></span><span class="bp-sec-title">Supplements</span><a href="health.html" class="bp-sec-link">Full view &rarr;</a></div>
@@ -640,8 +646,44 @@
     }
 
     /* ── Boot ─────────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════
+       MEASUREMENTS (summary — full page is measure.html)
+    ══════════════════════════════════════════════════ */
+    function renderMeasure() {
+      const el = document.getElementById('measBody');
+      if (!el) return;
+      let logs = ls('bm:logs') || [];
+      if (!Array.isArray(logs)) logs = [];
+      logs = logs.filter(e => e && e.dateKey).sort((a,b) => a.dateKey.localeCompare(b.dateKey));
+      if (!logs.length) {
+        el.innerHTML = '<p style="color:var(--au-dim);font-size:13px;line-height:1.5;margin:0">No measurements yet — track waist, chest &amp; arms over time (the real recomp signal). <a href="measure.html" style="color:rgb(24,200,192);text-decoration:none;font-weight:600">Add your first &rarr;</a></p>';
+        return;
+      }
+      const latest = k => { for (let i = logs.length - 1; i >= 0; i--) if (logs[i][k] != null) return logs[i][k]; return null; };
+      const fmt = n => n == null ? '—' : (n % 1 === 0 ? n.toFixed(0) : n.toFixed(1));
+      const waist = latest('waist'), chest = latest('chest'), sh = latest('shoulders'), arm = latest('arm');
+      const vt = (sh != null && waist != null && waist > 0) ? (sh / waist).toFixed(2) : null;
+      const stats = [];
+      if (waist != null) stats.push(['Waist', fmt(waist) + ' cm']);
+      if (chest != null) stats.push(['Chest', fmt(chest) + ' cm']);
+      if (arm != null)   stats.push(['Arm',   fmt(arm)   + ' cm']);
+      if (vt != null)    stats.push(['V-taper', vt]);
+      const cells = stats.slice(0, 4).map(s =>
+        '<div style="text-align:center;padding:10px 4px;background:rgba(255,255,255,.03);border:1px solid var(--au-line);border-radius:12px">' +
+          '<div style="font-family:var(--au-mono);font-size:16px;font-weight:700;color:var(--au-ivory);letter-spacing:-.02em">' + esc(s[1]) + '</div>' +
+          '<div style="font-family:var(--au-mono);font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin-top:4px">' + esc(s[0]) + '</div>' +
+        '</div>').join('');
+      const lastKey = logs[logs.length - 1].dateKey;
+      const md = lastKey.split('-');
+      const mName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+md[1]) - 1];
+      el.innerHTML =
+        '<div style="display:grid;grid-template-columns:repeat(' + Math.max(1, Math.min(stats.length, 4)) + ',1fr);gap:8px">' + cells + '</div>' +
+        '<div style="font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--au-faint);margin-top:11px">Last logged ' + (+md[2]) + ' ' + mName + ' · ' + logs.length + ' ' + (logs.length === 1 ? 'entry' : 'entries') + '</div>';
+    }
+
     function renderAllSections() {
       renderWeight();
+      renderMeasure();
       renderSupps();
       renderWater();
       renderCaffeine();
@@ -656,21 +698,13 @@
     // Re-render all sections when returning from another page / iOS resume
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        renderWeight();
-        renderSupps();
-        renderWater();
-        renderCaffeine();
-        renderNutrition();
+        renderAllSections();
       }
     });
 
     // Storage events from other tabs/pages
     window.addEventListener('storage', () => {
-      renderWeight();
-      renderSupps();
-      renderWater();
-      renderCaffeine();
-      renderNutrition();
+      renderAllSections();
     });
   })();
   </script>
@@ -689,6 +723,7 @@
       function rerender(){ if (typeof window._bodyRerender === 'function') { try { window._bodyRerender(); } catch (e) {} } }
       window.initCloudSync({ appKey: 'health',   syncedKeys: ['stack:items', 'stack:low', 'po_water_v1'], syncedPrefixes: ['stack:taken:'], onApplied: rerender });
       window.initCloudSync({ appKey: 'caffeine', syncedKeys: ['caf:logs', 'caf:custom'], onApplied: rerender });
+      window.initCloudSync({ appKey: 'body-measure', syncedKeys: ['bm:logs'], onApplied: rerender });
     })();
   </script>
 

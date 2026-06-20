@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Measurements · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --mz:24,200,192; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    .mz-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .mz-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--mz),.85); margin-bottom:11px; }
+    .mz-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; letter-spacing:-.01em; }
+    .mz-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; max-width:34ch; line-height:1.45; }
+    .mz-orb{ flex:none; width:62px; height:62px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--mz),.22), rgba(var(--mz),.04));
+      border:1px solid rgba(var(--mz),.3); box-shadow:0 0 30px rgba(var(--mz),.12); }
+
+    .mz-snap{ max-width:600px; margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr);
+      background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px;
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+    .mz-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
+    .mz-snap-i:last-child{ border-right:none; }
+    .mz-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .mz-snap-v small{ font-size:10px; font-weight:600; color:var(--au-dim); }
+    .mz-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    .mz-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
+    .mz-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px 16px 18px; }
+    .mz-card-hd{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+    .mz-card-hd .dot{ width:7px; height:7px; border-radius:50%; background:rgba(var(--mz),.9); box-shadow:0 0 8px rgba(var(--mz),.6); }
+    .mz-card-hd h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
+    .mz-card-hd .line{ flex:1; height:1px; background:var(--au-line); }
+
+    /* ── V-taper insight ──────────────────────────── */
+    .mz-vtaper{ display:flex; align-items:center; gap:16px; }
+    .mz-vt-ring{ flex:none; position:relative; width:84px; height:84px; }
+    .mz-vt-num{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .mz-vt-num b{ font-family:var(--au-mono); font-size:21px; font-weight:800; color:#fff; line-height:1; }
+    .mz-vt-num span{ font-family:var(--au-mono); font-size:7px; font-weight:700; letter-spacing:.12em; color:var(--au-faint); text-transform:uppercase; margin-top:3px; }
+    .mz-vt-txt{ flex:1; }
+    .mz-vt-txt .t{ font-size:14px; color:var(--au-ivory); font-weight:600; line-height:1.35; }
+    .mz-vt-txt .s{ font-size:12px; color:var(--au-dim); margin-top:5px; line-height:1.4; }
+
+    /* ── Add / edit form ──────────────────────────── */
+    .mz-daterow{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+    .mz-daterow label{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); }
+    .mz-date{ flex:1; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:10px; color:var(--au-ivory); font-family:var(--au-mono); font-size:14px; padding:9px 12px; outline:none; -webkit-appearance:none; }
+    .mz-date:focus{ border-color:rgba(var(--mz),.45); }
+    .mz-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .mz-field{ display:flex; flex-direction:column; gap:5px; }
+    .mz-field label{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); display:flex; justify-content:space-between; }
+    .mz-field label .goal{ color:rgba(var(--mz),.7); }
+    .mz-inwrap{ position:relative; }
+    .mz-in{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:11px; color:var(--au-ivory);
+      font-family:var(--au-mono); font-size:17px; font-weight:700; padding:11px 38px 11px 13px; outline:none; -webkit-appearance:none; font-variant-numeric:tabular-nums; }
+    .mz-in:focus{ border-color:rgba(var(--mz),.5); box-shadow:0 0 0 3px rgba(var(--mz),.1); }
+    .mz-in-unit{ position:absolute; right:13px; top:50%; transform:translateY(-50%); font-family:var(--au-mono); font-size:11px; color:var(--au-faint); pointer-events:none; }
+    .mz-save{ width:100%; margin-top:14px; background:rgb(var(--mz)); color:#04130D; border:none; border-radius:13px; padding:14px; font-family:var(--au-sans); font-size:14px; font-weight:800; letter-spacing:.02em; cursor:pointer; box-shadow:0 6px 22px rgba(var(--mz),.28); transition:transform .12s; }
+    .mz-save:active{ transform:scale(.98); }
+    .mz-toast{ text-align:center; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:rgb(var(--mz)); margin-top:10px; min-height:14px; opacity:0; transition:opacity .25s; }
+    .mz-toast.show{ opacity:1; }
+
+    /* ── Trend cards ──────────────────────────────── */
+    .mz-trend{ display:flex; align-items:center; gap:13px; padding:12px 0; border-bottom:1px solid var(--au-line); }
+    .mz-trend:last-child{ border-bottom:none; }
+    .mz-trend-main{ flex:1; min-width:0; }
+    .mz-trend-name{ font-size:14px; font-weight:600; color:var(--au-ivory); }
+    .mz-trend-delta{ font-family:var(--au-mono); font-size:11px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums; }
+    .mz-trend-delta.good{ color:var(--au-emerald,#34E2B0); }
+    .mz-trend-delta.bad{ color:#FF8FA3; }
+    .mz-trend-delta.flat{ color:var(--au-faint); }
+    .mz-spark{ flex:none; display:flex; align-items:flex-end; gap:2px; height:30px; width:88px; }
+    .mz-spark-bar{ flex:1; min-width:2px; background:rgba(var(--mz),.35); border-radius:2px 2px 0 0; }
+    .mz-spark-bar.last{ background:rgb(var(--mz)); box-shadow:0 0 7px rgba(var(--mz),.55); }
+    .mz-trend-val{ flex:none; text-align:right; }
+    .mz-trend-cur{ font-family:var(--au-mono); font-size:18px; font-weight:800; color:#fff; line-height:1; font-variant-numeric:tabular-nums; }
+    .mz-trend-cur small{ font-size:10px; font-weight:600; color:var(--au-dim); }
+
+    /* ── History ──────────────────────────────────── */
+    .mz-hist-row{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--au-line); }
+    .mz-hist-row:last-child{ border-bottom:none; }
+    .mz-hist-date{ flex:none; width:74px; font-family:var(--au-mono); font-size:11px; font-weight:700; color:var(--au-dim); }
+    .mz-hist-sum{ flex:1; min-width:0; font-size:12px; color:var(--au-faint); line-height:1.4; }
+    .mz-hist-sum b{ color:var(--au-ivory); font-weight:600; font-variant-numeric:tabular-nums; }
+    .mz-hist-btns{ flex:none; display:flex; gap:6px; }
+    .mz-hb{ padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-faint); cursor:pointer; font-family:var(--au-sans); }
+    .mz-hb.del{ color:#FF8FA3; border-color:rgba(255,143,163,.25); }
+    .mz-hb:active{ background:rgba(255,255,255,.08); }
+
+    .mz-empty{ text-align:center; padding:8px 6px 4px; color:var(--au-dim); font-size:13px; line-height:1.5; }
+    .mz-foot{ max-width:600px; margin:4px auto 0; padding:0 18px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="mz-hero">
+    <div>
+      <div class="mz-eyebrow">Tape measure</div>
+      <div class="mz-hero-line" id="mzHeadline">Body Measurements</div>
+      <div class="mz-hero-sub" id="mzSub">The real recomp signal — track size where the scale can't.</div>
+    </div>
+    <div class="mz-orb" aria-hidden="true">📏</div>
+  </header>
+
+  <div class="mz-snap">
+    <div class="mz-snap-i"><div class="mz-snap-v" id="snEntries">0</div><div class="mz-snap-l">Logs</div></div>
+    <div class="mz-snap-i"><div class="mz-snap-v" id="snWaist">—</div><div class="mz-snap-l">Waist</div></div>
+    <div class="mz-snap-i"><div class="mz-snap-v" id="snChest">—</div><div class="mz-snap-l">Chest</div></div>
+    <div class="mz-snap-i"><div class="mz-snap-v" id="snVtaper">—</div><div class="mz-snap-l">V-taper</div></div>
+  </div>
+
+  <main class="mz-wrap">
+
+    <!-- V-taper insight -->
+    <section class="mz-card hidden" id="vtCard">
+      <div class="mz-card-hd"><span class="dot"></span><h2>V-Taper</h2><span class="line"></span></div>
+      <div class="mz-vtaper">
+        <div class="mz-vt-ring" id="vtRing"></div>
+        <div class="mz-vt-txt"><div class="t" id="vtText">—</div><div class="s" id="vtSub">Shoulder-to-waist ratio. The classic aesthetic target is ≈1.618 (the golden ratio).</div></div>
+      </div>
+    </section>
+
+    <!-- Add / edit -->
+    <section class="mz-card">
+      <div class="mz-card-hd"><span class="dot"></span><h2 id="formTitle">Log measurements</h2><span class="line"></span></div>
+      <div class="mz-daterow">
+        <label for="mzDate">Date</label>
+        <input type="date" class="mz-date" id="mzDate">
+      </div>
+      <div class="mz-grid" id="mzGrid"></div>
+      <button class="mz-save" id="mzSave" type="button">Save measurements</button>
+      <div class="mz-toast" id="mzToast"></div>
+    </section>
+
+    <!-- Trends -->
+    <section class="mz-card hidden" id="trendCard">
+      <div class="mz-card-hd"><span class="dot"></span><h2>Trends</h2><span class="line"></span></div>
+      <div id="trendBody"></div>
+    </section>
+
+    <!-- History -->
+    <section class="mz-card hidden" id="histCard">
+      <div class="mz-card-hd"><span class="dot"></span><h2>History</h2><span class="line"></span></div>
+      <div id="histBody"></div>
+    </section>
+
+    <div class="mz-empty hidden" id="mzEmpty">No measurements yet. Grab a tape measure and log your first set above — even just waist and chest is enough to start tracking your recomp.</div>
+
+  </main>
+  <div class="mz-foot">Logged in centimetres. Measure relaxed (except “Arm” — flexed), same time of day, ideally weekly. Records sync across your devices automatically.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    var KEY = 'bm:logs';
+    var PARTS = [
+      { k:'neck',      label:'Neck',         goal:'neutral' },
+      { k:'shoulders', label:'Shoulders',    goal:'up' },
+      { k:'chest',     label:'Chest',        goal:'up' },
+      { k:'arm',       label:'Arm · flexed', goal:'up' },
+      { k:'forearm',   label:'Forearm',      goal:'up' },
+      { k:'waist',     label:'Waist',        goal:'down' },
+      { k:'hips',      label:'Hips',         goal:'neutral' },
+      { k:'thigh',     label:'Thigh',        goal:'up' },
+      { k:'calf',      label:'Calf',         goal:'up' }
+    ];
+    var PMAP = {}; PARTS.forEach(function(p){ PMAP[p.k]=p; });
+
+    function $(id){ return document.getElementById(id); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function todayKey(){ return dateKey(new Date()); }
+    function parseNum(v){ if(v==null) return null; var n=parseFloat(String(v).replace(',','.')); return (isFinite(n) && n>0) ? Math.round(n*10)/10 : null; }
+    function fmt(n){ if(n==null) return '—'; return (n%1===0 ? n.toFixed(0) : n.toFixed(1)); }
+    function fmtDateLabel(k){ var p=k.split('-'); if(p.length<3) return k;
+      var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return (+p[2])+' '+m[(+p[1])-1]; }
+
+    function load(){
+      var arr; try{ arr=JSON.parse(localStorage.getItem(KEY)); }catch(e){ arr=null; }
+      if(!Array.isArray(arr)) arr=[];
+      return arr.filter(function(e){ return e && e.dateKey; })
+                .sort(function(a,b){ return a.dateKey.localeCompare(b.dateKey); });
+    }
+    // Goes through the sync-wrapped setItem → records tombstones + schedules push.
+    function persist(arr){ try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(e){} }
+
+    var logs = load();
+
+    /* ── Build the input grid once ─────────────────── */
+    function buildGrid(){
+      $('mzGrid').innerHTML = PARTS.map(function(p){
+        var hint = p.goal==='up' ? '↑ grow' : p.goal==='down' ? '↓ trim' : '';
+        return '<div class="mz-field"><label for="in_'+p.k+'">'+esc(p.label)+
+          (hint?'<span class="goal">'+hint+'</span>':'')+'</label>'+
+          '<div class="mz-inwrap"><input class="mz-in" id="in_'+p.k+'" inputmode="decimal" '+
+          'pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" placeholder="0"><span class="mz-in-unit">cm</span></div></div>';
+      }).join('');
+    }
+
+    function entryFor(key){ return logs.find(function(e){ return e.dateKey===key; }) || null; }
+
+    function fillForm(key){
+      var e = entryFor(key) || {};
+      PARTS.forEach(function(p){ var el=$('in_'+p.k); if(el) el.value = (e[p.k]!=null ? fmt(e[p.k]) : ''); });
+      $('formTitle').textContent = entryFor(key) ? 'Edit · '+fmtDateLabel(key) : 'Log measurements';
+    }
+
+    function toast(msg){
+      var t=$('mzToast'); t.textContent=msg; t.classList.add('show');
+      clearTimeout(t._tm); t._tm=setTimeout(function(){ t.classList.remove('show'); }, 1800);
+    }
+
+    function save(){
+      var key = $('mzDate').value || todayKey();
+      var rec = { dateKey:key, ts:Date.now() };
+      var any=false;
+      PARTS.forEach(function(p){ var v=parseNum($('in_'+p.k).value); if(v!=null){ rec[p.k]=v; any=true; } });
+      var idx = logs.findIndex(function(e){ return e.dateKey===key; });
+      if(!any){
+        // Cleared everything for this date → remove the entry if it existed.
+        if(idx>-1){ logs.splice(idx,1); persist(logs); toast('Entry cleared'); }
+        else toast('Nothing to save');
+      } else {
+        if(idx>-1) logs[idx]=rec; else logs.push(rec);
+        logs.sort(function(a,b){ return a.dateKey.localeCompare(b.dateKey); });
+        persist(logs);
+        toast('Saved ✓');
+      }
+      if(window.ALSSync && window.ALSSync.flush) window.ALSSync.flush();
+      render();
+    }
+
+    function delEntry(key){
+      if(!confirm('Delete measurements for '+fmtDateLabel(key)+'?')) return;
+      logs = logs.filter(function(e){ return e.dateKey!==key; });
+      persist(logs);                               // setItem interception tombstones the removed dateKey
+      if(window.ALSSync && window.ALSSync.flush) window.ALSSync.flush();
+      if($('mzDate').value===key) fillForm(key);
+      render();
+    }
+
+    /* ── Per-part series helpers ───────────────────── */
+    function seriesFor(k){
+      var out=[]; logs.forEach(function(e){ if(e[k]!=null) out.push({ d:e.dateKey, v:e[k] }); });
+      return out; // already date-sorted (logs is sorted)
+    }
+    function latestVal(k){ var s=seriesFor(k); return s.length? s[s.length-1].v : null; }
+
+    function sparkHtml(series){
+      if(series.length<2) return '<div class="mz-spark"></div>';
+      var vals=series.map(function(p){return p.v;});
+      var min=Math.min.apply(null,vals), max=Math.max.apply(null,vals);
+      var range=(max-min)||1;
+      var bars=series.slice(-14);
+      return '<div class="mz-spark">'+bars.map(function(p,i){
+        var h=Math.round(((p.v-min)/range)*24+4);
+        var last=i===bars.length-1;
+        return '<div class="mz-spark-bar'+(last?' last':'')+'" style="height:'+h+'px" title="'+p.d+': '+fmt(p.v)+'cm"></div>';
+      }).join('')+'</div>';
+    }
+
+    function deltaClass(goal,diff){
+      if(diff===0 || goal==='neutral') return 'flat';
+      if(goal==='up')   return diff>0 ? 'good' : 'bad';
+      return diff<0 ? 'good' : 'bad';  // goal 'down'
+    }
+
+    /* ── Render everything ─────────────────────────── */
+    function render(){
+      logs = load();
+
+      // Snapshot
+      $('snEntries').textContent = logs.length;
+      var waist=latestVal('waist'), chest=latestVal('chest'), sh=latestVal('shoulders');
+      $('snWaist').innerHTML = waist!=null ? fmt(waist)+'<small>cm</small>' : '—';
+      $('snChest').innerHTML = chest!=null ? fmt(chest)+'<small>cm</small>' : '—';
+      var vt = (sh!=null && waist!=null && waist>0) ? sh/waist : null;
+      $('snVtaper').textContent = vt!=null ? vt.toFixed(2) : '—';
+
+      // V-taper card
+      if(vt!=null){
+        $('vtCard').classList.remove('hidden');
+        var pct = Math.max(0, Math.min(1, (vt-1.0)/(1.618-1.0))); // 1.0 → 0%, golden → 100%
+        var deg = Math.round(pct*360);
+        $('vtRing').innerHTML =
+          '<svg viewBox="0 0 84 84" width="84" height="84" style="transform:rotate(-90deg)">'+
+            '<circle cx="42" cy="42" r="36" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/>'+
+            '<circle cx="42" cy="42" r="36" fill="none" stroke="rgb(var(--mz))" stroke-width="7" stroke-linecap="round" '+
+            'stroke-dasharray="'+(2*Math.PI*36)+'" stroke-dashoffset="'+(2*Math.PI*36*(1-pct))+'"/>'+
+          '</svg><div class="mz-vt-num"><b>'+vt.toFixed(2)+'</b><span>ratio</span></div>';
+        var gap = (1.618 - vt);
+        $('vtText').textContent = gap<=0 ? 'Golden ratio reached — elite V-taper.' :
+          (vt>=1.4 ? 'Strong taper — closing in on the golden 1.618.' :
+           vt>=1.2 ? 'Taper is building. Grow shoulders, trim the waist.' :
+                     'Early days. Shoulder work + waist down moves this fast.');
+        $('vtSub').textContent = gap>0 ? ('Shoulders '+fmt(sh)+'cm ÷ waist '+fmt(waist)+'cm. '+gap.toFixed(2)+' to the golden 1.618.')
+                                       : ('Shoulders '+fmt(sh)+'cm ÷ waist '+fmt(waist)+'cm.');
+      } else { $('vtCard').classList.add('hidden'); }
+
+      // Hero line
+      if(logs.length){
+        $('mzSub').textContent = 'Last logged '+fmtDateLabel(logs[logs.length-1].dateKey)+' · '+logs.length+' '+(logs.length===1?'entry':'entries')+'.';
+      }
+
+      // Trends — one row per part that has data, in PARTS order
+      var trendHtml='';
+      PARTS.forEach(function(p){
+        var s=seriesFor(p.k); if(!s.length) return;
+        var cur=s[s.length-1].v;
+        var deltaTxt='First entry', dcls='flat';
+        if(s.length>=2){
+          var prev=s[s.length-2].v; var diff=Math.round((cur-prev)*10)/10;
+          var sign=diff>0?'+':''; dcls=deltaClass(p.goal,diff);
+          deltaTxt=(diff===0?'no change':sign+fmt(diff)+'cm')+' vs prev';
+          var first=s[0].v; var tot=Math.round((cur-first)*10)/10;
+          if(s.length>=3 && tot!==0){ deltaTxt += ' · '+(tot>0?'+':'')+fmt(tot)+' all-time'; }
+        }
+        trendHtml +=
+          '<div class="mz-trend">'+
+            '<div class="mz-trend-main"><div class="mz-trend-name">'+esc(p.label)+'</div>'+
+              '<div class="mz-trend-delta '+dcls+'">'+deltaTxt+'</div></div>'+
+            sparkHtml(s)+
+            '<div class="mz-trend-val"><div class="mz-trend-cur">'+fmt(cur)+'<small>cm</small></div></div>'+
+          '</div>';
+      });
+      if(trendHtml){ $('trendCard').classList.remove('hidden'); $('trendBody').innerHTML=trendHtml; }
+      else $('trendCard').classList.add('hidden');
+
+      // History
+      if(logs.length){
+        $('histCard').classList.remove('hidden');
+        var rows = logs.slice().sort(function(a,b){ return b.dateKey.localeCompare(a.dateKey); });
+        $('histBody').innerHTML = rows.map(function(e){
+          var parts = PARTS.filter(function(p){ return e[p.k]!=null; })
+            .map(function(p){ return esc(p.label.split(' ')[0])+' <b>'+fmt(e[p.k])+'</b>'; });
+          return '<div class="mz-hist-row">'+
+            '<div class="mz-hist-date">'+esc(fmtDateLabel(e.dateKey))+'</div>'+
+            '<div class="mz-hist-sum">'+(parts.length?parts.join(' · '):'<span style="opacity:.5">empty</span>')+'</div>'+
+            '<div class="mz-hist-btns">'+
+              '<button type="button" class="mz-hb" data-edit="'+esc(e.dateKey)+'">Edit</button>'+
+              '<button type="button" class="mz-hb del" data-del="'+esc(e.dateKey)+'">✕</button>'+
+            '</div></div>';
+        }).join('');
+      } else $('histCard').classList.add('hidden');
+
+      $('mzEmpty').classList.toggle('hidden', logs.length>0);
+    }
+
+    /* ── Wiring ────────────────────────────────────── */
+    buildGrid();
+    $('mzDate').value = todayKey();
+    $('mzDate').max = todayKey();
+    fillForm(todayKey());
+    render();
+
+    $('mzDate').addEventListener('change', function(){ fillForm($('mzDate').value || todayKey()); });
+    $('mzSave').addEventListener('click', save);
+    $('histBody').addEventListener('click', function(e){
+      var ed=e.target.closest('[data-edit]'), dl=e.target.closest('[data-del]');
+      if(ed){ var k=ed.getAttribute('data-edit'); $('mzDate').value=k; fillForm(k); window.scrollTo({top:0,behavior:'smooth'}); }
+      else if(dl){ delEntry(dl.getAttribute('data-del')); }
+    });
+
+    // Cross-device: re-render when sync applies remote changes, on resume, and on cross-tab writes.
+    window._measureRerender = function(){ render(); /* refreshes trends/history/snapshot; leaves the form inputs as the user left them */ };
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage', function(ev){ if(!ev || ev.key===KEY) render(); });
+
+    // Start sync (generic engine, own row).
+    document.addEventListener('DOMContentLoaded', function(){
+      (function start(){
+        if (typeof window.initCloudSync !== 'function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'body-measure', syncedKeys:[KEY], onApplied:function(){ if(window._measureRerender) window._measureRerender(); } });
+      })();
+    });
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
