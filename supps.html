@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Supplement Timing · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --sp:155,140,255; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    .sp-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .sp-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--sp),.9); margin-bottom:11px; }
+    .sp-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; }
+    .sp-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; line-height:1.45; }
+    .sp-hero-sub b{ color:var(--au-ivory); font-weight:700; }
+    .sp-orb{ flex:none; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:27px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--sp),.22), rgba(var(--sp),.04)); border:1px solid rgba(var(--sp),.3); box-shadow:0 0 30px rgba(var(--sp),.12); }
+
+    /* progress */
+    .sp-prog{ max-width:600px; margin:12px auto 0; padding:0 18px; }
+    .sp-prog-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
+    .sp-prog-lbl{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    .sp-prog-cnt{ font-family:var(--au-mono); font-size:13px; font-weight:800; color:var(--au-ivory); }
+    .sp-prog-track{ height:7px; background:rgba(255,255,255,.07); border-radius:4px; overflow:hidden; }
+    .sp-prog-fill{ height:100%; border-radius:4px; background:linear-gradient(90deg,rgb(var(--sp)),#34E2B0); transition:width .4s; }
+
+    /* "right now" callout */
+    .sp-now{ max-width:600px; margin:16px auto 0; padding:0 18px; }
+    .sp-now-card{ border:1px solid rgba(var(--sp),.4); background:linear-gradient(135deg,rgba(var(--sp),.14),rgba(var(--sp),.03)); border-radius:16px; padding:15px 16px; box-shadow:0 0 30px rgba(var(--sp),.08); }
+    .sp-now-eyebrow{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--sp),.95); margin-bottom:7px; }
+    .sp-now-txt{ font-size:14.5px; color:var(--au-ivory); line-height:1.45; }
+    .sp-now-txt b{ font-weight:700; }
+
+    /* timeline */
+    .sp-wrap{ max-width:600px; margin:8px auto 0; padding:14px 18px; }
+    .sp-win{ position:relative; padding-left:34px; padding-bottom:8px; }
+    .sp-win::before{ content:""; position:absolute; left:11px; top:6px; bottom:-8px; width:2px; background:var(--au-line); }
+    .sp-win:last-child::before{ display:none; }
+    .sp-node{ position:absolute; left:0; top:2px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; background:#0c0e12; border:2px solid var(--au-line); z-index:1; }
+    .sp-win.now .sp-node{ border-color:rgb(var(--sp)); box-shadow:0 0 0 4px rgba(var(--sp),.16); }
+    .sp-win.done .sp-node{ border-color:#34E2B0; color:#34E2B0; }
+    .sp-win.missed .sp-node{ border-color:#FF8FA3; }
+    .sp-win-hd{ display:flex; align-items:center; gap:9px; margin-bottom:10px; min-height:24px; }
+    .sp-win-title{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); }
+    .sp-win-time{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); letter-spacing:.04em; }
+    .sp-pill{ margin-left:auto; font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; padding:3px 8px; border-radius:6px; }
+    .sp-pill.now{ background:rgb(var(--sp)); color:#0a0a12; }
+    .sp-pill.done{ background:rgba(52,226,176,.18); color:#34E2B0; }
+    .sp-pill.missed{ background:rgba(255,143,163,.16); color:#FF8FA3; }
+    .sp-pill.upcoming{ background:rgba(255,255,255,.06); color:var(--au-faint); }
+    .sp-pill.open{ background:rgba(255,255,255,.06); color:var(--au-dim); }
+
+    .sp-item{ display:flex; align-items:center; gap:12px; padding:11px 13px; margin-bottom:8px; border-radius:13px; border:1px solid var(--au-line); background:rgba(255,255,255,.025); cursor:pointer; transition:border-color .15s,background .15s; }
+    .sp-item:active{ background:rgba(255,255,255,.05); }
+    .sp-item.taken{ opacity:.62; }
+    .sp-check{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:14px; color:#04130D; transition:background .15s,border-color .15s; }
+    .sp-item.taken .sp-check{ background:#34E2B0; border-color:#34E2B0; }
+    .sp-item-main{ flex:1; min-width:0; }
+    .sp-item-name{ font-size:14.5px; font-weight:600; color:var(--au-ivory); }
+    .sp-item.taken .sp-item-name{ text-decoration:line-through; color:var(--au-dim); }
+    .sp-item-note{ font-size:11.5px; color:var(--au-faint); margin-top:3px; line-height:1.4; }
+    .sp-item-dose{ flex:none; font-family:var(--au-mono); font-size:12px; font-weight:700; color:rgba(var(--sp),.9); white-space:nowrap; }
+
+    .sp-empty{ max-width:520px; margin:46px auto; text-align:center; padding:0 24px; color:var(--au-dim); font-size:14px; line-height:1.55; }
+    .sp-empty .ico{ font-size:44px; margin-bottom:14px; }
+    .sp-empty a{ color:rgb(var(--sp)); text-decoration:none; font-weight:700; }
+    .sp-foot{ max-width:600px; margin:4px auto 0; padding:0 18px 4px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="sp-hero">
+    <div>
+      <div class="sp-eyebrow">Supplement timing</div>
+      <div class="sp-hero-line">When to take what</div>
+      <div class="sp-hero-sub" id="spSub">Your stack, laid out across the day.</div>
+    </div>
+    <div class="sp-orb" aria-hidden="true">💊</div>
+  </header>
+
+  <div class="sp-prog" id="spProgWrap">
+    <div class="sp-prog-top"><span class="sp-prog-lbl">Today’s stack</span><span class="sp-prog-cnt" id="spProgCnt">0 / 0</span></div>
+    <div class="sp-prog-track"><div class="sp-prog-fill" id="spProgFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="sp-now hidden" id="spNowWrap">
+    <div class="sp-now-card"><div class="sp-now-eyebrow" id="spNowEyebrow">Right now</div><div class="sp-now-txt" id="spNowTxt"></div></div>
+  </div>
+
+  <main class="sp-wrap" id="spTimeline"></main>
+  <div class="sp-empty hidden" id="spEmpty">
+    <div class="ico">💊</div>
+    No supplements in your stack yet.<br>Add them in the <a href="health.html">Health module</a> and they’ll line up here by time of day.
+  </div>
+  <div class="sp-foot" id="spFoot">Tap any supplement to mark it taken — it syncs with your Daily Stack. Resets at 6 AM.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    // Enriched windows (STACK_WINDOWS from health.html + startHour for "now" logic).
+    var WINDOWS=[
+      { key:'morning',    icon:'🌅', title:'Morning',  time:'7–10 AM',        startHour:5,    cutoffHour:10 },
+      { key:'lunch',      icon:'🍽️', title:'Lunch',    time:'12–2 PM',        startHour:10,   cutoffHour:14 },
+      { key:'evening',    icon:'🌙', title:'Evening',  time:'9–11 PM',        startHour:15,   cutoffHour:23 },
+      { key:'anytime',    icon:'⏱️', title:'Anytime',  time:'Any time today', startHour:null, cutoffHour:null },
+      { key:'occasional', icon:'🔆', title:'As needed',time:'Only when needed',startHour:null, cutoffHour:null }
+    ];
+
+    function $(id){ return document.getElementById(id); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+    function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+    // Same 6 AM-rollover key health.html / body.html use, so taken state is shared.
+    function activeDate(){ var n=new Date(); if(n.getHours()<6) n.setDate(n.getDate()-1);
+      return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+    function takenKey(){ return 'stack:taken:'+activeDate(); }
+
+    function items(){ var a=ls('stack:items',[]); return Array.isArray(a)?a.filter(function(i){return i&&i.id&&i.name;}):[]; }
+    function taken(){ var t=ls(takenKey(),{}); return (t&&typeof t==='object')?t:{}; }
+    function itemsIn(key){ return items().filter(function(i){ return (i.window||'anytime')===key; }); }
+
+    function toggle(id){
+      var t=taken(); if(t[id]) delete t[id]; else t[id]=Date.now();
+      save(takenKey(), t);
+      if(window.ALSSync && window.ALSSync.flush) window.ALSSync.flush();
+      render();
+    }
+
+    function winStatus(win, list, t){
+      var due=list.filter(function(i){ return !t[i.id]; }).length;
+      if(list.length && due===0) return 'done';
+      if(win.cutoffHour==null) return 'open';            // anytime / occasional
+      var h=new Date().getHours();
+      if(h>win.cutoffHour) return 'missed';
+      if(win.startHour!=null && h<win.startHour) return 'upcoming';
+      return 'now';
+    }
+    var PILL={ now:'Now', done:'Done', missed:'Missed', upcoming:'Later', open:'Open' };
+
+    function render(){
+      var all=items(), t=taken();
+      if(!all.length){
+        $('spTimeline').classList.add('hidden'); $('spNowWrap').classList.add('hidden');
+        $('spProgWrap').classList.add('hidden'); $('spFoot').classList.add('hidden');
+        $('spEmpty').classList.remove('hidden');
+        return;
+      }
+      $('spEmpty').classList.add('hidden'); $('spTimeline').classList.remove('hidden');
+      $('spProgWrap').classList.remove('hidden'); $('spFoot').classList.remove('hidden');
+
+      // progress = everything except "occasional" (only-if-needed)
+      var daily=all.filter(function(i){ return (i.window||'anytime')!=='occasional'; });
+      var done=daily.filter(function(i){ return t[i.id]; }).length;
+      $('spProgCnt').textContent=done+' / '+daily.length;
+      $('spProgFill').style.width=(daily.length?Math.round(done/daily.length*100):0)+'%';
+
+      // build timeline (skip windows with no items)
+      var html='', nowFocus=null, upcomingFocus=null;
+      WINDOWS.forEach(function(win){
+        var list=itemsIn(win.key); if(!list.length) return;
+        var st=winStatus(win,list,t);
+        var untaken=list.filter(function(i){ return !t[i.id]; });
+        if(st==='now' && !nowFocus && untaken.length) nowFocus={win:win,items:untaken};
+        if(st==='upcoming' && !upcomingFocus && untaken.length) upcomingFocus={win:win,items:untaken};
+        if(win.key==='anytime' && !nowFocus && untaken.length) nowFocus={win:win,items:untaken};
+
+        var rows=list.map(function(i){
+          var isT=!!t[i.id];
+          return '<div class="sp-item'+(isT?' taken':'')+'" data-id="'+esc(i.id)+'">'+
+            '<div class="sp-check">'+(isT?'&#10003;':'')+'</div>'+
+            '<div class="sp-item-main"><div class="sp-item-name">'+esc(i.name)+'</div>'+
+              (i.note?'<div class="sp-item-note">'+esc(i.note)+'</div>':'')+'</div>'+
+            (i.dose?'<div class="sp-item-dose">'+esc(i.dose)+'</div>':'')+
+          '</div>';
+        }).join('');
+
+        var pillCls=(st==='now'||st==='done'||st==='missed'||st==='upcoming')?st:'open';
+        html+='<div class="sp-win '+st+'">'+
+          '<div class="sp-node">'+(st==='done'?'&#10003;':win.icon)+'</div>'+
+          '<div class="sp-win-hd"><span class="sp-win-title">'+esc(win.title)+'</span>'+
+            '<span class="sp-win-time">'+esc(win.time)+'</span>'+
+            '<span class="sp-pill '+pillCls+'">'+(PILL[st]||'')+'</span></div>'+
+          rows+'</div>';
+      });
+      $('spTimeline').innerHTML=html;
+
+      // "right now" callout
+      var focus=nowFocus||upcomingFocus;
+      if(focus){
+        $('spNowWrap').classList.remove('hidden');
+        var names=focus.items.map(function(i){ return i.name+(i.dose?' ('+i.dose+')':''); });
+        var lead=focus===upcomingFocus?'Coming up · '+focus.win.title:'Take now · '+focus.win.title;
+        $('spNowEyebrow').textContent=lead;
+        $('spNowTxt').innerHTML='<b>'+esc(names.join(', '))+'</b>';
+      } else {
+        $('spNowWrap').classList.remove('hidden');
+        $('spNowEyebrow').textContent='All caught up';
+        $('spNowTxt').innerHTML='Everything scheduled is taken. Nice work. 💪';
+      }
+
+      // hero sub
+      $('spSub').innerHTML='<b>'+done+'</b> of <b>'+daily.length+'</b> taken today.';
+    }
+
+    $('spTimeline').addEventListener('click', function(e){
+      var it=e.target.closest('.sp-item'); if(it) toggle(it.getAttribute('data-id'));
+    });
+
+    render();
+    window._suppsRerender=function(){ render(); };
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage', function(ev){ if(!ev || ev.key==='stack:items' || (ev.key&&ev.key.indexOf('stack:taken:')===0)) render(); });
+    // refresh window statuses as the hour rolls over
+    setInterval(render, 60000);
+
+    document.addEventListener('DOMContentLoaded', function(){
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'health', syncedKeys:['stack:items','stack:low','po_water_v1'], syncedPrefixes:['stack:taken:'],
+          onApplied:function(){ if(window._suppsRerender) window._suppsRerender(); } });
+      })();
+    });
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
