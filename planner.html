@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Meal Planner · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --pl:124,207,122; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    .pl-hero{ max-width:640px; margin:0 auto; padding:24px 18px 4px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .pl-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--pl),.9); margin-bottom:11px; }
+    .pl-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; }
+    .pl-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; line-height:1.45; }
+    .pl-hero-sub b{ color:var(--au-ivory); font-weight:700; }
+    .pl-orb{ flex:none; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:27px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--pl),.22), rgba(var(--pl),.04)); border:1px solid rgba(var(--pl),.3); box-shadow:0 0 30px rgba(var(--pl),.12); }
+
+    /* week nav + tabs */
+    .pl-bar{ max-width:640px; margin:12px auto 0; padding:0 18px; display:flex; align-items:center; gap:10px; }
+    .pl-wknav{ flex:1; display:flex; align-items:center; gap:8px; }
+    .pl-arrow{ flex:none; width:34px; height:34px; border-radius:10px; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-ivory); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .pl-arrow:active{ background:rgba(255,255,255,.1); }
+    .pl-wklbl{ flex:1; text-align:center; font-family:var(--au-mono); font-size:12px; font-weight:700; color:var(--au-ivory); letter-spacing:.02em; }
+    .pl-wklbl span{ display:block; font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:2px; }
+
+    .pl-tabs{ max-width:640px; margin:14px auto 0; padding:0 18px; display:flex; gap:8px; }
+    .pl-tab{ flex:1; padding:11px; border-radius:12px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+    .pl-tab.on{ border-color:rgba(var(--pl),.45); background:rgba(var(--pl),.13); color:var(--au-ivory); }
+
+    .pl-wrap{ max-width:640px; margin:0 auto; padding:14px 18px; display:flex; flex-direction:column; gap:13px; }
+
+    /* day card */
+    .pl-day{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:16px; overflow:hidden; }
+    .pl-day.today{ border-color:rgba(var(--pl),.4); box-shadow:0 0 0 1px rgba(var(--pl),.1); }
+    .pl-day-hd{ display:flex; align-items:center; gap:10px; padding:13px 15px 11px; border-bottom:1px solid var(--au-line); }
+    .pl-day-name{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); }
+    .pl-day-name small{ font-family:var(--au-mono); font-style:normal; font-size:10px; color:var(--au-faint); margin-left:7px; letter-spacing:.04em; }
+    .pl-day-kcal{ margin-left:auto; text-align:right; }
+    .pl-day-kcal b{ font-family:var(--au-mono); font-size:15px; font-weight:800; }
+    .pl-day-kcal small{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); display:block; }
+    .pl-bar-track{ height:4px; background:rgba(255,255,255,.07); margin:0 15px; border-radius:2px; overflow:hidden; }
+    .pl-bar-fill{ height:100%; border-radius:2px; }
+    .pl-slots{ padding:6px 15px 13px; }
+    .pl-slot{ padding:9px 0; border-bottom:1px solid var(--au-line); }
+    .pl-slot:last-child{ border-bottom:none; }
+    .pl-slot-hd{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .pl-slot-name{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); }
+    .pl-slot-add{ margin-left:auto; width:24px; height:24px; border-radius:7px; border:1px solid rgba(var(--pl),.35); background:rgba(var(--pl),.1); color:rgb(var(--pl)); font-size:15px; font-weight:700; line-height:1; cursor:pointer; }
+    .pl-slot-add:active{ background:rgba(var(--pl),.22); }
+    .pl-item{ display:flex; align-items:center; gap:9px; padding:7px 9px; margin-bottom:5px; background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:10px; }
+    .pl-item:last-child{ margin-bottom:0; }
+    .pl-item-name{ flex:1; min-width:0; font-size:13px; color:var(--au-ivory); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pl-item-name span{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); }
+    .pl-item-kcal{ flex:none; font-family:var(--au-mono); font-size:11px; font-weight:700; color:var(--au-dim); font-variant-numeric:tabular-nums; }
+    .pl-item-x{ flex:none; width:20px; height:20px; border:none; background:none; color:var(--au-faint); font-size:12px; cursor:pointer; }
+    .pl-item-x:active{ color:#FF8FA3; }
+    .pl-slot-empty{ font-size:11.5px; color:var(--au-faint); padding:2px 0 0; }
+    .pl-day-actions{ display:flex; gap:7px; padding:0 15px 13px; }
+    .pl-da{ flex:1; padding:8px; border-radius:9px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-sans); font-size:11px; font-weight:700; cursor:pointer; }
+    .pl-da:active{ background:rgba(255,255,255,.08); }
+    .pl-da.accent{ border-color:rgba(var(--pl),.35); color:rgb(var(--pl)); }
+
+    /* shopping */
+    .pl-shop-hd{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+    .pl-shop-hd h2{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); flex:1; }
+    .pl-copy{ flex:none; padding:8px 14px; border-radius:10px; border:1px solid rgba(var(--pl),.35); background:rgba(var(--pl),.1); color:rgb(var(--pl)); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; }
+    .pl-shop-meta{ font-size:12px; color:var(--au-dim); margin-bottom:14px; }
+    .pl-cat{ margin-bottom:16px; }
+    .pl-cat-name{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--pl),.85); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+    .pl-cat-name .line{ flex:1; height:1px; background:var(--au-line); }
+    .pl-shop-row{ display:flex; align-items:center; gap:11px; padding:10px 2px; border-bottom:1px solid var(--au-line); cursor:pointer; }
+    .pl-shop-row:last-child{ border-bottom:none; }
+    .pl-check{ flex:none; width:22px; height:22px; border-radius:7px; border:1.5px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:12px; color:#04130D; transition:background .15s,border-color .15s; }
+    .pl-shop-row.done .pl-check{ background:rgb(var(--pl)); border-color:rgb(var(--pl)); }
+    .pl-shop-name{ flex:1; min-width:0; font-size:14px; color:var(--au-ivory); }
+    .pl-shop-row.done .pl-shop-name{ color:var(--au-faint); text-decoration:line-through; }
+    .pl-shop-qty{ flex:none; font-family:var(--au-mono); font-size:12px; font-weight:700; color:var(--au-dim); font-variant-numeric:tabular-nums; }
+
+    .pl-empty{ text-align:center; padding:40px 24px; color:var(--au-dim); font-size:14px; line-height:1.55; }
+    .pl-empty a{ color:rgb(var(--pl)); text-decoration:none; font-weight:700; }
+    .pl-toast{ position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); z-index:60;
+      background:rgba(10,12,14,.96); border:1px solid rgba(var(--pl),.4); color:var(--au-ivory); font-size:12.5px; font-weight:600; padding:11px 18px; border-radius:12px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+    .pl-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* picker dialog — dialog IS the sized box (proven nu-sheet pattern) */
+    dialog.pl-sheet{ position:fixed; left:0; right:0; bottom:0; top:auto; margin:0 auto; padding:0;
+      width:min(640px,100%); max-width:min(640px,100%); max-height:86dvh;
+      background:#0b0d10; color:inherit; border:1px solid var(--au-line); border-radius:20px 20px 0 0;
+      box-shadow:0 -16px 50px rgba(0,0,0,.6); overflow:hidden; }
+    dialog.pl-sheet[open]{ display:flex; flex-direction:column; }
+    dialog.pl-sheet::backdrop{ background:rgba(0,0,0,.6); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+    .pl-sheet-in{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .pl-sheet-top{ display:flex; align-items:center; gap:10px; padding:16px 16px 12px; border-bottom:1px solid var(--au-line); }
+    .pl-sheet-title{ flex:1; font-family:var(--au-serif); font-style:italic; font-size:19px; color:var(--au-ivory); }
+    .pl-sheet-x{ flex:none; width:32px; height:32px; border-radius:50%; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-ivory); font-size:14px; cursor:pointer; }
+    .pl-sheet-tabs{ display:flex; gap:7px; padding:12px 16px 0; }
+    .pl-stab{ flex:1; padding:9px; border-radius:10px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; }
+    .pl-stab.on{ border-color:rgba(var(--pl),.45); background:rgba(var(--pl),.13); color:var(--au-ivory); }
+    .pl-sheet-body{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:12px 16px calc(16px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling:touch; }
+    .pl-pick{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:12px; margin-bottom:8px; border-radius:12px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); cursor:pointer; }
+    .pl-pick:active{ background:rgba(var(--pl),.1); border-color:rgba(var(--pl),.4); }
+    .pl-pick-main{ flex:1; min-width:0; }
+    .pl-pick-name{ font-size:14px; color:var(--au-ivory); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pl-pick-sub{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:3px; }
+    .pl-pick-kcal{ flex:none; text-align:right; font-family:var(--au-mono); }
+    .pl-pick-kcal b{ font-size:15px; font-weight:800; color:#fff; }
+    .pl-pick-kcal small{ display:block; font-size:8.5px; color:var(--au-faint); }
+    .pl-pick-empty{ text-align:center; color:var(--au-faint); font-size:13px; padding:30px 10px; line-height:1.5; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="pl-hero">
+    <div>
+      <div class="pl-eyebrow">Meal planner</div>
+      <div class="pl-hero-line">Plan the week</div>
+      <div class="pl-hero-sub" id="plTarget">Loading your target…</div>
+    </div>
+    <div class="pl-orb" aria-hidden="true">🗓️</div>
+  </header>
+
+  <div class="pl-bar">
+    <div class="pl-wknav">
+      <button class="pl-arrow" id="wkPrev" type="button" aria-label="Previous week">&#8249;</button>
+      <div class="pl-wklbl" id="wkLbl">—<span id="wkRel">this week</span></div>
+      <button class="pl-arrow" id="wkNext" type="button" aria-label="Next week">&#8250;</button>
+    </div>
+  </div>
+
+  <div class="pl-tabs">
+    <button class="pl-tab on" id="tabPlan" type="button">Plan</button>
+    <button class="pl-tab" id="tabShop" type="button">Shopping list</button>
+  </div>
+
+  <main class="pl-wrap" id="planView"></main>
+  <main class="pl-wrap hidden" id="shopView"></main>
+
+  <div class="pl-toast" id="plToast"></div>
+
+  <dialog class="pl-sheet" id="pickSheet">
+    <div class="pl-sheet-in">
+      <div class="pl-sheet-top">
+        <div class="pl-sheet-title" id="pickTitle">Add to plan</div>
+        <button class="pl-sheet-x" id="pickX" type="button">&#10005;</button>
+      </div>
+      <div class="pl-sheet-tabs">
+        <button class="pl-stab on" id="pkMeals" type="button">Saved meals</button>
+        <button class="pl-stab" id="pkFoods" type="button">Recent foods</button>
+      </div>
+      <div class="pl-sheet-body" id="pickBody"></div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script src="tdee.js"></script>
+  <script>
+  (function(){
+    'use strict';
+    var PLANK='mealplan:days', SHOPK='mealplan:shopdone';
+    var MEALS=['Breakfast','Lunch','Dinner','Snacks'];
+    var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function $(id){ return document.getElementById(id); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function today(){ return dateKey(new Date()); }
+    function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+    function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function r0(n){ return Math.round(n||0); }
+    function r1(n){ return Math.round((n||0)*10)/10; }
+    function uid(){ return 'pi-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+    function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+    /* ── Targets (mirrors nutrition.html targets()) ─── */
+    function weightKg(){
+      var w=(((ls('po_water_v1',{})||{}).profile)||{}).weightKg; if(w) return w;
+      var ws=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
+      return ws.length ? ws[ws.length-1].weight : 75;
+    }
+    function tdeeNow(){ if(!window.ALSTDEE) return null; try{ return window.ALSTDEE.compute(ls('nut:logs',[])||[], ls('po_coach_weights',[])||[], {weightKg:weightKg()}); }catch(e){ return null; } }
+    function targets(){
+      var p=ls('nut:profile',{})||{}, w=weightKg(), goal=p.goal||'maintain';
+      var kcal=p.calTarget;
+      if(!kcal){ var r=tdeeNow(); if(r&&r.ok&&window.ALSTDEE) kcal=window.ALSTDEE.recommend(r.tdee, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}); }
+      if(!kcal) kcal=Math.round(w*32);
+      var pPerKg = goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
+      var prot=p.proteinTarget||Math.round(w*pPerKg);
+      var fat=p.fatTarget||Math.max(Math.round(w*0.8), Math.round(kcal*0.25/9));
+      var carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
+      return { kcal:kcal,p:prot,c:carb,f:fat,goal:goal };
+    }
+
+    /* ── Plan storage ──────────────────────────────── */
+    function emptySlots(){ return {Breakfast:[],Lunch:[],Dinner:[],Snacks:[]}; }
+    function getDays(){ var a=ls(PLANK,[]); return Array.isArray(a)?a.filter(function(d){return d&&d.dateKey;}):[]; }
+    function saveDays(a){ save(PLANK,a); }
+    function dayRec(dk){
+      var rec=getDays().find(function(d){return d.dateKey===dk;});
+      if(!rec) return {dateKey:dk,ts:0,slots:emptySlots()};
+      // normalise: ensure all slots exist
+      var slots=emptySlots(); MEALS.forEach(function(m){ if(Array.isArray(rec.slots&&rec.slots[m])) slots[m]=rec.slots[m]; });
+      return {dateKey:dk,ts:rec.ts||0,slots:slots};
+    }
+    function isEmptyRec(rec){ return MEALS.every(function(m){ return !rec.slots[m] || !rec.slots[m].length; }); }
+    function setDayRec(rec){
+      var days=getDays(); var idx=days.findIndex(function(d){return d.dateKey===rec.dateKey;});
+      if(isEmptyRec(rec)){ if(idx>-1){ days.splice(idx,1); } }
+      else { rec.ts=Date.now(); if(idx>-1) days[idx]=rec; else days.push(rec); }
+      saveDays(days);
+      if(window.ALSSync && window.ALSSync.flush) window.ALSSync.flush();
+    }
+
+    /* ── Sources: saved meals + recent foods ───────── */
+    function itemTot(items){ var t={kcal:0,p:0,c:0,f:0}; (items||[]).forEach(function(it){ t.kcal+=it.kcal||0;t.p+=it.p||0;t.c+=it.c||0;t.f+=it.f||0; }); return t; }
+    function savedMeals(){
+      var arr=ls('nut:meals',[]); if(!Array.isArray(arr)) arr=[];
+      return arr.filter(function(m){return m&&m.name&&Array.isArray(m.items)&&m.items.length;}).map(function(m){
+        var t=itemTot(m.items);
+        return { id:m.id||('m:'+m.name), name:m.name, items:m.items, kcal:r0(t.kcal), p:r0(t.p), c:r0(t.c), f:r0(t.f) };
+      });
+    }
+    function recentFoods(){
+      var seen={}, out=[];
+      (ls('nut:logs',[])||[]).slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);}).forEach(function(e){
+        var key=(e.name||'').toLowerCase(); if(!key||seen[key])return; seen[key]=1;
+        out.push({ name:e.name, grams:e.grams||100, kcal:e.kcal||0, p:e.p||0, c:e.c||0, f:e.f||0,
+          fiber:e.fiber||0, sugar:e.sugar||0, sodium:e.sodium||0, satfat:e.satfat||0 });
+      });
+      return out.slice(0,40);
+    }
+
+    /* ── Plan-item builders (snapshot ingredients) ─── */
+    function mealToPlanItem(m){
+      var items=clone(m.items); var t=itemTot(items);
+      return { id:uid(), kind:'meal', name:m.name, items:items, kcal:r0(t.kcal), p:r1(t.p), c:r1(t.c), f:r1(t.f) };
+    }
+    function foodToPlanItem(f){
+      var ing={ name:f.name, grams:r0(f.grams), kcal:r0(f.kcal), p:r1(f.p), c:r1(f.c), f:r1(f.f),
+        fiber:r1(f.fiber), sugar:r1(f.sugar), sodium:r0(f.sodium), satfat:r1(f.satfat) };
+      return { id:uid(), kind:'food', name:f.name, items:[ing], kcal:ing.kcal, p:ing.p, c:ing.c, f:ing.f };
+    }
+
+    /* ── Week handling ─────────────────────────────── */
+    var weekOffset=0, tab='plan';
+    function mondayOf(offset){
+      var d=new Date(); d.setHours(0,0,0,0);
+      var diff=(d.getDay()+6)%7;              // 0=Mon … 6=Sun
+      d.setDate(d.getDate()-diff + offset*7);
+      return d;
+    }
+    function weekDays(){
+      var mon=mondayOf(weekOffset), out=[];
+      for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); out.push(dateKey(d)); }
+      return out;
+    }
+
+    /* ── Day macro totals ──────────────────────────── */
+    function dayTotals(rec){ var t={kcal:0,p:0,c:0,f:0}; MEALS.forEach(function(m){ (rec.slots[m]||[]).forEach(function(it){ t.kcal+=it.kcal||0;t.p+=it.p||0;t.c+=it.c||0;t.f+=it.f||0; }); }); return t; }
+
+    /* ── Auto-fill a day from saved meals ──────────── */
+    function autofillDay(dk){
+      var tg=targets(), meals=savedMeals();
+      if(!meals.length){ toast('Add saved meals in Nutrition first'); return; }
+      var target=tg.kcal||2200, pool=meals.slice(), chosen=[], total=0;
+      for(var n=0;n<5;n++){
+        var best=null, bestScore=Infinity, bestIdx=-1;
+        for(var i=0;i<pool.length;i++){
+          var nk=total+pool[i].kcal;
+          if(nk>target*1.12) continue;                 // never blow past the target
+          var score=Math.abs(target-nk);
+          if(score<bestScore-1e-6 || (Math.abs(score-bestScore)<=1e-6 && best && pool[i].id<best.id)){ bestScore=score; best=pool[i]; bestIdx=i; }
+        }
+        if(!best) break;
+        if(total>0 && Math.abs(target-(total+best.kcal))>=Math.abs(target-total)) break; // must improve
+        chosen.push(best); total+=best.kcal; pool.splice(bestIdx,1);
+        if(total>=target*0.92) break;
+      }
+      if(!chosen.length){ toast('No meal fits — add smaller saved meals'); return; }
+      var slots=emptySlots(), order=['Breakfast','Lunch','Dinner'];
+      chosen.forEach(function(m,idx){ slots[order[idx]||'Snacks'].push(mealToPlanItem(m)); });
+      setDayRec({dateKey:dk,slots:slots});
+      toast('Filled '+chosen.length+' meal'+(chosen.length>1?'s':'')+' · '+total+' kcal');
+      render();
+    }
+    function clearDay(dk){ var rec=dayRec(dk); if(isEmptyRec(rec)){ toast('Already empty'); return; } setDayRec({dateKey:dk,slots:emptySlots()}); render(); }
+    function copyDayToWeek(dk){
+      var src=dayRec(dk); if(isEmptyRec(src)){ toast('Nothing to copy'); return; }
+      weekDays().forEach(function(d){ if(d===dk) return;
+        var slots=emptySlots();
+        MEALS.forEach(function(m){ slots[m]=(src.slots[m]||[]).map(function(it){ var c=clone(it); c.id=uid(); return c; }); });
+        setDayRec({dateKey:d,slots:slots});
+      });
+      toast('Copied to the whole week');
+      render();
+    }
+    function removeItem(dk,slot,id){
+      var rec=dayRec(dk); rec.slots[slot]=(rec.slots[slot]||[]).filter(function(it){return it.id!==id;}); setDayRec(rec); render();
+    }
+
+    /* ── Shopping aggregation ──────────────────────── */
+    var CATS=[
+      { name:'Produce',          kw:['banana','blueber','kiwi','spinach','pepper','onion','garlic','green bean','potato','tomato','avocado','lemon','lime','vegetable','broccoli','cucumber','carrot','apple','berry','fruit','lettuce','mushroom','sweet potato'] },
+      { name:'Protein & fish',   kw:['chicken','beef','salmon','tuna','shrimp','calamari','squid','liver','steak','brizola','turkey','pork','fish','mince','ground','bacon','prawn'] },
+      { name:'Dairy & eggs',     kw:['egg','yogurt','yoghurt','milk','cheese','parmesan','feta','butter','cream','kefir'] },
+      { name:'Grains & carbs',   kw:['rice','pasta','oats','bread','sourdough','gnocci','gnocchi','tortig','flour','cereal','coco pops','quinoa','couscous','rye','wrap','tortilla'] },
+      { name:'Pantry & sauces',  kw:['oil','honey','sauce','ketchup','paste','stock','sweet chilli','chilli','vinegar','salt','spice','peanut','almond butter','tahini','mustard','soy'] },
+      { name:'Snacks & sweets',  kw:['chocolate','cocoa','cacao','brownie','protein','nuts','brazil','hemp','seed','bar','donut','cake','spread','biscoff','lotus','candy','ion'] }
+    ];
+    function categoryOf(name){
+      var n=String(name||'').toLowerCase();
+      for(var i=0;i<CATS.length;i++){ for(var j=0;j<CATS[i].kw.length;j++){ if(n.indexOf(CATS[i].kw[j])>-1) return CATS[i].name; } }
+      return 'Other';
+    }
+    function aggregateShop(){
+      var map={}, totalKcal=0, days=weekDays();
+      days.forEach(function(dk){ var rec=dayRec(dk);
+        MEALS.forEach(function(m){ (rec.slots[m]||[]).forEach(function(it){
+          totalKcal+=it.kcal||0;
+          (it.items||[]).forEach(function(ing){
+            var key=String(ing.name||'').trim().toLowerCase(); if(!key) return;
+            if(!map[key]) map[key]={ name:ing.name, grams:0, cat:categoryOf(ing.name) };
+            map[key].grams += (+ing.grams||0);
+          });
+        }); });
+      });
+      return { items:Object.keys(map).map(function(k){return map[k];}), totalKcal:totalKcal };
+    }
+    function fmtQty(g){ if(g>=1000){ var kg=g/1000; return (kg%1===0?kg.toFixed(0):kg.toFixed(1))+' kg'; } return r0(g)+' g'; }
+    function shopChecked(){ var a=ls(SHOPK,[]); return Array.isArray(a)?a:[]; }
+    function toggleShop(key){
+      var arr=shopChecked(), i=arr.indexOf(key);
+      if(i>-1) arr.splice(i,1); else arr.push(key);
+      save(SHOPK,arr); renderShop();
+    }
+
+    /* ── Toast ─────────────────────────────────────── */
+    function toast(msg){ var t=$('plToast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){ t.classList.remove('show'); },1900); }
+
+    /* ── Picker dialog ─────────────────────────────── */
+    var pickCtx=null, pickTab='meals';
+    function openPicker(dk,slot){
+      pickCtx={dk:dk,slot:slot}; pickTab='meals';
+      $('pickTitle').textContent=slot+' · '+relDayLabel(dk);
+      setPickTab('meals');
+      var dlg=$('pickSheet'); if(!dlg.open) dlg.showModal();
+    }
+    function closePicker(){ var dlg=$('pickSheet'); if(dlg.open) dlg.close(); pickCtx=null; }
+    function setPickTab(t){
+      pickTab=t;
+      $('pkMeals').classList.toggle('on',t==='meals');
+      $('pkFoods').classList.toggle('on',t==='foods');
+      renderPick();
+    }
+    function renderPick(){
+      var body=$('pickBody'), html='';
+      if(pickTab==='meals'){
+        var meals=savedMeals();
+        if(!meals.length){ body.innerHTML='<div class="pl-pick-empty">No saved meals yet. Build meals in the Nutrition page (Meals tab) and they’ll appear here to plan with.</div>'; return; }
+        meals.forEach(function(m){
+          html+='<button type="button" class="pl-pick" data-pick="meal" data-id="'+esc(m.id)+'">'+
+            '<div class="pl-pick-main"><div class="pl-pick-name">'+esc(m.name)+'</div>'+
+            '<div class="pl-pick-sub">'+m.items.length+' items · '+m.p+'g protein</div></div>'+
+            '<div class="pl-pick-kcal"><b>'+m.kcal+'</b><small>kcal</small></div></button>';
+        });
+      } else {
+        var foods=recentFoods();
+        if(!foods.length){ body.innerHTML='<div class="pl-pick-empty">No recent foods yet. Log a few foods in Nutrition and they’ll show up here for quick planning.</div>'; return; }
+        foods.forEach(function(f,i){
+          html+='<button type="button" class="pl-pick" data-pick="food" data-idx="'+i+'">'+
+            '<div class="pl-pick-main"><div class="pl-pick-name">'+esc(f.name)+'</div>'+
+            '<div class="pl-pick-sub">'+r0(f.grams)+'g · '+r0(f.p)+'P '+r0(f.c)+'C '+r0(f.f)+'F</div></div>'+
+            '<div class="pl-pick-kcal"><b>'+r0(f.kcal)+'</b><small>kcal</small></div></button>';
+        });
+      }
+      body.innerHTML=html;
+    }
+    function doPick(el){
+      if(!pickCtx) return;
+      var rec=dayRec(pickCtx.dk), item=null;
+      if(el.getAttribute('data-pick')==='meal'){
+        var m=savedMeals().find(function(x){return x.id===el.getAttribute('data-id');}); if(m) item=mealToPlanItem(m);
+      } else {
+        var f=recentFoods()[+el.getAttribute('data-idx')]; if(f) item=foodToPlanItem(f);
+      }
+      if(!item) return;
+      rec.slots[pickCtx.slot]=(rec.slots[pickCtx.slot]||[]).concat([item]);
+      setDayRec(rec);
+      toast('Added '+item.name);
+      render();
+      // keep the sheet open for fast multi-add
+    }
+
+    /* ── Labels ────────────────────────────────────── */
+    function relDayLabel(dk){
+      if(dk===today()) return 'Today';
+      var d=new Date(dk+'T00:00:00');
+      return DOW[d.getDay()]+' '+d.getDate();
+    }
+
+    /* ── Render: plan view ─────────────────────────── */
+    function dayColor(kcal,target){
+      if(!target||!kcal) return 'rgba(155,140,255,.85)';
+      var r=kcal/target;
+      if(r>1.1) return '#FF8FA3';
+      if(r>=0.9) return 'rgb(var(--pl))';
+      return 'rgba(155,140,255,.85)';
+    }
+    function renderPlan(){
+      var tg=targets(), days=weekDays(), html='';
+      days.forEach(function(dk){
+        var rec=dayRec(dk), t=dayTotals(rec), isToday=dk===today();
+        var d=new Date(dk+'T00:00:00');
+        var col=dayColor(t.kcal,tg.kcal);
+        var pct=tg.kcal?Math.min(1,t.kcal/tg.kcal):0;
+        var slotsHtml='';
+        MEALS.forEach(function(m){
+          var items=rec.slots[m]||[];
+          slotsHtml+='<div class="pl-slot"><div class="pl-slot-hd"><span class="pl-slot-name">'+m+'</span>'+
+            '<button type="button" class="pl-slot-add" data-add="'+dk+'|'+m+'" aria-label="Add to '+m+'">+</button></div>';
+          if(!items.length) slotsHtml+='<div class="pl-slot-empty">—</div>';
+          items.forEach(function(it){
+            slotsHtml+='<div class="pl-item"><div class="pl-item-name">'+esc(it.name)+' <span>'+r0(it.p)+'P</span></div>'+
+              '<span class="pl-item-kcal">'+r0(it.kcal)+'</span>'+
+              '<button type="button" class="pl-item-x" data-rm="'+dk+'|'+m+'|'+it.id+'" aria-label="Remove">&#10005;</button></div>';
+          });
+          slotsHtml+='</div>';
+        });
+        html+='<div class="pl-day'+(isToday?' today':'')+'">'+
+          '<div class="pl-day-hd"><div class="pl-day-name">'+DOW[d.getDay()]+'<small>'+d.getDate()+' '+MON[d.getMonth()]+'</small></div>'+
+            '<div class="pl-day-kcal"><b style="color:'+col+'">'+r0(t.kcal)+'</b><small>/ '+tg.kcal+' kcal · '+r0(t.p)+'g P</small></div></div>'+
+          '<div class="pl-bar-track"><div class="pl-bar-fill" style="width:'+(pct*100).toFixed(0)+'%;background:'+col+'"></div></div>'+
+          '<div class="pl-slots">'+slotsHtml+'</div>'+
+          '<div class="pl-day-actions">'+
+            '<button type="button" class="pl-da accent" data-auto="'+dk+'">✨ Auto-fill</button>'+
+            '<button type="button" class="pl-da" data-copy="'+dk+'">Copy → week</button>'+
+            '<button type="button" class="pl-da" data-clear="'+dk+'">Clear</button>'+
+          '</div></div>';
+      });
+      $('planView').innerHTML=html;
+    }
+
+    /* ── Render: shopping view ─────────────────────── */
+    function renderShop(){
+      var agg=aggregateShop(), checked=shopChecked();
+      if(!agg.items.length){
+        $('shopView').innerHTML='<div class="pl-empty">Your shopping list builds itself from the meals you plan.<br><br>Switch to <b style="color:rgb(var(--pl))">Plan</b> and add some meals to this week.</div>';
+        return;
+      }
+      var byCat={}; agg.items.forEach(function(it){ (byCat[it.cat]=byCat[it.cat]||[]).push(it); });
+      var order=CATS.map(function(c){return c.name;}).concat(['Other']);
+      var doneCount=0;
+      var html='<div class="pl-shop-hd"><h2>Shopping list</h2><button type="button" class="pl-copy" id="copyShop">Copy</button></div>';
+      var metaIdx=html.length;
+      order.forEach(function(cat){
+        var arr=byCat[cat]; if(!arr||!arr.length) return;
+        arr.sort(function(a,b){ return a.name.localeCompare(b.name); });
+        html+='<div class="pl-cat"><div class="pl-cat-name">'+esc(cat)+'<span class="line"></span></div>';
+        arr.forEach(function(it){
+          var key=String(it.name).trim().toLowerCase(); var done=checked.indexOf(key)>-1; if(done) doneCount++;
+          html+='<div class="pl-shop-row'+(done?' done':'')+'" data-shop="'+esc(key)+'">'+
+            '<div class="pl-check">'+(done?'&#10003;':'')+'</div>'+
+            '<div class="pl-shop-name">'+esc(it.name)+'</div>'+
+            '<div class="pl-shop-qty">'+fmtQty(it.grams)+'</div></div>';
+        });
+        html+='</div>';
+      });
+      $('shopView').innerHTML=html;
+      var meta='<div class="pl-shop-meta">'+agg.items.length+' items · '+doneCount+' ticked · ~'+r0(agg.totalKcal)+' kcal planned this week</div>';
+      $('shopView').children[0].insertAdjacentHTML('afterend', meta);
+    }
+
+    function render(){
+      // hero target line
+      var tg=targets();
+      $('plTarget').innerHTML='Daily target <b>~'+tg.kcal+' kcal</b> · <b>'+tg.p+'g protein</b> ('+tg.goal+')';
+      // week label
+      var days=weekDays(), a=new Date(days[0]+'T00:00:00'), b=new Date(days[6]+'T00:00:00');
+      $('wkLbl').childNodes[0].nodeValue=a.getDate()+' '+MON[a.getMonth()]+' – '+b.getDate()+' '+MON[b.getMonth()];
+      $('wkRel').textContent = weekOffset===0?'this week':(weekOffset===1?'next week':(weekOffset===-1?'last week':(weekOffset>0?('in '+weekOffset+' weeks'):(Math.abs(weekOffset)+' weeks ago'))));
+      renderPlan();
+      renderShop();
+    }
+
+    function setTab(t){
+      tab=t;
+      $('tabPlan').classList.toggle('on',t==='plan');
+      $('tabShop').classList.toggle('on',t==='shop');
+      $('planView').classList.toggle('hidden',t!=='plan');
+      $('shopView').classList.toggle('hidden',t!=='shop');
+    }
+
+    /* ── Wiring ────────────────────────────────────── */
+    $('wkPrev').addEventListener('click', function(){ weekOffset--; render(); });
+    $('wkNext').addEventListener('click', function(){ weekOffset++; render(); });
+    $('tabPlan').addEventListener('click', function(){ setTab('plan'); });
+    $('tabShop').addEventListener('click', function(){ setTab('shop'); });
+    $('pkMeals').addEventListener('click', function(){ setPickTab('meals'); });
+    $('pkFoods').addEventListener('click', function(){ setPickTab('foods'); });
+    $('pickX').addEventListener('click', closePicker);
+    $('pickSheet').addEventListener('click', function(e){ if(e.target===this) closePicker(); }); // click backdrop
+    $('pickBody').addEventListener('click', function(e){ var b=e.target.closest('.pl-pick'); if(b) doPick(b); });
+
+    $('planView').addEventListener('click', function(e){
+      var add=e.target.closest('[data-add]'), rm=e.target.closest('[data-rm]'),
+          au=e.target.closest('[data-auto]'), cp=e.target.closest('[data-copy]'), cl=e.target.closest('[data-clear]');
+      if(add){ var p=add.getAttribute('data-add').split('|'); openPicker(p[0],p[1]); }
+      else if(rm){ var q=rm.getAttribute('data-rm').split('|'); removeItem(q[0],q[1],q[2]); }
+      else if(au){ autofillDay(au.getAttribute('data-auto')); }
+      else if(cp){ copyDayToWeek(cp.getAttribute('data-copy')); }
+      else if(cl){ clearDay(cl.getAttribute('data-clear')); }
+    });
+    $('shopView').addEventListener('click', function(e){
+      var cp=e.target.closest('#copyShop');
+      if(cp){ copyShoppingList(); return; }
+      var row=e.target.closest('[data-shop]'); if(row) toggleShop(row.getAttribute('data-shop'));
+    });
+
+    function copyShoppingList(){
+      var agg=aggregateShop(); if(!agg.items.length){ toast('Nothing to copy'); return; }
+      var byCat={}; agg.items.forEach(function(it){ (byCat[it.cat]=byCat[it.cat]||[]).push(it); });
+      var order=CATS.map(function(c){return c.name;}).concat(['Other']);
+      var lines=['Shopping list — week of '+ (function(){var d=new Date(weekDays()[0]+'T00:00:00'); return d.getDate()+' '+MON[d.getMonth()];})()];
+      order.forEach(function(cat){ var arr=byCat[cat]; if(!arr||!arr.length) return;
+        arr.sort(function(a,b){return a.name.localeCompare(b.name);});
+        lines.push(''); lines.push(cat.toUpperCase());
+        arr.forEach(function(it){ lines.push('• '+it.name+' — '+fmtQty(it.grams)); });
+      });
+      var text=lines.join('\n');
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ toast('List copied'); }, function(){ toast('Copy failed'); }); }
+      else { toast('Clipboard unavailable'); }
+    }
+
+    setTab('plan');
+    render();
+
+    window._plannerRerender=function(){ render(); };
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage', function(ev){ if(!ev || ev.key===PLANK || ev.key===SHOPK || ev.key==='nut:meals') render(); });
+
+    document.addEventListener('DOMContentLoaded', function(){
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'mealplan', syncedKeys:[PLANK], onApplied:function(){ if(window._plannerRerender) window._plannerRerender(); } });
+      })();
+    });
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
