@@ -24,7 +24,11 @@
 
   function intakeByDay(logs) {
     var m = {};
-    (logs || []).forEach(function (l) { if (l && l.dateKey) m[l.dateKey] = (m[l.dateKey] || 0) + (l.kcal || 0); });
+    // Imported MyFitnessPal history (source 'mfp') is kept for the diary + food
+    // search, but is NOT trusted for the adaptive maintenance math — only food
+    // logged natively in the dashboard counts. So TDEE effectively learns from
+    // the day real logging started here, ignoring the imported back-history.
+    (logs || []).forEach(function (l) { if (l && l.dateKey && l.source !== 'mfp') m[l.dateKey] = (m[l.dateKey] || 0) + (l.kcal || 0); });
     return m;
   }
 
