@@ -11,14 +11,24 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <style>
+    /* ────────────────────────────────────────────────────────────
+       ATTEMPT 4 — the simple one. Every other page in this app works
+       because it uses NORMAL document flow + a fixed bottom bar. The
+       chat kept breaking because it alone tried to lock the viewport
+       (position:fixed body + --app-h JS + grid). Messages laid out in
+       normal block flow CANNOT overlap each other — full stop. So the
+       page just scrolls like any other page; the composer is fixed at
+       the bottom (like the app's bottombar), and one tiny visualViewport
+       handler nudges ONLY the composer above the keyboard. No grid, no
+       locked body, no --app-h.
+       ──────────────────────────────────────────────────────────── */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    /* Lock the layout viewport completely so iOS can't scroll/shift the page when
-       the keyboard opens (that focus-scroll was what bunched the messages). The
-       app's real height comes from --app-h, set live from window.visualViewport. */
-    html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;}
-    body{position:fixed;inset:0;background:#050507;color:#F4F1EA;font-family:var(--au-sans,-apple-system,system-ui,sans-serif);touch-action:none;}
+    html{background:#050507;}
+    body{min-height:100dvh;background:#050507;color:#F4F1EA;
+      font-family:var(--au-sans,-apple-system,system-ui,sans-serif);
+      overflow-x:hidden;padding-bottom:120px;}
 
-    /* living HUD backdrop */
+    /* living HUD backdrop — fixed, decorative, always behind content */
     body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
       background:
         radial-gradient(120% 70% at 50% -10%, rgba(52,226,176,.10), transparent 60%),
@@ -30,16 +40,12 @@
       -webkit-mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);}
     @keyframes nv-breathe{0%,100%{opacity:.85;}50%{opacity:1;}}
 
-    /* CSS GRID layout (not flex): three explicit rows — header / scroll / composer.
-       Grid tracks are non-overlapping by definition, so the messages can never
-       pile onto each other even if the height math glitches. minmax(0,1fr) lets
-       the middle track shrink below its content size so it actually scrolls —
-       the deterministic cousin of the flex min-height:0 trick that kept failing. */
-    .nv-app{position:relative;z-index:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:var(--app-h,100dvh);max-width:760px;margin:0 auto;overflow:hidden;}
+    .nv-app{position:relative;z-index:1;max-width:760px;margin:0 auto;}
 
-    /* ── header ───────────────────────────────── */
-    .nv-top{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
-      border-bottom:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(5,5,7,.92),rgba(5,5,7,.5));backdrop-filter:blur(10px);}
+    /* ── header (sticky) ──────────────────────── */
+    .nv-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;
+      padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
+      border-bottom:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(5,5,7,.96),rgba(5,5,7,.82));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
     .nv-back{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
     .nv-back:active{background:rgba(255,255,255,.1);}
     .nv-top .nova{width:40px;height:40px;flex:none;}
@@ -51,13 +57,10 @@
     .nv-clear{flex:none;background:none;border:none;color:rgba(244,241,234,.3);font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:8px 4px;}
     .nv-clear:active{color:#F4F1EA;}
 
-    /* ── messages ─────────────────────────────── */
-    .nv-scroll{min-height:0;height:100%;display:block!important;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:18px 14px 12px;}
-    /* Full-width rows (forced, so they never shrink-wrap); bubbles hug their
-       text via inline-block and align left (Nova) / right (you). */
-    .nv-row{display:flex!important;width:100%!important;box-sizing:border-box;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
+    /* ── messages (NORMAL FLOW — the page scrolls, not this div) ── */
+    .nv-scroll{padding:18px 14px 12px;}
+    .nv-row{display:flex;width:100%;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
     @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-    .nv-av{display:none;}
     .nv-row.nova{justify-content:flex-start;}
     .nv-row.me{justify-content:flex-end;}
     .nv-bub{max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:15px;line-height:1.5;overflow-wrap:break-word;}
@@ -65,7 +68,6 @@
     .nv-bub strong{font-weight:700;}
     .nv-row.nova .nv-bub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:6px;color:#F4F1EA;}
     .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.18),rgba(24,200,192,.11));border:1px solid rgba(52,226,176,.3);border-bottom-right-radius:6px;color:#F4F1EA;}
-    .nv-name-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(52,226,176,.7);margin-bottom:5px;}
     .nv-cursor{display:inline-block;width:7px;height:15px;margin-left:2px;background:#34E2B0;vertical-align:-2px;border-radius:1px;animation:nv-caret .9s step-end infinite;box-shadow:0 0 6px rgba(52,226,176,.7);}
     @keyframes nv-caret{0%,100%{opacity:1;}50%{opacity:0;}}
     .nv-think{display:inline-flex;gap:5px;padding:3px 0;}
@@ -82,12 +84,13 @@
     .nv-chip{font-size:13px;color:#F4F1EA;background:rgba(255,255,255,.04);border:1px solid rgba(52,226,176,.22);border-radius:13px;padding:9px 14px;cursor:pointer;transition:background .15s,border-color .15s;}
     .nv-chip:active{background:rgba(52,226,176,.12);border-color:rgba(52,226,176,.5);}
 
-    /* ── composer ─────────────────────────────── */
-    .nv-bar{flex:none;padding:10px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);
-      background:linear-gradient(0deg,rgba(5,5,7,.95),rgba(5,5,7,.6));backdrop-filter:blur(10px);}
+    /* ── composer (fixed, like the app bottombar) ── */
+    .nv-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;max-width:760px;margin:0 auto;
+      padding:10px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);
+      background:linear-gradient(0deg,rgba(5,5,7,.98),rgba(5,5,7,.86));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
     .nv-inwrap{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:6px 6px 6px 16px;transition:border-color .2s,box-shadow .2s;}
     .nv-inwrap:focus-within{border-color:rgba(52,226,176,.45);box-shadow:0 0 0 3px rgba(52,226,176,.1);}
-    .nv-in{flex:1;background:none;border:none;outline:none;color:#F4F1EA;font-family:inherit;font-size:15.5px;line-height:1.4;resize:none;max-height:130px;padding:8px 0;}
+    .nv-in{flex:1;background:none;border:none;outline:none;color:#F4F1EA;font-family:inherit;font-size:16px;line-height:1.4;resize:none;max-height:130px;padding:8px 0;}
     .nv-in::placeholder{color:rgba(244,241,234,.32);}
     .nv-send{flex:none;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
       background:linear-gradient(135deg,#34E2B0,#18C8C0 55%,#9B8CFF);color:#04130D;box-shadow:0 4px 16px rgba(52,226,176,.3);transition:transform .12s,opacity .2s;}
@@ -98,7 +101,6 @@
     /* crystal reacts while Nova is speaking */
     body.nv-live .nv-top .nova .nova-glow{animation:nv-pulse 1.1s ease-in-out infinite;transform-origin:50% 50%;}
     @keyframes nv-pulse{0%,100%{filter:drop-shadow(0 0 4px rgba(52,226,176,.5));}50%{filter:drop-shadow(0 0 14px rgba(52,226,176,.95));}}
-    .nv-scroll::-webkit-scrollbar{width:0;}
   </style>
 </head>
 <body id="root" class="au-mood-calm">
@@ -108,20 +110,20 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v44</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v45</span></div>
       </div>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
 
     <div class="nv-scroll" id="nvScroll"></div>
+  </div>
 
-    <div class="nv-bar">
-      <div class="nv-inwrap">
-        <textarea class="nv-in" id="nvIn" rows="1" placeholder="Talk to Nova…" autocomplete="off"></textarea>
-        <button class="nv-send" id="nvSend" type="button" aria-label="Send" disabled>
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
+  <div class="nv-bar" id="nvBar">
+    <div class="nv-inwrap">
+      <textarea class="nv-in" id="nvIn" rows="1" placeholder="Talk to Nova…" autocomplete="off"></textarea>
+      <button class="nv-send" id="nvSend" type="button" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
   </div>
 
@@ -129,7 +131,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v44'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v45'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
@@ -142,6 +144,7 @@
     var sendBtn= document.getElementById('nvSend');
     var status = document.getElementById('nvStatus');
     var root   = document.getElementById('root');
+    var bar    = document.getElementById('nvBar');
 
     function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
     function save(h){ try { localStorage.setItem(KEY, JSON.stringify(h.slice(-40))); } catch(e){} }
@@ -155,8 +158,14 @@
     // Render Nova's reply as readable HTML: escape, bold **x**, real line breaks.
     function fmtNova(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); }
     function fmtUser(s){ return esc(s).replace(/\n/g,'<br>'); }
-    function atBottom(){ return scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 120; }
-    function toBottom(force){ if(force||atBottom()) scroll.scrollTop = scroll.scrollHeight; }
+
+    // The PAGE scrolls (normal flow), so scroll the window — not an inner div.
+    function atBottom(){ return (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 160); }
+    function toBottom(force){ if(force||atBottom()) window.scrollTo(0, document.body.scrollHeight); }
+
+    // Keep the last message clear of the fixed composer by padding the body to
+    // its real height (the textarea grows, so re-measure).
+    function setBarSpace(){ try{ document.body.style.paddingBottom = (bar.offsetHeight + 16) + 'px'; }catch(e){} }
 
     function renderIntro(){
       var chips = SUGGESTIONS.map(function(s){ return '<button class="nv-chip" type="button" data-q="'+esc(s)+'">'+esc(s)+'</button>'; }).join('');
@@ -170,12 +179,10 @@
     function bubble(role, text, streaming){
       var row = document.createElement('div');
       row.className = 'nv-row ' + (role === 'user' ? 'me' : 'nova');
-      var inner = '';
       var body = role === 'user'
         ? '<div class="nv-bub">'+fmtUser(text)+'</div>'
         : '<div class="nv-bub"><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
-      inner += body;
-      row.innerHTML = inner;
+      row.innerHTML = body;
       scroll.appendChild(row);
       return row;
     }
@@ -241,10 +248,9 @@
       save(history);
       setBusy(false);
       toBottom();
-      input.focus();
     }
 
-    function autosize(){ input.style.height='auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
+    function autosize(){ input.style.height='auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; setBarSpace(); }
 
     input.addEventListener('input', function(){ autosize(); sendBtn.disabled = busy || !input.value.trim(); });
     input.addEventListener('keydown', function(e){
@@ -260,32 +266,27 @@
       history = []; save(history); renderAll();
     });
 
-    // ── Bulletproof iOS-PWA viewport sizing ─────────────
-    // The layout viewport is locked (body:fixed). The app's height is driven
-    // entirely by the VISUAL viewport via --app-h, so when the keyboard opens
-    // the whole app shrinks to the space above it — composer included — and the
-    // message list never bunches behind the keyboard. window.scrollTo(0,0)
-    // defeats iOS's focus-scroll, the real cause of the "all together" overlap.
-    var docEl = document.documentElement;
-    function setAppH(){
+    // ── Keyboard: nudge ONLY the composer above the on-screen keyboard.
+    // With interactive-widget=resizes-content the viewport already shrinks
+    // (overlap ≈ 0). Without it (older iOS), visualViewport tells us the
+    // keyboard height and we lift the fixed bar by that much. Messages stay
+    // in normal flow and never move, so they can't overlap. No body locking.
+    if (window.visualViewport){
       var vv = window.visualViewport;
-      var h = vv ? vv.height : window.innerHeight;
-      docEl.style.setProperty('--app-h', h + 'px');
-      window.scrollTo(0,0);
-      toBottom(true);
+      var fixBar = function(){
+        var overlap = window.innerHeight - vv.height - vv.offsetTop;
+        bar.style.bottom = (overlap > 1 ? overlap : 0) + 'px';
+        setBarSpace();
+        toBottom();
+      };
+      vv.addEventListener('resize', fixBar);
+      vv.addEventListener('scroll', fixBar);
     }
-    if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', setAppH);
-      window.visualViewport.addEventListener('scroll', setAppH);
-    }
-    window.addEventListener('resize', setAppH);
-    window.addEventListener('orientationchange', function(){ setTimeout(setAppH, 250); });
-    input.addEventListener('focus', function(){ setTimeout(setAppH, 100); setTimeout(setAppH, 350); });
-    input.addEventListener('blur', function(){ setTimeout(setAppH, 100); });
-    setAppH();
+    window.addEventListener('resize', setBarSpace);
 
+    setBarSpace();
     renderAll();
-    setTimeout(function(){ if(window.innerWidth > 640) input.focus(); }, 200);
+    setTimeout(setBarSpace, 200);
   })();
   </script>
 </body>
