@@ -287,6 +287,39 @@ body::after {
 .tile-improve   { --accent-rgb:168,214,110; }
 .tile-arc       { --accent-rgb:150,130,255; }
 
+/* ── HUB SEARCH (jump-to command palette) ─────────── */
+.hub-search { position:relative; margin:4px 0 18px; }
+.hub-search-box { display:flex; align-items:center; gap:10px; padding:13px 16px; border-radius:15px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09);
+  backdrop-filter:blur(20px) saturate(1.3); -webkit-backdrop-filter:blur(20px) saturate(1.3); transition:border-color .2s, box-shadow .2s; }
+.hub-search-box:focus-within { border-color:rgba(124,184,255,0.45); box-shadow:0 0 0 3px rgba(124,184,255,0.10); }
+.hub-search-ico { font-size:17px; color:var(--text-tertiary); flex:none; line-height:1; }
+.hub-search input { flex:1; background:none; border:none; outline:none; color:var(--text-primary); font:inherit; font-size:15px; min-width:0; }
+.hub-search input::placeholder { color:var(--text-tertiary); }
+.hub-search-clear { display:none; background:none; border:none; color:var(--text-tertiary); font-size:21px; cursor:pointer; line-height:1; padding:0 2px; }
+.hub-search.has-q .hub-search-clear { display:block; }
+.hub-search-results { position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:60;
+  background:rgba(12,13,17,0.97); border:1px solid rgba(255,255,255,0.10); border-radius:15px;
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); box-shadow:0 18px 50px rgba(0,0,0,0.6); overflow:hidden; display:none; }
+.hub-search.open .hub-search-results { display:block; }
+.hub-search-item { display:flex; align-items:center; gap:12px; padding:12px 15px; text-decoration:none;
+  color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.05); }
+.hub-search-item:last-child { border-bottom:none; }
+.hub-search-item.sel, .hub-search-item:hover { background:rgba(255,255,255,0.06); }
+.hub-search-emoji { font-size:18px; flex:none; width:24px; text-align:center; }
+.hub-search-main { flex:1; min-width:0; }
+.hub-search-label { font-size:14px; font-weight:700; color:var(--text-primary); }
+.hub-search-grp { font-family:var(--font-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
+.hub-search-go { font-family:var(--font-mono); font-size:13px; color:var(--text-tertiary); flex:none; }
+.hub-search-empty { padding:16px; text-align:center; color:var(--text-tertiary); font-size:13px; }
+
+/* ── BENTO SECTIONS (grouped tiles) ───────────────── */
+.bento-hd { display:flex; align-items:baseline; gap:11px; margin:22px 2px 13px; }
+.bento-section:first-of-type .bento-hd { margin-top:4px; }
+.bento-hd-lbl { font-family:var(--font-mono); font-size:11px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:rgb(var(--hd,124,184,255)); }
+.bento-hd-sub { font-family:var(--font-mono); font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); }
+.bento-hd-line { flex:1; height:1px; background:linear-gradient(90deg, rgba(var(--hd,124,184,255),0.28), transparent); }
+
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
   .bento-grid { grid-template-columns:repeat(2,1fr); grid-auto-rows:148px; }
@@ -846,123 +879,141 @@ body::after {
 
 <!-- BENTO GRID -->
 <div class="bento-wrap">
-  <div class="bento-grid">
-
-    <!-- ·01 Main / Goals -->
-    <a class="tile tile-main big" href="main.html">
-      <div class="tile-top"><span class="tile-num">·01</span><span class="tile-emoji">🎯</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livMain">—</div>
-      <div class="tile-title">Goals</div>
-      <div class="tile-footer"><span class="tile-sub">Daily plan &amp; targets</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·02 Fitness -->
-    <a class="tile tile-fitness wide" href="gym.html">
-      <div class="tile-top"><span class="tile-num">·02</span><span class="tile-emoji">💪</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livFit">—</div>
-      <div class="tile-title">Fitness</div>
-      <div class="tile-footer"><span class="tile-sub">Workouts &amp; splits</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·03 PR Board -->
-    <a class="tile tile-fitness" href="pr.html">
-      <div class="tile-top"><span class="tile-num">·03</span><span class="tile-emoji">🏆</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livPR">—</div>
-      <div class="tile-title">PR Board</div>
-      <div class="tile-footer"><span class="tile-sub">All-time bests</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·04 Body -->
-    <a class="tile tile-body wide" href="body.html">
-      <div class="tile-top"><span class="tile-num">·04</span><span class="tile-emoji">🫀</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livBody">—</div>
-      <div class="tile-title">Body</div>
-      <div class="tile-footer"><span class="tile-sub">Weight · Water · Caffeine · Nutrition</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·05 Finance -->
-    <a class="tile tile-finance wide" href="finance.html">
-      <div class="tile-top"><span class="tile-num">·05</span><span class="tile-emoji">📊</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livFinance">—</div>
-      <div class="tile-title">Finance</div>
-      <div class="tile-footer"><span class="tile-sub">Net worth &amp; spending</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·06 Ideas -->
-    <a class="tile tile-ideas" href="ideas.html">
-      <div class="tile-top"><span class="tile-num">·06</span><span class="tile-emoji">💡</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livIdeas">—</div>
-      <div class="tile-title">Ideas</div>
-      <div class="tile-footer"><span class="tile-sub">Capture &amp; organise</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <a class="tile tile-sleep wide" href="sleep.html">
-      <div class="tile-top"><span class="tile-num">·07</span><span class="tile-emoji">🌙</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livSleep">—</div>
-      <div class="tile-title">Sleep</div>
-      <div class="tile-footer"><span class="tile-sub">Sleep &amp; recovery score</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <a class="tile tile-identity wide" href="identity.html">
-      <div class="tile-top"><span class="tile-num">·08</span><span class="tile-emoji">🧭</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livIdentity">—</div>
-      <div class="tile-title">Identity</div>
-      <div class="tile-footer"><span class="tile-sub">North Star · habits · journal</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <a class="tile tile-trends wide" href="trends.html">
-      <div class="tile-top"><span class="tile-num">·09</span><span class="tile-emoji">📈</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livTrends">—</div>
-      <div class="tile-title">Trends</div>
-      <div class="tile-footer"><span class="tile-sub">Charts over time</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·10 Movies -->
-    <a class="tile tile-movies" href="movies.html">
-      <div class="tile-top"><span class="tile-num">·10</span><span class="tile-emoji">🎬</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livMovies">—</div>
-      <div class="tile-title">Movies</div>
-      <div class="tile-footer"><span class="tile-sub">Rate · watchlist · picks</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·11 Bills -->
-    <a class="tile tile-bills" href="bills.html">
-      <div class="tile-top"><span class="tile-num">·11</span><span class="tile-emoji">🧾</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livBills">—</div>
-      <div class="tile-title">Bills</div>
-      <div class="tile-footer"><span class="tile-sub">Bill calendar · no-spend</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·12 Improve -->
-    <a class="tile tile-improve" href="improve.html">
-      <div class="tile-top"><span class="tile-num">·12</span><span class="tile-emoji">🌱</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livImprove">—</div>
-      <div class="tile-title">Improve</div>
-      <div class="tile-footer"><span class="tile-sub">Learning queue · habits</span><span class="tile-arrow">→</span></div>
-    </a>
-
-    <!-- ·13 Your Arc -->
-    <a class="tile tile-arc wide" href="arc.html">
-      <div class="tile-top"><span class="tile-num">·13</span><span class="tile-emoji">🌌</span></div>
-      <div class="tile-spacer"></div>
-      <div class="tile-live" id="livArc">—</div>
-      <div class="tile-title">Your Arc</div>
-      <div class="tile-footer"><span class="tile-sub">A cinematic scroll through your data</span><span class="tile-arrow">→</span></div>
-    </a>
-
+  <!-- JUMP-TO SEARCH (command palette) -->
+  <div class="hub-search" id="hubSearch">
+    <div class="hub-search-box">
+      <span class="hub-search-ico">⌕</span>
+      <input type="text" id="hubSearchInput" placeholder="Jump to anything…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+      <button class="hub-search-clear" id="hubSearchClear" type="button" aria-label="Clear">×</button>
+    </div>
+    <div class="hub-search-results" id="hubSearchResults"></div>
   </div>
+
+  <!-- ─ BODY ─ -->
+  <section class="bento-section">
+    <div class="bento-hd" style="--hd:52,226,176"><span class="bento-hd-lbl">Body</span><span class="bento-hd-sub">train · recover · fuel</span><span class="bento-hd-line"></span></div>
+    <div class="bento-grid">
+      <a class="tile tile-fitness wide" href="gym.html">
+        <div class="tile-top"><span class="tile-num">·01</span><span class="tile-emoji">💪</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livFit">—</div>
+        <div class="tile-title">Fitness</div>
+        <div class="tile-footer"><span class="tile-sub">Workouts &amp; splits</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-fitness" href="pr.html">
+        <div class="tile-top"><span class="tile-num">·02</span><span class="tile-emoji">🏆</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livPR">—</div>
+        <div class="tile-title">PR Board</div>
+        <div class="tile-footer"><span class="tile-sub">All-time bests</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-body wide" href="body.html">
+        <div class="tile-top"><span class="tile-num">·03</span><span class="tile-emoji">🫀</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livBody">—</div>
+        <div class="tile-title">Body</div>
+        <div class="tile-footer"><span class="tile-sub">Weight · Water · Caffeine · Nutrition</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-sleep wide" href="sleep.html">
+        <div class="tile-top"><span class="tile-num">·04</span><span class="tile-emoji">🌙</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livSleep">—</div>
+        <div class="tile-title">Sleep</div>
+        <div class="tile-footer"><span class="tile-sub">Sleep &amp; recovery score</span><span class="tile-arrow">→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─ MIND ─ -->
+  <section class="bento-section">
+    <div class="bento-hd" style="--hd:155,140,255"><span class="bento-hd-lbl">Mind</span><span class="bento-hd-sub">goals · identity · growth</span><span class="bento-hd-line"></span></div>
+    <div class="bento-grid">
+      <a class="tile tile-main big" href="main.html">
+        <div class="tile-top"><span class="tile-num">·05</span><span class="tile-emoji">🎯</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livMain">—</div>
+        <div class="tile-title">Goals</div>
+        <div class="tile-footer"><span class="tile-sub">Daily plan &amp; targets</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-identity wide" href="identity.html">
+        <div class="tile-top"><span class="tile-num">·06</span><span class="tile-emoji">🧭</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livIdentity">—</div>
+        <div class="tile-title">Identity</div>
+        <div class="tile-footer"><span class="tile-sub">North Star · habits · journal</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-ideas" href="ideas.html">
+        <div class="tile-top"><span class="tile-num">·07</span><span class="tile-emoji">💡</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livIdeas">—</div>
+        <div class="tile-title">Ideas</div>
+        <div class="tile-footer"><span class="tile-sub">Capture &amp; organise</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-improve" href="improve.html">
+        <div class="tile-top"><span class="tile-num">·08</span><span class="tile-emoji">🌱</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livImprove">—</div>
+        <div class="tile-title">Improve</div>
+        <div class="tile-footer"><span class="tile-sub">Learning queue · habits</span><span class="tile-arrow">→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─ MONEY ─ -->
+  <section class="bento-section">
+    <div class="bento-hd" style="--hd:242,192,99"><span class="bento-hd-lbl">Money</span><span class="bento-hd-sub">net worth · bills</span><span class="bento-hd-line"></span></div>
+    <div class="bento-grid">
+      <a class="tile tile-finance wide" href="finance.html">
+        <div class="tile-top"><span class="tile-num">·09</span><span class="tile-emoji">📊</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livFinance">—</div>
+        <div class="tile-title">Finance</div>
+        <div class="tile-footer"><span class="tile-sub">Net worth &amp; spending</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-bills wide" href="bills.html">
+        <div class="tile-top"><span class="tile-num">·10</span><span class="tile-emoji">🧾</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livBills">—</div>
+        <div class="tile-title">Bills</div>
+        <div class="tile-footer"><span class="tile-sub">Bill calendar · no-spend</span><span class="tile-arrow">→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─ LIFE ─ -->
+  <section class="bento-section">
+    <div class="bento-hd" style="--hd:214,142,247"><span class="bento-hd-lbl">Life</span><span class="bento-hd-sub">leisure</span><span class="bento-hd-line"></span></div>
+    <div class="bento-grid">
+      <a class="tile tile-movies wide" href="movies.html">
+        <div class="tile-top"><span class="tile-num">·11</span><span class="tile-emoji">🎬</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livMovies">—</div>
+        <div class="tile-title">Movies</div>
+        <div class="tile-footer"><span class="tile-sub">Rate · watchlist · picks</span><span class="tile-arrow">→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─ REFLECT ─ -->
+  <section class="bento-section">
+    <div class="bento-hd" style="--hd:96,165,250"><span class="bento-hd-lbl">Reflect</span><span class="bento-hd-sub">story · trends</span><span class="bento-hd-line"></span></div>
+    <div class="bento-grid">
+      <a class="tile tile-arc wide" href="arc.html">
+        <div class="tile-top"><span class="tile-num">·12</span><span class="tile-emoji">🌌</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livArc">—</div>
+        <div class="tile-title">Your Arc</div>
+        <div class="tile-footer"><span class="tile-sub">A cinematic scroll through your data</span><span class="tile-arrow">→</span></div>
+      </a>
+      <a class="tile tile-trends wide" href="trends.html">
+        <div class="tile-top"><span class="tile-num">·13</span><span class="tile-emoji">📈</span></div>
+        <div class="tile-spacer"></div>
+        <div class="tile-live" id="livTrends">—</div>
+        <div class="tile-title">Trends</div>
+        <div class="tile-footer"><span class="tile-sub">Charts over time</span><span class="tile-arrow">→</span></div>
+      </a>
+    </div>
+  </section>
 </div>
 
 <!-- ── AGENT STATUS ───────────────────────────── -->
@@ -1718,5 +1769,70 @@ setInterval(renderIntelFeed, 60000);
 })();
 </script>
 <script src="nova-coach.js?v=18" defer></script>
+<script>
+/* ── Jump-to command palette ─────────────────────────────────── */
+(function(){
+  'use strict';
+  var DEST = [
+    {e:'🎯', l:'Goals',              g:'Mind',    u:'main.html',         k:'today plan targets daily'},
+    {e:'💪', l:'Fitness',            g:'Body',    u:'gym.html',          k:'gym workout train lifting exercise sets'},
+    {e:'🏆', l:'PR Board',           g:'Body',    u:'pr.html',           k:'pr records bests 1rm personal record strength'},
+    {e:'🫀', l:'Body',               g:'Body',    u:'body.html',         k:'body overview weight water caffeine nutrition'},
+    {e:'🌙', l:'Sleep',              g:'Body',    u:'sleep.html',        k:'sleep recovery rest score'},
+    {e:'🥗', l:'Nutrition',          g:'Body',    u:'nutrition.html',    k:'nutrition food calories macros eat diet protein log'},
+    {e:'🛒', l:'Meal Planner',       g:'Body',    u:'planner.html',      k:'meal plan planner shopping list'},
+    {e:'💧', l:'Water',              g:'Body',    u:'po-water.html',     k:'water hydration drink bottle'},
+    {e:'☕', l:'Caffeine',           g:'Body',    u:'caffeine.html',     k:'caffeine coffee energy'},
+    {e:'💊', l:'Supplements',        g:'Body',    u:'health.html',       k:'supplements stack vitamins pills creatine'},
+    {e:'⏱️', l:'Supplement Timing',  g:'Body',    u:'supps.html',        k:'supplement timing schedule when'},
+    {e:'⚖️', l:'Weight',             g:'Body',    u:'weight.html',       k:'weight scale bodyweight'},
+    {e:'📏', l:'Measurements',       g:'Body',    u:'measure.html',      k:'measurements tape waist chest arms v-taper'},
+    {e:'🧭', l:'Identity',           g:'Mind',    u:'identity.html',     k:'identity north star habits journal who'},
+    {e:'💡', l:'Ideas',              g:'Mind',    u:'ideas.html',        k:'ideas notes capture brainstorm'},
+    {e:'🌱', l:'Improve',            g:'Mind',    u:'improve.html',      k:'improve learning videos habits grow queue'},
+    {e:'📊', l:'Finance',            g:'Money',   u:'finance.html',      k:'finance net worth money stocks crypto savings'},
+    {e:'🧾', l:'Bills',              g:'Money',   u:'bills.html',        k:'bills calendar subscriptions no-spend due'},
+    {e:'🎬', l:'Movies',             g:'Life',    u:'movies.html',       k:'movies films watchlist cinema rate'},
+    {e:'◈',  l:'Morning Briefing',   g:'Reflect', u:'morning.html',      k:'morning briefing start day'},
+    {e:'✦',  l:'Weekly Review',      g:'Reflect', u:'weekly.html',       k:'weekly review week sunday'},
+    {e:'🌌', l:'Your Arc',           g:'Reflect', u:'arc.html',          k:'arc story journey cinematic'},
+    {e:'📈', l:'Trends',             g:'Reflect', u:'trends.html',       k:'trends charts graphs history'},
+    {e:'💬', l:'Talk to Nova',       g:'Nova',    u:'nova-chat.html',    k:'nova chat talk ai coach assistant ask'}
+  ];
+  var box=document.getElementById('hubSearch'), input=document.getElementById('hubSearchInput'),
+      results=document.getElementById('hubSearchResults'), clearBtn=document.getElementById('hubSearchClear');
+  if(!box||!input||!results) return;
+  var sel=0, cur=[];
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function score(d,q){ var l=d.l.toLowerCase(); if(l.indexOf(q)===0) return 4; if(l.indexOf(q)>-1) return 3;
+    if((' '+d.k).indexOf(' '+q)>-1) return 2; if(d.k.indexOf(q)>-1) return 1; return 0; }
+  function filter(q){ q=q.trim().toLowerCase(); if(!q) return [];
+    return DEST.map(function(d){ return {d:d,s:score(d,q)}; }).filter(function(x){ return x.s>0; })
+      .sort(function(a,b){ return b.s-a.s || a.d.l.localeCompare(b.d.l); }).slice(0,8).map(function(x){ return x.d; }); }
+  function render(){
+    if(!input.value.trim()){ results.innerHTML=''; return; }
+    if(!cur.length){ results.innerHTML='<div class="hub-search-empty">No match — try “sleep”, “bills”, “nova”…</div>'; return; }
+    results.innerHTML=cur.map(function(d,i){
+      return '<a class="hub-search-item'+(i===sel?' sel':'')+'" href="'+d.u+'" data-i="'+i+'">'+
+        '<span class="hub-search-emoji">'+d.e+'</span>'+
+        '<span class="hub-search-main"><span class="hub-search-label">'+esc(d.l)+'</span><span class="hub-search-grp">'+esc(d.g)+'</span></span>'+
+        '<span class="hub-search-go">↵</span></a>';
+    }).join('');
+  }
+  function update(){ var q=input.value; cur=filter(q); sel=0;
+    box.classList.toggle('has-q', !!q.trim()); box.classList.toggle('open', !!q.trim()); render(); }
+  input.addEventListener('input', update);
+  input.addEventListener('focus', function(){ if(input.value.trim()) box.classList.add('open'); });
+  input.addEventListener('keydown', function(e){
+    if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(sel+1, cur.length-1); render(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(sel-1, 0); render(); }
+    else if(e.key==='Enter'){ var a=results.querySelector('.hub-search-item.sel')||results.querySelector('.hub-search-item'); if(a){ e.preventDefault(); a.click(); } }
+    else if(e.key==='Escape'){ input.value=''; update(); input.blur(); }
+  });
+  results.addEventListener('mousemove', function(e){ var a=e.target.closest('.hub-search-item'); if(a){ var i=+a.getAttribute('data-i'); if(i!==sel){ sel=i; render(); } } });
+  clearBtn.addEventListener('click', function(){ input.value=''; update(); input.focus(); });
+  document.addEventListener('click', function(e){ if(!box.contains(e.target)) box.classList.remove('open'); });
+})();
+</script>
 </body>
 </html>
