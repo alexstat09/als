@@ -281,6 +281,10 @@ body::after {
 .tile-body      { --accent-rgb:251,113,133; }
 .tile-sleep     { --accent-rgb:155,140,255; }
 .tile-identity  { --accent-rgb:155,140,255; }
+.tile-trends    { --accent-rgb:96,165,250; }
+.tile-movies    { --accent-rgb:214,142,247; }
+.tile-bills     { --accent-rgb:90,210,160; }
+.tile-improve   { --accent-rgb:168,214,110; }
 
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
@@ -921,6 +925,33 @@ body::after {
       <div class="tile-footer"><span class="tile-sub">Charts over time</span><span class="tile-arrow">→</span></div>
     </a>
 
+    <!-- ·10 Movies -->
+    <a class="tile tile-movies" href="movies.html">
+      <div class="tile-top"><span class="tile-num">·10</span><span class="tile-emoji">🎬</span></div>
+      <div class="tile-spacer"></div>
+      <div class="tile-live" id="livMovies">—</div>
+      <div class="tile-title">Movies</div>
+      <div class="tile-footer"><span class="tile-sub">Rate · watchlist · picks</span><span class="tile-arrow">→</span></div>
+    </a>
+
+    <!-- ·11 Bills -->
+    <a class="tile tile-bills" href="bills.html">
+      <div class="tile-top"><span class="tile-num">·11</span><span class="tile-emoji">🧾</span></div>
+      <div class="tile-spacer"></div>
+      <div class="tile-live" id="livBills">—</div>
+      <div class="tile-title">Bills</div>
+      <div class="tile-footer"><span class="tile-sub">Bill calendar · no-spend</span><span class="tile-arrow">→</span></div>
+    </a>
+
+    <!-- ·12 Improve -->
+    <a class="tile tile-improve" href="improve.html">
+      <div class="tile-top"><span class="tile-num">·12</span><span class="tile-emoji">🌱</span></div>
+      <div class="tile-spacer"></div>
+      <div class="tile-live" id="livImprove">—</div>
+      <div class="tile-title">Improve</div>
+      <div class="tile-footer"><span class="tile-sub">Learning queue · habits</span><span class="tile-arrow">→</span></div>
+    </a>
+
   </div>
 </div>
 
@@ -1085,6 +1116,48 @@ function liveData() {
     const wts = JSON.parse(localStorage.getItem('po_coach_weights'))||[];
     set('livTrends', Array.isArray(wts)&&wts.length ? wts.length+' weigh-ins tracked' : 'Start tracking');
   } catch(e){ set('livTrends',''); }
+
+  /* Movies — seen count + avg rating */
+  try {
+    const seen = (JSON.parse(localStorage.getItem('movies:seen'))||[]).filter(x=>x&&x.id);
+    const watch = (JSON.parse(localStorage.getItem('movies:watch'))||[]).filter(x=>x&&x.id);
+    const rated = seen.filter(f=>f.rating!=null);
+    if (seen.length) { const avg = rated.length ? Math.round(rated.reduce((a,f)=>a+f.rating,0)/rated.length) : null;
+      set('livMovies', seen.length+' rated'+(avg!=null?' · avg '+avg:'')); }
+    else if (watch.length) set('livMovies', watch.length+' to watch');
+    else set('livMovies', 'Rate your first film');
+  } catch(e){ set('livMovies',''); }
+
+  /* Bills — count + nearest due */
+  try {
+    const items = (JSON.parse(localStorage.getItem('bills:items'))||[]).filter(x=>x&&x.id);
+    const paid = (JSON.parse(localStorage.getItem('bills:paid'))||[]).filter(x=>x&&x.id);
+    if (!items.length) set('livBills','Add your bills');
+    else {
+      const dim=(y,m)=>new Date(y,m+1,0).getDate(), pad=n=>String(n).padStart(2,'0');
+      const occ=(b,y,m,d)=>{ const last=dim(y,m);
+        if(b.recur==='monthly') return d===Math.min(b.day||1,last);
+        if(b.recur==='weekly') return new Date(y,m,d).getDay()===(b.day==null?1:b.day);
+        if(b.recur==='yearly') return b.month===m && d===Math.min(b.day||1,last);
+        if(b.recur==='once') return b.date===y+'-'+pad(m+1)+'-'+pad(d);
+        return false; };
+      const isPaid=(id,y,m)=>paid.some(p=>p.id===id+'|'+y+'-'+pad(m+1));
+      const today=new Date(); let found=null;
+      for(let i=0;i<60&&!found;i++){ const dt=new Date(today.getFullYear(),today.getMonth(),today.getDate()+i);
+        const due=items.filter(b=>occ(b,dt.getFullYear(),dt.getMonth(),dt.getDate()) && !(b.recur!=='weekly'&&isPaid(b.id,dt.getFullYear(),dt.getMonth())));
+        if(due.length){ found={b:due[0],i}; } }
+      set('livBills', found ? (found.b.name+(found.i===0?' due today':' in '+found.i+'d')) : items.length+' bills · all paid');
+    }
+  } catch(e){ set('livBills',''); }
+
+  /* Improve — queue + habits in progress */
+  try {
+    const vids = (JSON.parse(localStorage.getItem('improve:videos'))||[]).filter(x=>x&&x.id);
+    const habs = (JSON.parse(localStorage.getItem('improve:habits'))||[]).filter(x=>x&&x.id);
+    const toWatch = vids.filter(v=>!v.watched).length, building = habs.filter(h=>!h.adopted).length;
+    if (vids.length||habs.length) set('livImprove', toWatch+' to watch · '+building+' habit'+(building===1?'':'s'));
+    else set('livImprove', 'Queue something worth learning');
+  } catch(e){ set('livImprove',''); }
 
   /* Identity — habits done today or North Star prompt */
   try {

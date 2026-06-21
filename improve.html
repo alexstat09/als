@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Improve · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --gr:168,214,110; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    .gr-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .gr-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--gr),.85); margin-bottom:11px; }
+    .gr-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; letter-spacing:-.01em; }
+    .gr-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; max-width:36ch; line-height:1.45; }
+    .gr-orb{ flex:none; width:62px; height:62px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--gr),.22), rgba(var(--gr),.04)); border:1px solid rgba(var(--gr),.3); box-shadow:0 0 30px rgba(var(--gr),.12); }
+
+    .gr-snap{ max-width:600px; margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr);
+      background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+    .gr-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
+    .gr-snap-i:last-child{ border-right:none; }
+    .gr-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .gr-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    .gr-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
+    .gr-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px 16px 18px; }
+    .gr-card-hd{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+    .gr-card-hd .dot{ width:7px; height:7px; border-radius:50%; background:rgba(var(--gr),.9); box-shadow:0 0 8px rgba(var(--gr),.6); }
+    .gr-card-hd h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
+    .gr-card-hd .line{ flex:1; height:1px; background:var(--au-line); }
+
+    /* focus */
+    .gr-focus{ background:linear-gradient(135deg, rgba(var(--gr),.12), rgba(var(--gr),.03)); border:1px solid rgba(var(--gr),.28); }
+    .gr-focus .lab{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--gr),.9); margin-bottom:9px; }
+    .gr-focus .big{ font-size:16px; font-weight:600; color:var(--au-ivory); line-height:1.35; }
+    .gr-focus .sub{ font-size:12.5px; color:var(--au-dim); margin-top:7px; line-height:1.4; }
+    .gr-focus a.go{ display:inline-block; margin-top:11px; font-size:12.5px; font-weight:700; color:rgb(var(--gr)); text-decoration:none; }
+
+    /* form */
+    .gr-form-row{ display:flex; gap:10px; margin-bottom:11px; }
+    .gr-field{ display:flex; flex-direction:column; gap:5px; flex:1; }
+    .gr-field label{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    .gr-in{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:11px; color:var(--au-ivory); font-family:var(--au-sans); font-size:15px; padding:11px 13px; outline:none; -webkit-appearance:none; }
+    .gr-in:focus{ border-color:rgba(var(--gr),.5); box-shadow:0 0 0 3px rgba(var(--gr),.1); }
+    textarea.gr-in{ font-size:14px; min-height:50px; resize:vertical; }
+    .gr-save{ width:100%; margin-top:3px; background:rgb(var(--gr)); color:#10210a; border:none; border-radius:13px; padding:13px; font-family:var(--au-sans); font-size:14px; font-weight:800; letter-spacing:.02em; cursor:pointer; box-shadow:0 6px 22px rgba(var(--gr),.25); transition:transform .12s; }
+    .gr-save:active{ transform:scale(.98); }
+    .gr-toast{ text-align:center; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:rgb(var(--gr)); margin-top:9px; min-height:14px; opacity:0; transition:opacity .25s; }
+    .gr-toast.show{ opacity:1; }
+
+    /* topic filter */
+    .gr-filter{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+    .gr-fchip{ font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:999px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; }
+    .gr-fchip.on{ background:rgba(var(--gr),.16); border-color:rgba(var(--gr),.5); color:#fff; }
+
+    .gr-row{ display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--au-line); }
+    .gr-row:last-child{ border-bottom:none; }
+    .gr-check{ flex:none; width:24px; height:24px; border-radius:7px; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:13px; color:#10210a; cursor:pointer; margin-top:1px; }
+    .gr-check.on{ background:rgb(var(--gr)); border-color:rgb(var(--gr)); }
+    .gr-row-main{ flex:1; min-width:0; }
+    .gr-row-title{ font-size:14px; font-weight:600; color:var(--au-ivory); line-height:1.3; }
+    .gr-row.done .gr-row-title{ color:var(--au-faint); text-decoration:line-through; }
+    .gr-row-meta{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:4px; letter-spacing:.02em; }
+    .gr-row-why{ font-size:12px; color:var(--au-dim); margin-top:5px; line-height:1.4; }
+    .gr-mini{ flex:none; display:flex; gap:6px; flex-direction:column; align-items:flex-end; }
+    .gr-mb{ padding:6px 10px; border-radius:9px; font-size:11.5px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); white-space:nowrap; text-decoration:none; display:inline-block; }
+    .gr-mb.open{ color:rgb(var(--gr)); border-color:rgba(var(--gr),.3); }
+    .gr-mb.del{ color:#FF8FA3; border-color:rgba(255,143,163,.25); }
+    .gr-mb:active{ background:rgba(255,255,255,.08); }
+
+    .gr-empty{ text-align:center; padding:8px 6px 4px; color:var(--au-dim); font-size:13px; line-height:1.5; }
+    .gr-foot{ max-width:600px; margin:4px auto 0; padding:0 18px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="gr-hero">
+    <div>
+      <div class="gr-eyebrow">Become</div>
+      <div class="gr-hero-line">Improve</div>
+      <div class="gr-hero-sub" id="grSub">A queue of things worth learning, and the habits you're growing into.</div>
+    </div>
+    <div class="gr-orb" aria-hidden="true">🌱</div>
+  </header>
+
+  <div class="gr-snap">
+    <div class="gr-snap-i"><div class="gr-snap-v" id="snQueue">0</div><div class="gr-snap-l">To watch</div></div>
+    <div class="gr-snap-i"><div class="gr-snap-v" id="snDone">0</div><div class="gr-snap-l">Watched</div></div>
+    <div class="gr-snap-i"><div class="gr-snap-v" id="snHabits">0</div><div class="gr-snap-l">Building</div></div>
+    <div class="gr-snap-i"><div class="gr-snap-v" id="snAdopted">0</div><div class="gr-snap-l">Adopted</div></div>
+  </div>
+
+  <main class="gr-wrap">
+
+    <!-- Focus -->
+    <section class="gr-card gr-focus hidden" id="focusCard">
+      <div class="lab">Next up</div>
+      <div class="big" id="focusBig">—</div>
+      <div class="sub" id="focusSub"></div>
+      <a class="go" id="focusLink" target="_blank" rel="noopener">Watch now →</a>
+    </section>
+
+    <!-- Add video -->
+    <section class="gr-card">
+      <div class="gr-card-hd"><span class="dot"></span><h2>Add to the queue</h2><span class="line"></span></div>
+      <div class="gr-form-row">
+        <div class="gr-field" style="flex:2"><label for="vTitle">Title</label><input class="gr-in" id="vTitle" placeholder="What to watch / read" autocomplete="off"></div>
+        <div class="gr-field"><label for="vTopic">Topic</label><input class="gr-in" id="vTopic" placeholder="e.g. Mindset" autocomplete="off"></div>
+      </div>
+      <div class="gr-field" style="margin-bottom:11px"><label for="vUrl">Link <span style="color:var(--au-faint)">· optional</span></label><input class="gr-in" id="vUrl" inputmode="url" placeholder="https://…" autocomplete="off"></div>
+      <button class="gr-save" id="vSave" type="button">Add to queue</button>
+      <div class="gr-toast" id="vToast"></div>
+    </section>
+
+    <!-- Queue -->
+    <section class="gr-card hidden" id="queueCard">
+      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span></div>
+      <div class="gr-filter" id="vFilter"></div>
+      <div id="queueBody"></div>
+    </section>
+
+    <!-- Habits to build -->
+    <section class="gr-card">
+      <div class="gr-card-hd"><span class="dot"></span><h2>Habits to build</h2><span class="line"></span></div>
+      <div class="gr-form-row">
+        <div class="gr-field"><label for="hText">Habit</label><input class="gr-in" id="hText" placeholder="e.g. Read 20 min before bed" autocomplete="off"></div>
+      </div>
+      <div class="gr-field" style="margin-bottom:11px"><label for="hWhy">Why it matters <span style="color:var(--au-faint)">· optional</span></label><textarea class="gr-in" id="hWhy" placeholder="The person this makes you…"></textarea></div>
+      <button class="gr-save" id="hSave" type="button">Add habit</button>
+      <div class="gr-toast" id="hToast"></div>
+      <div id="habitBody" style="margin-top:14px"></div>
+    </section>
+
+    <div class="gr-empty hidden" id="grEmpty">Nothing here yet. Queue up a video worth your time, or name a habit you want to grow into.</div>
+  </main>
+  <div class="gr-foot">Mark videos watched as you go. When a habit sticks, track it for real in <a href="identity.html" style="color:rgba(var(--gr),.85)">Identity</a>. Everything syncs across devices.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    var K_VID='improve:videos', K_HAB='improve:habits';
+
+    function $(id){ return document.getElementById(id); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+    function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
+    function persist(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
+    function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
+
+    function srcFromUrl(url){
+      if(!url) return '';
+      var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u;
+      var host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(e){ var m=String(url).match(/([a-z0-9-]+\.[a-z]{2,})/i); host=m?m[1]:''; }
+      if(/youtube\.com|youtu\.be/i.test(host)) return 'YouTube';
+      if(/vimeo\.com/i.test(host)) return 'Vimeo';
+      if(/spotify\.com/i.test(host)) return 'Spotify';
+      if(/podcasts\.apple/i.test(host)) return 'Apple Podcasts';
+      if(/medium\.com/i.test(host)) return 'Medium';
+      if(/twitter\.com|x\.com/i.test(host)) return 'X';
+      if(/ted\.com/i.test(host)) return 'TED';
+      if(!host) return '';
+      var base=host.split('.')[0]; return base.charAt(0).toUpperCase()+base.slice(1);
+    }
+    function normUrl(url){ if(!url) return ''; var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
+
+    var videos=loadArr(K_VID), habits=loadArr(K_HAB), filter='all';
+
+    /* ── videos ───────────────────────────────────────── */
+    function topics(){ var t={}; videos.forEach(function(v){ if(v.topic) t[v.topic]=(t[v.topic]||0)+1; }); return Object.keys(t).sort(function(a,b){return t[b]-t[a];}); }
+    function saveVideo(){
+      var title=$('vTitle').value.trim(); if(!title){ vtoast('Add a title'); return; }
+      var url=normUrl($('vUrl').value); var topic=$('vTopic').value.trim();
+      videos.push({ id:uid(), title:title, url:url, source:srcFromUrl(url), topic:topic, watched:false, note:'', ts:Date.now() });
+      persist(K_VID,videos); flush(); vtoast('Queued ✓');
+      $('vTitle').value=''; $('vUrl').value=''; $('vTopic').value=''; render();
+    }
+    function toggleWatched(id){ var v=videos.find(function(x){return x.id===id;}); if(!v) return; v.watched=!v.watched; v.ts=Date.now(); persist(K_VID,videos); flush(); render(); }
+    function delVideo(id){ videos=videos.filter(function(x){return x.id!==id;}); persist(K_VID,videos); flush(); render(); }
+    function vtoast(m){ var t=$('vToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1600); }
+
+    /* ── habits ───────────────────────────────────────── */
+    function saveHabit(){
+      var text=$('hText').value.trim(); if(!text){ htoast('Name the habit'); return; }
+      habits.push({ id:uid(), text:text, why:$('hWhy').value.trim(), adopted:false, ts:Date.now() });
+      persist(K_HAB,habits); flush(); htoast('Added ✓'); $('hText').value=''; $('hWhy').value=''; render();
+    }
+    function toggleAdopted(id){ var h=habits.find(function(x){return x.id===id;}); if(!h) return; h.adopted=!h.adopted; h.ts=Date.now(); persist(K_HAB,habits); flush(); render(); }
+    function delHabit(id){ habits=habits.filter(function(x){return x.id!==id;}); persist(K_HAB,habits); flush(); render(); }
+    function htoast(m){ var t=$('hToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1600); }
+
+    /* ── render ───────────────────────────────────────── */
+    function render(){
+      videos=loadArr(K_VID); habits=loadArr(K_HAB);
+      var unwatched=videos.filter(function(v){return !v.watched;});
+      var watched=videos.filter(function(v){return v.watched;});
+      var building=habits.filter(function(h){return !h.adopted;});
+      var adopted=habits.filter(function(h){return h.adopted;});
+
+      $('snQueue').textContent=unwatched.length;
+      $('snDone').textContent=watched.length;
+      $('snHabits').textContent=building.length;
+      $('snAdopted').textContent=adopted.length;
+      if(videos.length||habits.length) $('grSub').textContent=unwatched.length+' to watch · '+building.length+' habit'+(building.length===1?'':'s')+' in progress';
+
+      // focus
+      var nextV=unwatched.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
+      var nextH=building.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
+      if(nextV||nextH){
+        $('focusCard').classList.remove('hidden');
+        if(nextV){
+          $('focusBig').textContent=nextV.title;
+          $('focusSub').textContent=[nextV.source,nextV.topic].filter(Boolean).join(' · ')||'In your queue';
+          if(nextV.url){ $('focusLink').style.display='inline-block'; $('focusLink').href=nextV.url; $('focusLink').textContent='Watch now →'; }
+          else $('focusLink').style.display='none';
+        } else {
+          $('focusBig').textContent=nextH.text;
+          $('focusSub').textContent=nextH.why||'A habit you’re building';
+          $('focusLink').style.display='inline-block'; $('focusLink').href='identity.html'; $('focusLink').textContent='Track it in Identity →';
+        }
+      } else $('focusCard').classList.add('hidden');
+
+      // queue
+      if(videos.length){
+        $('queueCard').classList.remove('hidden');
+        var tps=topics();
+        $('vFilter').innerHTML=tps.length?(['all'].concat(tps)).map(function(t){
+          return '<span class="gr-fchip'+(filter===t?' on':'')+'" data-f="'+esc(t)+'">'+(t==='all'?'All':esc(t))+'</span>';
+        }).join(''):'';
+        $('vFilter').style.display=tps.length?'flex':'none';
+        var list=videos.slice().sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return (a.ts||0)-(b.ts||0); });
+        if(filter!=='all') list=list.filter(function(v){return v.topic===filter;});
+        $('queueBody').innerHTML=list.length?list.map(function(v){
+          return '<div class="gr-row'+(v.watched?' done':'')+'">'+
+            '<div class="gr-check'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'&#10003;':'')+'</div>'+
+            '<div class="gr-row-main"><div class="gr-row-title">'+esc(v.title)+'</div>'+
+            ((v.source||v.topic)?'<div class="gr-row-meta">'+[esc(v.source),esc(v.topic)].filter(Boolean).join(' · ')+'</div>':'')+'</div>'+
+            '<div class="gr-mini">'+(v.url?'<a class="gr-mb open" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
+            '<button type="button" class="gr-mb del" data-dv="'+v.id+'">✕</button></div></div>';
+        }).join(''):'<div class="gr-empty">Nothing under “'+esc(filter)+'”.</div>';
+      } else $('queueCard').classList.add('hidden');
+
+      // habits
+      if(habits.length){
+        var hlist=habits.slice().sort(function(a,b){ if(!!a.adopted!==!!b.adopted) return a.adopted?1:-1; return (a.ts||0)-(b.ts||0); });
+        $('habitBody').innerHTML=hlist.map(function(h){
+          return '<div class="gr-row'+(h.adopted?' done':'')+'">'+
+            '<div class="gr-check'+(h.adopted?' on':'')+'" data-ha="'+h.id+'">'+(h.adopted?'&#10003;':'')+'</div>'+
+            '<div class="gr-row-main"><div class="gr-row-title">'+esc(h.text)+'</div>'+
+            (h.why?'<div class="gr-row-why">'+esc(h.why)+'</div>':'')+
+            (h.adopted?'<div class="gr-row-meta" style="color:rgba(var(--gr),.8)">Adopted · track it in Identity</div>':'')+'</div>'+
+            '<div class="gr-mini"><button type="button" class="gr-mb del" data-dh="'+h.id+'">✕</button></div></div>';
+        }).join('');
+      } else $('habitBody').innerHTML='';
+
+      $('grEmpty').classList.toggle('hidden', videos.length>0||habits.length>0);
+    }
+
+    /* ── wiring ───────────────────────────────────────── */
+    $('vSave').addEventListener('click',saveVideo);
+    $('hSave').addEventListener('click',saveHabit);
+    $('vFilter').addEventListener('click',function(e){ var c=e.target.closest('[data-f]'); if(!c) return; filter=c.getAttribute('data-f'); render(); });
+    $('queueBody').addEventListener('click',function(e){ var w=e.target.closest('[data-w]'), d=e.target.closest('[data-dv]'); if(w) toggleWatched(w.getAttribute('data-w')); else if(d) delVideo(d.getAttribute('data-dv')); });
+    $('habitBody').addEventListener('click',function(e){ var a=e.target.closest('[data-ha]'), d=e.target.closest('[data-dh]'); if(a) toggleAdopted(a.getAttribute('data-ha')); else if(d) delHabit(d.getAttribute('data-dh')); });
+
+    render();
+
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_HAB) render(); });
+    document.addEventListener('DOMContentLoaded',function(){
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_HAB], onApplied:function(){ render(); } });
+      })();
+    });
+    window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, topics:topics, _set:function(v,h){ videos=v; habits=h; } };
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>

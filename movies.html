@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Movies · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --mv:214,142,247; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    .mv-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .mv-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--mv),.85); margin-bottom:11px; }
+    .mv-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; letter-spacing:-.01em; }
+    .mv-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; max-width:36ch; line-height:1.45; }
+    .mv-orb{ flex:none; width:62px; height:62px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--mv),.22), rgba(var(--mv),.04)); border:1px solid rgba(var(--mv),.3); box-shadow:0 0 30px rgba(var(--mv),.12); }
+
+    .mv-snap{ max-width:600px; margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr);
+      background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+    .mv-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
+    .mv-snap-i:last-child{ border-right:none; }
+    .mv-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .mv-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    .mv-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
+    .mv-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px 16px 18px; }
+    .mv-card-hd{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+    .mv-card-hd .dot{ width:7px; height:7px; border-radius:50%; background:rgba(var(--mv),.9); box-shadow:0 0 8px rgba(var(--mv),.6); }
+    .mv-card-hd h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
+    .mv-card-hd .line{ flex:1; height:1px; background:var(--au-line); }
+    .mv-card-hd .act{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--mv),.85); background:rgba(var(--mv),.08); border:1px solid rgba(var(--mv),.25); border-radius:8px; padding:5px 9px; cursor:pointer; }
+
+    /* segmented mode */
+    .mv-seg{ display:flex; gap:8px; margin-bottom:14px; }
+    .mv-seg button{ flex:1; padding:10px; border-radius:11px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; }
+    .mv-seg button.on{ background:rgb(var(--mv)); color:#1a0a26; border-color:rgb(var(--mv)); }
+
+    .mv-row2{ display:flex; gap:10px; margin-bottom:12px; }
+    .mv-field{ display:flex; flex-direction:column; gap:5px; flex:1; }
+    .mv-field.year{ flex:0 0 96px; }
+    .mv-field label{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    .mv-in{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:11px; color:var(--au-ivory); font-family:var(--au-sans); font-size:15px; padding:11px 13px; outline:none; -webkit-appearance:none; }
+    .mv-in:focus{ border-color:rgba(var(--mv),.5); box-shadow:0 0 0 3px rgba(var(--mv),.1); }
+    textarea.mv-in{ font-size:14px; min-height:56px; resize:vertical; font-family:var(--au-sans); }
+
+    .mv-genres{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+    .mv-chip{ font-size:12px; font-weight:600; padding:7px 11px; border-radius:999px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; }
+    .mv-chip.on{ background:rgba(var(--mv),.16); border-color:rgba(var(--mv),.5); color:#fff; }
+
+    .mv-rate{ margin-bottom:6px; }
+    .mv-rate-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:7px; }
+    .mv-rate-lab{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    .mv-rate-val{ font-family:var(--au-mono); font-size:22px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; }
+    .mv-rate-val small{ font-size:11px; color:var(--au-dim); font-weight:600; }
+    input[type=range].mv-slider{ width:100%; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:linear-gradient(90deg,rgba(var(--mv),.7),rgba(var(--mv),.25)); outline:none; }
+    input[type=range].mv-slider::-webkit-slider-thumb{ -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:rgb(var(--mv)); box-shadow:0 2px 8px rgba(var(--mv),.5); cursor:pointer; }
+
+    .mv-save{ width:100%; margin-top:14px; background:rgb(var(--mv)); color:#1a0a26; border:none; border-radius:13px; padding:14px; font-family:var(--au-sans); font-size:14px; font-weight:800; letter-spacing:.02em; cursor:pointer; box-shadow:0 6px 22px rgba(var(--mv),.28); transition:transform .12s; }
+    .mv-save:active{ transform:scale(.98); }
+    .mv-toast{ text-align:center; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:rgb(var(--mv)); margin-top:10px; min-height:14px; opacity:0; transition:opacity .25s; }
+    .mv-toast.show{ opacity:1; }
+
+    /* taste profile */
+    .mv-taste{ display:flex; flex-wrap:wrap; gap:9px; }
+    .mv-taste-pill{ display:flex; flex-direction:column; gap:3px; padding:10px 13px; border-radius:13px; background:rgba(var(--mv),.07); border:1px solid rgba(var(--mv),.2); }
+    .mv-taste-pill b{ font-family:var(--au-mono); font-size:15px; font-weight:800; color:#fff; }
+    .mv-taste-pill span{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+
+    /* recommendation / list rows */
+    .mv-rec{ display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--au-line); }
+    .mv-rec:last-child{ border-bottom:none; }
+    .mv-rec-main{ flex:1; min-width:0; }
+    .mv-rec-title{ font-size:14.5px; font-weight:600; color:var(--au-ivory); line-height:1.25; }
+    .mv-rec-title .yr{ color:var(--au-faint); font-weight:500; font-size:12.5px; }
+    .mv-rec-tags{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:4px; letter-spacing:.02em; }
+    .mv-rec-why{ font-size:11.5px; color:rgba(var(--mv),.85); margin-top:5px; line-height:1.35; }
+    .mv-rec-score{ flex:none; font-family:var(--au-mono); font-size:11px; font-weight:700; color:var(--au-faint); }
+    .mv-mini{ flex:none; display:flex; gap:6px; }
+    .mv-mb{ padding:7px 10px; border-radius:9px; font-size:12px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); white-space:nowrap; }
+    .mv-mb.add{ color:rgb(var(--mv)); border-color:rgba(var(--mv),.3); }
+    .mv-mb.del{ color:#FF8FA3; border-color:rgba(255,143,163,.25); }
+    .mv-mb:active{ background:rgba(255,255,255,.08); }
+
+    .mv-seen-row{ display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--au-line); }
+    .mv-seen-row:last-child{ border-bottom:none; }
+    .mv-score-badge{ flex:none; width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:var(--au-mono); font-size:15px; font-weight:800; color:#fff; }
+    .mv-sort{ display:flex; gap:8px; margin-bottom:6px; }
+    .mv-sort button{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:6px 10px; border-radius:8px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-faint); cursor:pointer; }
+    .mv-sort button.on{ color:#fff; border-color:rgba(var(--mv),.4); background:rgba(var(--mv),.1); }
+
+    .mv-empty{ text-align:center; padding:8px 6px 4px; color:var(--au-dim); font-size:13px; line-height:1.5; }
+    .mv-foot{ max-width:600px; margin:4px auto 0; padding:0 18px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="mv-hero">
+    <div>
+      <div class="mv-eyebrow">Screening room</div>
+      <div class="mv-hero-line" id="mvHeadline">Movies</div>
+      <div class="mv-hero-sub" id="mvSub">Rate what you watch. Build a watchlist. Get picks tuned to your taste.</div>
+    </div>
+    <div class="mv-orb" aria-hidden="true">🎬</div>
+  </header>
+
+  <div class="mv-snap">
+    <div class="mv-snap-i"><div class="mv-snap-v" id="snSeen">0</div><div class="mv-snap-l">Seen</div></div>
+    <div class="mv-snap-i"><div class="mv-snap-v" id="snAvg">—</div><div class="mv-snap-l">Avg ★</div></div>
+    <div class="mv-snap-i"><div class="mv-snap-v" id="snWatch">0</div><div class="mv-snap-l">Watchlist</div></div>
+    <div class="mv-snap-i"><div class="mv-snap-v" id="snTop">—</div><div class="mv-snap-l">Top genre</div></div>
+  </div>
+
+  <main class="mv-wrap">
+
+    <!-- Add / edit -->
+    <section class="mv-card">
+      <div class="mv-card-hd"><span class="dot"></span><h2 id="formTitle">Add a film</h2><span class="line"></span></div>
+      <div class="mv-seg" id="mvSeg">
+        <button type="button" data-mode="seen" class="on">★ Watched</button>
+        <button type="button" data-mode="watch">＋ Want to see</button>
+      </div>
+      <div class="mv-row2">
+        <div class="mv-field"><label for="mvTitle">Title</label><input class="mv-in" id="mvTitle" placeholder="e.g. Blade Runner 2049" autocomplete="off"></div>
+        <div class="mv-field year"><label for="mvYear">Year</label><input class="mv-in" id="mvYear" inputmode="numeric" pattern="[0-9]*" placeholder="2017"></div>
+      </div>
+      <div class="mv-genres" id="mvGenres"></div>
+      <div class="mv-rate" id="mvRateWrap">
+        <div class="mv-rate-top"><span class="mv-rate-lab">Your rating</span><span class="mv-rate-val" id="mvRateVal">75<small>/100</small></span></div>
+        <input type="range" min="0" max="100" value="75" class="mv-slider" id="mvRate">
+      </div>
+      <div class="mv-field" style="margin-top:12px"><label for="mvNote">Note <span style="color:var(--au-faint)">· optional</span></label><textarea class="mv-in" id="mvNote" placeholder="A line on why it landed (or didn't)…"></textarea></div>
+      <button class="mv-save" id="mvSave" type="button">Save film</button>
+      <div class="mv-toast" id="mvToast"></div>
+    </section>
+
+    <!-- Taste profile -->
+    <section class="mv-card hidden" id="tasteCard">
+      <div class="mv-card-hd"><span class="dot"></span><h2>Your taste</h2><span class="line"></span></div>
+      <div class="mv-taste" id="tasteBody"></div>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="mv-card">
+      <div class="mv-card-hd"><span class="dot"></span><h2>Recommended for you</h2><span class="line"></span><span class="act" id="mvReroll">↻ Re-roll</span></div>
+      <div id="recBody"></div>
+    </section>
+
+    <!-- Watchlist -->
+    <section class="mv-card hidden" id="watchCard">
+      <div class="mv-card-hd"><span class="dot"></span><h2>Watchlist</h2><span class="line"></span></div>
+      <div id="watchBody"></div>
+    </section>
+
+    <!-- Seen -->
+    <section class="mv-card hidden" id="seenCard">
+      <div class="mv-card-hd"><span class="dot"></span><h2>Seen</h2><span class="line"></span></div>
+      <div class="mv-sort" id="seenSort">
+        <button type="button" data-sort="rating" class="on">By rating</button>
+        <button type="button" data-sort="recent">Recent</button>
+      </div>
+      <div id="seenBody"></div>
+    </section>
+
+    <div class="mv-empty hidden" id="mvEmpty">No films yet. Log one you loved above and the recommendations will start tuning to your taste.</div>
+  </main>
+  <div class="mv-foot">Ratings out of 100. Recommendations are generated on-device from a curated catalogue, weighted by the genres you rate highest. Everything syncs across your devices.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    var K_SEEN='movies:seen', K_WATCH='movies:watch';
+    var GENRES=['Action','Adventure','Animation','Comedy','Crime','Documentary','Drama','Fantasy','Horror','Mystery','Romance','Sci-Fi','Thriller','War','Western'];
+
+    // curated catalogue: [title, year, "genres", acclaim 60-99]
+    var CATALOG=[
+      ['The Godfather',1972,'Crime,Drama',98],['The Shawshank Redemption',1994,'Drama',97],['Pulp Fiction',1994,'Crime,Drama',95],
+      ['Schindler’s List',1993,'Drama,War',96],['The Dark Knight',2008,'Action,Crime,Drama',95],['Goodfellas',1990,'Crime,Drama',94],
+      ['12 Angry Men',1957,'Drama',94],['Fight Club',1999,'Drama,Thriller',92],['Forrest Gump',1994,'Drama,Romance',91],
+      ['Inception',2010,'Action,Sci-Fi,Thriller',93],['The Matrix',1999,'Action,Sci-Fi',93],['Interstellar',2014,'Adventure,Drama,Sci-Fi',92],
+      ['Parasite',2019,'Drama,Thriller',95],['Whiplash',2014,'Drama',92],['The Prestige',2006,'Drama,Mystery,Thriller',90],
+      ['Se7en',1995,'Crime,Mystery,Thriller',91],['The Silence of the Lambs',1991,'Crime,Thriller',92],['Gladiator',2000,'Action,Adventure,Drama',89],
+      ['Saving Private Ryan',1998,'Drama,War',91],['The Departed',2006,'Crime,Drama,Thriller',90],['Django Unchained',2012,'Drama,Western',88],
+      ['Once Upon a Time in the West',1968,'Western',91],['No Country for Old Men',2007,'Crime,Drama,Thriller',91],['There Will Be Blood',2007,'Drama',92],
+      ['Mad Max: Fury Road',2015,'Action,Adventure,Sci-Fi',90],['Blade Runner 2049',2017,'Drama,Sci-Fi,Thriller',89],['Blade Runner',1982,'Sci-Fi,Thriller',90],
+      ['Alien',1979,'Horror,Sci-Fi',90],['Aliens',1986,'Action,Sci-Fi',89],['The Thing',1982,'Horror,Sci-Fi',88],
+      ['2001: A Space Odyssey',1968,'Adventure,Sci-Fi',93],['Arrival',2016,'Drama,Mystery,Sci-Fi',89],['Ex Machina',2014,'Drama,Sci-Fi,Thriller',86],
+      ['Dune',2021,'Adventure,Sci-Fi',88],['Spirited Away',2001,'Animation,Adventure,Fantasy',95],['Princess Mononoke',1997,'Animation,Adventure,Fantasy',91],
+      ['Your Name',2016,'Animation,Drama,Romance',89],['Grave of the Fireflies',1988,'Animation,Drama,War',92],['Toy Story',1995,'Animation,Adventure,Comedy',90],
+      ['WALL·E',2008,'Animation,Adventure,Sci-Fi',91],['Up',2009,'Animation,Adventure,Comedy',90],['Coco',2017,'Animation,Adventure,Fantasy',89],
+      ['Spider-Man: Into the Spider-Verse',2018,'Animation,Action,Adventure',92],['The Lion King',1994,'Animation,Adventure,Drama',88],['Ratatouille',2007,'Animation,Comedy',88],
+      ['The Lord of the Rings: The Fellowship of the Ring',2001,'Adventure,Fantasy',93],['The Lord of the Rings: The Return of the King',2003,'Adventure,Fantasy',94],
+      ['The Lord of the Rings: The Two Towers',2002,'Adventure,Fantasy',92],['Pan’s Labyrinth',2006,'Drama,Fantasy,War',90],['The Green Mile',1999,'Crime,Drama,Fantasy',88],
+      ['Joker',2019,'Crime,Drama,Thriller',86],['Oldboy',2003,'Action,Drama,Mystery',89],['Memento',2000,'Mystery,Thriller',89],
+      ['The Usual Suspects',1995,'Crime,Mystery,Thriller',89],['Heat',1995,'Action,Crime,Drama',88],['Casino',1995,'Crime,Drama',86],
+      ['Apocalypse Now',1979,'Drama,War',92],['Full Metal Jacket',1987,'Drama,War',88],['1917',2019,'Drama,War',88],
+      ['Dunkirk',2017,'Action,Drama,War',86],['The Pianist',2002,'Drama,War',90],['Braveheart',1995,'Action,Drama,War',87],
+      ['Goodbye Lenin',2003,'Comedy,Drama',83],['Amelie',2001,'Comedy,Romance',88],['In Bruges',2008,'Comedy,Crime,Drama',85],
+      ['The Grand Budapest Hotel',2014,'Adventure,Comedy,Drama',88],['The Big Lebowski',1998,'Comedy,Crime',86],['Snatch',2000,'Comedy,Crime',85],
+      ['Back to the Future',1985,'Adventure,Comedy,Sci-Fi',89],['Jurassic Park',1993,'Adventure,Sci-Fi,Thriller',88],['Terminator 2: Judgment Day',1991,'Action,Sci-Fi',90],
+      ['Die Hard',1988,'Action,Thriller',87],['Raiders of the Lost Ark',1981,'Action,Adventure',90],['The Shining',1980,'Drama,Horror',90],
+      ['Get Out',2017,'Horror,Mystery,Thriller',86],['Hereditary',2018,'Drama,Horror,Mystery',83],['The Witch',2015,'Drama,Horror,Mystery',82],
+      ['A Clockwork Orange',1971,'Crime,Drama,Sci-Fi',89],['Taxi Driver',1976,'Crime,Drama',91],['Raging Bull',1980,'Drama',90],
+      ['Casablanca',1942,'Drama,Romance,War',92],['Rear Window',1954,'Mystery,Thriller',91],['Vertigo',1958,'Mystery,Romance,Thriller',91],
+      ['Psycho',1960,'Horror,Mystery,Thriller',92],['Chinatown',1974,'Crime,Drama,Mystery',90],['The Truman Show',1998,'Comedy,Drama,Sci-Fi',86],
+      ['Eternal Sunshine of the Spotless Mind',2004,'Drama,Romance,Sci-Fi',89],['La La Land',2016,'Comedy,Drama,Romance',86],['Her',2013,'Drama,Romance,Sci-Fi',87],
+      ['Call Me by Your Name',2017,'Drama,Romance',84],['Before Sunrise',1995,'Drama,Romance',86],['Moonlight',2016,'Drama',87],
+      ['The Wolf of Wall Street',2013,'Comedy,Crime,Drama',86],['Catch Me If You Can',2002,'Crime,Drama',85],['American Beauty',1999,'Drama',86],
+      ['Good Will Hunting',1997,'Drama,Romance',87],['A Beautiful Mind',2001,'Drama',84],['The Social Network',2010,'Drama',87]
+    ];
+    var CAT=CATALOG.map(function(c){ return { title:c[0], year:c[1], genres:c[2].split(','), acclaim:c[3] }; });
+
+    function $(id){ return document.getElementById(id); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function normTitle(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+    function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
+    function persist(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
+    function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
+
+    var seen=loadArr(K_SEEN), watch=loadArr(K_WATCH);
+    var mode='seen', editId=null, seenSort='rating', rerollSeed=0;
+
+    /* ── taste model ─────────────────────────────────── */
+    function affinity(){
+      var sum={}, cnt={};
+      seen.forEach(function(f){ if(f.rating==null) return; (f.genres||[]).forEach(function(g){ sum[g]=(sum[g]||0)+(f.rating-65); cnt[g]=(cnt[g]||0)+1; }); });
+      var aff={}; Object.keys(cnt).forEach(function(g){ aff[g]=sum[g]/cnt[g]; });
+      return { aff:aff, cnt:cnt };
+    }
+    function topGenres(n){
+      // rank by total accumulated sentiment (affinity × how many you've seen),
+      // so a genre you watch a lot AND rate highly beats a single high-rated outlier
+      var a=affinity(); var ks=Object.keys(a.cnt);
+      ks.sort(function(x,y){ var sx=(a.aff[x]||0)*a.cnt[x], sy=(a.aff[y]||0)*a.cnt[y]; if(sy!==sx) return sy-sx; return a.cnt[y]-a.cnt[x]; });
+      return ks.slice(0,n);
+    }
+    function favDecade(){
+      var sum={}, cnt={};
+      seen.forEach(function(f){ if(f.rating==null||!f.year) return; var d=Math.floor(f.year/10)*10; sum[d]=(sum[d]||0)+f.rating; cnt[d]=(cnt[d]||0)+1; });
+      var best=null,bv=-1; Object.keys(cnt).forEach(function(d){ if(cnt[d]<2) return; var avg=sum[d]/cnt[d]; if(avg>bv){bv=avg;best=+d;} });
+      return best;
+    }
+    function avgRating(){ var r=seen.filter(function(f){return f.rating!=null;}); if(!r.length) return null; return Math.round(r.reduce(function(a,f){return a+f.rating;},0)/r.length); }
+
+    function recommend(limit){
+      var have={}; seen.forEach(function(f){ have[normTitle(f.title)]=1; }); watch.forEach(function(f){ have[normTitle(f.title)]=1; });
+      var a=affinity(), fav=favDecade();
+      var scored=CAT.filter(function(c){ return !have[normTitle(c.title)]; }).map(function(c){
+        var s=c.acclaim;
+        var bestG=null, bestA=-999;
+        c.genres.forEach(function(g){ if(a.cnt[g]){ var v=Math.max(-20,Math.min(28,a.aff[g])); s+=v*0.85; if(a.aff[g]>bestA){bestA=a.aff[g];bestG=g;} } });
+        if(fav!=null && c.year && Math.floor(c.year/10)*10===fav) s+=6;
+        // re-roll jitter (deterministic per seed so re-render is stable)
+        var jitter=((Math.sin((CAT.indexOf(c)+1)*(rerollSeed+1)*12.9898)*43758.5453)%1+1)%1;
+        s+=jitter*9;
+        var why;
+        if(bestG && bestA>4) why='Because you rate '+bestG+' highly';
+        else if(c.acclaim>=93) why='An all-time great';
+        else if(fav!=null && c.year && Math.floor(c.year/10)*10===fav) why='From your favourite era — the '+fav+'s';
+        else why='Widely acclaimed';
+        return { c:c, score:s, why:why };
+      });
+      scored.sort(function(x,y){ return y.score-x.score; });
+      return scored.slice(0,limit);
+    }
+
+    /* ── form ────────────────────────────────────────── */
+    var selGenres={};
+    function buildGenres(){
+      $('mvGenres').innerHTML=GENRES.map(function(g){ return '<span class="mv-chip" data-g="'+esc(g)+'">'+esc(g)+'</span>'; }).join('');
+    }
+    function syncGenreChips(){ Array.prototype.forEach.call($('mvGenres').children,function(ch){ ch.classList.toggle('on',!!selGenres[ch.getAttribute('data-g')]); }); }
+    function setMode(m){ mode=m; Array.prototype.forEach.call($('mvSeg').children,function(b){ b.classList.toggle('on',b.getAttribute('data-mode')===m); });
+      $('mvRateWrap').classList.toggle('hidden', m!=='seen');
+      $('mvSave').textContent = m==='seen' ? (editId?'Update film':'Save film') : 'Add to watchlist';
+      $('formTitle').textContent = editId ? 'Edit film' : (m==='seen'?'Add a film':'Add to watchlist');
+    }
+    function resetForm(){ editId=null; selGenres={}; $('mvTitle').value=''; $('mvYear').value=''; $('mvNote').value=''; $('mvRate').value=75; $('mvRateVal').innerHTML='75<small>/100</small>'; syncGenreChips(); setMode(mode); }
+    function toast(m){ var t=$('mvToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1700); }
+
+    function save(){
+      var title=$('mvTitle').value.trim(); if(!title){ toast('Add a title'); return; }
+      var year=parseInt($('mvYear').value,10); if(!(year>=1900&&year<=2100)) year=null;
+      var genres=Object.keys(selGenres).filter(function(g){return selGenres[g];});
+      var note=$('mvNote').value.trim();
+      if(mode==='seen'){
+        var rating=parseInt($('mvRate').value,10); if(isNaN(rating)) rating=75;
+        if(editId){ var i=seen.findIndex(function(f){return f.id===editId;});
+          if(i>-1){ seen[i]={ id:editId, title:title, year:year, genres:genres, rating:rating, note:note, dateKey:seen[i].dateKey||todayKey(), ts:Date.now() }; } }
+        else { seen.push({ id:uid(), title:title, year:year, genres:genres, rating:rating, note:note, dateKey:todayKey(), ts:Date.now() });
+          // if it was on the watchlist, take it off
+          var wi=watch.findIndex(function(f){return normTitle(f.title)===normTitle(title);}); if(wi>-1){ watch.splice(wi,1); persist(K_WATCH,watch); } }
+        persist(K_SEEN,seen); toast(editId?'Updated ✓':'Logged ✓');
+      } else {
+        if(watch.some(function(f){return normTitle(f.title)===normTitle(title);})||seen.some(function(f){return normTitle(f.title)===normTitle(title);})){ toast('Already on your lists'); return; }
+        watch.push({ id:uid(), title:title, year:year, genres:genres, note:note, ts:Date.now() });
+        persist(K_WATCH,watch); toast('Added ✓');
+      }
+      flush(); resetForm(); render();
+    }
+
+    function addToWatchByTitle(c){
+      if(watch.some(function(f){return normTitle(f.title)===normTitle(c.title);})){ toast('Already on watchlist'); return; }
+      watch.push({ id:uid(), title:c.title, year:c.year, genres:c.genres.slice(), note:'', ts:Date.now() });
+      persist(K_WATCH,watch); flush(); toast('Added to watchlist'); render();
+    }
+    function editSeen(id){ var f=seen.find(function(x){return x.id===id;}); if(!f) return; editId=id; mode='seen';
+      $('mvTitle').value=f.title||''; $('mvYear').value=f.year||''; $('mvNote').value=f.note||''; $('mvRate').value=f.rating!=null?f.rating:75;
+      $('mvRateVal').innerHTML=(f.rating!=null?f.rating:75)+'<small>/100</small>'; selGenres={}; (f.genres||[]).forEach(function(g){selGenres[g]=1;}); syncGenreChips(); setMode('seen');
+      window.scrollTo({top:0,behavior:'smooth'}); }
+    function delSeen(id){ var f=seen.find(function(x){return x.id===id;}); if(!f) return; if(!confirm('Remove “'+f.title+'”?')) return;
+      seen=seen.filter(function(x){return x.id!==id;}); persist(K_SEEN,seen); flush(); if(editId===id) resetForm(); render(); }
+    function watchToSeen(id){ var f=watch.find(function(x){return x.id===id;}); if(!f) return; editId=null; mode='seen';
+      $('mvTitle').value=f.title||''; $('mvYear').value=f.year||''; $('mvNote').value=''; $('mvRate').value=75; $('mvRateVal').innerHTML='75<small>/100</small>';
+      selGenres={}; (f.genres||[]).forEach(function(g){selGenres[g]=1;}); syncGenreChips(); setMode('seen'); window.scrollTo({top:0,behavior:'smooth'}); toast('Rate it, then save'); }
+    function delWatch(id){ watch=watch.filter(function(x){return x.id!==id;}); persist(K_WATCH,watch); flush(); render(); }
+
+    function scoreColor(r){ if(r>=85) return 'rgba(52,226,176,.9)'; if(r>=70) return 'rgba(var(--mv),.9)'; if(r>=50) return 'rgba(242,192,99,.9)'; return 'rgba(255,143,163,.85)'; }
+
+    /* ── render ───────────────────────────────────────── */
+    function render(){
+      seen=loadArr(K_SEEN); watch=loadArr(K_WATCH);
+
+      // snapshot
+      $('snSeen').textContent=seen.length;
+      var avg=avgRating(); $('snAvg').textContent=avg!=null?avg:'—';
+      $('snWatch').textContent=watch.length;
+      var tg=topGenres(1); $('snTop').textContent=tg.length?tg[0]:'—';
+      if(seen.length||watch.length){ $('mvSub').textContent=seen.length+' rated · '+watch.length+' to watch'+(avg!=null?' · avg '+avg:''); }
+
+      // taste
+      if(seen.filter(function(f){return f.rating!=null;}).length>=3){
+        $('tasteCard').classList.remove('hidden');
+        var tgs=topGenres(3), fav=favDecade(), a=affinity();
+        var pills=tgs.map(function(g){ return '<div class="mv-taste-pill"><b>'+esc(g)+'</b><span>'+(a.cnt[g])+' film'+(a.cnt[g]>1?'s':'')+' · '+(a.aff[g]>=0?'+':'')+Math.round(a.aff[g])+'</span></div>'; });
+        pills.push('<div class="mv-taste-pill"><b>'+(avg!=null?avg:'—')+'</b><span>Avg rating</span></div>');
+        if(fav!=null) pills.push('<div class="mv-taste-pill"><b>'+fav+'s</b><span>Favourite era</span></div>');
+        $('tasteBody').innerHTML=pills.join('');
+      } else $('tasteCard').classList.add('hidden');
+
+      // recommendations
+      var recs=recommend(8);
+      $('recBody').innerHTML=recs.length?recs.map(function(r){
+        return '<div class="mv-rec"><div class="mv-rec-main">'+
+          '<div class="mv-rec-title">'+esc(r.c.title)+' <span class="yr">'+(r.c.year||'')+'</span></div>'+
+          '<div class="mv-rec-tags">'+esc(r.c.genres.join(' · '))+'</div>'+
+          '<div class="mv-rec-why">'+esc(r.why)+'</div></div>'+
+          '<div class="mv-mini"><button type="button" class="mv-mb add" data-rec="'+esc(r.c.title)+'">＋ List</button></div></div>';
+      }).join(''):'<div class="mv-empty">You’ve seen everything in the catalogue. Legend.</div>';
+
+      // watchlist
+      if(watch.length){
+        $('watchCard').classList.remove('hidden');
+        var wsorted=watch.slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+        $('watchBody').innerHTML=wsorted.map(function(f){
+          return '<div class="mv-rec"><div class="mv-rec-main">'+
+            '<div class="mv-rec-title">'+esc(f.title)+' <span class="yr">'+(f.year||'')+'</span></div>'+
+            (f.genres&&f.genres.length?'<div class="mv-rec-tags">'+esc(f.genres.join(' · '))+'</div>':'')+'</div>'+
+            '<div class="mv-mini"><button type="button" class="mv-mb add" data-seen="'+esc(f.id)+'">▶ Seen</button>'+
+            '<button type="button" class="mv-mb del" data-delw="'+esc(f.id)+'">✕</button></div></div>';
+        }).join('');
+      } else $('watchCard').classList.add('hidden');
+
+      // seen list
+      if(seen.length){
+        $('seenCard').classList.remove('hidden');
+        var rows=seen.slice();
+        if(seenSort==='rating') rows.sort(function(a,b){ return (b.rating||0)-(a.rating||0) || (b.ts||0)-(a.ts||0); });
+        else rows.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+        $('seenBody').innerHTML=rows.map(function(f){
+          return '<div class="mv-seen-row">'+
+            '<div class="mv-score-badge" style="background:'+scoreColor(f.rating||0).replace('.9)','.16)').replace('.85)','.16)')+';color:'+scoreColor(f.rating||0)+'">'+(f.rating!=null?f.rating:'—')+'</div>'+
+            '<div class="mv-rec-main"><div class="mv-rec-title">'+esc(f.title)+' <span class="yr">'+(f.year||'')+'</span></div>'+
+            (f.genres&&f.genres.length?'<div class="mv-rec-tags">'+esc(f.genres.join(' · '))+'</div>':'')+
+            (f.note?'<div class="mv-rec-why" style="color:var(--au-dim)">'+esc(f.note)+'</div>':'')+'</div>'+
+            '<div class="mv-mini"><button type="button" class="mv-mb" data-edit="'+esc(f.id)+'">Edit</button>'+
+            '<button type="button" class="mv-mb del" data-dels="'+esc(f.id)+'">✕</button></div></div>';
+        }).join('');
+      } else $('seenCard').classList.add('hidden');
+
+      $('mvEmpty').classList.toggle('hidden', seen.length>0||watch.length>0);
+    }
+
+    /* ── wiring ───────────────────────────────────────── */
+    buildGenres();
+    $('mvGenres').addEventListener('click',function(e){ var ch=e.target.closest('[data-g]'); if(!ch) return; var g=ch.getAttribute('data-g'); selGenres[g]=!selGenres[g]; syncGenreChips(); });
+    $('mvSeg').addEventListener('click',function(e){ var b=e.target.closest('[data-mode]'); if(!b) return; if(editId) resetForm(); setMode(b.getAttribute('data-mode')); });
+    $('mvRate').addEventListener('input',function(){ $('mvRateVal').innerHTML=$('mvRate').value+'<small>/100</small>'; });
+    $('mvSave').addEventListener('click',save);
+    $('mvReroll').addEventListener('click',function(){ rerollSeed=(rerollSeed+1)%9999; render(); });
+    $('seenSort').addEventListener('click',function(e){ var b=e.target.closest('[data-sort]'); if(!b) return; seenSort=b.getAttribute('data-sort'); Array.prototype.forEach.call($('seenSort').children,function(x){x.classList.toggle('on',x===b);}); render(); });
+    $('recBody').addEventListener('click',function(e){ var a=e.target.closest('[data-rec]'); if(!a) return; var t=a.getAttribute('data-rec'); var c=CAT.find(function(x){return x.title===t;}); if(c) addToWatchByTitle(c); });
+    $('watchBody').addEventListener('click',function(e){ var s=e.target.closest('[data-seen]'), d=e.target.closest('[data-delw]'); if(s) watchToSeen(s.getAttribute('data-seen')); else if(d) delWatch(d.getAttribute('data-delw')); });
+    $('seenBody').addEventListener('click',function(e){ var ed=e.target.closest('[data-edit]'), dl=e.target.closest('[data-dels]'); if(ed) editSeen(ed.getAttribute('data-edit')); else if(dl) delSeen(dl.getAttribute('data-dels')); });
+
+    setMode('seen'); render();
+
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_SEEN||ev.key===K_WATCH) render(); });
+    document.addEventListener('DOMContentLoaded',function(){
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'movies', syncedKeys:[K_SEEN,K_WATCH], onApplied:function(){ render(); } });
+      })();
+    });
+    // expose for self-test harness (no-op in app)
+    window.__mv={ recommend:recommend, affinity:affinity, topGenres:topGenres, favDecade:favDecade, normTitle:normTitle, CAT:CAT, _set:function(s,w){ seen=s; watch=w; } };
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
