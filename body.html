@@ -474,6 +474,7 @@
         if (!s.logs) s.logs = {};
         const t = today();
         s.logs[t] = (s.logs[t] || 0) + 1;
+        s._ts = Date.now(); // last-write-wins so undo/decrement survives cloud merge
         lsSave('po_water_v1', s);
         renderWater(); updateSnap();
       });
@@ -484,6 +485,7 @@
         const cur = s.logs[t] || 0;
         if (cur <= 0) return;
         s.logs[t] = cur - 1;
+        s._ts = Date.now(); // last-write-wins so this decrement isn't restored by Math.max merge
         lsSave('po_water_v1', s);
         renderWater(); updateSnap();
       });

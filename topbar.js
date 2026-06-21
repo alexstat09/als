@@ -444,6 +444,7 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
     state.logs = state.logs || {};
     const k = calendarDateKey();
     state.logs[k] = (state.logs[k] || 0) + 1;
+    state._ts = Date.now(); // last-write-wins so the water count stays editable across devices
     try { localStorage.setItem('po_water_v1', JSON.stringify(state)); } catch (e) {}
     render();
     const btn = document.getElementById('topbarWaterAdd');
