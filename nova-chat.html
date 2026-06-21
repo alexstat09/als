@@ -208,6 +208,9 @@
       sendBtn.disabled = on || !input.value.trim();
       status.textContent = on ? 'Thinking…' : 'online · ' + BUILD;
       root.classList.toggle('nv-live', on);
+      // Nova comes alive: the header orb "thinks" while generating a reply.
+      var orb = document.querySelector('.nova');
+      if(orb){ orb.classList.toggle('is-thinking', on); if(on) orb.classList.remove('is-listening'); }
     }
 
     async function send(text){
@@ -253,6 +256,9 @@
     function autosize(){ input.style.height='auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; setBarSpace(); }
 
     input.addEventListener('input', function(){ autosize(); sendBtn.disabled = busy || !input.value.trim(); });
+    // Nova "listens" while you're typing to it.
+    input.addEventListener('focus', function(){ if(!busy){ var orb=document.querySelector('.nova'); if(orb) orb.classList.add('is-listening'); } });
+    input.addEventListener('blur', function(){ var orb=document.querySelector('.nova'); if(orb) orb.classList.remove('is-listening'); });
     input.addEventListener('keydown', function(e){
       if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); }
     });

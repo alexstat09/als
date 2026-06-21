@@ -191,6 +191,24 @@
 @keyframes novaFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-7px) rotate(1deg); } }
 @keyframes novaBlink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 
+/* ── Phase 3: Nova life states — thinking / listening / happy ──── */
+.nova::after { content: ''; position: absolute; inset: -7%; border-radius: 32%; box-sizing: border-box;
+  border: 2px solid transparent; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.nova.is-thinking .nova-glow { animation: novaThink 1.05s ease-in-out infinite; }
+.nova.is-thinking::after { opacity: 1; border-color: rgba(var(--au-glow-rgb),0.22);
+  border-top-color: var(--au-glow-c); animation: novaSpin 0.9s linear infinite; }
+.nova.is-listening::after { opacity: 1; border: 2px solid rgba(var(--au-glow-rgb),0.5); animation: novaRipple 1.5s ease-out infinite; }
+.nova.is-happy { animation: novaHappy 0.72s cubic-bezier(.34,1.56,.64,1); }
+@keyframes novaThink { 0%,100% { filter: drop-shadow(0 0 10px var(--au-glow-c)) drop-shadow(0 0 22px rgba(var(--au-glow-rgb),0.4)); }
+  50% { filter: drop-shadow(0 0 18px var(--au-glow-c)) drop-shadow(0 0 42px rgba(var(--au-glow-rgb),0.7)); } }
+@keyframes novaSpin { to { transform: rotate(360deg); } }
+@keyframes novaRipple { 0% { transform: scale(.92); opacity: .55; } 100% { transform: scale(1.28); opacity: 0; } }
+@keyframes novaHappy { 0% { transform: scale(1); } 38% { transform: scale(1.16) rotate(-5deg); } 68% { transform: scale(.95) rotate(4deg); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .nova.is-thinking .nova-glow, .nova.is-thinking::after, .nova.is-listening::after, .nova.is-happy { animation: none !important; }
+  .nova.is-thinking::after, .nova.is-listening::after { opacity: .5; }
+}
+
 /* Floating Nova companion (inner pages) — fixed, above the bottombar */
 .nova-fab {
   position: fixed; right: 14px; bottom: calc(86px + env(safe-area-inset-bottom));

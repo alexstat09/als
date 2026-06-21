@@ -28,6 +28,14 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Nova Life: reactive orb states (think / listen / happy) API.
+  (function loadNovaLife(){ try {
+    if (window.Nova || document.querySelector('script[data-nova-life]')) return;
+    var s = document.createElement('script'); s.src = 'nova-life.js'; s.defer = true;
+    s.setAttribute('data-nova-life', '');
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
