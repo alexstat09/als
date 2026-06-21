@@ -20,6 +20,14 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Living Aurora: the data-reactive ambient background, on every page.
+  (function loadAuroraBg(){ try {
+    if (window.AuroraBG || document.querySelector('script[data-aurora-bg]')) return;
+    var s = document.createElement('script'); s.src = 'aurora-bg.js'; s.defer = true;
+    s.setAttribute('data-aurora-bg', '');
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
