@@ -249,15 +249,23 @@ html, body { -webkit-text-size-adjust: 100%; }
 }
 body.topbar-modal-open { overflow: hidden; }
 /* ── PAGE TRANSITIONS ─────────────────────────────────── */
-body { animation: _tbIn 0.32s cubic-bezier(0.16,1,0.3,1) both; }
-@keyframes _tbIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-@keyframes _tbOut { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-7px); } }
-body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-events:none; }
+body { animation: _tbIn 0.38s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes _tbIn  { from { opacity:0; transform:translateY(11px) scale(.993); } to { opacity:1; transform:none; } }
+@keyframes _tbOut { from { opacity:1; transform:scale(1); } to { opacity:0; transform:scale(1.018); } }
+body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important; pointer-events:none; }
+/* a leaving hub tile "opens" — zooms up + brightens as the page dissolves into the aurora */
+.tb-tile-open { animation: _tbTileOpen 0.2s cubic-bezier(.2,.8,.2,1) forwards !important; position: relative; z-index: 6; }
+@keyframes _tbTileOpen { to { transform: scale(1.07); filter: brightness(1.18); } }
+@media (prefers-reduced-motion: reduce) {
+  body, body.tb-out, .tb-tile-open { animation: none !important; }
+  body.tb-out { opacity: 0; }
+}
 /* scan line */
 .tb-scan {
-  position: fixed; left:0; right:0; height:1px; z-index:9999; pointer-events:none;
-  background: linear-gradient(90deg, transparent, rgba(125,211,252,0.4), transparent);
-  animation: _tbScan 0.75s cubic-bezier(0.4,0,0.2,1) forwards;
+  position: fixed; left:0; right:0; height:2px; z-index:9999; pointer-events:none;
+  background: linear-gradient(90deg, transparent, var(--au-glow-c, rgba(125,211,252,0.75)) 50%, transparent);
+  box-shadow: 0 0 14px var(--au-glow-c, rgba(125,211,252,0.5));
+  animation: _tbScan 0.8s cubic-bezier(0.4,0,0.2,1) forwards;
 }
 @keyframes _tbScan {
   0%   { top:0;    opacity:0; }
@@ -514,6 +522,8 @@ body.tb-out { animation: _tbOut 0.17s ease-in forwards !important; pointer-event
       if (a.target === '_blank') return;
       e.preventDefault();
       sessionStorage.setItem('_tbPrev', window.location.href);
+      // morph cue: a tapped hub tile zooms/brightens as the page dissolves
+      if (a.classList && a.classList.contains('tile')) a.classList.add('tb-tile-open');
       document.body.classList.add('tb-out');
       setTimeout(() => { window.location.href = href; }, 170);
     });
