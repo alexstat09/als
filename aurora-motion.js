@@ -85,6 +85,15 @@
 
   // ── reveal (fade + rise / scale) ──────────────────────────
   var revealIO = null;
+  // Safety net: anything observed but never revealed (IO misfire, weird
+  // browser) is force-shown after a beat so content can NEVER stay hidden.
+  var pendingReveal = [];
+  var safetyScheduled = false;
+  function scheduleRevealSafety() {
+    if (safetyScheduled) return; safetyScheduled = true;
+    setTimeout(function () { pendingReveal.slice().forEach(function (el) { playReveal(el); }); pendingReveal.length = 0; }, 2600);
+  }
+  function unpend(el) { var i = pendingReveal.indexOf(el); if (i > -1) pendingReveal.splice(i, 1); }
   function ensureRevealIO() {
     if (revealIO || !window.IntersectionObserver) return revealIO;
     revealIO = new IntersectionObserver(function (entries) {
@@ -108,6 +117,7 @@
     else el.style.transform = 'translate3d(0,18px,0)';
   }
   function playReveal(el) {
+    unpend(el);
     var delay = +el.getAttribute('data-am-delay') || 0;
     if (REDUCED) { clearReveal(el); runRevealHooks(el); return; }
     setTimeout(function () {
@@ -141,7 +151,8 @@
       if (opts.stagger) el.setAttribute('data-am-delay', (opts.delay || 0) + i * opts.stagger);
       else if (opts.delay) el.setAttribute('data-am-delay', opts.delay);
       setRevealStart(el, kind);
-      if (io) io.observe(el); else playReveal(el); // no IO → just play
+      if (io) { io.observe(el); if (!REDUCED) { pendingReveal.push(el); scheduleRevealSafety(); } }
+      else playReveal(el); // no IO → just play
     });
   }
 
@@ -222,15 +233,34 @@
   }
   function auto(root) {
     root = root || document;
-    // grouped staggered reveals
-    resolve('[data-am-reveal-group]').forEach(function (group) {
+    // grouped staggered reveals — explicit opt-in AND the app's modern
+    // `<main class="*-wrap">` pages get card reveals for free (zero edits).
+    resolve('[data-am-reveal-group], main[class*="-wrap"]').forEach(function (group) {
       if (group.__amGroup) return; group.__amGroup = 1;
-      var kids = Array.prototype.filter.call(group.children, function (c) { return c.nodeType === 1; });
-      var stg = group.hasAttribute('data-am-stagger') ? +group.getAttribute('data-am-stagger') : 90;
+      var kids = Array.prototype.filter.call(group.children, function (c) { return c.nodeType === 1 && !(c.hasAttribute && c.hasAttribute('data-am-no-reveal')); });
+      var stg = group.hasAttribute('data-am-stagger') ? +group.getAttribute('data-am-stagger') : 80;
       reveal(kids, { stagger: stg });
     });
     // individual reveals
     reveal('[data-am-reveal]');
+
+    // auto count-up of the app's snapshot stats. Safe: only animates pure
+    // integers in childless elements, so units (75<small>cm</small>),
+    // money ("CHF 1.2k"), decimals and "—" are left untouched.
+    resolve('[class$="-snap-v"], .im-stat b').forEach(function (el) {
+      if (el.__amSnap) return; el.__amSnap = 1;
+      if (el.children && el.children.length) return;
+      var txt = (el.textContent || '').trim();
+      if (!/^\d{1,9}$/.test(txt)) return;
+      if (REDUCED) return;
+      var target = parseInt(txt, 10);
+      if (!target) return; // 0 → nothing to count
+      var io = ensureRevealIO();
+      el.textContent = '0';
+      var fired = false, run = function () { if (fired) return; fired = true; count(el, target, { from: 0 }); };
+      if (io) { var once = new IntersectionObserver(function (ents) { ents.forEach(function (en) { if (en.isIntersecting) { run(); once.unobserve(el); } }); }, { threshold: 0.1 }); once.observe(el); }
+      setTimeout(run, 1500); // safety: never leave it stuck on 0
+    });
     // counts / rings NOT inside a reveal still fire on their own scroll-in
     resolve('[data-am-count]').forEach(function (el) {
       if (el.__amReveal || el.__amCounted) return;            // handled via reveal
