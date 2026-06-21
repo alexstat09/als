@@ -239,6 +239,19 @@
     })();
   }
 
+  // ── haptics (best-effort: Android/Chrome support it; iOS Safari is a no-op) ──
+  function haptic(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern == null ? 12 : pattern); } catch (e) {} }
+
+  // ── celebrate: one call for a milestone moment ─────────────
+  // burst (skippable) + aurora flare + Nova happy + a haptic tap.
+  function celebrate(opts) {
+    opts = opts || {};
+    if (opts.burst !== false) burst(opts);
+    try { if (window.AuroraBG && window.AuroraBG.flare) window.AuroraBG.flare(); } catch (e) {}
+    try { if (window.Nova && window.Nova.happy) window.Nova.happy(); } catch (e) {}
+    haptic(opts.haptic != null ? opts.haptic : [12, 40, 18]);
+  }
+
   // ── declarative count hook ────────────────────────────────
   function runCountHook(el) {
     var to = parseNum(el.getAttribute('data-am-count'));
@@ -342,6 +355,8 @@
     drawRing: drawRing,
     ring: ring,
     burst: burst,
+    haptic: haptic,
+    celebrate: celebrate,
     auto: auto,
     refresh: function (root) { auto(root); },
     loadGSAP: loadGSAP,

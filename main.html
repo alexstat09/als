@@ -1226,7 +1226,21 @@ body::after {
     });
 
     const card = document.getElementById('gmCardToday');
-    card.classList.toggle('gm-all-done', total > 0 && done === total);
+    const allDone = total > 0 && done === total;
+    card.classList.toggle('gm-all-done', allDone);
+    // Phase 6: celebrate the moment the day's goals are all completed — once per
+    // day, and only on a genuine transition (never on a reload that's already done).
+    try {
+      if (window.__gmDonePrev === undefined) { window.__gmDonePrev = allDone; }
+      else if (allDone && !window.__gmDonePrev) {
+        const dk = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+        if (localStorage.getItem('gm_celebrated') !== dk) {
+          localStorage.setItem('gm_celebrated', dk);
+          if (window.AuroraMotion && AuroraMotion.celebrate) AuroraMotion.celebrate();
+        }
+      }
+      window.__gmDonePrev = allDone;
+    } catch (e) {}
 
     const pushBtn = document.getElementById('gmPushBtn');
     pushBtn.style.display = (total > 0 && done < total) ? 'block' : 'none';
