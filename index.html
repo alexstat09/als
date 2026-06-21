@@ -285,6 +285,7 @@ body::after {
 .tile-movies    { --accent-rgb:214,142,247; }
 .tile-bills     { --accent-rgb:90,210,160; }
 .tile-improve   { --accent-rgb:168,214,110; }
+.tile-arc       { --accent-rgb:150,130,255; }
 
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
@@ -952,6 +953,15 @@ body::after {
       <div class="tile-footer"><span class="tile-sub">Learning queue · habits</span><span class="tile-arrow">→</span></div>
     </a>
 
+    <!-- ·13 Your Arc -->
+    <a class="tile tile-arc wide" href="arc.html">
+      <div class="tile-top"><span class="tile-num">·13</span><span class="tile-emoji">🌌</span></div>
+      <div class="tile-spacer"></div>
+      <div class="tile-live" id="livArc">—</div>
+      <div class="tile-title">Your Arc</div>
+      <div class="tile-footer"><span class="tile-sub">A cinematic scroll through your data</span><span class="tile-arrow">→</span></div>
+    </a>
+
   </div>
 </div>
 
@@ -1158,6 +1168,24 @@ function liveData() {
     if (vids.length||habs.length) set('livImprove', toWatch+' to watch · '+building+' habit'+(building===1?'':'s'));
     else set('livImprove', 'Queue something worth learning');
   } catch(e){ set('livImprove',''); }
+
+  /* Your Arc — days tracked + workouts */
+  try {
+    const pad=n=>String(n).padStart(2,'0');
+    const tk=(()=>{ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
+    const W=JSON.parse(localStorage.getItem('po_coach_weights'))||[];
+    const WO=JSON.parse(localStorage.getItem('po_workouts'))||[];
+    const SL=JSON.parse(localStorage.getItem('sleep:logs'))||[];
+    const dates=[];
+    (Array.isArray(W)?W:[]).forEach(e=>{ if(e&&e.dateKey) dates.push(e.dateKey); });
+    (Array.isArray(WO)?WO:[]).forEach(e=>{ if(e&&e.date) dates.push(e.date); });
+    (Array.isArray(SL)?SL:[]).forEach(e=>{ if(e&&e.dateKey) dates.push(e.dateKey); });
+    dates.sort();
+    const wc=(Array.isArray(WO)?WO:[]).filter(w=>w&&w.date).length;
+    if(dates.length){ const days=Math.round((new Date(tk+'T00:00:00')-new Date(dates[0]+'T00:00:00'))/86400000)+1;
+      set('livArc', days+' days · '+wc+' workouts'); }
+    else set('livArc', 'Your story, drawn live');
+  } catch(e){ set('livArc','Your story, drawn live'); }
 
   /* Identity — habits done today or North Star prompt */
   try {

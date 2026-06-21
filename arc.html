@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Your Arc · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --arc:150,130,255; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(90px + env(safe-area-inset-bottom)); }
+
+    .arc-act{ max-width:640px; margin:0 auto; padding:0 20px; min-height:88vh; display:flex; flex-direction:column; justify-content:center; }
+    .arc-act.hero{ min-height:94vh; }
+    .arc-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.26em; text-transform:uppercase; color:rgba(var(--arc),.9); margin-bottom:16px; }
+    .arc-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); line-height:1.04; letter-spacing:-.01em; }
+    .hero .arc-title{ font-size:clamp(44px,15vw,86px); }
+    .arc-act h2.arc-title{ font-size:clamp(30px,8vw,46px); margin-bottom:10px; }
+    .arc-sub{ font-size:15px; color:var(--au-dim); line-height:1.5; margin-top:14px; max-width:42ch; }
+    .arc-sub b{ color:var(--au-ivory); font-weight:600; }
+
+    .arc-hero-stats{ display:flex; gap:26px; margin-top:34px; flex-wrap:wrap; }
+    .arc-hs b{ display:block; font-family:var(--au-mono); font-size:30px; font-weight:800; color:#fff; letter-spacing:-.02em; line-height:1; }
+    .arc-hs span{ display:block; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--au-faint); margin-top:8px; }
+    .arc-scrollcue{ position:absolute; left:50%; bottom:26px; transform:translateX(-50%); font-family:var(--au-mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint); animation:arcBob 2.4s ease-in-out infinite; }
+    @keyframes arcBob{ 0%,100%{ transform:translate(-50%,0); opacity:.5; } 50%{ transform:translate(-50%,6px); opacity:1; } }
+
+    .arc-canvas-wrap{ position:relative; margin-top:26px; }
+    canvas.arc-canvas{ display:block; width:100%; height:230px; }
+    .arc-stats{ display:flex; gap:22px; margin-top:18px; flex-wrap:wrap; }
+    .arc-stat b{ display:block; font-family:var(--au-mono); font-size:22px; font-weight:800; color:#fff; letter-spacing:-.02em; line-height:1; }
+    .arc-stat b small{ font-size:11px; font-weight:600; color:var(--au-dim); }
+    .arc-stat span{ display:block; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-top:7px; }
+    .arc-delta.good{ color:var(--au-emerald,#34E2B0)!important; }
+    .arc-delta.bad{ color:#FF8FA3!important; }
+
+    .arc-empty{ margin-top:22px; padding:22px; border:1px dashed var(--au-line); border-radius:16px; text-align:center; color:var(--au-dim); font-size:13.5px; line-height:1.55; }
+    .arc-empty a{ color:rgba(var(--arc),.95); text-decoration:none; font-weight:700; }
+
+    .arc-close-line{ font-family:var(--au-serif); font-style:italic; font-size:clamp(20px,5.5vw,27px); line-height:1.4; color:var(--au-ivory); margin-top:6px; }
+    .arc-back{ display:inline-block; margin-top:30px; padding:13px 26px; border-radius:13px; background:rgb(var(--arc)); color:#140a26; font-weight:800; font-size:14px; text-decoration:none; box-shadow:0 6px 24px rgba(var(--arc),.3); }
+    .arc-foot{ text-align:center; color:var(--au-faint); font-size:11px; padding:30px 20px 8px; line-height:1.5; }
+    .hidden{ display:none!important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+
+  <section class="arc-act hero" style="position:relative">
+    <div class="arc-eyebrow">The story so far</div>
+    <h1 class="arc-title">Your Arc.</h1>
+    <div class="arc-sub" id="heroSub">Everything you've logged, drawn as one continuous line. Scroll slowly.</div>
+    <div class="arc-hero-stats">
+      <div class="arc-hs"><b id="hsDays">0</b><span>Days tracked</span></div>
+      <div class="arc-hs"><b id="hsWorkouts">0</b><span>Workouts</span></div>
+      <div class="arc-hs"><b id="hsTonnage">0</b><span>kg moved</span></div>
+    </div>
+    <div class="arc-scrollcue">Scroll ↓</div>
+  </section>
+
+  <section class="arc-act" id="actWeight">
+    <div class="arc-eyebrow">Bodyweight</div>
+    <h2 class="arc-title">The shape of you.</h2>
+    <div class="arc-sub" id="weightSub"></div>
+    <div class="arc-canvas-wrap"><canvas class="arc-canvas" id="cvWeight"></canvas></div>
+    <div class="arc-stats" id="weightStats"></div>
+    <div class="arc-empty hidden" id="weightEmpty">No weigh-ins yet. <a href="weight.html">Log your weight →</a> and your line starts here.</div>
+  </section>
+
+  <section class="arc-act" id="actStrength">
+    <div class="arc-eyebrow">Strength</div>
+    <h2 class="arc-title">Iron, accumulated.</h2>
+    <div class="arc-sub" id="strengthSub"></div>
+    <div class="arc-canvas-wrap"><canvas class="arc-canvas" id="cvStrength"></canvas></div>
+    <div class="arc-stats" id="strengthStats"></div>
+    <div class="arc-empty hidden" id="strengthEmpty">No workouts logged yet. <a href="gym.html">Start training →</a> and watch this rise.</div>
+  </section>
+
+  <section class="arc-act" id="actRecovery">
+    <div class="arc-eyebrow">Recovery</div>
+    <h2 class="arc-title">Your rhythm.</h2>
+    <div class="arc-sub" id="recoverySub"></div>
+    <div class="arc-canvas-wrap"><canvas class="arc-canvas" id="cvRecovery"></canvas></div>
+    <div class="arc-stats" id="recoveryStats"></div>
+    <div class="arc-empty hidden" id="recoveryEmpty">No recovery logged yet. <a href="sleep.html">Log a night →</a> to see your waves.</div>
+  </section>
+
+  <section class="arc-act" id="actClose">
+    <div class="arc-eyebrow">Today</div>
+    <h2 class="arc-title">This is your arc.</h2>
+    <div class="arc-close-line" id="closeLine">— and you're still drawing it.</div>
+    <div class="arc-stats" id="closeStats" style="margin-top:26px"></div>
+    <a href="index.html" class="arc-back">Back to the dashboard</a>
+  </section>
+
+  <div class="arc-foot">Generated live from your own data — it redraws itself every time you visit. Nothing here is uploaded.</div>
+
+  <script>
+  (function(){
+    'use strict';
+    function $(id){ return document.getElementById(id); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function daysBetween(a,b){ return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000); }
+    function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+    function r0(n){ return Math.round(n||0); }
+    function r1(n){ return Math.round((n||0)*10)/10; }
+    function reduced(){ try{ return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+    function isoWeek(dk){
+      var d=new Date(dk+'T00:00:00'); var day=(d.getDay()+6)%7; var x=new Date(d); x.setDate(d.getDate()-day+3);
+      var f=new Date(x.getFullYear(),0,4); var w=1+Math.round(((x-f)/86400000 - 3 + ((f.getDay()+6)%7))/7);
+      return x.getFullYear()+'-W'+pad(w);
+    }
+
+    /* ── data aggregation (pure, testable) ───────────────── */
+    function weightSeries(){
+      var a=ls('po_coach_weights'); if(!Array.isArray(a)) return [];
+      return a.filter(function(e){ return e && e.dateKey && typeof e.weight==='number'; })
+              .map(function(e){ return { d:e.dateKey, v:e.weight }; })
+              .sort(function(x,y){ return x.d.localeCompare(y.d); });
+    }
+    function volumeByWeek(){
+      var a=ls('po_workouts'); if(!Array.isArray(a)) return [];
+      var m={};
+      a.forEach(function(w){ if(!w||!w.date) return; var wk=isoWeek(w.date);
+        if(!m[wk]) m[wk]={ week:wk, volume:0, pr:false };
+        m[wk].volume += (+w.volume||0); if(w.prs && w.prs.length) m[wk].pr=true;
+      });
+      return Object.keys(m).sort().map(function(k){ return m[k]; });
+    }
+    function recoverySeries(){
+      var a=ls('sleep:logs'); if(!Array.isArray(a)) return [];
+      return a.filter(function(e){ return e && e.dateKey && typeof e.recovery==='number'; })
+              .map(function(e){ return { d:e.dateKey, v:e.recovery }; })
+              .sort(function(x,y){ return x.d.localeCompare(y.d); });
+    }
+    function summary(){
+      var W=ls('po_coach_weights')||[], WO=ls('po_workouts')||[], SL=ls('sleep:logs')||[];
+      var weights=weightSeries(), rec=recoverySeries();
+      var totalWorkouts=Array.isArray(WO)?WO.filter(function(w){return w&&w.date;}).length:0;
+      var totalVolume=Array.isArray(WO)?WO.reduce(function(s,w){return s+(+(w&&w.volume)||0);},0):0;
+      var totalPRs=Array.isArray(WO)?WO.reduce(function(s,w){return s+((w&&w.prs&&w.prs.length)||0);},0):0;
+      // earliest logged date across all sources
+      var dates=[];
+      (Array.isArray(W)?W:[]).forEach(function(e){ if(e&&e.dateKey) dates.push(e.dateKey); });
+      (Array.isArray(WO)?WO:[]).forEach(function(e){ if(e&&e.date) dates.push(e.date); });
+      (Array.isArray(SL)?SL:[]).forEach(function(e){ if(e&&e.dateKey) dates.push(e.dateKey); });
+      dates.sort();
+      var daysTracked = dates.length ? (daysBetween(dates[0], todayKey())+1) : 0;
+      var startW = weights.length ? weights[0].v : null;
+      var curW = weights.length ? weights[weights.length-1].v : null;
+      var avgRec = rec.length ? Math.round(rec.reduce(function(s,e){return s+e.v;},0)/rec.length) : null;
+      var bestRec = rec.length ? Math.max.apply(null, rec.map(function(e){return e.v;})) : null;
+      var gs=ls('goal_streak_v1'); var streak=(gs&&typeof gs.count==='number')?gs.count:(typeof gs==='number'?gs:0);
+      return { daysTracked:daysTracked, totalWorkouts:totalWorkouts, totalVolume:totalVolume, totalPRs:totalPRs,
+        startW:startW, curW:curW, weightDelta:(startW!=null&&curW!=null)?r1(curW-startW):null,
+        avgRec:avgRec, bestRec:bestRec, nightsLogged:rec.length, weighIns:weights.length, streak:streak };
+    }
+
+    /* ── canvas helpers ──────────────────────────────────── */
+    function rgba(rgb,a){ return 'rgba('+rgb+','+a+')'; }
+    function easeOut(t){ return 1-Math.pow(1-t,3); }
+    function roundRectPath(ctx,x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+    var PAD=20, PADT=20, PADB=24;
+    function lineLikeCoords(c, series){
+      var n=series.length; var vals=series.map(function(s){return s.v;});
+      var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals); var rng=(mx-mn)||1;
+      var pad = rng*0.12;
+      mn-=pad; mx+=pad; rng=(mx-mn)||1;
+      var xs=series.map(function(s,i){ return PAD + (c.w-2*PAD)*(n>1?i/(n-1):0.5); });
+      var ys=series.map(function(s){ return PADT + (c.h-PADT-PADB)*(1-(s.v-mn)/rng); });
+      return { xs:xs, ys:ys };
+    }
+    function drawCurve(c, series, p, rgb, fill){
+      var ctx=c.ctx; ctx.clearRect(0,0,c.w,c.h);
+      if(series.length<2) return;
+      var co=lineLikeCoords(c,series); var xs=co.xs, ys=co.ys;
+      var total=series.length-1; var drawn=clamp(p,0,1)*total; var fi=Math.floor(drawn-1e-9); if(fi<0) fi=0; var frac=drawn-fi;
+      // baseline
+      ctx.strokeStyle=rgba('255,255,255',0.06); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(PAD,c.h-PADB); ctx.lineTo(c.w-PAD,c.h-PADB); ctx.stroke();
+      // build path up to head
+      var hx,hy;
+      ctx.beginPath(); ctx.moveTo(xs[0],ys[0]);
+      for(var i=1;i<=fi;i++) ctx.lineTo(xs[i],ys[i]);
+      if(fi<total){ hx=xs[fi]+(xs[fi+1]-xs[fi])*frac; hy=ys[fi]+(ys[fi+1]-ys[fi])*frac; ctx.lineTo(hx,hy); }
+      else { hx=xs[total]; hy=ys[total]; }
+      if(fill){
+        ctx.save(); ctx.lineTo(hx,c.h-PADB); ctx.lineTo(xs[0],c.h-PADB); ctx.closePath();
+        var g=ctx.createLinearGradient(0,PADT,0,c.h-PADB); g.addColorStop(0,rgba(rgb,0.28)); g.addColorStop(1,rgba(rgb,0));
+        ctx.fillStyle=g; ctx.fill(); ctx.restore();
+      }
+      // redraw line crisp on top
+      ctx.beginPath(); ctx.moveTo(xs[0],ys[0]);
+      for(i=1;i<=fi;i++) ctx.lineTo(xs[i],ys[i]);
+      ctx.lineTo(hx,hy);
+      ctx.strokeStyle=rgba(rgb,0.95); ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.shadowColor=rgba(rgb,0.8); ctx.shadowBlur=12; ctx.stroke(); ctx.shadowBlur=0;
+      // head dot
+      ctx.beginPath(); ctx.arc(hx,hy,4.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.shadowColor=rgba(rgb,1); ctx.shadowBlur=16; ctx.fill(); ctx.shadowBlur=0;
+    }
+    function drawBars(c, items, p, rgb){
+      var ctx=c.ctx; ctx.clearRect(0,0,c.w,c.h);
+      var n=items.length; if(!n) return;
+      var mx=Math.max.apply(null,items.map(function(i){return i.volume;}))||1;
+      var gap=Math.max(2,Math.min(6,(c.w-2*PAD)/n*0.18)); var bw=((c.w-2*PAD)-gap*(n-1))/n;
+      ctx.strokeStyle=rgba('255,255,255',0.06); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(PAD,c.h-PADB); ctx.lineTo(c.w-PAD,c.h-PADB); ctx.stroke();
+      for(var i=0;i<n;i++){
+        var appear=clamp(p*n - i, 0, 1); if(appear<=0) continue;
+        var full=(c.h-PADT-PADB)*(items[i].volume/mx);
+        var bh=full*easeOut(appear); var x=PAD+i*(bw+gap), y=c.h-PADB-bh;
+        var g=ctx.createLinearGradient(0,y,0,c.h-PADB); g.addColorStop(0,rgba(rgb,0.85)); g.addColorStop(1,rgba(rgb,0.30));
+        ctx.fillStyle=g; roundRectPath(ctx,x,y,bw,bh,Math.min(3,bw/2)); ctx.fill();
+        if(items[i].pr && appear>0.55){ // PR star
+          ctx.save(); ctx.fillStyle='#fff'; ctx.shadowColor=rgba('242,192,99',1); ctx.shadowBlur=10;
+          star(ctx,x+bw/2,y-9,3.2,5); ctx.fill(); ctx.restore();
+        }
+      }
+    }
+    function star(ctx,cx,cy,rIn,rOut){ ctx.beginPath();
+      for(var i=0;i<10;i++){ var ang=Math.PI/5*i - Math.PI/2; var r=(i%2===0)?rOut:rIn; var px=cx+Math.cos(ang)*r, py=cy+Math.sin(ang)*r; if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);} ctx.closePath(); }
+
+    /* ── scroll-scrub engine (native, rAF-batched) ───────── */
+    var charts=[], RED=reduced();
+    function measure(c){ var rect=c.canvas.getBoundingClientRect(); c.w=rect.width; c.h=rect.height;
+      var dpr=Math.min(window.devicePixelRatio||1,2); c.canvas.width=Math.max(1,c.w*dpr); c.canvas.height=Math.max(1,c.h*dpr); c.ctx.setTransform(dpr,0,0,dpr,0,0); }
+    function progressOf(el){ var r=el.getBoundingClientRect(); var vh=window.innerHeight||800;
+      var start=vh*0.85, end=vh*0.30; return clamp((start - r.top)/(start-end), 0, 1); }
+    var ticking=false;
+    function frame(){ ticking=false; charts.forEach(function(c){ var p=RED?1:progressOf(c.el); if(Math.abs(p-(c._p==null?-1:c._p))>0.004 || (p===1&&c._p!==1) || (p===0&&c._p!==0)){ c._p=p; c.draw(p); } }); }
+    function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(frame); } }
+
+    function registerChart(canvasId, actId, drawFn){
+      var canvas=$(canvasId); if(!canvas) return null;
+      var c={ canvas:canvas, ctx:canvas.getContext('2d'), el:$(actId), w:0, h:0, _p:null, draw:function(p){ measureGuard(c); drawFn(c,p); } };
+      charts.push(c); return c;
+    }
+    var _measured=false;
+    function measureGuard(c){ if(!c.w){ measure(c); } }
+
+    /* ── build it ────────────────────────────────────────── */
+    function fmtKg(n){ return r1(n); }
+    function statEl(value, label, cls){ return '<div class="arc-stat"><b class="'+(cls||'')+'">'+value+'</b><span>'+label+'</span></div>'; }
+    function setNum(el, val, suffix){ if(!el) return; el.setAttribute('data-am-count', val); if(suffix) el.setAttribute('data-am-suffix', suffix); if(val>=1000) el.setAttribute('data-am-sep',''); }
+
+    function build(){
+      var s=summary();
+
+      // hero
+      setNum($('hsDays'), s.daysTracked);
+      setNum($('hsWorkouts'), s.totalWorkouts);
+      setNum($('hsTonnage'), s.totalVolume);
+      $('heroSub').innerHTML = s.daysTracked>0
+        ? 'Across <b>'+s.daysTracked+'</b> days you’ve logged <b>'+s.totalWorkouts+'</b> workouts and moved <b>'+r0(s.totalVolume).toLocaleString('en-US')+' kg</b> of iron. Here’s the line it draws.'
+        : 'Your story starts the moment you log something. Scroll on — then go make the first mark.';
+
+      // weight
+      var W=weightSeries();
+      if(W.length>=2){
+        $('weightSub').innerHTML='From <b>'+fmtKg(W[0].v)+' kg</b> to <b>'+fmtKg(W[W.length-1].v)+' kg</b>, every weigh-in a point on the line.';
+        var dcls=s.weightDelta<0?'good':s.weightDelta>0?'bad':'';
+        $('weightStats').innerHTML=
+          statEl('<small></small>'+fmtKg(W[0].v)+'<small> kg</small>','Start')+
+          statEl(fmtKg(W[W.length-1].v)+'<small> kg</small>','Now')+
+          statEl((s.weightDelta>0?'+':'')+fmtKg(s.weightDelta)+'<small> kg</small>','Change','arc-delta '+dcls)+
+          statEl(s.weighIns,'Weigh-ins');
+        registerChart('cvWeight','actWeight',function(c,p){ drawCurve(c,W,p,'24,200,192',true); });
+      } else { $('cvWeight').classList.add('hidden'); $('weightEmpty').classList.remove('hidden'); }
+
+      // strength
+      var V=volumeByWeek();
+      if(V.length>=1 && s.totalWorkouts>0){
+        $('strengthSub').innerHTML='<b>'+s.totalVolume.toLocaleString('en-US')+' kg</b> lifted across <b>'+s.totalWorkouts+'</b> sessions — week by week, the work stacks up.';
+        $('strengthStats').innerHTML=
+          statEl(s.totalWorkouts,'Sessions')+
+          statEl(r0(s.totalVolume/1000)+'<small>t</small>','Tonnage')+
+          statEl(s.totalPRs,'PRs set')+
+          statEl(V.length,'Weeks');
+        registerChart('cvStrength','actStrength',function(c,p){ drawBars(c,V,p,'242,192,99'); });
+      } else { $('cvStrength').classList.add('hidden'); $('strengthEmpty').classList.remove('hidden'); }
+
+      // recovery
+      var R=recoverySeries();
+      if(R.length>=2){
+        $('recoverySub').innerHTML='Your recovery, night after night — averaging <b>'+s.avgRec+'</b>, peaking at <b>'+s.bestRec+'</b>.';
+        $('recoveryStats').innerHTML=
+          statEl(s.avgRec,'Avg recovery')+
+          statEl(s.bestRec,'Best night')+
+          statEl(s.nightsLogged,'Nights');
+        registerChart('cvRecovery','actRecovery',function(c,p){ drawCurve(c,R,p,'52,226,176',true); });
+      } else { $('cvRecovery').classList.add('hidden'); $('recoveryEmpty').classList.remove('hidden'); }
+
+      // close
+      var closeStats=[];
+      if(s.streak>0) closeStats.push(statEl(s.streak,'Day streak'));
+      if(s.totalPRs>0) closeStats.push(statEl(s.totalPRs,'Lifetime PRs'));
+      if(s.daysTracked>0) closeStats.push(statEl(s.daysTracked,'Days in'));
+      $('closeStats').innerHTML=closeStats.join('');
+      $('closeLine').textContent = s.totalWorkouts>0
+        ? '— ' + s.totalWorkouts + ' sessions deep, and you’re still drawing it.'
+        : '— and the best part is, it’s only just begun.';
+
+      // animate the numbers once the engine is ready
+      whenAM(function(){ if(window.AuroraMotion) AuroraMotion.refresh(); });
+
+      // initial measure + paint
+      charts.forEach(measure);
+      requestAnimationFrame(function(){ charts.forEach(function(c){ var p=RED?1:progressOf(c.el); c._p=p; c.draw(p); }); });
+    }
+
+    function whenAM(cb){ if(window.AuroraMotion){ cb(); return; } var t=setInterval(function(){ if(window.AuroraMotion){ clearInterval(t); cb(); } },120); setTimeout(function(){ clearInterval(t); },4000); }
+
+    // Read-only "story" page: it just reads whatever the rest of the app has
+    // already synced into localStorage. No cloud writes (avoids touching the
+    // shared po-coach row that pocoach-sync.js owns).
+    function rebuild(){ charts.length=0;
+      ['cvWeight','cvStrength','cvRecovery'].forEach(function(id){ var e=$(id); if(e) e.classList.remove('hidden'); });
+      ['weightEmpty','strengthEmpty','recoveryEmpty'].forEach(function(id){ var e=$(id); if(e) e.classList.add('hidden'); });
+      build(); }
+    var rbTimer;
+    function rebuildSoon(){ clearTimeout(rbTimer); rbTimer=setTimeout(function(){ try{ rebuild(); }catch(e){} }, 200); }
+
+    window.addEventListener('scroll', onScroll, { passive:true });
+    var rsz; window.addEventListener('resize', function(){ clearTimeout(rsz); rsz=setTimeout(function(){ charts.forEach(measure); charts.forEach(function(c){ c.draw(c._p==null?0:c._p); }); }, 180); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) rebuildSoon(); });
+    window.addEventListener('storage', function(ev){ if(!ev || /po_coach_weights|po_workouts|sleep:logs|goal_streak_v1/.test(ev.key||'')) rebuildSoon(); });
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build, { once:true }); else build();
+
+    // expose for self-test
+    window.__arc={ weightSeries:weightSeries, volumeByWeek:volumeByWeek, recoverySeries:recoverySeries, summary:summary, isoWeek:isoWeek };
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=18" defer></script>
+</body>
+</html>
