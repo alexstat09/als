@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Import from Strong · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --im:242,192,99; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+    .im-hero{ max-width:620px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .im-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--im),.9); margin-bottom:11px; }
+    .im-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(23px,6vw,31px); line-height:1.08; }
+    .im-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; line-height:1.45; max-width:42ch; }
+    .im-orb{ flex:none; width:58px; height:58px; border-radius:17px; display:flex; align-items:center; justify-content:center; font-size:26px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--im),.22), rgba(var(--im),.04)); border:1px solid rgba(var(--im),.3); }
+    .im-wrap{ max-width:620px; margin:0 auto; padding:14px 18px; display:flex; flex-direction:column; gap:14px; }
+    .im-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:16px; padding:15px 16px; }
+    .im-card h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-dim); margin-bottom:11px; }
+    textarea.im-ta{ width:100%; min-height:150px; max-height:46vh; resize:vertical; background:rgba(0,0,0,.3); border:1px solid var(--au-line); border-radius:12px; color:var(--au-ivory); font-family:var(--au-mono); font-size:12px; line-height:1.5; padding:12px; outline:none; }
+    textarea.im-ta:focus{ border-color:rgba(var(--im),.45); }
+    .im-file{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .im-file label{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:1px dashed rgba(var(--im),.4); border-radius:12px; font-size:13px; font-weight:700; color:rgba(var(--im),.95); cursor:pointer; }
+    .im-file input{ display:none; }
+    .im-btn{ width:100%; margin-top:12px; border:none; border-radius:13px; padding:14px; font-family:var(--au-sans); font-size:14px; font-weight:800; cursor:pointer; }
+    .im-btn.primary{ background:rgb(var(--im)); color:#1c1304; box-shadow:0 6px 22px rgba(var(--im),.25); }
+    .im-btn.go{ background:linear-gradient(135deg,#F2C063,#E8A33D); color:#1c1304; box-shadow:0 6px 22px rgba(242,192,99,.25); }
+    .im-btn:disabled{ opacity:.4; cursor:default; box-shadow:none; }
+    .im-btn.ghost{ background:rgba(255,255,255,.04); color:var(--au-dim); border:1px solid var(--au-line); box-shadow:none; font-weight:700; }
+    .im-stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+    .im-stat{ text-align:center; padding:11px 4px; background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:12px; }
+    .im-stat b{ display:block; font-family:var(--au-mono); font-size:18px; font-weight:800; color:#fff; letter-spacing:-.02em; }
+    .im-stat span{ display:block; font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+    .im-line{ font-size:13px; color:var(--au-dim); line-height:1.5; margin-bottom:6px; }
+    .im-line b{ color:var(--au-ivory); }
+    .im-units{ display:flex; gap:8px; margin:4px 0 12px; }
+    .im-units button{ flex:1; padding:11px; border-radius:11px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-mono); font-size:12px; font-weight:800; letter-spacing:.08em; cursor:pointer; }
+    .im-units button.on{ background:rgb(var(--im)); color:#1c1304; border-color:rgb(var(--im)); }
+    .im-units-note{ font-size:11px; color:var(--au-faint); margin:-6px 0 12px; line-height:1.5; }
+    .im-toggle{ display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--au-line); cursor:pointer; }
+    .im-toggle:last-of-type{ border-bottom:none; }
+    .im-box{ flex:none; width:24px; height:24px; border-radius:7px; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:13px; color:#1c1304; }
+    .im-toggle.on .im-box{ background:rgb(var(--im)); border-color:rgb(var(--im)); }
+    .im-toggle-main{ flex:1; }
+    .im-toggle-t{ font-size:14px; color:var(--au-ivory); font-weight:600; }
+    .im-toggle-s{ font-size:11.5px; color:var(--au-faint); margin-top:2px; }
+    .im-warn{ margin-top:10px; font-size:11.5px; color:#E8C66B; line-height:1.5; }
+    .im-warn ul{ margin:6px 0 0 16px; }
+    .im-result{ font-size:14px; color:var(--au-ivory); line-height:1.6; }
+    .im-result b{ color:rgb(var(--im)); }
+    .im-help{ font-size:12px; color:var(--au-faint); line-height:1.55; }
+    .im-help b{ color:var(--au-dim); }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="im-hero">
+    <div>
+      <div class="im-eyebrow">Data import</div>
+      <div class="im-hero-line">Import from Strong</div>
+      <div class="im-hero-sub">Drop in your Strong export. I'll rebuild every session — exercises, sets, weights and reps — straight into your training history. Safe to re-run: duplicates are skipped.</div>
+    </div>
+    <div class="im-orb" aria-hidden="true">🏋️</div>
+  </header>
+
+  <main class="im-wrap">
+    <div class="im-card">
+      <h2>1 · Add your export</h2>
+      <div class="im-file">
+        <label for="imFile">📄 Choose strong.csv<input type="file" id="imFile" accept=".csv,text/csv,text/plain"></label>
+      </div>
+      <textarea class="im-ta" id="imTA" placeholder="…or paste the contents of your Strong CSV export here." autocomplete="off" spellcheck="false"></textarea>
+      <button class="im-btn primary" id="imPreview" type="button">Preview import</button>
+      <button class="im-btn ghost" id="imClear" type="button" style="margin-top:8px">Clear</button>
+    </div>
+
+    <div class="im-card hidden" id="imPrevCard">
+      <h2>2 · Preview</h2>
+      <div class="im-stat-row">
+        <div class="im-stat"><b id="stSess">0</b><span>New sessions</span></div>
+        <div class="im-stat"><b id="stSets">0</b><span>Sets</span></div>
+        <div class="im-stat"><b id="stEx">0</b><span>New exercises</span></div>
+        <div class="im-stat"><b id="stVol">0</b><span>Total volume</span></div>
+      </div>
+      <div class="im-line" id="imRange"></div>
+      <div class="im-line" id="imDup"></div>
+
+      <div style="margin-top:6px">
+        <div class="im-line" style="margin-bottom:4px;color:var(--au-faint);font-family:var(--au-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase">Weight unit in your file</div>
+        <div class="im-units" id="imUnits">
+          <button type="button" data-u="kg" class="on">KG</button>
+          <button type="button" data-u="lb">LB → KG</button>
+        </div>
+        <div class="im-units-note" id="imUnitNote"></div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="im-toggle on" id="tgHist" data-tg="hist"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Backfill workout history</div><div class="im-toggle-s">Every session lands in History & Progress · feeds streaks, PRs and Nova</div></div></div>
+        <div class="im-toggle on" id="tgEx" data-tg="ex"><div class="im-box">&#10003;</div><div class="im-toggle-main"><div class="im-toggle-t">Add exercises I don't recognise</div><div class="im-toggle-s">Anything not already in your library gets created so its history shows up</div></div></div>
+      </div>
+
+      <div class="im-warn hidden" id="imWarn"></div>
+      <button class="im-btn go" id="imGo" type="button" style="margin-top:14px">Import now</button>
+    </div>
+
+    <div class="im-card hidden" id="imDoneCard">
+      <h2>Done</h2>
+      <div class="im-result" id="imResult"></div>
+      <a class="im-btn primary" href="gym.html" style="display:block;text-align:center;text-decoration:none;margin-top:14px">Open Fitness →</a>
+    </div>
+
+    <div class="im-card">
+      <h2>How to export from Strong</h2>
+      <div class="im-help">In the Strong app open <b>Settings → Export Data → Export</b>, then share the CSV to yourself (AirDrop, Files, email). Open it here with <b>Choose strong.csv</b>, or paste its text above. Strong's column names line up with this app's exercises, so most lifts map automatically. Re-importing is always safe — sessions you've already imported are skipped.</div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pocoach-sync.js?v=2"></script>
+  <script>
+  (function(){
+    'use strict';
+    function $(id){ return document.getElementById(id); }
+    function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+    function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function r0(n){ return Math.round(n||0); }
+    function r2(n){ return Math.round((n||0)*100)/100; }
+    function norm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
+    function hash32(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h*33)^s.charCodeAt(i))>>>0; } return h.toString(36); }
+    var LB2KG=0.45359237;
+
+    // ── canonical exercise library (mirrors gym.html SEED_EX) ─────────
+    // [id, name, muscle, time?]  — time exercises log duration, not kg×reps
+    var CANON = [
+      ['barbell-bench','Bench Press (Barbell)','Chest'],['bench-press-db','Bench Press (Dumbbell)','Chest'],['bench-smith','Bench Press (Smith Machine)','Chest'],
+      ['incline-bench-bb','Incline Bench Press (Barbell)','Chest'],['inclinebench-smith','Incline Bench Press (Smith Machine)','Chest'],['incline-bench-db','Incline Bench Press (Dumbbell)','Chest'],
+      ['decline-bench-bb','Decline Bench Press (Barbell)','Chest'],['decline-bench-db','Decline Bench Press (Dumbbell)','Chest'],['chestpress-m','Chest Press (Machine)','Chest'],
+      ['isolateral-chest','Iso-Lateral Chest Press','Chest'],['chestfly','Chest Fly','Chest'],['pec-deck','Pec Deck (Machine)','Chest'],
+      ['cable-fly-high','Cable Fly (High to Low)','Chest'],['cable-fly-low','Cable Fly (Low to High)','Chest'],['incline-fly-db','Incline Fly (Dumbbell)','Chest'],
+      ['chest-dip','Chest Dip','Chest'],['pushup','Push Up','Chest'],['svend-press','Svend Press','Chest'],
+      ['deadlift','Deadlift (Barbell)','Back'],['trap-bar-deadlift','Trap Bar Deadlift','Back'],['pullup','Pull Up','Back'],['chinup','Chin Up','Back'],
+      ['assisted-pullup','Assisted Pull Up (Machine)','Back'],['latpulldown','Lat Pulldown (Machine)','Back'],['latpulldown-wide','Lat Pulldown (Wide Grip)','Back'],
+      ['latpulldown-close','Lat Pulldown (Close Grip)','Back'],['latpulldown-cable','Lat Pulldown (Cable)','Back'],['straightarm-pulldown','Straight Arm Pulldown (Cable)','Back'],
+      ['barbellrow','Bent Over Row (Barbell)','Back'],['pendlay-row','Pendlay Row (Barbell)','Back'],['dumbbellrow','Bent Over Row (Dumbbell)','Back'],
+      ['tbarrow','T Bar Row','Back'],['seatedrow','Seated Row (Machine)','Back'],['seatedrow-cable','Seated Row (Cable)','Back'],
+      ['chestsupported-row','Chest Supported Row (Machine)','Back'],['inverted-row','Inverted Row','Back'],['pullover-db','Dumbbell Pullover','Back'],
+      ['shrug-bb','Shrug (Barbell)','Back'],['shrug-db','Shrug (Dumbbell)','Back'],['back-extension','Back Extension','Back'],
+      ['ohp-bb','Overhead Press (Barbell)','Shoulders'],['ohp-db','Overhead Press (Dumbbell)','Shoulders'],['shoulderpress-m','Shoulder Press (Machine)','Shoulders'],
+      ['shoulderpress-plate','Shoulder Press (Plate Loaded)','Shoulders'],['arnoldpress','Arnold Press (Dumbbell)','Shoulders'],['push-press','Push Press (Barbell)','Shoulders'],
+      ['lateralraise-db','Lateral Raise (Dumbbell)','Shoulders'],['lateralraise-cable','Lateral Raise (Cable)','Shoulders'],['lateralraise-m','Lateral Raise (Machine)','Shoulders'],
+      ['front-raise-db','Front Raise (Dumbbell)','Shoulders'],['front-raise-cable','Front Raise (Cable)','Shoulders'],['reversefly-cable','Reverse Fly (Cable)','Shoulders'],
+      ['reversefly-m','Reverse Fly (Machine)','Shoulders'],['reversefly-db','Reverse Fly (Dumbbell)','Shoulders'],['facepull','Face Pull (Cable)','Shoulders'],['upright-row','Upright Row (Cable)','Shoulders'],
+      ['bicepcurl-bb','Barbell Curl','Arms'],['bicepcurl-db','Dumbbell Curl','Arms'],['bicepcurl-m','Bicep Curl (Machine)','Arms'],['ez-bar-curl','EZ Bar Curl','Arms'],
+      ['cable-curl','Cable Curl','Arms'],['hammercurl','Hammer Curl (Dumbbell)','Arms'],['inclinecurl-db','Incline Curl (Dumbbell)','Arms'],['preachercurl-m','Preacher Curl (Machine)','Arms'],
+      ['preachercurl-bb','Preacher Curl (Barbell)','Arms'],['concentration-curl','Concentration Curl (Dumbbell)','Arms'],['spider-curl','Spider Curl','Arms'],
+      ['closegrip-bench','Bench Press - Close Grip (Barbell)','Arms'],['tricepsext','Triceps Extension','Arms'],['tricepsext-cable','Triceps Extension (Cable)','Arms'],
+      ['tricepsext-m','Triceps Extension (Machine)','Arms'],['tricep-pushdown','Tricep Pushdown (Cable)','Arms'],['rope-pushdown','Tricep Rope Pushdown (Cable)','Arms'],
+      ['overhead-tricep-db','Overhead Triceps Extension (Dumbbell)','Arms'],['skullcrusher','Skullcrusher (EZ Bar)','Arms'],['tricep-dip','Triceps Dip','Arms'],
+      ['tricep-kickback','Triceps Kickback (Dumbbell)','Arms'],['wrist-curl','Wrist Curl (Barbell)','Arms'],['reverse-wrist-curl','Reverse Wrist Curl (Barbell)','Arms'],
+      ['squat-bb','Squat (Barbell)','Legs'],['front-squat','Front Squat (Barbell)','Legs'],['squat-smith','Squat (Smith Machine)','Legs'],['goblet-squat','Goblet Squat (Dumbbell)','Legs'],
+      ['hacksquat','Hack Squat','Legs'],['legpress','Leg Press','Legs'],['legext','Leg Extension (Machine)','Legs'],['seatedlegcurl','Seated Leg Curl (Machine)','Legs'],
+      ['lyinglegcurl','Lying Leg Curl (Machine)','Legs'],['romanian-deadlift','Romanian Deadlift (Barbell)','Legs'],['rdl-db','Romanian Deadlift (Dumbbell)','Legs'],
+      ['stiff-leg-dl','Stiff Leg Deadlift','Legs'],['lunge-db','Lunge (Dumbbell)','Legs'],['walking-lunge','Walking Lunge (Dumbbell)','Legs'],
+      ['bulgarian-split','Bulgarian Split Squat (Dumbbell)','Legs'],['step-up','Step Up (Dumbbell)','Legs'],['hipthrust','Hip Thrust (Barbell)','Legs'],
+      ['glute-bridge','Glute Bridge','Legs'],['glute-kickback','Glute Kickback (Cable)','Legs'],['hipabductor','Hip Abductor (Machine)','Legs'],['hipadductor','Hip Adductor (Machine)','Legs'],
+      ['standingcalf','Standing Calf Raise (Machine)','Legs'],['seatedcalf-plate','Seated Calf Raise (Plate Loaded)','Legs'],['calf-press','Calf Press (Leg Press)','Legs'],
+      ['plank','Plank','Core',1],['side-plank','Side Plank','Core',1],['hollow-hold','Hollow Hold','Core',1],['hanging-legraise','Hanging Leg Raise','Core'],
+      ['lying-legraise','Lying Leg Raise','Core'],['crunch','Crunch','Core'],['machine-crunch','Crunch (Machine)','Core'],['cable-crunch','Cable Crunch','Core'],
+      ['situp','Sit Up','Core'],['russian-twist','Russian Twist','Core'],['ab-wheel','Ab Wheel Rollout','Core'],['woodchopper','Cable Woodchopper','Core'],
+      ['dead-bug','Dead Bug','Core'],['mountain-climber','Mountain Climbers','Core',1],
+      ['cycling','Cycling (Indoor)','Cardio',1],['treadmill','Treadmill','Cardio',1],['running','Running (Outdoor)','Cardio',1],['incline-walk','Incline Walk','Cardio',1],
+      ['stairmaster','Stairmaster','Cardio',1],['rowing-erg','Rowing (Machine)','Cardio',1],['elliptical','Elliptical','Cardio',1],['ski-erg','Ski Erg','Cardio',1],
+      ['assault-bike','Assault Bike','Cardio',1],['jump-rope','Jump Rope','Cardio',1],['swimming','Swimming','Cardio',1],
+      ['clean-and-jerk','Clean and Jerk (Barbell)','Legs'],['power-clean','Power Clean (Barbell)','Legs'],['snatch','Snatch (Barbell)','Legs'],
+      ['thruster','Thruster (Barbell)','Legs'],['kettlebell-swing','Kettlebell Swing','Legs']
+    ];
+    // common Strong → app name differences
+    var ALIAS = {
+      'bicep curl (dumbbell)':'bicepcurl-db','bicep curl (barbell)':'bicepcurl-bb',
+      'triceps pushdown (cable)':'tricep-pushdown','triceps rope pushdown (cable)':'rope-pushdown',
+      'lat pulldown':'latpulldown','lat pulldown - close grip (cable)':'latpulldown-close',
+      'seated cable row':'seatedrow-cable','seated row (cable)':'seatedrow-cable',
+      'cycling':'cycling','running':'running','treadmill':'treadmill',
+      'romanian deadlift':'romanian-deadlift','hip thrust':'hipthrust',
+      'overhead press':'ohp-bb','seated overhead press (dumbbell)':'ohp-db'
+    };
+    var BY_NAME={}, BY_ID={};
+    CANON.forEach(function(e){ BY_NAME[norm(e[1])]={id:e[0],name:e[1],muscle:e[2],time:!!e[3]}; BY_ID[e[0]]=1; });
+    function matchEx(name){
+      var k=norm(name); if(BY_NAME[k]) return BY_NAME[k];
+      if(ALIAS[k] && BY_ID[ALIAS[k]]){ var e=CANON.find(function(c){return c[0]===ALIAS[k];}); return {id:e[0],name:e[1],muscle:e[2],time:!!e[3]}; }
+      return null;
+    }
+
+    // ── CSV tokeniser (quotes, comma / semicolon / tab) ───────────────
+    function parseCSV(text){
+      text=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+      var nl=text.indexOf('\n'); var head=(nl<0?text:text.slice(0,nl));
+      var commas=(head.match(/,/g)||[]).length, semis=(head.match(/;/g)||[]).length, tabs=(head.match(/\t/g)||[]).length;
+      var delim=','; if(semis>commas && semis>=tabs) delim=';'; else if(tabs>commas && tabs>semis) delim='\t';
+      var rows=[], row=[], f='', inQ=false, i=0, n=text.length;
+      while(i<n){ var ch=text[i];
+        if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){ f+='"'; i+=2; continue; } inQ=false; i++; continue; } f+=ch; i++; continue; }
+        if(ch==='"'){ inQ=true; i++; continue; }
+        if(ch===delim){ row.push(f); f=''; i++; continue; }
+        if(ch==='\n'){ row.push(f); f=''; rows.push(row); row=[]; i++; continue; }
+        f+=ch; i++;
+      }
+      if(f.length || row.length){ row.push(f); rows.push(row); }
+      return rows;
+    }
+    function numv(s){ if(s==null) return null; s=String(s).trim(); if(s===''||s==='--') return null; var m=s.replace(/,/g,'').match(/-?[\d.]+/); return m?parseFloat(m[0]):null; }
+    function parseDurSec(s){ s=String(s||'').trim(); if(!s) return 0;
+      var h=s.match(/(\d+)\s*h/), m=s.match(/(\d+)\s*m/), sec=s.match(/(\d+)\s*s/);
+      if(h||m||sec) return (h?+h[1]:0)*3600+(m?+m[1]:0)*60+(sec?+sec[1]:0);
+      if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){ var p=s.split(':').map(Number); return p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+p[1]; }
+      var num=numv(s); return num?Math.round(num):0; // bare number = seconds
+    }
+    function dkFrom(s){ s=String(s||'').trim(); var m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+'-'+m[2]+'-'+m[3];
+      var d=new Date(s); if(!isNaN(d)) return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); return null; }
+    function startedFrom(s,dk){ s=String(s||'').trim();
+      var m=s.match(/(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/);
+      if(m){ var d=new Date(m[1]+'T'+m[2]); if(!isNaN(d)) return d.toISOString(); }
+      return new Date(dk+'T12:00:00').toISOString();
+    }
+
+    // ── header mapping (by name, version-tolerant) ────────────────────
+    function buildCols(header){
+      var h=header.map(function(c){return norm(c);});
+      function find(){ for(var a=0;a<arguments.length;a++){ var want=arguments[a]; for(var i=0;i<h.length;i++){ if(h[i]===want || h[i].indexOf(want)===0) return i; } } return -1; }
+      return {
+        date:find('date'), workout:find('workout name'), ex:find('exercise name'),
+        order:find('set order'), weight:find('weight'), reps:find('reps'),
+        dist:find('distance'), secs:find('seconds'), dur:find('workout duration','duration'),
+        rpe:find('rpe'), unitCol:find('weight unit'),
+        unit:(function(){ var i=find('weight'); if(i<0) return null; var hh=h[i]; if(hh.indexOf('lb')>-1) return 'lb'; if(hh.indexOf('kg')>-1) return 'kg'; return null; })()
+      };
+    }
+
+    // ── parse Strong export → sessions ────────────────────────────────
+    function parseStrong(text, unit){
+      var rows=parseCSV(text);
+      if(rows.length<2) return {error:'No data rows found.'};
+      // locate header row (first row containing both a date column and an exercise column)
+      var hi=-1, cols=null;
+      for(var r=0;r<Math.min(rows.length,5);r++){ var c=buildCols(rows[r]); if(c.date>-1 && c.ex>-1){ hi=r; cols=c; break; } }
+      if(hi<0) return {error:'Couldn’t find Strong’s column headers (need at least "Date" and "Exercise Name").'};
+      // unit may live in the header ("Weight (kg)") or a per-row "Weight Unit" column
+      var detectedUnit=cols.unit;
+      if(!detectedUnit && cols.unitCol>-1){ for(var pr=hi+1; pr<rows.length; pr++){ var uv=rows[pr] && cols.unitCol<rows[pr].length ? norm(rows[pr][cols.unitCol]) : ''; if(uv){ detectedUnit=(uv.indexOf('lb')>-1?'lb':'kg'); break; } } }
+
+      var sessions={}, order=[], unmatched={}, totalSets=0;
+      for(var li=hi+1; li<rows.length; li++){
+        var row=rows[li]; if(!row || (row.length===1 && !String(row[0]).trim())) continue;
+        var get=function(i){ return i>-1 && i<row.length ? String(row[i]).trim() : ''; };
+        var dateRaw=get(cols.date), exName=get(cols.ex); if(!dateRaw || !exName) continue;
+        var dk=dkFrom(dateRaw); if(!dk) continue;
+        var wname=get(cols.workout)||'Workout';
+        var started=startedFrom(dateRaw,dk);
+        var sid='strong-'+dk+'-'+hash32(wname+'|'+started);
+        var sess=sessions[sid];
+        if(!sess){ sess={ id:sid, name:wname, templateId:null, date:dk, startedAt:started, durationSec:parseDurSec(get(cols.dur)), entries:[], _exmap:{}, source:'strong' }; sessions[sid]=sess; order.push(sid); }
+
+        var mx=matchEx(exName);
+        var exId, exDisplay, isTime, muscle;
+        if(mx){ exId=mx.id; exDisplay=mx.name; isTime=mx.time; muscle=mx.muscle; }
+        else { exId='strong-ex-'+hash32(norm(exName)); exDisplay=exName; muscle='';
+          var sc=numv(get(cols.secs)), rp=numv(get(cols.reps)), wt=numv(get(cols.weight));
+          isTime = (sc!=null && sc>0 && (!rp) && (!wt));
+          unmatched[norm(exName)]=exName;
+        }
+
+        var entry=sess._exmap[exId];
+        if(!entry){ entry={ exId:exId, name:exDisplay, muscle:muscle, kind:isTime?'time':'weight', perSide:false, note:'', sets:[] }; sess._exmap[exId]=entry; sess.entries.push(entry); }
+
+        if(isTime){
+          var secs=parseDurSec(get(cols.secs)); if(!secs){ var dn=numv(get(cols.secs)); secs=dn?Math.round(dn):0; }
+          if(secs>0){ entry.sets.push({ secs:secs, done:true }); totalSets++; }
+        } else {
+          var reps=parseInt(get(cols.reps),10)||0;
+          var w=numv(get(cols.weight)); if(w==null) w=0;
+          var rowUnit = unit || (cols.unitCol>-1 ? (norm(get(cols.unitCol)).indexOf('lb')>-1?'lb':'kg') : (detectedUnit||'kg'));
+          if(rowUnit==='lb') w=w*LB2KG;
+          if(reps>0){ entry.sets.push({ kg:r2(w), reps:reps, done:true }); totalSets++; }
+        }
+      }
+
+      var out=[];
+      order.forEach(function(sid){ var s=sessions[sid];
+        s.entries=s.entries.filter(function(e){ return e.sets.length>0; });
+        if(!s.entries.length) return;
+        var vol=0; s.entries.forEach(function(e){ if(e.kind==='weight') e.sets.forEach(function(st){ vol+=(+st.kg||0)*(+st.reps||0); }); });
+        delete s._exmap;
+        s.volume=Math.round(vol); s.prs=[];
+        out.push(s);
+      });
+      out.sort(function(a,b){ return (a.startedAt<b.startedAt)?1:-1; }); // newest first (matches gym)
+      return { sessions:out, unmatched:unmatched, totalSets:totalSets, detectedUnit:detectedUnit, usedUnit:(unit||detectedUnit||'kg') };
+    }
+
+    // ── state ─────────────────────────────────────────────────────────
+    var rawText='', parsed=null, opts={hist:true,ex:true}, unit=null; // null = auto
+
+    function recompute(){
+      parsed=parseStrong(rawText, unit);
+      if(parsed.error){ alert(parsed.error); return false; }
+      if(!parsed.sessions.length){ alert('No completed sets found in that export.'); return false; }
+
+      // dedup sessions against existing history
+      var existing=ls('po_workouts',[]); if(!Array.isArray(existing)) existing=[];
+      var haveS={}; existing.forEach(function(w){ if(w&&w.id) haveS[w.id]=1; });
+      var newSess=parsed.sessions.filter(function(s){ return !haveS[s.id]; });
+      var dupCount=parsed.sessions.length-newSess.length;
+
+      // new exercises
+      var lib=ls('po_exercises',[]); if(!Array.isArray(lib)) lib=[]; var haveE={}; lib.forEach(function(e){ if(e&&e.id) haveE[e.id]=1; });
+      var newExMap={};
+      newSess.forEach(function(s){ s.entries.forEach(function(e){ if(!haveE[e.exId] && !newExMap[e.exId]) newExMap[e.exId]={id:e.exId,name:e.name,muscle:e.muscle,kind:e.kind}; }); });
+      var newEx=Object.keys(newExMap).map(function(k){return newExMap[k];});
+
+      var sets=0, vol=0; newSess.forEach(function(s){ vol+=s.volume; s.entries.forEach(function(e){ sets+=e.sets.length; }); });
+      var dks=parsed.sessions.map(function(s){return s.date;}).sort();
+
+      parsed._new=newSess; parsed._newEx=newEx; parsed._dup=dupCount; parsed._sets=sets; parsed._vol=vol; parsed._range=[dks[0],dks[dks.length-1]];
+      return true;
+    }
+
+    function renderPreview(){
+      $('stSess').textContent=parsed._new.length;
+      $('stSets').textContent=parsed._sets;
+      $('stEx').textContent=parsed._newEx.length;
+      $('stVol').textContent=(parsed._vol>=1000?(Math.round(parsed._vol/100)/10)+'k':parsed._vol);
+      $('imRange').innerHTML='Range: <b>'+(parsed._range[0]||'—')+'</b> → <b>'+(parsed._range[1]||'—')+'</b> · <b>'+parsed.sessions.length+'</b> sessions found';
+      $('imDup').innerHTML=parsed._dup?('<b>'+parsed._dup+'</b> already imported — they’ll be skipped.'):'All sessions are new.';
+
+      // units
+      Array.prototype.forEach.call($('imUnits').children,function(b){ b.classList.toggle('on', b.getAttribute('data-u')===parsed.usedUnit); });
+      $('imUnitNote').textContent = parsed.detectedUnit
+        ? ('Detected '+(parsed.detectedUnit==='lb'?'pounds':'kilograms')+' from your file’s header.')
+        : 'No unit in the file header — assuming kilograms. Switch if your Strong app logged in pounds.';
+
+      var um=Object.keys(parsed.unmatched);
+      if(um.length){
+        $('imWarn').classList.remove('hidden');
+        $('imWarn').innerHTML='ℹ '+um.length+' exercise'+(um.length>1?'s aren’t':' isn’t')+' in your library yet — they’ll be created (toggle above):<ul>'+
+          um.slice(0,12).map(function(k){return '<li>'+esc(parsed.unmatched[k])+'</li>';}).join('')+(um.length>12?'<li>…and '+(um.length-12)+' more</li>':'')+'</ul>';
+      } else { $('imWarn').classList.add('hidden'); }
+
+      $('imPrevCard').classList.remove('hidden');
+      $('imDoneCard').classList.add('hidden');
+      $('imGo').disabled=!parsed._new.length;
+      $('imPrevCard').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function preview(){
+      rawText=$('imTA').value||'';
+      if(!rawText.trim()){ alert('Choose your strong.csv or paste its contents first.'); return; }
+      if(recompute()) renderPreview();
+    }
+
+    function doImport(){
+      if(!parsed || !parsed._new) return;
+      var added=0, exAdded=0;
+      if(opts.ex && parsed._newEx.length){
+        var lib=ls('po_exercises',[]); if(!Array.isArray(lib)) lib=[]; var haveE={}; lib.forEach(function(e){ if(e&&e.id) haveE[e.id]=1; });
+        parsed._newEx.forEach(function(e){ if(haveE[e.id]) return; lib.push({id:e.id,name:e.name,muscle:e.muscle,kind:e.kind}); haveE[e.id]=1; exAdded++; });
+        save('po_exercises',lib);
+      }
+      if(opts.hist){
+        var hist=ls('po_workouts',[]); if(!Array.isArray(hist)) hist=[]; var haveS={}; hist.forEach(function(w){ if(w&&w.id) haveS[w.id]=1; });
+        var done=ls('po_coach_workout_done',{})||{};
+        parsed._new.forEach(function(s){ if(haveS[s.id]) return;
+          // strip helper field; keep exercise kind only if it differs from default
+          var clean={ id:s.id, name:s.name, templateId:null, date:s.date, startedAt:s.startedAt, durationSec:s.durationSec||0,
+            entries:s.entries.map(function(e){ var o={exId:e.exId,name:e.name,muscle:e.muscle,note:''}; if(e.kind==='time'){o.kind='time';o.sets=e.sets.map(function(st){return {secs:st.secs,done:true};});} else {o.kind='weight';o.perSide=false;o.sets=e.sets.map(function(st){return {kg:st.kg,reps:st.reps,done:true};});} return o; }),
+            volume:s.volume, prs:[], source:'strong' };
+          hist.push(clean); haveS[s.id]=1; added++;
+          if(!done[s.date]) done[s.date]=s.startedAt;
+          // mirror into per-day coach log (newest import for a day wins, like finishActive)
+          save('po_coach_logs:'+s.date, clean.entries.map(function(e){return {exId:e.exId,name:e.name,sets:e.sets};}));
+        });
+        hist.sort(function(a,b){ return ((b.startedAt||'')<(a.startedAt||''))?-1:1; });
+        save('po_workouts',hist);
+        save('po_coach_workout_done',done);
+      }
+
+      $('imResult').innerHTML='Imported <b>'+added+'</b> training session'+(added===1?'':'s')+
+        (parsed._dup?(' ('+parsed._dup+' already there, skipped)'):'')+'.<br>'+
+        'Added <b>'+exAdded+'</b> new exercise'+(exAdded===1?'':'s')+' to your library.<br><br>'+
+        'Your History, Progress charts and PRs now have the full picture. 💪';
+      $('imDoneCard').classList.remove('hidden');
+      $('imGo').disabled=true;
+      $('imDoneCard').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    // ── wiring ────────────────────────────────────────────────────────
+    $('imFile').addEventListener('change', function(ev){ var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+      var rd=new FileReader(); rd.onload=function(){ $('imTA').value=String(rd.result||''); preview(); }; rd.readAsText(f); });
+    $('imPreview').addEventListener('click', preview);
+    $('imClear').addEventListener('click', function(){ $('imTA').value=''; $('imFile').value=''; rawText=''; parsed=null; unit=null; $('imPrevCard').classList.add('hidden'); $('imDoneCard').classList.add('hidden'); });
+    $('imGo').addEventListener('click', doImport);
+    Array.prototype.forEach.call($('imUnits').children,function(b){ b.addEventListener('click', function(){ unit=b.getAttribute('data-u'); if(recompute()) renderPreview(); }); });
+    ['tgHist','tgEx'].forEach(function(id){ var el=$(id);
+      el.addEventListener('click', function(){ var k=el.getAttribute('data-tg'); opts[k]=!opts[k]; el.classList.toggle('on',opts[k]); el.querySelector('.im-box').innerHTML=opts[k]?'&#10003;':''; });
+    });
+  })();
+  </script>
+</body>
+</html>
