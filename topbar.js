@@ -10,6 +10,16 @@
 (function () {
   'use strict';
 
+  // ── Aurora motion engine: load the shared animation engine on every page.
+  // One injection here → every page that includes topbar.js gets motion.
+  // The engine is self-sufficient (no GSAP needed for its core primitives).
+  (function loadAuroraMotion(){ try {
+    if (window.AuroraMotion || document.querySelector('script[data-aurora-motion]')) return;
+    var s = document.createElement('script'); s.src = 'aurora-motion.js'; s.defer = true;
+    s.setAttribute('data-aurora-motion', '');
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
