@@ -141,15 +141,21 @@
   }
 
   // reveal(target, { kind, delay, stagger })
+  // Stagger is applied ONLY to items in the initial viewport — items further
+  // down reveal with no delay as they scroll in, so long pages never lag.
   function reveal(target, opts) {
     opts = opts || {};
     var els = resolve(target);
     var io = ensureRevealIO();
-    els.forEach(function (el, i) {
+    var vh = window.innerHeight || 800, vis = 0;
+    els.forEach(function (el) {
       if (el.__amReveal) return; el.__amReveal = 1;
       var kind = opts.kind || el.getAttribute('data-am-reveal') || 'up';
-      if (opts.stagger) el.setAttribute('data-am-delay', (opts.delay || 0) + i * opts.stagger);
-      else if (opts.delay) el.setAttribute('data-am-delay', opts.delay);
+      if (opts.stagger) {
+        var aboveFold = true; try { aboveFold = el.getBoundingClientRect().top < vh; } catch (e) {}
+        var d = aboveFold ? (opts.delay || 0) + (vis++) * opts.stagger : 0;
+        if (d) el.setAttribute('data-am-delay', d);
+      } else if (opts.delay) el.setAttribute('data-am-delay', opts.delay);
       setRevealStart(el, kind);
       if (io) { io.observe(el); if (!REDUCED) { pendingReveal.push(el); scheduleRevealSafety(); } }
       else playReveal(el); // no IO → just play
@@ -172,6 +178,28 @@
       var cur = from + (pct - from) * p;
       circle.setAttribute('stroke-dashoffset', C * (1 - cur));
     }, function () { circle.__amRing = null; });
+  }
+
+  // ── ring(): draw-in a progress ring with re-render dedup ──
+  // Pages rebuild ring SVG via innerHTML each render, so call this after
+  // setting innerHTML: ring(circleEl, pct, key). It draws from empty→pct on
+  // first paint, animates old→new when the value changes, and does nothing
+  // (instant) on a no-op re-render — keyed by a stable string so tab-focus /
+  // 15s sync re-renders don't re-trigger the sweep. Flash-free: it sets the
+  // start offset synchronously before the browser paints.
+  var ringStore = (typeof Map !== 'undefined') ? new Map() : null;
+  function ring(circle, pct, key) {
+    if (!circle) return;
+    pct = Math.max(0, Math.min(1, pct || 0));
+    var r = parseFloat(circle.getAttribute('r')) || 0, C = 2 * Math.PI * r;
+    if (!circle.getAttribute('stroke-dasharray')) circle.setAttribute('stroke-dasharray', C);
+    var last = (ringStore && key != null) ? ringStore.get(key) : undefined;
+    if (ringStore && key != null) ringStore.set(key, pct);
+    if (REDUCED) { circle.setAttribute('stroke-dashoffset', C * (1 - pct)); return; }
+    if (last != null && Math.abs(last - pct) < 0.001) { circle.setAttribute('stroke-dashoffset', C * (1 - pct)); return; }
+    var from = (last != null) ? last : 0;
+    circle.setAttribute('stroke-dashoffset', C * (1 - from)); // start state before paint → no flash of final
+    drawRing(circle, pct, { from: from });
   }
 
   // ── celebratory burst (lightweight canvas particles) ──────
@@ -237,7 +265,13 @@
     // `<main class="*-wrap">` pages get card reveals for free (zero edits).
     resolve('[data-am-reveal-group], main[class*="-wrap"]').forEach(function (group) {
       if (group.__amGroup) return; group.__amGroup = 1;
-      var kids = Array.prototype.filter.call(group.children, function (c) { return c.nodeType === 1 && !(c.hasAttribute && c.hasAttribute('data-am-no-reveal')); });
+      var kids = Array.prototype.filter.call(group.children, function (c) {
+        if (c.nodeType !== 1) return false;
+        if (c.hasAttribute && c.hasAttribute('data-am-no-reveal')) return false;
+        // never animate fixed/sticky children — a transform would break them
+        try { var p = window.getComputedStyle ? getComputedStyle(c).position : ''; if (p === 'fixed' || p === 'sticky') return false; } catch (e) {}
+        return true;
+      });
       var stg = group.hasAttribute('data-am-stagger') ? +group.getAttribute('data-am-stagger') : 80;
       reveal(kids, { stagger: stg });
     });
@@ -306,6 +340,7 @@
     reveal: reveal,
     count: count,
     drawRing: drawRing,
+    ring: ring,
     burst: burst,
     auto: auto,
     refresh: function (root) { auto(root); },
