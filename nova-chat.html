@@ -112,10 +112,19 @@
         <div class="nv-name">Nova</div>
         <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v45</span></div>
       </div>
+      <button class="nv-clear" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
     </header>
 
     <div class="nv-scroll" id="nvScroll"></div>
+  </div>
+
+  <div class="nv-mem" id="nvMemPanel" hidden>
+    <div class="nv-mem-card">
+      <div class="nv-mem-head"><span>🧠 What Nova remembers</span><button id="nvMemClose" class="nv-mem-x" type="button" aria-label="Close">✕</button></div>
+      <div class="nv-mem-list" id="nvMemList"></div>
+      <button class="nv-mem-forget" id="nvMemForgetAll" type="button">Forget everything</button>
+    </div>
   </div>
 
   <div class="nv-bar" id="nvBar">
@@ -127,6 +136,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js" defer></script>
   <script src="insights-engine.js" defer></script>
   <script src="forecast-engine.js" defer></script>
   <script>
@@ -152,6 +163,37 @@
     function save(h){ try { localStorage.setItem(KEY, JSON.stringify(h.slice(-40))); } catch(e){} }
     var history = load();
     var busy = false;
+
+    // ── Nova long-term memory: facts Nova chooses to remember, synced across
+    // devices (array of {id,fact,ts} → clean union merge, no transcript ordering pitfalls).
+    var MEMKEY = 'nova:memory';
+    function loadMem(){ try{ var a=JSON.parse(localStorage.getItem(MEMKEY)); return Array.isArray(a)?a.filter(function(m){return m&&m.id&&m.fact;}):[]; }catch(e){ return []; } }
+    function saveMem(a){ try{ localStorage.setItem(MEMKEY, JSON.stringify(a.slice(-40))); }catch(e){} }
+    function memFacts(){ return loadMem().map(function(m){ return m.fact; }).slice(-30); }
+    function normFact(s){ return String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+    function addMemory(fact){
+      fact=(fact||'').trim(); if(!fact||fact.length>200) return;
+      var mem=loadMem(), n=normFact(fact);
+      if(mem.some(function(m){ return normFact(m.fact)===n; })) return;        // dedup
+      mem.push({ id:'mem-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), fact:fact, ts:Date.now() });
+      saveMem(mem); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem();
+    }
+    function forget(id){ saveMem(loadMem().filter(function(m){ return m.id!==id; })); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem(); }
+    function forgetAll(){ saveMem([]); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem(); }
+    // pull [[REMEMBER: ...]] markers out of a reply → { display (clean), facts }
+    function stripMemory(text){
+      var facts=[]; var s=String(text==null?'':text);
+      s=s.replace(/\[\[\s*REMEMBER\s*:\s*([^\]]+?)\s*\]\]/gi, function(_,f){ facts.push(f.trim()); return ''; });
+      s=s.replace(/\[\[[^\]]*$/,'');                              // drop a trailing unclosed marker mid-stream
+      s=s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/\s+$/,'');
+      return { display:s, facts:facts };
+    }
+    function renderMem(){
+      var list=document.getElementById('nvMemList'); if(!list) return;
+      var mem=loadMem();
+      if(!mem.length){ list.innerHTML='<div class="nv-mem-empty">Nothing yet. As you tell me things worth remembering, they’ll appear here — and you can forget any of them.</div>'; return; }
+      list.innerHTML=mem.slice().reverse().map(function(m){ return '<div class="nv-mem-item"><span>'+esc(m.fact)+'</span><button type="button" class="nv-mem-del" data-id="'+esc(m.id)+'" aria-label="Forget">✕</button></div>'; }).join('');
+    }
 
     function novaSVG(){
       return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>';
@@ -235,25 +277,26 @@
         try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
         var res = await fetch('/api/nova-chat', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ messages: history, insights: novaInsights })
+          body: JSON.stringify({ messages: history, insights: novaInsights, memory: memFacts() })
         });
         if(res.body && res.body.getReader){
           var reader = res.body.getReader(), dec = new TextDecoder();
           while(true){
             var r = await reader.read(); if(r.done) break;
             acc += dec.decode(r.value, {stream:true});
-            setStream(row, acc, false); toBottom();
+            setStream(row, stripMemory(acc).display, false); toBottom();   // hide [[REMEMBER]] markers live
           }
         } else {
-          acc = await res.text(); setStream(row, acc, false);
+          acc = await res.text(); setStream(row, stripMemory(acc).display, false);
         }
       } catch(e){
         acc = acc || 'I lost the connection there — try me again.';
       }
-      acc = acc.trim() || '…';
-      setStream(row, acc, true);
-      history.push({ role:'assistant', content:acc });
+      var sm = stripMemory(acc); var finalText = sm.display.trim() || '…';
+      setStream(row, finalText, true);
+      history.push({ role:'assistant', content:finalText });   // store the clean text, never the markers
       save(history);
+      sm.facts.forEach(addMemory);                              // commit what Nova chose to remember
       setBusy(false);
       toBottom();
     }
@@ -298,6 +341,36 @@
     setBarSpace();
     renderAll();
     setTimeout(setBarSpace, 200);
+
+    // ── Memory panel + cross-device sync ──
+    (function(){
+      var st=document.createElement('style');
+      st.textContent='.nv-mem{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;}'
+        +'.nv-mem[hidden]{display:none;}'
+        +'.nv-mem-card{width:100%;max-width:440px;background:#0c0d11;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.6);}'
+        +'.nv-mem-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:#F4F1EA;margin-bottom:12px;}'
+        +'.nv-mem-x{background:none;border:none;color:rgba(244,241,234,.5);font-size:18px;cursor:pointer;line-height:1;}'
+        +'.nv-mem-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;}'
+        +'.nv-mem-item{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:11px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);font-size:13.5px;line-height:1.45;color:#F4F1EA;}'
+        +'.nv-mem-del{background:none;border:none;color:#FF8FA3;font-size:13px;cursor:pointer;flex:none;}'
+        +'.nv-mem-empty{color:rgba(244,241,234,.4);font-size:13px;padding:10px 2px;line-height:1.5;}'
+        +'.nv-mem-forget{margin-top:12px;width:100%;padding:11px;border-radius:11px;border:1px solid rgba(255,143,163,.3);background:rgba(255,143,163,.08);color:#FF8FA3;font-weight:700;font-size:13px;cursor:pointer;}';
+      document.head.appendChild(st);
+
+      var panel=document.getElementById('nvMemPanel'), memBtn=document.getElementById('nvMem');
+      if(memBtn && panel){
+        memBtn.addEventListener('click', function(){ renderMem(); panel.hidden=false; });
+        document.getElementById('nvMemClose').addEventListener('click', function(){ panel.hidden=true; });
+        panel.addEventListener('click', function(e){ if(e.target===panel) panel.hidden=true; });
+        document.getElementById('nvMemForgetAll').addEventListener('click', function(){ if(loadMem().length && !confirm('Forget everything Nova remembers about you?')) return; forgetAll(); });
+        document.getElementById('nvMemList').addEventListener('click', function(e){ var d=e.target.closest && e.target.closest('.nv-mem-del'); if(d) forget(d.getAttribute('data-id')); });
+      }
+      renderMem();
+
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'nova-chat', syncedKeys:[MEMKEY], onApplied:function(){ renderMem(); } });
+      })();
+    })();
   })();
   </script>
 </body>

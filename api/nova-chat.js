@@ -220,7 +220,7 @@ async function buildBrief(tz) {
   return L.join('\n');
 }
 
-function systemPrompt(brief, patterns) {
+function systemPrompt(brief, patterns, memory) {
   var lines = [
     "You are Nova — Alex's personal AI coach and companion, built into his life-tracking dashboard. Alex is 17 and doing a body recomposition: building strength and muscle while leaning out. You know him better than anyone because you can see his whole life below — his training, sleep, recovery, nutrition, supplements, caffeine, hydration, habits, goals and weight, updated in real time. You genuinely care about him and your job is to make him better.",
     '',
@@ -238,10 +238,20 @@ function systemPrompt(brief, patterns) {
     '',
     "RULES: Ground every answer in the live data below. Never invent numbers you don't have — if something isn't logged, say so plainly and nudge him to track it (you literally can't coach blind). For general fitness/nutrition/mindset questions beyond his data, answer as the expert coach you are. He's 17 — keep advice safe and sane (no extreme cuts, no hormones/PEDs; supplements stay sensible). You advise, motivate and explain; you can't edit his data yourself, so when action is needed, tell him exactly what to log or do.",
     '',
+    "MEMORY: When Alex shares something durable worth recalling in future conversations — a goal, a hard constraint or injury, a strong preference, a key milestone — append it on its own final line exactly as [[REMEMBER: one concise fact]]. Use it sparingly, only for things that should genuinely persist, and never for something already in your memory below. The app captures and hides these brackets automatically; never read them aloud or mention them.",
+    '',
     '=== HIS LIVE DATA (this is real, current, and yours to use) ===',
     brief,
     '=== END DATA ==='
   ];
+  if (memory && memory.length) {
+    lines.push(
+      '',
+      '=== WHAT YOU REMEMBER ABOUT ALEX (long-term memory — persists across every conversation) ===',
+      memory.map(function (m) { return '• ' + m; }).join('\n'),
+      '=== END MEMORY ==='
+    );
+  }
   if (patterns && patterns.length) {
     lines.push(
       '',
@@ -261,6 +271,14 @@ function cleanInsights(raw) {
     if (typeof s !== 'string') { try { s = String(s == null ? '' : s); } catch (e) { s = ''; } }
     return s.slice(0, 300).trim();
   }).filter(Boolean).slice(0, 8);
+}
+
+// Long-term facts Nova has chosen to remember about Alex (client-stored, synced).
+function cleanMemory(raw) {
+  return (Array.isArray(raw) ? raw : []).map(function (s) {
+    if (typeof s !== 'string') { try { s = String(s == null ? '' : s); } catch (e) { s = ''; } }
+    return s.slice(0, 200).trim();
+  }).filter(Boolean).slice(0, 40);
 }
 
 function readBody(req) {
@@ -298,6 +316,7 @@ module.exports = async function (req, res) {
   var messages = cleanMessages(body.messages);
   if (!messages.length) { res.status(400).json({ error: 'no messages' }); return; }
   var patterns = cleanInsights(body.insights);
+  var memory = cleanMemory(body.memory);
 
   var tz = 'Europe/Athens';
   try { var prefs = await supa.readRow('push:prefs'); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
@@ -308,7 +327,7 @@ module.exports = async function (req, res) {
   // Groq (OpenAI-compatible): system message + the conversation.
   var payload = {
     model: GROQ_MODEL,
-    messages: [{ role: 'system', content: systemPrompt(brief, patterns) }].concat(messages),
+    messages: [{ role: 'system', content: systemPrompt(brief, patterns, memory) }].concat(messages),
     max_tokens: 1024,
     temperature: 0.7,
     stream: true
