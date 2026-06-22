@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Worlds · concept demo</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="stylesheet" href="aurora.css">
+  <style>
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ height:100%; overflow:hidden; }
+    body{ background:#050506; color:var(--au-ivory); font-family:var(--au-sans); }
+
+    .wx-ribbon{ position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; background:linear-gradient(180deg, rgba(5,5,7,.7), transparent); }
+    .wx-ribbon b{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(214,142,247,.95); }
+    .wx-ribbon b small{ color:var(--au-faint); font-weight:600; }
+    .wx-ribbon .lnks{ display:flex; gap:7px; }
+    .wx-ribbon a{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--au-dim); text-decoration:none; border:1px solid var(--au-line); padding:6px 9px; border-radius:9px; }
+
+    /* page dots */
+    .wx-dots{ position:fixed; top:48px; left:0; right:0; z-index:40; display:flex; gap:7px; justify-content:center; }
+    .wx-dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.22); transition:all .3s; }
+    .wx-dot.on{ width:20px; border-radius:3px; background:rgb(var(--on,255,255,255)); }
+
+    /* horizontal pager */
+    .wx-pager{ display:flex; height:100vh; height:100dvh; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .wx-pager::-webkit-scrollbar{ display:none; }
+
+    .wx-world{ flex:0 0 100vw; width:100vw; height:100%; scroll-snap-align:center; overflow-y:auto; overflow-x:hidden; position:relative;
+      padding:96px 22px calc(70px + env(safe-area-inset-bottom)); }
+    .wx-watermark{ position:absolute; top:8%; left:50%; transform:translateX(-50%); font-size:46vw; line-height:1; opacity:.05; pointer-events:none; filter:blur(2px); }
+
+    .wx-inner{ position:relative; max-width:560px; margin:0 auto; }
+    .wx-eyebrow{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--c),.95); margin-bottom:12px; }
+    .wx-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(40px,13vw,68px); line-height:.98; color:#fff; letter-spacing:-.02em; }
+    .wx-tag{ font-size:15px; color:var(--au-dim); margin-top:14px; line-height:1.45; }
+    .wx-stat{ display:inline-flex; align-items:baseline; gap:8px; margin-top:22px; padding:10px 16px; border-radius:14px;
+      background:rgba(var(--c),.10); border:1px solid rgba(var(--c),.28); }
+    .wx-stat b{ font-family:var(--au-mono); font-size:26px; font-weight:800; color:#fff; letter-spacing:-.02em; }
+    .wx-stat span{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(var(--c),.9); }
+
+    .wx-tools{ display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:30px; }
+    .wx-tool{ display:flex; align-items:center; gap:11px; padding:15px 15px; border-radius:16px; text-decoration:none; color:var(--au-ivory);
+      background:rgba(255,255,255,.04); border:1px solid var(--au-line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .16s, border-color .2s; }
+    .wx-tool:active{ transform:scale(.96); }
+    .wx-tool:hover{ border-color:rgba(var(--c),.4); }
+    .wx-tool .e{ font-size:21px; flex:none; }
+    .wx-tool .t{ font-size:14px; font-weight:700; }
+
+    .wx-hint{ position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:30; text-align:center;
+      font-family:var(--au-mono); font-size:10px; letter-spacing:.1em; color:var(--au-faint); pointer-events:none; }
+  </style>
+</head>
+<body>
+
+  <div class="wx-ribbon">
+    <b>✦ Concept demo <small>· Worlds</small></b>
+    <div class="lnks"><a href="demo.html">Stream</a><a href="demo-constellation.html">✦</a><a href="index.html">← dash</a></div>
+  </div>
+
+  <div class="wx-dots" id="dots"></div>
+  <div class="wx-pager" id="pager"></div>
+  <div class="wx-hint">‹ swipe between worlds ›</div>
+
+  <script>
+  (function(){
+    'use strict';
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // live stat helpers
+    function recovery(){ var sl=ls('sleep:logs'); var l=Array.isArray(sl)&&sl.length?sl[sl.length-1]:null; return l&&typeof l.recovery==='number'?l.recovery:null; }
+    function streak(){ var g=ls('goal_streak_v1'); return g&&typeof g.count==='number'?g.count:0; }
+    function moviesSeen(){ var m=ls('movies:seen'); return Array.isArray(m)?m.filter(function(x){return x&&x.id;}).length:0; }
+
+    var WORLDS=[
+      { key:'body', label:'Body', tag:'Train. Recover. Fuel.', c:'52,226,176', wm:'🫀',
+        stat:function(){ var r=recovery(); return r!=null?{v:r,l:'recovery'}:null; },
+        tools:[['💪','Fitness','gym.html'],['🏆','PR Board','pr.html'],['🌙','Sleep','sleep.html'],['🥗','Nutrition','nutrition.html'],['⚖️','Weight','weight.html'],['💧','Water','po-water.html'],['☕','Caffeine','caffeine.html'],['💊','Supps','health.html'],['📏','Measure','measure.html']] },
+      { key:'mind', label:'Mind', tag:'Who you’re becoming.', c:'155,140,255', wm:'🧭',
+        stat:function(){ var s=streak(); return s>0?{v:s,l:'day streak'}:null; },
+        tools:[['🎯','Goals','main.html'],['🧭','Identity','identity.html'],['💡','Ideas','ideas.html'],['🌱','Improve','improve.html']] },
+      { key:'money', label:'Money', tag:'Resources & runway.', c:'242,192,99', wm:'📊',
+        stat:function(){ return null; },
+        tools:[['📊','Finance','finance.html'],['🧾','Bills','bills.html']] },
+      { key:'life', label:'Life', tag:'Time well spent.', c:'214,142,247', wm:'🎬',
+        stat:function(){ var n=moviesSeen(); return n>0?{v:n,l:'films rated'}:null; },
+        tools:[['🎬','Movies','movies.html']] },
+      { key:'reflect', label:'Reflect', tag:'Look back. Look ahead.', c:'124,184,255', wm:'✦',
+        stat:function(){ return null; },
+        tools:[['◈','Morning','morning.html'],['✦','Weekly','weekly.html'],['🌌','Your Arc','arc.html'],['📈','Trends','trends.html']] }
+    ];
+
+    var pager=document.getElementById('pager'), dots=document.getElementById('dots');
+
+    WORLDS.forEach(function(w){
+      var sec=document.createElement('section'); sec.className='wx-world'; sec.style.setProperty('--c', w.c);
+      sec.style.background='radial-gradient(85% 55% at 50% 0%, rgba('+w.c+',.20), transparent 72%), radial-gradient(70% 45% at 50% 100%, rgba('+w.c+',.10), transparent 72%), #050506';
+      var st=w.stat(); var statHTML = st ? '<div class="wx-stat"><b>'+st.v+'</b><span>'+st.l+'</span></div>' : '';
+      var toolsHTML = w.tools.map(function(t){ return '<a class="wx-tool" href="'+t[2]+'"><span class="e">'+t[0]+'</span><span class="t">'+esc(t[1])+'</span></a>'; }).join('');
+      sec.innerHTML =
+        '<div class="wx-watermark" aria-hidden="true">'+w.wm+'</div>'+
+        '<div class="wx-inner">'+
+          '<div class="wx-eyebrow">World · '+esc(w.label)+'</div>'+
+          '<div class="wx-title">'+esc(w.label)+'.</div>'+
+          '<div class="wx-tag">'+esc(w.tag)+'</div>'+
+          statHTML+
+          '<div class="wx-tools">'+toolsHTML+'</div>'+
+        '</div>';
+      pager.appendChild(sec);
+
+      var dot=document.createElement('div'); dot.className='wx-dot'; dot.style.setProperty('--on', w.c); dots.appendChild(dot);
+    });
+
+    function setActive(i){
+      var ds=dots.children;
+      for(var k=0;k<ds.length;k++) ds[k].classList.toggle('on', k===i);
+    }
+    setActive(0);
+    var ticking=false;
+    pager.addEventListener('scroll', function(){
+      if(ticking) return; ticking=true;
+      requestAnimationFrame(function(){ ticking=false; setActive(Math.round(pager.scrollLeft/window.innerWidth)); });
+    }, {passive:true});
+    // tapping a dot jumps to that world
+    Array.prototype.forEach.call(dots.children, function(d,i){ d.style.cursor='pointer'; d.addEventListener('click', function(){ pager.scrollTo({left:i*window.innerWidth, behavior:'smooth'}); }); });
+  })();
+  </script>
+</body>
+</html>
