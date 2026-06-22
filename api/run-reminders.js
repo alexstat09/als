@@ -38,6 +38,18 @@ function daysBetween(aKey, bKey) {
   return Math.round((Date.UTC(a[0], a[1] - 1, a[2]) - Date.UTC(b[0], b[1] - 1, b[2])) / 86400000);
 }
 
+// Proactive intelligence: is recovery clearly slipping AND now low? Returns
+// { n, drop, latest } only when it's worth a heads-up — never on a single dip
+// or while recovery is still high. Mirrors the in-app rec-down insight.
+function recoveryDipFrom(sleepLogs) {
+  var rec = (sleepLogs || []).filter(function (e) { return e && e.dateKey && typeof e.recovery === 'number'; })
+    .sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); }).slice(-7).map(function (e) { return e.recovery; });
+  if (rec.length < 4) return null;
+  var first = rec[0], latest = rec[rec.length - 1], prev = rec[rec.length - 2];
+  if ((first - latest) >= 10 && latest < 62 && latest <= prev) return { n: rec.length, drop: Math.round(first - latest), latest: Math.round(latest) };
+  return null;
+}
+
 // Each reminder: when it fires by default, whether it's relevant today, and
 // the line Nova sends. Mirrors the conditions in nova-coach.js so the push
 // matches what the in-app coach would say.
@@ -49,6 +61,10 @@ var REMINDERS = [
   { id: 'training', defHour: 14, title: 'Time to move 💪',
     cond: function (c) { return c.daysSinceTraining != null && c.daysSinceTraining >= 3; },
     body: function (c) { return "It's been " + c.daysSinceTraining + ' days since your last session. Even a short one keeps momentum.'; } },
+
+  { id: 'recovery', defHour: 9, title: 'Recovery check 🪫',
+    cond: function (c) { return !!c.recoveryDip; },
+    body: function (c) { var d = c.recoveryDip || {}; return 'Your recovery has slipped about ' + d.drop + ' points over your last ' + d.n + ' mornings (now ' + d.latest + '). Today’s a day to go lighter or rest — and protect tonight’s sleep.'; } },
 
   { id: 'protein', defHour: 19, title: 'Protein check 🍗',
     cond: function (c) { return c.proteinTarget > 0 && c.protein < c.proteinTarget * 0.7; },
@@ -104,9 +120,11 @@ async function buildContext(tz, today) {
   var jToday = (idn['journal:entries'] || []).find(function (e) { return e && e.dateKey === today; });
   var journaledToday = !!(jToday && (((jToday.reflection || '').trim()) || ((jToday.gratitude || '').trim())));
 
+  var recoveryDip = recoveryDipFrom((await supa.readRow('sleep'))['sleep:logs']);
+
   return { weighedToday: weighedToday, daysSinceTraining: daysSinceTraining,
     protein: protein, proteinTarget: proteinTarget, cafToday: cafToday,
-    habitsLeft: habitsLeft, journaledToday: journaledToday };
+    habitsLeft: habitsLeft, journaledToday: journaledToday, recoveryDip: recoveryDip };
 }
 
 module.exports = async function (req, res) {
