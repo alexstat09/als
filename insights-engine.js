@@ -33,14 +33,14 @@
     var rows = {};
     function row(dk) { return rows[dk] || (rows[dk] = { date: dk }); }
     var sl = ls('sleep:logs'); if (Array.isArray(sl)) sl.forEach(function (e) {
-      if (e && e.dateKey) { var r = row(e.dateKey); if (typeof e.recovery === 'number') r.recovery = e.recovery; if (typeof e.hours === 'number') r.sleepH = e.hours; }
+      if (e && e.dateKey) { var r = row(e.dateKey); if (typeof e.recovery === 'number') r.recovery = e.recovery; if (typeof e.hours === 'number') r.sleepH = e.hours; if (typeof e.quality === 'number') r.quality = e.quality; if (typeof e.energy === 'number') r.energy = e.energy; }
     });
     var w = ls('po_coach_weights'); if (Array.isArray(w)) w.forEach(function (e) { if (e && e.dateKey && typeof e.weight === 'number') row(e.dateKey).weight = e.weight; });
     var wo = ls('po_workouts'); if (Array.isArray(wo)) wo.forEach(function (s) {
       if (s && s.date) { var r = row(s.date); r.volume = (r.volume || 0) + (+s.volume || 0); r.trained = 1; if (s.prs && s.prs.length) r.pr = 1; else if (r.pr == null) r.pr = 0; }
     });
     var nu = ls('nut:logs'); if (Array.isArray(nu)) nu.forEach(function (e) {
-      if (e && e.dateKey) { var r = row(e.dateKey); r.kcal = (r.kcal || 0) + (+e.kcal || 0); r.protein = (r.protein || 0) + (+e.p || 0); }
+      if (e && e.dateKey) { var r = row(e.dateKey); r.kcal = (r.kcal || 0) + (+e.kcal || 0); r.protein = (r.protein || 0) + (+e.p || 0); r.carbs = (r.carbs || 0) + (+e.c || 0); }
     });
     var cf = ls('caf:logs'); if (Array.isArray(cf)) cf.forEach(function (e) {
       if (e && e.ts) { var d = new Date(e.ts); if (!isNaN(d)) { var r = row(dkOf(d)); r.caf = (r.caf || 0) + (+e.mg || 0); if (d.getHours() >= 16) r.cafLate = (r.cafLate || 0) + (+e.mg || 0); } }
@@ -113,7 +113,24 @@
       min: function (s) { return s.loMean > 0 && Math.abs(s.hiMean - s.loMean) / s.loMean >= 0.15; },
       effect: function (s) { return Math.min(1, Math.abs(s.hiMean - s.loMean) / Math.max(1, s.loMean) / 0.5); },
       text: function (s) { return 'You train heavier when you wake recovered — volume averages ' + kfmt(s.hiMean) + ' on high-recovery days versus ' + kfmt(s.loMean) + ' on low ones. (' + s.n + ' days)'; },
-      e: '💪' }
+      e: '💪' },
+    { id: 'water-rec', A: 'water', B: 'recovery', lag: 1, scale: 22,
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 8; },
+      text: function (s) { var hi = s.hiMean > s.loMean; return 'Recovery runs about ' + round(Math.abs(s.hiMean - s.loMean)) + ' points ' + (hi ? 'higher' : 'lower') + ' the morning after your better-hydrated days (' + round(s.hiMean) + ' vs ' + round(s.loMean) + ', ' + s.n + ' days).'; },
+      e: '💧' },
+    { id: 'caf-sleep', A: 'caf', B: 'sleepH', lag: 1, scale: 1.1,
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 0.4; },
+      text: function (s) { return 'On your higher-caffeine days you sleep about ' + round(Math.abs(s.hiMean - s.loMean), 1) + 'h ' + (s.hiMean > s.loMean ? 'more' : 'less') + ' that night (' + round(s.hiMean, 1) + 'h vs ' + round(s.loMean, 1) + 'h, ' + s.n + ' nights).'; },
+      e: '☕' },
+    { id: 'qual-vol', A: 'quality', B: 'volume', lag: 0, scale: 0,
+      min: function (s) { return s.loMean > 0 && Math.abs(s.hiMean - s.loMean) / s.loMean >= 0.15; },
+      effect: function (s) { return Math.min(1, Math.abs(s.hiMean - s.loMean) / Math.max(1, s.loMean) / 0.5); },
+      text: function (s) { return 'You train harder after better sleep — volume averages ' + kfmt(s.hiMean) + ' on your best-quality nights versus ' + kfmt(s.loMean) + ' on your worst. (' + s.n + ' days)'; },
+      e: '🛌' },
+    { id: 'carb-rec', A: 'carbs', B: 'recovery', lag: 1, scale: 22,
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 8; },
+      text: function (s) { var hi = s.hiMean > s.loMean; return 'Recovery is about ' + round(Math.abs(s.hiMean - s.loMean)) + ' points ' + (hi ? 'higher' : 'lower') + ' the morning after your higher-carb days (' + round(s.hiMean) + ' vs ' + round(s.loMean) + ', ' + s.n + ' days).'; },
+      e: '🍚' }
   ];
 
   function crossDomain(rows) {
