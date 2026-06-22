@@ -36,6 +36,13 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Insight Engine: available app-wide so Nova can cite cross-domain patterns.
+  (function loadInsights(){ try {
+    if (window.ALSInsights || document.querySelector('script[src*="insights-engine"]')) return;
+    var s = document.createElement('script'); s.src = 'insights-engine.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';

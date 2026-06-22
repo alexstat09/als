@@ -141,6 +141,25 @@
     return false;
   }
 
+  /* Once-per-session intro: prefer surfacing a real cross-domain insight, else a gentle greet. */
+  function novaGreet(){
+    try { if (!sessionStorage.getItem('nova_greeted')) { sessionStorage.setItem('nova_greeted', '1'); setTimeout(speak, 1600); } }
+    catch(e){ setTimeout(speak, 1600); }
+  }
+  function maybeIntro(){
+    var t = tk();
+    if (ls('nova_insight:'+t)) { novaGreet(); return; }   // already surfaced a pattern today → generic intro
+    var tries = 8;
+    (function attempt(){
+      if (!window.ALSInsights) { if (tries-- > 0) { setTimeout(attempt, 400); return; } novaGreet(); return; } // wait for the injected engine
+      var pins = []; try { pins = window.ALSInsights.compute(); } catch(e){}
+      if (pins.length && pins[0].strength >= 0.4) {
+        try { localStorage.setItem('nova_insight:'+t, '1'); } catch(e){}
+        setTimeout(function(){ bubbleSpeak('I noticed a pattern — ' + pins[0].text); }, 1600);
+      } else { novaGreet(); }
+    })();
+  }
+
   fab.addEventListener('click', function(){
     fab.classList.add('nova-poke');
     setTimeout(function(){ fab.classList.remove('nova-poke'); }, 600);
@@ -166,15 +185,8 @@
     // Proactive: morning check-in / evening reflection (once per day each).
     var fired = false;
     try { fired = proactive(); } catch(e){}
-    // Otherwise, a gentle once-per-session intro.
-    if (!fired) {
-      try {
-        if (!sessionStorage.getItem('nova_greeted')) {
-          sessionStorage.setItem('nova_greeted', '1');
-          setTimeout(speak, 1600);
-        }
-      } catch(e) { setTimeout(speak, 1600); }
-    }
+    // Otherwise: surface a cross-domain insight (once/day, prioritised) or a gentle intro.
+    if (!fired) maybeIntro();
     // idle life
     setInterval(function(){ if (!document.hidden && Math.random() < 0.5) lookAround(); }, 14000);
   }
