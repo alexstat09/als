@@ -308,20 +308,20 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
-  <a href="index.html"     class="bottombar-tab" data-page="hub">
-    <span class="bottombar-tab-icon">🏠</span><span>Hub</span>
+  <a href="index.html"     class="bottombar-tab" data-page="home">
+    <span class="bottombar-tab-icon">🏠</span><span>Home</span>
   </a>
-  <a href="main.html"      class="bottombar-tab" data-page="goals">
-    <span class="bottombar-tab-icon">🎯</span><span>Goals</span>
-  </a>
-  <a href="gym.html"       class="bottombar-tab" data-page="fitness">
-    <span class="bottombar-tab-icon">💪</span><span>Fitness</span>
-  </a>
-  <a href="body.html" class="bottombar-tab" data-page="body">
+  <a href="body.html"      class="bottombar-tab" data-page="body">
     <span class="bottombar-tab-icon">🫀</span><span>Body</span>
   </a>
-  <a href="ideas.html"     class="bottombar-tab" data-page="ideas">
-    <span class="bottombar-tab-icon">💡</span><span>Ideas</span>
+  <a href="main.html"      class="bottombar-tab" data-page="mind">
+    <span class="bottombar-tab-icon">🧠</span><span>Mind</span>
+  </a>
+  <a href="finance.html"   class="bottombar-tab" data-page="money">
+    <span class="bottombar-tab-icon">💰</span><span>Money</span>
+  </a>
+  <a href="nova-chat.html" class="bottombar-tab" data-page="nova">
+    <span class="bottombar-tab-icon">💬</span><span>Nova</span>
   </a>
 </nav>`;
 
@@ -329,13 +329,19 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     try { return window.self !== window.top; } catch (e) { return true; }
   }
   function shouldShowChrome() { return !isEmbedded(); }
+  // Maps the current page to one of the five bottom-nav "spaces" so the right
+  // tab highlights. Pages outside the bar (Life/Reflect) return '' (no tab lit).
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('index.html') || p === '/' || p.endsWith('/')) return 'hub';
-    if (p.endsWith('main.html'))      return 'goals';
-    if (p.endsWith('gym.html'))       return 'fitness';
-    if (p.endsWith('nutrition.html')) return 'nutrition';
-    if (p.endsWith('ideas.html'))     return 'ideas';
+    const f = p.split('/').pop() || '';
+    if (f === '' || f === 'index.html' || p === '/' || p.endsWith('/')) return 'home';
+    if (f === 'nova-chat.html') return 'nova';
+    const BODY = ['body.html','gym.html','pr.html','sleep.html','weight.html','po-water.html','caffeine.html','nutrition.html','measure.html','health.html','supps.html','planner.html','import.html','import-strong.html'];
+    const MIND = ['main.html','identity.html','ideas.html','improve.html'];
+    const MONEY = ['finance.html','bills.html'];
+    if (BODY.indexOf(f) > -1)  return 'body';
+    if (MIND.indexOf(f) > -1)  return 'mind';
+    if (MONEY.indexOf(f) > -1) return 'money';
     return '';
   }
 
@@ -367,7 +373,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     // Show back button on every page except the hub
     const backBtn = document.getElementById('topbarBack');
     if (backBtn) {
-      const isHub = currentPageKey() === 'hub';
+      const isHub = currentPageKey() === 'home';
       if (!isHub) {
         backBtn.style.display = 'inline-flex';
         backBtn.addEventListener('click', () => {
