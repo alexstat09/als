@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>The Constellation · concept demo</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="stylesheet" href="aurora.css">
+  <style>
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ height:100%; overflow:hidden; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); }
+
+    .cx-ribbon{ position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; background:linear-gradient(180deg, rgba(5,5,7,.8), transparent); }
+    .cx-ribbon b{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(155,140,255,.95); }
+    .cx-ribbon b small{ color:var(--au-faint); font-weight:600; }
+    .cx-ribbon .lnks{ display:flex; gap:8px; }
+    .cx-ribbon a{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--au-dim); text-decoration:none; border:1px solid var(--au-line); padding:6px 10px; border-radius:9px; }
+
+    .cx-space{ position:fixed; inset:0; overflow:hidden; }
+    .cx-lines{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    .cx-star{ position:absolute; border-radius:50%; background:#fff; pointer-events:none; animation:cxTwinkle 4s ease-in-out infinite; }
+    @keyframes cxTwinkle{ 0%,100%{ opacity:.15; } 50%{ opacity:.5; } }
+
+    /* center Nova sun */
+    .cx-center{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6;
+      display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; }
+    .cx-center .nova{ width:92px; height:92px; filter:drop-shadow(0 0 30px rgba(124,211,252,.4)); }
+    .cx-center .hint{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); text-align:center; max-width:140px; line-height:1.5; transition:opacity .3s; }
+
+    /* nodes */
+    .cx-node{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; z-index:4; text-decoration:none;
+      transition:left .55s cubic-bezier(.34,1.45,.5,1), top .55s cubic-bezier(.34,1.45,.5,1), opacity .4s ease, transform .25s; }
+    .cx-node .orb{ width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:25px;
+      background:radial-gradient(circle at 35% 28%, rgba(var(--c),.32), rgba(var(--c),.05));
+      border:1.5px solid rgba(var(--c),.55); box-shadow:0 0 26px rgba(var(--c),.35), inset 0 0 16px rgba(var(--c),.16); }
+    .cx-node .lab{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--c),.95); white-space:nowrap; }
+    .cx-node:active{ transform:translate(-50%,-50%) scale(.9); }
+    .cx-node.dim{ opacity:.12; pointer-events:none; }
+    .cx-node.float{ animation:cxFloat 6s ease-in-out infinite; }
+    @keyframes cxFloat{ 0%,100%{ margin-top:0; } 50%{ margin-top:-6px; } }
+    .cx-tool .orb{ width:48px; height:48px; font-size:20px; }
+    .cx-tool .lab{ color:var(--au-ivory); font-size:9px; letter-spacing:.06em; }
+    .cx-tool{ opacity:0; }
+    .cx-tool.in{ opacity:1; }
+
+    .cx-foot{ position:fixed; left:0; right:0; bottom:0; z-index:20; text-align:center; padding:0 20px calc(20px + env(safe-area-inset-bottom));
+      font-family:var(--au-mono); font-size:10px; letter-spacing:.08em; color:var(--au-faint); pointer-events:none; }
+  </style>
+</head>
+<body class="au-mood-calm">
+
+  <div class="cx-ribbon">
+    <b>✦ Concept demo <small>· The Constellation</small></b>
+    <div class="lnks"><a href="demo.html">Stream</a><a href="index.html">← dashboard</a></div>
+  </div>
+
+  <div class="cx-space" id="space">
+    <svg class="cx-lines" id="lines"></svg>
+    <div class="cx-center" id="center">
+      <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="cxNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#cxNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
+      <div class="hint" id="hint">Tap a world to explore<br>tap me to talk</div>
+    </div>
+  </div>
+
+  <div class="cx-foot" id="foot"></div>
+
+  <script src="aurora-bg.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    var space=document.getElementById('space'), svg=document.getElementById('lines'),
+        center=document.getElementById('center'), hint=document.getElementById('hint'), foot=document.getElementById('foot');
+
+    var DOMAINS=[
+      { key:'body', label:'Body', emoji:'🫀', c:'52,226,176', tools:[
+        {l:'Fitness',e:'💪',u:'gym.html'},{l:'PRs',e:'🏆',u:'pr.html'},{l:'Sleep',e:'🌙',u:'sleep.html'},
+        {l:'Nutrition',e:'🥗',u:'nutrition.html'},{l:'Weight',e:'⚖️',u:'weight.html'},{l:'Water',e:'💧',u:'po-water.html'},
+        {l:'Caffeine',e:'☕',u:'caffeine.html'},{l:'Supps',e:'💊',u:'health.html'},{l:'Measure',e:'📏',u:'measure.html'} ] },
+      { key:'mind', label:'Mind', emoji:'🧭', c:'155,140,255', tools:[
+        {l:'Goals',e:'🎯',u:'main.html'},{l:'Identity',e:'🧭',u:'identity.html'},{l:'Ideas',e:'💡',u:'ideas.html'},{l:'Improve',e:'🌱',u:'improve.html'} ] },
+      { key:'money', label:'Money', emoji:'📊', c:'242,192,99', tools:[
+        {l:'Finance',e:'📊',u:'finance.html'},{l:'Bills',e:'🧾',u:'bills.html'} ] },
+      { key:'life', label:'Life', emoji:'🎬', c:'214,142,247', tools:[
+        {l:'Movies',e:'🎬',u:'movies.html'} ] },
+      { key:'reflect', label:'Reflect', emoji:'✦', c:'124,184,255', tools:[
+        {l:'Morning',e:'◈',u:'morning.html'},{l:'Weekly',e:'✦',u:'weekly.html'},{l:'Arc',e:'🌌',u:'arc.html'},{l:'Trends',e:'📈',u:'trends.html'} ] }
+    ];
+
+    var W,H,cx,cy,R, nodes=[], openKey=null, toolNodes=[];
+
+    function el(cls){ var d=document.createElement('div'); d.className=cls; return d; }
+    function clampX(x){ return Math.max(46, Math.min(W-46, x)); }
+    function clampY(y){ return Math.max(72, Math.min(H-70, y)); }
+
+    function stars(){
+      for(var i=0;i<46;i++){ var s=el('cx-star'); var sz=Math.random()*2+0.6;
+        s.style.width=s.style.height=sz+'px'; s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*100)+'%';
+        s.style.animationDelay=(Math.random()*4)+'s'; space.insertBefore(s, svg.nextSibling); }
+    }
+
+    function buildDomains(){
+      DOMAINS.forEach(function(d,i){
+        var a=document.createElement('a'); a.className='cx-node cx-domain float'; a.href='javascript:void(0)';
+        a.style.setProperty('--c', d.c); a.style.animationDelay=(i*0.7)+'s';
+        a.innerHTML='<div class="orb">'+d.emoji+'</div><div class="lab">'+d.label+'</div>';
+        a.addEventListener('click', function(ev){ ev.preventDefault(); toggle(d.key); });
+        space.appendChild(a); d._el=a; nodes.push(d);
+      });
+    }
+
+    function layout(){
+      W=space.clientWidth; H=space.clientHeight; cx=W/2; cy=H/2; R=Math.min(W,H)*0.31;
+      nodes.forEach(function(d,i){ var ang=(-90 + i*(360/nodes.length))*Math.PI/180; d.ang=ang;
+        d.x=cx+R*Math.cos(ang); d.y=cy+R*Math.sin(ang);
+        if(openKey!==d.key){ d._el.style.left=d.x+'px'; d._el.style.top=d.y+'px'; } });
+      drawLines();
+    }
+
+    function line(x1,y1,x2,y2,rgb,op){ var l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+      l.setAttribute('stroke','rgba('+rgb+','+op+')'); l.setAttribute('stroke-width','1'); svg.appendChild(l); }
+    function ring(){ var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',R); c.setAttribute('fill','none');
+      c.setAttribute('stroke','rgba(255,255,255,.05)'); c.setAttribute('stroke-width','1'); svg.appendChild(c); }
+    function drawLines(){
+      svg.innerHTML='';
+      if(openKey){ var d=nodes.filter(function(n){return n.key===openKey;})[0];
+        toolNodes.forEach(function(t){ line(d.x,d.y,t._x,t._y, d.c, .35); });
+        return; }
+      ring();
+      nodes.forEach(function(d){ line(cx,cy,d.x,d.y, d.c, .22); });
+    }
+
+    function toggle(key){ if(openKey===key) collapse(); else expand(key); }
+
+    function expand(key){
+      collapse(true);
+      openKey=key;
+      var d=nodes.filter(function(n){return n.key===key;})[0];
+      nodes.forEach(function(n){ if(n.key!==key) n._el.classList.add('dim'); });
+      d._el.classList.remove('float');
+      var tools=d.tools, N=tools.length, inward=d.ang+Math.PI;
+      var span=N>1?Math.min(2.7,(N-1)*0.5):0, toolR=Math.min(R*0.62, 118);
+      tools.forEach(function(t,j){
+        var ang= N>1 ? (inward - span/2 + j*(span/(N-1))) : inward;
+        var tx=clampX(d.x+toolR*Math.cos(ang)), ty=clampY(d.y+toolR*Math.sin(ang));
+        var a=document.createElement('a'); a.className='cx-node cx-tool'; a.href=t.u;
+        a.style.setProperty('--c', d.c);
+        a.innerHTML='<div class="orb">'+t.e+'</div><div class="lab">'+t.l+'</div>';
+        a.style.left=d.x+'px'; a.style.top=d.y+'px';                 // start at the world, then blossom out
+        a._x=tx; a._y=ty; space.appendChild(a); toolNodes.push(a);
+        requestAnimationFrame(function(){ a.classList.add('in'); a.style.left=tx+'px'; a.style.top=ty+'px'; });
+      });
+      hint.textContent=d.label.toUpperCase()+' — tap Nova to go back';
+      setTimeout(drawLines, 60);
+    }
+
+    function collapse(silent){
+      openKey=null;
+      toolNodes.forEach(function(a){ a.remove(); }); toolNodes=[];
+      nodes.forEach(function(n){ n._el.classList.remove('dim'); n._el.classList.add('float');
+        n._el.style.left=n.x+'px'; n._el.style.top=n.y+'px'; });
+      if(!silent){ hint.innerHTML='Tap a world to explore<br>tap me to talk'; drawLines(); }
+    }
+
+    center.addEventListener('click', function(){ if(openKey) collapse(); else window.location.href='nova-chat.html'; });
+
+    stars();
+    buildDomains();
+    layout();
+    foot.textContent='your life, as a constellation';
+    var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(function(){ collapse(true); layout(); if(!openKey){ hint.innerHTML='Tap a world to explore<br>tap me to talk'; } }, 200); });
+  })();
+  </script>
+</body>
+</html>
