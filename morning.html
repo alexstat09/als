@@ -12,6 +12,7 @@
 <script src="tdee.js" defer></script>
 <script src="topbar.js" defer></script>
 <script src="insights-engine.js" defer></script>
+<script src="forecast-engine.js" defer></script>
 <style>
 /* ── TOKENS ────────────────────────────────────────── */
 :root {
@@ -472,6 +473,8 @@ body::after {
   .mb-directive-text a{ color:#34E2B0; border-bottom:1px solid rgba(52,226,176,.4); }
   .mb-noticed{ --accent-rgb:124,211,252; margin-top:-6px; }
   .mb-noticed .mb-directive-eyebrow{ color:rgba(124,211,252,.7); }
+  .mb-headed{ --accent-rgb:242,192,99; margin-top:-6px; }
+  .mb-headed .mb-directive-eyebrow{ color:rgba(242,192,99,.7); }
 
   /* ── RECOVERY PANEL ────────────────────────────── */
   .mb-panel-recovery{ --accent-rgb:155,140,255; }
@@ -558,6 +561,12 @@ body::after {
   <div class="mb-directive mb-noticed" id="mbNoticed" style="display:none">
     <span class="mb-directive-eyebrow">◈ NOVA NOTICED</span>
     <div class="mb-directive-text" id="mbNoticedText"></div>
+  </div>
+
+  <!-- trajectory (forecast) -->
+  <div class="mb-directive mb-headed" id="mbHeaded" style="display:none">
+    <span class="mb-directive-eyebrow">◈ ON YOUR TRAJECTORY</span>
+    <div class="mb-directive-text" id="mbHeadedText"></div>
   </div>
 
   <!-- panels -->
@@ -1226,6 +1235,16 @@ function boot(){
     }
   })();
 
+  /* Trajectory: surface the strongest weight/lift forecast (tomorrow-recovery is evening-gated) */
+  (function(){
+    var el=document.getElementById('mbHeaded'), txt=document.getElementById('mbHeadedText');
+    if(el && txt && window.ALSForecast){
+      var fc=[]; try{ fc=window.ALSForecast.compute(); }catch(e){}
+      fc=fc.filter(function(f){ return f.id!=='rec-tomorrow'; });
+      if(fc.length){ txt.textContent=fc[0].emoji+'  '+fc[0].text; el.style.display=''; }
+    }
+  })();
+
   /* staggered reveal */
   setTimeout(()=>{ document.getElementById('mbSysline').classList.add('visible'); }, 120);
   setTimeout(()=>{ document.getElementById('mbClockWrap').classList.add('visible'); }, 260);
@@ -1239,6 +1258,7 @@ function boot(){
         document.getElementById('mbDivider').classList.add('visible');
         setTimeout(()=>{ const d=document.getElementById('mbDirective'); if(d) d.classList.add('visible'); }, 120);
         setTimeout(()=>{ const n=document.getElementById('mbNoticed'); if(n && n.style.display!=='none') n.classList.add('visible'); }, 250);
+        setTimeout(()=>{ const f=document.getElementById('mbHeaded'); if(f && f.style.display!=='none') f.classList.add('visible'); }, 330);
         const panels=document.querySelectorAll('.mb-panel');
         panels.forEach((p,i)=>setTimeout(()=>p.classList.add('visible'), i*130));
         const after=panels.length*130+280;

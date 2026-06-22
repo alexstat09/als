@@ -19,6 +19,8 @@
   function dayNum(dk) { var d = new Date(dk + 'T00:00:00'); return isNaN(d) ? 0 : Math.floor(d.getTime() / 86400000); }
   function addDays(dk, n) { var d = new Date(dk + 'T00:00:00'); if (isNaN(d)) return dk; d.setDate(d.getDate() + n); return dkOf(d); }
   function round(n, p) { p = p || 0; var m = Math.pow(10, p); return Math.round((n || 0) * m) / m; }
+  function mean(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function fmtDate(dk) { var d = new Date(dk + 'T00:00:00'); return isNaN(d) ? dk : MON[d.getMonth()] + ' ' + d.getDate(); }
   function e1rm(w, r) { return (+w || 0) * (1 + (+r || 0) / 30); }
@@ -91,12 +93,45 @@
       text: 'Your ' + pick.ex.name + ' is climbing about ' + round(perWeek, 1) + ' kg/week (estimated 1RM) — on track to reach ' + milestone + ' kg around ' + fmtDate(eta) + ' if you keep the pace.' };
   }
 
+  // ── tomorrow's recovery, from YOUR own next-day response to training load ──
+  // Regresses next-morning recovery on the prior day's training volume, then
+  // applies today's actual load. Honest: ranged (±), and gated so it never
+  // predicts before today's training is known (needs you trained today, or it's
+  // evening). Falls back to your recent baseline when load doesn't explain much.
+  function recoveryForecast() {
+    var sl = ls('sleep:logs'); if (!Array.isArray(sl)) return null;
+    var rec = {}; sl.forEach(function (e) { if (e && e.dateKey && typeof e.recovery === 'number') rec[e.dateKey] = e.recovery; });
+    var recDates = Object.keys(rec).sort(); if (recDates.length < 8) return null;
+    var vol = {}; var wo = ls('po_workouts'); if (Array.isArray(wo)) wo.forEach(function (s) { if (s && s.date) vol[s.date] = (vol[s.date] || 0) + (+s.volume || 0); });
+    var pts = recDates.map(function (dk) { return [vol[addDays(dk, -1)] || 0, rec[dk]]; });
+    if (pts.length < 8) return null;
+    var r = linreg(pts); if (!r) return null;
+
+    var todayK = dkOf(new Date()), todayVol = vol[todayK] || 0;
+    var trainedToday = todayVol > 0, hour = new Date().getHours();
+    if (!trainedToday && hour < 18) return null;             // don't call tomorrow before today's training is known
+
+    var baseline = mean(recDates.slice(-14).map(function (d) { return rec[d]; }));
+    var loadPredictive = (r.r2 >= 0.15 && Math.abs(r.slope) > 0);
+    var pred = clamp(loadPredictive ? (r.intercept + r.slope * todayVol) : baseline, 0, 100);
+    var band = Math.max(5, Math.round(r.residStd));
+    var p = Math.round(pred), diff = pred - baseline, text;
+    if (trainedToday) {
+      if (diff <= -5) text = 'Today’s training will likely cost you — tomorrow’s recovery projects around ' + p + ' (±' + band + '), based on how you usually respond to days like this.';
+      else text = 'You trained today but should bounce back — tomorrow’s recovery projects around ' + p + ' (±' + band + ').';
+    } else {
+      text = 'A rest day today — tomorrow’s recovery projects around ' + p + ' (±' + band + ').';
+    }
+    return { id: 'rec-tomorrow', emoji: '🔮', kind: 'recovery', text: text };
+  }
+
   function compute() {
     var out = [];
     try { var w = weightForecast(); if (w) out.push(w); } catch (e) {}
     try { var l = liftForecast(); if (l) out.push(l); } catch (e) {}
+    try { var rc = recoveryForecast(); if (rc) out.push(rc); } catch (e) {}
     return out;
   }
 
-  window.ALSForecast = { compute: compute, _linreg: linreg, _weightForecast: weightForecast, _liftForecast: liftForecast };
+  window.ALSForecast = { compute: compute, _linreg: linreg, _weightForecast: weightForecast, _liftForecast: liftForecast, _recoveryForecast: recoveryForecast };
 })();
