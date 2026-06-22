@@ -220,8 +220,8 @@ async function buildBrief(tz) {
   return L.join('\n');
 }
 
-function systemPrompt(brief) {
-  return [
+function systemPrompt(brief, patterns) {
+  var lines = [
     "You are Nova — Alex's personal AI coach and companion, built into his life-tracking dashboard. Alex is 17 and doing a body recomposition: building strength and muscle while leaning out. You know him better than anyone because you can see his whole life below — his training, sleep, recovery, nutrition, supplements, caffeine, hydration, habits, goals and weight, updated in real time. You genuinely care about him and your job is to make him better.",
     '',
     'HOW YOU HELP — this is the whole point, do it every time:',
@@ -241,7 +241,26 @@ function systemPrompt(brief) {
     '=== HIS LIVE DATA (this is real, current, and yours to use) ===',
     brief,
     '=== END DATA ==='
-  ].join('\n');
+  ];
+  if (patterns && patterns.length) {
+    lines.push(
+      '',
+      "=== PATTERNS YOU'VE ALREADY NOTICED IN HIS DATA ===",
+      "These are statistically derived from his own logged history — established cross-domain observations you can cite, not guesses. When one of them answers his question (e.g. why he's tired, flat, sleeping badly, or hitting PRs), connect it for him in plain language. Don't invent new statistical patterns beyond these ones and what's in the live data above.",
+      patterns.map(function (p) { return '• ' + p; }).join('\n'),
+      '=== END PATTERNS ==='
+    );
+  }
+  return lines.join('\n');
+}
+
+// Cross-domain patterns the on-device Insight Engine computed, passed up by the
+// client. Strings only, trimmed and capped so prompt size stays bounded.
+function cleanInsights(raw) {
+  return (Array.isArray(raw) ? raw : []).map(function (s) {
+    if (typeof s !== 'string') { try { s = String(s == null ? '' : s); } catch (e) { s = ''; } }
+    return s.slice(0, 300).trim();
+  }).filter(Boolean).slice(0, 8);
 }
 
 function readBody(req) {
@@ -278,6 +297,7 @@ module.exports = async function (req, res) {
   var body = readBody(req);
   var messages = cleanMessages(body.messages);
   if (!messages.length) { res.status(400).json({ error: 'no messages' }); return; }
+  var patterns = cleanInsights(body.insights);
 
   var tz = 'Europe/Athens';
   try { var prefs = await supa.readRow('push:prefs'); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
@@ -288,7 +308,7 @@ module.exports = async function (req, res) {
   // Groq (OpenAI-compatible): system message + the conversation.
   var payload = {
     model: GROQ_MODEL,
-    messages: [{ role: 'system', content: systemPrompt(brief) }].concat(messages),
+    messages: [{ role: 'system', content: systemPrompt(brief, patterns) }].concat(messages),
     max_tokens: 1024,
     temperature: 0.7,
     stream: true

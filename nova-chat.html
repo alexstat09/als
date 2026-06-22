@@ -127,6 +127,7 @@
     </div>
   </div>
 
+  <script src="insights-engine.js" defer></script>
   <script>
   (function(){
     'use strict';
@@ -228,9 +229,11 @@
       toBottom(true);
       var acc = '';
       try {
+        // pass the cross-domain patterns Nova has noticed so she can cite them
+        var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
         var res = await fetch('/api/nova-chat', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ messages: history })
+          body: JSON.stringify({ messages: history, insights: novaInsights })
         });
         if(res.body && res.body.getReader){
           var reader = res.body.getReader(), dec = new TextDecoder();
