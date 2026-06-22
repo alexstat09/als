@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Command Core · concept demo</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="stylesheet" href="aurora.css">
+  <style>
+    :root{ --core:124,211,252; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    /* faint scan grid + moving scanline */
+    .cr-grid{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+      background-image:linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+      background-size:40px 40px; mask-image:radial-gradient(120% 80% at 50% 25%, #000, transparent 80%); -webkit-mask-image:radial-gradient(120% 80% at 50% 25%, #000, transparent 80%); }
+    .cr-scanline{ position:fixed; left:0; right:0; height:120px; z-index:1; pointer-events:none;
+      background:linear-gradient(rgba(var(--core),0), rgba(var(--core),.045), rgba(var(--core),0)); animation:crScan 7s linear infinite; }
+    @keyframes crScan{ 0%{ top:-120px } 100%{ top:100% } }
+
+    .cr-ribbon{ position:relative; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; }
+    .cr-ribbon b{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--core),.95); }
+    .cr-ribbon b small{ color:var(--au-faint); font-weight:600; }
+    .cr-ribbon .lnks{ display:flex; gap:7px; }
+    .cr-ribbon a{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--au-dim); text-decoration:none; border:1px solid var(--au-line); padding:6px 9px; border-radius:9px; }
+
+    .cr-wrap{ position:relative; z-index:10; max-width:600px; margin:0 auto; padding:4px 18px; }
+
+    /* system line */
+    .cr-sys{ display:flex; align-items:center; gap:9px; font-family:var(--au-mono); font-size:11px; color:var(--au-dim);
+      border:1px solid var(--au-line); border-radius:11px; padding:9px 13px; background:rgba(255,255,255,.02); margin-bottom:6px; }
+    .cr-sys .dot{ width:7px; height:7px; border-radius:50%; background:rgb(var(--core)); box-shadow:0 0 9px rgb(var(--core)); animation:crBlink 2.2s ease-in-out infinite; flex:none; }
+    @keyframes crBlink{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+    .cr-sys .msg{ flex:1; min-width:0; color:var(--au-ivory); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cr-sys .clk{ color:var(--au-faint); flex:none; letter-spacing:.05em; }
+
+    /* the core */
+    .cr-core{ position:relative; height:262px; display:flex; align-items:center; justify-content:center; margin:6px 0 2px; }
+    .cr-core-glow{ position:absolute; width:240px; height:240px; border-radius:50%;
+      background:radial-gradient(circle, rgba(var(--core),.28), rgba(var(--core),0) 65%); filter:blur(8px); animation:crBreath 4.6s ease-in-out infinite; }
+    @keyframes crBreath{ 0%,100%{ transform:scale(1); opacity:.85 } 50%{ transform:scale(1.08); opacity:1 } }
+    .cr-svg{ position:absolute; width:240px; height:240px; }
+    .cr-reticle{ transform-origin:120px 120px; animation:crSpin 26s linear infinite; }
+    @keyframes crSpin{ to{ transform:rotate(360deg) } }
+    .cr-reticle2{ transform-origin:120px 120px; animation:crSpin 40s linear infinite reverse; }
+    .cr-orb{ position:absolute; width:78px; height:78px; top:46px; }   /* Nova, the living heart */
+    .cr-orb .nova{ width:78px; height:78px; cursor:pointer; }
+    .cr-readout{ position:absolute; top:140px; display:flex; flex-direction:column; align-items:center; }
+    .cr-num{ font-family:var(--au-mono); font-size:54px; font-weight:800; line-height:1; letter-spacing:-.03em; color:#fff;
+      text-shadow:0 0 26px rgba(var(--core),.6); }
+    .cr-num small{ font-size:16px; color:var(--au-dim); font-weight:700; }
+    .cr-word{ font-family:var(--au-mono); font-size:11px; font-weight:800; letter-spacing:.26em; text-transform:uppercase; color:rgb(var(--core)); margin-top:8px; }
+
+    /* primary directive */
+    .cr-dir{ position:relative; border-radius:15px; padding:14px 16px; margin:8px 0 14px; text-decoration:none; display:block;
+      background:linear-gradient(135deg, rgba(var(--dc,124,211,252),.10), rgba(var(--dc,124,211,252),.02)); border:1px solid rgba(var(--dc,124,211,252),.26); }
+    .cr-dir .ey{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:rgba(var(--dc,124,211,252),.95); margin-bottom:7px; display:flex; align-items:center; gap:7px; }
+    .cr-dir .ey .ar{ margin-left:auto; color:var(--au-faint); }
+    .cr-dir .tx{ font-size:15px; line-height:1.4; color:var(--au-ivory); }
+
+    /* HUD instrument grid */
+    .cr-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .cr-mod{ position:relative; border:1px solid var(--au-line); border-radius:14px; padding:14px 14px 13px; text-decoration:none; color:inherit;
+      background:rgba(255,255,255,.025); overflow:hidden; transition:transform .16s, border-color .2s; }
+    .cr-mod:active{ transform:scale(.97); }
+    .cr-mod.full{ grid-column:1/-1; }
+    /* corner brackets */
+    .cr-mod::before, .cr-mod::after{ content:''; position:absolute; width:11px; height:11px; border:1.5px solid rgba(var(--mc,124,211,252),.5); pointer-events:none; }
+    .cr-mod::before{ top:7px; left:7px; border-right:none; border-bottom:none; border-top-left-radius:3px; }
+    .cr-mod::after{ bottom:7px; right:7px; border-left:none; border-top:none; border-bottom-right-radius:3px; }
+    .cr-mlabel{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--mc,124,211,252),.9); margin-bottom:9px; padding-left:8px; }
+    .cr-mval{ font-family:var(--au-mono); font-size:25px; font-weight:800; color:#fff; letter-spacing:-.02em; line-height:1; padding-left:8px; }
+    .cr-mval small{ font-size:12px; color:var(--au-dim); font-weight:600; }
+    .cr-msub{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:7px; padding-left:8px; }
+    .cr-bar{ height:4px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:9px; margin-left:8px; }
+    .cr-bar i{ display:block; height:100%; border-radius:2px; background:rgb(var(--mc,124,211,252)); }
+    .cr-spark{ display:flex; align-items:flex-end; gap:2px; height:20px; margin-top:8px; margin-left:8px; }
+    .cr-spark i{ flex:1; min-width:2px; background:rgba(var(--mc,124,211,252),.4); border-radius:1px; }
+    .cr-spark i.last{ background:rgb(var(--mc,124,211,252)); }
+
+    .cr-intel{ font-size:13.5px; line-height:1.5; color:var(--au-ivory); padding-left:8px; }
+
+    .cr-alert{ display:none; align-items:center; gap:9px; border:1px solid rgba(255,107,139,.4); background:rgba(255,107,139,.08);
+      border-radius:12px; padding:11px 14px; margin:0 0 12px; font-size:13px; color:#FFC2CE; }
+    .cr-alert.on{ display:flex; }
+    .cr-alert .d{ width:7px; height:7px; border-radius:50%; background:#FF6B8B; box-shadow:0 0 8px #FF6B8B; animation:crBlink 1.1s ease-in-out infinite; flex:none; }
+
+    .cr-sec{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint); margin:18px 2px 10px; }
+
+    /* command bar */
+    .cr-cmd{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+      background:linear-gradient(0deg, rgba(5,5,7,.96), rgba(5,5,7,.55) 70%, transparent); }
+    .cr-cmd-in{ max-width:600px; margin:0 auto; display:flex; align-items:center; gap:11px; text-decoration:none;
+      background:rgba(255,255,255,.05); border:1px solid rgba(var(--core),.3); border-radius:15px; padding:13px 15px;
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 -2px 30px rgba(0,0,0,.5); }
+    .cr-cmd-in .arrow{ font-family:var(--au-mono); color:rgb(var(--core)); font-weight:800; }
+    .cr-cmd-in .t{ flex:1; color:var(--au-dim); font-size:14px; font-family:var(--au-mono); letter-spacing:.02em; }
+    .cr-cmd-in .k{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); border:1px solid var(--au-line); border-radius:6px; padding:3px 6px; }
+    .hidden{ display:none!important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <div class="cr-grid" aria-hidden="true"></div>
+  <div class="cr-scanline" aria-hidden="true"></div>
+
+  <div class="cr-ribbon">
+    <b>✦ Concept demo <small>· Command Core</small></b>
+    <div class="lnks"><a href="demo-constellation.html">✦</a><a href="demo-worlds.html">Worlds</a><a href="index.html">← dash</a></div>
+  </div>
+
+  <div class="cr-wrap">
+    <div class="cr-sys"><span class="dot"></span><span class="msg" id="crSys">Booting systems…</span><span class="clk" id="crClk">--:--</span></div>
+
+    <div class="cr-core" id="crCore">
+      <div class="cr-core-glow" id="crGlow"></div>
+      <svg class="cr-svg" viewBox="0 0 240 240" id="crSvg">
+        <circle class="cr-reticle" cx="120" cy="120" r="108" fill="none" stroke="rgba(124,211,252,.18)" stroke-width="1" stroke-dasharray="2 10"/>
+        <circle class="cr-reticle2" cx="120" cy="120" r="96" fill="none" stroke="rgba(124,211,252,.28)" stroke-width="1.5" stroke-dasharray="14 18"/>
+        <circle cx="120" cy="120" r="82" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+        <circle id="crRing" cx="120" cy="120" r="82" fill="none" stroke="rgb(124,211,252)" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="515.2" stroke-dashoffset="515.2" transform="rotate(-90 120 120)"
+          style="transition:stroke-dashoffset 1.5s cubic-bezier(.22,.61,.36,1); filter:drop-shadow(0 0 8px rgba(124,211,252,.7))"/>
+      </svg>
+      <div class="cr-orb"><div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="crNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#crNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div></div>
+      <div class="cr-readout"><div class="cr-num" id="crNum">—</div><div class="cr-word" id="crWord">awaiting sleep</div></div>
+    </div>
+
+    <div class="cr-alert" id="crAlert"><span class="d"></span><span id="crAlertTx"></span></div>
+
+    <a class="cr-dir" id="crDir" href="#"><div class="ey"><span id="crDirE">▸</span><span>Do this now</span><span class="ar">→</span></div><div class="tx" id="crDirTx">—</div></a>
+
+    <div class="cr-grid2" id="crMods"></div>
+
+    <div class="cr-sec hidden" id="crIntelSec">Intel</div>
+    <div class="cr-grid2" id="crIntel"></div>
+  </div>
+
+  <a class="cr-cmd" href="nova-chat.html">
+    <div class="cr-cmd-in"><span class="arrow">▸</span><span class="t">Ask Nova…</span><span class="k">⌘</span></div>
+  </a>
+
+  <script src="aurora-bg.js" defer></script>
+  <script src="insights-engine.js" defer></script>
+  <script src="forecast-engine.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    function $(id){ return document.getElementById(id); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function r0(n){ return Math.round(n||0); }
+    function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+    function daysBetween(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+
+    function readState(){
+      var h=new Date().getHours(), t=todayKey();
+      var sl=ls('sleep:logs')||[]; var last=Array.isArray(sl)&&sl.length?sl[sl.length-1]:null;
+      var recovery=last&&typeof last.recovery==='number'?last.recovery:null;
+      var sleepH=last&&typeof last.hours==='number'?last.hours:null;
+      var sleptToday=Array.isArray(sl)&&sl.some(function(e){return e&&e.dateKey===t&&(e.hours>0||e.quality!=null);});
+      var wo=ls('po_workouts')||[]; var trainedToday=(ls('po_coach_workout_done')||{})[t]!=null||(Array.isArray(wo)&&wo.some(function(w){return w&&w.date===t;}));
+      var lastTrain=null,lastVol=0; (Array.isArray(wo)?wo:[]).forEach(function(w){ if(w&&w.date&&(!lastTrain||w.date>lastTrain)){ lastTrain=w.date; lastVol=+w.volume||0; } });
+      var daysSinceTrain=lastTrain?daysBetween(t,lastTrain):null;
+      // volume spark (last 7 by date)
+      var volByDay={}; (Array.isArray(wo)?wo:[]).forEach(function(w){ if(w&&w.date) volByDay[w.date]=(volByDay[w.date]||0)+(+w.volume||0); });
+      var volSpark=Object.keys(volByDay).sort().slice(-7).map(function(k){ return volByDay[k]; });
+      var weights=ls('po_coach_weights')||[]; var weight=Array.isArray(weights)&&weights.length?weights[weights.length-1].weight:null;
+      var prof=ls('nut:profile')||{}; var kcalTarget=prof.calTarget||(weight?r0(weight*32):2300); var protTarget=weight?r0(weight*2):150;
+      var nut=ls('nut:logs')||[]; var kcal=0,protein=0; (Array.isArray(nut)?nut:[]).forEach(function(e){ if(e&&e.dateKey===t){ kcal+=(+e.kcal||0); protein+=(+e.p||0); } });
+      var caf=ls('caf:logs')||[]; var caffeine=0; (Array.isArray(caf)?caf:[]).forEach(function(e){ if(e&&e.ts){ var d=new Date(e.ts); if(!isNaN(d)&&d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())===t) caffeine+=(+e.mg||0); } });
+      var pw=ls('po_water_v1')||{}; var water=((pw.logs||{})[t])||0;
+      var gs=ls('goal_streak_v1'); var streak=gs&&typeof gs.count==='number'?gs.count:0;
+      return { h:h, recovery:recovery, sleepH:sleepH, sleptToday:sleptToday, trainedToday:trainedToday, daysSinceTrain:daysSinceTrain,
+        lastVol:lastVol, volSpark:volSpark, weight:weight, kcal:kcal, kcalTarget:kcalTarget, protein:protein, protTarget:protTarget,
+        caffeine:caffeine, water:water, streak:streak };
+    }
+
+    function recCol(r){ if(r==null) return '124,211,252'; return r>=80?'52,226,176':r>=65?'24,200,192':r>=50?'242,192,99':'255,107,139'; }
+    function word(r){ if(r==null) return 'awaiting sleep'; return r>=80?'primed':r>=65?'recovered':r>=50?'steady':r>=40?'flat':'depleted'; }
+
+    function directive(s){
+      if(s.recovery!=null && s.recovery<45) return { e:'🪫', dc:'255,107,139', t:'You’re depleted (recovery '+s.recovery+'). Go light or rest — protect tonight’s sleep.', href:'sleep.html' };
+      if(!s.sleptToday && s.h>=5 && s.h<12) return { e:'🌙', dc:'155,140,255', t:'Log last night’s sleep so I can read your readiness.', href:'sleep.html' };
+      if(s.recovery!=null && s.recovery>=78 && !s.trainedToday) return { e:'⚡', dc:'52,226,176', t:'You’re primed (recovery '+s.recovery+'). Today’s a day to push and chase a PR.', href:'gym.html' };
+      if(s.daysSinceTrain!=null && s.daysSinceTrain>=3) return { e:'💪', dc:'124,211,252', t:'It’s been '+s.daysSinceTrain+' days since you trained — even a short session keeps momentum.', href:'gym.html' };
+      if(s.h>=17 && s.protTarget>0 && s.protein < s.protTarget*0.7) return { e:'🍗', dc:'124,184,122', t:r0(s.protein)+'g protein so far — aim for ~'+s.protTarget+'g. Get a hit in.', href:'nutrition.html' };
+      if(s.recovery!=null) return { e:'✓', dc:'52,226,176', t:'Solid setup. Eat well, move, and keep stacking good days.', href:'gym.html' };
+      return { e:'◈', dc:'124,211,252', t:'Log your day as you go — the more I see, the sharper I get.', href:'sleep.html' };
+    }
+
+    function alert(s){
+      if(s.recovery!=null && s.recovery<45) return 'Recovery low — your body’s asking for a break today.';
+      if(s.caffeine>0 && s.h>=16) return 'Caffeine after 4pm — cut it now so tonight’s sleep (and tomorrow’s lifts) don’t pay.';
+      if(!s.sleptToday && s.h>=10) return 'No sleep logged yet — I’m flying blind on your readiness.';
+      return null;
+    }
+
+    function sparkHTML(arr, mc){
+      if(!arr||arr.length<2) return '';
+      var mx=Math.max.apply(null,arr)||1;
+      return '<div class="cr-spark">'+arr.map(function(v,i){ var hh=clamp((v/mx)*20,2,20); return '<i class="'+(i===arr.length-1?'last':'')+'" style="height:'+hh+'px"></i>'; }).join('')+'</div>';
+    }
+    function mod(o){
+      return '<a class="cr-mod'+(o.full?' full':'')+'" href="'+o.href+'" style="--mc:'+o.mc+'">'+
+        '<div class="cr-mlabel">'+esc(o.label)+'</div>'+
+        '<div class="cr-mval">'+o.val+'</div>'+
+        (o.sub?'<div class="cr-msub">'+o.sub+'</div>':'')+
+        (o.extra||'')+'</a>';
+    }
+
+    function build(){
+      var s=readState(), rc=recCol(s.recovery);
+      document.documentElement.style.setProperty('--core', rc);
+
+      // system line
+      var d=new Date(); $('crClk').textContent=pad(d.getHours())+':'+pad(d.getMinutes());
+      $('crSys').textContent = s.recovery!=null ? ('Nova online · you’re '+word(s.recovery)+' today') : 'Nova online · log last night to calibrate';
+
+      // core
+      $('crNum').innerHTML = s.recovery!=null ? s.recovery : '—';
+      $('crWord').textContent = word(s.recovery);
+      $('crWord').style.color='rgb('+rc+')';
+      var C=2*Math.PI*82;
+      var ring=$('crRing'); ring.setAttribute('stroke','rgb('+rc+')'); ring.style.filter='drop-shadow(0 0 8px rgba('+rc+',.7))';
+      requestAnimationFrame(function(){ ring.setAttribute('stroke-dashoffset', s.recovery!=null ? C*(1-s.recovery/100) : C); });
+
+      // alert
+      var al=alert(s); var ae=$('crAlert');
+      if(al){ $('crAlertTx').textContent=al; ae.classList.add('on'); } else ae.classList.remove('on');
+
+      // directive
+      var dir=directive(s); $('crDir').href=dir.href; $('crDir').style.setProperty('--dc',dir.dc); $('crDirE').textContent=dir.e; $('crDirTx').textContent=dir.t;
+
+      // instruments
+      var kp=s.kcalTarget?clamp(s.kcal/s.kcalTarget,0,1):0, pp=s.protTarget?clamp(s.protein/s.protTarget,0,1):0;
+      var mods=[
+        mod({ label:'Fuel · today', mc:'124,184,122', href:'nutrition.html',
+          val:r0(s.kcal)+'<small> / '+s.kcalTarget+'</small>', sub:r0(s.protein)+'g / '+s.protTarget+'g protein',
+          extra:'<div class="cr-bar"><i style="width:'+(kp*100).toFixed(0)+'%;background:'+(s.kcal>s.kcalTarget*1.08?'#FF6B8B':'#7CB87A')+'"></i></div>' }),
+        mod({ label:'Training load', mc:'124,211,252', href:'gym.html',
+          val: s.trainedToday?'TODAY':(s.daysSinceTrain!=null?s.daysSinceTrain+'<small>d ago</small>':'—'),
+          sub: s.lastVol?('last '+(s.lastVol>=1000?(Math.round(s.lastVol/100)/10)+'k':s.lastVol)+' kg'):'no sessions yet',
+          extra:sparkHTML(s.volSpark,'124,211,252') }),
+        mod({ label:'Sleep · last night', mc:'155,140,255', href:'sleep.html',
+          val: s.sleepH!=null?(s.sleepH.toFixed(1)+'<small>h</small>'):'—',
+          sub: s.recovery!=null?('recovery '+s.recovery):'not logged' }),
+        mod({ label:'Hydration', mc:'96,165,250', href:'po-water.html',
+          val: s.water+'<small> / 8</small>', sub:'glasses today',
+          extra:'<div class="cr-bar"><i style="width:'+clamp(s.water/8*100,0,100).toFixed(0)+'%"></i></div>' }),
+        mod({ label:'Caffeine', mc:'201,163,107', href:'caffeine.html',
+          val: r0(s.caffeine)+'<small>mg</small>', sub: s.caffeine>0?(s.h>=16?'past your cutoff':'within range'):'none today' }),
+        mod({ label:'Streak', mc:'52,226,176', href:'main.html',
+          val: s.streak+'<small> 🔥</small>', sub: s.streak>0?'days on plan':'start one today' })
+      ];
+      $('crMods').innerHTML=mods.join('');
+
+      // intel (insight + forecast)
+      var intel=[];
+      try{ if(window.ALSInsights){ var ins=window.ALSInsights.compute(); if(ins.length) intel.push(mod({ label:'◈ Nova noticed', mc:'124,211,252', href:'index.html', full:true, val:'<span style="font-size:0;line-height:0"></span>', extra:'<div class="cr-intel">'+esc(ins[0].text)+'</div>' })); } }catch(e){}
+      try{ if(window.ALSForecast){ var fc=window.ALSForecast.compute(); if(fc.length) intel.push(mod({ label:'📈 On your trajectory', mc:'242,192,99', href:'arc.html', full:true, val:'<span style="font-size:0;line-height:0"></span>', extra:'<div class="cr-intel">'+esc(fc[0].text)+'</div>' })); } }catch(e){}
+      if(intel.length){ $('crIntelSec').classList.remove('hidden'); $('crIntel').innerHTML=intel.join(''); }
+      else { $('crIntelSec').classList.add('hidden'); $('crIntel').innerHTML=''; }
+    }
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build, {once:true}); else build();
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) build(); });
+    setInterval(function(){ var d=new Date(); $('crClk').textContent=pad(d.getHours())+':'+pad(d.getMinutes()); }, 20000);
+    $('crCore').addEventListener('click', function(){ window.location.href='nova-chat.html'; });
+  })();
+  </script>
+</body>
+</html>
