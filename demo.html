@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>The Stream · concept demo</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="stylesheet" href="aurora.css">
+  <style>
+    :root{ --d:124,211,252; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(96px + env(safe-area-inset-bottom)); }
+
+    /* demo ribbon */
+    .dx-ribbon{ position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between;
+      padding:10px 18px calc(10px); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+      background:linear-gradient(180deg, rgba(5,5,7,.85), rgba(5,5,7,.4)); border-bottom:1px solid var(--au-line); }
+    .dx-ribbon b{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--d),.95); }
+    .dx-ribbon b small{ color:var(--au-faint); font-weight:600; }
+    .dx-ribbon a{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-dim); text-decoration:none; border:1px solid var(--au-line); padding:6px 11px; border-radius:9px; }
+
+    .dx-wrap{ max-width:600px; margin:0 auto; padding:8px 18px; }
+
+    /* hero: Nova speaks your state */
+    .dx-hero{ padding:24px 4px 14px; }
+    .dx-greet{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint); margin-bottom:14px; }
+    .dx-hero-row{ display:flex; align-items:center; gap:16px; }
+    .dx-orb{ width:74px; height:74px; flex:none; }
+    .dx-orb .nova{ width:74px; height:74px; cursor:default; }
+    .dx-state{ flex:1; }
+    .dx-state-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(21px,5.6vw,27px); line-height:1.18; color:var(--au-ivory); }
+    .dx-state-sub{ font-size:12.5px; color:var(--au-dim); margin-top:7px; line-height:1.4; }
+
+    /* the stream */
+    .dx-stream{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+    .dx-card{ position:relative; display:block; text-decoration:none; color:inherit;
+      background:rgba(255,255,255,.028); border:1px solid var(--au-line); border-radius:18px; padding:16px 17px;
+      backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); overflow:hidden;
+      transition:transform .18s cubic-bezier(.34,1.56,.64,1), border-color .2s; }
+    a.dx-card:active{ transform:scale(.985); }
+    a.dx-card:hover{ border-color:rgba(var(--cc,124,211,252),.3); }
+    .dx-card::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:rgb(var(--cc,124,211,252)); opacity:.7; }
+    .dx-ey{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--cc,124,211,252),.95); margin-bottom:9px; display:flex; align-items:center; gap:7px; }
+    .dx-ey .arrow{ margin-left:auto; color:var(--au-faint); font-size:13px; }
+    .dx-big{ font-size:16px; line-height:1.4; color:var(--au-ivory); }
+    .dx-big b{ font-weight:700; }
+    .dx-sub{ font-size:12.5px; color:var(--au-dim); margin-top:6px; line-height:1.45; }
+
+    /* recovery ring inline */
+    .dx-rec{ display:flex; align-items:center; gap:15px; }
+    .dx-ring{ flex:none; position:relative; width:64px; height:64px; }
+    .dx-ring-n{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .dx-ring-n b{ font-family:var(--au-mono); font-size:19px; font-weight:800; color:#fff; line-height:1; }
+    .dx-ring-n span{ font-family:var(--au-mono); font-size:6.5px; font-weight:700; letter-spacing:.12em; color:var(--au-faint); text-transform:uppercase; margin-top:3px; }
+
+    /* fuel bars */
+    .dx-fuel-row{ display:flex; gap:14px; margin-top:4px; }
+    .dx-fuel{ flex:1; }
+    .dx-fuel-top{ display:flex; justify-content:space-between; align-items:baseline; font-family:var(--au-mono); font-size:11px; margin-bottom:5px; }
+    .dx-fuel-top b{ color:#fff; font-size:14px; font-weight:800; }
+    .dx-fuel-top span{ color:var(--au-faint); }
+    .dx-fuel-tr{ height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; }
+    .dx-fuel-fl{ height:100%; border-radius:3px; }
+
+    /* quick jump chips */
+    .dx-jump{ display:flex; gap:9px; flex-wrap:wrap; margin-top:4px; }
+    .dx-chip{ display:flex; align-items:center; gap:7px; padding:10px 14px; border-radius:13px; text-decoration:none;
+      background:rgba(255,255,255,.04); border:1px solid var(--au-line); color:var(--au-ivory); font-size:13px; font-weight:600; }
+    .dx-chip:active{ transform:scale(.96); }
+    .dx-chip .e{ font-size:15px; }
+
+    .dx-sec-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--au-faint); margin:18px 4px 2px; }
+
+    /* persistent Nova bar */
+    .dx-nova{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+      background:linear-gradient(0deg, rgba(5,5,7,.96), rgba(5,5,7,.55) 70%, transparent); }
+    .dx-nova-inner{ max-width:600px; margin:0 auto; display:flex; align-items:center; gap:11px;
+      background:rgba(255,255,255,.05); border:1px solid rgba(var(--d),.28); border-radius:16px; padding:12px 14px;
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); text-decoration:none; box-shadow:0 -2px 30px rgba(0,0,0,.5); }
+    .dx-nova-orb{ width:30px; height:30px; flex:none; }
+    .dx-nova-orb .nova{ width:30px; height:30px; }
+    .dx-nova-txt{ flex:1; color:var(--au-dim); font-size:14px; }
+    .dx-nova-go{ color:rgba(var(--d),.9); font-size:18px; }
+
+    .hidden{ display:none!important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+
+  <div class="dx-ribbon">
+    <b>✦ Concept demo <small>· The Stream</small></b>
+    <a href="index.html">← my dashboard</a>
+  </div>
+
+  <div class="dx-wrap">
+    <section class="dx-hero">
+      <div class="dx-greet" id="dxGreet">—</div>
+      <div class="dx-hero-row">
+        <div class="dx-orb">
+          <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="dxNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#dxNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
+        </div>
+        <div class="dx-state">
+          <div class="dx-state-line" id="dxState">Reading your day…</div>
+          <div class="dx-state-sub" id="dxStateSub"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="dx-stream" id="dxStream"></div>
+  </div>
+
+  <a class="dx-nova" href="nova-chat.html">
+    <div class="dx-nova-inner">
+      <div class="dx-nova-orb"><div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#dxNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/></g></svg></div></div>
+      <div class="dx-nova-txt">Ask Nova anything…</div>
+      <div class="dx-nova-go">↑</div>
+    </div>
+  </a>
+
+  <script src="aurora-bg.js" defer></script>
+  <script src="insights-engine.js" defer></script>
+  <script src="forecast-engine.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    function $(id){ return document.getElementById(id); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function r0(n){ return Math.round(n||0); }
+    function daysBetween(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+
+    // ── read the real data ──
+    function readState(){
+      var h=new Date().getHours(), t=todayKey();
+      var sl=ls('sleep:logs'); var lastSleep=Array.isArray(sl)&&sl.length?sl[sl.length-1]:null;
+      var recovery=lastSleep&&typeof lastSleep.recovery==='number'?lastSleep.recovery:null;
+      var sleptToday=Array.isArray(sl)&&sl.some(function(e){return e&&e.dateKey===t&&(e.hours>0||e.quality!=null);});
+      var wo=ls('po_workouts')||[];
+      var trainedToday=(ls('po_coach_workout_done')||{})[t]!=null || (Array.isArray(wo)&&wo.some(function(w){return w&&w.date===t;}));
+      var lastTrain=null; (Array.isArray(wo)?wo:[]).forEach(function(w){ if(w&&w.date&&(!lastTrain||w.date>lastTrain)) lastTrain=w.date; });
+      var daysSinceTrain=lastTrain?daysBetween(t,lastTrain):null;
+      var weights=ls('po_coach_weights')||[]; var weight=Array.isArray(weights)&&weights.length?weights[weights.length-1].weight:75;
+      var prof=ls('nut:profile')||{}; var kcalTarget=prof.calTarget||r0(weight*32); var protTarget=r0(weight*2);
+      var nut=ls('nut:logs')||[]; var kcal=0,protein=0;
+      (Array.isArray(nut)?nut:[]).forEach(function(e){ if(e&&e.dateKey===t){ kcal+=(+e.kcal||0); protein+=(+e.p||0); } });
+      var pw=ls('po_water_v1')||{}; var water=((pw.logs||{})[t])||0;
+      return { h:h, recovery:recovery, sleptToday:sleptToday, trainedToday:trainedToday, daysSinceTrain:daysSinceTrain,
+        weight:weight, kcal:kcal, kcalTarget:kcalTarget, protein:protein, protTarget:protTarget, water:water };
+    }
+
+    function greeting(h){ return h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':h<22?'Good evening':'Late one'; }
+    function readinessWord(r){ if(r==null) return null; return r>=80?'primed':r>=65?'recovered':r>=50?'steady':r>=40?'a little flat':'run-down'; }
+    function recCol(r){ return r>=80?'52,226,176':r>=65?'24,200,192':r>=45?'242,192,99':'255,107,139'; }
+
+    // Nova's one-line read of you (the "state of you")
+    function stateLine(s){
+      if(s.recovery!=null){ var w=readinessWord(s.recovery); return 'You’re '+w+' today.'; }
+      if(!s.sleptToday && s.h<12) return 'Morning. How did you sleep?';
+      return 'Here’s where you stand.';
+    }
+    function stateSub(s){
+      var bits=[];
+      if(s.recovery!=null) bits.push('Recovery '+s.recovery);
+      if(s.trainedToday) bits.push('trained ✓'); else if(s.daysSinceTrain!=null) bits.push(s.daysSinceTrain+'d since training');
+      if(s.kcal>0) bits.push(r0(s.kcal)+' / '+s.kcalTarget+' kcal');
+      return bits.join('  ·  ');
+    }
+
+    // the single most important thing right now
+    function directive(s){
+      if(s.recovery!=null && s.recovery<45) return { e:'🪫', cc:'255,107,139', t:'You’re run-down (recovery '+s.recovery+'). Go light or rest today — and protect tonight’s sleep.', href:'sleep.html' };
+      if(!s.sleptToday && s.h>=5 && s.h<12) return { e:'🌙', cc:'155,140,255', t:'Log last night’s sleep so I can read your readiness.', href:'sleep.html' };
+      if(s.recovery!=null && s.recovery>=78 && !s.trainedToday) return { e:'⚡', cc:'52,226,176', t:'You’re primed (recovery '+s.recovery+'). Today’s a day to push and chase a PR.', href:'gym.html' };
+      if(s.daysSinceTrain!=null && s.daysSinceTrain>=3) return { e:'💪', cc:'124,211,252', t:'It’s been '+s.daysSinceTrain+' days — even a short session keeps momentum.', href:'gym.html' };
+      if(s.h>=17 && s.protTarget>0 && s.protein < s.protTarget*0.7) return { e:'🍗', cc:'124,184,122', t:r0(s.protein)+'g protein so far — aim for ~'+s.protTarget+'g. Get a hit in to grow while you lean out.', href:'nutrition.html' };
+      if(!s.trainedToday && s.recovery!=null) return { e:'✓', cc:'52,226,176', t:'Solid setup. Eat well, move, and keep stacking good days.', href:'gym.html' };
+      return { e:'◈', cc:'124,211,252', t:'Log your day as you go — the more I see, the sharper I get.', href:'index.html' };
+    }
+
+    function ringSVG(pct, rgb){
+      var R=27, C=2*Math.PI*R, off=C*(1-Math.max(0,Math.min(1,pct)));
+      return '<svg viewBox="0 0 64 64" width="64" height="64" style="transform:rotate(-90deg)">'+
+        '<circle cx="32" cy="32" r="'+R+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="5"/>'+
+        '<circle cx="32" cy="32" r="'+R+'" fill="none" stroke="rgb('+rgb+')" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" style="filter:drop-shadow(0 0 6px rgba('+rgb+',.6))"/></svg>';
+    }
+
+    function card(opts){
+      var a=document.createElement('a'); a.className='dx-card'; a.href=opts.href||'#'; a.style.setProperty('--cc',opts.cc||'124,211,252');
+      a.innerHTML='<div class="dx-ey">'+(opts.e?'<span>'+opts.e+'</span>':'')+esc(opts.label)+'<span class="arrow">→</span></div>'+opts.body;
+      return a;
+    }
+
+    function build(){
+      var s=readState();
+      $('dxGreet').textContent=greeting(s.h)+', Alex';
+      $('dxState').textContent=stateLine(s);
+      $('dxStateSub').textContent=stateSub(s);
+
+      var stream=$('dxStream'); stream.innerHTML='';
+
+      // 1 — do this now
+      var dir=directive(s);
+      stream.appendChild(card({ label:'Do this now', e:dir.e, cc:dir.cc, href:dir.href,
+        body:'<div class="dx-big">'+esc(dir.t)+'</div>' }));
+
+      // 2 — recovery (if available)
+      if(s.recovery!=null){
+        var rc=recCol(s.recovery);
+        stream.appendChild(card({ label:'Recovery · last night', cc:rc, href:'sleep.html',
+          body:'<div class="dx-rec"><div class="dx-ring">'+ringSVG(s.recovery/100, rc)+'<div class="dx-ring-n"><b>'+s.recovery+'</b><span>recovery</span></div></div>'+
+            '<div><div class="dx-big"><b>'+(readinessWord(s.recovery)||'').replace(/^./,function(c){return c.toUpperCase();})+'.</b></div>'+
+            '<div class="dx-sub">'+(s.recovery>=70?'Your engine’s running well — make today count.':s.recovery>=45?'Middle of the road. Train smart, then recover hard.':'Back off today; tomorrow’s built on tonight’s sleep.')+'</div></div></div>' }));
+      }
+
+      // 3 — fuel
+      var kp=s.kcalTarget?Math.min(1,s.kcal/s.kcalTarget):0, pp=s.protTarget?Math.min(1,s.protein/s.protTarget):0;
+      stream.appendChild(card({ label:'Fuel · today', e:'🥗', cc:'124,184,122', href:'nutrition.html',
+        body:'<div class="dx-fuel-row">'+
+          '<div class="dx-fuel"><div class="dx-fuel-top"><b>'+r0(s.kcal)+'</b><span>/ '+s.kcalTarget+' kcal</span></div><div class="dx-fuel-tr"><div class="dx-fuel-fl" style="width:'+(kp*100).toFixed(0)+'%;background:'+(s.kcal>s.kcalTarget*1.08?'#FF6B8B':'#7CB87A')+'"></div></div></div>'+
+          '<div class="dx-fuel"><div class="dx-fuel-top"><b>'+r0(s.protein)+'g</b><span>/ '+s.protTarget+'g protein</span></div><div class="dx-fuel-tr"><div class="dx-fuel-fl" style="width:'+(pp*100).toFixed(0)+'%;background:#34E2B0"></div></div></div>'+
+          '</div>' }));
+
+      // 4 — nova noticed (top insight)
+      try{ if(window.ALSInsights){ var ins=window.ALSInsights.compute(); if(ins.length){
+        stream.appendChild(card({ label:'Nova noticed', e:'◈', cc:'124,211,252', href:'index.html',
+          body:'<div class="dx-big">'+esc(ins[0].text)+'</div>' })); } } }catch(e){}
+
+      // 5 — trajectory (top forecast)
+      try{ if(window.ALSForecast){ var fc=window.ALSForecast.compute(); if(fc.length){
+        stream.appendChild(card({ label:'On your trajectory', e:'📈', cc:'242,192,99', href:'arc.html',
+          body:'<div class="dx-big">'+esc(fc[0].text)+'</div>' })); } } }catch(e){}
+
+      // 6 — quick jump (the few you reach for)
+      var lbl=document.createElement('div'); lbl.className='dx-sec-lbl'; lbl.textContent='Jump in'; stream.appendChild(lbl);
+      var jump=document.createElement('div'); jump.className='dx-jump';
+      [['💪','Fitness','gym.html'],['🌙','Sleep','sleep.html'],['🥗','Nutrition','nutrition.html'],['⚖️','Weight','weight.html'],['🌌','Your Arc','arc.html'],['🧭','Identity','identity.html']]
+        .forEach(function(j){ jump.innerHTML+='<a class="dx-chip" href="'+j[2]+'"><span class="e">'+j[0]+'</span>'+j[1]+'</a>'; });
+      stream.appendChild(jump);
+    }
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build, {once:true}); else build();
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) build(); });
+  })();
+  </script>
+</body>
+</html>
