@@ -9,14 +9,14 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v68";
+var CACHE = "als-v69";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
   'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html',
   'aurora.css', 'aurora-page.css', 'jarvis.css',
   'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
-  'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'aurora-bg.js', 'nova-life.js',
+  'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'aurora-bg.js', 'nova-life.js', 'insights-engine.js',
   'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/Flip.min.js', 'vendor/SplitText.min.js', 'vendor/lenis.min.js',
   'manifest.json', 'icon-192.png', 'icon-512.png', 'icon.svg', 'apple-touch-icon.png'
 ];

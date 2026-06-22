@@ -320,6 +320,14 @@ body::after {
 .bento-hd-sub { font-family:var(--font-mono); font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); }
 .bento-hd-line { flex:1; height:1px; background:linear-gradient(90deg, rgba(var(--hd,124,184,255),0.28), transparent); }
 
+/* ── INSIGHTS ("what Nova noticed") ───────────────── */
+.insight-card { display:flex; gap:13px; align-items:flex-start; padding:14px 16px; border-radius:16px; margin-bottom:10px;
+  background:linear-gradient(135deg, rgba(124,211,252,0.08), rgba(124,211,252,0.02));
+  border:1px solid rgba(124,211,252,0.20); }
+.insight-emoji { font-size:21px; line-height:1.25; flex:none; filter:drop-shadow(0 0 8px rgba(124,211,252,0.45)); }
+.insight-text { font-size:14px; line-height:1.5; color:var(--text-primary); }
+.insight-empty { padding:15px 16px; border-radius:16px; border:1px dashed rgba(255,255,255,0.10); color:var(--text-tertiary); font-size:13px; line-height:1.55; }
+
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
   .bento-grid { grid-template-columns:repeat(2,1fr); grid-auto-rows:148px; }
@@ -888,6 +896,12 @@ body::after {
     </div>
     <div class="hub-search-results" id="hubSearchResults"></div>
   </div>
+
+  <!-- ─ WHAT NOVA NOTICED (cross-domain insights) ─ -->
+  <section class="bento-section" id="insightSection" style="display:none">
+    <div class="bento-hd" style="--hd:124,211,252"><span class="bento-hd-lbl">What Nova noticed</span><span class="bento-hd-sub">patterns across your data</span><span class="bento-hd-line"></span></div>
+    <div id="insightCards"></div>
+  </section>
 
   <!-- ─ BODY ─ -->
   <section class="bento-section">
@@ -1769,6 +1783,32 @@ setInterval(renderIntelFeed, 60000);
 })();
 </script>
 <script src="nova-coach.js?v=18" defer></script>
+<script src="insights-engine.js" defer></script>
+<script>
+/* ── What Nova noticed: render cross-domain insights ─────────── */
+(function(){
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function go(){
+    if(!window.ALSInsights){ setTimeout(go,150); return; }
+    var sec=document.getElementById('insightSection'), wrap=document.getElementById('insightCards');
+    if(!sec||!wrap) return;
+    var ins=[]; try{ ins=window.ALSInsights.compute(); }catch(e){ ins=[]; }
+    if(ins.length){
+      wrap.innerHTML=ins.slice(0,3).map(function(i){
+        return '<div class="insight-card"><span class="insight-emoji">'+esc(i.emoji)+'</span><span class="insight-text">'+esc(i.text)+'</span></div>';
+      }).join('');
+      sec.style.display='';
+    } else {
+      var days=0; try{ days=Object.keys(window.ALSInsights._timeline()).length; }catch(e){}
+      if(days>=3){
+        wrap.innerHTML='<div class="insight-empty">I’m still learning your patterns. Keep logging sleep, training, food and caffeine — once there’s about two weeks of overlap I’ll start connecting the dots across them.</div>';
+        sec.style.display='';
+      }
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', go, {once:true}); else go();
+})();
+</script>
 <script>
 /* ── Jump-to command palette ─────────────────────────────────── */
 (function(){
