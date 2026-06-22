@@ -128,6 +128,7 @@
   </div>
 
   <script src="insights-engine.js" defer></script>
+  <script src="forecast-engine.js" defer></script>
   <script>
   (function(){
     'use strict';
@@ -229,8 +230,9 @@
       toBottom(true);
       var acc = '';
       try {
-        // pass the cross-domain patterns Nova has noticed so she can cite them
+        // pass the cross-domain patterns + trajectory forecasts so Nova can cite them
         var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
+        try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
         var res = await fetch('/api/nova-chat', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ messages: history, insights: novaInsights })

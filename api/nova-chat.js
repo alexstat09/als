@@ -245,8 +245,8 @@ function systemPrompt(brief, patterns) {
   if (patterns && patterns.length) {
     lines.push(
       '',
-      "=== PATTERNS YOU'VE ALREADY NOTICED IN HIS DATA ===",
-      "These are statistically derived from his own logged history — established cross-domain observations you can cite, not guesses. When one of them answers his question (e.g. why he's tired, flat, sleeping badly, or hitting PRs), connect it for him in plain language. Don't invent new statistical patterns beyond these ones and what's in the live data above.",
+      "=== PATTERNS & PROJECTIONS NOVA HAS COMPUTED FROM HIS DATA ===",
+      "These are derived from his own logged history — cross-domain patterns and trend-based projections you can cite, not guesses. When one answers his question (why he's tired, flat, sleeping badly, hitting PRs, or where a trend is heading), connect it in plain language. Items phrased as projections ('on track for', 'in 4 weeks', 'around [date]') are estimates from his current trend, NOT certainties — relay them with that nuance. Don't invent new patterns or numbers beyond these and the live data above.",
       patterns.map(function (p) { return '• ' + p; }).join('\n'),
       '=== END PATTERNS ==='
     );

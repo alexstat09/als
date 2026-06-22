@@ -43,6 +43,13 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Forecast Engine: trajectory/projection, app-wide for Nova.
+  (function loadForecast(){ try {
+    if (window.ALSForecast || document.querySelector('script[src*="forecast-engine"]')) return;
+    var s = document.createElement('script'); s.src = 'forecast-engine.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';

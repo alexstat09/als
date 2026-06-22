@@ -328,6 +328,12 @@ body::after {
 .insight-text { font-size:14px; line-height:1.5; color:var(--text-primary); }
 .insight-empty { padding:15px 16px; border-radius:16px; border:1px dashed rgba(255,255,255,0.10); color:var(--text-tertiary); font-size:13px; line-height:1.55; }
 
+/* ── FORECASTS ("where you're headed") ────────────── */
+.forecast-card { display:flex; gap:13px; align-items:flex-start; padding:14px 16px; border-radius:16px; margin-bottom:10px;
+  background:linear-gradient(135deg, rgba(242,192,99,0.08), rgba(242,192,99,0.02));
+  border:1px solid rgba(242,192,99,0.20); }
+.forecast-card .insight-emoji { filter:drop-shadow(0 0 8px rgba(242,192,99,0.45)); }
+
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:720px){
   .bento-grid { grid-template-columns:repeat(2,1fr); grid-auto-rows:148px; }
@@ -901,6 +907,12 @@ body::after {
   <section class="bento-section" id="insightSection" style="display:none">
     <div class="bento-hd" style="--hd:124,211,252"><span class="bento-hd-lbl">What Nova noticed</span><span class="bento-hd-sub">patterns across your data</span><span class="bento-hd-line"></span></div>
     <div id="insightCards"></div>
+  </section>
+
+  <!-- ─ WHERE YOU'RE HEADED (forecasts) ─ -->
+  <section class="bento-section" id="forecastSection" style="display:none">
+    <div class="bento-hd" style="--hd:242,192,99"><span class="bento-hd-lbl">Where you’re headed</span><span class="bento-hd-sub">projected from your trends</span><span class="bento-hd-line"></span></div>
+    <div id="forecastCards"></div>
   </section>
 
   <!-- ─ BODY ─ -->
@@ -1784,6 +1796,26 @@ setInterval(renderIntelFeed, 60000);
 </script>
 <script src="nova-coach.js?v=18" defer></script>
 <script src="insights-engine.js" defer></script>
+<script src="forecast-engine.js" defer></script>
+<script>
+/* ── Where you're headed: render trajectory forecasts ────────── */
+(function(){
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function go(){
+    if(!window.ALSForecast){ setTimeout(go,150); return; }
+    var sec=document.getElementById('forecastSection'), wrap=document.getElementById('forecastCards');
+    if(!sec||!wrap) return;
+    var fc=[]; try{ fc=window.ALSForecast.compute(); }catch(e){ fc=[]; }
+    if(fc.length){
+      wrap.innerHTML=fc.map(function(f){
+        return '<div class="forecast-card"><span class="insight-emoji">'+esc(f.emoji)+'</span><span class="insight-text">'+esc(f.text)+'</span></div>';
+      }).join('');
+      sec.style.display='';
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', go, {once:true}); else go();
+})();
+</script>
 <script>
 /* ── What Nova noticed: render cross-domain insights ─────────── */
 (function(){
