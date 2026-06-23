@@ -13,110 +13,106 @@
     *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
     html,body{ min-height:100%; }
     body{ background:#03040a; color:#E8EDF4; font-family:var(--au-sans); overflow-x:hidden;
-      padding:0 0 calc(140px + env(safe-area-inset-bottom)); }
-    .mono{ font-family:var(--au-mono); }
+      padding:0 0 calc(132px + env(safe-area-inset-bottom)); }
 
-    /* ambient holo wash + grid + scanline */
+    /* ambient holo wash + scanline (kept faint for cleanliness) */
     .cc-wash{ position:fixed; inset:0; z-index:0; pointer-events:none;
-      background:radial-gradient(120% 90% at 50% 8%, rgba(var(--lens),.10), transparent 60%), radial-gradient(80% 60% at 50% 105%, rgba(var(--lens),.08), transparent 60%);
-      transition:background .6s; }
-    .cc-grid{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
-      background-image:linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
-      background-size:44px 44px; mask-image:radial-gradient(120% 80% at 50% 30%, #000, transparent 82%); -webkit-mask-image:radial-gradient(120% 80% at 50% 30%, #000, transparent 82%); }
-    .cc-scan{ position:fixed; left:0; right:0; height:140px; z-index:1; pointer-events:none;
-      background:linear-gradient(rgba(var(--lens),0), rgba(var(--lens),.05), rgba(var(--lens),0)); animation:ccScan 7.5s linear infinite; }
-    @keyframes ccScan{ 0%{ top:-140px } 100%{ top:100% } }
+      background:radial-gradient(120% 80% at 50% 38%, rgba(var(--lens),.11), transparent 62%); transition:background .6s; }
+    .cc-scan{ position:fixed; left:0; right:0; height:160px; z-index:1; pointer-events:none;
+      background:linear-gradient(rgba(var(--lens),0), rgba(var(--lens),.04), rgba(var(--lens),0)); animation:ccScan 8s linear infinite; }
+    @keyframes ccScan{ 0%{ top:-160px } 100%{ top:100% } }
 
     /* corner reticle frame */
-    .cc-cnr{ position:fixed; width:26px; height:26px; z-index:6; pointer-events:none; border:1.5px solid rgba(var(--gold),.45); }
+    .cc-cnr{ position:fixed; width:24px; height:24px; z-index:6; pointer-events:none; border:1.5px solid rgba(var(--gold),.4); }
     .cc-cnr.tl{ top:9px; left:9px; border-right:none; border-bottom:none; }
     .cc-cnr.tr{ top:9px; right:9px; border-left:none; border-bottom:none; }
     .cc-cnr.bl{ bottom:9px; left:9px; border-right:none; border-top:none; }
     .cc-cnr.br{ bottom:9px; right:9px; border-left:none; border-top:none; }
 
-    .cc-rib{ position:relative; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:9px 30px; }
+    .cc-rib{ position:relative; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:9px 28px; }
     .cc-rib b{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:rgba(var(--gold),.95); }
     .cc-rib b small{ color:rgba(255,255,255,.32); font-weight:600; }
     .cc-rib .lnks{ display:flex; gap:6px; }
     .cc-rib a{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:rgba(255,255,255,.4); text-decoration:none; border:1px solid rgba(255,255,255,.12); padding:5px 8px; border-radius:7px; }
 
-    .cc-wrap{ position:relative; z-index:10; max-width:600px; margin:0 auto; padding:2px 20px; }
+    .cc-wrap{ position:relative; z-index:10; max-width:560px; margin:0 auto; padding:0 18px; }
 
-    /* JARVIS voice telemetry */
-    .cc-voice{ display:flex; align-items:center; gap:10px; font-family:var(--au-mono); font-size:11.5px; line-height:1.45;
-      color:#CFE6F5; border:1px solid rgba(var(--lens),.22); border-radius:3px; padding:10px 13px; background:rgba(var(--lens),.05);
-      letter-spacing:.01em; margin:4px 0 2px; min-height:42px; transition:border-color .5s, background .5s; }
-    .cc-voice .id{ font-weight:700; color:rgba(var(--lens),.95); letter-spacing:.14em; flex:none; }
-    .cc-voice .tx{ flex:1; min-width:0; }
-    .cc-voice .cur{ display:inline-block; width:7px; height:13px; background:rgba(var(--lens),.9); margin-left:2px; vertical-align:-2px; animation:ccBlink 1.05s steps(1) infinite; }
-    @keyframes ccBlink{ 0%,100%{ opacity:1 } 50%{ opacity:0 } }
+    /* JARVIS voice — single clean telemetry line */
+    .cc-voice{ display:flex; align-items:center; gap:9px; font-family:var(--au-mono); font-size:11px; line-height:1.4;
+      color:#CFE6F5; letter-spacing:.01em; padding:6px 2px; min-height:34px; }
+    .cc-voice .dot{ width:6px; height:6px; border-radius:50%; background:rgb(var(--lens)); box-shadow:0 0 9px rgb(var(--lens)); flex:none; animation:ccPulse 2.4s ease-in-out infinite; }
+    @keyframes ccPulse{ 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+    .cc-voice .id{ font-weight:700; color:rgba(var(--lens),.9); letter-spacing:.13em; flex:none; }
+    .cc-voice .tx{ flex:1; min-width:0; color:#D6E6F2; }
 
-    /* THE REACTOR */
-    .cc-reactor{ position:relative; height:282px; display:flex; align-items:center; justify-content:center; margin:2px 0 0; }
-    .cc-rcore{ position:absolute; width:118px; height:118px; border-radius:50%;
-      background:radial-gradient(circle, rgba(var(--lens),.55), rgba(var(--lens),.12) 55%, transparent 72%); filter:blur(2px); animation:ccBreath 4.4s ease-in-out infinite; }
-    @keyframes ccBreath{ 0%,100%{ transform:scale(1); opacity:.9 } 50%{ transform:scale(1.07); opacity:1 } }
-    .cc-svg{ position:absolute; width:268px; height:268px; }
-    .cc-spin{ transform-origin:134px 134px; animation:ccSpin 30s linear infinite; }
-    .cc-spin-r{ transform-origin:134px 134px; animation:ccSpin 46s linear infinite reverse; }
-    @keyframes ccSpin{ to{ transform:rotate(360deg) } }
-    .cc-readout{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; }
-    .cc-num{ font-family:var(--au-mono); font-size:62px; font-weight:800; line-height:.9; letter-spacing:-.04em; color:#fff;
-      text-shadow:0 0 30px rgba(var(--lens),.65); font-variant-numeric:tabular-nums; }
-    .cc-num small{ font-size:18px; color:rgba(255,255,255,.5); font-weight:700; margin-left:1px; }
-    .cc-word{ font-family:var(--au-mono); font-size:10.5px; font-weight:800; letter-spacing:.3em; text-transform:uppercase; color:rgb(var(--lens)); margin-top:11px; }
-    .cc-rlabel{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.26em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:9px; }
-
-    /* priority + alert telemetry */
-    .cc-pri{ display:flex; align-items:center; gap:9px; font-family:var(--au-mono); font-size:12px; line-height:1.4; color:#E8EDF4;
-      border-left:2px solid rgb(var(--lens)); padding:9px 12px; background:rgba(255,255,255,.02); border-radius:0 4px 4px 0; margin:6px 0 0; text-decoration:none; }
-    .cc-pri .k{ font-size:8.5px; font-weight:800; letter-spacing:.18em; color:rgba(var(--lens),.9); flex:none; }
-    .cc-pri .tx{ flex:1; min-width:0; color:#D6E3EE; }
-    .cc-pri .gt{ color:rgba(255,255,255,.3); flex:none; }
-    .cc-alert{ display:none; align-items:center; gap:9px; font-family:var(--au-mono); font-size:11.5px; color:#FFC2CE;
-      border:1px solid rgba(255,107,139,.4); background:rgba(255,107,139,.07); border-radius:4px; padding:9px 12px; margin-top:8px; }
+    .cc-alert{ display:none; align-items:center; gap:8px; font-family:var(--au-mono); font-size:11px; color:#FFC2CE;
+      border:1px solid rgba(255,107,139,.4); background:rgba(255,107,139,.07); border-radius:4px; padding:8px 11px; margin:2px 0; }
     .cc-alert.on{ display:flex; }
-    .cc-alert .d{ width:7px; height:7px; border-radius:50%; background:#FF6B8B; box-shadow:0 0 8px #FF6B8B; animation:ccBlink 1.1s steps(1) infinite; flex:none; }
+    .cc-alert .d{ width:6px; height:6px; border-radius:50%; background:#FF6B8B; box-shadow:0 0 8px #FF6B8B; animation:ccPulse 1.1s ease-in-out infinite; flex:none; }
     .cc-alert .k{ font-weight:800; letter-spacing:.16em; flex:none; }
 
-    /* radial gauge dials */
-    .cc-dials{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px 8px; margin-top:18px; }
-    .cc-dial{ display:flex; flex-direction:column; align-items:center; text-decoration:none; color:inherit; transition:transform .15s; }
-    .cc-dial:active{ transform:scale(.93); }
-    .cc-dwrap{ position:relative; width:84px; height:84px; }
-    .cc-dwrap svg{ width:84px; height:84px; transform:rotate(-90deg); }
-    .cc-dval{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--au-mono); font-size:17px; font-weight:800; color:#fff; letter-spacing:-.02em; }
-    .cc-dval small{ font-size:10px; color:rgba(255,255,255,.5); font-weight:700; }
-    .cc-dlabel{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:rgba(var(--dc,124,211,252),.95); margin-top:8px; text-align:center; }
-    .cc-dsub{ font-family:var(--au-mono); font-size:8.5px; color:rgba(255,255,255,.32); margin-top:3px; text-align:center; }
+    /* ---- the radial stage: reactor + wired orbiting nodes ---- */
+    .cc-stage{ position:relative; width:min(94vw,372px); margin:8px auto 0; }
+    .cc-stage::before{ content:''; display:block; padding-top:100%; }   /* square */
+    .cc-spokes{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+    .cc-reactor{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:52%; height:52%; z-index:2; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .cc-rcore{ position:absolute; width:64%; height:64%; border-radius:50%;
+      background:radial-gradient(circle, rgba(var(--lens),.55), rgba(var(--lens),.12) 55%, transparent 72%); filter:blur(2px); animation:ccBreath 4.4s ease-in-out infinite; }
+    @keyframes ccBreath{ 0%,100%{ transform:scale(1); opacity:.9 } 50%{ transform:scale(1.07); opacity:1 } }
+    .cc-rsvg{ position:absolute; inset:0; width:100%; height:100%; }
+    .cc-spin{ transform-origin:134px 134px; animation:ccSpin 32s linear infinite; }
+    .cc-spin-r{ transform-origin:134px 134px; animation:ccSpin 48s linear infinite reverse; }
+    @keyframes ccSpin{ to{ transform:rotate(360deg) } }
+    .cc-readout{ position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; }
+    .cc-rlabel{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.26em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:6px; }
+    .cc-num{ font-family:var(--au-mono); font-weight:800; font-size:clamp(40px,13.5vw,58px); line-height:.9; letter-spacing:-.04em; color:#fff; text-shadow:0 0 30px rgba(var(--lens),.65); font-variant-numeric:tabular-nums; }
+    .cc-num small{ font-size:.32em; color:rgba(255,255,255,.5); font-weight:700; margin-left:1px; }
+    .cc-word{ font-family:var(--au-mono); font-size:9.5px; font-weight:800; letter-spacing:.28em; text-transform:uppercase; color:rgb(var(--lens)); margin-top:9px; }
+
+    .cc-node{ position:absolute; transform:translate(-50%,-50%); width:17.5%; min-width:52px; z-index:3;
+      display:flex; flex-direction:column; align-items:center; text-decoration:none; transition:transform .15s; }
+    .cc-node:active{ transform:translate(-50%,-50%) scale(.9); }
+    .cc-nwrap{ position:relative; width:100%; }
+    .cc-nwrap::before{ content:''; display:block; padding-top:100%; }
+    .cc-nwrap svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+    .cc-nval{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--au-mono); font-weight:800; font-size:clamp(12px,3.5vw,15px); color:#fff; letter-spacing:-.02em; }
+    .cc-nval small{ font-size:.62em; color:rgba(255,255,255,.5); font-weight:700; }
+    .cc-nlabel{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:rgba(var(--dc,124,211,252),.95); margin-top:5px; text-align:center; white-space:nowrap; }
+
+    /* priority — one clean recommendation line */
+    .cc-pri{ display:flex; align-items:center; gap:9px; font-family:var(--au-mono); font-size:11.5px; line-height:1.4; color:#E8EDF4;
+      border-left:2px solid rgb(var(--lens)); padding:9px 12px; background:rgba(255,255,255,.02); border-radius:0 4px 4px 0; margin:14px 0 0; text-decoration:none; }
+    .cc-pri .k{ font-size:8px; font-weight:800; letter-spacing:.18em; color:rgba(var(--lens),.9); flex:none; }
+    .cc-pri .tx{ flex:1; min-width:0; color:#D6E3EE; }
+    .cc-pri .gt{ color:rgba(255,255,255,.3); flex:none; }
 
     /* lens rail */
-    .cc-rail{ position:fixed; left:0; right:0; bottom:calc(60px + env(safe-area-inset-bottom)); z-index:40; display:flex; justify-content:center; }
-    .cc-rail-in{ display:flex; gap:4px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:13px; background:rgba(7,9,16,.82);
+    .cc-rail{ position:fixed; left:0; right:0; bottom:calc(58px + env(safe-area-inset-bottom)); z-index:40; display:flex; justify-content:center; }
+    .cc-rail-in{ display:flex; gap:3px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:13px; background:rgba(7,9,16,.82);
       backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:0 6px 24px rgba(0,0,0,.5); }
-    .cc-lens{ font-family:var(--au-mono); font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.4);
-      padding:8px 11px; border-radius:9px; border:1px solid transparent; cursor:pointer; transition:.18s; white-space:nowrap; }
+    .cc-lens{ font-family:var(--au-mono); font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:rgba(255,255,255,.4);
+      padding:8px 10px; border-radius:9px; border:1px solid transparent; cursor:pointer; transition:.18s; white-space:nowrap; }
     .cc-lens.on{ color:#fff; border-color:rgba(var(--lc),.55); background:rgba(var(--lc),.12); text-shadow:0 0 10px rgba(var(--lc),.6); }
 
-    .cc-cmd{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:9px 20px calc(11px + env(safe-area-inset-bottom));
+    .cc-cmd{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:8px 18px calc(10px + env(safe-area-inset-bottom));
       background:linear-gradient(0deg, rgba(3,4,10,.97), rgba(3,4,10,.4) 80%, transparent); }
-    .cc-cmd-in{ max-width:600px; margin:0 auto; display:flex; align-items:center; gap:10px; text-decoration:none;
-      border:1px solid rgba(var(--lens),.28); border-radius:4px; padding:11px 14px; background:rgba(255,255,255,.03); }
+    .cc-cmd-in{ max-width:560px; margin:0 auto; display:flex; align-items:center; gap:10px; text-decoration:none;
+      border:1px solid rgba(var(--lens),.28); border-radius:4px; padding:10px 14px; background:rgba(255,255,255,.03); }
     .cc-cmd-in .p{ font-family:var(--au-mono); color:rgb(var(--lens)); font-weight:800; }
-    .cc-cmd-in .t{ flex:1; font-family:var(--au-mono); color:rgba(255,255,255,.45); font-size:12.5px; letter-spacing:.04em; }
+    .cc-cmd-in .t{ flex:1; font-family:var(--au-mono); color:rgba(255,255,255,.45); font-size:12px; letter-spacing:.04em; }
     .cc-cmd-in .k{ font-family:var(--au-mono); font-size:9px; color:rgba(255,255,255,.3); border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:3px 6px; }
 
     /* boot */
     .cc-boot{ position:fixed; inset:0; z-index:90; background:#03040a; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; transition:opacity .5s; }
     .cc-boot.off{ opacity:0; pointer-events:none; }
-    .cc-boot svg{ width:120px; height:120px; }
+    .cc-boot svg{ width:118px; height:118px; }
     .cc-boot .bt{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.3em; text-transform:uppercase; color:rgba(var(--cy),.9); }
     .cc-boot .bt b{ color:rgba(var(--gold),.95); }
-    .cc-bsweep{ transform-origin:60px 60px; animation:ccSpin 1.1s linear infinite; }
+    .cc-bsweep{ transform-origin:59px 59px; animation:ccSpin 1.1s linear infinite; }
   </style>
 </head>
 <body>
-  <div class="cc-wash"></div><div class="cc-grid"></div><div class="cc-scan"></div>
+  <div class="cc-wash"></div><div class="cc-scan"></div>
   <div class="cc-cnr tl"></div><div class="cc-cnr tr"></div><div class="cc-cnr bl"></div><div class="cc-cnr br"></div>
 
   <div class="cc-rib">
@@ -125,37 +121,39 @@
   </div>
 
   <div class="cc-wrap">
-    <div class="cc-voice"><span class="id">J.A.R.V.I.S</span><span class="tx" id="ccVoice">Standing by…</span><span class="cur"></span></div>
+    <div class="cc-voice"><span class="dot"></span><span class="id">J.A.R.V.I.S</span><span class="tx" id="ccVoice">Standing by…</span></div>
+    <div class="cc-alert" id="ccAlert"><span class="d"></span><span class="k">ALERT</span><span class="tx" id="ccAlertTx"></span></div>
 
-    <div class="cc-reactor" id="ccReactor">
-      <div class="cc-rcore" id="ccCoreGlow"></div>
-      <svg class="cc-svg" viewBox="0 0 268 268">
-        <circle class="cc-spin" cx="134" cy="134" r="124" fill="none" stroke="rgba(232,194,106,.30)" stroke-width="1" stroke-dasharray="2 15"/>
-        <circle cx="134" cy="134" r="113" fill="none" stroke="rgba(232,194,106,.20)" stroke-width="7" stroke-dasharray="1.4 6.6"/>
-        <circle class="cc-spin-r" cx="134" cy="134" r="100" fill="none" stroke="rgba(124,211,252,.25)" stroke-width="1.5" stroke-dasharray="22 30"/>
-        <circle cx="134" cy="134" r="88" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="7"/>
-        <circle id="ccRing" cx="134" cy="134" r="88" fill="none" stroke="rgb(124,211,252)" stroke-width="7" stroke-linecap="round"
-          stroke-dasharray="552.9" stroke-dashoffset="552.9" transform="rotate(-90 134 134)"
-          style="transition:stroke-dashoffset 1.1s cubic-bezier(.22,.61,.36,1); filter:drop-shadow(0 0 9px rgba(124,211,252,.75))"/>
-      </svg>
-      <div class="cc-readout">
-        <div class="cc-rlabel" id="ccRlabel">Readiness</div>
-        <div class="cc-num"><span id="ccNum">—</span><small id="ccUnit"></small></div>
-        <div class="cc-word" id="ccWord">awaiting data</div>
+    <div class="cc-stage">
+      <svg class="cc-spokes" id="ccSpokes" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      <div class="cc-reactor" id="ccReactor">
+        <div class="cc-rcore" id="ccCoreGlow"></div>
+        <svg class="cc-rsvg" viewBox="0 0 268 268">
+          <circle class="cc-spin" cx="134" cy="134" r="124" fill="none" stroke="rgba(232,194,106,.30)" stroke-width="1" stroke-dasharray="2 15"/>
+          <circle cx="134" cy="134" r="113" fill="none" stroke="rgba(232,194,106,.20)" stroke-width="7" stroke-dasharray="1.4 6.6"/>
+          <circle class="cc-spin-r" cx="134" cy="134" r="100" fill="none" stroke="rgba(124,211,252,.25)" stroke-width="1.5" stroke-dasharray="22 30"/>
+          <circle cx="134" cy="134" r="88" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="7"/>
+          <circle id="ccRing" cx="134" cy="134" r="88" fill="none" stroke="rgb(124,211,252)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="552.9" stroke-dashoffset="552.9" transform="rotate(-90 134 134)"
+            style="transition:stroke-dashoffset 1.1s cubic-bezier(.22,.61,.36,1); filter:drop-shadow(0 0 9px rgba(124,211,252,.75))"/>
+        </svg>
+        <div class="cc-readout">
+          <div class="cc-rlabel" id="ccRlabel">Readiness</div>
+          <div class="cc-num"><span id="ccNum">—</span><small id="ccUnit"></small></div>
+          <div class="cc-word" id="ccWord">awaiting data</div>
+        </div>
       </div>
+      <div id="ccNodes"></div>
     </div>
 
     <a class="cc-pri" id="ccPri" href="#"><span class="k" id="ccPriK">PRIORITY</span><span class="tx" id="ccPriTx">—</span><span class="gt">→</span></a>
-    <div class="cc-alert" id="ccAlert"><span class="d"></span><span class="k">ALERT</span><span class="tx" id="ccAlertTx"></span></div>
-
-    <div class="cc-dials" id="ccDials"></div>
   </div>
 
   <div class="cc-rail"><div class="cc-rail-in" id="ccRail"></div></div>
   <a class="cc-cmd" href="nova-chat.html"><div class="cc-cmd-in"><span class="p">&gt;_</span><span class="t">engage console</span><span class="k">⌘</span></div></a>
 
   <div class="cc-boot" id="ccBoot">
-    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(124,211,252,.12)" stroke-width="3"/><circle class="cc-bsweep" cx="60" cy="60" r="50" fill="none" stroke="rgb(124,211,252)" stroke-width="3" stroke-linecap="round" stroke-dasharray="80 234"/><circle cx="60" cy="60" r="32" fill="none" stroke="rgba(232,194,106,.5)" stroke-width="2" stroke-dasharray="2 8"/></svg>
+    <svg viewBox="0 0 118 118"><circle cx="59" cy="59" r="49" fill="none" stroke="rgba(124,211,252,.12)" stroke-width="3"/><circle class="cc-bsweep" cx="59" cy="59" r="49" fill="none" stroke="rgb(124,211,252)" stroke-width="3" stroke-linecap="round" stroke-dasharray="78 230"/><circle cx="59" cy="59" r="31" fill="none" stroke="rgba(232,194,106,.5)" stroke-width="2" stroke-dasharray="2 8"/></svg>
     <div class="bt">Initializing <b>Command Core</b></div>
   </div>
 
@@ -196,7 +194,6 @@
     function readAll(){
       var now=new Date(), h=now.getHours(), t=todayKey(), y=now.getFullYear(), m=now.getMonth();
       var D={ h:h, t:t };
-      // BODY
       var sl=arr('sleep:logs'), last=sl.length?sl[sl.length-1]:null;
       D.recovery=last&&typeof last.recovery==='number'?last.recovery:null;
       D.sleepH=last&&typeof last.hours==='number'?last.hours:null;
@@ -210,12 +207,10 @@
       D.caffeine=0; arr('caf:logs').forEach(function(e){ if(e&&e.ts){ var d=new Date(e.ts); if(!isNaN(d)&&dkOf(d.getFullYear(),d.getMonth(),d.getDate())===t) D.caffeine+=(+e.mg||0); } });
       D.water=((ls('po_water_v1')||{}).logs||{})[t]||0;
       var gs=ls('goal_streak_v1'); D.streak=gs&&typeof gs.count==='number'?gs.count:0;
-      // MIND
       var hbList=arr('habits:list'), hbLog=ls('habits:log')||{}, today=hbLog[t]||{};
       D.hbTotal=hbList.length; D.hbDone=Math.min(Object.keys(today).length, hbList.length);
       var vids=arr('improve:videos'); D.vidTotal=vids.length; D.vidWatched=vids.filter(function(v){return v&&v.watched;}).length; D.vidQueue=D.vidTotal-D.vidWatched;
       var ihab=arr('improve:habits'); D.adoptTotal=ihab.length; D.adopted=ihab.filter(function(x){return x&&x.adopted;}).length;
-      // MONEY
       var bills=arr('bills:items'), paid=arr('bills:paid'), nospend=arr('bills:nospend');
       D.billsCount=bills.length;
       D.monthTotal=bills.reduce(function(s,b){ return s+monthOccCount(b,y,m)*(+b.amount||0); },0);
@@ -224,11 +219,9 @@
       D.paidCount=D.billsMonth.filter(function(b){ return b.recur!=='weekly' && paid.some(function(p){return p.id===paidId(b.id,y,m);}); }).length;
       var pre=y+'-'+pad(m+1)+'-'; D.noSpend=nospend.filter(function(n){return n&&typeof n.id==='string'&&n.id.indexOf(pre)===0;}).length;
       D.dayOfMonth=now.getDate();
-      // LIFE
       var seen=arr('movies:seen'); D.filmsSeen=seen.length; var rated=seen.filter(function(f){return f&&f.rating!=null;});
       D.tasteAvg=rated.length?Math.round(rated.reduce(function(a,f){return a+f.rating;},0)/rated.length):null;
       D.watchlist=arr('movies:watch').length;
-      // REFLECT
       var measured=arr('bm:logs').filter(function(e){return e&&e.dateKey;}); D.measureCount=measured.length;
       D.lastMeasure=measured.length?measured[measured.length-1].dateKey:null;
       var loggedDays={}; for(var i=0;i<7;i++){ var dd=new Date(); dd.setDate(dd.getDate()-i); loggedDays[dkOf(dd.getFullYear(),dd.getMonth(),dd.getDate())]=false; }
@@ -244,7 +237,6 @@
     function recWord(r){ if(r==null) return 'awaiting data'; return r>=80?'primed':r>=65?'recovered':r>=50?'steady':r>=40?'flat':'depleted'; }
     function pctWord(p){ return p>=.85?'locked in':p>=.6?'on track':p>=.35?'building':p>0?'early':'no data'; }
 
-    /* ---------- lenses ---------- */
     var LENSES=[
       { k:'body',    name:'Body',    rgb:'124,211,252' },
       { k:'mind',    name:'Mind',    rgb:'155,140,255' },
@@ -269,12 +261,12 @@
           : 'Recovery is low at '+d.recovery+'. I’d advise you recover, not train.';
         return { rgb:rg, rlabel:'Readiness', num:d.recovery, unit:'', word:recWord(d.recovery), ringPct:d.recovery!=null?d.recovery/100:0,
           voice:voice, priority:pri, gauges:[
-            { label:'Fuel', val:shortVol(d.kcal), sub:'/'+d.kcalTarget, pct:clamp(d.kcal/d.kcalTarget,0,1), rgb:d.kcal>d.kcalTarget*1.08?'255,107,139':'124,184,122', href:'nutrition.html' },
-            { label:'Protein', val:r0(d.protein), unit:'g', sub:'/'+d.protTarget+'g', pct:clamp(d.protein/d.protTarget,0,1), rgb:'124,184,122', href:'nutrition.html' },
-            { label:'Train', val:d.trainedToday?'ON':(d.daysSinceTrain!=null?d.daysSinceTrain:'—'), unit:d.trainedToday?'':(d.daysSinceTrain!=null?'d':''), sub:d.lastVol?shortVol(d.lastVol)+'kg':'no data', pct:d.trainedToday?1:(d.daysSinceTrain!=null?clamp(1-d.daysSinceTrain/4,0,1):0), rgb:'124,211,252', href:'gym.html' },
-            { label:'Sleep', val:d.sleepH!=null?d.sleepH.toFixed(1):'—', unit:d.sleepH!=null?'h':'', sub:d.recovery!=null?'rec '+d.recovery:'—', pct:d.sleepH!=null?clamp(d.sleepH/9,0,1):0, rgb:'155,140,255', href:'sleep.html' },
-            { label:'Water', val:d.water, unit:'/8', sub:'glasses', pct:clamp(d.water/8,0,1), rgb:'96,165,250', href:'po-water.html' },
-            { label:'Caffeine', val:r0(d.caffeine), unit:'mg', sub:d.caffeine>0?(d.h>=16?'late':'ok'):'none', pct:clamp(d.caffeine/200,0,1), rgb:'201,163,107', href:'caffeine.html' }
+            { label:'Fuel', val:shortVol(d.kcal), pct:clamp(d.kcal/d.kcalTarget,0,1), rgb:d.kcal>d.kcalTarget*1.08?'255,107,139':'124,184,122', href:'nutrition.html' },
+            { label:'Protein', val:r0(d.protein), unit:'g', pct:clamp(d.protein/d.protTarget,0,1), rgb:'124,184,122', href:'nutrition.html' },
+            { label:'Train', val:d.trainedToday?'ON':(d.daysSinceTrain!=null?d.daysSinceTrain:'—'), unit:d.trainedToday?'':(d.daysSinceTrain!=null?'d':''), pct:d.trainedToday?1:(d.daysSinceTrain!=null?clamp(1-d.daysSinceTrain/4,0,1):0), rgb:'124,211,252', href:'gym.html' },
+            { label:'Sleep', val:d.sleepH!=null?d.sleepH.toFixed(1):'—', unit:d.sleepH!=null?'h':'', pct:d.sleepH!=null?clamp(d.sleepH/9,0,1):0, rgb:'155,140,255', href:'sleep.html' },
+            { label:'Water', val:d.water, unit:'/8', pct:clamp(d.water/8,0,1), rgb:'96,165,250', href:'po-water.html' },
+            { label:'Caffeine', val:r0(d.caffeine), unit:'mg', pct:clamp(d.caffeine/200,0,1), rgb:'201,163,107', href:'caffeine.html' }
           ]};
       }
       if(k==='mind'){
@@ -288,10 +280,10 @@
           : 'No daily protocols on file. Define a few and I’ll track them.';
         return { rgb:'155,140,255', rlabel:'Discipline', num:d.hbTotal?Math.round(dp*100):null, unit:d.hbTotal?'%':'', word:d.hbTotal?pctWord(dp):'undefined', ringPct:dp,
           voice:voice, priority:pri, gauges:[
-            { label:'Protocols', val:d.hbTotal?d.hbDone+'/'+d.hbTotal:'—', sub:'today', pct:dp, rgb:'155,140,255', href:'weekly.html' },
-            { label:'Learn', val:d.vidQueue, sub:'in queue', pct:d.vidTotal?clamp(d.vidWatched/d.vidTotal,0,1):0, rgb:'124,211,252', href:'improve.html' },
-            { label:'Adopted', val:d.adoptTotal?d.adopted+'/'+d.adoptTotal:'—', sub:'habits', pct:d.adoptTotal?clamp(d.adopted/d.adoptTotal,0,1):0, rgb:'52,226,176', href:'improve.html' },
-            { label:'Streak', val:d.streak, sub:'day'+(d.streak===1?'':'s'), pct:clamp(d.streak/30,0,1), rgb:'52,226,176', href:'main.html' }
+            { label:'Protocols', val:d.hbTotal?d.hbDone+'/'+d.hbTotal:'—', pct:dp, rgb:'155,140,255', href:'weekly.html' },
+            { label:'Learn', val:d.vidQueue, pct:d.vidTotal?clamp(d.vidWatched/d.vidTotal,0,1):0, rgb:'124,211,252', href:'improve.html' },
+            { label:'Adopted', val:d.adoptTotal?d.adopted+'/'+d.adoptTotal:'—', pct:d.adoptTotal?clamp(d.adopted/d.adoptTotal,0,1):0, rgb:'52,226,176', href:'improve.html' },
+            { label:'Streak', val:d.streak, pct:clamp(d.streak/30,0,1), rgb:'52,226,176', href:'main.html' }
           ]};
       }
       if(k==='money'){
@@ -303,10 +295,10 @@
           : 'Finances steady. '+d.paidCount+' of '+d.billsMonthCount+' bills settled, '+d.noSpend+' no-spend day'+(d.noSpend===1?'':'s')+' this month.';
         return { rgb:'232,194,106', rlabel:'No-spend', num:d.noSpend, unit:'', word:d.noSpend>0?'days this month':'none yet', ringPct:clamp(d.noSpend/Math.max(d.dayOfMonth,1),0,1),
           voice:voice, priority:pri, gauges:[
-            { label:'Committed', val:moneyShort(d.monthTotal), sub:'per month', kind:'readout', rgb:'232,194,106', href:'bills.html' },
-            { label:'Settled', val:d.billsMonthCount?d.paidCount+'/'+d.billsMonthCount:'—', sub:'bills paid', pct:settle, rgb:'52,226,176', href:'bills.html' },
-            { label:'No-spend', val:d.noSpend, sub:'days', pct:clamp(d.noSpend/Math.max(d.dayOfMonth,1),0,1), rgb:'232,194,106', href:'bills.html' },
-            { label:'Tracked', val:d.billsCount, sub:'bills', kind:'readout', rgb:'232,194,106', href:'bills.html' }
+            { label:'Committed', val:moneyShort(d.monthTotal), kind:'readout', rgb:'232,194,106', href:'bills.html' },
+            { label:'Settled', val:d.billsMonthCount?d.paidCount+'/'+d.billsMonthCount:'—', pct:settle, rgb:'52,226,176', href:'bills.html' },
+            { label:'No-spend', val:d.noSpend, pct:clamp(d.noSpend/Math.max(d.dayOfMonth,1),0,1), rgb:'232,194,106', href:'bills.html' },
+            { label:'Tracked', val:d.billsCount, kind:'readout', rgb:'232,194,106', href:'bills.html' }
           ]};
       }
       if(k==='life'){
@@ -318,38 +310,37 @@
           : 'Leisure catalogued — '+d.filmsSeen+' film'+(d.filmsSeen===1?'':'s')+' logged'+(d.tasteAvg!=null?', taste rating '+d.tasteAvg:'')+'.';
         return { rgb:'242,140,170', rlabel:'Taste', num:d.tasteAvg, unit:'', word:d.tasteAvg!=null?'avg rating':'unrated', ringPct:tp,
           voice:voice, priority:pri, gauges:[
-            { label:'Catalogue', val:d.filmsSeen, sub:'films seen', kind:'readout', rgb:'242,140,170', href:'movies.html' },
-            { label:'Taste', val:d.tasteAvg!=null?d.tasteAvg:'—', sub:'avg rating', pct:tp, rgb:'242,140,170', href:'movies.html' },
-            { label:'Watchlist', val:d.watchlist, sub:'queued', kind:'readout', rgb:'232,194,106', href:'movies.html' }
+            { label:'Catalogue', val:d.filmsSeen, kind:'readout', rgb:'242,140,170', href:'movies.html' },
+            { label:'Taste', val:d.tasteAvg!=null?d.tasteAvg:'—', pct:tp, rgb:'242,140,170', href:'movies.html' },
+            { label:'Watchlist', val:d.watchlist, kind:'readout', rgb:'232,194,106', href:'movies.html' }
           ]};
       }
-      // reflect
       var rp=d.tracked7/7;
       var priR = d.tracked7>=6 ? {tx:'Tracking is consistent. Run your weekly review to find the signal.', href:'weekly.html'}
         : {tx:'You’ve logged '+d.tracked7+' of the last 7 days. Consistency is the edge.', href:'weekly.html'};
       var voiceR = 'You’ve tracked '+d.tracked7+' of the last 7 days'+(d.measureCount?', '+d.measureCount+' measurement set'+(d.measureCount===1?'':'s')+' on file':'')+'.';
       return { rgb:'96,200,180', rlabel:'Consistency', num:d.tracked7, unit:'/7', word:rp>=.85?'aligned':rp>=.5?'steady':'drifting', ringPct:rp,
         voice:voiceR, priority:priR, gauges:[
-          { label:'Tracked', val:d.tracked7, unit:'/7', sub:'days logged', pct:rp, rgb:'96,200,180', href:'weekly.html' },
-          { label:'Measured', val:d.measureCount, sub:d.lastMeasure?'last '+d.lastMeasure.slice(5):'logs', kind:'readout', rgb:'124,211,252', href:'measure.html' },
-          { label:'Arc', val:'↗', sub:'your story', kind:'readout', rgb:'155,140,255', href:'arc.html' }
+          { label:'Tracked', val:d.tracked7, unit:'/7', pct:rp, rgb:'96,200,180', href:'weekly.html' },
+          { label:'Measured', val:d.measureCount, kind:'readout', rgb:'124,211,252', href:'measure.html' },
+          { label:'Arc', val:'↗', kind:'readout', rgb:'155,140,255', href:'arc.html' }
         ]};
     }
 
     /* ---------- render ---------- */
     var DATA=null, LENS=localStorage.getItem('cc_lens')||'body', numAnim=null;
-    var C=2*Math.PI*88;
+    var C=2*Math.PI*88, ORBIT=39; // orbit radius as % of stage
 
-    function dialHTML(g){
-      var rg=g.rgb||'124,211,252', dc=2*Math.PI*34, full=(g.kind==='readout');
+    function nodeHTML(g,lx,ly){
+      var rg=g.rgb||'124,211,252', dc=2*Math.PI*30, full=(g.kind==='readout');
       var off = full ? dc*0.001 : dc*(1-clamp(g.pct||0,0,1));
       var num = (g.val===''||g.val==null) ? '—' : g.val;
-      return '<a class="cc-dial" href="'+g.href+'" style="--dc:'+rg+'">'+
-        '<div class="cc-dwrap"><svg viewBox="0 0 84 84">'+
-          '<circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="4"/>'+
-          '<circle cx="42" cy="42" r="34" fill="none" stroke="rgb('+rg+')" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+dc.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" style="opacity:'+(full?'.32':'1')+';filter:drop-shadow(0 0 5px rgba('+rg+',.6))"/>'+
-        '</svg><div class="cc-dval">'+num+(g.unit?'<small>'+g.unit+'</small>':'')+'</div></div>'+
-        '<div class="cc-dlabel">'+esc(g.label)+'</div><div class="cc-dsub">'+esc(g.sub||'')+'</div></a>';
+      return '<a class="cc-node" href="'+g.href+'" style="left:'+lx.toFixed(2)+'%;top:'+ly.toFixed(2)+'%;--dc:'+rg+'">'+
+        '<div class="cc-nwrap"><svg viewBox="0 0 72 72">'+
+          '<circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3.4"/>'+
+          '<circle cx="36" cy="36" r="30" fill="none" stroke="rgb('+rg+')" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="'+dc.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" style="opacity:'+(full?'.34':'1')+';filter:drop-shadow(0 0 4px rgba('+rg+',.6))"/>'+
+        '</svg><div class="cc-nval">'+num+(g.unit?'<small>'+g.unit+'</small>':'')+'</div></div>'+
+        '<div class="cc-nlabel">'+esc(g.label)+'</div></a>';
     }
 
     function animateNum(el,to){
@@ -380,7 +371,14 @@
       animateNum($('ccNum'), v.num);
       $('ccPri').href=v.priority.href; $('ccPriTx').textContent=v.priority.tx;
       var al=globalAlert(DATA), ae=$('ccAlert'); if(al){ $('ccAlertTx').textContent=al; ae.classList.add('on'); } else ae.classList.remove('on');
-      $('ccDials').innerHTML=v.gauges.map(dialHTML).join('');
+      // radial nodes + wired spokes
+      var N=v.gauges.length, nodes='', spokes='';
+      v.gauges.forEach(function(g,i){
+        var a=i*2*Math.PI/N, lx=50+ORBIT*Math.sin(a), ly=50-ORBIT*Math.cos(a);
+        spokes += '<line x1="50" y1="50" x2="'+lx.toFixed(2)+'" y2="'+ly.toFixed(2)+'" stroke="rgba('+v.rgb+',.20)" stroke-width="0.5" stroke-dasharray="1.1 1.5"/>';
+        nodes += nodeHTML(g,lx,ly);
+      });
+      $('ccSpokes').innerHTML=spokes; $('ccNodes').innerHTML=nodes;
       Array.prototype.forEach.call($('ccRail').children, function(el){ var on=el.dataset.k===LENS; el.classList.toggle('on',on); if(on) el.style.setProperty('--lc', v.rgb); });
     }
 
@@ -391,7 +389,6 @@
       Array.prototype.forEach.call($('ccRail').children, function(el){ el.addEventListener('click', function(){ setLens(el.dataset.k); }); });
     }
 
-    // swipe between lenses
     var tx=0,ty=0;
     document.addEventListener('touchstart', function(e){ if(e.touches.length!==1) return; tx=e.touches[0].clientX; ty=e.touches[0].clientY; }, {passive:true});
     document.addEventListener('touchend', function(e){ var dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
@@ -405,6 +402,7 @@
     }
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
     document.addEventListener('visibilitychange', function(){ if(!document.hidden){ DATA=readAll(); render(); } });
+    $('ccReactor').addEventListener('click', function(){ window.location.href='nova-chat.html'; });
   })();
   </script>
 </body>
