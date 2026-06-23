@@ -88,11 +88,13 @@
     .cc-pri .gt{ color:rgba(255,255,255,.3); flex:none; }
 
     /* lens rail */
-    .cc-rail{ position:fixed; left:0; right:0; bottom:calc(58px + env(safe-area-inset-bottom)); z-index:40; display:flex; justify-content:center; }
-    .cc-rail-in{ display:flex; gap:3px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:13px; background:rgba(7,9,16,.82);
-      backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:0 6px 24px rgba(0,0,0,.5); }
-    .cc-lens{ font-family:var(--au-mono); font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:rgba(255,255,255,.4);
-      padding:8px 10px; border-radius:9px; border:1px solid transparent; cursor:pointer; transition:.18s; white-space:nowrap; }
+    .cc-rail{ position:fixed; left:0; right:0; bottom:calc(58px + env(safe-area-inset-bottom)); z-index:40; display:flex; justify-content:center; padding:0 8px; }
+    .cc-rail-in{ display:flex; gap:2px; padding:5px; border:1px solid rgba(255,255,255,.1); border-radius:13px; background:rgba(7,9,16,.82);
+      backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:0 6px 24px rgba(0,0,0,.5);
+      max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .cc-rail-in::-webkit-scrollbar{ display:none; }
+    .cc-lens{ font-family:var(--au-mono); font-size:8.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:rgba(255,255,255,.4);
+      padding:8px 8px; border-radius:9px; border:1px solid transparent; cursor:pointer; transition:.18s; white-space:nowrap; flex:none; }
     .cc-lens.on{ color:#fff; border-color:rgba(var(--lc),.55); background:rgba(var(--lc),.12); text-shadow:0 0 10px rgba(var(--lc),.6); }
 
     .cc-cmd{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:8px 18px calc(10px + env(safe-area-inset-bottom));
@@ -198,13 +200,20 @@
       var sl=arr('sleep:logs'), last=sl.length?sl[sl.length-1]:null;
       D.recovery=last&&typeof last.recovery==='number'?last.recovery:null;
       D.sleepH=last&&typeof last.hours==='number'?last.hours:null;
+      D.sleepQuality=last&&last.quality!=null?last.quality:null;
       D.sleptToday=sl.some(function(e){return e&&e.dateKey===t&&(e.hours>0||e.quality!=null);});
       var wo=arr('po_workouts'); D.trainedToday=(ls('po_coach_workout_done')||{})[t]!=null||wo.some(function(w){return w&&w.date===t;});
       var lastTrain=null; D.lastVol=0; wo.forEach(function(w){ if(w&&w.date&&(!lastTrain||w.date>lastTrain)){ lastTrain=w.date; D.lastVol=+w.volume||0; } });
       D.daysSinceTrain=lastTrain?daysBetween(t,lastTrain):null;
+      var c7=new Date(); c7.setDate(c7.getDate()-6); var cut7=dkOf(c7.getFullYear(),c7.getMonth(),c7.getDate());
+      var c30=new Date(); c30.setDate(c30.getDate()-29); var cut30=dkOf(c30.getFullYear(),c30.getMonth(),c30.getDate());
+      D.sessionsWeek=0; D.weekVolume=0; D.prs30=0;
+      wo.forEach(function(w){ if(!w||!w.date) return; if(w.date>=cut7){ D.sessionsWeek++; D.weekVolume+=(+w.volume||0); } if(w.date>=cut30 && Array.isArray(w.prs)) D.prs30+=w.prs.length; });
+      var stackItems=arr('stack:items'), taken=ls('stack:taken:'+t)||{};
+      D.suppTotal=stackItems.length; D.suppTaken=Object.keys(taken).filter(function(id){return taken[id];}).length;
       var weights=arr('po_coach_weights'); D.weight=weights.length?weights[weights.length-1].weight:null;
       var prof=ls('nut:profile')||{}; D.kcalTarget=prof.calTarget||(D.weight?r0(D.weight*32):2300); D.protTarget=D.weight?r0(D.weight*2):150;
-      var nut=arr('nut:logs'); D.kcal=0; D.protein=0; nut.forEach(function(e){ if(e&&e.dateKey===t){ D.kcal+=(+e.kcal||0); D.protein+=(+e.p||0); } });
+      var nut=arr('nut:logs'); D.kcal=0; D.protein=0; D.carbs=0; nut.forEach(function(e){ if(e&&e.dateKey===t){ D.kcal+=(+e.kcal||0); D.protein+=(+e.p||0); D.carbs+=(+e.c||0); } });
       D.caffeine=0; arr('caf:logs').forEach(function(e){ if(e&&e.ts){ var d=new Date(e.ts); if(!isNaN(d)&&dkOf(d.getFullYear(),d.getMonth(),d.getDate())===t) D.caffeine+=(+e.mg||0); } });
       D.water=((ls('po_water_v1')||{}).logs||{})[t]||0;
       var gs=ls('goal_streak_v1'); D.streak=gs&&typeof gs.count==='number'?gs.count:0;
@@ -239,35 +248,66 @@
     function pctWord(p){ return p>=.85?'locked in':p>=.6?'on track':p>=.35?'building':p>0?'early':'no data'; }
 
     var LENSES=[
-      { k:'body',    name:'Body',    rgb:'124,211,252' },
+      { k:'recover', name:'Recover', rgb:'124,211,252' },
+      { k:'fuel',    name:'Fuel',    rgb:'124,184,122' },
+      { k:'train',   name:'Train',   rgb:'245,130,100' },
       { k:'mind',    name:'Mind',    rgb:'155,140,255' },
       { k:'money',   name:'Money',   rgb:'232,194,106' },
-      { k:'life',    name:'Life',    rgb:'242,140,170' },
-      { k:'reflect', name:'Reflect', rgb:'96,200,180' }
+      { k:'life',    name:'Life',    rgb:'242,140,170' }
     ];
 
+    function fuelWord(kcal,target){ if(kcal===0) return 'no data'; var p=kcal/target; return p<0.9?'fueling':p<=1.1?'on target':'over'; }
+
     function lensView(k,d){
-      if(k==='body'){
+      if(k==='recover'){
         var rg=recCol(d.recovery);
         var pri = d.recovery!=null&&d.recovery<45 ? {tx:'Recovery low. I advise active recovery, not load. Protect tonight’s sleep.', href:'sleep.html'}
           : !d.sleptToday&&d.h>=5&&d.h<12 ? {tx:'Log last night’s sleep so I can calibrate your readiness.', href:'sleep.html'}
-          : d.recovery!=null&&d.recovery>=78&&!d.trainedToday ? {tx:'You’re primed. Conditions are ideal for a heavy session — go chase a PR.', href:'gym.html'}
-          : d.daysSinceTrain!=null&&d.daysSinceTrain>=3 ? {tx:d.daysSinceTrain+' days since your last session. A short one keeps momentum.', href:'gym.html'}
-          : d.h>=17&&d.protTarget>0&&d.protein<d.protTarget*0.7 ? {tx:r0(d.protein)+'g protein logged — target ~'+d.protTarget+'g. Get a hit in.', href:'nutrition.html'}
-          : {tx:'Systems nominal. Eat well, move, and keep stacking good days.', href:'gym.html'};
+          : d.recovery!=null&&d.recovery>=78 ? {tx:'You’re primed. Conditions are ideal — make today count.', href:'gym.html'}
+          : d.recovery!=null&&d.recovery>=50 ? {tx:'Recovery is moderate. Train, but leave a little in the tank.', href:'gym.html'}
+          : {tx:'Bring readiness up with sleep and hydration before pushing hard.', href:'sleep.html'};
         var voice = d.recovery==null ? 'Awaiting last night’s sleep data to calibrate readiness.'
           : d.recovery>=80 ? 'Recovery nominal at '+d.recovery+', sir. Systems primed — clear for a heavy session.'
-          : d.recovery>=65 ? 'Recovery reads '+d.recovery+'. You’re in good shape. Train as planned.'
-          : d.recovery>=50 ? 'Recovery holding at '+d.recovery+'. I’d keep the intensity moderate today.'
+          : d.recovery>=65 ? 'Recovery reads '+d.recovery+'. You’re in good shape.'
+          : d.recovery>=50 ? 'Recovery holding at '+d.recovery+'. Keep the intensity moderate today.'
           : 'Recovery is low at '+d.recovery+'. I’d advise you recover, not train.';
         return { rgb:rg, rlabel:'Readiness', num:d.recovery, unit:'', word:recWord(d.recovery), ringPct:d.recovery!=null?d.recovery/100:0,
           voice:voice, priority:pri, gauges:[
-            { label:'Fuel', val:shortVol(d.kcal), pct:clamp(d.kcal/d.kcalTarget,0,1), rgb:d.kcal>d.kcalTarget*1.08?'255,107,139':'124,184,122', href:'nutrition.html' },
-            { label:'Protein', val:r0(d.protein), unit:'g', pct:clamp(d.protein/d.protTarget,0,1), rgb:'124,184,122', href:'nutrition.html' },
-            { label:'Train', val:d.trainedToday?'ON':(d.daysSinceTrain!=null?d.daysSinceTrain:'—'), unit:d.trainedToday?'':(d.daysSinceTrain!=null?'d':''), pct:d.trainedToday?1:(d.daysSinceTrain!=null?clamp(1-d.daysSinceTrain/4,0,1):0), rgb:'124,211,252', href:'gym.html' },
             { label:'Sleep', val:d.sleepH!=null?d.sleepH.toFixed(1):'—', unit:d.sleepH!=null?'h':'', pct:d.sleepH!=null?clamp(d.sleepH/9,0,1):0, rgb:'155,140,255', href:'sleep.html' },
-            { label:'Water', val:d.water, unit:'/8', pct:clamp(d.water/8,0,1), rgb:'96,165,250', href:'po-water.html' },
-            { label:'Caffeine', val:r0(d.caffeine), unit:'mg', pct:clamp(d.caffeine/200,0,1), rgb:'201,163,107', href:'caffeine.html' }
+            { label:'Quality', val:d.sleepQuality!=null?d.sleepQuality:'—', kind:'readout', rgb:'155,140,255', href:'sleep.html' },
+            { label:'Hydration', val:d.water, unit:'/8', pct:clamp(d.water/8,0,1), rgb:'96,165,250', href:'po-water.html' }
+          ]};
+      }
+      if(k==='fuel'){
+        var fword=fuelWord(d.kcal,d.kcalTarget);
+        var pri = d.kcal===0&&d.h>=11 ? {tx:'Nothing logged yet today. Get your first meal in.', href:'nutrition.html'}
+          : d.h>=17&&d.protein<d.protTarget*0.7 ? {tx:r0(d.protein)+'g protein logged — aim for ~'+d.protTarget+'g. Get a hit in.', href:'nutrition.html'}
+          : d.kcal>d.kcalTarget*1.1 ? {tx:'You’re over your calorie target. Ease off if recomp matters this week.', href:'nutrition.html'}
+          : {tx:'Fuel’s on track. Protein and timing are what move the needle.', href:'nutrition.html'};
+        var voice = d.kcal===0 ? 'No fuel logged yet today, sir.'
+          : 'Fuel at '+r0(d.kcal)+' of '+d.kcalTarget+' calories, '+r0(d.protein)+'g protein. '+(fword==='over'?'Running a little hot.':fword==='on target'?'Right on target.':'Room to top up.');
+        return { rgb:'124,184,122', rlabel:'Calories', num:r0(d.kcal), unit:'', word:fword, ringPct:clamp(d.kcal/d.kcalTarget,0,1),
+          voice:voice, priority:pri, gauges:[
+            { label:'Protein', val:r0(d.protein), unit:'g', pct:clamp(d.protein/d.protTarget,0,1), rgb:'124,184,122', href:'nutrition.html' },
+            { label:'Carbs', val:r0(d.carbs), unit:'g', kind:'readout', rgb:'232,194,106', href:'nutrition.html' },
+            { label:'Caffeine', val:r0(d.caffeine), unit:'mg', pct:clamp(d.caffeine/200,0,1), rgb:'201,163,107', href:'caffeine.html' },
+            { label:'Supps', val:d.suppTotal?d.suppTaken+'/'+d.suppTotal:d.suppTaken, pct:d.suppTotal?clamp(d.suppTaken/d.suppTotal,0,1):0, kind:d.suppTotal?undefined:'readout', rgb:'124,184,122', href:'health.html' }
+          ]};
+      }
+      if(k==='train'){
+        var sw=d.sessionsWeek, swp=clamp(sw/5,0,1);
+        var pri = sw===0&&d.daysSinceTrain!=null&&d.daysSinceTrain>=2 ? {tx:'No sessions this week yet — '+d.daysSinceTrain+' days since your last. Time to move.', href:'gym.html'}
+          : d.trainedToday ? {tx:'Logged today. Recovery will tell you when to go again.', href:'gym.html'}
+          : sw>=4 ? {tx:'Strong week — '+sw+' sessions in. Don’t skip recovery.', href:'gym.html'}
+          : {tx:'Keep the week moving — aim for your usual training frequency.', href:'gym.html'};
+        var voice = sw===0 ? 'No training logged this week yet.'
+          : sw+' session'+(sw===1?'':'s')+' this week'+(d.weekVolume?', '+shortVol(d.weekVolume)+'kg moved':'')+'.';
+        return { rgb:'245,130,100', rlabel:'This week', num:sw, unit:'', word:swp>=.8?'on it':swp>=.4?'building':'easing', ringPct:swp,
+          voice:voice, priority:pri, gauges:[
+            { label:'Volume', val:d.weekVolume?shortVol(d.weekVolume):'—', kind:'readout', rgb:'245,130,100', href:'gym.html' },
+            { label:'Last', val:d.trainedToday?'ON':(d.daysSinceTrain!=null?d.daysSinceTrain:'—'), unit:d.trainedToday?'':(d.daysSinceTrain!=null?'d':''), pct:d.trainedToday?1:(d.daysSinceTrain!=null?clamp(1-d.daysSinceTrain/4,0,1):0), rgb:'124,211,252', href:'gym.html' },
+            { label:'PRs 30d', val:d.prs30, kind:'readout', rgb:'232,194,106', href:'gym.html' },
+            { label:'Measure', val:d.measureCount, kind:'readout', rgb:'96,165,250', href:'measure.html' }
           ]};
       }
       if(k==='mind'){
@@ -281,9 +321,8 @@
           : 'No daily protocols on file. Define a few and I’ll track them.';
         return { rgb:'155,140,255', rlabel:'Discipline', num:d.hbTotal?Math.round(dp*100):null, unit:d.hbTotal?'%':'', word:d.hbTotal?pctWord(dp):'undefined', ringPct:dp,
           voice:voice, priority:pri, gauges:[
-            { label:'Protocols', val:d.hbTotal?d.hbDone+'/'+d.hbTotal:'—', pct:dp, rgb:'155,140,255', href:'weekly.html' },
+            { label:'Habits', val:d.hbTotal?d.hbDone+'/'+d.hbTotal:'—', pct:dp, rgb:'155,140,255', href:'weekly.html' },
             { label:'Learn', val:d.vidQueue, pct:d.vidTotal?clamp(d.vidWatched/d.vidTotal,0,1):0, rgb:'124,211,252', href:'improve.html' },
-            { label:'Adopted', val:d.adoptTotal?d.adopted+'/'+d.adoptTotal:'—', pct:d.adoptTotal?clamp(d.adopted/d.adoptTotal,0,1):0, rgb:'52,226,176', href:'improve.html' },
             { label:'Streak', val:d.streak, pct:clamp(d.streak/30,0,1), rgb:'52,226,176', href:'main.html' }
           ]};
       }
@@ -298,38 +337,27 @@
           voice:voice, priority:pri, gauges:[
             { label:'Committed', val:moneyShort(d.monthTotal), kind:'readout', rgb:'232,194,106', href:'bills.html' },
             { label:'Settled', val:d.billsMonthCount?d.paidCount+'/'+d.billsMonthCount:'—', pct:settle, rgb:'52,226,176', href:'bills.html' },
-            { label:'No-spend', val:d.noSpend, pct:clamp(d.noSpend/Math.max(d.dayOfMonth,1),0,1), rgb:'232,194,106', href:'bills.html' },
-            { label:'Tracked', val:d.billsCount, kind:'readout', rgb:'232,194,106', href:'bills.html' }
+            { label:'No-spend', val:d.noSpend, pct:clamp(d.noSpend/Math.max(d.dayOfMonth,1),0,1), rgb:'232,194,106', href:'bills.html' }
           ]};
       }
-      if(k==='life'){
-        var tp=d.tasteAvg!=null?d.tasteAvg/100:0;
-        var pri = d.filmsSeen===0&&d.watchlist===0 ? {tx:'No films catalogued. Add something to your watchlist for later.', href:'movies.html'}
-          : d.watchlist>0 ? {tx:d.watchlist+' title'+(d.watchlist>1?'s':'')+' queued on your watchlist — pick one to unwind.', href:'movies.html'}
-          : {tx:'Watchlist empty. Queue something for your next downtime.', href:'movies.html'};
-        var voice = d.filmsSeen===0 ? 'No leisure logged yet. Recovery isn’t only physical, sir.'
-          : 'Leisure catalogued — '+d.filmsSeen+' film'+(d.filmsSeen===1?'':'s')+' logged'+(d.tasteAvg!=null?', taste rating '+d.tasteAvg:'')+'.';
-        return { rgb:'242,140,170', rlabel:'Taste', num:d.tasteAvg, unit:'', word:d.tasteAvg!=null?'avg rating':'unrated', ringPct:tp,
-          voice:voice, priority:pri, gauges:[
-            { label:'Catalogue', val:d.filmsSeen, kind:'readout', rgb:'242,140,170', href:'movies.html' },
-            { label:'Taste', val:d.tasteAvg!=null?d.tasteAvg:'—', pct:tp, rgb:'242,140,170', href:'movies.html' },
-            { label:'Watchlist', val:d.watchlist, kind:'readout', rgb:'232,194,106', href:'movies.html' }
-          ]};
-      }
-      var rp=d.tracked7/7;
-      var priR = d.tracked7>=6 ? {tx:'Tracking is consistent. Run your weekly review to find the signal.', href:'weekly.html'}
-        : {tx:'You’ve logged '+d.tracked7+' of the last 7 days. Consistency is the edge.', href:'weekly.html'};
-      var voiceR = 'You’ve tracked '+d.tracked7+' of the last 7 days'+(d.measureCount?', '+d.measureCount+' measurement set'+(d.measureCount===1?'':'s')+' on file':'')+'.';
-      return { rgb:'96,200,180', rlabel:'Consistency', num:d.tracked7, unit:'/7', word:rp>=.85?'aligned':rp>=.5?'steady':'drifting', ringPct:rp,
-        voice:voiceR, priority:priR, gauges:[
-          { label:'Tracked', val:d.tracked7, unit:'/7', pct:rp, rgb:'96,200,180', href:'weekly.html' },
-          { label:'Measured', val:d.measureCount, kind:'readout', rgb:'124,211,252', href:'measure.html' },
+      // life — off the clock: leisure + reflection
+      var tp=d.tasteAvg!=null?d.tasteAvg/100:0, rp=d.tracked7/7;
+      var pri = d.filmsSeen===0&&d.watchlist===0 ? {tx:'Nothing logged for downtime. Queue a film for later.', href:'movies.html'}
+        : d.watchlist>0 ? {tx:d.watchlist+' title'+(d.watchlist>1?'s':'')+' on your watchlist — pick one to unwind.', href:'movies.html'}
+        : {tx:'Run a weekly review to step back and see the bigger picture.', href:'weekly.html'};
+      var voice = d.filmsSeen===0 ? 'No leisure logged yet. Recovery isn’t only physical, sir.'
+        : 'Off the clock — '+d.filmsSeen+' film'+(d.filmsSeen===1?'':'s')+' catalogued'+(d.tasteAvg!=null?', taste rating '+d.tasteAvg:'')+'.';
+      return { rgb:'242,140,170', rlabel:'Taste', num:d.tasteAvg, unit:'', word:d.tasteAvg!=null?'avg rating':'unrated', ringPct:tp,
+        voice:voice, priority:pri, gauges:[
+          { label:'Films', val:d.filmsSeen, kind:'readout', rgb:'242,140,170', href:'movies.html' },
+          { label:'Watchlist', val:d.watchlist, kind:'readout', rgb:'232,194,106', href:'movies.html' },
+          { label:'Review', val:d.tracked7, unit:'/7', pct:rp, rgb:'96,200,180', href:'weekly.html' },
           { label:'Arc', val:'↗', kind:'readout', rgb:'155,140,255', href:'arc.html' }
         ]};
     }
 
     /* ---------- render ---------- */
-    var DATA=null, LENS=localStorage.getItem('cc_lens')||'body', numAnim=null;
+    var DATA=null, LENS=localStorage.getItem('cc_lens')||'recover', numAnim=null;
     var C=2*Math.PI*88, ORBIT=39; // orbit radius as % of stage
 
     function nodeHTML(g,lx,ly){
@@ -397,7 +425,7 @@
 
     function boot(){
       DATA=readAll(); buildRail();
-      if(LENSES.map(function(l){return l.k;}).indexOf(LENS)<0) LENS='body';
+      if(LENSES.map(function(l){return l.k;}).indexOf(LENS)<0) LENS='recover';
       render();
       setTimeout(function(){ var b=$('ccBoot'); if(b){ b.classList.add('off'); setTimeout(function(){ b.remove(); },550); } }, 1050);
     }
