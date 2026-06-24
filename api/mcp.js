@@ -16,7 +16,23 @@ var supa = require('./_supa');
 /* ---------- helpers ---------- */
 function pad(n) { return String(n).padStart(2, '0'); }
 function dk(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-function todayKey() { return dk(new Date()); }
+function todayKey() { return dk(new Date()); } // UTC fallback only
+
+/* ---------- timezone-aware dates (matches the app: reminders store prefs.tz) ---------- */
+var TZ_CACHE = null;
+async function getTz() { if (TZ_CACHE) return TZ_CACHE; try { var p = await supa.readRow('push:prefs'); TZ_CACHE = (p && p.tz) || 'Europe/Athens'; } catch (e) { TZ_CACHE = 'Europe/Athens'; } return TZ_CACHE; }
+function fmtLocal(tz, date) { try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date); } catch (e) { return dk(date); } }
+async function localToday() { return fmtLocal(await getTz(), new Date()); }
+function shiftKey(key, days) { var d = new Date(key + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+async function resolveDate(arg) {
+  if (!arg) return await localToday();
+  var s = String(arg).trim().toLowerCase();
+  if (s === 'today') return await localToday();
+  if (s === 'yesterday') return shiftKey(await localToday(), -1);
+  if (s === 'tomorrow') return shiftKey(await localToday(), 1);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return await localToday();
+}
 function arr(v) { return Array.isArray(v) ? v : []; }
 function r0(n) { return Math.round(+n || 0); }
 function r1(n) { return Math.round((+n || 0) * 10) / 10; }
@@ -137,9 +153,9 @@ async function callTool(name, a) {
     var nut = await readArr('nut:logs');
     var prof = await readKey('nut:profile');
     var target = (prof && prof.calTarget) || null;
-    var byDay = {};
+    var nzTz = await getTz(), byDay = {};
     nut.forEach(function (e) {
-      var d = (e && (e.dateKey || (e.ts ? dk(new Date(e.ts)) : null))); if (!d) return;
+      var d = (e && (e.dateKey || (e.ts ? fmtLocal(nzTz, new Date(e.ts)) : null))); if (!d) return;
       var o = byDay[d] || (byDay[d] = { kcal: 0, p: 0, c: 0, f: 0 });
       o.kcal += (+e.kcal || 0); o.p += (+e.p || 0); o.c += (+e.c || 0); o.f += (+e.f || 0);
     });
@@ -153,9 +169,9 @@ async function callTool(name, a) {
   if (name === 'get_body') {
     var wts = await readArr('po_coach_weights');
     var wline = wts.length ? 'Weight: latest ' + r1(wts[wts.length - 1].weight) + 'kg over ' + wts.length + ' weigh-ins' : 'Weight: none logged';
-    var pw = await readKey('po_water_v1'); var wlogs = (pw && pw.logs) || {}; var t = todayKey();
+    var pw = await readKey('po_water_v1'); var wlogs = (pw && pw.logs) || {}; var t = await localToday(); var bTz = await getTz();
     var caf = await readArr('caf:logs');
-    var cafToday = caf.filter(function (e) { if (!e || !e.ts) return false; var d = new Date(e.ts); return !isNaN(d) && dk(d) === t; }).reduce(function (s, e) { return s + (+e.mg || 0); }, 0);
+    var cafToday = caf.filter(function (e) { if (!e || !e.ts) return false; var d = new Date(e.ts); return !isNaN(d) && fmtLocal(bTz, d) === t; }).reduce(function (s, e) { return s + (+e.mg || 0); }, 0);
     var bm = (await readArr('bm:logs')).filter(function (e) { return e && e.dateKey; });
     return wline + '\nWater today: ' + (wlogs[t] || 0) + ' glasses\nCaffeine today: ' + r0(cafToday) + ' mg\nMeasurements: ' + bm.length + ' logged' + (bm.length ? ' (latest ' + bm[bm.length - 1].dateKey + ')' : '');
   }
@@ -175,7 +191,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'get_mind') {
-    var hbList = await readArr('habits:list'); var hbLog = await readKey('habits:log'); var t2 = todayKey();
+    var hbList = await readArr('habits:list'); var hbLog = await readKey('habits:log'); var t2 = await localToday();
     var done = (hbLog && hbLog[t2]) ? Object.keys(hbLog[t2]).filter(function (k) { return hbLog[t2][k]; }).length : 0;
     var vids = await readArr('improve:videos'); var queue = vids.filter(function (v) { return v && !v.watched; }).length;
     var ihab = await readArr('improve:habits'); var adopting = ihab.filter(function (h) { return h && !h.adopted; }).length;
@@ -191,13 +207,13 @@ async function callTool(name, a) {
 
   if (name === 'snapshot') {
     var p = await Promise.all([callTool('get_recovery', { limit: 3 }), callTool('get_nutrition', { days: 2 }), callTool('get_training', { limit: 3 }), callTool('get_body', {}), callTool('get_money', {}), callTool('get_mind', {})]);
-    return '=== SNAPSHOT (' + todayKey() + ') ===\n\n[RECOVERY]\n' + p[0] + '\n\n[FUEL]\n' + p[1] + '\n\n[TRAINING]\n' + p[2] + '\n\n[BODY]\n' + p[3] + '\n\n[MONEY]\n' + p[4] + '\n\n[MIND]\n' + p[5];
+    return '=== SNAPSHOT (' + (await localToday()) + ') ===\n\n[RECOVERY]\n' + p[0] + '\n\n[FUEL]\n' + p[1] + '\n\n[TRAINING]\n' + p[2] + '\n\n[BODY]\n' + p[3] + '\n\n[MONEY]\n' + p[4] + '\n\n[MIND]\n' + p[5];
   }
 
   /* ---- writes ---- */
   if (name === 'log_meal') {
     if (a.name == null || a.kcal == null) return 'Need at least name and kcal.';
-    var d1 = a.date || todayKey();
+    var d1 = await resolveDate(a.date);
     await mutateBundle('nutrition', function (b) {
       var logs = arr(b['nut:logs']);
       logs.push({ id: uid('m-'), ts: Date.now(), dateKey: d1, meal: a.meal || 'Snacks', name: String(a.name), grams: a.grams != null ? r0(a.grams) : null, source: 'claude', kcal: r0(a.kcal), p: r1(a.protein), c: r1(a.carbs), f: r1(a.fat), fiber: 0, sugar: 0, sodium: 0, satfat: 0 });
@@ -208,7 +224,7 @@ async function callTool(name, a) {
 
   if (name === 'log_weight') {
     if (a.kg == null) return 'Need kg.';
-    var d2 = a.date || todayKey();
+    var d2 = await resolveDate(a.date);
     await mutateBundle('po-coach', function (b) {
       var w = arr(b['po_coach_weights']); var i = w.findIndex(function (e) { return e && e.dateKey === d2; });
       if (i >= 0) w[i] = { dateKey: d2, weight: +a.kg }; else w.push({ dateKey: d2, weight: +a.kg });
@@ -218,7 +234,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'add_water') {
-    var d3 = a.date || todayKey(), g = a.glasses != null ? r0(a.glasses) : 1, newCount = g;
+    var d3 = await resolveDate(a.date), g = a.glasses != null ? r0(a.glasses) : 1, newCount = g;
     await mutateBundle('health', function (b) {
       var w = b['po_water_v1'] || {}; if (!w.logs) w.logs = {}; w.logs[d3] = (+w.logs[d3] || 0) + g; newCount = w.logs[d3];
       w._ts = Date.now(); // water merges last-write-wins by _ts; stamp it or the client reverts our change
@@ -239,7 +255,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'log_sleep') {
-    var d4 = a.date || todayKey();
+    var d4 = await resolveDate(a.date);
     if (a.hours == null && a.recovery == null && a.quality == null && a.energy == null) return 'Provide at least one of hours/recovery/quality/energy.';
     await mutateBundle('sleep', function (b) {
       var logs = arr(b['sleep:logs']); var i = logs.findIndex(function (e) { return e && e.dateKey === d4; });
@@ -255,13 +271,13 @@ async function callTool(name, a) {
   }
 
   if (name === 'mark_workout_done') {
-    var d5 = a.date || todayKey();
+    var d5 = await resolveDate(a.date);
     await mutateBundle('po-coach', function (b) { var done = b['po_coach_workout_done'] || {}; done[d5] = new Date().toISOString(); b['po_coach_workout_done'] = done; });
     return 'Marked workout done for ' + d5 + '.';
   }
 
   if (name === 'add_no_spend_day') {
-    var d6 = a.date || todayKey();
+    var d6 = await resolveDate(a.date);
     await mutateBundle('bills', function (b) { var ns = arr(b['bills:nospend']); if (!ns.some(function (n) { return n && n.id === d6; })) ns.push({ id: d6, ts: Date.now() }); b['bills:nospend'] = ns; });
     return 'Marked ' + d6 + ' as a no-spend day.';
   }
@@ -286,7 +302,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'complete_habit') {
-    var d7 = a.date || todayKey(), q2 = String(a.habit || '').toLowerCase(); var msg2 = '';
+    var d7 = await resolveDate(a.date), q2 = String(a.habit || '').toLowerCase(); var msg2 = '';
     await mutateBundle('identity', function (b) {
       var list = arr(b['habits:list']); var h = list.find(function (x) { return x && String(x.name || '').toLowerCase().indexOf(q2) >= 0; });
       if (!h) { msg2 = 'No habit matching "' + a.habit + '".'; return; }
@@ -297,7 +313,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'take_supplement') {
-    var d8 = a.date || todayKey(), q3 = String(a.name || '').toLowerCase(); var msg3 = '';
+    var d8 = await resolveDate(a.date), q3 = String(a.name || '').toLowerCase(); var msg3 = '';
     await mutateBundle('health', function (b) {
       var items = arr(b['stack:items']);
       if (!items.length) { msg3 = 'No supplement list found in your synced data (the default stack lives in-app). Open Supplements once on your phone to sync it, then try again.'; return; }
@@ -311,9 +327,10 @@ async function callTool(name, a) {
 
   if (name === 'log_movie') {
     if (!a.title) return 'Need a title.';
+    var dkLocal = await localToday();
     await mutateBundle('movies', function (b) {
       var s = arr(b['movies:seen']);
-      s.push({ id: uid(), title: String(a.title), year: a.year || null, genres: [], rating: a.rating != null ? r0(a.rating) : null, note: '', dateKey: todayKey(), ts: Date.now() });
+      s.push({ id: uid(), title: String(a.title), year: a.year || null, genres: [], rating: a.rating != null ? r0(a.rating) : null, note: '', dateKey: dkLocal, ts: Date.now() });
       b['movies:seen'] = s;
     });
     return 'Logged "' + a.title + '" as watched' + (a.rating != null ? ' (' + r0(a.rating) + ')' : '') + '.';
@@ -342,7 +359,7 @@ async function callTool(name, a) {
   }
 
   if (name === 'journal_entry') {
-    var d9 = a.date || todayKey();
+    var d9 = await resolveDate(a.date);
     if (a.reflection == null && a.gratitude == null) return 'Provide reflection and/or gratitude.';
     await mutateBundle('identity', function (b) {
       var en = arr(b['journal:entries']); var i = en.findIndex(function (e) { return e && e.dateKey === d9; });
@@ -379,10 +396,10 @@ async function handle(m) {
   if (method === 'tools/list') return reply(id, { tools: TOOLS });
   if (method === 'tools/call') {
     var nm = m.params && m.params.name, a = (m.params && m.params.arguments) || {};
-    CACHE = {};
+    CACHE = {}; TZ_CACHE = null;
     try { var text = await callTool(nm, a); return reply(id, { content: [{ type: 'text', text: String(text) }] }); }
     catch (e) { return reply(id, { content: [{ type: 'text', text: 'Error: ' + ((e && e.message) || e) }], isError: true }); }
-    finally { CACHE = null; }
+    finally { CACHE = null; TZ_CACHE = null; }
   }
   if (id === undefined || id === null) return null;
   return rpcError(id, -32601, 'Method not found: ' + method);
