@@ -218,11 +218,13 @@ async function callTool(name, a) {
   }
 
   if (name === 'add_water') {
-    var d3 = a.date || todayKey(), g = a.glasses != null ? r0(a.glasses) : 1;
+    var d3 = a.date || todayKey(), g = a.glasses != null ? r0(a.glasses) : 1, newCount = g;
     await mutateBundle('health', function (b) {
-      var w = b['po_water_v1'] || {}; if (!w.logs) w.logs = {}; w.logs[d3] = (+w.logs[d3] || 0) + g; b['po_water_v1'] = w;
+      var w = b['po_water_v1'] || {}; if (!w.logs) w.logs = {}; w.logs[d3] = (+w.logs[d3] || 0) + g; newCount = w.logs[d3];
+      w._ts = Date.now(); // water merges last-write-wins by _ts; stamp it or the client reverts our change
+      b['po_water_v1'] = w;
     });
-    return 'Added ' + g + ' glass(es) of water for ' + d3 + '.';
+    return 'Added ' + g + ' glass(es) of water for ' + d3 + ' — now ' + newCount + ' total.';
   }
 
   if (name === 'log_caffeine') {
