@@ -39,6 +39,9 @@ function r1(n) { return Math.round((+n || 0) * 10) / 10; }
 function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 function dkOf(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
 function uid(p) { return (p || '') + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+// delete propagation: sync.js excludes tombstoned ids on merge (key matches idOf)
+function idKeyOf(item) { if (item && typeof item === 'object') { if (item.id != null) return 'id:' + item.id; if (item.dateKey != null) return 'dk:' + item.dateKey; if (item.date != null) return 'dt:' + item.date; } return null; }
+function tombstone(b, lsKey, item) { var k = idKeyOf(item); if (!k) return; if (!b._deletes) b._deletes = {}; if (!b._deletes[lsKey]) b._deletes[lsKey] = {}; b._deletes[lsKey][k] = Date.now(); }
 
 /* ---------- bundle layout: localStorage key -> app_state row (appKey) ---------- */
 var BUNDLE = {
@@ -106,7 +109,25 @@ var TOOLS = [
   { name: 'add_to_watchlist', description: 'Add a film to the watchlist.', inputSchema: { type: 'object', properties: { title: { type: 'string' }, year: { type: 'number' } }, required: ['title'] } },
   { name: 'add_idea', description: 'Capture an idea.', inputSchema: { type: 'object', properties: { text: { type: 'string' }, note: { type: 'string' }, category: { type: 'string' } }, required: ['text'] } },
   { name: 'add_learning', description: 'Add something to the learning queue.', inputSchema: { type: 'object', properties: { title: { type: 'string' }, url: { type: 'string' } }, required: ['title'] } },
-  { name: 'journal_entry', description: 'Write/update a journal entry (reflection and/or gratitude) for a day.', inputSchema: { type: 'object', properties: { reflection: { type: 'string' }, gratitude: { type: 'string' }, date: { type: 'string' } } } }
+  { name: 'journal_entry', description: 'Write/update a journal entry (reflection and/or gratitude) for a day.', inputSchema: { type: 'object', properties: { reflection: { type: 'string' }, gratitude: { type: 'string' }, date: { type: 'string' } } } },
+  // more reads
+  { name: 'get_supplements', description: 'Your supplement stack and which were taken on a day (default today).', inputSchema: { type: 'object', properties: { date: { type: 'string' } } } },
+  { name: 'get_journal', description: 'Recent journal entries.', inputSchema: { type: 'object', properties: { limit: { type: 'number' } } } },
+  { name: 'get_ideas', description: 'Your captured ideas (active by default; set include_done).', inputSchema: { type: 'object', properties: { limit: { type: 'number' }, include_done: { type: 'boolean' } } } },
+  { name: 'get_watchlist', description: 'Films on your watchlist.', inputSchema: { type: 'object', properties: {} } },
+  // updates / toggles
+  { name: 'set_calorie_target', description: 'Set the daily calorie target.', inputSchema: { type: 'object', properties: { kcal: { type: 'number' } }, required: ['kcal'] } },
+  { name: 'log_measurement', description: 'Log body tape measurements (cm) for a day.', inputSchema: { type: 'object', properties: { waist: { type: 'number' }, chest: { type: 'number' }, arms: { type: 'number' }, shoulders: { type: 'number' }, hips: { type: 'number' }, thigh: { type: 'number' }, calf: { type: 'number' }, neck: { type: 'number' }, forearm: { type: 'number' }, date: { type: 'string' } } } },
+  { name: 'complete_learning', description: 'Mark a learning-queue item (by title) as watched.', inputSchema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } },
+  { name: 'adopt_habit', description: 'Mark a "habit to build" (by text) as adopted.', inputSchema: { type: 'object', properties: { habit: { type: 'string' } }, required: ['habit'] } },
+  { name: 'mark_idea_done', description: 'Mark an idea (by text) as done.', inputSchema: { type: 'object', properties: { idea: { type: 'string' } }, required: ['idea'] } },
+  // undo / delete
+  { name: 'remove_water', description: 'Remove glasses of water (undo) for a day.', inputSchema: { type: 'object', properties: { glasses: { type: 'number' }, date: { type: 'string' } } } },
+  { name: 'delete_last_meal', description: 'Delete the most recent meal logged for a day.', inputSchema: { type: 'object', properties: { date: { type: 'string' } } } },
+  { name: 'delete_idea', description: 'Delete an idea (by text).', inputSchema: { type: 'object', properties: { idea: { type: 'string' } }, required: ['idea'] } },
+  { name: 'remove_from_watchlist', description: 'Remove a film (by title) from the watchlist.', inputSchema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } },
+  { name: 'unmark_bill_paid', description: 'Undo marking a bill (by name) paid for the month.', inputSchema: { type: 'object', properties: { bill: { type: 'string' }, date: { type: 'string' } }, required: ['bill'] } },
+  { name: 'remove_no_spend_day', description: 'Undo a no-spend day.', inputSchema: { type: 'object', properties: { date: { type: 'string' } } } }
 ];
 
 var READABLE = Object.keys(BUNDLE).concat(['stack:taken:<date>']);
@@ -227,7 +248,8 @@ async function callTool(name, a) {
     var d2 = await resolveDate(a.date);
     await mutateBundle('po-coach', function (b) {
       var w = arr(b['po_coach_weights']); var i = w.findIndex(function (e) { return e && e.dateKey === d2; });
-      if (i >= 0) w[i] = { dateKey: d2, weight: +a.kg }; else w.push({ dateKey: d2, weight: +a.kg });
+      var rec = { dateKey: d2, weight: +a.kg, ts: Date.now() }; // ts → wins mergeWeights on same-day update
+      if (i >= 0) w[i] = rec; else w.push(rec);
       b['po_coach_weights'] = w;
     });
     return 'Logged bodyweight ' + a.kg + 'kg for ' + d2 + '.';
@@ -264,6 +286,7 @@ async function callTool(name, a) {
       if (a.recovery != null) e.recovery = r0(a.recovery);
       if (a.quality != null) e.quality = r0(a.quality);
       if (a.energy != null) e.energy = r0(a.energy);
+      e.ts = Date.now(); // ts → wins mergeArray on same-night update
       if (i >= 0) logs[i] = e; else logs.push(e);
       b['sleep:logs'] = logs;
     });
@@ -371,6 +394,133 @@ async function callTool(name, a) {
       b['journal:entries'] = en;
     });
     return 'Saved journal entry for ' + d9 + '.';
+  }
+
+  /* ---- more reads ---- */
+  if (name === 'get_supplements') {
+    var sd = await resolveDate(a.date);
+    var items = await readArr('stack:items');
+    var taken = (await readKey('stack:taken:' + sd)) || {};
+    if (!items.length) return 'No supplement stack synced yet (the default stack lives in-app — open Supplements once on your phone to sync it).';
+    var tk = items.filter(function (it) { return taken[it.id]; }).length;
+    return 'Supplements ' + sd + ' — ' + tk + '/' + items.length + ' taken:\n' + items.map(function (it) { return (taken[it.id] ? '✓ ' : '· ') + (it.name || it.id) + (it.window ? ' (' + it.window + ')' : ''); }).join('\n');
+  }
+  if (name === 'get_journal') {
+    var je = (await readArr('journal:entries')).slice(-(+a.limit || 5)).reverse();
+    if (!je.length) return 'No journal entries yet.';
+    return je.map(function (e) { return (e.dateKey || '?') + ((e.reflection || '').trim() ? '\n  Reflection: ' + e.reflection : '') + ((e.gratitude || '').trim() ? '\n  Gratitude: ' + e.gratitude : ''); }).join('\n\n');
+  }
+  if (name === 'get_ideas') {
+    var ideas = await readArr('ideas:items'); var inc = a.include_done === true;
+    var list = ideas.filter(function (x) { return x && (inc || !x.done); }).slice(0, (+a.limit || 15));
+    if (!list.length) return 'No ideas captured yet.';
+    return list.map(function (x) { return (x.done ? '✓ ' : '· ') + (x.text || '') + (x.category ? ' [' + x.category + ']' : ''); }).join('\n');
+  }
+  if (name === 'get_watchlist') {
+    var w0 = await readArr('movies:watch');
+    if (!w0.length) return 'Watchlist is empty.';
+    return 'Watchlist (' + w0.length + '):\n' + w0.map(function (f) { return '· ' + (f.title || '') + (f.year ? ' (' + f.year + ')' : ''); }).join('\n');
+  }
+
+  /* ---- updates / toggles ---- */
+  if (name === 'set_calorie_target') {
+    if (a.kcal == null) return 'Need kcal.';
+    await mutateBundle('nutrition', function (b) { var p = b['nut:profile'] || {}; p.calTarget = r0(a.kcal); p._ts = Date.now(); b['nut:profile'] = p; });
+    return 'Set calorie target to ' + r0(a.kcal) + ' kcal/day.';
+  }
+  if (name === 'log_measurement') {
+    var md = await resolveDate(a.date);
+    var fld = ['waist', 'chest', 'arms', 'shoulders', 'hips', 'thigh', 'calf', 'neck', 'forearm'];
+    if (!fld.some(function (f) { return a[f] != null; })) return 'Provide at least one measurement (waist, chest, arms, …).';
+    var logged = [];
+    await mutateBundle('body-measure', function (b) {
+      var logs = arr(b['bm:logs']); var i = logs.findIndex(function (e) { return e && e.dateKey === md; });
+      var rec = i >= 0 ? logs[i] : { dateKey: md };
+      fld.forEach(function (f) { if (a[f] != null) { rec[f] = +a[f]; logged.push(f + ' ' + (+a[f]) + 'cm'); } });
+      rec.ts = Date.now();
+      if (i >= 0) logs[i] = rec; else logs.push(rec);
+      b['bm:logs'] = logs;
+    });
+    return 'Logged for ' + md + ': ' + logged.join(', ') + '.';
+  }
+  if (name === 'complete_learning') {
+    var lq = String(a.title || '').toLowerCase(), lmsg = 'No queue item matching "' + a.title + '".';
+    await mutateBundle('improve', function (b) {
+      var v = arr(b['improve:videos']); var it = v.find(function (x) { return x && String(x.title || '').toLowerCase().indexOf(lq) >= 0; });
+      if (!it) return; it.watched = true; it.ts = Date.now(); b['improve:videos'] = v; lmsg = 'Marked "' + it.title + '" watched.';
+    });
+    return lmsg;
+  }
+  if (name === 'adopt_habit') {
+    var aq = String(a.habit || '').toLowerCase(), amsg = 'No habit-to-build matching "' + a.habit + '".';
+    await mutateBundle('improve', function (b) {
+      var h = arr(b['improve:habits']); var it = h.find(function (x) { return x && String(x.text || '').toLowerCase().indexOf(aq) >= 0; });
+      if (!it) return; it.adopted = true; it.ts = Date.now(); b['improve:habits'] = h; amsg = 'Marked "' + it.text + '" as adopted.';
+    });
+    return amsg;
+  }
+  if (name === 'mark_idea_done') {
+    var iq = String(a.idea || '').toLowerCase(), imsg = 'No idea matching "' + a.idea + '".';
+    await mutateBundle('ideas', function (b) {
+      var list = arr(b['ideas:items']); var it = list.find(function (x) { return x && String(x.text || '').toLowerCase().indexOf(iq) >= 0; });
+      if (!it) return; it.done = true; it.doneAt = new Date().toISOString(); it.ts = Date.now(); b['ideas:items'] = list; imsg = 'Marked idea "' + it.text + '" done.';
+    });
+    return imsg;
+  }
+
+  /* ---- undo / delete (remove + tombstone so it doesn't resurrect on sync) ---- */
+  if (name === 'remove_water') {
+    var rwd = await resolveDate(a.date), rg = a.glasses != null ? r0(a.glasses) : 1, rnc = 0;
+    await mutateBundle('health', function (b) {
+      var w = b['po_water_v1'] || {}; if (!w.logs) w.logs = {}; rnc = Math.max(0, (+w.logs[rwd] || 0) - rg);
+      if (rnc === 0) delete w.logs[rwd]; else w.logs[rwd] = rnc; w._ts = Date.now(); b['po_water_v1'] = w;
+    });
+    return 'Removed ' + rg + ' glass(es) of water for ' + rwd + ' — now ' + rnc + ' total.';
+  }
+  if (name === 'delete_last_meal') {
+    var dmd = await resolveDate(a.date), dmsg = 'No meals logged for ' + dmd + '.';
+    await mutateBundle('nutrition', function (b) {
+      var logs = arr(b['nut:logs']); var idx = -1, best = -1;
+      for (var i = 0; i < logs.length; i++) { var e = logs[i]; if (e && e.dateKey === dmd) { var t = +e.ts || 0; if (t >= best) { best = t; idx = i; } } }
+      if (idx < 0) return; var rem = logs[idx]; logs.splice(idx, 1); b['nut:logs'] = logs; tombstone(b, 'nut:logs', rem);
+      dmsg = 'Deleted "' + (rem.name || 'meal') + '" (' + r0(rem.kcal) + ' kcal) from ' + dmd + '.';
+    });
+    return dmsg;
+  }
+  if (name === 'delete_idea') {
+    var diq = String(a.idea || '').toLowerCase(), dimsg = 'No idea matching "' + a.idea + '".';
+    await mutateBundle('ideas', function (b) {
+      var list = arr(b['ideas:items']); var idx = list.findIndex(function (x) { return x && String(x.text || '').toLowerCase().indexOf(diq) >= 0; });
+      if (idx < 0) return; var rem = list[idx]; list.splice(idx, 1); b['ideas:items'] = list; tombstone(b, 'ideas:items', rem); dimsg = 'Deleted idea "' + rem.text + '".';
+    });
+    return dimsg;
+  }
+  if (name === 'remove_from_watchlist') {
+    var rwq = String(a.title || '').toLowerCase(), rwmsg = 'No watchlist film matching "' + a.title + '".';
+    await mutateBundle('movies', function (b) {
+      var w = arr(b['movies:watch']); var idx = w.findIndex(function (x) { return x && String(x.title || '').toLowerCase().indexOf(rwq) >= 0; });
+      if (idx < 0) return; var rem = w[idx]; w.splice(idx, 1); b['movies:watch'] = w; tombstone(b, 'movies:watch', rem); rwmsg = 'Removed "' + rem.title + '" from the watchlist.';
+    });
+    return rwmsg;
+  }
+  if (name === 'unmark_bill_paid') {
+    var ubq = String(a.bill || '').toLowerCase(), un = a.date ? new Date(a.date + 'T12:00:00') : new Date(), uym = un.getFullYear() + '-' + pad(un.getMonth() + 1), ubmsg = 'No matching bill.';
+    await mutateBundle('bills', function (b) {
+      var items = arr(b['bills:items']); var bill = items.find(function (x) { return x && String(x.name || '').toLowerCase().indexOf(ubq) >= 0; });
+      if (!bill) { ubmsg = 'No bill matching "' + a.bill + '".'; return; }
+      var paid = arr(b['bills:paid']); var pid = bill.id + '|' + uym; var idx = paid.findIndex(function (p) { return p.id === pid; });
+      if (idx < 0) { ubmsg = '"' + bill.name + '" wasn’t marked paid for ' + uym + '.'; return; }
+      var rem = paid[idx]; paid.splice(idx, 1); b['bills:paid'] = paid; tombstone(b, 'bills:paid', rem); ubmsg = 'Unmarked "' + bill.name + '" paid for ' + uym + '.';
+    });
+    return ubmsg;
+  }
+  if (name === 'remove_no_spend_day') {
+    var rnd = await resolveDate(a.date), rnmsg = rnd + ' was not a no-spend day.';
+    await mutateBundle('bills', function (b) {
+      var ns = arr(b['bills:nospend']); var idx = ns.findIndex(function (n) { return n && n.id === rnd; });
+      if (idx < 0) return; var rem = ns[idx]; ns.splice(idx, 1); b['bills:nospend'] = ns; tombstone(b, 'bills:nospend', rem); rnmsg = 'Removed no-spend mark on ' + rnd + '.';
+    });
+    return rnmsg;
   }
 
   throw new Error('Unknown tool: ' + name);
