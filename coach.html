@@ -123,6 +123,20 @@
     function dm(d){ return DMAP[d] || { p:'index.html', c:'155,140,255', l:'' }; }
     function confLabel(i){ var c = (i.confidence != null) ? i.confidence : (i.strength || 0); return c >= 0.6 ? 'strong signal' : c >= 0.38 ? 'clear signal' : 'emerging'; }
 
+    /* Persist the #1 insight to a tiny cloud row so the serverless weekly cron
+       (/api/run-reminders) can push it with the app closed. Best-effort. */
+    function persistTopInsight(hero){
+      try{
+        var SUPA='https://oiyvadqfldwbjroiknjc.supabase.co';
+        var KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+        fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{
+          method:'POST',
+          headers:{ 'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' },
+          body:JSON.stringify({ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() })
+        }).catch(function(){});
+      }catch(e){}
+    }
+
     function stateLine(){
       var sl = ls('sleep:logs'); if(!Array.isArray(sl) || !sl.length) return '';
       var last = sl[sl.length-1]; if(!last || typeof last.recovery !== 'number') return '';
@@ -167,6 +181,8 @@
 
       var rest = insights.filter(function(x){ return x !== hero; });
       var days = dataDays();
+
+      if(hero) persistTopInsight(hero);
 
       if(hero){
         $('coIntro').textContent = insights.length>1

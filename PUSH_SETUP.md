@@ -62,6 +62,7 @@ phone if asked) and you’ll get nudges that fire **with the app closed**:
 | Protein check 🍗     | 7pm  | you’re below ~70% of your protein target |
 | Caffeine cutoff ☕️   | 2pm  | you’ve logged any caffeine today |
 | Evening wind-down 🧭 | 10pm | habits aren’t closed or you haven’t journaled |
+| Weekly insight 🧠    | Mon 9am | the app has found a real pattern (your #1, with the one thing to do about it) |
 
 Each fires at most once a day. Toggle any of them off on the card, and tap the
 green time chip on any row to change when it fires (saved instantly, synced).

@@ -39,6 +39,15 @@ function daysBetween(aKey, bKey) {
   return Math.round((Date.UTC(a[0], a[1] - 1, a[2]) - Date.UTC(b[0], b[1] - 1, b[2])) / 86400000);
 }
 
+// Day-of-week (0=Sun..6=Sat) and the Monday-of-this-week key, from a YYYY-MM-DD.
+function dowOf(dk) { var p = dk.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); }
+function mondayOf(dk) {
+  var p = dk.split('-').map(Number), d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+  var back = (d.getUTCDay() + 6) % 7; // Mon→0, Sun→6
+  d.setUTCDate(d.getUTCDate() - back);
+  return d.toISOString().slice(0, 10);
+}
+
 // Proactive intelligence: is recovery clearly slipping AND now low? Returns
 // { n, drop, latest } only when it's worth a heads-up — never on a single dip
 // or while recovery is still high. Mirrors the in-app rec-down insight.
@@ -88,7 +97,13 @@ var REMINDERS = [
     cond: function () { return true; },
     body: function (c) { return c.bedtimeTarget
       ? ('Aim to be in bed by ' + c.bedtimeTarget + ' for ' + c.sleepNeed + 'h — wind down now: screens off, lights low.')
-      : 'Start winding down — screens off, lights low. Sleep is your #1 lever.'; } }
+      : 'Start winding down — screens off, lights low. Sleep is your #1 lever.'; } },
+
+  // Weekly — Monday morning. Pushes the #1 cross-domain insight the app
+  // computed (stored client-side in the 'insight' row). Deduped per week.
+  { id: 'weekly', defHour: 9, weekly: true, dow: 1, title: 'Your week in focus 🧠',
+    cond: function (c) { return !!c.topInsight; },
+    body: function (c) { var t = c.topInsight; return (t.text || '') + (t.action ? '  → ' + t.action : ''); } }
 ];
 
 // Pull the user's data rows and reduce to the few facts the reminders need.
@@ -123,9 +138,17 @@ async function buildContext(tz, today) {
 
   var recoveryDip = recoveryDipFrom((await supa.readRow('sleep'))['sleep:logs']);
 
+  // Weekly insight (computed in-app, stored in the 'insight' row). Ignore if
+  // stale (>14d) so we never push a pattern that no longer reflects the data.
+  var insRow = await supa.readRow('insight');
+  var topInsight = (insRow && insRow['insight:top']) ? insRow['insight:top'] : null;
+  if (topInsight && topInsight.ts && (Date.now() - topInsight.ts > 14 * 86400000)) topInsight = null;
+  if (topInsight && !((topInsight.text || '').trim())) topInsight = null;
+
   return { weighedToday: weighedToday, daysSinceTraining: daysSinceTraining,
     protein: protein, proteinTarget: proteinTarget, cafToday: cafToday,
-    habitsLeft: habitsLeft, journaledToday: journaledToday, recoveryDip: recoveryDip };
+    habitsLeft: habitsLeft, journaledToday: journaledToday, recoveryDip: recoveryDip,
+    topInsight: topInsight };
 }
 
 module.exports = async function (req, res) {
@@ -166,12 +189,19 @@ module.exports = async function (req, res) {
       return r.defHour;
     }
 
-    // Which reminders are scheduled for this local hour and not yet sent today?
+    var weekKey = mondayOf(lp.dateKey);
+    var dow = dowOf(lp.dateKey);
+    function dedupeKey(r) { return r.weekly ? weekKey : lp.dateKey; }
+
+    // Which reminders are scheduled for this local hour and not yet sent in
+    // their window (today for daily, this week for weekly)?
     var due = REMINDERS.filter(function (r) {
       var pr = prefR[r.id] || {};
       if (r.id === 'winddown') { if (pr.on !== true) return false; }   // opt-in
       else if (pr.on === false) return false;
-      return reminderHour(r) === lp.hour && sent[r.id] !== lp.dateKey;
+      if (reminderHour(r) !== lp.hour) return false;
+      if (r.weekly && dow !== (r.dow != null ? r.dow : 1)) return false; // weekly fires on its weekday only
+      return sent[r.id] !== dedupeKey(r);
     });
     if (!due.length) { res.status(200).json({ checked: true, tz: tz, hour: lp.hour, due: 0 }); return; }
 
@@ -189,7 +219,7 @@ module.exports = async function (req, res) {
         try { await webpush.sendNotification(subs[ep], payload); }
         catch (err) { var sc = err && err.statusCode; if (sc === 404 || sc === 410) dead[ep] = 1; }
       }
-      sent[r.id] = lp.dateKey;
+      sent[r.id] = dedupeKey(r);
       fired.push(r.id);
     }
 

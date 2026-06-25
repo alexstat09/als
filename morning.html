@@ -1226,14 +1226,34 @@ function boot(){
   const greetPre=document.getElementById('mbGreetPre');
   if(greetPre) greetPre.textContent=greetPhrase();
 
-  /* Nova noticed: surface the strongest cross-domain insight, in Nova's voice */
+  /* Nova noticed: surface the strongest cross-domain insight, in Nova's voice.
+     Hero = strongest insight that carries an action (matches coach.html), so
+     the briefing is actionable. Also persist it for the weekly push nudge. */
   (function(){
     var el=document.getElementById('mbNoticed'), txt=document.getElementById('mbNoticedText');
-    if(el && txt && window.ALSInsights){
-      var ins=[]; try{ ins=window.ALSInsights.compute(); }catch(e){}
-      if(ins.length){ txt.textContent=ins[0].emoji+'  '+ins[0].text; el.style.display=''; }
-    }
+    if(!(el && txt && window.ALSInsights)) return;
+    var ins=[]; try{ ins=window.ALSInsights.compute()||[]; }catch(e){}
+    if(!ins.length) return;
+    var hero=null; for(var i=0;i<ins.length;i++){ if(ins[i].action){ hero=ins[i]; break; } }
+    if(!hero) hero=ins[0];
+    txt.textContent = hero.emoji+'  '+hero.text + (hero.action ? '  → '+hero.action : '');
+    el.style.display='';
+    persistTopInsight(hero);
   })();
+
+  /* Persist the day's #1 insight to a tiny cloud row so the serverless weekly
+     cron (/api/run-reminders) can push it even with the app closed. Best-effort. */
+  function persistTopInsight(hero){
+    try{
+      var SUPA='https://oiyvadqfldwbjroiknjc.supabase.co';
+      var KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+      fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{
+        method:'POST',
+        headers:{ 'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' },
+        body:JSON.stringify({ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() })
+      }).catch(function(){});
+    }catch(e){}
+  }
 
   /* Trajectory: surface the strongest weight/lift forecast (tomorrow-recovery is evening-gated) */
   (function(){

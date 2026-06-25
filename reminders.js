@@ -22,9 +22,10 @@
     protein:  { on: true, hour: 19, emoji: '🍗', label: 'Protein check',     when: 'evening if you’re behind' },
     caffeine: { on: true, hour: 14, emoji: '☕️', label: 'Caffeine cutoff',    when: 'if you’ve had any today' },
     journal:  { on: true, hour: 22, emoji: '🧭', label: 'Evening wind-down',  when: 'habits + journal before bed' },
-    winddown: { on: false, hour: 22, emoji: '🌙', label: 'Bedtime wind-down',  when: 'at your target bedtime — screens off' }
+    winddown: { on: false, hour: 22, emoji: '🌙', label: 'Bedtime wind-down',  when: 'at your target bedtime — screens off' },
+    weekly:   { on: true, hour: 9,  emoji: '🧠', label: 'Weekly insight',     when: 'Monday morning — your #1 pattern' }
   };
-  var ORDER = ['weighin', 'recovery', 'training', 'protein', 'caffeine', 'journal', 'winddown'];
+  var ORDER = ['weighin', 'recovery', 'training', 'protein', 'caffeine', 'journal', 'winddown', 'weekly'];
 
   function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function fmtHour(h) { var ap = h < 12 ? 'am' : 'pm'; var hr = h % 12; if (hr === 0) hr = 12; return hr + ap; }
