@@ -53,29 +53,28 @@
   .w-empty{font-family:var(--au-serif);font-style:italic;color:var(--au-dim);text-align:center;padding:26px 0;font-size:16px;}
 
   /* sheet (template detail / picker / editor) */
-  .w-sheet-bg{position:fixed;inset:0;z-index:60;background:rgba(3,4,6,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .25s;}
-  .w-sheet-bg.on{opacity:1;pointer-events:auto;}
-  /* Bottom sheet — anchored to the screen edge so it's ALWAYS in frame, and
-     slides up into view (no more centered box landing off-screen). Becomes a
-     floating centered card on wider screens. */
-  .w-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:61;width:100%;max-width:600px;margin:0 auto;
-    max-height:88vh;overflow-y:auto;
-    background:#0a0c10;border:1px solid rgba(var(--au-glow-rgb),.28);border-bottom:none;
-    border-radius:24px 24px 0 0;
+  /* Sheet — a top-layer <dialog> (opened via showModal) so it is positioned
+     against the VIEWPORT, immune to any ancestor transform/filter that was
+     pushing the old position:fixed box to the bottom of the page. Slide-up
+     bottom sheet on phones; floating centered card on wider screens. */
+  .w-sheet{position:fixed;inset:auto 0 0 0;z-index:61;width:100%;max-width:600px;margin:0 auto;
+    max-height:88vh;overflow-y:auto;color:var(--au-ivory);
+    background:#0a0c10;border:1px solid rgba(var(--au-glow-rgb),.28);border-bottom:none;border-radius:24px 24px 0 0;
     padding:9px 18px calc(24px + env(safe-area-inset-bottom));
-    opacity:0;pointer-events:none;transform:translateY(101%);
+    transform:translateY(101%);opacity:0;
     transition:opacity .25s ease, transform .44s cubic-bezier(.22,1,.36,1);
-    box-shadow:0 -22px 60px rgba(0,0,0,.6), 0 0 70px rgba(var(--au-glow-rgb),.12);-webkit-overflow-scrolling:touch;}
-  .w-sheet.on{opacity:1;pointer-events:auto;transform:translateY(0);}
+    box-shadow:0 -22px 60px rgba(0,0,0,.6), 0 0 70px rgba(var(--au-glow-rgb),.12);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+  .w-sheet::backdrop{background:rgba(3,4,6,.62);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);}
+  .w-sheet.on{transform:translateY(0);opacity:1;}
   /* the grab handle, visible on the bottom sheet */
   .w-sheet-grip{display:block;width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,.2);margin:0 auto 14px;}
   @media(min-width:620px){
-    .w-sheet{left:50%;right:auto;bottom:auto;top:50%;width:min(540px,92vw);max-width:none;max-height:86vh;margin:0;
+    .w-sheet{inset:0;margin:auto;width:min(540px,92vw);max-width:none;max-height:86vh;height:max-content;
       border:1px solid rgba(var(--au-glow-rgb),.28);border-radius:22px;padding:20px 18px 22px;
-      transform:translate(-50%,-46%) scale(.96);
+      transform:translateY(16px) scale(.96);
       transition:opacity .2s ease, transform .34s cubic-bezier(.34,1.56,.45,1);
       box-shadow:0 30px 80px rgba(0,0,0,.65), 0 0 70px rgba(var(--au-glow-rgb),.13);}
-    .w-sheet.on{transform:translate(-50%,-50%) scale(1);}
+    .w-sheet.on{transform:translateY(0) scale(1);}
     .w-sheet-grip{display:none;}
   }
   .w-sheet-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
@@ -153,14 +152,13 @@
   .w-preset{padding:15px 6px;border-radius:12px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-ivory);font-family:var(--au-mono);font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .w-preset.on{background:rgb(var(--au-glow-rgb));color:#04130D;border-color:transparent;box-shadow:0 0 16px rgba(var(--au-glow-rgb),.4);}
 
-  /* compact rest popup */
-  .w-modal-bg{position:fixed;inset:0;z-index:70;background:rgba(3,4,6,.55);opacity:0;pointer-events:none;transition:opacity .18s;}
-  .w-modal-bg.on{opacity:1;pointer-events:auto;}
-  .w-modal{position:fixed;z-index:71;left:50%;top:40%;transform:translate(-50%,-50%) scale(.92);width:min(320px,86vw);
-    background:#0c0e13;border:1px solid rgba(var(--au-glow-rgb),.32);border-radius:20px;padding:22px 20px;
+  /* compact rest popup — also a top-layer <dialog>, centered to the viewport */
+  .w-modal{position:fixed;z-index:71;inset:0;margin:auto;width:min(320px,86vw);height:max-content;
+    background:#0c0e13;border:1px solid rgba(var(--au-glow-rgb),.32);border-radius:20px;padding:22px 20px;color:var(--au-ivory);
     box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(var(--au-glow-rgb),.12);
-    opacity:0;pointer-events:none;transition:opacity .18s,transform .26s cubic-bezier(.34,1.5,.5,1);text-align:center;}
-  .w-modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+    opacity:0;transform:scale(.92);transition:opacity .18s,transform .26s cubic-bezier(.34,1.5,.5,1);text-align:center;}
+  .w-modal::backdrop{background:rgba(3,4,6,.55);}
+  .w-modal.on{opacity:1;transform:scale(1);}
   .w-modal-title{font-family:var(--au-serif);font-style:italic;font-size:23px;color:var(--au-ivory);}
   .w-modal-sub{font-family:var(--au-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin:3px 0 18px;}
   .w-modal-time{display:flex;align-items:flex-start;justify-content:center;gap:8px;margin-bottom:16px;}
@@ -258,11 +256,9 @@
 
 <div class="w-wrap" id="wWrap"></div>
 
-<div class="w-sheet-bg" id="wSheetBg" onclick="sheetBgClose()"></div>
-<div class="w-sheet" id="wSheet"></div>
+<dialog class="w-sheet" id="wSheet"></dialog>
 
-<div class="w-modal-bg" id="wModalBg" data-act="rest-close"></div>
-<div class="w-modal" id="wModal">
+<dialog class="w-modal" id="wModal">
   <div class="w-modal-title">Rest between sets</div>
   <div class="w-modal-sub">Set your own time</div>
   <div class="w-modal-time">
@@ -279,7 +275,7 @@
   </div>
   <button type="button" class="w-btn" data-act="rest-set">Set</button>
   <button type="button" class="w-btn-ghost" id="wNotifEnable" data-act="notif-enable" style="margin-top:10px;display:none;">&#128276; Alert me when rest ends</button>
-</div>
+</dialog>
 
 <script src="pocoach-sync.js?v=2"></script>
 <script src="push.js" defer></script>
@@ -1039,21 +1035,31 @@ function openRestModal(){
   if(si) si.value=pad(cur%60);
   var nb=document.getElementById('wNotifEnable');
   if(nb) nb.style.display = ('Notification' in window && Notification.permission!=='granted') ? '' : 'none';
-  document.getElementById('wModalBg').classList.add('on');
-  document.getElementById('wModal').classList.add('on');
+  var m=document.getElementById('wModal'); clearTimeout(restCloseT);
+  if(!m.open){ try{ m.showModal(); }catch(e){ m.setAttribute('open',''); } }
+  requestAnimationFrame(function(){ m.classList.add('on'); });
   restOpenedAt=Date.now();
   setTimeout(function(){ if(mi){ try{ mi.focus(); mi.select(); }catch(e){} } },260);
 }
-function closeRestModal(){ var b=document.getElementById('wModalBg'),m=document.getElementById('wModal'); if(b)b.classList.remove('on'); if(m)m.classList.remove('on'); }
+function closeRestModal(){ var m=document.getElementById('wModal'); if(!m)return; m.classList.remove('on'); clearTimeout(restCloseT); restCloseT=setTimeout(function(){ try{ if(m.open) m.close(); }catch(e){ m.removeAttribute('open'); } },240); }
 function applyRest(sec){ sec=parseInt(sec,10); if(isNaN(sec)||sec<5) sec=5; save('po_rest_default',sec); var a=getActive(); if(a&&a.rest){ a.rest.endAt=Date.now()+sec*1000; a.rest.doneAt=null; restAlerted=false; setActive(a); ensureRest(); } closeRestModal(); render(); }
 function restSetFromInputs(){ var m=parseInt((document.getElementById('wRmMin')||{}).value,10)||0; var s=parseInt((document.getElementById('wRmSec')||{}).value,10)||0; applyRest(m*60+s); }
 window.openRestConfig=openRestModal;
 
 /* SHEET */
-var sheetOpenedAt=0, restOpenedAt=0;
-function openSheet(html){ var s=document.getElementById('wSheet'); s.innerHTML=html; document.getElementById('wSheetBg').classList.add('on'); s.classList.add('on'); s.scrollTop=0; sheetOpenedAt=Date.now(); }
-window.closeSheet=function(){ document.getElementById('wSheetBg').classList.remove('on'); document.getElementById('wSheet').classList.remove('on'); };
+var sheetOpenedAt=0, restOpenedAt=0, sheetCloseT=null, restCloseT=null;
+function openSheet(html){ var s=document.getElementById('wSheet'); clearTimeout(sheetCloseT); s.innerHTML=html; if(!s.open){ try{ s.showModal(); }catch(e){ s.setAttribute('open',''); } } s.scrollTop=0; sheetOpenedAt=Date.now(); requestAnimationFrame(function(){ s.classList.add('on'); }); }
+window.closeSheet=function(){ var s=document.getElementById('wSheet'); if(!s)return; s.classList.remove('on'); clearTimeout(sheetCloseT); sheetCloseT=setTimeout(function(){ try{ if(s.open) s.close(); }catch(e){ s.removeAttribute('open'); } },300); };
 window.sheetBgClose=function(){ if(Date.now()-sheetOpenedAt<450) return; window.closeSheet(); }; /* ignore the iOS ghost-click that lands on the backdrop right after opening */
+/* top-layer <dialog> wiring: tap the dim backdrop or press Esc to close */
+(function(){
+  var s=document.getElementById('wSheet');
+  if(s){ s.addEventListener('click', function(e){ if(e.target===s) window.sheetBgClose(); });
+         s.addEventListener('cancel', function(e){ e.preventDefault(); window.closeSheet(); }); }
+  var m=document.getElementById('wModal');
+  if(m){ m.addEventListener('click', function(e){ if(e.target===m && Date.now()-restOpenedAt>=450) closeRestModal(); });
+         m.addEventListener('cancel', function(e){ e.preventDefault(); closeRestModal(); }); }
+})();
 
 /* nav exports */
 function requestNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
