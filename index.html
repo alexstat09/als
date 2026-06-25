@@ -428,44 +428,26 @@ body::after {
   .intel-grid { grid-template-columns: 1fr; }
 }
 
-/* ── DATA VAULT ──────────────────────────────────── */
+/* ── DATA VAULT (compact entry → backup.html) ─────── */
 .vault-wrap {
-  padding: 0 20px; margin: 0 auto 28px; max-width: 1100px;
+  display:block; text-decoration:none; -webkit-tap-highlight-color:transparent;
+  padding: 16px 18px; margin: 0 auto 28px; max-width: 1100px;
+  border:1px solid rgba(255,255,255,.08); border-radius:18px;
+  background:linear-gradient(135deg, rgba(52,226,176,.05), rgba(255,255,255,.015));
+  transition:transform .15s ease, border-color .2s ease, background .2s ease;
 }
-.vault-hdr { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.vault-wrap:active { transform:scale(.992); }
+@media(hover:hover){ .vault-wrap:hover { border-color:rgba(52,226,176,.28); } }
+.vault-hdr { display:flex; align-items:center; gap:10px; margin-bottom:2px; }
 .vault-hdr-label { font-family:var(--au-mono,ui-monospace); font-size:9.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:rgba(244,241,234,.34); }
 .vault-hdr-line { flex:1; height:1px; background:linear-gradient(90deg,rgba(52,226,176,.22),transparent); }
-.vault-row { display:flex; gap:10px; }
-.vault-btn {
-  flex:1; padding:15px 14px; border-radius:14px; border:none; cursor:pointer;
-  font-family:var(--au-sans,-apple-system); font-size:14px; font-weight:700;
-  -webkit-tap-highlight-color:transparent;
-  transition:transform .15s ease, box-shadow .25s ease, background .2s ease;
-}
-.vault-btn:disabled { opacity:.55; }
-.vault-btn-primary {
-  color:#04130D;
-  background:linear-gradient(120deg,#34E2B0,#18C8C0 50%,#9B8CFF);
-  box-shadow:0 6px 24px rgba(52,226,176,.28);
-}
-.vault-btn-primary:active { transform:translateY(1px); }
-.vault-btn-ghost {
-  color:#F4F1EA; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10);
-}
-.vault-btn-ghost:active { background:rgba(255,255,255,.09); }
-.vault-status { font-family:var(--au-mono,ui-monospace); font-size:11px; min-height:15px; margin-top:11px; color:rgba(244,241,234,.5); letter-spacing:.03em; }
-.vault-status.ok   { color:#34E2B0; }
-.vault-status.warn { color:#F2C063; }
-.vault-status.err  { color:#FF6B8B; }
-.vault-meta { font-family:var(--au-mono,ui-monospace); font-size:10px; color:rgba(244,241,234,.34); margin-top:4px; letter-spacing:.04em; }
-.vault-secondary { display:flex; gap:18px; margin-top:13px; }
-.vault-link {
-  font-family:var(--au-mono,ui-monospace); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-  color:rgba(244,241,234,.34); background:none; border:none; cursor:pointer; padding:0;
-  text-decoration:underline; text-underline-offset:3px; transition:color .2s;
-}
-.vault-link:hover { color:#F4F1EA; }
-@media(max-width:440px){ .vault-wrap { padding: 0 14px; } }
+.vault-go { font-family:var(--au-mono,ui-monospace); font-size:14px; color:rgba(52,226,176,.7); flex:none; }
+.vault-cta { display:flex; align-items:center; gap:12px; padding-top:11px; }
+.vault-cta-ico { font-size:22px; flex:none; }
+.vault-cta-main { flex:1; min-width:0; }
+.vault-cta-t { display:block; font-family:var(--au-sans,-apple-system); font-size:15px; font-weight:700; color:#F4F1EA; }
+.vault-meta { display:block; font-family:var(--au-mono,ui-monospace); font-size:10px; color:rgba(244,241,234,.36); margin-top:3px; letter-spacing:.04em; }
+@media(max-width:440px){ .vault-wrap { padding: 14px 14px; } }
 
 /* ── MORNING NUDGE ───────────────────────────────── */
 .nudge-wrap {
@@ -1118,23 +1100,20 @@ body::after {
 </div>
 
 <!-- ── DATA VAULT ──────────────────────────────── -->
-<div class="vault-wrap">
+<a class="vault-wrap" id="vault" href="backup.html">
   <div class="vault-hdr">
     <span class="vault-hdr-label">&#9672; Data Vault</span>
     <div class="vault-hdr-line"></div>
+    <span class="vault-go">&rarr;</span>
   </div>
-  <div class="vault-row">
-    <button class="vault-btn vault-btn-primary" id="vaultBackup">&#9729;&#65039; Back up now</button>
-    <button class="vault-btn vault-btn-ghost" id="vaultRestore">&#10227; Restore</button>
+  <div class="vault-cta">
+    <span class="vault-cta-ico">&#128451;&#65039;</span>
+    <span class="vault-cta-main">
+      <span class="vault-cta-t">Back up &amp; restore</span>
+      <span class="vault-meta" id="vaultMeta"></span>
+    </span>
   </div>
-  <div class="vault-status" id="vaultStatus"></div>
-  <div class="vault-meta" id="vaultMeta"></div>
-  <div class="vault-secondary">
-    <button class="vault-link" id="vaultDownload">Download a copy</button>
-    <label class="vault-link" for="vaultFile">Restore from file</label>
-    <input type="file" id="vaultFile" accept="application/json,.json,text/plain" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none">
-  </div>
-</div>
+</a>
 
 <!-- ── DAILY REMINDERS (rendered by reminders.js) ──────────── -->
 <div id="remMount"></div>
@@ -1630,102 +1609,17 @@ if (window.ALS && window.ALS.generateInsights) {
 }
 setInterval(renderIntelFeed, 60000);
 
-/* ── Data Vault ─────────────────────────────────── */
+/* ── Data Vault meta (full backup/restore UI lives in backup.html) ── */
 (function () {
   'use strict';
-  var REST = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
-  var SB_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
-  var BACKUP_KEY = 'als-full-backup';
-  var EXCLUDE = ['topbar_water_rendered', 'debug', 'als-full-backup'];
-
-  function allKeys(){ return Object.keys(localStorage).filter(function(k){ return EXCLUDE.indexOf(k) === -1; }); }
-  function snapshot(){ var o = {}; allKeys().forEach(function(k){ o[k] = localStorage.getItem(k); }); return o; }
   function fmtBytes(n){ if (n < 1024) return n + ' B'; if (n < 1048576) return (n/1024).toFixed(1) + ' KB'; return (n/1048576).toFixed(2) + ' MB'; }
-  function hdrs(){ return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }; }
   function fmtWhen(iso){ try { var d = new Date(iso); return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ', ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch(e){ return iso; } }
-  function status(msg, cls){
-    var el = document.getElementById('vaultStatus'); if (!el) return;
-    el.textContent = msg; el.className = 'vault-status' + (cls ? ' ' + cls : '');
-    if (cls === 'ok') setTimeout(function(){ if (el.textContent === msg){ el.textContent = ''; el.className = 'vault-status'; } }, 5000);
-  }
-  function updateMeta(){
-    var el = document.getElementById('vaultMeta'); if (!el) return;
-    var keys = allKeys(); var bytes = 0;
-    keys.forEach(function(k){ bytes += (localStorage.getItem(k) || '').length * 2; });
-    var last = localStorage.getItem('als_last_cloud_backup');
-    el.textContent = keys.length + ' keys · ' + fmtBytes(bytes) + (last ? ' · last cloud backup ' + fmtWhen(last) : ' · no cloud backup yet');
-  }
-
-  document.getElementById('vaultBackup').addEventListener('click', function(){
-    var btn = this; btn.disabled = true; status('Backing up to cloud…');
-    var snap = snapshot(); var savedAt = new Date().toISOString();
-    var body = { key: BACKUP_KEY, data: { savedAt: savedAt, keys: Object.keys(snap).length, snap: snap }, updated_at: savedAt };
-    fetch(REST + '?on_conflict=key', { method:'POST', headers: Object.assign({}, hdrs(), {'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(body) })
-      .then(function(r){
-        btn.disabled = false;
-        if (r.ok){ localStorage.setItem('als_last_cloud_backup', savedAt); status('✓ Backed up to cloud · ' + Object.keys(snap).length + ' keys', 'ok'); updateMeta(); }
-        else { status('Cloud backup failed (' + r.status + ') — try Download a copy', 'err'); }
-      })
-      .catch(function(){ btn.disabled = false; status('No connection — try Download a copy', 'err'); });
-  });
-
-  document.getElementById('vaultRestore').addEventListener('click', function(){
-    status('Checking cloud…');
-    fetch(REST + '?key=eq.' + BACKUP_KEY + '&select=data', { headers: hdrs() })
-      .then(function(r){ return r.json(); })
-      .then(function(rows){
-        var d = (rows && rows[0] && rows[0].data) ? rows[0].data : null;
-        if (!d || !d.snap){ status('No cloud backup found yet — back up first', 'warn'); return; }
-        var when = fmtWhen(d.savedAt);
-        var count = d.keys || Object.keys(d.snap).length;
-        if (!confirm('Restore your cloud backup from ' + when + '?\n\nThis replaces the data on THIS device (' + count + ' keys).')){ status(''); return; }
-        var n = 0; Object.keys(d.snap).forEach(function(k){ try { localStorage.setItem(k, d.snap[k]); n++; } catch(e){} });
-        status('✓ Restored ' + n + ' keys — reloading…', 'ok');
-        setTimeout(function(){ location.reload(); }, 1100);
-      })
-      .catch(function(){ status('No connection — could not reach cloud', 'err'); });
-  });
-
-  document.getElementById('vaultDownload').addEventListener('click', function(){
-    var snap = snapshot();
-    var out = { _version: 1, _exported: new Date().toISOString(), _keys: Object.keys(snap).length };
-    Object.keys(snap).forEach(function(k){ out[k] = snap[k]; });
-    var json = JSON.stringify(out, null, 2);
-    var fname = 'als-backup-' + new Date().toISOString().slice(0,10) + '.json';
-    try {
-      var file = new File([json], fname, { type: 'application/json' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })){
-        navigator.share({ files: [file], title: fname }).then(function(){ status('✓ Saved', 'ok'); }).catch(function(){});
-        return;
-      }
-    } catch(e){}
-    var url = URL.createObjectURL(new Blob([json], { type: 'application/octet-stream' }));
-    var a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
-    status('✓ Downloaded a copy', 'ok');
-  });
-
-  document.getElementById('vaultFile').addEventListener('change', function(e){
-    var file = e.target.files[0]; if (!file) return;
-    status('Reading file…');
-    var reader = new FileReader();
-    reader.onerror = function(){ status('Could not read file', 'err'); };
-    reader.onload = function(ev){
-      try {
-        var data = JSON.parse(ev.target.result);
-        var snap = data.snap ? data.snap : data;
-        var skip = { _version:1, _exported:1, _keys:1, savedAt:1, keys:1, snap:1 };
-        if (!confirm('Restore from this file? This replaces data on THIS device.')){ status(''); e.target.value=''; return; }
-        var n = 0; Object.keys(snap).forEach(function(k){ if (skip[k]) return; try { localStorage.setItem(k, snap[k]); n++; } catch(e){} });
-        status('✓ Restored ' + n + ' keys — reloading…', 'ok');
-        e.target.value = '';
-        setTimeout(function(){ location.reload(); }, 1100);
-      } catch(err){ status('Restore failed — invalid file', 'err'); }
-    };
-    reader.readAsText(file);
-  });
-
-  updateMeta();
+  var el = document.getElementById('vaultMeta'); if (!el) return;
+  var EXCLUDE = { 'topbar_water_rendered':1, 'debug':1, 'als-full-backup':1, 'als-full-backup-prev':1, 'als_last_cloud_backup':1 };
+  var keys = Object.keys(localStorage).filter(function(k){ return !EXCLUDE[k] && k.indexOf('__synctomb__') !== 0; });
+  var bytes = 0; keys.forEach(function(k){ bytes += (localStorage.getItem(k) || '').length * 2; });
+  var last = localStorage.getItem('als_last_cloud_backup');
+  el.textContent = keys.length + ' keys · ' + fmtBytes(bytes) + (last ? ' · cloud backup ' + fmtWhen(last) : ' · not backed up yet');
 })();
 
 })();
@@ -1894,6 +1788,7 @@ setInterval(renderIntelFeed, 60000);
     {e:'✦',  l:'Weekly Review',      g:'Reflect', u:'weekly.html',       k:'weekly review week sunday'},
     {e:'🌌', l:'Your Arc',           g:'Reflect', u:'arc.html',          k:'arc story journey cinematic'},
     {e:'📈', l:'Trends',             g:'Reflect', u:'trends.html',       k:'trends charts graphs history'},
+    {e:'🗄️', l:'Backup & Restore',   g:'System',  u:'backup.html',       k:'backup restore export import json save data download safety recover'},
     {e:'💬', l:'Talk to Nova',       g:'Nova',    u:'nova-chat.html',    k:'nova chat talk ai coach assistant ask'},
     {e:'✦', l:'New home (demo)',     g:'Concept', u:'demo.html',         k:'demo stream new home concept nav navigation experiment'},
     {e:'🧠', l:'Coach',              g:'Intelligence', u:'coach.html',           k:'coach intelligence insights patterns correlations forecast trends nova brain analysis'},

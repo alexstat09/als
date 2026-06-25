@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Backup &amp; Restore · ALS</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{ --bk:52,226,176; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+    .bk-hero{ max-width:620px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .bk-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--bk),.9); margin-bottom:11px; }
+    .bk-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(23px,6vw,31px); line-height:1.08; }
+    .bk-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; line-height:1.45; max-width:42ch; }
+    .bk-orb{ flex:none; width:58px; height:58px; border-radius:17px; display:flex; align-items:center; justify-content:center; font-size:26px;
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--bk),.22), rgba(var(--bk),.04)); border:1px solid rgba(var(--bk),.3); }
+    .bk-wrap{ max-width:620px; margin:0 auto; padding:14px 18px; display:flex; flex-direction:column; gap:14px; }
+    .bk-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:16px; padding:16px; }
+    .bk-card h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-dim); margin-bottom:6px; }
+    .bk-card .desc{ font-size:13px; color:var(--au-dim); line-height:1.5; margin-bottom:13px; }
+    .bk-stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+    .bk-stat{ text-align:center; padding:11px 4px; background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:12px; }
+    .bk-stat b{ display:block; font-family:var(--au-mono); font-size:18px; font-weight:800; color:#fff; letter-spacing:-.02em; }
+    .bk-stat span{ display:block; font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+    .bk-btn{ width:100%; border:none; border-radius:13px; padding:14px; font-family:var(--au-sans); font-size:14px; font-weight:800; cursor:pointer; }
+    .bk-btn.go{ background:linear-gradient(135deg,#34E2B0,#18C8C0); color:#04130D; box-shadow:0 6px 22px rgba(52,226,176,.25); }
+    .bk-btn.warn{ background:linear-gradient(135deg,#F2A65A,#E8736B); color:#160a04; box-shadow:0 6px 22px rgba(232,115,107,.25); }
+    .bk-btn.ghost{ background:rgba(255,255,255,.04); color:var(--au-dim); border:1px solid var(--au-line); box-shadow:none; font-weight:700; }
+    .bk-btn:disabled{ opacity:.4; cursor:default; box-shadow:none; }
+    .bk-btn + .bk-btn{ margin-top:9px; }
+    .bk-drop{ border:1.5px dashed var(--au-line); border-radius:13px; padding:22px 14px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
+    .bk-drop.over{ border-color:rgba(var(--bk),.6); background:rgba(var(--bk),.05); }
+    .bk-drop .big{ font-size:24px; }
+    .bk-drop .t{ font-size:13.5px; color:var(--au-ivory); font-weight:600; margin-top:7px; }
+    .bk-drop .s{ font-size:11.5px; color:var(--au-faint); margin-top:3px; }
+    .bk-line{ font-size:13px; color:var(--au-dim); line-height:1.55; margin-bottom:6px; }
+    .bk-line b{ color:var(--au-ivory); }
+    .bk-warn{ margin:12px 0; padding:11px 13px; border-radius:11px; background:rgba(232,115,107,.08); border:1px solid rgba(232,115,107,.25); font-size:12px; color:#F0B6AE; line-height:1.5; }
+    .bk-warn b{ color:#F7D0C9; }
+    .bk-ok{ margin-top:12px; padding:12px 14px; border-radius:11px; background:rgba(var(--bk),.08); border:1px solid rgba(var(--bk),.3); font-size:13.5px; color:#BFF3E2; line-height:1.5; }
+    .bk-help{ font-size:12px; color:var(--au-faint); line-height:1.6; }
+    .bk-help b{ color:var(--au-dim); }
+    .bk-help code{ font-family:var(--au-mono); font-size:11px; color:rgba(var(--bk),.85); }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="bk-hero">
+    <div>
+      <div class="bk-eyebrow">Data · Backup</div>
+      <div class="bk-hero-line">Back up &amp; restore</div>
+      <div class="bk-hero-sub">One file that holds your entire dashboard — every workout, meal, weight, habit, note and number. Keep a copy; restore it on any device.</div>
+    </div>
+    <div class="bk-orb" aria-hidden="true">🗄️</div>
+  </header>
+
+  <main class="bk-wrap">
+
+    <!-- CLOUD SNAPSHOT (one-tap) -->
+    <div class="bk-card">
+      <h2>Cloud snapshot</h2>
+      <div class="desc">The fast path: keep one full copy in your own cloud. <b>Back up</b> overwrites it with everything you have now; <b>Restore</b> brings it all back on any device.</div>
+      <div class="bk-line" id="clMeta" style="margin-bottom:12px">Checking…</div>
+      <button class="bk-btn go" id="clBackup" type="button">☁️ Back up to cloud</button>
+      <button class="bk-btn ghost" id="clRestore" type="button">↻ Restore from cloud</button>
+      <div class="bk-ok hidden" id="clDone"></div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="bk-card">
+      <h2>Export a file</h2>
+      <div class="desc">Download a single <b>.json</b> snapshot of everything — pulled from this device <i>and</i> the cloud so it's complete even on a fresh install.</div>
+      <div class="bk-stat-row">
+        <div class="bk-stat"><b id="exKeys">…</b><span>Data keys</span></div>
+        <div class="bk-stat"><b id="exSize">…</b><span>Size</span></div>
+        <div class="bk-stat"><b id="exBundles">…</b><span>Cloud sets</span></div>
+      </div>
+      <button class="bk-btn go" id="exBtn" type="button">⬇️ Download backup</button>
+      <div class="bk-ok hidden" id="exDone"></div>
+    </div>
+
+    <!-- RESTORE -->
+    <div class="bk-card">
+      <h2>Restore a file</h2>
+      <div class="desc">Load a backup file to bring your data back. This <b>replaces</b> your current data — a safety copy of what you have now is downloaded automatically first.</div>
+      <div class="bk-drop" id="bkDrop">
+        <div class="big">📂</div>
+        <div class="t">Choose a backup file</div>
+        <div class="s">…or drag &amp; drop an <code style="color:rgba(var(--bk),.85)">aurora-backup-*.json</code> here</div>
+      </div>
+      <input type="file" id="bkFile" accept="application/json,.json" class="hidden">
+
+      <div class="hidden" id="bkPrev" style="margin-top:14px">
+        <div class="bk-line" id="bkPrevMeta"></div>
+        <div class="bk-stat-row">
+          <div class="bk-stat"><b id="rsKeys">0</b><span>Data keys</span></div>
+          <div class="bk-stat"><b id="rsBundles">0</b><span>Cloud sets</span></div>
+          <div class="bk-stat"><b id="rsAge">—</b><span>Backup age</span></div>
+        </div>
+        <div class="bk-warn">⚠️ <b>This overwrites your current data</b> on this device and in the cloud. A safety backup of your current state will download first, so you can undo by restoring that.</div>
+        <button class="bk-btn warn" id="rsBtn" type="button">↺ Restore this backup</button>
+        <button class="bk-btn ghost" id="rsCancel" type="button">Cancel</button>
+        <div class="bk-ok hidden" id="rsDone"></div>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div class="bk-card">
+      <h2>What's inside</h2>
+      <div class="bk-help">
+        The backup captures every synced data store — <b>training</b> (workouts, PRs, weights, templates), <b>nutrition</b> &amp; meals, <b>caffeine</b>, <b>supplements &amp; water</b>, <b>sleep</b>, <b>identity</b> (habits · journal · north star), <b>measurements</b>, <b>bills</b>, <b>movies</b>, <b>improve</b>, <b>ideas</b>, <b>finance &amp; net worth</b>, <b>goals</b>, <b>meal plans</b>, and <b>Nova's memory</b> — plus your local preferences.<br><br>
+        It's plain JSON: human-readable, no account, nothing leaves your device except the file you download. Restore is additive-safe — your existing cloud rows are only touched for the data the backup actually contains.
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  (function(){
+    'use strict';
+    var SUPA = 'https://oiyvadqfldwbjroiknjc.supabase.co';
+    var KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+
+    // localStorage key -> cloud bundle (app_state row). Mirrors every page's
+    // initCloudSync config + pocoach-sync. Keep in sync if a new store is added.
+    var BUNDLES = {
+      'po-coach':     { keys:['po_coach_v1','po_coach_workout_done','po_coach_weights','po_coach_photos','po_tpl_folders','po_templates','po_exercises','po_workouts'], prefixes:['po_coach_logs:'] },
+      'nutrition':    { keys:['nut:logs','nut:custom','nut:profile','nut:history','nut:meals'], prefixes:[] },
+      'caffeine':     { keys:['caf:logs','caf:custom'], prefixes:[] },
+      'health':       { keys:['stack:items','stack:low','po_water_v1'], prefixes:['stack:taken:'] },
+      'sleep':        { keys:['sleep:logs','sleep:profile'], prefixes:[] },
+      'identity':     { keys:['identity:northstar','habits:list','habits:log','journal:entries'], prefixes:[] },
+      'body-measure': { keys:['bm:logs'], prefixes:[] },
+      'bills':        { keys:['bills:items','bills:paid','bills:nospend'], prefixes:[] },
+      'movies':       { keys:['movies:seen','movies:watch'], prefixes:[] },
+      'improve':      { keys:['improve:videos','improve:habits'], prefixes:[] },
+      'ideas':        { keys:['ideas:items'], prefixes:[] },
+      'finance':      { keys:['subs','wishlist','incoming_orders','nw_currency','nw:activity','nw:history'], prefixes:['nw:'] },
+      'goals':        { keys:[], prefixes:['goals:'] },
+      'mealplan':     { keys:['mealplan:days','mealplan:shopdone'], prefixes:[] },
+      'nova-chat':    { keys:['nova:memory'], prefixes:[] }
+    };
+    var APP_KEYS = Object.keys(BUNDLES);
+
+    function bundleFor(k){
+      for (var i=0;i<APP_KEYS.length;i++){
+        var b = BUNDLES[APP_KEYS[i]];
+        if (b.keys.indexOf(k) !== -1) return APP_KEYS[i];
+        for (var j=0;j<b.prefixes.length;j++) if (k.indexOf(b.prefixes[j]) === 0) return APP_KEYS[i];
+      }
+      return null;
+    }
+    function isInternal(k){ return !k || k.indexOf('__synctomb__') === 0; }
+    function $(id){ return document.getElementById(id); }
+    function tryParse(s){ try { return JSON.parse(s); } catch(e){ return s; } }
+    function fmtBytes(n){ if (n < 1024) return n + ' B'; if (n < 1048576) return (n/1024).toFixed(1) + ' KB'; return (n/1048576).toFixed(2) + ' MB'; }
+    function pad(n){ return n < 10 ? '0'+n : ''+n; }
+    function stamp(){ var d=new Date(); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()); }
+
+    function headers(extra){
+      var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+      if (extra) for (var k in extra) h[k] = extra[k];
+      return h;
+    }
+
+    // ── EXPORT ────────────────────────────────────────────────
+    // Local snapshot: every non-internal localStorage value, as raw strings.
+    function localSnapshot(){
+      var data = {};
+      for (var i=0;i<localStorage.length;i++){
+        var k = localStorage.key(i);
+        if (isInternal(k)) continue;
+        var v = localStorage.getItem(k);
+        if (v != null) data[k] = v;
+      }
+      return data;
+    }
+    // Pull every cloud bundle and expand its keys; fill ONLY gaps the local
+    // snapshot is missing (so a fresh device still gets a complete backup).
+    async function fillFromCloud(data){
+      var sets = 0;
+      try {
+        var r = await fetch(SUPA + '/rest/v1/app_state?select=key,data', { headers: headers() });
+        if (!r.ok) return sets;
+        var rows = await r.json();
+        if (!Array.isArray(rows)) return sets;
+        rows.forEach(function(row){
+          if (!row || !row.data || typeof row.data !== 'object') return;
+          sets++;
+          Object.keys(row.data).forEach(function(k){
+            if (k === '_deletes') return;
+            if (!(k in data)) data[k] = JSON.stringify(row.data[k]);
+          });
+        });
+      } catch(e){}
+      return sets;
+    }
+    function buildPayload(data, cloudSets){
+      return {
+        app: 'AURORA', kind: 'als-backup', version: 1,
+        exportedAt: new Date().toISOString(),
+        host: location.host,
+        cloudSets: cloudSets,
+        count: Object.keys(data).length,
+        data: data
+      };
+    }
+    function download(filename, text){
+      var blob = new Blob([text], { type:'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ try { URL.revokeObjectURL(url); a.remove(); } catch(e){} }, 1500);
+    }
+
+    function refreshExportStats(){
+      var data = localSnapshot();
+      var json = JSON.stringify(buildPayload(data, '—'));
+      $('exKeys').textContent = Object.keys(data).length;
+      $('exSize').textContent = fmtBytes(json.length);
+      var sets = 0; APP_KEYS.forEach(function(ak){ var b=BUNDLES[ak]; var hit=false;
+        Object.keys(data).forEach(function(k){ if (bundleFor(k)===ak) hit=true; }); if (hit) sets++; });
+      $('exBundles').textContent = sets;
+    }
+
+    $('exBtn').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Gathering…';
+      try {
+        var data = localSnapshot();
+        var cloudSets = await fillFromCloud(data);
+        var payload = buildPayload(data, cloudSets);
+        var json = JSON.stringify(payload, null, 0);
+        download('aurora-backup-' + stamp() + '.json', json);
+        var done = $('exDone');
+        done.textContent = '✓ Saved ' + payload.count + ' data keys (' + fmtBytes(json.length) + '). Keep this file somewhere safe.';
+        done.classList.remove('hidden');
+      } catch(e){
+        var done = $('exDone'); done.textContent = '⚠️ Export failed: ' + (e && e.message || e); done.classList.remove('hidden');
+      } finally { btn.disabled = false; btn.textContent = prev; }
+    });
+
+    // ── RESTORE ───────────────────────────────────────────────
+    var pending = null; // parsed payload awaiting confirm
+
+    function ageOf(iso){
+      var t = Date.parse(iso); if (isNaN(t)) return '—';
+      var d = Math.max(0, Math.round((Date.now() - t) / 86400000));
+      if (d === 0) return 'today'; if (d === 1) return '1 day'; return d + ' days';
+    }
+    function previewBundles(data){
+      var s = {};
+      Object.keys(data).forEach(function(k){ var ak = bundleFor(k); if (ak) s[ak] = 1; });
+      return Object.keys(s).length;
+    }
+    function showPreview(payload){
+      pending = payload;
+      var data = payload.data || {};
+      $('rsKeys').textContent = Object.keys(data).length;
+      $('rsBundles').textContent = previewBundles(data);
+      $('rsAge').textContent = ageOf(payload.exportedAt);
+      var when = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString() : 'unknown date';
+      $('bkPrevMeta').innerHTML = 'From <b>' + (payload.host || 'unknown') + '</b> · exported <b>' + when + '</b>';
+      $('bkPrev').classList.remove('hidden');
+      $('rsDone').classList.add('hidden');
+    }
+    function readFile(file){
+      var rd = new FileReader();
+      rd.onload = function(){
+        var payload;
+        try { payload = JSON.parse(rd.result); } catch(e){ alert('That file is not valid JSON.'); return; }
+        if (!payload || typeof payload !== 'object' || !payload.data || typeof payload.data !== 'object'){
+          alert('That doesn’t look like an AURORA backup (no data block).'); return;
+        }
+        if (payload.kind && payload.kind !== 'als-backup'){
+          if (!confirm('This file isn’t marked as an AURORA backup. Restore anyway?')) return;
+        }
+        showPreview(payload);
+      };
+      rd.readAsText(file);
+    }
+
+    var drop = $('bkDrop'), fileInput = $('bkFile');
+    drop.addEventListener('click', function(){ fileInput.click(); });
+    fileInput.addEventListener('change', function(){ if (this.files && this.files[0]) readFile(this.files[0]); this.value=''; });
+    ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function(e){ var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readFile(f); });
+
+    $('rsCancel').addEventListener('click', function(){ pending = null; $('bkPrev').classList.add('hidden'); });
+
+    // Overwrite one cloud bundle with the restored values (replace semantics).
+    async function pushBundle(appKey, bundleData){
+      var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: headers({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' }),
+        body: JSON.stringify({ key: appKey, data: bundleData, updated_at: new Date().toISOString() })
+      });
+      return r.ok;
+    }
+
+    // Shared restore core — used by file restore AND cloud restore.
+    async function restoreFromData(data){
+      data = data || {};
+
+      // 1) Safety backup of CURRENT state first (so a wrong restore is undoable).
+      try {
+        var cur = localSnapshot();
+        download('aurora-backup-PRE-RESTORE-' + stamp() + '.json', JSON.stringify(buildPayload(cur, 'local')));
+      } catch(e){}
+
+      // 2) Remove managed keys that the backup doesn't contain (true replace of
+      //    the synced stores) + clear local tombstones so nothing fights it.
+      var removeKeys = [];
+      for (var i=0;i<localStorage.length;i++){
+        var k = localStorage.key(i);
+        if (!k) continue;
+        if (k.indexOf('__synctomb__') === 0) { removeKeys.push(k); continue; }
+        if (bundleFor(k) && !(k in data)) removeKeys.push(k);
+      }
+      removeKeys.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+
+      // 3) Write every backup key back into localStorage (raw strings).
+      Object.keys(data).forEach(function(k){
+        if (isInternal(k)) return;
+        try { localStorage.setItem(k, typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k])); } catch(e){}
+      });
+
+      // 4) Push each cloud bundle the backup actually contains (overwrite row).
+      var groups = {}; var pushed = 0, failed = 0;
+      Object.keys(data).forEach(function(k){
+        var ak = bundleFor(k); if (!ak) return;
+        if (!groups[ak]) groups[ak] = {};
+        groups[ak][k] = tryParse(typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]));
+      });
+      var keys = Object.keys(groups);
+      for (var g=0; g<keys.length; g++){
+        try { (await pushBundle(keys[g], groups[keys[g]])) ? pushed++ : failed++; } catch(e){ failed++; }
+      }
+      return { pushed: pushed, failed: failed, local: Object.keys(data).length };
+    }
+
+    $('rsBtn').addEventListener('click', async function(){
+      if (!pending) return;
+      var btn = this; btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Restoring…';
+      $('rsCancel').disabled = true;
+      try {
+        var res = await restoreFromData(pending.data || {});
+        var done = $('rsDone');
+        done.innerHTML = '✓ Restored <b>' + res.local + '</b> data keys locally and synced <b>' + res.pushed + '</b> cloud set' + (res.pushed===1?'':'s') +
+          (res.failed ? ' (' + res.failed + ' failed to sync — try again on a better connection)' : '') +
+          '. Reloading…';
+        done.classList.remove('hidden');
+        setTimeout(function(){ location.replace('index.html'); }, 2200);
+      } catch(e){
+        var done = $('rsDone'); done.textContent = '⚠️ Restore failed: ' + (e && e.message || e) + '. Your safety backup downloaded — nothing was lost.'; done.classList.remove('hidden');
+        btn.disabled = false; btn.textContent = prev; $('rsCancel').disabled = false;
+      }
+    });
+
+    // ── CLOUD SNAPSHOT (one-tap, single row) ──────────────────
+    var CLOUD_KEY = 'als-full-backup';
+    function fmtWhen(iso){ try { var d=new Date(iso); return d.toLocaleDateString([],{month:'short',day:'numeric'})+', '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); } catch(e){ return iso; } }
+
+    async function refreshCloudMeta(){
+      var el = $('clMeta');
+      try {
+        var r = await fetch(SUPA + '/rest/v1/app_state?key=eq.' + CLOUD_KEY + '&select=data', { headers: headers() });
+        var rows = r.ok ? await r.json() : null;
+        var d = (rows && rows[0] && rows[0].data) ? rows[0].data : null;
+        if (d && d.snap){ el.innerHTML = 'Last cloud snapshot: <b>' + fmtWhen(d.savedAt) + '</b> · ' + (d.keys || Object.keys(d.snap).length) + ' keys'; }
+        else { el.textContent = 'No cloud snapshot yet.'; }
+      } catch(e){ el.textContent = 'Cloud status unavailable offline.'; }
+    }
+
+    $('clBackup').addEventListener('click', async function(){
+      var btn=this; btn.disabled=true; var prev=btn.textContent; btn.textContent='Backing up…';
+      try {
+        var snap = localSnapshot();
+        var savedAt = new Date().toISOString();
+        var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=key', {
+          method:'POST',
+          headers: headers({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' }),
+          body: JSON.stringify({ key: CLOUD_KEY, data: { savedAt: savedAt, keys: Object.keys(snap).length, snap: snap }, updated_at: savedAt })
+        });
+        var done = $('clDone');
+        if (r.ok){
+          try { localStorage.setItem('als_last_cloud_backup', savedAt); } catch(e){}
+          done.textContent = '✓ Backed up ' + Object.keys(snap).length + ' keys to your cloud.';
+          refreshCloudMeta();
+        } else { done.textContent = '⚠️ Cloud backup failed (' + r.status + ') — try “Download a file” instead.'; }
+        done.classList.remove('hidden');
+      } catch(e){
+        var done=$('clDone'); done.textContent='⚠️ No connection — try “Download a file” instead.'; done.classList.remove('hidden');
+      } finally { btn.disabled=false; btn.textContent=prev; }
+    });
+
+    $('clRestore').addEventListener('click', async function(){
+      var btn=this;
+      try {
+        var r = await fetch(SUPA + '/rest/v1/app_state?key=eq.' + CLOUD_KEY + '&select=data', { headers: headers() });
+        var rows = r.ok ? await r.json() : null;
+        var d = (rows && rows[0] && rows[0].data) ? rows[0].data : null;
+        if (!d || !d.snap){ var done=$('clDone'); done.textContent='No cloud snapshot found — back up first.'; done.classList.remove('hidden'); return; }
+        if (!confirm('Restore your cloud snapshot from ' + fmtWhen(d.savedAt) + '?\n\nThis replaces your current data (a safety copy downloads first).')) return;
+        btn.disabled=true; var prev=btn.textContent; btn.textContent='Restoring…'; $('clBackup').disabled=true;
+        var res = await restoreFromData(d.snap);
+        var done=$('clDone');
+        done.innerHTML = '✓ Restored <b>'+res.local+'</b> keys · synced <b>'+res.pushed+'</b> cloud set'+(res.pushed===1?'':'s')+'. Reloading…';
+        done.classList.remove('hidden');
+        setTimeout(function(){ location.replace('index.html'); }, 2200);
+      } catch(e){
+        var done=$('clDone'); done.textContent='⚠️ Restore failed: '+(e&&e.message||e); done.classList.remove('hidden');
+        btn.disabled=false; btn.textContent='↻ Restore from cloud'; $('clBackup').disabled=false;
+      }
+    });
+
+    refreshExportStats();
+    refreshCloudMeta();
+  })();
+  </script>
+</body>
+</html>
