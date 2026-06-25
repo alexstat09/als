@@ -50,6 +50,13 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Global error toast: surface silent runtime errors, app-wide.
+  (function loadErrorToast(){ try {
+    if (window.ALSToast || document.querySelector('script[src*="error-toast"]')) return;
+    var s = document.createElement('script'); s.src = 'error-toast.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
