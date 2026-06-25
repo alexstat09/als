@@ -30,11 +30,13 @@
 
     /* living HUD backdrop — fixed, decorative, always behind content */
     body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+      transform:translateZ(0);will-change:opacity;
       background:
         radial-gradient(120% 70% at 50% -10%, rgba(52,226,176,.10), transparent 60%),
         radial-gradient(90% 60% at 90% 110%, rgba(155,140,255,.10), transparent 60%);
       animation:nv-breathe 9s ease-in-out infinite;}
     body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+      transform:translateZ(0);
       background-image:linear-gradient(rgba(52,226,176,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(52,226,176,.045) 1px,transparent 1px);
       background-size:40px 40px;
       -webkit-mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);}
@@ -43,9 +45,12 @@
     .nv-app{position:relative;z-index:1;max-width:760px;margin:0 auto;}
 
     /* ── header (sticky) ──────────────────────── */
-    .nv-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;
-      padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
-      border-bottom:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(5,5,7,.96),rgba(5,5,7,.82));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+    /* Sticky header — SOLID (no backdrop-filter). On iOS WKWebView a blurred
+       sticky/fixed layer makes the messages scrolling under it smear and look
+       like they overlap; an opaque bar paints cleanly and fixes that. */
+    .nv-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;
+      padding:calc(14px + env(safe-area-inset-top)) 14px 13px;
+      border-bottom:1px solid rgba(255,255,255,.07);background:#08080a;}
     .nv-back{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
     .nv-back:active{background:rgba(255,255,255,.1);}
     .nv-top .nova{width:40px;height:40px;flex:none;}
@@ -56,14 +61,21 @@
     @keyframes nv-blink{0%,100%{opacity:1;}50%{opacity:.25;}}
     .nv-clear{flex:none;background:none;border:none;color:rgba(244,241,234,.3);font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:8px 4px;}
     .nv-clear:active{color:#F4F1EA;}
+    /* text-size (zoom) control */
+    .nv-zoom{display:flex;align-items:center;gap:3px;flex:none;}
+    .nv-zoom button{width:27px;height:27px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(244,241,234,.7);font-family:var(--au-sans,system-ui);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+    .nv-zoom button:active{background:rgba(52,226,176,.16);color:#F4F1EA;}
+    .nv-zoom button:disabled{opacity:.35;cursor:default;}
+    .nv-zoom .za{font-size:11px;} .nv-zoom .zb{font-size:15px;}
 
-    /* ── messages (NORMAL FLOW — the page scrolls, not this div) ── */
-    .nv-scroll{padding:18px 14px 12px;}
-    .nv-row{display:flex;width:100%;margin-bottom:14px;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
+    /* ── messages (NORMAL FLOW — deterministic flex column, can't overlap) ── */
+    .nv-scroll{display:flex;flex-direction:column;gap:14px;padding:20px 14px 14px;}
+    .nv-row{display:flex;width:100%;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
     @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
     .nv-row.nova{justify-content:flex-start;}
     .nv-row.me{justify-content:flex-end;}
-    .nv-bub{max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:15px;line-height:1.5;overflow-wrap:break-word;}
+    .nv-bub{max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:var(--nv-fs,15px);line-height:1.5;overflow-wrap:break-word;}
+    @media(min-width:600px){ .nv-bub{max-width:78%;} }
     .nv-bub .nv-text{display:inline;}
     .nv-bub strong{font-weight:700;}
     .nv-row.nova .nv-bub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:6px;color:#F4F1EA;}
@@ -97,8 +109,8 @@
 
     /* ── composer (fixed, like the app bottombar) ── */
     .nv-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;max-width:760px;margin:0 auto;
-      padding:10px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);
-      background:linear-gradient(0deg,rgba(5,5,7,.98),rgba(5,5,7,.86));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+      padding:10px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.07);
+      background:#08080a;}
     .nv-inwrap{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:6px 6px 6px 16px;transition:border-color .2s,box-shadow .2s;}
     .nv-inwrap:focus-within{border-color:rgba(52,226,176,.45);box-shadow:0 0 0 3px rgba(52,226,176,.1);}
     .nv-in{flex:1;background:none;border:none;outline:none;color:#F4F1EA;font-family:inherit;font-size:16px;line-height:1.4;resize:none;max-height:130px;padding:8px 0;}
@@ -121,7 +133,11 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v45</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v46</span></div>
+      </div>
+      <div class="nv-zoom">
+        <button class="za" id="nvZoomOut" type="button" aria-label="Smaller text">A&minus;</button>
+        <button class="zb" id="nvZoomIn" type="button" aria-label="Larger text">A+</button>
       </div>
       <button class="nv-clear" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
@@ -157,7 +173,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v45'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v46'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
@@ -169,6 +185,20 @@
     var input  = document.getElementById('nvIn');
     var sendBtn= document.getElementById('nvSend');
     var status = document.getElementById('nvStatus');
+
+    /* ── Text size (zoom) — scales the conversation, persisted ── */
+    (function(){
+      var FS_KEY='nova:fontsize', MIN=13, MAX=24, DEF=15;
+      function get(){ var v=parseInt(localStorage.getItem(FS_KEY),10); return isFinite(v)?Math.max(MIN,Math.min(MAX,v)):DEF; }
+      function apply(v){ document.documentElement.style.setProperty('--nv-fs', v+'px');
+        var o=document.getElementById('nvZoomOut'), i=document.getElementById('nvZoomIn');
+        if(o) o.disabled=(v<=MIN); if(i) i.disabled=(v>=MAX); }
+      function set(v){ v=Math.max(MIN,Math.min(MAX,v)); try{ localStorage.setItem(FS_KEY, v); }catch(e){} apply(v); }
+      apply(get());
+      var oBtn=document.getElementById('nvZoomOut'), iBtn=document.getElementById('nvZoomIn');
+      if(oBtn) oBtn.addEventListener('click', function(){ set(get()-1); });
+      if(iBtn) iBtn.addEventListener('click', function(){ set(get()+1); });
+    })();
     var root   = document.getElementById('root');
     var bar    = document.getElementById('nvBar');
 
