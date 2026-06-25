@@ -206,6 +206,8 @@
     // North Star reminder
     var ns=ls('identity:northstar',{})||{};
     if(ns && ns.statement) lines.push('And remember who you’re becoming: '+ns.statement+'. Everything above was a vote for that.');
+    // Something you told me to remember — proof I'm actually listening across time.
+    var mem=ls('nova:memory',[]); if(Array.isArray(mem)){ var facts=mem.filter(function(m){return m&&m.fact;}); if(facts.length){ var f=facts[facts.length-1].fact; lines.push('I haven’t forgotten what you told me: '+f+'. I’m keeping it in mind for you.'); } }
     lines.push('You’re 17 and building the body — and the discipline — most people never do. I’m watching it happen. Let’s make next week even better.');
     return { title:'Your week, from Nova', body:lines, line:'I wrote you a letter about your week — tap to read it.' };
   }
@@ -499,7 +501,17 @@
     setTimeout(function(){ try { if(s.open && s.close) s.close(); else s.removeAttribute('open'); } catch(e){ s.removeAttribute('open'); } }, 200);
   }
 
-  window.NovaCoach={ open:open, close:close, brief:build, correlations:correlations, letter:weeklyLetter };
+  // ── The single brain, one door. Every Nova surface (orb, deck, chat
+  //    grounding, briefing) reads from here so they never disagree. ──
+  function novaMemory(){ var a=ls('nova:memory',[]); return Array.isArray(a)?a.filter(function(m){return m&&m.fact;}).map(function(m){return m.fact;}):[]; }
+  window.NovaCoach={
+    open:open, close:close, brief:build, correlations:correlations, letter:weeklyLetter,
+    state:gather,                              // canonical "today" facts
+    line:function(){ try{ return build().headline; }catch(e){ return ''; } },
+    mood:function(){ try{ return build().mood; }catch(e){ return 'calm'; } },
+    moves:function(){ try{ return build().cards||[]; }catch(e){ return []; } },
+    memory:novaMemory
+  };
 
   /* tap any Nova avatar anywhere → open the coach; tap a card with a target → go */
   document.addEventListener('click', function(ev){

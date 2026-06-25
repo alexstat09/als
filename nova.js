@@ -37,6 +37,12 @@
     return 'calm';
   }
 
+  /* One brain: prefer NovaCoach (the shared deck) for the line + mood so the
+     orb never contradicts the coach. Fall back to local logic if it's not
+     loaded yet (deferred) or unavailable. */
+  function brainMood(){ try { if (window.NovaCoach && window.NovaCoach.mood){ var m = window.NovaCoach.mood(); if (m) return m; } } catch(e){} return mood(signals()); }
+  function brainLine(){ try { if (window.NovaCoach && window.NovaCoach.line){ var l = window.NovaCoach.line(); if (l) return l; } } catch(e){} return message(signals()); }
+
   /* A real, contextual line — Nova's voice (no emoji, on-brand) */
   function message(s){
     if (s.caf >= 400) return 'That’s ' + s.caf + 'mg of caffeine today — ease off and drink some water.';
@@ -78,12 +84,11 @@
   bubble.setAttribute('aria-live', 'polite');
 
   var hideTimer = null;
-  function setMoodClass(){ fab.className = 'nova-fab nova au-mood-' + mood(signals()); }
+  function setMoodClass(){ fab.className = 'nova-fab nova au-mood-' + brainMood(); }
 
   function speak(){
-    var s = signals();
-    bubble.className = 'nova-bubble au-mood-' + mood(s);
-    bubble.textContent = message(s);
+    bubble.className = 'nova-bubble au-mood-' + brainMood();
+    bubble.textContent = brainLine();
     // force reflow then show (so transition runs even if re-tapped)
     void bubble.offsetWidth;
     bubble.classList.add('show');
