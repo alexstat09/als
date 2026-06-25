@@ -1,6 +1,8 @@
 // Schedules a delayed Web Push for when the rest timer ends, using QStash
 // (Upstash) to call /api/fire-push at the right second — works even when the
 // app is fully closed. Returns the QStash messageId so the client can cancel.
+const auth = require('./_auth');
+
 function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   try { return JSON.parse(req.body || '{}'); } catch (e) { return {}; }
@@ -8,6 +10,7 @@ function readBody(req) {
 
 module.exports = async function (req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guard(req, res, { name: 'sched-rest' })) return;
   try {
     const body = readBody(req);
     const subscription = body.subscription;
@@ -23,13 +26,20 @@ module.exports = async function (req, res) {
     const dest = proto + '://' + host + '/api/fire-push';
     const qstash = (process.env.QSTASH_URL || 'https://qstash.upstash.io').replace(/\/+$/, '');
 
+    // Headers QStash receives (auth = QStash token) + headers it FORWARDS to the
+    // destination (Upstash-Forward-*). The forwarded bearer is how /api/fire-push
+    // recognises a legit cron call vs. a stranger once CRON_SECRET is set.
+    const pubHeaders = {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Upstash-Delay': delaySec + 's'
+    };
+    const cronSecret = (process.env.CRON_SECRET || '').trim();
+    if (cronSecret) pubHeaders['Upstash-Forward-Authorization'] = 'Bearer ' + cronSecret;
+
     const r = await fetch(qstash + '/v2/publish/' + encodeURIComponent(dest), {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-        'Upstash-Delay': delaySec + 's'
-      },
+      headers: pubHeaders,
       body: JSON.stringify({
         subscription: subscription,
         title: body.title || 'Rest complete 💪',

@@ -1,6 +1,7 @@
 // Sends a Web Push to one subscription. Called by QStash at the rest end-time
 // (or directly). The subscription is passed in the body, so no DB is needed.
 const webpush = require('web-push');
+const auth = require('./_auth');
 
 function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -9,6 +10,7 @@ function readBody(req) {
 
 module.exports = async function (req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guardCron(req, res)) return; // QStash (cron secret) or same-origin test push
   try {
     const body = readBody(req);
     const sub = body.subscription;

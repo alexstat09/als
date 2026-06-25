@@ -13,6 +13,7 @@
 'use strict';
 
 var CORE = require('./_core-foods.js');
+var auth = require('./_auth.js');
 
 function n(v) { var x = typeof v === 'number' ? v : parseFloat(v); return isFinite(x) && x >= 0 ? Math.round(x * 10) / 10 : 0; }
 function clip(s, len) { return (s == null ? '' : String(s)).trim().slice(0, len || 90); }
@@ -180,6 +181,7 @@ function score(row, qToks, qPhrase) {
 module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (!auth.guard(req, res, { name: 'food', rateMax: 60 })) return;
   var u;
   try { u = new URL(req.url, 'http://x'); } catch (e) { res.status(400).json({ error: 'bad url' }); return; }
   var barcode = (u.searchParams.get('barcode') || '').replace(/[^0-9]/g, '').slice(0, 20);

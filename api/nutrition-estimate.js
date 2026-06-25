@@ -5,6 +5,7 @@
 // and clamps the model output so the client always gets clean numbers.
 // ════════════════════════════════════════════════════════════════
 'use strict';
+var auth = require('./_auth');
 var GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -31,6 +32,7 @@ module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guard(req, res, { name: 'est', rateMax: 30 })) return;
 
   var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) { res.status(200).json({ error: 'no-key', message: 'AI estimate needs GROQ_API_KEY (see NOVA_SETUP.md).' }); return; }

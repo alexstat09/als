@@ -5,6 +5,7 @@
 // Key stays server-side. Model is env-overridable (GROQ_VISION_MODEL).
 // ════════════════════════════════════════════════════════════════
 'use strict';
+var auth = require('./_auth');
 var GROQ_MODEL = process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -34,6 +35,7 @@ module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guard(req, res, { name: 'photo', rateMax: 15 })) return;
 
   var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) { res.status(200).json({ error: 'no-key', message: 'Photo logging needs GROQ_API_KEY (see NOVA_SETUP.md).' }); return; }

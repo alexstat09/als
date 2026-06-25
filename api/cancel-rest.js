@@ -1,5 +1,7 @@
 // Cancels a scheduled rest push (when you come back to the app before the
 // timer ends) by deleting the QStash message.
+const auth = require('./_auth');
+
 function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   try { return JSON.parse(req.body || '{}'); } catch (e) { return {}; }
@@ -7,6 +9,7 @@ function readBody(req) {
 
 module.exports = async function (req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guard(req, res, { name: 'cancel-rest' })) return;
   try {
     const body = readBody(req);
     const id = body.messageId;

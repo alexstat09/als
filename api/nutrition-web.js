@@ -9,6 +9,7 @@
 // Needs GROQ_API_KEY (parse) + TAVILY_API_KEY (search, free/no-card at tavily.com).
 // ════════════════════════════════════════════════════════════════
 'use strict';
+var auth = require('./_auth');
 var GROQ_MODEL = process.env.GROQ_WEB_PARSE_MODEL || 'llama-3.3-70b-versatile';
 var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 var TAVILY_URL = 'https://api.tavily.com/search';
@@ -77,6 +78,7 @@ module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  if (!auth.guard(req, res, { name: 'nweb', rateMax: 20 })) return;
 
   var groqKey = (process.env.GROQ_API_KEY || '').trim();
   var tavKey = (process.env.TAVILY_API_KEY || '').trim();

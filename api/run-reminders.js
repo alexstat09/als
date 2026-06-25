@@ -11,6 +11,7 @@
 'use strict';
 var webpush = require('web-push');
 var supa = require('./_supa');
+var auth = require('./_auth');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -128,6 +129,7 @@ async function buildContext(tz, today) {
 }
 
 module.exports = async function (req, res) {
+  if (!auth.guardCron(req, res)) return; // QStash hourly cron (cron secret) or same-origin manual run
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured' }); return; }
     webpush.setVapidDetails(

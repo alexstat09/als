@@ -9,6 +9,7 @@
 // ════════════════════════════════════════════════════════════════
 'use strict';
 var supa = require('./_supa');
+var auth = require('./_auth');
 
 // Groq: free API, fast, available worldwide (incl. the EEA/Greece, where
 // Gemini's free tier is not offered — limit:0). OpenAI-compatible API.
@@ -304,6 +305,7 @@ function cleanMessages(raw) {
 module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).end('POST only'); return; }
+  if (!auth.guard(req, res, { name: 'nova', rateMax: 30 })) return;
 
   var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) {

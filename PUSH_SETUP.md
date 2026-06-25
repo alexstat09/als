@@ -78,3 +78,28 @@ above — it reuses the same VAPID + QStash you already configured.
 - Tap **“Send a test nudge”** on the card to confirm it lands on your phone.
 - Reminders read these Supabase rows: `po-coach` (weight/workouts), `nutrition`,
   `caffeine`, `identity` (habits/journal), `health` (body weight → protein target).
+
+---
+
+## Locking down the API (security)
+
+Every browser-facing endpoint (`nova-chat`, `food-search`, `meal-photo`,
+`nutrition-estimate`, `nutrition-web`, `schedule-rest`, `cancel-rest`,
+`setup-reminders`) is now **same-origin only** — a request that doesn't come
+from the dashboard's own page is rejected with `403`, plus a best-effort
+per-IP rate limit on the AI endpoints. This is automatic; nothing to configure.
+
+The two cron endpoints (`run-reminders`, `fire-push`) are also called
+server-to-server by QStash, so they accept a shared secret. To turn that lock on:
+
+1. **Add an env var in Vercel** (Settings → Environment Variables):
+   `CRON_SECRET = <a long random string>` (any value, e.g. from a password
+   generator). Redeploy.
+2. **Re-register the hourly schedule once** so QStash starts forwarding the
+   secret: open `https://<your-domain>/api/setup-reminders?force=1` in the
+   browser while signed in to the app (same-origin), or just toggle reminders
+   off and on. The response should say `"secured": true`.
+
+That's it. The rest-timer push (`schedule-rest`) picks up the secret on its next
+use automatically. Until `CRON_SECRET` is set, the cron endpoints stay open
+(fail-open) so nothing breaks before you configure it.
