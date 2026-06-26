@@ -45,6 +45,9 @@
     .arc-empty a{ color:rgba(var(--arc),.95); text-decoration:none; font-weight:700; }
 
     .arc-close-line{ font-family:var(--au-serif); font-style:italic; font-size:clamp(20px,5.5vw,27px); line-height:1.4; color:var(--au-ivory); margin-top:6px; }
+    .arc-ns{ font-size:14px; color:var(--au-dim); line-height:1.5; margin-top:22px; }
+    .arc-ns a{ color:rgba(var(--arc),.95); text-decoration:none; font-weight:700; }
+    .arc-ns-q{ display:block; margin-top:9px; font-family:var(--au-serif); font-style:italic; font-size:clamp(19px,5vw,26px); color:var(--au-ivory); line-height:1.35; }
     .arc-back{ display:inline-block; margin-top:30px; padding:13px 26px; border-radius:13px; background:rgb(var(--arc)); color:#140a26; font-weight:800; font-size:14px; text-decoration:none; box-shadow:0 6px 24px rgba(var(--arc),.3); }
     .arc-foot{ text-align:center; color:var(--au-faint); font-size:11px; padding:30px 20px 8px; line-height:1.5; }
     .hidden{ display:none!important; }
@@ -63,6 +66,9 @@
     </div>
     <div class="arc-scrollcue">Scroll ↓</div>
   </section>
+
+  <!-- chapters spine — generated from detected episodes in your data -->
+  <div id="chaptersWrap"></div>
 
   <section class="arc-act" id="actWeight">
     <div class="arc-eyebrow">Bodyweight</div>
@@ -95,12 +101,14 @@
     <div class="arc-eyebrow">Today</div>
     <h2 class="arc-title">This is your arc.</h2>
     <div class="arc-close-line" id="closeLine">— and you're still drawing it.</div>
+    <div class="arc-ns" id="closeNorthStar"></div>
     <div class="arc-stats" id="closeStats" style="margin-top:26px"></div>
     <a href="index.html" class="arc-back">Back to the dashboard</a>
   </section>
 
   <div class="arc-foot">Generated live from your own data — it redraws itself every time you visit. Nothing here is uploaded.</div>
 
+  <script src="chapters-engine.js"></script>
   <script>
   (function(){
     'use strict';
@@ -113,6 +121,7 @@
     function r0(n){ return Math.round(n||0); }
     function r1(n){ return Math.round((n||0)*10)/10; }
     function reduced(){ try{ return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function isoWeek(dk){
       var d=new Date(dk+'T00:00:00'); var day=(d.getDay()+6)%7; var x=new Date(d); x.setDate(d.getDate()-day+3);
@@ -252,8 +261,45 @@
     function statEl(value, label, cls){ return '<div class="arc-stat"><b class="'+(cls||'')+'">'+value+'</b><span>'+label+'</span></div>'; }
     function setNum(el, val, suffix){ if(!el) return; el.setAttribute('data-am-count', val); if(suffix) el.setAttribute('data-am-suffix', suffix); if(val>=1000) el.setAttribute('data-am-sep',''); }
 
+    // ── chapters spine (Pillar 4: data → narrative) ──────
+    function renderChapters(res){
+      var wrap=$('chaptersWrap'); if(!wrap) return;
+      wrap.innerHTML='';
+      if(!res || !res.hasEnough || !res.chapters.length) return;
+      var pending=[];
+      wrap.innerHTML = res.chapters.map(function(c){
+        var sparkHtml='';
+        if(c.spark){ sparkHtml='<div class="arc-canvas-wrap"><canvas class="arc-canvas" id="chcv'+c.n+'"></canvas></div>'; pending.push({n:c.n, spark:c.spark}); }
+        return '<section class="arc-act arc-chapter" id="chact'+c.n+'">'
+          + '<div class="arc-eyebrow" style="color:rgba('+c.color+',.95)">Chapter '+c.n+' · '+esc(c.eyebrow)+'</div>'
+          + '<h2 class="arc-title">'+esc(c.title)+'</h2>'
+          + '<div class="arc-sub">'+esc(c.body)+'</div>'
+          + sparkHtml
+          + '<div class="arc-stats">'+statEl(esc(String(c.stat.value)), esc(c.stat.label))+'</div>'
+          + '</section>';
+      }).join('');
+      pending.forEach(function(p){
+        var sp=p.spark;
+        if(sp.kind==='curve') registerChart('chcv'+p.n,'chact'+p.n,function(c,pr){ drawCurve(c, sp.data, pr, sp.rgb, true); });
+        else if(sp.kind==='bars') registerChart('chcv'+p.n,'chact'+p.n,function(c,pr){ drawBars(c, sp.data, pr, sp.rgb); });
+      });
+    }
+    function renderNorthStarClose(ns){
+      var el=$('closeNorthStar'); if(!el) return;
+      el.innerHTML='';
+      if(ns && ns.statement){
+        el.appendChild(document.createTextNode('Every chapter has been you becoming someone — and you’ve named who:'));
+        var q=document.createElement('div'); q.className='arc-ns-q'; q.textContent='“'+ns.statement+'”';
+        el.appendChild(q);
+      } else {
+        el.innerHTML='<a href="identity.html">Name your North Star →</a> and every chapter gets a destination.';
+      }
+    }
+
     function build(){
       var s=summary();
+      var chRes=(window.ALSChapters ? window.ALSChapters.compute() : { hasEnough:false, chapters:[], northStar:null });
+      renderChapters(chRes);
 
       // hero
       setNum($('hsDays'), s.daysTracked);
@@ -305,6 +351,7 @@
       if(s.totalPRs>0) closeStats.push(statEl(s.totalPRs,'Lifetime PRs'));
       if(s.daysTracked>0) closeStats.push(statEl(s.daysTracked,'Days in'));
       $('closeStats').innerHTML=closeStats.join('');
+      renderNorthStarClose(chRes.northStar);
       $('closeLine').textContent = s.totalWorkouts>0
         ? '— ' + s.totalWorkouts + ' sessions deep, and you’re still drawing it.'
         : '— and the best part is, it’s only just begun.';
@@ -332,7 +379,7 @@
     window.addEventListener('scroll', onScroll, { passive:true });
     var rsz; window.addEventListener('resize', function(){ clearTimeout(rsz); rsz=setTimeout(function(){ charts.forEach(measure); charts.forEach(function(c){ c.draw(c._p==null?0:c._p); }); }, 180); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) rebuildSoon(); });
-    window.addEventListener('storage', function(ev){ if(!ev || /po_coach_weights|po_workouts|sleep:logs|goal_streak_v1/.test(ev.key||'')) rebuildSoon(); });
+    window.addEventListener('storage', function(ev){ if(!ev || /po_coach_weights|po_workouts|sleep:logs|goal_streak_v1|identity:northstar/.test(ev.key||'')) rebuildSoon(); });
 
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build, { once:true }); else build();
 
