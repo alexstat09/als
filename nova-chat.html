@@ -127,7 +127,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v47</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v48</span></div>
       </div>
       <button class="nv-clear" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
@@ -155,7 +155,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="error-toast.js" defer></script>
-  <script src="als-dialog.js" defer></script>
   <script src="sync.js" defer></script>
   <script src="insights-engine.js" defer></script>
   <script src="forecast-engine.js" defer></script>
@@ -384,9 +383,9 @@
     scroll.addEventListener('click', function(e){
       var c = e.target.closest && e.target.closest('.nv-chip'); if(c) send(c.getAttribute('data-q'));
     });
-    document.getElementById('nvClear').addEventListener('click', async function(){
+    document.getElementById('nvClear').addEventListener('click', function(){
       if(busy) return;
-      if(history.length && !(await ALSConfirm({title:'Clear conversation?',message:'This clears this chat with Nova.',confirmText:'Clear',danger:true}))) return;
+      if(history.length && !confirm('Clear this conversation with Nova?')) return;
       history = []; save(history); renderAll();
     });
 
@@ -432,7 +431,7 @@
         memBtn.addEventListener('click', function(){ renderMem(); panel.hidden=false; });
         document.getElementById('nvMemClose').addEventListener('click', function(){ panel.hidden=true; });
         panel.addEventListener('click', function(e){ if(e.target===panel) panel.hidden=true; });
-        document.getElementById('nvMemForgetAll').addEventListener('click', async function(){ if(loadMem().length && !(await ALSConfirm({title:'Forget everything?',message:'Nova will forget everything she remembers about you.',confirmText:'Forget all',danger:true}))) return; forgetAll(); });
+        document.getElementById('nvMemForgetAll').addEventListener('click', function(){ if(loadMem().length && !confirm('Forget everything Nova remembers about you?')) return; forgetAll(); });
         document.getElementById('nvMemList').addEventListener('click', function(e){ var d=e.target.closest && e.target.closest('.nv-mem-del'); if(d) forget(d.getAttribute('data-id')); });
       }
       renderMem();
