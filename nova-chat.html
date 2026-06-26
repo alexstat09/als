@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Nova · ALS</title>
@@ -26,7 +26,7 @@
     html{background:#050507;}
     body{min-height:100dvh;background:#050507;color:#F4F1EA;
       font-family:var(--au-sans,-apple-system,system-ui,sans-serif);
-      overflow-x:hidden;padding-bottom:120px;}
+      overflow-x:hidden;padding-bottom:120px;touch-action:manipulation;}
 
     /* living HUD backdrop — fixed, decorative, always behind content */
     body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -127,7 +127,7 @@
       <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
       <div class="nv-id">
         <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">online · v48</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">connecting…</span></div>
       </div>
       <button class="nv-clear" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
       <button class="nv-clear" id="nvClear" type="button">Clear</button>
@@ -163,7 +163,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v47'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v49'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
@@ -176,28 +176,14 @@
     var sendBtn= document.getElementById('nvSend');
     var status = document.getElementById('nvStatus');
 
-    /* ── Pinch-to-zoom the conversation (custom). Native pinch is disabled in
-       the viewport because in a standalone iOS PWA it zooms once and gets
-       stuck. Here two fingers scale the text, which REFLOWS so it stays
-       readable and never clips; pinch back in — or double-tap — always
-       shrinks it. Persisted across sessions. ── */
+    /* Text size: applied read-only from any previously-saved value. The custom
+       pinch-to-zoom handlers were REMOVED — a non-passive document `touchmove`
+       listener can stop iOS WKWebView from synthesizing taps in a standalone
+       PWA (the page went fully untappable). Standard interaction only now. */
     (function(){
-      var FS_KEY='nova:fontsize', MIN=13, MAX=30, DEF=15;
-      var saved=parseInt(localStorage.getItem(FS_KEY),10);
-      var fs=isFinite(saved)?Math.max(MIN,Math.min(MAX,saved)):DEF;
-      function apply(){ document.documentElement.style.setProperty('--nv-fs', fs+'px'); }
-      function setFS(v){ fs=Math.max(MIN,Math.min(MAX,v)); apply(); }
-      function persist(){ try{ localStorage.setItem(FS_KEY, Math.round(fs)); }catch(e){} }
-      apply();
-      function dist(t){ var dx=t[0].clientX-t[1].clientX, dy=t[0].clientY-t[1].clientY; return Math.sqrt(dx*dx+dy*dy); }
-      var startDist=0, startFS=fs, pinching=false;
-      document.addEventListener('touchstart', function(e){ if(e.touches.length===2){ pinching=true; startDist=dist(e.touches)||1; startFS=fs; } }, {passive:true});
-      document.addEventListener('touchmove', function(e){ if(pinching && e.touches.length===2){ e.preventDefault(); setFS(startFS*(dist(e.touches)/startDist)); } }, {passive:false});
-      function endPinch(e){ if(pinching && (!e.touches || e.touches.length<2)){ pinching=false; persist(); } }
-      document.addEventListener('touchend', endPinch); document.addEventListener('touchcancel', endPinch);
-      // double-tap → reset to default size (a guaranteed way back to normal)
-      var lastTap=0;
-      document.addEventListener('touchend', function(e){ if(e.touches && e.touches.length) return; var now=Date.now(); if(now-lastTap<300){ setFS(DEF); persist(); lastTap=0; } else { lastTap=now; } });
+      var saved=parseInt(localStorage.getItem('nova:fontsize'),10);
+      var fs=isFinite(saved)?Math.max(13,Math.min(30,saved)):15;
+      document.documentElement.style.setProperty('--nv-fs', fs+'px');
     })();
     var root   = document.getElementById('root');
     var bar    = document.getElementById('nvBar');
@@ -409,6 +395,7 @@
 
     setBarSpace();
     renderAll();
+    if(status) status.textContent = 'online · ' + BUILD; // init reached → handlers are wired
     setTimeout(setBarSpace, 200);
 
     // ── Memory panel + cross-device sync ──
