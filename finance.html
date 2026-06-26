@@ -3,12 +3,12 @@
 <head>
 <script src="lock.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0a0a0b">
+<meta name="theme-color" content="#050506">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Finances</title>
+<title>Finances · ALS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
@@ -83,7 +83,7 @@ body::after {
 .shell {
   max-width: 880px;
   margin: 0 auto;
-  padding: 24px 16px 100px;   /* extra bottom padding so tab bar doesn't cover content */
+  padding: 24px 16px 28px;   /* app bottom nav clearance handled by body.has-bottombar */
 }
 
 /* ===== Back to dashboard ===== */
@@ -112,33 +112,27 @@ body::after {
 .fin-back-btn svg { display: block; }
 
 /* ===== Bottom tab bar ===== */
+/* Top segmented control (frees the bottom for the shared app nav). */
 .bottom-tabs {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 100;
   display: flex;
-  justify-content: center;
   gap: 4px;
-  padding: 8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
-  background: linear-gradient(180deg, transparent, rgba(5,5,6,0.92) 30%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  margin: 0 0 18px;
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
-.bottom-tabs::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12px; right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-  pointer-events: none;
-}
+.bottom-tabs::before { display: none; }
 .bot-tab {
-  flex: 1; max-width: 140px;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-tertiary);
-  padding: 9px 14px 8px;
+  padding: 9px 8px;
   border-radius: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -148,15 +142,17 @@ body::after {
 .bot-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.025); }
 .bot-tab.active {
   color: var(--text-primary);
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.07);
   border-color: rgba(255,255,255,0.10);
 }
-.bot-tab-icon { font-size: 18px; line-height: 1; }
+.bot-tab-icon { font-size: 15px; line-height: 1; }
 .bot-tab-label {
   font-size: 10px; font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+@media (max-width: 380px) { .bot-tab-label { display: none; } .bot-tab-icon { font-size: 18px; } }
 
 /* Sections: hide non-active when bottom tabs are in use */
 .section[hidden] { display: none !important; }
@@ -1605,6 +1601,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="ticker-dots" id="tickerDots"></div>
 </div>
 
+<!-- ===== SECTION SWITCHER (sticky top segmented control) ===== -->
+<nav class="bottom-tabs" id="bottomTabs" aria-label="Sections">
+  <button class="bot-tab active" data-tab="net">
+    <span class="bot-tab-icon">📊</span>
+    <span class="bot-tab-label">Net Worth</span>
+  </button>
+  <button class="bot-tab" data-tab="subs">
+    <span class="bot-tab-icon">🔁</span>
+    <span class="bot-tab-label">Subs</span>
+  </button>
+  <button class="bot-tab" data-tab="incoming">
+    <span class="bot-tab-icon">📦</span>
+    <span class="bot-tab-label">Orders</span>
+  </button>
+  <button class="bot-tab" data-tab="wish">
+    <span class="bot-tab-icon">🎯</span>
+    <span class="bot-tab-label">Wishlist</span>
+  </button>
+</nav>
+
 <!-- ===== NET WORTH ===== -->
 <div class="section" data-section="net">
   <div class="section-title">
@@ -1884,26 +1900,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </div>
 
 </div>
-
-<!-- ===== BOTTOM TAB BAR ===== -->
-<nav class="bottom-tabs" id="bottomTabs" aria-label="Sections">
-  <button class="bot-tab active" data-tab="net">
-    <span class="bot-tab-icon">📊</span>
-    <span class="bot-tab-label">Net Worth</span>
-  </button>
-  <button class="bot-tab" data-tab="subs">
-    <span class="bot-tab-icon">🔁</span>
-    <span class="bot-tab-label">Subs</span>
-  </button>
-  <button class="bot-tab" data-tab="incoming">
-    <span class="bot-tab-icon">📦</span>
-    <span class="bot-tab-label">Orders</span>
-  </button>
-  <button class="bot-tab" data-tab="wish">
-    <span class="bot-tab-icon">🎯</span>
-    <span class="bot-tab-label">Wishlist</span>
-  </button>
-</nav>
 
 <script>
 (function() {
@@ -2558,8 +2554,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       del.title = 'Delete';
       del.style.cssText = 'background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
       del.textContent = '×';
-      del.addEventListener('click', () => {
-        if (!confirm('Delete "' + it.name + '"?')) return;
+      del.addEventListener('click', async () => {
+        if (!(await ALSConfirm({title:'Delete subscription?',message:'Delete "' + it.name + '"?',confirmText:'Delete',danger:true}))) return;
         items.splice(idx, 1); storeSet('subs', items); renderSubs();
       });
       actions.appendChild(editBtn);
@@ -2569,13 +2565,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     });
     // Wire row-level auto-deduct toggle buttons
     subsList.querySelectorAll('[data-sub-toggle]').forEach(b => {
-      b.addEventListener('click', (e) => {
+      b.addEventListener('click', async (e) => {
         e.stopPropagation();
         const i = parseInt(b.dataset.subToggle, 10);
         const arr = storeGet('subs') || [];
         if (!arr[i]) return;
         if (!arr[i].autoDeduct && (!arr[i].fromCat || !arr[i].fromAccount)) {
-          alert('Pick a "From account" first (use the ✏ edit button) so the deduction knows where to take the money from.');
+          await ALSAlert('Pick a "From account" first (use the ✏ edit button) so the deduction knows where to take the money from.','warn');
           return;
         }
         arr[i].autoDeduct = !arr[i].autoDeduct;
@@ -2699,7 +2695,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       '<button class="se-save quick-add-btn">Save</button>' +
       '<button class="se-cancel" style="background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:6px 10px;border-radius:var(--radius-md);font-family:inherit">Cancel</button>';
     row.appendChild(form);
-    const save = () => {
+    const save = async () => {
       const newName = row.querySelector('.se-name').value.trim();
       const newAmtRaw = parseFloat(row.querySelector('.se-amt').value);
       const newCcy = row.querySelector('.se-ccy').value;
@@ -2713,7 +2709,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         if (ix > 0) { newFromCat = newFromVal.slice(0, ix); newFromAccount = newFromVal.slice(ix + 2); }
       }
       if (newAuto && (!newFromCat || !newFromAccount)) {
-        alert('Pick a "From account" — auto-deduct needs somewhere to take the money from.');
+        await ALSAlert('Pick a "From account" — auto-deduct needs somewhere to take the money from.','warn');
         return;
       }
       if (!newName || isNaN(newAmtRaw)) return;
@@ -2733,7 +2729,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     row.querySelector('.se-name').focus();
   }
 
-  function doSubAdd() {
+  async function doSubAdd() {
     try {
       const nEl = document.getElementById('subName');
       const aEl = document.getElementById('subAmount');
@@ -2758,7 +2754,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       const autoDeduct = !!(tEl && tEl.checked);
       // Guard: auto-deduct requires a linked account
       if (autoDeduct && (!fromCat || !fromAccount)) {
-        alert('Pick a "From account" first — auto-deduct needs to know where to take the money from.');
+        await ALSAlert('Pick a "From account" first — auto-deduct needs to know where to take the money from.','warn');
         return;
       }
       const items = storeGet('subs') || [];
@@ -3088,7 +3084,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // activity, freezes the order's % at the moment of deduction, and
   // marks the order as deducted (with no further % updates).
   // ============================================================
-  function openDeductChooser(orderId, cardEl) {
+  async function openDeductChooser(orderId, cardEl) {
     if (!cardEl) return;
     // Toggle: if a chooser already exists in this card, remove it.
     const existing = cardEl.querySelector('.ord-deduct-chooser');
@@ -3097,7 +3093,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     if (!order) return;
     const accounts = listAllNwAccounts();
     if (!accounts.length) {
-      alert('Add at least one net worth account before deducting.');
+      await ALSAlert('Add at least one net worth account before deducting.','warn');
       return;
     }
     const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
@@ -3122,16 +3118,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       + '<button class="ord-deduct-cancel" type="button">cancel</button>';
     cardEl.appendChild(chooser);
     chooser.querySelectorAll('.ord-deduct-opt').forEach(b => {
-      b.addEventListener('click', () => {
+      b.addEventListener('click', async () => {
         if (b.dataset.insuf === '1') {
-          if (!confirm('That account doesn\'t have enough — deduct anyway? (it will go negative)')) return;
+          if (!(await ALSConfirm({title:'Deduct anyway?',message:'That account doesn\'t have enough — it will go negative.',confirmText:'Deduct',danger:true}))) return;
         }
         confirmDeduct(orderId, b.dataset.cat, b.dataset.name);
       });
     });
     chooser.querySelector('.ord-deduct-cancel').addEventListener('click', () => chooser.remove());
   }
-  function confirmDeduct(orderId, catKey, itemName) {
+  async function confirmDeduct(orderId, catKey, itemName) {
     const orders = storeGet('incoming_orders') || [];
     const oIdx = orders.findIndex(x => x.id === orderId);
     if (oIdx < 0) return;
@@ -3140,7 +3136,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const items = storeGet('nw:' + catKey) || [];
     const itemIdx = items.findIndex(it => String(it.name) === String(itemName));
     if (itemIdx < 0) {
-      alert('That account no longer exists. Refresh the chooser.');
+      await ALSAlert('That account no longer exists. Refresh the chooser.','warn');
       return;
     }
     const cost = Number(order.amount) || 0;

@@ -683,14 +683,14 @@ function addSet(ei){ var a=getActive(); if(!a)return; var en=a.entries[ei]; var 
   else sets.push({ kg:last?last.kg:'', reps:last?last.reps:'', done:false });
   setActive(a); render(); }
 function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); render(); }
-function removeEx(ei){ var a=getActive(); if(!a)return; if(!confirm('Remove '+a.entries[ei].name+' from this workout?'))return; a.entries.splice(ei,1); setActive(a); render(); }
+async function removeEx(ei){ var a=getActive(); if(!a)return; if(!(await ALSConfirm({title:'Remove exercise?',message:'Remove '+a.entries[ei].name+' from this workout?',confirmText:'Remove',danger:true})))return; a.entries.splice(ei,1); setActive(a); render(); }
 function lastTimeFor(exId){ var le=lastEntryFor(exId); if(!le)return 0; var m=0; (le.sets||[]).forEach(function(s){ if((s.secs||0)>m)m=s.secs; }); return m; }
 function addExToActive(ex){ var a=getActive(); if(!a)return; var tm=isTime(ex);
   a.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',note:'',perSide:false,sets:[ tm?{secs:'',done:false}:{kg:'',reps:'',done:false} ]});
   setActive(a); closeSheet(); render(); }
-function cancelActive(){ if(!confirm('Discard this workout? Nothing will be saved.'))return; clearInterval(timerInt); restSkip(); save('po_active',null); go('home'); }
+async function cancelActive(){ if(!(await ALSConfirm({title:'Discard workout?',message:'Nothing will be saved.',confirmText:'Discard',danger:true})))return; clearInterval(timerInt); restSkip(); save('po_active',null); go('home'); }
 
-function finishActive(){
+async function finishActive(){
   var a=getActive(); if(!a)return;
   var entries=[]; var volume=0; var prExs=[];
   a.entries.forEach(function(en){
@@ -707,7 +707,7 @@ function finishActive(){
     if(thisBest>prevBest && prevBest>0) prExs.push(en.exId);
     entries.push({exId:en.exId,name:en.name,muscle:en.muscle,kind:'weight',perSide:!!en.perSide,note:en.note||'',sets:doneSets.map(function(s){return {kg:+s.kg||0,reps:+s.reps||0,done:true};})});
   });
-  if(!entries.length){ if(!confirm('No sets were checked off. Discard this workout?'))return; save('po_active',null); clearInterval(timerInt); restSkip(); go('home'); return; }
+  if(!entries.length){ if(!(await ALSConfirm({title:'Discard workout?',message:'No sets were checked off.',confirmText:'Discard',danger:true})))return; save('po_active',null); clearInterval(timerInt); restSkip(); go('home'); return; }
   var dur=(Date.now()-new Date(a.startedAt).getTime())/1000;
   var dk=dateKey(new Date(a.startedAt));
   var session={ id:a.id, name:a.name, templateId:a.templateId, date:dk, startedAt:a.startedAt, durationSec:Math.round(dur), entries:entries, volume:Math.round(volume), prs:prExs };
@@ -726,8 +726,8 @@ function tplDiffers(tpl, entries){
   for(var i=0;i<entries.length;i++){ if(tpl.items[i].exId!==entries[i].exId) return true; if((tpl.items[i].sets||0)!==entries[i].sets.length) return true; }
   return false;
 }
-window.updateTplFromSession=function(){ var s=window.__lastSession; if(!s||!s.templateId)return; var list=templates(); var idx=list.findIndex(function(x){return x.id===s.templateId;}); if(idx<0){alert('That template no longer exists.');return;} list[idx].items=s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};}); save('po_templates',list); closeSheet(); go('home'); };
-window.saveSessionAsTemplate=function(){ var s=window.__lastSession; if(!s)return; var name=prompt('Name this template:', (s.name && s.name!=='Quick Workout') ? s.name : ''); if(!name||!name.trim())return; var t={id:uid(),folderId:(folders()[0]||{}).id||null,name:name.trim(),items:s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};})}; var list=templates(); list.push(t); save('po_templates',list); closeSheet(); go('home'); };
+window.updateTplFromSession=async function(){ var s=window.__lastSession; if(!s||!s.templateId)return; var list=templates(); var idx=list.findIndex(function(x){return x.id===s.templateId;}); if(idx<0){await ALSAlert('That template no longer exists.','warn');return;} list[idx].items=s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};}); save('po_templates',list); closeSheet(); go('home'); };
+window.saveSessionAsTemplate=async function(){ var s=window.__lastSession; if(!s)return; var name=await ALSPrompt({title:'Save as template',placeholder:'Template name',value:(s.name && s.name!=='Quick Workout') ? s.name : '',confirmText:'Save'}); if(!name||!name.trim())return; var t={id:uid(),folderId:(folders()[0]||{}).id||null,name:name.trim(),items:s.entries.map(function(e){return {exId:e.exId,sets:e.sets.length};})}; var list=templates(); list.push(t); save('po_templates',list); closeSheet(); go('home'); };
 function showSummary(s, srcTpl, changed){
   window.__lastSession=s;
   var prNames=s.prs.map(function(id){return exById(id).name;});
@@ -918,15 +918,15 @@ window.filterPick=function(){
   el.innerHTML=list.map(function(e){return '<button type="button" class="w-pick" onclick="choosePick(\''+e.id+'\')"><div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((e.muscle||'?').slice(0,2).toUpperCase())+'</div><span class="w-pick-name">'+esc(e.name)+(isTime(e)?' <span style="color:var(--au-faint);font-size:11px;">· time</span>':'')+'</span><span class="w-pick-muscle">'+esc(e.muscle)+'</span></button>';}).join('') || '<div class="w-empty" style="font-size:13px;">No match — create it above.</div>';
 };
 window.choosePick=function(id){ var e=exById(id); if(window.__pickCb) window.__pickCb(e); };
-window.addCustomExercise=function(){
-  var name=prompt('Exercise name:'); if(!name||!name.trim())return;
-  var muscle=(prompt('Muscle group — Chest, Back, Shoulders, Arms, Legs, Core or Cardio:','Chest')||'').trim();
+window.addCustomExercise=async function(){
+  var name=await ALSPrompt({title:'New exercise',placeholder:'Exercise name',confirmText:'Next'}); if(!name||!name.trim())return;
+  var muscle=((await ALSPrompt({title:'Muscle group',message:'Chest, Back, Shoulders, Arms, Legs, Core or Cardio',value:'Chest',confirmText:'Next'}))||'').trim();
   var VALID=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
   var match=VALID.filter(function(v){return v.toLowerCase()===muscle.toLowerCase();})[0];
   muscle=match||muscle||'Other';
   var kind='weight';
   if(muscle==='Cardio') kind='time';
-  else { var ans=prompt('Track it by reps or time? (reps / time)','reps')||'reps'; if(/^t/i.test(ans.trim())) kind='time'; }
+  else { var ans=(await ALSPrompt({title:'How to track it?',message:'reps / time',value:'reps',confirmText:'Add'}))||'reps'; if(/^t/i.test(ans.trim())) kind='time'; }
   var ex={id:uid(),name:name.trim(),muscle:muscle,kind:kind};
   var list=exercises(); list.push(ex); save('po_exercises',list);
   pickMuscle='All'; var box=document.getElementById('wMchips'); if(box){ Array.prototype.forEach.call(box.children,function(b){ b.classList.toggle('on', b.getAttribute('data-mfilter')==='All'); }); }
@@ -967,24 +967,24 @@ window.edSets=function(i,d){ var t=window.__editTpl; t.items[i].sets=Math.max(1,
 window.edMove=function(i,d){ var t=window.__editTpl; var j=i+d; if(j<0||j>=t.items.length)return; var tmp=t.items[i]; t.items[i]=t.items[j]; t.items[j]=tmp; renderEditor(); };
 window.edRemove=function(i){ window.__editTpl.items.splice(i,1); renderEditor(); };
 window.edAddEx=function(ex){ window.__editTpl.items.push({exId:ex.id,sets:3}); renderEditor(); };
-window.saveTpl=function(){
+window.saveTpl=async function(){
   var t=window.__editTpl;
-  if(!t.name||!t.name.trim()){ alert('Give your template a name.'); return; }
-  if(t.folderId==='__new'){ var fn=prompt('New folder name:'); if(fn){ var f={id:uid(),name:fn.trim()}; var fl=folders(); fl.push(f); save('po_tpl_folders',fl); t.folderId=f.id; } else { t.folderId=(folders()[0]||{}).id; } }
-  if(!t.items.length){ alert('Add at least one exercise.'); return; }
+  if(!t.name||!t.name.trim()){ await ALSAlert('Give your template a name.','warn'); return; }
+  if(t.folderId==='__new'){ var fn=await ALSPrompt({title:'New folder',placeholder:'Folder name',confirmText:'Create'}); if(fn){ var f={id:uid(),name:fn.trim()}; var fl=folders(); fl.push(f); save('po_tpl_folders',fl); t.folderId=f.id; } else { t.folderId=(folders()[0]||{}).id; } }
+  if(!t.items.length){ await ALSAlert('Add at least one exercise.','warn'); return; }
   var list=templates(); var idx=list.findIndex(function(x){return x.id===t.id;});
   if(idx>=0) list[idx]=t; else list.push(t);
   save('po_templates',list); closeSheet(); go('home');
 };
-window.deleteTpl=function(){ if(!confirm('Delete this template?'))return; var list=templates().filter(function(x){return x.id!==window.__editTpl.id;}); save('po_templates',list); closeSheet(); go('home'); };
-window.newFolder=function(){ var name=prompt('New folder name:'); if(!name||!name.trim())return; var fl=folders(); fl.push({id:uid(),name:name.trim()}); save('po_tpl_folders',fl); render(); };
-window.editFolder=function(id){
+window.deleteTpl=async function(){ if(!(await ALSConfirm({title:'Delete template?',confirmText:'Delete',danger:true})))return; var list=templates().filter(function(x){return x.id!==window.__editTpl.id;}); save('po_templates',list); closeSheet(); go('home'); };
+window.newFolder=async function(){ var name=await ALSPrompt({title:'New folder',placeholder:'Folder name',confirmText:'Create'}); if(!name||!name.trim())return; var fl=folders(); fl.push({id:uid(),name:name.trim()}); save('po_tpl_folders',fl); render(); };
+window.editFolder=async function(id){
   var fl=folders(); var f=fl.find(function(x){return x.id===id;}); if(!f)return;
-  var name=prompt('Rename folder (clear the text & press OK to delete it):', f.name);
+  var name=await ALSPrompt({title:'Rename folder',message:'Clear the text & save to delete it.',value:f.name,confirmText:'Save'});
   if(name===null) return;
   name=name.trim();
   if(!name){
-    if(templates().some(function(t){return t.folderId===id;})){ alert('This folder still has templates — move or delete those first.'); return; }
+    if(templates().some(function(t){return t.folderId===id;})){ await ALSAlert('This folder still has templates — move or delete those first.','warn'); return; }
     save('po_tpl_folders', fl.filter(function(x){return x.id!==id;})); render(); return;
   }
   f.name=name; save('po_tpl_folders',fl); render();
@@ -1069,7 +1069,7 @@ window.openTpl=openTpl; window.startFromTpl=startFromTpl; window.startEmpty=star
 window.editTemplate=editTemplate; window.setVal=setVal; window.toggleSet=toggleSet; window.addSet=addSet; window.removeEx=removeEx;
 window.finishActive=finishActive; window.cancelActive=cancelActive; window.pickExercise=pickExercise; window.addExToActive=addExToActive;
 window.setTime=setTime; window.setNote=setNote; window.togglePerSide=togglePerSide; window.moveEx=moveEx; window.removeSet=removeSet;
-window.deleteWorkout=function(id){ if(!confirm('Delete this workout permanently?'))return; var list=workouts().filter(function(w){return w.id!==id;}); save('po_workouts',list); render(); };
+window.deleteWorkout=async function(id){ if(!(await ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true})))return; var list=workouts().filter(function(w){return w.id!==id;}); save('po_workouts',list); render(); };
 
 if(getActive()) view='active';
 render();

@@ -277,13 +277,16 @@ html, body {
   vector-effect: non-scaling-stroke;
 }
 
-/* ----- Modal ----- */
+/* ----- Modal (native <dialog>, renders in the browser top layer) ----- */
 .modal-bg {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  display: none; position: fixed; inset: 0; width: 100%; height: 100%;
+  max-width: none; max-height: none; margin: 0; border: 0; color: inherit;
+  box-sizing: border-box; overflow: auto;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   z-index: 100; align-items: center; justify-content: center; padding: 20px;
 }
-.modal-bg.show { display: flex; }
+.modal-bg[open] { display: flex; }
+.modal-bg::backdrop { background: transparent; }
 .modal {
   width: 100%; max-width: 480px;
   background: var(--bg-card);
@@ -510,7 +513,7 @@ html, body {
 </div>
 
 <!-- Settings modal -->
-<div class="modal-bg" id="setModalBg">
+<dialog class="modal-bg" id="setModalBg">
   <div class="modal">
     <h3>Settings</h3>
 
@@ -614,7 +617,7 @@ html, body {
       <button class="btn-primary" id="setClose">Done</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <script>
 (function() {
@@ -1018,11 +1021,11 @@ html, body {
     }).join('');
     results.classList.add('show');
     results.querySelectorAll('.search-result').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', async () => {
         const id = el.dataset.id;
         const sub = SUBSTANCE_DB.find(x => x.id === id);
         if (!sub) return;
-        if ((state.substances || []).find(x => x.id === id)) { alert('Already added — edit the dose below.'); return; }
+        if ((state.substances || []).find(x => x.id === id)) { await ALSAlert('Already added — edit the dose below.','info'); return; }
         state.substances.push({
           id: sub.id, name: sub.name, cat: sub.cat,
           unit: sub.unit, mlPerUnit: sub.mlPerUnit,
@@ -1042,9 +1045,11 @@ html, body {
 
   $('settingsBtn').addEventListener('click', () => {
     renderSettings();
-    $('setModalBg').classList.add('show');
+    $('setModalBg').showModal();
   });
-  $('setClose').addEventListener('click', () => $('setModalBg').classList.remove('show'));
+  $('setClose').addEventListener('click', () => $('setModalBg').close());
+  // Tap the dimmed backdrop (outside the card) to dismiss.
+  $('setModalBg').addEventListener('click', (e) => { if (e.target === $('setModalBg')) $('setModalBg').close(); });
 
   // Export / import / reset
   $('setExport').addEventListener('click', () => {
@@ -1058,21 +1063,21 @@ html, body {
   $('setImportFile').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = async () => {
       try {
         const parsed = JSON.parse(r.result);
-        if (!confirm('Replace ALL current data with the imported file?')) return;
+        if (!(await ALSConfirm({title:'Replace all data?',message:'This replaces ALL current data with the imported file.',confirmText:'Replace',danger:true}))) return;
         state = normalize(parsed);
         saveState(); renderSettings(); renderAll();
-      } catch (err) { alert('Import failed: ' + err.message); }
+      } catch (err) { await ALSAlert('Import failed: ' + err.message,'err'); }
     };
     r.readAsText(f);
   });
-  $('setReset').addEventListener('click', () => {
-    if (!confirm('Wipe ALL water logs and settings? This cannot be undone.')) return;
+  $('setReset').addEventListener('click', async () => {
+    if (!(await ALSConfirm({title:'Wipe everything?',message:'All water logs and settings will be erased. This cannot be undone.',confirmText:'Wipe',danger:true}))) return;
     localStorage.removeItem(LS_KEY);
     state = loadState();
-    $('setModalBg').classList.remove('show');
+    $('setModalBg').close();
     renderAll();
   });
 

@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#050506">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Dashboard</title>
+<title>Home · ALS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
@@ -759,13 +759,15 @@ body::after {
   }
   .xp-ms-chip{ border-radius:12px !important; }
 
-  /* Level-up celebration modal */
+  /* Level-up celebration modal (native <dialog>, renders in the browser top layer) */
   .xp-levelup{
     position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    width:100%; height:100%; max-width:none; max-height:none; margin:0; border:0; padding:0;
     background:rgba(3,4,6,0.62); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
     opacity:0; transition:opacity .35s ease; pointer-events:none;
   }
   .xp-levelup.show{ opacity:1; pointer-events:auto; }
+  .xp-levelup::backdrop{ background:transparent; }
   .xp-levelup-card{
     text-align:center; padding:30px 38px; border-radius:22px;
     background:rgba(9,11,15,0.92); border:1px solid rgba(52,226,176,0.4);
@@ -1454,7 +1456,7 @@ function renderIntelFeed() {
 
 /* ── Level-up celebration ───────────────────────── */
 function celebrateLevelUp(level) {
-  const el = document.createElement('div');
+  const el = document.createElement('dialog');
   el.className = 'xp-levelup';
   el.innerHTML =
     '<div class="xp-levelup-card">' +
@@ -1463,12 +1465,16 @@ function celebrateLevelUp(level) {
       '<div class="xp-levelup-sub">Level ' + level.level + ' · ' + level.xp.toLocaleString() + ' XP</div>' +
     '</div>';
   document.body.appendChild(el);
+  try { el.showModal(); } catch (e) {}
   requestAnimationFrame(() => el.classList.add('show'));
   // Nova celebrates too
   const nova = document.getElementById('nova');
   if (nova) { nova.classList.add('nova-poke'); setTimeout(() => nova.classList.remove('nova-poke'), 700); }
-  const close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); };
+  let closed = false;
+  const close = () => { if (closed) return; closed = true; el.classList.remove('show');
+    setTimeout(() => { try { el.close(); } catch (e) {} el.remove(); }, 400); };
   el.addEventListener('click', close);
+  el.addEventListener('cancel', (e) => { e.preventDefault(); close(); }); // Esc
   setTimeout(close, 5000);
 }
 
@@ -1790,11 +1796,8 @@ setInterval(renderIntelFeed, 60000);
     {e:'📈', l:'Trends',             g:'Reflect', u:'trends.html',       k:'trends charts graphs history'},
     {e:'🗄️', l:'Backup & Restore',   g:'System',  u:'backup.html',       k:'backup restore export import json save data download safety recover'},
     {e:'💬', l:'Talk to Nova',       g:'Nova',    u:'nova-chat.html',    k:'nova chat talk ai coach assistant ask'},
-    {e:'✦', l:'New home (demo)',     g:'Concept', u:'demo.html',         k:'demo stream new home concept nav navigation experiment'},
     {e:'🧠', l:'Coach',              g:'Intelligence', u:'coach.html',           k:'coach intelligence insights patterns correlations forecast trends nova brain analysis'},
-    {e:'◉', l:'Command Core (demo)', g:'Concept', u:'demo-core.html',          k:'demo command core cockpit hud nova reactor nav navigation concept experiment'},
-    {e:'🌌', l:'Constellation (demo)', g:'Concept', u:'demo-constellation.html', k:'demo constellation star map nav navigation concept experiment'},
-    {e:'🪐', l:'Worlds (demo)',       g:'Concept', u:'demo-worlds.html',        k:'demo worlds swipe domains nav navigation concept experiment'}
+    {e:'◉', l:'Command Core',        g:'Home',    u:'demo-core.html',    k:'command core cockpit hud nova reactor home alternate view'}
   ];
   var box=document.getElementById('hubSearch'), input=document.getElementById('hubSearchInput'),
       results=document.getElementById('hubSearchResults'), clearBtn=document.getElementById('hubSearchClear');

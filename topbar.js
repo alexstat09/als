@@ -57,6 +57,13 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── On-brand dialogs (ALSConfirm/ALSAlert/ALSPrompt), app-wide.
+  (function loadDialog(){ try {
+    if (window.ALSDialog || document.querySelector('script[src*="als-dialog"]')) return;
+    var s = document.createElement('script'); s.src = 'als-dialog.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';

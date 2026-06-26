@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#050506">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Alex's Dashboard</title>
+<title>Home · ALS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
@@ -1305,11 +1305,11 @@ body::after {
   }
 
   // ---------- Push remaining ----------
-  document.getElementById('gmPushBtn').addEventListener('click', () => {
+  document.getElementById('gmPushBtn').addEventListener('click', async () => {
     const today    = getGoals(todayKey());
     const remaining = today.filter(g => !g.done);
     if (remaining.length === 0) return;
-    if (!confirm('Move ' + remaining.length + ' unchecked goal' + (remaining.length === 1 ? '' : 's') + ' to tomorrow?')) return;
+    if (!(await ALSConfirm({title:'Push to tomorrow?',message:'Move ' + remaining.length + ' unchecked goal' + (remaining.length === 1 ? '' : 's') + ' to tomorrow?',confirmText:'Move'}))) return;
     const tomorrow = getGoals(tomorrowKey());
     const seen = new Set(tomorrow.map(g => g.text));
     remaining.forEach(g => {

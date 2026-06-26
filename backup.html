@@ -274,14 +274,14 @@
     }
     function readFile(file){
       var rd = new FileReader();
-      rd.onload = function(){
+      rd.onload = async function(){
         var payload;
-        try { payload = JSON.parse(rd.result); } catch(e){ alert('That file is not valid JSON.'); return; }
+        try { payload = JSON.parse(rd.result); } catch(e){ await ALSAlert('That file is not valid JSON.','err'); return; }
         if (!payload || typeof payload !== 'object' || !payload.data || typeof payload.data !== 'object'){
-          alert('That doesn’t look like an AURORA backup (no data block).'); return;
+          await ALSAlert('That doesn’t look like an AURORA backup (no data block).','warn'); return;
         }
         if (payload.kind && payload.kind !== 'als-backup'){
-          if (!confirm('This file isn’t marked as an AURORA backup. Restore anyway?')) return;
+          if (!(await ALSConfirm({title:'Restore anyway?',message:'This file isn’t marked as an AURORA backup.',confirmText:'Restore'}))) return;
         }
         showPreview(payload);
       };
@@ -410,7 +410,7 @@
         var rows = r.ok ? await r.json() : null;
         var d = (rows && rows[0] && rows[0].data) ? rows[0].data : null;
         if (!d || !d.snap){ var done=$('clDone'); done.textContent='No cloud snapshot found — back up first.'; done.classList.remove('hidden'); return; }
-        if (!confirm('Restore your cloud snapshot from ' + fmtWhen(d.savedAt) + '?\n\nThis replaces your current data (a safety copy downloads first).')) return;
+        if (!(await ALSConfirm({title:'Restore cloud snapshot?',message:'From ' + fmtWhen(d.savedAt) + '.\n\nThis replaces your current data (a safety copy downloads first).',confirmText:'Restore'}))) return;
         btn.disabled=true; var prev=btn.textContent; btn.textContent='Restoring…'; $('clBackup').disabled=true;
         var res = await restoreFromData(d.snap);
         var done=$('clDone');

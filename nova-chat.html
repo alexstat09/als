@@ -155,6 +155,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="error-toast.js" defer></script>
+  <script src="als-dialog.js" defer></script>
   <script src="sync.js" defer></script>
   <script src="insights-engine.js" defer></script>
   <script src="forecast-engine.js" defer></script>
@@ -383,9 +384,9 @@
     scroll.addEventListener('click', function(e){
       var c = e.target.closest && e.target.closest('.nv-chip'); if(c) send(c.getAttribute('data-q'));
     });
-    document.getElementById('nvClear').addEventListener('click', function(){
+    document.getElementById('nvClear').addEventListener('click', async function(){
       if(busy) return;
-      if(history.length && !confirm('Clear this conversation with Nova?')) return;
+      if(history.length && !(await ALSConfirm({title:'Clear conversation?',message:'This clears this chat with Nova.',confirmText:'Clear',danger:true}))) return;
       history = []; save(history); renderAll();
     });
 
@@ -431,7 +432,7 @@
         memBtn.addEventListener('click', function(){ renderMem(); panel.hidden=false; });
         document.getElementById('nvMemClose').addEventListener('click', function(){ panel.hidden=true; });
         panel.addEventListener('click', function(e){ if(e.target===panel) panel.hidden=true; });
-        document.getElementById('nvMemForgetAll').addEventListener('click', function(){ if(loadMem().length && !confirm('Forget everything Nova remembers about you?')) return; forgetAll(); });
+        document.getElementById('nvMemForgetAll').addEventListener('click', async function(){ if(loadMem().length && !(await ALSConfirm({title:'Forget everything?',message:'Nova will forget everything she remembers about you.',confirmText:'Forget all',danger:true}))) return; forgetAll(); });
         document.getElementById('nvMemList').addEventListener('click', function(e){ var d=e.target.closest && e.target.closest('.nv-mem-del'); if(d) forget(d.getAttribute('data-id')); });
       }
       renderMem();

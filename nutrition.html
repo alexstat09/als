@@ -575,10 +575,10 @@
       var c=ls(CUSTOM,[]); c.unshift(f); save(CUSTOM,c); showPortion(searchResultToFood(f),100);
     }
 
-    function mealSave(){
+    async function mealSave(){
       var items=dayLogs(viewDate).filter(function(e){return (e.meal||'Snacks')===curMeal;});
       if(!items.length){ shBody.insertAdjacentHTML('afterbegin','<div class="sh-msg">Nothing logged in '+curMeal+' yet.</div>'); return; }
-      var nm=prompt('Name this meal:',curMeal+' set'); if(!nm) return;
+      var nm=await ALSPrompt({title:'Save meal',placeholder:'Meal name',value:curMeal+' set',confirmText:'Save'}); if(!nm) return;
       var m=ls(MEALSK,[]); m.unshift({id:uid(),name:nm,items:items.map(function(e){var c={};for(var k in e)c[k]=e[k];delete c.id;delete c.ts;delete c.dateKey;return c;})}); save(MEALSK,m); setTab('meals');
     }
     function addSavedMeal(ml){
