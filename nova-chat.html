@@ -31,19 +31,17 @@
       font-family:var(--au-sans,-apple-system,system-ui,sans-serif);
       overflow-x:hidden;padding-bottom:120px;touch-action:manipulation;}
 
-    /* living HUD backdrop — fixed, decorative, always behind content */
-    body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-      transform:translateZ(0);will-change:opacity;
-      background:
-        radial-gradient(120% 70% at 50% -10%, rgba(52,226,176,.10), transparent 60%),
-        radial-gradient(90% 60% at 90% 110%, rgba(155,140,255,.10), transparent 60%);
-      animation:nv-breathe 9s ease-in-out infinite;}
-    body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
-      transform:translateZ(0);
-      background-image:linear-gradient(rgba(52,226,176,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(52,226,176,.045) 1px,transparent 1px);
-      background-size:40px 40px;
-      -webkit-mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);mask-image:radial-gradient(120% 100% at 50% 0,#000,transparent 80%);}
-    @keyframes nv-breathe{0%,100%{opacity:.85;}50%{opacity:1;}}
+    /* Static, non-fixed backdrop. The old version used position:fixed,
+       animated, GPU-composited (translateZ/will-change) pseudo-elements behind
+       the scrolling messages — on iOS WKWebView that desyncs paint so message
+       bubbles render at a stale (too-short) height and their text overflows onto
+       the next message (the "overlapping text" bug). A plain gradient painted
+       into the normal background can't create that desync. */
+    body{background:
+      radial-gradient(120% 60% at 50% 0, rgba(52,226,176,.08), transparent 55%),
+      radial-gradient(90% 50% at 90% 100%, rgba(155,140,255,.07), transparent 55%),
+      #050507;
+      background-attachment:scroll;background-repeat:no-repeat;}
 
     .nv-app{position:relative;z-index:1;max-width:760px;margin:0 auto;}
 
@@ -67,13 +65,13 @@
 
     /* ── messages (NORMAL FLOW — deterministic flex column, can't overlap) ── */
     .nv-scroll{display:flex;flex-direction:column;gap:14px;padding:20px 14px 14px;}
-    .nv-row{display:flex;width:100%;animation:nv-rise .3s cubic-bezier(.2,.7,.3,1);}
-    @keyframes nv-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+    .nv-row{display:flex;width:100%;animation:nv-rise .25s ease;}
+    @keyframes nv-rise{from{opacity:0;}to{opacity:1;}}
     .nv-row.nova{justify-content:flex-start;}
     .nv-row.me{justify-content:flex-end;}
     .nv-bub{max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:var(--nv-fs,15px);line-height:1.5;overflow-wrap:break-word;}
     @media(min-width:600px){ .nv-bub{max-width:78%;} }
-    .nv-bub .nv-text{display:inline;}
+    .nv-bub .nv-text{display:block;}
     .nv-bub strong{font-weight:700;}
     .nv-row.nova .nv-bub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:6px;color:#F4F1EA;}
     .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.18),rgba(24,200,192,.11));border:1px solid rgba(52,226,176,.3);border-bottom-right-radius:6px;color:#F4F1EA;}
@@ -166,7 +164,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v50'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v51'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
