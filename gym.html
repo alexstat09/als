@@ -83,11 +83,12 @@
   .w-x{background:rgba(255,255,255,.06);border:none;color:var(--au-dim);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0;}
 
   /* exercise row (detail/active) */
-  .w-ex{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--au-line);}
+  .w-ex{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--au-line);transition:transform .16s ease;}
   .w-ex:first-of-type{border-top:none;}
   .w-ex-dot{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;font-family:var(--au-mono);font-size:10px;font-weight:700;color:#04130D;background:rgb(var(--au-glow-rgb));}
   .w-ex-main{flex:1;min-width:0;}
   .w-ex-name{font-weight:700;font-size:14.5px;color:var(--au-ivory);line-height:1.25;}
+  .w-ex-editpen{font-size:11px;color:var(--au-faint);opacity:.7;margin-left:3px;}
   .w-ex-muscle{font-family:var(--au-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-faint);margin-top:3px;}
   .w-ex-last{font-size:11px;color:var(--au-dim);margin-top:4px;font-style:italic;font-family:var(--au-serif);}
 
@@ -110,6 +111,10 @@
   .w-itool{width:30px;height:30px;border-radius:8px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-dim);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;}
   .w-itool:active{background:rgba(255,255,255,.1);}
   .w-itool.del{color:var(--au-rose);}
+  /* drag-to-reorder grip + lifted state */
+  .w-grip{width:34px;height:30px;border-radius:8px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-dim);font-size:15px;line-height:1;cursor:grab;display:grid;place-items:center;touch-action:none;-webkit-tap-highlight-color:transparent;flex-shrink:0;user-select:none;}
+  .w-grip:active{cursor:grabbing;background:rgba(255,255,255,.1);}
+  .w-dragging{z-index:20!important;box-shadow:0 14px 34px rgba(0,0,0,.55);opacity:.97;transition:none!important;position:relative;}
   /* per-side toggle */
   .w-side{font-family:var(--au-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:7px 11px;border-radius:999px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-faint);cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;}
   .w-side.on{background:rgba(155,140,255,.16);border-color:rgba(155,140,255,.5);color:#9B8CFF;}
@@ -131,7 +136,7 @@
   .w-finish{font-family:var(--au-sans);font-weight:700;font-size:13px;color:#04130D;background:var(--au-gradient);border:none;border-radius:999px;padding:9px 18px;cursor:pointer;}
   .w-cancel{font-family:var(--au-mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--au-rose);background:rgba(255,107,139,.1);border:1px solid rgba(255,107,139,.3);border-radius:999px;padding:8px 13px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 
-  .w-card{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;}
+  .w-card{background:var(--au-glass);border:1px solid var(--au-line);border-radius:16px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;transition:transform .16s ease;}
   .w-card::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--au-glow-rgb),.4),transparent);}
 
   /* rest timer bar */
@@ -607,7 +612,7 @@ var timerInt=null;
 function renderActive(){
   view='active';
   var a=getActive(); if(!a){ go('home'); return; }
-  var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl">'+esc(a.name)+'</div></div>'+
+  var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl" onclick="renameActive()" style="cursor:pointer;">'+esc(a.name)+' <span class="w-ex-editpen">✎</span></div></div>'+
     '<div style="display:flex;align-items:center;gap:10px;"><button type="button" class="w-cancel" onclick="cancelActive()">✕ Discard</button><button class="w-finish" onclick="finishActive()">Finish</button></div></div>';
   html+='<button type="button" class="w-restcfg" data-act="rest-config">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
   if(!a.entries.length){ html+='<div class="w-empty">No exercises yet. Add one below.</div>'; }
@@ -616,10 +621,9 @@ function renderActive(){
     html+='<div class="w-card">';
     html+='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
       '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
-      '<div class="w-ex-main"><div class="w-ex-name">'+esc(en.name)+'</div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
+      '<div class="w-ex-main" onclick="editEntryEx('+ei+')" style="cursor:pointer;"><div class="w-ex-name">'+esc(en.name)+' <span class="w-ex-editpen">✎</span></div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
       '<div class="w-ex-tools">'+
-        (ei>0?'<button type="button" class="w-itool" onclick="moveEx('+ei+',-1)" aria-label="Move up">&#9650;</button>':'')+
-        (ei<a.entries.length-1?'<button type="button" class="w-itool" onclick="moveEx('+ei+',1)" aria-label="Move down">&#9660;</button>':'')+
+        (a.entries.length>1?'<span class="w-grip" data-drag="active" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
         '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
       '</div></div>';
     html+='<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="setNote('+ei+',this.value)">';
@@ -777,13 +781,14 @@ function renderHistory(){
   html+=segHTML('history');
   if(!ws.length){ html+='<div class="w-empty">No workouts logged yet.<br>Start one and it’ll show up here.</div>'; W.innerHTML=html; return; }
   ws.forEach(function(s){
-    html+='<div class="w-hist"><div class="w-hist-top"><span class="w-hist-name">'+esc(s.name)+'</span><span style="display:flex;align-items:center;gap:8px;"><span class="w-hist-date">'+relDate(s.date)+'</span><button type="button" class="w-itool del" style="width:26px;height:26px;font-size:11px;" onclick="deleteWorkout(\''+s.id+'\')" aria-label="Delete workout">✕</button></span></div>'+
+    html+='<div class="w-hist" onclick="editWorkout(\''+s.id+'\')" style="cursor:pointer;"><div class="w-hist-top"><span class="w-hist-name">'+esc(s.name)+' <span class="w-ex-editpen">✎</span></span><span style="display:flex;align-items:center;gap:8px;"><span class="w-hist-date">'+relDate(s.date)+'</span><button type="button" class="w-itool del" style="width:26px;height:26px;font-size:11px;" onclick="event.stopPropagation();deleteWorkout(\''+s.id+'\')" aria-label="Delete workout">✕</button></span></div>'+
       '<div class="w-hist-stats">'+
         '<span class="w-hist-stat"><b>'+fmtDur(s.durationSec)+'</b> time</span>'+
         '<span class="w-hist-stat"><b>'+(s.volume||0).toLocaleString()+'</b> kg</span>'+
         '<span class="w-hist-stat pr"><b>'+(s.prs?s.prs.length:0)+'</b> PRs</span></div>'+
       histExerciseRows(s)+'</div>';
   });
+  html+='<button type="button" class="w-btn-ghost" style="margin-top:10px;" onclick="openLibrary()">&#9881; Manage exercise library</button>';
   W.innerHTML=html;
 }
 function histExerciseRows(s){
@@ -918,20 +923,14 @@ window.filterPick=function(){
   el.innerHTML=list.map(function(e){return '<button type="button" class="w-pick" onclick="choosePick(\''+e.id+'\')"><div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((e.muscle||'?').slice(0,2).toUpperCase())+'</div><span class="w-pick-name">'+esc(e.name)+(isTime(e)?' <span style="color:var(--au-faint);font-size:11px;">· time</span>':'')+'</span><span class="w-pick-muscle">'+esc(e.muscle)+'</span></button>';}).join('') || '<div class="w-empty" style="font-size:13px;">No match — create it above.</div>';
 };
 window.choosePick=function(id){ var e=exById(id); if(window.__pickCb) window.__pickCb(e); };
-window.addCustomExercise=async function(){
-  var name=await ALSPrompt({title:'New exercise',placeholder:'Exercise name',confirmText:'Next'}); if(!name||!name.trim())return;
-  var muscle=((await ALSPrompt({title:'Muscle group',message:'Chest, Back, Shoulders, Arms, Legs, Core or Cardio',value:'Chest',confirmText:'Next'}))||'').trim();
-  var VALID=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio'];
-  var match=VALID.filter(function(v){return v.toLowerCase()===muscle.toLowerCase();})[0];
-  muscle=match||muscle||'Other';
-  var kind='weight';
-  if(muscle==='Cardio') kind='time';
-  else { var ans=(await ALSPrompt({title:'How to track it?',message:'reps / time',value:'reps',confirmText:'Add'}))||'reps'; if(/^t/i.test(ans.trim())) kind='time'; }
-  var ex={id:uid(),name:name.trim(),muscle:muscle,kind:kind};
-  var list=exercises(); list.push(ex); save('po_exercises',list);
-  pickMuscle='All'; var box=document.getElementById('wMchips'); if(box){ Array.prototype.forEach.call(box.children,function(b){ b.classList.toggle('on', b.getAttribute('data-mfilter')==='All'); }); }
-  var s=document.getElementById('wSearch'); if(s) s.value='';
-  filterPick();
+window.addCustomExercise=function(){
+  var cb=window.__pickCb;   // remember the picker's target (active workout / template)
+  exForm({ title:'New exercise', confirm:'Create', onSave:function(v){
+    var ex={ id:uid(), name:v.name, muscle:v.muscle||'Other', kind:v.kind };
+    var list=exercises(); list.push(ex); save('po_exercises',list);
+    if(typeof cb==='function'){ cb(ex); }   // adds it straight into the workout/template + closes the sheet
+    else closeSheet();
+  }});
 };
 
 /* TEMPLATE EDITOR */
@@ -954,8 +953,7 @@ function renderEditor(){
     var ex=exById(it.exId);
     html+='<div class="w-ex"><div class="w-ex-main"><div class="w-ex-name">'+esc(ex.name)+'</div><div class="w-ex-muscle">'+esc(ex.muscle)+'</div>'+
       '<div class="w-row-actions"><span class="w-stepper"><button onclick="edSets('+i+',-1)">−</button><span>'+it.sets+'×</span><button onclick="edSets('+i+',1)">&#65291;</button></span>'+
-      (i>0?'<button type="button" class="w-itool" onclick="edMove('+i+',-1)" aria-label="Move up">&#9650;</button>':'')+
-      (i<t.items.length-1?'<button type="button" class="w-itool" onclick="edMove('+i+',1)" aria-label="Move down">&#9660;</button>':'')+
+      (t.items.length>1?'<span class="w-grip" data-drag="tpl" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
       '<button class="w-mini w-del" onclick="edRemove('+i+')">remove</button></div></div></div>';
   });
   html+='<button class="w-btn-ghost" style="margin-top:8px;" onclick="pickExercise(edAddEx)">&#65291; Add exercise</button>';
@@ -1106,6 +1104,185 @@ function _swEnd(){ if(!_sw.el)return; var el=_sw.el, ei=_sw.ei, si=_sw.si, on=_s
 }
 W.addEventListener('touchend', _swEnd, {passive:true});
 W.addEventListener('touchcancel', _swEnd, {passive:true});
+
+/* ── Drag-to-reorder (grip handle). Works on active-workout exercise cards
+   (.w-card in W) and template-editor rows (.w-ex in #wSheet). Pointer-based so
+   it works on iOS; the dragged item follows the finger while the others slide
+   to make room, then the data array is reordered on drop. ── */
+var _dg=null;
+function _dgClear(){ if(!_dg)return; _dg.items.forEach(function(el){ el.style.transform=''; el.classList.remove('w-dragging'); }); _dg=null; }
+document.addEventListener('pointerdown', function(e){
+  var grip = e.target && e.target.closest ? e.target.closest('.w-grip') : null; if(!grip) return;
+  e.preventDefault();
+  var ctx = grip.getAttribute('data-drag');                 // 'active' | 'tpl'
+  var container = ctx==='tpl' ? document.getElementById('wSheet') : W;
+  var sel = ctx==='tpl' ? '.w-ex' : '.w-card';
+  var items = Array.prototype.slice.call(container.querySelectorAll(sel));
+  var item = grip.closest(sel); var from = items.indexOf(item);
+  if(from<0 || items.length<2) return;
+  var rects = items.map(function(el){ var r=el.getBoundingClientRect(); return {top:r.top, mid:r.top+r.height/2}; });
+  var H = (from < items.length-1) ? (rects[from+1].top - rects[from].top) : (rects[from].top - rects[from-1].top);
+  _dg={ ctx:ctx, items:items, rects:rects, from:from, cur:from, H:H, startY:e.clientY, item:item, moved:false };
+  item.classList.add('w-dragging');
+  try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+});
+document.addEventListener('pointermove', function(e){
+  if(!_dg) return; e.preventDefault();
+  var dy = e.clientY - _dg.startY; if(Math.abs(dy)>4) _dg.moved=true;
+  _dg.item.style.transform = 'translateY('+dy+'px)';
+  var ptr=e.clientY, ni=0;
+  for(var i=0;i<_dg.items.length;i++){ if(i===_dg.from) continue; if(ptr>_dg.rects[i].mid) ni++; }
+  if(ni!==_dg.cur){
+    _dg.cur=ni;
+    for(var j=0;j<_dg.items.length;j++){ if(j===_dg.from) continue;
+      var shift=0;
+      if(ni>_dg.from && j>_dg.from && j<=ni) shift=-_dg.H;
+      else if(ni<_dg.from && j>=ni && j<_dg.from) shift=_dg.H;
+      _dg.items[j].style.transform = shift ? ('translateY('+shift+'px)') : '';
+    }
+  }
+});
+function _dgEnd(){ if(!_dg) return; var d=_dg; _dgClear();
+  if(!d.moved || d.cur===d.from) return;
+  if(d.ctx==='tpl'){ var t=window.__editTpl; if(t&&t.items){ var it=t.items.splice(d.from,1)[0]; t.items.splice(d.cur,0,it); renderEditor(); } }
+  else { var a=getActive(); if(a){ var it2=a.entries.splice(d.from,1)[0]; a.entries.splice(d.cur,0,it2); setActive(a); render(); } }
+}
+document.addEventListener('pointerup', _dgEnd);
+document.addEventListener('pointercancel', _dgClear);
+
+/* ── Rename the active workout (tap its name in the top bar) ── */
+window.renameActive=function(){ var a=getActive(); if(!a) return;
+  ALSPrompt({title:'Rename workout',placeholder:'Workout name',value:a.name||'',confirmText:'Save'}).then(function(n){
+    if(n==null) return; n=(n||'').trim(); if(!n) return; a.name=n; setActive(a); render();
+  });
+};
+
+/* ── Inline-edit an exercise from a live workout (rename / muscle / type) ── */
+window.editEntryEx=function(ei){ var a=getActive(); if(!a||!a.entries[ei]) return; var en=a.entries[ei];
+  exForm({ title:'Edit exercise', confirm:'Save', name:en.name, muscle:en.muscle||'Other', kind:isTime(en)?'time':'weight',
+    onSave:function(v){
+      var list=exercises(); var li=list.findIndex(function(x){return x.id===en.exId;});
+      if(li>=0){ list[li].name=v.name; list[li].muscle=v.muscle; list[li].kind=v.kind; save('po_exercises',list); }
+      en.name=v.name; en.muscle=v.muscle; en.kind=v.kind;
+      en.sets.forEach(function(s){ if(v.kind==='time'){ if(s.secs==null)s.secs=''; } else { if(s.kg==null)s.kg=''; if(s.reps==null)s.reps=''; } });
+      setActive(a); closeSheet(); render();
+    } });
+};
+
+/* ── Reusable exercise form (create / edit) — one on-brand sheet, no prompt chain ── */
+function exForm(opts){
+  window.__exForm={ name:opts.name||'', muscle:opts.muscle||'Chest', kind:opts.kind||'weight',
+    onSave:opts.onSave, title:opts.title||'New exercise', confirm:opts.confirm||'Save' };
+  renderExForm();
+}
+function renderExForm(){
+  var f=window.__exForm; var groups=['Chest','Back','Shoulders','Arms','Legs','Core','Cardio','Other'];
+  var chips=groups.map(function(m){ return '<button type="button" class="w-mchip'+(m===f.muscle?' on':'')+'" onclick="exFormMuscle(\''+m+'\')">'+m+'</button>'; }).join('');
+  var html='<div class="w-sheet-grip"></div>'+
+    '<div class="w-sheet-hd"><div class="w-sheet-title">'+esc(f.title)+'</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<input class="w-search" id="exFormName" placeholder="Exercise name" value="'+esc(f.name)+'" oninput="window.__exForm.name=this.value">'+
+    '<div class="w-set-head" style="grid-template-columns:1fr;margin:10px 0 6px;">MUSCLE GROUP</div>'+
+    '<div class="w-mchips">'+chips+'</div>'+
+    '<div class="w-set-head" style="grid-template-columns:1fr;margin:12px 0 6px;">TRACK BY</div>'+
+    '<div class="w-seg" style="margin-bottom:4px;"><button type="button" class="'+(f.kind!=='time'?'on':'')+'" onclick="exFormKind(\'weight\')">Reps &amp; weight</button><button type="button" class="'+(f.kind==='time'?'on':'')+'" onclick="exFormKind(\'time\')">Time</button></div>'+
+    '<button class="w-btn" style="margin-top:14px;" onclick="exFormSave()">'+esc(f.confirm)+'</button>';
+  openSheet(html);
+  setTimeout(function(){ var n=document.getElementById('exFormName'); if(n && !f.name){ n.focus(); } },350);
+}
+window.exFormMuscle=function(m){ var f=window.__exForm; var n=document.getElementById('exFormName'); if(n)f.name=n.value; f.muscle=m; if(m==='Cardio')f.kind='time'; renderExForm(); };
+window.exFormKind=function(k){ var f=window.__exForm; var n=document.getElementById('exFormName'); if(n)f.name=n.value; f.kind=k; renderExForm(); };
+window.exFormSave=function(){ var f=window.__exForm; var n=document.getElementById('exFormName'); var name=((n?n.value:f.name)||'').trim();
+  if(!name){ ALSAlert('Give the exercise a name.','warn'); return; }
+  f.onSave({ name:name, muscle:f.muscle||'Other', kind:(f.muscle==='Cardio'?'time':f.kind) });
+};
+
+/* ── Exercise Library manager (edit / rename / retype / delete any exercise) ── */
+window.openLibrary=function(){
+  var list=exercises().slice().sort(function(a,b){ if((a.muscle||'')!==(b.muscle||'')) return (a.muscle||'')<(b.muscle||'')?-1:1; return (a.name||'')<(b.name||'')?-1:1; });
+  var rows = list.length ? list.map(function(e){
+    return '<div class="w-ex" style="align-items:center;transition:none;"><div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((e.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
+      '<div class="w-ex-main"><div class="w-ex-name">'+esc(e.name)+(isTime(e)?' <span style="color:var(--au-faint);font-size:11px;font-weight:400;">· time</span>':'')+'</div><div class="w-ex-muscle">'+esc(e.muscle||'Other')+'</div></div>'+
+      '<div class="w-ex-tools"><button type="button" class="w-itool" onclick="libEdit(\''+e.id+'\')" aria-label="Edit">✎</button><button type="button" class="w-itool del" onclick="libDelete(\''+e.id+'\')" aria-label="Delete">✕</button></div></div>';
+  }).join('') : '<div class="w-empty" style="font-size:13px;">No exercises yet.</div>';
+  var html='<div class="w-sheet-grip"></div>'+
+    '<div class="w-sheet-hd"><div class="w-sheet-title">Exercise library</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<div class="w-sheet-sub">'+list.length+' exercise'+(list.length===1?'':'s')+' · edit or remove any</div>'+
+    rows+
+    '<button class="w-btn-ghost" style="margin-top:10px;" onclick="libNew()">&#65291; New exercise</button>';
+  openSheet(html);
+};
+window.libNew=function(){ exForm({ title:'New exercise', confirm:'Create', onSave:function(v){ var ex={id:uid(),name:v.name,muscle:v.muscle||'Other',kind:v.kind}; var l=exercises(); l.push(ex); save('po_exercises',l); openLibrary(); } }); };
+window.libEdit=function(id){ var ex=exById(id); exForm({ title:'Edit exercise', confirm:'Save', name:ex.name, muscle:ex.muscle||'Other', kind:isTime(ex)?'time':'weight',
+  onSave:function(v){ var l=exercises(); var i=l.findIndex(function(x){return x.id===id;}); if(i>=0){ l[i].name=v.name; l[i].muscle=v.muscle; l[i].kind=v.kind; save('po_exercises',l); } openLibrary(); } }); };
+window.libDelete=function(id){
+  var usedHist=workouts().some(function(w){return (w.entries||[]).some(function(en){return en.exId===id;});});
+  var usedTpl=templates().some(function(t){return (t.items||[]).some(function(it){return it.exId===id;});});
+  var a=getActive(); var usedActive=!!(a&&(a.entries||[]).some(function(en){return en.exId===id;}));
+  var msg=(usedHist||usedTpl||usedActive)?'It’s used in your templates/history. Past workouts keep their record; it’ll be removed from templates and the library.':'';
+  ALSConfirm({title:'Delete exercise?',message:msg,confirmText:'Delete',danger:true}).then(function(ok){ if(!ok)return;
+    save('po_exercises', exercises().filter(function(x){return x.id!==id;}));
+    var tl=templates(),ch=false; tl.forEach(function(t){ var nn=(t.items||[]).filter(function(it){return it.exId!==id;}); if(nn.length!==(t.items||[]).length){ t.items=nn; ch=true; } }); if(ch) save('po_templates',tl);
+    openLibrary();
+  });
+};
+
+/* ── Edit a PAST workout (full editor: name, date, sets, add/remove, notes) ── */
+window.editWorkout=function(id){ var w=workouts().find(function(x){return x.id===id;}); if(!w)return; window.__editWk=JSON.parse(JSON.stringify(w)); renderWkEditor(); };
+function renderWkEditor(){
+  var w=window.__editWk; if(!w)return;
+  var html='<div class="w-sheet-grip"></div>'+
+    '<div class="w-sheet-hd"><div class="w-sheet-title">Edit workout</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<input class="w-search" placeholder="Workout name" value="'+esc(w.name||'')+'" oninput="window.__editWk.name=this.value">'+
+    '<div class="w-set-head" style="grid-template-columns:1fr;margin:8px 0 4px;">DATE</div>'+
+    '<input class="w-search" type="date" value="'+esc(w.date||'')+'" onchange="window.__editWk.date=this.value">';
+  (w.entries||[]).forEach(function(en,ei){
+    var tm=(en.kind==='time')||isTime(en);
+    html+='<div class="w-card" style="margin-top:12px;">'+
+      '<div class="w-ex" style="border:none;padding:0 0 6px;transition:none;"><div class="w-ex-main"><div class="w-ex-name">'+esc(en.name)+'</div><div class="w-ex-muscle">'+esc(en.muscle||'')+(en.perSide?' &middot; per side':'')+'</div></div>'+
+      '<div class="w-ex-tools"><button type="button" class="w-itool del" onclick="wkRemoveEx('+ei+')" aria-label="Remove">✕</button></div></div>';
+    if(tm){
+      html+='<div class="w-set-head" style="grid-template-columns:38px 1fr 44px;"><span>SET</span><span>TIME · MIN:SEC</span><span></span></div>';
+      en.sets.forEach(function(s,si){ html+='<div class="w-set" style="grid-template-columns:38px 1fr 44px;margin-bottom:6px;"><span class="w-set-num">'+(si+1)+'</span>'+
+        '<input class="w-in" type="text" inputmode="text" placeholder="0:00" value="'+(s.secs?fmtMMSS(s.secs):'')+'" onchange="wkSet('+ei+','+si+',\'secs\',this.value)">'+
+        '<button type="button" class="w-itool del" onclick="wkRemoveSet('+ei+','+si+')" aria-label="Delete set">✕</button></div>'; });
+    } else {
+      html+='<div class="w-set-head"><span>SET</span><span>'+(en.perSide?'KG/SIDE':'KG')+'</span><span>REPS</span><span></span></div>';
+      en.sets.forEach(function(s,si){ html+='<div class="w-set" style="margin-bottom:6px;"><span class="w-set-num">'+(si+1)+'</span>'+
+        '<input class="w-in" type="text" inputmode="decimal" placeholder="0" value="'+(s.kg!=null&&s.kg!==''?s.kg:'')+'" oninput="wkSet('+ei+','+si+',\'kg\',this.value)">'+
+        '<input class="w-in" type="text" inputmode="numeric" placeholder="0" value="'+(s.reps!=null&&s.reps!==''?s.reps:'')+'" oninput="wkSet('+ei+','+si+',\'reps\',this.value)">'+
+        '<button type="button" class="w-itool del" onclick="wkRemoveSet('+ei+','+si+')" aria-label="Delete set">✕</button></div>'; });
+    }
+    html+='<button type="button" class="w-addset" onclick="wkAddSet('+ei+')">&#65291; Add set</button>'+
+      '<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="window.__editWk.entries['+ei+'].note=this.value">';
+    html+='</div>';
+  });
+  html+='<button type="button" class="w-btn-ghost" style="margin-top:8px;" onclick="pickExercise(wkAddEx)">&#65291; Add exercise</button>'+
+    '<button class="w-btn" style="margin-top:16px;" onclick="saveWkEdit()">Save changes</button>'+
+    '<button class="w-btn-ghost" style="margin-top:8px;color:var(--au-rose);border-color:rgba(255,107,139,.3);" onclick="deleteWkEdit()">Delete workout</button>';
+  openSheet(html);
+}
+window.wkSet=function(ei,si,f,val){ var w=window.__editWk; if(!w||!w.entries[ei])return; var s=w.entries[ei].sets[si]; if(!s)return;
+  if(f==='kg') s.kg=(val===''?0:numVal(val)); else if(f==='reps') s.reps=(val===''?0:(parseInt(val,10)||0)); else if(f==='secs') s.secs=parseTime(val); };
+window.wkAddSet=function(ei){ var w=window.__editWk; var en=w.entries[ei]; var last=en.sets[en.sets.length-1];
+  if((en.kind==='time')||isTime(en)) en.sets.push({secs:last?last.secs:0,done:true}); else en.sets.push({kg:last?last.kg:0,reps:last?last.reps:0,done:true}); renderWkEditor(); };
+window.wkRemoveSet=function(ei,si){ var w=window.__editWk; w.entries[ei].sets.splice(si,1); if(!w.entries[ei].sets.length) w.entries.splice(ei,1); renderWkEditor(); };
+window.wkRemoveEx=function(ei){ window.__editWk.entries.splice(ei,1); renderWkEditor(); };
+window.wkAddEx=function(ex){ var w=window.__editWk; var tm=isTime(ex); w.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',perSide:false,note:'',sets:[ tm?{secs:0,done:true}:{kg:0,reps:0,done:true} ]}); closeSheet(); renderWkEditor(); };
+window.saveWkEdit=function(){ var w=window.__editWk; if(!w)return;
+  var volume=0, prs=[];
+  (w.entries||[]).forEach(function(en){
+    if((en.kind==='time')||isTime(en)) return;
+    var mult=en.perSide?2:1, thisBest=0;
+    (en.sets||[]).forEach(function(s){ volume+=(+s.kg||0)*(+s.reps||0)*mult; var v=e1rm(s.kg,s.reps); if(v>thisBest)thisBest=v; });
+    var prev=bestE1rmFor(en.exId, w.id);
+    if(thisBest>prev && prev>0) prs.push(en.exId);
+  });
+  w.volume=Math.round(volume); w.prs=prs;
+  var list=workouts(); var i=list.findIndex(function(x){return x.id===w.id;});
+  if(i>=0){ list[i]=w; list.sort(function(a,b){ return (a.date||'')<(b.date||'')?1:-1; }); save('po_workouts',list); }
+  closeSheet(); render();
+};
+window.deleteWkEdit=function(){ var w=window.__editWk; if(!w)return; ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true}).then(function(ok){ if(!ok)return; save('po_workouts', workouts().filter(function(x){return x.id!==w.id;})); closeSheet(); render(); }); };
 
 /* Bulletproof tap handling via delegation (iOS-safe — one listener on document) */
 document.addEventListener('click', function(ev){
