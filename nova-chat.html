@@ -2,145 +2,185 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- user-scalable=no prevents the standalone-PWA "pinch zooms once and sticks" bug
-       (which makes text look overlapped). It does NOT block taps — the tap breakage
-       was the removed non-passive touchmove handler, not this. No custom pinch now. -->
+  <!-- user-scalable=no avoids the standalone-PWA "pinch zooms once and sticks"
+       bug. It does NOT block taps. No custom touch handlers on this page. -->
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Nova · ALS</title>
-  <meta name="theme-color" content="#050507">
+  <meta name="theme-color" content="#070709">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="aurora.css">
+  <!-- NOTE: this page is intentionally SELF-CONTAINED (no aurora.css). It is the
+       one page that kept breaking; isolating its CSS removes any external rule
+       from interfering with the message layout. -->
   <style>
-    /* ────────────────────────────────────────────────────────────
-       ATTEMPT 4 — the simple one. Every other page in this app works
-       because it uses NORMAL document flow + a fixed bottom bar. The
-       chat kept breaking because it alone tried to lock the viewport
-       (position:fixed body + --app-h JS + grid). Messages laid out in
-       normal block flow CANNOT overlap each other — full stop. So the
-       page just scrolls like any other page; the composer is fixed at
-       the bottom (like the app's bottombar), and one tiny visualViewport
-       handler nudges ONLY the composer above the keyboard. No grid, no
-       locked body, no --app-h.
-       ──────────────────────────────────────────────────────────── */
+    /* ════════════════════════════════════════════════════════════════
+       Nova chat — rebuilt clean (v53). The recurring "overlapping text"
+       was a LAYOUT bug: message bubbles were laid out with fl/inline
+       boxes whose height iOS WKWebView could resolve SHORTER than their
+       content, so text spilled onto the next message. The cure is the
+       dumbest, most deterministic box model there is:
+         a message bubble is a BLOCK element with width:fit-content +
+         max-width. A block element is ALWAYS at least as tall as its
+         content — it cannot be shorter, so text cannot overflow it.
+       No flex, no inline-block, no transforms, no fixed/animated layers
+       behind the scroll. Plain document flow, like every working page.
+       ════════════════════════════════════════════════════════════════ */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    html{background:#050507;}
-    body{min-height:100dvh;background:#050507;color:#F4F1EA;
-      font-family:var(--au-sans,-apple-system,system-ui,sans-serif);
-      overflow-x:hidden;padding-bottom:120px;touch-action:manipulation;}
+    :root{
+      --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,system-ui,sans-serif;
+      --serif:Georgia,"Times New Roman",ui-serif,serif;
+      --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+      --bg:#070709; --ink:#F4F1EA; --emerald:#34E2B0; --violet:#9B8CFF;
+    }
+    html,body{background:var(--bg);}
+    body{
+      min-height:100dvh; color:var(--ink); font-family:var(--sans);
+      -webkit-font-smoothing:antialiased; overflow-x:hidden;
+      padding-bottom:132px; touch-action:manipulation;
+      background:
+        radial-gradient(135% 55% at 50% -5%, rgba(52,226,176,.07), transparent 55%),
+        radial-gradient(95% 45% at 100% 102%, rgba(155,140,255,.06), transparent 55%),
+        var(--bg);
+      background-repeat:no-repeat;
+    }
 
-    /* Static, non-fixed backdrop. The old version used position:fixed,
-       animated, GPU-composited (translateZ/will-change) pseudo-elements behind
-       the scrolling messages — on iOS WKWebView that desyncs paint so message
-       bubbles render at a stale (too-short) height and their text overflows onto
-       the next message (the "overlapping text" bug). A plain gradient painted
-       into the normal background can't create that desync. */
-    body{background:
-      radial-gradient(120% 60% at 50% 0, rgba(52,226,176,.08), transparent 55%),
-      radial-gradient(90% 50% at 90% 100%, rgba(155,140,255,.07), transparent 55%),
-      #050507;
-      background-attachment:scroll;background-repeat:no-repeat;}
-
-    .nv-app{position:relative;z-index:1;max-width:760px;margin:0 auto;}
-
-    /* ── header (sticky) ──────────────────────── */
-    /* Sticky header — SOLID (no backdrop-filter). On iOS WKWebView a blurred
-       sticky/fixed layer makes the messages scrolling under it smear and look
-       like they overlap; an opaque bar paints cleanly and fixes that. */
-    .nv-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;
-      padding:calc(14px + env(safe-area-inset-top)) 14px 13px;
-      border-bottom:1px solid rgba(255,255,255,.07);background:#08080a;}
-    .nv-back{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
-    .nv-back:active{background:rgba(255,255,255,.1);}
-    .nv-top .nova{width:40px;height:40px;flex:none;}
+    /* ── header (sticky, solid) ── */
+    .nv-top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:11px;
+      padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+      background:rgba(8,8,11,.97);border-bottom:1px solid rgba(255,255,255,.06);}
+    .nv-back{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.04);color:var(--ink);font-size:18px;text-decoration:none;
+      display:flex;align-items:center;justify-content:center;}
+    .nv-back:active{background:rgba(255,255,255,.12);}
+    .nova{display:block;}
+    .nv-top .nova{width:38px;height:38px;flex:none;}
+    .nv-top .nova svg{width:100%;height:100%;display:block;}
     .nv-id{flex:1;min-width:0;}
-    .nv-name{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:21px;line-height:1;color:#F4F1EA;}
-    .nv-status{display:flex;align-items:center;gap:6px;margin-top:3px;font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.4);}
-    .nv-dot{width:6px;height:6px;border-radius:50%;background:#34E2B0;box-shadow:0 0 7px #34E2B0;animation:nv-blink 1.5s ease-in-out infinite;}
+    .nv-name{font-family:var(--serif);font-style:italic;font-size:21px;line-height:1;}
+    .nv-status{display:flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);
+      font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.4);}
+    .nv-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 7px var(--emerald);animation:nv-blink 1.6s ease-in-out infinite;}
     @keyframes nv-blink{0%,100%{opacity:1;}50%{opacity:.25;}}
-    .nv-clear{flex:none;background:none;border:none;color:rgba(244,241,234,.3);font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:8px 4px;}
-    .nv-clear:active{color:#F4F1EA;}
+    .nv-icon{flex:none;background:none;border:none;color:rgba(244,241,234,.32);font-family:var(--mono);
+      font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:8px 4px;}
+    .nv-icon.emoji{font-size:17px;letter-spacing:0;}
+    .nv-icon:active{color:var(--ink);}
 
-    /* ── messages — PLAIN BLOCK FLOW (no flex). iOS WKWebView miscalculates the
-       height of a flex item (default align-items:stretch) to be shorter than its
-       content, so the text overflowed the bubble onto the next message. Plain
-       block rows + inline-block bubbles size to their content every time — the
-       same normal flow every other (working) page uses. ── */
-    .nv-scroll{display:block;padding:20px 14px 14px;}
-    .nv-row{display:block;width:100%;margin-bottom:14px;animation:nv-rise .25s ease;}
+    /* ── conversation (PLAIN BLOCK FLOW) ── */
+    .nv-wrap{max-width:720px;margin:0 auto;}
+    .nv-scroll{display:block;padding:22px 16px 10px;}
+    .nv-row{display:block;margin:0 0 16px;animation:nv-rise .25s ease both;}
     .nv-row:last-child{margin-bottom:0;}
     @keyframes nv-rise{from{opacity:0;}to{opacity:1;}}
-    .nv-row.nova{text-align:left;}
-    .nv-row.me{text-align:right;}
-    .nv-bub{display:inline-block;max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:var(--nv-fs,15px);line-height:1.5;overflow-wrap:break-word;word-break:break-word;}
-    @media(min-width:600px){ .nv-bub{max-width:78%;} }
-    .nv-bub .nv-text{display:block;}
+
+    /* THE bubble: a block that shrink-wraps to its text but is always tall
+       enough for it. width:fit-content shrink-wraps; if a browser ignored it
+       the bubble would simply be wider — never shorter than its text. */
+    .nv-bub{
+      display:block;
+      width:-moz-fit-content; width:fit-content;
+      max-width:86%;
+      padding:12px 16px;
+      border-radius:20px;
+      font-size:var(--nv-fs,15px);
+      line-height:1.55;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .nv-row.nova .nv-bub{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);
+      border-top-left-radius:7px;color:var(--ink);}
+    .nv-row.me .nv-bub{margin-left:auto;
+      background:linear-gradient(135deg,rgba(52,226,176,.20),rgba(155,140,255,.13));
+      border:1px solid rgba(52,226,176,.30);border-top-right-radius:7px;color:var(--ink);}
     .nv-bub strong{font-weight:700;}
-    .nv-row.nova .nv-bub{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-bottom-left-radius:6px;color:#F4F1EA;}
-    .nv-row.me .nv-bub{background:linear-gradient(135deg,rgba(52,226,176,.18),rgba(24,200,192,.11));border:1px solid rgba(52,226,176,.3);border-bottom-right-radius:6px;color:#F4F1EA;}
-    .nv-cursor{display:inline-block;width:7px;height:15px;margin-left:2px;background:#34E2B0;vertical-align:-2px;border-radius:1px;animation:nv-caret .9s step-end infinite;box-shadow:0 0 6px rgba(52,226,176,.7);}
+    .nv-text{display:block;}
+
+    .nv-cursor{display:inline-block;width:7px;height:1em;margin-left:2px;vertical-align:-2px;
+      background:var(--emerald);border-radius:1px;box-shadow:0 0 6px rgba(52,226,176,.7);
+      animation:nv-caret .9s step-end infinite;}
     @keyframes nv-caret{0%,100%{opacity:1;}50%{opacity:0;}}
-    .nv-think{display:inline-flex;gap:5px;padding:3px 0;}
+    .nv-think{display:inline-flex;gap:5px;padding:2px 0;}
     .nv-think i{width:7px;height:7px;border-radius:50%;background:rgba(52,226,176,.85);animation:nv-bounce 1.1s ease-in-out infinite;}
-    .nv-think i:nth-child(2){animation-delay:.15s;}.nv-think i:nth-child(3){animation-delay:.3s;}
+    .nv-think i:nth-child(2){animation-delay:.15s;} .nv-think i:nth-child(3){animation-delay:.3s;}
     @keyframes nv-bounce{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
-    /* Nova's hands — confirm-first action chip */
-    .nv-act{margin-top:11px;padding:11px 12px;border-radius:13px;background:rgba(52,226,176,.07);border:1px solid rgba(52,226,176,.28);animation:nv-rise .25s ease;}
-    .nv-act-q{font-size:13.5px;color:#F4F1EA;line-height:1.4;margin-bottom:9px;}
+
+    /* Nova's hands — confirm-first action chip (inside the nova bubble) */
+    .nv-act{margin-top:11px;padding:11px 12px;border-radius:13px;background:rgba(52,226,176,.07);border:1px solid rgba(52,226,176,.28);}
+    .nv-act-q{font-size:13.5px;color:var(--ink);line-height:1.4;margin-bottom:9px;}
     .nv-act-btns{display:flex;gap:8px;}
     .nv-act-go,.nv-act-no{border:none;border-radius:9px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
-    .nv-act-go{background:linear-gradient(135deg,#34E2B0,#18C8C0);color:#04130D;}
+    .nv-act-go{background:linear-gradient(135deg,var(--emerald),#18C8C0);color:#04130D;}
     .nv-act-no{background:rgba(255,255,255,.06);color:rgba(244,241,234,.65);border:1px solid rgba(255,255,255,.1);}
     .nv-act-go:disabled,.nv-act-no:disabled{opacity:.5;cursor:default;}
     .nv-act.done{background:rgba(52,226,176,.1);border-color:rgba(52,226,176,.4);}
     .nv-act.fail{background:rgba(255,107,139,.08);border-color:rgba(255,107,139,.35);}
     .nv-act.done .nv-act-q,.nv-act.fail .nv-act-q{margin-bottom:0;}
 
-    /* ── intro / suggestions ──────────────────── */
-    .nv-intro{text-align:center;padding:30px 16px 10px;}
-    .nv-intro .nova{width:72px;height:72px;margin:0 auto 16px;}
-    .nv-intro h1{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:27px;color:#F4F1EA;margin-bottom:8px;line-height:1.15;}
-    .nv-intro p{font-size:13.5px;color:rgba(244,241,234,.5);max-width:340px;margin:0 auto;line-height:1.5;}
-    .nv-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:20px;}
-    .nv-chip{font-size:13px;color:#F4F1EA;background:rgba(255,255,255,.04);border:1px solid rgba(52,226,176,.22);border-radius:13px;padding:9px 14px;cursor:pointer;transition:background .15s,border-color .15s;}
+    /* ── intro / suggestions ── */
+    .nv-intro{text-align:center;padding:34px 18px 12px;}
+    .nv-intro .nova{width:74px;height:74px;margin:0 auto 18px;}
+    .nv-intro h1{font-family:var(--serif);font-style:italic;font-size:28px;margin-bottom:9px;line-height:1.15;}
+    .nv-intro p{font-size:13.5px;color:rgba(244,241,234,.5);max-width:340px;margin:0 auto;line-height:1.55;}
+    .nv-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:22px;}
+    .nv-chip{font-size:13px;color:var(--ink);background:rgba(255,255,255,.04);border:1px solid rgba(52,226,176,.22);
+      border-radius:14px;padding:10px 15px;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s;}
     .nv-chip:active{background:rgba(52,226,176,.12);border-color:rgba(52,226,176,.5);}
 
-    /* ── composer (fixed, like the app bottombar) ── */
-    .nv-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;max-width:760px;margin:0 auto;
-      padding:10px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.07);
-      background:#08080a;}
-    .nv-inwrap{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:6px 6px 6px 16px;transition:border-color .2s,box-shadow .2s;}
-    .nv-inwrap:focus-within{border-color:rgba(52,226,176,.45);box-shadow:0 0 0 3px rgba(52,226,176,.1);}
-    .nv-in{flex:1;background:none;border:none;outline:none;color:#F4F1EA;font-family:inherit;font-size:16px;line-height:1.4;resize:none;max-height:130px;padding:8px 0;}
+    /* ── composer (fixed at the bottom, solid) ── */
+    .nv-bar{position:fixed;left:0;right:0;bottom:0;z-index:30;
+      padding:10px 14px calc(12px + env(safe-area-inset-bottom));
+      background:rgba(8,8,11,.98);border-top:1px solid rgba(255,255,255,.06);}
+    .nv-barIn{max-width:720px;margin:0 auto;display:flex;align-items:flex-end;gap:10px;
+      background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11);border-radius:22px;
+      padding:6px 6px 6px 16px;transition:border-color .2s,box-shadow .2s;}
+    .nv-barIn:focus-within{border-color:rgba(52,226,176,.45);box-shadow:0 0 0 3px rgba(52,226,176,.1);}
+    .nv-in{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--ink);font-family:inherit;
+      font-size:16px;line-height:1.4;resize:none;max-height:130px;padding:8px 0;}
     .nv-in::placeholder{color:rgba(244,241,234,.32);}
-    .nv-send{flex:none;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-      background:linear-gradient(135deg,#34E2B0,#18C8C0 55%,#9B8CFF);color:#04130D;box-shadow:0 4px 16px rgba(52,226,176,.3);transition:transform .12s,opacity .2s;}
+    .nv-send{flex:none;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;color:#04130D;
+      background:linear-gradient(135deg,var(--emerald),#18C8C0 55%,var(--violet));
+      box-shadow:0 4px 16px rgba(52,226,176,.3);transition:transform .12s,opacity .2s;}
     .nv-send:active{transform:scale(.92);}
     .nv-send:disabled{opacity:.4;cursor:default;box-shadow:none;}
     .nv-send svg{width:19px;height:19px;}
 
-    /* crystal reacts while Nova is speaking */
+    /* orb reacts while Nova generates */
     body.nv-live .nv-top .nova .nova-glow{animation:nv-pulse 1.1s ease-in-out infinite;transform-origin:50% 50%;}
     @keyframes nv-pulse{0%,100%{filter:drop-shadow(0 0 4px rgba(52,226,176,.5));}50%{filter:drop-shadow(0 0 14px rgba(52,226,176,.95));}}
+
+    /* memory panel */
+    .nv-mem{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;}
+    .nv-mem[hidden]{display:none;}
+    .nv-mem-card{width:100%;max-width:440px;background:#0c0d11;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.6);}
+    .nv-mem-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:12px;}
+    .nv-mem-x{background:none;border:none;color:rgba(244,241,234,.5);font-size:18px;cursor:pointer;line-height:1;}
+    .nv-mem-list{display:block;max-height:52vh;overflow:auto;}
+    .nv-mem-item{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:8px;
+      padding:11px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+      font-size:13.5px;line-height:1.45;}
+    .nv-mem-del{background:none;border:none;color:#FF8FA3;font-size:13px;cursor:pointer;flex:none;}
+    .nv-mem-empty{color:rgba(244,241,234,.4);font-size:13px;padding:10px 2px;line-height:1.5;}
+    .nv-mem-forget{margin-top:8px;width:100%;padding:11px;border-radius:11px;border:1px solid rgba(255,143,163,.3);background:rgba(255,143,163,.08);color:#FF8FA3;font-weight:700;font-size:13px;cursor:pointer;}
   </style>
 </head>
-<body id="root" class="au-mood-calm" data-no-aurora>
-  <div class="nv-app">
-    <header class="nv-top">
-      <a class="nv-back" href="index.html" aria-label="Back to hub">&#8592;</a>
-      <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
-      <div class="nv-id">
-        <div class="nv-name">Nova</div>
-        <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">connecting…</span></div>
-      </div>
-      <button class="nv-clear" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
-      <button class="nv-clear" id="nvClear" type="button">Clear</button>
-    </header>
+<body id="root">
+  <header class="nv-top">
+    <a class="nv-back" href="index.html" aria-label="Back to hub">&#8592;</a>
+    <div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvNova" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>
+    <div class="nv-id">
+      <div class="nv-name">Nova</div>
+      <div class="nv-status"><span class="nv-dot"></span><span id="nvStatus">connecting…</span></div>
+    </div>
+    <button class="nv-icon emoji" id="nvMem" type="button" title="What Nova remembers" aria-label="Memory">🧠</button>
+    <button class="nv-icon" id="nvClear" type="button">Clear</button>
+  </header>
 
+  <main class="nv-wrap">
     <div class="nv-scroll" id="nvScroll"></div>
-  </div>
+  </main>
 
   <div class="nv-mem" id="nvMemPanel" hidden>
     <div class="nv-mem-card">
@@ -151,7 +191,7 @@
   </div>
 
   <div class="nv-bar" id="nvBar">
-    <div class="nv-inwrap">
+    <div class="nv-barIn">
       <textarea class="nv-in" id="nvIn" rows="1" placeholder="Talk to Nova…" autocomplete="off"></textarea>
       <button class="nv-send" id="nvSend" type="button" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -169,7 +209,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v52'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v53';
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
@@ -181,26 +221,19 @@
     var input  = document.getElementById('nvIn');
     var sendBtn= document.getElementById('nvSend');
     var status = document.getElementById('nvStatus');
-
-    /* Text size: applied read-only from any previously-saved value. The custom
-       pinch-to-zoom handlers were REMOVED — a non-passive document `touchmove`
-       listener can stop iOS WKWebView from synthesizing taps in a standalone
-       PWA (the page went fully untappable). Standard interaction only now. */
-    (function(){
-      var saved=parseInt(localStorage.getItem('nova:fontsize'),10);
-      var fs=isFinite(saved)?Math.max(13,Math.min(30,saved)):15;
-      document.documentElement.style.setProperty('--nv-fs', fs+'px');
-    })();
     var root   = document.getElementById('root');
     var bar    = document.getElementById('nvBar');
+
+    // honour a previously-saved text size (read-only; no pinch handlers)
+    (function(){ var s=parseInt(localStorage.getItem('nova:fontsize'),10);
+      document.documentElement.style.setProperty('--nv-fs',(isFinite(s)?Math.max(13,Math.min(30,s)):15)+'px'); })();
 
     function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
     function save(h){ try { localStorage.setItem(KEY, JSON.stringify(h.slice(-40))); } catch(e){} }
     var history = load();
     var busy = false;
 
-    // ── Nova long-term memory: facts Nova chooses to remember, synced across
-    // devices (array of {id,fact,ts} → clean union merge, no transcript ordering pitfalls).
+    // ── Nova long-term memory (synced array of {id,fact,ts}) ──
     var MEMKEY = 'nova:memory';
     function loadMem(){ try{ var a=JSON.parse(localStorage.getItem(MEMKEY)); return Array.isArray(a)?a.filter(function(m){return m&&m.id&&m.fact;}):[]; }catch(e){ return []; } }
     function saveMem(a){ try{ localStorage.setItem(MEMKEY, JSON.stringify(a.slice(-40))); }catch(e){} }
@@ -209,19 +242,17 @@
     function addMemory(fact){
       fact=(fact||'').trim(); if(!fact||fact.length>200) return;
       var mem=loadMem(), n=normFact(fact);
-      if(mem.some(function(m){ return normFact(m.fact)===n; })) return;        // dedup
+      if(mem.some(function(m){ return normFact(m.fact)===n; })) return;
       mem.push({ id:'mem-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), fact:fact, ts:Date.now() });
       saveMem(mem); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem();
     }
     function forget(id){ saveMem(loadMem().filter(function(m){ return m.id!==id; })); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem(); }
     function forgetAll(){ saveMem([]); if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); renderMem(); }
-    // pull [[REMEMBER: ...]] markers out of a reply → { display (clean), facts }
     function stripMemory(text){
       var facts=[], action=null; var s=String(text==null?'':text);
       s=s.replace(/\[\[\s*REMEMBER\s*:\s*([^\]]+?)\s*\]\]/gi, function(_,f){ facts.push(f.trim()); return ''; });
-      // Nova's proposed action: [[ACTION: {json}]] → parsed, hidden from the text, shown as a confirm chip.
       s=s.replace(/\[\[\s*ACTION\s*:\s*(\{[\s\S]*?\})\s*\]\]/gi, function(_,j){ try{ var o=JSON.parse(j); if(o&&o.verb) action=o; }catch(e){} return ''; });
-      s=s.replace(/\[\[[^\]]*$/,'');                              // drop a trailing unclosed marker mid-stream
+      s=s.replace(/\[\[[^\]]*$/,'');
       s=s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/\s+$/,'');
       return { display:s, facts:facts, action:action };
     }
@@ -236,16 +267,11 @@
       return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>';
     }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    // Render Nova's reply as readable HTML: escape, bold **x**, real line breaks.
     function fmtNova(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); }
     function fmtUser(s){ return esc(s).replace(/\n/g,'<br>'); }
 
-    // The PAGE scrolls (normal flow), so scroll the window — not an inner div.
     function atBottom(){ return (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 160); }
     function toBottom(force){ if(force||atBottom()) window.scrollTo(0, document.body.scrollHeight); }
-
-    // Keep the last message clear of the fixed composer by padding the body to
-    // its real height (the textarea grows, so re-measure).
     function setBarSpace(){ try{ document.body.style.paddingBottom = (bar.offsetHeight + 16) + 'px'; }catch(e){} }
 
     function renderIntro(){
@@ -257,13 +283,13 @@
         '<div class="nv-chips">'+chips+'</div></div>';
     }
 
+    // A message = a BLOCK row containing a BLOCK bubble. Deterministic height.
     function bubble(role, text, streaming){
       var row = document.createElement('div');
       row.className = 'nv-row ' + (role === 'user' ? 'me' : 'nova');
-      var body = role === 'user'
-        ? '<div class="nv-bub">'+fmtUser(text)+'</div>'
+      row.innerHTML = role === 'user'
+        ? '<div class="nv-bub"><span class="nv-text">'+fmtUser(text)+'</span></div>'
         : '<div class="nv-bub"><span class="nv-text">'+(streaming?'':fmtNova(text))+'</span>'+(streaming?'<span class="nv-think"><i></i><i></i><i></i></span>':'')+'</div>';
-      row.innerHTML = body;
       scroll.appendChild(row);
       return row;
     }
@@ -275,7 +301,6 @@
       toBottom(true);
     }
 
-    // Append/replace streaming text inside a Nova row, keeping a live cursor.
     function setStream(row, text, done){
       var t = row.querySelector('.nv-text');
       var think = row.querySelector('.nv-think');
@@ -289,9 +314,6 @@
       sendBtn.disabled = on || !input.value.trim();
       status.textContent = on ? 'Thinking…' : 'online · ' + BUILD;
       root.classList.toggle('nv-live', on);
-      // Nova comes alive: the header orb "thinks" while generating a reply.
-      var orb = document.querySelector('.nova');
-      if(orb){ orb.classList.toggle('is-thinking', on); if(on) orb.classList.remove('is-listening'); }
     }
 
     async function send(text){
@@ -309,7 +331,6 @@
       toBottom(true);
       var acc = '';
       try {
-        // pass the cross-domain patterns + trajectory forecasts so Nova can cite them
         var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
         try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
         var res = await fetch('/api/nova-chat', {
@@ -321,7 +342,7 @@
           while(true){
             var r = await reader.read(); if(r.done) break;
             acc += dec.decode(r.value, {stream:true});
-            setStream(row, stripMemory(acc).display, false); toBottom();   // hide [[REMEMBER]] markers live
+            setStream(row, stripMemory(acc).display, false); toBottom();
           }
         } else {
           acc = await res.text(); setStream(row, stripMemory(acc).display, false);
@@ -331,20 +352,19 @@
       }
       var sm = stripMemory(acc); var finalText = sm.display.trim() || '…';
       setStream(row, finalText, true);
-      history.push({ role:'assistant', content:finalText });   // store the clean text, never the markers
+      history.push({ role:'assistant', content:finalText });
       save(history);
-      sm.facts.forEach(addMemory);                              // commit what Nova chose to remember
-      if(sm.action) renderActionChip(row, sm.action);          // Nova's hands: offer the proposed action
+      sm.facts.forEach(addMemory);
+      if(sm.action) renderActionChip(row, sm.action);
       setBusy(false);
       toBottom();
     }
 
-    /* Confirm-first agency: render a tap-to-confirm chip for a proposed action.
-       Nothing is written until Alex taps "Do it". */
+    // Confirm-first agency: a tap-to-confirm chip. Nothing runs until tapped.
     function renderActionChip(row, action){
       if(!(window.NovaActions && NovaActions.has(action.verb))) return;
       var label = NovaActions.describe(action.verb, action);
-      if(!label) return;                                        // invalid/missing args → offer nothing
+      if(!label) return;
       var bub = row.querySelector('.nv-bub'); if(!bub) return;
       var chip = document.createElement('div'); chip.className = 'nv-act';
       chip.innerHTML = '<div class="nv-act-q">'+esc(label)+'?</div>'+
@@ -365,34 +385,22 @@
     function autosize(){ input.style.height='auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; setBarSpace(); }
 
     input.addEventListener('input', function(){ autosize(); sendBtn.disabled = busy || !input.value.trim(); });
-    // Nova "listens" while you're typing to it.
-    input.addEventListener('focus', function(){ if(!busy){ var orb=document.querySelector('.nova'); if(orb) orb.classList.add('is-listening'); } });
-    input.addEventListener('blur', function(){ var orb=document.querySelector('.nova'); if(orb) orb.classList.remove('is-listening'); });
-    input.addEventListener('keydown', function(e){
-      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); }
-    });
+    input.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(input.value); } });
     sendBtn.addEventListener('click', function(){ send(input.value); });
-    scroll.addEventListener('click', function(e){
-      var c = e.target.closest && e.target.closest('.nv-chip'); if(c) send(c.getAttribute('data-q'));
-    });
+    scroll.addEventListener('click', function(e){ var c = e.target.closest && e.target.closest('.nv-chip'); if(c) send(c.getAttribute('data-q')); });
     document.getElementById('nvClear').addEventListener('click', function(){
       if(busy) return;
       if(history.length && !confirm('Clear this conversation with Nova?')) return;
       history = []; save(history); renderAll();
     });
 
-    // ── Keyboard: nudge ONLY the composer above the on-screen keyboard.
-    // With interactive-widget=resizes-content the viewport already shrinks
-    // (overlap ≈ 0). Without it (older iOS), visualViewport tells us the
-    // keyboard height and we lift the fixed bar by that much. Messages stay
-    // in normal flow and never move, so they can't overlap. No body locking.
+    // Keyboard: lift ONLY the fixed composer above the on-screen keyboard.
     if (window.visualViewport){
       var vv = window.visualViewport;
       var fixBar = function(){
         var overlap = window.innerHeight - vv.height - vv.offsetTop;
         bar.style.bottom = (overlap > 1 ? overlap : 0) + 'px';
-        setBarSpace();
-        toBottom();
+        setBarSpace(); toBottom();
       };
       vv.addEventListener('resize', fixBar);
       vv.addEventListener('scroll', fixBar);
@@ -401,37 +409,21 @@
 
     setBarSpace();
     renderAll();
-    if(status) status.textContent = 'online · ' + BUILD; // init reached → handlers are wired
+    if(status) status.textContent = 'online · ' + BUILD;
     setTimeout(setBarSpace, 200);
 
-    // ── Memory panel + cross-device sync ──
-    (function(){
-      var st=document.createElement('style');
-      st.textContent='.nv-mem{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;}'
-        +'.nv-mem[hidden]{display:none;}'
-        +'.nv-mem-card{width:100%;max-width:440px;background:#0c0d11;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.6);}'
-        +'.nv-mem-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:#F4F1EA;margin-bottom:12px;}'
-        +'.nv-mem-x{background:none;border:none;color:rgba(244,241,234,.5);font-size:18px;cursor:pointer;line-height:1;}'
-        +'.nv-mem-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;}'
-        +'.nv-mem-item{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:11px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);font-size:13.5px;line-height:1.45;color:#F4F1EA;}'
-        +'.nv-mem-del{background:none;border:none;color:#FF8FA3;font-size:13px;cursor:pointer;flex:none;}'
-        +'.nv-mem-empty{color:rgba(244,241,234,.4);font-size:13px;padding:10px 2px;line-height:1.5;}'
-        +'.nv-mem-forget{margin-top:12px;width:100%;padding:11px;border-radius:11px;border:1px solid rgba(255,143,163,.3);background:rgba(255,143,163,.08);color:#FF8FA3;font-weight:700;font-size:13px;cursor:pointer;}';
-      document.head.appendChild(st);
-
-      var panel=document.getElementById('nvMemPanel'), memBtn=document.getElementById('nvMem');
-      if(memBtn && panel){
-        memBtn.addEventListener('click', function(){ renderMem(); panel.hidden=false; });
-        document.getElementById('nvMemClose').addEventListener('click', function(){ panel.hidden=true; });
-        panel.addEventListener('click', function(e){ if(e.target===panel) panel.hidden=true; });
-        document.getElementById('nvMemForgetAll').addEventListener('click', function(){ if(loadMem().length && !confirm('Forget everything Nova remembers about you?')) return; forgetAll(); });
-        document.getElementById('nvMemList').addEventListener('click', function(e){ var d=e.target.closest && e.target.closest('.nv-mem-del'); if(d) forget(d.getAttribute('data-id')); });
-      }
-      renderMem();
-
-      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'nova-chat', syncedKeys:[MEMKEY], onApplied:function(){ renderMem(); } });
-      })();
+    // Memory panel wiring + cross-device sync
+    var panel=document.getElementById('nvMemPanel'), memBtn=document.getElementById('nvMem');
+    if(memBtn && panel){
+      memBtn.addEventListener('click', function(){ renderMem(); panel.hidden=false; });
+      document.getElementById('nvMemClose').addEventListener('click', function(){ panel.hidden=true; });
+      panel.addEventListener('click', function(e){ if(e.target===panel) panel.hidden=true; });
+      document.getElementById('nvMemForgetAll').addEventListener('click', function(){ if(loadMem().length && !confirm('Forget everything Nova remembers about you?')) return; forgetAll(); });
+      document.getElementById('nvMemList').addEventListener('click', function(e){ var d=e.target.closest && e.target.closest('.nv-mem-del'); if(d) forget(d.getAttribute('data-id')); });
+    }
+    renderMem();
+    (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+      window.initCloudSync({ appKey:'nova-chat', syncedKeys:[MEMKEY], onApplied:function(){ renderMem(); } });
     })();
   })();
   </script>
