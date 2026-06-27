@@ -63,13 +63,18 @@
     .nv-clear{flex:none;background:none;border:none;color:rgba(244,241,234,.3);font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:8px 4px;}
     .nv-clear:active{color:#F4F1EA;}
 
-    /* ── messages (NORMAL FLOW — deterministic flex column, can't overlap) ── */
-    .nv-scroll{display:flex;flex-direction:column;gap:14px;padding:20px 14px 14px;}
-    .nv-row{display:flex;width:100%;animation:nv-rise .25s ease;}
+    /* ── messages — PLAIN BLOCK FLOW (no flex). iOS WKWebView miscalculates the
+       height of a flex item (default align-items:stretch) to be shorter than its
+       content, so the text overflowed the bubble onto the next message. Plain
+       block rows + inline-block bubbles size to their content every time — the
+       same normal flow every other (working) page uses. ── */
+    .nv-scroll{display:block;padding:20px 14px 14px;}
+    .nv-row{display:block;width:100%;margin-bottom:14px;animation:nv-rise .25s ease;}
+    .nv-row:last-child{margin-bottom:0;}
     @keyframes nv-rise{from{opacity:0;}to{opacity:1;}}
-    .nv-row.nova{justify-content:flex-start;}
-    .nv-row.me{justify-content:flex-end;}
-    .nv-bub{max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:var(--nv-fs,15px);line-height:1.5;overflow-wrap:break-word;}
+    .nv-row.nova{text-align:left;}
+    .nv-row.me{text-align:right;}
+    .nv-bub{display:inline-block;max-width:84%;text-align:left;position:relative;padding:11px 15px;border-radius:18px;font-size:var(--nv-fs,15px);line-height:1.5;overflow-wrap:break-word;word-break:break-word;}
     @media(min-width:600px){ .nv-bub{max-width:78%;} }
     .nv-bub .nv-text{display:block;}
     .nv-bub strong{font-weight:700;}
@@ -164,7 +169,7 @@
   (function(){
     'use strict';
     var KEY = 'nova:chat:v1';
-    var BUILD = 'v51'; // visible in the header status — confirms the fresh build loaded
+    var BUILD = 'v52'; // visible in the header status — confirms the fresh build loaded
     var SUGGESTIONS = [
       'How should I train today?',
       'Am I on track with my recomp?',
