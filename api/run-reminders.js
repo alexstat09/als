@@ -124,7 +124,7 @@ async function buildContext(tz, today) {
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || 75;
   var proteinTarget = Math.round(weightKg * 2);
   var protein = 0;
-  (nut['nut:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) protein += (l.p || 0); });
+  (nut['nut:logs'] || []).forEach(function (l) { if (l && (l.dateKey ? l.dateKey === today : (l.ts && tsToDateKey(l.ts, tz) === today))) protein += (l.p || 0); });
 
   var cafToday = 0;
   (caf['caf:logs'] || []).forEach(function (l) { if (l && l.ts && tsToDateKey(l.ts, tz) === today) cafToday += (l.mg || 0); });

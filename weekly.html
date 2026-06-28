@@ -131,35 +131,7 @@
     <div class="wk-card-hd"><span class="wk-card-ic">▸</span><span class="wk-card-lbl">Next week — one focus</span></div>
     <div class="wk-focus-text" id="wkFocusText">—</div>
   </div>
-
-  <!-- Frontier deep dive (Claude, once a week) -->
-  <div class="wk-card wk-deep" id="wkDeepCard" style="grid-column:1/-1">
-    <div class="wk-card-hd"><span class="wk-card-ic">✦</span><span class="wk-card-lbl">Frontier Deep Dive</span><span class="wk-deep-meta" id="wkDeepMeta"></span></div>
-    <div id="wkDeepBody"></div>
-  </div>
 </div>
-
-<style>
-  .wk-deep{ border:1px solid rgba(155,140,255,.28); background:linear-gradient(180deg,rgba(155,140,255,.06),rgba(155,140,255,.02)); }
-  .wk-deep-meta{ margin-left:auto; font-family:var(--au-mono,ui-monospace,monospace); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(244,241,234,.34); }
-  .wk-deep-intro{ font-size:13.5px; line-height:1.55; color:var(--au-dim,rgba(244,241,234,.6)); margin-bottom:14px; }
-  .wk-deep-btn{ display:inline-flex; align-items:center; gap:8px; border:none; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700;
-    padding:12px 18px; border-radius:13px; color:#140a26; background:linear-gradient(135deg,#9B8CFF,#7CD3FC); box-shadow:0 6px 22px rgba(155,140,255,.3); -webkit-tap-highlight-color:transparent; }
-  .wk-deep-btn:active{ transform:scale(.97); }
-  .wk-deep-btn:disabled{ opacity:.55; cursor:default; box-shadow:none; }
-  .wk-deep-text{ font-size:15px; line-height:1.62; color:var(--au-ivory,#F4F1EA); white-space:normal; }
-  .wk-deep-text p{ margin:0 0 13px; }
-  .wk-deep-text strong{ font-weight:700; color:#fff; }
-  .wk-deep-text li{ margin:0 0 6px 2px; list-style:none; padding-left:16px; position:relative; }
-  .wk-deep-text li::before{ content:'·'; position:absolute; left:3px; color:rgba(155,140,255,.9); font-weight:900; }
-  .wk-deep-regen{ display:inline-block; margin-top:14px; background:none; border:none; cursor:pointer; font-family:var(--au-mono,ui-monospace,monospace);
-    font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(244,241,234,.4); padding:6px 2px; }
-  .wk-deep-regen:active{ color:#F4F1EA; }
-  .wk-deep-load{ display:flex; align-items:center; gap:11px; font-size:13.5px; color:var(--au-dim,rgba(244,241,234,.6)); padding:6px 0; }
-  .wk-deep-spin{ width:16px; height:16px; flex:none; border-radius:50%; border:2px solid rgba(155,140,255,.25); border-top-color:#9B8CFF; animation:wkSpin .8s linear infinite; }
-  @keyframes wkSpin{ to{ transform:rotate(360deg); } }
-  .wk-deep-err{ font-size:13.5px; line-height:1.5; color:#FF8FA3; }
-</style>
 
 <script>
 (function(){
@@ -337,72 +309,12 @@ function loadFocus(){
   set('wkFocusText', esc(msg));
 }
 
-/* ── Frontier Deep Dive (Claude, once a week) ── */
-var ddBusy=false;
-function ddBody(){ return document.getElementById('wkDeepBody'); }
-function ddMeta(t){ var m=document.getElementById('wkDeepMeta'); if(m) m.textContent=t||''; }
-function fmtAgo(iso){ try{ var d=new Date(iso), s=Math.floor((Date.now()-d.getTime())/1000);
-  if(s<90) return 'just now'; if(s<5400) return Math.round(s/60)+'m ago'; if(s<172800) return Math.round(s/3600)+'h ago';
-  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
-// light markdown → HTML: escape, **bold**, "- " bullets, blank-line paragraphs, # headers→bold
-function ddMd(text){
-  var lines=String(text||'').replace(/\r/g,'').split('\n'), html='', inList=false, para=[];
-  function inline(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>'); }
-  function flushP(){ if(para.length){ html+='<p>'+para.join(' ')+'</p>'; para=[]; } }
-  for(var i=0;i<lines.length;i++){
-    var ln=lines[i].replace(/\s+$/,'');
-    if(/^\s*[-*]\s+/.test(ln)){ flushP(); if(!inList){ html+='<ul style="margin:0 0 13px;padding:0">'; inList=true; } html+='<li>'+inline(ln.replace(/^\s*[-*]\s+/,''))+'</li>'; continue; }
-    if(inList){ html+='</ul>'; inList=false; }
-    if(ln===''){ flushP(); continue; }
-    if(/^#+\s/.test(ln)){ flushP(); html+='<p><strong>'+inline(ln.replace(/^#+\s*/,''))+'</strong></p>'; continue; }
-    para.push(inline(ln));
-  }
-  if(inList) html+='</ul>'; flushP();
-  return html;
-}
-function ddRenderReport(text, generatedAt, fresh){
-  ddBody().innerHTML='<div class="wk-deep-text">'+ddMd(text)+'</div>'+
-    '<button type="button" class="wk-deep-regen" id="wkDeepRegen">↻ Regenerate</button>';
-  ddMeta(fresh? 'just now' : (generatedAt? fmtAgo(generatedAt) : ''));
-  var rb=document.getElementById('wkDeepRegen'); if(rb) rb.addEventListener('click', function(){ ddGenerate(true); });
-}
-function ddRenderPrompt(){
-  ddBody().innerHTML='<div class="wk-deep-intro">Once a week, Nova reads your full week and writes the analysis a quick chat can’t — the cross-domain patterns, what worked, and the one thing to change. Powered by the frontier model.</div>'+
-    '<button type="button" class="wk-deep-btn" id="wkDeepGen">✦ Generate this week’s deep dive</button>';
-  ddMeta('');
-  var b=document.getElementById('wkDeepGen'); if(b) b.addEventListener('click', function(){ ddGenerate(false); });
-}
-function ddRenderErr(msg, force){
-  ddBody().innerHTML='<div class="wk-deep-err">'+esc(msg||'Couldn’t generate the deep dive — try again.')+'</div>'+
-    '<button type="button" class="wk-deep-regen" id="wkDeepRetry">↻ Try again</button>';
-  ddMeta('');
-  var rt=document.getElementById('wkDeepRetry'); if(rt) rt.addEventListener('click', function(){ ddGenerate(force); });
-}
-function ddGenerate(force){
-  if(ddBusy) return; ddBusy=true;
-  ddBody().innerHTML='<div class="wk-deep-load"><span class="wk-deep-spin"></span><span>Nova is thinking deeply about your week… this takes ~20–40s.</span></div>';
-  ddMeta('working');
-  fetch('/api/nova-weekly'+(force?'?force=1':''), { method:'POST', headers:{'Content-Type':'application/json'} })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ ddBusy=false;
-      if(d && d.text && !d.error) ddRenderReport(d.text, d.generatedAt, d.fresh===true);
-      else ddRenderErr((d&&d.text)||'Couldn’t generate the deep dive — try again.', force);
-    })
-    .catch(function(){ ddBusy=false; ddRenderErr('Network hiccup — try again.', force); });
-}
-function loadDeep(){
-  ddRenderPrompt();
-  fetch('/api/nova-weekly', { method:'GET' }).then(function(r){ return r.json(); }).then(function(d){
-    if(d && d.exists && d.isCurrent && d.text) ddRenderReport(d.text, d.generatedAt, false);
-  }).catch(function(){});
-}
-
 /* ── Boot + staggered reveal ─────────────── */
 function boot(){
-  loadWeight(); loadNut(); loadTrain(); loadSleep(); loadCons(); loadFocus(); loadDeep();
+  loadWeight(); loadNut(); loadTrain(); loadSleep(); loadCons(); loadFocus();
   var letterReady=loadLetter();
   if(!letterReady){ var tries=0, iv=setInterval(function(){ tries++; if(loadLetter()||tries>20) clearInterval(iv); }, 200); }
-  var cards=[document.getElementById('cardWeight'),document.getElementById('cardNut'),document.getElementById('cardTrain'),document.getElementById('cardSleep'),document.getElementById('cardCons'),document.getElementById('wkFocusCard'),document.getElementById('wkDeepCard')];
+  var cards=[document.getElementById('cardWeight'),document.getElementById('cardNut'),document.getElementById('cardTrain'),document.getElementById('cardSleep'),document.getElementById('cardCons'),document.getElementById('wkFocusCard')];
   cards.forEach(function(c,i){ if(c) setTimeout(function(){ c.classList.add('in'); }, 140+i*90); });
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();

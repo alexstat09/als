@@ -23,7 +23,7 @@
     var wc = ((pw.logs||{})[tk()]) || 0;
     var dawn = new Date(); dawn.setHours(0,0,0,0);
     var caf = (ls('caf:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.mg||0); }, 0);
-    var nut = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; });
+    var nut = (ls('nut:logs')||[]).filter(function(l){ return l && (l.dateKey ? l.dateKey===tk() : new Date(l.ts) >= dawn); });
     var kcal = nut.reduce(function(s,l){ return s + (l.kcal||0); }, 0);
     var logged = (wToday?1:0) + (wc>0?1:0) + (caf>0?1:0) + (kcal>0?1:0);
     return { h:h, wToday:wToday, wc:wc, caf:caf, kcal:kcal, mealCount:nut.length, logged:logged };

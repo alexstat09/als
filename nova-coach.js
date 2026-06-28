@@ -99,7 +99,7 @@
       var rv=(e.recovery!=null)?e.recovery:recoveryScore(e); if(rv!=null) r.recovery=rv; });
     (ls('po_coach_weights',[])||[]).forEach(function(e){ if(e&&e.dateKey&&typeof e.weight==='number') rec(e.dateKey).weight=e.weight; });
     (ls('po_workouts',[])||[]).forEach(function(w){ if(!w||!w.date) return; var r=rec(w.date); r.trained=true; r.volume=(r.volume||0)+(w.volume||0); if(w.prs&&w.prs.length) r.pr=true; });
-    (ls('nut:logs',[])||[]).forEach(function(l){ if(!l||!l.ts) return; var r=rec(dk(new Date(l.ts))); r.protein=(r.protein||0)+(l.p||0); r.kcal=(r.kcal||0)+(l.kcal||0); });
+    (ls('nut:logs',[])||[]).forEach(function(l){ if(!l||(!l.ts&&!l.dateKey)) return; var r=rec(l.dateKey || dk(new Date(l.ts))); r.protein=(r.protein||0)+(l.p||0); r.kcal=(r.kcal||0)+(l.kcal||0); });
     (ls('caf:logs',[])||[]).forEach(function(l){ if(!l||!l.ts) return; var d=new Date(l.ts); var r=rec(dk(d)); r.caf=(r.caf||0)+(l.mg||0); if(d.getHours()>=16) r.cafLate=(r.cafLate||0)+(l.mg||0); });
     return byDay;
   }
@@ -225,7 +225,7 @@
     var weights=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&e.dateKey;}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
     var water=ls('po_water_v1',{})||{};
     var caf=(ls('caf:logs',[])||[]).filter(function(l){return new Date(l.ts)>=dawn();}).reduce(function(s,l){return s+(l.mg||0);},0);
-    var nut=(ls('nut:logs',[])||[]).filter(function(l){return new Date(l.ts)>=dawn();});
+    var nut=(ls('nut:logs',[])||[]).filter(function(l){return l && (l.dateKey ? l.dateKey===dk() : new Date(l.ts)>=dawn());});
     var kcal=nut.reduce(function(s,l){return s+(l.kcal||0);},0);
     var prot=nut.reduce(function(s,l){return s+(l.p||0);},0);
     var supps=ls('stack:items',[])||[]; var takenMap=ls('stack:taken:'+suppDayKey(),{})||{};

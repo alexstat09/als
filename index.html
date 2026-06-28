@@ -1166,7 +1166,7 @@ function liveData() {
     const todayWt = wts.find(e => e.dateKey === tk);
     const wtStr = todayWt ? todayWt.weight+'kg' : (wts.length ? wts[wts.length-1].weight+'kg' : 'no weight');
     const cafMg = (JSON.parse(localStorage.getItem('caf:logs'))||[]).filter(l=>new Date(l.ts)>=dawn()).reduce((s,l)=>s+(l.mg||0),0);
-    const nutLogs = (JSON.parse(localStorage.getItem('nut:logs'))||[]).filter(l=>new Date(l.ts)>=dawn());
+    const nutLogs = (JSON.parse(localStorage.getItem('nut:logs'))||[]).filter(l=> l && (l.dateKey ? l.dateKey===tk : new Date(l.ts)>=dawn()));
     const kcal = Math.round(nutLogs.reduce((s,l)=>s+(l.kcal||0),0));
     const pw = JSON.parse(localStorage.getItem('po_water_v1'))||{};
     const waterCount = (pw.logs||{})[tk]||0;
@@ -1703,7 +1703,7 @@ setInterval(renderIntelFeed, 60000);
     var wc = ((pw.logs||{})[tk()]) || 0;
     var dawn = new Date(); dawn.setHours(0,0,0,0);
     var caf = (ls('caf:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.mg||0); }, 0);
-    var kcal = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
+    var kcal = (ls('nut:logs')||[]).filter(function(l){ return l && (l.dateKey ? l.dateKey===tk() : new Date(l.ts) >= dawn); }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
     var logged = (wToday?1:0) + (wc>0?1:0) + (caf>0?1:0) + (kcal>0?1:0);
     var mood = 'calm';
     if (h < 12 && logged === 0) mood = 'low';

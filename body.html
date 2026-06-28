@@ -266,7 +266,7 @@
       document.getElementById('snapCaf').textContent = cafTotal;
 
       // Nutrition
-      const nutLogs = (ls('nut:logs') || []).filter(l => new Date(l.ts) >= dawn);
+      const nutLogs = (ls('nut:logs') || []).filter(l => l && (l.dateKey ? l.dateKey===today() : new Date(l.ts) >= dawn));
       const kcalTotal = r0(nutLogs.reduce((s,l) => s + (l.kcal||0), 0));
       document.getElementById('snapKcal').textContent = kcalTotal;
     }
@@ -568,7 +568,7 @@
     ══════════════════════════════════════════════════ */
     function renderNutrition() {
       const dawn = new Date(); dawn.setHours(0,0,0,0);
-      const logs = (ls('nut:logs') || []).filter(l => new Date(l.ts) >= dawn);
+      const logs = (ls('nut:logs') || []).filter(l => l && (l.dateKey ? l.dateKey===today() : new Date(l.ts) >= dawn));
       const prof = ls('nut:profile') || {};
 
       const tot = logs.reduce((a,l) => ({
@@ -748,7 +748,7 @@
       var wc = ((pw.logs||{})[tk()]) || 0;
       var dawn = new Date(); dawn.setHours(0,0,0,0);
       var caf = (ls('caf:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.mg||0); }, 0);
-      var kcal = (ls('nut:logs')||[]).filter(function(l){ return new Date(l.ts) >= dawn; }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
+      var kcal = (ls('nut:logs')||[]).filter(function(l){ return l && (l.dateKey ? l.dateKey===tk() : new Date(l.ts) >= dawn); }).reduce(function(s,l){ return s + (l.kcal||0); }, 0);
 
       var logged = (wToday?1:0) + (wc>0?1:0) + (caf>0?1:0) + (kcal>0?1:0);
       var mood = 'calm', line = 'Everything in one place. Let’s check in.';

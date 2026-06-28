@@ -58,32 +58,6 @@ Then redeploy. (Parsing reuses your existing `GROQ_API_KEY`.) Until it's added,
 the web button cleanly offers Nova's estimate instead — nothing breaks.
 *(Optional)* `GROQ_WEB_PARSE_MODEL` overrides the parsing model.
 
-## Frontier Weekly Deep Dive (optional, ~pennies/week — needs a paid key)
-The **Weekly Review** page has a **✦ Frontier Deep Dive** card: once a week, the
-*top* model (Claude) reads your whole week and writes a real cross-domain analysis
-— deeper than the on-device insight engine. It's deliberately **once per ISO week**
-(cached server-side in Supabase), and only runs when you tap **Generate**, so cost
-stays to roughly one short Opus call per week.
-
-- `/api/nova-weekly` holds the key server-side, builds a 7-day data brief from
-  Supabase, calls the Anthropic Messages API, and caches the report by ISO week.
-- Model: **`claude-opus-4-8`** (most capable). Override with `ANTHROPIC_MODEL`
-  (e.g. `claude-sonnet-4-6` for a cheaper run).
-
-To enable it:
-1. Go to **https://console.anthropic.com** → **API Keys** → create a key
-   (`sk-ant-...`). This is a **paid** key (unlike Groq) — but one weekly Opus call
-   is only a few cents.
-2. Vercel → **als** → Settings → Environment Variables (Production):
-
-| Name | Value |
-|------|-------|
-| `ANTHROPIC_API_KEY` | the `sk-ant-...` key |
-
-Then redeploy. Until it's added, the card cleanly says "frontier brain isn't
-connected yet" — nothing else is affected. (The deep-dive function's timeout is
-raised to 60s in `vercel.json`; the rest of the API stays at 15s.)
-
 ## Notes
 - The conversation is stored locally on the device (`nova:chat:v1`) — tap **Clear**
   to wipe it.

@@ -174,7 +174,7 @@
     }
     function sumByDay(logs, valFn){
       var map = {};
-      (logs||[]).forEach(function(l){ var k = keyOf(dayStart(l.ts)); map[k] = (map[k]||0) + valFn(l); });
+      (logs||[]).forEach(function(l){ if(!l) return; var k = l.dateKey || keyOf(dayStart(l.ts)); map[k] = (map[k]||0) + valFn(l); });
       return map;
     }
     function barRow(name, accentName, days, valForDay, unit, fmt){
@@ -212,7 +212,7 @@
       var weights = (ls('po_coach_weights')||[]);
       var wSet = {}; if (Array.isArray(weights)) weights.forEach(function(e){ if(e&&e.dateKey) wSet[e.dateKey]=1; });
       var cafMap = {}; (ls('caf:logs')||[]).forEach(function(l){ cafMap[keyOf(dayStart(l.ts))]=1; });
-      var nutMap = {}; (ls('nut:logs')||[]).forEach(function(l){ nutMap[keyOf(dayStart(l.ts))]=1; });
+      var nutMap = {}; (ls('nut:logs')||[]).forEach(function(l){ if(!l) return; nutMap[l.dateKey || keyOf(dayStart(l.ts))]=1; });
       function score(k){ return (wSet[k]?1:0) + ((water[k]>0)?1:0) + (cafMap[k]?1:0) + (nutMap[k]?1:0); }
 
       var today = new Date(); today.setHours(0,0,0,0);
