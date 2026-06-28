@@ -20,11 +20,52 @@
                  'po_tpl_folders', 'po_templates', 'po_exercises', 'po_workouts'];
   /* Array keys merged by union-of-id (never lose templates/history across devices) */
   var ID_UNION = { po_tpl_folders: 1, po_templates: 1, po_exercises: 1, po_workouts: 1 };
-  function mergeById(loc, rem) {
+
+  /* ── Deletion tombstones ──────────────────────────────────────────
+     Union-of-id ALONE resurrects anything you delete (remote still has
+     it → merge re-adds it). So we record removed ids/dateKeys with a
+     timestamp; on merge an item is dropped UNLESS it was (re)added AFTER
+     the delete (ts compare), and re-adding clears the tombstone. Tombs
+     travel in the synced row under `_deletes`. */
+  var TOMB_KEY = 'po_synctomb';
+  function pj(v){ try { return JSON.parse(v); } catch (e) { return v; } }
+  function loadTomb(){ try { return JSON.parse(localStorage.getItem(TOMB_KEY)) || {}; } catch (e) { return {}; } }
+  function saveTomb(t){ try { _origSet(TOMB_KEY, JSON.stringify(t)); } catch (e) {} }
+  function addedAtG(v){
+    if (v && typeof v === 'object') return (+v.ts || +v.startedAt || +v._ts || 0);
+    if (typeof v === 'number') return v;
+    return 0;
+  }
+  function tombedG(tnode, key, val){
+    if (!tnode) return false;
+    var t = tnode[key];
+    if (typeof t !== 'number') return false;
+    return addedAtG(val) <= t;
+  }
+  // Record removals (now), clear re-adds. isW → key by dateKey, else by id.
+  function diffTombG(prev, next, tnode, now, isW){
+    tnode = (tnode && typeof tnode === 'object') ? tnode : {};
+    var kf = isW ? function(e){ return (e && e.dateKey != null) ? 'dk:' + e.dateKey : null; }
+                 : function(e){ return (e && e.id != null) ? 'id:' + e.id : null; };
+    var P = {}, N = {};
+    if (Array.isArray(prev)) prev.forEach(function(e){ var k = kf(e); if (k) P[k] = 1; });
+    if (Array.isArray(next)) next.forEach(function(e){ var k = kf(e); if (k) N[k] = 1; });
+    for (var k in P) { if (!Object.prototype.hasOwnProperty.call(P, k)) continue; if (!N[k]) tnode[k] = now; }
+    for (var k2 in N) { if (!Object.prototype.hasOwnProperty.call(N, k2)) continue; if (typeof tnode[k2] === 'number') delete tnode[k2]; }
+    return tnode;
+  }
+  function unionTombG(a, b){
+    var out = {};
+    [a, b].forEach(function(s){ if (!s) return; for (var k in s){ if (!Object.prototype.hasOwnProperty.call(s, k)) continue; if (!out[k]) out[k] = {}; for (var id in s[k]){ if (!Object.prototype.hasOwnProperty.call(s[k], id)) continue; out[k][id] = Math.max(out[k][id] || 0, s[k][id]); } } });
+    return out;
+  }
+
+  function mergeById(loc, rem, tnode) {
     var map = {}, r = Array.isArray(rem) ? rem : [], l = Array.isArray(loc) ? loc : [];
-    for (var i = 0; i < r.length; i++) if (r[i] && r[i].id != null) map[r[i].id] = r[i];
-    for (var j = 0; j < l.length; j++) if (l[j] && l[j].id != null) map[l[j].id] = l[j]; // local wins same id
-    var out = []; for (var k in map) if (Object.prototype.hasOwnProperty.call(map, k)) out.push(map[k]);
+    for (var i = 0; i < r.length; i++) if (r[i] && r[i].id != null) map['id:' + r[i].id] = r[i];
+    for (var j = 0; j < l.length; j++) if (l[j] && l[j].id != null) map['id:' + l[j].id] = l[j]; // local wins same id
+    var out = [];
+    for (var k in map) { if (!Object.prototype.hasOwnProperty.call(map, k)) continue; if (tombedG(tnode, k, map[k])) continue; out.push(map[k]); }
     return out;
   }
 
@@ -68,7 +109,7 @@
      another device just because it happens to sync last. Legacy entries have
      no ts (treated as 0); on a true tie the later-considered (local) wins,
      preserving the old behaviour for historical data. */
-  function mergeWeights(loc, rem) {
+  function mergeWeights(loc, rem, tnode) {
     var map = {};
     var r = Array.isArray(rem) ? rem : [];
     var l = Array.isArray(loc) ? loc : [];
@@ -82,22 +123,26 @@
     for (var i = 0; i < r.length; i++) consider(r[i]); // remote first
     for (var j = 0; j < l.length; j++) consider(l[j]); // then local
     var out = [];
-    for (var dk in map) if (Object.prototype.hasOwnProperty.call(map, dk)) out.push(map[dk]);
+    for (var dk in map) { if (!Object.prototype.hasOwnProperty.call(map, dk)) continue; if (tombedG(tnode, 'dk:' + dk, map[dk])) continue; out.push(map[dk]); }
     out.sort(function(a, b) { return a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0; });
     return out;
   }
 
-  /* Merge remote into local — union weights, local wins for every other key */
+  /* Merge remote into local — union weights/id-arrays (honoring tombstones),
+     local wins for every other key. Also unions + persists tombstones. */
   function mergeData(loc, rem) {
     if (!rem || typeof rem !== 'object') return loc;
+    var tomb = unionTombG(loadTomb(), rem._deletes || {});
+    saveTomb(tomb);
     var m = {};
     var lk = Object.keys(loc);
     for (var i = 0; i < lk.length; i++) m[lk[i]] = loc[lk[i]];
     var rk = Object.keys(rem);
     for (var j = 0; j < rk.length; j++) {
       var k = rk[j];
-      if (k === 'po_coach_weights') { m[k] = mergeWeights(loc[k], rem[k]); }
-      else if (ID_UNION[k])         { m[k] = mergeById(loc[k], rem[k]); }
+      if (k === '_deletes')         { continue; }
+      else if (k === 'po_coach_weights') { m[k] = mergeWeights(loc[k], rem[k], tomb[k]); }
+      else if (ID_UNION[k])         { m[k] = mergeById(loc[k], rem[k], tomb[k]); }
       else if (!(k in m))           { m[k] = rem[k]; }
     }
     return m;
@@ -121,13 +166,20 @@
     return changed;
   }
 
+  /* Body we send to Supabase: local data + deletion tombstones */
+  function pushBody() {
+    var data = readLocal();
+    var tomb = loadTomb();
+    if (tomb && Object.keys(tomb).length) data._deletes = tomb;
+    return data;
+  }
+
   /* Push current local state to Supabase (keepalive=true for pagehide) */
   function push(keepalive) {
-    var data = readLocal();
     fetch(REST + '?on_conflict=key', {
       method: 'POST',
       headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ key: APP_KEY, data: pushBody(), updated_at: new Date().toISOString() }),
       keepalive: !!keepalive
     }).catch(function() {});
   }
@@ -140,9 +192,9 @@
         var remote  = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
         var local   = readLocal();
         var merged  = mergeData(local, remote);
-        var mJson   = JSON.stringify(merged);
         var changed = applyLocal(merged);
-        if (mJson !== lastJson) { lastJson = mJson; push(false); }
+        var bJson   = JSON.stringify(pushBody());
+        if (bJson !== lastJson) { lastJson = bJson; push(false); }
         if (changed) fireRerender();
       })
       .catch(function() {});
@@ -155,9 +207,9 @@
     if (remJson === lastJson) return; // our own echo
     var local   = readLocal();
     var merged  = mergeData(local, remote);
-    var mJson   = JSON.stringify(merged);
     var changed = applyLocal(merged);
-    if (mJson !== remJson) { /* local had extra data — push the union */ lastJson = mJson; push(false); }
+    var bJson   = JSON.stringify(pushBody());
+    if (bJson !== remJson) { /* local had extra data/tombs — push the union */ lastJson = bJson; push(false); }
     else                   { lastJson = remJson; }
     if (changed) fireRerender();
   }
@@ -165,8 +217,18 @@
   /* Capture the real localStorage.setItem BEFORE any other override */
   var _origSet = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function(k, v) {
+    var prev;
+    if (!suppressed && (ID_UNION[k] || k === 'po_coach_weights')) { try { prev = localStorage.getItem(k); } catch (e) {} }
     _origSet(k, v);
     if (!suppressed && isGymKey(k)) {
+      if (ID_UNION[k] || k === 'po_coach_weights') {
+        try {
+          var t = loadTomb();
+          t[k] = diffTombG(pj(prev), pj(v), t[k], Date.now(), k === 'po_coach_weights');
+          if (t[k] && !Object.keys(t[k]).length) delete t[k];
+          saveTomb(t);
+        } catch (e) {}
+      }
       clearTimeout(pushTimer);
       pushTimer = setTimeout(function() { push(false); }, 400);
     }

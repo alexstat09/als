@@ -230,8 +230,11 @@
     }
     function toggleHabit(id){
       var log=habitLog(); var k=today(); if(!log[k]) log[k]={};
-      if(log[k][id]){ delete log[k][id]; } else { log[k][id]=1; buzz(18); }
-      if(Object.keys(log[k]).length===0) delete log[k];
+      // Store a timestamp (not 1) so a re-tick after an un-tick beats the
+      // sync deletion-tombstone (which compares add-time vs delete-time).
+      if(log[k][id]){ delete log[k][id]; } else { log[k][id]=Date.now(); buzz(18); }
+      // Keep an emptied day as {} (don't delete the key) so un-ticks stay
+      // leaf-level and ts-compared rather than a coarse whole-day tombstone.
       lsSave('habits:log',log); renderHabits(); updateNova();
     }
     async function delHabit(id){

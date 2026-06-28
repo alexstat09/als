@@ -23,6 +23,20 @@
     return null;
   }
   function isPlainObj(o){ return o && typeof o === 'object' && !Array.isArray(o); }
+  // "When was this added?" — used to decide if a re-add beats a tombstone.
+  function addedAt(v){
+    if (typeof v === 'number') return v;                 // map-leaf stored as a ts
+    if (v && typeof v === 'object') return (+v.ts || +v._ts || 0);
+    return 0;
+  }
+  // A tombstone for `key` (a number T) suppresses it UNLESS it was (re)added AFTER T.
+  function tombed(tnode, key, val){
+    if (!tnode) return false;
+    var t = tnode[key];
+    if (typeof t !== 'number') return false;
+    return addedAt(val) <= t;
+  }
+  function subTomb(tnode, key){ return (tnode && isPlainObj(tnode[key])) ? tnode[key] : null; }
 
   function mergeArray(loc, rem, tomb){
     var l = Array.isArray(loc) ? loc : [], r = Array.isArray(rem) ? rem : [];
@@ -43,7 +57,7 @@
         }
       }
       var out = [];
-      for (var key in map) { if (!Object.prototype.hasOwnProperty.call(map, key)) continue; if (tomb && tomb[key]) continue; out.push(map[key]); }
+      for (var key in map) { if (!Object.prototype.hasOwnProperty.call(map, key)) continue; if (tombed(tomb, key, map[key])) continue; out.push(map[key]); }
       return out;
     }
     var allPrim = l.every(function(x){ return typeof x !== 'object'; }) && r.every(function(x){ return typeof x !== 'object'; });
@@ -56,7 +70,7 @@
     return l.length >= r.length ? l : r; // unknown shape → bias to more data
   }
 
-  function mergeObject(loc, rem){
+  function mergeObject(loc, rem, tomb){
     var out = {}, keys = {};
     var lk = Object.keys(loc || {}), rk = Object.keys(rem || {});
     for (var i = 0; i < lk.length; i++) keys[lk[i]] = 1;
@@ -64,6 +78,7 @@
     for (var key in keys) {
       if (!Object.prototype.hasOwnProperty.call(keys, key)) continue;
       var lv = (loc || {})[key], rv = (rem || {})[key];
+      // 'logs' counter map: monotonic Math.max merge (counters, not deletions) — tomb N/A
       if (key === 'logs' && isPlainObj(lv) && isPlainObj(rv)) {
         var m = {}, dks = {};
         var a1 = Object.keys(lv), a2 = Object.keys(rv);
@@ -74,11 +89,15 @@
           var av = lv[d], bv = rv[d];
           m[d] = (typeof av === 'number' && typeof bv === 'number') ? Math.max(av, bv) : (av !== undefined ? av : bv);
         }
-        out[key] = m;
-      } else if (lv === undefined) out[key] = rv;
+        out[key] = m; continue;
+      }
+      // map-key deletion: drop a key that was deleted and not re-added AFTER the delete
+      var chosen = (lv !== undefined) ? lv : rv;
+      if (tombed(tomb, key, chosen)) continue;
+      if (lv === undefined) out[key] = rv;
       else if (rv === undefined) out[key] = lv;
-      else if (Array.isArray(lv) && Array.isArray(rv)) out[key] = mergeArray(lv, rv, null);
-      else if (isPlainObj(lv) && isPlainObj(rv)) out[key] = (('_ts' in lv) || ('_ts' in rv)) ? (((+lv._ts || 0) >= (+rv._ts || 0)) ? lv : rv) : mergeObject(lv, rv);
+      else if (Array.isArray(lv) && Array.isArray(rv)) out[key] = mergeArray(lv, rv, subTomb(tomb, key));
+      else if (isPlainObj(lv) && isPlainObj(rv)) out[key] = (('_ts' in lv) || ('_ts' in rv)) ? (((+lv._ts || 0) >= (+rv._ts || 0)) ? lv : rv) : mergeObject(lv, rv, subTomb(tomb, key));
       else out[key] = rv; // scalar conflict → remote wins (converges)
     }
     return out;
@@ -93,33 +112,61 @@
       // fresh user edit (e.g. nutrition goal cut/maintain/bulk) is NOT reverted
       // by the older remote copy on the next pull. Without _ts → deep merge.
       if (('_ts' in lv) || ('_ts' in rv)) return ((+lv._ts || 0) >= (+rv._ts || 0)) ? lv : rv;
-      return mergeObject(lv, rv);
+      return mergeObject(lv, rv, tombForKey);
     }
     return rv;
   }
 
-  function diffRemoved(prevArr, newArr){
-    if (!Array.isArray(prevArr)) return [];
-    var newIds = {};
-    if (Array.isArray(newArr)) newArr.forEach(function(it){ var id = idOf(it); if (id) newIds[id] = 1; });
-    var removed = [];
-    prevArr.forEach(function(it){ var id = idOf(it); if (id && !newIds[id]) removed.push(id); });
-    return removed;
-  }
-
-  function unionTomb(a, b){
-    var out = {};
-    [a, b].forEach(function(src){
-      if (!src) return;
-      for (var k in src) {
-        if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
-        if (!out[k]) out[k] = {};
-        for (var id in src[k]) {
-          if (!Object.prototype.hasOwnProperty.call(src[k], id)) continue;
-          out[k][id] = Math.max(out[k][id] || 0, src[k][id]);
+  // Recursive deletion diff: record removed ids/keys (with `now`), and CLEAR
+  // tombs for anything re-added (present again). Handles top-level arrays,
+  // object maps, and one+ level of nesting (e.g. habits:log {date:{id:ts}}).
+  // Returns the updated tomb subtree, or null if empty.
+  function diffTomb(prev, next, tnode, now){
+    tnode = isPlainObj(tnode) ? tnode : {};
+    if (Array.isArray(prev) || Array.isArray(next)) {
+      var pIds = {}, nIds = {};
+      if (Array.isArray(prev)) prev.forEach(function(it){ var id = idOf(it); if (id) pIds[id] = 1; });
+      if (Array.isArray(next)) next.forEach(function(it){ var id = idOf(it); if (id) nIds[id] = 1; });
+      for (var id in pIds) { if (!Object.prototype.hasOwnProperty.call(pIds, id)) continue; if (!nIds[id]) tnode[id] = now; }
+      for (var id2 in nIds) { if (!Object.prototype.hasOwnProperty.call(nIds, id2)) continue; if (typeof tnode[id2] === 'number') delete tnode[id2]; }
+      return Object.keys(tnode).length ? tnode : null;
+    }
+    if (isPlainObj(prev) || isPlainObj(next)) {
+      var P = isPlainObj(prev) ? prev : {}, N = isPlainObj(next) ? next : {};
+      var allk = {}; Object.keys(P).forEach(function(k){ allk[k] = 1; }); Object.keys(N).forEach(function(k){ allk[k] = 1; });
+      for (var k in allk) {
+        if (!Object.prototype.hasOwnProperty.call(allk, k) || k === '_ts') continue;
+        var inP = (k in P), inN = (k in N);
+        if (inP && !inN) {
+          tnode[k] = now;                                  // deleted
+        } else if (inN && (isPlainObj(N[k]) || Array.isArray(N[k]))) {
+          if (typeof tnode[k] === 'number') delete tnode[k];
+          var sub = diffTomb(inP ? P[k] : undefined, N[k], isPlainObj(tnode[k]) ? tnode[k] : null, now);
+          if (sub) tnode[k] = sub; else if (isPlainObj(tnode[k])) delete tnode[k];
+        } else if (inN && typeof tnode[k] === 'number') {
+          delete tnode[k];                                 // re-added leaf → clear tomb
         }
       }
-    });
+      return Object.keys(tnode).length ? tnode : null;
+    }
+    return Object.keys(tnode).length ? tnode : null;
+  }
+
+  // Recursive union of two tomb subtrees (a deletion-number dominates nested edits).
+  function unionNode(a, b){
+    if (a == null) return (b == null) ? undefined : b;
+    if (b == null) return a;
+    var aNum = (typeof a === 'number'), bNum = (typeof b === 'number');
+    if (aNum || bNum) return Math.max(aNum ? a : 0, bNum ? b : 0);
+    var out = {}, keys = {};
+    Object.keys(a).forEach(function(k){ keys[k] = 1; }); Object.keys(b).forEach(function(k){ keys[k] = 1; });
+    for (var k in keys) { if (!Object.prototype.hasOwnProperty.call(keys, k)) continue; var u = unionNode(a[k], b[k]); if (u !== undefined) out[k] = u; }
+    return out;
+  }
+  function unionTomb(a, b){
+    var out = {}, keys = {};
+    [a, b].forEach(function(s){ if (s) Object.keys(s).forEach(function(k){ keys[k] = 1; }); });
+    for (var k in keys) { if (!Object.prototype.hasOwnProperty.call(keys, k)) continue; var u = unionNode((a || {})[k], (b || {})[k]); if (u !== undefined) out[k] = u; }
     return out;
   }
 
@@ -159,14 +206,11 @@
     function loadTomb() { try { return JSON.parse(origGet(TOMB_KEY)) || {}; } catch (e) { return {}; } }
     function saveTomb(t) { try { origSet(TOMB_KEY, JSON.stringify(t)); } catch (e) {} }
 
-    function recordTomb(k, prevVal, newArr) {
+    function recordTomb(k, prevVal, nextVal) {
       const prev = parse(prevVal);
-      if (!Array.isArray(prev)) return;
-      const removed = diffRemoved(prev, newArr);
-      if (!removed.length) return;
-      const t = loadTomb(); if (!t[k]) t[k] = {};
-      const now = Date.now();
-      removed.forEach(function(id){ t[k][id] = now; });
+      const t = loadTomb();
+      const sub = diffTomb(prev, nextVal, t[k] || null, Date.now());
+      if (sub) t[k] = sub; else if (t[k]) delete t[k];
       saveTomb(t);
     }
 
@@ -181,7 +225,7 @@
       let prev;
       if (!suppress && matches(k)) { try { prev = origGet(k); } catch (e) {} }
       origRemove(k);
-      if (!suppress && matches(k)) { try { recordTomb(k, prev, []); } catch (e) {} schedulePush(); }
+      if (!suppress && matches(k)) { try { recordTomb(k, prev, undefined); } catch (e) {} schedulePush(); }
     };
 
     // Combine local + remote (+ tombstones) into the merged superset.
