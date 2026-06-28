@@ -210,10 +210,17 @@
     function saveDays(a){ save(PLANK,a); }
     function dayRec(dk){
       var rec=getDays().find(function(d){return d.dateKey===dk;});
-      if(!rec) return {dateKey:dk,ts:0,slots:emptySlots()};
-      // normalise: ensure all slots exist
-      var slots=emptySlots(); MEALS.forEach(function(m){ if(Array.isArray(rec.slots&&rec.slots[m])) slots[m]=rec.slots[m]; });
-      return {dateKey:dk,ts:rec.ts||0,slots:slots};
+      if(!rec) return {dateKey:dk,ts:0,del:{},slots:emptySlots()};
+      // `del` = per-item delete guard (id→ts). It survives any cloud-merge path
+      // (even an old deep-merge that unions the meal arrays back), so a removed
+      // meal can never reappear: dayRec filters del'd items out on every read,
+      // and every view (plan, totals, shopping) reads through dayRec.
+      var del=(rec.del&&typeof rec.del==='object')?rec.del:{};
+      var slots=emptySlots(); MEALS.forEach(function(m){
+        var arr=(rec.slots&&Array.isArray(rec.slots[m]))?rec.slots[m]:[];
+        slots[m]=arr.filter(function(it){ return it && it.id && !del[it.id]; });
+      });
+      return {dateKey:dk,ts:rec.ts||0,del:del,slots:slots};
     }
     function isEmptyRec(rec){ return MEALS.every(function(m){ return !rec.slots[m] || !rec.slots[m].length; }); }
     function setDayRec(rec){
@@ -308,7 +315,10 @@
       render();
     }
     function removeItem(dk,slot,id){
-      var rec=dayRec(dk); rec.slots[slot]=(rec.slots[slot]||[]).filter(function(it){return it.id!==id;}); setDayRec(rec); render();
+      var rec=dayRec(dk);
+      rec.del=rec.del||{}; rec.del[id]=Date.now();                 // guard: never let this id come back
+      rec.slots[slot]=(rec.slots[slot]||[]).filter(function(it){return it.id!==id;});
+      setDayRec(rec); render();
     }
 
     /* ── Shopping aggregation ──────────────────────── */
