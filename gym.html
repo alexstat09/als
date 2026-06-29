@@ -122,6 +122,33 @@
   /* settings rows */
   .w-setrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
   .w-setrow-name{font-family:var(--au-mono);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--au-dim);flex:1;}
+  /* Today / weekly-schedule card */
+  .w-today{position:relative;background:linear-gradient(135deg,rgba(var(--au-glow-rgb),.13),rgba(255,255,255,.02));border:1px solid rgba(var(--au-glow-rgb),.32);border-radius:18px;padding:16px 17px;margin-bottom:12px;overflow:hidden;}
+  .w-today::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--au-glow-rgb),.6),transparent);}
+  .w-today-rest{background:rgba(255,255,255,.035);border-color:var(--au-line);}
+  .w-today-day{font-family:var(--au-mono);font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--au-glow-rgb),.9);}
+  .w-today-rest .w-today-day{color:var(--au-faint);}
+  .w-today-name{font-family:var(--au-serif);font-style:italic;font-size:25px;color:var(--au-ivory);line-height:1.05;margin:5px 0 4px;}
+  .w-today-ex{font-size:12px;color:var(--au-faint);line-height:1.45;}
+  .w-sched-sel{width:170px;flex:none;background:rgba(255,255,255,.05);border:1px solid var(--au-line);border-radius:10px;padding:9px 10px;color:var(--au-ivory);font-family:var(--au-sans);font-size:13px;outline:none;}
+  .w-sched-sel:focus{border-color:rgba(var(--au-glow-rgb),.5);}
+  /* live est-1RM readout */
+  .w-live{font-family:var(--au-mono);font-size:11px;letter-spacing:.02em;color:var(--au-dim);margin:9px 0 2px;line-height:1.45;}
+  .w-live b{color:var(--au-ivory);font-weight:700;}
+  .w-live-dim{color:var(--au-faint);}
+  .w-live-pr{color:var(--au-amber);font-weight:700;}
+  .w-live-off{color:var(--au-faint);}
+  /* RPE (effort) — optional 5th column */
+  .w-rpe{font-family:var(--au-mono);font-size:13px;font-weight:700;color:var(--au-faint);background:rgba(255,255,255,.05);border:1px solid var(--au-line);border-radius:9px;height:38px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .w-rpe.set{color:var(--au-amber);border-color:rgba(242,192,99,.4);background:rgba(242,192,99,.08);}
+  .w-rpe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;}
+  .w-rpe-opt{padding:15px 6px;border-radius:12px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-ivory);font-family:var(--au-mono);font-size:17px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .w-rpe-opt:active{background:rgba(var(--au-glow-rgb),.2);}
+  /* set-check pop + PR flash (targeted, plays once on toggle) */
+  @keyframes wCheckPop{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+  .w-check.pop{animation:wCheckPop .32s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes wPrFlash{0%{box-shadow:0 0 0 0 rgba(242,192,99,0)}30%{box-shadow:0 0 22px 2px rgba(242,192,99,.55)}100%{box-shadow:0 0 0 0 rgba(242,192,99,0)}}
+  .w-set.prflash{animation:wPrFlash .9s ease;}
 
   /* per-exercise tools (reorder / remove) */
   .w-ex-tools{display:flex;gap:5px;align-items:center;flex-shrink:0;}
@@ -552,6 +579,9 @@ function segHTML(cur){ return '<div class="w-seg">'+[['home','Workout'],['histor
 function novaSvg(){ return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvF)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>'; }
 
 /* HOME */
+var DOW_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function getSchedule(){ return (ls('po_coach_v1',{})||{}).schedule||{}; }
+function todayTpl(){ var id=getSchedule()[String(new Date().getDay())]; if(!id) return null; return templates().find(function(t){return t.id===id;})||null; }
 function renderHome(){
   view='home';
   var active=getActive();
@@ -560,6 +590,26 @@ function renderHome(){
     '<h1 class="w-hero-title">Train.</h1></div>'+novaSvg()+'</div>';
   html+=segHTML('home');
   if(active){ html+='<button class="w-btn" style="background:var(--au-amber);box-shadow:0 6px 24px rgba(242,192,99,.3);margin-bottom:10px;" onclick="resumeActive()">&#9656; Resume workout in progress</button>'; }
+  /* Today — what's scheduled for this weekday */
+  (function(){
+    var tt=todayTpl(); var sched=getSchedule(); var hasSched=Object.keys(sched).length>0;
+    var dn=DOW_FULL[new Date().getDay()];
+    if(tt){
+      var names=tt.items.map(function(it){return exById(it.exId).name;});
+      html+='<div class="w-today"><div class="w-today-day">'+dn+' · today</div>'+
+        '<div class="w-today-name">'+esc(tt.name)+'</div>'+
+        '<div class="w-today-ex">'+esc(names.slice(0,4).join(' · '))+(names.length>4?' …':'')+'</div>'+
+        '<button class="w-btn" style="margin-top:13px;" onclick="startFromTpl(\''+tt.id+'\')">&#9656; Start '+esc(tt.name)+'</button>'+
+        '<button type="button" class="w-mini" style="margin-top:9px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
+    } else if(hasSched){
+      html+='<div class="w-today w-today-rest"><div class="w-today-day">'+dn+'</div>'+
+        '<div class="w-today-name">Rest day</div>'+
+        '<div class="w-today-ex">Nothing scheduled — recover, or start anything below.</div>'+
+        '<button type="button" class="w-mini" style="margin-top:9px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
+    } else if(templates().length){
+      html+='<button type="button" class="w-btn-ghost" style="margin-bottom:10px;" onclick="openSchedule()">&#128197; Plan your week — schedule your sessions</button>';
+    }
+  })();
   html+='<button class="w-btn" onclick="startEmpty()">&#65291; Start an empty workout</button>';
   html+='<div style="display:flex;gap:8px;margin-top:8px;">'+
     '<button class="w-btn-ghost" style="margin:0;" onclick="editTemplate(null)">&#65291; New template</button>'+
@@ -591,6 +641,22 @@ function lastDoneForTpl(id){
   var ws=workouts().filter(function(w){return w.templateId===id;}).sort(function(a,b){return (b.startedAt||'')<(a.startedAt||'')?-1:1;});
   return ws[0]?ws[0].date:null;
 }
+/* Weekly schedule editor — assign a template (or rest) to each weekday */
+window.openSchedule=function(){
+  var tpls=templates(); var sched=getSchedule();
+  var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">Weekly schedule</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<div class="w-sheet-sub">Pick a session for each day · it greets you as “today”</div>';
+  if(!tpls.length){ html+='<div class="w-empty" style="font-size:14px;">Make a template first, then schedule it here.</div>'; openSheet(html); return; }
+  var todayIdx=new Date().getDay();
+  html+=DOW_FULL.map(function(dn,i){
+    var cur=sched[String(i)]||'';
+    var opts='<option value="">Rest day</option>'+tpls.map(function(t){return '<option value="'+t.id+'"'+(cur===t.id?' selected':'')+'>'+esc(t.name)+'</option>';}).join('');
+    return '<div class="w-setrow"><span class="w-setrow-name"'+(i===todayIdx?' style="color:rgb(var(--au-glow-rgb));"':'')+'>'+dn.slice(0,3)+'</span><select class="w-sched-sel" onchange="setScheduleDay('+i+',this.value)">'+opts+'</select></div>';
+  }).join('');
+  html+='<button class="w-btn" style="margin-top:16px;" onclick="closeSheet();render();">Done</button>';
+  openSheet(html);
+};
+window.setScheduleDay=function(i,val){ var cv=ls('po_coach_v1',{})||{}; cv.schedule=cv.schedule||{}; if(val) cv.schedule[String(i)]=val; else delete cv.schedule[String(i)]; save('po_coach_v1',cv); };
 
 /* TEMPLATE DETAIL */
 function openTpl(id){
@@ -635,6 +701,81 @@ var _wakeLock=null;
 function acquireWake(){ try{ if(_wakeLock || !('wakeLock' in navigator) || document.visibilityState!=='visible') return;
   navigator.wakeLock.request('screen').then(function(wl){ _wakeLock=wl; try{ wl.addEventListener('release',function(){ _wakeLock=null; }); }catch(e){} }).catch(function(){}); }catch(e){} }
 function releaseWake(){ try{ if(_wakeLock){ var w=_wakeLock; _wakeLock=null; if(w.release) w.release().catch(function(){}); } }catch(e){} }
+
+function rpeEnabled(){ return !!(ls('po_coach_v1',{})||{}).trackRpe; }
+/* live estimated-1RM line that updates as you type (PR-pace aware) */
+function liveE1rmText(en, a){
+  var allTime=bestE1rmFor(en.exId, a.id);
+  var best=0, bw=null;
+  (en.sets||[]).forEach(function(s){ if(isWarm(s)) return; var k=+s.kg||0, r=+s.reps||0; if(k>0&&r>0){ var v=e1rm(k,r); if(v>best){ best=v; bw=s; } } });
+  if(best<=0) return '<span class="w-live-dim">Fill a set to see your estimated 1RM</span>';
+  var t='Top set <b>'+(bw.kg)+'kg × '+(+bw.reps||0)+'</b> · est 1RM <b>'+Math.round(best)+'kg</b>';
+  if(allTime>0){ if(best>allTime) t+=' · <span class="w-live-pr">🔥 PR pace +'+Math.round(best-allTime)+'kg</span>';
+                 else t+=' · <span class="w-live-off">'+Math.round(allTime-best)+'kg off your best</span>'; }
+  return t;
+}
+/* one exercise card's inner HTML — used by the full render AND by paintCard
+   (targeted single-card repaint) so a set toggle never rebuilds the whole list */
+function entryCardHTML(en, ei, a){
+  var tm=isTime(en);
+  var html='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
+    '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
+    '<div class="w-ex-main" data-exhist="'+esc(en.exId)+'" onclick="editEntryEx('+ei+')" style="cursor:pointer;"><div class="w-ex-name">'+esc(en.name)+' <span class="w-ex-editpen">✎ · hold for history</span></div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
+    '<div class="w-ex-tools">'+
+      (a.entries.length>1?'<span class="w-grip" data-drag="active" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
+      '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
+    '</div></div>';
+  html+='<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="setNote('+ei+',this.value)">';
+  if(tm){
+    var lastT=lastTimeFor(en.exId);
+    html+='<div class="w-target">'+(lastT?'Last time <b>'+fmtMMSS(lastT)+'</b> &middot; beat it':'Log your time — minutes (e.g. 20) or mm:ss.')+'</div>';
+    html+='<div class="w-set-head" style="grid-template-columns:38px 1fr 44px;"><span>SET</span><span>TIME · MIN:SEC</span><span></span></div>';
+    en.sets.forEach(function(s,si){
+      html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
+        '<div class="w-set'+(s.done?' done':'')+'" style="grid-template-columns:38px 1fr 44px;">'+
+        '<span class="w-set-num">'+(si+1)+'</span>'+
+        '<input class="w-in" type="text" inputmode="text" placeholder="0:00" value="'+(s.secs?fmtMMSS(s.secs):'')+'" onchange="setTime('+ei+','+si+',this.value)">'+
+        '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')">✓</button></div></div>';
+    });
+  } else {
+    var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
+    var doneMax=0; en.sets.forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
+    if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
+    else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'+
+      '<button type="button" class="w-side'+(en.perSide?' on':'')+'" style="margin:0;" onclick="togglePerSide('+ei+')">'+(en.perSide?'✓ Per side (each hand counts double)':'＋ Per side / single-arm?')+'</button>'+
+      '<button type="button" class="w-warm-btn" onclick="addWarmups('+ei+')">🔥 Warm-up</button></div>';
+    var rpe=rpeEnabled();
+    var gstyle=rpe?' style="grid-template-columns:30px 1fr 1fr 40px 40px;"':'';
+    html+='<div class="w-set-head"'+gstyle+'><span>SET</span><span>'+(en.perSide?'KG/SIDE':'KG')+'</span><span>REPS</span>'+(rpe?'<span>RPE</span>':'')+'<span></span></div>';
+    var wn=0;
+    en.sets.forEach(function(s,si){
+      var warm=isWarm(s);
+      var v=e1rm(s.kg,s.reps);
+      var beat = s.done && !warm && v>0 && (allTime>0 ? v>allTime : (v>=doneMax));
+      var label = warm ? 'W' : (s.type==='drop' ? 'D' : String(++wn));
+      html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
+        '<div class="w-set'+(s.done?' done':'')+(beat?' beat':'')+'"'+gstyle+'>'+
+        '<button type="button" class="w-set-type type-'+(s.type||'work')+'" onclick="cycleType('+ei+','+si+')" title="Tap: working → warm-up → drop">'+label+'</button>'+
+        '<input class="w-in" type="text" inputmode="decimal" placeholder="0" value="'+(s.kg!==''&&s.kg!=null?s.kg:'')+'" oninput="setVal('+ei+','+si+',\'kg\',this.value)">'+
+        '<input class="w-in" type="text" inputmode="numeric" placeholder="0" value="'+(s.reps!==''&&s.reps!=null?s.reps:'')+'" oninput="setVal('+ei+','+si+',\'reps\',this.value)">'+
+        (rpe?'<button type="button" class="w-rpe'+(s.rpe?' set':'')+'" onclick="pickRPE('+ei+','+si+')">'+(s.rpe?s.rpe:'–')+'</button>':'')+
+        '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')" title="'+(beat?'New PR!':'')+'">'+(beat?'★':'✓')+'</button></div></div>';
+    });
+    html+='<div class="w-live" id="live-'+ei+'">'+liveE1rmText(en, a)+'</div>';
+  }
+  html+='<button class="w-addset" onclick="addSet('+ei+')">&#65291; Add set</button>';
+  if(restRunning() && ei===restCardIndex()) html+=restInlineHTML();
+  return html;
+}
+/* repaint exactly one exercise card (no full-list rebuild → no flicker/scroll-jump) */
+function paintCard(ei){
+  var a=getActive(); if(!a||!a.entries[ei]) return;
+  var card=W.querySelector('.w-card[data-card="'+ei+'"]');
+  if(!card){ render(); return; }
+  card.innerHTML=entryCardHTML(a.entries[ei], ei, a);
+}
+function updateLive(ei){ var a=getActive(); if(!a||!a.entries[ei]) return; var el=document.getElementById('live-'+ei); if(el) el.innerHTML=liveE1rmText(a.entries[ei], a); }
 function renderActive(){
   view='active';
   var a=getActive(); if(!a){ go('home'); return; }
@@ -643,53 +784,7 @@ function renderActive(){
   html+='<button type="button" class="w-restcfg" data-act="rest-config">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
   if(!a.entries.length){ html+='<div class="w-empty">No exercises yet. Add one below.</div>'; }
   a.entries.forEach(function(en,ei){
-    var tm=isTime(en);
-    html+='<div class="w-card">';
-    html+='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
-      '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
-      '<div class="w-ex-main" onclick="editEntryEx('+ei+')" style="cursor:pointer;"><div class="w-ex-name">'+esc(en.name)+' <span class="w-ex-editpen">✎</span></div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
-      '<div class="w-ex-tools">'+
-        (a.entries.length>1?'<span class="w-grip" data-drag="active" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
-        '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
-      '</div></div>';
-    html+='<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="setNote('+ei+',this.value)">';
-    if(tm){
-      var lastT=lastTimeFor(en.exId);
-      html+='<div class="w-target">'+(lastT?'Last time <b>'+fmtMMSS(lastT)+'</b> &middot; beat it':'Log your time — minutes (e.g. 20) or mm:ss.')+'</div>';
-      html+='<div class="w-set-head" style="grid-template-columns:38px 1fr 44px;"><span>SET</span><span>TIME · MIN:SEC</span><span></span></div>';
-      en.sets.forEach(function(s,si){
-        html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
-          '<div class="w-set'+(s.done?' done':'')+'" style="grid-template-columns:38px 1fr 44px;">'+
-          '<span class="w-set-num">'+(si+1)+'</span>'+
-          '<input class="w-in" type="text" inputmode="text" placeholder="0:00" value="'+(s.secs?fmtMMSS(s.secs):'')+'" onchange="setTime('+ei+','+si+',this.value)">'+
-          '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')">✓</button></div></div>';
-      });
-    } else {
-      var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
-      var doneMax=0; en.sets.forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
-      if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
-      else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
-      html+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'+
-        '<button type="button" class="w-side'+(en.perSide?' on':'')+'" style="margin:0;" onclick="togglePerSide('+ei+')">'+(en.perSide?'✓ Per side (each hand counts double)':'＋ Per side / single-arm?')+'</button>'+
-        '<button type="button" class="w-warm-btn" onclick="addWarmups('+ei+')">🔥 Warm-up</button></div>';
-      html+='<div class="w-set-head"><span>SET</span><span>'+(en.perSide?'KG/SIDE':'KG')+'</span><span>REPS</span><span></span></div>';
-      var wn=0;
-      en.sets.forEach(function(s,si){
-        var warm=isWarm(s);
-        var v=e1rm(s.kg,s.reps);
-        var beat = s.done && !warm && v>0 && (allTime>0 ? v>allTime : (v>=doneMax));
-        var label = warm ? 'W' : (s.type==='drop' ? 'D' : String(++wn));
-        html+='<div class="w-set-wrap" data-ei="'+ei+'" data-si="'+si+'"><div class="w-set-del">Delete</div>'+
-          '<div class="w-set'+(s.done?' done':'')+(beat?' beat':'')+'">'+
-          '<button type="button" class="w-set-type type-'+(s.type||'work')+'" onclick="cycleType('+ei+','+si+')" title="Tap: working → warm-up → drop">'+label+'</button>'+
-          '<input class="w-in" type="text" inputmode="decimal" placeholder="0" value="'+(s.kg!==''&&s.kg!=null?s.kg:'')+'" oninput="setVal('+ei+','+si+',\'kg\',this.value)">'+
-          '<input class="w-in" type="text" inputmode="numeric" placeholder="0" value="'+(s.reps!==''&&s.reps!=null?s.reps:'')+'" oninput="setVal('+ei+','+si+',\'reps\',this.value)">'+
-          '<button class="w-check'+(s.done?' on':'')+'" onclick="toggleSet('+ei+','+si+')" title="'+(beat?'New PR!':'')+'">'+(beat?'★':'✓')+'</button></div></div>';
-      });
-    }
-    html+='<button class="w-addset" onclick="addSet('+ei+')">&#65291; Add set</button>';
-    if(restRunning() && ei===restCardIndex()) html+=restInlineHTML();
-    html+='</div>';
+    html+='<div class="w-card" data-card="'+ei+'">'+entryCardHTML(en,ei,a)+'</div>';
   });
   html+='<button class="w-btn-ghost" style="margin-top:6px;" onclick="pickExercise(addExToActive)">&#65291; Add exercise</button>';
   W.innerHTML=html;
@@ -705,20 +800,31 @@ function startTimer(){
 function setVal(ei,si,field,val){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si];
   if(field==='kg') s.kg = (val===''?'':numVal(val));
   else s.reps = (val===''?'':(parseInt(val,10)||0));
-  setActive(a); }
-function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); render(); }
+  setActive(a); updateLive(ei); }
+function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); paintCard(ei); }
 function setNote(ei,val){ var a=getActive(); if(!a)return; a.entries[ei].note=val; setActive(a); } /* no re-render — keep focus */
-function togglePerSide(ei){ var a=getActive(); if(!a)return; a.entries[ei].perSide=!a.entries[ei].perSide; setActive(a); render(); }
+function togglePerSide(ei){ var a=getActive(); if(!a)return; a.entries[ei].perSide=!a.entries[ei].perSide; setActive(a); paintCard(ei); }
 function moveEx(ei,dir){ var a=getActive(); if(!a)return; var j=ei+dir; if(j<0||j>=a.entries.length)return; var t=a.entries[ei]; a.entries[ei]=a.entries[j]; a.entries[j]=t; setActive(a); render(); }
-function toggleSet(ei,si){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si]; s.done=!s.done;
+function toggleSet(ei,si){ var a=getActive(); if(!a)return;
+  var prevRestEi=(a.rest&&typeof a.rest.ei==='number')?a.rest.ei:-1;
+  var s=a.entries[ei].sets[si]; s.done=!s.done;
   if(s.done){ ensureAudio(); setActive(a); restStart(ei); }
   else { if(a.rest && a.rest.ei===ei){ a.rest=null; clearInterval(restInt); restInt=null; } setActive(a); }
-  render(); }
+  paintCard(ei);
+  if(prevRestEi>=0 && prevRestEi!==ei) paintCard(prevRestEi);
+  if(s.done) animateCheck(ei,si);
+}
+function animateCheck(ei,si){
+  var card=W.querySelector('.w-card[data-card="'+ei+'"]'); if(!card) return;
+  var wrap=card.querySelector('.w-set-wrap[data-ei="'+ei+'"][data-si="'+si+'"]'); if(!wrap) return;
+  var chk=wrap.querySelector('.w-check'); if(chk){ chk.classList.remove('pop'); void chk.offsetWidth; chk.classList.add('pop'); }
+  var setEl=wrap.querySelector('.w-set'); if(setEl && setEl.classList.contains('beat')){ setEl.classList.remove('prflash'); void setEl.offsetWidth; setEl.classList.add('prflash'); try{ if(window.AuroraBG&&AuroraBG.flare) AuroraBG.flare(); }catch(e){} }
+}
 function addSet(ei){ var a=getActive(); if(!a)return; var en=a.entries[ei]; var sets=en.sets; var last=sets[sets.length-1];
   if(isTime(en)) sets.push({ secs:(last&&last.secs)?last.secs:'', done:false });
   else sets.push({ kg:last?last.kg:'', reps:last?last.reps:'', done:false });
-  setActive(a); render(); }
-function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); render(); }
+  setActive(a); paintCard(ei); }
+function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); paintCard(ei); }
 async function removeEx(ei){ var a=getActive(); if(!a)return; if(!(await ALSConfirm({title:'Remove exercise?',message:'Remove '+a.entries[ei].name+' from this workout?',confirmText:'Remove',danger:true})))return; a.entries.splice(ei,1); setActive(a); render(); }
 function lastTimeFor(exId){ var le=lastEntryFor(exId); if(!le)return 0; var m=0; (le.sets||[]).forEach(function(s){ if((s.secs||0)>m)m=s.secs; }); return m; }
 function addExToActive(ex){ var a=getActive(); if(!a)return; var tm=isTime(ex);
@@ -741,7 +847,7 @@ async function finishActive(){
     var prevBest=bestE1rmFor(en.exId,a.id); var thisBest=0; var mult=en.perSide?2:1;
     doneSets.forEach(function(s){ if(isWarm(s)) return; volume+=(+s.kg||0)*(+s.reps||0)*mult; var v=e1rm(s.kg,s.reps); if(v>thisBest)thisBest=v; });
     if(thisBest>prevBest && prevBest>0) prExs.push(en.exId);
-    entries.push({exId:en.exId,name:en.name,muscle:en.muscle,kind:'weight',perSide:!!en.perSide,note:en.note||'',sets:doneSets.map(function(s){var o={kg:+s.kg||0,reps:+s.reps||0,done:true}; if(s.type&&s.type!=='work') o.type=s.type; return o;})});
+    entries.push({exId:en.exId,name:en.name,muscle:en.muscle,kind:'weight',perSide:!!en.perSide,note:en.note||'',sets:doneSets.map(function(s){var o={kg:+s.kg||0,reps:+s.reps||0,done:true}; if(s.type&&s.type!=='work') o.type=s.type; if(s.rpe) o.rpe=s.rpe; return o;})});
   });
   if(!entries.length){ if(!(await ALSConfirm({title:'Discard workout?',message:'No sets were checked off.',confirmText:'Discard',danger:true})))return; save('po_active',null); clearInterval(timerInt); restSkip(); go('home'); return; }
   var dur=(Date.now()-new Date(a.startedAt).getTime())/1000;
@@ -925,13 +1031,20 @@ function chartSVG(vals){
 function exerciseProgress(exId){
   var ex=exById(exId); var h=exHistory(exId);
   var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">'+esc(ex.name)+'</div><button type="button" class="w-x" data-act="close-sheet">✕</button></div><div class="w-sheet-sub">'+esc(ex.muscle)+' · '+h.length+' session'+(h.length===1?'':'s')+'</div>';
-  if(h.length<2){ html+='<div class="w-empty" style="font-size:14px;">Do this exercise at least twice to chart your progress.</div>'; openSheet(html); return; }
+  if(!h.length){ html+='<div class="w-empty" style="font-size:14px;">No history yet — this is your first time. Give it a strong set; it becomes your baseline.</div>'; openSheet(html); return; }
   var prE1=Math.max.apply(null,h.map(function(x){return x.e1rm;}));
   var prW=0; h.forEach(function(x){ if(x.set && (+x.set.kg||0)>prW) prW=+x.set.kg||0; });
   var prV=Math.max.apply(null,h.map(function(x){return x.vol;}));
   html+='<div class="w-prgrid"><div class="w-prstat"><b>'+Math.round(prE1)+'kg</b>est 1RM</div><div class="w-prstat"><b>'+prW+'kg</b>top weight</div><div class="w-prstat"><b>'+prV.toLocaleString()+'</b>best volume</div></div>';
-  html+=chartSVG(h.map(function(x){return x.e1rm;}));
-  html+='<div class="w-chartcap"><span>'+relDate(h[0].date)+'</span><span>estimated 1RM over time</span><span>Now</span></div>';
+  if(h.length>=2){
+    html+=chartSVG(h.map(function(x){return x.e1rm;}));
+    html+='<div class="w-chartcap"><span>'+relDate(h[0].date)+'</span><span>estimated 1RM over time</span><span>Now</span></div>';
+  }
+  html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">RECENT SESSIONS</div>';
+  h.slice(-5).reverse().forEach(function(x){
+    var setTxt=x.set?((+x.set.kg||0)+'kg × '+(+x.set.reps||0)):'—';
+    html+='<div class="w-hist-row"><span class="nm">'+relDate(x.date)+'</span><span class="bs">'+esc(setTxt)+' · '+Math.round(x.e1rm)+'kg 1RM</span></div>';
+  });
   openSheet(html);
 }
 
@@ -1125,7 +1238,7 @@ window.addEventListener('focus', function(){ if(view==='active' && getActive()) 
 var _sw={el:null,x0:0,y0:0,on:false,dx:0,ei:-1,si:-1};
 W.addEventListener('touchstart', function(e){
   var wrap=e.target.closest?e.target.closest('.w-set-wrap'):null; if(!wrap)return;
-  if(e.target.closest('.w-check')||e.target.closest('.w-set-type'))return;  /* let check + set-type taps work */
+  if(e.target.closest('.w-check')||e.target.closest('.w-set-type')||e.target.closest('.w-rpe'))return;  /* let check + set-type + rpe taps work */
   var t=e.touches[0]; _sw.el=wrap.querySelector('.w-set'); _sw.x0=t.clientX; _sw.y0=t.clientY; _sw.on=false; _sw.dx=0;
   _sw.ei=+wrap.getAttribute('data-ei'); _sw.si=+wrap.getAttribute('data-si');
 }, {passive:true});
@@ -1188,6 +1301,20 @@ function _dgEnd(){ if(!_dg) return; var d=_dg; _dgClear();
 document.addEventListener('pointerup', _dgEnd);
 document.addEventListener('pointercancel', _dgClear);
 
+/* ── Long-press an exercise name (active workout) → its history sheet ── */
+var _lp={timer:null, fired:false, x:0, y:0};
+document.addEventListener('pointerdown', function(e){
+  if(view!=='active') return;
+  var el=e.target&&e.target.closest?e.target.closest('[data-exhist]'):null; if(!el) return;
+  var exId=el.getAttribute('data-exhist'); _lp.fired=false; _lp.x=e.clientX; _lp.y=e.clientY;
+  clearTimeout(_lp.timer);
+  _lp.timer=setTimeout(function(){ _lp.fired=true; try{ if(navigator.vibrate) navigator.vibrate(12); }catch(_){ } exerciseProgress(exId); }, 450);
+});
+document.addEventListener('pointermove', function(e){ if(!_lp.timer) return; if(Math.abs(e.clientX-_lp.x)>10||Math.abs(e.clientY-_lp.y)>10){ clearTimeout(_lp.timer); _lp.timer=null; } });
+function _lpEnd(){ clearTimeout(_lp.timer); _lp.timer=null; }
+document.addEventListener('pointerup', _lpEnd);
+document.addEventListener('pointercancel', _lpEnd);
+
 /* ── Rename the active workout (tap its name in the top bar) ── */
 window.renameActive=function(){ var a=getActive(); if(!a) return;
   ALSPrompt({title:'Rename workout',placeholder:'Workout name',value:a.name||'',confirmText:'Save'}).then(function(n){
@@ -1198,7 +1325,8 @@ window.renameActive=function(){ var a=getActive(); if(!a) return;
 /* ── Tap an exercise in a live workout → choose Replace (safe, keeps sets) or
    Edit-in-library (explicitly global). Replaces the old behaviour that silently
    renamed the library exercise across ALL history when you only wanted to swap. ── */
-window.editEntryEx=function(ei){ var a=getActive(); if(!a||!a.entries[ei]) return; var en=a.entries[ei];
+window.editEntryEx=function(ei){ if(_lp.fired){ _lp.fired=false; return; }  /* a long-press just opened history — ignore the click */
+  var a=getActive(); if(!a||!a.entries[ei]) return; var en=a.entries[ei];
   var html='<div class="w-sheet-grip"></div>'+
     '<div class="w-sheet-hd"><div class="w-sheet-title">'+esc(en.name)+'</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
     '<div class="w-sheet-sub">'+esc(en.muscle||'')+'</div>'+
@@ -1235,7 +1363,7 @@ function doReplaceEx(ei,ex){ var a=getActive(); if(!a||!a.entries[ei]) return; v
 window.cycleType=function(ei,si){ var a=getActive(); if(!a||!a.entries[ei]||!a.entries[ei].sets[si]) return;
   var s=a.entries[ei].sets[si]; var cur=s.type||'work';
   s.type = cur==='work' ? 'warmup' : cur==='warmup' ? 'drop' : 'work';
-  setActive(a); render(); };
+  setActive(a); paintCard(ei); };
 /* warm-up calculator: ramp sets toward the working weight, no math, marked warm-up */
 window.addWarmups=async function(ei){ var a=getActive(); if(!a||!a.entries[ei]) return; var en=a.entries[ei];
   if(isTime(en)){ await ALSAlert('Warm-ups are for weighted exercises.','warn'); return; }
@@ -1250,7 +1378,22 @@ window.addWarmups=async function(ei){ var a=getActive(); if(!a||!a.entries[ei]) 
   var firstWork=0; while(firstWork<en.sets.length && isWarm(en.sets[firstWork])) firstWork++;
   en.sets.splice(0, firstWork);          // drop any existing leading warm-ups
   en.sets=warm.concat(en.sets);          // prepend the fresh ramp
-  setActive(a); render(); };
+  setActive(a); paintCard(ei); };
+
+/* ── RPE / effort per set (opt-in via Settings) ── */
+var _rpeTarget=null;
+window.pickRPE=function(ei,si){ _rpeTarget={ei:ei,si:si};
+  var chips=[10,9.5,9,8.5,8,7,6].map(function(v){return '<button type="button" class="w-rpe-opt" onclick="setRPE('+v+')">'+v+'</button>';}).join('');
+  var html='<div class="w-sheet-grip"></div><div class="w-sheet-hd"><div class="w-sheet-title">Effort</div><button class="w-x" onclick="closeSheet()">✕</button></div>'+
+    '<div class="w-sheet-sub">RPE — how hard was that set? (10 = no reps left in the tank)</div>'+
+    '<div class="w-rpe-grid">'+chips+'</div>'+
+    '<button type="button" class="w-btn-ghost" style="margin-top:12px;" onclick="setRPE(0)">Clear</button>';
+  openSheet(html);
+};
+window.setRPE=function(v){ var t=_rpeTarget; if(!t){ closeSheet(); return; } var a=getActive();
+  if(!a||!a.entries[t.ei]||!a.entries[t.ei].sets[t.si]){ closeSheet(); return; }
+  var s=a.entries[t.ei].sets[t.si]; if(v) s.rpe=v; else delete s.rpe; setActive(a); closeSheet(); paintCard(t.ei); };
+window.toggleRpe=function(){ var cv=ls('po_coach_v1',{})||{}; cv.trackRpe=!cv.trackRpe; save('po_coach_v1',cv); openSettings(); };
 
 /* ── Fitness settings: weekly set targets, rest default, data/backup ── */
 function relTimeAgo(ts){ var s=Math.max(0,Math.round((Date.now()-ts)/1000)); if(s<60)return 'just now'; var m=Math.round(s/60); if(m<60)return m+' min ago'; var h=Math.round(m/60); if(h<24)return h+'h ago'; return Math.round(h/24)+'d ago'; }
@@ -1267,6 +1410,8 @@ window.openSettings=function(){
     '<button type="button" class="w-btn-ghost" style="margin-top:6px;" onclick="resetTargets()">Reset to defaults</button>'+
     '<div class="w-set-head" style="grid-template-columns:1fr;margin:18px 0 8px;">REST TIMER</div>'+
     '<button type="button" class="w-btn-ghost" onclick="closeSheet();openRestConfig()">Default rest · '+fmtDur(restDefault())+'</button>'+
+    '<div class="w-set-head" style="grid-template-columns:1fr;margin:18px 0 8px;">EFFORT TRACKING</div>'+
+    '<button type="button" class="w-btn-ghost" onclick="toggleRpe()">'+(rpeEnabled()?'✓ RPE column on · tap to hide':'＋ Show RPE column — rate effort per set')+'</button>'+
     '<div class="w-set-head" style="grid-template-columns:1fr;margin:18px 0 8px;">YOUR DATA</div>'+
     '<div class="w-target" style="margin:0 0 10px;">Every set saves to this device instantly and syncs to the cloud automatically'+(lastSync?' · last synced '+esc(lastSync):'')+'.</div>'+
     '<button type="button" class="w-btn-ghost" onclick="location.href=\'backup.html\'">Open Backup &amp; Restore</button>';
