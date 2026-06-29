@@ -149,6 +149,43 @@
   .w-check.pop{animation:wCheckPop .32s cubic-bezier(.34,1.56,.64,1);}
   @keyframes wPrFlash{0%{box-shadow:0 0 0 0 rgba(242,192,99,0)}30%{box-shadow:0 0 22px 2px rgba(242,192,99,.55)}100%{box-shadow:0 0 0 0 rgba(242,192,99,0)}}
   .w-set.prflash{animation:wPrFlash .9s ease;}
+  /* ── Phase C: Progress dashboard ── */
+  /* lifetime totals */
+  .w-tot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px;}
+  .w-tot{background:rgba(255,255,255,.03);border:1px solid var(--au-line);border-radius:12px;padding:13px 6px;text-align:center;}
+  .w-tot b{display:block;font-family:var(--au-mono);font-size:19px;font-weight:700;color:var(--au-ivory);letter-spacing:-.02em;line-height:1.1;}
+  .w-tot span{font-family:var(--au-mono);font-size:8px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--au-faint);}
+  /* coach notes */
+  .w-coach{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);}
+  .w-coach:first-of-type{border-top:none;padding-top:2px;}
+  .w-coach-ic{font-size:15px;flex:none;line-height:1.4;}
+  .w-coach-t{font-size:13px;line-height:1.45;color:var(--au-dim);}
+  .w-coach-t b{color:var(--au-ivory);font-weight:700;}
+  /* muscle map */
+  .w-heat{width:100%;display:block;margin:4px 0 2px;}
+  .w-heat-legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:8px;}
+  .w-heat-legend span{display:flex;align-items:center;gap:5px;font-family:var(--au-mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--au-faint);}
+  .w-heat-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .w-fig-lbl{font-family:var(--au-mono);font-size:8px;letter-spacing:.14em;fill:rgba(244,241,234,.42);text-transform:uppercase;}
+  /* consistency calendar */
+  .w-cal{display:flex;gap:3px;margin:4px 0 2px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .w-cal-col{display:flex;flex-direction:column;gap:3px;flex:none;}
+  .w-cal-c{width:11px;height:11px;border-radius:3px;background:rgba(255,255,255,.05);}
+  .w-cal-c.t1{background:rgba(52,226,176,.3);}
+  .w-cal-c.t2{background:rgba(52,226,176,.62);}
+  .w-cal-c.t3{background:#34E2B0;box-shadow:0 0 6px rgba(52,226,176,.5);}
+  .w-cal-c.tf{background:transparent;}
+  .w-cal-foot{display:flex;justify-content:space-between;font-family:var(--au-mono);font-size:11px;font-weight:700;color:var(--au-dim);margin-top:10px;}
+  .w-cal-foot span:last-child{color:var(--au-faint);font-weight:400;}
+  /* strength standards */
+  .w-std{margin-bottom:13px;}
+  .w-std:last-child{margin-bottom:0;}
+  .w-std-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px;}
+  .w-std-name{font-size:13px;font-weight:700;color:var(--au-ivory);}
+  .w-std-lvl{font-family:var(--au-mono);font-size:10px;font-weight:700;letter-spacing:.04em;color:rgb(var(--au-glow-rgb));white-space:nowrap;}
+  .w-std-ratio{font-family:var(--au-mono);font-size:10px;color:var(--au-faint);}
+  .w-std-track{height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .w-std-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#18C8C0,#34E2B0);}
 
   /* per-exercise tools (reorder / remove) */
   .w-ex-tools{display:flex;gap:5px;align-items:center;flex-shrink:0;}
@@ -996,12 +1033,156 @@ function renderVolume(){
   if(cardio) rows+='<div class="w-vol-row"><span class="w-vol-name">Cardio</span><div class="w-vol-track"><div class="w-vol-fill" style="width:100%;background:#9B8CFF;box-shadow:0 0 10px #9B8CFF66;"></div></div><span class="w-vol-val">'+cardio+'</span></div>';
   return '<div class="w-vol-card"><div class="w-vol-hd">This week’s volume</div><div class="w-vol-sub">Working sets per muscle &middot; hit the target to grow</div>'+rows+'</div>';
 }
+/* ── Phase C: lifetime totals ── */
+function fmtBig(n){ n=Math.round(n||0); if(n>=1000000) return (Math.round(n/100000)/10)+'M'; if(n>=1000) return (Math.round(n/100)/10)+'k'; return String(n); }
+function fmtHrs(sec){ sec=Math.round(sec||0); if(sec<3600) return Math.round(sec/60)+'m'; return (Math.round(sec/360)/10)+'h'; }
+function lifetimeTotals(){
+  var t={workouts:0,sets:0,tonnage:0,timeSec:0,prs:0}, days={};
+  workouts().forEach(function(w){ if(!w) return; t.workouts++; t.tonnage+=(+w.volume||0); t.timeSec+=(+w.durationSec||0); t.prs+=(w.prs&&w.prs.length)||0; if(w.date) days[w.date]=1;
+    (w.entries||[]).forEach(function(en){ if(en.kind==='time'||isTime(en)) return; t.sets+=workSets(en.sets).length; }); });
+  t.days=Object.keys(days).length; return t;
+}
+function renderTotals(){
+  var t=lifetimeTotals();
+  function tile(v,l){ return '<div class="w-tot"><b>'+v+'</b><span>'+l+'</span></div>'; }
+  return '<div class="w-vol-card" style="margin-bottom:14px;"><div class="w-vol-hd">All time</div><div class="w-vol-sub">Everything you’ve put in</div>'+
+    '<div class="w-tot-grid">'+tile(t.workouts,'workouts')+tile(t.days,'days trained')+tile(fmtBig(t.tonnage),'kg lifted')+
+      tile(fmtBig(t.sets),'working sets')+tile(fmtHrs(t.timeSec),'under the bar')+tile(t.prs,'PRs set')+'</div></div>';
+}
+
+/* ── Phase C: muscle map (body heat diagram) ── */
+function renderHeatmap(){
+  var c=weekVolume(), tg={}; getMuscleTargets().forEach(function(m){ tg[m[0]]=m[1]; });
+  function mc(m){ var n=c[m]||0, t=tg[m]||10; if(n<=0) return 'rgba(255,255,255,.09)'; var p=n/t; return p>=1?'#34E2B0':p>=0.6?'#F2C063':'#FF6B8B'; }
+  var NC='rgba(255,255,255,.07)';
+  function r(x,y,w,h,rx,f){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+rx+'" fill="'+f+'"/>'; }
+  function e(cx,cy,rx,ry,f){ return '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'"/>'; }
+  function c2(cx,cy,rr,f){ return '<circle cx="'+cx+'" cy="'+cy+'" r="'+rr+'" fill="'+f+'"/>'; }
+  var sh=mc('Shoulders'), ar=mc('Arms'), ch=mc('Chest'), co=mc('Core'), lg=mc('Legs'), bk=mc('Back');
+  var svg='<svg class="w-heat" viewBox="0 0 240 150" height="150" preserveAspectRatio="xMidYMid meet">'+
+    /* FRONT (centre 60) */
+    c2(60,15,8,NC)+ r(49,25,22,40,7,NC)+
+    e(46,29,7,5.5,sh)+ e(74,29,7,5.5,sh)+
+    r(37,32,8,20,4,ar)+ r(83,32,8,20,4,ar)+
+    r(35,52,6.5,18,3,NC)+ r(84.5,52,6.5,18,3,NC)+
+    r(50,26,9,12,3,ch)+ r(61,26,9,12,3,ch)+
+    r(53,40,14,22,4,co)+
+    r(50,64,9,28,4,lg)+ r(61,64,9,28,4,lg)+
+    r(51,93,7,24,3,NC)+ r(62,93,7,24,3,NC)+
+    '<text class="w-fig-lbl" x="60" y="135" text-anchor="middle">Front</text>'+
+    /* BACK (centre 180) */
+    c2(180,15,8,NC)+ r(169,25,22,40,7,NC)+
+    e(166,29,7,5.5,sh)+ e(194,29,7,5.5,sh)+
+    r(157,32,8,20,4,ar)+ r(203,32,8,20,4,ar)+
+    r(155,52,6.5,18,3,NC)+ r(204.5,52,6.5,18,3,NC)+
+    r(169,26,22,32,5,bk)+
+    r(170,60,20,10,4,lg)+ r(171,71,9,21,4,lg)+ r(181,71,9,21,4,lg)+
+    r(171,94,7.5,23,3,lg)+ r(181.5,94,7.5,23,3,lg)+
+    '<text class="w-fig-lbl" x="180" y="135" text-anchor="middle">Back</text>'+
+  '</svg>';
+  var legend='<div class="w-heat-legend">'+
+    '<span><i class="w-heat-dot" style="background:#34E2B0"></i>On target</span>'+
+    '<span><i class="w-heat-dot" style="background:#F2C063"></i>Getting there</span>'+
+    '<span><i class="w-heat-dot" style="background:#FF6B8B"></i>Behind</span>'+
+    '<span><i class="w-heat-dot" style="background:rgba(255,255,255,.18)"></i>Untrained</span></div>';
+  return '<div class="w-vol-card" style="margin-bottom:14px;"><div class="w-vol-hd">Muscle map</div><div class="w-vol-sub">This week — what you’ve hit</div>'+svg+legend+'</div>';
+}
+
+/* ── Phase C: consistency calendar ── */
+function _trainVol(){ var v={}; workouts().forEach(function(w){ if(w&&w.date) v[w.date]=(v[w.date]||0)+(+w.volume||0); }); return v; }
+function _weekHas(vol, monday){ for(var d=0;d<7;d++){ var c=new Date(monday); c.setDate(monday.getDate()+d); if(vol[dateKey(c)]) return true; } return false; }
+function _mondayOf(d){ var x=new Date(d); x.setHours(0,0,0,0); var dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
+function streakWeeks(vol){ var cur=_mondayOf(new Date()); if(!_weekHas(vol,cur)) cur.setDate(cur.getDate()-7); var n=0; while(_weekHas(vol,cur)){ n++; cur.setDate(cur.getDate()-7); } return n; }
+function bestStreakWeeks(vol){ var keys=Object.keys(vol).sort(); if(!keys.length) return 0; var cur=_mondayOf(new Date(keys[0]+'T00:00:00')); var end=_mondayOf(new Date()); var best=0,run=0;
+  while(cur<=end){ if(_weekHas(vol,cur)){ run++; if(run>best)best=run; } else run=0; cur.setDate(cur.getDate()+7); } return best; }
+function renderCalendar(){
+  var vol=_trainVol(); var WEEKS=18;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var start=_mondayOf(today); start.setDate(start.getDate()-(WEEKS-1)*7);
+  var maxVol=0; Object.keys(vol).forEach(function(k){ if(vol[k]>maxVol) maxVol=vol[k]; });
+  var cols='';
+  for(var wk=0; wk<WEEKS; wk++){ var cells='';
+    for(var d=0; d<7; d++){ var cur=new Date(start); cur.setDate(start.getDate()+wk*7+d); var key=dateKey(cur); var v=vol[key]||0;
+      var tier = cur>today?'tf' : v<=0?'' : maxVol&&v<maxVol*0.34?'t1' : maxVol&&v<maxVol*0.67?'t2':'t3';
+      cells+='<div class="w-cal-c '+tier+'" title="'+key+(v?' · '+Math.round(v)+'kg':'')+'"></div>'; }
+    cols+='<div class="w-cal-col">'+cells+'</div>'; }
+  var streak=streakWeeks(vol), best=bestStreakWeeks(vol), last28=0;
+  for(var i=0;i<28;i++){ var dd=new Date(today); dd.setDate(today.getDate()-i); if(vol[dateKey(dd)]) last28++; }
+  return '<div class="w-vol-card" style="margin-bottom:14px;"><div class="w-vol-hd">Consistency</div><div class="w-vol-sub">Last '+WEEKS+' weeks · '+last28+' days trained in the last 28</div>'+
+    '<div class="w-cal">'+cols+'</div><div class="w-cal-foot"><span>🔥 '+streak+'-week streak</span><span>best '+best+' weeks</span></div></div>';
+}
+
+/* ── Phase C: strength standards (vs bodyweight) ── */
+function bodyweightKg(){
+  var w=ls('po_coach_weights',[]); if(!Array.isArray(w)||!w.length) return null;
+  var latest=null; w.forEach(function(x){ if(x&&typeof x.weight==='number'&&x.dateKey){ if(!latest||x.dateKey>latest.dateKey) latest=x; } });
+  if(!latest) return null;
+  return ((ls('po_coach_v1',{})||{}).units==='lb') ? latest.weight*0.453592 : latest.weight;
+}
+var STANDARDS=[
+  {key:'bench press', not:['incline','decline','close','db','dumbbell','machine','smith'], name:'Bench Press', bands:[0.5,0.75,1.25,1.75,2.0]},
+  {key:'squat', not:['hack','split','goblet','bulgarian','leg','box','pistol','sissy'], name:'Squat', bands:[0.75,1.25,1.5,2.25,2.75]},
+  {key:'deadlift', not:['romanian','rdl','stiff','single','snatch','deficit'], name:'Deadlift', bands:[1.0,1.5,2.0,2.5,3.0]},
+  {key:'overhead press', not:['db','dumbbell','machine','seated'], name:'Overhead Press', bands:[0.35,0.55,0.8,1.1,1.4]}
+];
+function renderStandards(){
+  var bw=bodyweightKg();
+  var card='<div class="w-vol-card" style="margin-bottom:14px;"><div class="w-vol-hd">Strength standards</div><div class="w-vol-sub">Best est-1RM vs your bodyweight</div>';
+  if(!bw) return card+'<div class="w-empty" style="font-size:13px;padding:6px 0;">Log your <a href="weight.html" style="color:rgb(var(--au-glow-rgb));text-decoration:none;border-bottom:1px solid rgba(var(--au-glow-rgb),.4);">bodyweight</a> to see how your lifts stack up.</div></div>';
+  var LEVELS=['Untrained','Beginner','Novice','Intermediate','Advanced','Elite'];
+  var exs=exercises(), found=[];
+  STANDARDS.forEach(function(st){ var best=0;
+    exs.forEach(function(ex){ var nm=(ex.name||'').toLowerCase(); if(nm.indexOf(st.key)===-1) return; if(st.not.some(function(w){return nm.indexOf(w)!==-1;})) return; var v=bestE1rmFor(ex.id); if(v>best) best=v; });
+    if(best>0) found.push({st:st, e1rm:best}); });
+  if(!found.length) return card+'<div class="w-empty" style="font-size:13px;padding:6px 0;line-height:1.5;">These track the big barbell lifts — bench, squat, deadlift, overhead press. Log those to see your level; your machine work shows in the map &amp; totals above.</div></div>';
+  card+=found.map(function(f){
+    var ratio=f.e1rm/bw, bands=f.st.bands, lv=0;
+    for(var i=0;i<bands.length;i++){ if(ratio>=bands[i]) lv=i+1; }
+    var prev=lv>0?bands[lv-1]:0, next=lv<bands.length?bands[lv]:bands[bands.length-1];
+    var pct = lv>=bands.length?100:Math.max(3,Math.min(100,Math.round((ratio-prev)/(next-prev)*100)));
+    return '<div class="w-std"><div class="w-std-top"><span class="w-std-name">'+esc(f.st.name)+'</span><span class="w-std-lvl">'+LEVELS[lv]+'</span></div>'+
+      '<div class="w-std-track"><div class="w-std-fill" style="width:'+pct+'%;"></div></div>'+
+      '<div class="w-std-ratio" style="margin-top:4px;">'+Math.round(f.e1rm)+'kg · '+(Math.round(ratio*100)/100)+'× bodyweight'+(lv<bands.length?' · next '+bands[lv]+'×':' · maxed 💎')+'</div></div>';
+  }).join('');
+  return card+'</div>';
+}
+
+/* ── Phase C: per-lift overload / plateau coaching ── */
+function coachNotes(){
+  var notes=[];
+  trainedExIds().forEach(function(id){
+    var ex=exById(id); if(isTime(ex)||ex.muscle==='Cardio') return;
+    var h=exHistory(id); if(h.length<3) return;
+    var recent=h[h.length-1].date; var daysAgo=Math.round((Date.now()-new Date(recent+'T00:00:00').getTime())/86400000);
+    if(daysAgo>28) return;                        // only coach actively-trained lifts
+    var last=h.slice(-Math.min(5,h.length)); var first=last[0].e1rm, lastv=last[last.length-1].e1rm;
+    var ch=first>0?(lastv-first)/first:0;
+    if(ch<=-0.04) notes.push({pri:1,kind:'down',text:'<b>'+esc(ex.name)+'</b> has slipped ~'+Math.round(Math.abs(ch)*100)+'% over your last '+last.length+' sessions. Take a lighter day, then rebuild — and check sleep & food.'});
+    else if(Math.abs(ch)<0.02) notes.push({pri:2,kind:'flat',text:'<b>'+esc(ex.name)+'</b> has stalled near '+Math.round(lastv)+'kg for '+last.length+' sessions. Add a set, +2.5kg, or one more rep to break through.'});
+    else if(ch>=0.03) notes.push({pri:3,kind:'up',text:'<b>'+esc(ex.name)+'</b> is climbing — up ~'+Math.round(ch*100)+'% lately. Keep the progression going.'});
+  });
+  notes.sort(function(a,b){ return a.pri-b.pri; });
+  return notes.slice(0,3);
+}
+function renderCoach(){
+  var n=coachNotes(); if(!n.length) return '';
+  return '<div class="w-vol-card" style="margin-bottom:14px;"><div class="w-vol-hd">Coach notes</div><div class="w-vol-sub">Per-lift progression — what to do next</div>'+
+    n.map(function(x){ var ic=x.kind==='down'?'🪫':x.kind==='flat'?'⏸️':'📈';
+      return '<div class="w-coach"><span class="w-coach-ic">'+ic+'</span><span class="w-coach-t">'+x.text+'</span></div>'; }).join('')+'</div>';
+}
+
 function renderStats(){
   view='stats';
   var html='<div class="w-hero"><div><div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>FITNESS</div><h1 class="w-hero-title">Progress.</h1></div>'+novaSvg()+'</div>'+segHTML('stats');
   var ids=trainedExIds();
   if(!ids.length){ html+='<div class="w-empty">Log a few workouts and your strength progress shows up here.</div>'; W.innerHTML=html; return; }
+  html+=renderTotals();
+  html+=renderCoach();
+  html+=renderHeatmap();
   html+=renderVolume();
+  html+=renderCalendar();
+  html+=renderStandards();
+  html+='<div class="w-vol-hd" style="margin:20px 0 12px;">Your lifts</div>';
   ids.sort(function(a,b){ var ha=exHistory(a),hb=exHistory(b); var da=ha.length?ha[ha.length-1].date:''; var db=hb.length?hb[hb.length-1].date:''; return db<da?-1:db>da?1:0; });
   ids.forEach(function(id){
     var h=exHistory(id); if(!h.length)return;
