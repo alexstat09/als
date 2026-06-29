@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Insight Engine · ALS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="topbar.js" defer></script>
+<script src="insights.js" defer></script>
+<script src="insights-engine.js" defer></script>
+<link rel="stylesheet" href="aurora.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:#050507;color:#F4F1EA;-webkit-font-smoothing:antialiased;}
+  body{font-family:var(--au-sans,-apple-system,system-ui,sans-serif);min-height:100vh;overflow-x:hidden;}
+  /* living aurora backdrop — cyan/violet "lab" cast */
+  body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(36% 30% at 82% 6%, rgba(124,211,252,.15), transparent 60%),
+      radial-gradient(34% 28% at 12% 20%, rgba(155,140,255,.13), transparent 60%),
+      radial-gradient(44% 36% at 52% 98%, rgba(24,200,192,.10), transparent 62%);
+    filter:blur(26px);animation:iqBreathe 15s ease-in-out infinite alternate;}
+  @keyframes iqBreathe{0%{opacity:.7}100%{opacity:1}}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.013) 1px,transparent 1px);background-size:3px 3px;}
+
+  .iq-shell{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:18px 18px 48px;}
+
+  /* header */
+  .iq-back{display:inline-flex;align-items:center;gap:7px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.4);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:8px;padding:8px 13px;text-decoration:none;transition:color .2s,border-color .2s;}
+  .iq-back:active{color:#F4F1EA;border-color:rgba(124,211,252,.4);}
+  .iq-eyebrow{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:rgba(124,211,252,.65);margin:22px 0 4px;display:flex;align-items:center;gap:8px;}
+  .iq-eyebrow .iq-dot{width:5px;height:5px;border-radius:50%;background:#7CD3FC;box-shadow:0 0 7px #7CD3FC;animation:iqBlink 2.4s ease-in-out infinite;}
+  @keyframes iqBlink{0%,100%{opacity:1}50%{opacity:.3}}
+  .iq-title{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(34px,9vw,52px);line-height:1.02;color:#F4F1EA;letter-spacing:-.01em;}
+  .iq-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,241,234,.45);margin-top:9px;}
+
+  /* generic card reveal */
+  .iq-card{position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 17px;margin-top:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    opacity:0;transform:translateY(10px);transition:opacity .55s ease,transform .55s ease;}
+  .iq-card.in{opacity:1;transform:none;}
+  .iq-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .iq-card-ic{font-size:14px;line-height:1;}
+  .iq-card-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.5);flex:1;}
+
+  /* Nova's read */
+  .iq-nova{background:linear-gradient(150deg,rgba(124,211,252,.1),rgba(155,140,255,.05));border-color:rgba(124,211,252,.2);}
+  .iq-nova .iq-card-lbl{color:rgba(124,211,252,.75);}
+  .iq-nova-body p{font-size:14.5px;line-height:1.62;color:#E9E6DF;margin-bottom:10px;}
+  .iq-nova-body p:last-child{margin-bottom:0;}
+  .iq-nova-sig{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:17px;color:#7CD3FC;margin-top:8px;}
+
+  /* section eyebrow between groups */
+  .iq-sec{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4);margin:26px 0 2px;display:flex;align-items:center;gap:9px;}
+  .iq-sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent);}
+
+  /* headline pattern */
+  .iq-hero{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border-color:rgba(255,255,255,.1);}
+  .iq-hero .iq-htext{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(19px,4.8vw,23px);line-height:1.34;color:#F4F1EA;}
+  .iq-hero .iq-hemoji{font-size:26px;line-height:1;}
+
+  /* pattern card */
+  .iq-pat{--ac:124,211,252;border-left:2px solid rgba(var(--ac),.55);}
+  .iq-pat .iq-ptop{display:flex;align-items:flex-start;gap:11px;}
+  .iq-pemoji{font-size:19px;line-height:1.25;flex:none;}
+  .iq-ptext{font-size:14px;line-height:1.5;color:#EDEAE3;}
+  .iq-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;align-items:center;}
+  .iq-chip{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;border:1px solid rgba(var(--ac),.3);color:rgba(var(--ac),.95);background:rgba(var(--ac),.08);}
+  .iq-chip.muted{border-color:rgba(255,255,255,.1);color:rgba(244,241,234,.5);background:rgba(255,255,255,.03);}
+  .iq-meter{flex:1;min-width:80px;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .iq-meter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,rgba(var(--ac),.95),rgba(var(--ac),.5));width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .25s;}
+  .iq-action{margin-top:10px;font-size:13px;line-height:1.45;color:rgba(244,241,234,.78);display:flex;gap:7px;}
+  .iq-action::before{content:"▸";color:rgba(var(--ac),.9);font-size:11px;line-height:1.5;flex:none;}
+
+  /* today signals */
+  .iq-sig{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid rgba(255,255,255,.05);}
+  .iq-sig:first-child{border-top:0;}
+  .iq-sig-ic{font-size:15px;line-height:1.2;width:18px;text-align:center;flex:none;}
+  .iq-sig-ic.positive{color:#34E2B0;} .iq-sig-ic.warning{color:#F2C063;} .iq-sig-ic.neutral,.iq-sig-ic.info{color:rgba(244,241,234,.55);}
+  .iq-sig-tt{font-size:13.5px;font-weight:600;color:#F4F1EA;line-height:1.3;}
+  .iq-sig-dt{font-family:var(--au-mono,ui-monospace,monospace);font-size:10.5px;letter-spacing:.04em;color:rgba(244,241,234,.45);margin-top:3px;}
+
+  /* empty / learning */
+  .iq-empty{font-size:14px;line-height:1.6;color:rgba(244,241,234,.5);}
+  .iq-empty a{color:#7CD3FC;border-bottom:1px solid rgba(124,211,252,.4);text-decoration:none;}
+
+  /* methodology */
+  .iq-method{margin-top:24px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;line-height:1.7;letter-spacing:.02em;color:rgba(244,241,234,.32);text-align:center;}
+</style>
+</head>
+<body id="root" class="au-mood-calm">
+
+<div class="iq-shell">
+  <a class="iq-back" href="index.html">&#8592; HUB</a>
+
+  <div class="iq-eyebrow"><span class="iq-dot"></span>INSIGHT ENGINE</div>
+  <div class="iq-title">What your data knows</div>
+  <div class="iq-sub" id="iqSub">Reading your logs…</div>
+
+  <!-- Nova's read (narration) -->
+  <div class="iq-card iq-nova" id="iqNovaCard" style="display:none">
+    <div class="iq-card-hd"><span class="iq-card-ic">✦</span><span class="iq-card-lbl">Nova's read</span></div>
+    <div class="iq-nova-body" id="iqNovaBody"></div>
+    <div class="iq-nova-sig">— Nova</div>
+  </div>
+
+  <!-- dynamic content -->
+  <div id="iqContent"></div>
+
+  <div class="iq-method" id="iqMethod" style="display:none">
+    Patterns are rank-split comparisons (your lower days vs higher days) that pass<br>
+    an absolute-effect bar <em>and</em> a Welch t-test — association, never proven cause.
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+function el(id){ return document.getElementById(id); }
+
+/* domain → accent rgb + nice label */
+var DOM = {
+  training: {rgb:'245,130,100', name:'Training'},
+  nutrition:{rgb:'52,226,176',  name:'Nutrition'},
+  sleep:    {rgb:'155,140,255', name:'Sleep'},
+  caffeine: {rgb:'242,192,99',  name:'Caffeine'},
+  recovery: {rgb:'24,200,192',  name:'Recovery'},
+  body:     {rgb:'124,211,252', name:'Body'},
+  _default: {rgb:'124,211,252', name:'Pattern'}
+};
+function dom(d){ return DOM[d] || DOM._default; }
+
+function confLabel(c){ return c>=0.7?'high confidence' : c>=0.4?'moderate confidence' : 'emerging'; }
+function effLabel(d){ d=Math.abs(d||0); return d>=0.8?'large effect' : d>=0.5?'moderate effect' : 'subtle but real'; }
+
+/* ── build a Nova-voiced narration from the strongest patterns ── */
+function narrate(ins, days){
+  var out=[];
+  var withAction = ins.filter(function(i){ return i.action; });
+  var lead = withAction[0] || ins[0];
+  if(!lead) return out;
+  out.push('I’ve been connecting the dots across ' + days + ' days of your logs — looking for signals that survive the noise, not coincidences.');
+  var p2 = 'The clearest one right now: ' + lc(lead.text);
+  if(lead.action) p2 += ' So — ' + lc(lead.action);
+  out.push(p2);
+  var second = ins.filter(function(i){ return i.id!==lead.id; })[0];
+  if(second){
+    var p3 = 'I’m also seeing that ' + lc(second.text);
+    if(ins.length>2) p3 += ' (' + (ins.length-2) + ' more pattern' + (ins.length-2===1?'':'s') + ' below).';
+    out.push(p3);
+  } else if(ins.length===1){
+    out.push('That’s the only pattern strong enough to call right now — the rest of your data is still too noisy to read honestly. The more you log, the more I’ll surface.');
+  }
+  return out;
+}
+function lc(s){ s=String(s||''); return s.charAt(0).toLowerCase()+s.slice(1); }
+
+/* ── render one pattern card ── */
+function patCard(i){
+  var d = dom(i.domain);
+  var conf = i.confidence!=null ? i.confidence : 0.5;
+  var strengthPct = Math.round((i.strength||0)*100);
+  var chips = '';
+  chips += '<span class="iq-chip">'+esc(d.name)+'</span>';
+  chips += '<span class="iq-chip muted">'+esc(confLabel(conf))+'</span>';
+  if(i.d) chips += '<span class="iq-chip muted">'+esc(effLabel(i.d))+'</span>';
+  chips += '<span class="iq-meter"><i data-w="'+strengthPct+'"></i></span>';
+  var html = ''
+    + '<div class="iq-card iq-pat" style="--ac:'+d.rgb+'">'
+    +   '<div class="iq-ptop"><span class="iq-pemoji">'+esc(i.emoji||'•')+'</span><span class="iq-ptext">'+esc(i.text)+'</span></div>'
+    +   '<div class="iq-chips">'+chips+'</div>'
+    +   (i.action ? '<div class="iq-action">'+esc(i.action)+'</div>' : '')
+    + '</div>';
+  return html;
+}
+
+/* ── render today's status signals from insights.js ── */
+function sigRows(){
+  if(!(window.ALS && window.ALS.generateInsights)) return '';
+  var sigs=[]; try{ sigs=window.ALS.generateInsights()||[]; }catch(e){ sigs=[]; }
+  sigs = sigs.filter(function(s){ return s && s.title; }).slice(0,7);
+  if(!sigs.length) return '';
+  return sigs.map(function(s){
+    return '<div class="iq-sig">'
+      + '<span class="iq-sig-ic '+esc(s.type||'info')+'">'+esc(s.icon||'•')+'</span>'
+      + '<div><div class="iq-sig-tt">'+esc(s.title)+'</div>'
+      + (s.detail?'<div class="iq-sig-dt">'+esc(s.detail)+'</div>':'')+'</div></div>';
+  }).join('');
+}
+
+function boot(){
+  var content = el('iqContent');
+  var ins = [];
+  var days = 0;
+  try{ days = Object.keys(window.ALSInsights._timeline()).length; }catch(e){}
+  try{ ins = window.ALSInsights.compute() || []; }catch(e){ ins = []; }
+
+  var cards = []; // collected nodes for staggered reveal
+
+  if(ins.length){
+    el('iqSub').textContent = ins.length + ' pattern' + (ins.length===1?'':'s') + ' found · reading ' + days + ' days';
+
+    /* Nova's read */
+    var lines = narrate(ins, days);
+    if(lines.length){
+      el('iqNovaBody').innerHTML = lines.map(function(p){ return '<p>'+esc(p)+'</p>'; }).join('');
+      el('iqNovaCard').style.display='';
+      cards.push(el('iqNovaCard'));
+    }
+
+    /* headline pattern */
+    var hero = ins.filter(function(i){return i.action;})[0] || ins[0];
+    var heroHtml = '<div class="iq-sec">The headline</div>'
+      + '<div class="iq-card iq-hero">'
+      + '<div class="iq-card-hd"><span class="iq-card-ic">◈</span><span class="iq-card-lbl">strongest signal · '+esc(dom(hero.domain).name)+'</span></div>'
+      + '<div class="iq-ptop" style="align-items:flex-start;gap:13px"><span class="iq-hemoji">'+esc(hero.emoji||'◈')+'</span><span class="iq-htext">'+esc(hero.text)+'</span></div>'
+      + (hero.action ? '<div class="iq-action" style="--ac:124,211,252;margin-top:13px;font-size:14px">'+esc(hero.action)+'</div>' : '')
+      + '</div>';
+
+    /* every other pattern */
+    var rest = ins.filter(function(i){ return i.id!==hero.id; });
+    var restHtml = '';
+    if(rest.length){
+      restHtml = '<div class="iq-sec">Every pattern · '+rest.length+'</div>' + rest.map(patCard).join('');
+    }
+
+    /* today's signals */
+    var sig = sigRows();
+    var sigHtml = sig ? ('<div class="iq-sec">Right now</div><div class="iq-card">'+sig+'</div>') : '';
+
+    content.innerHTML = heroHtml + restHtml + sigHtml;
+    el('iqMethod').style.display='';
+  } else {
+    /* learning / empty state */
+    el('iqSub').textContent = days>=1 ? ('reading '+days+' day'+(days===1?'':'s')) : 'no data yet';
+    var msg = days>=3
+      ? 'I’m still learning your patterns. The engine only speaks when a signal is strong enough to be real — it won’t invent connections. Keep logging <strong>sleep, training, food and caffeine</strong>, and once there’s about two weeks of overlap I’ll start connecting them here.'
+      : 'Not enough logged yet to find honest patterns. Track your <a href="sleep.html">sleep</a>, <a href="gym.html">training</a>, <a href="nutrition.html">food</a> and <a href="caffeine.html">caffeine</a> for a couple of weeks and this page will fill with cross-domain insights.';
+    content.innerHTML = '<div class="iq-card"><div class="iq-empty">'+msg+'</div></div>';
+
+    /* still show today's status signals if any */
+    var sig2 = sigRows();
+    if(sig2) content.innerHTML += '<div class="iq-sec">Right now</div><div class="iq-card">'+sig2+'</div>';
+  }
+
+  /* gather all .iq-card for staggered reveal + animate meters */
+  var all = Array.prototype.slice.call(document.querySelectorAll('.iq-card'));
+  all.forEach(function(c,i){ setTimeout(function(){
+    c.classList.add('in');
+    c.querySelectorAll('.iq-meter i').forEach(function(b){ b.style.width = (b.getAttribute('data-w')||0)+'%'; });
+  }, 120 + i*85); });
+}
+
+function start(){
+  if(!window.ALSInsights){ setTimeout(start, 140); return; }
+  boot();
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start, {once:true}); else start();
+})();
+</script>
+<script src="nova.js" defer></script>
+</body>
+</html>
