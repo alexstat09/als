@@ -189,6 +189,7 @@
     fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
+        try { window.POCOACH_LAST_SYNC = Date.now(); } catch (e) {} // a pull completed → cloud is reachable
         var remote  = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
         var local   = readLocal();
         var merged  = mergeData(local, remote);

@@ -70,7 +70,7 @@
       if (!s || !s.date) return;
       (s.entries || []).forEach(function (en) {
         if (!en || en.kind === 'time') return;
-        var best = 0; (en.sets || []).forEach(function (st) { if (st && st.done !== false) { var v = e1rm(st.kg, st.reps); if (v > best) best = v; } });
+        var best = 0; (en.sets || []).forEach(function (st) { if (st && st.done !== false && st.type !== 'warmup') { var v = e1rm(st.kg, st.reps); if (v > best) best = v; } });
         if (best > 0) { var k = en.exId || en.name; if (!byEx[k]) byEx[k] = { name: en.name || k, byDay: {} }; var d = s.date; if (!byEx[k].byDay[d] || best > byEx[k].byDay[d]) byEx[k].byDay[d] = best; }
       });
     });

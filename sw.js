@@ -1,15 +1,20 @@
 /* ════════════════════════════════════════════════════════════════
    ALS Dashboard — service worker (Pillar 5: offline + notifications)
    • Offline app shell: precache core pages/assets, runtime-cache the
-     rest. Navigations are network-first (always fresh online, cached
-     offline); static assets are stale-while-revalidate.
+     rest. Same-origin requests are CACHE-FIRST with background revalidate
+     — the app opens instantly even on dead gym wi-fi and never hangs
+     waiting on the network. Freshness after a deploy is guaranteed by the
+     CACHE version bump + precache(reload): the new SW repopulates a new
+     cache on install (skipWaiting + clients.claim), so the next load is
+     fresh. (Was network-first, which hung on poor reception — the exact
+     opposite of what a workout app needs mid-set.)
    • Cross-origin requests (Supabase, CDN, Google Fonts) are never
      intercepted — sync stays online-only and degrades gracefully.
    • Rest-timer notification: the app hands off the rest end-time when
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v117";
+var CACHE = "als-v118";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -46,19 +51,24 @@ self.addEventListener('fetch', function (e) {
   try { url = new URL(req.url); } catch (err) { return; }
   if (url.origin !== self.location.origin) return; // leave Supabase / CDN / fonts to the network
 
-  // Network-first for EVERYTHING same-origin: always fresh code online, cache
-  // only as an offline fallback. (Stale-while-revalidate was serving old JS/CSS
-  // for an extra load each deploy — the source of the "still cached" issues.)
+  // Cache-first for EVERYTHING same-origin: serve the cached copy instantly
+  // (zero network wait — critical mid-workout on weak gym signal), then
+  // revalidate in the background so the next load picks up any new deploy.
+  // The CACHE version bump per deploy + precache(reload) means the freshly
+  // cached assets ARE the new ones once the updated SW activates, so this is
+  // not stale-serving — it's instant-serving with eventual freshness.
   e.respondWith(
-    fetch(req).then(function (res) {
-      if (res && res.status === 200 && res.type === 'basic') {
-        var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
-      }
-      return res;
-    }).catch(function () {
-      return caches.match(req).then(function (r) {
-        return r || (req.mode === 'navigate' ? caches.match('index.html') : undefined);
+    caches.match(req).then(function (cached) {
+      var network = fetch(req).then(function (res) {
+        if (res && res.status === 200 && res.type === 'basic') {
+          var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () {
+        return cached || (req.mode === 'navigate' ? caches.match('index.html') : undefined);
       });
+      // cached → instant; otherwise wait on the network (and cache it)
+      return cached || network;
     })
   );
 });
