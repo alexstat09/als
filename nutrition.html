@@ -157,6 +157,7 @@
     <div class="card" id="coachCard" style="padding:14px 16px;"></div>
     <div class="card" id="energyCard" style="padding:14px 16px;"></div>
     <div class="card" id="trendsCard" style="padding:14px 16px;"></div>
+    <div class="card" id="consistencyCard" style="padding:14px 16px;"></div>
     <div id="diary"></div>
   </div>
 
@@ -303,12 +304,55 @@
       var col=sc>=85?'#34E2B0':(sc>=65?'#E8C66B':(sc>=40?'#F0A66B':'#FF6B8B'));
       var lbl=sc>=85?'Dialed in':(sc>=65?'Solid':(sc>=40?'Getting there':'Let’s build it'));
       var action=nextAction(t,tg);
+      // Anticipatory: the food you usually eat in this slot, not yet logged today → one-tap log.
+      var slot=currentMealSlot(), sug=null, gz=slotGotos(slot,4);
+      for(var gi=0;gi<gz.length;gi++){ if(!loggedTodayName(gz[gi].name)){ sug=gz[gi]; break; } }
+      window._nowGoto=sug||null;
+      var sugHtml = sug ? '<div style="margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px">'+
+          '<div style="flex:1;min-width:0;font-size:12.5px;color:rgba(244,241,234,.82);line-height:1.4">☼ You usually have <b style="color:#F4F1EA">'+esc(sug.name)+'</b> at '+esc(slot).toLowerCase()+'</div>'+
+          '<button type="button" class="sh-btn" data-act="goto-log" style="flex:none;width:auto;margin:0;padding:9px 15px;font-size:12.5px">Log it</button>'+
+        '</div>' : '';
       el.innerHTML='<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="flex:none;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid '+col+';background:rgba(255,255,255,.03)"><div style="font-size:20px;font-weight:800;color:'+col+';font-family:var(--au-mono,ui-monospace);line-height:1">'+(sc==null?'—':sc)+'</div></div>'+
         '<div style="flex:1;min-width:0">'+
           '<div style="font-family:var(--au-mono,ui-monospace);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:'+col+';margin-bottom:4px">'+(sc==null?'Today':lbl+' · day score')+'</div>'+
           '<div style="font-size:13px;color:#F4F1EA;line-height:1.45">'+esc(action)+'</div>'+
-        '</div></div>';
+        '</div></div>'+sugHtml;
+    }
+    // ── Consistency calendar + streaks (Phase C) ──────────────────
+    function renderConsistency(){
+      var el=document.getElementById('consistencyCard'); if(!el) return;
+      var tg=targets();
+      var byDay={}; getLogs().forEach(function(e){ if(!e||!e.dateKey) return; var t=byDay[e.dateKey]||(byDay[e.dateKey]={kcal:0,p:0}); t.kcal+=e.kcal||0; t.p+=e.p||0; });
+      var loggedDays=Object.keys(byDay).filter(function(dk){ return byDay[dk].kcal>0; });
+      if(loggedDays.length<5){ el.style.display='none'; return; }
+      el.style.display='';
+      function status(dk){ var t=byDay[dk]; if(!t||t.kcal<=0) return 0; var onK=tg.kcal&&Math.abs(t.kcal/tg.kcal-1)<=0.1, onP=tg.p?t.p>=tg.p*0.9:true; return (onK&&onP)?3:((onK||onP)?2:1); }
+      function cellCol(st){ return st===3?'#34E2B0':(st===2?'rgba(52,226,176,.45)':(st===1?'rgba(155,140,255,.4)':(st===0?'rgba(255,255,255,.06)':'transparent'))); }
+      // 18-week grid, weeks as columns (Sunday-started), oldest → newest
+      var WK=18, DAYS=WK*7, todayD=new Date(); todayD.setHours(0,0,0,0);
+      var start=new Date(todayD.getTime()-(DAYS-1)*86400000); start.setDate(start.getDate()-start.getDay());
+      var cur=new Date(start), cells='';
+      while(cur<=todayD){ var colHtml='';
+        for(var i=0;i<7;i++){ var dk=dateKey(cur), future=cur>todayD, st=future?-1:status(dk);
+          colHtml+='<div title="'+dk+'" style="width:11px;height:11px;border-radius:3px;background:'+cellCol(st)+'"></div>';
+          cur.setDate(cur.getDate()+1); }
+        cells+='<div style="display:flex;flex-direction:column;gap:3px">'+colHtml+'</div>';
+      }
+      // streaks (lenient: an empty today doesn't break it)
+      function dayNum(dk){ var p=dk.split('-').map(Number); return Math.round(new Date(p[0],p[1]-1,p[2]).getTime()/86400000); }
+      var dd=new Date(todayD); if(!(byDay[dateKey(dd)]&&byDay[dateKey(dd)].kcal>0)) dd.setDate(dd.getDate()-1);
+      var streak=0; while(byDay[dateKey(dd)]&&byDay[dateKey(dd)].kcal>0){ streak++; dd.setDate(dd.getDate()-1); }
+      var ns=loggedDays.map(dayNum).sort(function(a,b){return a-b;}), best=0,run=0,prev=null;
+      ns.forEach(function(nn){ run=(prev!=null&&nn===prev+1)?run+1:1; if(run>best)best=run; prev=nn; });
+      var tn=dayNum(dateKey(todayD)), last30=loggedDays.filter(function(dk){ var ago=tn-dayNum(dk); return ago>=0&&ago<30; });
+      var onT30=last30.filter(function(dk){ return status(dk)===3; }).length;
+      function stat(v,l){ return '<div style="flex:1;text-align:center"><div style="font-family:var(--au-mono,ui-monospace);font-size:17px;font-weight:800;color:#F4F1EA">'+v+'</div><div style="font-family:var(--au-mono,ui-monospace);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:3px">'+l+'</div></div>'; }
+      el.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11px"><div style="font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5)">Consistency</div><div style="font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.35)">last 18 weeks</div></div>'+
+        '<div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px">'+cells+'</div>'+
+        '<div style="display:flex;gap:10px;align-items:center;margin:9px 0 13px;font-family:var(--au-mono,ui-monospace);font-size:8px;color:rgba(244,241,234,.4)"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34E2B0;display:inline-block"></span>on target</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(52,226,176,.45);display:inline-block"></span>partial</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(155,140,255,.4);display:inline-block"></span>logged</span></div>'+
+        '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px">'+stat(streak+'d','streak')+stat(best+'d','best')+stat(last30.length,'logged / 30')+stat(onT30,'on target / 30')+'</div>';
     }
     function renderTrends(){
       var el=document.getElementById('trendsCard'); if(!el) return;
@@ -366,7 +410,7 @@
     function renderAll(){
       document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
       document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
-      renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderDiary();
+      renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderConsistency(); renderDiary();
     }
     window._nutRerender=renderAll;
 
@@ -419,13 +463,14 @@
         if(!e||!e.name||!(e.grams>0)) return;
         var key=String(e.name).toLowerCase().trim(); if(!key) return;
         var o=byKey[key];
-        if(!o){ o=byKey[key]={name:e.name,count:0,lastTs:0,gl:{},per100:null,source:e.source||'manual'}; }
+        if(!o){ o=byKey[key]={name:e.name,count:0,lastTs:0,gl:{},meals:{},per100:null,source:e.source||'manual'}; }
         o.count++;
         var ts=e.ts||0;
         if(ts>=o.lastTs){ o.lastTs=ts; var k=100/e.grams;
           o.per100={kcal:(e.kcal||0)*k,p:(e.p||0)*k,c:(e.c||0)*k,f:(e.f||0)*k,fiber:(e.fiber||0)*k,sugar:(e.sugar||0)*k,sodium:(e.sodium||0)*k,satfat:(e.satfat||0)*k};
           o.source=e.source||o.source; }
         var gk=Math.round(e.grams); o.gl[gk]=(o.gl[gk]||0)+1;
+        var ml=e.meal||'Snacks'; o.meals[ml]=(o.meals[ml]||0)+1;
       });
       var arr=Object.keys(byKey).map(function(key){ var o=byKey[key];
         var best=null,bc=0; for(var g in o.gl){ if(o.gl[g]>bc){ bc=o.gl[g]; best=+g; } }
@@ -460,6 +505,20 @@
     }
     function favResult(f){ return {name:f.name,brand:f.brand||'',kcal:f.kcal||0,p:f.p||0,c:f.c||0,f:f.f||0,fiber:f.fiber||0,sugar:f.sugar||0,sodium:f.sodium||0,satfat:f.satfat||0,source:f.source||'manual',servingG:0,usualG:f.prefG||100,_fav:true}; }
     function favSub(f){ return '★ Favorite · usual '+r0(f.usualG)+'g'; }
+
+    // ── Time-aware go-tos (Phase C): the foods you most often log in the
+    // CURRENT meal slot. Meal slot (not raw clock hour) is the time signal —
+    // it's accurate for imported MyFitnessPal logs too (those are all stamped
+    // at noon, so a raw-hour model would be meaningless). ──
+    function currentMealSlot(){ var h=new Date().getHours(); if(h<11) return 'Breakfast'; if(h<15) return 'Lunch'; if(h<18) return 'Snacks'; if(h<22) return 'Dinner'; return 'Snacks'; }
+    function slotGotos(slot, limit){
+      var idx=getPIndex(), out=[];
+      idx.forEach(function(o){ var c=(o.meals&&o.meals[slot])||0; if(c>=2) out.push({o:o,c:c}); });
+      out.sort(function(a,b){ return (b.c-a.c)||(b.o.score-a.o.score); });
+      return out.slice(0,limit||4).map(function(x){ var r=histResult(x.o); r._goto=true; r._meal=slot; r._slotCount=x.c; return r; });
+    }
+    function gotoSub(f){ return '☼ usual '+r0(f.usualG)+'g · you eat this at '+esc(f._meal).toLowerCase(); }
+    function loggedTodayName(name){ var k=String(name||'').toLowerCase(); return dayLogs(today()).some(function(e){ return String(e.name||'').toLowerCase()===k; }); }
     // forgiving local match: substring of the folded name, or token-prefix
     function pMatch(name,q){ if(!q) return true; var f=nfFold(name), fq=nfFold(q).trim(); if(!fq) return true; if(f.indexOf(fq)>=0) return true; return nfMatch(name,q); }
     function histResult(o){ var p=o.per100||{}; return {name:o.name,brand:'',kcal:p.kcal||0,p:p.p||0,c:p.c||0,f:p.f||0,fiber:p.fiber||0,sugar:p.sugar||0,sodium:p.sodium||0,satfat:p.satfat||0,source:o.source||'manual',servingG:0,usualG:o.usualG,_count:o.count,_hist:true}; }
@@ -481,9 +540,15 @@
       function sec(t){ html+='<div class="sh-sec">'+esc(t)+'</div>'; }
       function push(items, sub){ items.forEach(function(f){ var i=rows.length; rows.push(f); html+=resRow(f.name,f.brand||'',sub(f),'search',i); }); }
       if(!q){
+        var favNames={}; loc.favs.forEach(function(f){ favNames[String(f.name).toLowerCase()]=1; });
+        var gotos=slotGotos(currentMealSlot(),4).filter(function(g){ return !favNames[String(g.name).toLowerCase()]; });
+        var gNames={}; gotos.forEach(function(g){ gNames[String(g.name).toLowerCase()]=1; });
+        if(gotos.length){ sec(currentMealSlot()+' go-tos'); push(gotos, gotoSub); }
         if(loc.favs.length){ sec('Favorites'); push(loc.favs, favSub); }
-        if(loc.hist.length){ sec('Your foods'); push(loc.hist.slice(0,12), histSub); }
-        if(loc.cust.length){ sec('Custom'); push(loc.cust.slice(0,6), custSub); }
+        var histF=loc.hist.filter(function(h){ return !gNames[String(h.name).toLowerCase()]; });
+        if(histF.length){ sec('Your foods'); push(histF.slice(0,12), histSub); }
+        var custF=loc.cust.filter(function(c){ return !gNames[String(c.name).toLowerCase()]; });
+        if(custF.length){ sec('Custom'); push(custF.slice(0,6), custSub); }
         if(!rows.length){ box.innerHTML='<div class="sh-msg">Log a few foods and your go-tos appear here for one-tap logging. Until then, just start typing.</div>'; window._sr=[]; return; }
       } else {
         if(loc.favs.length){ sec('Favorites'); push(loc.favs, favSub); }
@@ -807,6 +872,9 @@
       else if(act==='copy-open'){ copyOpen(); }
       else if(act==='copy-close'){ copyClose(); }
       else if(act==='copy-day'){ copyDay(el.getAttribute('data-dk')); }
+      else if(act==='goto-log'){ var g=window._nowGoto; if(!g) return; var gg=g.usualG||100, kk=gg/100;
+        addEntry({id:uid(),ts:Date.now(),dateKey:today(),meal:g._meal||'Snacks',name:g.name,grams:gg,source:g.source||'manual',
+          kcal:r0(g.kcal*kk),p:r1(g.p*kk),c:r1(g.c*kk),f:r1(g.f*kk),fiber:r1((g.fiber||0)*kk),sugar:r1((g.sugar||0)*kk),sodium:r0((g.sodium||0)*kk),satfat:r1((g.satfat||0)*kk)}); }
     });
     document.addEventListener('input', function(e){ if(e.target&&e.target.id==='qIn') onSearchInput(); });
     document.addEventListener('change', function(e){ if(e.target&&e.target.id==='mealPhoto'){ var f=e.target.files&&e.target.files[0]; try{ e.target.value=''; }catch(x){} if(f) photoGo(f); } });
