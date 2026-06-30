@@ -167,6 +167,8 @@
 
     <div class="card sum" id="sumCard"></div>
     <div class="card" id="coachCard" style="padding:14px 16px;"></div>
+    <div class="card" id="fuelCard" style="padding:14px 16px;"></div>
+    <div class="card" id="proteinCard" style="padding:14px 16px;"></div>
     <div class="card" id="energyCard" style="padding:14px 16px;"></div>
     <div class="card" id="trendsCard" style="padding:14px 16px;"></div>
     <div class="card" id="consistencyCard" style="padding:14px 16px;"></div>
@@ -251,6 +253,38 @@
       var carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
       return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14), goal:goal };
     }
+
+    // ── Weekly Fuel: training-aware day targets + calorie banking ──
+    // Reads YOUR gym log (po_workouts) + weekly schedule (po_coach_v1): gym days
+    // get more fuel (mostly carbs), rest days less, the WEEK total unchanged.
+    // No other app does this from a real training log — only this one can.
+    function sessionDK(s){ if(!s) return null; if(s.date && /^\d{4}-\d{2}-\d{2}/.test(s.date)) return String(s.date).slice(0,10); if(s.startedAt){ try{ return dateKey(new Date(s.startedAt)); }catch(e){} } return null; }
+    function trainedSet(){ var m={}; (ls('po_workouts',[])||[]).forEach(function(s){ var dk=sessionDK(s); if(dk) m[dk]=1; }); return m; }
+    function schedHas(){ return ((ls('po_coach_v1',{})||{}).schedule)||{}; }
+    function mondayOf(dk){ var p=dk.split('-').map(Number), d=new Date(p[0],p[1]-1,p[2]); var wd=d.getDay(); d.setDate(d.getDate()+(wd===0?-6:1-wd)); return d; }
+    function weekDays(dk){ var mon=mondayOf(dk), out=[]; for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); out.push(dateKey(d)); } return out; }
+    function trainInfo(dk, tset, sched){ if(tset[dk]) return 'trained'; var p=dk.split('-').map(Number), wd=new Date(p[0],p[1]-1,p[2]).getDay(); if(sched[String(wd)]) return dk>=today()?'planned':'rest'; return 'rest'; }
+    function isTrain(info){ return info==='trained'||info==='planned'; }
+    function weekFuelPlan(dk){
+      var base=targets(), sched=schedHas(), tset=trainedSet();
+      var hasData=(ls('po_workouts',[])||[]).length>0 || Object.keys(sched).length>0;
+      var wd=weekDays(dk), infos=wd.map(function(d){ return trainInfo(d,tset,sched); });
+      var T=infos.filter(isTrain).length, R=7-T;
+      // p = per-training-day surplus fraction; surplus pulled evenly from rest
+      // days. Bounded so a rest day never drops below 80% of base.
+      var p=(hasData && T>0 && R>0) ? Math.min(0.15, 0.2*R/T) : 0;
+      var days=wd.map(function(d,i){ var info=infos[i], tr=isTrain(info);
+        var kc=p>0 ? (tr?Math.round(base.kcal*(1+p)):Math.round(base.kcal*(1-T*p/R))) : base.kcal;
+        return {dk:d, info:info, train:tr, kcal:kc}; });
+      return { base:base, days:days, T:T, R:R, p:p, hasData:hasData };
+    }
+    function dayTargets(dk){
+      var plan=weekFuelPlan(dk), base=plan.base; if(plan.p<=0) return base;
+      var day=null,i; for(i=0;i<plan.days.length;i++){ if(plan.days[i].dk===dk){ day=plan.days[i]; break; } }
+      if(!day) return base;
+      var kcal=day.kcal, prot=base.p, fat=base.f, carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
+      return { kcal:kcal, p:prot, c:carb, f:fat, fiber:base.fiber, goal:base.goal, _base:base.kcal, _train:day.train, _adj:kcal-base.kcal, _info:day.info };
+    }
     // Daily score 0–100: calorie adherence (both-sided) + protein + fiber.
     function dayScore(t,tg){
       if(!tg.kcal||t.kcal<=0) return null;
@@ -287,7 +321,7 @@
       var stats='<div class="en-stat"><div class="en-val">'+maint+'</div><div class="en-lbl">'+(learned?'maintenance':'est. maintenance')+'</div></div>';
       if(learned){ var wc=r.weeklyWeightChange, tcol=wc<-0.05?'#34E2B0':(wc>0.05?'#9B8CFF':'rgba(244,241,234,.6)');
         stats+='<div class="en-stat"><div class="en-val" style="color:'+tcol+';font-size:16px">'+(wc>0?'+':'')+wc+'</div><div class="en-lbl">kg / week</div></div>'; }
-      stats+='<div class="en-stat" style="margin-left:auto;text-align:right"><div class="en-val" style="color:rgb(var(--nu))">'+tgt+'</div><div class="en-lbl">daily target</div></div>';
+      stats+='<div class="en-stat" style="margin-left:auto;text-align:right"><div class="en-val" style="color:rgb(var(--nu))">'+tgt+'</div><div class="en-lbl">base / day</div></div>';
       el.innerHTML=
         '<div class="en-hdr">Adaptive Energy · '+conf+'</div>'+
         '<div class="en-row">'+stats+'</div>'+
@@ -312,7 +346,7 @@
       var el=document.getElementById('coachCard'); if(!el) return;
       if(viewDate!==today()){ el.style.display='none'; return; } // today only
       el.style.display='';
-      var t=dayTotals(viewDate), tg=targets(), sc=dayScore(t,tg);
+      var t=dayTotals(viewDate), tg=dayTargets(viewDate), sc=dayScore(t,tg);
       var col=sc>=85?'#34E2B0':(sc>=65?'#E8C66B':(sc>=40?'#F0A66B':'#FF6B8B'));
       var lbl=sc>=85?'Dialed in':(sc>=65?'Solid':(sc>=40?'Getting there':'Let’s build it'));
       var action=nextAction(t,tg);
@@ -331,6 +365,62 @@
           '<div style="font-size:13px;color:#F4F1EA;line-height:1.45">'+esc(action)+'</div>'+
         '</div></div>'+sugHtml;
     }
+    // ── Weekly Fuel card ──────────────────────────────────────────
+    function renderFuel(){
+      var el=document.getElementById('fuelCard'); if(!el) return;
+      var plan=weekFuelPlan(viewDate);
+      if(!plan.hasData){ el.style.display='none'; return; }   // no gym data → hide
+      el.style.display='';
+      var base=plan.base, wb=base.kcal*7, todayDK=today(), consumed=0, vd=null;
+      plan.days.forEach(function(d){ d.eaten=dayTotals(d.dk).kcal; if(d.dk<=todayDK) consumed+=d.eaten; if(d.dk===viewDate) vd=d; });
+      var remaining=wb-consumed;
+      var cycling=plan.p>0;
+      var todayTag = (vd&&cycling) ? (vd.train?('Training day · +'+(vd.kcal-base.kcal)+' kcal, mostly carbs'):('Rest day · '+(vd.kcal-base.kcal)+' kcal')) : 'Even split — schedule/log workouts to carb-cycle';
+      var dowL=['M','T','W','T','F','S','S'];
+      var cells=plan.days.map(function(d,i){
+        var on=d.eaten>0&&Math.abs(d.eaten/Math.max(d.kcal,1)-1)<=0.1, over=d.eaten>d.kcal*1.1;
+        var col=d.eaten<=0?'rgba(255,255,255,.08)':(on?'#34E2B0':(over?'#FF6B8B':'rgba(155,140,255,.8)'));
+        var pct=Math.max(5,Math.min(100,Math.round(d.eaten/Math.max(d.kcal,1)*100)));
+        var isV=d.dk===viewDate;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px'+(isV?';opacity:1':'')+'">'+
+          '<div style="font-size:10px;line-height:1">'+(d.train?'🏋':'·')+'</div>'+
+          '<div style="width:100%;max-width:24px;height:34px;border-radius:5px;background:rgba(255,255,255,.05);display:flex;align-items:flex-end;overflow:hidden;'+(isV?'outline:1.5px solid rgba(124,211,252,.6)':'')+'"><div style="width:100%;height:'+pct+'%;background:'+col+'"></div></div>'+
+          '<div style="font-size:8px;font-family:var(--au-mono,ui-monospace);color:'+(isV?'#F4F1EA':'rgba(244,241,234,.4)')+'">'+dowL[i]+'</div></div>';
+      }).join('');
+      var bankCol=remaining>=0?'#34E2B0':'#FF6B8B';
+      var bankTxt=remaining>=0?(fmtK(remaining)+' kcal left this week'):(fmtK(-remaining)+' kcal over this week');
+      var pctWk=Math.max(0,Math.min(100,Math.round(consumed/Math.max(wb,1)*100)));
+      el.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px"><div style="font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5)">Weekly Fuel</div><div style="font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.35)">Mon–Sun · from your training</div></div>'+
+        '<div style="display:flex;align-items:baseline;gap:8px;margin:6px 0 2px"><div style="font-family:var(--au-mono,ui-monospace);font-size:24px;font-weight:800;color:#F4F1EA;line-height:1">'+(vd?fmtK(vd.kcal):fmtK(base.kcal))+'</div><div style="font-size:11px;color:rgba(244,241,234,.5)">target '+(viewDate===todayDK?'today':fmtDateLbl(viewDate).toLowerCase())+'</div></div>'+
+        '<div style="font-size:11.5px;color:'+(vd&&vd.train&&cycling?'rgb(var(--nu))':'rgba(244,241,234,.55)')+';margin-bottom:13px">'+esc(todayTag)+'</div>'+
+        '<div style="display:flex;gap:5px;align-items:flex-end;margin-bottom:11px">'+cells+'</div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:10.5px;font-family:var(--au-mono,ui-monospace);margin-bottom:5px"><span style="color:rgba(244,241,234,.5)">week budget '+fmtK(wb)+'</span><span style="color:'+bankCol+'">'+esc(bankTxt)+'</span></div>'+
+        '<div style="height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden"><div style="height:100%;width:'+pctWk+'%;background:'+(remaining>=0?'rgb(var(--nu))':'#FF6B8B')+'"></div></div>'+
+        (cycling?'<div style="font-size:10.5px;color:rgba(244,241,234,.4);margin-top:10px;line-height:1.45">Gym days get more fuel (mostly carbs), rest days less — your week still totals the same. A big day isn’t a miss if the week balances.</div>':'');
+    }
+    function fmtK(n){ n=Math.round(n||0); try{ return n.toLocaleString('en-US'); }catch(e){ return String(n); } }
+
+    // ── Protein-per-meal distribution card ────────────────────────
+    function renderProtein(){
+      var el=document.getElementById('proteinCard'); if(!el) return;
+      if(viewDate!==today()){ el.style.display='none'; return; }
+      var logs=dayLogs(viewDate), totP=logs.reduce(function(s,e){return s+(e.p||0);},0);
+      if(totP<=0){ el.style.display='none'; return; }
+      el.style.display='';
+      var w=weightKg(), perMeal=Math.max(25,Math.round(w*0.4));   // ~0.4 g/kg/meal MPS threshold
+      var byMeal=MEALS.map(function(m){ return {m:m, p:logs.filter(function(e){return (e.meal||'Snacks')===m;}).reduce(function(s,e){return s+(e.p||0);},0)}; });
+      var withFood=byMeal.filter(function(x){return x.p>0;}), hit=byMeal.filter(function(x){return x.p>=perMeal;}).length;
+      var maxShare=Math.max.apply(null, byMeal.map(function(x){return x.p/totP;}));
+      var bars=byMeal.map(function(x){ var pct=Math.max(4,Math.min(100,Math.round(x.p/perMeal*100))); var col=x.p>=perMeal?'#34E2B0':(x.p>0?'rgba(52,226,176,.4)':'rgba(255,255,255,.07)');
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;max-width:42px;height:44px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:flex-end;overflow:hidden"><div style="width:100%;height:'+pct+'%;background:'+col+'"></div></div><div style="font-family:var(--au-mono,ui-monospace);font-size:11px;font-weight:700;color:#F4F1EA">'+r0(x.p)+'</div><div style="font-family:var(--au-mono,ui-monospace);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(244,241,234,.4)">'+esc(x.m.slice(0,3))+'</div></div>'; }).join('');
+      var note;
+      if(maxShare>0.6 && withFood.length>=2) note='Most of today’s protein is in one meal — spreading it across meals supports muscle better.';
+      else if(hit>=2) note='Well spread — '+hit+' meals cleared your ~'+perMeal+'g protein mark.';
+      else note='Aim for ~'+perMeal+'g protein per main meal to get the most muscle benefit.';
+      el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11px"><div style="font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5)">Protein timing</div><div style="font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.35)">~'+perMeal+'g / meal</div></div><div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">'+bars+'</div><div style="font-size:11.5px;color:rgba(244,241,234,.6);line-height:1.45">'+esc(note)+'</div>';
+    }
+
     // ── Consistency calendar + streaks (Phase C) ──────────────────
     function renderConsistency(){
       var el=document.getElementById('consistencyCard'); if(!el) return;
@@ -390,7 +480,7 @@
         '<div style="display:flex;gap:16px;font-size:11px;color:rgba(244,241,234,.55)"><span>avg <b style="color:#F4F1EA">'+avgK+'</b> kcal</span><span>avg <b style="color:#F4F1EA">'+avgP+'g</b> protein</span><span>target <b style="color:rgb(var(--nu))">'+tg.kcal+'</b></span></div>';
     }
     function renderSummary(){
-      var t=dayTotals(viewDate), tg=targets();
+      var t=dayTotals(viewDate), tg=dayTargets(viewDate);
       var pct=Math.max(0,Math.min(1,tg.kcal?t.kcal/tg.kcal:0)), R=46, C=2*Math.PI*R, off=C-pct*C;
       var col=t.kcal>tg.kcal*1.08?'#FF6B8B':'rgb(var(--nu))';
       function bar(cls,name,v,tar,u){ var p=tar?Math.min(1,v/tar):0; return '<div class="mac '+cls+'"><div class="mac-top"><span class="mac-name">'+name+'</span><span class="mac-val">'+r0(v)+' / '+tar+u+'</span></div><div class="mac-track"><div class="mac-fill" style="width:'+(p*100).toFixed(0)+'%"></div></div></div>'; }
@@ -427,7 +517,7 @@
     function renderAll(){
       document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
       document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
-      renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderConsistency(); renderDiary();
+      renderSummary(); renderCoach(); renderFuel(); renderProtein(); renderEnergy(); renderTrends(); renderConsistency(); renderDiary();
     }
     window._nutRerender=renderAll;
 
