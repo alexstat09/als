@@ -155,6 +155,16 @@
     .pat-n{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); white-space:nowrap; }
     .pat-rhythm{ margin-top:13px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06); font-size:12px; color:var(--au-dim); line-height:1.55; }
     .pat-rhythm b{ color:var(--au-ivory); font-weight:700; }
+
+    /* ── Your day: circadian energy schedule (Phase C) ─── */
+    .day-list{ display:flex; flex-direction:column; gap:2px; }
+    .day-row{ display:flex; align-items:flex-start; gap:12px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .day-row:last-child{ border-bottom:none; }
+    .day-ic{ font-size:16px; line-height:1.4; width:22px; text-align:center; flex-shrink:0; }
+    .day-mid{ flex:1; min-width:0; }
+    .day-name{ font-family:var(--au-mono); font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--au-ivory); }
+    .day-time{ color:rgb(var(--sec-rgb)); margin-left:5px; }
+    .day-tip{ font-size:12px; color:var(--au-dim); line-height:1.4; margin-top:3px; }
   </style>
 </head>
 <body data-page="sleep" class="au-bg au-mood-alert" id="root">
@@ -201,10 +211,22 @@
       <div class="sl-sec-body" id="checkBody"></div>
     </section>
 
+    <!-- Your day — circadian energy schedule -->
+    <section class="sl-sec" id="daySec" style="--sec-rgb:242,192,99">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Your day</span><span class="sl-sec-note">ENERGY SCHEDULE</span></div>
+      <div class="sl-sec-body" id="dayBody"></div>
+    </section>
+
     <!-- Trends -->
     <section class="sl-sec" style="--sec-rgb:52,226,176">
       <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Trends</span><span class="sl-sec-note">LAST 14 NIGHTS</span></div>
       <div class="sl-sec-body" id="trendBody"></div>
+    </section>
+
+    <!-- Consistency calendar -->
+    <section class="sl-sec" style="--sec-rgb:52,226,176">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Consistency</span><span class="sl-sec-note">LAST 12 WEEKS</span></div>
+      <div class="sl-sec-body" id="consBody"></div>
     </section>
 
     <!-- What affects you (cross-domain patterns) -->
@@ -383,7 +405,9 @@
       var durEl = document.querySelector('#sleepBody .sl-dur-val');
       if (durEl) durEl.textContent = fmtHM(hrs);
       renderRecovery();
+      renderDay();
       renderTrends();
+      renderConsistency();
       renderPatterns();
       updateNova();
     }
@@ -426,9 +450,9 @@
     function sleepInsights(){
       var logs = getLogs().filter(function(e){ return e && e.dateKey; }).sort(function(a,b){ return a.dateKey < b.dateKey ? -1 : 1; });
       var need = getProfile().need;
-      var cut = dateKey(new Date(Date.now() - 7 * 86400000));
-      var wk = logs.filter(function(e){ return e.dateKey > cut && e.hours > 0; });
-      var debt = wk.reduce(function(s,e){ return s + (need - e.hours); }, 0);
+      // 14-night rolling debt (Rise-style), consistent with the recovery engine
+      var dbt = debtInfo(need, today());
+      var debt = dbt ? dbt.debt : 0, weekNights = dbt ? dbt.nights : 0;
       var beds = logs.slice(-10).filter(function(e){ return e.bed; }).map(function(e){ var p = e.bed.split(':'); var mm = (+p[0]) * 60 + (+p[1]); if (mm < 720) mm += 1440; return mm; });
       var consistency = null, spread = null;
       if (beds.length >= 3){
@@ -443,7 +467,7 @@
       while (have[dateKey(cur)]){ streak++; cur = new Date(cur.getTime() - 86400000); }
       var recent = logs.slice(-14).filter(function(e){ return e.hours > 0; }), best = null;
       recent.forEach(function(e){ var sc = e.recovery != null ? e.recovery : recoveryOf(e.dateKey); var k = sc != null ? sc : e.hours; if (!best || k > best.key) best = { e: e, key: k, sc: sc }; });
-      return { debt: debt, weekNights: wk.length, consistency: consistency, spread: spread, streak: streak, best: best, need: need };
+      return { debt: debt, weekNights: weekNights, consistency: consistency, spread: spread, streak: streak, best: best, need: need };
     }
 
     /* ══════════ RECOVERY CARD ══════════ */
@@ -684,9 +708,9 @@
       var ins = sleepInsights();
       var debtV, debtL;
       if (!ins.weekNights){ debtV = '—'; debtL = 'sleep debt'; }
-      else if (ins.debt > 0.5){ debtV = '−' + (Math.round(ins.debt * 10) / 10) + 'h'; debtL = 'debt this week'; }
-      else if (ins.debt < -0.5){ debtV = '+' + (Math.round(-ins.debt * 10) / 10) + 'h'; debtL = 'surplus this week'; }
-      else { debtV = 'on&nbsp;target'; debtL = 'this week'; }
+      else if (ins.debt > 0.5){ debtV = '−' + (Math.round(ins.debt * 10) / 10) + 'h'; debtL = 'sleep debt · 14n'; }
+      else if (ins.debt < -0.5){ debtV = '+' + (Math.round(-ins.debt * 10) / 10) + 'h'; debtL = 'surplus · 14n'; }
+      else { debtV = 'on&nbsp;target'; debtL = '14 nights'; }
       var consV = ins.consistency != null ? (ins.consistency + '<small> /100</small>') : '—';
       var insHtml = '<div class="sl-ins">' +
         '<div class="sl-ins-card"><div class="sl-ins-v">' + debtV + '</div><div class="sl-ins-l">' + debtL + '</div></div>' +
@@ -696,8 +720,8 @@
       var bestDay = '';
       if (ins.best){ var bd = new Date(ins.best.e.dateKey + 'T00:00:00'); bestDay = ins.best.e.dateKey === today() ? 'tonight' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][bd.getDay()]; }
       var takeaway;
-      if (ins.streak >= 7 && ins.consistency != null && ins.consistency >= 75) takeaway = 'Locked in — ' + ins.streak + ' nights straight with steady timing. This is exactly how recovery compounds.';
-      else if (ins.debt > 2) takeaway = 'You’re ' + (Math.round(ins.debt * 10) / 10) + 'h down this week — an earlier night tonight will lift tomorrow’s recovery.';
+      if (ins.debt > 1.5){ var pm = Math.round(ins.debt * 60 / 7); takeaway = 'You’re carrying ' + (Math.round(ins.debt * 10) / 10) + 'h of sleep debt — clear it with about +' + pm + ' min a night this week, or a weekend lie-in.'; }
+      else if (ins.streak >= 7 && ins.consistency != null && ins.consistency >= 75) takeaway = 'Locked in — ' + ins.streak + ' nights straight with steady timing. This is exactly how recovery compounds.';
       else if (ins.consistency != null && ins.consistency < 50) takeaway = 'Your bedtime swings ±' + ins.spread + ' min — steadier timing lifts recovery more than an extra 20 minutes in bed.';
       else if (ins.best && ins.best.sc != null && ins.best.sc >= 80) takeaway = 'Your best night was ' + bestDay + ' — ' + fmtHM(ins.best.e.hours) + ', recovery ' + ins.best.sc + '. Worth repeating.';
       else if (ins.debt < -1) takeaway = 'Banking surplus sleep this week — nice. Keep the rhythm going.';
@@ -840,6 +864,66 @@
       buzz(); toggleTag(id);
     });
 
+    /* ══════════ YOUR DAY — circadian energy schedule (Phase C) ══════════
+       Standard circadian phases anchored to your wake time + target bed —
+       grogginess, focus peaks, the afternoon dip, wind-down, melatonin
+       window. Derivable with no sensor; labelled as approximate. */
+    function renderDay(){
+      var body = document.getElementById('dayBody'); if (!body) return;
+      var pr = getProfile(), te = todayEntry();
+      var wake = (te && te.wake) ? te.wake : pr.wakeTime;
+      var wp = wake.split(':'), wm = (+wp[0])*60 + (+wp[1]);
+      var bp = targetBed().split(':'), bm = (+bp[0])*60 + (+bp[1]);
+      if (bm <= wm) bm += 1440;                             // bed after wake on the clock
+      function t(mins){ var v = ((Math.round(mins)%1440)+1440)%1440; return pad(Math.floor(v/60)) + ':' + pad(v%60); }
+      var phases = [
+        { ic:'🌫️', name:'Grogginess',    a:wm,      b:wm+90,   tip:'Sleep inertia — ease in; caffeine works well now.' },
+        { ic:'⚡', name:'Peak focus',     a:wm+150,  b:wm+270,  tip:'Your sharpest window — do the hardest thinking.' },
+        { ic:'🥱', name:'Afternoon dip',  a:wm+420,  b:wm+540,  tip:'Natural lull — easy tasks, a walk, or a short nap.' },
+        { ic:'🔥', name:'Evening peak',   a:wm+600,  b:wm+750,  tip:'Second wind — your best window to train hard.' },
+        { ic:'🌆', name:'Wind-down',      a:bm-120,  b:bm-30,   tip:'Dim the lights, screens down — start powering off.' },
+        { ic:'🌙', name:'Sleep window',   a:bm-30,   b:bm+45,   tip:'Melatonin’s flowing — lights out here to fall asleep fast.' }
+      ];
+      body.innerHTML = '<div class="day-list">' + phases.map(function(p){
+        return '<div class="day-row"><span class="day-ic">' + p.ic + '</span><div class="day-mid">' +
+          '<div class="day-name">' + p.name + ' <span class="day-time">' + t(p.a) + '–' + t(p.b) + '</span></div>' +
+          '<div class="day-tip">' + p.tip + '</div></div></div>';
+      }).join('') + '</div>' +
+      '<div class="rec-method" style="margin-top:12px">A typical circadian rhythm anchored to your <b>' + wake + '</b> wake — approximate, but a useful map for timing focus, training &amp; sleep.</div>';
+    }
+
+    /* ══════════ CONSISTENCY CALENDAR (Phase C) ══════════ */
+    function renderConsistency(){
+      var body = document.getElementById('consBody'); if (!body) return;
+      var need = getProfile().need;
+      var byDay = {}; getLogs().forEach(function(e){ if (e && e.dateKey && e.hours > 0) byDay[e.dateKey] = e.hours; });
+      var loggedDays = Object.keys(byDay);
+      if (loggedDays.length < 5){ body.innerHTML = '<p class="sl-empty">Your night-by-night consistency grid fills in here as you log sleep.</p>'; return; }
+      function status(dk){ var h = byDay[dk]; if (!(h > 0)) return 0; if (h >= need - 0.25) return 3; if (h >= need - 1) return 2; return 1; }
+      function col(st){ return st === 3 ? '#34E2B0' : st === 2 ? 'rgba(52,226,176,.45)' : st === 1 ? 'rgba(155,140,255,.4)' : 'rgba(255,255,255,.06)'; }
+      var DAYS = 12*7, todayD = new Date(); todayD.setHours(0,0,0,0);
+      var start = new Date(todayD.getTime() - (DAYS-1)*86400000); start.setDate(start.getDate() - start.getDay());
+      var cur = new Date(start), cells = '';
+      while (cur <= todayD){ var colHtml = '';
+        for (var i=0;i<7;i++){ var dk = dateKey(cur), future = cur > todayD, st = future ? -1 : status(dk);
+          colHtml += '<div title="' + dk + '" style="width:11px;height:11px;border-radius:3px;background:' + (future ? 'transparent' : col(st)) + '"></div>';
+          cur.setDate(cur.getDate() + 1); }
+        cells += '<div style="display:flex;flex-direction:column;gap:3px">' + colHtml + '</div>';
+      }
+      function dayNum(dk){ var p = dk.split('-').map(Number); return Math.round(new Date(p[0],p[1]-1,p[2]).getTime()/86400000); }
+      var dd = new Date(todayD); if (!(byDay[dateKey(dd)] > 0)) dd.setDate(dd.getDate()-1);
+      var streak = 0; while (byDay[dateKey(dd)] > 0){ streak++; dd.setDate(dd.getDate()-1); }
+      var ns = loggedDays.map(dayNum).sort(function(a,b){ return a-b; }), best = 0, run = 0, prev = null;
+      ns.forEach(function(nn){ run = (prev != null && nn === prev+1) ? run+1 : 1; if (run > best) best = run; prev = nn; });
+      var tn = dayNum(dateKey(todayD)), last30 = loggedDays.filter(function(dk){ var a = tn - dayNum(dk); return a >= 0 && a < 30; });
+      var hit30 = last30.filter(function(dk){ return status(dk) === 3; }).length;
+      function stat(v,l){ return '<div style="flex:1;text-align:center"><div style="font-family:var(--au-mono);font-size:17px;font-weight:800;color:var(--au-ivory)">' + v + '</div><div style="font-family:var(--au-mono);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin-top:3px">' + l + '</div></div>'; }
+      body.innerHTML =
+        '<div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px">' + cells + '</div>' +
+        '<div style="display:flex;gap:12px;align-items:center;margin:9px 0 13px;font-family:var(--au-mono);font-size:8px;color:var(--au-faint)"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34E2B0"></span>hit your ' + need + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(52,226,176,.45)"></span>close</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(155,140,255,.4)"></span>short</span></div>' +
+        '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px">' + stat(streak + 'n','streak') + stat(best + 'n','best') + stat(last30.length,'logged / 30') + stat(hit30,'hit / 30') + '</div>';
+    }
+
     /* ── Nova hero: reactive line + page mood ─────── */
     function updateNova(){
       var root = document.getElementById('root'); if (!root) return;
@@ -871,7 +955,9 @@
       renderRecovery();
       renderSleep();
       renderCheck();
+      renderDay();
       renderTrends();
+      renderConsistency();
       renderPatterns();
       updateNova();
     }
