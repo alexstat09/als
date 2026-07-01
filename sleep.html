@@ -137,6 +137,24 @@
     .sl-ins-l{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--au-faint); margin-top:6px; line-height:1.3; }
     .sl-takeaway{ font-family:var(--au-serif); font-style:italic; font-size:14.5px; color:var(--au-ivory); line-height:1.45; padding:12px 14px; margin-bottom:14px; border-radius:13px; background:rgba(var(--sec-rgb),.07); border-left:2px solid rgb(var(--sec-rgb)); }
     .sl-streak{ font-family:var(--au-mono); font-size:9px; }
+
+    /* ── Night tags (Phase B) ─────────────────────── */
+    .sl-tags-wrap{ margin-top:18px; padding-top:15px; border-top:1px solid rgba(255,255,255,.06); }
+    .sl-tags{ display:flex; flex-wrap:wrap; gap:7px; }
+    .sl-tag{ font-family:var(--au-sans); font-size:12px; font-weight:600; color:var(--au-dim); background:rgba(255,255,255,.04); border:1px solid var(--au-line); border-radius:11px; padding:8px 11px; cursor:pointer; transition:transform .12s, border-color .2s, background .2s, color .2s; -webkit-tap-highlight-color:transparent; }
+    .sl-tag:active{ transform:scale(.95); }
+    .sl-tag.on{ background:rgba(var(--sec-rgb),.18); border-color:rgba(var(--sec-rgb),.55); color:rgb(var(--sec-rgb)); }
+
+    /* ── Patterns / what affects you (Phase B) ────── */
+    .pat-today{ font-family:var(--au-serif); font-style:italic; font-size:14.5px; color:var(--au-ivory); line-height:1.45; padding:11px 14px; margin-bottom:14px; border-radius:12px; background:rgba(var(--sec-rgb),.08); border-left:2px solid rgb(var(--sec-rgb)); }
+    .pat-list{ display:flex; flex-direction:column; gap:12px; }
+    .pat-row{ display:flex; align-items:flex-start; gap:10px; }
+    .pat-dot{ width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; box-shadow:0 0 8px currentColor; }
+    .pat-txt{ font-size:13px; color:var(--au-dim); line-height:1.45; flex:1; }
+    .pat-txt b{ color:var(--au-ivory); font-weight:700; }
+    .pat-n{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); white-space:nowrap; }
+    .pat-rhythm{ margin-top:13px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06); font-size:12px; color:var(--au-dim); line-height:1.55; }
+    .pat-rhythm b{ color:var(--au-ivory); font-weight:700; }
   </style>
 </head>
 <body data-page="sleep" class="au-bg au-mood-alert" id="root">
@@ -187,6 +205,12 @@
     <section class="sl-sec" style="--sec-rgb:52,226,176">
       <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">Trends</span><span class="sl-sec-note">LAST 14 NIGHTS</span></div>
       <div class="sl-sec-body" id="trendBody"></div>
+    </section>
+
+    <!-- What affects you (cross-domain patterns) -->
+    <section class="sl-sec" id="patSec" style="--sec-rgb:155,140,255">
+      <div class="sl-sec-hdr"><span class="sl-sec-dot"></span><span class="sl-sec-title">What affects you</span><span class="sl-sec-note">YOUR PATTERNS</span></div>
+      <div class="sl-sec-body" id="patBody"></div>
     </section>
 
   </div>
@@ -360,6 +384,7 @@
       if (durEl) durEl.textContent = fmtHM(hrs);
       renderRecovery();
       renderTrends();
+      renderPatterns();
       updateNova();
     }
 
@@ -565,6 +590,10 @@
           '<div class="sl-scale-ends"><span>' + m.low + '</span><span>' + m.high + '</span></div>' +
         '</div>';
       }).join('');
+      var tags = Array.isArray(e.tags) ? e.tags : [];
+      html += '<div class="sl-tags-wrap"><div class="sl-metric-name" style="margin-bottom:9px">Last night I had…</div><div class="sl-tags">' +
+        TAGS.map(function(t){ var on = tags.indexOf(t.id) >= 0; return '<button type="button" class="sl-tag' + (on ? ' on' : '') + '" data-tag="' + t.id + '">' + t.emoji + ' ' + t.label + '</button>'; }).join('') +
+        '</div></div>';
       document.getElementById('checkBody').innerHTML = html;
     }
 
@@ -687,6 +716,130 @@
         '<div class="sl-nights">' + nights + '</div>';
     }
 
+    /* ══════════ WHAT AFFECTS YOU — cross-domain patterns (Phase B) ══════════
+       Reads your OTHER logs (caffeine, training, food) + manual night tags,
+       then compares recovery/sleep on nights WITH vs WITHOUT each factor
+       (Bearable-style; min 3 of each, last 60 nights). Correlation from your
+       own data — surfaced honestly, never claimed as proof. All client-side. */
+    var TAGS = [
+      { id:'alcohol', label:'Alcohol',       emoji:'🍷' },
+      { id:'screen',  label:'Late screen',   emoji:'📱' },
+      { id:'stress',  label:'Stressful day', emoji:'😰' },
+      { id:'nap',     label:'Napped',        emoji:'😴' },
+      { id:'sick',    label:'Felt ill',      emoji:'🤒' },
+      { id:'travel',  label:'Travel',        emoji:'✈️' }
+    ];
+    function cafLogs(){ var a = ls('caf:logs'); return Array.isArray(a) ? a : []; }
+    function nutLogs(){ var a = ls('nut:logs'); return Array.isArray(a) ? a : []; }
+    function workouts(){ var a = ls('po_workouts'); return Array.isArray(a) ? a : []; }
+    function prevDay(dk){ var p = dk.split('-').map(Number); return dateKey(new Date(p[0], p[1]-1, p[2]-1)); }
+    function avg(a){ return a.reduce(function(x,y){ return x+y; }, 0) / a.length; }
+    // Pre-index the evenings that had each behaviour (O(1) lookups afterwards).
+    function crossIndex(){
+      var lateCaf = {}, trained = {}, lateMeal = {};
+      cafLogs().forEach(function(c){ if (c && c.ts != null){ var d = new Date(c.ts); if (!isNaN(d) && d.getHours() >= 14) lateCaf[dateKey(d)] = 1; } });
+      workouts().forEach(function(w){ if (w && w.date) trained[w.date] = 1; });
+      nutLogs().forEach(function(n){ if (n && n.dateKey && n.ts != null){ var d = new Date(n.ts); if (!isNaN(d) && d.getHours() >= 21) lateMeal[n.dateKey] = 1; } });
+      return { lateCaf:lateCaf, trained:trained, lateMeal:lateMeal };
+    }
+    function factorList(){
+      var auto = [
+        { key:'caffeine_late', label:'caffeine after 2pm',      test:function(e,X){ return !!X.lateCaf[prevDay(e.dateKey)]; } },
+        { key:'trained_prev',  label:'training the day before',  test:function(e,X){ return !!X.trained[prevDay(e.dateKey)]; } },
+        { key:'late_meal',     label:'eating after 9pm',         test:function(e,X){ return !!X.lateMeal[prevDay(e.dateKey)]; } }
+      ];
+      TAGS.forEach(function(t){ auto.push({ key:'tag_'+t.id, label:t.label.toLowerCase(), test:function(e){ return Array.isArray(e.tags) && e.tags.indexOf(t.id) >= 0; } }); });
+      return auto;
+    }
+    function recScoreOf(e){ return e.recovery != null ? e.recovery : (recovery(e) ? recovery(e).score : null); }
+    function factorEffects(){
+      var cut = dateKey(new Date(Date.now() - 60 * 86400000));
+      var pool = getLogs().filter(function(e){ return e && e.dateKey && e.dateKey >= cut; });
+      var X = crossIndex(), out = [];
+      factorList().forEach(function(f){
+        var wR = [], oR = [], wH = [], oH = [];
+        pool.forEach(function(e){
+          var has = false; try { has = f.test(e, X); } catch(_){ has = false; }
+          var rec = recScoreOf(e);
+          if (rec != null) (has ? wR : oR).push(rec);
+          if (e.hours > 0) (has ? wH : oH).push(e.hours);
+        });
+        if (wR.length >= 3 && oR.length >= 3){
+          var dR = avg(wR) - avg(oR);
+          var dH = (wH.length >= 3 && oH.length >= 3) ? (avg(wH) - avg(oH)) : null;
+          if (Math.abs(dR) >= 4) out.push({ label:f.label, key:f.key, test:f.test, dR:dR, dH:dH, nWith:wR.length });
+        }
+      });
+      out.sort(function(a,b){ return Math.abs(b.dR) - Math.abs(a.dR); });
+      return { effects:out, X:X };
+    }
+    function socialJetlag(){
+      var rows = getLogs().filter(function(e){ return e && e.dateKey && e.bed && e.wake; })
+        .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,28);
+      var wd = [], we = [];
+      rows.forEach(function(e){ var m = midMin(e); if (m == null) return; var day = new Date(e.dateKey + 'T00:00:00').getDay(); var adj = m < 720 ? m + 1440 : m; (day === 0 || day === 6 ? we : wd).push(adj); });
+      if (wd.length < 3 || we.length < 3) return null;
+      return { shiftMin: Math.round(avg(we) - avg(wd)) };
+    }
+    function fmtMinDur(mins){ var a = Math.abs(mins), h = Math.floor(a/60), m = a%60; return (h ? h + 'h' : '') + (m ? (h ? ' ' : '') + m + 'm' : (h ? '' : '0m')); }
+    function renderPatterns(){
+      var body = document.getElementById('patBody'); if (!body) return;
+      var fe = factorEffects(), effects = fe.effects;
+      var sj = socialJetlag(), reg = regularityScore();
+
+      // Today attribution: negative factors that are active for last night.
+      var te = entryFor(today()), todayHtml = '';
+      if (te){
+        var neg = effects.filter(function(f){ return f.dR <= -4; });
+        var active = neg.filter(function(f){ try { return f.test(te, fe.X); } catch(_){ return false; } });
+        if (active.length){
+          var names = active.slice(0,2).map(function(f){ return esc(f.label); }).join(' and ');
+          todayHtml = '<div class="pat-today">Last night you logged <b>' + names + '</b> — that usually costs you recovery. Worth watching tonight.</div>';
+        }
+      }
+
+      var findings = '';
+      if (effects.length){
+        findings = '<div class="pat-list">' + effects.slice(0,3).map(function(f){
+          var hurts = f.dR < 0, amt = Math.abs(Math.round(f.dR)), rgb = hurts ? '255,107,139' : '52,226,176';
+          var hrs = (f.dH != null && Math.abs(f.dH) >= 0.25) ? (' and sleep <b>' + fmtMinDur(Math.round(f.dH*60)) + ' ' + (f.dH < 0 ? 'less' : 'more') + '</b>') : '';
+          return '<div class="pat-row"><span class="pat-dot" style="color:rgb(' + rgb + ');background:rgb(' + rgb + ')"></span>' +
+            '<div class="pat-txt">After <b>' + esc(f.label) + '</b>, your recovery runs <b style="color:rgb(' + rgb + ')">' + amt + ' ' + (hurts ? 'lower' : 'higher') + '</b>' + hrs + '</div>' +
+            '<span class="pat-n">' + f.nWith + ' nights</span></div>';
+        }).join('') + '</div>';
+      }
+
+      var rhythmBits = [];
+      if (reg) rhythmBits.push('Your bed/wake timing varies <b>±' + reg.sd + ' min</b> (regularity ' + reg.score + '/100)');
+      if (sj && Math.abs(sj.shiftMin) >= 20) rhythmBits.push('weekends run <b>' + fmtMinDur(sj.shiftMin) + ' ' + (sj.shiftMin > 0 ? 'later' : 'earlier') + '</b> than weekdays — social jet-lag');
+      var rhythm = rhythmBits.length ? '<div class="pat-rhythm">' + rhythmBits.join(' · ') + '. Regular timing lifts recovery more than an extra 20 min in bed.</div>' : '';
+
+      if (!findings && !rhythm && !todayHtml){
+        body.innerHTML = '<p class="sl-empty">As you log nights — and tag things like alcohol, naps or travel — Nova surfaces what actually moves your sleep &amp; recovery, drawn from your caffeine, training and food logs too.</p>';
+        return;
+      }
+      body.innerHTML = todayHtml + findings + rhythm +
+        '<div class="rec-method" style="margin-top:' + (findings || rhythm ? '13px' : '0') + '">Compares nights with vs without each factor (min 3 of each, last 60 days), across your caffeine, training, food &amp; tags. A real signal in your own data — correlation, not proof.</div>';
+    }
+    // Toggle a night tag on today's entry (tags feed patterns; they do NOT
+    // change the recovery score directly — same as Oura's tags).
+    function toggleTag(id){
+      var dk = today(), logs = getLogs(), idx = -1;
+      for (var i=0;i<logs.length;i++){ if (logs[i] && logs[i].dateKey === dk){ idx = i; break; } }
+      var e = idx >= 0 ? logs[idx] : { id:'sl-'+dk, dateKey:dk };
+      var tags = Array.isArray(e.tags) ? e.tags.slice() : [];
+      var p = tags.indexOf(id); if (p >= 0) tags.splice(p,1); else tags.push(id);
+      e.tags = tags; e.ts = Date.now();
+      if (idx >= 0) logs[idx] = e; else logs.push(e);
+      lsSave(KEY, logs); flashNote('checkNote'); renderCheck(); renderPatterns();
+    }
+    document.addEventListener('click', function(ev){
+      var t = ev.target && ev.target.closest ? ev.target.closest('.sl-tag') : null;
+      if (!t) return;
+      var id = t.getAttribute('data-tag'); if (!id) return;
+      buzz(); toggleTag(id);
+    });
+
     /* ── Nova hero: reactive line + page mood ─────── */
     function updateNova(){
       var root = document.getElementById('root'); if (!root) return;
@@ -719,6 +872,7 @@
       renderSleep();
       renderCheck();
       renderTrends();
+      renderPatterns();
       updateNova();
     }
     renderAll();
