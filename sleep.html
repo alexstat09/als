@@ -51,6 +51,8 @@
     .rec-bar-fill{ height:100%; border-radius:3px; transition:width .5s ease; }
     .rec-bar-v{ font-family:var(--au-mono); font-size:10px; color:var(--au-dim); width:30px; text-align:right; flex-shrink:0; }
     .rec-empty{ font-family:var(--au-serif); font-style:italic; font-size:16px; color:var(--au-dim); line-height:1.5; text-align:center; padding:8px 4px; }
+    .rec-method{ margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06); font-family:var(--au-mono); font-size:9.5px; line-height:1.5; letter-spacing:.02em; color:var(--au-faint); }
+    .rec-method b{ color:var(--au-dim); font-weight:700; }
 
     /* ── Sleep log (times) ────────────────────────── */
     .sl-times{ display:flex; align-items:stretch; gap:10px; margin-bottom:6px; }
@@ -230,26 +232,90 @@
     // Each component → 0..100, then a weighted average over the
     // components that are actually present. Stress & soreness are
     // inverted (higher input = worse).
-    var COMP = [
-      { key:'hours',    w:0.30, label:'Sleep',    score:function(v){ return clamp(100 - Math.abs(v - 8.5) * 13, 0, 100); } },
-      { key:'quality',  w:0.20, label:'Quality',  score:function(v){ return (v - 1) / 4 * 100; } },
-      { key:'soreness', w:0.18, label:'Freshness',score:function(v){ return (5 - v) / 4 * 100; } },
-      { key:'energy',   w:0.14, label:'Energy',   score:function(v){ return (v - 1) / 4 * 100; } },
-      { key:'stress',   w:0.10, label:'Calm',     score:function(v){ return (5 - v) / 4 * 100; } },
-      { key:'mood',     w:0.08, label:'Mood',     score:function(v){ return (v - 1) / 4 * 100; } }
-    ];
+    // ── Science-grounded Recovery (Phase A) ─────────────────────────
+    // The subjective items (sleep, fatigue→energy, soreness, stress) are the
+    // VALIDATED Hooper–Mackinnon athlete-wellness set. Each is scored against
+    // the athlete's OWN rolling baseline (z-score) — the method sports science
+    // uses because subjective wellness tracks training readiness with better
+    // sensitivity than HRV/RHR (Saw et al., Br J Sports Med 2016). The sleep
+    // dimension adds objective sleep science: duration vs YOUR need, timing
+    // regularity, and cumulative sleep debt.
+    var BASE_SCORE = 68, Z_SPREAD = 18, SD_FLOOR = 0.5, BASE_MIN_N = 5, BASE_FULL_N = 12;
+
+    function baselineStats(field, excludeDK){
+      var vals = getLogs().filter(function(e){ return e && e.dateKey && e.dateKey !== excludeDK && e[field] != null; })
+        .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,28).map(function(e){ return e[field]; });
+      var n = vals.length; if (!n) return { mean:3, sd:1, n:0 };
+      var mean = vals.reduce(function(a,b){ return a+b; },0)/n;
+      var sd = n>1 ? Math.sqrt(vals.reduce(function(a,b){ return a+(b-mean)*(b-mean); },0)/n) : 1;
+      return { mean:mean, sd:sd, n:n };
+    }
+    // val is 1..5. `worse`=true for items where higher is worse (soreness, stress).
+    function subScore(field, val, excludeDK, worse){
+      if (val == null) return null;
+      var abs = worse ? (5-val)/4*100 : (val-1)/4*100;      // absolute anchor
+      var st = baselineStats(field, excludeDK);
+      if (st.n < BASE_MIN_N) return clamp(abs, 0, 100);
+      var sd = Math.max(st.sd, SD_FLOOR);
+      var z = worse ? (st.mean - val)/sd : (val - st.mean)/sd;
+      var bl = clamp(BASE_SCORE + z*Z_SPREAD, 0, 100);
+      var conf = clamp((st.n - BASE_MIN_N)/(BASE_FULL_N - BASE_MIN_N), 0, 1);
+      return clamp(conf*bl + (1-conf)*abs, 0, 100);
+    }
+    // duration vs personal need — curvilinear (short sleep hurts nonlinearly)
+    function durScore(hours, need){
+      if (!(hours > 0)) return null;
+      if (hours >= need) return clamp(100 - (hours-need)*8, 82, 100);
+      return clamp(100 - Math.pow(need-hours, 1.5)*18, 0, 100);
+    }
+    function midMin(e){
+      if (!e || !e.bed || !e.wake) return null;
+      var b=e.bed.split(':'), w=e.wake.split(':');
+      var bm=(+b[0])*60+(+b[1]), wm=(+w[0])*60+(+w[1]); if (wm<=bm) wm+=1440;
+      return ((bm+wm)/2)%1440;
+    }
+    // timing regularity: SD of sleep midpoint over recent nights (lower = better)
+    function regularityScore(){
+      var mids = getLogs().filter(function(e){ return e && e.dateKey && e.bed && e.wake; })
+        .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,14)
+        .map(midMin).filter(function(v){ return v != null; })
+        .map(function(m){ return m < 720 ? m+1440 : m; });   // early-AM midpoints → post-midnight space
+      if (mids.length < 4) return null;
+      var mean = mids.reduce(function(a,b){ return a+b; },0)/mids.length;
+      var sd = Math.sqrt(mids.reduce(function(a,b){ return a+(b-mean)*(b-mean); },0)/mids.length);
+      return { score: clamp(100 - Math.max(0, sd-25)*0.8, 20, 100), sd: Math.round(sd) };
+    }
+    // cumulative sleep debt over last 14 logged nights (per-night clamped ±2h)
+    function debtInfo(need, uptoDK){
+      var nights = getLogs().filter(function(e){ return e && e.dateKey && e.hours > 0 && (!uptoDK || e.dateKey <= uptoDK); })
+        .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,14);
+      if (nights.length < 3) return null;
+      var debt = nights.reduce(function(s,e){ return s + clamp(need - e.hours, -2, 2); }, 0);
+      return { debt: debt, score: clamp(100 - Math.max(0, debt-1)*7, 25, 100), nights: nights.length };
+    }
     function recovery(e){
       if (!e) return null;
-      var sum = 0, wsum = 0, parts = [];
-      COMP.forEach(function(c){
-        var v = e[c.key];
-        if (v == null || (c.key === 'hours' && !(v > 0))) return;
-        var s = clamp(c.score(v), 0, 100);
-        sum += s * c.w; wsum += c.w;
-        parts.push({ label:c.label, score:Math.round(s) });
-      });
+      var need = getProfile().need, dk = e.dateKey;
+      var qS = subScore('quality', e.quality, dk, false);
+      var dS = durScore(e.hours != null ? e.hours : calcHours(e.bed, e.wake), need);
+      var reg = regularityScore(), rS = reg ? reg.score : null;
+      var dbt = debtInfo(need, dk), deS = dbt ? dbt.score : null;
+      // Sleep dimension = felt quality + measured (duration / regularity / debt)
+      var ss=0, sw=0;
+      function addSleep(v,w){ if (v != null){ ss += v*w; sw += w; } }
+      addSleep(qS,0.40); addSleep(dS,0.35); addSleep(rS,0.15); addSleep(deS,0.10);
+      var sleepDim = sw ? ss/sw : null;
+      var enS = subScore('energy',   e.energy,   dk, false);
+      var soS = subScore('soreness', e.soreness, dk, true);
+      var stS = subScore('stress',   e.stress,   dk, true);
+      var moS = subScore('mood',     e.mood,     dk, false);
+      // Hooper-equal core (sleep/fatigue/soreness/stress) + mood adjunct
+      var W = [['Sleep',sleepDim,0.28],['Energy',enS,0.22],['Freshness',soS,0.22],['Calm',stS,0.18],['Mood',moS,0.10]];
+      var sum=0, wsum=0, parts=[];
+      W.forEach(function(x){ if (x[1] != null){ sum += x[1]*x[2]; wsum += x[2]; parts.push({ label:x[0], score:Math.round(x[1]) }); } });
       if (!wsum) return null;
-      return { score: Math.round(sum / wsum), parts: parts, n: parts.length };
+      var histN = getLogs().filter(function(x){ return x && x.dateKey && x.dateKey !== dk && (x.quality!=null||x.energy!=null||x.soreness!=null||x.stress!=null); }).length;
+      return { score: Math.round(sum/wsum), parts: parts, n: parts.length, histN: histN, reg: reg, dbt: dbt, need: need };
     }
     function verdictFor(score){
       if (score >= 82) return { mood:'hot',   rgb:'52,226,176',  word:'Primed',    advice:'You’re fully recovered — attack a hard session and chase a PR.' };
@@ -394,6 +460,13 @@
         else if (r.score < 45) trainHtml = 'Low recovery — a rest day or easy walk pays off more than grinding.';
       }
 
+      // Transparency: what the number is built from + baseline maturity.
+      var mReg = r.reg ? ('±' + r.reg.sd + 'm timing') : null;
+      var mDebt = (r.dbt && r.dbt.debt > 0.5) ? ('−' + (Math.round(r.dbt.debt*10)/10) + 'h debt') : ((r.dbt && r.dbt.debt < -0.5) ? ('+' + (Math.round(-r.dbt.debt*10)/10) + 'h surplus') : null);
+      var mBits = [mReg, mDebt].filter(Boolean).join(' · ');
+      var mConf = r.histN >= BASE_FULL_N ? 'vs your baseline' : (r.histN >= BASE_MIN_N ? 'baseline building · ' + r.histN + ' nights' : 'early — anchored to norms until ~' + BASE_MIN_N + ' nights');
+      var methodHtml = '<div class="rec-method"><b>Hooper wellness index</b>, scored ' + mConf + ' · sleep weighted by duration vs your ' + r.need + 'h need, regularity &amp; debt' + (mBits ? ' <span style="opacity:.8">(' + mBits + ')</span>' : '') + '</div>';
+
       body.innerHTML =
         '<div class="rec-main">' +
           '<div class="rec-ring-wrap' + (r.score >= 85 ? ' peak' : '') + '">' +
@@ -405,7 +478,7 @@
           '</div>' +
           '<div class="rec-right"><div class="rec-verdict">' + v.word + '.</div>' + deltaHtml + '<div class="rec-advice">' + v.advice + '</div>' + (trainHtml ? '<div class="rec-train">' + trainHtml + '</div>' : '') + '</div>' +
         '</div>' +
-        '<div class="rec-bars">' + bars + '</div>';
+        '<div class="rec-bars">' + bars + '</div>' + methodHtml;
       if (window.AuroraMotion) { var _rc = body.querySelector('.am-ring'); if (_rc) AuroraMotion.ring(_rc, (r.score || 0) / 100, 'sleep-rec'); }
     }
 
