@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Αρχαία">
+<title>Αρχαία · Άγνωστο</title>
+<meta name="theme-color" content="#050506">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --void:#050506; --ink:#0c0c11; --card:#14141b; --card2:#1b1b24;
+    --ivory:#f3f0ea; --dim:#9a97a3; --faint:#5c5964; --line:#26262f;
+    --syn:#ff6b6b; --mor:#ffa94d; --verb:#4dabf7; --pron:#b197fc; --root:#69db7c; --expr:#ffd43b;
+    --ok:#51cf66; --no:#ff6b6b;
+  }
+  html,body{ min-height:100%; height:100%; }
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(77,171,247,.10), transparent 60%),
+      radial-gradient(1000px 500px at -10% 110%, rgba(177,151,252,.10), transparent 60%),
+      var(--void);
+    color:var(--ivory);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+    display:flex; flex-direction:column;
+  }
+  .greek{ font-family:Georgia,"Times New Roman","Palatino",serif; }
+  .wrap{ width:100%; max-width:520px; margin:0 auto; padding:0 18px; }
+
+  /* ── HOME ───────────────────────────── */
+  #home{ padding:calc(env(safe-area-inset-top) + 26px) 0 40px; }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .brand h1{ font-size:1.5rem; letter-spacing:.02em; font-weight:800; }
+  .brand h1 span{ color:var(--dim); font-weight:600; }
+  .sub{ color:var(--faint); font-size:.82rem; margin-top:3px; }
+  .infobtn{ width:34px;height:34px;border-radius:50%; border:1px solid var(--line); background:var(--card);
+    color:var(--dim); font-size:1rem; flex:0 0 auto; }
+
+  .ringrow{ display:flex; align-items:center; gap:18px; margin:24px 0 22px; }
+  .ring{ width:96px;height:96px; flex:0 0 auto; }
+  .ringtxt{ font-size:1.9rem; font-weight:800; }
+  .ringtxt small{ font-size:.8rem; color:var(--dim); font-weight:600; }
+  .ringmeta .big{ font-size:1.05rem; font-weight:700; }
+  .ringmeta .small{ color:var(--dim); font-size:.83rem; margin-top:2px; line-height:1.4; }
+
+  .cta{ display:block; width:100%; text-align:left; border:none; border-radius:20px; padding:20px;
+    background:linear-gradient(135deg,#1d2740,#171724); border:1px solid #2b3550;
+    color:var(--ivory); position:relative; overflow:hidden; margin-bottom:8px; }
+  .cta::after{ content:"›"; position:absolute; right:20px; top:50%; transform:translateY(-50%);
+    font-size:2rem; color:var(--dim); }
+  .cta .lbl{ font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:#8fb2ff; font-weight:700; }
+  .cta .day{ font-size:1.35rem; font-weight:800; margin:5px 0 3px; }
+  .cta .meta{ color:var(--dim); font-size:.86rem; }
+  .cta.done{ background:linear-gradient(135deg,#16281c,#141420); border-color:#274b30; }
+  .cta.done .lbl{ color:var(--ok); }
+
+  .caltitle{ display:flex; justify-content:space-between; align-items:center; margin:26px 0 12px; }
+  .caltitle h2{ font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700; }
+  .caltitle button{ background:none;border:none;color:#8fb2ff;font-size:.82rem;font-weight:600; }
+  .cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:7px; }
+  .cell{ aspect-ratio:1; border-radius:12px; background:var(--card); border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    color:var(--dim); position:relative; padding:0; }
+  .cell .n{ font-size:.9rem; font-weight:700; color:var(--ivory); }
+  .cell .dot{ width:5px;height:5px;border-radius:50%; }
+  .cell.today{ outline:2px solid #8fb2ff; outline-offset:1px; }
+  .cell.done{ background:var(--card2); }
+  .cell.done .n{ color:var(--ok); }
+  .cell.done::before{ content:"✓"; position:absolute; top:4px; right:6px; font-size:.6rem; color:var(--ok); }
+  .cell.future{ opacity:.5; }
+  .cell.rev .n{ color:#c9c6d0; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:10px 14px; margin:18px 2px 0; }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; font-size:.74rem; color:var(--dim); }
+  .legend i{ width:9px;height:9px;border-radius:3px; display:inline-block; }
+
+  /* ── SESSION ────────────────────────── */
+  #session,#summary,#stats{ display:none; flex:1; flex-direction:column; min-height:100%; }
+  .topbar{ display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
+  .topbar .close{ background:none;border:none;color:var(--dim);font-size:1.5rem;line-height:1;flex:0 0 auto;width:30px;text-align:left; }
+  .pbar{ flex:1; height:7px; border-radius:6px; background:#20202a; overflow:hidden; }
+  .pbar i{ display:block; height:100%; width:0; border-radius:6px; background:linear-gradient(90deg,#4dabf7,#b197fc); transition:width .3s; }
+  .pcount{ font-size:.8rem; color:var(--dim); font-weight:600; flex:0 0 auto; min-width:42px; text-align:right; }
+
+  .cardarea{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:10px 18px 0; }
+  .flash{ position:relative; }
+  .chip{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; padding:6px 13px; border-radius:100px;
+    font-size:.74rem; font-weight:700; letter-spacing:.02em; margin-bottom:26px; }
+  .chip i{ width:8px;height:8px;border-radius:50%; }
+  .word{ font-size:clamp(2.5rem,13vw,4.2rem); font-weight:600; line-height:1.12; letter-spacing:.01em; word-break:break-word; }
+  .answer{ margin-top:26px; opacity:0; max-height:0; overflow:hidden; transition:opacity .25s; }
+  .answer.show{ opacity:1; max-height:none; }
+  .answer .hr{ height:1px; background:var(--line); margin-bottom:20px; }
+  .answer .mean{ font-size:1.5rem; font-weight:600; line-height:1.4; }
+  .answer .note{ margin-top:14px; font-size:.92rem; color:var(--mor); background:rgba(255,169,77,.08);
+    border:1px solid rgba(255,169,77,.2); border-radius:12px; padding:11px 14px; line-height:1.45; }
+  .answer .fam{ margin-top:14px; font-size:1.05rem; color:var(--root); line-height:1.5; }
+
+  .controls{ padding:16px 18px calc(env(safe-area-inset-bottom) + 20px); }
+  .btn{ width:100%; border:none; border-radius:16px; padding:18px; font-size:1.05rem; font-weight:700;
+    color:var(--void); background:var(--ivory); }
+  .btn.ghost{ background:var(--card); color:var(--ivory); border:1px solid var(--line); }
+  .judge{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .judge .no{ background:rgba(255,107,107,.14); color:#ff9b9b; border:1px solid rgba(255,107,107,.35); }
+  .judge .ok{ background:rgba(81,207,102,.14); color:#8ef0a3; border:1px solid rgba(81,207,102,.35); }
+  .hint{ text-align:center; color:var(--faint); font-size:.78rem; margin-top:12px; }
+
+  /* ── SUMMARY ────────────────────────── */
+  .sumwrap{ flex:1; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 40px) 22px 30px; }
+  .sumwrap h2{ font-size:1.7rem; font-weight:800; }
+  .score{ font-size:4rem; font-weight:800; margin:14px 0 2px; }
+  .score small{ font-size:1.4rem; color:var(--dim); font-weight:600; }
+  .scmeta{ color:var(--dim); margin-bottom:22px; }
+  .misslist{ flex:1; overflow-y:auto; }
+  .misslist h3{ font-size:.76rem; letter-spacing:.12em; text-transform:uppercase; color:var(--no); margin-bottom:12px; }
+  .missrow{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .missrow .g{ font-family:Georgia,serif; font-size:1.15rem; flex:0 0 40%; }
+  .missrow .m{ color:var(--dim); font-size:.95rem; }
+  .allgood{ text-align:center; color:var(--ok); padding:30px 0; font-size:1.05rem; }
+
+  /* ── STATS ──────────────────────────── */
+  .stwrap{ flex:1; padding:calc(env(safe-area-inset-top) + 30px) 22px 30px; }
+  .stwrap h2{ font-size:1.5rem; font-weight:800; margin-bottom:6px; }
+  .strow{ margin:20px 0; }
+  .strow .top{ display:flex; justify-content:space-between; font-size:.92rem; margin-bottom:8px; }
+  .strow .top b{ font-weight:700; }
+  .strow .top span{ color:var(--dim); }
+  .track{ height:9px; border-radius:6px; background:#20202a; overflow:hidden; }
+  .track i{ display:block; height:100%; border-radius:6px; transition:width .5s; }
+  .reset{ margin-top:30px; width:100%; padding:14px; border-radius:14px; background:none; border:1px solid var(--line);
+    color:var(--faint); font-size:.85rem; }
+
+  .fadein{ animation:fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="wrap">
+  <div class="brand">
+    <div>
+      <h1>Αρχαία <span>· Άγνωστο</span></h1>
+      <div class="sub" id="subline">Πλάνο Ιουλίου · 31 μέρες · 132 SOS</div>
+    </div>
+    <div style="display:flex;gap:8px;flex:0 0 auto">
+      <a class="infobtn" href="index.html" aria-label="Dashboard" style="display:flex;align-items:center;justify-content:center;text-decoration:none">‹</a>
+      <button class="infobtn" id="infoBtn" aria-label="Οδηγίες">?</button>
+    </div>
+  </div>
+
+  <div class="ringrow">
+    <svg class="ring" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#20202a" stroke-width="8"/>
+      <circle id="ringFill" cx="50" cy="50" r="42" fill="none" stroke="url(#g)" stroke-width="8"
+        stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="264" stroke-dashoffset="264"/>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4dabf7"/><stop offset="1" stop-color="#b197fc"/></linearGradient></defs>
+      <text id="ringTxt" x="50" y="52" text-anchor="middle" dominant-baseline="middle"
+        fill="#f3f0ea" font-size="20" font-weight="800" font-family="-apple-system,sans-serif">0</text>
+      <text x="50" y="66" text-anchor="middle" fill="#9a97a3" font-size="8" font-family="-apple-system,sans-serif">/ 31</text>
+    </svg>
+    <div class="ringmeta">
+      <div class="big" id="streakBig">Ξεκίνα σήμερα</div>
+      <div class="small" id="streakSmall">Μάθε τη δομή του κειμένου πρώτα.</div>
+    </div>
+  </div>
+
+  <button class="cta" id="startCta">
+    <div class="lbl" id="ctaLbl">Σήμερα</div>
+    <div class="day" id="ctaDay">Μέρα 1</div>
+    <div class="meta" id="ctaMeta">—</div>
+  </button>
+
+  <div class="caltitle">
+    <h2>31 μέρες</h2>
+    <button id="statsLink">Στατιστικά →</button>
+  </div>
+  <div class="cal" id="cal"></div>
+
+  <div class="legend">
+    <span><i style="background:var(--syn)"></i>Σύνδεσμοι</span>
+    <span><i style="background:var(--mor)"></i>Μόρια</span>
+    <span><i style="background:var(--verb)"></i>Ρήματα</span>
+    <span><i style="background:var(--pron)"></i>Αντωνυμίες</span>
+    <span><i style="background:var(--root)"></i>Ρίζες</span>
+    <span><i style="background:var(--expr)"></i>Εκφράσεις</span>
+  </div>
+</section>
+
+<!-- SESSION -->
+<section id="session">
+  <div class="topbar">
+    <button class="close" id="sessClose">✕</button>
+    <div class="pbar"><i id="pbarFill"></i></div>
+    <div class="pcount" id="pcount">0/0</div>
+  </div>
+  <div class="cardarea">
+    <div class="flash" id="flash"></div>
+  </div>
+  <div class="controls" id="controls"></div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary">
+  <div class="sumwrap">
+    <h2 id="sumTitle">Τέλος!</h2>
+    <div class="score" id="sumScore">0<small>/0</small></div>
+    <div class="scmeta" id="sumMeta">—</div>
+    <div class="misslist" id="sumMiss"></div>
+    <button class="btn" id="sumDone" style="margin-top:18px">Τέλος</button>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="topbar">
+    <button class="close" id="statClose">‹ Πίσω</button>
+  </div>
+  <div class="stwrap">
+    <h2>Η πρόοδός σου ανά κατηγορία</h2>
+    <div class="sub" style="color:var(--faint);margin-bottom:10px">Ποσοστό σωστών σε όσες έχεις δει.</div>
+    <div id="statBars"></div>
+    <button class="reset" id="resetBtn">Μηδενισμός όλης της προόδου</button>
+  </div>
+</section>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════
+   Αρχαία Ελληνικά — SOS λεξιλόγιο για το άγνωστο
+   132 καταχωρήσεις · 6 κατηγορίες · 31-ήμερο πλάνο με επανάληψη
+   Όλα offline / on-device (localStorage). Καμία εξωτερική εξάρτηση.
+   ═══════════════════════════════════════════════════════════ */
+
+var CATS = {
+  syn:{name:"Σύνδεσμοι",  c:"#ff6b6b"},
+  mor:{name:"Μόρια",      c:"#ffa94d"},
+  verb:{name:"Ρήματα",    c:"#4dabf7"},
+  pron:{name:"Αντωνυμίες",c:"#b197fc"},
+  root:{name:"Ρίζες",     c:"#69db7c"},
+  expr:{name:"Εκφράσεις", c:"#ffd43b"}
+};
+
+/* id, gr (αρχαίο), el (νόημα), note (παγίδα), cat, fam(=ρίζα παράγωγα) */
+var DATA = [
+  /* ── ΣΥΝΔΕΣΜΟΙ ───────────────────────── */
+  {id:"s01",cat:"syn",gr:"καί",       el:"και · ακόμα και · και όμως"},
+  {id:"s02",cat:"syn",gr:"δέ",        el:"αλλά / ενώ / και (πιο ήπιο)", note:"ΠΟΤΕ πρώτη λέξη της πρότασης."},
+  {id:"s03",cat:"syn",gr:"μέν … δέ",  el:"από τη μία … από την άλλη",   note:"Το «μέν» προϊδεάζει· ψάξε το «δέ» που ακολουθεί."},
+  {id:"s04",cat:"syn",gr:"ἀλλά",      el:"αλλά (ισχυρή αντίθεση)"},
+  {id:"s05",cat:"syn",gr:"γάρ",       el:"γιατί, διότι (αιτιολογία)",   note:"ΠΟΤΕ πρώτη λέξη. Δείχνει ΑΙΤΙΑ."},
+  {id:"s06",cat:"syn",gr:"οὖν",       el:"λοιπόν, άρα (συμπέρασμα)",    note:"ΠΟΤΕ πρώτη λέξη. Δείχνει ΣΥΜΠΕΡΑΣΜΑ."},
+  {id:"s07",cat:"syn",gr:"ὅτι",       el:"ότι · διότι"},
+  {id:"s08",cat:"syn",gr:"ὡς",        el:"ότι / ώστε / όπως / ενώ / καθώς", note:"Πολυσήμαντο! Κρίνε από τα συμφραζόμενα (βλ. Εκφράσεις)."},
+  {id:"s09",cat:"syn",gr:"εἰ",        el:"αν (υποθετική)"},
+  {id:"s10",cat:"syn",gr:"ἐάν",       el:"αν",                          note:"Συντάσσεται με υποτακτική."},
+  {id:"s11",cat:"syn",gr:"ἵνα",       el:"για να (τελική — σκοπός)"},
+  {id:"s12",cat:"syn",gr:"ὥστε",      el:"ώστε, με αποτέλεσμα να (αποτέλεσμα)"},
+  {id:"s13",cat:"syn",gr:"ἐπεί",      el:"επειδή / αφού / μόλις",        note:"Χρονική ή αιτιολογική — κρίνε από το νόημα."},
+  {id:"s14",cat:"syn",gr:"ἐπειδή",    el:"επειδή / αφού / μόλις",        note:"Χρονική ή αιτιολογική."},
+  {id:"s15",cat:"syn",gr:"ὅτε",       el:"όταν, τότε που"},
+  {id:"s16",cat:"syn",gr:"ὅταν",      el:"όταν",                        note:"+ υποτακτική (αόριστη επανάληψη)."},
+  {id:"s17",cat:"syn",gr:"ἕως",       el:"ωσότου, μέχρι να / όσο"},
+  {id:"s18",cat:"syn",gr:"εἰ μή",     el:"αν δεν · εκτός αν · παρά μόνο"},
+  {id:"s19",cat:"syn",gr:"πλήν",      el:"εκτός από · όμως"},
+  {id:"s20",cat:"syn",gr:"καίτοι",    el:"καίτοι, αν και, παρόλο που"},
+  {id:"s21",cat:"syn",gr:"μέντοι",    el:"όμως, ωστόσο (ήπια αντίθεση)"},
+  {id:"s22",cat:"syn",gr:"τοίνυν",    el:"λοιπόν (το επόμενο βήμα στη σκέψη)"},
+  {id:"s23",cat:"syn",gr:"καίπερ + μτχ.", el:"αν και, παρόλο που",      note:"Εναντιωματική — ΠΑΝΤΑ με μετοχή."},
+  {id:"s24",cat:"syn",gr:"ἅτε / οἷα + μτχ.", el:"επειδή, λόγω του ότι", note:"Αιτιολογική μετοχή (πραγματική αιτία)."},
+  {id:"s25",cat:"syn",gr:"εἴτε … εἴτε", el:"είτε … είτε"},
+  {id:"s26",cat:"syn",gr:"οὔτε … οὔτε", el:"ούτε … ούτε",               note:"Άρνηση στην οριστική."},
+  {id:"s27",cat:"syn",gr:"μήτε … μήτε", el:"μήτε … μήτε",               note:"Άρνηση στις υπόλοιπες εγκλίσεις."},
+
+  /* ── ΜΟΡΙΑ & ΕΠΙΡΡΗΜΑΤΑ ──────────────── */
+  {id:"m01",cat:"mor",gr:"ἄν",        el:"θα / αν (δυνητικό–τροπικό μόριο)", note:"ΚΡΙΣΙΜΟ. Με οριστ.=«θα» (μη πραγματικό)· με υποτ.=υπόθεση/αοριστία."},
+  {id:"m02",cat:"mor",gr:"οὐ / οὐκ / οὐχ", el:"δεν (άρνηση πραγματικού)", note:"οὐκ πριν φωνήεν, οὐχ πριν δασεία."},
+  {id:"m03",cat:"mor",gr:"μή",        el:"μη / να μη",                  note:"Άρνηση σε απαγόρευση, υποθετικές, σκοπό, ευχή."},
+  {id:"m04",cat:"mor",gr:"μάλιστα",   el:"πάρα πολύ / κυρίως / ναι, βεβαίως"},
+  {id:"m05",cat:"mor",gr:"μᾶλλον",    el:"περισσότερο, μάλλον"},
+  {id:"m06",cat:"mor",gr:"μάλα",      el:"πολύ, πάρα πολύ"},
+  {id:"m07",cat:"mor",gr:"ἥκιστα",    el:"καθόλου, ελάχιστα",           note:"Το αντίθετο του «μάλιστα»."},
+  {id:"m08",cat:"mor",gr:"οὐδαμῶς / μηδαμῶς", el:"καθόλου, με κανέναν τρόπο"},
+  {id:"m09",cat:"mor",gr:"ἐναντίως",  el:"αντίθετα, το αντίθετο"},
+  {id:"m10",cat:"mor",gr:"εἰκῇ",      el:"άσκοπα, τυχαία, στην τύχη"},
+  {id:"m11",cat:"mor",gr:"ἄρα",       el:"άρα, λοιπόν (συμπέρασμα)"},
+  {id:"m12",cat:"mor",gr:"ἴσως",      el:"ίσως, πιθανόν"},
+  {id:"m13",cat:"mor",gr:"τάχα",      el:"γρήγορα / ίσως, πιθανόν"},
+  {id:"m14",cat:"mor",gr:"ἅμα",       el:"μαζί / ταυτόχρονα, συγχρόνως"},
+  {id:"m15",cat:"mor",gr:"εὐθύς / αὐτίκα", el:"αμέσως, ευθύς"},
+  {id:"m16",cat:"mor",gr:"ἤδη",       el:"ήδη, πλέον, τώρα"},
+  {id:"m17",cat:"mor",gr:"οὐκέτι / μηκέτι", el:"δεν … πια, όχι πλέον"},
+  {id:"m18",cat:"mor",gr:"ἔπειτα / εἶτα", el:"έπειτα, ύστερα, μετά"},
+  {id:"m19",cat:"mor",gr:"πρότερον",  el:"πρωτύτερα, προηγουμένως"},
+  {id:"m20",cat:"mor",gr:"ὕστερον",   el:"αργότερα, ύστερα"},
+  {id:"m21",cat:"mor",gr:"ἄλλως",     el:"αλλιώς, διαφορετικά"},
+  {id:"m22",cat:"mor",gr:"ὅμως",      el:"όμως, παρόλα αυτά"},
+
+  /* ── ΡΗΜΑΤΑ ──────────────────────────── */
+  {id:"v01",cat:"verb",gr:"εἰμί",     el:"είμαι, υπάρχω",               note:"ἐστί(ν), ἦν, ἔσται, ὤν/οὖσα/ὄν, εἶναι."},
+  {id:"v02",cat:"verb",gr:"φημί",     el:"λέω, ισχυρίζομαι",            note:"φησί(ν), ἔφη, φάναι, φάσκων."},
+  {id:"v03",cat:"verb",gr:"εἶμι",     el:"θα πάω, πηγαίνω",             note:"ἴμεν, ἰέναι, ἰών. (Μη το μπερδέψεις με το εἰμί=είμαι.)"},
+  {id:"v04",cat:"verb",gr:"οἶδα",     el:"γνωρίζω, ξέρω",               note:"ἴσμεν/ἴστε, εἰδέναι, εἰδώς. (Παρακείμ. με σημ. ενεστ.)"},
+  {id:"v05",cat:"verb",gr:"εἶπον",    el:"είπα",                        note:"Αόρ. β΄ του λέγω. εἰπεῖν, εἴπας/εἰπών."},
+  {id:"v06",cat:"verb",gr:"ἔλαβον",   el:"πήρα, έπιασα",                note:"Αόρ. β΄ του λαμβάνω. λαβεῖν, λαβών."},
+  {id:"v07",cat:"verb",gr:"ἦλθον",    el:"ήρθα, πήγα",                  note:"Αόρ. β΄ του ἔρχομαι. ἐλθεῖν, ἐλθών."},
+  {id:"v08",cat:"verb",gr:"εἶδον",    el:"είδα",                        note:"Αόρ. β΄ του ὁράω. ἰδεῖν, ἰδών."},
+  {id:"v09",cat:"verb",gr:"ἐγένετο",  el:"έγινε, συνέβη",               note:"Αόρ. β΄ του γίγνομαι. γενέσθαι, γενόμενος."},
+  {id:"v10",cat:"verb",gr:"δεῖ",      el:"πρέπει",                      note:"Απρόσωπο. + αιτιατική + απαρέμφατο (δεῖ με ποιεῖν)."},
+  {id:"v11",cat:"verb",gr:"χρή",      el:"πρέπει, αρμόζει",             note:"Απρόσωπο. + αιτιατική + απαρέμφατο."},
+  {id:"v12",cat:"verb",gr:"ἔξεστι",   el:"επιτρέπεται, είναι δυνατόν",  note:"Απρόσωπο. + δοτική + απαρέμφατο."},
+  {id:"v13",cat:"verb",gr:"δοκεῖ (μοι)", el:"μου φαίνεται / αποφασίζω", note:"Απρόσωπο· «ἔδοξε» = αποφασίστηκε."},
+  {id:"v14",cat:"verb",gr:"δῆλόν ἐστι", el:"είναι φανερό, ολοφάνερο"},
+  {id:"v15",cat:"verb",gr:"ἐνδέχεται", el:"είναι δυνατόν, ενδέχεται"},
+  {id:"v16",cat:"verb",gr:"προσήκει", el:"αρμόζει, ταιριάζει, ανήκει"},
+  {id:"v17",cat:"verb",gr:"μέλει (τινί τινος)", el:"ενδιαφέρεται/νοιάζεται κάποιος για κάτι"},
+  {id:"v18",cat:"verb",gr:"μεταμέλει (τινί)", el:"μετανιώνει κάποιος"},
+  {id:"v19",cat:"verb",gr:"νομίζω",   el:"νομίζω, θεωρώ, πιστεύω"},
+  {id:"v20",cat:"verb",gr:"ἡγέομαι",  el:"θεωρώ / οδηγώ, ηγούμαι"},
+  {id:"v21",cat:"verb",gr:"οἴομαι / οἶμαι", el:"νομίζω, φαντάζομαι"},
+  {id:"v22",cat:"verb",gr:"δοκέω-ῶ",  el:"νομίζω / φαίνομαι"},
+  {id:"v23",cat:"verb",gr:"πιστεύω",  el:"πιστεύω, εμπιστεύομαι"},
+  {id:"v24",cat:"verb",gr:"ὁμολογέω-ῶ", el:"ομολογώ, συμφωνώ, παραδέχομαι"},
+  {id:"v25",cat:"verb",gr:"ἀποφαίνομαι", el:"αποδεικνύω, εκφράζω γνώμη, δηλώνω"},
+  {id:"v26",cat:"verb",gr:"λέγεται",  el:"λέγεται, υποστηρίζεται"},
+  {id:"v27",cat:"verb",gr:"πράττω",   el:"κάνω, ενεργώ, πράττω"},
+  {id:"v28",cat:"verb",gr:"ποιέω-ῶ",  el:"κάνω, φτιάχνω, ποιώ"},
+  {id:"v29",cat:"verb",gr:"ἄγω",      el:"οδηγώ, φέρνω, διάγω"},
+  {id:"v30",cat:"verb",gr:"φέρω",     el:"φέρνω, υπομένω, υφίσταμαι"},
+  {id:"v31",cat:"verb",gr:"πάσχω",    el:"παθαίνω, υφίσταμαι, δοκιμάζω"},
+  {id:"v32",cat:"verb",gr:"δίδωμι",   el:"δίνω",                        note:"δίδωσι, ἔδωκα, δοῦναι, δούς."},
+  {id:"v33",cat:"verb",gr:"τίθημι",   el:"θέτω, τοποθετώ, θεσπίζω",      note:"τίθησι, ἔθηκα, θεῖναι, θείς."},
+  {id:"v34",cat:"verb",gr:"ἵστημι",   el:"στήνω / (μέσο) στέκομαι",      note:"ἵστησι, ἔστην, στῆναι, στάς."},
+  {id:"v35",cat:"verb",gr:"ἀφίημι",   el:"αφήνω, ελευθερώνω, εκτοξεύω"},
+  {id:"v36",cat:"verb",gr:"βούλομαι", el:"θέλω, επιθυμώ, προτιμώ"},
+  {id:"v37",cat:"verb",gr:"δύναμαι",  el:"μπορώ, είμαι ικανός"},
+  {id:"v38",cat:"verb",gr:"ἐθέλω / θέλω", el:"θέλω, είμαι πρόθυμος"},
+
+  /* ── ΑΝΤΩΝΥΜΙΕΣ ──────────────────────── */
+  {id:"p01",cat:"pron",gr:"ὅς, ἥ, ὅ", el:"ο οποίος, η οποία, το οποίο", note:"Αναφορική — η ΠΙΟ συχνή. Ανοίγει δευτερεύουσα."},
+  {id:"p02",cat:"pron",gr:"αὐτός, -ή, -ό", el:"αυτός / ο ίδιος / τον…, τους… (πλάγιες)", note:"Στην ονομ.=«ο ίδιος»· στις πλάγιες=«αυτόν/του»· ὁ αὐτός=«ο ίδιος»."},
+  {id:"p03",cat:"pron",gr:"τίς, τί",  el:"ποιος; τι; (ερωτηματική)",    note:"Έχει ΤΟΝΟ."},
+  {id:"p04",cat:"pron",gr:"τις, τι",  el:"κάποιος, κάτι (αόριστη)",     note:"ΑΤΟΝΙΣΤΗ / εγκλιτική."},
+  {id:"p05",cat:"pron",gr:"οὐδείς / μηδείς", el:"κανένας, τίποτα"},
+  {id:"p06",cat:"pron",gr:"ἕκαστος",  el:"καθένας (χωριστά)"},
+  {id:"p07",cat:"pron",gr:"ἑαυτοῦ, -ῆς, -οῦ", el:"του εαυτού του (αυτοπαθής)"},
+  {id:"p08",cat:"pron",gr:"ἄλλος",    el:"άλλος"},
+  {id:"p09",cat:"pron",gr:"ἕτερος",   el:"ο άλλος (από τους δύο), ο έτερος"},
+  {id:"p10",cat:"pron",gr:"ὁ αὐτός",  el:"ο ίδιος",                     note:"Με άρθρο! Διαφορετικό από το σκέτο «αὐτός»."},
+  {id:"p11",cat:"pron",gr:"ἀλλήλων",  el:"ο ένας τον άλλον (αλλήλους)"},
+  {id:"p12",cat:"pron",gr:"ὅσπερ, ἥπερ, ὅπερ", el:"ο οποίος ακριβώς, αυτός ακριβώς που"},
+
+  /* ── ΡΙΖΕΣ (μία ρίζα = πολλές λέξεις) ── */
+  {id:"r01",cat:"root",gr:"λόγ-",     el:"λόγος, λέξη, λογική",  fam:"λόγος · λογίζομαι · λογικός · εὐλογία · κατάλογος"},
+  {id:"r02",cat:"root",gr:"νόμ-",     el:"νόμος, κανόνας",       fam:"νόμος · νομίζω · νομοθέτης · εὐνομία · παράνομος"},
+  {id:"r03",cat:"root",gr:"ἀρετ- / ἀριστ-", el:"αρετή, αριστεία", fam:"ἀρετή · ἄριστος · ἀριστεύω · ἀγαθός"},
+  {id:"r04",cat:"root",gr:"πολιτ- / πολ-", el:"πόλη, πολίτης",   fam:"πόλις · πολίτης · πολιτεία · πολιτεύομαι"},
+  {id:"r05",cat:"root",gr:"δικ-",     el:"δίκαιο, δικαιοσύνη",   fam:"δίκη · δίκαιος · δικαιοσύνη · ἀδικέω · δικαστής"},
+  {id:"r06",cat:"root",gr:"ψυχ-",     el:"ψυχή",                 fam:"ψυχή · ψυχικός · ἔμψυχος"},
+  {id:"r07",cat:"root",gr:"βουλ-",    el:"θέληση, βουλή, σκέψη", fam:"βούλομαι · βουλεύομαι · βουλή · σύμβουλος"},
+  {id:"r08",cat:"root",gr:"γνω- / γιγνωσκ-", el:"γνώση, γνώμη",  fam:"γιγνώσκω · γνώμη · γνῶσις · διαγιγνώσκω"},
+  {id:"r09",cat:"root",gr:"ἀγαθ-",    el:"καλό, αγαθό",          fam:"ἀγαθός · ἀγαθόν · εὐεργετέω"},
+  {id:"r10",cat:"root",gr:"φρον-",    el:"σκέψη, φρόνηση",       fam:"φρονέω · φρόνησις · σωφροσύνη · εὔφρων"},
+  {id:"r11",cat:"root",gr:"ἰσχ-",     el:"δύναμη, ισχύς",        fam:"ἰσχύς · ἰσχυρός · ἰσχύω"},
+  {id:"r12",cat:"root",gr:"κρατ-",    el:"δύναμη, εξουσία",      fam:"κράτος · κρατέω · δημοκρατία · ἀριστοκρατία"},
+  {id:"r13",cat:"root",gr:"ἀρχ-",     el:"αρχή / εξουσία",       fam:"ἄρχω · ἀρχή · ἄρχων · ἀναρχία · μοναρχία"},
+  {id:"r14",cat:"root",gr:"τιμ-",     el:"τιμή, αξία",           fam:"τιμή · τιμάω · ἄτιμος · ἀτιμάζω"},
+  {id:"r15",cat:"root",gr:"εὐ- (πρόθεμα)", el:"καλός, καλά",     fam:"εὔνους · εὐδαίμων · εὔελπις · εὐεργέτης"},
+  {id:"r16",cat:"root",gr:"ἀ- / ἀν- (στέρηση)", el:"χωρίς, μη-", fam:"ἄδικος · ἄνομος · ἄπιστος · ἀδύνατος"},
+
+  /* ── ΕΚΦΡΑΣΕΙΣ ───────────────────────── */
+  {id:"e01",cat:"expr",gr:"ὡς + μετοχή", el:"ενώ, σαν να, με τη σκέψη ότι", note:"Δηλώνει υποκειμενική αιτία / υπόθεση του υποκειμένου."},
+  {id:"e02",cat:"expr",gr:"ὡς + επίρρ./επίθ.", el:"πόσο…! (θαυμαστικό)"},
+  {id:"e03",cat:"expr",gr:"ὡς + ουσιαστικό", el:"ως, σαν, με την ιδιότητα του"},
+  {id:"e04",cat:"expr",gr:"οἷόν τ' ἐστι + απρμφ.", el:"είναι δυνατόν να"},
+  {id:"e05",cat:"expr",gr:"οἷός τ' εἰμι + απρμφ.", el:"μπορώ / είμαι ικανός να"},
+  {id:"e06",cat:"expr",gr:"περὶ πολλοῦ ποιοῦμαι", el:"θεωρώ πολύ σπουδαίο"},
+  {id:"e07",cat:"expr",gr:"περὶ ἐλαχίστου ποιοῦμαι", el:"θεωρώ εντελώς ασήμαντο"},
+  {id:"e08",cat:"expr",gr:"ἐφ' ᾧτε + απρμφ.", el:"με τον όρο να, υπό την προϋπόθεση να"},
+  {id:"e09",cat:"expr",gr:"χαλεπόν ἐστι + απρμφ.", el:"είναι δύσκολο να"},
+  {id:"e10",cat:"expr",gr:"δεινός + απρμφ.", el:"ικανός / φοβερός στο να"},
+  {id:"e11",cat:"expr",gr:"ὀλίγου ἐδέησε + απρμφ.", el:"λίγο έλειψε να, παραλίγο να"},
+  {id:"e12",cat:"expr",gr:"εἰς λόγους ἔρχομαι", el:"έρχομαι σε συνομιλία / διαπραγμάτευση"},
+  {id:"e13",cat:"expr",gr:"δίκην δίδωμι", el:"τιμωρούμαι, δίνω λόγο"},
+  {id:"e14",cat:"expr",gr:"δίκην λαμβάνω παρά τινος", el:"τιμωρώ / εκδικούμαι κάποιον"},
+  {id:"e15",cat:"expr",gr:"κακῶς / εὖ ποιῶ τινα", el:"βλάπτω / ωφελώ κάποιον"},
+  {id:"e16",cat:"expr",gr:"κακῶς / εὖ λέγω τινα", el:"κακολογώ / επαινώ κάποιον"},
+  {id:"e17",cat:"expr",gr:"δεῖ με + απρμφ.", el:"πρέπει (εγώ) να"}
+];
+
+/* ── 31-ήμερο πλάνο ──────────────────────
+   Μαθησιακές μέρες: new = νέες κάρτες (+ έως 4 παλιά λάθη ως επανάληψη).
+   Μέρες επανάληψης: pools + count (προτεραιότητα στα λάθη σου). */
+var SCHEDULE = {
+  1:{lbl:"Σύνδεσμοι Ι — ο σκελετός της πρότασης", nw:["s01","s02","s03","s04","s05","s06","s07","s08","s09","s10"]},
+  2:{lbl:"Σύνδεσμοι ΙΙ — δευτερεύουσες προτάσεις", nw:["s11","s12","s13","s14","s15","s16","s17","s18","s19","s20"]},
+  3:{lbl:"Σύνδεσμοι ΙΙΙ — οι λεπτές αποχρώσεις", nw:["s21","s22","s23","s24","s25","s26","s27"]},
+  4:{lbl:"Μόρια Ι — άρνηση & δυνητικό ἄν", nw:["m01","m02","m03","m04","m05","m06","m07","m08","m11","m12"]},
+  5:{lbl:"Μόρια ΙΙ — χρόνος & σειρά", nw:["m13","m14","m15","m16","m17","m18","m19","m20","m22"]},
+  6:{lbl:"Μόρια ΙΙΙ — υπόλοιπα επιρρήματα", nw:["m10","m09","m21"]},
+  7:{lbl:"⟳ Επανάληψη — Σύνδεσμοι + Μόρια", pools:["syn","mor"], count:10},
+  8:{lbl:"Αντωνυμίες Ι — ποιος κάνει τι", nw:["p01","p02","p03","p04","p05","p06","p07","p08","p09","p10"]},
+  9:{lbl:"Αντωνυμίες ΙΙ + Ρήματα (ανώμαλα)", nw:["p11","p12","v01","v02","v03","v04","v05","v06"]},
+  10:{lbl:"Ρήματα — αόριστοι β΄ & απρόσωπα", nw:["v07","v08","v09","v10","v11","v12","v13","v14","v15","v16"]},
+  11:{lbl:"Ρήματα — νόησης & λόγου Ι", nw:["v17","v18","v19","v20","v21","v22","v23","v24"]},
+  12:{lbl:"Ρήματα — λόγου ΙΙ & πράξης", nw:["v25","v26","v27","v28","v29","v30","v31","v32"]},
+  13:{lbl:"Ρήματα — σε -μι & θέλησης", nw:["v33","v34","v35","v36","v37","v38"]},
+  14:{lbl:"⟳ Επανάληψη — Αντωνυμίες + Ρήματα", pools:["pron","verb"], count:10},
+  15:{lbl:"Ρίζες Ι — οι πολλαπλασιαστές", nw:["r01","r02","r03","r04","r05","r06","r07","r08","r09","r10"]},
+  16:{lbl:"Ρίζες ΙΙ", nw:["r11","r12","r13","r14","r15","r16"]},
+  17:{lbl:"Εκφράσεις Ι — οι παγίδες", nw:["e01","e02","e03","e04","e05","e06","e07","e08","e09","e10"]},
+  18:{lbl:"Εκφράσεις ΙΙ", nw:["e11","e12","e13","e14","e15","e16","e17"]},
+  19:{lbl:"⟳ Επανάληψη — Ρίζες + Εκφράσεις", pools:["root","expr"], count:10},
+  20:{lbl:"⟳ MEGA επανάληψη — όλες οι κατηγορίες", pools:["all"], count:12},
+  21:{lbl:"⟳ Τα δύσκολά σου — ό,τι έχεις λαθέψει", pools:["all"], count:10, missedOnly:true},
+  22:{lbl:"⟳ Σύνδεσμοι — full (ὡς, γάρ, ὥστε)", pools:["syn"], count:10},
+  23:{lbl:"⟳ Μόρια — full (ἄν vs οὐ/μή)", pools:["mor"], count:10},
+  24:{lbl:"⟳ Ρήματα — ανώμαλα & απρόσωπα", pools:["verb"], count:10},
+  25:{lbl:"⟳ Mix — 10 τυχαία απ' όλα", pools:["all"], count:10},
+  26:{lbl:"⟳ Εκφράσεις — full", pools:["expr"], count:10},
+  27:{lbl:"⟳ Ρίζες — μάντεψε τα παράγωγα", pools:["root"], count:10},
+  28:{lbl:"⟳ Mix — 10 τυχαία απ' όλα", pools:["all"], count:10},
+  29:{lbl:"⟳ Σύνδεσμοι + Μόρια — εστίαση", pools:["syn","mor"], count:10},
+  30:{lbl:"⟳ Mock — 10 τυχαία, σαν εξέταση", pools:["all"], count:10},
+  31:{lbl:"⟳ Final — τα πιο δύσκολα που λάθεψες", pools:["all"], count:10, missedOnly:true}
+};
+
+/* ── κατάσταση / αποθήκευση ──────────────── */
+var KEY="arxaia:v1";
+var START=new Date(2026,6,1); // 1 Ιουλ 2026 = Μέρα 1
+var state=load();
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+state.days = state.days||{};   // {n:{done,correct,total,ts}}
+state.seen = state.seen||{};   // {id:{c:σωστά, w:λάθη}}
+state.miss = state.miss||{};   // {id:count} τρέχοντα λάθη προς επανάληψη
+
+function byId(id){ for(var i=0;i<DATA.length;i++) if(DATA[i].id===id) return DATA[i]; return null; }
+function missedIds(){ return Object.keys(state.miss).filter(function(k){ return state.miss[k]>0; }); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function pick(arr,n){ return shuffle(arr).slice(0,n); }
+
+function suggestedDay(){
+  var last=0; for(var n=1;n<=31;n++){ if(state.days[n]&&state.days[n].done) last=n; }
+  var today=new Date(); today.setHours(0,0,0,0);
+  var diff=Math.floor((today-START)/86400000)+1;
+  if(diff>=1&&diff<=31) return diff;          // μέσα στον Ιούλιο → η μέρα του μήνα
+  if(diff<1) return last>0?Math.min(last+1,31):1;
+  return Math.min(last+1,31);                  // μετά τον Ιούλιο → επόμενη ανολοκλήρωτη
+}
+
+/* ── δόμηση ουράς κάρτας ──────────────────── */
+function buildQueue(dayNum){
+  var d=SCHEDULE[dayNum], ids=[];
+  if(d.nw){
+    ids=d.nw.slice();
+    var bonus=pick(missedIds().filter(function(id){ return d.nw.indexOf(id)<0; }),4);
+    ids=shuffle(ids.concat(bonus));
+  } else {
+    var pool=DATA.filter(function(c){ return d.pools.indexOf("all")>=0||d.pools.indexOf(c.cat)>=0; })
+                 .map(function(c){ return c.id; });
+    var miss=missedIds().filter(function(id){ return pool.indexOf(id)>=0; });
+    if(d.missedOnly && miss.length){ ids=pick(miss,d.count); }
+    else {
+      var rest=pool.filter(function(id){ return miss.indexOf(id)<0; });
+      ids=pick(miss,d.count).concat(pick(rest,d.count));
+      ids=shuffle(ids).slice(0,d.count);
+    }
+  }
+  return ids.map(byId).filter(Boolean);
+}
+
+/* ── UI helpers ───────────────────────────── */
+function $(s){ return document.querySelector(s); }
+function show(id){
+  ["home","session","summary","stats"].forEach(function(x){
+    var el=document.getElementById(x); el.style.display = (x===id)?(x==="home"?"block":"flex"):"none";
+  });
+  window.scrollTo(0,0);
+}
+
+/* ── HOME render ──────────────────────────── */
+function renderHome(){
+  var doneCount=0; for(var n=1;n<=31;n++){ if(state.days[n]&&state.days[n].done) doneCount++; }
+  var off=264-(264*doneCount/31);
+  $("#ringFill").setAttribute("stroke-dashoffset",off);
+  $("#ringTxt").textContent=doneCount;
+  if(doneCount===0){ $("#streakBig").textContent="Ξεκίνα σήμερα"; $("#streakSmall").textContent="Μάθε πρώτα τη δομή του κειμένου."; }
+  else if(doneCount>=31){ $("#streakBig").textContent="Ολοκληρώθηκε! 🏛"; $("#streakSmall").textContent="Τώρα κάνε τις μέρες επανάληψης όσο θες."; }
+  else { $("#streakBig").textContent=doneCount+" / 31 μέρες"; $("#streakSmall").textContent="Συνέχισε — η επανάληψη κάνει τη διαφορά."; }
+
+  var sd=suggestedDay(), d=SCHEDULE[sd], q=buildQueue(sd);
+  var dn=state.days[sd];
+  $("#ctaLbl").textContent = dn&&dn.done ? "Ολοκληρωμένη — ξανακάνε" : "Σήμερα";
+  $("#ctaDay").textContent = "Μέρα "+sd;
+  $("#ctaMeta").textContent = d.lbl+" · "+q.length+" κάρτες";
+  $("#startCta").className = "cta"+(dn&&dn.done?" done":"");
+  $("#startCta").onclick=function(){ startSession(sd); };
+
+  var cal=$("#cal"); cal.innerHTML="";
+  for(var i=1;i<=31;i++){
+    (function(i){
+      var s=SCHEDULE[i], dd=state.days[i], cell=document.createElement("button");
+      var isToday=(i===sd), isFuture=(i>sd && !(dd&&dd.done));
+      cell.className="cell"+(dd&&dd.done?" done":"")+(isToday?" today":"")+(isFuture?" future":"")+(s.nw?"":" rev");
+      var color = s.nw ? CATS[byId(s.nw[0]).cat].c : "#c9c6d0";
+      cell.innerHTML='<span class="n">'+i+'</span><span class="dot" style="background:'+color+'"></span>';
+      cell.onclick=function(){ startSession(i); };
+      cal.appendChild(cell);
+    })(i);
+  }
+}
+
+/* ── SESSION ──────────────────────────────── */
+var sess=null;
+function startSession(dayNum){
+  var q=buildQueue(dayNum);
+  if(!q.length){ renderHome(); return; }
+  sess={ day:dayNum, queue:q, i:0, correct:0, total:q.length, missedToday:[], requeued:false };
+  show("session");
+  renderCard();
+}
+function renderCard(){
+  var c=sess.queue[sess.i], cat=CATS[c.cat];
+  $("#pcount").textContent=(sess.i+1)+"/"+sess.queue.length;
+  $("#pbarFill").style.width=(sess.i/sess.queue.length*100)+"%";
+  var flash=$("#flash");
+  flash.className="flash fadein";
+  flash.innerHTML=
+    '<div class="chip" style="background:'+hex(cat.c,.13)+';color:'+cat.c+'"><i style="background:'+cat.c+'"></i>'+cat.name+'</div>'+
+    '<div class="word greek">'+c.gr+'</div>'+
+    '<div class="answer" id="ans">'+
+      '<div class="hr"></div>'+
+      '<div class="mean">'+c.el+'</div>'+
+      (c.fam?'<div class="fam greek">'+c.fam+'</div>':'')+
+      (c.note?'<div class="note">'+c.note+'</div>':'')+
+    '</div>';
+  var ctr=$("#controls");
+  ctr.innerHTML='<button class="btn" id="revealBtn">Δείξε τη σημασία</button>'+
+                '<div class="hint">Σκέψου το πρώτα — μετά αποκάλυψε.</div>';
+  $("#revealBtn").onclick=reveal;
+}
+function reveal(){
+  $("#ans").classList.add("show");
+  var ctr=$("#controls");
+  ctr.innerHTML='<div class="judge">'+
+      '<button class="btn no" id="noBtn">✗ Δεν το ήξερα</button>'+
+      '<button class="btn ok" id="okBtn">✓ Το ήξερα</button>'+
+    '</div>';
+  $("#okBtn").onclick=function(){ judge(true); };
+  $("#noBtn").onclick=function(){ judge(false); };
+}
+function judge(knew){
+  var c=sess.queue[sess.i];
+  var s=state.seen[c.id]||{c:0,w:0};
+  if(knew){ s.c++; sess.correct++; if(state.miss[c.id]){ state.miss[c.id]--; if(state.miss[c.id]<=0) delete state.miss[c.id]; } }
+  else { s.w++; state.miss[c.id]=(state.miss[c.id]||0)+1; if(sess.missedToday.indexOf(c.id)<0) sess.missedToday.push(c.id); if(!sess.requeued) sess.requeue=(sess.requeue||[]).concat(c); }
+  state.seen[c.id]=s; save();
+  sess.i++;
+  // στο τέλος, ξαναδείξε μία φορά όσα λάθεψε (ενεργή ανάκληση)
+  if(sess.i>=sess.queue.length && sess.requeue && sess.requeue.length && !sess.requeued){
+    sess.requeued=true; sess.queue=sess.queue.concat(shuffle(sess.requeue)); sess.requeue=[];
+  }
+  if(sess.i>=sess.queue.length) endSession();
+  else renderCard();
+}
+function endSession(){
+  var d=state.days[sess.day]||{};
+  d.done=true; d.correct=sess.correct; d.total=sess.total; d.ts=Date.now();
+  state.days[sess.day]=d; save();
+  // summary
+  $("#sumTitle").textContent="Μέρα "+sess.day+" — τέλος";
+  var pct=Math.round(sess.correct/sess.total*100);
+  $("#sumScore").innerHTML=sess.correct+'<small>/'+sess.total+'</small>';
+  $("#sumMeta").textContent=pct+"% σωστά" + (pct>=90?" — εξαιρετικά! 🏛":pct>=70?" — καλή δουλειά.":" — τα λάθη θα ξαναγυρίσουν για επανάληψη.");
+  var wrap=$("#sumMiss");
+  if(sess.missedToday.length){
+    var h='<h3>Ξαναδές αυτά ('+sess.missedToday.length+')</h3>';
+    sess.missedToday.forEach(function(id){ var c=byId(id);
+      h+='<div class="missrow"><div class="g greek">'+c.gr+'</div><div class="m">'+c.el+'</div></div>'; });
+    wrap.innerHTML=h;
+  } else { wrap.innerHTML='<div class="allgood">✓ Τα ήξερες όλα. Καθαρή μέρα.</div>'; }
+  show("summary");
+}
+
+/* ── STATS ────────────────────────────────── */
+function renderStats(){
+  var bars=$("#statBars"); bars.innerHTML="";
+  Object.keys(CATS).forEach(function(k){
+    var ids=DATA.filter(function(c){return c.cat===k;}).map(function(c){return c.id;});
+    var seen=0,correct=0,total=0;
+    ids.forEach(function(id){ var s=state.seen[id]; if(s&&(s.c+s.w)>0){ seen++; correct+=s.c; total+=s.c+s.w; } });
+    var pct= total? Math.round(correct/total*100) : 0;
+    var cov= Math.round(seen/ids.length*100);
+    bars.innerHTML+=
+      '<div class="strow"><div class="top"><b>'+CATS[k].name+'</b>'+
+      '<span>'+(seen?pct+"% σωστά · "+seen+"/"+ids.length+" είδες":"δεν ξεκίνησες")+'</span></div>'+
+      '<div class="track"><i style="width:'+(seen?pct:0)+'%;background:'+CATS[k].c+'"></i></div></div>';
+  });
+  show("stats");
+}
+
+/* ── util ─────────────────────────────────── */
+function hex(h,a){ var n=parseInt(h.slice(1),16); return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a+")"; }
+
+/* ── οδηγίες ──────────────────────────────── */
+function info(){
+  alert("ΑΡΧΑΙΑ · SOS λεξιλόγιο για το άγνωστο\n\n"+
+    "• 132 λέξεις/εκφράσεις σε 6 κατηγορίες, μοιρασμένες σε 31 μέρες.\n"+
+    "• Κάθε μέρα: βλέπεις την αρχαία λέξη, τη σκέφτεσαι, αποκαλύπτεις τη σημασία, κρίνεις αν την ήξερες.\n"+
+    "• Ό,τι λαθεύεις επιστρέφει — στο τέλος της μέρας και σε επόμενες μέρες (επανάληψη με διαστήματα).\n"+
+    "• Μέρες με ⟳ = καθαρή επανάληψη.\n"+
+    "• Η πρόοδος αποθηκεύεται στη συσκευή σου. Πρόσθεσέ το στην αρχική οθόνη για γρήγορη πρόσβαση.\n\n"+
+    "Σειρά: Σύνδεσμοι → Μόρια → Αντωνυμίες → Ρήματα → Ρίζες → Εκφράσεις (από τη δομή προς το νόημα).");
+}
+
+/* ── bindings ─────────────────────────────── */
+$("#infoBtn").onclick=info;
+$("#statsLink").onclick=renderStats;
+$("#sessClose").onclick=function(){ if(confirm("Έξοδος; Η πρόοδος της κάρτας δεν αποθηκεύεται, μόνο η μέρα όταν τελειώσει.")){ renderHome(); show("home"); } };
+$("#statClose").onclick=function(){ renderHome(); show("home"); };
+$("#sumDone").onclick=function(){ renderHome(); show("home"); };
+$("#resetBtn").onclick=function(){ if(confirm("Σίγουρα; Θα σβηστεί ΟΛΗ η πρόοδος και τα στατιστικά.")){ state={days:{},seen:{},miss:{}}; save(); renderHome(); show("home"); } };
+
+renderHome();
+show("home");
+
+/* service worker (offline) — χρησιμοποιεί τον υπάρχοντα του dashboard */
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
+</script>
+</body>
+</html>
