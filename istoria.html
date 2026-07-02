@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ιστορία">
+<title>Ιστορία · Προσανατολισμού</title>
+<meta name="theme-color" content="#050506">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  :root{
+    --void:#050506; --card:#14141b; --card2:#1b1b24;
+    --ivory:#f3f0ea; --dim:#9a97a3; --faint:#5c5964; --line:#26262f;
+    --terms:#d98b5f;   /* όροι — sienna */
+    --themes:#7aa2e3;  /* νόημα — slate blue */
+    --ok:#51cf66; --no:#ff6b6b;
+  }
+  html,body{ min-height:100%; height:100%; }
+  body{
+    background:
+      radial-gradient(1200px 600px at 82% -10%, rgba(217,139,95,.10), transparent 60%),
+      radial-gradient(1000px 500px at -12% 112%, rgba(122,162,227,.10), transparent 60%),
+      var(--void);
+    color:var(--ivory);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; overscroll-behavior:none;
+    display:flex; flex-direction:column;
+  }
+  .serif{ font-family:Georgia,"Times New Roman",serif; }
+  .wrap{ width:100%; max-width:560px; margin:0 auto; padding:0 18px; }
+
+  /* ── HOME ─────────────────────────── */
+  #home{ padding:calc(env(safe-area-inset-top) + 26px) 0 44px; }
+  .brand{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .brand h1{ font-size:1.5rem; letter-spacing:.02em; font-weight:800; }
+  .brand h1 span{ color:var(--dim); font-weight:600; }
+  .sub{ color:var(--faint); font-size:.82rem; margin-top:3px; }
+  .infobtn{ width:34px;height:34px;border-radius:50%; border:1px solid var(--line); background:var(--card);
+    color:var(--dim); font-size:1rem; display:flex;align-items:center;justify-content:center; text-decoration:none; flex:0 0 auto; }
+
+  .statline{ display:flex; gap:10px; margin:22px 0 6px; }
+  .stat{ flex:1; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; }
+  .stat .v{ font-size:1.5rem; font-weight:800; }
+  .stat .v small{ font-size:.9rem; color:var(--dim); font-weight:600; }
+  .stat .k{ font-size:.74rem; color:var(--dim); margin-top:2px; }
+
+  .unit{ display:block; width:100%; text-align:left; border:none; border-radius:20px; padding:20px;
+    background:linear-gradient(135deg,#241a15,#181820); border:1px solid #3a2a20; color:var(--ivory);
+    position:relative; overflow:hidden; margin-top:14px; }
+  .unit .lbl{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--terms); font-weight:700; }
+  .unit .ttl{ font-size:1.3rem; font-weight:800; margin:5px 0 3px; }
+  .unit .meta{ color:var(--dim); font-size:.86rem; }
+  .unit::after{ content:"›"; position:absolute; right:20px; top:50%; transform:translateY(-50%); font-size:2rem; color:var(--dim); }
+  .unit.soon{ opacity:.5; } .unit.soon::after{ content:"·"; }
+  .unit.soon .lbl{ color:var(--faint); }
+
+  .sectlabel{ font-size:.76rem; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700; margin:28px 2px 12px; }
+
+  /* ── UNIT VIEW ────────────────────── */
+  #unit{ display:none; padding:calc(env(safe-area-inset-top) + 20px) 0 44px; }
+  .backrow{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .backrow button{ background:none;border:none;color:var(--dim);font-size:.95rem;font-weight:600;padding:0; }
+  .uhead{ font-size:1.35rem; font-weight:800; }
+  .uhead small{ display:block; color:var(--dim); font-size:.8rem; font-weight:600; margin-top:3px; }
+  .modes{ display:flex; flex-direction:column; gap:12px; margin-top:22px; }
+  .mode{ text-align:left; border:none; border-radius:18px; padding:18px 20px; color:var(--ivory); position:relative; }
+  .mode .mt{ font-size:1.15rem; font-weight:800; display:flex; align-items:center; gap:9px; }
+  .mode .md{ color:var(--dim); font-size:.85rem; margin-top:5px; }
+  .mode .bar{ height:6px; border-radius:4px; background:rgba(255,255,255,.09); overflow:hidden; margin-top:12px; }
+  .mode .bar i{ display:block; height:100%; border-radius:4px; }
+  .mode.terms{ background:linear-gradient(135deg,rgba(217,139,95,.16),rgba(217,139,95,.03)); border:1px solid rgba(217,139,95,.32); }
+  .mode.terms .bar i{ background:var(--terms); }
+  .mode.themes{ background:linear-gradient(135deg,rgba(122,162,227,.16),rgba(122,162,227,.03)); border:1px solid rgba(122,162,227,.32); }
+  .mode.themes .bar i{ background:var(--themes); }
+  .mode.mix{ background:var(--card); border:1px solid var(--line); }
+  .mode .cnt{ position:absolute; right:20px; top:18px; font-size:.8rem; color:var(--dim); font-weight:700; }
+
+  /* ── SESSION ──────────────────────── */
+  #session,#summary{ display:none; flex:1; flex-direction:column; min-height:100%; }
+  .topbar{ display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
+  .topbar .close{ background:none;border:none;color:var(--dim);font-size:1.5rem;line-height:1;width:30px;text-align:left;flex:0 0 auto; }
+  .pbar{ flex:1; height:7px; border-radius:6px; background:#20202a; overflow:hidden; }
+  .pbar i{ display:block; height:100%; width:0; border-radius:6px; transition:width .3s; }
+  .pcount{ font-size:.8rem; color:var(--dim); font-weight:600; min-width:42px; text-align:right; flex:0 0 auto; }
+
+  .cardarea{ flex:1; display:flex; flex-direction:column; padding:12px 20px 0; overflow-y:auto; }
+  .chip{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; padding:6px 13px; border-radius:100px;
+    font-size:.72rem; font-weight:700; letter-spacing:.03em; margin-bottom:20px; }
+  .chip i{ width:8px;height:8px;border-radius:50%; }
+  .qword{ font-size:clamp(1.7rem,6.4vw,2.4rem); font-weight:800; line-height:1.22; }
+  .qprompt{ font-size:1.15rem; color:var(--ivory); font-weight:600; line-height:1.45; }
+  .qhint{ color:var(--faint); font-size:.85rem; margin-top:14px; }
+
+  .answer{ margin-top:22px; display:none; }
+  .answer.show{ display:block; animation:fade .3s ease; }
+  .answer .hr{ height:1px; background:var(--line); margin-bottom:18px; }
+  .adef{ font-size:1.2rem; line-height:1.5; }
+  .ablock{ margin-bottom:15px; }
+  .ablock .h{ font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:800; margin-bottom:7px; }
+  .ablock.aitia .h{ color:#ff9b7a; } .ablock.geg .h{ color:#ffd479; }
+  .ablock.syn .h{ color:#7ee0a3; }  .ablock.link .h{ color:#7aa2e3; }
+  .ablock ul{ list-style:none; }
+  .ablock li{ position:relative; padding-left:16px; margin-bottom:6px; line-height:1.5; font-size:1rem; }
+  .ablock li::before{ content:"·"; position:absolute; left:3px; color:var(--dim); font-weight:800; }
+  .ablock.link p{ line-height:1.5; font-size:1rem; color:var(--dim); }
+
+  .controls{ padding:16px 20px calc(env(safe-area-inset-bottom) + 20px); }
+  .btn{ width:100%; border:none; border-radius:16px; padding:17px; font-size:1.05rem; font-weight:700; color:var(--void); background:var(--ivory); }
+  .judge{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .judge .no{ background:rgba(255,107,107,.14); color:#ff9b9b; border:1px solid rgba(255,107,107,.35); }
+  .judge .ok{ background:rgba(81,207,102,.14); color:#8ef0a3; border:1px solid rgba(81,207,102,.35); }
+  .jhint{ text-align:center; color:var(--faint); font-size:.78rem; margin-top:11px; }
+
+  /* ── SUMMARY ──────────────────────── */
+  .sumwrap{ flex:1; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 42px) 22px 30px; }
+  .sumwrap h2{ font-size:1.6rem; font-weight:800; }
+  .score{ font-size:3.6rem; font-weight:800; margin:14px 0 2px; }
+  .score small{ font-size:1.3rem; color:var(--dim); font-weight:600; }
+  .scmeta{ color:var(--dim); margin-bottom:22px; }
+  .misslist{ flex:1; overflow-y:auto; }
+  .misslist h3{ font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; color:var(--no); margin-bottom:10px; }
+  .missrow{ padding:11px 0; border-bottom:1px solid var(--line); }
+  .missrow .g{ font-weight:700; font-size:1rem; }
+  .missrow .m{ color:var(--dim); font-size:.9rem; margin-top:2px; line-height:1.4; }
+  .allgood{ text-align:center; color:var(--ok); padding:30px 0; font-size:1.05rem; }
+
+  @keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  .fadein{ animation:fade .32s ease; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="wrap">
+  <div class="brand">
+    <div>
+      <h1>Ιστορία <span>· Προσανατολισμού</span></h1>
+      <div class="sub">Θέματα Νεοελληνικής Ιστορίας · κατανόηση, όχι παπαγαλία</div>
+    </div>
+    <a class="infobtn" id="infoBtn" role="button" aria-label="Οδηγίες">?</a>
+  </div>
+
+  <div class="statline">
+    <div class="stat"><div class="v" id="stTerms">0<small>/0</small></div><div class="k">όρους έμαθες</div></div>
+    <div class="stat"><div class="v" id="stThemes">0<small>/0</small></div><div class="k">ενότητες κατέχεις</div></div>
+  </div>
+
+  <div class="sectlabel">Ενότητες</div>
+  <div id="unitList"></div>
+
+  <div class="sectlabel">Πώς δουλεύει</div>
+  <div class="stat" style="line-height:1.55; font-size:.9rem; color:var(--dim)">
+    <b style="color:var(--terms)">📇 Όροι</b> = flashcards για την <b>Ομάδα Α΄</b> (σίγουροι βαθμοί).<br>
+    <b style="color:var(--themes)">🧠 Νόημα</b> = για κάθε ενότητα, λες με δικά σου λόγια <b>Αίτια → Γεγονότα → Συνέπειες</b> και το ελέγχεις — χτίζει την <b>Ομάδα Β΄ &amp; τις πηγές</b>.
+  </div>
+  <div style="text-align:center;margin-top:20px"><a href="index.html" style="color:var(--faint);font-size:.85rem;text-decoration:none">‹ Πίσω στο Dashboard</a></div>
+</section>
+
+<!-- UNIT VIEW -->
+<section id="unit" class="wrap">
+  <div class="backrow"><button id="uBack">‹ Ενότητες</button></div>
+  <div class="uhead" id="uTitle">—<small id="uYears"></small></div>
+  <div class="modes">
+    <button class="mode terms" id="mTerms">
+      <span class="cnt" id="cTerms"></span>
+      <div class="mt">📇 Όροι</div>
+      <div class="md">Μάθε τους εξεταζόμενους όρους (Ομάδα Α΄).</div>
+      <div class="bar"><i id="barTerms" style="width:0"></i></div>
+    </button>
+    <button class="mode themes" id="mThemes">
+      <span class="cnt" id="cThemes"></span>
+      <div class="mt">🧠 Νόημα</div>
+      <div class="md">Κατανόησε τις υποενότητες (Ομάδα Β΄ &amp; πηγές).</div>
+      <div class="bar"><i id="barThemes" style="width:0"></i></div>
+    </button>
+    <button class="mode mix" id="mMix">
+      <div class="mt">🔀 Ανακάτεψε</div>
+      <div class="md">Γρήγορη μεικτή επανάληψη — όροι + νόημα.</div>
+    </button>
+  </div>
+</section>
+
+<!-- SESSION -->
+<section id="session">
+  <div class="topbar">
+    <button class="close" id="sClose">✕</button>
+    <div class="pbar"><i id="pfill"></i></div>
+    <div class="pcount" id="pcount">0/0</div>
+  </div>
+  <div class="cardarea"><div id="flash"></div></div>
+  <div class="controls" id="controls"></div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary">
+  <div class="sumwrap">
+    <h2 id="sumTitle">Τέλος</h2>
+    <div class="score" id="sumScore">0<small>/0</small></div>
+    <div class="scmeta" id="sumMeta">—</div>
+    <div class="misslist" id="sumMiss"></div>
+    <button class="btn" id="sumDone" style="margin-top:18px">Τέλος</button>
+  </div>
+</section>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════
+   ΙΣΤΟΡΙΑ ΠΡΟΣΑΝΑΤΟΛΙΣΜΟΥ — «Θέματα Νεοελληνικής Ιστορίας» (Γ΄ Λυκείου)
+   Περιεχόμενο επαληθευμένο από το επίσημο σχολικό βιβλίο (ebooks.edu.gr,
+   Ψηφιακό Σχολείο). Δύο modes: Όροι (Ομάδα Α΄) + Νόημα (Ομάδα Β΄/πηγές).
+   Offline / on-device (localStorage). Καμία εξωτερική εξάρτηση.
+   ═══════════════════════════════════════════════════════════════ */
+
+var UNITS = [
+{
+  id:"prosf", name:"Το Προσφυγικό Ζήτημα", years:"1821–1930", ready:true,
+
+  /* ── ΟΡΟΙ (Ομάδα Α΄) ────────────────────────────────── */
+  terms:[
+    {id:"t01", t:"Διωγμός του 1914 (α΄ διωγμός)",
+      d:"Ο πρώτος συστηματικός διωγμός των Ελλήνων της Οθωμανικής Αυτοκρατορίας (Ανατ. Θράκη → Δυτ. Μικρά Ασία, 1914). Αφορμές: τουρκικός εθνικισμός, η οικονομική ισχύς Ελλήνων & Αρμενίων, οι διαφορές για τα νησιά. Μορφές: επιτάξεις, εκτοπισμοί από τα παράλια στο εσωτερικό, τάγματα εργασίας."},
+    {id:"t02", t:"Τάγματα εργασίας",
+      d:"Καταναγκαστικά τάγματα στα οποία εντάχθηκαν Έλληνες άνδρες της Οθωμανικής Αυτοκρατορίας υπό άθλιες συνθήκες (αντί ή πλάι στη στράτευση) — μέσο καταπίεσης κατά τον διωγμό."},
+    {id:"t03", t:"Συνθήκη του Νεϊγύ (Νοέμβριος 1919)",
+      d:"Ελληνοβουλγαρική συνθήκη με σύμφωνο περί αμοιβαίας (εθελοντικής) μετανάστευσης μειονοτήτων: ~50.000 Βούλγαροι έφυγαν από την Ελλάδα και ~30.000 Έλληνες από τη Βουλγαρία."},
+    {id:"t04", t:"Παλιννόστηση",
+      d:"Η επιστροφή των προσφύγων στις εστίες τους (Μικρά Ασία, Ανατ. Θράκη) μετά το τέλος του πολέμου για την Τουρκία (τέλη 1918–1920). Ανακόπηκε βίαια τον Αύγουστο του 1922."},
+    {id:"t05", t:"Ύπατη Αρμοστεία Σμύρνης",
+      d:"Η ελληνική διοίκηση στη ζώνη της Σμύρνης μετά την απόβαση του στρατού (Μάιος 1919)· ίδρυσε Υπηρεσία Παλιννοστήσεως και Περιθάλψεως για την αποκατάσταση των επιστρεφόντων."},
+    {id:"t06", t:"Μικρασιατική Καταστροφή (1922)",
+      d:"Η στρατιωτική ήττα και η βίαιη εκρίζωση του ελληνισμού από τη Μικρά Ασία (Αύγουστος 1922). Ως το φθινόπωρο του 1922 έφτασαν ~900.000 πρόσφυγες (μαζί & ~50.000 Αρμένιοι)."},
+    {id:"t07", t:"Σύμβαση ανταλλαγής πληθυσμών (30 Ιαν. 1923)",
+      d:"Ελληνοτουρκική σύμβαση (Λοζάνη) για την ΥΠΟΧΡΕΩΤΙΚΗ ανταλλαγή Ελλήνων ορθοδόξων της Τουρκίας και Μουσουλμάνων της Ελλάδας. Εξαιρέθηκαν οι Έλληνες της Κωνσταντινούπολης και οι Μουσουλμάνοι της Δυτ. Θράκης (και Ίμβρος–Τένεδος)."},
+    {id:"t08", t:"Συνθήκη της Λοζάνης (24 Ιουλ. 1923)",
+      d:"Η συνθήκη ειρήνης που καθόρισε τα οριστικά σύνορα και επικύρωσε το νέο καθεστώς μετά τη Μικρασιατική Καταστροφή."},
+    {id:"t09", t:"Μικτή Επιτροπή Ανταλλαγής",
+      d:"Ιδρύθηκε βάσει του άρθρου 11 της Σύμβασης· έδρα η Κωνσταντινούπολη· 11 μέλη (4 Έλληνες, 4 Τούρκοι, 3 ουδέτεροι). Καθόριζε τον τρόπο μετανάστευσης και εκτιμούσε την ακίνητη περιουσία των ανταλλαξίμων."},
+    {id:"t10", t:"Ανταλλάξιμη περιουσία",
+      d:"Η ακίνητη περιουσία που εγκατέλειψαν οι ανταλλάξιμοι. Οι δικαιούχοι είχαν δικαίωμα να μεταφέρουν την κινητή τους περιουσία και να λάβουν από το κράτος αποζημίωση ίσης αξίας με την ακίνητη που άφησαν."},
+    {id:"t11", t:"Ταμείο Περιθάλψεως Προσφύγων (Νοέμ. 1922)",
+      d:"Οργανισμός για την άμεση περίθαλψη· ανέγειρε ξύλινα παραπήγματα για τη στέγαση. Λειτούργησε περίπου 1922–1925."},
+    {id:"t12", t:"Επιτροπή Αποκαταστάσεως Προσφύγων (ΕΑΠ)",
+      d:"Αυτόνομος οργανισμός με πρωτοβουλία της Κ.Τ.Ε. (Σεπτ. 1923), έδρα την Αθήνα. Σκοπός: η παραγωγική απασχόληση και η ΟΡΙΣΤΙΚΗ στέγαση. Πόροι: 8+ εκατ. στρέμματα γης & δύο διεθνή δάνεια (1924, 1928). Λειτούργησε ως το τέλος του 1930, οπότε μεταβίβασε περιουσία & υποχρεώσεις στο ελληνικό Δημόσιο."},
+    {id:"t13", t:"Κοινωνία των Εθνών (Κ.Τ.Ε.)",
+      d:"Ο διεθνής οργανισμός με πρωτοβουλία του οποίου ιδρύθηκε η ΕΑΠ και εξασφαλίστηκαν τα δάνεια για την αποκατάσταση."},
+    {id:"t14", t:"Αγροτική αποκατάσταση",
+      d:"Η εγκατάσταση προσφύγων στην ύπαιθρο (προτεραιότητα: Μακεδονία & Δυτ. Θράκη). Παρεχόταν στέγη ΚΑΙ κλήρος (γη), εργαλεία, σπόροι, ζώα. Ο κλήρος γινόταν κυριότητα μετά την αποπληρωμή."},
+    {id:"t15", t:"Αστική αποκατάσταση",
+      d:"Η στέγαση προσφύγων στις πόλεις (νέοι συνοικισμοί: Καισαριανή, Βύρωνας, Νέα Ιωνία, Κοκκινιά). Περιλάμβανε ΜΟΝΟ στέγη (όχι εργασία)· την ανέλαβε κυρίως το κράτος."},
+    {id:"t16", t:"Αυτοστέγαση",
+      d:"Η ανέγερση της κατοικίας από τους ίδιους τους πρόσφυγες, με οικοδομικά υλικά που χορηγούσε η ΕΑΠ."},
+    {id:"t17", t:"Συμφωνία της Άγκυρας (10 Ιουν. 1930)",
+      d:"Ελληνοτουρκική συμφωνία (Βενιζέλος) που ρύθμισε ΟΡΙΣΤΙΚΑ τις αποζημιώσεις: συμψηφισμός των ανταλλάξιμων περιουσιών και εκατέρωθεν διαγραφή των οικονομικών υποχρεώσεων. Προκάλεσε δυσαρέσκεια στους πρόσφυγες (οι ελληνικές περιουσίες ήταν πολύ μεγαλύτερες)."},
+    {id:"t18", t:"Γενική Διεύθυνση Ανταλλαγής Πληθυσμών (1924)",
+      d:"Υπηρεσία υπό το Υπουργείο Γεωργίας για την εκτίμηση των ανταλλάξιμων περιουσιών (σε συνεργασία με τη Μικτή Επιτροπή· προσωρινές αποζημιώσεις μέσω της Εθνικής Τράπεζας)."},
+    {id:"t19", t:"Γηγενείς",
+      d:"Οι ντόπιοι κάτοικοι, σε αντιδιαστολή με τους πρόσφυγες. Οι σχέσεις τους ήταν αρχικά καχύποπτες/ανταγωνιστικές· η διάκριση ουσιαστικά εξαλείφθηκε μετά τη δεκαετία του 1940."},
+    {id:"t20", t:"Εθνολογική ομοιογένεια",
+      d:"Συνέπεια της άφιξης των προσφύγων: το ποσοστό των μη ορθοδόξων/μη Ελλήνων έπεσε από 20% (1920) σε 6% (1928)· στη Μακεδονία από 48% σε 12%. Εδραίωσε τα εδάφη που κερδήθηκαν στους Βαλκανικούς Πολέμους."},
+    {id:"t21", t:"Ερμούπολη (Σύρος)",
+      d:"Πόλη που ονομάστηκε το 1825 και αναπτύχθηκε από πρόσφυγες του Αγώνα (Χίοι, Ψαριανοί, Κρήτες κ.ά.) χωρίς κρατική βοήθεια· εξελίχθηκε σε μεγάλο εμπορικό & ναυτιλιακό κέντρο — παράδειγμα προσφυγικής αυτο-οργάνωσης τον 19ο αι."}
+  ],
+
+  /* ── ΝΟΗΜΑ (Ομάδα Β΄ / πηγές) ───────────────────────── */
+  themes:[
+    {id:"h01", t:"Οι πρόσφυγες τον 19ο αιώνα", q:"Πώς αντιμετωπίστηκε το προσφυγικό ζήτημα τον 19ο αιώνα;",
+      aitia:["Τουρκικά αντίποινα μετά τις επαναστατικές εξεγέρσεις (1821 κ.ε.).","Καταστροφές νησιών & περιοχών (Χίος, Ψαρά, Κάσος, Κρήτη)."],
+      geg:["Πρόσφυγες από Μ. Ασία, Κων/πολη, Κύπρο και από νησιά/ηπειρωτική Ελλάδα.","ΚΑΜΙΑ συστηματική κρατική πολιτική στην Επανάσταση — βοήθεια τοπική & εθελοντική.","Η Ερμούπολη (Σύρος) δημιουργήθηκε από πρόσφυγες χωρίς κρατική στήριξη.","Πρώτες οργανωμένες προσπάθειες αποκατάστασης επί Καποδίστρια (1828–31)."],
+      syn:["Το ζήτημα παρέμεινε διαρκές, συνδεδεμένο με τα αλυτρωτικά κινήματα.","Προετοίμασε την εμπειρία που θα φανεί καθοριστική τον 20ό αιώνα."],
+      link:"Σε σχέση με τον 19ο αι., ο 20ός φέρνει προσφυγικά ρεύματα ασύγκριτα μεγαλύτερα — και τελικά την υποχρεωτική οργάνωση της αποκατάστασης."},
+
+    {id:"h02", t:"Προσφυγικά ρεύματα 1914–1922", q:"Ποια ήταν τα προσφυγικά ρεύματα προς την Ελλάδα (1914–1922) και οι αιτίες τους;",
+      aitia:["Τουρκικός εθνικισμός & εχθρότητα προς τις μειονότητες.","Η οικονομική ισχύς Ελλήνων/Αρμενίων στο εμπόριο & τη βιομηχανία.","Ο Α΄ Παγκόσμιος Πόλεμος και η Ρωσική Επανάσταση."],
+      geg:["Διωγμός του 1914 (Ανατ. Θράκη → Δυτ. Μ. Ασία): επιτάξεις, εκτοπισμοί, τάγματα εργασίας.","Ανατ. Μακεδονία: βουλγαρική κατοχή (1916).","Δυτ. Θράκη: Συνθήκη Νεϊγύ (1919), αμοιβαία μετανάστευση.","Έλληνες από τη Ρωσία (1919–21) λόγω της Επανάστασης.","Ως το 1920 οι πρόσφυγες έφτασαν τους ~800.000."],
+      syn:["Ανάγκη για οργανωμένη περίθαλψη — ίδρυση Υπουργείου Περιθάλψεως (1917).","Οι πρόσφυγες θεωρούσαν την προσφυγιά προσωρινή."],
+      link:"Η παλιννόστηση (1918–20) έδειχνε λύση — αλλά ανατράπηκε ολοκληρωτικά με τη Μικρασιατική Καταστροφή του 1922."},
+
+    {id:"h03", t:"Μικρασιατική Καταστροφή & ανταλλαγή", q:"Τι ήταν η Μικρασιατική Καταστροφή και πώς ρυθμίστηκε το ζήτημα με τη Λοζάνη;",
+      aitia:["Η στρατιωτική ήττα του ελληνικού στρατού (Αύγουστος 1922).","Η βίαιη εκρίζωση του ελληνισμού από τα μικρασιατικά παράλια."],
+      geg:["~900.000 πρόσφυγες ως το φθινόπωρο του 1922.","Σύμβαση ανταλλαγής πληθυσμών (30 Ιαν. 1923) — υποχρεωτική.","Συνθήκη Λοζάνης (24 Ιουλ. 1923).","Εξαιρέσεις: Έλληνες Κων/πολης, Μουσουλμάνοι Δυτ. Θράκης.","Μικτή Επιτροπή Ανταλλαγής (11 μέλη).","Απογραφή 1928: ~1.220.000 πρόσφυγες συνολικά."],
+      syn:["Τεράστιο έργο περίθαλψης & αποκατάστασης για το ελληνικό κράτος.","Η υπογραφή της Σύμβασης = ψυχολογική στροφή προς τη ΜΟΝΙΜΗ εγκατάσταση."],
+      link:"Το μέγεθος του προβλήματος οδήγησε στην ίδρυση της ΕΑΠ (1923) με τη βοήθεια της Κ.Τ.Ε."},
+
+    {id:"h04", t:"Η αποκατάσταση των προσφύγων (ΕΑΠ)", q:"Πώς έγινε η αποκατάσταση (αγροτική/αστική) και ποιος ο ρόλος της ΕΑΠ;",
+      aitia:["Το τεράστιο πλήθος προσφύγων απαιτούσε οριστική, παραγωγική εγκατάσταση — όχι απλή περίθαλψη."],
+      geg:["Αίτηση βοήθειας στην Κ.Τ.Ε. → ίδρυση ΕΑΠ (Σεπτ. 1923), αυτόνομος οργανισμός, έδρα Αθήνα.","Πόροι: 8+ εκατ. στρέμματα & δύο δάνεια (1924, 1928).","Κριτήρια: διάκριση αστών/αγροτών, ομαδοποίηση κατά τόπο προέλευσης (π.χ. Νέα Σμύρνη, Νέα Φιλαδέλφεια).","Αγροτική: στέγη + κλήρος (κυρίως Μακεδονία/Δυτ. Θράκη).","Αστική: μόνο στέγη — συνοικισμοί (Καισαριανή, Βύρωνας, Ν. Ιωνία, Κοκκινιά)· και αυτοστέγαση."],
+      syn:["Οριστική εγκατάσταση εκατομμυρίων· διαμόρφωση των σύγχρονων προαστίων.","Η ΕΑΠ έληξε το 1930 και μεταβίβασε το έργο στο ελληνικό Δημόσιο."],
+      link:"Παράλληλα έμενε ανοιχτό το ζήτημα των αποζημιώσεων — που έκλεισε με τη Σύμβαση της Άγκυρας (1930)."},
+
+    {id:"h05", t:"Αποζημίωση & Σύμβαση Άγκυρας (1930)", q:"Πώς ρυθμίστηκε η αποζημίωση των ανταλλαξίμων;",
+      aitia:["Ανάγκη αποτίμησης & αποζημίωσης των περιουσιών που εγκαταλείφθηκαν εκατέρωθεν.","Επιδίωξη Βενιζέλου για οικονομική εκκαθάριση & ελληνοτουρκική προσέγγιση."],
+      geg:["Εκτίμηση ανταλλάξιμης περιουσίας: Μικτή Επιτροπή & Γενική Διεύθυνση Ανταλλαγής (1924).","Προσωρινές αποζημιώσεις στους απροκατάστατους μέσω της Εθνικής Τράπεζας.","Συμφωνία Άγκυρας (10 Ιουν. 1930): συμψηφισμός περιουσιών & εκατέρωθεν διαγραφή υποχρεώσεων."],
+      syn:["Δυσαρέσκεια των προσφύγων (οι ελληνικές περιουσίες ήταν πολύ μεγαλύτερες από τις μουσουλμανικές).","Συνέβαλε στην εκλογική ήττα των Φιλελευθέρων (1932–33)."],
+      link:"Το ζήτημα των αποζημιώσεων επηρέασε άμεσα την πολιτική στάση & ένταξη των προσφύγων."},
+
+    {id:"h06", t:"Η ένταξη των προσφύγων — συνέπειες", q:"Ποιες ήταν οι συνέπειες της ένταξης των προσφύγων (οικ/κοιν/πολ/πολιτιστικές);",
+      aitia:["Η άφιξη >1,2 εκατ. προσφύγων μετέβαλε ριζικά τον πληθυσμό, την οικονομία & την κοινωνία."],
+      geg:["Οικονομικές: γεωργία — διπλασιασμός παραγωγής (1922–31), νέες καλλιέργειες (καπνός, βαμβάκι)· βιομηχανία — φθηνό εξειδικευμένο εργατικό δυναμικό, διπλασιασμός μονάδων· αστικοποίηση (Αθήνα/Πειραιάς διπλασιασμός), γυναικεία εργασία.","Κοινωνικές: ετερογένεια, καχυποψία γηγενών, ο όρος «πρόσφυγας» υποτιμητικός· άμβλυνση μετά το 1940.","Πολιτικές: οι πρόσφυγες πήραν πολιτικά δικαιώματα & στήριξαν τους Βενιζελικούς → αντιβενιζελική εχθρότητα.","Πολιτιστικές/πληθυσμιακές: εθνολογική ομοιογένεια (μη ορθόδοξοι 20%→6%)· ρεμπέτικο· λογοτεχνία (Σεφέρης, Βενέζης, Πολίτης, Θεοτοκάς, Δούκας, Κόντογλου, Καλομοίρης)."],
+      syn:["Ο πληθυσμός της Ελλάδας αυξήθηκε ~20% (1920–28).","Διαμορφώθηκε η σύγχρονη Ελλάδα — οικονομικά, κοινωνικά & πολιτισμικά."],
+      link:"Η ένταξη «κλείνει» το προσφυγικό ζήτημα (1821–1930) και συνδέει το κεφάλαιο με την οικονομία & τα πολιτικά κόμματα του Μεσοπολέμου."}
+  ]
+}
+];
+
+/* μελλοντικές ενότητες (εμφανίζονται ως «σύντομα») */
+var COMING = [
+  {name:"Τα Πολιτικά Κόμματα", years:"1821–1936"},
+  {name:"Η Ελληνική Οικονομία", years:"19ος–20ός αι."},
+  {name:"Το Κρητικό Ζήτημα", years:"19ος–20ός αι."},
+  {name:"Ο Παρευξείνιος Ελληνισμός", years:"19ος–20ός αι."}
+];
+
+/* ── κατάσταση / αποθήκευση ───────────────────────────── */
+var KEY="istoria:v1";
+var state=load();
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+state.seen=state.seen||{};   // {id:{c,w}}
+state.miss=state.miss||{};   // {id:count}
+state.days=state.days||{};   // {yyyy-mm-dd:true}
+
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function pick(a,n){ return shuffle(a).slice(0,n); }
+function unitById(id){ for(var i=0;i<UNITS.length;i++) if(UNITS[i].id===id) return UNITS[i]; return null; }
+function allItems(u){ var a=[]; u.terms.forEach(function(x){a.push({kind:"term",u:u.id,item:x});}); u.themes.forEach(function(x){a.push({kind:"theme",u:u.id,item:x});}); return a; }
+function termMastered(id){ var s=state.seen[id]; return !!(s&&s.c>=2&&!(state.miss[id]>0)); }
+function themeKnown(id){ var s=state.seen[id]; return !!(s&&s.c>=1&&!(state.miss[id]>0)); }
+function seenAny(id){ var s=state.seen[id]; return !!(s&&(s.c+s.w)>0); }
+
+/* ── δόμηση ουράς ──────────────────────────────────────── */
+function buildQueue(unit,mode){
+  var poolT=unit.terms.map(function(x){return {kind:"term",item:x};});
+  var poolH=unit.themes.map(function(x){return {kind:"theme",item:x};});
+  function order(pool,n){
+    var unseen=pool.filter(function(c){ return !seenAny(c.item.id); });
+    var due=pool.filter(function(c){ return state.miss[c.item.id]>0; });
+    var rest=pool.filter(function(c){ return seenAny(c.item.id) && !(state.miss[c.item.id]>0); });
+    var q=shuffle(due).concat(shuffle(unseen)).concat(shuffle(rest));
+    return q.slice(0,n);
+  }
+  if(mode==="terms") return order(poolT,10);
+  if(mode==="themes") return order(poolH,5);
+  return shuffle(order(poolT,6).concat(order(poolH,3))); // mix
+}
+
+/* ── UI ────────────────────────────────────────────────── */
+function $(s){ return document.querySelector(s); }
+function show(id){ ["home","unit","session","summary"].forEach(function(x){
+  var el=document.getElementById(x); el.style.display=(x===id)?(x==="session"||x==="summary"?"flex":"block"):"none"; });
+  window.scrollTo(0,0);
+}
+
+/* HOME */
+function renderHome(){
+  var u=UNITS[0];
+  var tM=0,tT=u.terms.length; u.terms.forEach(function(x){ if(termMastered(x.id)) tM++; });
+  var hM=0,hT=0;
+  UNITS.forEach(function(un){ un.themes.forEach(function(x){ hT++; if(themeKnown(x.id)) hM++; }); });
+  // (only ready units counted; add cross-unit terms later)
+  var totalT=0,totalTM=0; UNITS.forEach(function(un){ un.terms.forEach(function(x){ totalT++; if(termMastered(x.id)) totalTM++; }); });
+  $("#stTerms").innerHTML=totalTM+'<small>/'+totalT+'</small>';
+  $("#stThemes").innerHTML=hM+'<small>/'+hT+'</small>';
+
+  var list=$("#unitList"); list.innerHTML="";
+  UNITS.forEach(function(un){
+    var tm=0; un.terms.forEach(function(x){ if(termMastered(x.id)) tm++; });
+    var hm=0; un.themes.forEach(function(x){ if(themeKnown(x.id)) hm++; });
+    var b=document.createElement("button"); b.className="unit";
+    b.innerHTML='<div class="lbl">Ενότητα · '+un.years+'</div><div class="ttl">'+un.name+'</div>'+
+      '<div class="meta">'+un.terms.length+' όροι · '+un.themes.length+' υποενότητες  ·  '+tm+'+'+hm+' κατακτημένα</div>';
+    b.onclick=function(){ openUnit(un.id); };
+    list.appendChild(b);
+  });
+  COMING.forEach(function(c){
+    var b=document.createElement("button"); b.className="unit soon"; b.disabled=true;
+    b.innerHTML='<div class="lbl">Σύντομα · '+c.years+'</div><div class="ttl">'+c.name+'</div><div class="meta">Έρχεται στο επόμενο build</div>';
+    list.appendChild(b);
+  });
+}
+
+/* UNIT */
+var curUnit=null;
+function openUnit(id){
+  curUnit=unitById(id);
+  $("#uTitle").firstChild.textContent=curUnit.name;
+  $("#uYears").textContent=curUnit.years+" · Θέματα Νεοελληνικής Ιστορίας";
+  var tm=0; curUnit.terms.forEach(function(x){ if(termMastered(x.id)) tm++; });
+  var hm=0; curUnit.themes.forEach(function(x){ if(themeKnown(x.id)) hm++; });
+  $("#cTerms").textContent=tm+"/"+curUnit.terms.length;
+  $("#cThemes").textContent=hm+"/"+curUnit.themes.length;
+  $("#barTerms").style.width=(tm/curUnit.terms.length*100)+"%";
+  $("#barThemes").style.width=(hm/curUnit.themes.length*100)+"%";
+  show("unit");
+}
+$("#uBack").onclick=function(){ renderHome(); show("home"); };
+$("#mTerms").onclick=function(){ startSession(curUnit,"terms"); };
+$("#mThemes").onclick=function(){ startSession(curUnit,"themes"); };
+$("#mMix").onclick=function(){ startSession(curUnit,"mix"); };
+
+/* SESSION */
+var sess=null;
+function startSession(unit,mode){
+  var q=buildQueue(unit,mode);
+  if(!q.length){ return; }
+  sess={ unit:unit, mode:mode, queue:q, i:0, correct:0, total:q.length, missed:[], requeued:false };
+  show("session"); renderCard();
+}
+function renderCard(){
+  var c=sess.queue[sess.i], isTerm=(c.kind==="term");
+  var col=isTerm?"217,139,95":"122,162,227", label=isTerm?"Όρος · Ομάδα Α΄":"Νόημα · Ομάδα Β΄";
+  $("#pcount").textContent=(sess.i+1)+"/"+sess.queue.length;
+  $("#pfill").style.background=isTerm?"var(--terms)":"var(--themes)";
+  $("#pfill").style.width=(sess.i/sess.queue.length*100)+"%";
+  var f=$("#flash"); f.className="fadein";
+  if(isTerm){
+    f.innerHTML='<div class="chip" style="background:rgba('+col+',.14);color:rgb('+col+')"><i style="background:rgb('+col+')"></i>'+label+'</div>'+
+      '<div class="qword serif">'+c.item.t+'</div>'+
+      '<div class="qhint">Θυμήσου τον ορισμό — μετά αποκάλυψε.</div>'+
+      '<div class="answer" id="ans"><div class="hr"></div><div class="adef">'+c.item.d+'</div></div>';
+  } else {
+    var it=c.item;
+    var blocks=
+      '<div class="ablock aitia"><div class="h">Αίτια / Πλαίσιο</div><ul>'+li(it.aitia)+'</ul></div>'+
+      '<div class="ablock geg"><div class="h">Γεγονότα-κλειδιά</div><ul>'+li(it.geg)+'</ul></div>'+
+      '<div class="ablock syn"><div class="h">Συνέπειες</div><ul>'+li(it.syn)+'</ul></div>'+
+      '<div class="ablock link"><div class="h">Σύνδεση</div><p>'+it.link+'</p></div>';
+    f.innerHTML='<div class="chip" style="background:rgba('+col+',.14);color:rgb('+col+')"><i style="background:rgb('+col+')"></i>'+label+'</div>'+
+      '<div class="qword serif" style="font-size:clamp(1.3rem,5vw,1.7rem)">'+it.t+'</div>'+
+      '<div class="qprompt" style="margin-top:14px">'+it.q+'</div>'+
+      '<div class="qhint">Πες το με δικά σου λόγια (Αίτια → Γεγονότα → Συνέπειες), μετά έλεγξε.</div>'+
+      '<div class="answer" id="ans"><div class="hr"></div>'+blocks+'</div>';
+  }
+  var ctr=$("#controls");
+  ctr.innerHTML='<button class="btn" id="revealBtn">'+(isTerm?"Δείξε τον ορισμό":"Δείξε την ανάλυση")+'</button>';
+  $("#revealBtn").onclick=reveal;
+}
+function li(arr){ return arr.map(function(x){ return '<li>'+x+'</li>'; }).join(""); }
+function reveal(){
+  $("#ans").classList.add("show");
+  var isTerm=(sess.queue[sess.i].kind==="term");
+  $("#controls").innerHTML='<div class="judge">'+
+    '<button class="btn no" id="noBtn">'+(isTerm?"✗ Δεν το ήξερα":"✗ Χρειάζεται δουλειά")+'</button>'+
+    '<button class="btn ok" id="okBtn">'+(isTerm?"✓ Το ήξερα":"✓ Το είπα σωστά")+'</button></div>'+
+    '<div class="jhint">Ειλικρινά — έτσι δουλεύει η επανάληψη.</div>';
+  $("#okBtn").onclick=function(){ judge(true); };
+  $("#noBtn").onclick=function(){ judge(false); };
+}
+function judge(knew){
+  var c=sess.queue[sess.i], id=c.item.id, s=state.seen[id]||{c:0,w:0};
+  if(knew){ s.c++; sess.correct++; if(state.miss[id]){ state.miss[id]--; if(state.miss[id]<=0) delete state.miss[id]; } }
+  else { s.w++; state.miss[id]=(state.miss[id]||0)+1; sess.missed.push(c); sess.requeue=(sess.requeue||[]).concat(c); }
+  state.seen[id]=s;
+  var d=new Date(), ds=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); state.days[ds]=true;
+  save();
+  sess.i++;
+  if(sess.i>=sess.queue.length && sess.requeue && sess.requeue.length && !sess.requeued){
+    sess.requeued=true; sess.queue=sess.queue.concat(shuffle(sess.requeue)); sess.requeue=[];
+  }
+  if(sess.i>=sess.queue.length) endSession(); else renderCard();
+}
+function endSession(){
+  var pct=Math.round(sess.correct/sess.total*100);
+  $("#sumTitle").textContent = sess.mode==="terms"?"Όροι — τέλος" : sess.mode==="themes"?"Νόημα — τέλος" : "Μεικτή — τέλος";
+  $("#sumScore").innerHTML=sess.correct+'<small>/'+sess.total+'</small>';
+  $("#sumMeta").textContent=pct+"% "+(pct>=80?"— πολύ δυνατά! 🏛":pct>=60?"— καλή δουλειά.":"— τα δύσκολα θα ξαναγυρίσουν.");
+  var wrap=$("#sumMiss");
+  if(sess.missed.length){
+    var seen={}, h='<h3>Ξαναδές αυτά ('+sess.missed.length+')</h3>';
+    sess.missed.forEach(function(c){ if(seen[c.item.id])return; seen[c.item.id]=1;
+      var title=c.kind==="term"?c.item.t:c.item.t;
+      var sub=c.kind==="term"?c.item.d:c.item.q;
+      h+='<div class="missrow"><div class="g">'+title+'</div><div class="m">'+sub+'</div></div>'; });
+    wrap.innerHTML=h;
+  } else wrap.innerHTML='<div class="allgood">✓ Καθαρό — τα κατέχεις.</div>';
+  show("summary");
+}
+
+/* nav */
+$("#sClose").onclick=function(){ openUnit(sess.unit.id); };
+$("#sumDone").onclick=function(){ openUnit(sess.unit.id); };
+$("#infoBtn").onclick=function(){
+  alert("ΙΣΤΟΡΙΑ ΠΡΟΣΑΝΑΤΟΛΙΣΜΟΥ\n\nΤο μάθημα βαθμολογείται 100 μονάδες, 50/50:\n• Ομάδα Α΄ = γνώσεις/όροι → το mode «📇 Όροι».\n• Ομάδα Β΄ = σύνθεση + πηγές (αίτια/συνέπειες) → το mode «🧠 Νόημα».\n\nΣτο Νόημα: πες την ενότητα με δικά σου λόγια ΠΡΙΝ αποκαλύψεις — μετά κρίνε ειλικρινά αν την είπες σωστά. Ό,τι λαθεύεις επιστρέφει.\n\nΠεριεχόμενο από το επίσημο σχολικό βιβλίο «Θέματα Νεοελληνικής Ιστορίας» (Ψηφιακό Σχολείο). Η πρόοδος αποθηκεύεται στη συσκευή σου. Λειτουργεί χωρίς σύνδεση.");
+};
+
+renderHome(); show("home");
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
+</script>
+</body>
+</html>
