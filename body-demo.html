@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Body · DEMO</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="topbar.js" defer></script>
+  <style>
+    :root{
+      --font:var(--au-sans); --font-mono:var(--au-mono);
+      --text-primary:var(--au-ivory); --text-secondary:var(--au-dim); --text-tertiary:var(--au-faint);
+      --border:var(--au-line); --surface:var(--au-glass);
+      --c-water:24,200,192; --c-cal:52,226,176; --c-caf:242,192,99; --c-wt:155,140,255;
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { min-height:100%; }
+    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+
+    /* DEMO ribbon */
+    .demo-ribbon{ max-width:600px; margin:0 auto; padding:8px 18px 0; }
+    .demo-ribbon-in{ display:flex; align-items:center; gap:8px; font-family:var(--au-mono); font-size:9.5px; font-weight:700;
+      letter-spacing:.14em; text-transform:uppercase; color:rgba(155,140,255,.8); background:rgba(155,140,255,.07);
+      border:1px solid rgba(155,140,255,.22); border-radius:999px; padding:6px 12px; }
+    .demo-ribbon-dot{ width:6px; height:6px; border-radius:50%; background:#9B8CFF; box-shadow:0 0 8px #9B8CFF; }
+    .demo-ribbon-in a{ color:rgba(244,241,234,.5); text-decoration:none; margin-left:auto; }
+
+    /* ── Hero ── */
+    .bp-hero{ max-width:600px; margin:0 auto; padding:16px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .bp-hero-eyebrow{ margin-bottom:11px; }
+    .bp-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(22px,5.4vw,29px); line-height:1.12; letter-spacing:-.01em; max-width:22ch; }
+    .bp-hero-status{ font-family:var(--au-mono); font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--au-dim); margin-top:10px; }
+    .bp-hero-status b{ color:var(--au-ivory); font-weight:700; }
+    .bp-hero .nova{ flex-shrink:0; width:66px; height:66px; margin-top:2px; }
+
+    /* ── Vitals deck (the crown) ── */
+    .deck{ max-width:600px; margin:12px auto 0; padding:0 18px; }
+    .deck-grid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .gauge{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:20px;
+      padding:16px 15px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+      display:flex; align-items:center; gap:13px; min-height:104px; }
+    .gauge::before{ content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(var(--g),.6),transparent); }
+    .gauge-ring{ position:relative; width:66px; height:66px; flex-shrink:0; }
+    .gauge-ring svg{ transform:rotate(-90deg); }
+    .gauge-ring-in{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .gauge-ring-num{ font-family:var(--au-mono); font-size:17px; font-weight:800; color:var(--au-ivory); line-height:1; letter-spacing:-.03em; }
+    .gauge-ring-den{ font-family:var(--au-mono); font-size:8px; color:var(--au-faint); margin-top:2px; }
+    .gauge-meta{ min-width:0; flex:1; }
+    .gauge-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgb(var(--g)); }
+    .gauge-sub{ font-family:var(--au-mono); font-size:10.5px; color:var(--au-faint); margin-top:5px; line-height:1.35; }
+    /* weight gauge (no ring — big number + spark) */
+    .gauge-wt-big{ font-family:var(--au-mono); font-size:30px; font-weight:800; color:var(--au-ivory); letter-spacing:-.04em; line-height:1; }
+    .gauge-wt-unit{ font-size:12px; font-weight:600; color:var(--au-faint); }
+    .gauge-wt-delta{ font-family:var(--au-mono); font-size:10.5px; font-weight:700; margin-top:6px; }
+    .gauge-spark{ display:flex; align-items:flex-end; gap:2px; height:26px; margin-top:9px; }
+    .gauge-spark-bar{ flex:1; border-radius:2px 2px 0 0; background:rgba(var(--g),.28); min-height:3px; }
+    .gauge-spark-bar.t{ background:rgb(var(--g)); box-shadow:0 0 8px rgba(var(--g),.6); }
+
+    /* ── Quick actions ── */
+    .qa{ max-width:600px; margin:13px auto 0; padding:0 18px; display:flex; gap:9px; }
+    .qa-btn{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:13px 4px; border-radius:16px;
+      border:1px solid var(--au-line); background:var(--au-glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s, border-color .2s, box-shadow .2s;
+      text-decoration:none; }
+    .qa-btn:active{ transform:scale(.94); }
+    .qa-btn-emo{ font-size:20px; line-height:1; }
+    .qa-btn-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-dim); }
+    .qa-btn.on{ border-color:rgba(var(--qc),.5); box-shadow:0 0 20px rgba(var(--qc),.14); }
+    .qa-btn.on .qa-btn-lbl{ color:rgb(var(--qc)); }
+
+    /* ── Section label ── */
+    .deck-hd{ max-width:600px; margin:22px auto 10px; padding:0 20px; display:flex; align-items:center; gap:10px; }
+    .deck-hd-lbl{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint); }
+    .deck-hd-line{ flex:1; height:1px; background:linear-gradient(90deg,var(--au-line),transparent); }
+
+    /* ── Collapsible detail cards ── */
+    .bp-wrap{ padding:0 18px; display:flex; flex-direction:column; gap:11px; max-width:600px; margin:0 auto; }
+    .card{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden;
+      backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); transition:border-color .25s, box-shadow .25s; }
+    .card[open]{ border-color:rgba(var(--sec),.24); box-shadow:0 14px 44px rgba(0,0,0,.4), 0 0 34px rgba(var(--sec),.06); }
+    .card-sum{ display:flex; align-items:center; gap:12px; padding:15px 16px; cursor:pointer; list-style:none; -webkit-tap-highlight-color:transparent; }
+    .card-sum::-webkit-details-marker{ display:none; }
+    .card-ico{ width:38px; height:38px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      font-size:19px; background:rgba(var(--sec),.1); border:1px solid rgba(var(--sec),.22); }
+    .card-txt{ flex:1; min-width:0; }
+    .card-name{ font-family:var(--au-serif); font-style:italic; font-size:19px; color:var(--au-ivory); line-height:1.05; }
+    .card-glance{ font-family:var(--au-mono); font-size:11px; color:var(--au-faint); margin-top:4px; letter-spacing:.02em; }
+    .card-glance b{ color:rgb(var(--sec)); font-weight:700; }
+    .card-chev{ font-family:var(--au-mono); font-size:15px; color:var(--au-faint); transition:transform .25s; flex-shrink:0; }
+    .card[open] .card-chev{ transform:rotate(90deg); }
+    .card-body{ padding:2px 16px 17px; border-top:1px solid var(--au-line); }
+    .card-body-in{ padding-top:14px; }
+
+    /* re-used sub-styles from live body page */
+    .hidden{ display:none !important; }
+    .wt-input-row{ display:flex; align-items:center; gap:8px; }
+    .wt-input{ flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec),.3); border-radius:12px; padding:11px 14px; color:var(--au-ivory); font-family:var(--au-mono); font-size:20px; font-weight:700; text-align:center; outline:none; -webkit-appearance:none; }
+    .wt-input:focus{ border-color:rgba(var(--sec),.65); }
+    .wt-save-btn{ padding:11px 18px; border-radius:12px; border:none; background:rgb(var(--sec)); color:#04130D; font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 18px rgba(var(--sec),.3); }
+    .wt-save-btn:active{ opacity:.8; }
+    .row-btns{ display:flex; gap:8px; }
+    .rb{ padding:11px 0; border-radius:999px; border:none; cursor:pointer; font-family:var(--au-sans); font-size:14px; font-weight:700; -webkit-tap-highlight-color:transparent; transition:opacity .15s; }
+    .rb:active{ opacity:.7; }
+    .rb-plus{ flex:2; background:rgb(var(--sec)); color:#04130D; box-shadow:0 4px 18px rgba(var(--sec),.3); }
+    .rb-minus{ flex:1; background:rgba(255,255,255,.06); border:1px solid var(--au-line); color:var(--au-dim); font-size:18px; }
+
+    .caf-quick{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:13px; }
+    .caf-quick-btn{ padding:8px 12px; border-radius:999px; border:1px solid rgba(var(--sec),.28); background:rgba(var(--sec),.08); color:rgb(var(--sec)); font-family:var(--au-sans); font-size:12px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .caf-quick-btn:active{ background:rgba(var(--sec),.22); }
+    .log-row{ display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .log-row:last-child{ border-bottom:none; }
+    .log-emo{ font-size:15px; }
+    .log-name{ font-size:12.5px; font-weight:600; color:var(--au-ivory); flex:1; }
+    .log-time{ font-size:11px; color:var(--au-faint); font-family:var(--au-mono); }
+    .log-mg{ font-family:var(--au-mono); font-size:12px; font-weight:700; color:rgb(var(--sec)); background:rgba(var(--sec),.12); padding:2px 8px; border-radius:6px; }
+    .log-del{ background:none; border:none; color:var(--au-faint); font-size:16px; cursor:pointer; padding:2px 4px; }
+
+    .supp-progress{ display:flex; align-items:center; gap:8px; margin-bottom:12px; font-family:var(--au-mono); font-size:11px; color:var(--au-dim); }
+    .supp-prog-bar-wrap{ flex:1; height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+    .supp-prog-bar{ height:100%; border-radius:3px; background:rgb(var(--sec)); box-shadow:0 0 10px rgba(var(--sec),.5); transition:width .3s; }
+    .supp-group{ margin-bottom:12px; } .supp-group:last-child{ margin-bottom:0; }
+    .supp-group-title{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-bottom:8px; }
+    .supp-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .supp-item:last-child{ border-bottom:none; }
+    .supp-check{ width:22px; height:22px; border-radius:7px; flex-shrink:0; border:1.5px solid rgba(var(--sec),.45); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:rgb(var(--sec)); -webkit-tap-highlight-color:transparent; }
+    .supp-check.checked{ background:rgba(var(--sec),.2); border-color:rgba(var(--sec),.7); box-shadow:0 0 12px rgba(var(--sec),.4); }
+    .supp-name{ font-size:13px; font-weight:600; color:var(--au-ivory); line-height:1.3; }
+    .supp-item.taken .supp-name{ color:var(--au-dim); text-decoration:line-through; }
+    .supp-dose{ font-size:11px; color:var(--au-faint); font-family:var(--au-mono); }
+
+    .macros{ display:flex; flex-direction:column; gap:7px; margin:2px 0 13px; }
+    .macro-row{ display:flex; align-items:center; gap:8px; }
+    .macro-lbl{ font-family:var(--au-mono); font-size:10px; font-weight:700; text-transform:uppercase; color:var(--au-faint); width:14px; }
+    .macro-bar-wrap{ flex:1; height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+    .macro-bar{ height:100%; border-radius:3px; transition:width .4s; }
+    .macro-val{ font-family:var(--au-mono); font-size:11px; font-weight:700; color:var(--au-dim); width:44px; text-align:right; }
+    .link-btn{ display:block; width:100%; padding:12px; border-radius:999px; text-align:center; background:rgb(var(--sec)); color:#04130D; font-family:var(--au-sans); font-size:13px; font-weight:700; text-decoration:none; box-shadow:0 4px 18px rgba(var(--sec),.3); }
+    .link-btn:active{ opacity:.8; }
+    .full-link{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); text-decoration:none; display:inline-block; margin-top:12px; }
+    .full-link:hover{ color:rgb(var(--sec)); }
+    .empty{ font-family:var(--au-serif); font-style:italic; font-size:14px; color:var(--au-dim); }
+    .meal-row{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .meal-row:last-child{ border-bottom:none; }
+    .meal-name{ font-size:13px; font-weight:600; color:var(--au-ivory); flex:1; }
+    .meal-kcal{ font-family:var(--au-mono); font-size:12px; font-weight:700; color:rgb(var(--sec)); }
+    .meas-grid{ display:grid; gap:8px; }
+    .meas-cell{ text-align:center; padding:10px 4px; background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:12px; }
+    .meas-v{ font-family:var(--au-mono); font-size:16px; font-weight:700; color:var(--au-ivory); }
+    .meas-l{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+
+    /* toast */
+    .toast{ position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(12px);
+      background:rgba(10,12,16,.92); border:1px solid var(--au-line); color:var(--au-ivory); font-family:var(--au-mono); font-size:12px;
+      padding:10px 16px; border-radius:999px; opacity:0; pointer-events:none; transition:.25s; z-index:50; backdrop-filter:blur(12px); }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body data-page="body" class="au-bg au-mood-calm" id="root">
+
+  <div class="demo-ribbon">
+    <div class="demo-ribbon-in"><span class="demo-ribbon-dot"></span>Design demo · Body cockpit<a href="body.html">current →</a></div>
+  </div>
+
+  <!-- Hero -->
+  <div class="bp-hero">
+    <div>
+      <div class="au-eyebrow bp-hero-eyebrow"><span class="au-dot"></span>BODY<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
+      <p class="bp-hero-line" id="novaSays">Everything at a glance.</p>
+      <div class="bp-hero-status" id="heroStatus">—</div>
+    </div>
+    <div class="nova" id="nova" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs><linearGradient id="novaGradBody" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/>
+        </linearGradient></defs>
+        <g class="nova-glow">
+          <rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#novaGradBody)" opacity="0.95"/>
+          <circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/>
+          <circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/>
+          <circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/>
+          <circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Vitals deck -->
+  <div class="deck">
+    <div class="deck-grid">
+      <div class="gauge" style="--g:var(--c-cal)" id="gaugeCal"></div>
+      <div class="gauge" style="--g:var(--c-wt)"  id="gaugeWt"></div>
+      <div class="gauge" style="--g:var(--c-water)" id="gaugeWater"></div>
+      <div class="gauge" style="--g:var(--c-caf)" id="gaugeCaf"></div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="qa">
+    <button class="qa-btn on" style="--qc:var(--c-water)" id="qaWater"><span class="qa-btn-emo">💧</span><span class="qa-btn-lbl">+ Water</span></button>
+    <button class="qa-btn on" style="--qc:var(--c-caf)" id="qaCaf"><span class="qa-btn-emo">☕</span><span class="qa-btn-lbl">+ Coffee</span></button>
+    <button class="qa-btn on" style="--qc:var(--c-wt)" id="qaWeigh"><span class="qa-btn-emo">⚖️</span><span class="qa-btn-lbl">Weigh in</span></button>
+    <a class="qa-btn on" style="--qc:var(--c-cal)" href="nutrition.html"><span class="qa-btn-emo">🍽️</span><span class="qa-btn-lbl">Log meal</span></a>
+  </div>
+
+  <div class="deck-hd"><span class="deck-hd-lbl">Details</span><span class="deck-hd-line"></span></div>
+
+  <!-- Detail cards (frequency order) -->
+  <div class="bp-wrap">
+    <details class="card" id="cardWater" style="--sec:var(--c-water)">
+      <summary class="card-sum"><span class="card-ico">💧</span><span class="card-txt"><span class="card-name">Water</span><span class="card-glance" id="glWater">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodyWater"></div></div>
+    </details>
+
+    <details class="card" id="cardCaf" style="--sec:var(--c-caf)">
+      <summary class="card-sum"><span class="card-ico">☕</span><span class="card-txt"><span class="card-name">Caffeine</span><span class="card-glance" id="glCaf">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodyCaf"></div></div>
+    </details>
+
+    <details class="card" id="cardSupp" style="--sec:var(--c-wt)">
+      <summary class="card-sum"><span class="card-ico">💊</span><span class="card-txt"><span class="card-name">Supplements</span><span class="card-glance" id="glSupp">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodySupp"></div></div>
+    </details>
+
+    <details class="card" id="cardWt" style="--sec:var(--c-wt)">
+      <summary class="card-sum"><span class="card-ico">⚖️</span><span class="card-txt"><span class="card-name">Weight</span><span class="card-glance" id="glWt">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodyWt"></div></div>
+    </details>
+
+    <details class="card" id="cardNut" style="--sec:var(--c-cal)">
+      <summary class="card-sum"><span class="card-ico">🍽️</span><span class="card-txt"><span class="card-name">Nutrition</span><span class="card-glance" id="glNut">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodyNut"></div></div>
+    </details>
+
+    <details class="card" id="cardMeas" style="--sec:var(--c-water)">
+      <summary class="card-sum"><span class="card-ico">📏</span><span class="card-txt"><span class="card-name">Measurements</span><span class="card-glance" id="glMeas">—</span></span><span class="card-chev">›</span></summary>
+      <div class="card-body"><div class="card-body-in" id="bodyMeas"></div></div>
+    </details>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function () {
+    'use strict';
+    /* ── helpers (mirrors body.html) ── */
+    function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function today(){ return dateKey(new Date()); }
+    function suppToday(){ const n=new Date(); if(n.getHours()<6) n.setDate(n.getDate()-1); return dateKey(n); }
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+    function lsSave(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmtTime(ts){ const d=new Date(ts); let h=d.getHours(),m=d.getMinutes(); const a=h>=12?'pm':'am'; h=h%12||12; return h+':'+String(m).padStart(2,'0')+a; }
+    function r0(n){ return Math.round(n||0); }
+    function $(id){ return document.getElementById(id); }
+    let _tt;
+    function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),1400); }
+
+    function ring(pct, color, num, den){
+      const R=27, C=2*Math.PI*R, off=C-(Math.min(100,pct)/100)*C;
+      return `<div class="gauge-ring"><svg width="66" height="66" viewBox="0 0 66 66">
+        <circle cx="33" cy="33" r="${R}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="7"/>
+        <circle cx="33" cy="33" r="${R}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+      </svg><div class="gauge-ring-in"><div class="gauge-ring-num">${num}</div><div class="gauge-ring-den">${den}</div></div></div>`;
+    }
+
+    /* ── data reads ── */
+    function calData(){
+      const dawn=new Date(); dawn.setHours(0,0,0,0);
+      const logs=(ls('nut:logs')||[]).filter(l=>l&&(l.dateKey?l.dateKey===today():new Date(l.ts)>=dawn));
+      const prof=ls('nut:profile')||{};
+      const tot=logs.reduce((a,l)=>({kcal:a.kcal+(l.kcal||0),p:a.p+(l.p||0),c:a.c+(l.c||0),f:a.f+(l.f||0)}),{kcal:0,p:0,c:0,f:0});
+      const cm=prof.heightCm||175, age=prof.age||22, sex=prof.sex||'m', wKg=prof.weightKg||75;
+      const bmr=sex==='f'?10*wKg+6.25*cm-5*age-161:10*wKg+6.25*cm-5*age+5;
+      const acts={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very_active:1.9};
+      let tdee=bmr*(acts[prof.activityLevel]||1.55); if(prof.tdeeOverride) tdee=prof.tdeeOverride;
+      const goal=prof.goal||'cut';
+      let target=goal==='cut'?Math.max(bmr+200,tdee-500):goal==='mini_cut'?Math.max(bmr+200,tdee-300):goal==='bulk'?tdee+250:tdee;
+      target=Math.round(target);
+      return {logs, tot, target, mt:{p:Math.round(target*.30/4),c:Math.round(target*.45/4),f:Math.round(target*.25/9)}};
+    }
+    function waterData(){
+      const s=ls('po_water_v1')||{}; const logs=(s.logs&&typeof s.logs==='object')?s.logs:{};
+      const count=logs[today()]||0; const unit=s.unit||'glass';
+      const unitMl=unit==='glass'?(s.glassMl||250):unit==='oz'?30:(s.bottleMl||500);
+      const unitName=unit==='glass'?'glasses':unit==='oz'?'oz':'bottles';
+      const wKg=(s.profile&&s.profile.weightKg)||75, actHrs=(s.profile&&s.profile.activityHrsPerWeek)||0;
+      const target=Math.max(1,Math.ceil((wKg*35+actHrs*500)/unitMl));
+      return {count, target, unit, unitName};
+    }
+    function cafData(){
+      const dawn=new Date(); dawn.setHours(0,0,0,0);
+      const logs=(ls('caf:logs')||[]).filter(l=>new Date(l.ts)>=dawn);
+      return {logs, total:logs.reduce((s,l)=>s+l.mg,0), limit:400};
+    }
+    function wtData(){
+      let e=ls('po_coach_weights')||[]; if(!Array.isArray(e)) e=[];
+      e.sort((a,b)=>a.dateKey.localeCompare(b.dateKey));
+      const units=(ls('po_coach_v1')||{}).units||'kg';
+      const tEntry=e.find(x=>x.dateKey===today());
+      const recent=e.slice(-10);
+      let delta=null;
+      if(recent.length>=2) delta=recent[recent.length-1].weight-recent[recent.length-2].weight;
+      return {entries:e, units, tEntry, recent, delta};
+    }
+
+    /* ── vitals deck ── */
+    function paintDeck(){
+      const c=calData(), w=waterData(), caf=cafData(), wt=wtData();
+      // calories
+      const calPct=(c.tot.kcal/c.target)*100;
+      const calCol=calPct>=105?'#fb7185':calPct>=90?'#F2C063':'#34D399';
+      $('gaugeCal').innerHTML=ring(calPct,calCol,r0(c.tot.kcal),'/ '+c.target)+
+        `<div class="gauge-meta"><div class="gauge-lbl">Calories</div><div class="gauge-sub">${Math.max(0,c.target-r0(c.tot.kcal))} left · P${r0(c.tot.p)} C${r0(c.tot.c)} F${r0(c.tot.f)}</div></div>`;
+      // weight
+      let sparkH='';
+      if(wt.recent.length>1){
+        const vals=wt.recent.map(e=>e.weight), mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||.1;
+        sparkH='<div class="gauge-spark">'+wt.recent.map(e=>{
+          const h=Math.round(((e.weight-mn)/rg)*22+3); return `<div class="gauge-spark-bar${e.dateKey===today()?' t':''}" style="height:${h}px"></div>`;
+        }).join('')+'</div>';
+      }
+      const dTxt=wt.delta==null?'':(wt.delta>0?'▲ +'+wt.delta.toFixed(1):wt.delta<0?'▼ '+wt.delta.toFixed(1):'– 0.0');
+      const dCol=wt.delta==null?'var(--au-faint)':wt.delta>0?'#F2C063':'#34E2B0';
+      $('gaugeWt').innerHTML=`<div class="gauge-meta"><div class="gauge-lbl">Weight</div>
+        <div style="margin-top:7px"><span class="gauge-wt-big">${wt.tEntry?wt.tEntry.weight.toFixed(1):(wt.recent.length?wt.recent[wt.recent.length-1].weight.toFixed(1):'—')}</span><span class="gauge-wt-unit"> ${esc(wt.units)}</span></div>
+        ${dTxt?`<div class="gauge-wt-delta" style="color:${dCol}">${dTxt} ${esc(wt.units)}</div>`:'<div class="gauge-wt-delta" style="color:var(--au-faint)">tap to log</div>'}
+        ${sparkH}</div>`;
+      // water
+      const wPct=(w.count/w.target)*100;
+      $('gaugeWater').innerHTML=ring(wPct,wPct>=100?'#34E2B0':'#18C8C0',w.count,'/ '+w.target)+
+        `<div class="gauge-meta"><div class="gauge-lbl">Water</div><div class="gauge-sub">${w.unitName}<br>${wPct>=100?'goal hit 🎉':(w.target-w.count)+' to go'}</div></div>`;
+      // caffeine
+      const cPct=(caf.total/caf.limit)*100;
+      const cCol=cPct>=90?'#FF6B8B':cPct>=70?'#F2C063':'rgba(242,192,99,.85)';
+      $('gaugeCaf').innerHTML=ring(cPct,cCol,caf.total,'mg')+
+        `<div class="gauge-meta"><div class="gauge-lbl">Caffeine</div><div class="gauge-sub">of ${caf.limit}mg cap<br>${caf.logs.length} drink${caf.logs.length===1?'':'s'}</div></div>`;
+    }
+
+    /* ── glances ── */
+    function paintGlances(){
+      const c=calData(), w=waterData(), caf=cafData(), wt=wtData();
+      const supp=(()=>{ const items=ls('stack:items')||[]; const taken=ls('stack:taken:'+suppToday())||{};
+        const daily=items.filter(i=>(i.window||'anytime')!=='occasional'); const t=daily.filter(i=>!!taken[i.id]).length;
+        return {items, taken, daily, takenCount:t}; })();
+      $('glWater').innerHTML=`<b>${w.count}</b> / ${w.target} ${w.unitName}`;
+      $('glCaf').innerHTML=`<b>${caf.total}</b> / ${caf.limit} mg · ${caf.logs.length} drink${caf.logs.length===1?'':'s'}`;
+      $('glSupp').innerHTML=supp.items.length?`<b>${supp.takenCount}</b> / ${supp.daily.length} taken today`:'none set up yet';
+      $('glWt').innerHTML=wt.tEntry?`<b>${wt.tEntry.weight.toFixed(1)}</b> ${esc(wt.units)} today`:(wt.recent.length?`last <b>${wt.recent[wt.recent.length-1].weight.toFixed(1)}</b> ${esc(wt.units)} · not logged today`:'no entries yet');
+      $('glNut').innerHTML=`<b>${r0(c.tot.kcal)}</b> / ${c.target} kcal · ${c.logs.length} meal${c.logs.length===1?'':'s'}`;
+      const bm=ls('bm:logs')||[]; const bmN=Array.isArray(bm)?bm.filter(e=>e&&e.dateKey).length:0;
+      $('glMeas').innerHTML=bmN?`${bmN} entr${bmN===1?'y':'ies'} logged`:'none yet';
+    }
+
+    /* ── expandable bodies (lazy, on first open) ── */
+    function renderWaterBody(){
+      const w=waterData();
+      $('bodyWater').innerHTML=`<div class="row-btns">
+        <button class="rb rb-minus" id="wMinus">−</button>
+        <button class="rb rb-plus" id="wPlus">+ ${w.unit==='glass'?'Glass':w.unit==='oz'?'Oz':'Bottle'} (${w.count}/${w.target})</button>
+      </div><a href="po-water.html" class="full-link">Open full water page →</a>`;
+      $('wPlus').onclick=()=>{ const s=ls('po_water_v1')||{}; if(!s.logs)s.logs={}; const t=today(); s.logs[t]=(s.logs[t]||0)+1; s._ts=Date.now(); lsSave('po_water_v1',s); toast('💧 Water logged'); refresh(); renderWaterBody(); };
+      $('wMinus').onclick=()=>{ const s=ls('po_water_v1')||{}; if(!s.logs)s.logs={}; const t=today(); if((s.logs[t]||0)<=0)return; s.logs[t]-=1; s._ts=Date.now(); lsSave('po_water_v1',s); refresh(); renderWaterBody(); };
+    }
+    const CAF_QUICK=[{name:'Espresso',mg:63,emoji:'☕'},{name:'Double espresso',mg:126,emoji:'☕'},{name:'Drip coffee',mg:95,emoji:'☕'},{name:'Matcha',mg:70,emoji:'🍵'},{name:'Energy drink',mg:160,emoji:'⚡'}];
+    function renderCafBody(){
+      const caf=cafData();
+      const logHtml=caf.logs.length?caf.logs.slice().reverse().map(l=>`<div class="log-row"><span class="log-emo">${esc(l.emoji||'☕')}</span><span class="log-name">${esc(l.name)}</span><span class="log-time">${fmtTime(l.ts)}</span><span class="log-mg">${l.mg}mg</span><button class="log-del" data-id="${l.id}">×</button></div>`).join(''):'<p class="empty">No caffeine logged today</p>';
+      $('bodyCaf').innerHTML=`<div class="caf-quick">${CAF_QUICK.map(d=>`<button class="caf-quick-btn" data-name="${esc(d.name)}" data-mg="${d.mg}" data-emoji="${esc(d.emoji)}">${d.emoji} ${d.name} <span style="opacity:.6">${d.mg}mg</span></button>`).join('')}</div>${logHtml}<a href="caffeine.html" class="full-link">Open full caffeine page →</a>`;
+      $('bodyCaf').querySelectorAll('.caf-quick-btn').forEach(b=>b.onclick=()=>{ const all=ls('caf:logs')||[]; all.push({id:Date.now(),name:b.dataset.name,mg:+b.dataset.mg,emoji:b.dataset.emoji,ts:new Date().toISOString()}); lsSave('caf:logs',all); toast(b.dataset.emoji+' '+b.dataset.name+' logged'); refresh(); renderCafBody(); });
+      $('bodyCaf').querySelectorAll('.log-del').forEach(b=>b.onclick=()=>{ const all=ls('caf:logs')||[]; lsSave('caf:logs',all.filter(l=>l.id!==+b.dataset.id)); refresh(); renderCafBody(); });
+    }
+    function renderSuppBody(){
+      const items=ls('stack:items')||[]; const takenKey='stack:taken:'+suppToday(); const taken=ls(takenKey)||{};
+      if(!items.length){ $('bodySupp').innerHTML='<p class="empty">No supplements set up. <a href="health.html" style="color:rgb(155,140,255)">Add them →</a></p>'; return; }
+      const daily=items.filter(i=>(i.window||'anytime')!=='occasional'); const tc=daily.filter(i=>!!taken[i.id]).length;
+      const pct=daily.length?tc/daily.length*100:0;
+      const WIN=['morning','lunch','afternoon','evening','night','anytime','occasional'];
+      const LAB={morning:'Morning',lunch:'Midday',afternoon:'Afternoon',evening:'Evening',night:'Night',anytime:'Anytime',occasional:'Occasional · if needed'};
+      let html=`<div class="supp-progress"><span>${tc}/${daily.length} taken</span><div class="supp-prog-bar-wrap"><div class="supp-prog-bar" style="width:${pct.toFixed(1)}%"></div></div></div>`;
+      WIN.forEach(win=>{ const g=items.filter(i=>(i.window||'anytime')===win); if(!g.length)return;
+        html+=`<div class="supp-group"><div class="supp-group-title">${LAB[win]}</div>`;
+        g.forEach(item=>{ const tk=!!taken[item.id];
+          html+=`<div class="supp-item${tk?' taken':''}"><button class="supp-check${tk?' checked':''}" data-id="${esc(item.id)}">${tk?'✓':''}</button><div><div class="supp-name">${esc(item.name)}</div>${item.dose?`<div class="supp-dose">${esc(item.dose)}</div>`:''}</div></div>`; });
+        html+='</div>'; });
+      $('bodySupp').innerHTML=html+'<a href="health.html" class="full-link">Open full supplements page →</a>';
+      $('bodySupp').querySelectorAll('.supp-check').forEach(b=>b.onclick=()=>{ const cur=ls(takenKey)||{}; if(cur[b.dataset.id])delete cur[b.dataset.id]; else cur[b.dataset.id]=Date.now(); lsSave(takenKey,cur); refresh(); renderSuppBody(); });
+    }
+    function renderWtBody(){
+      const wt=wtData();
+      $('bodyWt').innerHTML=`<div class="wt-input-row"><input type="text" class="wt-input" id="wtInp" placeholder="${wt.tEntry?wt.tEntry.weight.toFixed(1):'0.0'}" inputmode="decimal" enterkeyhint="done"><button class="wt-save-btn" id="wtSave">Save</button></div><a href="weight.html" class="full-link">Open full weight page →</a>`;
+      const inp=$('wtInp'), sv=$('wtSave');
+      const doSave=()=>{ const v=parseFloat(String(inp.value).trim().replace(',','.')); if(isNaN(v)||v<=0||v>500)return; const w=Math.round(v*10)/10;
+        let e=ls('po_coach_weights')||[]; if(!Array.isArray(e))e=[]; const t=today(); const i=e.findIndex(x=>x.dateKey===t);
+        if(i>=0){e[i].weight=w;e[i].ts=Date.now();} else e.push({dateKey:t,weight:w,ts:Date.now()});
+        e.sort((a,b)=>a.dateKey.localeCompare(b.dateKey)); lsSave('po_coach_weights',e); toast('⚖️ '+w+' '+wt.units+' saved'); refresh(); renderWtBody(); };
+      sv.onclick=doSave; inp.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();doSave();} };
+    }
+    function renderNutBody(){
+      const c=calData();
+      const mt=c.mt;
+      const mr=(lbl,val,tgt,col)=>{ const p=tgt>0?Math.min(100,val/tgt*100):0; return `<div class="macro-row"><span class="macro-lbl">${lbl}</span><div class="macro-bar-wrap"><div class="macro-bar" style="width:${p.toFixed(1)}%;background:${col}"></div></div><span class="macro-val">${r0(val)}/${tgt}g</span></div>`; };
+      const meals=c.logs.length?c.logs.slice().reverse().slice(0,6).map(l=>`<div class="meal-row"><span class="meal-name">${esc(l.name)}</span><span class="meal-kcal">${r0(l.kcal)} kcal</span></div>`).join(''):'<p class="empty">No meals logged today</p>';
+      $('bodyNut').innerHTML=`<div class="macros">${mr('P',c.tot.p,mt.p,'#7DD3FC')}${mr('C',c.tot.c,mt.c,'#F2C063')}${mr('F',c.tot.f,mt.f,'#F87171')}</div>${meals}<a href="nutrition.html" class="link-btn" style="margin-top:13px">+ Log a meal</a>`;
+    }
+    function renderMeasBody(){
+      let logs=ls('bm:logs')||[]; if(!Array.isArray(logs))logs=[];
+      logs=logs.filter(e=>e&&e.dateKey).sort((a,b)=>a.dateKey.localeCompare(b.dateKey));
+      if(!logs.length){ $('bodyMeas').innerHTML='<p class="empty">No measurements yet — waist, chest &amp; arms are the real recomp signal. <a href="measure.html" style="color:rgb(24,200,192)">Add your first →</a></p>'; return; }
+      const latest=k=>{ for(let i=logs.length-1;i>=0;i--) if(logs[i][k]!=null)return logs[i][k]; return null; };
+      const fmt=n=>n==null?'—':(n%1===0?n.toFixed(0):n.toFixed(1));
+      const waist=latest('waist'),chest=latest('chest'),sh=latest('shoulders'),arm=latest('arm');
+      const vt=(sh!=null&&waist!=null&&waist>0)?(sh/waist).toFixed(2):null;
+      const stats=[]; if(waist!=null)stats.push(['Waist',fmt(waist)+' cm']); if(chest!=null)stats.push(['Chest',fmt(chest)+' cm']); if(arm!=null)stats.push(['Arm',fmt(arm)+' cm']); if(vt!=null)stats.push(['V-taper',vt]);
+      const cells=stats.slice(0,4).map(s=>`<div class="meas-cell"><div class="meas-v">${esc(s[1])}</div><div class="meas-l">${esc(s[0])}</div></div>`).join('');
+      $('bodyMeas').innerHTML=`<div class="meas-grid" style="grid-template-columns:repeat(${Math.max(1,Math.min(stats.length,4))},1fr)">${cells}</div><a href="measure.html" class="full-link">Open full measurements page →</a>`;
+    }
+
+    /* ── refresh top surfaces ── */
+    function refresh(){ paintDeck(); paintGlances(); updateNova(); }
+
+    /* lazy-render a card body the first time it opens, keep fresh after */
+    const renderers={cardWater:renderWaterBody,cardCaf:renderCafBody,cardSupp:renderSuppBody,cardWt:renderWtBody,cardNut:renderNutBody,cardMeas:renderMeasBody};
+    Object.keys(renderers).forEach(id=>{ const el=$(id); el.addEventListener('toggle',()=>{ if(el.open) renderers[id](); }); });
+
+    /* quick actions */
+    $('qaWater').onclick=()=>{ const s=ls('po_water_v1')||{}; if(!s.logs)s.logs={}; const t=today(); s.logs[t]=(s.logs[t]||0)+1; s._ts=Date.now(); lsSave('po_water_v1',s); toast('💧 Water logged'); refresh(); if($('cardWater').open)renderWaterBody(); };
+    $('qaCaf').onclick=()=>{ const all=ls('caf:logs')||[]; all.push({id:Date.now(),name:'Espresso',mg:63,emoji:'☕',ts:new Date().toISOString()}); lsSave('caf:logs',all); toast('☕ Espresso · 63mg'); refresh(); if($('cardCaf').open)renderCafBody(); };
+    $('qaWeigh').onclick=()=>{ const el=$('cardWt'); el.open=true; renderWtBody(); el.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>{const i=$('wtInp'); if(i)i.focus();},350); };
+
+    /* Nova line + mood (mirrors body.html) */
+    function updateNova(){
+      const root=$('root'); if(!root)return;
+      const h=new Date().getHours(), dd=new Date();
+      const dEl=$('heroDate'); if(dEl) dEl.textContent=['SUN','MON','TUE','WED','THU','FRI','SAT'][dd.getDay()]+' '+dd.getDate();
+      const wt=wtData(), w=waterData(), caf=cafData(), c=calData();
+      const wToday=!!wt.tEntry, wc=w.count, kcal=c.tot.kcal;
+      const logged=(wToday?1:0)+(wc>0?1:0)+(caf.total>0?1:0)+(kcal>0?1:0);
+      let mood='calm', line='Everything at a glance.';
+      if(h<12&&logged===0){ mood='low'; line='A fresh day. Start with a weigh-in or some water.'; }
+      else if(caf.total>=400){ mood='alert'; line='That’s a lot of caffeine — ease off and hydrate.'; }
+      else if(logged>=3){ mood='hot'; line='You’re on top of it today. Keep it going.'; }
+      else if(wToday){ mood='hot'; line='Weight’s in. Nice and consistent.'; }
+      else{ mood='calm'; line='Looking good — a few things left to log.'; }
+      root.classList.remove('au-mood-calm','au-mood-hot','au-mood-alert','au-mood-low'); root.classList.add('au-mood-'+mood);
+      const ns=$('novaSays'); if(ns) ns.textContent=line;
+      // status strip
+      const bits=[];
+      bits.push(`<b>${wc}</b> ${w.unitName.replace('glasses','glass').replace('bottles','btl')}`);
+      if(caf.logs.length) bits.push(`<b>${caf.logs.length}</b>&nbsp;coffee`);
+      if(wt.tEntry) bits.push(`<b>${wt.tEntry.weight.toFixed(1)}</b>${esc(wt.units)}`);
+      bits.push(`<b>${r0(kcal)}</b>&nbsp;kcal`);
+      $('heroStatus').innerHTML=bits.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+    }
+
+    refresh();
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refresh(); });
+    window.addEventListener('storage',refresh);
+    window.addEventListener('focus',refresh);
+    setInterval(updateNova,30000);
+    window._bodyRerender=refresh;
+  })();
+  </script>
+
+  <!-- same sync engines as body.html so the demo reads/writes real synced data -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pocoach-sync.js?v=2"></script>
+  <script src="sync.js"></script>
+  <script>
+    (function(){
+      if(typeof window.initCloudSync!=='function')return;
+      function rr(){ if(typeof window._bodyRerender==='function'){ try{ window._bodyRerender(); }catch(e){} } }
+      window.initCloudSync({ appKey:'health', syncedKeys:['stack:items','stack:low','po_water_v1'], syncedPrefixes:['stack:taken:'], onApplied:rr });
+      window.initCloudSync({ appKey:'caffeine', syncedKeys:['caf:logs','caf:custom'], onApplied:rr });
+      window.initCloudSync({ appKey:'body-measure', syncedKeys:['bm:logs'], onApplied:rr });
+    })();
+  </script>
+</body>
+</html>
