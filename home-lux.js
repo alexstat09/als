@@ -142,12 +142,21 @@
     var heroHtml = m.txt ? '<span class="lx-hero lx-hero-txt">'+m.hero+'</span>'
                          : '<span class="lx-hero" data-to="'+(typeof m.hero==='number'?m.hero:'')+'">'+(m.hero==='—'?'—':(typeof m.hero==='number'?'0':m.hero))+'</span>'+(m.unit?'<em>'+m.unit+'</em>':'');
     host.innerHTML = heroHtml + (m.spark?sparkSVG(m.spark):'');
-    // count-up numbers
-    var hn=host.querySelector('.lx-hero[data-to]');
-    if(hn && hn.getAttribute('data-to')!=='' && !hn.dataset.done){ hn.dataset.done='1'; countUp(hn, m.unit); }
-    // draw spark
+  }
+  /* count-up + sparkline draw — fired when the tile SCROLLS into view */
+  function animateTile(tile){
+    if(tile.dataset.lxAnimated) return; tile.dataset.lxAnimated='1';
+    var host=tile.querySelector('.lx-value'); if(!host) return;
+    host.querySelectorAll('.lx-hero[data-to]').forEach(function(hn){ if(hn.getAttribute('data-to')!=='') countUp(hn); });
     var pl=host.querySelector('.lx-spark polyline');
-    if(pl && !reduce){ var L=pl.getTotalLength?pl.getTotalLength():200; pl.style.strokeDasharray=L; pl.style.strokeDashoffset=L; pl.getBoundingClientRect(); pl.style.transition='stroke-dashoffset 1.1s '+EASE; pl.style.strokeDashoffset='0'; }
+    if(pl){ if(reduce){ pl.style.strokeDashoffset='0'; } else { var L=200; try{ L=pl.getTotalLength(); }catch(e){} pl.style.strokeDasharray=L; pl.style.strokeDashoffset=L; pl.getBoundingClientRect(); pl.style.transition='stroke-dashoffset 1.1s '+EASE; pl.style.strokeDashoffset='0'; } }
+  }
+  /* update the number in place (no re-animation) for the 30s data refresh */
+  function refresh(tile){
+    var m=metric(href(tile)); if(!m) return; var host=tile.querySelector('.lx-value'); if(!host) return; var hero=host.querySelector('.lx-hero'); if(!hero) return;
+    if(m.txt){ hero.textContent=m.hero; }
+    else if(typeof m.hero==='number'){ hero.textContent = m.hero>=1000?fmtN(m.hero):(String(m.hero).indexOf('.')>-1?(+m.hero).toFixed(1):String(m.hero)); }
+    else { hero.textContent=m.hero; }
   }
   function countUp(node,unit){
     var to=parseFloat(node.getAttribute('data-to')); if(isNaN(to)){ return; }
@@ -178,7 +187,7 @@
   })();
 
   /* ── re-paint on interval so data stays live (like the app does) ── */
-  setInterval(function(){ document.querySelectorAll('.tile').forEach(function(t){ var host=t.querySelector('.lx-value'); if(host){ host.querySelectorAll('.lx-hero[data-to]').forEach(function(n){ delete n.dataset.done; }); } paint(t); }); }, 30000);
+  setInterval(function(){ document.querySelectorAll('.tile').forEach(function(t){ if(t.dataset.lxAnimated) refresh(t); }); }, 30000);
 
   /* ── Readiness ring (real recovery, hidden if none) ── */
   (function(){
@@ -198,7 +207,7 @@
   /* ── Scroll-reveal + stagger ── */
   var groups=[];
   ['.hub-header','.hub-briefing-wrap','.view-switch','.lx-ready','.status-strip','.bento-section','.xp-wrap','.intel-wrap','.vault-wrap'].forEach(function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.classList.add('lx-rise'); groups.push(el); }); });
-  function revealEl(el){ el.classList.add('in'); if(el._reveal) try{el._reveal();}catch(e){} var tiles=el.querySelectorAll?el.querySelectorAll('.tile'):[]; Array.prototype.forEach.call(tiles,function(t,i){ t.classList.add('lx-rise'); t.style.transitionDelay=(reduce?0:i*55)+'ms'; requestAnimationFrame(function(){ t.classList.add('in'); }); }); }
+  function revealEl(el){ el.classList.add('in'); if(el._reveal) try{el._reveal();}catch(e){} var tiles=el.querySelectorAll?el.querySelectorAll('.tile'):[]; Array.prototype.forEach.call(tiles,function(t,i){ t.classList.add('lx-rise'); var d=reduce?0:i*55; t.style.transitionDelay=d+'ms'; requestAnimationFrame(function(){ t.classList.add('in'); }); setTimeout(function(){ animateTile(t); }, d+140); }); }
   if('IntersectionObserver' in window){ var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); revealEl(e.target); } }); },{threshold:0.1, rootMargin:'0px 0px -6% 0px'}); groups.forEach(function(el){ io.observe(el); }); setTimeout(function(){ groups.forEach(function(el){ if(!el.classList.contains('in')) revealEl(el); }); },3000); } else groups.forEach(revealEl);
 
   /* ── Peek ── */
@@ -215,8 +224,7 @@
     t.addEventListener('pointermove',function(e){ var r=t.getBoundingClientRect(); t.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); t.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); },{passive:true}); }
   document.querySelectorAll('.tile').forEach(addPeek);
 
-  /* #14 · bottom nav (matches the demo) */
-  (function(){ if(document.querySelector('.lx-nav')) return; var nav=document.createElement('nav'); nav.className='lx-nav'; nav.innerHTML='<a class="on" href="index.html">Home</a><a href="body.html">Body</a><a href="identity.html">Mind</a><a href="finance.html">Money</a><a href="nova-chat.html">Nova</a>'; document.body.appendChild(nav); })();
+  /* #14 · the app's real .bottombar nav is reskinned via CSS (no duplicate) */
 
   /* #30 · skeleton shimmer on the intelligence feed until the engine fills it */
   (function(){ var g=document.getElementById('intelGrid'); if(g && (!g.children.length || g.querySelector('.intel-empty'))){ var row='<div class="lx-skelrow"><span class="lx-skel lx-skic"></span><span class="lx-skel lx-skl1"></span></div>'; g.innerHTML=row+row+row; } })();
