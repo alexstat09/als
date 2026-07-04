@@ -6,6 +6,8 @@
 (function(){
   'use strict';
   document.documentElement.classList.add('js');
+  // kill the legacy aurora animated background entirely (source of the glow)
+  try{ var _r=document.getElementById('root'); if(_r) _r.classList.remove('au-bg'); }catch(e){}
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var EASE='cubic-bezier(0.16,1,0.3,1)';
   function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
