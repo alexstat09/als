@@ -229,7 +229,50 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   .js [data-rise]{opacity:1!important; transform:none!important; transition:none!important;}
   .js .tile .spark polyline{stroke-dashoffset:0!important;}
   .xpbar-fill{transform:none!important; transition:none!important;} .wrow .wf{transform:none!important; transition:none!important;}
+  .focus .ring .rf{stroke-dashoffset:92.5!important; transition:none!important;} .skel::after{animation:none!important;}
 }
+/* ── Readiness ring (inside focus card) ── */
+.focus{display:flex; gap:22px; align-items:center;}
+.focus .ring{flex-shrink:0; width:104px; height:104px; position:relative;}
+.focus .ring svg{width:100%; height:100%; transform:rotate(-90deg);}
+.focus .ring circle{fill:none; stroke-width:6;}
+.focus .ring .rt{stroke:rgba(255,255,255,0.08);}
+.focus .ring .rf{stroke:url(#rg); stroke-linecap:round; stroke-dasharray:289; stroke-dashoffset:289; transition:stroke-dashoffset 1.4s var(--settle) .25s;}
+.focus.in .ring .rf{stroke-dashoffset:92.5;}
+.focus .ring .rc{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.focus .ring .rc .rn{font-family:var(--serif); font-style:italic; font-size:34px; color:var(--ivory); line-height:1;}
+.focus .ring .rc .rl{font-family:var(--mono); font-size:7.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-top:3px;}
+.focus .ftext{flex:1;}
+@media (max-width:560px){ .focus{flex-direction:column; align-items:flex-start; gap:16px;} }
+
+/* ── Skeleton shimmer ── */
+.skel{position:relative; overflow:hidden; background:rgba(255,255,255,0.045); border-radius:7px;}
+.skel::after{content:''; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent); animation:shimmer 1.5s infinite;}
+@keyframes shimmer{100%{transform:translateX(100%);}}
+.feed-skel .srow{display:flex; gap:13px; align-items:flex-start; padding:15px 18px; border-top:1px solid var(--line);}
+.feed-skel .srow:first-child{border-top:0;}
+.sk-ic{width:16px;height:16px;border-radius:5px;flex-shrink:0;margin-top:2px;} .sk-l{flex:1;} .sk-l .l1{height:10px;width:72%;margin-bottom:9px;} .sk-l .l2{height:10px;width:46%;}
+.feed-real{transition:opacity .55s var(--settle);}
+
+/* ── Peek (progressive disclosure) ── */
+.tile .peek{position:absolute; top:10px; right:10px; z-index:3; width:26px; height:26px; border-radius:8px; border:1px solid var(--line-2); background:rgba(0,0,0,0.25); color:var(--faint); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .3s var(--snap), color .3s var(--snap), border-color .3s var(--snap); cursor:pointer; padding:0;}
+.tile:hover .peek{opacity:1;}
+@media (hover:none){ .tile .peek{opacity:.45;} }
+.tile .peek:hover{color:var(--emerald); border-color:rgba(var(--glow),0.4);}
+.tile .peek svg{width:13px; height:13px;}
+.peekdlg{border:1px solid var(--line-2); background:#0b0b0d; color:var(--dim); border-radius:20px; padding:0; max-width:380px; width:calc(100% - 44px); box-shadow:0 30px 80px rgba(0,0,0,0.6); position:relative;}
+.peekdlg::backdrop{background:rgba(4,4,5,0.62);}
+.peekbody{padding:24px;}
+.peek-ey{font-family:var(--mono); font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--emerald);}
+.peek-val{font-family:var(--serif); font-style:italic; font-size:42px; color:var(--ivory); margin:9px 0 2px; line-height:1;}
+.peek-val em{font-style:normal; font-family:var(--sans); font-size:14px; color:var(--dim); margin-left:3px;}
+.peek-name{color:var(--ivory); font-size:15px; font-weight:500;}
+.peek-spark{height:42px; margin:16px 0 6px; color:var(--emerald); opacity:.8;} .peek-spark svg{width:100%; height:100%;}
+.peek-dir{font-size:14px; line-height:1.55; color:var(--dim); border-top:1px solid var(--line); padding-top:14px; margin-top:14px;}
+.peek-open{display:inline-flex; align-items:center; gap:7px; margin-top:18px; font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--canvas); background:var(--emerald); border:0; border-radius:11px; padding:11px 16px; text-decoration:none; cursor:pointer;}
+.peek-x{position:absolute; top:13px; right:13px; width:28px; height:28px; border-radius:9px; border:1px solid var(--line); background:none; color:var(--faint); cursor:pointer; font-size:15px; line-height:1;}
+.peek-x:hover{color:var(--ivory);}
+
 .ribbon{position:fixed; top:0; left:0; right:0; z-index:9; text-align:center; font-family:var(--mono); font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); padding:6px; background:rgba(0,0,0,0.45); border-bottom:1px solid var(--line);}
 </style>
 </head>
@@ -274,9 +317,15 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
     </div>
 
     <a class="focus" href="morning.html" data-rise>
-      <div class="label">Today's focus</div>
-      <div class="line">Recovery is high. Push legs, then protect sleep.</div>
-      <div class="meta">Recovery sits at 68 and climbing, you trained upper yesterday, and fuel is on plan. A good day to spend energy.</div>
+      <div class="ring">
+        <svg viewBox="0 0 100 100"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3FE0B0"/><stop offset="100%" stop-color="#18C8C0"/></linearGradient></defs><circle class="rt" cx="50" cy="50" r="46"/><circle class="rf" cx="50" cy="50" r="46"/></svg>
+        <div class="rc"><div class="rn"><span class="cnt" data-to="68">0</span></div><div class="rl">Readiness</div></div>
+      </div>
+      <div class="ftext">
+        <div class="label">Today's focus · primed</div>
+        <div class="line">Recovery is high. Push legs, then protect sleep.</div>
+        <div class="meta">Recovery sits at 68 and climbing, you trained upper yesterday, and fuel is on plan. A good day to spend energy.</div>
+      </div>
     </a>
 
     <div class="palette" data-rise>
@@ -398,11 +447,18 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   </section>
 
   <!-- INTELLIGENCE FEED -->
-  <section class="feed" data-reveal data-rise>
-    <div class="feed-hd"><span class="l">◈ Intelligence feed</span><div style="flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)"></div><span class="ts">updated 07:14</span></div>
-    <div class="feed-item"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></span><div class="ft"><b>Recovery climbing.</b> Third day of upward trend. Your body is ready for a heavier session today.</div></div>
-    <div class="feed-item"><span class="fi" style="color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span><div class="ft"><b>Two bills due Friday.</b> €68 total. You have a no-spend streak of 4 days going.</div></div>
-    <div class="feed-item"><span class="fi" style="color:var(--violet)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg></span><div class="ft"><b>New chapter: Surge.</b> Your data crossed into a growth phase 6 days ago. Open Your Arc to see it.</div></div>
+  <section class="feed" id="feed" data-reveal data-rise>
+    <div class="feed-hd"><span class="l">◈ Intelligence feed</span><div style="flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)"></div><span class="ts" id="feedTs">analysing…</span></div>
+    <div class="feed-skel" id="feedSkel">
+      <div class="srow"><span class="sk-ic skel"></span><span class="sk-l"><span class="l1 skel" style="display:block"></span><span class="l2 skel" style="display:block"></span></span></div>
+      <div class="srow"><span class="sk-ic skel"></span><span class="sk-l"><span class="l1 skel" style="display:block"></span><span class="l2 skel" style="display:block"></span></span></div>
+      <div class="srow"><span class="sk-ic skel"></span><span class="sk-l"><span class="l1 skel" style="display:block"></span><span class="l2 skel" style="display:block"></span></span></div>
+    </div>
+    <div class="feed-real" id="feedReal" style="display:none; opacity:0;">
+      <div class="feed-item"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></span><div class="ft"><b>Recovery climbing.</b> Third day of upward trend. Your body is ready for a heavier session today.</div></div>
+      <div class="feed-item"><span class="fi" style="color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span><div class="ft"><b>Two bills due Friday.</b> €68 total. You have a no-spend streak of 4 days going.</div></div>
+      <div class="feed-item"><span class="fi" style="color:var(--violet)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg></span><div class="ft"><b>New chapter: Surge.</b> Your data crossed into a growth phase 6 days ago. Open Your Arc to see it.</div></div>
+    </div>
   </section>
 
   <!-- DATA VAULT -->
@@ -431,6 +487,9 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   <a href="finance.html">Money</a>
   <a href="nova-chat.html">Nova</a>
 </nav>
+
+<dialog id="peek" class="peekdlg"></dialog>
+<label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
 <script>
 (function(){
@@ -461,7 +520,79 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   function activate(el){
     var cs=el.querySelectorAll?el.querySelectorAll('.cnt'):[]; Array.prototype.forEach.call(cs, countUp);
     if(el.classList && el.classList.contains('tile')) drawSpark(el);
+    if(el.id==='feed') revealFeed();
   }
+
+  /* haptics — Android via vibrate, iOS via a switch-toggle nudge (best effort) */
+  function haptic(ms){
+    try{
+      if(navigator.vibrate){ navigator.vibrate(ms||8); return; }
+      var i=document.querySelector('#iosHaptic input');
+      if(i){ i.checked=!i.checked; i.dispatchEvent(new Event('change',{bubbles:true})); }
+    }catch(e){}
+  }
+
+  /* skeleton → real for the intelligence feed */
+  var feedDone=false;
+  function revealFeed(){
+    if(feedDone) return; feedDone=true;
+    setTimeout(function(){
+      var sk=document.getElementById('feedSkel'), re=document.getElementById('feedReal'), ts=document.getElementById('feedTs');
+      if(sk) sk.style.display='none';
+      if(re){ re.style.display=''; requestAnimationFrame(function(){ re.style.opacity='1'; }); }
+      if(ts) ts.textContent='updated 07:14';
+    }, reduce?0:1100);
+  }
+
+  /* progressive-disclosure peek */
+  var DIRECTIVE={
+    'gym.html':'Legs today. Recovery supports a heavy session — try to beat last week’s top set.',
+    'pr.html':'Fresh deadlift PR. Keep accessories light tomorrow so it sticks.',
+    'nutrition.html':'640 kcal and ~42g protein left. A chicken-and-rice bowl closes both cleanly.',
+    'sleep.html':'82 recovery banked. Hold tonight’s bedtime near 23:30 to keep the streak.',
+    'weight.html':'Down 0.3 this week, on track for 76.5 kg by early August.',
+    'caffeine.html':'80 mg in. Stop before 14:00 so it doesn’t cost you sleep tonight.',
+    'health.html':'2 supplements left today: creatine and omega-3 with dinner.',
+    'measure.html':'Waist down 1.5 cm this month. The V-taper trend is climbing.',
+    'main.html':'4 of 6 targets done. The gym block and evening read are what’s left.',
+    'identity.html':'12-day streak alive. One journal line tonight keeps it.',
+    'finance.html':'€1,240 saved this month, up 8%. On pace for your quarter goal.'
+  };
+  var peekDlg=document.getElementById('peek');
+  function openPeek(t){
+    var name=(t.querySelector('.name')||{}).textContent||'';
+    var valEl=t.querySelector('.val'); var val=valEl?valEl.innerHTML:'';
+    var sub=(t.querySelector('.sub')||{}).textContent||'';
+    var href=t.getAttribute('href')||'#';
+    var dir=DIRECTIVE[href]||('Open '+name+' to see the full view.');
+    var spark=t.querySelector('.spark'); var sparkHtml=spark?'<div class="peek-spark">'+spark.innerHTML+'</div>':'';
+    peekDlg.innerHTML='<button class="peek-x" aria-label="Close">×</button><div class="peekbody">'
+      +'<div class="peek-ey">'+sub+'</div>'
+      +'<div class="peek-val">'+val+'</div>'
+      +'<div class="peek-name">'+name+'</div>'
+      +sparkHtml
+      +'<div class="peek-dir">'+dir+'</div>'
+      +'<a class="peek-open" href="'+href+'">Open '+name+' →</a></div>';
+    if(typeof peekDlg.showModal==='function') peekDlg.showModal(); else location.href=href;
+    var pl=peekDlg.querySelector('.peek-spark polyline'); if(pl && !reduce){ pl.style.strokeDasharray='200'; pl.style.strokeDashoffset='200'; requestAnimationFrame(function(){ pl.style.transition='stroke-dashoffset 1s '+settle; pl.style.strokeDashoffset='0'; }); }
+    peekDlg.querySelector('.peek-x').addEventListener('click',function(){ peekDlg.close(); });
+  }
+  if(peekDlg){
+    peekDlg.addEventListener('click',function(e){ if(e.target===peekDlg) peekDlg.close(); }); /* backdrop */
+    document.querySelectorAll('.tile').forEach(function(t){
+      var b=document.createElement('span'); b.className='peek'; b.setAttribute('role','button'); b.tabIndex=0; b.setAttribute('aria-label','Peek at '+((t.querySelector('.name')||{}).textContent||'tile'));
+      b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
+      function fire(e){ e.preventDefault(); e.stopPropagation(); haptic(6); openPeek(t); }
+      b.addEventListener('click',fire);
+      b.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' ') fire(e); });
+      t.appendChild(b);
+    });
+  }
+
+  /* subtle haptic on press of interactive things */
+  document.querySelectorAll('.tile, .lbtn, .vault, .nav a').forEach(function(el){
+    el.addEventListener('pointerdown',function(){ haptic(6); }, {passive:true});
+  });
 
   /* reveal observer with intra-section stagger */
   if('IntersectionObserver' in window){
