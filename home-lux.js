@@ -12,6 +12,7 @@
   var EASE='cubic-bezier(0.16,1,0.3,1)';
   function ls(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
   function tk(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function activeDate(){ var d=new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function dawn(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
   function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||6); }catch(e){} }
   function relDay(key){ var d=new Date(key+'T00:00:00'); var diff=Math.round((new Date()-d)/86400000); return diff===0?'today':diff===1?'yesterday':diff+'d ago'; }
@@ -26,6 +27,8 @@
     'weight.html':'<rect x="3.5" y="3" width="17" height="18" rx="2.5"/><path d="M8 3c0 2 1.6 3.4 4 3.4S16 5 16 3"/><path d="M12 13l2.6-3.2"/>',
     'caffeine.html':'<path d="M4 8h12v4.5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M16 9h2.2a2.2 2.2 0 0 1 0 4.4H16"/><path d="M7 2.5v2M10.5 2.5v2"/>',
     'po-water.html':'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/>',
+    'health.html':'<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><line x1="8" y1="8" x2="16" y2="16"/>',
+    'measure.html':'<rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v3M10.5 7v4M14 7v3M17.5 7v4"/>',
     'main.html':'<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/>',
     'identity.html':'<circle cx="12" cy="12" r="8.2"/><polygon points="12,7 14,14 8,10.5 16,10.5 10,14" fill="currentColor" stroke="none"/>',
     'ideas.html':'<path d="M9.5 18h5"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.8 10.6c.8.7 1.3 1.4 1.3 2.4h5c0-1 .5-1.7 1.3-2.4A6 6 0 0 0 12 3Z"/>',
@@ -61,9 +64,22 @@
         return {hero:'—',note:'log your sleep'};
       }
       case 'nutrition.html': {
-        var nl=ls('nut:logs',[]).filter(function(l){return l&&(l.dateKey?l.dateKey===t:new Date(l.ts)>=dawn());});
+        var all=ls('nut:logs',[]); all=Array.isArray(all)?all:[];
+        var nl=all.filter(function(l){return l&&(l.dateKey?l.dateKey===t:new Date(l.ts)>=dawn());});
         var kc=Math.round(nl.reduce(function(s,l){return s+(l.kcal||0);},0));
-        return kc>0?{hero:kc,unit:'kcal',note:'today'}:{hero:'—',note:'log food'};
+        var byDay={}; all.forEach(function(l){ if(!l)return; var k=l.dateKey||(l.ts?new Date(l.ts).toISOString().slice(0,10):null); if(k) byDay[k]=(byDay[k]||0)+(l.kcal||0); });
+        var days=Object.keys(byDay).sort().slice(-10).map(function(k){return Math.round(byDay[k]);});
+        return kc>0?{hero:kc,unit:'kcal',note:'today',spark:days.length>=3?days:null}:{hero:'—',note:'log food'};
+      }
+      case 'health.html': {
+        var it=ls('stack:items',[]); it=(Array.isArray(it)?it:[]).filter(function(i){return i&&i.id&&i.name;});
+        var tkn=ls('stack:taken:'+activeDate(),{})||{}; var tc=it.filter(function(i){return tkn[i.id];}).length;
+        return it.length?{hero:tc,unit:'/ '+it.length,note:'stack today'}:{hero:'—',note:'your stack'};
+      }
+      case 'measure.html': {
+        var lg=ls('bm:logs',[]); lg=Array.isArray(lg)?lg:[];
+        var latest=function(k){ var s=lg.filter(function(r){return r&&r[k]!=null;}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;}); return s.length?s[s.length-1][k]:null; };
+        var wa=latest('waist'); return wa!=null?{hero:wa,unit:'cm',note:'waist'}:{hero:'—',note:'measure up'};
       }
       case 'weight.html': case 'body.html': {
         var W=ls('po_coach_weights',[]); W=Array.isArray(W)?W:[];
@@ -152,7 +168,7 @@
     var bodyTile=document.querySelector('.tile[href="body.html"]'); if(!bodyTile) return;
     var grid=bodyTile.parentNode; if(!grid) return;
     bodyTile.style.display='none';
-    var add=[['nutrition.html','Nutrition','fuel','wide'],['weight.html','Weight','vitals','wide'],['caffeine.html','Caffeine','intake',''],['po-water.html','Water','hydration','']];
+    var add=[['nutrition.html','Nutrition','fuel','wide'],['weight.html','Weight','vitals','wide'],['caffeine.html','Caffeine','intake',''],['po-water.html','Water','hydration',''],['health.html','Supplements','stack',''],['measure.html','Measure','body','']];
     add.forEach(function(c){
       if(grid.querySelector('.tile[href="'+c[0]+'"]')) return;
       var a=document.createElement('a'); a.className='tile lx-injected'+(c[3]?' '+c[3]:''); a.setAttribute('href',c[0]);
@@ -195,6 +211,13 @@
   function addPeek(t){ if(!I[href(t)]) return; var b=document.createElement('span'); b.className='lx-peek'; b.setAttribute('role','button'); b.tabIndex=0; b.setAttribute('aria-label','Peek');
     b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
     function fire(e){ e.preventDefault(); e.stopPropagation(); haptic(6); openPeek(t); } b.addEventListener('click',fire); b.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' ') fire(e); }); t.appendChild(b);
-    t.addEventListener('pointerdown',function(){ haptic(6); },{passive:true}); }
+    t.addEventListener('pointerdown',function(){ haptic(6); },{passive:true});
+    t.addEventListener('pointermove',function(e){ var r=t.getBoundingClientRect(); t.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); t.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); },{passive:true}); }
   document.querySelectorAll('.tile').forEach(addPeek);
+
+  /* #14 · bottom nav (matches the demo) */
+  (function(){ if(document.querySelector('.lx-nav')) return; var nav=document.createElement('nav'); nav.className='lx-nav'; nav.innerHTML='<a class="on" href="index.html">Home</a><a href="body.html">Body</a><a href="identity.html">Mind</a><a href="finance.html">Money</a><a href="nova-chat.html">Nova</a>'; document.body.appendChild(nav); })();
+
+  /* #30 · skeleton shimmer on the intelligence feed until the engine fills it */
+  (function(){ var g=document.getElementById('intelGrid'); if(g && (!g.children.length || g.querySelector('.intel-empty'))){ var row='<div class="lx-skelrow"><span class="lx-skel lx-skic"></span><span class="lx-skel lx-skl1"></span></div>'; g.innerHTML=row+row+row; } })();
 })();
