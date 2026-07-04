@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v147";
+var CACHE = "als-v148";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -53,7 +53,7 @@ self.addEventListener('fetch', function (e) {
   // only as an offline fallback. This guarantees a deploy is visible on the
   // next load (no waiting for a service-worker generation to roll over).
   e.respondWith(
-    fetch(req).then(function (res) {
+    fetch(req, { cache: 'no-store' }).then(function (res) {
       if (res && res.status === 200 && res.type === 'basic') {
         var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); });
       }
