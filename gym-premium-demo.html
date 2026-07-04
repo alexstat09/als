@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060607">
+<title>Fitness · AURORA (luxury demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* AURORA — luxury gym session (ISOLATED DEMO, self-contained).
+   Same design tokens as the home demo so the system stays one language.
+   Nothing here touches live gym.html. */
+:root{
+  --canvas:#060607; --ivory:#F5F2EC;
+  --dim:rgba(245,242,236,0.56); --faint:rgba(245,242,236,0.30); --ghost:rgba(245,242,236,0.13);
+  --line:rgba(255,255,255,0.06); --line-2:rgba(255,255,255,0.10); --glass:rgba(255,255,255,0.022); --glass-2:rgba(255,255,255,0.04);
+  --emerald:#3FE0B0; --teal:#18C8C0; --violet:#9B8CFF; --amber:#F2C063; --coral:#FF8A6B;
+  --glow:63,224,176; --hot:255,138,107;
+  --gradient:linear-gradient(118deg,var(--coral),var(--amber) 55%,var(--emerald));
+  --serif:"Instrument Serif",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --s1:8px;--s2:16px;--s3:24px;--s4:36px;--s5:56px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--canvas); color:var(--dim); font-family:var(--sans); -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden; padding:0 0 120px; position:relative; letter-spacing:0.005em;}
+body::before{content:''; position:fixed; inset:-15%; z-index:-2; pointer-events:none; background:radial-gradient(30% 22% at 14% 2%, rgba(255,138,107,0.08), transparent 62%),radial-gradient(26% 22% at 90% 98%, rgba(63,224,176,0.05), transparent 66%); filter:blur(34px); animation:drift 30s ease-in-out infinite alternate;}
+body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size:3px 3px;}
+@keyframes drift{0%{transform:translate3d(-1.2%,-0.8%,0);}100%{transform:translate3d(1.2%,0.8%,0);}}
+.wrap{max-width:720px; margin:0 auto; padding:0 22px;}
+
+/* header */
+.head{padding:max(38px,env(safe-area-inset-top)) 0 0;}
+.back{font-family:var(--mono); font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:color .4s var(--ease);}
+.back:hover{color:var(--dim);}
+.eyebrow{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--faint); display:inline-flex; align-items:center; gap:9px; margin-top:22px;}
+.eyebrow .dot{width:5px; height:5px; border-radius:50%; background:var(--coral); box-shadow:0 0 8px var(--coral); animation:pulse 2.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 5px rgba(var(--hot),0.6);}50%{box-shadow:0 0 13px var(--coral),0 0 22px rgba(var(--hot),0.3);}}
+.title{font-family:var(--serif); font-style:italic; color:var(--ivory); line-height:1.0; letter-spacing:-0.015em; font-size:clamp(40px,7.4vw,58px); margin:12px 0 8px;}
+.sub{font-family:var(--mono); font-size:12px; letter-spacing:0.05em; color:var(--faint);}
+
+/* stats strip */
+.stats{display:flex; margin-top:var(--s3); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+.stat{flex:1; padding:14px 15px; border-right:1px solid var(--line);}
+.stat:last-child{border-right:0;}
+.stat .k{font-family:var(--mono); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint);}
+.stat .v{font-family:var(--serif); font-style:italic; font-size:26px; color:var(--ivory); line-height:1.05; margin-top:4px;}
+.stat .v em{font-style:normal; font-family:var(--sans); font-size:12px; color:var(--dim); margin-left:2px;}
+
+/* exercise card */
+.ex{position:relative; margin-top:14px; background:var(--glass); border:1px solid var(--line); border-radius:18px; padding:18px 18px 10px; overflow:hidden; transition:border-color .5s var(--ease);}
+.ex.done{opacity:0.72;}
+.ex-hd{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+.ex-name{font-size:17px; font-weight:500; color:var(--ivory); letter-spacing:-0.01em;}
+.ex-tag{font-family:var(--mono); font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--faint); margin-top:5px; display:inline-flex; gap:8px; align-items:center;}
+.ex-1rm{text-align:right; flex-shrink:0;}
+.ex-1rm .n{font-family:var(--serif); font-style:italic; font-size:24px; color:var(--ivory); line-height:1;}
+.ex-1rm .l{font-family:var(--mono); font-size:8.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--faint); margin-top:3px;}
+.pr{display:inline-block; font-family:var(--mono); font-size:8.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--amber); border:1px solid rgba(242,192,99,0.4); border-radius:20px; padding:2px 7px;}
+
+/* set rows */
+.sets{margin-top:14px;}
+.set{display:grid; grid-template-columns:34px 1fr 1fr 34px; align-items:center; gap:10px; padding:11px 4px; border-top:1px solid var(--line); cursor:pointer; transition:background .3s var(--ease);}
+.set:first-child{border-top:0;}
+.set:hover{background:rgba(255,255,255,0.015);}
+.set .sn{font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--faint);}
+.set .wt{font-family:var(--serif); font-style:italic; font-size:22px; color:var(--ivory); line-height:1;}
+.set .wt em, .set .rp em{font-style:normal; font-family:var(--sans); font-size:11px; color:var(--faint); margin-left:3px; letter-spacing:0;}
+.set .rp{font-family:var(--serif); font-style:italic; font-size:22px; color:var(--dim); line-height:1;}
+.set.pending .wt, .set.pending .rp{color:var(--ghost);}
+.set .chk{width:24px; height:24px; border-radius:8px; border:1px solid var(--line-2); display:flex; align-items:center; justify-content:center; transition:all .35s var(--ease); justify-self:end;}
+.set .chk svg{width:13px; height:13px; stroke:var(--canvas); opacity:0; transform:scale(.5); transition:all .35s var(--ease);}
+.set.on .chk{background:var(--emerald); border-color:var(--emerald); box-shadow:0 0 14px rgba(var(--glow),0.35);}
+.set.on .chk svg{opacity:1; transform:scale(1);}
+.addset{display:flex; align-items:center; gap:8px; padding:12px 4px; border-top:1px solid var(--line); font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--faint); cursor:pointer; transition:color .3s var(--ease);}
+.addset:hover{color:var(--dim);}
+.addset .plus{width:16px; height:16px; border:1px solid var(--line-2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1;}
+
+/* section label */
+.slab{font-family:var(--mono); font-size:10px; letter-spacing:0.24em; text-transform:uppercase; color:var(--faint); margin:var(--s4) 0 var(--s2) 2px;}
+
+/* rest timer pill */
+.rest{position:fixed; left:50%; bottom:78px; transform:translateX(-50%); z-index:6; display:flex; align-items:center; gap:14px; padding:11px 16px 11px 14px; border-radius:16px; background:rgba(12,12,13,0.82); border:1px solid var(--line-2); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); box-shadow:0 16px 40px rgba(0,0,0,0.5);}
+.rest .ring{position:relative; width:34px; height:34px;}
+.rest .ring svg{transform:rotate(-90deg);}
+.rest .ring circle{fill:none; stroke-width:2.5;}
+.rest .ring .bg{stroke:var(--line-2);}
+.rest .ring .fg{stroke:var(--emerald); stroke-linecap:round; transition:stroke-dashoffset 1s linear;}
+.rest .txt .t{font-family:var(--serif); font-style:italic; font-size:20px; color:var(--ivory); line-height:1;}
+.rest .txt .l{font-family:var(--mono); font-size:8.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-top:2px;}
+.rest .skip{font-family:var(--mono); font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint); border:1px solid var(--line); border-radius:10px; padding:7px 10px; cursor:pointer; transition:color .3s var(--ease);}
+.rest .skip:hover{color:var(--dim);}
+
+/* bottom nav */
+.nav{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:2px; padding:5px; border-radius:16px; z-index:5; background:rgba(12,12,13,0.7); border:1px solid var(--line-2); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);}
+.nav a{font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint); text-decoration:none; padding:9px 16px; border-radius:11px; transition:color .4s var(--ease), background .4s var(--ease);}
+.nav a.on{color:var(--ivory); background:rgba(var(--hot),0.10);}
+.nav a:hover{color:var(--dim);}
+
+.rise{opacity:0; transform:translateY(15px); animation:rise .8s var(--ease) forwards;}
+@keyframes rise{to{opacity:1; transform:none;}}
+@keyframes pop{0%{transform:scale(1);}40%{transform:scale(1.06);}100%{transform:scale(1);}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;} .rise{opacity:1; transform:none;}}
+.ribbon{position:fixed; top:0; left:0; right:0; z-index:9; text-align:center; font-family:var(--mono); font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); padding:6px; background:rgba(0,0,0,0.45); border-bottom:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="ribbon">Luxury AURORA · gym · isolated demo · live gym.html untouched</div>
+
+<div class="wrap">
+  <header class="head">
+    <a class="back rise" href="home-premium-demo.html" style="animation-delay:.02s">← Home</a>
+    <div class="eyebrow rise" style="animation-delay:.06s"><span class="dot"></span> Fitness · Push / Pull / Legs · week 3</div>
+    <h1 class="title rise" style="animation-delay:.12s">Legs day.</h1>
+    <div class="sub rise" style="animation-delay:.18s">Thursday · target 18 sets · about 62 min</div>
+  </header>
+
+  <div class="stats rise" style="animation-delay:.24s">
+    <div class="stat"><div class="k">Volume</div><div class="v" id="vol">6,120<em>kg</em></div></div>
+    <div class="stat"><div class="k">Sets</div><div class="v"><span id="setsDone">9</span><em>/ 18</em></div></div>
+    <div class="stat"><div class="k">Best est 1RM</div><div class="v">320<em>kg</em></div></div>
+    <div class="stat"><div class="k">PRs today</div><div class="v">1</div></div>
+  </div>
+
+  <div class="slab rise" style="animation-delay:.3s">Today's session</div>
+
+  <!-- Hack Squat -->
+  <section class="ex rise" style="animation-delay:.34s">
+    <div class="ex-hd">
+      <div><div class="ex-name">Hack Squat</div><div class="ex-tag">Quads · machine</div></div>
+      <div class="ex-1rm"><div class="n">132</div><div class="l">est 1RM</div></div>
+    </div>
+    <div class="sets">
+      <div class="set on"><span class="sn">01</span><span class="wt">60<em>kg</em></span><span class="rp">12<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set on"><span class="sn">02</span><span class="wt">80<em>kg</em></span><span class="rp">10<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set on"><span class="sn">03</span><span class="wt">100<em>kg</em></span><span class="rp">8<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set pending"><span class="sn">04</span><span class="wt">110<em>kg</em></span><span class="rp">6<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+    </div>
+    <div class="addset"><span class="plus">+</span> Add set</div>
+  </section>
+
+  <!-- Leg Press -->
+  <section class="ex rise" style="animation-delay:.4s">
+    <div class="ex-hd">
+      <div><div class="ex-name">Leg Press</div><div class="ex-tag">Quads · glutes</div></div>
+      <div class="ex-1rm"><div class="n">320</div><div class="l">est 1RM</div></div>
+    </div>
+    <div class="sets">
+      <div class="set on"><span class="sn">01</span><span class="wt">180<em>kg</em></span><span class="rp">12<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set on"><span class="sn">02</span><span class="wt">220<em>kg</em></span><span class="rp">10<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set pending"><span class="sn">03</span><span class="wt">260<em>kg</em></span><span class="rp">8<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+    </div>
+    <div class="addset"><span class="plus">+</span> Add set</div>
+  </section>
+
+  <!-- RDL with PR -->
+  <section class="ex rise" style="animation-delay:.46s">
+    <div class="ex-hd">
+      <div><div class="ex-name">Romanian Deadlift</div><div class="ex-tag">Hamstrings <span class="pr">New PR</span></div></div>
+      <div class="ex-1rm"><div class="n">128</div><div class="l">est 1RM</div></div>
+    </div>
+    <div class="sets">
+      <div class="set on"><span class="sn">01</span><span class="wt">80<em>kg</em></span><span class="rp">10<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set on"><span class="sn">02</span><span class="wt">90<em>kg</em></span><span class="rp">10<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set pending"><span class="sn">03</span><span class="wt">100<em>kg</em></span><span class="rp">8<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+    </div>
+    <div class="addset"><span class="plus">+</span> Add set</div>
+  </section>
+
+  <!-- Leg Extension -->
+  <section class="ex rise" style="animation-delay:.52s">
+    <div class="ex-hd">
+      <div><div class="ex-name">Leg Extension</div><div class="ex-tag">Quads · isolation</div></div>
+      <div class="ex-1rm"><div class="n">72</div><div class="l">est 1RM</div></div>
+    </div>
+    <div class="sets">
+      <div class="set on"><span class="sn">01</span><span class="wt">45<em>kg</em></span><span class="rp">15<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+      <div class="set pending"><span class="sn">02</span><span class="wt">55<em>kg</em></span><span class="rp">12<em>reps</em></span><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></div>
+    </div>
+    <div class="addset"><span class="plus">+</span> Add set</div>
+  </section>
+</div>
+
+<!-- rest timer -->
+<div class="rest rise" id="rest" style="animation-delay:.6s">
+  <div class="ring"><svg width="34" height="34"><circle class="bg" cx="17" cy="17" r="15"/><circle class="fg" id="ring" cx="17" cy="17" r="15" stroke-dasharray="94.2" stroke-dashoffset="0"/></svg></div>
+  <div class="txt"><div class="t" id="rtime">1:12</div><div class="l">rest · Leg Press next</div></div>
+  <div class="skip" id="skip">Skip</div>
+</div>
+
+<nav class="nav rise" style="animation-delay:.66s">
+  <a href="home-premium-demo.html">Home</a>
+  <a class="on" href="#">Body</a>
+  <a href="identity.html">Mind</a>
+  <a href="finance.html">Money</a>
+  <a href="nova-chat.html">Nova</a>
+</nav>
+
+<script>
+// Tiny bit of life so you can FEEL it: tap a set to log it (check-pop), tap add-set, rest countdown.
+document.querySelectorAll('.set').forEach(function(s){
+  s.addEventListener('click', function(){
+    s.classList.toggle('on'); s.classList.toggle('pending');
+    var c=s.querySelector('.chk'); c.style.animation='pop .35s var(--ease)'; setTimeout(function(){c.style.animation='';},360);
+    recount();
+  });
+});
+function recount(){
+  var done=document.querySelectorAll('.set.on').length;
+  document.getElementById('setsDone').textContent=done;
+}
+// rest ring countdown (demo loop)
+var total=90, left=72, C=94.2, ring=document.getElementById('ring'), rt=document.getElementById('rtime');
+function tick(){
+  left=left<=0?90:left-1;
+  var mm=Math.floor(left/60), ss=String(left%60).padStart(2,'0');
+  rt.textContent=mm+':'+ss;
+  ring.setAttribute('stroke-dashoffset', (C*(1-left/total)).toFixed(1));
+}
+var iv=setInterval(tick,1000);
+document.getElementById('skip').addEventListener('click',function(){
+  document.getElementById('rest').style.transition='opacity .5s, transform .5s';
+  document.getElementById('rest').style.opacity='0';
+  document.getElementById('rest').style.transform='translateX(-50%) translateY(10px)';
+  clearInterval(iv);
+});
+</script>
+</body>
+</html>
