@@ -178,12 +178,15 @@
     var bodyTile=document.querySelector('.tile[href="body.html"]'); if(!bodyTile) return;
     var grid=bodyTile.parentNode; if(!grid) return;
     bodyTile.classList.add('lx-hidden');   /* class-based so it beats .tile{display:flex!important} */
-    var add=[['nutrition.html','Nutrition','fuel','wide'],['weight.html','Weight','vitals','wide'],['caffeine.html','Caffeine','intake',''],['po-water.html','Water','hydration',''],['health.html','Supplements','stack',''],['measure.html','Measure','body','']];
+    var sleepTile=grid.querySelector('.tile[href="sleep.html"]');
+    /* demo order: Nutrition, Sleep, Weight, Caffeine, Supplements, Measure, Water */
+    var add=[['nutrition.html','Nutrition','fuel','wide',1],['weight.html','Weight','vitals','wide',0],['caffeine.html','Caffeine','intake','',0],['health.html','Supplements','stack','',0],['measure.html','Measure','body','',0],['po-water.html','Water','hydration','',0]];
     add.forEach(function(c){
       if(grid.querySelector('.tile[href="'+c[0]+'"]')) return;
       var a=document.createElement('a'); a.className='tile lx-injected'+(c[3]?' '+c[3]:''); a.setAttribute('href',c[0]);
       a.innerHTML='<div class="tile-top"><span class="lx-ic">'+svg(I[c[0]]||'')+'</span></div><div class="lx-value"></div><div class="tile-title">'+c[1]+'</div><div class="tile-footer"><span class="tile-sub">'+c[2]+'</span></div>';
-      grid.appendChild(a); paint(a);
+      if(c[4] && sleepTile){ grid.insertBefore(a, sleepTile); } else { grid.appendChild(a); }
+      paint(a);
     });
   })();
 
@@ -198,7 +201,7 @@
     var C=289, off=C*(1-rec/100);
     var line=rec>=67?'Recovery is high. A good day to spend energy.':rec>=45?'Recovery is moderate. Train smart, keep it steady.':'Recovery is low. Protect sleep and go easy today.';
     var wrap=document.createElement('div'); wrap.className='lx-ready lx-rise';
-    wrap.innerHTML='<div class="ring"><svg viewBox="0 0 100 100"><defs><linearGradient id="lxrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3FE0B0"/><stop offset="100%" stop-color="#18C8C0"/></linearGradient></defs><circle class="rt" cx="50" cy="50" r="46"/><circle class="rf" cx="50" cy="50" r="46" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"/></svg><div class="rc"><div class="rn">0</div><div class="rl">Readiness</div></div></div><div class="rtext"><div class="re">Today · readiness</div><div class="rd">'+line+'</div></div>';
+    wrap.innerHTML='<div class="ring"><svg viewBox="0 0 100 100"><defs><linearGradient id="lxrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3FE0B0"/><stop offset="100%" stop-color="#18C8C0"/></linearGradient></defs><circle class="rt" cx="50" cy="50" r="46"/><circle class="rf" cx="50" cy="50" r="46" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'"/></svg><div class="rc"><div class="rn">0</div><div class="rl">Readiness</div></div></div><div class="rtext"><div class="re">Today’s focus · primed</div><div class="rd">'+line+'</div></div>';
     var anchor=document.querySelector('.hub-briefing-wrap')||document.querySelector('.hub-header');
     if(anchor&&anchor.parentNode){ anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
       wrap._reveal=function(){ var rf=wrap.querySelector('.rf'), rn=wrap.querySelector('.rn'); if(reduce){ rf.style.strokeDashoffset=off; rn.textContent=rec; return; } requestAnimationFrame(function(){ rf.style.strokeDashoffset=off; }); var st=performance.now(); (function tick(now){ var p=Math.min(1,(now-st)/900); p=1-Math.pow(1-p,3); rn.textContent=Math.round(rec*p); if(p<1) requestAnimationFrame(tick); else rn.textContent=rec; })(st); };
