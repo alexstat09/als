@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v148";
+var CACHE = "als-v149";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -39,6 +39,13 @@ self.addEventListener('activate', function (e) {
     caches.keys().then(function (keys) {
       return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
+     .then(function () {
+       // when a new SW version activates, force every open window to reload
+       // through the fresh no-store worker — breaks any stale-cache loop.
+       return self.clients.matchAll({ type: 'window' }).then(function (list) {
+         list.forEach(function (c) { try { c.navigate(c.url); } catch (e) {} });
+       });
+     })
   );
 });
 
