@@ -139,8 +139,9 @@
     var h=href(tile); var m=metric(h); if(!m) return;
     var host=tile.querySelector('.lx-value'); if(!host){ host=document.createElement('div'); host.className='lx-value';
       var live=tile.querySelector('.tile-live'); if(live){ live.style.display='none'; live.parentNode.insertBefore(host, live.nextSibling); } else { tile.appendChild(host); } }
+    if(m.hero==='—'){ var nm=(tile.querySelector('.tile-title')||{}).textContent||''; host.innerHTML='<span class="lx-hero lx-hero-txt">'+nm+'</span>'; var tt=tile.querySelector('.tile-title'); if(tt) tt.classList.add('lx-hidden'); return; }
     var heroHtml = m.txt ? '<span class="lx-hero lx-hero-txt">'+m.hero+'</span>'
-                         : '<span class="lx-hero" data-to="'+(typeof m.hero==='number'?m.hero:'')+'">'+(m.hero==='—'?'—':(typeof m.hero==='number'?'0':m.hero))+'</span>'+(m.unit?'<em>'+m.unit+'</em>':'');
+                         : '<span class="lx-hero" data-to="'+(typeof m.hero==='number'?m.hero:'')+'">'+(typeof m.hero==='number'?'0':m.hero)+'</span>'+(m.unit?'<em>'+m.unit+'</em>':'');
     host.innerHTML = heroHtml + (m.spark?sparkSVG(m.spark):'');
   }
   /* count-up + sparkline draw — fired when the tile SCROLLS into view */
@@ -176,7 +177,7 @@
   (function(){
     var bodyTile=document.querySelector('.tile[href="body.html"]'); if(!bodyTile) return;
     var grid=bodyTile.parentNode; if(!grid) return;
-    bodyTile.style.display='none';
+    bodyTile.classList.add('lx-hidden');   /* class-based so it beats .tile{display:flex!important} */
     var add=[['nutrition.html','Nutrition','fuel','wide'],['weight.html','Weight','vitals','wide'],['caffeine.html','Caffeine','intake',''],['po-water.html','Water','hydration',''],['health.html','Supplements','stack',''],['measure.html','Measure','body','']];
     add.forEach(function(c){
       if(grid.querySelector('.tile[href="'+c[0]+'"]')) return;
