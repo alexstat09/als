@@ -147,7 +147,7 @@
   gap: 8px;
   padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
   background: rgba(10,10,11,0.96);
-  border-bottom: 1px solid rgba(125,211,252,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 .topbar-water-wrap { display: flex; align-items: stretch; }
@@ -222,7 +222,7 @@
   display: flex; justify-content: space-around; align-items: stretch;
   padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
   background: rgba(5,5,6,0.94);
-  border-top: 1px solid rgba(125,211,252,0.10);
+  border-top: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
@@ -237,20 +237,18 @@
   -webkit-tap-highlight-color: transparent; transition: color 0.2s;
 }
 .bottombar-tab-icon {
-  font-size: 22px; line-height: 1;
-  filter: grayscale(100%) brightness(0.85); opacity: 0.38;
-  transition: opacity 0.2s, filter 0.2s, transform 0.12s;
+  line-height: 1; display: flex; align-items: center; justify-content: center;
+  opacity: 0.45;
+  transition: opacity 0.2s, transform 0.12s;
 }
-.bottombar-tab.active { color: rgba(125,211,252,0.90); }
-.bottombar-tab.active .bottombar-tab-icon {
-  filter: grayscale(0%) brightness(1.05); opacity: 1;
-}
+.bottombar-tab-icon svg { width: 21px; height: 21px; display: block; }
+.bottombar-tab.active { color: rgba(245,242,236,0.92); }
+.bottombar-tab.active .bottombar-tab-icon { opacity: 1; color: #3FE0B0; }
 .bottombar-tab.active::before {
   content: ''; position: absolute; top: 0; left: 50%;
   transform: translateX(-50%);
-  width: 24px; height: 2px; border-radius: 0 0 3px 3px;
-  background: rgba(125,211,252,0.85);
-  box-shadow: 0 0 10px rgba(125,211,252,0.7), 0 0 20px rgba(125,211,252,0.28);
+  width: 22px; height: 2px; border-radius: 0 0 3px 3px;
+  background: rgba(63,224,176,0.75);
 }
 .bottombar-tab:active .bottombar-tab-icon { transform: scale(0.90); }
 body.has-bottombar {
@@ -291,7 +289,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 /* scan line */
 .tb-scan {
   position: fixed; left:0; right:0; height:2px; z-index:9999; pointer-events:none;
-  background: linear-gradient(90deg, transparent, var(--au-glow-c, rgba(125,211,252,0.75)) 50%, transparent);
+  background: linear-gradient(90deg, transparent, var(--au-glow-c, rgba(63,224,176,0.7)) 50%, transparent);
   box-shadow: none;
   animation: _tbScan 0.8s cubic-bezier(0.4,0,0.2,1) forwards;
 }
@@ -334,22 +332,23 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   </a>
 </header>`;
 
+  const tbIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
   <a href="index.html"     class="bottombar-tab" data-page="home">
-    <span class="bottombar-tab-icon">🏠</span><span>Home</span>
+    <span class="bottombar-tab-icon">${tbIco('<path d="M4 11.5 12 4l8 7.5M6 10v9.5h12V10"/>')}</span><span>Home</span>
   </a>
   <a href="body.html"      class="bottombar-tab" data-page="body">
-    <span class="bottombar-tab-icon">🫀</span><span>Body</span>
+    <span class="bottombar-tab-icon">${tbIco('<path d="M12 20.5s-7.5-4.6-7.5-10A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 3.3c0 5.4-7.5 10-7.5 10z"/>')}</span><span>Body</span>
   </a>
   <a href="main.html"      class="bottombar-tab" data-page="mind">
-    <span class="bottombar-tab-icon">🧠</span><span>Mind</span>
+    <span class="bottombar-tab-icon">${tbIco('<path d="M9.5 4.5A3.5 3.5 0 0 0 6 8a3.3 3.3 0 0 0-2 3.2 3.4 3.4 0 0 0 1.6 3A3.5 3.5 0 0 0 9 19.5c1.4 0 2.6-.8 3-2V6.7a3.4 3.4 0 0 0-2.5-2.2zM14.5 4.5A3.5 3.5 0 0 1 18 8a3.3 3.3 0 0 1 2 3.2 3.4 3.4 0 0 1-1.6 3A3.5 3.5 0 0 1 15 19.5c-1.4 0-2.6-.8-3-2"/>')}</span><span>Mind</span>
   </a>
   <a href="finance.html"   class="bottombar-tab" data-page="money">
-    <span class="bottombar-tab-icon">💰</span><span>Money</span>
+    <span class="bottombar-tab-icon">${tbIco('<path d="M12 3v18M17 6.5H9.6a3.1 3.1 0 0 0 0 6.2h4.8a3.1 3.1 0 0 1 0 6.2H6.5"/>')}</span><span>Money</span>
   </a>
   <a href="nova-chat.html" class="bottombar-tab" data-page="nova">
-    <span class="bottombar-tab-icon">💬</span><span>Nova</span>
+    <span class="bottombar-tab-icon">${tbIco('<path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 9 9 0 0 1-3.2-.6L4 20.5l1.3-4.1a8 8 0 0 1-1.3-4.8A8.4 8.4 0 0 1 12.5 3.3 8.4 8.4 0 0 1 21 11.6z"/>')}</span><span>Nova</span>
   </a>
 </nav>`;
 
