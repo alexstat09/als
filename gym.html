@@ -376,6 +376,45 @@
   .w-card{ border-radius:18px; padding:16px 17px 11px; }
   .w-card.donecard{ opacity:.7; }
   .w-check{ border-radius:9px; }
+
+  /* ── Workout LANDING tab — premium ── */
+  .w-hero-sub{ font-family:var(--au-mono); font-size:11px; letter-spacing:.03em; color:var(--au-faint); margin-top:10px; }
+  .w-hero-sub b{ color:var(--au-dim); font-weight:700; }
+  /* line icons inside buttons */
+  .w-ic{ width:16px; height:16px; flex:none; }
+  .w-btn-ghost .w-ic{ width:15px; height:15px; opacity:.85; }
+  /* primary buttons — slightly calmer, tighter radius */
+  .w-btn{ border-radius:15px; letter-spacing:.005em; }
+  .w-btn-resume{ background:var(--au-amber); box-shadow:0 6px 22px rgba(242,192,99,.26); color:#231400; margin-bottom:10px; }
+  .w-btn-import{ display:flex; text-decoration:none; margin-top:8px; }
+  /* seg nav — quieter surface */
+  .w-seg{ background:rgba(255,255,255,.03); }
+  /* today card — restrained premium hero */
+  .w-today{ background:linear-gradient(140deg, rgba(var(--au-glow-rgb),.11), rgba(255,255,255,.014)); border-color:rgba(var(--au-glow-rgb),.26); border-radius:20px; padding:18px 18px; }
+  .w-today-day{ letter-spacing:.2em; }
+  .w-today-name{ font-size:28px; margin:6px 0 5px; }
+  .w-today .w-mini{ color:var(--au-faint); letter-spacing:.08em; }
+  /* folder header — refined */
+  .w-folder{ margin:26px 0 12px; }
+  .w-folder-name{ font-size:20px; }
+  .w-folder-count{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; padding:3px 8px; border:1px solid var(--au-line); border-radius:999px; color:var(--au-faint); }
+  .w-fedit{ display:grid; place-items:center; }
+  .w-fedit-ic{ width:13px; height:13px; }
+  /* template cards — premium, data-as-hero identity */
+  .w-tpls{ gap:11px; }
+  .w-tpl{ border-radius:18px; padding:15px 15px 14px; background:var(--au-glass); border:1px solid var(--au-line);
+    transition:transform .3s cubic-bezier(.16,1,.3,1), border-color .3s, box-shadow .3s; }
+  .w-tpl:hover{ border-color:rgba(var(--au-glow-rgb),.3); box-shadow:0 12px 34px rgba(0,0,0,.42); }
+  .w-tpl:active{ transform:scale(.98); }
+  .w-tpl-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .w-tpl-ic{ width:19px; height:19px; color:var(--au-faint); transition:color .3s; }
+  .w-tpl:hover .w-tpl-ic{ color:rgb(var(--au-glow-rgb)); }
+  .w-tpl-count{ font-family:var(--au-mono); font-size:13px; font-weight:700; color:var(--au-ivory); }
+  .w-tpl-count em{ font-style:normal; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-left:3px; }
+  .w-tpl-name{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:19px; color:var(--au-ivory); margin-bottom:6px; line-height:1.12; }
+  .w-tpl-ex{ min-height:44px; line-height:1.5; }
+  .w-tpl-meta{ display:flex; align-items:center; gap:5px; }
+  .w-tpl-mic{ width:12px; height:12px; opacity:.85; flex:none; }
 </style>
 </head>
 <body data-page="fitness" class="au-bg au-mood-hot" id="root">
@@ -655,6 +694,21 @@ function segHTML(cur){ return '<div class="w-seg">'+[['home','Workout'],['histor
 
 function novaSvg(){ return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="nvF" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvF)" opacity="0.95"/><circle class="nova-eye" cx="42" cy="50" r="5.5" fill="#04130D"/><circle class="nova-eye" cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>'; }
 
+/* refined line icons (premium look — replaces emoji) */
+function wIcon(n,cls){
+  var p={
+    play:'<path d="M7 5v14l11-7z"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4"/>',
+    down:'<path d="M12 4v11M7.5 10.5l4.5 4.5 4.5-4.5M5 20h14"/>',
+    pen:'<path d="M4 20h4L20 8l-4-4L4 16z"/>',
+    ref:'<path d="M4.5 12a7.5 7.5 0 0 1 12.9-5.2L20 9M20 3.5V9h-5.5"/>',
+    bell:'<path d="M4 8h4M4 16h4M16 8h4M16 16h4M8 5v14M16 5v14M8 12h8"/>',
+    dumbbell:'<path d="M2.5 9.5v5M5.5 7.5v9M18.5 7.5v9M21.5 9.5v5M7 12h10"/>',
+    folder:'<path d="M3.5 7a2 2 0 0 1 2-2h3.6l2 2.4H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/>'
+  };
+  return '<svg class="'+(cls||'w-ic')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(p[n]||'')+'</svg>';
+}
 /* HOME */
 var DOW_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function getSchedule(){ return (ls('po_coach_v1',{})||{}).schedule||{}; }
@@ -662,42 +716,47 @@ function todayTpl(){ var id=getSchedule()[String(new Date().getDay())]; if(!id) 
 function renderHome(){
   view='home';
   var active=getActive();
+  /* sessions logged in the last 7 days — hero context */
+  var now=Date.now();
+  var wkCount=workouts().filter(function(w){ return w.date && (now-new Date(w.date+'T00:00:00').getTime()) < 7*86400000 && (now-new Date(w.date+'T00:00:00').getTime()) >= -86400000; }).length;
+  var subTxt = wkCount ? '<b>'+wkCount+'</b> session'+(wkCount===1?'':'s')+' this week' : 'No sessions yet this week — start one below';
   var html='<div class="w-hero"><div>'+
     '<div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>FITNESS</div>'+
-    '<h1 class="w-hero-title">Train.</h1></div>'+novaSvg()+'</div>';
+    '<h1 class="w-hero-title">Train.</h1>'+
+    '<div class="w-hero-sub">'+subTxt+'</div></div>'+novaSvg()+'</div>';
   html+=segHTML('home');
-  if(active){ html+='<button class="w-btn" style="background:var(--au-amber);box-shadow:0 6px 24px rgba(242,192,99,.3);margin-bottom:10px;" onclick="resumeActive()">&#9656; Resume workout in progress</button>'; }
+  if(active){ html+='<button class="w-btn w-btn-resume" onclick="resumeActive()">'+wIcon('play')+' Resume workout in progress</button>'; }
   /* Today — what's scheduled for this weekday */
   (function(){
     var tt=todayTpl(); var sched=getSchedule(); var hasSched=Object.keys(sched).length>0;
     var dn=DOW_FULL[new Date().getDay()];
     if(tt){
       var names=tt.items.map(function(it){return exById(it.exId).name;});
-      html+='<div class="w-today"><div class="w-today-day">'+dn+' · today</div>'+
+      html+='<div class="w-today"><div class="w-today-day">'+esc(dn)+' · today</div>'+
         '<div class="w-today-name">'+esc(tt.name)+'</div>'+
         '<div class="w-today-ex">'+esc(names.slice(0,4).join(' · '))+(names.length>4?' …':'')+'</div>'+
-        '<button class="w-btn" style="margin-top:13px;" onclick="startFromTpl(\''+tt.id+'\')">&#9656; Start '+esc(tt.name)+'</button>'+
-        '<button type="button" class="w-mini" style="margin-top:9px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
+        '<button class="w-btn" style="margin-top:14px;" onclick="startFromTpl(\''+tt.id+'\')">'+wIcon('play')+' Start '+esc(tt.name)+'</button>'+
+        '<button type="button" class="w-mini" style="margin-top:11px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
     } else if(hasSched){
-      html+='<div class="w-today w-today-rest"><div class="w-today-day">'+dn+'</div>'+
+      html+='<div class="w-today w-today-rest"><div class="w-today-day">'+esc(dn)+'</div>'+
         '<div class="w-today-name">Rest day</div>'+
         '<div class="w-today-ex">Nothing scheduled — recover, or start anything below.</div>'+
-        '<button type="button" class="w-mini" style="margin-top:9px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
+        '<button type="button" class="w-mini" style="margin-top:11px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
     } else if(templates().length){
-      html+='<button type="button" class="w-btn-ghost" style="margin-bottom:10px;" onclick="openSchedule()">&#128197; Plan your week — schedule your sessions</button>';
+      html+='<button type="button" class="w-btn-ghost" style="margin-bottom:10px;" onclick="openSchedule()">'+wIcon('cal')+' Plan your week — schedule your sessions</button>';
     }
   })();
-  html+='<button class="w-btn" onclick="startEmpty()">&#65291; Start an empty workout</button>';
+  html+='<button class="w-btn" onclick="startEmpty()">'+wIcon('plus')+' Start an empty workout</button>';
   html+='<div style="display:flex;gap:8px;margin-top:8px;">'+
-    '<button class="w-btn-ghost" style="margin:0;" onclick="editTemplate(null)">&#65291; New template</button>'+
-    '<button class="w-btn-ghost" style="margin:0;" onclick="newFolder()">&#65291; New folder</button></div>';
-  html+='<a class="w-btn-ghost" href="import-strong.html" style="display:block;text-align:center;text-decoration:none;margin-top:8px;">&#11015; Import history from Strong</a>';
+    '<button class="w-btn-ghost" style="margin:0;" onclick="editTemplate(null)">'+wIcon('plus')+' New template</button>'+
+    '<button class="w-btn-ghost" style="margin:0;" onclick="newFolder()">'+wIcon('folder')+' New folder</button></div>';
+  html+='<a class="w-btn-ghost w-btn-import" href="import-strong.html">'+wIcon('down')+' Import history from Strong</a>';
   var fs=folders(), tpls=templates();
   var ORDER={'f-cbas':0,'f-ul':1,'f-ppl':2};
   fs.sort(function(a,b){ return (ORDER[a.id]==null?99:ORDER[a.id])-(ORDER[b.id]==null?99:ORDER[b.id]); });
   fs.forEach(function(f){
     var list=tpls.filter(function(t){return t.folderId===f.id;});
-    html+='<div class="w-folder"><span class="w-folder-name">'+esc(f.name)+'</span><span class="w-folder-count">'+list.length+'</span><button type="button" class="w-fedit" onclick="editFolder(\''+f.id+'\')" aria-label="Edit folder">✎</button><span class="w-folder-line"></span></div>';
+    html+='<div class="w-folder"><span class="w-folder-name">'+esc(f.name)+'</span><span class="w-folder-count">'+list.length+'</span><button type="button" class="w-fedit" onclick="editFolder(\''+f.id+'\')" aria-label="Edit folder">'+wIcon('pen','w-fedit-ic')+'</button><span class="w-folder-line"></span></div>';
     if(!list.length){ html+='<div class="w-empty" style="font-size:13px;padding:10px 0;">No templates here yet.</div>'; }
     else { html+='<div class="w-tpls">'+list.map(tplCard).join('')+'</div>'; }
   });
@@ -710,9 +769,10 @@ function tplCard(t){
   var preview=names.slice(0,4).join(', ')+(names.length>4?' …':'');
   var last=lastDoneForTpl(t.id);
   return '<button class="w-tpl" onclick="openTpl(\''+t.id+'\')">'+
+    '<div class="w-tpl-top">'+wIcon('dumbbell','w-tpl-ic')+'<span class="w-tpl-count">'+t.items.length+'<em>ex</em></span></div>'+
     '<div class="w-tpl-name">'+esc(t.name)+'</div>'+
     '<div class="w-tpl-ex">'+esc(preview)+'</div>'+
-    '<div class="w-tpl-meta">'+(last?'⟳ '+relDate(last):t.items.length+' exercises')+'</div></button>';
+    '<div class="w-tpl-meta">'+(last? wIcon('ref','w-tpl-mic')+relDate(last) : 'never done')+'</div></button>';
 }
 function lastDoneForTpl(id){
   var ws=workouts().filter(function(w){return w.templateId===id;}).sort(function(a,b){return (b.startedAt||'')<(a.startedAt||'')?-1:1;});
