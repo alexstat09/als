@@ -14,9 +14,11 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <script src="topbar.js" defer></script>
+  <script>window.__pmAutoSel='.card,.hero-sum';</script>
+  <script src="page-motion.js" defer></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    :root{ --nu:124,211,252; } /* nutrition accent (sky) */
+    :root{ --nu:63,224,176; } /* nutrition accent — emerald (home language) */
     html,body{min-height:100%;}
     body{ background:#050507; color:var(--au-ivory,#F4F1EA); font-family:var(--au-sans,-apple-system,system-ui,sans-serif); padding:0 0 calc(92px + env(safe-area-inset-bottom)); }
 
@@ -96,7 +98,7 @@
     .sum-ring{position:relative;width:120px;height:120px;flex:none;}
     .sum-ring svg{transform:rotate(-90deg);}
     .sum-ring-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .sum-kcal{font-family:var(--au-mono,ui-monospace);font-size:31px;font-weight:800;color:#F4F1EA;line-height:1;letter-spacing:-.02em;}
+    .sum-kcal{font-family:var(--au-serif,Georgia);font-style:italic;font-size:34px;font-weight:400;color:#F5F2EC;line-height:1;letter-spacing:-.015em;}
     .sum-kcal-lbl{font-family:var(--au-mono,ui-monospace);font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:4px;}
     .sum-macros{flex:1;min-width:0;display:flex;flex-direction:column;gap:11px;}
     .mac-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-family:var(--au-mono,ui-monospace);font-size:10px;letter-spacing:.04em;}
@@ -536,7 +538,7 @@
     // returns true when the count actually advanced today (→ celebrate)
     function bumpStreak(){ var s=getStreak(), td=today(); if(s.lastDay===td) return false; var d=streakDayDiff(td,s.lastDay); if(d<0) return false; // logging a past day never touches the streak
       s.count = (d===1) ? (s.count||0)+1 : 1; s.lastDay=td; s._ts=Date.now(); save(STREAK,s); return true; }
-    function renderStreak(){ var el=document.getElementById('streakChip'); if(el) el.textContent='🔥 '+getStreak().count; }
+    function renderStreak(){ var el=document.getElementById('streakChip'); if(el) el.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 3s5.5 4.2 5.5 9.2A5.5 5.5 0 0 1 12 17.5 5.5 5.5 0 0 1 6.5 12.2C6.5 9 9 6.5 12 3z"/></svg> '+getStreak().count; }
     function showStreakPop(){ try{ var n=getStreak().count, d=document.createElement('div'); d.className='streak-pop';
       d.innerHTML='<div class="streak-pop-in"><div class="streak-pop-fl">🔥</div><div class="streak-pop-n">'+n+'</div><div class="streak-pop-l">day streak</div></div>';
       document.body.appendChild(d); requestAnimationFrame(function(){ d.classList.add('show'); });
@@ -562,7 +564,7 @@
         '<div class="sum-top"><div class="sum-ring"><svg width="120" height="120" viewBox="0 0 120 120">'+
           '<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="9"/>'+
           '<circle class="am-ring" cx="60" cy="60" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
-        '</svg><div class="sum-ring-in"><div class="sum-kcal">'+r0(t.kcal)+'</div><div class="sum-kcal-lbl">/ '+tg.kcal+' kcal</div>'+remHtml+'</div></div>'+
+        '</svg><div class="sum-ring-in"><div class="sum-kcal" data-to="'+r0(t.kcal)+'" data-comma="1">'+r0(t.kcal).toLocaleString('en-US')+'</div><div class="sum-kcal-lbl">/ '+tg.kcal+' kcal</div>'+remHtml+'</div></div>'+
         '<div class="sum-macros">'+bar('p','Protein',t.p,tg.p,'g')+bar('c','Carbs',t.c,tg.c,'g')+bar('f','Fat',t.f,tg.f,'g')+'</div></div>'+
         '<div class="micros">'+micro(t.fiber,'Fiber','g')+micro(t.sugar,'Sugar','g')+micro(t.satfat,'Sat Fat','g')+micro(t.sodium,'Sodium','mg')+'</div>'+protHtml;
       if(window.AuroraMotion){ var _nr=document.getElementById('sumCard').querySelector('.am-ring'); if(_nr) AuroraMotion.ring(_nr, pct, 'nu-summary'); }
@@ -593,6 +595,7 @@
       if(dayTotals(today()).kcal>0 && bumpStreak()) showStreakPop();   // first log of a new day advances the streak
       renderStreak();
       renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderConsistency(); renderDiary();
+      try{ if(window.PageMotion){ PageMotion.scan(window.__nutTagged?null:'.card,.hero-sum'); window.__nutTagged=1; } }catch(e){}
     }
     window._nutRerender=renderAll;
 

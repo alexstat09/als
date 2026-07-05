@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <script src="topbar.js" defer></script>
+  <script src="page-motion.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     html, body { min-height:100%; }
@@ -30,7 +31,7 @@
     .wt-card::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
 
     .wt-row{ display:flex; align-items:baseline; gap:8px; }
-    .wt-num{ font-family:var(--au-mono); font-size:48px; font-weight:700; letter-spacing:-.03em; line-height:1; color:var(--au-ivory); font-variant-numeric:tabular-nums; }
+    .wt-num{ font-family:var(--au-serif); font-style:italic; font-size:54px; font-weight:400; letter-spacing:-.015em; line-height:1; color:var(--au-ivory); }
     .wt-unit{ font-size:16px; color:var(--au-faint); font-family:var(--au-mono); }
     .wt-delta{ font-family:var(--au-mono); font-size:13px; font-weight:700; margin-top:8px; font-variant-numeric:tabular-nums; }
     .wt-delta.up{ color:var(--au-amber); } .wt-delta.down{ color:var(--au-emerald); }
@@ -111,7 +112,7 @@
 </head>
 <body data-page="weight" class="au-bg au-mood-hot" id="root">
 
-  <div class="wp-hero">
+  <div class="wp-hero" data-rise>
     <div>
       <div class="au-eyebrow wp-hero-eyebrow"><span class="au-dot"></span>WEIGHT<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
       <p class="wp-hero-line" id="novaSays">Every weigh-in, tracked.</p>
@@ -132,14 +133,14 @@
     </div>
   </div>
 
-  <div class="wp-wrap" data-am-reveal-group>
-    <div class="wt-card">
+  <div class="wp-wrap">
+    <div class="wt-card" data-rise>
       <div class="wt-row">
         <span class="wt-num" id="wtNum">&mdash;</span>
         <span class="wt-unit" id="wtUnit">kg</span>
       </div>
       <div class="wt-delta hidden" id="wtDelta"></div>
-      <div class="wt-streak hidden" id="wtStreak">🔥<span id="wtStreakNum">0 day streak</span></div>
+      <div class="wt-streak hidden" id="wtStreak"><span id="wtStreakNum">0 day streak</span></div>
 
       <div class="wt-empty" id="wtEmpty">Log your first weight to start tracking.</div>
 
@@ -394,7 +395,7 @@
       var todayEntry=wtEntries.find(function(e){return e.dateKey===todayKey;});
       var u=units();
       $('wtUnit').textContent=u; $('wtUnitStatic').textContent=u;
-      $('wtNum').textContent=last?last.weight.toFixed(1):'—';
+      (function(){var n=$('wtNum'); if(last){ n.setAttribute('data-to',last.weight.toFixed(1)); n.setAttribute('data-dec','1'); n.removeAttribute('data-done'); n.textContent=last.weight.toFixed(1); if(window.PageMotion&&n.closest('[data-rise].in')) PageMotion.countUp(n);} else n.textContent='—';})();
 
       if(todayEntry){
         $('wtEmpty').classList.add('hidden');
