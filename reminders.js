@@ -108,7 +108,7 @@
       '.rem-time-wrap::after{content:"\\25BE";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:8px;color:rgba(52,226,176,.65);pointer-events:none}',
       '.rem-time{font-family:var(--au-mono,ui-monospace);font-size:11px;font-weight:700;letter-spacing:.05em;color:#34E2B0;background:rgba(52,226,176,.07);border:1px solid rgba(52,226,176,.26);border-radius:8px;padding:6px 22px 6px 10px;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;-webkit-tap-highlight-color:transparent}',
       '.rem-time:hover{background:rgba(52,226,176,.11)}',
-      '.rem-time:focus{border-color:#34E2B0;box-shadow:0 0 0 3px rgba(52,226,176,.16)}',
+      '.rem-time:focus{border-color:#34E2B0;box-shadow: none}',
       '.rem-time option{background:#0b0e10;color:#F4F1EA}',
       '.rem-switch{position:relative;width:46px;height:27px;border-radius:14px;border:none;cursor:pointer;flex:none;background:rgba(255,255,255,.1);transition:background .22s ease;-webkit-tap-highlight-color:transparent;padding:0}',
       '.rem-switch.sm{width:40px;height:23px}',

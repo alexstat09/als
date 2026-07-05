@@ -292,7 +292,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 .tb-scan {
   position: fixed; left:0; right:0; height:2px; z-index:9999; pointer-events:none;
   background: linear-gradient(90deg, transparent, var(--au-glow-c, rgba(125,211,252,0.75)) 50%, transparent);
-  box-shadow: 0 0 14px var(--au-glow-c, rgba(125,211,252,0.5));
+  box-shadow: none;
   animation: _tbScan 0.8s cubic-bezier(0.4,0,0.2,1) forwards;
 }
 @keyframes _tbScan {
