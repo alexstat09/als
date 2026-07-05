@@ -8,6 +8,8 @@
   'use strict';
   document.documentElement.classList.add('js');
   try{ var _r=document.getElementById('root'); if(_r) _r.classList.remove('au-bg'); }catch(e){}
+  /* TEST marker so Alex can confirm updates are reaching his device */
+  try{ function _bang(){ var g=document.getElementById('hubGreeting'); if(g && g.textContent.indexOf('!!')<0){ g.innerHTML = g.innerHTML.replace(/\s*$/,'') + ' <span class="grn">!!</span>'; } } _bang(); setTimeout(_bang,300); setTimeout(_bang,1200); }catch(e){}
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var EASE='cubic-bezier(0.16,1,0.3,1)';
   function ls(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
