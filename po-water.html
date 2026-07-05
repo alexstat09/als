@@ -12,6 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <script src="topbar.js" defer></script>
+<script>window.__pmAutoSel='.card,.hero,header';</script>
+<script src="page-motion.js" defer></script>
 
 <script>
 const CONFIG = {
@@ -60,7 +62,7 @@ const CONFIG = {
   --good: #34E2B0;
   --warn: #fbbf24;
   --bad: #FF6B8B;
-  --info: #7CD3FC;
+  --info: #18C8C0;
   --font: var(--au-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif);
   --font-mono: var(--au-mono, ui-monospace, SF Mono, Menlo, Consolas, monospace);
 }
@@ -94,7 +96,7 @@ html, body {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px;
 }
-.title { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+.title { font-family: var(--au-serif, Georgia); font-style: italic; font-size: 30px; font-weight: 400; letter-spacing: -0.015em; margin: 0; color: var(--au-ivory, #F5F2EC); }
 .icon-btn {
   width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
@@ -120,11 +122,13 @@ html, body {
 
 /* ----- Card ----- */
 .card {
-  background: var(--bg-card);
+  position: relative;
+  background: rgba(255,255,255,0.022);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 22px 20px 18px;
   margin-bottom: 14px;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 
 /* ----- Water hero ----- */
@@ -136,8 +140,9 @@ html, body {
   display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;
 }
 .water-num {
-  font-size: 56px; font-weight: 700; letter-spacing: -0.03em;
-  line-height: 1; font-variant-numeric: tabular-nums;
+  font-family: var(--au-serif, Georgia); font-style: italic;
+  font-size: 60px; font-weight: 400; letter-spacing: -0.015em;
+  line-height: 1;
 }
 .water-target {
   font-size: 18px; color: var(--text-3); font-weight: 500;
@@ -155,7 +160,7 @@ html, body {
   border-radius: 14px;
   background: linear-gradient(90deg, var(--info), var(--good));
   transition: width 0.4s ease;
-  box-shadow: 0 0 18px rgba(110,231,183,0.18);
+  box-shadow: none;
 }
 .water-bar-fill.over {
   background: linear-gradient(90deg, var(--good), var(--warn));
@@ -190,13 +195,12 @@ html, body {
 .water-minus-btn:hover { background: rgba(255,255,255,0.10); }
 .water-minus-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .water-plus-btn {
-  background: linear-gradient(180deg, #ffffff 0%, #e8e5dd 100%);
-  color: #0a0a0b; border: none; border-radius: 16px;
-  font-family: inherit; font-size: 16px; font-weight: 700;
+  background: linear-gradient(120deg, #34E2B0, #18C8C0 55%, #9B8CFF);
+  color: #04130D; border: none; border-radius: 15px;
+  font-family: inherit; font-size: 15px; font-weight: 700;
   cursor: pointer; padding: 16px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.40);
 }
 .water-plus-btn:hover { transform: translateY(-1px); }
 .water-plus-btn:active { transform: scale(0.98); }
@@ -782,7 +786,7 @@ html, body {
     const unitName = unitLabelPlural();
 
     $('waterUnitLabel').textContent = unitName.toUpperCase() + ' DRANK TODAY';
-    $('waterNum').textContent = count;
+    (function(){var n=$('waterNum'); if(!window.__h2oCounted){ n.setAttribute('data-to',count); n.textContent=count; } else { n.textContent=count; n.dataset.done='1'; } window.__h2oCounted=1; })();
     $('waterTarget').textContent = '/ ' + targetUnits;
     $('waterPlusLabel').textContent = 'Drank a ' + unitLabelSingular();
 

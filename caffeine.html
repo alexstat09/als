@@ -12,6 +12,8 @@
 <script src="sync.js" defer></script>
 <link rel="stylesheet" href="jarvis.css">
 <script src="topbar.js" defer></script>
+<script>window.__pmAutoSel='.dash-title,.section';</script>
+<script src="page-motion.js" defer></script>
 <style>
 :root {
   --text-primary:   #FAFAFA;
@@ -130,9 +132,9 @@ body::after {
   align-items: center; justify-content: center;
 }
 .ring-num {
-  font-size: 30px; font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  font-family: var(--au-serif, Georgia); font-style: italic;
+  font-size: 34px; font-weight: 400;
+  letter-spacing: -0.015em;
   color: var(--text-primary); line-height: 1;
 }
 .ring-energy-label {
@@ -344,7 +346,7 @@ body::after {
   background: rgba(255,255,255,0.07);
   border-color: rgba(255,255,255,0.14);
 }
-.drink-emoji { font-size: 18px; flex-shrink: 0; }
+.drink-emoji { display: none; }
 .drink-info { flex: 1; min-width: 0; }
 .drink-name {
   font-size: 12px; font-weight: 600;
@@ -439,15 +441,11 @@ body::after {
   <link rel="stylesheet" href="aurora-page.css">
 </head>
 <body>
-<div class="page" data-am-reveal-group>
+<div class="page">
   <div class="jv-hdr">
-    <a href="index.html" class="jv-hub-link">← HUB</a>
-    <span class="jv-hdr-sep">·</span>
-    <span>ALS·06</span>
-    <span class="jv-hdr-sep">◈</span>
-    <span>CAFFEINE MODULE</span>
+    <a href="index.html" class="jv-hub-link">← Home</a>
     <span class="jv-hdr-sp"></span>
-    <span class="jv-hdr-stat"><span class="jv-dot"></span>ONLINE</span>
+    <span class="jv-hdr-stat"><span class="jv-dot"></span>CAFFEINE</span>
   </div>
   <h1 class="dash-title">Caffeine</h1>
 
@@ -872,7 +870,7 @@ function updateRing(score, isScrub, atHour) {
   const col = ringColor(score);
   arc.setAttribute('stroke-dashoffset', (RING_C * (1 - score / 100)).toFixed(1));
   arc.setAttribute('stroke', col);
-  document.getElementById('ringNum').textContent   = Math.round(score);
+  (function(){var n=document.getElementById('ringNum');n.setAttribute('data-to',Math.round(score));n.removeAttribute('data-done');n.textContent=Math.round(score);if(window.PageMotion&&n.closest('[data-rise].in'))PageMotion.countUp(n);})();
   document.getElementById('ringState').textContent = energyWord(score);
   document.getElementById('ringHint').textContent  = isScrub
     ? fmtH(atHour) : 'RIGHT NOW';
