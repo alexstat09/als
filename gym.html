@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="aurora.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="topbar.js" defer></script>
+<script src="page-motion.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{min-height:100%;}
@@ -684,11 +685,14 @@ var view='home';
 var pickMuscle='All';
 var W=document.getElementById('wWrap');
 
+/* premium motion: containers that rise in on scroll (home language) */
+window.__pmAutoSel='.w-hero,.w-seg,.w-statstrip,.w-restcfg,.w-today,#wWrap>.w-btn,#wWrap>.w-btn-ghost,.w-card,.w-folder,.w-tpl,.w-hist,.w-vol-card,.w-stat-card,.w-tot-grid,.w-heat,.w-cal';
 function render(){
   if(view==='active' && getActive()) renderActive();
   else if(view==='history') renderHistory();
   else if(view==='stats') renderStats();
   else renderHome();
+  try{ if(window.PageMotion) PageMotion.scan(window.__pmAutoSel, W); }catch(e){}
 }
 function segHTML(cur){ return '<div class="w-seg">'+[['home','Workout'],['history','History'],['stats','Progress']].map(function(p){return '<button type="button" class="'+(cur===p[0]?'on':'')+'" data-act="go" data-val="'+p[0]+'">'+p[1]+'</button>';}).join('')+'</div>'; }
 
@@ -719,7 +723,7 @@ function renderHome(){
   /* sessions logged in the last 7 days — hero context */
   var now=Date.now();
   var wkCount=workouts().filter(function(w){ return w.date && (now-new Date(w.date+'T00:00:00').getTime()) < 7*86400000 && (now-new Date(w.date+'T00:00:00').getTime()) >= -86400000; }).length;
-  var subTxt = wkCount ? '<b>'+wkCount+'</b> session'+(wkCount===1?'':'s')+' this week' : 'No sessions yet this week — start one below';
+  var subTxt = wkCount ? '<b data-to="'+wkCount+'">'+wkCount+'</b> session'+(wkCount===1?'':'s')+' this week' : 'No sessions yet this week — start one below';
   var html='<div class="w-hero"><div>'+
     '<div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>FITNESS</div>'+
     '<h1 class="w-hero-title">Train.</h1>'+
@@ -859,7 +863,7 @@ function entryCardHTML(en, ei, a){
   var _at=bestE1rmFor(en.exId,a.id), _sess=0;
   if(!tm){ (en.sets||[]).forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>_sess)_sess=v; } }); }
   var _show=_sess||_at, _pr=_sess>0&&_at>0&&_sess>_at;
-  var badge = (!tm && _show>0) ? '<div class="w-ex-1rm'+(_pr?' pr':'')+'"><div class="n">'+Math.round(_show)+'</div><div class="l">'+(_pr?'PR · 1RM':'est 1RM')+'</div></div>' : '';
+  var badge = (!tm && _show>0) ? '<div class="w-ex-1rm'+(_pr?' pr':'')+'"><div class="n" data-to="'+Math.round(_show)+'">'+Math.round(_show)+'</div><div class="l">'+(_pr?'PR · 1RM':'est 1RM')+'</div></div>' : '';
   var html='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
     '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
     '<div class="w-ex-main" data-exhist="'+esc(en.exId)+'" onclick="editEntryEx('+ei+')" style="cursor:pointer;"><div class="w-ex-name">'+esc(en.name)+' <span class="w-ex-editpen">✎ · hold for history</span></div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
@@ -934,9 +938,9 @@ function sessionStatsHTML(a){
     if(exPr) prs++;
   });
   return '<div class="w-statc"><div class="k">Volume</div><div class="v">'+fmtBig(vol)+'<em>kg</em></div></div>'+
-    '<div class="w-statc"><div class="k">Sets</div><div class="v">'+sdone+'<em>/ '+stot+'</em></div></div>'+
-    '<div class="w-statc"><div class="k">Best 1RM</div><div class="v">'+(best1?Math.round(best1)+'<em>kg</em>':'—')+'</div></div>'+
-    '<div class="w-statc'+(prs?' pr':'')+'"><div class="k">PRs today</div><div class="v">'+prs+'</div></div>';
+    '<div class="w-statc"><div class="k">Sets</div><div class="v"><span data-to="'+sdone+'">'+sdone+'</span><em>/ '+stot+'</em></div></div>'+
+    '<div class="w-statc"><div class="k">Best 1RM</div><div class="v">'+(best1?'<span data-to="'+Math.round(best1)+'">'+Math.round(best1)+'</span><em>kg</em>':'—')+'</div></div>'+
+    '<div class="w-statc'+(prs?' pr':'')+'"><div class="k">PRs today</div><div class="v"><span data-to="'+prs+'">'+prs+'</span></div></div>';
 }
 function updateStats(){ var a=getActive(); if(!a) return; var el=document.getElementById('wStats'); if(el) el.innerHTML=sessionStatsHTML(a); }
 function renderActive(){
