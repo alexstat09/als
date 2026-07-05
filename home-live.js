@@ -18,6 +18,19 @@
   function fmtN(n) { return Number(n).toLocaleString('en-US'); }
   function href(t) { var h = t.getAttribute('href') || ''; return h.split('#')[0].split('?')[0]; }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  /* render html into host, but only rewrite the DOM when it actually changed
+     (no 30s-repaint flicker) and always reveal freshly-injected [data-rise]
+     cards ourselves — the motion observer fires once per section then unobserves,
+     so re-injected nodes would otherwise stay stuck at opacity:0 and vanish. */
+  function render(host, html) {
+    if (!host || host.getAttribute('data-html') === html) return;
+    host.setAttribute('data-html', html);
+    host.innerHTML = html;
+    var rise = host.querySelectorAll('[data-rise]');
+    requestAnimationFrame(function () {
+      rise.forEach(function (n, i) { n.style.transitionDelay = (i * 60) + 'ms'; n.classList.add('in'); });
+    });
+  }
 
   /* ── this-week workout count (Mon–Sun) ── */
   function workoutsThisWeek() {
@@ -212,14 +225,14 @@
       var ins = window.ALSInsights.compute() || [];
       var host = document.querySelector('#novaNoticed .intel-cards'); if (!host) return;
       if (!ins.length) {
-        host.innerHTML = '<div class="icard" data-rise><div class="top"><span>Learning</span><span class="conf">building</span></div><div class="body">Nova is still learning your patterns. Keep logging and correlations will appear here.</div></div>';
+        render(host, '<div class="icard" data-rise><div class="top"><span>Learning</span><span class="conf">building</span></div><div class="body">Nova is still learning your patterns. Keep logging and correlations will appear here.</div></div>');
         return;
       }
-      host.innerHTML = ins.slice(0, 2).map(function (i) {
+      render(host, ins.slice(0, 2).map(function (i) {
         var conf = i.strength != null ? Math.round(i.strength * 100) + '% conf' : 'signal';
         var label = cap(i.domain || 'pattern');
         return '<div class="icard" data-rise><div class="top"><span>' + label + '</span><span class="conf">' + conf + '</span></div><div class="body">' + esc(i.text) + '</div></div>';
-      }).join('');
+      }).join(''));
     } catch (e) { }
   }
 
@@ -230,14 +243,14 @@
       var fc = window.ALSForecast.compute() || [];
       var host = document.querySelector('#headed .intel-cards'); if (!host) return;
       if (!fc.length) {
-        host.innerHTML = '<div class="icard f" data-rise><div class="top"><span>Trajectory</span><span class="conf">building</span></div><div class="body">A few more days of data and Nova will project where your trends are heading.</div></div>';
+        render(host, '<div class="icard f" data-rise><div class="top"><span>Trajectory</span><span class="conf">building</span></div><div class="body">A few more days of data and Nova will project where your trends are heading.</div></div>');
         return;
       }
       var labels = { weight: 'Bodyweight', lift: 'Strength', recovery: 'Recovery' };
-      host.innerHTML = fc.slice(0, 2).map(function (f) {
+      render(host, fc.slice(0, 2).map(function (f) {
         var label = labels[f.kind] || 'Projection';
         return '<div class="icard f" data-rise><div class="top"><span>' + label + '</span><span class="conf">projection</span></div><div class="body">' + esc(f.text) + '</div></div>';
-      }).join('');
+      }).join(''));
     } catch (e) { }
   }
 
