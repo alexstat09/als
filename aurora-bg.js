@@ -138,10 +138,10 @@
   };
 
   function boot() {
-    if (!document.body) return;
-    if (document.body.hasAttribute('data-no-aurora')) return; // bespoke-bg pages opt out
-    inject();
-    refresh();
+    // GLOW REMOVED (Alex, 2026-07-05): the drifting colored blobs washed the
+    // whole app in green/amber. Never inject the visual layer — the AuroraBG
+    // API stays intact (flare/refresh no-op safely when el is null).
+    return;
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
