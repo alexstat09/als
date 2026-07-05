@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Fitness · ALS</title>
-<meta name="theme-color" content="#060607">
+<meta name="theme-color" content="#050507">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="aurora.css">
@@ -336,46 +336,6 @@
   .w-stepper{display:inline-flex;align-items:center;border:1px solid var(--au-line);border-radius:9px;overflow:hidden;}
   .w-stepper button{width:30px;height:30px;background:rgba(255,255,255,.04);border:none;color:var(--au-ivory);font-size:16px;cursor:pointer;}
   .w-stepper span{min-width:34px;text-align:center;font-family:var(--au-mono);font-size:13px;font-weight:700;color:var(--au-ivory);}
-
-  /* ══ LUXURY LAYER — matches gym-premium-demo.html ══════════════════
-     Appended overrides (same class contract, win by source order — this
-     is in-file CSS refinement, NOT a cross-file overlay). Quiets the
-     canvas to the demo's restrained near-black, brings the session
-     stat-strip + per-exercise est-1RM badge, and refines the cards.
-     Every existing element keeps its rule above; nothing is removed. */
-  :root{ --au-coral:#FF8A6B; }
-  body{ background:#060607; letter-spacing:.005em; }
-  /* quiet, restrained canvas — subtle coral (top) + emerald (bottom) wash */
-  .au-bg::before{
-    background:
-      radial-gradient(30% 22% at 14% 3%,  rgba(255,138,107,0.085), transparent 62%),
-      radial-gradient(26% 22% at 88% 97%, rgba(63,224,176,0.05),   transparent 66%);
-    filter:blur(34px);
-  }
-  .w-wrap{ max-width:640px; padding:20px 18px calc(86px + env(safe-area-inset-bottom)); }
-  /* hero — bigger serif, training-mood coral pulse dot */
-  .w-hero-title{ font-size:clamp(34px,8.4vw,52px); }
-  .w-hero-eyebrow .au-dot{ background:var(--au-coral); box-shadow:0 0 8px var(--au-coral); }
-
-  /* session stat-strip (Volume · Sets · Best 1RM · PRs) */
-  .w-statstrip{ display:flex; margin:2px 0 16px; border:1px solid var(--au-line); border-radius:16px; overflow:hidden; }
-  .w-statc{ flex:1; padding:12px 13px; border-right:1px solid var(--au-line); min-width:0; }
-  .w-statc:last-child{ border-right:none; }
-  .w-statc .k{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; }
-  .w-statc .v{ font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); line-height:1.05; margin-top:5px; }
-  .w-statc .v em{ font-style:normal; font-family:var(--au-sans); font-size:11px; color:var(--au-dim); margin-left:2px; }
-  .w-statc.pr .v{ color:var(--au-amber); }
-
-  /* per-exercise est-1RM badge (card header, right — data as hero) */
-  .w-ex-1rm{ text-align:right; flex-shrink:0; padding-left:8px; }
-  .w-ex-1rm .n{ font-family:var(--au-serif); font-style:italic; font-size:23px; color:var(--au-ivory); line-height:1; }
-  .w-ex-1rm .l{ font-family:var(--au-mono); font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-top:3px; white-space:nowrap; }
-  .w-ex-1rm.pr .n{ color:var(--au-amber); }
-
-  /* refined session cards + check */
-  .w-card{ border-radius:18px; padding:16px 17px 11px; }
-  .w-card.donecard{ opacity:.7; }
-  .w-check{ border-radius:9px; }
 </style>
 </head>
 <body data-page="fitness" class="au-bg au-mood-hot" id="root">
@@ -795,15 +755,9 @@ function liveE1rmText(en, a){
    (targeted single-card repaint) so a set toggle never rebuilds the whole list */
 function entryCardHTML(en, ei, a){
   var tm=isTime(en);
-  /* est-1RM badge — this session's best done working set, else all-time best (data as hero) */
-  var _at=bestE1rmFor(en.exId,a.id), _sess=0;
-  if(!tm){ (en.sets||[]).forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>_sess)_sess=v; } }); }
-  var _show=_sess||_at, _pr=_sess>0&&_at>0&&_sess>_at;
-  var badge = (!tm && _show>0) ? '<div class="w-ex-1rm'+(_pr?' pr':'')+'"><div class="n">'+Math.round(_show)+'</div><div class="l">'+(_pr?'PR · 1RM':'est 1RM')+'</div></div>' : '';
   var html='<div class="w-ex" style="border:none;padding:0 0 4px;">'+
     '<div class="w-ex-dot" style="background:rgba(var(--au-glow-rgb),.15);color:rgb(var(--au-glow-rgb));">'+esc((en.muscle||'?').slice(0,2).toUpperCase())+'</div>'+
     '<div class="w-ex-main" data-exhist="'+esc(en.exId)+'" onclick="editEntryEx('+ei+')" style="cursor:pointer;"><div class="w-ex-name">'+esc(en.name)+' <span class="w-ex-editpen">✎ · hold for history</span></div><div class="w-ex-muscle">'+esc(en.muscle)+(en.perSide?' &middot; per side':'')+'</div></div>'+
-    badge+
     '<div class="w-ex-tools">'+
       (a.entries.length>1?'<span class="w-grip" data-drag="active" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
       '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
@@ -859,32 +813,11 @@ function paintCard(ei){
   card.innerHTML=entryCardHTML(a.entries[ei], ei, a);
 }
 function updateLive(ei){ var a=getActive(); if(!a||!a.entries[ei]) return; var el=document.getElementById('live-'+ei); if(el) el.innerHTML=liveE1rmText(a.entries[ei], a); }
-/* live session stat-strip — Volume · Sets · Best est-1RM · PRs today */
-function sessionStatsHTML(a){
-  var vol=0, sdone=0, stot=0, best1=0, prs=0;
-  (a.entries||[]).forEach(function(en){
-    var tm=isTime(en), exPr=false, at=bestE1rmFor(en.exId,a.id);
-    (en.sets||[]).forEach(function(s){
-      stot++; if(s.done) sdone++;
-      if(!tm && s.done && !isWarm(s)){
-        var k=+s.kg||0, r=+s.reps||0;
-        if(k>0 && r>0){ vol += Math.round(k*r*(en.perSide?2:1)); var v=e1rm(k,r); if(v>best1)best1=v; if(at>0 && v>at) exPr=true; }
-      }
-    });
-    if(exPr) prs++;
-  });
-  return '<div class="w-statc"><div class="k">Volume</div><div class="v">'+fmtBig(vol)+'<em>kg</em></div></div>'+
-    '<div class="w-statc"><div class="k">Sets</div><div class="v">'+sdone+'<em>/ '+stot+'</em></div></div>'+
-    '<div class="w-statc"><div class="k">Best 1RM</div><div class="v">'+(best1?Math.round(best1)+'<em>kg</em>':'—')+'</div></div>'+
-    '<div class="w-statc'+(prs?' pr':'')+'"><div class="k">PRs today</div><div class="v">'+prs+'</div></div>';
-}
-function updateStats(){ var a=getActive(); if(!a) return; var el=document.getElementById('wStats'); if(el) el.innerHTML=sessionStatsHTML(a); }
 function renderActive(){
   view='active';
   var a=getActive(); if(!a){ go('home'); return; }
   var html='<div class="w-active-bar"><div><div class="w-timer" id="wTimer">0:00</div><div class="w-timer-lbl" onclick="renameActive()" style="cursor:pointer;">'+esc(a.name)+' <span class="w-ex-editpen">✎</span></div></div>'+
     '<div style="display:flex;align-items:center;gap:10px;"><button type="button" class="w-cancel" onclick="cancelActive()">✕ Discard</button><button class="w-finish" onclick="finishActive()">Finish</button></div></div>';
-  html+='<div class="w-statstrip" id="wStats">'+sessionStatsHTML(a)+'</div>';
   html+='<button type="button" class="w-restcfg" data-act="rest-config">&#9201; Rest between sets &middot; <b>'+fmtDur(restDefault())+'</b> &middot; tap to change</button>';
   if(!a.entries.length){ html+='<div class="w-empty">No exercises yet. Add one below.</div>'; }
   a.entries.forEach(function(en,ei){
@@ -904,8 +837,8 @@ function startTimer(){
 function setVal(ei,si,field,val){ var a=getActive(); if(!a)return; var s=a.entries[ei].sets[si];
   if(field==='kg') s.kg = (val===''?'':numVal(val));
   else s.reps = (val===''?'':(parseInt(val,10)||0));
-  setActive(a); updateLive(ei); updateStats(); }
-function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); paintCard(ei); updateStats(); }
+  setActive(a); updateLive(ei); }
+function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); paintCard(ei); }
 function setNote(ei,val){ var a=getActive(); if(!a)return; a.entries[ei].note=val; setActive(a); } /* no re-render — keep focus */
 function togglePerSide(ei){ var a=getActive(); if(!a)return; a.entries[ei].perSide=!a.entries[ei].perSide; setActive(a); paintCard(ei); }
 function moveEx(ei,dir){ var a=getActive(); if(!a)return; var j=ei+dir; if(j<0||j>=a.entries.length)return; var t=a.entries[ei]; a.entries[ei]=a.entries[j]; a.entries[j]=t; setActive(a); render(); }
@@ -916,7 +849,6 @@ function toggleSet(ei,si){ var a=getActive(); if(!a)return;
   else { if(a.rest && a.rest.ei===ei){ a.rest=null; clearInterval(restInt); restInt=null; } setActive(a); }
   paintCard(ei);
   if(prevRestEi>=0 && prevRestEi!==ei) paintCard(prevRestEi);
-  updateStats();
   if(s.done) animateCheck(ei,si);
 }
 function animateCheck(ei,si){
@@ -928,8 +860,8 @@ function animateCheck(ei,si){
 function addSet(ei){ var a=getActive(); if(!a)return; var en=a.entries[ei]; var sets=en.sets; var last=sets[sets.length-1];
   if(isTime(en)) sets.push({ secs:(last&&last.secs)?last.secs:'', done:false });
   else sets.push({ kg:last?last.kg:'', reps:last?last.reps:'', done:false });
-  setActive(a); paintCard(ei); updateStats(); }
-function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); paintCard(ei); updateStats(); }
+  setActive(a); paintCard(ei); }
+function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.entries[ei].sets.splice(si,1); setActive(a); paintCard(ei); }
 async function removeEx(ei){ var a=getActive(); if(!a)return; if(!(await ALSConfirm({title:'Remove exercise?',message:'Remove '+a.entries[ei].name+' from this workout?',confirmText:'Remove',danger:true})))return; a.entries.splice(ei,1); setActive(a); render(); }
 function lastTimeFor(exId){ var le=lastEntryFor(exId); if(!le)return 0; var m=0; (le.sets||[]).forEach(function(s){ if((s.secs||0)>m)m=s.secs; }); return m; }
 function addExToActive(ex){ var a=getActive(); if(!a)return; var tm=isTime(ex);
