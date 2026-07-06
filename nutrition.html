@@ -409,6 +409,7 @@
             '<div class="en-fld"><label>Carbs g</label><input disabled placeholder="auto — fills rest" style="opacity:.45"></div>'+
           '</div>'+
           '<button type="button" class="sh-btn" style="margin-top:14px" data-act="stats-save">Save</button>'+
+          ((p.calTarget||p.proteinTarget||p.fatTarget)?'<button type="button" class="goal-seg" style="width:100%;margin-top:8px;color:#FF8FA3;border-color:rgba(255,107,139,.35)" data-act="stats-reset">Reset to auto targets</button>':'')+
           '<button type="button" class="goal-seg" style="width:100%;margin-top:8px" data-act="stats-cancel">Cancel</button>';
         return;
       }
@@ -1146,9 +1147,33 @@
       if(act==='day-prev'){ var p=viewDate.split('-').map(Number); viewDate=dateKey(new Date(p[0],p[1]-1,p[2]-1)); renderAll(); }
       else if(act==='day-next'){ var q=viewDate.split('-').map(Number); var nd=dateKey(new Date(q[0],q[1]-1,q[2]+1)); if(nd<=today()){ viewDate=nd; renderAll(); } }
       else if(act==='day-today'){ viewDate=today(); renderAll(); }
-      else if(act==='goal'){ var pr=ls(PROFILE,{})||{}; pr.goal=el.getAttribute('data-goal'); pr._ts=Date.now(); save(PROFILE,pr); renderAll(); }
+      else if(act==='goal'){ var pr=ls(PROFILE,{})||{}; var newGoal=el.getAttribute('data-goal');
+        var hasCustom=!!(pr.calTarget||pr.proteinTarget||pr.fatTarget);
+        if(!hasCustom){
+          // auto mode: switching Cut/Maintain/Bulk recalculates kcal + macros immediately
+          pr.goal=newGoal; pr._ts=Date.now(); save(PROFILE,pr); renderAll();
+        } else {
+          // custom target active: never silently overwrite it — ask what to do
+          var lbl=newGoal.charAt(0).toUpperCase()+newGoal.slice(1);
+          var askAuto=function(){ return window.ALSConfirm
+            ? ALSConfirm({ title:lbl+' — you have a custom target', message:'Auto-calculate your '+lbl+' calories & macros from your stats, or set them manually yourself?', confirmText:'Auto-calculate', cancelText:'Set manually' })
+            : Promise.resolve(window.confirm('You have a custom target set.\n\nOK = auto-calculate your '+lbl+' calories from your stats.\nCancel = set them manually yourself.')); };
+          askAuto().then(function(auto){
+            pr=ls(PROFILE,{})||{}; pr.goal=newGoal; pr._ts=Date.now();
+            if(auto){ delete pr.calTarget; delete pr.proteinTarget; delete pr.fatTarget; save(PROFILE,pr); renderAll(); }
+            else { save(PROFILE,pr); editingStats=true; renderAll(); } // opens the target editor to type the new numbers
+          });
+        }
+      }
       else if(act==='stats-edit'){ editingStats=true; renderEnergy(); }
       else if(act==='stats-cancel'){ editingStats=false; renderEnergy(); }
+      else if(act==='stats-reset'){
+        var doReset=function(){ var pr3=ls(PROFILE,{})||{}; delete pr3.calTarget; delete pr3.proteinTarget; delete pr3.fatTarget; pr3._ts=Date.now(); save(PROFILE,pr3); editingStats=false; renderAll(); };
+        (window.ALSConfirm
+          ? ALSConfirm({ title:'Reset to auto?', message:'Discard your custom calories & macros and go back to the auto-calculated targets from your stats and goal.', confirmText:'Reset', danger:true })
+          : Promise.resolve(window.confirm('Discard your custom calories & macros and go back to auto-calculated targets?'))
+        ).then(function(ok){ if(ok) doReset(); });
+      }
       else if(act==='stats-save'){ var pr2=ls(PROFILE,{})||{};
         var sx=(document.getElementById('stSex')||{}).value, ag=parseFloat(((document.getElementById('stAge')||{}).value||'').replace(',','.')), cm=parseFloat(((document.getElementById('stCm')||{}).value||'').replace(',','.')), ac=(document.getElementById('stAct')||{}).value;
         if(sx) pr2.sex=sx; if(isFinite(ag)&&ag>0) pr2.age=Math.round(ag); if(isFinite(cm)&&cm>0) pr2.heightCm=Math.round(cm); if(ac) pr2.activity=ac;
