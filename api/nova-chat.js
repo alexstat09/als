@@ -101,7 +101,7 @@ async function buildBrief(tz) {
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || (weights.length ? weights[weights.length - 1].weight : 75);
   var nGoal = ((nut['nut:profile'] || {}).goal) || 'maintain';
   var protTarget = (nut['nut:profile'] || {}).proteinTarget || Math.round(weightKg * (nGoal === 'cut' ? 2.2 : (nGoal === 'bulk' ? 1.8 : 2.0)));
-  var dailyTarget = (nut['nut:profile'] || {}).calTarget || Math.round(weightKg * 32); // refined by adaptive block below if data allows
+  var dailyTarget = (nut['nut:profile'] || {}).calTarget || Math.round(weightKg * 32); // refined by the stats formula below
   var fiberTarget = Math.round(dailyTarget / 1000 * 14);
   // Per-day nutrition from ALL logs → real history (today, yesterday, this week),
   // not just a today snapshot. Match by dateKey, fall back to ts.
@@ -123,17 +123,26 @@ async function buildBrief(tz) {
     L.push('What he actually ate today — ' + lines.join(' | ') + '.');
   } else L.push('Nothing logged yet today.');
 
-  // Adaptive TDEE — learned maintenance + recommended target (self-corrects logging error)
+  // Energy target — Mifflin-St Jeor × activity from his stats (adaptive
+  // intake-based TDEE removed by request: logged intake isn't always
+  // accurate, so the stats formula is the single source of truth).
   try {
-    var TDEE = require('../tdee.js');
-    var todayNum = Math.floor(Date.parse(today + 'T00:00:00Z') / 86400000);
-    var tres = TDEE.compute(nut['nut:logs'] || [], weights || [], { weightKg: weightKg, todayNum: todayNum });
-    if (tres && tres.ok) {
-      var ntgt = TDEE.recommend(tres.tdee, nGoal, { weightKg: weightKg });
-      dailyTarget = ntgt; fiberTarget = Math.round(dailyTarget / 1000 * 14);
-      L.push('Adaptive energy: maintenance ≈ ' + tres.tdee + ' kcal (learned from ' + tres.intakeDays + 'd intake + weight trend ' + (tres.weeklyWeightChange > 0 ? '+' : '') + tres.weeklyWeightChange + ' kg/wk). Goal ' + nGoal + ' → recommended ~' + ntgt + ' kcal/day. Use these real numbers when advising on calories.');
+    var nProf = nut['nut:profile'] || {};
+    if (!nProf.calTarget) {
+      var nAge = +nProf.age, nCm = +nProf.heightCm;
+      if (nAge > 0 && nCm > 0) {
+        var nBmr = 10 * weightKg + 6.25 * nCm - 5 * nAge + (nProf.sex === 'female' ? -161 : 5);
+        var nAct = { sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725, athlete: 1.9 }[nProf.activity] || 1.55;
+        var nMaint = Math.round(nBmr * nAct);
+        var TDEE = require('../tdee.js');
+        dailyTarget = TDEE.recommend(nMaint, nGoal, { weightKg: weightKg, rateKgPerWeek: nProf.rateKgPerWeek });
+        fiberTarget = Math.round(dailyTarget / 1000 * 14);
+        L.push('Energy: maintenance ≈ ' + nMaint + ' kcal (Mifflin-St Jeor × activity from his stats). Goal ' + nGoal + ' → target ~' + dailyTarget + ' kcal/day. Use these numbers when advising on calories.');
+      } else {
+        L.push('Energy: using ~' + dailyTarget + ' kcal as a rough working target (no stats set). Goal: ' + nGoal + '.');
+      }
     } else {
-      L.push('Adaptive energy: still learning his true maintenance (' + ((tres && tres.reason) || 'needs more logged days') + '). Using ~' + dailyTarget + ' kcal as a working target. Goal: ' + nGoal + '.');
+      L.push('Energy: he has set his OWN target of ' + dailyTarget + ' kcal/day (goal ' + nGoal + ') — respect it when advising.');
     }
   } catch (e) {}
 

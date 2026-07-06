@@ -193,11 +193,17 @@
       var ws=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
       return ws.length ? ws[ws.length-1].weight : 75;
     }
-    function tdeeNow(){ if(!window.ALSTDEE) return null; try{ return window.ALSTDEE.compute(ls('nut:logs',[])||[], ls('po_coach_weights',[])||[], {weightKg:weightKg()}); }catch(e){ return null; } }
     function targets(){
       var p=ls('nut:profile',{})||{}, w=weightKg(), goal=p.goal||'maintain';
       var kcal=p.calTarget;
-      if(!kcal){ var r=tdeeNow(); if(r&&r.ok&&window.ALSTDEE) kcal=window.ALSTDEE.recommend(r.tdee, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}); }
+      if(!kcal){ var age=+p.age, cm=+p.heightCm;
+        if(age>0&&cm>0){
+          var bmr=10*w+6.25*cm-5*age+(p.sex==='female'?-161:5);
+          var act={sedentary:1.2,light:1.375,moderate:1.55,very:1.725,athlete:1.9}[p.activity]||1.55;
+          var maint=Math.round(bmr*act);
+          kcal=window.ALSTDEE?window.ALSTDEE.recommend(maint, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}):maint;
+        }
+      }
       if(!kcal) kcal=Math.round(w*32);
       var pPerKg = goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
       var prot=p.proteinTarget||Math.round(w*pPerKg);

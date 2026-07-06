@@ -292,18 +292,11 @@
       var bmr=10*w + 6.25*cm - 5*age + (sex==='female'?-161:5);
       return { kcal:Math.round(bmr*actMult(p.activity)), have:true, bmr:Math.round(bmr) };
     }
-    // Maintenance = ADAPTIVE TDEE (real intake vs weight trend, self-corrects
-    // logging error) when the engine is confident; Mifflin-St Jeor × activity
-    // as the fallback. Same source morning/weekly/planner already use — the
-    // whole app now agrees on one number.
+    // Maintenance = Mifflin-St Jeor × activity, from the user's stats ONLY.
+    // (Adaptive intake-based TDEE deliberately removed 2026-07-06 — logged
+    // intake isn't always accurate, so the formula is the single truth.)
     function maintenanceInfo(){
       var pm=profileMaintenance();
-      try{
-        if(window.ALSTDEE && window.ALSTDEE.compute){
-          var ad=ALSTDEE.compute(ls(LOGS,[])||[], ls('po_coach_weights',[])||[], {weightKg:weightKg()});
-          if(ad && ad.ok && ad.confidence>=0.5) return { kcal:ad.tdee, have:pm.have, adaptive:true, conf:ad.confidence, bmr:pm.bmr };
-        }
-      }catch(e){}
       return { kcal:pm.kcal, have:pm.have, adaptive:false, bmr:pm.bmr };
     }
     function targets(){
@@ -443,15 +436,15 @@
       var remaining=wb-consumed, todayKcal=vd?vd.kcal:base.kcal;
       var todayLbl = manual?'target / day':((cycling&&vd)?(vd.train?'today · training':'today · rest'):'target / day');
       el.innerHTML=
-        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Energy'+(manual?' · custom':((pm.have||pm.adaptive)?'':' · rough est.'))+'</span><button type="button" class="en-edit" style="margin-left:auto" data-act="stats-edit">'+(pm.have?'✎ edit':'set up →')+'</button></div>'+
+        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Energy'+(manual?' · custom':(pm.have?'':' · rough est.'))+'</span><button type="button" class="en-edit" style="margin-left:auto" data-act="stats-edit">'+(pm.have?'✎ edit':'set up →')+'</button></div>'+
         '<div class="en-row">'+
-          '<div class="en-stat"><div class="en-val">'+fmtK(maint)+'</div><div class="en-lbl">maintenance'+(pm.adaptive?' · adaptive':'')+'</div></div>'+
+          '<div class="en-stat"><div class="en-val">'+fmtK(maint)+'</div><div class="en-lbl">maintenance</div></div>'+
           '<div class="en-stat" style="margin-left:auto;text-align:right"><div class="en-val" style="color:rgb(var(--nu))">'+fmtK(todayKcal)+'</div><div class="en-lbl">'+todayLbl+'</div></div>'+
         '</div>'+
         '<div class="goal-seg-wrap">'+seg+'</div>'+
         '<div class="en-rate">'+(manual?'Your own target · tap ✎ edit to change or clear':rateTxt)+((cycling&&vd)?' · '+(vd.kcal-base.kcal>0?'+':'')+(vd.kcal-base.kcal)+' kcal today':'')+'</div>'+
         (plan.hasData?weeklyFuelHtml(plan, base, consumed, wb, remaining, cycling):'')+
-        ((pm.have||pm.adaptive)?'':'<div class="en-note" style="margin-top:10px">Using a rough body-weight estimate. Tap “set your stats” for an accurate target from your height, age &amp; activity.</div>');
+        (pm.have?'':'<div class="en-note" style="margin-top:10px">Using a rough body-weight estimate. Tap “set your stats” for an accurate target from your height, age &amp; activity.</div>');
     }
     function dayTotals(dk){
       var t={kcal:0,p:0,c:0,f:0,fiber:0,sugar:0,sodium:0,satfat:0};

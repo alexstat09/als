@@ -201,9 +201,15 @@ function loadNut(){
   var kArr=days.map(function(k){return byDay[k].kcal;}), pArr=days.map(function(k){return byDay[k].p;});
   var avgK=Math.round(avg(kArr)), avgP=Math.round(avg(pArr));
   _nutAvgKcal=avgK; _nutAvgProt=avgP;
-  // adaptive target
+  // formula target (Mifflin-St Jeor from stats; adaptive TDEE removed)
   var prof=ls('nut:profile',{})||{}, wkg=weightKg(), goal=prof.goal||'maintain', tgt=prof.calTarget;
-  if(!tgt && window.ALSTDEE){ try{ var r=window.ALSTDEE.compute(logs, ls('po_coach_weights',[])||[], {weightKg:wkg}); if(r&&r.ok) tgt=window.ALSTDEE.recommend(r.tdee,goal,{weightKg:wkg,rateKgPerWeek:prof.rateKgPerWeek}); }catch(e){} }
+  if(!tgt){ var age=+prof.age, cm=+prof.heightCm;
+    if(age>0&&cm>0){
+      var bmr=10*wkg+6.25*cm-5*age+(prof.sex==='female'?-161:5);
+      var actM={sedentary:1.2,light:1.375,moderate:1.55,very:1.725,athlete:1.9}[prof.activity]||1.55;
+      var maintK=Math.round(bmr*actM);
+      tgt=window.ALSTDEE?window.ALSTDEE.recommend(maintK,goal,{weightKg:wkg,rateKgPerWeek:prof.rateKgPerWeek}):maintK;
+    } }
   if(!tgt) tgt=Math.round(wkg*32);
   _nutTarget=tgt;
   var onTarget=days.filter(function(k){ return Math.abs(byDay[k].kcal/tgt-1)<=0.10; }).length;

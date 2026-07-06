@@ -1093,16 +1093,22 @@ function bodyWeightKg(){
 function nutTargets(){
   const prof=JSON.parse(localStorage.getItem('nut:profile'))||{};
   const w=bodyWeightKg(), goal=prof.goal||'maintain';
-  let kcal=prof.calTarget, adaptive=null;
-  if(window.ALSTDEE){
-    try{ adaptive=window.ALSTDEE.compute(JSON.parse(localStorage.getItem('nut:logs'))||[], JSON.parse(localStorage.getItem('po_coach_weights'))||[], {weightKg:w}); }catch(e){}
-    if(!kcal && adaptive && adaptive.ok) kcal=window.ALSTDEE.recommend(adaptive.tdee, goal, {weightKg:w, rateKgPerWeek:prof.rateKgPerWeek});
-  }
+  let kcal=prof.calTarget, haveStats=false;
+  if(!kcal){
+    const age=+prof.age, cm=+prof.heightCm;
+    if(age>0&&cm>0){
+      haveStats=true;
+      const bmr=10*w+6.25*cm-5*age+(prof.sex==='female'?-161:5);
+      const act={sedentary:1.2,light:1.375,moderate:1.55,very:1.725,athlete:1.9}[prof.activity]||1.55;
+      const maint=Math.round(bmr*act);
+      kcal=window.ALSTDEE?window.ALSTDEE.recommend(maint, goal, {weightKg:w, rateKgPerWeek:prof.rateKgPerWeek}):maint;
+    }
+  } else haveStats=true;
   if(!kcal) kcal=Math.round(w*32);
   const pPerKg=goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
   const prot=prof.proteinTarget||Math.round(w*pPerKg);
   const fiber=Math.round(kcal/1000*14);
-  return { kcal, p:prot, fiber, goal, adaptive };
+  return { kcal, p:prot, fiber, goal, haveStats };
 }
 function dayTotalsKey(key){
   const t={kcal:0,p:0,fiber:0};
@@ -1125,14 +1131,7 @@ function loadFuel(){
   const body=document.getElementById('mbFuelBody'); if(!body) return;
   const tg=nutTargets(); _fuelTg=tg;
   const goalLbl=tg.goal.charAt(0).toUpperCase()+tg.goal.slice(1);
-  let note;
-  if(tg.adaptive && tg.adaptive.ok){
-    const conf=tg.adaptive.confidence>=0.8?'high':(tg.adaptive.confidence>=0.6?'good':'building');
-    const wc=tg.adaptive.weeklyWeightChange;
-    note='Adaptive · maintenance <b>'+tg.adaptive.tdee+'</b> · trend '+(wc>0?'+':'')+wc+' kg/wk · '+conf+' confidence';
-  } else {
-    note=(tg.adaptive&&tg.adaptive.reason?tg.adaptive.reason+' to unlock adaptive targets.':'Estimated from bodyweight — log food to calibrate.');
-  }
+  const note=tg.haveStats?'From your stats · Mifflin-St Jeor × activity':'Estimated from bodyweight — set your stats in Nutrition for accuracy.';
   const yt=dayTotalsKey(ydayKey()), ysc=nutScore(yt,tg);
   const yLine=ysc==null?'' :
     '<div class="mb-fuel-note" style="margin-top:7px">Yesterday’s nutrition score: <b style="color:'+(ysc>=85?'#34E2B0':(ysc>=65?'#E8C66B':(ysc>=40?'#F0A66B':'#FF6B8B')))+'">'+ysc+'</b>/100</div>';
