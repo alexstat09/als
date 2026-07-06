@@ -314,6 +314,42 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+  /* ── water quick-log chip (the old topbar pill, reborn premium) ── */
+  function waterState() { var s = ls('po_water_v1', {}); return (s && typeof s === 'object') ? s : {}; }
+  function waterCount(s) { var raw = (s.logs && typeof s.logs === 'object') ? s.logs[tk()] : 0; return (typeof raw === 'number') ? raw : (raw && typeof raw.n === 'number' ? raw.n : 0); }
+  function waterTarget(s) {
+    var unit = s.unit || 'glass';
+    var unitMl = unit === 'glass' ? (s.glassMl || 250) : unit === 'oz' ? 30 : (s.bottleMl || 500);
+    var wKg = (s.profile && s.profile.weightKg) || 75;
+    var actHrs = (s.profile && s.profile.activityHrsPerWeek) || 0;
+    return Math.max(1, Math.ceil((wKg * 35 + actHrs * 500) / unitMl)); /* same formula as po-water/body */
+  }
+  function paintWater() {
+    try {
+      var c = document.getElementById('wCount'); if (!c) return;
+      var s = waterState();
+      c.textContent = waterCount(s);
+      var g = document.getElementById('wGoal'); if (g) g.textContent = '/ ' + waterTarget(s);
+    } catch (e) { }
+  }
+  (function wireWater() {
+    var btn = document.getElementById('wAdd'); if (!btn) return;
+    btn.addEventListener('click', function () {
+      try {
+        var s = waterState();
+        if (!s.logs || typeof s.logs !== 'object') s.logs = {};
+        var t = tk(), raw = s.logs[t];
+        var cur = (typeof raw === 'number') ? raw : (raw && typeof raw.n === 'number' ? raw.n : 0);
+        s.logs[t] = cur + 1;                 /* canonical plain-number day shape */
+        s._ts = Date.now();                  /* last-write-wins — survives the Math.max('logs') merge */
+        localStorage.setItem('po_water_v1', JSON.stringify(s));
+        var b = document.getElementById('wCount');
+        if (b) { b.textContent = cur + 1; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+        try { if (navigator.vibrate) navigator.vibrate(8); } catch (e2) { }
+      } catch (e) { }
+    });
+  })();
+
   /* ── first paint (before motion animates) ── */
   function paintAll(animate) {
     paintAllTiles(animate);
@@ -322,6 +358,7 @@
     paintForecasts();
     paintFeed();
     paintAgent();
+    paintWater();
   }
   paintAll(true);
 
@@ -329,7 +366,7 @@
   window.__alsReady = function () { var f = document.querySelector('.focus'); return f && f.dataset.roff ? +f.dataset.roff : 92.5; };
 
   /* ── keep it live: repaint (no re-animate) on data changes ── */
-  var repaint = function () { paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); };
+  var repaint = function () { paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
   window.addEventListener('storage', repaint);
   window.addEventListener('focus', repaint);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) repaint(); });
