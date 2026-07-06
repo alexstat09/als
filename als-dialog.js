@@ -30,10 +30,14 @@
   function injectStyle() {
     if (document.getElementById('als-dialog-style')) return;
     var css = '' +
-      '#als-dlg{border:none;padding:0;background:transparent;color:#F4F1EA;max-width:none;max-height:none;' +
+      /* pinned to the VIEWPORT (top layer) — centered wherever you are on the
+         page, immune to scroll position, ancestor transforms and iOS placing
+         un-positioned dialogs at the top of the document. */
+      '#als-dlg{position:fixed;inset:0;margin:auto;width:min(420px,calc(100vw - 32px));height:max-content;max-height:86vh;' +
+        'border:none;padding:0;background:transparent;color:#F4F1EA;max-width:none;' +
         'overflow:visible;outline:none;}' +
       '#als-dlg::backdrop{background:rgba(4,4,6,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}' +
-      '.als-dlg-card{width:min(420px,calc(100vw - 32px));box-sizing:border-box;' +
+      '.als-dlg-card{width:100%;box-sizing:border-box;' +
         'font-family:var(--au-sans,-apple-system,system-ui,sans-serif);' +
         'background:rgba(20,20,24,.97);border:1px solid rgba(255,255,255,.10);border-radius:18px;' +
         'box-shadow:0 24px 70px rgba(0,0,0,.6);padding:22px 22px 18px;' +
