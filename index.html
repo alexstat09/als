@@ -293,8 +293,13 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 @media (hover:none){ .tile .peek{opacity:.45;} }
 .tile .peek:hover{color:var(--emerald); border-color:rgba(var(--glow),0.4);}
 .tile .peek svg{width:13px; height:13px;}
-.peekdlg{border:1px solid var(--line-2); background:#0b0b0d; color:var(--dim); border-radius:20px; padding:0; max-width:380px; width:calc(100% - 44px); box-shadow:0 30px 80px rgba(0,0,0,0.6); position:relative;}
-.peekdlg::backdrop{background:rgba(4,4,5,0.62);}
+/* peek dialog — pinned to the VIEWPORT (top layer), immune to ancestor
+   transforms and iOS's document-top placement; settles into frame. */
+.peekdlg{position:fixed; inset:0; margin:auto; width:min(380px, calc(100vw - 44px)); height:max-content; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line-2); background:#0b0b0d; color:var(--dim); border-radius:20px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,0.6);
+  opacity:0; transform:translateY(16px) scale(0.94); transition:opacity .2s ease, transform .34s cubic-bezier(.34,1.56,.45,1);}
+.peekdlg.on{opacity:1; transform:none;}
+.peekdlg::backdrop{background:rgba(4,4,5,0.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);}
+@media (prefers-reduced-motion:reduce){ .peekdlg{transition:none; opacity:1; transform:none;} }
 .peekbody{padding:24px;}
 .peek-ey{font-family:var(--mono); font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--emerald);}
 .peek-val{font-family:var(--serif); font-style:italic; font-size:42px; color:var(--ivory); margin:9px 0 2px; line-height:1;}
@@ -536,6 +541,6 @@ body.has-bottombar{ padding-bottom:116px !important; }
 <label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
 <script src="home-live.js?v=202" defer></script>
-<script src="home-motion.js?v=200" defer></script>
+<script src="home-motion.js?v=201" defer></script>
 </body>
 </html>

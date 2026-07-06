@@ -80,11 +80,12 @@
       + sparkHtml
       + '<div class="peek-dir">' + dir + '</div>'
       + '<a class="peek-open" href="' + href + '">Open ' + name + ' →</a></div>';
-    if (typeof peekDlg.showModal === 'function') peekDlg.showModal(); else location.href = href;
+    if (typeof peekDlg.showModal === 'function') { peekDlg.showModal(); requestAnimationFrame(function () { requestAnimationFrame(function () { peekDlg.classList.add('on'); }); }); } else { location.href = href; }
     var pl = peekDlg.querySelector('.peek-spark polyline'); if (pl && !reduce) { pl.style.strokeDasharray = '200'; pl.style.strokeDashoffset = '200'; requestAnimationFrame(function () { pl.style.transition = 'stroke-dashoffset 1s ' + settle; pl.style.strokeDashoffset = '0'; }); }
     peekDlg.querySelector('.peek-x').addEventListener('click', function () { peekDlg.close(); });
   }
   if (peekDlg) {
+    peekDlg.addEventListener('close', function () { peekDlg.classList.remove('on'); });
     peekDlg.addEventListener('click', function (e) { if (e.target === peekDlg) peekDlg.close(); });
     document.querySelectorAll('.tile').forEach(function (t) {
       var b = document.createElement('span'); b.className = 'peek'; b.setAttribute('role', 'button'); b.tabIndex = 0; b.setAttribute('aria-label', 'Peek at ' + ((t.querySelector('.name') || {}).textContent || 'tile'));
