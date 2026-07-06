@@ -292,20 +292,39 @@
       var bmr=10*w + 6.25*cm - 5*age + (sex==='female'?-161:5);
       return { kcal:Math.round(bmr*actMult(p.activity)), have:true, bmr:Math.round(bmr) };
     }
+    // Maintenance = ADAPTIVE TDEE (real intake vs weight trend, self-corrects
+    // logging error) when the engine is confident; Mifflin-St Jeor × activity
+    // as the fallback. Same source morning/weekly/planner already use — the
+    // whole app now agrees on one number.
+    function maintenanceInfo(){
+      var pm=profileMaintenance();
+      try{
+        if(window.ALSTDEE && window.ALSTDEE.compute){
+          var ad=ALSTDEE.compute(ls(LOGS,[])||[], ls('po_coach_weights',[])||[], {weightKg:weightKg()});
+          if(ad && ad.ok && ad.confidence>=0.5) return { kcal:ad.tdee, have:pm.have, adaptive:true, conf:ad.confidence, bmr:pm.bmr };
+        }
+      }catch(e){}
+      return { kcal:pm.kcal, have:pm.have, adaptive:false, bmr:pm.bmr };
+    }
     function targets(){
       var p=ls(PROFILE,{})||{}, w=weightKg(), goal=p.goal||'maintain';
-      var kcal=p.calTarget; // explicit manual override always wins
+      var manual=!!p.calTarget;
+      var kcal=p.calTarget; // explicit manual override always wins — the single source of truth
       if(!kcal){
-        var maint=profileMaintenance().kcal;
+        var maint=maintenanceInfo().kcal;
+        // goal rates: cut −0.5 kg/wk (≈−550/d, floored at 22 kcal/kg — never a
+        // crash diet), bulk +0.25 kg/wk (≈+275/d) — standard evidence-based rates.
         kcal = window.ALSTDEE ? window.ALSTDEE.recommend(maint, goal, {weightKg:w, rateKgPerWeek:p.rateKgPerWeek}) : maint;
       }
-      // personalized, goal-aware macros: more protein on a cut to spare muscle;
-      // fat held at a hormone-safe floor; carbs fill the rest.
+      // science-based, goal-aware macros (ISSN / Helms guidance):
+      //   protein: cut 2.2 g/kg (muscle-sparing in a deficit), maintain 2.0, bulk 1.8
+      //   fat: max(0.8 g/kg, 25% of kcal) — hormone-safe floor
+      //   carbs: fill the remainder (training fuel) · fiber: 14 g per 1000 kcal (IOM)
       var pPerKg = goal==='cut'?2.2:(goal==='bulk'?1.8:2.0);
       var prot=p.proteinTarget||Math.round(w*pPerKg);
       var fat=p.fatTarget||Math.max(Math.round(w*0.8), Math.round(kcal*0.25/9));
       var carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
-      return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14), goal:goal };
+      return { kcal:kcal,p:prot,c:carb,f:fat,fiber:Math.round(kcal/1000*14), goal:goal, manual:manual };
     }
 
     // ── Weekly Fuel: training-aware day targets + calorie banking ──
@@ -326,7 +345,9 @@
       var T=infos.filter(isTrain).length, R=7-T;
       // p = per-training-day surplus fraction; surplus pulled evenly from rest
       // days. Bounded so a rest day never drops below 80% of base.
-      var p=(hasData && T>0 && R>0) ? Math.min(0.15, 0.2*R/T) : 0;
+      // MANUAL TARGET = a command, not a suggestion: cycling is OFF so every
+      // day (ring, coach, energy card) shows exactly the number the user set.
+      var p=(!base.manual && hasData && T>0 && R>0) ? Math.min(0.15, 0.2*R/T) : 0;
       var days=wd.map(function(d,i){ var info=infos[i], tr=isTrain(info);
         var kc=p>0 ? (tr?Math.round(base.kcal*(1+p)):Math.round(base.kcal*(1-T*p/R))) : base.kcal;
         return {dk:d, info:info, train:tr, kcal:kc}; });
@@ -413,7 +434,7 @@
           '<button type="button" class="goal-seg" style="width:100%;margin-top:8px" data-act="stats-cancel">Cancel</button>';
         return;
       }
-      var pm=profileMaintenance(), maint=pm.kcal, manual=!!p.calTarget;
+      var pm=maintenanceInfo(), maint=pm.kcal, manual=!!p.calTarget;
       var seg=['cut','maintain','bulk'].map(function(g){ var on=g===goal;
         return '<button type="button" class="goal-seg'+(on?' on':'')+'" data-act="goal" data-goal="'+g+'">'+g.charAt(0).toUpperCase()+g.slice(1)+'</button>'; }).join('');
       var rateTxt = goal==='cut'?'Cut · aiming for ~−0.5 kg / week':(goal==='bulk'?'Bulk · aiming for ~+0.25 kg / week':'Maintain · holding your weight');
@@ -422,15 +443,15 @@
       var remaining=wb-consumed, todayKcal=vd?vd.kcal:base.kcal;
       var todayLbl = manual?'target / day':((cycling&&vd)?(vd.train?'today · training':'today · rest'):'target / day');
       el.innerHTML=
-        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Energy'+(pm.have?(manual?' · custom':''):' · rough est.')+'</span><button type="button" class="en-edit" style="margin-left:auto" data-act="stats-edit">'+(pm.have?'✎ edit':'set up →')+'</button></div>'+
+        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Energy'+(manual?' · custom':((pm.have||pm.adaptive)?'':' · rough est.'))+'</span><button type="button" class="en-edit" style="margin-left:auto" data-act="stats-edit">'+(pm.have?'✎ edit':'set up →')+'</button></div>'+
         '<div class="en-row">'+
-          '<div class="en-stat"><div class="en-val">'+fmtK(maint)+'</div><div class="en-lbl">maintenance</div></div>'+
+          '<div class="en-stat"><div class="en-val">'+fmtK(maint)+'</div><div class="en-lbl">maintenance'+(pm.adaptive?' · adaptive':'')+'</div></div>'+
           '<div class="en-stat" style="margin-left:auto;text-align:right"><div class="en-val" style="color:rgb(var(--nu))">'+fmtK(todayKcal)+'</div><div class="en-lbl">'+todayLbl+'</div></div>'+
         '</div>'+
         '<div class="goal-seg-wrap">'+seg+'</div>'+
         '<div class="en-rate">'+(manual?'Your own target · tap ✎ edit to change or clear':rateTxt)+((cycling&&vd)?' · '+(vd.kcal-base.kcal>0?'+':'')+(vd.kcal-base.kcal)+' kcal today':'')+'</div>'+
         (plan.hasData?weeklyFuelHtml(plan, base, consumed, wb, remaining, cycling):'')+
-        (pm.have?'':'<div class="en-note" style="margin-top:10px">Using a rough body-weight estimate. Tap “set your stats” for an accurate target from your height, age &amp; activity.</div>');
+        ((pm.have||pm.adaptive)?'':'<div class="en-note" style="margin-top:10px">Using a rough body-weight estimate. Tap “set your stats” for an accurate target from your height, age &amp; activity.</div>');
     }
     function dayTotals(dk){
       var t={kcal:0,p:0,c:0,f:0,fiber:0,sugar:0,sodium:0,satfat:0};
