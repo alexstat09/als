@@ -30,8 +30,12 @@
       background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
     .gr-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
     .gr-snap-i:last-child{ border-right:none; }
-    .gr-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .gr-snap-v{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:27px; color:var(--au-ivory); letter-spacing:0; line-height:1; }
     .gr-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
+    .gr-mo{ max-width:600px; margin:12px auto 0; padding:0 18px; }
+    .gr-mo-track{ height:5px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden; }
+    .gr-mo-fill{ height:100%; border-radius:3px; background:rgb(var(--gr)); width:0; transition:width .9s cubic-bezier(.16,1,.3,1); }
+    .gr-mo-cap{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
 
     .gr-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
     .gr-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px 16px 18px; }
@@ -99,6 +103,11 @@
     <div class="gr-snap-i"><div class="gr-snap-v" id="snDone">0</div><div class="gr-snap-l">Watched</div></div>
     <div class="gr-snap-i"><div class="gr-snap-v" id="snHabits">0</div><div class="gr-snap-l">Building</div></div>
     <div class="gr-snap-i"><div class="gr-snap-v" id="snAdopted">0</div><div class="gr-snap-l">Adopted</div></div>
+  </div>
+
+  <div class="gr-mo" id="grMo" style="display:none">
+    <div class="gr-mo-track"><div class="gr-mo-fill" id="grMoFill"></div></div>
+    <div class="gr-mo-cap"><span>Learning momentum</span><span id="grMoR"></span></div>
   </div>
 
   <main class="gr-wrap">
@@ -202,6 +211,8 @@
     function htoast(m){ var t=$('hToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1600); }
 
     /* ── render ───────────────────────────────────────── */
+    function countTo(el,end){ end=parseInt(end,10); if(!el||!isFinite(end)) return; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+    function setNum(el,v,anim){ if(!el) return; if(anim&&typeof v==='number'&&isFinite(v)&&v>0){ countTo(el,v); } else el.textContent=v; }
     function render(){
       videos=loadArr(K_VID); habits=loadArr(K_HAB);
       var unwatched=videos.filter(function(v){return !v.watched;});
@@ -209,11 +220,17 @@
       var building=habits.filter(function(h){return !h.adopted;});
       var adopted=habits.filter(function(h){return h.adopted;});
 
-      $('snQueue').textContent=unwatched.length;
-      $('snDone').textContent=watched.length;
-      $('snHabits').textContent=building.length;
-      $('snAdopted').textContent=adopted.length;
+      var first=!window.__grAnim; window.__grAnim=true;
+      setNum($('snQueue'), unwatched.length, first);
+      setNum($('snDone'), watched.length, first);
+      setNum($('snHabits'), building.length, first);
+      setNum($('snAdopted'), adopted.length, first);
       if(videos.length||habits.length) $('grSub').textContent=unwatched.length+' to watch · '+building.length+' habit'+(building.length===1?'':'s')+' in progress';
+
+      // learning momentum — share of your queue actually watched
+      var totV=videos.length, pct=totV?Math.round(watched.length/totV*100):0, mo=$('grMo');
+      if(totV){ mo.style.display='block'; $('grMoR').textContent=pct+'% watched'; requestAnimationFrame(function(){ $('grMoFill').style.width=pct+'%'; }); }
+      else mo.style.display='none';
 
       // focus
       var nextV=unwatched.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];

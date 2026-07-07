@@ -87,7 +87,18 @@
     .jr-entry-grat{ font-size:12px; color:var(--au-faint); margin-top:6px; line-height:1.45; }
     .jr-entry-grat b{ color:rgb(var(--sec-rgb)); font-family:var(--au-mono); font-style:normal; font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
     .jr-hist-title{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-top:18px; }
-  
+
+    /* Pulse — serif data heroes + 28-day consistency spine */
+    .id-pulse{ max-width:600px; margin:12px auto 0; padding:0 18px; }
+    .id-stats{ display:grid; grid-template-columns:repeat(4,1fr); background:var(--au-glass); border:1px solid var(--au-line); border-radius:16px; overflow:hidden; }
+    .id-stat{ display:flex; flex-direction:column; align-items:center; padding:13px 4px; border-right:1px solid var(--au-line); }
+    .id-stat:last-child{ border-right:none; }
+    .id-stat-v{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:27px; color:var(--au-ivory); line-height:1; }
+    .id-stat-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; text-align:center; }
+    .id-spine{ display:flex; gap:3px; margin-top:11px; }
+    .id-spine-c{ flex:1; height:22px; border-radius:3px; background:rgba(255,255,255,.06); }
+    .id-spine-cap{ display:flex; justify-content:space-between; margin-top:7px; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+
 /* premium layer */
 .hb-streak svg{vertical-align:-1px;}
 </style>
@@ -113,6 +124,17 @@
         </g>
       </svg>
     </div>
+  </div>
+
+  <div class="id-pulse">
+    <div class="id-stats">
+      <div class="id-stat"><div class="id-stat-v" id="stHabits">0</div><div class="id-stat-l">Habits</div></div>
+      <div class="id-stat"><div class="id-stat-v" id="stStreak">0</div><div class="id-stat-l">Best streak</div></div>
+      <div class="id-stat"><div class="id-stat-v" id="stDays">0</div><div class="id-stat-l">Days on · 30</div></div>
+      <div class="id-stat"><div class="id-stat-v" id="stJournal">0</div><div class="id-stat-l">Journal</div></div>
+    </div>
+    <div class="id-spine" id="idSpine"></div>
+    <div class="id-spine-cap"><span>4 weeks</span><span>Today</span></div>
   </div>
 
   <div class="id-wrap" data-am-reveal-group>
@@ -227,6 +249,29 @@
       }
       html+='<div class="hb-add"><input class="id-input" id="hbNew" placeholder="New habit…" enterkeyhint="done"><button class="id-btn" data-act="hb-add">Add</button></div>';
       el.innerHTML=html;
+      renderPulse();
+    }
+    function countTo(el,end){ end=parseInt(end,10); if(!el||!isFinite(end)) return; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+    function setNum(el,v,anim){ if(!el) return; if(anim&&typeof v==='number'&&isFinite(v)&&v>0){ countTo(el,v); } else el.textContent=v; }
+    function renderPulse(){
+      var list=habits(), log=habitLog();
+      var best=0; list.forEach(function(h){ var s=habitStreak(h.id); if(s>best) best=s; });
+      var daysOn=0; for(var i=0;i<30;i++){ var d=new Date(); d.setDate(d.getDate()-i); var k=dateKey(d); if(log[k]&&Object.keys(log[k]).length) daysOn++; }
+      var jn=journal().filter(function(x){ return (x.reflection&&x.reflection.trim())||(x.gratitude&&x.gratitude.trim()); }).length;
+      var first=!window.__idAnim; window.__idAnim=true;
+      setNum(document.getElementById('stHabits'), list.length, first);
+      setNum(document.getElementById('stStreak'), best, first);
+      setNum(document.getElementById('stDays'), daysOn, first);
+      setNum(document.getElementById('stJournal'), jn, first);
+      var sp=document.getElementById('idSpine'); if(sp){ var cells='';
+        for(var j=27;j>=0;j--){ var dd=new Date(); dd.setDate(dd.getDate()-j); var kk=dateKey(dd);
+          var done=(log[kk]?Object.keys(log[kk]).length:0);
+          var ratio=list.length?Math.min(1,done/list.length):(done>0?1:0);
+          var bg=ratio<=0?'rgba(255,255,255,.06)':'rgba(63,224,176,'+(0.24+ratio*0.66).toFixed(2)+')';
+          cells+='<span class="id-spine-c" title="'+kk+' · '+done+' done" style="background:'+bg+'"></span>';
+        }
+        sp.innerHTML=cells;
+      }
     }
     function addHabit(){
       var inp=document.getElementById('hbNew'); var name=(inp&&inp.value||'').trim(); if(!name) return;

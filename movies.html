@@ -30,7 +30,7 @@
       background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
     .mv-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
     .mv-snap-i:last-child{ border-right:none; }
-    .mv-snap-v{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); letter-spacing:-.02em; line-height:1.05; }
+    .mv-snap-v{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:27px; color:var(--au-ivory); letter-spacing:0; line-height:1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .mv-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
 
     .mv-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
@@ -74,7 +74,7 @@
     /* taste profile */
     .mv-taste{ display:flex; flex-wrap:wrap; gap:9px; }
     .mv-taste-pill{ display:flex; flex-direction:column; gap:3px; padding:10px 13px; border-radius:13px; background:rgba(var(--mv),.07); border:1px solid rgba(var(--mv),.2); }
-    .mv-taste-pill b{ font-family:var(--au-mono); font-size:15px; font-weight:800; color:#fff; }
+    .mv-taste-pill b{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:20px; color:var(--au-ivory); line-height:1; }
     .mv-taste-pill span{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
 
     /* recommendation / list rows */
@@ -336,14 +336,18 @@
     function scoreColor(r){ if(r>=85) return 'rgba(52,226,176,.9)'; if(r>=70) return 'rgba(var(--mv),.9)'; if(r>=50) return 'rgba(242,192,99,.9)'; return 'rgba(255,143,163,.85)'; }
 
     /* ── render ───────────────────────────────────────── */
+    function countTo(el,end){ end=parseInt(end,10); if(!isFinite(el&&end)) return; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+    function setNum(el,v,anim){ if(!el) return; if(anim&&typeof v==='number'&&isFinite(v)&&v>0){ countTo(el,v); } else el.textContent=v; }
     function render(){
       seen=loadArr(K_SEEN); watch=loadArr(K_WATCH);
 
-      // snapshot
-      $('snSeen').textContent=seen.length;
-      var avg=avgRating(); $('snAvg').textContent=avg!=null?avg:'—';
-      $('snWatch').textContent=watch.length;
-      var tg=topGenres(1); $('snTop').textContent=tg.length?tg[0]:'—';
+      // snapshot — serif data-heroes, count up on first paint
+      var avg=avgRating(), tg=topGenres(1);
+      var first=!window.__mvAnim; window.__mvAnim=true;
+      setNum($('snSeen'), seen.length, first);
+      setNum($('snAvg'), avg!=null?avg:'—', first);
+      setNum($('snWatch'), watch.length, first);
+      $('snTop').textContent=tg.length?tg[0]:'—';
       if(seen.length||watch.length){ $('mvSub').textContent=seen.length+' rated · '+watch.length+' to watch'+(avg!=null?' · avg '+avg:''); }
 
       // taste
