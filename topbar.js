@@ -146,77 +146,83 @@
   display: flex; justify-content: flex-end; align-items: center;
   gap: 8px;
   padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
-  background: rgba(10,10,11,0.96);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(7,7,9,0.98);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
 .topbar-water-wrap { display: flex; align-items: stretch; }
 .topbar-water-pill {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 14px;
-  background: rgba(63, 224, 176, 0.07);
-  border: 1px solid rgba(63, 224, 176, 0.18);
+  padding: 8px 14px;
+  background: rgba(63, 224, 176, 0.06);
+  border: 1px solid rgba(63, 224, 176, 0.16);
   border-right: none;
   border-radius: 12px 0 0 12px;
-  text-decoration: none; color: #FAFAFA;
+  text-decoration: none; color: #3FE0B0;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
 }
-.topbar-water-pill .topbar-pill-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #3FE0B0; flex-shrink: 0;
+.topbar-water-pill .topbar-water-drop {
+  width: 14px; height: 14px; flex-shrink: 0; display: block;
 }
-.topbar-water-pill.warn .topbar-pill-dot { background: #fbbf24; }
-.topbar-water-pill.miss .topbar-pill-dot {
-  background: #ff8a8a;
-  animation: topbar-miss-pulse 1.6s ease-in-out infinite;
+.topbar-water-pill .topbar-water-drop svg { width: 100%; height: 100%; display: block; }
+.topbar-water-pill.warn { color: #F2C063; border-color: rgba(242,192,99,0.18); background: rgba(242,192,99,0.06); }
+.topbar-water-pill.miss { color: #FF8A6B; border-color: rgba(255,138,107,0.20); background: rgba(255,138,107,0.06); }
+.topbar-water-pill.miss .topbar-water-drop {
+  animation: topbar-miss-pulse 1.7s ease-in-out infinite;
 }
 @keyframes topbar-miss-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
-  50%      { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
 }
 .topbar-pill-count {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px; font-weight: 700; color: #FAFAFA;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
+  font-family: var(--au-serif, "Instrument Serif", Georgia, serif);
+  font-style: italic; font-size: 18px; font-weight: 400;
+  color: #F5F2EC; line-height: 1; white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 .topbar-water-add {
-  width: 44px;
-  border: 1px solid rgba(63, 224, 176, 0.18);
-  background: rgba(63, 224, 176, 0.20);
-  color: #F5F2EC; font-family: inherit;
-  font-size: 20px; font-weight: 700; line-height: 1;
+  width: 42px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(63, 224, 176, 0.16);
+  background: rgba(63, 224, 176, 0.18);
+  color: #EAF7F1; font-family: inherit;
   cursor: pointer; border-radius: 0 12px 12px 0;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s, transform 0.10s;
 }
+.topbar-water-add svg { width: 17px; height: 17px; display: block; }
 .topbar-water-add:active { transform: scale(0.94); }
 .topbar-water-add.flash {
-  background: rgba(63, 224, 176, 0.52);
+  background: rgba(63, 224, 176, 0.5);
 }
 .topbar-finance-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
+  width: 42px; height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px; text-decoration: none;
+  color: rgba(245, 242, 236, 0.5);
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.topbar-finance-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.topbar-finance-btn:hover, .topbar-finance-btn:active {
+  background: rgba(255, 255, 255, 0.07); color: #F5F2EC;
+  border-color: rgba(255,255,255,0.14);
+}
+.topbar-finance-btn svg { width: 19px; height: 19px; display: block; }
 .topbar-back {
-  display: inline-flex; align-items: center;
-  padding: 8px 12px; border-radius: 10px; border: none;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
-  color: rgba(255,255,255,0.65); font-family: inherit;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 13px 8px 10px; border-radius: 11px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(245,242,236,0.55);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, color 0.15s; white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s; white-space: nowrap;
 }
-.topbar-back:active { background: rgba(255,255,255,0.12); color: #fff; }
-.topbar-finance-icon {
-  font-size: 20px; line-height: 1;
-  filter: grayscale(100%) brightness(1.4); opacity: 0.85;
-}
+.topbar-back svg { width: 15px; height: 15px; display: block; }
+.topbar-back:active { background: rgba(255,255,255,0.08); color: #F5F2EC; border-color: rgba(255,255,255,0.14); }
 .bottombar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
   display: flex; justify-content: space-around; align-items: stretch;
@@ -256,11 +262,11 @@ body.has-bottombar {
 }
 @media (max-width: 480px) {
   .topbar { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); gap: 6px; }
-  .topbar-water-pill { padding: 8px 11px; gap: 6px; }
-  .topbar-pill-count { font-size: 12px; }
-  .topbar-water-add { width: 40px; font-size: 18px; }
-  .topbar-finance-btn { width: 40px; height: 38px; }
-  .topbar-finance-icon { font-size: 18px; }
+  .topbar-water-pill { padding: 7px 11px; gap: 7px; }
+  .topbar-pill-count { font-size: 16px; }
+  .topbar-water-add { width: 38px; }
+  .topbar-back { padding: 7px 11px 7px 9px; }
+  .topbar-finance-btn { width: 38px; height: 38px; }
   .bottombar-tab-icon { font-size: 22px; }
   .bottombar-tab { font-size: 10px; }
 }
@@ -318,17 +324,17 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 
   const topbarHtml = `
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
-  <button class="topbar-back" id="topbarBack" aria-label="Go back" type="button" style="display:none">← Back</button>
+  <button class="topbar-back" id="topbarBack" aria-label="Go back" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></button>
   <div style="flex:1"></div>
   <div class="topbar-water-wrap">
     <a href="health.html#water" class="topbar-water-pill" id="topbarWater" aria-label="Water progress">
-      <span class="topbar-pill-dot"></span>
+      <span class="topbar-water-drop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c3.2 3.8 5.5 6.6 5.5 9.7A5.5 5.5 0 0 1 6.5 13.2c0-3.1 2.3-5.9 5.5-9.7z"/></svg></span>
       <span class="topbar-pill-count" id="topbarWaterCount">0/0</span>
     </a>
-    <button class="topbar-water-add" id="topbarWaterAdd" aria-label="Log one drink" type="button">+</button>
+    <button class="topbar-water-add" id="topbarWaterAdd" aria-label="Log one drink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
   <a href="finance.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
-    <span class="topbar-finance-icon">📊</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7.5 19v-5M12 19V8.5M16.5 19v-8"/></svg>
   </a>
 </header>`;
 
