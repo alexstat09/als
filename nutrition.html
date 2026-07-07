@@ -745,7 +745,7 @@
     function histResult(o){ var p=o.per100||{}; return {name:o.name,brand:'',kcal:p.kcal||0,p:p.p||0,c:p.c||0,f:p.f||0,fiber:p.fiber||0,sugar:p.sugar||0,sodium:p.sodium||0,satfat:p.satfat||0,source:o.source||'manual',servingG:0,usualG:o.usualG,_count:o.count,_hist:true}; }
     function histSub(f){ return '★ '+(f.usualG?('usual '+r0(f.usualG)+'g · '):'')+'logged '+f._count+'×'; }
     function custSub(f){ return 'Custom · '+r0(f.kcal)+' kcal /100g'; }
-    function dbSub(f){ var tag=f.source==='core'?'✓ Verified':((f.generic||f.source==='usda'||!f.brand)?'Generic':esc(f.brand||'Branded')); return tag+' · '+r0(f.kcal)+' kcal /100g'; }
+    function dbSub(f){ var tag=f.source==='core'?'✓ Verified':((f.generic||f.source==='usda'||!f.brand)?'Generic':esc(f.brand||'Branded')); return tag+' · '+r0(f.kcal)+' kcal /100g'+((f.servingName&&f.servingG>0)?' · 1 '+esc(f.servingName)+' '+r0(f.servingG)+'g':''); }
     function buildLocal(q){
       var favs=getFavs().filter(function(f){ return f&&f.name&&pMatch(f.name+' '+(f.brand||''),q); }).map(favResult);
       var fk={}; favs.forEach(function(f){ fk[String(f.name).toLowerCase()]=1; });
@@ -1005,18 +1005,27 @@
     }
     function stopScan(){ if(scanner){ try{ scanner.stop().then(function(){try{scanner.clear();}catch(e){}}).catch(function(){}); }catch(e){} scanner=null; } }
 
+    // Fallback grams for one common household unit — used ONLY when the food has a
+    // named unit (e.g. "cookie") but the database never gave its gram weight, so a
+    // unit option can ALWAYS be offered. Clearly flagged as an estimate in the UI.
+    var UNIT_G={cookie:11,biscuit:11,cracker:5,slice:28,scoop:31,piece:30,bar:40,square:8,ball:15,egg:50,can:330,bottle:500,glass:250,cup:240,sachet:6,pot:125,pouch:100,container:150,pack:30,tablet:1,capsule:1,wrap:60,roll:50,bun:50,stick:12,patty:80,link:45,fillet:120,nugget:18,tortilla:35,waffle:35,pancake:40};
     function showPortion(food,defG){
       pickFood=food; pickMeal=curMeal;
-      var g=Math.round(defG||food.servingG||100); if(!g) g=100;
-      var hasS=food.servingG>0;
+      var rawUnit=(food.servingName||'').toLowerCase();
+      var trueG=food.servingG>0;                             // real per-unit grams from the DB
+      var estG=(!trueG&&rawUnit)?(UNIT_G[rawUnit]||30):0;    // honest fallback when the DB lacks it
+      var effG=trueG?food.servingG:estG;                     // grams of ONE unit (0 → grams-only)
+      pickFood._effG=effG;
+      var hasS=effG>0;
+      var g=Math.round((defG&&defG!==100)?defG:(effG||100)); if(!(g>0)) g=100;
       var unit=(food.servingName||'serving'), unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
-      var sv=hasS?(Math.round(g/food.servingG*10)/10):0;
+      var sv=hasS?(Math.round(g/effG*10)/10):0;
       var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
       var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
       var srcLine=food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'';
       var serRow=hasS?'<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppServ" inputmode="decimal" value="'+sv+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>':'';
       var gRow='<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>';
-      var info=hasS?'<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 '+esc(unit)+' = '+r0(food.servingG)+'g'+(food.packageG>food.servingG?' · whole pack '+r0(food.packageG)+'g':'')+(food.servingsPer>1?' · '+(Math.round(food.servingsPer*10)/10)+'/pack':'')+'</div>':'';
+      var info=hasS?('<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 '+esc(unit)+' '+(trueG?'= ':'&asymp; ')+r0(effG)+'g'+(trueG?((food.packageG>food.servingG?' · whole pack '+r0(food.packageG)+'g':'')+(food.servingsPer>1?' · '+(Math.round(food.servingsPer*10)/10)+'/pack':'')):' · estimate — tweak grams if you know it')+'</div>'):'';
       var starBtn=(portionTarget==='meal')?'':'<button type="button" class="pp-star" data-act="fav-toggle" aria-label="Favorite">'+(isFav(food)?'★':'☆')+'</button>';
       shBody.innerHTML=
         '<div class="pp-name" style="display:flex;align-items:center;gap:8px"><span style="flex:1;min-width:0">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</span>'+starBtn+'</div>'+
@@ -1027,8 +1036,8 @@
         '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>'+
         ((portionTarget!=='meal'&&!pickEditId)?'<button type="button" class="sh-btn ghost" data-act="pp-add-more" style="margin-top:8px;">+ Add &amp; keep going</button>':'');
       var gi=document.getElementById('ppG'), si=document.getElementById('ppServ');
-      if(gi) gi.addEventListener('input', function(){ if(si&&pickFood.servingG){ var gg=parseFloat((gi.value||'').replace(',','.'))||0; si.value=gg>0?(Math.round(gg/pickFood.servingG*10)/10):''; } ppPreview(); });
-      if(si) si.addEventListener('input', function(){ if(gi&&pickFood.servingG){ var s2=parseFloat((si.value||'').replace(',','.'))||0; gi.value=s2>0?Math.round(s2*pickFood.servingG):''; } ppPreview(); });
+      if(gi) gi.addEventListener('input', function(){ if(si&&effG){ var gg=parseFloat((gi.value||'').replace(',','.'))||0; si.value=gg>0?(Math.round(gg/effG*10)/10):''; } ppPreview(); });
+      if(si) si.addEventListener('input', function(){ if(gi&&effG){ var s2=parseFloat((si.value||'').replace(',','.'))||0; gi.value=s2>0?Math.round(s2*effG):''; } ppPreview(); });
       ppPreview();
     }
     function ppGrams(){ var v=parseFloat((((document.getElementById('ppG')||{}).value)||'').replace(',','.')); return (isFinite(v)&&v>0)?v:0; }
@@ -1233,13 +1242,13 @@
         if(pk==='custom'){ var cf2=findById(CUSTOM,pid); if(cf2) showPortion(searchResultToFood(cf2),100); }
         else if(pk==='savedmeal'){ var ml2=findById(MEALSK,pid); if(ml2) addSavedMeal(ml2); } }
       else if(act==='meal-edit-id'){ var mle2=findById(MEALSK, el.getAttribute('data-id')); if(mle2){ editMeal=JSON.parse(JSON.stringify(mle2)); if(!Array.isArray(editMeal.items)) editMeal.items=[]; gotoMealEditor(); } }
-      else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood.servingG){ gi.value=r0(pickFood.servingG); ppPreview(); } }
+      else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood._effG){ gi.value=r0(pickFood._effG); ppPreview(); } }
       else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab&&!pickEditId) ab.textContent='Add to '+pickMeal; }
       else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return;
         if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(pickFood.source==='ai') saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
         commitDiaryAdd(true); }
       else if(act==='pp-add-more'){ commitDiaryAdd(false); }
-      else if(act==='fav-toggle'){ if(!pickFood) return; var on=toggleFav(pickFood, ppGrams()||pickFood.servingG||100); el.textContent=on?'★':'☆'; }
+      else if(act==='fav-toggle'){ if(!pickFood) return; var on=toggleFav(pickFood, ppGrams()||pickFood._effG||pickFood.servingG||100); el.textContent=on?'★':'☆'; }
       else if(act==='quick-go'){ quickAddGo(); }
       else if(act==='copy-close'){ copyClose(); }
       else if(act==='copy-meal-open'){ copyMealOpen(el.getAttribute('data-meal')); }

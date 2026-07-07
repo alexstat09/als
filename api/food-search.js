@@ -21,8 +21,31 @@ function withTimeout(p, ms) { return Promise.race([p, new Promise(function (res)
 
 // ── Open Food Facts ──────────────────────────────────────────────
 function deriveKcal(kcal, p, c, f) { return (!kcal && (p || c || f)) ? Math.round(4 * p + 4 * c + 9 * f) : kcal; }
+// household unit words we recognize in a serving-size string ("1 cookie (11 g)")
+var UNIT_RE = 'bar|slice|scoop|piece|cookie|biscuit|cracker|can|bottle|glass|cup|sachet|pot|pouch|container|pack|tablet|capsule|square|ball|wrap|roll|bun|stick|egg|patty|link|fillet|nugget|tortilla|waffle|pancake';
 // pull a household unit word ("bar","slice","scoop"…) out of a serving-size string
-function servUnit(s) { var m = String(s || '').toLowerCase().match(/\b(bar|slice|scoop|piece|cookie|biscuit|can|bottle|cup|sachet|pot|pouch|container|pack|tablet|capsule|square|ball|wrap|roll|bun|stick|egg)s?\b/); return m ? m[1] : ''; }
+function servUnit(s) { var m = String(s || '').toLowerCase().match(new RegExp('\\b(' + UNIT_RE + ')s?\\b')); return m ? m[1] : ''; }
+// Parse a serving string into { unit, count, grams }. Handles "1 cookie (11.3 g)",
+// "34 g (2 cookies)", "2 x 25 g", "1 slice 28g". count = how many units the string
+// describes, grams = the gram figure it mentions (whole serving).
+function parseServing(s) {
+  s = String(s || '').toLowerCase();
+  var unit = servUnit(s);
+  var gm = s.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|gram|grams)\b/);
+  var grams = gm ? parseFloat(gm[1].replace(',', '.')) : 0;
+  var count = 1;
+  if (unit) { var cm = s.match(new RegExp('(\\d+(?:[.,]\\d+)?)\\s*(?:x\\s*)?' + unit)); if (cm) { var cv = parseFloat(cm[1].replace(',', '.')); if (cv > 0) count = cv; } }
+  return { unit: unit, count: count, grams: grams > 0 ? grams : 0 };
+}
+// grams of ONE named unit (or one serving). Prefers the DB's numeric grams, else
+// the grams parsed from the string; divides by the unit count so "2 cookies (22 g)"
+// yields 11 g per cookie (what the portion picker needs).
+function perUnitGrams(numericG, servingStr) {
+  var pv = parseServing(servingStr);
+  var base = n(numericG) || pv.grams || 0;
+  var g = (pv.unit && pv.count > 1 && base > 0) ? base / pv.count : base;
+  return { g: g > 0 ? Math.round(g * 10) / 10 : 0, unit: pv.unit };
+}
 function offRow(prod) {
   if (!prod) return null;
   var nu = prod.nutriments || {};
@@ -32,10 +55,11 @@ function offRow(prod) {
   if (kcal == null && nu['energy_100g'] != null) kcal = nu['energy_100g'] / 4.184; // kJ→kcal fallback
   var p = n(nu.proteins_100g), c = n(nu.carbohydrates_100g), f = n(nu.fat_100g);
   kcal = deriveKcal(Math.round(n(kcal)), p, c, f);
+  var su = perUnitGrams(prod.serving_quantity, prod.serving_size);
   return {
     name: name, brand: clip(prod.brands, 40), per: '100g',
-    servingG: n(prod.serving_quantity) || 0,
-    servingName: servUnit(prod.serving_size), packageG: n(prod.product_quantity) || 0,
+    servingG: su.g,
+    servingName: su.unit, packageG: n(prod.product_quantity) || 0,
     kcal: kcal, p: p, c: c, f: f,
     fiber: n(nu.fiber_100g), sugar: n(nu.sugars_100g),
     sodium: Math.round(n(nu.sodium_100g) * 1000), satfat: n(nu['saturated-fat_100g']),
@@ -90,10 +114,11 @@ function usdaRow(food) {
   if (!name) return null;
   var p = usdaNutr(food, ['203', '1003']), c = usdaNutr(food, ['205', '1005']), f = usdaNutr(food, ['204', '1004']);
   var kcal = deriveKcal(Math.round(usdaNutr(food, ['208', '1008'])), p, c, f); // some USDA rows omit energy
+  var su = perUnitGrams(food.servingSize, food.householdServingFullText);
   return {
     name: name, brand: clip(food.brandOwner || food.brandName, 40), per: '100g',
-    servingG: n(food.servingSize) || 0,
-    servingName: servUnit(food.householdServingFullText), packageG: 0,
+    servingG: su.g,
+    servingName: su.unit, packageG: 0,
     kcal: kcal, p: p, c: c, f: f,
     fiber: usdaNutr(food, ['291', '1079']), sugar: usdaNutr(food, ['269', '2000']),
     sodium: Math.round(usdaNutr(food, ['307', '1093'])), satfat: usdaNutr(food, ['606', '1258']),
