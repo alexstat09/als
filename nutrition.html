@@ -1009,16 +1009,37 @@
     // named unit (e.g. "cookie") but the database never gave its gram weight, so a
     // unit option can ALWAYS be offered. Clearly flagged as an estimate in the UI.
     var UNIT_G={cookie:11,biscuit:11,cracker:5,slice:28,scoop:31,piece:30,bar:40,square:8,ball:15,egg:50,can:330,bottle:500,glass:250,cup:240,sachet:6,pot:125,pouch:100,container:150,pack:30,tablet:1,capsule:1,wrap:60,roll:50,bun:50,stick:12,patty:80,link:45,fillet:120,nugget:18,tortilla:35,waffle:35,pancake:40};
+    // Snack foods you eat by the piece — matched off the NAME so ANY source (your
+    // MFP imports, custom foods, web results) offers a "log 3 of them" count with a
+    // sensible piece-weight estimate (clearly flagged), no gram-guessing needed.
+    var SNACK_UNITS=[
+      [/mini.?oreo|μίνι.?ορεο/i,'cookie',5],
+      [/oreo|ορεο/i,'cookie',11],
+      [/lotus|biscoff|speculoos/i,'biscuit',6],
+      [/digestive|petit beurre|μπισκότ|\bbiscuit/i,'biscuit',8],
+      [/\bcookie|μπισκότο/i,'cookie',15],
+      [/cracker|κράκερ/i,'cracker',5],
+      [/rice.?cake|ρυζογκοφρ/i,'cake',9],
+      [/wafer|γκοφρέτ|γκοφρετ/i,'wafer',6],
+      [/protein.?bar|μπάρα.?πρωτε/i,'bar',55],
+      [/granola bar|cereal bar|chocolate bar|μπάρα|\bbar\b/i,'bar',40],
+      [/pretzel|πρέτζελ/i,'pretzel',5],
+      [/rusk|παξιμάδ/i,'piece',12],
+      [/nugget/i,'nugget',18]
+    ];
+    function guessUnit(name){ name=String(name||''); for(var i=0;i<SNACK_UNITS.length;i++){ if(SNACK_UNITS[i][0].test(name)) return {unit:SNACK_UNITS[i][1],g:SNACK_UNITS[i][2]}; } return null; }
     function showPortion(food,defG){
       pickFood=food; pickMeal=curMeal;
-      var rawUnit=(food.servingName||'').toLowerCase();
       var trueG=food.servingG>0;                             // real per-unit grams from the DB
-      var estG=(!trueG&&rawUnit)?(UNIT_G[rawUnit]||30):0;    // honest fallback when the DB lacks it
+      var rawUnit=(food.servingName||'').toLowerCase();
+      var guess=(!trueG&&!rawUnit)?guessUnit((food.name||'')+' '+(food.brand||'')):null; // name-based snack estimate
+      if(guess) rawUnit=guess.unit;
+      var estG=(!trueG&&rawUnit)?(guess?guess.g:(UNIT_G[rawUnit]||30)):0; // estimate when the DB lacks the weight
       var effG=trueG?food.servingG:estG;                     // grams of ONE unit (0 → grams-only)
       pickFood._effG=effG;
       var hasS=effG>0;
       var g=Math.round((defG&&defG!==100)?defG:(effG||100)); if(!(g>0)) g=100;
-      var unit=(food.servingName||'serving'), unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
+      var unit=rawUnit||'serving', unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
       var sv=hasS?(Math.round(g/effG*10)/10):0;
       var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
       var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
