@@ -177,6 +177,10 @@
     .pp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
     .pp-row label{font-family:var(--au-mono,ui-monospace);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(244,241,234,.5);}
     .pp-g{flex:1;}
+    .pp-per{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--au-mono,ui-monospace);font-size:12px;color:rgba(244,241,234,.5);margin:-4px 0 14px;}
+    .pp-ug{width:56px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:6px 6px;color:#F4F1EA;font-family:inherit;font-size:13px;font-weight:700;text-align:center;outline:none;-webkit-tap-highlight-color:transparent;}
+    .pp-ug:focus{border-color:rgba(var(--nu),.5);}
+    .pp-est{font-family:var(--au-mono,ui-monospace);font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(var(--nu),.75);background:rgba(var(--nu),.1);border-radius:6px;padding:2px 6px;}
     .pp-preview{display:flex;gap:8px;margin-bottom:6px;}
     .pp-chip{flex:1;text-align:center;background:rgba(255,255,255,.04);border-radius:11px;padding:10px 4px;}
     .pp-chip-v{font-family:var(--au-mono,ui-monospace);font-size:16px;font-weight:700;color:#F4F1EA;}
@@ -252,7 +256,7 @@
     function uid(){ return 'nf-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
     var MEALS=['Breakfast','Lunch','Dinner','Snacks'];
-    var LOGS='nut:logs', CUSTOM='nut:custom', MEALSK='nut:meals', PROFILE='nut:profile', FAVS='nut:favs', USUAL='nut:usual';
+    var LOGS='nut:logs', CUSTOM='nut:custom', MEALSK='nut:meals', PROFILE='nut:profile', FAVS='nut:favs', USUAL='nut:usual', PIECEK='nut:pieceG';
     var viewDate=today(), pickEditId=null;
 
     // One-time seed of Alex's real saved meals (rebuilt from the verified core
@@ -1028,38 +1032,61 @@
       [/nugget/i,'nugget',18]
     ];
     function guessUnit(name){ name=String(name||''); for(var i=0;i<SNACK_UNITS.length;i++){ if(SNACK_UNITS[i][0].test(name)) return {unit:SNACK_UNITS[i][1],g:SNACK_UNITS[i][2]}; } return null; }
+    // ── Per-piece weights you've set stick to the food (A: learn & remember) ──
+    function pieceKey(food){ return String((food.name||'')+'|'+(food.brand||'')).toLowerCase().replace(/\s+/g,' ').trim(); }
+    function getPiece(food){ var m=ls(PIECEK,{})||{}; var p=m[pieceKey(food)]; return (p&&p.g>0)?p:null; }
+    function savePiece(food,unit,g){ if(!(g>0)||!unit) return; var m=ls(PIECEK,{})||{}; m[pieceKey(food)]={u:unit,g:Math.round(g*10)/10}; m._ts=Date.now(); save(PIECEK,m); }
+    // B: ask the free AI (Groq) for one piece's weight — background, non-blocking
+    function aiPieceWeight(name,cb){ try{ fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({piece:name})}).then(function(r){return r.json();}).then(function(j){ cb((j&&j.grams>0)?{grams:j.grams,unit:(j.unit||'').toLowerCase()}:null); }).catch(function(){ cb(null); }); }catch(e){ cb(null); } }
+
     function showPortion(food,defG){
       pickFood=food; pickMeal=curMeal;
       var trueG=food.servingG>0;                             // real per-unit grams from the DB
-      var rawUnit=(food.servingName||'').toLowerCase();
-      var guess=(!trueG&&!rawUnit)?guessUnit((food.name||'')+' '+(food.brand||'')):null; // name-based snack estimate
-      if(guess) rawUnit=guess.unit;
-      var estG=(!trueG&&rawUnit)?(guess?guess.g:(UNIT_G[rawUnit]||30)):0; // estimate when the DB lacks the weight
-      var effG=trueG?food.servingG:estG;                     // grams of ONE unit (0 → grams-only)
-      pickFood._effG=effG;
-      var hasS=effG>0;
+      var savedP=getPiece(food);                             // a weight you set before (learned)
+      var rawUnit=(savedP&&savedP.u)||(food.servingName||'').toLowerCase();
+      var guess=(!trueG&&!savedP&&!food.servingName)?guessUnit((food.name||'')+' '+(food.brand||'')):null;
+      if(!rawUnit&&guess) rawUnit=guess.unit;
+      var known=savedP?savedP.g:(trueG?food.servingG:0);     // a confirmed / real per-unit weight
+      var estG=(!known&&rawUnit)?(guess?guess.g:(UNIT_G[rawUnit]||30)):0;
+      var effG=known||estG;                                  // grams of ONE unit (0 → grams-only)
+      var isEst=!known&&effG>0;                              // still just an estimate you haven't set
+      var hasS=effG>0&&!!rawUnit;                            // piece mode needs a named unit
+      pickFood._effG=effG; pickFood._unit=hasS?rawUnit:''; pickFood._userSetUnit=false;
       var g=Math.round((defG&&defG!==100)?defG:(effG||100)); if(!(g>0)) g=100;
       var unit=rawUnit||'serving', unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
-      var sv=hasS?(Math.round(g/effG*10)/10):0;
       var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
       var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
       var srcLine=food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'';
-      var serRow=hasS?'<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppServ" inputmode="decimal" value="'+sv+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>':'';
-      var gRow='<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>';
-      var info=hasS?('<div class="sh-hint" style="margin-top:-6px;margin-bottom:10px;">1 '+esc(unit)+' '+(trueG?'= ':'&asymp; ')+r0(effG)+'g'+(trueG?((food.packageG>food.servingG?' · whole pack '+r0(food.packageG)+'g':'')+(food.servingsPer>1?' · '+(Math.round(food.servingsPer*10)/10)+'/pack':'')):' · estimate — tweak grams if you know it')+'</div>'):'';
+      var portionRows=hasS
+        ? '<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppQty" inputmode="decimal" value="'+r1(g/effG)+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:20px;"></div>'+
+          '<div class="pp-per">1 '+esc(unit)+' '+(isEst?'&asymp;':'=')+' <input class="pp-ug" id="ppUnitG" inputmode="decimal" value="'+r1(effG)+'"> g'+(isEst?' <span class="pp-est">est</span>':'')+'</div>'+
+          '<input type="hidden" id="ppG" value="'+Math.round(g)+'">'
+        : '<div class="pp-row pp-g"><label>Grams</label><input class="sh-in" id="ppG" inputmode="numeric" value="'+g+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:18px;"></div>';
       var starBtn=(portionTarget==='meal')?'':'<button type="button" class="pp-star" data-act="fav-toggle" aria-label="Favorite">'+(isFav(food)?'★':'☆')+'</button>';
       shBody.innerHTML=
         '<div class="pp-name" style="display:flex;align-items:center;gap:8px"><span style="flex:1;min-width:0">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</span>'+starBtn+'</div>'+
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
-        confLine+itemsLine+srcLine+serRow+gRow+info+
+        confLine+itemsLine+srcLine+portionRows+
         '<div class="pp-preview" id="ppPrev"></div>'+
         (portionTarget==='meal'?'':'<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
         '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>'+
         ((portionTarget!=='meal'&&!pickEditId)?'<button type="button" class="sh-btn ghost" data-act="pp-add-more" style="margin-top:8px;">+ Add &amp; keep going</button>':'');
-      var gi=document.getElementById('ppG'), si=document.getElementById('ppServ');
-      if(gi) gi.addEventListener('input', function(){ if(si&&effG){ var gg=parseFloat((gi.value||'').replace(',','.'))||0; si.value=gg>0?(Math.round(gg/effG*10)/10):''; } ppPreview(); });
-      if(si) si.addEventListener('input', function(){ if(gi&&effG){ var s2=parseFloat((si.value||'').replace(',','.'))||0; gi.value=s2>0?Math.round(s2*effG):''; } ppPreview(); });
+      var qi=document.getElementById('ppQty'), gi=document.getElementById('ppG'), ug=document.getElementById('ppUnitG');
+      function recalc(){ if(!qi||!gi) return; var q=parseFloat((qi.value||'').replace(',','.'))||0; gi.value=(q>0&&effG>0)?Math.round(q*effG):0; ppPreview(); }
+      if(qi&&gi){
+        qi.addEventListener('input', recalc);
+        if(ug) ug.addEventListener('input', function(){ var e=parseFloat((ug.value||'').replace(',','.'))||0; if(e>0){ effG=e; pickFood._effG=e; pickFood._userSetUnit=true; } recalc(); });
+      } else if(gi){ gi.addEventListener('input', ppPreview); }
       ppPreview();
+      // B — no weight on file yet: quietly fetch a better starting estimate
+      if(hasS && isEst && !savedP){
+        aiPieceWeight((food.name||'')+' '+(food.brand||''), function(res){
+          if(!res||!(res.grams>0)||pickFood!==food||pickFood._userSetUnit) return;
+          effG=res.grams; pickFood._effG=effG;
+          var u2=document.getElementById('ppUnitG'); if(u2) u2.value=r1(effG);
+          recalc();
+        });
+      }
     }
     function ppGrams(){ var v=parseFloat((((document.getElementById('ppG')||{}).value)||'').replace(',','.')); return (isFinite(v)&&v>0)?v:0; }
     function ppPreview(){
@@ -1109,6 +1136,7 @@
     // add the next one — each add commits immediately (nothing to lose). ──
     function commitDiaryAdd(close){
       var gg=ppGrams(); if(!gg||!pickFood) return;
+      if(pickFood._unit && pickFood._effG>0) savePiece(pickFood, pickFood._unit, pickFood._effG); // learn this food's piece weight
       var wasEdit=!!pickEditId; if(pickEditId){ delEntry(pickEditId); pickEditId=null; }
       if(!wasEdit && pickFood.source==='ai') saveLocalFood(pickFood);
       addEntry(scaleEntry(pickFood,gg,pickMeal));
@@ -1356,7 +1384,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', function(){
       function start(){ if(typeof initCloudSync!=='function'){ setTimeout(start,200); return; }
-        initCloudSync({ appKey:'nutrition', syncedKeys:['nut:logs','nut:custom','nut:profile','nut:history','nut:meals','nut:favs','nut:usual','nut:streak'], onApplied:function(){ if(window._nutInvalidateIndex) window._nutInvalidateIndex(); if(window._nutSeedMeals) window._nutSeedMeals(); if(window._nutRerender) window._nutRerender(); } });
+        initCloudSync({ appKey:'nutrition', syncedKeys:['nut:logs','nut:custom','nut:profile','nut:history','nut:meals','nut:favs','nut:usual','nut:streak','nut:pieceG'], onApplied:function(){ if(window._nutInvalidateIndex) window._nutInvalidateIndex(); if(window._nutSeedMeals) window._nutSeedMeals(); if(window._nutRerender) window._nutRerender(); } });
         // fallback: seed even if sync never applies (offline first load); flag-guarded so it's still once
         setTimeout(function(){ if(window._nutSeedMeals) window._nutSeedMeals(); }, 2500); }
       start();

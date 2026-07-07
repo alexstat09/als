@@ -37,7 +37,25 @@ module.exports = async function (req, res) {
   var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) { res.status(200).json({ error: 'no-key', message: 'AI estimate needs GROQ_API_KEY (see NOVA_SETUP.md).' }); return; }
 
-  var text = (readBody(req).text || '').toString().slice(0, 600).trim();
+  var body = readBody(req);
+
+  // Piece-weight mode: "how many grams is ONE of this?" — used by the portion
+  // picker to seed a good starting estimate for snacks the DB has no serving for.
+  var piece = (body.piece || '').toString().slice(0, 120).trim();
+  if (piece) {
+    var pSys = 'You estimate the weight of ONE single piece/unit of a snack or food (input may be any language incl. Greek). Reply ONLY minified JSON: {"unit":"singular english piece word e.g. cookie|biscuit|bar|slice|cracker|piece","grams": weight of ONE piece in grams as a number}. Examples: "mini oreo"->{"unit":"cookie","grams":5}; regular Oreo->11; "lotus biscoff"->{"unit":"biscuit","grams":6}; "protein bar"->{"unit":"bar","grams":55}. Give one realistic number, never refuse.';
+    var pr;
+    try {
+      pr = await fetch(GROQ_URL, { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: pSys }, { role: 'user', content: piece }], max_tokens: 60, temperature: 0.2, response_format: { type: 'json_object' } }) });
+    } catch (e) { res.status(200).json({ error: 'network' }); return; }
+    if (!pr.ok) { res.status(200).json({ error: 'upstream', status: pr.status }); return; }
+    var praw = ''; try { var pj = await pr.json(); praw = (pj && pj.choices && pj.choices[0] && pj.choices[0].message && pj.choices[0].message.content) || ''; } catch (e) {}
+    var po = {}; try { po = JSON.parse(praw); } catch (e) { var pm = praw.match(/\{[\s\S]*\}/); if (pm) { try { po = JSON.parse(pm[0]); } catch (e2) {} } }
+    res.status(200).json({ unit: (po.unit || 'piece').toString().slice(0, 20).toLowerCase(), grams: Math.max(1, Math.round(num(po.grams, 2000)) || 0), source: 'ai' });
+    return;
+  }
+
+  var text = (body.text || '').toString().slice(0, 600).trim();
   if (!text) { res.status(400).json({ error: 'no text' }); return; }
 
   var payload = {
