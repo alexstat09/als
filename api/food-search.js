@@ -178,7 +178,10 @@ function coreSearch(q) {
     var nt = toks(cf.name + ' ' + (cf.alias || ''));
     var ok = qt.every(function (t) { return nt.some(function (x) { return tokEq(x, t); }); });
     if (ok) out.push({
-      name: cf.name, brand: '', per: '100g', servingG: cf.s || 0,
+      // when a food has a household unit (cf.u/cf.us), expose it so the portion
+      // picker lets you log "1 cookie/slice/bar"; else fall back to the serving grams
+      name: cf.name, brand: '', per: '100g',
+      servingG: cf.u ? cf.us : (cf.s || 0), servingName: cf.u || '',
       kcal: cf.kcal, p: cf.p, c: cf.c, f: cf.f,
       fiber: cf.fiber || 0, sugar: cf.sugar || 0, sodium: cf.sodium || 0, satfat: cf.satfat || 0,
       source: 'core', generic: true, core: true

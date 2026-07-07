@@ -33,7 +33,7 @@ module.exports = [
   { name: 'Octopus, cooked', alias: 'χταπόδι', kcal: 164, p: 30, c: 4.4, f: 2.1, sodium: 391, satfat: 0.5, s: 100 },
 
   // ── Eggs / dairy ────────────────────────────────────────────────
-  { name: 'Egg, whole', alias: 'eggs αυγό αυγά', kcal: 143, p: 12.6, c: 0.7, f: 9.5, sugar: 0.4, sodium: 142, satfat: 3.1, s: 50 },
+  { name: 'Egg, whole', alias: 'eggs αυγό αυγά', kcal: 143, p: 12.6, c: 0.7, f: 9.5, sugar: 0.4, sodium: 142, satfat: 3.1, s: 50 , u: 'egg', us: 50 },
   { name: 'Egg white', alias: 'ασπράδι αυγού', kcal: 52, p: 10.9, c: 0.7, f: 0.2, sodium: 166, s: 33 },
   { name: 'Greek yogurt, 2% plain', alias: 'γιαούρτι fage total', kcal: 73, p: 9.5, c: 3.9, f: 1.9, sugar: 3.9, sodium: 36, satfat: 1.2, s: 170 },
   { name: 'Greek yogurt, 0% plain', alias: 'γιαούρτι fat free total fage galpo lidl 0%', kcal: 59, p: 10.3, c: 3.6, f: 0.4, sugar: 3.2, sodium: 36, s: 170 },
@@ -63,9 +63,9 @@ module.exports = [
   { name: 'Oats, rolled dry', alias: 'oatmeal βρώμη πλιγούρι nutri valley', kcal: 389, p: 16.9, c: 66, f: 6.9, fiber: 10.6, sodium: 2, s: 50 },
   { name: 'Pasta, cooked', alias: 'ζυμαρικά μακαρόνια', kcal: 158, p: 5.8, c: 31, f: 0.9, fiber: 1.8, sodium: 1, s: 180 },
   { name: 'Pasta, dry', alias: 'ζυμαρικά μακαρόνια', kcal: 371, p: 13, c: 75, f: 1.5, fiber: 3.2, sodium: 6, s: 80 },
-  { name: 'Bread, white', alias: 'ψωμί άσπρο italian bread d italiano', kcal: 265, p: 9, c: 49, f: 3.2, fiber: 2.7, sugar: 5, sodium: 491, s: 30 },
-  { name: 'Bread, whole wheat', alias: 'ψωμί ολικής', kcal: 247, p: 13, c: 41, f: 3.4, fiber: 7, sugar: 6, sodium: 450, s: 30 },
-  { name: 'Pita bread', alias: 'πίτα πίτα ψητή λαδωτή σουβλάκι αλαδωτη', kcal: 275, p: 9, c: 55, f: 1.2, fiber: 2.2, sodium: 536, s: 60 },
+  { name: 'Bread, white', alias: 'ψωμί άσπρο italian bread d italiano', kcal: 265, p: 9, c: 49, f: 3.2, fiber: 2.7, sugar: 5, sodium: 491, s: 30 , u: 'slice', us: 30 },
+  { name: 'Bread, whole wheat', alias: 'ψωμί ολικής', kcal: 247, p: 13, c: 41, f: 3.4, fiber: 7, sugar: 6, sodium: 450, s: 30 , u: 'slice', us: 30 },
+  { name: 'Pita bread', alias: 'πίτα πίτα ψητή λαδωτή σουβλάκι αλαδωτη', kcal: 275, p: 9, c: 55, f: 1.2, fiber: 2.2, sodium: 536, s: 60 , u: 'pita', us: 60 },
   { name: 'Couscous, cooked', alias: 'κουσκούς', kcal: 112, p: 3.8, c: 23, f: 0.2, fiber: 1.4, sodium: 5, s: 150 },
   { name: 'Quinoa, cooked', alias: 'κινόα', kcal: 120, p: 4.4, c: 21, f: 1.9, fiber: 2.8, sodium: 7, s: 150 },
   { name: 'Potato, boiled', alias: 'πατάτα βραστή', kcal: 87, p: 1.9, c: 20, f: 0.1, fiber: 1.8, sodium: 4, s: 200 },
@@ -74,8 +74,8 @@ module.exports = [
   { name: 'French fries', alias: 'τηγανητές πατάτες chips five guys fries', kcal: 312, p: 3.4, c: 41, f: 15, fiber: 3.8, sodium: 210, satfat: 2.3, s: 150 },
 
   // ── Fruit ───────────────────────────────────────────────────────
-  { name: 'Banana', alias: 'μπανάνα', kcal: 89, p: 1.1, c: 23, f: 0.3, fiber: 2.6, sugar: 12, sodium: 1, s: 120 },
-  { name: 'Apple', alias: 'μήλο', kcal: 52, p: 0.3, c: 14, f: 0.2, fiber: 2.4, sugar: 10, sodium: 1, s: 180 },
+  { name: 'Banana', alias: 'μπανάνα', kcal: 89, p: 1.1, c: 23, f: 0.3, fiber: 2.6, sugar: 12, sodium: 1, s: 120 , u: 'banana', us: 120 },
+  { name: 'Apple', alias: 'μήλο', kcal: 52, p: 0.3, c: 14, f: 0.2, fiber: 2.4, sugar: 10, sodium: 1, s: 180 , u: 'apple', us: 180 },
   { name: 'Orange', alias: 'πορτοκάλι', kcal: 47, p: 0.9, c: 12, f: 0.1, fiber: 2.4, sugar: 9, sodium: 0, s: 150 },
   { name: 'Strawberries', alias: 'φράουλες', kcal: 32, p: 0.7, c: 7.7, f: 0.3, fiber: 2, sugar: 4.9, sodium: 1, s: 150 },
   { name: 'Grapes', alias: 'σταφύλι', kcal: 69, p: 0.7, c: 18, f: 0.2, fiber: 0.9, sugar: 16, sodium: 2, s: 120 },
@@ -127,18 +127,18 @@ module.exports = [
   { name: 'Milk chocolate', alias: 'σοκολάτα γάλακτος lacta chocolate σοκολατένιο αυγό chocolate egg', kcal: 535, p: 7.6, c: 59, f: 30, sugar: 52, sodium: 79, satfat: 18, s: 25 },
   { name: 'Dark chocolate, 70-85%', alias: 'σοκολάτα υγείας μαύρη bitter dark chocolate elmer', kcal: 598, p: 7.8, c: 46, f: 43, fiber: 11, sugar: 24, sodium: 20, satfat: 24, s: 20 },
   { name: 'ION dark chocolate w/ almonds 72%', alias: 'ion σοκολάτα υγείας αμυγδάλου super fruits', kcal: 597, p: 8, c: 40, f: 45, fiber: 9, sugar: 28, sodium: 15, satfat: 22, s: 15 },
-  { name: 'Chocolate wafer bar', alias: 'γκοφρέτα koukouroukou wafer καουα banofee lacta', kcal: 537, p: 6, c: 63, f: 29, sugar: 40, sodium: 90, satfat: 18, s: 20 },
+  { name: 'Chocolate wafer bar', alias: 'γκοφρέτα koukouroukou wafer καουα banofee lacta', kcal: 537, p: 6, c: 63, f: 29, sugar: 40, sodium: 90, satfat: 18, s: 20 , u: 'bar', us: 20 },
   { name: 'Kinder Bueno', alias: 'kinder bueno σοκολάτα', kcal: 565, p: 8.6, c: 49.5, f: 37, sugar: 40, sodium: 120, satfat: 19, s: 21 },
   { name: 'Ferrero Rocher', alias: 'rocher ferrero', kcal: 585, p: 8, c: 46, f: 41, sugar: 41, sodium: 50, satfat: 13, s: 13 },
-  { name: 'Lotus Biscoff cookies', alias: 'biscoff lotus speculoos μπισκότα', kcal: 484, p: 3.9, c: 72, f: 19.5, sugar: 38, sodium: 350, satfat: 9, s: 13 },
+  { name: 'Lotus Biscoff cookies', alias: 'biscoff lotus speculoos μπισκότα', kcal: 484, p: 3.9, c: 72, f: 19.5, sugar: 38, sodium: 350, satfat: 9, s: 13 , u: 'cookie', us: 6.3 },
   { name: 'Speculoos / Biscoff spread', alias: 'speculoos speculoso lidl άλειμμα', kcal: 568, p: 4, c: 58, f: 35, sugar: 49, sodium: 380, satfat: 12, s: 20 },
-  { name: 'Oreo cookies', alias: 'oreo oreos μπισκότα', kcal: 480, p: 4.3, c: 71, f: 20, sugar: 38, sodium: 380, satfat: 6, s: 34 },
+  { name: 'Oreo cookies', alias: 'oreo oreos μπισκότα', kcal: 480, p: 4.3, c: 71, f: 20, sugar: 38, sodium: 380, satfat: 6, s: 34 , u: 'cookie', us: 11.3 },
   { name: 'Marzipan', alias: 'marzipan αμυγδαλόπαστα biermann', kcal: 470, p: 9, c: 50, f: 26, sugar: 45, sodium: 10, satfat: 2.5, s: 15 },
   { name: 'Gummy candy', alias: 'haribo starmix ζελεδάκια gummy bears καραμέλες', kcal: 343, p: 6.9, c: 77, f: 0.5, sugar: 47, sodium: 30, s: 25 },
   { name: 'Cupcake', alias: 'cupcake κεϊκάκι muffin', kcal: 349, p: 3.5, c: 50, f: 15, sugar: 32, sodium: 280, satfat: 5, s: 50 },
-  { name: 'Chocolate chip cookie', alias: 'cookie μπισκότο choc chip cookies', kcal: 483, p: 5, c: 64, f: 23, sugar: 35, sodium: 320, satfat: 11, s: 30 },
+  { name: 'Chocolate chip cookie', alias: 'cookie μπισκότο choc chip cookies', kcal: 483, p: 5, c: 64, f: 23, sugar: 35, sodium: 320, satfat: 11, s: 30 , u: 'cookie', us: 30 },
   { name: 'Butter cookies', alias: 'biscotello μπισκότα βουτύρου cookies', kcal: 489, p: 6, c: 64, f: 22, sugar: 24, sodium: 300, satfat: 12, s: 30 },
-  { name: 'Kormos (chocolate biscuit log)', alias: 'κορμός σπιτικός μωσαϊκό chocolate salami', kcal: 414, p: 5, c: 50, f: 21, sugar: 32, sodium: 120, satfat: 11, s: 50 },
+  { name: 'Kormos (chocolate biscuit log)', alias: 'κορμός σπιτικός μωσαϊκό chocolate salami', kcal: 414, p: 5, c: 50, f: 21, sugar: 32, sodium: 120, satfat: 11, s: 50 , u: 'slice', us: 50 },
   { name: 'Granola', alias: 'γκρανόλα granola μούσλι muesli', kcal: 449, p: 10, c: 64, f: 17, fiber: 7, sugar: 18, sodium: 30, s: 40 },
   { name: 'Granola w/ dark chocolate', alias: 'γκρανόλα μαύρη σοκολάτα healthy habits', kcal: 455, p: 9, c: 62, f: 19, fiber: 7, sugar: 20, sodium: 40, s: 30 },
   { name: 'Chocolate brownie batter spread', alias: 'chocolate brownie batter per4m άλειμμα', kcal: 333, p: 12, c: 42, f: 13, sugar: 18, sodium: 120, satfat: 6, s: 15 },
@@ -151,13 +151,13 @@ module.exports = [
   { name: 'Vanilla ice cream', alias: 'παγωτό βανίλια ice cream', kcal: 209, p: 3.5, c: 24, f: 11, sugar: 21, sodium: 80, satfat: 7, s: 100 },
   { name: 'Chocolate ice cream', alias: 'παγωτό σοκολάτα', kcal: 217, p: 3.8, c: 28, f: 10, sugar: 25, sodium: 76, satfat: 6, s: 100 },
   { name: 'Chocolate hazelnut gelato', alias: 'gelato bueno παγωτό σοκολάτα φουντούκι', kcal: 230, p: 4, c: 31, f: 10, sugar: 26, sodium: 60, satfat: 6, s: 80 },
-  { name: 'Magnum ice cream bar', alias: 'magnum salted caramel almond παγωτό ξυλάκι', kcal: 287, p: 3.6, c: 30, f: 17, sugar: 27, sodium: 70, satfat: 11, s: 79 },
+  { name: 'Magnum ice cream bar', alias: 'magnum salted caramel almond παγωτό ξυλάκι', kcal: 287, p: 3.6, c: 30, f: 17, sugar: 27, sodium: 70, satfat: 11, s: 79 , u: 'bar', us: 79 },
   { name: 'Ice cream cone (wafer)', alias: 'χωνάκι παγωτού wafer cone soyumgood', kcal: 388, p: 8, c: 80, f: 4, sugar: 6, sodium: 250, s: 5 },
 
   // ── Protein snacks / supplements ────────────────────────────────
-  { name: 'Protein bar', alias: 'μπάρα πρωτεΐνης protein bar', kcal: 353, p: 33, c: 35, f: 9, fiber: 6, sugar: 4, sodium: 250, s: 60 },
-  { name: 'Born Winner protein bar', alias: 'born winner protein bar strawberry cheesecake μπάρα', kcal: 347, p: 33, c: 36, f: 8, fiber: 5, sugar: 3, sodium: 220, s: 60 },
-  { name: 'Hungry Not protein bar', alias: 'hungry not protein bar sdoukos σδούκος μπάρα', kcal: 390, p: 40, c: 35, f: 10, fiber: 6, sugar: 3, sodium: 250, s: 50 },
+  { name: 'Protein bar', alias: 'μπάρα πρωτεΐνης protein bar', kcal: 353, p: 33, c: 35, f: 9, fiber: 6, sugar: 4, sodium: 250, s: 60 , u: 'bar', us: 60 },
+  { name: 'Born Winner protein bar', alias: 'born winner protein bar strawberry cheesecake μπάρα', kcal: 347, p: 33, c: 36, f: 8, fiber: 5, sugar: 3, sodium: 220, s: 60 , u: 'bar', us: 60 },
+  { name: 'Hungry Not protein bar', alias: 'hungry not protein bar sdoukos σδούκος μπάρα', kcal: 390, p: 40, c: 35, f: 10, fiber: 6, sugar: 3, sodium: 250, s: 50 , u: 'bar', us: 50 },
   { name: 'Protein drink mix powder', alias: 'ryse protein drink mix chocolate cookie blast σκόνη', kcal: 373, p: 70, c: 12, f: 5, sugar: 3, sodium: 250, s: 30 },
   { name: 'High-protein yogurt', alias: 'protein yogurt γιαούρτι πρωτεΐνης high protein snack', kcal: 81, p: 10, c: 8, f: 1, sugar: 6, sodium: 40, s: 200 },
 
@@ -174,9 +174,9 @@ module.exports = [
   { name: 'Chocolate cereal (Coco Pops)', alias: 'coco pops kellogg δημητριακά σοκολάτα cereal', kcal: 388, p: 4.5, c: 87, f: 2.5, fiber: 2, sugar: 35, sodium: 480, s: 30 },
 
   // ── Bread / Greek bakery ────────────────────────────────────────
-  { name: 'Sourdough bread', alias: 'sourdough προζυμένιο ψωμί lidl', kcal: 245, p: 9, c: 47, f: 2, fiber: 3, sodium: 480, s: 60 },
-  { name: 'Rye sourdough bread', alias: 'σίτου σίκαλη προζύμι rye sourdough carrefour ψωμί', kcal: 247, p: 9, c: 47, f: 2.5, fiber: 6, sodium: 460, s: 50 },
-  { name: 'Koulouri Thessalonikis', alias: 'κουλούρι θεσσαλονίκης σουσάμι sesame bread ring σκλαβενίτης', kcal: 296, p: 10, c: 55, f: 4, fiber: 3, sodium: 450, s: 70 },
+  { name: 'Sourdough bread', alias: 'sourdough προζυμένιο ψωμί lidl', kcal: 245, p: 9, c: 47, f: 2, fiber: 3, sodium: 480, s: 60 , u: 'slice', us: 60 },
+  { name: 'Rye sourdough bread', alias: 'σίτου σίκαλη προζύμι rye sourdough carrefour ψωμί', kcal: 247, p: 9, c: 47, f: 2.5, fiber: 6, sodium: 460, s: 50 , u: 'slice', us: 50 },
+  { name: 'Koulouri Thessalonikis', alias: 'κουλούρι θεσσαλονίκης σουσάμι sesame bread ring σκλαβενίτης', kcal: 296, p: 10, c: 55, f: 4, fiber: 3, sodium: 450, s: 70 , u: 'piece', us: 70 },
   { name: 'Lagana bread', alias: 'λαγάνα σαρακοστιανό ψωμί', kcal: 299, p: 8, c: 60, f: 3, fiber: 2.5, sodium: 470, s: 60 },
 
   // ── Greek prepared / taverna dishes ─────────────────────────────
@@ -201,7 +201,7 @@ module.exports = [
   { name: 'Egg yolk', alias: 'κρόκος αυγού egg yolk', kcal: 322, p: 16, c: 3.6, f: 27, sodium: 48, satfat: 9.5, s: 17 },
 
   // ── Fruit (additional) ──────────────────────────────────────────
-  { name: 'Kiwi', alias: 'ακτινίδιο kiwi', kcal: 61, p: 1.1, c: 15, f: 0.5, fiber: 3, sugar: 9, sodium: 3, s: 75 },
+  { name: 'Kiwi', alias: 'ακτινίδιο kiwi', kcal: 61, p: 1.1, c: 15, f: 0.5, fiber: 3, sugar: 9, sodium: 3, s: 75 , u: 'kiwi', us: 75 },
   { name: 'Pineapple', alias: 'ανανάς pineapple', kcal: 50, p: 0.5, c: 13, f: 0.1, fiber: 1.4, sugar: 10, sodium: 1, s: 100 },
   { name: 'Mandarin / clementine', alias: 'μανταρίνι mandarin clementine', kcal: 53, p: 0.8, c: 13, f: 0.3, fiber: 1.8, sugar: 11, sodium: 2, s: 80 },
 
@@ -251,9 +251,9 @@ module.exports = [
   { name: 'Muesli', alias: 'μούσλι muesli δημητριακά', kcal: 365, p: 10, c: 66, f: 6, fiber: 7, sugar: 16, sodium: 30, s: 45 },
   { name: 'Frosted flakes', alias: 'frosties δημητριακά ζάχαρη', kcal: 375, p: 4.5, c: 91, f: 0.6, fiber: 2, sugar: 37, sodium: 480, s: 30 },
   { name: 'Pancakes', alias: 'τηγανίτες pancakes', kcal: 227, p: 6, c: 28, f: 9, fiber: 1, sugar: 6, sodium: 380, satfat: 2, s: 80 },
-  { name: 'Waffle', alias: 'βάφλα waffle', kcal: 291, p: 7, c: 33, f: 14, sugar: 8, sodium: 420, satfat: 3, s: 75 },
+  { name: 'Waffle', alias: 'βάφλα waffle', kcal: 291, p: 7, c: 33, f: 14, sugar: 8, sodium: 420, satfat: 3, s: 75 , u: 'waffle', us: 75 },
   { name: 'Croissant', alias: 'κρουασάν croissant', kcal: 406, p: 8, c: 46, f: 21, fiber: 2.6, sugar: 11, sodium: 470, satfat: 12, s: 60 },
-  { name: 'Rice cakes', alias: 'ρυζογκοφρέτες rice cakes', kcal: 387, p: 8, c: 82, f: 3, fiber: 4, sodium: 30, s: 9 },
+  { name: 'Rice cakes', alias: 'ρυζογκοφρέτες rice cakes', kcal: 387, p: 8, c: 82, f: 3, fiber: 4, sodium: 30, s: 9 , u: 'cake', us: 9 },
   { name: 'Semolina, dry', alias: 'σιμιγδάλι semolina', kcal: 360, p: 12, c: 73, f: 1, fiber: 3.9, sodium: 1, s: 40 },
 
   // ── Cheese / dairy (additional) ─────────────────────────────────
