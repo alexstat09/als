@@ -657,7 +657,12 @@ function fmtMMSS(secs){ secs=Math.max(0,Math.round(secs||0)); return Math.floor(
 function numVal(v){ var n=parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(n)?'':n; }
 function folders(){ return ls('po_tpl_folders',[]); }
 function templates(){ return ls('po_templates',[]); }
-function workouts(){ return ls('po_workouts',[]); }
+/* Demo/seed workouts (ids like "w1".."w5") leaked into the cloud via an old preview harness.
+   Real sessions always use uid()/"strong-" ids, never a bare "w"+digits — so this is an exact,
+   safe filter that can only ever match the fake seeds, never real data. */
+function isSeedWorkout(w){ return !!(w && /^w\d+$/.test(String(w.id))); }
+function pruneSeedWorkouts(){ try{ var raw=ls('po_workouts',[]); if(!Array.isArray(raw)) return; var clean=raw.filter(function(w){ return !isSeedWorkout(w); }); if(clean.length!==raw.length) save('po_workouts', clean); }catch(e){} }
+function workouts(){ return ls('po_workouts',[]).filter(function(w){ return !isSeedWorkout(w); }); }
 function getActive(){ return ls('po_active',null); }
 function setActive(a){ save('po_active', a); }
 
@@ -1083,8 +1088,14 @@ function showSummary(s, srcTpl, changed){
 /* HISTORY */
 function renderHistory(){
   view='history';
-  var ws=workouts();
-  var html='<div class="w-hero"><div><div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>FITNESS</div><h1 class="w-hero-title">History.</h1></div>'+novaSvg()+'</div>';
+  /* Order by when the workout happened — never trust raw array order (cloud merges append
+     newly-finished sessions to the end, which used to bury today's workout at the bottom). */
+  var ws=workouts().slice().sort(function(a,b){
+    var ka=a.startedAt||(a.date?a.date+'T00:00:00Z':''), kb=b.startedAt||(b.date?b.date+'T00:00:00Z':'');
+    return kb<ka?-1:kb>ka?1:0;
+  });
+  var eyebrow='FITNESS'+(ws.length?(' · '+ws.length+' session'+(ws.length>1?'s':'')):'');
+  var html='<div class="w-hero"><div><div class="au-eyebrow w-hero-eyebrow"><span class="au-dot"></span>'+eyebrow+'</div><h1 class="w-hero-title">History.</h1></div>'+novaSvg()+'</div>';
   html+=segHTML('history');
   if(!ws.length){ html+='<div class="w-empty">No workouts logged yet.<br>Start one and it’ll show up here.</div>'; W.innerHTML=html; return; }
   ws.forEach(function(s){
@@ -1533,9 +1544,13 @@ window.finishActive=finishActive; window.cancelActive=cancelActive; window.pickE
 window.setTime=setTime; window.setNote=setNote; window.togglePerSide=togglePerSide; window.moveEx=moveEx; window.removeSet=removeSet;
 window.deleteWorkout=async function(id){ if(!(await ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true})))return; var list=workouts().filter(function(w){return w.id!==id;}); save('po_workouts',list); render(); };
 
+pruneSeedWorkouts();
+/* pocoach-sync calls this after a cloud merge. Re-prune any seeds the merge re-added
+   (tombstoning them so the cloud gets cleaned too), then repaint the current view. */
+window._gymRerender = function(){ try{ pruneSeedWorkouts(); }catch(e){} if(view!=='active') render(); };
 if(getActive()) view='active';
 render();
-window.addEventListener('storage', function(){ if(view!=='active') render(); });
+window.addEventListener('storage', function(){ if(view!=='active') { pruneSeedWorkouts(); render(); } });
 /* iOS freezes JS when backgrounded — so when you leave mid-rest we ask the
    server to push you a "rest complete" alert at the end-time (fires even with
    the app closed). On return we cancel it and rebuild so the timers re-sync. */
