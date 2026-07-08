@@ -201,7 +201,7 @@
   .w-side{font-family:var(--au-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:7px 11px;border-radius:999px;border:1px solid var(--au-line);background:rgba(255,255,255,.04);color:var(--au-faint);cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;}
   .w-side.on{background:rgba(155,140,255,.16);border-color:rgba(155,140,255,.5);color:#9B8CFF;}
   /* per-exercise note */
-  .w-note{display:block;width:100%;background:rgba(255,255,255,.03);border:1px dashed var(--au-line);border-radius:9px;padding:8px 11px;color:var(--au-dim);font-family:var(--au-serif);font-style:italic;font-size:13px;outline:none;margin:2px 0 9px;}
+  .w-note{display:block;width:100%;background:rgba(255,255,255,.03);border:1px dashed var(--au-line);border-radius:9px;padding:8px 11px;color:var(--au-dim);font-family:var(--au-serif);font-style:italic;font-size:13px;outline:none;margin:2px 0 9px;line-height:1.5;min-height:40px;resize:vertical;white-space:pre-wrap;-webkit-appearance:none;}
   .w-note:focus{border-color:rgba(var(--au-glow-rgb),.5);color:var(--au-ivory);background:rgba(255,255,255,.05);}
   .w-note::placeholder{color:var(--au-faint);}
   /* swipe-to-delete a set */
@@ -647,6 +647,37 @@ seed();
 
 function exercises(){ return ls('po_exercises',[]); }
 function exById(id){ return exercises().find(function(e){return e.id===id;}) || {id:id,name:id,muscle:'',kind:'weight'}; }
+/* ── per-exercise memory: a remembered per-side setting + one sticky note, saved on the exercise ── */
+function setExField(exId, field, val){
+  var list=exercises(); var i=list.findIndex(function(e){return e.id===exId;});
+  if(i<0){ var ex=exById(exId); list.push({id:exId,name:ex.name,muscle:ex.muscle,kind:ex.kind||'weight'}); i=list.length-1; }
+  list[i][field]=val; save('po_exercises',list);
+}
+function exNote(exId){ return exById(exId).note||''; }
+function exPerSide(exId){ return !!exById(exId).perSide; }
+/* best working set bucketed by the slot the exercise was done in (1 = first movement of the session) —
+   so "when done 2nd" is compared to "when done 2nd", not to a fresh-first PR. */
+function exHistoryByPos(exId){
+  var byPos={};
+  workouts().slice().sort(function(a,b){return (a.startedAt||'')<(b.startedAt||'')?-1:1;}).forEach(function(w){
+    var idx=-1; (w.entries||[]).forEach(function(e,i){ if(idx<0 && e.exId===exId) idx=i; });
+    if(idx<0) return;
+    var en=w.entries[idx], pos=idx+1, best=0, bw=null;
+    workSets(en.sets).forEach(function(s){ if((+s.kg||0)>0 && (+s.reps||0)>0){ var v=e1rm(s.kg,s.reps); if(v>best){ best=v; bw=s; } } });
+    if(best<=0) return;
+    var b=byPos[pos]||(byPos[pos]={pos:pos,best:0,bestSet:null,count:0,lastDate:'',lastSet:null});
+    b.count++; b.lastDate=w.date; b.lastSet=bw;
+    if(best>b.best){ b.best=best; b.bestSet=bw; }
+  });
+  return byPos;
+}
+/* last reference for the slot this exercise currently sits in (fatigue-aware target) */
+function targetForPos(exId, pos){
+  var b=exHistoryByPos(exId)[pos];
+  if(b && b.lastSet){ return { w:+b.lastSet.kg||0, r:+b.lastSet.reps||0, count:b.count, best:b.best }; }
+  return null;
+}
+function ordinal(n){ return n+({1:'st',2:'nd',3:'rd'}[n%100>10&&n%100<14?0:n%10]||'th'); }
 /* time-based (cardio / holds) = log duration, not kg×reps */
 function isTime(o){ return o && (o.kind==='time' || o.muscle==='Cardio'); }
 function parseTime(str){ str=String(str==null?'':str).trim(); if(!str) return 0;
@@ -833,7 +864,7 @@ function startFromTpl(id){
     for(var i=0;i<it.sets;i++){ var prev = le && le.sets[i];
       if(tm) sets.push({ secs: prev&&prev.secs?prev.secs:'', done:false });
       else sets.push({ kg: prev?prev.kg:'', reps: prev?prev.reps:'', done:false }); }
-    return { exId:it.exId, name:ex.name, muscle:ex.muscle, kind:tm?'time':'weight', note:'', perSide:false, sets:sets };
+    return { exId:it.exId, name:ex.name, muscle:ex.muscle, kind:tm?'time':'weight', note:exNote(it.exId), perSide:tm?false:exPerSide(it.exId), sets:sets };
   });
   setActive({ id:uid(), name:t.name, templateId:id, startedAt:new Date().toISOString(), entries:entries });
   closeSheet(); go('active');
@@ -877,7 +908,7 @@ function entryCardHTML(en, ei, a){
       (a.entries.length>1?'<span class="w-grip" data-drag="active" aria-label="Drag to reorder" title="Drag to reorder">&#8801;</span>':'')+
       '<button type="button" class="w-itool del" onclick="removeEx('+ei+')" aria-label="Remove">✕</button>'+
     '</div></div>';
-  html+='<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="setNote('+ei+',this.value)">';
+  html+='<textarea class="w-note" rows="2" placeholder="Sticky note — stays on this exercise…" oninput="setNote('+ei+',this.value)">'+esc(en.note||'')+'</textarea>';
   if(tm){
     var lastT=lastTimeFor(en.exId);
     html+='<div class="w-target">'+(lastT?'Last time <b>'+fmtMMSS(lastT)+'</b> &middot; beat it':'Log your time — minutes (e.g. 20) or mm:ss.')+'</div>';
@@ -892,7 +923,11 @@ function entryCardHTML(en, ei, a){
   } else {
     var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
     var doneMax=0; en.sets.forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
-    if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
+    /* fatigue-aware reference: if you train this lift in different slots, show what you hit when it was done in THIS slot */
+    var _pos=ei+1, _byPos=exHistoryByPos(en.exId), _posVaries=Object.keys(_byPos).length>1, _bp=_byPos[_pos];
+    if(_posVaries && _bp && _bp.lastSet){
+      html+='<div class="w-target">When done '+ordinal(_pos)+' &middot; last best <b>'+(+_bp.lastSet.kg||0)+'kg × '+(+_bp.lastSet.reps||0)+'</b> &middot; beat it</div>';
+    } else if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
     else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'+
       '<button type="button" class="w-side'+(en.perSide?' on':'')+'" style="margin:0;" onclick="togglePerSide('+ei+')">'+(en.perSide?'✓ Per side (each hand counts double)':'＋ Per side / single-arm?')+'</button>'+
@@ -975,8 +1010,8 @@ function setVal(ei,si,field,val){ var a=getActive(); if(!a)return; var s=a.entri
   else s.reps = (val===''?'':(parseInt(val,10)||0));
   setActive(a); updateLive(ei); updateStats(); }
 function setTime(ei,si,val){ var a=getActive(); if(!a)return; a.entries[ei].sets[si].secs=parseTime(val); setActive(a); paintCard(ei); updateStats(); }
-function setNote(ei,val){ var a=getActive(); if(!a)return; a.entries[ei].note=val; setActive(a); } /* no re-render — keep focus */
-function togglePerSide(ei){ var a=getActive(); if(!a)return; a.entries[ei].perSide=!a.entries[ei].perSide; setActive(a); paintCard(ei); }
+function setNote(ei,val){ var a=getActive(); if(!a)return; var en=a.entries[ei]; en.note=val; setActive(a); if(en.exId) setExField(en.exId,'note',val); } /* sticky note lives on the exercise — no re-render, keep focus */
+function togglePerSide(ei){ var a=getActive(); if(!a)return; var en=a.entries[ei]; en.perSide=!en.perSide; setActive(a); if(en.exId) setExField(en.exId,'perSide',en.perSide); paintCard(ei); }
 function moveEx(ei,dir){ var a=getActive(); if(!a)return; var j=ei+dir; if(j<0||j>=a.entries.length)return; var t=a.entries[ei]; a.entries[ei]=a.entries[j]; a.entries[j]=t; setActive(a); render(); }
 function toggleSet(ei,si){ var a=getActive(); if(!a)return;
   var prevRestEi=(a.rest&&typeof a.rest.ei==='number')?a.rest.ei:-1;
@@ -1002,7 +1037,7 @@ function removeSet(ei,si){ var a=getActive(); if(!a||!a.entries[ei])return; a.en
 async function removeEx(ei){ var a=getActive(); if(!a)return; if(!(await ALSConfirm({title:'Remove exercise?',message:'Remove '+a.entries[ei].name+' from this workout?',confirmText:'Remove',danger:true})))return; a.entries.splice(ei,1); setActive(a); render(); }
 function lastTimeFor(exId){ var le=lastEntryFor(exId); if(!le)return 0; var m=0; (le.sets||[]).forEach(function(s){ if((s.secs||0)>m)m=s.secs; }); return m; }
 function addExToActive(ex){ var a=getActive(); if(!a)return; var tm=isTime(ex);
-  a.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',note:'',perSide:false,sets:[ tm?{secs:'',done:false}:{kg:'',reps:'',done:false} ]});
+  a.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',note:exNote(ex.id),perSide:tm?false:exPerSide(ex.id),sets:[ tm?{secs:'',done:false}:{kg:'',reps:'',done:false} ]});
   setActive(a); closeSheet(); render(); }
 async function cancelActive(){ if(!(await ALSConfirm({title:'Discard workout?',message:'Nothing will be saved.',confirmText:'Discard',danger:true})))return; clearInterval(timerInt); restSkip(); save('po_active',null); go('home'); }
 
@@ -1363,6 +1398,14 @@ function exerciseProgress(exId){
   if(h.length>=2){
     html+=chartSVG(h.map(function(x){return x.e1rm;}));
     html+='<div class="w-chartcap"><span>'+relDate(h[0].date)+'</span><span>estimated 1RM over time</span><span>Now</span></div>';
+  }
+  /* order-aware: how you perform when this lift is done fresh (1st) vs later in the session */
+  var byPos=exHistoryByPos(exId), posKeys=Object.keys(byPos).map(Number).sort(function(a,b){return a-b;});
+  if(posKeys.length>1){
+    html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">WHEN DONE 1ST VS LATER</div>';
+    posKeys.forEach(function(p){ var b=byPos[p]; var st=b.bestSet?((+b.bestSet.kg||0)+'kg × '+(+b.bestSet.reps||0)):'—';
+      html+='<div class="w-hist-row"><span class="nm">'+ordinal(p)+' in session <span style="color:var(--au-faint)">· '+b.count+'×</span></span><span class="bs">best '+esc(st)+' · '+Math.round(b.best)+'kg 1RM</span></div>';
+    });
   }
   html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">RECENT SESSIONS</div>';
   h.slice(-5).reverse().forEach(function(x){
@@ -1834,7 +1877,7 @@ function renderWkEditor(){
         '<button type="button" class="w-itool del" onclick="wkRemoveSet('+ei+','+si+')" aria-label="Delete set">✕</button></div>'; });
     }
     html+='<button type="button" class="w-addset" onclick="wkAddSet('+ei+')">&#65291; Add set</button>'+
-      '<input class="w-note" placeholder="Add a note…" value="'+esc(en.note||'')+'" oninput="window.__editWk.entries['+ei+'].note=this.value">';
+      '<textarea class="w-note" rows="2" placeholder="Note…" oninput="window.__editWk.entries['+ei+'].note=this.value">'+esc(en.note||'')+'</textarea>';
     html+='</div>';
   });
   html+='<button type="button" class="w-btn-ghost" style="margin-top:8px;" onclick="pickExercise(wkAddEx)">&#65291; Add exercise</button>'+
@@ -1848,7 +1891,7 @@ window.wkAddSet=function(ei){ var w=window.__editWk; var en=w.entries[ei]; var l
   if((en.kind==='time')||isTime(en)) en.sets.push({secs:last?last.secs:0,done:true}); else en.sets.push({kg:last?last.kg:0,reps:last?last.reps:0,done:true}); renderWkEditor(); };
 window.wkRemoveSet=function(ei,si){ var w=window.__editWk; w.entries[ei].sets.splice(si,1); if(!w.entries[ei].sets.length) w.entries.splice(ei,1); renderWkEditor(); };
 window.wkRemoveEx=function(ei){ window.__editWk.entries.splice(ei,1); renderWkEditor(); };
-window.wkAddEx=function(ex){ var w=window.__editWk; var tm=isTime(ex); w.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',perSide:false,note:'',sets:[ tm?{secs:0,done:true}:{kg:0,reps:0,done:true} ]}); closeSheet(); renderWkEditor(); };
+window.wkAddEx=function(ex){ var w=window.__editWk; var tm=isTime(ex); w.entries.push({exId:ex.id,name:ex.name,muscle:ex.muscle,kind:tm?'time':'weight',perSide:tm?false:exPerSide(ex.id),note:exNote(ex.id),sets:[ tm?{secs:0,done:true}:{kg:0,reps:0,done:true} ]}); closeSheet(); renderWkEditor(); };
 window.saveWkEdit=function(){ var w=window.__editWk; if(!w)return;
   var volume=0, prs=[];
   (w.entries||[]).forEach(function(en){
