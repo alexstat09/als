@@ -337,12 +337,22 @@ module.exports = async function (req, res) {
   var brief;
   try { brief = await buildBrief(tz); } catch (e) { brief = '(data temporarily unavailable)'; }
 
+  // Calendar comes from the client (read-only, on-device) as a ready-formatted
+  // string — passed through per request, never stored server-side.
+  var schedule = (typeof body.schedule === 'string') ? body.schedule.slice(0, 1200).trim() : '';
+  if (schedule) brief += "\n\nCALENDAR — his schedule today & tomorrow (from his Google Calendar):\n" + schedule;
+
+  var briefMode = body.mode === 'brief';
+  var sys = systemPrompt(brief, patterns, memory);
+  if (briefMode) sys += "\n\n=== MORNING BRIEF MODE (he did not type anything — you are opening his day for him) ===\n"
+    + "Give Alex his brief for TODAY: the 2 to 4 things that matter most, each a concrete prioritized move reasoned across his recovery, training plan, nutrition, calendar and goals. Weave the schedule in — when to train, when to eat the bigger vs lighter meal, when to wind down for tomorrow. Lead with the single biggest lever. No greeting, no preamble, no questions back, no sign-off. One tight sentence per point, each on its own line starting with \"• \". Plain text, warm and direct. If a domain has no data, skip it silently rather than mentioning the gap.";
+
   // Groq (OpenAI-compatible): system message + the conversation.
   var payload = {
     model: GROQ_MODEL,
-    messages: [{ role: 'system', content: systemPrompt(brief, patterns, memory) }].concat(messages),
-    max_tokens: 1024,
-    temperature: 0.7,
+    messages: [{ role: 'system', content: sys }].concat(messages),
+    max_tokens: briefMode ? 500 : 1024,
+    temperature: briefMode ? 0.5 : 0.7,
     stream: true
   };
 

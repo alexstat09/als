@@ -206,6 +206,7 @@
   <script src="insights-engine.js" defer></script>
   <script src="forecast-engine.js" defer></script>
   <script src="nova-actions.js" defer></script>
+  <script src="gcal.js" defer></script>
   <script>
   (function(){
     'use strict';
@@ -334,9 +335,10 @@
       try {
         var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
         try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
+        var sched=''; try{ if(window.GCal){ var gc=GCal.cached(); if(gc&&gc.events){ var f=function(iso){var d=new Date(iso);if(isNaN(d))return '';var h=d.getHours(),m=d.getMinutes();return h+':'+(m<10?'0':'')+m;}; var ln=function(evs){return evs.map(function(e){return (e.allDay?'all day':f(e.start))+' '+e.title;}).join('; ');}; var t0=GCal.eventsForDay(gc.events,0),t1=GCal.eventsForDay(gc.events,1),o=[]; o.push('Today: '+(t0.length?ln(t0):'nothing scheduled')); if(t1.length)o.push('Tomorrow: '+ln(t1)); sched=o.join('\n'); } } }catch(e){}
         var res = await fetch('/api/nova-chat', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ messages: history, insights: novaInsights, memory: memFacts() })
+          body: JSON.stringify({ messages: history, insights: novaInsights, memory: memFacts(), schedule: sched })
         });
         if(res.body && res.body.getReader){
           var reader = res.body.getReader(), dec = new TextDecoder();

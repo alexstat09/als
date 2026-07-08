@@ -583,6 +583,18 @@ body::after {
   <!-- panels -->
   <div class="mb-grid">
 
+    <!-- Nova's daily read — grounded LLM, calendar-aware -->
+    <div class="mb-panel mb-panel-nova" style="grid-column:1/-1">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2.2" transform="rotate(45 12 12)"/></svg></span>
+        <span class="mb-panel-label">NOVA'S READ ON YOUR DAY</span>
+        <span id="mbBriefRefresh" style="margin-left:auto;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-3);display:none">↻ RETHINK</span>
+      </div>
+      <div id="mbBriefBody"><div class="mb-fuel-note">—</div></div>
+    </div>
+
     <!-- today's agenda (Google Calendar) -->
     <div class="mb-panel mb-panel-agenda" style="grid-column:1/-1">
       <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
@@ -1372,6 +1384,69 @@ if(document.readyState==='loading'){
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,120); }, {once:true});
   else setTimeout(boot,120);
+})();
+</script>
+<script>
+/* NOVA'S READ — proactive daily brief: grounded LLM (free Groq via nova-chat.js),
+   calendar-aware, cached once per day. This is the brain, not a chatbot you poke. */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function ls(k,d){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+  function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  var CK='nova:brief';
+
+  function scheduleStr(){
+    if(!window.GCal){ return ''; }
+    var c=GCal.cached(); if(!c||!c.events){ return ''; }
+    function fmt(iso){ var d=new Date(iso); if(isNaN(d)) return ''; var h=d.getHours(),m=d.getMinutes(); return h+':'+(m<10?'0':'')+m; }
+    function line(evs){ return evs.map(function(e){ return (e.allDay?'all day':fmt(e.start))+' '+e.title; }).join('; '); }
+    var t=GCal.eventsForDay(c.events,0), tm=GCal.eventsForDay(c.events,1), out=[];
+    out.push('Today: '+(t.length?line(t):'nothing scheduled'));
+    if(tm.length) out.push('Tomorrow: '+line(tm));
+    return out.join('\n');
+  }
+  function renderBrief(text){
+    var body=$('mbBriefBody'); if(!body) return;
+    var lines=String(text||'').split('\n').map(function(l){ return l.replace(/^[•\-\*]\s*/,'').trim(); }).filter(Boolean);
+    if(!lines.length){ body.innerHTML='<div class="mb-fuel-note">—</div>'; return; }
+    body.innerHTML=lines.map(function(l){
+      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+        '<span style="color:#3FE0B0;font-size:13px;line-height:1.5;flex:none">◆</span>'+
+        '<span style="flex:1;font-size:14px;color:var(--text-1,#F4F1EA);line-height:1.5">'+esc(l)+'</span></div>';
+    }).join('');
+  }
+  function setState(msg){ var body=$('mbBriefBody'); if(body) body.innerHTML='<div class="mb-fuel-note" style="line-height:1.6">'+esc(msg)+'</div>'; }
+
+  async function generate(){
+    var r=$('mbBriefRefresh'); if(r){ r.style.display=''; r.textContent='↻ …'; }
+    setState('Nova is reading your day…');
+    try{
+      var insights=[]; try{ if(window.ALSInsights&&ALSInsights.compute) insights=ALSInsights.compute().slice(0,8).map(function(i){ return i.text||i; }).filter(Boolean); }catch(e){}
+      var mem=(ls('nova:memory',[])||[]).filter(function(m){ return m&&m.fact; }).map(function(m){ return m.fact; });
+      var res=await fetch('/api/nova-chat',{ method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ messages:[{role:'user',content:'Give me my brief for today.'}], mode:'brief', schedule:scheduleStr(), insights:insights, memory:mem }) });
+      var text=await res.text();
+      if(!res.ok || !text || /brain isn.t connected|hit a snag|couldn.t reach|getting a lot of requests/i.test(text)){
+        setState(text && text.length<180 ? text : 'Nova could not put your brief together right now. Tap ↻ to retry.');
+        if(r) r.textContent='↻ RETHINK'; return;
+      }
+      text=text.replace(/\[\[(REMEMBER|ACTION)[\s\S]*?\]\]/g,'').trim();
+      renderBrief(text);
+      try{ localStorage.setItem(CK, JSON.stringify({ date:todayKey(), text:text })); }catch(e){}
+      if(r) r.textContent='↻ RETHINK';
+    }catch(e){ setState('Nova could not put your brief together right now. Tap ↻ to retry.'); if(r) r.textContent='↻ RETHINK'; }
+  }
+
+  function regen(){ if(window.GCal && GCal.isConnected()){ GCal.refresh(function(){ generate(); }); } else { generate(); } }
+  function boot(){
+    var c=ls(CK,null);
+    if(c && c.date===todayKey() && c.text){ renderBrief(c.text); var r=$('mbBriefRefresh'); if(r) r.style.display=''; }
+    else { regen(); }
+    var r2=$('mbBriefRefresh'); if(r2) r2.addEventListener('click', regen);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,450); }, {once:true});
+  else setTimeout(boot,450);
 })();
 </script>
 <script src="nova.js" defer></script>
