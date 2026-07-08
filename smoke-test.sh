@@ -50,7 +50,12 @@ files.forEach(function (f) {
   var src;
   try { src = read(f); } catch (e) { print('  ✗ READ     ' + f); problems++; return; }
 
-  if (/\.js$/.test(f)) { jsN++; parseOK(src, f); return; }
+  if (/\.js$/.test(f)) {
+    jsN++;
+    // ES-module .js (has top-level import/export) — strip those lines new Function() can't parse, still check the logic.
+    var js = /^\s*(import|export)\s/m.test(src) ? src.replace(/^\s*import\s.*$/gm, '').replace(/^\s*export\s.*$/gm, '') : src;
+    parseOK(js, f); return;
+  }
 
   htmlN++;
   var re = /<script(\s[^>]*)?>([\s\S]*?)<\/script>/g, m, i = 0;

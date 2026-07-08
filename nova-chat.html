@@ -122,6 +122,13 @@
     /* ── intro / suggestions ── */
     .nv-intro{text-align:center;padding:34px 18px 12px;}
     .nv-intro .nova{width:74px;height:74px;margin:0 auto 18px;}
+    /* living gem hero (nova-gem.js) */
+    .nv-intro .nv-gem{width:132px;height:132px;margin:0 auto 20px;}
+    .nv-gem{position:relative;}
+    .nv-gem canvas{width:100%;height:100%;display:none;}   /* revealed when WebGL starts */
+    .nv-gem-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+    .nv-gem-fallback .nova{width:100%;height:100%;margin:0;}
+    .nv-gem::before{content:"";position:absolute;inset:-22%;border-radius:50%;background:radial-gradient(circle,rgba(63,224,176,.26),rgba(63,224,176,0) 70%);filter:blur(7px);z-index:-1;pointer-events:none;}
     .nv-intro h1{font-family:var(--serif);font-style:italic;font-size:28px;margin-bottom:9px;line-height:1.15;}
     .nv-intro p{font-size:13.5px;color:rgba(244,241,234,.5);max-width:340px;margin:0 auto;line-height:1.55;}
     .nv-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:22px;}
@@ -207,6 +214,8 @@
   <script src="forecast-engine.js" defer></script>
   <script src="nova-actions.js" defer></script>
   <script src="gcal.js" defer></script>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+  <script type="module" src="nova-gem.js"></script>
   <script>
   (function(){
     'use strict';
@@ -268,6 +277,9 @@
     function novaSVG(){
       return '<div class="nova" aria-hidden="true"><svg viewBox="0 0 100 100"><g class="nova-glow"><rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#nvNova)" opacity="0.95"/><circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/><circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/></g></svg></div>';
     }
+    /* Intro hero = Nova's living 3D gem (nova-gem.js), with the flat SVG as a
+       graceful fallback until/unless WebGL starts. */
+    function novaGemHTML(){ return '<div class="nv-gem"><canvas data-nova-gem></canvas><div class="nv-gem-fallback">'+ novaSVG() +'</div></div>'; }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function fmtNova(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); }
     function fmtUser(s){ return esc(s).replace(/\n/g,'<br>'); }
@@ -279,10 +291,11 @@
     function renderIntro(){
       var chips = SUGGESTIONS.map(function(s){ return '<button class="nv-chip" type="button" data-q="'+esc(s)+'">'+esc(s)+'</button>'; }).join('');
       scroll.innerHTML =
-        '<div class="nv-intro">'+ novaSVG() +
+        '<div class="nv-intro">'+ novaGemHTML() +
         '<h1>Hey Alex.</h1>'+
         '<p>I can see your training, sleep, recovery, nutrition and habits in real time. Ask me anything — how to train today, why your sleep is off, whether you’re on track.</p>'+
         '<div class="nv-chips">'+chips+'</div></div>';
+      try { if (window.NovaGem) NovaGem.scan(); } catch(e){}
     }
 
     // A message = a BLOCK row containing a BLOCK bubble. Deterministic height.
