@@ -15,6 +15,7 @@
 <script src="page-motion.js" defer></script>
 <script src="insights-engine.js" defer></script>
 <script src="forecast-engine.js" defer></script>
+<script src="gcal.js" defer></script>
 <style>
 /* ── TOKENS ────────────────────────────────────────── */
 :root {
@@ -581,6 +582,18 @@ body::after {
 
   <!-- panels -->
   <div class="mb-grid">
+
+    <!-- today's agenda (Google Calendar) -->
+    <div class="mb-panel mb-panel-agenda" style="grid-column:1/-1">
+      <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
+      <div class="mb-corner bl"></div><div class="mb-corner br"></div>
+      <div class="mb-panel-head">
+        <span class="mb-panel-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"/><line x1="8" y1="3" x2="8" y2="6.5"/><line x1="16" y1="3" x2="16" y2="6.5"/></svg></span>
+        <span class="mb-panel-label">TODAY'S AGENDA</span>
+        <span id="mbAgRefresh" style="margin-left:auto;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-3);display:none">↻ SYNC</span>
+      </div>
+      <div id="mbAgendaBody"><div class="mb-fuel-note">—</div></div>
+    </div>
 
     <!-- recovery / last night -->
     <div class="mb-panel mb-panel-recovery">
@@ -1306,6 +1319,59 @@ if(document.readyState==='loading'){
   boot();
 }
 
+})();
+</script>
+<script>
+/* Today's Agenda — Google Calendar (read-only, client-side via gcal.js) */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtTime(iso){ var d=new Date(iso); if(isNaN(d)) return ''; var h=d.getHours(), m=d.getMinutes(); return h+':'+(m<10?'0':'')+m; }
+  function eventRow(e){
+    var t = e.allDay ? 'all day' : fmtTime(e.start);
+    var loc = e.location ? ' <span style="color:var(--text-3)">· '+esc(e.location)+'</span>' : '';
+    return '<div style="display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+      '<span style="font-family:var(--au-serif,Georgia);font-style:italic;font-size:15px;color:#3FE0B0;min-width:54px">'+t+'</span>'+
+      '<span style="flex:1;font-size:13.5px;color:var(--text-1,#F4F1EA);line-height:1.4">'+esc(e.title)+loc+'</span></div>';
+  }
+  function connectUI(msg){
+    return '<div class="mb-fuel-note" style="margin-bottom:9px;line-height:1.6">'+esc(msg)+'</div>'+
+      '<button type="button" id="mbAgConnect" style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:9px 13px;border-radius:10px;border:1px solid rgba(63,224,176,.35);background:rgba(63,224,176,.08);color:#3FE0B0;cursor:pointer;">＋ Connect Google Calendar</button>';
+  }
+  function wireConnect(){
+    var b=$('mbAgConnect'); if(!b) return;
+    b.addEventListener('click', function(){
+      b.textContent='Connecting…'; b.disabled=true;
+      GCal.connect(function(evs,err){ if(err){ b.disabled=false; b.textContent='Try again'; } render(); });
+    });
+  }
+  function render(){
+    var body=$('mbAgendaBody'), refresh=$('mbAgRefresh'); if(!body) return;
+    if(!window.GCal){ body.innerHTML='<div class="mb-fuel-note">Calendar module loading…</div>'; return; }
+    var c=GCal.cached();
+    if(!GCal.isConnected() && !c){
+      body.innerHTML=connectUI('See your day here. One tap, read-only, private to you.');
+      wireConnect(); if(refresh) refresh.style.display='none'; return;
+    }
+    if(refresh) refresh.style.display='';
+    var evs=(c&&c.events)||[];
+    var today=GCal.eventsForDay(evs,0), tom=GCal.eventsForDay(evs,1);
+    var html='';
+    if(!today.length){ html+='<div class="mb-fuel-note" style="line-height:1.6">Nothing on the calendar today. Clear runway.</div>'; }
+    else { html+=today.map(eventRow).join(''); }
+    if(tom.length){
+      var f=tom[0]; var ft=f.allDay?'all day':fmtTime(f.start);
+      html+='<div class="mb-fuel-note" style="margin-top:11px">Tomorrow: '+tom.length+' event'+(tom.length>1?'s':'')+', first at <b>'+ft+'</b> · '+esc(f.title)+'</div>';
+    }
+    body.innerHTML=html;
+  }
+  function boot(){
+    render();
+    if(window.GCal && GCal.isConnected()){ GCal.refresh(function(){ render(); }); }
+    var r=$('mbAgRefresh'); if(r) r.addEventListener('click', function(){ if(window.GCal){ r.textContent='↻ …'; GCal.refresh(function(){ r.textContent='↻ SYNC'; render(); }); } });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,120); }, {once:true});
+  else setTimeout(boot,120);
 })();
 </script>
 <script src="nova.js" defer></script>
