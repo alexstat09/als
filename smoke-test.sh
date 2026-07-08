@@ -56,7 +56,11 @@ files.forEach(function (f) {
   var re = /<script(\s[^>]*)?>([\s\S]*?)<\/script>/g, m, i = 0;
   while ((m = re.exec(src)) !== null) {
     var attrs = m[1] || ''; if (/\bsrc\s*=/.test(attrs)) continue;
+    var tm = attrs.match(/\btype\s*=\s*["']([^"']+)["']/i), type = tm ? tm[1].toLowerCase() : '';
+    if (type === 'importmap' || type.indexOf('json') >= 0) continue;   // JSON payloads, not JS
     var body = m[2]; if (!body.trim()) continue;
+    // ES modules: strip top-level import/export lines new Function() can't parse, still check the logic.
+    if (type === 'module') body = body.replace(/^\s*import\s.*$/gm, '').replace(/^\s*export\s.*$/gm, '');
     i++; parseOK(body, f + '  inline#' + i);
   }
 
