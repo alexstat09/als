@@ -120,6 +120,19 @@
         case 'finance.html': { var nw = 0; ['bank', 'stocks', 'crypto', 'other'].forEach(function (c) { (ls('nw:' + c, []) || []).forEach(function (it2) { nw += Number(it2.amount) || 0; }); }); var cur = ls('nw_currency', 'CHF'); return nw > 0 ? { hero: Math.round(nw), unit: cur, comma: nw >= 1000, note: 'net worth' } : { hero: '—', note: 'net worth' }; }
         case 'bills.html': { var b = ls('bills:items', []); b = (Array.isArray(b) ? b : []).filter(function (x) { return x && x.id; }); return b.length ? { hero: b.length, note: 'tracked' } : { hero: '—', note: 'add bills' }; }
         case 'movies.html': { var sn = (ls('movies:seen', []) || []).filter(function (x) { return x && x.id; }); var wt = (ls('movies:watch', []) || []).filter(function (x) { return x && x.id; }); if (sn.length) return { hero: sn.length, note: 'rated · watchlist' }; if (wt.length) return { hero: wt.length, note: 'to watch' }; return { hero: '—', note: 'rate a film' }; }
+        case 'run.html': {
+          var rl = (ls('run:logs', []) || []).filter(function (x) { return x && x.id; });
+          var rp = (ls('run:plan', []) || []).filter(function (x) { return x && x.id; });
+          var wsD = new Date(); wsD.setHours(0, 0, 0, 0); wsD.setDate(wsD.getDate() - ((wsD.getDay() + 6) % 7));
+          var wsKey = wsD.getFullYear() + '-' + String(wsD.getMonth() + 1).padStart(2, '0') + '-' + String(wsD.getDate()).padStart(2, '0');
+          var wkKm = 0; rl.forEach(function (r) { if (r.date >= wsKey) wkKm += (+r.distanceKm || 0); });
+          var sToday = rp.filter(function (s) { return s.date === t && s.type !== 'Rest'; })[0];
+          var note = sToday ? ('today · ' + String(sToday.type || '').toLowerCase()) : 'this week';
+          if (wkKm > 0) { wkKm = Math.round(wkKm * 10) / 10; return { hero: wkKm, unit: 'km', dec: (wkKm % 1 ? 1 : 0), note: note }; }
+          if (sToday && sToday.km) return { hero: sToday.km, unit: 'km', note: note };
+          if (rl.length) return { hero: rl.length, unit: 'runs', note: 'all-time' };
+          return { hero: '—', note: 'set race · paces' };
+        }
         case 'arc.html': {
           var Wt = ls('po_coach_weights', []), Wo = ls('po_workouts', []), Sl = ls('sleep:logs', []), ds = [];
           (Array.isArray(Wt) ? Wt : []).forEach(function (e) { if (e && e.dateKey) ds.push(e.dateKey); });

@@ -133,7 +133,7 @@
 
   /* command palette */
   var ITEMS = [
-    ['Fitness', 'gym.html', 'Train'], ['PR Board', 'pr.html', 'Train'],
+    ['Fitness', 'gym.html', 'Train'], ['PR Board', 'pr.html', 'Train'], ['Running', 'run.html', 'Run'],
     ['Nutrition', 'nutrition.html', 'Body'], ['Sleep', 'sleep.html', 'Body'], ['Weight', 'weight.html', 'Body'], ['Caffeine', 'caffeine.html', 'Body'], ['Supplements', 'health.html', 'Body'], ['Measurements', 'measure.html', 'Body'], ['Supplement timing', 'supps.html', 'Body'], ['Meal planner', 'planner.html', 'Body'], ['Water', 'po-water.html', 'Body'], ['Import MyFitnessPal', 'import.html', 'Body'], ['Import Strong', 'import-strong.html', 'Body'], ['Body hub', 'body.html', 'Body'],
     ['Goals', 'main.html', 'Mind'], ['Identity', 'identity.html', 'Mind'], ['Ideas', 'ideas.html', 'Mind'], ['Improve', 'improve.html', 'Mind'],
     ['Finance', 'finance.html', 'Money'], ['Bills', 'bills.html', 'Money'], ['Movies', 'movies.html', 'Life'], ['Your Arc', 'arc.html', 'Life'],
