@@ -213,7 +213,19 @@
     .rn-wx-chips{ display:flex; gap:7px; flex-wrap:wrap; }
     .rn-wx-chip{ display:flex; align-items:center; gap:6px; font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.03em; color:var(--au-dim); background:rgba(255,255,255,.03); border:1px solid var(--au-line); padding:6px 10px; border-radius:20px; }
     .rn-wx-chip b{ color:rgb(var(--rn)); }
+    .rn-wx-chip.best{ color:var(--au-ivory); border-color:rgba(var(--rn),.45); background:rgba(var(--rn),.1); }
     .rn-wx-chip .dotc{ width:6px; height:6px; border-radius:50%; }
+    .rn-shift{ margin-top:15px; padding-top:13px; border-top:1px solid var(--au-line); }
+    .rn-shift-lab{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-bottom:8px; }
+    .rn-shift-row{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .rn-sh{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:7px 2px; border-radius:9px; border:1px solid var(--au-line); background:rgba(255,255,255,.02); cursor:pointer; }
+    .rn-sh .d{ font-family:var(--au-mono); font-size:8px; font-weight:700; color:var(--au-faint); text-transform:uppercase; }
+    .rn-sh .m{ font-family:var(--au-mono); font-size:9.5px; font-weight:800; color:var(--au-faint); }
+    .rn-sh.today{ border-color:rgba(var(--rn),.4); }
+    .rn-sh.s-morning .m{ color:rgb(var(--rn)); }
+    .rn-sh.s-evening .m{ color:rgb(var(--rn-hot)); }
+    .rn-sh.s-off{ background:rgba(255,255,255,.01); }
+    .rn-sh.s-off .m{ color:var(--au-dim); }
     .rn-wx-paces{ display:flex; gap:2px; margin-top:12px; border-radius:12px; overflow:hidden; }
     .rn-wx-pace{ flex:1; text-align:center; padding:9px 4px; background:rgba(255,255,255,.02); }
     .rn-wx-pace .z{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.08em; color:var(--au-faint); }
@@ -939,18 +951,29 @@
       var base=(tempC-14)*0.65, humMult=Math.max(0.7, 1+((rh==null?55:rh)-55)/100*0.6); return Math.min(20, Math.max(0, base*humMult)); }
     function comfortScore(temp, rh, uv){ if(temp==null) return 999; var s=heatSlowdown(temp,rh); s+=(uv!=null?uv:0)*0.6;
       if(temp>32) s+=(temp-32)*2.5; if(temp<4) s+=(4-temp)*1.5; return Math.round(s*10)/10; }
-    function bestWindow(hours, now){ var cand=[];
+    function bestWindow(hours, now, h0, h1){ h0=(h0==null?5:h0); h1=(h1==null?21:h1); var cand=[];
       for(var i=0;i<hours.length;i++){ var h=hours[i]; if(!h.time) continue;
-        if(h.time.getTime()<now.getTime()-1800000) continue; var hod=h.time.getHours(); if(hod<5||hod>21) continue;
+        if(h.time.getTime()<now.getTime()-1800000) continue; var hod=h.time.getHours(); if(hod<h0||hod>h1) continue;
         cand.push({i:i, score:comfortScore(h.temp,h.rh,h.uv), temp:h.temp, time:h.time}); }
       if(!cand.length) return null;
       var best=cand.reduce(function(a,b){ return b.score<a.score?b:a; });
       var lo=best.i, hi=best.i, thr=best.score+4;
-      while(lo-1>=0 && hours[lo-1].time && hours[lo-1].time.getHours()>=5 && comfortScore(hours[lo-1].temp,hours[lo-1].rh,hours[lo-1].uv)<=thr && (best.i-(lo-1))<=4) lo--;
-      while(hi+1<hours.length && hours[hi+1].time && hours[hi+1].time.getHours()<=21 && comfortScore(hours[hi+1].temp,hours[hi+1].rh,hours[hi+1].uv)<=thr && ((hi+1)-best.i)<=4) hi++;
+      while(lo-1>=0 && hours[lo-1].time && hours[lo-1].time.getHours()>=h0 && comfortScore(hours[lo-1].temp,hours[lo-1].rh,hours[lo-1].uv)<=thr && (best.i-(lo-1))<=4) lo--;
+      while(hi+1<hours.length && hours[hi+1].time && hours[hi+1].time.getHours()<=h1 && comfortScore(hours[hi+1].temp,hours[hi+1].rh,hours[hi+1].uv)<=thr && ((hi+1)-best.i)<=4) hi++;
       var temps=[]; for(var k=lo;k<=hi;k++) temps.push(hours[k].temp);
       return { lo:lo, hi:hi, bestI:best.i, startTime:hours[lo].time, endTime:hours[hi].time,
         minScore:best.score, avgTemp:Math.round(temps.reduce(function(a,t){return a+t;},0)/temps.length) }; }
+    /* shift → free run blocks (she runs OPPOSITE her shift; no pre-dawn) */
+    function freeBlocks(shift){
+      if(shift==='morning') return [{h0:15,h1:22,gr:'Μετά τη δουλειά',en:'after work'}];
+      if(shift==='evening') return [{h0:5,h1:14,gr:'Το πρωί',en:'before work'}];
+      if(shift==='off')     return [{h0:5,h1:11,gr:'Πρωί',en:'morning'},{h0:16,h1:22,gr:'Απόγευμα',en:'evening'}];
+      return [{h0:5,h1:22,gr:'',en:''}];
+    }
+    function runWindows(hours, now, shift){
+      var out=[]; freeBlocks(shift).forEach(function(bl){ var w=bestWindow(hours, now, bl.h0, bl.h1); if(w){ w.gr=bl.gr; w.en=bl.en; out.push(w); } });
+      out.sort(function(a,b){ return a.minScore-b.minScore; }); out.forEach(function(w,i){ w.best=(i===0); }); return out;
+    }
     function indoorAdvice(hours, win){ if(!win) return null; var c=hours[win.bestI].temp;
       if(c>=31 || win.minScore>=15) return { indoor:true, coolestTemp:Math.round(c) };
       if(c>=28) return { indoor:false, caution:true, coolestTemp:Math.round(c) };
@@ -979,52 +1002,61 @@
         wxFetching=false; renderHeat();
       }).catch(function(){ wxFetching=false; var b=$('heatBody'); if(b&&!loadWx()) b.innerHTML='<div class="rn-empty">Ο καιρός δεν φόρτωσε. Weather unavailable right now.</div>'; });
     }
+    /* shift storage (she runs opposite her shift) */
+    var K_SHIFT='run:shifts';
+    function shiftOn(dk){ return loadObj(K_SHIFT)[dk]||''; }
+    function cycleShift(dk){ var s=loadObj(K_SHIFT), order=['','morning','evening','off'], cur=s[dk]||'', nx=order[(order.indexOf(cur)+1)%4];
+      if(nx) s[dk]=nx; else delete s[dk]; persist(K_SHIFT,s); flush(); render(); }
+    function shiftLabel(s){ return s==='morning'?['Πρωινή βάρδια','morning shift']:s==='evening'?['Βραδινή βάρδια','evening shift']:s==='off'?['Ρεπό σήμερα','day off']:['','']; }
+    function shiftStripHTML(){
+      var ws=weekStart(new Date()), tdk=todayDk(), sh=loadObj(K_SHIFT), cells='';
+      for(var i=0;i<7;i++){ var d=addDays(ws,i), dk=dkOf(d), s=sh[dk]||'';
+        var mk = s==='morning'?'Πρ':(s==='evening'?'Βρ':(s==='off'?'Ρ':'+'));
+        cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="m">'+mk+'</span></button>';
+      }
+      return '<div class="rn-shift"><div class="rn-shift-lab">Η βάρδιά σου · your shift · tap to set</div><div class="rn-shift-row">'+cells+'</div></div>';
+    }
     function renderHeat(){
       var c=loadWx(); if(!c || (Date.now()-c.fetchedAt>3600000)) fetchWeather();
-      if(!c) return; // skeleton until first fetch
+      if(!c){ return; } // skeleton until first fetch
       var hours=hydrateWx(c), now=new Date();
       var nowI=0, bestD=Infinity; hours.forEach(function(h,i){ var d=Math.abs(h.time-now); if(d<bestD){ bestD=d; nowI=i; } });
-      var cur=hours[nowI]; var win=bestWindow(hours, now); var adv=win?indoorAdvice(hours,win):null;
-      var slow=heatSlowdown(cur.temp, cur.rh);
-      var W=320,H=84,pad=8, cv=heatCurve(hours, nowI, 16, W, H, pad);
-      var svg='';
+      var cur=hours[nowI], shift=shiftOn(todayDk());
+      var wins=runWindows(hours, now, shift), best=wins[0]||null;
+      var adv=best?indoorAdvice(hours,best):null;
+      var runTemp=best?hours[best.bestI].temp:cur.temp, runRh=best?hours[best.bestI].rh:cur.rh, slow=heatSlowdown(runTemp, runRh);
+      var W=320,H=84,pad=8, cv=heatCurve(hours, nowI, 16, W, H, pad), svg='';
       if(cv){
-        var bx=cv.pts.filter(function(p){ return win && p.time>=win.startTime && p.time<=win.endTime; });
-        var band=''; if(bx.length){ var x0=bx[0].x, x1=bx[bx.length-1].x; band='<rect x="'+x0.toFixed(1)+'" y="0" width="'+Math.max(3,(x1-x0)).toFixed(1)+'" height="'+H+'" fill="rgba(var(--rn),.12)" rx="4"/>'; }
+        var bands=wins.map(function(w){ var bx=cv.pts.filter(function(p){ return p.time>=w.startTime && p.time<=w.endTime; }); if(!bx.length) return '';
+          var x0=bx[0].x, x1=bx[bx.length-1].x; return '<rect x="'+x0.toFixed(1)+'" y="0" width="'+Math.max(3,(x1-x0)).toFixed(1)+'" height="'+H+'" fill="rgba(var(--rn),'+(w.best?'.14':'.06')+')" rx="4"/>'; }).join('');
         var nowX=cv.pts[0].x.toFixed(1);
         var area=cv.d+' L'+cv.pts[cv.pts.length-1].x.toFixed(1)+' '+H+' L'+cv.pts[0].x.toFixed(1)+' '+H+' Z';
         svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
-          '<defs><linearGradient id="wxg" x1="0" y1="0" x2="0" y2="1">'+
-            '<stop offset="0" stop-color="rgba(var(--rn-hot),.32)"/><stop offset="1" stop-color="rgba(var(--rn-cool),.02)"/></linearGradient></defs>'+
-          band+'<path d="'+area+'" fill="url(#wxg)"/>'+
+          '<defs><linearGradient id="wxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--rn-hot),.32)"/><stop offset="1" stop-color="rgba(var(--rn-cool),.02)"/></linearGradient></defs>'+
+          bands+'<path d="'+area+'" fill="url(#wxg)"/>'+
           '<path d="'+cv.d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
           '<line x1="'+nowX+'" y1="0" x2="'+nowX+'" y2="'+H+'" stroke="rgba(255,255,255,.35)" stroke-width="1" stroke-dasharray="2 3"/>'+
-          '<circle cx="'+nowX+'" cy="'+cv.pts[0].y.toFixed(1)+'" r="3.5" fill="rgb(var(--rn))"/>'+
-        '</svg>';
+          '<circle cx="'+nowX+'" cy="'+cv.pts[0].y.toFixed(1)+'" r="3.5" fill="rgb(var(--rn))"/></svg>';
       }
-      var ticks=''; if(cv){ var idxs=[0,5,10,15]; ticks='<div class="rn-wx-ticks">'+idxs.map(function(k){ var p=cv.pts[k]; return p?('<span>'+hhmm(p.time)+'</span>'):''; }).join('')+'</div>'; }
-      var wl=wcodeLabel(cur.code);
-      // verdict
+      var ticks=''; if(cv){ ticks='<div class="rn-wx-ticks">'+[0,5,10,15].map(function(k){ var p=cv.pts[k]; return p?('<span>'+hhmm(p.time)+'</span>'):''; }).join('')+'</div>'; }
+      var wl=wcodeLabel(cur.code), sl=shiftLabel(shift);
       var verdict, sub;
-      if(adv&&adv.indoor){
-        verdict='Πολλή ζέστη σήμερα. <b class="hot">Καλύτερα μέσα.</b>';
-        sub='Even the coolest hour is ~'+adv.coolestTemp+'°. Take today’s session indoors.';
-      } else if(win){
-        var nowBest = Math.abs(hours[win.bestI].time-now)<5400000;
-        var sameDay = win.startTime.getDate()===now.getDate();
-        var whenGr = (sameDay?'':'αύριο ')+hhmm(win.startTime)+'–'+hhmm(win.endTime);
-        verdict = nowBest ? ('Τώρα είναι <b>καλή ώρα</b> για τρέξιμο.') : ('Καλύτερο τρέξιμο <b>'+whenGr+'</b>.');
-        sub = 'around '+win.avgTemp+'° · '+ (nowBest?'go now':'cooler then')+(adv&&adv.caution?' · warm out there':'');
-      } else { verdict='—'; sub=''; }
-      // adjusted paces (current conditions)
+      if(adv&&adv.indoor){ verdict=(sl[0]?sl[0]+'. ':'')+'Πολλή ζέστη. <b class="hot">Καλύτερα μέσα.</b>';
+        sub='Even your free window is ~'+adv.coolestTemp+'° — do today’s session at OXYGEN.'; }
+      else if(best){ var nowBest=Math.abs(hours[best.bestI].time-now)<5400000, when=hhmm(best.startTime)+'–'+hhmm(best.endTime);
+        var lead = shift==='evening'?'Τρέξε το πρωί ':shift==='morning'?'Τρέξε μετά τη δουλειά ':(shift==='off'?'Καλύτερα ':'Καλύτερο τρέξιμο ');
+        verdict=(sl[0]?sl[0]+'. ':'')+(nowBest?'Τώρα είναι <b>καλή ώρα</b>.':(lead+'<b>'+when+'</b>.'));
+        sub='around '+best.avgTemp+'°'+(wins.length>1?' · plus an evening option':'')+(adv&&adv.caution?' · warm out there':''); }
+      else { verdict='—'; sub=''; }
+      var chips = wins.length? ('<div class="rn-wx-chips" style="margin-top:12px">'+wins.map(function(w){
+        return '<span class="rn-wx-chip'+(w.best?' best':'')+'"><span class="dotc" style="background:'+(w.avgTemp>=30?'rgb(var(--rn-hot))':'rgb(var(--rn-cool))')+'"></span>'+(w.gr?esc(w.gr)+' · ':'')+hhmm(w.startTime)+'–'+hhmm(w.endTime)+' · '+w.avgTemp+'°'+(w.best?' ✓':'')+'</span>'; }).join('')+'</div>') : '';
       var pacesHtml='';
-      if(paces){
-        var show=[['E','Easy'],['M','Mar'],['T','Thr']];
-        if(slow<2){ pacesHtml='<div class="rn-wx-chips" style="margin-top:12px"><span class="rn-wx-chip"><span class="dotc" style="background:rgb(var(--rn-cool))"></span>Ιδανικές συνθήκες · ideal, no heat penalty</span></div>'; }
+      if(paces){ var show=[['E'],['M'],['T']];
+        if(slow<2){ pacesHtml='<div class="rn-wx-chips" style="margin-top:10px"><span class="rn-wx-chip"><span class="dotc" style="background:rgb(var(--rn-cool))"></span>Ιδανικές συνθήκες · ideal, no heat penalty</span></div>'; }
         else { pacesHtml='<div class="rn-wx-paces">'+show.map(function(z){ var zz=paces.filter(function(x){return x.k===z[0];})[0]; if(!zz) return '';
-          var b=zz.range?(zz.range[0]+zz.range[1])/2:zz.pace; var adj=adjustPaceSec(b,slow);
+          var b=zz.range?(zz.range[0]+zz.range[1])/2:zz.pace, adj=adjustPaceSec(b,slow);
           return '<div class="rn-wx-pace"><div class="z">'+z[0]+'</div><div class="p">'+mmss(adj)+'</div><div class="o">'+mmss(b)+'</div></div>'; }).join('')+'</div>'+
-          '<div class="rn-wx-sub" style="text-align:center;margin-top:7px">+'+Math.round(slow)+'% για '+cur.temp+'° · heat-adjusted, and that’s correct not slow</div>'; }
+          '<div class="rn-wx-sub" style="text-align:center;margin-top:7px">+'+Math.round(slow)+'% στους '+best.avgTemp+'° · heat-adjusted, that’s correct not slow</div>'; }
       }
       var indoorCard = (adv&&adv.indoor) ? ('<div class="rn-indoor"><div class="rn-indoor-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></div>'+
         '<div class="rn-indoor-t"><b>Σήμερα μέσα στο OXYGEN · take it indoors</b><span>Κάνε τη σημερινή προπόνηση στο γυμναστήριο. Cooler, safer, same training.</span></div></div>') : '';
@@ -1032,8 +1064,8 @@
         '<div class="rn-wx-top"><div class="rn-wx-now"><div class="rn-wx-temp">'+Math.round(cur.temp)+'<sup>°</sup></div>'+
           '<div class="rn-wx-feels">νιώθεις '+Math.round(cur.feels!=null?cur.feels:cur.temp)+'° · '+wl[0]+'</div></div>'+
           '<div class="rn-wx-head"><div class="rn-wx-verdict">'+verdict+'</div><div class="rn-wx-sub">'+esc(sub)+'</div></div></div>'+
-        '<div class="rn-wx-curve">'+svg+'</div>'+ticks+
-        pacesHtml+indoorCard;
+        '<div class="rn-wx-curve">'+svg+'</div>'+ticks+chips+pacesHtml+indoorCard+shiftStripHTML();
+      Array.prototype.forEach.call($('heatBody').querySelectorAll('[data-sh]'), function(b){ b.addEventListener('click',function(){ cycleShift(b.getAttribute('data-sh')); }); });
     }
 
     function renderHero(){
@@ -1213,11 +1245,11 @@
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS], onApplied:function(){ render(); } });
+        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT], onApplied:function(){ render(); } });
       })();
     });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath,
-      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, mmss:mmss };
+      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, mmss:mmss };
   })();
   </script>
   <script src="nova.js" defer></script>
