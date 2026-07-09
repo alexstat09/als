@@ -11,10 +11,10 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <script src="topbar.js" defer></script>
-<script>window.__pmAutoSel='.rn-hero,.rn-card,.rn-today,.rn-run-row';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
+<script>window.__pmAutoSel='.rn-hero';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
 <script src="page-motion.js" defer></script>
   <style>
-    :root{ --rn:240,148,171; --rn-ink:#2a0913; --rn-gold:233,196,182; --rn-hot:236,132,96; --rn-cool:150,199,196; }
+    :root{ --rn:240,148,171; --rn-ink:#2a0913; --rn-gold:233,196,182; --rn-hot:236,132,96; --rn-cool:150,199,196; --tbh:54px; }
     *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
     html,body{ min-height:100%; }
     body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
@@ -208,6 +208,32 @@
     .rn-coach-note{ font-family:var(--au-serif); font-style:italic; font-size:13.5px; color:var(--au-dim); line-height:1.5; padding:11px 14px; border:1px solid rgba(var(--rn),.14); background:rgba(var(--rn),.035); border-radius:12px; margin:-2px 0 13px; }
     .rn-coach-note b{ font-family:var(--au-mono); font-style:normal; font-size:8px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.85); display:block; margin-bottom:4px; }
 
+    /* ── app tabs ── */
+    .rn-tabs{ position:sticky; top:var(--tbh,0px); z-index:30; display:flex; gap:5px; max-width:600px; margin:10px auto 0; padding:10px 18px 10px;
+      background:linear-gradient(to bottom, rgba(5,5,6,.96) 78%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+    .rn-tabs button{ flex:1; padding:9px 4px; border-radius:20px; border:1px solid var(--au-line); background:rgba(255,255,255,.025);
+      color:var(--au-dim); font-family:var(--au-sans); font-size:11.5px; font-weight:650; letter-spacing:.01em; cursor:pointer;
+      transition:color .18s, border-color .18s, background .18s; white-space:nowrap; }
+    .rn-tabs button.on{ color:var(--rn-ink); background:rgb(var(--rn)); border-color:transparent; font-weight:750; }
+    .rn-view{ display:flex; flex-direction:column; gap:16px; animation:rnView .28s cubic-bezier(.2,.8,.25,1); }
+    @keyframes rnView{ from{ opacity:0; transform:translateY(7px); } to{ opacity:1; transform:none; } }
+    .rn-view .rn-today{ margin:0; }
+
+    /* ── full runs list ── */
+    .rn-fchips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .rn-fc{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.05em; color:var(--au-faint);
+      background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:16px; padding:6px 11px; cursor:pointer; }
+    .rn-fc.on{ color:rgb(var(--rn)); border-color:rgba(var(--rn),.45); background:rgba(var(--rn),.09); }
+    .rn-mo{ width:100%; display:flex; align-items:baseline; gap:9px; background:none; border:none; cursor:pointer; text-align:left;
+      padding:13px 0 7px; border-bottom:1px solid var(--au-line); }
+    .rn-mo .nm{ font-family:var(--au-serif); font-style:italic; font-size:16px; color:var(--au-ivory); letter-spacing:-.01em; }
+    .rn-mo .st{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); letter-spacing:.04em; margin-left:auto; }
+    .rn-mo .ch{ font-size:10px; color:var(--au-faint); transition:transform .2s; display:inline-block; }
+    .rn-mo.open .ch{ transform:rotate(90deg); }
+    .rn-run-row{ cursor:pointer; }
+    .rn-run-x{ padding:2px 0 10px 50px; border-bottom:1px solid var(--au-line); }
+    .rn-run-x .rn-splits{ padding-left:0; padding-right:0; }
+
     /* ── strength planner ── */
     .rn-str-note{ font-family:var(--au-serif); font-style:italic; font-size:13.5px; color:var(--au-dim); line-height:1.5; margin-bottom:13px; }
     .rn-str-sess{ border:1px solid var(--au-line); border-radius:14px; padding:13px 14px; margin-bottom:10px; background:rgba(255,255,255,.015); }
@@ -303,35 +329,27 @@
     <div class="rn-orb" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6"/><path d="M6 21l3-5 3 2 1-4M9 16l-1.5-4L12 9l3 2 3 .5M12 9l-3 1.5"/></svg></div>
   </header>
 
-  <!-- TODAY -->
-  <section class="rn-today" id="todayCard"></section>
+  <nav class="rn-tabs" id="rnTabs" aria-label="Sections">
+    <button type="button" data-view="today" class="on">Σήμερα</button>
+    <button type="button" data-view="plan">Πλάνο</button>
+    <button type="button" data-view="runs">Τρεξίματα</button>
+    <button type="button" data-view="str">Δύναμη</button>
+    <button type="button" data-view="prog">Πρόοδος</button>
+  </nav>
 
   <main class="rn-wrap">
 
+    <div class="rn-view" id="view-today">
+    <!-- TODAY -->
+  <section class="rn-today" id="todayCard"></section>
     <!-- RUNNING WEATHER (heat intelligence) -->
     <section class="rn-card rn-heat" id="heatCard">
       <div class="rn-card-hd"><span class="dot"></span><h2>Καιρός για τρέξιμο · Running weather</h2><span class="line"></span><span class="act" id="heatLoc" style="cursor:default">Ρόδος</span></div>
       <div id="heatBody"><div class="rn-wx-skel"></div></div>
     </section>
+    </div>
 
-    <!-- GOAL RACE -->
-    <section class="rn-card rn-race" id="raceCard">
-      <div class="rn-race-top"><span class="rn-race-eyebrow">Στόχος · Goal race</span><span class="rn-race-phase" id="racePhase">—</span></div>
-      <div class="rn-race-name">Αυθεντικός Μαραθώνιος Αθήνας</div>
-      <div class="rn-race-meta">ATHENS AUTHENTIC MARATHON · 8 ΝΟΕ 2026 · 42.195</div>
-      <div class="rn-race-nums">
-        <div><span id="raceDays">—</span><label>μέρες · days</label></div>
-        <div><span id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
-        <div id="raceProjWrap" class="hidden"><span id="raceProj">—</span><label>πρόβλεψη · projected</label></div>
-      </div>
-    </section>
-
-    <!-- FITNESS & FORM -->
-    <section class="rn-card rn-fit hidden" id="fitCard">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Φόρμα &amp; Fitness</h2><span class="line"></span><span class="act" id="fitStatus" style="cursor:default"></span></div>
-      <div id="fitBody"></div>
-    </section>
-
+    <div class="rn-view hidden" id="view-plan">
     <!-- THIS WEEK -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>This week · Εβδομάδα</h2><span class="line"></span></div>
@@ -342,32 +360,6 @@
       <div class="rn-week" id="weekGrid"></div>
       <div class="rn-week-bar"><div class="rn-week-fill" id="weekFill"></div></div>
     </section>
-
-    <!-- TRAINING PACES -->
-    <section class="rn-card">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Training paces · Ρυθμοί</h2><span class="line"></span><button class="act" id="editRace" type="button">Set race</button></div>
-      <div id="pacesBody">
-        <div class="rn-empty" id="pacesEmpty">Add a recent race result and every workout below gets a personal target pace, computed from your VDOT (Jack Daniels).</div>
-        <div id="pacesReal" class="hidden">
-          <div class="rn-vdot-row"><span class="rn-vdot" id="vdotNum">0</span><span class="rn-vdot-lab">VDOT<br>fitness</span><span class="rn-vdot-src" id="vdotSrc"></span></div>
-          <div class="rn-zones" id="zonesBox"></div>
-        </div>
-      </div>
-      <!-- race form -->
-      <div id="raceForm" class="hidden" style="margin-top:14px">
-        <div class="rn-frow">
-          <div class="rn-field" style="flex:1.4"><label for="rcDist">Recent race</label>
-            <select class="rn-in" id="rcDist"><option value="1500">1500 m</option><option value="3000">3000 m</option><option value="5000" selected>5 km</option><option value="10000">10 km</option><option value="21097">Half marathon</option><option value="42195">Marathon</option></select></div>
-          <div class="rn-field"><label for="rcTime">Time (mm:ss)</label><input class="rn-in" id="rcTime" inputmode="numeric" placeholder="24:30"></div>
-        </div>
-        <div class="rn-frow">
-          <div class="rn-field"><label for="rcName">Runner name</label><input class="rn-in" id="rcName" placeholder="optional" autocomplete="off"></div>
-        </div>
-        <button class="rn-save" id="rcSave" type="button">Save & compute paces</button>
-        <div class="rn-toast" id="rcToast"></div>
-      </div>
-    </section>
-
     <!-- PROGRAMME -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Programme · Πρόγραμμα</h2><span class="line"></span></div>
@@ -400,13 +392,9 @@
 
       <div id="sessList" style="margin-top:6px"></div>
     </section>
+    </div>
 
-    <!-- STRENGTH -->
-    <section class="rn-card rn-str" id="strCard">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Δύναμη για τρέξιμο · Strength</h2><span class="line"></span><span class="act" id="strPhase" style="cursor:default"></span></div>
-      <div id="strBody"></div>
-    </section>
-
+    <div class="rn-view hidden" id="view-runs">
     <!-- LOG A RUN -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
@@ -434,12 +422,63 @@
       <button class="rn-save" id="lgSave" type="button">Save run</button>
       <div class="rn-toast" id="lgToast"></div>
     </section>
-
     <!-- RECENT RUNS -->
     <section class="rn-card hidden" id="runsCard">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Recent runs · Πρόσφατα</h2><span class="line"></span><span class="act" id="runsTotal" style="cursor:default"></span></div>
+      <div class="rn-card-hd"><span class="dot"></span><h2>Όλα τα τρεξίματα · all runs</h2><span class="line"></span><span class="act" id="runsTotal" style="cursor:default"></span></div>
       <div id="runsBody"></div>
     </section>
+    </div>
+
+    <div class="rn-view hidden" id="view-str">
+    <!-- STRENGTH -->
+    <section class="rn-card rn-str" id="strCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Δύναμη για τρέξιμο · Strength</h2><span class="line"></span><span class="act" id="strPhase" style="cursor:default"></span></div>
+      <div id="strBody"></div>
+    </section>
+    </div>
+
+    <div class="rn-view hidden" id="view-prog">
+    <!-- GOAL RACE -->
+    <section class="rn-card rn-race" id="raceCard">
+      <div class="rn-race-top"><span class="rn-race-eyebrow">Στόχος · Goal race</span><span class="rn-race-phase" id="racePhase">—</span></div>
+      <div class="rn-race-name">Αυθεντικός Μαραθώνιος Αθήνας</div>
+      <div class="rn-race-meta">ATHENS AUTHENTIC MARATHON · 8 ΝΟΕ 2026 · 42.195</div>
+      <div class="rn-race-nums">
+        <div><span id="raceDays">—</span><label>μέρες · days</label></div>
+        <div><span id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
+        <div id="raceProjWrap" class="hidden"><span id="raceProj">—</span><label>πρόβλεψη · projected</label></div>
+      </div>
+    </section>
+    <!-- FITNESS & FORM -->
+    <section class="rn-card rn-fit hidden" id="fitCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Φόρμα &amp; Fitness</h2><span class="line"></span><span class="act" id="fitStatus" style="cursor:default"></span></div>
+      <div id="fitBody"></div>
+    </section>
+    <!-- TRAINING PACES -->
+    <section class="rn-card">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Training paces · Ρυθμοί</h2><span class="line"></span><button class="act" id="editRace" type="button">Set race</button></div>
+      <div id="pacesBody">
+        <div class="rn-empty" id="pacesEmpty">Add a recent race result and every workout below gets a personal target pace, computed from your VDOT (Jack Daniels).</div>
+        <div id="pacesReal" class="hidden">
+          <div class="rn-vdot-row"><span class="rn-vdot" id="vdotNum">0</span><span class="rn-vdot-lab">VDOT<br>fitness</span><span class="rn-vdot-src" id="vdotSrc"></span></div>
+          <div class="rn-zones" id="zonesBox"></div>
+        </div>
+      </div>
+      <!-- race form -->
+      <div id="raceForm" class="hidden" style="margin-top:14px">
+        <div class="rn-frow">
+          <div class="rn-field" style="flex:1.4"><label for="rcDist">Recent race</label>
+            <select class="rn-in" id="rcDist"><option value="1500">1500 m</option><option value="3000">3000 m</option><option value="5000" selected>5 km</option><option value="10000">10 km</option><option value="21097">Half marathon</option><option value="42195">Marathon</option></select></div>
+          <div class="rn-field"><label for="rcTime">Time (mm:ss)</label><input class="rn-in" id="rcTime" inputmode="numeric" placeholder="24:30"></div>
+        </div>
+        <div class="rn-frow">
+          <div class="rn-field"><label for="rcName">Runner name</label><input class="rn-in" id="rcName" placeholder="optional" autocomplete="off"></div>
+        </div>
+        <button class="rn-save" id="rcSave" type="button">Save & compute paces</button>
+        <div class="rn-toast" id="rcToast"></div>
+      </div>
+    </section>
+    </div>
 
   </main>
   <div class="rn-foot">Οι ρυθμοί σου ενημερώνονται όσο βελτιώνεσαι. Your paces update as your races improve. Drop a Garmin .GPX / .TCX to log with the route map. Heat-smart pacing and a runner's strength plan are next. Everything syncs across devices.</div>
@@ -504,7 +543,8 @@
 
     /* ── state ── */
     var prof=loadObj(K_PROF), plan=loadArr(K_PLAN), logs=loadArr(K_LOGS);
-    var paces=null, movingId=null;
+    var paces=null, movingId=null, runFilter='all', openMonths={}, openRun=null;
+    var GRMONTH=['Ιανουάριος','Φεβρουάριος','Μάρτιος','Απρίλιος','Μάιος','Ιούνιος','Ιούλιος','Αύγουστος','Σεπτέμβριος','Οκτώβριος','Νοέμβριος','Δεκέμβριος'];
     var EVDOT=0, EVDOTMODE='', EVDOT_FROM=null;
     function computeEffVdot(){ if(prof.vdot>0){ EVDOT=prof.vdot; EVDOTMODE='race'; EVDOT_FROM=null; }
       else { var a=autoVdot(logs); if(a){ EVDOT=a.vdot; EVDOTMODE='auto'; EVDOT_FROM=a.from; } else { EVDOT=0; EVDOTMODE=''; EVDOT_FROM=null; } } }
@@ -1022,23 +1062,41 @@
       return '<div class="rn-move"><div class="rn-move-lab">Μετάφερε σε · move to · η βάρδιά σου φαίνεται</div><div class="rn-move-days">'+cells+'</div></div>';
     }
 
+    function runRowHTML(l){
+      var d=parseDk(l.date), dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()];
+      var pace=(l.distanceKm>0&&l.timeSec>0)?mmss(l.timeSec/l.distanceKm)+'/km':'';
+      var lead=(l.route&&l.route.length>1)?('<div class="rn-run-map">'+routeSVG(l.route,38,38,true)+'</div>'):('<div class="rn-run-ico">'+iconRun()+'</div>');
+      var row='<div class="rn-run-row" data-run="'+l.id+'">'+lead+
+        '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+(l.src&&l.src!=='manual'?' <span style="font-family:var(--au-mono);font-size:8px;color:rgba(var(--rn),.7);letter-spacing:.08em">'+l.src.toUpperCase()+'</span>':'')+'</div>'+
+        '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(l.elevGain?(' · ↑'+l.elevGain+'m'):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
+        '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small style="font-size:11px;color:var(--au-dim)"> km</small></div>'+
+        (pace?'<div class="rn-run-pace">'+pace+'</div>':'')+'</div>'+
+        '<button class="rn-run-del" data-del-run="'+l.id+'" aria-label="Delete">✕</button></div>';
+      var exp='';
+      if(openRun===l.id){ exp='<div class="rn-run-x">'+((l.splits&&l.splits.length>1)?splitsHTML(l.splits):'<div class="rn-splits-lab">χωρίς αναλυτικά χιλιόμετρα · no per-km splits</div>')+'</div>'; }
+      return row+exp;
+    }
     function renderRuns(){
       if(!logs.length){ $('runsCard').classList.add('hidden'); return; }
       $('runsCard').classList.remove('hidden');
-      var totKm=logs.reduce(function(a,l){return a+(+l.distanceKm||0);},0);
-      $('runsTotal').textContent=(Math.round(totKm)+' km all-time');
-      var rows=logs.slice().sort(function(a,b){ return (b.date<a.date?-1:(b.date>a.date?1:(b.ts-a.ts))); }).slice(0,15);
-      $('runsBody').innerHTML=rows.map(function(l){
-        var d=parseDk(l.date); var dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()];
-        var pace = (l.distanceKm>0&&l.timeSec>0) ? mmss(l.timeSec/l.distanceKm)+'/km' : '';
-        var lead = (l.route&&l.route.length>1) ? ('<div class="rn-run-map">'+routeSVG(l.route,38,38,true)+'</div>') : ('<div class="rn-run-ico">'+iconRun()+'</div>');
-        return '<div class="rn-run-row">'+lead+
-          '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+(l.src&&l.src!=='manual'?' <span style="font-family:var(--au-mono);font-size:8px;color:rgba(var(--rn),.7);letter-spacing:.08em">'+l.src.toUpperCase()+'</span>':'')+'</div>'+
-          '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(l.elevGain?(' · ↑'+l.elevGain+'m'):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
-          '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small style="font-size:11px;color:var(--au-dim)"> km</small></div>'+
-          (pace?'<div class="rn-run-pace">'+pace+'</div>':'')+'</div>'+
-          '<button class="rn-run-del" data-del-run="'+l.id+'" aria-label="Delete">✕</button></div>';
+      var all=logs.slice().sort(function(a,b){ return (b.date<a.date?-1:(b.date>a.date?1:(b.ts-a.ts))); });
+      var totKm=all.reduce(function(a,l){return a+(+l.distanceKm||0);},0);
+      $('runsTotal').textContent=Math.round(totKm)+' χλμ · '+all.length+' runs';
+      var TYPES=[['all','Όλα'],['Easy','Easy'],['Long','Long'],['Tempo','Tempo'],['Steady','Steady'],['Interval','Intervals'],['Hills','Hills'],['Test','Test'],['Race','Race']];
+      var present={}; all.forEach(function(l){ present[(l.type||'Run')]=1; });
+      var chips='<div class="rn-fchips">'+TYPES.filter(function(t){ return t[0]==='all'||present[t[0]]; }).map(function(t){
+        return '<button type="button" class="rn-fc'+(runFilter===t[0]?' on':'')+'" data-filter="'+t[0]+'">'+t[1]+'</button>'; }).join('')+'</div>';
+      var filtered = runFilter==='all' ? all : all.filter(function(l){ return (l.type||'Run')===runFilter; });
+      var groups=[], byMo={};
+      filtered.forEach(function(l){ var mo=String(l.date).slice(0,7); if(!byMo[mo]){ byMo[mo]=[]; groups.push(mo); } byMo[mo].push(l); });
+      if(!Object.keys(openMonths).length && groups.length) openMonths[groups[0]]=true;
+      var body=groups.map(function(mo){
+        var arr=byMo[mo], moKm=arr.reduce(function(a,l){return a+(+l.distanceKm||0);},0), isOpen=!!openMonths[mo];
+        var d=parseDk(mo+'-01'), moLabel=GRMONTH[d.getMonth()]+' '+d.getFullYear();
+        return '<button class="rn-mo'+(isOpen?' open':'')+'" data-mo="'+mo+'"><span class="ch">▸</span><span class="nm">'+moLabel+'</span>'+
+          '<span class="st">'+Math.round(moKm)+' χλμ · '+arr.length+'</span></button>'+(isOpen?arr.map(runRowHTML).join(''):'');
       }).join('');
+      $('runsBody').innerHTML=chips+(filtered.length?body:'<div class="rn-empty">Καμία εγγραφή για αυτό το φίλτρο.</div>');
     }
 
     /* ── goal race: Athens Authentic Marathon · 8 Nov 2026 ── */
@@ -1434,7 +1492,24 @@
       var mv=e.target.closest('[data-move-sess]'); if(mv){ var id=mv.getAttribute('data-move-sess'); movingId=(movingId===id?null:id); render(); return; }
       var d=e.target.closest('[data-del-sess]'); if(d) delSess(d.getAttribute('data-del-sess'));
     });
-    $('runsBody').addEventListener('click',function(e){ var d=e.target.closest('[data-del-run]'); if(d) delRun(d.getAttribute('data-del-run')); });
+    $('runsBody').addEventListener('click',function(e){
+      var del=e.target.closest('[data-del-run]'); if(del){ e.stopPropagation(); delRun(del.getAttribute('data-del-run')); return; }
+      var fc=e.target.closest('[data-filter]'); if(fc){ runFilter=fc.getAttribute('data-filter'); openMonths={}; openRun=null; renderRuns(); return; }
+      var mo=e.target.closest('[data-mo]'); if(mo){ var m=mo.getAttribute('data-mo'); openMonths[m]=!openMonths[m]; renderRuns(); return; }
+      var run=e.target.closest('[data-run]'); if(run){ var id=run.getAttribute('data-run'); openRun=(openRun===id?null:id); renderRuns(); return; }
+    });
+    /* ── tab navigation ── */
+    var VIEWS=['today','plan','runs','str','prog'];
+    function showView(v){ if(VIEWS.indexOf(v)<0) v='today';
+      VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) el.classList.toggle('hidden', id!==v); });
+      Array.prototype.forEach.call($('rnTabs').children, function(b){ b.classList.toggle('on', b.getAttribute('data-view')===v); });
+      try{ localStorage.setItem('run:view', v); }catch(e){} window.scrollTo(0,0);
+    }
+    $('rnTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-view]'); if(b) showView(b.getAttribute('data-view')); });
+    function setTbh(){ var tb=document.querySelector('.topbar'); if(tb&&tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight+'px'); }
+    (function tbhTick(n){ setTbh(); if(n<6) setTimeout(function(){ tbhTick(n+1); }, 300); })(0);
+    window.addEventListener('resize', setTbh);
+    (function(){ var v='today'; try{ v=localStorage.getItem('run:view')||'today'; }catch(e){} showView(v); })();
 
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
