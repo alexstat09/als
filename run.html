@@ -208,6 +208,26 @@
     .rn-coach-note{ font-family:var(--au-serif); font-style:italic; font-size:13.5px; color:var(--au-dim); line-height:1.5; padding:11px 14px; border:1px solid rgba(var(--rn),.14); background:rgba(var(--rn),.035); border-radius:12px; margin:-2px 0 13px; }
     .rn-coach-note b{ font-family:var(--au-mono); font-style:normal; font-size:8px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.85); display:block; margin-bottom:4px; }
 
+    /* ── strength planner ── */
+    .rn-str-note{ font-family:var(--au-serif); font-style:italic; font-size:13.5px; color:var(--au-dim); line-height:1.5; margin-bottom:13px; }
+    .rn-str-sess{ border:1px solid var(--au-line); border-radius:14px; padding:13px 14px; margin-bottom:10px; background:rgba(255,255,255,.015); }
+    .rn-str-sess:last-child{ margin-bottom:0; }
+    .rn-str-sess.done{ border-color:rgba(var(--rn),.3); background:rgba(var(--rn),.04); }
+    .rn-str-hd{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
+    .rn-str-title{ display:flex; align-items:center; gap:9px; min-width:0; }
+    .rn-str-title .k{ flex:none; width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-family:var(--au-mono); font-size:11px; font-weight:800; color:var(--rn-ink); background:rgba(var(--rn),.85); }
+    .rn-str-title>span{ font-size:13.5px; font-weight:600; color:var(--au-ivory); line-height:1.2; }
+    .rn-str-title em{ display:block; font-family:var(--au-mono); font-style:normal; font-size:8.5px; color:var(--au-faint); letter-spacing:.03em; margin-top:1px; }
+    .rn-str-done{ flex:none; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.05em; color:var(--au-faint); background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:16px; padding:6px 11px; cursor:pointer; }
+    .rn-str-done.on{ color:rgb(var(--rn)); border-color:rgba(var(--rn),.4); background:rgba(var(--rn),.09); }
+    .rn-ex{ padding:8px 0; border-top:1px solid rgba(255,255,255,.045); }
+    .rn-ex:first-child{ border-top:none; }
+    .rn-ex-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .rn-ex-n{ font-size:12.5px; font-weight:600; color:var(--au-ivory); }
+    .rn-ex-n em{ font-family:var(--au-mono); font-style:normal; font-size:8.5px; color:var(--au-faint); letter-spacing:.02em; }
+    .rn-ex-r{ flex:none; font-family:var(--au-mono); font-size:10.5px; font-weight:700; color:rgb(var(--rn)); }
+    .rn-ex-c{ font-size:11px; color:var(--au-faint); line-height:1.4; margin-top:3px; }
+
     /* ── fitness & form ── */
     .rn-fit-top{ display:flex; gap:12px; margin-bottom:12px; }
     .rn-fit-num{ flex:1; display:flex; flex-direction:column; gap:3px; }
@@ -381,6 +401,12 @@
       <div id="sessList" style="margin-top:6px"></div>
     </section>
 
+    <!-- STRENGTH -->
+    <section class="rn-card rn-str" id="strCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Δύναμη για τρέξιμο · Strength</h2><span class="line"></span><span class="act" id="strPhase" style="cursor:default"></span></div>
+      <div id="strBody"></div>
+    </section>
+
     <!-- LOG A RUN -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
@@ -486,6 +512,8 @@
        last-write-wins instead of reverting a fresh edit to the older remote copy. */
     function saveProf(){ prof._ts=Date.now(); persist(K_PROF,prof); }
     function saveShifts(s){ s._ts=Date.now(); persist(K_SHIFT,s); }
+    var K_STR='run:strength';
+    function saveStr(s){ s._ts=Date.now(); persist(K_STR,s); }
     function computePaces(){ paces = (EVDOT>0) ? zonePaces(EVDOT) : null; }
 
     function paceStr(zoneKey){ if(!paces) return null; var z=paces.filter(function(x){return x.k===zoneKey;})[0]; if(!z) return null;
@@ -1187,6 +1215,48 @@
         (pbChips?'<div class="rn-pbs">'+pbChips+'</div>':'');
     }
 
+    /* ── runner strength planner (knee-safe, masters, phase-aware) ── */
+    function strengthPlan(weeks){
+      var taper = weeks<=3, peak = weeks>3 && weeks<=10, setMain = peak?2:3;
+      if(taper){ return { phase:['Φρεσκάρισμα','taper'], note:'Κράτα τα ελαφριά, χωρίς βάρη — φρέσκα πόδια για τον αγώνα.', sessions:[
+        { key:'A', gr:'Ελαφριά ενεργοποίηση', en:'light activation', ex:[
+          {gr:'Γέφυρα γλουτών', en:'glute bridge', reps:'2×15', cue:'σφίξε γλουτούς, ουδέτερη μέση'},
+          {gr:'Απαγωγές (clamshell)', en:'clamshell', reps:'2×15/πλευρά', cue:'σταθερότητα ισχίου, χωρίς πίεση στο γόνατο'},
+          {gr:'Ανυψώσεις γάμπας', en:'calf raise', reps:'2×15', cue:'αργά και ελεγχόμενα'},
+          {gr:'Σανίδα', en:'plank', reps:'2×30″', cue:'ουδέτερη σπονδυλική στήλη'} ] } ] }; }
+      var A={ key:'A', gr:'Γλουτοί & οπίσθια αλυσίδα', en:'glutes & posterior chain', ex:[
+        {gr:'Ώθηση/γέφυρα γλουτών', en:'hip thrust', reps:setMain+'×10', cue:'δύναμη από γλουτούς, όχι από τη μέση'},
+        {gr:'Ρουμανικές άρσεις', en:'Romanian deadlift', reps:setMain+'×10', cue:'κάμψη ισχίου, γόνατα χαλαρά, ίσια πλάτη'},
+        {gr:'Απαγωγές / clamshell', en:'clamshell', reps:'2×15/πλευρά', cue:'σταθεροποιεί το ισχίο, προστατεύει το γόνατο'},
+        {gr:'Bird-dog', en:'bird-dog', reps:'2×10/πλευρά', cue:'κορμός σταθερός, χωρίς στροφή λεκάνης'} ] };
+      var B={ key:'B', gr:'Σταθερότητα ενός ποδιού & γάμπες', en:'single-leg & calves', ex:[
+        {gr:'Ανεβάσματα σε σκαλί', en:'step-ups', reps:setMain+'×10/πόδι', cue:'πάτα στη φτέρνα, ελεγχόμενη κάθοδος, γόνατο ευθεία'},
+        {gr:'Ανυψώσεις γάμπας (ένα πόδι)', en:'single-leg calf raise', reps:setMain+'×12/πλευρά', cue:'γάμπα & σολέας — βασικό για δρομείς & γόνατα'},
+        {gr:'Ψαλιδάκια (ρηχά)', en:'split squat', reps:'2×8/πόδι', cue:'όρθιος κορμός, γόνατο πάνω από τα δάχτυλα, χωρίς πόνο'},
+        {gr:'Πλάγια σανίδα', en:'side plank', reps:'2×30″/πλευρά', cue:'ισχία ψηλά, σταθερός κορμός'} ] };
+      return { phase: peak?['Κορύφωση','peak · maintain']:['Χτίσιμο','build'], sessions:[A,B],
+        note: peak?'Διατήρηση: 2 σετ — κράτα τη δύναμη χωρίς κούραση κοντά στον αγώνα.':'2 φορές/βδομάδα στο OXYGEN, σε εύκολες ή ρεπό μέρες — όχι πριν από δυνατή προπόνηση.' };
+    }
+    function toggleStrength(key){ var st=loadObj(K_STR), wk=dkOf(weekStart(new Date())); st[wk]=st[wk]||{};
+      st[wk][key]=st[wk][key]?0:1; saveStr(st); flush(); render(); }
+    function renderStrength(){
+      var today=new Date(); today.setHours(0,0,0,0);
+      var days=Math.round((parseDk(GOAL.dk)-today)/86400000), weeks=days>0?Math.floor(days/7):20;
+      var plan=strengthPlan(weeks);
+      $('strPhase').textContent='φάση · '+plan.phase[0];
+      var st=loadObj(K_STR), wk=dkOf(weekStart(new Date())), done=st[wk]||{};
+      $('strBody').innerHTML='<div class="rn-str-note">'+esc(plan.note)+'</div>'+plan.sessions.map(function(s){
+        var isDone=!!done[s.key.toLowerCase()];
+        return '<div class="rn-str-sess'+(isDone?' done':'')+'"><div class="rn-str-hd">'+
+          '<div class="rn-str-title"><span class="k">'+s.key+'</span><span>'+esc(s.gr)+'<em>'+esc(s.en)+'</em></span></div>'+
+          '<button class="rn-str-done'+(isDone?' on':'')+'" type="button" data-str="'+s.key.toLowerCase()+'">'+(isDone?'✓ έγινε':'σημείωσε')+'</button></div>'+
+          '<div class="rn-str-ex">'+s.ex.map(function(e){
+            return '<div class="rn-ex"><div class="rn-ex-top"><span class="rn-ex-n">'+esc(e.gr)+' <em>'+esc(e.en)+'</em></span><span class="rn-ex-r">'+esc(e.reps)+'</span></div><div class="rn-ex-c">'+esc(e.cue)+'</div></div>';
+          }).join('')+'</div></div>';
+      }).join('');
+      Array.prototype.forEach.call($('strBody').querySelectorAll('[data-str]'), function(b){ b.addEventListener('click',function(){ toggleStrength(b.getAttribute('data-str')); }); });
+    }
+
     function renderHero(){
       $('rnTitle').textContent = (prof.name?prof.name.split(' ')[0]:'Chrissie')+'’s runs';
       var dk=todayDk(); var s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0];
@@ -1198,7 +1268,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderRuns();
+      renderHero(); renderToday(); renderHeat(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
@@ -1375,12 +1445,12 @@
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT], onApplied:function(){ render(); } });
+        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR], onApplied:function(){ render(); } });
       })();
     });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath,
       heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove,
-      autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, mmss:mmss };
+      autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, strengthPlan:strengthPlan, mmss:mmss };
   })();
   </script>
   <script src="nova.js" defer></script>
