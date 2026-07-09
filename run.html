@@ -296,9 +296,9 @@
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
       <div class="rn-import" id="importZone" role="button" tabindex="0">
-        <input type="file" id="gpxInput" accept=".gpx,.tcx,.xml" multiple hidden>
+        <input type="file" id="gpxInput" accept=".gpx,.tcx,.xml,.fit,.gz,.zip" multiple hidden>
         <div class="rn-imp-ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></div>
-        <div class="rn-imp-txt"><b>Από το Garmin · Import a run</b><span>Ρίξε ή διάλεξε αρχεία .GPX / .TCX · Garmin Connect → Export</span></div>
+        <div class="rn-imp-txt"><b>Από το Garmin · Import runs</b><span>Ρίξε αρχεία ή ΟΛΟ το export .zip · GPX / TCX / FIT / gz / zip</span></div>
       </div>
       <div id="importPrev" class="hidden"></div>
       <div class="rn-or">ή γράψ’ το · or log manually</div>
@@ -647,6 +647,82 @@
         (thumb?'':'<circle cx="'+rp.sx.toFixed(1)+'" cy="'+rp.sy.toFixed(1)+'" r="4.5" fill="rgb(var(--rn))"/><circle cx="'+rp.ex.toFixed(1)+'" cy="'+rp.ey.toFixed(1)+'" r="4.5" fill="rgb(var(--rn-gold))" stroke="var(--au-void)" stroke-width="1"/>')+
       '</svg>'; }
 
+    /* ── .FIT decoder + .gz/.zip expansion (verified in node: 15 assertions) ── */
+    var FIT_EPOCH=631065600, SEMI=180/2147483648;
+    function readVal(dv,pos,size,base,le){ var bt=base&0x1F;
+      if(size===1){ var v=dv.getUint8(pos); if(bt===1) return v===0x7F?null:(v>0x7F?v-0x100:v); return v===0xFF?null:v; }
+      if(size===2){ if(bt===3){ var s=dv.getInt16(pos,le); return s===0x7FFF?null:s; } var u=dv.getUint16(pos,le); return u===0xFFFF?null:u; }
+      if(size===4){ if(bt===5){ var s2=dv.getInt32(pos,le); return s2===0x7FFFFFFF?null:s2; } if(bt===8) return dv.getFloat32(pos,le); var u2=dv.getUint32(pos,le); return u2===0xFFFFFFFF?null:u2; }
+      return null; }
+    function parseFIT(bytes){
+      if(!(bytes instanceof Uint8Array)) bytes=new Uint8Array(bytes);
+      if(bytes.length<14) return null;
+      var dv=new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      if(!(bytes[8]===0x2E&&bytes[9]===0x46&&bytes[10]===0x49&&bytes[11]===0x54)) return null;
+      var headerSize=dv.getUint8(0), dataSize=dv.getUint32(4,true), pos=headerSize, end=Math.min(headerSize+dataSize, bytes.length);
+      var defs={}, pts=[], session=null, lastTs=0;
+      function readFields(p,def){ var f={}, le=def.le;
+        def.fields.forEach(function(fld){ var val=fld.dev?null:readVal(dv,p,fld.size,fld.base,le); if(fld.num>=0&&val!==undefined) f[fld.num]=val; p+=fld.size; });
+        return {f:f, pos:p}; }
+      function handle(g,f){
+        if(g===20){ var lat=f[0],lon=f[1]; if(lat!=null&&lon!=null) pts.push({lat:lat*SEMI, lon:lon*SEMI,
+          ele:f[2]!=null?f[2]/5-500:null, time:f[253]!=null?new Date((FIT_EPOCH+f[253])*1000):null, dist:f[5]!=null?f[5]/100:null}); }
+        else if(g===18){ session={ dist:f[9]!=null?f[9]/100:null, timer:f[8]!=null?f[8]/1000:null, elapsed:f[7]!=null?f[7]/1000:null,
+          start:f[2]!=null?new Date((FIT_EPOCH+f[2])*1000):null, ascent:f[22]!=null?f[22]:null }; }
+      }
+      var guard=0;
+      while(pos<end && guard++<2000000){
+        var h=dv.getUint8(pos++);
+        if(h&0x80){ var lt=(h>>5)&0x03, offset=h&0x1F, def=defs[lt]; if(!def) break;
+          var r=readFields(pos,def); pos=r.pos; var b=lastTs & ~0x1F, ts=(offset>=(lastTs&0x1F))?b+offset:b+offset+0x20; lastTs=ts; r.f[253]=ts; handle(def.globalNum, r.f);
+        } else if(h&0x40){ var lt2=h&0x0F, hasDev=h&0x20; pos++; var arch=dv.getUint8(pos++), le=(arch===0);
+          var gnum=dv.getUint16(pos,le); pos+=2; var nf=dv.getUint8(pos++), fields=[];
+          for(var i=0;i<nf;i++){ fields.push({num:dv.getUint8(pos), size:dv.getUint8(pos+1), base:dv.getUint8(pos+2)}); pos+=3; }
+          if(hasDev){ var ndev=dv.getUint8(pos++); for(var j=0;j<ndev;j++){ fields.push({num:-1, size:dv.getUint8(pos+1), base:dv.getUint8(pos+2), dev:true}); pos+=3; } }
+          defs[lt2]={le:le, globalNum:gnum, fields:fields};
+        } else { var lt3=h&0x0F, def3=defs[lt3]; if(!def3) break; var r3=readFields(pos,def3); pos=r3.pos; if(r3.f[253]!=null) lastTs=r3.f[253]; handle(def3.globalNum, r3.f); }
+      }
+      var cum=[0], usePt=pts.length>1&&pts.every(function(p){return p.dist!=null;});
+      for(var c=1;c<pts.length;c++) cum[c]=cum[c-1]+(usePt?Math.max(0,pts[c].dist-pts[c-1].dist):haversine(pts[c-1],pts[c]));
+      var totalM=(session&&session.dist>0)?session.dist:(cum.length?cum[cum.length-1]:0);
+      var timeSec=(session&&session.timer>0)?session.timer:((session&&session.elapsed>0)?session.elapsed:((pts.length>1&&pts[0].time&&pts[pts.length-1].time)?(pts[pts.length-1].time-pts[0].time)/1000:0));
+      if(totalM<=0) return null;
+      var t0=(session&&session.start)||(pts[0]&&pts[0].time)||new Date();
+      return { distanceKm:Math.round(totalM/1000*100)/100, timeSec:Math.round(timeSec), date:t0,
+        elevGain:(session&&session.ascent!=null)?session.ascent:elevGain(pts),
+        route:pts.length>1?downsample(pts,48):null, splits:computeSplits(pts,cum), format:'fit' };
+    }
+    function isZip(b){ return b.length>3&&b[0]===0x50&&b[1]===0x4B&&(b[2]===0x03||b[2]===0x05||b[2]===0x07); }
+    function isGzip(b){ return b.length>2&&b[0]===0x1F&&b[1]===0x8B; }
+    function isFIT(b){ return b.length>12&&b[8]===0x2E&&b[9]===0x46&&b[10]===0x49&&b[11]===0x54; }
+    function utf8(b){ return new TextDecoder('utf-8').decode(b); }
+    async function decomp(u8,fmt){ var ds=new DecompressionStream(fmt), w=ds.writable.getWriter(); w.write(u8); w.close();
+      var reader=ds.readable.getReader(), chunks=[], len=0;
+      while(true){ var res=await reader.read(); if(res.done) break; chunks.push(res.value); len+=res.value.length; }
+      var out=new Uint8Array(len), o=0; chunks.forEach(function(c){ out.set(c,o); o+=c.length; }); return out; }
+    async function unzip(u8){
+      var dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength), eocd=-1;
+      for(var i=u8.length-22;i>=0&&i>=u8.length-22-65536;i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+      if(eocd<0) return [];
+      var count=dv.getUint16(eocd+10,true), cdOff=dv.getUint32(eocd+16,true), p=cdOff, entries=[];
+      for(var n=0;n<count;n++){ if(dv.getUint32(p,true)!==0x02014b50) break;
+        var method=dv.getUint16(p+10,true), compSize=dv.getUint32(p+20,true);
+        var nameLen=dv.getUint16(p+28,true), extraLen=dv.getUint16(p+30,true), commLen=dv.getUint16(p+32,true), lho=dv.getUint32(p+42,true);
+        var name=utf8(u8.subarray(p+46,p+46+nameLen));
+        var lnameLen=dv.getUint16(lho+26,true), lextra=dv.getUint16(lho+28,true), dataStart=lho+30+lnameLen+lextra;
+        entries.push({name:name, method:method, comp:u8.subarray(dataStart, dataStart+compSize)});
+        p+=46+nameLen+extraLen+commLen; }
+      var out=[];
+      for(var e=0;e<entries.length;e++){ var en=entries[e]; if(/\/$/.test(en.name)) continue;
+        out.push({name:en.name, bytes: en.method===0?en.comp:await decomp(en.comp,'deflate-raw')}); }
+      return out; }
+    async function expandBytes(name,bytes){ var runs=[];
+      if(isZip(bytes)){ var ents=await unzip(bytes); for(var e=0;e<ents.length;e++){ runs=runs.concat(await expandBytes(ents[e].name, ents[e].bytes)); } return runs; }
+      if(isGzip(bytes)){ var d=await decomp(bytes,'gzip'); return expandBytes(name.replace(/\.gz$/i,''), d); }
+      if(isFIT(bytes)){ var r=parseFIT(bytes); if(r) runs.push(r); return runs; }
+      var text; try{ text=utf8(bytes); }catch(e){ return runs; }
+      var r2=parseActivity(text); if(r2) runs.push(r2); return runs; }
+
     /* ── render ── */
     function sessionsOn(dk){ return plan.filter(function(s){return s.date===dk;}); }
     function logsOn(dk){ return logs.filter(function(l){return l.date===dk;}); }
@@ -878,15 +954,17 @@
     function isDupe(run){ var d=dkOf(run.date); return logs.some(function(l){
       return l.date===d && Math.abs((+l.distanceKm||0)-run.distanceKm)<0.25 && (!l.timeSec||!run.timeSec||Math.abs(l.timeSec-run.timeSec)<90); }); }
     function paceOf(km,sec){ return (km>0&&sec>0)?mmss(sec/km):''; }
-    function readFiles(fileList){
-      var files=Array.prototype.slice.call(fileList).filter(function(f){return /\.(gpx|tcx|xml)$/i.test(f.name);});
-      if(!files.length){ toast('lgToast','Only .GPX / .TCX files'); return; }
-      var out=[], pending=files.length, bad=0;
-      files.forEach(function(f){ var rd=new FileReader();
-        rd.onload=function(){ try{ var r=parseActivity(String(rd.result)); if(r) out.push(r); else bad++; }catch(e){ bad++; }
-          if(--pending===0) afterRead(out,bad); };
-        rd.onerror=function(){ bad++; if(--pending===0) afterRead(out,bad); };
-        rd.readAsText(f); });
+    async function ingestFiles(fileList){
+      var files=Array.prototype.slice.call(fileList).filter(function(f){return /\.(gpx|tcx|xml|fit|gz|zip)$/i.test(f.name);});
+      if(!files.length){ toast('lgToast','.GPX / .TCX / .FIT / .zip only'); return; }
+      toast('lgToast','Reading '+files.length+' file'+(files.length>1?'s':'')+'…');
+      var out=[], bad=0;
+      for(var i=0;i<files.length;i++){
+        try{ var buf=new Uint8Array(await files[i].arrayBuffer()); var rs=await expandBytes(files[i].name, buf);
+          if(rs&&rs.length) out=out.concat(rs); else bad++; }
+        catch(e){ bad++; }
+      }
+      afterRead(out,bad);
     }
     function afterRead(runs,bad){
       if(!runs.length){ toast('lgToast', bad?'Couldn’t read those files':'Nothing found'); return; }
@@ -977,10 +1055,10 @@
     (function(){ var zone=$('importZone'), inp=$('gpxInput');
       zone.addEventListener('click',function(){ inp.click(); });
       zone.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inp.click(); } });
-      inp.addEventListener('change',function(){ if(inp.files&&inp.files.length) readFiles(inp.files); });
+      inp.addEventListener('change',function(){ if(inp.files&&inp.files.length) ingestFiles(inp.files); });
       ['dragenter','dragover'].forEach(function(ev){ zone.addEventListener(ev,function(e){ e.preventDefault(); zone.classList.add('drag'); }); });
       ['dragleave','drop'].forEach(function(ev){ zone.addEventListener(ev,function(e){ e.preventDefault(); zone.classList.remove('drag'); }); });
-      zone.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) readFiles(e.dataTransfer.files); });
+      zone.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) ingestFiles(e.dataTransfer.files); });
     })();
     $('sessList').addEventListener('click',function(e){ var d=e.target.closest('[data-del-sess]'); if(d) delSess(d.getAttribute('data-del-sess')); });
     $('runsBody').addEventListener('click',function(e){ var d=e.target.closest('[data-del-run]'); if(d) delRun(d.getAttribute('data-del-run')); });
@@ -997,7 +1075,7 @@
         window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS], onApplied:function(){ render(); } });
       })();
     });
-    window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, routePath:routePath, mmss:mmss };
+    window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath, mmss:mmss };
   })();
   </script>
   <script src="nova.js" defer></script>
