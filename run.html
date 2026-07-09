@@ -208,6 +208,22 @@
     .rn-coach-note{ font-family:var(--au-serif); font-style:italic; font-size:13.5px; color:var(--au-dim); line-height:1.5; padding:11px 14px; border:1px solid rgba(var(--rn),.14); background:rgba(var(--rn),.035); border-radius:12px; margin:-2px 0 13px; }
     .rn-coach-note b{ font-family:var(--au-mono); font-style:normal; font-size:8px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.85); display:block; margin-bottom:4px; }
 
+    /* ── fitness & form ── */
+    .rn-fit-top{ display:flex; gap:12px; margin-bottom:12px; }
+    .rn-fit-num{ flex:1; display:flex; flex-direction:column; gap:3px; }
+    .rn-fit-num .v{ font-family:var(--au-serif); font-style:italic; font-size:34px; line-height:.9; color:var(--au-ivory); letter-spacing:-.02em; }
+    .rn-fit-num .v.fresh{ color:rgb(var(--rn-cool)); } .rn-fit-num .v.tired{ color:rgb(var(--rn-hot)); }
+    .rn-fit-num .l{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); }
+    .rn-fit-curve svg{ display:block; width:100%; height:auto; }
+    .rn-fit-gauge{ display:flex; align-items:center; gap:8px; margin-top:11px; }
+    .rn-fit-gauge .lab{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; }
+    .rn-fit-gauge .lab.t{ color:rgba(var(--rn-hot),.8); } .rn-fit-gauge .lab.f{ color:rgba(var(--rn-cool),.9); }
+    .rn-fit-gauge .track{ position:relative; flex:1; height:4px; border-radius:3px; background:linear-gradient(90deg, rgba(var(--rn-hot),.5), rgba(255,255,255,.1), rgba(var(--rn-cool),.5)); }
+    .rn-fit-gauge .dot{ position:absolute; top:50%; width:11px; height:11px; border-radius:50%; background:rgb(var(--rn)); border:2px solid var(--au-void); transform:translate(-50%,-50%); }
+    .rn-pbs{ display:flex; flex-wrap:wrap; gap:6px; margin-top:13px; padding-top:12px; border-top:1px solid var(--au-line); }
+    .rn-pb{ font-family:var(--au-mono); font-size:10px; font-weight:700; color:var(--au-ivory); background:rgba(var(--rn),.06); border:1px solid rgba(var(--rn),.16); padding:6px 9px; border-radius:9px; }
+    .rn-pb b{ display:block; font-size:7.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:rgba(var(--rn),.9); margin-bottom:2px; }
+
     /* ── running weather (heat intelligence) ── */
     .rn-heat{ position:relative; overflow:hidden; }
     .rn-wx-top{ display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; }
@@ -288,6 +304,12 @@
         <div><span id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
         <div id="raceProjWrap" class="hidden"><span id="raceProj">—</span><label>πρόβλεψη · projected</label></div>
       </div>
+    </section>
+
+    <!-- FITNESS & FORM -->
+    <section class="rn-card rn-fit hidden" id="fitCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Φόρμα &amp; Fitness</h2><span class="line"></span><span class="act" id="fitStatus" style="cursor:default"></span></div>
+      <div id="fitBody"></div>
     </section>
 
     <!-- THIS WEEK -->
@@ -457,11 +479,14 @@
     /* ── state ── */
     var prof=loadObj(K_PROF), plan=loadArr(K_PLAN), logs=loadArr(K_LOGS);
     var paces=null, movingId=null;
+    var EVDOT=0, EVDOT_SRC='', EVDOT_FROM=null;
+    function computeEffVdot(){ if(prof.vdot>0){ EVDOT=prof.vdot; EVDOT_SRC='race'; EVDOT_FROM=null; }
+      else { var a=autoVdot(logs); if(a){ EVDOT=a.vdot; EVDOT_SRC='auto'; EVDOT_FROM=a.from; } else { EVDOT=0; EVDOT_SRC=''; EVDOT_FROM=null; } } }
     /* settings objects (run:profile, run:shifts) need a _ts stamp so cloud sync does
        last-write-wins instead of reverting a fresh edit to the older remote copy. */
     function saveProf(){ prof._ts=Date.now(); persist(K_PROF,prof); }
     function saveShifts(s){ s._ts=Date.now(); persist(K_SHIFT,s); }
-    function computePaces(){ paces = (prof.vdot>0) ? zonePaces(prof.vdot) : null; }
+    function computePaces(){ paces = (EVDOT>0) ? zonePaces(EVDOT) : null; }
 
     function paceStr(zoneKey){ if(!paces) return null; var z=paces.filter(function(x){return x.k===zoneKey;})[0]; if(!z) return null;
       return z.range ? (mmss(z.range[0])+'–'+mmss(z.range[1])) : mmss(z.pace); }
@@ -560,7 +585,7 @@
     function zoneSec(z){
       if(paces){ var zz=paces.filter(function(x){return x.k===z;})[0];
         if(zz) return zz.range ? (zz.range[0]+zz.range[1])/2 : zz.pace;
-        if(z==='RACE'&&prof.vdot) return raceTimeFor(prof.vdot,10000)/10; }
+        if(z==='RACE'&&EVDOT) return raceTimeFor(EVDOT,10000)/10; }
       return ASSUME[z]||360;
     }
     function kmOf(parts){
@@ -626,6 +651,31 @@
     function raceTimeFor(vdot,distM){ var lo=distM*0.14, hi=distM*0.9;
       for(var i=0;i<70;i++){ var mid=(lo+hi)/2; if(vdotOf(distM,mid)>vdot) lo=mid; else hi=mid; } return (lo+hi)/2; }
 
+    /* ── data-alive engine (auto-VDOT + fitness/form + PBs) — verified in node: 13 assertions ── */
+    function autoVdot(list, nowMs){ nowMs=nowMs||Date.now(); var best=0, from=null;
+      list.forEach(function(l){ if(!(l.distanceKm>=3)||!(l.timeSec>0)) return;
+        var ageD=(nowMs - parseDk(l.date).getTime())/86400000; if(ageD>60||ageD<-1.5) return;
+        var v=vdotOf(l.distanceKm*1000, l.timeSec); if(v>best){ best=v; from={distanceKm:l.distanceKm, timeSec:l.timeSec, date:l.date}; } });
+      return best>0 ? {vdot:Math.round(best*10)/10, from:from} : null; }
+    function runTSS(l, vdot){ if(!(l.timeSec>0)||!(l.distanceKm>0)||!(vdot>0)) return 0;
+      var thrSpeed=1000/paceForPct(vdot,0.88), runSpeed=(l.distanceKm*1000)/l.timeSec, IF=Math.min(1.15, runSpeed/thrSpeed);
+      return (l.timeSec/3600)*IF*IF*100; }
+    function fitnessSeries(list, vdot, showDays){ showDays=showDays||84;
+      var byDay={}; list.forEach(function(l){ if(!l.date) return; byDay[l.date]=(byDay[l.date]||0)+runTSS(l,vdot); });
+      var dates=Object.keys(byDay).sort(); if(!dates.length) return [];
+      var today=new Date(); today=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+      var start=parseDk(dates[0]), winStart=addDays(today,-(showDays-1));
+      var ctl=0, atl=0, aC=1-Math.exp(-1/42), aA=1-Math.exp(-1/7), out=[];
+      for(var d=new Date(start); d<=today; d=addDays(d,1)){ var dk=dkOf(d), tss=byDay[dk]||0, pC=ctl, pA=atl;
+        ctl+=(tss-ctl)*aC; atl+=(tss-atl)*aA;
+        if(d>=winStart) out.push({ date:dk, ctl:Math.round(ctl*10)/10, atl:Math.round(atl*10)/10, tsb:Math.round((pC-pA)*10)/10 }); }
+      return out; }
+    function formLabel(tsb){ if(tsb>=8) return ['Φρέσκια','fresh']; if(tsb>=-8) return ['Ισορροπία','balanced']; if(tsb>=-20) return ['Κουρασμένη','tired']; return ['Πολύ κουρασμένη','very tired']; }
+    function pbsOf(list){ var stds=[{d:5,gr:'5 χλμ'},{d:10,gr:'10 χλμ'},{d:21.097,gr:'Ημιμαρ.'},{d:42.195,gr:'Μαραθ.'}];
+      return stds.map(function(s){ var best=null; list.forEach(function(l){ if(l.timeSec>0 && l.distanceKm>=s.d*0.97 && l.distanceKm<=s.d*1.12){ if(!best||l.timeSec<best.timeSec) best=l; } });
+        return best?{label:s.gr, timeSec:best.timeSec, date:best.date, km:best.distanceKm}:null; }).filter(Boolean); }
+    function longestRun(list){ var m=null; list.forEach(function(l){ if(l.distanceKm>0 && (!m||l.distanceKm>m.distanceKm)) m=l; }); return m; }
+
     /* bilingual part labels + display helpers */
     var PARTLAB={ wu:['Προθέρμανση','warm-up'], cd:['Αποθεραπεία','cool-down'], aer:['Αερόβιο','aerobic'],
       steady:['Έντονο αερόβιο','strong aerobic'], hard:['Έντονο','hard'], thr:['Κατώφλι','threshold'],
@@ -643,8 +693,8 @@
       if(p.kind==='str') return {t:'gym', soft:true};
       if(p.kind==='drill') return null;
       if(!paces||!p.zone) return null;
-      if(p.zone==='RACE'){ if(!prof.vdot) return null;
-        var d=(p.km||10)*1000; var sec=raceTimeFor(prof.vdot,d)/(d/1000); return {t:mmss(sec)+'/χλμ'}; }
+      if(p.zone==='RACE'){ if(!EVDOT) return null;
+        var d=(p.km||10)*1000; var sec=raceTimeFor(EVDOT,d)/(d/1000); return {t:mmss(sec)+'/χλμ'}; }
       if(p.zone==='R'&&p.repM){ var rs=zoneSec('R')*p.repM/1000; return {t:Math.round(rs)+'″/'+p.repM+'μ'}; }
       var ps=paceStr(p.zone); return ps?{t:ps+'/χλμ'}:null;
     }
@@ -897,9 +947,11 @@
       computePaces();
       if(!paces){ $('pacesEmpty').classList.remove('hidden'); $('pacesReal').classList.add('hidden'); return; }
       $('pacesEmpty').classList.add('hidden'); $('pacesReal').classList.remove('hidden');
-      $('vdotNum').textContent=Math.round(prof.vdot*10)/10;
-      if(prof.raceDist){ var dm=+prof.raceDist, nm=({1500:'1500m',3000:'3000m',5000:'5 km',10000:'10 km',21097:'Half',42195:'Marathon'})[dm]||(dm+'m');
+      $('vdotNum').textContent=Math.round(EVDOT*10)/10;
+      if(EVDOT_SRC==='race' && prof.raceDist){ var dm=+prof.raceDist, nm=({1500:'1500m',3000:'3000m',5000:'5 km',10000:'10 km',21097:'Half',42195:'Marathon'})[dm]||(dm+'m');
         $('vdotSrc').innerHTML='from '+nm+'<br>'+hms(prof.raceTime); }
+      else if(EVDOT_SRC==='auto' && EVDOT_FROM){ $('vdotSrc').innerHTML='από τα τρεξίματά σου<br>'+EVDOT_FROM.distanceKm+'χλμ · '+hms(EVDOT_FROM.timeSec); }
+      else $('vdotSrc').innerHTML='';
       $('zonesBox').innerHTML=paces.map(function(z){
         var p = z.range ? (mmss(z.range[0])+'–'+mmss(z.range[1])) : mmss(z.pace);
         return '<div class="rn-zone"><div class="rn-zone-k">'+z.k+'</div>'+
@@ -973,9 +1025,9 @@
       $('racePhase').textContent=phase;
       $('raceDays').textContent=days;
       $('raceWeeks').textContent=weeks;
-      if(prof.vdot>0){
+      if(EVDOT>0){
         $('raceProjWrap').classList.remove('hidden');
-        $('raceProj').textContent='~'+hms(Math.round(raceTimeFor(prof.vdot,GOAL.distM)/60)*60);
+        $('raceProj').textContent='~'+hms(Math.round(raceTimeFor(EVDOT,GOAL.distM)/60)*60);
       } else $('raceProjWrap').classList.add('hidden');
     }
 
@@ -1102,18 +1154,51 @@
       Array.prototype.forEach.call($('heatBody').querySelectorAll('[data-sh]'), function(b){ b.addEventListener('click',function(){ cycleShift(b.getAttribute('data-sh')); }); });
     }
 
+    function renderFitness(){
+      var card=$('fitCard');
+      if(!(EVDOT>0)){ card.classList.add('hidden'); return; }
+      var series=fitnessSeries(logs, EVDOT, 84);
+      if(series.length<10){ card.classList.add('hidden'); return; }
+      card.classList.remove('hidden');
+      var cur=series[series.length-1], ago=series[Math.max(0,series.length-15)];
+      var trend = cur.ctl>ago.ctl+1 ? ['ανεβαίνει','building'] : (cur.ctl<ago.ctl-1?['χαλαρώνει','easing']:['σταθερή','holding']);
+      var fl=formLabel(cur.tsb);
+      $('fitStatus').textContent='φόρμα · '+fl[0];
+      var W=320,H=90,pad=8, ctls=series.map(function(s){return s.ctl;});
+      var mn=Math.min.apply(null,ctls), mx=Math.max.apply(null,ctls), span=(mx-mn)||1, stepX=(W-2*pad)/(series.length-1);
+      var pts=series.map(function(s,i){ return {x:pad+i*stepX, y:H-pad-((s.ctl-mn)/span)*(H-2*pad)}; });
+      var d='M'+pts.map(function(p){return p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' L');
+      var area=d+' L'+pts[pts.length-1].x.toFixed(1)+' '+H+' L'+pts[0].x.toFixed(1)+' '+H+' Z';
+      var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+        '<defs><linearGradient id="fitg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--rn),.28)"/><stop offset="1" stop-color="rgba(var(--rn),.01)"/></linearGradient></defs>'+
+        '<path d="'+area+'" fill="url(#fitg)"/><path d="'+d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<circle cx="'+pts[pts.length-1].x.toFixed(1)+'" cy="'+pts[pts.length-1].y.toFixed(1)+'" r="3.6" fill="rgb(var(--rn))"/></svg>';
+      var gpct=Math.max(3,Math.min(97,(cur.tsb+30)/50*100));
+      var pb=pbsOf(logs), lr=longestRun(logs);
+      var pbChips=pb.map(function(p){ return '<span class="rn-pb"><b>'+p.label+'</b>'+hms(p.timeSec)+'</span>'; }).join('')+
+        (lr?'<span class="rn-pb"><b>Μεγαλύτερο</b>'+(Math.round(lr.distanceKm*10)/10)+'χλμ</span>':'');
+      $('fitBody').innerHTML=
+        '<div class="rn-fit-top">'+
+          '<div class="rn-fit-num"><span class="v">'+Math.round(cur.ctl)+'</span><span class="l">Fitness · '+trend[0]+'</span></div>'+
+          '<div class="rn-fit-num"><span class="v'+(cur.tsb>=8?' fresh':(cur.tsb<-20?' tired':''))+'">'+(cur.tsb>0?'+':'')+Math.round(cur.tsb)+'</span><span class="l">Φόρμα · '+fl[0]+'</span></div>'+
+        '</div>'+
+        '<div class="rn-fit-curve">'+svg+'</div>'+
+        '<div class="rn-fit-gauge"><span class="lab t">κουρασμένη</span><div class="track"><span class="dot" style="left:'+gpct.toFixed(0)+'%"></span></div><span class="lab f">φρέσκια</span></div>'+
+        (pbChips?'<div class="rn-pbs">'+pbChips+'</div>':'');
+    }
+
     function renderHero(){
       $('rnTitle').textContent = (prof.name?prof.name.split(' ')[0]:'Chrissie')+'’s runs';
       var dk=todayDk(); var s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0];
       if(s){ var zk=typeZone(s.type); var ps=zk?paceStr(zk):null;
         $('rnSub').textContent='Today: '+s.type+(s.km?(' · '+s.km+'km'):'')+(ps?(' at '+ps+'/km'):'')+'.';
-      } else if(!prof.vdot){ $('rnSub').textContent='Set a recent race to unlock your training paces, then paste in this week’s programme.';
+      } else if(!EVDOT){ $('rnSub').textContent='Set a recent race to unlock your training paces, then paste in this week’s programme.';
       } else { $('rnSub').textContent='No session today. Your paces are ready below whenever you head out.'; }
     }
 
     function render(){
-      prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderRace(); renderWeek(); renderPaces(); renderSessions(); renderRuns();
+      prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computeEffVdot(); computePaces();
+      renderHero(); renderToday(); renderHeat(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderRuns();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
@@ -1294,7 +1379,8 @@
       })();
     });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath,
-      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove, mmss:mmss };
+      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove,
+      autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, mmss:mmss };
   })();
   </script>
   <script src="nova.js" defer></script>
