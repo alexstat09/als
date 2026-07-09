@@ -239,6 +239,9 @@
     .rn-sh.s-evening .m{ color:rgb(var(--rn-hot)); }
     .rn-sh.s-off{ background:rgba(255,255,255,.01); }
     .rn-sh.s-off .m{ color:var(--au-dim); }
+    .rn-shift-leg{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-family:var(--au-mono); font-size:8px; color:var(--au-faint); letter-spacing:.04em; }
+    .rn-shift-leg b{ font-weight:800; color:var(--au-dim); }
+    .rn-shift-leg b.mo{ color:rgb(var(--rn)); } .rn-shift-leg b.ev{ color:rgb(var(--rn-hot)); } .rn-shift-leg b.of{ color:var(--au-dim); }
     .rn-wx-paces{ display:flex; gap:2px; margin-top:12px; border-radius:12px; overflow:hidden; }
     .rn-wx-pace{ flex:1; text-align:center; padding:9px 4px; background:rgba(255,255,255,.02); }
     .rn-wx-pace .z{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.08em; color:var(--au-faint); }
@@ -454,6 +457,10 @@
     /* ── state ── */
     var prof=loadObj(K_PROF), plan=loadArr(K_PLAN), logs=loadArr(K_LOGS);
     var paces=null, movingId=null;
+    /* settings objects (run:profile, run:shifts) need a _ts stamp so cloud sync does
+       last-write-wins instead of reverting a fresh edit to the older remote copy. */
+    function saveProf(){ prof._ts=Date.now(); persist(K_PROF,prof); }
+    function saveShifts(s){ s._ts=Date.now(); persist(K_SHIFT,s); }
     function computePaces(){ paces = (prof.vdot>0) ? zonePaces(prof.vdot) : null; }
 
     function paceStr(zoneKey){ if(!paces) return null; var z=paces.filter(function(x){return x.k===zoneKey;})[0]; if(!z) return null;
@@ -854,7 +861,7 @@
       });
       el.querySelectorAll('[data-grp]').forEach(function(btn){
         btn.addEventListener('click',function(){
-          prof.group=btn.getAttribute('data-grp'); persist(K_PROF,prof); flush(); render();
+          prof.group=btn.getAttribute('data-grp'); saveProf(); flush(); render();
         });
       });
     }
@@ -1032,7 +1039,7 @@
     var K_SHIFT='run:shifts';
     function shiftOn(dk){ return loadObj(K_SHIFT)[dk]||''; }
     function cycleShift(dk){ var s=loadObj(K_SHIFT), order=['','morning','evening','off'], cur=s[dk]||'', nx=order[(order.indexOf(cur)+1)%4];
-      if(nx) s[dk]=nx; else delete s[dk]; persist(K_SHIFT,s); flush(); render(); }
+      if(nx) s[dk]=nx; else delete s[dk]; saveShifts(s); flush(); render(); }
     function shiftLabel(s){ return s==='morning'?['Πρωινή βάρδια','morning shift']:s==='evening'?['Βραδινή βάρδια','evening shift']:s==='off'?['Ρεπό σήμερα','day off']:['','']; }
     function shiftStripHTML(){
       var ws=weekStart(new Date()), tdk=todayDk(), sh=loadObj(K_SHIFT), cells='';
@@ -1040,7 +1047,8 @@
         var mk = s==='morning'?'Πρ':(s==='evening'?'Βρ':(s==='off'?'Ρ':'+'));
         cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="m">'+mk+'</span></button>';
       }
-      return '<div class="rn-shift"><div class="rn-shift-lab">Η βάρδιά σου · your shift · tap to set</div><div class="rn-shift-row">'+cells+'</div></div>';
+      return '<div class="rn-shift"><div class="rn-shift-lab">Η βάρδιά σου · your shift · πάτα να αλλάξεις</div><div class="rn-shift-row">'+cells+'</div>'+
+        '<div class="rn-shift-leg"><span><b class="mo">Πρ</b> πρωινή</span><span><b class="ev">Βρ</b> βραδινή</span><span><b class="of">Ρ</b> ρεπό</span><span><b>+</b> όρισε</span></div></div>';
     }
     function renderHeat(){
       var c=loadWx(); if(!c || (Date.now()-c.fetchedAt>3600000)) fetchWeather();
@@ -1121,7 +1129,7 @@
       var vd=vdotOf(dist,tsec); if(!(vd>0)){ toast('rcToast','Check the time'); return; }
       prof.raceDist=dist; prof.raceTime=tsec; prof.vdot=Math.round(vd*10)/10;
       var nm=$('rcName').value.trim(); if(nm) prof.name=nm;
-      persist(K_PROF,prof); flush(); toast('rcToast','Paces updated ✓'); $('raceForm').classList.add('hidden'); render();
+      saveProf(); flush(); toast('rcToast','Paces updated ✓'); $('raceForm').classList.add('hidden'); render();
     }
     function addSession(){
       var dk=$('asDate').value; if(!dk){ toast('asToast','Pick a day'); return; }
@@ -1145,7 +1153,7 @@
       });
       plan=plan.filter(function(s){ var d=parseDk(s.date); return !(s.src==='plan' && d>=ws && d<we); }); // replace this week's imported plan
       plan=plan.concat(parsed); persist(K_PLAN,plan);
-      prof.weekNote=res.preamble||''; persist(K_PROF,prof); flush();
+      prof.weekNote=res.preamble||''; saveProf(); flush();
       toast('planToast','Read '+parsed.length+' day'+(parsed.length>1?'s':'')+' ✓ Διαβάστηκαν'); $('planText').value=''; render();
     }
     /* ── import flows ── */
