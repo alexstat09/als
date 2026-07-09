@@ -120,6 +120,19 @@
     .rn-sess-t.done{ color:var(--au-faint); }
     .rn-sess-s{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:2px; }
     .rn-sess-del{ flex:none; background:none; border:none; color:var(--au-faint); font-size:14px; cursor:pointer; padding:4px; }
+    .rn-sess-move{ flex:none; background:none; border:none; color:var(--au-faint); cursor:pointer; padding:4px 3px; display:flex; align-items:center; }
+    .rn-sess-move.on,.rn-sess-move:active{ color:rgb(var(--rn)); }
+    .rn-move{ padding:2px 0 11px 60px; }
+    .rn-move-lab{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-bottom:7px; }
+    .rn-move-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .rn-md{ position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; border-radius:9px; border:1px solid var(--au-line); background:rgba(255,255,255,.02); cursor:pointer; }
+    .rn-md .d{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; color:var(--au-faint); text-transform:uppercase; }
+    .rn-md .n{ font-family:var(--au-serif); font-style:italic; font-size:14px; color:var(--au-ivory); line-height:1; letter-spacing:-.01em; }
+    .rn-md .sm{ font-family:var(--au-mono); font-size:7px; font-weight:800; color:var(--au-faint); }
+    .rn-md.s-morning .sm{ color:rgb(var(--rn)); } .rn-md.s-evening .sm{ color:rgb(var(--rn-hot)); } .rn-md.s-off .sm{ color:var(--au-dim); }
+    .rn-md.cur{ border-color:rgba(var(--rn),.5); background:rgba(var(--rn),.09); }
+    .rn-md.today .n{ color:rgb(var(--rn)); }
+    .rn-md .occ{ position:absolute; top:4px; right:4px; width:4px; height:4px; border-radius:50%; background:rgba(var(--rn),.7); }
 
     .rn-empty{ text-align:center; padding:10px 6px; color:var(--au-faint); font-size:13px; line-height:1.5; }
     .rn-foot{ max-width:600px; margin:6px auto 0; padding:2px 18px 0; text-align:center; font-size:10.5px; color:var(--au-faint); line-height:1.55; }
@@ -440,7 +453,7 @@
 
     /* ── state ── */
     var prof=loadObj(K_PROF), plan=loadArr(K_PLAN), logs=loadArr(K_LOGS);
-    var paces=null;
+    var paces=null, movingId=null;
     function computePaces(){ paces = (prof.vdot>0) ? zonePaces(prof.vdot) : null; }
 
     function paceStr(zoneKey){ if(!paces) return null; var z=paces.filter(function(x){return x.k===zoneKey;})[0]; if(!z) return null;
@@ -902,11 +915,24 @@
           }).join(' · '); }
         else { var zk=typeZone(s.type); var ps=zk?paceStr(zk):null;
           sum=esc(s.struct||'')+(ps?(' · <span style="color:rgba(var(--rn),.9)">'+ps+'/km</span>'):''); }
-        return '<div class="rn-sess-row"><div class="rn-sess-date">'+DOW[(d.getDay()+6)%7]+'<b>'+d.getDate()+'</b></div>'+
+        var mvSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h12l-3-3M17 16H5l3 3"/></svg>';
+        return '<div class="rn-sess-item"><div class="rn-sess-row"><div class="rn-sess-date">'+DOW[(d.getDay()+6)%7]+'<b>'+d.getDate()+'</b></div>'+
           '<div class="rn-sess-main"><div class="rn-sess-t'+(done?' done':'')+'">'+esc(s.type)+(s.km?(' · '+s.km+(s.kmEst?'≈':'')+'km'):'')+(done?' ✓':'')+(s.split?' <span style="color:var(--au-faint);font-size:10px">2 ομάδες</span>':'')+'</div>'+
           '<div class="rn-sess-s">'+(pp?esc(sum):sum)+'</div></div>'+
-          '<button class="rn-sess-del" data-del-sess="'+s.id+'" aria-label="Remove">✕</button></div>';
+          '<button class="rn-sess-move'+(movingId===s.id?' on':'')+'" data-move-sess="'+s.id+'" aria-label="Move day">'+mvSvg+'</button>'+
+          '<button class="rn-sess-del" data-del-sess="'+s.id+'" aria-label="Remove">✕</button></div>'+
+          (movingId===s.id? movePickerHTML(s) : '')+'</div>';
       }).join('');
+    }
+    function movePickerHTML(s){
+      var ws=weekStart(new Date()), sh=loadObj(K_SHIFT), tdk=todayDk(), cells='';
+      for(var i=0;i<7;i++){ var d=addDays(ws,i), dk=dkOf(d), sft=sh[dk]||'';
+        var occ=plan.some(function(x){ return x.id!==s.id && x.date===dk; });
+        var mk=sft==='morning'?'Πρ':(sft==='evening'?'Βρ':(sft==='off'?'Ρ':''));
+        cells+='<button type="button" class="rn-md'+(dk===s.date?' cur':'')+(dk===tdk?' today':'')+(sft?(' s-'+sft):'')+'" data-move-to="'+s.id+'|'+dk+'">'+
+          '<span class="d">'+DOW[i]+'</span><span class="n">'+d.getDate()+'</span>'+(mk?'<span class="sm">'+mk+'</span>':'<span class="sm">·</span>')+(occ?'<span class="occ"></span>':'')+'</button>';
+      }
+      return '<div class="rn-move"><div class="rn-move-lab">Μετάφερε σε · move to · η βάρδιά σου φαίνεται</div><div class="rn-move-days">'+cells+'</div></div>';
     }
 
     function renderRuns(){
@@ -1214,7 +1240,14 @@
       if(window.ALSConfirm){ if(!(await ALSConfirm({title:'Delete run?',message:'Remove this '+(r.distanceKm)+'km run?',confirmText:'Delete',danger:true}))) return; }
       logs=logs.filter(function(x){return x.id!==id;}); persist(K_LOGS,logs); flush(); render(); }
     async function delSess(id){ var s=plan.find(function(x){return x.id===id;}); if(!s) return;
-      plan=plan.filter(function(x){return x.id!==id;}); persist(K_PLAN,plan); flush(); render(); }
+      plan=plan.filter(function(x){return x.id!==id;}); if(movingId===id) movingId=null; persist(K_PLAN,plan); flush(); render(); }
+    function applyMove(list, id, targetDk, now){
+      var s=null; for(var i=0;i<list.length;i++) if(list[i].id===id) s=list[i];
+      if(!s) return list; var fromDk=s.date; if(fromDk===targetDk) return list;
+      var other=null; for(var j=0;j<list.length;j++){ if(list[j].id!==id && list[j].date===targetDk){ other=list[j]; break; } }
+      if(other){ other.date=fromDk; other.ts=now; } s.date=targetDk; s.ts=now; return list;
+    }
+    function moveSession(id, dk){ applyMove(plan, id, dk, Date.now()); persist(K_PLAN,plan); flush(); movingId=null; render(); }
 
     /* ── wiring ── */
     $('editRace').addEventListener('click',function(){ var f=$('raceForm'); f.classList.toggle('hidden');
@@ -1233,7 +1266,11 @@
       ['dragleave','drop'].forEach(function(ev){ zone.addEventListener(ev,function(e){ e.preventDefault(); zone.classList.remove('drag'); }); });
       zone.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) ingestFiles(e.dataTransfer.files); });
     })();
-    $('sessList').addEventListener('click',function(e){ var d=e.target.closest('[data-del-sess]'); if(d) delSess(d.getAttribute('data-del-sess')); });
+    $('sessList').addEventListener('click',function(e){
+      var to=e.target.closest('[data-move-to]'); if(to){ var pr=to.getAttribute('data-move-to').split('|'); moveSession(pr[0],pr[1]); return; }
+      var mv=e.target.closest('[data-move-sess]'); if(mv){ var id=mv.getAttribute('data-move-sess'); movingId=(movingId===id?null:id); render(); return; }
+      var d=e.target.closest('[data-del-sess]'); if(d) delSess(d.getAttribute('data-del-sess'));
+    });
     $('runsBody').addEventListener('click',function(e){ var d=e.target.closest('[data-del-run]'); if(d) delRun(d.getAttribute('data-del-run')); });
 
     // default dates = today
@@ -1249,7 +1286,7 @@
       })();
     });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath,
-      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, mmss:mmss };
+      heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove, mmss:mmss };
   })();
   </script>
   <script src="nova.js" defer></script>
