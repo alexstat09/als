@@ -350,13 +350,15 @@
     @keyframes rnShim{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
 
     /* ── readiness heartbeat: the living anchor of Today ── */
-    .rn-beat{ max-width:600px; margin:0 auto 8px; padding:6px 20px 0; display:flex; flex-direction:column; align-items:center; text-align:center; }
-    .rn-beat-canvas{ width:176px; height:176px; margin-bottom:0; }
-    .rn-beat-state{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(30px,8vw,38px); color:var(--au-ivory); line-height:1.02; letter-spacing:-.02em; margin-top:-8px; }
-    .rn-beat-line{ font-size:14.5px; color:var(--au-dim); margin-top:11px; max-width:32ch; line-height:1.5; }
-    .rn-beat-meta{ display:flex; flex-wrap:wrap; justify-content:center; gap:7px 15px; margin-top:14px; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--au-faint); }
+    .rn-beat{ max-width:600px; margin:0 auto; padding:14px 20px 4px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+    .rn-beat-canvas{ width:190px; height:190px; margin-bottom:-2px; }
+    .rn-beat-state{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(32px,8.6vw,42px); color:var(--au-ivory); line-height:1.02; letter-spacing:-.02em; margin-top:-6px; }
+    .rn-beat-line{ font-size:14.5px; color:var(--au-dim); margin-top:12px; max-width:32ch; line-height:1.5; }
+    .rn-beat-meta{ display:flex; flex-wrap:wrap; justify-content:center; gap:7px 15px; margin-top:15px; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--au-faint); }
     .rn-beat-meta span{ white-space:nowrap; }
     .rn-beat-meta b{ color:rgba(var(--rn),.9); font-weight:800; }
+    /* hero divider: crowns the heartbeat as Today's anchor, details follow below */
+    .rn-beat::after{ content:''; width:46px; height:1px; margin-top:22px; background:linear-gradient(90deg, transparent, rgba(var(--rn),.45), transparent); }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -1046,6 +1048,8 @@
       var meta=[];
       if(haveForm){ meta.push('Φόρμα · <b>'+formLabel(tsb)[0]+'</b>'); meta.push('Fitness '+Math.round(cur.ctl)); }
       if(best&&!indoor&&!done) meta.push('<b>'+when+'</b> · '+temp+'°');
+      var gd=Math.round((parseDk(GOAL.dk).getTime()-new Date().setHours(0,0,0,0))/86400000);
+      if(gd>=0) meta.push('Αθήνα · <b>'+gd+'</b> μέρες');
       var R={ meta:meta };
       if(done){ R.state=['Έγινε','done']; R.color='cool'; R.target=.9; R.rate=1.5; R.line='Η σημερινή μπήκε. Κάθε βήμα σε πάει Αθήνα.'; return R; }
       if(isRest){ R.state=['Ρεπό','rest']; R.color='gold'; R.target=.55; R.rate=.6; R.line='Ξεκούραση σήμερα, έτσι χτίζεται η φόρμα για την Αθήνα.'; return R; }
@@ -1283,7 +1287,7 @@
         $('raceProj').textContent='~'+hms(Math.round(raceTimeFor(EVDOT,GOAL.distM)/60)*60);
       } else $('raceProjWrap').classList.add('hidden');
       var pulse=$('todayPulse');
-      if(pulse){ pulse.classList.remove('hidden');
+      if(pulse){ pulse.classList.add('hidden'); /* Athens countdown now lives in the heartbeat meta */
         pulse.innerHTML='<span class="dot"></span>Αθήνα · <b>'+days+'</b> μέρες <span class="ph">'+phase.split(' · ')[0]+'</span><span class="go">Πρόοδος ›</span>'; }
     }
 
