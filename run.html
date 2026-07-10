@@ -358,10 +358,8 @@
     .rn-beat-meta span{ white-space:nowrap; }
     .rn-beat-meta b{ color:rgba(var(--rn),.9); font-weight:800; }
 
-    /* ── tiltable 3D fitness curve ── */
-    .rn-fit3d-wrap{ position:relative; margin:2px 0 6px; }
-    .rn-fit3d{ display:block; width:100%; height:196px; touch-action:none; cursor:grab; }
-    .rn-fit3d-hint{ position:absolute; right:2px; bottom:2px; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); pointer-events:none; opacity:.65; }
+    /* fitness curve caption: says plainly what the line means */
+    .rn-fit-cap{ font-family:var(--au-serif); font-style:italic; font-size:13px; color:var(--au-dim); line-height:1.5; margin-top:9px; }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -510,7 +508,6 @@
     <!-- FITNESS & FORM -->
     <section class="rn-card rn-fit hidden" id="fitCard">
       <div class="rn-card-hd"><span class="dot"></span><h2>Φόρμα &amp; Fitness</h2><span class="line"></span><span class="act" id="fitStatus" style="cursor:default"></span></div>
-      <div class="rn-fit3d-wrap hidden" id="fit3dWrap"><canvas class="rn-fit3d" id="fit3d"></canvas><span class="rn-fit3d-hint">σύρε · drag to tilt</span></div>
       <div id="fitBody"></div>
     </section>
     <!-- TRAINING PACES -->
@@ -1002,7 +999,7 @@
     /* ── living visuals engine: canvas heartbeat + tiltable 3D form curve ── */
     var COL={ rose:'240,148,171', cool:'150,199,196', hot:'236,132,96', gold:'233,196,182' };
     var RM=(typeof matchMedia!=='undefined')&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-    var beat={ canvas:null, score:null, target:.62, rate:1.1, rgb:COL.rose }, fit3d={ canvas:null, series:null, pitch:.52, yaw:-.36, rgb:COL.rose, drag:false };
+    var beat={ canvas:null, score:null, target:.62, rate:1.1, rgb:COL.rose };
     var animItems=[], animRAF=0, TAU=Math.PI*2;
     function fitSize(o){ var cv=o.canvas; if(!cv) return false; var cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch) return false;
       var dpr=Math.min(2, window.devicePixelRatio||1), w=Math.round(cw*dpr), h=Math.round(ch*dpr);
@@ -1037,41 +1034,6 @@
       var cg=g.createRadialGradient(cx,cy,0,cx,cy,coreR);
       cg.addColorStop(0,'rgba('+col+',0.85)'); cg.addColorStop(1,'rgba('+col+',0.10)');
       g.fillStyle=cg; g.beginPath(); g.arc(cx,cy,coreR,0,TAU); g.fill();
-    }
-
-    function drawFit3d(t){
-      var f=fit3d, s=f.series; if(!s||s.length<2) return;
-      var g=f.ctx, W=f.w, H=f.h, dpr=f.dpr, col=f.rgb||COL.rose;
-      g.clearRect(0,0,W,H);
-      if(!f.drag && !RM) f.yaw+=0.0016;
-      var yaw=f.yaw, pitch=f.pitch, n=s.length;
-      var ctls=s.map(function(p){return p.ctl;});
-      var mn=Math.min.apply(null,ctls), mx=Math.max.apply(null,ctls), span=(mx-mn)||1;
-      var scale=Math.min(W*0.30, H*0.42), cx=W/2, cy=H*0.60, d=3.4, zf=0.13, zb=-0.13;
-      function proj(x,y,z){ var cY=Math.cos(yaw),sY=Math.sin(yaw), x1=x*cY-z*sY, z1=x*sY+z*cY;
-        var cX=Math.cos(pitch),sX=Math.sin(pitch), y2=y*cX-z1*sX, z2=y*sX+z1*cX, pp=d/(d+z2);
-        return { x:cx+x1*pp*scale, y:cy-y2*pp*scale }; }
-      function px(i){ return -1.25+2.5*i/(n-1); }
-      function ht(i){ return 0.14+((s[i].ctl-mn)/span)*0.86; }
-      g.lineWidth=1*dpr; g.strokeStyle='rgba(255,255,255,0.055)';
-      for(var gi=0;gi<=6;gi++){ var xx=-1.25+2.5*gi/6, a=proj(xx,0,zf), b=proj(xx,0,zb); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
-      var fa=proj(-1.25,0,zf), fb=proj(1.25,0,zf), ba=proj(-1.25,0,zb), bb=proj(1.25,0,zb);
-      g.beginPath(); g.moveTo(fa.x,fa.y); g.lineTo(fb.x,fb.y); g.moveTo(ba.x,ba.y); g.lineTo(bb.x,bb.y); g.stroke();
-      var topF=[], topB=[], baseF=[], i, x, h;
-      for(i=0;i<n;i++){ x=px(i); h=ht(i); topF.push(proj(x,h,zf)); topB.push(proj(x,h,zb)); baseF.push(proj(x,0,zf)); }
-      g.beginPath(); g.moveTo(baseF[0].x,baseF[0].y);
-      for(i=1;i<n;i++) g.lineTo(baseF[i].x,baseF[i].y);
-      for(i=n-1;i>=0;i--) g.lineTo(topF[i].x,topF[i].y); g.closePath();
-      var fg=g.createLinearGradient(0,cy-scale,0,cy); fg.addColorStop(0,'rgba('+col+',0.40)'); fg.addColorStop(1,'rgba('+col+',0.05)');
-      g.fillStyle=fg; g.fill();
-      g.beginPath(); g.moveTo(topF[0].x,topF[0].y);
-      for(i=1;i<n;i++) g.lineTo(topF[i].x,topF[i].y);
-      for(i=n-1;i>=0;i--) g.lineTo(topB[i].x,topB[i].y); g.closePath();
-      g.fillStyle='rgba('+col+',0.5)'; g.fill();
-      g.lineWidth=2*dpr; g.lineJoin='round'; g.strokeStyle='rgb('+col+')';
-      g.beginPath(); g.moveTo(topF[0].x,topF[0].y); for(i=1;i<n;i++) g.lineTo(topF[i].x,topF[i].y); g.stroke();
-      var hd=topF[n-1]; g.fillStyle='rgb('+col+')'; g.beginPath(); g.arc(hd.x,hd.y,3.5*dpr,0,TAU); g.fill();
-      g.strokeStyle='rgba('+col+',0.3)'; g.lineWidth=1*dpr; g.beginPath(); g.arc(hd.x,hd.y,7*dpr,0,TAU); g.stroke();
     }
 
     /* readiness = form (TSB) + today's session + heat window, in one verdict */
@@ -1116,14 +1078,6 @@
       var mt=$('beatMeta'); if(mt) mt.innerHTML=R.meta.map(function(m){ return '<span>'+m+'</span>'; }).join('');
     }
     function initBeat(){ var cv=$('beatCanvas'); if(!cv) return; beat.canvas=cv; animReg(beat, drawBeat); }
-    function initFit3d(){ var cv=$('fit3d'); if(!cv) return; fit3d.canvas=cv; animReg(fit3d, drawFit3d);
-      var last=null;
-      cv.addEventListener('pointerdown',function(e){ fit3d.drag=true; last={x:e.clientX,y:e.clientY}; if(cv.setPointerCapture){ try{ cv.setPointerCapture(e.pointerId); }catch(_){} } cv.style.cursor='grabbing'; });
-      cv.addEventListener('pointermove',function(e){ if(!fit3d.drag||!last) return; var dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
-        fit3d.yaw+=dx*0.006; fit3d.pitch=Math.max(0.08,Math.min(1.15, fit3d.pitch+dy*0.005)); });
-      function up(){ fit3d.drag=false; last=null; cv.style.cursor='grab'; }
-      cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up); cv.addEventListener('pointerleave',up);
-    }
 
     function sessionsOn(dk){ return plan.filter(function(s){return s.date===dk;}); }
     function logsOn(dk){ return logs.filter(function(l){return l.date===dk;}); }
@@ -1509,11 +1463,10 @@
     }
 
     function renderFitness(){
-      var card=$('fitCard'), wrap=$('fit3dWrap');
-      if(!(EVDOT>0)){ card.classList.add('hidden'); if(wrap) wrap.classList.add('hidden'); fit3d.series=null; return; }
+      var card=$('fitCard');
+      if(!(EVDOT>0)){ card.classList.add('hidden'); return; }
       var series=fitnessSeries(logs, EVDOT, 84);
       if(series.length<10){
-        if(wrap) wrap.classList.add('hidden'); fit3d.series=null;
         if(logs.length){ card.classList.remove('hidden'); $('fitStatus').textContent='';
           $('fitBody').innerHTML='<div class="rn-empty">Η καμπύλη φόρμας σου θα εμφανιστεί εδώ σε λίγες μέρες τρεξιμάτων ακόμα. Your fitness curve appears after about 10 days of runs.</div>'; }
         else card.classList.add('hidden');
@@ -1524,11 +1477,17 @@
       var trend = cur.ctl>ago.ctl+1 ? ['ανεβαίνει','building'] : (cur.ctl<ago.ctl-1?['χαλαρώνει','easing']:['σταθερή','holding']);
       var fl=formLabel(cur.tsb);
       $('fitStatus').textContent='φόρμα · '+fl[0];
-      /* feed the tiltable 3D form curve — her fitness as a shape she can turn */
-      if(wrap) wrap.classList.remove('hidden');
-      fit3d.series=series;
-      fit3d.rgb = cur.tsb>=8?COL.cool : (cur.tsb<-20?COL.hot : COL.rose);
-      animStart();
+      /* clean 2D fitness curve — one line: is her engine growing */
+      var W=320,H=96,pad=8, ctls=series.map(function(s){return s.ctl;});
+      var mn=Math.min.apply(null,ctls), mx=Math.max.apply(null,ctls), span=(mx-mn)||1, stepX=(W-2*pad)/(series.length-1);
+      var pts=series.map(function(s,i){ return {x:pad+i*stepX, y:H-pad-((s.ctl-mn)/span)*(H-2*pad)}; });
+      var d='M'+pts.map(function(p){return p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' L');
+      var area=d+' L'+pts[pts.length-1].x.toFixed(1)+' '+H+' L'+pts[0].x.toFixed(1)+' '+H+' Z';
+      var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+        '<defs><linearGradient id="fitg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--rn),.28)"/><stop offset="1" stop-color="rgba(var(--rn),.01)"/></linearGradient></defs>'+
+        '<path d="'+area+'" fill="url(#fitg)"/><path d="'+d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<circle cx="'+pts[pts.length-1].x.toFixed(1)+'" cy="'+pts[pts.length-1].y.toFixed(1)+'" r="3.6" fill="rgb(var(--rn))"/></svg>';
+      var CAP={ building:'Η φόρμα σου χτίζεται σταθερά · your fitness is building', holding:'Η φόρμα σου κρατιέται σταθερή · your fitness is holding steady', easing:'Χαλαρώνεις τώρα, τα πόδια ξεκουράζονται · easing back on purpose' };
       var gpct=Math.max(3,Math.min(97,(cur.tsb+30)/50*100));
       var pb=pbsOf(logs), lr=longestRun(logs);
       var pbChips=pb.map(function(p){ return '<span class="rn-pb"><b>'+p.label+'</b>'+hms(p.timeSec)+'</span>'; }).join('')+
@@ -1538,6 +1497,8 @@
           '<div class="rn-fit-num"><span class="v">'+Math.round(cur.ctl)+'</span><span class="l">Fitness · '+trend[0]+'</span></div>'+
           '<div class="rn-fit-num"><span class="v'+(cur.tsb>=8?' fresh':(cur.tsb<-20?' tired':''))+'">'+(cur.tsb>0?'+':'')+Math.round(cur.tsb)+'</span><span class="l">Φόρμα · '+fl[0]+'</span></div>'+
         '</div>'+
+        '<div class="rn-fit-curve">'+svg+'</div>'+
+        '<div class="rn-fit-cap">'+CAP[trend[1]]+'</div>'+
         '<div class="rn-fit-gauge"><span class="lab t">κουρασμένη</span><div class="track"><span class="dot" style="left:'+gpct.toFixed(0)+'%"></span></div><span class="lab f">φρέσκια</span></div>'+
         (pbChips?'<div class="rn-pbs">'+pbChips+'</div>':'');
     }
@@ -1834,7 +1795,7 @@
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
 
-    initBeat(); initFit3d();
+    initBeat();
     render();
     animStart();
 
