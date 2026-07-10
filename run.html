@@ -359,6 +359,20 @@
     .rn-beat-meta b{ color:rgba(var(--rn),.9); font-weight:800; }
     /* hero divider: crowns the heartbeat as Today's anchor, details follow below */
     .rn-beat::after{ content:''; width:46px; height:1px; margin-top:22px; background:linear-gradient(90deg, transparent, rgba(var(--rn),.45), transparent); }
+
+    /* ── Τρεξίματα hero: your latest run, its route drawing itself (clean 2D) ── */
+    .rn-runhero{ max-width:600px; margin:0 auto; }
+    .rn-runhero-lab{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.9); margin-bottom:13px; }
+    .rn-runhero-map{ position:relative; border-radius:16px; overflow:hidden; margin-bottom:15px;
+      background:radial-gradient(120% 130% at 50% 0%, rgba(var(--rn),.10), rgba(255,255,255,.015) 60%, transparent); }
+    .rn-runhero-map svg{ display:block; width:100%; height:auto; }
+    .rn-runhero-badge{ position:absolute; left:12px; top:11px; font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--rn),.95); background:rgba(10,4,7,.55); padding:4px 9px; border-radius:20px; backdrop-filter:blur(6px); }
+    .rn-runhero-type{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); letter-spacing:-.01em; margin-bottom:14px; }
+    .rn-runhero-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:2px; }
+    .rn-rh{ text-align:center; padding:4px 6px; }
+    .rn-rh b{ display:block; font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
+    .rn-rh small{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); display:block; margin-top:6px; }
+    .rn-hero-route{ will-change:stroke-dashoffset; }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -450,6 +464,8 @@
     </div>
 
     <div class="rn-view hidden" id="view-runs">
+    <!-- LATEST RUN HERO: route draws itself -->
+    <section class="rn-runhero hidden" id="runHero"></section>
     <!-- LOG A RUN -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
@@ -1247,6 +1263,46 @@
       if(openRun===l.id){ exp='<div class="rn-run-x">'+((l.splits&&l.splits.length>1)?splitsHTML(l.splits):'<div class="rn-splits-lab">χωρίς αναλυτικά χιλιόμετρα · no per-km splits</div>')+'</div>'; }
       return row+exp;
     }
+    /* Τρεξίματα hero: her latest run — with its route tracing itself when GPS is present */
+    function renderRunHero(){
+      var hero=$('runHero'); if(!hero) return;
+      if(!logs.length){ hero.classList.add('hidden'); hero.innerHTML=''; return; }
+      hero.classList.remove('hidden');
+      var r=logs.slice().sort(function(a,b){ return (b.date<a.date?-1:(b.date>a.date?1:((b.ts||0)-(a.ts||0)))); })[0];
+      var d=parseDk(r.date), dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()];
+      var pace=(r.distanceKm>0&&r.timeSec>0)?mmss(r.timeSec/r.distanceKm):'—';
+      var hasRoute=!!(r.route&&r.route.length>1), map='';
+      if(hasRoute){
+        var W=340,H=190, rp=routePath(r.route,W,H,16);
+        if(rp){ map='<div class="rn-runhero-map"><span class="rn-runhero-badge">'+esc(r.type||'Run')+' · '+esc(dl)+'</span>'+
+          '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'+
+          '<path d="'+rp.d+'" fill="none" stroke="rgba(var(--rn),.15)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '<path class="rn-hero-route" d="'+rp.d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '<circle cx="'+rp.sx.toFixed(1)+'" cy="'+rp.sy.toFixed(1)+'" r="4.5" fill="rgb(var(--rn))"/>'+
+          '<circle cx="'+rp.ex.toFixed(1)+'" cy="'+rp.ey.toFixed(1)+'" r="4.5" fill="rgb(var(--rn-gold))" stroke="var(--au-void)" stroke-width="1"/>'+
+          '</svg></div>'; }
+        else hasRoute=false;
+      }
+      var head = hasRoute ? '' : ('<div class="rn-runhero-type">'+esc(r.type||'Run')+' · '+esc(dl)+'</div>');
+      hero.innerHTML='<div class="rn-runhero-lab">Το τελευταίο σου τρέξιμο · your latest run</div>'+map+head+
+        '<div class="rn-runhero-stats">'+
+          '<div class="rn-rh"><b>'+(Math.round((+r.distanceKm||0)*10)/10)+'</b><small>χλμ</small></div>'+
+          '<div class="rn-rh"><b>'+(r.timeSec?hms(r.timeSec):'—')+'</b><small>χρόνος</small></div>'+
+          '<div class="rn-rh"><b>'+pace+'</b><small>/χλμ</small></div>'+
+          '<div class="rn-rh"><b>'+(r.elevGain||0)+'</b><small>μ ↑</small></div>'+
+        '</div>';
+    }
+    /* trace the hero route on demand (when the Τρεξίματα tab opens) */
+    function animateRunHero(){
+      var p=document.querySelector('#runHero .rn-hero-route'); if(!p||!p.getTotalLength) return;
+      try{ var len=p.getTotalLength(); if(!(len>0)) return;
+        p.style.strokeDasharray=len;
+        if(RM){ p.style.strokeDashoffset='0'; return; }
+        p.style.transition='none'; p.style.strokeDashoffset=len; p.getBoundingClientRect();
+        requestAnimationFrame(function(){ p.style.transition='stroke-dashoffset 1.5s cubic-bezier(.35,.05,.2,1)'; p.style.strokeDashoffset='0'; });
+      }catch(e){}
+    }
+
     function renderRuns(){
       if(!logs.length){ $('runsCard').classList.add('hidden'); return; }
       $('runsCard').classList.remove('hidden');
@@ -1602,7 +1658,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat();
+      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
@@ -1783,6 +1839,7 @@
       VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) el.classList.toggle('hidden', id!==v); });
       Array.prototype.forEach.call($('rnTabs').children, function(b){ b.classList.toggle('on', b.getAttribute('data-view')===v); });
       try{ localStorage.setItem('run:view', v); }catch(e){} window.scrollTo(0,0);
+      if(v==='runs') requestAnimationFrame(animateRunHero);
     }
     $('rnTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-view]'); if(b) showView(b.getAttribute('data-view')); });
     function setTbh(){ var tb=document.querySelector('.topbar'); if(tb&&tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight+'px'); }
@@ -1796,6 +1853,7 @@
     initBeat();
     render();
     animStart();
+    if(!$('view-runs').classList.contains('hidden')) requestAnimationFrame(animateRunHero);
 
     document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); } });
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
