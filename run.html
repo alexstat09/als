@@ -194,6 +194,8 @@
     .rn-spine-mark{ position:absolute; top:50%; transform:translate(-50%,-50%); z-index:3; }
     .rn-spine-mark .d{ display:block; width:11px; height:11px; border-radius:50%; background:var(--au-ivory); box-shadow:0 0 0 3px rgba(10,4,7,.75), 0 0 12px rgba(var(--rn),.9); }
     .rn-spine-mark .he{ position:absolute; left:50%; bottom:15px; transform:translateX(-50%); font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-ivory); white-space:nowrap; }
+    @keyframes rnHere{ 0%,100%{ box-shadow:0 0 0 3px rgba(10,4,7,.75), 0 0 9px rgba(var(--rn),.65); } 50%{ box-shadow:0 0 0 3px rgba(10,4,7,.75), 0 0 17px rgba(var(--rn),1); } }
+    @media (prefers-reduced-motion: no-preference){ .rn-spine-mark .d{ animation:rnHere 2.8s ease-in-out infinite; } }
     .rn-spine-labels{ display:flex; gap:2px; margin-top:13px; }
     .rn-spine-lab{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--au-faint); text-align:center; }
     .rn-spine-lab.on{ color:rgb(var(--rn)); }
@@ -537,8 +539,8 @@
       <div class="rn-race-name">Αυθεντικός Μαραθώνιος Αθήνας</div>
       <div class="rn-race-meta">ATHENS AUTHENTIC MARATHON · 8 ΝΟΕ 2026 · 42.195</div>
       <div class="rn-race-nums">
-        <div><span id="raceDays">—</span><label>μέρες · days</label></div>
-        <div><span id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
+        <div><span class="rn-count" id="raceDays">—</span><label>μέρες · days</label></div>
+        <div><span class="rn-count" id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
         <div id="raceProjWrap" class="hidden"><span id="raceProj">—</span><label>πρόβλεψη · projected</label></div>
       </div>
       <div class="rn-spine" id="raceSpine"></div>
@@ -555,7 +557,7 @@
       <div id="pacesBody">
         <div class="rn-empty" id="pacesEmpty">Add a recent race result and every workout below gets a personal target pace, computed from your VDOT (Jack Daniels).</div>
         <div id="pacesReal" class="hidden">
-          <div class="rn-vdot-row"><span class="rn-vdot" id="vdotNum">0</span><span class="rn-vdot-lab">VDOT<br>fitness</span><span class="rn-vdot-src" id="vdotSrc"></span></div>
+          <div class="rn-vdot-row"><span class="rn-vdot rn-count" id="vdotNum">0</span><span class="rn-vdot-lab">VDOT<br>fitness</span><span class="rn-vdot-src" id="vdotSrc"></span></div>
           <div class="rn-zones" id="zonesBox"></div>
         </div>
       </div>
@@ -1939,11 +1941,26 @@
     });
     /* ── tab navigation ── */
     var VIEWS=['today','plan','runs','str','prog'];
+    /* living numbers: hero figures count up when their screen appears */
+    function rnReduced(){ return window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches; }
+    function animateCount(el){ if(!el) return;
+      var raw=(el.textContent||'').trim(), to=parseFloat(raw); if(!isFinite(to)) return;
+      var dec=(raw.indexOf('.')>=0)?1:0, final=dec?to.toFixed(1):String(Math.round(to));
+      if(rnReduced()||to===0){ el.textContent=final; return; }
+      var dur=850, t0=null;
+      el.textContent=dec?'0.0':'0';
+      (function step(ts){ if(t0==null) t0=ts; var p=Math.min(1,(ts-t0)/dur), e=1-Math.pow(1-p,3), val=to*e;
+        el.textContent=dec?val.toFixed(1):String(Math.round(val));
+        if(p<1) requestAnimationFrame(step); else el.textContent=final; })(performance.now());
+    }
+    function animateNumbersIn(v){ var el=$('view-'+v); if(!el) return;
+      Array.prototype.forEach.call(el.querySelectorAll('.rn-count'), animateCount); }
     function showView(v){ if(VIEWS.indexOf(v)<0) v='today';
       VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) el.classList.toggle('hidden', id!==v); });
       Array.prototype.forEach.call($('rnTabs').children, function(b){ b.classList.toggle('on', b.getAttribute('data-view')===v); });
       try{ localStorage.setItem('run:view', v); }catch(e){} window.scrollTo(0,0);
       if(v==='runs') requestAnimationFrame(animateRunHero);
+      requestAnimationFrame(function(){ animateNumbersIn(v); });
     }
     $('rnTabs').addEventListener('click',function(e){ var b=e.target.closest('[data-view]'); if(b) showView(b.getAttribute('data-view')); });
     function setTbh(){ var tb=document.querySelector('.topbar'); if(tb&&tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight+'px'); }
