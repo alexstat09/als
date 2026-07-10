@@ -1233,14 +1233,15 @@
     function hhmm(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
 
     var K_WX='run:wx', wxFetching=false;
-    function loadWx(){ try{ var c=JSON.parse(localStorage.getItem(K_WX)); if(c&&c.hours&&c.hours.length) return c; }catch(e){} return null; }
+    /* fd guards out stale caches fetched with fewer forecast days */
+    function loadWx(){ try{ var c=JSON.parse(localStorage.getItem(K_WX)); if(c&&c.hours&&c.hours.length&&c.fd===4) return c; }catch(e){} return null; }
     function hydrateWx(c){ return c.hours.map(function(h){ return {time:new Date(h.t), temp:h.temp, rh:h.rh, uv:h.uv, feels:h.feels, code:h.code}; }); }
     function fetchWeather(){ if(wxFetching) return; wxFetching=true;
-      var url='https://api.open-meteo.com/v1/forecast?latitude=36.4349&longitude=28.2176&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code&timezone=auto&forecast_days=3';
+      var url='https://api.open-meteo.com/v1/forecast?latitude=36.4349&longitude=28.2176&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code&timezone=auto&forecast_days=4';
       fetch(url).then(function(r){ return r.json(); }).then(function(j){
         if(!j||!j.hourly||!j.hourly.time) throw 0; var H=j.hourly;
         var hours=H.time.map(function(t,i){ return { t:t, temp:H.temperature_2m[i], rh:H.relative_humidity_2m[i], uv:H.uv_index?H.uv_index[i]:null, feels:H.apparent_temperature?H.apparent_temperature[i]:null, code:H.weather_code?H.weather_code[i]:null }; });
-        try{ localStorage.setItem(K_WX, JSON.stringify({ fetchedAt:Date.now(), hours:hours })); }catch(e){}
+        try{ localStorage.setItem(K_WX, JSON.stringify({ fetchedAt:Date.now(), fd:4, hours:hours })); }catch(e){}
         wxFetching=false; renderHeat(); renderNext();
       }).catch(function(){ wxFetching=false; var b=$('heatBody'); if(b&&!loadWx()) b.innerHTML='<div class="rn-empty">Ο καιρός δεν φόρτωσε. Weather unavailable right now.</div>'; });
     }
@@ -1334,14 +1335,17 @@
               return dt?(dt+' '+lab.toLowerCase()):lab.toLowerCase(); }).join(' · '); }
           else sub=s.struct||'';
         }
+        /* weather ALWAYS (the SOS): coolest shift-aware window + temp, session or not */
         var win='';
-        if(hours && s && !isRest){
+        if(hours){
           var dayHours=hours.filter(function(h){ return h.time && dkOf(h.time)===dk; });
           if(dayHours.length){
+            var temps=dayHours.map(function(h){return h.temp==null?-99:h.temp;});
+            var dayMax=Math.round(Math.max.apply(null,temps));
             var fake=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,1);
             var wins=runWindows(dayHours, fake, sh), w=wins[0];
-            if(w){ win='<span class="rn-nd-win">'+hhmm(w.startTime)+'–'+hhmm(w.endTime)+' · ~'+w.avgTemp+'°</span>';
-              if(w.startTime.getHours()<=8) prep='Βάλε ξυπνητήρι · early start beats the heat'; }
+            if(w){ win='<span class="rn-nd-win">'+hhmm(w.startTime)+'–'+hhmm(w.endTime)+' · ~'+w.avgTemp+'°'+(dayMax>=31?' · έως '+dayMax+'°':'')+'</span>';
+              if(s && !isRest && w.startTime.getHours()<=8) prep='Βάλε ξυπνητήρι · early start beats the heat'; }
           }
         }
         if(s&&!isRest&&(s.type==='Long'||(+s.km||0)>=14)) prep='Ετοίμασε τζελ και νερό από απόψε · prep fuel tonight';
