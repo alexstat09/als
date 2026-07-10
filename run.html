@@ -68,6 +68,24 @@
     .rn-cheer{ margin-top:14px; font-family:var(--au-serif); font-style:italic; font-size:15.5px; line-height:1.5; color:rgba(var(--rn),.95); }
     .rn-cheer b{ font-weight:400; color:var(--au-ivory); }
 
+    /* coming-up rows: next days so she can prepare */
+    .rn-nd{ display:flex; align-items:flex-start; gap:14px; padding:13px 0; border-bottom:1px solid rgba(255,255,255,.05); cursor:pointer; }
+    .rn-nd:last-child{ border-bottom:none; }
+    .rn-nd-date{ flex:none; width:46px; text-align:center; padding-top:1px; }
+    .rn-nd-date span{ display:block; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); }
+    .rn-nd-date b{ display:block; font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:23px; color:var(--au-ivory); line-height:1.1; letter-spacing:-.01em; }
+    .rn-nd-main{ flex:1; min-width:0; }
+    .rn-nd-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+    .rn-nd-day{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.9); }
+    .rn-nd-sh{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--au-faint); border:1px solid var(--au-line); border-radius:12px; padding:2px 8px; }
+    .rn-nd-sh.s-morning{ color:rgb(var(--rn)); border-color:rgba(var(--rn),.3); }
+    .rn-nd-sh.s-evening{ color:rgb(var(--rn-hot)); border-color:rgba(var(--rn-hot),.3); }
+    .rn-nd-win{ margin-left:auto; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:rgba(var(--rn),.95); }
+    .rn-nd-t{ font-size:14.5px; font-weight:600; color:var(--au-ivory); }
+    .rn-nd-t.rest{ color:var(--au-dim); font-weight:500; }
+    .rn-nd-s{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); margin-top:3px; letter-spacing:.02em; line-height:1.5; }
+    .rn-nd-prep{ font-family:var(--au-serif); font-style:italic; font-size:12.5px; color:rgba(var(--rn),.9); margin-top:5px; }
+
     /* WEEK strip */
     .rn-week-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:15px; }
     .rn-week-km{ font-family:var(--au-serif); font-style:italic; font-size:30px; color:var(--au-ivory); letter-spacing:-.015em; }
@@ -361,6 +379,11 @@
       <div class="rn-card-hd"><span class="dot"></span><h2>Καιρός για τρέξιμο · Running weather</h2><span class="line"></span><span class="act" id="heatLoc" style="cursor:default">Ρόδος</span></div>
       <div id="heatBody"><div class="rn-wx-skel"></div></div>
     </section>
+    <!-- COMING UP (next days, so she can prepare) -->
+    <section class="rn-card" id="nextCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Επόμενες μέρες · Coming up</h2><span class="line"></span></div>
+      <div id="nextBody"></div>
+    </section>
     </div>
 
     <div class="rn-view hidden" id="view-plan">
@@ -521,6 +544,7 @@
     function addDays(d,n){ var x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()+n); return x; }
     var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     var MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var GRDOWFULL=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
 
     /* ── time / pace ── */
     function parseTime(str){ if(!str) return 0; str=String(str).trim(); var p=str.split(':').map(Number); if(p.some(isNaN)) return 0;
@@ -808,9 +832,35 @@
         var dd=_xtag(head,'DistanceMeters'); if(dd!=null) lapDist+=_num(dd)||0; });
       return {time:lapTime, dist:lapDist}; }
     function firstTimeOf(text,isTCX){ var m; if(isTCX){ m=text.match(/<Id>([^<]+)<\/Id>/)||text.match(/StartTime="([^"]+)"/); } else { m=text.match(/<time>([^<]+)<\/time>/); } return m?new Date(m[1]):null; }
-    function downsample(pts,max){ var g=pts.filter(function(p){return p.lat!=null&&p.lon!=null;});
-      if(g.length<=max) return g.map(function(p){return [r5(p.lat),r5(p.lon)];});
-      var step=(g.length-1)/(max-1), out=[]; for(var i=0;i<max;i++){ var p=g[Math.round(i*step)]; out.push([r5(p.lat),r5(p.lon)]); } return out; }
+    /* Douglas-Peucker shape simplification. Blind every-Nth downsampling starved
+       lap courses (11km on a 300m loop → 5 pts/lap = scribble); DP keeps the shape. */
+    function simplifyRoute(pts,maxPts){
+      var g=pts.filter(function(p){return p.lat!=null&&p.lon!=null;});
+      if(g.length<2) return null;
+      if(g.length>4000){ var st=Math.ceil(g.length/4000), thin=[]; for(var q=0;q<g.length;q+=st) thin.push(g[q]);
+        if(thin[thin.length-1]!==g[g.length-1]) thin.push(g[g.length-1]); g=thin; }
+      var midLat=g.reduce(function(a,p){return a+p.lat;},0)/g.length, k=Math.cos(midLat*Math.PI/180);
+      function perp(p,a,b){ var ax=a.lon*k, ay=a.lat, px=p.lon*k, py=p.lat;
+        var dx=b.lon*k-ax, dy=b.lat-ay, L2=dx*dx+dy*dy;
+        if(L2===0) return Math.hypot(px-ax,py-ay);
+        var t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/L2));
+        return Math.hypot(px-(ax+t*dx), py-(ay+t*dy)); }
+      function dp(tol){
+        var keep=new Uint8Array(g.length); keep[0]=1; keep[g.length-1]=1;
+        var stack=[[0,g.length-1]];
+        while(stack.length){ var seg=stack.pop(), lo=seg[0], hi=seg[1];
+          if(hi-lo<2) continue;
+          var maxD=0, idx=-1;
+          for(var i=lo+1;i<hi;i++){ var dd=perp(g[i],g[lo],g[hi]); if(dd>maxD){ maxD=dd; idx=i; } }
+          if(maxD>tol&&idx>0){ keep[idx]=1; stack.push([lo,idx],[idx,hi]); }
+        }
+        var out=[]; for(var j=0;j<g.length;j++) if(keep[j]) out.push([r5(g[j].lat),r5(g[j].lon)]);
+        return out;
+      }
+      var tol=0.00005, out=dp(tol), guard=0; // ~5m fidelity; loosen only if still huge
+      while(out.length>maxPts&&guard++<8){ tol*=1.7; out=dp(tol); }
+      return out;
+    }
     function elevGain(pts){ var g=0, prev=null; pts.forEach(function(p){ if(p.ele==null) return; if(prev!=null){ var d=p.ele-prev; if(d>0.4) g+=d; } prev=p.ele; }); return Math.round(g); }
     function computeSplits(pts,cum){ if(pts.length<2||!pts[0].time) return null;
       var t0=pts[0].time.getTime(), splits=[], boundary=1000, prevBE=0;
@@ -832,7 +882,7 @@
       if(totalM<=0) return null;
       var t0=(pts[0]&&pts[0].time)||firstTimeOf(text,isTCX)||new Date();
       return { distanceKm:Math.round(totalM/1000*100)/100, timeSec:Math.round(timeSec), date:t0,
-        elevGain:elevGain(pts), route:pts.length>1?downsample(pts,48):null, splits:computeSplits(pts,cum), format:isTCX?'tcx':'gpx' };
+        elevGain:elevGain(pts), route:pts.length>1?simplifyRoute(pts,300):null, splits:computeSplits(pts,cum), format:isTCX?'tcx':'gpx' };
     }
     function routePath(route,W,H,pad){ if(!route||route.length<2) return null;
       var midLat=route.reduce(function(a,p){return a+p[0];},0)/route.length, k=Math.cos(midLat*Math.PI/180);
@@ -893,7 +943,7 @@
       var t0=(session&&session.start)||(pts[0]&&pts[0].time)||new Date();
       return { distanceKm:Math.round(totalM/1000*100)/100, timeSec:Math.round(timeSec), date:t0,
         elevGain:(session&&session.ascent!=null)?session.ascent:elevGain(pts),
-        route:pts.length>1?downsample(pts,48):null, splits:computeSplits(pts,cum), format:'fit' };
+        route:pts.length>1?simplifyRoute(pts,300):null, splits:computeSplits(pts,cum), format:'fit' };
     }
     function isZip(b){ return b.length>3&&b[0]===0x50&&b[1]===0x4B&&(b[2]===0x03||b[2]===0x05||b[2]===0x07); }
     function isGzip(b){ return b.length>2&&b[0]===0x1F&&b[1]===0x8B; }
@@ -1186,12 +1236,12 @@
     function loadWx(){ try{ var c=JSON.parse(localStorage.getItem(K_WX)); if(c&&c.hours&&c.hours.length) return c; }catch(e){} return null; }
     function hydrateWx(c){ return c.hours.map(function(h){ return {time:new Date(h.t), temp:h.temp, rh:h.rh, uv:h.uv, feels:h.feels, code:h.code}; }); }
     function fetchWeather(){ if(wxFetching) return; wxFetching=true;
-      var url='https://api.open-meteo.com/v1/forecast?latitude=36.4349&longitude=28.2176&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code&timezone=auto&forecast_days=2';
+      var url='https://api.open-meteo.com/v1/forecast?latitude=36.4349&longitude=28.2176&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code&timezone=auto&forecast_days=3';
       fetch(url).then(function(r){ return r.json(); }).then(function(j){
         if(!j||!j.hourly||!j.hourly.time) throw 0; var H=j.hourly;
         var hours=H.time.map(function(t,i){ return { t:t, temp:H.temperature_2m[i], rh:H.relative_humidity_2m[i], uv:H.uv_index?H.uv_index[i]:null, feels:H.apparent_temperature?H.apparent_temperature[i]:null, code:H.weather_code?H.weather_code[i]:null }; });
         try{ localStorage.setItem(K_WX, JSON.stringify({ fetchedAt:Date.now(), hours:hours })); }catch(e){}
-        wxFetching=false; renderHeat();
+        wxFetching=false; renderHeat(); renderNext();
       }).catch(function(){ wxFetching=false; var b=$('heatBody'); if(b&&!loadWx()) b.innerHTML='<div class="rn-empty">Ο καιρός δεν φόρτωσε. Weather unavailable right now.</div>'; });
     }
     /* shift storage (she runs opposite her shift) */
@@ -1259,6 +1309,51 @@
           '<div class="rn-wx-head"><div class="rn-wx-verdict">'+verdict+'</div><div class="rn-wx-sub">'+esc(sub)+'</div></div></div>'+
         '<div class="rn-wx-curve">'+svg+'</div>'+ticks+chips+pacesHtml+indoorCard+shiftStripHTML();
       Array.prototype.forEach.call($('heatBody').querySelectorAll('[data-sh]'), function(b){ b.addEventListener('click',function(){ cycleShift(b.getAttribute('data-sh')); }); });
+    }
+
+    /* coming up: next 3 days with session, shift, coolest run window, prep hint */
+    function renderNext(){
+      var body=$('nextBody'); if(!body) return;
+      var c=loadWx(), hours=c?hydrateWx(c):null;
+      var rows='';
+      for(var i=1;i<=3;i++){
+        var d=addDays(new Date(),i), dk=dkOf(d);
+        var sess=sessionsOn(dk);
+        var s=sess.filter(function(x){return x.type!=='Rest';})[0]||sess[0];
+        var isRest=!!s&&s.type==='Rest';
+        var sh=shiftOn(dk), sl=shiftLabel(sh);
+        var name=(i===1?'Αύριο':GRDOWFULL[(d.getDay()+6)%7]);
+        var title, sub='', prep='';
+        if(!s){ title='<span class="rn-nd-t rest">Χωρίς πρόγραμμα ακόμα</span>'; }
+        else if(isRest){ title='<span class="rn-nd-t rest">Ρεπό · rest</span>'; sub='Η ξεκούραση είναι κι αυτή προπόνηση.'; }
+        else{
+          title='<span class="rn-nd-t">'+esc(s.type)+(s.km?(' · '+s.km+(s.kmEst?'≈':'')+' χλμ'):'')+'</span>';
+          var pp=partsFor(s);
+          if(pp){ sub=pp.filter(function(p){return p.kind!=='note';}).map(function(p){
+              var dt=partDetail(p), lab=(PARTLAB[p.kind]||PARTLAB.run)[0];
+              return dt?(dt+' '+lab.toLowerCase()):lab.toLowerCase(); }).join(' · '); }
+          else sub=s.struct||'';
+        }
+        var win='';
+        if(hours && s && !isRest){
+          var dayHours=hours.filter(function(h){ return h.time && dkOf(h.time)===dk; });
+          if(dayHours.length){
+            var fake=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,1);
+            var wins=runWindows(dayHours, fake, sh), w=wins[0];
+            if(w){ win='<span class="rn-nd-win">'+hhmm(w.startTime)+'–'+hhmm(w.endTime)+' · ~'+w.avgTemp+'°</span>';
+              if(w.startTime.getHours()<=8) prep='Βάλε ξυπνητήρι · early start beats the heat'; }
+          }
+        }
+        if(s&&!isRest&&(s.type==='Long'||(+s.km||0)>=14)) prep='Ετοίμασε τζελ και νερό από απόψε · prep fuel tonight';
+        rows+='<div class="rn-nd">'+
+          '<div class="rn-nd-date"><span>'+DOW[(d.getDay()+6)%7]+'</span><b>'+d.getDate()+'</b></div>'+
+          '<div class="rn-nd-main"><div class="rn-nd-top"><span class="rn-nd-day">'+esc(name)+'</span>'+
+            (sl[0]?'<span class="rn-nd-sh s-'+sh+'">'+esc(sl[0])+'</span>':'')+win+'</div>'+
+          title+(sub?'<div class="rn-nd-s">'+esc(sub)+'</div>':'')+
+          (prep?'<div class="rn-nd-prep">'+esc(prep)+'</div>':'')+
+          '</div></div>';
+      }
+      body.innerHTML=rows;
     }
 
     function renderFitness(){
@@ -1400,7 +1495,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns();
+      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
@@ -1555,6 +1650,7 @@
     $('lgSave').addEventListener('click',saveRun);
     $('wkReport').addEventListener('click',sendWeekReport);
     $('todayPulse').addEventListener('click',function(){ showView('prog'); });
+    $('nextBody').addEventListener('click',function(){ showView('plan'); });
     (function(){ var zone=$('importZone'), inp=$('gpxInput');
       zone.addEventListener('click',function(){ inp.click(); });
       zone.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inp.click(); } });
@@ -1599,7 +1695,7 @@
         window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR], onApplied:function(){ render(); } });
       })();
     });
-    window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath,
+    window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath, simplifyRoute:simplifyRoute,
       heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove,
       autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, strengthPlan:strengthPlan, mmss:mmss };
   })();
