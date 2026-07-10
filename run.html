@@ -348,6 +348,20 @@
     .rn-indoor-t span{ display:block; font-family:var(--au-mono); font-size:9px; color:var(--au-faint); margin-top:2px; letter-spacing:.02em; }
     .rn-wx-skel{ height:150px; border-radius:14px; background:linear-gradient(100deg, rgba(255,255,255,.02), rgba(255,255,255,.05), rgba(255,255,255,.02)); background-size:200% 100%; animation:rnShim 1.4s linear infinite; }
     @keyframes rnShim{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+    /* ── readiness heartbeat: the living anchor of Today ── */
+    .rn-beat{ max-width:600px; margin:0 auto 8px; padding:6px 20px 0; display:flex; flex-direction:column; align-items:center; text-align:center; }
+    .rn-beat-canvas{ width:176px; height:176px; margin-bottom:0; }
+    .rn-beat-state{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(30px,8vw,38px); color:var(--au-ivory); line-height:1.02; letter-spacing:-.02em; margin-top:-8px; }
+    .rn-beat-line{ font-size:14.5px; color:var(--au-dim); margin-top:11px; max-width:32ch; line-height:1.5; }
+    .rn-beat-meta{ display:flex; flex-wrap:wrap; justify-content:center; gap:7px 15px; margin-top:14px; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--au-faint); }
+    .rn-beat-meta span{ white-space:nowrap; }
+    .rn-beat-meta b{ color:rgba(var(--rn),.9); font-weight:800; }
+
+    /* ── tiltable 3D fitness curve ── */
+    .rn-fit3d-wrap{ position:relative; margin:2px 0 6px; }
+    .rn-fit3d{ display:block; width:100%; height:196px; touch-action:none; cursor:grab; }
+    .rn-fit3d-hint{ position:absolute; right:2px; bottom:2px; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); pointer-events:none; opacity:.65; }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -371,6 +385,13 @@
   <main class="rn-wrap">
 
     <div class="rn-view" id="view-today">
+    <!-- READINESS HEARTBEAT: the living anchor -->
+    <section class="rn-beat" id="beatCard">
+      <canvas class="rn-beat-canvas" id="beatCanvas" width="352" height="352" aria-hidden="true"></canvas>
+      <div class="rn-beat-state" id="beatState">Έτοιμη</div>
+      <div class="rn-beat-line" id="beatLine"></div>
+      <div class="rn-beat-meta" id="beatMeta"></div>
+    </section>
     <button class="rn-pulse hidden" id="todayPulse" type="button"></button>
     <!-- TODAY -->
   <section class="rn-today" id="todayCard"></section>
@@ -489,6 +510,7 @@
     <!-- FITNESS & FORM -->
     <section class="rn-card rn-fit hidden" id="fitCard">
       <div class="rn-card-hd"><span class="dot"></span><h2>Φόρμα &amp; Fitness</h2><span class="line"></span><span class="act" id="fitStatus" style="cursor:default"></span></div>
+      <div class="rn-fit3d-wrap hidden" id="fit3dWrap"><canvas class="rn-fit3d" id="fit3d"></canvas><span class="rn-fit3d-hint">σύρε · drag to tilt</span></div>
       <div id="fitBody"></div>
     </section>
     <!-- TRAINING PACES -->
@@ -977,6 +999,132 @@
       var r2=parseActivity(text); if(r2) runs.push(r2); return runs; }
 
     /* ── render ── */
+    /* ── living visuals engine: canvas heartbeat + tiltable 3D form curve ── */
+    var COL={ rose:'240,148,171', cool:'150,199,196', hot:'236,132,96', gold:'233,196,182' };
+    var RM=(typeof matchMedia!=='undefined')&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+    var beat={ canvas:null, score:null, target:.62, rate:1.1, rgb:COL.rose }, fit3d={ canvas:null, series:null, pitch:.52, yaw:-.36, rgb:COL.rose, drag:false };
+    var animItems=[], animRAF=0, TAU=Math.PI*2;
+    function fitSize(o){ var cv=o.canvas; if(!cv) return false; var cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch) return false;
+      var dpr=Math.min(2, window.devicePixelRatio||1), w=Math.round(cw*dpr), h=Math.round(ch*dpr);
+      if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; o.ctx=null; }
+      if(!o.ctx) o.ctx=cv.getContext('2d'); o.w=w; o.h=h; o.dpr=dpr; return true; }
+    function animReg(o,draw){ animItems.push(function(t){ if(fitSize(o)) draw(t); }); }
+    function animTick(t){ animRAF=requestAnimationFrame(animTick); for(var i=0;i<animItems.length;i++) animItems[i](t); }
+    function animStart(){ if(!animRAF) animRAF=requestAnimationFrame(animTick); }
+    function animStop(){ if(animRAF){ cancelAnimationFrame(animRAF); animRAF=0; } }
+
+    function drawBeat(t){
+      var g=beat.ctx, W=beat.w, H=beat.h, dpr=beat.dpr, col=beat.rgb||COL.rose;
+      if(beat.score==null) beat.score=beat.target||0;
+      g.clearRect(0,0,W,H);
+      var cx=W/2, cy=H/2, R=Math.min(W,H)/2-6*dpr;
+      var breath=RM?0:Math.sin(t/1000*(beat.rate||1.1));
+      if(RM) beat.score=beat.target; else beat.score+=((beat.target||0)-beat.score)*0.07;
+      var sc=Math.max(0.02,Math.min(1,beat.score)), br=1+breath*0.03;
+      var halo=g.createRadialGradient(cx,cy,0,cx,cy,R*br);
+      halo.addColorStop(0,'rgba('+col+',0.22)'); halo.addColorStop(.5,'rgba('+col+',0.09)'); halo.addColorStop(1,'rgba('+col+',0)');
+      g.fillStyle=halo; g.beginPath(); g.arc(cx,cy,R*br,0,TAU); g.fill();
+      g.lineWidth=3*dpr; g.strokeStyle='rgba(255,255,255,0.06)';
+      g.beginPath(); g.arc(cx,cy,R*0.72,0,TAU); g.stroke();
+      var a0=-Math.PI/2, a1=a0+TAU*sc;
+      var ag=g.createLinearGradient(cx-R,cy-R,cx+R,cy+R);
+      ag.addColorStop(0,'rgba('+col+',0.42)'); ag.addColorStop(1,'rgba('+col+',1)');
+      g.strokeStyle=ag; g.lineWidth=3.5*dpr; g.lineCap='round';
+      g.beginPath(); g.arc(cx,cy,R*0.72,a0,a1); g.stroke();
+      var hx=cx+Math.cos(a1)*R*0.72, hy=cy+Math.sin(a1)*R*0.72;
+      g.fillStyle='rgb('+col+')'; g.beginPath(); g.arc(hx,hy,4*dpr,0,TAU); g.fill();
+      var coreR=R*0.30*(1+breath*0.05);
+      var cg=g.createRadialGradient(cx,cy,0,cx,cy,coreR);
+      cg.addColorStop(0,'rgba('+col+',0.85)'); cg.addColorStop(1,'rgba('+col+',0.10)');
+      g.fillStyle=cg; g.beginPath(); g.arc(cx,cy,coreR,0,TAU); g.fill();
+    }
+
+    function drawFit3d(t){
+      var f=fit3d, s=f.series; if(!s||s.length<2) return;
+      var g=f.ctx, W=f.w, H=f.h, dpr=f.dpr, col=f.rgb||COL.rose;
+      g.clearRect(0,0,W,H);
+      if(!f.drag && !RM) f.yaw+=0.0016;
+      var yaw=f.yaw, pitch=f.pitch, n=s.length;
+      var ctls=s.map(function(p){return p.ctl;});
+      var mn=Math.min.apply(null,ctls), mx=Math.max.apply(null,ctls), span=(mx-mn)||1;
+      var scale=Math.min(W*0.30, H*0.42), cx=W/2, cy=H*0.60, d=3.4, zf=0.13, zb=-0.13;
+      function proj(x,y,z){ var cY=Math.cos(yaw),sY=Math.sin(yaw), x1=x*cY-z*sY, z1=x*sY+z*cY;
+        var cX=Math.cos(pitch),sX=Math.sin(pitch), y2=y*cX-z1*sX, z2=y*sX+z1*cX, pp=d/(d+z2);
+        return { x:cx+x1*pp*scale, y:cy-y2*pp*scale }; }
+      function px(i){ return -1.25+2.5*i/(n-1); }
+      function ht(i){ return 0.14+((s[i].ctl-mn)/span)*0.86; }
+      g.lineWidth=1*dpr; g.strokeStyle='rgba(255,255,255,0.055)';
+      for(var gi=0;gi<=6;gi++){ var xx=-1.25+2.5*gi/6, a=proj(xx,0,zf), b=proj(xx,0,zb); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
+      var fa=proj(-1.25,0,zf), fb=proj(1.25,0,zf), ba=proj(-1.25,0,zb), bb=proj(1.25,0,zb);
+      g.beginPath(); g.moveTo(fa.x,fa.y); g.lineTo(fb.x,fb.y); g.moveTo(ba.x,ba.y); g.lineTo(bb.x,bb.y); g.stroke();
+      var topF=[], topB=[], baseF=[], i, x, h;
+      for(i=0;i<n;i++){ x=px(i); h=ht(i); topF.push(proj(x,h,zf)); topB.push(proj(x,h,zb)); baseF.push(proj(x,0,zf)); }
+      g.beginPath(); g.moveTo(baseF[0].x,baseF[0].y);
+      for(i=1;i<n;i++) g.lineTo(baseF[i].x,baseF[i].y);
+      for(i=n-1;i>=0;i--) g.lineTo(topF[i].x,topF[i].y); g.closePath();
+      var fg=g.createLinearGradient(0,cy-scale,0,cy); fg.addColorStop(0,'rgba('+col+',0.40)'); fg.addColorStop(1,'rgba('+col+',0.05)');
+      g.fillStyle=fg; g.fill();
+      g.beginPath(); g.moveTo(topF[0].x,topF[0].y);
+      for(i=1;i<n;i++) g.lineTo(topF[i].x,topF[i].y);
+      for(i=n-1;i>=0;i--) g.lineTo(topB[i].x,topB[i].y); g.closePath();
+      g.fillStyle='rgba('+col+',0.5)'; g.fill();
+      g.lineWidth=2*dpr; g.lineJoin='round'; g.strokeStyle='rgb('+col+')';
+      g.beginPath(); g.moveTo(topF[0].x,topF[0].y); for(i=1;i<n;i++) g.lineTo(topF[i].x,topF[i].y); g.stroke();
+      var hd=topF[n-1]; g.fillStyle='rgb('+col+')'; g.beginPath(); g.arc(hd.x,hd.y,3.5*dpr,0,TAU); g.fill();
+      g.strokeStyle='rgba('+col+',0.3)'; g.lineWidth=1*dpr; g.beginPath(); g.arc(hd.x,hd.y,7*dpr,0,TAU); g.stroke();
+    }
+
+    /* readiness = form (TSB) + today's session + heat window, in one verdict */
+    function computeReadiness(){
+      var dk=todayDk(), sess=sessionsOn(dk);
+      var s=sess.filter(function(x){return x.type!=='Rest';})[0]||sess[0];
+      var isRest=!!s&&s.type==='Rest', done=logsOn(dk).length>0;
+      var series=(EVDOT>0)?fitnessSeries(logs,EVDOT,84):[], haveForm=series.length>=10;
+      var cur=haveForm?series[series.length-1]:null, tsb=cur?cur.tsb:null;
+      var c=loadWx(), best=null, adv=null;
+      if(c){ var hours=hydrateWx(c), now=new Date(), wins=runWindows(hours,now,shiftOn(dk)); best=wins[0]||null; adv=best?indoorAdvice(hours,best):null; }
+      var indoor=!!(adv&&adv.indoor), when=best?(hhmm(best.startTime)+'–'+hhmm(best.endTime)):null, temp=best?best.avgTemp:null;
+      var meta=[];
+      if(haveForm){ meta.push('Φόρμα · <b>'+formLabel(tsb)[0]+'</b>'); meta.push('Fitness '+Math.round(cur.ctl)); }
+      if(best&&!indoor&&!done) meta.push('<b>'+when+'</b> · '+temp+'°');
+      var R={ meta:meta };
+      if(done){ R.state=['Έγινε','done']; R.color='cool'; R.target=.9; R.rate=1.5; R.line='Η σημερινή μπήκε. Κάθε βήμα σε πάει Αθήνα.'; return R; }
+      if(isRest){ R.state=['Ρεπό','rest']; R.color='gold'; R.target=.55; R.rate=.6; R.line='Ξεκούραση σήμερα, έτσι χτίζεται η φόρμα για την Αθήνα.'; return R; }
+      var word,color,target,rate,lead;
+      if(!haveForm){ word=['Έτοιμη','ready']; color='rose'; target=.62; rate=1.1; lead='Έτοιμη για τρέξιμο'; }
+      else if(tsb>=8){ word=['Φρέσκια','fresh']; color='cool'; target=.9; rate=1.5; lead='Φρέσκια και δυνατή'; }
+      else if(tsb>=-8){ word=['Ισορροπία','balanced']; color='rose'; target=.72; rate=1.1; lead='Σε καλή ισορροπία'; }
+      else if(tsb>=-20){ word=['Κουρασμένη','tired']; color='hot'; target=.5; rate=.85; lead='Λίγο κουρασμένη σήμερα'; }
+      else { word=['Κουρασμένη','very tired']; color='hot'; target=.34; rate=.72; lead='Κουρασμένη, άκου το σώμα'; }
+      R.state=word; R.color=color; R.target=target; R.rate=rate;
+      var km=s&&s.km?(' · '+s.km+(s.kmEst?'≈':'')+' χλμ'):'';
+      if(s&&indoor) R.line=lead+'. Ζέστη έξω, κάν’ το '+s.type+' μέσα στο OXYGEN.';
+      else if(s&&best) R.line=lead+'. '+s.type+km+' · '+when+', ~'+temp+'°.';
+      else if(s) R.line=lead+'. Σήμερα '+s.type+km+'.';
+      else if(best&&!indoor) R.line='Ελεύθερη μέρα. Καλύτερη ώρα '+when+', ~'+temp+'°.';
+      else if(indoor) R.line='Ελεύθερη μέρα. Ζέστη έξω, προτίμησε νωρίς ή μέσα.';
+      else R.line='Ελεύθερη μέρα. Βγες όποτε σε βολεύει.';
+      return R;
+    }
+    function renderBeat(){
+      if(!beat.canvas) return;
+      var R=computeReadiness();
+      beat.rgb=COL[R.color]; beat.target=R.target; beat.rate=R.rate;
+      if(beat.score==null) beat.score=R.target;
+      var st=$('beatState'); if(st) st.textContent=R.state[0];
+      var ln=$('beatLine'); if(ln) ln.textContent=R.line;
+      var mt=$('beatMeta'); if(mt) mt.innerHTML=R.meta.map(function(m){ return '<span>'+m+'</span>'; }).join('');
+    }
+    function initBeat(){ var cv=$('beatCanvas'); if(!cv) return; beat.canvas=cv; animReg(beat, drawBeat); }
+    function initFit3d(){ var cv=$('fit3d'); if(!cv) return; fit3d.canvas=cv; animReg(fit3d, drawFit3d);
+      var last=null;
+      cv.addEventListener('pointerdown',function(e){ fit3d.drag=true; last={x:e.clientX,y:e.clientY}; if(cv.setPointerCapture){ try{ cv.setPointerCapture(e.pointerId); }catch(_){} } cv.style.cursor='grabbing'; });
+      cv.addEventListener('pointermove',function(e){ if(!fit3d.drag||!last) return; var dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
+        fit3d.yaw+=dx*0.006; fit3d.pitch=Math.max(0.08,Math.min(1.15, fit3d.pitch+dy*0.005)); });
+      function up(){ fit3d.drag=false; last=null; cv.style.cursor='grab'; }
+      cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up); cv.addEventListener('pointerleave',up);
+    }
+
     function sessionsOn(dk){ return plan.filter(function(s){return s.date===dk;}); }
     function logsOn(dk){ return logs.filter(function(l){return l.date===dk;}); }
     function iconRun(cls){ return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="'+(cls||'')+'"><circle cx="13" cy="4.5" r="1.4"/><path d="M6.5 20l2.6-4.4 2.6 1.7 1-3.5M9 15.6l-1.3-3.5L11.5 9l2.6 1.7 2.6.4"/></svg>'; }
@@ -1242,7 +1390,7 @@
         if(!j||!j.hourly||!j.hourly.time) throw 0; var H=j.hourly;
         var hours=H.time.map(function(t,i){ return { t:t, temp:H.temperature_2m[i], rh:H.relative_humidity_2m[i], uv:H.uv_index?H.uv_index[i]:null, feels:H.apparent_temperature?H.apparent_temperature[i]:null, code:H.weather_code?H.weather_code[i]:null }; });
         try{ localStorage.setItem(K_WX, JSON.stringify({ fetchedAt:Date.now(), fd:4, hours:hours })); }catch(e){}
-        wxFetching=false; renderHeat(); renderNext();
+        wxFetching=false; renderHeat(); renderNext(); renderBeat();
       }).catch(function(){ wxFetching=false; var b=$('heatBody'); if(b&&!loadWx()) b.innerHTML='<div class="rn-empty">Ο καιρός δεν φόρτωσε. Weather unavailable right now.</div>'; });
     }
     /* shift storage (she runs opposite her shift) */
@@ -1361,10 +1509,11 @@
     }
 
     function renderFitness(){
-      var card=$('fitCard');
-      if(!(EVDOT>0)){ card.classList.add('hidden'); return; }
+      var card=$('fitCard'), wrap=$('fit3dWrap');
+      if(!(EVDOT>0)){ card.classList.add('hidden'); if(wrap) wrap.classList.add('hidden'); fit3d.series=null; return; }
       var series=fitnessSeries(logs, EVDOT, 84);
       if(series.length<10){
+        if(wrap) wrap.classList.add('hidden'); fit3d.series=null;
         if(logs.length){ card.classList.remove('hidden'); $('fitStatus').textContent='';
           $('fitBody').innerHTML='<div class="rn-empty">Η καμπύλη φόρμας σου θα εμφανιστεί εδώ σε λίγες μέρες τρεξιμάτων ακόμα. Your fitness curve appears after about 10 days of runs.</div>'; }
         else card.classList.add('hidden');
@@ -1375,15 +1524,11 @@
       var trend = cur.ctl>ago.ctl+1 ? ['ανεβαίνει','building'] : (cur.ctl<ago.ctl-1?['χαλαρώνει','easing']:['σταθερή','holding']);
       var fl=formLabel(cur.tsb);
       $('fitStatus').textContent='φόρμα · '+fl[0];
-      var W=320,H=90,pad=8, ctls=series.map(function(s){return s.ctl;});
-      var mn=Math.min.apply(null,ctls), mx=Math.max.apply(null,ctls), span=(mx-mn)||1, stepX=(W-2*pad)/(series.length-1);
-      var pts=series.map(function(s,i){ return {x:pad+i*stepX, y:H-pad-((s.ctl-mn)/span)*(H-2*pad)}; });
-      var d='M'+pts.map(function(p){return p.x.toFixed(1)+' '+p.y.toFixed(1);}).join(' L');
-      var area=d+' L'+pts[pts.length-1].x.toFixed(1)+' '+H+' L'+pts[0].x.toFixed(1)+' '+H+' Z';
-      var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
-        '<defs><linearGradient id="fitg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(var(--rn),.28)"/><stop offset="1" stop-color="rgba(var(--rn),.01)"/></linearGradient></defs>'+
-        '<path d="'+area+'" fill="url(#fitg)"/><path d="'+d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
-        '<circle cx="'+pts[pts.length-1].x.toFixed(1)+'" cy="'+pts[pts.length-1].y.toFixed(1)+'" r="3.6" fill="rgb(var(--rn))"/></svg>';
+      /* feed the tiltable 3D form curve — her fitness as a shape she can turn */
+      if(wrap) wrap.classList.remove('hidden');
+      fit3d.series=series;
+      fit3d.rgb = cur.tsb>=8?COL.cool : (cur.tsb<-20?COL.hot : COL.rose);
+      animStart();
       var gpct=Math.max(3,Math.min(97,(cur.tsb+30)/50*100));
       var pb=pbsOf(logs), lr=longestRun(logs);
       var pbChips=pb.map(function(p){ return '<span class="rn-pb"><b>'+p.label+'</b>'+hms(p.timeSec)+'</span>'; }).join('')+
@@ -1393,7 +1538,6 @@
           '<div class="rn-fit-num"><span class="v">'+Math.round(cur.ctl)+'</span><span class="l">Fitness · '+trend[0]+'</span></div>'+
           '<div class="rn-fit-num"><span class="v'+(cur.tsb>=8?' fresh':(cur.tsb<-20?' tired':''))+'">'+(cur.tsb>0?'+':'')+Math.round(cur.tsb)+'</span><span class="l">Φόρμα · '+fl[0]+'</span></div>'+
         '</div>'+
-        '<div class="rn-fit-curve">'+svg+'</div>'+
         '<div class="rn-fit-gauge"><span class="lab t">κουρασμένη</span><div class="track"><span class="dot" style="left:'+gpct.toFixed(0)+'%"></span></div><span class="lab f">φρέσκια</span></div>'+
         (pbChips?'<div class="rn-pbs">'+pbChips+'</div>':'');
     }
@@ -1499,7 +1643,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns();
+      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
@@ -1690,9 +1834,11 @@
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
 
+    initBeat(); initFit3d();
     render();
+    animStart();
 
-    document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+    document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); } });
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
