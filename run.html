@@ -186,6 +186,24 @@
     .rn-race-nums>div{ display:flex; flex-direction:column; gap:5px; }
     .rn-race-nums span{ font-family:var(--au-serif); font-style:italic; font-size:clamp(34px,9vw,44px); color:rgb(var(--rn)); line-height:1; letter-spacing:-.02em; }
     .rn-race-nums label{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); }
+    /* Athens spine: the road-to-race timeline */
+    .rn-spine{ margin-top:24px; }
+    .rn-spine-track{ position:relative; height:6px; border-radius:4px; background:rgba(255,255,255,.06); }
+    .rn-spine-fill{ position:absolute; left:0; top:0; height:100%; width:100%; border-radius:4px; background:linear-gradient(90deg, rgba(var(--rn-cool),.7), rgb(var(--rn))); box-shadow:0 0 10px rgba(var(--rn),.35); transform-origin:left center; transform:scaleX(0); transition:transform 1.15s cubic-bezier(.4,0,.2,1); }
+    .rn-spine-tick{ position:absolute; top:-2px; width:1px; height:10px; background:rgba(255,255,255,.16); transform:translateX(-50%); }
+    .rn-spine-mark{ position:absolute; top:50%; transform:translate(-50%,-50%); z-index:3; }
+    .rn-spine-mark .d{ display:block; width:11px; height:11px; border-radius:50%; background:var(--au-ivory); box-shadow:0 0 0 3px rgba(10,4,7,.75), 0 0 12px rgba(var(--rn),.9); }
+    .rn-spine-mark .he{ position:absolute; left:50%; bottom:15px; transform:translateX(-50%); font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-ivory); white-space:nowrap; }
+    .rn-spine-labels{ display:flex; gap:2px; margin-top:13px; }
+    .rn-spine-lab{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--au-faint); text-align:center; }
+    .rn-spine-lab.on{ color:rgb(var(--rn)); }
+    .rn-spine-miles{ display:flex; justify-content:space-between; margin-top:12px; font-family:var(--au-mono); font-size:8.5px; color:var(--au-faint); letter-spacing:.04em; }
+    .rn-spine-miles b{ color:var(--au-dim); font-weight:700; }
+    .rn-stand{ font-family:var(--au-serif); font-style:italic; font-size:clamp(16px,4.6vw,19px); line-height:1.3; color:var(--au-ivory); letter-spacing:-.01em; margin-top:22px; }
+    .rn-stand b{ font-style:normal; font-weight:400; color:rgb(var(--rn)); }
+    .rn-stand .up{ font-style:normal; color:rgb(var(--rn-cool)); }
+    .rn-stand .dn{ font-style:normal; color:rgb(var(--rn-gold)); }
+    .rn-stand-sub{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); margin-top:8px; letter-spacing:.03em; line-height:1.55; }
 
     /* structured session parts */
     .rn-parts{ margin-top:12px; display:flex; flex-direction:column; }
@@ -523,6 +541,8 @@
         <div><span id="raceWeeks">—</span><label>εβδομάδες · weeks</label></div>
         <div id="raceProjWrap" class="hidden"><span id="raceProj">—</span><label>πρόβλεψη · projected</label></div>
       </div>
+      <div class="rn-spine" id="raceSpine"></div>
+      <div class="rn-stand" id="raceStand"></div>
     </section>
     <!-- FITNESS & FORM -->
     <section class="rn-card rn-fit hidden" id="fitCard">
@@ -582,12 +602,15 @@
     function addDays(d,n){ var x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()+n); return x; }
     var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     var MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var GRMO=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
+    function grDate(d){ return d.getDate()+' '+GRMO[d.getMonth()]; }
     var GRDOWFULL=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
 
     /* ── time / pace ── */
     function parseTime(str){ if(!str) return 0; str=String(str).trim(); var p=str.split(':').map(Number); if(p.some(isNaN)) return 0;
       if(p.length===3) return p[0]*3600+p[1]*60+p[2]; if(p.length===2) return p[0]*60+p[1]; return p[0]; }
     function mmss(sec){ sec=Math.round(sec); var m=Math.floor(sec/60), s=sec%60; return m+':'+pad(s); }
+    function hm(sec){ var m=Math.round(sec/60); return Math.floor(m/60)+':'+pad(m%60); }
     function hms(sec){ sec=Math.round(sec); var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
       return h>0 ? (h+':'+pad(m)+':'+pad(s)) : (m+':'+pad(s)); }
 
@@ -801,6 +824,15 @@
         var ageD=(nowMs - parseDk(l.date).getTime())/86400000; if(ageD>60||ageD<-1.5) return;
         var v=vdotOf(l.distanceKm*1000, l.timeSec); if(v>best){ best=v; from={distanceKm:l.distanceKm, timeSec:l.timeSec, date:l.date}; } });
       return best>0 ? {vdot:Math.round(best*10)/10, from:from} : null; }
+    /* best race-equivalent VDOT from runs aged [minD,maxD] days — for the Athens trend */
+    function vdotInWindow(list, minD, maxD, nowMs){ nowMs=nowMs||Date.now(); var best=0;
+      list.forEach(function(l){ if(!(l.distanceKm>=3)||!(l.timeSec>0)||!l.date) return;
+        var ageD=(nowMs - parseDk(l.date).getTime())/86400000; if(ageD<minD||ageD>maxD) return;
+        var v=vdotOf(l.distanceKm*1000, l.timeSec); if(v>best) best=v; });
+      return best; }
+    function vdotTrend(list, nowMs){ var recent=vdotInWindow(list,-2,32,nowMs), older=vdotInWindow(list,32,95,nowMs);
+      if(recent<=0||older<=0) return null; var d=recent-older;
+      if(d>=0.5) return {dir:'up', gr:'και ανεβαίνεις'}; if(d<=-0.5) return {dir:'down', gr:'κράτα δυνάμεις'}; return {dir:'flat', gr:'σταθερή'}; }
     function runTSS(l, vdot){ if(!(l.timeSec>0)||!(l.distanceKm>0)||!(vdot>0)) return 0;
       var thrSpeed=1000/paceForPct(vdot,0.88), runSpeed=(l.distanceKm*1000)/l.timeSec, IF=Math.min(1.15, runSpeed/thrSpeed);
       return (l.timeSec/3600)*IF*IF*100; }
@@ -1332,23 +1364,59 @@
 
     /* ── goal race: Athens Authentic Marathon · 8 Nov 2026 ── */
     var GOAL={ dk:'2026-11-08', distM:42195 };
+    /* the block visual spans BLOCK_W weeks; phases end at these weeks-to-race */
+    var BLOCK_W=24, PH_END=[18,10,3,0], PH_SPAN=[6,8,7,3], PH_GR=['Βάση','Χτίσιμο','Κορύφωση','Ταπερ'];
+    function racePhaseIdx(wF){ return wF>18?0 : wF>10?1 : wF>3?2 : 3; }
     function renderRace(){
       var today=new Date(); today.setHours(0,0,0,0);
       var race=parseDk(GOAL.dk);
       var days=Math.round((race-today)/86400000);
       if(days<0){ $('raceCard').classList.add('hidden'); return; }
-      var weeks=Math.floor(days/7);
-      var phase = weeks>18 ? 'Βάση · Base' : weeks>10 ? 'Χτίσιμο · Build' : weeks>3 ? 'Κορύφωση · Peak' : days>1 ? 'Φρεσκάρισμα · Taper' : 'Αγώνας · Race!';
-      $('racePhase').textContent=phase;
+      var weeks=Math.floor(days/7), wF=days/7, idx=racePhaseIdx(wF);
+      var phaseFull = idx===0?'Βάση · Base' : idx===1?'Χτίσιμο · Build' : idx===2?'Κορύφωση · Peak' : days>1?'Φρεσκάρισμα · Taper' : 'Αγώνας · Race!';
+      $('racePhase').textContent=phaseFull;
       $('raceDays').textContent=days;
       $('raceWeeks').textContent=weeks;
-      if(EVDOT>0){
+      var proj=null;
+      if(EVDOT>0){ proj=raceTimeFor(EVDOT,GOAL.distM);
         $('raceProjWrap').classList.remove('hidden');
-        $('raceProj').textContent='~'+hms(Math.round(raceTimeFor(EVDOT,GOAL.distM)/60)*60);
+        $('raceProj').textContent='~'+hms(Math.round(proj/60)*60);
       } else $('raceProjWrap').classList.add('hidden');
+
+      /* ── the spine: her place on the road to Athens ── */
+      var fr=Math.max(0,Math.min(1,(BLOCK_W-wF)/BLOCK_W)), frPct=(fr*100).toFixed(1);
+      var bnd=[]; var acc=0; for(var i=0;i<3;i++){ acc+=PH_SPAN[i]; bnd.push((acc/BLOCK_W*100).toFixed(1)); }
+      var ticks=bnd.map(function(b){ return '<span class="rn-spine-tick" style="left:'+b+'%"></span>'; }).join('');
+      var labels=PH_GR.map(function(nm,i){ return '<span class="rn-spine-lab'+(i===idx?' on':'')+'" style="flex:'+PH_SPAN[i]+'">'+nm+'</span>'; }).join('');
+      var taperDate=addDays(race,-21);
+      $('raceSpine').innerHTML=
+        '<div class="rn-spine-track"><div class="rn-spine-fill" id="raceFill"></div>'+ticks+
+          '<div class="rn-spine-mark" style="left:'+frPct+'%"><span class="he">εδώ</span><span class="d"></span></div></div>'+
+        '<div class="rn-spine-labels">'+labels+'</div>'+
+        '<div class="rn-spine-miles"><span>Ταπεράρισμα · <b>'+grDate(taperDate)+'</b></span><span>Αθήνα · <b>'+grDate(race)+'</b></span></div>';
+      requestAnimationFrame(function(){ var f=$('raceFill'); if(!f) return;
+        if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches) f.style.transition='none';
+        f.style.transform='scaleX('+fr.toFixed(3)+')'; });
+
+      /* ── where she stands, in one honest line ── */
+      var stand, sub;
+      if(proj){
+        var paceSec=proj/(GOAL.distM/1000), projTxt=hm(proj), tr=(idx<3)?vdotTrend(logs):null;
+        var trSpan = tr ? (' <span class="'+(tr.dir==='up'?'up':tr.dir==='down'?'dn':'')+'">· '+tr.gr+'</span>') : '';
+        if(idx===3){ stand='Το σκληρό τελείωσε. Τώρα <b>φρεσκάρεις</b> για την Αθήνα.';
+          sub='Σε φόρμα '+projTxt+' · '+mmss(paceSec)+'/χλμ. Άφησε τα πόδια να ξεκουραστούν — δούλεψες γι’ αυτό.'; }
+        else { var wksToTaper=Math.max(0,Math.floor((days-21)/7));
+          stand='Σε φόρμα για <b>'+projTxt+'</b> στην Αθήνα'+trSpan+'.';
+          sub='~'+mmss(paceSec)+'/χλμ ρυθμός στόχου'+(wksToTaper>0?' · '+wksToTaper+' εβδ. μέχρι το ταπεράρισμα':''); }
+      } else {
+        stand='Κάθε βήμα σε πάει <b>Αθήνα</b>.';
+        sub='Κάνε λίγα τρεξίματα ή όρισε έναν αγώνα, και θα προβλέψω τον χρόνο σου εδώ.';
+      }
+      $('raceStand').innerHTML=stand+'<div class="rn-stand-sub">'+sub+'</div>';
+
       var pulse=$('todayPulse');
       if(pulse){ pulse.classList.add('hidden'); /* Athens countdown now lives in the heartbeat meta */
-        pulse.innerHTML='<span class="dot"></span>Αθήνα · <b>'+days+'</b> μέρες <span class="ph">'+phase.split(' · ')[0]+'</span><span class="go">Πρόοδος ›</span>'; }
+        pulse.innerHTML='<span class="dot"></span>Αθήνα · <b>'+days+'</b> μέρες <span class="ph">'+phaseFull.split(' · ')[0]+'</span><span class="go">Πρόοδος ›</span>'; }
     }
 
     /* ── running weather · heat intelligence (model verified in node: 15 assertions) ── */
