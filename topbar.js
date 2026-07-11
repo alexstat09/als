@@ -361,7 +361,12 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
-  function shouldShowChrome() { return !isEmbedded(); }
+  // run.html is Chrissie's standalone running app — no cross-app nav (keeps her
+  // out of the rest of the private dashboard). Auth + ambient scripts still load.
+  function isRunSolo() {
+    return (window.location.pathname || '').toLowerCase().endsWith('run.html');
+  }
+  function shouldShowChrome() { return !isEmbedded() && !isRunSolo(); }
   // Maps the current page to one of the five bottom-nav "spaces" so the right
   // tab highlights. Pages outside the bar (Life/Reflect) return '' (no tab lit).
   function currentPageKey() {
