@@ -556,6 +556,9 @@
     .rn-adv-act{ margin-top:14px; }
     .rn-adv-btn{ padding:11px 18px; border-radius:12px; border:1px solid rgba(var(--rn),.4); background:rgba(var(--rn),.08); color:rgb(var(--rn)); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; }
     .rn-adv-btn:active{ background:rgba(var(--rn),.15); }
+    .rn-adv-undo-wrap{ margin-top:10px; }
+    .rn-adv-undo{ background:none; border:none; padding:5px 0; font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--au-faint); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+    .rn-adv-undo:active{ color:var(--au-dim); }
     .rn-adh{ display:flex; align-items:baseline; gap:10px; padding:2px 0 4px; }
     .rn-adh-n{ font-family:var(--au-serif); font-style:italic; font-size:26px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
     .rn-adh-n i{ font-style:italic; font-size:15px; color:var(--au-faint); }
@@ -1446,6 +1449,7 @@
     function bestLineToday(){ var c=loadWx(); if(!c) return ''; var hours=hydrateWx(c), wins=runWindows(hours,new Date(),shiftOn(todayDk())), best=wins[0]; if(!best) return '';
       var adv=indoorAdvice(hours,best); if(adv&&adv.indoor) return 'Ζέστη έξω — προτίμησε νωρίς ή μέσα στο OXYGEN.';
       return 'Καλύτερο παράθυρο · <b>'+hhmm(best.startTime)+'–'+hhmm(best.endTime)+'</b> · ~'+best.avgTemp+'°'; }
+    var coachUndo=null; // { label, fn } — lets her change her mind after an ease / pull
     function renderCoach(){
       var card=$('coachCard'); if(!plan.length && !logs.length){ card.classList.add('hidden'); return; }
       var dk=todayDk(), sess=sessionsOn(dk), s=sess.filter(function(x){return x.type!=='Rest';})[0]||sess[0];
@@ -1457,19 +1461,29 @@
       var win=(!done && !isRest)?bestLineToday():'';
       var act = adv.action==='ease' ? '<button class="rn-adv-btn" type="button" data-coach="ease">Κάν’ το χαλαρό</button>'
         : adv.action==='pull' ? '<button class="rn-adv-btn" type="button" data-coach="pull">Φέρε μία σήμερα</button>' : '';
+      var undo = (coachUndo && !done) ? '<button class="rn-adv-undo" type="button" data-coach="undo">'+coachUndo.label+' · αναίρεση</button>' : '';
       $('coachBody').innerHTML='<div class="rn-adv t-'+adv.tone+'"><div class="rn-adv-h">'+adv.head+'</div>'+
         '<div class="rn-adv-b">'+adv.body+'</div>'+(win?'<div class="rn-adv-win">'+win+'</div>':'')+
-        (act?'<div class="rn-adv-act">'+act+'</div>':'')+'</div>';
+        (act?'<div class="rn-adv-act">'+act+'</div>':'')+(undo?'<div class="rn-adv-undo-wrap">'+undo+'</div>':'')+'</div>';
     }
     function easeToday(){ var dk=todayDk(), s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0]; if(!s) return;
+      var snap={ id:s.id, type:s.type, km:s.km, kmEst:s.kmEst, struct:s.struct, eased:s.eased };
       s.type='Easy'; s.km=s.km?Math.max(4,Math.round(s.km*0.7)):s.km; s.struct='Χαλαρό — άκουσε το σώμα'; s.eased=1; s.ts=Date.now();
-      persist(K_PLAN,plan); flush(); render(); toast('lgToast','Έγινε χαλαρό σήμερα ✓'); }
+      persist(K_PLAN,plan); flush();
+      coachUndo={ label:'Επαναφορά προπόνησης', fn:function(){ var t=plan.filter(function(x){return x.id===snap.id;})[0]; if(!t) return;
+        t.type=snap.type; t.km=snap.km; t.kmEst=snap.kmEst; t.struct=snap.struct; if(snap.eased==null) delete t.eased; else t.eased=snap.eased; t.ts=Date.now(); persist(K_PLAN,plan); flush(); } };
+      render(); toast('lgToast','Έγινε χαλαρό σήμερα ✓ · μπορείς να το αναιρέσεις'); }
     function pullMissed(){ var ws=weekStart(new Date()), tdk=todayDk(), cand=null;
       plan.forEach(function(s){ if(s.type==='Rest') return; var d=parseDk(s.date); if(d>=ws && s.date<tdk && logsOn(s.date).length===0){ if(!cand||s.date>cand.date) cand=s; } });
-      if(cand) moveSession(cand.id, tdk); }
+      if(!cand) return; var id=cand.id, fromDate=cand.date;
+      moveSession(id, tdk);
+      coachUndo={ label:'Αναίρεση μετακίνησης', fn:function(){ if(!plan.some(function(x){return x.id===id;})) return; applyMove(plan, id, fromDate, Date.now()); persist(K_PLAN,plan); flush(); } };
+      render(); toast('lgToast','Μεταφέρθηκε σήμερα ✓ · μπορείς να το αναιρέσεις'); }
     (function(){ var cb=$('coachBody'); if(cb) cb.addEventListener('click',function(e){
       var b=e.target.closest('[data-coach]'); if(!b) return; var a=b.getAttribute('data-coach');
-      if(a==='ease') easeToday(); else if(a==='pull') pullMissed(); }); })();
+      if(a==='ease') easeToday();
+      else if(a==='pull') pullMissed();
+      else if(a==='undo'){ if(coachUndo){ coachUndo.fn(); coachUndo=null; render(); toast('lgToast','Αναιρέθηκε ✓'); } } }); })();
 
     function sessionsOn(dk){ return plan.filter(function(s){return s.date===dk;}); }
     function logsOn(dk){ return logs.filter(function(l){return l.date===dk;}); }
