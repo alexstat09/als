@@ -489,6 +489,39 @@
     .rn-shoe-act button{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--au-faint); background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:14px; padding:6px 11px; cursor:pointer; }
     .rn-shoe-act button.on{ color:rgb(var(--rn)); border-color:rgba(var(--rn),.4); background:rgba(var(--rn),.09); }
     .rn-shoe-act button.del{ margin-left:auto; color:rgba(var(--rn-hot),.8); padding:6px 10px; }
+    /* ── accomplishment summary ── */
+    .rn-sum-tot{ display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
+    .rn-st{ text-align:center; padding:4px 6px; }
+    .rn-st b{ display:block; font-family:var(--au-serif); font-style:italic; font-size:28px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
+    .rn-st small{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); display:block; margin-top:6px; }
+    .rn-sum-meta{ display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; margin:15px 0 2px; font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.03em; color:var(--au-faint); }
+    .rn-sum-meta b{ color:rgb(var(--rn)); font-family:var(--au-serif); font-style:italic; font-size:15px; }
+    .rn-cal{ display:flex; flex-direction:column; gap:3px; margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
+    .rn-cal-row{ display:flex; align-items:center; gap:7px; }
+    .rn-cal-mo{ flex:none; width:26px; font-family:var(--au-mono); font-size:7.5px; font-weight:700; color:var(--au-faint); text-transform:uppercase; }
+    .rn-cal-cells{ flex:1; display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+    .rn-cal-c{ aspect-ratio:1; border-radius:3px; background:rgba(255,255,255,.05); }
+    .rn-cal-c.q1{ background:rgba(var(--rn),.28); } .rn-cal-c.q2{ background:rgba(var(--rn),.5); }
+    .rn-cal-c.q3{ background:rgba(var(--rn),.72); } .rn-cal-c.q4{ background:rgb(var(--rn)); }
+    .rn-cal-c.fut{ background:rgba(255,255,255,.02); }
+    .rn-cal-c[data-cal-run]{ cursor:pointer; }
+    .rn-cal-key{ display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:9px; font-family:var(--au-mono); font-size:8px; color:var(--au-faint); }
+    .rn-cal-key .rn-cal-c{ width:11px; height:11px; aspect-ratio:auto; }
+    .rn-ms{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
+    .rn-ms-c{ padding:11px 12px; border-radius:12px; background:rgba(var(--rn),.05); border:1px solid rgba(var(--rn),.14); }
+    .rn-ms-c b{ display:block; font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
+    .rn-ms-c b i{ font-style:italic; font-size:12px; color:var(--au-faint); margin-left:2px; }
+    .rn-ms-c span{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--au-faint); display:block; margin-top:6px; }
+    .rn-ms-next{ margin-top:13px; }
+    .rn-ms-next-lab{ font-family:var(--au-mono); font-size:9px; letter-spacing:.03em; color:var(--au-faint); margin-bottom:7px; }
+    .rn-ms-next-lab b{ color:rgb(var(--rn)); }
+    .rn-ms-bar{ height:6px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; }
+    .rn-ms-bar span{ display:block; height:100%; border-radius:4px; background:linear-gradient(90deg, rgba(var(--rn-cool),.7), rgb(var(--rn))); }
+    /* share + edit button row in the run sheet */
+    .rn-sheet-act{ display:flex; gap:8px; }
+    .rn-sheet-act button{ flex:1; }
+    .rn-sheet-share{ padding:12px; border-radius:12px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-family:var(--au-sans); font-size:12.5px; font-weight:700; cursor:pointer; }
+    .rn-sheet-share:active{ background:rgba(255,255,255,.06); }
     @media (prefers-reduced-motion:reduce){ .rn-sheet[open]{ animation:none; } }
   </style>
 </head>
@@ -583,6 +616,11 @@
     <div class="rn-view hidden" id="view-runs">
     <!-- LATEST RUN HERO: route draws itself -->
     <section class="rn-runhero hidden" id="runHero"></section>
+    <!-- ACCOMPLISHMENT: totals · streak · consistency · milestones -->
+    <section class="rn-card hidden" id="sumCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Η προπόνησή σου · Your running</h2><span class="line"></span></div>
+      <div id="sumBody"></div>
+    </section>
     <!-- LOG A RUN -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
@@ -980,6 +1018,24 @@
       return stds.map(function(s){ var best=null; list.forEach(function(l){ if(l.timeSec>0 && l.distanceKm>=s.d*0.97 && l.distanceKm<=s.d*1.08){ if(!best||l.timeSec<best.timeSec) best=l; } });
         return best?{label:s.gr, timeSec:best.timeSec, date:best.date, km:best.distanceKm}:null; }).filter(Boolean); }
     function longestRun(list){ var m=null; list.forEach(function(l){ if(l.distanceKm>0 && (!m||l.distanceKm>m.distanceKm)) m=l; }); return m; }
+    /* ── accomplishment: totals, streak, consistency, milestones ── */
+    function kmIn(list,fromMs,toMs){ var s=0; list.forEach(function(l){ if(!l.date) return; var t=parseDk(l.date).getTime(); if(t>=fromMs&&t<toMs) s+=(+l.distanceKm||0); }); return s; }
+    function runStats(list,nowMs){ var now=new Date(nowMs); var tEnd=addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),1).getTime();
+      var total=0; list.forEach(function(l){ total+=(+l.distanceKm||0); });
+      return { weekKm:kmIn(list,weekStart(now).getTime(),tEnd), monthKm:kmIn(list,new Date(now.getFullYear(),now.getMonth(),1).getTime(),tEnd),
+        yearKm:kmIn(list,new Date(now.getFullYear(),0,1).getTime(),tEnd), totalKm:total, runs:list.length }; }
+    function weekStreak(list,nowMs){ var weeks={}; list.forEach(function(l){ if(!l.date) return; weeks[dkOf(weekStart(parseDk(l.date)))]=1; });
+      var cur=weekStart(new Date(nowMs)); if(!weeks[dkOf(cur)]) cur=addDays(cur,-7);   // this week not run yet → don't break the streak
+      var n=0; while(weeks[dkOf(cur)]){ n++; cur=addDays(cur,-7); } return n; }
+    function biggestWeek(list){ var wk={}, mx=0; list.forEach(function(l){ if(!l.date) return; var k=dkOf(weekStart(parseDk(l.date))); wk[k]=(wk[k]||0)+(+l.distanceKm||0); });
+      for(var k in wk) if(wk[k]>mx) mx=wk[k]; return mx; }
+    function nextMilestoneKm(total){ var ms=[50,100,250,500,750,1000,1500,2000,3000,5000]; for(var i=0;i<ms.length;i++) if(total<ms[i]) return {target:ms[i], prev:i>0?ms[i-1]:0}; return {target:ms[ms.length-1], prev:ms[ms.length-1]}; }
+    function calendarModel(list,weeks,nowMs){ var byDay={};
+      list.forEach(function(l){ if(!l.date) return; var e=byDay[l.date]||(byDay[l.date]={km:0,id:null}); e.km+=(+l.distanceKm||0); if(!e.id) e.id=l.id; });
+      var td=new Date(nowMs); td=new Date(td.getFullYear(),td.getMonth(),td.getDate()); var start=addDays(weekStart(td),-(weeks-1)*7), rows=[];
+      for(var w=0;w<weeks;w++){ var row=[]; for(var d=0;d<7;d++){ var day=addDays(start,w*7+d), dk=dkOf(day), e2=byDay[dk];
+        row.push({ dk:dk, km:e2?e2.km:0, id:e2?e2.id:null, future:day.getTime()>td.getTime() }); } rows.push(row); }
+      return rows; }
 
     /* bilingual part labels + display helpers */
     var PARTLAB={ wu:['Προθέρμανση','warm-up'], cd:['Αποθεραπεία','cool-down'], aer:['Αερόβιο','aerobic'],
@@ -1517,7 +1573,8 @@
         (r.rpe?('<div class="rn-sheet-rpe">Κόπος · effort <b>'+esc(r.rpe)+'</b> /10</div>'):'')+
         (splits?('<div class="rn-sheet-sec">'+splits+'</div>'):'')+
         (r.note?('<div class="rn-coach-note" style="margin:14px 0 0"><b>Σημείωση · note</b>'+esc(r.note)+'</div>'):'')+
-        '<div class="rn-sheet-act"><button class="rn-sheet-edit" type="button" data-edit="'+r.id+'">Επεξεργασία · edit run</button></div>'+
+        '<div class="rn-sheet-act"><button class="rn-sheet-share" type="button" data-share="'+r.id+'">Κοινοποίηση · share</button>'+
+          '<button class="rn-sheet-edit" type="button" data-edit="'+r.id+'">Επεξεργασία · edit</button></div>'+
       '</div>';
     }
     /* heart-rate + cadence tiles — only the ones we actually have */
@@ -1597,12 +1654,114 @@
       // in-sheet actions (edit / save / cancel / delete) via delegation on the persistent body
       var body=$('runSheetBody');
       if(body) body.addEventListener('click',function(e){
+        var sh=e.target.closest('[data-share]'); if(sh){ shareRun(sh.getAttribute('data-share')); return; }
         var ed=e.target.closest('[data-edit]'); if(ed){ runSheetEdit(ed.getAttribute('data-edit')); return; }
         var sv=e.target.closest('[data-edit-save]'); if(sv){ applyRunEdit(sv.getAttribute('data-edit-save')); return; }
         var cx=e.target.closest('[data-edit-cancel]'); if(cx){ openRunSheet(cx.getAttribute('data-edit-cancel')); return; }
         var dd=e.target.closest('[data-edit-del]'); if(dd){ var rid=dd.getAttribute('data-edit-del'); closeSheet(); delRun(rid); return; }
       });
     })();
+
+    var GRMO3=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
+    function calendarHTML(rows){
+      var body=rows.map(function(row){
+        var mon=parseDk(row[0].dk), lab=(mon.getDate()<=7)?GRMO3[mon.getMonth()]:'';
+        var cells=row.map(function(c){
+          if(c.future) return '<span class="rn-cal-c fut"></span>';
+          var q=c.km<=0?0:(c.km<5?1:(c.km<10?2:(c.km<16?3:4)));
+          return '<span class="rn-cal-c q'+q+'"'+(c.id?(' data-cal-run="'+c.id+'"'):'')+' title="'+c.dk+(c.km>0?(' · '+(Math.round(c.km*10)/10)+'χλμ'):'')+'"></span>';
+        }).join('');
+        return '<div class="rn-cal-row"><span class="rn-cal-mo">'+lab+'</span><div class="rn-cal-cells">'+cells+'</div></div>';
+      }).join('');
+      return '<div class="rn-cal">'+body+'</div>'+
+        '<div class="rn-cal-key"><span>λιγότερο</span><span class="rn-cal-c q1"></span><span class="rn-cal-c q2"></span><span class="rn-cal-c q3"></span><span class="rn-cal-c q4"></span><span>περισσότερο</span></div>';
+    }
+    function milestonesHTML(list){
+      var total=0; list.forEach(function(l){ total+=(+l.distanceKm||0); });
+      var lr=longestRun(list), bw=biggestWeek(list), nm=nextMilestoneKm(total);
+      function chip(v,lab){ return '<div class="rn-ms-c"><b>'+v+'</b><span>'+lab+'</span></div>'; }
+      var chips=chip(Math.round(total)+'<i>χλμ</i>','σύνολο · total')+
+        (lr?chip((Math.round(lr.distanceKm*10)/10)+'<i>χλμ</i>','μεγαλύτερο · longest'):'')+
+        chip(Math.round(bw)+'<i>χλμ</i>','κορυφαία εβδ. · best week')+
+        chip(list.length,'τρεξίματα · runs');
+      var span=(nm.target-nm.prev)||1, pct=Math.max(3,Math.min(100,Math.round((total-nm.prev)/span*100)));
+      return '<div class="rn-ms">'+chips+'</div>'+
+        '<div class="rn-ms-next"><div class="rn-ms-next-lab">Επόμενο ορόσημο · next <b>'+nm.target+' χλμ</b> · έμειναν '+Math.max(0,Math.round(nm.target-total))+'</div>'+
+        '<div class="rn-ms-bar"><span style="width:'+pct+'%"></span></div></div>';
+    }
+    function renderRunSummary(){
+      var card=$('sumCard'); if(!logs.length){ card.classList.add('hidden'); return; }
+      card.classList.remove('hidden');
+      var s=runStats(logs,Date.now()), streak=weekStreak(logs,Date.now()), lr=longestRun(logs);
+      function r1(x){ return Math.round(x*10)/10; }
+      $('sumBody').innerHTML=
+        '<div class="rn-sum-tot">'+
+          '<div class="rn-st"><b class="rn-count">'+r1(s.weekKm)+'</b><small>εβδομάδα · week</small></div>'+
+          '<div class="rn-st"><b class="rn-count">'+r1(s.monthKm)+'</b><small>μήνας · month</small></div>'+
+          '<div class="rn-st"><b class="rn-count">'+Math.round(s.yearKm)+'</b><small>χρονιά · year</small></div>'+
+        '</div>'+
+        '<div class="rn-sum-meta"><span><b class="rn-count">'+streak+'</b> εβδ. σερί · week streak</span>'+
+          '<span><b class="rn-count">'+(lr?r1(lr.distanceKm):0)+'</b> χλμ μεγαλύτερο</span></div>'+
+        calendarHTML(calendarModel(logs,15,Date.now()))+
+        milestonesHTML(logs);
+    }
+    (function(){ var sb=$('sumBody'); if(sb) sb.addEventListener('click',function(e){
+      var c=e.target.closest('[data-cal-run]'); if(c) openRunSheet(c.getAttribute('data-cal-run')); }); })();
+
+    /* ── shareable run card (canvas → image → share/save) ── */
+    function drawRouteCanvas(ctx,route,x,y,w,h,stroke,endc){
+      if(!route||route.length<2){ // no GPS → a quiet rose pulse instead of an empty box
+        var cx=x+w/2, cy=y+h/2; ctx.lineWidth=4;
+        [130,90,52].forEach(function(rad,i){ ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.strokeStyle='rgba(240,148,171,'+(0.14+i*0.12)+')'; ctx.stroke(); });
+        ctx.beginPath(); ctx.arc(cx,cy,20,0,Math.PI*2); ctx.fillStyle=stroke; ctx.fill(); return; }
+      var pad=26, midLat=0; route.forEach(function(p){ midLat+=p[0]; }); midLat/=route.length; var k=Math.cos(midLat*Math.PI/180);
+      var xs=route.map(function(p){return p[1]*k;}), ys=route.map(function(p){return p[0];});
+      var minX=Math.min.apply(null,xs),maxX=Math.max.apply(null,xs),minY=Math.min.apply(null,ys),maxY=Math.max.apply(null,ys);
+      var spanX=(maxX-minX)||1e-6, spanY=(maxY-minY)||1e-6, scale=Math.min((w-2*pad)/spanX,(h-2*pad)/spanY);
+      var offX=(w-spanX*scale)/2, offY=(h-spanY*scale)/2;
+      function X(p){ return x+offX+(p[1]*k-minX)*scale; } function Y(p){ return y+h-(offY+(p[0]-minY)*scale); }
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.beginPath(); route.forEach(function(p,i){ var px=X(p),py=Y(p); if(i)ctx.lineTo(px,py); else ctx.moveTo(px,py); });
+      ctx.strokeStyle='rgba(240,148,171,.22)'; ctx.lineWidth=15; ctx.stroke();
+      ctx.strokeStyle=stroke; ctx.lineWidth=6; ctx.stroke();
+      ctx.fillStyle=stroke; ctx.beginPath(); ctx.arc(X(route[0]),Y(route[0]),13,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=endc; ctx.beginPath(); ctx.arc(X(route[route.length-1]),Y(route[route.length-1]),13,0,Math.PI*2); ctx.fill();
+    }
+    function drawShareCard(ctx,W,H,r){
+      var RN='rgb(240,148,171)', GOLD='rgb(233,196,182)', INK='#f4f1ea', DIM='rgba(244,241,234,.6)', FAINT='rgba(244,241,234,.4)', pad=92;
+      ctx.fillStyle='#0a0407'; ctx.fillRect(0,0,W,H);
+      var g=ctx.createRadialGradient(W/2,H*0.08,40,W/2,H*0.08,W); g.addColorStop(0,'rgba(240,148,171,.17)'); g.addColorStop(0.55,'rgba(240,148,171,.02)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+      ctx.fillStyle=RN; ctx.font='700 27px ui-monospace, Menlo, monospace'; ctx.fillText('ΔΡΟΜΟΣ ΓΙΑ ΤΗΝ ΑΘΗΝΑ · ROAD TO ATHENS', pad, 132);
+      var d=parseDk(r.date), dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()]+' '+d.getFullYear();
+      ctx.fillStyle=FAINT; ctx.font='500 27px ui-monospace, monospace'; ctx.fillText((r.type||'Run')+' · '+dl, pad, 176);
+      var boxY=214, boxH=460; drawRouteCanvas(ctx, r.route, pad, boxY, W-2*pad, boxH, RN, GOLD);
+      var by=boxY+boxH+186; var distTxt=(Math.round((+r.distanceKm||0)*10)/10)+'';
+      ctx.fillStyle=INK; ctx.font='italic 208px Georgia, "Times New Roman", serif'; ctx.fillText(distTxt, pad-8, by);
+      var dw=ctx.measureText(distTxt).width; ctx.fillStyle=RN; ctx.font='italic 56px Georgia, serif'; ctx.fillText(' χλμ', pad-8+dw+12, by);
+      var cols=[['χρόνος', r.timeSec?hms(r.timeSec):'—'], ['ρυθμός', (r.distanceKm>0&&r.timeSec>0)?(mmss(r.timeSec/r.distanceKm)+'/χλμ'):'—']];
+      if(r.avgHR>0) cols.push(['♥ παλμοί', r.avgHR+'']); cols.push(['υψόμετρο', (r.elevGain||0)+' μ']);
+      var sy=by+118, cw=(W-2*pad)/cols.length;
+      cols.forEach(function(c,i){ var x=pad+i*cw;
+        ctx.fillStyle=INK; ctx.font='italic 62px Georgia, serif'; ctx.fillText(c[1], x, sy+46);
+        ctx.fillStyle=FAINT; ctx.font='700 23px ui-monospace, monospace'; ctx.fillText(c[0].toUpperCase(), x, sy+90); });
+      ctx.fillStyle=DIM; ctx.font='italic 42px Georgia, serif'; ctx.textAlign='left'; ctx.fillText("Chrissie’s Runs", pad, H-92);
+      ctx.fillStyle=FAINT; ctx.font='700 23px ui-monospace, monospace'; ctx.textAlign='right'; ctx.fillText('AURORA', W-pad, H-94);
+    }
+    function shareRun(id){
+      var r=logs.filter(function(x){return x.id===id;})[0]; if(!r) return;
+      var W=1080,H=1350, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+      var ctx=cv.getContext&&cv.getContext('2d'); if(!ctx){ toast('lgToast','Δεν υποστηρίζεται εδώ'); return; }
+      try{ drawShareCard(ctx,W,H,r); }catch(e){ toast('lgToast','Κάτι πήγε στραβά'); return; }
+      function finish(blob){ if(!blob){ toast('lgToast','Κάτι πήγε στραβά'); return; }
+        var file=null; try{ file=new File([blob],'chrissie-run.png',{type:'image/png'}); }catch(e){}
+        if(file && navigator.canShare && navigator.canShare({files:[file]})){
+          navigator.share({files:[file], title:"Chrissie’s Runs", text:'Δρόμος για την Αθήνα · '+(Math.round((+r.distanceKm||0)*10)/10)+' χλμ'}).catch(function(){});
+        } else { try{ var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='chrissie-run.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); },3000); toast('lgToast','Αποθηκεύτηκε η εικόνα ✓'); }catch(e){ toast('lgToast','Δεν μπόρεσε να αποθηκευτεί'); } }
+      }
+      if(cv.toBlob) cv.toBlob(finish,'image/png'); else finish(null);
+    }
 
     function renderRuns(){
       if(!logs.length){ $('runsCard').classList.add('hidden'); return; }
@@ -2108,7 +2267,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); shoes=loadArr(K_SHOES); kneeLog=loadArr(K_KNEE); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero();
+      renderHero(); renderToday(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero(); renderRunSummary();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
