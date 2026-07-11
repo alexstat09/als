@@ -561,7 +561,21 @@
     .rn-adh-n i{ font-style:italic; font-size:15px; color:var(--au-faint); }
     .rn-adh-l{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--au-faint); }
     .rn-adh-l b{ color:rgba(var(--rn-hot),.9); }
-    @media (prefers-reduced-motion:reduce){ .rn-sheet[open]{ animation:none; } }
+    /* ── first-run welcome ── */
+    .rn-wel{ text-align:center; padding:10px 6px 4px; }
+    .rn-wel-flourish{ margin:0 auto 18px; max-width:184px; }
+    .rn-wel-flourish svg{ display:block; width:100%; height:auto; }
+    .rn-wel-draw{ stroke-dasharray:1; stroke-dashoffset:1; animation:rnWelDraw 1.7s cubic-bezier(.35,.05,.2,1) .25s forwards; will-change:stroke-dashoffset; }
+    @keyframes rnWelDraw{ to{ stroke-dashoffset:0; } }
+    .rn-wel-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.9); margin-bottom:12px; }
+    .rn-wel-h{ font-family:var(--au-serif); font-style:italic; font-size:30px; color:var(--au-ivory); letter-spacing:-.02em; margin-bottom:12px; }
+    .rn-wel-b{ font-size:14.5px; line-height:1.6; color:var(--au-dim); max-width:34ch; margin:0 auto 22px; }
+    .rn-wel-steps{ display:flex; flex-direction:column; gap:9px; max-width:340px; margin:0 auto; text-align:left; }
+    .rn-wel-step{ display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:14px; border:1px solid var(--au-line); background:rgba(255,255,255,.02); }
+    .rn-wel-num{ flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--au-mono); font-size:12px; font-weight:800; color:var(--rn-ink); background:rgb(var(--rn)); }
+    .rn-wel-st b{ display:block; font-size:13.5px; font-weight:650; color:var(--au-ivory); }
+    .rn-wel-st span{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); letter-spacing:.02em; }
+    @media (prefers-reduced-motion:reduce){ .rn-sheet[open]{ animation:none; } .rn-wel-draw{ animation:none; stroke-dashoffset:0; } }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -658,6 +672,8 @@
     </div>
 
     <div class="rn-view hidden" id="view-runs">
+    <!-- FIRST-RUN WELCOME (only until she has runs) -->
+    <section class="hidden" id="runsWelcome"></section>
     <!-- LATEST RUN HERO: route draws itself -->
     <section class="rn-runhero hidden" id="runHero"></section>
     <!-- ACCOMPLISHMENT: totals · streak · consistency · milestones -->
@@ -1627,6 +1643,26 @@
       if(openRun===l.id){ exp='<div class="rn-run-x">'+((l.splits&&l.splits.length>1)?splitsHTML(l.splits):'<div class="rn-splits-lab">χωρίς αναλυτικά χιλιόμετρα · no per-km splits</div>')+'</div>'; }
       return row+exp;
     }
+    /* first-run welcome: the inviting moment before she has any runs */
+    function renderRunsWelcome(){
+      var w=$('runsWelcome'); if(!w) return;
+      if(logs.length){ if(w.innerHTML){ w.classList.add('hidden'); w.innerHTML=''; } return; }
+      if(w.innerHTML){ w.classList.remove('hidden'); return; } // keep the drawn flourish, don't re-trigger
+      w.classList.remove('hidden');
+      function step(n,t,s){ return '<div class="rn-wel-step"><span class="rn-wel-num">'+n+'</span><div class="rn-wel-st"><b>'+t+'</b><span>'+s+'</span></div></div>'; }
+      w.innerHTML='<div class="rn-wel">'+
+        '<div class="rn-wel-flourish"><svg viewBox="0 0 120 60" aria-hidden="true">'+
+          '<path class="rn-wel-draw" pathLength="1" d="M8 46 C 28 18, 44 54, 62 34 S 96 14, 112 42" fill="none" stroke="rgb(var(--rn))" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '<circle cx="8" cy="46" r="3.4" fill="rgb(var(--rn))"/><circle cx="112" cy="42" r="3.4" fill="rgb(var(--rn-gold))"/></svg></div>'+
+        '<div class="rn-wel-eyebrow">Δρόμος για την Αθήνα · Road to Athens</div>'+
+        '<div class="rn-wel-h">Καλώς ήρθες.</div>'+
+        '<div class="rn-wel-b">Εδώ ζει το τρέξιμό σου. Φέρε τις διαδρομές σου από το Garmin και θα δεις χάρτες, ρυθμό, παλμούς, υψόμετρο και την πρόοδό σου προς τον Μαραθώνιο.</div>'+
+        '<div class="rn-wel-steps">'+
+          step('1','Garmin Connect','διάλεξε ένα τρέξιμο')+
+          step('2','⋯ → Export','GPX ή αρχείο')+
+          step('3','Άνοιξέ το εδώ','με το «Import» πιο κάτω')+
+        '</div></div>';
+    }
     /* Τρεξίματα hero: her latest run — with its route tracing itself when GPS is present */
     function renderRunHero(){
       var hero=$('runHero'); if(!hero) return;
@@ -2452,7 +2488,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); shoes=loadArr(K_SHOES); kneeLog=loadArr(K_KNEE); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderCoach(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero(); renderRunSummary();
+      renderHero(); renderToday(); renderCoach(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero(); renderRunSummary(); renderRunsWelcome();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
