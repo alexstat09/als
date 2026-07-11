@@ -406,9 +406,10 @@
     .rn-sheet::backdrop{ background:rgba(4,3,5,.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
     .rn-sheet[open]{ animation:rnSheetIn .34s cubic-bezier(.2,.8,.25,1); }
     @keyframes rnSheetIn{ from{ opacity:0; transform:translateY(14px) scale(.985); } to{ opacity:1; transform:none; } }
-    .rn-sheet-scroll{ max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .rn-sheet-x{ position:absolute; right:12px; top:12px; z-index:6; width:32px; height:32px; border-radius:50%;
-      border:1px solid var(--au-line); background:rgba(10,4,7,.5); color:var(--au-dim); font-size:14px; line-height:1; cursor:pointer;
+    .rn-sheet-scroll{ max-height:90vh; overflow-y:auto; }
+    .rn-sheet-x{ position:absolute; right:11px; top:11px; z-index:10; width:38px; height:38px; border-radius:50%;
+      border:1px solid var(--au-line); background:rgba(10,4,7,.62); color:var(--au-ivory); font-size:15px; line-height:1; cursor:pointer;
+      touch-action:manipulation; -webkit-tap-highlight-color:transparent;
       backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
     .rn-sheet-x:active{ color:var(--au-ivory); }
     .rn-sheet-body{ padding:17px 18px 20px; }
@@ -1416,8 +1417,11 @@
       });
     }
     (function(){ var dlg=$('runSheet'); if(!dlg) return;
-      var x=$('runSheetX'); if(x) x.addEventListener('click',function(){ dlg.close(); });
-      dlg.addEventListener('click',function(e){ if(e.target===dlg) dlg.close(); }); // backdrop
+      function closeSheet(e){ if(e){ e.preventDefault(); e.stopPropagation(); } try{ dlg.close(); }catch(_){ dlg.removeAttribute('open'); } }
+      var x=$('runSheetX'); if(x){ x.addEventListener('click',closeSheet); x.addEventListener('touchend',closeSheet); }
+      // backdrop tap: mousedown (iOS doesn't reliably fire click on ::backdrop)
+      dlg.addEventListener('mousedown',function(e){ if(e.target===dlg) closeSheet(); });
+      dlg.addEventListener('cancel',function(e){ e.preventDefault(); closeSheet(); }); // Esc
       dlg.addEventListener('close',function(){ $('runSheetBody').innerHTML=''; });
     })();
 
@@ -2097,8 +2101,8 @@
   })();
   </script>
   <dialog id="runSheet" class="rn-sheet" aria-label="Run detail">
-    <button class="rn-sheet-x" id="runSheetX" aria-label="Close">✕</button>
     <div id="runSheetBody" class="rn-sheet-scroll"></div>
+    <button class="rn-sheet-x" id="runSheetX" type="button" aria-label="Close">✕</button>
   </dialog>
   <script src="nova.js" defer></script>
   <script src="nova-coach.js?v=18" defer></script>
