@@ -397,6 +397,31 @@
     .rn-rh b{ display:block; font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
     .rn-rh small{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); display:block; margin-top:6px; }
     .rn-hero-route{ will-change:stroke-dashoffset; }
+
+    /* ── run detail sheet: tap a run, it opens fully ── */
+    .rn-sheet{ position:relative; border:none; padding:0; width:calc(100% - 28px); max-width:440px; max-height:90vh;
+      border-radius:20px; background:var(--au-void); color:var(--au-ivory); box-shadow:0 26px 80px rgba(0,0,0,.62); overflow:hidden; }
+    .rn-sheet::backdrop{ background:rgba(4,3,5,.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+    .rn-sheet[open]{ animation:rnSheetIn .34s cubic-bezier(.2,.8,.25,1); }
+    @keyframes rnSheetIn{ from{ opacity:0; transform:translateY(14px) scale(.985); } to{ opacity:1; transform:none; } }
+    .rn-sheet-scroll{ max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .rn-sheet-x{ position:absolute; right:12px; top:12px; z-index:6; width:32px; height:32px; border-radius:50%;
+      border:1px solid var(--au-line); background:rgba(10,4,7,.5); color:var(--au-dim); font-size:14px; line-height:1; cursor:pointer;
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
+    .rn-sheet-x:active{ color:var(--au-ivory); }
+    .rn-sheet-body{ padding:17px 18px 20px; }
+    .rn-sheet-elab{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--rn),.9); }
+    .rn-sheet-title{ font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); letter-spacing:-.01em; margin-top:5px; line-height:1.1; }
+    .rn-sheet-src{ font-family:var(--au-mono); font-style:normal; font-size:8.5px; font-weight:700; letter-spacing:.08em; color:rgba(var(--rn),.75); vertical-align:middle; }
+    .rn-sheet-rpe{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.05em; color:var(--au-faint); margin-top:13px; }
+    .rn-sheet-rpe b{ color:rgb(var(--rn)); font-size:12px; }
+    .rn-sheet-sec{ margin-top:14px; padding-top:12px; border-top:1px solid var(--au-line); }
+    .rn-sheet-noroute{ display:flex; flex-direction:column; align-items:center; gap:9px; padding:38px 18px 30px;
+      background:radial-gradient(120% 130% at 50% 0%, rgba(var(--rn),.07), transparent 62%); }
+    .rn-sheet-fbk{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:rgb(var(--rn)); background:rgba(var(--rn),.09); border:1px solid rgba(var(--rn),.2); }
+    .rn-sheet-noroute b{ font-family:var(--au-serif); font-style:italic; font-size:20px; color:var(--au-ivory); }
+    .rn-sheet-noroute span{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); letter-spacing:.04em; }
+    @media (prefers-reduced-motion:reduce){ .rn-sheet[open]{ animation:none; } }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -1341,6 +1366,59 @@
       }catch(e){}
     }
 
+    /* ── tap a run → it opens fully: big self-drawing route + every number + splits ── */
+    function sheetMapHTML(r){
+      if(!(r.route&&r.route.length>1)) return null;
+      var W=340,H=190, rp=routePath(r.route,W,H,16); if(!rp) return null;
+      return '<div class="rn-runhero-map"><span class="rn-runhero-badge">'+esc(r.type||'Run')+'</span>'+
+        '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'+
+        '<path d="'+rp.d+'" fill="none" stroke="rgba(var(--rn),.15)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<path class="rn-sheet-route rn-hero-route" d="'+rp.d+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '<circle cx="'+rp.sx.toFixed(1)+'" cy="'+rp.sy.toFixed(1)+'" r="4.5" fill="rgb(var(--rn))"/>'+
+        '<circle cx="'+rp.ex.toFixed(1)+'" cy="'+rp.ey.toFixed(1)+'" r="4.5" fill="rgb(var(--rn-gold))" stroke="var(--au-void)" stroke-width="1"/>'+
+        '</svg></div>';
+    }
+    function runSheetHTML(r){
+      var d=parseDk(r.date), dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()]+' '+d.getFullYear();
+      var pace=(r.distanceKm>0&&r.timeSec>0)?mmss(r.timeSec/r.distanceKm):'—';
+      var map=sheetMapHTML(r);
+      var top = map || ('<div class="rn-sheet-noroute"><div class="rn-sheet-fbk">'+iconRun()+'</div><b>'+esc(r.type||'Run')+'</b><span>χωρίς χάρτη GPS · no route recorded</span></div>');
+      var splits=(r.splits&&r.splits.length>1)?splitsHTML(r.splits):'';
+      return top+'<div class="rn-sheet-body">'+
+        '<div class="rn-sheet-elab">'+esc(dl)+'</div>'+
+        '<div class="rn-sheet-title">'+esc(r.type||'Run')+(r.src&&r.src!=='manual'?' <span class="rn-sheet-src">'+esc(r.src.toUpperCase())+'</span>':'')+'</div>'+
+        '<div class="rn-runhero-stats" style="margin-top:15px">'+
+          '<div class="rn-rh"><b>'+(Math.round((+r.distanceKm||0)*10)/10)+'</b><small>χλμ</small></div>'+
+          '<div class="rn-rh"><b>'+(r.timeSec?hms(r.timeSec):'—')+'</b><small>χρόνος</small></div>'+
+          '<div class="rn-rh"><b>'+pace+'</b><small>/χλμ</small></div>'+
+          '<div class="rn-rh"><b>'+(r.elevGain||0)+'</b><small>μ ↑</small></div>'+
+        '</div>'+
+        (r.rpe?('<div class="rn-sheet-rpe">Κόπος · effort <b>'+esc(r.rpe)+'</b> /10</div>'):'')+
+        (splits?('<div class="rn-sheet-sec">'+splits+'</div>'):'')+
+        (r.note?('<div class="rn-coach-note" style="margin:14px 0 0"><b>Σημείωση · note</b>'+esc(r.note)+'</div>'):'')+
+      '</div>';
+    }
+    function openRunSheet(id){
+      var r=logs.filter(function(x){return x.id===id;})[0]; if(!r) return;
+      var dlg=$('runSheet'); if(!dlg||!dlg.showModal) return;
+      $('runSheetBody').innerHTML=runSheetHTML(r);
+      dlg.showModal();
+      requestAnimationFrame(function(){
+        var p=document.querySelector('#runSheet .rn-sheet-route'); if(!p||!p.getTotalLength) return;
+        try{ var len=p.getTotalLength(); if(!(len>0)) return;
+          p.style.strokeDasharray=len;
+          if(RM){ p.style.strokeDashoffset='0'; return; }
+          p.style.transition='none'; p.style.strokeDashoffset=len; p.getBoundingClientRect();
+          requestAnimationFrame(function(){ p.style.transition='stroke-dashoffset 1.5s cubic-bezier(.35,.05,.2,1)'; p.style.strokeDashoffset='0'; });
+        }catch(e){}
+      });
+    }
+    (function(){ var dlg=$('runSheet'); if(!dlg) return;
+      var x=$('runSheetX'); if(x) x.addEventListener('click',function(){ dlg.close(); });
+      dlg.addEventListener('click',function(e){ if(e.target===dlg) dlg.close(); }); // backdrop
+      dlg.addEventListener('close',function(){ $('runSheetBody').innerHTML=''; });
+    })();
+
     function renderRuns(){
       if(!logs.length){ $('runsCard').classList.add('hidden'); return; }
       $('runsCard').classList.remove('hidden');
@@ -1809,8 +1887,27 @@
     }
     /* ── import flows ── */
     function guessType(dk){ var s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0]; return s?s.type:'Easy'; }
-    function isDupe(run){ var d=dkOf(run.date); return logs.some(function(l){
-      return l.date===d && Math.abs((+l.distanceKm||0)-run.distanceKm)<0.25 && (!l.timeSec||!run.timeSec||Math.abs(l.timeSec-run.timeSec)<90); }); }
+    /* one shape for a stored run, whether one file or a whole export — route NEVER dropped */
+    function runFromParsed(r){ return { id:uid(), date:dkOf(r.date), distanceKm:r.distanceKm, timeSec:r.timeSec||0,
+      type:guessType(dkOf(r.date)), rpe:'', note:'', elevGain:r.elevGain||0, route:r.route||null,
+      splits:r.splits||null, src:r.format, ts:Date.now() }; }
+    /* the already-logged run this import refers to (same day, ~same distance, ~same time) */
+    function findMatch(run){ var d=dkOf(run.date); return logs.filter(function(l){
+      return l.date===d && Math.abs((+l.distanceKm||0)-run.distanceKm)<0.25 && (!l.timeSec||!run.timeSec||Math.abs(l.timeSec-run.timeSec)<90); })[0]||null; }
+    function isDupe(run){ return !!findMatch(run); }
+    /* re-import HEALS: does this import carry a finer route / splits / elevation than what's stored? */
+    function canUpgrade(ex,run){
+      var nl=run.route?run.route.length:0, ol=(ex.route&&ex.route.length)||0;
+      if(run.route&&nl>ol) return true;
+      if(run.splits&&run.splits.length>1&&!(ex.splits&&ex.splits.length>1)) return true;
+      if((run.elevGain||0)>0&&!(ex.elevGain>0)) return true;
+      return false; }
+    function applyUpgrade(ex,run,now){
+      var nl=run.route?run.route.length:0, ol=(ex.route&&ex.route.length)||0;
+      if(run.route&&nl>ol) ex.route=run.route;
+      if(run.splits&&run.splits.length>1&&!(ex.splits&&ex.splits.length>1)) ex.splits=run.splits;
+      if((run.elevGain||0)>0&&!(ex.elevGain>0)) ex.elevGain=run.elevGain;
+      ex.ts=now; }
     function paceOf(km,sec){ return (km>0&&sec>0)?mmss(sec/km):''; }
     async function ingestFiles(fileList){
       var files=Array.prototype.slice.call(fileList).filter(function(f){return /\.(gpx|tcx|xml|fit|gz|zip)$/i.test(f.name);});
@@ -1839,32 +1936,43 @@
       return '<div class="rn-splits">'+bars+'</div><div class="rn-splits-lab">ανά χλμ · per-km splits · fastest '+mmss(mn)+' /km</div>';
     }
     function showBulk(runs,bad){
-      var fresh=runs.filter(function(r){return !isDupe(r);}), dups=runs.length-fresh.length;
+      var fresh=[], ups=[], dups=0;
+      runs.forEach(function(r){ var ex=findMatch(r); if(!ex) fresh.push(r); else if(canUpgrade(ex,r)) ups.push({run:r,ex:ex}); else dups++; });
       var totalKm=Math.round(fresh.reduce(function(a,r){return a+r.distanceKm;},0)*10)/10;
-      window.__pendingBulk=fresh;
+      window.__pendingBulk={fresh:fresh, ups:ups};
+      var n=fresh.length+ups.length;
+      var caption = n
+        ? ((fresh.length?('Seed '+fresh.length+' run'+(fresh.length>1?'s':'')):'')+(fresh.length&&ups.length?' · ':'')+(ups.length?('upgrade '+ups.length+' map'+(ups.length>1?'s':'')):''))
+        : 'All already imported ✓';
+      if(bad>0) caption+=' · '+bad+' skipped';
+      var btn = fresh.length&&ups.length ? ('Add '+fresh.length+' · upgrade '+ups.length)
+        : fresh.length ? ('Add '+fresh.length+' run'+(fresh.length>1?'s':''))
+        : ('Upgrade '+ups.length+' map'+(ups.length>1?'s':''));
       var p=$('importPrev'); p.classList.remove('hidden');
       p.innerHTML='<div class="rn-prev"><div class="rn-prev-stats">'+
-        statBlock('runs · νέα',fresh.length)+statBlock('km σύνολο',totalKm)+
-        statBlock('διπλά · dupes',dups)+statBlock('skipped',bad||0)+
-        '</div><div class="rn-splits-lab" style="padding-top:9px">'+
-          (fresh.length? ('Seed '+fresh.length+' run'+(fresh.length>1?'s':'')+' into her history') : 'All already imported')+
+        statBlock('νέα · new',fresh.length)+statBlock('αναβάθμιση',ups.length)+
+        statBlock('km σύνολο',totalKm)+statBlock('διπλά · dupes',dups)+
+        '</div><div class="rn-splits-lab" style="padding-top:9px">'+caption+
         '</div><div class="rn-prev-act">'+
         '<button id="bulkCancel">Άκυρο · Cancel</button>'+
-        (fresh.length?'<button class="prime" id="bulkAdd">Add '+fresh.length+' runs</button>':'')+
+        (n?'<button class="prime" id="bulkAdd">'+btn+'</button>':'')+
         '</div></div>';
       var ba=$('bulkAdd'); if(ba) ba.addEventListener('click',function(){
-        var now=Date.now();
-        window.__pendingBulk.forEach(function(r,i){ logs.push({ id:uid(), date:dkOf(r.date), distanceKm:r.distanceKm,
-          timeSec:r.timeSec||0, type:guessType(dkOf(r.date)), rpe:'', note:'', elevGain:r.elevGain||0,
-          splits:r.splits||null, src:r.format, ts:now+i }); });
-        persist(K_LOGS,logs); flush(); clearImport(); toast('lgToast','Added '+window.__pendingBulk.length+' runs ✓'); render();
+        var now=Date.now(), pend=window.__pendingBulk;
+        pend.fresh.forEach(function(r,i){ var o=runFromParsed(r); o.ts=now+i; logs.push(o); });
+        pend.ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
+        persist(K_LOGS,logs); flush(); clearImport();
+        toast('lgToast','Added '+pend.fresh.length+(pend.ups.length?(' · upgraded '+pend.ups.length):'')+' ✓'); render();
       });
       $('bulkCancel').addEventListener('click',clearImport);
     }
     function showSingle(r){
-      window.__pendingSingle=r; var dk=dkOf(r.date), dup=isDupe(r);
+      window.__pendingSingle=r; var ex=findMatch(r), up=!!(ex&&canUpgrade(ex,r));
       var d=r.date, dl=DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MO[d.getMonth()];
       var mapH = r.route ? ('<div class="rn-map"><span class="rn-map-badge">'+esc(dl)+'</span>'+routeSVG(r.route,320,150,false)+'</div>') : '';
+      var note = up ? '<div class="rn-splits-lab" style="color:rgba(var(--rn),.95)">αναβάθμιση χάρτη · upgrading your '+esc(dl)+' run ✓</div>'
+        : (ex ? '<div class="rn-splits-lab" style="color:rgba(var(--rn-gold),.9)">όμοιο τρέξιμο υπάρχει ήδη · looks already logged</div>' : '');
+      var btn = up ? 'Upgrade · Αναβάθμιση' : (ex ? 'Save anyway' : 'Save this run · Αποθήκευση');
       var p=$('importPrev'); p.classList.remove('hidden');
       p.innerHTML='<div class="rn-prev">'+mapH+
         '<div class="rn-prev-stats">'+
@@ -1872,16 +1980,14 @@
           statBlock('χρόνος', r.timeSec?hms(r.timeSec):'—')+
           statBlock('ρυθμός /χλμ', paceOf(r.distanceKm,r.timeSec)||'—')+
           statBlock('υψόμετρο', (r.elevGain||0)+'m')+
-        '</div>'+ splitsHTML(r.splits)+
-        (dup?'<div class="rn-splits-lab" style="color:rgba(var(--rn-gold),.9)">όμοιο τρέξιμο υπάρχει ήδη · looks already logged</div>':'')+
+        '</div>'+ splitsHTML(r.splits)+ note+
         '<div class="rn-prev-act"><button id="singleCancel">Άκυρο</button>'+
-        '<button class="prime" id="singleSave">'+(dup?'Save anyway':'Save this run · Αποθήκευση')+'</button></div></div>';
+        '<button class="prime" id="singleSave">'+btn+'</button></div></div>';
       $('singleSave').addEventListener('click',function(){
-        var r2=window.__pendingSingle;
-        logs.push({ id:uid(), date:dkOf(r2.date), distanceKm:r2.distanceKm, timeSec:r2.timeSec||0,
-          type:guessType(dkOf(r2.date)), rpe:'', note:'', elevGain:r2.elevGain||0, route:r2.route||null,
-          splits:r2.splits||null, src:r2.format, ts:Date.now() });
-        persist(K_LOGS,logs); flush(); clearImport(); toast('lgToast','Run imported ✓ Καταγράφηκε'); render();
+        var r2=window.__pendingSingle, ex2=findMatch(r2), up2=!!(ex2&&canUpgrade(ex2,r2));
+        if(up2) applyUpgrade(ex2,r2,Date.now());
+        else logs.push(runFromParsed(r2));
+        persist(K_LOGS,logs); flush(); clearImport(); toast('lgToast', up2?'Χάρτης αναβαθμίστηκε ✓ Map upgraded':'Run imported ✓ Καταγράφηκε'); render();
       });
       $('singleCancel').addEventListener('click',clearImport);
     }
@@ -1937,7 +2043,7 @@
       var del=e.target.closest('[data-del-run]'); if(del){ e.stopPropagation(); delRun(del.getAttribute('data-del-run')); return; }
       var fc=e.target.closest('[data-filter]'); if(fc){ runFilter=fc.getAttribute('data-filter'); openMonths={}; openRun=null; renderRuns(); return; }
       var mo=e.target.closest('[data-mo]'); if(mo){ var m=mo.getAttribute('data-mo'); openMonths[m]=!openMonths[m]; renderRuns(); return; }
-      var run=e.target.closest('[data-run]'); if(run){ var id=run.getAttribute('data-run'); openRun=(openRun===id?null:id); renderRuns(); return; }
+      var run=e.target.closest('[data-run]'); if(run){ openRunSheet(run.getAttribute('data-run')); return; }
     });
     /* ── tab navigation ── */
     var VIEWS=['today','plan','runs','str','prog'];
@@ -1988,6 +2094,10 @@
       autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, strengthPlan:strengthPlan, mmss:mmss };
   })();
   </script>
+  <dialog id="runSheet" class="rn-sheet" aria-label="Run detail">
+    <button class="rn-sheet-x" id="runSheetX" aria-label="Close">✕</button>
+    <div id="runSheetBody" class="rn-sheet-scroll"></div>
+  </dialog>
   <script src="nova.js" defer></script>
   <script src="nova-coach.js?v=18" defer></script>
 </body>
