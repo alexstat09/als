@@ -179,7 +179,7 @@
     if (!appKey || !window.supabase) return;
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
-    let supa = null, pushTimer = null, suppress = false, lastJson = null, lastPushAt = 0;
+    let supa = null, pushTimer = null, suppress = false, lastJson = null, lastPushAt = 0, lastRemoteStamp = null;
     const TOMB_KEY = '__synctomb__' + appKey;
 
     const origSet = localStorage.setItem.bind(localStorage);
@@ -261,10 +261,20 @@
 
     async function pull() {
       try {
-        const { data, error } = await supa.from('app_state').select('data').eq('key', appKey).maybeSingle();
-        if (!error && data && data.data) return data.data;
+        const { data, error } = await supa.from('app_state').select('data,updated_at').eq('key', appKey).maybeSingle();
+        if (!error && data) { if (data.updated_at) lastRemoteStamp = data.updated_at; if (data.data) return data.data; }
       } catch (e) {}
       return null;
+    }
+    // Cheap freshness probe: read ONLY the timestamp so the 15s interval can
+    // skip pulling the (large, growing) data blob when nothing changed remotely.
+    // undefined = probe failed (retry next tick); null = no row yet.
+    async function probe() {
+      try {
+        const { data, error } = await supa.from('app_state').select('updated_at').eq('key', appKey).maybeSingle();
+        if (!error) return data ? (data.updated_at || null) : null;
+      } catch (e) {}
+      return undefined;
     }
 
     // pull -> merge -> apply locally -> push merged superset
@@ -277,10 +287,22 @@
       const body = pushBody(r.merged, r.tomb);
       const json = JSON.stringify(body);
       if (json !== lastJson) {
+        const iso = new Date().toISOString();
         lastJson = json; lastPushAt = Date.now();
-        try { await supa.from('app_state').upsert({ key: appKey, data: body, updated_at: new Date().toISOString() }, { onConflict: 'key' }); } catch (e) {}
+        try { await supa.from('app_state').upsert({ key: appKey, data: body, updated_at: iso }, { onConflict: 'key' }); lastRemoteStamp = iso; } catch (e) {}
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
+    }
+    // Interval reconciler: probe the tiny timestamp first; do the full
+    // pull+merge+push only when the remote actually changed OR we still hold
+    // unpushed local edits. Steady-state idle = one small timestamp read/cycle
+    // instead of dragging the whole run:logs blob down every 15 seconds.
+    async function syncTick() {
+      if (!supa) return;
+      const stamp = await probe();
+      if (stamp === undefined) return;                         // network hiccup — retry next tick
+      if (stamp !== lastRemoteStamp) { await syncNow(); return; } // remote moved → reconcile
+      if (JSON.stringify(pushBody(collectLocal(), loadTomb())) !== lastJson) await syncNow(); // local drifted → push
     }
     function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
     // Direct API so a page can force a deletion tombstone + immediate push
@@ -341,11 +363,16 @@
           applyRealtime(payload.new.data);
         })
         .subscribe();
-      setInterval(syncNow, 15000);
+      setInterval(syncTick, 15000);
     })();
 
     window.addEventListener('beforeunload', flushOnUnload);
     window.addEventListener('pagehide', flushOnUnload);
-    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') syncNow(); });
+    // Sync through the safe MERGE path whenever visibility changes — including
+    // going to the BACKGROUND (the usual precursor to iOS suspending the tab).
+    // Pending edits get pulled+merged+pushed before the blind keepalive
+    // unload-push ever has to run, so a stale tab can't wholesale-clobber the
+    // cloud. (syncNow is idempotent: identical state re-pushes nothing.)
+    document.addEventListener('visibilitychange', function(){ syncNow(); });
   };
 })();

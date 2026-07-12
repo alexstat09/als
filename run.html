@@ -2574,14 +2574,21 @@
     /* ── import flows ── */
     function guessType(dk){ var s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0]; return s?s.type:'Easy'; }
     /* one shape for a stored run, whether one file or a whole export — route NEVER dropped */
-    function runFromParsed(r){ return { id:uid(), date:dkOf(r.date), distanceKm:r.distanceKm, timeSec:r.timeSec||0,
+    function runFromParsed(r){ return { id:uid(), date:dkOf(r.date), startTs:(r.date&&r.date.getTime)?r.date.getTime():null, distanceKm:r.distanceKm, timeSec:r.timeSec||0,
       type:guessType(dkOf(r.date)), rpe:'', note:'', elevGain:r.elevGain||0, route:r.route||null,
       splits:r.splits||null, avgHR:r.avgHR||null, maxHR:r.maxHR||null, cadence:r.avgCad||null,
       series:r.series||null, gapSec:r.gapSec||null, hrZones:r.hrZones||null, laps:r.laps||null,
       shoeId:shoeForDate(dkOf(r.date)), src:r.format, ts:Date.now() }; }
     /* the already-logged run this import refers to (same day, ~same distance, ~same time) */
-    function findMatch(run){ var d=dkOf(run.date); return logs.filter(function(l){
-      return l.date===d && Math.abs((+l.distanceKm||0)-run.distanceKm)<0.25 && (!l.timeSec||!run.timeSec||Math.abs(l.timeSec-run.timeSec)<90); })[0]||null; }
+    /* start time (ms): stored logs carry startTs from import; a freshly-parsed
+       run carries a Date in .date. null when unknown (manual/legacy runs). */
+    function startMsOf(x){ if(x&&x.startTs>0) return x.startTs; if(x&&x.date instanceof Date) return x.date.getTime(); return null; }
+    function findMatch(run){ var d=dkOf(run.date), rs=startMsOf(run); return logs.filter(function(l){
+      if(l.date!==d) return false;
+      if(Math.abs((+l.distanceKm||0)-run.distanceKm)>=0.25) return false;
+      if(l.timeSec&&run.timeSec&&Math.abs(l.timeSec-run.timeSec)>=90) return false;
+      var ls=startMsOf(l); if(rs!=null&&ls!=null&&Math.abs(rs-ls)>1800000) return false; // same day but >30min apart → a second run, not a dupe
+      return true; })[0]||null; }
     function isDupe(run){ return !!findMatch(run); }
     /* re-import HEALS: does this import carry a finer route / splits / elevation than what's stored? */
     function canUpgrade(ex,run){
