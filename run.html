@@ -277,7 +277,6 @@
     .rn-imp-txt{ min-width:0; }
     .rn-imp-txt b{ display:block; font-size:var(--t-body); font-weight:700; color:var(--au-ivory); }
     .rn-imp-txt span{ font-family:var(--au-mono); font-size:var(--t-micro); color:var(--au-faint); letter-spacing:var(--tr-t); }
-    .rn-or{ text-align:center; font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-w1); text-transform:uppercase; color:var(--au-faint); margin:0 0 13px; }
 
     /* import preview */
     .rn-prev{ border:1px solid var(--rn-a30); border-radius:var(--r-lg); overflow:hidden; margin-bottom:13px; background:var(--rn-a03); }
@@ -598,8 +597,6 @@
     .rn-adv.t-info .rn-adv-h{ color:rgb(var(--rn)); }
     .rn-adv.t-good .rn-adv-h{ color:rgb(var(--rn-cool)); }
     .rn-adv-b{ font-size:var(--t-copy); line-height:1.55; color:var(--au-dim); }
-    .rn-adv-win{ margin-top:11px; font-family:var(--au-mono); font-size:var(--t-label); letter-spacing:var(--tr-t); color:var(--au-faint); }
-    .rn-adv-win b{ color:rgb(var(--rn)); }
     .rn-adv-act{ margin-top:14px; }
     .rn-adv-btn{ padding:11px 18px; border-radius:var(--r-md); border:1px solid var(--rn-a45); background:var(--rn-a09); color:rgb(var(--rn)); font-family:var(--au-sans); font-size:var(--t-body); font-weight:700; cursor:pointer; }
     .rn-adv-btn:active{ background:var(--rn-a15); }
@@ -681,7 +678,7 @@
     <div class="rn-view hidden" id="view-plan">
     <!-- THIS WEEK -->
     <section class="rn-card">
-      <div class="rn-card-hd"><span class="dot"></span><h2>This week · Εβδομάδα</h2><span class="line"></span></div>
+      <div class="rn-card-hd"><span class="dot"></span><h2>Εβδομάδα · This week</h2><span class="line"></span></div>
       <div class="rn-week-top">
         <div><span class="rn-week-km" id="wkDone">0</span><span class="rn-week-km" style="color:var(--au-faint)"> / <span id="wkTarget">0</span></span><small>χλμ αυτή την εβδομάδα</small></div>
         <div class="rn-week-lab" id="wkLabel">—</div>
@@ -699,7 +696,7 @@
 
       <div class="rn-coach-note hidden" id="coachNote"></div>
       <div id="pastePane">
-        <div class="rn-hint">Paste the week exactly as the coach sends it, multi-line days and all. Επικόλλησε την εβδομάδα όπως ακριβώς τη στέλνει ο προπονητής, με όλες τις γραμμές.</div>
+        <div class="rn-hint">Επικόλλησε την εβδομάδα όπως ακριβώς τη στέλνει ο προπονητής, με όλες τις γραμμές. Paste the week exactly as the coach sends it.</div>
         <textarea class="rn-in" id="planText" placeholder="Τρίτη 10' προθέρμανση&#10;5χλμ αερόβιο&#10;4Χ100 ανοίγματα&#10;10' αποθεραπεία&#10;&#10;Τετάρτη 60' αερόβιο ..."></textarea>
         <button class="rn-save" id="planParse" type="button" style="margin-top:11px">Διάβασέ το στην εβδομάδα μου</button>
         <div class="rn-toast" id="planToast"></div>
@@ -735,14 +732,16 @@
     </section>
     <!-- LOG A RUN -->
     <section class="rn-card">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Log a run · Καταγραφή</h2><span class="line"></span></div>
+      <div class="rn-card-hd"><span class="dot"></span><h2>Καταγραφή · Log a run</h2><span class="line"></span></div>
       <div class="rn-import" id="importZone" role="button" tabindex="0">
         <input type="file" id="gpxInput" accept=".gpx,.tcx,.xml,.fit,.gz,.zip" multiple hidden>
         <div class="rn-imp-ico"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></div>
         <div class="rn-imp-txt"><b>Από το Garmin · Import runs</b><span>Ρίξε αρχεία ή ΟΛΟ το export .zip · GPX / TCX / FIT / gz / zip</span></div>
       </div>
       <div id="importPrev" class="hidden"></div>
-      <div class="rn-or">ή γράψ’ το · or log manually</div>
+      <!-- CALM pass: her main flow is Garmin import — the 8-field manual form opens on request -->
+      <button class="rn-save ghost" id="manualToggle" type="button">ή γράψ’ το με το χέρι · log manually</button>
+      <div id="manualPane" class="hidden">
       <div class="rn-frow">
         <div class="rn-field"><label for="lgDate">Ημέρα · Date</label><input class="rn-in" id="lgDate" type="date"></div>
         <div class="rn-field"><label for="lgType">Τύπος · Type</label>
@@ -758,6 +757,7 @@
         <div class="rn-field" style="flex:2"><label for="lgNote">Σημειώσεις · Notes</label><input class="rn-in" id="lgNote" placeholder="ένιωθα δυνατή, αρνητικό split…" autocomplete="off"></div>
       </div>
       <button class="rn-save" id="lgSave" type="button">Αποθήκευση · Save run</button>
+      </div><!-- /manualPane -->
       <div class="rn-toast" id="lgToast"></div>
     </section>
     <!-- RECENT RUNS -->
@@ -811,9 +811,9 @@
     </section>
     <!-- TRAINING PACES -->
     <section class="rn-card">
-      <div class="rn-card-hd"><span class="dot"></span><h2>Training paces · Ρυθμοί</h2><span class="line"></span><button class="act" id="editRace" type="button">Όρισε αγώνα</button></div>
+      <div class="rn-card-hd"><span class="dot"></span><h2>Ρυθμοί · Training paces</h2><span class="line"></span><button class="act" id="editRace" type="button">Όρισε αγώνα</button></div>
       <div id="pacesBody">
-        <div class="rn-empty" id="pacesEmpty">Add a recent race result and every workout below gets a personal target pace, computed from your VDOT (Jack Daniels).</div>
+        <div class="rn-empty" id="pacesEmpty">Βάλε έναν πρόσφατο αγώνα και κάθε προπόνηση παίρνει τον δικό σου ρυθμό-στόχο. Add a recent race and every workout gets your personal pace (VDOT · Jack Daniels).</div>
         <div id="pacesReal" class="hidden">
           <div class="rn-vdot-row"><span class="rn-vdot rn-count" id="vdotNum">0</span><span class="rn-vdot-lab">VDOT<br>fitness</span><span class="rn-vdot-src" id="vdotSrc"></span></div>
           <div class="rn-zones" id="zonesBox"></div>
@@ -1538,9 +1538,6 @@
     }
     function missedThisWeek(){ var ws=weekStart(new Date()), tdk=todayDk(), n=0;
       plan.forEach(function(s){ if(s.type==='Rest') return; var d=parseDk(s.date); if(d>=ws && s.date<tdk && logsOn(s.date).length===0) n++; }); return n; }
-    function bestLineToday(){ var c=loadWx(); if(!c) return ''; var hours=hydrateWx(c), wins=runWindows(hours,new Date(),shiftOn(todayDk())), best=wins[0]; if(!best) return '';
-      var adv=indoorAdvice(hours,best); if(adv&&adv.indoor) return 'Ζέστη έξω — προτίμησε νωρίς ή μέσα στο OXYGEN.';
-      return 'Καλύτερο παράθυρο · <b>'+hhmm(best.startTime)+'–'+hhmm(best.endTime)+'</b> · ~'+best.avgTemp+'°'; }
     var coachUndo=null; // { label, fn } — lets her change her mind after an ease / pull
     function renderCoach(){
       var card=$('coachCard'); if(!plan.length && !logs.length){ card.classList.add('hidden'); return; }
@@ -1550,12 +1547,13 @@
       var a=acwrOf(logs,EVDOT);
       var ctx={ tsb:tsb, acwrZone:a?a.zone:null, kneePain:recentKneePain(7), session:isRest?null:s, done:done, isRest:isRest, missed:missedThisWeek() };
       var adv=coachAdvice(ctx); card.classList.remove('hidden');
-      var win=(!done && !isRest)?bestLineToday():'';
+      /* CALM pass: the best-window line was the 3rd place showing the same window
+         (heartbeat meta + weather card already do) — the coach keeps only advice + action. */
       var act = adv.action==='ease' ? '<button class="rn-adv-btn" type="button" data-coach="ease">Κάν’ το χαλαρό</button>'
         : adv.action==='pull' ? '<button class="rn-adv-btn" type="button" data-coach="pull">Φέρε μία σήμερα</button>' : '';
       var undo = (coachUndo && !done) ? '<button class="rn-adv-undo" type="button" data-coach="undo">'+coachUndo.label+' · αναίρεση</button>' : '';
       $('coachBody').innerHTML='<div class="rn-adv t-'+adv.tone+'"><div class="rn-adv-h">'+adv.head+'</div>'+
-        '<div class="rn-adv-b">'+adv.body+'</div>'+(win?'<div class="rn-adv-win">'+win+'</div>':'')+
+        '<div class="rn-adv-b">'+adv.body+'</div>'+
         (act?'<div class="rn-adv-act">'+act+'</div>':'')+(undo?'<div class="rn-adv-undo-wrap">'+undo+'</div>':'')+'</div>';
     }
     function easeToday(){ var dk=todayDk(), s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0]; if(!s) return;
@@ -1584,7 +1582,7 @@
 
     function renderToday(){
       var dk=todayDk(); var sess=sessionsOn(dk); var d=new Date();
-      var dateLab=DOW[(d.getDay()+6)%7]+' · '+d.getDate()+' '+MO[d.getMonth()];
+      var dateLab=GRDOWFULL[(d.getDay()+6)%7]+' '+grDate(d);
       var el=$('todayCard');
       var s=sess.filter(function(x){return x.type!=='Rest';})[0] || sess[0];
       if(!s){
@@ -1634,7 +1632,7 @@
         '<div class="rn-today-type">'+esc(s.type)+(s.km?(' · '+s.km+(s.kmEst?'≈':'')+' km'):'')+'</div>'+
         bodyHtml+
         '<div class="rn-today-done">'+
-          '<button class="prime'+(done?' on':'')+'" id="tDone">'+(done?'✓ Καταγράφηκε · logged':'Log this run · Καταγραφή')+'</button>'+
+          '<button class="prime'+(done?' on':'')+'" id="tDone">'+(done?'✓ Καταγράφηκε · logged':'Καταγραφή · Log this run')+'</button>'+
         '</div>'+
         (done?('<div class="rn-cheer">'+cheerLine()+'</div>'):'')+
         '</div>';
@@ -1642,6 +1640,7 @@
         $('lgType').value = ['Easy','Long','Tempo','Threshold','Interval','Repetition','Steady','Hills','Test','Recovery','Race'].indexOf(s.type)>=0 ? s.type : 'Easy';
         if(s.km) $('lgKm').value=s.km;
         $('lgDate').value=dk;
+        openManualPane(); // the collapsed manual form opens for her, pre-filled
         showView('runs'); // the form lives in the Τρεξίματα view
         setTimeout(function(){ $('lgKm').scrollIntoView({behavior:'smooth',block:'center'}); $('lgTime').focus(); }, 120);
       });
@@ -2328,6 +2327,7 @@
       if(dot){ dot.setAttribute('cx',best.x.toFixed(1)); dot.setAttribute('cy',best.y.toFixed(1)); dot.setAttribute('opacity','1'); }
       if(out){ var lf=Math.max(9,Math.min(91,(best.x/WX_W)*100)); out.style.left=lf.toFixed(1)+'%';
         out.innerHTML=hhmm(best.time)+' · <b>'+Math.round(best.temp)+'°</b>'; out.classList.add('on'); }
+      try{ localStorage.setItem('run:wxHint','1'); }catch(e){}
     }
     function heatScrubEnd(){ var line=document.getElementById('wxScrubLine'), dot=document.getElementById('wxScrubDot'), out=document.getElementById('wxScrub');
       if(line) line.setAttribute('opacity','0'); if(dot) dot.setAttribute('opacity','0'); if(out) out.classList.remove('on'); }
@@ -2367,7 +2367,9 @@
           '<circle id="wxScrubDot" cx="0" cy="0" r="3.8" fill="rgba(255,255,255,.96)" stroke="rgb(var(--rn))" stroke-width="1.6" opacity="0" pointer-events="none"/></svg>';
       }
       wxPts = cv ? cv.pts : null;
-      var ticks=''; if(cv){ ticks='<div class="rn-wx-ticks">'+[0,5,10,15].map(function(k){ var p=cv.pts[k]; return p?('<span>'+hhmm(p.time)+'</span>'):''; }).join('')+'</div><div class="rn-wx-hint">σύρε το δάχτυλο στην καμπύλη · drag along the curve</div>'; }
+      /* the drag-hint teaches once; after she's scrubbed, it retires for good */
+      var hintDone=false; try{ hintDone=localStorage.getItem('run:wxHint')==='1'; }catch(e){}
+      var ticks=''; if(cv){ ticks='<div class="rn-wx-ticks">'+[0,5,10,15].map(function(k){ var p=cv.pts[k]; return p?('<span>'+hhmm(p.time)+'</span>'):''; }).join('')+'</div>'+(hintDone?'':'<div class="rn-wx-hint">σύρε το δάχτυλο στην καμπύλη · drag along the curve</div>'); }
       var wl=wcodeLabel(cur.code), sl=shiftLabel(shift);
       var verdict, sub;
       if(adv&&adv.indoor){ verdict=(sl[0]?sl[0]+'. ':'')+'Πολλή ζέστη. <b class="hot">Καλύτερα μέσα.</b>';
@@ -2659,9 +2661,11 @@
       $('rnTitle').textContent = (prof.name?prof.name.split(' ')[0]:'Chrissie')+'’s runs';
       var dk=todayDk(); var s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0];
       if(s){ var zk=typeZone(s.type); var ps=zk?paceStr(zk):null;
-        $('rnSub').textContent='Today: '+s.type+(s.km?(' · '+s.km+'km'):'')+(ps?(' at '+ps+'/km'):'')+'.';
-      } else if(!EVDOT){ $('rnSub').textContent='Φέρε τα τρεξίματά σου ή όρισε αγώνα, και όλα γεμίζουν με τους δικούς σου ρυθμούς.';
-      } else { $('rnSub').textContent='Χωρίς προπόνηση σήμερα. Οι ρυθμοί σου περιμένουν στην Πρόοδο.'; }
+        /* CALM pass: don't repeat today's session here — the heartbeat + Today card
+           right below carry it. The hero stays quiet once the app has her data. */
+        $('rnSub').textContent='';
+      } else if(!EVDOT && !plan.length && !logs.length){ $('rnSub').textContent='Φέρε τα τρεξίματά σου ή όρισε αγώνα, και όλα γεμίζουν με τους δικούς σου ρυθμούς.';
+      } else { $('rnSub').textContent=''; }
     }
 
     function render(){
@@ -2777,7 +2781,7 @@
       var bars=use.map(function(s){
         var pct=25+(1-(s.sec-mn)/rng)*75; var cls=s.sec===mn?'fast':(s.sec===mx?'slow':'');
         return '<div class="b '+cls+'" style="height:'+Math.max(8,Math.min(100,pct))+'%" title="km '+s.km+' · '+mmss(s.sec)+'/km"></div>'; }).join('');
-      return '<div class="rn-splits">'+bars+'</div><div class="rn-splits-lab">ανά χλμ · per-km splits · fastest '+mmss(mn)+' /km'+(capped?(' · '+splits.length+' χλμ συνολικά'):'')+'</div>';
+      return '<div class="rn-splits">'+bars+'</div><div class="rn-splits-lab">ανά χλμ · γρήγορο '+mmss(mn)+' · αργό '+mmss(mx)+' /χλμ'+(capped?(' · '+splits.length+' χλμ συνολικά'):'')+'</div>';
     }
     function showBulk(runs,bad){
       var fresh=[], ups=[], dups=0;
@@ -2816,7 +2820,7 @@
       var mapH = r.route ? ('<div class="rn-map"><span class="rn-map-badge">'+esc(dl)+'</span>'+routeSVG(r.route,320,150,false)+'</div>') : '';
       var note = up ? '<div class="rn-splits-lab" style="color:rgba(var(--rn),.95)">αναβάθμιση χάρτη · upgrading your '+esc(dl)+' run ✓</div>'
         : (ex ? '<div class="rn-splits-lab" style="color:rgba(var(--rn-gold),.9)">όμοιο τρέξιμο υπάρχει ήδη · looks already logged</div>' : '');
-      var btn = up ? 'Upgrade · Αναβάθμιση' : (ex ? 'Αποθήκευσέ το πάντως' : 'Save this run · Αποθήκευση');
+      var btn = up ? 'Upgrade · Αναβάθμιση' : (ex ? 'Αποθήκευσέ το πάντως' : 'Αποθήκευση · Save this run');
       var p=$('importPrev'); p.classList.remove('hidden');
       p.innerHTML='<div class="rn-prev">'+mapH+
         '<div class="rn-prev-stats">'+
@@ -2882,6 +2886,8 @@
     $('planParse').addEventListener('click',doParse);
     $('asSave').addEventListener('click',addSession);
     $('lgSave').addEventListener('click',saveRun);
+    function openManualPane(){ $('manualPane').classList.remove('hidden'); $('manualToggle').classList.add('hidden'); }
+    $('manualToggle').addEventListener('click',openManualPane);
     $('wkReport').addEventListener('click',sendWeekReport);
     $('nextBody').addEventListener('click',function(){ showView('plan'); });
     (function(){ var zone=$('importZone'), inp=$('gpxInput');
