@@ -614,6 +614,7 @@
     <section class="rn-card hidden" id="coachCard">
       <div class="rn-card-hd"><span class="dot"></span><h2>Σήμερα για σένα · Today, for you</h2><span class="line"></span></div>
       <div id="coachBody"></div>
+      <div class="rn-toast" id="coachToast"></div>
     </section>
     <!-- TODAY -->
   <section class="rn-today" id="todayCard"></section>
@@ -803,7 +804,12 @@
     function pad(n){ return String(n).padStart(2,'0'); }
     function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
     function loadObj(k){ var o; try{ o=JSON.parse(localStorage.getItem(k)); }catch(e){ o=null; } return (o&&typeof o==='object')?o:{}; }
-    function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+    /* returns false if the write failed (e.g. storage full) so callers stop
+       claiming "saved ✓" when nothing was written. Warn her to free space
+       instead of losing the run silently behind a fake success toast. */
+    function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }
+      catch(e){ try{ if(window.ALSToast) ALSToast.show('Ο χώρος στο τηλέφωνο γέμισε — ελευθέρωσε λίγο. Storage full.','error'); }catch(_){}
+        return false; } }
     function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
 
     /* ── date helpers (local, Monday-first weeks) ── */
@@ -819,8 +825,18 @@
     var GRDOWFULL=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
 
     /* ── time / pace ── */
-    function parseTime(str){ if(!str) return 0; str=String(str).trim(); var p=str.split(':').map(Number); if(p.some(isNaN)) return 0;
-      if(p.length===3) return p[0]*3600+p[1]*60+p[2]; if(p.length===2) return p[0]*60+p[1]; return p[0]; }
+    /* Robust to the iOS numeric keypad, which has NO colon: she types 42:30 as
+       "4230" or "42.30" or "42,30". Colon form still parses h:mm:ss / mm:ss. */
+    function parseTime(str){ if(str==null) return 0; str=String(str).trim(); if(!str) return 0;
+      if(str.indexOf(':')>=0){ var p=str.split(':').map(function(x){ return parseInt(x,10); }); if(p.some(function(n){ return isNaN(n); })) return 0;
+        if(p.length===3) return p[0]*3600+p[1]*60+p[2]; if(p.length===2) return p[0]*60+p[1]; return p[0]; }
+      var dm=str.match(/^(\d+)[.,](\d{1,2})$/);                       // "42.30" / "42,3" → 42 min 30 s
+      if(dm){ return (+dm[1])*60 + (+(dm[2].length===1?dm[2]+'0':dm[2])); }
+      if(/^\d+$/.test(str)){                                          // pure digits: read right→left in 2-digit groups (ss, mm, hh)
+        if(str.length<=2) return (+str)*60;                          // "42" → 42 minutes
+        var s2=+str.slice(-2), rest=str.slice(0,-2), m2=+rest.slice(-2), h2=+(rest.slice(0,-2)||0);
+        return h2*3600+m2*60+s2; }
+      return 0; }
     function mmss(sec){ sec=Math.round(sec); var m=Math.floor(sec/60), s=sec%60; return m+':'+pad(s); }
     function hm(sec){ var m=Math.round(sec/60); return Math.floor(m/60)+':'+pad(m%60); }
     function hms(sec){ sec=Math.round(sec); var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
@@ -1074,6 +1090,13 @@
     function shoeKm(id){ var s=0; logs.forEach(function(l){ if(l.shoeId===id) s+=(+l.distanceKm||0); }); return Math.round(s); }
     function activeShoes(){ return shoes.filter(function(s){ return !s.retired; }); }
     function defaultShoe(){ return activeShoes().filter(function(s){ return s.def; })[0]||activeShoes()[0]||null; }
+    /* which shoe to attribute a run to, given its DAY — never one acquired AFTER
+       the run. Stops a whole-Garmin-history import piling km onto a new shoe.
+       Legacy shoes with no acquired stamp fall back to "assign" (unchanged). */
+    function shoeAcquired(s){ return (+s.addedAt)||(+s.ord)||0; }
+    function shoeForDate(dk){ var s=defaultShoe(); if(!s||!dk) return (s?s.id:null);
+      var acq=shoeAcquired(s); if(!acq) return s.id;
+      return (dk>=dkOf(new Date(acq))) ? s.id : null; }
     function kneeOn(dk){ return kneeLog.filter(function(k){ return k.date===dk; }).sort(function(a,b){return (b.ts||0)-(a.ts||0);})[0]||null; }
     function recentKneePain(days){ var cut=Date.now()-days*86400000, n=0;
       kneeLog.forEach(function(k){ if((k.level||0)>=2 && parseDk(k.date).getTime()>=cut-86400000) n++; }); return n; }
@@ -1468,22 +1491,22 @@
     }
     function easeToday(){ var dk=todayDk(), s=sessionsOn(dk).filter(function(x){return x.type!=='Rest';})[0]; if(!s) return;
       var snap={ id:s.id, type:s.type, km:s.km, kmEst:s.kmEst, struct:s.struct, eased:s.eased };
-      s.type='Easy'; s.km=s.km?Math.max(4,Math.round(s.km*0.7)):s.km; s.struct='Χαλαρό — άκουσε το σώμα'; s.eased=1; s.ts=Date.now();
+      s.type='Easy'; s.km=s.km?Math.min(s.km,Math.max(4,Math.round(s.km*0.7))):s.km; s.struct='Χαλαρό — άκουσε το σώμα'; s.eased=1; s.ts=Date.now();
       persist(K_PLAN,plan); flush();
       coachUndo={ label:'Επαναφορά προπόνησης', fn:function(){ var t=plan.filter(function(x){return x.id===snap.id;})[0]; if(!t) return;
         t.type=snap.type; t.km=snap.km; t.kmEst=snap.kmEst; t.struct=snap.struct; if(snap.eased==null) delete t.eased; else t.eased=snap.eased; t.ts=Date.now(); persist(K_PLAN,plan); flush(); } };
-      render(); toast('lgToast','Έγινε χαλαρό σήμερα ✓ · μπορείς να το αναιρέσεις'); }
+      render(); toast('coachToast','Έγινε χαλαρό σήμερα ✓ · μπορείς να το αναιρέσεις'); }
     function pullMissed(){ var ws=weekStart(new Date()), tdk=todayDk(), cand=null;
       plan.forEach(function(s){ if(s.type==='Rest') return; var d=parseDk(s.date); if(d>=ws && s.date<tdk && logsOn(s.date).length===0){ if(!cand||s.date>cand.date) cand=s; } });
       if(!cand) return; var id=cand.id, fromDate=cand.date;
       moveSession(id, tdk);
       coachUndo={ label:'Αναίρεση μετακίνησης', fn:function(){ if(!plan.some(function(x){return x.id===id;})) return; applyMove(plan, id, fromDate, Date.now()); persist(K_PLAN,plan); flush(); } };
-      render(); toast('lgToast','Μεταφέρθηκε σήμερα ✓ · μπορείς να το αναιρέσεις'); }
+      render(); toast('coachToast','Μεταφέρθηκε σήμερα ✓ · μπορείς να το αναιρέσεις'); }
     (function(){ var cb=$('coachBody'); if(cb) cb.addEventListener('click',function(e){
       var b=e.target.closest('[data-coach]'); if(!b) return; var a=b.getAttribute('data-coach');
       if(a==='ease') easeToday();
       else if(a==='pull') pullMissed();
-      else if(a==='undo'){ if(coachUndo){ coachUndo.fn(); coachUndo=null; render(); toast('lgToast','Αναιρέθηκε ✓'); } } }); })();
+      else if(a==='undo'){ if(coachUndo){ coachUndo.fn(); coachUndo=null; render(); toast('coachToast','Αναιρέθηκε ✓'); } } }); })();
 
     function sessionsOn(dk){ return plan.filter(function(s){return s.date===dk;}); }
     function logsOn(dk){ return logs.filter(function(l){return l.date===dk;}); }
@@ -1865,17 +1888,20 @@
       $('edNote').value=r.note||'';
       $('edShoe').value=r.shoeId||'';
     }
-    function applyRunEdit(id){
+    async function applyRunEdit(id){
       var r=logs.filter(function(x){return x.id===id;})[0]; if(!r) return;
       var kmS=String($('edKm').value).replace(',','.').trim(), km=parseFloat(kmS);
-      if(kmS && km>0) r.distanceKm=Math.round(km*100)/100;
-      var tS=String($('edTime').value).trim(); if(tS) r.timeSec=parseTime(tS)||0;
+      var nextKm=(kmS&&km>0)?Math.round(km*100)/100:r.distanceKm;
+      var tS=String($('edTime').value).trim(), nextSec=tS?(parseTime(tS)||0):r.timeSec;
+      if(!(await confirmSaneRun(nextKm,nextSec,r.date))) return;   // same keypad-typo guard as manual save
+      r.distanceKm=nextKm; r.timeSec=nextSec;
       r.type=$('edType').value||r.type;
-      var rp=String($('edRpe').value).trim(); r.rpe=rp||'';
+      var rpn=parseInt(String($('edRpe').value),10); r.rpe=(rpn>=1&&rpn<=10)?String(rpn):'';  // RPE is 1–10, never free text
       r.note=String($('edNote').value).trim();
       r.shoeId=$('edShoe').value||null;
       r.ts=Date.now();
-      persist(K_LOGS,logs); flush(); render();
+      if(!persist(K_LOGS,logs)) return;                            // storage full: persist() warned; keep the sheet as-is
+      flush(); render();
       openRunSheet(id); // back to the refreshed view (dialog stays open)
       toast('lgToast','Αποθηκεύτηκε ✓ Updated');
     }
@@ -2375,8 +2401,8 @@
     async function addShoe(){
       var name; try{ if(window.ALSPrompt) name=await ALSPrompt({title:'Νέο παπούτσι · new shoe', placeholder:'π.χ. Nike Pegasus', confirmText:'Προσθήκη'}); else name=window.prompt('Όνομα παπουτσιού;'); }catch(e){ name=window.prompt('Όνομα παπουτσιού;'); }
       name=(name||'').trim(); if(!name) return;
-      var first=!activeShoes().length;
-      shoes.push({ id:uid(), name:name, retireKm:SHOE_RETIRE, retired:false, def:first, ord:Date.now(), ts:Date.now() });
+      var first=!activeShoes().length, now=Date.now();
+      shoes.push({ id:uid(), name:name, retireKm:SHOE_RETIRE, retired:false, def:first, addedAt:now, ord:now, ts:now });
       saveShoes(); render();
     }
     function setDefaultShoe(id){ shoes.forEach(function(s){ var was=!!s.def; s.def=(s.id===id); if(was!==s.def) s.ts=Date.now(); }); saveShoes(); render(); }
@@ -2552,7 +2578,7 @@
       type:guessType(dkOf(r.date)), rpe:'', note:'', elevGain:r.elevGain||0, route:r.route||null,
       splits:r.splits||null, avgHR:r.avgHR||null, maxHR:r.maxHR||null, cadence:r.avgCad||null,
       series:r.series||null, gapSec:r.gapSec||null, hrZones:r.hrZones||null, laps:r.laps||null,
-      shoeId:(defaultShoe()||{}).id||null, src:r.format, ts:Date.now() }; }
+      shoeId:shoeForDate(dkOf(r.date)), src:r.format, ts:Date.now() }; }
     /* the already-logged run this import refers to (same day, ~same distance, ~same time) */
     function findMatch(run){ var d=dkOf(run.date); return logs.filter(function(l){
       return l.date===d && Math.abs((+l.distanceKm||0)-run.distanceKm)<0.25 && (!l.timeSec||!run.timeSec||Math.abs(l.timeSec-run.timeSec)<90); })[0]||null; }
@@ -2561,7 +2587,8 @@
     function canUpgrade(ex,run){
       var nl=run.route?run.route.length:0, ol=(ex.route&&ex.route.length)||0;
       if(run.route&&nl>ol) return true;
-      if(run.splits&&run.splits.length>1&&!(ex.splits&&ex.splits.length>1)) return true;
+      if((run.timeSec||0)>0&&!(ex.timeSec>0)) return true;   // manual run had no time → the GPX carries it
+      if((run.splits&&run.splits.length>1)&&!(ex.splits&&ex.splits.length>1)) return true;
       if((run.elevGain||0)>0&&!(ex.elevGain>0)) return true;
       if((run.avgHR||0)>0&&!(ex.avgHR>0)) return true;
       if((run.avgCad||0)>0&&!(ex.cadence>0)) return true;
@@ -2570,6 +2597,8 @@
     function applyUpgrade(ex,run,now){
       var nl=run.route?run.route.length:0, ol=(ex.route&&ex.route.length)||0;
       if(run.route&&nl>ol) ex.route=run.route;
+      if((run.timeSec||0)>0&&!(ex.timeSec>0)) ex.timeSec=run.timeSec;          // backfill a missing time (pace/VDOT/TSS need it)
+      if((run.distanceKm||0)>0&&!(ex.distanceKm>0)) ex.distanceKm=run.distanceKm;
       if(run.splits&&run.splits.length>1&&!(ex.splits&&ex.splits.length>1)) ex.splits=run.splits;
       if((run.elevGain||0)>0&&!(ex.elevGain>0)) ex.elevGain=run.elevGain;
       if((run.avgHR||0)>0&&!(ex.avgHR>0)){ ex.avgHR=run.avgHR; ex.maxHR=run.maxHR||ex.maxHR; }
@@ -2663,12 +2692,25 @@
     }
     function clearImport(){ var p=$('importPrev'); p.classList.add('hidden'); p.innerHTML=''; $('gpxInput').value=''; window.__pendingSingle=null; window.__pendingBulk=null; }
 
-    function saveRun(){
-      var km=parseFloat(String($('lgKm').value).replace(',','.')); if(!(km>0)){ toast('lgToast','Add a distance'); return; }
+    /* guard the keypad-typo class: a future date, or a pace so far outside
+       2:00–20:00/km it can only be a mistyped time, gets a gentle confirm. */
+    async function confirmSaneRun(km,sec,dk){
+      if(dk && dk>todayDk() && window.ALSConfirm){
+        if(!(await ALSConfirm({title:'Μελλοντική ημερομηνία · future date', message:'Η ημέρα που διάλεξες είναι στο μέλλον. Σωστή;', confirmText:'Ναι', cancelText:'Άλλαξε', danger:false}))) return false; }
+      if(km>0 && sec>0){ var pace=sec/km;
+        if((pace<120||pace>1200) && window.ALSConfirm){
+          return await ALSConfirm({title:'Έλεγξε τον χρόνο · check the time', message:'Αυτό βγάζει ρυθμό '+mmss(pace)+'/χλμ. Είναι σωστός ο χρόνος;', confirmText:'Ναι, σώσε', cancelText:'Διόρθωσε', danger:false}); } }
+      return true;
+    }
+    async function saveRun(){
+      var km=parseFloat(String($('lgKm').value).replace(',','.')); if(!(km>0)){ toast('lgToast','Πρόσθεσε απόσταση · add a distance'); return; }
       var dk=$('lgDate').value||todayDk(); var tsec=parseTime($('lgTime').value);
+      if(!(await confirmSaneRun(km,tsec,dk))) return;
       var r={ id:uid(), date:dk, distanceKm:Math.round(km*100)/100, timeSec:tsec||0, type:$('lgType').value,
-        rpe:$('lgRpe').value||'', note:$('lgNote').value.trim(), shoeId:(defaultShoe()||{}).id||null, ts:Date.now() };
-      logs.push(r); persist(K_LOGS,logs); flush(); toast('lgToast','Run saved ✓');
+        rpe:$('lgRpe').value||'', note:$('lgNote').value.trim(), shoeId:shoeForDate(dk), ts:Date.now() };
+      logs.push(r); var ok=persist(K_LOGS,logs); flush();
+      if(!ok){ logs=logs.filter(function(x){return x.id!==r.id;}); return; }   // storage full: persist() already warned; don't fake success
+      toast('lgToast','Καταγράφηκε ✓ Run saved');
       $('lgKm').value=''; $('lgTime').value=''; $('lgNote').value=''; $('lgRpe').value=''; render();
     }
     async function delRun(id){ var r=logs.find(function(x){return x.id===id;}); if(!r) return;
