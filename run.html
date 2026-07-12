@@ -213,6 +213,32 @@
     .rn-stand .dn{ font-style:normal; color:rgb(var(--rn-gold)); }
     .rn-stand-sub{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); margin-top:8px; letter-spacing:.03em; line-height:1.55; }
 
+    /* ── Athens race-day plan ── */
+    .rn-rp-proj{ text-align:center; padding:2px 0 4px; }
+    .rn-rp-band{ font-family:var(--au-serif); font-style:italic; font-size:clamp(30px,8.4vw,40px); color:rgb(var(--rn)); letter-spacing:-.02em; line-height:1; }
+    .rn-rp-lab{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-top:9px; }
+    .rn-rp-prof{ margin:18px 0 2px; }
+    .rn-rp-prof svg{ display:block; width:100%; height:66px; }
+    .rn-rp-prof-x{ display:flex; justify-content:space-between; font-family:var(--au-mono); font-size:8.5px; color:var(--au-faint); letter-spacing:.03em; margin-top:6px; }
+    .rn-rp-prof-x span:nth-child(2){ color:rgba(var(--rn-hot),.9); }
+    .rn-rp-splits-h{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin:18px 0 4px; }
+    .rn-rsplit{ display:flex; align-items:center; gap:10px; padding:7.5px 0; border-bottom:1px solid rgba(255,255,255,.045); }
+    .rn-rsplit:last-child{ border-bottom:none; }
+    .rn-rsplit .k{ flex:none; width:70px; font-family:var(--au-mono); font-size:10.5px; font-weight:700; color:var(--au-dim); }
+    .rn-rsplit .g{ flex:none; width:14px; text-align:center; color:var(--au-faint); font-size:9px; }
+    .rn-rsplit .p{ flex:1; font-family:var(--au-serif); font-style:italic; font-size:16.5px; color:var(--au-ivory); letter-spacing:-.01em; }
+    .rn-rsplit .p i{ font-family:var(--au-mono); font-style:normal; font-size:9px; color:var(--au-dim); margin-left:2px; }
+    .rn-rsplit .c{ flex:none; font-family:var(--au-mono); font-size:10.5px; color:var(--au-faint); }
+    .rn-rsplit.climb .g{ color:rgb(var(--rn-hot)); }
+    .rn-rsplit.climb .p{ color:rgb(var(--rn-gold)); }
+    .rn-rp-note{ font-family:var(--au-serif); font-style:italic; font-size:14px; line-height:1.5; color:var(--au-dim); margin-top:15px; padding-left:14px; border-left:2px solid rgba(var(--rn),.45); }
+    .rn-rp-note b{ font-style:normal; color:rgb(var(--rn)); }
+    .rn-rp-check{ margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
+    .rn-rp-check-h{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); margin-bottom:10px; }
+    .rn-rp-check.on .rn-rp-check-h{ color:rgb(var(--rn)); }
+    .rn-rp-ci{ display:flex; align-items:flex-start; gap:10px; padding:5px 0; font-size:13px; color:var(--au-dim); line-height:1.45; }
+    .rn-rp-ci::before{ content:''; flex:none; width:5px; height:5px; border-radius:50%; background:rgba(var(--rn),.7); margin-top:7px; }
+
     /* structured session parts */
     .rn-parts{ margin-top:12px; display:flex; flex-direction:column; }
     .rn-part{ display:flex; align-items:center; gap:10px; padding:7.5px 0; border-bottom:1px solid rgba(255,255,255,.045); }
@@ -743,6 +769,11 @@
       </div>
       <div class="rn-spine" id="raceSpine"></div>
       <div class="rn-stand" id="raceStand"></div>
+    </section>
+    <!-- ATHENS RACE-DAY PLAN -->
+    <section class="rn-card hidden" id="racePlanCard">
+      <div class="rn-card-hd"><span class="dot"></span><h2>Σχέδιο αγώνα · Race plan</h2><span class="line"></span></div>
+      <div id="racePlanBody"></div>
     </section>
     <!-- FITNESS & FORM -->
     <section class="rn-card rn-fit hidden" id="fitCard">
@@ -2075,7 +2106,22 @@
       var today=new Date(); today.setHours(0,0,0,0);
       var race=parseDk(GOAL.dk);
       var days=Math.round((race-today)/86400000);
-      if(days<0){ $('raceCard').classList.add('hidden'); return; }
+      var nums=document.querySelector('#raceCard .rn-race-nums');
+      if(days<0){   // ── after the race: she did it. The card celebrates instead of vanishing.
+        $('raceCard').classList.remove('hidden');
+        if(nums) nums.classList.add('hidden');
+        $('racePhase').textContent='Ολοκληρώθηκε ✓';
+        $('raceSpine').innerHTML='';
+        var fin=logs.filter(function(l){ return (l.type==='Race'||(+l.distanceKm||0)>=40) && Math.abs(parseDk(l.date).getTime()-race.getTime())<=3*86400000; })
+          .sort(function(a,b){ return (+b.distanceKm||0)-(+a.distanceKm||0); })[0];
+        var msg = fin
+          ? '<b>Τα κατάφερες.</b> Αυθεντικός Μαραθώνιος Αθήνας — '+(Math.round((+fin.distanceKm||0)*10)/10)+' χλμ'+(fin.timeSec?(' σε '+hms(fin.timeSec)):'')+'. Είμαστε περήφανοι για σένα.'
+          : '<b>Τα κατάφερες.</b> Έτρεξες τον Αυθεντικό Μαραθώνιο Αθήνας. Ό,τι κι αν λέει το ρολόι, τα κατάφερες.';
+        $('raceStand').innerHTML=msg+'<div class="rn-stand-sub">8 Νοεμβρίου 2026 · Καλλιμάρμαρο</div>';
+        var pulseDone=$('todayPulse'); if(pulseDone) pulseDone.classList.add('hidden');
+        return;
+      }
+      if(nums) nums.classList.remove('hidden');
       var weeks=Math.floor(days/7), wF=days/7, idx=racePhaseIdx(wF);
       var phaseFull = idx===0?'Βάση · Base' : idx===1?'Χτίσιμο · Build' : idx===2?'Κορύφωση · Peak' : days>1?'Φρεσκάρισμα · Taper' : 'Αγώνας · Race!';
       $('racePhase').textContent=phaseFull;
@@ -2121,6 +2167,65 @@
       var pulse=$('todayPulse');
       if(pulse){ pulse.classList.add('hidden'); /* Athens countdown now lives in the heartbeat meta */
         pulse.innerHTML='<span class="dot"></span>Αθήνα · <b>'+days+'</b> μέρες <span class="ph">'+phaseFull.split(' · ')[0]+'</span><span class="go">Πρόοδος ›</span>'; }
+    }
+
+    /* ── Athens race-day plan: her VDOT + the REAL course, as even-effort 5k splits ──
+       Elevation (m, approx) at km marks: flat-ish to ~15k, the famous 17–31k climb
+       (~+230m), then downhill to the Kallimarmaro. */
+    var ATHENS_PROF=[[0,10],[5,25],[10,38],[15,70],[20,140],[25,200],[28,232],[31,240],[35,150],[40,75],[42.195,58]];
+    var ATHENS_SEG=[0,5,10,15,20,25,30,35,40,42.195];
+    var COURSE_FACTOR=1.03; // the Authentic plays a touch slower than a flat/standard course
+    function athensEleAt(km){ var p=ATHENS_PROF; if(km<=p[0][0]) return p[0][1];
+      for(var i=1;i<p.length;i++){ if(km<=p[i][0]){ var a=p[i-1],b=p[i], f=(km-a[0])/((b[0]-a[0])||1); return a[1]+f*(b[1]-a[1]); } }
+      return p[p.length-1][1]; }
+    /* even metabolic effort → pace scales with Minetti grade-cost; sum = Athens time */
+    function racePlan(vdot){ if(!(vdot>0)) return null;
+      var flatSec=raceTimeFor(vdot,GOAL.distM), flatPace=flatSec/(GOAL.distM/1000);
+      var base=flatPace*COURSE_FACTOR, c0=minettiCost(0), cum=0, segs=[];
+      for(var i=1;i<ATHENS_SEG.length;i++){ var from=ATHENS_SEG[i-1], to=ATHENS_SEG[i], km=to-from;
+        var g=(athensEleAt(to)-athensEleAt(from))/(km*1000), gc=Math.max(-0.18,Math.min(0.18,g));
+        var pace=base*minettiCost(gc)/c0; cum+=km*pace;
+        segs.push({ from:from, to:to, km:km, grade:g, pace:pace, cum:cum }); }
+      return { flatSec:flatSec, athensSec:cum, lo:cum*0.975, hi:cum*1.025, segs:segs }; }
+    function athensProfSVG(W,H){ var p=ATHENS_PROF, pad=6, maxKm=42.195;
+      var eles=p.map(function(x){return x[1];}), mn=Math.min.apply(null,eles), mx=Math.max.apply(null,eles), span=(mx-mn)||1;
+      function X(km){ return pad+(km/maxKm)*(W-2*pad); } function Y(e){ return H-pad-((e-mn)/span)*(H-2*pad); }
+      var line='M'+p.map(function(x){ return X(x[0]).toFixed(1)+' '+Y(x[1]).toFixed(1); }).join(' L');
+      var area=line+' L'+X(maxKm).toFixed(1)+' '+H+' L'+X(0).toFixed(1)+' '+H+' Z';
+      var cx0=X(17), cx1=X(31);
+      return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+        '<rect x="'+cx0.toFixed(1)+'" y="0" width="'+(cx1-cx0).toFixed(1)+'" height="'+H+'" fill="rgba(var(--rn-hot),.09)"/>'+
+        '<path d="'+area+'" fill="rgba(var(--rn),.09)"/>'+
+        '<path d="'+line+'" fill="none" stroke="rgb(var(--rn))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+        '</svg>'; }
+    function renderRacePlan(){
+      var card=$('racePlanCard'); if(!card) return;
+      var today=new Date(); today.setHours(0,0,0,0);
+      var days=Math.round((parseDk(GOAL.dk)-today)/86400000), plan=(EVDOT>0)?racePlan(EVDOT):null;
+      if(days<0 || !plan){ card.classList.add('hidden'); return; }   // hidden after the race, or before any fitness estimate
+      card.classList.remove('hidden');
+      function gIco(g){ return g>0.008?'▲':(g<-0.008?'▼':'▬'); }
+      var rows=plan.segs.map(function(s){ var climb=s.from>=15&&s.to<=31;
+        return '<div class="rn-rsplit'+(climb?' climb':'')+'"><span class="k">'+s.from+'–'+s.to+' χλμ</span>'+
+          '<span class="g">'+gIco(s.grade)+'</span><span class="p">'+mmss(s.pace)+'<i>/χλμ</i></span>'+
+          '<span class="c">'+hms(Math.round(s.cum))+'</span></div>'; }).join('');
+      var wk=days<=21;
+      var items=[
+        'Γέμισε υδατάνθρακες τις 2–3 μέρες πριν · ρύζι, ζυμαρικά, ψωμί.',
+        'Ετοίμασε τα πάντα από το βράδυ · παπούτσια, ρούχα, τζελ, αριθμό.',
+        'Τζελ κάθε ~40 λεπτά και νερό στους σταθμούς.',
+        'Ξεκίνα συντηρητικά τα πρώτα 5 χλμ — πιο αργά απ’ ό,τι νιώθεις.',
+        'Στην ανηφόρα κράτα προσπάθεια, όχι ρυθμό. Η κατηφόρα σού τον επιστρέφει.'
+      ];
+      $('racePlanBody').innerHTML=
+        '<div class="rn-rp-proj"><div class="rn-rp-band">'+hm(plan.lo)+'–'+hm(plan.hi)+'</div>'+
+          '<div class="rn-rp-lab">πρόβλεψη Αθήνας · projected finish</div></div>'+
+        '<div class="rn-rp-prof">'+athensProfSVG(320,66)+
+          '<div class="rn-rp-prof-x"><span>Μαραθώνας</span><span>ανηφόρα 17–31</span><span>Αθήνα</span></div></div>'+
+        '<div class="rn-rp-splits-h">ανά 5 χλμ · ίδια προσπάθεια, ρυθμός στόχος</div>'+rows+
+        '<div class="rn-rp-note">Στην ανηφόρα (17–31 χλμ) ο ρυθμός πέφτει — <b>σωστό</b>, ίδια προσπάθεια. Θα τον πάρεις πίσω στην κατηφόρα προς την Αθήνα.</div>'+
+        '<div class="rn-rp-check'+(wk?' on':'')+'"><div class="rn-rp-check-h">'+(wk?'Εβδομάδα αγώνα · race week':'Για την ημέρα του αγώνα · race day')+'</div>'+
+          items.map(function(t){ return '<div class="rn-rp-ci">'+esc(t)+'</div>'; }).join('')+'</div>';
     }
 
     /* ── running weather · heat intelligence (model verified in node: 15 assertions) ── */
@@ -2547,7 +2652,7 @@
 
     function render(){
       prof=loadObj(K_PROF); plan=loadArr(K_PLAN); logs=loadArr(K_LOGS); shoes=loadArr(K_SHOES); kneeLog=loadArr(K_KNEE); computeEffVdot(); computePaces();
-      renderHero(); renderToday(); renderCoach(); renderHeat(); renderNext(); renderRace(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero(); renderRunSummary(); renderRunsWelcome();
+      renderHero(); renderToday(); renderCoach(); renderHeat(); renderNext(); renderRace(); renderRacePlan(); renderFitness(); renderLoad(); renderShoes(); renderWeek(); renderPaces(); renderSessions(); renderStrength(); renderRuns(); renderBeat(); renderRunHero(); renderRunSummary(); renderRunsWelcome();
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
