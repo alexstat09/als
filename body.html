@@ -10,6 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
   <script src="topbar.js" defer></script>
   <script src="page-motion.js" defer></script>
   <style>
@@ -447,18 +448,15 @@
        WATER
     ══════════════════════════════════════════════════ */
     function renderWater() {
+      /* every water number on every page comes from water.js — this page used to
+         keep its own copy that read activityHrsPerWeek as DAILY hours (10 ≠ 7). */
       const state = ls('po_water_v1') || {};
-      const logs = (state.logs && typeof state.logs === 'object') ? state.logs : {};
-      const count = logs[today()] || 0;
-      const unit = state.unit || 'glass';
-      const unitMl = unit === 'glass' ? (state.glassMl || 250)
-                   : unit === 'oz' ? 30
-                   : (state.bottleMl || 500);
-      const unitName = unit === 'glass' ? 'glasses' : unit === 'oz' ? 'oz' : 'bottles';
-      const wKg = (state.profile && state.profile.weightKg) || 75;
-      const actHrs = (state.profile && state.profile.activityHrsPerWeek) || 0;
-      const targetMl = wKg * 35 + actHrs * 500;
-      const target = Math.max(1, Math.ceil(targetMl / unitMl));
+      const goal = ALSWater.target(state);
+      const count = ALSWater.count(state, today());
+      const unitName = ALSWater.unitLabel(state, true);
+      const unitOne = ALSWater.unitLabel(state, false);
+      const unitBtn = unitOne.charAt(0).toUpperCase() + unitOne.slice(1);
+      const target = goal.units;
       const pct = Math.min(100, (count / target) * 100);
 
       const R = 32, C = 2 * Math.PI * R;
@@ -483,7 +481,7 @@
             <div class="water-unit-lbl">${unitName} today</div>
             <div class="water-btns">
               <button class="water-btn water-btn-minus" id="h2oMinus">−</button>
-              <button class="water-btn water-btn-plus" id="h2oPlus">+ ${unit === 'glass' ? 'Glass' : unit === 'oz' ? 'Oz' : 'Bottle'}</button>
+              <button class="water-btn water-btn-plus" id="h2oPlus">+ ${unitBtn}</button>
             </div>
           </div>
         </div>`;
@@ -829,6 +827,6 @@
     setInterval(update, 30000);
   })();
   </script>
-<script src="nova-coach.js?v=18" defer></script>
+<script src="nova-coach.js?v=19" defer></script>
 </body>
 </html>

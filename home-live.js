@@ -100,9 +100,9 @@
           return { hero: mg || 0, unit: 'mg', note: 'today' };
         }
         case 'po-water.html': {
-          var pw = ls('po_water_v1', {}); var done = ((pw.logs || {})[t]) || 0;
-          var wKg = (pw.profile && pw.profile.weightKg) || 75; var total = Math.max(1, Math.ceil(wKg * 35 / (pw.bottleMl || 500)));
-          return { hero: done, unit: '/ ' + total, note: 'hydration' };
+          if (!window.ALSWater) return { hero: '—', note: 'hydration' };
+          var pw = ls('po_water_v1', {}), wg = ALSWater.target(pw);
+          return { hero: ALSWater.count(pw, t), unit: '/ ' + wg.units, note: ALSWater.fmtMl(wg.drinkMl) + ' · hydration' };
         }
         case 'main.html': {
           var g = ls('goals:' + t, []); if (Array.isArray(g) && g.length) return { hero: g.filter(function (x) { return x.done; }).length, unit: '/ ' + g.length + ' today', note: 'daily plan' };
@@ -329,14 +329,10 @@
 
   /* ── water quick-log chip (the old topbar pill, reborn premium) ── */
   function waterState() { var s = ls('po_water_v1', {}); return (s && typeof s === 'object') ? s : {}; }
-  function waterCount(s) { var raw = (s.logs && typeof s.logs === 'object') ? s.logs[tk()] : 0; return (typeof raw === 'number') ? raw : (raw && typeof raw.n === 'number' ? raw.n : 0); }
-  function waterTarget(s) {
-    var unit = s.unit || 'glass';
-    var unitMl = unit === 'glass' ? (s.glassMl || 250) : unit === 'oz' ? 30 : (s.bottleMl || 500);
-    var wKg = (s.profile && s.profile.weightKg) || 75;
-    var actHrs = (s.profile && s.profile.activityHrsPerWeek) || 0;
-    return Math.max(1, Math.ceil((wKg * 35 + actHrs * 500) / unitMl)); /* same formula as po-water/body */
-  }
+  function waterCount(s) { return window.ALSWater ? ALSWater.count(s, tk()) : 0; }
+  /* target comes from water.js — the one place the maths lives (this copy used
+     to read activityHrsPerWeek as DAILY hours and showed 10 bottles, not 7). */
+  function waterTarget(s) { return window.ALSWater ? ALSWater.target(s).units : 0; }
   function paintWater() {
     try {
       var c = document.getElementById('wCount'); if (!c) return;

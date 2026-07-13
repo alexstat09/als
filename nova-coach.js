@@ -242,10 +242,11 @@
     var wTrend=null;
     if(weights.length>=2){ var last=weights[weights.length-1]; var cutoff=dk(new Date(Date.now()-7*86400000)); var base=null; weights.forEach(function(e){ if(e.dateKey<=cutoff) base=e; }); if(!base)base=weights[0]; wTrend={delta:+(last.weight-base.weight).toFixed(1)}; }
 
-    var wlogs=(water.logs&&typeof water.logs==='object')?water.logs:{}; var wCount=wlogs[today]||0;
-    var p=(water.profile||{}); var wKg=p.weightKg||75; var unit=water.unit||'glass';
-    var unitMl= unit==='glass'?(water.glassMl||250):unit==='oz'?30:(water.bottleMl||500);
-    var wTarget=Math.max(1,Math.ceil((wKg*35+((p.activityHrsPerWeek||0)/7*500))/unitMl));
+    /* water target from water.js — the one source of truth (this copy left out
+       the caffeine/sex terms and said 6 bottles where the app says 7). */
+    var p=(water.profile||{}); var wKg=p.weightKg||75;
+    var wCount=window.ALSWater?ALSWater.count(water,today):0;
+    var wTarget=window.ALSWater?ALSWater.target(water).units:0;
     var protTarget=Math.round(wKg*2);
 
     var lastPR=(lastW && lastW.date===today && lastW.prs && lastW.prs.length) ? lastW.prs.map(function(id){return (exMap[id]||{}).name||id;}) : [];

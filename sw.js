@@ -12,13 +12,13 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v279";
+var CACHE = "als-v280";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'gym-classic.html', 'body-classic.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
   'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'istoria.html', 'run.html',
-  'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=203', 'home-motion.js?v=202',
-  'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
+  'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=204', 'home-motion.js?v=202',
+  'water.js', 'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
   'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'page-motion.js', 'aurora-bg.js', 'nova-life.js', 'insights-engine.js', 'forecast-engine.js', 'chapters-engine.js', 'error-toast.js', 'als-dialog.js', 'nova-actions.js', 'gcal.js', 'nova-gem.js',
   'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/Flip.min.js', 'vendor/SplitText.min.js', 'vendor/lenis.min.js',
   'manifest.json', 'run.webmanifest', 'icon-192.png', 'icon-512.png', 'icon.svg', 'apple-touch-icon.png'

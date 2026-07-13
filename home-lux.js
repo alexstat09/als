@@ -93,9 +93,9 @@
         return {hero:mg||0,unit:'mg',note:'today'};
       }
       case 'po-water.html': {
-        var pw=ls('po_water_v1',{}); var done=((pw.logs||{})[t])||0;
-        var wKg=(pw.profile&&pw.profile.weightKg)||75; var total=Math.max(1,Math.ceil(wKg*35/(pw.bottleMl||500)));
-        return {hero:done,unit:'/ '+total,note:'water'};
+        if(!window.ALSWater) return {hero:'—',note:'water'};
+        var pw=ls('po_water_v1',{}); /* target maths lives in water.js — never re-copy it */
+        return {hero:ALSWater.count(pw,t),unit:'/ '+ALSWater.target(pw).units,note:'water'};
       }
       case 'main.html': {
         var g=ls('goals:'+t,[]); if(Array.isArray(g)&&g.length) return {hero:g.filter(function(x){return x.done;}).length,unit:'/ '+g.length,note:'today'};
