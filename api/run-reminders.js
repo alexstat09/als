@@ -223,7 +223,22 @@ async function icuCheck() {
   if (doneIds.length > 500) doneIds = doneIds.slice(doneIds.length - 500);
   await supa.writeRow('run:inbox', { doneIds: doneIds, items: items });
 
-  return { runs: runs.length, added: added, errs: errs, pending: items.length };
+  // lightweight diagnostic (no data stored/exposed) — tells us what intervals returned
+  var types = {}; acts.forEach(function (a) { if (a && a.type) types[a.type] = (types[a.type] || 0) + 1; });
+  var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
+  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest };
+  // when the 30-day window is empty, peek at a full year so we can tell "no runs yet"
+  // (upstream Garmin→intervals not synced) apart from "just none recently".
+  if (acts.length === 0) {
+    try {
+      var wr = await fetch('https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
+        '/activities?oldest=' + ymd(new Date(now - 365 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)),
+        { headers: { Authorization: authHeader } });
+      if (wr.ok) { var wa = await wr.json(); if (Array.isArray(wa)) { out.total365d = wa.length; out.types365d = {}; wa.forEach(function (a) { if (a && a.type) out.types365d[a.type] = (out.types365d[a.type] || 0) + 1; }); } }
+      else { out.wide = 'status ' + wr.status; }
+    } catch (e) { out.wide = 'err'; }
+  }
+  return out;
 }
 
 module.exports = async function (req, res) {
