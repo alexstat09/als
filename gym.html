@@ -444,7 +444,7 @@
   <button type="button" class="w-btn-ghost" id="wNotifEnable" data-act="notif-enable" style="margin-top:10px;display:none;">Alert me when rest ends</button>
 </dialog>
 
-<script src="pocoach-sync.js?v=3"></script>
+<script src="pocoach-sync.js?v=4"></script>
 <script src="push.js" defer></script>
 <script src="nova.js" defer></script>
 <script>
@@ -697,7 +697,12 @@ function templates(){ return ls('po_templates',[]); }
    safe filter that can only ever match the fake seeds, never real data. */
 function isSeedWorkout(w){ return !!(w && /^w\d+$/.test(String(w.id))); }
 function pruneSeedWorkouts(){ try{ var raw=ls('po_workouts',[]); if(!Array.isArray(raw)) return; var clean=raw.filter(function(w){ return !isSeedWorkout(w); }); if(clean.length!==raw.length) save('po_workouts', clean); }catch(e){} }
-function workouts(){ return ls('po_workouts',[]).filter(function(w){ return !isSeedWorkout(w); }); }
+/* A workout you deleted is never shown again — even if a stale device, an import
+   or a sync merge puts it back in localStorage. The tombstone is the last word. */
+function workouts(){
+  var tomb = (window.POCOACH_TOMBS ? POCOACH_TOMBS('po_workouts') : {}) || {};
+  return ls('po_workouts',[]).filter(function(w){ return w && !isSeedWorkout(w) && !tomb['id:'+w.id]; });
+}
 function getActive(){ return ls('po_active',null); }
 function setActive(a){ save('po_active', a); }
 
@@ -1589,7 +1594,18 @@ window.openTpl=openTpl; window.startFromTpl=startFromTpl; window.startEmpty=star
 window.editTemplate=editTemplate; window.setVal=setVal; window.toggleSet=toggleSet; window.addSet=addSet; window.removeEx=removeEx;
 window.finishActive=finishActive; window.cancelActive=cancelActive; window.pickExercise=pickExercise; window.addExToActive=addExToActive;
 window.setTime=setTime; window.setNote=setNote; window.togglePerSide=togglePerSide; window.moveEx=moveEx; window.removeSet=removeSet;
-window.deleteWorkout=async function(id){ if(!(await ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true})))return; var list=workouts().filter(function(w){return w.id!==id;}); save('po_workouts',list); render(); };
+window.deleteWorkout=async function(id){
+  if(!(await ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true})))return;
+  await removeWorkoutForever(id);
+  render();
+};
+/* Tombstone it, drop it locally, and rewrite the cloud row itself — waiting for
+   the server. Saving a filtered array alone was not enough: the row still held
+   the workout, so the next pull (seconds later) handed it straight back. */
+async function removeWorkoutForever(id){
+  if(window.POCOACH_DELETE){ await window.POCOACH_DELETE('po_workouts',[id]); return; }
+  save('po_workouts', workouts().filter(function(w){ return w.id!==id; }));   // sync not loaded (offline page)
+}
 
 pruneSeedWorkouts();
 /* pocoach-sync calls this after a cloud merge. Re-prune any seeds the merge re-added
@@ -1910,7 +1926,7 @@ window.saveWkEdit=function(){ var w=window.__editWk; if(!w)return;
   if(i>=0){ list[i]=w; list.sort(function(a,b){ return (a.date||'')<(b.date||'')?1:-1; }); save('po_workouts',list); }
   closeSheet(); render();
 };
-window.deleteWkEdit=function(){ var w=window.__editWk; if(!w)return; ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true}).then(function(ok){ if(!ok)return; save('po_workouts', workouts().filter(function(x){return x.id!==w.id;})); closeSheet(); render(); }); };
+window.deleteWkEdit=function(){ var w=window.__editWk; if(!w)return; ALSConfirm({title:'Delete workout?',message:'This is permanent.',confirmText:'Delete',danger:true}).then(function(ok){ if(!ok)return; removeWorkoutForever(w.id).then(function(){ closeSheet(); render(); }); }); };
 
 /* Bulletproof tap handling via delegation (iOS-safe — one listener on document) */
 document.addEventListener('click', function(ev){

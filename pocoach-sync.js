@@ -76,6 +76,10 @@
     return out;
   }
 
+  /* set when a merge throws away an item the cloud still holds but we have deleted
+     → the row is dirty and must be rewritten, or the item sits there for ever */
+  var tombDropped = false;
+
   function mergeById(loc, rem, tnode) {
     var map = {}, r = Array.isArray(rem) ? rem : [], l = Array.isArray(loc) ? loc : [];
     for (var i = 0; i < r.length; i++) if (r[i] && r[i].id != null) map['id:' + r[i].id] = r[i];
@@ -83,7 +87,7 @@
     var out = [];
     for (var k in map) {
       if (!Object.prototype.hasOwnProperty.call(map, k)) continue;
-      if (tombedG(tnode, k, map[k])) continue;
+      if (tombedG(tnode, k, map[k])) { tombDropped = true; continue; }
       /* it outlived its tombstone (stamped after the delete = a real re-add), so
          retire the tombstone — otherwise this device alone would keep refusing an
          item every other device has accepted back. */
@@ -149,7 +153,7 @@
     var out = [];
     for (var dk in map) {
       if (!Object.prototype.hasOwnProperty.call(map, dk)) continue;
-      if (tombedG(tnode, 'dk:' + dk, map[dk])) continue;
+      if (tombedG(tnode, 'dk:' + dk, map[dk])) { tombDropped = true; continue; }
       if (tnode && typeof tnode['dk:' + dk] === 'number') delete tnode['dk:' + dk];  // re-logged after the delete → retire the tombstone
       out.push(map[dk]);
     }
@@ -160,6 +164,7 @@
   /* Merge remote into local — union weights/id-arrays (honoring tombstones),
      local wins for every other key. Also unions + persists tombstones. */
   function mergeData(loc, rem) {
+    tombDropped = false;
     if (!rem || typeof rem !== 'object') return loc;
     var tomb = unionTombG(loadTomb(), rem._deletes || {});
     var m = {};
@@ -237,7 +242,9 @@
         var merged  = mergeData(local, remote);
         var changed = applyLocal(merged);
         var bJson   = JSON.stringify(pushBody());
-        if (bJson !== lastJson) { lastJson = bJson; push(false); }
+        /* tombDropped → the cloud still holds something we deleted; rewrite the row
+           even when our own payload has not changed, or it would live there for ever */
+        if (bJson !== lastJson || tombDropped) { lastJson = bJson; push(false); }
         if (changed) fireRerender();
       })
       .catch(function() {});
@@ -253,7 +260,7 @@
     var merged  = mergeData(local, remote);
     var changed = applyLocal(merged);
     var bJson   = JSON.stringify(pushBody());
-    if (bJson !== remJson) { /* local had extra data/tombs — push the union */ lastJson = bJson; push(false); }
+    if (bJson !== remJson || tombDropped) { /* local had extra data/tombs, or the row still holds a delete — push the union */ lastJson = bJson; push(false); }
     else                   { lastJson = remJson; }
     if (changed) fireRerender();
   }
@@ -283,6 +290,56 @@
   window.POCOACH_TOMBED = function(key, id) {
     try { var t = loadTomb()[key]; return !!(t && typeof t['id:' + id] === 'number'); }
     catch (e) { return false; }
+  };
+
+  /* The tombstones for one key, e.g. {'id:abc': 1783…}. Pages filter their reads
+     through this so a deleted item can never be RENDERED — whatever put it back
+     in localStorage. Belt and braces: the merge already drops it. */
+  window.POCOACH_TOMBS = function(key) {
+    try { return loadTomb()[key] || {}; } catch (e) { return {}; }
+  };
+
+  /* Delete, definitively. Records the tombstone explicitly (rather than inferring
+     it from a before/after diff) and then rewrites the cloud row itself: reads it,
+     strips the ids, merges the tombstones back in, waits for the write to land.
+     Resolves once the deletion is real ON THE SERVER, so nothing can pull the item
+     back afterwards. */
+  window.POCOACH_DELETE = function(key, ids) {
+    ids = (ids || []).filter(function(x) { return x != null; });
+    if (!ids.length) return Promise.resolve(false);
+
+    var t = loadTomb(), now = Date.now();
+    t[key] = t[key] || {};
+    ids.forEach(function(id) { t[key]['id:' + id] = now; });
+    saveTomb(t);
+
+    var gone = {};
+    ids.forEach(function(id) { gone[String(id)] = 1; });
+
+    // local: drop them now, without re-triggering the diff hook
+    try {
+      var cur = pj(localStorage.getItem(key));
+      if (Array.isArray(cur)) {
+        suppressed = true;
+        try { _origSet(key, JSON.stringify(cur.filter(function(e) { return !(e && gone[String(e.id)]); }))); }
+        finally { suppressed = false; }
+      }
+    } catch (e) {}
+
+    // cloud: read → strip → write, and wait for it
+    return fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
+      .then(function(r) { return r.json(); })
+      .then(function(rows) {
+        var data = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : {};
+        if (Array.isArray(data[key])) data[key] = data[key].filter(function(e) { return !(e && gone[String(e.id)]); });
+        data._deletes = unionTombG(data._deletes || {}, loadTomb());
+        return fetch(REST + '?on_conflict=key', {
+          method: 'POST',
+          headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
+          body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() })
+        }).then(function() { lastJson = JSON.stringify(data); pulled = true; return true; });
+      })
+      .catch(function() { return false; });   // offline: the local tombstone still holds
   };
 
   /* Deliberately lift tombstones — for an EXPLICIT user re-add of something they
