@@ -61,9 +61,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 
 /* ── Header + Nova mascot ───────────────────────────────── */
 .head{padding:max(38px,env(safe-area-inset-top)) 0 0; display:flex; justify-content:space-between; align-items:flex-start; gap:20px;}
-.eyebrow{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; color:var(--faint); display:inline-flex; align-items:center; gap:9px;}
-.eyebrow .dot{width:5px; height:5px; border-radius:50%; background:var(--emerald); box-shadow:0 0 8px var(--emerald); animation:pulse 2.8s ease-in-out infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 5px rgba(var(--glow),0.6);}50%{box-shadow:0 0 13px var(--emerald),0 0 22px rgba(var(--glow),0.3);}}
 .greeting{font-family:var(--serif); font-style:italic; font-weight:400; color:var(--ivory); line-height:1.0; letter-spacing:-0.015em; font-size:clamp(42px,7.6vw,66px); margin:14px 0 8px;}
 .greeting .grn{color:var(--emerald);}
 .sub{font-family:var(--mono); font-size:12px; letter-spacing:0.05em; color:var(--faint);}
@@ -95,6 +92,28 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .wchip-add:hover{background:rgba(24,200,192,0.16);}
 .wchip-add:active{background:rgba(24,200,192,0.24);}
 .wchip-add svg{width:14px; height:14px;}
+
+/* ── Quick row ───────────────────────────────────────────────
+   Controls, not reports. Own row at every width, so it can never wrap up
+   into the launch buttons. The shortcuts borrow the water chip's exact
+   tokens (glass, line-2, 13px) so they read as its siblings. */
+.quick{display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; margin-top:10px;}
+.qlinks{display:inline-flex; align-items:stretch; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); overflow:hidden; transition:border-color .28s var(--snap);}
+.qlinks:hover{border-color:rgba(var(--glow),0.3);}
+.qlink{display:inline-flex; align-items:center; gap:9px; padding:10px 15px; text-decoration:none; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); -webkit-tap-highlight-color:transparent; transition:color .28s var(--snap), background .28s var(--snap);}
+.qlink + .qlink{border-left:1px solid var(--line);}
+.qlink .i{width:15px; height:15px; display:flex; color:var(--faint); transition:color .28s var(--snap);}
+.qlink .i svg{width:100%; height:100%;}
+.qlink:hover{color:var(--ivory); background:var(--glass-2);}
+.qlink:hover .i{color:var(--emerald);}
+.qlink:active{background:rgba(255,255,255,0.06);}
+/* On a phone the controls go compact so they hold ONE line — the count already
+   says "water", and the two glyphs carry the rest. Words return on desktop. */
+@media (max-width:560px){
+  .wchip-lbl{display:none;}
+  .qlink-lbl{display:none;}
+  .qlink{padding:10px 14px;}
+}
 @keyframes wpop{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
 .wchip-n b.pop{display:inline-block; animation:wpop .32s var(--snap);}
 .lbtn .i{width:15px; height:15px; color:var(--faint); transition:color .28s var(--snap);}
@@ -327,7 +346,6 @@ body.has-bottombar{ padding-bottom:116px !important; }
   <div data-reveal>
     <header class="head">
       <div>
-        <div class="eyebrow" data-rise><span class="dot"></span> System online · all modules ready</div>
         <h1 class="greeting" data-rise>Good morning, <span class="grn">Alex.</span></h1>
         <div class="sub" id="sub" data-rise>Friday, 4 July 2026 · 07:14</div>
       </div>
@@ -349,6 +367,12 @@ body.has-bottombar{ padding-bottom:116px !important; }
       <a class="lbtn primary" href="morning.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span> Morning briefing →</a>
       <a class="lbtn" href="weekly.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7L19.5 8.5l-3.75 3.65.9 5.15L12 14.9l-4.65 2.4.9-5.15L4.5 8.5l5.2-.8Z"/></svg></span> Weekly review →</a>
       <a class="lbtn" href="coach.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.3"/><circle cx="16.5" cy="7" r="2.3"/><circle cx="12" cy="16.5" r="2.3"/><line x1="8.8" y1="9.3" x2="10.5" y2="14.6"/><line x1="14.7" y1="8.8" x2="13" y2="14.6"/></svg></span> Coach →</a>
+    </div>
+
+    <!-- QUICK ROW — the controls: log a drink, jump to the two pages he opens most.
+         Its own row on purpose: these are not "reports" like the launch buttons
+         above, and on a phone they must never share a line with them. -->
+    <div class="quick" data-rise>
       <div class="wchip" id="wChip">
         <a class="wchip-main" href="po-water.html" aria-label="Open water tracker">
           <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2s5.8 6.4 5.8 10.6a5.8 5.8 0 0 1-11.6 0C6.2 9.6 12 3.2 12 3.2z"/></svg></span>
@@ -357,6 +381,16 @@ body.has-bottombar{ padding-bottom:116px !important; }
         </a>
         <button type="button" class="wchip-add" id="wAdd" aria-label="Log one water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
+      <nav class="qlinks" aria-label="Shortcuts">
+        <a class="qlink" href="nutrition.html">
+          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 11h16.8a8.4 8.4 0 0 1-16.8 0z"/><path d="M2.5 11h19"/><path d="M12 7.6c-1.6-1-1.6-2.6 0-4.1"/></svg></span>
+          <span class="qlink-lbl">Nutrition</span>
+        </a>
+        <a class="qlink" href="sleep.html">
+          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg></span>
+          <span class="qlink-lbl">Sleep</span>
+        </a>
+      </nav>
     </div>
 
     <div class="vswitch" data-rise>
