@@ -174,8 +174,10 @@ async function icuCheck() {
   var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
   function ymd(d) { return d.toISOString().slice(0, 10); }
   var now = Date.now();
+  // intervals returns a MINIMAL field set by default (no type) — must request it explicitly.
+  var FIELDS = '&fields=id,type,name,start_date_local';
   var listUrl = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
-    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
+    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)) + FIELDS;
   var lr;
   try { lr = await fetch(listUrl, { headers: { Authorization: authHeader } }); }
   catch (e) { return { error: 'list fetch failed' }; }
@@ -226,14 +228,13 @@ async function icuCheck() {
   // lightweight diagnostic (no data stored/exposed) — tells us what intervals returned
   var types = {}; acts.forEach(function (a) { if (a && a.type) types[a.type] = (types[a.type] || 0) + 1; });
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
-  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest,
-    keys0: Object.keys(acts[0] || {}), typeish: acts[0] ? { type: acts[0].type, sport: acts[0].sport, category: acts[0].category, activity_type: acts[0].activity_type } : null };
+  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest };
   // when the 30-day window is empty, peek at a full year so we can tell "no runs yet"
   // (upstream Garmin→intervals not synced) apart from "just none recently".
   if (acts.length === 0) {
     try {
       var wr = await fetch('https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
-        '/activities?oldest=' + ymd(new Date(now - 365 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)),
+        '/activities?oldest=' + ymd(new Date(now - 365 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)) + FIELDS,
         { headers: { Authorization: authHeader } });
       if (wr.ok) { var wa = await wr.json(); if (Array.isArray(wa)) { out.total365d = wa.length; out.types365d = {}; wa.forEach(function (a) { if (a && a.type) out.types365d[a.type] = (out.types365d[a.type] || 0) + 1; }); } }
       else { out.wide = 'status ' + wr.status; }
