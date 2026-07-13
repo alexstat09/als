@@ -196,21 +196,31 @@
 .topbar-water-add.flash {
   background: rgba(63, 224, 176, 0.5);
 }
-.topbar-finance-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 42px; height: 40px;
+/* One strip, not three loose buttons: the destinations read as a single
+   object so the bar stays two shapes — the water pill (an action) and this. */
+.topbar-links {
+  display: inline-flex; align-items: stretch;
+  height: 40px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px; text-decoration: none;
+  border-radius: 12px; overflow: hidden;
+}
+.topbar-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px;
+  text-decoration: none;
   color: rgba(245, 242, 236, 0.5);
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.topbar-finance-btn:hover, .topbar-finance-btn:active {
-  background: rgba(255, 255, 255, 0.07); color: #F5F2EC;
-  border-color: rgba(255,255,255,0.14);
-}
-.topbar-finance-btn svg { width: 19px; height: 19px; display: block; }
+.topbar-link + .topbar-link { border-left: 1px solid rgba(255, 255, 255, 0.07); }
+.topbar-link:hover { background: rgba(255, 255, 255, 0.07); color: #F5F2EC; }
+/* the strip is one solid object, so the icon presses — not the whole cell */
+.topbar-link:active { background: rgba(255,255,255,0.10); color: #F5F2EC; }
+.topbar-link:active svg { transform: scale(0.90); }
+.topbar-link svg { width: 19px; height: 19px; display: block; transition: transform 0.12s; }
+/* you are here */
+.topbar-link.here { color: #3FE0B0; background: rgba(63, 224, 176, 0.09); }
 .topbar-back {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 13px 8px 10px; border-radius: 11px;
@@ -266,9 +276,18 @@ body.has-bottombar {
   .topbar-pill-count { font-size: 16px; }
   .topbar-water-add { width: 38px; }
   .topbar-back { padding: 7px 11px 7px 9px; }
-  .topbar-finance-btn { width: 38px; height: 38px; }
+  .topbar-links { height: 38px; }
+  .topbar-link { width: 40px; }
+  .topbar-link svg { width: 18px; height: 18px; }
   .bottombar-tab-icon { font-size: 22px; }
   .bottombar-tab { font-size: 10px; }
+}
+/* Smallest phones: the bar now carries a water pill + three shortcuts, so BACK
+   sheds its word and keeps only the arrow. Nothing wraps, nothing overflows. */
+@media (max-width: 400px) {
+  .topbar-back span { display: none; }
+  .topbar-back { padding: 8px 9px; }
+  .topbar-link { width: 36px; }
 }
 html, body { -webkit-text-size-adjust: 100%; }
 @media (max-width: 768px) {
@@ -333,9 +352,17 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     </a>
     <button class="topbar-water-add" id="topbarWaterAdd" aria-label="Log one drink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
-  <a href="finance.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7.5 19v-5M12 19V8.5M16.5 19v-8"/></svg>
-  </a>
+  <nav class="topbar-links" aria-label="Shortcuts">
+    <a href="nutrition.html" class="topbar-link" data-link="nutrition" aria-label="Nutrition">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 11h16.8a8.4 8.4 0 0 1-16.8 0z"/><path d="M2.5 11h19"/><path d="M12 7.6c-1.6-1-1.6-2.6 0-4.1"/></svg>
+    </a>
+    <a href="sleep.html" class="topbar-link" data-link="sleep" aria-label="Sleep">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>
+    </a>
+    <a href="finance.html" class="topbar-link" data-link="finance" id="topbarFinance" aria-label="Finance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7.5 19v-5M12 19V8.5M16.5 19v-8"/></svg>
+    </a>
+  </nav>
 </header>`;
 
   const tbIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -383,6 +410,15 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     return '';
   }
 
+  // Which of the three topbar shortcuts (if any) points at the page we're on.
+  function currentLinkKey() {
+    const f = (window.location.pathname || '').toLowerCase().split('/').pop() || '';
+    if (f === 'nutrition.html') return 'nutrition';
+    if (f === 'sleep.html') return 'sleep';
+    if (f === 'finance.html' || f === 'bills.html') return 'finance';
+    return '';
+  }
+
   function isGymPage() {
     const p = (window.location.pathname || '').toLowerCase();
     return p.endsWith('gym.html');
@@ -398,6 +434,11 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     const topWrap = document.createElement('div');
     topWrap.innerHTML = topbarHtml.trim();
     document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
+    // Light the shortcut you're currently standing on (finance.html covers bills.html)
+    const here = currentLinkKey();
+    document.querySelectorAll('.topbar-link').forEach((a) => {
+      a.classList.toggle('here', a.getAttribute('data-link') === here);
+    });
     if (!isGymPage()) {
       const bottomWrap = document.createElement('div');
       bottomWrap.innerHTML = bottombarHtml.trim();
