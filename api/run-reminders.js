@@ -226,7 +226,8 @@ async function icuCheck() {
   // lightweight diagnostic (no data stored/exposed) — tells us what intervals returned
   var types = {}; acts.forEach(function (a) { if (a && a.type) types[a.type] = (types[a.type] || 0) + 1; });
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
-  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest };
+  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest,
+    keys0: Object.keys(acts[0] || {}), typeish: acts[0] ? { type: acts[0].type, sport: acts[0].sport, category: acts[0].category, activity_type: acts[0].activity_type } : null };
   // when the 30-day window is empty, peek at a full year so we can tell "no runs yet"
   // (upstream Garmin→intervals not synced) apart from "just none recently".
   if (acts.length === 0) {
