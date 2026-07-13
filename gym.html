@@ -132,6 +132,13 @@
   .w-today-rest .w-today-day{color:var(--au-faint);}
   .w-today-name{font-family:var(--au-serif);font-style:italic;font-size:25px;color:var(--au-ivory);line-height:1.05;margin:5px 0 4px;}
   .w-today-ex{font-size:12px;color:var(--au-faint);line-height:1.45;}
+  /* the day, once it's been earned */
+  .w-today-done{background:linear-gradient(135deg,rgba(var(--au-glow-rgb),.10),rgba(255,255,255,.02));border-color:rgba(var(--au-glow-rgb),.34);}
+  .w-done-tick{width:13px;height:13px;vertical-align:-2px;margin-right:6px;}
+  .w-done-line{font-family:var(--au-mono);font-size:10.5px;letter-spacing:.03em;color:var(--au-dim);margin-top:9px;}
+  .w-done-line b{color:var(--au-ivory);font-weight:700;}
+  .w-done-pr{color:var(--au-amber);}
+  .w-done-week{font-family:var(--au-serif);font-style:italic;font-size:13px;color:var(--au-faint);margin-top:11px;}
   .w-sched-sel{width:170px;flex:none;background:rgba(255,255,255,.05);border:1px solid var(--au-line);border-radius:10px;padding:9px 10px;color:var(--au-ivory);font-family:var(--au-sans);font-size:13px;outline:none;}
   .w-sched-sel:focus{border-color:rgba(var(--au-glow-rgb),.5);}
   /* live est-1RM readout */
@@ -820,7 +827,8 @@ function wIcon(n,cls){
     ref:'<path d="M4.5 12a7.5 7.5 0 0 1 12.9-5.2L20 9M20 3.5V9h-5.5"/>',
     bell:'<path d="M4 8h4M4 16h4M16 8h4M16 16h4M8 5v14M16 5v14M8 12h8"/>',
     dumbbell:'<path d="M2.5 9.5v5M5.5 7.5v9M18.5 7.5v9M21.5 9.5v5M7 12h10"/>',
-    folder:'<path d="M3.5 7a2 2 0 0 1 2-2h3.6l2 2.4H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/>'
+    folder:'<path d="M3.5 7a2 2 0 0 1 2-2h3.6l2 2.4H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/>',
+    check:'<path d="M4.5 12.5l5 5 10-11"/>'
   };
   return '<svg class="'+(cls||'w-ic')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(p[n]||'')+'</svg>';
 }
@@ -828,6 +836,74 @@ function wIcon(n,cls){
 var DOW_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function getSchedule(){ return (ls('po_coach_v1',{})||{}).schedule||{}; }
 function todayTpl(){ var id=getSchedule()[String(new Date().getDay())]; if(!id) return null; return templates().find(function(t){return t.id===id;})||null; }
+
+/* ── Today, once you've trained ─────────────────────────────────────────────
+   The card used to offer "Start Chest + Back" whether or not you had already
+   done it. These read the sessions actually LOGGED today — through workouts(),
+   so a deleted session never counts as done — and by exact local date key, never
+   an elapsed-hours delta (that is what once turned "today" into "yesterday" at
+   noon). */
+function todaysSessions(){ var t=dateKey(new Date()); return workouts().filter(function(w){ return w && w.date===t; }); }
+function weekDaysTrained(){
+  var d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7));   // Monday
+  var start=dateKey(d), days={};
+  workouts().forEach(function(w){ if(w && w.date && w.date>=start) days[w.date]=1; });
+  return Object.keys(days).length;
+}
+/* time on the floor, in words — NOT fmtDur(), which is the clock format the rest
+   timer and the live session timer use (0:45). Do not merge the two. */
+function fmtFloorTime(sec){
+  var m=Math.round((+sec||0)/60);
+  if(m<60) return m+' min';
+  var h=Math.floor(m/60), r=m%60;
+  return h+'h'+(r?' '+r+'m':'');
+}
+/* what today amounted to — one session or several, summed once */
+function todayTotals(sessions){
+  var vol=0, sets=0, dur=0, prIds={}, best=null, bestV=0;
+  sessions.forEach(function(s){
+    vol+=+s.volume||0; dur+=+s.durationSec||0;
+    (s.prs||[]).forEach(function(id){ prIds[id]=1; });
+    (s.entries||[]).forEach(function(en){
+      if(isTime(en)) return;
+      workSets(en.sets).forEach(function(st){
+        sets++;
+        var v=e1rm(st.kg,st.reps);
+        if(v>bestV){ bestV=v; best={ kg:+st.kg||0, reps:+st.reps||0, name:en.name||'' }; }
+      });
+    });
+  });
+  return { vol:Math.round(vol), sets:sets, dur:dur, prs:Object.keys(prIds), best:best };
+}
+function doneCardHTML(sessions, tt, dn, hasSched){
+  var T=todayTotals(sessions);
+  var single=sessions.length===1;
+  var name = single ? (sessions[0].name||'Workout') : (sessions.length+' sessions');
+  var sub='';
+  if(!tt && hasSched) sub='Rest day — you trained anyway.';
+  else if(tt && single && sessions[0].templateId!==tt.id) sub='Scheduled: '+esc(tt.name)+' · you logged this instead.';
+  else if(!single) sub=sessions.map(function(s){ return esc(s.name||'Workout'); }).join(' · ');
+
+  var wk=weekDaysTrained();
+  var html='<div class="w-today w-today-done">'+
+    '<div class="w-today-day">'+wIcon('check','w-done-tick')+esc(dn)+' &middot; done</div>'+
+    '<div class="w-today-name">'+esc(name)+'</div>'+
+    (sub?'<div class="w-today-ex">'+sub+'</div>':'')+
+    '<div class="w-tot-grid" style="margin-top:13px;">'+
+      '<div class="w-tot"><b>'+T.vol.toLocaleString()+'</b><span>kg lifted</span></div>'+
+      '<div class="w-tot"><b>'+T.sets+'</b><span>sets</span></div>'+
+      '<div class="w-tot"><b>'+esc(fmtFloorTime(T.dur))+'</b><span>on the floor</span></div>'+
+    '</div>';
+  if(T.best) html+='<div class="w-done-line">Best lift &middot; <b>'+T.best.kg+'kg × '+T.best.reps+'</b> '+esc(T.best.name)+'</div>';
+  if(T.prs.length) html+='<div class="w-done-line w-done-pr">&#9733; New PR &middot; '+esc(T.prs.map(function(id){ return exById(id).name; }).join(' · '))+'</div>';
+  html+='<div class="w-done-week">'+esc(ordinal(wk))+' session this week</div>'+
+    '<div style="display:flex;gap:8px;margin-top:13px;">'+
+      '<button type="button" class="w-btn-ghost" style="margin:0;" onclick="'+(single?('editWorkout(\''+esc(sessions[0].id)+'\')'):'go(\'history\')')+'">'+wIcon('pen')+' See the session</button>'+
+      '<button type="button" class="w-btn-ghost" style="margin:0;" onclick="'+(tt?('startFromTpl(\''+esc(tt.id)+'\')'):'startEmpty()')+'">'+wIcon('play')+' Train again</button>'+
+    '</div>'+
+    '<button type="button" class="w-mini" style="margin-top:11px;display:block;" onclick="openSchedule()">Edit weekly schedule</button></div>';
+  return html;
+}
 function renderHome(){
   view='home';
   var active=getActive();
@@ -845,6 +921,10 @@ function renderHome(){
   (function(){
     var tt=todayTpl(); var sched=getSchedule(); var hasSched=Object.keys(sched).length>0;
     var dn=DOW_FULL[new Date().getDay()];
+    /* trained today → say so. A workout in progress outranks it: Resume is the
+       action that matters, and calling the day done mid-session would be a lie. */
+    var doneToday=active?[]:todaysSessions();
+    if(doneToday.length){ html+=doneCardHTML(doneToday, tt, dn, hasSched); return; }
     if(tt){
       var names=tt.items.map(function(it){return exById(it.exId).name;});
       html+='<div class="w-today"><div class="w-today-day">'+esc(dn)+' · today</div>'+
