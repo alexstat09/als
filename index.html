@@ -76,22 +76,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .nova .eye{transform-origin:center; animation:blink 5.5s infinite;}
 @keyframes blink{0%,92%,100%{transform:scaleY(1);}96%{transform:scaleY(0.1);}}
 
-/* ── Home top bar ───────────────────────────────────────────
-   The rest of the app carries topbar.js. Home hides that chrome (it has its own
-   floating .nav), so it states the same idea in its own voice: one ACTION (the
-   water pill — press to log) and one strip of DESTINATIONS (press to go). The
-   water pill used to sit inside .launch, mixed in among navigation buttons. */
-.htop{position:sticky; top:0; z-index:9; background:rgba(6,6,7,0.88); border-bottom:1px solid var(--line); backdrop-filter:blur(22px) saturate(1.3); -webkit-backdrop-filter:blur(22px) saturate(1.3);}
-.htop-in{max-width:1120px; margin:0 auto; padding:max(10px,env(safe-area-inset-top)) 22px 10px; display:flex; justify-content:flex-end; align-items:center; gap:10px;}
-.hlinks{display:inline-flex; align-items:stretch; align-self:stretch; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); overflow:hidden;}
-.hlink{width:42px; display:inline-flex; align-items:center; justify-content:center; color:var(--faint); text-decoration:none; -webkit-tap-highlight-color:transparent; transition:color .28s var(--snap), background .28s var(--snap);}
-.hlink + .hlink{border-left:1px solid var(--line);}
-.hlink svg{width:18px; height:18px; transition:transform .18s var(--snap);}
-.hlink:hover{color:var(--ivory); background:var(--glass-2);}
-.hlink:active svg{transform:scale(0.9);}
-/* the water pill sets the bar's height; the strip stretches to match it */
-.htop .wchip{align-self:stretch;}
-
 /* ── Launch row ─────────────────────────────────────────── */
 .launch{display:flex; flex-wrap:wrap; gap:10px; margin-top:var(--s3);}
 .lbtn{display:inline-flex; align-items:center; gap:9px; padding:11px 16px; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); text-decoration:none; transition:border-color .28s var(--snap), color .28s var(--snap), transform .28s var(--snap);}
@@ -274,13 +258,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   .agent-split{grid-template-columns:1fr; gap:20px;}
   .nova{width:48px;height:48px;}
 }
-/* On a phone the bar sheds the WATER word — the drop and the count already say it,
-   and the room goes to the shortcuts instead. */
-@media (max-width:480px){
-  .htop-in{padding-left:16px; padding-right:16px; gap:8px;}
-  .wchip-lbl{display:none;}
-  .hlink{width:40px;}
-}
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;}
   .js [data-rise]{opacity:1!important; transform:none!important; transition:none!important;}
@@ -345,33 +322,6 @@ body.has-bottombar{ padding-bottom:116px !important; }
 </style>
 </head>
 <body id="root">
-
-<!-- HOME TOP BAR — the water pill (log) + the shortcuts (go). The pill keeps its
-     wChip/wCount/wGoal/wAdd ids, so home-live.js drives it exactly as before. -->
-<div class="htop">
-  <div class="htop-in">
-    <div class="wchip" id="wChip">
-      <a class="wchip-main" href="po-water.html" aria-label="Open water tracker">
-        <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2s5.8 6.4 5.8 10.6a5.8 5.8 0 0 1-11.6 0C6.2 9.6 12 3.2 12 3.2z"/></svg></span>
-        <span class="wchip-n"><b id="wCount">0</b><em id="wGoal">/ 8</em></span>
-        <span class="wchip-lbl">Water</span>
-      </a>
-      <button type="button" class="wchip-add" id="wAdd" aria-label="Log one water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-    </div>
-    <nav class="hlinks" aria-label="Shortcuts">
-      <a class="hlink" href="nutrition.html" aria-label="Nutrition">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 11h16.8a8.4 8.4 0 0 1-16.8 0z"/><path d="M2.5 11h19"/><path d="M12 7.6c-1.6-1-1.6-2.6 0-4.1"/></svg>
-      </a>
-      <a class="hlink" href="sleep.html" aria-label="Sleep">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>
-      </a>
-      <a class="hlink" href="finance.html" aria-label="Finance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7.5 19v-5M12 19V8.5M16.5 19v-8"/></svg>
-      </a>
-    </nav>
-  </div>
-</div>
-
 <div class="wrap">
   <!-- HERO (cascades on load) -->
   <div data-reveal>
@@ -399,6 +349,14 @@ body.has-bottombar{ padding-bottom:116px !important; }
       <a class="lbtn primary" href="morning.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span> Morning briefing →</a>
       <a class="lbtn" href="weekly.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7L19.5 8.5l-3.75 3.65.9 5.15L12 14.9l-4.65 2.4.9-5.15L4.5 8.5l5.2-.8Z"/></svg></span> Weekly review →</a>
       <a class="lbtn" href="coach.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.3"/><circle cx="16.5" cy="7" r="2.3"/><circle cx="12" cy="16.5" r="2.3"/><line x1="8.8" y1="9.3" x2="10.5" y2="14.6"/><line x1="14.7" y1="8.8" x2="13" y2="14.6"/></svg></span> Coach →</a>
+      <div class="wchip" id="wChip">
+        <a class="wchip-main" href="po-water.html" aria-label="Open water tracker">
+          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2s5.8 6.4 5.8 10.6a5.8 5.8 0 0 1-11.6 0C6.2 9.6 12 3.2 12 3.2z"/></svg></span>
+          <span class="wchip-n"><b id="wCount">0</b><em id="wGoal">/ 8</em></span>
+          <span class="wchip-lbl">Water</span>
+        </a>
+        <button type="button" class="wchip-add" id="wAdd" aria-label="Log one water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
     </div>
 
     <div class="vswitch" data-rise>
