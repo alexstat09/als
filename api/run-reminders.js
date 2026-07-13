@@ -233,8 +233,9 @@ async function icuCheck() {
   if (acts.length) {
     try {
       var fa = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id), { headers: { Authorization: authHeader } });
-      if (fa.ok) { var faj = await fa.json(); out.fullKeys = Object.keys(faj); out.fullType = faj.type; out.fullName = faj.name; }
+      if (fa.ok) { var faj = await fa.json(); out.full0 = faj; }
       else out.fullStatus = fa.status;
+      out.sample = acts.slice(0, 2);
       var ff = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id) + '/fit-file', { headers: { Authorization: authHeader } });
       out.fitStatus = ff.status;
       if (ff.ok) { var fb = Buffer.from(await ff.arrayBuffer()); out.fitBytes = fb.length; out.fitLooksActivity = icuLooksLikeActivity(fb); }
