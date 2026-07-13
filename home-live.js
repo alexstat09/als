@@ -14,7 +14,16 @@
   function tk() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function activeDate() { var d = new Date(); if (d.getHours() < 6) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dawn() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
-  function relDay(key) { var d = new Date(key + 'T00:00:00'); var diff = Math.round((new Date() - d) / 86400000); return diff === 0 ? 'today' : diff === 1 ? 'yesterday' : diff + 'd ago'; }
+  /* CALENDAR days apart, not elapsed hours. Comparing a midnight date-key against
+     new Date() (which carries the time of day) made every afternoon round up to 1 —
+     so a workout logged this morning read "yesterday" from noon onwards. Both sides
+     are pinned to local midnight, which also keeps it right across a DST shift. */
+  function relDay(key) {
+    var d = new Date(key + 'T00:00:00'); d.setHours(0, 0, 0, 0);
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    var diff = Math.round((t - d) / 86400000);
+    return diff <= 0 ? 'today' : diff === 1 ? 'yesterday' : diff + 'd ago';
+  }
   function fmtN(n) { return Number(n).toLocaleString('en-US'); }
   function href(t) { var h = t.getAttribute('href') || ''; return h.split('#')[0].split('?')[0]; }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
@@ -52,7 +61,13 @@
       switch (h) {
         case 'gym.html': {
           var wk = workoutsThisWeek();
-          var done = ls('po_coach_workout_done', {}) || {}; var ds = Object.keys(done).filter(function (k) { return done[k]; }).sort(); var ld = ds[ds.length - 1];
+          /* a session counts whether it was ticked off on the plan OR logged in the
+             gym tracker — same two sources workoutsThisWeek() counts, so the hero
+             and the "N sessions this week" note can never disagree. */
+          var done = ls('po_coach_workout_done', {}) || {}, gd = {};
+          Object.keys(done).forEach(function (k) { if (done[k]) gd[k] = 1; });
+          (ls('po_workouts', []) || []).forEach(function (w) { if (w && w.date) gd[w.date] = 1; });
+          var ds = Object.keys(gd).sort(), ld = ds[ds.length - 1];
           return { hero: ld ? relDay(ld) : 'Ready', txt: true, note: wk + (wk === 1 ? ' session this week' : ' sessions this week') };
         }
         case 'pr.html': {

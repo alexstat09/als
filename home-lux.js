@@ -17,7 +17,9 @@
   function activeDate(){ var d=new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function dawn(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
   function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||6); }catch(e){} }
-  function relDay(key){ var d=new Date(key+'T00:00:00'); var diff=Math.round((new Date()-d)/86400000); return diff===0?'today':diff===1?'yesterday':diff+'d ago'; }
+  /* calendar days apart — comparing against a timestamped new Date() flipped
+     "today" to "yesterday" every afternoon. Pin both sides to local midnight. */
+  function relDay(key){ var d=new Date(key+'T00:00:00'); d.setHours(0,0,0,0); var t=new Date(); t.setHours(0,0,0,0); var diff=Math.round((t-d)/86400000); return diff<=0?'today':diff===1?'yesterday':diff+'d ago'; }
 
   /* ── line icons ── */
   var I={
