@@ -172,12 +172,10 @@ async function icuCheck() {
   var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
   if (!ATH || !KEY) return { skipped: 'icu env not set' };
   var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
-  function ymd(d) { return d.toISOString().slice(0, 10); }
   var now = Date.now();
-  // intervals returns a MINIMAL field set by default (no type) — must request it explicitly.
-  var FIELDS = '&fields=id,type,name,start_date_local';
+  function ymd(d) { return d.toISOString().slice(0, 10); }
   var listUrl = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
-    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)) + FIELDS;
+    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
   var lr;
   try { lr = await fetch(listUrl, { headers: { Authorization: authHeader } }); }
   catch (e) { return { error: 'list fetch failed' }; }
@@ -192,67 +190,50 @@ async function icuCheck() {
   var seenIds = Array.isArray(ack.seenIds) ? ack.seenIds : [];
   var doneSet = {}; doneIds.forEach(function (id) { doneSet[id] = 1; });
   var seenSet = {}; seenIds.forEach(function (id) { seenSet[id] = 1; });
-
   items = items.filter(function (it) { return it && it.id && !seenSet[it.id]; }); // drop what the app already drained
 
-  var runs = acts.filter(function (a) { return a && a.id && /run/i.test(a.type || ''); })
-    .sort(function (a, b) { return (a.start_date_local || '') < (b.start_date_local || '') ? -1 : 1; });
+  // Strava-sourced activities are blocked by intervals' API ("not available") — skip them.
+  // Setup requires GARMIN connected DIRECTLY to intervals so runs arrive as source=GARMIN.
+  var strava = 0, cands = [];
+  acts.forEach(function (a) { if (!a || !a.id) return; if (a.source === 'STRAVA') { strava++; return; } cands.push(a); });
+  cands.sort(function (a, b) { return (a.start_date_local || '') < (b.start_date_local || '') ? -1 : 1; });
 
-  var added = 0, errs = 0, downloadedThisRun = 0;
-  for (var i = 0; i < runs.length; i++) {
-    var a = runs[i];
-    if (doneSet[a.id]) continue;                                   // already downloaded before
-    if (seenSet[a.id]) { doneSet[a.id] = 1; doneIds.push(a.id); continue; } // already consumed
-    if (downloadedThisRun >= 12) break;                            // bound one invocation (stays well under maxDuration)
-    downloadedThisRun++;
+  var added = 0, errs = 0, nonRun = 0;
+  for (var i = 0; i < cands.length; i++) {
+    var a = cands[i];
+    if (doneSet[a.id]) continue;
+    if (seenSet[a.id]) { doneSet[a.id] = 1; doneIds.push(a.id); continue; }
+    if (added + nonRun + errs >= 12) break;                          // bound one invocation under maxDuration
     var mark = true;
     try {
-      var fr = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id) + '/fit-file',
-        { headers: { Authorization: authHeader } });
+      // the list omits type; the FULL activity object carries it (available for non-Strava sources)
+      var fr = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id), { headers: { Authorization: authHeader } });
       if (!fr.ok) { errs++; }
       else {
-        var buf = Buffer.from(await fr.arrayBuffer());
-        if (buf.length && buf.length <= 4 * 1024 * 1024 && icuLooksLikeActivity(buf)) {
-          items.push({ id: a.id, name: (a.name || 'Run'), date: (a.start_date_local || ''), fit: buf.toString('base64') });
-          added++;
-        } else { errs++; }
+        var fj = await fr.json();
+        if (!/run/i.test(fj.type || '')) { nonRun++; }               // ride / swim / strength → skip (still mark done)
+        else {
+          var ff = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id) + '/fit-file', { headers: { Authorization: authHeader } });
+          if (!ff.ok) { errs++; }
+          else {
+            var buf = Buffer.from(await ff.arrayBuffer());
+            if (buf.length && buf.length <= 4 * 1024 * 1024 && icuLooksLikeActivity(buf)) {
+              items.push({ id: a.id, name: (fj.name || 'Run'), date: (a.start_date_local || fj.start_date_local || ''), fit: buf.toString('base64') });
+              added++;
+            } else { errs++; }
+          }
+        }
       }
-    } catch (e) { mark = false; errs++; }                           // network blip → retry next time
+    } catch (e) { mark = false; errs++; }                            // network blip → retry next time
     if (mark) { doneSet[a.id] = 1; doneIds.push(a.id); }
   }
 
-  if (items.length > 20) items = items.slice(items.length - 20);   // generous buffer; ack-pruning keeps it near-empty
+  if (items.length > 20) items = items.slice(items.length - 20);     // generous buffer; ack-pruning keeps it near-empty
   if (doneIds.length > 500) doneIds = doneIds.slice(doneIds.length - 500);
   await supa.writeRow('run:inbox', { doneIds: doneIds, items: items });
 
-  // lightweight diagnostic (no data stored/exposed) — tells us what intervals returned
-  var types = {}; acts.forEach(function (a) { if (a && a.type) types[a.type] = (types[a.type] || 0) + 1; });
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
-  var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest };
-  // ONE-SHOT diagnostic: full activity object (find the real type field) + prove the FIT download works.
-  if (acts.length) {
-    try {
-      var fa = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id), { headers: { Authorization: authHeader } });
-      if (fa.ok) { var faj = await fa.json(); out.full0 = faj; }
-      else out.fullStatus = fa.status;
-      out.sample = acts.slice(0, 2);
-      var ff = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id) + '/fit-file', { headers: { Authorization: authHeader } });
-      out.fitStatus = ff.status;
-      if (ff.ok) { var fb = Buffer.from(await ff.arrayBuffer()); out.fitBytes = fb.length; out.fitLooksActivity = icuLooksLikeActivity(fb); }
-    } catch (e) { out.diagErr = String((e && e.message) || e); }
-  }
-  // when the 30-day window is empty, peek at a full year so we can tell "no runs yet"
-  // (upstream Garmin→intervals not synced) apart from "just none recently".
-  if (acts.length === 0) {
-    try {
-      var wr = await fetch('https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
-        '/activities?oldest=' + ymd(new Date(now - 365 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000)) + FIELDS,
-        { headers: { Authorization: authHeader } });
-      if (wr.ok) { var wa = await wr.json(); if (Array.isArray(wa)) { out.total365d = wa.length; out.types365d = {}; wa.forEach(function (a) { if (a && a.type) out.types365d[a.type] = (out.types365d[a.type] || 0) + 1; }); } }
-      else { out.wide = 'status ' + wr.status; }
-    } catch (e) { out.wide = 'err'; }
-  }
-  return out;
+  return { total: acts.length, strava: strava, garmin: cands.length, added: added, nonRun: nonRun, errs: errs, pending: items.length, newest: newest };
 }
 
 module.exports = async function (req, res) {
