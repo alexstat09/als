@@ -151,8 +151,90 @@ async function buildContext(tz, today) {
     topInsight: topInsight };
 }
 
+// ── Garmin → intervals.icu courier ─────────────────────────────────
+// Chrissie links Garmin→intervals.icu once (OAuth). This dumb courier polls
+// intervals for new RUN activities, downloads each ORIGINAL watch file as a FIT,
+// and drops the raw bytes (base64) into an app_state 'run:inbox' row. The APP
+// drains that inbox through its own tested FIT pipeline (parse + dupe-safe heal),
+// so the server never parses or touches her actual run data — no clobber risk.
+// Idempotent: 'doneIds' stops re-downloads; the client acks consumed ids in
+// 'run:inbox-ack' so the server prunes delivered items. No 13th function: folded
+// into the hourly reminder cron, and the app can trigger an instant check (?icu=1).
+function icuLooksLikeActivity(b) {
+  if (!b || b.length < 12) return false;
+  if (b[0] === 0x1f && b[1] === 0x8b) return true;                                   // gzip (.gz)
+  if (b[0] === 0x50 && b[1] === 0x4b) return true;                                   // zip (PK)
+  if (b[8] === 0x2e && b[9] === 0x46 && b[10] === 0x49 && b[11] === 0x54) return true; // ".FIT"
+  var head = Buffer.from(b.slice(0, 96)).toString('utf8');
+  return /<\?xml|<TrainingCenterDatabase|<gpx/i.test(head);                          // tcx / gpx
+}
+async function icuCheck() {
+  var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
+  if (!ATH || !KEY) return { skipped: 'icu env not set' };
+  var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
+  function ymd(d) { return d.toISOString().slice(0, 10); }
+  var now = Date.now();
+  var listUrl = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
+    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
+  var lr;
+  try { lr = await fetch(listUrl, { headers: { Authorization: authHeader } }); }
+  catch (e) { return { error: 'list fetch failed' }; }
+  if (!lr.ok) return { error: 'list ' + lr.status };
+  var acts; try { acts = await lr.json(); } catch (e) { return { error: 'list not json' }; }
+  if (!Array.isArray(acts)) return { error: 'list not array' };
+
+  var inbox = await supa.readRow('run:inbox');
+  var ack = await supa.readRow('run:inbox-ack');
+  var doneIds = Array.isArray(inbox.doneIds) ? inbox.doneIds.slice() : [];
+  var items = Array.isArray(inbox.items) ? inbox.items.slice() : [];
+  var seenIds = Array.isArray(ack.seenIds) ? ack.seenIds : [];
+  var doneSet = {}; doneIds.forEach(function (id) { doneSet[id] = 1; });
+  var seenSet = {}; seenIds.forEach(function (id) { seenSet[id] = 1; });
+
+  items = items.filter(function (it) { return it && it.id && !seenSet[it.id]; }); // drop what the app already drained
+
+  var runs = acts.filter(function (a) { return a && a.id && /run/i.test(a.type || ''); })
+    .sort(function (a, b) { return (a.start_date_local || '') < (b.start_date_local || '') ? -1 : 1; });
+
+  var added = 0, errs = 0, downloadedThisRun = 0;
+  for (var i = 0; i < runs.length; i++) {
+    var a = runs[i];
+    if (doneSet[a.id]) continue;                                   // already downloaded before
+    if (seenSet[a.id]) { doneSet[a.id] = 1; doneIds.push(a.id); continue; } // already consumed
+    if (downloadedThisRun >= 12) break;                            // bound one invocation (stays well under maxDuration)
+    downloadedThisRun++;
+    var mark = true;
+    try {
+      var fr = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id) + '/fit-file',
+        { headers: { Authorization: authHeader } });
+      if (!fr.ok) { errs++; }
+      else {
+        var buf = Buffer.from(await fr.arrayBuffer());
+        if (buf.length && buf.length <= 4 * 1024 * 1024 && icuLooksLikeActivity(buf)) {
+          items.push({ id: a.id, name: (a.name || 'Run'), date: (a.start_date_local || ''), fit: buf.toString('base64') });
+          added++;
+        } else { errs++; }
+      }
+    } catch (e) { mark = false; errs++; }                           // network blip → retry next time
+    if (mark) { doneSet[a.id] = 1; doneIds.push(a.id); }
+  }
+
+  if (items.length > 20) items = items.slice(items.length - 20);   // generous buffer; ack-pruning keeps it near-empty
+  if (doneIds.length > 500) doneIds = doneIds.slice(doneIds.length - 500);
+  await supa.writeRow('run:inbox', { doneIds: doneIds, items: items });
+
+  return { runs: runs.length, added: added, errs: errs, pending: items.length };
+}
+
 module.exports = async function (req, res) {
   if (!auth.guardCron(req, res)) return; // QStash hourly cron (cron secret) or same-origin manual run
+
+  // Garmin→intervals courier runs on every hourly cron AND on demand (?icu=1 from the app).
+  var icuOnly = !!(req.query && (req.query.icu === '1' || req.query.icu === 'check'));
+  var icuResult = null;
+  try { icuResult = await icuCheck(); } catch (e) { icuResult = { error: String((e && e.message) || e) }; }
+  if (icuOnly) { res.status(200).json({ icu: icuResult }); return; }
+
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured' }); return; }
     webpush.setVapidDetails(

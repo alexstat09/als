@@ -2942,12 +2942,62 @@
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
 
+    /* ── auto-import from her watch (Garmin → intervals.icu → server inbox) ──
+       The server courier drops new runs (as raw FIT bytes) into an app_state
+       'run:inbox' row; here we drain it through the SAME tested pipeline her
+       manual imports use (expandBytes → findMatch/canUpgrade), so there are no
+       duplicates and the data is identical fidelity. She does nothing. */
+    var ICU_SB_URL='https://oiyvadqfldwbjroiknjc.supabase.co', ICU_SB_KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+    function icuToast(msg){ try{ if(window.ALSToast){ ALSToast.show(msg); return; } }catch(e){} toast('lgToast',msg); }
+    function icuSeenGet(){ try{ var a=JSON.parse(localStorage.getItem('run:icuSeen')); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+    function icuB64ToBytes(b64){ try{ var bin=atob(b64), n=bin.length, u=new Uint8Array(n); for(var i=0;i<n;i++) u[i]=bin.charCodeAt(i); return u; }catch(e){ return null; } }
+    async function icuAck(seenIds){
+      try{ await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict=key', { method:'POST',
+        headers:{ apikey:ICU_SB_KEY, Authorization:'Bearer '+ICU_SB_KEY, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ key:'run:inbox-ack', data:{ seenIds:seenIds }, updated_at:new Date().toISOString() }) }); }catch(e){}
+    }
+    async function icuDrainInbox(){
+      try{
+        var r=await fetch(ICU_SB_URL+'/rest/v1/app_state?select=data&key=eq.run%3Ainbox', { headers:{ apikey:ICU_SB_KEY, Authorization:'Bearer '+ICU_SB_KEY } });
+        if(!r.ok) return; var j=await r.json(); var data=(j&&j[0]&&j[0].data)||{};
+        var items=Array.isArray(data.items)?data.items:[]; if(!items.length) return;
+        var seen=icuSeenGet(), seenSet={}; seen.forEach(function(id){ seenSet[id]=1; });
+        var fresh=[], ups=[], consumed=[];
+        for(var i=0;i<items.length;i++){ var it=items[i]; if(!it||!it.id||seenSet[it.id]) continue;
+          consumed.push(it.id);                                  // mark consumed even if a single file is unreadable, so we never loop on it
+          var bytes=it.fit?icuB64ToBytes(it.fit):null; if(!bytes) continue;
+          try{ var arr=await expandBytes(it.name||'run.fit', bytes);
+            (arr||[]).forEach(function(run){ var ex=findMatch(run); if(!ex) fresh.push(run); else if(canUpgrade(ex,run)) ups.push({run:run,ex:ex}); });
+          }catch(e){}
+        }
+        if(!consumed.length) return;
+        var now=Date.now(), addedN=0;
+        fresh.forEach(function(run,i){ var o=runFromParsed(run); o.ts=now+i; logs.push(o); addedN++; });
+        ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
+        if(fresh.length||ups.length){ if(!persist(K_LOGS,logs)) return; flush(); }   // storage full: persist warned; don't ack, retry later
+        var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
+        try{ localStorage.setItem('run:icuSeen', JSON.stringify(newSeen)); }catch(e){}
+        icuAck(newSeen);                                          // tell the server it can prune these from the inbox
+        if(addedN>0){ render(); icuToast('Νέο τρέξιμο από το ρολόι ✓'+(addedN>1?(' · '+addedN):'')); }
+        else if(ups.length>0){ render(); icuToast('Χάρτης αναβαθμίστηκε ✓ από το ρολόι'); }
+      }catch(e){}
+    }
+    async function icuMaybeServerCheck(){
+      try{ var last=0; try{ last=+localStorage.getItem('run:icuPoll')||0; }catch(e){}
+        if(Date.now()-last < 8*60000) return;                    // throttle the intervals poll to ≤ once / 8 min; hourly cron covers the rest
+        try{ localStorage.setItem('run:icuPoll', String(Date.now())); }catch(e){}
+        await fetch('/api/run-reminders?icu=1', { cache:'no-store' });
+      }catch(e){}
+    }
+    function icuSync(){ icuDrainInbox(); icuMaybeServerCheck().then(icuDrainInbox); }
+
     initBeat();
     render();
     animStart();
     if(!$('view-runs').classList.contains('hidden')) requestAnimationFrame(animateRunHero);
+    icuSync();
 
-    document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); } });
+    document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); icuSync(); } });
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
