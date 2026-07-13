@@ -282,9 +282,10 @@ body.has-bottombar {
   .bottombar-tab-icon { font-size: 22px; }
   .bottombar-tab { font-size: 10px; }
 }
-/* Smallest phones: the bar now carries a water pill + three shortcuts, so BACK
-   sheds its word and keeps only the arrow. Nothing wraps, nothing overflows. */
-@media (max-width: 400px) {
+/* Only the truly narrow phones (≈320px) run out of room once the strip is there.
+   BACK keeps its word everywhere else — measured: at 360px it still has 32px of
+   slack, at 390px 62px. Don't raise this ceiling without re-measuring. */
+@media (max-width: 349px) {
   .topbar-back span { display: none; }
   .topbar-back { padding: 8px 9px; }
   .topbar-link { width: 36px; }
