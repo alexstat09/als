@@ -262,6 +262,15 @@
   /* progression targets */
   .w-target{font-family:var(--au-serif);font-style:italic;font-size:12.5px;color:var(--au-dim);margin:2px 0 6px;line-height:1.35;}
   .w-target b{color:rgb(var(--au-glow-rgb));font-style:normal;font-family:var(--au-mono);font-size:11px;}
+  .w-slot-note{font-style:normal;font-family:var(--au-mono);font-size:9.5px;color:var(--au-faint);}
+  /* what this lift weighs in each slot of its muscle — current slot lit */
+  .w-slots{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 9px;}
+  .w-slot{flex:1 1 108px;padding:8px 10px;border-radius:10px;border:1px solid var(--au-line);background:rgba(255,255,255,.025);}
+  .w-slot.on{border-color:rgba(var(--au-glow-rgb),.42);background:rgba(var(--au-glow-rgb),.07);}
+  .w-slot .s{display:block;font-family:var(--au-mono);font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);}
+  .w-slot.on .s{color:rgb(var(--au-glow-rgb));}
+  .w-slot .v{display:block;font-family:var(--au-mono);font-size:12.5px;font-weight:700;color:var(--au-ivory);margin-top:3px;}
+  .w-slot .n{display:block;font-family:var(--au-mono);font-size:8.5px;color:var(--au-faint);margin-top:2px;}
   .w-set.beat .w-check{background:var(--au-amber)!important;color:#04130D!important;border-color:transparent!important;box-shadow: none;}
   /* stats / progress */
   .w-stat-card{display:flex;align-items:center;gap:12px;background:var(--au-glass);border:1px solid var(--au-line);border-radius:14px;padding:13px 15px;margin-bottom:9px;cursor:pointer;width:100%;text-align:left;-webkit-tap-highlight-color:transparent;}
@@ -659,27 +668,84 @@ function setExField(exId, field, val){
 }
 function exNote(exId){ return exById(exId).note||''; }
 function exPerSide(exId){ return !!exById(exId).perSide; }
-/* best working set bucketed by the slot the exercise was done in (1 = first movement of the session) —
-   so "when done 2nd" is compared to "when done 2nd", not to a fresh-first PR. */
-function exHistoryByPos(exId){
-  var byPos={};
+/* ── MUSCLE SLOT ────────────────────────────────────────────────────────────
+   How fresh a lift is depends on how much of THAT MUSCLE came before it, not on
+   where it landed in the session. On a chest+back day (fly → pulldown → incline)
+   the incline is the 3rd exercise but only the 2nd CHEST movement — the pulldown
+   in between barely touches the chest. So bucket history by muscle slot: 1st
+   chest, 2nd chest… and compare like with like.
+   (Cardio/time entries never occupy a slot.) */
+function muscleSlotOf(entries, idx){
+  var en=(entries||[])[idx];
+  if(!en || isTime(en) || !en.muscle) return 0;
+  var n=0;
+  for(var i=0;i<=idx;i++){ var e=entries[i]; if(e && !isTime(e) && e.muscle===en.muscle) n++; }
+  return n;
+}
+/* best + last working set of this exercise, bucketed by the muscle slot it sat in */
+function exHistoryBySlot(exId){
+  var bySlot={};
   workouts().slice().sort(function(a,b){return (a.startedAt||'')<(b.startedAt||'')?-1:1;}).forEach(function(w){
-    var idx=-1; (w.entries||[]).forEach(function(e,i){ if(idx<0 && e.exId===exId) idx=i; });
+    var ents=w.entries||[], idx=-1;
+    for(var i=0;i<ents.length;i++){ if(ents[i] && ents[i].exId===exId){ idx=i; break; } }
     if(idx<0) return;
-    var en=w.entries[idx], pos=idx+1, best=0, bw=null;
+    var en=ents[idx]; if(isTime(en)) return;
+    var slot=muscleSlotOf(ents, idx); if(!slot) return;
+    var best=0, bw=null;
     workSets(en.sets).forEach(function(s){ if((+s.kg||0)>0 && (+s.reps||0)>0){ var v=e1rm(s.kg,s.reps); if(v>best){ best=v; bw=s; } } });
     if(best<=0) return;
-    var b=byPos[pos]||(byPos[pos]={pos:pos,best:0,bestSet:null,count:0,lastDate:'',lastSet:null});
+    var b=bySlot[slot]||(bySlot[slot]={slot:slot,muscle:en.muscle||'',best:0,bestSet:null,count:0,lastDate:'',lastSet:null});
     b.count++; b.lastDate=w.date; b.lastSet=bw;
     if(best>b.best){ b.best=best; b.bestSet=bw; }
   });
-  return byPos;
+  return bySlot;
 }
-/* last reference for the slot this exercise currently sits in (fatigue-aware target) */
-function targetForPos(exId, pos){
-  var b=exHistoryByPos(exId)[pos];
-  if(b && b.lastSet){ return { w:+b.lastSet.kg||0, r:+b.lastSet.reps||0, count:b.count, best:b.best }; }
+/* the reference for the slot this exercise currently sits in — what to beat TODAY */
+function targetForSlot(exId, slot){
+  var b=exHistoryBySlot(exId)[slot];
+  if(b && b.lastSet){
+    var w=+b.lastSet.kg||0, r=+b.lastSet.reps||0;
+    return { w:w, r:r, count:b.count, best:b.best, bestSet:b.bestSet, muscle:b.muscle,
+             suggest: w+'kg×'+(r+1)+' or '+(w+2.5)+'kg×'+r };
+  }
   return null;
+}
+function muscleWord(m){ return String(m||'').toLowerCase(); }
+function fmtSlotSet(s){ return s ? ((+s.kg||0)+'kg × '+(+s.reps||0)) : '—'; }
+/* The reference block on an exercise card: where this lift sits in the muscle
+   today, what you last hit THERE, and what you hit in the other slots — so if you
+   move it you already know the number before you load the machine. */
+function slotTargetHTML(a, en, ei, tgt){
+  var slot=muscleSlotOf(a.entries, ei), m=muscleWord(en.muscle);
+  var by=exHistoryBySlot(en.exId), here=slot?by[slot]:null;
+  var html='';
+  if(here && here.lastSet){
+    var t=targetForSlot(en.exId, slot);
+    html+='<div class="w-target">As your <b>'+ordinal(slot)+' '+esc(m)+'</b> movement &middot; last best <b>'+fmtSlotSet(here.lastSet)+'</b> &middot; beat it: '+esc(t.suggest)+'</div>';
+  } else if(slot && tgt){
+    /* never invent a number for a slot he has not trained — show the overall best, said plainly */
+    html+='<div class="w-target">First time as your <b>'+ordinal(slot)+' '+esc(m)+'</b> movement &middot; last best <b>'+tgt.w+'kg × '+tgt.r+'</b> <span class="w-slot-note">overall, not for this slot</span></div>';
+  } else if(tgt){
+    html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
+  } else {
+    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
+  }
+  var keys=Object.keys(by).map(Number);
+  if(slot && !by[slot]) keys.push(slot);
+  keys.sort(function(x,y){ return x-y; });
+  if(keys.length>1){
+    html+='<div class="w-slots">';
+    keys.forEach(function(k){
+      var b=by[k], on=(k===slot);
+      html+='<div class="w-slot'+(on?' on':'')+'">'+
+        '<span class="s">'+ordinal(k)+' '+esc(muscleWord(b?b.muscle:en.muscle))+'</span>'+
+        '<span class="v">'+fmtSlotSet(b?b.lastSet:null)+'</span>'+
+        '<span class="n">'+(b?(b.count+(b.count===1?' session':' sessions')):'no history')+(on?' &middot; you&rsquo;re here':'')+'</span>'+
+      '</div>';
+    });
+    html+='</div>';
+  }
+  return html;
 }
 function ordinal(n){ return n+({1:'st',2:'nd',3:'rd'}[n%100>10&&n%100<14?0:n%10]||'th'); }
 /* time-based (cardio / holds) = log duration, not kg×reps */
@@ -932,12 +998,7 @@ function entryCardHTML(en, ei, a){
   } else {
     var tgt=targetFor(en.exId); var allTime=bestE1rmFor(en.exId,a.id);
     var doneMax=0; en.sets.forEach(function(s){ if(s.done && !isWarm(s)){ var v=e1rm(s.kg,s.reps); if(v>doneMax)doneMax=v; } });
-    /* fatigue-aware reference: if you train this lift in different slots, show what you hit when it was done in THIS slot */
-    var _pos=ei+1, _byPos=exHistoryByPos(en.exId), _posVaries=Object.keys(_byPos).length>1, _bp=_byPos[_pos];
-    if(_posVaries && _bp && _bp.lastSet){
-      html+='<div class="w-target">When done '+ordinal(_pos)+' &middot; last best <b>'+(+_bp.lastSet.kg||0)+'kg × '+(+_bp.lastSet.reps||0)+'</b> &middot; beat it</div>';
-    } else if(tgt) html+='<div class="w-target">Last best <b>'+tgt.w+'kg × '+tgt.r+'</b> &middot; beat it: '+esc(tgt.suggest)+'</div>';
-    else    html+='<div class="w-target">First time logged &middot; give it a strong set &mdash; this becomes your baseline to beat. &#9733;</div>';
+    html+=slotTargetHTML(a, en, ei, tgt);
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">'+
       '<button type="button" class="w-side'+(en.perSide?' on':'')+'" style="margin:0;" onclick="togglePerSide('+ei+')">'+(en.perSide?'✓ Per side (each hand counts double)':'＋ Per side / single-arm?')+'</button>'+
       '<button type="button" class="w-warm-btn" onclick="addWarmups('+ei+')">Warm-up</button></div>';
@@ -1409,11 +1470,12 @@ function exerciseProgress(exId){
     html+='<div class="w-chartcap"><span>'+relDate(h[0].date)+'</span><span>estimated 1RM over time</span><span>Now</span></div>';
   }
   /* order-aware: how you perform when this lift is done fresh (1st) vs later in the session */
-  var byPos=exHistoryByPos(exId), posKeys=Object.keys(byPos).map(Number).sort(function(a,b){return a-b;});
-  if(posKeys.length>1){
-    html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">WHEN DONE 1ST VS LATER</div>';
-    posKeys.forEach(function(p){ var b=byPos[p]; var st=b.bestSet?((+b.bestSet.kg||0)+'kg × '+(+b.bestSet.reps||0)):'—';
-      html+='<div class="w-hist-row"><span class="nm">'+ordinal(p)+' in session <span style="color:var(--au-faint)">· '+b.count+'×</span></span><span class="bs">best '+esc(st)+' · '+Math.round(b.best)+'kg 1RM</span></div>';
+  var bySlot=exHistoryBySlot(exId), slotKeys=Object.keys(bySlot).map(Number).sort(function(a,b){return a-b;});
+  if(slotKeys.length>1){
+    var _m=muscleWord((bySlot[slotKeys[0]]||{}).muscle);
+    html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">FRESH VS FATIGUED &middot; BY '+esc(_m.toUpperCase())+' SLOT</div>';
+    slotKeys.forEach(function(p){ var b=bySlot[p]; var st=fmtSlotSet(b.bestSet);
+      html+='<div class="w-hist-row"><span class="nm">'+ordinal(p)+' '+esc(muscleWord(b.muscle))+' movement <span style="color:var(--au-faint)">· '+b.count+'×</span></span><span class="bs">best '+esc(st)+' · '+Math.round(b.best)+'kg 1RM</span></div>';
     });
   }
   html+='<div class="w-set-head" style="grid-template-columns:1fr;margin:16px 0 6px;">RECENT SESSIONS</div>';
@@ -1760,6 +1822,9 @@ window.addWarmups=async function(ei){ var a=getActive(); if(!a||!a.entries[ei]) 
   if(isTime(en)){ await ALSAlert('Warm-ups are for weighted exercises.','warn'); return; }
   var target=0;
   en.sets.forEach(function(s){ if(!isWarm(s)){ var k=+s.kg||0; if(k>target) target=k; } });
+  /* ramp to what you lift in THIS muscle slot — warming up to a fresh-first weight
+     you won't touch as a 2nd movement just burns the sets. */
+  if(!target){ var ts=targetForSlot(en.exId, muscleSlotOf(a.entries, ei)); if(ts) target=ts.w; }
   if(!target){ var tg=targetFor(en.exId); if(tg) target=tg.w; }
   if(!target){ var ans=await ALSPrompt({title:'Warm-up calculator',message:'Your first working-set weight (kg)?',placeholder:'e.g. 40',confirmText:'Generate'}); target=numVal(ans); }
   target=+target||0; if(target<=0) return;
