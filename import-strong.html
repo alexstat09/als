@@ -126,7 +126,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="pocoach-sync.js?v=2"></script>
+  <script src="pocoach-sync.js?v=3"></script>
   <script>
   (function(){
     'use strict';
@@ -382,7 +382,10 @@
         var done=ls('po_coach_workout_done',{})||{};
         parsed._new.forEach(function(s){ if(haveS[s.id]) return;
           // strip helper field; keep exercise kind only if it differs from default
-          var clean={ id:s.id, name:s.name, templateId:null, date:s.date, startedAt:s.startedAt, durationSec:s.durationSec||0,
+          /* ts = when it was imported. A workout's own startedAt is in the past, so
+             without this stamp a re-import of a session you deleted would lose to
+             its tombstone on every OTHER device and quietly vanish again. */
+          var clean={ id:s.id, name:s.name, templateId:null, date:s.date, startedAt:s.startedAt, ts:Date.now(), durationSec:s.durationSec||0,
             entries:s.entries.map(function(e){ var o={exId:e.exId,name:e.name,muscle:e.muscle,note:''}; if(e.kind==='time'){o.kind='time';o.sets=e.sets.map(function(st){return {secs:st.secs,done:true};});} else {o.kind='weight';o.perSide=false;o.sets=e.sets.map(function(st){return {kg:st.kg,reps:st.reps,done:true};});} return o; }),
             volume:s.volume, prs:[], source:'strong' };
           hist.push(clean); haveS[s.id]=1; added++;
@@ -391,6 +394,9 @@
           save('po_coach_logs:'+s.date, clean.entries.map(function(e){return {exId:e.exId,name:e.name,sets:e.sets};}));
         });
         hist.sort(function(a,b){ return ((b.startedAt||'')<(a.startedAt||''))?-1:1; });
+        /* Importing is an explicit choice, so it may un-delete: without this the
+           sync would drop any session the user had previously deleted, silently. */
+        if(window.POCOACH_UNTOMB) window.POCOACH_UNTOMB('po_workouts', parsed._new.map(function(s){ return s.id; }));
         save('po_workouts',hist);
         save('po_coach_workout_done',done);
       }

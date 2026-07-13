@@ -444,7 +444,7 @@
   <button type="button" class="w-btn-ghost" id="wNotifEnable" data-act="notif-enable" style="margin-top:10px;display:none;">Alert me when rest ends</button>
 </dialog>
 
-<script src="pocoach-sync.js?v=2"></script>
+<script src="pocoach-sync.js?v=3"></script>
 <script src="push.js" defer></script>
 <script src="nova.js" defer></script>
 <script>
@@ -621,6 +621,9 @@ var SEED_TPLS = [
   {id:'tpl-cbas-ub',folderId:'f-cbas',name:'Upper (B)',items:[['inclinebench-smith',2],['latpulldown',2],['tbarrow',1],['chestfly',2],['shoulderpress-m',2],['closegrip-bench',2],['preachercurl-m',2],['tricepsext',2],['hammercurl',2],['lateralraise-db',4]]}
 ];
 function buildTpls(){ return SEED_TPLS.map(function(t){return {id:t.id,folderId:t.folderId,name:t.name,items:t.items.map(function(it){return {exId:it[0],sets:it[1]};})};}); }
+/* Something the user deleted must not be re-seeded on the next load — sync would
+   only delete it again, and the two would fight forever. */
+function seedDeleted(k,id){ return !!(window.POCOACH_TOMBED && window.POCOACH_TOMBED(k,id)); }
 function seed(){
   // exercises: merge canonical into existing (never lose customs)
   var ex=ls('po_exercises',null);
@@ -628,19 +631,19 @@ function seed(){
   else {
     var byId={}; ex.forEach(function(e){byId[e.id]=e;}); var changed=false;
     SEED_EX.forEach(function(e){
-      if(!byId[e[0]]){ ex.push({id:e[0],name:e[1],muscle:e[2],kind:e[3]||'weight'}); changed=true; }
+      if(!byId[e[0]]){ if(seedDeleted('po_exercises',e[0])) return; ex.push({id:e[0],name:e[1],muscle:e[2],kind:e[3]||'weight'}); changed=true; }
       else if(e[3] && !byId[e[0]].kind){ byId[e[0]].kind=e[3]; changed=true; } // backfill time-kind onto existing
     });
     if(changed) save('po_exercises',ex);
   }
   // templates + folders: reseed to canonical on version bump
   if(ls('po_tpl_version',0) < TPL_VERSION){
-    save('po_tpl_folders', SEED_FOLDERS.slice());
-    save('po_templates', buildTpls());
+    save('po_tpl_folders', SEED_FOLDERS.filter(function(f){ return !seedDeleted('po_tpl_folders',f.id); }));
+    save('po_templates', buildTpls().filter(function(t){ return !seedDeleted('po_templates',t.id); }));
     save('po_tpl_version', TPL_VERSION);
   } else {
-    if(!ls('po_tpl_folders',null)) save('po_tpl_folders', SEED_FOLDERS.slice());
-    if(!ls('po_templates',null)) save('po_templates', buildTpls());
+    if(!ls('po_tpl_folders',null)) save('po_tpl_folders', SEED_FOLDERS.filter(function(f){ return !seedDeleted('po_tpl_folders',f.id); }));
+    if(!ls('po_templates',null)) save('po_templates', buildTpls().filter(function(t){ return !seedDeleted('po_templates',t.id); }));
   }
   if(!ls('po_workouts',null)) save('po_workouts', []);
 }
