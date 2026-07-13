@@ -229,6 +229,17 @@ async function icuCheck() {
   var types = {}; acts.forEach(function (a) { if (a && a.type) types[a.type] = (types[a.type] || 0) + 1; });
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
   var out = { runs: runs.length, added: added, errs: errs, pending: items.length, total30d: acts.length, types: types, newest: newest };
+  // ONE-SHOT diagnostic: full activity object (find the real type field) + prove the FIT download works.
+  if (acts.length) {
+    try {
+      var fa = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id), { headers: { Authorization: authHeader } });
+      if (fa.ok) { var faj = await fa.json(); out.fullKeys = Object.keys(faj); out.fullType = faj.type; out.fullName = faj.name; }
+      else out.fullStatus = fa.status;
+      var ff = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(acts[0].id) + '/fit-file', { headers: { Authorization: authHeader } });
+      out.fitStatus = ff.status;
+      if (ff.ok) { var fb = Buffer.from(await ff.arrayBuffer()); out.fitBytes = fb.length; out.fitLooksActivity = icuLooksLikeActivity(fb); }
+    } catch (e) { out.diagErr = String((e && e.message) || e); }
+  }
   // when the 30-day window is empty, peek at a full year so we can tell "no runs yet"
   // (upstream Garmin→intervals not synced) apart from "just none recently".
   if (acts.length === 0) {
