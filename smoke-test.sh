@@ -22,9 +22,13 @@ LIST="$(mktemp /tmp/als_smoke_files.XXXXXX)"
 PROG="$(mktemp /tmp/als_smoke_impl.XXXXXX.js)"
 trap 'rm -f "$LIST" "$PROG"' EXIT
 
-# Files to check: our own .html + .js, excluding vendored/3rd-party + this test.
+# Files to check: the LIVE app's own .html + .js. Excludes vendored code,
+# archive/ (retired pages, kept for reference — not deployed), and the
+# _*.html / render-*.html throwaways a headless render leaves behind.
 find . -type f \( -name '*.html' -o -name '*.js' \) \
   -not -path './vendor/*' -not -path './node_modules/*' \
+  -not -path './archive/*' -not -path './docs/*' -not -path './als/*' \
+  -not -name '_*.html' -not -name 'render-*.html' \
   | sed 's|^\./||' | sort > "$LIST"
 
 cat > "$PROG" <<JS

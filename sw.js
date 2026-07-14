@@ -12,9 +12,9 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v291";
+var CACHE = "als-v292";
 var CORE = [
-  './', 'index.html', 'main.html', 'gym.html', 'gym-classic.html', 'body-classic.html', 'body.html', 'sleep.html',
+  './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
   'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'istoria.html', 'run.html',
   'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=205', 'home-motion.js?v=202',
