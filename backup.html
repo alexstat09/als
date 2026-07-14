@@ -984,6 +984,56 @@
       return d.length > 46 ? d.slice(0, 46) + '…' : d;
     }
 
+    // ── TOMBSTONES — the thing that silently undoes a repair ──
+    // sync.js propagates deletions with tombstones: a `_deletes` tree on the
+    // cloud row, mirrored in localStorage as `__synctomb__<appKey>`. Its rule is
+    // that a re-added entry stays deleted UNLESS its timestamp is NEWER than the
+    // tombstone — and weigh-ins carry no `ts` at all, so addedAt() is 0.
+    //
+    // So bringing back a DELETED entry without touching the tombstone means the
+    // very next sync deletes it again, and you would never know. Verified against
+    // sync.js's real mergeArray(). sync itself clears a tomb when an entry is
+    // re-added (diffTomb), so we do exactly the same thing here.
+    function clearTombstones(row, appKey, key, ids){
+      if (!ids || !ids.length) return;
+      // 1) the cloud row's _deletes (we are about to push this row)
+      var d = row && row._deletes;
+      if (d && typeof d === 'object'){
+        var node = d[key];
+        if (node && typeof node === 'object'){
+          ids.forEach(function(id){ delete node[id]; });
+          if (!Object.keys(node).length) delete d[key];
+        } else if (typeof node === 'number'){
+          delete d[key];                       // the whole store was tombstoned
+        }
+        if (!Object.keys(d).length) delete row._deletes;
+      }
+      // 2) the LOCAL mirror — miss this and the next sync re-applies the tomb
+      try {
+        var tk = '__synctomb__' + appKey;
+        var raw = localStorage.getItem(tk);
+        if (!raw) return;
+        var lt = JSON.parse(raw);
+        if (!lt || typeof lt !== 'object') return;
+        var ln = lt[key];
+        if (ln && typeof ln === 'object'){
+          ids.forEach(function(id){ delete ln[id]; });
+          if (!Object.keys(ln).length) delete lt[key];
+        } else if (typeof ln === 'number'){
+          delete lt[key];
+        }
+        if (Object.keys(lt).length) localStorage.setItem(tk, JSON.stringify(lt));
+        else localStorage.removeItem(tk);
+      } catch(e){}
+    }
+
+    // The tomb ids for a set of restored entries, in sync.js's id scheme.
+    function tombIdsFor(missing){
+      if (Array.isArray(missing)) return missing.map(idOfItem).filter(Boolean);
+      if (missing && typeof missing === 'object') return Object.keys(missing);   // date-keyed maps
+      return [];
+    }
+
     var repairSnap = null, repairPlan = [], changedPlan = [], currentRows = {};
 
     async function loadCurrentRows(){
@@ -1154,6 +1204,10 @@
           });
           byRow[p.appKey][p.key] = obj;
         }
+        // Defensive: a put-back entry already exists, so it should not be
+        // tombstoned — but if the store was tombstoned wholesale, clear it.
+        clearTombstones(byRow[p.appKey], p.appKey, p.key,
+          p.changed.map(function(c){ return c.key != null ? c.key : c.id; }).filter(Boolean));
       });
 
       var okRows = 0, badRows = 0, rowKeys = Object.keys(byRow);
@@ -1205,6 +1259,8 @@
           byRow[p.appKey][p.key] = b2;
           added += Object.keys(p.missing).length;
         }
+        // Without this, sync's tombstone deletes them again on the next merge.
+        clearTombstones(byRow[p.appKey], p.appKey, p.key, tombIdsFor(p.missing));
       });
 
       var okRows = 0, badRows = 0;
