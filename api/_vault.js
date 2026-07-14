@@ -31,10 +31,18 @@ var MAX_BYTES = 20 * 1024 * 1024;   // refuse to ship something absurd
 //                   it could turn a ~1MB backup into ~80MB.
 // (run:inbox-ack IS kept — it's a tiny id list, and losing it could re-import
 //  Chrissie's runs as duplicates.)
+//   als-full-backup — the old one-tap "cloud snapshot" row. It is ITSELF a full
+//                   copy of every localStorage key, so including it stored a
+//                   second, staler copy of everything inside each snapshot —
+//                   roughly HALVING the useful size. It is a backup, not data.
+//                   (The row itself is left alone; it just isn't re-backed-up.)
+//   __test__ / __sync_test__ — connectivity-probe junk.
 function isExcluded(key) {
   if (!key) return true;
   if (key.indexOf('backup:') === 0) return true;
   if (key === 'run:inbox') return true;
+  if (key === 'als-full-backup') return true;
+  if (key.indexOf('__') === 0) return true;
   return false;
 }
 
