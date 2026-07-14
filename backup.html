@@ -84,6 +84,47 @@
               border:1px solid rgba(242,166,90,.4); border-radius:6px; padding:2px 6px; flex:none; }
     .pk-more{ font-size:12px; color:var(--au-dim); padding-top:10px; }
     .pk-head{ font-size:12.5px; color:var(--au-dim); line-height:1.6; margin-bottom:10px; }
+
+    /* ── The day panel: three actions, ranked by what they can cost you.
+       The whole point is that DANGER LOOKS LIKE DANGER. Read-only is quiet,
+       additive is emerald, destructive is red and sits last. ───────────── */
+    .dp{ margin-top:12px; padding-top:14px; border-top:1px solid var(--au-line); }
+    .dp-head{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
+    .dp-htxt{ flex:1; min-width:0; }
+    .dp-when{ font-family:var(--au-serif); font-style:italic; font-size:21px; color:var(--au-ivory); line-height:1.15; }
+    .dp-meta{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:6px; }
+    .dp-close{ flex:none; width:30px; height:30px; border-radius:9px; border:1px solid var(--au-line);
+               background:rgba(255,255,255,.03); color:var(--au-dim); font-size:13px; cursor:pointer; }
+    .dp-close:hover{ color:var(--au-ivory); }
+    .dp-act{ display:flex; align-items:flex-start; gap:11px; width:100%; text-align:left; cursor:pointer;
+             font-family:inherit; color:inherit; padding:13px; margin-bottom:8px; border-radius:12px;
+             background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-left-width:3px;
+             transition:background .2s, border-color .2s; }
+    .dp-act:hover{ background:rgba(255,255,255,.06); }
+    .dp-act .dp-i{ flex:none; font-size:14px; width:18px; text-align:center; margin-top:1px; }
+    .dp-t{ display:block; font-size:13.5px; font-weight:700; color:var(--au-ivory); }
+    .dp-s{ display:block; font-size:11.5px; color:var(--au-dim); margin-top:3px; line-height:1.5; }
+    .dp-act.safe{ border-left-color:rgba(255,255,255,.25); }
+    .dp-act.safe:hover{ border-color:rgba(255,255,255,.3); border-left-color:#fff; }
+    .dp-act.add{ border-left-color:#3FE0B0; }
+    .dp-act.add:hover{ border-color:rgba(63,224,176,.5); }
+    .dp-act.add .dp-i{ color:#3FE0B0; }
+    .dp-act.danger{ border-left-color:#E8736B; background:rgba(232,115,107,.05); }
+    .dp-act.danger:hover{ border-color:rgba(232,115,107,.5); background:rgba(232,115,107,.09); }
+    .dp-act.danger .dp-i{ color:#E8736B; }
+    .dp-act.on{ background:rgba(255,255,255,.07); }
+    .dp-act.on.add{ border-color:rgba(63,224,176,.5); }
+    #dpBody:not(:empty){ margin-top:12px; padding-top:13px; border-top:1px solid var(--au-line); }
+
+    /* ── Keep-a-copy divider + Advanced ──────────────────────── */
+    .bk-sep{ height:1px; background:var(--au-line); margin:18px 0 15px; }
+    .bk-subh{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-dim); margin-bottom:6px; }
+    .bk-adv summary{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+                     color:var(--au-faint); cursor:pointer; list-style:none; }
+    .bk-adv summary::-webkit-details-marker{ display:none; }
+    .bk-adv summary::after{ content:' +'; }
+    .bk-adv[open] summary::after{ content:' –'; }
+    .bk-adv summary:hover{ color:var(--au-dim); }
     .bk-drop{ border:1.5px dashed var(--au-line); border-radius:13px; padding:22px 14px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
     .bk-drop.over{ border-color:rgba(var(--bk),.6); background:rgba(var(--bk),.05); }
     .bk-drop .big{ font-size:24px; }
@@ -135,7 +176,7 @@
     <!-- THE VAULT — automatic daily history -->
     <div class="bk-card">
       <h2>The vault</h2>
-      <div class="desc">A snapshot of everything, taken <b>automatically every day</b> and committed to your private GitHub repo — where it can never be overwritten. If today's data is ever wrong, you can go back to any earlier day.</div>
+      <div class="desc">A snapshot of everything, taken <b>automatically every day</b> and committed to your private GitHub repo, where it can never be overwritten. If today's data is ever wrong, you can go back to any earlier day.</div>
       <div class="bk-stat-row">
         <div class="bk-stat"><b id="vlLast">…</b><span>Last backup</span></div>
         <div class="bk-stat"><b id="vlDays">…</b><span>Snapshots</span></div>
@@ -144,46 +185,52 @@
       <button class="bk-btn go" id="vlNow" type="button">Back up now</button>
       <button class="bk-btn ghost" id="vlVerify" type="button">✓ Verify my backup</button>
       <div class="bk-ok hidden" id="vlDone"></div>
-      <div class="vl-list hidden" id="vlList">
-        <div class="vl-h">Go back to a day</div>
-        <div id="vlItems"></div>
+    </div>
+
+    <!-- GO BACK TO A DAY — ONE picker, three actions ranked by what they cost.
+         This replaces the three separate day-pickers (vault list / repair /
+         look-inside) that all operated on the same day. Pick the day once,
+         then choose how far you want to go. -->
+    <div class="bk-card">
+      <h2>Go back to a day</h2>
+      <div class="desc">Every day is saved. Pick one, then choose what to do with it: from <b>just looking</b>, all the way to <b>replacing everything</b>. Nothing happens until you choose.</div>
+      <div id="dayList"></div>
+      <div class="dp hidden" id="dayPanel">
+        <div class="dp-head">
+          <div class="dp-htxt">
+            <div class="dp-when" id="dpWhen">—</div>
+            <div class="dp-meta" id="dpMeta">—</div>
+          </div>
+          <button class="dp-close" id="dpClose" type="button" aria-label="Close">✕</button>
+        </div>
+
+        <button class="dp-act safe" id="dpLook" type="button">
+          <span class="dp-i">👁</span>
+          <span class="vs-txt"><span class="dp-t">Look inside</span>
+          <span class="dp-s">Read your entries. Nothing is written, so this can't cost you anything. <b>Start here.</b></span></span>
+        </button>
+
+        <button class="dp-act add" id="dpAdd" type="button">
+          <span class="dp-i">✚</span>
+          <span class="vs-txt"><span class="dp-t">Bring back what's missing</span>
+          <span class="dp-s">Adds back only what's gone. It <b>cannot delete or overwrite</b> anything you've logged since.</span></span>
+        </button>
+
+        <button class="dp-act danger" id="dpRestore" type="button">
+          <span class="dp-i">⚠</span>
+          <span class="vs-txt"><span class="dp-t">Restore this whole day</span>
+          <span class="dp-s"><b>Replaces everything</b> with that day. Anything logged since is rolled back. A safety copy downloads first.</span></span>
+        </button>
+
+        <div id="dpBody"></div>
+        <div class="bk-ok hidden" id="dpDone"></div>
       </div>
     </div>
 
-    <!-- REPAIR — surgical, additive-only recovery -->
+    <!-- KEEP A COPY — the file in your hand, + restoring from one -->
     <div class="bk-card">
-      <h2>Bring something back</h2>
-      <div class="desc">Lost some weigh-ins but don't want to undo today's meals? Pick a day, see exactly what's missing, and take back <b>only that</b>. This can <b>only add entries — it can never delete one</b>, so nothing you've logged since is at risk.</div>
-      <select id="rpDay" class="rp-select"></select>
-      <button class="bk-btn ghost" id="rpCompare" type="button">Compare with today</button>
-      <div id="rpOut" class="rp-out hidden"></div>
-      <div class="bk-ok hidden" id="rpDone"></div>
-    </div>
-
-    <!-- LOOK INSIDE — read-only. Just show me what was there. -->
-    <div class="bk-card">
-      <h2>Look inside a backup</h2>
-      <div class="desc">Just want to <i>see</i> it? Pick a day and a store and read your actual entries — nothing is written, nothing changes. Anything that's no longer in your data today is flagged, so you can simply type it back in yourself.</div>
-      <select id="pkDay" class="rp-select"></select>
-      <select id="pkStore" class="rp-select"></select>
-      <button class="bk-btn ghost" id="pkShow" type="button">Show me</button>
-      <div id="pkOut" class="pk-out hidden"></div>
-    </div>
-
-    <!-- CLOUD SNAPSHOT (one-tap) -->
-    <div class="bk-card">
-      <h2>Cloud snapshot</h2>
-      <div class="desc">The fast path: keep one full copy in your own cloud. <b>Back up</b> overwrites it with everything you have now; <b>Restore</b> brings it all back on any device.</div>
-      <div class="bk-line" id="clMeta" style="margin-bottom:12px">Checking…</div>
-      <button class="bk-btn go" id="clBackup" type="button">Back up to cloud</button>
-      <button class="bk-btn ghost" id="clRestore" type="button">↻ Restore from cloud</button>
-      <div class="bk-ok hidden" id="clDone"></div>
-    </div>
-
-    <!-- EXPORT -->
-    <div class="bk-card">
-      <h2>Export a file</h2>
-      <div class="desc">Download a single <b>.json</b> snapshot of everything, pulled from this device <i>and</i> the cloud so it's complete even on a fresh install.</div>
+      <h2>Keep a copy</h2>
+      <div class="desc">A single <b>.json</b> file of everything, pulled from this device <i>and</i> the cloud. This is the copy no company can take away from you. Worth doing every month or so.</div>
       <div class="bk-stat-row">
         <div class="bk-stat"><b id="exKeys">…</b><span>Data keys</span></div>
         <div class="bk-stat"><b id="exSize">…</b><span>Size</span></div>
@@ -191,12 +238,10 @@
       </div>
       <button class="bk-btn go" id="exBtn" type="button">Download backup</button>
       <div class="bk-ok hidden" id="exDone"></div>
-    </div>
 
-    <!-- RESTORE -->
-    <div class="bk-card">
-      <h2>Restore a file</h2>
-      <div class="desc">Load a backup file to bring your data back. This <b>replaces</b> your current data. A safety copy of what you have now is downloaded automatically first.</div>
+      <div class="bk-sep"></div>
+      <div class="bk-subh">Restore from a file</div>
+      <div class="desc" style="margin-bottom:11px">Load a backup file you saved earlier. This <b>replaces</b> your current data. A safety copy downloads first.</div>
       <div class="bk-drop" id="bkDrop">
         <div class="big" style="color:#3FE0B0;display:flex;justify-content:center"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h3.6l2 2.4H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/></svg></div>
         <div class="t">Choose a backup file</div>
@@ -217,6 +262,19 @@
         <div class="bk-ok hidden" id="rsDone"></div>
       </div>
     </div>
+
+    <!-- ADVANCED — the legacy one-slot cloud snapshot. Superseded by the vault
+         (which is automatic and keeps 14 days + forever on GitHub, where this
+         kept exactly one copy that overwrote itself). Kept read-side only, so
+         an old snapshot is never stranded, but it no longer competes for
+         attention with the vault. -->
+    <details class="bk-card bk-adv">
+      <summary>Advanced</summary>
+      <div class="desc" style="margin-top:12px">The old one-slot cloud snapshot, from before the vault. It holds a single copy that overwrote itself each time. The vault replaces it, but if you have an old snapshot sitting there, you can still restore it.</div>
+      <div class="bk-line" id="clMeta" style="margin-bottom:12px">Checking…</div>
+      <button class="bk-btn ghost" id="clRestore" type="button">↻ Restore the old cloud snapshot</button>
+      <div class="bk-ok hidden" id="clDone"></div>
+    </details>
 
     <!-- HELP -->
     <div class="bk-card">
@@ -487,28 +545,6 @@
       } catch(e){ el.textContent = 'Cloud status unavailable offline.'; }
     }
 
-    $('clBackup').addEventListener('click', async function(){
-      var btn=this; btn.disabled=true; var prev=btn.textContent; btn.textContent='Backing up…';
-      try {
-        var snap = localSnapshot();
-        var savedAt = new Date().toISOString();
-        var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=key', {
-          method:'POST',
-          headers: headers({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' }),
-          body: JSON.stringify({ key: CLOUD_KEY, data: { savedAt: savedAt, keys: Object.keys(snap).length, snap: snap }, updated_at: savedAt })
-        });
-        var done = $('clDone');
-        if (r.ok){
-          try { localStorage.setItem('als_last_cloud_backup', savedAt); } catch(e){}
-          done.textContent = '✓ Backed up ' + Object.keys(snap).length + ' keys to your cloud.';
-          refreshCloudMeta();
-        } else { done.textContent = 'Cloud backup failed (' + r.status + '). Try “Download a file” instead.'; }
-        done.classList.remove('hidden');
-      } catch(e){
-        var done=$('clDone'); done.textContent='No connection. Try “Download a file” instead.'; done.classList.remove('hidden');
-      } finally { btn.disabled=false; btn.textContent=prev; }
-    });
-
     $('clRestore').addEventListener('click', async function(){
       var btn=this;
       try {
@@ -517,7 +553,7 @@
         var d = (rows && rows[0] && rows[0].data) ? rows[0].data : null;
         if (!d || !d.snap){ var done=$('clDone'); done.textContent='No cloud snapshot found — back up first.'; done.classList.remove('hidden'); return; }
         if (!(await ALSConfirm({title:'Restore cloud snapshot?',message:'From ' + fmtWhen(d.savedAt) + '.\n\nThis replaces your current data (a safety copy downloads first).',confirmText:'Restore'}))) return;
-        btn.disabled=true; var prev=btn.textContent; btn.textContent='Restoring…'; $('clBackup').disabled=true;
+        btn.disabled=true; var prev=btn.textContent; btn.textContent='Restoring…'; 
         var res = await restoreFromData(d.snap);
         var done=$('clDone');
         done.innerHTML = '✓ Restored <b>'+res.local+'</b> keys · synced <b>'+res.pushed+'</b> cloud set'+(res.pushed===1?'':'s')+'. Reloading…';
@@ -525,7 +561,7 @@
         setTimeout(function(){ location.replace('index.html'); }, 2200);
       } catch(e){
         var done=$('clDone'); done.textContent='Restore failed: '+(e&&e.message||e); done.classList.remove('hidden');
-        btn.disabled=false; btn.textContent='↻ Restore from cloud'; $('clBackup').disabled=false;
+        btn.disabled=false; btn.textContent='↻ Restore the old cloud snapshot'; 
       }
     });
 
@@ -617,31 +653,63 @@
       var idx = vaultIndex;
       if (!idx || !idx.lastAt){
         $('vlLast').textContent = '—'; $('vlDays').textContent = '0'; $('vlRecs').textContent = '—';
-        $('vlList').classList.add('hidden');
+        $('dayList').innerHTML = '<div class="rp-none">No snapshots yet. Tap “Back up now” above and this fills in.</div>';
         return;
       }
       $('vlLast').textContent = agoWords(idx.lastAt);
       $('vlDays').textContent = (idx.days || []).length;
       $('vlRecs').textContent = (idx.lastRecords != null) ? idx.lastRecords.toLocaleString() : '—';
+      renderDayList();
+    }
 
-      var days = (idx.days || []).slice().reverse();   // newest first
-      if (!days.length){ $('vlList').classList.add('hidden'); return; }
-      var host = $('vlItems');
+    // ── ONE day picker ────────────────────────────────────────
+    // Tapping a day does NOT act on it — it opens the panel and lets you choose
+    // how far to go. (Before, this list restored the whole day on tap, styled
+    // exactly like the safe buttons. That was a footgun.)
+    var activeDay = null;
+
+    function renderDayList(){
+      var days = ((vaultIndex && vaultIndex.days) || []).slice().reverse();  // newest first
+      var host = $('dayList');
       host.innerHTML = '';
       days.forEach(function(d){
         var b = document.createElement('button');
-        b.type = 'button'; b.className = 'vl-item';
+        b.type = 'button';
+        b.className = 'vl-item' + (activeDay && activeDay.date === d.date ? ' on' : '');
         var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
         b.innerHTML = '<span class="vs-txt"><span class="vl-d">' + when + '</span><span class="vl-m">' +
           (d.records != null ? d.records.toLocaleString() + ' records' : '—') +
           ' · ' + fmtBytes(d.bytes || 0) +
           (d.shrank ? ' · <span class="vl-flag">⚠ far fewer than the day before</span>' : '') +
-          '</span></span><span class="vl-go">Restore →</span>';
-        b.addEventListener('click', function(){ restoreDay(d); });
+          '</span></span><span class="vl-go">Open →</span>';
+        b.addEventListener('click', function(){ openDay(d); });
         host.appendChild(b);
       });
-      $('vlList').classList.remove('hidden');
     }
+
+    function openDay(d){
+      activeDay = d;
+      var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+      $('dpWhen').textContent = when;
+      $('dpMeta').textContent = (d.records != null ? d.records.toLocaleString() + ' records' : '') +
+                                ' · ' + fmtBytes(d.bytes || 0) + (d.github ? ' · on GitHub' : '');
+      $('dpBody').innerHTML = '';
+      $('dpDone').classList.add('hidden');
+      ['dpLook','dpAdd','dpRestore'].forEach(function(id){ $(id).classList.remove('on'); });
+      $('dayPanel').classList.remove('hidden');
+      renderDayList();
+      try { $('dayPanel').scrollIntoView({ behavior:'smooth', block:'nearest' }); } catch(e){}
+    }
+
+    $('dpClose').addEventListener('click', function(){
+      activeDay = null;
+      $('dayPanel').classList.add('hidden');
+      renderDayList();
+    });
+
+    $('dpLook').addEventListener('click', function(){ if (activeDay) showLook(activeDay); });
+    $('dpAdd').addEventListener('click', function(){ if (activeDay) showCompare(activeDay); });
+    $('dpRestore').addEventListener('click', function(){ if (activeDay) restoreDay(activeDay); });
 
     async function loadVault(){
       try {
@@ -649,8 +717,6 @@
       } catch(e){ vaultIndex = null; }
       renderStatus();
       renderVault();
-      fillRepairDays();
-      fillPeekDays();
     }
 
     // Go back to a day. Reuses the SAME restore core the file/cloud paths use —
@@ -821,32 +887,12 @@
       return map;
     }
 
-    function fillRepairDays(){
-      var sel = $('rpDay');
-      sel.innerHTML = '';
-      var days = ((vaultIndex && vaultIndex.days) || []).slice().reverse();
-      if (!days.length){
-        var o = document.createElement('option');
-        o.textContent = 'No snapshots yet — back up first'; o.value = '';
-        sel.appendChild(o); sel.disabled = true; $('rpCompare').disabled = true;
-        return;
-      }
-      sel.disabled = false; $('rpCompare').disabled = false;
-      days.forEach(function(d){
-        var o = document.createElement('option');
-        o.value = d.date;
-        o.textContent = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' }) +
-                        (d.records != null ? '  ·  ' + d.records.toLocaleString() + ' records' : '');
-        sel.appendChild(o);
-      });
-    }
-
-    $('rpCompare').addEventListener('click', async function(){
-      var btn = this, date = $('rpDay').value;
-      if (!date) return;
-      btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Comparing…';
-      var out = $('rpOut'); out.classList.add('hidden');
-      $('rpDone').classList.add('hidden');
+    // Renders into the day panel. Same engine, one picker.
+    async function showCompare(d){
+      var date = d.date, body = $('dpBody');
+      $('dpLook').classList.remove('on'); $('dpAdd').classList.add('on');
+      $('dpDone').classList.add('hidden');
+      body.innerHTML = '<div class="rp-none">Comparing with today…</div>';
       try {
         repairSnap = await readVaultRow('backup:snap:' + date);
         if (!repairSnap || !repairSnap.rows) throw new Error('that snapshot could not be read');
@@ -870,10 +916,9 @@
         });
         repairPlan.sort(function(a,b){ return b.n - a.n; });
 
-        out.innerHTML = '';
+        body.innerHTML = '';
         if (!repairPlan.length){
-          out.innerHTML = '<div class="rp-none">✓ Nothing is missing. Everything in that snapshot is still in your data today — there is nothing to bring back.</div>';
-          out.classList.remove('hidden');
+          body.innerHTML = '<div class="rp-none">✓ <b>Nothing is missing.</b> Everything in that backup is still in your data today, so there is nothing to bring back.</div>';
           return;
         }
         repairPlan.forEach(function(p, i){
@@ -883,30 +928,27 @@
             '<span class="vs-txt"><span class="rp-name">' + p.label + '</span>' +
             '<span class="rp-sub"><span class="rp-gone">' + p.n + ' missing</span> · ' +
             p.then + ' in that backup, ' + p.now + ' now</span></span>';
-          out.appendChild(row);
+          body.appendChild(row);
         });
         var total = repairPlan.reduce(function(s,p){ return s + p.n; }, 0);
         var go = document.createElement('button');
         go.type = 'button'; go.className = 'bk-btn go'; go.style.marginTop = '13px';
         go.textContent = 'Bring back ' + total + ' entr' + (total === 1 ? 'y' : 'ies');
         go.addEventListener('click', function(){ doHeal(date); });
-        out.appendChild(go);
+        body.appendChild(go);
         var note = document.createElement('div');
-        note.className = 'rp-none';
-        note.style.marginTop = '10px';
+        note.className = 'rp-none'; note.style.marginTop = '10px';
         note.innerHTML = 'This <b>only adds</b> what is missing. Nothing you have logged since ' +
           new Date(date + 'T00:00:00').toLocaleDateString([], { month:'long', day:'numeric' }) + ' can be removed by it.';
-        out.appendChild(note);
-        out.classList.remove('hidden');
+        body.appendChild(note);
       } catch(e){
-        out.innerHTML = '<div class="rp-none rp-gone">Could not compare: ' + ((e && e.message) || e) + '</div>';
-        out.classList.remove('hidden');
-      } finally { btn.disabled = false; btn.textContent = prev; }
-    });
+        body.innerHTML = '<div class="rp-none rp-gone">Could not compare: ' + ((e && e.message) || e) + '</div>';
+      }
+    }
 
     async function doHeal(date){
       var picked = [];
-      $('rpOut').querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      $('dpBody').querySelectorAll('input[type=checkbox]').forEach(function(cb){
         if (cb.checked) picked.push(repairPlan[+cb.getAttribute('data-i')]);
       });
       if (!picked.length){ return; }
@@ -918,7 +960,7 @@
         confirmText: 'Bring them back'
       }))) return;
 
-      var done = $('rpDone');
+      var done = $('dpDone');
       done.textContent = 'Bringing them back…'; done.classList.remove('hidden');
 
       // Group by cloud bundle so each row is written once, preserving its other keys.
@@ -1030,144 +1072,101 @@
 
     var peekSnap = null;
 
-    function fillPeekDays(){
-      var sel = $('pkDay');
-      sel.innerHTML = '';
-      var days = ((vaultIndex && vaultIndex.days) || []).slice().reverse();
-      if (!days.length){
-        var o = document.createElement('option');
-        o.textContent = 'No snapshots yet'; o.value = '';
-        sel.appendChild(o); sel.disabled = true; $('pkShow').disabled = true; $('pkStore').disabled = true;
-        return;
-      }
-      sel.disabled = false; $('pkShow').disabled = false; $('pkStore').disabled = false;
-      days.forEach(function(d){
-        var o = document.createElement('option');
-        o.value = d.date;
-        o.textContent = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
-        sel.appendChild(o);
-      });
-      fillPeekStores();
-    }
-
-    // Store list comes from the snapshot's own census, so it always reflects
-    // what that day actually held.
-    function fillPeekStores(){
-      var sel = $('pkStore');
-      var date = $('pkDay').value;
-      var day = ((vaultIndex && vaultIndex.days) || []).filter(function(d){ return d.date === date; })[0];
-      sel.innerHTML = '';
-      // The census is per app_state ROW; we want per KEY, so offer the friendly
-      // keys we know, and discover the rest when the snapshot loads.
-      var known = Object.keys(FRIENDLY);
-      known.forEach(function(k){
-        var o = document.createElement('option');
-        o.value = k; o.textContent = FRIENDLY[k];
-        sel.appendChild(o);
-      });
-      var o2 = document.createElement('option');
-      o2.value = '__all__'; o2.textContent = 'Everything (summary)';
-      sel.appendChild(o2);
-    }
-    $('pkDay').addEventListener('change', function(){ $('pkOut').classList.add('hidden'); });
-
-    $('pkShow').addEventListener('click', async function(){
-      var btn = this, date = $('pkDay').value, want = $('pkStore').value;
-      if (!date) return;
-      btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Opening…';
-      var out = $('pkOut');
+    // Read-only. Renders inside the day panel: a store picker, then the entries.
+    async function showLook(d){
+      var date = d.date, body = $('dpBody');
+      $('dpAdd').classList.remove('on'); $('dpLook').classList.add('on');
+      $('dpDone').classList.add('hidden');
+      body.innerHTML = '<div class="rp-none">Opening that day…</div>';
       try {
         peekSnap = await readVaultRow('backup:snap:' + date);
         if (!peekSnap || !peekSnap.rows) throw new Error('that snapshot could not be read');
         if (!Object.keys(currentRows).length) currentRows = await loadCurrentRows();
 
-        // Find the requested key anywhere in the snapshot's rows.
-        var found = null, foundRow = null;
+        // Only offer stores this day ACTUALLY holds — no empty dead-ends.
+        var stores = [];
         Object.keys(peekSnap.rows).forEach(function(appKey){
-          var row = peekSnap.rows[appKey] || {};
-          if (want !== '__all__' && (want in row)) { found = row[want]; foundRow = appKey; }
+          Object.keys(peekSnap.rows[appKey] || {}).forEach(function(k){
+            if (k === '_deletes') return;
+            var n = countOf(peekSnap.rows[appKey][k]);
+            if (n) stores.push({ appKey: appKey, key: k, n: n, label: FRIENDLY[k] || k });
+          });
+        });
+        stores.sort(function(a,b){
+          var fa = FRIENDLY[a.key] ? 0 : 1, fb = FRIENDLY[b.key] ? 0 : 1;   // known stores first
+          if (fa !== fb) return fa - fb;
+          return b.n - a.n;
         });
 
-        out.innerHTML = '';
-        var when = new Date(date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+        body.innerHTML = '';
+        var sel = document.createElement('select');
+        sel.className = 'rp-select';
+        stores.forEach(function(st, i){
+          var o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = st.label + '  ·  ' + st.n;
+          sel.appendChild(o);
+        });
+        body.appendChild(sel);
 
-        if (want === '__all__'){
-          var head = document.createElement('div');
-          head.className = 'pk-head';
-          head.innerHTML = 'Everything in the <b>' + when + '</b> backup:';
-          out.appendChild(head);
-          var rows = peekSnap.rows;
-          Object.keys(rows).forEach(function(appKey){
-            Object.keys(rows[appKey] || {}).forEach(function(k){
-              if (k === '_deletes') return;
-              var n = countOf(rows[appKey][k]);
-              if (!n) return;
-              var d = document.createElement('div');
-              d.className = 'pk-item';
-              d.innerHTML = '<span class="pk-what">' + (FRIENDLY[k] || k) + '</span><span class="pk-when">' + n + '</span>';
-              out.appendChild(d);
+        var list = document.createElement('div');
+        list.className = 'pk-out';
+        body.appendChild(list);
+
+        function paint(){
+          var st = stores[+sel.value];
+          if (!st) { list.innerHTML = ''; return; }
+          var found = peekSnap.rows[st.appKey][st.key];
+          var cur = (currentRows[st.appKey] || {})[st.key];
+          var missing = missingBetween(found, cur);
+          var missSet = {};
+          if (Array.isArray(missing)) missing.forEach(function(it){ var i = idOfItem(it); if (i) missSet[i] = 1; });
+          else if (missing && typeof missing === 'object') Object.keys(missing).forEach(function(k){ missSet['k:' + k] = 1; });
+
+          var items = [];
+          if (Array.isArray(found)){
+            items = found.slice().sort(function(a,b){
+              var da = (a && (a.dateKey || a.date)) || '', db = (b && (b.dateKey || b.date)) || '';
+              if (da && db) return da < db ? 1 : -1;                 // newest first
+              return ((b && b.ts) || 0) - ((a && a.ts) || 0);
+            }).map(function(it){ return { it: it, lost: !!missSet[idOfItem(it)] }; });
+          } else if (found && typeof found === 'object'){
+            items = Object.keys(found).sort().reverse().map(function(k){
+              return { it: found[k], key: k, lost: !!missSet['k:' + k] };
             });
+          }
+
+          var lostN = items.filter(function(x){ return x.lost; }).length;
+          list.innerHTML = '';
+          var h = document.createElement('div');
+          h.className = 'pk-head';
+          h.innerHTML = '<b>' + items.length + '</b> entr' + (items.length===1?'y':'ies') +
+            (lostN ? ' · <span class="rp-gone">' + lostN + ' no longer in your data</span>. Flagged below, so you can just type them back in.'
+                   : ' · all of them are still in your data.');
+          list.appendChild(h);
+
+          items.slice(0, 60).forEach(function(x){
+            var row = document.createElement('div');
+            row.className = 'pk-item';
+            var w = x.key ? (function(){ try { return new Date(x.key + 'T00:00:00').toLocaleDateString([], { day:'numeric', month:'short' }); } catch(e){ return x.key; } })() : whenOf(x.it);
+            row.innerHTML = '<span class="pk-when">' + (w || '—') + '</span>' +
+                            '<span class="pk-what">' + describe(st.key, x.it) + '</span>' +
+                            (x.lost ? '<span class="pk-lost">lost</span>' : '');
+            list.appendChild(row);
           });
-          out.classList.remove('hidden');
-          return;
+          if (items.length > 60){
+            var m = document.createElement('div');
+            m.className = 'pk-more';
+            m.textContent = '…and ' + (items.length - 60) + ' more. The full file is on GitHub.';
+            list.appendChild(m);
+          }
         }
-
-        if (found == null){
-          out.innerHTML = '<div class="rp-none">Nothing was stored for <b>' + (FRIENDLY[want] || want) + '</b> on ' + when + '.</div>';
-          out.classList.remove('hidden');
-          return;
-        }
-
-        // Which of these are no longer in today's data? (read-only flag)
-        var cur = (currentRows[foundRow] || {})[want];
-        var missing = missingBetween(found, cur);
-        var missSet = {};
-        if (Array.isArray(missing)) missing.forEach(function(it){ var i = idOfItem(it); if (i) missSet[i] = 1; });
-        else if (missing && typeof missing === 'object') Object.keys(missing).forEach(function(k){ missSet['k:' + k] = 1; });
-
-        var items = [];
-        if (Array.isArray(found)) {
-          items = found.slice();
-          items.sort(function(a,b){
-            var da = (a && (a.dateKey || a.date)) || '', db = (b && (b.dateKey || b.date)) || '';
-            if (da && db) return da < db ? 1 : -1;                 // newest first
-            return ((b && b.ts) || 0) - ((a && a.ts) || 0);
-          });
-          items = items.map(function(it){ return { it: it, lost: !!missSet[idOfItem(it)] }; });
-        } else if (found && typeof found === 'object') {
-          items = Object.keys(found).sort().reverse().map(function(k){
-            return { it: found[k], key: k, lost: !!missSet['k:' + k] };
-          });
-        }
-
-        var lostN = items.filter(function(x){ return x.lost; }).length;
-        var h = document.createElement('div');
-        h.className = 'pk-head';
-        h.innerHTML = '<b>' + (FRIENDLY[want] || want) + '</b> in the ' + when + ' backup — <b>' + items.length + '</b> entr' + (items.length===1?'y':'ies') +
-          (lostN ? ' · <span class="rp-gone">' + lostN + ' no longer in your data</span> (flagged below — just type them back in)' : ' · all still in your data');
-        out.appendChild(h);
-
-        items.slice(0, 60).forEach(function(x){
-          var d = document.createElement('div');
-          d.className = 'pk-item';
-          var w = x.key ? (function(){ try { return new Date(x.key + 'T00:00:00').toLocaleDateString([], { day:'numeric', month:'short' }); } catch(e){ return x.key; } })() : whenOf(x.it);
-          d.innerHTML = '<span class="pk-when">' + (w || '—') + '</span>' +
-                        '<span class="pk-what">' + describe(want, x.it) + '</span>' +
-                        (x.lost ? '<span class="pk-lost">lost</span>' : '');
-          out.appendChild(d);
-        });
-        if (items.length > 60){
-          var m = document.createElement('div');
-          m.className = 'pk-more';
-          m.textContent = '…and ' + (items.length - 60) + ' more. The full file is on GitHub.';
-          out.appendChild(m);
-        }
-        out.classList.remove('hidden');
+        sel.addEventListener('change', paint);
+        paint();
       } catch(e){
-        out.innerHTML = '<div class="rp-none rp-gone">Could not open it: ' + ((e && e.message) || e) + '</div>';
-        out.classList.remove('hidden');
-      } finally { btn.disabled = false; btn.textContent = prev; }
-    });
+        body.innerHTML = '<div class="rp-none rp-gone">Could not open it: ' + ((e && e.message) || e) + '</div>';
+      }
+    }
 
     refreshExportStats();
     refreshCloudMeta();
