@@ -43,6 +43,12 @@
     'arxaia', 'istoria'
   ];
 
+  // Alex's revision pages for the Greek Πανελλήνιες exams. They are HIS content,
+  // not a product feature — nobody else should be shown them. (Cosmetic only:
+  // the data behind them is protected by RLS like everything else.)
+  var OWNER_UID = '1655556c-97af-43ac-970f-fcbdbd8f7f0c';
+  var OWNER_ONLY = ['arxaia', 'istoria'];
+
   var DEFAULTS = {
     name: '',
     sex: null,               // 'm' | 'f' | null  → BMR
@@ -58,6 +64,19 @@
   };
 
   var cache = null, client = null, uid = null, readyFns = [], isReady = false;
+
+  // Is `page` visible to the account `who`, given their `pages` allow-list?
+  //  1. OWNER-ONLY pages (Alex's Πανελλήνιες revision) belong to him alone —
+  //     personal content, not a feature. It follows the account, no flag needed.
+  //  2. An explicit allow-list, if the profile has one.
+  // Unknown pages default to visible, so shipping a new page never silently
+  // hides it from everyone.
+  // Presentation only — the DATA is protected by row-level security in Postgres.
+  function pageAllowed(page, who, pages) {
+    if (OWNER_ONLY.indexOf(page) >= 0 && who && who !== OWNER_UID) return false;
+    if (!pages || !pages.length) return true;      // null = the full app
+    return pages.indexOf(page) >= 0;
+  }
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } }
   function lsSet(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {} }
@@ -172,12 +191,24 @@
       return new Date().getFullYear() - cache.birthYear;
     },
 
-    // Is this page enabled for this account? Unknown pages default to visible,
-    // so adding a page never silently hides it from everyone.
-    has: function (page) {
-      if (!cache.pages || !cache.pages.length) return true;   // null = full app
-      return cache.pages.indexOf(page) >= 0;
-    },
+    // Is this page enabled for this account?
+    //
+    // Two rules, in order:
+    //  1. OWNER-ONLY pages (Alex's Πανελλήνιες revision) are his alone — they
+    //     are personal content, not a feature, and mean nothing to anyone else.
+    //     No profile flag needed: it follows the account.
+    //  2. An explicit `pages` allow-list, if one is set.
+    // Unknown pages default to visible, so shipping a new page never silently
+    // hides it from everyone.
+    //
+    // This is presentation, NOT security. Data is protected by row-level
+    // security in Postgres; hiding a link just avoids showing someone a page
+    // that has nothing to do with them.
+    has: function (page) { return pageAllowed(page, uid, cache.pages); },
+    isOwner: function () { return !uid || uid === OWNER_UID; },
+
+    // The rule itself, pure and testable (no session, no DOM, no cloud).
+    _pageAllowed: pageAllowed,
 
     needsOnboarding: function () { return !(cache.name || '').trim(); },
 
@@ -191,5 +222,31 @@
     _forget: function () { cache = merged(null); try { localStorage.removeItem(KEY); } catch (e) {} }
   };
 
-  hydrate();
+  // ── Enforce the page list in the UI ────────────────────────────────────────
+  // Hide every link to a page this account doesn't have, and bounce them home
+  // if they land on one directly. Runs after hydrate() so `uid` is known.
+  // Presentation only — the data itself is protected by RLS.
+  function pageKey(href) {
+    var m = String(href || '').split(/[?#]/)[0].split('/').pop();
+    return m.replace(/\.html$/, '') || 'index';
+  }
+  function enforce() {
+    try {
+      var here = pageKey(location.pathname);
+      if (!window.ALSProfile.has(here)) { location.replace('index.html'); return; }
+      var links = document.querySelectorAll('a[href$=".html"]');
+      Array.prototype.forEach.call(links, function (a) {
+        if (!window.ALSProfile.has(pageKey(a.getAttribute('href')))) a.remove();
+      });
+    } catch (e) {}
+  }
+  window.ALSProfile._enforce = enforce;
+
+  hydrate().then(function () {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enforce);
+    else enforce();
+    // home-live.js and the command palette inject tiles/links after load
+    setTimeout(enforce, 600);
+    setTimeout(enforce, 2000);
+  });
 })();

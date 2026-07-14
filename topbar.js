@@ -72,6 +72,15 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── First run: ask who they are before showing them a stranger's-looking app.
+  // Self-arms only when the profile has no name (and only after it has hydrated
+  // from the cloud, so a returning user on a new device isn't asked twice).
+  (function loadOnboard(){ try {
+    if (window.ALSOnboard || document.querySelector('script[src*="als-onboard"]')) return;
+    var s = document.createElement('script'); s.src = 'als-onboard.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
@@ -166,28 +175,44 @@
         '<input id="alsPw" type="password" autocomplete="current-password" placeholder="Password" style="width:100%;padding:13px 15px;margin-bottom:6px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#F4F1EA;font-size:15px;outline:none">'+
         '<div id="alsErr" style="min-height:16px;font-size:12px;color:#FF8FA3;margin:4px 2px 10px;line-height:1.4"></div>'+
         '<button id="alsGo" type="button" style="width:100%;padding:14px;margin-bottom:9px;border-radius:13px;border:none;font-size:15px;font-weight:700;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);cursor:pointer">Log in</button>'+
-        '<button id="alsNew" type="button" style="width:100%;padding:13px;border-radius:13px;border:1px solid rgba(52,226,176,.4);background:rgba(255,255,255,.04);font-size:14px;font-weight:700;color:#F4F1EA;cursor:pointer">Create account</button>'+
-        '<div style="text-align:center;margin-top:14px;font-size:11.5px;color:rgba(244,241,234,.4);line-height:1.5">First time? Enter an email + password and tap <b style="color:rgba(244,241,234,.6)">Create account</b>.</div>'+
+        // Signups are closed (accounts are invited from the Supabase dashboard),
+        // so the old "Create account" button was a dead end. A magic link is the
+        // forgiving path instead: no password to remember, and it works for
+        // anyone who has been invited.
+        '<button id="alsLink" type="button" style="width:100%;padding:13px;border-radius:13px;border:1px solid rgba(52,226,176,.4);background:rgba(255,255,255,.04);font-size:14px;font-weight:700;color:#F4F1EA;cursor:pointer">Email me a sign-in link</button>'+
+        '<div style="text-align:center;margin-top:14px;font-size:11.5px;color:rgba(244,241,234,.4);line-height:1.5">Forgot your password? Use the link — we\'ll email you a one-tap sign-in.</div>'+
       '</div>');
-      var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), nw=ov.querySelector('#alsNew'), err=ov.querySelector('#alsErr');
-      function submit(mode){
+      var em=ov.querySelector('#alsEm'), pw=ov.querySelector('#alsPw'), go=ov.querySelector('#alsGo'), lk=ov.querySelector('#alsLink'), err=ov.querySelector('#alsErr');
+      function submit(){
         var e=(em.value||'').trim(), p=pw.value||'';
         if(!e||!p){ err.style.color='#FF8FA3'; err.textContent='Enter your email and password first.'; return; }
-        if(mode==='signup' && p.length<6){ err.style.color='#FF8FA3'; err.textContent='Password must be at least 6 characters.'; return; }
-        var btn = mode==='signup'?nw:go, orig = btn.textContent;
-        go.disabled=true; nw.disabled=true; btn.textContent='…'; err.textContent='';
-        function reset(){ go.disabled=false; nw.disabled=false; btn.textContent=orig; }
-        var pr; try{ pr = mode==='signup'? client.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin}}) : client.auth.signInWithPassword({email:e,password:p}); }
+        var orig = go.textContent;
+        go.disabled=true; lk.disabled=true; go.textContent='…'; err.textContent='';
+        function reset(){ go.disabled=false; lk.disabled=false; go.textContent=orig; }
+        var pr; try{ pr = client.auth.signInWithPassword({email:e,password:p}); }
         catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; reset(); return; }
         Promise.resolve(pr).then(function(res){
           if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Something went wrong.'; reset(); return; }
-          if(mode==='signup' && (!res||!res.data||!res.data.session)){ err.style.color='#34E2B0'; err.textContent='Account created — check your email to confirm, then tap Log in.'; reset(); return; }
           location.reload();
         }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; reset(); });
       }
-      go.addEventListener('click',function(){ submit('login'); });
-      nw.addEventListener('click',function(){ submit('signup'); });
-      pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit('login'); });
+      // Magic link — for the person who never remembers a password (and for a
+      // phone where typing one is a chore). Only works for an invited account.
+      function magic(){
+        var e=(em.value||'').trim();
+        if(!e){ err.style.color='#FF8FA3'; err.textContent='Enter your email first, then tap this.'; return; }
+        var orig=lk.textContent; go.disabled=true; lk.disabled=true; lk.textContent='…'; err.textContent='';
+        function reset(){ go.disabled=false; lk.disabled=false; lk.textContent=orig; }
+        var pr; try{ pr = client.auth.signInWithOtp({ email:e, options:{ emailRedirectTo: location.origin, shouldCreateUser:false } }); }
+        catch(ex){ err.style.color='#FF8FA3'; err.textContent='Auth unavailable — try again.'; reset(); return; }
+        Promise.resolve(pr).then(function(res){
+          if(res&&res.error){ err.style.color='#FF8FA3'; err.textContent=res.error.message||'Could not send the link.'; reset(); return; }
+          err.style.color='#34E2B0'; err.textContent='Check your email — tap the link and you\'re in.'; reset();
+        }).catch(function(){ err.style.color='#FF8FA3'; err.textContent='Network error — try again.'; reset(); });
+      }
+      go.addEventListener('click',submit);
+      lk.addEventListener('click',magic);
+      pw.addEventListener('keydown',function(ev){ if(ev.key==='Enter') submit(); });
       setTimeout(function(){ try{ em.focus(); }catch(e){} }, 60);
     }
 

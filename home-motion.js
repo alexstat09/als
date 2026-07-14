@@ -146,7 +146,12 @@
     q.addEventListener('input', function () {
       var v = q.value.trim().toLowerCase();
       if (!v) { res.classList.remove('on'); res.innerHTML = ''; return; }
-      var m = ITEMS.filter(function (i) { return i[0].toLowerCase().indexOf(v) > -1; }).slice(0, 6);
+      // Only pages this account actually has — the search palette must not
+      // offer someone a page we've hidden everywhere else.
+      var m = ITEMS.filter(function (i) {
+        if (i[0].toLowerCase().indexOf(v) < 0) return false;
+        try { return !window.ALSProfile || ALSProfile.has(i[1].replace(/\.html$/, '')); } catch (e) { return true; }
+      }).slice(0, 6);
       res.innerHTML = m.length ? m.map(function (i, idx) { return '<a class="pr-item" style="animation-delay:' + (idx * 40) + 'ms" href="' + i[1] + '"><span class="ic">' + arrow + '</span>' + i[0] + '<span class="k">' + i[2] + '</span></a>'; }).join('') : '<div class="pr-item" style="color:var(--faint)">No match</div>';
       res.classList.add('on');
     });
