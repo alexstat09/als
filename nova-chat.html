@@ -208,6 +208,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- This page has no topbar, so it loads the profile itself: it needs the
+       name for the greeting AND the access token for /api/nova-chat. -->
+  <script src="als-profile.js" defer></script>
   <script src="error-toast.js" defer></script>
   <script src="sync.js" defer></script>
   <script src="insights-engine.js" defer></script>
@@ -292,7 +295,7 @@
       var chips = SUGGESTIONS.map(function(s){ return '<button class="nv-chip" type="button" data-q="'+esc(s)+'">'+esc(s)+'</button>'; }).join('');
       scroll.innerHTML =
         '<div class="nv-intro">'+ novaGemHTML() +
-        '<h1>Hey Alex.</h1>'+
+        '<h1>Hey' + (function(){ try{ var n = window.ALSProfile && ALSProfile.firstName(); return n ? ' ' + n : ' there'; }catch(e){ return ' there'; } })() + '.</h1>'+
         '<p>I can see your training, sleep, recovery, nutrition and habits in real time. Ask me anything — how to train today, why your sleep is off, whether you’re on track.</p>'+
         '<div class="nv-chips">'+chips+'</div></div>';
       try { if (window.NovaGem) NovaGem.scan(); } catch(e){}
@@ -349,8 +352,11 @@
         var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
         try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
         var sched=''; try{ if(window.GCal){ var gc=GCal.cached(); if(gc&&gc.events){ var f=function(iso){var d=new Date(iso);if(isNaN(d))return '';var h=d.getHours(),m=d.getMinutes();return h+':'+(m<10?'0':'')+m;}; var ln=function(evs){return evs.map(function(e){return (e.allDay?'all day':f(e.start))+' '+e.title;}).join('; ');}; var t0=GCal.eventsForDay(gc.events,0),t1=GCal.eventsForDay(gc.events,1),o=[]; o.push('Today: '+(t0.length?ln(t0):'nothing scheduled')); if(t1.length)o.push('Tomorrow: '+ln(t1)); sched=o.join('\n'); } } }catch(e){}
+        // Nova reads YOUR data — so it has to know who you are. The server
+        // verifies this token and scopes every read to that account.
+        var authHdr = {}; try { if (window.ALSAuthHeader) authHdr = await window.ALSAuthHeader(); } catch(e){}
         var res = await fetch('/api/nova-chat', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers: Object.assign({'Content-Type':'application/json'}, authHdr),
           body: JSON.stringify({ messages: history, insights: novaInsights, memory: memFacts(), schedule: sched })
         });
         if(res.body && res.body.getReader){

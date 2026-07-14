@@ -106,7 +106,30 @@ async function deleteRow(key, who) {
   } catch (e) {}
 }
 
+// ── Who is calling? ─────────────────────────────────────────────────────────
+// Endpoints that return PERSONAL data (Nova) must serve the signed-in caller,
+// not the owner. Reading OWNER_ID's rows for whoever asks would show Chrissie
+// Alex's training, meals and weight — a cross-account leak dressed up as a
+// feature. So: verify the caller's Supabase access token and use THEIR id.
+// Returns null when the token is missing/expired/forged — callers must then
+// refuse, never fall back to the owner.
+var ANON_KEY = process.env.SUPABASE_KEY || 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+async function uidFromRequest(req) {
+  try {
+    var auth = (req && req.headers && (req.headers.authorization || req.headers.Authorization)) || '';
+    var token = String(auth).replace(/^Bearer\s+/i, '').trim();
+    if (!token) return null;
+    var r = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + token }
+    });
+    if (!r.ok) return null;                       // expired / invalid → not signed in
+    var j = await r.json();
+    return (j && j.id) ? j.id : null;             // Supabase verified the JWT for us
+  } catch (e) { return null; }
+}
+
 module.exports = {
   readRow: readRow, writeRow: writeRow, readAllRows: readAllRows, deleteRow: deleteRow,
+  uidFromRequest: uidFromRequest,
   OWNER_ID: OWNER_ID, RUNNER_ID: RUNNER_ID
 };

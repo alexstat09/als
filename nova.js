@@ -135,7 +135,11 @@
     var h = new Date().getHours(), t = tk();
     if (h>=5 && h<12 && !ls('nova_morning:'+t)) {
       try { localStorage.setItem('nova_morning:'+t, '1'); } catch(e){}
-      setTimeout(function(){ bubbleSpeak(sleptToday() ? briefLine(message(signals())) : 'Morning, Alex. How did you sleep? Tap me to log it.'); }, 1500);
+      setTimeout(function(){
+        var nm = ''; try { nm = (window.ALSProfile && ALSProfile.firstName()) || ''; } catch(e){}
+        bubbleSpeak(sleptToday() ? briefLine(message(signals()))
+          : ('Morning' + (nm ? ', ' + nm : '') + '. How did you sleep? Tap me to log it.'));
+      }, 1500);
       return true;
     }
     if (h>=20 && !ls('nova_evening:'+t)) {

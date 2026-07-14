@@ -1425,7 +1425,10 @@ if(document.readyState==='loading'){
     try{
       var insights=[]; try{ if(window.ALSInsights&&ALSInsights.compute) insights=ALSInsights.compute().slice(0,8).map(function(i){ return i.text||i; }).filter(Boolean); }catch(e){}
       var mem=(ls('nova:memory',[])||[]).filter(function(m){ return m&&m.fact; }).map(function(m){ return m.fact; });
-      var res=await fetch('/api/nova-chat',{ method:'POST', headers:{'Content-Type':'application/json'},
+      // The brief is built from YOUR rows — the server needs your token to know
+      // whose. Without it Nova 401s rather than showing you someone else's day.
+      var authHdr={}; try{ if(window.ALSAuthHeader) authHdr = await window.ALSAuthHeader(); }catch(e){}
+      var res=await fetch('/api/nova-chat',{ method:'POST', headers:Object.assign({'Content-Type':'application/json'}, authHdr),
         body:JSON.stringify({ messages:[{role:'user',content:'Give me my brief for today.'}], mode:'brief', schedule:scheduleStr(), insights:insights, memory:mem }) });
       var text=await res.text();
       if(!res.ok || !text || /brain isn.t connected|hit a snag|couldn.t reach|getting a lot of requests/i.test(text)){

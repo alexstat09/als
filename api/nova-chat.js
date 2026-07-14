@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════════════════════════
 // Conversational Nova — the crown jewel (free brain: Groq / Llama).
 // A streaming proxy to the Groq API. The API key stays server-side.
-// On every turn Nova is grounded in Alex's real, up-to-the-minute data
-// (read from Supabase via _supa.js) so she answers like a coach who
-// actually knows him. Streams the model's response straight to the browser
+// On every turn Nova is grounded in the SIGNED-IN CALLER's real, up-to-the-minute
+// data (read from Supabase via _supa.js, scoped to their verified uid) so she
+// answers like a coach who actually knows them — and never shows one account
+// another account's life. Streams the model's response straight to the browser
 // as plain text. Provider-agnostic by design — the data brief + persona
 // below would work behind any model; only the call section is provider-specific.
 // ════════════════════════════════════════════════════════════════
@@ -37,18 +38,25 @@ function avg(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 
 function r1(n) { return Math.round(n * 10) / 10; }
 function dayLbl(dk) { var p = dk.split('-').map(Number); var dt = new Date(Date.UTC(p[0], p[1] - 1, p[2])); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getUTCDay()] + ' ' + p[2]; }
 
-// Build the compact, factual brief that grounds Nova in Alex's life today.
-async function buildBrief(tz) {
+// Build the compact, factual brief that grounds Nova in the CALLER's life
+// today. `who` is the verified uid of whoever is signed in — never the owner,
+// or Nova would coach Chrissie using Alex's numbers.
+async function buildBrief(tz, who) {
   var lp = localParts(tz);
   var today = lp.dateKey;
   var rows = await Promise.all([
-    supa.readRow('po-coach'), supa.readRow('nutrition'), supa.readRow('caffeine'),
-    supa.readRow('identity'), supa.readRow('health'), supa.readRow('sleep'),
-    supa.readRow('goals'), supa.readRow('ideas')
+    supa.readRow('po-coach', who), supa.readRow('nutrition', who), supa.readRow('caffeine', who),
+    supa.readRow('identity', who), supa.readRow('health', who), supa.readRow('sleep', who),
+    supa.readRow('goals', who), supa.readRow('ideas', who), supa.readRow('profile', who)
   ]);
   var poc = rows[0], nut = rows[1], caf = rows[2], idn = rows[3], hlt = rows[4], slp = rows[5], gls = rows[6], ide = rows[7];
+  var prof = (rows[8] && rows[8]['als:profile']) || {};
+  var who_name = (prof.name || '').trim() || 'They';
+  var who_age = prof.birthYear ? (new Date().getFullYear() - prof.birthYear) : null;
   var L = [];
-  L.push('ALEX — live snapshot, ' + lp.weekday + ' ' + today + ' (his local time, hour ' + lp.hour + ').');
+  L.push(who_name.toUpperCase() + ' — live snapshot, ' + lp.weekday + ' ' + today + ' (their local time, hour ' + lp.hour + ').');
+  L.push('WHO: ' + who_name + (who_age ? ', ' + who_age : '') + (prof.sex ? ', ' + (prof.sex === 'f' ? 'female' : 'male') : '') +
+         (prof.sport ? ', trains mainly as a ' + prof.sport : '') + (prof.goal ? '. Their stated goal: ' + prof.goal : '') + '.');
 
   var weights = (poc['po_coach_weights'] || []).filter(function (e) { return e && e.dateKey && typeof e.weight === 'number'; })
     .sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
@@ -96,7 +104,7 @@ async function buildBrief(tz) {
     L.push('Sleep: ' + (lastN ? 'last night ' + r1(lastN.hours) + 'h' + (lastN.quality ? ' (quality ' + lastN.quality + '/5)' : '') : 'last night not logged') +
       (todayS && todayS.recovery != null ? '; today recovery ' + todayS.recovery + '/100' : '') +
       (avgRec != null ? '; 7-day avg recovery ' + Math.round(avgRec) + '/100' : '') + '.');
-  } else L.push('Sleep: nothing logged yet (his #1 untracked lever).');
+  } else L.push('Sleep: nothing logged yet (their #1 untracked lever).');
 
   var weightKg = (((hlt['po_water_v1'] || {}).profile) || {}).weightKg || (weights.length ? weights[weights.length - 1].weight : 75);
   var nGoal = ((nut['nut:profile'] || {}).goal) || 'maintain';
@@ -137,12 +145,12 @@ async function buildBrief(tz) {
         var TDEE = require('../tdee.js');
         dailyTarget = TDEE.recommend(nMaint, nGoal, { weightKg: weightKg, rateKgPerWeek: nProf.rateKgPerWeek });
         fiberTarget = Math.round(dailyTarget / 1000 * 14);
-        L.push('Energy: maintenance ≈ ' + nMaint + ' kcal (Mifflin-St Jeor × activity from his stats). Goal ' + nGoal + ' → target ~' + dailyTarget + ' kcal/day. Use these numbers when advising on calories.');
+        L.push('Energy: maintenance ≈ ' + nMaint + ' kcal (Mifflin-St Jeor × activity from their stats). Goal ' + nGoal + ' → target ~' + dailyTarget + ' kcal/day. Use these numbers when advising on calories.');
       } else {
         L.push('Energy: using ~' + dailyTarget + ' kcal as a rough working target (no stats set). Goal: ' + nGoal + '.');
       }
     } else {
-      L.push('Energy: he has set his OWN target of ' + dailyTarget + ' kcal/day (goal ' + nGoal + ') — respect it when advising.');
+      L.push('Energy: they have set their OWN target of ' + dailyTarget + ' kcal/day (goal ' + nGoal + ') — respect it when advising.');
     }
   } catch (e) {}
 
@@ -230,36 +238,51 @@ async function buildBrief(tz) {
   return L.join('\n');
 }
 
-function systemPrompt(brief, patterns, memory) {
+// `person` = the CALLER (name/age/sex/sport/goal from their profile row).
+// Nova used to be written entirely around Alex — 17, body recomp, "he", "his".
+// Two people use this app now and more may follow, so the coach adapts to who
+// is actually talking to it. Second person throughout; no assumed pronouns.
+function systemPrompt(brief, patterns, memory, person) {
+  var p = person || {};
+  var nm = (p.name || '').trim();
+  var whoLine = nm ? nm : 'the person you coach';
+  var bits = [];
+  if (p.age) bits.push(p.age + ' years old');
+  if (p.sport) bits.push('trains mainly as a ' + p.sport);
+  if (p.goal) bits.push('their stated goal is: ' + p.goal);
+  var whoDesc = bits.length ? (nm || 'They') + ' — ' + bits.join(', ') + '.' : '';
+
   var lines = [
-    "You are Nova — Alex's personal AI coach and companion, built into his life-tracking dashboard. Alex is 17 and doing a body recomposition: building strength and muscle while leaning out. You know him better than anyone because you can see his whole life below — his training, sleep, recovery, nutrition, supplements, caffeine, hydration, habits, goals and weight, updated in real time. You genuinely care about him and your job is to make him better.",
+    "You are Nova — " + whoLine + "'s personal AI coach and companion, built into their life-tracking dashboard. " +
+      (whoDesc ? whoDesc + ' ' : '') +
+      "You know them better than anyone because you can see their whole life below — training, sleep, recovery, nutrition, supplements, caffeine, hydration, habits, goals and weight, updated in real time. You genuinely care about them and your job is to make them better. Address them directly as \"you\".",
     '',
     'HOW YOU HELP — this is the whole point, do it every time:',
-    '• Be specific and use his real numbers. Not "eat more protein" — say "you\'re at 92g, ~58 short of your 150g target; a scoop of whey and Greek yogurt closes it."',
-    '• Connect the dots across domains — that is your superpower. Sleep ↔ training readiness, caffeine timing ↔ sleep, protein/calories ↔ weight trend, training volume ↔ recovery, missed supplements ↔ goals. Surface links he wouldn\'t notice himself.',
-    '• Lead with the single highest-leverage thing. When he asks something open ("what should I do today?", "am I on track?"), open with the one move that matters most right now given the data, then briefly why.',
-    "• Gate intensity by recovery: if he's run-down/depleted, steer him to rest or go light; if primed, tell him to push and chase a PR. If a muscle is well under its weekly volume target, point it out.",
-    '• Be proactive: if you see something off in the data even when he didn\'t ask (no food logged by afternoon, caffeine late, weigh-in missed, a habit streak about to break), mention it.',
-    '• You have his FULL recent history below — today, YESTERDAY\'s exact foods, the last 7 days of intake (calories/protein/carbs/sodium) and his day-by-day weight series. USE IT. When he asks about yesterday or a weight change, read the actual days and answer with specifics; never say you can\'t see the past — it is right there.',
+    '• Be specific and use their real numbers. Not "eat more protein" — say "you\'re at 92g, ~58 short of your 150g target; a scoop of whey and Greek yogurt closes it."',
+    '• Connect the dots across domains — that is your superpower. Sleep ↔ training readiness, caffeine timing ↔ sleep, protein/calories ↔ weight trend, training volume ↔ recovery, missed supplements ↔ goals. Surface links they wouldn\'t notice themselves.',
+    '• Lead with the single highest-leverage thing. When they ask something open ("what should I do today?", "am I on track?"), open with the one move that matters most right now given the data, then briefly why.',
+    "• Gate intensity by recovery: if they're run-down, steer them to rest or go light; if they're fresh, tell them to push. If a muscle is well under its weekly volume target, point it out.",
+    '• Be proactive: if you see something off in the data even when they didn\'t ask (no food logged by afternoon, caffeine late, weigh-in missed, a habit streak about to break), mention it.',
+    '• You have their FULL recent history below — today, YESTERDAY\'s exact foods, the last 7 days of intake (calories/protein/carbs/sodium) and their day-by-day weight series. USE IT. When they ask about yesterday or a weight change, read the actual days and answer with specifics; never say you can\'t see the past — it is right there.',
     '',
-    'WEIGHT-CHANGE LITERACY (use this whenever he mentions a gain, spike or drop): day-to-day scale weight is mostly WATER, not fat. A 0.5–1.5 kg overnight jump is normal and usually comes from a high-carb or high-sodium day (every gram of stored glycogen holds ~3g of water), a large food volume still in the gut, dehydration rebound, training-induced muscle inflammation, or bowel/hormonal timing. True fat gain needs a real surplus — about 7700 kcal per kg — so gaining a full kg of fat overnight is physically impossible. When he flags a spike: look at his actual last 1–3 days of calories, carbs and sodium below, name the most likely water-driven cause in plain terms, reassure him it is not fat if his 7-day weight average is not climbing, and only raise genuine concern if the multi-day trend is clearly rising. Never let one day spook either of you.',
+    'WEIGHT-CHANGE LITERACY (use this whenever they mention a gain, spike or drop): day-to-day scale weight is mostly WATER, not fat. A 0.5–1.5 kg overnight jump is normal and usually comes from a high-carb or high-sodium day (every gram of stored glycogen holds ~3g of water), a large food volume still in the gut, dehydration rebound, training-induced muscle inflammation, or bowel/hormonal timing. True fat gain needs a real surplus — about 7700 kcal per kg — so gaining a full kg of fat overnight is physically impossible. When they flag a spike: look at their actual last 1–3 days of calories, carbs and sodium below, name the most likely water-driven cause in plain terms, reassure them it is not fat if the 7-day weight average is not climbing, and only raise genuine concern if the multi-day trend is clearly rising. Never let one day spook either of you.',
     '',
-    'VOICE: warm, sharp, direct — a trusted older brother who happens to be an elite coach. Encouraging but honest; celebrate real wins, call out drift without lecturing or moralizing. Talk like a real person, never a corporate assistant. Keep it tight — usually 2–5 sentences; only write a longer structured plan if he explicitly asks for one. Plain conversational text — no markdown headings or bullet dumps unless asked. Emojis rare and natural.',
+    'VOICE: warm, sharp, direct — a trusted friend who happens to be an elite coach. Encouraging but honest; celebrate real wins, call out drift without lecturing or moralizing. Talk like a real person, never a corporate assistant. Keep it tight — usually 2–5 sentences; only write a longer structured plan if they explicitly ask for one. Plain conversational text — no markdown headings or bullet dumps unless asked. Emojis rare and natural.',
     '',
-    "RULES: Ground every answer in the live data below. Never invent numbers you don't have — if something isn't logged, say so plainly and nudge him to track it (you literally can't coach blind). For general fitness/nutrition/mindset questions beyond his data, answer as the expert coach you are. He's 17 — keep advice safe and sane (no extreme cuts, no hormones/PEDs; supplements stay sensible). You advise, motivate and explain — and you can also DO a few things for him when he asks (see ACTIONS).",
+    "RULES: Ground every answer in the live data below. Never invent numbers you don't have — if something isn't logged, say so plainly and nudge them to track it (you literally can't coach blind). For general fitness/nutrition/mindset questions beyond their data, answer as the expert coach you are. Keep advice safe and sane for whoever you are talking to — no extreme cuts, no hormones/PEDs, supplements stay sensible; if they are a teenager or a masters athlete, weight that accordingly. You advise, motivate and explain — and you can also DO a few things for them when asked (see ACTIONS).",
     '',
-    "MEMORY: When Alex shares something durable worth recalling in future conversations — a goal, a hard constraint or injury, a strong preference, a key milestone — append it on its own final line exactly as [[REMEMBER: one concise fact]]. Use it sparingly, only for things that should genuinely persist, and never for something already in your memory below. The app captures and hides these brackets automatically; never read them aloud or mention them.",
+    "MEMORY: When they share something durable worth recalling in future conversations — a goal, a hard constraint or injury, a strong preference, a key milestone — append it on its own final line exactly as [[REMEMBER: one concise fact]]. Use it sparingly, only for things that should genuinely persist, and never for something already in your memory below. The app captures and hides these brackets automatically; never read them aloud or mention them.",
     '',
-    "ACTIONS — you have hands. When Alex asks you to log or change something you can do it for him. Propose it by appending, on its own final line, exactly [[ACTION: {\"verb\":\"...\"}]] as STRICT minified JSON (include any args). The app shows him a one-tap confirm button and only runs it when he taps — so NEVER claim you already did it; say what you're about to do and let him confirm. Emit AT MOST ONE action per reply, and ONLY when he actually asks you to act (never for a question or advice). Use his exact numbers. Supported verbs (with args): log_water {n}; log_caffeine {mg,name}; log_weight {kg}; log_sleep {hours,quality,recovery,energy}; complete_habit {habit}; take_supplement {name}; journal_entry {reflection,gratitude}; add_idea {text}; mark_workout_done {}; set_calorie_target {kcal}. If a request isn't covered by these verbs, just tell him where to do it instead.",
+    "ACTIONS — you have hands. When they ask you to log or change something you can do it for them. Propose it by appending, on its own final line, exactly [[ACTION: {\"verb\":\"...\"}]] as STRICT minified JSON (include any args). The app shows a one-tap confirm button and only runs it when they tap — so NEVER claim you already did it; say what you're about to do and let them confirm. Emit AT MOST ONE action per reply, and ONLY when they actually ask you to act (never for a question or advice). Use their exact numbers. Supported verbs (with args): log_water {n}; log_caffeine {mg,name}; log_weight {kg}; log_sleep {hours,quality,recovery,energy}; complete_habit {habit}; take_supplement {name}; journal_entry {reflection,gratitude}; add_idea {text}; mark_workout_done {}; set_calorie_target {kcal}. If a request isn't covered by these verbs, just tell them where to do it instead.",
     '',
-    '=== HIS LIVE DATA (this is real, current, and yours to use) ===',
+    '=== THEIR LIVE DATA (this is real, current, and yours to use) ===',
     brief,
     '=== END DATA ==='
   ];
   if (memory && memory.length) {
     lines.push(
       '',
-      '=== WHAT YOU REMEMBER ABOUT ALEX (long-term memory — persists across every conversation) ===',
+      '=== WHAT YOU REMEMBER ABOUT THEM (long-term memory — persists across every conversation) ===',
       memory.map(function (m) { return '• ' + m; }).join('\n'),
       '=== END MEMORY ==='
     );
@@ -268,7 +291,7 @@ function systemPrompt(brief, patterns, memory) {
     lines.push(
       '',
       "=== PATTERNS & PROJECTIONS NOVA HAS COMPUTED FROM HIS DATA ===",
-      "These are derived from his own logged history — cross-domain patterns and trend-based projections you can cite, not guesses. When one answers his question (why he's tired, flat, sleeping badly, hitting PRs, or where a trend is heading), connect it in plain language. Items phrased as projections ('on track for', 'in 4 weeks', 'around [date]') are estimates from his current trend, NOT certainties — relay them with that nuance. Don't invent new patterns or numbers beyond these and the live data above.",
+      "These are derived from their own logged history — cross-domain patterns and trend-based projections you can cite, not guesses. When one answers their question (why they are tired, flat, sleeping badly, hitting PRs, or where a trend is heading), connect it in plain language. Items phrased as projections ('on track for', 'in 4 weeks', 'around [date]') are estimates from their current trend, NOT certainties — relay them with that nuance. Don't invent new patterns or numbers beyond these and the live data above.",
       patterns.map(function (p) { return '• ' + p; }).join('\n'),
       '=== END PATTERNS ==='
     );
@@ -325,6 +348,17 @@ module.exports = async function (req, res) {
     return;
   }
 
+  // WHOSE life is Nova reading? The caller's — verified from their Supabase
+  // access token, server-side. There is deliberately NO fallback to the owner:
+  // an unauthenticated caller getting Alex's brief is exactly the leak this
+  // whole multi-account change exists to close.
+  var who = await supa.uidFromRequest(req);
+  if (!who) {
+    res.status(401).setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.end('Sign in to talk to Nova — it reads your own data, so it needs to know who you are.');
+    return;
+  }
+
   var body = readBody(req);
   var messages = cleanMessages(body.messages);
   if (!messages.length) { res.status(400).json({ error: 'no messages' }); return; }
@@ -332,20 +366,30 @@ module.exports = async function (req, res) {
   var memory = cleanMemory(body.memory);
 
   var tz = 'Europe/Athens';
-  try { var prefs = await supa.readRow('push:prefs'); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
+  try { var prefs = await supa.readRow('push:prefs', who); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
 
   var brief;
-  try { brief = await buildBrief(tz); } catch (e) { brief = '(data temporarily unavailable)'; }
+  try { brief = await buildBrief(tz, who); } catch (e) { brief = '(data temporarily unavailable)'; }
 
   // Calendar comes from the client (read-only, on-device) as a ready-formatted
   // string — passed through per request, never stored server-side.
   var schedule = (typeof body.schedule === 'string') ? body.schedule.slice(0, 1200).trim() : '';
-  if (schedule) brief += "\n\nCALENDAR — his schedule today & tomorrow (from his Google Calendar):\n" + schedule;
+  if (schedule) brief += "\n\nCALENDAR — their schedule today & tomorrow (from their Google Calendar):\n" + schedule;
 
   var briefMode = body.mode === 'brief';
-  var sys = systemPrompt(brief, patterns, memory);
-  if (briefMode) sys += "\n\n=== MORNING BRIEF MODE (he did not type anything — you are opening his day for him) ===\n"
-    + "Give Alex his brief for TODAY: the 2 to 4 things that matter most, each a concrete prioritized move reasoned across his recovery, training plan, nutrition, calendar and goals. Weave the schedule in — when to train, when to eat the bigger vs lighter meal, when to wind down for tomorrow. Lead with the single biggest lever. No greeting, no preamble, no questions back, no sign-off. One tight sentence per point, each on its own line starting with \"• \". Plain text, warm and direct. If a domain has no data, skip it silently rather than mentioning the gap.";
+  // Who is Nova talking to? (name/age/sex/sport/goal — never assumed)
+  var person = {};
+  try {
+    var prow = await supa.readRow('profile', who);
+    var pf = (prow && prow['als:profile']) || {};
+    person = {
+      name: pf.name || '', sex: pf.sex || null, sport: pf.sport || null, goal: pf.goal || '',
+      age: pf.birthYear ? (new Date().getFullYear() - pf.birthYear) : null
+    };
+  } catch (e) {}
+  var sys = systemPrompt(brief, patterns, memory, person);
+  if (briefMode) sys += "\n\n=== MORNING BRIEF MODE (they did not type anything — you are opening their day for them) ===\n"
+    + "Give them their brief for TODAY: the 2 to 4 things that matter most, each a concrete prioritized move reasoned across their recovery, training plan, nutrition, calendar and goals. Weave the schedule in — when to train, when to eat the bigger vs lighter meal, when to wind down for tomorrow. Lead with the single biggest lever. No greeting, no preamble, no questions back, no sign-off. One tight sentence per point, each on its own line starting with \"• \". Plain text, warm and direct. If a domain has no data, skip it silently rather than mentioning the gap.";
 
   // Groq (OpenAI-compatible): system message + the conversation.
   var payload = {

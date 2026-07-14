@@ -64,6 +64,14 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── Who is using this app (ALSProfile) — the greeting, the units, the pages.
+  // Loaded everywhere, like the dialogs, so no page has to remember to ask.
+  (function loadProfile(){ try {
+    if (window.ALSProfile || document.querySelector('script[src*="als-profile"]')) return;
+    var s = document.createElement('script'); s.src = 'als-profile.js'; s.defer = true;
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) {} })();
+
   // -------- Supabase config (replace with your own project URL + publishable key) --------
   const TOPBAR_SUPABASE_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
@@ -96,7 +104,60 @@
     var settled=false;
     function settle(){ settled=true; try{ clearTimeout(killTimer); }catch(e){} }
     function killOverlay(){ settle(); closeOv(); }
-    function done(session){ settle(); window.ALSAuth={user:(session&&session.user)||null,client:client,signOut:function(){try{client.auth.signOut().then(function(){location.reload();});}catch(e){location.reload();}}}; closeOv(); }
+    // ── Sign-out MUST wipe this device's local data. ────────────────────────
+    // localStorage is the source of truth and sync.js is merge-first (pull →
+    // merge → push union). If Alex signs out and Chrissie signs in on the same
+    // browser, HIS leftover local keys would be merged and pushed into HER
+    // rows. So: clear everything local, THEN end the session. Nothing is lost —
+    // every synced key already lives in that account's cloud row.
+    function purgeLocal(){
+      try{ if(window.ALSProfile && ALSProfile._forget) ALSProfile._forget(); }catch(e){}
+      try{ localStorage.clear(); }catch(e){}
+      try{ sessionStorage.clear(); }catch(e){}
+      // Drop the service-worker caches too, so no page renders the last
+      // person's numbers from cache before the new session hydrates.
+      try{ if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }catch(e){}
+    }
+    // `confirmed` = the caller already asked (the account button does).
+    async function doSignOut(confirmed){
+      try{
+        var ok = true;
+        if (!confirmed && typeof window.ALSConfirm === 'function') {
+          ok = await window.ALSConfirm({
+            title: 'Sign out?',
+            message: 'This device will be cleared. Your data stays safe in the cloud and comes back when you sign in.',
+            confirmText: 'Sign out'
+          });
+        }
+        if (!ok) return;
+      }catch(e){}
+      purgeLocal();
+      try{ await client.auth.signOut(); }catch(e){}
+      location.replace('/');
+    }
+    // The other half of the same trap: a DIFFERENT account signing in on a
+    // browser that still holds the previous person's local data (session
+    // swapped without a sign-out). Detect the switch and purge before any page
+    // gets the chance to sync stale keys up into the new account.
+    var UIDKEY = 'als:uid';
+    function guardAccountSwitch(session){
+      var id = session && session.user && session.user.id; if (!id) return false;
+      var seen = null; try{ seen = localStorage.getItem(UIDKEY); }catch(e){}
+      if (seen && seen !== id){
+        purgeLocal();
+        try{ localStorage.setItem(UIDKEY, id); }catch(e){}
+        location.reload();
+        return true;                       // stop here — the reload takes over
+      }
+      if (!seen){ try{ localStorage.setItem(UIDKEY, id); }catch(e){} }
+      return false;
+    }
+    function done(session){
+      settle();
+      if (guardAccountSwitch(session)) return;
+      window.ALSAuth={ user:(session&&session.user)||null, client:client, signOut:doSignOut, purgeLocal:purgeLocal };
+      closeOv();
+    }
     function showLogin(){
       settle();
       ov.innerHTML=wrapHTML('<div style="width:100%;max-width:340px">'+
@@ -150,6 +211,18 @@
   border-bottom: 1px solid rgba(255,255,255,0.05);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 }
+.topbar-acct {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex-shrink: 0; margin-left: 8px;
+  border-radius: 11px; cursor: pointer;
+  border: 1px solid rgba(63, 224, 176, 0.18);
+  background: rgba(63, 224, 176, 0.06);
+  color: #3FE0B0;
+  font-family: ui-monospace, monospace; font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+.topbar-acct:active { transform: scale(0.94); }
 .topbar-water-wrap { display: flex; align-items: stretch; }
 .topbar-water-pill {
   display: inline-flex; align-items: center; gap: 8px;
@@ -336,6 +409,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   <a href="finance.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7.5 19v-5M12 19V8.5M16.5 19v-8"/></svg>
   </a>
+  <button class="topbar-acct" id="topbarAcct" type="button" aria-label="Your account"><span id="topbarAcctIni">·</span></button>
 </header>`;
 
   const tbIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -408,6 +482,45 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       });
       document.body.classList.add('has-bottombar');
     }
+    // ── Account button: their initials, and the only way to sign out.
+    // (Signing out is also the ONLY safe way to hand this device to another
+    // account — it purges the local data first. See doSignOut/purgeLocal.)
+    const acctBtn = document.getElementById('topbarAcct');
+    if (acctBtn) {
+      const paintAcct = () => {
+        const ini = document.getElementById('topbarAcctIni');
+        if (!ini) return;
+        let name = '';
+        try { name = (window.ALSProfile && ALSProfile.get().name) || ''; } catch (e) {}
+        if (name) {
+          ini.textContent = name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+        } else {
+          let em = '';
+          try { em = (window.ALSAuth && ALSAuth.user && ALSAuth.user.email) || ''; } catch (e) {}
+          ini.textContent = em ? em[0].toUpperCase() : '·';
+        }
+      };
+      paintAcct();
+      document.addEventListener('als:profile', paintAcct);
+      setTimeout(paintAcct, 800);        // ALSProfile hydrates from the cloud async
+      acctBtn.addEventListener('click', async () => {
+        let name = '', email = '';
+        try { name = (window.ALSProfile && ALSProfile.get().name) || ''; } catch (e) {}
+        try { email = (window.ALSAuth && ALSAuth.user && ALSAuth.user.email) || ''; } catch (e) {}
+        const who = name ? (name + (email ? ' · ' + email : '')) : (email || 'this account');
+        if (typeof window.ALSConfirm === 'function') {
+          const ok = await window.ALSConfirm({
+            title: 'Signed in as ' + (name || email),
+            message: who + '\n\nSigning out clears this device. Your data stays safe in the cloud and returns when you sign back in.',
+            confirmText: 'Sign out'
+          });
+          if (ok && window.ALSAuth && ALSAuth.signOut) ALSAuth.signOut(true);
+        } else if (window.ALSAuth && ALSAuth.signOut) {
+          ALSAuth.signOut();
+        }
+      });
+    }
+
     // Show back button on every page except the hub
     const backBtn = document.getElementById('topbarBack');
     if (backBtn) {

@@ -389,8 +389,25 @@
   /* expose the ring offset for home-motion to use */
   window.__alsReady = function () { var f = document.querySelector('.focus'); return f && f.dataset.roff ? +f.dataset.roff : 92.5; };
 
+  /* ── the greeting belongs to whoever is signed in ────────────────────────
+     Two accounts use this app now. The name comes from ALSProfile, never from
+     the markup — Chrissie must never be greeted as Alex. It repaints on the
+     als:profile event because the profile hydrates from the cloud async. */
+  function paintGreeting() {
+    var h1 = document.getElementById('homeGreeting'), span = document.getElementById('homeGreetingName');
+    if (!h1 || !span) return;
+    var hr = new Date().getHours();
+    var part = hr < 5 ? 'Good night' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+    var name = '';
+    try { name = (window.ALSProfile && ALSProfile.firstName()) || ''; } catch (e) {}
+    h1.childNodes[0].nodeValue = name ? part + ', ' : part;
+    span.textContent = name ? name + '.' : '';
+  }
+  paintGreeting();
+  document.addEventListener('als:profile', paintGreeting);
+
   /* ── keep it live: repaint (no re-animate) on data changes ── */
-  var repaint = function () { paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
+  var repaint = function () { paintGreeting(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
   window.addEventListener('storage', repaint);
   window.addEventListener('focus', repaint);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) repaint(); });
