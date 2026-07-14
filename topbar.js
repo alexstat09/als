@@ -528,21 +528,50 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       paintAcct();
       document.addEventListener('als:profile', paintAcct);
       setTimeout(paintAcct, 800);        // ALSProfile hydrates from the cloud async
-      acctBtn.addEventListener('click', async () => {
+      // The account sheet: who you are, edit your details (re-runs onboarding —
+      // otherwise that flow is unreachable the moment it's finished), sign out.
+      acctBtn.addEventListener('click', () => {
+        if (document.getElementById('alsAcctSheet')) return;
         let name = '', email = '';
         try { name = (window.ALSProfile && ALSProfile.get().name) || ''; } catch (e) {}
         try { email = (window.ALSAuth && ALSAuth.user && ALSAuth.user.email) || ''; } catch (e) {}
-        const who = name ? (name + (email ? ' · ' + email : '')) : (email || 'this account');
-        if (typeof window.ALSConfirm === 'function') {
-          const ok = await window.ALSConfirm({
-            title: 'Signed in as ' + (name || email),
-            message: who + '\n\nSigning out clears this device. Your data stays safe in the cloud and returns when you sign back in.',
-            confirmText: 'Sign out'
-          });
+
+        const d = document.createElement('dialog');
+        d.id = 'alsAcctSheet';
+        d.style.cssText = 'position:fixed;inset:0;width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:100dvh;margin:0;padding:0;border:0;z-index:99997;background:rgba(5,5,7,.72);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#F5F2EC;font-family:-apple-system,system-ui,sans-serif;';
+        d.innerHTML =
+          '<div style="min-height:100%;display:flex;align-items:flex-end;justify-content:center;padding:20px 16px max(20px,env(safe-area-inset-bottom));">' +
+            '<div style="width:100%;max-width:420px;background:#0B0B0F;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:22px 20px;">' +
+              '<div style="font-family:Georgia,serif;font-style:italic;font-size:24px;color:#F5F2EC;line-height:1.2">' + (name ? name : 'Your account') + '</div>' +
+              (email ? '<div style="font-family:ui-monospace,monospace;font-size:11.5px;color:rgba(245,242,236,.38);margin-top:6px">' + email + '</div>' : '') +
+              '<button type="button" id="acEdit" style="width:100%;margin-top:20px;padding:14px;border-radius:14px;border:1px solid rgba(52,226,176,.32);background:rgba(52,226,176,.07);color:#F5F2EC;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">Edit my details</button>' +
+              '<button type="button" id="acOut" style="width:100%;margin-top:9px;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);color:#F5F2EC;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">Sign out</button>' +
+              '<div style="font-size:11.5px;line-height:1.5;color:rgba(245,242,236,.34);margin-top:11px;text-align:center">Signing out clears this device. Your data stays in the cloud.</div>' +
+              '<button type="button" id="acClose" style="width:100%;margin-top:14px;padding:10px;background:none;border:none;color:rgba(245,242,236,.34);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer">Close</button>' +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(d);
+        try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+
+        const shut = () => { try { d.close(); } catch (e) {} try { d.remove(); } catch (e) {} };
+        d.querySelector('#acClose').addEventListener('click', shut);
+        d.addEventListener('click', (ev) => { if (ev.target === d) shut(); });
+        d.querySelector('#acEdit').addEventListener('click', () => {
+          shut();
+          if (window.ALSOnboard) ALSOnboard.open();
+        });
+        d.querySelector('#acOut').addEventListener('click', async () => {
+          shut();
+          let ok = true;
+          if (typeof window.ALSConfirm === 'function') {
+            ok = await window.ALSConfirm({
+              title: 'Sign out?',
+              message: 'This device will be cleared. Your data stays safe in the cloud and comes back when you sign in.',
+              confirmText: 'Sign out'
+            });
+          }
           if (ok && window.ALSAuth && ALSAuth.signOut) ALSAuth.signOut(true);
-        } else if (window.ALSAuth && ALSAuth.signOut) {
-          ALSAuth.signOut();
-        }
+        });
       });
     }
 

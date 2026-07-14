@@ -51,9 +51,11 @@
 
   var DEFAULTS = {
     name: '',
-    sex: null,               // 'm' | 'f' | null  → BMR
+    sex: null,               // 'm' | 'f' | null (skippable) → BMR
     birthYear: null,         // → age → HR zones, BMR
     heightCm: null,          // → BMR, BMI
+    weightKg: null,          // → BMR, protein target. NEVER invented: no weight,
+                             //   no energy figure shown anywhere.
     units: 'metric',         // 'metric' | 'imperial'
     wakeTime: '07:00',       // → the sleep score (mirrors sleep:profile)
     sleepNeed: 8.5,          // → the sleep score

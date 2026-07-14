@@ -280,10 +280,16 @@
     function saveLogs(a){ save(LOGS,a); }
     function dayLogs(dk){ return getLogs().filter(function(e){ return e && e.dateKey===dk; }); }
 
+    // Who is this? Onboarding (ALSProfile) is the fallback for anyone who hasn't
+    // weighed in yet — a new account otherwise fell back to an INVENTED 75kg
+    // body and quietly built its calorie target on a stranger's numbers.
+    function alsProf(){ try{ return (window.ALSProfile && ALSProfile.get()) || {}; }catch(e){ return {}; } }
     function weightKg(){
       var w=(((ls('po_water_v1',{})||{}).profile)||{}).weightKg; if(w) return w;
       var ws=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
-      return ws.length ? ws[ws.length-1].weight : 75;
+      if (ws.length) return ws[ws.length-1].weight;
+      var pw = alsProf().weightKg;                 // what they told us on day one
+      return pw > 0 ? pw : 75;
     }
     // Maintenance from YOUR stats — Mifflin-St Jeor BMR × activity (not learned
     // from logged intake, which drifts wrong when logging isn't 100%). Weight is
@@ -291,9 +297,13 @@
     var ACT=[['sedentary','Sedentary',1.2],['light','Lightly active',1.375],['moderate','Moderately active',1.55],['very','Very active',1.725],['athlete','Athlete',1.9]];
     function actMult(a){ for(var i=0;i<ACT.length;i++){ if(ACT[i][0]===a) return ACT[i][2]; } return 1.55; }
     function profileMaintenance(){
-      var p=ls(PROFILE,{})||{}, w=weightKg();
-      var age=+p.age, cm=+p.heightCm, sex=p.sex;
-      if(!(age>0)||!(cm>0)) return { kcal:Math.round(w*32), have:false }; // no stats yet → rough anchor
+      var p=ls(PROFILE,{})||{}, w=weightKg(), ap=alsProf();
+      // Fall back to what they told the onboarding, so a brand-new account gets
+      // its REAL maintenance instead of the w×32 rough anchor.
+      var age=+p.age || (ap.birthYear ? (new Date().getFullYear() - ap.birthYear) : 0);
+      var cm=+p.heightCm || +ap.heightCm;
+      var sex=p.sex || (ap.sex === 'f' ? 'female' : ap.sex === 'm' ? 'male' : '');
+      if(!(age>0)||!(cm>0)) return { kcal:Math.round(w*32), have:false }; // still nothing → rough anchor
       var bmr=10*w + 6.25*cm - 5*age + (sex==='female'?-161:5);
       return { kcal:Math.round(bmr*actMult(p.activity)), have:true, bmr:Math.round(bmr) };
     }
