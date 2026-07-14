@@ -328,6 +328,8 @@
     function fmtBytes(n){ if (n < 1024) return n + ' B'; if (n < 1048576) return (n/1024).toFixed(1) + ' KB'; return (n/1048576).toFixed(2) + ' MB'; }
     function pad(n){ return n < 10 ? '0'+n : ''+n; }
     function stamp(){ var d=new Date(); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes()); }
+    // Sorts chronologically when the files sit in a folder together.
+    function ymdName(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 
     function headers(extra){
       var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
@@ -377,14 +379,55 @@
         data: data
       };
     }
-    function download(filename, text){
-      var blob = new Blob([text], { type:'application/json' });
+    // The old version made a blob and clicked an <a download>. Inside an
+    // INSTALLED PWA that is ignored: the browser just OPENS the JSON in a tab
+    // instead of saving it, which is useless for keeping a copy. So try the
+    // ways that actually put a file in your Files/Downloads, best first.
+    function blobOf(text){ return new Blob([text], { type:'application/json' }); }
+
+    function anchorDownload(filename, text){
+      // Last resort. octet-stream makes a browser far less likely to render it.
+      var blob = new Blob([text], { type:'application/octet-stream' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
-      a.href = url; a.download = filename;
+      a.href = url; a.download = filename; a.rel = 'noopener';
       document.body.appendChild(a); a.click();
       setTimeout(function(){ try { URL.revokeObjectURL(url); a.remove(); } catch(e){} }, 1500);
     }
+
+    // Returns 'files' | 'saved' | 'downloaded' | 'cancelled'.
+    async function saveFile(filename, text){
+      var file = null;
+      try { file = new File([blobOf(text)], filename, { type:'application/json' }); } catch(e){}
+
+      // 1) iPhone / iPad: the native share sheet has "Save to Files". This is
+      //    the only thing that reliably lands a file on iOS.
+      if (file && navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
+        try { await navigator.share({ files:[file], title: filename }); return 'files'; }
+        catch(e){ if (e && e.name === 'AbortError') return 'cancelled'; }   // else fall through
+      }
+
+      // 2) Desktop Chrome/Edge: a real "Save as…" dialog, so he picks the folder.
+      if (window.showSaveFilePicker){
+        try {
+          var handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description:'AURORA backup', accept: { 'application/json': ['.json'] } }]
+          });
+          var w = await handle.createWritable();
+          await w.write(blobOf(text));
+          await w.close();
+          return 'saved';
+        } catch(e){ if (e && e.name === 'AbortError') return 'cancelled'; }  // else fall through
+      }
+
+      // 3) Everything else.
+      anchorDownload(filename, text);
+      return 'downloaded';
+    }
+
+    // Kept for the pre-restore safety copy, which must never prompt or block.
+    function download(filename, text){ anchorDownload(filename, text); }
 
     function refreshExportStats(){
       var data = localSnapshot();
@@ -396,19 +439,43 @@
       $('exBundles').textContent = sets;
     }
 
+    // Pre-build the file in the background on page load. This matters: on iOS,
+    // awaiting the cloud fetch INSIDE the click handler spends the user gesture,
+    // and navigator.share() then refuses. With the file already built, the tap
+    // opens the share sheet immediately.
+    var exportCache = null;
+    async function buildExport(){
+      var data = localSnapshot();
+      var cloudSets = await fillFromCloud(data);
+      var payload = buildPayload(data, cloudSets);
+      exportCache = { json: JSON.stringify(payload), count: payload.count, at: Date.now() };
+      return exportCache;
+    }
+
     $('exBtn').addEventListener('click', async function(){
-      var btn = this; btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Gathering…';
+      var btn = this; btn.disabled = true; var prev = btn.textContent;
+      var done = $('exDone');
       try {
-        var data = localSnapshot();
-        var cloudSets = await fillFromCloud(data);
-        var payload = buildPayload(data, cloudSets);
-        var json = JSON.stringify(payload, null, 0);
-        download('aurora-backup-' + stamp() + '.json', json);
-        var done = $('exDone');
-        done.textContent = '✓ Saved ' + payload.count + ' data keys (' + fmtBytes(json.length) + '). Keep this file somewhere safe.';
+        var c = exportCache;
+        if (!c || (Date.now() - c.at) > 120000){        // stale or not ready yet
+          btn.textContent = 'Gathering…';
+          c = await buildExport();
+        }
+        btn.textContent = 'Saving…';
+        var name = 'aurora-backup-' + ymdName() + '.json';
+        var how = await saveFile(name, c.json);
+        if (how === 'cancelled'){ done.classList.add('hidden'); return; }
+        var where = how === 'files' ? 'Choose <b>Save to Files</b> to keep it.'
+                  : how === 'saved' ? 'Saved where you chose.'
+                  : 'Check your <b>Downloads</b> folder.';
+        done.innerHTML = '✓ <b>' + name + '</b> · ' + c.count + ' data keys (' + fmtBytes(c.json.length) + '). ' + where +
+                         '<br><br>To bring it back later: <b>Restore from a file</b>, just below.';
         done.classList.remove('hidden');
+        try { localStorage.setItem('backup:lastFile', new Date().toISOString()); } catch(e){}
+        renderStatus();
+        buildExport();                                   // refresh the cache for next time
       } catch(e){
-        var done = $('exDone'); done.textContent = 'Export failed: ' + (e && e.message || e); done.classList.remove('hidden');
+        done.textContent = 'Could not save: ' + (e && e.message || e); done.classList.remove('hidden');
       } finally { btn.disabled = false; btn.textContent = prev; }
     });
 
@@ -803,12 +870,6 @@
       } finally { btn.disabled = false; btn.textContent = prev; }
     });
 
-    // Remember when a file copy was last downloaded, so the status can nag.
-    $('exBtn').addEventListener('click', function(){
-      try { localStorage.setItem('backup:lastFile', new Date().toISOString()); } catch(e){}
-      setTimeout(renderStatus, 400);
-    });
-
     // ── REPAIR — surgical, additive-only recovery ─────────────
     // The problem this solves: a FULL restore is all-or-nothing. If you lose
     // your weigh-ins, restoring yesterday brings them back but also rolls back
@@ -1171,6 +1232,7 @@
     refreshExportStats();
     refreshCloudMeta();
     loadVault();
+    buildExport();   // warm the cache so the first tap can share immediately
   })();
   </script>
 </body>
