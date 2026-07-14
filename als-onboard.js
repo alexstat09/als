@@ -443,12 +443,23 @@
 
   // First run: only once the profile has actually hydrated from the cloud, or a
   // returning user on a new device would be asked all over again.
+  //
+  // AND only once somebody is actually SIGNED IN. A signed-out browser has an
+  // empty profile too, so without this check the flow opens straight on top of
+  // the login gate — collecting answers that belong to no account, which then
+  // get merged into whoever signs in next. Nobody is onboarded until the
+  // session exists; topbar.js fires `als:auth` the moment it does.
+  function signedIn(){
+    try { return !!(window.ALSAuth && window.ALSAuth.user); } catch(e){ return false; }
+  }
   function maybe(){
     try {
+      if (!signedIn()) return;                 // the als:auth listener will call us back
       if (!window.ALSProfile) return;
       ALSProfile.ready(function(p){ if (!p || !(p.name || '').trim()) open(); });
     } catch(e){}
   }
+  document.addEventListener('als:auth', function(){ setTimeout(maybe, 200); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(maybe, 400); });
   else setTimeout(maybe, 400);
 })();

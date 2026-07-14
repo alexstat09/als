@@ -476,6 +476,15 @@
         L.body.map(function(p){ return '<div class="nc-letter-p">'+esc(p)+'</div>'; }).join('')+'</div>';
     }catch(e){ return ''; }
   }
+  // Whoever is signed in — never a hardcoded name. Falls back to a bare
+  // "Good morning." rather than guessing, because guessing means calling
+  // someone by the previous account holder's name.
+  function whoami(){
+    try{
+      var n = window.ALSProfile && ALSProfile.firstName && ALSProfile.firstName();
+      return n ? ', ' + n + '.' : '.';
+    }catch(e){ return '.'; }
+  }
   function open(){
     ensureDOM();
     var b=build();
@@ -483,7 +492,7 @@
     sh.className='nc-sheet au-mood-'+b.mood;
     sh.innerHTML='<span class="nc-corner tl"></span><span class="nc-corner tr"></span><span class="nc-corner bl"></span><span class="nc-corner br"></span><div class="nc-scan"></div>'+
       '<div class="nc-scroll">'+
-      '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow"><span class="nc-dot"></span>NOVA &middot; COACH ONLINE</div><div class="nc-greet">'+esc(b.greeting)+', Alex.</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
+      '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow"><span class="nc-dot"></span>NOVA &middot; COACH ONLINE</div><div class="nc-greet">'+esc(b.greeting)+esc(whoami())+'</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
       '<a class="nc-talk" href="nova-chat.html">&#10022; Talk to me</a>'+
       '<div class="nc-headline">'+esc(b.headline)+'</div>'+
       letterHTMLIfDue()+

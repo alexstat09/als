@@ -166,6 +166,10 @@
       if (guardAccountSwitch(session)) return;
       window.ALSAuth={ user:(session&&session.user)||null, client:client, signOut:doSignOut, purgeLocal:purgeLocal };
       closeOv();
+      // The session has landed. Anything that must not run for a signed-out
+      // browser (the onboarding, above all) waits for this instead of guessing
+      // from a timer.
+      try{ document.dispatchEvent(new CustomEvent('als:auth',{ detail:{ user:window.ALSAuth.user } })); }catch(e){}
     }
     function showLogin(){
       settle();
