@@ -203,6 +203,14 @@
       <h2>Go back to a day</h2>
       <div class="desc">Every day is saved. Pick one, then choose what to do with it: from <b>just looking</b>, all the way to <b>replacing everything</b>. Nothing happens until you choose.</div>
       <div id="dayList"></div>
+
+      <!-- Beyond the 14-day window. GitHub keeps every day forever, and
+           corruption is exactly what you notice late — so the surgical tools
+           must work on a file too, not only on the last 14 days. -->
+      <button class="bk-btn ghost" id="dayFileBtn" type="button" style="margin-top:10px">Older than 14 days? Open a backup file</button>
+      <input type="file" id="dayFile" accept="application/json,.json" class="hidden">
+      <div class="rp-none" id="dayFileNote" style="margin-top:9px">Use any day from your <b>als-backups</b> repo on GitHub, or a file you downloaded. It opens exactly like a day above, with the same three choices.</div>
+
       <div class="dp hidden" id="dayPanel">
         <div class="dp-head">
           <div class="dp-htxt">
@@ -679,6 +687,64 @@
       return data;
     }
 
+    // ── SNAPSHOT FROM A FILE ──────────────────────────────────
+    // The Supabase rollback window is 14 days, but GitHub keeps EVERY day
+    // forever — and corruption is exactly the thing you notice late. So the
+    // surgical tools (look / compare / put back / bring back) must work on a
+    // FILE too, not just the last 14 days.
+    //
+    // Two shapes have to normalise to the same thing:
+    //   • a vault snapshot (GitHub: backups/YYYY-MM-DD.json)
+    //       { v, takenAt, date, rows: { appKey: { storeKey: value } }, counts }
+    //   • a file export (Download backup: aurora-backup-YYYY-MM-DD.json)
+    //       { kind:'als-backup', exportedAt, data: { storeKey: "<json string>" } }
+    // Everything downstream speaks `rows`, so the file export is regrouped into
+    // rows using the same BUNDLES map the restore path already uses.
+    function normalizeSnapshot(payload){
+      if (!payload || typeof payload !== 'object') return null;
+
+      // Vault snapshot — already in the right shape.
+      if (payload.rows && typeof payload.rows === 'object'){
+        return {
+          rows: payload.rows,
+          date: payload.date || (payload.takenAt || '').slice(0, 10) || 'file',
+          takenAt: payload.takenAt || null,
+          counts: payload.counts || null,
+          kind: 'vault'
+        };
+      }
+
+      // File export — flat localStorage keys holding JSON strings.
+      if (payload.data && typeof payload.data === 'object'){
+        var rows = {}, n = 0;
+        Object.keys(payload.data).forEach(function(k){
+          if (isInternal(k)) return;
+          var ak = bundleFor(k);
+          if (!ak) return;                       // unsynced local pref → not repairable
+          var v = payload.data[k];
+          if (!rows[ak]) rows[ak] = {};
+          rows[ak][k] = (typeof v === 'string') ? tryParse(v) : v;
+          n++;
+        });
+        if (!n) return null;
+        return {
+          rows: rows,
+          date: (payload.exportedAt || '').slice(0, 10) || 'file',
+          takenAt: payload.exportedAt || null,
+          counts: null,
+          kind: 'export'
+        };
+      }
+      return null;
+    }
+
+    // Where a day's data comes from: an uploaded file if it has one, else the
+    // 14-day Supabase window.
+    async function snapshotFor(d){
+      if (d && d.snap) return d.snap;
+      return await readVaultRow('backup:snap:' + d.date);
+    }
+
     async function readVaultRow(key){
       var r = await fetch(SUPA + '/rest/v1/app_state?key=eq.' + encodeURIComponent(key) + '&select=data', { headers: headers() });
       if (!r.ok) return null;
@@ -762,12 +828,20 @@
       });
     }
 
+    // A date that never renders as "Invalid Date" — a file may carry anything.
+    function dayWords(date){
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'That backup';
+      var t = new Date(date + 'T00:00:00');
+      if (isNaN(t.getTime())) return 'That backup';
+      return t.toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+    }
+
     function openDay(d){
       activeDay = d;
-      var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
-      $('dpWhen').textContent = when;
+      $('dpWhen').textContent = dayWords(d.date);
       $('dpMeta').textContent = (d.records != null ? d.records.toLocaleString() + ' records' : '') +
-                                ' · ' + fmtBytes(d.bytes || 0) + (d.github ? ' · on GitHub' : '');
+        ' · ' + fmtBytes(d.bytes || 0) +
+        (d.fromFile ? ' · from file' : (d.github ? ' · on GitHub' : ''));
       $('dpBody').innerHTML = '';
       $('dpDone').classList.add('hidden');
       ['dpLook','dpAdd','dpRestore'].forEach(function(id){ $(id).classList.remove('on'); });
@@ -780,6 +854,50 @@
       activeDay = null;
       $('dayPanel').classList.add('hidden');
       renderDayList();
+    });
+
+    // ── Open a snapshot FILE as if it were a day ──────────────
+    $('dayFileBtn').addEventListener('click', function(){ $('dayFile').click(); });
+    $('dayFile').addEventListener('change', function(){
+      var f = this.files && this.files[0];
+      this.value = '';
+      if (!f) return;
+      var note = $('dayFileNote');
+      note.innerHTML = 'Reading <b>' + f.name + '</b>…';
+      var rd = new FileReader();
+      rd.onerror = function(){ note.innerHTML = '<span class="rp-gone">Could not read that file.</span>'; };
+      rd.onload = async function(){
+        var payload;
+        try { payload = JSON.parse(rd.result); }
+        catch(e){ note.innerHTML = '<span class="rp-gone">That file is not valid JSON.</span>'; return; }
+
+        var snap = normalizeSnapshot(payload);
+        if (!snap){
+          note.innerHTML = '<span class="rp-gone">That doesn’t look like an AURORA backup. Use a <b>backups/YYYY-MM-DD.json</b> from your als-backups repo, or a file from “Download backup”.</span>';
+          return;
+        }
+
+        // Count what's in it, so the panel reads like any other day.
+        var records = 0, bytes = f.size;
+        Object.keys(snap.rows).forEach(function(ak){
+          Object.keys(snap.rows[ak] || {}).forEach(function(k){
+            if (k !== '_deletes') records += countOf(snap.rows[ak][k]);
+          });
+        });
+
+        note.innerHTML = 'Opened <b>' + f.name + '</b> · ' + records.toLocaleString() + ' records. ' +
+          'It behaves exactly like a day above, so the same three choices apply.';
+
+        // A file-backed "day". snapshotFor() will use .snap instead of Supabase,
+        // so look / compare / put-back / restore all work on it unchanged.
+        activeDay = null;
+        currentRows = await loadCurrentRows();          // always diff against LIVE data
+        openDay({
+          date: snap.date, records: records, bytes: bytes,
+          github: false, fromFile: true, fileName: f.name, snap: snap
+        });
+      };
+      rd.readAsText(f);
     });
 
     $('dpLook').addEventListener('click', function(){ if (activeDay) showLook(activeDay); });
@@ -797,18 +915,18 @@
     // Go back to a day. Reuses the SAME restore core the file/cloud paths use —
     // safety copy downloads first, then local + cloud are replaced.
     async function restoreDay(d){
-      var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+      var when = dayWords(d.date) + (d.fromFile ? ' (from ' + (d.fileName || 'your file') + ')' : '');
       var msg = 'Restore your data as it was on ' + when + '?\n\n' +
         (d.records != null ? d.records.toLocaleString() + ' records.\n\n' : '') +
         'This replaces what you have now, on this device and in the cloud. A safety copy of your current data downloads first, so this is undoable.';
-      if (!(await ALSConfirm({ title:'Go back to ' + when + '?', message: msg, confirmText:'Restore that day' }))) return;
+      if (!(await ALSConfirm({ title:'Go back to ' + dayWords(d.date) + '?', message: msg, confirmText:'Restore that day' }))) return;
 
-      var done = $('vlDone');
+      var done = $('dpDone');
       done.textContent = 'Fetching that day…'; done.classList.remove('hidden');
       try {
-        var snap = await readVaultRow('backup:snap:' + d.date);
+        var snap = await snapshotFor(d);
         if (!snap || !snap.rows){
-          done.textContent = 'That snapshot could not be read. It may be older than the 14-day window — get it from GitHub instead.';
+          done.textContent = 'That snapshot could not be read. If it is older than 14 days, use “Open a backup file” above with the day from GitHub.';
           return;
         }
         var data = snapToData(snap);
@@ -1051,7 +1169,7 @@
       $('dpDone').classList.add('hidden');
       body.innerHTML = '<div class="rp-none">Comparing with today…</div>';
       try {
-        repairSnap = await readVaultRow('backup:snap:' + date);
+        repairSnap = await snapshotFor(d);
         if (!repairSnap || !repairSnap.rows) throw new Error('that snapshot could not be read');
         currentRows = await loadCurrentRows();
 
@@ -1154,7 +1272,7 @@
           var note = document.createElement('div');
           note.className = 'rp-none'; note.style.marginTop = '10px';
           note.innerHTML = 'This <b>only adds</b> what is missing. Nothing you have logged since ' +
-            new Date(date + 'T00:00:00').toLocaleDateString([], { month:'long', day:'numeric' }) + ' can be removed by it.';
+            dayWords(date) + ' can be removed by it.';
           body.appendChild(note);
         }
       } catch(e){
@@ -1362,7 +1480,7 @@
       $('dpDone').classList.add('hidden');
       body.innerHTML = '<div class="rp-none">Opening that day…</div>';
       try {
-        peekSnap = await readVaultRow('backup:snap:' + date);
+        peekSnap = await snapshotFor(d);
         if (!peekSnap || !peekSnap.rows) throw new Error('that snapshot could not be read');
         if (!Object.keys(currentRows).length) currentRows = await loadCurrentRows();
 
