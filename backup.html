@@ -39,6 +39,27 @@
     .bk-btn.ghost{ background:rgba(255,255,255,.04); color:var(--au-dim); border:1px solid var(--au-line); box-shadow:none; font-weight:700; }
     .bk-btn:disabled{ opacity:.4; cursor:default; box-shadow:none; }
     .bk-btn + .bk-btn{ margin-top:9px; }
+
+    /* ── Vault: status + time travel ─────────────────────────── */
+    .vs-row{ display:flex; align-items:center; gap:11px; padding:11px 0; border-top:1px solid var(--au-line); }
+    .vs-row:first-child{ border-top:none; }
+    .vs-dot{ width:9px; height:9px; border-radius:50%; flex:none; background:var(--au-dim); }
+    .vs-dot.ok{ background:#3FE0B0; box-shadow:0 0 10px rgba(63,224,176,.5); }
+    .vs-dot.warn{ background:#F2A65A; }
+    .vs-dot.bad{ background:#E8736B; }
+    .vs-txt{ flex:1; min-width:0; display:block; }
+    .vs-t{ display:block; font-size:13.5px; font-weight:700; color:var(--au-ivory); }
+    .vs-s{ display:block; font-size:11.5px; color:var(--au-dim); margin-top:3px; line-height:1.5; }
+    .vl-list{ margin-top:14px; }
+    .vl-h{ font-family:var(--au-mono,monospace); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--au-dim); margin-bottom:8px; }
+    .vl-item{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:rgba(255,255,255,.03);
+              border:1px solid var(--au-line); border-radius:11px; padding:11px 13px; margin-bottom:7px; cursor:pointer;
+              font-family:inherit; color:inherit; transition:border-color .2s, background .2s; }
+    .vl-item:hover{ border-color:rgba(63,224,176,.4); background:rgba(255,255,255,.05); }
+    .vl-d{ display:block; font-weight:700; font-size:13px; color:var(--au-ivory); }
+    .vl-m{ display:block; font-size:11px; color:var(--au-dim); margin-top:3px; line-height:1.45; }
+    .vl-go{ margin-left:auto; font-size:11px; font-weight:700; color:#3FE0B0; flex:none; }
+    .vl-flag{ color:#F2A65A; font-weight:700; }
     .bk-drop{ border:1.5px dashed var(--au-line); border-radius:13px; padding:22px 14px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
     .bk-drop.over{ border-color:rgba(var(--bk),.6); background:rgba(var(--bk),.05); }
     .bk-drop .big{ font-size:24px; }
@@ -69,6 +90,41 @@
   </header>
 
   <main class="bk-wrap">
+
+    <!-- STATUS — the only question that matters: am I safe right now? -->
+    <div class="bk-card">
+      <h2>Are you safe?</h2>
+      <div class="vs-row">
+        <span class="vs-dot" id="vsVaultDot"></span>
+        <span class="vs-txt"><span class="vs-t">The vault</span><span class="vs-s" id="vsVaultS">Checking…</span></span>
+      </div>
+      <div class="vs-row">
+        <span class="vs-dot" id="vsCloudDot"></span>
+        <span class="vs-txt"><span class="vs-t">Cloud sync</span><span class="vs-s" id="vsCloudS">Checking…</span></span>
+      </div>
+      <div class="vs-row">
+        <span class="vs-dot" id="vsFileDot"></span>
+        <span class="vs-txt"><span class="vs-t">A file in your hand</span><span class="vs-s" id="vsFileS">Checking…</span></span>
+      </div>
+    </div>
+
+    <!-- THE VAULT — automatic daily history -->
+    <div class="bk-card">
+      <h2>The vault</h2>
+      <div class="desc">A snapshot of everything, taken <b>automatically every day</b> and committed to your private GitHub repo — where it can never be overwritten. If today's data is ever wrong, you can go back to any earlier day.</div>
+      <div class="bk-stat-row">
+        <div class="bk-stat"><b id="vlLast">…</b><span>Last backup</span></div>
+        <div class="bk-stat"><b id="vlDays">…</b><span>Snapshots</span></div>
+        <div class="bk-stat"><b id="vlRecs">…</b><span>Records</span></div>
+      </div>
+      <button class="bk-btn go" id="vlNow" type="button">Back up now</button>
+      <button class="bk-btn ghost" id="vlVerify" type="button">✓ Verify my backup</button>
+      <div class="bk-ok hidden" id="vlDone"></div>
+      <div class="vl-list hidden" id="vlList">
+        <div class="vl-h">Go back to a day</div>
+        <div id="vlItems"></div>
+      </div>
+    </div>
 
     <!-- CLOUD SNAPSHOT (one-tap) -->
     <div class="bk-card">
@@ -429,8 +485,221 @@
       }
     });
 
+    // ── THE VAULT ─────────────────────────────────────────────
+    // Automatic daily snapshots: permanent history in a private GitHub repo,
+    // plus the last 14 days in Supabase for one-tap rollback. The server writes
+    // them (api/_vault.js, folded into the hourly cron); this page reads them.
+    var vaultIndex = null;
+
+    function agoWords(iso){
+      var t = Date.parse(iso); if (isNaN(t)) return 'never';
+      var mins = Math.round((Date.now() - t) / 60000);
+      if (mins < 2) return 'just now';
+      if (mins < 60) return mins + ' min ago';
+      var h = Math.round(mins / 60);
+      if (h < 24) return h + 'h ago';
+      var d = Math.round(h / 24);
+      return d === 1 ? 'yesterday' : d + ' days ago';
+    }
+    function daysSince(iso){
+      var t = Date.parse(iso); if (isNaN(t)) return Infinity;
+      return (Date.now() - t) / 86400000;
+    }
+    function setDot(id, cls){ var e = $(id); e.className = 'vs-dot' + (cls ? ' ' + cls : ''); }
+
+    // A vault snapshot stores app_state ROWS ({appKey: {key: value}}). The
+    // restore core wants a FLAT map of localStorage keys -> raw strings — the
+    // same shape a file backup has. Convert, then reuse the tested path.
+    function snapToData(snap){
+      var data = {};
+      var rows = (snap && snap.rows) || {};
+      Object.keys(rows).forEach(function(rk){
+        var row = rows[rk];
+        if (!row || typeof row !== 'object') return;
+        Object.keys(row).forEach(function(k){
+          if (k === '_deletes') return;
+          data[k] = JSON.stringify(row[k]);
+        });
+      });
+      return data;
+    }
+
+    async function readVaultRow(key){
+      var r = await fetch(SUPA + '/rest/v1/app_state?key=eq.' + encodeURIComponent(key) + '&select=data', { headers: headers() });
+      if (!r.ok) return null;
+      var rows = await r.json();
+      return (rows && rows[0] && rows[0].data) ? rows[0].data : null;
+    }
+
+    function renderStatus(){
+      var idx = vaultIndex;
+
+      // 1) The vault — the layer that actually saves you.
+      var vs = $('vsVaultS');
+      if (!idx || !idx.lastAt){
+        setDot('vsVaultDot', 'bad');
+        vs.textContent = 'No automatic backup yet. Tap “Back up now”.';
+      } else {
+        var d = daysSince(idx.lastAt);
+        setDot('vsVaultDot', d < 2 ? 'ok' : (d < 4 ? 'warn' : 'bad'));
+        var gh = idx.lastGithub ? 'saved to GitHub' : 'NOT on GitHub yet';
+        vs.innerHTML = 'Last backup <b>' + agoWords(idx.lastAt) + '</b> · ' +
+          (idx.days ? idx.days.length : 0) + ' day' + ((idx.days && idx.days.length === 1) ? '' : 's') +
+          ' you can go back to · ' + (idx.lastGithub ? gh : '<span class="vl-flag">' + gh + '</span>');
+      }
+
+      // 2) Cloud sync — the live mirror (not a backup; it copies mistakes too).
+      var cs = $('vsCloudS');
+      var lastSync = null;
+      try { lastSync = localStorage.getItem('als_last_cloud_backup'); } catch(e){}
+      setDot('vsCloudDot', 'ok');
+      cs.textContent = 'Your data mirrors to Supabase as you use the app. This is a mirror, not a backup — it copies mistakes too.';
+
+      // 3) A file in your hand — the copy no company can take away.
+      var fs_ = $('vsFileS');
+      var lastFile = null;
+      try { lastFile = localStorage.getItem('backup:lastFile'); } catch(e){}
+      if (!lastFile){
+        setDot('vsFileDot', 'warn');
+        fs_.textContent = 'You’ve never downloaded a file copy. Worth doing once — it survives everything.';
+      } else {
+        var fd = daysSince(lastFile);
+        setDot('vsFileDot', fd < 40 ? 'ok' : 'warn');
+        fs_.innerHTML = 'Last download <b>' + agoWords(lastFile) + '</b>.';
+      }
+    }
+
+    function renderVault(){
+      var idx = vaultIndex;
+      if (!idx || !idx.lastAt){
+        $('vlLast').textContent = '—'; $('vlDays').textContent = '0'; $('vlRecs').textContent = '—';
+        $('vlList').classList.add('hidden');
+        return;
+      }
+      $('vlLast').textContent = agoWords(idx.lastAt);
+      $('vlDays').textContent = (idx.days || []).length;
+      $('vlRecs').textContent = (idx.lastRecords != null) ? idx.lastRecords.toLocaleString() : '—';
+
+      var days = (idx.days || []).slice().reverse();   // newest first
+      if (!days.length){ $('vlList').classList.add('hidden'); return; }
+      var host = $('vlItems');
+      host.innerHTML = '';
+      days.forEach(function(d){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'vl-item';
+        var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+        b.innerHTML = '<span class="vs-txt"><span class="vl-d">' + when + '</span><span class="vl-m">' +
+          (d.records != null ? d.records.toLocaleString() + ' records' : '—') +
+          ' · ' + fmtBytes(d.bytes || 0) +
+          (d.shrank ? ' · <span class="vl-flag">⚠ far fewer than the day before</span>' : '') +
+          '</span></span><span class="vl-go">Restore →</span>';
+        b.addEventListener('click', function(){ restoreDay(d); });
+        host.appendChild(b);
+      });
+      $('vlList').classList.remove('hidden');
+    }
+
+    async function loadVault(){
+      try {
+        vaultIndex = await readVaultRow('backup:index');
+      } catch(e){ vaultIndex = null; }
+      renderStatus();
+      renderVault();
+    }
+
+    // Go back to a day. Reuses the SAME restore core the file/cloud paths use —
+    // safety copy downloads first, then local + cloud are replaced.
+    async function restoreDay(d){
+      var when = new Date(d.date + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+      var msg = 'Restore your data as it was on ' + when + '?\n\n' +
+        (d.records != null ? d.records.toLocaleString() + ' records.\n\n' : '') +
+        'This replaces what you have now, on this device and in the cloud. A safety copy of your current data downloads first, so this is undoable.';
+      if (!(await ALSConfirm({ title:'Go back to ' + when + '?', message: msg, confirmText:'Restore that day' }))) return;
+
+      var done = $('vlDone');
+      done.textContent = 'Fetching that day…'; done.classList.remove('hidden');
+      try {
+        var snap = await readVaultRow('backup:snap:' + d.date);
+        if (!snap || !snap.rows){
+          done.textContent = 'That snapshot could not be read. It may be older than the 14-day window — get it from GitHub instead.';
+          return;
+        }
+        var data = snapToData(snap);
+        var n = Object.keys(data).length;
+        if (!n){ done.textContent = 'That snapshot is empty — refusing to restore it.'; return; }
+        done.textContent = 'Restoring ' + n + ' data keys…';
+        var res = await restoreFromData(data);
+        done.innerHTML = '✓ Restored <b>' + res.local + '</b> data keys from <b>' + when + '</b> · synced <b>' + res.pushed + '</b> cloud set' + (res.pushed === 1 ? '' : 's') + '. Reloading…';
+        setTimeout(function(){ location.replace('index.html'); }, 2200);
+      } catch(e){
+        done.textContent = 'Restore failed: ' + ((e && e.message) || e);
+      }
+    }
+
+    // "Back up now" — force a fresh snapshot through the same server path the
+    // cron uses, so the button proves the automatic system works.
+    $('vlNow').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Backing up…';
+      var done = $('vlDone'); done.classList.add('hidden');
+      try {
+        var r = await fetch('/api/run-reminders?backup=1');
+        var j = await r.json();
+        var b = (j && j.backup) || {};
+        if (b.ok){
+          done.innerHTML = '✓ Backed up <b>' + b.records.toLocaleString() + '</b> records (' + fmtBytes(b.bytes) + ') · ' +
+            (b.github === 'committed' ? 'committed to GitHub' : '<span class="vl-flag">GitHub: ' + b.github + '</span>');
+        } else {
+          done.innerHTML = '<span class="vl-flag">Backup did not run: ' + (b.error || b.skipped || 'unknown') + '</span>';
+        }
+        done.classList.remove('hidden');
+        await loadVault();
+      } catch(e){
+        done.textContent = 'Could not reach the vault: ' + ((e && e.message) || e);
+        done.classList.remove('hidden');
+      } finally { btn.disabled = false; btn.textContent = prev; }
+    });
+
+    // "Verify" — actually OPEN the newest snapshot and count what's in it.
+    // An untested backup is a rumour. This turns it into a fact you can read.
+    $('vlVerify').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Opening it…';
+      var done = $('vlDone'); done.classList.add('hidden');
+      try {
+        if (!vaultIndex || !vaultIndex.lastDate) throw new Error('there is no backup yet');
+        var snap = await readVaultRow('backup:snap:' + vaultIndex.lastDate);
+        if (!snap || !snap.rows) throw new Error('the newest snapshot could not be read');
+        var data = snapToData(snap);
+        var keys = Object.keys(data).length;
+        if (!keys) throw new Error('the snapshot is empty');
+        var c = snap.counts || {};
+        var LABEL = { 'po_workouts':'workouts', 'nut:logs':'meals', 'po_coach_weights':'weigh-ins',
+                      'sleep:logs':'nights of sleep', 'caf:logs':'caffeine logs', 'bm:logs':'measurements',
+                      'journal:entries':'journal entries', 'movies:seen':'movies' };
+        var parts = [];
+        Object.keys(LABEL).forEach(function(k){
+          // counts are per app_state ROW; fall back to counting the restored data
+          var v = data[k] ? tryParse(data[k]) : null;
+          var n = Array.isArray(v) ? v.length : (v && typeof v === 'object' ? Object.keys(v).length : 0);
+          if (n) parts.push('<b>' + n.toLocaleString() + '</b> ' + LABEL[k]);
+        });
+        done.innerHTML = '✓ Verified the ' + (vaultIndex.lastDate) + ' snapshot: <b>' + keys + '</b> data keys are readable and restorable' +
+          (parts.length ? ' — ' + parts.join(' · ') : '') + '.';
+        done.classList.remove('hidden');
+      } catch(e){
+        done.innerHTML = '<span class="vl-flag">Could not verify: ' + ((e && e.message) || e) + '</span>';
+        done.classList.remove('hidden');
+      } finally { btn.disabled = false; btn.textContent = prev; }
+    });
+
+    // Remember when a file copy was last downloaded, so the status can nag.
+    $('exBtn').addEventListener('click', function(){
+      try { localStorage.setItem('backup:lastFile', new Date().toISOString()); } catch(e){}
+      setTimeout(renderStatus, 400);
+    });
+
     refreshExportStats();
     refreshCloudMeta();
+    loadVault();
   })();
   </script>
 </body>

@@ -12,6 +12,7 @@
 var webpush = require('web-push');
 var supa = require('./_supa');
 var auth = require('./_auth');
+var vault = require('./_vault');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -239,6 +240,23 @@ async function icuCheck() {
 module.exports = async function (req, res) {
   if (!auth.guardCron(req, res)) return; // QStash hourly cron (cron secret) or same-origin manual run
 
+  // ── THE VAULT — daily backup. Runs FIRST, on purpose. ────────────
+  // It must come before the reminder block's early returns ("VAPID not
+  // configured", "reminders off", "no subscriptions") — behind those, it would
+  // silently never run, which is the worst possible failure for a backup. It is
+  // also cheap on the 23 hourly ticks where today is already done (one read),
+  // and running it before the courier's FIT downloads means a slow courier can
+  // never eat the time budget the backup needs.
+  // ?backup=auto  → the app's once-a-day ping on open. Idempotent: a no-op if
+  //                 today is already done, so opening the app 10× costs 10 reads.
+  // ?backup=1     → "Back up now" in the app. Forces a fresh snapshot.
+  var bq = (req.query && req.query.backup) || '';
+  var backupOnly = bq === '1' || bq === 'force' || bq === 'auto';
+  var backupResult = null;
+  try { backupResult = await vault.runBackup({ force: bq === '1' || bq === 'force' }); }
+  catch (e) { backupResult = { error: String((e && e.message) || e) }; }
+  if (backupOnly) { res.status(200).json({ backup: backupResult }); return; }
+
   // Garmin→intervals courier runs on every hourly cron AND on demand (?icu=1 from the app).
   var icuOnly = !!(req.query && (req.query.icu === '1' || req.query.icu === 'check'));
   var icuResult = null;
@@ -246,21 +264,21 @@ module.exports = async function (req, res) {
   if (icuOnly) { res.status(200).json({ icu: icuResult }); return; }
 
   try {
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured' }); return; }
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured', backup: backupResult }); return; }
     webpush.setVapidDetails(
       (process.env.VAPID_SUBJECT || 'mailto:nobody@example.com').trim(),
       (process.env.VAPID_PUBLIC_KEY || '').trim(), (process.env.VAPID_PRIVATE_KEY || '').trim()
     );
 
     var prefs = await supa.readRow('push:prefs');
-    if (prefs.enabled === false) { res.status(200).json({ skipped: 'reminders off' }); return; }
+    if (prefs.enabled === false) { res.status(200).json({ skipped: 'reminders off', backup: backupResult }); return; }
     var tz = prefs.tz || 'Europe/Athens';
     var lp = localParts(tz);
 
     var subsRow = await supa.readRow('push:subscriptions');
     var subs = (subsRow && subsRow.subs) || {};
     var endpoints = Object.keys(subs);
-    if (!endpoints.length) { res.status(200).json({ skipped: 'no subscriptions' }); return; }
+    if (!endpoints.length) { res.status(200).json({ skipped: 'no subscriptions', backup: backupResult }); return; }
 
     var state = await supa.readRow('push:state');
     var sent = state.sent || {};
@@ -295,7 +313,7 @@ module.exports = async function (req, res) {
       if (r.weekly && dow !== (r.dow != null ? r.dow : 1)) return false; // weekly fires on its weekday only
       return sent[r.id] !== dedupeKey(r);
     });
-    if (!due.length) { res.status(200).json({ checked: true, tz: tz, hour: lp.hour, due: 0 }); return; }
+    if (!due.length) { res.status(200).json({ checked: true, tz: tz, hour: lp.hour, due: 0, backup: backupResult }); return; }
 
     // Only pay for the data read when something might fire.
     var ctx = await buildContext(tz, lp.dateKey);
@@ -321,7 +339,7 @@ module.exports = async function (req, res) {
       await supa.writeRow('push:subscriptions', { subs: subs });
     }
 
-    res.status(200).json({ ok: true, tz: tz, hour: lp.hour, fired: fired, pruned: Object.keys(dead).length });
+    res.status(200).json({ ok: true, tz: tz, hour: lp.hour, fired: fired, pruned: Object.keys(dead).length, backup: backupResult });
   } catch (e) {
     res.status(200).json({ error: String((e && e.message) || e) });
   }

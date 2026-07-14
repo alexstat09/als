@@ -34,4 +34,25 @@ async function writeRow(key, data) {
   } catch (e) {}
 }
 
-module.exports = { readRow: readRow, writeRow: writeRow };
+// Read EVERY app_state row: [{key, data, updated_at}, ...]. Used by the vault
+// to snapshot the whole account. Returns [] on error (never a partial lie —
+// a caller must not mistake "the fetch failed" for "you have no data").
+async function readAllRows() {
+  try {
+    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=key,data,updated_at', { headers: headers() });
+    if (!r.ok) return null;
+    var j = await r.json();
+    return Array.isArray(j) ? j : null;
+  } catch (e) { return null; }
+}
+
+// Delete one app_state row by key. Only ever used to prune old backup:snap:* rows.
+async function deleteRow(key) {
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/app_state?key=eq.' + encodeURIComponent(key), {
+      method: 'DELETE', headers: headers({ Prefer: 'return=minimal' })
+    });
+  } catch (e) {}
+}
+
+module.exports = { readRow: readRow, writeRow: writeRow, readAllRows: readAllRows, deleteRow: deleteRow };

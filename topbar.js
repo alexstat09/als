@@ -566,8 +566,35 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     } catch (e) {}
   }
 
+  // THE VAULT — second trigger. The hourly QStash cron is the primary one, but a
+  // backup system that can fail silently is worse than none, because you trust
+  // it. So the app also nudges the vault once a day when it's opened: if QStash
+  // ever dies, backups keep happening simply because Alex uses the app.
+  // Idempotent server-side (?backup=auto is a no-op once today is done), and
+  // gated locally so opening 10 pages costs at most one call.
+  function nudgeVault() {
+    try {
+      if (window.self !== window.top) return;                 // not from iframes
+      if (!navigator.onLine) return;
+      var today = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem('vault:pinged') === today) return;
+      localStorage.setItem('vault:pinged', today);            // set FIRST: a failed
+      // call must not retry on every page load — the cron is still the primary.
+      setTimeout(function () {
+        fetch('/api/run-reminders?backup=auto', { method: 'GET', keepalive: true })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            var b = (j && j.backup) || {};
+            if (b.ok || b.skipped) localStorage.setItem('vault:lastOk', new Date().toISOString());
+          })
+          .catch(function () {});
+      }, 4000);                                               // let the page settle first
+    } catch (e) {}
+  }
+
   function boot() {
     registerServiceWorker();
+    nudgeVault();
     injectStyleAndHTML();
     const btn = document.getElementById('topbarWaterAdd');
     if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); addWater(); });
