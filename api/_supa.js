@@ -19,11 +19,25 @@
 'use strict';
 var SUPABASE_URL = (process.env.SUPABASE_URL || 'https://oiyvadqfldwbjroiknjc.supabase.co').replace(/\/+$/, '');
 var SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
-var OWNER_ID = process.env.OWNER_ID || '';
+// A misconfigured id is worse than a missing one: `user_id=eq.<garbage>` matches
+// nothing, so every read silently returns {} and the app looks empty rather than
+// broken. So validate the shape and SHOUT if it's wrong.
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function cleanId(name) {
+  var v = (process.env[name] || '').trim();
+  if (!v) return '';
+  if (!UUID_RE.test(v)) {
+    console.error('[_supa] ' + name + ' is NOT a valid uuid (' + v.length + ' chars: "' + v.slice(0, 12) + '…"). ' +
+                  'Every scoped query would match zero rows. Ignoring it — falling back to unscoped.');
+    return '';
+  }
+  return v;
+}
+var OWNER_ID = cleanId('OWNER_ID');
 // The runner (Chrissie). Her app is run.html and her data lives in HER account,
 // so the intervals.icu courier must deliver `run:inbox` to her rows, not Alex's.
 // Until she has an account this is empty and everything stays with the owner.
-var RUNNER_ID = process.env.RUNNER_ID || '';
+var RUNNER_ID = cleanId('RUNNER_ID');
 
 var warned = false;
 // Every helper takes an optional `who` (a user uuid). Default: the owner.
