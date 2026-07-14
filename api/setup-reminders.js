@@ -41,7 +41,10 @@ module.exports = async function (req, res) {
     var schedHeaders = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Upstash-Cron': '0 * * * *' };
     if (cronSecret) schedHeaders['Upstash-Forward-Authorization'] = 'Bearer ' + cronSecret;
 
-    var r = await fetch(qstash + '/v2/schedules/' + encodeURIComponent(dest), {
+    // The destination goes on the path RAW — QStash parses it as a URL.
+    // encodeURIComponent turned it into https%3A%2F%2F… and QStash rejected it
+    // with "endpoint has invalid scheme". (Only the scheduleId gets encoded.)
+    var r = await fetch(qstash + '/v2/schedules/' + dest, {
       method: 'POST',
       headers: schedHeaders,
       body: '{}'
