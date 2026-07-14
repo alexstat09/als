@@ -74,6 +74,14 @@
     .rp-fine{ color:var(--au-dim); }
     .rp-none{ font-size:12.5px; color:var(--au-dim); line-height:1.6; }
 
+    /* ── Changed values: show the damage, don't just count it ── */
+    .chg-ex{ margin:2px 0 4px 30px; }
+    .chg-row{ display:flex; align-items:baseline; gap:7px; padding:4px 0; font-size:12px; }
+    .chg-now{ color:#E8736B; font-weight:700; }
+    .chg-arr{ color:var(--au-faint); flex:none; }
+    .chg-was{ color:#3FE0B0; font-weight:700; }
+    .chg-more{ font-size:11px; color:var(--au-faint); padding:3px 0 0; }
+
     /* ── Look inside: read-only entry list ───────────────────── */
     .pk-out{ margin-top:14px; }
     .pk-item{ display:flex; align-items:baseline; gap:10px; padding:9px 0; border-top:1px solid var(--au-line); font-size:13px; }
@@ -212,8 +220,8 @@
 
         <button class="dp-act add" id="dpAdd" type="button">
           <span class="dp-i">✚</span>
-          <span class="vs-txt"><span class="dp-t">See what's missing</span>
-          <span class="dp-s">Shows you what's gone, then lets you tick what to bring back. <b>Nothing is written until you confirm</b>, and it can never delete what you've logged since.</span></span>
+          <span class="vs-txt"><span class="dp-t">See what's different</span>
+          <span class="dp-s">Finds entries that are <b>missing</b> and values that were <b>changed</b>, and shows you the old numbers. <b>Nothing is written until you confirm.</b> It never deletes what you've logged since.</span></span>
         </button>
 
         <button class="dp-act danger" id="dpRestore" type="button">
@@ -938,7 +946,45 @@
       return null;   // scalars: nothing meaningful to "add back"
     }
 
-    var repairSnap = null, repairPlan = [], currentRows = {};
+    // Entries that EXIST on both sides but whose contents differ. This is the
+    // corruption case: 15 weigh-ins still sitting on the right dates, but the
+    // numbers are wrong. missingBetween() cannot see it (identity matches, so
+    // nothing looks gone) — it is additive-only and fixes DELETIONS. This finds
+    // MODIFICATIONS. Entries added since the backup have no counterpart in it,
+    // so they are never touched.
+    function changedBetween(snapV, curV){
+      var out = [];
+      if (Array.isArray(snapV) && Array.isArray(curV)){
+        var cur = {};
+        curV.forEach(function(it){ var i = idOfItem(it); if (i) cur[i] = it; });
+        snapV.forEach(function(it){
+          var i = idOfItem(it);
+          if (!i || !(i in cur)) return;                       // gone, or never there → not our job
+          var a, b;
+          try { a = JSON.stringify(cur[i]); b = JSON.stringify(it); } catch(e){ return; }
+          if (a !== b) out.push({ id: i, now: cur[i], backup: it });
+        });
+        return out;
+      }
+      if (snapV && typeof snapV === 'object' && !Array.isArray(snapV) &&
+          curV && typeof curV === 'object' && !Array.isArray(curV)){
+        Object.keys(snapV).forEach(function(k){
+          if (!(k in curV)) return;
+          var a, b;
+          try { a = JSON.stringify(curV[k]); b = JSON.stringify(snapV[k]); } catch(e){ return; }
+          if (a !== b) out.push({ id: 'k:' + k, key: k, now: curV[k], backup: snapV[k] });
+        });
+      }
+      return out;
+    }
+
+    // Show a value the way a human reads it, for the "now X → backup Y" line.
+    function valueBrief(key, it){
+      var d = describe(key, it);
+      return d.length > 46 ? d.slice(0, 46) + '…' : d;
+    }
+
+    var repairSnap = null, repairPlan = [], changedPlan = [], currentRows = {};
 
     async function loadCurrentRows(){
       var r = await fetch(SUPA + '/rest/v1/app_state?select=key,data', { headers: headers() });
@@ -959,57 +1005,177 @@
         if (!repairSnap || !repairSnap.rows) throw new Error('that snapshot could not be read');
         currentRows = await loadCurrentRows();
 
-        repairPlan = [];
+        repairPlan = []; changedPlan = [];
         Object.keys(repairSnap.rows).forEach(function(appKey){
           var srow = repairSnap.rows[appKey] || {};
           var crow = currentRows[appKey] || {};
           Object.keys(srow).forEach(function(k){
             if (k === '_deletes') return;
+            var label = FRIENDLY[k] || k;
+
             var miss = missingBetween(srow[k], crow[k]);
             var n = countOf(miss);
-            if (!n) return;
-            repairPlan.push({
+            if (n) repairPlan.push({
               appKey: appKey, key: k, missing: miss, n: n,
-              now: countOf(crow[k]), then: countOf(srow[k]),
-              label: FRIENDLY[k] || k
+              now: countOf(crow[k]), then: countOf(srow[k]), label: label
+            });
+
+            var chg = changedBetween(srow[k], crow[k]);
+            if (chg.length) changedPlan.push({
+              appKey: appKey, key: k, changed: chg, n: chg.length, label: label
             });
           });
         });
         repairPlan.sort(function(a,b){ return b.n - a.n; });
+        changedPlan.sort(function(a,b){ return b.n - a.n; });
 
         body.innerHTML = '';
-        if (!repairPlan.length){
-          body.innerHTML = '<div class="rp-none">✓ <b>Nothing is missing.</b> Everything in that backup is still in your data today, so there is nothing to bring back.</div>';
+        if (!repairPlan.length && !changedPlan.length){
+          body.innerHTML = '<div class="rp-none">✓ <b>Nothing is different.</b> Every entry in that backup is still in your data today, with the same values. There is nothing to fix.</div>';
           return;
         }
-        repairPlan.forEach(function(p, i){
-          var row = document.createElement('label');
-          row.className = 'rp-row';
-          row.innerHTML = '<input type="checkbox" data-i="' + i + '" checked>' +
-            '<span class="vs-txt"><span class="rp-name">' + p.label + '</span>' +
-            '<span class="rp-sub"><span class="rp-gone">' + p.n + ' missing</span> · ' +
-            p.then + ' in that backup, ' + p.now + ' now</span></span>';
-          body.appendChild(row);
-        });
-        var total = repairPlan.reduce(function(s,p){ return s + p.n; }, 0);
-        var go = document.createElement('button');
-        go.type = 'button'; go.className = 'bk-btn go'; go.style.marginTop = '13px';
-        go.textContent = 'Bring back ' + total + ' entr' + (total === 1 ? 'y' : 'ies');
-        go.addEventListener('click', function(){ doHeal(date); });
-        body.appendChild(go);
-        var note = document.createElement('div');
-        note.className = 'rp-none'; note.style.marginTop = '10px';
-        note.innerHTML = 'This <b>only adds</b> what is missing. Nothing you have logged since ' +
-          new Date(date + 'T00:00:00').toLocaleDateString([], { month:'long', day:'numeric' }) + ' can be removed by it.';
-        body.appendChild(note);
+
+        // ── CHANGED (corruption) — first, because it is the scarier one and the
+        //    one you cannot see by counting. Shows the actual values.
+        if (changedPlan.length){
+          var ch = document.createElement('div');
+          ch.className = 'vl-h'; ch.style.marginTop = '2px';
+          ch.textContent = 'Values that changed';
+          body.appendChild(ch);
+
+          changedPlan.forEach(function(p, i){
+            var row = document.createElement('label');
+            row.className = 'rp-row';
+            row.innerHTML = '<input type="checkbox" data-c="' + i + '" checked>' +
+              '<span class="vs-txt"><span class="rp-name">' + p.label + '</span>' +
+              '<span class="rp-sub"><span class="rp-gone">' + p.n + ' entr' + (p.n===1?'y':'ies') + ' differ</span> from the backup</span></span>';
+            body.appendChild(row);
+
+            // Show the first few, so you SEE the damage rather than trust a number.
+            var ex = document.createElement('div');
+            ex.className = 'chg-ex';
+            p.changed.slice(0, 4).forEach(function(c){
+              var when = c.key ? c.key : whenOf(c.backup);
+              ex.innerHTML += '<div class="chg-row"><span class="pk-when">' + (when || '—') + '</span>' +
+                '<span class="chg-now">' + valueBrief(p.key, c.now) + '</span>' +
+                '<span class="chg-arr">→</span>' +
+                '<span class="chg-was">' + valueBrief(p.key, c.backup) + '</span></div>';
+            });
+            if (p.changed.length > 4) ex.innerHTML += '<div class="chg-more">…and ' + (p.changed.length - 4) + ' more</div>';
+            body.appendChild(ex);
+          });
+
+          var totC = changedPlan.reduce(function(s,p){ return s + p.n; }, 0);
+          var fix = document.createElement('button');
+          fix.type = 'button'; fix.className = 'bk-btn go'; fix.style.marginTop = '11px';
+          fix.textContent = 'Put back the ' + totC + ' backup value' + (totC === 1 ? '' : 's');
+          fix.addEventListener('click', function(){ doPutBack(date); });
+          body.appendChild(fix);
+
+          var noteC = document.createElement('div');
+          noteC.className = 'rp-none'; noteC.style.marginTop = '10px';
+          noteC.innerHTML = 'Replaces <b>only these entries</b> with the backup\'s version. Entries you added since are not touched, and nothing is deleted.';
+          body.appendChild(noteC);
+        }
+
+        // ── MISSING (deletions) — additive-only.
+        if (repairPlan.length){
+          var mh = document.createElement('div');
+          mh.className = 'vl-h';
+          mh.style.marginTop = changedPlan.length ? '20px' : '2px';
+          mh.textContent = 'Entries that are gone';
+          body.appendChild(mh);
+
+          repairPlan.forEach(function(p, i){
+            var row = document.createElement('label');
+            row.className = 'rp-row';
+            row.innerHTML = '<input type="checkbox" data-i="' + i + '" checked>' +
+              '<span class="vs-txt"><span class="rp-name">' + p.label + '</span>' +
+              '<span class="rp-sub"><span class="rp-gone">' + p.n + ' missing</span> · ' +
+              p.then + ' in that backup, ' + p.now + ' now</span></span>';
+            body.appendChild(row);
+          });
+          var total = repairPlan.reduce(function(s,p){ return s + p.n; }, 0);
+          var go = document.createElement('button');
+          go.type = 'button'; go.className = 'bk-btn go'; go.style.marginTop = '11px';
+          go.textContent = 'Bring back ' + total + ' entr' + (total === 1 ? 'y' : 'ies');
+          go.addEventListener('click', function(){ doHeal(date); });
+          body.appendChild(go);
+          var note = document.createElement('div');
+          note.className = 'rp-none'; note.style.marginTop = '10px';
+          note.innerHTML = 'This <b>only adds</b> what is missing. Nothing you have logged since ' +
+            new Date(date + 'T00:00:00').toLocaleDateString([], { month:'long', day:'numeric' }) + ' can be removed by it.';
+          body.appendChild(note);
+        }
       } catch(e){
         body.innerHTML = '<div class="rp-none rp-gone">Could not compare: ' + ((e && e.message) || e) + '</div>';
       }
     }
 
+    // PUT BACK — repairs CHANGED values. For each selected store it rewrites
+    // only the entries whose contents differ, replacing them with the backup's
+    // version. Entries added since the backup have no counterpart there, so they
+    // pass through untouched; nothing is deleted; other stores are not opened.
+    async function doPutBack(date){
+      var picked = [];
+      $('dpBody').querySelectorAll('input[data-c]').forEach(function(cb){
+        if (cb.checked) picked.push(changedPlan[+cb.getAttribute('data-c')]);
+      });
+      if (!picked.length) return;
+      var total = picked.reduce(function(s,p){ return s + p.n; }, 0);
+      var what = picked.map(function(p){ return p.n + ' ' + p.label.toLowerCase(); }).join(', ');
+      if (!(await ALSConfirm({
+        title: 'Put back ' + total + ' value' + (total===1?'':'s') + '?',
+        message: 'Restores ' + what + ' to the values in the ' + date + ' backup.\n\n' +
+                 'Only these entries change. Anything you added since is kept, and nothing is deleted.',
+        confirmText: 'Put them back'
+      }))) return;
+
+      var done = $('dpDone');
+      done.textContent = 'Putting them back…'; done.classList.remove('hidden');
+
+      var byRow = {}, fixed = 0;
+      picked.forEach(function(p){
+        if (!byRow[p.appKey]) byRow[p.appKey] = JSON.parse(JSON.stringify(currentRows[p.appKey] || {}));
+        var cur = byRow[p.appKey][p.key];
+
+        if (Array.isArray(cur)){
+          var fix = {};
+          p.changed.forEach(function(c){ fix[c.id] = c.backup; });
+          byRow[p.appKey][p.key] = cur.map(function(it){
+            var i = idOfItem(it);
+            if (i && fix[i]){ fixed++; return JSON.parse(JSON.stringify(fix[i])); }
+            return it;                                  // added since / already fine → untouched
+          });
+        } else if (cur && typeof cur === 'object'){
+          var obj = JSON.parse(JSON.stringify(cur));
+          p.changed.forEach(function(c){
+            if (c.key != null && (c.key in obj)){ obj[c.key] = c.backup; fixed++; }
+          });
+          byRow[p.appKey][p.key] = obj;
+        }
+      });
+
+      var okRows = 0, badRows = 0, rowKeys = Object.keys(byRow);
+      for (var i = 0; i < rowKeys.length; i++){
+        try { (await pushBundle(rowKeys[i], byRow[rowKeys[i]])) ? okRows++ : badRows++; }
+        catch(e){ badRows++; }
+      }
+      picked.forEach(function(p){
+        try { localStorage.setItem(p.key, JSON.stringify(byRow[p.appKey][p.key])); } catch(e){}
+      });
+
+      if (badRows){
+        done.innerHTML = '<span class="vl-flag">Put back ' + fixed + ', but ' + badRows + ' store' + (badRows===1?'':'s') + ' failed to sync. Try again on a better connection.</span>';
+        return;
+      }
+      done.innerHTML = '✓ Put back <b>' + fixed + '</b> value' + (fixed===1?'':'s') + ' across <b>' + okRows + '</b> store' + (okRows===1?'':'s') + '. Nothing else was touched. Reloading…';
+      setTimeout(function(){ location.reload(); }, 2200);
+    }
+
     async function doHeal(date){
       var picked = [];
-      $('dpBody').querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      $('dpBody').querySelectorAll('input[data-i]').forEach(function(cb){
         if (cb.checked) picked.push(repairPlan[+cb.getAttribute('data-i')]);
       });
       if (!picked.length){ return; }
