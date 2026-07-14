@@ -33,12 +33,11 @@ module.exports = async function (req, res) {
       return s && s.destination && s.destination.indexOf('/api/run-reminders') !== -1;
     }) : [];
     if (existing.length && !force) { res.status(200).json({ ok: true, status: 'already scheduled', scheduleId: existing[0].scheduleId, cron: existing[0].cron }); return; }
-    if (existing.length && force) {
-      for (var i = 0; i < existing.length; i++) {
-        try { await fetch(qstash + '/v2/schedules/' + encodeURIComponent(existing[i].scheduleId), { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } }); } catch (e) {}
-      }
-    }
 
+    // CREATE FIRST, delete the old one only once the replacement exists.
+    // The old order (delete → create) left the account with NO schedule at all
+    // when the create failed — no reminders, no nightly Vault backup, and a
+    // response that just said "failed" without saying why.
     var schedHeaders = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Upstash-Cron': '0 * * * *' };
     if (cronSecret) schedHeaders['Upstash-Forward-Authorization'] = 'Bearer ' + cronSecret;
 
@@ -47,8 +46,27 @@ module.exports = async function (req, res) {
       headers: schedHeaders,
       body: '{}'
     });
-    var j = await r.json().catch(function () { return {}; });
-    res.status(200).json({ ok: r.ok, status: r.ok ? (force ? 're-scheduled hourly' : 'scheduled hourly') : 'failed', secured: !!cronSecret, scheduleId: j.scheduleId || null });
+    var raw = await r.text();
+    var j = {}; try { j = JSON.parse(raw); } catch (e) {}
+
+    if (!r.ok) {
+      // Surface QStash's actual complaint — a silent "failed" is unfixable.
+      res.status(200).json({
+        ok: false, status: 'failed', secured: !!cronSecret, scheduleId: null,
+        qstashStatus: r.status,
+        qstashError: String(raw || '').slice(0, 300),
+        keptExisting: existing.length,          // the old schedule is still alive
+        hint: existing.length ? 'Your previous schedule was NOT deleted — reminders still run.' : 'No schedule exists yet.'
+      });
+      return;
+    }
+
+    // New one is live → now retire the old ones.
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].scheduleId === j.scheduleId) continue;
+      try { await fetch(qstash + '/v2/schedules/' + encodeURIComponent(existing[i].scheduleId), { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } }); } catch (e) {}
+    }
+    res.status(200).json({ ok: true, status: force ? 're-scheduled hourly' : 'scheduled hourly', secured: !!cronSecret, scheduleId: j.scheduleId || null, replaced: existing.length });
   } catch (e) {
     res.status(200).json({ ok: false, error: String((e && e.message) || e) });
   }
