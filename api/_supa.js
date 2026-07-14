@@ -3,9 +3,37 @@
 // is a private library. Prefers the SERVICE-ROLE key (server-only, bypasses RLS)
 // so cron/Nova keep working once row-level security is on; falls back to the
 // publishable key when the service role isn't configured.
+//
+// ── OWNER SCOPING (migration 001) ────────────────────────────────────────────
+// app_state rows are keyed by (user_id, key): more than one account can have a
+// row called 'sleep'. The service-role key BYPASSES row-level security, so this
+// file is the one place that could quietly read the WRONG person's data —
+// `key=eq.sleep` on its own would return whichever row Postgres handed back.
+// Everything here is therefore pinned to the owner: the cron reminders, Nova's
+// brief, the run importer and the Vault are ALEX's, and must never read,
+// snapshot or overwrite another account's rows.
+//
+// OWNER_ID must be set in Vercel (Settings → Environment Variables) to Alex's
+// auth.users id. If it is missing we fall back to unscoped queries — correct
+// only while he is the sole account — and say so loudly in the log.
 'use strict';
 var SUPABASE_URL = (process.env.SUPABASE_URL || 'https://oiyvadqfldwbjroiknjc.supabase.co').replace(/\/+$/, '');
 var SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+var OWNER_ID = process.env.OWNER_ID || '';
+// The runner (Chrissie). Her app is run.html and her data lives in HER account,
+// so the intervals.icu courier must deliver `run:inbox` to her rows, not Alex's.
+// Until she has an account this is empty and everything stays with the owner.
+var RUNNER_ID = process.env.RUNNER_ID || '';
+
+var warned = false;
+// Every helper takes an optional `who` (a user uuid). Default: the owner.
+function uid(who) { return who || OWNER_ID; }
+function ownerFilter(who) {
+  var u = uid(who);
+  if (u) return '&user_id=eq.' + encodeURIComponent(u);
+  if (!warned) { warned = true; console.warn('[_supa] OWNER_ID not set — queries are UNSCOPED. Safe only while there is exactly one account.'); }
+  return '';
+}
 
 function headers(extra) {
   var h = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
@@ -13,46 +41,58 @@ function headers(extra) {
   return h;
 }
 
-// Read one app_state row's `data` JSON by key. Returns {} on miss/error.
-async function readRow(key) {
+// Read one app_state row by key, for the owner (or `who`). {} on miss/error.
+async function readRow(key, who) {
   try {
-    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=data&key=eq.' + encodeURIComponent(key), { headers: headers() });
+    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=data&key=eq.' + encodeURIComponent(key) + ownerFilter(who), { headers: headers() });
     if (!r.ok) return {};
     var j = await r.json();
     return (j && j[0] && j[0].data) ? j[0].data : {};
   } catch (e) { return {}; }
 }
 
-// Upsert one app_state row (whole-row replace, same as the client's flush).
-async function writeRow(key, data) {
+// Upsert one app_state row (whole-row replace, like the client's flush) for the
+// owner, or for `who`. Stamped with that user; conflicts resolve on
+// (user_id, key) to match the primary key created by migration 001.
+async function writeRow(key, data, who) {
   try {
-    await fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+    var u = uid(who);
+    var row = { key: key, data: data, updated_at: new Date().toISOString() };
+    var conflict = 'key';
+    if (u) { row.user_id = u; conflict = 'user_id,key'; }
+    await fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=' + conflict, {
       method: 'POST',
       headers: headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify({ key: key, data: data, updated_at: new Date().toISOString() })
+      body: JSON.stringify(row)
     });
   } catch (e) {}
 }
 
-// Read EVERY app_state row: [{key, data, updated_at}, ...]. Used by the vault
-// to snapshot the whole account. Returns [] on error (never a partial lie —
-// a caller must not mistake "the fetch failed" for "you have no data").
-async function readAllRows() {
+// Read every app_state row BELONGING TO THE OWNER: [{key, data, updated_at}, ...].
+// Used by the Vault to snapshot the account. Returns null on error (never a
+// partial lie — a caller must not mistake "the fetch failed" for "you have no
+// data"). Scoping matters doubly here: an unscoped snapshot would sweep someone
+// else's private data into Alex's backup repo.
+async function readAllRows(who) {
   try {
-    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=key,data,updated_at', { headers: headers() });
+    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=key,data,updated_at' + ownerFilter(who), { headers: headers() });
     if (!r.ok) return null;
     var j = await r.json();
     return Array.isArray(j) ? j : null;
   } catch (e) { return null; }
 }
 
-// Delete one app_state row by key. Only ever used to prune old backup:snap:* rows.
-async function deleteRow(key) {
+// Delete one row by key, for the owner (or `who`). Only ever used to prune old
+// backup:snap:* rows.
+async function deleteRow(key, who) {
   try {
-    await fetch(SUPABASE_URL + '/rest/v1/app_state?key=eq.' + encodeURIComponent(key), {
+    await fetch(SUPABASE_URL + '/rest/v1/app_state?key=eq.' + encodeURIComponent(key) + ownerFilter(who), {
       method: 'DELETE', headers: headers({ Prefer: 'return=minimal' })
     });
   } catch (e) {}
 }
 
-module.exports = { readRow: readRow, writeRow: writeRow, readAllRows: readAllRows, deleteRow: deleteRow };
+module.exports = {
+  readRow: readRow, writeRow: writeRow, readAllRows: readAllRows, deleteRow: deleteRow,
+  OWNER_ID: OWNER_ID, RUNNER_ID: RUNNER_ID
+};

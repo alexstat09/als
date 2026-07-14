@@ -184,8 +184,12 @@ async function icuCheck() {
   var acts; try { acts = await lr.json(); } catch (e) { return { error: 'list not json' }; }
   if (!Array.isArray(acts)) return { error: 'list not array' };
 
-  var inbox = await supa.readRow('run:inbox');
-  var ack = await supa.readRow('run:inbox-ack');
+  // The courier delivers to the RUNNER's account (Chrissie), not the owner's —
+  // run.html is her app and her rows are hers. Falls back to the owner while
+  // she has no account yet, which is the single-account status quo.
+  var runner = supa.RUNNER_ID || undefined;
+  var inbox = await supa.readRow('run:inbox', runner);
+  var ack = await supa.readRow('run:inbox-ack', runner);
   var doneIds = Array.isArray(inbox.doneIds) ? inbox.doneIds.slice() : [];
   var items = Array.isArray(inbox.items) ? inbox.items.slice() : [];
   var seenIds = Array.isArray(ack.seenIds) ? ack.seenIds : [];
@@ -231,7 +235,7 @@ async function icuCheck() {
 
   if (items.length > 20) items = items.slice(items.length - 20);     // generous buffer; ack-pruning keeps it near-empty
   if (doneIds.length > 500) doneIds = doneIds.slice(doneIds.length - 500);
-  await supa.writeRow('run:inbox', { doneIds: doneIds, items: items });
+  await supa.writeRow('run:inbox', { doneIds: doneIds, items: items }, runner);
 
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
   return { total: acts.length, strava: strava, garmin: cands.length, added: added, nonRun: nonRun, errs: errs, pending: items.length, newest: newest };

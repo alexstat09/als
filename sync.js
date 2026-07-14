@@ -180,6 +180,8 @@
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
     let supa = null, pushTimer = null, suppress = false, lastJson = null, lastPushAt = 0, lastRemoteStamp = null;
+    // who owns the rows we read/write, and whether the DB knows about owners yet
+    let me = null, accessToken = null, hasOwnerCol = false;
     const TOMB_KEY = '__synctomb__' + appKey;
 
     const origSet = localStorage.setItem.bind(localStorage);
@@ -259,9 +261,24 @@
       return data;
     }
 
+    // ── Owner scoping ───────────────────────────────────────────────────
+    // Every row belongs to exactly one account. `me` is the signed-in user's
+    // uuid; `hasOwnerCol` is whether the DB has been migrated yet (migration
+    // 001). Both states work, so the code can ship before or after the SQL is
+    // run — there is no window where syncing breaks.
+    // A row is addressed by (user_id, key), never by key alone: two accounts
+    // both have a row called 'sleep'.
+    function scoped(q) { return hasOwnerCol ? q.eq('user_id', me) : q; }
+    function rowBody(body, iso) {
+      const r = { key: appKey, data: body, updated_at: iso };
+      if (hasOwnerCol) r.user_id = me;
+      return r;
+    }
+    function conflictCols() { return hasOwnerCol ? 'user_id,key' : 'key'; }
+
     async function pull() {
       try {
-        const { data, error } = await supa.from('app_state').select('data,updated_at').eq('key', appKey).maybeSingle();
+        const { data, error } = await scoped(supa.from('app_state').select('data,updated_at').eq('key', appKey)).maybeSingle();
         if (!error && data) { if (data.updated_at) lastRemoteStamp = data.updated_at; if (data.data) return data.data; }
       } catch (e) {}
       return null;
@@ -271,7 +288,7 @@
     // undefined = probe failed (retry next tick); null = no row yet.
     async function probe() {
       try {
-        const { data, error } = await supa.from('app_state').select('updated_at').eq('key', appKey).maybeSingle();
+        const { data, error } = await scoped(supa.from('app_state').select('updated_at').eq('key', appKey)).maybeSingle();
         if (!error) return data ? (data.updated_at || null) : null;
       } catch (e) {}
       return undefined;
@@ -289,7 +306,7 @@
       if (json !== lastJson) {
         const iso = new Date().toISOString();
         lastJson = json; lastPushAt = Date.now();
-        try { await supa.from('app_state').upsert({ key: appKey, data: body, updated_at: iso }, { onConflict: 'key' }); lastRemoteStamp = iso; } catch (e) {}
+        try { await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() }); lastRemoteStamp = iso; } catch (e) {}
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
@@ -322,40 +339,72 @@
       if (json !== lastJson) {
         lastJson = json; lastPushAt = Date.now();
         // local held data the payload lacked — push the union back
-        try { supa.from('app_state').upsert({ key: appKey, data: body, updated_at: new Date().toISOString() }, { onConflict: 'key' }); } catch (e) {}
+        try { supa.from('app_state').upsert(rowBody(body, new Date().toISOString()), { onConflict: conflictCols() }); } catch (e) {}
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
 
-    // Best-effort save when the page is closing (can't await a pull here).
+    // Best-effort save when the page is closing (can't await a pull here, and
+    // can't await a token either — so `accessToken` is kept fresh in the
+    // background). It must be the USER's token, not the publishable key:
+    // once RLS is on, an anonymous write is rejected outright.
     function flushOnUnload() {
       const local = collectLocal();
       const body = pushBody(local, loadTomb());
       const json = JSON.stringify(body);
       if (json === lastJson) return;
       try {
-        fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+        fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=' + conflictCols(), {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Authorization': 'Bearer ' + (accessToken || SUPABASE_KEY),
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates',
           },
-          body: JSON.stringify({ key: appKey, data: body, updated_at: new Date().toISOString() }),
+          body: JSON.stringify(rowBody(body, new Date().toISOString())),
           keepalive: true,
         }).catch(function(){});
       } catch (e) {}
     }
 
     (async function init() {
-      supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      // Share the ONE client the login gate already created (topbar.js), so we
+      // ride its session instead of opening a second, anonymous connection.
+      supa = window.__alsAuthClient ||
+             (window.__alsAuthClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY));
+
+      // Who is signed in? No session → no cloud, full stop. localStorage still
+      // works, so nothing is lost; we simply refuse to write a row that has no
+      // owner (that is exactly how the unowned rows got there in the first
+      // place) and we never read someone else's.
+      try {
+        const s = await supa.auth.getSession();
+        const sess = s && s.data && s.data.session;
+        me = sess && sess.user && sess.user.id;
+        accessToken = sess && sess.access_token;
+      } catch (e) { me = null; }
+      if (!me) return;
+      supa.auth.onAuthStateChange(function (_evt, sess) {
+        accessToken = sess && sess.access_token;                 // keep the unload token fresh
+        if (sess && sess.user && sess.user.id !== me) location.reload();   // account switched
+      });
+
+      // Has migration 001 run? One tiny probe, then every read/write is scoped
+      // correctly for whichever schema is live. Ship-before-or-after safe.
+      try {
+        const t = await supa.from('app_state').select('user_id').limit(1);
+        hasOwnerCol = !t.error;
+      } catch (e) { hasOwnerCol = false; }
+
       await syncNow();
       supa.channel('app_state_' + appKey)
         .on('postgres_changes', {
           event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + appKey,
         }, function (payload) {
           if (!payload.new || !payload.new.data) return;
+          // Another account's row with the same key must never be applied here.
+          if (payload.new.user_id && payload.new.user_id !== me) return;
           const incoming = JSON.stringify(payload.new.data);
           // skip our own echo: exact match, OR within a few seconds of our push
           // (Supabase jsonb re-orders keys so the string compare often misses).
