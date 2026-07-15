@@ -1287,11 +1287,13 @@ function boot(){
     try{
       var SUPA='https://oiyvadqfldwbjroiknjc.supabase.co';
       var KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
-      fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{
-        method:'POST',
-        headers:{ 'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' },
-        body:JSON.stringify({ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() })
-      }).catch(function(){});
+      // Per-user row: RLS needs the caller's token, so the anon key alone is
+      // rejected. Best-effort — send the session token, skip silently if out.
+      var body={ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() };
+      var go=function(tok){ fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{ method:'POST', headers:{ 'apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' }, body:JSON.stringify(body) }).catch(function(){}); };
+      var c=(window.ALSAuth&&window.ALSAuth.client)||window.__alsAuthClient;
+      if(c&&c.auth&&c.auth.getSession){ c.auth.getSession().then(function(s){ go(s&&s.data&&s.data.session&&s.data.session.access_token); }).catch(function(){ go(null); }); }
+      else go(null);
     }catch(e){}
   }
 

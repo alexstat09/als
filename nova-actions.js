@@ -21,7 +21,23 @@
   var SUPA = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   var KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
 
-  function hdr(extra) { var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }; if (extra) for (var k in extra) h[k] = extra[k]; return h; }
+  // RLS returns/accepts a user's rows only with THEIR access token; the anon key
+  // alone now reads nothing and its writes are rejected. apikey stays the
+  // publishable key; Authorization carries the signed-in user's JWT (SESSION_TOKEN).
+  var SESSION_TOKEN = null, _authListen = false;
+  function authClient() { try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; } catch (e) { return null; } }
+  function ensureToken() {
+    return new Promise(function (resolve) {
+      var n = 0;
+      (function tick() {
+        var c = authClient();
+        if (!c || !c.auth) { if (n++ < 25) { setTimeout(tick, 120); return; } resolve(null); return; }
+        if (!_authListen && c.auth.onAuthStateChange) { _authListen = true; c.auth.onAuthStateChange(function (_e, s) { SESSION_TOKEN = (s && s.access_token) || SESSION_TOKEN; }); }
+        c.auth.getSession().then(function (s) { SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null; resolve(SESSION_TOKEN); }).catch(function () { resolve(null); });
+      })();
+    });
+  }
+  function hdr(extra) { var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + (SESSION_TOKEN || KEY) }; if (extra) for (var k in extra) h[k] = extra[k]; return h; }
   function r0(n) { n = parseFloat(n); return isFinite(n) ? Math.round(n) : 0; }
   function num(n) { n = parseFloat(n); return isFinite(n) ? n : null; }
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -193,6 +209,7 @@
     args = args || {};
     if (v.valid && !v.valid(args)) return { ok: false, message: 'I’m missing something to do that — tell me the details.' };
     try {
+      await ensureToken();                 // RLS needs the caller's JWT or the read/write no-ops
       var b = await getBundle(v.appKey);
       var res = v.apply(b, args);
       if (res && res.error) return { ok: false, message: res.error };  // app-level (e.g. no matching habit) — nothing written

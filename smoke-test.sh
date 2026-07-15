@@ -89,5 +89,26 @@ JS
 
 OUT="$("$JSC" "$PROG" 2>&1)"
 echo "$OUT"
+
+# ── Guardrail: no live file may send the PUBLIC key as the Supabase auth token.
+# RLS returns/accepts a user's rows only for their signed-in session JWT; the
+# anon publishable key as a Bearer reads nothing and its writes are rejected —
+# which once silently emptied gym/weigh-in history on a freshly-installed PWA.
+# The correct form always falls back THROUGH the token, e.g.
+#   'Bearer ' + (SESSION_TOKEN || KEY)
+# so this pattern (a bare '+ KEY' / '+ SB_KEY') matches only the broken shape.
+BADAUTH="$(grep -rnE "Bearer '[[:space:]]*\+[[:space:]]*(KEY|SB_KEY)\b" \
+  --include='*.js' --include='*.html' . 2>/dev/null \
+  | grep -vE '/(vendor|node_modules|archive|docs|als)/' \
+  | grep -vE '/_[^/]*\.html:')"
+if [ -n "$BADAUTH" ]; then
+  echo ""
+  echo "  ✗ AUTH     a live file sends the public key as the Supabase Bearer token."
+  echo "             Use the signed-in session token, e.g. 'Bearer ' + (SESSION_TOKEN || KEY):"
+  echo "$BADAUTH" | sed 's/^/               /'
+  echo "SMOKE_FAIL auth"
+  exit 1
+fi
+
 echo "$OUT" | grep -q '^SMOKE_OK$' && exit 0
 exit 1
