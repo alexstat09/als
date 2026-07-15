@@ -773,9 +773,20 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     } catch (e) {}
   }
 
+  // The sync-status indicator ("is it actually saved?") — loaded on every page,
+  // once. sync.js / pocoach-sync.js report into window.ALSSyncStatus defensively.
+  function loadSyncStatus() {
+    try {
+      if (window.ALSSyncStatus || document.querySelector('script[src*="als-sync-status"]')) return;
+      var s = document.createElement('script'); s.src = 'als-sync-status.js'; s.defer = true;
+      document.head.appendChild(s);
+    } catch (e) {}
+  }
+
   function boot() {
     registerServiceWorker();
     nudgeVault();
+    loadSyncStatus();
     injectStyleAndHTML();
     const btn = document.getElementById('topbarWaterAdd');
     if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); addWater(); });

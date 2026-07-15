@@ -171,6 +171,10 @@
   }
 
   // ── per-page sync instance ───────────────────────────────
+  // Report sync state to the on-screen indicator (als-sync-status.js). Defensive:
+  // a no-op if that script isn't loaded, so load order never matters.
+  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](); } catch (e) {} }
+
   window.initCloudSync = function (config) {
     const appKey = config && config.appKey;
     const syncedKeys = (config && config.syncedKeys) || [];
@@ -306,8 +310,8 @@
       if (json !== lastJson) {
         const iso = new Date().toISOString();
         lastJson = json; lastPushAt = Date.now();
-        try { await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() }); lastRemoteStamp = iso; } catch (e) {}
-      }
+        try { await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() }); lastRemoteStamp = iso; ss('ok'); } catch (e) { ss('fail'); }
+      } else { ss('ok'); }   // nothing to push = we're in sync with the cloud
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
     // Interval reconciler: probe the tiny timestamp first; do the full
@@ -321,7 +325,7 @@
       if (stamp !== lastRemoteStamp) { await syncNow(); return; } // remote moved → reconcile
       if (JSON.stringify(pushBody(collectLocal(), loadTomb())) !== lastJson) await syncNow(); // local drifted → push
     }
-    function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
+    function schedulePush() { ss('queued'); clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
     // Direct API so a page can force a deletion tombstone + immediate push
     // (belt-and-suspenders beyond the setItem interception).
     window.ALSSync = {

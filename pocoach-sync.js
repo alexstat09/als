@@ -135,6 +135,9 @@
     return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + (SESSION_TOKEN || SB_KEY), 'Content-Type': 'application/json' };
   }
 
+  // Report to the on-screen sync indicator (als-sync-status.js). No-op if absent.
+  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](); } catch (e) {} }
+
   /* Call whichever page-specific rerender hooks are present */
   function fireRerender() {
     if (typeof window._gymRerender === 'function')  { try { window._gymRerender(); }  catch(e) {} }
@@ -261,7 +264,7 @@
       headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
       body: JSON.stringify({ key: APP_KEY, data: pushBody(), updated_at: new Date().toISOString() }),
       keepalive: !!keepalive
-    }).catch(function() {});
+    }).then(function(r) { ss(r && r.ok ? 'ok' : 'fail'); }).catch(function() { ss('fail'); });
   }
 
   /* Pull from Supabase → merge → push merged → rerender if changed.
@@ -270,7 +273,7 @@
   function syncNow() {
     ensureToken().then(function () {
     fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
-      .then(function(r) { return r.json(); })
+      .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
       .then(function(rows) {
         try { window.POCOACH_LAST_SYNC = Date.now(); } catch (e) {} // a pull completed → cloud is reachable
         pulled = true;                                             // we now hold the cloud's tombstones
@@ -283,8 +286,9 @@
            even when our own payload has not changed, or it would live there for ever */
         if (bJson !== lastJson || tombDropped) { lastJson = bJson; push(false); }
         if (changed) fireRerender();
+        ss('ok');                                                 // pull+merge reached the cloud
       })
-      .catch(function() {});
+      .catch(function() { ss('fail'); });
     });
   }
 
@@ -318,6 +322,7 @@
           saveTomb(t);
         } catch (e) {}
       }
+      ss('queued');                                    // a gym/weigh-in change is waiting to save
       clearTimeout(pushTimer);
       pushTimer = setTimeout(function() { push(false); }, 400);
     }
