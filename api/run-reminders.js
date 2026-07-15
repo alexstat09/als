@@ -244,6 +244,22 @@ async function icuCheck() {
 module.exports = async function (req, res) {
   if (!auth.guardCron(req, res)) return; // QStash hourly cron (cron secret) or same-origin manual run
 
+  // ── OWNER READ-THROUGH ("view as her") ───────────────────────────
+  // Let the OWNER (Alex) view the runner's (Chrissie's) running app read-only,
+  // so he can develop it without her phone. Deliberately the ONLY cross-account
+  // read in the app, and it is tightly gated: verified server-side that the
+  // caller's token IS the owner, returns ONLY the 'run' bundle, read-only. Any
+  // other caller gets 403 — this must never become a general data leak.
+  if (req.query && req.query.peek) {
+    var caller = await supa.uidFromRequest(req);
+    if (!caller || !supa.OWNER_ID || caller !== supa.OWNER_ID) { res.status(403).json({ error: 'owner only' }); return; }
+    if (req.query.peek !== 'run' || !supa.RUNNER_ID) { res.status(400).json({ error: 'unknown peek target' }); return; }
+    var runRow = await supa.readRow('run', supa.RUNNER_ID);
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ appKey: 'run', data: runRow || {} });
+    return;
+  }
+
   // ── THE VAULT — daily backup. Runs FIRST, on purpose. ────────────
   // It must come before the reminder block's early returns ("VAPID not
   // configured", "reminders off", "no subscriptions") — behind those, it would
