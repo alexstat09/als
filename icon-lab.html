@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Icon Lab · AURORA</title>
+<style>
+  :root{
+    --em:#34E2B0; --teal:#18C8C0; --violet:#9B8CFF;
+    --ivory:#F5F2EC; --dim:rgba(245,242,236,.56); --faint:rgba(245,242,236,.3);
+    --serif:"Instrument Serif",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#060607; color:var(--ivory); font-family:var(--sans); -webkit-font-smoothing:antialiased; padding:0 0 80px; }
+  .wrap{ max-width:960px; margin:0 auto; padding:34px 20px; }
+  h1{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:clamp(34px,8vw,50px); margin:0; line-height:1; letter-spacing:-.01em; }
+  .kick{ font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  .lead{ color:var(--dim); font-size:14.5px; line-height:1.55; max-width:56ch; margin:12px 0 6px; }
+
+  .toggle{ display:inline-flex; gap:3px; padding:4px; border:1px solid rgba(255,255,255,.1); border-radius:12px; margin:18px 0 4px; background:rgba(255,255,255,.03); }
+  .toggle button{ font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); background:none; border:0; padding:8px 14px; border-radius:9px; cursor:pointer; }
+  .toggle button.on{ color:#08110d; background:linear-gradient(120deg,var(--em),var(--teal) 55%,var(--violet)); font-weight:700; }
+
+  .stage{ margin-top:24px; padding:38px 22px; border-radius:26px; border:1px solid rgba(255,255,255,.07); transition:background .4s ease; }
+  .stage.dark{ background:radial-gradient(120% 90% at 50% 0%, #16171d 0%, #0a0a0c 60%); }
+  .stage.light{ background:radial-gradient(120% 90% at 50% 0%, #f4f2ee 0%, #dcdae0 70%); }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:34px 22px; }
+  .cell{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; }
+
+  /* real home-screen squircle tile */
+  .tile{ width:150px; height:150px; border-radius:33.5px; overflow:hidden; position:relative;
+    box-shadow:0 12px 34px rgba(0,0,0,.5), inset 0 0 0 .5px rgba(255,255,255,.06); }
+  .tile svg{ display:block; width:100%; height:100%; }
+
+  .cap{ font-family:var(--serif); font-style:italic; font-size:22px; line-height:1; }
+  .stage.light .cap{ color:#17171b; }
+  .cap-d{ font-size:12px; color:var(--dim); line-height:1.45; max-width:24ch; }
+  .stage.light .cap-d{ color:#4a4a52; }
+  .rec{ font-family:var(--mono); font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--em); border:1px solid rgba(52,226,176,.4); border-radius:20px; padding:3px 9px; }
+
+  /* legibility strip — the true test */
+  .sizes{ display:flex; align-items:center; gap:12px; }
+  .sizes .s{ border-radius:22.5%; overflow:hidden; box-shadow:inset 0 0 0 .5px rgba(255,255,255,.08); }
+  .s60{ width:60px; height:60px; } .s40{ width:40px; height:40px; } .s29{ width:29px; height:29px; }
+  .sizes svg{ display:block; width:100%; height:100%; }
+  .sizes-lbl{ font-family:var(--mono); font-size:8.5px; letter-spacing:.1em; color:var(--faint); }
+  .stage.light .sizes-lbl{ color:#6a6a72; }
+  .note{ font-family:var(--mono); font-size:10px; color:var(--faint); letter-spacing:.05em; margin-top:30px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick">AURORA · icon lab</div>
+  <h1>Pick the mark.</h1>
+  <p class="lead">Four directions, no letter. Each is shown as a real home-screen tile, then shrunk to 60·40·29px — the small sizes are the true test of a premium icon. Flip the backdrop to see it on a light home screen too.</p>
+
+  <div class="toggle" id="toggle">
+    <button data-bg="dark" class="on">Dark home</button>
+    <button data-bg="light">Light home</button>
+  </div>
+
+  <div class="stage dark" id="stage">
+    <div class="grid" id="grid"></div>
+    <div class="note">Rendered as SVG — the winner gets rasterised to icon-192 / icon-512 / apple-touch-icon and wired into the manifest.</div>
+  </div>
+</div>
+
+<!-- ── the four marks, as reusable SVG (viewBox 512) ────────────────────── -->
+<template id="svgdefs">
+
+<!-- 1 · NOVA GEM — the app's own crystal, simplified (no eyes): premium, not cute.
+     The icon you tap becomes the Nova you talk to. -->
+<svg id="mk-gem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gemBg" cx=".5" cy=".36" r=".85"><stop offset="0" stop-color="#14162a"/><stop offset="1" stop-color="#070709"/></radialGradient>
+    <linearGradient id="gemFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46EAB8"/><stop offset=".52" stop-color="#1CC9C4"/><stop offset="1" stop-color="#9B8CFF"/></linearGradient>
+    <linearGradient id="gemFacet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <filter id="gemGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="30"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#gemBg)"/>
+  <g transform="rotate(45 256 256)">
+    <rect x="146" y="146" width="220" height="220" rx="56" fill="url(#gemFill)" filter="url(#gemGlow)" opacity=".5"/>
+    <rect x="146" y="146" width="220" height="220" rx="56" fill="url(#gemFill)"/>
+    <rect x="146" y="146" width="220" height="220" rx="56" fill="url(#gemFacet)"/>
+    <rect x="146" y="146" width="220" height="220" rx="56" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="2"/>
+  </g>
+  <circle cx="196" cy="196" r="10" fill="#fff" opacity=".85"/>
+</svg>
+
+<!-- 2 · AURORA — a luminous ribbon of the brand gradient, the northern lights. -->
+<svg id="mk-aurora" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="auBg" cx=".5" cy=".3" r=".9"><stop offset="0" stop-color="#101527"/><stop offset="1" stop-color="#06060A"/></radialGradient>
+    <linearGradient id="auStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#34E2B0"/><stop offset=".5" stop-color="#18C8C0"/><stop offset="1" stop-color="#9B8CFF"/></linearGradient>
+    <filter id="auGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#auBg)"/>
+  <g filter="url(#auGlow)" opacity=".75">
+    <path d="M44 336 C 168 232, 264 384, 468 248" fill="none" stroke="url(#auStroke)" stroke-width="40" stroke-linecap="round"/>
+  </g>
+  <path d="M44 336 C 168 232, 264 384, 468 248" fill="none" stroke="url(#auStroke)" stroke-width="26" stroke-linecap="round"/>
+  <path d="M60 236 C 184 156, 300 300, 460 182" fill="none" stroke="url(#auStroke)" stroke-width="12" stroke-linecap="round" opacity=".6"/>
+</svg>
+
+<!-- 3 · PULSE — a single heartbeat in the gradient: the living-data soul of the app. -->
+<svg id="mk-pulse" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="puBg" cx=".5" cy=".4" r=".85"><stop offset="0" stop-color="#121428"/><stop offset="1" stop-color="#07070B"/></radialGradient>
+    <linearGradient id="puStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#34E2B0"/><stop offset=".55" stop-color="#25C9C4"/><stop offset="1" stop-color="#9B8CFF"/></linearGradient>
+    <filter id="puGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#puBg)"/>
+  <g fill="none" stroke="url(#puStroke)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 264 H176 L212 264 L242 150 L286 372 L318 226 L346 264 H456" filter="url(#puGlow)" opacity=".7"/>
+    <path d="M56 264 H176 L212 264 L242 150 L286 372 L318 226 L346 264 H456"/>
+  </g>
+</svg>
+
+<!-- 4 · DAWN — a rising crown of light over a dark horizon. Literal "aurora". -->
+<svg id="mk-dawn" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dwBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0C0D17"/><stop offset="1" stop-color="#060608"/></linearGradient>
+    <linearGradient id="dwArc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#34E2B0"/><stop offset=".5" stop-color="#18C8C0"/><stop offset="1" stop-color="#9B8CFF"/></linearGradient>
+    <radialGradient id="dwHalo" cx=".5" cy=".62" r=".5"><stop offset="0" stop-color="#2ED6C0" stop-opacity=".55"/><stop offset="1" stop-color="#2ED6C0" stop-opacity="0"/></radialGradient>
+    <filter id="dwGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="16"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#dwBg)"/>
+  <rect width="512" height="512" fill="url(#dwHalo)"/>
+  <g filter="url(#dwGlow)" opacity=".7"><path d="M120 322 A 136 136 0 0 1 392 322" fill="none" stroke="url(#dwArc)" stroke-width="30" stroke-linecap="round"/></g>
+  <path d="M120 322 A 136 136 0 0 1 392 322" fill="none" stroke="url(#dwArc)" stroke-width="22" stroke-linecap="round"/>
+  <line x1="86" y1="352" x2="426" y2="352" stroke="url(#dwArc)" stroke-width="10" stroke-linecap="round" opacity=".5"/>
+</svg>
+
+</template>
+
+<script>
+(function(){
+  var CONCEPTS = [
+    { id:'mk-gem',    name:'Nova Gem',  desc:'The app’s own crystal, simplified. The icon becomes the Nova you talk to.', rec:true },
+    { id:'mk-aurora', name:'Aurora',    desc:'A ribbon of the brand gradient — the northern lights the app is named for.' },
+    { id:'mk-pulse',  name:'Pulse',     desc:'One heartbeat in gradient — the living-data soul of the whole app.' },
+    { id:'mk-dawn',   name:'Dawn',      desc:'A rising crown of light over a dark horizon. The literal meaning of aurora.' }
+  ];
+  var defs = document.getElementById('svgdefs').content;
+  function svgFor(id){ return defs.getElementById(id).cloneNode(true); }
+
+  var grid = document.getElementById('grid');
+  CONCEPTS.forEach(function(c){
+    var cell = document.createElement('div'); cell.className='cell';
+
+    var tile = document.createElement('div'); tile.className='tile'; tile.appendChild(svgFor(c.id));
+    cell.appendChild(tile);
+
+    var cap = document.createElement('div'); cap.className='cap'; cap.textContent = c.name; cell.appendChild(cap);
+    if (c.rec){ var r=document.createElement('div'); r.className='rec'; r.textContent='my pick'; cell.appendChild(r); }
+    var d = document.createElement('div'); d.className='cap-d'; d.textContent = c.desc; cell.appendChild(d);
+
+    var sizes = document.createElement('div'); sizes.className='sizes';
+    ['s60','s40','s29'].forEach(function(sz){
+      var s=document.createElement('div'); s.className='s '+sz; s.appendChild(svgFor(c.id)); sizes.appendChild(s);
+    });
+    cell.appendChild(sizes);
+    var sl=document.createElement('div'); sl.className='sizes-lbl'; sl.textContent='60 · 40 · 29 px'; cell.appendChild(sl);
+
+    grid.appendChild(cell);
+  });
+
+  var stage = document.getElementById('stage');
+  document.getElementById('toggle').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    [].forEach.call(this.children, function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    stage.className = 'stage ' + b.getAttribute('data-bg');
+  });
+})();
+</script>
+</body>
+</html>
