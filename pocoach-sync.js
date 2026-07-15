@@ -97,8 +97,42 @@
     return out;
   }
 
+  // RLS returns a user's rows only when the request carries THEIR access token;
+  // the anon publishable key alone now gets nothing. A device that already had
+  // the gym/weigh-in history cached never noticed — but a FRESH device pulls an
+  // empty history, which is exactly the bug this fixes. apikey stays the
+  // publishable key (identifies the project); Authorization carries the signed-in
+  // user's JWT, kept current in SESSION_TOKEN. Falls back to the anon key only
+  // when signed out, which reads as anon and returns nothing — never another
+  // account's data, and (being read-only under RLS) never overwrites the cloud.
+  var SESSION_TOKEN = null, _authListen = false, rtClient = null;
+  function authClient() {
+    try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; }
+    catch (e) { return null; }
+  }
+  function ensureToken() {
+    return new Promise(function (resolve) {
+      var tries = 0;
+      (function tick() {
+        var c = authClient();
+        if (!c || !c.auth) { if (tries++ < 25) { setTimeout(tick, 120); return; } resolve(null); return; }
+        if (!_authListen && c.auth.onAuthStateChange) {
+          _authListen = true;
+          c.auth.onAuthStateChange(function (_e, sess) {
+            SESSION_TOKEN = (sess && sess.access_token) || SESSION_TOKEN;
+            try { if (rtClient && SESSION_TOKEN) rtClient.realtime.setAuth(SESSION_TOKEN); } catch (e) {}
+          });
+        }
+        c.auth.getSession().then(function (s) {
+          SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null;
+          resolve(SESSION_TOKEN);
+        }).catch(function () { resolve(null); });
+      })();
+    });
+  }
+
   function hdrs() {
-    return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+    return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + (SESSION_TOKEN || SB_KEY), 'Content-Type': 'application/json' };
   }
 
   /* Call whichever page-specific rerender hooks are present */
@@ -230,8 +264,11 @@
     }).catch(function() {});
   }
 
-  /* Pull from Supabase → merge → push merged → rerender if changed */
+  /* Pull from Supabase → merge → push merged → rerender if changed.
+     ensureToken() first: without the caller's JWT the pull returns nothing under
+     RLS, and a fresh device would render an empty history. */
   function syncNow() {
+    ensureToken().then(function () {
     fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
@@ -248,6 +285,7 @@
         if (changed) fireRerender();
       })
       .catch(function() {});
+    });
   }
 
   /* Apply an incoming Realtime payload — same merge logic */
@@ -326,7 +364,8 @@
       }
     } catch (e) {}
 
-    // cloud: read → strip → write, and wait for it
+    // cloud: read → strip → write, and wait for it (token first, or RLS rejects)
+    return ensureToken().then(function () {
     return fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
@@ -340,6 +379,7 @@
         }).then(function() { lastJson = JSON.stringify(data); pulled = true; return true; });
       })
       .catch(function() { return false; });   // offline: the local tombstone still holds
+    });
   };
 
   /* Deliberately lift tombstones — for an EXPLICIT user re-add of something they
@@ -372,14 +412,19 @@
   /* Supabase Realtime — instant updates on the receiving device */
   if (window.supabase) {
     try {
-      var rt = window.supabase.createClient(SB_BASE, SB_KEY);
-      rt.channel('pocoach_realtime')
-        .on('postgres_changes', {
-          event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + APP_KEY
-        }, function(payload) {
-          if (payload && payload.new && payload.new.data) applyRealtime(payload.new.data);
-        })
-        .subscribe();
+      rtClient = window.supabase.createClient(SB_BASE, SB_KEY);
+      // Realtime is RLS-gated too — hand it the user's token before subscribing,
+      // or it silently receives no row changes (the 15s poll still covers it).
+      ensureToken().then(function (tok) {
+        try { if (tok) rtClient.realtime.setAuth(tok); } catch (e) {}
+        rtClient.channel('pocoach_realtime')
+          .on('postgres_changes', {
+            event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + APP_KEY
+          }, function(payload) {
+            if (payload && payload.new && payload.new.data) applyRealtime(payload.new.data);
+          })
+          .subscribe();
+      });
     } catch(e) {}
   }
 })();
