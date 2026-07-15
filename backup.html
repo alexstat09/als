@@ -10,6 +10,13 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
+  <!-- The Vault reads & writes app_state over Supabase REST. Since the multi-user
+       lockdown, RLS returns rows only to the SIGNED-IN user's JWT — the anon key
+       gets nothing. This page must therefore load Supabase JS (so topbar.js runs
+       the login gate and creates the session client) and send that user's token on
+       every REST call (see headers()/ensureToken below). Without it, Verify, the
+       snapshot list, restore and repair all silently see nothing. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="water.js"></script>
   <script src="topbar.js" defer></script>
 <script>window.__pmAutoSel='.bk-hero,.bk-stat,.bk-card';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
@@ -347,8 +354,34 @@
     // Sorts chronologically when the files sit in a folder together.
     function ymdName(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 
+    // RLS returns a user's rows only when the request carries THEIR access token
+    // (the anon publishable KEY alone now gets nothing). apikey stays the
+    // publishable key — it identifies the project/role — while Authorization
+    // carries the signed-in user's JWT. ensureToken() keeps SESSION_TOKEN current;
+    // if it's ever null (signed out / lib missing) we fall back to KEY, which
+    // simply reads as the anon role and returns nothing, never someone else's data.
+    var SESSION_TOKEN = null, _authListenerSet = false;
+    function authClient(){
+      try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; }
+      catch(e){ return null; }
+    }
+    async function ensureToken(){
+      try {
+        var c = authClient();
+        // topbar.js creates the client during its own boot — wait briefly for it.
+        for (var i = 0; i < 25 && !c; i++){ await new Promise(function(r){ setTimeout(r, 120); }); c = authClient(); }
+        if (!c || !c.auth) return null;
+        if (!_authListenerSet && c.auth.onAuthStateChange){
+          _authListenerSet = true;
+          c.auth.onAuthStateChange(function(_e, sess){ SESSION_TOKEN = (sess && sess.access_token) || SESSION_TOKEN; });
+        }
+        var s = await c.auth.getSession();
+        SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null;
+        return SESSION_TOKEN;
+      } catch(e){ return null; }
+    }
     function headers(extra){
-      var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
+      var h = { 'apikey': KEY, 'Authorization': 'Bearer ' + (SESSION_TOKEN || KEY) };
       if (extra) for (var k in extra) h[k] = extra[k];
       return h;
     }
@@ -557,6 +590,7 @@
     // Shared restore core — used by file restore AND cloud restore.
     async function restoreFromData(data){
       data = data || {};
+      await ensureToken();                 // writes need a valid JWT too, or RLS rejects them
 
       // 1) Safety backup of CURRENT state first (so a wrong restore is undoable).
       try {
@@ -905,6 +939,7 @@
     $('dpRestore').addEventListener('click', function(){ if (activeDay) restoreDay(activeDay); });
 
     async function loadVault(){
+      await ensureToken();                 // RLS needs the caller's JWT or every read returns nothing
       try {
         vaultIndex = await readVaultRow('backup:index');
       } catch(e){ vaultIndex = null; }
@@ -1285,6 +1320,7 @@
     // version. Entries added since the backup have no counterpart there, so they
     // pass through untouched; nothing is deleted; other stores are not opened.
     async function doPutBack(date){
+      await ensureToken();                 // repair writes need a valid JWT or RLS rejects them
       var picked = [];
       $('dpBody').querySelectorAll('input[data-c]').forEach(function(cb){
         if (cb.checked) picked.push(changedPlan[+cb.getAttribute('data-c')]);
@@ -1346,6 +1382,7 @@
     }
 
     async function doHeal(date){
+      await ensureToken();                 // repair writes need a valid JWT or RLS rejects them
       var picked = [];
       $('dpBody').querySelectorAll('input[data-i]').forEach(function(cb){
         if (cb.checked) picked.push(repairPlan[+cb.getAttribute('data-i')]);

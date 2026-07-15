@@ -737,10 +737,11 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     } catch (e) {}
   }
 
-  // THE VAULT — second trigger. The hourly QStash cron is the primary one, but a
-  // backup system that can fail silently is worse than none, because you trust
-  // it. So the app also nudges the vault once a day when it's opened: if QStash
-  // ever dies, backups keep happening simply because Alex uses the app.
+  // THE VAULT — second trigger. The daily Vercel cron (vercel.json → crons,
+  // /api/run-reminders?backup=auto) is the primary one, but a backup system that
+  // can fail silently is worse than none, because you trust it. So the app also
+  // nudges the vault once a day when it's opened: if the cron ever dies, backups
+  // keep happening simply because Alex uses the app.
   // Idempotent server-side (?backup=auto is a no-op once today is done), and
   // gated locally so opening 10 pages costs at most one call.
   function nudgeVault() {
@@ -749,16 +750,23 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       if (!navigator.onLine) return;
       var today = new Date().toISOString().slice(0, 10);
       if (localStorage.getItem('vault:pinged') === today) return;
-      localStorage.setItem('vault:pinged', today);            // set FIRST: a failed
-      // call must not retry on every page load — the cron is still the primary.
+      if (window.__vaultNudged) return;                       // once per page load
+      window.__vaultNudged = true;
       setTimeout(function () {
         fetch('/api/run-reminders?backup=auto', { method: 'GET', keepalive: true })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             var b = (j && j.backup) || {};
-            if (b.ok || b.skipped) localStorage.setItem('vault:lastOk', new Date().toISOString());
+            // Mark today done ONLY when the server confirms it. Setting the flag up
+            // front (the old behaviour) meant a failed or interrupted nudge silently
+            // burned the whole day with no backup. On failure we leave it unset so
+            // the next app-open retries — the request is idempotent server-side.
+            if (b.ok || b.skipped) {
+              localStorage.setItem('vault:pinged', today);
+              localStorage.setItem('vault:lastOk', new Date().toISOString());
+            } else { window.__vaultNudged = false; }
           })
-          .catch(function () {});
+          .catch(function () { window.__vaultNudged = false; });
       }, 4000);                                               // let the page settle first
     } catch (e) {}
   }
