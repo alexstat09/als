@@ -10,6 +10,12 @@
 <title>Αρχαία · Άγνωστο</title>
 <meta name="theme-color" content="#050506">
 <link rel="manifest" href="manifest.json">
+<!-- Cloud sync (added 2026-07-15): this page used to be on-device only, so its
+     progress never left the phone and wasn't in the backups. sync.js is
+     token-aware and merges by deep union (an empty device can never wipe a full
+     one), and once arxaia:v1 is a cloud row the Vault backs it up automatically. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -635,6 +641,26 @@ $("#resetBtn").onclick=function(){ if(confirm("Σίγουρα; Θα σβηστε
 
 renderHome();
 show("home");
+
+/* ── Cloud sync (arxaia:v1) ─────────────────────────────────
+   Waits for the token-aware sync.js. onApplied reloads state from storage BEFORE
+   any future save() can run, so an incoming merge (e.g. this progress arriving
+   from the phone) can never be clobbered by a stale in-memory copy. renderHome()
+   only repaints the home DOM — it never switches views, so it's safe mid-session. */
+(function initArxaiaSync(){
+  var tries=0;
+  (function wait(){
+    if(typeof initCloudSync!=='function' || !window.supabase){ if(tries++<40){ setTimeout(wait,200); } return; }
+    initCloudSync({
+      appKey:'arxaia',
+      syncedKeys:['arxaia:v1'],
+      onApplied:function(){
+        state=load(); state.days=state.days||{}; state.seen=state.seen||{}; state.miss=state.miss||{};
+        try{ renderHome(); }catch(e){}
+      }
+    });
+  })();
+})();
 
 /* service worker (offline) — χρησιμοποιεί τον υπάρχοντα του dashboard */
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }

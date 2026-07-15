@@ -11,6 +11,11 @@
 <meta name="theme-color" content="#050506">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- Cloud sync (added 2026-07-15): was on-device only, so progress never left the
+     phone and wasn't backed up. sync.js is token-aware and merges by deep union
+     (empty can never wipe full); once istoria:v1 is a cloud row the Vault backs it up. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <style>
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   :root{
@@ -608,6 +613,26 @@ $("#infoBtn").onclick=function(){
 };
 
 renderHome(); show("home");
+
+/* ── Cloud sync (istoria:v1) — token-aware sync.js, deep-union merge. onApplied
+   reloads state before any save() so an incoming merge (this progress arriving
+   from the phone) is never clobbered by a stale in-memory copy. renderHome()
+   only repaints the home DOM, so it is safe to call mid-session. */
+(function initIstoriaSync(){
+  var tries=0;
+  (function wait(){
+    if(typeof initCloudSync!=='function' || !window.supabase){ if(tries++<40){ setTimeout(wait,200); } return; }
+    initCloudSync({
+      appKey:'istoria',
+      syncedKeys:['istoria:v1'],
+      onApplied:function(){
+        state=load(); state.seen=state.seen||{}; state.miss=state.miss||{}; state.days=state.days||{}; state.plan=state.plan||{};
+        try{ renderHome(); }catch(e){}
+      }
+    });
+  })();
+})();
+
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 </script>
 </body>
