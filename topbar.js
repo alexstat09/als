@@ -548,7 +548,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
             '<div style="width:100%;max-width:420px;background:#0B0B0F;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:22px 20px;">' +
               '<div style="font-family:Georgia,serif;font-style:italic;font-size:24px;color:#F5F2EC;line-height:1.2">' + (name ? name : 'Your account') + '</div>' +
               (email ? '<div style="font-family:ui-monospace,monospace;font-size:11.5px;color:rgba(245,242,236,.38);margin-top:6px">' + email + '</div>' : '') +
-              '<button type="button" id="acEdit" style="width:100%;margin-top:20px;padding:14px;border-radius:14px;border:1px solid rgba(52,226,176,.32);background:rgba(52,226,176,.07);color:#F5F2EC;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">Edit my details</button>' +
+              '<button type="button" id="acSettings" style="width:100%;margin-top:20px;padding:14px;border-radius:14px;border:1px solid rgba(52,226,176,.32);background:rgba(52,226,176,.07);color:#F5F2EC;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">Settings</button>' +
               '<button type="button" id="acOut" style="width:100%;margin-top:9px;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);color:#F5F2EC;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer">Sign out</button>' +
               '<div style="font-size:11.5px;line-height:1.5;color:rgba(245,242,236,.34);margin-top:11px;text-align:center">Signing out clears this device. Your data stays in the cloud.</div>' +
               '<button type="button" id="acClose" style="width:100%;margin-top:14px;padding:10px;background:none;border:none;color:rgba(245,242,236,.34);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer">Close</button>' +
@@ -560,9 +560,11 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
         const shut = () => { try { d.close(); } catch (e) {} try { d.remove(); } catch (e) {} };
         d.querySelector('#acClose').addEventListener('click', shut);
         d.addEventListener('click', (ev) => { if (ev.target === d) shut(); });
-        d.querySelector('#acEdit').addEventListener('click', () => {
+        d.querySelector('#acSettings').addEventListener('click', () => {
           shut();
-          if (window.ALSOnboard) ALSOnboard.open();
+          // Settings owns editing your details now (and more) — a calm page, not
+          // a re-run of the onboarding wizard.
+          if (location.pathname.replace(/^\//, '') !== 'settings.html') location.href = 'settings.html';
         });
         d.querySelector('#acOut').addEventListener('click', async () => {
           shut();
