@@ -858,7 +858,26 @@
        from her fetched data, writes go nowhere (never to disk, never synced). Auto
        -import and cloud sync are disabled in the boot block below. Nothing here can
        contaminate either account — close the tab and the in-memory copy is gone. */
-    var __RUN_PEEK = /[?&]peek=1\b/.test(location.search);
+    var OWNER_UID = '1655556c-97af-43ac-970f-fcbdbd8f7f0c';   // matches als-profile.js
+    // Is the OWNER (Alex) the one signed in on this device? Read straight from the
+    // stored Supabase session's JWT (sync so we can decide before data loads). The
+    // owner has no runs of his own — his running page is a read-only window into
+    // hers. The RUNNER (Chrissie) gets her normal editable app. The server
+    // re-verifies ownership on the peek fetch, so this is only UI routing.
+    function __ownerSignedIn(){
+      try{
+        for (var i=0;i<localStorage.length;i++){
+          var k=localStorage.key(i);
+          if (k && k.indexOf('sb-')===0 && k.indexOf('-auth-token')>0){
+            var j=JSON.parse(localStorage.getItem(k)||'null');
+            var tok=j && (j.access_token || (j.currentSession && j.currentSession.access_token));
+            if (tok){ var p=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); return !!(p && p.sub === OWNER_UID); }
+          }
+        }
+      }catch(e){}
+      return false;
+    }
+    var __RUN_PEEK = /[?&]peek=1\b/.test(location.search) || __ownerSignedIn();
     if (__RUN_PEEK) {
       window.__RUN_PEEK = true;
       (function(){
@@ -3044,21 +3063,35 @@
       b.style.background = warn ? 'linear-gradient(120deg,#F2C063,#FF8A6B)' : 'linear-gradient(120deg,#34E2B0,#18C8C0 60%,#9B8CFF)';
       b.textContent=msg;
     }
-    async function startPeek(){
-      peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
-      var tok=null;
+    async function peekToken(){
       try{
         var c=window.__alsAuthClient || (window.supabase && window.supabase.createClient(ICU_SB_URL, ICU_SB_KEY));
-        if(c){ window.__alsAuthClient=c; var s=await c.auth.getSession(); tok=s&&s.data&&s.data.session&&s.data.session.access_token; }
+        if(c){ window.__alsAuthClient=c; var s=await c.auth.getSession(); return s&&s.data&&s.data.session&&s.data.session.access_token; }
       }catch(e){}
+      return null;
+    }
+    async function peekFetch(first){
+      var tok=await peekToken();
       try{
         var r=await fetch('/api/run-reminders?peek=run', { headers: tok?{Authorization:'Bearer '+tok}:{}, cache:'no-store' });
-        if(!r.ok){ peekBanner(r.status===403?'Μόνο ο ιδιοκτήτης (σύνδεση ως Alex).':('Σφάλμα '+r.status), true); return; }
+        if(!r.ok){ if(first) peekBanner(r.status===403?'Μόνο ο ιδιοκτήτης (σύνδεση ως Alex).':('Σφάλμα '+r.status), true); return; }
         var j=await r.json();
         if(window.__RUN_PEEK_SET) window.__RUN_PEEK_SET((j&&j.data)||{});
         render();
-        if(!logs.length && !plan.length && !Object.keys(prof).length) peekBanner('👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
-      }catch(e){ peekBanner('Σφάλμα φόρτωσης', true); }
+        if(first){
+          peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
+          if(!logs.length && !plan.length && !Object.keys(prof).length) peekBanner('👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
+        }
+      }catch(e){ if(first) peekBanner('Σφάλμα φόρτωσης', true); }
+    }
+    function startPeek(){
+      peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
+      peekFetch(true);
+      // Keep it live: re-pull her latest on focus and every 45s, so runs she syncs
+      // show up here on their own (read from the cloud, which her phone updates).
+      document.addEventListener('visibilitychange', function(){ if(!document.hidden) peekFetch(false); });
+      window.addEventListener('focus', function(){ peekFetch(false); });
+      setInterval(function(){ if(!document.hidden) peekFetch(false); }, 45000);
     }
 
     initBeat();
