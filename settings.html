@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Settings · ALS</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <!-- supabase-js first: als-profile.js reads/writes the signed-in user's cloud
+       profile through the session client, and topbar.js runs the login gate. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="water.js"></script>
+  <script src="topbar.js" defer></script>
+  <script>window.__pmAutoSel='.st-card';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
+  <script src="page-motion.js" defer></script>
+  <style>
+    .st-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; }
+    .st-kicker{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); margin-bottom:7px; }
+    .st-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(30px,8vw,42px); line-height:1; letter-spacing:-.01em; }
+    .st-sub{ margin-top:9px; color:var(--au-dim); font-size:13.5px; line-height:1.5; max-width:42ch; }
+
+    .st-wrap{ padding:16px 18px 40px; display:flex; flex-direction:column; gap:16px; max-width:600px; margin:0 auto; }
+
+    .st-card{ background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; padding:18px 18px 6px; }
+    .st-card-hd{ display:flex; align-items:center; gap:9px; margin-bottom:4px; padding-bottom:2px; }
+    .st-card-ic{ color:var(--au-emerald); display:inline-flex; }
+    .st-card-lbl{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-dim); }
+    .st-card-note{ color:var(--au-faint); font-size:12px; line-height:1.5; margin:2px 0 14px; }
+
+    /* editable field rows */
+    .st-field{ display:flex; align-items:center; gap:12px; padding:13px 0; border-top:1px solid var(--au-line); }
+    .st-field:first-of-type{ border-top:0; }
+    .st-flabel{ flex:none; width:104px; font-size:13px; color:var(--au-dim); }
+    .st-fctrl{ flex:1; display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+    .st-input, .st-select{
+      font-family:inherit; font-size:15px; color:var(--au-ivory); text-align:right;
+      background:transparent; border:0; border-bottom:1px solid transparent; outline:none;
+      padding:4px 2px; min-width:0; width:100%; transition:border-color .18s var(--au-ease);
+    }
+    .st-input::placeholder{ color:var(--au-faint); }
+    .st-input:focus, .st-select:focus{ border-bottom-color:rgba(var(--au-glow-rgb),.5); }
+    .st-select{ text-align-last:right; -webkit-appearance:none; appearance:none; cursor:pointer; }
+    .st-select option{ background:#101012; color:var(--au-ivory); }
+    .st-unit{ flex:none; font-family:var(--au-mono); font-size:11px; color:var(--au-faint); letter-spacing:.04em; }
+    .st-saved{ flex:none; font-family:var(--au-mono); font-size:10px; letter-spacing:.1em; color:var(--au-emerald); opacity:0; transition:opacity .2s var(--au-ease); }
+    .st-saved.show{ opacity:1; }
+    .st-age{ font-family:var(--au-mono); font-size:11px; color:var(--au-faint); }
+
+    /* navigation rows (deep-links + account actions) */
+    .st-link{ display:flex; align-items:center; gap:13px; padding:14px 0; border-top:1px solid var(--au-line); color:var(--au-ivory); text-decoration:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .st-link:first-of-type{ border-top:0; }
+    .st-link-ic{ flex:none; width:20px; color:var(--au-dim); display:inline-flex; }
+    .st-link-body{ flex:1; min-width:0; }
+    .st-link-t{ font-size:14.5px; }
+    .st-link-d{ font-size:12px; color:var(--au-faint); margin-top:2px; line-height:1.4; }
+    .st-link-chev{ flex:none; color:var(--au-faint); }
+    .st-link.danger .st-link-t{ color:var(--au-rose); }
+    .st-link.danger .st-link-ic{ color:var(--au-rose); }
+
+    .st-who{ display:flex; align-items:center; gap:12px; padding:2px 0 14px; }
+    .st-who-av{ flex:none; width:42px; height:42px; border-radius:50%; background:var(--au-gradient); display:flex; align-items:center; justify-content:center; font-family:var(--au-serif); font-style:italic; font-size:19px; color:#08110d; }
+    .st-who-email{ font-size:14px; color:var(--au-ivory); }
+    .st-who-role{ font-family:var(--au-mono); font-size:10px; letter-spacing:.1em; color:var(--au-faint); margin-top:2px; text-transform:uppercase; }
+
+    .st-foot{ text-align:center; color:var(--au-faint); font-family:var(--au-mono); font-size:9.5px; letter-spacing:.1em; padding:4px 0 8px; }
+  </style>
+</head>
+<body data-page="settings" class="au-bg" id="root">
+
+  <header class="st-hero" data-rise>
+    <div class="st-kicker">Your account</div>
+    <h1 class="st-title">Settings</h1>
+    <p class="st-sub">Everything about you, in one place. Fix a detail you got wrong at the start, and it updates everywhere, on every device.</p>
+  </header>
+
+  <main class="st-wrap">
+
+    <!-- ── YOU — the identity fields. All live in ALSProfile; editing one saves
+         instantly (local + cloud) and every page re-reads it. ── -->
+    <section class="st-card" data-rise>
+      <div class="st-card-hd">
+        <span class="st-card-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+        <span class="st-card-lbl">You</span>
+      </div>
+      <p class="st-card-note">These shape your coaching, calories and health numbers. Nothing here is guessed from someone else. It's only what you set.</p>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fName">Name</label>
+        <div class="st-fctrl">
+          <input class="st-input" id="fName" type="text" autocomplete="off" placeholder="Your name">
+          <span class="st-saved" data-for="fName">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fSex">Sex</label>
+        <div class="st-fctrl">
+          <select class="st-select" id="fSex">
+            <option value="">—</option>
+            <option value="m">Male</option>
+            <option value="f">Female</option>
+          </select>
+          <span class="st-saved" data-for="fSex">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fYear">Birth year</label>
+        <div class="st-fctrl">
+          <span class="st-age" id="ageOut"></span>
+          <input class="st-input" id="fYear" type="number" inputmode="numeric" min="1920" max="2020" style="max-width:88px" placeholder="—">
+          <span class="st-saved" data-for="fYear">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fHeight">Height</label>
+        <div class="st-fctrl">
+          <input class="st-input" id="fHeight" type="number" inputmode="numeric" min="120" max="230" style="max-width:88px" placeholder="—">
+          <span class="st-unit">cm</span>
+          <span class="st-saved" data-for="fHeight">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fWeight">Weight</label>
+        <div class="st-fctrl">
+          <input class="st-input" id="fWeight" type="number" inputmode="decimal" min="30" max="250" step="0.1" style="max-width:88px" placeholder="—">
+          <span class="st-unit">kg</span>
+          <span class="st-saved" data-for="fWeight">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fUnits">Units</label>
+        <div class="st-fctrl">
+          <select class="st-select" id="fUnits">
+            <option value="metric">Metric (kg, cm)</option>
+            <option value="imperial">Imperial (lb, in)</option>
+          </select>
+          <span class="st-saved" data-for="fUnits">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field">
+        <label class="st-flabel" for="fSport">Focus</label>
+        <div class="st-fctrl">
+          <select class="st-select" id="fSport">
+            <option value="lifter">Strength</option>
+            <option value="runner">Running</option>
+          </select>
+          <span class="st-saved" data-for="fSport">Saved</span>
+        </div>
+      </div>
+
+      <div class="st-field" style="align-items:flex-start">
+        <label class="st-flabel" for="fGoal" style="padding-top:5px">Goal</label>
+        <div class="st-fctrl">
+          <input class="st-input" id="fGoal" type="text" autocomplete="off" placeholder="Your north-star line">
+          <span class="st-saved" data-for="fGoal">Saved</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── YOUR DATA — correcting past entries lives on each page's own editor,
+         not a generic writer here (that's what corrupted the weigh-ins before).
+         These just take you to the right place. ── -->
+    <section class="st-card" data-rise>
+      <div class="st-card-hd">
+        <span class="st-card-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+        <span class="st-card-lbl">Your data</span>
+      </div>
+      <p class="st-card-note">Made a mistake in the past — a wrong weigh-in, a mistyped meal? Fix it where you logged it. Each opens its own history.</p>
+      <div id="dataLinks"></div>
+    </section>
+
+    <!-- ── ACCOUNT ── -->
+    <section class="st-card" data-rise>
+      <div class="st-card-hd">
+        <span class="st-card-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 8l9 5 9-5"/></svg></span>
+        <span class="st-card-lbl">Account</span>
+      </div>
+
+      <div class="st-who">
+        <div class="st-who-av" id="whoAv">·</div>
+        <div>
+          <div class="st-who-email" id="whoEmail">—</div>
+          <div class="st-who-role" id="whoRole">signed in</div>
+        </div>
+      </div>
+
+      <a class="st-link" href="backup.html">
+        <span class="st-link-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span>
+        <span class="st-link-body"><span class="st-link-t">Backups &amp; export</span><span class="st-link-d">The Vault — daily snapshots, restore, download your data</span></span>
+        <span class="st-link-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </a>
+
+      <div class="st-link danger" id="signOut" role="button" tabindex="0">
+        <span class="st-link-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12H4m0 0l4-4m-4 4l4 4M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/></svg></span>
+        <span class="st-link-body"><span class="st-link-t">Sign out</span><span class="st-link-d">Clears this device so it can be handed to someone else</span></span>
+      </div>
+    </section>
+
+    <div class="st-foot" id="verTag">AURORA</div>
+  </main>
+
+  <script>
+  (function(){
+    'use strict';
+    function $(id){ return document.getElementById(id); }
+
+    // ── Field wiring: read from ALSProfile, save on change (local + cloud). ──
+    // Every field maps to one ALSProfile key. A blank input clears the value to
+    // null rather than storing '' — an unset number must stay unset, never 0.
+    var FIELDS = [
+      { el:'fName',   key:'name',      type:'str' },
+      { el:'fSex',    key:'sex',       type:'str' },
+      { el:'fYear',   key:'birthYear', type:'int' },
+      { el:'fHeight', key:'heightCm',  type:'num' },
+      { el:'fWeight', key:'weightKg',  type:'num' },
+      { el:'fUnits',  key:'units',     type:'str' },
+      { el:'fSport',  key:'sport',     type:'str' },
+      { el:'fGoal',   key:'goal',      type:'str' }
+    ];
+
+    function flashSaved(elId){
+      var s = document.querySelector('.st-saved[data-for="'+elId+'"]');
+      if(!s) return;
+      s.classList.add('show');
+      clearTimeout(s._t); s._t = setTimeout(function(){ s.classList.remove('show'); }, 1400);
+    }
+    function renderAge(){
+      var y = parseInt($('fYear').value, 10);
+      var out = $('ageOut');
+      if (y && y > 1900 && y < 2100){ out.textContent = (new Date().getFullYear() - y) + ' yrs'; }
+      else out.textContent = '';
+    }
+
+    function fill(p){
+      p = p || {};
+      FIELDS.forEach(function(f){
+        var el = $(f.el); if(!el) return;
+        var v = p[f.key];
+        el.value = (v == null) ? '' : v;
+      });
+      renderAge();
+    }
+
+    function coerce(f, raw){
+      var s = (raw == null ? '' : String(raw)).trim();
+      if (f.type === 'str') return s;              // '' is a legitimate empty string
+      if (s === '') return null;                    // numbers: blank means unset, not 0
+      var n = (f.type === 'int') ? parseInt(s, 10) : parseFloat(s);
+      return isFinite(n) ? n : null;
+    }
+
+    function saveField(f){
+      var el = $(f.el); if(!el || !window.ALSProfile) return;
+      var patch = {}; patch[f.key] = coerce(f, el.value);
+      try { ALSProfile.set(patch); flashSaved(f.el); } catch(e){}
+    }
+
+    function wire(){
+      FIELDS.forEach(function(f){
+        var el = $(f.el); if(!el) return;
+        var isSelect = el.tagName === 'SELECT';
+        el.addEventListener(isSelect ? 'change' : 'change', function(){ saveField(f); });
+        if (f.el === 'fYear') el.addEventListener('input', renderAge);
+      });
+    }
+
+    // ── Your-data deep links: each domain's own editor (decision: no generic
+    // writer). Shown only for pages this account actually has. ──
+    var DATA = [
+      { page:'sleep.html',     label:'Sleep',                 desc:'Nights — edit or delete any entry' },
+      { page:'gym.html',       label:'Training & workouts',   desc:'Sessions, weigh-ins and photos' },
+      { page:'nutrition.html', label:'Nutrition',             desc:'Meals and daily food log' },
+      { page:'body.html',      label:'Body measurements',     desc:'Weight and measurement history' },
+      { page:'health.html',    label:'Supplements & water',   desc:'Your stack and intake' },
+      { page:'bills.html',     label:'Bills & money',         desc:'Bills, paid status, spending' },
+      { page:'identity.html',  label:'Habits & journal',      desc:'Habits, streaks and entries' },
+      { page:'movies.html',    label:'Movies',                desc:'Seen list and watchlist' }
+    ];
+    function chev(){ return '<span class="st-link-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>'; }
+    function renderDataLinks(){
+      var wrap = $('dataLinks'); if(!wrap) return;
+      var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+      var has = function(base){ try { return !window.ALSProfile || ALSProfile.has(base); } catch(e){ return true; } };
+      var html = DATA.filter(function(d){ return has(d.page.replace('.html','')); }).map(function(d){
+        return '<a class="st-link" href="'+d.page+'">'+
+          '<span class="st-link-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span>'+
+          '<span class="st-link-body"><span class="st-link-t">'+esc(d.label)+'</span><span class="st-link-d">'+esc(d.desc)+'</span></span>'+
+          chev()+'</a>';
+      }).join('');
+      wrap.innerHTML = html;
+    }
+
+    // ── Account identity + sign out ──
+    function renderWho(){
+      var email = '';
+      try { email = (window.ALSAuth && ALSAuth.user && ALSAuth.user.email) || ''; } catch(e){}
+      var name = '';
+      try { name = (window.ALSProfile && ALSProfile.firstName && ALSProfile.firstName()) || ''; } catch(e){}
+      $('whoEmail').textContent = email || (name ? name : 'Signed in');
+      $('whoAv').textContent = (name || email || '·').trim().charAt(0).toUpperCase() || '·';
+      $('whoRole').textContent = name ? name : 'signed in';
+    }
+    $('signOut').addEventListener('click', function(){
+      try {
+        if (window.ALSAuth && ALSAuth.signOut) { ALSAuth.signOut(true); }
+        else { location.reload(); }
+      } catch(e){ location.reload(); }
+    });
+    $('signOut').addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.click(); } });
+
+    // ── Boot: fields save even offline (localStorage); cloud fills in when the
+    // profile resolves. Re-fill on any external profile change (another device). ──
+    wire();
+    renderDataLinks();
+    function boot(){
+      if (window.ALSProfile && ALSProfile.ready){
+        ALSProfile.ready(function(p){ fill(p); renderDataLinks(); renderWho(); });
+      } else { setTimeout(boot, 200); }
+    }
+    boot();
+    document.addEventListener('als:profile', function(e){ fill((e && e.detail) || (window.ALSProfile && ALSProfile.get())); });
+    document.addEventListener('als:auth', renderWho);
+  })();
+  </script>
+</body>
+</html>
