@@ -2949,17 +2949,35 @@
        manual imports use (expandBytes → findMatch/canUpgrade), so there are no
        duplicates and the data is identical fidelity. She does nothing. */
     var ICU_SB_URL='https://oiyvadqfldwbjroiknjc.supabase.co', ICU_SB_KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+    // run:inbox belongs to HER account, so RLS returns/accepts it only with HER
+    // session token — the anon key alone reads nothing (which is why her watch's
+    // runs sat in the inbox and never drained). apikey stays the publishable key;
+    // Authorization carries her JWT. sync.js already created the session client.
+    var ICU_TOKEN=null;
+    function icuClient(){ try{ return (window.ALSAuth&&window.ALSAuth.client)||window.__alsAuthClient||null; }catch(e){ return null; } }
+    function icuEnsureToken(){
+      return new Promise(function(res){
+        var n=0;
+        (function tick(){
+          var c=icuClient();
+          if(!c||!c.auth){ if(n++<25){ setTimeout(tick,120); return; } res(null); return; }
+          c.auth.getSession().then(function(s){ ICU_TOKEN=(s&&s.data&&s.data.session&&s.data.session.access_token)||null; res(ICU_TOKEN); }).catch(function(){ res(null); });
+        })();
+      });
+    }
+    function icuHdr(extra){ var h={ apikey:ICU_SB_KEY, Authorization:'Bearer '+(ICU_TOKEN||ICU_SB_KEY) }; if(extra){ for(var k in extra) h[k]=extra[k]; } return h; }
     function icuToast(msg){ try{ if(window.ALSToast){ ALSToast.show(msg); return; } }catch(e){} toast('lgToast',msg); }
     function icuSeenGet(){ try{ var a=JSON.parse(localStorage.getItem('run:icuSeen')); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
     function icuB64ToBytes(b64){ try{ var bin=atob(b64), n=bin.length, u=new Uint8Array(n); for(var i=0;i<n;i++) u[i]=bin.charCodeAt(i); return u; }catch(e){ return null; } }
     async function icuAck(seenIds){
-      try{ await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict=key', { method:'POST',
-        headers:{ apikey:ICU_SB_KEY, Authorization:'Bearer '+ICU_SB_KEY, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal' },
+      try{ await icuEnsureToken(); await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict=key', { method:'POST',
+        headers: icuHdr({ 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal' }),
         body: JSON.stringify({ key:'run:inbox-ack', data:{ seenIds:seenIds }, updated_at:new Date().toISOString() }) }); }catch(e){}
     }
     async function icuDrainInbox(){
       try{
-        var r=await fetch(ICU_SB_URL+'/rest/v1/app_state?select=data&key=eq.run%3Ainbox', { headers:{ apikey:ICU_SB_KEY, Authorization:'Bearer '+ICU_SB_KEY } });
+        await icuEnsureToken();
+        var r=await fetch(ICU_SB_URL+'/rest/v1/app_state?select=data&key=eq.run%3Ainbox', { headers: icuHdr() });
         if(!r.ok) return; var j=await r.json(); var data=(j&&j[0]&&j[0].data)||{};
         var items=Array.isArray(data.items)?data.items:[]; if(!items.length) return;
         var seen=icuSeenGet(), seenSet={}; seen.forEach(function(id){ seenSet[id]=1; });

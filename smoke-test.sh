@@ -96,10 +96,14 @@ echo "$OUT"
 # which once silently emptied gym/weigh-in history on a freshly-installed PWA.
 # The correct form always falls back THROUGH the token, e.g.
 #   'Bearer ' + (SESSION_TOKEN || KEY)
-# so this pattern (a bare '+ KEY' / '+ SB_KEY') matches only the broken shape.
-BADAUTH="$(grep -rnE "Bearer '[[:space:]]*\+[[:space:]]*(KEY|SB_KEY)\b" \
+# so this pattern (a bare '+ <anything>KEY', incl. SB_KEY / ICU_SB_KEY) matches
+# only the broken shape — the correct form has a '(' right after the '+'.
+# api/ is SERVER code: it legitimately uses the service-role key as Bearer (it is
+# meant to bypass RLS), so it's excluded — this rule is about CLIENT code, which
+# must carry the signed-in user's token.
+BADAUTH="$(grep -rnE "Bearer '[[:space:]]*\+[[:space:]]*[A-Za-z_]*KEY\b" \
   --include='*.js' --include='*.html' . 2>/dev/null \
-  | grep -vE '/(vendor|node_modules|archive|docs|als)/' \
+  | grep -vE '/(vendor|node_modules|archive|docs|als|api)/' \
   | grep -vE '/_[^/]*\.html:')"
 if [ -n "$BADAUTH" ]; then
   echo ""
