@@ -1447,7 +1447,21 @@ if(document.readyState==='loading'){
     }catch(e){ setState('Nova could not put your brief together right now. Tap ↻ to retry.'); if(r) r.textContent='↻ RETHINK'; }
   }
 
-  function regen(){ if(window.GCal && GCal.isConnected()){ GCal.refresh(function(){ generate(); }); } else { generate(); } }
+  // Freshen the calendar first if we can, but NEVER let it hold the brief hostage.
+  // A silent GCal token refresh can hang and never call back; the brief reads the
+  // CACHED calendar anyway, so generate() must fire regardless — once — via whichever
+  // comes first: the refresh callback or a short timeout. Without this the panel sits
+  // on its "—" placeholder forever because generate() is never reached.
+  function regen(){
+    var fired=false;
+    function go(){ if(fired) return; fired=true; generate(); }
+    try{
+      if(window.GCal && GCal.isConnected()){
+        try{ GCal.refresh(go); }catch(e){ go(); }
+        setTimeout(go, 2500);
+      } else { go(); }
+    }catch(e){ go(); }
+  }
   function boot(){
     var c=ls(CK,null);
     if(c && c.date===todayKey() && c.text){ renderBrief(c.text); var r=$('mbBriefRefresh'); if(r) r.style.display=''; }
