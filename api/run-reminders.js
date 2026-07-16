@@ -315,49 +315,6 @@ module.exports = async function (req, res) {
     if (!caller || !supa.OWNER_ID || caller !== supa.OWNER_ID) { res.status(403).json({ error: 'owner only' }); return; }
     if (!supa.RUNNER_ID) { res.status(400).json({ error: 'no runner configured' }); return; }
 
-    // ?peek=wellness — a READ-ONLY probe of what Garmin actually puts into her
-    // intervals.icu wellness record. Chrissie wants sleep (and the rest her watch
-    // measures) to arrive automatically like her runs do; the courier below can
-    // carry it on the same key. But her sleep score is MEASURED-only by design
-    // (bed/wake/latency/wakes), so before mapping anything we need to know which
-    // fields her account really has — especially whether it carries sleep TIMING
-    // or only a duration. Guessing that is how a day was lost on 2026-07-16.
-    // Reports field names and sizes, never bulk data. Owner-gated. Temporary.
-    if (req.query.peek === 'wellness') {
-      var wATH = (process.env.ICU_ATHLETE_ID || '').trim();
-      var wKEY = (process.env.ICU_API_KEY || '').trim();
-      if (!wATH || !wKEY) { res.status(200).json({ error: 'ICU not configured', athlete: !!wATH, key: !!wKEY }); return; }
-      var wTo = new Date(), wFrom = new Date(Date.now() - 8 * 864e5);
-      var ymd = function (d) { return d.toISOString().slice(0, 10); };
-      var wUrl = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(wATH) +
-                 '/wellness?oldest=' + ymd(wFrom) + '&newest=' + ymd(wTo);
-      var wr, wj;
-      try {
-        wr = await fetch(wUrl, { headers: { Authorization: 'Basic ' + Buffer.from('API_KEY:' + wKEY).toString('base64') } });
-        if (!wr.ok) { res.status(200).json({ error: 'icu ' + wr.status, body: (await wr.text()).slice(0, 200) }); return; }
-        wj = await wr.json();
-      } catch (e) { res.status(200).json({ error: 'fetch failed: ' + String(e && e.message).slice(0, 120) }); return; }
-      var rows = Array.isArray(wj) ? wj : [];
-      // Which fields are actually POPULATED (not just present-and-null)?
-      var populated = {};
-      rows.forEach(function (r) {
-        Object.keys(r || {}).forEach(function (k) {
-          var v = r[k];
-          if (v === null || v === undefined || v === '' ) return;
-          populated[k] = (populated[k] || 0) + 1;
-        });
-      });
-      res.setHeader('Cache-Control', 'no-store');
-      res.status(200).json({
-        days: rows.length,
-        // every field Garmin actually filled, with how many of the last 8 days have it
-        populated: populated,
-        // the most recent day in full, so the exact shape/units are visible
-        latest: rows.length ? rows[rows.length - 1] : null
-      });
-      return;
-    }
-
     if (req.query.peek !== 'run') { res.status(400).json({ error: 'unknown peek target' }); return; }
     var runRow = await supa.readRow('run', supa.RUNNER_ID);
     res.setHeader('Cache-Control', 'no-store');
