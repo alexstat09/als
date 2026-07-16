@@ -864,18 +864,34 @@
     // owner has no runs of his own — his running page is a read-only window into
     // hers. The RUNNER (Chrissie) gets her normal editable app. The server
     // re-verifies ownership on the peek fetch, so this is only UI routing.
+    /* Scan EVERY sb-*-auth-token, not just the first. A device can hold more than
+       one: a stale token from testing her account, a leftover from another Supabase
+       project, or a chunked entry (supabase-js splits big sessions across
+       `…-auth-token.0`, `.1`). The old version returned on the FIRST key it found,
+       so one stale token in front of the real one made the owner invisible — the
+       page then silently fell through to the runner path and rendered the owner's
+       own pre-migration `run` row (her runs, frozen the day she got her account).
+       That is why this worked on one machine and not another.
+       Fail only after every candidate has been checked, and never let one bad
+       entry abort the scan. */
     function __ownerSignedIn(){
+      var found = false;
       try{
         for (var i=0;i<localStorage.length;i++){
           var k=localStorage.key(i);
-          if (k && k.indexOf('sb-')===0 && k.indexOf('-auth-token')>0){
+          if (!k || k.indexOf('sb-')!==0 || k.indexOf('-auth-token')<=0) continue;
+          try{
             var j=JSON.parse(localStorage.getItem(k)||'null');
             var tok=j && (j.access_token || (j.currentSession && j.currentSession.access_token));
-            if (tok){ var p=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); return !!(p && p.sub === OWNER_UID); }
-          }
+            if (!tok) continue;
+            var b=(tok.split('.')[1]||'').replace(/-/g,'+').replace(/_/g,'/');
+            while (b.length % 4) b += '=';                        // base64url has no padding; atob wants it
+            var p=JSON.parse(decodeURIComponent(escape(atob(b)))); // payloads can hold non-ASCII (Greek names)
+            if (p && p.sub === OWNER_UID) { found = true; break; }
+          }catch(e){ /* chunked or malformed entry — skip it, keep scanning */ }
         }
       }catch(e){}
-      return false;
+      return found;
     }
     var __RUN_PEEK = /[?&]peek=1\b/.test(location.search) || __ownerSignedIn();
     if (__RUN_PEEK) {
