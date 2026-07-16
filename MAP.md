@@ -10,7 +10,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 
 ---
 
-## The 33 live pages
+## The 35 live pages
 
 **Home & shell**
 | Page | What it is |
@@ -19,6 +19,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 | `main.html` | The "Mind" hub — reached from the bottom-nav Mind tab. |
 | `identity.html` | Identity / who-you're-becoming. |
 | `arc.html` | Your Arc — the long-view story of your data. |
+| `settings.html` | **Settings.** Owns editing your details; the only route in is the account button in `topbar.js` (initials, top-right). Unreachable otherwise — don't "tidy" that link away. |
 
 **Body & training**
 | Page | What it is |
@@ -54,11 +55,21 @@ Everything in the root is live. Anything retired is in `archive/`.
 | `morning.html` | Morning briefing. |
 | `weekly.html` | Weekly review. |
 
-**Running** — `run.html` — **Chrissie's standalone PWA** (own manifest, `run.webmanifest`, starts at `/run.html`, nav hidden). Not part of your dashboard chrome.
+**Running** — `run.html` — Chrissie's running app. Has its own manifest
+(`run.webmanifest`, starts at `/run.html`) so it installs as a standalone icon,
+**but since als-v326 it is a full citizen of the app**: Chrissie has her own
+account, so `topbar.js` now renders the shared top bar on it — and with it the
+same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav, so
+it skips the global bottom bar (same treatment as `gym.html`). The page sizes
+itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `arxaia.html` (Αρχαία), `istoria.html` (Ιστορία).
 
 **Tools** — `import.html` (MyFitnessPal), `import-strong.html` (Strong), `backup.html` (backup & restore).
+
+**Dev** — `icon-lab.html` (icon playground). Tracked, so it *is* live at
+`/icon-lab.html`, but nothing links to it and it isn't precached. Harmless;
+archive it if you ever want the root tighter.
 
 ---
 
@@ -109,7 +120,11 @@ Home has its own token set inline in `index.html`.
 4. **Never run a sync script in a render harness.** `home-live.js` and the sync
    layer write to *live* Supabase; a headless render of a page with its scripts
    intact touches real data. Strip every `<script>` first. (This corrupted a
-   weigh-in once.)
+   weigh-in once.) **Then delete the artifact the moment you're done** —
+   `_pv-*.html`, `_gympv.html`, `_hpv.html`, `render-*.html`. `.gitignore` stops
+   them deploying, but it does not stop them piling up: a 2026-07-16 audit found
+   **31** of them in the root — 45% of the .html files — and one still had its
+   sync layer wired in. Gitignored is not the same as gone.
 5. **Run `./smoke-test.sh` before pushing.** It parses every JS file and inline
    script and checks that every local link resolves.
 
