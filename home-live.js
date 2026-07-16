@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   AURORA — home-live.js
+   MÉTRON — home-live.js
    Wires the premium home (exact demo markup) to Alex's REAL data.
    Reads the same localStorage keys the app uses; never writes state.
    Runs BEFORE home-motion.js so count-up animates to real values.

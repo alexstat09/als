@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   gcal.js — Google Calendar (read-only) for AURORA.
+   gcal.js — Google Calendar (read-only) for Métron.
    Client-side only: Google Identity Services token flow → fetch events
    straight from the Calendar API (CORS-enabled). No backend, no new
    serverless function, no client secret. The Client ID is public.

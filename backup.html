@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Backup &amp; Restore · ALS</title>
+  <title>Backup &amp; Restore · MÉTRON</title>
   <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -268,7 +268,7 @@
       <div class="bk-drop" id="bkDrop">
         <div class="big" style="color:#3FE0B0;display:flex;justify-content:center"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h3.6l2 2.4H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/></svg></div>
         <div class="t">Choose a backup file</div>
-        <div class="s">…or drag &amp; drop an <code style="color:rgba(var(--bk),.85)">aurora-backup-*.json</code> here</div>
+        <div class="s">…or drag &amp; drop an <code style="color:rgba(var(--bk),.85)">metron-backup-*.json</code> here</div>
       </div>
       <input type="file" id="bkFile" accept="application/json,.json" class="hidden">
 
@@ -420,7 +420,7 @@
     }
     function buildPayload(data, cloudSets){
       return {
-        app: 'AURORA', kind: 'als-backup', version: 1,
+        app: 'MÉTRON', kind: 'als-backup', version: 1,
         exportedAt: new Date().toISOString(),
         host: location.host,
         cloudSets: cloudSets,
@@ -461,7 +461,7 @@
         try {
           var handle = await window.showSaveFilePicker({
             suggestedName: filename,
-            types: [{ description:'AURORA backup', accept: { 'application/json': ['.json'] } }]
+            types: [{ description:'Métron backup', accept: { 'application/json': ['.json'] } }]
           });
           var w = await handle.createWritable();
           await w.write(blobOf(text));
@@ -511,7 +511,7 @@
           c = await buildExport();
         }
         btn.textContent = 'Saving…';
-        var name = 'aurora-backup-' + ymdName() + '.json';
+        var name = 'metron-backup-' + ymdName() + '.json';
         var how = await saveFile(name, c.json);
         if (how === 'cancelled'){ done.classList.add('hidden'); return; }
         var where = how === 'files' ? 'Choose <b>Save to Files</b> to keep it.'
@@ -558,10 +558,10 @@
         var payload;
         try { payload = JSON.parse(rd.result); } catch(e){ await ALSAlert('That file is not valid JSON.','err'); return; }
         if (!payload || typeof payload !== 'object' || !payload.data || typeof payload.data !== 'object'){
-          await ALSAlert('That doesn’t look like an AURORA backup (no data block).','warn'); return;
+          await ALSAlert('That doesn’t look like a Métron backup (no data block).','warn'); return;
         }
         if (payload.kind && payload.kind !== 'als-backup'){
-          if (!(await ALSConfirm({title:'Restore anyway?',message:'This file isn’t marked as an AURORA backup.',confirmText:'Restore'}))) return;
+          if (!(await ALSConfirm({title:'Restore anyway?',message:'This file isn’t marked as a Métron backup.',confirmText:'Restore'}))) return;
         }
         showPreview(payload);
       };
@@ -595,7 +595,7 @@
       // 1) Safety backup of CURRENT state first (so a wrong restore is undoable).
       try {
         var cur = localSnapshot();
-        download('aurora-backup-PRE-RESTORE-' + stamp() + '.json', JSON.stringify(buildPayload(cur, 'local')));
+        download('metron-backup-PRE-RESTORE-' + stamp() + '.json', JSON.stringify(buildPayload(cur, 'local')));
       } catch(e){}
 
       // 2) Remove managed keys that the backup doesn't contain (true replace of
@@ -730,7 +730,7 @@
     // Two shapes have to normalise to the same thing:
     //   • a vault snapshot (GitHub: backups/YYYY-MM-DD.json)
     //       { v, takenAt, date, rows: { appKey: { storeKey: value } }, counts }
-    //   • a file export (Download backup: aurora-backup-YYYY-MM-DD.json)
+    //   • a file export (Download backup: metron-backup-YYYY-MM-DD.json)
     //       { kind:'als-backup', exportedAt, data: { storeKey: "<json string>" } }
     // Everything downstream speaks `rows`, so the file export is regrouped into
     // rows using the same BUNDLES map the restore path already uses.
@@ -907,7 +907,7 @@
 
         var snap = normalizeSnapshot(payload);
         if (!snap){
-          note.innerHTML = '<span class="rp-gone">That doesn’t look like an AURORA backup. Use a <b>backups/YYYY-MM-DD.json</b> from your als-backups repo, or a file from “Download backup”.</span>';
+          note.innerHTML = '<span class="rp-gone">That doesn’t look like a Métron backup. Use a <b>backups/YYYY-MM-DD.json</b> from your als-backups repo, or a file from “Download backup”.</span>';
           return;
         }
 

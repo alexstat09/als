@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   AURORA — home-motion.js
+   MÉTRON — home-motion.js
    The premium home's motion engine (from the approved demo):
    scroll-reveal cascade, count-up, self-drawing sparklines,
    pointer-tracked specular, spring press, peek dialog, palette.

@@ -1,11 +1,11 @@
 /* ════════════════════════════════════════════════════════════════
-   ALS Dashboard — Daily Reminders settings (window.ALSReminders)
+   Métron — Daily Reminders settings (window.ALSReminders)
    Lets Alex turn on smart daily push nudges (weigh-in / training /
    protein / caffeine cutoff / evening wind-down). Stores his push
    subscription + preferences in Supabase so the serverless cron
    (/api/run-reminders) can fire them with the app fully closed.
    Reuses window.ALSPush for the permission/subscribe flow. Renders a
-   self-contained AURORA card into #remMount if present.
+   self-contained Métron card into #remMount if present.
    Degrades to a silent no-op when push isn't supported / not set up.
    ════════════════════════════════════════════════════════════════ */
 (function () {

@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
 // ALSOnboard — the first thing anyone ever sees.
 //
-// Eight screens, one question each, full-bleed. AURORA's own language:
+// Eight screens, one question each, full-bleed. Métron's own language:
 // Instrument Serif hero words, near-mono emerald, no emoji, no imagery. This
 // is an offline-first PWA — "cinematic" here is typography and pacing, not
 // megabytes of video.
@@ -267,7 +267,7 @@
       '<div class="ob-wrap">' +
         '<div class="ob-aura"></div>' +
         '<div class="ob-open">' +
-          '<div class="ob-mark ob-rise">Aurora</div>' +
+          '<div class="ob-mark ob-rise">Métron</div>' +
           '<div class="ob-open-hi ob-rise">This is empty<br>until it knows you.</div>' +
           '<div class="ob-open-sub ob-rise">Six questions. Two minutes. Then every number in here is yours.</div>' +
         '</div>' +

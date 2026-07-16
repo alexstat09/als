@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   ALS Dashboard — service worker (Pillar 5: offline + notifications)
+   Métron — service worker (Pillar 5: offline + notifications)
    • Offline app shell: precache core pages/assets, runtime-cache the
      rest. Same-origin requests are NETWORK-FIRST: always fresh code when
      online (so a deploy shows up on the very next load — no stale-cache
@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v326";
+var CACHE = "als-v327";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -80,7 +80,7 @@ self.addEventListener('push', function (e) {
   var data = {};
   try { data = e.data ? e.data.json() : {}; }
   catch (err) { try { data = { body: e.data.text() }; } catch (_) {} }
-  e.waitUntil(self.registration.showNotification(data.title || 'ALS Dashboard', {
+  e.waitUntil(self.registration.showNotification(data.title || 'Métron', {
     body: data.body || '',
     tag: data.tag || 'als', renotify: true,
     icon: 'icon-192.png', badge: 'icon-192.png',

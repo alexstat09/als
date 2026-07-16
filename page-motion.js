@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   AURORA — page-motion.js
+   MÉTRON — page-motion.js
    The home page's motion language, extracted for every inner page:
    scroll-reveal cascade, count-up numbers, self-drawing sparklines.
 

@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   ALS Dashboard — Web Push client (window.ALSPush)
+   Métron — Web Push client (window.ALSPush)
    Subscribes the device to push (via the service worker + VAPID), and
    schedules/cancels the rest-timer push through the serverless API.
    Degrades to a silent no-op when push isn't supported or the backend
