@@ -256,7 +256,24 @@ module.exports = async function (req, res) {
     if (req.query.peek !== 'run' || !supa.RUNNER_ID) { res.status(400).json({ error: 'unknown peek target' }); return; }
     var runRow = await supa.readRow('run', supa.RUNNER_ID);
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ appKey: 'run', data: runRow || {} });
+    // _diag: this has now silently answered 200-with-{} once, which is
+    // indistinguishable from "she has no runs". readRow() returns {} both when the
+    // row is missing AND on any error, so the empty case must say WHY. Ids are
+    // truncated to 8 chars: enough to tell them apart, not enough to be a secret.
+    // Owner-only endpoint, so this leaks nothing.
+    res.status(200).json({
+      appKey: 'run',
+      data: runRow || {},
+      _diag: {
+        keys: Object.keys(runRow || {}).length,
+        runKeys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length,
+        runner: supa.RUNNER_ID ? supa.RUNNER_ID.slice(0, 8) : null,
+        owner: supa.OWNER_ID ? supa.OWNER_ID.slice(0, 8) : null,
+        // If these are equal, RUNNER_ID is misconfigured to Alex and the peek is
+        // reading his own fossil row instead of hers.
+        sameId: !!(supa.RUNNER_ID && supa.OWNER_ID && supa.RUNNER_ID === supa.OWNER_ID)
+      }
+    });
     return;
   }
 

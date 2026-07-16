@@ -3109,7 +3109,15 @@
         render();
         if(first){
           peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
-          if(!logs.length && !plan.length && !Object.keys(prof).length) peekBanner('👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
+          if(!logs.length && !plan.length && !Object.keys(prof).length){
+            /* "No data" is the one answer that must never be silent: the server
+               returns {} for a missing row, a wrong RUNNER_ID and an error alike.
+               Say which, in the banner, instead of shrugging. */
+            var d = j && j._diag;
+            peekBanner(d
+              ? ('👁 Κενό · keys=' + d.keys + ' run=' + d.runKeys + ' · runner=' + d.runner + ' owner=' + d.owner + (d.sameId ? ' ⚠ SAME ID' : ''))
+              : '👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
+          }
         }
       }catch(e){ if(first) peekBanner('Σφάλμα φόρτωσης', true); }
     }
