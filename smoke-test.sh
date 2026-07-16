@@ -117,5 +117,41 @@ if [ -n "$BADAUTH" ]; then
   exit 1
 fi
 
+# ── Nova is one heartbeat ────────────────────────────────────────
+# Nova's geometry is inline in each host on purpose (flat files, no flash, no
+# JS dependency), so nothing structural stops the copies drifting apart — which
+# is exactly how the old diamond survived in 14 places for a year. Pin it here:
+# the beat lives in aurora.css, the path must be byte-identical everywhere, and
+# the diamond must never come back. nova-lab.html is exempt — it quotes the old
+# Nova deliberately, as the comparison.
+ECG='M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3'
+OLDNOVA="$(grep -rl 'rotate(45 50 50)' --include='*.html' --include='*.js' . 2>/dev/null \
+  | grep -vE '/(vendor|node_modules|archive|docs|_quarantine)/' | grep -v 'nova-lab.html')"
+if [ -n "$OLDNOVA" ]; then
+  echo ""
+  echo "  ✗ NOVA     the old diamond is back. Nova is the Pulse — see aurora.css."
+  echo "$OLDNOVA" | sed 's/^/               /'
+  echo "SMOKE_FAIL nova"
+  exit 1
+fi
+BADBEAT="$(grep -rlE '@keyframes (novaTrace|novaNode|novaRingBeat)' --include='*.html' . 2>/dev/null \
+  | grep -vE '/(archive|_quarantine)/')"
+if [ -n "$BADBEAT" ]; then
+  echo ""
+  echo "  ✗ NOVA     a page redefines Nova's beat. It belongs in aurora.css, once:"
+  echo "$BADBEAT" | sed 's/^/               /'
+  echo "SMOKE_FAIL nova"
+  exit 1
+fi
+DRIFT="$(grep -rho 'd="M18\.8 50[^"]*"' --include='*.html' --include='*.js' . 2>/dev/null \
+  | sed 's/^d="//; s/"$//' | sort -u | grep -vxF "$ECG")"
+if [ -n "$DRIFT" ]; then
+  echo ""
+  echo "  ✗ NOVA     a copy of the heartbeat has drifted from icon.svg's:"
+  echo "$DRIFT" | sed 's/^/               /'
+  echo "SMOKE_FAIL nova"
+  exit 1
+fi
+
 echo "$OUT" | grep -q '^SMOKE_OK$' && exit 0
 exit 1

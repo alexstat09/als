@@ -73,6 +73,28 @@ mark. It lives in `icon.svg` (`puBg` / `puStroke`), rasterised to `icon-192.png`
 `icon-lab.html`, is retired to `archive/` — the decision is made and the other
 three concepts (Nova Gem, Ribbon, Dawn) are rejected.
 
+**Nova** — settled (2026-07-16): Nova IS the Pulse. Same heartbeat as the app
+mark, scaled 512→100 (`M18.8 50 H38.3 …`), with a bright run travelling it and
+the node firing at the peak. The old rotated diamond with two dark eyes is gone
+from all 11 hosts. Its chooser, `nova-lab.html`, retires to `archive/` like
+icon-lab did — the decision is made.
+
+- **Everything that MOVES lives in `aurora.css`, once** (`novaTrace`, `novaNode`,
+  `novaRingBeat`, plus `--nova-beat`, which `is-thinking` and `nova-look` retune).
+  Never redefine those keyframes in a page.
+- **The geometry is inline in each host on purpose** — flat files, no flash, no
+  JS dependency. `smoke-test.sh` pins it: it fails if the diamond returns, if a
+  page redefines the beat, or if any copy of the path drifts from icon.svg's.
+- **Timing is derived, not guessed.** The path is 157.4 units; the peak sits at
+  56.7; the comet's centre is at `200p+12`, so it hits the peak at p=22.4% —
+  hence the node fires at 22%. The 24/176 dash period (200 > 157.4) keeps
+  exactly one beat on the path and leaves a real rest between beats.
+- **Small marks** (coach.html's 22–24px orbs) use heavier strokes and are
+  static — at that size a 2.6 stroke on a 100-box is sub-pixel and vanishes.
+- `nova-gem.js` (three.js) and `nova-life.js` are now **dead** — nothing loads
+  them, and neither is precached. The gem was nova-chat's intro hero; it painted
+  the old eyes onto a spinning crystal and cost 600KB of CDN three.js.
+
 ---
 
 ## The scripts

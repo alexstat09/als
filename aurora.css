@@ -191,17 +191,44 @@ button:active { transform: scale(0.96); }
 .au-step-lbl { font-family: var(--au-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--au-faint); text-align: center; }
 .au-step.active .au-step-lbl { color: var(--au-ivory); }
 
-/* ── Nova mascot (cross-page companion) ───────────────────────── */
+/* ── Nova (cross-page companion) ───────────────────────────────
+   Nova is the app's PULSE: the exact heartbeat from icon.svg, with a bright
+   run travelling it and the node firing at the peak. She's the same waveform
+   as the mark because she IS the app paying attention.
+
+   The geometry is inline in each host (no flash, no JS dependency — this app
+   is flat files on purpose). Everything that MOVES lives here, once, so the
+   beat can never drift between pages. smoke-test.sh pins the geometry.
+
+   Timing is not decorative. The path is 157.4 units; the dash pattern is
+   24-on/176-off, so exactly one comet is on the path at a time and there is a
+   real rest between beats. The comet's centre sits at path position 200p+12,
+   which reaches the peak (position 56.7) at p=22.35% — so the node fires at
+   22%, not on a guessed keyframe. */
 .nova { width: 88px; height: 88px; position: relative; cursor: pointer; animation: novaFloat 5s ease-in-out infinite; }
 .nova svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .nova .nova-glow { filter: none; transition: filter 0.6s; }
-.nova .nova-eye { transform-origin: center; animation: novaBlink 5.5s infinite; }
 @keyframes novaFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-7px) rotate(1deg); } }
-@keyframes novaBlink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+
+.nova .nova-trace { stroke-dasharray: 24 176; animation: novaTrace var(--nova-beat, 2.9s) cubic-bezier(.5,0,.5,1) infinite; }
+@keyframes novaTrace { 0% { stroke-dashoffset: 200; } 100% { stroke-dashoffset: 0; } }
+.nova .nova-node { transform-origin: 48.8px 25px; animation: novaNode var(--nova-beat, 2.9s) cubic-bezier(.5,0,.5,1) infinite; }
+@keyframes novaNode {
+  0%, 15%, 100% { opacity: 0; transform: scale(.4); }
+  22%           { opacity: 1; transform: scale(1); }
+  38%           { opacity: 0; transform: scale(1.7); }
+}
+.nova .nova-ring { transform-origin: 50px 50px; animation: novaRingBeat var(--nova-beat, 2.9s) ease-out infinite; }
+@keyframes novaRingBeat {
+  0%, 100% { transform: scale(1);     opacity: .5; }
+  22%      { transform: scale(1.035); opacity: .9; }
+}
 
 /* ── Phase 3: Nova life states — thinking / listening / happy ──── */
-.nova::after { content: ''; position: absolute; inset: -7%; border-radius: 32%; box-sizing: border-box;
+.nova::after { content: ''; position: absolute; inset: -7%; border-radius: 50%; box-sizing: border-box;
   border: 2px solid transparent; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+/* thinking = a quickened heart, not a spinner bolted to a mascot */
+.nova.is-thinking { --nova-beat: 1.15s; }
 .nova.is-thinking .nova-glow { animation: novaThink 1.05s ease-in-out infinite; }
 .nova.is-thinking::after { opacity: 1; border-color: rgba(var(--au-glow-rgb),0.22);
   border-top-color: var(--au-glow-c); animation: novaSpin 0.9s linear infinite; }
@@ -215,6 +242,13 @@ button:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) {
   .nova.is-thinking .nova-glow, .nova.is-thinking::after, .nova.is-listening::after, .nova.is-happy { animation: none !important; }
   .nova.is-thinking::after, .nova.is-listening::after { opacity: .5; }
+  /* Freeze the beat, but never erase it: with the trace stopped, the dash
+     pattern would hide most of the waveform and leave a stub. Show the whole
+     line and hold the node lit — still legibly a heartbeat, just a still one. */
+  .nova, .nova .nova-trace, .nova .nova-node, .nova .nova-ring { animation: none !important; }
+  .nova .nova-trace { stroke-dasharray: none !important; opacity: .85; }
+  .nova .nova-node  { opacity: 1 !important; transform: none !important; }
+  .nova .nova-ring  { opacity: .6; }
 }
 
 /* Floating Nova companion (inner pages) — fixed, above the bottombar */
@@ -237,11 +271,15 @@ button:active { transform: scale(0.96); }
   0%, 100% { transform: scale(1); opacity: 1; }
   50%      { transform: scale(1.28); opacity: 0.65; }
 }
-.nova-poke { animation: novaPoke 0.6s ease !important; }
+/* poke = a startled heartbeat. The old wobble was a mascot flinching; a pulse
+   answers by beating harder. */
+.nova-poke { animation: novaPoke 0.6s cubic-bezier(.2,.9,.3,1) !important; }
 @keyframes novaPoke {
-  0%,100% { transform: rotate(0deg) scale(1); }
-  30%     { transform: rotate(-13deg) scale(1.14); }
-  60%     { transform: rotate(10deg) scale(1.08); }
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.16); }
+  46%  { transform: scale(.97); }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 /* Nova level-up — pulsing mood-colored aura behind the crystal */
@@ -250,12 +288,14 @@ button:active { transform: scale(0.96); }
   0%,100% { transform: scale(0.82); opacity: 0.28; }
   50%     { transform: scale(1.18); opacity: 0.55; }
 }
-/* idle "look around" — eyes drift side to side */
-.nova-look .nova-eye { animation: novaLook 1.5s ease-in-out; }
-@keyframes novaLook {
-  0%,100% { transform: translateX(0); }
-  30%     { transform: translateX(-3px); }
-  65%     { transform: translateX(3px); }
+/* idle "life" — she used to glance around; a pulse skips a beat instead.
+   Same job (a small sign of life), same 1.5s window nova.js already holds. */
+.nova-look { --nova-beat: 1.35s; }
+.nova-look .nova-ring { animation: novaLookRing 1.5s ease-out; }
+@keyframes novaLookRing {
+  0%,100% { transform: scale(1);    opacity: .5; }
+  26%     { transform: scale(1.07); opacity: 1; }
+  58%     { transform: scale(.99);  opacity: .7; }
 }
 
 /* Nova speech bubble — talks to you in the serif aurora voice */
