@@ -169,6 +169,66 @@ function icuLooksLikeActivity(b) {
   var head = Buffer.from(b.slice(0, 96)).toString('utf8');
   return /<\?xml|<TrainingCenterDatabase|<gpx/i.test(head);                          // tcx / gpx
 }
+// ── Garmin → intervals.icu WELLNESS courier (her sleep, RHR, HRV) ──────────
+// Chrissie wanted everything her watch measures to arrive on its own, like her
+// runs do. It comes down the same wire: intervals keeps one wellness record per
+// day that Garmin fills. Verified against her real account 2026-07-16 — what it
+// actually carries is:
+//     sleepSecs (6h16m) · sleepScore (66) · restingHR (51) · hrv rMSSD (44) · steps
+// and, importantly, NOT bed/wake times. intervals is a training platform: it
+// distils Garmin's night into a duration, so there is no timeline to import.
+// That is fine, and in fact better than typed input — sleepSecs is time actually
+// ASLEEP, while bed→wake arithmetic is time IN BED and flatters you by an hour.
+//
+// TWO RULES:
+//  1. MEASUREMENTS only. Garmin's own sleepScore is a VERDICT from a black box.
+//     It is carried as `garminScore` for comparison and must NEVER feed her
+//     score, or there are two scores disagreeing and the circularity that got
+//     sleep.html rebuilt on 2026-07-14 is back.
+//  2. Delivered to the RUNNER's account, never the owner's. Alex has no watch;
+//     nothing here can reach his rows or change his dashboard.
+//
+// Idempotent by date: this publishes a rolling snapshot keyed by dateKey, NOT a
+// queue. So there is nothing to ack, nothing to prune, and re-running is free —
+// unlike the activity courier, which must track doneIds because FIT downloads
+// are expensive and one-shot.
+async function icuWellness() {
+  var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
+  if (!ATH || !KEY) return { skipped: 'icu env not set' };
+  var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
+  function ymd(d) { return d.toISOString().slice(0, 10); }
+  var now = Date.now();
+  // 21 days: enough to backfill her sleep-debt window after a break, cheap enough
+  // to re-pull hourly.
+  var url = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
+    '/wellness?oldest=' + ymd(new Date(now - 21 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
+  var r;
+  try { r = await fetch(url, { headers: { Authorization: authHeader } }); }
+  catch (e) { return { error: 'wellness fetch failed' }; }
+  if (!r.ok) return { error: 'wellness ' + r.status };
+  var rows; try { rows = await r.json(); } catch (e) { return { error: 'wellness not json' }; }
+  if (!Array.isArray(rows)) return { error: 'wellness not array' };
+
+  var items = [];
+  rows.forEach(function (w) {
+    if (!w || !w.id) return;
+    var it = { dateKey: String(w.id).slice(0, 10) }, any = false;
+    if (w.sleepSecs > 0)  { it.asleepMeasured = Math.round((w.sleepSecs / 3600) * 100) / 100; any = true; }
+    if (w.restingHR > 0)  { it.restingHR = w.restingHR; any = true; }
+    if (w.hrv > 0)        { it.hrv = w.hrv; any = true; }
+    if (w.sleepScore > 0) { it.garminScore = w.sleepScore; any = true; }   // comparison ONLY
+    if (any) items.push(it);
+  });
+  if (!items.length) return { wellness: 0 };
+
+  var runner = supa.RUNNER_ID || undefined;
+  var prev = await supa.readRow('sleep:inbox', runner);
+  var sig = JSON.stringify(items);
+  if (prev && prev.sig === sig) return { wellness: items.length, unchanged: true };  // no write, no sync churn
+  await supa.writeRow('sleep:inbox', { items: items, sig: sig, at: new Date().toISOString() }, runner);
+  return { wellness: items.length, wrote: true };
+}
+
 async function icuCheck() {
   var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
   if (!ATH || !KEY) return { skipped: 'icu env not set' };
@@ -334,7 +394,12 @@ module.exports = async function (req, res) {
   var icuOnly = !!(req.query && (req.query.icu === '1' || req.query.icu === 'check'));
   var icuResult = null;
   try { icuResult = await icuCheck(); } catch (e) { icuResult = { error: String((e && e.message) || e) }; }
-  if (icuOnly) { res.status(200).json({ icu: icuResult }); return; }
+  // Wellness rides the same tick. Kept in its OWN try so a wellness failure can
+  // never take her runs down with it — they are independent deliveries and the
+  // runs are the ones she'd notice.
+  var wellResult = null;
+  try { wellResult = await icuWellness(); } catch (e) { wellResult = { error: String((e && e.message) || e) }; }
+  if (icuOnly) { res.status(200).json({ icu: icuResult, wellness: wellResult }); return; }
 
   try {
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) { res.status(200).json({ skipped: 'VAPID not configured', backup: backupResult }); return; }
