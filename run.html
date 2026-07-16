@@ -893,8 +893,12 @@
       }catch(e){}
       return found;
     }
+    /* The shadow, installable on demand and idempotent. The browser cannot reliably
+       tell who is signed in, so the SERVER decides (see __resolveMode at boot) and
+       may switch peek on after the page has already started. */
     var __RUN_PEEK = /[?&]peek=1\b/.test(location.search) || __ownerSignedIn();
-    if (__RUN_PEEK) {
+    window.__RUN_PEEK_INSTALL = function(){
+      if (window.__RUN_PEEK_SET) return;   // already installed
       window.__RUN_PEEK = true;
       (function(){
         var store = {};
@@ -909,7 +913,8 @@
           try { Object.keys(data||{}).forEach(function(k){ if (k.indexOf('run:') === 0) { var v = data[k]; store[k] = (typeof v === 'string') ? v : JSON.stringify(v); } }); } catch(e){}
         };
       })();
-    }
+    };
+    if (__RUN_PEEK) window.__RUN_PEEK_INSTALL();
 
     function $(id){ return document.getElementById(id); }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -3100,9 +3105,53 @@
         }
       }catch(e){ if(first) peekBanner('Σφάλμα φόρτωσης', true); }
     }
+    /* ── WHO IS THIS? Ask the server, don't guess. ────────────────────────────
+       The browser cannot reliably answer this. __ownerSignedIn() reads tokens out
+       of localStorage, and a device can hold several (a leftover from testing her
+       account, another project, a chunked entry) — so the same account answered
+       differently on Alex's PC and his laptop.
+       Guessing wrong is harmful BOTH ways:
+         wrong "runner" for Alex    → he silently sees his own pre-migration `run`
+                                      row: her runs, months stale, and plausible
+                                      enough to look like the app is merely behind.
+         wrong "peek" for Chrissie  → her real app would render empty.
+       So the fast path is only ever an optimisation, and the server — the sole
+       authority, which re-verifies ownership on every peek fetch anyway — settles
+       it. Offline or unauthenticated resolves to the runner, so her app still
+       works with no network. */
+    var __peekPrime = null;
+    async function peekProbe(){
+      try{
+        var tok = await peekToken();
+        if (!tok) return false;                       // no session → not the owner
+        var r = await fetch('/api/run-reminders?peek=run', { headers:{Authorization:'Bearer '+tok}, cache:'no-store' });
+        if (!r.ok) return false;                      // 403 → this is her app, not a peek
+        var j = await r.json();
+        __peekPrime = (j && j.data) || {};            // reuse it; don't fetch her data twice
+        return true;
+      }catch(e){ return false; }                      // offline → behave as the runner
+    }
+    var __modeResolved = null;
+    function __resolveMode(){
+      if (__modeResolved) return __modeResolved;
+      if (__RUN_PEEK){ startPeek(); __modeResolved = Promise.resolve(true); return __modeResolved; }
+      __modeResolved = peekProbe().then(function(isOwner){
+        if (!isOwner){ icuSync(); return false; }
+        __RUN_PEEK = true;
+        window.__RUN_PEEK_INSTALL();                  // shadow goes up BEFORE her data lands
+        startPeek();
+        return true;
+      });
+      return __modeResolved;
+    }
     function startPeek(){
       peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
-      peekFetch(true);
+      if (__peekPrime){                               // the probe already fetched her data
+        try { window.__RUN_PEEK_SET(__peekPrime); } catch(e){}
+        render();
+        if (!logs.length && !plan.length && !Object.keys(prof).length) peekBanner('👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
+        __peekPrime = null;
+      } else peekFetch(true);
       // Keep it live: re-pull her latest on focus and every 45s, so runs she syncs
       // show up here on their own (read from the cloud, which her phone updates).
       document.addEventListener('visibilitychange', function(){ if(!document.hidden) peekFetch(false); });
@@ -3114,15 +3163,22 @@
     render();
     animStart();
     if(!$('view-runs').classList.contains('hidden')) requestAnimationFrame(animateRunHero);
-    if(__RUN_PEEK){ startPeek(); } else { icuSync(); }
+    __resolveMode();
 
     document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); if(!__RUN_PEEK) icuSync(); } });
     window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
     document.addEventListener('DOMContentLoaded',function(){
-      if(__RUN_PEEK) return;                          // peek is read-only: never sync her data into any account
-      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR,K_SHOES,K_KNEE], onApplied:function(){ render(); } });
-      })();
+      /* Wait for the mode to settle before syncing ANYTHING. Starting the sync
+         while the answer is still unknown is a genuine hazard: if peek switches on
+         a moment later, the shadow would hand HER data to a sync scoped to HIS
+         user_id and write her runs into his row — the exact "never write an
+         unowned row" failure, inverted. Resolve first, then sync. */
+      __resolveMode().then(function(isPeek){
+        if(isPeek) return;                            // peek is read-only: never sync her data into any account
+        (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+          window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR,K_SHOES,K_KNEE], onApplied:function(){ render(); } });
+        })();
+      });
     });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath, simplifyRoute:simplifyRoute,
       heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove,
