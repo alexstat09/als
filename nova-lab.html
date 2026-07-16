@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<title>Nova Lab · MÉTRON</title>
+<!-- ══════════════════════════════════════════════════════════════
+     nova-lab.html — the chooser for Nova's face. Same job icon-lab.html
+     did for the app mark (Pulse won; this is that page's sibling).
+
+     ISOLATED ON PURPOSE. No sync.js, no supabase, no nova.js, no writes.
+     It reads localStorage READ-ONLY to show Nova in the mood his real data
+     puts her in right now. Once he picks, the winner is centralised into a
+     single source and this page retires to archive/ like icon-lab did.
+     ══════════════════════════════════════════════════════════════ -->
+<link rel="stylesheet" href="aurora.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:#050507;color:#F4F1EA;-webkit-font-smoothing:antialiased;}
+  body{font-family:var(--au-sans,-apple-system,system-ui,sans-serif);min-height:100vh;overflow-x:hidden;}
+  body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:radial-gradient(38% 30% at 78% 6%, rgba(155,140,255,.13), transparent 60%),
+               radial-gradient(36% 30% at 12% 24%, rgba(52,226,176,.10), transparent 60%);
+    filter:blur(26px);}
+  .shell{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:20px 18px 64px;}
+
+  .back{display:inline-flex;align-items:center;gap:7px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.4);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:8px;padding:8px 13px;text-decoration:none;}
+  .eyebrow{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:rgba(155,140,255,.6);margin:24px 0 6px;}
+  h1{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(34px,8vw,54px);line-height:1.02;font-weight:400;letter-spacing:-.01em;}
+  .lede{font-size:14.5px;line-height:1.6;color:rgba(244,241,234,.62);max-width:64ch;margin-top:12px;}
+  .lede b{color:#F4F1EA;font-weight:600;}
+
+  /* controls */
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:22px;padding:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);border-radius:14px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
+  .bar-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.38);margin-right:2px;}
+  .chip{font-family:var(--au-mono,ui-monospace,monospace);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.55);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);border-radius:99px;padding:7px 13px;cursor:pointer;transition:color .18s,border-color .18s,background .18s;}
+  .chip:hover{color:#F4F1EA;}
+  .chip[aria-pressed="true"]{color:#050507;background:#34E2B0;border-color:#34E2B0;}
+  .chip:focus-visible{outline:2px solid rgba(155,140,255,.7);outline-offset:2px;}
+  .live{margin-left:auto;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;letter-spacing:.06em;color:rgba(244,241,234,.42);}
+  .live b{color:#34E2B0;font-weight:700;}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:18px;}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  .card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:18px;padding:20px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:border-color .25s,background .25s;}
+  .card.picked{border-color:rgba(52,226,176,.5);background:rgba(52,226,176,.05);}
+  .card-top{display:flex;align-items:flex-start;gap:16px;}
+  .stage{width:132px;height:132px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .meta{flex:1;min-width:0;}
+  .name{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:26px;line-height:1.1;}
+  .kind{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(155,140,255,.65);margin-top:6px;}
+  .kind.face{color:rgba(255,201,120,.75);}
+  .why{font-size:13px;line-height:1.55;color:rgba(244,241,234,.6);margin-top:10px;}
+  .says{font-size:12.5px;line-height:1.5;color:rgba(244,241,234,.4);margin-top:8px;font-style:italic;}
+
+  /* the corner mock — how it reads at real FAB size */
+  .foot{display:flex;align-items:center;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);}
+  .mock{width:104px;height:70px;flex:none;position:relative;border:1px solid rgba(255,255,255,.09);border-radius:9px;overflow:hidden;
+    background:linear-gradient(160deg,#0B0B12,#050507);}
+  .mock i{position:absolute;display:block;background:rgba(255,255,255,.06);border-radius:2px;}
+  .mock i:nth-child(1){left:8px;top:9px;width:42px;height:4px;}
+  .mock i:nth-child(2){left:8px;top:19px;width:64px;height:3px;background:rgba(255,255,255,.035);}
+  .mock i:nth-child(3){left:8px;top:27px;width:54px;height:3px;background:rgba(255,255,255,.035);}
+  .mock .fabslot{position:absolute;right:7px;bottom:7px;width:30px;height:30px;}
+  .foot-note{font-family:var(--au-mono,ui-monospace,monospace);font-size:9.5px;line-height:1.5;letter-spacing:.05em;color:rgba(244,241,234,.34);}
+  .pick{margin-left:auto;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.5);border:1px solid rgba(255,255,255,.14);background:transparent;border-radius:99px;padding:9px 15px;cursor:pointer;transition:all .18s;}
+  .pick:hover{color:#F4F1EA;border-color:rgba(52,226,176,.5);}
+  .card.picked .pick{color:#050507;background:#34E2B0;border-color:#34E2B0;}
+  .pick:focus-visible{outline:2px solid rgba(155,140,255,.7);outline-offset:2px;}
+
+  /* ── the four Nova bodies ──────────────────
+     One mood system for all of them: each candidate reads --c1/--c2/--glow/--sp
+     off its wrapper, so they can be compared under identical conditions.
+     Set by [data-mood] below — never random, mapped from the same signals
+     nova.js already uses (weigh-in, water, caffeine, food, hour). */
+  .nv{--c1:#34E2B0;--c2:#22CBC6;--c3:#9B8CFF;--glow:82,226,176;--sp:1;--dim:1;
+      width:100%;height:100%;position:relative;display:block;}
+  .nv svg{display:block;width:100%;height:100%;overflow:visible;}
+  /* Colour hooks. These MUST be CSS rules, not presentation attributes:
+     var() does not resolve in fill="…"/stop-color="…" — the browser drops it
+     and paints black. Every mood-reactive colour goes through a class. */
+  .nv .s1{stop-color:var(--c1);} .nv .s2{stop-color:var(--c2);} .nv .s3{stop-color:var(--c3);}
+  .nv .f1{fill:var(--c1);} .nv .f2{fill:var(--c2);}
+  .nv .k1{stroke:var(--c1);} .nv .k2{stroke:var(--c2);}
+  [data-mood="calm"]  .nv{--c1:#34E2B0;--c2:#22CBC6;--c3:#9B8CFF;--glow:52,226,176;--sp:1;--dim:1;}
+  [data-mood="hot"]   .nv{--c1:#5CF0C8;--c2:#34E2B0;--c3:#9B8CFF;--glow:92,240,200;--sp:.62;--dim:1.18;}
+  [data-mood="low"]   .nv{--c1:#1F7C68;--c2:#2A5C6B;--c3:#4B4A7A;--glow:40,110,96;--sp:1.75;--dim:.55;}
+  [data-mood="alert"] .nv{--c1:#FFC978;--c2:#FF9D6B;--c3:#FF6B8B;--glow:255,157,107;--sp:.44;--dim:1.1;}
+  .nv::after{content:"";position:absolute;inset:-14%;border-radius:50%;pointer-events:none;z-index:-1;
+    background:radial-gradient(circle,rgba(var(--glow),calc(.30*var(--dim))),rgba(var(--glow),0) 70%);
+    filter:blur(6px);animation:halo calc(5s*var(--sp)) ease-in-out infinite;}
+  @keyframes halo{0%,100%{opacity:.72;transform:scale(.96);}50%{opacity:1;transform:scale(1.04);}}
+  .nv.poke{animation:poke .6s cubic-bezier(.34,1.4,.5,1);}
+  @keyframes poke{0%{transform:scale(1);}35%{transform:scale(.9);}70%{transform:scale(1.07);}100%{transform:scale(1);}}
+
+  /* 1 — APERTURE */
+  .ap-tick{transform-origin:50px 50px;animation:spin calc(26s*var(--sp)) linear infinite;}
+  .ap-arc{transform-origin:50px 50px;animation:spinBack calc(9s*var(--sp)) linear infinite;}
+  .ap-iris{transform-origin:50px 50px;animation:irisBreathe calc(4.6s*var(--sp)) ease-in-out infinite;}
+  /* scale, not the `r` geometry property — r-as-CSS is SVG2 and not safe on her phone */
+  .ap-core{transform-origin:center;transform-box:fill-box;animation:coreBeat calc(2.3s*var(--sp)) ease-in-out infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes spinBack{to{transform:rotate(-360deg);}}
+  @keyframes irisBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
+  @keyframes coreBeat{0%,100%{opacity:.55;transform:scale(.85);}50%{opacity:1;transform:scale(1.15);}}
+  [data-look="1"] .ap-iris,[data-look="1"] .ap-core{animation:gaze 1.5s ease-in-out;}
+  @keyframes gaze{0%,100%{transform:translateX(0);}30%,55%{transform:translateX(5px);}}
+  [data-think="1"] .ap-arc{animation-duration:calc(1.1s*var(--sp));}
+
+  /* 2 — PULSE */
+  .pu-trace{stroke-dasharray:24 176;animation:trace calc(2.9s*var(--sp)) cubic-bezier(.5,0,.5,1) infinite;}
+  @keyframes trace{0%{stroke-dashoffset:200;}100%{stroke-dashoffset:0;}}
+  .pu-node{animation:nodeBeat calc(2.9s*var(--sp)) cubic-bezier(.5,0,.5,1) infinite;}
+  @keyframes nodeBeat{0%,58%,100%{opacity:0;transform:scale(.4);}66%{opacity:1;transform:scale(1);}80%{opacity:0;transform:scale(1.6);}}
+  .pu-ring{transform-origin:50px 50px;animation:ringBreathe calc(2.9s*var(--sp)) ease-out infinite;}
+  @keyframes ringBreathe{0%,100%{transform:scale(1);opacity:.5;}62%{transform:scale(1.035);opacity:.9;}}
+  [data-think="1"] .pu-trace,[data-think="1"] .pu-node,[data-think="1"] .pu-ring{animation-duration:calc(1.05s*var(--sp));}
+
+  /* 3 — GEM */
+  .gm-facet{transform-origin:50px 50px;}
+  .gm-facet:nth-of-type(1){animation:sheen calc(6s*var(--sp)) ease-in-out infinite;}
+  .gm-facet:nth-of-type(2){animation:sheen calc(6s*var(--sp)) ease-in-out infinite calc(-5s*var(--sp));}
+  .gm-facet:nth-of-type(3){animation:sheen calc(6s*var(--sp)) ease-in-out infinite calc(-4s*var(--sp));}
+  .gm-facet:nth-of-type(4){animation:sheen calc(6s*var(--sp)) ease-in-out infinite calc(-3s*var(--sp));}
+  .gm-facet:nth-of-type(5){animation:sheen calc(6s*var(--sp)) ease-in-out infinite calc(-2s*var(--sp));}
+  .gm-facet:nth-of-type(6){animation:sheen calc(6s*var(--sp)) ease-in-out infinite calc(-1s*var(--sp));}
+  @keyframes sheen{0%,100%{opacity:.16;}50%{opacity:.62;}}
+  .gm-body{transform-origin:50px 50px;animation:gemBreathe calc(5.2s*var(--sp)) ease-in-out infinite;}
+  @keyframes gemBreathe{0%,100%{transform:scale(1) rotate(0deg);}50%{transform:scale(1.035) rotate(1.6deg);}}
+  .gm-table{animation:tableGlow calc(5.2s*var(--sp)) ease-in-out infinite;}
+  @keyframes tableGlow{0%,100%{opacity:.5;}50%{opacity:.95;}}
+  [data-look="1"] .gm-body{animation:gemLean 1.5s ease-in-out;}
+  @keyframes gemLean{0%,100%{transform:rotate(0deg) translateX(0);}35%,60%{transform:rotate(7deg) translateX(3px);}}
+  [data-think="1"] .gm-body{animation-duration:calc(1.3s*var(--sp));}
+
+  /* 4 — COMPANION */
+  .cp-body{transform-origin:50px 50px;animation:float calc(5s*var(--sp)) ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-3.5px);}}
+  .cp-eye{transform-origin:center;transform-box:fill-box;animation:blink calc(5.4s*var(--sp)) infinite;}
+  @keyframes blink{0%,92%,100%{transform:scaleY(1);}95.5%{transform:scaleY(.08);}}
+  [data-look="1"] .cp-eyes{animation:eyesLook 1.5s ease-in-out;}
+  @keyframes eyesLook{0%,100%{transform:translateX(0);}30%,55%{transform:translateX(4px);}}
+  [data-think="1"] .cp-body{animation-duration:calc(1.6s*var(--sp));}
+
+  @media (prefers-reduced-motion: reduce){
+    .nv *,.nv::after{animation:none !important;}
+    .pu-trace{stroke-dasharray:none !important;}
+    .pu-node,.gm-facet{opacity:.5 !important;}
+  }
+
+  .closing{margin-top:34px;border:1px solid rgba(155,140,255,.22);background:linear-gradient(140deg,rgba(155,140,255,.08),rgba(52,226,176,.04));border-radius:16px;padding:20px;}
+  .closing h2{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-weight:400;font-size:24px;}
+  .closing p{font-size:13.5px;line-height:1.6;color:rgba(244,241,234,.62);margin-top:10px;max-width:72ch;}
+  .verdict{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);font-size:13.5px;line-height:1.6;color:rgba(244,241,234,.72);}
+  .verdict b{color:#34E2B0;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <a class="back" href="index.html">&#8592; HUB</a>
+  <div class="eyebrow">NOVA LAB · PICK ONE</div>
+  <h1>Nova needs a face</h1>
+  <p class="lede">Four candidates, all reactive to <b>your real data</b> — same mood engine, same conditions, so it's a fair fight. Tap any Nova to poke her. Change the mood up top to see what she does when you've had 400mg of caffeine at 4pm, or when it's 9am and you've logged nothing.
+  The current Nova is in there too, so you can see exactly what you'd be trading.</p>
+
+  <div class="bar">
+    <span class="bar-lbl">Mood</span>
+    <button class="chip" data-set="calm"  aria-pressed="true">Calm</button>
+    <button class="chip" data-set="hot"   aria-pressed="false">On it</button>
+    <button class="chip" data-set="low"   aria-pressed="false">Low</button>
+    <button class="chip" data-set="alert" aria-pressed="false">Alert</button>
+    <span class="bar-lbl" style="margin-left:10px">State</span>
+    <button class="chip" id="thinkBtn" aria-pressed="false">Thinking</button>
+    <button class="chip" id="lookBtn"  aria-pressed="false">Look around</button>
+    <span class="live" id="live">reading your data…</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="closing">
+    <h2>What you're actually choosing</h2>
+    <p>The eyes are the whole question. Nova with eyes is a <b>companion</b> — she's someone. Nova without is an <b>instrument</b> — she's something you read. Both are defensible; they're different products. Everything else you've chosen over the last year (Instrument Serif, line icons, no emoji, Pulse) points at the instrument. But your mum uses this app, and warmth is not a weakness.</p>
+    <div class="verdict">
+      <b>If you want my pick: Pulse.</b> It's the only one that answers "why does Nova look like that?" with something true — she's the app's heartbeat, the same waveform as your icon, drawn once and set in motion. The Aperture is the most premium and the most cold. The Gem is the safest upgrade and the least brave. The Companion is the best version of what you have now, if the face is worth keeping.
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ── candidates ───────────────────────────
+   Every body is plain inline SVG + CSS. No three.js, no canvas: this thing
+   has to mount on 22 pages and stay cheap on her phone. Gradient ids are
+   per-candidate because they all share one document. */
+
+function apertureSVG(id){ return ''+
+  '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<defs>'+
+      '<linearGradient id="'+id+'r" x1="0" y1="0" x2="1" y2="1">'+
+        '<stop offset="0%" class="s1"/><stop offset="100%" class="s3"/></linearGradient>'+
+      '<radialGradient id="'+id+'i" cx=".38" cy=".33" r=".78">'+
+        '<stop offset="0%" class="s1" stop-opacity=".85"/>'+
+        '<stop offset="60%" class="s2" stop-opacity=".28"/>'+
+        '<stop offset="100%" stop-color="#050507" stop-opacity=".9"/></radialGradient>'+
+    '</defs>'+
+    '<circle cx="50" cy="50" r="45" fill="none" stroke="url(#'+id+'r)" stroke-width="1.2" opacity=".45"/>'+
+    '<g class="ap-tick" opacity=".5">'+ ticks() +'</g>'+
+    '<circle class="ap-arc" cx="50" cy="50" r="34" fill="none" stroke="url(#'+id+'r)" stroke-width="2.4"'+
+      ' stroke-linecap="round" stroke-dasharray="30 184" opacity=".95"/>'+
+    '<circle class="k2" cx="50" cy="50" r="26" fill="none" stroke-width=".8" opacity=".22"/>'+
+    '<g class="ap-iris">'+
+      '<circle cx="50" cy="50" r="18" fill="url(#'+id+'i)"/>'+
+      '<path class="k1" d="M 38 44 A 18 18 0 0 1 54 33" fill="none" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>'+
+      '<circle class="ap-core" cx="50" cy="50" r="3" fill="#EAFFF7"/>'+
+    '</g>'+
+  '</svg>'; }
+function ticks(){
+  var out='';
+  for (var i=0;i<12;i++){
+    var a=i*30*Math.PI/180, r1=40, r2=i%3===0?34.5:37.5;
+    out+='<line class="k2" x1="'+(50+Math.cos(a)*r1).toFixed(1)+'" y1="'+(50+Math.sin(a)*r1).toFixed(1)+
+         '" x2="'+(50+Math.cos(a)*r2).toFixed(1)+'" y2="'+(50+Math.sin(a)*r2).toFixed(1)+
+         '" stroke-width="'+(i%3===0?1.5:.9)+'" stroke-linecap="round"/>';
+  }
+  return out;
+}
+
+// The exact heartbeat from icon.svg (512-box) scaled to the 100-box. Nova is
+// literally the app's pulse — a sibling to the mark, not a copy of it.
+var ECG='M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3';
+function pulseSVG(id){ return ''+
+  '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<defs>'+
+      '<linearGradient id="'+id+'s" x1="0" y1="0" x2="1" y2="0">'+
+        '<stop offset="0%" class="s1"/><stop offset="55%" class="s2"/>'+
+        '<stop offset="100%" class="s3"/></linearGradient>'+
+      '<radialGradient id="'+id+'f" cx=".5" cy=".5" r=".5">'+
+        '<stop offset="0%" class="s1" stop-opacity=".16"/>'+
+        '<stop offset="100%" class="s1" stop-opacity="0"/></radialGradient>'+
+      '<clipPath id="'+id+'c"><circle cx="50" cy="50" r="40"/></clipPath>'+
+    '</defs>'+
+    '<circle cx="50" cy="50" r="40" fill="url(#'+id+'f)"/>'+
+    '<circle class="pu-ring" cx="50" cy="50" r="40" fill="none" stroke="url(#'+id+'s)" stroke-width="2.2" opacity=".55"/>'+
+    '<g clip-path="url(#'+id+'c)">'+
+      // the track: the whole waveform, always there but quiet
+      '<path d="'+ECG+'" fill="none" stroke="url(#'+id+'s)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".2"/>'+
+      // the beat: a short bright run travelling the same path
+      '<path class="pu-trace" d="'+ECG+'" fill="none" stroke="url(#'+id+'s)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<path class="pu-trace" d="'+ECG+'" fill="none" stroke="#EAFFF7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>'+
+    '</g>'+
+    '<g class="pu-node" style="transform-origin:48.8px 25px"><circle cx="48.8" cy="25" r="4.4" fill="#EAFFF7"/></g>'+
+  '</svg>'; }
+
+function gemSVG(id){
+  var pts=[], R=40;
+  for (var i=0;i<6;i++){ var a=(i*60-90)*Math.PI/180; pts.push([50+Math.cos(a)*R, 50+Math.sin(a)*R]); }
+  var hull=pts.map(function(p){ return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+  var tbl=pts.map(function(p){ return (50+(p[0]-50)*.46).toFixed(1)+','+(50+(p[1]-50)*.46).toFixed(1); }).join(' ');
+  var facets='';
+  for (var j=0;j<6;j++){
+    var a1=pts[j], a2=pts[(j+1)%6];
+    var b1=[50+(a1[0]-50)*.46, 50+(a1[1]-50)*.46], b2=[50+(a2[0]-50)*.46, 50+(a2[1]-50)*.46];
+    facets+='<polygon class="gm-facet" points="'+a1[0].toFixed(1)+','+a1[1].toFixed(1)+' '+a2[0].toFixed(1)+','+a2[1].toFixed(1)+
+            ' '+b2[0].toFixed(1)+','+b2[1].toFixed(1)+' '+b1[0].toFixed(1)+','+b1[1].toFixed(1)+
+            '" fill="url(#'+id+'g)"/>';
+  }
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<defs>'+
+      '<linearGradient id="'+id+'g" x1="0" y1="0" x2="1" y2="1">'+
+        '<stop offset="0%" class="s1"/><stop offset="100%" class="s3"/></linearGradient>'+
+      '<linearGradient id="'+id+'e" x1="0" y1="0" x2="1" y2="1">'+
+        '<stop offset="0%" class="s1"/><stop offset="100%" class="s3"/></linearGradient>'+
+      '<radialGradient id="'+id+'t" cx=".4" cy=".32" r=".8">'+
+        '<stop offset="0%" stop-color="#EAFFF7" stop-opacity=".55"/>'+
+        '<stop offset="100%" class="s2" stop-opacity=".08"/></radialGradient>'+
+    '</defs>'+
+    '<g class="gm-body">'+
+      facets+
+      '<polygon class="gm-table" points="'+tbl+'" fill="url(#'+id+'t)"/>'+
+      '<polygon points="'+hull+'" fill="none" stroke="url(#'+id+'e)" stroke-width="1.8" stroke-linejoin="round"/>'+
+      '<polygon class="k1" points="'+tbl+'" fill="none" stroke-width=".9" stroke-linejoin="round" opacity=".5"/>'+
+      // the girdle lines that make it read as CUT rather than drawn
+      pts.map(function(p){ var b=[50+(p[0]-50)*.46, 50+(p[1]-50)*.46];
+        return '<line class="k1" x1="'+p[0].toFixed(1)+'" y1="'+p[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+
+               '" stroke-width=".7" opacity=".35"/>'; }).join('')+
+    '</g>'+
+  '</svg>';
+}
+
+function companionSVG(id){ return ''+
+  '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<defs>'+
+      '<linearGradient id="'+id+'b" x1=".2" y1="0" x2=".8" y2="1">'+
+        '<stop offset="0%" stop-color="#12141F"/><stop offset="100%" stop-color="#070810"/></linearGradient>'+
+      '<linearGradient id="'+id+'r" x1="0" y1="0" x2="1" y2="1">'+
+        '<stop offset="0%" class="s1"/><stop offset="100%" class="s3"/></linearGradient>'+
+      '<radialGradient id="'+id+'in" cx=".5" cy=".62" r=".6">'+
+        '<stop offset="0%" class="s1" stop-opacity=".22"/>'+
+        '<stop offset="100%" class="s1" stop-opacity="0"/></radialGradient>'+
+      '<filter id="'+id+'gl" x="-70%" y="-70%" width="240%" height="240%">'+
+        '<feGaussianBlur stdDeviation="2.4"/></filter>'+
+    '</defs>'+
+    '<g class="cp-body">'+
+      // a squircle, not the old rotated diamond — calmer, and it stops reading as a kite
+      '<rect x="16" y="16" width="68" height="68" rx="26" fill="url(#'+id+'b)"/>'+
+      '<rect x="16" y="16" width="68" height="68" rx="26" fill="url(#'+id+'in)"/>'+
+      '<rect x="16" y="16" width="68" height="68" rx="26" fill="none" stroke="url(#'+id+'r)" stroke-width="1.8"/>'+
+      // a creature made of light: luminous eyes on a dark body, not black dots on a bright one
+      '<g class="cp-eyes">'+
+        '<g filter="url(#'+id+'gl)" opacity=".85">'+
+          '<rect class="cp-eye f1" x="38.2" y="43" width="4.6" height="13" rx="2.3"/>'+
+          '<rect class="cp-eye f1" x="57.2" y="43" width="4.6" height="13" rx="2.3"/>'+
+        '</g>'+
+        '<rect class="cp-eye" x="38.2" y="43" width="4.6" height="13" rx="2.3" fill="#EAFFF7"/>'+
+        '<rect class="cp-eye" x="57.2" y="43" width="4.6" height="13" rx="2.3" fill="#EAFFF7"/>'+
+      '</g>'+
+    '</g>'+
+  '</svg>'; }
+
+// the incumbent, verbatim from nova.js — so the comparison is honest
+function currentSVG(id){ return ''+
+  '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="1" y2="1">'+
+      '<stop offset="0%" stop-color="#34E2B0"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient></defs>'+
+    '<g>'+
+      '<rect x="22" y="22" width="56" height="56" rx="16" transform="rotate(45 50 50)" fill="url(#'+id+')" opacity="0.95"/>'+
+      '<circle cx="42" cy="50" r="5.5" fill="#04130D"/><circle cx="58" cy="50" r="5.5" fill="#04130D"/>'+
+      '<circle cx="43.4" cy="48.5" r="1.6" fill="#fff"/><circle cx="59.4" cy="48.5" r="1.6" fill="#fff"/>'+
+    '</g>'+
+  '</svg>'; }
+
+var CANDIDATES=[
+  { id:'ap', name:'Aperture', kind:'Instrument · no face', svg:apertureSVG,
+    why:'A lens that attends to you. Rings, ticks and an iris that breathes and drifts when she looks — attention without a face. It is the most premium thing here and it belongs beside Instrument Serif.',
+    says:'“I am a precision instrument pointed at your life.”' },
+  { id:'pu', name:'Pulse', kind:'Instrument · no face', svg:pulseSVG,
+    why:'Your app mark, alive. The exact heartbeat path from icon.svg, with a bright run travelling it and the node firing at the peak. Nova is the same waveform as the app because she IS the app paying attention.',
+    says:'“I am your pulse. When you move, I move.”' },
+  { id:'gm', name:'Facet', kind:'Instrument · no face', svg:gemSVG,
+    why:'The gem you already built in nova-gem.js, cut down to cheap SVG so it can live on all 22 pages. Light crosses the facets, it leans when it looks. Familiar silhouette, no eyes, no WebGL.',
+    says:'“I am something precious you carry.”' },
+  { id:'cp', name:'Companion', kind:'Face · warmth kept', svg:companionSVG,
+    why:'The face, done properly. A calm squircle instead of the kite, and the light inverted: a dark body with luminous eyes, so she reads as a creature made of light rather than a sticker with dots. Blinks, looks, floats.',
+    says:'“I am someone who is on your side.”' },
+  { id:'cur', name:'Current Nova', kind:'The incumbent', svg:currentSVG,
+    why:'What ships today, pasted here verbatim from nova.js. A rotated rounded square with two black eyes and catch-lights. Look at it beside the others and the problem is obvious: it is the last cartoon in a premium instrument.',
+    says:'“I was drawn before you knew what this app was.”' }
+];
+
+/* ── build ── */
+var grid=document.getElementById('grid');
+CANDIDATES.forEach(function(c){
+  var card=document.createElement('div');
+  card.className='card'; card.dataset.id=c.id;
+  card.innerHTML=
+    '<div class="card-top">'+
+      '<div class="stage"><div class="nv" data-body="'+c.id+'">'+c.svg(c.id+'H')+'</div></div>'+
+      '<div class="meta">'+
+        '<div class="name">'+c.name+'</div>'+
+        '<div class="kind'+(c.kind.indexOf('Face')===0?' face':'')+'">'+c.kind+'</div>'+
+        '<div class="why">'+c.why+'</div>'+
+        '<div class="says">'+c.says+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="foot">'+
+      '<div class="mock"><i></i><i></i><i></i>'+
+        '<div class="fabslot"><div class="nv" data-body="'+c.id+'">'+c.svg(c.id+'F')+'</div></div>'+
+      '</div>'+
+      '<div class="foot-note">at real size,<br>bottom-right<br>of every page</div>'+
+      '<button class="pick" type="button">Pick '+c.name+'</button>'+
+    '</div>';
+  card.querySelector('.stage').addEventListener('click', function(){
+    var n=card.querySelector('.stage .nv');
+    n.classList.remove('poke'); void n.offsetWidth; n.classList.add('poke');
+  });
+  card.querySelector('.pick').addEventListener('click', function(){
+    var was=card.classList.contains('picked');
+    Array.prototype.forEach.call(grid.children, function(k){ k.classList.remove('picked'); });
+    if(!was){ card.classList.add('picked');
+      try{ sessionStorage.setItem('nova_lab_pick', c.id); }catch(e){}
+    }
+  });
+  grid.appendChild(card);
+});
+
+/* ── mood + state ── */
+function setMood(m){
+  document.body.setAttribute('data-mood', m);
+  Array.prototype.forEach.call(document.querySelectorAll('.chip[data-set]'), function(b){
+    b.setAttribute('aria-pressed', String(b.dataset.set===m));
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll('.chip[data-set]'), function(b){
+  b.addEventListener('click', function(){ setMood(b.dataset.set); });
+});
+var thinkBtn=document.getElementById('thinkBtn');
+thinkBtn.addEventListener('click', function(){
+  var on=document.body.getAttribute('data-think')==='1';
+  document.body.setAttribute('data-think', on?'0':'1');
+  thinkBtn.setAttribute('aria-pressed', String(!on));
+});
+document.getElementById('lookBtn').addEventListener('click', function(){
+  document.body.setAttribute('data-look','1');
+  setTimeout(function(){ document.body.setAttribute('data-look','0'); }, 1500);
+});
+
+/* ── his real data, READ ONLY ─────────────
+   Same signals and the same thresholds nova.js already uses, so the mood this
+   page opens in is the mood Nova is actually in right now. Nothing is written,
+   no sync script is loaded: this page can only look. */
+function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function tk(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function signals(){
+  var h=new Date().getHours();
+  var wts=ls('po_coach_weights')||[];
+  var wToday=Array.isArray(wts)&&wts.some(function(e){ return e&&e.dateKey===tk(); });
+  var pw=ls('po_water_v1')||{}; var wc=((pw.logs||{})[tk()])||0;
+  var dawn=new Date(); dawn.setHours(0,0,0,0);
+  var caf=(ls('caf:logs')||[]).filter(function(l){ return l&&new Date(l.ts)>=dawn; }).reduce(function(s,l){ return s+(l.mg||0); },0);
+  var nut=(ls('nut:logs')||[]).filter(function(l){ return l&&(l.dateKey?l.dateKey===tk():new Date(l.ts)>=dawn); });
+  var kcal=nut.reduce(function(s,l){ return s+(l.kcal||0); },0);
+  var logged=(wToday?1:0)+(wc>0?1:0)+(caf>0?1:0)+(kcal>0?1:0);
+  return { h:h, wToday:wToday, caf:caf, logged:logged };
+}
+function moodOf(s){
+  if (s.h<12 && s.logged===0) return 'low';
+  if (s.caf>=400)             return 'alert';
+  if (s.logged>=3)            return 'hot';
+  if (s.wToday)               return 'hot';
+  return 'calm';
+}
+try{
+  var s=signals(), m=moodOf(s);
+  setMood(m);
+  document.getElementById('live').innerHTML='live · your data right now → <b>'+m+'</b>';
+}catch(e){
+  setMood('calm');
+  // never let a failed read look like a calm day — that confusion has cost this app days
+  document.getElementById('live').textContent='couldn’t read your data — showing Calm as a default, not as a reading';
+}
+})();
+</script>
+</body>
+</html>
