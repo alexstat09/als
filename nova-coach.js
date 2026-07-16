@@ -16,7 +16,12 @@
   function e1rm(w,r){ return (+w||0)*(1+(+r||0)/30); }
   function dawn(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
   function suppDayKey(){ var n=new Date(); if(n.getHours()<6) n.setDate(n.getDate()-1); return dk(n); }
-  function weekStartKey(){ var t=new Date(); t.setHours(0,0,0,0); var dow=(t.getDay()+6)%7; var s=new Date(t); s.setDate(t.getDate()-dow); return dk(s); }
+  function weekStartKey(){ return dk(mondayOf(new Date())); }
+  // Monday-first, like every other week in this app (gym, planner, home-live, run).
+  function mondayOf(d){ var x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
+  function weekKeysFrom(mon){ var out=[]; for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); out.push(dk(d)); } return out; }
+  // The week that has CLOSED — what a review reviews.
+  function lastClosedWeekKeys(){ var m=mondayOf(new Date()); m.setDate(m.getDate()-7); return weekKeysFrom(m); }
 
   var MT={Chest:14,Back:16,Shoulders:12,Arms:12,Legs:18,Core:9};
 
@@ -178,10 +183,14 @@
   }
 
   /* ════════ WEEKLY LETTER FROM NOVA — memory & reflection ════════ */
-  function weeklyLetter(){
+  /* A letter about a WEEK — Mon–Sun, closed. Not the trailing 7 days it used to
+     be: the caller (weekly.html) can browse weeks, and its cards and this prose
+     must describe the same seven days or the page argues with itself. Called
+     bare (nova.js's once-per-ISO-week nudge) it reviews the week that just
+     closed — which is what that Monday nudge was always promising. */
+  function weeklyLetter(keys){
     var byDay=dayRecords();
-    var today=new Date(), keys=[];
-    for(var i=6;i>=0;i--){ var d=new Date(today); d.setDate(d.getDate()-i); keys.push(dk(d)); }
+    if(!Array.isArray(keys) || keys.length!==7) keys=lastClosedWeekKeys();
     var workoutsN=0, vol=0, prs=0, recVals=[], sleepVals=[], protVals=[], days=0;
     keys.forEach(function(k){ var r=byDay[k]; if(!r) return; days++;
       if(r.trained){ workoutsN++; vol+=r.volume||0; } if(r.pr) prs++;

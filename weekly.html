@@ -39,7 +39,17 @@
   .wk-eyebrow .wk-dot{width:5px;height:5px;border-radius:50%;background:#9B8CFF;box-shadow: none;animation:wkBlink 2.4s ease-in-out infinite;}
   @keyframes wkBlink{0%,100%{opacity:1}50%{opacity:.3}}
   .wk-title{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(34px,9vw,52px);line-height:1.02;color:#F4F1EA;letter-spacing:-.01em;}
-  .wk-range{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.45);margin-top:8px;}
+  .wk-range{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.45);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .wk-wknum{font-size:9px;letter-spacing:.14em;color:rgba(244,241,234,.32);border:1px solid rgba(255,255,255,.09);border-radius:5px;padding:2px 6px;}
+  .wk-wknum-hi{color:rgba(155,140,255,.75);border-color:rgba(155,140,255,.28);}
+  /* week nav — the review can walk backwards; forward past the last closed week is nothing */
+  .wk-nav{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .wk-nav button{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(244,241,234,.55);border-radius:9px;cursor:pointer;font-size:13px;line-height:1;transition:color .2s,border-color .2s,opacity .2s;}
+  .wk-nav button:active:not(:disabled){color:#F4F1EA;border-color:rgba(155,140,255,.4);}
+  .wk-nav button:disabled{opacity:.28;cursor:default;}
+  .wk-nav button:focus-visible{outline:2px solid rgba(155,140,255,.6);outline-offset:2px;}
+  /* an empty week and an unreadable one must never look the same */
+  .wk-warn{margin-top:12px;border:1px solid rgba(255,107,139,.3);background:rgba(255,107,139,.07);border-radius:10px;padding:9px 12px;font-size:12.5px;line-height:1.45;color:#FF9DB2;}
 
   /* cards */
   .wk-card{position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 17px;margin-top:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -97,7 +107,12 @@
 
   <div class="wk-eyebrow"><span class="wk-dot"></span>WEEKLY REVIEW</div>
   <div class="wk-title">Your week</div>
-  <div class="wk-range" id="wkRange">—</div>
+  <div class="wk-nav">
+    <button id="wkPrev" type="button" aria-label="Previous week">&#8592;</button>
+    <button id="wkNext" type="button" aria-label="Next week">&#8594;</button>
+    <div class="wk-range" id="wkRange">—</div>
+  </div>
+  <div class="wk-warn" id="wkWarn" style="display:none"></div>
 
   <!-- Nova's letter -->
   <div class="wk-card wk-letter" id="wkLetterCard" style="display:none">
@@ -144,7 +159,16 @@
 <script>
 (function(){
 'use strict';
-function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+/* A key that is ABSENT and a key we FAILED to read both used to return the
+   fallback, so "you logged nothing that week" and "we couldn't read your data"
+   rendered as the same quiet dash. That confusion has cost this app real days.
+   Count the failures so the page can admit to them. */
+var _lsFail=0;
+function ls(k,f){
+  var raw; try{ raw=localStorage.getItem(k); }catch(e){ _lsFail++; return f; }
+  if(raw==null) return f;                                  // genuinely absent
+  try{ var v=JSON.parse(raw); return v==null?f:v; }catch(e){ _lsFail++; return f; }
+}
 function p2(n){ return n<10?'0'+n:''+n; }
 function dkOf(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
 function todayKey(){ return dkOf(new Date()); }
@@ -153,36 +177,89 @@ function r1(n){ return Math.round(n*10)/10; }
 var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// trailing 7-day window (today back to today-6)
-var windowKeys=[]; (function(){ var t=new Date(); for(var i=6;i>=0;i--){ var d=new Date(t); d.setDate(d.getDate()-i); windowKeys.push(dkOf(d)); } })();
-var startKey=windowKeys[0], endKey=windowKeys[windowKeys.length-1];
+/* ── The week ─────────────────────────────
+   A review reviews a week that has CLOSED. This used to be a trailing 7 days
+   ending today, which meant it never held still: open it Thursday and last
+   Friday was in, open it Friday and last Friday was gone. It also disagreed
+   with every other page here (gym, planner, home-live, run, arc all cut the
+   week at Monday) and with its own Monday 9am reminder, which promised a
+   week's insight and delivered Tue–Mon including a two-hour-old today.
+   So: Monday–Sunday, defaulting to the week that just ended, and you can walk
+   backwards. There is no forward past the last closed week — the current week
+   is not a review, it is a thing you are still living, and coach.html and the
+   home tiles already show it. */
+function mondayOf(d){ var x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; }
+function keysFrom(mon){ var out=[]; for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); out.push(dkOf(d)); } return out; }
+var LAST_CLOSED=(function(){ var m=mondayOf(new Date()); m.setDate(m.getDate()-7); return m; })();
+var viewMon=new Date(LAST_CLOSED);          // Monday of the week on screen
+var windowKeys=[], startKey='', endKey='', prevKeys=[], prevStartKey='', prevEndKey='';
+function setWeek(mon){
+  viewMon=new Date(mon);
+  windowKeys=keysFrom(viewMon); startKey=windowKeys[0]; endKey=windowKeys[6];
+  var pm=new Date(viewMon); pm.setDate(pm.getDate()-7);
+  prevKeys=keysFrom(pm); prevStartKey=prevKeys[0]; prevEndKey=prevKeys[6];
+}
 function inWindow(k){ return k>=startKey && k<=endKey; }
+function inPrev(k){ return k>=prevStartKey && k<=prevEndKey; }
+function isLatest(){ return viewMon.getTime()===LAST_CLOSED.getTime(); }
+// ISO week number — same maths as arc.html, so the two pages count weeks alike.
+function isoWeek(mon){ var x=new Date(mon); x.setDate(x.getDate()+3); var f=new Date(x.getFullYear(),0,4);
+  return 1+Math.round(((x-f)/86400000 - 3 + ((f.getDay()+6)%7))/7); }
 
 function set(id,html){ var el=document.getElementById(id); if(el) el.innerHTML=html; }
 
-/* ── range label ─────────────────────────── */
-(function(){
-  var s=startKey.split('-').map(Number), e=endKey.split('-').map(Number);
-  var sD=new Date(s[0],s[1]-1,s[2]), eD=new Date(e[0],e[1]-1,e[2]);
-  set('wkRange', DOW[sD.getDay()]+' '+sD.getDate()+' '+MON[sD.getMonth()]+'  —  '+DOW[eD.getDay()]+' '+eD.getDate()+' '+MON[eD.getMonth()]);
-})();
+/* ── range label + week nav ──────────────── */
+function fmtDay(dk){ var p=dk.split('-').map(Number), d=new Date(p[0],p[1]-1,p[2]);
+  return DOW[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]; }
+function loadRange(){
+  set('wkRange', fmtDay(startKey)+'  —  '+fmtDay(endKey)+
+    '<span class="wk-wknum">Week '+isoWeek(viewMon)+'</span>'+
+    (isLatest()? '<span class="wk-wknum wk-wknum-hi">Just ended</span>' : ''));
+  var nx=document.getElementById('wkNext'); if(nx) nx.disabled=isLatest();
+}
+function step(weeks){
+  var m=new Date(viewMon); m.setDate(m.getDate()+weeks*7);
+  if(m.getTime()>LAST_CLOSED.getTime()) return;   // a week that has not closed is not reviewable
+  setWeek(m); render();
+}
+
+/* ── week-over-week ───────────────────────
+   The whole point of a week that holds still: it can be compared to the one
+   before it. The old delta was the first vs last weigh-in INSIDE a sliding
+   window, so it moved when he happened to step on the scale, not when his
+   weight did. Averages vs averages across two fixed weeks is the real number. */
+function num(n,dp){ var f=Math.pow(10,dp||0); return (Math.round(n*f)/f).toLocaleString(); }
+function deltaHTML(cur,prev,o){
+  o=o||{};
+  if(cur==null||prev==null) return '<div class="wk-delta flat">'+(o.noPrev||'Nothing logged the week before to compare')+'</div>';
+  var d=cur-prev, flat=Math.abs(d)<=(o.eps||0);
+  var cls=(flat||o.neutral)?'flat':(((d>0)===!o.lowerIsBetter)?'good':'bad');
+  var txt=flat?'→ level with the week before'
+              :(d>0?'↑ +':'↓ ')+num(Math.abs(d),o.dp)+(o.unit||'')+' vs the week before';
+  return '<div class="wk-delta '+cls+'">'+txt+'</div>';
+}
+// On a week he can still act on, an empty card should offer the door. On a week
+// from a month ago it would just be a lie — you cannot go and log that Tuesday.
+function cta(href,label){ return isLatest()?' <a href="'+href+'">'+label+' →</a>':''; }
 
 /* ── Weight ──────────────────────────────── */
 function loadWeight(){
   var w=(ls('po_coach_weights',[])||[]).filter(function(e){return e&&typeof e.weight==='number'&&e.dateKey;}).sort(function(a,b){return a.dateKey<b.dateKey?-1:1;});
   var u=(ls('po_coach_v1',{})||{}).units||'kg';
-  if(!w.length){ set('wkWeightBody','<div class="wk-empty">No weigh-ins yet. <a href="weight.html">Log your weight →</a></div>'); return; }
+  if(!w.length){ set('wkWeightBody','<div class="wk-empty">No weigh-ins yet.'+cta('weight.html','Log your weight')+'</div>'); return; }
   var inWin=w.filter(function(e){return inWindow(e.dateKey);});
-  var last=w[w.length-1];
-  var delta=null; if(inWin.length>=2) delta=r1(inWin[inWin.length-1].weight-inWin[0].weight);
-  var dCls=delta==null?'flat':(delta<-0.05?'good':(delta>0.05?'bad':'flat'));
-  var dTxt=delta==null?'Only one weigh-in this week':((delta>0?'↑ +':(delta<0?'↓ ':'→ '))+(delta!==0?Math.abs(delta):'0')+' '+u+' this week');
-  var spk=sparkline(w.slice(-10).map(function(e){return e.weight;}));
+  if(!inWin.length){ set('wkWeightBody','<div class="wk-empty">No weigh-ins this week.'+cta('weight.html','Log your weight')+'</div>'); return; }
+  var inPv=w.filter(function(e){return inPrev(e.dateKey);});
+  var last=inWin[inWin.length-1];  // the last time he actually stood on the scale that week
+  var vals=function(a){ return a.map(function(e){return e.weight;}); };
+  var curAvg=avg(vals(inWin)), pvAvg=inPv.length?avg(vals(inPv)):null;
+  // never let a browsed week show a line drawn from weeks that hadn't happened yet
+  var spk=sparkline(vals(w.filter(function(e){return e.dateKey<=endKey;}).slice(-10)));
   set('wkWeightBody',
     '<div class="wk-big">'+last.weight+' <span class="u">'+u+'</span></div>'+
-    '<div class="wk-sub">'+inWin.length+' weigh-in'+(inWin.length===1?'':'s')+' this week</div>'+
+    '<div class="wk-sub">'+inWin.length+' weigh-in'+(inWin.length===1?'':'s')+' · avg '+r1(curAvg)+' '+u+'</div>'+
     spk+
-    '<div class="wk-delta '+dCls+'">'+dTxt+'</div>');
+    deltaHTML(curAvg,pvAvg,{unit:' '+u,dp:1,eps:0.05,lowerIsBetter:true,noPrev:'No weigh-ins the week before'}));
 }
 function sparkline(vals){
   if(vals.length<2) return '';
@@ -199,13 +276,17 @@ function sparkline(vals){
 
 /* ── Nutrition ───────────────────────────── */
 var _nutAvgKcal=null,_nutAvgProt=null,_nutTarget=null;
-function loadNut(){
-  var logs=ls('nut:logs',[])||[];
-  var byDay={};
-  logs.forEach(function(l){ if(!l) return; var dk=l.dateKey||null; if(!dk||!inWindow(dk)) return;
+function nutByDay(pred){
+  var logs=ls('nut:logs',[])||[], byDay={};
+  // bucket by dateKey (the day the food is FOR), never by ts — house rule
+  logs.forEach(function(l){ if(!l) return; var dk=l.dateKey||null; if(!dk||!pred(dk)) return;
     var d=byDay[dk]||(byDay[dk]={kcal:0,p:0}); d.kcal+=l.kcal||0; d.p+=l.p||0; });
+  return byDay;
+}
+function loadNut(){
+  var byDay=nutByDay(inWindow);
   var days=Object.keys(byDay);
-  if(!days.length){ set('wkNutBody','<div class="wk-empty">No food logged this week. <a href="nutrition.html">Start logging →</a></div>'); return; }
+  if(!days.length){ set('wkNutBody','<div class="wk-empty">No food logged this week.'+cta('nutrition.html','Start logging')+'</div>'); return; }
   var kArr=days.map(function(k){return byDay[k].kcal;}), pArr=days.map(function(k){return byDay[k].p;});
   var avgK=Math.round(avg(kArr)), avgP=Math.round(avg(pArr));
   _nutAvgKcal=avgK; _nutAvgProt=avgP;
@@ -221,11 +302,15 @@ function loadNut(){
   if(!tgt) tgt=Math.round(wkg*32);
   _nutTarget=tgt;
   var onTarget=days.filter(function(k){ return Math.abs(byDay[k].kcal/tgt-1)<=0.10; }).length;
+  var pv=nutByDay(inPrev), pvDays=Object.keys(pv);
+  var pvK=pvDays.length?avg(pvDays.map(function(k){return pv[k].kcal;})):null;
   set('wkNutBody',
     '<div class="wk-big">'+avgK+' <span class="u">kcal/day</span></div>'+
     '<div class="wk-sub">avg over '+days.length+' logged day'+(days.length===1?'':'s')+' · target '+tgt+'</div>'+
     '<div class="wk-row2"><div><div class="k">Avg protein</div><div class="v">'+avgP+'g</div></div>'+
-    '<div><div class="k">Days on target</div><div class="v">'+onTarget+'/'+days.length+'</div></div></div>');
+    '<div><div class="k">Days on target</div><div class="v">'+onTarget+'/'+days.length+'</div></div></div>'+
+    // neutral: over or under is only good or bad against the target, never on its own
+    deltaHTML(avgK,pvK,{unit:' kcal/day',neutral:true,eps:20,noPrev:'No food logged the week before'}));
 }
 function weightKg(){
   var w=(((ls('po_water_v1',{})||{}).profile)||{}).weightKg; if(w) return w;
@@ -237,8 +322,10 @@ function weightKg(){
 var _sessions=0,_avgSleep=null;
 var MTARGET={Chest:14,Back:16,Shoulders:12,Arms:12,Legs:18,Core:9};
 function loadTrain(){
-  var workouts=(ls('po_workouts',[])||[]).filter(function(w){return w&&w.date&&inWindow(w.date);});
-  if(!workouts.length){ set('wkTrainBody','<div class="wk-empty">No workouts logged this week. <a href="gym.html">Open Fitness →</a></div>'); return; }
+  var all=(ls('po_workouts',[])||[]).filter(function(w){return w&&w.date;});
+  var workouts=all.filter(function(w){return inWindow(w.date);});
+  var pvN=all.filter(function(w){return inPrev(w.date);}).length;
+  if(!workouts.length){ set('wkTrainBody','<div class="wk-empty">No workouts logged this week.'+cta('gym.html','Open Fitness')+'</div>'); return; }
   _sessions=workouts.length;
   var vol=0,prs=0,muscle={};
   workouts.forEach(function(w){ vol+=w.volume||0; prs+=(w.prs&&w.prs.length)||0;
@@ -251,15 +338,26 @@ function loadTrain(){
     '<div class="wk-row2"><div><div class="k">Sessions</div><div class="v">'+_sessions+'</div></div>'+
     '<div><div class="k">Total volume</div><div class="v">'+Math.round(vol).toLocaleString()+' '+u+'</div></div>'+
     '<div><div class="k">New PRs</div><div class="v">'+prs+'</div></div></div>'+
-    (bars?'<div class="wk-muscles">'+bars+'</div>':''));
+    (bars?'<div class="wk-muscles">'+bars+'</div>':'')+
+    deltaHTML(_sessions,pvN?pvN:(inPrevHasAny()?0:null),
+      {unit:Math.abs(_sessions-pvN)===1?' session':' sessions',noPrev:'Nothing logged the week before'}));
+}
+// Did the previous week exist at all in his data? Distinguishes "he trained zero
+// times that week" (a real, comparable 0) from "there is nothing there to compare".
+function inPrevHasAny(){
+  if((ls('po_workouts',[])||[]).some(function(w){return w&&w.date&&inPrev(w.date);})) return true;
+  if(Object.keys(nutByDay(inPrev)).length) return true;
+  return (ls('sleep:logs',[])||[]).some(function(e){return e&&e.dateKey&&inPrev(e.dateKey);});
 }
 
 /* ── Sleep ───────────────────────────────── */
 function loadSleep(){
-  var logs=(ls('sleep:logs',[])||[]).filter(function(e){return e&&e.dateKey&&inWindow(e.dateKey);});
+  var all=(ls('sleep:logs',[])||[]).filter(function(e){return e&&e.dateKey;});
+  var logs=all.filter(function(e){return inWindow(e.dateKey);});
+  var pvHrs=all.filter(function(e){return inPrev(e.dateKey)&&e.hours>0;}).map(function(e){return e.hours;});
   var hrs=logs.filter(function(e){return e.hours>0;}).map(function(e){return e.hours;});
   var rec=logs.filter(function(e){return e.recovery!=null;}).map(function(e){return e.recovery;});
-  if(!hrs.length && !rec.length){ set('wkSleepBody','<div class="wk-empty">No sleep logged this week. <a href="sleep.html">Log sleep →</a></div>'); return; }
+  if(!hrs.length && !rec.length){ set('wkSleepBody','<div class="wk-empty">No sleep logged this week.'+cta('sleep.html','Log sleep')+'</div>'); return; }
   var aH=hrs.length?avg(hrs):null; _avgSleep=aH;
   var aR=rec.length?Math.round(avg(rec)):null;
   var fmt=aH==null?'—':(Math.floor(aH)+'h'+(Math.round((aH-Math.floor(aH))*60)?' '+Math.round((aH-Math.floor(aH))*60)+'m':''));
@@ -267,7 +365,8 @@ function loadSleep(){
     '<div class="wk-big">'+fmt+'</div>'+
     '<div class="wk-sub">avg over '+hrs.length+' night'+(hrs.length===1?'':'s')+'</div>'+
     '<div class="wk-row2">'+(aR!=null?'<div><div class="k">Avg recovery</div><div class="v">'+aR+'/100</div></div>':'')+
-    '<div><div class="k">Nights logged</div><div class="v">'+hrs.length+'/7</div></div></div>');
+    '<div><div class="k">Nights logged</div><div class="v">'+hrs.length+'/7</div></div></div>'+
+    deltaHTML(aH,pvHrs.length?avg(pvHrs):null,{unit:'h',dp:1,eps:0.1,noPrev:'No sleep logged the week before'}));
 }
 
 /* ── Consistency (habits + goals + ideas) ── */
@@ -284,9 +383,13 @@ function loadCons(){
   var goalDays=0,goalSet=0;
   windowKeys.forEach(function(k){ var g=ls('goals:'+k,null); if(Array.isArray(g)&&g.length){ goalSet++; if(g.every(function(x){return x&&x.done;})) goalDays++; } });
   if(goalSet) parts.push('<div><div class="k">Goal days hit</div><div class="v">'+goalDays+'/'+goalSet+'</div></div>');
-  // ideas captured this week (id = creation ms)
-  var ideas=ls('ideas:items',[])||[]; var startMs=new Date(startKey+'T00:00:00').getTime();
-  var added=ideas.filter(function(i){ return i && typeof i.id==='number' && i.id>=startMs; }).length;
+  // Ideas captured in this week (id = creation ms). Bounded at BOTH ends: it was
+  // start-only, which was invisible while the window always ended today, but the
+  // moment you can browse to an older week it would count every idea since.
+  var ideas=ls('ideas:items',[])||[];
+  var startMs=new Date(startKey+'T00:00:00').getTime();
+  var endMs=new Date(endKey+'T00:00:00').getTime()+86400000;   // through the end of Sunday
+  var added=ideas.filter(function(i){ return i && typeof i.id==='number' && i.id>=startMs && i.id<endMs; }).length;
   if(added) parts.push('<div><div class="k">Ideas captured</div><div class="v">'+added+'</div></div>');
 
   if(!parts.length){ set('wkConsBody','<div class="wk-empty">Build habits in <a href="identity.html">Identity</a> to track consistency here.</div>'); return; }
@@ -296,8 +399,10 @@ function loadCons(){
 /* ── Nova's letter (reuse the coach engine) ── */
 function loadLetter(){
   if(!window.NovaCoach || !window.NovaCoach.letter) return false;
-  var L; try{ L=window.NovaCoach.letter(); }catch(e){ L=null; }
-  if(!L || !L.body || !L.body.length) return true; // engine ready but nothing to say
+  // the SAME seven days the cards above are describing — the letter used to
+  // compute its own trailing 7 and then write "this week" over the top of it
+  var L; try{ L=window.NovaCoach.letter(windowKeys); }catch(e){ L=null; }
+  if(!L || !L.body || !L.body.length){ hideLetter(); return true; } // engine ready but nothing to say
   document.getElementById('wkLetterTitle').textContent=L.title||'A letter from Nova';
   document.getElementById('wkLetterBody').innerHTML=L.body.map(function(s){ return '<p>'+esc(s)+'</p>'; }).join('');
   var card=document.getElementById('wkLetterCard'); card.style.display='';
@@ -323,11 +428,35 @@ function loadFocus(){
   set('wkFocusText', esc(msg));
 }
 
-/* ── Boot + staggered reveal ─────────────── */
+/* ── Render + boot ───────────────────────── */
+var _letterIv=null;
+function hideLetter(){ var c=document.getElementById('wkLetterCard'); if(c){ c.style.display='none'; c.classList.remove('in'); } }
+function render(){
+  _lsFail=0; _nutAvgKcal=null; _nutAvgProt=null; _nutTarget=null; _sessions=0; _avgSleep=null;
+  loadRange();
+  loadWeight(); loadNut(); loadTrain(); loadSleep(); loadCons();
+  // "Next week" only means something on the week that just ended. Browsing back
+  // to May, there is no next week left to aim at, so the card stands down.
+  var fc=document.getElementById('wkFocusCard');
+  if(fc) fc.style.display=isLatest()?'':'none';
+  if(isLatest()) loadFocus();
+  if(_letterIv){ clearInterval(_letterIv); _letterIv=null; }
+  hideLetter();
+  if(!loadLetter()){ var tries=0; _letterIv=setInterval(function(){
+    tries++; if(loadLetter()||tries>20){ clearInterval(_letterIv); _letterIv=null; } }, 200); }
+  var warn=document.getElementById('wkWarn');
+  if(warn){
+    warn.style.display=_lsFail?'':'none';
+    if(_lsFail) warn.textContent='Couldn’t read '+_lsFail+' of your saved '+(_lsFail===1?'record':'records')+
+      ' on this device, so this week may be missing data it actually has. This is a read problem, not an empty week — nothing has been lost or overwritten.';
+  }
+}
 function boot(){
-  loadWeight(); loadNut(); loadTrain(); loadSleep(); loadCons(); loadFocus();
-  var letterReady=loadLetter();
-  if(!letterReady){ var tries=0, iv=setInterval(function(){ tries++; if(loadLetter()||tries>20) clearInterval(iv); }, 200); }
+  setWeek(LAST_CLOSED);
+  var p=document.getElementById('wkPrev'), n=document.getElementById('wkNext');
+  if(p) p.addEventListener('click',function(){ step(-1); });
+  if(n) n.addEventListener('click',function(){ step(1); });
+  render();
   var cards=[document.getElementById('cardWeight'),document.getElementById('cardNut'),document.getElementById('cardTrain'),document.getElementById('cardSleep'),document.getElementById('cardCons'),document.getElementById('wkFocusCard')];
   cards.forEach(function(c,i){ if(c) setTimeout(function(){ c.classList.add('in'); }, 140+i*90); });
 }
@@ -335,6 +464,6 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 })();
 </script>
 <script src="nova.js" defer></script>
-<script src="nova-coach.js?v=19" defer></script>
+<script src="nova-coach.js?v=20" defer></script>
 </body>
 </html>
