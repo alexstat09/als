@@ -10,7 +10,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 
 ---
 
-## The 35 live pages
+## The 34 live pages
 
 **Home & shell**
 | Page | What it is |
@@ -67,9 +67,11 @@ itself to the bar via `--tbh` / `setTbh()`.
 
 **Tools** — `import.html` (MyFitnessPal), `import-strong.html` (Strong), `backup.html` (backup & restore).
 
-**Dev** — `icon-lab.html` (icon playground). Tracked, so it *is* live at
-`/icon-lab.html`, but nothing links to it and it isn't precached. Harmless;
-archive it if you ever want the root tighter.
+**The icon** — settled: **Pulse** (one heartbeat in the brand gradient) is the
+mark. It lives in `icon.svg` (`puBg` / `puStroke`), rasterised to `icon-192.png`,
+`icon-512.png` and `apple-touch-icon.png`. The chooser that picked it,
+`icon-lab.html`, is retired to `archive/` — the decision is made and the other
+three concepts (Nova Gem, Ribbon, Dawn) are rejected.
 
 ---
 
