@@ -3095,7 +3095,15 @@
       var tok=await peekToken();
       try{
         var r=await fetch('/api/run-reminders?peek=run', { headers: tok?{Authorization:'Bearer '+tok}:{}, cache:'no-store' });
-        if(!r.ok){ if(first) peekBanner(r.status===403?'Μόνο ο ιδιοκτήτης (σύνδεση ως Alex).':('Σφάλμα '+r.status), true); return; }
+        if(!r.ok){
+          /* 403 = this caller is not the owner. If peek was FORCED by ?peek=1 (the
+             home tile always asks for it), that means the runner tapped it — drop
+             the param and reload into her own normal app rather than stranding her
+             behind an error banner. The param is gone, so this cannot loop. */
+          if(r.status===403 && /[?&]peek=1\b/.test(location.search)){ location.replace('run.html'); return; }
+          if(first) peekBanner(r.status===403?'Μόνο ο ιδιοκτήτης (σύνδεση ως Alex).':('Σφάλμα '+r.status), true);
+          return;
+        }
         var j=await r.json();
         if(window.__RUN_PEEK_SET) window.__RUN_PEEK_SET((j&&j.data)||{});
         render();
