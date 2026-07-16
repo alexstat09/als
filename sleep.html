@@ -1518,6 +1518,33 @@
     // that land from another device get scored on the same scale before render.
     window._sleepRerender = function(){ backfillScores(); renderAll(); };
 
+    /* Merge what her watch measured into her nights. Lives INSIDE the IIFE, with
+       the data model it touches — getLogs/lsSave/recomputeDerived are all scoped
+       here — and is exposed as the one narrow entry point the inbox drain calls.
+       THE RULE: fill only what a watch can measure. bed / wake / latency / wakes /
+       notes are HERS and are never touched; the watch has no opinion on them. A
+       sync that quietly overwrites a human's own input is the exact failure this
+       project keeps paying for.
+       Returns the number of fields changed, so the caller can stay idempotent and
+       not flush or re-render for nothing. */
+    window._sleepApplyWellness = function(items){
+      if (!Array.isArray(items) || !items.length) return 0;
+      var logs = getLogs(), byDk = {}, changed = 0;
+      logs.forEach(function(e){ if (e && e.dateKey) byDk[e.dateKey] = e; });
+      items.forEach(function(it){
+        if (!it || !it.dateKey) return;
+        var e = byDk[it.dateKey], touched = 0;
+        if (!e){ e = { id:'sl-'+it.dateKey, dateKey:it.dateKey }; logs.push(e); byDk[it.dateKey] = e; }
+        ['asleepMeasured','restingHR','hrv','garminScore'].forEach(function(f){
+          if (it[f] != null && e[f] !== it[f]){ e[f] = it[f]; touched++; }
+        });
+        if (touched){ e.src = 'garmin'; recomputeDerived(e); e.ts = Date.now(); changed += touched; }
+      });
+      if (!changed) return 0;
+      lsSave(KEY, logs);
+      return changed;
+    };
+
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) renderAll(); });
     window.addEventListener('storage', renderAll);
     window.addEventListener('focus', renderAll);
@@ -1528,7 +1555,60 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="sync.js" defer></script>
   <script>
+    /* ── Garmin wellness inbox ────────────────────────────────────────────────
+       The courier (api/run-reminders.js) publishes a rolling snapshot of what her
+       watch measured into a 'sleep:inbox' row on HER account: asleepMeasured,
+       restingHR, hrv, and Garmin's own verdict as garminScore. Drain it here.
+
+       THE RULE: fill only what a watch can measure, and NEVER overwrite anything
+       she typed. bed / wake / latency / wakes / notes are hers; the watch has no
+       opinion on them. A sync that quietly overwrites a human's input is the
+       failure mode this project keeps paying for.
+
+       Reads with HER session JWT, never the bare anon key — under RLS the anon key
+       returns EMPTY on a fresh device, which is exactly how a fresh phone once
+       looked like it had lost every weigh-in. `Bearer (token || KEY)`, same as
+       run.html's inbox drain. If there is no session yet, don't call at all.       */
+    var SB_URL = 'https://oiyvadqfldwbjroiknjc.supabase.co';
+    var SB_KEY = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
+    var SB_TOKEN = null;
+    async function sbToken(){
+      if (SB_TOKEN) return SB_TOKEN;
+      try {
+        var c = window.__alsAuthClient || (window.supabase && window.supabase.createClient(SB_URL, SB_KEY));
+        if (!c) return null;
+        window.__alsAuthClient = c;
+        var s = await c.auth.getSession();
+        SB_TOKEN = s && s.data && s.data.session && s.data.session.access_token;
+        return SB_TOKEN;
+      } catch(e){ return null; }
+    }
+    async function drainWellness(){
+      try {
+        var tok = await sbToken();
+        if (!tok) return;                       // signed out → RLS would answer empty; don't pretend
+        var r = await fetch(SB_URL + '/rest/v1/app_state?select=data&key=eq.sleep%3Ainbox',
+          { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + tok }, cache: 'no-store' });
+        if (!r.ok) return;
+        var rows = await r.json();
+        var box = rows && rows[0] && rows[0].data;
+        var items = box && Array.isArray(box.items) ? box.items : [];
+        if (!items.length) return;
+
+        // The merge lives inside the page's IIFE with the data model it touches;
+        // this block only fetches and hands off. (getLogs/lsSave/recomputeDerived
+        // are NOT in scope out here — reaching for them would throw.)
+        if (typeof window._sleepApplyWellness !== 'function') return;
+        var changed = window._sleepApplyWellness(items);
+        if (!changed) return;                   // idempotent: a re-drain writes nothing
+        if (window.ALSSync && window.ALSSync.flush) window.ALSSync.flush();
+        if (window._sleepRerender) window._sleepRerender();
+      } catch(e){}
+    }
+
     document.addEventListener('DOMContentLoaded', function(){
+      drainWellness();
+      window.addEventListener('focus', drainWellness);
       function start(){
         if (typeof initCloudSync !== 'function'){ setTimeout(start, 200); return; }
         initCloudSync({
