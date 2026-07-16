@@ -464,12 +464,14 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
-  // run.html is Chrissie's standalone running app — no cross-app nav (keeps her
-  // out of the rest of the private dashboard). Auth + ambient scripts still load.
+  // run.html now lives inside the full app (Chrissie has her own account), so it
+  // gets the shared top bar — and with it the identical Back button — just like
+  // every other page. It keeps its own 5-tab .rn-tabs nav, so it skips the global
+  // bottom bar (same treatment as gym.html) to avoid a doubled-up bottom nav.
   function isRunSolo() {
     return (window.location.pathname || '').toLowerCase().endsWith('run.html');
   }
-  function shouldShowChrome() { return !isEmbedded() && !isRunSolo(); }
+  function shouldShowChrome() { return !isEmbedded(); }
   // Maps the current page to one of the five bottom-nav "spaces" so the right
   // tab highlights. Pages outside the bar (Life/Reflect) return '' (no tab lit).
   function currentPageKey() {
@@ -501,7 +503,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     const topWrap = document.createElement('div');
     topWrap.innerHTML = topbarHtml.trim();
     document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
-    if (!isGymPage()) {
+    if (!isGymPage() && !isRunSolo()) {
       const bottomWrap = document.createElement('div');
       bottomWrap.innerHTML = bottombarHtml.trim();
       document.body.appendChild(bottomWrap.firstChild);
