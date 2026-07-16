@@ -3105,7 +3105,16 @@
           return;
         }
         var j=await r.json();
+        /* Her data has arrived, so there MUST be somewhere to put it. This used to
+           read `if (window.__RUN_PEEK_SET) …` — which silently dropped 150KB of her
+           runs on the floor whenever the shadow had not been installed, and then
+           rendered the welcome screen as if she had never run. A guard that skips
+           the work is not a guard; it is a data loss with a polite face.
+           Install on demand: it is idempotent, and this is the only place that
+           needs it to exist. */
+        if(!window.__RUN_PEEK_SET && window.__RUN_PEEK_INSTALL) window.__RUN_PEEK_INSTALL();
         if(window.__RUN_PEEK_SET) window.__RUN_PEEK_SET((j&&j.data)||{});
+        else { peekBanner('👁 Σφάλμα: το read-only store δεν φορτώθηκε.', true); return; }
         render();
         if(first){
           peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
@@ -3160,7 +3169,7 @@
     var __modeResolved = null;
     function __resolveMode(){
       if (__modeResolved) return __modeResolved;
-      if (__RUN_PEEK){ startPeek(); __modeResolved = Promise.resolve(true); return __modeResolved; }
+      if (__RUN_PEEK){ window.__RUN_PEEK_INSTALL(); startPeek(); __modeResolved = Promise.resolve(true); return __modeResolved; }
       __modeResolved = peekProbe().then(function(isOwner){
         if (!isOwner){ icuSync(); return false; }
         __RUN_PEEK = true;
