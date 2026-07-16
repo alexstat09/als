@@ -893,26 +893,33 @@
       }catch(e){}
       return found;
     }
-    /* The shadow, installable on demand and idempotent. The browser cannot reliably
-       tell who is signed in, so the SERVER decides (see __resolveMode at boot) and
-       may switch peek on after the page has already started. */
+    /* ── Read-only peek store ────────────────────────────────────────────────
+       This used to monkey-patch localStorage.getItem/setItem to shadow run:* keys.
+       That works in Chrome (Alex's PC) and NOT in Safari (his laptop web app):
+       Storage is an exotic object there, and assigning to it can be swallowed or
+       treated as storing an ITEM rather than overriding the method. So her 150KB of
+       runs arrived, went into a store nothing could read, and the page rendered
+       "she has never run". Same wrong-looking-right failure as the anon-key bug.
+       The lesson: never patch the platform when you can add one indirection of your
+       own. Every run:* read/write in this file now goes through lsGet/lsSet/lsRem,
+       which consult this store first while peeking. Reads come from her fetched
+       data; writes die in memory and never touch disk or any account. */
     var __RUN_PEEK = /[?&]peek=1\b/.test(location.search) || __ownerSignedIn();
+    var __peekStore = null;                 // non-null == peek mode
     window.__RUN_PEEK_INSTALL = function(){
-      if (window.__RUN_PEEK_SET) return;   // already installed
+      if (!__peekStore) __peekStore = {};
       window.__RUN_PEEK = true;
-      (function(){
-        var store = {};
-        var oGet = localStorage.getItem.bind(localStorage);
-        var oSet = localStorage.setItem.bind(localStorage);
-        var oRem = localStorage.removeItem.bind(localStorage);
-        function isRun(k){ return typeof k === 'string' && k.indexOf('run:') === 0; }
-        localStorage.getItem = function(k){ return isRun(k) ? (k in store ? store[k] : null) : oGet(k); };
-        localStorage.setItem = function(k,v){ if (isRun(k)) { store[k] = String(v); return; } return oSet(k,v); };
-        localStorage.removeItem = function(k){ if (isRun(k)) { delete store[k]; return; } return oRem(k); };
-        window.__RUN_PEEK_SET = function(data){
-          try { Object.keys(data||{}).forEach(function(k){ if (k.indexOf('run:') === 0) { var v = data[k]; store[k] = (typeof v === 'string') ? v : JSON.stringify(v); } }); } catch(e){}
-        };
-      })();
+    };
+    window.__RUN_PEEK_SET = function(data){
+      if (!__peekStore) __peekStore = {};   // data must never arrive with nowhere to go
+      try {
+        Object.keys(data||{}).forEach(function(k){
+          if (k.indexOf('run:') !== 0) return;
+          var v = data[k];
+          __peekStore[k] = (typeof v === 'string') ? v : JSON.stringify(v);
+        });
+        return Object.keys(__peekStore).length;
+      } catch(e){ return -1; }
     };
     if (__RUN_PEEK) window.__RUN_PEEK_INSTALL();
 
@@ -920,14 +927,31 @@
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
     function pad(n){ return String(n).padStart(2,'0'); }
-    function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
-    function loadObj(k){ var o; try{ o=JSON.parse(localStorage.getItem(k)); }catch(e){ o=null; } return (o&&typeof o==='object')?o:{}; }
+    /* The ONLY storage accessors this file may use for run:* keys. While peeking,
+       __peekStore answers instead of the disk — no platform patching, so this
+       behaves identically in Safari and Chrome. Outside peek they are plain
+       localStorage with the try/catch the app already needed. */
+    function __isRunKey(k){ return typeof k === 'string' && k.indexOf('run:') === 0; }
+    function lsGet(k){
+      if (__peekStore && __isRunKey(k)) return (k in __peekStore) ? __peekStore[k] : null;
+      try { return localStorage.getItem(k); } catch(e){ return null; }
+    }
+    function lsSet(k,v){
+      if (__peekStore && __isRunKey(k)) { __peekStore[k] = String(v); return true; }   // peek writes die here
+      try { localStorage.setItem(k, v); return true; } catch(e){ return false; }
+    }
+    function lsRem(k){
+      if (__peekStore && __isRunKey(k)) { delete __peekStore[k]; return; }
+      try { localStorage.removeItem(k); } catch(e){}
+    }
+    function loadArr(k){ var a; try{ a=JSON.parse(lsGet(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
+    function loadObj(k){ var o; try{ o=JSON.parse(lsGet(k)); }catch(e){ o=null; } return (o&&typeof o==='object')?o:{}; }
     /* returns false if the write failed (e.g. storage full) so callers stop
        claiming "saved ✓" when nothing was written. Warn her to free space
        instead of losing the run silently behind a fake success toast. */
-    function persist(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }
-      catch(e){ try{ if(window.ALSToast) ALSToast.show('Ο χώρος στο τηλέφωνο γέμισε — ελευθέρωσε λίγο. Storage full.','error'); }catch(_){}
-        return false; } }
+    function persist(k,v){ if(!lsSet(k,JSON.stringify(v))){
+        try{ if(window.ALSToast) ALSToast.show('Ο χώρος στο τηλέφωνο γέμισε — ελευθέρωσε λίγο. Storage full.','error'); }catch(_){}
+        return false; } return true; }
     function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
 
     /* ── date helpers (local, Monday-first weeks) ── */
@@ -2352,14 +2376,14 @@
 
     var K_WX='run:wx', wxFetching=false;
     /* fd guards out stale caches fetched with fewer forecast days */
-    function loadWx(){ try{ var c=JSON.parse(localStorage.getItem(K_WX)); if(c&&c.hours&&c.hours.length&&c.fd===4) return c; }catch(e){} return null; }
+    function loadWx(){ try{ var c=JSON.parse(lsGet(K_WX)); if(c&&c.hours&&c.hours.length&&c.fd===4) return c; }catch(e){} return null; }
     function hydrateWx(c){ return c.hours.map(function(h){ return {time:new Date(h.t), temp:h.temp, rh:h.rh, uv:h.uv, feels:h.feels, code:h.code}; }); }
     function fetchWeather(){ if(wxFetching) return; wxFetching=true;
       var url='https://api.open-meteo.com/v1/forecast?latitude=36.4349&longitude=28.2176&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code&timezone=auto&forecast_days=4';
       fetch(url).then(function(r){ return r.json(); }).then(function(j){
         if(!j||!j.hourly||!j.hourly.time) throw 0; var H=j.hourly;
         var hours=H.time.map(function(t,i){ return { t:t, temp:H.temperature_2m[i], rh:H.relative_humidity_2m[i], uv:H.uv_index?H.uv_index[i]:null, feels:H.apparent_temperature?H.apparent_temperature[i]:null, code:H.weather_code?H.weather_code[i]:null }; });
-        try{ localStorage.setItem(K_WX, JSON.stringify({ fetchedAt:Date.now(), fd:4, hours:hours })); }catch(e){}
+        lsSet(K_WX, JSON.stringify({ fetchedAt:Date.now(), fd:4, hours:hours }));
         wxFetching=false; renderHeat(); renderNext(); renderBeat();
       }).catch(function(){ wxFetching=false; var b=$('heatBody'); if(b&&!loadWx()) b.innerHTML='<div class="rn-empty">Ο καιρός δεν φόρτωσε. Weather unavailable right now.</div>'; });
     }
@@ -2392,7 +2416,7 @@
       if(dot){ dot.setAttribute('cx',best.x.toFixed(1)); dot.setAttribute('cy',best.y.toFixed(1)); dot.setAttribute('opacity','1'); }
       if(out){ var lf=Math.max(9,Math.min(91,(best.x/WX_W)*100)); out.style.left=lf.toFixed(1)+'%';
         out.innerHTML=hhmm(best.time)+' · <b>'+Math.round(best.temp)+'°</b>'; out.classList.add('on'); }
-      try{ localStorage.setItem('run:wxHint','1'); }catch(e){}
+      lsSet('run:wxHint','1');
     }
     function heatScrubEnd(){ var line=document.getElementById('wxScrubLine'), dot=document.getElementById('wxScrubDot'), out=document.getElementById('wxScrub');
       if(line) line.setAttribute('opacity','0'); if(dot) dot.setAttribute('opacity','0'); if(out) out.classList.remove('on'); }
@@ -2433,7 +2457,7 @@
       }
       wxPts = cv ? cv.pts : null;
       /* the drag-hint teaches once; after she's scrubbed, it retires for good */
-      var hintDone=false; try{ hintDone=localStorage.getItem('run:wxHint')==='1'; }catch(e){}
+      var hintDone = lsGet('run:wxHint')==='1';
       var ticks=''; if(cv){ ticks='<div class="rn-wx-ticks">'+[0,5,10,15].map(function(k){ var p=cv.pts[k]; return p?('<span>'+hhmm(p.time)+'</span>'):''; }).join('')+'</div>'+(hintDone?'':'<div class="rn-wx-hint">σύρε το δάχτυλο στην καμπύλη · drag along the curve</div>'); }
       var wl=wcodeLabel(cur.code), sl=shiftLabel(shift);
       var verdict, sub;
@@ -2994,7 +3018,7 @@
     function showView(v){ if(VIEWS.indexOf(v)<0) v='today';
       VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) el.classList.toggle('hidden', id!==v); });
       Array.prototype.forEach.call($('rnTabs').children, function(b){ var on=b.getAttribute('data-view')===v; b.classList.toggle('on', on); b.setAttribute('aria-selected', on?'true':'false'); });
-      try{ localStorage.setItem('run:view', v); }catch(e){} window.scrollTo(0,0);
+      lsSet('run:view', v); window.scrollTo(0,0);
       if(v==='runs') requestAnimationFrame(animateRunHero);
       requestAnimationFrame(function(){ animateNumbersIn(v); });
     }
@@ -3002,7 +3026,7 @@
     function setTbh(){ var tb=document.querySelector('.topbar'); if(tb&&tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight+'px'); }
     (function tbhTick(n){ setTbh(); if(n<6) setTimeout(function(){ tbhTick(n+1); }, 300); })(0);
     window.addEventListener('resize', setTbh);
-    (function(){ var v='today'; try{ v=localStorage.getItem('run:view')||'today'; }catch(e){} showView(v); })();
+    (function(){ var v = lsGet('run:view') || 'today'; showView(v); })();
 
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
@@ -3031,7 +3055,7 @@
     }
     function icuHdr(extra){ var h={ apikey:ICU_SB_KEY, Authorization:'Bearer '+(ICU_TOKEN||ICU_SB_KEY) }; if(extra){ for(var k in extra) h[k]=extra[k]; } return h; }
     function icuToast(msg){ try{ if(window.ALSToast){ ALSToast.show(msg); return; } }catch(e){} toast('lgToast',msg); }
-    function icuSeenGet(){ try{ var a=JSON.parse(localStorage.getItem('run:icuSeen')); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+    function icuSeenGet(){ try{ var a=JSON.parse(lsGet('run:icuSeen')); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
     function icuB64ToBytes(b64){ try{ var bin=atob(b64), n=bin.length, u=new Uint8Array(n); for(var i=0;i<n;i++) u[i]=bin.charCodeAt(i); return u; }catch(e){ return null; } }
     async function icuAck(seenIds){
       try{ await icuEnsureToken(); await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict=key', { method:'POST',
@@ -3059,16 +3083,16 @@
         ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
         if(fresh.length||ups.length){ if(!persist(K_LOGS,logs)) return; flush(); }   // storage full: persist warned; don't ack, retry later
         var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
-        try{ localStorage.setItem('run:icuSeen', JSON.stringify(newSeen)); }catch(e){}
+        lsSet('run:icuSeen', JSON.stringify(newSeen));
         icuAck(newSeen);                                          // tell the server it can prune these from the inbox
         if(addedN>0){ render(); icuToast('Νέο τρέξιμο από το ρολόι ✓'+(addedN>1?(' · '+addedN):'')); }
         else if(ups.length>0){ render(); icuToast('Χάρτης αναβαθμίστηκε ✓ από το ρολόι'); }
       }catch(e){}
     }
     async function icuMaybeServerCheck(){
-      try{ var last=0; try{ last=+localStorage.getItem('run:icuPoll')||0; }catch(e){}
+      try{ var last=0; try{ last=+lsGet('run:icuPoll')||0; }catch(e){}
         if(Date.now()-last < 8*60000) return;                    // throttle the intervals poll to ≤ once / 8 min; hourly cron covers the rest
-        try{ localStorage.setItem('run:icuPoll', String(Date.now())); }catch(e){}
+        lsSet('run:icuPoll', String(Date.now()));
         await fetch('/api/run-reminders?icu=1', { cache:'no-store' });
       }catch(e){}
     }
@@ -3130,7 +3154,7 @@
             var got = 0, sample = '';
             try {
               got = Object.keys((j && j.data) || {}).filter(function(k){ return k.indexOf('run:')===0; }).length;
-              var raw = localStorage.getItem(K_LOGS);
+              var raw = lsGet(K_LOGS);
               sample = 'store:logs=' + (raw === null ? 'NULL' : (typeof raw + '/' + String(raw).length));
             } catch(e){ sample = 'store:ERR'; }
             peekBanner(d
