@@ -256,33 +256,14 @@ module.exports = async function (req, res) {
     if (req.query.peek !== 'run' || !supa.RUNNER_ID) { res.status(400).json({ error: 'unknown peek target' }); return; }
     var runRow = await supa.readRow('run', supa.RUNNER_ID);
     res.setHeader('Cache-Control', 'no-store');
-    // _diag: this has now silently answered 200-with-{} once, which is
-    // indistinguishable from "she has no runs". readRow() returns {} both when the
-    // row is missing AND on any error, so the empty case must say WHY. Ids are
-    // truncated to 8 chars: enough to tell them apart, not enough to be a secret.
-    // Owner-only endpoint, so this leaks nothing.
+    // `keys` survives the 2026-07-16 debugging as the one number worth keeping:
+    // readRow() returns {} for a missing row, a wrong RUNNER_ID and an error
+    // alike, so without it "she has no runs" and "this is broken" look identical
+    // from the client. That ambiguity cost a day. Owner-gated; leaks nothing.
     res.status(200).json({
       appKey: 'run',
       data: runRow || {},
-      _diag: {
-        keys: Object.keys(runRow || {}).length,
-        runKeys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length,
-        runner: supa.RUNNER_ID ? supa.RUNNER_ID.slice(0, 8) : null,
-        owner: supa.OWNER_ID ? supa.OWNER_ID.slice(0, 8) : null,
-        // If these are equal, RUNNER_ID is misconfigured to Alex and the peek is
-        // reading his own fossil row instead of hers.
-        sameId: !!(supa.RUNNER_ID && supa.OWNER_ID && supa.RUNNER_ID === supa.OWNER_ID),
-        // keys=7/run=6 proved the row exists and the data IS sent, yet the page
-        // renders the welcome state — so the loss is client-side. Report each
-        // key's NAME, the TYPE it arrives as, and its SIZE: a present-but-empty
-        // key and a double-encoded string are indistinguishable from a count.
-        shape: Object.keys(runRow || {}).map(function (k) {
-          var v = runRow[k];
-          var t = Array.isArray(v) ? 'arr' : (v === null ? 'null' : typeof v);
-          var n = (typeof v === 'string') ? v.length : JSON.stringify(v === undefined ? null : v).length;
-          return k.replace(/^run:/, '') + '=' + t + '/' + n;
-        }).join(' ')
-      }
+      keys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length
     });
     return;
   }

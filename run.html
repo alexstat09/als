@@ -3143,22 +3143,14 @@
         if(first){
           peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
           if(!logs.length && !plan.length && !Object.keys(prof).length){
-            /* "No data" is the one answer that must never be silent: the server
-               returns {} for a missing row, a wrong RUNNER_ID and an error alike.
-               Say which, in the banner, instead of shrugging.
-               The server already proved the row exists and the keys are sent
-               (keys=7 run=6), so also report what the STORE actually holds after
-               __RUN_PEEK_SET — that isolates "never arrived" from "arrived and was
-               dropped on the way to render()". */
-            var d = j && j._diag;
-            var got = 0, sample = '';
-            try {
-              got = Object.keys((j && j.data) || {}).filter(function(k){ return k.indexOf('run:')===0; }).length;
-              var raw = lsGet(K_LOGS);
-              sample = 'store:logs=' + (raw === null ? 'NULL' : (typeof raw + '/' + String(raw).length));
-            } catch(e){ sample = 'store:ERR'; }
-            peekBanner(d
-              ? ('👁 Κενό · sent=' + got + ' ' + sample + ' · ' + (d.shape || ('keys=' + d.keys + ' run=' + d.runKeys)))
+            /* An empty page has two very different causes, and for one whole day
+               they were indistinguishable: she genuinely has no runs yet, OR her
+               data arrived and we failed to read it. Never show one message for
+               both — that is what made a broken app look merely "behind".
+               j.keys is what the SERVER found; if it sent keys and we still have
+               nothing, the fault is here, and it must say so. */
+            peekBanner((j && j.keys > 0)
+              ? ('👁 Σφάλμα: ήρθαν ' + j.keys + ' κλειδιά αλλά δεν διαβάστηκαν.')
               : '👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
           }
         }
