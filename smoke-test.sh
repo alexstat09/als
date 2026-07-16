@@ -23,11 +23,14 @@ PROG="$(mktemp /tmp/als_smoke_impl.XXXXXX.js)"
 trap 'rm -f "$LIST" "$PROG"' EXIT
 
 # Files to check: the LIVE app's own .html + .js. Excludes vendored code,
-# archive/ (retired pages, kept for reference — not deployed), and the
-# _*.html / render-*.html throwaways a headless render leaves behind.
+# archive/ (retired pages, kept for reference — not deployed), _quarantine/
+# (throwaways + the May-28 fossil clone, which still carries the OLD anon-key
+# bug and would otherwise trip the auth check), and the _*.html / render-*.html
+# throwaways a headless render leaves behind.
 find . -type f \( -name '*.html' -o -name '*.js' \) \
   -not -path './vendor/*' -not -path './node_modules/*' \
   -not -path './archive/*' -not -path './docs/*' -not -path './als/*' \
+  -not -path './_quarantine/*' \
   -not -name '_*.html' -not -name 'render-*.html' \
   | sed 's|^\./||' | sort > "$LIST"
 
@@ -103,7 +106,7 @@ echo "$OUT"
 # must carry the signed-in user's token.
 BADAUTH="$(grep -rnE "Bearer '[[:space:]]*\+[[:space:]]*[A-Za-z_]*KEY\b" \
   --include='*.js' --include='*.html' . 2>/dev/null \
-  | grep -vE '/(vendor|node_modules|archive|docs|als|api)/' \
+  | grep -vE '/(vendor|node_modules|archive|docs|als|api|_quarantine)/' \
   | grep -vE '/_[^/]*\.html:')"
 if [ -n "$BADAUTH" ]; then
   echo ""
