@@ -3112,10 +3112,20 @@
           if(!logs.length && !plan.length && !Object.keys(prof).length){
             /* "No data" is the one answer that must never be silent: the server
                returns {} for a missing row, a wrong RUNNER_ID and an error alike.
-               Say which, in the banner, instead of shrugging. */
+               Say which, in the banner, instead of shrugging.
+               The server already proved the row exists and the keys are sent
+               (keys=7 run=6), so also report what the STORE actually holds after
+               __RUN_PEEK_SET — that isolates "never arrived" from "arrived and was
+               dropped on the way to render()". */
             var d = j && j._diag;
+            var got = 0, sample = '';
+            try {
+              got = Object.keys((j && j.data) || {}).filter(function(k){ return k.indexOf('run:')===0; }).length;
+              var raw = localStorage.getItem(K_LOGS);
+              sample = 'store:logs=' + (raw === null ? 'NULL' : (typeof raw + '/' + String(raw).length));
+            } catch(e){ sample = 'store:ERR'; }
             peekBanner(d
-              ? ('👁 Κενό · keys=' + d.keys + ' run=' + d.runKeys + ' · runner=' + d.runner + ' owner=' + d.owner + (d.sameId ? ' ⚠ SAME ID' : ''))
+              ? ('👁 Κενό · sent=' + got + ' ' + sample + ' · ' + (d.shape || ('keys=' + d.keys + ' run=' + d.runKeys)))
               : '👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
           }
         }

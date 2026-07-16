@@ -271,7 +271,17 @@ module.exports = async function (req, res) {
         owner: supa.OWNER_ID ? supa.OWNER_ID.slice(0, 8) : null,
         // If these are equal, RUNNER_ID is misconfigured to Alex and the peek is
         // reading his own fossil row instead of hers.
-        sameId: !!(supa.RUNNER_ID && supa.OWNER_ID && supa.RUNNER_ID === supa.OWNER_ID)
+        sameId: !!(supa.RUNNER_ID && supa.OWNER_ID && supa.RUNNER_ID === supa.OWNER_ID),
+        // keys=7/run=6 proved the row exists and the data IS sent, yet the page
+        // renders the welcome state — so the loss is client-side. Report each
+        // key's NAME, the TYPE it arrives as, and its SIZE: a present-but-empty
+        // key and a double-encoded string are indistinguishable from a count.
+        shape: Object.keys(runRow || {}).map(function (k) {
+          var v = runRow[k];
+          var t = Array.isArray(v) ? 'arr' : (v === null ? 'null' : typeof v);
+          var n = (typeof v === 'string') ? v.length : JSON.stringify(v === undefined ? null : v).length;
+          return k.replace(/^run:/, '') + '=' + t + '/' + n;
+        }).join(' ')
       }
     });
     return;
