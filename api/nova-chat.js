@@ -235,7 +235,187 @@ async function buildBrief(tz, who) {
     L.push('Ideas backlog: ' + ideasOpen + ' open of ' + ideas.length + '.');
   }
 
-  return L.join('\n');
+  /* The brief is a SUMMARY — it always was, and it's a good one. But it's a
+     snapshot: everything it leaves out (six months of squats, the week she
+     slept badly, every day he ate rice) is invisible to Nova forever. These
+     rows are already in memory, already paid for. Hand them back so the tools
+     below can answer from the whole history instead of the postcard. */
+  return {
+    text: L.join('\n'),
+    data: { poc: poc, nut: nut, caf: caf, slp: slp, hlt: hlt, prof: prof,
+            tz: tz, today: today, units: units, exMap: exMap }
+  };
+}
+
+/* ── Nova's hands ────────────────────────────────────────────────
+   Read-only queries over the rows buildBrief already loaded. No extra
+   Supabase reads, no writes, no new serverless function. Every result is
+   BOUNDED — an unbounded tool result would blow the context window and make
+   her dumber, not smarter, which is the whole thing we're trying to fix. */
+var TOOL_CAP_DAYS = 400;
+var TOOL_CAP_ROWS = 200;
+
+var TOOLS = [
+  { type: 'function', function: {
+    name: 'day_history',
+    description: 'Their logged days as one row each: weight, calories, protein, sleep hours, recovery score, whether they trained, training volume, caffeine. Use this for ANY question spanning more than the last 7 days, for comparing two periods, or for looking at the days around an event. Oldest first.',
+    parameters: { type: 'object', properties: {
+      from: { type: 'string', description: 'Start date, YYYY-MM-DD (inclusive).' },
+      to: { type: 'string', description: 'End date, YYYY-MM-DD (inclusive).' }
+    }, required: ['from', 'to'] } } },
+  { type: 'function', function: {
+    name: 'exercise_history',
+    description: 'Every session they have ever logged for one exercise, with the best estimated 1RM each time. Use this to answer whether a lift is progressing or stalled, or what their best ever was.',
+    parameters: { type: 'object', properties: {
+      exercise: { type: 'string', description: 'Exercise name, e.g. "squat". Partial matches work.' }
+    }, required: ['exercise'] } } },
+  { type: 'function', function: {
+    name: 'workout_detail',
+    description: 'The full set-by-set detail of every workout on one date.',
+    parameters: { type: 'object', properties: {
+      date: { type: 'string', description: 'YYYY-MM-DD' }
+    }, required: ['date'] } } },
+  { type: 'function', function: {
+    name: 'food_search',
+    description: 'Find every time they logged a food matching a name, with the date, calories and protein. Use for "how often do I eat X" or "when did I last have X".',
+    parameters: { type: 'object', properties: {
+      query: { type: 'string', description: 'Food name, partial match, case-insensitive.' }
+    }, required: ['query'] } } }
+];
+
+function dkAdd(key, n) { var p = String(key).split('-').map(Number); var d = new Date(p[0], p[1] - 1, p[2]); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function dkDiff(a, b) { return Math.round((new Date(a + 'T00:00:00') - new Date(b + 'T00:00:00')) / 86400000); }
+function e1rm(w, r) { return (+w || 0) * (1 + (+r || 0) / 30); }
+
+function toolDayHistory(a, D) {
+  var from = String(a.from || '').slice(0, 10), to = String(a.to || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { error: 'from/to must be YYYY-MM-DD' };
+  if (from > to) { var t = from; from = to; to = t; }
+  // a window wider than the cap is silently narrowed to its most recent slice —
+  // say so in the result rather than quietly returning less than was asked for
+  var narrowed = false;
+  if (dkDiff(to, from) > TOOL_CAP_DAYS) { from = dkAdd(to, -TOOL_CAP_DAYS); narrowed = true; }
+  var inR = function (k) { return k && k >= from && k <= to; };
+  var day = {};
+  var rec = function (k) { return day[k] || (day[k] = { date: k }); };
+  (D.poc['po_coach_weights'] || []).forEach(function (e) { if (e && inR(e.dateKey) && typeof e.weight === 'number') rec(e.dateKey).weight = e.weight; });
+  (D.slp['sleep:logs'] || []).forEach(function (e) {
+    if (!e || !inR(e.dateKey)) return; var r = rec(e.dateKey);
+    if (e.hours > 0) r.sleepH = Math.round(e.hours * 10) / 10;
+    if (e.recovery != null) r.recovery = e.recovery;
+  });
+  (D.poc['po_workouts'] || []).forEach(function (w) {
+    if (!w || !inR(w.date)) return; var r = rec(w.date);
+    r.trained = true; r.volume = Math.round((r.volume || 0) + (w.volume || 0));
+    if (w.prs && w.prs.length) r.prs = (r.prs || 0) + w.prs.length;
+  });
+  (D.nut['nut:logs'] || []).forEach(function (l) {
+    if (!l) return; var k = l.dateKey || (l.ts ? tsToDateKey(l.ts, D.tz) : null);
+    if (!inR(k)) return; var r = rec(k);
+    r.kcal = Math.round((r.kcal || 0) + (l.kcal || 0)); r.protein = Math.round((r.protein || 0) + (l.p || 0));
+  });
+  (D.caf['caf:logs'] || []).forEach(function (l) {
+    if (!l || !l.ts) return; var k = tsToDateKey(l.ts, D.tz);
+    if (!inR(k)) return; rec(k).caffeine = Math.round((rec(k).caffeine || 0) + (l.mg || 0));
+  });
+  var days = Object.keys(day).sort().map(function (k) { return day[k]; });
+  var out = { from: from, to: to, days: days.length, units: D.units, rows: days.slice(-TOOL_CAP_ROWS) };
+  if (narrowed) out.note = 'Window was wider than ' + TOOL_CAP_DAYS + ' days — narrowed to the most recent ' + TOOL_CAP_DAYS + '.';
+  if (days.length > TOOL_CAP_ROWS) out.note = (out.note ? out.note + ' ' : '') + 'Showing the most recent ' + TOOL_CAP_ROWS + ' logged days of ' + days.length + '.';
+  if (!days.length) out.note = 'Nothing logged in this window — this is a real gap in their data, not an error.';
+  return out;
+}
+
+function toolExerciseHistory(a, D) {
+  var q = String(a.exercise || '').trim().toLowerCase();
+  if (!q) return { error: 'exercise is required' };
+  var ids = [], names = {};
+  Object.keys(D.exMap).forEach(function (id) {
+    var n = (D.exMap[id] && D.exMap[id].name) || '';
+    if (n.toLowerCase().indexOf(q) !== -1) { ids.push(id); names[id] = n; }
+  });
+  if (!ids.length) return { matched: [], note: 'No exercise matching "' + a.exercise + '". They may call it something else — try a shorter word.' };
+  var sessions = [];
+  (D.poc['po_workouts'] || []).slice().sort(function (x, y) { return (x.date || '') < (y.date || '') ? -1 : 1; }).forEach(function (w) {
+    if (!w || !w.date) return;
+    (w.entries || []).forEach(function (en) {
+      if (!en || ids.indexOf(en.exId) === -1) return;
+      var best = 0, topSet = null, working = 0;
+      (en.sets || []).forEach(function (s) {
+        if (!s || s.type === 'warmup') return; working++;
+        var v = e1rm(s.kg, s.reps);
+        if (v > best) { best = v; topSet = { kg: s.kg, reps: s.reps }; }
+      });
+      if (working) sessions.push({ date: w.date, exercise: names[en.exId], sets: working,
+        topSet: topSet, e1rm: Math.round(best * 10) / 10 });
+    });
+  });
+  if (!sessions.length) return { matched: ids.map(function (i) { return names[i]; }), sessions: [], note: 'That exercise exists but has no logged working sets.' };
+  var first = sessions[0], last = sessions[sessions.length - 1];
+  var bestEver = sessions.reduce(function (m, s) { return s.e1rm > m.e1rm ? s : m; }, sessions[0]);
+  return {
+    matched: ids.map(function (i) { return names[i]; }), units: D.units,
+    sessions: sessions.slice(-TOOL_CAP_ROWS),
+    total_sessions: sessions.length,
+    first: { date: first.date, e1rm: first.e1rm },
+    latest: { date: last.date, e1rm: last.e1rm },
+    best_ever: { date: bestEver.date, e1rm: bestEver.e1rm },
+    change_since_first: Math.round((last.e1rm - first.e1rm) * 10) / 10,
+    note: 'e1rm is an ESTIMATED 1-rep max (Epley) from the top working set — compare it across sessions, do not quote it as a tested max.'
+  };
+}
+
+function toolWorkoutDetail(a, D) {
+  var date = String(a.date || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'date must be YYYY-MM-DD' };
+  var out = [];
+  (D.poc['po_workouts'] || []).forEach(function (w) {
+    if (!w || w.date !== date) return;
+    out.push({
+      name: w.name || null, volume: Math.round(w.volume || 0),
+      prs: (w.prs || []).length,
+      exercises: (w.entries || []).slice(0, 40).map(function (en) {
+        return { exercise: ((D.exMap[en.exId] || {}).name) || en.exId, muscle: en.muscle || null,
+          sets: (en.sets || []).slice(0, 20).map(function (s) { return { kg: s.kg, reps: s.reps, warmup: s.type === 'warmup' || undefined }; }) };
+      })
+    });
+  });
+  if (!out.length) return { date: date, workouts: [], note: 'No workout logged on that date.' };
+  return { date: date, units: D.units, workouts: out };
+}
+
+function toolFoodSearch(a, D) {
+  var q = String(a.query || '').trim().toLowerCase();
+  if (!q) return { error: 'query is required' };
+  var hits = [];
+  (D.nut['nut:logs'] || []).forEach(function (l) {
+    if (!l) return;
+    var n = (l.name || l.food || '') + '';
+    if (n.toLowerCase().indexOf(q) === -1) return;
+    hits.push({ date: l.dateKey || (l.ts ? tsToDateKey(l.ts, D.tz) : null), food: n,
+      kcal: Math.round(l.kcal || 0), protein: Math.round(l.p || 0), meal: l.meal || null });
+  });
+  hits.sort(function (x, y) { return (x.date || '') < (y.date || '') ? 1 : -1; });   // newest first
+  if (!hits.length) return { query: a.query, hits: [], note: 'They have never logged a food matching that.' };
+  var days = {}; hits.forEach(function (h) { if (h.date) days[h.date] = 1; });
+  return { query: a.query, times_logged: hits.length, distinct_days: Object.keys(days).length,
+    last_eaten: hits[0].date, hits: hits.slice(0, TOOL_CAP_ROWS) };
+}
+
+function runTool(name, argsJSON, D) {
+  var a; try { a = JSON.parse(argsJSON || '{}'); } catch (e) { return { error: 'bad arguments JSON' }; }
+  if (!D) return { error: 'their data is not loaded right now' };
+  try {
+    if (name === 'day_history') return toolDayHistory(a, D);
+    if (name === 'exercise_history') return toolExerciseHistory(a, D);
+    if (name === 'workout_detail') return toolWorkoutDetail(a, D);
+    if (name === 'food_search') return toolFoodSearch(a, D);
+    return { error: 'unknown tool ' + name };
+  } catch (e) {
+    // a thrown tool must never kill the turn — hand the model the failure and
+    // let it recover in words
+    return { error: 'tool failed: ' + String((e && e.message) || e).slice(0, 140) };
+  }
 }
 
 // `person` = the CALLER (name/age/sex/sport/goal from their profile row).
@@ -264,6 +444,13 @@ function systemPrompt(brief, patterns, memory, person) {
     "• Gate intensity by recovery: if they're run-down, steer them to rest or go light; if they're fresh, tell them to push. If a muscle is well under its weekly volume target, point it out.",
     '• Be proactive: if you see something off in the data even when they didn\'t ask (no food logged by afternoon, caffeine late, weigh-in missed, a habit streak about to break), mention it.',
     '• You have their FULL recent history below — today, YESTERDAY\'s exact foods, the last 7 days of intake (calories/protein/carbs/sodium) and their day-by-day weight series. USE IT. When they ask about yesterday or a weight change, read the actual days and answer with specifics; never say you can\'t see the past — it is right there.',
+    '',
+    'LOOK IT UP — you have tools, and the snapshot below is only the recent slice. Everything older is still there; you just have to ask for it. Call a tool whenever the answer depends on something the snapshot does not already contain:',
+    '• day_history(from,to) — ANY question spanning more than the last 7 days, comparing two periods, or examining the days around an event. "Am I better than in January", "what happened the week I slept badly".',
+    '• exercise_history(exercise) — whether a lift is progressing or stalled, or their best ever. "Why is my squat stuck".',
+    '• workout_detail(date) — the exact sets of one session.',
+    '• food_search(query) — "how often do I eat X", "when did I last have X".',
+    'Look it up rather than hedging. If you are about to say "I only have the last 7 days" or "I can\'t see that far back", you are wrong — call day_history instead. Prefer one well-aimed call over several; today\'s date is in the snapshot, so compute the range yourself rather than asking them for it. If a tool comes back empty that is a real gap in their logging, not an error — say so plainly and never invent the missing numbers.',
     '',
     'WEIGHT-CHANGE LITERACY (use this whenever they mention a gain, spike or drop): day-to-day scale weight is mostly WATER, not fat. A 0.5–1.5 kg overnight jump is normal and usually comes from a high-carb or high-sodium day (every gram of stored glycogen holds ~3g of water), a large food volume still in the gut, dehydration rebound, training-induced muscle inflammation, or bowel/hormonal timing. True fat gain needs a real surplus — about 7700 kcal per kg — so gaining a full kg of fat overnight is physically impossible. When they flag a spike: look at their actual last 1–3 days of calories, carbs and sodium below, name the most likely water-driven cause in plain terms, reassure them it is not fat if the 7-day weight average is not climbing, and only raise genuine concern if the multi-day trend is clearly rising. Never let one day spook either of you.',
     '',
@@ -369,7 +556,9 @@ module.exports = async function (req, res) {
   try { var prefs = await supa.readRow('push:prefs', who); if (prefs && prefs.tz) tz = prefs.tz; } catch (e) {}
 
   var brief;
-  try { brief = await buildBrief(tz, who); } catch (e) { brief = '(data temporarily unavailable)'; }
+  var novaData = null;
+  try { var _b = await buildBrief(tz, who); brief = _b.text; novaData = _b.data; }
+  catch (e) { brief = '(data temporarily unavailable)'; }
 
   // Calendar comes from the client (read-only, on-device) as a ready-formatted
   // string — passed through per request, never stored server-side.
@@ -392,67 +581,135 @@ module.exports = async function (req, res) {
     + "Give them their brief for TODAY: the 2 to 4 things that matter most, each a concrete prioritized move reasoned across their recovery, training plan, nutrition, calendar and goals. Weave the schedule in — when to train, when to eat the bigger vs lighter meal, when to wind down for tomorrow. Lead with the single biggest lever. No greeting, no preamble, no questions back, no sign-off. One tight sentence per point, each on its own line starting with \"• \". Plain text, warm and direct. If a domain has no data, skip it silently rather than mentioning the gap.";
 
   // Groq (OpenAI-compatible): system message + the conversation.
-  var payload = {
-    model: GROQ_MODEL,
-    messages: [{ role: 'system', content: sys }].concat(messages),
-    max_tokens: briefMode ? 500 : 1024,
-    temperature: briefMode ? 0.5 : 0.7,
-    stream: true
-  };
+  var convo = [{ role: 'system', content: sys }].concat(messages);
 
-  var upstream;
-  try {
-    upstream = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch (e) {
-    res.status(200).setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end("I couldn't reach my brain just now — check your connection and try again.");
-    return;
+  /* The morning brief is a monologue — she is opening his day, not
+     investigating it, and the snapshot already holds everything it needs.
+     Tools there would only add latency and rate-limit pressure. */
+  var useTools = !briefMode && !!novaData;
+
+  var headersSent = false;
+  function startBody() {
+    if (headersSent) return;
+    headersSent = true;
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('X-Accel-Buffering', 'no');
   }
 
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('X-Accel-Buffering', 'no');
+  /* One streamed turn. Forwards text to the browser as it arrives and, in the
+     same pass, accumulates any tool calls the model streams alongside it
+     (OpenAI shape: delta.tool_calls[] fragments keyed by index, arguments
+     arriving as string pieces). Returns what it collected so the caller can
+     decide whether another round is needed. */
+  async function streamTurn(withTools) {
+    var payload = {
+      model: GROQ_MODEL,
+      messages: convo,
+      max_tokens: briefMode ? 500 : 1024,
+      temperature: briefMode ? 0.5 : 0.7,
+      stream: true
+    };
+    if (withTools) { payload.tools = TOOLS; payload.tool_choice = 'auto'; }
 
-  if (!upstream.ok || !upstream.body) {
-    if (upstream.status === 429) {
-      res.end("I'm getting a lot of requests right now — give me a minute and ask me again. 🌿");
+    var upstream;
+    try {
+      upstream = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) { return { fatal: "I couldn't reach my brain just now — check your connection and try again." }; }
+
+    if (!upstream.ok || !upstream.body) {
+      if (upstream.status === 429) return { fatal: "I'm getting a lot of requests right now — give me a minute and ask me again. 🌿" };
+      var detail = '';
+      try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
+      return { fatal: 'Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.' };
+    }
+
+    startBody();
+    var decoder = new TextDecoder();
+    var buf = '';
+    var calls = [];        // accumulated by index
+    var text = '';
+    var finish = null;
+
+    try {
+      for await (var chunk of upstream.body) {
+        buf += decoder.decode(chunk, { stream: true });
+        var nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          var line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+          if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
+          if (line.indexOf('data:') !== 0) continue;
+          var data = line.slice(5).trim();
+          if (!data || data === '[DONE]') continue;
+          var ev; try { ev = JSON.parse(data); } catch (e) { continue; }
+          if (ev.error) { res.write('\n\n[Nova error: ' + (ev.error.message || 'unknown') + ']'); continue; }
+          var ch0 = ev.choices && ev.choices[0];
+          if (!ch0) continue;
+          if (ch0.finish_reason) finish = ch0.finish_reason;
+          var d = ch0.delta;
+          if (!d) continue;
+          if (typeof d.content === 'string' && d.content) { text += d.content; res.write(d.content); }
+          if (Array.isArray(d.tool_calls)) {
+            d.tool_calls.forEach(function (tc) {
+              var i = typeof tc.index === 'number' ? tc.index : 0;
+              var slot = calls[i] || (calls[i] = { id: '', name: '', args: '' });
+              if (tc.id) slot.id = tc.id;
+              if (tc.function && tc.function.name) slot.name += tc.function.name;
+              if (tc.function && typeof tc.function.arguments === 'string') slot.args += tc.function.arguments;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      return { text: text, calls: calls.filter(Boolean), finish: finish, dropped: true };
+    }
+    return { text: text, calls: calls.filter(Boolean), finish: finish };
+  }
+
+  /* Up to MAX_ROUNDS of look-it-up. The cap is a real guard, not a
+     formality: a model that loops on tools forever would hang the request and
+     burn the free tier. On the last round tools are withheld, which forces a
+     text answer instead of a fifth silent lookup. */
+  var MAX_ROUNDS = 4;
+  var turn = null;
+  for (var round = 0; round < MAX_ROUNDS; round++) {
+    var allowTools = useTools && round < MAX_ROUNDS - 1;
+    turn = await streamTurn(allowTools);
+
+    if (turn.fatal) {
+      if (!headersSent) { startBody(); }
+      res.end(turn.fatal);
       return;
     }
-    var detail = '';
-    try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
-    res.end('Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.');
-    return;
+    if (turn.dropped) { try { res.write('\n\n[connection dropped — ask me again]'); } catch (_) {} break; }
+    if (!turn.calls.length) break;   // she answered
+
+    // Echo her tool-call turn back verbatim, then answer each call. Both are
+    // required by the OpenAI shape: a tool result with no matching tool_call
+    // in history is a 400.
+    convo = convo.concat([{
+      role: 'assistant',
+      content: turn.text || null,
+      tool_calls: turn.calls.map(function (c, i) {
+        return { id: c.id || ('call_' + round + '_' + i), type: 'function',
+                 function: { name: c.name, arguments: c.args || '{}' } };
+      })
+    }]);
+    turn.calls.forEach(function (c, i) {
+      var result = runTool(c.name, c.args, novaData);
+      convo = convo.concat([{
+        role: 'tool',
+        tool_call_id: c.id || ('call_' + round + '_' + i),
+        name: c.name,
+        content: JSON.stringify(result)
+      }]);
+    });
   }
 
-  // Parse Groq's SSE (`data: {json}` lines, OpenAI shape) → forward text deltas.
-  var decoder = new TextDecoder();
-  var buf = '';
-  function emit(obj) {
-    var ch = obj && obj.choices;
-    if (!ch || !ch[0] || !ch[0].delta) return;
-    if (typeof ch[0].delta.content === 'string') res.write(ch[0].delta.content);
-  }
-  try {
-    for await (var chunk of upstream.body) {
-      buf += decoder.decode(chunk, { stream: true });
-      var nl;
-      while ((nl = buf.indexOf('\n')) >= 0) {
-        var line = buf.slice(0, nl); buf = buf.slice(nl + 1);
-        if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
-        if (line.indexOf('data:') !== 0) continue;
-        var data = line.slice(5).trim();
-        if (!data || data === '[DONE]') continue;
-        var ev; try { ev = JSON.parse(data); } catch (e) { continue; }
-        if (ev.error) { res.write('\n\n[Nova error: ' + (ev.error.message || 'unknown') + ']'); continue; }
-        emit(ev);
-      }
-    }
-  } catch (e) {
-    try { res.write('\n\n[connection dropped — ask me again]'); } catch (_) {}
-  }
+  if (!headersSent) { startBody(); res.write("I couldn't put an answer together just then — ask me again."); }
   res.end();
 };
