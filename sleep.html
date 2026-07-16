@@ -399,7 +399,20 @@
     }
     // Time ASLEEP = in bed − time to fall asleep − time awake in the night.
     // Each awakening costs ~10 min back to sleep.
+    //
+    // …unless a watch MEASURED it. Chrissie's Garmin reports time actually asleep
+    // (via intervals.icu → the courier → sleep:inbox), which beats this arithmetic
+    // outright: bed→wake is time IN BED and flatters you by the hour you lay awake.
+    // A measurement always wins over an estimate — that is the whole premise of
+    // this page.
+    //
+    // Gated on the DATA, never on who is looking. Alex has no watch, so no entry
+    // of his carries asleepMeasured and this branch is dead code on his dashboard:
+    // every one of his nights falls through to the arithmetic below, unchanged.
+    // (Also means it just works if he ever straps one on — and nothing is
+    // hardcoded to a person.)
     function asleepHours(e){
+      if (e && e.asleepMeasured > 0) return e.asleepMeasured;
       var tib = inBedHours(e); if (!(tib > 0)) return null;
       var loss = ((e.latency > 0 ? e.latency : 0) + (e.wakes > 0 ? e.wakes * 10 : 0)) / 60;
       return Math.max(0.5, Math.round((tib - loss) * 100) / 100);
@@ -446,8 +459,14 @@
       if (!e) return null;
       var need = getProfile().need, dk = e.dateKey;
       var tib = inBedHours(e);
-      if (!(tib > 0)) return null;                       // no measured night → no score
       var asleep = asleepHours(e), eff = efficiencyOf(e);
+      // No measured night → no score. "Measured" now means either she told us when
+      // she went to bed, OR a watch measured the sleep itself. Requiring bed/wake
+      // even when Garmin has already reported the duration would throw away the
+      // better number and leave her with no score at all.
+      // Alex is unaffected: with no asleepMeasured this is the original
+      // `if (!(tib > 0)) return null;` exactly.
+      if (!(tib > 0) && !(asleep > 0)) return null;
       var reg = regularityScore(dk), dbt = debtInfo(need, dk);
       var C = [
         ['Duration',   durScore(asleep, need),      W_DUR],
