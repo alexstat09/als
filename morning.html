@@ -13,6 +13,13 @@
      Without this script the header was empty and the brief silently failed. Also
      provides ALSProfile so nova-coach's greeting resolves the name here too. -->
 <script src="als-profile.js" defer></script>
+<!-- This page renders weight, sleep, food, water, caffeine, goals and study but
+     OWNS none of it — every key belongs to another page's appKey. Without this it
+     read whatever this device happened to have cached from the last time it opened
+     each source page: log breakfast on the phone, read the briefing on the laptop,
+     and the food simply wasn't there. readOnly pulls each row once and never
+     writes back (see the registrations at the foot of this file). -->
+<script src="sync.js" defer></script>
 <script src="insights.js" defer></script>
 <script src="tdee.js" defer></script>
 <script src="water.js"></script>
@@ -267,6 +274,20 @@ body::after {
 .mb-weight-trend.down { color:var(--green); }
 .mb-weight-trend.flat { color:var(--text-3); }
 
+/* STALE. A weight last measured days ago is not today's weight, and the page
+   said so only in a quiet caption — through the 14–17 Jul gap this number sat
+   there glowing in confident white every morning and went unnoticed. Drop the
+   glow, dim it, and turn the caption amber: it should LOOK like what it is. */
+.mb-weight-big.is-stale {
+  color:var(--text-2,rgba(244,241,234,.62));
+  text-shadow:none;
+  opacity:.72;
+}
+.mb-weight-logged.is-stale {
+  color:#F2C063;
+  opacity:1;
+}
+
 .mb-sparkline {
   width:100%; height:36px; display:block; margin-bottom:8px;
   overflow:visible;
@@ -323,12 +344,18 @@ body::after {
   background:rgba(107,227,164,0.12);
   overflow:hidden; position:relative;
 }
+/* A bar that ENCODES A NUMBER must not overshoot it. cubic-bezier(.34,1.56,…)
+   springs past its target and settles back, so "5 / 8 complete" briefly draws
+   as ~6 / 8. That easing is right for a button press or Nova's happy bounce —
+   a spring on a control is charm; a spring on a measurement is a wrong number.
+   Smooth decel (the house .16,1,.3,1), and scaleX so it never touches layout. */
 .mb-goals-bar::after {
   content:''; position:absolute; inset-block:0; left:0;
   background:linear-gradient(90deg,var(--green),rgba(63,224,176,0.8));
   border-radius:2px;
-  width:var(--pct, 0%);
-  transition:width 1s cubic-bezier(0.34,1.56,0.64,1) .8s;
+  width:100%;
+  transform:scaleX(var(--pct, 0)); transform-origin:left center;
+  transition:transform 1s cubic-bezier(.16,1,.3,1) .8s;
 }
 .mb-goals-bar-label {
   font-family:var(--mono); font-size:10px; font-weight:700;
@@ -350,9 +377,11 @@ body::after {
   flex:1; height:3px; border-radius:2px;
   background:rgba(255,255,255,0.06); overflow:hidden; position:relative;
 }
+/* Same rule as the goals bar: water at 6/8 must never draw as 7/8 on its way. */
 .mb-sys-bar {
-  height:100%; border-radius:2px; width:0%;
-  transition:width 1s cubic-bezier(0.34,1.56,0.64,1) .9s;
+  height:100%; border-radius:2px; width:100%;
+  transform:scaleX(0); transform-origin:left center;
+  transition:transform 1s cubic-bezier(.16,1,.3,1) .9s;
 }
 .mb-sys-bar-water { background:linear-gradient(90deg,#60A5FA,#7DD3FC); }
 .mb-sys-bar-caf   { background:linear-gradient(90deg,#C9A36B,#F2C063); }
@@ -594,7 +623,13 @@ body::after {
       <div class="mb-corner tl"></div><div class="mb-corner tr"></div>
       <div class="mb-corner bl"></div><div class="mb-corner br"></div>
       <div class="mb-panel-head">
-        <span class="mb-panel-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2.2" transform="rotate(45 12 12)"/></svg></span>
+        <!-- Nova is the Pulse, not the diamond. This was the last diamond alive
+             outside archive/ — on the page he reads every day. It survived the
+             icon migration because the smoke guard matched rotate(45 50 50) and
+             this one is a 24-viewBox rotate(45 12 12). Same canonical ECG as
+             icon.svg (so the drift guard now covers it), drawn as a line icon to
+             match the calendar/moon icons beside it. -->
+        <span class="mb-panel-icon"><svg viewBox="0 0 100 100" width="15" height="15" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3"/></svg></span>
         <span class="mb-panel-label">NOVA'S READ ON YOUR DAY</span>
         <span id="mbBriefRefresh" style="margin-left:auto;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-3);display:none">↻ RETHINK</span>
       </div>
@@ -668,6 +703,11 @@ body::after {
         <span class="mb-panel-icon">◇</span>
         <span class="mb-panel-label">INTEL</span>
       </div>
+      <!-- The briefing covered body, fuel, recovery and money but never once
+           mentioned the exams. Both keys already exist and already sync; nobody
+           was reading them. -->
+      <div class="mb-intel-row"><span class="mb-intel-key">ΑΡΧΑΙΑ</span><span class="mb-intel-val" id="intelArxaia">—</span></div>
+      <div class="mb-intel-row"><span class="mb-intel-key">ΙΣΤΟΡΙΑ</span><span class="mb-intel-val" id="intelIstoria">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">LAST TRAINED</span><span class="mb-intel-val" id="intelTrained">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">WORKOUTS THIS WEEK</span><span class="mb-intel-val" id="intelWorkouts">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">FIRST COFFEE</span><span class="mb-intel-val" id="intelCoffee">—</span></div>
@@ -770,11 +810,29 @@ function dayOfYear(){
   return Math.floor((now-start)/86400000);
 }
 function fmtRelDate(key){
-  const d=new Date(key+'T00:00:00');
-  const diff=Math.round((new Date()-d)/86400000);
+  const diff=daysAgo(key);
   if(diff===0) return 'logged today';
   if(diff===1) return 'logged yesterday';
   return 'logged '+diff+'d ago';
+}
+function daysAgo(key){
+  const d=new Date(key+'T00:00:00');
+  if(isNaN(d)) return 0;
+  const t=new Date(); t.setHours(0,0,0,0);
+  return Math.round((t-d)/86400000);
+}
+/* dateKey for N days back — for windows measured in DAYS, not in rows. */
+function dkAgo(n){
+  const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+/* Monday of the current week. A week is Mon–Sun everywhere in this app
+   (weekly, run, planner, gym, arc, home-live, nova, xp) — morning.html was the
+   last page saying "this week" and meaning "the last 7 days". */
+function mondayKey(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 /* ── Clock ────────────────────────────────────────── */
@@ -829,27 +887,47 @@ function greetPhrase(){
 /* ── Physical ─────────────────────────────────────── */
 function loadPhysical(){
   try{
-    const wts=(JSON.parse(localStorage.getItem('po_coach_weights'))||[]);
+    /* SORT FIRST. This array is not stored in date order and nothing guarantees
+       it: sync rebuilds it from a map, so entries that existed only on this
+       device get appended LAST whatever their date. Backfill an older weigh-in
+       and wts[length-1] is not your latest — it is just the newest ROW. Every
+       other surface sorts (weekly, planner, nutrition, nova-coach); this one,
+       the hero number, did not. */
+    const wts=(JSON.parse(localStorage.getItem('po_coach_weights'))||[])
+      .filter(e=>e&&typeof e.weight==='number'&&e.dateKey)
+      .sort((a,b)=>a.dateKey<b.dateKey?-1:1);
     if(!wts.length){ set('mbWeight','—'); set('mbWeightLogged','No weigh-ins yet'); return; }
     const last=wts[wts.length-1];
     set('mbWeight', last.weight+' kg');
     set('mbWeightLogged', fmtRelDate(last.dateKey));
 
-    /* trend vs 7-day avg */
-    const recent=wts.slice(-7);
-    if(recent.length>=2){
-      const prev=recent.slice(0,-1).reduce((s,e)=>s+e.weight,0)/(recent.length-1);
-      const diff=(last.weight-prev).toFixed(1);
-      const el=document.getElementById('mbWeightTrend');
-      if(+diff<-0.05){
-        el.textContent='↓ '+Math.abs(diff)+' kg vs 7d avg';
-        el.className='mb-weight-trend down';
-      } else if(+diff>0.05){
-        el.textContent='↑ +'+diff+' kg vs 7d avg';
-        el.className='mb-weight-trend up';
-      } else {
-        el.textContent='→ Stable vs 7d avg';
+    /* A number you last measured days ago is not today's number. Through the
+       14–17 Jul gap this sat there in confident white with a quiet caption and
+       nobody noticed. Stale data has to LOOK stale, not just say so. */
+    const staleDays=daysAgo(last.dateKey);
+    const wEl=document.getElementById('mbWeight');
+    const lEl=document.getElementById('mbWeightLogged');
+    if(wEl) wEl.classList.toggle('is-stale', staleDays>=2);
+    if(lEl) lEl.classList.toggle('is-stale', staleDays>=2);
+
+    /* Trend over a REAL 7 days, not the last 7 rows. slice(-7) silently widens
+       across gaps: after the 4-day hole it compared today against entries
+       spanning 11 days while the label still said "7d". */
+    const el=document.getElementById('mbWeightTrend');
+    const cut=dkAgo(7);
+    const window7=wts.filter(e=>e.dateKey>cut&&e.dateKey<last.dateKey);
+    if(el){
+      if(!window7.length){
+        el.textContent='Not enough weigh-ins this week';
         el.className='mb-weight-trend flat';
+      } else {
+        const prev=window7.reduce((s,e)=>s+e.weight,0)/window7.length;
+        const diff=(last.weight-prev).toFixed(1);
+        const n=window7.length;
+        const lbl=' kg vs 7d avg ('+n+' weigh-in'+(n===1?'':'s')+')';
+        if(+diff<-0.05){ el.textContent='↓ '+Math.abs(diff)+lbl; el.className='mb-weight-trend down'; }
+        else if(+diff>0.05){ el.textContent='↑ +'+diff+lbl; el.className='mb-weight-trend up'; }
+        else { el.textContent='→ Stable vs 7d avg ('+n+')'; el.className='mb-weight-trend flat'; }
       }
     }
 
@@ -913,7 +991,7 @@ function loadMission(){
       barWrap.style.display='flex';
       const pct=Math.round(done/goals.length*100);
       const bar=document.getElementById('mbGoalsBar');
-      if(bar) bar.style.setProperty('--pct',pct+'%');
+      if(bar) bar.style.setProperty('--pct', pct/100);   // unitless: it drives scaleX
       set('mbGoalsBarLabel', done+' / '+goals.length+' complete');
     }
   } catch(e){}
@@ -977,17 +1055,65 @@ function loadIntel(){
     set('intelNW', total>0 ? cur+' '+Math.round(total).toLocaleString() : '—');
   } catch(e){ set('intelNW','—'); }
 
-  /* workouts this week */
+  /* Workouts THIS WEEK — Monday to today, not a rolling 7 days. The old loop
+     counted back 7 days from now, so on a Tuesday it still included last
+     Wednesday and the count never reset on Monday. It said "this week" and
+     meant "the last 7 days" — the same lie weekly.html used to tell. */
   try{
     let sessions=0;
+    const mon=mondayKey();
+    const d=new Date(); d.setHours(0,0,0,0);
     for(let i=0;i<7;i++){
-      const d=new Date(); d.setDate(d.getDate()-i);
       const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(key<mon) break;                       // walked back past Monday — stop
       const log=JSON.parse(localStorage.getItem('po_coach_logs:'+key))||[];
       if(log.length>0) sessions++;
+      d.setDate(d.getDate()-1);
     }
     set('intelWorkouts', sessions+' session'+(sessions!==1?'s':''));
   } catch(e){ set('intelWorkouts','—'); }
+
+  /* Study. Mirrors arxaia.html's own suggestedDay(): 1 Jul 2026 = Μέρα 1, a
+     31-day plan, and inside July the day IS the date. Kept deliberately thin —
+     the plan data itself lives in arxaia.html and must not be duplicated here. */
+  try{
+    const el=document.getElementById('intelArxaia');
+    if(el){
+      const START=new Date(2026,6,1);
+      const t=new Date(); t.setHours(0,0,0,0);
+      const day=Math.floor((t-START)/86400000)+1;
+      const raw=localStorage.getItem('arxaia:v1');
+      if(day<1)            el.textContent='Starts 1 Jul';
+      else if(day>31)      el.textContent='Plan complete';
+      /* absent ≠ "not done today". If this device has never pulled the key we
+         must not accuse him of skipping — say we don't know. */
+      else if(raw==null)   el.textContent='Day '+day+'/31 · —';
+      else {
+        const st=JSON.parse(raw)||{}, days=st.days||{}, d=days[day];
+        if(d&&d.done) el.textContent='Day '+day+'/31 ✓'+(d.total?' · '+d.correct+'/'+d.total:'');
+        else          el.textContent='Day '+day+'/31 · today not done';
+      }
+    }
+  } catch(e){}
+
+  /* Ιστορία has no fixed plan — report what is actually mastered (seen twice,
+     no outstanding misses), which is istoria.html's own termMastered() rule. */
+  try{
+    const el=document.getElementById('intelIstoria');
+    if(el){
+      const raw=localStorage.getItem('istoria:v1');
+      if(raw==null){ el.textContent='—'; }
+      else {
+        const st=JSON.parse(raw)||{}, seen=st.seen||{}, miss=st.miss||{};
+        let n=0;
+        Object.keys(seen).forEach(function(id){
+          const s=seen[id];
+          if(s&&s.c>=2&&!(miss[id]>0)) n++;
+        });
+        el.textContent = n ? n+' mastered' : 'Not started';
+      }
+    }
+  } catch(e){}
 
   /* last trained — scan back for the most recent logged session */
   try{
@@ -1124,11 +1250,18 @@ function loadRecovery(){
 }
 
 /* ── Today's fuel (adaptive, mirrors nutrition.html) ── */
+/* Your measured weight IS your weight. This used to prefer the number typed
+   once into the water profile and only fall back to the scale — so 153 real
+   weigh-ins lost to a setting that never moves as you do. Scale first, the
+   typed profile only if you have never weighed in. */
 function bodyWeightKg(){
   try{
-    const w=(((JSON.parse(localStorage.getItem('po_water_v1'))||{}).profile)||{}).weightKg; if(w) return w;
-    const ws=(JSON.parse(localStorage.getItem('po_coach_weights'))||[]).filter(e=>e&&typeof e.weight==='number').sort((a,b)=>a.dateKey<b.dateKey?-1:1);
-    return ws.length?ws[ws.length-1].weight:75;
+    const ws=(JSON.parse(localStorage.getItem('po_coach_weights'))||[])
+      .filter(e=>e&&typeof e.weight==='number'&&e.dateKey)
+      .sort((a,b)=>a.dateKey<b.dateKey?-1:1);
+    if(ws.length) return ws[ws.length-1].weight;
+    const w=(((JSON.parse(localStorage.getItem('po_water_v1'))||{}).profile)||{}).weightKg;
+    return w||75;
   }catch(e){ return 75; }
 }
 function nutTargets(){
@@ -1241,16 +1374,50 @@ function loadDirective(){
 
 /* ── DOM helpers ──────────────────────────────────── */
 function set(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt||''; }
-function setBar(id,pct){ const el=document.getElementById(id); if(el) el.style.width=pct+'%'; }
+/* pct in 0..100 → a unitless scaleX factor (the bar is width:100% and scales). */
+function setBar(id,pct){ const el=document.getElementById(id); if(el) el.style.transform='scaleX('+(Math.max(0,Math.min(100,pct))/100)+')'; }
 function escHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
 /* ── Boot sequence ────────────────────────────────── */
+/* Re-render everything the cloud just taught us. Cheap: these all read
+   localStorage and paint. Debounced because ten rows land at once. */
+let _rerenderTimer=null;
+function rerenderAll(){
+  clearTimeout(_rerenderTimer);
+  _rerenderTimer=setTimeout(function(){
+    try{ loadRecovery(); loadFuel(); loadPhysical(); loadMission(); loadSystems(); loadIntel(); loadDirective(); }catch(e){}
+  },120);
+}
+
+/* THE BRIEFING OWNS NOTHING IT SHOWS. Every key here belongs to another page's
+   appKey, and this page registered for none of them — so it rendered whatever
+   this device last cached from opening those pages. Log breakfast on the phone,
+   read the briefing on the laptop, and the food was simply missing.
+   readOnly = pull each row once, merge, repaint, never write back. */
+function pullEverything(){
+  if(typeof window.initCloudSync!=='function') return;
+  const ro=(appKey,keys,prefixes)=>{
+    try{ window.initCloudSync({ appKey:appKey, syncedKeys:keys||[], syncedPrefixes:prefixes||[], readOnly:true, onApplied:rerenderAll }); }catch(e){}
+  };
+  ro('po-coach', ['po_coach_weights'], ['po_coach_logs:']);          // weight, sessions
+  ro('sleep',    ['sleep:logs','sleep:profile']);                    // recovery
+  ro('nutrition',['nut:logs','nut:profile']);                        // fuel
+  ro('health',   ['stack:items','po_water_v1'], ['stack:taken:']);   // water, supplements
+  ro('caffeine', ['caf:logs']);                                      // caffeine, first coffee
+  ro('goals',    [], ['goals:']);                                    // today's mission
+  ro('finance',  ['nw_currency'], ['nw:']);                          // net worth
+  ro('arxaia',   ['arxaia:v1']);                                     // ΑΡΧΑΙΑ
+  ro('istoria',  ['istoria:v1']);                                    // ΙΣΤΟΡΙΑ
+  ro('nova-chat',['nova:memory']);                                   // what Nova remembers
+}
+
 function boot(){
   /* Mark briefing opened today so Hub nudge clears */
   const _td = new Date(); const _p2 = n => String(n).padStart(2,'0');
   localStorage.setItem('morning:lastOpened',
     _td.getFullYear()+'-'+_p2(_td.getMonth()+1)+'-'+_p2(_td.getDate()));
 
+  pullEverything();
   startClock();
   loadRecovery();
   loadFuel();
@@ -1420,7 +1587,9 @@ if(document.readyState==='loading'){
     if(!lines.length){ body.innerHTML='<div class="mb-fuel-note">—</div>'; return; }
     body.innerHTML=lines.map(function(l){
       return '<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
-        '<span style="color:#3FE0B0;font-size:13px;line-height:1.5;flex:none">◆</span>'+
+        /* Was a diamond glyph — that was Nova's old identity. She is the Pulse
+           now, and a bullet per line should stay quiet rather than restate it. */
+        '<span style="color:#3FE0B0;font-size:9px;line-height:2.1;flex:none">●</span>'+
         '<span style="flex:1;font-size:14px;color:var(--text-1,#F4F1EA);line-height:1.5">'+esc(l)+'</span></div>';
     }).join('');
   }
@@ -1444,7 +1613,7 @@ if(document.readyState==='loading'){
       }
       text=text.replace(/\[\[(REMEMBER|ACTION)[\s\S]*?\]\]/g,'').trim();
       renderBrief(text);
-      try{ localStorage.setItem(CK, JSON.stringify({ date:todayKey(), text:text })); }catch(e){}
+      try{ localStorage.setItem(CK, JSON.stringify({ date:todayKey(), ts:Date.now(), text:text })); }catch(e){}
       if(r) r.textContent='↻ RETHINK';
     }catch(e){ setState('Nova could not put your brief together right now. Tap ↻ to retry.'); if(r) r.textContent='↻ RETHINK'; }
   }
@@ -1464,9 +1633,19 @@ if(document.readyState==='loading'){
       } else { go(); }
     }catch(e){ go(); }
   }
+  /* The cache was keyed on the DATE alone, so a brief written at 07:00 was still
+     served at 21:00 — under a "GOOD EVENING" greeting, describing a day that had
+     since happened. A read of your day has a shelf life. Same day AND under three
+     hours old = still true; otherwise she re-reads. */
+  var BRIEF_TTL_MS = 3*60*60*1000;
+  function briefIsFresh(c){
+    if(!c || !c.text || c.date!==todayKey()) return false;
+    if(!c.ts) return false;                       // pre-TTL cache entry → re-read once
+    return (Date.now()-c.ts) < BRIEF_TTL_MS;
+  }
   function boot(){
     var c=ls(CK,null);
-    if(c && c.date===todayKey() && c.text){ renderBrief(c.text); var r=$('mbBriefRefresh'); if(r) r.style.display=''; }
+    if(briefIsFresh(c)){ renderBrief(c.text); var r=$('mbBriefRefresh'); if(r) r.style.display=''; }
     else { regen(); }
     var r2=$('mbBriefRefresh'); if(r2) r2.addEventListener('click', regen);
   }

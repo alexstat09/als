@@ -125,7 +125,10 @@ fi
 # the diamond must never come back. nova-lab.html is exempt — it quotes the old
 # Nova deliberately, as the comparison.
 ECG='M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3'
-OLDNOVA="$(grep -rl 'rotate(45 50 50)' --include='*.html' --include='*.js' . 2>/dev/null \
+# Matches the diamond at ANY viewBox. The old pattern was 'rotate(45 50 50)',
+# which is the 100x100 form — so morning.html's 24x24 'rotate(45 12 12)' sailed
+# through and the last diamond in the app survived on the page he reads daily.
+OLDNOVA="$(grep -rlE 'transform="rotate\(45 [0-9.]+ [0-9.]+\)"' --include='*.html' --include='*.js' . 2>/dev/null \
   | grep -vE '/(vendor|node_modules|archive|docs|_quarantine)/' | grep -v 'nova-lab.html')"
 if [ -n "$OLDNOVA" ]; then
   echo ""

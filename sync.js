@@ -175,11 +175,25 @@
   // a no-op if that script isn't loaded, so load order never matters.
   function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](); } catch (e) {} }
 
+  /* readOnly: pull the cloud's copy once, merge it into localStorage, and stop.
+     No push, no interval, no realtime, no setItem interception.
+
+     It exists for pages that only READ other pages' data — morning.html is the
+     whole reason. It renders weight, sleep, food, water, caffeine, goals and
+     study from ten different appKeys and owns none of them, so it was showing
+     whatever each device happened to have cached from the last time that device
+     opened each source page. Log breakfast on the phone, read the briefing on
+     the laptop, and the food simply wasn't there.
+
+     Registering ten full engines on a page that never writes would mean ten
+     upserts and ten realtime channels for a snapshot nobody edits. A briefing
+     wants the truth once, at load. */
   window.initCloudSync = function (config) {
     const appKey = config && config.appKey;
     const syncedKeys = (config && config.syncedKeys) || [];
     const syncedPrefixes = (config && config.syncedPrefixes) || [];
     const onApplied = config && config.onApplied;
+    const readOnly = !!(config && config.readOnly);
     if (!appKey || !window.supabase) return;
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
@@ -221,18 +235,23 @@
     }
 
     // Intercept writes: record deletions as tombstones, then schedule a sync.
-    localStorage.setItem = function (k, v) {
-      let prev;
-      if (!suppress && matches(k)) { try { prev = origGet(k); } catch (e) {} }
-      origSet(k, v);
-      if (!suppress && matches(k)) { try { recordTomb(k, prev, parse(v)); } catch (e) {} schedulePush(); }
-    };
-    localStorage.removeItem = function (k) {
-      let prev;
-      if (!suppress && matches(k)) { try { prev = origGet(k); } catch (e) {} }
-      origRemove(k);
-      if (!suppress && matches(k)) { try { recordTomb(k, prev, undefined); } catch (e) {} schedulePush(); }
-    };
+    // Skipped entirely when read-only — a page that owns none of these keys has
+    // no business recording tombstones for them, and morning.html registers ten
+    // of these: ten chained setItem overrides on a page that never writes.
+    if (!readOnly) {
+      localStorage.setItem = function (k, v) {
+        let prev;
+        if (!suppress && matches(k)) { try { prev = origGet(k); } catch (e) {} }
+        origSet(k, v);
+        if (!suppress && matches(k)) { try { recordTomb(k, prev, parse(v)); } catch (e) {} schedulePush(); }
+      };
+      localStorage.removeItem = function (k) {
+        let prev;
+        if (!suppress && matches(k)) { try { prev = origGet(k); } catch (e) {} }
+        origRemove(k);
+        if (!suppress && matches(k)) { try { recordTomb(k, prev, undefined); } catch (e) {} schedulePush(); }
+      };
+    }
 
     // Combine local + remote (+ tombstones) into the merged superset.
     function buildMerged(remoteData) {
@@ -423,6 +442,16 @@
         hasOwnerCol = !t.error;
       } catch (e) { hasOwnerCol = false; }
 
+      // Read-only: take the cloud's copy, merge it in, render, done. No push,
+      // no channel, no interval — a briefing is a snapshot, not a session.
+      if (readOnly) {
+        const remote = await pull();
+        const r = buildMerged(remote);
+        const changed = applyLocal(r.merged);
+        if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
+        return;
+      }
+
       await syncNow();
       supa.channel('app_state_' + appKey)
         .on('postgres_changes', {
@@ -440,6 +469,11 @@
         .subscribe();
       setInterval(syncTick, 15000);
     })();
+
+    // A read-only registration must never write. Without this it would still
+    // blind-push on unload — and a briefing holding a stale cache of ten other
+    // pages' data is the LAST thing that should get a keepalive write.
+    if (readOnly) return;
 
     window.addEventListener('beforeunload', flushOnUnload);
     window.addEventListener('pagehide', flushOnUnload);
