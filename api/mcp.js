@@ -47,6 +47,7 @@ function tombstone(b, lsKey, item) { var k = idKeyOf(item); if (!k) return; if (
 var BUNDLE = {
   'sleep:logs': 'sleep', 'sleep:profile': 'sleep',
   'po_workouts': 'po-coach', 'po_coach_weights': 'po-coach', 'po_coach_workout_done': 'po-coach',
+  'po_templates': 'po-coach', 'po_exercises': 'po-coach', 'po_tpl_folders': 'po-coach',
   'nut:logs': 'nutrition', 'nut:profile': 'nutrition', 'nut:meals': 'nutrition', 'nut:custom': 'nutrition',
   'caf:logs': 'caffeine',
   'po_water_v1': 'health', 'stack:items': 'health',
@@ -96,6 +97,8 @@ var TOOLS = [
   // writes
   { name: 'log_meal', description: 'Log a meal/food to nutrition. Provide calories; protein/carbs/fat optional.', inputSchema: { type: 'object', properties: { name: { type: 'string' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' }, meal: { type: 'string', description: 'Breakfast/Lunch/Dinner/Snacks' }, date: { type: 'string', description: 'YYYY-MM-DD, default today' } }, required: ['name', 'kcal'] } },
   { name: 'log_weight', description: 'Log bodyweight (kg) for a day.', inputSchema: { type: 'object', properties: { kg: { type: 'number' }, date: { type: 'string' } }, required: ['kg'] } },
+  { name: 'get_workout_templates', description: 'List his workout templates: name, folder, and each exercise with its set count.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'add_workout_template', description: 'Add a NEW workout template. Append-only: it always mints a fresh id and can never edit or replace one he built. exIds must already exist in his exercise list (see get_workout_templates).', inputSchema: { type: 'object', properties: { name: { type: 'string' }, folderId: { type: 'string' }, items: { type: 'array', items: { type: 'object', properties: { exId: { type: 'string' }, sets: { type: 'number' } }, required: ['exId', 'sets'] } } }, required: ['name', 'items'] } },
   { name: 'add_water', description: 'Add glasses of water for a day (default 1).', inputSchema: { type: 'object', properties: { glasses: { type: 'number' }, date: { type: 'string' } } } },
   { name: 'log_caffeine', description: 'Log caffeine in mg.', inputSchema: { type: 'object', properties: { mg: { type: 'number' }, name: { type: 'string' }, date: { type: 'string' } }, required: ['mg'] } },
   { name: 'log_sleep', description: 'Log/update a night of sleep (hours and/or recovery 0-100, quality, energy).', inputSchema: { type: 'object', properties: { hours: { type: 'number' }, recovery: { type: 'number' }, quality: { type: 'number' }, energy: { type: 'number' }, date: { type: 'string' } } } },
@@ -253,6 +256,47 @@ async function callTool(name, a) {
       b['po_coach_weights'] = w;
     });
     return 'Logged bodyweight ' + a.kg + 'kg for ' + d2 + '.';
+  }
+
+  if (name === 'get_workout_templates') {
+    var tpls = await readArr('po_templates');
+    var exs = await readArr('po_exercises');
+    if (!tpls.length) return 'No templates stored yet (the seeds live in-app until he edits one).';
+    var exName = {}; exs.forEach(function (e) { if (e && e.id) exName[e.id] = e.name; });
+    return tpls.map(function (t) {
+      var items = arr(t.items).map(function (it) {
+        return '    ' + (exName[it.exId] || it.exId) + ' × ' + it.sets;
+      }).join('\n');
+      return (t.name || t.id) + (t.folderId ? '  [' + t.folderId + ']' : '') + '\n' + items;
+    }).join('\n\n');
+  }
+
+  if (name === 'add_workout_template') {
+    var tname = String(a.name || '').trim().slice(0, 60);
+    if (!tname) return 'Need a name.';
+    var wanted = arr(a.items);
+    if (!wanted.length) return 'Need at least one item.';
+
+    // An exId the app cannot resolve renders as a broken row, so refuse rather
+    // than write a template he'd open once and never trust again.
+    var known = await readArr('po_exercises');
+    var ids = {}; known.forEach(function (e) { if (e && e.id) ids[e.id] = 1; });
+    var bad = wanted.filter(function (it) { return !it || !it.exId || (known.length && !ids[it.exId]); })
+                    .map(function (it) { return (it && it.exId) || '(blank)'; });
+    if (bad.length) return 'Unknown exercise id(s): ' + bad.join(', ') + '. Use get_workout_templates to see valid ids.';
+
+    var made = null;
+    await mutateBundle('po-coach', function (b) {
+      var tpls = arr(b['po_templates']);
+      /* APPEND ONLY. A fresh id every time, never a lookup-by-name that could
+         overwrite something he built. po_templates is an ID_UNION key in
+         pocoach-sync, so a new id merges across devices instead of colliding. */
+      var id = 'tpl-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      made = { id: id, name: tname, items: wanted.map(function (it) { return { exId: String(it.exId), sets: Math.max(1, r0(it.sets) || 1) }; }) };
+      if (a.folderId) made.folderId = String(a.folderId);
+      b['po_templates'] = tpls.concat([made]);
+    });
+    return 'Added template "' + tname + '" (' + made.items.length + ' exercises, id ' + made.id + '). Nothing existing was touched.';
   }
 
   if (name === 'add_water') {
@@ -538,7 +582,7 @@ async function handle(m) {
       protocolVersion: (m.params && m.params.protocolVersion) || '2024-11-05',
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: 'ALS Dashboard', version: '2.0.0' },
-      instructions: 'Personal performance dashboard for Alex. READ tools (snapshot, get_*) report his live data; WRITE tools (log_meal, log_weight, add_water, log_caffeine, log_sleep, mark_workout_done, mark_bill_paid, add_no_spend_day, add_habit, complete_habit, take_supplement, log_movie, add_to_watchlist, add_idea, add_learning, journal_entry) modify it. Dates are YYYY-MM-DD and default to today. Confirm destructive-sounding requests before writing.'
+      instructions: 'Personal performance dashboard for Alex. READ tools (snapshot, get_*) report his live data; WRITE tools (log_meal, log_weight, add_water, log_caffeine, log_sleep, mark_workout_done, mark_bill_paid, add_no_spend_day, add_habit, complete_habit, take_supplement, log_movie, add_to_watchlist, add_idea, add_learning, journal_entry, add_workout_template) modify it. add_workout_template is APPEND-ONLY and mints a fresh id every call — it can never edit or replace a template he built, and there is deliberately no tool that can. Dates are YYYY-MM-DD and default to today. Confirm destructive-sounding requests before writing.'
     });
   }
   if (typeof method === 'string' && method.indexOf('notifications/') === 0) return null;
