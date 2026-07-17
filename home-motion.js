@@ -40,7 +40,6 @@
       var rf = el.querySelector('.rf');
       if (rf) { var off = (window.__alsReady ? window.__alsReady() : 92.5); if (reduce) rf.style.setProperty('stroke-dashoffset', off, 'important'); else rf.style.strokeDashoffset = off; }
     }
-    if (el.id === 'feed') revealFeed();
   }
 
   /* haptics */
@@ -52,17 +51,10 @@
     } catch (e) { }
   }
 
-  /* skeleton → real for the intelligence feed */
-  var feedDone = false;
-  function revealFeed() {
-    if (feedDone) return; feedDone = true;
-    setTimeout(function () {
-      var sk = document.getElementById('feedSkel'), re = document.getElementById('feedReal'), ts = document.getElementById('feedTs');
-      if (sk) sk.style.display = 'none';
-      if (re) { re.style.display = ''; requestAnimationFrame(function () { re.style.opacity = '1'; }); }
-      if (ts) ts.textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    }, reduce ? 0 : 1100);
-  }
+  /* revealFeed() lived here: a 1.1s skeleton shimmer that "analysed" before
+     showing the intelligence feed. The feed is gone (it duplicated the two
+     sections above it), and so is the theatre — the data was already in memory
+     the whole time it pretended to think. */
 
   /* progressive-disclosure peek */
   var peekDlg = document.getElementById('peek');

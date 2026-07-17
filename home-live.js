@@ -282,43 +282,23 @@
     } catch (e) { }
   }
 
-  /* ── intelligence feed — real signals ── */
-  function paintFeed() {
-    try {
-      var real = document.getElementById('feedReal'); if (!real) return;
-      var items = [];
-      var ins = (window.ALSInsights && window.ALSInsights.compute()) || [];
-      var fc = (window.ALSForecast && window.ALSForecast.compute()) || [];
-      ins.slice(0, 2).forEach(function (i) { items.push({ c: 'var(--emerald)', p: 'M3 12h4l2-5 4 10 2-5h6', t: i.text }); });
-      if (fc[0]) items.push({ c: 'var(--violet)', p: 'M4 4v16h16M7 14l3-4 3 2 5-7', t: fc[0].text });
-      /* bills due */
-      try {
-        var bills = (ls('bills:items', []) || []).filter(function (b) { return b && b.id; });
-        if (bills.length) items.push({ c: 'var(--amber)', p: 'M12 3v18M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', t: 'You track ' + bills.length + ' recurring bill' + (bills.length === 1 ? '' : 's') + '. Check what’s due this week.' });
-      } catch (e) { }
-      if (!items.length) {
-        items.push({ c: 'var(--emerald)', p: 'M20 6 9 17l-5-5', t: 'Nothing flagged today. Keep logging and Nova will surface what matters.' });
-      }
-      real.innerHTML = items.slice(0, 3).map(function (it) {
-        return '<div class="feed-item"><span class="fi" style="color:' + it.c + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="' + it.p + '"/></svg></span><div class="ft">' + esc(it.t) + '</div></div>';
-      }).join('');
-    } catch (e) { }
-  }
+  /* The "Intelligence feed" lived here. It rendered ALSInsights.slice(0,2) +
+     ALSForecast[0] — a strict SUBSET of "What Nova noticed" and "Where you're
+     headed", the two sections about 100px above it on the same page. Same
+     engines, same page, third rendering; ALSInsights.compute() ran four times
+     per load. Its only unique line was a count of recurring bills, which said
+     the same sentence every day. Deleted, not moved: nothing was lost. */
 
-  /* ── Agent / XP card — real gamification ── */
+  /* ── Standing — streak, this week vs last, milestones ──
+     No level, no XP, no rank title: those measured nothing. Everything below is
+     a count of something he actually did. */
   function paintAgent() {
     try {
       if (!(window.ALS && window.ALS.XP)) return;
       var st = window.ALS.XP.compute(); if (!st) return;
-      var lv = st.level, data = st.data, tw = st.thisWeek, lw = st.lastWeek;
+      var data = st.data, tw = st.thisWeek, lw = st.lastWeek;
       var setTxt = function (sel, v) { var e = document.querySelector(sel); if (e) e.textContent = v; };
-      setTxt('.agent .badge', 'LVL ' + lv.level);
       setTxt('.agent .streak', (data.streak || 0) + ' day streak');
-      setTxt('.agent-title', 'The ' + lv.title);
-      var xpLbl = document.querySelectorAll('.agent .xpbar-lbl span');
-      if (xpLbl[0]) xpLbl[0].textContent = fmtN(lv.xp) + ' XP';
-      if (xpLbl[1]) xpLbl[1].textContent = lv.isMax ? 'Max level reached' : (fmtN(lv.xpToNext) + ' to ' + lv.nextTitle);
-      var fill = document.querySelector('.agent .xpbar-fill'); if (fill) fill.style.width = Math.round((lv.progress || 0) * 100) + '%';
       /* week vs last */
       var wnum = document.querySelector('.agent .week-score .num .cnt') || document.querySelector('.agent .week-score .num');
       if (wnum && tw) { wnum.setAttribute('data-to', Math.round(tw.score)); wnum.textContent = '0'; }
@@ -380,7 +360,6 @@
     paintReadiness(animate);
     paintInsights();
     paintForecasts();
-    paintFeed();
     paintAgent();
     paintWater();
   }

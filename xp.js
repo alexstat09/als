@@ -1,21 +1,13 @@
-/* xp.js — Jarvis Gamification Engine
-   Computes XP, level, milestones and week-vs-week score
-   purely from existing localStorage data. No per-page changes needed. */
+/* xp.js — standing: streak, week-vs-week and milestones, computed from the
+   data that is already there. No per-page changes needed.
+
+   It was the "Jarvis Gamification Engine": an XP score and a Recruit→Legend
+   ladder. Both are gone. Everything MÉTRON shows is a measurement of a real
+   life; XP was the one number that measured nothing. The name stays only
+   because filename == URL in this repo and 30-odd pages reference it. */
 (function () {
   'use strict';
   window.ALS = window.ALS || {};
-
-  // ── Level table ───────────────────────────────────────
-  const LEVELS = [
-    { n: 1, min: 0,    title: 'Recruit',    color: '#76746E' },
-    { n: 2, min: 150,  title: 'Operative',  color: '#18C8C0' },
-    { n: 3, min: 400,  title: 'Agent',      color: '#34E2B0' },
-    { n: 4, min: 800,  title: 'Specialist', color: '#F2C063' },
-    { n: 5, min: 1400, title: 'Commander',  color: '#9B8CFF' },
-    { n: 6, min: 2200, title: 'Director',   color: '#5EEAD4' },
-    { n: 7, min: 3200, title: 'Phantom',    color: '#C4B5FD' },
-    { n: 8, min: 4500, title: 'Legend',     color: '#F4F1EA' },
-  ];
 
   // ── Milestone definitions ────────────────────────────
   const MILESTONES = [
@@ -98,44 +90,14 @@
     return { totalDone, perfectDays, weightLogs, workoutDays, nutritionDays, streak };
   }
 
-  // ── XP formula ────────────────────────────────────────
-  function computeXP(d) {
-    let xp = 0;
-    xp += d.totalDone    * 8;   // 8 XP per goal completed
-    xp += d.perfectDays  * 20;  // +20 bonus per perfect day
-    xp += d.weightLogs   * 4;   // 4 XP per weigh-in
-    xp += d.workoutDays  * 15;  // 15 XP per workout day logged
-    xp += d.nutritionDays * 10; // 10 XP per nutrition day tracked
-    // Streak bonuses (additive tiers)
-    if (d.streak >= 100) xp += 500;
-    else if (d.streak >= 30) xp += 200;
-    else if (d.streak >= 14) xp += 100;
-    else if (d.streak >= 7)  xp += 50;
-    else if (d.streak >= 3)  xp += 20;
-    return Math.round(xp);
-  }
-
-  // ── Level info from XP ────────────────────────────────
-  function getLevelInfo(xp) {
-    let cur = LEVELS[0];
-    for (const l of LEVELS) {
-      if (xp >= l.min) cur = l; else break;
-    }
-    const idx  = LEVELS.indexOf(cur);
-    const next = LEVELS[idx + 1] || null;
-    return {
-      level:    cur.n,
-      title:    cur.title,
-      color:    cur.color,
-      xp,
-      xpMin:    cur.min,
-      xpNext:   next ? next.min : cur.min,
-      xpToNext: next ? next.min - xp : 0,
-      progress: next ? (xp - cur.min) / (next.min - cur.min) : 1,
-      isMax:    !next,
-      nextTitle: next ? next.title : null,
-    };
-  }
+  /* The XP formula and the level table used to live here — 8 XP per goal, a
+     Recruit→Legend ladder, "The Operator", LVL 14.
+     They're gone on purpose. XP was the only number on this dashboard that was
+     not a measurement: 69.7kg is a fact, 7h12m is a fact, "8,420 XP" was an
+     abstraction invented to make logging feel like a game, and the ranks were
+     cosplay left over from before the design direction was settled. Everything
+     underneath was real and is kept — streak, week-vs-week, milestones. The
+     score on top was the only fiction, so the score on top is what went. */
 
   // ── Week stats ────────────────────────────────────────
   // weekOffset: 0 = this week (Mon–Sun), -1 = last week
@@ -189,15 +151,14 @@
   }
 
   // ── Public API ────────────────────────────────────────
+  // No `level` any more: see the note above. Callers get measurements only.
   window.ALS.XP = {
     compute() {
-      const data      = collectData();
-      const xp        = computeXP(data);
-      const level     = getLevelInfo(xp);
+      const data       = collectData();
       const milestones = MILESTONES.map(m => ({ ...m, unlocked: m.check(data) }));
-      const thisWeek  = getWeekData(0);
-      const lastWeek  = getWeekData(-1);
-      return { data, level, milestones, thisWeek, lastWeek };
+      const thisWeek   = getWeekData(0);
+      const lastWeek   = getWeekData(-1);
+      return { data, milestones, thisWeek, lastWeek };
     },
   };
 })();
