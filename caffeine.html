@@ -664,8 +664,17 @@ function loadCustom() {
 }
 function saveCustom() { localStorage.setItem('caf:custom', JSON.stringify(custom)); }
 
-// ── Load profile (weight from po-water) ──────────────────────
+// ── Load profile (weight) ────────────────────────────────────
 function loadProfile() {
+  // Bodyweight drives the 3 mg/kg target. Weigh-ins are the truth — they move as
+  // he does — so read them first; the typed water profile is only a fallback for
+  // someone who has never weighed in. Mirrors bodyWeightKg() in morning.html.
+  try {
+    const ws = (JSON.parse(localStorage.getItem('po_coach_weights')) || [])
+      .filter(e => e && typeof e.weight === 'number' && e.dateKey)
+      .sort((a, b) => a.dateKey < b.dateKey ? -1 : 1);
+    if (ws.length) { weightKg = ws[ws.length - 1].weight; return; }
+  } catch (e) {}
   try {
     const s = JSON.parse(localStorage.getItem('po_water_v1')) || {};
     const p = s.profile || {};
@@ -673,6 +682,44 @@ function loadProfile() {
       weightKg = (s.weightUnit === 'lb') ? p.weightKg / 2.20462 : +p.weightKg;
     }
   } catch (e) {}
+}
+
+// ── Load sleep (his real wake/bed + recovery) ────────────────
+function loadSleep() {
+  // The whole energy curve, the cutoff, and the "first coffee" tip pivot on
+  // wake/bed. Read his actual sleep log instead of assuming 7am–11pm. e.recovery
+  // (0–100, the score his sleep page already computes) drives the caffeine ceiling
+  // — which, before this, only ever fired for WHOOP users. Mirrors morning.html.
+  let e = null;
+  try {
+    const logs = JSON.parse(localStorage.getItem('sleep:logs')) || [];
+    if (logs.length) {
+      const tk = todayKey();
+      e = logs.find(l => l && l.dateKey === tk)
+          || logs.slice().sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1))[0];
+    }
+  } catch (err) {}
+  if (!e) return;
+
+  const w = hmToH(e.wake), b = hmToH(e.bed);
+  if (w != null && w >= 3 && w <= 12) wakeH = w;
+  if (b != null) {
+    let bh = b;
+    if (bh < wakeH) bh += 24;                 // bedtime past midnight
+    if (bh >= 18 && bh <= 26) bedH = Math.min(bh, 24);
+  }
+  if (typeof e.recovery === 'number') recovery = e.recovery;
+}
+function hmToH(s) {                            // "23:30" → 23.5
+  if (!s || typeof s !== 'string') return null;
+  const p = s.split(':'), h = +p[0], m = +p[1];
+  if (!isFinite(h)) return null;
+  return h + (isFinite(m) ? m / 60 : 0);
+}
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+       + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 // ── WHOOP ─────────────────────────────────────────────────────
@@ -1106,7 +1153,13 @@ let drinkQ = '';
 
 function renderDrinks() {
   const q = drinkQ.toLowerCase();
-  const all = [...DRINKS, ...custom];
+  const seen = new Set();
+  const all = [...DRINKS, ...custom].filter(d => {
+    const k = d.name.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   const list = q ? all.filter(d => d.name.toLowerCase().includes(q)) : all;
   eid('drinksGrid').innerHTML = list.map(d =>
     `<button class="drink-btn" onclick='logDrink(${J(d.name)},${d.mg},${J(d.emoji||"☕")})'>
@@ -1121,7 +1174,10 @@ function renderDrinks() {
 
 // ── Log / delete ──────────────────────────────────────────────
 window.logDrink = function (name, mg, emoji) {
-  logs.push({ id: Date.now(), name, mg, emoji, ts: new Date().toISOString() });
+  const now = Date.now();
+  // _ts is numeric so sync's re-add-vs-tombstone check reads a real time, not NaN
+  // from the ISO ts string. Keeps a delete from being resurrected across devices.
+  logs.push({ id: now, name, mg, emoji, ts: new Date().toISOString(), _ts: now });
   saveLogs();
   rerender();
 };
@@ -1204,6 +1260,7 @@ async function init() {
   loadLogs();
   loadCustom();
   loadProfile();
+  loadSleep();          // his real wake/bed + recovery; WHOOP (if ever connected) overrides
   await loadWhoop();
 
   renderDrinks();
@@ -1218,9 +1275,8 @@ async function init() {
     const name = eid('customName').value.trim();
     const mg   = parseInt(eid('customMg').value, 10);
     if (!name || !(mg > 0)) return;
-    const entry = { name, mg, emoji: '☕' };
-    custom.push(entry);
-    saveCustom();
+    const exists = custom.some(c => c.name.toLowerCase() === name.toLowerCase());
+    if (!exists) { custom.push({ name, mg, emoji: '☕' }); saveCustom(); }
     eid('customName').value = '';
     eid('customMg').value   = '';
     renderDrinks();
