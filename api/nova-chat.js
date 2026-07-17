@@ -14,8 +14,9 @@ var auth = require('./_auth');
 
 // Groq: free API, fast, available worldwide (incl. the EEA/Greece, where
 // Gemini's free tier is not offered — limit:0). OpenAI-compatible API.
-var GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Which model she thinks with is _model.js's problem, not hers — she asks for
+// the 'text' role and gets the strongest one that's still alive.
+var model = require('./_model');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function localParts(tz) {
@@ -604,29 +605,31 @@ module.exports = async function (req, res) {
      decide whether another round is needed. */
   async function streamTurn(withTools) {
     var payload = {
-      model: GROQ_MODEL,
       messages: convo,
-      max_tokens: briefMode ? 500 : 1024,
+      // Deep reasoning spends output budget before the answer starts, so the
+      // ceiling has to clear both. 1024 was sized for a model that didn't think.
+      max_tokens: briefMode ? 500 : 2048,
       temperature: briefMode ? 0.5 : 0.7,
       stream: true
     };
     if (withTools) { payload.tools = TOOLS; payload.tool_choice = 'auto'; }
+    // Think hard on real questions. _model maps this to whatever the chosen
+    // model actually accepts; the brief is a fixed recital and needs none.
+    if (!briefMode) payload.reasoning = 'high';
 
-    var upstream;
-    try {
-      upstream = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    } catch (e) { return { fatal: "I couldn't reach my brain just now — check your connection and try again." }; }
+    var got = await model.stream('text', payload);
 
-    if (!upstream.ok || !upstream.body) {
-      if (upstream.status === 429) return { fatal: "I'm getting a lot of requests right now — give me a minute and ask me again. 🌿" };
-      var detail = '';
-      try { var j = await upstream.json(); detail = (j && j.error && j.error.message) || ''; } catch (e) {}
-      return { fatal: 'Nova hit a snag (' + upstream.status + (detail ? ': ' + detail : '') + '). Try again in a moment.' };
+    if (!got.ok) {
+      if (got.kind === 'network') return { fatal: "I couldn't reach my brain just now — check your connection and try again." };
+      if (got.kind === 'no-key') return { fatal: 'Nova needs GROQ_API_KEY to think (see NOVA_SETUP.md).' };
+      if (got.kind === 'rate') return { fatal: "I'm getting a lot of requests right now — give me a minute and ask me again. 🌿" };
+      // The model wrote prose where a tool call belonged. That's a fumble, not
+      // a death — the same model answers fine once we stop offering it tools.
+      // Nothing has been streamed yet, so the caller can cleanly retry.
+      if (got.kind === 'tool_use_failed') return { toolFailed: true };
+      return { fatal: 'Nova hit a snag (' + (got.status || '?') + (got.message ? ': ' + got.message : '') + '). Try again in a moment.' };
     }
+    var upstream = got.upstream;
 
     startBody();
     var decoder = new TextDecoder();
@@ -679,6 +682,11 @@ module.exports = async function (req, res) {
   for (var round = 0; round < MAX_ROUNDS; round++) {
     var allowTools = useTools && round < MAX_ROUNDS - 1;
     turn = await streamTurn(allowTools);
+
+    // Tool call fumbled (prose where a call belonged). Nothing streamed yet,
+    // so take the same round again with tools withheld: she answers from her
+    // brief instead of dying with an error the user can do nothing about.
+    if (turn.toolFailed) turn = await streamTurn(false);
 
     if (turn.fatal) {
       if (!headersSent) { startBody(); }

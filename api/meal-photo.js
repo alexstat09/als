@@ -2,12 +2,18 @@
 // Photo → meal estimate. POST { image: dataURL } → a Groq vision model
 // looks at the photo and returns ONE strict JSON object with estimated
 // macros for the whole plate. Same shape + clamping as nutrition-estimate.
-// Key stays server-side. Model is env-overridable (GROQ_VISION_MODEL).
+// Key stays server-side. Model comes from the 'vision' chain (_model.js),
+// still overridable with GROQ_VISION_MODEL.
+//
+// ⚠️ Vision has NO safety net: qwen3.6-27b is Groq's only image-capable model
+// and it is PREVIEW — exactly what llama-4-scout was before it was pulled on
+// 17/07/26 and took this endpoint down. So every failure path below must SAY
+// the photo could not be read. It must never fall back to zeros: a 0-kcal
+// meal silently logged is worse than no meal logged.
 // ════════════════════════════════════════════════════════════════
 'use strict';
 var auth = require('./_auth');
-var GROQ_MODEL = process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
-var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+var model = require('./_model');
 
 function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -44,8 +50,7 @@ module.exports = async function (req, res) {
   if (!image || image.indexOf('data:image') !== 0) { res.status(400).json({ error: 'no image' }); return; }
   if (image.length > 8000000) { res.status(200).json({ error: 'too-big', message: 'Photo too large — try again.' }); return; }
 
-  var payload = {
-    model: GROQ_MODEL,
+  var r = await model.json('vision', {
     messages: [
       { role: 'system', content: SYS },
       { role: 'user', content: [
@@ -56,30 +61,20 @@ module.exports = async function (req, res) {
     max_tokens: 500,
     temperature: 0.2,
     response_format: { type: 'json_object' }
-  };
-
-  var r;
-  try {
-    r = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch (e) { res.status(200).json({ error: 'network' }); return; }
+  });
 
   if (!r.ok) {
-    var d = ''; try { var ej = await r.json(); d = (ej && ej.error && ej.error.message) || ''; } catch (e) {}
-    if (r.status === 429) { res.status(200).json({ error: 'rate', message: 'Busy for a moment — try again in a few seconds.' }); return; }
-    res.status(200).json({ error: 'upstream', status: r.status, message: d }); return;
+    res.status(200).json(model.fail(r, {
+      'no-key': 'Photo logging needs GROQ_API_KEY (see NOVA_SETUP.md).',
+      // The chain is one model deep here, so "exhausted" means photo reading
+      // is genuinely unavailable. Say that, and point at the path that works.
+      exhausted: 'Photo reading is unavailable right now (the vision model is not responding) — use AI Describe instead.'
+    }));
+    return;
   }
 
-  var raw = '';
-  try { var j = await r.json(); raw = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || ''; } catch (e) {}
-  var obj = {};
-  try { obj = JSON.parse(raw); } catch (e) {
-    var m = raw.match(/\{[\s\S]*\}/); if (m) { try { obj = JSON.parse(m[0]); } catch (e2) {} }
-  }
-  if (!obj || typeof obj !== 'object') { res.status(200).json({ error: 'parse', message: 'Could not read the photo clearly — try AI Describe.' }); return; }
+  var obj = r.obj;
+  if (!obj) { res.status(200).json({ error: 'parse', message: 'Could not read the photo clearly — try AI Describe.' }); return; }
 
   var items = [];
   if (Array.isArray(obj.items)) {

@@ -153,5 +153,41 @@ if [ -n "$DRIFT" ]; then
   exit 1
 fi
 
+# ── MODEL ─────────────────────────────────────────────────────────
+# Groq retires models on a published schedule and every file that hardcoded
+# one died with it: llama-4-scout took photo macros down on 17/07/26 without a
+# single warning. Groq announces these months ahead, so a dead ID has no
+# business reaching main. When one here goes dark, add it to the list and the
+# next push tells you which file to fix.
+# Live schedule: https://console.groq.com/docs/deprecations
+DEAD='llama-4-scout|llama-4-maverick|llama-3\.1-8b-instant|llama3-70b-8192|llama3-8b-8192|gemma2-9b-it|mixtral-8x7b|kimi-k2-instruct|deepseek-r1-distill|qwen/qwen3-32b|llama-guard-4-12b|playai-tts|mistral-saba'
+DEADHIT="$(grep -rnE "$DEAD" --include='*.js' api/ 2>/dev/null | grep -v '^\s*//' | grep -vE '//.*(shut down|pulled|retired|died|was before)')"
+if [ -n "$DEADHIT" ]; then
+  echo ""
+  echo "  ✗ MODEL    a retired Groq model is still referenced in api/:"
+  echo "$DEADHIT" | sed 's/^/               /'
+  echo "             chain lives in api/_model.js — see console.groq.com/docs/deprecations"
+  echo "SMOKE_FAIL model"
+  exit 1
+fi
+# llama-3.3-70b is NOT dead yet (16/08/26) — it is the last rung of the text
+# chain on purpose. But it must never be the FIRST thing we reach for again.
+if grep -qE "^\s*text:\s*\['llama-3\.3-70b" api/_model.js 2>/dev/null; then
+  echo ""
+  echo "  ✗ MODEL    the text chain leads with llama-3.3-70b, which dies 16/08/26."
+  echo "SMOKE_FAIL model"
+  exit 1
+fi
+# Every Groq call must go through the chain. A raw endpoint URL in an endpoint
+# file means someone hardcoded a model again and re-opened this whole hole.
+RAWGROQ="$(grep -rln 'api\.groq\.com' --include='*.js' api/ 2>/dev/null | grep -v '_model.js')"
+if [ -n "$RAWGROQ" ]; then
+  echo ""
+  echo "  ✗ MODEL    a file calls Groq directly instead of via _model.js:"
+  echo "$RAWGROQ" | sed 's/^/               /'
+  echo "SMOKE_FAIL model"
+  exit 1
+fi
+
 echo "$OUT" | grep -q '^SMOKE_OK$' && exit 0
 exit 1

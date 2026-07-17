@@ -10,8 +10,7 @@
 // ════════════════════════════════════════════════════════════════
 'use strict';
 var auth = require('./_auth');
-var GROQ_MODEL = process.env.GROQ_WEB_PARSE_MODEL || 'llama-3.3-70b-versatile';
-var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+var model = require('./_model');   // role 'web' keeps the GROQ_WEB_PARSE_MODEL override
 var TAVILY_URL = 'https://api.tavily.com/search';
 
 function readBody(req) {
@@ -96,25 +95,21 @@ module.exports = async function (req, res) {
   if (!ctx || !ctx.text) { res.status(200).json({ error: 'no-results', message: 'Web search found nothing usable — try a barcode or the estimate.' }); return; }
 
   // 2) parse the snippets into nutrition JSON (tiny request — cannot 413)
-  var payload = {
-    model: GROQ_MODEL,
+  var r = await model.json('web', {
     messages: [{ role: 'system', content: SYS }, { role: 'user', content: 'PRODUCT: ' + text + '\n\nWEB RESULTS:\n' + ctx.text }],
     max_tokens: 400, temperature: 0.1, response_format: { type: 'json_object' }
-  };
-  var r;
-  try {
-    r = await fetch(GROQ_URL, { method: 'POST', headers: { 'Authorization': 'Bearer ' + groqKey, 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-  } catch (e) { res.status(200).json({ error: 'network' }); return; }
+  });
   if (!r.ok) {
-    if (r.status === 429) { res.status(200).json({ error: 'rate', message: 'Busy for a moment — try again.' }); return; }
-    res.status(200).json({ error: 'upstream', status: r.status, message: 'Couldn’t parse the web results — use the estimate.' }); return;
+    res.status(200).json(model.fail(r, {
+      rate: 'Busy for a moment — try again.',
+      upstream: 'Couldn’t parse the web results — use the estimate.',
+      exhausted: 'Couldn’t parse the web results — use the estimate.'
+    }));
+    return;
   }
 
-  var raw = '';
-  try { var j = await r.json(); raw = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || ''; } catch (e) {}
-  var obj = null;
-  try { obj = JSON.parse(raw); } catch (e) { var m = raw.match(/\{[\s\S]*\}/); if (m) { try { obj = JSON.parse(m[0]); } catch (e2) {} } }
-  if (!obj || typeof obj !== 'object') { res.status(200).json({ error: 'parse', message: 'Couldn’t read a clear result — try a barcode.' }); return; }
+  var obj = r.obj;
+  if (!obj) { res.status(200).json({ error: 'parse', message: 'Couldn’t read a clear result — try a barcode.' }); return; }
 
   var p100 = obj.per100 || {};
   var P = num(p100.p, 100), C = num(p100.c, 100), F = num(p100.f, 100);
