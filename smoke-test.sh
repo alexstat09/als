@@ -153,6 +153,36 @@ if [ -n "$DRIFT" ]; then
   exit 1
 fi
 
+# ── SYNC ──────────────────────────────────────────────────────────
+# On 14/07/26 four days of weigh-ins lived on one phone because the engines
+# marked data as "already pushed" BEFORE the write was confirmed. The failure
+# then left that marker lying, so the 15s reconciler compared local against it,
+# saw no drift, and never retried. `lastJson` may ONLY advance on a confirmed
+# write. These pin the exact shapes that caused it.
+OPTIMISTIC="$(grep -rn "lastJson = json; lastPushAt\|lastJson = bJson; push(\|lastJson = bJson; tombDropped" --include='*.js' . 2>/dev/null \
+  | grep -vE '/(archive|docs|_quarantine|node_modules)/')"
+if [ -n "$OPTIMISTIC" ]; then
+  echo ""
+  echo "  ✗ SYNC     a sync engine marks data pushed BEFORE the cloud confirms it."
+  echo "             That is the 14/07/26 bug: the failed push leaves the marker"
+  echo "             lying, the reconciler sees no drift, and it never retries."
+  echo "$OPTIMISTIC" | sed 's/^/               /'
+  echo "SMOKE_FAIL sync"
+  exit 1
+fi
+# A push whose result is never inspected cannot be retried or reported.
+FLOATING="$(grep -rn "try { supa.from('app_state').upsert" --include='*.js' . 2>/dev/null \
+  | grep -vE '/(archive|docs|_quarantine)/')"
+if [ -n "$FLOATING" ]; then
+  echo ""
+  echo "  ✗ SYNC     an upsert is fired without awaiting it — an async rejection"
+  echo "             cannot be caught by the surrounding try/catch, so the failure"
+  echo "             is invisible."
+  echo "$FLOATING" | sed 's/^/               /'
+  echo "SMOKE_FAIL sync"
+  exit 1
+fi
+
 # ── MODEL ─────────────────────────────────────────────────────────
 # Groq retires models on a published schedule and every file that hardcoded
 # one died with it: llama-4-scout took photo macros down on 17/07/26 without a

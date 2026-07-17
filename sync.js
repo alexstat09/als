@@ -309,9 +309,21 @@
       const json = JSON.stringify(body);
       if (json !== lastJson) {
         const iso = new Date().toISOString();
-        lastJson = json; lastPushAt = Date.now();
-        try { await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() }); lastRemoteStamp = iso; ss('ok'); } catch (e) { ss('fail'); }
-      } else { ss('ok'); }   // nothing to push = we're in sync with the cloud
+        lastPushAt = Date.now();          // echo-suppression window opens at the attempt
+        try {
+          await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          // lastJson advances ONLY here, on a confirmed write. Setting it before
+          // the await is how four days of weigh-ins stayed on one phone: the
+          // failed push left lastJson claiming "already pushed", so syncTick
+          // compared local against it, saw no drift, and never tried again.
+          lastJson = json; lastRemoteStamp = iso; ss('ok');
+        } catch (e) {
+          // lastJson untouched → syncTick sees drift → retries in 15s, forever,
+          // without needing the user to notice anything.
+          console.warn('[sync] push failed — retrying on the next tick:', (e && e.message) || e);
+          ss('fail');
+        }
+      } else { ss('ok'); }   // lastJson only ever holds a CONFIRMED push, so this is now true
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
     // Interval reconciler: probe the tiny timestamp first; do the full
@@ -334,16 +346,26 @@
     };
 
     // Incoming realtime change from another device.
-    function applyRealtime(remoteData) {
+    async function applyRealtime(remoteData) {
       const r = buildMerged(remoteData);
       saveTomb(r.tomb);
       const changed = applyLocal(r.merged);
       const body = pushBody(r.merged, r.tomb);
       const json = JSON.stringify(body);
       if (json !== lastJson) {
-        lastJson = json; lastPushAt = Date.now();
-        // local held data the payload lacked — push the union back
-        try { supa.from('app_state').upsert(rowBody(body, new Date().toISOString()), { onConflict: conflictCols() }); } catch (e) {}
+        const iso = new Date().toISOString();
+        lastPushAt = Date.now();
+        // local held data the payload lacked — push the union back. This used to
+        // be a floating promise inside a try/catch that could never catch it: an
+        // async rejection isn't thrown synchronously, so a failure here was
+        // invisible AND lastJson had already moved on. Await it and confirm.
+        try {
+          await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          lastJson = json; lastRemoteStamp = iso; ss('ok');
+        } catch (e) {
+          console.warn('[sync] realtime union push failed — retrying on the next tick:', (e && e.message) || e);
+          ss('fail');
+        }
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }

@@ -775,8 +775,9 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     } catch (e) {}
   }
 
-  // The sync-status indicator ("is it actually saved?") — loaded on every page,
-  // once. sync.js / pocoach-sync.js report into window.ALSSyncStatus defensively.
+  // The sync watchdog — loaded on every page, once. It draws NOTHING unless data
+  // is genuinely stuck on this device; sync.js / pocoach-sync.js report into
+  // window.ALSSyncStatus defensively.
   function loadSyncStatus() {
     try {
       if (window.ALSSyncStatus || document.querySelector('script[src*="als-sync-status"]')) return;

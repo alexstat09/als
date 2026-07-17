@@ -1,151 +1,134 @@
 /* ════════════════════════════════════════════════════════════════
-   als-sync-status.js — the "is it actually saved?" indicator.
+   als-sync-status.js — the sync watchdog.
 
-   The sync engines used to save silently: when a write failed you had no way to
-   know until data went missing days later. This gives sync a VOICE — a small,
-   always-readable pill tucked under the account circle (top-right). It reads
-   "Saved · 3m ago" when all is well, "Saving…" while a change is in flight, and
-   turns amber ("Not saved" / "Offline") the moment something hasn't reached the
-   cloud — tap it to retry.
+   This was an always-on pill ("Saved · 3m ago") in the corner of all 33 pages.
+   Two things were wrong with it.
 
-   The sync engines (sync.js, pocoach-sync.js) report into window.ALSSyncStatus:
-     .queued()  a local change is waiting to be saved
-     .ok()      a push/pull reached the cloud (we're in sync)
-     .fail()    a push/pull failed (something is NOT saved)
-   They call these defensively, so load order never matters. `lastOk` persists in
-   localStorage, so the reassuring state reads true immediately on every page —
-   even ones that don't sync themselves (like home).
+   It was noise. It sat there reporting success on a screen where success is
+   the only thing that ever happens, so it earned nothing and cost attention.
+
+   And it lied. The engines could call ok() without having pushed anything —
+   pocoach-sync fired ok() when a PULL succeeded, regardless of whether our own
+   write landed, and both engines advanced their "already pushed" marker before
+   the write was confirmed. So a green pill was not evidence. On 14/07/26 that
+   cost four days of weigh-ins: they lived on one phone while the cloud, and
+   the laptop, knew nothing.
+
+   That is fixed at the source now (sync.js / pocoach-sync.js): ok() means the
+   cloud CONFIRMED the write, the "already pushed" marker only advances on that
+   confirmation, and both engines retry every 15s until it lands. A failed push
+   is now a blip that heals with nobody watching.
+
+   So this file shows NOTHING when things work, and nothing while a blip heals.
+   It speaks exactly once: when data has been stuck on this device, with the
+   network up, for long enough that it is not a blip. Silence means saved —
+   which is only an honest promise because of the fixes above.
+
+   The API is unchanged, so the engines did not have to learn anything:
+     .queued()  a local change is waiting
+     .ok()      a write REACHED the cloud
+     .fail()    a write did not
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
   if (window.ALSSyncStatus) return;
 
-  var LS_OK = 'als:sync:lastOk';
-  var state = {
-    pending: false,
-    error: false,
-    offline: (typeof navigator !== 'undefined' && navigator.onLine === false),
-    lastOk: (function () { try { return +localStorage.getItem(LS_OK) || 0; } catch (e) { return 0; } })()
-  };
+  /* The engines retry every 15s. Two minutes of unbroken failure is ~8 straight
+     attempts — long past any blip, and far short of nagging. */
+  var STRANDED_MS = 2 * 60 * 1000;
+  var TICK_MS = 20 * 1000;
 
-  var el, dotEl, txtEl, seen = state.lastOk > 0, agoTimer;
+  var failingSince = 0;      // start of the current run of failures; 0 = healthy
+  var el = null, txtEl = null, tick = null;
 
-  function ago(ms) {
-    if (!ms) return '';
-    var s = Math.max(0, Math.round((Date.now() - ms) / 1000));
-    if (s < 45) return 'just now';
-    var m = Math.round(s / 60);
-    if (m < 60) return m + 'm ago';
-    var h = Math.round(m / 60);
-    if (h < 24) return h + 'h ago';
-    return Math.round(h / 24) + 'd ago';
+  function isOnline() { try { return navigator.onLine !== false; } catch (e) { return true; } }
+
+  /* Stuck, and it is not the network's fault. Offline is excluded on purpose:
+     a tunnel is not a bug, the data is safe locally, and it will heal on its
+     own the moment there is signal. Interrupting for that would teach him to
+     ignore this — and then it is worthless on the day it matters. */
+  function stranded() {
+    return failingSince > 0 && isOnline() && (Date.now() - failingSince) >= STRANDED_MS;
   }
 
-  function mode() {                                   // offline > error > pending > synced
-    if (state.offline) return 'offline';
-    if (state.error) return 'error';
-    if (state.pending) return 'saving';
-    return 'synced';
-  }
-  function label(m) {
-    if (m === 'offline') return 'Offline';
-    if (m === 'error') return 'Not saved';
-    if (m === 'saving') return 'Saving…';
-    return state.lastOk ? ('Saved · ' + ago(state.lastOk)) : 'Saved';
-  }
+  function mins() { return Math.max(1, Math.round((Date.now() - failingSince) / 60000)); }
 
-  function ensureEl() {
+  function build() {
     if (el) return;
-    el = document.createElement('button');
-    el.id = 'alsSync'; el.type = 'button'; el.setAttribute('aria-live', 'polite');
-    dotEl = document.createElement('span'); dotEl.className = 'als-sync-dot';
-    txtEl = document.createElement('span'); txtEl.className = 'als-sync-txt';
-    el.appendChild(dotEl); el.appendChild(txtEl);
-
     var css = document.createElement('style');
     css.textContent =
-      '#alsSync{position:fixed;top:56px;right:14px;z-index:47;' +
-      'display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 9px;' +
-      'border:1px solid rgba(255,255,255,.09);border-radius:999px;' +
-      'background:rgba(12,12,14,.62);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);' +
-      'font:600 11.5px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;' +
-      'letter-spacing:.01em;color:rgba(245,242,236,.8);cursor:pointer;-webkit-tap-highlight-color:transparent;' +
-      'box-shadow:0 5px 18px rgba(0,0,0,.38);opacity:0;transform:translateY(-5px) scale(.96);pointer-events:none;' +
-      'transition:opacity .4s cubic-bezier(.16,1,.3,1),transform .4s cubic-bezier(.16,1,.3,1),border-color .3s,background .3s,color .3s;}' +
-      '#alsSync.show{opacity:1;transform:none;pointer-events:auto;}' +
-      '#alsSync .als-sync-dot{flex:none;width:7px;height:7px;border-radius:50%;background:#34E2B0;transition:background .3s;}' +
-      '#alsSync .als-sync-txt{white-space:nowrap;}' +
-      '#alsSync.m-saving .als-sync-dot{animation:alsSyncPulse 1.3s ease-in-out infinite;}' +
-      '@keyframes alsSyncPulse{0%,100%{box-shadow:0 0 0 0 rgba(52,226,176,.5);}50%{box-shadow:0 0 0 5px rgba(52,226,176,0);}}' +
-      '#alsSync.m-error,#alsSync.m-offline{border-color:rgba(242,192,99,.45);background:rgba(30,22,8,.72);color:#F6E4BE;}' +
-      '#alsSync.m-error .als-sync-dot,#alsSync.m-offline .als-sync-dot{background:#F2C063;animation:alsSyncBlink 1.6s step-end infinite;}' +
-      '@keyframes alsSyncBlink{0%,60%{opacity:1;}61%,100%{opacity:.35;}}' +
-      '@media (prefers-reduced-motion:reduce){#alsSync .als-sync-dot{animation:none!important;}}';
+      '#alsStranded{position:fixed;left:0;right:0;top:0;z-index:9999;' +
+      'display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;' +
+      'padding:11px 16px;background:#3A2A08;border-bottom:1px solid rgba(242,192,99,.5);' +
+      'font:600 13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;' +
+      'color:#F8EACA;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.4);' +
+      'padding-top:calc(11px + env(safe-area-inset-top,0px));}' +
+      '#alsStranded .als-str-dot{flex:none;width:8px;height:8px;border-radius:50%;background:#F2C063;}' +
+      '#alsStranded .als-str-btn{flex:none;border:1px solid rgba(242,192,99,.55);border-radius:999px;' +
+      'background:rgba(242,192,99,.14);color:#F8EACA;font:600 12.5px/1 inherit;padding:7px 13px;cursor:pointer;' +
+      '-webkit-tap-highlight-color:transparent;}' +
+      '#alsStranded .als-str-btn:active{transform:scale(.97);}';
     document.head.appendChild(css);
 
-    el.addEventListener('click', onTap);
+    el = document.createElement('div');
+    el.id = 'alsStranded';
+    el.setAttribute('role', 'alert');
+    el.setAttribute('aria-live', 'assertive');
+
+    var dot = document.createElement('span'); dot.className = 'als-str-dot';
+    txtEl = document.createElement('span'); txtEl.className = 'als-str-txt';
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'als-str-btn'; btn.textContent = 'Retry now';
+    btn.addEventListener('click', retry);
+
+    el.appendChild(dot); el.appendChild(txtEl); el.appendChild(btn);
     (document.body || document.documentElement).appendChild(el);
-    place();
-    window.addEventListener('resize', place);
-    // The account circle is injected by topbar.js a moment after load — keep
-    // trying to tuck under it until it appears, then stop.
-    var tries = 0, iv = setInterval(function () { if (place() || tries++ > 30) clearInterval(iv); }, 250);
   }
 
-  // Sit just under the account circle, right-aligned to it — works whether the
-  // circle is in the normal top bar or floated on the home page. Returns true
-  // once the circle was found and used.
-  function place() {
-    if (!el) return false;
-    var acct = document.getElementById('topbarAcct');
-    if (acct) {
-      var r = acct.getBoundingClientRect();
-      if (r.width || r.height) {
-        el.style.top = (r.bottom + 8) + 'px';
-        el.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
-        return true;
-      }
-    }
-    return false;
+  function retry() {
+    try { if (window.ALSSync && window.ALSSync.flush) window.ALSSync.flush(); } catch (e) {}
+    try { window.dispatchEvent(new Event('online')); } catch (e) {}
+    try { document.dispatchEvent(new Event('visibilitychange')); } catch (e) {}
   }
 
   function render() {
-    ensureEl();
-    var m = mode();
-    el.className = 'm-' + m + (seen ? ' show' : '');
-    txtEl.textContent = label(m);
-    el.setAttribute('aria-label', 'Sync status: ' + label(m));
-    place();
-    // keep the "· 3m ago" text honest while the page sits open
-    clearTimeout(agoTimer);
-    if (m === 'synced' && state.lastOk) agoTimer = setTimeout(render, 60000);
-  }
-  function reveal() { seen = true; render(); }
-
-  function onTap() {
-    var m = mode();
-    if (m === 'error' || m === 'offline') {
-      try { if (window.ALSSync && window.ALSSync.flush) window.ALSSync.flush(); } catch (e) {}
-      try { window.dispatchEvent(new Event('online')); } catch (e) {}
-      try { document.dispatchEvent(new Event('visibilitychange')); } catch (e) {}   // nudge pocoach foreground sync
+    if (stranded()) {
+      build();
+      /* Say what is actually at stake — "Not saved" is a status, and a status is
+         easy to dismiss. The thing he needs to know is WHERE his data is. */
+      txtEl.textContent = 'Your changes from the last ' + mins() + ' min are only on this device — they haven\'t reached the cloud.';
+      el.style.display = '';
+    } else if (el) {
+      el.style.display = 'none';
     }
   }
 
-  window.addEventListener('online',  function () { state.offline = false; reveal(); });
-  window.addEventListener('offline', function () { state.offline = true;  reveal(); });
+  /* The banner has to be able to APPEAR while nothing is happening: the engines
+     only report on attempts, so without a clock a device that goes quiet stays
+     quiet. It also refreshes the elapsed count. */
+  function startTick() { if (!tick) tick = setInterval(render, TICK_MS); }
+  function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
+
+  window.addEventListener('offline', render);
+  window.addEventListener('online', function () {
+    /* Fresh grace period: the failures may have been the tunnel, and 15s from
+       now it will probably have healed. Do not accuse it of being broken for
+       something that was never its fault. */
+    if (failingSince) failingSince = Date.now();
+    render();
+  });
 
   window.ALSSyncStatus = {
-    queued: function () { state.pending = true; reveal(); },
+    queued: function () { /* healthy path — deliberately silent */ },
     ok: function () {
-      state.pending = false; state.error = false; state.lastOk = Date.now();
-      try { localStorage.setItem(LS_OK, String(state.lastOk)); } catch (e) {}
-      reveal();
+      failingSince = 0;
+      stopTick();
+      render();
     },
-    fail: function () { state.error = true; reveal(); },
-    get: function () { return { mode: mode(), lastOk: state.lastOk }; }
+    fail: function () {
+      if (!failingSince) failingSince = Date.now();
+      startTick();
+      render();
+    }
   };
-
-  function boot() { if (seen) render(); }             // show the reassuring state right away if we've ever synced
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
-  else boot();
 })();

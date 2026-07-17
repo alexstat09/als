@@ -256,15 +256,24 @@
      just-logged workout is worse than a tombstone another device will re-push. */
   var pulled = false;
 
-  /* Push current local state to Supabase (keepalive=true for pagehide) */
-  function push(keepalive) {
-    if (!pulled && !keepalive) { syncNow(); return; }
-    fetch(REST + '?on_conflict=key', {
+  /* Push current local state to Supabase (keepalive=true for pagehide).
+     Resolves TRUE only when the cloud confirmed the write — the caller uses that
+     to decide whether lastJson may advance. Never advance it on a promise. */
+  function push(keepalive, body) {
+    if (!pulled && !keepalive) { syncNow(); return Promise.resolve(false); }
+    return fetch(REST + '?on_conflict=key', {
       method: 'POST',
       headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: APP_KEY, data: pushBody(), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ key: APP_KEY, data: body || pushBody(), updated_at: new Date().toISOString() }),
       keepalive: !!keepalive
-    }).then(function(r) { ss(r && r.ok ? 'ok' : 'fail'); }).catch(function() { ss('fail'); });
+    }).then(function(r) {
+      if (r && r.ok) { ss('ok'); return true; }
+      console.warn('[pocoach-sync] push rejected: http ' + (r && r.status) + ' — will retry');
+      ss('fail'); return false;
+    }).catch(function(e) {
+      console.warn('[pocoach-sync] push failed — will retry:', (e && e.message) || e);
+      ss('fail'); return false;
+    });
   }
 
   /* Pull from Supabase → merge → push merged → rerender if changed.
@@ -281,14 +290,30 @@
         var local   = readLocal();
         var merged  = mergeData(local, remote);
         var changed = applyLocal(merged);
-        var bJson   = JSON.stringify(pushBody());
+        var body    = pushBody();
+        var bJson   = JSON.stringify(body);
+        if (changed) fireRerender();
         /* tombDropped → the cloud still holds something we deleted; rewrite the row
            even when our own payload has not changed, or it would live there for ever */
-        if (bJson !== lastJson || tombDropped) { lastJson = bJson; push(false); }
-        if (changed) fireRerender();
-        ss('ok');                                                 // pull+merge reached the cloud
+        if (bJson !== lastJson || tombDropped) {
+          /* A pull reaching the cloud does NOT mean OUR data got there. Only the
+             push can say that. This used to fire ss('ok') here regardless and
+             advance lastJson on an unresolved promise — so a failing push could
+             read "Saved" while local edits sat unsent, and the 15s reconciler
+             then compared against a lastJson that was never true and stopped
+             retrying. Wait for the push; advance only on confirmation. */
+          return push(false, body).then(function (pushed) {
+            if (pushed) lastJson = bJson;
+            return pushed;
+          });
+        }
+        ss('ok');            // nothing of ours to send AND the pull confirmed → truly in sync
+        return true;
       })
-      .catch(function() { ss('fail'); });
+      .catch(function(e) {
+        console.warn('[pocoach-sync] pull failed — will retry:', (e && e.message) || e);
+        ss('fail'); return false;
+      });
     });
   }
 
@@ -301,10 +326,17 @@
     var local   = readLocal();
     var merged  = mergeData(local, remote);
     var changed = applyLocal(merged);
-    var bJson   = JSON.stringify(pushBody());
-    if (bJson !== remJson || tombDropped) { /* local had extra data/tombs, or the row still holds a delete — push the union */ lastJson = bJson; push(false); }
-    else                   { lastJson = remJson; }
+    var body    = pushBody();
+    var bJson   = JSON.stringify(body);
     if (changed) fireRerender();
+    if (bJson !== remJson || tombDropped) {
+      /* local had extra data/tombs, or the row still holds a delete — push the
+         union. lastJson may only advance if that push is confirmed; otherwise
+         the 15s reconciler must still see the drift and try again. */
+      push(false, body).then(function (pushed) { if (pushed) lastJson = bJson; });
+    } else {
+      lastJson = remJson;   // the cloud already holds exactly this — nothing to send
+    }
   }
 
   /* Capture the real localStorage.setItem BEFORE any other override */
@@ -324,7 +356,12 @@
       }
       ss('queued');                                    // a gym/weigh-in change is waiting to save
       clearTimeout(pushTimer);
-      pushTimer = setTimeout(function() { push(false); }, 400);
+      pushTimer = setTimeout(function() {
+        // Advance lastJson here too when it lands, or the 15s reconciler would
+        // see stale drift and push the identical payload a second time.
+        var b = pushBody(), bj = JSON.stringify(b);
+        push(false, b).then(function (pushed) { if (pushed) lastJson = bj; });
+      }, 400);
     }
   };
 
@@ -381,7 +418,12 @@
           method: 'POST',
           headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
           body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() })
-        }).then(function() { lastJson = JSON.stringify(data); pulled = true; return true; });
+        }).then(function(r) {
+          // fetch() resolves on 4xx/5xx too — without this check a rejected write
+          // still advanced lastJson and reported success.
+          if (!(r && r.ok)) { console.warn('[pocoach-sync] delete push rejected: http ' + (r && r.status)); return false; }
+          lastJson = JSON.stringify(data); pulled = true; return true;
+        });
       })
       .catch(function() { return false; });   // offline: the local tombstone still holds
     });
