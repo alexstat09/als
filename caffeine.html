@@ -402,6 +402,36 @@ body::after {
   color: var(--text-tertiary); padding: 14px 0;
 }
 
+/* ── Section 3c: Caffeine & Sleep insight ────────────── */
+.ins-card { border-color: rgba(var(--accent-rgb),0.16); }
+.ins-verdict {
+  font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: 24px; line-height: 1.12; color: var(--ins, var(--text-primary));
+  margin-bottom: 12px;
+}
+.ins-line { margin: 0 0 10px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+.ins-line strong { color: var(--text-primary); font-weight: 600; }
+.ins-n { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; }
+.ins-foot { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-tertiary); }
+
+/* ── Cutoff nudge toast ──────────────────────────────── */
+.caf-toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 16px);
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 13px 16px; border-radius: 14px;
+  background: rgba(18,18,20,0.92); color: var(--text-secondary);
+  border: 1px solid rgba(242,192,99,0.35);
+  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  font-size: 12.5px; line-height: 1.5; z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s var(--au-ease), transform 0.3s var(--au-ease);
+}
+.caf-toast strong { color: var(--text-primary); font-weight: 700; }
+.caf-toast.warn { border-color: rgba(242,192,99,0.45); }
+.caf-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
 /* ── Section 4: Log a Drink ─────────────────────────── */
 .search-wrap { position: relative; margin-bottom: 12px; }
 .search-icon {
@@ -705,6 +735,16 @@ body::after {
     <div class="section-title">Last 7 Days</div>
     <div class="gm-card" id="histCard">
       <div id="histBody"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       §3c  CAFFEINE & SLEEP  (hidden until statistically real)
+       ═══════════════════════════════════════════════════ -->
+  <div class="section" id="insightSection" style="display:none">
+    <div class="section-title">Caffeine &amp; Sleep</div>
+    <div class="gm-card ins-card">
+      <div id="insightBody"></div>
     </div>
   </div>
 
@@ -1340,6 +1380,110 @@ function renderHistory() {
 }
 function cutoffH() { return bedH - 5 * Math.log2(95 / 30); }
 
+// ── Caffeine × Sleep (natural experiment) ─────────────────────
+// Ported verbatim from sleep.html's engine: compare two groups, and say
+// NOTHING unless the difference clears the two-tailed 5% critical value for
+// its degrees of freedom. A pattern page that always finds a pattern is a
+// horoscope.
+function avgArr(a) { return a.reduce((s, x) => s + x, 0) / a.length; }
+function variance(a) {
+  if (a.length < 2) return 0;
+  const m = avgArr(a);
+  return a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1);
+}
+const T_CRIT = [[2,4.30],[3,3.18],[4,2.78],[5,2.57],[6,2.45],[7,2.36],[8,2.31],[9,2.26],[10,2.23],[12,2.18],[15,2.13],[20,2.09],[25,2.06],[30,2.04],[40,2.02],[60,2.00],[120,1.98]];
+function tCrit(df) {
+  if (df < 2) return Infinity;
+  for (let i = 0; i < T_CRIT.length; i++) { if (df <= T_CRIT[i][0]) return T_CRIT[i][1]; }
+  return 1.96;
+}
+function welch(a, b, minN) {
+  const need = minN || 4;
+  if (a.length < need || b.length < need) return null;
+  const va = variance(a), vb = variance(b);
+  const se = Math.sqrt(va / a.length + vb / b.length);
+  if (!(se > 0)) return null;
+  const diff = avgArr(a) - avgArr(b), t = diff / se;
+  const df = Math.pow(va / a.length + vb / b.length, 2) /
+             (Math.pow(va / a.length, 2) / (a.length - 1) + Math.pow(vb / b.length, 2) / (b.length - 1));
+  if (Math.abs(t) < tCrit(df)) return null;      // not real → stay quiet
+  return { diff: diff, t: t, df: df, nA: a.length, nB: b.length };
+}
+function prevKey(dk) {
+  const p = dk.split('-').map(Number);
+  return dateKeyOf(new Date(p[0], p[1] - 1, p[2] - 1));
+}
+// Pair each measured night with the caffeine consumed the PRIOR day, split on
+// his personal cutoff, and compare recovery. Returns null until it's real.
+function sleepCaffeineInsight() {
+  let sleep = [];
+  try { sleep = JSON.parse(localStorage.getItem('sleep:logs')) || []; } catch (e) {}
+  if (!Array.isArray(sleep) || !sleep.length) return null;
+
+  const lastByDay = {};
+  days.forEach(d => { if (d && d.dateKey && typeof d.lastH === 'number' && d.mg > 0) lastByDay[d.dateKey] = d.lastH; });
+
+  const cutoff = cutoffH(), early = [], late = [];
+  sleep.forEach(s => {
+    if (!s || !s.dateKey || typeof s.recovery !== 'number') return;
+    const lh = lastByDay[prevKey(s.dateKey)];
+    if (typeof lh !== 'number') return;
+    (lh > cutoff ? late : early).push(s.recovery);
+  });
+
+  const w = welch(early, late, 4);
+  if (!w) return null;
+  return {
+    cutoff: cutoff,
+    earlyMean: Math.round(avgArr(early)),
+    lateMean:  Math.round(avgArr(late)),
+    diff: w.diff,                    // early − late; positive ⇒ late nights are worse
+    nEarly: early.length, nLate: late.length
+  };
+}
+function renderInsight() {
+  const sec = eid('insightSection');
+  if (!sec) return;
+  const r = sleepCaffeineInsight();
+  if (!r) { sec.style.display = 'none'; return; }   // silent until the data earns it
+
+  const worse = r.diff > 0;
+  const mag  = Math.abs(Math.round(r.diff));
+  const col  = worse ? 'var(--danger)' : 'var(--success)';
+  const head = worse ? 'Late caffeine is costing you sleep'
+                     : 'Your caffeine timing is working';
+  const line = `On nights after caffeine past <strong>${fmtH(r.cutoff)}</strong>, your recovery averaged `
+    + `<strong style="color:${col}">${r.lateMean}%</strong> — ${mag} point${mag === 1 ? '' : 's'} `
+    + `${worse ? 'lower' : 'higher'} than the <strong>${r.earlyMean}%</strong> you get otherwise `
+    + `<span class="ins-n">(${r.nLate} late vs ${r.nEarly} earlier nights)</span>.`;
+  const foot = worse
+    ? `Pulling your last caffeine before ${fmtH(r.cutoff)} looks like your single easiest recovery win.`
+    : `No penalty in the data so far — keep it up.`;
+
+  eid('insightBody').innerHTML =
+    `<div class="ins-verdict" style="--ins:${col}">${head}</div>
+     <p class="ins-line">${line}</p>
+     <p class="ins-foot">${foot}</p>`;
+  sec.style.display = '';
+}
+
+// ── Cutoff nudge (a gentle toast when a late drink will linger to bedtime) ──
+function toast(msg, tone) {
+  let t = document.getElementById('cafToast');
+  if (!t) { t = document.createElement('div'); t.id = 'cafToast'; document.body.appendChild(t); }
+  t.className = 'caf-toast' + (tone === 'warn' ? ' warn' : '');
+  t.innerHTML = msg;
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(t._hide); t._hide = setTimeout(() => t.classList.remove('show'), 5200);
+}
+function maybeCutoffNudge() {
+  const now = nowH();
+  if (!(bedH > now)) return;                     // already past bedtime — no nudge
+  const atBed = activeMgAt(bedH, logs);
+  if (atBed <= 30) return;                        // negligible by the time he sleeps
+  toast(`~<strong>${Math.round(atBed)} mg</strong> will still be active at your <strong>${fmtH(bedH)}</strong> bedtime. Over 30 mg can cut into deep sleep.`, 'warn');
+}
+
 // ── Drinks database ───────────────────────────────────────────
 const DRINKS = [
   // Coffee
@@ -1462,6 +1606,7 @@ window.logDrink = function (name, mg) {
   saveLogs();
   renderRecent();
   rerender();
+  maybeCutoffNudge();
 };
 window.deleteLog = function (id) {
   logs = logs.filter(l => l.id !== id);
@@ -1547,6 +1692,7 @@ function rerender() {
   analyse();
   renderToday();
   renderHistory();
+  renderInsight();
   renderLogged();
 }
 
