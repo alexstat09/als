@@ -349,6 +349,59 @@ body::after {
   color: var(--text-tertiary);
 }
 
+/* ── Section 3b: Last 7 Days ─────────────────────────── */
+.hist-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 14px; margin-bottom: 18px;
+}
+.hist-avg {
+  font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: 42px; line-height: 1; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.hist-avg small {
+  font-family: var(--font-mono); font-style: normal;
+  font-size: 11px; color: var(--text-tertiary); margin-left: 8px;
+}
+.hist-sub {
+  font-family: var(--font-mono); font-size: 10px; line-height: 1.6;
+  color: var(--text-tertiary); text-align: right; white-space: nowrap;
+}
+.hist-bars {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 8px; align-items: end; height: 128px;
+}
+.hist-col { display: flex; flex-direction: column; align-items: center; gap: 7px; height: 100%; }
+.hist-val {
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--text-secondary);
+  height: 12px; line-height: 12px;
+}
+.hist-track { position: relative; width: 100%; flex: 1; min-height: 0; display: flex; align-items: flex-end; }
+.hist-fill {
+  width: 100%; height: 100%; min-height: 3px;
+  border-radius: 6px 6px 3px 3px;
+  transform: scaleY(0); transform-origin: bottom;
+  transition: transform 0.7s var(--au-ease);
+}
+.hist-col.today .hist-fill { box-shadow: 0 0 14px rgba(var(--accent-rgb),0.4); }
+.hist-day {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-tertiary);
+}
+.hist-col.today .hist-day { color: var(--success); }
+.hist-pattern {
+  display: flex; align-items: flex-start; gap: 11px;
+  margin-top: 18px; padding-top: 15px;
+  border-top: 1px solid var(--au-line, rgba(255,255,255,0.06));
+  font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;
+}
+.hist-pattern strong { color: var(--text-primary); font-weight: 600; }
+.hist-pattern.warn .tip-dot { background: var(--warning); box-shadow: 0 0 8px rgba(242,192,99,0.6); }
+.hist-empty {
+  text-align: center; font-style: italic; font-size: 13px;
+  color: var(--text-tertiary); padding: 14px 0;
+}
+
 /* ── Section 4: Log a Drink ─────────────────────────── */
 .search-wrap { position: relative; margin-bottom: 12px; }
 .search-icon {
@@ -646,6 +699,16 @@ body::after {
   </div>
 
   <!-- ═══════════════════════════════════════════════════
+       §3b  LAST 7 DAYS
+       ═══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Last 7 Days</div>
+    <div class="gm-card" id="histCard">
+      <div id="histBody"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
        §4  LOG A DRINK
        ═══════════════════════════════════════════════════ -->
   <div class="section">
@@ -711,14 +774,54 @@ let recovery    = null;   // 0-100 or null
 let chartMode   = 'LINE';
 let scrubH      = null;   // null = current time
 let curveDrawn  = false;  // self-draw the energy curve once per load
+let days    = [];   // [{dateKey, mg, n, firstH, lastH, _ts}] — persisted daily history
+let histDrawn   = false;  // grow the history bars once per load
 
 // ── Persist ──────────────────────────────────────────────────
 function loadLogs() {
-  try { logs = JSON.parse(localStorage.getItem('caf:logs')) || []; } catch (e) { logs = []; }
-  const dawn = new Date(); dawn.setHours(0,0,0,0);
-  logs = logs.filter(l => new Date(l.ts) >= dawn);
+  let all = [];
+  try { all = JSON.parse(localStorage.getItem('caf:logs')) || []; } catch (e) { all = []; }
+  const tk = todayKey();
+  // Capture any past-day logs into persistent history BEFORE the midnight filter
+  // drops them — that filter is why history used to vanish at 00:00.
+  const byDay = {};
+  all.forEach(l => { const dk = dateKeyOf(l.ts); if (dk && dk !== tk) (byDay[dk] = byDay[dk] || []).push(l); });
+  const rolled = Object.keys(byDay);
+  rolled.forEach(dk => rollupDay(dk, byDay[dk]));
+  if (rolled.length) { pruneDays(); saveDays(); }
+  logs = all.filter(l => dateKeyOf(l.ts) === tk);
 }
 function saveLogs() { localStorage.setItem('caf:logs', JSON.stringify(logs)); }
+
+// ── Daily history (survives midnight; today stays live from `logs`) ──
+function dateKeyOf(ts) {
+  const d = new Date(ts);
+  if (isNaN(d)) return null;
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+       + '-' + String(d.getDate()).padStart(2, '0');
+}
+function loadDays() {
+  try { days = JSON.parse(localStorage.getItem('caf:days')) || []; } catch (e) { days = []; }
+  if (!Array.isArray(days)) days = [];
+}
+function saveDays() { try { localStorage.setItem('caf:days', JSON.stringify(days)); } catch (e) {} }
+function rollupDay(dk, dayLogs) {
+  if (!dk || !dayLogs || !dayLogs.length) return;
+  const mg  = dayLogs.reduce((s, l) => s + (+l.mg || 0), 0);
+  const hrs = dayLogs.map(l => { const d = new Date(l.ts); return d.getHours() + d.getMinutes() / 60; });
+  const entry = {
+    dateKey: dk, mg: mg, n: dayLogs.length,
+    firstH: +Math.min.apply(null, hrs).toFixed(2),
+    lastH:  +Math.max.apply(null, hrs).toFixed(2),
+    _ts: Date.now()
+  };
+  const i = days.findIndex(d => d && d.dateKey === dk);
+  if (i >= 0) days[i] = entry; else days.push(entry);
+}
+function pruneDays() {
+  days = days.filter(d => d && d.dateKey).sort((a, b) => a.dateKey < b.dateKey ? -1 : 1);
+  if (days.length > 60) days = days.slice(-60);
+}
 function loadCustom() {
   try { custom = JSON.parse(localStorage.getItem('caf:custom')) || []; } catch (e) { custom = []; }
 }
@@ -1160,6 +1263,83 @@ function renderToday() {
   countTo(eid('activeMgNow'), active);
 }
 
+// ── Last 7 days (history) ─────────────────────────────────────
+function last7Keys() {
+  const out = [], d = new Date(); d.setHours(0, 0, 0, 0);
+  for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(dateKeyOf(x)); }
+  return out;
+}
+function mgForDay(dk) {
+  if (dk === todayKey()) return logs.reduce((s, l) => s + (+l.mg || 0), 0);
+  const e = days.find(d => d && d.dateKey === dk);
+  return e ? e.mg : 0;
+}
+function renderHistory() {
+  const body = eid('histBody');
+  if (!body) return;
+  const keys = last7Keys(), tk = todayKey();
+  const vals = keys.map(mgForDay);
+  const logged = vals.filter(v => v > 0);
+  const anyHistory = logged.length || days.some(d => d && d.mg > 0);
+
+  if (!anyHistory) {
+    body.innerHTML = '<div class="hist-empty">Your caffeine history builds as you log. Check back tomorrow.</div>';
+    return;
+  }
+
+  const target   = Math.round(3 * weightKg);
+  const avg      = logged.length ? Math.round(logged.reduce((a, b) => a + b, 0) / logged.length) : 0;
+  const scaleMax = Math.max(400, Math.max.apply(null, vals), 1);
+  const cutoff   = cutoffH();
+  const initial  = ['S','M','T','W','T','F','S'];
+  const dayLetter = dk => initial[new Date(dk + 'T00:00:00').getDay()];
+  const barCol = v => v > 400 ? 'var(--danger)' : v > target ? 'var(--warning)' : 'var(--success)';
+
+  const bars = keys.map((dk, i) => {
+    const v = vals[i], h = (v / scaleMax).toFixed(3), today = dk === tk;
+    const bg = v ? barCol(v) : 'rgba(255,255,255,0.06)';
+    return `<div class="hist-col${today ? ' today' : ''}">
+      <div class="hist-val">${v ? v : ''}</div>
+      <div class="hist-track">
+        <div class="hist-fill" data-h="${h}" style="transform:scaleY(${histDrawn ? h : 0});background:${bg}"></div>
+      </div>
+      <div class="hist-day">${dayLetter(dk)}</div>
+    </div>`;
+  }).join('');
+
+  // Typical last-caffeine time (needs a few days before it means anything).
+  const lastHs = days.filter(d => d && d.mg > 0 && typeof d.lastH === 'number').slice(-14).map(d => d.lastH);
+  let pattern = '';
+  if (lastHs.length >= 3) {
+    const avgLast = lastHs.reduce((a, b) => a + b, 0) / lastHs.length;
+    const risky = avgLast > cutoff;
+    pattern = `<div class="hist-pattern${risky ? ' warn' : ''}">
+      <span class="tip-dot"></span>
+      <span>You usually have your last caffeine around <strong>${fmtH(avgLast)}</strong>. `
+      + (risky
+          ? `That's past your <strong>${fmtH(cutoff)}</strong> cutoff — pulling it earlier would protect your sleep.`
+          : `That's comfortably before your ${fmtH(cutoff)} cutoff.`)
+      + `</span></div>`;
+  }
+
+  body.innerHTML =
+    `<div class="hist-head">
+       <div class="hist-avg">${avg}<small>mg/day avg</small></div>
+       <div class="hist-sub">${logged.length}/7 days logged<br>target ~${target} mg · ceiling 400</div>
+     </div>
+     <div class="hist-bars">${bars}</div>${pattern}`;
+
+  if (!histDrawn && !prefersReduce()) {
+    histDrawn = true;
+    requestAnimationFrame(() => {
+      body.querySelectorAll('.hist-fill').forEach(f => { f.style.transform = 'scaleY(' + f.dataset.h + ')'; });
+    });
+  } else {
+    histDrawn = true;
+  }
+}
+function cutoffH() { return bedH - 5 * Math.log2(95 / 30); }
+
 // ── Drinks database ───────────────────────────────────────────
 const DRINKS = [
   // Coffee
@@ -1366,6 +1546,7 @@ function rerender() {
   renderChart();
   analyse();
   renderToday();
+  renderHistory();
   renderLogged();
 }
 
@@ -1375,6 +1556,7 @@ async function init() {
   if (hd) hd.textContent = new Date()
     .toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
 
+  loadDays();           // history first, so loadLogs can roll past days into it
   loadLogs();
   loadCustom();
   loadRecent();
@@ -1413,8 +1595,8 @@ async function init() {
   if (window.initCloudSync) {
     window.initCloudSync({
       appKey: 'caffeine',
-      syncedKeys: ['caf:logs', 'caf:custom'],
-      onApplied: () => { loadLogs(); loadCustom(); rerender(); }
+      syncedKeys: ['caf:logs', 'caf:custom', 'caf:days'],
+      onApplied: () => { loadDays(); loadLogs(); loadCustom(); rerender(); }
     });
   }
 }
