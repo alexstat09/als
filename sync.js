@@ -475,6 +475,13 @@
     // pages' data is the LAST thing that should get a keepalive write.
     if (readOnly) return;
 
+    // Record that this page has a WRITABLE engine for this appKey, so global
+    // chrome (the topbar water button, present on every page) can tell whether
+    // the page already syncs the health row or it must spin up its own. Only
+    // writable engines mark — a readOnly briefing can't push, so it doesn't count.
+    window.__alsSyncApps = window.__alsSyncApps || {};
+    window.__alsSyncApps[appKey] = true;
+
     window.addEventListener('beforeunload', flushOnUnload);
     window.addEventListener('pagehide', flushOnUnload);
     // Sync through the safe MERGE path whenever visibility changes — including

@@ -645,21 +645,39 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       caffeineMgPerDay: 200, substances: [], logs: {}
     };
   }
-  async function pushWaterMergedToSupabase(localWater) {
-    if (window.location.pathname.endsWith('/health.html') ||
-        window.location.pathname.endsWith('health.html')) return;
-    if (!window.supabase || !TOPBAR_SUPABASE_URL || !TOPBAR_SUPABASE_KEY) return;
-    if (TOPBAR_SUPABASE_URL.indexOf('PASTE-') === 0) return;
+  // The quick water button lives on EVERY page, but only the water/supplement
+  // pages used to run the sync engine for the 'health' row. Everywhere else, a
+  // tap wrote localStorage and then relied on a hand-rolled push that used the
+  // ANON key (blocked by row-level security under multi-user) and clobbered the
+  // remote wholesale — so quick-adds from the home screen, gym, etc. never
+  // reached the other device. Instead of reinventing auth + merge here, make the
+  // real engine cover 'health' on any page that doesn't already: sync.js then
+  // pushes the localStorage write with the proper session token, merge and
+  // realtime, and pulls the other device's changes back into the pill. Full key
+  // set (not just water) so the push never drops supplements from the row.
+  function initHealthSync() {
+    if (typeof window.initCloudSync !== 'function') return;
+    if (window.__alsSyncApps && window.__alsSyncApps['health']) return;   // page already covers it
     try {
-      const supa = window.supabase.createClient(TOPBAR_SUPABASE_URL, TOPBAR_SUPABASE_KEY);
-      const { data } = await supa
-        .from('app_state').select('data').eq('key', 'health').maybeSingle();
-      const current = (data && data.data) || {};
-      const merged = Object.assign({}, current, { po_water_v1: localWater });
-      await supa.from('app_state').upsert(
-        { key: 'health', data: merged, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
-      );
+      window.initCloudSync({
+        appKey: 'health',
+        syncedKeys: ['stack:items', 'stack:low', 'po_water_v1'],
+        syncedPrefixes: ['stack:taken:'],
+        onApplied: render
+      });
+    } catch (e) {}
+  }
+  function ensureHealthSync() {
+    if (window.__alsSyncApps && window.__alsSyncApps['health']) return;   // page already covers it
+    if (typeof window.initCloudSync === 'function') { initHealthSync(); return; }
+    // A couple of view pages (insights) don't load sync.js. Pull it in, then
+    // init. (If the page also lacks the Supabase lib, sync.js no-ops harmlessly
+    // and the write still syncs the next time a real page's reconciler runs.)
+    try {
+      if (document.querySelector('script[src*="sync.js"]')) return;
+      var s = document.createElement('script'); s.src = 'sync.js'; s.defer = true;
+      s.onload = initHealthSync;
+      document.head.appendChild(s);
     } catch (e) {}
   }
   function addWater() {
@@ -674,7 +692,10 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     render();
     const btn = document.getElementById('topbarWaterAdd');
     if (btn) { btn.classList.add('flash'); setTimeout(() => btn.classList.remove('flash'), 220); }
-    pushWaterMergedToSupabase(state);
+    // No manual push: the setItem above is caught by the sync engine that
+    // ensureHealthSync() guarantees is running on this page, which pushes it
+    // with the right auth and merge. A tap before the engine boots is still
+    // caught by its first syncNow / 15s reconciler, which reads localStorage.
   }
 
   function blockGesture(e) { e.preventDefault(); }
@@ -801,6 +822,10 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     window.addEventListener('focus', render);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
     setInterval(render, 30 * 1000);
+    // After the page's own sync inits have run (they mark the health row on
+    // DOMContentLoaded), make sure SOMETHING is syncing water on this page.
+    if (document.readyState === 'complete') ensureHealthSync();
+    else window.addEventListener('load', ensureHealthSync, { once: true });
   }
 
   if (document.readyState === 'loading') {
