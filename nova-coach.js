@@ -299,13 +299,13 @@
     if(d.recToday!=null){
       if(d.recToday<45) cards.push({p:92,tone:'warn',title:'Recovery is low ('+d.recToday+'/100)',
         detail:'You are depleted today — short sleep, soreness or stress. Go light, do mobility, or rest. Growth happens when you recover.',
-        line:'Recovery is only '+d.recToday+' today — go light or rest. You grow when you recover, not when you grind.',href:'sleep.html'});
+        line:'Recovery is only '+d.recToday+' today — go light or rest. You grow when you recover, not when you grind.',href:'sleep.html',stat:{v:d.recToday,u:'/100',k:'Recovery today'}});
       else if(d.recToday<65) cards.push({p:74,tone:'info',title:'Recovery is moderate ('+d.recToday+'/100)',
         detail:'A little run-down. Train, but keep it sensible — hit your main lifts and skip the junk volume.',
-        line:'Recovery is '+d.recToday+' today — train, but keep it moderate and hit the lifts that matter.',href:'sleep.html'});
+        line:'Recovery is '+d.recToday+' today — train, but keep it moderate and hit the lifts that matter.',href:'sleep.html',stat:{v:d.recToday,u:'/100',k:'Recovery today'}});
       else cards.push({p:64,tone:'good',title:'Recovery is strong ('+d.recToday+'/100)',
         detail:'You are well recovered'+(d.lastNight?' on '+ (Math.round(d.lastNight.hours*10)/10) +'h sleep':'')+'. This is the day to push hard and chase a PR.',
-        line:'Recovery is '+d.recToday+' today — you are primed. Push hard and chase a PR.',href:'gym.html'});
+        line:'Recovery is '+d.recToday+' today — you are primed. Push hard and chase a PR.',href:'gym.html',stat:{v:d.recToday,u:'/100',k:'Recovery today'}});
     } else if(!d.sleepToday && d.h>=6 && d.h<14){
       cards.push({p:62,tone:'info',title:'How did you sleep?',
         detail:'Log last night and a 10-second morning check-in — I will turn it into a recovery score that tells you how hard to train today.',
@@ -319,14 +319,14 @@
       if(behind.length){ var b=behind[0];
         cards.push({p:82,tone:'push',title:b.m+' is lagging this week',
           detail:'Only '+b.have+' of '+b.tgt+' sets so far'+(behind.length>1?' ('+behind.length+' muscles behind pace)':'')+'. Slot in a '+b.m.toLowerCase()+'-focused session to stay balanced.',
-          line:'Your '+b.m.toLowerCase()+' is behind this week — '+b.have+'/'+b.tgt+' sets. Give it a session and you stay balanced.',href:'gym.html'});
+          line:'Your '+b.m.toLowerCase()+' is behind this week — '+b.have+'/'+b.tgt+' sets. Give it a session and you stay balanced.',href:'gym.html',stat:{v:b.have,u:'/'+b.tgt+' sets',k:b.m+' this week'}});
       }
     }
 
     if(d.daysSince!=null && d.daysSince>=3)
       cards.push({p:80,tone:'push',title:d.daysSince+' days since you trained',
         detail:'Momentum fades fast. Even a short session keeps you moving forward.',
-        line:'It has been '+d.daysSince+' days since your last workout — let us get one in today.',href:'gym.html'});
+        line:'It has been '+d.daysSince+' days since your last workout — let us get one in today.',href:'gym.html',stat:{v:d.daysSince,u:d.daysSince===1?'day off':'days off',k:'Since last workout'}});
 
     if(d.stalled)
       cards.push({p:70,tone:'push',title:d.stalled+' has stalled',
@@ -336,7 +336,7 @@
     if(d.caf>=400)
       cards.push({p:66,tone:'warn',title:'High caffeine today',
         detail:d.caf+'mg — over the 400mg line. Ease off now so it does not wreck tonight’s sleep, and drink water.',
-        line:'That is '+d.caf+'mg of caffeine today — ease off so it does not hurt your sleep.',href:'body.html'});
+        line:'That is '+d.caf+'mg of caffeine today — ease off so it does not hurt your sleep.',href:'body.html',stat:{v:d.caf,u:'mg',k:'Caffeine today'}});
 
     if(!d.wToday && d.h>=7)
       cards.push({p:60,tone:'info',title:'No weigh-in yet',
@@ -350,12 +350,12 @@
     else if(d.prot>0 && d.prot < d.protTarget*0.6 && d.h>=15)
       cards.push({p:52,tone:'info',title:'Protein low so far',
         detail:Math.round(d.prot)+'g today — aim for ~'+d.protTarget+'g. Protein is what builds muscle while you lean out.',
-        line:'Protein is a bit low ('+Math.round(d.prot)+'g) — load up to grow while you cut.'});
+        line:'Protein is a bit low ('+Math.round(d.prot)+'g) — load up to grow while you cut.',stat:{v:Math.round(d.prot),u:'g',k:'Protein so far'}});
 
     if(d.wTrend){
       if(d.wTrend.delta<=-0.2) cards.push({p:50,tone:'good',title:'Weight trending down',
         detail:d.wTrend.delta+'kg over the last week. Recomp is working — keep protein high and lifts heavy.',
-        line:'Weight is down '+Math.abs(d.wTrend.delta)+'kg this week — recomp is working. Keep protein up.'});
+        line:'Weight is down '+Math.abs(d.wTrend.delta)+'kg this week — recomp is working. Keep protein up.',stat:{v:Math.abs(d.wTrend.delta),u:'kg down',k:'This week'}});
       else if(d.wTrend.delta>=0.5) cards.push({p:46,tone:'info',title:'Weight ticked up',
         detail:'+'+d.wTrend.delta+'kg this week. Fine if you are bulking; ease intake a touch if you are cutting.',
         line:'Weight is up '+d.wTrend.delta+'kg this week — worth a glance at your intake.'});
@@ -363,11 +363,11 @@
 
     if(d.wCount < d.wTarget && d.h>=12){ var left=d.wTarget-d.wCount;
       cards.push({p:42,tone:'info',title:'Hydration behind',detail:left+' more to hit today’s target ('+d.wCount+'/'+d.wTarget+').',
-        line:'You are '+left+' short on water today — keep sipping.',href:'body.html'}); }
+        line:'You are '+left+' short on water today — keep sipping.',href:'body.html',stat:{v:left,u:'to go',k:'Water today'}}); }
 
     if(d.suppTotal>0 && d.suppTaken<d.suppTotal && d.h>=11)
       cards.push({p:38,tone:'info',title:'Supplements pending',detail:d.suppTaken+' of '+d.suppTotal+' taken today.',
-        line:'A few supplements still to take today ('+d.suppTaken+'/'+d.suppTotal+').',href:'body.html'});
+        line:'A few supplements still to take today ('+d.suppTaken+'/'+d.suppTotal+').',href:'body.html',stat:{v:d.suppTaken,u:'of '+d.suppTotal,k:'Supplements'}});
 
     // Cross-domain patterns Nova has spotted across your whole life — the magic.
     var cors=correlations();
@@ -380,11 +380,11 @@
     if(d.topStreak>=7)
       cards.push({p:50,tone:'good',title:d.topStreakName+' — '+d.topStreak+'-day streak',
         detail:'You’ve kept it '+d.topStreak+' days straight. That’s identity, not motivation. Don’t break the chain.',
-        line:d.topStreakName+' is on a '+d.topStreak+'-day streak — that is who you are now. Keep the chain alive.',href:'identity.html'});
+        line:d.topStreakName+' is on a '+d.topStreak+'-day streak — that is who you are now. Keep the chain alive.',href:'identity.html',stat:{v:d.topStreak,u:'days',k:d.topStreakName+' streak'}});
     if(d.habitsTotal>0 && d.habitsDone<d.habitsTotal && d.h>=17)
       cards.push({p:54,tone:'push',title:'Habits: '+d.habitsDone+'/'+d.habitsTotal+' today',
         detail:(d.habitsTotal-d.habitsDone)+' left. These daily reps build the person on your North Star — close them out before bed.',
-        line:'You’ve got '+(d.habitsTotal-d.habitsDone)+' habit'+((d.habitsTotal-d.habitsDone)>1?'s':'')+' left today — finish them, that is the discipline compounding.',href:'identity.html'});
+        line:'You’ve got '+(d.habitsTotal-d.habitsDone)+' habit'+((d.habitsTotal-d.habitsDone)>1?'s':'')+' left today — finish them, that is the discipline compounding.',href:'identity.html',stat:{v:d.habitsDone,u:'of '+d.habitsTotal,k:'Habits today'}});
     if(!d.journaledToday && d.h>=20)
       cards.push({p:36,tone:'info',title:'No journal entry yet',
         detail:'Two honest lines on today — what you did, what you’re grateful for — keeps you in touch with who you’re becoming.',
@@ -395,7 +395,7 @@
     if(gl && gl.done<gl.total && d.h>=11)
       cards.push({p:44,tone:'info',title:'Your goals for today',
         detail:gl.done+' of '+gl.total+' done. Close the loop on what you set out to do — future you is counting on it.',
-        line:gl.done+'/'+gl.total+' goals done today — let’s finish what you started.',href:'main.html'});
+        line:gl.done+'/'+gl.total+' goals done today — let’s finish what you started.',href:'main.html',stat:{v:gl.done,u:'of '+gl.total,k:'Goals today'}});
 
     if(!cards.length) cards.push({p:10,tone:'good',title:'You are on top of it',
       detail:'Nothing urgent — everything is tracking well. Consistency like this is exactly what builds the best version of you.',
@@ -413,7 +413,7 @@
   /* Native <dialog> in the top layer — centered by the browser, immune to any
      ancestor transform/filter (which break position:fixed). Bulletproof on
      iPhone + laptop. */
-  'dialog.nc-sheet{position:fixed;inset:0;margin:auto;z-index:81;width:min(540px,calc(100% - 28px));max-width:min(540px,calc(100% - 28px));max-height:88vh;max-height:88dvh;padding:0;border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;background:linear-gradient(180deg,#0b0e13,#080a0e);color:inherit;overflow:hidden;box-shadow: 0 30px 80px rgba(0,0,0,.66);opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);}'+
+  'dialog.nc-sheet{position:fixed;inset:0;margin:auto;z-index:81;width:min(540px,calc(100% - 28px));max-width:min(540px,calc(100% - 28px));max-height:88vh;max-height:88dvh;padding:0;border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;background:linear-gradient(180deg,#0b0e13,#080a0e);color:inherit;overflow:hidden;box-shadow: 0 30px 80px rgba(0,0,0,.66);opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .5s cubic-bezier(.16,1,.3,1);}'+
   'dialog.nc-sheet[open]{display:block;}'+
   'dialog.nc-sheet.on{opacity:1;transform:translateY(0) scale(1);}'+
   'dialog.nc-sheet::backdrop{background:rgba(3,4,6,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}'+
@@ -430,9 +430,21 @@
   '@keyframes nc-sweep{0%{transform:translateY(-170px);opacity:0;}22%{opacity:.85;}100%{transform:translateY(92vh);opacity:0;}}'+
   '.nc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:rgb(var(--au-glow-rgb));box-shadow: none;margin-right:6px;vertical-align:middle;animation:nc-blink 1.4s ease-in-out infinite;}'+
   '@keyframes nc-blink{0%,100%{opacity:1;}50%{opacity:.2;}}'+
-  '.nc-headline{position:relative;}'+
-  '.nc-headline::after{content:"";position:absolute;left:2px;bottom:5px;height:2px;width:0;background:linear-gradient(90deg,rgb(var(--au-glow-rgb)),transparent);border-radius:2px;transition:width .6s ease .3s;}'+
-  '.nc-sheet.on .nc-headline::after{width:54px;}'+
+  /* Lead card as a hero — the #1 thing Nova sees, spoken in Métron's voice:
+     a big Instrument-Serif number when the metric is numeric, else the serif
+     line. The accent draws in with transform (no layout animation). Colour
+     follows the sheet's mood via --au-glow-rgb. */
+  '.nc-hero{position:relative;border-radius:18px;padding:16px 18px 17px;margin-bottom:14px;overflow:hidden;background:linear-gradient(180deg,rgba(var(--au-glow-rgb),.09),rgba(255,255,255,.015));border:1px solid rgba(var(--au-glow-rgb),.3);transition:transform .15s;-webkit-tap-highlight-color:transparent;}'+
+  '.nc-hero[data-nc-go]:active{transform:scale(.99);}'+
+  '.nc-hero-eyebrow{font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(var(--au-glow-rgb),.82);}'+
+  '.nc-hero-stat{display:flex;align-items:baseline;gap:9px;margin:8px 0 7px;}'+
+  '.nc-hero-v{font-family:var(--au-serif);font-style:italic;font-size:clamp(46px,15vw,62px);line-height:.8;letter-spacing:-.01em;color:var(--au-ivory);}'+
+  '.nc-hero-u{font-family:var(--au-serif);font-size:19px;color:var(--au-dim);}'+
+  '.nc-hero-line{font-family:var(--au-serif);font-style:italic;font-size:clamp(18px,4.8vw,21px);line-height:1.3;color:var(--au-ivory);}'+
+  '.nc-hero-sub{font-size:13px;line-height:1.46;color:var(--au-dim);margin-top:7px;}'+
+  '.nc-hero-go{display:inline-block;font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgb(var(--au-glow-rgb));margin-top:12px;}'+
+  '.nc-hero-accent{position:absolute;left:18px;bottom:0;height:2px;width:52px;border-radius:2px;background:linear-gradient(90deg,rgb(var(--au-glow-rgb)),transparent);transform:scaleX(0);transform-origin:left;transition:transform .6s ease .28s;}'+
+  '.nc-sheet.on .nc-hero-accent{transform:scaleX(1);}'+
   '.nc-talk{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 16px;padding:14px;border-radius:14px;text-decoration:none;font-family:var(--au-sans,-apple-system);font-size:14.5px;font-weight:700;letter-spacing:.01em;color:#04130D;background:linear-gradient(120deg,#34E2B0,#18C8C0 55%,#9B8CFF);box-shadow: none;transition:transform .14s;-webkit-tap-highlight-color:transparent;}'+
   '.nc-talk:active{transform:translateY(1px);}'+
   '.nc-grip{display:none;}'+
@@ -441,7 +453,6 @@
   '.nc-eyebrow{font-family:var(--au-mono);font-size:9px;font-weight:700;letter-spacing:.22em;color:rgba(var(--au-glow-rgb),.75);}'+
   '.nc-greet{font-family:var(--au-serif);font-style:italic;font-size:22px;color:var(--au-ivory);line-height:1.1;margin-top:2px;}'+
   '.nc-x{margin-left:auto;background:rgba(255,255,255,.06);border:none;color:var(--au-dim);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0;}'+
-  '.nc-headline{font-family:var(--au-serif);font-style:italic;font-size:clamp(20px,5.2vw,26px);line-height:1.3;color:var(--au-ivory);margin:6px 2px 20px;}'+
   '.nc-card{position:relative;background:var(--au-glass);border:1px solid var(--au-line);border-left:3px solid var(--au-line);border-radius:14px;padding:13px 15px;margin-bottom:10px;transition:transform .15s;-webkit-tap-highlight-color:transparent;}'+
   '.nc-card:active{transform:scale(.99);}'+
   '.nc-card-t{font-weight:700;font-size:14px;color:var(--au-ivory);margin-bottom:3px;}'+
@@ -473,6 +484,23 @@
     var eyebrow = c.insight ? '<div class="nc-card-eyebrow">✦ Pattern Nova spotted</div>' : '';
     return '<div class="nc-card nc-'+c.tone+(c.insight?' nc-insight':'')+'"'+attr+'>'+eyebrow+'<div class="nc-card-t">'+esc(c.title)+'</div><div class="nc-card-d">'+esc(c.detail)+'</div>'+go+'</div>';
   }
+  /* The lead card, rendered big — number-as-hero when the metric is numeric,
+     otherwise the serif line. Shown once (it no longer repeats as a list card). */
+  function heroHTML(c){
+    if(!c) return '';
+    var eyebrow = c.insight ? '&#10022; Pattern Nova spotted' : (c.stat && c.stat.k ? esc(c.stat.k) : 'What matters now');
+    var body;
+    if(c.stat){
+      body = '<div class="nc-hero-stat"><span class="nc-hero-v">'+esc(String(c.stat.v))+'</span>'+
+             (c.stat.u ? '<span class="nc-hero-u">'+esc(c.stat.u)+'</span>' : '')+'</div>'+
+             '<div class="nc-hero-sub">'+esc(c.line||c.detail||'')+'</div>';
+    } else {
+      body = '<div class="nc-hero-line">'+esc(c.line||c.title||'')+'</div>';
+    }
+    var go = c.href ? '<div class="nc-hero-go">Tap to open &rarr;</div>' : '';
+    var attr = c.href ? ' data-nc-go="'+esc(c.href)+'"' : '';
+    return '<div class="nc-hero"'+attr+'><div class="nc-hero-eyebrow">'+eyebrow+'</div>'+body+go+'<span class="nc-hero-accent"></span></div>';
+  }
   /* Weekly letter — shown once per ISO week (first open of a new week). */
   function letterHTMLIfDue(){
     try{
@@ -502,9 +530,9 @@
       '<div class="nc-scroll">'+
       '<div class="nc-head">'+novaSVG()+'<div><div class="nc-eyebrow"><span class="nc-dot"></span>NOVA &middot; COACH ONLINE</div><div class="nc-greet">'+esc(b.greeting)+esc(whoami())+'</div></div><button type="button" class="nc-x" id="ncX">✕</button></div>'+
       '<a class="nc-talk" href="nova-chat.html">&#10022; Talk to me</a>'+
-      '<div class="nc-headline">'+esc(b.headline)+'</div>'+
+      heroHTML(b.cards[0])+
       letterHTMLIfDue()+
-      b.cards.map(cardHTML).join('')+
+      b.cards.slice(1).map(cardHTML).join('')+
       '<div class="nc-foot">Nova reads your training, body &amp; nutrition every time<br>to give you this. Tap a card to act on it.</div>'+
       '</div>';
     try { if(sh.showModal){ if(!sh.open) sh.showModal(); } else { sh.setAttribute('open',''); } } catch(e){ sh.setAttribute('open',''); }
