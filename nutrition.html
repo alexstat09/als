@@ -631,6 +631,40 @@
 
     function per100From(o){ return {kcal:o.kcal||0,p:o.p||0,c:o.c||0,f:o.f||0,fiber:o.fiber||0,sugar:o.sugar||0,sodium:o.sodium||0,satfat:o.satfat||0}; }
     function searchResultToFood(r){ return {name:r.name,brand:r.brand||'',per100:per100From(r),servingG:r.servingG||0,source:r.source,servingName:r.servingName||'',packageG:r.packageG||0,servingsPer:r.servingsPer||0}; }
+    // ── Auto-heal a food against the verified core DB (display-time, safe) ──
+    // A saved food (usually an MFP import) can carry nonsense per-100g macros —
+    // e.g. ONE Oreo's calories (~53) stored AS the per-100g value, so 11g logs 6
+    // kcal instead of ~53. When a food UNAMBIGUOUSLY matches exactly one verified
+    // staple and its calories are wildly off, we show the verified numbers. Your
+    // saved data and its NAME are never changed; this only corrects what the
+    // picker/log uses. Matching mirrors the server's coreSearch (token subset).
+    var _core=null,_coreTok=null;
+    function _fold(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ς/g,'σ'); }
+    function _ntoks(s){ return _fold(s).split(/[^a-z0-9α-ω]+/).filter(Boolean); }
+    function _tokEq(a,b){ return a===b||(a.length>=4&&b.length>=4&&(a.indexOf(b)===0||b.indexOf(a)===0)); }
+    function _setCore(arr){ _core=arr; _coreTok=arr.map(function(cf){ return _ntoks((cf.name||'')+' '+(cf.alias||'')); }); }
+    function loadCore(){
+      if(!_core){ try{ var c=JSON.parse(localStorage.getItem('nut:coreCache')||'null'); if(c&&Array.isArray(c.core)) _setCore(c.core); }catch(e){} }
+      var ts=0; try{ var c2=JSON.parse(localStorage.getItem('nut:coreCache')||'null'); ts=(c2&&c2.ts)||0; }catch(e){}
+      if(_core&&(Date.now()-ts)<6048e5) return;               // fresh within a week
+      try{ fetch('/api/food-search?all=1').then(function(r){return r.json();}).then(function(j){ if(j&&Array.isArray(j.core)){ _setCore(j.core); try{ localStorage.setItem('nut:coreCache',JSON.stringify({ts:Date.now(),core:j.core})); }catch(e){} } }).catch(function(){}); }catch(e){}
+    }
+    function _cleanTok(name){ var s=String(name||'').split('·')[0].replace(/\([^)]*\)/g,' '); return _ntoks(s).filter(function(t){ return t.length>1 && !/^\d+$/.test(t); }); }
+    function _matchCore(name){ if(!_core) return null; var qt=_cleanTok(name); if(!qt.length) return null; var hit=-1;
+      for(var i=0;i<_core.length;i++){ var nt=_coreTok[i]; var ok=qt.every(function(t){ return nt.some(function(x){ return _tokEq(x,t); }); });
+        if(ok){ if(hit>=0) return null; hit=i; } }                // >1 match = ambiguous, never heal
+      return hit>=0?_core[hit]:null; }
+    function healFood(food){ try{
+        if(!food||!food.per100||!_core) return food;
+        var cf=_matchCore(food.name); if(!cf||!(cf.kcal>0)) return food;
+        var have=+food.per100.kcal||0;
+        if(have>0 && Math.abs(have-cf.kcal)/cf.kcal < 0.4) return food;   // already close — leave it
+        var f={}; for(var k in food){ if(Object.prototype.hasOwnProperty.call(food,k)) f[k]=food[k]; }
+        f.per100={kcal:cf.kcal,p:cf.p||0,c:cf.c||0,f:cf.f||0,fiber:cf.fiber||0,sugar:cf.sugar||0,sodium:cf.sodium||0,satfat:cf.satfat||0};
+        if(!(food.servingG>0)&&(cf.u||cf.s)){ f.servingG=cf.u?cf.us:cf.s; if(cf.u&&!food.servingName) f.servingName=cf.u; }
+        f._healed=cf.name;
+        return f;
+      }catch(e){ return food; } }
     function aiToFood(a){ var g=a.grams||100,k=100/g; return {name:a.name,brand:'',per100:{kcal:a.kcal*k,p:a.p*k,c:a.c*k,f:a.f*k,fiber:(a.fiber||0)*k,sugar:(a.sugar||0)*k,sodium:(a.sodium||0)*k,satfat:(a.satfat||0)*k},servingG:g,source:'ai',confidence:(typeof a.confidence==='number'?a.confidence:null),items:(Array.isArray(a.items)?a.items:null)}; }
     function scaleEntry(food,grams,meal){
       var k=grams/100,p=food.per100;
@@ -820,7 +854,7 @@
     var TABS=[['describe','AI Describe'],['photo','Photo'],['search','Search'],['quick','Quick Add'],['recent','Recent'],['custom','Custom'],['meals','Meals'],['scan','Scan']];
     var searchSeq=0, searchTimer=null, _pIndexCache=null, plateCount=0, customQ='', mealQ='';
 
-    function openSheet(meal){ curMeal=meal||'Snacks'; pickMeal=curMeal; curTab='describe'; pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; plateCount=0; customQ=''; mealQ=''; _pIndexCache=null; renderTabs(); renderTab();
+    function openSheet(meal){ loadCore(); curMeal=meal||'Snacks'; pickMeal=curMeal; curTab='describe'; pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; plateCount=0; customQ=''; mealQ=''; _pIndexCache=null; renderTabs(); renderTab();
       document.getElementById('shTitle').textContent='Add to '+curMeal;
       try{ if(!sheet.open) sheet.showModal(); }catch(e){ sheet.setAttribute('open',''); } }
     function closeSheet(){ stopScan(); pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; try{ if(sheet.open) sheet.close(); else sheet.removeAttribute('open'); }catch(e){} }
@@ -1062,6 +1096,7 @@
     function aiPieceWeight(name,cb){ try{ fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({piece:name})}).then(function(r){return r.json();}).then(function(j){ cb((j&&j.grams>0)?{grams:j.grams,unit:(j.unit||'').toLowerCase()}:null); }).catch(function(){ cb(null); }); }catch(e){ cb(null); } }
 
     function showPortion(food,defG){
+      food=healFood(food);                                   // snap a clearly-broken staple to verified numbers
       pickFood=food; pickMeal=curMeal;
       var trueG=food.servingG>0;                             // real per-unit grams from the DB
       var savedP=getPiece(food);                             // a weight you set before (learned)
@@ -1079,6 +1114,7 @@
       var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
       var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
       var srcLine=food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'';
+      var healLine=food._healed?'<div class="sh-hint" style="margin:-4px 0 12px;color:rgb(var(--nu))">✓ Corrected to verified “'+esc(food._healed)+'” — this entry had the wrong calories.</div>':'';
       var portionRows=hasS
         ? '<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppQty" inputmode="decimal" value="'+r1(g/effG)+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:20px;"></div>'+
           '<div class="pp-per">1 '+esc(unit)+' '+(isEst?'&asymp;':'=')+' <input class="pp-ug" id="ppUnitG" inputmode="decimal" value="'+r1(effG)+'"> g'+(isEst?' <span class="pp-est">est</span>':'')+'</div>'+
@@ -1088,7 +1124,7 @@
       shBody.innerHTML=
         '<div class="pp-name" style="display:flex;align-items:center;gap:8px"><span style="flex:1;min-width:0">'+esc(food.name)+(food.brand?' <span style="opacity:.5;font-weight:400">'+esc(food.brand)+'</span>':'')+'</span>'+starBtn+'</div>'+
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
-        confLine+itemsLine+srcLine+portionRows+
+        confLine+itemsLine+srcLine+healLine+portionRows+
         '<div class="pp-preview" id="ppPrev"></div>'+
         (portionTarget==='meal'?'':'<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
         '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>'+

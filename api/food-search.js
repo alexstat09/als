@@ -215,6 +215,11 @@ module.exports = async function (req, res) {
   var barcode = (u.searchParams.get('barcode') || '').replace(/[^0-9]/g, '').slice(0, 20);
   var q = (u.searchParams.get('q') || '').toString().slice(0, 100).trim();
 
+  // Whole verified-core DB — the client caches this to auto-heal saved foods
+  // against canonical numbers (e.g. an MFP import that stored ONE Oreo's calories
+  // as the per-100g value). Small, static, same-origin-guarded.
+  if (u.searchParams.get('all')) { res.status(200).json({ core: CORE }); return; }
+
   // Barcode → Open Food Facts product
   if (barcode) {
     try { var item = await offBarcode(barcode); res.status(200).json({ results: item ? [item] : [] }); }
