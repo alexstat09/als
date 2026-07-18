@@ -1031,7 +1031,8 @@
       [/mini.?oreo|μίνι.?ορεο/i,'cookie',5],
       [/oreo|ορεο/i,'cookie',11],
       [/lotus|biscoff|speculoos/i,'biscuit',6],
-      [/digestive|petit beurre|μπισκότ|\bbiscuit/i,'biscuit',8],
+      [/digestive|ντάιτζεστιβ/i,'biscuit',15],
+      [/petit beurre|petit-beurre|πτι.?μπερ|μπισκότ|\bbiscuit/i,'biscuit',8],
       [/\bcookie|μπισκότο/i,'cookie',15],
       [/cracker|κράκερ/i,'cracker',5],
       [/rice.?cake|ρυζογκοφρ/i,'cake',9],
@@ -1043,10 +1044,20 @@
       [/nugget/i,'nugget',18]
     ];
     function guessUnit(name){ name=String(name||''); for(var i=0;i<SNACK_UNITS.length;i++){ if(SNACK_UNITS[i][0].test(name)) return {unit:SNACK_UNITS[i][1],g:SNACK_UNITS[i][2]}; } return null; }
+    // Plausible grams for ONE of a named unit. A learned/AI/DB weight outside its
+    // range is a data error — e.g. an Oreo remembered as "1 cookie = 111g", a 10×
+    // mistake that would log ~530 kcal for one cookie. Such a weight is ignored so
+    // the sensible fallback wins, and it is never persisted. Unknown units get a
+    // generous cap only (catch absurdities, allow real variety).
+    var UNIT_RANGE={cookie:[3,40],biscuit:[3,30],cracker:[1,20],wafer:[2,20],cake:[3,60],slice:[8,90],scoop:[10,60],piece:[3,400],bar:[10,110],square:[3,25],ball:[5,60],egg:[30,80],can:[100,600],bottle:[150,1000],glass:[120,500],cup:[80,400],sachet:[2,30],pot:[80,260],pouch:[40,260],container:[60,400],pack:[5,120],tablet:[0.2,3],capsule:[0.2,3],wrap:[30,120],roll:[20,120],bun:[25,120],stick:[5,40],patty:[40,200],link:[20,90],fillet:[60,300],nugget:[8,45],tortilla:[15,90],waffle:[15,90],pancake:[15,90],pretzel:[2,120]};
+    function unitOK(unit,g){ g=+g; if(!(g>0)) return false; var r=UNIT_RANGE[String(unit||'').toLowerCase()]; return r?(g>=r[0]&&g<=r[1]):(g<=600); }
     // ── Per-piece weights you've set stick to the food (A: learn & remember) ──
     function pieceKey(food){ return String((food.name||'')+'|'+(food.brand||'')).toLowerCase().replace(/\s+/g,' ').trim(); }
-    function getPiece(food){ var m=ls(PIECEK,{})||{}; var p=m[pieceKey(food)]; return (p&&p.g>0)?p:null; }
-    function savePiece(food,unit,g){ if(!(g>0)||!unit) return; var m=ls(PIECEK,{})||{}; m[pieceKey(food)]={u:unit,g:Math.round(g*10)/10}; m._ts=Date.now(); save(PIECEK,m); }
+    function getPiece(food){ var m=ls(PIECEK,{})||{}; var k=pieceKey(food); var p=m[k];
+      if(!(p&&p.g>0)) return null;
+      if(!unitOK(p.u,p.g)){ try{ delete m[k]; m._ts=Date.now(); save(PIECEK,m); }catch(e){} return null; } // drop a poisoned learned weight
+      return p; }
+    function savePiece(food,unit,g){ if(!(g>0)||!unit||!unitOK(unit,g)) return; var m=ls(PIECEK,{})||{}; m[pieceKey(food)]={u:unit,g:Math.round(g*10)/10}; m._ts=Date.now(); save(PIECEK,m); }
     // B: ask the free AI (Groq) for one piece's weight — background, non-blocking
     function aiPieceWeight(name,cb){ try{ fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({piece:name})}).then(function(r){return r.json();}).then(function(j){ cb((j&&j.grams>0)?{grams:j.grams,unit:(j.unit||'').toLowerCase()}:null); }).catch(function(){ cb(null); }); }catch(e){ cb(null); } }
 
@@ -1093,6 +1104,7 @@
       if(hasS && isEst && !savedP){
         aiPieceWeight((food.name||'')+' '+(food.brand||''), function(res){
           if(!res||!(res.grams>0)||pickFood!==food||pickFood._userSetUnit) return;
+          if(!unitOK(res.unit||rawUnit, res.grams)) return; // never seed an implausible AI weight (the 111g-cookie class of error)
           effG=res.grams; pickFood._effG=effG;
           var u2=document.getElementById('ppUnitG'); if(u2) u2.value=r1(effG);
           recalc();
