@@ -415,9 +415,8 @@
      iPhone + laptop. */
   'dialog.nc-sheet{position:fixed;inset:0;margin:auto;z-index:81;width:min(540px,calc(100% - 28px));max-width:min(540px,calc(100% - 28px));max-height:88vh;max-height:88dvh;padding:0;border:1px solid rgba(var(--au-glow-rgb),.34);border-radius:22px;background:linear-gradient(180deg,#0b0e13,#080a0e);color:inherit;overflow:hidden;box-shadow: 0 30px 80px rgba(0,0,0,.66);opacity:0;transform:translateY(14px) scale(.96);transition:opacity .22s ease, transform .42s cubic-bezier(.34,1.55,.45,1);}'+
   'dialog.nc-sheet[open]{display:block;}'+
-  'dialog.nc-sheet.on{opacity:1;transform:translateY(0) scale(1);animation:nc-breathe 3.8s ease-in-out infinite .45s;}'+
+  'dialog.nc-sheet.on{opacity:1;transform:translateY(0) scale(1);}'+
   'dialog.nc-sheet::backdrop{background:rgba(3,4,6,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}'+
-  '@keyframes nc-breathe{0%,100%{box-shadow: 0 30px 80px rgba(0,0,0,.66);}50%{box-shadow: 0 30px 80px rgba(0,0,0,.66);}}'+
   '.nc-scroll{position:relative;z-index:1;max-height:86vh;max-height:86dvh;overflow-y:auto;padding:20px 18px 22px;-webkit-overflow-scrolling:touch;}'+
   '.nc-sheet::before{content:"";position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(var(--au-glow-rgb),.06) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--au-glow-rgb),.06) 1px,transparent 1px);background-size:34px 34px;pointer-events:none;-webkit-mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);mask-image:radial-gradient(125% 80% at 50% 0,#000,transparent 72%);}'+
   '.nc-corner{position:absolute;z-index:3;width:17px;height:17px;border:2px solid rgb(var(--au-glow-rgb));opacity:0;transition:opacity .45s .25s;pointer-events:none;filter: none;}'+

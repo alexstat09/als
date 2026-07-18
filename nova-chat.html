@@ -11,9 +11,13 @@
   <meta name="theme-color" content="#070709">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <!-- NOTE: this page is intentionally SELF-CONTAINED (no aurora.css). It is the
-       one page that kept breaking; isolating its CSS removes any external rule
-       from interfering with the message layout. -->
+  <!-- Nova's ONE heartbeat lives in aurora.css. This page stays self-contained
+       for its MESSAGE layout (the thing that kept breaking) — and aurora.css is
+       100% class-scoped (.au-*/.nova only, zero bare-element or .nv-* rules), so
+       linking it touches nothing but the .nova orb: it gives Nova back her beat,
+       float and thinking-state on the very page you talk to her. Linked BEFORE
+       the inline <style> so this page's own .nova sizing still wins. -->
+  <link rel="stylesheet" href="aurora.css">
   <style>
     /* ════════════════════════════════════════════════════════════════
        Nova chat — rebuilt clean (v53). The recurring "overlapping text"
@@ -152,9 +156,10 @@
     .nv-send:disabled{opacity:.4;cursor:default;box-shadow:none;}
     .nv-send svg{width:19px;height:19px;}
 
-    /* orb reacts while Nova generates */
-    body.nv-live .nv-top .nova .nova-glow{animation:nv-pulse 1.1s ease-in-out infinite;transform-origin:50% 50%;}
-    @keyframes nv-pulse{0%,100%{filter: none;}50%{filter: none;}}
+    /* While Nova generates, the header orb gets the real thinking state from
+       aurora.css (the .is-thinking class, toggled in setBusy): a quickened
+       heartbeat + a fine sweeping ring. No page-local keyframe — one heartbeat,
+       one source. */
 
     /* memory panel */
     .nv-mem{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;}
@@ -329,6 +334,8 @@
       sendBtn.disabled = on || !input.value.trim();
       status.textContent = on ? 'Thinking…' : 'online · ' + BUILD;
       root.classList.toggle('nv-live', on);
+      var orb = document.querySelector('.nv-top .nova');
+      if(orb) orb.classList.toggle('is-thinking', on);
     }
 
     async function send(text){
