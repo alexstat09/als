@@ -8,7 +8,8 @@ var CORE = require('./_core-foods.js');
 function recon() {
   var flags = [];
   CORE.forEach(function (f) {
-    var atwater = 4 * f.p + 4 * f.c + 9 * f.f - 2 * (f.fiber || 0);
+    // ethanol contributes 7 kcal/g and is NOT in P/C/F — count it for spirits/wine/beer
+    var atwater = 4 * f.p + 4 * f.c + 9 * f.f - 2 * (f.fiber || 0) + 7 * (f.alc || 0);
     var diff = f.kcal - atwater;
     var pct = f.kcal ? Math.abs(diff) / f.kcal : 0;
     if (Math.abs(diff) > 25 && pct > 0.12) {
@@ -35,7 +36,10 @@ function integrity() {
 }
 
 // ── 3. coverage: every food Alex eats returns a core hit ─────────
-function toks(s) { return String(s || '').toLowerCase().split(/[^a-z0-9À-ɏͰ-Ͽἀ-῿]+/).filter(Boolean); }
+// mirror the real server (food-search.js): fold diacritics + final sigma so
+// unaccented Greek queries match accented names/aliases, then tokenize
+function fold(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ς/g, 'σ'); }
+function toks(s) { return fold(s).split(/[^a-z0-9α-ω]+/).filter(Boolean); }
 function tokEq(a, b) { return a === b || (a.length >= 4 && b.length >= 4 && (a.indexOf(b) === 0 || b.indexOf(a) === 0)); }
 function coreHit(q) {
   var qt = toks(q); if (!qt.length) return null;
