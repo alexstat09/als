@@ -141,6 +141,22 @@
     .entry-sub{font-family:var(--au-mono,ui-monospace);font-size:10px;color:rgba(244,241,234,.42);margin-top:2px;}
     .entry-kcal{font-family:var(--au-mono,ui-monospace);font-size:13px;font-weight:700;color:rgba(244,241,234,.8);flex:none;}
     .entry-del{flex:none;background:none;border:none;color:rgba(255,107,139,.7);font-size:15px;cursor:pointer;padding:4px 2px;}
+    .entry-move{flex:none;background:none;border:none;color:rgba(244,241,234,.38);cursor:pointer;padding:4px 3px;display:flex;align-items:center;}
+    .entry-move svg{width:15px;height:15px;}
+    .entry-move:active{color:rgb(var(--nu));}
+    .meal-move{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(244,241,234,.6);width:30px;height:30px;border-radius:50%;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;}
+    .meal-move svg{width:14px;height:14px;}
+    .meal-move:active{background:rgba(255,255,255,.12);}
+    /* move-to-slot picker — real top-layer <dialog>, not a hand-rolled overlay */
+    dialog.nu-move{position:fixed;inset:0;margin:auto;width:min(360px,calc(100% - 40px));max-width:min(360px,calc(100% - 40px));height:max-content;padding:0;border:1px solid rgba(var(--nu),.3);border-radius:20px;background:linear-gradient(180deg,#0b0e13,#080a0e);color:inherit;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7);}
+    dialog.nu-move[open]{display:block;}
+    dialog.nu-move::backdrop{background:rgba(3,4,6,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+    .mv-title{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:18px;color:#F4F1EA;padding:18px 18px 3px;line-height:1.25;}
+    .mv-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(var(--nu),.85);padding:0 18px 12px;}
+    .mv-opts{display:flex;flex-direction:column;gap:8px;padding:4px 16px 6px;}
+    .mv-opt{width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#F4F1EA;border-radius:12px;padding:14px 16px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}
+    .mv-opt:active{background:rgba(var(--nu),.16);border-color:rgb(var(--nu));}
+    .mv-cancel{width:calc(100% - 32px);margin:4px 16px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(244,241,234,.7);border-radius:12px;padding:12px;font-family:var(--au-sans,-apple-system);font-size:14px;font-weight:700;cursor:pointer;}
     .meal-empty{padding:6px 14px 12px;font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:13px;color:rgba(244,241,234,.32);}
 
     /* explicit height (not just max-height) so the flex column doesn't collapse
@@ -245,6 +261,13 @@
   <dialog class="nu-sheet" id="copySheet">
     <div class="sh-top"><div class="sh-title" id="copyTitle">Copy a meal</div><button type="button" class="sh-x" data-act="copy-close">&#10005;</button></div>
     <div class="sh-body" id="copyBody"></div>
+  </dialog>
+
+  <dialog class="nu-move" id="moveSheet">
+    <div class="mv-title" id="mvTitle">Move to…</div>
+    <div class="mv-sub">Choose a meal</div>
+    <div class="mv-opts" id="mvOpts"></div>
+    <button type="button" class="mv-cancel" data-act="mv-cancel">Cancel</button>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -625,9 +648,9 @@
       MEALS.forEach(function(m){
         var items=logs.filter(function(e){return (e.meal||'Snacks')===m;});
         var kc=items.reduce(function(s,e){return s+(e.kcal||0);},0);
-        html+='<div class="card meal"><div class="meal-hdr"><div class="meal-name">'+m+'</div><div class="meal-hdr-r"><span class="meal-kcal">'+r0(kc)+' kcal</span><button type="button" class="meal-copy" data-act="copy-meal-open" data-meal="'+m+'" aria-label="Copy this meal from another day">&#10696;</button><button type="button" class="meal-add" data-act="add" data-meal="'+m+'">+</button></div></div>';
+        html+='<div class="card meal"><div class="meal-hdr"><div class="meal-name">'+m+'</div><div class="meal-hdr-r"><span class="meal-kcal">'+r0(kc)+' kcal</span>'+(items.length?'<button type="button" class="meal-move" data-act="move-meal" data-meal="'+m+'" aria-label="Move all of '+m+' to another meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h13"/><path d="M16 19l4-4-4-4"/><path d="M20 15H7"/></svg></button>':'')+'<button type="button" class="meal-copy" data-act="copy-meal-open" data-meal="'+m+'" aria-label="Copy this meal from another day">&#10696;</button><button type="button" class="meal-add" data-act="add" data-meal="'+m+'">+</button></div></div>';
         if(!items.length) html+='<div class="meal-empty">Nothing yet — tap + to log.</div>';
-        items.forEach(function(e){ html+='<div class="entry" data-act="edit" data-id="'+e.id+'"><div class="entry-main"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-sub">'+(e.grams>0?r0(e.grams)+'g · ':'')+r0(e.p)+'P '+r0(e.c)+'C '+r0(e.f)+'F</div></div><span class="entry-kcal">'+r0(e.kcal)+'</span><button type="button" class="entry-del" data-act="del" data-id="'+e.id+'">&#10005;</button></div>'; });
+        items.forEach(function(e){ html+='<div class="entry" data-act="edit" data-id="'+e.id+'"><div class="entry-main"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-sub">'+(e.grams>0?r0(e.grams)+'g · ':'')+r0(e.p)+'P '+r0(e.c)+'C '+r0(e.f)+'F</div></div><span class="entry-kcal">'+r0(e.kcal)+'</span><button type="button" class="entry-move" data-act="move-food" data-id="'+e.id+'" aria-label="Move to another meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h13"/><path d="M16 19l4-4-4-4"/><path d="M20 15H7"/></svg></button><button type="button" class="entry-del" data-act="del" data-id="'+e.id+'">&#10005;</button></div>'; });
         html+=usualBtnHtml(m);
         html+='</div>';
       });
@@ -751,6 +774,25 @@
     }
     function addEntry(e){ var a=getLogs(); a.push(e); saveLogs(a); _pIndexCache=null; renderAll(); }
     function delEntry(id){ saveLogs(getLogs().filter(function(e){return e.id!==id;})); _pIndexCache=null; try{ if(window.ALSSync){ window.ALSSync.drop('nut:logs', id); window.ALSSync.flush(); } }catch(e){} renderAll(); }
+    // ── Move logged food / whole meal between slots. Sync-safe & lossless:
+    //    clone with a fresh id + tombstone the old — the proven edit-save path.
+    function moveEntries(ids, target){
+      var byId={}; getLogs().forEach(function(e){ if(e&&e.id) byId[e.id]=e; });
+      var moved=0;
+      ids.forEach(function(id){ var e=byId[id]; if(!e||(e.meal||'Snacks')===target) return;
+        var c={}; for(var k in e) c[k]=e[k]; c.id=uid(); c.ts=Date.now(); c.meal=target;
+        addEntry(c); delEntry(id); moved++; });
+      return moved;
+    }
+    function openMove(title, fromMeal, apply){
+      var dlg=document.getElementById('moveSheet'); if(!dlg) return;
+      document.getElementById('mvTitle').textContent=title;
+      document.getElementById('mvOpts').innerHTML=MEALS.filter(function(m){return m!==fromMeal;}).map(function(m){
+        return '<button type="button" class="mv-opt" data-act="mv-pick" data-meal="'+esc(m)+'">'+esc(m)+'</button>'; }).join('');
+      window._moveApply=apply;
+      try{ dlg.showModal(); }catch(e){ dlg.setAttribute('open',''); }
+    }
+    function closeMove(){ var dlg=document.getElementById('moveSheet'); try{ if(dlg&&dlg.open) dlg.close(); else if(dlg) dlg.removeAttribute('open'); }catch(e){} window._moveApply=null; }
 
     function recentFoods(){
       var seen={}, out=[];
@@ -1204,7 +1246,7 @@
         '<div class="pp-sub">'+(food.source||'').toUpperCase()+' · per 100g: '+r0(food.per100.kcal)+' kcal, '+r0(food.per100.p)+'P</div>'+
         confLine+itemsLine+srcLine+healLine+portionRows+
         '<div class="pp-preview" id="ppPrev"></div>'+
-        (portionTarget==='meal'?'':'<div class="pp-meals" id="ppMeals">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
+        (portionTarget==='meal'?'':'<div class="sh-sec" style="margin-top:8px">Meal</div><div class="pp-meals" id="ppMeals" style="margin-top:6px">'+MEALS.map(function(m){return '<button type="button" class="pp-meal'+(m===pickMeal?' on':'')+'" data-act="pp-meal" data-meal="'+m+'">'+m+'</button>';}).join('')+'</div>')+
         '<button type="button" class="sh-btn" data-act="pp-add">'+(pickEditId?'Save changes':(portionTarget==='meal'?(mealItemEdit>=0?'Save item':'Add to meal'):'Add to '+esc(pickMeal)))+'</button>'+
         ((portionTarget!=='meal'&&!pickEditId)?'<button type="button" class="sh-btn ghost" data-act="pp-add-more" style="margin-top:8px;">+ Add &amp; keep going</button>':'');
       var qi=document.getElementById('ppQty'), gi=document.getElementById('ppG'), ug=document.getElementById('ppUnitG');
@@ -1395,6 +1437,12 @@
       else if(act==='add'){ openSheet(el.getAttribute('data-meal')); }
       else if(act==='del'){ ev.stopPropagation(); delEntry(el.getAttribute('data-id')); }
       else if(act==='edit'){ var e=getLogs().filter(function(x){return x.id===el.getAttribute('data-id');})[0]; if(e){ openSheet(e.meal||'Snacks'); pickEditId=e.id; var g=e.grams||100,k=100/g; showPortion({name:e.name,brand:'',per100:{kcal:(e.kcal||0)*k,p:(e.p||0)*k,c:(e.c||0)*k,f:(e.f||0)*k,fiber:(e.fiber||0)*k,sugar:(e.sugar||0)*k,sodium:(e.sodium||0)*k,satfat:(e.satfat||0)*k},source:e.source}, e.grams); } }
+      else if(act==='move-food'){ ev.stopPropagation(); var mfId=el.getAttribute('data-id'); var mfe=getLogs().filter(function(x){return x.id===mfId;})[0]; if(!mfe) return; openMove('Move “'+(mfe.name||'food')+'” to…', mfe.meal||'Snacks', function(target){ moveEntries([mfId], target); }); }
+      else if(act==='move-meal'){ ev.stopPropagation(); var mm=el.getAttribute('data-meal'); var mmItems=dayLogs(viewDate).filter(function(e){return (e.meal||'Snacks')===mm;}); if(!mmItems.length) return; openMove('Move all of '+mm+' to…', mm, function(target){ var ids=mmItems.map(function(e){return e.id;});
+          if(window.ALSConfirm){ ALSConfirm({title:'Move all of '+mm+'?',message:'Move all '+ids.length+' item'+(ids.length>1?'s':'')+' to '+target+'.',confirmText:'Move',cancelText:'Cancel'}).then(function(ok){ if(ok) moveEntries(ids,target); }); }
+          else { moveEntries(ids,target); } }); }
+      else if(act==='mv-pick'){ var tgt=el.getAttribute('data-meal'); var ap=window._moveApply; closeMove(); if(ap) ap(tgt); }
+      else if(act==='mv-cancel'){ closeMove(); }
       else if(act==='sheet-close'){ closeSheet(); }
       else if(act==='tab'){ setTab(el.getAttribute('data-tab')); }
       else if(act==='ai-go'){ aiGo(); }
@@ -1429,7 +1477,7 @@
         else if(pk==='savedmeal'){ var ml2=findById(MEALSK,pid); if(ml2) addSavedMeal(ml2); } }
       else if(act==='meal-edit-id'){ var mle2=findById(MEALSK, el.getAttribute('data-id')); if(mle2){ editMeal=JSON.parse(JSON.stringify(mle2)); if(!Array.isArray(editMeal.items)) editMeal.items=[]; gotoMealEditor(); } }
       else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood._effG){ gi.value=r0(pickFood._effG); ppPreview(); } }
-      else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab&&!pickEditId) ab.textContent='Add to '+pickMeal; }
+      else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab){ if(pickEditId) ab.textContent=(pickMeal!==curMeal?'Save · moved to '+pickMeal:'Save changes'); else ab.textContent='Add to '+pickMeal; } }
       else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return;
         if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(pickFood.source==='ai') saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
         commitDiaryAdd(true); }
