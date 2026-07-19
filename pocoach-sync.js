@@ -12,6 +12,12 @@
    ════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
+  // Never run twice on one page. Pages that include this script natively set the
+  // flag when they run; topbar's ensurePocoachSync() checks it before injecting,
+  // so weight sync now runs app-wide without ever double-installing the engine
+  // (which would stack the setItem override / duplicate the 15s poll + Realtime).
+  if (window.__pocoachSync) return;
+  window.__pocoachSync = true;
   var REST    = 'https://oiyvadqfldwbjroiknjc.supabase.co/rest/v1/app_state';
   var SB_BASE = 'https://oiyvadqfldwbjroiknjc.supabase.co';
   var SB_KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';

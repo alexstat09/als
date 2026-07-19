@@ -680,6 +680,23 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       document.head.appendChild(s);
     } catch (e) {}
   }
+  // Weigh-ins (po_coach_weights) sync through pocoach-sync.js — which historically
+  // loaded on ONLY the gym / body / weight pages. If a log-time push failed there
+  // and the user then used other pages, nothing ever retried, so a weight could sit
+  // on one device for days (it has happened, more than once). Mirror the water fix:
+  // make the real pocoach engine — its battle-tested by-dateKey weight merge,
+  // deletion tombstones and confirmed-write-only retry — run on EVERY page, so a
+  // stranded weigh-in flushes from wherever the app is next opened online. Guarded
+  // by __pocoachSync so it can never double-install (body.html / pr.html already run
+  // sync.js and pocoach-sync.js together, so the two engines coexisting is proven).
+  function ensurePocoachSync() {
+    if (window.__pocoachSync) return;                                     // already running here
+    if (document.querySelector('script[src*="pocoach-sync.js"]')) return; // its own tag will run
+    try {
+      var s = document.createElement('script'); s.src = 'pocoach-sync.js'; s.defer = true;
+      document.head.appendChild(s);
+    } catch (e) {}
+  }
   function addWater() {
     let state = null;
     try { state = JSON.parse(localStorage.getItem('po_water_v1')); } catch (e) {}
@@ -824,8 +841,8 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     setInterval(render, 30 * 1000);
     // After the page's own sync inits have run (they mark the health row on
     // DOMContentLoaded), make sure SOMETHING is syncing water on this page.
-    if (document.readyState === 'complete') ensureHealthSync();
-    else window.addEventListener('load', ensureHealthSync, { once: true });
+    if (document.readyState === 'complete') { ensureHealthSync(); ensurePocoachSync(); }
+    else window.addEventListener('load', function () { ensureHealthSync(); ensurePocoachSync(); }, { once: true });
   }
 
   if (document.readyState === 'loading') {
