@@ -25,6 +25,7 @@
 
     .nuh{max-width:620px;margin:0 auto;padding:24px 18px 6px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
     .nuh-line{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:clamp(23px,6vw,30px);line-height:1.08;color:var(--au-ivory,#F4F1EA);}
+    .nuh-line b{font-style:normal;color:rgb(var(--nu));font-weight:400;}
     .nuh-eyebrow{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-bottom:10px;}
     .nuh .nova{width:66px;height:66px;flex:none;margin-top:2px;}
 
@@ -79,6 +80,19 @@
     .nu-eb-n{margin-left:auto;font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.38);text-transform:uppercase;letter-spacing:.08em;}
     .card.sum::before,.card.hero-sum::before{opacity:1;}
     .card.hero-sum{border-color:rgba(var(--nu),.16);box-shadow:0 10px 40px rgba(0,0,0,.35),0 0 30px rgba(var(--nu),.05);}
+    /* ── composition tiers: the Today card owns the screen, analytics recede ── */
+    .tier-hero{border-color:rgba(var(--nu),.22);box-shadow:0 18px 50px rgba(0,0,0,.4),0 0 42px rgba(var(--nu),.07);background:linear-gradient(180deg,rgba(var(--nu),.05),rgba(255,255,255,.02));}
+    .tier-hero::before{opacity:1;left:0;right:0;background:linear-gradient(90deg,transparent,rgba(var(--nu),.7),transparent);}
+    .tier-quiet{background:rgba(255,255,255,.016);border-color:rgba(255,255,255,.055);}
+    .tier-quiet::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);}
+    .tier-quiet .nu-eb-d{background:rgba(244,241,234,.4);box-shadow:none;}
+    .tier-quiet .nu-eb-l{color:rgba(244,241,234,.42);}
+    /* one-tap "usual" strip, relocated from the old Coach card into Today */
+    .now-goto{margin-top:15px;padding-top:13px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;}
+    .now-goto-t{flex:1;min-width:0;font-size:12.5px;color:rgba(244,241,234,.82);line-height:1.4;}
+    /* line-icon tools (replacing the 🛒 / ⬇️ emoji) */
+    .nu-tool-ic{color:rgb(var(--nu));}
+    .nu-tool-ic svg{width:20px;height:20px;display:block;}
     .sum-rem{font-family:var(--au-mono,ui-monospace);font-size:10px;font-weight:700;letter-spacing:.04em;margin-top:6px;}
     /* bottom tools row */
     .nu-tools{display:flex;gap:10px;margin-top:4px;}
@@ -211,16 +225,14 @@
       <button type="button" data-act="day-next" aria-label="Next day">&#8250;</button>
     </div>
 
-    <div class="card sum hero-sum" id="sumCard"></div>
-    <div class="card" id="coachCard" style="padding:14px 16px;"></div>
+    <div class="card sum hero-sum tier-hero" id="sumCard"></div>
     <div id="diary"></div>
     <div class="card" id="energyCard" style="padding:14px 16px;"></div>
-    <div class="card" id="trendsCard" style="padding:14px 16px;"></div>
-    <div class="card" id="consistencyCard" style="padding:14px 16px;"></div>
+    <div class="card tier-quiet" id="analyticsCard" style="padding:16px;"></div>
 
     <div class="nu-tools">
-      <a href="planner.html" class="nu-tool"><span class="nu-tool-ic">🛒</span><span style="flex:1;min-width:0"><span class="nu-tool-t">Meal Planner</span><span class="nu-tool-s">Plan &amp; shopping list</span></span></a>
-      <a href="import.html" class="nu-tool"><span class="nu-tool-ic">⬇️</span><span style="flex:1;min-width:0"><span class="nu-tool-t">Import</span><span class="nu-tool-s">From MyFitnessPal</span></span></a>
+      <a href="planner.html" class="nu-tool"><span class="nu-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 12.3a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.3L21 8H6.2"/><circle cx="9.5" cy="20.5" r="1.2"/><circle cx="17.5" cy="20.5" r="1.2"/></svg></span><span style="flex:1;min-width:0"><span class="nu-tool-t">Meal Planner</span><span class="nu-tool-s">Plan &amp; shopping list</span></span></a>
+      <a href="import.html" class="nu-tool"><span class="nu-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span style="flex:1;min-width:0"><span class="nu-tool-t">Import</span><span class="nu-tool-s">From MyFitnessPal</span></span></a>
     </div>
   </div>
 
@@ -589,6 +601,14 @@
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;max-width:38px;height:30px;border-radius:5px;background:rgba(255,255,255,.05);display:flex;align-items:flex-end;overflow:hidden"><div style="width:100%;height:'+pc+'%;background:'+cc+'"></div></div><div style="font-family:var(--au-mono,ui-monospace);font-size:9.5px;font-weight:700;color:#F4F1EA">'+r0(mp)+'</div><div style="font-family:var(--au-mono,ui-monospace);font-size:7px;letter-spacing:.05em;text-transform:uppercase;color:rgba(244,241,234,.4)">'+esc(m.slice(0,3))+'</div></div>'; }).join('');
         protHtml='<div style="margin-top:15px;padding-top:13px;border-top:1px solid rgba(255,255,255,.06)"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-family:var(--au-mono,ui-monospace);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.45)">Protein / meal</span><span style="font-family:var(--au-mono,ui-monospace);font-size:9px;color:rgba(244,241,234,.35)">~'+perMeal+'g target</span></div><div style="display:flex;gap:7px;align-items:flex-end">'+pbars+'</div></div>';
       }
+      // Anticipatory one-tap "usual" (relocated from the old Coach card) — today only.
+      var nowGotoHtml='';
+      if(viewDate===today()){
+        var slot=currentMealSlot(), sug=null, gz=slotGotos(slot,4);
+        for(var gi=0;gi<gz.length;gi++){ if(!loggedTodayName(gz[gi].name)){ sug=gz[gi]; break; } }
+        window._nowGoto=sug||null;
+        if(sug) nowGotoHtml='<div class="now-goto"><div class="now-goto-t">You usually have <b style="color:#F4F1EA">'+esc(sug.name)+'</b> at '+esc(slot).toLowerCase()+'</div><button type="button" class="sh-btn" data-act="goto-log" style="flex:none;width:auto;margin:0;padding:9px 15px;font-size:12.5px">Log it</button></div>';
+      } else { window._nowGoto=null; }
       document.getElementById('sumCard').innerHTML=
         eb('Today', fmtDateLbl(viewDate))+
         '<div class="sum-top"><div class="sum-ring"><svg width="120" height="120" viewBox="0 0 120 120">'+
@@ -596,7 +616,7 @@
           '<circle class="am-ring" cx="60" cy="60" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
         '</svg><div class="sum-ring-in"><div class="sum-kcal" data-to="'+r0(t.kcal)+'" data-comma="1">'+r0(t.kcal).toLocaleString('en-US')+'</div><div class="sum-kcal-lbl">/ '+tg.kcal+' kcal</div>'+remHtml+'</div></div>'+
         '<div class="sum-macros">'+bar('p','Protein',t.p,tg.p,'g')+bar('c','Carbs',t.c,tg.c,'g')+bar('f','Fat',t.f,tg.f,'g')+'</div></div>'+
-        '<div class="micros">'+micro(t.fiber,'Fiber','g')+micro(t.sugar,'Sugar','g')+micro(t.satfat,'Sat Fat','g')+micro(t.sodium,'Sodium','mg')+'</div>'+protHtml;
+        '<div class="micros">'+micro(t.fiber,'Fiber','g')+micro(t.sugar,'Sugar','g')+micro(t.satfat,'Sat Fat','g')+micro(t.sodium,'Sodium','mg')+'</div>'+protHtml+nowGotoHtml;
       if(window.AuroraMotion){ var _nr=document.getElementById('sumCard').querySelector('.am-ring'); if(_nr) AuroraMotion.ring(_nr, pct, 'nu-summary'); }
     }
 
@@ -619,12 +639,70 @@
       return '<button type="button" class="usual-set-link" data-act="usual-set" data-meal="'+esc(meal)+'">&#43; set a one-tap usual for '+esc(meal.toLowerCase())+'</button>';
     }
 
+    // ── Live header line — the single most useful thing, at a glance.
+    // Absorbs the old Coach card's one-line guidance (glance altitude).
+    function heroLine(){
+      if(viewDate!==today()){
+        var pt=dayTotals(viewDate);
+        return pt.kcal>0 ? '<b>'+fmtK(pt.kcal)+'</b> kcal logged.' : 'Nothing logged this day.';
+      }
+      var t=dayTotals(today()), tg=dayTargets(today()), h=new Date().getHours();
+      var remK=Math.round(tg.kcal-t.kcal), remP=Math.round(tg.p-t.p);
+      if(t.kcal<=0) return h<11?'Fuel the day — lead with protein.':'Nothing logged yet today.';
+      if(remP>40) return 'Still <b>'+remP+'g protein</b> to go.';
+      if(remK<-Math.round(tg.kcal*0.08)) return '<b>'+fmtK(-remK)+'</b> over — ease up tomorrow.';
+      if(remK>Math.round(tg.kcal*0.3)) return '<b>'+fmtK(remK)+'</b> calories left today.';
+      if(remP<=10 && Math.abs(remK)<=tg.kcal*0.1) return 'Dialed in today.';
+      return '<b>'+fmtK(Math.max(0,remK))+'</b> kcal · <b>'+Math.max(0,remP)+'g</b> protein to go.';
+    }
+
+    // ── Merged analytics (quiet tier): 7-day trend + streak/consistency stats.
+    // Replaces the old separate Trends + Consistency cards (heatmap dropped).
+    function renderAnalytics(){
+      var el=document.getElementById('analyticsCard'); if(!el) return;
+      var tg=targets(), days=[];
+      for(var i=6;i>=0;i--){ var d=new Date(); d.setDate(d.getDate()-i); var dk=dateKey(d); var tot=dayTotals(dk); days.push({kcal:tot.kcal,d:d}); }
+      var logged7=days.filter(function(x){return x.kcal>0;});
+      if(!logged7.length){ el.style.display='none'; return; }
+      el.style.display='';
+      var avgK=Math.round(logged7.reduce(function(a,b){return a+b.kcal;},0)/logged7.length);
+      var onT7=logged7.filter(function(x){return tg.kcal&&Math.abs(x.kcal/tg.kcal-1)<=0.1;}).length;
+      var maxK=Math.max(tg.kcal||0, days.reduce(function(m,x){return Math.max(m,x.kcal);},0))||1;
+      var bars=days.map(function(x){
+        var hPct=Math.round(x.kcal/maxK*100);
+        var on=tg.kcal&&x.kcal>0&&Math.abs(x.kcal/tg.kcal-1)<=0.1;
+        var over=tg.kcal&&x.kcal>tg.kcal*1.1;
+        var col=x.kcal===0?'rgba(255,255,255,.08)':(on?'rgb(var(--nu))':(over?'#FF6B8B':'rgba(155,140,255,.7)'));
+        var dn=['S','M','T','W','T','F','S'][x.d.getDay()];
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end"><div style="width:100%;max-width:26px;height:'+Math.max(3,Math.round(hPct*0.5))+'px;background:'+col+';border-radius:4px 4px 2px 2px"></div><div style="font-size:8.5px;color:rgba(244,241,234,.4);font-family:var(--au-mono,ui-monospace)">'+dn+'</div></div>';
+      }).join('');
+      // streak + consistency stats across all logs
+      var byDay={}; getLogs().forEach(function(e){ if(!e||!e.dateKey) return; var tt=byDay[e.dateKey]||(byDay[e.dateKey]={kcal:0,p:0}); tt.kcal+=e.kcal||0; tt.p+=e.p||0; });
+      var loggedDays=Object.keys(byDay).filter(function(dk){ return byDay[dk].kcal>0; });
+      function dayNum(dk){ var p=dk.split('-').map(Number); return Math.round(new Date(p[0],p[1]-1,p[2]).getTime()/86400000); }
+      function onTargetDay(dk){ var tt=byDay[dk]; if(!tt) return false; var onK=tg.kcal&&Math.abs(tt.kcal/tg.kcal-1)<=0.1, onP=tg.p?tt.p>=tg.p*0.9:true; return onK&&onP; }
+      var todayD=new Date(); todayD.setHours(0,0,0,0);
+      var dd=new Date(todayD); if(!(byDay[dateKey(dd)]&&byDay[dateKey(dd)].kcal>0)) dd.setDate(dd.getDate()-1);
+      var streak=0; while(byDay[dateKey(dd)]&&byDay[dateKey(dd)].kcal>0){ streak++; dd.setDate(dd.getDate()-1); }
+      var ns=loggedDays.map(dayNum).sort(function(a,b){return a-b;}), best=0,run=0,prev=null;
+      ns.forEach(function(nn){ run=(prev!=null&&nn===prev+1)?run+1:1; if(run>best)best=run; prev=nn; });
+      var tn=dayNum(dateKey(todayD)), last30=loggedDays.filter(function(dk){ var ago=tn-dayNum(dk); return ago>=0&&ago<30; });
+      var onT30=last30.filter(onTargetDay).length;
+      function stat(v,l){ return '<div style="flex:1;text-align:center"><div style="font-family:var(--au-mono,ui-monospace);font-size:17px;font-weight:800;color:#F4F1EA">'+v+'</div><div style="font-family:var(--au-mono,ui-monospace);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:3px">'+l+'</div></div>'; }
+      el.innerHTML=
+        eb('Trends', onT7+'/'+logged7.length+' on target')+
+        '<div style="display:flex;gap:6px;align-items:flex-end;height:60px;margin-bottom:10px">'+bars+'</div>'+
+        '<div style="display:flex;gap:16px;font-size:11px;color:rgba(244,241,234,.5)"><span>avg <b style="color:#F4F1EA">'+avgK+'</b> kcal</span><span>target <b style="color:rgb(var(--nu))">'+(tg.kcal||'—')+'</b></span></div>'+
+        '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:13px;margin-top:14px">'+stat(streak+'d','streak')+stat(best+'d','best')+stat(last30.length+' / 30','logged')+stat(onT30+' / 30','on target')+'</div>';
+    }
+
     function renderAll(){
       document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
       document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
       if(dayTotals(today()).kcal>0 && bumpStreak()) showStreakPop();   // first log of a new day advances the streak
       renderStreak();
-      renderSummary(); renderCoach(); renderEnergy(); renderTrends(); renderConsistency(); renderDiary();
+      var hEl=document.getElementById('nuHero'); if(hEl) hEl.innerHTML=heroLine();
+      renderSummary(); renderEnergy(); renderAnalytics(); renderDiary();
       try{ if(window.PageMotion){ PageMotion.scan(window.__nutTagged?null:'.card,.hero-sum'); window.__nutTagged=1; } }catch(e){}
     }
     window._nutRerender=renderAll;
