@@ -161,7 +161,8 @@
     .rn-sess-row:last-child{ border-bottom:none; }
     .rn-sess-date{ flex:none; width:52px; text-align:center; font-family:var(--au-mono); font-size:var(--t-label); font-weight:700; color:var(--au-dim); line-height:1.2; }
     .rn-sess-date b{ display:block; font-size:var(--t-copy); color:var(--au-ivory); font-weight:800; }
-    .rn-sess-main{ flex:1; min-width:0; }
+    .rn-sess-main{ flex:1; min-width:0; cursor:pointer; }
+    .rn-sess-main:active .rn-sess-t{ color:rgb(var(--rn)); }
     .rn-sess-t{ font-size:var(--t-body); font-weight:600; color:var(--au-ivory); }
     .rn-sess-t.done{ color:var(--au-faint); }
     .rn-sess-s{ font-family:var(--au-mono); font-size:var(--t-label); color:var(--au-faint); margin-top:2px; }
@@ -1046,6 +1047,11 @@
     function stripAcc(s){ return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g,'') : s; }
     function norm(s){ return stripAcc(String(s).toLowerCase()).replace(/ς/g,'σ'); }
     function dayIdxOf(tok){ tok=norm(tok).replace(/[^a-zα-ω]/g,''); return DAYMAP.hasOwnProperty(tok)?DAYMAP[tok]:null; }
+    /* relative days — the coach often writes "σήμερα / αύριο" instead of the weekday name.
+       Resolve them against the real day it's read, so the session lands on the right box. */
+    var RELDAY={ 'σημερα':0, today:0, 'αυριο':1, tomorrow:1, tmrw:1, 'μεθαυριο':2, 'μεθαυρι':2, 'χθεσ':-1, 'χτεσ':-1, yesterday:-1 };
+    function relIdxOf(tok){ tok=norm(tok).replace(/[^a-zα-ω]/g,''); if(!RELDAY.hasOwnProperty(tok)) return null;
+      var base=(new Date().getDay()+6)%7; return ((base+RELDAY[tok])%7+7)%7; }
 
     function kindOf(desc){
       var t=norm(desc);
@@ -1156,6 +1162,7 @@
           if(!seg) return;
           var ft=seg.match(/^([^\s:,\-–]+)\s*[:\-–,]?\s*(.*)$/);
           var idx=ft?dayIdxOf(ft[1]):null;
+          if(idx==null&&ft) idx=relIdxOf(ft[1]);
           if(idx!=null){ cur={day:idx, lines:[]}; blocks.push(cur); if(ft[2]&&ft[2].trim()) cur.lines.push(ft[2].trim()); }
           else if(cur) cur.lines.push(seg);
           else preamble.push(seg);
@@ -1805,7 +1812,7 @@
           sum=esc(s.struct||'')+(ps?(' · <span style="color:rgba(var(--rn),.9)">'+ps+'/km</span>'):''); }
         var mvSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h12l-3-3M17 16H5l3 3"/></svg>';
         return '<div class="rn-sess-item"><div class="rn-sess-row"><div class="rn-sess-date">'+DOW[(d.getDay()+6)%7]+'<b>'+d.getDate()+'</b></div>'+
-          '<div class="rn-sess-main"><div class="rn-sess-t'+(done?' done':'')+'">'+esc(s.type)+(s.km?(' · '+s.km+(s.kmEst?'≈':'')+'km'):'')+(done?' ✓':'')+(s.split?' <span style="color:var(--au-faint);font-size:10px">2 ομάδες</span>':'')+'</div>'+
+          '<div class="rn-sess-main" data-edit-sess="'+s.id+'" title="Άλλαξέ το · edit"><div class="rn-sess-t'+(done?' done':'')+'">'+esc(s.type)+(s.km?(' · '+s.km+(s.kmEst?'≈':'')+'km'):'')+(done?' ✓':'')+(s.split?' <span style="color:var(--au-faint);font-size:10px">2 ομάδες</span>':'')+'</div>'+
           '<div class="rn-sess-s">'+(pp?esc(sum):sum)+'</div></div>'+
           '<button class="rn-sess-move'+(movingId===s.id?' on':'')+'" data-move-sess="'+s.id+'" aria-label="Move day">'+mvSvg+'</button>'+
           '<button class="rn-sess-del" data-del-sess="'+s.id+'" aria-label="Remove">✕</button></div>'+
@@ -2778,18 +2785,36 @@
       var nm=$('rcName').value.trim(); if(nm) prof.name=nm;
       saveProf(); flush(); toast('rcToast','Paces updated ✓'); $('raceForm').classList.add('hidden'); render();
     }
+    var editingId=null;
+    function resetAddForm(){ editingId=null; $('asStruct').value=''; $('asKm').value=''; $('asSave').textContent='Στο πρόγραμμα · Add'; }
+    function startEdit(id){
+      var s=plan.find(function(x){return x.id===id;}); if(!s) return;
+      editingId=id;
+      $('segAdd').click(); // reveal the Add pane
+      $('asDate').value=s.date; $('asType').value=s.type; $('asStruct').value=s.struct||''; $('asKm').value=(s.km!=null?s.km:'');
+      $('asSave').textContent='Ενημέρωσε · Update';
+      $('asStruct').focus();
+    }
     function addSession(){
       var dk=$('asDate').value; if(!dk){ toast('asToast','Pick a day'); return; }
+      if(editingId){
+        var ex=plan.find(function(x){return x.id===editingId;});
+        if(ex){ ex.date=dk; ex.type=$('asType').value; ex.struct=$('asStruct').value.trim()||$('asType').value;
+          ex.km=parseFloat(String($('asKm').value).replace(',','.'))||null; ex.ts=Date.now();
+          delete ex.parts; delete ex.split; delete ex.partsFast; delete ex.partsSlow; // hand-edit wins: show the edited text, drop stale parsed structure
+          persist(K_PLAN,plan); flush(); toast('asToast','Updated ✓'); }
+        resetAddForm(); render(); return;
+      }
       var s={ id:uid(), date:dk, type:$('asType').value, struct:$('asStruct').value.trim()||$('asType').value,
         km:parseFloat(String($('asKm').value).replace(',','.'))||null, ts:Date.now(), src:'manual' };
       plan.push(s); persist(K_PLAN,plan); flush(); toast('asToast','Added ✓');
-      $('asStruct').value=''; $('asKm').value=''; render();
+      resetAddForm(); render();
     }
     function doParse(){
       var txt=$('planText').value; if(!txt.trim()){ toast('planToast','Paste the plan first'); return; }
       var res=parsePlanV2(txt);
       if(!res.sessions.length){ toast('planToast','Couldn’t find any days · Δεν βρέθηκαν μέρες'); return; }
-      var ws=weekStart(new Date()), we=addDays(ws,7), now=Date.now();
+      var ws=weekStart(new Date()), now=Date.now();
       var parsed=res.sessions.map(function(s){
         var o={ id:uid(), date:dkOf(addDays(ws,s.day)), type:s.type, struct:(s.raw||'').replace(/\n/g,' · '),
           km:s.km||null, ts:now, src:'plan' };
@@ -2798,9 +2823,12 @@
         if(s.split){ o.split=true; o.partsFast=s.partsFast; o.partsSlow=s.partsSlow; }
         return o;
       });
-      plan=plan.filter(function(s){ var d=parseDk(s.date); return !(s.src==='plan' && d>=ws && d<we); }); // replace this week's imported plan
+      // upsert only the days this paste covers — re-pasting Mon+Tue must NOT wipe Wed–Sun
+      var covered={}; parsed.forEach(function(o){ covered[o.date]=1; });
+      plan=plan.filter(function(s){ return !(s.src==='plan' && covered[s.date]); });
       plan=plan.concat(parsed); persist(K_PLAN,plan);
-      prof.weekNote=res.preamble||''; saveProf(); flush();
+      if(res.preamble){ prof.weekNote=res.preamble; saveProf(); } // only overwrite the coach note when this paste actually carries one
+      flush();
       toast('planToast','Read '+parsed.length+' day'+(parsed.length>1?'s':'')+' ✓ Διαβάστηκαν'); $('planText').value=''; render();
     }
     /* ── import flows ── */
@@ -2970,7 +2998,7 @@
     $('editRace').addEventListener('click',function(){ var f=$('raceForm'); f.classList.toggle('hidden');
       if(!f.classList.contains('hidden')){ if(prof.raceDist)$('rcDist').value=prof.raceDist; if(prof.raceTime)$('rcTime').value=hms(prof.raceTime); if(prof.name)$('rcName').value=prof.name; } });
     $('rcSave').addEventListener('click',saveRace);
-    $('segPaste').addEventListener('click',function(){ $('segPaste').classList.add('on'); $('segAdd').classList.remove('on'); $('pastePane').classList.remove('hidden'); $('addPane').classList.add('hidden'); });
+    $('segPaste').addEventListener('click',function(){ $('segPaste').classList.add('on'); $('segAdd').classList.remove('on'); $('pastePane').classList.remove('hidden'); $('addPane').classList.add('hidden'); resetAddForm(); });
     $('segAdd').addEventListener('click',function(){ $('segAdd').classList.add('on'); $('segPaste').classList.remove('on'); $('addPane').classList.remove('hidden'); $('pastePane').classList.add('hidden'); });
     $('planParse').addEventListener('click',doParse);
     $('asSave').addEventListener('click',addSession);
@@ -2990,7 +3018,8 @@
     $('sessList').addEventListener('click',function(e){
       var to=e.target.closest('[data-move-to]'); if(to){ var pr=to.getAttribute('data-move-to').split('|'); moveSession(pr[0],pr[1]); return; }
       var mv=e.target.closest('[data-move-sess]'); if(mv){ var id=mv.getAttribute('data-move-sess'); movingId=(movingId===id?null:id); render(); return; }
-      var d=e.target.closest('[data-del-sess]'); if(d) delSess(d.getAttribute('data-del-sess'));
+      var d=e.target.closest('[data-del-sess]'); if(d){ delSess(d.getAttribute('data-del-sess')); return; }
+      var ed=e.target.closest('[data-edit-sess]'); if(ed){ startEdit(ed.getAttribute('data-edit-sess')); return; }
     });
     $('runsBody').addEventListener('click',function(e){
       var del=e.target.closest('[data-del-run]'); if(del){ e.stopPropagation(); delRun(del.getAttribute('data-del-run')); return; }
