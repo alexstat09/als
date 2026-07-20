@@ -1193,7 +1193,7 @@
       }
 
       var rhythmBits = [];
-      if (reg) rhythmBits.push('Your bed/wake timing varies <b>±' + reg.sd + ' min</b> (regularity ' + reg.score + '/100)');
+      if (reg) rhythmBits.push('Your bed/wake timing varies <b>±' + reg.sd + ' min</b> (regularity ' + Math.round(reg.score) + '/100)');
       if (sj && Math.abs(sj.shiftMin) >= 20) rhythmBits.push('weekends run <b>' + fmtMinDur(sj.shiftMin) + ' ' + (sj.shiftMin > 0 ? 'later' : 'earlier') + '</b> than weekdays — social jet-lag');
       var rhythm = rhythmBits.length ? '<div class="pat-rhythm">' + rhythmBits.join(' · ') + '. Regular timing lifts recovery more than an extra 20 min in bed.</div>' : '';
 
@@ -1277,34 +1277,86 @@
     function renderConsistency(){
       var body = document.getElementById('consBody'); if (!body) return;
       var prC = getProfile(), floorC = prC.floor, idealC = prC.ideal;
-      var byDay = {}; getLogs().forEach(function(e){ var a = asleepHours(e); if (e && e.dateKey && a > 0) byDay[e.dateKey] = a; });
+      // Two maps. Hours drive the tiles; the SCORE drives the grid. The grid
+      // used to colour by duration alone, so a long broken night was
+      // indistinguishable from a clean one — 12.1h (score 77) and 9.1h (100)
+      // both rendered as the same bright green.
+      var byDay = {}, scoreByDay = {};
+      getLogs().forEach(function(e){
+        if (!e || !e.dateKey) return;
+        var a = asleepHours(e); if (a > 0) byDay[e.dateKey] = a;
+        var sc = recScoreOf(e); if (sc != null) scoreByDay[e.dateKey] = sc;
+      });
       var loggedDays = Object.keys(byDay);
       if (loggedDays.length < 5){ body.innerHTML = '<p class="sl-empty">Your night-by-night consistency grid fills in here as you log sleep.</p>'; return; }
-      // Three states now map to the band: reached the ideal, cleared the floor,
-      // or fell short of it. "Short" means short — not merely "under ideal".
       function status(dk){ var h = byDay[dk]; if (!(h > 0)) return 0; if (h >= idealC - 0.25) return 3; if (h >= floorC - 0.25) return 2; return 1; }
-      function col(st){ return st === 3 ? '#34E2B0' : st === 2 ? 'rgba(52,226,176,.45)' : st === 1 ? 'rgba(155,140,255,.4)' : 'rgba(255,255,255,.06)'; }
+      // Colour by the sleep score, on the same bands verdictFor() uses so the
+      // grid agrees with every other surface. Nights logged with hours but no
+      // score (MCP-written, no bed/wake) fall back to the duration band rather
+      // than rendering as "never logged" — silent-empty is this project's disease.
+      function cellCol(dk){
+        var sc = scoreByDay[dk];
+        if (sc != null){
+          if (sc >= 85) return '#34E2B0';
+          if (sc >= 70) return 'rgba(52,226,176,.55)';
+          if (sc >= 55) return 'rgba(242,192,99,.6)';
+          return 'rgba(255,107,139,.55)';
+        }
+        var st = status(dk);
+        return st === 0 ? 'rgba(255,255,255,.06)' : st === 3 ? '#34E2B0' : st === 2 ? 'rgba(52,226,176,.55)' : 'rgba(155,140,255,.4)';
+      }
+      function cellTitle(dk){
+        var h = byDay[dk], sc = scoreByDay[dk];
+        if (!(h > 0)) return dk + ' — not logged';
+        return dk + ' — ' + fmtHM(h) + (sc != null ? ' · scored ' + sc : '');
+      }
       var DAYS = 12*7, todayD = new Date(); todayD.setHours(0,0,0,0);
       var start = new Date(todayD.getTime() - (DAYS-1)*86400000); start.setDate(start.getDate() - start.getDay());
       var cur = new Date(start), cells = '';
       while (cur <= todayD){ var colHtml = '';
-        for (var i=0;i<7;i++){ var dk = dateKey(cur), future = cur > todayD, st = future ? -1 : status(dk);
-          colHtml += '<div title="' + dk + '" style="width:11px;height:11px;border-radius:3px;background:' + (future ? 'transparent' : col(st)) + '"></div>';
+        for (var i=0;i<7;i++){ var dk = dateKey(cur), future = cur > todayD;
+          colHtml += '<div title="' + (future ? '' : cellTitle(dk)) + '" style="width:11px;height:11px;border-radius:3px;background:' + (future ? 'transparent' : cellCol(dk)) + '"></div>';
           cur.setDate(cur.getDate() + 1); }
         cells += '<div style="display:flex;flex-direction:column;gap:3px">' + colHtml + '</div>';
       }
+      // The grid always starts on a Sunday (start is snapped back to one), so the
+      // seven rows ARE the days of the week. They were never labelled, which hid
+      // a pattern that was already on screen: which weekday you sleep badly on.
+      var DOW = ['S','M','T','W','T','F','S'];
+      var dowCol = '<div style="display:flex;flex-direction:column;gap:3px;flex:0 0 auto;margin-right:2px">' +
+        DOW.map(function(d){ return '<div style="width:9px;height:11px;line-height:11px;font-family:var(--au-mono);font-size:7px;color:var(--au-faint);text-align:right">' + d + '</div>'; }).join('') +
+      '</div>';
       function dayNum(dk){ var p = dk.split('-').map(Number); return Math.round(new Date(p[0],p[1]-1,p[2]).getTime()/86400000); }
       var dd = new Date(todayD); if (!(byDay[dateKey(dd)] > 0)) dd.setDate(dd.getDate()-1);
       var streak = 0; while (byDay[dateKey(dd)] > 0){ streak++; dd.setDate(dd.getDate()-1); }
-      var ns = loggedDays.map(dayNum).sort(function(a,b){ return a-b; }), best = 0, run = 0, prev = null;
-      ns.forEach(function(nn){ run = (prev != null && nn === prev+1) ? run+1 : 1; if (run > best) best = run; prev = nn; });
       var tn = dayNum(dateKey(todayD)), last30 = loggedDays.filter(function(dk){ var a = tn - dayNum(dk); return a >= 0 && a < 30; });
       var hit30 = last30.filter(function(dk){ return status(dk) === 3; }).length;
+      // `best` (longest logging run) and `logged/30` both replaced: for anyone who
+      // logs nightly they are frozen at "same as streak" and "30/30", so three of
+      // the four tiles carried no information. These two can actually move.
+      var typical = median(last30.map(function(dk){ return byDay[dk]; }).filter(function(h){ return h > 0; }));
+      var regC = regularityScore(), sjC = socialJetlag();
       function stat(v,l){ return '<div style="flex:1;text-align:center"><div style="font-family:var(--au-mono);font-size:17px;font-weight:800;color:var(--au-ivory)">' + v + '</div><div style="font-family:var(--au-mono);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin-top:3px">' + l + '</div></div>'; }
+      // Weekend drift is a CONSISTENCY fact; it used to live only in Levers.
+      var sjLine = (sjC && Math.abs(sjC.shiftMin) >= 20)
+        ? '<div style="font-family:var(--au-mono);font-size:8px;color:var(--au-faint);margin-top:9px;text-align:center">weekends run <b style="color:var(--au-ivory)">' + fmtMinDur(sjC.shiftMin) + ' ' + (sjC.shiftMin > 0 ? 'later' : 'earlier') + '</b> than weekdays</div>'
+        : '';
       body.innerHTML =
-        '<div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px">' + cells + '</div>' +
-        '<div style="display:flex;gap:12px;align-items:center;margin:9px 0 13px;font-family:var(--au-mono);font-size:8px;color:var(--au-faint)"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34E2B0"></span>reached ' + idealC + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(52,226,176,.45)"></span>cleared ' + floorC + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(155,140,255,.4)"></span>short</span></div>' +
-        '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px">' + stat(streak + 'n','streak') + stat(best + 'n','best') + stat(last30.length,'logged / 30') + stat(hit30,'hit / 30') + '</div>';
+        '<div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px">' + dowCol + cells + '</div>' +
+        // Legend now describes SCORE bands, because that is what the grid encodes.
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:9px 0 13px;font-family:var(--au-mono);font-size:8px;color:var(--au-faint)">' +
+          [['#34E2B0','excellent'],['rgba(52,226,176,.55)','solid'],['rgba(242,192,99,.6)','patchy'],['rgba(255,107,139,.55)','poor']].map(function(x){
+            return '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:' + x[0] + '"></span>' + x[1] + '</span>';
+          }).join('') +
+        '</div>' +
+        '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px">' +
+          stat(streak + 'n','streak') +
+          stat(typical != null ? fmtHM(typical) : '—','typical night') +
+          stat(regC ? '±' + regC.sd + 'm' : '—','timing') +
+          stat(hit30 + '<small> /' + last30.length + '</small>','reached ' + idealC + 'h') +
+        '</div>' +
+        sjLine +
+        '<div style="font-family:var(--au-mono);font-size:7.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--au-faint);opacity:.75;margin-top:7px;text-align:center">grid: last 12 weeks · figures: last 30 nights</div>';
     }
 
     /* ══════════ TONIGHT — the one thing you can still change ══════════
