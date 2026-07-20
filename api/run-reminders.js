@@ -13,6 +13,7 @@ var webpush = require('web-push');
 var supa = require('./_supa');
 var auth = require('./_auth');
 var vault = require('./_vault');
+var movies = require('./_movies');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -327,6 +328,26 @@ module.exports = async function (req, res) {
       data: runRow || {},
       keys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length
     });
+    return;
+  }
+
+  // ── MOVIES: Letterboxd → TMDB sync (same-origin, stateless) ──────
+  // The app calls ?movies=<letterboxd-username> when the films page opens.
+  // Fetches that public diary + enriches via TMDB server-side, returns the
+  // films; writes NOTHING (the page reconciles into movies:seen itself). Its
+  // own early return keeps it fully clear of the backup/cron logic below.
+  // Username is stripped to [A-Za-z0-9_] — Letterboxd's own charset — which
+  // also closes the door on any URL/SSRF injection through the path.
+  if (req.query && req.query.movies) {
+    var uname = String(req.query.movies).replace(/[^A-Za-z0-9_]/g, '').slice(0, 40);
+    if (!uname) { res.status(400).json({ error: 'no username' }); return; }
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var films = await movies.sync(uname, (process.env.TMDB_API_KEY || '').trim());
+      res.status(200).json({ films: films, count: films.length, tmdb: !!(process.env.TMDB_API_KEY || '').trim() });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
     return;
   }
 
