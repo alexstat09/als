@@ -124,10 +124,18 @@
   function diffTomb(prev, next, tnode, now){
     tnode = isPlainObj(tnode) ? tnode : {};
     if (Array.isArray(prev) || Array.isArray(next)) {
-      var pIds = {}, nIds = {};
-      if (Array.isArray(prev)) prev.forEach(function(it){ var id = idOf(it); if (id) pIds[id] = 1; });
+      var pIds = {}, nIds = {}, pTs = {};
+      // Keep each removed item's own add-time: the tombstone must DOMINATE it.
+      if (Array.isArray(prev)) prev.forEach(function(it){ var id = idOf(it); if (id) { pIds[id] = 1; var a = addedAt(it); if (a > (pTs[id] || 0)) pTs[id] = a; } });
       if (Array.isArray(next)) next.forEach(function(it){ var id = idOf(it); if (id) nIds[id] = 1; });
-      for (var id in pIds) { if (!Object.prototype.hasOwnProperty.call(pIds, id)) continue; if (!nIds[id]) tnode[id] = now; }
+      // A deletion tombstone is stamped at max(now, item.ts + 1). tombed() suppresses
+      // a remote copy only when addedAt(item) <= T, so stamping merely `now` FAILS to
+      // kill any item whose ts sits in the future (device-clock skew between the phone
+      // that logged it and the laptop deleting it) — it beats its own tombstone and
+      // resurrects forever, then the next write clears the tomb. Dominating its ts
+      // makes the delete stick regardless of clock skew; legit re-adds get fresh ids
+      // so they are unaffected.
+      for (var id in pIds) { if (!Object.prototype.hasOwnProperty.call(pIds, id)) continue; if (!nIds[id]) tnode[id] = Math.max(now, (pTs[id] || 0) + 1); }
       for (var id2 in nIds) { if (!Object.prototype.hasOwnProperty.call(nIds, id2)) continue; if (typeof tnode[id2] === 'number') delete tnode[id2]; }
       return Object.keys(tnode).length ? tnode : null;
     }
@@ -361,7 +369,10 @@
     // (belt-and-suspenders beyond the setItem interception).
     window.ALSSync = {
       flush: function () { schedulePush(); },
-      drop: function (key, id) { try { if (!matches(key)) return; var t = loadTomb(); if (!t[key]) t[key] = {}; t[key]['id:' + id] = Date.now(); saveTomb(t); schedulePush(); } catch (e) {} }
+      // Never DOWNGRADE a tombstone: delEntry() saves the shortened array first
+      // (diffTomb stamps max(now, item.ts+1)), then calls drop() — so keep the
+      // larger of the two, or a future-ts item's dominating tomb would be lost.
+      drop: function (key, id) { try { if (!matches(key)) return; var t = loadTomb(); if (!t[key]) t[key] = {}; var cur = (typeof t[key]['id:' + id] === 'number') ? t[key]['id:' + id] : 0; t[key]['id:' + id] = Math.max(cur, Date.now()); saveTomb(t); schedulePush(); } catch (e) {} }
     };
 
     // Incoming realtime change from another device.
