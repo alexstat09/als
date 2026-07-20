@@ -312,7 +312,16 @@
     }
     window._nutSeedMeals=seedMeals;
 
-    function getLogs(){ var a=ls(LOGS,[]); return Array.isArray(a)?a:[]; }
+    // ── Permanent delete block-list (resurrection-proof) ──────────────────
+    // The sync tombstone works at MERGE time and can be defeated by timing /
+    // clock skew across devices. This block-list works at READ time: a deleted
+    // id is recorded here (synced) and filtered out of EVERY read, so even if
+    // the raw row comes back from the cloud the entry can never reappear. It is
+    // append-only — a re-logged food gets a fresh id, so nothing legit is hidden.
+    var DELK='nut:deleted';
+    function getDeleted(){ var d=ls(DELK,{}); return (d&&typeof d==='object'&&!Array.isArray(d))?d:{}; }
+    function banish(id){ if(id==null) return; var d=getDeleted(); if(!d[id]){ d[id]=Date.now(); save(DELK,d); } }
+    function getLogs(){ var a=ls(LOGS,[]); if(!Array.isArray(a)) return []; var d=getDeleted(); return a.filter(function(e){ return e&&e.id!=null&&!d[e.id]; }); }
     function saveLogs(a){ save(LOGS,a); }
     function dayLogs(dk){ return getLogs().filter(function(e){ return e && e.dateKey===dk; }); }
 
@@ -784,11 +793,10 @@
     function addEntry(e){ var a=getLogs(); a.push(e); saveLogs(a); _pIndexCache=null; renderAll(); }
     function delEntry(id){
       if(id==null) return;
-      var before=getLogs(), after=before.filter(function(e){return e.id!==id;});
-      // Belt-and-braces: tombstone BEFORE writing so the deletion is recorded even
-      // if a sync pull lands in the same tick, and only re-render if it changed.
-      try{ if(window.ALSSync){ window.ALSSync.drop('nut:logs', id); } }catch(e){}
-      saveLogs(after); _pIndexCache=null;
+      banish(id);                               // permanent read-time block — resurrection-proof
+      var raw=ls(LOGS,[]); if(!Array.isArray(raw)) raw=[];
+      try{ if(window.ALSSync){ window.ALSSync.drop('nut:logs', id); } }catch(e){}   // tombstone too (cleans the raw row)
+      saveLogs(raw.filter(function(e){return !(e&&e.id===id);})); _pIndexCache=null;
       try{ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }catch(e){}
       renderAll();
     }
@@ -1667,7 +1675,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', function(){
       function start(){ if(typeof initCloudSync!=='function'){ setTimeout(start,200); return; }
-        initCloudSync({ appKey:'nutrition', syncedKeys:['nut:logs','nut:custom','nut:profile','nut:history','nut:meals','nut:favs','nut:usual','nut:streak','nut:pieceG'], onApplied:function(){ if(window._nutInvalidateIndex) window._nutInvalidateIndex(); if(window._nutSeedMeals) window._nutSeedMeals(); try{ if(window._nutPruneDupes) window._nutPruneDupes(); }catch(e){} if(window._nutRerender) window._nutRerender(); } });
+        initCloudSync({ appKey:'nutrition', syncedKeys:['nut:logs','nut:deleted','nut:custom','nut:profile','nut:history','nut:meals','nut:favs','nut:usual','nut:streak','nut:pieceG'], onApplied:function(){ if(window._nutInvalidateIndex) window._nutInvalidateIndex(); if(window._nutSeedMeals) window._nutSeedMeals(); try{ if(window._nutPruneDupes) window._nutPruneDupes(); }catch(e){} if(window._nutRerender) window._nutRerender(); } });
         // fallback: seed even if sync never applies (offline first load); flag-guarded so it's still once
         setTimeout(function(){ if(window._nutSeedMeals) window._nutSeedMeals(); }, 2500); }
       start();
