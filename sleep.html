@@ -351,7 +351,7 @@
        sleep was bad"). Four measured components, weights renormalized over
        whatever exists, so old nights still score on what they have:
 
-         Duration  .45  — time ASLEEP vs your personal need (curvilinear)
+         Duration  .45  — time ASLEEP against your floor→ideal band
          Efficiency .25 — asleep ÷ time in bed (latency + awakenings)
          Timing    .18  — SD of your sleep midpoint (regularity)
          Debt      .12  — rolling 14-night sleep debt
@@ -363,10 +363,25 @@
     // Short sleep hurts fast. Oversleep hurts too: the old curve floored at 82,
     // which is how a 12-hour night used to score in the 80s. It shouldn't —
     // routinely sleeping hours past your need is a signal, not an achievement.
-    function durScore(hours, need){
+    // Duration is scored against a BAND, not a point:
+    //   at/above ideal → 100 (with a full extra hour of grace before any taper,
+    //                    so a 9h ideal still gives a 10h lie-in full marks)
+    //   floor → ideal  → 80 rising to 100
+    //   below floor    → falls 16 points per hour short
+    // 80 at the floor is deliberate: clearing the floor is a genuinely good
+    // night, not a pass mark, but it should still read below a perfect one.
+    var DUR_AT_FLOOR = 80, DUR_PER_H_SHORT = 16, DUR_OVER_GRACE = 1;
+    function durScore(hours, floor, ideal){
       if (!(hours > 0)) return null;
-      if (hours >= need) return clamp(100 - Math.pow(hours - need, 1.4) * 11, 30, 100);
-      return clamp(100 - Math.pow(need - hours, 1.5) * 18, 0, 100);
+      if (hours >= ideal){
+        var over = Math.max(0, hours - (ideal + DUR_OVER_GRACE));
+        return clamp(100 - Math.pow(over, 1.4) * 8, 55, 100);
+      }
+      if (hours >= floor){
+        var span = Math.max(0.5, ideal - floor);
+        return clamp(DUR_AT_FLOOR + ((hours - floor) / span) * (100 - DUR_AT_FLOOR), DUR_AT_FLOOR, 100);
+      }
+      return clamp(DUR_AT_FLOOR - (floor - hours) * DUR_PER_H_SHORT, 0, DUR_AT_FLOOR);
     }
     // sleep efficiency → score. Anchors from sleep medicine: <60% is severe
     // insomnia territory, 85% is the clinical "good sleep" line, 95%+ is ideal.
@@ -430,14 +445,32 @@
       var sd = Math.sqrt(mids.reduce(function(a,b){ return a+(b-mean)*(b-mean); },0)/mids.length);
       return { score: clamp(100 - Math.max(0, sd-25)*0.8, 20, 100), sd: Math.round(sd) };
     }
-    // cumulative sleep debt over the 14 logged nights up to uptoDK (clamped ±2h/night)
-    function debtInfo(need, uptoDK){
+    // Rolling sleep debt over the 14 logged nights up to uptoDK.
+    // Debt accrues ONLY on nights under the floor — clearing the floor is never
+    // a deficit, however far short of the ideal it lands. Run as a balance from
+    // oldest to newest: short nights add (max 2h each), long nights pay back
+    // (max 1h each, since recovery sleep is real but cannot be fully banked),
+    // and the balance never drops below zero — surplus is not carried.
+    function debtInfo(floor, uptoDK){
       var nights = getLogs().filter(function(e){ return e && e.dateKey && inBedHours(e) > 0 && (!uptoDK || e.dateKey <= uptoDK); })
         .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,14);
       if (nights.length < 3) return null;
-      var debt = nights.reduce(function(s,e){ var a = asleepHours(e); return s + clamp(need - (a != null ? a : e.hours), -2, 2); }, 0);
-      return { debt: debt, score: clamp(100 - Math.max(0, debt-1)*7, 25, 100), nights: nights.length };
+      var debt = 0;
+      nights.slice().reverse().forEach(function(e){
+        var a = asleepHours(e); if (a == null) a = e.hours;
+        debt = debtApply(debt, a, floor);
+      });
+      return { debt: debt, score: debtScoreOf(debt), nights: nights.length };
     }
+    // One night's effect on the running balance. Shared by the real engine and
+    // the Tonight projector so the two can never disagree about what a night costs.
+    function debtApply(bal, asleep, floor){
+      if (!(asleep > 0)) return bal;
+      if (asleep < floor) bal += Math.min(2, floor - asleep);
+      else bal -= Math.min(1, asleep - floor);
+      return bal < 0 ? 0 : bal;
+    }
+    function debtScoreOf(debt){ return clamp(100 - Math.max(0, debt - 1) * 7, 25, 100); }
 
     var W_DUR = 0.45, W_EFF = 0.25, W_TIM = 0.18, W_DEBT = 0.12;
 
@@ -446,7 +479,7 @@
     // now carries the honest, measured sleep score.
     function recovery(e){
       if (!e) return null;
-      var need = getProfile().need, dk = e.dateKey;
+      var pr = getProfile(), floor = pr.floor, ideal = pr.ideal, dk = e.dateKey;
       var tib = inBedHours(e);
       var asleep = asleepHours(e), eff = efficiencyOf(e);
       // No measured night → no score. "Measured" now means either she told us when
@@ -456,9 +489,9 @@
       // Alex is unaffected: with no asleepMeasured this is the original
       // `if (!(tib > 0)) return null;` exactly.
       if (!(tib > 0) && !(asleep > 0)) return null;
-      var reg = regularityScore(dk), dbt = debtInfo(need, dk);
+      var reg = regularityScore(dk), dbt = debtInfo(floor, dk);
       var C = [
-        ['Duration',   durScore(asleep, need),      W_DUR],
+        ['Duration',   durScore(asleep, floor, ideal), W_DUR],
         ['Efficiency', effScore(eff),               W_EFF],
         ['Timing',     reg ? reg.score : null,      W_TIM],
         ['Debt',       dbt ? dbt.score : null,      W_DEBT]
@@ -468,7 +501,7 @@
       if (!wsum) return null;
       return {
         score: Math.round(sum/wsum), parts: parts, n: parts.length,
-        reg: reg, dbt: dbt, need: need,
+        reg: reg, dbt: dbt, floor: floor, ideal: ideal,
         inBed: tib, asleep: asleep, eff: eff,
         hasEff: eff != null
       };
@@ -498,6 +531,33 @@
       e.sleepScore = r ? r.score : null;
       e.recovery = e.sleepScore;      // compat: the whole app reads e.recovery
       return e;
+    }
+    // Scores are DERIVED but also PERSISTED (e.recovery is read by coach, arc,
+    // insights, weekly, Nova and MCP), so changing the floor/ideal has to rewrite
+    // history or the rest of the app keeps serving numbers from the old model.
+    // Raw inputs are never touched — only the derived fields are recomputed.
+    function rescoreAll(){
+      var logs = getLogs(); if (!logs.length) return 0;
+      var n = 0;
+      logs.forEach(function(e){ if (e && e.dateKey){ recomputeDerived(e); n++; } });
+      lsSave(KEY, logs);
+      return n;
+    }
+    // One-time migration off the single-`need` model. Versioned so it runs once
+    // per device and never fights a later manual change to the floor/ideal.
+    var SLEEP_MODEL_V = 'sleep:modelv';
+    function migrateSleepModel(){
+      try {
+        if (ls(SLEEP_MODEL_V) === 2) return;
+        var p = ls(PROF) || {};
+        if (typeof p.floor !== 'number' || typeof p.ideal !== 'number'){
+          var pr = getProfile();               // applies the legacy need → ideal rule
+          p.floor = pr.floor; p.ideal = pr.ideal; delete p.need;
+          saveProfile(p);
+        }
+        rescoreAll();
+        lsSave(SLEEP_MODEL_V, 2);
+      } catch (e) {}
     }
     function setField(field, value, noteId){
       var dk = today();
@@ -563,10 +623,29 @@
     }
 
     /* ── Profile, bedtime target, insights, haptics ── */
+    // Sleep need is a RANGE, not a point.
+    //   floor — the line below which sleep DEBT accrues.
+    //   ideal — what a perfect night looks like.
+    // Missing the ideal costs you score, never debt. The old single `need` was a
+    // PEAK: durScore penalised both sides of it and debt was measured against it,
+    // so a 9h "need" charged ~2h of debt on every ordinary night and punished a
+    // 10h lie-in. Splitting the two is what makes the debt number honest.
     var PROF = 'sleep:profile', editingTarget = false;
-    function getProfile(){ var p = ls(PROF) || {}; return { wakeTime: p.wakeTime || '07:00', need: (typeof p.need === 'number' ? p.need : 8.5) }; }
+    function getProfile(){
+      var p = ls(PROF) || {};
+      var floor = (typeof p.floor === 'number') ? p.floor : null;
+      var ideal = (typeof p.ideal === 'number') ? p.ideal : null;
+      // Legacy `need` was a peak target, so it migrates to IDEAL — never to the
+      // floor. Migrating it to the floor would keep the exact bug we're fixing.
+      if (ideal == null && typeof p.need === 'number') ideal = p.need;
+      if (floor == null) floor = 8;
+      if (ideal == null) ideal = 9;
+      if (ideal < floor + 0.5) ideal = floor + 0.5;
+      return { wakeTime: p.wakeTime || '07:00', floor: floor, ideal: ideal };
+    }
     function saveProfile(p){ lsSave(PROF, p); }
-    function targetBed(){ var pr = getProfile(); var w = pr.wakeTime.split(':'); var wm = (+w[0]) * 60 + (+w[1]); var bm = (((wm - Math.round(pr.need * 60)) % 1440) + 1440) % 1440; return pad(Math.floor(bm / 60)) + ':' + pad(bm % 60); }
+    // Bed target aims at the IDEAL — the point is to give yourself the good night.
+    function targetBed(){ var pr = getProfile(); var w = pr.wakeTime.split(':'); var wm = (+w[0]) * 60 + (+w[1]); var bm = (((wm - Math.round(pr.ideal * 60)) % 1440) + 1440) % 1440; return pad(Math.floor(bm / 60)) + ':' + pad(bm % 60); }
     function buzz(ms){ try{ if (navigator.vibrate) navigator.vibrate(ms || 12); }catch(e){} }
     function daysBetween(a, b){ var pa = a.split('-').map(Number), pb = b.split('-').map(Number); return Math.round((Date.UTC(pa[0],pa[1]-1,pa[2]) - Date.UTC(pb[0],pb[1]-1,pb[2])) / 86400000); }
     function elapsedStr(ms){ var m = Math.max(0, Math.round(ms / 60000)); var h = Math.floor(m / 60); return (h ? h + 'h ' : '') + (m % 60) + 'm'; }
@@ -574,9 +653,9 @@
     function recoveryOf(dk){ var r = recovery(entryFor(dk)); return r ? r.score : null; }
     function sleepInsights(){
       var logs = getLogs().filter(function(e){ return e && e.dateKey; }).sort(function(a,b){ return a.dateKey < b.dateKey ? -1 : 1; });
-      var need = getProfile().need;
+      var pr0 = getProfile();
       // 14-night rolling debt (Rise-style), consistent with the recovery engine
-      var dbt = debtInfo(need, today());
+      var dbt = debtInfo(pr0.floor, today());
       var debt = dbt ? dbt.debt : 0, weekNights = dbt ? dbt.nights : 0;
       var beds = logs.slice(-10).filter(function(e){ return e.bed; }).map(function(e){ var p = e.bed.split(':'); var mm = (+p[0]) * 60 + (+p[1]); if (mm < 720) mm += 1440; return mm; });
       var consistency = null, spread = null;
@@ -592,7 +671,7 @@
       while (have[dateKey(cur)]){ streak++; cur = new Date(cur.getTime() - 86400000); }
       var recent = logs.slice(-14).filter(function(e){ return inBedHours(e) > 0; }), best = null;
       recent.forEach(function(e){ var sc = recScoreOf(e); var k = sc != null ? sc : (asleepHours(e) || 0); if (!best || k > best.key) best = { e: e, key: k, sc: sc }; });
-      return { debt: debt, weekNights: weekNights, consistency: consistency, spread: spread, streak: streak, best: best, need: need };
+      return { debt: debt, weekNights: weekNights, consistency: consistency, spread: spread, streak: streak, best: best, floor: pr0.floor, ideal: pr0.ideal };
     }
 
     /* ══════════ RECOVERY CARD ══════════ */
@@ -635,10 +714,14 @@
 
       // Transparency: what the number is built from — and what it isn't.
       var mReg = r.reg ? ('±' + r.reg.sd + 'm timing' ) : null;
-      var mDebt = (r.dbt && r.dbt.debt > 0.5) ? ('−' + (Math.round(r.dbt.debt*10)/10) + 'h debt') : ((r.dbt && r.dbt.debt < -0.5) ? ('+' + (Math.round(-r.dbt.debt*10)/10) + 'h surplus') : null);
+      // Debt can no longer go negative, so there is no "surplus" branch: the
+      // balance is either carrying something or it is clear.
+      var mDebt = (r.dbt && r.dbt.debt > 0.5) ? ('−' + (Math.round(r.dbt.debt*10)/10) + 'h debt') : null;
       var mBits = [mReg, mDebt].filter(Boolean).join(' · ');
       var mMissing = r.hasEff ? '' : ' <span style="opacity:.8">(add tonight’s fall-asleep time &amp; awakenings to unlock efficiency)</span>';
-      var methodHtml = '<div class="rec-method"><b>Measured sleep only</b> — time asleep vs your ' + r.need + 'h need, efficiency, timing &amp; debt. How you feel is never an input; it’s the outcome, below' + (mBits ? ' <span style="opacity:.8">(' + mBits + ')</span>' : '') + '.' + mMissing + '</div>';
+      // The number must show its own assumption. A debt figure with no visible
+      // floor is exactly how a 9h "need" quietly charged debt on decent nights.
+      var methodHtml = '<div class="rec-method"><b>Measured sleep only</b> — time asleep against your <b>' + r.floor + 'h floor</b> and <b>' + r.ideal + 'h ideal</b>, plus efficiency, timing &amp; debt. Debt only builds below the floor. How you feel is never an input; it’s the outcome, below' + (mBits ? ' <span style="opacity:.8">(' + mBits + ')</span>' : '') + '.' + mMissing + '</div>';
 
       body.innerHTML =
         '<div class="rec-main">' +
@@ -696,14 +779,19 @@
       if (editingTarget){
         targetHtml = '<div class="sl-edit-row">' +
           '<div class="sl-edit-box"><label>Wake by</label><input type="time" id="slWakeGoal" value="' + pr.wakeTime + '"></div>' +
-          '<div class="sl-edit-box"><label>Sleep need</label><select id="slNeed">' +
-            [7,7.5,8,8.5,9,9.5].map(function(n){ return '<option value="' + n + '"' + (n === pr.need ? ' selected' : '') + '>' + n + 'h</option>'; }).join('') +
+          '<div class="sl-edit-box"><label>Floor (debt below)</label><select id="slFloor">' +
+            [6,6.5,7,7.5,8,8.5,9].map(function(n){ return '<option value="' + n + '"' + (n === pr.floor ? ' selected' : '') + '>' + n + 'h</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="sl-edit-box"><label>Ideal night</label><select id="slIdeal">' +
+            [7.5,8,8.5,9,9.5,10].map(function(n){ return '<option value="' + n + '"' + (n === pr.ideal ? ' selected' : '') + '>' + n + 'h</option>'; }).join('') +
           '</select></div>' +
           '<button type="button" class="sl-act prim" style="flex:0 0 auto;padding:10px 16px" data-sleep-act="target-save">Save</button>' +
         '</div>';
       } else {
-        var hit = (asleep != null) ? (asleep >= pr.need - 0.25 ? ' · hit it last night ✓' : ' · last night ' + fmtHM(asleep)) : '';
-        targetHtml = '<div class="sl-target" data-sleep-act="target-edit"><span class="sl-target-ico">🎯</span><span class="sl-target-txt">In bed by <b>' + tb + '</b> for <b>' + pr.need + 'h</b> before your ' + pr.wakeTime + ' wake' + hit + '</span><span class="sl-target-edit">Edit</span></div>';
+        // "Hit it" now means clearing the FLOOR — the ideal is what you aim at,
+        // not a bar you fail nightly.
+        var hit = (asleep != null) ? (asleep >= pr.floor - 0.25 ? ' · cleared your floor ✓' : ' · last night ' + fmtHM(asleep)) : '';
+        targetHtml = '<div class="sl-target" data-sleep-act="target-edit"><span class="sl-target-ico">🎯</span><span class="sl-target-txt">In bed by <b>' + tb + '</b> for your <b>' + pr.ideal + 'h</b> ideal before your ' + pr.wakeTime + ' wake' + hit + '</span><span class="sl-target-edit">Edit</span></div>';
       }
 
       var acts = '<div class="sl-acts">' +
@@ -838,10 +926,15 @@
       else if (act === 'cancel') cancelSleep();
       else if (act === 'target-edit'){ editingTarget = true; renderSleep(); }
       else if (act === 'target-save'){
-        var wg = document.getElementById('slWakeGoal'), nd = document.getElementById('slNeed'), prof = getProfile();
+        var wg = document.getElementById('slWakeGoal'), fl = document.getElementById('slFloor'), id = document.getElementById('slIdeal'), prof = getProfile();
         if (wg && wg.value) prof.wakeTime = wg.value;
-        if (nd && nd.value) prof.need = parseFloat(nd.value) || prof.need;
-        saveProfile(prof); editingTarget = false; renderSleep();
+        if (fl && fl.value) prof.floor = parseFloat(fl.value) || prof.floor;
+        if (id && id.value) prof.ideal = parseFloat(id.value) || prof.ideal;
+        // An ideal at or below the floor would collapse the band back into the
+        // single-point model this replaced.
+        if (prof.ideal < prof.floor + 0.5) prof.ideal = prof.floor + 0.5;
+        delete prof.need;                 // legacy field, fully migrated
+        saveProfile(prof); editingTarget = false; rescoreAll(); renderSleep();
       }
     });
 
@@ -903,9 +996,10 @@
       var ins = sleepInsights();
       var debtV, debtL;
       if (!ins.weekNights){ debtV = '—'; debtL = 'sleep debt'; }
-      else if (ins.debt > 0.5){ debtV = '−' + (Math.round(ins.debt * 10) / 10) + 'h'; debtL = 'sleep debt · 14n'; }
-      else if (ins.debt < -0.5){ debtV = '+' + (Math.round(-ins.debt * 10) / 10) + 'h'; debtL = 'surplus · 14n'; }
-      else { debtV = 'on&nbsp;target'; debtL = '14 nights'; }
+      else if (ins.debt > 0.5){ debtV = '−' + (Math.round(ins.debt * 10) / 10) + 'h'; debtL = 'below ' + ins.floor + 'h · 14n'; }
+      // The balance floors at zero, so "clear" is the good state — there is no
+      // surplus to display any more.
+      else { debtV = 'clear'; debtL = 'no debt · 14n'; }
       var consV = ins.consistency != null ? (ins.consistency + '<small> /100</small>') : '—';
       var insHtml = '<div class="sl-ins">' +
         '<div class="sl-ins-card"><div class="sl-ins-v">' + debtV + '</div><div class="sl-ins-l">' + debtL + '</div></div>' +
@@ -915,11 +1009,11 @@
       var bestDay = '';
       if (ins.best){ var bd = new Date(ins.best.e.dateKey + 'T00:00:00'); bestDay = ins.best.e.dateKey === today() ? 'tonight' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][bd.getDay()]; }
       var takeaway;
-      if (ins.debt > 1.5){ var pm = Math.round(ins.debt * 60 / 7); takeaway = 'You’re carrying ' + (Math.round(ins.debt * 10) / 10) + 'h of sleep debt — clear it with about +' + pm + ' min a night this week, or a weekend lie-in.'; }
+      if (ins.debt > 1.5){ var pm = Math.round(ins.debt * 60 / 7); takeaway = 'You’re carrying ' + (Math.round(ins.debt * 10) / 10) + 'h of sleep debt from nights under ' + ins.floor + 'h — clear it with about +' + pm + ' min a night this week, or a weekend lie-in.'; }
       else if (ins.streak >= 7 && ins.consistency != null && ins.consistency >= 75) takeaway = 'Locked in — ' + ins.streak + ' nights straight with steady timing. This is exactly how good sleep compounds.';
       else if (ins.consistency != null && ins.consistency < 50) takeaway = 'Your bedtime swings ±' + ins.spread + ' min — steadier timing scores higher than an extra 20 minutes in bed.';
       else if (ins.best && ins.best.sc != null && ins.best.sc >= 80) takeaway = 'Your best night was ' + bestDay + ' — ' + fmtHM(asleepHours(ins.best.e)) + ' asleep, scoring ' + ins.best.sc + '. Worth repeating.';
-      else if (ins.debt < -1) takeaway = 'Banking surplus sleep this week — nice. Keep the rhythm going.';
+      else if (ins.debt === 0 && ins.weekNights >= 7) takeaway = 'No sleep debt across ' + ins.weekNights + ' nights — every one cleared your ' + ins.floor + 'h floor. Keep the rhythm going.';
       else takeaway = 'Steady week. Keep stacking consistent nights — it’s the highest-leverage lever you’ve got.';
       var takeHtml = '<div class="sl-takeaway">' + takeaway + '</div>';
 
@@ -1182,11 +1276,13 @@
     /* ══════════ CONSISTENCY CALENDAR (Phase C) ══════════ */
     function renderConsistency(){
       var body = document.getElementById('consBody'); if (!body) return;
-      var need = getProfile().need;
+      var prC = getProfile(), floorC = prC.floor, idealC = prC.ideal;
       var byDay = {}; getLogs().forEach(function(e){ var a = asleepHours(e); if (e && e.dateKey && a > 0) byDay[e.dateKey] = a; });
       var loggedDays = Object.keys(byDay);
       if (loggedDays.length < 5){ body.innerHTML = '<p class="sl-empty">Your night-by-night consistency grid fills in here as you log sleep.</p>'; return; }
-      function status(dk){ var h = byDay[dk]; if (!(h > 0)) return 0; if (h >= need - 0.25) return 3; if (h >= need - 1) return 2; return 1; }
+      // Three states now map to the band: reached the ideal, cleared the floor,
+      // or fell short of it. "Short" means short — not merely "under ideal".
+      function status(dk){ var h = byDay[dk]; if (!(h > 0)) return 0; if (h >= idealC - 0.25) return 3; if (h >= floorC - 0.25) return 2; return 1; }
       function col(st){ return st === 3 ? '#34E2B0' : st === 2 ? 'rgba(52,226,176,.45)' : st === 1 ? 'rgba(155,140,255,.4)' : 'rgba(255,255,255,.06)'; }
       var DAYS = 12*7, todayD = new Date(); todayD.setHours(0,0,0,0);
       var start = new Date(todayD.getTime() - (DAYS-1)*86400000); start.setDate(start.getDate() - start.getDay());
@@ -1207,7 +1303,7 @@
       function stat(v,l){ return '<div style="flex:1;text-align:center"><div style="font-family:var(--au-mono);font-size:17px;font-weight:800;color:var(--au-ivory)">' + v + '</div><div style="font-family:var(--au-mono);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--au-faint);margin-top:3px">' + l + '</div></div>'; }
       body.innerHTML =
         '<div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px">' + cells + '</div>' +
-        '<div style="display:flex;gap:12px;align-items:center;margin:9px 0 13px;font-family:var(--au-mono);font-size:8px;color:var(--au-faint)"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34E2B0"></span>hit your ' + need + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(52,226,176,.45)"></span>close</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(155,140,255,.4)"></span>short</span></div>' +
+        '<div style="display:flex;gap:12px;align-items:center;margin:9px 0 13px;font-family:var(--au-mono);font-size:8px;color:var(--au-faint)"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:#34E2B0"></span>reached ' + idealC + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(52,226,176,.45)"></span>cleared ' + floorC + 'h</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(155,140,255,.4)"></span>short</span></div>' +
         '<div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px">' + stat(streak + 'n','streak') + stat(best + 'n','best') + stat(last30.length,'logged / 30') + stat(hit30,'hit / 30') + '</div>';
     }
 
@@ -1234,7 +1330,7 @@
     }
     // Score a hypothetical night that starts at bedMin (minutes from midnight)
     // and ends at his target wake — same four components as the real engine.
-    function projectNight(bedMin, need, H){
+    function projectNight(bedMin, floor, ideal, H){
       var wp = getProfile().wakeTime.split(':'), wm = (+wp[0])*60 + (+wp[1]);
       var tib = (((wm - bedMin) % 1440) + 1440) % 1440; if (!tib) tib = 1440;
       var tibH = tib / 60;
@@ -1258,10 +1354,12 @@
         .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,13);
       var debtScore = null, debtVal = null;
       if (prev.length >= 2){
-        debtVal = prev.reduce(function(s,e){ var a = asleepHours(e); return s + clamp(need - (a != null ? a : e.hours), -2, 2); }, 0) + clamp(need - asleep, -2, 2);
-        debtScore = clamp(100 - Math.max(0, debtVal-1)*7, 25, 100);
+        debtVal = 0;
+        prev.slice().reverse().forEach(function(e){ var a = asleepHours(e); if (a == null) a = e.hours; debtVal = debtApply(debtVal, a, floor); });
+        debtVal = debtApply(debtVal, asleep, floor);   // then tonight, as projected
+        debtScore = debtScoreOf(debtVal);
       }
-      var C = [[durScore(asleep, need), W_DUR], [effScore(eff), W_EFF], [timing, W_TIM], [debtScore, W_DEBT]];
+      var C = [[durScore(asleep, floor, ideal), W_DUR], [effScore(eff), W_EFF], [timing, W_TIM], [debtScore, W_DEBT]];
       var sum = 0, wsum = 0;
       C.forEach(function(x){ if (x[0] != null){ sum += x[0]*x[1]; wsum += x[1]; } });
       return { score: wsum ? Math.round(sum/wsum) : null, asleep: asleep, inBed: tibH, debt: debtVal };
@@ -1270,13 +1368,13 @@
 
     function renderTonight(){
       var body = document.getElementById('tnBody'); if (!body) return;
-      var pr = getProfile(), need = pr.need, H = habits();
+      var pr = getProfile(), H = habits();
       var tb = targetBed().split(':'), tbm = (+tb[0])*60 + (+tb[1]);
       var offsets = [-60,-30,0,30,60];
       var picked = (tnPick == null) ? 0 : tnPick;
 
       var opts = offsets.map(function(off){
-        var p = projectNight(tbm + off, need, H);
+        var p = projectNight(tbm + off, pr.floor, pr.ideal, H);
         return { off: off, bed: minToHM(tbm + off), p: p };
       });
       var cur = opts.filter(function(o){ return o.off === picked; })[0] || opts[2];
@@ -1497,6 +1595,7 @@
       updateNova();
       try{ if(window.PageMotion){ PageMotion.scan(window.__slTagged?null:'.sl-hero,.sl-sec'); window.__slTagged=1; } }catch(e){}
     }
+    migrateSleepModel();   // floor/ideal split — must run before anything scores
     backfillScores();
     renderAll();
 
