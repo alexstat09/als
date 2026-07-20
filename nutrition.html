@@ -134,8 +134,9 @@
     .meal-add{background:rgba(var(--nu),.12);border:1px solid rgba(var(--nu),.32);color:rgb(var(--nu));width:30px;height:30px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none;}
     .meal-add:active{background:rgba(var(--nu),.22);}
     .meal-hdr-r{display:flex;align-items:center;gap:12px;}
-    .entry{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.05);cursor:pointer;}
+    .entry{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.05);cursor:pointer;touch-action:pan-y;will-change:transform;}
     .entry:active{background:rgba(255,255,255,.03);}
+    .entry.sw-anim{transition:transform .2s ease, background-color .2s ease, opacity .2s ease;}
     .entry-main{flex:1;min-width:0;}
     .entry-name{font-size:13.5px;font-weight:600;color:#F4F1EA;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .entry-sub{font-family:var(--au-mono,ui-monospace);font-size:10px;color:rgba(244,241,234,.42);margin-top:2px;}
@@ -720,12 +721,19 @@
     }
 
     function renderAll(){
-      document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate);
-      document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible';
-      if(dayTotals(today()).kcal>0 && bumpStreak()) showStreakPop();   // first log of a new day advances the streak
-      renderStreak();
-      var hEl=document.getElementById('nuHero'); if(hEl) hEl.innerHTML=heroLine();
-      renderSummary(); renderEnergy(); renderAnalytics(); renderDiary();
+      // Each section is isolated: a failure in ONE (e.g. a summary/analytics
+      // computation on some odd data) must NEVER stop renderDiary from running.
+      // Before this guard, an early throw froze the diary on stale DOM and made
+      // deletes silently do nothing — that was the "can't delete anything" bug.
+      try{ document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate); }catch(e){}
+      try{ document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible'; }catch(e){}
+      try{ if(dayTotals(today()).kcal>0 && bumpStreak()) showStreakPop(); }catch(e){}
+      try{ renderStreak(); }catch(e){ console.warn('nut renderStreak',e); }
+      try{ var hEl=document.getElementById('nuHero'); if(hEl) hEl.innerHTML=heroLine(); }catch(e){ console.warn('nut heroLine',e); }
+      try{ renderSummary(); }catch(e){ console.warn('nut renderSummary',e); }
+      try{ renderEnergy(); }catch(e){ console.warn('nut renderEnergy',e); }
+      try{ renderAnalytics(); }catch(e){ console.warn('nut renderAnalytics',e); }
+      try{ renderDiary(); }catch(e){ console.warn('nut renderDiary',e); }   // the diary + delete UI ALWAYS renders
       try{ if(window.PageMotion){ PageMotion.scan(window.__nutTagged?null:'.card,.hero-sum'); window.__nutTagged=1; } }catch(e){}
     }
     window._nutRerender=renderAll;
@@ -1392,7 +1400,56 @@
       shBody.innerHTML=html;
     }
 
+    // ── Swipe-left-to-delete on diary entries ──────────────────────
+    // Horizontal-only: it decides direction on the first move and bows out the
+    // moment a gesture looks vertical, so it never fights the page scroll. A
+    // completed swipe sets a short guard so the follow-up click doesn't also
+    // open the edit sheet. Deletes go through the same delEntry() as the ✕.
+    (function(){
+      var diary=document.getElementById('diary'); if(!diary) return;
+      var el=null, id=null, x0=0, y0=0, dir=0; // dir: 0 undecided, 1 horizontal, -1 vertical
+      var THRESH=80, MAXPULL=150;
+      window._nutSwipeGuard=0;
+      function reset(animate){
+        if(!el) return; var e=el; if(animate){ e.classList.add('sw-anim'); } e.style.transform=''; e.style.backgroundColor='';
+        if(animate) setTimeout(function(){ e.classList.remove('sw-anim'); }, 210);
+        el=null; id=null; dir=0;
+      }
+      diary.addEventListener('touchstart', function(ev){
+        if(ev.touches.length!==1) return;
+        var row=ev.target.closest && ev.target.closest('.entry[data-act="edit"]'); if(!row) return;
+        // ignore touches that begin on the action buttons
+        if(ev.target.closest('.entry-del,.entry-move')) return;
+        el=row; id=row.getAttribute('data-id'); x0=ev.touches[0].clientX; y0=ev.touches[0].clientY; dir=0;
+        el.classList.remove('sw-anim');
+      }, {passive:true});
+      diary.addEventListener('touchmove', function(ev){
+        if(!el) return; var t=ev.touches[0], dx=t.clientX-x0, dy=t.clientY-y0;
+        if(dir===0){ if(Math.abs(dx)<6 && Math.abs(dy)<6) return; dir=Math.abs(dx)>Math.abs(dy)?1:-1; if(dir===-1){ el=null; return; } }
+        if(dir!==1) return;
+        if(dx>0) dx=0;                              // left only
+        if(dx<-MAXPULL) dx=-MAXPULL;
+        ev.preventDefault();
+        el.style.transform='translateX('+dx+'px)';
+        el.style.backgroundColor='rgba(255,107,139,'+Math.min(.24, (-dx/THRESH)*.24)+')';
+      }, {passive:false});
+      diary.addEventListener('touchend', function(ev){
+        if(!el) return;
+        var m=/translateX\((-?\d+(?:\.\d+)?)px\)/.exec(el.style.transform||''), dx=m?parseFloat(m[1]):0;
+        if(dir===1) window._nutSwipeGuard=Date.now();   // suppress the click that follows a real swipe
+        if(dx <= -THRESH){
+          var doomed=el, delId=id;
+          doomed.classList.add('sw-anim'); doomed.style.transform='translateX(-100%)'; doomed.style.opacity='0';
+          el=null; id=null; dir=0;
+          setTimeout(function(){ delEntry(delId); }, 180);
+        } else reset(true);
+      });
+      diary.addEventListener('touchcancel', function(){ reset(true); });
+    })();
+
     document.addEventListener('click', function(ev){
+      // a click landing right after a swipe is the tail of that gesture — ignore it
+      if(window._nutSwipeGuard && (Date.now()-window._nutSwipeGuard)<400){ window._nutSwipeGuard=0; return; }
       var el=ev.target&&ev.target.closest?ev.target.closest('[data-act]'):null; if(!el) return;
       var act=el.getAttribute('data-act');
       if(act==='day-prev'){ var p=viewDate.split('-').map(Number); viewDate=dateKey(new Date(p[0],p[1]-1,p[2]-1)); renderAll(); }
