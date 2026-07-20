@@ -1133,10 +1133,21 @@
        you felt the morning after each. Same t-gate. */
     function consequences(){
       var pool = getLogs().filter(function(e){ return e && e.dateKey && recScoreOf(e) != null; });
-      if (pool.length < 8) return null;
-      var good = pool.filter(function(e){ return recScoreOf(e) >= 72; });
-      var poor = pool.filter(function(e){ return recScoreOf(e) < 58; });
-      if (good.length < 4 || poor.length < 4) return null;
+      if (pool.length < 12) return null;               // need enough nights to form thirds
+      // RELATIVE split, not absolute. The old cut (good ≥72 / poor <58) assumed a
+      // spread of nights that a consistent sleeper never produces — Alex's worst
+      // night in 35 days scored 60, so "poor" was empty and this card was silent
+      // forever. Comparing your OWN best third vs worst third asks the honest
+      // question ("do your rougher nights cost you?") for whoever is logging.
+      var sorted = pool.slice().sort(function(a,b){ return recScoreOf(a) - recScoreOf(b); });
+      var k = Math.max(4, Math.floor(sorted.length / 3));
+      var poor = sorted.slice(0, k);
+      var good = sorted.slice(sorted.length - k);
+      var gScore = avgArr(good.map(recScoreOf)), pScore = avgArr(poor.map(recScoreOf));
+      // The two groups must genuinely differ in quality, or "good vs poor" is a
+      // distinction without a difference (every night ~96) and any morning-after
+      // gap the t-test finds would be noise dressed as meaning.
+      if (gScore - pScore < 6) return null;
       var out = [];
       CHECK.forEach(function(m){
         var g = good.map(function(e){ return e[m.key]; }).filter(function(v){ return v != null; });
@@ -1151,7 +1162,7 @@
         });
       });
       out.sort(function(a,b){ return b.diff - a.diff; });
-      return out.length ? { rows: out, nGood: good.length, nPoor: poor.length } : null;
+      return out.length ? { rows: out, nGood: good.length, nPoor: poor.length, gScore: Math.round(gScore), pScore: Math.round(pScore) } : null;
     }
     function socialJetlag(){
       var rows = getLogs().filter(function(e){ return e && e.dateKey && e.bed && e.wake; })
@@ -1165,7 +1176,7 @@
     function renderPatterns(){
       var body = document.getElementById('patBody'); if (!body) return;
       var fe = factorEffects(), effects = fe.effects;
-      var sj = socialJetlag(), reg = regularityScore();
+      var reg = regularityScore();
 
       // Today attribution: negative factors that are active for last night.
       var te = entryFor(today()), todayHtml = '';
@@ -1192,9 +1203,11 @@
         }).join('') + '</div>';
       }
 
+      // Regularity stays here as an actionable LEVER. Weekend drift used to sit
+      // beside it, but that is a consistency fact and now lives in the Consistency
+      // card — keeping it in both places was the same number said twice.
       var rhythmBits = [];
       if (reg) rhythmBits.push('Your bed/wake timing varies <b>±' + reg.sd + ' min</b> (regularity ' + Math.round(reg.score) + '/100)');
-      if (sj && Math.abs(sj.shiftMin) >= 20) rhythmBits.push('weekends run <b>' + fmtMinDur(sj.shiftMin) + ' ' + (sj.shiftMin > 0 ? 'later' : 'earlier') + '</b> than weekdays — social jet-lag');
       var rhythm = rhythmBits.length ? '<div class="pat-rhythm">' + rhythmBits.join(' · ') + '. Regular timing lifts recovery more than an extra 20 min in bed.</div>' : '';
 
       if (!findings && !rhythm && !todayHtml){
@@ -1222,9 +1235,9 @@
             (gl && pl ? ' — typically <b>' + esc(gl) + '</b> instead of <b>' + esc(pl) + '</b>' : '') + '</div></div>';
       }).join('');
       body.innerHTML =
-        '<div class="pat-today">This is the case <b>for</b> sleeping. Your ' + c.nGood + ' best nights vs your ' + c.nPoor + ' worst — and what your body did the morning after.</div>' +
+        '<div class="pat-today">This is the case <b>for</b> sleeping. Your ' + c.nGood + ' best nights (avg ' + c.gScore + ') vs your ' + c.nPoor + ' roughest (avg ' + c.pScore + ') — and what your body did the morning after.</div>' +
         '<div class="pat-list">' + rows + '</div>' +
-        '<div class="rec-method" style="margin-top:13px">Nights split by <b>measured</b> sleep score (72+ vs under 58), then compared on the next morning’s check-in. Welch t-test, p&lt;0.05. Because feelings are no longer inside the score, this comparison is finally honest.</div>';
+        '<div class="rec-method" style="margin-top:13px">Nights split into your own <b>best third vs worst third</b> by measured sleep score, then compared on the next morning’s check-in. Welch t-test, p&lt;0.05. Because feelings are no longer inside the score, this comparison is honest — and relative to <b>your</b> range, so it works even when all your nights are good.</div>';
     }
     // Toggle a night tag on today's entry (tags feed patterns; they do NOT
     // change the recovery score directly — same as Oura's tags).
