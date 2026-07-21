@@ -14,6 +14,7 @@ var supa = require('./_supa');
 var auth = require('./_auth');
 var vault = require('./_vault');
 var movies = require('./_movies');
+var yt = require('./_youtube');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -346,6 +347,36 @@ module.exports = async function (req, res) {
       var out = await movies.sync(uname, (process.env.TMDB_API_KEY || '').trim());
       var films = (out && out.films) || [];
       res.status(200).json({ films: films, recs: (out && out.recs) || [], count: films.length, tmdb: !!(process.env.TMDB_API_KEY || '').trim() });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
+
+  // The Improve page calls ?youtube=<playlistId> to mirror a playlist, and
+  // POST ?ytdistill to turn notes/transcript into durable key points. Both are
+  // stateless and early-return before the backup/cron logic below.
+  if (req.query && req.query.ytdistill !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var db = req.body; if (typeof db === 'string') { try { db = JSON.parse(db || '{}'); } catch (e) { db = {}; } }
+      var dtext = (db && db.text) || '', dtitle = (db && db.title) || '';
+      if (!String(dtext).trim()) { res.status(400).json({ error: 'no text' }); return; }
+      var dout = await yt.distill(dtext, dtitle);
+      if (!dout.ok) { res.status(502).json({ error: dout.error || 'distill failed' }); return; }
+      res.status(200).json({ text: dout.text });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
+  if (req.query && req.query.youtube) {
+    var pid = String(req.query.youtube).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+    if (!pid) { res.status(400).json({ error: 'no playlist' }); return; }
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var vids = await yt.playlist(pid, (process.env.YOUTUBE_API_KEY || '').trim());
+      res.status(200).json({ videos: vids, count: vids.length, full: !!(process.env.YOUTUBE_API_KEY || '').trim() });
     } catch (e) {
       res.status(502).json({ error: String((e && e.message) || e) });
     }
