@@ -163,8 +163,11 @@
 
     /* ── watchlist mini ── */
     .wl{ display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+    .wl-cell{ position:relative; }
     .wl .poster{ width:100%; aspect-ratio:2/3; cursor:pointer; }
     .wl .poster .rt{ display:none; }
+    .wl-x{ position:absolute; top:4px; right:4px; width:23px; height:23px; border-radius:50%; border:none; background:rgba(0,0,0,.62); backdrop-filter:blur(6px); color:#fff; font-size:11px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; padding:0; }
+    .wl-x:active{ transform:scale(.9); background:rgba(var(--rose),.9); }
 
     /* ── manual add (collapsed) ── */
     .mv-add-toggle{ width:100%; text-align:left; background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:14px; padding:14px 16px; color:var(--au-dim); font-family:var(--au-sans); font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
@@ -782,7 +785,7 @@
       if(watch.length){
         $('watchSec').classList.remove('hidden');
         var wsorted=watch.slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-        $('watchBody').innerHTML=wsorted.map(function(f){ return posterHtml(f,'wl-item'); }).join('');
+        $('watchBody').innerHTML=wsorted.map(function(f){ return '<div class="wl-cell">'+posterHtml(f,'wl-item')+'<button class="wl-x" data-delwatch="'+esc(f.id)+'" aria-label="Remove from watchlist">✕</button></div>'; }).join('');
       } else $('watchSec').classList.add('hidden');
 
       $('mvEmpty').classList.toggle('hidden', seen.length>0||watch.length>0);
@@ -801,7 +804,9 @@
     $('wall').addEventListener('click',function(e){ var p=e.target.closest('[data-film]'); if(p) openDetail(p.getAttribute('data-film')); });
     $('reel').addEventListener('click',function(e){ var p=e.target.closest('[data-film]'); if(p) openDetail(p.getAttribute('data-film')); });
     $('critCard').addEventListener('click',function(e){ var p=e.target.closest('[data-film]'); if(p) openDetail(p.getAttribute('data-film')); });
-    $('watchBody').addEventListener('click',function(e){ var p=e.target.closest('[data-film]'); if(!p) return; var f=watch.find(function(x){return x.id===p.getAttribute('data-film');}); if(f) watchToSeen(f.id); });
+    $('watchBody').addEventListener('click',function(e){
+      var x=e.target.closest('[data-delwatch]'); if(x){ e.stopPropagation(); delWatch(x.getAttribute('data-delwatch')); return; }
+      var p=e.target.closest('[data-film]'); if(!p) return; var f=watch.find(function(x){return x.id===p.getAttribute('data-film');}); if(f) watchToSeen(f.id); });
     $('mvDetail').addEventListener('click',function(e){
       if(e.target.closest('[data-close]')||e.target===this){ closeDetail(); return; }
       var ed=e.target.closest('[data-editf]'), dl=e.target.closest('[data-delf]');
