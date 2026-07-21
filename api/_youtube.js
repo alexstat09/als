@@ -60,20 +60,61 @@ async function playlist(playlistId, key) {
   return res;
 }
 
-// Distill the user's notes or a pasted transcript into durable key points.
-async function distill(text, title) {
+// Best-effort JSON object out of a model reply (handles code fences / stray prose).
+function extractJson(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object') return raw;
+  var m = String(raw).match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch (e) { return null; }
+}
+
+// One video's description (context for Distill). Data API only; '' without a key.
+async function videoDescription(videoId, key) {
+  if (!videoId || !key) return '';
+  try {
+    var r = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + encodeURIComponent(videoId) + '&key=' + encodeURIComponent(key));
+    if (!r.ok) return '';
+    var j = await r.json();
+    var it = (j.items || [])[0];
+    return (it && it.snippet && it.snippet.description) || '';
+  } catch (e) { return ''; }
+}
+
+// Distill the user's notes (+ the video's own description as context) into durable
+// key points. The description means even a couple of notes get real substance —
+// no transcript needed. Never invents: thin input → NOT_ENOUGH.
+async function distill(text, title, videoId, key) {
+  var desc = String(await videoDescription(videoId, key) || '').slice(0, 3000);
   var clean = String(text || '').slice(0, 14000);
-  var sys = 'You help someone remember what truly matters from a video, months later. From their notes or the transcript, extract the durable essence for their future self. Output PLAIN TEXT in EXACTLY this shape and nothing else:\n' +
+  var sys = 'You help someone remember what truly matters from a video, months later. Using their notes and the video\'s description (context — ignore promo, links, sponsors), extract the durable essence for their future self. Output PLAIN TEXT in EXACTLY this shape and nothing else:\n' +
     'CORE: <one sentence — the single most important idea>\n' +
     'KEY:\n- <a concise point worth remembering>\n- <3 to 6 points total, concrete, no fluff, no timestamps, never say "in this video">\n' +
     'DO: <one specific thing to apply>\n' +
-    'Be sharp, plain, and memorable. Never invent anything the input does not support.';
-  var user = 'Video: ' + (title || '(untitled)') + '\n\nNotes / transcript:\n' + clean;
+    'Be sharp, plain, and memorable. Never invent anything the notes and description do not support. If there is genuinely not enough substance, reply with exactly: NOT_ENOUGH';
+  var user = 'Video: ' + (title || '(untitled)') + '\n\n' +
+    (desc ? ('Description (context):\n' + desc + '\n\n') : '') +
+    'Their notes' + (clean ? ':\n' + clean : ' (none — work only from the title and description, and if that is too thin, say NOT_ENOUGH).');
   var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: user }], temperature: 0.4, max_tokens: 700 });
   if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model' };
   var t = (out.raw || '').trim();
   if (!t) return { ok: false, error: 'empty' };
+  if (/^NOT_ENOUGH/.test(t)) return { ok: false, error: 'thin' };
   return { ok: true, text: t };
 }
 
-module.exports = { playlist: playlist, distill: distill };
+// Sort a watchlist into a few meaningful concepts. Returns { videoId: label }.
+async function organize(items) {
+  var list = (items || []).slice(0, 90).map(function (v) {
+    return v.videoId + ' | ' + String(v.title || '').slice(0, 120) + ' | ' + String(v.channel || '').slice(0, 60);
+  }).join('\n');
+  if (!list) return { ok: false, error: 'empty' };
+  var sys = 'You organize a video watchlist into a few meaningful CONCEPTS. Each line is "videoId | title | channel". Assign EVERY video to ONE short concept label (2-4 words, Title Case). Choose a small, consistent set of 3-6 concepts total that best captures the themes (for example: Mindset & Focus, History, Conversations, Craft & Skills, Health, Culture). Return ONLY a JSON object mapping each videoId to its concept string — no commentary, no code fence.';
+  var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: list }], temperature: 0.2, max_tokens: 1400 });
+  if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model' };
+  var map = extractJson(out.obj) || extractJson(out.raw);
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return { ok: false, error: 'parse' };
+  return { ok: true, concepts: map };
+}
+
+module.exports = { playlist: playlist, distill: distill, organize: organize };

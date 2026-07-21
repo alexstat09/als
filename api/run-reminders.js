@@ -360,11 +360,24 @@ module.exports = async function (req, res) {
     res.setHeader('Cache-Control', 'no-store');
     try {
       var db = req.body; if (typeof db === 'string') { try { db = JSON.parse(db || '{}'); } catch (e) { db = {}; } }
-      var dtext = (db && db.text) || '', dtitle = (db && db.title) || '';
-      if (!String(dtext).trim()) { res.status(400).json({ error: 'no text' }); return; }
-      var dout = await yt.distill(dtext, dtitle);
+      var dtext = (db && db.text) || '', dtitle = (db && db.title) || '', dvid = (db && db.videoId) || '';
+      var dout = await yt.distill(dtext, dtitle, dvid, (process.env.YOUTUBE_API_KEY || '').trim());
       if (!dout.ok) { res.status(502).json({ error: dout.error || 'distill failed' }); return; }
       res.status(200).json({ text: dout.text });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
+  if (req.query && req.query.ytorganize !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var ob = req.body; if (typeof ob === 'string') { try { ob = JSON.parse(ob || '{}'); } catch (e) { ob = {}; } }
+      var oitems = (ob && ob.items) || [];
+      if (!oitems.length) { res.status(400).json({ error: 'no items' }); return; }
+      var oout = await yt.organize(oitems);
+      if (!oout.ok) { res.status(502).json({ error: oout.error || 'organize failed' }); return; }
+      res.status(200).json({ concepts: oout.concepts });
     } catch (e) {
       res.status(502).json({ error: String((e && e.message) || e) });
     }

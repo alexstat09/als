@@ -141,10 +141,32 @@
     .gr-spin{ font-family:var(--au-mono); font-size:11px; color:rgba(var(--gr),.9); }
     .gr-watchbox{ display:flex; flex-direction:column; gap:10px; align-items:center; }
     .gr-watch-frame{ width:min(760px,94vw); aspect-ratio:16/9; border:none; border-radius:16px; background:#000; display:block; }
+
+    /* ── cinematic hero backdrop ── */
+    .gr-herobg{ position:absolute; top:0; left:0; right:0; height:340px; background-size:cover; background-position:center 28%; opacity:0; transition:opacity 1.2s ease; z-index:0; pointer-events:none; }
+    .gr-herobg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,5,6,.6) 0%, rgba(5,5,6,.82) 56%, var(--au-void,#050506) 100%); }
+    .gr-herobg.on{ opacity:.5; }
+    .gr-hero, .gr-snap, .gr-mo, .gr-connect{ position:relative; z-index:1; }
+
+    /* ── concept sections ── */
+    .gr-concept{ display:flex; align-items:baseline; gap:10px; margin:20px 0 6px; }
+    .gr-concept:first-child{ margin-top:2px; }
+    .gr-concept .cn{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); letter-spacing:-.01em; }
+    .gr-concept .cc{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; color:var(--au-faint); }
+    .gr-concept .cl{ flex:1; height:1px; background:var(--au-line); align-self:center; }
+    .gr-organize{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(var(--gr),.95); background:rgba(var(--gr),.1); border:1px solid rgba(var(--gr),.3); border-radius:8px; padding:6px 10px; cursor:pointer; }
+    .gr-organize:active{ transform:scale(.96); }
+    .gr-organize.spin{ opacity:.55; pointer-events:none; }
+
+    /* ── collapse manual add ── */
+    .gr-addtoggle{ width:100%; text-align:left; background:none; border:none; color:var(--au-dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:8px; }
+    .gr-addtoggle .chev{ margin-left:auto; transition:transform .2s; }
+    .gr-addtoggle.open .chev{ transform:rotate(180deg); }
     .hidden{ display:none !important; }
   </style>
 </head>
 <body class="au-mood-calm">
+  <div class="gr-herobg" id="grHeroBg" aria-hidden="true"></div>
   <header class="gr-hero">
     <div>
       <div class="gr-eyebrow">Become</div>
@@ -196,9 +218,10 @@
       <a class="go" id="focusLink" target="_blank" rel="noopener">Watch now →</a>
     </section>
 
-    <!-- Add video -->
+    <!-- Add video (collapsed) -->
     <section class="gr-card">
-      <div class="gr-card-hd"><span class="dot"></span><h2>Add to the queue</h2><span class="line"></span></div>
+      <button type="button" class="gr-addtoggle" id="addToggle">＋ Add a video manually<span class="chev">▾</span></button>
+      <div id="addForm" class="hidden" style="margin-top:13px">
       <div class="gr-form-row">
         <div class="gr-field" style="flex:2"><label for="vTitle">Title</label><input class="gr-in" id="vTitle" placeholder="What to watch / read" autocomplete="off"></div>
         <div class="gr-field"><label for="vTopic">Topic</label><input class="gr-in" id="vTopic" placeholder="e.g. Mindset" autocomplete="off"></div>
@@ -206,12 +229,13 @@
       <div class="gr-field" style="margin-bottom:11px"><label for="vUrl">Link <span style="color:var(--au-faint)">· optional</span></label><input class="gr-in" id="vUrl" inputmode="url" placeholder="https://…" autocomplete="off"></div>
       <button class="gr-save" id="vSave" type="button">Add to queue</button>
       <div class="gr-toast" id="vToast"></div>
+      </div>
     </section>
 
     <!-- Queue -->
     <section class="gr-card hidden" id="queueCard">
-      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span></div>
-      <div class="gr-filter" id="vFilter"></div>
+      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span><button type="button" class="gr-organize" id="orgBtn">✦ Organize</button></div>
+      <div class="gr-filter" id="vFilter" style="display:none"></div>
       <div id="queueBody"></div>
     </section>
 
@@ -233,7 +257,7 @@
 
   <dialog class="gr-dlg" id="distillDlg"><div class="gr-sheet">
     <div class="gr-sheet-t" id="dsTitle">Distill</div>
-    <div class="gr-sheet-s">Jot what stuck with you — or paste the transcript from YouTube's “Show transcript”. Nova keeps only what's worth remembering, sharper than you'd write it.</div>
+    <div class="gr-sheet-s">Jot what stuck — even a couple of lines is enough; Nova fills the rest from the video's own description. (Or paste the transcript for the full detail.)</div>
     <textarea id="dsText" placeholder="What stuck with you? Or paste the transcript…"></textarea>
     <div class="result hidden" id="dsResult"></div>
     <div class="gr-sheet-btns">
@@ -341,6 +365,7 @@
         else { var n=reconcileVideos(vids);
           plMsg(n?(n+' new video'+(n>1?'s':'')+' added'+(data.full?'':' · add YOUTUBE_API_KEY in Vercel for the full list')):('Up to date · '+vids.length+' in playlist'+(data.full?'':' (recent 15)'))); }
         render();
+        if(videos.some(function(v){return v.ytId&&!v.concept;})) setTimeout(function(){ organizeVideos(true); }, 250);
       }catch(e){ plMsg('Sync failed: '+(e.message||'error')); }
       syncing=false; $('plSync').classList.remove('spin');
     }
@@ -358,12 +383,12 @@
       var text=$('dsText').value.trim(); if(!text){ $('dsText').focus(); return; }
       $('dsGo').setAttribute('disabled','1'); $('dsSpin').classList.remove('hidden');
       try{
-        var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text,title:v.title}) });
+        var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text,title:v.title,videoId:v.ytId||''}) });
         var data=await r.json();
         if(!r.ok||!data.text) throw new Error(data.error||'failed');
         v.keypoints=data.text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); persist(K_VID,videos); flush();
         var res=$('dsResult'); res.classList.remove('hidden'); res.textContent=data.text; $('dsGo').textContent='Re-distill'; render();
-      }catch(e){ var r2=$('dsResult'); r2.classList.remove('hidden'); r2.textContent='Couldn’t distill: '+(e.message||'error')+'. Try again, or paste a little more.'; }
+      }catch(e){ var msg=(e.message==='thin')?'Not quite enough to work with — jot a couple of lines on what stuck, or paste the transcript.':'Couldn’t distill: '+(e.message||'error')+'. Try again in a moment.'; var r2=$('dsResult'); r2.classList.remove('hidden'); r2.textContent=msg; }
       $('dsGo').removeAttribute('disabled'); $('dsSpin').classList.add('hidden');
     }
 
@@ -378,11 +403,63 @@
         .sort(function(a,b){ return (a.revisitTs||a.distilledTs)-(b.revisitTs||b.distilledTs); })[0]||null;
     }
 
+    /* one video card */
+    var _playSvg='<span class="play"><svg viewBox="0 0 68 48"><path d="M66.5 7.7c-.8-2.9-3-5.1-5.9-5.9C55.3.5 34 .5 34 .5s-21.3 0-26.6 1.3C4.5 2.6 2.3 4.8 1.5 7.7.2 13 .2 24 .2 24s0 11 1.3 16.3c.8 2.9 3 5.1 5.9 5.9C12.7 47.5 34 47.5 34 47.5s21.3 0 26.6-1.3c2.9-.8 5.1-3 5.9-5.9C67.8 35 67.8 24 67.8 24s0-11-1.3-16.3z" fill="#f00"/><path d="M27 34l18-10-18-10z" fill="#fff"/></svg></span>';
+    function videoCardHTML(v){
+      var kp=v.keypoints?'<div class="gr-kp">'+esc(v.keypoints)+'</div>':'';
+      var distillBtn='<button type="button" class="gr-va distil" data-distill="'+v.id+'">'+(v.keypoints?'✦ Notes':'✦ Distill')+'</button>';
+      if(v.ytId){
+        return '<div class="gr-vid'+(v.watched?' done':'')+'">'+
+          '<div class="gr-thumb" data-watch="'+esc(v.ytId)+'"><img loading="lazy" src="'+esc(v.thumb||('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'))+'" alt="">'+_playSvg+'</div>'+
+          '<div class="gr-vid-main"><div class="gr-vid-title">'+esc(v.title)+'</div>'+(v.channel?'<div class="gr-vid-ch">'+esc(v.channel)+'</div>':'')+
+          '<div class="gr-vid-acts">'+
+            '<button type="button" class="gr-va'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>'+
+            distillBtn+'<button type="button" class="gr-va del" data-dv="'+v.id+'">✕</button>'+
+          '</div>'+kp+'</div></div>';
+      }
+      return '<div class="gr-row'+(v.watched?' done':'')+'">'+
+        '<div class="gr-check'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'&#10003;':'')+'</div>'+
+        '<div class="gr-row-main"><div class="gr-row-title">'+esc(v.title)+'</div>'+
+        ((v.source||v.topic)?'<div class="gr-row-meta">'+[esc(v.source),esc(v.topic)].filter(Boolean).join(' · ')+'</div>':'')+
+        '<div class="gr-vid-acts">'+distillBtn+'</div>'+kp+'</div>'+
+        '<div class="gr-mini">'+(v.url?'<a class="gr-mb open" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
+        '<button type="button" class="gr-mb del" data-dv="'+v.id+'">✕</button></div></div>';
+    }
+
+    /* organize — AI sorts videos into concepts */
+    var organizing=false;
+    async function organizeVideos(auto){
+      if(organizing) return;
+      var pool=videos.filter(function(v){return v.ytId;});
+      var need=auto ? pool.filter(function(v){return !v.concept;}) : pool;
+      if(!need.length){ if(!auto) plMsg('Everything is already organized'); return; }
+      organizing=true; var b=$('orgBtn'); if(b) b.classList.add('spin'); if(!auto) plMsg('Organizing by concept…');
+      try{
+        var items=need.map(function(v){ return {videoId:v.ytId,title:v.title,channel:v.channel}; });
+        var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:items}) });
+        var data=await r.json();
+        if(!r.ok||!data.concepts) throw new Error(data.error||'failed');
+        var map=data.concepts, changed=0;
+        videos.forEach(function(v){ if(v.ytId&&map[v.ytId]){ var c=String(map[v.ytId]).slice(0,40); if(v.concept!==c){ v.concept=c; changed++; } } });
+        if(changed){ persist(K_VID,videos); flush(); }
+        organizing=false; if(b) b.classList.remove('spin'); if(!auto) plMsg('Sorted into concepts ✓'); render();
+      }catch(e){ organizing=false; if(b) b.classList.remove('spin'); if(!auto) plMsg('Organize failed: '+(e.message||'error')); }
+    }
+
+    /* cinematic hero backdrop from the latest video */
+    function setHeroBg(){
+      var el=$('grHeroBg'); if(!el) return;
+      var pick=videos.filter(function(v){return v.ytId||v.thumb;}).slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);})[0];
+      if(pick){ el.style.backgroundImage='url('+(pick.thumb||('https://i.ytimg.com/vi/'+pick.ytId+'/hqdefault.jpg'))+')'; el.classList.add('on'); }
+      else el.classList.remove('on');
+    }
+
     /* ── render ───────────────────────────────────────── */
     function countTo(el,end){ end=parseInt(end,10); if(!el||!isFinite(end)) return; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
     function setNum(el,v,anim){ if(!el) return; if(anim&&typeof v==='number'&&isFinite(v)&&v>0){ countTo(el,v); } else el.textContent=v; }
     function render(){
       videos=loadArr(K_VID); habits=loadArr(K_HAB);
+      setHeroBg();
       var unwatched=videos.filter(function(v){return !v.watched;});
       var watched=videos.filter(function(v){return v.watched;});
       var building=habits.filter(function(h){return !h.adopted;});
@@ -422,38 +499,18 @@
         }
       } else $('focusCard').classList.add('hidden');
 
-      // queue
+      // queue — grouped by concept
       if(videos.length){
         $('queueCard').classList.remove('hidden');
-        var tps=topics();
-        $('vFilter').innerHTML=tps.length?(['all'].concat(tps)).map(function(t){
-          return '<span class="gr-fchip'+(filter===t?' on':'')+'" data-f="'+esc(t)+'">'+(t==='all'?'All':esc(t))+'</span>';
-        }).join(''):'';
-        $('vFilter').style.display=tps.length?'flex':'none';
-        var list=videos.slice().sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return (a.ts||0)-(b.ts||0); });
-        if(filter!=='all') list=list.filter(function(v){return v.topic===filter;});
-        var playSvg='<span class="play"><svg viewBox="0 0 68 48"><path d="M66.5 7.7c-.8-2.9-3-5.1-5.9-5.9C55.3.5 34 .5 34 .5s-21.3 0-26.6 1.3C4.5 2.6 2.3 4.8 1.5 7.7.2 13 .2 24 .2 24s0 11 1.3 16.3c.8 2.9 3 5.1 5.9 5.9C12.7 47.5 34 47.5 34 47.5s21.3 0 26.6-1.3c2.9-.8 5.1-3 5.9-5.9C67.8 35 67.8 24 67.8 24s0-11-1.3-16.3z" fill="#f00"/><path d="M27 34l18-10-18-10z" fill="#fff"/></svg></span>';
-        $('queueBody').innerHTML=list.length?list.map(function(v){
-          var kp=v.keypoints?'<div class="gr-kp">'+esc(v.keypoints)+'</div>':'';
-          var distillBtn='<button type="button" class="gr-va distil" data-distill="'+v.id+'">'+(v.keypoints?'✦ Notes':'✦ Distill')+'</button>';
-          if(v.ytId){
-            return '<div class="gr-vid'+(v.watched?' done':'')+'">'+
-              '<div class="gr-thumb" data-watch="'+esc(v.ytId)+'"><img loading="lazy" src="'+esc(v.thumb||('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'))+'" alt="">'+playSvg+'</div>'+
-              '<div class="gr-vid-main"><div class="gr-vid-title">'+esc(v.title)+'</div>'+(v.channel?'<div class="gr-vid-ch">'+esc(v.channel)+'</div>':'')+
-              '<div class="gr-vid-acts">'+
-                '<button type="button" class="gr-va'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>'+
-                distillBtn+
-                '<button type="button" class="gr-va del" data-dv="'+v.id+'">✕</button>'+
-              '</div>'+kp+'</div></div>';
-          }
-          return '<div class="gr-row'+(v.watched?' done':'')+'">'+
-            '<div class="gr-check'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'&#10003;':'')+'</div>'+
-            '<div class="gr-row-main"><div class="gr-row-title">'+esc(v.title)+'</div>'+
-            ((v.source||v.topic)?'<div class="gr-row-meta">'+[esc(v.source),esc(v.topic)].filter(Boolean).join(' · ')+'</div>':'')+
-            '<div class="gr-vid-acts">'+distillBtn+'</div>'+kp+'</div>'+
-            '<div class="gr-mini">'+(v.url?'<a class="gr-mb open" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
-            '<button type="button" class="gr-mb del" data-dv="'+v.id+'">✕</button></div></div>';
-        }).join(''):'<div class="gr-empty">Nothing under “'+esc(filter)+'”.</div>';
+        var groups={}, order=[];
+        videos.forEach(function(v){ var c=v.concept||'Unsorted'; if(!groups[c]){ groups[c]=[]; order.push(c); } groups[c].push(v); });
+        var multi=order.length>1||(order.length===1&&order[0]!=='Unsorted');
+        order.sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return groups[b].length-groups[a].length; });
+        $('queueBody').innerHTML=order.map(function(c){
+          var vids=groups[c].slice().sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return (a.ts||0)-(b.ts||0); });
+          var head = multi ? '<div class="gr-concept"><span class="cn">'+esc(c)+'</span><span class="cc">'+vids.length+'</span><span class="cl"></span></div>' : '';
+          return head+vids.map(videoCardHTML).join('');
+        }).join('');
       } else $('queueCard').classList.add('hidden');
 
       // habits
@@ -492,6 +549,8 @@
     $('watchDlg').addEventListener('click',function(e){ if(e.target===this) closeWatch(); });
     $('rmGot').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v){ v.revisitTs=Date.now(); persist(K_VID,videos); flush(); render(); } });
     $('rmOpen').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v&&v.ytId) openWatch(v.ytId); });
+    $('orgBtn').addEventListener('click',function(){ organizeVideos(false); });
+    $('addToggle').addEventListener('click',function(){ var f=$('addForm'); var open=f.classList.toggle('hidden')===false; this.classList.toggle('open',open); });
     if(profile.playlist) $('plInput').value='https://www.youtube.com/playlist?list='+profile.playlist;
 
     render();
