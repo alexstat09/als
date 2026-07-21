@@ -257,8 +257,8 @@
 
   <dialog class="gr-dlg" id="distillDlg"><div class="gr-sheet">
     <div class="gr-sheet-t" id="dsTitle">Distill</div>
-    <div class="gr-sheet-s">Jot what stuck — even a couple of lines is enough; Nova fills the rest from the video's own description. (Or paste the transcript for the full detail.)</div>
-    <textarea id="dsText" placeholder="What stuck with you? Or paste the transcript…"></textarea>
+    <div class="gr-sheet-s">Nova pulls the key points from the video automatically. Want them sharper? Add your own notes below (or paste the transcript) and Re-distill.</div>
+    <textarea id="dsText" placeholder="Optional — add your own notes to sharpen the key points…"></textarea>
     <div class="result hidden" id="dsResult"></div>
     <div class="gr-sheet-btns">
       <button type="button" class="gr-sb ghost" id="dsCancel">Close</button>
@@ -374,21 +374,27 @@
     var distillId=null;
     function openDistill(id){ var v=videos.find(function(x){return x.id===id;}); if(!v) return; distillId=id;
       $('dsTitle').textContent=v.title||'Distill'; $('dsText').value='';
-      var res=$('dsResult'); if(v.keypoints){ res.classList.remove('hidden'); res.textContent=v.keypoints; } else { res.classList.add('hidden'); res.textContent=''; }
-      $('dsGo').textContent=v.keypoints?'Re-distill':'Distill'; $('dsSpin').classList.add('hidden'); $('dsGo').removeAttribute('disabled');
-      showDlg('distillDlg'); setTimeout(function(){ $('dsText').focus(); },50);
+      var res=$('dsResult');
+      $('dsSpin').classList.add('hidden'); $('dsGo').removeAttribute('disabled');
+      if(v.keypoints){ res.classList.remove('hidden'); res.textContent=v.keypoints; $('dsGo').textContent='Re-distill'; showDlg('distillDlg'); }
+      else { res.classList.add('hidden'); res.textContent=''; $('dsGo').textContent='Distill'; showDlg('distillDlg'); runDistill(); } // auto: one tap → key points
     }
     async function runDistill(){
       var v=videos.find(function(x){return x.id===distillId;}); if(!v) return;
-      var text=$('dsText').value.trim(); if(!text){ $('dsText').focus(); return; }
+      var text=$('dsText').value.trim(); // notes optional — server distills from the video's description
       $('dsGo').setAttribute('disabled','1'); $('dsSpin').classList.remove('hidden');
-      try{
-        var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text,title:v.title,videoId:v.ytId||''}) });
-        var data=await r.json();
-        if(!r.ok||!data.text) throw new Error(data.error||'failed');
-        v.keypoints=data.text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); persist(K_VID,videos); flush();
-        var res=$('dsResult'); res.classList.remove('hidden'); res.textContent=data.text; $('dsGo').textContent='Re-distill'; render();
-      }catch(e){ var msg=(e.message==='thin')?'Not quite enough to work with — jot a couple of lines on what stuck, or paste the transcript.':'Couldn’t distill: '+(e.message||'error')+'. Try again in a moment.'; var r2=$('dsResult'); r2.classList.remove('hidden'); r2.textContent=msg; }
+      var got=null;
+      for(var attempt=0; attempt<2 && !got; attempt++){
+        if(attempt) await new Promise(function(res){ setTimeout(res,1300); });
+        try{
+          var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text,title:v.title,videoId:v.ytId||''}) });
+          var data=await r.json();
+          if(r.ok&&data.text) got=data.text;
+        }catch(e){}
+      }
+      if(got){ v.keypoints=got; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); persist(K_VID,videos); flush();
+        var res=$('dsResult'); res.classList.remove('hidden'); res.textContent=got; $('dsGo').textContent='Re-distill'; render(); }
+      else { var r2=$('dsResult'); r2.classList.remove('hidden'); r2.textContent='Nova’s busy for a second — tap Distill again.'; }
       $('dsGo').removeAttribute('disabled'); $('dsSpin').classList.add('hidden');
     }
 
@@ -434,16 +440,22 @@
       var need=auto ? pool.filter(function(v){return !v.concept;}) : pool;
       if(!need.length){ if(!auto) plMsg('Everything is already organized'); return; }
       organizing=true; var b=$('orgBtn'); if(b) b.classList.add('spin'); if(!auto) plMsg('Organizing by concept…');
-      try{
-        var items=need.map(function(v){ return {videoId:v.ytId,title:v.title,channel:v.channel}; });
-        var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:items}) });
-        var data=await r.json();
-        if(!r.ok||!data.concepts) throw new Error(data.error||'failed');
-        var map=data.concepts, changed=0;
-        videos.forEach(function(v){ if(v.ytId&&map[v.ytId]){ var c=String(map[v.ytId]).slice(0,40); if(v.concept!==c){ v.concept=c; changed++; } } });
-        if(changed){ persist(K_VID,videos); flush(); }
-        organizing=false; if(b) b.classList.remove('spin'); if(!auto) plMsg('Sorted into concepts ✓'); render();
-      }catch(e){ organizing=false; if(b) b.classList.remove('spin'); if(!auto) plMsg('Organize failed: '+(e.message||'error')); }
+      var items=need.map(function(v){ return {videoId:v.ytId,title:v.title,channel:v.channel}; });
+      var map=null;
+      for(var attempt=0; attempt<2 && !map; attempt++){
+        if(attempt) await new Promise(function(res){ setTimeout(res,1300); });
+        try{
+          var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:items}) });
+          var data=await r.json();
+          if(r.ok&&data.concepts&&Object.keys(data.concepts).length) map=data.concepts;
+        }catch(e){}
+      }
+      organizing=false; if(b) b.classList.remove('spin');
+      if(!map){ if(!auto) plMsg('Nova’s busy — tap Organize again in a moment'); return; }
+      var changed=0;
+      videos.forEach(function(v){ if(v.ytId&&map[v.ytId]){ var c=String(map[v.ytId]).slice(0,40); if(v.concept!==c){ v.concept=c; changed++; } } });
+      if(changed){ persist(K_VID,videos); flush(); }
+      if(!auto) plMsg('Sorted into concepts ✓'); render();
     }
 
     /* cinematic hero backdrop from the latest video */

@@ -87,19 +87,18 @@ async function videoDescription(videoId, key) {
 async function distill(text, title, videoId, key) {
   var desc = String(await videoDescription(videoId, key) || '').slice(0, 3000);
   var clean = String(text || '').slice(0, 14000);
-  var sys = 'You help someone remember what truly matters from a video, months later. Using their notes and the video\'s description (context — ignore promo, links, sponsors), extract the durable essence for their future self. Output PLAIN TEXT in EXACTLY this shape and nothing else:\n' +
-    'CORE: <one sentence — the single most important idea>\n' +
-    'KEY:\n- <a concise point worth remembering>\n- <3 to 6 points total, concrete, no fluff, no timestamps, never say "in this video">\n' +
-    'DO: <one specific thing to apply>\n' +
-    'Be sharp, plain, and memorable. Never invent anything the notes and description do not support. If there is genuinely not enough substance, reply with exactly: NOT_ENOUGH';
+  var sys = 'You capture the key points and takeaways of a video so someone can remember them later, in the SIMPLEST, clearest way possible. Use the video\'s title, its description (ignore promo, links, sponsors), and the person\'s notes if they gave any. ALWAYS produce useful key points. Output PLAIN TEXT in EXACTLY this shape and nothing else:\n' +
+    'CORE: <one simple sentence — the main idea>\n' +
+    'KEY:\n- <a short, clear takeaway in everyday language>\n- <3 to 6 takeaways total, no jargon, no timestamps, never say "in this video">\n' +
+    'DO: <one simple thing to try>\n' +
+    'Keep it easy to read and genuinely useful. If the description is thin, give the most useful, practical takeaways a thoughtful viewer would get from a video with this title — stay general and honest, and never state specific facts you cannot support.';
   var user = 'Video: ' + (title || '(untitled)') + '\n\n' +
-    (desc ? ('Description (context):\n' + desc + '\n\n') : '') +
-    'Their notes' + (clean ? ':\n' + clean : ' (none — work only from the title and description, and if that is too thin, say NOT_ENOUGH).');
-  var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: user }], temperature: 0.4, max_tokens: 700 });
+    (desc ? ('Description:\n' + desc + '\n\n') : '') +
+    (clean ? ('Their notes:\n' + clean) : 'They left no notes — work from the title and description.');
+  var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: user }], temperature: 0.45, max_tokens: 700 });
   if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model' };
   var t = (out.raw || '').trim();
   if (!t) return { ok: false, error: 'empty' };
-  if (/^NOT_ENOUGH/.test(t)) return { ok: false, error: 'thin' };
   return { ok: true, text: t };
 }
 
