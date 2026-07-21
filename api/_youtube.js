@@ -104,16 +104,32 @@ async function distill(text, title, videoId, key) {
 }
 
 // Sort a watchlist into a few meaningful concepts. Returns { videoId: label }.
+// Parses by looking up each known videoId in the reply — robust to any wrapping,
+// code fences, prose, or a truncated tail, where strict JSON would shatter.
+function esc_re(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 async function organize(items) {
-  var list = (items || []).slice(0, 90).map(function (v) {
+  items = (items || []).slice(0, 90);
+  var list = items.map(function (v) {
     return v.videoId + ' | ' + String(v.title || '').slice(0, 120) + ' | ' + String(v.channel || '').slice(0, 60);
   }).join('\n');
   if (!list) return { ok: false, error: 'empty' };
-  var sys = 'You organize a video watchlist into a few meaningful CONCEPTS. Each line is "videoId | title | channel". Assign EVERY video to ONE short concept label (2-4 words, Title Case). Choose a small, consistent set of 3-6 concepts total that best captures the themes (for example: Mindset & Focus, History, Conversations, Craft & Skills, Health, Culture). Return ONLY a JSON object mapping each videoId to its concept string — no commentary, no code fence.';
-  var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: list }], temperature: 0.2, max_tokens: 1400 });
+  var sys = 'You organize a video watchlist into a few meaningful CONCEPTS. Each input line is "videoId | title | channel". Assign EVERY video to ONE short concept label (2-4 words, Title Case), choosing a small consistent set of 3-6 concepts total that best captures the themes (for example: Mindset & Focus, History, Conversations, Craft & Skills, Health, Culture). Output ONE line per video in EXACTLY this form and nothing else:\nvideoId => Concept Label';
+  var out = await model.json('text', { messages: [{ role: 'system', content: sys }, { role: 'user', content: list }], temperature: 0.2, max_tokens: 2000 });
   if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model' };
-  var map = extractJson(out.obj) || extractJson(out.raw);
-  if (!map || typeof map !== 'object' || Array.isArray(map)) return { ok: false, error: 'parse' };
+  var raw = String(out.raw || '');
+  var map = {};
+  // 1) try a JSON object first (in case the model returned one)
+  var j = extractJson(raw);
+  if (j && typeof j === 'object' && !Array.isArray(j)) {
+    Object.keys(j).forEach(function (k) { if (typeof j[k] === 'string' && j[k].trim()) map[k] = j[k].trim().slice(0, 40); });
+  }
+  // 2) look up each known id in the reply (bulletproof for line/JSON/prose alike)
+  items.forEach(function (v) {
+    if (map[v.videoId]) return;
+    var m = raw.match(new RegExp(esc_re(v.videoId) + '["\']?\\s*(?:=>|=|:|\\||\\)|,)\\s*["\']?\\s*([^\\n\\r",}]+)'));
+    if (m) { var label = m[1].replace(/["'.\s]+$/, '').trim().slice(0, 40); if (label) map[v.videoId] = label; }
+  });
+  if (!Object.keys(map).length) return { ok: false, error: 'parse' };
   return { ok: true, concepts: map };
 }
 
