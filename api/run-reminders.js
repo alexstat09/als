@@ -343,8 +343,9 @@ module.exports = async function (req, res) {
     if (!uname) { res.status(400).json({ error: 'no username' }); return; }
     res.setHeader('Cache-Control', 'no-store');
     try {
-      var films = await movies.sync(uname, (process.env.TMDB_API_KEY || '').trim());
-      res.status(200).json({ films: films, count: films.length, tmdb: !!(process.env.TMDB_API_KEY || '').trim() });
+      var out = await movies.sync(uname, (process.env.TMDB_API_KEY || '').trim());
+      var films = (out && out.films) || [];
+      res.status(200).json({ films: films, recs: (out && out.recs) || [], count: films.length, tmdb: !!(process.env.TMDB_API_KEY || '').trim() });
     } catch (e) {
       res.status(502).json({ error: String((e && e.message) || e) });
     }
