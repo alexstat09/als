@@ -628,6 +628,7 @@ body::after {
 .gm-rhy-b.now  i { background: rgba(124,184,122,0.95); box-shadow: 0 0 10px rgba(124,184,122,0.45); }
 .gm-rhy-b.zero i { background: rgba(255,107,107,0.26); }
 .gm-rhy-b.none i { background: rgba(255,255,255,0.06); }
+.gm-rhy-empty { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.6; padding: 14px 2px; }
 .gm-rhy-ax { display: flex; justify-content: space-between; margin-top: 8px; font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-tertiary); }
 .heat-stats { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
 .heat-stat { font-size: 11px; color: var(--text-tertiary); }
@@ -1495,12 +1496,28 @@ body::after {
       weeks.push({ rate: wTotal ? wDone / wTotal : null, logged: logged, start: wStart });
     }
 
+    const live0 = weeks.filter(w => w.rate != null);
+    // Nothing logged in the window: SAY so. Drawing 18 two-pixel grey stubs and
+    // "0%" is not an empty state, it's a chart you cannot see — the same
+    // silent-empty failure as rendering a failed read as no data.
+    if (!live0.length) {
+      barsEl.innerHTML = '<div class="gm-rhy-empty">No goals logged in the last ' + WEEKS + ' weeks. Tick a few days and the shape of your weeks shows up here.</div>';
+      const $e = id => document.getElementById(id);
+      if ($e('rhyAvg'))  $e('rhyAvg').innerHTML = '—';
+      if ($e('rhyPeak')) $e('rhyPeak').textContent = '';
+      if ($e('rhyL'))    $e('rhyL').textContent = '';
+      if ($e('rhyC'))    $e('rhyC').textContent = '';
+      if ($e('rhyR'))    $e('rhyR').textContent = '';
+      const st0 = document.getElementById('heatStats'); if (st0) st0.innerHTML = '';
+      return;
+    }
+
     let mx = 0, peak = -1;
     weeks.forEach((w, i) => { if (w.rate != null && w.rate > mx) { mx = w.rate; peak = i; } });
     barsEl.innerHTML = weeks.map((w, i) => {
       const cls = w.rate == null ? 'none'
         : (i === weeks.length - 1 ? 'now' : (i === peak && mx > 0 ? 'peak' : (w.rate === 0 ? 'zero' : '')));
-      const h = w.rate == null ? 2 : Math.max(2, Math.round(w.rate * 74));
+      const h = w.rate == null ? 3 : Math.max(6, Math.round(w.rate * 74));
       const lbl = w.rate == null ? 'nothing logged' : Math.round(w.rate * 100) + '% done';
       return '<span class="gm-rhy-b ' + cls + '" title="' + MONTHS[w.start.getMonth()] + ' ' + w.start.getDate() + ' — ' + lbl + '"><i style="height:' + h + 'px"></i></span>';
     }).join('');

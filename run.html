@@ -2106,11 +2106,14 @@
         return { km:km, future:allFuture, mon:parseDk(row[0].dk) };
       }).filter(function(w){ return !w.future; });
       if(!weeks.length) return '';
+      // Every week empty → say it, rather than drawing sixteen invisible stubs.
+      if(!weeks.some(function(w){ return w.km>0; }))
+        return '<div class="rn-rhy"><div class="rn-rhy-ax"><span>Κανένα τρέξιμο ακόμα · no runs yet</span></div></div>';
       var mx=0, tot=0, peak=0;
       weeks.forEach(function(w,i){ tot+=w.km; if(w.km>mx){ mx=w.km; peak=i; } });
       var avg=tot/weeks.length;
       var bars=weeks.map(function(w,i){
-        var h=mx>0?Math.max(2,Math.round(w.km/mx*76)):2;
+        var h=mx>0?(w.km>0?Math.max(7,Math.round(w.km/mx*76)):3):3;
         var cls=(i===weeks.length-1)?'now':(i===peak&&w.km>0?'peak':(w.km<=0?'zero':''));
         return '<span class="rn-rhy-b '+cls+'" title="'+r1(w.km)+'χλμ"><i style="height:'+h+'px"></i></span>';
       }).join('');
