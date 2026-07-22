@@ -143,5 +143,78 @@ function night() {
   }
 }
 
+/* ── 5. the render, driven by the shaped night ───────────────────
+   sleep.html's night block is inside a DOM-bound IIFE, so the pieces under
+   test are lifted out by brace-matching and run headless. Deliberately no
+   sync scripts and no localStorage anywhere near this — a render harness that
+   loads them is what corrupted a week of weigh-ins once already. */
+{
+  const HTML = fs.readFileSync(path.join(__dirname, '..', 'sleep.html'), 'utf8');
+
+  // Pull `start` and everything up to its matching close brace.
+  function grab(marker) {
+    const i = HTML.indexOf(marker);
+    if (i < 0) return null;
+    let depth = 0, j = HTML.indexOf('{', i);
+    if (j < 0) return null;
+    for (let k = j; k < HTML.length; k++) {
+      if (HTML[k] === '{') depth++;
+      else if (HTML[k] === '}') { depth--; if (depth === 0) return HTML.slice(i, k + 1); }
+    }
+    return null;
+  }
+  const parts = ['function esc(s)', 'function fmtHM(hours)', 'function calcHours(bed, wake)',
+    'function latencyOf(e)', 'function fmtMins(m)', 'function watchHtml(e)'].map(grab);
+  const consts = HTML.match(/var STAGE_ORDER =[\s\S]*?var STAGE_NAME = \{[^}]*\};/);
+
+  if (parts.some(p => !p) || !consts) {
+    fail++; console.log('  ✗ could not lift the render functions out of sleep.html');
+  } else {
+    const sandbox = {};
+    vm.createContext(sandbox);
+    vm.runInContext(consts[0] + '\n' + parts.join('\n') + '\n; this.watchHtml = watchHtml;', sandbox);
+    const watchHtml = sandbox.watchHtml;
+
+    const it = garmin._shape(night());
+    it.hypno = [[0, 10, 'light'], [10, 17, 'deep'], [27, 25, 'light'], [437, 22, 'rem']];
+    const h = watchHtml(it);
+
+    ok('renders her measured window', h.indexOf('00:39') >= 0 && h.indexOf('07:26') >= 0);
+    ok('marks the night as measured, not typed', h.indexOf('sl-watch-chip') >= 0);
+    ok('answers "was it continuous" outright', h.indexOf('Unbroken') >= 0);
+    ok('reports restless moments', h.indexOf('35 restless moments') >= 0);
+    ok('shows deep in minutes', h.indexOf('49m') >= 0);
+    ok('shows light as hours+minutes', h.indexOf('4h 44m') >= 0);
+    ok('carries the body metrics', h.indexOf('Overnight HRV') >= 0 && h.indexOf('+63') >= 0);
+    ok('labels Garmin\'s score as theirs, not ours',
+      /Garmin scored this night/.test(h) && /not used in yours/.test(h));
+    ok('no undefined leaked into the markup', h.indexOf('undefined') < 0, h.slice(0, 200));
+    ok('no NaN leaked into the markup', h.indexOf('NaN') < 0);
+
+    // Every segment must sit inside the bar, or the hypnogram lies about time.
+    const segs = [...h.matchAll(/left:([\d.]+)%;width:([\d.]+)%/g)].map(m => [+m[1], +m[2]]);
+    eq('one bar per stage segment', segs.length, 4);
+    ok('every segment stays within the timeline', segs.every(s => s[0] >= 0 && s[0] + s[1] <= 100.5),
+      JSON.stringify(segs));
+    ok('segments run in time order', segs.every((s, i) => i === 0 || s[0] >= segs[i - 1][0]));
+
+    // A night with no watch at all — Alex's every night — must render nothing.
+    eq('a night with no measurement renders nothing', watchHtml({ dateKey: '2026-07-22' }), '');
+    eq('an empty entry renders nothing', watchHtml(null), '');
+
+    // Duration but no window: the intervals leg. Must NOT look like a blank.
+    const thin = watchHtml({ dateKey: '2026-07-21', asleepMeasured: 6.27 });
+    ok('a duration-only night explains itself instead of showing a hole',
+      thin.length > 0 && /not when/.test(thin));
+    ok('and does not fake a timeline', thin.indexOf('sl-hyp-seg') < 0);
+
+    // Latency is the pairing's payoff: her bedtime + the watch's onset.
+    const withBed = garmin._shape(night());
+    withBed.bed = '00:15';
+    ok('latency appears once she gives a bedtime', /24 min after lights out/.test(watchHtml(withBed)));
+    ok('and is absent while she has not', watchHtml(garmin._shape(night())).indexOf('after lights out') < 0);
+  }
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

@@ -92,6 +92,48 @@
     .sl-asleep-sep{ opacity:.4; }
     .sl-asleep-hint{ font-family:var(--au-serif); font-style:italic; font-size:13px; letter-spacing:0; color:var(--au-dim); line-height:1.45; display:block; }
 
+    /* ── What her watch measured ──────────────────────────────────
+       Stage colour is one HUE FAMILY for depth — deep is the saturated
+       violet, light is the same violet thinned out, so "light sleep" reads
+       as literally lighter — with a separate vivid for REM and the page's
+       existing alert rose for being awake. Deliberately not Garmin's blue and
+       magenta: this has to look like it grew here. */
+    .sl-watch{ margin-top:12px; padding:13px 14px 11px; border-radius:14px; background:rgba(255,255,255,.035); border:1px solid var(--au-line); }
+    .sl-watch-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:11px; }
+    .sl-watch-win{ font-family:var(--au-mono); font-size:13px; font-weight:700; color:var(--au-ivory); letter-spacing:.02em; }
+    .sl-watch-win .sl-watch-arrow{ color:var(--au-faint); margin:0 5px; font-weight:400; }
+    .sl-watch-chip{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:rgb(var(--sec-rgb)); border:1px solid rgba(var(--sec-rgb),.35); border-radius:999px; padding:3px 8px; white-space:nowrap; }
+    .sl-watch-sub{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); letter-spacing:.02em; margin-left:auto; }
+
+    /* The hypnogram. Lanes run awake → deep, the conventional reading order
+       for sleep architecture. Segments are placed by real time offset, so the
+       gaps and the shape are hers, not decoration. */
+    .sl-hyp{ position:relative; height:88px; margin:2px 0 9px; }
+    .sl-hyp-lane{ position:absolute; left:40px; right:0; height:1px; background:rgba(255,255,255,.055); }
+    .sl-hyp-bars{ position:absolute; left:40px; right:0; top:0; bottom:0; }
+    .sl-hyp-seg{ position:absolute; height:13px; border-radius:3px; }
+    .sl-hyp-seg.deep{  background:#7A6BE8; }
+    .sl-hyp-seg.light{ background:rgba(155,140,255,.42); }
+    .sl-hyp-seg.rem{   background:var(--au-emerald); }
+    .sl-hyp-seg.awake{ background:var(--au-rose); }
+    .sl-hyp-tick{ position:absolute; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); left:0; }
+    .sl-hyp-axis{ display:flex; justify-content:space-between; font-family:var(--au-mono); font-size:9px; color:var(--au-faint); letter-spacing:.04em; padding-left:40px; }
+
+    .sl-stages{ display:flex; gap:7px; margin-top:11px; }
+    .sl-stage{ flex:1; padding:8px 4px 7px; border-radius:10px; background:rgba(255,255,255,.035); text-align:center; border-top:2px solid transparent; }
+    .sl-stage.deep{  border-top-color:#7A6BE8; }
+    .sl-stage.light{ border-top-color:rgba(155,140,255,.55); }
+    .sl-stage.rem{   border-top-color:var(--au-emerald); }
+    .sl-stage.awake{ border-top-color:var(--au-rose); }
+    .sl-stage-v{ font-family:var(--au-mono); font-size:12.5px; font-weight:700; color:var(--au-ivory); line-height:1; }
+    .sl-stage-k{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; }
+    .sl-stage-p{ font-family:var(--au-mono); font-size:8.5px; color:var(--au-dim); margin-top:3px; }
+
+    .sl-body{ display:flex; flex-wrap:wrap; gap:6px; margin-top:11px; }
+    .sl-body-c{ flex:1 1 76px; padding:8px 6px 7px; border-radius:10px; background:rgba(255,255,255,.03); text-align:center; }
+    .sl-body-v{ font-family:var(--au-mono); font-size:12.5px; font-weight:700; color:var(--au-ivory); line-height:1; }
+    .sl-body-k{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; line-height:1.3; }
+
     /* ── Divergence: the night vs the body ────────── */
     .sl-diverge{ display:flex; align-items:flex-start; gap:10px; margin:0 0 16px; padding:12px 14px; border-radius:13px; background:rgba(var(--dv),.09); border:1px solid rgba(var(--dv),.24); font-size:13px; line-height:1.5; color:var(--au-dim); }
     .sl-diverge b{ color:var(--au-ivory); font-weight:700; }
@@ -396,9 +438,20 @@
       return 100;
     }
     // Time in bed (what bed→wake actually measures).
+    //
+    // THE WATCH DOES NOT KNOW THIS, and it is worth being blunt about why.
+    // Garmin reports the sleep it DETECTED, not the time she spent in bed:
+    // on her 2026-07-22 night sleepEnd − sleepStart was 24420s and sleepTime
+    // was also 24420s — the same number, with awake at 0. Treat that window as
+    // "in bed" and efficiency comes out 100% every night by construction, which
+    // is exactly the flattery this page was rebuilt in July to stop telling.
+    //
+    // So the START of time-in-bed can only ever be what SHE tells us. The END
+    // is fair game — the watch genuinely does know when she woke.
     function inBedHours(e){
       if (!e) return null;
-      if (e.bed && e.wake) return calcHours(e.bed, e.wake);
+      var wake = e.wake || e.wakeMeasured;
+      if (e.bed && wake) return calcHours(e.bed, wake);
       return (e.hours > 0) ? e.hours : null;      // MCP-written nights have hours only
     }
     // Time ASLEEP = in bed − time to fall asleep − time awake in the night.
@@ -421,22 +474,50 @@
       var loss = ((e.latency > 0 ? e.latency : 0) + (e.wakes > 0 ? e.wakes * 10 : 0)) / 60;
       return Math.max(0.5, Math.round((tib - loss) * 100) / 100);
     }
-    // Only claim an efficiency when he actually told us latency or awakenings.
+    // Minutes from lights-out to actual sleep onset — MEASURED, whenever she has
+    // said when she got into bed and the watch has said when sleep began.
+    //
+    // This is the one number the pairing produces that neither side owns alone:
+    // she cannot time her own falling-asleep, and the watch cannot see her get
+    // into bed. It is also why her typed bedtime still matters now that a watch
+    // reports the night — it is no longer a worse copy of what Garmin knows,
+    // it is the missing half.
+    function latencyOf(e){
+      if (!e) return null;
+      if (e.bed && e.bedMeasured){
+        var m = Math.round(calcHours(e.bed, e.bedMeasured) * 60);
+        // Over 3h is not latency — it is a bedtime typed against the wrong
+        // night, or a nap the watch opened a window for. Refuse to publish
+        // nonsense as a measurement.
+        if (m >= 0 && m <= 180) return m;
+      }
+      return (e.latency != null) ? e.latency : null;
+    }
+    // Only claim an efficiency when the gap between lying down and being asleep
+    // is actually visible — either she told us (latency / awakenings), or the
+    // watch measured sleep onset against a bedtime she gave us.
     function efficiencyOf(e){
-      if (!e || (e.latency == null && e.wakes == null)) return null;
+      if (!e) return null;
+      var measured = !!(e.bed && e.bedMeasured && e.asleepMeasured > 0);
+      if (!measured && e.latency == null && e.wakes == null) return null;
       var tib = inBedHours(e), a = asleepHours(e);
       if (!(tib > 0) || a == null) return null;
       return clamp(a / tib, 0, 1);
     }
+    // Sleep midpoint. Prefers the watch — measured onset/offset is a truer
+    // midpoint than a typed bedtime, because it is when she was actually
+    // ASLEEP rather than when she put the book down.
     function midMin(e){
-      if (!e || !e.bed || !e.wake) return null;
-      var b=e.bed.split(':'), w=e.wake.split(':');
+      if (!e) return null;
+      var bS = e.bedMeasured || e.bed, wS = e.wakeMeasured || e.wake;
+      if (!bS || !wS) return null;
+      var b=bS.split(':'), w=wS.split(':');
       var bm=(+b[0])*60+(+b[1]), wm=(+w[0])*60+(+w[1]); if (wm<=bm) wm+=1440;
       return ((bm+wm)/2)%1440;
     }
     // timing regularity: SD of sleep midpoint over the 14 nights up to uptoDK
     function regularityScore(uptoDK){
-      var mids = getLogs().filter(function(e){ return e && e.dateKey && e.bed && e.wake && (!uptoDK || e.dateKey <= uptoDK); })
+      var mids = getLogs().filter(function(e){ return e && e.dateKey && (e.bedMeasured || e.bed) && (e.wakeMeasured || e.wake) && (!uptoDK || e.dateKey <= uptoDK); })
         .sort(function(a,b){ return a.dateKey < b.dateKey ? 1 : -1; }).slice(0,14)
         .map(midMin).filter(function(v){ return v != null; })
         .map(function(m){ return m < 720 ? m+1440 : m; });   // early-AM midpoints → post-midnight space
@@ -740,6 +821,112 @@
 
     /* ══════════ SLEEP LOG CARD ══════════ */
     // Stored value = the midpoint of the bucket, in minutes.
+    /* ── The night her watch measured ──────────────────────────────────────
+       Three states, and they must LOOK different. Rendering "nothing measured"
+       and "measured, but this wire only carries a duration" the same way is
+       the silent-empty failure this project keeps re-learning: she would read
+       a blank where the honest answer is "your watch knows, the pipe doesn't
+       carry it".
+
+       Nothing here feeds the score. Garmin's own verdict is shown once, at the
+       bottom, labelled as theirs — the score above it stays ours.            */
+    function fmtMins(m){
+      if (!(m > 0)) return '0m';
+      var h = Math.floor(m / 60), r = Math.round(m % 60);
+      return (h ? h + 'h' + (r ? ' ' + r + 'm' : '') : r + 'm');
+    }
+    var STAGE_ORDER = ['awake','rem','light','deep'];      // hypnogram lanes, top → bottom
+    var STAGE_TOP = { awake: 4, rem: 24, light: 44, deep: 64 };
+    var STAGE_NAME = { deep:'Deep', light:'Light', rem:'REM', awake:'Awake' };
+
+    function watchHtml(e){
+      if (!e || !(e.asleepMeasured > 0)) return '';         // nothing measured — say nothing
+
+      // State 2: a duration arrived, but no window. That is the intervals.icu
+      // leg, which carries four numbers and no timeline. Name the limit rather
+      // than leave a hole where the times should be.
+      if (!e.bedMeasured || !e.wakeMeasured){
+        return '<div class="sl-watch"><div class="sl-watch-top">' +
+          '<span class="sl-watch-win">' + fmtHM(e.asleepMeasured) + ' asleep</span>' +
+          '<span class="sl-watch-chip">Measured</span></div>' +
+          '<div class="sl-asleep-hint" style="margin:0">Your watch measured how long you slept, but not when — that arrived over the sync that carries duration only. Add your bedtime above and the rest of the night still works.</div></div>';
+      }
+
+      // State 3: the full night.
+      var hy = Array.isArray(e.hypno) ? e.hypno : [];
+      var span = 0;
+      hy.forEach(function(s){ if (s && s.length >= 3) span = Math.max(span, s[0] + s[1]); });
+      if (!(span > 0)) span = Math.round(e.asleepMeasured * 60);
+
+      var lanes = '', bars = '';
+      STAGE_ORDER.forEach(function(k){
+        lanes += '<div class="sl-hyp-lane" style="top:' + (STAGE_TOP[k] + 6) + 'px"></div>' +
+                 '<div class="sl-hyp-tick" style="top:' + (STAGE_TOP[k] + 2) + 'px">' + STAGE_NAME[k] + '</div>';
+      });
+      hy.forEach(function(s){
+        if (!s || s.length < 3 || STAGE_TOP[s[2]] == null) return;
+        // A 3-minute stage on a 7-hour night is a sliver; floor the width so it
+        // stays visible instead of vanishing into a rounding error.
+        var w = Math.max(0.7, (s[1] / span) * 100);
+        bars += '<div class="sl-hyp-seg ' + s[2] + '" style="left:' + ((s[0] / span) * 100).toFixed(2) +
+          '%;width:' + w.toFixed(2) + '%;top:' + STAGE_TOP[s[2]] + 'px"></div>';
+      });
+      var hyp = hy.length
+        ? '<div class="sl-hyp">' + lanes + '<div class="sl-hyp-bars">' + bars + '</div></div>' +
+          '<div class="sl-hyp-axis"><span>' + esc(e.bedMeasured) + '</span><span>' + esc(e.wakeMeasured) + '</span></div>'
+        : '';
+
+      var st = e.stages || {}, total = (st.deep || 0) + (st.light || 0) + (st.rem || 0);
+      var stages = '<div class="sl-stages">' + ['deep','light','rem','awake'].map(function(k){
+        var v = st[k] || 0;
+        var pct = (total > 0 && k !== 'awake') ? Math.round(v / total * 100) + '%' : '';
+        return '<div class="sl-stage ' + k + '"><div class="sl-stage-v">' + fmtMins(v) + '</div>' +
+          '<div class="sl-stage-k">' + STAGE_NAME[k] + '</div>' +
+          (pct ? '<div class="sl-stage-p">' + pct + '</div>' : '') + '</div>';
+      }).join('') + '</div>';
+
+      // "Was it continuous?" — answered outright, which is the whole reason the
+      // intervals wire wasn't enough.
+      var awakeMin = st.awake || 0, breaks = (e.awakeCount != null) ? e.awakeCount : null;
+      var cont = (awakeMin === 0 && (breaks === 0 || breaks === null))
+        ? 'Unbroken'
+        : 'Broken ' + (breaks ? breaks + (breaks === 1 ? ' time' : ' times') : '') + (awakeMin ? ' · ' + fmtMins(awakeMin) + ' awake' : '');
+      if (e.restless != null) cont += ' · ' + e.restless + ' restless moment' + (e.restless === 1 ? '' : 's');
+
+      // Latency only exists once SHE has told us when she got into bed.
+      var lat = (e.bed && e.bedMeasured) ? latencyOf(e) : null;
+      var latTxt = (lat != null && e.latency == null) ? 'Asleep ' + lat + ' min after lights out' : '';
+
+      var cells = [];
+      function cell(v, k){ if (v != null && v !== '') cells.push('<div class="sl-body-c"><div class="sl-body-v">' + esc(v) + '</div><div class="sl-body-k">' + k + '</div></div>'); }
+      cell(e.overnightHR, 'Overnight HR');
+      cell(e.restingHR, 'Resting HR');
+      cell(e.hrv != null ? e.hrv + ' ms' : null, 'Overnight HRV');
+      cell(e.resp != null ? e.resp : null, 'Respiration');
+      cell(e.bodyBattery != null ? (e.bodyBattery > 0 ? '+' : '') + e.bodyBattery : null, 'Body battery');
+      cell(e.stress, 'Sleep stress');
+      cell(e.spo2 != null ? e.spo2 + '%' : null, 'SpO₂');
+      var body = cells.length ? '<div class="sl-body">' + cells.join('') + '</div>' : '';
+
+      // Garmin's own number, kept at arm's length. It is a verdict from a black
+      // box; ours is built from measurements we can name. Showing it as a
+      // comparison is useful — letting it into the score is how you end up with
+      // two scores that disagree.
+      var theirs = (e.garminScore != null)
+        ? '<div class="sl-asleep" style="margin-top:10px"><span class="sl-asleep-k">Garmin scored this night <b>' + e.garminScore + '</b></span><span class="sl-asleep-sep">·</span><span class="sl-asleep-k">shown for comparison, not used in yours</span></div>'
+        : '';
+
+      return '<div class="sl-watch">' +
+        '<div class="sl-watch-top">' +
+          '<span class="sl-watch-win">' + esc(e.bedMeasured) + '<span class="sl-watch-arrow">→</span>' + esc(e.wakeMeasured) + '</span>' +
+          '<span class="sl-watch-chip">Measured</span>' +
+          '<span class="sl-watch-sub">' + esc(cont) + '</span>' +
+        '</div>' + hyp + stages +
+        (latTxt ? '<div class="sl-watch-sub" style="margin:10px 0 0;display:block">' + esc(latTxt) + '</div>' : '') +
+        body + theirs +
+      '</div>';
+    }
+
     var LATENCY = [[5,'&lt;10 min'],[15,'10–20'],[30,'20–45'],[60,'45+']];
     var LAT_LBL = { 5:'Under 10 min', 15:'10–20 min', 30:'20–45 min', 60:'45+ min' };
     var WAKES = [[0,'None'],[1,'Once'],[2,'Twice'],[3,'3+']];
@@ -807,7 +994,14 @@
         }).join('');
       }
       var latHtml = '<div class="sl-metric">' +
-        '<div class="sl-metric-top"><span class="sl-metric-name">Time to fall asleep</span><span class="sl-metric-cur">' + (e.latency != null ? LAT_LBL[e.latency] || (e.latency + ' min') : '—') + '</span></div>' +
+        '<div class="sl-metric-top"><span class="sl-metric-name">Time to fall asleep</span><span class="sl-metric-cur">' + (function(){
+          // Measured beats remembered: if she gave a bedtime and the watch gave
+          // sleep onset, the answer is arithmetic and the chips below are just
+          // an override.
+          var mLat = (e.bed && e.bedMeasured) ? latencyOf(e) : null;
+          if (mLat != null && e.latency == null) return mLat + ' min · measured';
+          return e.latency != null ? (LAT_LBL[e.latency] || (e.latency + ' min')) : '—';
+        })() + '</span></div>' +
         '<div class="sl-chips">' + chipRow('latency', LATENCY, e.latency) + '</div>' +
       '</div>';
       var wakeHtml = '<div class="sl-metric">' +
@@ -815,12 +1009,24 @@
         '<div class="sl-chips">' + chipRow('wakes', WAKES, e.wakes) + '</div>' +
       '</div>';
 
+      // ── What the watch measured ────────────────────────────────────────
+      // Her Garmin knows things she cannot report: when sleep actually began,
+      // the architecture of it, and whether it broke. It does NOT know when she
+      // got into bed. So this block states the measured window plainly and
+      // never dresses it up as time in bed.
+      var wHtml = watchHtml(e);
       // Time in bed vs actually asleep — shown side by side so the difference
       // is visible (this is exactly what the old score was blind to).
       var effV = efficiencyOf(e);
       var effHtml = (effV != null)
         ? '<div class="sl-asleep"><span class="sl-asleep-k">Asleep <b>' + fmtHM(asleep) + '</b></span><span class="sl-asleep-sep">·</span><span class="sl-asleep-k">In bed <b>' + fmtHM(tib) + '</b></span><span class="sl-asleep-sep">·</span><span class="sl-asleep-k">Efficiency <b style="color:rgb(var(--sec-rgb))">' + Math.round(effV*100) + '%</b></span></div>'
-        : (tib > 0 ? '<div class="sl-asleep sl-asleep-hint">Add how long you took to fall asleep and how often you woke — that’s what turns time in bed into real sleep.</div>' : '');
+        : (tib > 0
+            ? '<div class="sl-asleep sl-asleep-hint">Add how long you took to fall asleep and how often you woke — that’s what turns time in bed into real sleep.</div>'
+            // The watch has the night but not the one thing only she can give.
+            // Ask for exactly that, and say what it buys.
+            : (e.bedMeasured && !e.bed
+                ? '<div class="sl-asleep sl-asleep-hint">Your watch knows sleep began at <b>' + esc(e.bedMeasured) + '</b> — it can’t know when you got into bed. Add your bedtime above and it measures how long you took to fall asleep.</div>'
+                : ''));
 
       body.innerHTML =
         targetHtml + acts +
@@ -828,7 +1034,7 @@
           '<div class="sl-time-box"><div class="sl-time-lbl">Bedtime</div><input type="time" class="sl-time-in" id="slBed" value="' + (e.bed || '') + '"></div>' +
           '<div class="sl-dur"><div class="sl-dur-val">' + fmtHM(asleep) + '</div><div class="sl-dur-lbl">Asleep</div></div>' +
           '<div class="sl-time-box"><div class="sl-time-lbl">Woke up</div><input type="time" class="sl-time-in" id="slWake" value="' + (e.wake || '') + '"></div>' +
-        '</div>' + effHtml + latHtml + wakeHtml;
+        '</div>' + wHtml + effHtml + latHtml + wakeHtml;
 
       var bed = document.getElementById('slBed'), wake = document.getElementById('slWake');
       function bind(el, field){ function save(){ if (el.value) setField(field, el.value, 'sleepNote'); } el.addEventListener('change', save); el.addEventListener('input', save); }
@@ -1680,6 +1886,15 @@
        project keeps paying for.
        Returns the number of fields changed, so the caller can stay idempotent and
        not flush or re-render for nothing. */
+    // Everything a watch can legitimately claim to have MEASURED. Her own
+    // bed / wake / latency / wakes / quality / tags / notes are deliberately
+    // absent: the watch has no opinion on those and must never overwrite them.
+    // `bedMeasured` / `wakeMeasured` sit alongside `bed` / `wake` rather than
+    // replacing them, which is what keeps latency computable at all.
+    var WATCH_FIELDS = ['asleepMeasured','restingHR','hrv','garminScore',
+      'bedMeasured','wakeMeasured','stages','hypno','restless','awakeCount',
+      'overnightHR','resp','respLow','stress','bodyBattery','spo2','hrvStatus'];
+
     window._sleepApplyWellness = function(items){
       if (!Array.isArray(items) || !items.length) return 0;
       var logs = getLogs(), byDk = {}, changed = 0;
@@ -1688,8 +1903,15 @@
         if (!it || !it.dateKey) return;
         var e = byDk[it.dateKey], touched = 0;
         if (!e){ e = { id:'sl-'+it.dateKey, dateKey:it.dateKey }; logs.push(e); byDk[it.dateKey] = e; }
-        ['asleepMeasured','restingHR','hrv','garminScore'].forEach(function(f){
-          if (it[f] != null && e[f] !== it[f]){ e[f] = it[f]; touched++; }
+        // Scalars compare by value; `stages` and `hypno` are an object and an
+        // array, and `!==` on those is ALWAYS true — every drain would report a
+        // change, flush to the cloud and re-render, forever. Compare by shape.
+        WATCH_FIELDS.forEach(function(f){
+          if (it[f] == null) return;
+          var same = (f === 'stages' || f === 'hypno')
+            ? JSON.stringify(e[f]) === JSON.stringify(it[f])
+            : e[f] === it[f];
+          if (!same){ e[f] = it[f]; touched++; }
         });
         // `measuredBy`, not the obvious short name: the smoke test's link checker
         // treats that assignment as an HTML source attribute and goes hunting for
