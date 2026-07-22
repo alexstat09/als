@@ -91,7 +91,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v391`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v393`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -173,9 +173,28 @@ constraint 11 for the bug it uncovered. Two things it left unsettled:
   duplicates a few hundred pixels above it. Left alone on purpose (every page
   owns a tile), but he never ruled on it.
 
+**Also shipped — `als-v392`/`v393`, Chrissie's real Garmin night** (2026-07-22).
+`intervals.icu` carries four numbers per night and **structurally cannot** carry
+bed/wake, stages or continuity — Garmin's partner API never sends it sleep
+onset/offset. `api/_garmin.js` (a free `_` helper) goes straight to Garmin's
+`dailySleepData` with a long-lived OAuth1 token obtained once on a laptop, so no
+password reaches the server. `publishSleepInbox()` is the single writer of
+`sleep:inbox`; the intervals leg stays as the fallback.
+
+⚠️ **Garmin's window is DETECTED SLEEP, not time in bed.** `sleepEnd − sleepStart`
+equals `sleepTimeSeconds` exactly and `awakeSleepSeconds` is 0, so feeding it to
+efficiency reads 100% every night — the flattery `sleep.html` was rebuilt to
+stop. The start of time-in-bed is only ever what she types; the end may come
+from the watch. Her bedtime plus the watch's onset then gives MEASURED latency.
+
+⏳ **Garmin retires OAuth1 on 2026-12-31.** Successor is an iPhone → Apple Health
+Shortcut; the item shape is source-agnostic so only the courier changes.
+`?garmin=diag` fingerprints the env token and tells a bad paste (401) from a
+blocked IP (403/429). `tests/sleep-inbox.test.js`, 48 assertions.
+
 **Needs Alex, not code**
-- Connect Garmin directly on `intervals.icu` and remove Strava. This blocks
-  Chrissie's auto-import and the marathon is 8 Nov 2026.
+- Connect Garmin directly on `intervals.icu` and remove Strava. Still blocks her
+  RUN auto-import (sleep no longer depends on it); the marathon is 8 Nov 2026.
 - Send his 4 gym trial templates (folder `f-cbas`). ⚠️ Zero leg sets in all of
   2026. Don't fight him on volume; argue frequency.
 - Decide the Nova → Hy3 model upgrade. Free tier requires training consent
