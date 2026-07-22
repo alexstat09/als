@@ -91,7 +91,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v390`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v391`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -106,6 +106,11 @@ Violating any of these breaks production or loses data.
 10. **Silent-empty is this project's disease.** "No data" and "we failed to read
     it" must never render the same way. Use `lsGet/lsSet/lsRem`; never
     monkey-patch `localStorage` (it breaks Safari).
+11. **A class you toggle from JS must exist in CSS — grep it.** `.hidden` was
+    toggled on Home's arc band for two versions and defined nowhere (`aurora.css`
+    is that page's only stylesheet). The "new chapter" badge was permanently lit
+    and a failed read drew an empty band. A no-op class fails silently, which is
+    silent-empty wearing a different hat.
 
 ---
 
@@ -126,7 +131,9 @@ guard (`unitOK()`, the 111g-Oreo fix), favourites, streaks.
 nutrition, films, runs), `coach.html` (weekly Focus Loop with memory, grades
 last week against real data, deterministic Nova briefing), `insights.html`
 (Welch t-test hypothesis engine, three states: confirmed / ruled-out / watching,
-weekly memory), `arc.html` (chapters, surfaced as a band atop Home),
+weekly memory), `arc.html` (chapters; on Home the arc rests as a one-line rail
+under the dateline and expands to the full band only for the three days after a
+chapter turns, so nothing outranks the greeting on an ordinary day),
 `improve.html` (YouTube shelves + background reader), `movies.html`
 (Letterboxd + TMDB, real recommendations), `ideas.html`, `identity.html`,
 `planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income).
@@ -191,7 +198,7 @@ race-day crown, `intervals.icu` auto-import.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 8 suites, ~176 assertions
+for f in tests/*.js; do node "$f"; done   # 8 suites, 181 assertions
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
@@ -207,6 +214,22 @@ the request clearly ends in "push".
 regex, run it in a `vm` with a stubbed DOM and `localStorage`, and assert on the
 rendered markup. `tests/gcal-panel.test.js` is the reference implementation.
 Assert that something rendered, not just that nothing threw.
+
+**Seeing a layout change before he does:** copy the page to the scratchpad,
+`replace(/<script[\s\S]*?<\/script>/gi,'')`, then **assert no `<script>`
+survived and throw if one did** — constraint 8 is a data-loss rule, not a style
+one. Hardcode what the JS would have painted, force `[data-rise]` to
+`opacity:1`, and shoot it:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+  --disable-gpu --screenshot=after.png --window-size=393,700 \
+  --virtual-time-budget=3000 --hide-scrollbars "file://$PWD/after.html"
+```
+
+Render `git show HEAD:<page>` the same way for a real before/after. Headless
+does not apply the mobile viewport, so the right edge clips — compare the two
+shots against each other, never a shot against the phone. Delete both when done.
 
 **Design work:** the `impeccable`, `ui-ux-pro-max`, and `redesign-existing-projects`
 skills are installed, but every output stays vanilla single-file HTML/CSS/JS.
