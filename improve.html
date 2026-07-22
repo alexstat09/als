@@ -64,10 +64,22 @@
     .gr-toast{ text-align:center; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:rgb(var(--gr)); margin-top:9px; min-height:14px; opacity:0; transition:opacity .25s; }
     .gr-toast.show{ opacity:1; }
 
-    /* topic filter */
-    .gr-filter{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
-    .gr-fchip{ font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:999px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; }
+    /* ── queue controls: search + filter chips ── */
+    .gr-seek{ position:relative; margin-bottom:10px; }
+    .gr-seek input{ width:100%; background:rgba(255,255,255,.04); border:1px solid var(--au-line); border-radius:12px; color:var(--au-ivory); font-family:var(--au-sans); font-size:13.5px; padding:10px 32px 10px 32px; outline:none; -webkit-appearance:none; }
+    .gr-seek input:focus{ border-color:rgba(var(--gr),.45); }
+    .gr-seek input::placeholder{ color:var(--au-faint); }
+    .gr-seek .mag{ position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--au-faint); pointer-events:none; }
+    .gr-seek .clr{ position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--au-faint); font-size:14px; cursor:pointer; padding:4px 6px; }
+
+    .gr-filter{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px; }
+    .gr-filter:last-of-type{ margin-bottom:13px; }
+    .gr-fchip{ font-size:11.5px; font-weight:600; padding:5.5px 11px; border-radius:999px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); white-space:nowrap; transition:background .15s,border-color .15s,color .15s; }
+    .gr-fchip .n{ font-family:var(--au-mono); font-size:9.5px; opacity:.6; margin-left:4px; }
     .gr-fchip.on{ background:rgba(var(--gr),.16); border-color:rgba(var(--gr),.5); color:#fff; }
+    .gr-fchip.on .n{ opacity:.8; }
+    .gr-fchip:active{ transform:scale(.97); }
+    .gr-prog{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(var(--gr),.85); white-space:nowrap; }
 
     .gr-row{ display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--au-line); }
     .gr-row:last-child{ border-bottom:none; }
@@ -115,7 +127,23 @@
     .gr-va.on{ background:rgba(var(--gr),.14); color:#fff; border-color:rgba(var(--gr),.4); }
     .gr-va.del{ color:#FF8FA3; border-color:rgba(255,143,163,.22); margin-left:auto; }
     .gr-va:active{ transform:scale(.96); }
-    .gr-kp{ margin-top:10px; padding:11px 12px; background:rgba(var(--gr),.06); border:1px solid rgba(var(--gr),.18); border-radius:11px; font-size:12.5px; line-height:1.55; color:var(--au-ivory); white-space:pre-wrap; }
+
+    /* ── the key points, living on the card itself ── */
+    .gr-core{ margin-top:8px; font-family:var(--au-serif); font-style:italic; font-size:14px; line-height:1.42; color:rgba(var(--gr),.94); letter-spacing:-.005em; }
+    .gr-vid.done .gr-core{ color:rgba(var(--gr),.6); }
+    .gr-core.pend{ font-family:var(--au-mono); font-style:normal; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); animation:grPulse 1.9s ease-in-out infinite; }
+    .gr-core.miss{ font-family:var(--au-mono); font-style:normal; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--au-faint); cursor:pointer; }
+    @keyframes grPulse{ 0%,100%{ opacity:.45; } 50%{ opacity:.95; } }
+    @media (prefers-reduced-motion:reduce){ .gr-core.pend{ animation:none; opacity:.7; } }
+
+    .gr-kpwrap{ margin-top:10px; padding:11px 13px; background:rgba(var(--gr),.055); border:1px solid rgba(var(--gr),.16); border-radius:12px; }
+    .gr-keys{ list-style:none; display:flex; flex-direction:column; gap:7px; }
+    .gr-keys li{ position:relative; padding-left:14px; font-size:12.5px; line-height:1.5; color:var(--au-ivory); }
+    .gr-keys li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:50%; background:rgba(var(--gr),.75); }
+    .gr-do{ margin-top:10px; padding-top:9px; border-top:1px solid rgba(var(--gr),.14); font-size:12.5px; line-height:1.5; color:var(--au-dim); }
+    .gr-do b{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--gr),.9); display:block; margin-bottom:4px; }
+    .gr-tiny{ margin-top:11px; background:none; border:none; padding:0; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); cursor:pointer; }
+    .gr-tiny:active{ color:rgba(var(--gr),.9); }
 
     /* ── remember card ── */
     .gr-remember{ background:linear-gradient(135deg, rgba(var(--gr),.14), rgba(var(--gr),.03)); border:1px solid rgba(var(--gr),.3); }
@@ -147,16 +175,6 @@
     .gr-herobg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,5,6,.6) 0%, rgba(5,5,6,.82) 56%, var(--au-void,#050506) 100%); }
     .gr-herobg.on{ opacity:.5; }
     .gr-hero, .gr-snap, .gr-mo, .gr-connect{ position:relative; z-index:1; }
-
-    /* ── concept sections ── */
-    .gr-concept{ display:flex; align-items:baseline; gap:10px; margin:20px 0 6px; }
-    .gr-concept:first-child{ margin-top:2px; }
-    .gr-concept .cn{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); letter-spacing:-.01em; }
-    .gr-concept .cc{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; color:var(--au-faint); }
-    .gr-concept .cl{ flex:1; height:1px; background:var(--au-line); align-self:center; }
-    .gr-organize{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(var(--gr),.95); background:rgba(var(--gr),.1); border:1px solid rgba(var(--gr),.3); border-radius:8px; padding:6px 10px; cursor:pointer; }
-    .gr-organize:active{ transform:scale(.96); }
-    .gr-organize.spin{ opacity:.55; pointer-events:none; }
 
     /* ── collapse manual add ── */
     .gr-addtoggle{ width:100%; text-align:left; background:none; border:none; color:var(--au-dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:8px; }
@@ -234,8 +252,14 @@
 
     <!-- Queue -->
     <section class="gr-card hidden" id="queueCard">
-      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span><button type="button" class="gr-organize" id="orgBtn">✦ Organize</button></div>
-      <div class="gr-filter" id="vFilter" style="display:none"></div>
+      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span><span class="gr-prog" id="kpProg"></span></div>
+      <div class="gr-seek" id="seekWrap">
+        <span class="mag" aria-hidden="true">⌕</span>
+        <input id="vSeek" type="search" placeholder="Search titles, channels, key points…" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Search your queue">
+        <button type="button" class="clr hidden" id="vSeekClr" aria-label="Clear search">✕</button>
+      </div>
+      <div class="gr-filter" id="fState"></div>
+      <div class="gr-filter" id="fTopic"></div>
       <div id="queueBody"></div>
     </section>
 
@@ -256,14 +280,14 @@
   <div class="gr-foot">Mark videos watched as you go. When a habit sticks, track it for real in <a href="identity.html" style="color:rgba(var(--gr),.85)">Identity</a>. Everything syncs across devices.</div>
 
   <dialog class="gr-dlg" id="distillDlg"><div class="gr-sheet">
-    <div class="gr-sheet-t" id="dsTitle">Distill</div>
-    <div class="gr-sheet-s">Nova pulls the key points from the video automatically. Want them sharper? Add your own notes below (or paste the transcript) and Re-distill.</div>
-    <textarea id="dsText" placeholder="Optional — add your own notes to sharpen the key points…"></textarea>
+    <div class="gr-sheet-t" id="dsTitle">Sharpen</div>
+    <div class="gr-sheet-s">Nova already read this one. Add what <em>you</em> took from it — a line, a quote, anything — and she'll rewrite the key points around it.</div>
+    <textarea id="dsText" placeholder="What stayed with you from this video…"></textarea>
     <div class="result hidden" id="dsResult"></div>
     <div class="gr-sheet-btns">
       <button type="button" class="gr-sb ghost" id="dsCancel">Close</button>
-      <span class="gr-spin hidden" id="dsSpin">Distilling…</span>
-      <button type="button" class="gr-sb prime" id="dsGo">Distill</button>
+      <span class="gr-spin hidden" id="dsSpin">Rewriting…</span>
+      <button type="button" class="gr-sb prime" id="dsGo">Rewrite</button>
     </div>
   </div></dialog>
   <dialog class="gr-dlg" id="watchDlg"><div class="gr-watchbox">
@@ -301,14 +325,51 @@
     }
     function normUrl(url){ if(!url) return ''; var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
 
-    var videos=loadArr(K_VID), habits=loadArr(K_HAB), filter='all';
+    var videos=loadArr(K_VID), habits=loadArr(K_HAB);
+    var fState='todo', fTopic='', seek='', openKp={};
+
+    /* Queue position lives in `ord`, never in `ts` — `ts` is the sync clock and
+       every distill bumps it, which would reshuffle the list under him. */
+    function migrateOrd(){
+      var miss=videos.filter(function(v){ return typeof v.ord!=='number'; });
+      if(!miss.length) return;
+      var base=videos.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>m?v.ord:m; },-1);
+      miss.sort(function(a,b){ return (a.ts||0)-(b.ts||0); }).forEach(function(v){ v.ord=++base; });
+      persist(K_VID,videos);
+    }
+    migrateOrd();
+    function nextOrd(){ return videos.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>=m?v.ord+1:m; },0); }
+    function byOrd(a,b){ var x=typeof a.ord==='number'?a.ord:1e9, y=typeof b.ord==='number'?b.ord:1e9; return x!==y?x-y:(a.ts||0)-(b.ts||0); }
+
+    /* Nova answers in plain text (TOPIC / CORE / KEY / DO) rather than JSON,
+       because JSON is what shattered on long replies. Parse it forgivingly:
+       a missing header or a stray bullet style must never cost him the notes. */
+    function kpParse(raw){
+      var o={topic:'',core:'',keys:[],act:''};
+      String(raw||'').split(/\r?\n/).forEach(function(ln){
+        var s=ln.trim().replace(/\*\*/g,'').replace(/^#+\s*/,'').trim();
+        if(!s) return;
+        var m;
+        if((m=s.match(/^TOPIC\s*[:\-–—]\s*(.+)$/i))){ o.topic=m[1].replace(/["'`*_.]/g,'').trim().slice(0,40); return; }
+        if((m=s.match(/^CORE\s*[:\-–—]\s*(.+)$/i))){ o.core=m[1].trim(); return; }
+        if((m=s.match(/^(?:DO|TRY|ACTION)\s*[:\-–—]\s*(.+)$/i))){ o.act=m[1].trim(); return; }
+        // Longest label first — "KEY POINTS:" must not match as "KEY" + "POINTS:".
+        if((m=s.match(/^(?:KEY POINTS?|KEY TAKEAWAYS?|TAKEAWAYS?|KEY|POINTS)\s*[:\-–—]?\s*(.*)$/i))){ if(m[1].trim()) o.keys.push(m[1].trim()); return; }
+        if((m=s.match(/^[-•*–—▸]\s*(.+)$/))){ o.keys.push(m[1].trim()); return; }
+        if((m=s.match(/^\d+[.)]\s+(.+)$/))){ o.keys.push(m[1].trim()); return; }
+        if(!o.core&&!o.keys.length&&s.length>20) o.core=s;   // shape ignored — keep the words anyway
+      });
+      if(!o.core&&o.keys.length) o.core=o.keys.shift();
+      return o;
+    }
+    function conceptOf(v){ return v.concept||v.topic||''; }
 
     /* ── videos ───────────────────────────────────────── */
-    function topics(){ var t={}; videos.forEach(function(v){ if(v.topic) t[v.topic]=(t[v.topic]||0)+1; }); return Object.keys(t).sort(function(a,b){return t[b]-t[a];}); }
+    function topics(){ var t={}; videos.forEach(function(v){ var c=conceptOf(v); if(c) t[c]=(t[c]||0)+1; }); return Object.keys(t).sort(function(a,b){return t[b]-t[a];}); }
     function saveVideo(){
       var title=$('vTitle').value.trim(); if(!title){ vtoast('Add a title'); return; }
       var url=normUrl($('vUrl').value); var topic=$('vTopic').value.trim();
-      videos.push({ id:uid(), title:title, url:url, source:srcFromUrl(url), topic:topic, watched:false, note:'', ts:Date.now() });
+      videos.push({ id:uid(), title:title, url:url, source:srcFromUrl(url), topic:topic, watched:false, note:'', ord:nextOrd(), ts:Date.now() });
       persist(K_VID,videos); flush(); vtoast('Queued ✓');
       $('vTitle').value=''; $('vUrl').value=''; $('vTopic').value=''; render();
     }
@@ -344,7 +405,7 @@
         if(ex){ if(inc.title&&!ex.title) ex.title=inc.title; if(inc.thumb) ex.thumb=inc.thumb; if(inc.channel&&!ex.channel) ex.channel=inc.channel; return; } // keep watched + keypoints
         videos.push({ id:uid(), ytId:inc.videoId, title:inc.title||'(untitled)', channel:inc.channel||'',
           thumb:inc.thumb||('https://i.ytimg.com/vi/'+inc.videoId+'/hqdefault.jpg'),
-          url:'https://www.youtube.com/watch?v='+inc.videoId, source:'YouTube', topic:'', watched:false, ts:Date.now() });
+          url:'https://www.youtube.com/watch?v='+inc.videoId, source:'YouTube', topic:'', watched:false, ord:nextOrd(), ts:Date.now() });
         added++;
       });
       if(added){ persist(K_VID,videos); flush(); }
@@ -365,36 +426,86 @@
         else { var n=reconcileVideos(vids);
           plMsg(n?(n+' new video'+(n>1?'s':'')+' added'+(data.full?'':' · add YOUTUBE_API_KEY in Vercel for the full list')):('Up to date · '+vids.length+' in playlist'+(data.full?'':' (recent 15)'))); }
         render();
-        if(videos.some(function(v){return v.ytId&&!v.concept;})) setTimeout(function(){ organizeVideos(true); }, 250);
+        sweep();
       }catch(e){ plMsg('Sync failed: '+(e.message||'error')); }
       syncing=false; $('plSync').classList.remove('spin');
     }
 
-    /* distill — the user's notes / transcript → durable key points */
+    /* ── the reader ───────────────────────────────────────────────
+       No button. Every video that has no key points gets read in the
+       background, one at a time, and the notes land on its card. It survives
+       reloads because the result is persisted per video, and it survives the
+       free tier's rate limit by BACKING OFF instead of failing — that limit is
+       exactly what used to surface as "Nova's busy" and give up. */
+    var vById=function(id){ return videos.find(function(x){ return x.id===id; }); };
+    function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+    function kpProg(m){ var e=$('kpProg'); if(e) e.textContent=m||''; }
+    function applyKP(v,text){
+      v.keypoints=text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
+      var p=kpParse(text); if(p.topic) v.concept=p.topic;
+      persist(K_VID,videos); flush();
+    }
+    async function askDistill(v,notes){
+      try{
+        var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ text:notes||'', title:v.title, videoId:v.ytId||'' }) });
+        var d={}; try{ d=await r.json(); }catch(e){}
+        if(r.ok&&d.text) return { ok:true, text:d.text };
+        return { ok:false, rate: r.status===429 || (d&&d.error==='rate') };
+      }catch(e){ return { ok:false }; }
+    }
+
+    var sweeping=false;
+    function pendingKP(){ return videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; }); }
+    async function sweep(){
+      if(sweeping) return;
+      var pend=pendingKP(); if(!pend.length){ kpProg(''); fillConcepts(); return; }
+      sweeping=true;
+      var ids=pend.map(function(v){ return v.id; }), total=ids.length;
+      for(var i=0;i<ids.length;i++){
+        var v=vById(ids[i]); if(!v||v.keypoints) continue;
+        var got=null;
+        for(var att=0; att<3 && !got; att++){
+          kpProg('Reading '+(i+1)+'/'+total);
+          var res=await askDistill(v,v.notes);
+          if(res.ok){ got=res.text; break; }
+          if(res.rate){ kpProg('Waiting '+(i+1)+'/'+total); await wait(20000+att*15000); }
+          else await wait(2500);
+        }
+        v=vById(ids[i]); if(!v) continue;
+        if(got) applyKP(v,got);
+        else { v.kpFail=(v.kpFail||0)+1; persist(K_VID,videos); }
+        renderQueue();      // cards only — the counters above haven't moved
+        await wait(2200);   // pace: the free tier is capped per minute, not per day
+      }
+      sweeping=false; kpProg('');
+      render();
+      fillConcepts();
+    }
+
+    /* Sharpen — his own words, folded back into the key points. */
     var distillId=null;
-    function openDistill(id){ var v=videos.find(function(x){return x.id===id;}); if(!v) return; distillId=id;
-      $('dsTitle').textContent=v.title||'Distill'; $('dsText').value='';
-      var res=$('dsResult');
-      $('dsSpin').classList.add('hidden'); $('dsGo').removeAttribute('disabled');
-      if(v.keypoints){ res.classList.remove('hidden'); res.textContent=v.keypoints; $('dsGo').textContent='Re-distill'; showDlg('distillDlg'); }
-      else { res.classList.add('hidden'); res.textContent=''; $('dsGo').textContent='Distill'; showDlg('distillDlg'); runDistill(); } // auto: one tap → key points
+    function openDistill(id){ var v=vById(id); if(!v) return; distillId=id;
+      $('dsTitle').textContent=v.title||'Sharpen'; $('dsText').value=v.notes||'';
+      var res=$('dsResult'); res.classList.add('hidden'); res.textContent='';
+      $('dsSpin').classList.add('hidden'); $('dsGo').removeAttribute('disabled'); $('dsGo').textContent='Rewrite';
+      showDlg('distillDlg');
     }
     async function runDistill(){
-      var v=videos.find(function(x){return x.id===distillId;}); if(!v) return;
-      var text=$('dsText').value.trim(); // notes optional — server distills from the video's description
+      var v=vById(distillId); if(!v) return;
+      var text=$('dsText').value.trim();
       $('dsGo').setAttribute('disabled','1'); $('dsSpin').classList.remove('hidden');
-      var got=null;
-      for(var attempt=0; attempt<2 && !got; attempt++){
-        if(attempt) await new Promise(function(res){ setTimeout(res,1300); });
-        try{
-          var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text,title:v.title,videoId:v.ytId||''}) });
-          var data=await r.json();
-          if(r.ok&&data.text) got=data.text;
-        }catch(e){}
+      var got=null, rate=false;
+      for(var att=0; att<2 && !got; att++){
+        if(att) await wait(rate?12000:1500);
+        var res=await askDistill(v,text); rate=!!res.rate;
+        if(res.ok) got=res.text;
       }
-      if(got){ v.keypoints=got; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); persist(K_VID,videos); flush();
-        var res=$('dsResult'); res.classList.remove('hidden'); res.textContent=got; $('dsGo').textContent='Re-distill'; render(); }
-      else { var r2=$('dsResult'); r2.classList.remove('hidden'); r2.textContent='Nova’s busy for a second — tap Distill again.'; }
+      var out=$('dsResult'); out.classList.remove('hidden');
+      v=vById(distillId);
+      if(got&&v){ v.notes=text; applyKP(v,got); out.textContent=got; openKp[v.id]=true; render(); }
+      else out.textContent=rate ? 'Nova has hit her free-tier limit for the minute. Wait about half a minute and tap Rewrite again — your key points are already saved.'
+                                : 'Couldn’t reach Nova just now. Tap Rewrite again.';
       $('dsGo').removeAttribute('disabled'); $('dsSpin').classList.add('hidden');
     }
 
@@ -412,58 +523,116 @@
     /* one video card */
     var _playSvg='<span class="play"><svg viewBox="0 0 68 48"><path d="M66.5 7.7c-.8-2.9-3-5.1-5.9-5.9C55.3.5 34 .5 34 .5s-21.3 0-26.6 1.3C4.5 2.6 2.3 4.8 1.5 7.7.2 13 .2 24 .2 24s0 11 1.3 16.3c.8 2.9 3 5.1 5.9 5.9C12.7 47.5 34 47.5 34 47.5s21.3 0 26.6-1.3c2.9-.8 5.1-3 5.9-5.9C67.8 35 67.8 24 67.8 24s0-11-1.3-16.3z" fill="#f00"/><path d="M27 34l18-10-18-10z" fill="#fff"/></svg></span>';
     function videoCardHTML(v){
-      var kp=v.keypoints?'<div class="gr-kp">'+esc(v.keypoints)+'</div>':'';
-      var distillBtn='<button type="button" class="gr-va distil" data-distill="'+v.id+'">'+(v.keypoints?'✦ Notes':'✦ Distill')+'</button>';
+      var p=kpParse(v.keypoints||''), open=!!openKp[v.id];
+      var line;
+      if(p.core) line='<div class="gr-core">'+esc(p.core)+'</div>';
+      else if((v.kpFail||0)>=3) line='<div class="gr-core miss" data-retry="'+v.id+'">Couldn’t read this one · tap to retry</div>';
+      else if(v.ytId) line='<div class="gr-core pend">Nova is reading this…</div>';
+      else line='';
+
+      var body='';
+      if(open&&(p.keys.length||p.act)){
+        body='<div class="gr-kpwrap">'+
+          (p.keys.length?'<ul class="gr-keys">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'')+
+          (p.act?'<div class="gr-do"><b>Try this</b>'+esc(p.act)+'</div>':'')+
+          '<button type="button" class="gr-tiny" data-distill="'+v.id+'">✎ '+(v.notes?'Edit my notes':'Add my own notes')+'</button>'+
+        '</div>';
+      }
+      var expand=(p.keys.length||p.act)
+        ? '<button type="button" class="gr-va'+(open?' on':'')+'" data-x="'+v.id+'">'+(open?'Hide ▴':(p.keys.length+' key point'+(p.keys.length===1?'':'s')+' ▾'))+'</button>' : '';
+
       if(v.ytId){
         return '<div class="gr-vid'+(v.watched?' done':'')+'">'+
           '<div class="gr-thumb" data-watch="'+esc(v.ytId)+'"><img loading="lazy" src="'+esc(v.thumb||('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'))+'" alt="">'+_playSvg+'</div>'+
-          '<div class="gr-vid-main"><div class="gr-vid-title">'+esc(v.title)+'</div>'+(v.channel?'<div class="gr-vid-ch">'+esc(v.channel)+'</div>':'')+
+          '<div class="gr-vid-main"><div class="gr-vid-title">'+esc(v.title)+'</div>'+
+          (v.channel?'<div class="gr-vid-ch">'+esc(v.channel)+'</div>':'')+ line +
           '<div class="gr-vid-acts">'+
             '<button type="button" class="gr-va'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>'+
-            distillBtn+'<button type="button" class="gr-va del" data-dv="'+v.id+'">✕</button>'+
-          '</div>'+kp+'</div></div>';
+            expand+'<button type="button" class="gr-va del" data-dv="'+v.id+'">✕</button>'+
+          '</div>'+body+'</div></div>';
       }
       return '<div class="gr-row'+(v.watched?' done':'')+'">'+
         '<div class="gr-check'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'&#10003;':'')+'</div>'+
         '<div class="gr-row-main"><div class="gr-row-title">'+esc(v.title)+'</div>'+
-        ((v.source||v.topic)?'<div class="gr-row-meta">'+[esc(v.source),esc(v.topic)].filter(Boolean).join(' · ')+'</div>':'')+
-        '<div class="gr-vid-acts">'+distillBtn+'</div>'+kp+'</div>'+
+        ((v.source||conceptOf(v))?'<div class="gr-row-meta">'+[esc(v.source),esc(conceptOf(v))].filter(Boolean).join(' · ')+'</div>':'')+
+        (p.core?'<div class="gr-core">'+esc(p.core)+'</div>':'')+
+        '<div class="gr-vid-acts">'+(expand||'<button type="button" class="gr-va distil" data-distill="'+v.id+'">✦ Key points</button>')+'</div>'+body+'</div>'+
         '<div class="gr-mini">'+(v.url?'<a class="gr-mb open" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
         '<button type="button" class="gr-mb del" data-dv="'+v.id+'">✕</button></div></div>';
     }
 
-    /* organize — AI sorts videos into concepts */
-    var organizing=false;
-    async function organizeVideos(auto){
-      if(organizing) return;
-      var pool=videos.filter(function(v){return v.ytId;});
-      var need=auto ? pool.filter(function(v){return !v.concept;}) : pool;
-      if(!need.length){ if(!auto) plMsg('Everything is already organized'); return; }
-      organizing=true; var b=$('orgBtn'); if(b) b.classList.add('spin'); if(!auto) plMsg('Organizing by concept…');
-      var items=need.map(function(v){ return {videoId:v.ytId,title:v.title,channel:v.channel}; });
-      var map=null;
-      for(var attempt=0; attempt<2 && !map; attempt++){
-        if(attempt) await new Promise(function(res){ setTimeout(res,1300); });
-        try{
-          var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:items}) });
-          var data=await r.json();
-          if(r.ok&&data.concepts&&Object.keys(data.concepts).length) map=data.concepts;
-        }catch(e){}
-      }
-      organizing=false; if(b) b.classList.remove('spin');
-      if(!map){ if(!auto) plMsg('Nova’s busy — tap Organize again in a moment'); return; }
-      var changed=0;
-      videos.forEach(function(v){ if(v.ytId&&map[v.ytId]){ var c=String(map[v.ytId]).slice(0,40); if(v.concept!==c){ v.concept=c; changed++; } } });
-      if(changed){ persist(K_VID,videos); flush(); }
-      if(!auto) plMsg('Sorted into concepts ✓'); render();
+    /* Most videos get their topic free, from the TOPIC line of their own key
+       points. This only mops up the stragglers — and it is CHUNKED server-side,
+       because one 42-video request is what used to come back empty. */
+    var filling=false;
+    async function fillConcepts(){
+      if(filling) return;
+      var need=videos.filter(function(v){ return v.ytId&&!v.concept; });
+      if(!need.length) return;
+      var count={}; videos.forEach(function(v){ if(v.concept) count[v.concept]=(count[v.concept]||0)+1; });
+      var known=Object.keys(count).sort(function(a,b){ return count[b]-count[a]; }).slice(0,10);
+      filling=true; kpProg('Sorting');
+      try{
+        var items=need.slice(0,120).map(function(v){ return { videoId:v.ytId, title:v.title, channel:v.channel, core:kpParse(v.keypoints||'').core }; });
+        var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items:items, known:known }) });
+        var d={}; try{ d=await r.json(); }catch(e){}
+        if(r.ok&&d.concepts){
+          var ch=0;
+          videos.forEach(function(v){ if(v.ytId&&!v.concept&&d.concepts[v.ytId]){ v.concept=String(d.concepts[v.ytId]).slice(0,40); ch++; } });
+          if(ch){ persist(K_VID,videos); flush(); }
+        }
+      }catch(e){}
+      filling=false; kpProg(''); render();
     }
 
-    /* cinematic hero backdrop from the latest video */
+    /* cinematic hero backdrop — the one he'd watch next, so it stays put */
     function setHeroBg(){
       var el=$('grHeroBg'); if(!el) return;
-      var pick=videos.filter(function(v){return v.ytId||v.thumb;}).slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);})[0];
+      var pool=videos.filter(function(v){ return v.ytId||v.thumb; });
+      var pick=pool.filter(function(v){ return !v.watched; }).sort(byOrd)[0]||pool.slice().sort(byOrd)[0];
       if(pick){ el.style.backgroundImage='url('+(pick.thumb||('https://i.ytimg.com/vi/'+pick.ytId+'/hqdefault.jpg'))+')'; el.classList.add('on'); }
       else el.classList.remove('on');
+    }
+
+    /* ── the queue: search, then two rows of chips, then one flat list ──
+       42 videos stacked under AI headings was a wall. Narrowing beats
+       browsing: state first (what he actually wants is "to watch"), topic
+       second, and every count reflects what he's already narrowed to. */
+    function chipHTML(kind,val,label,n,on){
+      return '<button type="button" class="gr-fchip'+(on?' on':'')+'" data-'+(kind==='s'?'fs':'ft')+'="'+esc(val)+'">'+
+        esc(label)+(n!=null?'<span class="n">'+n+'</span>':'')+'</button>';
+    }
+    function renderQueue(){
+      var q=seek.trim().toLowerCase();
+      var pool=videos.filter(function(v){
+        if(!q) return true;
+        return (v.title+' '+(v.channel||'')+' '+conceptOf(v)+' '+(v.keypoints||'')).toLowerCase().indexOf(q)>=0;
+      });
+      var nTodo=pool.filter(function(v){ return !v.watched; }).length, nDone=pool.length-nTodo;
+      if(fState==='todo'&&!nTodo&&nDone) fState='all';        // don't strand him on an empty tab
+      if(fState==='done'&&!nDone) fState='all';
+      var scoped=pool.filter(function(v){ return fState==='all'?true:(fState==='done'?!!v.watched:!v.watched); });
+
+      var tc={}; scoped.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; tc[c]=(tc[c]||0)+1; });
+      var tks=Object.keys(tc).sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return tc[b]-tc[a]||a.localeCompare(b); });
+      if(fTopic&&tks.indexOf(fTopic)<0) fTopic='';
+
+      $('fState').innerHTML=chipHTML('s','todo','To watch',nTodo,fState==='todo')+
+        (nDone?chipHTML('s','done','Watched',nDone,fState==='done'):'')+
+        chipHTML('s','all','All',pool.length,fState==='all');
+
+      var showT=tks.length>1;
+      $('fTopic').innerHTML=showT
+        ? chipHTML('t','','Every topic',scoped.length,!fTopic)+tks.map(function(c){ return chipHTML('t',c,c,tc[c],fTopic===c); }).join('')
+        : '';
+      $('fTopic').style.display=showT?'flex':'none';
+      $('seekWrap').style.display=videos.length>6?'block':'none';
+      $('vSeekClr').classList.toggle('hidden',!seek);
+
+      var list=scoped.filter(function(v){ return !fTopic||(conceptOf(v)||'Unsorted')===fTopic; })
+        .sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return byOrd(a,b); });
+      $('queueBody').innerHTML=list.length ? list.map(videoCardHTML).join('')
+        : '<div class="gr-empty" style="padding:16px 6px">'+(q?'Nothing matches “'+esc(seek.trim())+'”.':'Nothing in this view.')+'</div>';
     }
 
     /* ── render ───────────────────────────────────────── */
@@ -491,17 +660,21 @@
 
       // remember — resurface a distilled video's key points
       var rem=dueRemember();
-      if(rem){ $('rememberCard').classList.remove('hidden'); $('rmTitle').textContent=rem.title; $('rmKp').textContent=rem.keypoints; $('rememberCard').setAttribute('data-id',rem.id); }
+      if(rem){ $('rememberCard').classList.remove('hidden'); $('rmTitle').textContent=rem.title;
+        var rp=kpParse(rem.keypoints);
+        $('rmKp').innerHTML=(rp.core?'<div class="gr-core" style="margin-top:0">'+esc(rp.core)+'</div>':'')+
+          (rp.keys.length?'<ul class="gr-keys" style="margin-top:9px">'+rp.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'');
+        $('rememberCard').setAttribute('data-id',rem.id); }
       else $('rememberCard').classList.add('hidden');
 
       // focus
-      var nextV=unwatched.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
+      var nextV=unwatched.slice().sort(byOrd)[0];
       var nextH=building.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
       if(nextV||nextH){
         $('focusCard').classList.remove('hidden');
         if(nextV){
           $('focusBig').textContent=nextV.title;
-          $('focusSub').textContent=[nextV.source,nextV.topic].filter(Boolean).join(' · ')||'In your queue';
+          $('focusSub').textContent=[nextV.channel||nextV.source,conceptOf(nextV)].filter(Boolean).join(' · ')||'In your queue';
           if(nextV.url){ $('focusLink').style.display='inline-block'; $('focusLink').href=nextV.url; $('focusLink').textContent='Watch now →'; }
           else $('focusLink').style.display='none';
         } else {
@@ -511,18 +684,10 @@
         }
       } else $('focusCard').classList.add('hidden');
 
-      // queue — grouped by concept
+      // queue — one flat list, narrowed by search + two rows of chips
       if(videos.length){
         $('queueCard').classList.remove('hidden');
-        var groups={}, order=[];
-        videos.forEach(function(v){ var c=v.concept||'Unsorted'; if(!groups[c]){ groups[c]=[]; order.push(c); } groups[c].push(v); });
-        var multi=order.length>1||(order.length===1&&order[0]!=='Unsorted');
-        order.sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return groups[b].length-groups[a].length; });
-        $('queueBody').innerHTML=order.map(function(c){
-          var vids=groups[c].slice().sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return (a.ts||0)-(b.ts||0); });
-          var head = multi ? '<div class="gr-concept"><span class="cn">'+esc(c)+'</span><span class="cc">'+vids.length+'</span><span class="cl"></span></div>' : '';
-          return head+vids.map(videoCardHTML).join('');
-        }).join('');
+        renderQueue();
       } else $('queueCard').classList.add('hidden');
 
       // habits
@@ -544,15 +709,23 @@
     /* ── wiring ───────────────────────────────────────── */
     $('vSave').addEventListener('click',saveVideo);
     $('hSave').addEventListener('click',saveHabit);
-    $('vFilter').addEventListener('click',function(e){ var c=e.target.closest('[data-f]'); if(!c) return; filter=c.getAttribute('data-f'); render(); });
-    $('queueBody').addEventListener('click',function(e){ var w=e.target.closest('[data-w]'), d=e.target.closest('[data-dv]'); if(w) toggleWatched(w.getAttribute('data-w')); else if(d) delVideo(d.getAttribute('data-dv')); });
+    $('fState').addEventListener('click',function(e){ var c=e.target.closest('[data-fs]'); if(!c) return; fState=c.getAttribute('data-fs'); renderQueue(); });
+    $('fTopic').addEventListener('click',function(e){ var c=e.target.closest('[data-ft]'); if(!c) return; fTopic=c.getAttribute('data-ft'); renderQueue(); });
+    $('vSeek').addEventListener('input',function(){ seek=this.value; renderQueue(); });
+    $('vSeekClr').addEventListener('click',function(){ seek=''; $('vSeek').value=''; renderQueue(); $('vSeek').focus(); });
     $('habitBody').addEventListener('click',function(e){ var a=e.target.closest('[data-ha]'), d=e.target.closest('[data-dh]'); if(a) toggleAdopted(a.getAttribute('data-ha')); else if(d) delHabit(d.getAttribute('data-dh')); });
     // new: playlist sync, inline watch, distill, remember
     $('plSync').addEventListener('click',syncPlaylist);
     $('plInput').addEventListener('keydown',function(e){ if(e.key==='Enter') syncPlaylist(); });
     $('queueBody').addEventListener('click',function(e){
-      var wt=e.target.closest('[data-watch]'); if(wt){ openWatch(wt.getAttribute('data-watch')); return; }
+      var x=e.target.closest('[data-x]');
+      if(x){ var xid=x.getAttribute('data-x'); if(openKp[xid]) delete openKp[xid]; else openKp[xid]=true; renderQueue(); return; }
+      var rt=e.target.closest('[data-retry]');
+      if(rt){ var rv=vById(rt.getAttribute('data-retry')); if(rv){ rv.kpFail=0; persist(K_VID,videos); renderQueue(); sweep(); } return; }
       var ds=e.target.closest('[data-distill]'); if(ds){ openDistill(ds.getAttribute('data-distill')); return; }
+      var wt=e.target.closest('[data-watch]'); if(wt){ openWatch(wt.getAttribute('data-watch')); return; }
+      var w=e.target.closest('[data-w]'); if(w){ toggleWatched(w.getAttribute('data-w')); return; }
+      var d=e.target.closest('[data-dv]'); if(d){ delVideo(d.getAttribute('data-dv')); return; }
     });
     $('dsGo').addEventListener('click',runDistill);
     $('dsCancel').addEventListener('click',function(){ closeDlg('distillDlg'); });
@@ -561,17 +734,19 @@
     $('watchDlg').addEventListener('click',function(e){ if(e.target===this) closeWatch(); });
     $('rmGot').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v){ v.revisitTs=Date.now(); persist(K_VID,videos); flush(); render(); } });
     $('rmOpen').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v&&v.ytId) openWatch(v.ytId); });
-    $('orgBtn').addEventListener('click',function(){ organizeVideos(false); });
     $('addToggle').addEventListener('click',function(){ var f=$('addForm'); var open=f.classList.toggle('hidden')===false; this.classList.toggle('open',open); });
     if(profile.playlist) $('plInput').value='https://www.youtube.com/playlist?list='+profile.playlist;
 
     render();
+    // Give cloud sync a moment to land first — otherwise a fresh device would
+    // spend its rate limit re-reading videos whose notes are already saved.
+    setTimeout(function(){ sweep(); }, 2500);
 
-    document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); sweep(); } });
     window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_HAB) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_HAB,K_PROF], onApplied:function(){ render(); } });
+        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_HAB,K_PROF], onApplied:function(){ render(); sweep(); } });
       })();
     });
     window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, topics:topics, _set:function(v,h){ videos=v; habits=h; } };

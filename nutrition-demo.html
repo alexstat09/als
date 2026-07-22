@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Nutrition — composition demo</title>
+  <meta name="theme-color" content="#050507">
+  <link rel="stylesheet" href="aurora.css">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    :root{ --nu:63,224,176; }
+    html,body{min-height:100%;}
+    body{ background:#050507; color:var(--au-ivory,#F4F1EA); font-family:var(--au-sans,-apple-system,system-ui,sans-serif); padding:0 0 60px; }
+
+    /* demo banner */
+    .demo-tag{max-width:620px;margin:10px auto 0;padding:8px 18px;font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(var(--nu),.8);}
+
+    /* ── header ─────────────────────────────────────────── */
+    .nuh{max-width:620px;margin:0 auto;padding:16px 18px 6px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+    .nuh-eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-bottom:11px;}
+    .nuh-line{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:clamp(24px,6.4vw,32px);line-height:1.06;color:var(--au-ivory,#F4F1EA);letter-spacing:-.01em;}
+    .nuh-line b{font-style:normal;color:rgb(var(--nu));font-weight:400;}
+    .nuh .nova{width:66px;height:66px;flex:none;margin-top:2px;}
+    .nu-streak{display:inline-flex;align-items:center;gap:3px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:800;color:#F2C063;background:rgba(242,192,99,.14);border:1px solid rgba(242,192,99,.32);border-radius:8px;padding:2px 7px;}
+
+    .wrap{max-width:620px;margin:0 auto;padding:8px 16px;display:flex;flex-direction:column;gap:14px;}
+
+    .datenav{display:flex;align-items:center;justify-content:center;gap:14px;padding:2px 0 2px;}
+    .datenav button{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#F4F1EA;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;}
+    .datenav-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:12px;font-weight:700;letter-spacing:.05em;color:#F4F1EA;min-width:140px;text-align:center;text-transform:uppercase;}
+
+    /* ── card tiers ─────────────────────────────────────────
+       This is the whole point of the demo: three visual weights.
+       hero → working → quiet, so the eye has a path.            */
+    .card{position:relative;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.08);border-radius:18px;backdrop-filter:blur(14px);overflow:hidden;}
+    .card::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--nu),.5),transparent);pointer-events:none;}
+
+    /* TIER 1 — hero. Brighter, lifted, owns the screen. */
+    .tier-hero{border-color:rgba(var(--nu),.22);box-shadow:0 18px 50px rgba(0,0,0,.4),0 0 42px rgba(var(--nu),.07);background:linear-gradient(180deg,rgba(var(--nu),.05),rgba(255,255,255,.02));}
+    .tier-hero::before{opacity:1;left:0;right:0;background:linear-gradient(90deg,transparent,rgba(var(--nu),.7),transparent);}
+
+    /* TIER 3 — quiet. Recedes. No bright hairline, dimmer, flatter. */
+    .tier-quiet{background:rgba(255,255,255,.016);border-color:rgba(255,255,255,.055);}
+    .tier-quiet::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);}
+
+    /* shared eyebrow */
+    .nu-eb{display:flex;align-items:center;gap:8px;margin-bottom:13px;}
+    .nu-eb-d{width:6px;height:6px;border-radius:50%;background:rgb(var(--nu));box-shadow:0 0 8px rgba(var(--nu),.7);flex:none;}
+    .nu-eb-l{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,241,234,.55);}
+    .nu-eb-n{margin-left:auto;font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;color:rgba(244,241,234,.38);text-transform:uppercase;letter-spacing:.08em;}
+    .tier-quiet .nu-eb-d{background:rgba(244,241,234,.4);box-shadow:none;}
+    .tier-quiet .nu-eb-l{color:rgba(244,241,234,.42);}
+
+    /* ── Today (hero) ─────────────────────────────────────── */
+    .sum{padding:20px 18px;}
+    .sum-top{display:flex;align-items:center;gap:20px;}
+    .sum-ring{position:relative;width:132px;height:132px;flex:none;}
+    .sum-ring svg{transform:rotate(-90deg);}
+    .sum-ring-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .sum-kcal{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:38px;font-weight:400;color:#F5F2EC;line-height:1;letter-spacing:-.015em;}
+    .sum-kcal-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:5px;}
+    .sum-rem{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.04em;margin-top:6px;color:rgb(var(--nu));}
+    .sum-macros{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;}
+    .mac-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;letter-spacing:.04em;}
+    .mac-name{font-weight:700;text-transform:uppercase;color:rgba(244,241,234,.6);}
+    .mac-val{color:rgba(244,241,234,.85);}
+    .mac-track{height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;}
+    .mac-fill{height:100%;border-radius:4px;}
+    .mac.p .mac-fill{background:#34E2B0;} .mac.c .mac-fill{background:#F2C063;} .mac.f .mac-fill{background:#9B8CFF;}
+    .micros{display:flex;gap:8px;margin-top:18px;}
+    .micro{flex:1;text-align:center;background:rgba(255,255,255,.03);border-radius:11px;padding:10px 4px;}
+    .micro-v{font-family:var(--au-mono,ui-monospace,monospace);font-size:14px;font-weight:700;color:#F4F1EA;}
+    .micro-l{font-family:var(--au-mono,ui-monospace,monospace);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:3px;}
+
+    /* ── Diary (working surface) ──────────────────────────── */
+    .meal{padding:0 0 4px;}
+    .meal-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 9px;}
+    .meal-name{font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:19px;color:#F4F1EA;}
+    .meal-kcal{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;font-weight:700;color:rgba(244,241,234,.5);}
+    .meal-hdr-r{display:flex;align-items:center;gap:12px;}
+    .meal-add{background:rgba(var(--nu),.12);border:1px solid rgba(var(--nu),.32);color:rgb(var(--nu));width:30px;height:30px;border-radius:50%;font-size:19px;line-height:1;cursor:pointer;flex:none;}
+    .icon-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(244,241,234,.6);width:30px;height:30px;border-radius:50%;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;}
+    .icon-btn svg{width:15px;height:15px;}
+    .entry{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.05);}
+    .entry-main{flex:1;min-width:0;}
+    .entry-name{font-size:13.5px;font-weight:600;color:#F4F1EA;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .entry-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;color:rgba(244,241,234,.42);margin-top:2px;}
+    .entry-kcal{font-family:var(--au-mono,ui-monospace,monospace);font-size:13px;font-weight:700;color:rgba(244,241,234,.8);flex:none;}
+    .meal-empty{padding:6px 14px 12px;font-family:var(--au-serif,Georgia,serif);font-style:italic;font-size:13px;color:rgba(244,241,234,.32);}
+
+    /* ── Energy (mid) ─────────────────────────────────────── */
+    .en-row{display:flex;gap:14px;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;}
+    .en-val{font-size:22px;font-weight:800;color:#F4F1EA;font-family:var(--au-mono,ui-monospace,monospace);line-height:1;}
+    .en-lbl{font-size:10px;color:rgba(244,241,234,.45);margin-top:4px;}
+    .goal-seg-wrap{display:flex;gap:7px;}
+    .goal-seg{flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#F4F1EA;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;}
+    .goal-seg.on{border-color:rgb(var(--nu));background:rgba(52,226,176,.18);}
+    .en-rate{margin-top:11px;font-size:12px;color:rgba(244,241,234,.62);text-align:center;}
+
+    /* ── Merged analytics (quiet) ─────────────────────────── */
+    .an-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,241,234,.4);margin:2px 2px 9px;}
+    .an-stats{display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:13px;margin-top:14px;}
+    .an-stat{flex:1;text-align:center;}
+    .an-stat-v{font-family:var(--au-mono,ui-monospace,monospace);font-size:17px;font-weight:800;color:#F4F1EA;}
+    .an-stat-l{font-family:var(--au-mono,ui-monospace,monospace);font-size:7.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,241,234,.4);margin-top:3px;}
+
+    /* ── tools (line icons) ───────────────────────────────── */
+    .nu-tools{display:flex;gap:10px;margin-top:2px;}
+    .nu-tool{flex:1;display:flex;align-items:center;gap:11px;text-decoration:none;padding:13px 14px;border-radius:14px;border:1px solid rgba(var(--nu),.24);background:linear-gradient(135deg,rgba(var(--nu),.10),rgba(var(--nu),.02));}
+    .nu-tool-ic{flex:none;color:rgb(var(--nu));display:flex;}
+    .nu-tool-ic svg{width:20px;height:20px;}
+    .nu-tool-t{display:block;font-weight:700;color:#F4F1EA;font-size:13px;line-height:1.2;}
+    .nu-tool-s{display:block;font-size:10.5px;color:rgba(244,241,234,.5);margin-top:2px;}
+  </style>
+</head>
+<body id="root" class="au-mood-calm">
+
+  <div class="demo-tag">● Composition demo · not live · sample data</div>
+
+  <header class="nuh">
+    <div>
+      <div class="nuh-eyebrow">&#9673; Nutrition <span class="nu-streak"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 3s5.5 4.2 5.5 9.2A5.5 5.5 0 0 1 12 17.5 5.5 5.5 0 0 1 6.5 12.2C6.5 9 9 6.5 12 3z"/></svg> 791</span></div>
+      <!-- LIVE HERO: data-driven, doubles as the coach's one line -->
+      <div class="nuh-line" id="hero">Fuel the work.</div>
+    </div>
+    <div class="nova" id="nova" data-nova aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="nuNova" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#34E2B0"/><stop offset="55%" stop-color="#22CBC6"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient><radialGradient id="nuNovaF" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="#34E2B0" stop-opacity=".16"/><stop offset="100%" stop-color="#34E2B0" stop-opacity="0"/></radialGradient><clipPath id="nuNovaC"><circle cx="50" cy="50" r="40"/></clipPath></defs><g class="nova-glow"><circle cx="50" cy="50" r="40" fill="url(#nuNovaF)"/><circle class="nova-ring" cx="50" cy="50" r="40" fill="none" stroke="url(#nuNova)" stroke-width="2.2" opacity=".55"/><g clip-path="url(#nuNovaC)"><path class="nova-track" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#nuNova)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".2"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#nuNova)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="#EAFFF7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></g><g class="nova-node"><circle cx="48.8" cy="25" r="4.4" fill="#EAFFF7"/></g></g></svg></div>
+  </header>
+
+  <div class="wrap">
+    <div class="datenav">
+      <button type="button" aria-label="Previous day">&#8249;</button>
+      <div class="datenav-lbl">Today</div>
+      <button type="button" aria-label="Next day">&#8250;</button>
+    </div>
+
+    <!-- ═══ TIER 1 — HERO ═══ -->
+    <div class="card sum tier-hero" id="sumCard"></div>
+
+    <!-- ═══ TIER 2 — WORKING SURFACE (diary) ═══ -->
+    <div id="diary"></div>
+
+    <!-- ═══ mid — energy/targets ═══ -->
+    <div class="card" style="padding:16px" id="energyCard"></div>
+
+    <!-- ═══ TIER 3 — QUIET analytics (Trends + Consistency merged) ═══ -->
+    <div class="card tier-quiet" style="padding:16px" id="analyticsCard"></div>
+
+    <div class="nu-tools">
+      <a href="#" class="nu-tool"><span class="nu-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 12.3a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.3L21 8H6.2"/><circle cx="9.5" cy="20.5" r="1.2"/><circle cx="17.5" cy="20.5" r="1.2"/></svg></span><span style="flex:1;min-width:0"><span class="nu-tool-t">Meal Planner</span><span class="nu-tool-s">Plan &amp; shopping list</span></span></a>
+      <a href="#" class="nu-tool"><span class="nu-tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span style="flex:1;min-width:0"><span class="nu-tool-t">Import</span><span class="nu-tool-s">From MyFitnessPal</span></span></a>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+    function r0(n){ return Math.round(n||0); }
+    function fmtK(n){ n=Math.round(n||0); try{ return n.toLocaleString('en-US'); }catch(e){ return String(n); } }
+    function esc(s){ return String(s==null?'':s); }
+
+    // ── sample day ──────────────────────────────────────────
+    var tg = { kcal:2350, p:190, c:235, f:70 };
+    var t  = { kcal:1310, p:128, c:118, f:41, fiber:22, sugar:44, satfat:9, sodium:1680 };
+    var meals = [
+      { name:'Breakfast', items:[
+        {name:'Greek yogurt bowl, blueberries & honey', grams:430, p:38, c:52, f:12, kcal:470},
+        {name:'Ελληνικός καφές', grams:60, p:0, c:1, f:0, kcal:5} ] },
+      { name:'Lunch', items:[
+        {name:'Grilled chicken w/ basmati rice', grams:360, p:58, c:60, f:11, kcal:585},
+        {name:'Green beans, lemon', grams:110, p:2, c:8, f:0, kcal:35} ] },
+      { name:'Dinner', items:[] },
+      { name:'Snacks', items:[
+        {name:'ION dark chocolate 72%, almonds', grams:20, p:2, c:8, f:9, kcal:120},
+        {name:'Brazil nuts', grams:15, p:2, c:2, f:10, kcal:100} ] }
+    ];
+    var week = [1980, 2310, 2405, 1760, 2260, 2380, 1310]; // last 7 days kcal, today last
+    var streak=791, best=120, logged30=28, onTarget30=22;
+
+    // ── LIVE HERO — the single most useful line, computed ────
+    // (in the real page this is derived from live totals; it also
+    //  absorbs the old Coach card's one-line "next action")
+    function heroLine(){
+      var remK = tg.kcal - t.kcal, remP = tg.p - t.p;
+      if(remP > 40)  return 'Still <b>'+r0(remP)+'g protein</b> to go today.';
+      if(remK > 250) return '<b>'+fmtK(remK)+'</b> calories left — room for a real dinner.';
+      if(remK < -100) return '<b>'+fmtK(-remK)+'</b> over. Ease up tomorrow.';
+      return 'Dialed in. <b>'+r0(remP)+'g</b> protein to close it out.';
+    }
+    document.getElementById('hero').innerHTML = heroLine();
+
+    // ── Today (hero ring) ────────────────────────────────────
+    (function(){
+      var pct=Math.max(0,Math.min(1,t.kcal/tg.kcal)), R=58, C=2*Math.PI*R, off=C-pct*C;
+      var col = t.kcal>tg.kcal*1.08 ? '#FF6B8B' : 'rgb(var(--nu))';
+      var rem = r0(tg.kcal - t.kcal);
+      function bar(cls,name,v,tar){ var p=tar?Math.min(1,v/tar):0;
+        return '<div class="mac '+cls+'"><div class="mac-top"><span class="mac-name">'+name+'</span><span class="mac-val">'+r0(v)+' / '+tar+'g</span></div><div class="mac-track"><div class="mac-fill" style="width:'+(p*100).toFixed(0)+'%"></div></div></div>'; }
+      function micro(v,l,u){ return '<div class="micro"><div class="micro-v">'+r0(v)+(u||'')+'</div><div class="micro-l">'+l+'</div></div>'; }
+      document.getElementById('sumCard').innerHTML =
+        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Today</span><span class="nu-eb-n">Fri 19 Jul</span></div>'+
+        '<div class="sum-top"><div class="sum-ring"><svg width="132" height="132" viewBox="0 0 132 132">'+
+          '<circle cx="66" cy="66" r="'+R+'" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="9"/>'+
+          '<circle cx="66" cy="66" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
+        '</svg><div class="sum-ring-in"><div class="sum-kcal">'+fmtK(t.kcal)+'</div><div class="sum-kcal-lbl">/ '+tg.kcal+' kcal</div><div class="sum-rem">'+fmtK(rem)+' left</div></div></div>'+
+        '<div class="sum-macros">'+bar('p','Protein',t.p,tg.p)+bar('c','Carbs',t.c,tg.c)+bar('f','Fat',t.f,tg.f)+'</div></div>'+
+        '<div class="micros">'+micro(t.fiber,'Fiber','g')+micro(t.sugar,'Sugar','g')+micro(t.satfat,'Sat Fat','g')+micro(t.sodium,'Sodium','mg')+'</div>';
+    })();
+
+    // ── Diary ────────────────────────────────────────────────
+    (function(){
+      var editSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20H5a1 1 0 0 1-1-1v-3L15 5l4 4L8 20z"/><path d="M13.5 6.5 17.5 10.5"/></svg>';
+      var copySvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+      var html='';
+      meals.forEach(function(m){
+        var kc=m.items.reduce(function(s,e){return s+(e.kcal||0);},0);
+        html+='<div class="card meal"><div class="meal-hdr"><div class="meal-name">'+m.name+'</div><div class="meal-hdr-r"><span class="meal-kcal">'+r0(kc)+' kcal</span><button class="icon-btn" aria-label="Copy">'+copySvg+'</button><button class="meal-add">+</button></div></div>';
+        if(!m.items.length) html+='<div class="meal-empty">Nothing yet — tap + to log.</div>';
+        m.items.forEach(function(e){
+          html+='<div class="entry"><div class="entry-main"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-sub">'+r0(e.grams)+'g · '+r0(e.p)+'P '+r0(e.c)+'C '+r0(e.f)+'F</div></div><span class="entry-kcal">'+r0(e.kcal)+'</span></div>';
+        });
+        html+='</div>';
+      });
+      document.getElementById('diary').innerHTML=html;
+    })();
+
+    // ── Energy ───────────────────────────────────────────────
+    document.getElementById('energyCard').innerHTML =
+      '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Energy</span><span class="nu-eb-n" style="text-transform:none">✎ edit</span></div>'+
+      '<div class="en-row"><div><div class="en-val">2,350</div><div class="en-lbl">maintenance</div></div>'+
+      '<div style="margin-left:auto;text-align:right"><div class="en-val" style="color:rgb(var(--nu))">2,350</div><div class="en-lbl">target / day</div></div></div>'+
+      '<div class="goal-seg-wrap"><button class="goal-seg">Cut</button><button class="goal-seg on">Maintain</button><button class="goal-seg">Bulk</button></div>'+
+      '<div class="en-rate">Maintain · holding your weight</div>';
+
+    // ── Merged analytics: Trends + Consistency, quiet tier ───
+    (function(){
+      var maxK = Math.max(tg.kcal, Math.max.apply(null, week)) || 1;
+      var dn = ['S','M','T','W','T','F','S'];
+      var today = new Date();
+      var bars='';
+      for(var i=0;i<7;i++){
+        var k=week[i], hPct=Math.round(k/maxK*100);
+        var on = Math.abs(k/tg.kcal-1)<=0.1, over=k>tg.kcal*1.1;
+        var col = k===0?'rgba(255,255,255,.08)':(on?'rgb(var(--nu))':(over?'#FF6B8B':'rgba(155,140,255,.7)'));
+        var d = new Date(today.getTime() - (6-i)*86400000);
+        bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end"><div style="width:100%;max-width:26px;height:'+Math.max(3,Math.round(hPct*0.5))+'px;background:'+col+';border-radius:4px 4px 2px 2px"></div><div style="font-size:8.5px;color:rgba(244,241,234,.4);font-family:var(--au-mono,ui-monospace,monospace)">'+dn[d.getDay()]+'</div></div>';
+      }
+      var avgK = Math.round(week.reduce(function(a,b){return a+b;},0)/week.length);
+      var onT = week.filter(function(k){return Math.abs(k/tg.kcal-1)<=0.1;}).length;
+      function stat(v,l){ return '<div class="an-stat"><div class="an-stat-v">'+v+'</div><div class="an-stat-l">'+l+'</div></div>'; }
+      document.getElementById('analyticsCard').innerHTML =
+        '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">Trends</span><span class="nu-eb-n">'+onT+'/7 on target</span></div>'+
+        '<div style="display:flex;gap:6px;align-items:flex-end;height:60px;margin-bottom:10px">'+bars+'</div>'+
+        '<div style="display:flex;gap:16px;font-size:11px;color:rgba(244,241,234,.5)"><span>avg <b style="color:#F4F1EA">'+avgK+'</b> kcal</span><span>target <b style="color:rgb(var(--nu))">'+tg.kcal+'</b></span></div>'+
+        '<div class="an-stats">'+stat(streak+'d','streak')+stat(best+'d','best')+stat(logged30+' / 30','logged')+stat(onTarget30+' / 30','on target')+'</div>';
+    })();
+  })();
+  </script>
+</body>
+</html>
