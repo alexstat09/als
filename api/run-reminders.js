@@ -508,6 +508,13 @@ module.exports = async function (req, res) {
   catch (e) { backupResult = { error: String((e && e.message) || e) }; }
   if (backupOnly) { res.status(200).json({ backup: backupResult }); return; }
 
+  // ?garmin=diag — is the token wrong, or is the IP unwelcome? Returns
+  // fingerprints, never the secret itself.
+  if (req.query && req.query.garmin === 'diag') {
+    var dg; try { dg = await garmin.diag(); } catch (e) { dg = { error: String((e && e.message) || e) }; }
+    res.status(200).json({ garmin: dg }); return;
+  }
+
   // Garmin→intervals courier runs on every hourly cron AND on demand (?icu=1 from the app).
   var icuOnly = !!(req.query && (req.query.icu === '1' || req.query.icu === 'check'));
   var icuResult = null;

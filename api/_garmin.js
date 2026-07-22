@@ -247,8 +247,62 @@ async function recentNights(opts) {
   return { items: out, errors: errors };
 }
 
+// ── diagnostic ───────────────────────────────────────────────────
+// A 401 from the exchange means "this signature is wrong"; a 403/429 means
+// "this IP is unwelcome". They demand opposite fixes, and from the outside a
+// failed courier looks identical either way. This reports enough to tell them
+// apart and to prove whether the token in Vercel is byte-for-byte the token
+// that worked on the laptop — WITHOUT ever returning the secret. Length plus a
+// SHA-256 prefix is comparable against the local file and reveals nothing.
+function fingerprint(v) {
+  if (!v) return { set: false };
+  return {
+    set: true,
+    len: v.length,
+    sha: crypto.createHash('sha256').update(v).digest('hex').slice(0, 12),
+    // The paste artifacts that actually happen, named rather than guessed at.
+    looksQuoted: /^["']|["']$/.test(v),
+    looksJson: /^\s*[{[]/.test(v),
+    hasSpace: /\s/.test(v)
+  };
+}
+async function diag() {
+  var out = {
+    token: fingerprint(env('GARMIN_OAUTH1_TOKEN')),
+    secret: fingerprint(env('GARMIN_OAUTH1_SECRET')),
+    displayNameSet: !!env('GARMIN_DISPLAY_NAME')
+  };
+  if (!out.token.set || !out.secret.set) { out.verdict = 'env missing'; return out; }
+  try {
+    var c = await consumer();
+    out.consumerKeyLen = c.key ? c.key.length : 0;
+    var url = API + '/oauth-service/oauth/exchange/user/2.0';
+    var r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'User-Agent': UA,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: oauth1Header('POST', url, c, {
+          oauth_token: env('GARMIN_OAUTH1_TOKEN'), oauth_token_secret: env('GARMIN_OAUTH1_SECRET')
+        })
+      },
+      body: ''
+    });
+    out.status = r.status;
+    out.body = (await r.text()).slice(0, 200);
+    out.verdict = r.ok ? 'OK — token is good'
+      : (r.status === 401 ? 'signature/token rejected — the value in Vercel is not the one that worked'
+      : (r.status === 403 || r.status === 429 ? 'Garmin is refusing this IP, not this token'
+      : 'unexpected ' + r.status));
+  } catch (e) {
+    out.verdict = 'threw: ' + String((e && e.message) || e);
+  }
+  return out;
+}
+
 module.exports = {
   configured: function () { return !!(env('GARMIN_OAUTH1_TOKEN') && env('GARMIN_OAUTH1_SECRET')); },
+  diag: diag,
   recentNights: recentNights,
   night: night,
   _shape: shape
