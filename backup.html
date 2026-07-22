@@ -380,8 +380,14 @@
     // the override works and no engine reads them — but they were landing in
     // backup files and being counted as "data on this device". They are not data.
     var STORAGE_METHODS = { setItem:1, getItem:1, removeItem:1, clear:1, key:1, length:1 };
+    /* `gcal:*` is deliberately device-local. The connect screen promises the
+       calendar never leaves the device, so it must stay out of the vault
+       snapshot too — and the sync check must not nag about keys that are
+       never meant to sync. The cache regenerates from Google in one tap;
+       `gcal:connected` / `gcal:cals` are per-device by definition. */
     function isInternal(k){
-      return !k || k.indexOf('__synctomb__') === 0 || k === 'als:sync-stuck' || STORAGE_METHODS[k] === 1;
+      return !k || k.indexOf('__synctomb__') === 0 || k === 'als:sync-stuck'
+          || k.indexOf('gcal:') === 0 || STORAGE_METHODS[k] === 1;
     }
     function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function $(id){ return document.getElementById(id); }

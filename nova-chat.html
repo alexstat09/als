@@ -361,7 +361,22 @@
       try {
         var novaInsights = []; try { if(window.ALSInsights) novaInsights = ALSInsights.compute().slice(0,8).map(function(i){ return i.text; }); } catch(e){}
         try { if(window.ALSForecast) novaInsights = novaInsights.concat(ALSForecast.compute().map(function(f){ return f.text; })); } catch(e){}
-        var sched=''; try{ if(window.GCal){ var gc=GCal.cached(); if(gc&&gc.events){ var f=function(iso){var d=new Date(iso);if(isNaN(d))return '';var h=d.getHours(),m=d.getMinutes();return h+':'+(m<10?'0':'')+m;}; var ln=function(evs){return evs.map(function(e){return (e.allDay?'all day':f(e.start))+' '+e.title;}).join('; ');}; var t0=GCal.eventsForDay(gc.events,0),t1=GCal.eventsForDay(gc.events,1),o=[]; o.push('Today: '+(t0.length?ln(t0):'nothing scheduled')); if(t1.length)o.push('Tomorrow: '+ln(t1)); sched=o.join('\n'); } } }catch(e){}
+        /* The classified day, not the raw feed. Ninety-five percent of his
+           calendar is five-minute habit reminders; handed those verbatim Nova
+           talks about skincare instead of the one thing he actually committed to. */
+        var sched=''; try{ if(window.GCal && GCal.day){ var gc=GCal.cached(); if(gc&&gc.events){
+          var f=function(d){ if(!d||isNaN(d)) return ''; var h=d.getHours(),m=d.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; };
+          var ln=function(evs){ return evs.map(function(e){ return (e.allDay?'all day':f(GCal.startOf(e)))+' '+e.title; }).join('; '); };
+          var d0=GCal.day(0), d1=GCal.day(1), o=[];
+          o.push('Today: '+(d0.events.length?ln(d0.events):'nothing committed'));
+          if(d0.routines.length) o.push('Routine reminders today: '+d0.routines.length+' (habit nudges, not commitments — do not list them back)');
+          if(d0.anchor) o.push('Anchor of the day: '+d0.anchor.title+' at '+f(GCal.startOf(d0.anchor)));
+          if(d0.bedtime) o.push('His own calendar puts sleep at '+f(d0.bedtime));
+          if(d1.events.length) o.push('Tomorrow: '+ln(d1.events));
+          var xm=GCal.nextExam();
+          if(xm) o.push('EXAM: '+xm.ev.title+' in '+xm.days+' day'+(xm.days===1?'':'s')+' — this outranks everything else');
+          sched=o.join('\n');
+        } } }catch(e){}
         // Nova reads YOUR data — so it has to know who you are. The server
         // verifies this token and scopes every read to that account.
         var authHdr = {}; try { if (window.ALSAuthHeader) authHdr = await window.ALSAuthHeader(); } catch(e){}
