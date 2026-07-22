@@ -42,11 +42,15 @@ deployed. Full inventory in `MAP.md`.
 ### Serverless — the hard ceiling
 **`vercel.json` `functions` has 12 entries and all 12 are used.** A 13th routed
 `api/*.js` breaks the deploy. `_`-prefixed helpers (`_model`, `_supa`, `_auth`,
-`_youtube`, `_prices`, `_movies`, `_vault`, …) are **not** routed and are free.
+`_youtube`, `_prices`, `_movies`, `_vault`, `_garmin`, …) are **not** routed and
+are free.
 
 New server logic folds into an existing function. `api/run-reminders.js` is the
 courier: it early-returns on `?movies=`, `?youtube=`, `?ytdistill`, `?ytorganize`,
-`?prices`, `?backup=auto`. Add there.
+`?prices`, `?backup=auto`, `?garmin=diag`, `?icu=1`. Add there. It runs on an
+hourly QStash schedule; the Vercel cron entry is `?backup=auto` only, which
+returns before the couriers — so anything that must run unattended needs the
+QStash tick or a page that asks for it.
 
 ### AI calls
 `api/_model.js` is the only brain-stem. **Callers name a ROLE, never a model.**
@@ -121,7 +125,11 @@ Elevated MÉTRON design (`aurora.css`).
 
 **Body & training** — `gym.html` (246 seeded exercises, templates, folders),
 `health.html`, `body.html`, `measure.html`, `pr.html`, `supps.html`,
-`sleep.html` (score is MEASURED only; feelings are an outcome, never an input),
+`sleep.html` (score is MEASURED only; feelings are an outcome, never an input —
+and for Chrissie it now draws her watch's whole night: measured window,
+hypnogram, stage split, continuity, overnight body. Three states that must LOOK
+different: no measurement renders nothing, a duration with no window says so in
+words, a full night draws the timeline),
 `caffeine.html`, `po-water.html`.
 
 **Food** — `nutrition.html` with photo macros, food search, per-piece weight
@@ -161,7 +169,13 @@ race-day crown, `intervals.icu` auto-import.
 
 ## 5 · Open
 
-**Last shipped — `als-v391`, the arc rail** (2026-07-22, pushed to `main`).
+**Last shipped — `als-v393`, Chrissie's real Garmin night** (2026-07-22, on
+`main`, verified on her phone). Her sleep now arrives complete and unattended:
+bedtime and wake, the hypnogram, deep/light/REM, whether it broke, and the
+overnight body. Detail in the block below; the arc rail before it is still the
+most recent *design* change.
+
+**Before that — `als-v391`, the arc rail** (2026-07-22).
 His words: *"the surge on top of the home screen is too big, ur eye doesnt
 really see the good morning alex."* He was right. See §4 for the behaviour and
 constraint 11 for the bug it uncovered. Two things it left unsettled:
@@ -173,24 +187,62 @@ constraint 11 for the bug it uncovered. Two things it left unsettled:
   duplicates a few hundred pixels above it. Left alone on purpose (every page
   owns a tile), but he never ruled on it.
 
-**Also shipped — `als-v392`/`v393`, Chrissie's real Garmin night** (2026-07-22).
-`intervals.icu` carries four numbers per night and **structurally cannot** carry
-bed/wake, stages or continuity — Garmin's partner API never sends it sleep
-onset/offset. `api/_garmin.js` (a free `_` helper) goes straight to Garmin's
-`dailySleepData` with a long-lived OAuth1 token obtained once on a laptop, so no
-password reaches the server. `publishSleepInbox()` is the single writer of
-`sleep:inbox`; the intervals leg stays as the fallback.
+### The Garmin sleep pipe (`als-v392` / `v393`)
 
-⚠️ **Garmin's window is DETECTED SLEEP, not time in bed.** `sleepEnd − sleepStart`
-equals `sleepTimeSeconds` exactly and `awakeSleepSeconds` is 0, so feeding it to
-efficiency reads 100% every night — the flattery `sleep.html` was rebuilt to
-stop. The start of time-in-bed is only ever what she types; the end may come
-from the watch. Her bedtime plus the watch's onset then gives MEASURED latency.
+**Why a second pipe exists.** `intervals.icu` carries exactly four numbers per
+night — duration, restingHR, hrv, Garmin's score — and **structurally cannot**
+carry bed/wake, stages or continuity. Garmin's partner API never sends it sleep
+onset/offset; intervals' own forum says so. Don't re-investigate it.
+
+**The route.** `api/_garmin.js` (a free `_` helper — the 12-function ceiling is
+untouched) exchanges a long-lived OAuth1 token for a bearer and reads Garmin's
+`dailySleepData`. `publishSleepInbox()` in `run-reminders.js` is the **single
+writer** of `sleep:inbox`; precedence is field-by-field, Garmin > intervals >
+already-delivered, a null never erases a real value, and an empty read is never
+published over a good snapshot. The intervals leg stays as the fallback. Steady
+state is ONE request per tick (today only) — older days are fetched solely to
+fill a gap, because Garmin needs one request per day and that endpoint is not
+ours to hammer.
+
+**No password on the server.** `tests/garmin-probe.js` is run once on the Mac
+(prompts, hides input, refuses placeholder values because Garmin locks accounts
+after repeated failures); its OAuth1 token goes into Vercel as
+`GARMIN_OAUTH1_TOKEN` / `GARMIN_OAUTH1_SECRET` (+ optional `GARMIN_DISPLAY_NAME`).
+`tests/garmin-probe-out/` is gitignored — it holds a live credential and her raw
+health data.
+
+⚠️ **Garmin's window is DETECTED SLEEP, not time in bed.** On her 2026-07-22
+night `sleepEnd − sleepStart` and `sleepTimeSeconds` were both 24420s with
+`awakeSleepSeconds` 0. Feed that to efficiency and it reads **100% every night by
+construction** — exactly the flattery `sleep.html` was rebuilt in July to stop.
+So the START of time-in-bed is only ever what she types; only the END may come
+from the watch. Which makes her bedtime worth MORE, not less: lights-out plus the
+watch's measured onset yields **measured latency**, the one number neither side
+has alone (guarded to 0–180 min). `midMin()` prefers measured onset/offset, so
+Timing scores itself. Garmin's own `sleepScore` stays quarantined as
+`garminScore`: displayed once, labelled as theirs, never in her score.
+
+**Gotchas that cost time here, in the order they bit:**
+- `*TimestampLocal` are epoch-ms **already shifted** into her timezone — read
+  them with UTC getters or 00:39 renders as 03:39 on a UTC server.
+- `activityLevel` 0=deep 1=light 2=rem 3=awake, **proven** by summing segments
+  against the DTO totals, never assumed.
+- **Vercel stores env values literally.** A pasted quote character becomes part
+  of the HMAC and yields `exchange 401`, which looks exactly like an IP block.
+  `?garmin=diag` fingerprints the env values (length + SHA prefix, never the
+  secret) and tells a bad paste (401) from a refused IP (403/429). Vercel's IP is
+  **not** blocked.
+- The drain compares `stages`/`hypno` by **JSON shape** — `!==` on an object is
+  always true and would flush + re-render forever.
+- `sleep.html` nudges `?icu=1` itself (throttled to 15 min). Without it the
+  courier only ran on the hourly cron and when `run.html` opened, so opening only
+  the sleep page read a stale row. The daily Vercel cron does **not** cover it:
+  `?backup=auto` returns before the courier runs.
 
 ⏳ **Garmin retires OAuth1 on 2026-12-31.** Successor is an iPhone → Apple Health
-Shortcut; the item shape is source-agnostic so only the courier changes.
-`?garmin=diag` fingerprints the env token and tells a bad paste (401) from a
-blocked IP (403/429). `tests/sleep-inbox.test.js`, 48 assertions.
+Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
+2024). The item shape is deliberately source-agnostic, so only the courier
+changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
 - Connect Garmin directly on `intervals.icu` and remove Strava. Still blocks her
@@ -229,13 +281,18 @@ blocked IP (403/429). `tests/sleep-inbox.test.js`, 48 assertions.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 8 suites, 181 assertions
+for f in tests/*.js; do node "$f"; done   # 9 suites, 229 assertions
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
 `smoke-test.sh` parses every JS file and inline `<script>`, checks every local
 link resolves, bans `on_conflict=key`, and fails if a synced key is missing from
-`BUNDLES`.
+`BUNDLES`. It skips `tests/garmin-probe-out/` (pages Garmin served US — foreign
+markup, never deployed) and chokes on a `#!` shebang, so don't add one.
+
+`tests/garmin-probe.js` lives in `tests/` but is an interactive **tool**, not a
+suite: run it directly to re-issue Chrissie's Garmin token. It exits quietly
+when stdin isn't a TTY so the loop above doesn't hang waiting for a password.
 
 **Before pushing:** bump `sw.js:15`, run the tests, run the smoke test.
 Small commits. Note the SW bump in the message. Push only when asked, or when

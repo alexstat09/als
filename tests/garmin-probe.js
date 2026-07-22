@@ -318,11 +318,18 @@ function verdict(sleep) {
 }
 
 (async function main() {
+  // This lives in tests/ but is an interactive TOOL, not a test. The documented
+  // workflow runs `for f in tests/*.js; do node "$f"; done` — without this, that
+  // loop stops dead here waiting for an email address nobody is there to type.
+  let email = (process.env.GARMIN_EMAIL || '').trim();
+  let password = process.env.GARMIN_PASSWORD || '';
+  if (!process.stdin.isTTY && (!email || !password)) {
+    console.log('  garmin-probe: skipped (interactive tool — run it directly to re-issue the token)');
+    process.exit(0);
+  }
   // Prompted, not passed in. An inline `GARMIN_PASSWORD=…` lands her password
   // in ~/.zsh_history forever; env vars are honoured if already set, but the
   // default path leaves no trace.
-  let email = (process.env.GARMIN_EMAIL || '').trim();
-  let password = process.env.GARMIN_PASSWORD || '';
   if (!email) email = await ask('  Her Garmin email: ');
   if (!password) password = await askSecret('  Her Garmin password (hidden): ');
 

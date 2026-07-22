@@ -119,7 +119,10 @@ modal helper (native `<dialog>`).
 **Styles** — `aurora.css` (35 pages), `aurora-page.css`, `jarvis.css`.
 Home has its own token set inline in `index.html`.
 
-**`api/`** — 12 serverless functions. **`vendor/`** — GSAP, Lenis.
+**`api/`** — 12 serverless functions, plus `_`-prefixed helpers that Vercel
+neither routes nor counts (`_model`, `_supa`, `_auth`, `_vault`, `_movies`,
+`_prices`, `_youtube`, `_garmin`, …). New server logic goes into a helper and is
+called from an existing function. **`vendor/`** — GSAP, Lenis.
 
 ---
 
@@ -130,6 +133,10 @@ Home has its own token set inline in `index.html`.
   `gym-classic.html` / `body-classic.html`. **Nothing links here.** Not deployed
   (see `.vercelignore`).
 - **`docs/`** — setup notes and older write-ups. Not deployed.
+- **`tests/`** — 9 suites, 229 assertions, run with plain `node`. Also holds
+  `garmin-probe.js`, an interactive **tool** (not a suite) for re-issuing
+  Chrissie's Garmin token, and `garmin-probe-out/` — gitignored, because it
+  holds a live credential and her raw sleep data.
 
 ---
 
