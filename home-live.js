@@ -384,11 +384,68 @@
     h1.childNodes[0].nodeValue = name ? part + ', ' : part;
     span.textContent = name ? name + '.' : '';
   }
+
+  /* ── THE ARC BAND ─────────────────────────────────────────────────
+     The chapters engine was read by exactly one file (arc.html), so the app
+     could never mention that a chapter had turned — you'd only find out by
+     opening the page and noticing. This puts the current chapter at the top of
+     Home and flags it the first time a new one appears.
+
+     `arc:seen` remembers the last chapter shown. It is deliberately NOT synced:
+     "have I been told about this yet" is a fact about a device, not about him,
+     and syncing it would mean the phone silently eats the announcement the
+     laptop should have made. */
+  function paintArcBand() {
+    var band = document.getElementById('arcBand');
+    if (!band || !window.ALSChapters) return;
+    var res;
+    try { res = window.ALSChapters.compute(); } catch (e) { return; }
+    if (!res || !res.hasEnough || !res.chapters || !res.chapters.length) { band.classList.add('hidden'); return; }
+
+    /* The last entry is always "Now." — an open placeholder rather than a
+       chapter he lived through. Prefer the most recent REAL one; fall back to
+       Now only when nothing else has been detected yet. */
+    var chs = res.chapters;
+    var cur = null;
+    for (var i = chs.length - 1; i >= 0; i--) { if (chs[i].key !== 'now') { cur = chs[i]; break; } }
+    if (!cur) cur = chs[chs.length - 1];
+
+    var sig = cur.key + '|' + (cur.start || '');
+    var seen = null; try { seen = localStorage.getItem('arc:seen'); } catch (e) {}
+    var isNew = !!seen && seen !== sig;          // never "new" on a first-ever visit
+    try { localStorage.setItem('arc:seen', sig); } catch (e) {}
+
+    /* A chapter object carries `start` but no `end` — the end only survives
+       inside the eyebrow, as "Sep 9 – Oct 15". So a closed chapter must NOT be
+       given a "day N" count: saying "day 316" about something that finished in
+       October reads as though he is still living it. Only open-ended chapters
+       get a running count. */
+    var closed = / – /.test(String(cur.eyebrow || ''));
+    var days = 0;
+    if (cur.start && !closed) {
+      var d0 = new Date(cur.start + 'T00:00:00'); d0.setHours(0, 0, 0, 0);
+      var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+      days = Math.max(0, Math.round((t0 - d0) / 86400000));
+    }
+    var set = function (id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; };
+    set('arcBandN', (closed ? 'Last chapter · ' : 'Chapter ') + (cur.n || 1));
+    set('arcBandTitle', String(cur.title || '').replace(/\.$/, ''));
+    set('arcBandMeta', (days ? ('day ' + days + ' · ') : '') + (cur.eyebrow || ''));
+    /* One sentence. The Arc itself is where the whole thing is read. */
+    var body = String(cur.body || '');
+    var stop = body.indexOf('. ');
+    set('arcBandBody', stop > 20 ? body.slice(0, stop + 1) : body);
+    var nb = document.getElementById('arcBandNew');
+    if (nb) nb.classList.toggle('hidden', !isNew);
+    band.classList.remove('hidden');
+  }
+
   paintGreeting();
+  paintArcBand();
   document.addEventListener('als:profile', paintGreeting);
 
   /* ── keep it live: repaint (no re-animate) on data changes ── */
-  var repaint = function () { paintGreeting(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
+  var repaint = function () { paintGreeting(); paintArcBand(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
   window.addEventListener('storage', repaint);
   window.addEventListener('focus', repaint);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) repaint(); });

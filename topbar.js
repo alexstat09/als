@@ -480,7 +480,9 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     if (f === '' || f === 'index.html' || p === '/' || p.endsWith('/')) return 'home';
     if (f === 'nova-chat.html') return 'nova';
     const BODY = ['body.html','gym.html','pr.html','sleep.html','weight.html','po-water.html','caffeine.html','nutrition.html','measure.html','health.html','supps.html','planner.html','import.html','import-strong.html'];
-    const MIND = ['main.html','identity.html','ideas.html','improve.html'];
+    // arc.html used to belong to NO group, so opening the Arc lit up no tab at
+    // all — the app didn't know where its own best page lived.
+    const MIND = ['main.html','identity.html','ideas.html','improve.html','arc.html','insights.html'];
     const MONEY = ['finance.html','bills.html'];
     if (BODY.indexOf(f) > -1)  return 'body';
     if (MIND.indexOf(f) > -1)  return 'mind';

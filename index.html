@@ -33,6 +33,7 @@
 <script src="reminders.js" defer></script>
 <script src="nova-coach.js?v=20" defer></script>
 <script src="insights-engine.js" defer></script>
+<script src="chapters-engine.js" defer></script>
 <script src="forecast-engine.js" defer></script>
 <style>
 
@@ -64,6 +65,24 @@ body::before{content:''; position:fixed; inset:-15%; z-index:-2; pointer-events:
 body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size:3px 3px;}
 @keyframes drift{0%{transform:translate3d(-1.2%,-0.8%,0);}100%{transform:translate3d(1.2%,0.8%,0);}}
 .wrap{max-width:1120px; margin:0 auto; padding:0 22px;}
+/* ── the arc band ── */
+.arcband{ position:relative; display:block; margin:18px 0 4px; padding:20px 20px 18px; border-radius:20px; text-decoration:none; overflow:hidden;
+  background:linear-gradient(135deg, rgba(155,140,255,.16), rgba(52,226,176,.05) 62%, rgba(255,255,255,.02));
+  border:1px solid rgba(155,140,255,.26); }
+.arcband-glow{ position:absolute; inset:-40% -10% auto -10%; height:180%; pointer-events:none;
+  background:radial-gradient(60% 50% at 18% 0%, rgba(155,140,255,.20), rgba(155,140,255,0) 70%); }
+.arcband>*{ position:relative; }
+.arcband-eyebrow{ display:flex; align-items:center; gap:9px; font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(155,140,255,.95); }
+.arcband-new{ padding:3px 7px; border-radius:6px; background:rgba(52,226,176,.16); border:1px solid rgba(52,226,176,.36); color:#34E2B0; letter-spacing:.12em; }
+.arcband-title{ display:block; margin-top:11px; font-family:var(--au-serif,Georgia),serif; font-style:italic; font-weight:400;
+  font-size:clamp(26px,7vw,38px); line-height:1.02; letter-spacing:-.02em; color:var(--text-primary,#F4F1EA); }
+.arcband-meta{ display:block; margin-top:8px; font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-tertiary,#8A8A93); }
+.arcband-body{ display:block; margin-top:12px; max-width:56ch; font-size:13.5px; line-height:1.55; color:var(--text-secondary,#B9B9C2); }
+.arcband-go{ display:block; margin-top:14px; font-size:12.5px; font-weight:700; color:rgba(155,140,255,.95); }
+.arcband:active{ transform:scale(.995); }
+@media(min-width:720px){ .arcband{ padding:26px 28px 24px; } }
 
 /* ── scroll-reveal (JS-gated so no-JS shows everything) ── */
 .js [data-rise]{opacity:0; transform:translateY(20px); transition:opacity .7s var(--settle), transform .7s var(--settle); will-change:opacity,transform;}
@@ -334,6 +353,21 @@ body.has-bottombar{ padding-bottom:116px !important; }
 </head>
 <body id="root">
 <div class="wrap">
+  <!-- THE ARC — the band above everything.
+       It was a tile among twenty, the same size and shape as Water and Bills,
+       and nothing in the app ever mentioned it: ALSChapters was read by exactly
+       one file, arc.html. So you could enter a whole new chapter of your life
+       and only find out by opening the page and noticing. It frames the day
+       now, and it says when the chapter turns. -->
+  <a class="arcband hidden" id="arcBand" href="arc.html">
+    <span class="arcband-glow" aria-hidden="true"></span>
+    <span class="arcband-eyebrow"><span id="arcBandN">Chapter</span><span class="arcband-new hidden" id="arcBandNew">New chapter</span></span>
+    <span class="arcband-title" id="arcBandTitle"></span>
+    <span class="arcband-meta" id="arcBandMeta"></span>
+    <span class="arcband-body" id="arcBandBody"></span>
+    <span class="arcband-go">read your arc →</span>
+  </a>
+
   <!-- HERO (cascades on load) -->
   <div data-reveal>
     <header class="head">
@@ -560,7 +594,7 @@ body.has-bottombar{ padding-bottom:116px !important; }
 <dialog id="peek" class="peekdlg"></dialog>
 <label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
-<script src="home-live.js?v=205" defer></script>
+<script src="home-live.js?v=206" defer></script>
 <script src="home-motion.js?v=202" defer></script>
 </body>
 </html>
