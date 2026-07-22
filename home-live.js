@@ -132,8 +132,11 @@
         }
         case 'ideas.html': { var a = ls('ideas:items', []); a = Array.isArray(a) ? a : []; return a.length ? { hero: a.filter(function (i) { return !i.done; }).length, note: 'open · capture' } : { hero: '—', note: 'capture' }; }
         case 'improve.html': { var v = ls('improve:videos', []); v = Array.isArray(v) ? v : []; var w = v.filter(function (x) { return x && !x.watched; }).length; return v.length ? { hero: w, note: 'to learn · queue' } : { hero: '—', note: 'learning queue' }; }
-        case 'finance.html': { var nw = 0; ['bank', 'stocks', 'crypto', 'other'].forEach(function (c) { (ls('nw:' + c, []) || []).forEach(function (it2) { nw += Number(it2.amount) || 0; }); }); var cur = ls('nw_currency', 'CHF'); return nw > 0 ? { hero: Math.round(nw), unit: cur, comma: nw >= 1000, note: 'net worth' } : { hero: '—', note: 'net worth' }; }
-        case 'bills.html': { var b = ls('bills:items', []); b = (Array.isArray(b) ? b : []).filter(function (x) { return x && x.id; }); return b.length ? { hero: b.length, note: 'tracked' } : { hero: '—', note: 'add bills' }; }
+        // Money is euros now, read from money:accounts. The old tile summed the
+        // nw:* categories, which were stored in a CHF base and displayed through
+        // a live FX rate — so the home screen could show a different number from
+        // the page itself.
+        case 'finance.html': { var acc = ls('money:accounts', []); acc = Array.isArray(acc) ? acc : []; var nw = 0; acc.forEach(function (a) { nw += Number(a && a.amount) || 0; }); return nw > 0 ? { hero: Math.round(nw), unit: '€', comma: nw >= 1000, note: 'in hand' } : { hero: '—', note: 'what you hold' }; }
         case 'movies.html': { var sn = (ls('movies:seen', []) || []).filter(function (x) { return x && x.id; }); var wt = (ls('movies:watch', []) || []).filter(function (x) { return x && x.id; }); if (sn.length) return { hero: sn.length, note: 'rated · watchlist' }; if (wt.length) return { hero: wt.length, note: 'to watch' }; return { hero: '—', note: 'rate a film' }; }
         case 'run.html': {
           var rl = (ls('run:logs', []) || []).filter(function (x) { return x && x.id; });

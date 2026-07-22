@@ -15,6 +15,7 @@ var auth = require('./_auth');
 var vault = require('./_vault');
 var movies = require('./_movies');
 var yt = require('./_youtube');
+var prices = require('./_prices');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -379,6 +380,20 @@ module.exports = async function (req, res) {
       if (!oout.ok) { res.status(502).json({ error: oout.error || 'organize failed' }); return; }
       res.status(200).json({ concepts: oout.concepts, partial: !!oout.partial });
     } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
+  // The Money page's practice portfolio asks for live EUR prices. Stateless,
+  // key-less, and cached briefly at the edge — a fake portfolio does not need
+  // second-by-second quotes, and CoinGecko's free tier is rate-limited.
+  if (req.query && req.query.prices !== undefined) {
+    try {
+      var pout = await prices.prices();
+      res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
+      res.status(200).json(pout);
+    } catch (e) {
+      res.setHeader('Cache-Control', 'no-store');
       res.status(502).json({ error: String((e && e.message) || e) });
     }
     return;
