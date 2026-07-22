@@ -1457,9 +1457,12 @@ function boot(){
       // Per-user row: RLS needs the caller's token, so the anon key alone is
       // rejected. Best-effort — send the session token, skip silently if out.
       var body={ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() };
-      var go=function(tok){ fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{ method:'POST', headers:{ 'apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' }, body:JSON.stringify(body) }).catch(function(){}); };
+      // ...and the row is keyed (user_id, key): on_conflict=key matches no
+      // unique constraint, so Postgres rejects it 42P10/400. Send the owner.
+      var go=function(tok,uid){ var row=Object.assign({},body); if(uid) row.user_id=uid;
+        fetch(SUPA+'/rest/v1/app_state?on_conflict='+(uid?'user_id,key':'key'),{ method:'POST', headers:{ 'apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' }, body:JSON.stringify(row) }).catch(function(){}); };
       var c=(window.ALSAuth&&window.ALSAuth.client)||window.__alsAuthClient;
-      if(c&&c.auth&&c.auth.getSession){ c.auth.getSession().then(function(s){ go(s&&s.data&&s.data.session&&s.data.session.access_token); }).catch(function(){ go(null); }); }
+      if(c&&c.auth&&c.auth.getSession){ c.auth.getSession().then(function(s){ var ss=s&&s.data&&s.data.session; go(ss&&ss.access_token, ss&&ss.user&&ss.user.id); }).catch(function(){ go(null); }); }
       else go(null);
     }catch(e){}
   }

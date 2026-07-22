@@ -117,6 +117,32 @@ if [ -n "$BADAUTH" ]; then
   exit 1
 fi
 
+# ── Guardrail: a row is addressed by (user_id, key), never by key alone ──
+# app_state's primary key is (user_id, key). There is NO unique index on `key`,
+# so an upsert targeting `on_conflict=key` is rejected by Postgres itself with
+#   42P10: there is no unique or exclusion constraint matching the ON CONFLICT
+# as a hard HTTP 400 — before RLS is even consulted, and on every single attempt.
+# pocoach-sync.js shipped that shape, which meant EVERY weigh-in push failed from
+# the day the multi-user migration ran. It cost three separate rounds of missing
+# weigh-ins, and it was invisible: the retry logic was honest and correct, and it
+# spent months faithfully retrying a request that could never succeed.
+# The correct form derives the target from whether an owner is known, e.g.
+#   'on_conflict=' + (SESSION_UID ? 'user_id,key' : 'key')
+# api/ is SERVER code and already does this in _supa.js; the literal below only
+# matches the hardcoded broken shape.
+BADCONFLICT="$(grep -rnE "on_conflict=key[\"'&]|onConflict: *['\"]key['\"]" \
+  --include='*.js' --include='*.html' . 2>/dev/null \
+  | grep -vE '/(vendor|node_modules|archive|docs|als|api|_quarantine)/' \
+  | grep -vE '/_[^/]*\.html:')"
+if [ -n "$BADCONFLICT" ]; then
+  echo ""
+  echo "  ✗ UPSERT   a live file upserts app_state with on_conflict=key."
+  echo "             The row is keyed (user_id, key) — Postgres rejects that 42P10/400 every time:"
+  echo "$BADCONFLICT" | sed 's/^/               /'
+  echo "SMOKE_FAIL upsert"
+  exit 1
+fi
+
 # ── Nova is one heartbeat ────────────────────────────────────────
 # Nova's geometry is inline in each host on purpose (flat files, no flash, no
 # JS dependency), so nothing structural stops the copies drifting apart — which

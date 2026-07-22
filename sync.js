@@ -181,7 +181,10 @@
   // ── per-page sync instance ───────────────────────────────
   // Report sync state to the on-screen indicator (als-sync-status.js). Defensive:
   // a no-op if that script isn't loaded, so load order never matters.
-  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](); } catch (e) {} }
+  // `app` names which row this is about. The watchdog keeps failure state per
+  // engine: one app syncing fine must never clear another app's stuck data,
+  // which is how three rounds of missing weigh-ins went unreported.
+  function ss(m, app) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](app || 'sync'); } catch (e) {} }
 
   /* readOnly: pull the cloud's copy once, merge it into localStorage, and stop.
      No push, no interval, no realtime, no setItem interception.
@@ -343,14 +346,14 @@
           // the await is how four days of weigh-ins stayed on one phone: the
           // failed push left lastJson claiming "already pushed", so syncTick
           // compared local against it, saw no drift, and never tried again.
-          lastJson = json; lastRemoteStamp = iso; ss('ok');
+          lastJson = json; lastRemoteStamp = iso; ss('ok', appKey);
         } catch (e) {
           // lastJson untouched → syncTick sees drift → retries in 15s, forever,
           // without needing the user to notice anything.
           console.warn('[sync] push failed — retrying on the next tick:', (e && e.message) || e);
-          ss('fail');
+          ss('fail', appKey);
         }
-      } else { ss('ok'); }   // lastJson only ever holds a CONFIRMED push, so this is now true
+      } else { ss('ok', appKey); }   // lastJson only ever holds a CONFIRMED push, so this is now true
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
     }
     // Interval reconciler: probe the tiny timestamp first; do the full
@@ -364,7 +367,7 @@
       if (stamp !== lastRemoteStamp) { await syncNow(); return; } // remote moved → reconcile
       if (JSON.stringify(pushBody(collectLocal(), loadTomb())) !== lastJson) await syncNow(); // local drifted → push
     }
-    function schedulePush() { ss('queued'); clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
+    function schedulePush() { ss('queued', appKey); clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
     // Direct API so a page can force a deletion tombstone + immediate push
     // (belt-and-suspenders beyond the setItem interception).
     window.ALSSync = {
@@ -391,10 +394,10 @@
         // invisible AND lastJson had already moved on. Await it and confirm.
         try {
           await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
-          lastJson = json; lastRemoteStamp = iso; ss('ok');
+          lastJson = json; lastRemoteStamp = iso; ss('ok', appKey);
         } catch (e) {
           console.warn('[sync] realtime union push failed — retrying on the next tick:', (e && e.message) || e);
-          ss('fail');
+          ss('fail', appKey);
         }
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }

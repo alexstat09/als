@@ -188,6 +188,19 @@
       </div>
     </div>
 
+    <!-- SYNC CHECK — "is everything on THIS device also in the cloud?"
+         He asked for certainty before reinstalling the phone app, and until now
+         the only answer available was "no news is good news", which had been
+         wrong three times. This compares device against cloud key by key and
+         says what is actually different. -->
+    <div class="bk-card">
+      <h2>Is this device fully synced?</h2>
+      <div class="desc">Compares what's on <b>this device</b> against what's in the <b>cloud</b>, entry by entry. Run it on your phone and on your laptop before you reinstall anything.</div>
+      <button class="bk-btn go" id="scBtn" type="button">Check this device against the cloud</button>
+      <button class="bk-btn ghost hidden" id="scPush" type="button">↑ Send what's missing to the cloud</button>
+      <div id="scBody"></div>
+    </div>
+
     <!-- THE VAULT — automatic daily history -->
     <div class="bk-card">
       <h2>The vault</h2>
@@ -345,7 +358,12 @@
       }
       return null;
     }
-    function isInternal(k){ return !k || k.indexOf('__synctomb__') === 0; }
+    // Device-local bookkeeping, never part of a backup or a sync comparison.
+    // `als:sync-stuck` is the watchdog's per-engine unsent-since record: it
+    // describes THIS device's health, so restoring it onto another one would be
+    // meaningless at best and a false alarm at worst.
+    function isInternal(k){ return !k || k.indexOf('__synctomb__') === 0 || k === 'als:sync-stuck'; }
+    function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function $(id){ return document.getElementById(id); }
     function tryParse(s){ try { return JSON.parse(s); } catch(e){ return s; } }
     function fmtBytes(n){ if (n < 1024) return n + ' B'; if (n < 1048576) return (n/1024).toFixed(1) + ' KB'; return (n/1048576).toFixed(2) + ' MB'; }
@@ -360,7 +378,7 @@
     // carries the signed-in user's JWT. ensureToken() keeps SESSION_TOKEN current;
     // if it's ever null (signed out / lib missing) we fall back to KEY, which
     // simply reads as the anon role and returns nothing, never someone else's data.
-    var SESSION_TOKEN = null, _authListenerSet = false;
+    var SESSION_TOKEN = null, SESSION_UID = null, _authListenerSet = false;
     function authClient(){
       try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; }
       catch(e){ return null; }
@@ -373,10 +391,12 @@
         if (!c || !c.auth) return null;
         if (!_authListenerSet && c.auth.onAuthStateChange){
           _authListenerSet = true;
-          c.auth.onAuthStateChange(function(_e, sess){ SESSION_TOKEN = (sess && sess.access_token) || SESSION_TOKEN; });
+          c.auth.onAuthStateChange(function(_e, sess){ SESSION_TOKEN = (sess && sess.access_token) || SESSION_TOKEN; SESSION_UID = (sess && sess.user && sess.user.id) || SESSION_UID; });
         }
         var s = await c.auth.getSession();
-        SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null;
+        var sess = s && s.data && s.data.session;
+        SESSION_TOKEN = (sess && sess.access_token) || null;
+        SESSION_UID = (sess && sess.user && sess.user.id) || null;
         return SESSION_TOKEN;
       } catch(e){ return null; }
     }
@@ -578,12 +598,19 @@
     $('rsCancel').addEventListener('click', function(){ pending = null; $('bkPrev').classList.add('hidden'); });
 
     // Overwrite one cloud bundle with the restored values (replace semantics).
+    // A row is keyed (user_id, key). `on_conflict=key` matches no unique
+    // constraint, so Postgres rejected every restore with 42P10/400 — the Vault
+    // could take backups it could not put back. See pocoach-sync.js for the
+    // full story.
     async function pushBundle(appKey, bundleData){
-      var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=key', {
+      var row = { key: appKey, data: bundleData, updated_at: new Date().toISOString() };
+      if (SESSION_UID) row.user_id = SESSION_UID;
+      var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=' + (SESSION_UID ? 'user_id,key' : 'key'), {
         method: 'POST',
         headers: headers({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' }),
-        body: JSON.stringify({ key: appKey, data: bundleData, updated_at: new Date().toISOString() })
+        body: JSON.stringify(row)
       });
+      if (!r.ok) console.warn('[vault] restore write rejected: http ' + r.status + ' — ' + String(await r.text().catch(function(){ return ''; })).slice(0, 200));
       return r.ok;
     }
 
@@ -1605,6 +1632,153 @@
         body.innerHTML = '<div class="rp-none rp-gone">Could not open it: ' + ((e && e.message) || e) + '</div>';
       }
     }
+
+    /* ══ SYNC CHECK ═══════════════════════════════════════════════════
+       Compare THIS DEVICE against the cloud, entry by entry, and say what is
+       actually different. For three rounds of missing weigh-ins the only
+       available answer was "nothing has complained", and nothing complaining
+       turned out to mean nothing was watching. He should never have to trust
+       silence again — he should be able to ask. */
+
+    // The comparable units inside one value: array items by their id/dateKey,
+    // object maps by their keys. This is the same identity the merge engines
+    // use, so "only on this device" here means exactly what it says.
+    function entryIds(v){
+      var out = {};
+      if (Array.isArray(v)) {
+        v.forEach(function(it, i){
+          var k = null;
+          if (it && typeof it === 'object') {
+            k = (it.id != null) ? 'id:' + it.id : (it.dateKey != null) ? 'dk:' + it.dateKey : (it.date != null) ? 'dt:' + it.date : null;
+          } else { k = 'v:' + JSON.stringify(it); }
+          out[k || ('i:' + i)] = 1;
+        });
+      } else if (v && typeof v === 'object') {
+        Object.keys(v).forEach(function(k){ if (k !== '_ts' && k !== '_deletes') out['k:' + k] = 1; });
+      } else if (v !== undefined && v !== null && v !== '') {
+        out['scalar:' + JSON.stringify(v)] = 1;
+      }
+      return out;
+    }
+    function countOnlyIn(a, b){ var n = 0; for (var k in a) { if (Object.prototype.hasOwnProperty.call(a, k) && !(k in b)) n++; } return n; }
+    function parseMaybe(v){ try { return JSON.parse(v); } catch(e){ return v; } }
+
+    // Every localStorage key that BELONGS to a cloud bundle (so unsynced local
+    // scratch keys aren't reported as missing — they're not supposed to sync).
+    function syncedLocalKeys(){
+      var out = {};
+      for (var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        if (!k || isInternal(k)) continue;
+        var ak = bundleFor(k);
+        if (ak) out[k] = ak;
+      }
+      return out;
+    }
+
+    var scLastGaps = 0;
+    async function runSyncCheck(){
+      var body = $('scBody'), btn = $('scBtn');
+      body.innerHTML = '<div class="bk-line">Reading the cloud…</div>';
+      btn.setAttribute('disabled','1');
+      await ensureToken();
+      var rows = null, httpNote = '';
+      try {
+        var r = await fetch(SUPA + '/rest/v1/app_state?select=key,data', { headers: headers() });
+        if (r.ok) rows = await r.json();
+        else httpNote = 'HTTP ' + r.status;
+      } catch(e){ httpNote = (e && e.message) || 'network'; }
+      btn.removeAttribute('disabled');
+
+      // A failed read must never render as "you have no data" — that is the
+      // silent-empty disease, and it is how a healthy cloud gets overwritten.
+      if (!Array.isArray(rows)) {
+        body.innerHTML = '<div class="bk-warn"><b>Couldn\'t read the cloud' + (httpNote ? ' (' + esc(httpNote) + ')' : '') +
+          '.</b> That failure is the problem itself — check you\'re signed in and online, then run this again. It does <b>not</b> mean your data is missing.</div>';
+        return;
+      }
+
+      var cloud = {};
+      rows.forEach(function(row){
+        if (!row || !row.data || typeof row.data !== 'object') return;
+        Object.keys(row.data).forEach(function(k){ if (k !== '_deletes') cloud[k] = row.data[k]; });
+      });
+
+      var localKeys = syncedLocalKeys(), lines = [], onlyHere = 0, onlyThere = 0;
+      Object.keys(localKeys).forEach(function(k){
+        var lv = parseMaybe(localStorage.getItem(k));
+        var li = entryIds(lv), ci = entryIds(cloud[k]);
+        var here = countOnlyIn(li, ci), there = countOnlyIn(ci, li);
+        onlyHere += here; onlyThere += there;
+        if (here || there) lines.push({ key: k, here: here, there: there });
+      });
+      // Cloud-only keys this device has never seen at all.
+      Object.keys(cloud).forEach(function(k){
+        if (k in localKeys || isInternal(k) || !bundleFor(k)) return;
+        var n = Object.keys(entryIds(cloud[k])).length;
+        if (n) { onlyThere += n; lines.push({ key: k, here: 0, there: n }); }
+      });
+      lines.sort(function(a,b){ return (b.here + b.there) - (a.here + a.there); });
+      scLastGaps = onlyHere;
+
+      // Weigh-ins get their own sentence. They are what kept going missing, and
+      // "12 entries differ" is not what he needs to read at that moment.
+      var lw = parseMaybe(localStorage.getItem('po_coach_weights')) || [];
+      var cw = cloud['po_coach_weights'] || [];
+      function latest(a){ return (Array.isArray(a) && a.length) ? a.map(function(e){ return (e && e.dateKey) || ''; }).sort().pop() : '—'; }
+      var wLine = '<div class="bk-line" style="margin-top:10px">⚖️ <b>Weigh-ins</b> — this device: <b>' +
+        (Array.isArray(lw) ? lw.length : 0) + '</b> (latest ' + esc(latest(lw)) + ') · cloud: <b>' +
+        (Array.isArray(cw) ? cw.length : 0) + '</b> (latest ' + esc(latest(cw)) + ')</div>';
+
+      var stuck = null;
+      try { stuck = window.ALSSyncStatus && window.ALSSyncStatus.stuck && window.ALSSyncStatus.stuck(); } catch(e){}
+      var stuckLine = (stuck && stuck.since)
+        ? '<div class="bk-warn" style="margin-top:10px">The <b>' + esc((stuck.engines || []).join(', ') || 'sync') +
+          '</b> engine has had unsaved changes since ' + esc(new Date(stuck.since).toLocaleString()) + '.</div>' : '';
+
+      var head;
+      if (!onlyHere && !onlyThere) {
+        head = '<div class="bk-ok" style="margin-top:12px"><b>Everything on this device is in the cloud, and everything in the cloud is on this device.</b> Checked ' +
+          Object.keys(localKeys).length + ' data keys across ' + rows.length + ' cloud sets.</div>';
+      } else if (onlyHere) {
+        head = '<div class="bk-warn" style="margin-top:12px"><b>' + onlyHere + ' entr' + (onlyHere === 1 ? 'y is' : 'ies are') +
+          ' only on this device.</b> They have not reached the cloud yet, so your other device cannot see them. Send them now with the button above.' +
+          (onlyThere ? ' (' + onlyThere + ' more are in the cloud but not here — those arrive on the next sync.)' : '') + '</div>';
+      } else {
+        head = '<div class="bk-ok" style="margin-top:12px"><b>Nothing is stuck on this device.</b> ' + onlyThere +
+          ' entr' + (onlyThere === 1 ? 'y is' : 'ies are') + ' in the cloud but not here yet — they arrive on the next sync, and nothing is at risk.</div>';
+      }
+
+      var detail = lines.length
+        ? '<div class="bk-line" style="margin-top:10px">' + lines.slice(0, 12).map(function(l){
+            return '<div>' + esc(l.key) + ' — ' + (l.here ? '<b>' + l.here + '</b> only here' : '') +
+              (l.here && l.there ? ' · ' : '') + (l.there ? l.there + ' only in the cloud' : '') + '</div>';
+          }).join('') + (lines.length > 12 ? '<div>…and ' + (lines.length - 12) + ' more</div>' : '') + '</div>'
+        : '';
+
+      body.innerHTML = head + wLine + stuckLine + detail;
+      $('scPush').classList.toggle('hidden', !onlyHere);
+    }
+
+    // Don't hand-roll a write here. Nudge the REAL engines (both listen for a
+    // visibility change and do a full pull → merge → push), then re-check and
+    // report what actually happened.
+    async function forceSyncPush(){
+      var btn = $('scPush');
+      btn.setAttribute('disabled','1'); btn.textContent = 'Sending…';
+      try { if (window.ALSSync && window.ALSSync.flush) window.ALSSync.flush(); } catch(e){}
+      try { document.dispatchEvent(new Event('visibilitychange')); } catch(e){}
+      var before = scLastGaps;
+      await new Promise(function(r){ setTimeout(r, 5000); });
+      btn.removeAttribute('disabled'); btn.textContent = '↑ Send what\'s missing to the cloud';
+      await runSyncCheck();
+      if (scLastGaps >= before && before > 0) {
+        $('scBody').innerHTML += '<div class="bk-warn" style="margin-top:10px"><b>Still not sent.</b> Open the page that owns this data (weigh-ins live on <b>Weight</b> or <b>Gym</b>), leave it open a few seconds, then check again.</div>';
+      }
+    }
+
+    $('scBtn').addEventListener('click', runSyncCheck);
+    $('scPush').addEventListener('click', forceSyncPush);
 
     refreshExportStats();
     refreshCloudMeta();

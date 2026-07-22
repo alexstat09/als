@@ -111,7 +111,7 @@
   // user's JWT, kept current in SESSION_TOKEN. Falls back to the anon key only
   // when signed out, which reads as anon and returns nothing — never another
   // account's data, and (being read-only under RLS) never overwrites the cloud.
-  var SESSION_TOKEN = null, _authListen = false, rtClient = null;
+  var SESSION_TOKEN = null, SESSION_UID = null, _authListen = false, rtClient = null;
   function authClient() {
     try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; }
     catch (e) { return null; }
@@ -126,11 +126,14 @@
           _authListen = true;
           c.auth.onAuthStateChange(function (_e, sess) {
             SESSION_TOKEN = (sess && sess.access_token) || SESSION_TOKEN;
+            SESSION_UID = (sess && sess.user && sess.user.id) || SESSION_UID;
             try { if (rtClient && SESSION_TOKEN) rtClient.realtime.setAuth(SESSION_TOKEN); } catch (e) {}
           });
         }
         c.auth.getSession().then(function (s) {
-          SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null;
+          var sess = s && s.data && s.data.session;
+          SESSION_TOKEN = (sess && sess.access_token) || null;
+          SESSION_UID = (sess && sess.user && sess.user.id) || null;
           resolve(SESSION_TOKEN);
         }).catch(function () { resolve(null); });
       })();
@@ -141,8 +144,38 @@
     return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + (SESSION_TOKEN || SB_KEY), 'Content-Type': 'application/json' };
   }
 
-  // Report to the on-screen sync indicator (als-sync-status.js). No-op if absent.
-  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](); } catch (e) {} }
+  /* ⚠️ THE BUG THAT COST THREE ROUNDS OF WEIGH-INS (found 22/07/26).
+     A row is addressed by (user_id, key) — migration 001 made that the primary
+     key — and this engine was upserting with `?on_conflict=key`. Postgres has no
+     unique constraint on `key` alone, so EVERY push came back
+       42P10: there is no unique or exclusion constraint matching the ON CONFLICT
+     as an HTTP 400. Not RLS, not the network, not a busy server: the write was
+     malformed and was rejected 100% of the time, on every device, since the
+     multi-user migration.
+
+     Everything built on top of it was working perfectly and could not help. The
+     confirmed-write discipline (17/07) correctly refused to advance lastJson, so
+     the 15s reconciler retried — for ever, against a request that could never
+     succeed. Running the engine app-wide (19/07) spread a broken write to more
+     pages. The retry was honest; it was retrying an impossible request.
+
+     Verified against the live database: `on_conflict=key` → 42P10/400, while
+     `on_conflict=user_id,key` gets past constraint resolution. Keep these three
+     helpers as the ONLY way this file addresses a row. */
+  function conflictCols() { return SESSION_UID ? 'user_id,key' : 'key'; }
+  function rowFor(data) {
+    var r = { key: APP_KEY, data: data, updated_at: new Date().toISOString() };
+    if (SESSION_UID) r.user_id = SESSION_UID;
+    return r;
+  }
+  function scopeQ() { return SESSION_UID ? '&user_id=eq.' + encodeURIComponent(SESSION_UID) : ''; }
+
+  // Report to the sync watchdog (als-sync-status.js). No-op if absent.
+  // The engine NAME matters: the watchdog used to keep one shared counter, so
+  // sync.js succeeding cleared pocoach-sync's failures every 15s and the alarm
+  // could never fire. Weigh-ins are this engine's, and only this engine can
+  // say whether they landed.
+  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m]('gym & weigh-ins'); } catch (e) {} }
 
   /* Call whichever page-specific rerender hooks are present */
   function fireRerender() {
@@ -267,14 +300,28 @@
      to decide whether lastJson may advance. Never advance it on a promise. */
   function push(keepalive, body) {
     if (!pulled && !keepalive) { syncNow(); return Promise.resolve(false); }
-    return fetch(REST + '?on_conflict=key', {
-      method: 'POST',
-      headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: APP_KEY, data: body || pushBody(), updated_at: new Date().toISOString() }),
-      keepalive: !!keepalive
+    // A keepalive push has no time to round-trip, so it uses whatever token is
+    // already cached. Every other push waits for one: the 400ms debounce used to
+    // fire before the first ensureToken() had resolved, sending the anon key,
+    // which RLS rejects.
+    var ready = keepalive ? Promise.resolve() : ensureToken();
+    return ready.then(function () {
+      return fetch(REST + '?on_conflict=' + conflictCols(), {
+        method: 'POST',
+        headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
+        body: JSON.stringify(rowFor(body || pushBody())),
+        keepalive: !!keepalive
+      });
     }).then(function(r) {
       if (r && r.ok) { ss('ok'); return true; }
-      console.warn('[pocoach-sync] push rejected: http ' + (r && r.status) + ' — will retry');
+      // Read the body: a 400 here means the REQUEST is wrong (wrong conflict
+      // target, bad column), which no amount of retrying can fix. Four days of
+      // weigh-ins were lost to a failure nobody could name.
+      var st = (r && r.status) || 0;
+      if (r && r.text) { r.text().then(function (t) {
+        console.warn('[pocoach-sync] push rejected: http ' + st + ' — ' + String(t || '').slice(0, 300));
+      }).catch(function () {}); }
+      else console.warn('[pocoach-sync] push rejected: http ' + st);
       ss('fail'); return false;
     }).catch(function(e) {
       console.warn('[pocoach-sync] push failed — will retry:', (e && e.message) || e);
@@ -287,7 +334,7 @@
      RLS, and a fresh device would render an empty history. */
   function syncNow() {
     ensureToken().then(function () {
-    fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
+    fetch(REST + '?key=eq.' + APP_KEY + scopeQ() + '&select=data', { headers: hdrs() })
       .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
       .then(function(rows) {
         try { window.POCOACH_LAST_SYNC = Date.now(); } catch (e) {} // a pull completed → cloud is reachable
@@ -414,16 +461,16 @@
 
     // cloud: read → strip → write, and wait for it (token first, or RLS rejects)
     return ensureToken().then(function () {
-    return fetch(REST + '?key=eq.' + APP_KEY + '&select=data', { headers: hdrs() })
+    return fetch(REST + '?key=eq.' + APP_KEY + scopeQ() + '&select=data', { headers: hdrs() })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
         var data = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : {};
         if (Array.isArray(data[key])) data[key] = data[key].filter(function(e) { return !(e && gone[String(e.id)]); });
         data._deletes = unionTombG(data._deletes || {}, loadTomb());
-        return fetch(REST + '?on_conflict=key', {
+        return fetch(REST + '?on_conflict=' + conflictCols(), {
           method: 'POST',
           headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-          body: JSON.stringify({ key: APP_KEY, data: data, updated_at: new Date().toISOString() })
+          body: JSON.stringify(rowFor(data))
         }).then(function(r) {
           // fetch() resolves on 4xx/5xx too — without this check a rejected write
           // still advanced lastJson and reported success.
@@ -449,14 +496,24 @@
     } catch (e) {}
   };
 
-  /* Emergency push when page is hidden/closed — keepalive survives tab close */
-  function emergencyPush() { push(true); }
+  /* Emergency push when page is hidden/closed — keepalive survives tab close.
+     Gated on `pulled`: this push has no time to round-trip, so it replaces the
+     whole row with RAW LOCAL. From a device that has not merged with the cloud
+     yet — a fresh install, or simply a page closed a second after it opened —
+     that overwrites everything the other device has. Data waiting on this device
+     is recoverable (it is still in localStorage, and flushes the next time the
+     app opens); data this device erased from the cloud is not. So when we have
+     never pulled, we keep it rather than gamble the row. */
+  function emergencyPush() { if (pulled) push(true); }
   window.addEventListener('beforeunload', emergencyPush);
   window.addEventListener('pagehide',     emergencyPush);
-  /* Also push/pull when app comes back to foreground (iOS PWA) */
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') syncNow();
-  });
+  /* Sync in BOTH directions of a visibility change. Coming back to the
+     foreground is the obvious one. Going AWAY matters more: on iOS that is the
+     moment before the system suspends the tab, and it is the last chance to do a
+     real pull → merge → push before the blind keepalive write above is all
+     that's left. sync.js has done this for a while; the engine that owns the
+     weigh-ins did not, and the weigh-ins are what kept going missing. */
+  document.addEventListener('visibilitychange', function() { syncNow(); });
 
   /* Initial sync + 15s polling */
   syncNow();

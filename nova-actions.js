@@ -24,7 +24,7 @@
   // RLS returns/accepts a user's rows only with THEIR access token; the anon key
   // alone now reads nothing and its writes are rejected. apikey stays the
   // publishable key; Authorization carries the signed-in user's JWT (SESSION_TOKEN).
-  var SESSION_TOKEN = null, _authListen = false;
+  var SESSION_TOKEN = null, SESSION_UID = null, _authListen = false;
   function authClient() { try { return (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient || null; } catch (e) { return null; } }
   function ensureToken() {
     return new Promise(function (resolve) {
@@ -32,8 +32,8 @@
       (function tick() {
         var c = authClient();
         if (!c || !c.auth) { if (n++ < 25) { setTimeout(tick, 120); return; } resolve(null); return; }
-        if (!_authListen && c.auth.onAuthStateChange) { _authListen = true; c.auth.onAuthStateChange(function (_e, s) { SESSION_TOKEN = (s && s.access_token) || SESSION_TOKEN; }); }
-        c.auth.getSession().then(function (s) { SESSION_TOKEN = (s && s.data && s.data.session && s.data.session.access_token) || null; resolve(SESSION_TOKEN); }).catch(function () { resolve(null); });
+        if (!_authListen && c.auth.onAuthStateChange) { _authListen = true; c.auth.onAuthStateChange(function (_e, s) { SESSION_TOKEN = (s && s.access_token) || SESSION_TOKEN; SESSION_UID = (s && s.user && s.user.id) || SESSION_UID; }); }
+        c.auth.getSession().then(function (s) { var ss = s && s.data && s.data.session; SESSION_TOKEN = (ss && ss.access_token) || null; SESSION_UID = (ss && ss.user && ss.user.id) || null; resolve(SESSION_TOKEN); }).catch(function () { resolve(null); });
       })();
     });
   }
@@ -195,12 +195,17 @@
     var rows = await r.json();
     return (rows && rows[0] && rows[0].data) || {};
   }
+  // A row is keyed (user_id, key). `on_conflict=key` has no matching unique
+  // constraint, so Postgres rejects the write outright with 42P10/400 — see the
+  // long note in pocoach-sync.js. Send the owner and target both columns.
   async function putBundle(appKey, data) {
-    var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=key', {
+    var row = { key: appKey, data: data, updated_at: new Date().toISOString() };
+    if (SESSION_UID) row.user_id = SESSION_UID;
+    var r = await fetch(SUPA + '/rest/v1/app_state?on_conflict=' + (SESSION_UID ? 'user_id,key' : 'key'), {
       method: 'POST', headers: hdr({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify({ key: appKey, data: data, updated_at: new Date().toISOString() })
+      body: JSON.stringify(row)
     });
-    if (!r.ok) throw new Error('write ' + r.status);
+    if (!r.ok) throw new Error('write ' + r.status + ' ' + String(await r.text().catch(function(){ return ''; })).slice(0, 200));
   }
 
   // Execute a confirmed action. Returns { ok, message }.

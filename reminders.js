@@ -30,22 +30,47 @@
   function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function fmtHour(h) { var ap = h < 12 ? 'am' : 'pm'; var hr = h % 12; if (hr === 0) hr = 12; return hr + ap; }
 
+  // Two bugs lived here. This built its OWN anonymous client instead of riding
+  // the signed-in one, so RLS returned nothing and accepted nothing — the push
+  // prefs and the subscription never actually persisted. And the upsert targeted
+  // `key` alone, which matches no unique constraint now that a row is keyed
+  // (user_id, key): Postgres rejects that with 42P10 before RLS is even
+  // consulted. Share the authenticated client, and address the row by both
+  // columns. See the note in pocoach-sync.js.
   var _supa = null;
   function supa() {
     if (_supa) return _supa;
-    try { if (window.supabase) _supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) {}
+    try {
+      _supa = (window.ALSAuth && window.ALSAuth.client) || window.__alsAuthClient ||
+        (window.supabase ? (window.__alsAuthClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)) : null);
+    } catch (e) {}
     return _supa;
+  }
+  function myUid() {
+    var s = supa(); if (!s || !s.auth) return Promise.resolve(null);
+    return s.auth.getSession()
+      .then(function (r) { var ss = r && r.data && r.data.session; return (ss && ss.user && ss.user.id) || null; })
+      .catch(function () { return null; });
   }
   function readRow(key) {
     var s = supa(); if (!s) return Promise.resolve({});
-    return s.from('app_state').select('data').eq('key', key).maybeSingle()
-      .then(function (r) { return (r && r.data && r.data.data) || {}; })
-      .catch(function () { return {}; });
+    return myUid().then(function (u) {
+      var q = s.from('app_state').select('data').eq('key', key);
+      if (u) q = q.eq('user_id', u);
+      return q.maybeSingle()
+        .then(function (r) { return (r && r.data && r.data.data) || {}; })
+        .catch(function () { return {}; });
+    });
   }
   function writeRow(key, data) {
     var s = supa(); if (!s) return Promise.resolve();
-    return s.from('app_state').upsert({ key: key, data: data, updated_at: new Date().toISOString() }, { onConflict: 'key' })
-      .then(function () {}).catch(function () {});
+    return myUid().then(function (u) {
+      var row = { key: key, data: data, updated_at: new Date().toISOString() };
+      if (u) row.user_id = u;
+      return s.from('app_state').upsert(row, { onConflict: u ? 'user_id,key' : 'key' })
+        .then(function (r) { if (r && r.error) console.warn('[reminders] write rejected:', r.error.message || r.error); })
+        .catch(function (e) { console.warn('[reminders] write failed:', (e && e.message) || e); });
+    });
   }
 
   // Merge stored prefs over defaults so new reminders appear automatically.

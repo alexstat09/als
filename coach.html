@@ -286,9 +286,12 @@
         var SUPA='https://oiyvadqfldwbjroiknjc.supabase.co';
         var KEY='sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
         var body={ key:'insight', data:{ 'insight:top':{ emoji:hero.emoji||'🧠', text:hero.text||'', action:hero.action||'', domain:hero.domain||'', strength:hero.strength||0, ts:Date.now() } }, updated_at:new Date().toISOString() };
-        var go=function(tok){ fetch(SUPA+'/rest/v1/app_state?on_conflict=key',{ method:'POST', headers:{ 'apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' }, body:JSON.stringify(body) }).catch(function(){}); };
+        // Rows are keyed (user_id, key): on_conflict=key matches no unique
+        // constraint and Postgres rejects it 42P10/400. Send the owner.
+        var go=function(tok,uid){ var row=Object.assign({},body); if(uid) row.user_id=uid;
+          fetch(SUPA+'/rest/v1/app_state?on_conflict='+(uid?'user_id,key':'key'),{ method:'POST', headers:{ 'apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates' }, body:JSON.stringify(row) }).catch(function(){}); };
         var c=(window.ALSAuth&&window.ALSAuth.client)||window.__alsAuthClient;
-        if(c&&c.auth&&c.auth.getSession){ c.auth.getSession().then(function(s){ go(s&&s.data&&s.data.session&&s.data.session.access_token); }).catch(function(){ go(null); }); }
+        if(c&&c.auth&&c.auth.getSession){ c.auth.getSession().then(function(s){ var ss=s&&s.data&&s.data.session; go(ss&&ss.access_token, ss&&ss.user&&ss.user.id); }).catch(function(){ go(null); }); }
         else go(null);
       }catch(e){}
     }
