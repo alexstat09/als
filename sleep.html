@@ -1985,9 +1985,30 @@
       } catch(e){}
     }
 
+    /* Ask the server to go and look, before reading what it has.
+       Without this, the courier only runs on the hourly cron and when the
+       RUNNING app opens — run.html is the only page that asks. Her sleep lives
+       HERE, and someone who opens only the sleep page would be reading whatever
+       was last delivered, with no way to tell a stale row from a fresh one.
+       (The daily Vercel cron doesn't cover it either: it calls ?backup=auto,
+       which returns before the courier ever runs.)
+       Throttled exactly like run.html throttles its own poll — one nudge per
+       15 min however often she reopens the page. */
+    async function nudgeCourier(){
+      try{
+        var last = 0; try{ last = +localStorage.getItem('sleep:icuPoll') || 0; }catch(e){}
+        if (Date.now() - last < 15*60000) return;
+        try{ localStorage.setItem('sleep:icuPoll', String(Date.now())); }catch(e){}
+        await fetch('/api/run-reminders?icu=1', { cache:'no-store' });
+      }catch(e){}
+    }
+    // Read what's already there first so the page is never blank while waiting,
+    // then read again once the courier has had its look.
+    function syncWatch(){ drainWellness(); nudgeCourier().then(drainWellness); }
+
     document.addEventListener('DOMContentLoaded', function(){
-      drainWellness();
-      window.addEventListener('focus', drainWellness);
+      syncWatch();
+      window.addEventListener('focus', syncWatch);
       function start(){
         if (typeof initCloudSync !== 'function'){ setTimeout(start, 200); return; }
         initCloudSync({
