@@ -330,11 +330,23 @@
     var KEY  = 'sb_publishable_fGKn40f1Ek1Y4j0VComsFA_l4aXkKM-';
 
     // localStorage key -> cloud bundle (app_state row). Mirrors every page's
-    // initCloudSync config + pocoach-sync. Keep in sync if a new store is added.
+    // initCloudSync config + pocoach-sync.
+    //
+    // ⚠️ This map is LOAD-BEARING FOR RECOVERY. `restoreFromData` skips any key
+    // whose bundle is unknown (`if (!ak) return`), so a store missing from here
+    // syncs between devices perfectly well and then silently fails to come back
+    // from a backup — the one moment you actually need it. It had drifted by
+    // four whole rows and six keys (coach, run, arxaia, istoria; goals_outcomes_v1,
+    // caf:days, nut:deleted/favs/usual/streak/pieceG) before anyone looked.
+    // smoke-test.sh now FAILS the build when a live syncedKey is not covered here.
     var BUNDLES = {
       'po-coach':     { keys:['po_coach_v1','po_coach_workout_done','po_coach_weights','po_coach_photos','po_tpl_folders','po_templates','po_exercises','po_workouts'], prefixes:['po_coach_logs:'] },
-      'nutrition':    { keys:['nut:logs','nut:custom','nut:profile','nut:history','nut:meals'], prefixes:[] },
-      'caffeine':     { keys:['caf:logs','caf:custom'], prefixes:[] },
+      'nutrition':    { keys:['nut:logs','nut:deleted','nut:custom','nut:profile','nut:history','nut:meals','nut:favs','nut:usual','nut:streak','nut:pieceG'], prefixes:[] },
+      'caffeine':     { keys:['caf:logs','caf:custom','caf:days'], prefixes:[] },
+      'coach':        { keys:['coach:focus'], prefixes:[] },
+      'run':          { keys:['run:profile','run:plan','run:logs','run:shifts','run:strength','run:shoes','run:knee'], prefixes:[] },
+      'arxaia':       { keys:['arxaia:v1'], prefixes:[] },
+      'istoria':      { keys:['istoria:v1'], prefixes:[] },
       'health':       { keys:['stack:items','stack:low','po_water_v1'], prefixes:['stack:taken:'] },
       'sleep':        { keys:['sleep:logs','sleep:profile'], prefixes:[] },
       'identity':     { keys:['identity:northstar','habits:list','habits:log','journal:entries'], prefixes:[] },
@@ -344,7 +356,7 @@
       'improve':      { keys:['improve:videos','improve:habits'], prefixes:[] },
       'ideas':        { keys:['ideas:items'], prefixes:[] },
       'finance':      { keys:['subs','wishlist','incoming_orders','nw_currency','nw:activity','nw:history'], prefixes:['nw:'] },
-      'goals':        { keys:[], prefixes:['goals:'] },
+      'goals':        { keys:['goals_outcomes_v1'], prefixes:['goals:'] },
       'mealplan':     { keys:['mealplan:days','mealplan:shopdone'], prefixes:[] },
       'nova-chat':    { keys:['nova:memory'], prefixes:[] }
     };
@@ -362,7 +374,15 @@
     // `als:sync-stuck` is the watchdog's per-engine unsent-since record: it
     // describes THIS device's health, so restoring it onto another one would be
     // meaningless at best and a false alarm at worst.
-    function isInternal(k){ return !k || k.indexOf('__synctomb__') === 0 || k === 'als:sync-stuck'; }
+    // Storage's own method names show up as stored keys in WebKit, because the
+    // sync engines override them (`localStorage.setItem = fn`) and Storage routes
+    // that assignment through its named-property setter. Harmless to the app —
+    // the override works and no engine reads them — but they were landing in
+    // backup files and being counted as "data on this device". They are not data.
+    var STORAGE_METHODS = { setItem:1, getItem:1, removeItem:1, clear:1, key:1, length:1 };
+    function isInternal(k){
+      return !k || k.indexOf('__synctomb__') === 0 || k === 'als:sync-stuck' || STORAGE_METHODS[k] === 1;
+    }
     function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function $(id){ return document.getElementById(id); }
     function tryParse(s){ try { return JSON.parse(s); } catch(e){ return s; } }

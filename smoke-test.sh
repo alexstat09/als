@@ -145,6 +145,57 @@ if [ -n "$BADCONFLICT" ]; then
   exit 1
 fi
 
+# ── Guardrail: every synced key must be known to the Vault ───────
+# backup.html's BUNDLES maps a localStorage key to its cloud row. restoreFromData
+# SKIPS any key whose bundle it doesn't know (`var ak = bundleFor(k); if (!ak)
+# return;`), so a store missing from that map syncs between devices perfectly and
+# then silently fails to restore — at the one moment it matters. It had drifted by
+# four whole rows and six keys before anyone checked. Fail the build instead.
+if command -v node >/dev/null 2>&1; then
+  BADBUNDLE="$(node -e '
+    var fs=require("fs"), apps={};
+    fs.readdirSync(".").filter(f=>/\.(html|js)$/.test(f)&&!/^_|^render-/.test(f)).forEach(function(f){
+      var s=fs.readFileSync(f,"utf8"), i=-1;
+      while((i=s.indexOf("initCloudSync({",i+1))>=0){
+        var blk=s.slice(i,i+1200);
+        if(/readOnly\s*:\s*true/.test(blk.slice(0,300))) continue;
+        var ak=(blk.match(/appKey\s*:\s*.([^"\x27]+)./)||[])[1]; if(!ak) continue;
+        apps[ak]=apps[ak]||{keys:{},prefixes:{}};
+        var kb=(blk.match(/syncedKeys\s*:\s*\[([^\]]*)\]/)||[])[1]||"";
+        (kb.match(/\x27([^\x27]+)\x27/g)||[]).forEach(q=>apps[ak].keys[q.slice(1,-1)]=1);
+        var pb=(blk.match(/syncedPrefixes\s*:\s*\[([^\]]*)\]/)||[])[1]||"";
+        (pb.match(/\x27([^\x27]+)\x27/g)||[]).forEach(q=>apps[ak].prefixes[q.slice(1,-1)]=1);
+      }
+    });
+    var po=fs.readFileSync("pocoach-sync.js","utf8").match(/var KEYS\s*=\s*\[([\s\S]*?)\];/);
+    apps["po-coach"]={keys:{},prefixes:{"po_coach_logs:":1}};
+    (po[1].match(/\x27([^\x27]+)\x27/g)||[]).forEach(q=>apps["po-coach"].keys[q.slice(1,-1)]=1);
+    var b=fs.readFileSync("backup.html","utf8"), bs=b.indexOf("var BUNDLES"), be=b.indexOf("};",bs), cur={};
+    b.slice(bs,be).split("\n").forEach(function(l){
+      var m=l.match(/\x27([a-z-]+)\x27:\s*\{\s*keys:\[([^\]]*)\],\s*prefixes:\[([^\]]*)\]/); if(!m) return;
+      cur[m[1]]={keys:(m[2].match(/\x27([^\x27]+)\x27/g)||[]).map(x=>x.slice(1,-1)),
+                 prefixes:(m[3].match(/\x27([^\x27]+)\x27/g)||[]).map(x=>x.slice(1,-1))};
+    });
+    var out=[];
+    Object.keys(apps).sort().forEach(function(ak){
+      var c=cur[ak];
+      if(!c){ out.push(ak+" — the whole row is missing from BUNDLES"); return; }
+      var mk=Object.keys(apps[ak].keys).filter(k=>c.keys.indexOf(k)<0 && !c.prefixes.some(p=>k.indexOf(p)===0));
+      var mp=Object.keys(apps[ak].prefixes).filter(p=>c.prefixes.indexOf(p)<0);
+      if(mk.length||mp.length) out.push(ak+" — not in BUNDLES: "+mk.concat(mp.map(p=>p+"*")).join(", "));
+    });
+    process.stdout.write(out.join("\n"));
+  ' 2>/dev/null)"
+  if [ -n "$BADBUNDLE" ]; then
+    echo ""
+    echo "  ✗ VAULT    a synced store is unknown to backup.html BUNDLES."
+    echo "             It would sync fine and then NOT restore from a backup:"
+    echo "$BADBUNDLE" | sed 's/^/               /'
+    echo "SMOKE_FAIL vault"
+    exit 1
+  fi
+fi
+
 # ── Nova is one heartbeat ────────────────────────────────────────
 # Nova's geometry is inline in each host on purpose (flat files, no flash, no
 # JS dependency), so nothing structural stops the copies drifting apart — which
