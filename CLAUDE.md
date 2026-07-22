@@ -95,7 +95,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v393`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v395`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -163,19 +163,23 @@ additive-only repair (`backup.html`), multi-user auth, push notifications,
 per-engine persisted state (`als-sync-status.js`).
 
 **Running app for Chrissie** — `run.html`, editorial Rose 5-tab PWA, Athens
-race-day crown, `intervals.icu` auto-import.
+race-day crown, `intervals.icu` auto-import, and a **shoe stage** that knows
+which shoe it is drawing (§5).
 
 ---
 
 ## 5 · Open
 
-**Last shipped — `als-v393`, Chrissie's real Garmin night** (2026-07-22, on
+**Last shipped — `als-v394` / `als-v395`, her shoes became objects** (2026-07-22
+and 23, on `main`, live byte-verified). Detail in the block below.
+
+**Before that — `als-v393`, Chrissie's real Garmin night** (2026-07-22, on
 `main`, verified on her phone). Her sleep now arrives complete and unattended:
 bedtime and wake, the hypnogram, deep/light/REM, whether it broke, and the
-overnight body. Detail in the block below; the arc rail before it is still the
-most recent *design* change.
+overnight body. Detail in the block below.
 
-**Before that — `als-v391`, the arc rail** (2026-07-22).
+**And before that — `als-v391`, the arc rail** (2026-07-22), still the most
+recent change to a page Alex himself uses.
 His words: *"the surge on top of the home screen is too big, ur eye doesnt
 really see the good morning alex."* He was right. See §4 for the behaviour and
 constraint 11 for the bug it uncovered. Two things it left unsettled:
@@ -186,6 +190,63 @@ constraint 11 for the bug it uncovered. Two things it left unsettled:
 - Home's arc **tile** still reads "Surge / chapter · day 184", which the rail now
   duplicates a few hundred pixels above it. Left alone on purpose (every page
   owns a tile), but he never ruled on it.
+
+### The shoe stage (`als-v394` / `v395`)
+
+**Why it exists.** `SHOE_RETIRE` was a flat 700km. Chrissie's *default* shoe is
+`"Saucony endrorphin pro 5"` (her spelling) — a carbon racer finished at ~400km —
+so every auto-imported run piled onto it against a limit 300km too generous, on
+knees that already ache from eight hours standing. Her other pair is
+`"Hoka Bondi 9"`, max cushion, 800km. Recognising the model is what makes the
+number honest; the picture is a consequence, not the point.
+
+**How it decides.** `SHOE_KB` is 73 models (keywords, lifespan, stack, drop,
+plate, palette). `shoeIdentify()` scores brand + model tokens with a bounded
+Levenshtein ≤2, **penalises unmatched keywords** (without that, "Nike Pegasus 41"
+matches *Pegasus Trail*), and accepts a lone distinctive model token ≥5 chars
+(so "vaporfly next% 4" resolves with no brand). Precedence for the limit is
+`retireUser` → catalogue → stored `retireKm` → 700.
+
+- **Identification is read-only.** `shoeLifeKm()` computes at render; nothing is
+  ever written back onto a shoe. An unidentified shoe keeps whatever limit it had
+  and says so in words — it never invents a number.
+- Her photo replaces the drawing: `run:shoePics`, ≤26KB, synced **and** in
+  `BUNDLES`. At the limit, «Κάρτα ✧» draws a keepsake of the distance those shoes
+  carried her.
+
+**The shoe itself is drawn, never fetched.** No free, legal, durable shoe-image
+API exists; brand CDN URLs rot and a PWA offline in Rhodes would show a broken
+box. Don't re-pitch fetching product photos. Geometry comes from the model's own
+stack and drop, so it can do what a catalogue photo cannot — wear out.
+
+**`als-v395` makes it real 3D, on the GPU, with no dependency.** `shoeMeshGL()`
+lofts ~6,600 triangles; two inline shaders do per-pixel Phong. Laces and tread
+lugs are real geometry and the lugs flatten to nothing by end of life. The drawn
+2D SVG remains the fallback.
+
+⚠️ **Gotchas here, in the order they bit:**
+
+- **`y` grows DOWNWARD** in the shoe code (`GY=136` is the ground, the collar is
+  ~50). Two separate bugs came from forgetting it: `ry=(yTop-yBot)/2` went
+  negative and flattened the shoe into a ribbon, and `y<=yOut(t)` painted the
+  whole upper in the outsole's colour. The GL buffer flips Y on the way in.
+- **One shared GL context, blitted into each shoe's own 2D canvas.** Never one
+  context per shoe — browsers cap them and silently drop the oldest.
+  `webglcontextlost` falls back to the drawing; nothing on the page breaks.
+- **Colour lives on the vertices**, not the faces. Per-quad colour stair-steps the
+  midsole line and the flank sweep into something that looks like Minecraft.
+- Panels (toe bumper, heel counter, topline seam) are what stop a lofted profile
+  reading as a smooth loaf. The lens is *solved* from the canvas shape, not
+  hardcoded.
+- **Nothing animates on its own** — painted once, then only when she touches it,
+  so a shoe on screen costs her no battery. The gyroscope is deliberately unused:
+  iOS needs a permission prompt, and a system dialog because she touched a picture
+  of her trainers is not delight.
+
+**Not yet confirmed on a device:** the whole stage is verified by headless render
+and 2,153 assertions, but nobody has run a finger over it on Chrissie's iPhone.
+The keepsake card (`shoeKeepsake`) now rasterises the GL canvas rather than the
+SVG — that path in particular has only been read, never tapped.
 
 ### The Garmin sleep pipe (`als-v392` / `v393`)
 
@@ -281,7 +342,7 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 9 suites, 229 assertions
+for f in tests/*.js; do node "$f"; done   # 10 suites, 2,382 assertions
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
@@ -314,6 +375,20 @@ one. Hardcode what the JS would have painted, force `[data-rise]` to
   --disable-gpu --screenshot=after.png --window-size=393,700 \
   --virtual-time-budget=3000 --hide-scrollbars "file://$PWD/after.html"
 ```
+
+⚠️ **`--disable-gpu` silently kills WebGL**, so the shoe stage renders as an empty
+canvas and the page looks broken when it isn't. To shoot anything using the GPU,
+swap that flag for software rendering:
+
+```bash
+  --use-angle=swiftshader --enable-unsafe-swiftshader
+```
+
+**Looking at generative graphics is not optional.** The shoe took six rounds of
+render-screenshot-`Read`-the-PNG before it was worth shipping, and every round
+caught something the tests could not see: tread hanging below the sole, a heel
+that read as mush, inverted lighting, a shoe flattened into a ribbon. Assert the
+geometry is finite in a test; then *look at it*.
 
 Render `git show HEAD:<page>` the same way for a real before/after. Headless
 does not apply the mobile viewport, so the right edge clips — compare the two
