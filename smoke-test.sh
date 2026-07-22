@@ -25,12 +25,14 @@ trap 'rm -f "$LIST" "$PROG"' EXIT
 # Files to check: the LIVE app's own .html + .js. Excludes vendored code,
 # archive/ (retired pages, kept for reference — not deployed), _quarantine/
 # (throwaways + the May-28 fossil clone, which still carries the OLD anon-key
-# bug and would otherwise trip the auth check), and the _*.html / render-*.html
-# throwaways a headless render leaves behind.
+# bug and would otherwise trip the auth check), the _*.html / render-*.html
+# throwaways a headless render leaves behind, and tests/garmin-probe-out/
+# (pages Garmin served US — foreign HTML full of absolute links to their CDN,
+# never deployed, and it is not this guard's job to police Garmin's markup).
 find . -type f \( -name '*.html' -o -name '*.js' \) \
   -not -path './vendor/*' -not -path './node_modules/*' \
   -not -path './archive/*' -not -path './docs/*' -not -path './als/*' \
-  -not -path './_quarantine/*' \
+  -not -path './_quarantine/*' -not -path './tests/garmin-probe-out/*' \
   -not -name '_*.html' -not -name 'render-*.html' \
   | sed 's|^\./||' | sort > "$LIST"
 

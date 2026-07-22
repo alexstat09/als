@@ -16,6 +16,7 @@ var vault = require('./_vault');
 var movies = require('./_movies');
 var yt = require('./_youtube');
 var prices = require('./_prices');
+var garmin = require('./_garmin');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -172,18 +173,23 @@ function icuLooksLikeActivity(b) {
   var head = Buffer.from(b.slice(0, 96)).toString('utf8');
   return /<\?xml|<TrainingCenterDatabase|<gpx/i.test(head);                          // tcx / gpx
 }
-// ── Garmin → intervals.icu WELLNESS courier (her sleep, RHR, HRV) ──────────
+// ── WELLNESS courier — intervals.icu leg (the FALLBACK) ────────────────────
 // Chrissie wanted everything her watch measures to arrive on its own, like her
-// runs do. It comes down the same wire: intervals keeps one wellness record per
-// day that Garmin fills. Verified against her real account 2026-07-16 — what it
-// actually carries is:
+// runs do. This leg comes down the same wire as her runs: intervals keeps one
+// wellness record per day that Garmin fills. Verified against her real account
+// 2026-07-16 — what it actually carries is:
 //     sleepSecs (6h16m) · sleepScore (66) · restingHR (51) · hrv rMSSD (44) · steps
-// and, importantly, NOT bed/wake times. intervals is a training platform: it
-// distils Garmin's night into a duration, so there is no timeline to import.
-// That is fine, and in fact better than typed input — sleepSecs is time actually
-// ASLEEP, while bed→wake arithmetic is time IN BED and flatters you by an hour.
+// and, importantly, NOT bed/wake times, NOT stages, NOT continuity. intervals is
+// a training platform: it distils Garmin's night into a duration, so there is no
+// timeline to import. Confirmed twice over — intervals' own forum says sleep
+// onset/offset must be typed in by hand, because Garmin's partner API never
+// sends it.
 //
-// TWO RULES:
+// That gap is why _garmin.js exists and goes to the source. This leg STAYS as
+// the fallback: it needs no credentials and cannot be broken by Garmin retiring
+// OAuth1 on 2026-12-31, so on the day the rich leg dies her nights keep landing.
+//
+// TWO RULES, and they bind both legs:
 //  1. MEASUREMENTS only. Garmin's own sleepScore is a VERDICT from a black box.
 //     It is carried as `garminScore` for comparison and must NEVER feed her
 //     score, or there are two scores disagreeing and the circularity that got
@@ -191,13 +197,11 @@ function icuLooksLikeActivity(b) {
 //  2. Delivered to the RUNNER's account, never the owner's. Alex has no watch;
 //     nothing here can reach his rows or change his dashboard.
 //
-// Idempotent by date: this publishes a rolling snapshot keyed by dateKey, NOT a
-// queue. So there is nothing to ack, nothing to prune, and re-running is free —
-// unlike the activity courier, which must track doneIds because FIT downloads
-// are expensive and one-shot.
-async function icuWellness() {
+// Returns items; it does NOT write. publishSleepInbox() below is the single
+// writer, so the two legs can never race each other over one row.
+async function icuWellnessItems() {
   var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
-  if (!ATH || !KEY) return { skipped: 'icu env not set' };
+  if (!ATH || !KEY) return [];
   var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
   function ymd(d) { return d.toISOString().slice(0, 10); }
   var now = Date.now();
@@ -207,10 +211,10 @@ async function icuWellness() {
     '/wellness?oldest=' + ymd(new Date(now - 21 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
   var r;
   try { r = await fetch(url, { headers: { Authorization: authHeader } }); }
-  catch (e) { return { error: 'wellness fetch failed' }; }
-  if (!r.ok) return { error: 'wellness ' + r.status };
-  var rows; try { rows = await r.json(); } catch (e) { return { error: 'wellness not json' }; }
-  if (!Array.isArray(rows)) return { error: 'wellness not array' };
+  catch (e) { throw new Error('wellness fetch failed'); }
+  if (!r.ok) throw new Error('wellness ' + r.status);
+  var rows; try { rows = await r.json(); } catch (e) { throw new Error('wellness not json'); }
+  if (!Array.isArray(rows)) throw new Error('wellness not array');
 
   var items = [];
   rows.forEach(function (w) {
@@ -222,14 +226,90 @@ async function icuWellness() {
     if (w.sleepScore > 0) { it.garminScore = w.sleepScore; any = true; }   // comparison ONLY
     if (any) items.push(it);
   });
-  if (!items.length) return { wellness: 0 };
+  return items;
+}
 
+// ── THE SINGLE WRITER of sleep:inbox ───────────────────────────────────────
+// Two legs feed her sleep and exactly one function writes it, because two
+// writers on one row is a clobber waiting to happen.
+//
+// PRECEDENCE, field by field: Garmin > intervals > what was already delivered.
+// Never wholesale — a null from the rich leg (her watch reports no SpO2) must
+// not erase a real value the poor leg had. Only non-null wins.
+//
+// CARRY-FORWARD: the Garmin leg fetches only TODAY plus any gap, so previously
+// delivered nights would vanish from a rolling snapshot if we rebuilt it from
+// scratch each tick. Past Garmin nights are carried over from the previous row;
+// past intervals nights are not, because that leg re-pulls its whole 21 days
+// anyway and stale copies would only fight the fresh ones.
+//
+// Idempotent by date: a rolling snapshot keyed by dateKey, NOT a queue. Nothing
+// to ack, nothing to prune, re-running is free — unlike the activity courier,
+// which must track doneIds because FIT downloads are expensive and one-shot.
+var INBOX_DAYS = 30;
+
+function mergeInto(map, items, tag) {
+  (items || []).forEach(function (it) {
+    if (!it || !it.dateKey) return;
+    var cur = map[it.dateKey] || (map[it.dateKey] = { dateKey: it.dateKey });
+    Object.keys(it).forEach(function (k) {
+      if (it[k] === null || it[k] === undefined) return;   // never let a gap erase a reading
+      cur[k] = it[k];
+    });
+    if (tag) cur.measuredBy = tag;
+  });
+}
+
+async function publishSleepInbox() {
   var runner = supa.RUNNER_ID || undefined;
   var prev = await supa.readRow('sleep:inbox', runner);
+  var prevItems = (prev && Array.isArray(prev.items)) ? prev.items : [];
+
+  // Which nights has the rich leg already delivered? Those need no re-fetch.
+  var have = {}, carried = [];
+  prevItems.forEach(function (it) {
+    if (it && it.dateKey && it.measuredBy === 'garmin') { have[it.dateKey] = 1; carried.push(it); }
+  });
+
+  // Each leg in its OWN try. They are independent deliveries: a Garmin outage
+  // must not cost her the intervals duration, and vice versa.
+  var icuItems = [], icuErr = null;
+  try { icuItems = await icuWellnessItems(); }
+  catch (e) { icuErr = String((e && e.message) || e); }
+
+  var gItems = [], gErr = null, gConf = garmin.configured();
+  if (gConf) {
+    try {
+      var got = await garmin.recentNights({ have: have });
+      gItems = got.items;
+      if (got.errors && got.errors.length) gErr = got.errors.join(' | ');
+    } catch (e) { gErr = String((e && e.message) || e); }
+  }
+
+  var map = {};
+  mergeInto(map, icuItems, null);        // fallback leg first…
+  mergeInto(map, carried, 'garmin');     // …then what the watch already told us…
+  mergeInto(map, gItems, 'garmin');      // …then tonight's fresh reading, which wins.
+
+  var cutoff = new Date(Date.now() - INBOX_DAYS * 86400000).toISOString().slice(0, 10);
+  var items = Object.keys(map).filter(function (k) { return k >= cutoff; })
+    .sort().map(function (k) { return map[k]; });
+
+  // A read that failed must NEVER be published as an empty snapshot — that is
+  // how this project once "lost" a device's worth of data. If both legs came
+  // back with nothing and we previously had something, keep what we had.
+  if (!items.length) {
+    return { wellness: 0, garmin: gConf ? (gErr || 'no nights') : 'not configured', icu: icuErr || 'no rows',
+      kept: prevItems.length, skippedWrite: true };
+  }
+
   var sig = JSON.stringify(items);
-  if (prev && prev.sig === sig) return { wellness: items.length, unchanged: true };  // no write, no sync churn
+  var rich = items.filter(function (it) { return it.measuredBy === 'garmin'; }).length;
+  if (prev && prev.sig === sig) {
+    return { wellness: items.length, rich: rich, unchanged: true, garminError: gErr, icuError: icuErr };
+  }
   await supa.writeRow('sleep:inbox', { items: items, sig: sig, at: new Date().toISOString() }, runner);
-  return { wellness: items.length, wrote: true };
+  return { wellness: items.length, rich: rich, wrote: true, garminError: gErr, icuError: icuErr };
 }
 
 async function icuCheck() {
@@ -436,7 +516,7 @@ module.exports = async function (req, res) {
   // never take her runs down with it — they are independent deliveries and the
   // runs are the ones she'd notice.
   var wellResult = null;
-  try { wellResult = await icuWellness(); } catch (e) { wellResult = { error: String((e && e.message) || e) }; }
+  try { wellResult = await publishSleepInbox(); } catch (e) { wellResult = { error: String((e && e.message) || e) }; }
   if (icuOnly) { res.status(200).json({ icu: icuResult, wellness: wellResult }); return; }
 
   try {
