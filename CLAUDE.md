@@ -161,6 +161,18 @@ race-day crown, `intervals.icu` auto-import.
 
 ## 5 · Open
 
+**Last shipped — `als-v391`, the arc rail** (2026-07-22, pushed to `main`).
+His words: *"the surge on top of the home screen is too big, ur eye doesnt
+really see the good morning alex."* He was right. See §4 for the behaviour and
+constraint 11 for the bug it uncovered. Two things it left unsettled:
+
+- `ANNOUNCE_DAYS = 3` in `paintArcBand()` is a guess. **Nobody finds out whether
+  it is right until a chapter actually turns** — so if he mentions the band
+  feeling long or having missed it, that constant is the dial, not the design.
+- Home's arc **tile** still reads "Surge / chapter · day 184", which the rail now
+  duplicates a few hundred pixels above it. Left alone on purpose (every page
+  owns a tile), but he never ruled on it.
+
 **Needs Alex, not code**
 - Connect Garmin directly on `intervals.icu` and remove Strava. This blocks
   Chrissie's auto-import and the marathon is 8 Nov 2026.
