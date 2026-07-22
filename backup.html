@@ -1675,6 +1675,22 @@
       }
       return out;
     }
+    // …and the ones that belong to NO bundle. These sync nowhere, so a reinstall
+    // loses them. Naming them is the only honest way to answer "will I lose
+    // anything": he can read the list and see for himself that it holds caches
+    // and preferences, not logged data — and spot it immediately if that ever
+    // stops being true because a new store was added without a bundle.
+    function deviceOnlyKeys(){
+      var out = [];
+      for (var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        if (!k || isInternal(k) || bundleFor(k)) continue;
+        var v = localStorage.getItem(k) || '';
+        out.push({ key: k, size: v.length });
+      }
+      out.sort(function(a,b){ return b.size - a.size; });
+      return out;
+    }
 
     var scLastGaps = 0;
     async function runSyncCheck(){
@@ -1756,7 +1772,19 @@
           }).join('') + (lines.length > 12 ? '<div>…and ' + (lines.length - 12) + ' more</div>' : '') + '</div>'
         : '';
 
-      body.innerHTML = head + wLine + stuckLine + detail;
+      // What syncs nowhere at all — the honest answer to "will a reinstall lose
+      // anything". Rendered plainly, not as a warning, because caches and
+      // preferences SHOULD be device-only.
+      var dev = deviceOnlyKeys();
+      var devLine = dev.length
+        ? '<div class="bk-line" style="margin-top:12px"><b>' + dev.length + ' key' + (dev.length === 1 ? '' : 's') +
+          ' on this device sync nowhere</b> — caches and preferences, which a reinstall simply rebuilds. ' +
+          'Nothing you\'ve logged should appear here:<div style="margin-top:5px;opacity:.75">' +
+          dev.slice(0, 20).map(function(d){ return esc(d.key); }).join(' · ') +
+          (dev.length > 20 ? ' · …' + (dev.length - 20) + ' more' : '') + '</div></div>'
+        : '';
+
+      body.innerHTML = head + wLine + stuckLine + detail + devLine;
       $('scPush').classList.toggle('hidden', !onlyHere);
     }
 
