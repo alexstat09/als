@@ -544,17 +544,25 @@
     .rn-st small{ font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-m); text-transform:uppercase; color:var(--au-faint); display:block; margin-top:6px; }
     .rn-sum-meta{ display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; margin:15px 0 2px; font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-t); color:var(--au-faint); }
     .rn-sum-meta b{ color:rgb(var(--rn)); font-family:var(--au-serif); font-style:italic; font-size:var(--t-copy); }
-    .rn-cal{ display:flex; flex-direction:column; gap:3px; margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
-    .rn-cal-row{ display:flex; align-items:center; gap:7px; }
-    .rn-cal-mo{ flex:none; width:26px; font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; color:var(--au-faint); text-transform:uppercase; }
-    .rn-cal-cells{ flex:1; display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
-    .rn-cal-c{ aspect-ratio:1; border-radius:var(--r-xs); background:var(--e3); }
-    .rn-cal-c.q1{ background:var(--rn-a30); } .rn-cal-c.q2{ background:var(--rn-a45); }
-    .rn-cal-c.q3{ background:var(--rn-a75); } .rn-cal-c.q4{ background:rgb(var(--rn)); }
-    .rn-cal-c.fut{ background:var(--e1); }
-    .rn-cal-c[data-cal-run]{ cursor:pointer; }
-    .rn-cal-key{ display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:9px; font-family:var(--au-mono); font-size:var(--t-micro); color:var(--au-faint); }
-    .rn-cal-key .rn-cal-c{ width:11px; height:11px; aspect-ratio:auto; }
+    /* ── Ο ρυθμός · the rhythm ─────────────────────────────────────
+       This was a 15-row × 7-column calendar of dots. A grid with neither axis
+       labelled is a puzzle: you have to work out that across is days and down
+       is weeks before you can read anything, and even then it answers "which
+       days did I run", which she can already see in the run list below.
+       A marathon plan is built on WEEKLY VOLUME — that is the number her coach
+       moves — so the rhythm shows exactly that, on one axis, in one glance. */
+    .rn-rhy{ margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
+    .rn-rhy-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .rn-rhy-v{ font-family:var(--au-serif); font-style:italic; font-size:26px; line-height:1; color:var(--au-ivory); }
+    .rn-rhy-v small{ font-family:var(--au-mono); font-style:normal; font-size:var(--t-micro); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-left:6px; }
+    .rn-rhy-pk{ font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); text-align:right; }
+    .rn-rhy-bars{ display:flex; align-items:flex-end; gap:3px; height:76px; }
+    .rn-rhy-b{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
+    .rn-rhy-b i{ display:block; width:100%; border-radius:3px 3px 1px 1px; background:var(--rn-a45); min-height:2px; }
+    .rn-rhy-b.peak i{ background:rgb(var(--rn)); }
+    .rn-rhy-b.now i{ background:rgb(var(--rn)); box-shadow:0 0 10px rgba(var(--rn),.5); }
+    .rn-rhy-b.zero i{ background:var(--e3); }
+    .rn-rhy-ax{ display:flex; justify-content:space-between; margin-top:8px; font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); }
     .rn-ms{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:16px; padding-top:14px; border-top:1px solid var(--au-line); }
     .rn-ms-c{ padding:11px 12px; border-radius:var(--r-md); background:var(--rn-a06); border:1px solid var(--rn-a15); }
     .rn-ms-c b{ display:block; font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); letter-spacing:var(--tr-neg); line-height:1; }
@@ -2088,18 +2096,33 @@
     })();
 
     var GRMO3=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-    function calendarHTML(rows){
-      var body=rows.map(function(row){
-        var mon=parseDk(row[0].dk), lab=(mon.getDate()<=7)?GRMO3[mon.getMonth()]:'';
-        var cells=row.map(function(c){
-          if(c.future) return '<span class="rn-cal-c fut"></span>';
-          var q=c.km<=0?0:(c.km<5?1:(c.km<10?2:(c.km<16?3:4)));
-          return '<span class="rn-cal-c q'+q+'"'+(c.id?(' data-cal-run="'+c.id+'"'):'')+' title="'+c.dk+(c.km>0?(' · '+(Math.round(c.km*10)/10)+'χλμ'):'')+'"></span>';
-        }).join('');
-        return '<div class="rn-cal-row"><span class="rn-cal-mo">'+lab+'</span><div class="rn-cal-cells">'+cells+'</div></div>';
+    /* Ο ρυθμός · one bar a week, height = kilometres. Reuses calendarModel's
+       rows (already tested) and simply sums each week, so nothing about how the
+       days are gathered changes — only how they are shown. */
+    function rhythmHTML(rows){
+      var weeks=rows.map(function(row){
+        var km=0, allFuture=true;
+        row.forEach(function(c){ km+=(+c.km||0); if(!c.future) allFuture=false; });
+        return { km:km, future:allFuture, mon:parseDk(row[0].dk) };
+      }).filter(function(w){ return !w.future; });
+      if(!weeks.length) return '';
+      var mx=0, tot=0, peak=0;
+      weeks.forEach(function(w,i){ tot+=w.km; if(w.km>mx){ mx=w.km; peak=i; } });
+      var avg=tot/weeks.length;
+      var bars=weeks.map(function(w,i){
+        var h=mx>0?Math.max(2,Math.round(w.km/mx*76)):2;
+        var cls=(i===weeks.length-1)?'now':(i===peak&&w.km>0?'peak':(w.km<=0?'zero':''));
+        return '<span class="rn-rhy-b '+cls+'" title="'+r1(w.km)+'χλμ"><i style="height:'+h+'px"></i></span>';
       }).join('');
-      return '<div class="rn-cal">'+body+'</div>'+
-        '<div class="rn-cal-key"><span>λιγότερο</span><span class="rn-cal-c q1"></span><span class="rn-cal-c q2"></span><span class="rn-cal-c q3"></span><span class="rn-cal-c q4"></span><span>περισσότερο</span></div>';
+      var first=weeks[0].mon, last=weeks[weeks.length-1].mon;
+      return '<div class="rn-rhy">'+
+        '<div class="rn-rhy-top">'+
+          '<span class="rn-rhy-v">'+r1(avg)+'<small>χλμ / εβδ · avg per week</small></span>'+
+          '<span class="rn-rhy-pk">μέγιστο '+r1(mx)+' χλμ</span>'+
+        '</div>'+
+        '<div class="rn-rhy-bars">'+bars+'</div>'+
+        '<div class="rn-rhy-ax"><span>'+GRMO3[first.getMonth()]+'</span><span>'+weeks.length+' εβδομάδες</span><span>'+GRMO3[last.getMonth()]+'</span></div>'+
+      '</div>';
     }
     function milestonesHTML(list){
       var total=0; list.forEach(function(l){ total+=(+l.distanceKm||0); });
@@ -2127,11 +2150,9 @@
         '</div>'+
         '<div class="rn-sum-meta"><span><b class="rn-count">'+streak+'</b> εβδ. σερί · week streak</span>'+
           '<span><b class="rn-count">'+(lr?r1(lr.distanceKm):0)+'</b> χλμ μεγαλύτερο</span></div>'+
-        calendarHTML(calendarModel(logs,15,Date.now()))+
+        rhythmHTML(calendarModel(logs,16,Date.now()))+
         milestonesHTML(logs);
     }
-    (function(){ var sb=$('sumBody'); if(sb) sb.addEventListener('click',function(e){
-      var c=e.target.closest('[data-cal-run]'); if(c) openRunSheet(c.getAttribute('data-cal-run')); }); })();
 
     /* ── shareable run card (canvas → image → share/save) ── */
     function drawRouteCanvas(ctx,route,x,y,w,h,stroke,endc){

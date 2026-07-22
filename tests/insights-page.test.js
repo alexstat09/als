@@ -48,7 +48,10 @@ console.log('   →', els.boardN.textContent);
 ok_('question chips rendered', (els.askQs.innerHTML.match(/data-q=/g)||[]).length===5);
 ok_('shape card shown', !els.shapeCard.classList.contains('hidden'));
 ok_('shape has sparklines', els.shapeBody.innerHTML.indexOf('<svg')>=0);
-ok_('training heatmap shown', !els.heatWrap.classList.contains('hidden'));
+ok_('training rhythm shown', !els.rhyWrap.classList.contains('hidden'));
+ok_('rhythm has weekly bars', (els.rhyBars.innerHTML.match(/iq-rhy-b/g)||[]).length===14);
+ok_('rhythm states a per-week average', /sessions a week/.test(els.rhyV.innerHTML));
+ok_('rhythm axis is labelled at both ends', !!els.rhyL.textContent && !!els.rhyR.textContent);
 ok_('constellation drawn from his own data', els.iqSky.innerHTML.indexOf('<circle')>=0);
 ok_('method explains both bars', /big enough to matter/.test(els.method.innerHTML)&&/statistically real/.test(els.method.innerHTML));
 
