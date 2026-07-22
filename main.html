@@ -973,7 +973,10 @@ body::after {
     if (s && typeof s.count === 'number') return s;
     return { count: 0, lastProcessedDate: '' };
   }
-  function saveStreak(s) { storeSet('goal_streak_v1', s); }
+  // _ts makes this last-write-wins across devices. Without it sync.js deep-merges
+  // the object and `count` resolves scalar-conflict-remote-wins, so the streak
+  // could flip between phone and laptop. (See the water counter, same shape.)
+  function saveStreak(s) { s._ts = Date.now(); storeSet('goal_streak_v1', s); }
 
   function processStreak() {
     const s = loadStreak();
@@ -1766,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'goals',
-    syncedKeys: ['goals_outcomes_v1'],
+    syncedKeys: ['goals_outcomes_v1', 'goal_streak_v1'],
     syncedPrefixes: ['goals:'],
     onApplied: function () {
       window.dispatchEvent(new CustomEvent('goals-changed'));
