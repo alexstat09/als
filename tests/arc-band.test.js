@@ -38,7 +38,13 @@ var ok=0,bad=0; function is(n,c){(c?ok++:bad++);console.log((c?'  ✓ ':'  ✗ F
 var res=sb.window.ALSChapters.compute();
 console.log('\nchapters detected:', res.chapters.map(c=>c.key).join(' → '));
 is('engine found enough for chapters', res.hasEnough);
-is('band is visible', !els.arcBand.classList.contains('hidden'));
+// AT REST the arc is one line under the dateline, not a 200px band above the
+// greeting. The band is an announcement; on an ordinary day there is nothing to
+// announce, so exactly one of the two is on screen and it is the rail.
+is('at rest the RAIL shows, not the band', !els.arcRail.classList.contains('hidden') && els.arcBand.classList.contains('hidden'));
+console.log('  rail    :', JSON.stringify([els.arcRailN.textContent,els.arcRailTitle.textContent,els.arcRailMeta.textContent].join(' ')));
+is('the rail carries the chapter title', !!els.arcRailTitle.textContent && els.arcRailTitle.textContent!=='Now');
+is('the rail is never left blank where the band had content', !!els.arcRailN.textContent && !!els.arcRailMeta.textContent);
 console.log('  eyebrow :', JSON.stringify(els.arcBandN.textContent));
 console.log('  title   :', JSON.stringify(els.arcBandTitle.textContent));
 console.log('  meta    :', JSON.stringify(els.arcBandMeta.textContent));
@@ -60,12 +66,25 @@ vm.runInContext("(function(){ var b=document.getElementById('arcBand'); })();",s
 // call paint again through a fresh load of home-live (simplest honest way)
 vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#2'});
 is('a changed chapter IS announced', !els.arcBandNew.classList.contains('hidden'));
-is('…and then it stops announcing it', (function(){ els.arcBandNew.classList.add('hidden'); vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#3'}); return els.arcBandNew.classList.contains('hidden'); })());
+is('the announcement takes over the top of the page', !els.arcBand.classList.contains('hidden') && els.arcRail.classList.contains('hidden'));
+
+// The old bug: `arc:seen` was written on the same paint that read it, so the
+// announcement was true for exactly one repaint and any sync landing wiped it
+// out from under him. The turn is stamped with a DATE now, so it survives.
+vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#3'});
+is('a repaint does not swallow the announcement', !els.arcBand.classList.contains('hidden'));
+
+// …and once the window has passed, the arc goes back to resting in the rail.
+var old=new Date(); old.setDate(old.getDate()-4);
+store['arc:seen_at']=dk(old);
+vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#4'});
+is('after the window it collapses back to the rail', els.arcBand.classList.contains('hidden') && !els.arcRail.classList.contains('hidden'));
 
 // no data at all
-store={}; els.arcBand.classList.add('hidden');
-vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#4'});
+store={}; els.arcBand.classList.remove('hidden'); els.arcRail.classList.remove('hidden');
+vm.runInContext(fs.readFileSync(ALS+'/home-live.js','utf8'),sb,{filename:'home-live.js#5'});
 is('no data → band hides rather than showing an empty frame', els.arcBand.classList.contains('hidden'));
+is('no data → the rail hides too, no empty dangling line', els.arcRail.classList.contains('hidden'));
 
 console.log('\n'+ok+' passed, '+bad+' failed');
 process.exit(bad?1:0);

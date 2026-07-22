@@ -65,6 +65,14 @@ body::before{content:''; position:fixed; inset:-15%; z-index:-2; pointer-events:
 body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size:3px 3px;}
 @keyframes drift{0%{transform:translate3d(-1.2%,-0.8%,0);}100%{transform:translate3d(1.2%,0.8%,0);}}
 .wrap{max-width:1120px; margin:0 auto; padding:0 22px;}
+
+/* `.hidden` was used by home-live.js (the arc band, the "new chapter" pip) but
+   NEVER DEFINED on this page — aurora.css is the only stylesheet and it has no
+   such rule. So the green NEW CHAPTER badge was permanently lit, and a failed
+   chapter computation rendered an EMPTY purple band instead of nothing. One
+   rule fixes both. */
+.hidden{display:none !important;}
+
 /* ── the arc band ── */
 .arcband{ position:relative; display:block; margin:18px 0 4px; padding:20px 20px 18px; border-radius:20px; text-decoration:none; overflow:hidden;
   background:linear-gradient(135deg, rgba(155,140,255,.16), rgba(52,226,176,.05) 62%, rgba(255,255,255,.02));
@@ -83,6 +91,30 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .arcband-go{ display:block; margin-top:14px; font-size:12.5px; font-weight:700; color:rgba(155,140,255,.95); }
 .arcband:active{ transform:scale(.995); }
 @media(min-width:720px){ .arcband{ padding:26px 28px 24px; } }
+
+/* ── the arc RAIL — the arc's resting state ──────────────────
+   The band is an ANNOUNCEMENT: its whole job is to say a chapter turned. But a
+   chapter turns maybe six times a year, and the band was standing there ~200px
+   tall every single day to carry it. Two italic serif headlines stacked (the
+   chapter title at 38px, then "Good morning" at 66px) means the eye lands on
+   the chapter, not on him, and half the first screen is gone before the
+   greeting starts.
+   So the arc rests as one quiet line under the dateline: mono for the machine
+   facts, serif italic for the one word that is actually narrative. ~30px, and
+   it reads as a kicker rather than a headline. The band comes back, full size,
+   only in the days after a chapter actually turns. */
+.arcrail{ display:inline-flex; align-items:baseline; flex-wrap:wrap; gap:9px; margin-top:11px;
+  font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:0.18em;
+  text-transform:uppercase; color:var(--faint); text-decoration:none;
+  transition:color .28s var(--snap); }
+.arcrail:hover{ color:var(--dim); }
+.arcrail-dot{ align-self:center; width:5px; height:5px; border-radius:50%; flex-shrink:0;
+  background:#9B8CFF; }
+.arcrail-title{ font-family:var(--serif); font-style:italic; font-weight:400;
+  font-size:15.5px; line-height:1; letter-spacing:0; text-transform:none; color:var(--ivory); }
+.arcrail-sep{ opacity:.38; }
+.arcrail-go{ opacity:.5; letter-spacing:0; }
+.arcrail:hover .arcrail-go{ opacity:.9; }
 
 /* ── scroll-reveal (JS-gated so no-JS shows everything) ── */
 .js [data-rise]{opacity:0; transform:translateY(20px); transition:opacity .7s var(--settle), transform .7s var(--settle); will-change:opacity,transform;}
@@ -374,6 +406,17 @@ body.has-bottombar{ padding-bottom:116px !important; }
       <div>
         <h1 class="greeting" id="homeGreeting" data-rise>Good morning<span class="grn" id="homeGreetingName"></span></h1>
         <div class="sub" id="sub" data-rise>Friday, 4 July 2026 · 07:14</div>
+        <!-- The arc, at rest. Under the dateline on purpose: the chapter is
+             context for today, so it belongs where the date is, and nothing
+             now stands above the greeting. -->
+        <a class="arcrail hidden" id="arcRail" href="arc.html" data-rise>
+          <span class="arcrail-dot" aria-hidden="true"></span>
+          <span id="arcRailN">Chapter</span>
+          <span class="arcrail-title" id="arcRailTitle"></span>
+          <span class="arcrail-sep" aria-hidden="true">·</span>
+          <span id="arcRailMeta"></span>
+          <span class="arcrail-go" aria-hidden="true">→</span>
+        </a>
       </div>
       <div class="nova" id="nova" data-rise title="Nova">
         <svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="ng" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#34E2B0"/><stop offset="55%" stop-color="#22CBC6"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient><radialGradient id="ngF" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="#34E2B0" stop-opacity=".16"/><stop offset="100%" stop-color="#34E2B0" stop-opacity="0"/></radialGradient><clipPath id="ngC"><circle cx="50" cy="50" r="40"/></clipPath></defs><g class="nova-glow"><circle cx="50" cy="50" r="40" fill="url(#ngF)"/><circle class="nova-ring" cx="50" cy="50" r="40" fill="none" stroke="url(#ng)" stroke-width="2.2" opacity=".55"/><g clip-path="url(#ngC)"><path class="nova-track" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#ng)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".2"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#ng)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="#EAFFF7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></g><g class="nova-node"><circle cx="48.8" cy="25" r="4.4" fill="#EAFFF7"/></g></g></svg>
@@ -594,7 +637,7 @@ body.has-bottombar{ padding-bottom:116px !important; }
 <dialog id="peek" class="peekdlg"></dialog>
 <label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
-<script src="home-live.js?v=206" defer></script>
+<script src="home-live.js?v=207" defer></script>
 <script src="home-motion.js?v=202" defer></script>
 </body>
 </html>

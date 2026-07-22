@@ -400,7 +400,12 @@
     if (!band || !window.ALSChapters) return;
     var res;
     try { res = window.ALSChapters.compute(); } catch (e) { return; }
-    if (!res || !res.hasEnough || !res.chapters || !res.chapters.length) { band.classList.add('hidden'); return; }
+    var rail0 = document.getElementById('arcRail');
+    if (!res || !res.hasEnough || !res.chapters || !res.chapters.length) {
+      band.classList.add('hidden');
+      if (rail0) rail0.classList.add('hidden');
+      return;
+    }
 
     /* The last entry is always "Now." — an open placeholder rather than a
        chapter he lived through. Prefer the most recent REAL one; fall back to
@@ -410,10 +415,33 @@
     for (var i = chs.length - 1; i >= 0; i--) { if (chs[i].key !== 'now') { cur = chs[i]; break; } }
     if (!cur) cur = chs[chs.length - 1];
 
+    /* THE ANNOUNCEMENT WINDOW.
+       `isNew` used to be computed from `arc:seen` and then `arc:seen` was
+       written immediately — so the flag was true for exactly one paint. Any
+       repaint (a storage event, a sync landing) recomputed it as false and the
+       announcement vanished mid-look. Worse, the band itself stayed at full
+       height forever regardless, which is the actual cost: ~200px and a second
+       italic serif headline sitting above the greeting every day of the year to
+       carry a message that is true about six days of it.
+       So the turn is now stamped with a DATE, and the band is shown only while
+       that date is inside the window. After it, the arc rests in the rail. */
+    var ANNOUNCE_DAYS = 3;
     var sig = cur.key + '|' + (cur.start || '');
-    var seen = null; try { seen = localStorage.getItem('arc:seen'); } catch (e) {}
-    var isNew = !!seen && seen !== sig;          // never "new" on a first-ever visit
-    try { localStorage.setItem('arc:seen', sig); } catch (e) {}
+    var seen = null, seenAt = null;
+    try { seen = localStorage.getItem('arc:seen'); seenAt = localStorage.getItem('arc:seen_at'); } catch (e) {}
+    if (seen !== sig) {
+      /* A first-ever visit has nothing to announce: he has not missed a turn,
+         the device simply has no memory yet. Stamp it as already-seen. */
+      seenAt = seen ? tk() : '';
+      try { localStorage.setItem('arc:seen', sig); localStorage.setItem('arc:seen_at', seenAt); } catch (e) {}
+    }
+    var isNew = false;
+    if (seenAt) {
+      var s0 = new Date(seenAt + 'T00:00:00'); s0.setHours(0, 0, 0, 0);
+      var n0 = new Date(); n0.setHours(0, 0, 0, 0);
+      var age = Math.round((n0 - s0) / 86400000);
+      isNew = age >= 0 && age < ANNOUNCE_DAYS;
+    }
 
     /* A chapter object carries `start` but no `end` — the end only survives
        inside the eyebrow, as "Sep 9 – Oct 15". So a closed chapter must NOT be
@@ -428,8 +456,9 @@
       days = Math.max(0, Math.round((t0 - d0) / 86400000));
     }
     var set = function (id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; };
+    var title = String(cur.title || '').replace(/\.$/, '');
     set('arcBandN', (closed ? 'Last chapter · ' : 'Chapter ') + (cur.n || 1));
-    set('arcBandTitle', String(cur.title || '').replace(/\.$/, ''));
+    set('arcBandTitle', title);
     set('arcBandMeta', (days ? ('day ' + days + ' · ') : '') + (cur.eyebrow || ''));
     /* One sentence. The Arc itself is where the whole thing is read. */
     var body = String(cur.body || '');
@@ -437,7 +466,18 @@
     set('arcBandBody', stop > 20 ? body.slice(0, stop + 1) : body);
     var nb = document.getElementById('arcBandNew');
     if (nb) nb.classList.toggle('hidden', !isNew);
-    band.classList.remove('hidden');
+
+    /* The rail carries the same three facts in one line. An open chapter counts
+       days; a closed one has no running count, so it shows its date range
+       instead of nothing. */
+    set('arcRailN', closed ? ('Last · ' + (cur.n || 1)) : ('Chapter ' + (cur.n || 1)));
+    set('arcRailTitle', title);
+    set('arcRailMeta', days ? ('day ' + days) : (cur.eyebrow || ''));
+
+    /* Exactly one of the two is ever on screen. */
+    var rail = document.getElementById('arcRail');
+    band.classList.toggle('hidden', !isNew);
+    if (rail) rail.classList.toggle('hidden', isNew);
   }
 
   paintGreeting();
