@@ -5,265 +5,481 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050507">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Insight Engine · MÉTRON</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <script src="water.js"></script>
 <script src="topbar.js" defer></script>
-<script>window.__pmAutoSel='.iq-hero,.iq-sec,.iq-card';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
+<script>window.__pmAutoSel='.iq-hero,.iq-card';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
 <script src="page-motion.js" defer></script>
 <script src="insights.js" defer></script>
 <script src="insights-engine.js" defer></script>
 <link rel="stylesheet" href="aurora.css">
 <style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  html,body{background:#050507;color:#F4F1EA;-webkit-font-smoothing:antialiased;}
-  body{font-family:var(--au-sans,-apple-system,system-ui,sans-serif);min-height:100vh;overflow-x:hidden;}
-  /* living aurora backdrop — cyan/violet "lab" cast */
-  body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(36% 30% at 82% 6%, rgba(124,211,252,.15), transparent 60%),
-      radial-gradient(34% 28% at 12% 20%, rgba(155,140,255,.13), transparent 60%),
-      radial-gradient(44% 36% at 52% 98%, rgba(24,200,192,.10), transparent 62%);
-    filter:blur(26px);animation:iqBreathe 15s ease-in-out infinite alternate;}
-  @keyframes iqBreathe{0%{opacity:.7}100%{opacity:1}}
-  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-image:radial-gradient(rgba(255,255,255,.013) 1px,transparent 1px);background-size:3px 3px;}
+  :root{ --iq:124,211,252; --ok:123,227,176; --no:255,143,163; --wait:212,175,110; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+        -webkit-font-smoothing:antialiased; overflow-x:hidden;
+        padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
 
-  .iq-shell{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:18px 18px 48px;}
+  /* ── the constellation behind the hero ── */
+  .iq-sky{ position:absolute; top:0; left:0; right:0; height:300px; z-index:0; pointer-events:none; opacity:0; transition:opacity 1.6s ease; }
+  .iq-sky.on{ opacity:.55; }
+  .iq-sky::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(5,5,6,0) 0%,rgba(5,5,6,.7) 62%,var(--au-void,#050506) 100%); }
 
-  /* header */
-  .iq-back{display:inline-flex;align-items:center;gap:7px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.4);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:8px;padding:8px 13px;text-decoration:none;transition:color .2s,border-color .2s;}
-  .iq-back:active{color:#F4F1EA;border-color:rgba(124,211,252,.4);}
-  .iq-eyebrow{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:rgba(124,211,252,.65);margin:22px 0 4px;display:flex;align-items:center;gap:8px;}
-  .iq-eyebrow .iq-dot{width:5px;height:5px;border-radius:50%;background:#7CD3FC;box-shadow:0 0 7px #7CD3FC;animation:iqBlink 2.4s ease-in-out infinite;}
-  @keyframes iqBlink{0%,100%{opacity:1}50%{opacity:.3}}
-  .iq-title{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(34px,9vw,52px);line-height:1.02;color:#F4F1EA;letter-spacing:-.01em;}
-  .iq-sub{font-family:var(--au-mono,ui-monospace,monospace);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,241,234,.45);margin-top:9px;}
+  .iq-hero{ position:relative; z-index:1; max-width:620px; margin:0 auto; padding:26px 18px 6px; }
+  .iq-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--iq),.85); margin-bottom:12px; }
+  .iq-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:clamp(25px,6.6vw,34px); line-height:1.06; letter-spacing:-.015em; }
+  .iq-sub{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--au-faint); margin-top:11px; }
 
-  /* generic card reveal */
-  .iq-card{position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 17px;margin-top:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    opacity:0;transform:translateY(10px);transition:opacity .55s ease,transform .55s ease;}
-  .iq-card.in{opacity:1;transform:none;}
-  .iq-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-  .iq-card-ic{font-size:14px;line-height:1;}
-  .iq-card-lbl{font-family:var(--au-mono,ui-monospace,monospace);font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.5);flex:1;}
+  .iq-wrap{ position:relative; z-index:1; max-width:620px; margin:0 auto; padding:18px; display:flex; flex-direction:column; gap:15px; }
+  .iq-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px; }
+  .iq-hd{ display:flex; align-items:center; gap:9px; margin-bottom:13px; }
+  .iq-hd .dot{ flex:none; width:7px; height:7px; border-radius:50%; background:rgba(var(--iq),.9); box-shadow:0 0 8px rgba(var(--iq),.6); }
+  .iq-hd h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
+  .iq-hd .line{ flex:1; height:1px; background:var(--au-line); }
+  .iq-hd .n{ font-family:var(--au-mono); font-size:9px; font-weight:700; color:var(--au-faint); }
 
-  /* Nova's read */
-  .iq-nova{background:linear-gradient(150deg,rgba(124,211,252,.1),rgba(155,140,255,.05));border-color:rgba(124,211,252,.2);}
-  .iq-nova .iq-card-lbl{color:rgba(124,211,252,.75);}
-  .iq-nova-body p{font-size:14.5px;line-height:1.62;color:#E9E6DF;margin-bottom:10px;}
-  .iq-nova-body p:last-child{margin-bottom:0;}
-  .iq-nova-sig{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:17px;color:#7CD3FC;margin-top:8px;}
+  /* ── the headline ── */
+  .iq-lead{ background:linear-gradient(140deg, rgba(var(--iq),.13), rgba(var(--iq),.025)); border-color:rgba(var(--iq),.28); }
+  .iq-lead .lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--iq),.9); margin-bottom:11px; }
+  .iq-lead .txt{ font-family:var(--au-serif); font-style:italic; font-size:19px; line-height:1.4; letter-spacing:-.008em; }
+  .iq-lead .act{ margin-top:13px; padding-top:12px; border-top:1px solid rgba(var(--iq),.18); font-size:13.5px; font-weight:600; color:rgba(var(--iq),.98); line-height:1.45; }
 
-  /* section eyebrow between groups */
-  .iq-sec{font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.4);margin:26px 0 2px;display:flex;align-items:center;gap:9px;}
-  .iq-sec::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.12),transparent);}
+  /* ── what changed ── */
+  .iq-ch{ display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--au-line); align-items:flex-start; }
+  .iq-ch:last-child{ border-bottom:none; padding-bottom:0; }
+  .iq-ch:first-child{ padding-top:0; }
+  .iq-tag{ flex:none; font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+           padding:5px 8px; border-radius:7px; margin-top:2px; white-space:nowrap; }
+  .iq-tag.new{ background:rgba(var(--ok),.14); color:rgb(var(--ok)); border:1px solid rgba(var(--ok),.3); }
+  .iq-tag.stronger{ background:rgba(var(--ok),.1); color:rgba(var(--ok),.9); border:1px solid rgba(var(--ok),.22); }
+  .iq-tag.weaker{ background:rgba(var(--wait),.12); color:rgb(var(--wait)); border:1px solid rgba(var(--wait),.28); }
+  .iq-tag.broken{ background:rgba(var(--no),.12); color:rgb(var(--no)); border:1px solid rgba(var(--no),.28); }
+  .iq-ch-m{ flex:1; min-width:0; }
+  .iq-ch-t{ font-size:13.5px; font-weight:650; line-height:1.35; }
+  .iq-ch-b{ font-size:12.5px; color:var(--au-dim); line-height:1.5; margin-top:5px; }
+  .iq-ch-s{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); margin-top:6px; }
 
-  /* headline pattern */
-  .iq-hero{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border-color:rgba(255,255,255,.1);}
-  .iq-hero .iq-htext{font-family:var(--au-serif,"Instrument Serif",Georgia,serif);font-style:italic;font-size:clamp(19px,4.8vw,23px);line-height:1.34;color:#F4F1EA;}
-  .iq-hero .iq-hemoji{font-size:26px;line-height:1;}
+  /* ── ask ── */
+  .iq-qs{ display:flex; flex-wrap:wrap; gap:7px; }
+  .iq-q{ font-size:12.5px; font-weight:600; padding:9px 13px; border-radius:999px; border:1px solid var(--au-line);
+         background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); text-align:left; line-height:1.3; }
+  .iq-q.on{ background:rgba(var(--iq),.15); border-color:rgba(var(--iq),.45); color:#fff; }
+  .iq-q:active{ transform:scale(.98); }
+  .iq-ans{ margin-top:14px; }
+  .iq-ans-h{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin:14px 0 8px; }
+  .iq-ans-h:first-child{ margin-top:0; }
+  .iq-ans-row{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; }
+  .iq-ans-row .em{ flex:none; font-size:14px; line-height:1.5; width:18px; text-align:center; }
+  .iq-ans-row .tx{ flex:1; min-width:0; font-size:13px; line-height:1.55; color:var(--au-ivory); }
+  .iq-ans-row.mut .tx{ color:var(--au-dim); }
+  .iq-none{ font-size:13px; color:var(--au-dim); line-height:1.55; }
 
-  /* pattern card */
-  .iq-pat{--ac:124,211,252;border-left:2px solid rgba(var(--ac),.55);}
-  .iq-pat .iq-ptop{display:flex;align-items:flex-start;gap:11px;}
-  .iq-pemoji{font-size:19px;line-height:1.25;flex:none;}
-  .iq-ptext{font-size:14px;line-height:1.5;color:#EDEAE3;}
-  .iq-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;align-items:center;}
-  .iq-chip{font-family:var(--au-mono,ui-monospace,monospace);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;border:1px solid rgba(var(--ac),.3);color:rgba(var(--ac),.95);background:rgba(var(--ac),.08);}
-  .iq-chip.muted{border-color:rgba(255,255,255,.1);color:rgba(244,241,234,.5);background:rgba(255,255,255,.03);}
-  .iq-meter{flex:1;min-width:80px;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;}
-  .iq-meter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,rgba(var(--ac),.95),rgba(var(--ac),.5));width:0;transition:width 1s cubic-bezier(.34,1.56,.64,1) .25s;}
-  .iq-action{margin-top:10px;font-size:13px;line-height:1.45;color:rgba(244,241,234,.78);display:flex;gap:7px;}
-  .iq-action::before{content:"▸";color:rgba(var(--ac),.9);font-size:11px;line-height:1.5;flex:none;}
+  /* ── the board ── */
+  .iq-row{ display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--au-line); }
+  .iq-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .iq-pip{ flex:none; width:8px; height:8px; border-radius:50%; margin-top:6px; }
+  .iq-pip.confirmed{ background:rgb(var(--ok)); box-shadow:0 0 8px rgba(var(--ok),.5); }
+  .iq-pip.ruled{ background:rgba(255,255,255,.18); }
+  .iq-pip.watching{ background:rgb(var(--wait)); box-shadow:0 0 7px rgba(var(--wait),.35); }
+  .iq-row-m{ flex:1; min-width:0; }
+  .iq-row-t{ font-size:13.5px; font-weight:650; line-height:1.35; }
+  .iq-row.mut .iq-row-t{ color:var(--au-dim); font-weight:600; }
+  .iq-row-b{ font-size:12.5px; color:var(--au-dim); line-height:1.5; margin-top:5px; }
+  .iq-row-b b{ color:var(--au-ivory); font-weight:600; }
+  .iq-meta{ display:flex; align-items:center; gap:9px; margin-top:8px; }
+  .iq-bar{ flex:1; max-width:120px; height:3px; border-radius:2px; background:rgba(255,255,255,.07); overflow:hidden; }
+  .iq-bar i{ display:block; height:100%; border-radius:2px; width:0; transition:width 1s cubic-bezier(.16,1,.3,1); }
+  .iq-bar i.confirmed{ background:rgb(var(--ok)); }
+  .iq-bar i.watching{ background:rgba(var(--wait),.8); }
+  .iq-mn{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
 
-  /* today signals */
-  .iq-sig{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid rgba(255,255,255,.05);}
-  .iq-sig:first-child{border-top:0;}
-  .iq-sig-ic{font-size:15px;line-height:1.2;width:18px;text-align:center;flex:none;}
-  .iq-sig-ic.positive{color:#34E2B0;} .iq-sig-ic.warning{color:#F2C063;} .iq-sig-ic.neutral,.iq-sig-ic.info{color:rgba(244,241,234,.55);}
-  .iq-sig-tt{font-size:13.5px;font-weight:600;color:#F4F1EA;line-height:1.3;}
-  .iq-sig-dt{font-family:var(--au-mono,ui-monospace,monospace);font-size:10.5px;letter-spacing:.04em;color:rgba(244,241,234,.45);margin-top:3px;}
+  .iq-toggle{ width:100%; background:none; border:none; padding:11px 0 0; cursor:pointer;
+    font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); text-align:left; }
+  .iq-toggle:active{ color:rgba(var(--iq),.9); }
 
-  /* empty / learning */
-  .iq-empty{font-size:14px;line-height:1.6;color:rgba(244,241,234,.5);}
-  .iq-empty a{color:#7CD3FC;border-bottom:1px solid rgba(124,211,252,.4);text-decoration:none;}
+  /* ── the shape ── */
+  .iq-shape{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  @media (max-width:420px){ .iq-shape{ grid-template-columns:1fr; } }
+  .iq-sp{ padding:12px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid var(--au-line); }
+  .iq-sp .k{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); }
+  .iq-sp .v{ font-family:var(--au-serif); font-style:italic; font-size:23px; margin-top:5px; line-height:1; }
+  .iq-sp .d{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; margin-top:4px; }
+  .iq-sp .d.up{ color:rgb(var(--ok)); } .iq-sp .d.dn{ color:rgb(var(--no)); } .iq-sp .d.flat{ color:var(--au-faint); }
+  .iq-sp svg{ width:100%; height:30px; margin-top:9px; display:block; overflow:visible; }
 
-  /* methodology */
-  .iq-method{margin-top:24px;font-family:var(--au-mono,ui-monospace,monospace);font-size:10px;line-height:1.7;letter-spacing:.02em;color:rgba(244,241,234,.32);text-align:center;}
+  .iq-heat{ display:grid; grid-template-columns:repeat(13,1fr); gap:3px; margin-top:12px; }
+  .iq-heat span{ aspect-ratio:1; border-radius:2.5px; background:rgba(255,255,255,.05); }
+  .iq-heat span.l1{ background:rgba(var(--iq),.28); } .iq-heat span.l2{ background:rgba(var(--iq),.55); } .iq-heat span.l3{ background:rgba(var(--iq),.88); }
+  .iq-heat-c{ display:flex; justify-content:space-between; margin-top:8px; font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+
+  /* ── right now ── */
+  .iq-sig{ display:flex; gap:10px; align-items:flex-start; padding:9px 0; }
+  .iq-sig .ic{ flex:none; width:22px; text-align:center; font-size:13px; line-height:1.5; }
+  .iq-sig .tt{ font-size:13px; font-weight:600; line-height:1.4; }
+  .iq-sig .dt{ font-size:12px; color:var(--au-dim); line-height:1.45; margin-top:3px; }
+
+  .iq-note{ font-size:12.5px; color:var(--au-dim); line-height:1.6; }
+  .iq-note b{ color:var(--au-ivory); font-weight:600; }
+  .iq-foot{ max-width:620px; margin:2px auto 0; padding:0 18px 4px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.6; }
+  .hidden{ display:none !important; }
 </style>
 </head>
-<body id="root" class="au-mood-calm">
+<body class="au-mood-calm">
+  <svg class="iq-sky" id="iqSky" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
 
-<div class="iq-shell">
-  <a class="iq-back" href="index.html">&#8592; HUB</a>
+  <header class="iq-hero">
+    <div class="iq-eyebrow">Insight engine</div>
+    <div class="iq-title">What your data knows</div>
+    <div class="iq-sub" id="iqSub">reading…</div>
+  </header>
 
-  <div class="iq-eyebrow"><span class="iq-dot"></span>INSIGHT ENGINE</div>
-  <div class="iq-title">What your data knows</div>
-  <div class="iq-sub" id="iqSub">Reading your logs…</div>
+  <main class="iq-wrap">
 
-  <!-- Nova's read (narration) -->
-  <div class="iq-card iq-nova" id="iqNovaCard" style="display:none">
-    <div class="iq-card-hd"><span class="iq-card-ic">✦</span><span class="iq-card-lbl">Nova's read</span></div>
-    <div class="iq-nova-body" id="iqNovaBody"></div>
-    <div class="iq-nova-sig">— Nova</div>
-  </div>
+    <!-- WHAT CHANGED — the only thing here that is different each visit -->
+    <section class="iq-card hidden" id="chCard">
+      <div class="iq-hd"><span class="dot"></span><h2>What changed</h2><span class="line"></span><span class="n" id="chN"></span></div>
+      <div id="chBody"></div>
+    </section>
 
-  <!-- dynamic content -->
-  <div id="iqContent"></div>
+    <!-- THE HEADLINE -->
+    <section class="iq-card iq-lead hidden" id="leadCard">
+      <div class="lbl" id="leadLbl">Strongest signal</div>
+      <div class="txt" id="leadTxt"></div>
+      <div class="act hidden" id="leadAct"></div>
+    </section>
 
-  <div class="iq-method" id="iqMethod" style="display:none">
-    Patterns are rank-split comparisons (your lower days vs higher days) that pass<br>
-    an absolute-effect bar <em>and</em> a Welch t-test — association, never proven cause.
-  </div>
-</div>
+    <!-- ASK -->
+    <section class="iq-card" id="askCard">
+      <div class="iq-hd"><span class="dot"></span><h2>Ask it something</h2><span class="line"></span></div>
+      <div class="iq-qs" id="askQs"></div>
+      <div class="iq-ans hidden" id="askAns"></div>
+    </section>
+
+    <!-- THE BOARD -->
+    <section class="iq-card" id="boardCard">
+      <div class="iq-hd"><span class="dot"></span><h2>Everything it's testing</h2><span class="line"></span><span class="n" id="boardN"></span></div>
+      <div id="boardBody"></div>
+      <button type="button" class="iq-toggle" id="boardMore"></button>
+    </section>
+
+    <!-- THE SHAPE (folded in from the old Trends page) -->
+    <section class="iq-card hidden" id="shapeCard">
+      <div class="iq-hd"><span class="dot"></span><h2>The shape of it</h2><span class="line"></span></div>
+      <div class="iq-shape" id="shapeBody"></div>
+      <div id="heatWrap" class="hidden">
+        <div class="iq-heat" id="heat"></div>
+        <div class="iq-heat-c"><span id="heatL">13 weeks</span><span id="heatR"></span></div>
+      </div>
+    </section>
+
+    <!-- RIGHT NOW -->
+    <section class="iq-card hidden" id="nowCard">
+      <div class="iq-hd"><span class="dot"></span><h2>Right now</h2><span class="line"></span></div>
+      <div id="nowBody"></div>
+    </section>
+
+    <!-- METHOD -->
+    <section class="iq-card">
+      <div class="iq-hd"><span class="dot"></span><h2>How it decides</h2><span class="line"></span></div>
+      <div class="iq-note" id="method"></div>
+    </section>
+
+  </main>
+
+  <div class="iq-foot">It tests a fixed set of ideas that have a plausible mechanism behind them — it never trawls your data for coincidences. Associations only: it will not tell you one thing <em>caused</em> another.</div>
 
 <script>
 (function(){
-'use strict';
-function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
-function el(id){ return document.getElementById(id); }
+  'use strict';
 
-/* domain → accent rgb + nice label */
-var DOM = {
-  training: {rgb:'245,130,100', name:'Training'},
-  nutrition:{rgb:'52,226,176',  name:'Nutrition'},
-  sleep:    {rgb:'155,140,255', name:'Sleep'},
-  caffeine: {rgb:'242,192,99',  name:'Caffeine'},
-  recovery: {rgb:'24,200,192',  name:'Recovery'},
-  body:     {rgb:'124,211,252', name:'Body'},
-  _default: {rgb:'124,211,252', name:'Pattern'}
-};
-function dom(d){ return DOM[d] || DOM._default; }
+  /* ════════════════════════════════════════════════════════════════
+     Insight Engine — rebuilt 22/07/26.
 
-function confLabel(c){ return c>=0.7?'high confidence' : c>=0.4?'moderate confidence' : 'emerging'; }
-function effLabel(d){ d=Math.abs(d||0); return d>=0.8?'large effect' : d>=0.5?'moderate effect' : 'subtle but real'; }
+     Alex: "I have never pressed into it." The engine underneath was never the
+     problem — it is the most carefully built thing in the app, with a real
+     Welch t-gate and language that refuses to say "causes". The PAGE was the
+     problem, in two ways.
 
-/* ── build a Nova-voiced narration from the strongest patterns ── */
-function narrate(ins, days){
-  var out=[];
-  var withAction = ins.filter(function(i){ return i.action; });
-  var lead = withAction[0] || ins[0];
-  if(!lead) return out;
-  out.push('I’ve been connecting the dots across ' + days + ' days of your logs — looking for signals that survive the noise, not coincidences.');
-  var p2 = 'The clearest one right now: ' + lc(lead.text);
-  if(lead.action) p2 += ' So — ' + lc(lead.action);
-  out.push(p2);
-  var second = ins.filter(function(i){ return i.id!==lead.id; })[0];
-  if(second){
-    var p3 = 'I’m also seeing that ' + lc(second.text);
-    if(ins.length>2) p3 += ' (' + (ins.length-2) + ' more pattern' + (ins.length-2===1?'':'s') + ' below).';
-    out.push(p3);
-  } else if(ins.length===1){
-    out.push('That’s the only pattern strong enough to call right now — the rest of your data is still too noisy to read honestly. The more you log, the more I’ll surface.');
-  }
-  return out;
-}
-function lc(s){ s=String(s||''); return s.charAt(0).toLowerCase()+s.slice(1); }
+     It was a report, not a page. A correlation computed across ninety days
+     does not move between Monday and Thursday, so it said the same sentences
+     every visit, and anything that says the same thing every visit stops being
+     visited. Now it opens with what CHANGED — new, stronger, weaker, broken —
+     against a weekly snapshot of its own past verdicts. Real news, entirely
+     derived, never invented: with no old-enough snapshot it says so.
 
-/* ── render one pattern card ── */
-function patCard(i){
-  var d = dom(i.domain);
-  var conf = i.confidence!=null ? i.confidence : 0.5;
-  var strengthPct = Math.round((i.strength||0)*100);
-  var chips = '';
-  chips += '<span class="iq-chip">'+esc(d.name)+'</span>';
-  chips += '<span class="iq-chip muted">'+esc(confLabel(conf))+'</span>';
-  if(i.d) chips += '<span class="iq-chip muted">'+esc(effLabel(i.d))+'</span>';
-  chips += '<span class="iq-meter"><i data-w="'+strengthPct+'"></i></span>';
-  var html = ''
-    + '<div class="iq-card iq-pat" style="--ac:'+d.rgb+'">'
-    +   '<div class="iq-ptop"><span class="iq-pemoji" style="color:#3FE0B0">•</span><span class="iq-ptext">'+esc(i.text)+'</span></div>'
-    +   '<div class="iq-chips">'+chips+'</div>'
-    +   (i.action ? '<div class="iq-action">'+esc(i.action)+'</div>' : '')
-    + '</div>';
-  return html;
-}
+     And it hid most of what it knew. Sixteen hypotheses tested, only the
+     winners shown, the rest silently discarded. But "no measurable link across
+     52 days" frees you from managing something that isn't costing you
+     anything, and "eleven more days and this can be read" is a reason to log
+     tonight. The board now shows all three states. Same disease as a sync
+     engine that renders a failed read as an empty list.
+     ════════════════════════════════════════════════════════════════ */
 
-/* ── render today's status signals from insights.js ── */
-function sigRows(){
-  if(!(window.ALS && window.ALS.generateInsights)) return '';
-  var sigs=[]; try{ sigs=window.ALS.generateInsights()||[]; }catch(e){ sigs=[]; }
-  sigs = sigs.filter(function(s){ return s && s.title; }).slice(0,7);
-  if(!sigs.length) return '';
-  return sigs.map(function(s){
-    return '<div class="iq-sig">'
-      + '<span class="iq-sig-ic '+esc(s.type||'info')+'">'+esc(s.icon||'•')+'</span>'
-      + '<div><div class="iq-sig-tt">'+esc(s.title)+'</div>'
-      + (s.detail?'<div class="iq-sig-dt">'+esc(s.detail)+'</div>':'')+'</div></div>';
-  }).join('');
-}
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function lc(s){ s=String(s||''); return s.charAt(0).toLowerCase()+s.slice(1); }
+  function round(n,p){ p=p||0; var m=Math.pow(10,p); return Math.round((n||0)*m)/m; }
 
-function boot(){
-  var content = el('iqContent');
-  var ins = [];
-  var days = 0;
-  try{ days = Object.keys(window.ALSInsights._timeline()).length; }catch(e){}
-  try{ ins = window.ALSInsights.compute() || []; }catch(e){ ins = []; }
+  var E=null, EV=[], ROWS={}, DAYS=0;
 
-  var cards = []; // collected nodes for staggered reveal
-
-  if(ins.length){
-    el('iqSub').textContent = ins.length + ' pattern' + (ins.length===1?'':'s') + ' found · reading ' + days + ' days';
-
-    /* Nova's read */
-    var lines = narrate(ins, days);
-    if(lines.length){
-      el('iqNovaBody').innerHTML = lines.map(function(p){ return '<p>'+esc(p)+'</p>'; }).join('');
-      el('iqNovaCard').style.display='';
-      cards.push(el('iqNovaCard'));
+  /* ── the constellation: his own recovery series, drawn as stars ── */
+  function sky(){
+    var el=$('iqSky'); if(!el) return;
+    var rec=[]; try{ rec=E._seriesOf(ROWS,'recovery'); }catch(e){}
+    var pts=[];
+    if(rec.length>=4){
+      var take=rec.slice(-26);
+      var vs=take.map(function(x){ return x.v; });
+      var mx=Math.max.apply(null,vs), mn=Math.min.apply(null,vs), sp=(mx-mn)||1;
+      take.forEach(function(x,i){
+        pts.push({ x:14+(i/((take.length-1)||1))*372, y:36+(1-(x.v-mn)/sp)*150, r:1.1+(x.v-mn)/sp*1.5 });
+      });
+    } else {
+      for(var i=0;i<18;i++) pts.push({ x:14+(i/17)*372, y:60+Math.sin(i*0.9)*40+((i*37)%23), r:1.1 });
     }
-
-    /* headline pattern */
-    var hero = ins.filter(function(i){return i.action;})[0] || ins[0];
-    var heroHtml = '<div class="iq-sec">The headline</div>'
-      + '<div class="iq-card iq-hero">'
-      + '<div class="iq-card-hd"><span class="iq-card-ic">◈</span><span class="iq-card-lbl">strongest signal · '+esc(dom(hero.domain).name)+'</span></div>'
-      + '<div class="iq-ptop" style="align-items:flex-start;gap:13px"><span class="iq-hemoji">'+esc(hero.emoji||'◈')+'</span><span class="iq-htext">'+esc(hero.text)+'</span></div>'
-      + (hero.action ? '<div class="iq-action" style="--ac:124,211,252;margin-top:13px;font-size:14px">'+esc(hero.action)+'</div>' : '')
-      + '</div>';
-
-    /* every other pattern */
-    var rest = ins.filter(function(i){ return i.id!==hero.id; });
-    var restHtml = '';
-    if(rest.length){
-      restHtml = '<div class="iq-sec">Every pattern · '+rest.length+'</div>' + rest.map(patCard).join('');
+    var lines='';
+    for(var j=1;j<pts.length;j++){
+      lines+='<line x1="'+pts[j-1].x.toFixed(1)+'" y1="'+pts[j-1].y.toFixed(1)+'" x2="'+pts[j].x.toFixed(1)+'" y2="'+pts[j].y.toFixed(1)+
+        '" stroke="rgba(124,211,252,.16)" stroke-width="0.7"/>';
     }
-
-    /* today's signals */
-    var sig = sigRows();
-    var sigHtml = sig ? ('<div class="iq-sec">Right now</div><div class="iq-card">'+sig+'</div>') : '';
-
-    content.innerHTML = heroHtml + restHtml + sigHtml;
-    el('iqMethod').style.display='';
-  } else {
-    /* learning / empty state */
-    el('iqSub').textContent = days>=1 ? ('reading '+days+' day'+(days===1?'':'s')) : 'no data yet';
-    var msg = days>=3
-      ? 'I’m still learning your patterns. The engine only speaks when a signal is strong enough to be real — it won’t invent connections. Keep logging <strong>sleep, training, food and caffeine</strong>, and once there’s about two weeks of overlap I’ll start connecting them here.'
-      : 'Not enough logged yet to find honest patterns. Track your <a href="sleep.html">sleep</a>, <a href="gym.html">training</a>, <a href="nutrition.html">food</a> and <a href="caffeine.html">caffeine</a> for a couple of weeks and this page will fill with cross-domain insights.';
-    content.innerHTML = '<div class="iq-card"><div class="iq-empty">'+msg+'</div></div>';
-
-    /* still show today's status signals if any */
-    var sig2 = sigRows();
-    if(sig2) content.innerHTML += '<div class="iq-sec">Right now</div><div class="iq-card">'+sig2+'</div>';
+    var stars=pts.map(function(p,i){
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+p.r.toFixed(2)+
+        '" fill="rgba(124,211,252,'+(0.35+p.r/4).toFixed(2)+')"/>';
+    }).join('');
+    el.innerHTML=lines+stars;
+    requestAnimationFrame(function(){ el.classList.add('on'); });
   }
 
-  /* gather all .iq-card for staggered reveal + animate meters */
-  var all = Array.prototype.slice.call(document.querySelectorAll('.iq-card'));
-  all.forEach(function(c,i){ setTimeout(function(){
-    c.classList.add('in');
-    c.querySelectorAll('.iq-meter i').forEach(function(b){ b.style.width = (b.getAttribute('data-w')||0)+'%'; });
-  }, 120 + i*85); });
-}
+  /* ── what changed ── */
+  var TAGCOPY={ 'new':'New', stronger:'Stronger', weaker:'Weaker', broken:'Broken' };
+  function renderChanges(){
+    var ch=[]; try{ ch=E.changes(EV)||[]; }catch(e){}
+    if(!ch.length){ $('chCard').classList.add('hidden'); return; }
+    $('chCard').classList.remove('hidden');
+    $('chN').textContent=ch.length;
+    $('chBody').innerHTML=ch.slice(0,6).map(function(c){
+      return '<div class="iq-ch"><span class="iq-tag '+esc(c.kind)+'">'+TAGCOPY[c.kind]+'</span>'+
+        '<div class="iq-ch-m"><div class="iq-ch-t">'+esc(c.title)+'</div>'+
+        '<div class="iq-ch-b">'+esc(c.text)+'</div>'+
+        '<div class="iq-ch-s">since '+esc(c.since)+'</div></div></div>';
+    }).join('');
+  }
 
-function start(){
-  if(!window.ALSInsights){ setTimeout(start, 140); return; }
-  boot();
-}
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start, {once:true}); else start();
+  /* ── the headline ── */
+  function renderLead(){
+    var conf=EV.filter(function(e){ return e.state==='confirmed'; })
+      .sort(function(a,b){ return (b.strength||0)-(a.strength||0); });
+    if(!conf.length){ $('leadCard').classList.add('hidden'); return; }
+    var h=conf[0];
+    $('leadCard').classList.remove('hidden');
+    $('leadLbl').textContent='Strongest signal · '+(h.domain||'pattern');
+    $('leadTxt').textContent=h.text;
+    if(h.action){ $('leadAct').classList.remove('hidden'); $('leadAct').textContent=h.action; }
+    else $('leadAct').classList.add('hidden');
+  }
+
+  /* ── ask ── */
+  var askOpen=null;
+  function renderAsk(){
+    $('askQs').innerHTML=E.QUESTIONS.map(function(q){
+      return '<button type="button" class="iq-q'+(askOpen===q.id?' on':'')+'" data-q="'+esc(q.id)+'">'+esc(q.q)+'</button>';
+    }).join('');
+    var box=$('askAns');
+    if(!askOpen){ box.classList.add('hidden'); box.innerHTML=''; return; }
+    var a=E.answer(askOpen,EV);
+    if(!a){ box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    var out='';
+    if(a.confirmed.length){
+      out+='<div class="iq-ans-h">What holds up</div>'+a.confirmed.map(function(x){
+        return '<div class="iq-ans-row"><span class="em">'+esc(x.emoji||'•')+'</span><span class="tx">'+esc(x.text)+
+          (x.action?'<br><span style="color:rgba(124,211,252,.95);font-weight:600">'+esc(x.action)+'</span>':'')+'</span></div>';
+      }).join('');
+    } else {
+      out+='<div class="iq-none">'+esc(a.none)+'</div>';
+    }
+    if(a.ruledOut.length){
+      out+='<div class="iq-ans-h">Ruled out — and that’s useful</div>'+a.ruledOut.map(function(x){
+        return '<div class="iq-ans-row mut"><span class="em">—</span><span class="tx"><b style="font-weight:650;color:var(--au-ivory)">'+esc(x.title)+'</b><br>'+esc(x.text)+'</span></div>';
+      }).join('');
+    }
+    if(a.watching.length){
+      out+='<div class="iq-ans-h">Still watching</div>'+a.watching.map(function(x){
+        return '<div class="iq-ans-row mut"><span class="em">·</span><span class="tx"><b style="font-weight:650;color:var(--au-ivory)">'+esc(x.title)+'</b> — '+esc(x.text)+'</span></div>';
+      }).join('');
+    }
+    box.innerHTML=out;
+  }
+
+  /* ── the board ── */
+  var boardAll=false;
+  function boardRow(e){
+    var cls = e.state==='confirmed' ? 'confirmed' : (e.state==='ruled-out' ? 'ruled' : 'watching');
+    var meta='';
+    if(e.state==='confirmed'){
+      var pctv=Math.round((e.strength||0)*100);
+      meta='<div class="iq-meta"><span class="iq-bar"><i class="confirmed" data-w="'+pctv+'"></i></span>'+
+        '<span class="iq-mn">'+e.n+' days</span></div>';
+    } else if(e.state==='watching'&&e.need>0){
+      var have=e.n||0, want=have+e.need;
+      meta='<div class="iq-meta"><span class="iq-bar"><i class="watching" data-w="'+Math.round(have/want*100)+'"></i></span>'+
+        '<span class="iq-mn">'+have+' of '+want+' days</span></div>';
+    } else if(e.n){
+      meta='<div class="iq-meta"><span class="iq-mn">'+e.n+' days</span></div>';
+    }
+    return '<div class="iq-row'+(e.state==='confirmed'?'':' mut')+'"><span class="iq-pip '+cls+'"></span>'+
+      '<div class="iq-row-m"><div class="iq-row-t">'+esc(e.title)+'</div>'+
+      '<div class="iq-row-b">'+esc(e.text)+'</div>'+meta+'</div></div>';
+  }
+  function renderBoard(){
+    var order={ confirmed:0, 'ruled-out':1, watching:2 };
+    var sorted=EV.slice().sort(function(a,b){
+      if(order[a.state]!==order[b.state]) return order[a.state]-order[b.state];
+      return (b.strength||Math.abs(b.t||0))-(a.strength||Math.abs(a.t||0));
+    });
+    var n={confirmed:0,'ruled-out':0,watching:0};
+    EV.forEach(function(e){ n[e.state]++; });
+    $('boardN').textContent=n.confirmed+' confirmed · '+n['ruled-out']+' ruled out · '+n.watching+' watching';
+    var show=boardAll?sorted:sorted.slice(0,6);
+    $('boardBody').innerHTML=show.map(boardRow).join('');
+    $('boardMore').textContent=boardAll?'Show less ▴':('Show all '+sorted.length+' ▾');
+    $('boardMore').classList.toggle('hidden', sorted.length<=6);
+    fillBars();
+  }
+  function fillBars(){
+    requestAnimationFrame(function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.iq-bar i'), function(b){
+        b.style.width=(b.getAttribute('data-w')||0)+'%';
+      });
+    });
+  }
+
+  /* ── the shape (folded in from the old Trends page) ── */
+  function spark(vals,col){
+    if(vals.length<2) return '';
+    var mx=Math.max.apply(null,vals), mn=Math.min.apply(null,vals), sp=(mx-mn)||1;
+    var d=vals.map(function(v,i){
+      return (i?'L':'M')+((i/(vals.length-1))*100).toFixed(1)+','+(2+(1-(v-mn)/sp)*26).toFixed(1);
+    }).join(' ');
+    return '<svg viewBox="0 0 100 30" preserveAspectRatio="none"><path d="'+d+'" fill="none" stroke="'+col+
+      '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  function trendOf(vals){
+    if(vals.length<3) return 0;
+    try{ return E._slope(vals)*(vals.length-1); }catch(e){ return 0; }
+  }
+  function shapeTile(key,label,vals,unit,dp,goodUp){
+    if(vals.length<3) return '';
+    var last=vals[vals.length-1], mv=trendOf(vals);
+    var dir = Math.abs(mv)<(unit==='kg'?0.3:1) ? 'flat' : (mv>0 ? (goodUp?'up':'dn') : (goodUp?'dn':'up'));
+    var arrow = dir==='flat' ? '→' : (mv>0?'↑':'↓');
+    return '<div class="iq-sp"><div class="k">'+esc(label)+'</div>'+
+      '<div class="v">'+round(last,dp)+(unit?'<span style="font-size:12px;color:var(--au-faint);font-style:normal"> '+unit+'</span>':'')+'</div>'+
+      '<div class="d '+dir+'">'+arrow+' '+(Math.abs(mv)<0.05?'steady':(mv>0?'+':'')+round(mv,dp)+' over '+vals.length)+'</div>'+
+      spark(vals, dir==='up'?'rgb(123,227,176)':(dir==='dn'?'rgb(255,143,163)':'rgba(124,211,252,.8)'))+'</div>';
+  }
+  function renderShape(){
+    var out='';
+    function ser(k){ try{ return E._seriesOf(ROWS,k).map(function(x){ return x.v; }); }catch(e){ return []; } }
+    var wt=ser('weight').slice(-21), rec=ser('recovery').slice(-21), slp=ser('sleepH').slice(-21);
+    out+=shapeTile('weight','Weight',wt,'kg',1,false);
+    out+=shapeTile('recovery','Recovery',rec,'',0,true);
+    out+=shapeTile('sleep','Sleep',slp,'h',1,true);
+    var kc=ser('kcal').slice(-21);
+    out+=shapeTile('kcal','Calories',kc,'',0,true);
+    $('shapeBody').innerHTML=out;
+
+    // 13 weeks of training consistency
+    var days=[], today=new Date();
+    for(var i=90;i>=0;i--){
+      var d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i);
+      var dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      var r=ROWS[dk];
+      var lvl=0;
+      if(r&&r.trained){ var v=+r.volume||0; lvl = v>8000?3:(v>3000?2:1); }
+      days.push(lvl);
+    }
+    var trainedN=days.filter(function(x){ return x>0; }).length;
+    if(trainedN){
+      $('heatWrap').classList.remove('hidden');
+      $('heat').innerHTML=days.map(function(l){ return '<span'+(l?' class="l'+l+'"':'')+'></span>'; }).join('');
+      $('heatR').textContent=trainedN+' sessions';
+    } else $('heatWrap').classList.add('hidden');
+
+    if(out||trainedN) $('shapeCard').classList.remove('hidden');
+  }
+
+  /* ── right now (today's status signals from insights.js) ── */
+  function renderNow(){
+    var sigs=[];
+    try{ if(window.ALS&&window.ALS.generateInsights) sigs=window.ALS.generateInsights()||[]; }catch(e){}
+    sigs=sigs.filter(function(s){ return s&&s.title; }).slice(0,6);
+    if(!sigs.length){ $('nowCard').classList.add('hidden'); return; }
+    $('nowCard').classList.remove('hidden');
+    $('nowBody').innerHTML=sigs.map(function(s){
+      return '<div class="iq-sig"><span class="ic">'+esc(s.icon||'•')+'</span><div>'+
+        '<div class="tt">'+esc(s.title)+'</div>'+
+        (s.detail?'<div class="dt">'+esc(s.detail)+'</div>':'')+'</div></div>';
+    }).join('');
+  }
+
+  function renderMethod(){
+    var n={confirmed:0,'ruled-out':0,watching:0};
+    EV.forEach(function(e){ n[e.state]++; });
+    $('method').innerHTML='It tests <b>'+EV.length+'</b> fixed ideas, each with a plausible mechanism behind it — '+
+      'it never trawls for coincidences. For a pattern to be called <b>confirmed</b> it has to clear two bars at once: '+
+      'the difference must be <b>big enough to matter in your life</b>, and it must be <b>statistically real</b> against '+
+      'your day-to-day noise. Both, or it stays quiet.<br><br>'+
+      '<b>Ruled out</b> means enough days have passed to say there is no measurable link — not that there is no link in the '+
+      'universe, just none at your numbers. <b>Watching</b> means the answer genuinely isn’t in yet; where it can name a '+
+      'shortfall it does, and where more data might never settle it, it says that instead of showing you a bar that lies.';
+  }
+
+  function boot(){
+    E=window.ALSInsights;
+    try{ ROWS=E._timeline()||{}; }catch(e){ ROWS={}; }
+    DAYS=Object.keys(ROWS).length;
+    try{ EV=E.evaluate(ROWS)||[]; }catch(e){ EV=[]; }
+    try{ E.snapshot(EV); }catch(e){}
+
+    var conf=EV.filter(function(e){ return e.state==='confirmed'; }).length;
+    $('iqSub').textContent = DAYS
+      ? (conf ? conf+' pattern'+(conf===1?'':'s')+' confirmed · reading '+DAYS+' days'
+              : 'reading '+DAYS+' day'+(DAYS===1?'':'s')+' · nothing confirmed yet')
+      : 'no data yet';
+
+    sky();
+    renderChanges();
+    renderLead();
+    renderAsk();
+    renderBoard();
+    renderShape();
+    renderNow();
+    renderMethod();
+
+    var cards=Array.prototype.slice.call(document.querySelectorAll('.iq-card:not(.hidden)'));
+    cards.forEach(function(c,i){ c.style.opacity='0'; c.style.transform='translateY(10px)';
+      setTimeout(function(){ c.style.transition='opacity .5s ease, transform .6s cubic-bezier(.16,1,.3,1)';
+        c.style.opacity=''; c.style.transform=''; }, 90+i*70); });
+    setTimeout(fillBars, 400);
+  }
+
+  $('askQs').addEventListener('click',function(e){
+    var b=e.target.closest('[data-q]'); if(!b) return;
+    var id=b.getAttribute('data-q');
+    askOpen = (askOpen===id) ? null : id;
+    renderAsk();
+  });
+  $('boardMore').addEventListener('click',function(){ boardAll=!boardAll; renderBoard(); });
+
+  (function start(){ if(!window.ALSInsights){ setTimeout(start,140); return; } boot(); })();
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden && window.ALSInsights) boot(); });
 })();
 </script>
 <script src="nova.js" defer></script>

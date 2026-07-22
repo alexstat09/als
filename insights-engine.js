@@ -195,8 +195,75 @@
       action: 'Late caffeine costs you tomorrow — keep it early.',
       min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 8; },
       text: function (s) { var hi = s.hiMean > s.loMean; return 'After days with late caffeine, next-morning recovery averages ' + round(s.hiMean) + ' versus ' + round(s.loMean) + ' without — about ' + round(Math.abs(s.hiMean - s.loMean)) + ' points ' + (hi ? 'higher' : 'lower') + '. (' + s.n + ' days)'; },
-      e: '🌙' }
+      e: '🌙' },
+
+    // ── v3: the fields he was already logging that nothing ever read ──
+    // mood, soreness and kcal all reached the timeline and no hypothesis
+    // touched them, so he was answering three questions a night for nothing.
+    // These are added because there is a plausible mechanism behind each one —
+    // not to make the list longer. Correlation-dredging is how this engine
+    // would start lying.
+    { id: 'sleep-mood', A: 'sleepH', B: 'mood', lag: 0, scale: 2, domain: 'sleep',
+      action: 'Protect the hours — your mood is downstream of them.',
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 0.5; },
+      text: function (s) { var hi = s.hiMean > s.loMean; return 'Your mood reads ' + (hi ? 'better' : 'worse') + ' after longer nights — averaging ' + round(s.hiMean, 1) + ' on your best-slept days versus ' + round(s.loMean, 1) + ' on your shortest. (' + s.n + ' days)'; },
+      e: '🙂' },
+    { id: 'rec-mood', A: 'recovery', B: 'mood', lag: 0, scale: 2, domain: 'recovery',
+      action: 'On low-recovery mornings, expect the mood and plan gently.',
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 0.5; },
+      text: function (s) { return 'Mood tracks your recovery score — ' + round(s.hiMean, 1) + ' on high-recovery mornings versus ' + round(s.loMean, 1) + ' on low ones. (' + s.n + ' days)'; },
+      e: '🌤️' },
+    { id: 'vol-sore', A: 'volume', B: 'soreness', lag: 1, scale: 2, domain: 'training',
+      action: 'Your soreness is earned, not random — big days have a cost.',
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 0.5; },
+      text: function (s) { var hi = s.hiMean > s.loMean; return 'The day after your biggest sessions you report ' + (hi ? 'more' : 'less') + ' soreness — ' + round(s.hiMean, 1) + ' versus ' + round(s.loMean, 1) + ' after lighter days. (' + s.n + ' days)'; },
+      e: '🦵' },
+    { id: 'sore-vol', A: 'soreness', B: 'volume', lag: 0, scale: 0, domain: 'training',
+      action: 'Notice whether soreness actually stops you, or only feels like it does.',
+      min: function (s) { return s.loMean > 0 && Math.abs(s.hiMean - s.loMean) / s.loMean >= 0.15; },
+      effect: function (s) { return Math.min(1, Math.abs(s.hiMean - s.loMean) / Math.max(1, s.loMean) / 0.5); },
+      text: function (s) { var less = s.hiMean < s.loMean; return 'On your sorest mornings you train ' + (less ? 'lighter' : 'heavier') + ' — volume averages ' + kfmt(s.hiMean) + ' versus ' + kfmt(s.loMean) + ' when you feel fresh. (' + s.n + ' days)'; },
+      e: '🩹' },
+    { id: 'kcal-rec', A: 'kcal', B: 'recovery', lag: 1, scale: 22, domain: 'nutrition',
+      action: 'Under-eating shows up as poor recovery before it shows up anywhere else.',
+      min: function (s) { return Math.abs(s.hiMean - s.loMean) >= 8; },
+      text: function (s) { var hi = s.hiMean > s.loMean; return 'Recovery runs about ' + round(Math.abs(s.hiMean - s.loMean)) + ' points ' + (hi ? 'higher' : 'lower') + ' the morning after your bigger-calorie days (' + round(s.hiMean) + ' vs ' + round(s.loMean) + ', ' + s.n + ' days).'; },
+      e: '🍽️' },
+    { id: 'kcal-vol', A: 'kcal', B: 'volume', lag: 0, scale: 0, domain: 'nutrition',
+      action: 'Eat for the session you intend to have.',
+      min: function (s) { return s.loMean > 0 && Math.abs(s.hiMean - s.loMean) / s.loMean >= 0.15; },
+      effect: function (s) { return Math.min(1, Math.abs(s.hiMean - s.loMean) / Math.max(1, s.loMean) / 0.5); },
+      text: function (s) { return 'You train heavier on the days you eat more — volume averages ' + kfmt(s.hiMean) + ' versus ' + kfmt(s.loMean) + ' on your lightest-eating days. (' + s.n + ' days)'; },
+      e: '⚖️' }
   ];
+
+  // Human labels for the board, so a hypothesis can be NAMED before it has
+  // anything to say. Falls back to "A → B" if one is ever added without one.
+  var HYP_TITLE = {
+    'rec-pr': 'Recovery → setting a PR', 'prot-rec': 'Protein → next-day recovery',
+    'vol-rec': 'Training volume → next-day recovery', 'train-sleep': 'Training → that night’s sleep',
+    'caflate-sleep': 'Late caffeine → sleep length', 'rec-vol': 'Recovery → how hard you train',
+    'water-rec': 'Hydration → next-day recovery', 'caf-sleep': 'Caffeine → sleep length',
+    'qual-vol': 'Sleep quality → how hard you train', 'carb-rec': 'Carbs → next-day recovery',
+    'sleep-energy': 'Sleep length → morning energy', 'rec-energy': 'Recovery → morning energy',
+    'caf-rec': 'Caffeine → next-day recovery', 'vol-energy': 'Big sessions → next-day energy',
+    'water-energy': 'Hydration → energy', 'caflate-rec': 'Late caffeine → next-day recovery',
+    'sleep-mood': 'Sleep length → mood', 'rec-mood': 'Recovery → mood',
+    'vol-sore': 'Big sessions → next-day soreness', 'sore-vol': 'Soreness → how hard you train',
+    'kcal-rec': 'Calories → next-day recovery', 'kcal-vol': 'Calories → how hard you train'
+  };
+
+  /* ── plain-language "nothing there" ───────────────────────────────
+     A hypothesis that FAILS is a result. "Your caffeine has no measurable
+     effect on your sleep, across 52 nights" is genuinely useful — it frees you
+     from managing something that isn't costing you anything. The old page threw
+     all of that away and showed only the winners, so it was silent about most
+     of what it knew. Note the wording: no measurable effect AT THIS MUCH DATA.
+     Never "no effect". */
+  function ruledText(h, s) {
+    return 'No measurable link, across ' + s.n + ' days. Whatever moves ' +
+      (HYP_TITLE[h.id] || h.id).split('→').pop().trim() + ', at your numbers this isn’t it.';
+  }
 
   function crossDomain(rows) {
     var out = [];
@@ -259,8 +326,176 @@
       .slice(0, 8);
   }
 
+  /* ════════════════════════════════════════════════════════════════
+     v3 — the whole board, and a memory.
+
+     compute() returns only the hypotheses that PASSED. That is right for the
+     briefing and the coach, which want one true thing to say. It is wrong for
+     a page you are supposed to press into, because it means the page is silent
+     about most of what it knows: the twelve tests that came back empty, and
+     the ones that are three nights short of an answer. Those are results too —
+     one of them tells you to stop worrying about something, the other tells
+     you why tonight's log matters.
+
+     evaluate() returns EVERY hypothesis with a state, so the page can show the
+     board rather than the winners' podium. Nothing below changes compute(),
+     which coach.html, morning.html, nova.js and home-live.js all read.
+     ════════════════════════════════════════════════════════════════ */
+
+  // Enough paired days that "we found nothing" is a statement about your life
+  // rather than about the size of the sample.
+  var RULED_MIN_N = 25;
+  var RULED_MAX_D = 0.25;   // effect small enough to call flat
+  var RULED_MAX_T = 2.0;    // and nowhere near significant
+
+  function evaluate(rows) {
+    rows = rows || timeline();
+    var out = [];
+    HYP.forEach(function (h) {
+      var minN = h.minN || 8;
+      var s = splitAuto(rows, h.A, h.B, h.lag, { thr: h.thr, missingA: h.missingA, minN: minN });
+      var base = {
+        id: h.id, domain: h.domain || '', emoji: h.e, action: h.action || '',
+        title: HYP_TITLE[h.id] || (h.A + ' → ' + h.B)
+      };
+      if (!s) {
+        // Cannot even run yet — count what IS there so the shortfall is honest.
+        var have = 0;
+        Object.keys(rows).forEach(function (dk) {
+          var ra = rows[dk]; var av = (ra[h.A] != null) ? ra[h.A] : (h.missingA != null ? h.missingA : null);
+          if (av == null) return;
+          var rb = rows[h.lag ? addDays(dk, h.lag) : dk];
+          if (rb && rb[h.B] != null) have++;
+        });
+        out.push(Object.assign(base, { state: 'watching', n: have, need: Math.max(1, minN - have),
+          text: 'Needs about ' + Math.max(1, minN - have) + ' more day' + (Math.max(1, minN - have) === 1 ? '' : 's') + ' of both before it can be read.' }));
+        return;
+      }
+      var passesMin = !!h.min(s), sig = Math.abs(s.t) >= T_MIN;
+      if (passesMin && sig) {
+        var effect = h.effect ? h.effect(s) : Math.min(1, Math.abs(s.hiMean - s.loMean) / h.scale);
+        var confidence = clamp01((Math.abs(s.t) - 2) / 4);
+        out.push(Object.assign(base, {
+          state: 'confirmed', text: h.text(s), action: h.action || '',
+          strength: +clamp01(0.4 + effect * 0.3 + confidence * 0.3).toFixed(3),
+          effect: +effect.toFixed(2), confidence: +confidence.toFixed(2),
+          d: +s.d.toFixed(2), t: +s.t.toFixed(2), n: s.n
+        }));
+      } else if (s.n >= RULED_MIN_N && Math.abs(s.d) < RULED_MAX_D && Math.abs(s.t) < RULED_MAX_T) {
+        out.push(Object.assign(base, { state: 'ruled-out', text: ruledText(h, s), action: '',
+          d: +s.d.toFixed(2), t: +s.t.toFixed(2), n: s.n }));
+      } else {
+        // Running, but the answer isn't in yet. No promise of when — more data
+        // does not guarantee a verdict, and pretending otherwise is a lie with
+        // a progress bar on it.
+        out.push(Object.assign(base, { state: 'watching', n: s.n, need: 0,
+          d: +s.d.toFixed(2), t: +s.t.toFixed(2),
+          text: 'Unclear so far — ' + s.n + ' days in, the difference is still inside the noise.' }));
+      }
+    });
+    return out;
+  }
+
+  /* ── memory ───────────────────────────────────────────────────────
+     A correlation over ninety days does not move between Monday and Thursday,
+     so a page that only reports today's correlations says the same thing every
+     visit — which is exactly why it stopped being visited. Keeping a weekly
+     snapshot lets it lead with what CHANGED, which is real news derived from
+     his own data rather than invented to fill space. */
+  var HIST_KEY = 'insights:history', HIST_MAX = 60, WEEK = 7 * 86400000;
+
+  function history() { var h = ls(HIST_KEY); return Array.isArray(h) ? h : []; }
+
+  function snapshot(ev) {
+    try {
+      ev = ev || evaluate();
+      var h = history(), now = Date.now();
+      var last = h[h.length - 1];
+      if (last && (now - (last.ts || 0)) < WEEK) return h;   // at most one a week
+      var ids = {};
+      ev.forEach(function (e) { ids[e.id] = { s: e.state, d: e.d != null ? e.d : 0, t: e.t != null ? e.t : 0, n: e.n || 0 }; });
+      h.push({ ts: now, dateKey: dkOf(new Date()), ids: ids });
+      if (h.length > HIST_MAX) h.splice(0, h.length - HIST_MAX);
+      localStorage.setItem(HIST_KEY, JSON.stringify(h));
+      return h;
+    } catch (e) { return history(); }
+  }
+
+  // What is different now versus the oldest snapshot at least `minAgeDays` old.
+  // Returns [] when there is no old-enough snapshot — a page with no history
+  // must say it has no history, not manufacture a change.
+  function changes(ev, minAgeDays) {
+    minAgeDays = minAgeDays || 21;
+    ev = ev || evaluate();
+    var h = history(), cutoff = Date.now() - minAgeDays * 86400000;
+    var old = null;
+    for (var i = 0; i < h.length; i++) { if (h[i].ts <= cutoff) { old = h[i]; break; } }
+    if (!old || !old.ids) return [];
+    var when = old.dateKey || '';
+    var out = [];
+    ev.forEach(function (e) {
+      var was = old.ids[e.id];
+      if (!was) return;
+      if (e.state === 'confirmed' && was.s !== 'confirmed') {
+        out.push({ kind: 'new', id: e.id, title: e.title, text: e.text, emoji: e.emoji, domain: e.domain, action: e.action, since: when });
+      } else if (e.state !== 'confirmed' && was.s === 'confirmed') {
+        out.push({ kind: 'broken', id: e.id, title: e.title, emoji: e.emoji, domain: e.domain, since: when,
+          text: 'This used to hold and no longer does — ' + (e.state === 'ruled-out' ? 'the link has flattened out.' : 'the difference has fallen back into the noise.') });
+      } else if (e.state === 'confirmed' && was.s === 'confirmed' && typeof e.d === 'number' && typeof was.d === 'number') {
+        var delta = Math.abs(e.d) - Math.abs(was.d);
+        if (Math.abs(delta) >= 0.25) {
+          out.push({ kind: delta > 0 ? 'stronger' : 'weaker', id: e.id, title: e.title, text: e.text,
+            emoji: e.emoji, domain: e.domain, action: e.action, since: when, delta: +delta.toFixed(2) });
+        }
+      }
+    });
+    var order = { broken: 0, 'new': 1, stronger: 2, weaker: 3 };
+    return out.sort(function (a, b) { return order[a.kind] - order[b.kind]; });
+  }
+
+  /* ── questions ────────────────────────────────────────────────────
+     The same statistics, re-cut around something he'd actually wonder. A page
+     you arrive at WITH a question beats a page that hands you a report. */
+  var QUESTIONS = [
+    { id: 'recovery', q: 'What actually makes my recovery good?',
+      pick: function (h) { return h.B === 'recovery'; },
+      none: 'Nothing has cleared the bar for recovery yet. Sleep, food and caffeine are all still being watched.' },
+    { id: 'sleep', q: 'What wrecks my sleep?',
+      pick: function (h) { return h.B === 'sleepH' || h.B === 'quality'; },
+      none: 'Nothing measurably shortens your sleep yet — which, if it holds, is good news.' },
+    { id: 'caffeine', q: 'What is caffeine really doing to me?',
+      pick: function (h) { return h.A === 'caf' || h.A === 'cafLate'; },
+      none: 'No caffeine effect has cleared the bar yet, in either direction.' },
+    { id: 'training', q: 'When do I train best?',
+      pick: function (h) { return h.B === 'volume' || h.B === 'pr'; },
+      none: 'Nothing yet predicts your bigger sessions. Keep logging recovery and sleep alongside them.' },
+    { id: 'mood', q: 'What lifts my mood?',
+      pick: function (h) { return h.B === 'mood' || h.B === 'energy'; },
+      none: 'Nothing has cleared the bar for mood or energy yet.' }
+  ];
+
+  // Ranked answer to one question: confirmed first (strongest t), then what is
+  // still being watched, then what has been ruled out. All three matter.
+  function answer(qid, ev) {
+    var Q = null;
+    for (var i = 0; i < QUESTIONS.length; i++) if (QUESTIONS[i].id === qid) Q = QUESTIONS[i];
+    if (!Q) return null;
+    ev = ev || evaluate();
+    var byId = {}; HYP.forEach(function (h) { byId[h.id] = h; });
+    var mine = ev.filter(function (e) { var h = byId[e.id]; return h && Q.pick(h); });
+    function bucket(st) {
+      return mine.filter(function (e) { return e.state === st; })
+        .sort(function (a, b) { return Math.abs(b.t || 0) - Math.abs(a.t || 0); });
+    }
+    return { id: Q.id, q: Q.q, none: Q.none,
+      confirmed: bucket('confirmed'), watching: bucket('watching'), ruledOut: bucket('ruled-out') };
+  }
+
   window.ALSInsights = {
     compute: compute,
-    _timeline: timeline, _splitAuto: splitAuto, _slope: slope, _median: median, _crossDomain: crossDomain, _singleSeries: singleSeries, _HYP: HYP
+    evaluate: evaluate, snapshot: snapshot, changes: changes, history: history,
+    answer: answer, QUESTIONS: QUESTIONS, HYP_TITLE: HYP_TITLE,
+    _timeline: timeline, _splitAuto: splitAuto, _slope: slope, _median: median,
+    _crossDomain: crossDomain, _singleSeries: singleSeries, _HYP: HYP, _seriesOf: seriesOf
   };
 })();

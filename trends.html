@@ -3,247 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Trends · MÉTRON</title>
-  <meta name="theme-color" content="#050507">
+  <title>Insight Engine · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="aurora.css">
-  <script src="water.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="topbar.js" defer></script>
-  <script src="page-motion.js" defer></script>
+  <meta http-equiv="refresh" content="0; url=insights.html">
+  <link rel="canonical" href="insights.html">
   <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    html, body { min-height:100%; }
-    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
-
-    .tr-hero{ max-width:600px; margin:0 auto; padding:24px 18px 8px; }
-    .tr-hero-eyebrow{ margin-bottom:12px; }
-    .tr-hero-title{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(28px,7vw,40px); line-height:1.04; letter-spacing:-.01em; }
-    .tr-hero-sub{ font-family:var(--au-serif); font-style:italic; color:var(--au-dim); font-size:16px; margin-top:6px; }
-
-    .tr-wrap{ max-width:600px; margin:0 auto; padding:14px 18px; display:flex; flex-direction:column; gap:14px; }
-
-    .tr-card{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:16px 18px; }
-    .tr-card::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
-    .tr-card-hd{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:14px; }
-    .tr-card-title{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); line-height:1; }
-    .tr-card-dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:rgb(var(--sec-rgb)); margin-right:8px; vertical-align:middle; }
-
-    .tr-stats{ display:flex; gap:18px; }
-    .tr-stat-val{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:32px; color:var(--au-ivory); letter-spacing:-.01em; line-height:1; }
-    .tr-stat-val small{ font-family:var(--au-mono); font-size:12px; color:var(--au-faint); font-weight:700; font-style:normal; margin-left:2px; }
-    .tr-stat-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:5px; }
-    .tr-delta-down{ color:var(--au-emerald); }
-    .tr-delta-up{ color:var(--au-amber); }
-
-    .tr-chartcap{ display:flex; justify-content:space-between; font-family:var(--au-mono); font-size:9px; letter-spacing:.05em; color:var(--au-faint); text-transform:uppercase; margin-top:6px; }
-
-    /* weekly bars */
-    .tr-week-row{ margin-bottom:16px; }
-    .tr-week-row:last-child{ margin-bottom:0; }
-    .tr-week-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
-    .tr-week-name{ font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-dim); }
-    .tr-week-name b{ color:rgb(var(--sec-rgb)); }
-    .tr-week-avg{ font-family:var(--au-mono); font-size:11px; color:var(--au-faint); }
-    .tr-bars{ display:flex; align-items:flex-end; gap:6px; height:54px; }
-    .tr-bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; justify-content:flex-end; }
-    .tr-bar{ width:100%; border-radius:4px 4px 0 0; background:rgba(var(--sec-rgb),.28); min-height:3px; transition:height .4s ease; }
-    .tr-bar.today{ background:rgb(var(--sec-rgb)); }
-    .tr-bar-lbl{ font-family:var(--au-mono); font-size:8px; color:var(--au-faint); }
-
-    /* heatmap */
-    .tr-heat{ display:grid; grid-template-rows:repeat(7,1fr); grid-auto-flow:column; gap:4px; }
-    .tr-heat-cell{ width:100%; aspect-ratio:1; border-radius:3px; background:rgba(255,255,255,.05); }
-    .tr-heat-legend{ display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-top:12px; font-family:var(--au-mono); font-size:9px; color:var(--au-faint); text-transform:uppercase; letter-spacing:.08em; }
-    .tr-heat-key{ width:11px; height:11px; border-radius:3px; }
-
-    .tr-empty{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-dim); text-align:center; padding:14px 0; }
+    html,body{ height:100%; margin:0; background:#050506; color:#8A8A93;
+      font:500 13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+      display:flex; align-items:center; justify-content:center; letter-spacing:.1em; text-transform:uppercase; }
+    a{ color:#7CD3FC; }
   </style>
 </head>
-<body class="au-bg au-mood-hot" id="root">
+<body>
+  <!-- ════════════════════════════════════════════════════════════════
+       Trends lived here: a weight line, this week's count, a consistency
+       heatmap and a streak. Every one of those was either already on the page
+       that owns it, or was a SHAPE with no explanation attached — and the
+       explanation was sitting one page away in the Insight Engine, which knew
+       why the line moved and couldn't show it next to the line.
 
-  <div class="tr-hero" data-rise>
-    <div class="au-eyebrow tr-hero-eyebrow"><span class="au-dot"></span>TRENDS<span class="au-sep">&middot;</span><span id="trRange">LAST 30 DAYS</span></div>
-    <h1 class="tr-hero-title">Your trends</h1>
-    <p class="tr-hero-sub" id="trSub">Everything you&rsquo;ve tracked, over time.</p>
-  </div>
+       So the shapes moved to "The shape of it" inside the engine, where a
+       trend sits beside the pattern that accounts for it. Same reasoning that
+       folded Bills into Money: two pages asking half a question each.
 
-  <div class="tr-wrap">
-
-    <!-- Weight -->
-    <section class="tr-card" style="--sec-rgb:63,224,176" data-rise>
-      <div class="tr-card-hd">
-        <div class="tr-card-title"><span class="tr-card-dot"></span>Weight</div>
-      </div>
-      <div id="trWeight"></div>
-    </section>
-
-    <!-- This week -->
-    <section class="tr-card" style="--sec-rgb:63,224,176" data-rise>
-      <div class="tr-card-hd"><div class="tr-card-title"><span class="tr-card-dot"></span>This week</div></div>
-      <div id="trWeek"></div>
-    </section>
-
-    <!-- Consistency -->
-    <section class="tr-card" style="--sec-rgb:63,224,176" data-rise>
-      <div class="tr-card-hd"><div class="tr-card-title"><span class="tr-card-dot"></span>Consistency</div></div>
-      <div id="trHeat"></div>
-      <div class="tr-heat-legend">
-        <span>Less</span>
-        <span class="tr-heat-key" style="background:rgba(255,255,255,.05)"></span>
-        <span class="tr-heat-key" style="background:rgba(63,224,176,.3)"></span>
-        <span class="tr-heat-key" style="background:rgba(63,224,176,.6)"></span>
-        <span class="tr-heat-key" style="background:rgba(63,224,176,.95)"></span>
-        <span>More</span>
-      </div>
-    </section>
-
-  </div>
-
-  <script src="nova.js" defer></script>
-  <script>
-  (function () {
-    'use strict';
-    function ls(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function keyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-    function dayStart(ts){ var d=new Date(ts); d.setHours(0,0,0,0); return d; }
-    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-    var DOW = ['S','M','T','W','T','F','S'];
-
-    /* ── WEIGHT line chart ── */
-    function renderWeight(){
-      var el = document.getElementById('trWeight');
-      var raw = ls('po_coach_weights') || [];
-      if (!Array.isArray(raw)) raw = [];
-      var entries = raw.filter(function(e){ return e && e.dateKey && typeof e.weight === 'number'; })
-                       .sort(function(a,b){ return a.dateKey < b.dateKey ? -1 : 1; });
-      if (entries.length < 2){ el.innerHTML = '<p class="tr-empty">Log a couple of weigh-ins to see your trend.</p>'; return; }
-      var units = (ls('po_coach_v1') || {}).units || 'kg';
-      var view = entries.slice(-30);
-      var vals = view.map(function(e){ return e.weight; });
-      var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
-      var range = (max - min) || 1;
-      var W = 320, H = 96, pad = 12;
-      var pts = view.map(function(e,i){
-        var x = view.length === 1 ? W/2 : pad + (W - 2*pad) * i / (view.length - 1);
-        var y = pad + (H - 2*pad) * (1 - (e.weight - min) / range);
-        return [x, y];
-      });
-      var line = pts.map(function(p,i){ return (i?'L':'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
-      var area = line + ' L' + pts[pts.length-1][0].toFixed(1) + ',' + H + ' L' + pts[0][0].toFixed(1) + ',' + H + ' Z';
-      var last = entries[entries.length-1].weight;
-
-      function deltaOver(days){
-        var cutoff = keyOf(new Date(Date.now() - days*86400000));
-        var base = null;
-        for (var i=0;i<entries.length;i++){ if (entries[i].dateKey <= cutoff) base = entries[i]; }
-        if (!base) base = entries[0];
-        return last - base.weight;
-      }
-      function deltaHTML(label, d){
-        var cls = d < 0 ? 'tr-delta-down' : d > 0 ? 'tr-delta-up' : '';
-        var arrow = d < 0 ? '↓' : d > 0 ? '↑' : '→';
-        return '<div><div class="tr-stat-val ' + cls + '">' + arrow + ' ' + Math.abs(d).toFixed(1) + '<small>' + units + '</small></div><div class="tr-stat-lbl">' + label + '</div></div>';
-      }
-
-      el.innerHTML =
-        '<div class="tr-stats" style="margin-bottom:14px;">' +
-          '<div><div class="tr-stat-val">' + last.toFixed(1) + '<small>' + units + '</small></div><div class="tr-stat-lbl">Current</div></div>' +
-          deltaHTML('7-day', deltaOver(7)) +
-          deltaHTML('30-day', deltaOver(30)) +
-        '</div>' +
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" preserveAspectRatio="none">' +
-          '<defs>' +
-            '<linearGradient id="trFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3FE0B0" stop-opacity="0.20"/><stop offset="100%" stop-color="#3FE0B0" stop-opacity="0"/></linearGradient>' +
-          '</defs>' +
-          '<path d="' + area + '" fill="url(#trFill)"/>' +
-          '<path d="' + line + '" fill="none" stroke="#3FE0B0" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<circle cx="' + pts[pts.length-1][0].toFixed(1) + '" cy="' + pts[pts.length-1][1].toFixed(1) + '" r="3.5" fill="#3FE0B0"/>' +
-        '</svg>' +
-        '<div class="tr-chartcap"><span>' + view[0].dateKey.slice(5) + '</span><span>' + max.toFixed(1) + ' / ' + min.toFixed(1) + units + '</span><span>Today</span></div>';
-    }
-
-    /* ── THIS WEEK bars (water / caffeine / calories) ── */
-    function last7(){
-      var days = [];
-      for (var i=6;i>=0;i--){ var d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push(d); }
-      return days;
-    }
-    function sumByDay(logs, valFn){
-      var map = {};
-      (logs||[]).forEach(function(l){ if(!l) return; var k = l.dateKey || keyOf(dayStart(l.ts)); map[k] = (map[k]||0) + valFn(l); });
-      return map;
-    }
-    function barRow(name, accentName, days, valForDay, unit, fmt){
-      var vals = days.map(valForDay);
-      var max = Math.max.apply(null, vals.concat([1]));
-      var nonzero = vals.filter(function(v){ return v>0; });
-      var avg = nonzero.length ? nonzero.reduce(function(a,b){return a+b;},0)/nonzero.length : 0;
-      var todayKey = keyOf(days[days.length-1]);
-      var bars = days.map(function(d,i){
-        var v = vals[i];
-        var h = Math.round((v / max) * 100);
-        var isToday = keyOf(d) === todayKey;
-        return '<div class="tr-bar-col"><div class="tr-bar' + (isToday?' today':'') + '" style="height:' + Math.max(h,(v>0?6:2)) + '%" title="' + keyOf(d) + ': ' + fmt(v) + '"></div><div class="tr-bar-lbl">' + DOW[d.getDay()] + '</div></div>';
-      }).join('');
-      return '<div class="tr-week-row"><div class="tr-week-top"><span class="tr-week-name"><b>' + name + '</b></span><span class="tr-week-avg">avg ' + fmt(Math.round(avg)) + '</span></div><div class="tr-bars">' + bars + '</div></div>';
-    }
-    function renderWeek(){
-      var el = document.getElementById('trWeek');
-      var days = last7();
-      var water = ((ls('po_water_v1')||{}).logs) || {};
-      var dawnSum = function(logs, field){ return sumByDay(logs, function(l){ return l[field]||0; }); };
-      var cafMap = dawnSum(ls('caf:logs')||[], 'mg');
-      var kcalMap = dawnSum(ls('nut:logs')||[], 'kcal');
-      var html =
-        barRow('Water', 'teal', days, function(d){ return water[keyOf(d)]||0; }, '', function(v){ return v+''; }) +
-        barRow('Caffeine', 'amber', days, function(d){ return Math.round(cafMap[keyOf(d)]||0); }, 'mg', function(v){ return v+'mg'; }) +
-        barRow('Calories', 'emerald', days, function(d){ return Math.round(kcalMap[keyOf(d)]||0); }, '', function(v){ return v+''; });
-      el.innerHTML = html;
-    }
-
-    /* ── CONSISTENCY heatmap (8 weeks, weekday-aligned) ── */
-    function renderHeat(){
-      var el = document.getElementById('trHeat');
-      var water = ((ls('po_water_v1')||{}).logs) || {};
-      var weights = (ls('po_coach_weights')||[]);
-      var wSet = {}; if (Array.isArray(weights)) weights.forEach(function(e){ if(e&&e.dateKey) wSet[e.dateKey]=1; });
-      var cafMap = {}; (ls('caf:logs')||[]).forEach(function(l){ cafMap[keyOf(dayStart(l.ts))]=1; });
-      var nutMap = {}; (ls('nut:logs')||[]).forEach(function(l){ if(!l) return; nutMap[l.dateKey || keyOf(dayStart(l.ts))]=1; });
-      function score(k){ return (wSet[k]?1:0) + ((water[k]>0)?1:0) + (cafMap[k]?1:0) + (nutMap[k]?1:0); }
-
-      var today = new Date(); today.setHours(0,0,0,0);
-      // end on Saturday of this week, start 8 weeks back on Sunday
-      var end = new Date(today); end.setDate(end.getDate() + (6 - today.getDay()));
-      var start = new Date(end); start.setDate(start.getDate() - (8*7 - 1));
-      var cells = '';
-      for (var d = new Date(start); d <= end; d.setDate(d.getDate()+1)){
-        var k = keyOf(d);
-        var future = d > today;
-        var sc = future ? -1 : score(k);
-        var bg;
-        if (sc < 0) bg = 'transparent';
-        else if (sc === 0) bg = 'rgba(255,255,255,.05)';
-        else if (sc === 1) bg = 'rgba(63,224,176,.3)';
-        else if (sc === 2) bg = 'rgba(63,224,176,.55)';
-        else if (sc === 3) bg = 'rgba(63,224,176,.78)';
-        else bg = 'rgba(63,224,176,.98)';
-        var glow = sc >= 3 ? 'box-shadow: none;' : '';
-        cells += '<div class="tr-heat-cell" style="background:' + bg + ';' + glow + '" title="' + k + (future?'':(' · ' + sc + '/4 logged')) + '"></div>';
-      }
-      el.innerHTML = '<div class="tr-heat">' + cells + '</div>';
-    }
-
-    function renderAll(){ renderWeight(); renderWeek(); renderHeat(); }
-    renderAll();
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) renderAll(); });
-    window.addEventListener('focus', renderAll);
-  })();
-  </script>
-<script src="nova-coach.js?v=20" defer></script>
+       A redirect rather than a deletion, so a bookmark or an old link lands
+       somewhere sensible. No data lived here — it only ever read.
+       ════════════════════════════════════════════════════════════════ -->
+  <p>Moved into the <a href="insights.html">Insight Engine</a>…</p>
+  <script>location.replace('insights.html');</script>
 </body>
 </html>

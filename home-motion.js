@@ -129,7 +129,7 @@
     ['Nutrition', 'nutrition.html', 'Body'], ['Sleep', 'sleep.html', 'Body'], ['Weight', 'weight.html', 'Body'], ['Caffeine', 'caffeine.html', 'Body'], ['Supplements', 'health.html', 'Body'], ['Measurements', 'measure.html', 'Body'], ['Supplement timing', 'supps.html', 'Body'], ['Meal planner', 'planner.html', 'Body'], ['Water', 'po-water.html', 'Body'], ['Import MyFitnessPal', 'import.html', 'Body'], ['Import Strong', 'import-strong.html', 'Body'], ['Body hub', 'body.html', 'Body'],
     ['Goals', 'main.html', 'Mind'], ['Identity', 'identity.html', 'Mind'], ['Ideas', 'ideas.html', 'Mind'], ['Improve', 'improve.html', 'Mind'],
     ['Money', 'finance.html', 'Money'], ['Movies', 'movies.html', 'Life'], ['Your Arc', 'arc.html', 'Life'],
-    ['Trends', 'trends.html', 'Life'], ['Insight Engine', 'insights.html', 'Life'], ['Αρχαία', 'arxaia.html', 'Study'], ['Ιστορία', 'istoria.html', 'Study'],
+    ['Insight Engine', 'insights.html', 'Life'], ['Αρχαία', 'arxaia.html', 'Study'], ['Ιστορία', 'istoria.html', 'Study'],
     ['Morning Briefing', 'morning.html', 'Go'], ['Weekly Review', 'weekly.html', 'Go'], ['Coach', 'coach.html', 'Go'], ['Nova', 'nova-chat.html', 'Go'], ['Backup', 'backup.html', 'Go']
   ];
   var q = document.getElementById('q'), res = document.getElementById('res');
