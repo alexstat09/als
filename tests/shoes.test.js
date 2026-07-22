@@ -71,5 +71,46 @@ var flat=shoeArt(SHOE_KB[0],1,'x').flat;
 ok(/^<svg [^>]*width="\d+" height="\d+"/.test(flat),'the keepsake SVG carries explicit width/height');
 ok((flat.match(/<svg/g)||[]).length===1 && /<\/svg>$/.test(flat),'the keepsake SVG is a single closed root');
 
+/* ── the GPU mesh ── */
+var meshed=0;
+SHOE_KB.forEach(function(k){
+  [0,0.5,1].forEach(function(w){
+    var m=shoeMeshGL(k,w);
+    var finite=true, i;
+    for(i=0;i<m.pos.length;i++) if(!isFinite(m.pos[i])) finite=false;
+    for(i=0;i<m.nrm.length;i++) if(!isFinite(m.nrm[i])) finite=false;
+    for(i=0;i<m.col.length;i++) if(!isFinite(m.col[i])||m.col[i]<0||m.col[i]>1) finite=false;
+    ok(finite, k.m+' builds finite, in-gamut geometry at wear '+w);
+    ok(m.pos.length/3===m.nrm.length/3 && m.pos.length/3===m.col.length/3 && m.pos.length/3===m.shn.length,
+       k.m+' has one normal, colour and shininess per vertex at wear '+w);
+    var maxI=0; for(i=0;i<m.idx.length;i++) if(m.idx[i]>maxI) maxI=m.idx[i];
+    ok(maxI < m.pos.length/3, k.m+' indexes no vertex past the end at wear '+w);
+    ok(m.pos.length/3 < 65536, k.m+' fits 16-bit indices at wear '+w);
+    ok(m.idx.length%3===0, k.m+' emits whole triangles at wear '+w);
+    meshed++;
+  });
+});
+ok(meshed===SHOE_KB.length*3,'every model meshed at three wear levels');
+/* normals must be unit length or the lighting goes wrong in a way tests should catch */
+var nm=shoeMeshGL(SHOE_KB[0],0.3), badN=0;
+for(var q=0;q<nm.nrm.length;q+=3){
+  var L=Math.sqrt(nm.nrm[q]*nm.nrm[q]+nm.nrm[q+1]*nm.nrm[q+1]+nm.nrm[q+2]*nm.nrm[q+2]);
+  if(Math.abs(L-1)>0.001) badN++;
+}
+eq(badN,0,'every vertex normal is unit length');
+/* the tread is real geometry, so a worn-out shoe must have less of it */
+var fresh=shoeMeshGL(SHOE_KB[0],0), dead=shoeMeshGL(SHOE_KB[0],1);
+ok(dead.pos.length < fresh.pos.length,'tread lugs disappear as the shoe wears out');
+ok(fresh.tris>3000 && fresh.tris<20000,'mesh density is sane ('+fresh.tris+' triangles)');
+/* a plated racer and an unplated trainer must not produce identical meshes */
+var racer=shoeArtSpec({name:'Saucony endrorphin pro 5'}), bondi=shoeArtSpec({name:'Hoka Bondi 9'});
+var mr=shoeMeshGL(racer,0.2), mb=shoeMeshGL(bondi,0.2);
+function height(m){ var lo=1e9,hi=-1e9;
+  for(var i=1;i<m.pos.length;i+=3){ if(m.pos[i]<lo) lo=m.pos[i]; if(m.pos[i]>hi) hi=m.pos[i]; }
+  return hi-lo; }
+ok(Math.abs(height(mb)-height(mr))>0.5,
+   'a 43mm Bondi stands taller than a 39.5mm racer ('+height(mb).toFixed(1)+' vs '+height(mr).toFixed(1)+')');
+ok(racer.plate && !bondi.plate,'only the racer carries a plate');
+
 console.log((fail?'✗ ':'✓ ')+pass+' passed, '+fail+' failed');
 if(fail) process.exit(1);

@@ -527,7 +527,16 @@
     /* the shoe stands on a small stage: two SVG layers separated in Z, so
        turning it parallaxes the upper against the sole like a real object */
     .rn-shoe-stage{ position:relative; margin:0 0 13px; perspective:760px; touch-action:pan-y;
-      border-radius:var(--r-md); overflow:hidden; background:linear-gradient(170deg, var(--rn-a09), rgba(0,0,0,.16)); cursor:grab; }
+      border-radius:var(--r-md); overflow:hidden; cursor:grab;
+      background:radial-gradient(58% 24% at 50% 88%, rgba(0,0,0,.46), rgba(0,0,0,0) 72%),
+                 linear-gradient(170deg, var(--rn-a09), rgba(0,0,0,.16)); }
+    .rn-shoe-stage.is-gl{ perspective:none; }
+    .rn-shoe-gl{ display:block; width:100%; }
+    .rn-shoe-flip{ position:absolute; bottom:6px; left:6px; min-height:44px; display:flex; align-items:center; gap:6px;
+      padding:0 11px; border:1px solid var(--au-line); border-radius:var(--r-md); background:rgba(0,0,0,.30);
+      color:var(--au-faint); font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700;
+      letter-spacing:var(--tr-s); cursor:pointer; }
+    .rn-shoe-flip:hover{ color:rgb(var(--rn)); border-color:var(--rn-a45); }
     .rn-shoe-stage.drag{ cursor:grabbing; }
     .rn-shoe-3d{ position:relative; transform-style:preserve-3d; transform:rotateY(0deg) rotateX(0deg); will-change:transform; }
     .rn-shoe-art{ display:block; width:100%; height:auto; }
@@ -2915,6 +2924,309 @@
                flat:wrap(clip+gradM+gradU,backIn+frontIn,'',true) };
     }
 
+    /* Her shoe as real geometry, shaded per pixel on the GPU.
+       No library and no downloaded model: the mesh is lofted from the same stack
+       height, drop and plate the catalogue already knows, so it is HER shoe and not
+       a generic sneaker. A depth buffer replaces the painter's sort, and colour
+       lives on the vertices, so the midsole line and the flank sweep interpolate
+       instead of stepping. Laces and tread lugs are actual raised geometry — the
+       tread wears flat as the kilometres go on, which is the whole reason to be
+       able to turn a shoe over. */
+
+    function shoeMeshGL(spec, wear){
+      var w=Math.max(0,Math.min(1,wear||0));
+      var stack=spec.stack||36, drop=spec.drop||9;
+      var hh=stack*0.60, fh=Math.max(9,(stack-drop)*0.60);
+      hh*=(1-w*0.13); fh*=(1-w*0.09);
+      var GY=136, OT=5.0, mb=GY-OT, L=240, X0=36;
+      var mTop=mb-hh, fTop=mb-fh, CT=mTop-59+hh*0.05, THR=CT+29;
+
+      function lut(pts){ return function(t){
+        if(t<=pts[0][0]) return pts[0][1];
+        for(var i=1;i<pts.length;i++) if(t<=pts[i][0]){
+          var a=pts[i-1], b=pts[i], f=(t-a[0])/(b[0]-a[0]||1); f=f*f*(3-2*f);
+          return a[1]+(b[1]-a[1])*f;
+        }
+        return pts[pts.length-1][1];
+      }; }
+      var yTop=lut([[0,mTop-4],[.055,mTop-14],[.09,CT+3],[.175,CT-3],[.205,CT+4],[.265,THR-2],
+                    [.325,THR],[.45,THR+4],[.62,THR+10],[.775,fTop-25],[.855,fTop-23],[.925,fTop-18],[.97,fTop-6],[1,fTop+1]]);
+      var yBot=lut([[0,mTop+hh*.62],[.03,mb+2],[.075,GY],[.80,GY],[.90,GY-1],[.965,GY-6],[1,fTop+fh*.5]]);
+      var yMid=lut([[0,mTop],[.055,mTop],[.16,mTop+1.5],[.30,mTop+hh*.20],[.425,mTop+hh*.46],
+                    [.57,fTop-9],[.75,fTop-8],[.945,fTop-5],[1,fTop-1]]);
+      var yOut=lut([[0,mTop+hh*.60],[.075,mb],[.80,mb],[.905,mb-.3],[.968,mb-3],[1,fTop+fh*.52]]);
+      var half=lut([[0,.15],[.05,.54],[.12,.67],[.22,.65],[.34,.62],[.48,.69],[.63,.88],[.74,1],[.87,.79],[.96,.40],[1,.09]]);
+      var ySweep=lut([[.30,mTop+hh*.24],[.46,mTop+hh*.10],[.68,fTop-14],[.875,fTop-11]]);
+      var yPlate=lut([[.09,mTop+hh*.50],[.34,mTop+hh*.58],[.68,fTop-1],[.945,fTop-2.4]]);
+      var HW=38;
+
+      var P=spec.col||{};
+      function hx(c){ var n=parseInt(String(c||'#cccccc').slice(1),16);
+        return [((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255]; }
+      var C_up=hx(P.up), C_up2=hx(P.up2||P.up), C_mid=hx(P.mid), C_mid2=hx(P.mid2||P.mid),
+          C_out=hx(P.out), C_acc=hx(P.acc), C_plate=hx(P.plate||'#141619'), C_lace=hx(P.lace||'#ffffff');
+      function mix(a,b,f){ f=f<0?0:(f>1?1:f); return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f]; }
+      function ramp(x,a,b){ var f=(x-a)/((b-a)||1); f=f<0?0:(f>1?1:f); return f*f*(3-2*f); }
+
+      /* colour resolved per VERTEX, so every boundary interpolates across the face */
+      function shadeAt(t,y,z,hw){
+        var az=Math.abs(z)/(hw||1);
+        var em=ramp(y, yMid(t)-3.0, yMid(t)+3.0);
+        var eo=ramp(y, yOut(t)-2.0, yOut(t)+2.0);
+        var down=ramp(y, yTop(t), yBot(t));
+        var col=mix(mix(C_up,C_up2,down*0.55), mix(C_mid,C_mid2,down*0.5), em);
+        if(t>0.28 && t<0.895 && az>0.26){
+          var a=(1-ramp(Math.abs(y-ySweep(t)), 4.0, 8.6))*(1-em)*ramp(az,0.26,0.44);
+          col=mix(col, C_acc, a);
+        }
+        /* Panels, not one continuous skin. A real shoe is built from pieces, and
+           the seams between them are what stop the form reading as a smooth loaf. */
+        var up2f=(1-em);
+        col=mix(col, C_up2, ramp(t,0.78,0.92)*0.52*up2f);        // toe bumper
+        col=mix(col, C_up2, (1-ramp(t,0.12,0.25))*0.44*up2f);    // heel counter
+        var seam=(1-ramp(Math.abs(y-(yTop(t)+3.4)),1.1,2.9))*up2f*(t<0.80?1:0);
+        col=mix(col, [col[0]*0.52,col[1]*0.52,col[2]*0.52], seam*0.72);   // topline
+        if(spec.plate) col=mix(col, C_plate, (1-ramp(Math.abs(y-yPlate(t)),1.6,3.6))*em*(1-eo)*ramp(az,0.18,0.32));
+        col=mix(col, C_out, eo);
+        /* mileage dulls and dirties the upper, never the sole (that just wears) */
+        if(w>0.32) col=mix(col, [0.42,0.37,0.32], (w-0.32)*0.30*(1-em));
+        var shin=0.62*(1-em)+0.40*em; if(eo>0.5) shin=0.16;
+        return [col[0],col[1],col[2],shin];
+      }
+
+      var pos=[], nrm=[], col=[], shn=[], idx=[];
+      var CX=X0+L/2, CY=(mTop+CT)/2+8;
+      function vtx(x,y,z,c){
+        pos.push(x-CX, -(y-CY), z);          // flip Y: this file's y grows downward
+        nrm.push(0,0,0);
+        col.push(c[0],c[1],c[2]); shn.push(c[3]);
+        return (pos.length/3)-1;
+      }
+
+      /* ── body: rings lofted along the shoe ── */
+      var NS=64, NR=44, ring=[], i, j;
+      for(i=0;i<=NS;i++){
+        var t=i/NS, x=X0+L*t;
+        var yt=yTop(t), yb=yBot(t), cy=(yt+yb)/2, ry=Math.max(1,(yb-yt)/2), hw=Math.max(.6,HW*half(t));
+        var row=[];
+        for(j=0;j<NR;j++){
+          var th=j/NR*Math.PI*2, c=Math.cos(th), sn=Math.sin(th);
+          var eTop=2.15+ramp(t,0.72,0.93)*0.62;        // toe box squares off
+          var e=2/(sn<0?2.9:eTop);
+          var z=hw*(c<0?-1:1)*Math.pow(Math.abs(c),e);
+          var y=cy-ry*(sn<0?-1:1)*Math.pow(Math.abs(sn),e);
+          row.push({ i:vtx(x,y,z,shadeAt(t,y,z,hw)), x:x, y:y, z:z, t:t, hw:hw, th:th });
+        }
+        ring.push(row);
+      }
+      function quad(a,b,c,d){ idx.push(a,b,c, a,c,d); }
+      for(i=0;i<NS;i++) for(j=0;j<NR;j++){
+        var j2=(j+1)%NR;
+        quad(ring[i][j].i, ring[i+1][j].i, ring[i+1][j2].i, ring[i][j2].i);
+      }
+      /* end caps */
+      function cap(row,flip){
+        var sx=0,sy=0,sz=0,k;
+        for(k=0;k<row.length;k++){ sx+=row[k].x; sy+=row[k].y; sz+=row[k].z; }
+        sx/=row.length; sy/=row.length; sz/=row.length;
+        var ci=vtx(sx,sy,sz,shadeAt(row[0].t,sy,sz,row[0].hw));
+        for(k=0;k<row.length;k++){
+          var k2=(k+1)%row.length;
+          if(flip) idx.push(ci,row[k2].i,row[k].i); else idx.push(ci,row[k].i,row[k2].i);
+        }
+      }
+      cap(ring[0],true); cap(ring[NS],false);
+
+      /* ── raise a patch of the surface outward: laces and tread both use this ── */
+      function band(i0,i1,keep,depth,cfn){
+        var outer=[], k, s;
+        for(s=i0;s<=i1;s++){
+          var arc=[];
+          for(k=0;k<NR;k++){
+            var v=ring[s][k]; if(!keep(v)) continue;
+            var dz=v.z, dy=v.y-(yTop(v.t)+yBot(v.t))/2;
+            var ln=Math.sqrt(dz*dz+dy*dy)||1;
+            var nx2=dz/ln, ny2=dy/ln;
+            arc.push({ y:v.y+ny2*depth, z:v.z+nx2*depth, x:v.x, t:v.t, hw:v.hw, base:v });
+          }
+          if(arc.length>1) outer.push(arc);
+        }
+        if(outer.length<2) return;
+        for(s=0;s<outer.length;s++) for(k=0;k<outer[s].length;k++){
+          var o=outer[s][k]; o.i=vtx(o.x,o.y,o.z,cfn(o));
+        }
+        for(s=0;s<outer.length-1;s++){
+          var A=outer[s], B=outer[s+1], n=Math.min(A.length,B.length);
+          for(k=0;k<n-1;k++) quad(A[k].i, B[k].i, B[k+1].i, A[k+1].i);
+          /* side walls so the raised patch has thickness you can see */
+          quad(A[0].i, B[0].i, B[0].base.i, A[0].base.i);
+          quad(A[n-1].base.i, B[n-1].base.i, B[n-1].i, A[n-1].i);
+        }
+      }
+
+      /* laces across the instep */
+      var laceC=[C_lace[0],C_lace[1],C_lace[2],0.55];
+      for(var lk=0;lk<5;lk++){
+        var tt=0.365+lk*0.062, s0=Math.round(tt*NS), s1=s0+2;
+        if(s1>NS) break;
+        band(s0,s1,function(v){ return Math.sin(v.th)>0.25 && Math.abs(v.z)<0.60*v.hw; }, 1.7,
+             function(){ return laceC; });
+      }
+      /* tread lugs — real blocks that flatten as the shoe wears out */
+      var lugD=3.5*(1-w*0.95);   // a shoe at the end of its life is slick
+      if(lugD>0.22){
+        for(var g=0;g<11;g++){
+          var t0=0.085+g*0.072, a0=Math.round(t0*NS), a1=a0+2;
+          if(a1>NS) break;
+          band(a0,a1,function(v){ return Math.sin(v.th)<-0.30 && Math.abs(v.z)<0.82*v.hw; }, lugD,
+               function(o){ var c=shadeAt(o.t,yBot(o.t)+3,o.z,o.hw); return [c[0],c[1],c[2],0.20]; });
+        }
+      }
+      /* The collar opening, as a real recessed cavity rather than a painted dot.
+         Without it the mesh reads as a smooth loaf; a shoe you can see INTO reads
+         as a shoe. The rim is solved back onto the actual top surface so it sits
+         flush however the shoe is shaped at that station. */
+      function topSurfaceY(t,z){
+        var yt=yTop(t), yb=yBot(t), cy2=(yt+yb)/2, ry2=Math.max(1,(yb-yt)/2), hw2=Math.max(.6,HW*half(t));
+        var c=Math.min(1,Math.abs(z)/hw2), e2=2/2.2;
+        var cs=Math.pow(c,1/e2), sn2=Math.sqrt(Math.max(0,1-cs*cs));
+        return cy2-ry2*Math.pow(sn2,e2);
+      }
+      var oCx=X0+L*0.245, oRx=32, oRz=19.5;
+      var holeRim=[0.13,0.10,0.10,0.10], holeDeep=[0.055,0.04,0.045,0.03];
+      var rim=[], inner=[], floorC=null;
+      for(j=0;j<NR;j++){
+        var a2=j/NR*Math.PI*2, ca=Math.cos(a2), sa=Math.sin(a2);
+        var rx1=oCx+ca*oRx, rz1=sa*oRz, rt1=Math.max(0,Math.min(1,(rx1-X0)/L));
+        rim.push(vtx(rx1, topSurfaceY(rt1,rz1)-0.4, rz1, holeRim));
+        var rx2=oCx+ca*oRx*0.70, rz2=sa*oRz*0.70, rt2=Math.max(0,Math.min(1,(rx2-X0)/L));
+        inner.push(vtx(rx2, topSurfaceY(rt2,rz2)+7.5, rz2, holeDeep));
+      }
+      var floorY=topSurfaceY(Math.max(0,Math.min(1,(oCx-X0)/L)),0)+12.5;
+      floorC=vtx(oCx, floorY, 0, holeDeep);
+      for(j=0;j<NR;j++){
+        var j3=(j+1)%NR;
+        quad(rim[j], rim[j3], inner[j3], inner[j]);        // the wall you look down
+        idx.push(floorC, inner[j3], inner[j]);             // the floor of the cavity
+      }
+
+      /* smooth vertex normals */
+      for(i=0;i<idx.length;i+=3){
+        var a3=idx[i]*3, b3=idx[i+1]*3, c3=idx[i+2]*3;
+        var ux=pos[b3]-pos[a3], uy=pos[b3+1]-pos[a3+1], uz=pos[b3+2]-pos[a3+2];
+        var vx=pos[c3]-pos[a3], vy=pos[c3+1]-pos[a3+1], vz=pos[c3+2]-pos[a3+2];
+        var fx=uy*vz-uz*vy, fy=uz*vx-ux*vz, fz=ux*vy-uy*vx;
+        nrm[a3]+=fx; nrm[a3+1]+=fy; nrm[a3+2]+=fz;
+        nrm[b3]+=fx; nrm[b3+1]+=fy; nrm[b3+2]+=fz;
+        nrm[c3]+=fx; nrm[c3+1]+=fy; nrm[c3+2]+=fz;
+      }
+      for(i=0;i<nrm.length;i+=3){
+        var ln2=Math.sqrt(nrm[i]*nrm[i]+nrm[i+1]*nrm[i+1]+nrm[i+2]*nrm[i+2])||1;
+        nrm[i]/=ln2; nrm[i+1]/=ln2; nrm[i+2]/=ln2;
+      }
+      return { pos:new Float32Array(pos), nrm:new Float32Array(nrm), col:new Float32Array(col),
+               shn:new Float32Array(shn), idx:new Uint16Array(idx), wear:w,
+               tris:idx.length/3, verts:pos.length/3 };
+    }
+
+    /* ── GPU ─────────────────────────────────────────────────────────────── */
+    var SHOE_VS=
+    'attribute vec3 aPos; attribute vec3 aNorm; attribute vec3 aCol; attribute float aShin;\n'+
+    'uniform mat4 uProj; uniform mat4 uView; uniform mat3 uNM;\n'+
+    'varying vec3 vN; varying vec3 vP; varying vec3 vC; varying float vS;\n'+
+    'void main(){ vN=uNM*aNorm; vC=aCol; vS=aShin;\n'+
+    '  vec4 p=uView*vec4(aPos,1.0); vP=p.xyz; gl_Position=uProj*p; }';
+
+    var SHOE_FS=
+    'precision highp float;\n'+
+    'varying vec3 vN; varying vec3 vP; varying vec3 vC; varying float vS;\n'+
+    'uniform float uWear;\n'+
+    'void main(){\n'+
+    '  vec3 N=normalize(vN); if(!gl_FrontFacing) N=-N;\n'+
+    '  vec3 V=normalize(-vP);\n'+
+    '  vec3 L1=normalize(vec3(-0.42,0.86,0.60));\n'+   /* key, high and to the left */
+    '  vec3 L2=normalize(vec3(0.70,0.10,0.42));\n'+    /* cool fill from the right */
+    '  vec3 L3=normalize(vec3(-0.10,-0.75,-0.30));\n'+ /* faint bounce off the ground */
+    '  float d1=max(dot(N,L1),0.0), d2=max(dot(N,L2),0.0), d3=max(dot(N,L3),0.0);\n'+
+    '  vec3 H1=normalize(L1+V), H2=normalize(L2+V);\n'+
+    '  float sh=mix(20.0,86.0,vS);\n'+
+    '  float sp=pow(max(dot(N,H1),0.0),sh)*vS*0.55 + pow(max(dot(N,H2),0.0),sh)*vS*0.20;\n'+
+    '  float fres=pow(1.0-max(dot(N,V),0.0),3.5)*0.10*(0.4+vS);\n'+
+    '  vec3 warm=vec3(1.0,0.965,0.94), cool=vec3(0.90,0.94,1.0);\n'+
+    '  vec3 lit = vC*(0.19 + 0.98*d1)*warm + vC*(0.24*d2)*cool + vC*(0.10*d3);\n'+
+    '  lit *= (1.0 - uWear*0.09);\n'+
+    '  vec3 c = lit + vec3(sp)*warm + vec3(fres);\n'+
+    '  c = pow(clamp(c,0.0,1.0), vec3(0.87));\n'+       /* gentle lift, keeps darks from crushing */
+    '  gl_FragColor=vec4(c,1.0);\n'+
+    '}';
+
+    function ShoeGL(canvas){
+      var gl=null;
+      try{ gl=canvas.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:false})
+            || canvas.getContext('experimental-webgl',{antialias:true,alpha:true}); }catch(e){}
+      if(!gl) return null;
+      function sh(type,src){
+        var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+        if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ throw new Error(gl.getShaderInfoLog(s)); }
+        return s;
+      }
+      var prog=gl.createProgram();
+      try{
+        gl.attachShader(prog,sh(gl.VERTEX_SHADER,SHOE_VS));
+        gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,SHOE_FS));
+      }catch(e){ return null; }
+      gl.linkProgram(prog);
+      if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) return null;
+      gl.useProgram(prog);
+
+      var A={ pos:gl.getAttribLocation(prog,'aPos'), norm:gl.getAttribLocation(prog,'aNorm'),
+              col:gl.getAttribLocation(prog,'aCol'), shin:gl.getAttribLocation(prog,'aShin') };
+      var U={ proj:gl.getUniformLocation(prog,'uProj'), view:gl.getUniformLocation(prog,'uView'),
+              nm:gl.getUniformLocation(prog,'uNM'), wear:gl.getUniformLocation(prog,'uWear') };
+      var B={ pos:gl.createBuffer(), norm:gl.createBuffer(), col:gl.createBuffer(),
+              shin:gl.createBuffer(), idx:gl.createBuffer() };
+      gl.enable(gl.DEPTH_TEST);
+      var current=null;
+
+      function upload(m){
+        function put(buf,data,loc,size){
+          gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0);
+        }
+        put(B.pos,m.pos,A.pos,3); put(B.norm,m.nrm,A.norm,3);
+        put(B.col,m.col,A.col,3); put(B.shin,m.shn,A.shin,1);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,B.idx);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,m.idx,gl.STATIC_DRAW);
+        current=m;
+      }
+      function draw(m,yaw,pitch){
+        if(m!==current) upload(m);
+        var W=canvas.width, H=canvas.height;
+        gl.viewport(0,0,W,H);
+        gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+        /* Frame the shoe rather than hardcode a lens: solve the focal length so it
+           fills the canvas whatever shape that canvas is, and keep the camera far
+           enough back that a long lens flatters the shoe instead of bulging it. */
+        var asp=W/(H||1), near=20, far=1600, FITX=134, FITY=54;
+        var f=Math.min((0.86*430/FITX)*asp, 0.84*430/FITY);
+        var proj=new Float32Array([ f/asp,0,0,0, 0,f,0,0, 0,0,(far+near)/(near-far),-1, 0,0,2*far*near/(near-far),0 ]);
+        var cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp2=Math.sin(pitch);
+        /* R = rotX(pitch) * rotY(yaw), column-major */
+        var r00=cy,        r01=0,    r02=sy;
+        var r10=sp2*sy,    r11=cp,   r12=-sp2*cy;
+        var r20=-cp*sy,    r21=sp2,  r22=cp*cy;
+        var D=430;   // matches the framing solve above
+        var view=new Float32Array([ r00,r10,r20,0,  r01,r11,r21,0,  r02,r12,r22,0,  0,0,-D,1 ]);
+        var nm=new Float32Array([ r00,r10,r20, r01,r11,r21, r02,r12,r22 ]);
+        gl.uniformMatrix4fv(U.proj,false,proj);
+        gl.uniformMatrix4fv(U.view,false,view);
+        gl.uniformMatrix3fv(U.nm,false,nm);
+        gl.uniform1f(U.wear,m.wear||0);
+        gl.drawElements(gl.TRIANGLES,m.idx.length,gl.UNSIGNED_SHORT,0);
+      }
+      return { draw:draw, gl:gl, canvas:canvas };
+    }
+
     /* ── her own photographs ──────────────────────────────────────────────
        A drawing is a good likeness; her actual pair on her actual doorstep is
        better. Kept small on purpose — these ride the same sync row as her runs. */
@@ -2962,16 +3274,57 @@
       delete shoePics[sid]; persist(K_SPICS,shoePics); flush(); render(); toast('shoeToast','Η φωτογραφία αφαιρέθηκε');
     }
 
+    /* ── one GL context, shared by every shoe ──────────────────────────────
+       A browser will only hand out a handful of WebGL contexts, and losing one
+       silently is exactly the "silent empty" failure this app keeps banning. So
+       there is a single hidden renderer; each shoe's visible canvas is a 2D one
+       that the shared frame is blitted into. If the context never arrives, or
+       is lost later, every shoe falls back to the drawn 2D version and nothing
+       about the page breaks. */
+    var _sgl=null, _sglTried=false, _sglDead=false;
+    function shoeGL(){
+      if(_sglTried) return _sgl;
+      _sglTried=true;
+      try{
+        var c=document.createElement('canvas'); c.width=640; c.height=256;
+        c.addEventListener('webglcontextlost',function(e){ e.preventDefault(); _sglDead=true; _sgl=null; render(); },false);
+        _sgl=ShoeGL(c);
+      }catch(e){ _sgl=null; }
+      return _sgl;
+    }
+    function shoeGLReady(){ return !_sglDead && !!shoeGL(); }
+    function shoePaintGL(cv, mesh, yaw, pitch){
+      var R=shoeGL(); if(!R || !cv.width || !cv.height) return false;
+      try{
+        if(R.canvas.width!==cv.width || R.canvas.height!==cv.height){ R.canvas.width=cv.width; R.canvas.height=cv.height; }
+        R.draw(mesh, yaw, pitch);
+        var ctx=cv.getContext('2d'); if(!ctx) return false;
+        ctx.clearRect(0,0,cv.width,cv.height);
+        ctx.drawImage(R.canvas,0,0);
+        return true;
+      }catch(e){ _sglDead=true; return false; }
+    }
+
     /* ── the card ── */
     function shoeStageHTML(s,km,life){
       var wear=life>0?Math.min(1,km/life):0, pic=shoePic(s.id);
-      var art=shoeArt(shoeArtSpec(s), wear, String(s.id).replace(/[^a-zA-Z0-9]/g,''));
-      var inner = pic
-        ? '<img class="rn-shoe-photo" src="'+pic+'" alt="">'
-        : art.back+art.front;
-      return '<div class="rn-shoe-stage'+(pic?' has-pic':'')+'" data-shoe-stage="'+s.id+'">'+
-        '<div class="rn-shoe-3d idle">'+inner+'</div>'+
-        '<div class="rn-shoe-glare"></div>'+
+      var uid=String(s.id).replace(/[^a-zA-Z0-9]/g,'');
+      var body, cls='', hint='';
+      if(pic){
+        body='<img class="rn-shoe-photo" src="'+pic+'" alt="">'; cls=' has-pic';
+      } else if(shoeGLReady()){
+        body='<canvas class="rn-shoe-gl" data-shoe-canvas="'+s.id+'"></canvas>'; cls=' is-gl';
+        hint='<button type="button" class="rn-shoe-flip" data-shoe-flip="'+s.id+'" aria-label="Δες τη σόλα">'+
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">'+
+          '<path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9M20.5 12a8.5 8.5 0 0 1-14.6 5.9"/><path d="M18 2.6v3.9h-3.9M6 21.4v-3.9h3.9"/></svg>'+
+          '<span>σόλα</span></button>';
+      } else {
+        var art=shoeArt(shoeArtSpec(s), wear, uid);
+        body=art.back+art.front;
+      }
+      return '<div class="rn-shoe-stage'+cls+'" data-shoe-stage="'+s.id+'">'+
+        '<div class="rn-shoe-3d'+(cls?'':' idle')+'">'+body+'</div>'+
+        (cls?'':'<div class="rn-shoe-glare"></div>')+ hint+
         '<button type="button" class="rn-shoe-cam" data-shoe-cam="'+s.id+'" aria-label="'+(pic?'Άλλαξε φωτογραφία':'Βγάλε φωτογραφία')+'">'+
           '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">'+
           '<path d="M3 8.5h3.2l1.4-2h7.8l1.4 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.4"/></svg>'+
@@ -2979,6 +3332,7 @@
         (pic?'<button type="button" class="rn-shoe-unpic" data-shoe-unpic="'+s.id+'" aria-label="Αφαίρεση φωτογραφίας">✕</button>':'')+
       '</div>';
     }
+
     function renderShoes(){
       var card=$('shoeCard');
       if(!shoes.length && !logs.length){ card.classList.add('hidden'); return; }
@@ -3010,40 +3364,86 @@
       }).join('');
       wireShoeStages();
     }
-    /* drag the shoe to turn it. Pointer-driven on purpose: reading the phone's
+    /* Drag the shoe to turn it. Pointer-driven on purpose: reading the phone's
        gyroscope needs an iOS permission prompt, and a system dialog popping up
-       because she touched a picture of her trainers is not delight. */
+       because she touched a picture of her trainers is not delight. Nothing
+       animates on its own — the frame is painted once and then only when she
+       moves it, so a shoe on screen costs her nothing on a long run day. */
     function wireShoeStages(){
       var body=$('shoeBody'); if(!body) return;
       Array.prototype.forEach.call(body.querySelectorAll('.rn-shoe-stage'),function(st){
-        var inner=st.querySelector('.rn-shoe-3d'), glare=st.querySelector('.rn-shoe-glare');
-        if(!inner) return;
-        var down=false, moved=false, sx=0, sy=0, ry=0, rx=0, by=0, bx=0;
-        function paint(){
-          inner.style.transform='rotateY('+ry.toFixed(2)+'deg) rotateX('+rx.toFixed(2)+'deg)';
-          if(glare) glare.style.transform='translateX('+(ry*1.9).toFixed(1)+'%)';
-        }
-        function pos(e){ var t=(e.touches&&e.touches[0])||e; return {x:t.clientX||0,y:t.clientY||0}; }
-        function start(e){
-          if(e.target.closest('[data-shoe-cam],[data-shoe-unpic]')) return;
-          down=true; moved=false; var p=pos(e); sx=p.x; sy=p.y; by=ry; bx=rx;
-          st.classList.add('drag'); inner.classList.remove('idle');
-        }
-        function move(e){
-          if(!down) return; var p=pos(e), dx=p.x-sx, dy=p.y-sy;
-          if(!moved && (Math.abs(dx)+Math.abs(dy))<6) return;
-          moved=true; if(e.cancelable) e.preventDefault();
-          ry=Math.max(-52,Math.min(52,by+dx*0.42));
-          rx=Math.max(-16,Math.min(16,bx-dy*0.26));
-          paint();
-        }
-        function end(){ down=false; st.classList.remove('drag'); }
-        st.addEventListener('touchstart',start,{passive:true});
-        st.addEventListener('touchmove',move,{passive:false});
-        st.addEventListener('touchend',end); st.addEventListener('touchcancel',end);
-        st.addEventListener('mousedown',start);
-        window.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+        var gl=st.querySelector('.rn-shoe-gl');
+        if(gl) wireShoeGL(st,gl); else wireShoeFlat(st);
       });
+    }
+    function shoeDragBind(st, onMove, onStart){
+      var down=false, moved=false, sx=0, sy=0;
+      function pos(e){ var t=(e.touches&&e.touches[0])||e; return {x:t.clientX||0,y:t.clientY||0}; }
+      function start(e){
+        if(e.target.closest('[data-shoe-cam],[data-shoe-unpic],[data-shoe-flip]')) return;
+        down=true; moved=false; var p=pos(e); sx=p.x; sy=p.y; st.classList.add('drag'); if(onStart) onStart();
+      }
+      function move(e){
+        if(!down) return; var p=pos(e), dx=p.x-sx, dy=p.y-sy;
+        if(!moved && (Math.abs(dx)+Math.abs(dy))<6) return;
+        moved=true; if(e.cancelable) e.preventDefault();
+        onMove(dx,dy);
+      }
+      function end(){ down=false; st.classList.remove('drag'); }
+      st.addEventListener('touchstart',start,{passive:true});
+      st.addEventListener('touchmove',move,{passive:false});
+      st.addEventListener('touchend',end); st.addEventListener('touchcancel',end);
+      st.addEventListener('mousedown',start);
+      window.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+    }
+    function wireShoeGL(st,cv){
+      var sid=cv.getAttribute('data-shoe-canvas');
+      var s=shoes.filter(function(x){ return x.id===sid; })[0]; if(!s) return;
+      var life=shoeLifeKm(s), km=shoeKm(s.id);
+      var mesh=shoeMeshGL(shoeArtSpec(s), life>0?Math.min(1,km/life):0);
+      var yaw=-0.34, pitch=0.14, by=yaw, bp=pitch, raf=0, want=null;
+      function size(){
+        var r=Math.min(2, window.devicePixelRatio||1), w=st.clientWidth||300;
+        var W=Math.round(w*r), H=Math.round(w*r*0.40);
+        if(cv.width!==W || cv.height!==H){ cv.width=W; cv.height=H; cv.style.height=Math.round(w*0.40)+'px'; }
+      }
+      function paint(){
+        size();
+        if(!shoePaintGL(cv, mesh, yaw, pitch)) render();   // context died: fall back to the drawing
+      }
+      shoeDragBind(st, function(dx,dy){
+        cancelAnimationFrame(raf); want=null;
+        yaw=by+dx*0.011;
+        pitch=Math.max(-1.36, Math.min(1.36, bp+dy*0.008));
+        paint();
+      }, function(){ by=yaw; bp=pitch; });
+      var flip=st.querySelector('[data-shoe-flip]');
+      if(flip) flip.addEventListener('click',function(){
+        var soleUp=pitch>-0.85;
+        want={ yaw:-0.34, pitch:soleUp?-1.30:0.14 };
+        if(rnReduced()){ yaw=want.yaw; pitch=want.pitch; by=yaw; bp=pitch; want=null; paint(); return; }
+        cancelAnimationFrame(raf);
+        (function step(){
+          if(!want) return;
+          yaw+=(want.yaw-yaw)*0.16; pitch+=(want.pitch-pitch)*0.16;
+          paint();
+          if(Math.abs(want.pitch-pitch)>0.006) raf=requestAnimationFrame(step);
+          else { want=null; by=yaw; bp=pitch; }
+        })();
+      });
+      paint();
+    }
+    /* the drawn fallback: two SVG layers separated in Z */
+    function wireShoeFlat(st){
+      var inner=st.querySelector('.rn-shoe-3d'), glare=st.querySelector('.rn-shoe-glare');
+      if(!inner) return;
+      var ry=0, rx=0, by=0, bx=0;
+      shoeDragBind(st, function(dx,dy){
+        ry=Math.max(-52,Math.min(52,by+dx*0.42));
+        rx=Math.max(-16,Math.min(16,bx-dy*0.26));
+        inner.style.transform='rotateY('+ry.toFixed(2)+'deg) rotateX('+rx.toFixed(2)+'deg)';
+        if(glare) glare.style.transform='translateX('+(ry*1.9).toFixed(1)+'%)';
+      }, function(){ by=ry; bx=rx; inner.classList.remove('idle'); });
     }
 
     /* ── the goodbye ──────────────────────────────────────────────────────
@@ -3105,7 +3505,17 @@
         }
         if(cv.toBlob) cv.toBlob(finish,'image/png'); else finish(null);
       }
-      try{ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(shoeArt(spec, life>0?Math.min(1,km/life):1, 'card').flat); }
+      var wearNow=life>0?Math.min(1,km/life):1;
+      if(shoeGLReady()){
+        /* the keepsake gets the same shoe she has been turning all along */
+        try{
+          var R=shoeGL(); R.canvas.width=1000; R.canvas.height=400;
+          R.draw(shoeMeshGL(spec, wearNow), -0.42, 0.20);
+          ctx.drawImage(R.canvas, pad-30, 258, W-2*pad+60, (W-2*pad+60)*0.40);
+          finishCard(); return;
+        }catch(e){ /* fall through to the drawing */ }
+      }
+      try{ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(shoeArt(spec, wearNow, 'card').flat); }
       catch(e){ finishCard(); }
     }
 
