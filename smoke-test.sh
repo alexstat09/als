@@ -130,9 +130,11 @@ fi
 #   'on_conflict=' + (SESSION_UID ? 'user_id,key' : 'key')
 # api/ is SERVER code and already does this in _supa.js; the literal below only
 # matches the hardcoded broken shape.
+# tests/ is excluded: sync-regression.js sends the broken shape ON PURPOSE, to
+# assert the database rejects it. That test is the guardrail's twin, not a leak.
 BADCONFLICT="$(grep -rnE "on_conflict=key[\"'&]|onConflict: *['\"]key['\"]" \
   --include='*.js' --include='*.html' . 2>/dev/null \
-  | grep -vE '/(vendor|node_modules|archive|docs|als|api|_quarantine)/' \
+  | grep -vE '/(vendor|node_modules|archive|docs|als|api|tests|_quarantine)/' \
   | grep -vE '/_[^/]*\.html:')"
 if [ -n "$BADCONFLICT" ]; then
   echo ""
