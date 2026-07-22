@@ -209,6 +209,9 @@
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
     let supa = null, pushTimer = null, suppress = false, lastJson = null, lastPushAt = 0, lastRemoteStamp = null;
+    // Has a read of this row ever SUCCEEDED on this page? Until it has, this
+    // device does not know what the cloud holds and must not replace it.
+    let pulled = false;
     // who owns the rows we read/write, and whether the DB knows about owners yet
     let me = null, accessToken = null, hasOwnerCol = false;
     const TOMB_KEY = '__synctomb__' + appKey;
@@ -310,12 +313,21 @@
     }
     function conflictCols() { return hasOwnerCol ? 'user_id,key' : 'key'; }
 
+    // Returns { ok, data }. `ok:false` means WE FAILED TO READ — which is not
+    // the same as "the cloud is empty", and conflating the two is how a device
+    // wipes a row. This used to return null for both, so a failed read produced
+    // an empty `remote`, the merge kept only local, and syncNow pushed that over
+    // the top. On a freshly reinstalled device local is EMPTY, so one failed
+    // read at the wrong moment could blank an entire app's cloud data.
     async function pull() {
       try {
         const { data, error } = await scoped(supa.from('app_state').select('data,updated_at').eq('key', appKey)).maybeSingle();
-        if (!error && data) { if (data.updated_at) lastRemoteStamp = data.updated_at; if (data.data) return data.data; }
+        if (error) return { ok: false };
+        pulled = true;
+        if (data) { if (data.updated_at) lastRemoteStamp = data.updated_at; if (data.data) return { ok: true, data: data.data }; }
+        return { ok: true, data: null };     // genuinely no row yet — safe to push ours
       } catch (e) {}
-      return null;
+      return { ok: false };
     }
     // Cheap freshness probe: read ONLY the timestamp so the 15s interval can
     // skip pulling the (large, growing) data blob when nothing changed remotely.
@@ -331,8 +343,12 @@
     // pull -> merge -> apply locally -> push merged superset
     async function syncNow() {
       if (!supa) return;
-      const remote = await pull();
-      const r = buildMerged(remote);
+      const got = await pull();
+      // Couldn't read the cloud → say so and retry on the next tick. Pushing
+      // now would overwrite whatever is up there with whatever happens to be
+      // on this device, which is the opposite of merge-first.
+      if (!got.ok) { ss('fail', appKey); return; }
+      const r = buildMerged(got.data);
       saveTomb(r.tomb);
       const changed = applyLocal(r.merged);
       const body = pushBody(r.merged, r.tomb);
@@ -408,6 +424,12 @@
     // background). It must be the USER's token, not the publishable key:
     // once RLS is on, an anonymous write is rejected outright.
     function flushOnUnload() {
+      // Never from a device that has not merged with the cloud yet. This push
+      // replaces the whole row with RAW LOCAL — and on a page closed a second
+      // after it opened (or a phone that has just been reinstalled) raw local
+      // is a subset of the cloud, or nothing at all. Data waiting here is
+      // recoverable; data this device erases up there is not.
+      if (!pulled) return;
       const local = collectLocal();
       const body = pushBody(local, loadTomb());
       const json = JSON.stringify(body);
@@ -459,8 +481,9 @@
       // Read-only: take the cloud's copy, merge it in, render, done. No push,
       // no channel, no interval — a briefing is a snapshot, not a session.
       if (readOnly) {
-        const remote = await pull();
-        const r = buildMerged(remote);
+        const got = await pull();
+        if (!got.ok) return;                 // failed read → leave the cache alone
+        const r = buildMerged(got.data);
         const changed = applyLocal(r.merged);
         if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
         return;
