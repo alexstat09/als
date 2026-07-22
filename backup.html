@@ -352,8 +352,8 @@
       'identity':     { keys:['identity:northstar','habits:list','habits:log','journal:entries'], prefixes:[] },
       'body-measure': { keys:['bm:logs'], prefixes:[] },
       'bills':        { keys:['bills:items','bills:paid','bills:nospend'], prefixes:[] },
-      'movies':       { keys:['movies:seen','movies:watch'], prefixes:[] },
-      'improve':      { keys:['improve:videos','improve:habits'], prefixes:[] },
+      'movies':       { keys:['movies:seen','movies:watch','movies:profile'], prefixes:[] },
+      'improve':      { keys:['improve:videos','improve:habits','improve:profile'], prefixes:[] },
       'ideas':        { keys:['ideas:items'], prefixes:[] },
       'finance':      { keys:['subs','wishlist','incoming_orders','nw_currency','nw:activity','nw:history'], prefixes:['nw:'] },
       'goals':        { keys:['goals_outcomes_v1'], prefixes:['goals:'] },
@@ -1712,7 +1712,7 @@
       return out;
     }
 
-    var scLastGaps = 0;
+    var scLastGaps = 0, scStuckApps = {};
     async function runSyncCheck(){
       var body = $('scBody'), btn = $('scBtn');
       body.innerHTML = '<div class="bk-line">Reading the cloud…</div>';
@@ -1756,6 +1756,12 @@
       });
       lines.sort(function(a,b){ return (b.here + b.there) - (a.here + a.there); });
       scLastGaps = onlyHere;
+      // Which cloud rows hold the local-only entries. This page runs only the
+      // health and gym engines, so "only on this device" here usually means
+      // "no engine for that app is loaded on THIS page" rather than "stuck" —
+      // and the Send button was therefore promising something it couldn't do.
+      scStuckApps = {};
+      lines.forEach(function(l){ if (l.here) { var ak = bundleFor(l.key); if (ak) scStuckApps[ak] = 1; } });
 
       // Weigh-ins get their own sentence. They are what kept going missing, and
       // "12 entries differ" is not what he needs to read at that moment.
@@ -1808,20 +1814,33 @@
       $('scPush').classList.toggle('hidden', !onlyHere);
     }
 
-    // Don't hand-roll a write here. Nudge the REAL engines (both listen for a
-    // visibility change and do a full pull → merge → push), then re-check and
-    // report what actually happened.
+    // Never hand-roll a write here — start the REAL engine for each affected app
+    // and let it do its own pull → merge → push.
+    //
+    // This page loads only the health and gym engines, so a nutrition key with
+    // nowhere to go looked "stuck on this device" and the button truthfully could
+    // not send it. Spinning up the genuine engine for that appKey (from BUNDLES,
+    // which smoke-test now keeps honest) means the button does exactly what it
+    // says, using the merge logic that is already trusted everywhere else.
     async function forceSyncPush(){
       var btn = $('scPush');
       btn.setAttribute('disabled','1'); btn.textContent = 'Sending…';
+      var before = scLastGaps;
+
+      Object.keys(scStuckApps).forEach(function(ak){
+        var b = BUNDLES[ak];
+        if (!b || typeof window.initCloudSync !== 'function') return;
+        if (window.__alsSyncApps && window.__alsSyncApps[ak]) return;   // already running here
+        try { window.initCloudSync({ appKey: ak, syncedKeys: b.keys.slice(), syncedPrefixes: b.prefixes.slice() }); } catch(e){}
+      });
       try { if (window.ALSSync && window.ALSSync.flush) window.ALSSync.flush(); } catch(e){}
       try { document.dispatchEvent(new Event('visibilitychange')); } catch(e){}
-      var before = scLastGaps;
-      await new Promise(function(r){ setTimeout(r, 5000); });
+
+      await new Promise(function(r){ setTimeout(r, 6000); });
       btn.removeAttribute('disabled'); btn.textContent = '↑ Send what\'s missing to the cloud';
       await runSyncCheck();
       if (scLastGaps >= before && before > 0) {
-        $('scBody').innerHTML += '<div class="bk-warn" style="margin-top:10px"><b>Still not sent.</b> Open the page that owns this data (weigh-ins live on <b>Weight</b> or <b>Gym</b>), leave it open a few seconds, then check again.</div>';
+        $('scBody').innerHTML += '<div class="bk-warn" style="margin-top:10px"><b>Still not sent.</b> Open the page that owns this data (weigh-ins live on <b>Weight</b> or <b>Gym</b>, food on <b>Nutrition</b>), leave it open a few seconds, then check again.</div>';
       }
     }
 

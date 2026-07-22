@@ -155,16 +155,24 @@ if command -v node >/dev/null 2>&1; then
   BADBUNDLE="$(node -e '
     var fs=require("fs"), apps={};
     fs.readdirSync(".").filter(f=>/\.(html|js)$/.test(f)&&!/^_|^render-/.test(f)).forEach(function(f){
-      var s=fs.readFileSync(f,"utf8"), i=-1;
+      var s=fs.readFileSync(f,"utf8"), i=-1, vars={}, vm;
+      // Most pages list their keys as CONSTANTS (syncedKeys:[K_VID,K_HAB,K_PROF]),
+      // so a literal-only scan silently sees an empty key list and reports no gap.
+      // That is how improve:profile and movies:profile hid. Resolve them.
+      var vr=/\b([A-Za-z_$][\w$]*)\s*=\s*\x27([^\x27]+)\x27/g;
+      while((vm=vr.exec(s))) if(!(vm[1] in vars)) vars[vm[1]]=vm[2];
       while((i=s.indexOf("initCloudSync({",i+1))>=0){
         var blk=s.slice(i,i+1200);
         if(/readOnly\s*:\s*true/.test(blk.slice(0,300))) continue;
-        var ak=(blk.match(/appKey\s*:\s*.([^"\x27]+)./)||[])[1]; if(!ak) continue;
+        var ak=(blk.match(/appKey\s*:\s*\x27([^\x27]+)\x27/)||[])[1]; if(!ak) continue;
         apps[ak]=apps[ak]||{keys:{},prefixes:{}};
-        var kb=(blk.match(/syncedKeys\s*:\s*\[([^\]]*)\]/)||[])[1]||"";
-        (kb.match(/\x27([^\x27]+)\x27/g)||[]).forEach(q=>apps[ak].keys[q.slice(1,-1)]=1);
-        var pb=(blk.match(/syncedPrefixes\s*:\s*\[([^\]]*)\]/)||[])[1]||"";
-        (pb.match(/\x27([^\x27]+)\x27/g)||[]).forEach(q=>apps[ak].prefixes[q.slice(1,-1)]=1);
+        [["syncedKeys","keys"],["syncedPrefixes","prefixes"]].forEach(function(p){
+          var body=(blk.match(new RegExp(p[0]+"\\s*:\\s*\\[([^\\]]*)\\]"))||[])[1]||"";
+          body.split(",").forEach(function(t){ t=t.trim(); if(!t) return;
+            if(t.charAt(0)==="\x27") apps[ak][p[1]][t.slice(1,-1)]=1;
+            else if(vars[t]) apps[ak][p[1]][vars[t]]=1;
+            else apps[ak][p[1]]["(unresolved constant "+t+" in "+f+")"]=1; });
+        });
       }
     });
     var po=fs.readFileSync("pocoach-sync.js","utf8").match(/var KEYS\s*=\s*\[([\s\S]*?)\];/);
