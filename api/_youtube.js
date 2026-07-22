@@ -205,15 +205,43 @@ async function distill(text, title, videoId, key) {
    only its own videos. */
 function esc_re(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
+/* Decide the SHELVES before sorting anything onto them. Chunking alone made
+   every batch invent its own vocabulary — 42 videos came back under 10 labels,
+   some of them just channel names ("Bryce Crawford Podcast"). So: one cheap
+   pass over the titles alone names 4-6 concepts for the whole library, and the
+   sorting chunks may only use those. Titles-only keeps this small enough that
+   the whole library fits in one call even when the sort cannot. */
+async function proposeLabels(items) {
+  var list = items.map(function (v) {
+    return String(v.title || '').slice(0, 90) + (v.topic ? '  [' + String(v.topic).slice(0, 30) + ']' : '');
+  }).join('\n');
+  var sys = 'These are the titles of everything in one person\'s video library, one per line (a rough guess at a theme may follow in brackets). ' +
+    'Name the 4 to 6 CONCEPTS that best cover the WHOLE library. Broad, human, Title Case, 2-4 words each — shelves a person would actually sort by, ' +
+    'like Mindset & Focus, Faith, History, Health, Craft & Skill, Conversations, Money. ' +
+    'Never use a channel name, a person\'s name or a single video\'s subject as a label. Every video must fit one of them. ' +
+    'Output ONLY the labels, one per line, nothing else.';
+  var out = await model.json('text', {
+    messages: [{ role: 'system', content: sys }, { role: 'user', content: list }],
+    temperature: 0.3, max_tokens: 400, reasoning: 'low'
+  });
+  if (!out || !out.ok) return [];
+  return String(out.raw || '').split(/\r?\n/).map(function (l) {
+    return l.replace(/^[\s\-–—•*>]+/, '').replace(/^\d+[.)]\s*/, '').replace(/["'`*_]+/g, '').replace(/[.\s]+$/, '').trim().slice(0, 40);
+  }).filter(function (l) {
+    return l.length > 2 && l.length <= 40 && !/[:|=]/.test(l) && /[A-Za-z]/.test(l);
+  }).slice(0, 6);
+}
+
 async function organizeChunk(chunk, labels) {
   var list = chunk.map(function (v) {
     return v.videoId + ' | ' + String(v.title || '').slice(0, 110) +
       (v.channel ? ' | ' + String(v.channel).slice(0, 50) : '') +
       (v.core ? ' | about: ' + String(v.core).slice(0, 120) : '');
   }).join('\n');
-  var sys = 'You sort videos into CONCEPTS. Each input line is "videoId | title | channel | about". ' +
-    'Give EVERY video exactly one short concept label (2-4 words, Title Case). Keep the whole library to a handful of broad concepts — merge rather than split.' +
-    (labels.length ? ' Reuse one of these existing labels whenever it fits, and only invent a new one if none do: ' + labels.join(', ') + '.' : '') +
+  var sys = 'You sort videos onto shelves. Each input line is "videoId | title | channel | about". ' +
+    (labels.length
+      ? 'Use ONLY these shelves: ' + labels.join(', ') + '. Every video gets exactly one of them — pick the closest fit and never invent a new label.'
+      : 'Give EVERY video exactly one short concept label (2-4 words, Title Case), and keep the whole set to a handful of broad concepts — merge rather than split.') +
     '\nOutput ONE line per video, exactly this and nothing else:\nvideoId => Concept Label';
   var out = await model.json('text', {
     messages: [{ role: 'system', content: sys }, { role: 'user', content: list }],
@@ -246,7 +274,14 @@ async function organize(items, known) {
   if (!items.length) return { ok: false, error: 'empty' };
   var labels = [];
   (known || []).forEach(function (l) { l = String(l || '').trim().slice(0, 40); if (l && labels.indexOf(l) < 0) labels.push(l); });
-  labels = labels.slice(0, 10);
+  labels = labels.slice(0, 8);
+  // A library with shelves already keeps them, so new videos join the set he
+  // knows instead of spawning near-duplicates. An empty one gets shelves named.
+  if (labels.length < 3) {
+    var prop = [];
+    try { prop = await proposeLabels(items); } catch (e) { prop = []; }
+    prop.forEach(function (l) { if (labels.indexOf(l) < 0 && labels.length < 8) labels.push(l); });
+  }
 
   var map = {}, failed = 0;
   for (var i = 0; i < items.length; i += 10) {
@@ -256,7 +291,7 @@ async function organize(items, known) {
     if (!got) { failed++; continue; }
     Object.keys(got).forEach(function (id) {
       map[id] = got[id];
-      if (labels.indexOf(got[id]) < 0 && labels.length < 10) labels.push(got[id]);
+      if (labels.indexOf(got[id]) < 0 && labels.length < 8) labels.push(got[id]);
     });
   }
   if (!Object.keys(map).length) return { ok: false, error: failed ? 'model' : 'parse' };

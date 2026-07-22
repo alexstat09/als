@@ -362,7 +362,7 @@
       if(!o.core&&o.keys.length) o.core=o.keys.shift();
       return o;
     }
-    function conceptOf(v){ return v.concept||v.topic||''; }
+    function conceptOf(v){ return v.concept||v.rawTopic||v.topic||''; }
 
     /* ── videos ───────────────────────────────────────── */
     function topics(){ var t={}; videos.forEach(function(v){ var c=conceptOf(v); if(c) t[c]=(t[c]||0)+1; }); return Object.keys(t).sort(function(a,b){return t[b]-t[a];}); }
@@ -442,7 +442,10 @@
     function kpProg(m){ var e=$('kpProg'); if(e) e.textContent=m||''; }
     function applyKP(v,text){
       v.keypoints=text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
-      var p=kpParse(text); if(p.topic) v.concept=p.topic;
+      // TOPIC is only a placeholder so chips appear during the sweep. Each video
+      // guesses its own theme in isolation, which is how you end up with nine
+      // near-identical shelves — the canonical pass below decides the real set.
+      var p=kpParse(text); if(p.topic) v.rawTopic=p.topic;
       persist(K_VID,videos); flush();
     }
     async function askDistill(v,notes){
@@ -564,21 +567,28 @@
     /* Most videos get their topic free, from the TOPIC line of their own key
        points. This only mops up the stragglers — and it is CHUNKED server-side,
        because one 42-video request is what used to come back empty. */
-    var filling=false;
+    var CVER=2, filling=false;
     async function fillConcepts(){
       if(filling) return;
-      var need=videos.filter(function(v){ return v.ytId&&!v.concept; });
+      // cver marks a shelf assigned by the CURRENT scheme. Bumping it re-shelves
+      // the whole library once — which is how he escapes the ten drifted labels
+      // the old one-shot sort left behind — and then it settles.
+      var need=videos.filter(function(v){ return v.ytId&&(!v.concept||v.cver!==CVER); });
       if(!need.length) return;
-      var count={}; videos.forEach(function(v){ if(v.concept) count[v.concept]=(count[v.concept]||0)+1; });
-      var known=Object.keys(count).sort(function(a,b){ return count[b]-count[a]; }).slice(0,10);
+      var count={}; videos.forEach(function(v){ if(v.concept&&v.cver===CVER) count[v.concept]=(count[v.concept]||0)+1; });
+      var known=Object.keys(count).sort(function(a,b){ return count[b]-count[a]; }).slice(0,8);
       filling=true; kpProg('Sorting');
       try{
-        var items=need.slice(0,120).map(function(v){ return { videoId:v.ytId, title:v.title, channel:v.channel, core:kpParse(v.keypoints||'').core }; });
+        var items=need.slice(0,120).map(function(v){ return { videoId:v.ytId, title:v.title, channel:v.channel, topic:v.rawTopic||'', core:kpParse(v.keypoints||'').core }; });
         var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items:items, known:known }) });
         var d={}; try{ d=await r.json(); }catch(e){}
         if(r.ok&&d.concepts){
           var ch=0;
-          videos.forEach(function(v){ if(v.ytId&&!v.concept&&d.concepts[v.ytId]){ v.concept=String(d.concepts[v.ytId]).slice(0,40); ch++; } });
+          videos.forEach(function(v){
+            if(!v.ytId||v.cver===CVER) return;
+            var lab=d.concepts[v.ytId]; if(!lab) return;
+            v.concept=String(lab).slice(0,40); v.cver=CVER; v.ts=Date.now(); ch++;
+          });
           if(ch){ persist(K_VID,videos); flush(); }
         }
       }catch(e){}
