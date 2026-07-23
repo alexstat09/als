@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="aurora.css">
   <script src="water.js"></script>
   <script src="topbar.js" defer></script>
-  <script>window.__pmAutoSel='.sp-hero,.sp-now,.sp-win,.sp-bar-wrap,.sp-stack';</script>
+  <script>window.__pmAutoSel='.sp-hero,.sp-today,.sp-now,.sp-win,.sp-mom';</script>
   <script src="page-motion.js" defer></script>
   <style>
     :root{ --sp:63,224,176; }
@@ -20,7 +20,9 @@
     html,body{ min-height:100%; }
     body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
       padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+    .wrap{ max-width:600px; margin:0 auto; }
 
+    /* ── hero ── */
     .sp-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
     .sp-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--sp),.9); margin-bottom:11px; }
     .sp-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; }
@@ -29,28 +31,50 @@
     .sp-orb{ flex:none; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:27px;
       background:radial-gradient(120% 120% at 30% 20%, rgba(var(--sp),.22), rgba(var(--sp),.04)); border:1px solid rgba(var(--sp),.3); }
 
-    /* progress */
-    .sp-prog{ max-width:600px; margin:12px auto 0; padding:0 18px; }
-    .sp-prog-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
-    .sp-prog-lbl{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
-    .sp-prog-cnt{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:21px; color:var(--au-ivory); line-height:1; }
-    .sp-prog-track{ height:7px; background:rgba(255,255,255,.07); border-radius:4px; overflow:hidden; }
-    .sp-prog-fill{ height:100%; border-radius:4px; background:rgb(var(--sp)); transition:width .6s cubic-bezier(.16,1,.3,1); }
+    /* ── today band: streak + progress rings ── */
+    .sp-today{ max-width:600px; margin:16px auto 0; padding:0 18px; display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .sp-tile{ position:relative; border:1px solid var(--au-line); border-radius:18px; padding:16px 15px; overflow:hidden;
+      background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.008)); }
+    .sp-tile.accent{ border-color:rgba(var(--sp),.32); background:linear-gradient(160deg, rgba(var(--sp),.12), rgba(var(--sp),.02)); }
+    .sp-tile-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); margin-bottom:9px; }
+    .sp-tile.accent .sp-tile-lbl{ color:rgba(var(--sp),.95); }
+    .sp-tile-row{ display:flex; align-items:baseline; gap:7px; }
+    .sp-big{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:38px; line-height:.9; color:var(--au-ivory); }
+    .sp-big-suf{ font-size:12.5px; color:var(--au-dim); font-weight:600; }
+    .sp-tile-note{ font-size:10.5px; color:var(--au-faint); margin-top:9px; line-height:1.4; }
+    /* progress ring */
+    .sp-ring-wrap{ display:flex; align-items:center; gap:13px; }
+    .sp-ring{ flex:none; width:58px; height:58px; transform:rotate(-90deg); }
+    .sp-ring circle{ fill:none; stroke-width:6; stroke-linecap:round; }
+    .sp-ring .bg{ stroke:rgba(255,255,255,.08); }
+    .sp-ring .fg{ stroke:rgb(var(--sp)); transition:stroke-dashoffset .8s cubic-bezier(.16,1,.3,1); }
+    .sp-ring-txt{ min-width:0; }
+    .sp-ring-cnt{ font-family:var(--au-serif); font-style:italic; font-size:23px; line-height:1; color:var(--au-ivory); }
+    .sp-ring-sub{ font-size:10.5px; color:var(--au-faint); margin-top:5px; line-height:1.35; }
+    /* streak spark row */
+    .sp-flame{ display:inline-flex; vertical-align:-2px; margin-right:2px; color:rgb(var(--sp)); }
 
-    /* "right now" callout */
+    /* ── "right now" callout ── */
     .sp-now{ max-width:600px; margin:16px auto 0; padding:0 18px; }
-    .sp-now-card{ border:1px solid rgba(var(--sp),.4); background:linear-gradient(135deg,rgba(var(--sp),.14),rgba(var(--sp),.03)); border-radius:16px; padding:15px 16px; }
-    .sp-now-eyebrow{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--sp),.95); margin-bottom:7px; }
+    .sp-now-card{ border:1px solid rgba(var(--sp),.4); background:linear-gradient(135deg,rgba(var(--sp),.14),rgba(var(--sp),.03)); border-radius:16px; padding:15px 16px; position:relative; overflow:hidden; }
+    .sp-now-card.calm{ border-color:var(--au-line); background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.01)); }
+    .sp-now-eyebrow{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--sp),.95); margin-bottom:7px; display:flex; align-items:center; gap:6px; }
+    .sp-now-card.calm .sp-now-eyebrow{ color:var(--au-faint); }
+    .sp-now-dot{ width:6px; height:6px; border-radius:50%; background:rgb(var(--sp)); box-shadow:0 0 0 0 rgba(var(--sp),.5); animation:spPulse 2.2s ease-out infinite; }
+    .sp-now-card.calm .sp-now-dot{ background:var(--au-faint); animation:none; box-shadow:none; }
+    @keyframes spPulse{ 0%{ box-shadow:0 0 0 0 rgba(var(--sp),.45);} 70%{ box-shadow:0 0 0 7px rgba(var(--sp),0);} 100%{ box-shadow:0 0 0 0 rgba(var(--sp),0);} }
     .sp-now-txt{ font-size:14.5px; color:var(--au-ivory); line-height:1.45; }
     .sp-now-txt b{ font-weight:700; }
 
-    /* timeline */
+    /* ── timeline / the spine ── */
     .sp-wrap{ max-width:600px; margin:8px auto 0; padding:14px 18px; }
     .sp-win{ position:relative; padding-left:34px; padding-bottom:8px; }
     .sp-win::before{ content:""; position:absolute; left:11px; top:6px; bottom:-8px; width:2px; background:var(--au-line); }
+    .sp-win.done::before{ background:linear-gradient(rgba(63,224,176,.55), var(--au-line)); }
     .sp-win:last-child::before{ display:none; }
     .sp-node{ position:absolute; left:0; top:2px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; background:#0c0e12; border:2px solid var(--au-line); z-index:1; }
-    .sp-win.now .sp-node{ border-color:rgb(var(--sp)); box-shadow:0 0 0 4px rgba(var(--sp),.16); }
+    .sp-win.now .sp-node{ border-color:rgb(var(--sp)); box-shadow:0 0 0 4px rgba(var(--sp),.16); animation:spNode 2.6s ease-in-out infinite; }
+    @keyframes spNode{ 0%,100%{ box-shadow:0 0 0 4px rgba(var(--sp),.16);} 50%{ box-shadow:0 0 0 6px rgba(var(--sp),.05);} }
     .sp-win.done .sp-node{ border-color:#3FE0B0; color:#3FE0B0; }
     .sp-win.missed .sp-node{ border-color:#FF8FA3; }
     .sp-win-hd{ display:flex; align-items:center; gap:9px; margin-bottom:10px; min-height:24px; }
@@ -63,21 +87,40 @@
     .sp-pill.upcoming{ background:rgba(255,255,255,.06); color:var(--au-faint); }
     .sp-pill.open{ background:rgba(255,255,255,.06); color:var(--au-dim); }
 
-    .sp-item{ display:flex; align-items:center; gap:12px; padding:11px 13px; margin-bottom:8px; border-radius:13px; border:1px solid var(--au-line); background:rgba(255,255,255,.025); cursor:pointer; transition:border-color .15s,background .15s; }
-    .sp-item:active{ background:rgba(255,255,255,.05); }
+    .sp-item{ display:flex; align-items:center; gap:12px; padding:11px 13px; margin-bottom:8px; border-radius:13px; border:1px solid var(--au-line); background:rgba(255,255,255,.025); cursor:pointer; transition:border-color .15s,background .15s,transform .12s; }
+    .sp-item:active{ background:rgba(255,255,255,.05); transform:scale(.99); }
     .sp-item.taken{ opacity:.62; }
-    .sp-check{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:14px; color:#04130D; transition:background .15s,border-color .15s; }
-    .sp-item.taken .sp-check{ background:#3FE0B0; border-color:#3FE0B0; }
+    .sp-check{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:14px; color:#04130D; transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s,transform .18s; }
+    .sp-item.taken .sp-check{ background:#3FE0B0; border-color:#3FE0B0; transform:scale(1.06); }
     .sp-item-main{ flex:1; min-width:0; }
     .sp-item-name{ font-size:14.5px; font-weight:600; color:var(--au-ivory); }
     .sp-item.taken .sp-item-name{ text-decoration:line-through; color:var(--au-dim); }
     .sp-item-note{ font-size:11.5px; color:var(--au-faint); margin-top:3px; line-height:1.4; }
     .sp-item-dose{ flex:none; font-family:var(--au-mono); font-size:12px; font-weight:700; color:rgba(var(--sp),.9); white-space:nowrap; }
 
+    /* ── momentum / memory ── */
+    .sp-mom{ max-width:600px; margin:20px auto 0; padding:0 18px; }
+    .sp-mom-hd{ display:flex; align-items:baseline; gap:9px; margin-bottom:12px; }
+    .sp-mom-title{ font-family:var(--au-serif); font-style:italic; font-size:19px; color:var(--au-ivory); }
+    .sp-mom-sub{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); }
+    .sp-insight{ border:1px solid var(--au-line); border-left:2px solid rgba(var(--sp),.5); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.5; color:var(--au-dim); background:rgba(255,255,255,.02); }
+    .sp-insight b{ color:var(--au-ivory); font-weight:700; }
+    .sp-strip{ display:flex; align-items:center; gap:10px; padding:8px 0; }
+    .sp-strip+.sp-strip{ border-top:1px solid rgba(255,255,255,.045); }
+    .sp-strip-name{ flex:1; min-width:0; font-size:12.5px; color:var(--au-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sp-dots{ flex:none; display:flex; gap:3px; }
+    .sp-dot{ width:8px; height:8px; border-radius:50%; }
+    .sp-dot.hit{ background:rgb(var(--sp)); }
+    .sp-dot.miss{ background:transparent; border:1px solid rgba(255,255,255,.16); }
+    .sp-dot.void{ background:rgba(255,255,255,.05); }
+    .sp-dot.today{ box-shadow:0 0 0 2px rgba(var(--sp),.25); }
+    .sp-strip-cnt{ flex:none; width:38px; text-align:right; font-family:var(--au-mono); font-size:10.5px; font-weight:700; color:var(--au-faint); }
+    .sp-strip-cnt.strong{ color:rgba(var(--sp),.9); }
+
     .sp-empty{ max-width:520px; margin:46px auto; text-align:center; padding:0 24px; color:var(--au-dim); font-size:14px; line-height:1.55; }
     .sp-empty .ico{ font-size:44px; margin-bottom:14px; }
     .sp-empty a{ color:rgb(var(--sp)); text-decoration:none; font-weight:700; }
-    .sp-foot{ max-width:600px; margin:4px auto 0; padding:0 18px 4px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
+    .sp-foot{ max-width:600px; margin:18px auto 0; padding:0 18px 4px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
     .hidden{ display:none !important; }
   </style>
 </head>
@@ -91,60 +134,98 @@
     <div class="sp-orb" aria-hidden="true" style="color:#3FE0B0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M8.5 15.5l7-7"/></svg></div>
   </header>
 
-  <div class="sp-prog" id="spProgWrap">
-    <div class="sp-prog-top"><span class="sp-prog-lbl">Today’s stack</span><span class="sp-prog-cnt" id="spProgCnt">0 / 0</span></div>
-    <div class="sp-prog-track"><div class="sp-prog-fill" id="spProgFill" style="width:0%"></div></div>
-  </div>
+  <!-- today band -->
+  <section class="sp-today" id="spTodayBand">
+    <div class="sp-tile accent" id="spStreakTile">
+      <div class="sp-tile-lbl">Streak</div>
+      <div class="sp-tile-row">
+        <span class="sp-flame" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.6 3.5-2.4 4.8-2.4 8A2.4 2.4 0 0 0 12 13.4 2.4 2.4 0 0 0 14.4 11c0-.9-.4-1.6-.4-1.6 2.2 1 3.5 3 3.5 5.4A5.5 5.5 0 1 1 6.5 15c0-3.3 2.8-4.9 3.2-8 0 0 1.4 1 2.3-4z"/></svg></span>
+        <span class="sp-big" id="spStreakN" data-to="0">0</span>
+        <span class="sp-big-suf" id="spStreakSuf">days</span>
+      </div>
+      <div class="sp-tile-note" id="spStreakNote">Take every daily supplement to start the chain.</div>
+    </div>
+    <div class="sp-tile" id="spProgTile">
+      <div class="sp-tile-lbl">Today</div>
+      <div class="sp-ring-wrap">
+        <svg class="sp-ring" viewBox="0 0 58 58" aria-hidden="true">
+          <circle class="bg" cx="29" cy="29" r="24"></circle>
+          <circle class="fg" id="spRingFg" cx="29" cy="29" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"></circle>
+        </svg>
+        <div class="sp-ring-txt">
+          <div class="sp-ring-cnt" id="spProgCnt">0 / 0</div>
+          <div class="sp-ring-sub" id="spProgSub">taken today</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="sp-now hidden" id="spNowWrap">
-    <div class="sp-now-card"><div class="sp-now-eyebrow" id="spNowEyebrow">Right now</div><div class="sp-now-txt" id="spNowTxt"></div></div>
+    <div class="sp-now-card" id="spNowCard"><div class="sp-now-eyebrow" id="spNowEyebrow"><span class="sp-now-dot"></span><span id="spNowLead">Right now</span></div><div class="sp-now-txt" id="spNowTxt"></div></div>
   </div>
 
   <main class="sp-wrap" id="spTimeline"></main>
+
+  <section class="sp-mom hidden" id="spMom">
+    <div class="sp-mom-hd"><span class="sp-mom-title">Your consistency</span><span class="sp-mom-sub">Last 14 days</span></div>
+    <div class="sp-insight" id="spInsight"></div>
+    <div id="spStrips"></div>
+  </section>
+
   <div class="sp-empty hidden" id="spEmpty">
     <div class="ico" style="color:#3FE0B0;display:flex;justify-content:center"><svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M8.5 15.5l7-7"/></svg></div>
     No supplements in your stack yet.<br>Add them in the <a href="health.html">Health module</a> and they’ll line up here by time of day.
   </div>
-  <div class="sp-foot" id="spFoot">Tap any supplement to mark it taken — it syncs with your Daily Stack. Resets at 6 AM.</div>
+  <div class="sp-foot" id="spFoot">Tap any supplement to mark it taken — it syncs with your Daily Stack. Resets at 6 AM. A push nudges you at each window if you haven’t logged it.</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="sync.js" defer></script>
   <script>
   (function(){
     'use strict';
-    // Enriched windows (STACK_WINDOWS from health.html + startHour for "now" logic).
+    // Windows tuned to Alex's ACTUAL routine: morning supps ~10–11, "lunch"
+    // supps ~5–6 PM, night supps ~11 PM. startHour/cutoffHour drive the now/
+    // missed/upcoming logic; the push reminders in run-reminders.js fire at the
+    // same real hours (10 / 17 / 23).
     var WINDOWS=[
-      { key:'morning',    icon:'🌅', title:'Morning',  time:'7–10 AM',        startHour:5,    cutoffHour:10 },
-      { key:'lunch',      icon:'🍽️', title:'Lunch',    time:'12–2 PM',        startHour:10,   cutoffHour:14 },
-      { key:'evening',    icon:'🌙', title:'Evening',  time:'9–11 PM',        startHour:15,   cutoffHour:23 },
-      { key:'anytime',    icon:'⏱️', title:'Anytime',  time:'Any time today', startHour:null, cutoffHour:null },
-      { key:'occasional', icon:'🔆', title:'As needed',time:'Only when needed',startHour:null, cutoffHour:null }
+      { key:'morning',    title:'Morning',  time:'10–11 AM',       startHour:8,  cutoffHour:15 },
+      { key:'lunch',      title:'Afternoon',time:'5–6 PM',         startHour:15, cutoffHour:20 },
+      { key:'evening',    title:'Night',    time:'~11 PM',         startHour:20, cutoffHour:27 },
+      { key:'anytime',    title:'Anytime',  time:'Any time today', startHour:null, cutoffHour:null },
+      { key:'occasional', title:'As needed',time:'Only when needed',startHour:null, cutoffHour:null }
     ];
     // window glyphs as refined line icons (premium — no emoji)
     var WIN_ICO={
       morning:'<path d="M12 4v2.5M5 11l1.6 1.6M19 11l-1.6 1.6M3.5 18h17M7.5 18a4.5 4.5 0 0 1 9 0"/>',
-      lunch:'<path d="M8 3v7M6 3v4a2 2 0 0 0 4 0V3M8 10v10M17 3c-1.3 0-2 2.2-2 4.7 0 2.3.7 4.3 2 4.3v8"/>',
+      lunch:'<path d="M20 14.5A8 8 0 1 1 9.5 4 6.3 6.3 0 0 0 20 14.5z" transform="scale(-1,1) translate(-24,0)"/>',
       evening:'<path d="M20 14.5A8 8 0 1 1 9.5 4 6.3 6.3 0 0 0 20 14.5z"/>',
       anytime:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
       occasional:'<circle cx="12" cy="12" r="3.6"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>'
     };
     function winIco(k){ return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(WIN_ICO[k]||WIN_ICO.anytime)+'</svg>'; }
+
     var _spAnim=false;
     function setCount(el,n,total){ if(!el) return; if(_spAnim||!(n>0)){ el.textContent=n+' / '+total; _spAnim=true; return; } _spAnim=true; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(n*p)+' / '+total; if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
 
     function $(id){ return document.getElementById(id); }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function pad(n){ return String(n).padStart(2,'0'); }
     function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
     function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
     // Same 6 AM-rollover key health.html / body.html use, so taken state is shared.
-    function activeDate(){ var n=new Date(); if(n.getHours()<6) n.setDate(n.getDate()-1);
-      return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
-    function takenKey(){ return 'stack:taken:'+activeDate(); }
+    function dateKeyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function activeDate(){ var n=new Date(); if(n.getHours()<6) n.setDate(n.getDate()-1); return dateKeyOf(n); }
+    function takenKey(dk){ return 'stack:taken:'+(dk||activeDate()); }
+    function shiftDay(key,delta){ var p=key.split('-').map(Number); var d=new Date(p[0],p[1]-1,p[2]); d.setDate(d.getDate()+delta); return dateKeyOf(d); }
 
     function items(){ var a=ls('stack:items',[]); return Array.isArray(a)?a.filter(function(i){return i&&i.id&&i.name;}):[]; }
-    function taken(){ var t=ls(takenKey(),{}); return (t&&typeof t==='object')?t:{}; }
+    function dailyItems(){ return items().filter(function(i){ return (i.window||'anytime')!=='occasional'; }); }
+    function taken(dk){ var t=ls(takenKey(dk),{}); return (t&&typeof t==='object')?t:{}; }
     function itemsIn(key){ return items().filter(function(i){ return (i.window||'anytime')===key; }); }
+
+    // history — read every stack:taken:* key once (memory is free; nothing prunes them)
+    function history(){ var out={}; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('stack:taken:')===0){ var v=ls(k,{}); if(v&&typeof v==='object') out[k.slice(12)]=v; } } }catch(e){} return out; }
 
     function toggle(id){
       var t=taken(); if(t[id]) delete t[id]; else t[id]=Date.now();
@@ -153,33 +234,58 @@
       render();
     }
 
+    // normalised hour so the pre-6AM tail of "tonight" reads correctly (0–5 → 24–29)
+    function nowHour(){ var h=new Date().getHours(); return h<6?h+24:h; }
     function winStatus(win, list, t){
       var due=list.filter(function(i){ return !t[i.id]; }).length;
       if(list.length && due===0) return 'done';
       if(win.cutoffHour==null) return 'open';            // anytime / occasional
-      var h=new Date().getHours();
+      var h=nowHour();
       if(h>win.cutoffHour) return 'missed';
       if(win.startHour!=null && h<win.startHour) return 'upcoming';
       return 'now';
     }
     var PILL={ now:'Now', done:'Done', missed:'Missed', upcoming:'Later', open:'Open' };
 
+    // ── streak: consecutive complete days (all current daily items taken) ──
+    function dayComplete(map, ids){ if(!ids.length) return false; for(var i=0;i<ids.length;i++){ if(!map[ids[i]]) return false; } return true; }
+    function computeStreak(hist, ids){
+      if(!ids.length) return 0;
+      var day=activeDate(), streak=0, guard=0;
+      if(!dayComplete(hist[day]||{}, ids)) day=shiftDay(day,-1); // today unfinished doesn't break it yet
+      while(dayComplete(hist[day]||{}, ids) && guard++<400){ streak++; day=shiftDay(day,-1); }
+      return streak;
+    }
+
     function render(){
       var all=items(), t=taken();
       if(!all.length){
         $('spTimeline').classList.add('hidden'); $('spNowWrap').classList.add('hidden');
-        $('spProgWrap').classList.add('hidden'); $('spFoot').classList.add('hidden');
+        $('spTodayBand').classList.add('hidden'); $('spFoot').classList.add('hidden'); $('spMom').classList.add('hidden');
         $('spEmpty').classList.remove('hidden');
         return;
       }
       $('spEmpty').classList.add('hidden'); $('spTimeline').classList.remove('hidden');
-      $('spProgWrap').classList.remove('hidden'); $('spFoot').classList.remove('hidden');
+      $('spTodayBand').classList.remove('hidden'); $('spFoot').classList.remove('hidden');
 
       // progress = everything except "occasional" (only-if-needed)
-      var daily=all.filter(function(i){ return (i.window||'anytime')!=='occasional'; });
+      var daily=dailyItems();
       var done=daily.filter(function(i){ return t[i.id]; }).length;
       setCount($('spProgCnt'), done, daily.length);
-      $('spProgFill').style.width=(daily.length?Math.round(done/daily.length*100):0)+'%';
+      var frac=daily.length?done/daily.length:0, C=150.8;
+      $('spRingFg').style.strokeDashoffset=(C*(1-frac)).toFixed(1);
+      $('spProgSub').textContent = done>=daily.length&&daily.length ? 'all taken · nice' : 'taken today';
+
+      // streak
+      var hist=history(), ids=daily.map(function(i){ return i.id; });
+      var streak=computeStreak(hist, ids);
+      var sn=$('spStreakN'); sn.setAttribute('data-to', String(streak)); if(sn.dataset) delete sn.dataset.done; sn.textContent=String(streak);
+      $('spStreakSuf').textContent = streak===1?'day':'days';
+      var todayDone = ids.length && dayComplete(t, ids);
+      $('spStreakNote').textContent = streak===0
+        ? 'Take every daily supplement to start the chain.'
+        : (todayDone ? 'Unbroken — today’s already in the books.' : 'Keep it alive — finish today’s stack.');
+      $('spStreakTile').classList.toggle('accent', streak>0);
 
       // build timeline (skip windows with no items)
       var html='', nowFocus=null, upcomingFocus=null;
@@ -212,21 +318,77 @@
       $('spTimeline').innerHTML=html;
 
       // "right now" callout
-      var focus=nowFocus||upcomingFocus;
+      var focus=nowFocus||upcomingFocus, card=$('spNowCard');
+      $('spNowWrap').classList.remove('hidden');
       if(focus){
-        $('spNowWrap').classList.remove('hidden');
+        card.classList.remove('calm');
         var names=focus.items.map(function(i){ return i.name+(i.dose?' ('+i.dose+')':''); });
-        var lead=focus===upcomingFocus?'Coming up · '+focus.win.title:'Take now · '+focus.win.title;
-        $('spNowEyebrow').textContent=lead;
+        $('spNowLead').textContent=(focus===upcomingFocus?'Coming up · ':'Take now · ')+focus.win.title;
         $('spNowTxt').innerHTML='<b>'+esc(names.join(', '))+'</b>';
       } else {
-        $('spNowWrap').classList.remove('hidden');
-        $('spNowEyebrow').textContent='All caught up';
+        card.classList.add('calm');
+        $('spNowLead').textContent='All caught up';
         $('spNowTxt').innerHTML='Everything scheduled is taken. Nice work.';
       }
 
+      renderMomentum(hist, daily);
+
       // hero sub
       $('spSub').innerHTML='<b>'+done+'</b> of <b>'+daily.length+'</b> taken today.';
+    }
+
+    // ── momentum: per-supplement 14-day trail + one honest insight ──
+    var WIN_LABEL={ morning:'morning', lunch:'afternoon', evening:'night' };
+    function renderMomentum(hist, daily){
+      var histKeys=Object.keys(hist);
+      if(!histKeys.length || !daily.length){ $('spMom').classList.add('hidden'); return; }
+      var first=histKeys.sort()[0];
+      var today=activeDate();
+      // last 14 day-keys, oldest→newest
+      var days=[]; for(var d=13;d>=0;d--) days.push(shiftDay(today,-d));
+      var span=days.filter(function(dk){ return dk>=first; }).length; // days that actually exist as history
+      if(span<1){ $('spMom').classList.add('hidden'); return; }
+      $('spMom').classList.remove('hidden');
+
+      // strips
+      var strips=daily.map(function(it){
+        var hit=0, applied=0;
+        var dots=days.map(function(dk){
+          var pre = dk<first;
+          var on = !!(hist[dk] && hist[dk][it.id]);
+          if(!pre) applied++;
+          if(on) hit++;
+          var cls = pre?'void':(on?'hit':'miss');
+          if(dk===today) cls+=' today';
+          return '<span class="sp-dot '+cls+'"></span>';
+        }).join('');
+        var pct = applied?hit/applied:0;
+        return '<div class="sp-strip"><span class="sp-strip-name">'+esc(it.name.replace(/\s*\(.*\)$/,''))+'</span>'+
+          '<span class="sp-dots">'+dots+'</span>'+
+          '<span class="sp-strip-cnt'+(pct>=0.85?' strong':'')+'">'+hit+'/'+applied+'</span></div>';
+      }).join('');
+      $('spStrips').innerHTML=strips;
+
+      // insight — weakest timed window over the applied span
+      var appliedDays=days.filter(function(dk){ return dk>=first; });
+      var worst=null;
+      ['morning','lunch','evening'].forEach(function(wk){
+        var witems=daily.filter(function(i){ return (i.window||'anytime')===wk; });
+        if(!witems.length) return;
+        var complete=0;
+        appliedDays.forEach(function(dk){ var m=hist[dk]||{}; if(witems.every(function(i){ return m[i.id]; })) complete++; });
+        var adh=appliedDays.length?complete/appliedDays.length:1;
+        if(worst===null || adh<worst.adh) worst={ wk:wk, adh:adh, complete:complete, n:appliedDays.length };
+      });
+      var msg;
+      if(appliedDays.length<4){
+        msg='Early days — the dots fill in as you log. Keep tapping them in and the pattern shows up here.';
+      } else if(worst && worst.adh<0.8){
+        msg='<b>'+(WIN_LABEL[worst.wk]||worst.wk)+'</b> is where you slip — '+worst.complete+' of the last '+worst.n+' days. That’s the window a nudge protects most.';
+      } else {
+        msg='Rock solid — every window, almost every day over the last '+appliedDays.length+'. This is a habit now, not a chore.';
+      }
+      $('spInsight').innerHTML=msg;
     }
 
     $('spTimeline').addEventListener('click', function(e){

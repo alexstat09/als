@@ -65,6 +65,13 @@ function recoveryDipFrom(sleepLogs) {
   return null;
 }
 
+// Names the still-due supplements in a window into one push line.
+function suppBody(list) {
+  if (!list || !list.length) return '';
+  var names = list.length <= 3 ? list.join(', ') : (list.slice(0, 2).join(', ') + ' +' + (list.length - 2) + ' more');
+  return names + '. Tap to take ' + (list.length > 1 ? 'them' : 'it') + ' — 10 seconds and it’s logged.';
+}
+
 // Each reminder: when it fires by default, whether it's relevant today, and
 // the line Nova sends. Mirrors the conditions in nova-coach.js so the push
 // matches what the in-app coach would say.
@@ -88,6 +95,21 @@ var REMINDERS = [
   { id: 'caffeine', defHour: 14, title: 'Caffeine cutoff ☕️',
     cond: function (c) { return c.cafToday > 0; },
     body: function (c) { return "You're at " + Math.round(c.cafToday) + "mg today — cut it off now and tonight's sleep (and tomorrow's lifts) will thank you."; } },
+
+  // Supplement windows — fire at Alex's real timing (morning ~10, afternoon ~17,
+  // night ~23) and only when that window still has UNTAKEN daily supps. The body
+  // names exactly what's left, so the push doubles as the checklist.
+  { id: 'supp-morning', defHour: 10, title: 'Morning stack 🌅',
+    cond: function (c) { return c.suppMorning && c.suppMorning.length > 0; },
+    body: function (c) { return suppBody(c.suppMorning); } },
+
+  { id: 'supp-lunch', defHour: 17, title: 'Afternoon stack 🍽️',
+    cond: function (c) { return c.suppLunch && c.suppLunch.length > 0; },
+    body: function (c) { return suppBody(c.suppLunch); } },
+
+  { id: 'supp-evening', defHour: 23, title: 'Night stack 🌙',
+    cond: function (c) { return c.suppEvening && c.suppEvening.length > 0; },
+    body: function (c) { return suppBody(c.suppEvening); } },
 
   { id: 'journal', defHour: 22, title: 'Close out your day 🧭',
     cond: function (c) { return c.habitsLeft > 0 || !c.journaledToday; },
@@ -141,6 +163,22 @@ async function buildContext(tz, today) {
   var jToday = (idn['journal:entries'] || []).find(function (e) { return e && e.dateKey === today; });
   var journaledToday = !!(jToday && (((jToday.reflection || '').trim()) || ((jToday.gratitude || '').trim())));
 
+  // Supplement stack — items + today's taken map live in the 'health' row
+  // (supps.html syncs them under appKey 'health'). The window reminders fire at
+  // hours >= 6, where the 6 AM-rollover taken key == the plain local date, so
+  // 'stack:taken:'+today is the right bucket. List the still-UNTAKEN daily items
+  // per window; "anytime" (creatine) rides along with morning so it surfaces early.
+  var stackItems = hlt['stack:items'] || [];
+  var stackTaken = hlt['stack:taken:' + today] || {};
+  function suppDue(windows) {
+    return stackItems.filter(function (i) {
+      return i && i.id && i.name && windows.indexOf(i.window || 'anytime') !== -1 && !stackTaken[i.id];
+    }).map(function (i) { return i.name + (i.dose ? ' (' + i.dose + ')' : ''); });
+  }
+  var suppMorning = suppDue(['morning', 'anytime']);
+  var suppLunch = suppDue(['lunch']);
+  var suppEvening = suppDue(['evening']);
+
   var recoveryDip = recoveryDipFrom((await supa.readRow('sleep'))['sleep:logs']);
 
   // Weekly insight (computed in-app, stored in the 'insight' row). Ignore if
@@ -153,7 +191,8 @@ async function buildContext(tz, today) {
   return { weighedToday: weighedToday, daysSinceTraining: daysSinceTraining,
     protein: protein, proteinTarget: proteinTarget, cafToday: cafToday,
     habitsLeft: habitsLeft, journaledToday: journaledToday, recoveryDip: recoveryDip,
-    topInsight: topInsight };
+    topInsight: topInsight,
+    suppMorning: suppMorning, suppLunch: suppLunch, suppEvening: suppEvening };
 }
 
 // ── Garmin → intervals.icu courier ─────────────────────────────────
