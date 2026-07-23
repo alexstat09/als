@@ -95,7 +95,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v396`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v401`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -124,7 +124,7 @@ Everything on the original review list is shipped. All 34 live pages carry the
 Elevated MÉTRON design (`aurora.css`).
 
 **Body & training** — `gym.html` (246 seeded exercises, templates, folders),
-`health.html`, `body.html`, `measure.html`, `pr.html`, `supps.html`,
+`body.html`, `measure.html`, `pr.html`,
 `sleep.html` (score is MEASURED only; feelings are an outcome, never an input —
 and for Chrissie it now draws her watch's whole night: measured window,
 hypnogram, stage split, continuity, overnight body. Three states that must LOOK
@@ -133,7 +133,15 @@ words, a full night draws the timeline. For Alex, a **My protocol** section
 (als-v396) carries a read-only wake-time **anchor tracker** — last 14 nights vs
 his 10:00 target, a ±30-min band, drift status, streak — over a collapsible
 playbook),
-`caffeine.html`, `po-water.html`.
+`caffeine.html`, `po-water.html`, and `supps.html` — the **one** supplement page
+(als-v401): a timing timeline tuned to Alex's real routine (morning ~10–11 AM,
+afternoon ~5–6 PM, night ~11 PM — not the old generic 7–10 / 12–2 / 9–11), a
+**streak + 14-day per-supplement consistency** memory (computed from the
+never-pruned `stack:taken:*` history, zero backend), a native-`<dialog>` **"Manage
+your stack"** modal (74-entry library, add/edit/delete, window reassignment,
+running-low → shown as a "Low" badge), and **window push nudges** (§5).
+`health.html` was folded into it and is now a redirect; water is `po-water.html`
+only.
 
 **Food** — `nutrition.html` with photo macros, food search, per-piece weight
 guard (`unitOK()`, the 111g-Oreo fix), favourites, streaks.
@@ -173,7 +181,38 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**Last shipped — `als-v396`, Alex's sleep protocol on his own page** (2026-07-23,
+**Last shipped — `als-v399` → `als-v401`, `supps.html` became the whole
+supplement world** (2026-07-23, on `main`, 11 test suites + smoke green,
+manager + timeline headless-verified). Three moves:
+
+- **v399 — real timing + memory + push.** The page used generic windows (7–10 /
+  12–2 / 9–11) and marked Alex's afternoon dose "missed" by 2 PM; it now matches
+  how he actually doses (morning ~10–11, afternoon ~5–6 PM, night ~11 PM;
+  `winStatus` normalises the pre-6 AM tail, h<6 → h+24). Added a **streak +
+  14-day per-supplement consistency** section computed from the never-pruned
+  `stack:taken:*` history (no new data, no backend) and three **window push
+  reminders** folded into `api/run-reminders.js` (`supp-morning` defHour 10,
+  `supp-lunch` 17, `supp-evening` 23 — **no 13th function**). Each fires only when
+  its window still has UNTAKEN daily supps and names exactly what's left (reads
+  `stack:items` + `stack:taken:'+today` from the `health` Supabase row); "anytime"
+  (creatine) rides with the morning nudge. Default-on, relevance-gated.
+- **v400/v401 — one page, no stray.** The stack **manager** (add/edit/delete,
+  74-entry autocomplete library, per-item window reassignment, running-low) was
+  ported from `health.html` into a native `<dialog>` modal in `supps.html`.
+  ⚠️ **Seeding is EMPTY-ONLY** — `ensureSeed()` writes `STACK_DEFAULTS` only when
+  `stack:items` is absent/empty, **never** on version mismatch. The old
+  `health.html` reseeded on `stack:version !== 9` and could wipe a customised
+  stack; **do not reintroduce version-based reseeding.** Mutations use
+  `rawItems()` (unfiltered) so a save never prunes.
+- **`health.html` retired to a hash-aware redirect** (`#water`→`po-water.html`,
+  else→`supps.html`) — its water duplicated `po-water.html`, and it was reachable
+  only from places Alex never looked. Repointed EVERY referrer: topbar water pill
+  (`topbar.js`)→`po-water.html`; Home tile (`index.html`) + `home-live.js`
+  count-case + `home-motion.js` grouping + `body.html` "Open" + `settings.html`
+  →`supps.html` (settings lists Supplements + Water separately). Don't point any
+  of these back at `health.html`.
+
+**Before that — `als-v396`, Alex's sleep protocol on his own page** (2026-07-23,
 on `main`, tests + smoke pass, headless-verified). `sleep.html` gained a **My
 protocol** section (after *Tonight*): a wake-time **anchor tracker**
 (`renderWakeAnchor()`) reads the last 14 logged nights against his profile wake
@@ -348,6 +387,9 @@ changes — page, merge and tests carry over untouched.
 - Close `/api/nova-chat` to direct calls. Last real security gap; protects the
   free Groq quota.
 - Promote Home's "Studio" segment to a real index.
+- Supplement **refill/supply intelligence** on `supps.html` (Phase 3, not built):
+  opt-in bottle count → days-left from real adherence → "Magnesium: ~6 days left,
+  reorder." The running-low flag (`stack:low`) already exists to hang it on.
 
 **Known open bugs**
 - `po_water_v1` uses whole-object last-write-wins, so concurrent edits on two
