@@ -92,7 +92,7 @@
           var days = Object.keys(byDay).sort().slice(-10).map(function (k) { return Math.round(byDay[k]); });
           return kc > 0 ? { hero: kc, unit: 'kcal', comma: kc >= 1000, note: prot ? ('protein ' + prot + 'g today') : 'today', spark: days.length >= 3 ? days : null } : { hero: '—', note: 'log food' };
         }
-        case 'health.html': {
+        case 'health.html': case 'supps.html': {
           var it = ls('stack:items', []); it = (Array.isArray(it) ? it : []).filter(function (i) { return i && i.id && i.name; });
           var tkn = ls('stack:taken:' + activeDate(), {}) || {}; var tc = it.filter(function (i) { return tkn[i.id]; }).length;
           return it.length ? { hero: tc, unit: '/ ' + it.length, note: (it.length - tc) + ' left today' } : { hero: '—', note: 'your stack' };
