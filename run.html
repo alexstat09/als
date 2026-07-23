@@ -667,27 +667,238 @@
     @media (prefers-reduced-motion:reduce){ .rn-sheet[open]{ animation:none; } .rn-wel-draw{ animation:none; stroke-dashoffset:0; }
       /* P1: close the three reduced-motion gaps — the view slide-in, the week-fill sweep, the weather skeleton shimmer. */
       .rn-view>*{ animation:none; } .rn-week-fill{ transition:none; } .rn-wx-skel{ animation:none; } }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       RUN-DEMO — "The Road to Athens"
+       One journey she scrolls, not a dashboard she navigates.
+       Layered ON TOP of the base sheet: re-composition + re-art-direction only,
+       every engine + id below stays byte-identical to run.html.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* the page is a road: a faint horizon glow far below the North Star */
+    body::after{ content:''; position:fixed; left:0; right:0; bottom:0; height:220px; pointer-events:none; z-index:0;
+      background:radial-gradient(120% 100% at 50% 120%, var(--rn-a09), transparent 70%); }
+
+    /* ── NORTH STAR: Athens is always the top of mind ── */
+    .rn-hero{ flex-direction:column; align-items:stretch; gap:0; padding:26px 20px 14px; position:relative; z-index:1; }
+    .rn-hero .rn-orb{ display:none; }
+    .rn-ns{ display:flex; flex-direction:column; gap:3px;
+      padding:18px 20px 20px; margin-top:14px; border-radius:var(--r-lg);
+      border:1px solid var(--rn-a22);
+      background:linear-gradient(150% 130% at 90% 6%, var(--rn-a15), var(--rn-a03) 58%, transparent),
+                 var(--e1); position:relative; overflow:hidden; }
+    .rn-ns::before{ content:''; position:absolute; right:-34px; top:-34px; width:130px; height:130px;
+      background:radial-gradient(circle at 50% 50%, var(--rn-a30), transparent 68%); pointer-events:none; }
+    .rn-ns-eyebrow{ font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-w2);
+      text-transform:uppercase; color:var(--rn-a90); display:flex; align-items:center; gap:7px; }
+    .rn-ns-star{ color:rgb(var(--rn)); display:inline-flex; }
+    .rn-ns-place{ font-family:var(--au-serif); font-style:italic; font-size:clamp(23px,6.4vw,29px);
+      color:var(--au-ivory); letter-spacing:var(--tr-neg); line-height:1.06; margin-top:2px; }
+    .rn-ns-date{ font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-s);
+      text-transform:uppercase; color:var(--au-faint); margin-top:3px; }
+    .rn-ns-count{ display:flex; align-items:baseline; gap:12px; margin-top:14px;
+      border-top:1px solid var(--rn-a15); padding-top:14px; }
+    #nsDays{ font-family:var(--au-serif); font-style:italic; font-size:clamp(46px,14vw,62px);
+      color:rgb(var(--rn)); line-height:.88; letter-spacing:var(--tr-neg); }
+    #nsDaysL{ font-family:var(--au-mono); font-size:var(--t-label); font-weight:700; letter-spacing:var(--tr-s);
+      text-transform:uppercase; color:var(--au-dim); line-height:1.3; max-width:13ch; }
+
+    /* ── JUMP NAV: three moments, not five tabs ── */
+    .rn-jump{ position:sticky; top:var(--tbh); z-index:20; display:flex; justify-content:center; gap:4px;
+      margin:16px auto 4px; max-width:600px; padding:7px 12px;
+      background:rgba(5,5,6,.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--au-line); }
+    .rn-jump button{ appearance:none; border:none; background:none; cursor:pointer; position:relative;
+      font-family:var(--au-mono); font-size:var(--t-label); font-weight:700; letter-spacing:var(--tr-s);
+      text-transform:uppercase; color:var(--au-faint); padding:9px 14px; min-height:44px; border-radius:var(--r-pill);
+      transition:color .2s var(--au-ease); }
+    .rn-jump button.on{ color:rgb(var(--rn)); background:var(--rn-a09); }
+
+    /* ── ACT DIVIDERS: the three chapters of her journey ── */
+    .rn-act{ max-width:600px; margin:52px auto 6px; padding:0 20px; display:flex; align-items:center; gap:18px; }
+    .rn-act:first-of-type{ margin-top:30px; }
+    .rn-act-no{ flex:none; font-family:var(--au-serif); font-style:italic; font-size:52px; line-height:1;
+      color:transparent; -webkit-text-stroke:1px var(--rn-a45); letter-spacing:var(--tr-neg); }
+    .rn-act-t{ flex:1; min-width:0; }
+    .rn-act-k{ font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-w2);
+      text-transform:uppercase; color:var(--rn-a90); margin-bottom:5px; }
+    .rn-act-h{ font-family:var(--au-serif); font-style:italic; font-size:clamp(26px,7vw,34px); color:var(--au-ivory);
+      letter-spacing:var(--tr-neg); line-height:1.02; }
+    .rn-act-q{ font-size:var(--t-body); color:var(--au-dim); margin-top:7px; line-height:1.5; max-width:38ch; }
+    .rn-act-rule{ max-width:600px; margin:0 auto; padding:0 20px; }
+    .rn-act-rule i{ display:block; height:1px; background:linear-gradient(90deg, var(--rn-a45), var(--au-line) 40%, transparent); }
+
+    /* every view flows in the scroll now — no tab hides it; land jumps below the sticky nav */
+    .rn-view{ scroll-margin-top:calc(var(--tbh) + 66px); }
+    .rn-view.hidden{ display:block; }
+    .rn-wrap{ gap:30px; }
+    /* the heartbeat opens ACT I with a touch more room to breathe */
+    #view-today{ padding-top:6px; }
+
+    /* ── the journey order (visual reorder, no DOM move): NOW → ROAD → BANKED ──
+       DOM order is today,plan,runs,str,prog; flex order retells it as a road. */
+    .rn-wrap{ display:flex; flex-direction:column; }
+    #act-now,#rule-now{ order:1; }
+    #view-today{ order:2; } #view-plan{ order:3; } #view-str{ order:4; }
+    #act-road,#rule-road{ order:5; }
+    #view-prog{ order:6; }
+    #act-runs,#rule-runs{ order:7; }
+    #view-runs{ order:8; }
+
+    /* ═══ Pass 5 — one editorial language for the utility surfaces ═══
+       The hero surfaces already speak "open on the void". These didn't: boxes,
+       pills, coded grids, decoder legends, hairlines everywhere. Re-dress them
+       in the same voice — serif-italic for the human answer, mono for data,
+       whitespace instead of dividers. Every id/handler is untouched. */
+
+    /* ── WEATHER: the answer leads, the number supports ── */
+    .rn-wx-top{ align-items:flex-start; gap:18px; margin-bottom:20px; }
+    .rn-wx-now{ order:2; text-align:right; }
+    .rn-wx-head{ order:1; padding-top:1px; }
+    .rn-wx-temp{ font-size:30px; color:var(--au-dim); }
+    .rn-wx-temp sup{ font-size:12px; }
+    .rn-wx-feels{ margin-top:5px; }
+    .rn-wx-verdict{ font-size:clamp(20px,5.5vw,25px); line-height:1.32; }
+    .rn-wx-sub{ margin-top:8px; }
+    /* best-time windows become clean inline text, not pills */
+    .rn-wx-chips{ gap:18px; margin-top:2px; }
+    .rn-wx-chip{ background:none; border:none; padding:0; border-radius:0; color:var(--au-dim); font-size:var(--t-label); letter-spacing:var(--tr-t); }
+    .rn-wx-chip.best{ background:none; color:rgb(var(--rn)); }
+    .rn-wx-chip .dotc{ width:5px; height:5px; }
+    /* adjusted paces: three quiet columns on the void, no grey slab */
+    .rn-wx-paces{ background:none; gap:0; overflow:visible; border-radius:0; margin-top:20px; padding-top:16px; border-top:1px solid var(--e3); }
+    .rn-wx-pace{ background:none; padding:0 4px; text-align:left; }
+    .rn-wx-pace+.rn-wx-pace{ border-left:1px solid var(--e3); padding-left:14px; }
+    .rn-wx-pace .z{ color:var(--rn-a90); letter-spacing:var(--tr-w1); }
+    .rn-wx-pace .p{ font-size:19px; margin-top:5px; }
+    .rn-wx-pace .o{ margin-top:3px; }
+
+    /* ── SHIFT: a quiet weekly editor, folded away, no codes, no legend ── */
+    .rn-shift{ margin-top:22px; padding-top:0; border-top:none; }
+    .rn-shift-sum{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:7px 0;
+      font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-w1);
+      text-transform:uppercase; color:var(--au-faint); }
+    .rn-shift-sum::-webkit-details-marker{ display:none; }
+    .rn-shift-sum::after{ content:'›'; margin-left:2px; font-size:var(--t-body); color:var(--rn-a75); transition:transform .2s var(--au-ease); }
+    .rn-shift[open] .rn-shift-sum::after{ transform:rotate(90deg); }
+    .rn-shift-hint{ font-family:var(--au-mono); font-size:var(--t-micro); color:var(--au-faint); letter-spacing:var(--tr-t); line-height:1.5; margin:2px 0 12px; }
+    .rn-shift-row{ gap:2px; }
+    .rn-sh{ border:none!important; background:none!important; padding:6px 2px; gap:7px; }
+    .rn-sh .d{ letter-spacing:var(--tr-s); }
+    .rn-sh .g{ height:16px; display:flex; align-items:center; justify-content:center; color:var(--au-faint); }
+    .rn-sh.today .d{ color:rgb(var(--rn)); }
+    .rn-sh.s-morning .g{ color:rgb(var(--rn)); }
+    .rn-sh.s-evening .g{ color:rgb(var(--rn-hot)); }
+    .rn-sh.s-off .g{ color:var(--au-faint); opacity:.7; }
+
+    /* ── RUNS: proud objects, not spreadsheet rows ── */
+    .rn-run-row{ padding:15px 0; gap:15px; border-bottom:1px solid var(--e3); }
+    .rn-run-ico,.rn-run-map{ width:40px; height:40px; }
+    .rn-run-t{ font-size:var(--t-body); font-weight:650; }
+    .rn-run-m{ font-size:var(--t-micro); margin-top:4px; line-height:1.5; }
+    .rn-run-dist{ font-size:25px; line-height:1; }
+    .rn-run-dist small{ font-family:var(--au-mono); font-style:normal; font-size:11px; color:var(--au-dim); margin-left:1px; }
+    .rn-mo{ padding:9px 0; margin-top:4px; }
+    .rn-mo .nm{ font-size:17px; }
+
+    /* ── rhythm: one steady beat between the acts' sections ── */
+    .rn-wrap{ gap:34px; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Pass 6 — MATERIALIZE ON AURORA
+       The flat "open on the void" treatment read cheap beside his other pages,
+       which wear aurora's glass-card material. Restore real material + depth,
+       in Chrissie's rose, WITH hierarchy (heroes outrank utility) so it never
+       becomes a uniform stack of boxes. Rose is non-negotiable (she asked).
+       ═══════════════════════════════════════════════════════════════════ */
+    .au-mood-rose{ --au-glow-c:#f094ab; --au-glow-rgb:240,148,171; }
+
+    /* deepen the room so glass reads as glass: a richer void + her rose ambience */
+    body{ background:#070607; }
+    body::before{ height:620px;
+      background:radial-gradient(54% 52% at 50% 40%, var(--rn-a22), var(--rn-a06) 52%, transparent 74%); }
+
+    /* every content section becomes a premium glass card (aurora .au-card material) */
+    .rn-view > section{
+      background:var(--au-glass); border:1px solid var(--au-line); border-radius:20px;
+      padding:20px; overflow:hidden; position:relative;
+      -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+      box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 20px 46px -28px rgba(0,0,0,.82);
+      transition:border-color .5s var(--au-ease), box-shadow .5s var(--au-ease), transform .5s var(--au-ease); }
+    .rn-view > section::after{ content:''; position:absolute; top:0; left:14%; right:14%; height:1px; pointer-events:none;
+      background:linear-gradient(90deg, transparent, rgba(var(--au-glow-rgb),.34), transparent); }
+    .rn-card-hd{ margin-bottom:15px; }
+    /* keep the pace-column dividers from being clipped by card overflow */
+    .rn-wx-curve svg{ overflow:visible; }
+
+    /* ── HERO 1 · the heartbeat owns ACT I: rose-lit, deeper, no hairline ── */
+    #beatCard{ padding:26px 20px 22px;
+      background:radial-gradient(120% 92% at 50% -4%, rgba(var(--au-glow-rgb),.14), transparent 58%), var(--au-glass-2);
+      border-color:rgba(var(--au-glow-rgb),.20);
+      box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 26px 60px -30px rgba(0,0,0,.9); }
+    #beatCard::after{ display:none; }
+
+    /* ── HERO 2 · today's session: warm, prominent ── */
+    #todayCard{ background:radial-gradient(130% 110% at 8% 0%, var(--rn-a09), transparent 56%), var(--au-glass); }
+
+    /* ── HERO 3 · the Athens race card in ACT II ── */
+    #raceCard{ background:radial-gradient(130% 120% at 88% 4%, rgba(var(--au-glow-rgb),.13), transparent 55%), var(--au-glass-2);
+      border-color:rgba(var(--au-glow-rgb),.18); }
+
+    /* ── NORTH STAR: the signature hero card ── */
+    .rn-ns{ border:1px solid rgba(var(--au-glow-rgb),.30);
+      background:radial-gradient(130% 130% at 90% 2%, rgba(var(--au-glow-rgb),.22), transparent 52%), var(--au-glass-2);
+      -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+      box-shadow:0 24px 60px -30px rgba(0,0,0,.9); }
+
+    /* ── jump nav: a glass bar, not bare text ── */
+    .rn-jump{ background:rgba(9,7,9,.62); border-bottom:1px solid var(--au-line-2);
+      -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px); }
+
+    /* ── rhythm: cards sit close as a set; acts breathe between them ── */
+    .rn-wrap{ gap:15px; }
+    .rn-act{ margin:46px auto 10px; }
+    .rn-act:first-of-type{ margin-top:24px; }
+    .rn-act-rule i{ background:linear-gradient(90deg, rgba(var(--au-glow-rgb),.5), var(--au-line) 42%, transparent); }
   </style>
 </head>
-<body class="au-mood-calm">
+<body class="au-mood-rose">
   <header class="rn-hero">
     <div>
-      <div class="rn-eyebrow">Δρόμος για την Αθήνα · Road to Athens</div>
+      <div class="rn-eyebrow">Ο δρόμος για την Αθήνα · The road to Athens</div>
       <div class="rn-hero-line" id="rnTitle">Chrissie’s runs</div>
-      <div class="rn-hero-sub" id="rnSub">Φέρε τα τρεξίματά σου, και όλα γεμίζουν με τους δικούς σου ρυθμούς.</div>
+      <div class="rn-hero-sub" id="rnSub"></div>
     </div>
-    <div class="rn-orb" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6"/><path d="M6 21l3-5 3 2 1-4M9 16l-1.5-4L12 9l3 2 3 .5M12 9l-3 1.5"/></svg></div>
+    <!-- NORTH STAR: the one date her whole year bends toward, always in view -->
+    <div class="rn-ns">
+      <div class="rn-ns-eyebrow"><span class="rn-ns-star"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2l2.6 6.3L21 9l-5 4.3L17.6 20 12 16.3 6.4 20 8 13.3 3 9l6.4-.7z"/></svg></span>Αθήνα · Athens</div>
+      <div class="rn-ns-place">Αυθεντικός Μαραθώνιος</div>
+      <div class="rn-ns-date">8 Νοε 2026 · Καλλιμάρμαρο · 42.195</div>
+      <div class="rn-ns-count">
+        <span id="nsDays">—</span>
+        <span id="nsDaysL">μέρες για την Αθήνα</span>
+      </div>
+    </div>
   </header>
 
-  <nav class="rn-tabs" id="rnTabs" aria-label="Sections">
+  <nav class="rn-jump" id="rnTabs" aria-label="Jump to a moment of the journey">
     <button type="button" role="tab" aria-selected="true" data-view="today" class="on">Σήμερα</button>
-    <button type="button" role="tab" aria-selected="false" data-view="plan">Πλάνο</button>
+    <button type="button" role="tab" aria-selected="false" data-view="prog">Ο Δρόμος</button>
     <button type="button" role="tab" aria-selected="false" data-view="runs">Τρεξίματα</button>
-    <button type="button" role="tab" aria-selected="false" data-view="str">Δύναμη</button>
-    <button type="button" role="tab" aria-selected="false" data-view="prog">Πρόοδος</button>
   </nav>
 
   <main class="rn-wrap">
+
+    <!-- ═══ ACT I ═══ -->
+    <div class="rn-act" id="act-now">
+      <div class="rn-act-no">Α</div>
+      <div class="rn-act-t">
+        <div class="rn-act-k">Τώρα · Now</div>
+        <div class="rn-act-h">Σήμερα</div>
+        <div class="rn-act-q">Να τρέξω σήμερα; Πότε, και θα με πειράξουν τα γόνατα;</div>
+      </div>
+    </div>
+    <div class="rn-act-rule" id="rule-now"><i></i></div>
 
     <div class="rn-view" id="view-today">
     <!-- READINESS HEARTBEAT: the living anchor -->
@@ -717,7 +928,7 @@
     </section>
     </div>
 
-    <div class="rn-view hidden" id="view-plan">
+    <div class="rn-view" id="view-plan">
     <!-- THIS WEEK -->
     <section class="rn-card">
       <div class="rn-card-hd"><span class="dot"></span><h2>Εβδομάδα · This week</h2><span class="line"></span></div>
@@ -762,7 +973,18 @@
     </section>
     </div>
 
-    <div class="rn-view hidden" id="view-runs">
+    <!-- ═══ ACT III ═══ -->
+    <div class="rn-act" id="act-runs">
+      <div class="rn-act-no">Γ</div>
+      <div class="rn-act-t">
+        <div class="rn-act-k">Στο σακούλι σου · Banked</div>
+        <div class="rn-act-h">Τα τρεξίματά σου</div>
+        <div class="rn-act-q">Όλα όσα έχεις τρέξει, κάθε χιλιόμετρο μαζεμένο για τη μεγάλη μέρα.</div>
+      </div>
+    </div>
+    <div class="rn-act-rule" id="rule-runs"><i></i></div>
+
+    <div class="rn-view" id="view-runs">
     <!-- FIRST-RUN WELCOME (only until she has runs) -->
     <section class="hidden" id="runsWelcome"></section>
     <!-- LATEST RUN HERO: route draws itself -->
@@ -809,7 +1031,7 @@
     </section>
     </div>
 
-    <div class="rn-view hidden" id="view-str">
+    <div class="rn-view" id="view-str">
     <!-- STRENGTH -->
     <section class="rn-card rn-str" id="strCard">
       <div class="rn-card-hd"><span class="dot"></span><h2>Δύναμη για τρέξιμο · Strength</h2><span class="line"></span><span class="act" id="strPhase" style="cursor:default"></span></div>
@@ -817,7 +1039,18 @@
     </section>
     </div>
 
-    <div class="rn-view hidden" id="view-prog">
+    <!-- ═══ ACT II ═══ -->
+    <div class="rn-act" id="act-road">
+      <div class="rn-act-no">Β</div>
+      <div class="rn-act-t">
+        <div class="rn-act-k">Ο δρόμος · The road</div>
+        <div class="rn-act-h">Προς την Αθήνα</div>
+        <div class="rn-act-q">Είμαι σε καλό δρόμο για τον Μαραθώνιο; Πού βρίσκομαι στη διαδρομή;</div>
+      </div>
+    </div>
+    <div class="rn-act-rule" id="rule-road"><i></i></div>
+
+    <div class="rn-view" id="view-prog">
     <!-- GOAL RACE -->
     <section class="rn-card rn-race" id="raceCard">
       <div class="rn-race-top"><span class="rn-race-eyebrow">Στόχος · Goal race</span><span class="rn-race-phase" id="racePhase">—</span></div>
@@ -1876,11 +2109,9 @@
       var pace=(l.distanceKm>0&&l.timeSec>0)?mmss(l.timeSec/l.distanceKm)+'/km':'';
       var lead=(l.route&&l.route.length>1)?('<div class="rn-run-map">'+routeSVG(l.route,38,38,true)+'</div>'):('<div class="rn-run-ico">'+iconRun()+'</div>');
       var row='<div class="rn-run-row" data-run="'+l.id+'">'+lead+
-        '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+(l.src&&l.src!=='manual'?' <span style="font-family:var(--au-mono);font-size:8px;color:rgba(var(--rn),.7);letter-spacing:.08em">'+l.src.toUpperCase()+'</span>':'')+'</div>'+
-        '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(l.elevGain?(' · ↑'+l.elevGain+'m'):'')+(l.avgHR>0?(' · ♥'+l.avgHR):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
-        '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small style="font-size:11px;color:var(--au-dim)"> km</small></div>'+
-        (pace?'<div class="rn-run-pace">'+pace+'</div>':'')+'</div>'+
-        '<button class="rn-run-del" data-del-run="'+l.id+'" aria-label="Delete">✕</button></div>';
+        '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+'</div>'+
+        '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(pace?(' · '+pace):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
+        '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small> χλμ</small></div></div></div>';
       var exp='';
       if(openRun===l.id){ exp='<div class="rn-run-x">'+((l.splits&&l.splits.length>1)?splitsHTML(l.splits):'<div class="rn-splits-lab">χωρίς αναλυτικά χιλιόμετρα · no per-km splits</div>')+'</div>'; }
       return row+exp;
@@ -2457,14 +2688,21 @@
     function cycleShift(dk){ var s=loadObj(K_SHIFT), order=['','morning','evening','off'], cur=s[dk]||'', nx=order[(order.indexOf(cur)+1)%4];
       if(nx) s[dk]=nx; else delete s[dk]; saveShifts(s); flush(); render(); }
     function shiftLabel(s){ return s==='morning'?['Πρωινή βάρδια','morning shift']:s==='evening'?['Βραδινή βάρδια','evening shift']:s==='off'?['Ρεπό σήμερα','day off']:['','']; }
+    var _shiftOpen=false; /* keep the weekly shift editor open across the render() that a tap triggers */
+    var SHIFT_GLYPH={
+      morning:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.6"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg>',
+      evening:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 14.6A8 8 0 019.4 4 8 8 0 1020 14.6z"/></svg>',
+      off:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 12h10"/></svg>',
+      '':'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>'
+    };
     function shiftStripHTML(){
       var ws=weekStart(new Date()), tdk=todayDk(), sh=loadObj(K_SHIFT), cells='';
       for(var i=0;i<7;i++){ var d=addDays(ws,i), dk=dkOf(d), s=sh[dk]||'';
-        var mk = s==='morning'?'Πρ':(s==='evening'?'Βρ':(s==='off'?'Ρ':'+'));
-        cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="m">'+mk+'</span></button>';
+        cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="g">'+SHIFT_GLYPH[s]+'</span></button>';
       }
-      return '<div class="rn-shift"><div class="rn-shift-lab">Η βάρδιά σου · your shift · πάτα να αλλάξεις</div><div class="rn-shift-row">'+cells+'</div>'+
-        '<div class="rn-shift-leg"><span><b class="mo">Πρ</b> πρωινή</span><span><b class="ev">Βρ</b> βραδινή</span><span><b class="of">Ρ</b> ρεπό</span><span><b>+</b> όρισε</span></div></div>';
+      return '<details class="rn-shift"'+(_shiftOpen?' open':'')+'><summary class="rn-shift-sum">Οι βάρδιές σου · your shifts</summary>'+
+        '<div class="rn-shift-hint">Πάτα μια μέρα για πρωινή, βραδινή ή ρεπό. Tap a day to set your shift.</div>'+
+        '<div class="rn-shift-row">'+cells+'</div></details>';
     }
     /* touch-scrub the weather curve: drag a finger to read temp at each hour */
     var wxPts=null, WX_W=320;
@@ -2550,6 +2788,7 @@
           '<div class="rn-wx-head"><div class="rn-wx-verdict">'+verdict+'</div><div class="rn-wx-sub">'+esc(sub)+'</div></div></div>'+
         '<div class="rn-wx-curve">'+svg+(cv?'<div class="rn-wx-scrub" id="wxScrub"></div>':'')+'</div>'+ticks+chips+pacesHtml+indoorCard+shiftStripHTML();
       Array.prototype.forEach.call($('heatBody').querySelectorAll('[data-sh]'), function(b){ b.addEventListener('click',function(){ cycleShift(b.getAttribute('data-sh')); }); });
+      var _dt=$('heatBody').querySelector('.rn-shift'); if(_dt) _dt.addEventListener('toggle',function(){ _shiftOpen=_dt.open; });
       wireHeatScrub();
     }
 
@@ -3681,6 +3920,12 @@
       var cn=$('coachNote');
       if(prof.weekNote){ cn.classList.remove('hidden'); cn.innerHTML='<b>Σημείωμα προπονητή · coach’s note</b>«'+esc(prof.weekNote)+'»'; }
       else cn.classList.add('hidden');
+      /* North Star: mirror the Athens countdown into the hero ribbon (always in view) */
+      try{ var _g=Math.round((parseDk(GOAL.dk).getTime()-new Date().setHours(0,0,0,0))/86400000);
+        var _n=$('nsDays'), _nl=$('nsDaysL');
+        if(_n) _n.textContent = _g>0 ? _g : (_g===0 ? '0' : '✓');
+        if(_nl) _nl.textContent = _g>0 ? 'μέρες για την Αθήνα' : (_g===0 ? 'σήμερα! · today!' : 'Αθήνα · ολοκληρώθηκε');
+      }catch(e){}
     }
 
     /* ── toasts ── */
@@ -3954,10 +4199,15 @@
     var _counted={}; /* count-up is a first-impression delight: animate once per view per session, not on every revisit */
     function animateNumbersIn(v){ var el=$('view-'+v); if(!el||_counted[v]) return; _counted[v]=1;
       Array.prototype.forEach.call(el.querySelectorAll('.rn-count'), animateCount); }
+    /* "The Road" is one scroll: the jump-nav SCROLLS to a moment, it no longer hides the rest.
+       plan+str live inside ACT I (today), prog is ACT II, runs is ACT III. */
+    var NAVOF={today:'today',plan:'today',str:'today',prog:'prog',runs:'runs'};
+    function setNav(v){ var nv=NAVOF[v]||v;
+      Array.prototype.forEach.call($('rnTabs').children, function(b){ var on=b.getAttribute('data-view')===nv; b.classList.toggle('on', on); b.setAttribute('aria-selected', on?'true':'false'); }); }
     function showView(v){ if(VIEWS.indexOf(v)<0) v='today';
-      VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) el.classList.toggle('hidden', id!==v); });
-      Array.prototype.forEach.call($('rnTabs').children, function(b){ var on=b.getAttribute('data-view')===v; b.classList.toggle('on', on); b.setAttribute('aria-selected', on?'true':'false'); });
-      lsSet('run:view', v); window.scrollTo(0,0);
+      setNav(v); lsSet('run:view', v);
+      var rm=window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+      var el=$('view-'+v); if(el) el.scrollIntoView({behavior:(rm?'auto':'smooth'), block:'start'});
       if(v==='runs') requestAnimationFrame(animateRunHero);
       requestAnimationFrame(function(){ animateNumbersIn(v); });
     }
@@ -3965,7 +4215,15 @@
     function setTbh(){ var tb=document.querySelector('.topbar'); if(tb&&tb.offsetHeight) document.documentElement.style.setProperty('--tbh', tb.offsetHeight+'px'); }
     (function tbhTick(n){ setTbh(); if(n<6) setTimeout(function(){ tbhTick(n+1); }, 300); })(0);
     window.addEventListener('resize', setTbh);
-    (function(){ var v = lsGet('run:view') || 'today'; showView(v); })();
+    /* the page opens at the North Star, not a remembered tab; count-ups + the run-hero
+       fire once, as each act scrolls into view (a reveal, not an all-at-once flash). */
+    (function(){ setNav('today');
+      if('IntersectionObserver' in window){
+        var io=new IntersectionObserver(function(es){ es.forEach(function(en){ if(!en.isIntersecting) return;
+          var id=en.target.id.replace('view-',''); animateNumbersIn(id); if(id==='runs') requestAnimationFrame(animateRunHero); }); }, {rootMargin:'0px 0px -32% 0px'});
+        VIEWS.forEach(function(id){ var el=$('view-'+id); if(el) io.observe(el); });
+      } else { VIEWS.forEach(animateNumbersIn); }
+    })();
 
     // default dates = today
     $('asDate').value=todayDk(); $('lgDate').value=todayDk();
