@@ -744,6 +744,65 @@
     #view-prog{ order:6; }
     #act-runs,#rule-runs{ order:7; }
     #view-runs{ order:8; }
+
+    /* ═══ Pass 5 — one editorial language for the utility surfaces ═══
+       The hero surfaces already speak "open on the void". These didn't: boxes,
+       pills, coded grids, decoder legends, hairlines everywhere. Re-dress them
+       in the same voice — serif-italic for the human answer, mono for data,
+       whitespace instead of dividers. Every id/handler is untouched. */
+
+    /* ── WEATHER: the answer leads, the number supports ── */
+    .rn-wx-top{ align-items:flex-start; gap:18px; margin-bottom:20px; }
+    .rn-wx-now{ order:2; text-align:right; }
+    .rn-wx-head{ order:1; padding-top:1px; }
+    .rn-wx-temp{ font-size:30px; color:var(--au-dim); }
+    .rn-wx-temp sup{ font-size:12px; }
+    .rn-wx-feels{ margin-top:5px; }
+    .rn-wx-verdict{ font-size:clamp(20px,5.5vw,25px); line-height:1.32; }
+    .rn-wx-sub{ margin-top:8px; }
+    /* best-time windows become clean inline text, not pills */
+    .rn-wx-chips{ gap:18px; margin-top:2px; }
+    .rn-wx-chip{ background:none; border:none; padding:0; border-radius:0; color:var(--au-dim); font-size:var(--t-label); letter-spacing:var(--tr-t); }
+    .rn-wx-chip.best{ background:none; color:rgb(var(--rn)); }
+    .rn-wx-chip .dotc{ width:5px; height:5px; }
+    /* adjusted paces: three quiet columns on the void, no grey slab */
+    .rn-wx-paces{ background:none; gap:0; overflow:visible; border-radius:0; margin-top:20px; padding-top:16px; border-top:1px solid var(--e3); }
+    .rn-wx-pace{ background:none; padding:0 4px; text-align:left; }
+    .rn-wx-pace+.rn-wx-pace{ border-left:1px solid var(--e3); padding-left:14px; }
+    .rn-wx-pace .z{ color:var(--rn-a90); letter-spacing:var(--tr-w1); }
+    .rn-wx-pace .p{ font-size:19px; margin-top:5px; }
+    .rn-wx-pace .o{ margin-top:3px; }
+
+    /* ── SHIFT: a quiet weekly editor, folded away, no codes, no legend ── */
+    .rn-shift{ margin-top:22px; padding-top:0; border-top:none; }
+    .rn-shift-sum{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:7px 0;
+      font-family:var(--au-mono); font-size:var(--t-micro); font-weight:700; letter-spacing:var(--tr-w1);
+      text-transform:uppercase; color:var(--au-faint); }
+    .rn-shift-sum::-webkit-details-marker{ display:none; }
+    .rn-shift-sum::after{ content:'›'; margin-left:2px; font-size:var(--t-body); color:var(--rn-a75); transition:transform .2s var(--au-ease); }
+    .rn-shift[open] .rn-shift-sum::after{ transform:rotate(90deg); }
+    .rn-shift-hint{ font-family:var(--au-mono); font-size:var(--t-micro); color:var(--au-faint); letter-spacing:var(--tr-t); line-height:1.5; margin:2px 0 12px; }
+    .rn-shift-row{ gap:2px; }
+    .rn-sh{ border:none!important; background:none!important; padding:6px 2px; gap:7px; }
+    .rn-sh .d{ letter-spacing:var(--tr-s); }
+    .rn-sh .g{ height:16px; display:flex; align-items:center; justify-content:center; color:var(--au-faint); }
+    .rn-sh.today .d{ color:rgb(var(--rn)); }
+    .rn-sh.s-morning .g{ color:rgb(var(--rn)); }
+    .rn-sh.s-evening .g{ color:rgb(var(--rn-hot)); }
+    .rn-sh.s-off .g{ color:var(--au-faint); opacity:.7; }
+
+    /* ── RUNS: proud objects, not spreadsheet rows ── */
+    .rn-run-row{ padding:15px 0; gap:15px; border-bottom:1px solid var(--e3); }
+    .rn-run-ico,.rn-run-map{ width:40px; height:40px; }
+    .rn-run-t{ font-size:var(--t-body); font-weight:650; }
+    .rn-run-m{ font-size:var(--t-micro); margin-top:4px; line-height:1.5; }
+    .rn-run-dist{ font-size:25px; line-height:1; }
+    .rn-run-dist small{ font-family:var(--au-mono); font-style:normal; font-size:11px; color:var(--au-dim); margin-left:1px; }
+    .rn-mo{ padding:9px 0; margin-top:4px; }
+    .rn-mo .nm{ font-size:17px; }
+
+    /* ── rhythm: one steady beat between the acts' sections ── */
+    .rn-wrap{ gap:34px; }
   </style>
 </head>
 <body class="au-mood-calm">
@@ -1993,11 +2052,9 @@
       var pace=(l.distanceKm>0&&l.timeSec>0)?mmss(l.timeSec/l.distanceKm)+'/km':'';
       var lead=(l.route&&l.route.length>1)?('<div class="rn-run-map">'+routeSVG(l.route,38,38,true)+'</div>'):('<div class="rn-run-ico">'+iconRun()+'</div>');
       var row='<div class="rn-run-row" data-run="'+l.id+'">'+lead+
-        '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+(l.src&&l.src!=='manual'?' <span style="font-family:var(--au-mono);font-size:8px;color:rgba(var(--rn),.7);letter-spacing:.08em">'+l.src.toUpperCase()+'</span>':'')+'</div>'+
-        '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(l.elevGain?(' · ↑'+l.elevGain+'m'):'')+(l.avgHR>0?(' · ♥'+l.avgHR):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
-        '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small style="font-size:11px;color:var(--au-dim)"> km</small></div>'+
-        (pace?'<div class="rn-run-pace">'+pace+'</div>':'')+'</div>'+
-        '<button class="rn-run-del" data-del-run="'+l.id+'" aria-label="Delete">✕</button></div>';
+        '<div class="rn-run-main"><div class="rn-run-t">'+esc(l.type||'Run')+(l.rpe?(' · RPE '+l.rpe):'')+'</div>'+
+        '<div class="rn-run-m">'+dl+(l.timeSec?(' · '+hms(l.timeSec)):'')+(pace?(' · '+pace):'')+(l.note?(' · '+esc(l.note)):'')+'</div></div>'+
+        '<div class="rn-run-r"><div class="rn-run-dist">'+(Math.round((+l.distanceKm||0)*10)/10)+'<small> χλμ</small></div></div></div>';
       var exp='';
       if(openRun===l.id){ exp='<div class="rn-run-x">'+((l.splits&&l.splits.length>1)?splitsHTML(l.splits):'<div class="rn-splits-lab">χωρίς αναλυτικά χιλιόμετρα · no per-km splits</div>')+'</div>'; }
       return row+exp;
@@ -2574,14 +2631,21 @@
     function cycleShift(dk){ var s=loadObj(K_SHIFT), order=['','morning','evening','off'], cur=s[dk]||'', nx=order[(order.indexOf(cur)+1)%4];
       if(nx) s[dk]=nx; else delete s[dk]; saveShifts(s); flush(); render(); }
     function shiftLabel(s){ return s==='morning'?['Πρωινή βάρδια','morning shift']:s==='evening'?['Βραδινή βάρδια','evening shift']:s==='off'?['Ρεπό σήμερα','day off']:['','']; }
+    var _shiftOpen=false; /* keep the weekly shift editor open across the render() that a tap triggers */
+    var SHIFT_GLYPH={
+      morning:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.6"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg>',
+      evening:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 14.6A8 8 0 019.4 4 8 8 0 1020 14.6z"/></svg>',
+      off:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 12h10"/></svg>',
+      '':'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>'
+    };
     function shiftStripHTML(){
       var ws=weekStart(new Date()), tdk=todayDk(), sh=loadObj(K_SHIFT), cells='';
       for(var i=0;i<7;i++){ var d=addDays(ws,i), dk=dkOf(d), s=sh[dk]||'';
-        var mk = s==='morning'?'Πρ':(s==='evening'?'Βρ':(s==='off'?'Ρ':'+'));
-        cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="m">'+mk+'</span></button>';
+        cells+='<button type="button" class="rn-sh'+(dk===tdk?' today':'')+(s?(' s-'+s):'')+'" data-sh="'+dk+'"><span class="d">'+DOW[i]+'</span><span class="g">'+SHIFT_GLYPH[s]+'</span></button>';
       }
-      return '<div class="rn-shift"><div class="rn-shift-lab">Η βάρδιά σου · your shift · πάτα να αλλάξεις</div><div class="rn-shift-row">'+cells+'</div>'+
-        '<div class="rn-shift-leg"><span><b class="mo">Πρ</b> πρωινή</span><span><b class="ev">Βρ</b> βραδινή</span><span><b class="of">Ρ</b> ρεπό</span><span><b>+</b> όρισε</span></div></div>';
+      return '<details class="rn-shift"'+(_shiftOpen?' open':'')+'><summary class="rn-shift-sum">Οι βάρδιές σου · your shifts</summary>'+
+        '<div class="rn-shift-hint">Πάτα μια μέρα για πρωινή, βραδινή ή ρεπό. Tap a day to set your shift.</div>'+
+        '<div class="rn-shift-row">'+cells+'</div></details>';
     }
     /* touch-scrub the weather curve: drag a finger to read temp at each hour */
     var wxPts=null, WX_W=320;
@@ -2667,6 +2731,7 @@
           '<div class="rn-wx-head"><div class="rn-wx-verdict">'+verdict+'</div><div class="rn-wx-sub">'+esc(sub)+'</div></div></div>'+
         '<div class="rn-wx-curve">'+svg+(cv?'<div class="rn-wx-scrub" id="wxScrub"></div>':'')+'</div>'+ticks+chips+pacesHtml+indoorCard+shiftStripHTML();
       Array.prototype.forEach.call($('heatBody').querySelectorAll('[data-sh]'), function(b){ b.addEventListener('click',function(){ cycleShift(b.getAttribute('data-sh')); }); });
+      var _dt=$('heatBody').querySelector('.rn-shift'); if(_dt) _dt.addEventListener('toggle',function(){ _shiftOpen=_dt.open; });
       wireHeatScrub();
     }
 
