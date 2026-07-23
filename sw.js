@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v401";
+var CACHE = "als-v402";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -20,7 +20,7 @@ var CORE = [
   'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=206', 'home-motion.js?v=202',
   'water.js', 'topbar.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
   'insights.js', 'xp.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'page-motion.js', 'aurora-bg.js', 'insights-engine.js', 'forecast-engine.js', 'chapters-engine.js', 'error-toast.js', 'als-dialog.js', 'nova-actions.js', 'gcal.js', 'als-sync-status.js',
-  'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/Flip.min.js', 'vendor/SplitText.min.js', 'vendor/lenis.min.js',
+  'vendor/supabase.min.js', 'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/Flip.min.js', 'vendor/SplitText.min.js', 'vendor/lenis.min.js',
   'manifest.json', 'run.webmanifest', 'icon-192.png', 'icon-512.png', 'icon.svg', 'apple-touch-icon.png'
 ];
 
