@@ -95,7 +95,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v395`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v396`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -129,7 +129,10 @@ Elevated MÉTRON design (`aurora.css`).
 and for Chrissie it now draws her watch's whole night: measured window,
 hypnogram, stage split, continuity, overnight body. Three states that must LOOK
 different: no measurement renders nothing, a duration with no window says so in
-words, a full night draws the timeline),
+words, a full night draws the timeline. For Alex, a **My protocol** section
+(als-v396) carries a read-only wake-time **anchor tracker** — last 14 nights vs
+his 10:00 target, a ±30-min band, drift status, streak — over a collapsible
+playbook),
 `caffeine.html`, `po-water.html`.
 
 **Food** — `nutrition.html` with photo macros, food search, per-piece weight
@@ -170,7 +173,26 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**Last shipped — `als-v394` / `als-v395`, her shoes became objects** (2026-07-22
+**Last shipped — `als-v396`, Alex's sleep protocol on his own page** (2026-07-23,
+on `main`, tests + smoke pass, headless-verified). `sleep.html` gained a **My
+protocol** section (after *Tonight*): a wake-time **anchor tracker**
+(`renderWakeAnchor()`) reads the last 14 logged nights against his profile wake
+of **10:00**, plots each night's drift over a ±30-min band, and reads
+**LOCKED / DRIFTING / ALL OVER** with a streak — sitting over a static,
+collapsible **playbook** (nightly timeline, stop-the-early-waking, supps,
+when-you-wake-early, buy list). The tracker is **read-only** (never writes a
+night) and is wired into `renderAll` + `refreshDerived`. New CSS is `.wa-*`
+(anchor) and `.pb-*` (playbook); the playbook is static markup so it can't
+silent-empty. Alongside it, **four daily Google Calendar reminders** were created
+on his account via the GCal MCP (☕14:00 caffeine · 💧22:30 fluids · 😴23:00–00:15
+wind-down + supps · 📵00:00 screen-down); they fold into THE DAY's routine
+cluster like his other habit reminders. His sleep crux is **involuntary early
+waking** (dawn light in Rhodes summer); the goal is a **consistent 9:30 for
+growth**, not raw hours. His real data lives in `~/ALS DASHBOARD ALL FILES/BACKUPS/`
+(device + cloud exports) — the live cloud rows are only reachable through the
+`api/mcp.js` connector in the **claude.ai** app, never from Claude Code.
+
+**Before that — `als-v394` / `als-v395`, her shoes became objects** (2026-07-22
 and 23, on `main`, live byte-verified). Detail in the block below.
 
 **Before that — `als-v393`, Chrissie's real Garmin night** (2026-07-22, on
@@ -178,8 +200,8 @@ and 23, on `main`, live byte-verified). Detail in the block below.
 bedtime and wake, the hypnogram, deep/light/REM, whether it broke, and the
 overnight body. Detail in the block below.
 
-**And before that — `als-v391`, the arc rail** (2026-07-22), still the most
-recent change to a page Alex himself uses.
+**And before that — `als-v391`, the arc rail** (2026-07-22), the previous change
+to a page Alex himself uses before v396.
 His words: *"the surge on top of the home screen is too big, ur eye doesnt
 really see the good morning alex."* He was right. See §4 for the behaviour and
 constraint 11 for the bug it uncovered. Two things it left unsettled:
