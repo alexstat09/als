@@ -184,7 +184,15 @@
   // `app` names which row this is about. The watchdog keeps failure state per
   // engine: one app syncing fine must never clear another app's stuck data,
   // which is how three rounds of missing weigh-ins went unreported.
-  function ss(m, app) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](app || 'sync'); } catch (e) {} }
+  function ss(m, app, detail) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m](app || 'sync', detail); } catch (e) {} }
+  // A short, human-readable cause for a failed write, surfaced in the stranded
+  // banner so a failure can be READ off the phone instead of guessed at.
+  function errDetail(e) {
+    if (!e) return '';
+    var s = e.status || e.code;
+    if (s) return 'HTTP ' + s;
+    return String((e && e.message) || e).slice(0, 90);
+  }
 
   /* readOnly: pull the cloud's copy once, merge it into localStorage, and stop.
      No push, no interval, no realtime, no setItem interception.
@@ -347,7 +355,7 @@
       // Couldn't read the cloud → say so and retry on the next tick. Pushing
       // now would overwrite whatever is up there with whatever happens to be
       // on this device, which is the opposite of merge-first.
-      if (!got.ok) { ss('fail', appKey); return; }
+      if (!got.ok) { ss('fail', appKey, 'read failed'); return; }
       const r = buildMerged(got.data);
       saveTomb(r.tomb);
       const changed = applyLocal(r.merged);
@@ -357,7 +365,13 @@
         const iso = new Date().toISOString();
         lastPushAt = Date.now();          // echo-suppression window opens at the attempt
         try {
-          await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          // supabase-js does NOT throw on an HTTP-level rejection (401/400/…):
+          // it RESOLVES with an `error` field. Awaiting without reading it let a
+          // rejected write fall straight through to the success path below —
+          // advancing lastJson and reporting "Saved" over data that never left
+          // the device. Check the error and treat it as the failure it is.
+          var res = await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          if (res && res.error) throw res.error;
           // lastJson advances ONLY here, on a confirmed write. Setting it before
           // the await is how four days of weigh-ins stayed on one phone: the
           // failed push left lastJson claiming "already pushed", so syncTick
@@ -367,7 +381,7 @@
           // lastJson untouched → syncTick sees drift → retries in 15s, forever,
           // without needing the user to notice anything.
           console.warn('[sync] push failed — retrying on the next tick:', (e && e.message) || e);
-          ss('fail', appKey);
+          ss('fail', appKey, errDetail(e));
         }
       } else { ss('ok', appKey); }   // lastJson only ever holds a CONFIRMED push, so this is now true
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }
@@ -409,11 +423,12 @@
         // async rejection isn't thrown synchronously, so a failure here was
         // invisible AND lastJson had already moved on. Await it and confirm.
         try {
-          await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          var res = await supa.from('app_state').upsert(rowBody(body, iso), { onConflict: conflictCols() });
+          if (res && res.error) throw res.error;
           lastJson = json; lastRemoteStamp = iso; ss('ok', appKey);
         } catch (e) {
           console.warn('[sync] realtime union push failed — retrying on the next tick:', (e && e.message) || e);
-          ss('fail', appKey);
+          ss('fail', appKey, errDetail(e));
         }
       }
       if (changed && typeof onApplied === 'function') { try { onApplied(); } catch (e) {} }

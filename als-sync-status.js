@@ -56,8 +56,11 @@
   var STRANDED_MS = 2 * 60 * 1000;
   var TICK_MS = 20 * 1000;
   var STORE = 'als:sync-stuck';          // { engine: firstFailedAtMs }
+  var ESTORE = 'als:sync-errd';          // { engine: lastErrorDetail } — kept separate
+                                          // so STORE stays a pure {engine:ms} map (stuckSince
+                                          // does +s[k]; mixing a string in would poison it).
 
-  var el = null, txtEl = null, tick = null;
+  var el = null, txtEl = null, detEl = null, tick = null;
 
   function isOnline() { try { return navigator.onLine !== false; } catch (e) { return true; } }
 
@@ -92,6 +95,24 @@
     for (var k in s) { if (Object.prototype.hasOwnProperty.call(s, k) && +s[k] > 0) out.push(k); }
     return out;
   }
+  function loadErr() {
+    try { var o = JSON.parse(localStorage.getItem(ESTORE)); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; }
+    catch (e) { return {}; }
+  }
+  function saveErr(o) {
+    try { if (o && Object.keys(o).length) localStorage.setItem(ESTORE, JSON.stringify(o)); else localStorage.removeItem(ESTORE); }
+    catch (e) {}
+  }
+  /* "gym & weigh-ins · HTTP 401" for every engine still stuck — the one line
+     that turns "something is stuck" into a cause anyone can read off the screen. */
+  function stuckDetail() {
+    var errs = loadErr(), names = stuckNames(), parts = [];
+    for (var i = 0; i < names.length; i++) {
+      var d = errs[names[i]];
+      parts.push(names[i] + (d ? ' · ' + d : ''));
+    }
+    return parts.join('   ');
+  }
 
   /* Stuck, and it is not the network's fault. Offline is excluded on purpose:
      a tunnel is not a bug, the data is safe locally, and it will heal on its
@@ -125,7 +146,10 @@
       '#alsStranded .als-str-btn{flex:none;border:1px solid rgba(242,192,99,.55);border-radius:999px;' +
       'background:rgba(242,192,99,.14);color:#F8EACA;font:600 12.5px/1 inherit;padding:7px 13px;cursor:pointer;' +
       '-webkit-tap-highlight-color:transparent;}' +
-      '#alsStranded .als-str-btn:active{transform:scale(.97);}';
+      '#alsStranded .als-str-btn:active{transform:scale(.97);}' +
+      '#alsStranded .als-str-det{flex-basis:100%;margin:-4px 0 0;font:500 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;' +
+      'color:rgba(248,234,202,.62);letter-spacing:.02em;}' +
+      '#alsStranded .als-str-det:empty{display:none;}';
     document.head.appendChild(css);
 
     el = document.createElement('div');
@@ -138,8 +162,9 @@
     var btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'als-str-btn'; btn.textContent = 'Retry now';
     btn.addEventListener('click', retry);
+    detEl = document.createElement('span'); detEl.className = 'als-str-det';
 
-    el.appendChild(dot); el.appendChild(txtEl); el.appendChild(btn);
+    el.appendChild(dot); el.appendChild(txtEl); el.appendChild(btn); el.appendChild(detEl);
     (document.body || document.documentElement).appendChild(el);
   }
 
@@ -156,6 +181,7 @@
          easy to dismiss. The thing he needs to know is WHERE his data is. */
       txtEl.textContent = 'Some changes from the last ' + human(Date.now() - stuckSince()) +
         ' are only on this device — they haven\'t reached the cloud.';
+      if (detEl) detEl.textContent = stuckDetail();
       el.style.display = '';
     } else if (el) {
       el.style.display = 'none';
@@ -184,12 +210,14 @@
     ok: function (name) {
       var s = load(), key = name || 'sync';
       if (s[key]) { delete s[key]; save(s); }
+      var er = loadErr(); if (er[key]) { delete er[key]; saveErr(er); }
       if (!stuckSince()) stopTick();
       render();
     },
-    fail: function (name) {
+    fail: function (name, detail) {
       var s = load(), key = name || 'sync';
       if (!s[key]) { s[key] = Date.now(); save(s); }
+      if (detail) { var er = loadErr(); if (er[key] !== detail) { er[key] = detail; saveErr(er); } }
       startTick();
       render();
     },

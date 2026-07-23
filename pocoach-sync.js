@@ -175,7 +175,7 @@
   // sync.js succeeding cleared pocoach-sync's failures every 15s and the alarm
   // could never fire. Weigh-ins are this engine's, and only this engine can
   // say whether they landed.
-  function ss(m) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m]('gym & weigh-ins'); } catch (e) {} }
+  function ss(m, detail) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m]('gym & weigh-ins', detail); } catch (e) {} }
 
   /* Call whichever page-specific rerender hooks are present */
   function fireRerender() {
@@ -322,10 +322,10 @@
         console.warn('[pocoach-sync] push rejected: http ' + st + ' — ' + String(t || '').slice(0, 300));
       }).catch(function () {}); }
       else console.warn('[pocoach-sync] push rejected: http ' + st);
-      ss('fail'); return false;
+      ss('fail', 'HTTP ' + st); return false;
     }).catch(function(e) {
       console.warn('[pocoach-sync] push failed — will retry:', (e && e.message) || e);
-      ss('fail'); return false;
+      ss('fail', 'network'); return false;
     });
   }
 
@@ -365,7 +365,7 @@
       })
       .catch(function(e) {
         console.warn('[pocoach-sync] pull failed — will retry:', (e && e.message) || e);
-        ss('fail'); return false;
+        ss('fail', 'read failed'); return false;
       });
     });
   }
