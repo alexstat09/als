@@ -225,6 +225,28 @@ follow-up below). **Fix that worked: sign out / back in on her phone + fully
 reopen the PWA** (picks up the latest SW). When "sync looks broken but the page
 renders," suspect a stale session before touching code.
 
+**After the re-login, her night history briefly showed ONLY today's night — NOT
+data loss, needs NO code fix.** Verified from code, not guessed: sign-out is a
+bulk `localStorage.clear()` (topbar.js `purgeLocal`), which leaves **no deletion
+tombstones** — tombstones are only stamped on individual deletions through sync's
+write interceptor, so a bulk clear can't mark her old nights for removal. And
+`sleep:logs` merges by **UNION** (`mergeArray`, sync.js:44-61): the phone's
+freshly-drained single night unions with her full cloud history by night-id →
+**every night survives**; whole-blob LWW was deliberately removed so a cleared
+phone can't overwrite the cloud. What she saw was the gap between "signed in +
+drained today" and "the cloud pull landed." **It self-heals** — the next time her
+app opens online, sync pulls her full `sleep:logs` and all nights reappear
+automatically; nobody has to touch her phone.
+
+⚠️ **Claude Code cannot reach her live account** (no phone, no cloud rows, no
+service key in the repo). The ONLY bridge to her Supabase data is the **claude.ai
+`api/mcp.js` connector**, which needs one-time authorization in Alex's claude.ai
+connector settings — NOT authorized this session, so her `sleep:logs` was never
+read live. **OPEN (Alex can't access her phone):** to get certainty, authorize
+that connector and read her live `sleep:logs` (exact night count + oldest/newest
+date); the **Vault** (daily GitHub backups, 14-day rollback, additive repair) is
+the backstop if it is ever genuinely short.
+
 It sits on top of **the earlier sync-resilience pair, `als-v402`/`als-v403`**
 (2026-07-24, on `main`, 11 suites + smoke green). Triggered by Chrissie's run
 data + Alex's phone not reaching the cloud, and the dashboard's *"changes from
