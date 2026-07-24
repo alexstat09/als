@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Scripture · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <script>window.__pmAutoSel='.sc-hero,.sc-north,.sc-today,.sc-resume,.sc-canon,.sc-jrn';</script>
+  <script src="page-motion.js" defer></script>
+  <style>
+    :root{ --sc:212,175,110; --sc-deep:184,138,74; }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html,body{ min-height:100%; }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+      padding:0 0 calc(92px + env(safe-area-inset-bottom)); }
+
+    /* ── hero ── */
+    .sc-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .sc-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--sc),.92); margin-bottom:11px; }
+    .sc-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(25px,6.4vw,33px); line-height:1.06; }
+    .sc-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:9px; line-height:1.45; }
+    .sc-hero-sub b{ color:var(--au-ivory); font-weight:700; }
+    .sc-orb{ flex:none; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:rgb(var(--sc));
+      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--sc),.24), rgba(var(--sc),.04)); border:1px solid rgba(var(--sc),.32); }
+
+    /* ── the North Star: the whole Bible ── */
+    .sc-north{ max-width:600px; margin:16px auto 0; padding:0 18px; }
+    .sc-north-card{ position:relative; overflow:hidden; border:1px solid rgba(var(--sc),.28); border-radius:22px; padding:20px 19px 18px;
+      background:linear-gradient(158deg, rgba(var(--sc),.11), rgba(var(--sc),.015) 60%, rgba(255,255,255,.006)); }
+    .sc-north-glow{ position:absolute; inset:0; pointer-events:none; background:radial-gradient(90% 130% at 85% -10%, rgba(var(--sc),.16), transparent 60%); }
+    .sc-north-top{ position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; }
+    .sc-north-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:rgba(var(--sc),.9); margin-bottom:8px; }
+    .sc-north-pct{ font-family:var(--au-serif); font-style:italic; font-weight:400; line-height:.86; color:var(--au-ivory); }
+    .sc-north-pct .n{ font-size:62px; }
+    .sc-north-pct .p{ font-size:22px; color:rgba(var(--sc),.85); margin-left:2px; }
+    .sc-north-books{ text-align:right; }
+    .sc-north-books .big{ font-family:var(--au-serif); font-style:italic; font-size:32px; color:var(--au-ivory); line-height:1; }
+    .sc-north-books .sm{ font-size:10.5px; color:var(--au-faint); margin-top:6px; font-family:var(--au-mono); letter-spacing:.05em; }
+    .sc-meter{ position:relative; height:9px; border-radius:6px; margin:16px 0 12px; background:rgba(255,255,255,.06); overflow:hidden; }
+    .sc-meter-fill{ position:absolute; inset:0 auto 0 0; width:0; border-radius:6px; background:linear-gradient(90deg, rgba(var(--sc-deep),.9), rgb(var(--sc))); box-shadow:0 0 14px rgba(var(--sc),.4); transition:width 1.1s cubic-bezier(.16,1,.3,1); }
+    .sc-meter-tick{ position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.14); }
+    .sc-north-foot{ position:relative; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .sc-north-pages{ font-size:12px; color:var(--au-dim); }
+    .sc-north-pages b{ color:var(--au-ivory); font-weight:700; }
+    .sc-north-testa{ font-family:var(--au-mono); font-size:9px; letter-spacing:.08em; color:var(--au-faint); }
+
+    /* ── resume + log ── */
+    .sc-resume{ max-width:600px; margin:14px auto 0; padding:0 18px; }
+    .sc-resume-card{ display:flex; align-items:center; gap:13px; border:1px solid var(--au-line); border-radius:16px; padding:13px 15px; background:linear-gradient(135deg, rgba(255,255,255,.04), rgba(255,255,255,.008)); }
+    .sc-resume-card.home{ border-color:rgba(var(--sc),.34); background:linear-gradient(135deg, rgba(var(--sc),.1), rgba(var(--sc),.02)); }
+    .sc-resume-ic{ flex:none; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:rgb(var(--sc)); background:rgba(var(--sc),.1); border:1px solid rgba(var(--sc),.24); }
+    .sc-resume-main{ flex:1; min-width:0; }
+    .sc-resume-k{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); margin-bottom:4px; }
+    .sc-resume-v{ font-size:14px; color:var(--au-ivory); line-height:1.35; }
+    .sc-resume-v b{ font-weight:700; color:rgb(var(--sc)); }
+    .sc-log-btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:12px; padding:14px; border:none; border-radius:14px; cursor:pointer;
+      font-family:var(--au-mono); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#160f02;
+      background:linear-gradient(120deg, rgb(var(--sc)), rgb(var(--sc-deep))); box-shadow:0 10px 26px rgba(var(--sc),.22); transition:transform .12s; }
+    .sc-log-btn:active{ transform:scale(.985); }
+
+    /* ── today band ── */
+    .sc-today{ max-width:600px; margin:16px auto 0; padding:0 18px; display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .sc-tile{ position:relative; border:1px solid var(--au-line); border-radius:18px; padding:15px 15px 14px; overflow:hidden;
+      background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.008)); }
+    .sc-tile.accent{ border-color:rgba(var(--sc),.3); background:linear-gradient(160deg, rgba(var(--sc),.11), rgba(var(--sc),.02)); }
+    .sc-tile-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); margin-bottom:9px; }
+    .sc-tile.accent .sc-tile-lbl{ color:rgba(var(--sc),.95); }
+    .sc-tile-row{ display:flex; align-items:baseline; gap:7px; }
+    .sc-big{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:38px; line-height:.9; color:var(--au-ivory); }
+    .sc-big-suf{ font-size:12.5px; color:var(--au-dim); font-weight:600; }
+    .sc-tile-note{ font-size:10.5px; color:var(--au-faint); margin-top:9px; line-height:1.4; }
+    .sc-flame{ display:inline-flex; vertical-align:-2px; margin-right:2px; color:rgb(var(--sc)); }
+
+    /* ── the Canon map ── */
+    .sc-canon{ max-width:600px; margin:22px auto 0; padding:0 18px; }
+    .sc-sec-hd{ display:flex; align-items:baseline; gap:9px; margin-bottom:13px; }
+    .sc-sec-title{ font-family:var(--au-serif); font-style:italic; font-size:20px; color:var(--au-ivory); }
+    .sc-sec-sub{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-left:auto; }
+    .sc-testa-lbl{ display:flex; align-items:center; gap:9px; margin:16px 2px 10px; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:rgba(var(--sc),.82); }
+    .sc-testa-lbl::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(var(--sc),.28), transparent); }
+    .sc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(58px,1fr)); gap:7px; }
+    .sc-book{ position:relative; overflow:hidden; height:50px; border-radius:11px; border:1px solid var(--au-line); background:rgba(255,255,255,.02);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; transition:border-color .18s, transform .1s; }
+    .sc-book:active{ transform:scale(.96); }
+    .sc-book-fill{ position:absolute; left:0; right:0; bottom:0; background:linear-gradient(0deg, rgba(var(--sc),.28), rgba(var(--sc),.07)); transition:height .8s cubic-bezier(.16,1,.3,1); z-index:0; }
+    .sc-book-ab{ position:relative; z-index:1; font-size:12px; font-weight:700; color:var(--au-faint); letter-spacing:.01em; }
+    .sc-book-pp{ position:relative; z-index:1; font-family:var(--au-mono); font-size:7.5px; letter-spacing:.02em; color:transparent; }
+    .sc-book.touched{ border-color:rgba(var(--sc),.4); }
+    .sc-book.touched .sc-book-ab{ color:var(--au-ivory); }
+    .sc-book.touched .sc-book-pp{ color:rgba(var(--sc),.85); }
+    .sc-book.done{ border-color:rgba(var(--sc),.6); }
+    .sc-book.done .sc-book-ab{ color:rgb(var(--sc)); }
+    .sc-book.current{ border-color:rgb(var(--sc)); box-shadow:0 0 0 1px rgba(var(--sc),.3), 0 6px 18px rgba(var(--sc),.14); }
+    .sc-book.current::after{ content:""; position:absolute; top:5px; right:5px; width:5px; height:5px; border-radius:50%; background:rgb(var(--sc)); box-shadow:0 0 0 0 rgba(var(--sc),.5); animation:scPulse 2.4s ease-out infinite; z-index:2; }
+    @keyframes scPulse{ 0%{ box-shadow:0 0 0 0 rgba(var(--sc),.45);} 70%{ box-shadow:0 0 0 6px rgba(var(--sc),0);} 100%{ box-shadow:0 0 0 0 rgba(var(--sc),0);} }
+    .sc-book.filtered{ border-color:rgb(var(--sc)); background:rgba(var(--sc),.08); }
+    .sc-book-check{ position:absolute; top:4px; left:5px; z-index:2; color:rgb(var(--sc)); display:none; }
+    .sc-book.done .sc-book-check{ display:block; }
+
+    /* ── the Journal (S.O.A.P.) ── */
+    .sc-jrn{ max-width:600px; margin:26px auto 0; padding:0 18px; }
+    .sc-filter{ display:none; align-items:center; gap:8px; margin-bottom:12px; padding:9px 12px; border:1px solid rgba(var(--sc),.3); border-radius:11px; background:rgba(var(--sc),.06); font-size:12px; color:var(--au-ivory); }
+    .sc-filter.on{ display:flex; }
+    .sc-filter b{ color:rgb(var(--sc)); font-weight:700; }
+    .sc-filter-x{ margin-left:auto; font-family:var(--au-mono); font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--au-dim); background:none; border:none; cursor:pointer; }
+    .sc-entry{ position:relative; border:1px solid var(--au-line); border-radius:16px; padding:14px 15px; margin-bottom:11px; background:rgba(255,255,255,.02); cursor:pointer; transition:border-color .15s, background .15s; }
+    .sc-entry:active{ background:rgba(255,255,255,.04); }
+    .sc-entry.reflect{ border-left:2px solid rgba(var(--sc),.45); }
+    .sc-entry-hd{ display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+    .sc-entry-date{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); }
+    .sc-entry-tag{ margin-left:auto; font-family:var(--au-mono); font-size:7.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; padding:2px 7px; border-radius:5px; background:rgba(var(--sc),.14); color:rgba(var(--sc),.95); }
+    .sc-entry-title{ font-family:var(--au-serif); font-style:italic; font-size:19px; color:var(--au-ivory); line-height:1.15; margin-top:5px; }
+    .sc-entry-title .pp{ font-family:var(--au-mono); font-style:normal; font-size:12px; color:rgba(var(--sc),.85); letter-spacing:.02em; margin-left:2px; }
+    .sc-entry-note{ font-size:12.5px; color:var(--au-dim); margin-top:7px; line-height:1.5; }
+    .sc-soap{ margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+    .sc-soap-block{ padding-left:12px; border-left:2px solid rgba(var(--sc),.3); }
+    .sc-soap-k{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--sc),.9); margin-bottom:4px; }
+    .sc-soap-v{ font-size:13px; color:var(--au-ivory); line-height:1.5; white-space:pre-wrap; }
+    .sc-soap-chip{ display:inline-flex; align-items:center; gap:5px; margin-top:10px; font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    .sc-soap-chip span{ width:14px; height:2px; border-radius:2px; background:rgba(var(--sc),.5); }
+
+    .sc-empty{ max-width:520px; margin:40px auto; text-align:center; padding:0 24px; color:var(--au-dim); font-size:14px; line-height:1.55; }
+    .sc-empty .ico{ color:rgb(var(--sc)); margin-bottom:14px; display:flex; justify-content:center; }
+    .sc-foot{ max-width:600px; margin:22px auto 0; padding:0 18px 4px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.6; }
+    .sc-foot em{ font-style:italic; color:var(--au-dim); }
+
+    /* ── log / edit dialog ── */
+    .scm{ width:min(560px,94vw); max-height:90vh; padding:0; border:none; border-radius:22px; color:var(--au-ivory); background:#0b0d10;
+      box-shadow:0 30px 90px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.06); overflow:hidden; }
+    .scm::backdrop{ background:rgba(3,4,6,.74); backdrop-filter:blur(3px); }
+    .scm-inner{ display:flex; flex-direction:column; max-height:90vh; }
+    .scm-head{ flex:none; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:20px 20px 14px; border-bottom:1px solid var(--au-line); }
+    .scm-eyebrow{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:rgba(var(--sc),.9); margin-bottom:6px; }
+    .scm-title{ font-family:var(--au-serif); font-style:italic; font-size:23px; color:var(--au-ivory); line-height:1; }
+    .scm-x{ flex:none; width:34px; height:34px; border-radius:10px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .scm-x:active{ background:rgba(255,255,255,.07); }
+    .scm-body{ flex:1; overflow-y:auto; padding:16px 18px; -webkit-overflow-scrolling:touch; }
+    .scm-seg{ display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:4px; border:1px solid var(--au-line); border-radius:12px; background:rgba(255,255,255,.02); margin-bottom:16px; }
+    .scm-seg-btn{ padding:10px; border:none; border-radius:9px; background:transparent; color:var(--au-dim); font-family:var(--au-mono); font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; transition:background .15s, color .15s; }
+    .scm-seg-btn.on{ background:rgba(var(--sc),.16); color:rgb(var(--sc)); }
+    .scm-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin:2px 2px 8px; }
+    .scm-row{ display:grid; gap:9px; margin-bottom:15px; }
+    .scm-row.pages{ grid-template-columns:1fr 1fr; }
+    .scm-in, .scm-ta{ font-family:var(--au-sans); font-size:14px; color:var(--au-ivory); background:rgba(255,255,255,.04); border:1px solid var(--au-line); border-radius:10px; padding:11px 12px; width:100%; }
+    .scm-in::placeholder, .scm-ta::placeholder{ color:var(--au-faint); }
+    .scm-in:focus, .scm-ta:focus{ outline:none; border-color:rgba(var(--sc),.5); background:rgba(255,255,255,.06); }
+    .scm-ta{ resize:vertical; min-height:56px; line-height:1.5; }
+    .scm-detect{ display:flex; align-items:center; gap:8px; margin:-6px 2px 15px; font-size:12px; color:var(--au-dim); min-height:18px; }
+    .scm-detect b{ color:rgb(var(--sc)); font-weight:700; }
+    .scm-sel{ -webkit-appearance:none; appearance:none; cursor:pointer;
+      background-image:linear-gradient(45deg,transparent 50%,var(--au-faint) 50%),linear-gradient(135deg,var(--au-faint) 50%,transparent 50%);
+      background-position:calc(100% - 16px) 16px,calc(100% - 11px) 16px; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-right:30px; }
+    .scm-sel option{ background:#12151a; color:var(--au-ivory); }
+    .scm-soap-hd{ display:flex; align-items:center; gap:9px; margin:6px 0 12px; padding-top:15px; border-top:1px solid var(--au-line); }
+    .scm-soap-hd .t{ font-family:var(--au-serif); font-style:italic; font-size:17px; color:var(--au-ivory); }
+    .scm-soap-hd .s{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-left:auto; }
+    .scm-help{ font-size:11px; color:var(--au-faint); line-height:1.45; margin:-8px 2px 12px; }
+    .scm-foot{ flex:none; display:flex; gap:10px; padding:14px 18px calc(16px + env(safe-area-inset-bottom)); border-top:1px solid var(--au-line); background:rgba(255,255,255,.015); }
+    .scm-del{ flex:none; padding:13px 16px; border:1px solid var(--au-line); border-radius:11px; background:transparent; color:var(--au-dim); font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
+    .scm-del:active{ color:#FF8FA3; border-color:rgba(255,143,163,.4); background:rgba(255,143,163,.08); }
+    .scm-save{ flex:1; padding:13px; border:none; border-radius:11px; cursor:pointer; font-family:var(--au-mono); font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#160f02; background:linear-gradient(120deg, rgb(var(--sc)), rgb(var(--sc-deep))); }
+    .scm-save:active{ transform:scale(.99); }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body class="au-mood-calm">
+  <header class="sc-hero">
+    <div>
+      <div class="sc-eyebrow">Scripture</div>
+      <div class="sc-hero-line" id="scHeroLine">The road through the Bible</div>
+      <div class="sc-hero-sub" id="scHeroSub">Every page you read, every thought you keep — one journey to the last verse.</div>
+    </div>
+    <div class="sc-orb" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.5 4.5 5v12c3.5-.5 6 0 7.5 1.5C13.5 17 16 16.5 19.5 17V5C16 4.5 13.5 5 12 6.5z"/><path d="M12 6.5v12"/></svg></div>
+  </header>
+
+  <!-- North Star: the whole Bible -->
+  <section class="sc-north">
+    <div class="sc-north-card">
+      <div class="sc-north-glow"></div>
+      <div class="sc-north-top">
+        <div>
+          <div class="sc-north-lbl">The whole Bible</div>
+          <div class="sc-north-pct"><span class="n" id="scPctN">0</span><span class="p">%</span></div>
+        </div>
+        <div class="sc-north-books">
+          <div class="big"><span id="scBooksN">0</span><span style="font-size:15px;color:var(--au-faint)"> / 66</span></div>
+          <div class="sm">books opened</div>
+        </div>
+      </div>
+      <div class="sc-meter"><div class="sc-meter-fill" id="scMeterFill"></div><div class="sc-meter-tick" id="scMeterTick" title="Old Testament ends here"></div></div>
+      <div class="sc-north-foot">
+        <div class="sc-north-pages"><b id="scPagesN">0</b> of 1,721 pages read</div>
+        <div class="sc-north-testa" id="scTesta">OT · NT</div>
+      </div>
+    </div>
+
+    <!-- resume + log -->
+    <div class="sc-resume" style="padding:0;margin-top:12px">
+      <div class="sc-resume-card home" id="scResumeCard">
+        <div class="sc-resume-ic"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4v16l7-4 7 4V4H5z"/></svg></div>
+        <div class="sc-resume-main">
+          <div class="sc-resume-k" id="scResumeK">Pick up where you left off</div>
+          <div class="sc-resume-v" id="scResumeV">Open your Bible and log your first reading.</div>
+        </div>
+      </div>
+      <button class="sc-log-btn" id="scLogBtn" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Log today's reading
+      </button>
+    </div>
+  </section>
+
+  <!-- today band -->
+  <section class="sc-today">
+    <div class="sc-tile accent" id="scStreakTile">
+      <div class="sc-tile-lbl">Streak</div>
+      <div class="sc-tile-row">
+        <span class="sc-flame" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.6 3.5-2.4 4.8-2.4 8A2.4 2.4 0 0 0 12 13.4 2.4 2.4 0 0 0 14.4 11c0-.9-.4-1.6-.4-1.6 2.2 1 3.5 3 3.5 5.4A5.5 5.5 0 1 1 6.5 15c0-3.3 2.8-4.9 3.2-8 0 0 1.4 1 2.3-4z"/></svg></span>
+        <span class="sc-big" id="scStreakN">0</span>
+        <span class="sc-big-suf" id="scStreakSuf">days</span>
+      </div>
+      <div class="sc-tile-note" id="scStreakNote">Read any day to start the chain.</div>
+    </div>
+    <div class="sc-tile" id="scWeekTile">
+      <div class="sc-tile-lbl">This week</div>
+      <div class="sc-tile-row">
+        <span class="sc-big" id="scWeekN">0</span>
+        <span class="sc-big-suf">/ 7 days</span>
+      </div>
+      <div class="sc-tile-note" id="scWeekNote">Mon–Sun. Small and steady wins the road.</div>
+    </div>
+  </section>
+
+  <!-- the Canon map -->
+  <section class="sc-canon">
+    <div class="sc-sec-hd">
+      <span class="sc-sec-title">The canon</span>
+      <span class="sc-sec-sub" id="scCanonSub">66 books</span>
+    </div>
+    <div class="sc-testa-lbl">Old Testament</div>
+    <div class="sc-grid" id="scGridOT"></div>
+    <div class="sc-testa-lbl">New Testament</div>
+    <div class="sc-grid" id="scGridNT"></div>
+  </section>
+
+  <!-- the Journal -->
+  <section class="sc-jrn">
+    <div class="sc-sec-hd">
+      <span class="sc-sec-title">Your journal</span>
+      <span class="sc-sec-sub" id="scJrnSub"></span>
+    </div>
+    <div class="sc-filter" id="scFilter"><span>Showing <b id="scFilterName"></b></span><button class="sc-filter-x" id="scFilterX" type="button">Clear</button></div>
+    <div id="scEntries"></div>
+    <div class="sc-empty hidden" id="scEmpty">
+      <div class="ico"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.5 4.5 5v12c3.5-.5 6 0 7.5 1.5C13.5 17 16 16.5 19.5 17V5C16 4.5 13.5 5 12 6.5z"/><path d="M12 6.5v12"/></svg></div>
+      Nothing logged yet.<br>Tap <b style="color:rgb(var(--sc))">Log today's reading</b> to begin — the pages, and the thoughts they leave you.
+    </div>
+  </section>
+
+  <div class="sc-foot">
+    Tracked by page, the way you already read it. Your reflections use the <em>S.O.A.P.</em> method — Scripture, Observation, Application, Prayer.<br>Everything here is private and syncs across your devices.
+  </div>
+
+  <!-- log / edit dialog -->
+  <dialog class="scm" id="scmDlg" aria-label="Log a reading">
+    <div class="scm-inner">
+      <div class="scm-head">
+        <div><div class="scm-eyebrow" id="scmEyebrow">Log</div><div class="scm-title" id="scmTitle">Today's reading</div></div>
+        <button class="scm-x" id="scmClose" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="scm-body">
+        <div class="scm-seg">
+          <button class="scm-seg-btn on" id="scmModeRead" type="button" data-mode="read">Reading</button>
+          <button class="scm-seg-btn" id="scmModeReflect" type="button" data-mode="reflect">Reflection</button>
+        </div>
+
+        <div class="scm-lbl">Date</div>
+        <div class="scm-row"><input id="scmDate" class="scm-in" type="date"></div>
+
+        <!-- reading fields -->
+        <div id="scmReadFields">
+          <div class="scm-lbl">Pages read</div>
+          <div class="scm-row pages">
+            <input id="scmFrom" class="scm-in" type="number" inputmode="numeric" placeholder="From page" min="1" max="1722">
+            <input id="scmTo" class="scm-in" type="number" inputmode="numeric" placeholder="To page" min="1" max="1722">
+          </div>
+          <div class="scm-detect" id="scmDetect"></div>
+          <div class="scm-lbl">Book</div>
+          <div class="scm-row"><select id="scmBook" class="scm-in scm-sel"></select></div>
+        </div>
+
+        <!-- reflection fields -->
+        <div id="scmReflectFields" class="hidden">
+          <div class="scm-lbl">What was it about?</div>
+          <div class="scm-row"><input id="scmReflectTitle" class="scm-in" type="text" placeholder="e.g. Trusting God's plan (video)"></div>
+          <div class="scm-lbl">Notes <span style="text-transform:none;letter-spacing:0;color:var(--au-faint)">(optional)</span></div>
+          <div class="scm-row"><textarea id="scmReflectNote" class="scm-ta" placeholder="What you learned or want to remember…"></textarea></div>
+        </div>
+
+        <!-- S.O.A.P. -->
+        <div class="scm-soap-hd"><span class="t">Reflection</span><span class="s">S · O · A · P — all optional</span></div>
+        <div class="scm-lbl">Scripture</div>
+        <div class="scm-help">Write out a verse or passage that stood out.</div>
+        <div class="scm-row"><textarea id="scmS" class="scm-ta" placeholder="The verse or passage…"></textarea></div>
+        <div class="scm-lbl">Observation</div>
+        <div class="scm-help">What stood out? Any commands or instructions?</div>
+        <div class="scm-row"><textarea id="scmO" class="scm-ta" placeholder="What you noticed…"></textarea></div>
+        <div class="scm-lbl">Application</div>
+        <div class="scm-help">How can you live in light of this truth today?</div>
+        <div class="scm-row"><textarea id="scmA" class="scm-ta" placeholder="How you'll apply it…"></textarea></div>
+        <div class="scm-lbl">Prayer</div>
+        <div class="scm-help">Ask God to show you how to apply this to your life.</div>
+        <div class="scm-row"><textarea id="scmP" class="scm-ta" placeholder="Your prayer…"></textarea></div>
+      </div>
+      <div class="scm-foot">
+        <button class="scm-del hidden" id="scmDel" type="button">Delete</button>
+        <button class="scm-save" id="scmSave" type="button">Save reading</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="als-dialog.js" defer></script>
+  <script>
+  (function(){
+    'use strict';
+
+    // ── the canon of THIS Bible: Η Εικονογραφημένη Αγία Γραφή (demotic Greek) ──
+    // start = the page each book opens on in Alex's physical copy (from its
+    // contents pages). A book runs to the page before the next one starts; the
+    // last book runs to END-1. Proverbs starts 828 (his own log — "ΠΡΜ 837–853" —
+    // proves it, over a hard-to-read TOC digit). Book detection reads these, so a
+    // typed page range names its book with zero effort.
+    var END = 1723; // Χάρτες (maps) — scripture ends the page before
+    var BIBLE = [
+      { en:'Genesis', ab:'Gen', gr:'Γένεσις', t:'OT', p:2 },
+      { en:'Exodus', ab:'Exo', gr:'Έξοδος', t:'OT', p:90 },
+      { en:'Leviticus', ab:'Lev', gr:'Λευιτικόν', t:'OT', p:148 },
+      { en:'Numbers', ab:'Num', gr:'Αριθμοί', t:'OT', p:178 },
+      { en:'Deuteronomy', ab:'Deut', gr:'Δευτερονόμιον', t:'OT', p:220 },
+      { en:'Joshua', ab:'Josh', gr:'Ιησούς Ναυή', t:'OT', p:262 },
+      { en:'Judges', ab:'Judg', gr:'Κριταί', t:'OT', p:298 },
+      { en:'Ruth', ab:'Ruth', gr:'Ρουθ', t:'OT', p:338 },
+      { en:'1 Samuel', ab:'1Sa', gr:'Α΄ Σαμουήλ', t:'OT', p:346 },
+      { en:'2 Samuel', ab:'2Sa', gr:'Β΄ Σαμουήλ', t:'OT', p:406 },
+      { en:'1 Kings', ab:'1Ki', gr:'Α΄ Βασιλέων', t:'OT', p:448 },
+      { en:'2 Kings', ab:'2Ki', gr:'Β΄ Βασιλέων', t:'OT', p:494 },
+      { en:'1 Chronicles', ab:'1Ch', gr:'Α΄ Χρονικών', t:'OT', p:542 },
+      { en:'2 Chronicles', ab:'2Ch', gr:'Β΄ Χρονικών', t:'OT', p:576 },
+      { en:'Ezra', ab:'Ezra', gr:'Έσδρας', t:'OT', p:622 },
+      { en:'Nehemiah', ab:'Neh', gr:'Νεεμίας', t:'OT', p:638 },
+      { en:'Esther', ab:'Esth', gr:'Εσθήρ', t:'OT', p:662 },
+      { en:'Job', ab:'Job', gr:'Ιώβ', t:'OT', p:682 },
+      { en:'Psalms', ab:'Psa', gr:'Ψαλμοί', t:'OT', p:722 },
+      { en:'Proverbs', ab:'Prov', gr:'Παροιμίαι', t:'OT', p:828 },
+      { en:'Ecclesiastes', ab:'Eccl', gr:'Εκκλησιαστής', t:'OT', p:890 },
+      { en:'Song of Songs', ab:'Song', gr:'Άσμα Ασμάτων', t:'OT', p:900 },
+      { en:'Isaiah', ab:'Isa', gr:'Ησαΐας', t:'OT', p:980 },
+      { en:'Jeremiah', ab:'Jer', gr:'Ιερεμίας', t:'OT', p:1060 },
+      { en:'Lamentations', ab:'Lam', gr:'Θρήνοι', t:'OT', p:1070 },
+      { en:'Ezekiel', ab:'Ezek', gr:'Ιεζεκιήλ', t:'OT', p:1080 },
+      { en:'Daniel', ab:'Dan', gr:'Δανιήλ', t:'OT', p:1124 },
+      { en:'Hosea', ab:'Hos', gr:'Ωσηέ', t:'OT', p:1148 },
+      { en:'Joel', ab:'Joel', gr:'Ιωήλ', t:'OT', p:1162 },
+      { en:'Amos', ab:'Amos', gr:'Αμώς', t:'OT', p:1168 },
+      { en:'Obadiah', ab:'Obad', gr:'Οβδιού', t:'OT', p:1180 },
+      { en:'Jonah', ab:'Jon', gr:'Ιωνάς', t:'OT', p:1184 },
+      { en:'Micah', ab:'Mic', gr:'Μιχαίας', t:'OT', p:1190 },
+      { en:'Nahum', ab:'Nah', gr:'Ναούμ', t:'OT', p:1198 },
+      { en:'Habakkuk', ab:'Hab', gr:'Αββακούμ', t:'OT', p:1202 },
+      { en:'Zephaniah', ab:'Zeph', gr:'Σοφονίας', t:'OT', p:1206 },
+      { en:'Haggai', ab:'Hag', gr:'Αγγαίος', t:'OT', p:1209 },
+      { en:'Zechariah', ab:'Zech', gr:'Ζαχαρίας', t:'OT', p:1212 },
+      { en:'Malachi', ab:'Mal', gr:'Μαλαχίας', t:'OT', p:1223 },
+      { en:'Matthew', ab:'Matt', gr:'Κατά Ματθαίον', t:'NT', p:1232 },
+      { en:'Mark', ab:'Mark', gr:'Κατά Μάρκον', t:'NT', p:1304 },
+      { en:'Luke', ab:'Luke', gr:'Κατά Λουκάν', t:'NT', p:1348 },
+      { en:'John', ab:'John', gr:'Κατά Ιωάννην', t:'NT', p:1428 },
+      { en:'Acts', ab:'Acts', gr:'Πράξεις Αποστόλων', t:'NT', p:1482 },
+      { en:'Romans', ab:'Rom', gr:'Προς Ρωμαίους', t:'NT', p:1544 },
+      { en:'1 Corinthians', ab:'1Co', gr:'Προς Κορινθίους Α΄', t:'NT', p:1562 },
+      { en:'2 Corinthians', ab:'2Co', gr:'Προς Κορινθίους Β΄', t:'NT', p:1582 },
+      { en:'Galatians', ab:'Gal', gr:'Προς Γαλάτας', t:'NT', p:1594 },
+      { en:'Ephesians', ab:'Eph', gr:'Προς Εφεσίους', t:'NT', p:1601 },
+      { en:'Philippians', ab:'Phil', gr:'Προς Φιλιππησίους', t:'NT', p:1608 },
+      { en:'Colossians', ab:'Col', gr:'Προς Κολοσσαείς', t:'NT', p:1614 },
+      { en:'1 Thessalonians', ab:'1Th', gr:'Προς Θεσσαλονικείς Α΄', t:'NT', p:1620 },
+      { en:'2 Thessalonians', ab:'2Th', gr:'Προς Θεσσαλονικείς Β΄', t:'NT', p:1626 },
+      { en:'1 Timothy', ab:'1Ti', gr:'Α΄ Προς Τιμόθεον', t:'NT', p:1628 },
+      { en:'2 Timothy', ab:'2Ti', gr:'Β΄ Προς Τιμόθεον', t:'NT', p:1635 },
+      { en:'Titus', ab:'Titus', gr:'Προς Τίτον', t:'NT', p:1638 },
+      { en:'Philemon', ab:'Phlm', gr:'Προς Φιλήμονα', t:'NT', p:1641 },
+      { en:'Hebrews', ab:'Heb', gr:'Προς Εβραίους', t:'NT', p:1642 },
+      { en:'James', ab:'Jas', gr:'Επιστολή Ιακώβου', t:'NT', p:1662 },
+      { en:'1 Peter', ab:'1Pe', gr:'Επιστολή Α΄ Πέτρου', t:'NT', p:1667 },
+      { en:'2 Peter', ab:'2Pe', gr:'Επιστολή Β΄ Πέτρου', t:'NT', p:1674 },
+      { en:'1 John', ab:'1Jn', gr:'Επιστολή Α΄ Ιωάννου', t:'NT', p:1679 },
+      { en:'2 John', ab:'2Jn', gr:'Επιστολή Β΄ Ιωάννου', t:'NT', p:1685 },
+      { en:'3 John', ab:'3Jn', gr:'Επιστολή Γ΄ Ιωάννου', t:'NT', p:1686 },
+      { en:'Jude', ab:'Jude', gr:'Επιστολή Ιούδα', t:'NT', p:1688 },
+      { en:'Revelation', ab:'Rev', gr:'Αποκάλυψις Ιωάννου', t:'NT', p:1692 }
+    ];
+    // annotate each book with its end page + index
+    BIBLE.forEach(function(b,i){ b.i=i; b.end=(i<BIBLE.length-1?BIBLE[i+1].p:END)-1; });
+    var CANON_START=BIBLE[0].p, CANON_END=END-1, CANON_TOTAL=CANON_END-CANON_START+1;
+    var BOOK_BY_EN={}; BIBLE.forEach(function(b){ BOOK_BY_EN[b.en]=b; });
+    function bookOf(page){ if(page==null) return null; for(var i=0;i<BIBLE.length;i++){ if(page>=BIBLE[i].p && page<=BIBLE[i].end) return BIBLE[i]; } return null; }
+
+    // ── helpers ──
+    function $(id){ return document.getElementById(id); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
+    function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+    function dateKeyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+    function todayKey(){ return dateKeyOf(new Date()); }
+    function parseKey(k){ var p=String(k).split('-').map(Number); return new Date(p[0],(p[1]||1)-1,p[2]||1); }
+    function shiftDay(key,delta){ var d=parseKey(key); d.setDate(d.getDate()+delta); return dateKeyOf(d); }
+    var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtDate(k){ var d=parseKey(k); return d.getDate()+' '+MON[d.getMonth()]; }
+    function fmtDateLong(k){ var d=parseKey(k), now=new Date(); var s=d.getDate()+' '+MON[d.getMonth()]; if(d.getFullYear()!==now.getFullYear()) s+=' '+d.getFullYear(); return s; }
+    function nfmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+    function flush(){ if(window.ALSSync && window.ALSSync.flush) window.ALSSync.flush(); }
+
+    // ── data: reading sessions (synced; array of {id,ts,...} → union merge) ──
+    function sessions(){ var a=ls('bible:sessions',[]); return Array.isArray(a)?a.filter(function(s){ return s && s.id; }):[]; }
+    function saveSessions(a){ save('bible:sessions',a); flush(); }
+    function newId(){ return 'bs_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6); }
+
+    // ── coverage: union of read page-ranges → the whole-Bible picture ──
+    function coverage(){
+      var reads=sessions().filter(function(s){ return s.kind!=='reflect' && s.from>0; });
+      var ivs=reads.map(function(s){
+        var a=Math.max(CANON_START,Math.min(s.from,s.to||s.from));
+        var b=Math.min(CANON_END,Math.max(s.from,s.to||s.from));
+        return [a,b];
+      }).filter(function(iv){ return iv[1]>=iv[0]; }).sort(function(x,y){ return x[0]-y[0]; });
+      var merged=[]; ivs.forEach(function(iv){ var last=merged[merged.length-1]; if(last && iv[0]<=last[1]+1){ last[1]=Math.max(last[1],iv[1]); } else merged.push(iv.slice()); });
+      var pagesRead=0; merged.forEach(function(iv){ pagesRead+=iv[1]-iv[0]+1; });
+      // per-book pages read
+      var perBook={};
+      BIBLE.forEach(function(b){
+        var got=0;
+        merged.forEach(function(iv){ var a=Math.max(iv[0],b.p), c=Math.min(iv[1],b.end); if(c>=a) got+=c-a+1; });
+        var span=b.end-b.p+1;
+        perBook[b.en]={ got:got, span:span, pct:span?got/span:0, done:got>=span };
+      });
+      var booksTouched=0, booksDone=0;
+      BIBLE.forEach(function(b){ var pb=perBook[b.en]; if(pb.got>0) booksTouched++; if(pb.done) booksDone++; });
+      return { merged:merged, pagesRead:pagesRead, perBook:perBook, booksTouched:booksTouched, booksDone:booksDone };
+    }
+
+    // current position = the book of the most recent reading, and its furthest page
+    function position(){
+      var reads=sessions().filter(function(s){ return s.kind!=='reflect' && s.from>0; })
+        .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0); });
+      if(!reads.length) return null;
+      var last=reads[reads.length-1];
+      var pg=Math.max(last.from,last.to||last.from);
+      var bk=last.book?BOOK_BY_EN[last.book]:null; if(!bk) bk=bookOf(pg);
+      return { book:bk, page:pg, date:last.date };
+    }
+
+    // ── streak + week (a "day" = any session, reading OR reflection) ──
+    function activeDays(){ var set={}; sessions().forEach(function(s){ if(s.date) set[s.date]=1; }); return set; }
+    function computeStreak(){
+      var days=activeDays(), k=todayKey(), streak=0, guard=0;
+      if(!days[k]) k=shiftDay(k,-1); // today not yet logged doesn't break it
+      while(days[k] && guard++<4000){ streak++; k=shiftDay(k,-1); }
+      return streak;
+    }
+    function weekDays(){ // Mon–Sun, count of distinct days read this week
+      var days=activeDays(), now=new Date(); var dow=(now.getDay()+6)%7; // 0=Mon
+      var monday=new Date(now); monday.setDate(now.getDate()-dow);
+      var n=0; for(var i=0;i<7;i++){ var k=dateKeyOf(new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+i)); if(days[k]) n++; }
+      return n;
+    }
+
+    // ── render ──
+    var filterBook=null; // en name or null
+
+    function animateN(el,to,dur){ if(!el) return; to=Math.round(to); var t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/(dur||700)); p=1-Math.pow(1-p,3); el.textContent=nfmt(Math.round(to*p)); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+
+    function render(){
+      var cov=coverage(), all=sessions();
+      var pct=CANON_TOTAL?cov.pagesRead/CANON_TOTAL*100:0;
+
+      // North Star
+      if(cov.pagesRead>0 && pct<1){ $('scPctN').textContent='<1'; }
+      else animateN($('scPctN'), pct, 800);
+      var nt=BIBLE.filter(function(b){ return b.t==='NT'; })[0];
+      $('scMeterTick').style.left=((nt.p-CANON_START)/CANON_TOTAL*100).toFixed(1)+'%';
+      animateN($('scBooksN'), cov.booksTouched, 700);
+      animateN($('scPagesN'), cov.pagesRead, 900);
+      $('scMeterFill').style.width=Math.max(pct,cov.pagesRead>0?1.2:0).toFixed(2)+'%';
+      // OT / NT split of pages read
+      var otRead=0, ntRead=0; BIBLE.forEach(function(b){ var g=cov.perBook[b.en].got; if(b.t==='OT') otRead+=g; else ntRead+=g; });
+      $('scTesta').textContent = (cov.pagesRead>0) ? ('OT '+otRead+' · NT '+ntRead) : 'OT · NT';
+
+      // resume / position
+      var pos=position(), rc=$('scResumeCard');
+      if(pos && pos.book){
+        rc.classList.add('home');
+        var pb=cov.perBook[pos.book.en];
+        $('scResumeK').textContent='Where you left off';
+        $('scResumeV').innerHTML='<b>'+esc(pos.book.en)+'</b> — last on page '+pos.page+' · '+Math.round(pb.pct*100)+'% through this book';
+      } else {
+        rc.classList.remove('home');
+        $('scResumeK').textContent='Begin the journey';
+        $('scResumeV').innerHTML='Open your Bible and log your first reading.';
+      }
+
+      // hero sub
+      if(cov.pagesRead>0){
+        $('scHeroSub').innerHTML='<b>'+cov.booksTouched+'</b> of 66 books opened · <b>'+nfmt(cov.pagesRead)+'</b> pages behind you.';
+      }
+
+      // streak
+      var streak=computeStreak();
+      $('scStreakN').textContent=String(streak);
+      $('scStreakSuf').textContent=streak===1?'day':'days';
+      var loggedToday=!!activeDays()[todayKey()];
+      $('scStreakNote').textContent = streak===0 ? 'Read any day to start the chain.'
+        : (loggedToday ? 'Today is already in the books.' : 'Keep it alive — log today’s reading.');
+      $('scStreakTile').classList.toggle('accent', streak>0);
+
+      // week
+      var wk=weekDays();
+      $('scWeekN').textContent=String(wk);
+      $('scWeekNote').textContent = wk===0 ? 'Mon–Sun. Small and steady wins the road.'
+        : (wk>=5 ? 'Faithful week — this is a rhythm now.' : 'Mon–Sun. '+(7-wk)+' more chances this week.');
+
+      renderCanon(cov, pos);
+      renderJournal();
+    }
+
+    function renderCanon(cov, pos){
+      var curEn = pos && pos.book ? pos.book.en : null;
+      function cell(b){
+        var pb=cov.perBook[b.en]; var pctH=Math.round(pb.pct*100);
+        var cls='sc-book'; if(pb.done) cls+=' done'; else if(pb.got>0) cls+=' touched';
+        if(b.en===curEn && !pb.done) cls+=' current';
+        if(b.en===filterBook) cls+=' filtered';
+        return '<button class="'+cls+'" type="button" data-book="'+esc(b.en)+'" title="'+esc(b.en+' · '+b.gr)+'" aria-label="'+esc(b.en)+', '+pctH+'% read">'+
+          '<span class="sc-book-fill" style="height:'+Math.min(100,pctH)+'%"></span>'+
+          '<span class="sc-book-check"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>'+
+          '<span class="sc-book-ab">'+esc(b.ab)+'</span>'+
+          '<span class="sc-book-pp">'+(pb.got>0?pctH+'%':'&nbsp;')+'</span>'+
+        '</button>';
+      }
+      $('scGridOT').innerHTML=BIBLE.filter(function(b){ return b.t==='OT'; }).map(cell).join('');
+      $('scGridNT').innerHTML=BIBLE.filter(function(b){ return b.t==='NT'; }).map(cell).join('');
+      $('scCanonSub').textContent=cov.booksDone>0 ? (cov.booksDone+' finished · '+cov.booksTouched+' opened') : (cov.booksTouched+' of 66 opened');
+    }
+
+    function soapBlock(k,v){ if(!v||!String(v).trim()) return ''; return '<div class="sc-soap-block"><div class="sc-soap-k">'+k+'</div><div class="sc-soap-v">'+esc(v)+'</div></div>'; }
+
+    function renderJournal(){
+      var list=sessions().slice().sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:(b.ts||0)-(a.ts||0); });
+      if(filterBook) list=list.filter(function(s){ return (s.kind!=='reflect') && ((s.book||(s.from?(bookOf(s.from)||{}).en:null))===filterBook); });
+      var f=$('scFilter');
+      if(filterBook){ f.classList.add('on'); $('scFilterName').textContent=filterBook; } else f.classList.remove('on');
+
+      if(!list.length){
+        $('scEntries').innerHTML='';
+        $('scEmpty').classList.toggle('hidden', !!filterBook);
+        if(filterBook) $('scEntries').innerHTML='<div class="sc-empty" style="margin:20px auto">No readings logged in <b style="color:rgb(var(--sc))">'+esc(filterBook)+'</b> yet.</div>';
+        $('scJrnSub').textContent='';
+        return;
+      }
+      $('scEmpty').classList.add('hidden');
+      var totalReads=sessions().filter(function(s){ return s.kind!=='reflect'; }).length;
+      $('scJrnSub').textContent=sessions().length+' entries';
+
+      $('scEntries').innerHTML=list.map(function(s){
+        var hasSoap = (s.s&&s.s.trim())||(s.o&&s.o.trim())||(s.a&&s.a.trim())||(s.p&&s.p.trim());
+        var soap = hasSoap ? '<div class="sc-soap">'+soapBlock('Scripture',s.s)+soapBlock('Observation',s.o)+soapBlock('Application',s.a)+soapBlock('Prayer',s.p)+'</div>' : '';
+        if(s.kind==='reflect'){
+          return '<div class="sc-entry reflect" data-id="'+esc(s.id)+'">'+
+            '<div class="sc-entry-hd"><span class="sc-entry-date">'+esc(fmtDateLong(s.date))+'</span><span class="sc-entry-tag">Reflection</span></div>'+
+            '<div class="sc-entry-title">'+esc(s.title||'Reflection')+'</div>'+
+            (s.note?'<div class="sc-entry-note">'+esc(s.note)+'</div>':'')+ soap +
+          '</div>';
+        }
+        var bk=s.book||(bookOf(s.from)||{}).en||'—';
+        var pp=(s.to&&s.to!==s.from)?('pp. '+s.from+'–'+s.to):('p. '+s.from);
+        return '<div class="sc-entry" data-id="'+esc(s.id)+'">'+
+          '<div class="sc-entry-hd"><span class="sc-entry-date">'+esc(fmtDateLong(s.date))+'</span>'+(hasSoap?'<span class="sc-entry-tag">S.O.A.P.</span>':'')+'</div>'+
+          '<div class="sc-entry-title">'+esc(bk)+' <span class="pp">'+esc(pp)+'</span></div>'+
+          (s.note?'<div class="sc-entry-note">'+esc(s.note)+'</div>':'')+ soap +
+        '</div>';
+      }).join('');
+    }
+
+    // ── dialog ──
+    var editId=null, mode='read';
+    function fillBookSelect(sel){ sel.innerHTML='<option value="">— auto-detect —</option>'+BIBLE.map(function(b){ return '<option value="'+esc(b.en)+'">'+esc(b.en)+'  ·  '+esc(b.gr)+'</option>'; }).join(''); }
+    function setMode(m){
+      mode=m;
+      $('scmModeRead').classList.toggle('on', m==='read');
+      $('scmModeReflect').classList.toggle('on', m==='reflect');
+      $('scmReadFields').classList.toggle('hidden', m!=='read');
+      $('scmReflectFields').classList.toggle('hidden', m!=='read'?false:true);
+      $('scmSave').textContent = m==='read'?'Save reading':'Save reflection';
+    }
+    function updateDetect(){
+      var from=parseInt($('scmFrom').value,10);
+      var d=$('scmDetect');
+      if(!(from>0)){ d.innerHTML=''; return; }
+      var b=bookOf(from);
+      if(b){ d.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgb('+'var(--sc)'+')" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:rgb(var(--sc))"><path d="M20 6L9 17l-5-5"/></svg> This is <b>'+esc(b.en)+'</b> <span style="color:var(--au-faint)">('+esc(b.gr)+')</span>';
+        if(!$('scmBook').value) $('scmBook').value=b.en; // set only if not manually overridden
+      } else { d.innerHTML='<span style="color:var(--au-faint)">Page '+from+' is outside the numbered books.</span>'; }
+    }
+    function openDlg(id){
+      editId=id||null;
+      var d=$('scmDlg');
+      // reset
+      ['scmFrom','scmTo','scmReflectTitle','scmReflectNote','scmS','scmO','scmA','scmP'].forEach(function(x){ $(x).value=''; });
+      $('scmBook').value='';
+      $('scmDate').value=todayKey();
+      $('scmDetect').innerHTML='';
+      $('scmDel').classList.toggle('hidden', !editId);
+      if(editId){
+        var s=sessions().filter(function(x){ return x.id===editId; })[0];
+        if(s){
+          $('scmDate').value=s.date||todayKey();
+          setMode(s.kind==='reflect'?'reflect':'read');
+          if(s.kind==='reflect'){ $('scmReflectTitle').value=s.title||''; $('scmReflectNote').value=s.note||''; }
+          else { $('scmFrom').value=s.from||''; $('scmTo').value=s.to||''; $('scmBook').value=s.book||''; updateDetect(); }
+          $('scmS').value=s.s||''; $('scmO').value=s.o||''; $('scmA').value=s.a||''; $('scmP').value=s.p||'';
+          $('scmEyebrow').textContent='Edit'; $('scmTitle').textContent='Edit entry';
+        }
+      } else {
+        setMode('read');
+        $('scmEyebrow').textContent='Log'; $('scmTitle').textContent='Today’s reading';
+      }
+      if(d.showModal){ if(!d.open) d.showModal(); } else d.setAttribute('open','');
+      $('scmBody')&&($('scmBody').scrollTop=0);
+    }
+    function closeDlg(){ var d=$('scmDlg'); if(d.close && d.open) d.close(); else d.removeAttribute('open'); }
+
+    function saveDlg(){
+      var date=$('scmDate').value||todayKey();
+      var soap={ s:$('scmS').value.trim(), o:$('scmO').value.trim(), a:$('scmA').value.trim(), p:$('scmP').value.trim() };
+      var base;
+      if(mode==='reflect'){
+        var title=$('scmReflectTitle').value.trim();
+        if(!title && !(soap.s||soap.o||soap.a||soap.p)){ if(window.ALSAlert) ALSAlert('Add what the reflection was about first.'); else alert('Add a title.'); return; }
+        base={ kind:'reflect', date:date, title:title, note:$('scmReflectNote').value.trim() };
+      } else {
+        var from=parseInt($('scmFrom').value,10);
+        if(!(from>0)){ if(window.ALSAlert) ALSAlert('Enter the page you started on.'); else alert('Enter a from page.'); return; }
+        var to=parseInt($('scmTo').value,10); if(!(to>0)) to=from;
+        if(to<from){ var t=from; from=to; to=t; }
+        var book=$('scmBook').value || (bookOf(from)||{}).en || '';
+        base={ kind:'read', date:date, from:from, to:to, book:book, note:'' };
+      }
+      base.s=soap.s; base.o=soap.o; base.a=soap.a; base.p=soap.p;
+      var list=sessions();
+      if(editId){
+        var found=false;
+        list=list.map(function(x){ if(x.id===editId){ found=true; return Object.assign({}, x, base, { id:editId, ts:Date.now() }); } return x; });
+        if(!found){ base.id=newId(); base.ts=Date.now(); list.push(base); }
+      } else {
+        base.id=newId(); base.ts=Date.now(); list.push(base);
+      }
+      saveSessions(list);
+      closeDlg(); render();
+    }
+    function delDlg(){
+      if(!editId) return;
+      function doDel(){ saveSessions(sessions().filter(function(x){ return x.id!==editId; })); closeDlg(); render(); }
+      if(window.ALSConfirm) ALSConfirm('Delete this entry? This can’t be undone.').then(function(ok){ if(ok) doDel(); });
+      else if(confirm('Delete this entry?')) doDel();
+    }
+
+    // ── wiring ──
+    fillBookSelect($('scmBook'));
+    $('scLogBtn').addEventListener('click', function(){ openDlg(null); });
+    $('scmClose').addEventListener('click', closeDlg);
+    $('scmDlg').addEventListener('click', function(e){ if(e.target===$('scmDlg')) closeDlg(); });
+    $('scmModeRead').addEventListener('click', function(){ setMode('read'); });
+    $('scmModeReflect').addEventListener('click', function(){ setMode('reflect'); });
+    $('scmFrom').addEventListener('input', updateDetect);
+    $('scmBook').addEventListener('change', function(){ /* manual override sticks */ });
+    $('scmSave').addEventListener('click', saveDlg);
+    $('scmDel').addEventListener('click', delDlg);
+    $('scEntries').addEventListener('click', function(e){ var el=e.target.closest('.sc-entry'); if(el) openDlg(el.getAttribute('data-id')); });
+    function onBookTap(e){ var b=e.target.closest('.sc-book'); if(!b) return; var en=b.getAttribute('data-book'); filterBook=(filterBook===en)?null:en; renderJournal(); renderCanon(coverage(), position()); if(filterBook) $('scJrn')&&document.querySelector('.sc-jrn').scrollIntoView({behavior:'smooth',block:'start'}); }
+    $('scGridOT').addEventListener('click', onBookTap);
+    $('scGridNT').addEventListener('click', onBookTap);
+    $('scFilterX').addEventListener('click', function(){ filterBook=null; render(); });
+
+    // give scm-body an id hook for scroll-reset
+    document.querySelector('.scm-body').id='scmBody';
+
+    // ── his notebook, already here on first open (owner-only, empty-only) ──
+    // Stable ids so two devices never duplicate on sync. Each ts is derived from
+    // the date so merges are deterministic.
+    function seedData(){
+      function s(date,from,to){ return { id:'seed_'+date+'_'+from, ts:Date.parse(date+'T09:00:00')||0, kind:'read', date:date, from:from, to:to, book:(bookOf(from)||{}).en||'', note:'', s:'',o:'',a:'',p:'' }; }
+      function r(date,title,note){ return { id:'seed_'+date+'_r', ts:Date.parse(date+'T09:00:00')||0, kind:'reflect', date:date, title:title, note:note||'', s:'',o:'',a:'',p:'' }; }
+      return [
+        s('2026-03-18',1455,1460), s('2026-03-19',1460,1462), s('2026-03-22',1462,1464),
+        s('2026-03-23',1464,1465), s('2026-03-24',1465,1466), s('2026-03-27',1466,1469),
+        r('2026-03-28','Trusting God’s plan','Video.'),
+        s('2026-03-29',1469,1472), s('2026-03-30',1472,1474), s('2026-03-31',1474,1476),
+        s('2026-04-01',1476,1478), s('2026-04-03',1478,1480),
+        s('2026-04-07',1480,1481), { id:'seed_2026-04-07_837', ts:Date.parse('2026-04-07T09:30:00')||0, kind:'read', date:'2026-04-07', from:837, to:839, book:(bookOf(837)||{}).en||'', note:'', s:'',o:'',a:'',p:'' },
+        s('2026-04-10',839,840),
+        r('2026-04-11','Orthodox vs Catholic vs Protestant','The differences between the three.'),
+        s('2026-04-12',840,841), s('2026-04-21',842,842), s('2026-04-22',842,843),
+        s('2026-04-28',844,844), s('2026-04-29',844,847), s('2026-05-04',847,848),
+        s('2026-05-05',848,850), s('2026-05-10',850,852), s('2026-05-11',852,852),
+        s('2026-05-15',852,852), s('2026-05-17',853,853)
+      ];
+    }
+    var _seeded=false;
+    function maybeSeed(){
+      if(_seeded) return;
+      if(window.ALSProfile && window.ALSProfile.isOwner && !window.ALSProfile.isOwner()) return; // never on a non-owner account
+      if(sessions().length) { _seeded=true; return; }
+      _seeded=true;
+      save('bible:sessions', seedData()); flush(); render();
+    }
+
+    // ── boot ──
+    render();
+    window._scriptureRerender=function(){ render(); };
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage', function(ev){ if(!ev || ev.key==='bible:sessions') render(); });
+
+    document.addEventListener('DOMContentLoaded', function(){
+      // seed once the profile lands (so a non-owner is never seeded); fallback for offline/no-profile
+      if(window.ALSProfile && window.ALSProfile.ready){ window.ALSProfile.ready(function(){ maybeSeed(); }); }
+      setTimeout(maybeSeed, 2600);
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'scripture', syncedKeys:['bible:sessions'], syncedPrefixes:[],
+          onApplied:function(){ if(window._scriptureRerender) window._scriptureRerender(); } });
+      })();
+    });
+  })();
+  </script>
+  <script src="nova.js" defer></script>
+  <script src="nova-coach.js?v=20" defer></script>
+</body>
+</html>
