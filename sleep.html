@@ -1964,8 +1964,22 @@
        does not move. This reads the last 14 logged nights, measures each
        wake against the target, and shows how many landed within ±30 min.
        Wake-only and self-contained; it never writes. */
+    // "My protocol" is Alex's own standing system — his 10:00 wake target, his
+    // supps, his Rhodes-summer early-waking playbook. It is NOT Chrissie's, and
+    // her account must never be shown it (the hard rule: never hardcode Alex).
+    // isOwner() defaults to true until her session resolves, so the section shows
+    // by default and hides the instant ALSProfile confirms a non-owner.
+    function protoIsOwner(){
+      try { return !window.ALSProfile || ALSProfile.isOwner(); } catch(e){ return true; }
+    }
+    function applyProtoVisibility(){
+      var sec = document.getElementById('protoSec');
+      if (sec) sec.style.display = protoIsOwner() ? '' : 'none';
+    }
+
     function renderWakeAnchor(){
       var body = document.getElementById('wakeAnchorBody'); if (!body) return;
+      if (!protoIsOwner()) return;   // not her section — don't compute a hidden card
       var pr = getProfile();
       var wp = pr.wakeTime.split(':'), target = (+wp[0])*60 + (+wp[1]);
       var nights = getLogs().filter(function(e){ return e && e.dateKey && e.wake; })
@@ -2023,6 +2037,7 @@
     }
 
     function renderAll(){
+      applyProtoVisibility();
       renderRecovery();
       renderSleep();
       renderCheck();
@@ -2040,6 +2055,14 @@
     migrateSleepModel();   // floor/ideal split — must run before anything scores
     backfillScores();
     renderAll();
+
+    // Correct the ownership guess once the cloud confirms who is signed in.
+    // ALSProfile loads async (topbar injects it), so poll briefly for it, then
+    // hide "My protocol" for Chrissie the moment her identity resolves.
+    (function bindProtoOwner(){
+      if (window.ALSProfile && ALSProfile.ready){ ALSProfile.ready(applyProtoVisibility); return; }
+      setTimeout(bindProtoOwner, 200);
+    })();
 
     // Live "X so far" while a sleep is in progress.
     setInterval(function(){ var p = getPending(); var el = document.getElementById('slElapsed'); if (p && el) el.textContent = elapsedStr(Date.now() - p.at) + ' so far'; }, 30000);
