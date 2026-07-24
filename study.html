@@ -6,333 +6,275 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Η Χρονιά · MÉTRON</title>
-  <meta name="theme-color" content="#050506">
+  <meta name="theme-color" content="#0b0a08">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <script src="water.js"></script>
   <script src="als-profile.js" defer></script>
   <script src="topbar.js" defer></script>
-  <script>window.__pmAutoSel='.st-hero,.st-north,.st-today,.st-due,.st-exam,.st-plan,.st-subs,.st-tt';</script>
+  <script>window.__pmAutoSel='.mast,.day,.due,.exam,.plan,.subs,.tt';</script>
   <script src="page-motion.js" defer></script>
   <style>
     :root{
-      --st:52,226,176; --st-deep:24,200,192;          /* the year's own accent */
-      --c-violet:155,140,255; --c-amber:242,192,99; --c-rose:255,107,139;
-      --c-teal:24,200,192; --c-emerald:52,226,176; --c-slate:150,170,200;
+      --ink:#0b0a08; --ink-2:#12100c;
+      --ivory:#f1ebdd; --dim:rgba(241,235,221,.56); --faint:rgba(241,235,221,.30); --ghost:rgba(241,235,221,.16);
+      --line:rgba(228,206,160,.11); --line-2:rgba(228,206,160,.20);
+      --ac:201,162,92;            /* antique gold — the year's ink accent */
+      --rust:198,116,84;          /* overdue / urgency */
+      /* muted, scholarly subject tones (keys match seed color names) */
+      --c-violet:150,158,206; --c-amber:201,133,92; --c-rose:194,126,120; --c-teal:146,172,146; --c-slate:170,160,142; --c-emerald:201,162,92;
+      --ease:cubic-bezier(.16,1,.3,1);
     }
     *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
     html,body{ min-height:100%; }
-    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
-      padding:0 0 calc(92px + env(safe-area-inset-bottom)); }
-    .wrap{ max-width:600px; margin:0 auto; }
+    body{ background:var(--ink); color:var(--ivory); font-family:var(--au-sans);
+      padding:0 0 calc(96px + env(safe-area-inset-bottom)); -webkit-font-smoothing:antialiased; }
+    body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:radial-gradient(120% 60% at 50% -8%, rgba(var(--ac),.10), transparent 55%),
+                 radial-gradient(80% 40% at 100% 0%, rgba(var(--rust),.05), transparent 60%); }
+    .wrap{ position:relative; z-index:1; max-width:620px; margin:0 auto; padding:0 22px; }
+    .c-violet{--c:var(--c-violet);} .c-amber{--c:var(--c-amber);} .c-rose{--c:var(--c-rose);}
+    .c-teal{--c:var(--c-teal);} .c-slate{--c:var(--c-slate);} .c-emerald{--c:var(--c-emerald);}
 
-    /* subject colour tokens: any element with .c-X exposes --c */
-    .c-violet{ --c:var(--c-violet); } .c-amber{ --c:var(--c-amber); } .c-rose{ --c:var(--c-rose); }
-    .c-teal{ --c:var(--c-teal); } .c-emerald{ --c:var(--c-emerald); } .c-slate{ --c:var(--c-slate); }
+    .kick{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.32em; text-transform:uppercase; color:rgba(var(--ac),.85); }
+    .rule{ height:1px; background:var(--line); border:none; }
 
-    /* ── hero ── */
-    .st-hero{ padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
-    .st-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--st),.92); margin-bottom:11px; }
-    .st-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(25px,6.6vw,34px); line-height:1.04; }
-    .st-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:9px; line-height:1.45; }
-    .st-hero-sub b{ color:var(--au-ivory); font-weight:700; }
-    .st-orb{ flex:none; width:60px; height:60px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:rgb(var(--st));
-      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--st),.24), rgba(var(--st),.04)); border:1px solid rgba(var(--st),.32); }
-    .st-orb svg{ width:28px; height:28px; }
+    /* ─────────── MASTHEAD ─────────── */
+    .mast{ padding:30px 0 26px; text-align:center; cursor:pointer; position:relative; }
+    .mast-kick{ display:flex; align-items:center; justify-content:center; gap:11px; }
+    .mast-kick::before,.mast-kick::after{ content:""; width:26px; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--ac),.5)); }
+    .mast-kick::after{ background:linear-gradient(90deg,rgba(var(--ac),.5),transparent); }
+    .mast-num{ font-family:var(--au-serif); font-weight:400; color:var(--ivory); line-height:.82; letter-spacing:-.02em;
+      font-size:clamp(96px,30vw,150px); margin:14px 0 2px; text-shadow:0 2px 40px rgba(var(--ac),.14); }
+    .mast-num .sub{ display:block; font-size:.11em; letter-spacing:.32em; color:rgba(var(--ac),.8); font-family:var(--au-mono); margin-top:20px; text-transform:uppercase; }
+    .mast-meta{ display:flex; align-items:stretch; justify-content:center; gap:0; margin:22px auto 0; max-width:400px; }
+    .mast-cell{ flex:1; padding:0 16px; }
+    .mast-cell + .mast-cell{ border-left:1px solid var(--line); }
+    .mast-cell .k{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--faint); }
+    .mast-cell .v{ font-family:var(--au-serif); font-style:italic; font-size:19px; color:var(--ivory); margin-top:6px; line-height:1.15; }
+    .mast-cell .v.gold{ color:rgb(var(--ac)); font-style:normal; }
+    .mast-line{ position:relative; height:2px; margin:24px auto 12px; max-width:400px; background:rgba(241,235,221,.07); border-radius:2px; overflow:hidden; }
+    .mast-line i{ position:absolute; inset:0 auto 0 0; width:0; background:linear-gradient(90deg,rgba(var(--ac),.5),rgb(var(--ac))); box-shadow:0 0 12px rgba(var(--ac),.5); transition:width 1.2s var(--ease); }
+    .mast-foot{ font-family:var(--au-mono); font-size:10px; letter-spacing:.06em; color:var(--dim); }
+    .mast-foot b{ color:rgb(var(--ac)); }
 
-    /* ── North Star: the run to Πανελλήνιες ── */
-    .st-north{ margin:16px auto 0; padding:0 18px; }
-    .st-north-card{ position:relative; overflow:hidden; border:1px solid rgba(var(--st),.28); border-radius:22px; padding:20px 19px 18px; cursor:pointer;
-      background:linear-gradient(158deg, rgba(var(--st),.11), rgba(var(--st),.015) 60%, rgba(255,255,255,.006)); transition:transform .12s; }
-    .st-north-card:active{ transform:scale(.994); }
-    .st-north-glow{ position:absolute; inset:0; pointer-events:none; background:radial-gradient(90% 130% at 85% -10%, rgba(var(--st),.16), transparent 60%); }
-    .st-north-top{ position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; }
-    .st-north-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:rgba(var(--st),.9); margin-bottom:8px; }
-    .st-north-days{ font-family:var(--au-serif); font-style:italic; font-weight:400; line-height:.86; color:var(--au-ivory); }
-    .st-north-days .n{ font-size:62px; }
-    .st-north-days .p{ font-size:20px; color:rgba(var(--st),.85); margin-left:4px; }
-    .st-north-goal{ text-align:right; max-width:44%; }
-    .st-north-goal .big{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); line-height:1.05; }
-    .st-north-goal .sm{ font-size:10.5px; color:var(--au-faint); margin-top:6px; font-family:var(--au-mono); letter-spacing:.05em; }
-    .st-meter{ position:relative; height:9px; border-radius:6px; margin:16px 0 12px; background:rgba(255,255,255,.06); overflow:hidden; }
-    .st-meter-fill{ position:absolute; inset:0 auto 0 0; width:0; border-radius:6px; background:linear-gradient(90deg, rgba(var(--st-deep),.9), rgb(var(--st))); box-shadow:0 0 14px rgba(var(--st),.4); transition:width 1.1s cubic-bezier(.16,1,.3,1); }
-    .st-north-foot{ position:relative; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-    .st-north-foot .l{ font-size:12px; color:var(--au-dim); } .st-north-foot .l b{ color:var(--au-ivory); font-weight:700; }
-    .st-north-foot .r{ font-family:var(--au-mono); font-size:9px; letter-spacing:.08em; color:var(--au-faint); }
+    /* ─────────── SECTION HEADER ─────────── */
+    .sec{ margin-top:34px; }
+    .sec-hd{ display:flex; align-items:baseline; gap:12px; margin-bottom:4px; }
+    .sec-t{ font-family:var(--au-serif); font-style:italic; font-size:23px; color:var(--ivory); letter-spacing:.01em; }
+    .sec-s{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+    .sec-add{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; cursor:pointer; padding:5px 2px;
+      font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--ac),.9); }
+    .sec-add svg{ width:13px; height:13px; }
+    .sec-add:active{ color:var(--ivory); }
+    .sec-line{ height:1px; background:var(--line); margin:10px 0 4px; }
 
-    /* ── section header ── */
-    .st-sec{ margin:22px auto 0; padding:0 18px; }
-    .st-sec-hd{ display:flex; align-items:baseline; gap:9px; margin-bottom:13px; }
-    .st-sec-title{ font-family:var(--au-serif); font-style:italic; font-size:20px; color:var(--au-ivory); }
-    .st-sec-sub{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); }
-    .st-add{ margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border-radius:999px; cursor:pointer;
-      font-family:var(--au-mono); font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:rgba(var(--st),.95);
-      background:rgba(var(--st),.09); border:1px solid rgba(var(--st),.26); transition:background .15s; }
-    .st-add:active{ background:rgba(var(--st),.18); }
-    .st-add svg{ width:12px; height:12px; }
+    /* empty */
+    .empty{ padding:22px 4px; text-align:center; }
+    .empty .t{ font-family:var(--au-serif); font-style:italic; font-size:17px; color:var(--dim); }
+    .empty .s{ font-size:12.5px; color:var(--faint); margin-top:8px; line-height:1.6; max-width:340px; margin-left:auto; margin-right:auto; }
+    .empty .s b{ color:rgba(var(--ac),.9); }
 
-    /* ── generic empty state ── */
-    .st-empty{ border:1px dashed var(--au-line-2); border-radius:16px; padding:20px 18px; text-align:center; background:rgba(255,255,255,.012); }
-    .st-empty .t{ font-family:var(--au-serif); font-style:italic; font-size:16px; color:var(--au-dim); }
-    .st-empty .s{ font-size:12px; color:var(--au-faint); margin-top:7px; line-height:1.5; }
-    .st-empty .s b{ color:rgba(var(--st),.9); font-weight:700; }
+    /* ─────────── THE DAY (timeline spine) ─────────── */
+    .day-rail{ position:relative; margin-top:12px; }
+    .day-rail::before{ content:""; position:absolute; left:70px; top:14px; bottom:14px; width:1px;
+      background:linear-gradient(var(--line-2),var(--line) 70%,transparent); }
+    .day-item{ display:grid; grid-template-columns:58px 24px 1fr; align-items:start; padding:11px 0; position:relative; }
+    .day-time{ font-family:var(--au-mono); font-size:12.5px; font-weight:600; color:var(--ivory); text-align:right; padding-top:1px; letter-spacing:.02em; }
+    .day-time .e{ display:block; font-size:9px; color:var(--faint); margin-top:3px; font-weight:400; }
+    .day-node{ justify-self:center; width:12px; height:12px; border-radius:50%; margin-top:2px; position:relative; z-index:1;
+      background:var(--ink); border:2px solid rgb(var(--c,var(--ac))); box-shadow:0 0 0 4px var(--ink),0 0 12px rgba(var(--c,var(--ac)),.4); }
+    .day-item.past .day-node{ background:rgba(var(--c,var(--ac)),.5); box-shadow:0 0 0 4px var(--ink); }
+    .day-item.past{ opacity:.5; }
+    .day-body{ padding-left:8px; }
+    .day-name{ font-size:16px; font-weight:600; color:var(--ivory); line-height:1.15; }
+    .day-meta{ display:flex; align-items:center; gap:8px; margin-top:5px; }
+    .day-tag{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgb(var(--c,var(--ac))); }
+    .day-room{ font-size:10px; color:var(--faint); }
+    .day-now{ display:grid; grid-template-columns:58px 24px 1fr; align-items:center; padding:6px 0; }
+    .day-now .lbl{ font-family:var(--au-mono); font-size:10px; font-weight:800; letter-spacing:.14em; color:rgb(var(--ac)); text-align:right; }
+    .day-now .bar{ grid-column:2/4; height:1px; background:linear-gradient(90deg,rgb(var(--ac)),rgba(var(--ac),.05)); position:relative; }
+    .day-now .bar::before{ content:""; position:absolute; left:6px; top:50%; transform:translateY(-50%); width:7px; height:7px; border-radius:50%; background:rgb(var(--ac)); box-shadow:0 0 10px rgba(var(--ac),.7); }
 
-    /* ── TODAY band ── */
-    .st-today-card{ border:1px solid var(--au-line); border-radius:20px; padding:6px 4px 4px; background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.007)); }
-    .st-slot{ display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:14px; position:relative; }
-    .st-slot + .st-slot{ margin-top:2px; }
-    .st-slot::before{ content:""; position:absolute; left:14px; top:50%; width:3px; height:24px; transform:translateY(-50%); border-radius:2px; background:rgb(var(--c,var(--st))); box-shadow:0 0 10px rgba(var(--c,var(--st)),.5); }
-    .st-slot-time{ flex:none; width:82px; padding-left:14px; font-family:var(--au-mono); font-size:12px; color:var(--au-ivory); font-weight:600; }
-    .st-slot-time .to{ color:var(--au-faint); font-size:10px; }
-    .st-slot-main{ flex:1; min-width:0; }
-    .st-slot-name{ font-size:15px; color:var(--au-ivory); font-weight:600; line-height:1.2; }
-    .st-slot-sub{ font-size:10.5px; color:var(--au-faint); margin-top:3px; }
-    .st-track-tag{ flex:none; font-family:var(--au-mono); font-size:7.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:3px 7px; border-radius:6px; color:rgb(var(--c,var(--st))); background:rgba(var(--c,var(--st)),.1); border:1px solid rgba(var(--c,var(--st)),.24); }
-    .st-now{ display:flex; align-items:center; gap:8px; padding:10px 16px 6px; }
-    .st-now .dot{ width:6px; height:6px; border-radius:50%; background:rgb(var(--st)); box-shadow:0 0 0 0 rgba(var(--st),.5); animation:stPulse 2.4s ease-out infinite; }
-    @keyframes stPulse{ 0%{box-shadow:0 0 0 0 rgba(var(--st),.45);} 70%{box-shadow:0 0 0 7px rgba(var(--st),0);} 100%{box-shadow:0 0 0 0 rgba(var(--st),0);} }
-    .st-now .tx{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
-    .st-now .tx b{ color:var(--au-ivory); }
+    /* ─────────── DUE (editorial list) ─────────── */
+    .due-row{ display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+    .due-row:last-child{ border-bottom:none; }
+    .due-check{ flex:none; width:22px; height:22px; border-radius:50%; border:1.5px solid rgba(var(--c,var(--ac)),.55); display:flex; align-items:center; justify-content:center; color:rgb(var(--c,var(--ac))); cursor:pointer; transition:background .15s; }
+    .due-check svg{ width:12px; height:12px; opacity:0; }
+    .due-row.done .due-check{ background:rgb(var(--c,var(--ac))); border-color:transparent; color:var(--ink); }
+    .due-row.done .due-check svg{ opacity:1; }
+    .due-main{ flex:1; min-width:0; }
+    .due-task{ font-size:15px; color:var(--ivory); line-height:1.35; }
+    .due-row.done .due-task{ text-decoration:line-through; color:var(--faint); }
+    .due-sub{ font-family:var(--au-mono); font-size:8.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgb(var(--c,var(--ac))); margin-top:5px; }
+    .due-when{ flex:none; font-family:var(--au-mono); font-size:11px; color:var(--dim); text-align:right; }
+    .due-when.over{ color:rgb(var(--rust)); font-weight:700; }
+    .due-when.today{ color:rgb(var(--ac)); font-weight:700; }
+    .due-del{ flex:none; width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:var(--ghost); cursor:pointer; }
+    .subhd{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); margin:16px 0 2px; }
 
-    /* ── homework rows ── */
-    .st-hw{ display:flex; align-items:center; gap:12px; padding:13px 14px; border:1px solid var(--au-line); border-radius:15px; background:rgba(255,255,255,.02); margin-bottom:8px; transition:border-color .15s, opacity .2s; }
-    .st-hw.over{ border-color:rgba(var(--au-rose-rgb,255,107,139),.4); }
-    .st-hw.done{ opacity:.42; }
-    .st-hw-check{ flex:none; width:24px; height:24px; border-radius:8px; border:1.6px solid rgba(var(--c,var(--st)),.5); cursor:pointer; display:flex; align-items:center; justify-content:center; color:rgb(var(--c,var(--st))); transition:background .15s; }
-    .st-hw.done .st-hw-check{ background:rgba(var(--c,var(--st)),.9); color:#0a1410; border-color:transparent; }
-    .st-hw-check svg{ width:14px; height:14px; opacity:0; }
-    .st-hw.done .st-hw-check svg{ opacity:1; }
-    .st-hw-main{ flex:1; min-width:0; }
-    .st-hw-task{ font-size:14px; color:var(--au-ivory); line-height:1.3; }
-    .st-hw.done .st-hw-task{ text-decoration:line-through; text-decoration-color:rgba(255,255,255,.3); }
-    .st-hw-meta{ display:flex; align-items:center; gap:8px; margin-top:5px; }
-    .st-chip{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:2px 6px; border-radius:5px; color:rgb(var(--c,var(--st))); background:rgba(var(--c,var(--st)),.1); }
-    .st-due-lbl{ font-family:var(--au-mono); font-size:10px; color:var(--au-dim); }
-    .st-due-lbl.over{ color:rgb(255,107,139); font-weight:700; }
-    .st-due-lbl.today{ color:rgb(var(--st)); font-weight:700; }
-    .st-x{ flex:none; width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--au-faint); cursor:pointer; }
-    .st-x:active{ color:var(--au-ivory); }
+    /* ─────────── EXAMS (countdown rail) ─────────── */
+    .exam-rail{ display:flex; gap:0; overflow-x:auto; scrollbar-width:none; margin:14px -22px 0; padding:0 22px 6px; }
+    .exam-rail::-webkit-scrollbar{ display:none; }
+    .exam-card{ flex:none; width:150px; padding:2px 20px 4px 0; margin-right:20px; border-right:1px solid var(--line); cursor:pointer; }
+    .exam-card:last-child{ border-right:none; }
+    .exam-kind{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:rgb(var(--c,var(--ac))); }
+    .exam-num{ font-family:var(--au-serif); font-weight:400; color:var(--ivory); line-height:.8; margin:12px 0 2px; }
+    .exam-num .n{ font-size:52px; } .exam-num .u{ font-size:13px; color:var(--dim); margin-left:5px; font-style:italic; }
+    .exam-sub{ font-size:14px; color:var(--ivory); font-weight:600; margin-top:10px; line-height:1.2; }
+    .exam-ylh{ font-size:10.5px; color:var(--faint); margin-top:6px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .exam-date{ font-family:var(--au-mono); font-size:9px; color:var(--dim); margin-top:9px; letter-spacing:.04em; }
+    .past-row{ display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+    .past-row:last-child{ border-bottom:none; }
+    .past-main{ flex:1; min-width:0; } .past-name{ font-size:14px; color:var(--ivory); } .past-meta{ font-family:var(--au-mono); font-size:9px; color:var(--faint); margin-top:4px; letter-spacing:.04em; }
+    .past-score{ font-family:var(--au-serif); font-style:italic; font-size:26px; color:rgb(var(--c,var(--ac))); line-height:1; }
+    .past-score .mx{ font-size:12px; color:var(--faint); font-style:normal; }
+    .past-score.empty{ font-size:10px; font-family:var(--au-mono); font-style:normal; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; }
 
-    /* ── exams: horizontal countdown cards ── */
-    .st-exam-scroll{ display:flex; gap:11px; overflow-x:auto; padding:2px 18px 4px; margin:0 -18px; scrollbar-width:none; }
-    .st-exam-scroll::-webkit-scrollbar{ display:none; }
-    .st-exam-card{ flex:none; width:172px; border:1px solid rgba(var(--c,var(--st)),.3); border-radius:18px; padding:15px 15px 14px; cursor:pointer;
-      background:linear-gradient(160deg, rgba(var(--c,var(--st)),.1), rgba(var(--c,var(--st)),.015)); position:relative; overflow:hidden; }
-    .st-exam-kind{ font-family:var(--au-mono); font-size:8px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgb(var(--c,var(--st))); margin-bottom:10px; }
-    .st-exam-cd{ font-family:var(--au-serif); font-style:italic; line-height:.86; color:var(--au-ivory); }
-    .st-exam-cd .n{ font-size:40px; } .st-exam-cd .u{ font-size:13px; color:var(--au-dim); margin-left:3px; }
-    .st-exam-name{ font-size:13.5px; color:var(--au-ivory); font-weight:600; margin-top:11px; line-height:1.25; }
-    .st-exam-ylh{ font-size:10.5px; color:var(--au-faint); margin-top:6px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-    .st-exam-date{ font-family:var(--au-mono); font-size:9px; color:var(--au-dim); margin-top:9px; }
-    .st-past{ margin-top:12px; }
-    .st-past-hd{ display:flex; align-items:center; gap:9px; margin:4px 2px 10px; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); }
-    .st-past-hd::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(255,255,255,.1), transparent); }
-    .st-past-row{ display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--au-line); border-radius:13px; margin-bottom:7px; cursor:pointer; background:rgba(255,255,255,.015); }
-    .st-past-main{ flex:1; min-width:0; }
-    .st-past-name{ font-size:13px; color:var(--au-ivory); } .st-past-date{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); margin-top:3px; }
-    .st-score{ flex:none; font-family:var(--au-serif); font-style:italic; font-size:22px; color:rgb(var(--c,var(--st))); line-height:1; }
-    .st-score .mx{ font-size:11px; color:var(--au-faint); font-style:normal; }
-    .st-score.empty{ font-size:10px; font-family:var(--au-mono); font-style:normal; color:var(--au-faint); text-transform:uppercase; letter-spacing:.08em; }
+    /* ─────────── TONIGHT (study plan) ─────────── */
+    .plan-top{ display:flex; align-items:center; gap:16px; padding:16px 0 14px; border-bottom:1px solid var(--line); }
+    .plan-ring{ flex:none; width:50px; height:50px; border-radius:50%; display:grid; place-items:center; position:relative;
+      background:conic-gradient(rgb(var(--ac)) calc(var(--pp,0)*1%),rgba(241,235,221,.08) 0); }
+    .plan-ring::before{ content:""; position:absolute; inset:4px; border-radius:50%; background:var(--ink); }
+    .plan-ring span{ position:relative; font-family:var(--au-mono); font-size:12px; font-weight:800; color:var(--ivory); }
+    .plan-lbls .k{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+    .plan-lbls .v{ font-family:var(--au-serif); font-style:italic; font-size:20px; color:var(--ivory); margin-top:4px; } .plan-lbls .v b{ color:rgb(var(--ac)); font-weight:400; }
+    .plan-streak{ margin-left:auto; text-align:right; }
+    .plan-streak .n{ font-family:var(--au-serif); font-style:italic; font-size:26px; color:rgb(var(--ac)); line-height:1; }
+    .plan-streak .l{ font-family:var(--au-mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-top:3px; }
+    .plan-block{ display:flex; align-items:center; gap:13px; padding:12px 0; border-bottom:1px solid var(--line); }
+    .plan-block:last-of-type{ border-bottom:none; }
+    .plan-check{ flex:none; width:20px; height:20px; border-radius:6px; border:1.5px solid rgba(var(--c,var(--ac)),.55); display:flex; align-items:center; justify-content:center; color:rgb(var(--c,var(--ac))); cursor:pointer; }
+    .plan-check svg{ width:12px; height:12px; opacity:0; } .plan-block.done .plan-check{ background:rgb(var(--c,var(--ac))); border-color:transparent; color:var(--ink); } .plan-block.done .plan-check svg{ opacity:1; }
+    .plan-bm{ flex:1; min-width:0; } .plan-bm .n{ font-size:14px; color:var(--ivory); } .plan-block.done .plan-bm .n{ text-decoration:line-through; color:var(--faint); } .plan-bm .m{ font-size:10px; color:var(--faint); margin-top:3px; }
+    .plan-min{ flex:none; font-family:var(--au-mono); font-size:12px; color:var(--dim); }
+    .plan-del{ flex:none; width:22px; height:22px; display:flex; align-items:center; justify-content:center; color:var(--ghost); cursor:pointer; }
+    .plan-add{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:14px; margin-top:6px; border:1px dashed var(--line-2); border-radius:12px; background:transparent; cursor:pointer;
+      font-family:var(--au-mono); font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:rgba(var(--ac),.9); transition:border-color .15s; }
+    .plan-add:active{ border-color:rgb(var(--ac)); }
 
-    /* ── tonight's study plan ── */
-    .st-plan-head{ display:flex; align-items:center; gap:12px; padding:14px 15px; border:1px solid var(--au-line); border-radius:16px 16px 0 0; background:linear-gradient(150deg, rgba(var(--st),.09), rgba(var(--st),.015)); }
-    .st-plan-ring{ flex:none; width:46px; height:46px; border-radius:50%; display:grid; place-items:center; position:relative;
-      background:conic-gradient(rgb(var(--st)) calc(var(--pp,0)*1%), rgba(255,255,255,.07) 0); }
-    .st-plan-ring::before{ content:""; position:absolute; inset:4px; border-radius:50%; background:#0a0b0c; }
-    .st-plan-ring span{ position:relative; font-family:var(--au-mono); font-size:11px; font-weight:800; color:var(--au-ivory); }
-    .st-plan-lbls .k{ font-family:var(--au-mono); font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--st),.9); }
-    .st-plan-lbls .v{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--au-ivory); margin-top:3px; }
-    .st-plan-lbls .v b{ color:rgb(var(--st)); font-weight:400; }
-    .st-streak{ margin-left:auto; text-align:right; }
-    .st-streak .n{ font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--au-ivory); } .st-streak .n .fl{ color:rgb(var(--st)); }
-    .st-streak .l{ font-family:var(--au-mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:2px; }
-    .st-plan-body{ border:1px solid var(--au-line); border-top:none; border-radius:0 0 16px 16px; padding:6px; }
-    .st-block{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:12px; }
-    .st-block + .st-block{ border-top:1px solid var(--au-line); }
-    .st-block-check{ flex:none; width:22px; height:22px; border-radius:7px; border:1.6px solid rgba(var(--c,var(--st)),.5); cursor:pointer; display:flex; align-items:center; justify-content:center; color:rgb(var(--c,var(--st))); }
-    .st-block.done .st-block-check{ background:rgb(var(--c,var(--st))); color:#0a1410; border-color:transparent; }
-    .st-block-check svg{ width:13px; height:13px; opacity:0; } .st-block.done .st-block-check svg{ opacity:1; }
-    .st-block-main{ flex:1; min-width:0; } .st-block-main .n{ font-size:13.5px; color:var(--au-ivory); } .st-block.done .st-block-main .n{ text-decoration:line-through; opacity:.5; }
-    .st-block-main .m{ font-size:10px; color:var(--au-faint); margin-top:3px; }
-    .st-block-min{ flex:none; font-family:var(--au-mono); font-size:12px; color:var(--au-dim); }
-    .st-plan-add{ display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:12px; margin-top:2px; border:none; border-radius:10px; cursor:pointer;
-      font-family:var(--au-mono); font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--st),.95); background:rgba(var(--st),.07); transition:background .15s; }
-    .st-plan-add:active{ background:rgba(var(--st),.16); }
+    /* ─────────── SUBJECTS (roster) ─────────── */
+    .sub-row{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+    .sub-row:last-child{ border-bottom:none; }
+    .sub-dot{ flex:none; width:10px; height:10px; border-radius:50%; background:rgb(var(--c,var(--ac))); box-shadow:0 0 10px rgba(var(--c,var(--ac)),.4); }
+    .sub-name{ flex:none; width:96px; font-size:15.5px; color:var(--ivory); font-weight:600; }
+    .sub-track{ display:none; }
+    .sub-prog{ flex:1; height:3px; border-radius:2px; background:rgba(241,235,221,.07); overflow:hidden; }
+    .sub-prog i{ display:block; height:100%; border-radius:2px; background:linear-gradient(90deg,rgba(var(--c,var(--ac)),.5),rgb(var(--c,var(--ac)))); transition:width 1s var(--ease); }
+    .sub-pct{ flex:none; font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--ivory); min-width:54px; text-align:right; }
+    .sub-pct .p{ font-size:12px; color:rgba(241,235,221,.45); margin-left:1px; }
+    .sub-go{ flex:none; display:flex; color:var(--ghost); }
 
-    /* ── subjects & ύλη ── */
-    .st-subs-grid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
-    .st-sub-card{ border:1px solid rgba(var(--c,var(--st)),.24); border-radius:17px; padding:15px 15px 14px; cursor:pointer; position:relative; overflow:hidden;
-      background:linear-gradient(160deg, rgba(var(--c,var(--st)),.08), rgba(var(--c,var(--st)),.012)); transition:transform .1s, border-color .15s; }
-    .st-sub-card:active{ transform:scale(.985); }
-    .st-sub-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
-    .st-sub-name{ font-size:15px; color:var(--au-ivory); font-weight:600; }
-    .st-sub-tk{ font-family:var(--au-mono); font-size:7.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:rgb(var(--c,var(--st))); opacity:.75; }
-    .st-sub-pct{ font-family:var(--au-serif); font-style:italic; font-size:26px; color:var(--au-ivory); line-height:1; }
-    .st-sub-pct .p{ font-size:13px; color:rgba(var(--c,var(--st)),.8); }
-    .st-sub-bar{ height:6px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; margin:11px 0 8px; }
-    .st-sub-bar span{ display:block; height:100%; border-radius:4px; background:linear-gradient(90deg, rgba(var(--c,var(--st)),.6), rgb(var(--c,var(--st)))); transition:width 1s cubic-bezier(.16,1,.3,1); }
-    .st-sub-foot{ display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--au-faint); }
-    .st-sub-foot .go{ font-family:var(--au-mono); font-weight:700; color:rgba(var(--c,var(--st)),.9); }
+    /* ─────────── TIMETABLE entry ─────────── */
+    .tt-open{ display:flex; align-items:center; gap:14px; width:100%; padding:18px 0; border:none; background:transparent; cursor:pointer; color:inherit; text-align:left; border-top:1px solid var(--line); margin-top:30px; }
+    .tt-ic{ flex:none; width:40px; height:40px; border-radius:11px; display:grid; place-items:center; color:rgb(var(--ac)); border:1px solid rgba(var(--ac),.28); background:rgba(var(--ac),.06); }
+    .tt-open .m{ flex:1; } .tt-open .m .n{ font-family:var(--au-serif); font-style:italic; font-size:18px; color:var(--ivory); } .tt-open .m .s{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.06em; color:var(--faint); margin-top:4px; text-transform:uppercase; }
+    .tt-open .arw{ color:var(--faint); }
 
-    /* ── timetable ── */
-    .st-tt-card{ border:1px solid var(--au-line); border-radius:18px; overflow:hidden; }
-    .st-tt-open{ display:flex; align-items:center; gap:12px; width:100%; padding:15px 16px; border:none; background:linear-gradient(150deg, rgba(255,255,255,.035), rgba(255,255,255,.007)); cursor:pointer; color:inherit; text-align:left; }
-    .st-tt-ic{ flex:none; width:38px; height:38px; border-radius:11px; display:grid; place-items:center; color:rgb(var(--st)); background:rgba(var(--st),.09); border:1px solid rgba(var(--st),.22); }
-    .st-tt-open .m{ flex:1; } .st-tt-open .m .n{ font-size:14.5px; color:var(--au-ivory); font-weight:600; } .st-tt-open .m .s{ font-size:11px; color:var(--au-faint); margin-top:3px; }
-    .st-tt-open .arw{ color:var(--au-faint); }
-
-    /* ── dialogs ── */
-    dialog.st-dialog{ margin:auto; width:min(440px,94vw); max-height:88vh; border:none; padding:0; border-radius:24px; overflow:hidden;
-      background:#0d0e10; color:var(--au-ivory); box-shadow:0 30px 80px rgba(0,0,0,.6); }
-    dialog.st-dialog::backdrop{ background:rgba(4,4,6,.72); backdrop-filter:blur(6px); }
-    .st-dl-body{ padding:22px 20px; overflow-y:auto; max-height:88vh; }
-    .st-dl-hd{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
-    .st-dl-title{ font-family:var(--au-serif); font-style:italic; font-size:22px; color:var(--au-ivory); }
-    .st-dl-close{ flex:none; width:32px; height:32px; border-radius:10px; border:1px solid var(--au-line); background:transparent; color:var(--au-dim); cursor:pointer; display:grid; place-items:center; }
-    .st-field{ margin-bottom:15px; }
-    .st-field label{ display:block; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint); margin-bottom:8px; }
-    .st-input, .st-select, textarea.st-input{ width:100%; padding:13px 14px; border-radius:13px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.03); color:var(--au-ivory); font-family:var(--au-sans); font-size:15px; }
-    .st-input:focus, .st-select:focus, textarea.st-input:focus{ outline:none; border-color:rgba(var(--st),.5); }
-    textarea.st-input{ resize:vertical; min-height:64px; line-height:1.5; }
-    .st-select{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:38px; }
-    .st-row2{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
-    .st-pick{ display:flex; flex-wrap:wrap; gap:7px; }
-    .st-pick button{ padding:9px 13px; border-radius:11px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.02); color:var(--au-dim); font-family:var(--au-sans); font-size:13px; cursor:pointer; transition:all .12s; }
-    .st-pick button.on{ border-color:rgb(var(--st)); background:rgba(var(--st),.14); color:var(--au-ivory); font-weight:600; }
-    .st-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
-    .st-days button{ padding:10px 0; border-radius:10px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.02); color:var(--au-dim); font-family:var(--au-mono); font-size:11px; cursor:pointer; }
-    .st-days button.on{ border-color:rgb(var(--st)); background:rgba(var(--st),.14); color:var(--au-ivory); }
-    .st-save{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:15px; margin-top:6px; border:none; border-radius:14px; cursor:pointer;
-      font-family:var(--au-mono); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#0a1410;
-      background:linear-gradient(120deg, rgb(var(--st)), rgb(var(--st-deep))); box-shadow:0 10px 26px rgba(var(--st),.22); transition:transform .12s; }
-    .st-save:active{ transform:scale(.985); }
-    .st-del{ width:100%; padding:12px; margin-top:9px; border:1px solid rgba(255,107,139,.28); border-radius:12px; background:transparent; color:rgb(255,107,139); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
-
-    /* timetable dialog specifics */
-    .st-tabs{ display:flex; gap:7px; margin-bottom:16px; }
-    .st-tabs button{ flex:1; padding:11px; border-radius:12px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.02); color:var(--au-dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
-    .st-tabs button.on{ border-color:rgb(var(--st)); background:rgba(var(--st),.12); color:var(--au-ivory); }
-    .st-tt-day{ margin-bottom:14px; }
-    .st-tt-day-lbl{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint); margin-bottom:8px; }
-    .st-tt-slot{ display:flex; align-items:center; gap:11px; padding:9px 12px; border:1px solid var(--au-line); border-radius:11px; margin-bottom:6px; }
-    .st-tt-slot .tm{ font-family:var(--au-mono); font-size:11px; color:var(--au-ivory); width:88px; }
-    .st-tt-slot .nm{ flex:1; font-size:13px; color:var(--au-ivory); }
-    .st-tt-empty{ font-size:12px; color:var(--au-faint); font-style:italic; padding:6px 2px; }
-
-    /* status dot for unit sheet */
-    .st-unit{ display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--au-line); cursor:pointer; }
-    .st-unit:last-child{ border-bottom:none; }
-    .st-unit-dot{ flex:none; width:15px; height:15px; border-radius:50%; border:2px solid rgba(var(--st),.4); }
-    .st-unit-dot.s1{ background:rgba(var(--st),.28); border-color:rgba(var(--st),.5); }
-    .st-unit-dot.s2{ background:rgba(var(--st),.55); border-color:rgb(var(--st)); }
-    .st-unit-dot.s3{ background:rgba(var(--st),.78); border-color:rgb(var(--st)); }
-    .st-unit-dot.s4{ background:rgb(var(--st)); border-color:rgb(var(--st)); box-shadow:0 0 10px rgba(var(--st),.5); }
-    .st-unit-name{ flex:1; font-size:14px; color:var(--au-ivory); }
-    .st-unit-stat{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-dim); }
+    /* ─────────── DIALOGS ─────────── */
+    dialog.dlg{ margin:auto; width:min(440px,94vw); max-height:88vh; border:none; padding:0; border-radius:22px; overflow:hidden;
+      background:var(--ink-2); color:var(--ivory); box-shadow:0 30px 90px rgba(0,0,0,.7); border:1px solid var(--line); }
+    dialog.dlg::backdrop{ background:rgba(6,5,3,.74); backdrop-filter:blur(7px); }
+    .dl-body{ padding:24px 22px; overflow-y:auto; max-height:88vh; }
+    .dl-hd{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px; }
+    .dl-title{ font-family:var(--au-serif); font-style:italic; font-size:24px; color:var(--ivory); }
+    .dl-close{ flex:none; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--dim); cursor:pointer; display:grid; place-items:center; }
+    .fld{ margin-bottom:16px; }
+    .fld label{ display:block; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:9px; }
+    .in,.sel,textarea.in{ width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line-2); background:rgba(241,235,221,.03); color:var(--ivory); font-family:var(--au-sans); font-size:15px; }
+    .in:focus,.sel:focus,textarea.in:focus{ outline:none; border-color:rgba(var(--ac),.55); }
+    textarea.in{ resize:vertical; min-height:64px; line-height:1.5; }
+    .sel{ appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:38px; }
+    .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .pick{ display:flex; flex-wrap:wrap; gap:8px; }
+    .pick button{ padding:9px 14px; border-radius:10px; border:1px solid var(--line-2); background:rgba(241,235,221,.02); color:var(--dim); font-family:var(--au-sans); font-size:13px; cursor:pointer; transition:all .12s; }
+    .pick button.on{ border-color:rgb(var(--ac)); background:rgba(var(--ac),.14); color:var(--ivory); font-weight:600; }
+    .days{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+    .days button{ padding:10px 0; border-radius:9px; border:1px solid var(--line-2); background:rgba(241,235,221,.02); color:var(--dim); font-family:var(--au-mono); font-size:11px; cursor:pointer; }
+    .days button.on{ border-color:rgb(var(--ac)); background:rgba(var(--ac),.14); color:var(--ivory); }
+    .save{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:15px; margin-top:8px; border:none; border-radius:13px; cursor:pointer;
+      font-family:var(--au-mono); font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink);
+      background:linear-gradient(120deg,rgb(var(--ac)),rgb(178,140,74)); box-shadow:0 10px 28px rgba(var(--ac),.24); transition:transform .12s; }
+    .save:active{ transform:scale(.985); }
+    .del{ width:100%; padding:12px; margin-top:10px; border:1px solid rgba(var(--rust),.3); border-radius:12px; background:transparent; color:rgb(var(--rust)); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+    .tabs{ display:flex; gap:8px; margin-bottom:18px; }
+    .tabs button{ flex:1; padding:12px; border-radius:11px; border:1px solid var(--line-2); background:rgba(241,235,221,.02); color:var(--dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+    .tabs button.on{ border-color:rgb(var(--ac)); background:rgba(var(--ac),.12); color:var(--ivory); }
+    .tt-day{ margin-bottom:14px; } .tt-day-l{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+    .tt-slot{ display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); } .tt-slot:last-child{ border-bottom:none; }
+    .tt-slot .tm{ font-family:var(--au-mono); font-size:11px; color:var(--ivory); width:96px; } .tt-slot .nm{ flex:1; font-size:13px; color:var(--ivory); } .tt-slot .xd{ color:var(--ghost); cursor:pointer; display:flex; }
+    .tt-empty{ font-size:12px; color:var(--faint); font-style:italic; padding:6px 0; }
+    .unit{ display:flex; align-items:center; gap:13px; padding:13px 0; border-bottom:1px solid var(--line); cursor:pointer; } .unit:last-of-type{ border-bottom:none; }
+    .unit-dot{ flex:none; width:14px; height:14px; border-radius:50%; border:2px solid rgba(var(--ac),.4); }
+    .unit-dot.s1{ background:rgba(var(--ac),.28); } .unit-dot.s2{ background:rgba(var(--ac),.55); border-color:rgb(var(--ac)); } .unit-dot.s3{ background:rgba(var(--ac),.78); border-color:rgb(var(--ac)); } .unit-dot.s4{ background:rgb(var(--ac)); border-color:rgb(var(--ac)); box-shadow:0 0 10px rgba(var(--ac),.5); }
+    .unit-n{ flex:1; font-size:14px; color:var(--ivory); } .unit-s{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); }
   </style>
 </head>
 <body>
   <div class="wrap">
 
-    <!-- HERO -->
-    <header class="st-hero">
-      <div>
-        <div class="st-eyebrow">Πανελλήνιες · <span id="stYear">2027</span></div>
-        <div class="st-hero-line">Η χρονιά<br>που μετράει.</div>
-        <div class="st-hero-sub" id="stHeroSub">Ένα πρόγραμμα. Κάθε μάθημα, κάθε εργασία, κάθε διαγώνισμα.</div>
+    <!-- MASTHEAD -->
+    <header class="mast" id="stNorth">
+      <div class="mast-kick"><span class="kick">Πανελλήνιες · <span id="stYear">2027</span></span></div>
+      <div class="mast-num"><span id="stDays">—</span><span class="sub">μέρες μέχρι τα γραπτά</span></div>
+      <div class="mast-meta">
+        <div class="mast-cell"><div class="k">Στόχος</div><div class="v gold" id="stGoalName">Όρισε στόχο</div><div class="k" id="stGoalSub" style="margin-top:5px;letter-spacing:.06em">tap</div></div>
+        <div class="mast-cell"><div class="k">Πρώτο γραπτό</div><div class="v" id="stNorthDate">—</div></div>
       </div>
-      <div class="st-orb">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><path d="M15.5 8.5 11 11l-1.5 4.5L14 13Z" fill="currentColor" stroke="none"/></svg>
-      </div>
+      <div class="mast-line"><i id="stMeter"></i></div>
+      <div class="mast-foot" id="stNorthFoot">Ο αγώνας ξεκινά</div>
     </header>
 
-    <!-- NORTH STAR -->
-    <section class="st-north">
-      <div class="st-north-card" id="stNorth">
-        <div class="st-north-glow"></div>
-        <div class="st-north-top">
-          <div>
-            <div class="st-north-lbl">Ο δρόμος</div>
-            <div class="st-north-days"><span class="n" id="stDays">—</span><span class="p">μέρες</span></div>
-          </div>
-          <div class="st-north-goal">
-            <div class="big" id="stGoalName">Όρισε στόχο</div>
-            <div class="sm" id="stGoalSub">tap · σχολή & μόρια</div>
-          </div>
-        </div>
-        <div class="st-meter"><div class="st-meter-fill" id="stMeter"></div></div>
-        <div class="st-north-foot">
-          <div class="l" id="stNorthFoot">Ο αγώνας ξεκινά</div>
-          <div class="r" id="stNorthDate"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TODAY -->
-    <section class="st-sec st-today">
-      <div class="st-sec-hd">
-        <span class="st-sec-title">Σήμερα</span>
-        <span class="st-sec-sub" id="stTodayDate"></span>
-        <span class="st-add" data-act="tt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόγραμμα</span>
-      </div>
+    <!-- THE DAY -->
+    <section class="sec day">
+      <div class="sec-hd"><span class="sec-t">Σήμερα</span><span class="sec-s" id="stTodayDate"></span>
+        <span class="sec-add" data-act="tt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόγραμμα</span></div>
+      <div class="sec-line"></div>
       <div id="stTodayWrap"></div>
     </section>
 
-    <!-- DUE / HOMEWORK -->
-    <section class="st-sec st-due">
-      <div class="st-sec-hd">
-        <span class="st-sec-title">Εργασίες</span>
-        <span class="st-sec-sub" id="stDueCount"></span>
-        <span class="st-add" data-act="hw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Νέα</span>
-      </div>
+    <!-- DUE -->
+    <section class="sec due">
+      <div class="sec-hd"><span class="sec-t">Εργασίες</span><span class="sec-s" id="stDueCount"></span>
+        <span class="sec-add" data-act="hw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Νέα</span></div>
+      <div class="sec-line"></div>
       <div id="stDueWrap"></div>
     </section>
 
     <!-- EXAMS -->
-    <section class="st-sec st-exam">
-      <div class="st-sec-hd">
-        <span class="st-sec-title">Διαγωνίσματα</span>
-        <span class="st-sec-sub" id="stExamCount"></span>
-        <span class="st-add" data-act="exam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Νέο</span>
-      </div>
+    <section class="sec exam">
+      <div class="sec-hd"><span class="sec-t">Διαγωνίσματα</span><span class="sec-s" id="stExamCount"></span>
+        <span class="sec-add" data-act="exam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Νέο</span></div>
+      <div class="sec-line"></div>
       <div id="stExamWrap"></div>
     </section>
 
-    <!-- STUDY PLAN -->
-    <section class="st-sec st-plan">
-      <div class="st-sec-hd">
-        <span class="st-sec-title">Απόψε</span>
-        <span class="st-sec-sub">το διάβασμα</span>
-      </div>
+    <!-- TONIGHT -->
+    <section class="sec plan">
+      <div class="sec-hd"><span class="sec-t">Απόψε</span><span class="sec-s">το διάβασμα</span></div>
+      <div class="sec-line"></div>
       <div id="stPlanWrap"></div>
     </section>
 
     <!-- SUBJECTS -->
-    <section class="st-sec st-subs">
-      <div class="st-sec-hd">
-        <span class="st-sec-title">Μαθήματα</span>
-        <span class="st-sec-sub">ύλη · πρόοδος</span>
-      </div>
-      <div class="st-subs-grid" id="stSubsWrap"></div>
+    <section class="sec subs">
+      <div class="sec-hd"><span class="sec-t">Τα μαθήματα</span><span class="sec-s">ύλη · πρόοδος</span></div>
+      <div class="sec-line"></div>
+      <div id="stSubsWrap"></div>
     </section>
 
-    <!-- TIMETABLE ENTRY -->
-    <section class="st-sec st-tt" style="margin-bottom:26px;">
-      <div class="st-tt-card">
-        <button class="st-tt-open" data-act="tt">
-          <span class="st-tt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
-          <span class="m"><span class="n">Το εβδομαδιαίο πρόγραμμα</span><span class="s" id="stTtSummary">σχολείο & φροντιστήριο</span></span>
-          <span class="arw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span>
-        </button>
-      </div>
-    </section>
+    <!-- TIMETABLE -->
+    <button class="tt-open" data-act="tt">
+      <span class="tt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
+      <span class="m"><span class="n">Το εβδομαδιαίο πρόγραμμα</span><span class="s" id="stTtSummary">σχολείο & φροντιστήριο</span></span>
+      <span class="arw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span>
+    </button>
 
   </div>
 
-  <!-- ══ DIALOGS ══ -->
-  <dialog class="st-dialog" id="dlgForm"><div class="st-dl-body" id="dlgFormBody"></div></dialog>
-  <dialog class="st-dialog" id="dlgTt"><div class="st-dl-body" id="dlgTtBody"></div></dialog>
+  <dialog class="dlg" id="dlgForm"><div class="dl-body" id="dlgFormBody"></div></dialog>
+  <dialog class="dlg" id="dlgTt"><div class="dl-body" id="dlgTtBody"></div></dialog>
 
   <script src="vendor/supabase.min.js"></script>
   <script src="sync.js" defer></script>
@@ -341,7 +283,6 @@
   (function(){
     'use strict';
 
-    /* ─────────── storage ─────────── */
     function ls(k,f){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
     function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
     function flush(){ if(window.cloudSyncFlush) try{ window.cloudSyncFlush(); }catch(e){} }
@@ -350,137 +291,93 @@
     var K_SUB='study:subjects', K_TT='study:timetable', K_HW='study:homework',
         K_EX='study:exams', K_UN='study:units', K_PL='study:plan', K_GOAL='study:goal', K_SEED='study:seedv';
     var SEED_V=1;
+    function subs(){ return ls(K_SUB,[]); } function tt(){ return ls(K_TT,[]); } function hw(){ return ls(K_HW,[]); }
+    function exams(){ return ls(K_EX,[]); } function units(){ return ls(K_UN,[]); } function plan(){ return ls(K_PL,[]); } function goal(){ return ls(K_GOAL,{}); }
 
-    function subs(){ return ls(K_SUB,[]); }
-    function tt(){ return ls(K_TT,[]); }
-    function hw(){ return ls(K_HW,[]); }
-    function exams(){ return ls(K_EX,[]); }
-    function units(){ return ls(K_UN,[]); }
-    function plan(){ return ls(K_PL,[]); }
-    function goal(){ return ls(K_GOAL,{}); }
-
-    /* ─────────── dates (week = Mon..Sun) ─────────── */
     var DOW=['Δευ','Τρι','Τετ','Πεμ','Παρ','Σαβ','Κυρ'];
     var DOWLONG=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
-    var MON=['Ιαν','Φεβ','Μαρ','Απρ','Μαϊ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-    function wd(d){ return (d.getDay()+6)%7; }                 // Mon=0
+    var MON=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
+    function wd(d){ return (d.getDay()+6)%7; }
     function dayStart(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
     function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
     function daysBetween(a,b){ return Math.round((dayStart(b)-dayStart(a))/86400000); }
+    var EXAM_START=new Date(2027,4,28,0,0,0), ROAD_START=new Date(2026,7,3,0,0,0);
+    function panDate(){ var g=goal(); return g.examTs?new Date(g.examTs):EXAM_START; }
 
-    var EXAM_START = new Date(2027,4,28,0,0,0);   // Πανελλήνιες 2027 — first paper (editable)
-    var ROAD_START = new Date(2026,7,3,0,0,0);    // φροντιστήριο begins 3 Aug 2026
-
-    function panDate(){ var g=goal(); return g.examTs ? new Date(g.examTs) : EXAM_START; }
-
-    /* ─────────── seed (owner only) ─────────── */
     var _seeded=false;
-    function seedSubjects(){
-      return [
-        { id:'su-arx', name:'Αρχαία',   gr:'Αρχαία Ελληνικά',                short:'ΑΡΧ', track:'fronto', color:'violet', pan:true, link:'arxaia.html' },
-        { id:'su-ist', name:'Ιστορία',  gr:'Ιστορία Προσανατολισμού',        short:'ΙΣΤ', track:'fronto', color:'amber',  pan:true, link:'istoria.html' },
-        { id:'su-lat', name:'Λατινικά', gr:'Λατινικά',                        short:'ΛΑΤ', track:'fronto', color:'rose',   pan:true, link:'' },
-        { id:'su-ekt', name:'Έκθεση',   gr:'Νεοελληνική Γλώσσα & Λογοτεχνία', short:'ΕΚΘ', track:'fronto', color:'teal',   pan:true, link:'' }
-      ].map(function(s){ s.ts=Date.now(); return s; });
-    }
-    function seedUnits(){
-      var U=[
-        ['su-ist','Το Προσφυγικό ζήτημα'],['su-ist','Τα Κόμματα — Εθνικός Διχασμός'],['su-ist','Η Ελληνική Οικονομία'],['su-ist','Το Κρητικό Ζήτημα'],['su-ist','Ο Παρευξείνιος Ελληνισμός'],
-        ['su-arx','Διδαγμένο κείμενο'],['su-arx','Άγνωστο — μετάφραση'],['su-arx','Συντακτικό'],['su-arx','Λεξιλόγιο & ετυμολογικά'],
-        ['su-lat','Κείμενα'],['su-lat','Γραμματική'],['su-lat','Συντακτικό'],
-        ['su-ekt','Περίληψη'],['su-ekt','Παραγωγή λόγου'],['su-ekt','Λογοτεχνία']
-      ];
-      return U.map(function(u,i){ return { id:'un-'+u[0]+'-'+i, subjectId:u[0], name:u[1], status:0, ts:Date.now() }; });
-    }
-    function applySeed(){
-      if(_seeded) return;
+    function seedSubjects(){ return [
+      { id:'su-arx', name:'Αρχαία',   gr:'Αρχαία Ελληνικά',                short:'ΑΡΧ', track:'fronto', color:'violet', pan:true, link:'arxaia.html' },
+      { id:'su-ist', name:'Ιστορία',  gr:'Ιστορία Προσανατολισμού',        short:'ΙΣΤ', track:'fronto', color:'amber',  pan:true, link:'istoria.html' },
+      { id:'su-lat', name:'Λατινικά', gr:'Λατινικά',                        short:'ΛΑΤ', track:'fronto', color:'rose',   pan:true, link:'' },
+      { id:'su-ekt', name:'Έκθεση',   gr:'Νεοελληνική Γλώσσα & Λογοτεχνία', short:'ΕΚΘ', track:'fronto', color:'teal',   pan:true, link:'' }
+    ].map(function(s){ s.ts=Date.now(); return s; }); }
+    function seedUnits(){ var U=[
+      ['su-ist','Το Προσφυγικό ζήτημα'],['su-ist','Τα Κόμματα — Εθνικός Διχασμός'],['su-ist','Η Ελληνική Οικονομία'],['su-ist','Το Κρητικό Ζήτημα'],['su-ist','Ο Παρευξείνιος Ελληνισμός'],
+      ['su-arx','Διδαγμένο κείμενο'],['su-arx','Άγνωστο — μετάφραση'],['su-arx','Συντακτικό'],['su-arx','Λεξιλόγιο & ετυμολογικά'],
+      ['su-lat','Κείμενα'],['su-lat','Γραμματική'],['su-lat','Συντακτικό'],
+      ['su-ekt','Περίληψη'],['su-ekt','Παραγωγή λόγου'],['su-ekt','Λογοτεχνία'] ];
+      return U.map(function(u,i){ return { id:'un-'+u[0]+'-'+i, subjectId:u[0], name:u[1], status:0, ts:Date.now() }; }); }
+    function applySeed(){ if(_seeded) return;
       if(window.ALSProfile && window.ALSProfile.isOwner && !window.ALSProfile.isOwner()) return;
-      _seeded=true;
-      var did=false;
-      if(!subs().length){ save(K_SUB, seedSubjects()); did=true; }
-      if(!units().length){ save(K_UN, seedUnits()); did=true; }
+      _seeded=true; var did=false;
+      if(!subs().length){ save(K_SUB,seedSubjects()); did=true; }
+      if(!units().length){ save(K_UN,seedUnits()); did=true; }
       if(ls(K_SEED,0)<SEED_V){ save(K_SEED,SEED_V); }
-      if(did){ flush(); render(); }
-    }
+      if(did){ flush(); render(); } }
 
-    /* ─────────── helpers ─────────── */
-    function subById(id){ return subs().filter(function(s){ return s.id===id; })[0] || null; }
-    function colorClass(sub){ return 'c-'+((sub&&sub.color)||'emerald'); }
-    function trackLabel(t){ return t==='school' ? 'Σχολείο' : 'Φροντ.'; }
+    function subById(id){ return subs().filter(function(s){ return s.id===id; })[0]||null; }
+    function colorClass(s){ return 'c-'+((s&&s.color)||'emerald'); }
+    function trackLabel(t){ return t==='school'?'σχολείο':'φροντ.'; }
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-
-    // next date (>= today) on which a subject is taught, from the timetable
-    function nextSubjectDate(subjectId){
-      var slots=tt().filter(function(s){ return s.subjectId===subjectId; });
-      if(!slots.length) return null;
-      var now=new Date(), base=wd(now);
-      var best=null;
-      slots.forEach(function(s){
-        var delta=(s.day - base + 7) % 7;
-        // if it's today but the class hour has passed, push a week
+    function nextSubjectDate(subjectId){ var slots=tt().filter(function(s){ return s.subjectId===subjectId; }); if(!slots.length) return null;
+      var now=new Date(), base=wd(now), best=null;
+      slots.forEach(function(s){ var delta=(s.day-base+7)%7;
         if(delta===0){ var hm=(s.start||'23:59').split(':'); var end=new Date(); end.setHours(+hm[0]||0,+hm[1]||0,0,0); if(now>end) delta=7; }
-        var d=dayStart(now); d.setDate(d.getDate()+delta);
-        if(!best || d<best) best=d;
-      });
-      return best;
-    }
-    function dueLabel(ts){
-      if(ts==null) return {t:'—',c:''};
-      var n=daysBetween(new Date(), new Date(ts));
-      if(n<0) return {t:'άργησε '+(-n)+'μ', c:'over'};
-      if(n===0) return {t:'σήμερα', c:'today'};
-      if(n===1) return {t:'αύριο', c:''};
-      if(n<7) return {t:DOWLONG[wd(new Date(ts))], c:''};
-      return {t:'σε '+n+' μέρες', c:''};
-    }
+        var d=dayStart(now); d.setDate(d.getDate()+delta); if(!best||d<best) best=d; });
+      return best; }
+    function dueLabel(ts){ if(ts==null) return {t:'—',c:''};
+      var n=daysBetween(new Date(),new Date(ts));
+      if(n<0) return {t:'άργησε '+(-n)+'μ',c:'over'}; if(n===0) return {t:'σήμερα',c:'today'};
+      if(n===1) return {t:'αύριο',c:''}; if(n<7) return {t:DOWLONG[wd(new Date(ts))],c:''}; return {t:'σε '+n+' μέρες',c:''}; }
 
-    /* ─────────── RENDER ─────────── */
-    function render(){
-      renderNorth(); renderToday(); renderDue(); renderExams(); renderPlan(); renderSubjects(); renderTtSummary();
-    }
+    function render(){ renderNorth(); renderToday(); renderDue(); renderExams(); renderPlan(); renderSubjects(); renderTtSummary(); }
 
     function renderNorth(){
-      var d=panDate();
-      var days=Math.max(0, daysBetween(new Date(), d));
+      var d=panDate(); var days=Math.max(0,daysBetween(new Date(),d));
       document.getElementById('stDays').textContent=days;
       document.getElementById('stYear').textContent=d.getFullYear();
       document.getElementById('stNorthDate').textContent=d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();
       var g=goal();
-      if(g.school){ document.getElementById('stGoalName').textContent=g.school;
-        document.getElementById('stGoalSub').textContent=g.moria? ('στόχος · '+g.moria+' μόρια') : 'ο στόχος σου'; }
-      // year progress meter: ROAD_START → exam
-      var total=daysBetween(ROAD_START, d), done=daysBetween(ROAD_START, new Date());
-      var pct= total>0 ? Math.max(0,Math.min(100, done/total*100)) : 0;
+      if(g.school){ document.getElementById('stGoalName').textContent=g.school; document.getElementById('stGoalSub').textContent=g.moria?(g.moria+' μόρια'):'ο στόχος σου'; }
+      var total=daysBetween(ROAD_START,d), done=daysBetween(ROAD_START,new Date());
+      var pct= total>0?Math.max(0,Math.min(100,done/total*100)):0;
       document.getElementById('stMeter').style.width=pct.toFixed(1)+'%';
       var foot=document.getElementById('stNorthFoot');
-      if(done<0){ var s=Math.abs(done); foot.innerHTML='Ο αγώνας ξεκινά σε <b>'+s+'</b> μέρες'; }
+      if(done<0){ foot.innerHTML='Ο αγώνας ξεκινά σε <b>'+Math.abs(done)+'</b> μέρες'; }
       else{ foot.innerHTML='<b>'+Math.round(pct)+'%</b> της χρονιάς πέρασε'; }
     }
 
     function renderToday(){
-      var now=new Date(); var today=wd(now);
+      var now=new Date(), today=wd(now);
       document.getElementById('stTodayDate').textContent=DOWLONG[today]+' · '+now.getDate()+' '+MON[now.getMonth()];
-      var slots=tt().filter(function(s){ return s.day===today; }).sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
       var wrap=document.getElementById('stTodayWrap');
-      if(!tt().length){
-        wrap.innerHTML='<div class="st-empty"><div class="t">Το πρόγραμμα δεν είναι ακόμα εδώ</div>'+
-          '<div class="s">Το <b>φροντιστήριο</b> ξεκινά 3 Αυγ · το σχολείο μέσα Σεπτεμβρίου.<br>Πάτα <b>Πρόγραμμα</b> για να το χτίσεις.</div></div>';
-        return;
-      }
-      if(today>4 && !slots.length){ wrap.innerHTML='<div class="st-empty"><div class="t">Σαββατοκύριακο</div><div class="s">Καθόλου μάθημα σήμερα. Καλή ξεκούραση — ή κέρδισε έδαφος.</div></div>'; return; }
-      if(!slots.length){ wrap.innerHTML='<div class="st-empty"><div class="t">Ελεύθερη μέρα</div><div class="s">Κανένα μάθημα στο πρόγραμμα σήμερα.</div></div>'; return; }
-      var nowMin=now.getHours()*60+now.getMinutes();
-      var html='<div class="st-today-card">';
-      // "now / next" ribbon
-      var nextSlot=slots.filter(function(s){ var hm=(s.start||'0:0').split(':'); return (+hm[0]*60+ +hm[1])>=nowMin; })[0];
-      if(nextSlot){ var ns=subById(nextSlot.subjectId); html+='<div class="st-now"><span class="dot"></span><span class="tx">Επόμενο · <b>'+esc(ns?ns.name:'—')+' '+esc(nextSlot.start)+'</b></span></div>'; }
+      if(!tt().length){ wrap.innerHTML='<div class="empty"><div class="t">Το πρόγραμμα δεν είναι ακόμα εδώ</div><div class="s">Το <b>φροντιστήριο</b> ξεκινά 3 Αυγ · το σχολείο μέσα Σεπτεμβρίου. Πάτα <b>Πρόγραμμα</b> για να το χτίσεις.</div></div>'; return; }
+      var slots=tt().filter(function(s){ return s.day===today; }).sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
+      if(!slots.length){ var msg = today>4 ? ['Σαββατοκύριακο','Καθόλου μάθημα σήμερα — ξεκούραση, ή κέρδισε έδαφος.'] : ['Ελεύθερη μέρα','Κανένα μάθημα στο πρόγραμμα σήμερα.'];
+        wrap.innerHTML='<div class="empty"><div class="t">'+msg[0]+'</div><div class="s">'+msg[1]+'</div></div>'; return; }
+      var nowMin=now.getHours()*60+now.getMinutes(), placedNow=false;
+      var html='<div class="day-rail">';
       slots.forEach(function(s){
-        var sub=subById(s.subjectId); var cc=colorClass(sub);
-        html+='<div class="st-slot '+cc+'">'+
-          '<div class="st-slot-time">'+esc(s.start||'')+'<div class="to">→ '+esc(s.end||'')+'</div></div>'+
-          '<div class="st-slot-main"><div class="st-slot-name">'+esc(sub?sub.name:'Μάθημα')+'</div>'+
-            (s.room?'<div class="st-slot-sub">'+esc(s.room)+'</div>':'')+'</div>'+
-          '<div class="st-track-tag">'+trackLabel(s.track)+'</div></div>';
+        var sub=subById(s.subjectId), cc=colorClass(sub);
+        var hm=(s.start||'0:0').split(':'), sMin=+hm[0]*60+ +hm[1];
+        if(!placedNow && sMin>=nowMin && today<=4){ placedNow=true;
+          html+='<div class="day-now"><span class="lbl">'+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+'</span><span class="bar"></span></div>'; }
+        var past = sMin < nowMin;
+        html+='<div class="day-item '+cc+(past?' past':'')+'">'+
+          '<div class="day-time">'+esc(s.start||'')+'<span class="e">→ '+esc(s.end||'')+'</span></div>'+
+          '<div class="day-node"></div>'+
+          '<div class="day-body"><div class="day-name">'+esc(sub?sub.name:'Μάθημα')+'</div>'+
+            '<div class="day-meta"><span class="day-tag">'+trackLabel(s.track)+'</span>'+(s.room?'<span class="day-room">'+esc(s.room)+'</span>':'')+'</div></div></div>';
       });
       html+='</div>';
       wrap.innerHTML=html;
@@ -489,30 +386,21 @@
     function renderDue(){
       var list=hw().filter(function(h){ return !h.done; }).sort(function(a,b){ return (a.dueTs||9e15)-(b.dueTs||9e15); });
       var done=hw().filter(function(h){ return h.done; });
-      document.getElementById('stDueCount').textContent=list.length? (list.length+' εκκρεμούν') : '';
+      document.getElementById('stDueCount').textContent=list.length?(list.length+' εκκρεμούν'):'';
       var wrap=document.getElementById('stDueWrap');
-      if(!list.length && !done.length){
-        wrap.innerHTML='<div class="st-empty"><div class="t">Καμία εργασία</div><div class="s">Όταν κάποιο μάθημα σου βάλει εργασία, πρόσθεσέ την — η προθεσμία <b>μπαίνει μόνη της</b> από το πρόγραμμα.</div></div>';
-        return;
-      }
+      if(!list.length && !done.length){ wrap.innerHTML='<div class="empty"><div class="t">Καμία εργασία</div><div class="s">Πρόσθεσε μια εργασία και η προθεσμία <b>μπαίνει μόνη της</b> από το πρόγραμμα.</div></div>'; return; }
       var html='';
-      list.forEach(function(h){
-        var sub=subById(h.subjectId); var cc=colorClass(sub); var dl=dueLabel(h.dueTs);
-        html+='<div class="st-hw '+cc+(dl.c==='over'?' over':'')+'" data-hw="'+h.id+'">'+
-          '<div class="st-hw-check" data-act="hwtoggle" data-id="'+h.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
-          '<div class="st-hw-main" data-act="hwedit" data-id="'+h.id+'"><div class="st-hw-task">'+esc(h.task)+'</div>'+
-            '<div class="st-hw-meta"><span class="st-chip">'+esc(sub?sub.short:'—')+'</span><span class="st-due-lbl '+dl.c+'">'+dl.t+'</span></div></div></div>';
-      });
-      if(done.length){
-        html+='<div class="st-past-hd" style="margin-top:12px">Ολοκληρωμένες · '+done.length+'</div>';
-        done.slice(-4).reverse().forEach(function(h){
-          var sub=subById(h.subjectId); var cc=colorClass(sub);
-          html+='<div class="st-hw done '+cc+'" data-hw="'+h.id+'">'+
-            '<div class="st-hw-check" data-act="hwtoggle" data-id="'+h.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
-            '<div class="st-hw-main"><div class="st-hw-task">'+esc(h.task)+'</div><div class="st-hw-meta"><span class="st-chip">'+esc(sub?sub.short:'—')+'</span></div></div>'+
-            '<div class="st-x" data-act="hwdel" data-id="'+h.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>';
-        });
-      }
+      list.forEach(function(h){ var sub=subById(h.subjectId), cc=colorClass(sub), dl=dueLabel(h.dueTs);
+        html+='<div class="due-row '+cc+'">'+
+          '<div class="due-check" data-act="hwtoggle" data-id="'+h.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
+          '<div class="due-main" data-act="hwedit" data-id="'+h.id+'"><div class="due-task">'+esc(h.task)+'</div><div class="due-sub">'+esc(sub?sub.name:'—')+'</div></div>'+
+          '<div class="due-when '+dl.c+'">'+dl.t+'</div></div>'; });
+      if(done.length){ html+='<div class="subhd">Ολοκληρωμένες · '+done.length+'</div>';
+        done.slice(-4).reverse().forEach(function(h){ var sub=subById(h.subjectId), cc=colorClass(sub);
+          html+='<div class="due-row done '+cc+'">'+
+            '<div class="due-check" data-act="hwtoggle" data-id="'+h.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
+            '<div class="due-main"><div class="due-task">'+esc(h.task)+'</div><div class="due-sub">'+esc(sub?sub.name:'—')+'</div></div>'+
+            '<div class="due-del" data-act="hwdel" data-id="'+h.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>'; }); }
       wrap.innerHTML=html;
     }
 
@@ -520,351 +408,212 @@
       var now=new Date();
       var up=exams().filter(function(e){ return e.dateTs && daysBetween(now,new Date(e.dateTs))>=0; }).sort(function(a,b){ return a.dateTs-b.dateTs; });
       var past=exams().filter(function(e){ return e.dateTs && daysBetween(now,new Date(e.dateTs))<0; }).sort(function(a,b){ return b.dateTs-a.dateTs; });
-      document.getElementById('stExamCount').textContent=up.length? (up.length+' μπροστά') : '';
-      var wrap=document.getElementById('stExamWrap');
+      document.getElementById('stExamCount').textContent=up.length?(up.length+' μπροστά'):'';
       var KIND={test:'Τεστ',diag:'Διαγώνισμα',mock:'Προσομοίωση',pan:'Πανελλήνιες'};
-      var html='';
-      if(!up.length && !past.length){
-        html='<div class="st-empty"><div class="t">Κανένα διαγώνισμα</div><div class="s">Πρόσθεσε τεστ, διαγωνίσματα και <b>προσομοιώσεις</b> — με αντίστροφη μέτρηση και την ύλη τους.</div></div>';
-      } else {
-        if(up.length){
-          html+='<div class="st-exam-scroll">';
-          up.forEach(function(e){
-            var sub=subById(e.subjectId); var cc=colorClass(sub); var d=new Date(e.dateTs); var n=daysBetween(now,d);
-            html+='<div class="st-exam-card '+cc+'" data-act="examedit" data-id="'+e.id+'">'+
-              '<div class="st-exam-kind">'+esc(KIND[e.kind]||'Τεστ')+'</div>'+
-              '<div class="st-exam-cd"><span class="n">'+n+'</span><span class="u">'+(n===1?'μέρα':'μέρες')+'</span></div>'+
-              '<div class="st-exam-name">'+esc(sub?sub.name:'')+(e.title?' · '+esc(e.title):'')+'</div>'+
-              (e.ylh?'<div class="st-exam-ylh">'+esc(e.ylh)+'</div>':'')+
-              '<div class="st-exam-date">'+DOW[wd(d)]+' '+d.getDate()+' '+MON[d.getMonth()]+'</div></div>';
-          });
-          html+='</div>';
-        }
-        if(past.length){
-          html+='<div class="st-past"><div class="st-past-hd">Περασμένα</div>';
-          past.slice(0,5).forEach(function(e){
-            var sub=subById(e.subjectId); var cc=colorClass(sub); var d=new Date(e.dateTs);
-            var sc = (e.score!=null) ? '<div class="st-score '+cc+'">'+e.score+'<span class="mx">/'+(e.max||20)+'</span></div>' : '<div class="st-score empty">βαθμός;</div>';
-            html+='<div class="st-past-row '+cc+'" data-act="examedit" data-id="'+e.id+'">'+
-              '<div class="st-past-main"><div class="st-past-name">'+esc(sub?sub.name:'')+(e.title?' · '+esc(e.title):'')+'</div>'+
-              '<div class="st-past-date">'+esc(KIND[e.kind]||'')+' · '+DOW[wd(d)]+' '+d.getDate()+' '+MON[d.getMonth()]+'</div></div>'+sc+'</div>';
-          });
-          html+='</div>';
-        }
+      var wrap=document.getElementById('stExamWrap'), html='';
+      if(!up.length && !past.length){ html='<div class="empty"><div class="t">Κανένα διαγώνισμα</div><div class="s">Τεστ, διαγωνίσματα, <b>προσομοιώσεις</b> — με αντίστροφη μέτρηση και την ύλη τους.</div></div>'; }
+      else{
+        if(up.length){ html+='<div class="exam-rail">';
+          up.forEach(function(e){ var sub=subById(e.subjectId), cc=colorClass(sub), d=new Date(e.dateTs), n=daysBetween(now,d);
+            html+='<div class="exam-card '+cc+'" data-act="examedit" data-id="'+e.id+'"><div class="exam-kind">'+esc(KIND[e.kind]||'Τεστ')+'</div>'+
+              '<div class="exam-num"><span class="n">'+n+'</span><span class="u">'+(n===1?'μέρα':'μέρες')+'</span></div>'+
+              '<div class="exam-sub">'+esc(sub?sub.name:'')+(e.title?' · '+esc(e.title):'')+'</div>'+
+              (e.ylh?'<div class="exam-ylh">'+esc(e.ylh)+'</div>':'')+
+              '<div class="exam-date">'+DOW[wd(d)]+' '+d.getDate()+' '+MON[d.getMonth()]+'</div></div>'; });
+          html+='</div>'; }
+        if(past.length){ html+='<div class="subhd">Περασμένα</div>';
+          past.slice(0,5).forEach(function(e){ var sub=subById(e.subjectId), cc=colorClass(sub), d=new Date(e.dateTs);
+            var sc=(e.score!=null)?'<div class="past-score '+cc+'">'+e.score+'<span class="mx">/'+(e.max||20)+'</span></div>':'<div class="past-score empty">βαθμός;</div>';
+            html+='<div class="past-row '+cc+'" data-act="examedit" data-id="'+e.id+'"><div class="past-main"><div class="past-name">'+esc(sub?sub.name:'')+(e.title?' · '+esc(e.title):'')+'</div>'+
+              '<div class="past-meta">'+esc(KIND[e.kind]||'')+' · '+DOW[wd(d)]+' '+d.getDate()+' '+MON[d.getMonth()]+'</div></div>'+sc+'</div>'; }); }
       }
       wrap.innerHTML=html;
     }
 
     function renderPlan(){
-      var tk=todayKey();
-      var blocks=plan().filter(function(b){ return b.dateKey===tk; });
-      var doneN=blocks.filter(function(b){ return b.done; }).length;
+      var tk=todayKey(), blocks=plan().filter(function(b){ return b.dateKey===tk; });
       var totalMin=blocks.reduce(function(a,b){ return a+(b.minutes||0); },0);
       var doneMin=blocks.filter(function(b){ return b.done; }).reduce(function(a,b){ return a+(b.minutes||0); },0);
-      var pp = totalMin? Math.round(doneMin/totalMin*100) : 0;
-      // streak: consecutive days back from today with ≥1 done block
-      var byDay={}; plan().forEach(function(b){ if(b.done){ byDay[b.dateKey]=1; } });
+      var pp=totalMin?Math.round(doneMin/totalMin*100):0;
+      var byDay={}; plan().forEach(function(b){ if(b.done) byDay[b.dateKey]=1; });
       var streak=0, d=new Date();
-      for(var i=0;i<400;i++){ var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        if(byDay[k]){ streak++; } else if(i>0){ break; } d.setDate(d.getDate()-1); }
-      var wrap=document.getElementById('stPlanWrap');
-      var head='<div class="st-plan-head"><div class="st-plan-ring" style="--pp:'+pp+'"><span>'+pp+'</span></div>'+
-        '<div class="st-plan-lbls"><div class="k">Στόχος απόψε</div><div class="v"><b>'+doneMin+'</b> / '+totalMin+' λεπτά</div></div>'+
-        '<div class="st-streak"><div class="n"><span class="fl">'+streak+'</span></div><div class="l">σερί μέρες</div></div></div>';
-      var body='<div class="st-plan-body">';
-      if(!blocks.length){
-        body+='<div style="padding:16px 12px;text-align:center;color:var(--au-faint);font-size:12px;font-style:italic;">Δεν έχεις ορίσει διάβασμα για απόψε.</div>';
-      } else {
-        blocks.forEach(function(b){
-          var sub=subById(b.subjectId); var cc=colorClass(sub);
-          body+='<div class="st-block '+(b.done?'done ':'')+cc+'">'+
-            '<div class="st-block-check" data-act="blocktoggle" data-id="'+b.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
-            '<div class="st-block-main"><div class="n">'+esc(sub?sub.name:'Διάβασμα')+'</div>'+(b.note?'<div class="m">'+esc(b.note)+'</div>':'')+'</div>'+
-            '<div class="st-block-min">'+(b.minutes||0)+"'"+'</div>'+
-            '<div class="st-x" data-act="blockdel" data-id="'+b.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>';
-        });
-      }
-      body+='<button class="st-plan-add" data-act="block"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόσθεσε μπλοκ</button></div>';
-      wrap.innerHTML=head+body;
+      for(var i=0;i<400;i++){ var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); if(byDay[k]) streak++; else if(i>0) break; d.setDate(d.getDate()-1); }
+      var top='<div class="plan-top"><div class="plan-ring" style="--pp:'+pp+'"><span>'+pp+'</span></div>'+
+        '<div class="plan-lbls"><div class="k">Στόχος απόψε</div><div class="v"><b>'+doneMin+'</b> / '+totalMin+' λεπτά</div></div>'+
+        '<div class="plan-streak"><div class="n">'+streak+'</div><div class="l">σερί μέρες</div></div></div>';
+      var body='';
+      if(!blocks.length){ body='<div style="padding:18px 0;text-align:center;color:var(--faint);font-size:12.5px;font-style:italic">Δεν έχεις ορίσει διάβασμα για απόψε.</div>'; }
+      else{ blocks.forEach(function(b){ var sub=subById(b.subjectId), cc=colorClass(sub);
+        body+='<div class="plan-block '+(b.done?'done ':'')+cc+'"><div class="plan-check" data-act="blocktoggle" data-id="'+b.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
+          '<div class="plan-bm"><div class="n">'+esc(sub?sub.name:'Διάβασμα')+'</div>'+(b.note?'<div class="m">'+esc(b.note)+'</div>':'')+'</div>'+
+          '<div class="plan-min">'+(b.minutes||0)+"'"+'</div><div class="plan-del" data-act="blockdel" data-id="'+b.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>'; }); }
+      body+='<button class="plan-add" data-act="block"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόσθεσε μπλοκ</button>';
+      document.getElementById('stPlanWrap').innerHTML=top+body;
     }
 
     function renderSubjects(){
       var wrap=document.getElementById('stSubsWrap');
       var list=subs().slice().sort(function(a,b){ return (b.pan?1:0)-(a.pan?1:0); });
-      if(!list.length){ wrap.innerHTML='<div class="st-empty" style="grid-column:1/-1"><div class="t">Κανένα μάθημα</div></div>'; return; }
-      var W=[0,.25,.5,.75,1];
-      var html='';
-      list.forEach(function(s){
-        var us=units().filter(function(u){ return u.subjectId===s.id; });
-        var prog = us.length ? Math.round(us.reduce(function(a,u){ return a+(W[u.status]||0); },0)/us.length*100) : 0;
+      if(!list.length){ wrap.innerHTML='<div class="empty"><div class="t">Κανένα μάθημα</div></div>'; return; }
+      var W=[0,.25,.5,.75,1], html='';
+      list.forEach(function(s){ var us=units().filter(function(u){ return u.subjectId===s.id; });
+        var prog=us.length?Math.round(us.reduce(function(a,u){ return a+(W[u.status]||0); },0)/us.length*100):0;
         var cc=colorClass(s);
-        html+='<div class="st-sub-card '+cc+'" data-act="subject" data-id="'+s.id+'">'+
-          '<div class="st-sub-top"><div class="st-sub-name">'+esc(s.name)+'</div><div class="st-sub-tk">'+trackLabel(s.track)+'</div></div>'+
-          '<div class="st-sub-pct">'+prog+'<span class="p">%</span></div>'+
-          '<div class="st-sub-bar"><span style="width:'+prog+'%"></span></div>'+
-          '<div class="st-sub-foot"><span>'+us.length+' ενότητες</span>'+(s.link?'<span class="go">άνοιξε →</span>':'')+'</div></div>';
-      });
+        html+='<div class="sub-row '+cc+'" data-act="subject" data-id="'+s.id+'"><span class="sub-dot"></span>'+
+          '<span class="sub-name">'+esc(s.name)+'</span>'+
+          '<span class="sub-prog"><i style="width:'+prog+'%"></i></span>'+
+          '<span class="sub-pct">'+prog+'<span class="p">%</span></span>'+
+          '<span class="sub-go"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span></div>'; });
       wrap.innerHTML=html;
     }
 
-    function renderTtSummary(){
-      var n=tt().length;
-      document.getElementById('stTtSummary').textContent = n? (n+' μαθήματα · σχολείο & φροντιστήριο') : 'σχολείο & φροντιστήριο — κενό';
-    }
+    function renderTtSummary(){ var n=tt().length; document.getElementById('stTtSummary').textContent=n?(n+' μαθήματα · σχολείο & φροντιστήριο'):'σχολείο & φροντιστήριο — κενό'; }
 
-    /* ─────────── writes ─────────── */
-    function upsert(key, getter, obj){ var arr=getter(); var i=arr.findIndex(function(x){ return x.id===obj.id; }); obj.ts=Date.now();
-      if(i>=0) arr[i]=obj; else arr.push(obj); save(key,arr); flush(); render(); }
-    function remove(key, getter, id){ save(key, getter().filter(function(x){ return x.id!==id; })); flush(); render(); }
+    function upsert(key,getter,obj){ var arr=getter(); var i=arr.findIndex(function(x){ return x.id===obj.id; }); obj.ts=Date.now(); if(i>=0) arr[i]=obj; else arr.push(obj); save(key,arr); flush(); render(); }
+    function remove(key,getter,id){ save(key,getter().filter(function(x){ return x.id!==id; })); flush(); render(); }
 
-    /* ─────────── dialogs ─────────── */
     var dlgForm=document.getElementById('dlgForm'), dlgFormBody=document.getElementById('dlgFormBody');
     var dlgTt=document.getElementById('dlgTt'), dlgTtBody=document.getElementById('dlgTtBody');
     function openForm(html){ dlgFormBody.innerHTML=html; if(!dlgForm.open) dlgForm.showModal(); }
     function closeForm(){ dlgForm.close(); }
-    function subjectOptions(sel, includeNew){
-      var o=subs().map(function(s){ return '<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+esc(s.name)+' · '+trackLabel(s.track)+'</option>'; }).join('');
-      if(includeNew) o+='<option value="__new">+ νέο μάθημα…</option>';
-      return o;
-    }
-    function hd(title){ return '<div class="st-dl-hd"><div class="st-dl-title">'+title+'</div><button class="st-dl-close" data-act="close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>'; }
+    function subjectOptions(sel,includeNew){ var o=subs().map(function(s){ return '<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+esc(s.name)+' · '+trackLabel(s.track)+'</option>'; }).join(''); if(includeNew) o+='<option value="__new">+ νέο μάθημα…</option>'; return o; }
+    function hd(t){ return '<div class="dl-hd"><div class="dl-title">'+t+'</div><button class="dl-close" data-act="close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>'; }
 
-    // homework add/edit
-    function openHw(id){
-      var h = id ? hw().filter(function(x){ return x.id===id; })[0] : null;
-      var due = h && h.dueTs ? new Date(h.dueTs) : null;
-      var dueStr = due ? due.getFullYear()+'-'+String(due.getMonth()+1).padStart(2,'0')+'-'+String(due.getDate()).padStart(2,'0') : '';
+    function openHw(id){ var h=id?hw().filter(function(x){ return x.id===id; })[0]:null;
+      var due=h&&h.dueTs?new Date(h.dueTs):null, dueStr=due?due.getFullYear()+'-'+String(due.getMonth()+1).padStart(2,'0')+'-'+String(due.getDate()).padStart(2,'0'):'';
       openForm(hd(id?'Εργασία':'Νέα εργασία')+
-        '<div class="st-field"><label>Μάθημα</label><select class="st-select" id="fSub">'+subjectOptions(h?h.subjectId:'',true)+'</select></div>'+
-        '<div class="st-field"><label>Τι πρέπει να κάνω</label><textarea class="st-input" id="fTask" placeholder="π.χ. Άγνωστο σελ. 42, ασκ. 3–5">'+esc(h?h.task:'')+'</textarea></div>'+
-        '<div class="st-field"><label>Προθεσμία <span style="color:rgba(52,226,176,.8)">· μπαίνει μόνη της</span></label><input type="date" class="st-input" id="fDue" value="'+dueStr+'"></div>'+
-        '<button class="st-save" data-act="hwsave" data-id="'+(id||'')+'">Αποθήκευση</button>'+
-        (id?'<button class="st-del" data-act="hwdel2" data-id="'+id+'">Διαγραφή</button>':''));
-      // auto-fill due from timetable when subject changes and date is empty
+        '<div class="fld"><label>Μάθημα</label><select class="sel" id="fSub">'+subjectOptions(h?h.subjectId:'',true)+'</select></div>'+
+        '<div class="fld"><label>Τι πρέπει να κάνω</label><textarea class="in" id="fTask" placeholder="π.χ. Άγνωστο σελ. 42, ασκ. 3–5">'+esc(h?h.task:'')+'</textarea></div>'+
+        '<div class="fld"><label>Προθεσμία <span style="color:rgba(201,162,92,.85)">· μπαίνει μόνη της</span></label><input type="date" class="in" id="fDue" value="'+dueStr+'"></div>'+
+        '<button class="save" data-act="hwsave" data-id="'+(id||'')+'">Αποθήκευση</button>'+(id?'<button class="del" data-act="hwdel2" data-id="'+id+'">Διαγραφή</button>':''));
       var selEl=document.getElementById('fSub'), dueEl=document.getElementById('fDue');
-      function autofill(){ if(selEl.value==='__new') return; if(dueEl.value) return; var nd=nextSubjectDate(selEl.value);
-        if(nd) dueEl.value=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0'); }
-      selEl.addEventListener('change', function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); autofill(); }); } else autofill(); });
-      if(!id) autofill();
-    }
-    function saveHw(id){
-      var subId=document.getElementById('fSub').value; if(subId==='__new') return;
+      function autofill(){ if(selEl.value==='__new'||dueEl.value) return; var nd=nextSubjectDate(selEl.value); if(nd) dueEl.value=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0'); }
+      selEl.addEventListener('change',function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); autofill(); }); } else autofill(); });
+      if(!id) autofill(); }
+    function saveHw(id){ var subId=document.getElementById('fSub').value; if(subId==='__new') return;
       var task=document.getElementById('fTask').value.trim(); if(!task){ document.getElementById('fTask').focus(); return; }
-      var dv=document.getElementById('fDue').value;
-      var dueTs = dv ? new Date(dv+'T09:00:00').getTime() : null;
-      var h = id ? hw().filter(function(x){ return x.id===id; })[0] : { id:uid('hw'), done:false, assignedTs:Date.now() };
-      h.subjectId=subId; h.task=task; h.dueTs=dueTs;
-      upsert(K_HW, hw, h); closeForm();
-    }
+      var dv=document.getElementById('fDue').value, dueTs=dv?new Date(dv+'T09:00:00').getTime():null;
+      var h=id?hw().filter(function(x){ return x.id===id; })[0]:{ id:uid('hw'), done:false, assignedTs:Date.now() };
+      h.subjectId=subId; h.task=task; h.dueTs=dueTs; upsert(K_HW,hw,h); closeForm(); }
 
-    // exam add/edit
-    function openExam(id){
-      var e = id ? exams().filter(function(x){ return x.id===id; })[0] : null;
-      var dd = e && e.dateTs ? new Date(e.dateTs) : null;
-      var dStr = dd ? dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0') : '';
+    function openExam(id){ var e=id?exams().filter(function(x){ return x.id===id; })[0]:null;
+      var dd=e&&e.dateTs?new Date(e.dateTs):null, dStr=dd?dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0'):'';
       var kinds=[['test','Τεστ'],['diag','Διαγώνισμα'],['mock','Προσομοίωση'],['pan','Πανελλήνιες']];
       openForm(hd(id?'Διαγώνισμα':'Νέο διαγώνισμα')+
-        '<div class="st-field"><label>Μάθημα</label><select class="st-select" id="fSub">'+subjectOptions(e?e.subjectId:'',true)+'</select></div>'+
-        '<div class="st-field"><label>Είδος</label><div class="st-pick" id="fKind">'+kinds.map(function(k){ return '<button type="button" data-k="'+k[0]+'" class="'+((e?e.kind:'diag')===k[0]?'on':'')+'">'+k[1]+'</button>'; }).join('')+'</div></div>'+
-        '<div class="st-row2"><div class="st-field"><label>Ημερομηνία</label><input type="date" class="st-input" id="fDate" value="'+dStr+'"></div>'+
-        '<div class="st-field"><label>Τίτλος (προαιρ.)</label><input class="st-input" id="fTitle" value="'+esc(e?e.title:'')+'" placeholder="1ο τετράμηνο"></div></div>'+
-        '<div class="st-field"><label>Ύλη</label><textarea class="st-input" id="fYlh" placeholder="ποιες ενότητες μπαίνουν">'+esc(e?e.ylh:'')+'</textarea></div>'+
-        '<div class="st-row2"><div class="st-field"><label>Βαθμός (αν έγινε)</label><input type="number" step="0.1" class="st-input" id="fScore" value="'+(e&&e.score!=null?e.score:'')+'" placeholder="—"></div>'+
-        '<div class="st-field"><label>Στα</label><input type="number" class="st-input" id="fMax" value="'+(e&&e.max?e.max:20)+'"></div></div>'+
-        '<button class="st-save" data-act="examsave" data-id="'+(id||'')+'">Αποθήκευση</button>'+
-        (id?'<button class="st-del" data-act="examdel" data-id="'+id+'">Διαγραφή</button>':''));
-      var kindWrap=document.getElementById('fKind');
-      kindWrap.addEventListener('click', function(ev){ var b=ev.target.closest('button'); if(!b)return; kindWrap.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
-      var selEl=document.getElementById('fSub');
-      selEl.addEventListener('change', function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); }); } });
-    }
-    function saveExam(id){
-      var subId=document.getElementById('fSub').value; if(subId==='__new') return;
+        '<div class="fld"><label>Μάθημα</label><select class="sel" id="fSub">'+subjectOptions(e?e.subjectId:'',true)+'</select></div>'+
+        '<div class="fld"><label>Είδος</label><div class="pick" id="fKind">'+kinds.map(function(k){ return '<button type="button" data-k="'+k[0]+'" class="'+((e?e.kind:'diag')===k[0]?'on':'')+'">'+k[1]+'</button>'; }).join('')+'</div></div>'+
+        '<div class="row2"><div class="fld"><label>Ημερομηνία</label><input type="date" class="in" id="fDate" value="'+dStr+'"></div><div class="fld"><label>Τίτλος (προαιρ.)</label><input class="in" id="fTitle" value="'+esc(e?e.title:'')+'" placeholder="1ο τετράμηνο"></div></div>'+
+        '<div class="fld"><label>Ύλη</label><textarea class="in" id="fYlh" placeholder="ποιες ενότητες μπαίνουν">'+esc(e?e.ylh:'')+'</textarea></div>'+
+        '<div class="row2"><div class="fld"><label>Βαθμός (αν έγινε)</label><input type="number" step="0.1" class="in" id="fScore" value="'+(e&&e.score!=null?e.score:'')+'" placeholder="—"></div><div class="fld"><label>Στα</label><input type="number" class="in" id="fMax" value="'+(e&&e.max?e.max:20)+'"></div></div>'+
+        '<button class="save" data-act="examsave" data-id="'+(id||'')+'">Αποθήκευση</button>'+(id?'<button class="del" data-act="examdel" data-id="'+id+'">Διαγραφή</button>':''));
+      var kw=document.getElementById('fKind'); kw.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; kw.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
+      var selEl=document.getElementById('fSub'); selEl.addEventListener('change',function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); }); } }); }
+    function saveExam(id){ var subId=document.getElementById('fSub').value; if(subId==='__new') return;
       var dv=document.getElementById('fDate').value; if(!dv){ document.getElementById('fDate').focus(); return; }
-      var kb=document.querySelector('#fKind button.on'); var kind=kb?kb.getAttribute('data-k'):'diag';
+      var kb=document.querySelector('#fKind button.on'), kind=kb?kb.getAttribute('data-k'):'diag';
       var sc=document.getElementById('fScore').value, mx=document.getElementById('fMax').value;
-      var e = id ? exams().filter(function(x){ return x.id===id; })[0] : { id:uid('ex') };
-      e.subjectId=subId; e.kind=kind; e.dateTs=new Date(dv+'T09:00:00').getTime();
-      e.title=document.getElementById('fTitle').value.trim(); e.ylh=document.getElementById('fYlh').value.trim();
-      e.score = sc==='' ? null : parseFloat(sc); e.max = mx? parseInt(mx,10):20;
-      upsert(K_EX, exams, e); closeForm();
-    }
+      var e=id?exams().filter(function(x){ return x.id===id; })[0]:{ id:uid('ex') };
+      e.subjectId=subId; e.kind=kind; e.dateTs=new Date(dv+'T09:00:00').getTime(); e.title=document.getElementById('fTitle').value.trim(); e.ylh=document.getElementById('fYlh').value.trim();
+      e.score=sc===''?null:parseFloat(sc); e.max=mx?parseInt(mx,10):20; upsert(K_EX,exams,e); closeForm(); }
 
-    // study block add
-    function openBlock(){
-      openForm(hd('Μπλοκ διαβάσματος')+
-        '<div class="st-field"><label>Μάθημα</label><select class="st-select" id="fSub">'+subjectOptions('',true)+'</select></div>'+
-        '<div class="st-field"><label>Διάρκεια · λεπτά</label><div class="st-pick" id="fMin">'+[20,30,45,60,90].map(function(m,i){ return '<button type="button" data-m="'+m+'" class="'+(i===2?'on':'')+'">'+m+"'"+'</button>'; }).join('')+'</div></div>'+
-        '<div class="st-field"><label>Σημείωση (προαιρ.)</label><input class="st-input" id="fNote" placeholder="π.χ. επανάληψη Κρητικό"></div>'+
-        '<button class="st-save" data-act="blocksave">Πρόσθεσε</button>');
-      var minWrap=document.getElementById('fMin');
-      minWrap.addEventListener('click', function(ev){ var b=ev.target.closest('button'); if(!b)return; minWrap.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
-      var selEl=document.getElementById('fSub');
-      selEl.addEventListener('change', function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); }); } });
-    }
-    function saveBlock(){
-      var subId=document.getElementById('fSub').value; if(subId==='__new') return;
-      var mb=document.querySelector('#fMin button.on'); var m=mb?parseInt(mb.getAttribute('data-m'),10):45;
-      var b={ id:uid('bl'), dateKey:todayKey(), subjectId:subId, minutes:m, note:document.getElementById('fNote').value.trim(), done:false };
-      upsert(K_PL, plan, b); closeForm();
-    }
+    function openBlock(){ openForm(hd('Μπλοκ διαβάσματος')+
+        '<div class="fld"><label>Μάθημα</label><select class="sel" id="fSub">'+subjectOptions('',true)+'</select></div>'+
+        '<div class="fld"><label>Διάρκεια · λεπτά</label><div class="pick" id="fMin">'+[20,30,45,60,90].map(function(m,i){ return '<button type="button" data-m="'+m+'" class="'+(i===2?'on':'')+'">'+m+"'"+'</button>'; }).join('')+'</div></div>'+
+        '<div class="fld"><label>Σημείωση (προαιρ.)</label><input class="in" id="fNote" placeholder="π.χ. επανάληψη Κρητικό"></div>'+
+        '<button class="save" data-act="blocksave">Πρόσθεσε</button>');
+      var mw=document.getElementById('fMin'); mw.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; mw.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
+      var selEl=document.getElementById('fSub'); selEl.addEventListener('change',function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ refreshSelect(selEl,nid); }); } }); }
+    function saveBlock(){ var subId=document.getElementById('fSub').value; if(subId==='__new') return;
+      var mb=document.querySelector('#fMin button.on'), m=mb?parseInt(mb.getAttribute('data-m'),10):45;
+      upsert(K_PL,plan,{ id:uid('bl'), dateKey:todayKey(), subjectId:subId, minutes:m, note:document.getElementById('fNote').value.trim(), done:false }); closeForm(); }
 
-    // goal / north star editor
-    function openGoal(){
-      var g=goal(); var d=panDate();
-      var dStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    function openGoal(){ var g=goal(), d=panDate(), dStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       openForm(hd('Ο στόχος')+
-        '<div class="st-field"><label>Σχολή / στόχος</label><input class="st-input" id="gSchool" value="'+esc(g.school||'')+'" placeholder="π.χ. Νομική Αθήνας"></div>'+
-        '<div class="st-field"><label>Μόρια-στόχος</label><input type="number" class="st-input" id="gMoria" value="'+(g.moria||'')+'" placeholder="π.χ. 18500"></div>'+
-        '<div class="st-field"><label>Πρώτο γραπτό Πανελληνίων</label><input type="date" class="st-input" id="gExam" value="'+dStr+'"></div>'+
-        '<button class="st-save" data-act="goalsave">Αποθήκευση</button>');
-    }
-    function saveGoal(){
-      var g=goal();
-      g.school=document.getElementById('gSchool').value.trim();
-      g.moria=parseInt(document.getElementById('gMoria').value,10)||null;
-      var dv=document.getElementById('gExam').value; if(dv) g.examTs=new Date(dv+'T08:00:00').getTime();
-      save(K_GOAL,g); flush(); render(); closeForm();
-    }
+        '<div class="fld"><label>Σχολή / στόχος</label><input class="in" id="gSchool" value="'+esc(g.school||'')+'" placeholder="π.χ. Νομική Αθήνας"></div>'+
+        '<div class="fld"><label>Μόρια-στόχος</label><input type="number" class="in" id="gMoria" value="'+(g.moria||'')+'" placeholder="π.χ. 18500"></div>'+
+        '<div class="fld"><label>Πρώτο γραπτό Πανελληνίων</label><input type="date" class="in" id="gExam" value="'+dStr+'"></div>'+
+        '<button class="save" data-act="goalsave">Αποθήκευση</button>'); }
+    function saveGoal(){ var g=goal(); g.school=document.getElementById('gSchool').value.trim(); g.moria=parseInt(document.getElementById('gMoria').value,10)||null;
+      var dv=document.getElementById('gExam').value; if(dv) g.examTs=new Date(dv+'T08:00:00').getTime(); save(K_GOAL,g); flush(); render(); closeForm(); }
 
-    // subject / ύλη sheet
     var STAT=['—','διδάχθηκε','διαβάστηκε','επανάληψη','κατακτήθηκε'];
-    function openSubject(id){
-      var s=subById(id); if(!s) return;
+    function openSubject(id){ var s=subById(id); if(!s) return;
       var us=units().filter(function(u){ return u.subjectId===id; });
-      var rows=us.map(function(u){ return '<div class="st-unit" data-act="unit" data-id="'+u.id+'"><span class="st-unit-dot s'+u.status+'"></span><span class="st-unit-name">'+esc(u.name)+'</span><span class="st-unit-stat">'+STAT[u.status]+'</span></div>'; }).join('')
-        || '<div class="st-tt-empty">Καμία ενότητα ακόμα.</div>';
+      var rows=us.map(function(u){ return '<div class="unit" data-act="unit" data-id="'+u.id+'"><span class="unit-dot s'+u.status+'"></span><span class="unit-n">'+esc(u.name)+'</span><span class="unit-s">'+STAT[u.status]+'</span></div>'; }).join('')||'<div class="tt-empty">Καμία ενότητα ακόμα.</div>';
       openForm(hd(esc(s.name))+
-        '<div style="font-size:12px;color:var(--au-dim);margin:-8px 0 16px;line-height:1.5">'+esc(s.gr)+'<br><span style="font-family:var(--au-mono);font-size:10px;color:var(--au-faint)">Πάτα μια ενότητα: — → διδάχθηκε → διαβάστηκε → επανάληψη → κατακτήθηκε</span></div>'+
+        '<div style="font-size:12px;color:var(--dim);margin:-10px 0 18px;line-height:1.55">'+esc(s.gr)+'<br><span style="font-family:var(--au-mono);font-size:10px;color:var(--faint)">Πάτα μια ενότητα: — → διδάχθηκε → διαβάστηκε → επανάληψη → κατακτήθηκε</span></div>'+
         '<div id="unitList">'+rows+'</div>'+
-        '<button class="st-plan-add" data-act="unitadd" data-id="'+id+'" style="margin-top:14px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόσθεσε ενότητα</button>'+
-        (s.link?'<button class="st-save" data-act="opensub" data-link="'+esc(s.link)+'" style="margin-top:12px">Άνοιξε τα εργαλεία →</button>':''));
-    }
-    function cycleUnit(id){
-      var arr=units(); var u=arr.filter(function(x){ return x.id===id; })[0]; if(!u) return;
+        '<button class="plan-add" data-act="unitadd" data-id="'+id+'" style="margin-top:16px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Πρόσθεσε ενότητα</button>'+
+        (s.link?'<button class="save" data-act="opensub" data-link="'+esc(s.link)+'" style="margin-top:14px">Άνοιξε τα εργαλεία →</button>':'')); }
+    function cycleUnit(id){ var arr=units(), u=arr.filter(function(x){ return x.id===id; })[0]; if(!u) return;
       u.status=(u.status+1)%5; u.ts=Date.now(); save(K_UN,arr); flush();
-      // live update the row without closing the sheet
-      var el=document.querySelector('.st-unit[data-id="'+id+'"]');
-      if(el){ el.querySelector('.st-unit-dot').className='st-unit-dot s'+u.status; el.querySelector('.st-unit-stat').textContent=STAT[u.status]; }
-      renderSubjects();
-    }
+      var el=document.querySelector('.unit[data-id="'+id+'"]'); if(el){ el.querySelector('.unit-dot').className='unit-dot s'+u.status; el.querySelector('.unit-s').textContent=STAT[u.status]; } renderSubjects(); }
 
-    // inline "new subject" — used by the selects
-    function newSubjectInline(cb){
-      var pal=['slate','violet','amber','rose','teal','emerald'];
+    function newSubjectInline(cb){ var pal=['slate','violet','amber','rose','teal','emerald'];
       window.ALSPrompt ? ALSPrompt({ title:'Νέο μάθημα', label:'Όνομα', placeholder:'π.χ. Θρησκευτικά', ok:'Πρόσθεσε' }).then(function(name){ if(name) doCreate(name); else cb(null); }) : (function(){ var name=prompt('Νέο μάθημα:'); if(name) doCreate(name); else cb(null); })();
-      function doCreate(name){
-        var existing=subs().length; var col = pal[existing % pal.length];
+      function doCreate(name){ var existing=subs().length, col=pal[existing%pal.length];
         var s={ id:uid('su'), name:name.trim(), gr:name.trim(), short:name.trim().slice(0,3).toUpperCase(), track:'school', color:col, pan:false, link:'', ts:Date.now() };
-        var arr=subs(); arr.push(s); save(K_SUB,arr); flush(); cb(s.id);
-      }
-    }
-    function refreshSelect(sel, pick){ sel.innerHTML=subjectOptions(pick,true); if(pick) sel.value=pick; }
+        var arr=subs(); arr.push(s); save(K_SUB,arr); flush(); cb(s.id); } }
+    function refreshSelect(sel,pick){ sel.innerHTML=subjectOptions(pick,true); if(pick) sel.value=pick; }
 
-    /* ─────────── timetable dialog ─────────── */
     var ttTrack='fronto';
-    function openTt(){
-      dlgTtBody.innerHTML=hd('Το πρόγραμμα')+
-        '<div class="st-tabs"><button data-tk="fronto" class="'+(ttTrack==='fronto'?'on':'')+'">Φροντιστήριο</button><button data-tk="school" class="'+(ttTrack==='school'?'on':'')+'">Σχολείο</button></div>'+
-        '<div id="ttForm"></div><div id="ttList" style="margin-top:6px"></div>';
-      if(!dlgTt.open) dlgTt.showModal();
-      renderTtInner();
-    }
-    function renderTtInner(){
-      var def = ttTrack==='fronto' ? {start:'18:00',end:'19:00'} : {start:'08:15',end:'09:00'};
-      var trackSubs = subs().filter(function(s){ return s.track===ttTrack; });
-      var subOpts = trackSubs.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('') + '<option value="__new">+ νέο μάθημα…</option>';
+    function openTt(){ dlgTtBody.innerHTML=hd('Το πρόγραμμα')+
+        '<div class="tabs"><button data-tk="fronto" class="'+(ttTrack==='fronto'?'on':'')+'">Φροντιστήριο</button><button data-tk="school" class="'+(ttTrack==='school'?'on':'')+'">Σχολείο</button></div><div id="ttForm"></div><div id="ttList" style="margin-top:8px"></div>';
+      if(!dlgTt.open) dlgTt.showModal(); renderTtInner(); }
+    function renderTtInner(){ var def=ttTrack==='fronto'?{start:'18:00',end:'19:00'}:{start:'08:15',end:'09:00'};
+      var trackSubs=subs().filter(function(s){ return s.track===ttTrack; });
+      var subOpts=trackSubs.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('')+'<option value="__new">+ νέο μάθημα…</option>';
       document.getElementById('ttForm').innerHTML=
-        '<div class="st-field"><label>Ημέρα</label><div class="st-days" id="ttDays">'+DOW.map(function(d,i){ return '<button type="button" data-d="'+i+'" class="'+(i===0?'on':'')+'">'+d+'</button>'; }).join('')+'</div></div>'+
-        '<div class="st-row2"><div class="st-field"><label>Από</label><input type="time" class="st-input" id="ttStart" value="'+def.start+'"></div>'+
-        '<div class="st-field"><label>Έως</label><input type="time" class="st-input" id="ttEnd" value="'+def.end+'"></div></div>'+
-        '<div class="st-field"><label>Μάθημα</label><select class="st-select" id="ttSub">'+(subOpts||'<option value="__new">+ νέο μάθημα…</option>')+'</select></div>'+
-        '<button class="st-save" data-act="ttadd">Πρόσθεσε στο πρόγραμμα</button>';
-      var daysWrap=document.getElementById('ttDays');
-      daysWrap.addEventListener('click', function(ev){ var b=ev.target.closest('button'); if(!b)return; daysWrap.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
-      var selEl=document.getElementById('ttSub');
-      selEl.addEventListener('change', function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){
-        // ensure created subject is on the current track
-        if(nid){ var arr=subs(); var s=arr.filter(function(x){return x.id===nid;})[0]; if(s){ s.track=ttTrack; save(K_SUB,arr); } }
-        var ts=subs().filter(function(s){ return s.track===ttTrack; });
-        selEl.innerHTML=ts.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('')+'<option value="__new">+ νέο μάθημα…</option>';
-        if(nid) selEl.value=nid; }); } });
-      // list of slots for this track, grouped by day
-      var slots=tt().filter(function(s){ return s.track===ttTrack; });
-      var html='';
-      for(var d=0; d<7; d++){
-        var ds=slots.filter(function(s){ return s.day===d; }).sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
-        if(!ds.length) continue;
-        html+='<div class="st-tt-day"><div class="st-tt-day-lbl">'+DOWLONG[d]+'</div>';
-        ds.forEach(function(s){ var sub=subById(s.subjectId);
-          html+='<div class="st-tt-slot"><span class="tm">'+esc(s.start)+'–'+esc(s.end)+'</span><span class="nm">'+esc(sub?sub.name:'—')+'</span>'+
-            '<div class="st-x" data-act="ttdel" data-id="'+s.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>'; });
-        html+='</div>';
-      }
-      if(!html) html='<div class="st-tt-empty">Κανένα μάθημα σε αυτό το πρόγραμμα ακόμα. Πρόσθεσε το πρώτο πάνω.</div>';
-      document.getElementById('ttList').innerHTML=html;
-    }
-    function ttAdd(){
-      var db=document.querySelector('#ttDays button.on'); var day=db?parseInt(db.getAttribute('data-d'),10):0;
-      var start=document.getElementById('ttStart').value, end=document.getElementById('ttEnd').value;
-      var subId=document.getElementById('ttSub').value; if(!subId||subId==='__new'){ return; }
-      var slot={ id:uid('tt'), track:ttTrack, day:day, start:start, end:end, subjectId:subId, ts:Date.now() };
-      var arr=tt(); arr.push(slot); save(K_TT,arr); flush(); renderTtInner(); render();
-    }
+        '<div class="fld"><label>Ημέρα</label><div class="days" id="ttDays">'+DOW.map(function(d,i){ return '<button type="button" data-d="'+i+'" class="'+(i===0?'on':'')+'">'+d+'</button>'; }).join('')+'</div></div>'+
+        '<div class="row2"><div class="fld"><label>Από</label><input type="time" class="in" id="ttStart" value="'+def.start+'"></div><div class="fld"><label>Έως</label><input type="time" class="in" id="ttEnd" value="'+def.end+'"></div></div>'+
+        '<div class="fld"><label>Μάθημα</label><select class="sel" id="ttSub">'+subOpts+'</select></div>'+
+        '<button class="save" data-act="ttadd">Πρόσθεσε στο πρόγραμμα</button>';
+      var dw=document.getElementById('ttDays'); dw.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; dw.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); });
+      var selEl=document.getElementById('ttSub'); selEl.addEventListener('change',function(){ if(selEl.value==='__new'){ newSubjectInline(function(nid){ if(nid){ var arr=subs(), s=arr.filter(function(x){ return x.id===nid; })[0]; if(s){ s.track=ttTrack; save(K_SUB,arr); } } var ts=subs().filter(function(s){ return s.track===ttTrack; }); selEl.innerHTML=ts.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('')+'<option value="__new">+ νέο μάθημα…</option>'; if(nid) selEl.value=nid; }); } });
+      var slots=tt().filter(function(s){ return s.track===ttTrack; }), html='';
+      for(var d=0;d<7;d++){ var ds=slots.filter(function(s){ return s.day===d; }).sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); }); if(!ds.length) continue;
+        html+='<div class="tt-day"><div class="tt-day-l">'+DOWLONG[d]+'</div>';
+        ds.forEach(function(s){ var sub=subById(s.subjectId); html+='<div class="tt-slot"><span class="tm">'+esc(s.start)+'–'+esc(s.end)+'</span><span class="nm">'+esc(sub?sub.name:'—')+'</span><span class="xd" data-act="ttdel" data-id="'+s.id+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></div>'; }); html+='</div>'; }
+      if(!html) html='<div class="tt-empty">Κανένα μάθημα σε αυτό το πρόγραμμα ακόμα. Πρόσθεσε το πρώτο πάνω.</div>';
+      document.getElementById('ttList').innerHTML=html; }
+    function ttAdd(){ var db=document.querySelector('#ttDays button.on'), day=db?parseInt(db.getAttribute('data-d'),10):0;
+      var start=document.getElementById('ttStart').value, end=document.getElementById('ttEnd').value, subId=document.getElementById('ttSub').value;
+      if(!subId||subId==='__new') return;
+      var arr=tt(); arr.push({ id:uid('tt'), track:ttTrack, day:day, start:start, end:end, subjectId:subId, ts:Date.now() }); save(K_TT,arr); flush(); renderTtInner(); render(); }
 
-    /* ─────────── event delegation ─────────── */
-    document.addEventListener('click', function(ev){
-      var el=ev.target.closest('[data-act]'); if(!el) return;
+    document.addEventListener('click',function(ev){ var el=ev.target.closest('[data-act]'); if(!el) return;
       var act=el.getAttribute('data-act'), id=el.getAttribute('data-id');
       switch(act){
         case 'close': closeForm(); dlgTt.close(); break;
         case 'tt': openTt(); break;
-        case 'hw': openHw(null); break;
-        case 'hwedit': openHw(id); break;
-        case 'hwsave': saveHw(id||null); break;
-        case 'hwtoggle': { var arr=hw(); var h=arr.filter(function(x){return x.id===id;})[0]; if(h){ h.done=!h.done; h.doneTs=h.done?Date.now():null; h.ts=Date.now(); save(K_HW,arr); flush(); render(); } break; }
-        case 'hwdel': case 'hwdel2': remove(K_HW,hw,id); if(act==='hwdel2') closeForm(); break;
-        case 'exam': openExam(null); break;
-        case 'examedit': openExam(id); break;
-        case 'examsave': saveExam(id||null); break;
-        case 'examdel': remove(K_EX,exams,id); closeForm(); break;
-        case 'block': openBlock(); break;
-        case 'blocksave': saveBlock(); break;
-        case 'blocktoggle': { var a2=plan(); var b=a2.filter(function(x){return x.id===id;})[0]; if(b){ b.done=!b.done; b.ts=Date.now(); save(K_PL,a2); flush(); render(); } break; }
+        case 'hw': openHw(null); break; case 'hwedit': openHw(id); break; case 'hwsave': saveHw(id||null); break;
+        case 'hwtoggle': { var a=hw(), h=a.filter(function(x){ return x.id===id; })[0]; if(h){ h.done=!h.done; h.doneTs=h.done?Date.now():null; h.ts=Date.now(); save(K_HW,a); flush(); render(); } break; }
+        case 'hwdel': remove(K_HW,hw,id); break; case 'hwdel2': remove(K_HW,hw,id); closeForm(); break;
+        case 'exam': openExam(null); break; case 'examedit': openExam(id); break; case 'examsave': saveExam(id||null); break; case 'examdel': remove(K_EX,exams,id); closeForm(); break;
+        case 'block': openBlock(); break; case 'blocksave': saveBlock(); break;
+        case 'blocktoggle': { var a2=plan(), b=a2.filter(function(x){ return x.id===id; })[0]; if(b){ b.done=!b.done; b.ts=Date.now(); save(K_PL,a2); flush(); render(); } break; }
         case 'blockdel': remove(K_PL,plan,id); break;
-        case 'subject': openSubject(id); break;
-        case 'unit': cycleUnit(id); break;
-        case 'unitadd': addUnitTo(id); break;
+        case 'subject': openSubject(id); break; case 'unit': cycleUnit(id); break; case 'unitadd': addUnitTo(id); break;
         case 'opensub': { var lk=el.getAttribute('data-link'); if(lk) location.href=lk; break; }
-        case 'goalsave': saveGoal(); break;
-        case 'ttadd': ttAdd(); break;
-        case 'ttdel': { save(K_TT, tt().filter(function(x){return x.id!==id;})); flush(); renderTtInner(); render(); break; }
-      }
-    });
-    document.getElementById('stNorth').addEventListener('click', openGoal);
-    // clicking backdrop closes
-    [dlgForm,dlgTt].forEach(function(d){ d.addEventListener('click', function(ev){ if(ev.target===d) d.close(); }); });
+        case 'goalsave': saveGoal(); break; case 'ttadd': ttAdd(); break;
+        case 'ttdel': { save(K_TT,tt().filter(function(x){ return x.id!==id; })); flush(); renderTtInner(); render(); break; }
+      } });
+    document.getElementById('stNorth').addEventListener('click',function(ev){ if(ev.target.closest('.sec-add')) return; openGoal(); });
+    [dlgForm,dlgTt].forEach(function(d){ d.addEventListener('click',function(ev){ if(ev.target===d) d.close(); }); });
 
-    function addUnitTo(subId){
-      function create(name){ var arr=units(); arr.push({ id:uid('un'), subjectId:subId, name:name.trim(), status:0, ts:Date.now() }); save(K_UN,arr); flush(); openSubject(subId); renderSubjects(); }
-      window.ALSPrompt ? ALSPrompt({ title:'Νέα ενότητα', label:'Όνομα', ok:'Πρόσθεσε' }).then(function(n){ if(n) create(n); }) : (function(){ var n=prompt('Νέα ενότητα:'); if(n) create(n); })();
-    }
+    function addUnitTo(subId){ function create(name){ var arr=units(); arr.push({ id:uid('un'), subjectId:subId, name:name.trim(), status:0, ts:Date.now() }); save(K_UN,arr); flush(); openSubject(subId); renderSubjects(); }
+      window.ALSPrompt ? ALSPrompt({ title:'Νέα ενότητα', label:'Όνομα', ok:'Πρόσθεσε' }).then(function(n){ if(n) create(n); }) : (function(){ var n=prompt('Νέα ενότητα:'); if(n) create(n); })(); }
 
-    /* ─────────── boot ─────────── */
     render();
     window._studyRerender=function(){ render(); };
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden) render(); });
-    window.addEventListener('storage', function(ev){ if(!ev || (ev.key&&ev.key.indexOf('study:')===0)) render(); });
-
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+    window.addEventListener('storage',function(ev){ if(!ev||(ev.key&&ev.key.indexOf('study:')===0)) render(); });
+    document.addEventListener('DOMContentLoaded',function(){
       if(window.ALSProfile && window.ALSProfile.ready){ window.ALSProfile.ready(function(){ applySeed(); }); }
-      setTimeout(applySeed, 2600);
+      setTimeout(applySeed,2600);
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'study',
-          syncedKeys:['study:subjects','study:timetable','study:homework','study:exams','study:units','study:plan','study:goal'],
-          syncedPrefixes:[],
-          onApplied:function(){ if(window._studyRerender) window._studyRerender(); } });
-      })();
+        window.initCloudSync({ appKey:'study', syncedKeys:['study:subjects','study:timetable','study:homework','study:exams','study:units','study:plan','study:goal'], syncedPrefixes:[],
+          onApplied:function(){ if(window._studyRerender) window._studyRerender(); } }); })();
     });
   })();
   </script>
