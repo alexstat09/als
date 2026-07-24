@@ -113,7 +113,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v405`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v406`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -199,9 +199,33 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v405`** (run.html adopted the "Road to Athens" redesign,
-**visual-only** — her data path byte-identical; that work is its own thread).
-It sits on top of **this session's sync-resilience pair, `als-v402`/`als-v403`**
+**HEAD is `als-v406`** — Chrissie's sleep page is hers again. Alex reported the
+als-v396 **"My protocol"** section (his 10:00 wake anchor + early-waking
+playbook) showing on *her* account, and thought that update had also killed her
+Garmin sleep sync. The section was the real bug: `#protoSec` rendered
+**unconditionally**, a "never hardcode Alex" violation. Now gated on
+`ALSProfile.isOwner()` (`protoIsOwner()` / `applyProtoVisibility()` hide it for a
+non-owner, `renderWakeAnchor()` early-returns, an `ALSProfile.ready()` hook
+corrects the guess once her session lands; owner-default so it never flashes
+hidden for Alex). Verified both branches headless. (2026-07-24, on `main`, 11
+suites + smoke green.)
+
+**Her missing Garmin night was NOT this update** and NOT code — proven live and
+worth keeping: the sleep-page changes never touch the pipe (`_garmin.js`,
+`run-reminders.js`, the `sleep:inbox` drain), and `renderWakeAnchor` runs *after*
+her night is painted. Diagnosis by endpoint (from a logged-in browser, same
+origin — a plain `curl` is `{"error":"forbidden"}`):
+`?garmin=diag` → `verdict:"OK — token is good"`, status 200, env clean;
+`?icu=1` → `wellness:12, rich:12, unchanged:true, garminError:null`. So the
+server pipe is **healthy and her inbox is fully current** — the data was in the
+cloud. The break was **client-side on her phone**: a **stale session JWT** makes
+the drain read her `sleep:inbox` empty under RLS, so cached older nights render
+while today's never lands (this project's #1 failure mode — see the als-v403
+follow-up below). **Fix that worked: sign out / back in on her phone + fully
+reopen the PWA** (picks up the latest SW). When "sync looks broken but the page
+renders," suspect a stale session before touching code.
+
+It sits on top of **the earlier sync-resilience pair, `als-v402`/`als-v403`**
 (2026-07-24, on `main`, 11 suites + smoke green). Triggered by Chrissie's run
 data + Alex's phone not reaching the cloud, and the dashboard's *"changes from
 the last 9 hours are only on this device"* banner:
