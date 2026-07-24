@@ -85,6 +85,13 @@
         }
         case 'nutrition.html': {
           var all = ls('nut:logs', []); all = Array.isArray(all) ? all : [];
+          /* mirror nutrition.html getLogs(): drop null-id rows and anything in
+             the nut:deleted block-list. A cloud merge can resurrect a deleted
+             food into the raw array (sync tombstones lose to clock skew), so the
+             nutrition page filters it at READ time — the home tile must too, or
+             phantom entries inflate the day's kcal/protein above the real page. */
+          var del = ls('nut:deleted', {}); if (!del || typeof del !== 'object' || Array.isArray(del)) del = {};
+          all = all.filter(function (l) { return l && l.id != null && !del[l.id]; });
           var nl = all.filter(function (l) { return l && (l.dateKey ? l.dateKey === t : new Date(l.ts) >= dawn()); });
           var kc = Math.round(nl.reduce(function (s, l) { return s + (l.kcal || 0); }, 0));
           var prot = Math.round(nl.reduce(function (s, l) { return s + (l.protein || l.p || 0); }, 0));

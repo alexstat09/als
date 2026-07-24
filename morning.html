@@ -1153,7 +1153,7 @@ function loadSystems(){
 
   /* nutrition */
   try{
-    const logs=(JSON.parse(localStorage.getItem('nut:logs'))||[]).filter(l=> l && (l.dateKey ? l.dateKey===todayKey() : new Date(l.ts)>=dawn()));
+    const logs=(JSON.parse(localStorage.getItem('nut:logs'))||[]).filter(l=> l && l.id!=null && !nutDeleted()[l.id] && (l.dateKey ? l.dateKey===todayKey() : new Date(l.ts)>=dawn()));
     const kcal=Math.round(logs.reduce((s,l)=>s+(l.kcal||0),0));
     const prof=JSON.parse(localStorage.getItem('nut:profile'))||{};
     const target=prof.kcalTarget||2400;
@@ -1416,10 +1416,14 @@ function nutTargets(){
   const fiber=Math.round(kcal/1000*14);
   return { kcal, p:prot, fiber, goal, haveStats };
 }
+/* deleted-food block-list (mirrors nutrition.html getLogs()): a cloud merge can
+   resurrect a deleted entry into the raw nut:logs array, so filter it at read
+   time or today's kcal reads high on the briefing. */
+function nutDeleted(){ try{ const d=JSON.parse(localStorage.getItem('nut:deleted')); return (d&&typeof d==='object'&&!Array.isArray(d))?d:{}; }catch(e){ return {}; } }
 function dayTotalsKey(key){
-  const t={kcal:0,p:0,fiber:0};
+  const t={kcal:0,p:0,fiber:0}, del=nutDeleted();
   (JSON.parse(localStorage.getItem('nut:logs'))||[]).forEach(e=>{
-    if(e&&e.dateKey===key){ t.kcal+=e.kcal||0; t.p+=e.p||0; t.fiber+=e.fiber||0; }
+    if(e&&e.id!=null&&!del[e.id]&&e.dateKey===key){ t.kcal+=e.kcal||0; t.p+=e.p||0; t.fiber+=e.fiber||0; }
   });
   return t;
 }
