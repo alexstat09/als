@@ -113,7 +113,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v406`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v408`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -173,7 +173,16 @@ under the dateline and expands to the full band only for the three days after a
 chapter turns, so nothing outranks the greeting on an ordinary day),
 `improve.html` (YouTube shelves + background reader), `movies.html`
 (Letterboxd + TMDB, real recommendations), `ideas.html`, `identity.html`,
-`planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income).
+`planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income),
+and `scripture.html` — a Bible reading tracker. Alex reads *Η Εικονογραφημένη
+Αγία Γραφή* (illustrated demotic-Greek Bible) **by page, not chapter:verse**, and
+reflects with the **S.O.A.P.** method (Scripture/Observation/Application/Prayer).
+So the canon of his exact copy is encoded from its contents pages (66 books, the
+start page of each) and a typed page range **auto-names its book**. Finish-the-
+Bible North Star (% of 1,721 pages), a canon map (all 66 books, filled by
+read-fraction, current book pulses, tap-to-filter), the S.O.A.P. journal, streak
++ Mon–Sun week. His notebook history + the 4 finished Gospels are seeded. Synced
+via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 
 **Study** — `arxaia.html`, `istoria.html`.
 
@@ -199,7 +208,39 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v406`** — Chrissie's sleep page is hers again. Alex reported the
+**HEAD is `als-v408`** — `scripture.html`, the Bible reading tracker, built then
+refined on Alex's feedback (2026-07-24, on `main`, 12 suites + a 55-assertion
+`tests/scripture.test.js` + smoke green; page and centered dialog headless-shot).
+`als-v407` shipped the page; `als-v408` corrected and extended it. What a fresh
+session must know:
+
+- **The canon is transcribed from a photo of his Bible's contents pages, and the
+  first transcription was wrong.** From the blurry photo I column-shifted the OT
+  poetry/prophets. The corrected starts (from a clear photo, locked by a test):
+  Proverbs **836**, Ecclesiastes 878, Song 890, Isaiah 900, Jeremiah **980**,
+  Lamentations 1060, Ezekiel 1070 (the old values gave Jeremiah a 10-page span).
+  Genesis 2 → Malachi 1223, Matthew 1232 → Revelation 1692, `END`=1723 (Χάρτες).
+  If a book boundary ever looks off, it's editable per-entry and the auto-detect
+  self-corrects — but fix the `BIBLE[]` value too.
+- **Seeding uses an additive, versioned migration — not empty-only.** His notebook
+  (27 entries) + the 4 finished Gospels are seeded. `bible:seedv` is a **LOCAL,
+  never-synced** flag; `applySeed()` full-seeds an empty page, else adds only
+  entries newer than the stored `SEED_V` **by absent id**, once per device. Gospel
+  ids (`seed_g_*`) are brand-new so a tombstoned delete can't resurrect them. **To
+  ship more seed data later: add entries, bump `SEED_V`.** (The plain empty-only
+  pattern would never reach a device that already seeded.)
+- **The modal-off-frame trap bit again even with native `<dialog>`+`showModal()`.**
+  The page's own `*{margin:0}` reset kills the UA `dialog{margin:auto}` centering,
+  so the modal pinned off-frame. Fixed with `position:fixed; top/left:50%;
+  transform:translate(-50%,-50%)`. **Any single-file page that both resets margins
+  and uses `<dialog>` needs explicit centering** — this is constraint 4's cousin.
+- Registered everywhere a synced page must be: appKey `scripture` / key
+  `bible:sessions` in `sync.js` init + backup `BUNDLES` + `MAP.md`; `scripture.html`
+  in SW `CORE`; a Home **Life** tile in `index.html`. The whole coverage model is
+  the union of read page-ranges → % of canon, per-book completion, `continueTarget()`
+  for the resume card, and a `renderMilestone()` seal (the 4 Gospels are the first).
+
+**`als-v406`** — Chrissie's sleep page is hers again. Alex reported the
 als-v396 **"My protocol"** section (his 10:00 wake anchor + early-waking
 playbook) showing on *her* account, and thought that update had also killed her
 Garmin sleep sync. The section was the real bug: `#protoSec` rendered
