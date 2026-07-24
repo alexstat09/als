@@ -77,6 +77,24 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
 - **Weigh-ins and gym live in `pocoach-sync.js`, not `sync.js`.**
 - `fetch()` resolves on 4xx. Always check `r.ok`. `lastJson` advances only on a
   confirmed write.
+- **`supabase-js` does NOT throw on an HTTP-rejected write.** `.upsert()` /
+  `.insert()` / `.update()` **resolve** with an `{ error }` field. Awaiting one
+  without reading `res.error` is a silent-success trap: `sync.js` was advancing
+  `lastJson` and reporting "Saved" over rejected writes (fixed **als-v403** —
+  both upsert sites now `if (res.error) throw res.error`). This is the
+  supabase-js twin of the `r.ok` rule above. `pocoach-sync.js` (raw `fetch`)
+  was already honest, which is why the stranded banner names *it*.
+- **Never load a sync-critical dependency from an external CDN.** The Supabase
+  client was loaded from jsdelivr; the SW never caches cross-origin (see `sw.js`
+  header), so one flaky load left `window.supabase` undefined → topbar's login
+  gate fails **open** and `sync.js` no-ops **silently** (constraint 10). Vendored
+  to `vendor/supabase.min.js` + added to SW `CORE` (**als-v402**). Self-host sync
+  deps; never CDN them.
+- **The stranded banner tells the truth AND the cause** (`als-sync-status.js`):
+  `fail(name, detail)` carries the HTTP status, so it prints
+  `gym & weigh-ins · HTTP 401` (stored in `als:sync-errd`, cleared on `ok()`). A
+  stuck engine is **usually a stale session** — cached reads still render so the
+  page looks fine while writes 401; the fix is re-login.
 - `sync.js` merges any object child named **`logs`** with `Math.max`, so a
   counter cannot decrease unless every write stamps `_ts`.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
@@ -95,7 +113,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v401`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v405`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -181,7 +199,31 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**Last shipped — `als-v399` → `als-v401`, `supps.html` became the whole
+**HEAD is `als-v405`** (run.html adopted the "Road to Athens" redesign,
+**visual-only** — her data path byte-identical; that work is its own thread).
+It sits on top of **this session's sync-resilience pair, `als-v402`/`als-v403`**
+(2026-07-24, on `main`, 11 suites + smoke green). Triggered by Chrissie's run
+data + Alex's phone not reaching the cloud, and the dashboard's *"changes from
+the last 9 hours are only on this device"* banner:
+
+- **`als-v402` — self-hosted Supabase (the silent no-cloud fix).** Every page
+  loaded the Supabase client from `cdn.jsdelivr.net`; the SW never caches
+  cross-origin, so a flaky load on the PWA left `window.supabase` undefined →
+  topbar's login gate fails **open** and `sync.js` no-ops **silently** while the
+  page looks totally normal (localStorage still renders). Vendored the exact
+  build (2.110.8) to `vendor/supabase.min.js`, repointed **all 32 pages**, added
+  it to SW `CORE`. See the two new §2 sync rules.
+- **`als-v403` — sync.js stopped lying + the banner names the cause.** `sync.js`
+  awaited `supa.upsert()` but never read `.error`; supabase-js **resolves** (not
+  throws) on an HTTP rejection, so failed writes advanced `lastJson` and reported
+  "Saved." Both upsert sites now check `res.error`. And `fail(name, detail)` now
+  carries the HTTP status → the stranded banner prints `gym & weigh-ins · HTTP
+  401` (`als:sync-errd`), so a stuck write is **readable off the phone**. **Open
+  follow-up:** the live banner's cause was never confirmed — when Alex reads the
+  new second line, `HTTP 401/403` → stale session (re-login), `413` → row too
+  big, `400` → malformed. Chase whatever it actually says.
+
+**Before that — `als-v399` → `als-v401`, `supps.html` became the whole
 supplement world** (2026-07-23, on `main`, 11 test suites + smoke green,
 manager + timeline headless-verified). Three moves:
 
