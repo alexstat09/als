@@ -57,7 +57,7 @@ const code = main.replace(/^<script>/,'').replace(/<\/script>$/,'');
 
 // expose internals for assertions by appending a hook
 const hook = code.replace('window._scriptureRerender=function(){ render(); };',
-  'window.__t={ bookOf:bookOf, coverage:coverage, computeStreak:computeStreak, weekDays:weekDays, position:position, sessions:sessions, seedData:seedData, BIBLE:BIBLE, CANON_TOTAL:CANON_TOTAL }; window._scriptureRerender=function(){ render(); };');
+  'window.__t={ bookOf:bookOf, coverage:coverage, computeStreak:computeStreak, weekDays:weekDays, position:position, sessions:sessions, seedData:seedData, gospelSeed:gospelSeed, continueTarget:continueTarget, BOOK_BY_EN:BOOK_BY_EN, BIBLE:BIBLE, CANON_TOTAL:CANON_TOTAL }; window._scriptureRerender=function(){ render(); };');
 
 vm.createContext(sandbox);
 try { vm.runInContext(hook, sandbox); }
@@ -72,10 +72,15 @@ if(T){
   ok(T.bookOf(2).en==='Genesis', 'page 2 → Genesis');
   ok(T.bookOf(1455).en==='John', 'page 1455 → John (his first reading)');
   ok(T.bookOf(1481).en==='John', 'page 1481 → still John');
-  ok(T.bookOf(837).en==='Proverbs', 'page 837 → Proverbs (his ΠΡΜ pages, the 828 fix)');
+  ok(T.bookOf(836).en==='Proverbs', 'page 836 → Proverbs (corrected start)');
+  ok(T.bookOf(837).en==='Proverbs', 'page 837 → Proverbs (his ΠΡΜ pages)');
   ok(T.bookOf(853).en==='Proverbs', 'page 853 → Proverbs');
   ok(T.bookOf(722).en==='Psalms', 'page 722 → Psalms');
-  ok(T.bookOf(827).en==='Psalms', 'page 827 → last page before Proverbs is still Psalms');
+  ok(T.bookOf(835).en==='Psalms', 'page 835 → last Psalms page before Proverbs');
+  ok(T.bookOf(890).en==='Song of Songs', 'page 890 → Song of Songs (corrected)');
+  ok(T.bookOf(900).en==='Isaiah', 'page 900 → Isaiah (corrected)');
+  ok(T.bookOf(980).en==='Jeremiah', 'page 980 → Jeremiah (fixes the old 10-page-Jeremiah bug)');
+  ok(T.bookOf(1070).en==='Ezekiel', 'page 1070 → Ezekiel (corrected)');
   ok(T.bookOf(1692).en==='Revelation', 'page 1692 → Revelation');
   ok(T.bookOf(1722).en==='Revelation', 'last scripture page → Revelation');
   ok(T.bookOf(9999)===null, 'page past the maps → null');
@@ -146,6 +151,35 @@ if(T){
   ok(cov.booksTouched===2, 'seed touches exactly John + Proverbs');
   ok(cov.perBook['John'].got>0 && cov.perBook['Proverbs'].got>0, 'both John and Proverbs have pages');
   ok(cov.pagesRead>0 && cov.pagesRead<T.CANON_TOTAL, 'seed pages within the canon total');
+
+  // ── the four Gospels (finished) ──
+  const g = T.gospelSeed();
+  ok(g.length===4, 'gospel seed has 4 entries');
+  const gids = new Set(g.map(s=>s.id));
+  ok(gids.size===4 && g.every(s=>s.id.indexOf('seed_g_')===0), 'gospel ids unique + stable/prefixed');
+  ['Matthew','Mark','Luke'].forEach(en=>{
+    const e = g.find(x=>x.book===en);
+    const b = T.BOOK_BY_EN[en];
+    ok(e && e.whole===true && e.from===b.p && e.to===b.end, en+' seeded as a whole-book finish covering its full range');
+  });
+  const je = g.find(x=>x.id==='seed_g_john_early');
+  ok(je && je.from===T.BOOK_BY_EN['John'].p && je.to===1454, 'John early part 1428–1454 completes what the notebook (1455–1481) covers');
+
+  // seed + gospels → 4 gospels done, Proverbs still in progress
+  store['bible:sessions'] = JSON.stringify(seed.concat(g));
+  cov = T.coverage();
+  ['Matthew','Mark','Luke','John'].forEach(en=> ok(cov.perBook[en].done===true, en+' reads as finished after the migration'));
+  ok(cov.booksDone===4, 'exactly the 4 Gospels are finished');
+  ok(cov.perBook['Proverbs'].done===false && cov.perBook['Proverbs'].got>0, 'Proverbs stays in progress');
+
+  // ── continueTarget: points at Proverbs (most-recent unfinished), not a done Gospel ──
+  const pos = T.position();
+  const ct = T.continueTarget(cov, pos);
+  ok(ct && ct.book.en==='Proverbs' && ct.page===853, 'Continue resumes Proverbs at page 853');
+
+  // once every book is done, continueTarget is null (road complete)
+  store['bible:sessions'] = JSON.stringify(T.BIBLE.map((b,i)=>({ id:'full'+i, ts:1, kind:'read', date:'2026-01-01', from:b.p, to:b.end, book:b.en })));
+  ok(T.continueTarget(T.coverage(), T.position())===null, 'whole-Bible coverage → no continue target');
 } else {
   fail++; console.error('  ✗ internals not exposed');
 }
