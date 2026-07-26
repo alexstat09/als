@@ -29,6 +29,24 @@ t('a brand outranks a dish word (Misko pasta is a package)', function () {
   assert.strictEqual(KNOW.classify('μακαρόνια misko').kind, 'branded');
 });
 
+t('THE LIVE ERROR: a Greek PLURAL is still the same dish', function () {
+  // live als-v416: "2 τυρόπιτες" matched no dish word (the table holds the
+  // singular), took the product road, and dead-ended on "no label found"
+  ['2 τυρόπιτες', 'σπανακόπιτες', 'λουκουμάδες', '3 σουβλάκια'].forEach(function (q) {
+    assert.strictEqual(KNOW.classify(q).kind, 'dish', q + ' should be a dish');
+  });
+});
+
+t('a plural still gets its English rewrite', function () {
+  assert.ok(/cheese pie/.test(KNOW.classify('2 τυρόπιτες').en));
+  assert.ok(/spinach pie/.test(KNOW.classify('σπανακόπιτες').en));
+});
+
+t('stemming does not turn staples or brands into dishes', function () {
+  assert.strictEqual(KNOW.classify('chicken breast').kind, 'staple');
+  assert.strictEqual(KNOW.classify('kinder bueno').kind, 'branded');
+});
+
 console.log('\n— quantity: his own words carry the count —');
 
 t('a weight is a size, never a count', function () {

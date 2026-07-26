@@ -79,6 +79,21 @@ var GR_EN = {
 var GR_EN_FOLDED = {};
 Object.keys(GR_EN).forEach(function (k) { GR_EN_FOLDED[fold(k)] = GR_EN[k]; });
 
+// Greek inflects the ENDING, so an exact-substring test misses every plural:
+// "τυρόπιτα" is in the table and "2 τυρόπιτες" matched nothing, took the
+// product road, and dead-ended on "no label found" for a bakery pie. Comparing
+// stems costs nothing and covers -α/-ες/-ας/-ων/-ους and English plurals too.
+// A FIXED prefix, not "length − 2": two inflections of different lengths must
+// land on the same stem. "τυρόπιτα" → τυροπ and "τυρόπιτες" → τυροπ; trimming
+// two characters from each gives τυροπι vs τυροπιτ, which never meet.
+function stem(w) { return w.length >= 6 ? w.slice(0, 5) : w; }
+var GR_EN_STEM = {};
+Object.keys(GR_EN_FOLDED).forEach(function (k) {
+  if (k.indexOf(' ') !== -1) return;
+  var s = stem(k);
+  if (!GR_EN_STEM[s]) GR_EN_STEM[s] = GR_EN_FOLDED[k];
+});
+
 // A dish is a THING SOMEONE COOKED. There is no label for it, so it must be
 // costed from its ingredients rather than searched for as a product.
 var DISH_WORDS = [
@@ -199,7 +214,16 @@ function sourceTier(domain) {
 function canConfirmAlone(tier) { return tier <= 2; }
 
 // ── classification ───────────────────────────────────────────────
-function hasAny(f, list) { for (var i = 0; i < list.length; i++) if (f.indexOf(fold(list[i])) !== -1) return true; return false; }
+// Stem-aware containment, so a plural still finds its dish word.
+function hasAny(f, list) {
+  for (var i = 0; i < list.length; i++) {
+    var w = fold(list[i]);
+    if (!w) continue;
+    if (f.indexOf(w) !== -1) return true;
+    if (w.indexOf(' ') === -1 && w.length >= 6 && f.indexOf(stem(w)) !== -1) return true;
+  }
+  return false;
+}
 
 // "2 τυρόπιτες", "3 slices", "μισή πίτα" — his own words carry the count, and
 // throwing it away is a silent multiplication error.
@@ -242,7 +266,8 @@ function classify(text) {
   // toward the wrong food entirely.
   var en = text, seen = {};
   t.forEach(function (word) {
-    if (GR_EN_FOLDED[word] && !seen[word]) { seen[word] = 1; en += ' ' + GR_EN_FOLDED[word]; }
+    var hit = GR_EN_FOLDED[word] || GR_EN_STEM[stem(word)];
+    if (hit && !seen[word]) { seen[word] = 1; en += ' ' + hit; }
   });
   // multi-word keys still need a substring pass, but only they
   Object.keys(GR_EN_FOLDED).forEach(function (k) {
