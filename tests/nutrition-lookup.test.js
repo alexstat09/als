@@ -222,6 +222,21 @@ t('a one-word ingredient cannot match a long branded name', function () {
   });
 });
 
+t('THE LIVE ERROR: "tomato sauce" is not chicken kokkinisto', function () {
+  // live als-v414: a μακαρόνια με κιμά breakdown listed "Chicken in tomato
+  // sauce" as a verified ingredient — two of four words matched, but the food
+  // is chicken and the query never said chicken
+  var c = look('tomato sauce');
+  assert.ok(c, 'tomato sauce should still resolve');
+  assert.ok(!/chicken/i.test(c.name), 'matched ' + c.name);
+  assert.ok(/tomato/i.test(c.name), 'matched ' + c.name);
+});
+
+t('spelling variants name the same food', function () {
+  assert.ok(/phyllo/i.test(look('filo pastry').name));
+  assert.ok(/beef/i.test(look('minced beef').name));
+});
+
 t('a parenthetical aside is not part of the food', function () {
   var c = look('olive oil (for frying)');
   assert.ok(c && /olive oil/i.test(c.name), 'got ' + (c && c.name));

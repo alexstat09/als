@@ -131,7 +131,13 @@ var GENERIC_QUAL = { whole: 1, raw: 1, cooked: 1, plain: 1, fresh: 1, medium: 1,
 // "Watermelon" (watermelon.indexOf('water')===0) and a loukoumades breakdown
 // was costed with 40 g of watermelon in it. Plurals and inflections differ by
 // a letter or two; a different food differs by more.
+// Spelling pairs that name the SAME food. Without these the head-noun rule
+// below would reject "filo pastry" against "Phyllo pastry", which is the single
+// most common ingredient in his Greek dishes.
+var VARIANT = { filo: 'phyllo', fillo: 'phyllo', phillo: 'phyllo', yoghurt: 'yogurt', minced: 'ground', mince: 'ground', aubergine: 'eggplant', courgette: 'zucchini', prawn: 'shrimp', coriander: 'cilantro', rocket: 'arugula' };
+function canon(t) { return VARIANT[t] || t; }
 function tokEq(a, b) {
+  a = canon(a); b = canon(b);
   if (a === b) return true;
   if (a.length < 4 || b.length < 4) return false;
   if (Math.abs(a.length - b.length) > 2) return false;
@@ -167,6 +173,12 @@ function coreLookup(name) {
     var contentT = nameT.filter(function (x) { return !GENERIC_QUAL[x]; });
     if (!contentT.length) contentT = nameT;
     var matchedContent = contentT.filter(function (x) { return matchedName[x]; }).length;
+
+    // The HEAD NOUN is what the food actually is; everything after it
+    // qualifies. "tomato sauce" matched "Chicken in tomato sauce" on two of
+    // four words — but the food is chicken, and the query never said chicken.
+    // If the head noun is unexplained, this is a different food.
+    if (contentT.length && !matchedName[contentT[0]]) return;
 
     var qCov = hits / qt.length;
     var nCov = matchedContent / contentT.length;
