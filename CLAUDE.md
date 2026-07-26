@@ -61,6 +61,15 @@ QStash tick or a page that asks for it.
 - API: `json(role, payload)` → `{ok, obj, raw, model}`, `stream(role, payload)`.
 - ⚠️ **`gpt-oss-120b` counts hidden reasoning inside `max_tokens`.** A long call
   returns EMPTY, not an error. Use `reasoning:'low'` plus chunking.
+- ⚠️ **`response_format: json_object` is a VALIDATOR, not a hint.** If the
+  model's output isn't valid JSON — usually truncated, because reasoning tokens
+  eat the same budget — Groq rejects the **whole call with a 400** instead of
+  returning what it produced. This took BOTH photo paths down at once and read
+  as "the vision model is dead" when the model was fine. `json()` now retries
+  the same model once with `response_format` stripped and rescues the object
+  via `parse()`, accepting it only if an object actually comes back
+  (als-v419). **Budget generously for JSON calls** and, when a Groq endpoint
+  400s, read the upstream message before touching the prompt.
 - `reasoning_effort` is gpt-oss-only. `tune()` maps generic params per model.
 
 ### Sync — the most expensive bug class in this project
@@ -84,12 +93,16 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   both upsert sites now `if (res.error) throw res.error`). This is the
   supabase-js twin of the `r.ok` rule above. `pocoach-sync.js` (raw `fetch`)
   was already honest, which is why the stranded banner names *it*.
-- **Never load a sync-critical dependency from an external CDN.** The Supabase
-  client was loaded from jsdelivr; the SW never caches cross-origin (see `sw.js`
-  header), so one flaky load left `window.supabase` undefined → topbar's login
-  gate fails **open** and `sync.js` no-ops **silently** (constraint 10). Vendored
-  to `vendor/supabase.min.js` + added to SW `CORE` (**als-v402**). Self-host sync
-  deps; never CDN them.
+- **Never load ANY load-bearing dependency from an external CDN.** The SW never
+  caches cross-origin (see the `sw.js` header), so one flaky load leaves the
+  global undefined and the feature dies **silently**. It has now happened
+  twice: the Supabase client from jsdelivr left `window.supabase` undefined →
+  topbar's login gate failed **open** and `sync.js` no-opped (vendored
+  **als-v402**); and `html5-qrcode` from unpkg left the barcode scanner's
+  `if (!window.Html5Qrcode) return;` doing nothing at all, which is a large
+  part of why "most barcodes don't scan" (vendored **als-v413**). Vendor it
+  into `vendor/`, add it to SW `CORE`, and never write a guard that returns
+  silently when a library is missing — say it's missing.
 - **The stranded banner tells the truth AND the cause** (`als-sync-status.js`):
   `fail(name, detail)` carries the HTTP status, so it prints
   `gym & weigh-ins · HTTP 401` (stored in `als:sync-errd`, cleared on `ok()`). A
@@ -113,7 +126,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v408`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v419`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -161,7 +174,13 @@ running-low → shown as a "Low" badge), and **window push nudges** (§5).
 `health.html` was folded into it and is now a redirect; water is `po-water.html`
 only.
 
-**Food** — `nutrition.html` with photo macros, food search, per-piece weight
+**Food** — `nutrition.html`. Finding a food is **one pipeline behind one
+button** (als-v413→419, §5): it decides what KIND of food you typed, then a
+packaged product is looked up and verified against real labels while a cooked
+dish is costed from its ingredients against the verified core DB. Every answer
+carries its receipts — the source, whether it was label-verified or estimated,
+and a reason whenever confidence drops. Photographing the nutrition label is
+the exact path when nothing has it. Plus photo macros, food search, per-piece weight
 guard (`unitOK()`, the 111g-Oreo fix), favourites, streaks.
 
 **Mind & life** — `main.html` (outcome goals auto-tracked from workouts, weight,
@@ -209,15 +228,37 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v417` — the nutrition lookup was rebuilt to be grounded,
-classified and honest** (2026-07-26, on `main`, 38 test groups + all suites +
-smoke green, and every claim below verified against the LIVE endpoints). Read
-this first if the task touches finding or logging a food:
+**HEAD is `als-v419` — the nutrition lookup was rebuilt to be grounded,
+classified and honest** (2026-07-26, on `main`, 38 test groups in
+`tests/nutrition-lookup.test.js` + all 13 suites + smoke green). Read this
+first if the task touches finding or logging a food.
 
-- **Diagnose from the live endpoint, not from the code.** Every fix in this arc
-  came from `curl`-ing production with an `Origin` header (the `_auth` gate
-  rejects a bare curl) and *reading the answer*. Four separate wrong-food bugs
-  survived a green test suite and were only visible in real output.
+**The one lesson worth carrying to any task, not just this one:** every real
+bug in this arc was invisible to a green test suite and obvious the moment I
+read live output. Five deploys, and four of them fixed something the tests had
+already blessed. When the failure mode is a *plausible wrong number* rather
+than an error, tests only prove you didn't break what you thought to check.
+`curl` production and look at what it actually says.
+
+To reproduce any of it: `curl` production with an `Origin` header — the `_auth`
+gate rejects a bare curl.
+
+```bash
+H=https://als-ochre.vercel.app
+curl -s -X POST $H/api/nutrition-web -H "Content-Type: application/json" \
+  -H "Origin: $H" -d '{"text":"τυρόπιτα"}'
+```
+
+- 🔴 **STILL UNVERIFIED, needs a device — the whole CLIENT half.** The scanner
+  rewrite (native `BarcodeDetector`, camera-failure messages), the label-photo
+  flow through the UI, and the receipts line in `showPortion` are syntax- and
+  logic-checked only: **no browser, no camera and no real photo has touched
+  them.** The SERVER half is verified live end-to-end, including a Greek label
+  transcribed exactly (kcal/macros/fibre/sugar right, salt 0,45 g → 180 mg
+  sodium, serving 35 g, package 132 g). The **plate** photo path is also
+  unconfirmed — it refuses a label image, which is correct for a nonsense
+  input, but nobody has sent it a real meal. **Start here next session:** ask
+  Alex what the Scan tab says on a failure, since it now names its own cause.
 - **Three kinds of food, three roads** (`api/_food-know.js` → `classify()`).
   A packaged product has a label to find. A homemade dish **does not**, and
   hunting one is what produced the worst numbers in the app: "τυρόπιτα από
@@ -275,27 +316,13 @@ this first if the task touches finding or logging a food:
 - Not built: contributing a missing product back to Open Food Facts, and a
   local lookup cache (resolved foods are already remembered as Custom foods,
   which covers the common case).
-- ⚠️⚠️ **Groq's `json_object` mode is a VALIDATOR, and it took vision down.**
-  Both photo paths were returning HTTP 400 — *"Failed to validate JSON"* —
-  because when the model's output isn't valid JSON (truncated: reasoning
-  tokens count against `max_tokens`) Groq rejects the **entire call** instead
-  of returning what it produced. The model was fine; only the strict mode
-  failed. `_model.json()` now retries the same model once with
-  `response_format` removed and rescues the object with `parse()`, accepting
-  the retry only if an object actually comes back (als-v419); both vision
-  calls went 500 → 900 `max_tokens`. **This is the brain-stem, so every JSON
-  caller inherits it.** When a Groq endpoint 400s, read the upstream message
-  before touching the prompt — that message was being thrown away, which is
-  why the outage looked like a mystery.
-- **STILL UNVERIFIED, needs a device:** the whole client half. The scanner
-  rewrite (native `BarcodeDetector`, camera-failure messages), the label-photo
-  flow through the UI, and the receipts line in `showPortion` are syntax- and
-  logic-checked only — **no browser, no camera, no real photo has touched
-  them.** The *server* side is verified live end-to-end, including a Greek
-  label transcribed perfectly (kcal/macros/fibre/sugar exact, salt 0,45 g →
-  180 mg sodium, serving 35 g, package 132 g). The **plate** photo path is
-  also unconfirmed: it fails on a label image, which is the correct response
-  to a nonsense input, but nobody has sent it a real meal.
+- ⚠️⚠️ **A SEPARATE outage was found while verifying this, and it was not a
+  regression:** both photo paths had been returning HTTP 400 because Groq's
+  `json_object` mode is a validator that rejects a truncated reply outright.
+  Fixed in the brain-stem — **see §2 "AI calls"**, which is the permanent home
+  for that rule. Worth knowing the shape of it: the failure said "the vision
+  model is not responding" when the model was fine, because the upstream
+  message was being discarded.
 
 **Before that — `als-v412`.** The last sessions built, rebuilt (×3), then **pivoted**
 the study page. Read this first if the task touches studying / Πανελλήνιες:
@@ -666,7 +693,7 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 10 suites, 2,382 assertions
+for f in tests/*.js; do node "$f"; done   # 13 suites (garmin-probe is a TOOL, not a suite)
 ./smoke-test.sh                            # MUST pass before every push
 ```
 

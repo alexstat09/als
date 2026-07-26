@@ -121,8 +121,19 @@ Home has its own token set inline in `index.html`.
 
 **`api/`** — 12 serverless functions, plus `_`-prefixed helpers that Vercel
 neither routes nor counts (`_model`, `_supa`, `_auth`, `_vault`, `_movies`,
-`_prices`, `_youtube`, `_garmin`, …). New server logic goes into a helper and is
-called from an existing function. **`vendor/`** — GSAP, Lenis.
+`_prices`, `_youtube`, `_garmin`, `_core-foods`, `_food-know`, `_nut-check`, …).
+New server logic goes into a helper and is called from an existing function.
+
+Food lookup specifically: `food-search.js` (databases + barcode),
+`nutrition-web.js` (classify → retrieve → verify, and the dish-from-ingredients
+route), `nutrition-estimate.js` (last-resort estimate + per-piece weights),
+`meal-photo.js` (plate photos **and** `mode:'label'`, the label transcriber).
+The knowledge and the judgement live in the two helpers: `_food-know.js`
+(what kind of food is this, Greek→English, source tiers, portion and category
+priors) and `_nut-check.js` (grounding, label arithmetic, priors, consensus).
+
+**`vendor/`** — GSAP, Lenis, Supabase, `html5-qrcode` (self-hosted: a CDN'd
+scanner leaves `window.Html5Qrcode` undefined and the Scan tab dies silently).
 
 ---
 
