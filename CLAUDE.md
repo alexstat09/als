@@ -209,7 +209,74 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v412`.** The last sessions built, rebuilt (×3), then **pivoted**
+**HEAD is `als-v417` — the nutrition lookup was rebuilt to be grounded,
+classified and honest** (2026-07-26, on `main`, 38 test groups + all suites +
+smoke green, and every claim below verified against the LIVE endpoints). Read
+this first if the task touches finding or logging a food:
+
+- **Diagnose from the live endpoint, not from the code.** Every fix in this arc
+  came from `curl`-ing production with an `Origin` header (the `_auth` gate
+  rejects a bare curl) and *reading the answer*. Four separate wrong-food bugs
+  survived a green test suite and were only visible in real output.
+- **Three kinds of food, three roads** (`api/_food-know.js` → `classify()`).
+  A packaged product has a label to find. A homemade dish **does not**, and
+  hunting one is what produced the worst numbers in the app: "τυρόπιτα από
+  φούρνο" returned **60 kcal / 28 g** from eatthismuch.com while the core DB
+  held 316 kcal/100g at 120 g. Dishes are now **costed from ingredients**
+  against the verified core DB — traceable, and better than any recipe page.
+  Don't route a dish at a product search again.
+- **`found` is computed, never self-reported** (`api/_nut-check.js`). The old
+  prompt asked the model to grade its own homework and it returned
+  400/40/40/14 at **confidence 1.0** for a Born Winner bar — numbers on no
+  label anywhere, which Atwater ±20% waved through. Three independent tests
+  now: **GROUNDING** (do the digits literally appear in the page we read? a
+  fabrication cannot cite a source), **INTERNAL** (Atwater + sugar ⊆ carbs,
+  satfat ⊆ fat, ≤100 g/100 g), **PRIOR** (plausible for this *kind* of food).
+  Every downgrade writes a human-readable reason onto the card.
+- **Source tier decides who may confirm.** arise-app.com, fitvibestd.com and
+  dietandfitnesstoday.com were all sourcing real answers. Tier 0 =
+  manufacturer/Greek retailer, 1 = Open Food Facts, 2 = national DB, 3 =
+  trackers, 4 = everything else. **Tier ≥3 can corroborate but never confirm
+  alone.**
+- **Portion is a first-class answer.** Correct macros on the wrong mass is
+  still a wrong log: Kinder Bueno resolved to **21 g — one finger of a
+  two-finger bar**. `PORTION_PRIORS` holds as-eaten weights (γύρος 320 g,
+  τυρόπιτα 150 g, Bueno 43 g) and `quantityOf()` reads his own count.
+- **The label photo is the certainty ceiling** (`mode:'label'` in
+  `api/meal-photo.js`, same vision slot, no 13th function). A photo of the
+  nutrition table IS the ground truth every database copies from, so a
+  database miss offers to read the pack instead of dead-ending. It is
+  **transcription, not estimation** — the prompt forbids inference, an
+  unreadable photo says so, and `healFood()` must never "correct" a real
+  reading into a generic one.
+- ⚠️ **Barcode failures were mostly SILENT, not missing data.** The scanner
+  had four swallowed failures in six lines (`if(!lib) return`, empty catches,
+  empty `.catch`) and loaded from **unpkg** — the exact CDN mistake als-v402
+  exists to prevent. Now: vendored, native `BarcodeDetector` preferred,
+  grocery formats only (`ean_13`/`ean_8`/`upc_*`), and every camera failure
+  names its cause. Lookup tries OFF mirrors → USDA Branded by GTIN before
+  saying "not in any database".
+- **Bugs found INSIDE the fix, all locked by tests** — this is the useful part
+  for a future session, because each one produced a plausible wrong number
+  rather than an error: a backtracking digit run read `200g chicken` as **20
+  portions**; `'πίτα'` matched inside `'τυρόπιτα'` and steered a cheese-pie
+  query to pita bread; unfolded Greek keys meant final sigma never matched;
+  **`a.tier || 9` sorted tier-0 manufacturers LAST** (0 is falsy); `"water"`
+  matched **"Watermelon"** by unbounded prefix; one token of `"Magnum ice
+  cream bar"` counted as a full ingredient match; `"tomato sauce"` matched
+  `"Chicken in tomato sauce"` until the **head noun** had to match too;
+  `"egg"` costed as egg white (52 vs 143 kcal); and Greek **plurals** matched
+  no dish word at all, so `"2 τυρόπιτες"` dead-ended on "no label found" — the
+  stem must be a **fixed 5-char prefix**, not `length − 2`, or two inflections
+  never meet.
+- **Known imprecision, left in deliberately:** a bare `"cream"` still costs as
+  *Cream cheese*. Precision is favoured over recall throughout — a miss falls
+  back to a sane per-100g estimate, a wrong match silently poisons the meal.
+- Not built: contributing a missing product back to Open Food Facts, and a
+  local lookup cache (resolved foods are already remembered as Custom foods,
+  which covers the common case).
+
+**Before that — `als-v412`.** The last sessions built, rebuilt (×3), then **pivoted**
 the study page. Read this first if the task touches studying / Πανελλήνιες:
 
 - **What `study.html` is** — a single-page study OS for Alex's exams (Γ Λυκείου
