@@ -64,7 +64,7 @@ async function readLabel(image, res) {
         { type: 'image_url', image_url: { url: image } }
       ] }
     ],
-    max_tokens: 500, temperature: 0, response_format: { type: 'json_object' }
+    max_tokens: 900, temperature: 0, response_format: { type: 'json_object' }
   });
   if (!r.ok) {
     res.status(200).json(model.fail(r, {
@@ -126,7 +126,10 @@ module.exports = async function (req, res) {
         { type: 'image_url', image_url: { url: image } }
       ] }
     ],
-    max_tokens: 500,
+    // 500 was not enough headroom for a multi-item plate once the model's own
+    // reasoning counted against the budget — the JSON came back truncated and
+    // Groq's validator rejected the whole call with a 400.
+    max_tokens: 900,
     temperature: 0.2,
     response_format: { type: 'json_object' }
   });

@@ -79,6 +79,19 @@ function tune(model, payload) {
    chain makes it worse), 5xx (Groq-wide, not model-specific). */
 function shouldFallThrough(status) { return status === 404 || status === 400; }
 
+/* Groq's JSON mode is a VALIDATOR, not just a hint: if the model's output
+   isn't valid JSON (usually truncated, because reasoning tokens eat the
+   budget), Groq rejects the whole call with a 400 instead of returning what
+   it produced. That took photo macros AND label reading down together, and
+   the model itself was fine — only the strict mode failed.
+   We already rescue an object embedded in prose (see parse()), so the right
+   answer is to ask the SAME model again without the validator. */
+function isJsonValidateFailure(body) {
+  var c = ((body && body.error && (body.error.code || body.error.type)) || '').toString();
+  var m = ((body && body.error && body.error.message) || '').toString();
+  return c.indexOf('json_validate') >= 0 || /failed to validate json/i.test(m);
+}
+
 /* Groq's signal that the model emitted prose where a tool call belonged.
    gpt-oss-120b is reported to do this. It is NOT a reason to switch models —
    the same model can answer fine once you stop offering it tools. */
@@ -158,6 +171,26 @@ async function json(role, payload) {
     if (r.ok) {
       var raw = (body && body.choices && body.choices[0] && body.choices[0].message && body.choices[0].message.content) || '';
       return { ok: true, obj: parse(raw), raw: raw, model: chain[i] };
+    }
+    // Strict JSON mode refused this model's output. The model is not the
+    // problem — retry it once with the validator off and rescue the object
+    // ourselves. Only then fall through the chain.
+    if (r.status === 400 && isJsonValidateFailure(body) && payload.response_format) {
+      var relaxed = {};
+      for (var kk in payload) if (Object.prototype.hasOwnProperty.call(payload, kk)) relaxed[kk] = payload[kk];
+      delete relaxed.response_format;
+      console.warn('[_model] ' + role + ': ' + chain[i] + ' failed JSON validation — retrying without response_format');
+      var r2 = null;
+      try { r2 = await post(chain[i], relaxed, k); } catch (e2) { r2 = null; }
+      if (r2 && r2.ok) {
+        var b2 = null;
+        try { b2 = await r2.json(); } catch (e3) {}
+        var raw2 = (b2 && b2.choices && b2.choices[0] && b2.choices[0].message && b2.choices[0].message.content) || '';
+        var obj2 = parse(raw2);
+        // Only accept it if we could actually READ an object out of it —
+        // otherwise this is no better than the failure we started with.
+        if (obj2) return { ok: true, obj: obj2, raw: raw2, model: chain[i], relaxed: true };
+      }
     }
     if (!shouldFallThrough(r.status)) {
       return { ok: false, kind: r.status === 429 ? 'rate' : 'upstream', status: r.status, message: errMsg(body) };
