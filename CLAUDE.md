@@ -275,6 +275,27 @@ this first if the task touches finding or logging a food:
 - Not built: contributing a missing product back to Open Food Facts, and a
   local lookup cache (resolved foods are already remembered as Custom foods,
   which covers the common case).
+- ⚠️⚠️ **Groq's `json_object` mode is a VALIDATOR, and it took vision down.**
+  Both photo paths were returning HTTP 400 — *"Failed to validate JSON"* —
+  because when the model's output isn't valid JSON (truncated: reasoning
+  tokens count against `max_tokens`) Groq rejects the **entire call** instead
+  of returning what it produced. The model was fine; only the strict mode
+  failed. `_model.json()` now retries the same model once with
+  `response_format` removed and rescues the object with `parse()`, accepting
+  the retry only if an object actually comes back (als-v419); both vision
+  calls went 500 → 900 `max_tokens`. **This is the brain-stem, so every JSON
+  caller inherits it.** When a Groq endpoint 400s, read the upstream message
+  before touching the prompt — that message was being thrown away, which is
+  why the outage looked like a mystery.
+- **STILL UNVERIFIED, needs a device:** the whole client half. The scanner
+  rewrite (native `BarcodeDetector`, camera-failure messages), the label-photo
+  flow through the UI, and the receipts line in `showPortion` are syntax- and
+  logic-checked only — **no browser, no camera, no real photo has touched
+  them.** The *server* side is verified live end-to-end, including a Greek
+  label transcribed perfectly (kcal/macros/fibre/sugar exact, salt 0,45 g →
+  180 mg sodium, serving 35 g, package 132 g). The **plate** photo path is
+  also unconfirmed: it fails on a label image, which is the correct response
+  to a nonsense input, but nobody has sent it a real meal.
 
 **Before that — `als-v412`.** The last sessions built, rebuilt (×3), then **pivoted**
 the study page. Read this first if the task touches studying / Πανελλήνιες:
