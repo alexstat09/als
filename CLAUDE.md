@@ -184,7 +184,8 @@ read-fraction, current book pulses, tap-to-filter), the S.O.A.P. journal, streak
 + Mon–Sun week. His notebook history + the 4 finished Gospels are seeded. Synced
 via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 
-**Study** — `arxaia.html`, `istoria.html`.
+**Study** — `arxaia.html`, `istoria.html`, and `study.html` (the Πανελλήνιες
+command center «Η Χρονιά»; see §5 — live but its direction has pivoted to Notion).
 
 **Nova** — `nova-chat.html` plus `api/nova-chat.js`. Four read-only tools, every
 result bound. Empty is not an error and she must never invent a number.
@@ -208,7 +209,49 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v408`** — `scripture.html`, the Bible reading tracker, built then
+**HEAD is `als-v412`.** The last sessions built, rebuilt (×3), then **pivoted**
+the study page. Read this first if the task touches studying / Πανελλήνιες:
+
+- **What `study.html` is** — a single-page study OS for Alex's exams (Γ Λυκείου
+  → **Πανελλήνιες ~June 2027**, Θεωρητική: Αρχαία, Ιστορία, Λατινικά, Έκθεση).
+  Countdown North Star, timetable-driven Today, homework with **auto-due-dates**
+  (from the next class of that subject), exams+scores, study-plan ring/streak,
+  subjects+ύλη status tracker, timetable editor (Φροντ./Σχολείο tabs). appKey
+  `study`; 7 synced keys (`study:subjects/timetable/homework/exams/units/plan/goal`)
+  in `initCloudSync` + backup `BUNDLES` + SW `CORE` + a Home "Study" tile.
+  Owner-gated **empty-only** seed (4 subjects + 15 ύλη units incl. Ιστορία's
+  Προσφυγικό/Κόμματα/Οικονομία/Κρητικό/Παρευξείνιος). `study:seedv` is local-only.
+- **⚠️ THIS PAGE IS LAPTOP-ONLY** — Alex: *"i will be seeing it ONLY from the
+  laptop."* Design **desktop-first** (wide multi-column) if it continues.
+- **Three aesthetics, all rejected by Alex** (taste is the hard part, not
+  features — every rebuild kept 100% parity): v409 emerald card-stack ("generic,
+  layout AND aesthetic"), v410 warm editorial day-spine + antique gold ("the
+  colours are weird"), v411/412 neutral-graphite + blue laptop dashboard ("not so
+  premium… its off"). v412 also fixed a dead Σχολείο/Φροντ. tab (tabs had `data-tk`
+  but no handler). **Don't reflexively re-skin a 4th time** — see the pivot.
+- **⭐ THE PIVOT — going Notion.** Alex chose to move the study page OUT to
+  **Notion** (a premium look he controls himself) and "connect it here so you can
+  read it." Planned **«Η Χρονιά»** workspace: a dashboard (live countdown +
+  Σήμερα + this-week) over **6 linked DBs** — Μαθήματα, Ύλη, Εργασίες,
+  Διαγωνίσματα, Πρόγραμμα, Διάβασμα (full spec in memory `als_study_command_center`).
+- **⚠️⚠️ BLOCKER — the Notion connector is NOT reachable from Claude Code.** Alex
+  authorized **Notion in claude.ai's connectors** and said "connected, start
+  building." But this **Claude Code CLI has no Notion tool** (a tool search for
+  "notion" returns only Higgsfield / Google-Calendar MCPs). So the page **cannot
+  be built from Claude Code** as-is. To actually build it: **(a)** do it from the
+  **claude.ai app** (where the Notion connector lives), or **(b)** add a **Notion
+  MCP server to Claude Code** (`claude mcp add` / `/mcp`). Fallback that DOES work
+  from here: generate a **self-build kit** — import-ready CSVs for the DBs + a
+  short setup guide. **Never tell Alex "building it now" from Claude Code until a
+  Notion tool actually exists** — verify first. (When last left, I had NOT started
+  the Notion build; the session ended here because he was tired.)
+- **`study.html`'s fate is undecided** — keep it live for now; retire to a
+  redirect only if Notion fully replaces it (his call).
+- **Real timetable still pending** (drops into whichever tool wins): **φροντιστήριο
+  starts 3 Aug** (Mon–Fri, 3 lessons **18:00–21:00**, the 4 subjects), **school
+  mid-September**; general school subjects TBD. Target σχολή/μόρια optional.
+
+**`als-v408`** — `scripture.html`, the Bible reading tracker, built then
 refined on Alex's feedback (2026-07-24, on `main`, 12 suites + a 55-assertion
 `tests/scripture.test.js` + smoke green; page and centered dialog headless-shot).
 `als-v407` shipped the page; `als-v408` corrected and extended it. What a fresh

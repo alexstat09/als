@@ -124,26 +124,58 @@ var EXTRACT_SYS = [
 // for "egg" and being costed as "egg white" is a 3× error (52 vs 143 kcal), and
 // it scores identically to "egg, whole" without this — both are one extra word.
 var DERIVATIVE = { white: 1, whites: 1, yolk: 1, yolks: 1, powder: 1, powdered: 1, concentrate: 1, extract: 1, essence: 1, skin: 1, skinless: 0, shell: 1, substitute: 1, imitation: 1, flavored: 1, flavoured: 1, dried: 1, dehydrated: 1, juice: 1, liquid: 1 };
+// Words that describe the SAME food rather than a different one, so leaving
+// them unmatched shouldn't be held against a candidate ("egg" vs "Egg, whole").
+var GENERIC_QUAL = { whole: 1, raw: 1, cooked: 1, plain: 1, fresh: 1, medium: 1, large: 1, small: 1, all: 1, purpose: 1, natural: 1, regular: 1, ordinary: 1, boiled: 1, unsalted: 1, salted: 1 };
+// ⚠️ A prefix match must not change the food. Unbounded, "water" matched
+// "Watermelon" (watermelon.indexOf('water')===0) and a loukoumades breakdown
+// was costed with 40 g of watermelon in it. Plurals and inflections differ by
+// a letter or two; a different food differs by more.
+function tokEq(a, b) {
+  if (a === b) return true;
+  if (a.length < 4 || b.length < 4) return false;
+  if (Math.abs(a.length - b.length) > 2) return false;
+  return a.indexOf(b) === 0 || b.indexOf(a) === 0;
+}
 function coreLookup(name) {
-  var qt = KNOW.toks(name);
+  // "olive oil (for frying)" is olive oil — the aside is not part of the food
+  var qt = KNOW.toks(String(name).replace(/\([^)]*\)/g, ' '));
   if (!qt.length) return null;
   var best = null, bestScore = -1;
   CORE.forEach(function (cf) {
-    var nt = KNOW.toks(cf.name + ' ' + (cf.alias || ''));
-    var hits = 0;
+    // aliases help us FIND a food but are not part of its name, so they must
+    // not count against coverage (the Greek alias on "Phyllo pastry (φύλλο
+    // κρούστας)" would otherwise read as three unexplained words)
+    var nameT = KNOW.toks(String(cf.name).replace(/\([^)]*\)/g, ' '));
+    var allT = nameT.concat(KNOW.toks(cf.alias || ''));
+    if (!nameT.length) return;
+
+    var hits = 0, matchedName = {};
     qt.forEach(function (t) {
-      if (nt.some(function (x) { return x === t || (t.length >= 4 && x.length >= 4 && (x.indexOf(t) === 0 || t.indexOf(x) === 0)); })) hits++;
+      if (allT.some(function (x) { return tokEq(x, t); })) hits++;
+      nameT.forEach(function (x) { if (tokEq(x, t)) matchedName[x] = 1; });
     });
     if (!hits) return;
-    var score = hits / qt.length * 10 - Math.min(4, nt.length / 4);
-    if (hits === qt.length) score += 6;
+
+    // BOTH directions must hold. How much of the query is explained, AND how
+    // much of the food's name is explained. One word of "Magnum ice cream bar"
+    // is not an ingredient match — precision matters more than recall here,
+    // because a miss falls back to a sane estimate while a WRONG match silently
+    // poisons the meal (a loukoumades breakdown costed with watermelon in it).
+    // "whole", "raw", "plain" describe the same food; "cheese" makes it a
+    // different one. Only the latter should count as an unexplained word.
+    var contentT = nameT.filter(function (x) { return !GENERIC_QUAL[x]; });
+    if (!contentT.length) contentT = nameT;
+    var matchedContent = contentT.filter(function (x) { return matchedName[x]; }).length;
+
+    var qCov = hits / qt.length;
+    var nCov = matchedContent / contentT.length;
+    var score = 10 * qCov * nCov + (qCov === 1 ? 3 : 0);
     // a qualifier the query never asked for narrows the food to something else
-    nt.forEach(function (x) {
-      if (DERIVATIVE[x] && qt.indexOf(x) === -1) score -= 3;
-    });
+    allT.forEach(function (x) { if (DERIVATIVE[x] && qt.indexOf(x) === -1) score -= 3; });
     if (score > bestScore) { bestScore = score; best = cf; }
   });
-  return bestScore >= 5 ? best : null;
+  return bestScore >= 7 ? best : null;
 }
 
 var DISH_SYS = [
@@ -364,3 +396,9 @@ module.exports = async function (req, res) {
     res.status(200).json({ error: 'failed', message: 'That lookup broke — photograph the label and I’ll read it exactly.' });
   }
 };
+
+// Exposed for tests only. Vercel invokes module.exports as the handler; extra
+// properties on it are ignored. Ingredient matching is where a dish breakdown
+// silently goes wrong, so it needs to be assertable.
+module.exports._coreLookup = coreLookup;
+module.exports._tokEq = tokEq;

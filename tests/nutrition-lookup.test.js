@@ -195,6 +195,51 @@ t('a confirmed verdict needs grounding AND a source allowed to confirm', functio
   assert.strictEqual(farm.confirmed, false, 'a tier-4 site cannot confirm alone');
 });
 
+console.log('\n— ingredient costing: where a dish breakdown goes wrong —');
+
+var look = require('../api/nutrition-web.js')._coreLookup;
+
+t('real ingredients resolve to verified core foods', function () {
+  [['feta cheese', /feta/i], ['filo pastry', /phyllo|filo/i], ['olive oil', /olive oil/i],
+   ['minced beef', /beef/i], ['cooked white rice', /rice/i], ['honey', /honey/i]].forEach(function (pair) {
+    var c = look(pair[0]);
+    assert.ok(c, pair[0] + ' should match a core food');
+    assert.ok(pair[1].test(c.name), pair[0] + ' matched the wrong food: ' + c.name);
+  });
+});
+
+t('THE LIVE ERROR: "water" is not watermelon', function () {
+  // live als-v413: a λουκουμάδες breakdown was costed with 40 g of watermelon
+  var c = look('water');
+  assert.ok(!c || !/watermelon/i.test(c.name), 'water matched ' + (c && c.name));
+});
+
+t('a one-word ingredient cannot match a long branded name', function () {
+  // live als-v413: an ingredient resolved to "Magnum ice cream bar"
+  ['yeast', 'cinnamon', 'baking powder', 'vanilla'].forEach(function (q) {
+    var c = look(q);
+    if (c) assert.ok(KNOW.toks(c.name).length <= 4, q + ' matched an over-specific food: ' + c.name);
+  });
+});
+
+t('a parenthetical aside is not part of the food', function () {
+  var c = look('olive oil (for frying)');
+  assert.ok(c && /olive oil/i.test(c.name), 'got ' + (c && c.name));
+});
+
+t('whole egg, not egg white (52 vs 143 kcal)', function () {
+  var c = look('egg');
+  assert.ok(c && !/white|yolk/i.test(c.name), 'egg matched ' + (c && c.name));
+});
+
+t('plurals still match, different foods do not', function () {
+  var eq = require('../api/nutrition-web.js')._tokEq;
+  assert.ok(eq('potato', 'potatoes'));
+  assert.ok(eq('banana', 'bananas'));
+  assert.ok(!eq('water', 'watermelon'));
+  assert.ok(!eq('cream', 'creamery'));
+});
+
 console.log('\n— never silently confident —');
 
 t('every downgraded verdict explains itself', function () {
