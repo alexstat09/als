@@ -69,7 +69,11 @@ async function readLabel(image, res) {
   if (!r.ok) {
     res.status(200).json(model.fail(r, {
       'no-key': 'Label reading needs GROQ_API_KEY (see NOVA_SETUP.md).',
-      exhausted: 'Label reading is unavailable right now (the vision model is not responding).'
+      // The vision chain is ONE model deep and PREVIEW, so "exhausted" means
+      // image reading is genuinely down. Carry Groq's own reason: without it
+      // the outage is unfixable from the outside, which is the same disease as
+      // rendering "no data" when the read failed.
+      exhausted: 'Label reading is unavailable right now' + (r.message ? ' — ' + String(r.message).slice(0, 200) : ' (the vision model is not responding)') + '.'
     }));
     return;
   }
@@ -132,7 +136,7 @@ module.exports = async function (req, res) {
       'no-key': 'Photo logging needs GROQ_API_KEY (see NOVA_SETUP.md).',
       // The chain is one model deep here, so "exhausted" means photo reading
       // is genuinely unavailable. Say that, and point at the path that works.
-      exhausted: 'Photo reading is unavailable right now (the vision model is not responding) — use AI Describe instead.'
+      exhausted: 'Photo reading is unavailable right now' + (r.message ? ' — ' + String(r.message).slice(0, 200) : ' (the vision model is not responding)') + '. Use AI Describe instead.'
     }));
     return;
   }
