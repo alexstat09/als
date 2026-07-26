@@ -90,13 +90,27 @@ async function offSearch(q) {
   if (a && a.length) return a;
   return await offCGI(q).catch(function () { return []; });
 }
-async function offBarcode(code) {
-  var r = await fetch('https://world.openfoodfacts.org/api/v0/product/' + encodeURIComponent(code) + '.json',
+async function offBarcode(code, host) {
+  var r = await fetch((host || 'https://world.openfoodfacts.org') + '/api/v0/product/' + encodeURIComponent(code) + '.json',
     { headers: { 'User-Agent': 'ALS-Dashboard/1.0 (personal)' } });
   if (!r.ok) return null;
   var j = await r.json();
   if (j.status !== 1 || !j.product) return null;
   return offRow(j.product);
+}
+
+// Open Food Facts has several regional mirrors that do NOT share one index —
+// a Greek supermarket product is often on gr./world.openfoodfacts.org but not
+// on the .net staging host, and vice versa. One miss is not "doesn't exist".
+var OFF_HOSTS = ['https://world.openfoodfacts.org', 'https://gr.openfoodfacts.org', 'https://world.openfoodfacts.net'];
+async function offBarcodeAll(code) {
+  for (var i = 0; i < OFF_HOSTS.length; i++) {
+    try {
+      var row = await withTimeout(offBarcode(code, OFF_HOSTS[i]), 5000);
+      if (row) return row;
+    } catch (e) { /* try the next mirror */ }
+  }
+  return null;
 }
 
 // ── USDA FoodData Central ────────────────────────────────────────
@@ -136,6 +150,27 @@ async function usdaSearch(q, key) {
   if (!r.ok) return [];
   var j = await r.json();
   return (j.foods || []).map(usdaRow).filter(function (x) { return x && (x.kcal || x.p || x.c || x.f); });
+}
+
+// USDA's Branded set is indexed by GTIN/UPC, so a barcode OFF has never seen
+// can still resolve here. Only used as a barcode fallback — Branded is
+// deliberately excluded from text search (it's the clutter we push down).
+async function usdaBarcode(code, key) {
+  var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + encodeURIComponent(key) +
+    '&query=' + encodeURIComponent(code) + '&pageSize=5&dataType=' + encodeURIComponent('Branded');
+  var r = await fetch(url);
+  if (!r.ok) return null;
+  var j = await r.json();
+  var foods = j.foods || [];
+  for (var i = 0; i < foods.length; i++) {
+    // the query is a free-text match, so confirm the GTIN really is this barcode
+    var g = String(foods[i].gtinUpc || '').replace(/^0+/, '');
+    if (g && g === String(code).replace(/^0+/, '')) {
+      var row = usdaRow(foods[i]);
+      if (row && (row.kcal || row.p || row.c || row.f)) return row;
+    }
+  }
+  return null;
 }
 
 // ── ranking ──────────────────────────────────────────────────────
@@ -220,10 +255,19 @@ module.exports = async function (req, res) {
   // as the per-100g value). Small, static, same-origin-guarded.
   if (u.searchParams.get('all')) { res.status(200).json({ core: CORE }); return; }
 
-  // Barcode → Open Food Facts product
+  // Barcode → try every database we have before calling it a miss. A single
+  // "not found" from one mirror is what made most Greek products look absent.
   if (barcode) {
-    try { var item = await offBarcode(barcode); res.status(200).json({ results: item ? [item] : [] }); }
-    catch (e) { res.status(200).json({ results: [], error: 'lookup-failed' }); }
+    var ukey = (process.env.USDA_API_KEY || '').trim();
+    try {
+      var item = await offBarcodeAll(barcode);
+      if (!item && ukey) item = await withTimeout(usdaBarcode(barcode, ukey).catch(function () { return null; }), 7000);
+      if (item) { res.status(200).json({ results: [item], via: item.source }); return; }
+      // Genuine miss. Say so precisely and hand back the number so the client
+      // can offer the label-photo path instead of dead-ending.
+      res.status(200).json({ results: [], barcode: barcode, error: 'not-in-db' });
+    }
+    catch (e) { res.status(200).json({ results: [], barcode: barcode, error: 'lookup-failed' }); }
     return;
   }
   if (!q) { res.status(400).json({ error: 'no query' }); return; }

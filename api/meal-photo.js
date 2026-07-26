@@ -37,6 +37,66 @@ var SYS = [
   'All numbers, no units in values. Set confidence HONESTLY to reflect portion uncertainty: for most photos it should be 0.3-0.6 because exact grams cannot be known from an image — only use above 0.7 when portions are genuinely clear. Never refuse; give your best conservative estimate.'
 ].join(' ');
 
+// ── LABEL MODE ───────────────────────────────────────────────────
+// The single most certain input in the whole app. A photo of the nutrition
+// table IS the ground truth — it is the exact document every food database
+// copies from. So when no database has a product, this beats any web search:
+// there is nothing to hallucinate, only text to read.
+// Reading is TRANSCRIPTION, not estimation, so the prompt forbids inference.
+var LABEL_SYS = [
+  'You TRANSCRIBE a nutrition label from a photo. This is transcription, not estimation.',
+  'Read the nutrition table exactly as printed. Labels may be in Greek (Θρεπτικά συστατικά, Ενέργεια, Πρωτεΐνες, Υδατάνθρακες, εκ των οποίων σάκχαρα, Λιπαρά, εκ των οποίων κορεσμένα, Εδώδιμες ίνες, Αλάτι) or any other language.',
+  'Report values PER 100 g (or per 100 ml). If the table only gives per-serving values, convert using the printed serving size.',
+  'Energy is often printed as "kJ / kcal" — take the kcal figure. If only kJ is printed, divide by 4.184.',
+  'SALT is not SODIUM: if the label states salt in grams, sodium_mg = salt_g * 400. If it states sodium directly, use it.',
+  'Return ONLY a single minified JSON object, no prose, exactly these keys:',
+  '{"name": product name as printed (incl. brand if visible), "per100":{"kcal":,"p":,"c":,"f":,"fiber":,"sugar":,"sodium":mg,"satfat":}, "serving_g": printed serving size in grams else 0, "serving_name": the unit word for one serving e.g. "bar"/"slice"/"biscuit" else "", "package_g": total net weight of the package if printed else 0, "readable": true only if you could actually READ a nutrition table in the image, "unreadable_reason": short reason if readable is false else ""}',
+  'All numbers, no units. Use 0 for a value that is genuinely not printed on the label.',
+  'CRITICAL: never guess, infer or recall a number from memory. If the image is blurry, cropped, or shows no nutrition table, set readable=false and leave per100 zeros. A refusal to guess is the correct answer here.'
+].join(' ');
+
+async function readLabel(image, res) {
+  var r = await model.json('vision', {
+    messages: [
+      { role: 'system', content: LABEL_SYS },
+      { role: 'user', content: [
+        { type: 'text', text: 'Transcribe the nutrition label in this photo.' },
+        { type: 'image_url', image_url: { url: image } }
+      ] }
+    ],
+    max_tokens: 500, temperature: 0, response_format: { type: 'json_object' }
+  });
+  if (!r.ok) {
+    res.status(200).json(model.fail(r, {
+      'no-key': 'Label reading needs GROQ_API_KEY (see NOVA_SETUP.md).',
+      exhausted: 'Label reading is unavailable right now (the vision model is not responding).'
+    }));
+    return;
+  }
+  var o = r.obj;
+  if (!o) { res.status(200).json({ error: 'parse', message: 'Could not read that label — try a straighter, closer photo.' }); return; }
+  if (o.readable === false) {
+    res.status(200).json({ error: 'unreadable', message: (o.unreadable_reason || 'No nutrition table visible') + ' — get the label square in frame, close enough to read the numbers.' });
+    return;
+  }
+
+  var p = o.per100 || {};
+  var P = num(p.p, 100), C = num(p.c, 100), F = num(p.f, 100), K = num(p.kcal, 1000);
+  // A label with no energy and no macros was not actually read, whatever the
+  // model claimed. Never let that render as a 0-kcal food.
+  if (!K && !P && !C && !F) { res.status(200).json({ error: 'unreadable', message: 'No numbers came through — try a closer, straighter photo of the table.' }); return; }
+  if (!K && (P || C || F)) K = Math.round(4 * P + 4 * C + 9 * F);
+
+  res.status(200).json({
+    name: (o.name || 'Label product').toString().slice(0, 90),
+    per100: { kcal: Math.round(K), p: P, c: C, f: F, fiber: num(p.fiber, 100), sugar: num(p.sugar, 100), sodium: Math.round(num(p.sodium, 50000)), satfat: num(p.satfat, 100) },
+    serving_g: Math.round(num(o.serving_g, 5000)),
+    serving_name: (o.serving_name || '').toString().toLowerCase().replace(/[^a-z ]/g, '').trim().slice(0, 16),
+    package_g: Math.round(num(o.package_g, 50000)),
+    source: 'label', source_label: 'label', found: true, confidence: 0.97
+  });
+}
+
 module.exports = async function (req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -46,9 +106,13 @@ module.exports = async function (req, res) {
   var key = (process.env.GROQ_API_KEY || '').trim();
   if (!key) { res.status(200).json({ error: 'no-key', message: 'Photo logging needs GROQ_API_KEY (see NOVA_SETUP.md).' }); return; }
 
-  var image = (readBody(req).image || '').toString();
+  var body = readBody(req);
+  var image = (body.image || '').toString();
   if (!image || image.indexOf('data:image') !== 0) { res.status(400).json({ error: 'no image' }); return; }
   if (image.length > 8000000) { res.status(200).json({ error: 'too-big', message: 'Photo too large — try again.' }); return; }
+
+  // Same slot, same vision model, a completely different job (§12-function cap).
+  if (body.mode === 'label') { await readLabel(image, res); return; }
 
   var r = await model.json('vision', {
     messages: [

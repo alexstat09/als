@@ -274,7 +274,9 @@
   <script src="vendor/supabase.min.js"></script>
   <script src="sync.js" defer></script>
   <script src="tdee.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <!-- self-hosted: the SW never caches cross-origin, so a CDN'd scanner silently
+       leaves window.Html5Qrcode undefined and the Scan tab does nothing (als-v402) -->
+  <script src="vendor/html5-qrcode.min.js" defer></script>
   <script>
   (function(){
     'use strict';
@@ -775,6 +777,10 @@
       return hit>=0?_core[hit]:null; }
     function healFood(food){ try{
         if(!food||!food.per100||!_core) return food;
+        // A label he photographed outranks the core DB — it IS the source the
+        // database copies from, and it may legitimately be a variant. Never
+        // "correct" a real reading into a generic one.
+        if(food.source==='label') return food;
         var cf=_matchCore(food.name); if(!cf||!(cf.kcal>0)) return food;
         var have=+food.per100.kcal||0;
         if(have>0 && Math.abs(have-cf.kcal)/cf.kcal < 0.4) return food;   // already close — leave it
@@ -864,6 +870,11 @@
     function nfToks(s){ return nfFold(s).split(/[^a-z0-9α-ω]+/).filter(Boolean); }
     function nfMatch(hay,q){ var nt=nfToks(hay), qt=nfToks(q); if(!qt.length) return false;
       return qt.every(function(t){ return nt.some(function(x){ return x===t||(t.length>=3&&x.indexOf(t)===0)||(x.length>=3&&t.indexOf(x)===0); }); }); }
+    // Sources worth remembering as a Custom food: anything that took a lookup to
+    // resolve. Save it once and the SECOND time you eat it there is no search at
+    // all — over months your own history becomes the best database for your life.
+    // (Not 'search'/'core' — those are already instantly findable.)
+    var REMEMBER={ai:1,label:1,web:1};
     // persist a food (e.g. an AI-described one) into the Custom store so it's
     // saved forever, reusable, and searchable. Dedup by name (case-insensitive).
     function saveLocalFood(food){
@@ -1025,7 +1036,7 @@
     }
 
     var sheet=document.getElementById('addSheet'), shBody=document.getElementById('shBody'), shTabs=document.getElementById('shTabs');
-    var curMeal='Snacks', curTab='describe', pickFood=null, pickMeal='Snacks', scanner=null;
+    var curMeal='Snacks', curTab='describe', pickFood=null, pickMeal='Snacks', scanner=null, scanStream=null, scanRAF=null;
     var editMeal=null, portionTarget='diary', mealItemEdit=-1; // meal-builder state
     var TABS=[['describe','AI Describe'],['photo','Photo'],['search','Search'],['quick','Quick Add'],['recent','Recent'],['custom','Custom'],['meals','Meals'],['scan','Scan']];
     var searchSeq=0, searchTimer=null, _pIndexCache=null, plateCount=0, customQ='', mealQ='';
@@ -1040,7 +1051,7 @@
     function resRow(name,brand,sub,kind,i){ return '<div class="res" data-act="pick" data-kind="'+kind+'" data-i="'+i+'"><div class="res-main"><div class="res-name">'+esc(name)+(brand?' <span style="opacity:.5">'+esc(brand)+'</span>':'')+'</div><div class="res-sub">'+esc(sub)+'</div></div></div>'; }
 
     function renderTab(){
-      if(curTab==='describe') shBody.innerHTML='<textarea class="sh-in" id="aiText" placeholder="What did you eat?  e.g. chicken gyros pita with tzatziki, or 2 eggs and toast"></textarea><div class="sh-hint">Nova estimates the macros from your description — fastest way to log anything, even Greek food not in any database.</div><button type="button" class="sh-btn" data-act="ai-go">Estimate with Nova</button><button type="button" class="sh-btn ghost" data-act="web-go" style="margin-top:8px;">Find the exact product online</button><div class="sh-hint">Web search reads the real product label — slower (a few seconds), best for a specific branded item like a protein or bar.</div>';
+      if(curTab==='describe') shBody.innerHTML='<textarea class="sh-in" id="aiText" placeholder="What did you eat?  e.g. kinder bueno, τυρόπιτα, or 2 eggs and toast"></textarea><div class="sh-hint">Searches your verified food databases and the real product labels on the web, together. Packaged products are looked up; cooked dishes are costed from their ingredients. Every answer shows where its numbers came from.</div><button type="button" class="sh-btn" data-act="ai-go">Find it</button><button type="button" class="sh-btn ghost" data-act="label-pick" style="margin-top:8px;">📷 Photograph a nutrition label</button>'+LABEL_INPUT+'<div class="sh-hint">Reading the printed label is the most exact way there is — nothing to guess, just numbers to read.</div>';
       else if(curTab==='photo') shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Snap or pick a photo of your plate — Nova identifies the food and estimates the macros. Best for restaurant/homemade meals with no barcode.</div><button type="button" class="sh-btn" data-act="photo-pick">Take / choose a photo</button><input type="file" accept="image/*" capture="environment" id="mealPhoto" style="display:none"><div class="sh-hint">A photo estimate is a ballpark — portion size is guessed from the image, so adjust the grams after.</div>';
       else if(curTab==='search'){ shBody.innerHTML='<input class="sh-in" id="qIn" placeholder="Search your foods &amp; the database…" autocomplete="off" autocapitalize="none" autocorrect="off"><div id="searchRes" style="margin-top:6px"></div>'; searchSeq++; paintSearch('',null); var _q=document.getElementById('qIn'); if(_q){ try{ _q.focus(); }catch(e){} } }
       else if(curTab==='quick'){ shBody.innerHTML=
@@ -1052,7 +1063,7 @@
       else if(curTab==='recent'){ var rf=recentFoods(); window._rf=rf; shBody.innerHTML=rf.length?rf.map(function(f,i){return resRow(f.name,'',r0(f.per100.kcal)+' kcal /100g · '+(f.source||'').toUpperCase(),'recent',i);}).join(''):'<div class="sh-msg">Your recent foods will show here once you log a few.</div>'; }
       else if(curTab==='custom'){ shBody.innerHTML='<button type="button" class="sh-btn" data-act="custom-new">+ Create custom food</button><input class="sh-in" id="custFilter" placeholder="Search your custom foods…" autocomplete="off" autocapitalize="none" autocorrect="off" style="margin-top:10px" value="'+esc(customQ)+'"><div id="custList" style="margin-top:6px"></div>'; renderCustList(); }
       else if(curTab==='meals'){ if(editMeal){ renderMealEditor(); return; } shBody.innerHTML='<button type="button" class="sh-btn" data-act="meal-create">+ Create a new meal</button><button type="button" class="sh-btn ghost" data-act="meal-save" style="margin-top:8px;">Save this '+esc(curMeal)+' as a meal</button><input class="sh-in" id="mealFilter" placeholder="Search your meals (name or ingredient)…" autocomplete="off" autocapitalize="none" autocorrect="off" style="margin-top:10px" value="'+esc(mealQ)+'"><div id="mealList" style="margin-top:6px"></div>'; renderMealList(); }
-      else if(curTab==='scan'){ shBody.innerHTML='<div id="scanRegion"></div><div class="sh-hint">Point at a barcode. Or type the number:</div><input class="sh-in" id="bcIn" inputmode="numeric" placeholder="Barcode number" style="margin-top:8px;"><button type="button" class="sh-btn ghost" data-act="bc-go" style="margin-top:10px;">Look up barcode</button>'; startScan(); }
+      else if(curTab==='scan'){ shBody.innerHTML='<div id="scanRegion"></div><div class="sh-hint" id="scanNote">Starting the camera…</div><div class="sh-hint">Or type the number:</div><input class="sh-in" id="bcIn" inputmode="numeric" placeholder="Barcode number" style="margin-top:8px;"><button type="button" class="sh-btn ghost" data-act="bc-go" style="margin-top:10px;">Look up barcode</button>'; startScan(); }
     }
     // Filterable Custom / Meals lists (drag-reorder stays available when the
     // filter is empty; while filtering, rows show without grips).
@@ -1091,32 +1102,65 @@
         '<div class="meal-grid"'+(drag?' data-drag="'+MEALSK+'"':'')+'>'+list.map(function(ml){ return mealCard(ml, drag); }).join('')+'</div>';
     }
 
+    // Turn a /api/nutrition-web answer (product OR dish route) into a food the
+    // portion sheet understands, carrying its receipts with it.
+    function webToFood(j){
+      return {
+        name:j.name, brand:'', per100:j.per100||{kcal:0,p:0,c:0,f:0,fiber:0,sugar:0,sodium:0,satfat:0},
+        servingG:j.grams||100, servingName:j.serving_name||'', packageG:j.package_g||0,
+        source:(j.kind==='dish'?'ai':'web'), confidence:j.confidence,
+        items:(Array.isArray(j.items)&&j.items.length)?j.items:null,
+        verdict:{confirmed:!!j.confirmed, confidence:j.confidence, method:j.method||'', why:j.why||[], portion_note:j.portion_note||'', sources:j.sources||[]}
+      };
+    }
     function aiGo(){
       var t=((document.getElementById('aiText')||{}).value||'').trim(); if(!t) return;
       window._lastDescribe=t;
-      shBody.innerHTML='<div class="sh-spin">Nova is checking the database &amp; estimating…</div>';
+      shBody.innerHTML='<div class="sh-spin">Finding it — food databases, labels and the web…</div>';
       var qToks=nfToks(t);
-      // Run BOTH: the real food database (OFF/USDA — exact label data) AND the AI
-      // estimate. If the DB has the actual product, offer it first; estimate is the fallback.
+      // ONE pipeline. You shouldn't have to know which engine to press: the
+      // verified database and the grounded web/ingredient lookup run together
+      // and the most trustworthy answer wins. A CONFIRMED label short-circuits
+      // straight to the portion sheet; anything less shows you the options.
       Promise.all([
-        fetch('/api/nutrition-estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch('/api/food-search?q='+encodeURIComponent(t)).then(function(r){return r.json();}).catch(function(){return {results:[]};})
       ]).then(function(res){
         var ai=res[0], dbAll=((res[1]&&res[1].results)||[]);
         // keep DB hits that genuinely overlap the description (>=2 distinctive query tokens)
-        var hits=dbAll.filter(function(f){ var hay=nfToks((f.name||'')+' '+(f.brand||'')); var n=0; qToks.forEach(function(q){ if(q.length>=3 && hay.some(function(x){return x===q||x.indexOf(q)===0||q.indexOf(x)===0;})) n++; }); return n>=2; }).slice(0,5);
+        // How many query words a DB row must match. This used to be a flat 2,
+        // which silently threw away EVERY result for a one-word query — typing
+        // "τυρόπιτα" discarded the verified 316 kcal/100g core row and fell
+        // through to a raw guess (60 kcal). Needing more words than the query
+        // has is unsatisfiable by construction.
+        var qDist=qToks.filter(function(q){ return q.length>=3; });
+        var need=Math.min(2, qDist.length)||1;
+        var hits=dbAll.filter(function(f){ var hay=nfToks((f.name||'')+' '+(f.brand||'')); var n=0; qDist.forEach(function(q){ if(hay.some(function(x){return x===q||x.indexOf(q)===0||q.indexOf(x)===0;})) n++; }); return n>=need; }).slice(0,5);
         var aiOk = ai && !ai.error;
+        window._webAnswer = aiOk?ai:null;
+
+        // A verified label beats a list of maybes — go straight there.
+        if(aiOk && ai.confirmed){ showPortion(webToFood(ai), ai.grams||100); return; }
+
         if(hits.length){
-          window._sr=hits; window._aiEstimate = aiOk?ai:null;
+          window._sr=hits;
           var rows=hits.map(function(f,i){ var tag=f.source==='core'?'✓ Verified':(f.brand?esc(f.brand):'Generic'); return resRow(f.name,f.brand,tag+' · '+r0(f.kcal)+' kcal /100g','search',i); }).join('');
+          var label=aiOk?(ai.kind==='dish'?'Nova’s ingredient breakdown ('+r0(ai.kcal)+' kcal)':'Nova’s web answer ('+r0(ai.kcal)+' kcal)'):'';
           shBody.innerHTML='<div class="sh-hint" style="margin-top:0">Real label matches from the food database — tap the exact product:</div>'+rows+
-            (aiOk?'<button type="button" class="sh-btn ghost" data-act="ai-use-estimate" style="margin-top:12px;">None of these — use Nova’s estimate ('+r0(ai.kcal)+' kcal)</button>':'')+
-            '<button type="button" class="sh-btn ghost" data-act="web-go" style="margin-top:8px;">Search the web for the exact macros</button>'+
+            (aiOk?'<button type="button" class="sh-btn ghost" data-act="web-use" style="margin-top:12px;">None of these — use '+esc(label)+'</button>':'')+
+            '<button type="button" class="sh-btn ghost" data-act="label-pick" style="margin-top:8px;">📷 Photograph the label — exact</button>'+LABEL_INPUT+
             '<button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Edit description</button>';
         } else if(aiOk){
-          showPortion(aiToFood(ai), ai.grams||100);
+          showPortion(webToFood(ai), ai.grams||100);
+        } else if(ai && (ai.error==='no-label'||ai.error==='no-results')){
+          // Nothing online has a real label. Never dead-end — the pack in his
+          // hand outranks every database anyway.
+          shBody.innerHTML='<div class="sh-msg">'+esc(ai.message||'No label found online.')+'</div>'+
+            '<button type="button" class="sh-btn" data-act="label-pick">📷 Photograph the nutrition label</button>'+LABEL_INPUT+
+            '<button type="button" class="sh-btn ghost" data-act="describe-estimate" style="margin-top:8px;">Just estimate it</button>'+
+            '<button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Edit description</button>';
         } else {
-          shBody.innerHTML='<div class="sh-msg">'+esc((ai&&ai.message)||'Couldn’t find or estimate that — try Search or a barcode.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>';
+          webFallback(t, (ai&&ai.message)||'');
         }
       }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Try again</button>'; });
     }
@@ -1127,17 +1171,6 @@
           if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t estimate — try Search or a barcode.')+'</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; return; }
           showPortion(aiToFood(j), j.grams||100);
         }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe">Back</button>'; });
-    }
-    function webGo(){
-      var t=((document.getElementById('aiText')||{}).value||'').trim() || window._lastDescribe || ''; if(!t) return;
-      window._lastDescribe=t;
-      shBody.innerHTML='<div class="sh-spin">Searching the web for the exact product…</div>';
-      fetch('/api/nutrition-web',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
-        .then(function(r){return r.json();}).then(function(j){
-          if(!j||j.error){ if(j&&(j.error==='no-search'||j.error==='no-key')){ shBody.innerHTML='<div class="sh-msg">'+esc(j.message)+'</div><button type="button" class="sh-btn" data-act="web-fallback">Use Nova’s estimate instead</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; } else { webFallback(t, (j&&j.message)||'Web search unavailable'); } return; }
-          if(j.found===false){ shBody.innerHTML='<div class="sh-msg">Couldn’t confirm that exact product online — here’s the best estimate. Adjust grams, or scan its barcode for the exact label.</div><button type="button" class="sh-btn" data-act="web-use-estimate">Use this estimate ('+r0(j.kcal)+' kcal)</button><button type="button" class="sh-btn ghost" data-act="tab" data-tab="describe" style="margin-top:8px;">Back</button>'; window._webEstimate=j; return; }
-          var wf=aiToFood(j); wf.webSource=j.source||''; wf.servingName=j.serving_name||''; wf.packageG=j.package_g||0; wf.servingsPer=j.servings_per_container||0; showPortion(wf, j.grams||100);
-        }).catch(function(){ webFallback(t, 'Web search timed out'); });
     }
     function photoPick(){ var inp=document.getElementById('mealPhoto'); if(inp) inp.click(); }
     function compressImage(file, cb){
@@ -1218,17 +1251,103 @@
       code=(code||((document.getElementById('bcIn')||{}).value)||'').replace(/[^0-9]/g,''); if(!code) return;
       shBody.innerHTML='<div class="sh-spin">Looking up…</div>';
       fetch('/api/food-search?barcode='+encodeURIComponent(code)).then(function(r){return r.json();}).then(function(j){
-        var rs=(j&&j.results)||[]; if(rs.length) showPortion(searchResultToFood(rs[0]), rs[0].servingG||100);
-        else shBody.innerHTML='<div class="sh-msg">Barcode not found. Try Search or AI Describe.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="search">Search instead</button>';
-      }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Lookup failed.</div>'; });
+        var rs=(j&&j.results)||[];
+        if(rs.length){ showPortion(searchResultToFood(rs[0]), rs[0].servingG||100); return; }
+        // A miss is never a dead end: the label in your hand is more certain
+        // than any database, so offer to read it.
+        var lookedUp = (j&&j.error==='not-in-db');
+        shBody.innerHTML='<div class="sh-msg">'+(lookedUp?'Not in any food database — but the label on the pack is better than a database anyway.':'Lookup failed — but you can read the label directly.')+'</div>'+
+          '<button type="button" class="sh-btn" data-act="label-pick">📷 Photograph the nutrition label</button>'+LABEL_INPUT+
+          '<div class="sh-hint">Reads the printed table exactly — the most accurate way to log anything. Saved as your food, so it’s instant next time.</div>'+
+          '<button type="button" class="sh-btn ghost" data-act="tab" data-tab="search" style="margin-top:8px;">Search by name instead</button>';
+      }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="tab" data-tab="scan">Back</button>'; });
+    }
+    // ── Read the printed label (the certainty ceiling) ────────────────
+    // Rendered alongside every "photograph the label" button — the input must
+    // exist in the DOM at the moment labelPick() fires.
+    var LABEL_INPUT='<input type="file" accept="image/*" capture="environment" id="labelPhoto" style="display:none">';
+    function labelPick(){ var inp=document.getElementById('labelPhoto'); if(inp) inp.click(); }
+    function labelGo(file){
+      if(!file) return; shBody.innerHTML='<div class="sh-spin">Reading the label…</div>';
+      compressImage(file, function(dataUrl){
+        if(!dataUrl){ shBody.innerHTML='<div class="sh-msg">Couldn’t read that image — try another.</div><button type="button" class="sh-btn ghost" data-act="label-pick">Try again</button>'+LABEL_INPUT+''; return; }
+        fetch('/api/meal-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,mode:'label'})})
+          .then(function(r){return r.json();}).then(function(j){
+            if(!j||j.error){ shBody.innerHTML='<div class="sh-msg">'+esc((j&&j.message)||'Couldn’t read that label.')+'</div><button type="button" class="sh-btn" data-act="label-pick">Take another photo</button>'+LABEL_INPUT+'<button type="button" class="sh-btn ghost" data-act="tab" data-tab="search" style="margin-top:8px;">Search by name instead</button>'; return; }
+            var g=j.serving_g>0?j.serving_g:100;
+            var food={name:j.name,brand:'',per100:j.per100,servingG:g,servingName:j.serving_name||'',packageG:j.package_g||0,source:'label',confidence:j.confidence,
+              verdict:{confirmed:true,confidence:j.confidence,method:'Read from the label you photographed',why:[],portion_note:j.serving_g>0?'':'no serving size printed — set your portion below'}};
+            showPortion(food, g);
+          }).catch(function(){ shBody.innerHTML='<div class="sh-msg">Network hiccup — try again.</div><button type="button" class="sh-btn ghost" data-act="label-pick">Try again</button>'+LABEL_INPUT+''; });
+      });
+    }
+    // ── Barcode scanning ──────────────────────────────────────────────
+    // Every failure below used to be swallowed (`if(!lib) return`, empty catches,
+    // empty .catch) so a dead camera and a dead library looked identical to a
+    // camera that simply hadn't seen a barcode yet — constraint 10, four times in
+    // six lines. Now every path either scans or SAYS why it can't.
+    function scanMsg(html){ var el=document.getElementById('scanNote'); if(el) el.innerHTML=html; }
+    // Grocery products are EAN-13/EAN-8/UPC. Naming them stops the decoder
+    // hunting QR/DataMatrix/PDF417 on every frame, which is what makes a 1D
+    // barcode take forever or never lock at all.
+    var BC_FORMATS=['ean_13','ean_8','upc_a','upc_e','code_128','itf'];
+    function stopScan(){
+      if(scanRAF){ try{ cancelAnimationFrame(scanRAF); }catch(e){} scanRAF=null; }
+      if(scanStream){ try{ scanStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} scanStream=null; }
+      if(scanner){ try{ scanner.stop().then(function(){try{scanner.clear();}catch(e){}}).catch(function(){}); }catch(e){} scanner=null; }
+    }
+    // 1) Native BarcodeDetector — built into iOS Safari 17+ and Chrome. Faster and
+    // far more reliable on real grocery barcodes than any JS decoder.
+    function nativeScan(cb){
+      if(!('BarcodeDetector' in window)) return false;
+      var region=document.getElementById('scanRegion'); if(!region) return false;
+      try{
+        var det=new window.BarcodeDetector({formats:BC_FORMATS});
+        var v=document.createElement('video');
+        v.setAttribute('playsinline',''); v.muted=true; v.style.width='100%'; v.style.display='block';
+        region.innerHTML=''; region.appendChild(v);
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(st){
+          scanStream=st; v.srcObject=st; v.play();
+          scanMsg('Point at the barcode — hold steady.');
+          var tick=function(){
+            if(!scanStream) return;
+            det.detect(v).then(function(codes){
+              if(codes&&codes.length&&codes[0].rawValue){ stopScan(); cb(codes[0].rawValue); return; }
+              scanRAF=requestAnimationFrame(tick);
+            }).catch(function(){ scanRAF=requestAnimationFrame(tick); });
+          };
+          scanRAF=requestAnimationFrame(tick);
+        }).catch(function(err){ cameraFailed(err); });
+        return true;
+      }catch(e){ return false; }
+    }
+    function cameraFailed(err){
+      var nm=(err&&(err.name||err.message))||'';
+      var why = /NotAllowed|Permission/i.test(nm) ? 'Camera permission is off — allow it in Settings, or type the number below.'
+              : /NotFound|Devices/i.test(nm)     ? 'No camera available on this device — type the number below.'
+              : /NotReadable|Track/i.test(nm)    ? 'The camera is busy in another app — close it and try again.'
+              : 'Couldn’t start the camera — type the number below.';
+      scanMsg('<span style="color:#FF8FA3">'+esc(why)+'</span>');
     }
     function startScan(){
-      if(!window.Html5Qrcode) return;
-      try{ scanner=new Html5Qrcode('scanRegion');
-        scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:140}},function(txt){ stopScan(); bcGo(txt); },function(){}).catch(function(){});
-      }catch(e){}
+      scanMsg('Starting the camera…');
+      if(nativeScan(function(txt){ bcGo(txt); })) return;
+      // 2) Fallback: the self-hosted JS decoder.
+      if(!window.Html5Qrcode){
+        scanMsg('<span style="color:#FF8FA3">The scanner didn’t load. Reopen the app, or type the number below.</span>');
+        return;
+      }
+      try{
+        scanner=new Html5Qrcode('scanRegion',{formatsToSupport:BC_FORMATS.map(function(f){
+          try{ return Html5QrcodeSupportedFormats[f.toUpperCase()]; }catch(e){ return null; }
+        }).filter(function(x){ return x!=null; })});
+        scanMsg('Point at the barcode — hold steady.');
+        scanner.start({facingMode:'environment'},{fps:12,qrbox:{width:260,height:160}},
+          function(txt){ stopScan(); bcGo(txt); },
+          function(){}   // per-frame "no code in this frame" — genuinely not an error
+        ).catch(function(err){ cameraFailed(err); });
+      }catch(e){ scanMsg('<span style="color:#FF8FA3">Couldn’t start the scanner — type the number below.</span>'); }
     }
-    function stopScan(){ if(scanner){ try{ scanner.stop().then(function(){try{scanner.clear();}catch(e){}}).catch(function(){}); }catch(e){} scanner=null; } }
 
     // Fallback grams for one common household unit — used ONLY when the food has a
     // named unit (e.g. "cookie") but the database never gave its gram weight, so a
@@ -1289,7 +1408,27 @@
       var unit=rawUnit||'serving', unitLabel=unit.charAt(0).toUpperCase()+unit.slice(1)+(/s$/.test(unit)?'':'s');
       var confLine=(food.source==='ai'&&typeof food.confidence==='number')?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-8px 0 '+((food.items&&food.items.length)?'6px':'12px')+';color:'+(food.confidence>=0.7?'rgb(var(--nu))':(food.confidence>=0.4?'#E8C66B':'#FF8FA3'))+'">Nova ~'+r0(food.confidence*100)+'% confident — adjust below to refine</div>':'';
       var itemsLine=(food.items&&food.items.length)?'<div class="sh-hint" style="margin:0 0 12px">Detected: '+food.items.map(function(x){return esc(x.name)+' ~'+r0(x.grams)+'g';}).join(' · ')+'</div>':'';
-      var srcLine=food.webSource?'<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>':'';
+      // ── Receipts ───────────────────────────────────────────────────
+      // Where this number came from and how far to trust it, in plain words.
+      // A confirmed label and an unverifiable guess must never look the same:
+      // that is the whole failure this rebuild exists to end.
+      var srcLine='';
+      if(food.verdict && food._healed){
+        // The numbers on screen no longer came from where the verdict says they
+        // did — healFood swapped them for verified core values. Two competing
+        // provenance claims is exactly the confusion this section exists to end.
+        srcLine='<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Using your verified food database instead</div>';
+      } else if(food.verdict){
+        var v=food.verdict;
+        var tone=v.confirmed?'rgb(var(--nu))':(v.confidence>=0.55?'#E8C66B':'#FF8FA3');
+        var mark=v.confirmed?'✓':(v.confidence>=0.55?'~':'!');
+        srcLine='<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 '+((v.why&&v.why.length)?'4px':'12px')+';color:'+tone+'">'+mark+' '+esc(v.method||'')+(typeof v.confidence==='number'?' · '+r0(v.confidence*100)+'%':'')+'</div>';
+        if(v.why&&v.why.length) srcLine+='<div class="sh-hint" style="margin:0 0 10px">'+esc(v.why.join(' · '))+'</div>';
+        if(v.portion_note) srcLine+='<div class="sh-hint" style="margin:-4px 0 10px">Portion: '+esc(v.portion_note)+'. Change it below if yours differs.</div>';
+        if(!v.confirmed) srcLine+='<button type="button" class="sh-btn ghost" data-act="label-pick" style="margin:0 0 12px;">📷 Read the printed label instead — exact</button>'+LABEL_INPUT;
+      } else if(food.webSource){
+        srcLine='<div style="font-family:var(--au-mono,ui-monospace);font-size:10.5px;margin:-6px 0 12px;color:rgb(var(--nu))">✓ Verified from '+esc(food.webSource)+'</div>';
+      }
       var healLine=food._healed?'<div class="sh-hint" style="margin:-4px 0 12px;color:rgb(var(--nu))">✓ Corrected to verified “'+esc(food._healed)+'” — this entry had the wrong calories.</div>':'';
       var portionRows=hasS
         ? '<div class="pp-row"><label>'+esc(unitLabel)+'</label><input class="sh-in" id="ppQty" inputmode="decimal" value="'+r1(g/effG)+'" style="text-align:center;font-family:var(--au-mono);font-weight:700;font-size:20px;"></div>'+
@@ -1373,7 +1512,7 @@
       var gg=ppGrams(); if(!gg||!pickFood) return;
       if(pickFood._unit && pickFood._effG>0) savePiece(pickFood, pickFood._unit, pickFood._effG); // learn this food's piece weight
       var wasEdit=!!pickEditId; if(pickEditId){ delEntry(pickEditId); pickEditId=null; }
-      if(!wasEdit && pickFood.source==='ai') saveLocalFood(pickFood);
+      if(!wasEdit && REMEMBER[pickFood.source]) saveLocalFood(pickFood);
       addEntry(scaleEntry(pickFood,gg,pickMeal));
       if(close){ closeSheet(); return; }
       plateCount++; var tt=document.getElementById('shTitle'); if(tt) tt.textContent='Add to '+curMeal+' · '+plateCount+' added ✓';
@@ -1551,10 +1690,9 @@
       else if(act==='sheet-close'){ closeSheet(); }
       else if(act==='tab'){ setTab(el.getAttribute('data-tab')); }
       else if(act==='ai-go'){ aiGo(); }
-      else if(act==='ai-use-estimate'){ if(window._aiEstimate) showPortion(aiToFood(window._aiEstimate), window._aiEstimate.grams||100); }
-      else if(act==='web-go'){ webGo(); }
-      else if(act==='web-fallback'){ webFallback(window._lastDescribe||'', ''); }
-      else if(act==='web-use-estimate'){ if(window._webEstimate) showPortion(aiToFood(window._webEstimate), window._webEstimate.grams||100); }
+      else if(act==='web-use'){ if(window._webAnswer) showPortion(webToFood(window._webAnswer), window._webAnswer.grams||100); }
+      else if(act==='describe-estimate'){ webFallback(window._lastDescribe||'', ''); }
+      else if(act==='label-pick'){ labelPick(); }
       else if(act==='photo-pick'){ photoPick(); }
       else if(act==='bc-go'){ bcGo(); }
       else if(act==='custom-new'){ customNew(); }
@@ -1584,7 +1722,7 @@
       else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood._effG){ gi.value=r0(pickFood._effG); ppPreview(); } }
       else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab){ if(pickEditId) ab.textContent=(pickMeal!==curMeal?'Save · moved to '+pickMeal:'Save changes'); else ab.textContent='Add to '+pickMeal; } }
       else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return;
-        if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(pickFood.source==='ai') saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
+        if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(REMEMBER[pickFood.source]) saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
         commitDiaryAdd(true); }
       else if(act==='pp-add-more'){ commitDiaryAdd(false); }
       else if(act==='fav-toggle'){ if(!pickFood) return; var on=toggleFav(pickFood, ppGrams()||pickFood._effG||pickFood.servingG||100); el.textContent=on?'★':'☆'; }
@@ -1655,6 +1793,7 @@
     document.addEventListener('pointercancel', endMdrag);
     document.addEventListener('change', function(e){
       if(e.target&&e.target.id==='mealPhoto'){ var f=e.target.files&&e.target.files[0]; try{ e.target.value=''; }catch(x){} if(f) photoGo(f); }
+      else if(e.target&&e.target.id==='labelPhoto'){ var lf=e.target.files&&e.target.files[0]; try{ e.target.value=''; }catch(x){} if(lf) labelGo(lf); }
       else if(e.target&&e.target.id==='mealPhotoInp'){ var pf=e.target.files&&e.target.files[0]; try{ e.target.value=''; }catch(x){} if(pf&&editMeal){ readMealName(); var mid=editMeal.id; compressThumb(pf, function(du){ if(du&&editMeal&&editMeal.id===mid){ _mealPics[mid]=du; idbPutPic(mid,du); delete editMeal.photo; renderMealEditor(); } }); } }
     });
     sheet.addEventListener('click', function(e){ if(e.target===sheet) closeSheet(); });
