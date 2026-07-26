@@ -140,6 +140,15 @@ t('olive oil is allowed to be 884 kcal', function () {
   assert.deepStrictEqual(CHECK.prior('olive oil', { kcal: 884, p: 0, c: 0, f: 100 }).flags, []);
 });
 
+t('a flavour word does not decide the category', function () {
+  // live als-v413: "Born Winner Protein Bar Cookies and Cream" matched the
+  // BISCUIT prior on the flavour "cookies", so 680 kcal/100g passed unflagged
+  var cat = KNOW.categoryPrior('Born Winner Protein Bar Cookies and Cream');
+  assert.strictEqual(cat.name, 'protein bars', 'got ' + cat.name);
+  assert.ok(CHECK.prior('Born Winner Protein Bar Cookies and Cream', { kcal: 680, p: 20, c: 40, f: 40 }).flags.length,
+    '680 kcal/100g is not a protein bar and must be flagged');
+});
+
 console.log('\n— portions: correct macros on the wrong mass is still wrong —');
 
 t('THE LIVE ERROR: a Kinder Bueno is the whole bar, not one finger', function () {

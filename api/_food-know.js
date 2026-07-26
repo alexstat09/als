@@ -142,14 +142,20 @@ var PORTION_PRIORS = [
 // Plausible kcal per 100 g by food family. A number outside its own family is
 // not a small error, it is a different food — live, a fried cheese pie came
 // back at 60 kcal/100g, which no pastry on earth is. Priors catch that class.
+// ⚠️ ORDER IS SPECIFICITY — first match wins, so a narrow category must sit
+// above a broad one. "Born Winner Protein Bar Cookies and Cream" matched
+// `cookie` (a FLAVOUR here) and was judged as a biscuit, which let 680 kcal/100g
+// through unflagged. Product names are full of flavour words; the most specific
+// rule has to get there first.
 var CATEGORY_PRIORS = [
+  { re: /protein bar|μπαρα πρωτ|protein cookie|protein wafer/, lo: 300, hi: 450, name: 'protein bars' },
+  { re: /whey|protein powder|πρωτεινη σκονη|casein/, lo: 340, hi: 430, name: 'protein powder' },
   { re: /oil|λαδι|ελαιολαδο|butter|βουτυρο|ghee|λιπος/, lo: 700, hi: 900, name: 'fats and oils' },
   { re: /nuts?|αμυγδαλ|καρυδ|φυστικ|κασιου|ταχιν|tahini|peanut butter|almond butter/, lo: 480, hi: 720, name: 'nuts and seeds' },
   { re: /chocolate|σοκολατ|γκοφρετ|wafer|praline/, lo: 400, hi: 620, name: 'chocolate' },
   { re: /crisps|chips|τσιπς|τηγανητ|fried|deep.?fry/, lo: 250, hi: 600, name: 'fried food' },
   { re: /πιτα(?!ς? γυρο)|pie|pastry|φυλλο|filo|croissant|μπουγατσ|τυροπιτ|σπανακοπιτ|baklava|μπακλαβ/, lo: 220, hi: 480, name: 'pastry' },
   { re: /biscuit|cookie|μπισκοτ|κρακερ|cracker/, lo: 380, hi: 560, name: 'biscuits' },
-  { re: /protein bar|μπαρα πρωτ/, lo: 300, hi: 450, name: 'protein bars' },
   { re: /bread|ψωμι|κουλουρ|τοστ|baguette|ζυμη/, lo: 200, hi: 340, name: 'bread' },
   { re: /ριζι|rice|pasta|μακαρονι|ζυμαρικ|oats|βρωμη|quinoa|couscous/, lo: 320, hi: 400, name: 'dry grains' },
   { re: /cooked rice|cooked pasta|βρασμεν/, lo: 100, hi: 180, name: 'cooked grains' },
