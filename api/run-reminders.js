@@ -15,6 +15,7 @@ var auth = require('./_auth');
 var vault = require('./_vault');
 var movies = require('./_movies');
 var yt = require('./_youtube');
+var tt = require('./_tiktok');
 var prices = require('./_prices');
 var garmin = require('./_garmin');
 
@@ -651,6 +652,40 @@ module.exports = async function (req, res) {
     }
     return;
   }
+  // ── TikTok, the Improve page's other world ───────────────────────
+  // ?tiktok=<url>  → one saved video: caption, hashtags, on-screen text, the
+  //                  sound, and TikTok's own auto-captions fetched to TEXT
+  //                  (their URL expires within the hour, so it cannot wait).
+  //                  Doubles as the refresh call, because the cover URL is
+  //                  signed and expires too.
+  // ?ttread (POST) → that video → what is worth taking from it, IF anything
+  //                  is. _tiktok.grade() decides that in code first.
+  // Both stateless, both early-return before the backup/cron logic below.
+  if (req.query && req.query.tiktok) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var tout = await tt.meta(String(req.query.tiktok).slice(0, 300));
+      if (!tout.ok) { res.status(tout.gone ? 404 : 502).json(tout); return; }
+      res.status(200).json(tout);
+    } catch (e) {
+      res.status(502).json({ ok: false, error: String((e && e.message) || e) });
+    }
+    return;
+  }
+  if (req.query && req.query.ttread !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var tb = req.body; if (typeof tb === 'string') { try { tb = JSON.parse(tb || '{}'); } catch (e) { tb = {}; } }
+      if (!tb || typeof tb !== 'object') { res.status(400).json({ error: 'no video' }); return; }
+      var tread = await tt.read(tb);
+      if (!tread.ok) { res.status(tread.unreadable ? 422 : 502).json(tread); return; }
+      res.status(200).json(tread);
+    } catch (e) {
+      res.status(502).json({ ok: false, error: String((e && e.message) || e) });
+    }
+    return;
+  }
+
   // The Money page's practice portfolio asks for live EUR prices. Stateless,
   // key-less, and cached briefly at the edge — a fake portfolio does not need
   // second-by-second quotes, and CoinGecko's free tier is rate-limited.
