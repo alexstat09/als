@@ -725,6 +725,19 @@ changes — page, merge and tests carry over untouched.
   reorder." The running-low flag (`stack:low`) already exists to hang it on.
 
 **Known open bugs**
+- ⚠️ **Six other clients still carry the `Bearer (token || KEY)` fallback that
+  broke her run import** (als-v421 fixed only `run.html`): `nova-actions.js:40`,
+  `sync.js:457`, `pocoach-sync.js:144`, `backup.html:432`, `morning.html:1599`,
+  `coach.html:292`. The *writes* are comparatively safe — RLS rejects them and
+  als-v403 now reports it — but the **reads** return `200` + `[]`, so a device
+  whose session has not restored reads EMPTY and cannot tell. `pocoach-sync.js`
+  is the one that already cost 149 weigh-ins. The Vault is protected server-side
+  (`api/_vault.js` refuses to write an empty snapshot), so this is not urgent,
+  but it is the same bug waiting in six places. **`smoke-test.sh` currently
+  BLESSES this shape** — its guardrail was written to allow `|| KEY`. Worth its
+  own session: make the token mandatory, then tighten the guardrail.
+- `run-demo.html` is a stale duplicate of the pre-fix `run.html` (it still has
+  the anon-key fallback at :4253). It is not linked from anywhere. Delete it.
 - `po_water_v1` uses whole-object last-write-wins, so concurrent edits on two
   devices can clobber each other.
 - The Mind tab points to two different pages: `topbar.js` sends it to
