@@ -26,7 +26,8 @@ Everything in the root is live. Anything retired is in `archive/`.
 |---|---|
 | `gym.html` | Fitness — the big one (164 KB). Workouts, sessions, lifts. |
 | `body.html` | Body hub. |
-| `weight.html` · `measure.html` | Weigh-ins · body measurements. |
+| `weight.html` | Weigh-ins. Trend-first chart (7-day trend is the line, each morning is scatter on it), 3 kg minimum y-span, goal line from `goals_outcomes_v1`. Rebuilt als-v422/423 — see CLAUDE.md §5 before changing the chart. |
+| `measure.html` | Body measurements. |
 | `pr.html` | PR board. |
 | `health.html` | Health. |
 | `trends.html` | Trends across metrics. |

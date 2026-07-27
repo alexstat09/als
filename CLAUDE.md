@@ -126,7 +126,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v421`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v423`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -156,6 +156,12 @@ Elevated MÉTRON design (`aurora.css`).
 
 **Body & training** — `gym.html` (246 seeded exercises, templates, folders),
 `body.html`, `measure.html`, `pr.html`,
+`weight.html` — weigh-ins, rebuilt als-v422/423 (§5). The page's argument is that
+his 0.335 kg of daily noise is not the signal: the **7-day trend is the hero
+line**, each morning hangs off it as scatter, the y-axis never zooms tighter than
+3 kg, his 72 kg goal is drawn, and a rate is only called a direction when it
+exceeds its own standard error. Logging is a ritual (steppers + live sanity
+feedback) rather than a form,
 `sleep.html` (score is MEASURED only; feelings are an outcome, never an input —
 and for Chrissie it now draws her watch's whole night: measured window,
 hypnogram, stage split, continuity, overnight body. Three states that must LOOK
@@ -228,100 +234,108 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v423` — `weight.html`, second pass on Alex's own review.** Three
-things he was right about (2026-07-27, on `main`, 15 suites + smoke green,
-`tests/weight-chart.test.js` now 161 assertions):
+**HEAD is `als-v423` — `weight.html` was rebuilt over two passes, the second one
+driven by Alex's own review** (2026-07-27, on `main`, 15 suites + smoke green;
+`tests/weight-chart.test.js` = 161 assertions; verified live). Read this if the
+task touches the weigh-in page — and skim it before building **any chart in this
+app**, because most of the lessons are not about weight.
 
-- ⭐ **"the chart gets its own route, that confuses me."** It did, and the fault
-  was a line I'd added: a faint `wt-thread` polyline joining the daily dots ran
-  alongside the bold trend, so the chart had **two competing paths**. Fixed by
-  deleting the thread and tethering each reading to the trend with a hairline
-  (`.wt-whisk`). There is now exactly ONE path; the dots are scatter around it,
-  and a reading that landed on the trend disappears into it. The envelope band
-  went too — the tethers say the same thing from real data instead of a computed
-  ±SD, and "is this reading odd?" moved to where it's actionable (the input).
-  **Don't reintroduce a second line through this chart.**
-- ⚠️ **The trend was computed from the VISIBLE WINDOW, so it warmed up from a
-  single sample at the left edge.** On 7D the line started wherever that one
-  morning happened to land. It's now computed over the full history and
-  `.slice(startIdx)`d to the window — every range is a suffix, so the index is
-  all that's needed.
-- **The log form and the history list were the two most generic things left.**
-  The form opened with a raw `<input type="date">`; the list was 149 rows × 2
-  always-on buttons, i.e. an admin table. Now: a serif prompt, ∓0.1 steppers
-  that seed from his last reading, a **live feedback line** that reads the delta
-  back before he commits (catches a `704` or a `7.04` — judged against
-  `typicalSwing()`, his own ~0.34 kg morning-to-morning move, not a hardcoded
-  threshold), the date picker folded behind "LOGGING FOR TODAY · CHANGE", and
-  row actions behind a tap with the freed space carrying a **position marker**
-  so scrolling shows the shape of a month.
-- ⚠️ **The field is a PLACEHOLDER, never a pre-filled value.** Ghosting his last
-  reading helps; committing a stale number in one tap does not.
-- ⚠️ **Revealing Edit + Delete squeezed the row until `70.6 kg` WRAPPED onto two
-  lines** — caught by rendering at a true 321 px card width, invisible at any
-  wider size and invisible to every assertion. `.wt-history-val` is now
-  `nowrap`, the date is the only element allowed to ellipsis, and the delta
-  hides while a row is open. **To see mobile layout in headless, pin
-  `.wp-wrap{max-width:393px}` and shoot a WIDER window** — the documented
-  right-edge clip otherwise hides the bug you're looking for.
-- **New permanent guard: the suite now enforces constraint 11 generically** —
-  it extracts every class the inline script toggles or emits and fails if one
-  isn't defined in the page's `<style>` or `aurora.css`.
-- Feedback compares against the last entry logged **before the selected date**,
-  not against the newest row, so back-dating and editing both read correctly.
+**His data, which drove every decision:** 149 weigh-ins, 8 Feb → 13 Jul 2026,
+**7 missed days ever** (96%), range 69.2–73.2 kg, and a mean day-to-day move of
+**0.335 kg**. That last number is the whole thesis: his daily noise is about a
+third of an entire month's real movement, so **the daily reading is not the
+signal — the trend is.** Monthly averages 69.8 → 71.2 → **72.1** → 70.9 → 70.5
+→ 70.7: he reached his 72 kg goal in April and gave it back, and the old page
+never said so.
 
-**`als-v422` was the first pass — presentation only, data path byte-identical.**
-Read this if the task touches the weigh-in page or ANY chart in this app.
-
-- **The chart was lying by autoscaling.** `pad = max((max−min)*0.18, 0.4)` fit the
-  y-axis to whatever was visible, so a 0.6 kg wobble filled 170px and read as a
-  crisis. His day-to-day noise is **0.335 kg** — roughly a third of a whole
-  month's real movement. There is now a **3 kg minimum span** (`MIN_SPAN`), ticks
-  on real half/whole-kg values, and gridline labels rendered **inside** the SVG so
-  the two can't drift apart. Don't reintroduce a pure min/max fit.
-- **`preserveAspectRatio="none"` was the reason it looked cheap.** A 320-unit
-  viewBox stretched non-uniformly to device width, so strokes had different
-  weights on each axis, dots rendered as **ovals** and tooltip text was squashed.
-  The viewBox now tracks real CSS pixels (1 unit == 1 px) via a `ResizeObserver`.
-  ⚠️ The observer's own first callback fires **before** the chart is ever painted,
-  so it compares against **`wtLastW`** (the width last DRAWN at), not a captured
-  local — otherwise it re-renders and kills the draw-in animation.
-- **The hierarchy was inverted.** The noisy daily line had the glow and gradient;
-  the 7-day average — the only real signal — was the faintest thing on screen.
-  Now: trend is the bold gradient curve, daily readings are a whisper thread plus
-  quiet dots, and a **fluctuation channel** (trend ± SD of its own window)
-  replaces the generic gradient-fill-under-line. The trend window is by
-  **calendar date, not array index**, so a missed day widens the gap.
+### The chart — rules it now obeys
+- ⭐ **Exactly ONE path through the plot.** v422 drew the bold trend *and* a faint
+  thread joining the daily dots; Alex read that immediately as *"the chart gets
+  its own route, that confuses me"* and he was right. v423 deleted the thread and
+  tethers each reading to the trend with a hairline (`.wt-whisk`). The dots are
+  scatter **around** the line, and a morning that landed on it disappears into
+  it. **Never reintroduce a second line through this chart.** (An earlier ±SD
+  envelope band also went: the tethers say the same thing from real readings, and
+  "is this reading odd?" moved to the input, where it's actionable.)
+- **Never autoscale to the visible min/max.** The original `pad =
+  max((max−min)*0.18, 0.4)` let a 0.6 kg wobble fill 170px and read as a crisis.
+  There is now a **3 kg floor** (`MIN_SPAN`), ticks on real half/whole-kg values,
+  and gridline labels rendered **inside** the SVG so line and label can't drift.
+- **`preserveAspectRatio="none"` is why it looked cheap.** A 320-unit viewBox
+  stretched non-uniformly to device width, so strokes had different weights per
+  axis, dots rendered as **ovals** and tooltip text was squashed. The viewBox now
+  tracks real CSS pixels (1 unit == 1 px) via `ResizeObserver`. ⚠️ That observer's
+  own first callback fires **before** the chart has ever painted, so it compares
+  against **`wtLastW`** (the width last DRAWN at), never a captured local —
+  otherwise it re-renders and kills the draw-in animation.
+- ⚠️ **Compute a trend from the FULL history, then slice to the window.** v422
+  computed it from the visible rows, so on 7D the line "warmed up" from a single
+  sample and started wherever that one morning happened to land. Every range is a
+  suffix of the sorted array, so `trendSeries(allRows).slice(startIdx)` is all it
+  takes. The 7-day window itself is by **calendar date, not array index**, so a
+  missed day widens the gap instead of shifting the window.
 - ⚠️ **A slope smaller than its own standard error is not a trend.** The first
   build announced "↓ −0.07 kg/week · losing" over data that is statistically
-  flat. `trendRate()` now returns `{rate, se, n}` and `isSteady()` gates on
-  `|rate| < max(0.05, 1.5×se)`. Never state a direction the data can't support.
-- ⚠️ **Up is not automatically bad.** The old page painted every gain amber,
-  which is wrong for someone climbing to **72 kg**. The verdict is coloured by
+  flat. `trendRate()` returns `{rate, se, n}`; `isSteady()` gates on
+  `|rate| < max(0.05, 1.5×se)`. **Never state a direction the data can't support.**
+- ⚠️ **Up is not automatically bad.** The old page painted every gain amber, which
+  is simply wrong for someone climbing to **72 kg**. The verdict is coloured by
   whether he's moving *toward his own target*, read from `goals_outcomes_v1`
-  (`type:'bodyweight'`) — **read-only, never written**. No goal set = no goal
-  line, no invented target, and the stat cell falls back to LOWEST.
-- **Distance-to-goal is measured from the TREND, not the last reading**, or the
-  stat cell and Nova quote two different answers to the same question — they did,
-  +1.6 vs 1.3, until it was unified.
-- Also: month-by-month rail (his Feb→Jul arc, 69.8 → **72.1** → 70.7, so April's
-  peak is finally visible), history grouped by month with per-month avg + net,
-  `touch-action:pan-y` + gesture detection so a 214px chart no longer eats the
-  page scroll, and equal-width range segments so the sliding pill animates
-  **transform only**. Month labels thin from the newest end past ~9 months.
-- **Proof the data is untouched:** every storage function —
-  `wtLoad`/`wtSave`/`wtSaveEntry`/`wtDeleteEntry`/`wtGetSelectedDate`/
-  `parseWeight`/`wtDateKey` — is **byte-identical** across both passes,
-  `localStorage.setItem` call sites 1 → 1, `pocoach-sync.js` wiring unchanged,
-  and the suite asserts his 149 rows survive a render unmodified. `doSave` and
-  `wtEditEntry` gained UI-reset lines in v423 (classes + label text only, nothing
-  removed) — verified line-by-line, no storage or array writes added.
-- 🔴 **UNCONFIRMED ON DEVICE.** Verified by 161 assertions and headless renders at
-  321/330/428 px; no phone has touched it. Worth checking on iOS: the gesture
-  split (vertical drag scrolls, horizontal scrubs) and tap-to-open on the rows.
-- Pre-existing and NOT caused by this change: `tests/goals-rhythm.test.js` fails
-  one date-dependent assertion ("current week marked"). It reads `main.html`
-  only and fails identically with `weight.html` stashed.
+  (`type:'bodyweight'`) — **read-only, never written**. No goal = no goal line, no
+  invented target, and the stat cell falls back to LOWEST.
+- **Distance-to-goal is measured from the TREND, not the last reading.** Mixing
+  the two had the stat cell saying +1.6 while Nova said 1.3 — two answers to one
+  question on one screen.
+- Also here: the month-by-month rail (labels thin from the newest end past ~9
+  months so they can't collide), `touch-action:pan-y` **plus** gesture detection
+  so a 214px chart doesn't eat the page scroll, and equal-width range segments so
+  the sliding pill animates **transform only**.
+
+### The logging ritual and the history list
+Both were the generic leftovers — the form led with a raw `<input type="date">`,
+and the list was 149 rows × 2 always-on buttons, which is an admin table, not a
+record of his year.
+
+- A serif prompt, **∓0.1 steppers** seeded from his last reading, and a **live
+  feedback line that reads the delta back BEFORE saving** — it catches a `704` or
+  a `7.04`, judged against `typicalSwing()` (his own ~0.34 kg move), never a
+  hardcoded threshold.
+- ⚠️ **The field ghosts his last reading as a PLACEHOLDER, never a value.** A
+  pre-filled number can be committed unread, and a stale weigh-in is worse than
+  an empty field.
+- The date picker folds behind **"LOGGING FOR TODAY · CHANGE"**, which names the
+  day in words so a back-dated entry can't happen silently. Feedback compares
+  against the last entry logged **before the selected date**, so back-dating and
+  editing both read correctly.
+- Row actions live behind a tap; the freed space carries a **position marker**, so
+  scrolling shows the shape of a month, not only its digits. A flat month centres
+  every marker rather than dividing by zero.
+- ⚠️ **Revealing Edit + Delete squeezed the row until `70.6 kg` WRAPPED onto two
+  lines.** Only visible at a true 321px card width — invisible at any wider
+  viewport and invisible to all 161 assertions. `.wt-history-val` is `nowrap`,
+  the date is the only element allowed to ellipsis, and the delta hides while a
+  row is open. **The rendering technique that caught it is in §6.**
+
+### Data safety
+Both passes are **presentation only**. Every storage function —
+`wtLoad`/`wtSave`/`wtSaveEntry`/`wtDeleteEntry`/`wtGetSelectedDate`/
+`parseWeight`/`wtDateKey` — is **byte-identical** to before the work,
+`localStorage.setItem` call sites 1 → 1, and `pocoach-sync.js` wiring is
+untouched. `doSave` and `wtEditEntry` gained UI-reset lines in v423 (classes and
+label text only, nothing removed), verified line-by-line to add no storage or
+array writes. The suite asserts his 149 rows survive a render unmodified.
+
+### Still open on this page
+- 🔴 **NOTHING HAS BEEN TOUCHED ON A PHONE.** Verified by 161 assertions and
+  headless renders at 321/330/428 px only. Ask him about two things he has not
+  ruled on: whether **tap-to-open** on a history row annoys him (one extra tap on
+  something he does rarely), and whether the **position markers** read as useful
+  or as fussy. Both are cheap to pull back.
+- The chart's touch gesture split (vertical drag scrolls the page, horizontal
+  scrubs the readout) is the most iOS-dependent thing here and is unproven.
+- Pre-existing and **not** caused by this work: `tests/goals-rhythm.test.js`
+  fails one date-dependent assertion ("current week marked"). It reads
+  `main.html` only and fails identically with `weight.html` stashed.
 
 **Before that — `als-v421`, her watch inbox had stopped draining, silently**
 (2026-07-27, on `main`, 14 suites + smoke green; `tests/run-inbox.test.js`, 27
@@ -843,6 +857,11 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **`weight.html` (als-v423) has never been opened on a phone.** Two calls are
+  his, not mine: does **tap-to-open** on a history row annoy him, and do the
+  **position markers** in the list read as useful or fussy? Also unproven on iOS:
+  the chart's gesture split (vertical drag scrolls, horizontal scrubs). Details
+  at the top of this section.
 - 🔴 **Confirm the 515-run recovery actually applied** (5 → 520, list reaching
   Ιανουάριος 2022) and that the 25 Jul run drained on her phone. Both are the
   open ends of the als-v421 session; details in the block above.
@@ -909,9 +928,15 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 13 suites (garmin-probe is a TOOL, not a suite)
+for f in tests/*.js; do node "$f"; done   # 15 suites (garmin-probe is a TOOL, not a suite)
 ./smoke-test.sh                            # MUST pass before every push
 ```
+
+⚠️ **`tests/goals-rhythm.test.js` currently fails ONE assertion** ("current week
+marked") and has since before als-v422. It reads `main.html` only and the failure
+is date-dependent. **Expect 15 pass / 1 fail on a clean tree** — don't assume you
+broke it, and don't chase it unless the task is Home's heatmap. To prove any
+failure isn't yours: `git stash push <your files>`, re-run, `git stash pop`.
 
 `smoke-test.sh` parses every JS file and inline `<script>`, checks every local
 link resolves, bans `on_conflict=key`, and fails if a synced key is missing from
@@ -960,6 +985,21 @@ geometry is finite in a test; then *look at it*.
 Render `git show HEAD:<page>` the same way for a real before/after. Headless
 does not apply the mobile viewport, so the right edge clips — compare the two
 shots against each other, never a shot against the phone. Delete both when done.
+
+⚠️ **That clip hides real mobile bugs, so don't just live with it.** To inspect
+the layout at a genuine phone width, **pin the wrapper and shoot a WIDER window**:
+
+```bash
+# .wp-wrap max-width 393px → card content is exactly 321px, the real iPhone
+# value, while the 470px window keeps the page from overflowing and clipping
+--window-size=470,1700     # + inject: .wp-wrap,.wp-hero{max-width:393px!important}
+```
+
+This is how `weight.html`'s wrapped-value bug was found: revealing two buttons in
+a list row squeezed `70.6 kg` onto two lines **only** at 321px. Nothing wider
+showed it and no assertion could see it. **A layout that is only ever rendered
+wide is untested at the width he actually uses.** Crop the PNG to the region you
+care about and `Read` it — a full-page shot at phone width is too small to judge.
 
 **Design work:** the `impeccable`, `ui-ux-pro-max`, and `redesign-existing-projects`
 skills are installed, but every output stays vanilla single-file HTML/CSS/JS.
