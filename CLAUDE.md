@@ -266,6 +266,61 @@ reads a Supabase row.
   25 Jul.** If she reports a run from after that missing, the gap is UPSTREAM of
   this app (watch → Garmin Connect → intervals), not in the courier. Check
   `?icu=diag`'s `newest` before touching any code.
+- 🔴 **UNCONFIRMED ON HER DEVICE.** All of the above is verified by tests and by
+  live server probes; **no phone has run it.** The 25 Jul run was still `pending`
+  in the inbox when the session ended — **that run landing is the first real
+  proof.** Ask Alex what happened: either «Νέο τρέξιμο από το ρολόι ✓», or the
+  new amber strip naming the cause. Start there.
+
+### ⚠️ THE SAME SESSION UNCOVERED A BIGGER THING: her 515 runs were ORPHANED
+
+Alex then said "i dont see her run on 25 there" and, worse, "why did every other
+run of her leave? she had downloaded from 2022". He was right that they were
+gone from view, and it was **not** the v421 change.
+
+- **What her account held: 5 runs** (15, 18, 20, 22, 22 Jul) — *exactly* the five
+  the courier had delivered and acked. Her run history in that account began the
+  day the courier began. **The tell is the date arithmetic:** the gap starts
+  15 Jul, twelve days before the v421 deploy. Nothing in the drain removes an
+  existing run (the only shrinking line, `logs.length=base`, restores the
+  pre-import length after a failed save).
+- **The cause is the 14 Jul multi-user migration.** Her whole history was
+  imported into the SINGLE pre-migration account. When the accounts split she got
+  a new `run` row that started empty, and only the courier has written to it
+  since. **Nothing was ever deleted:** `_deletes` in the pre-migration snapshot
+  holds tombstones for `run:plan` and `run:shifts` and **zero** for `run:logs`.
+- **Where the data actually is** — `~/ALS DASHBOARD ALL FILES/BACKUPS/2026-07-14_pre-migration_cloud-rows.json`,
+  row `key:"run"` → `run:logs`: **515 runs, 2022-01-18 → 2026-07-13, 3,348 km,
+  515 unique ids, 343 with splits, only 5 with routes** (the bulk history was
+  imported stats-only by design — those maps were never there, so don't chase
+  them). That file is 26 pre-migration rows with `user_id: undefined`; it is the
+  single best artefact in the repo's orbit for any "did we lose X?" question.
+- **The recovery file I generated** (runs ONLY, so it cannot touch her plan /
+  shoes / profile): `2026-07-14_RUNS-RECOVERY_515-runs.json`, in that BACKUPS
+  folder and copied to his Desktop. Shape is the vault's own
+  `{date, takenAt, rows:{run:{"run:logs":[…]}}}`, which `normalizeSnapshot()`
+  accepts as `kind:'vault'`. Simulated against her 5 using the page's own
+  `idOfItem`: **adds 515, removes 0 → 520.**
+- **The route, and the trap:** `backup.html` has **TWO file pickers that do
+  opposite things.** "Keep a copy → Choose a backup file" is the **destructive**
+  full restore. The correct one is **"Go back to a day" → "Older than 14 days?
+  Open a backup file"** → then the middle **✚ "See what's different"** →
+  **"Bring back 515 entries"**. Never the red ⚠ "Restore this whole day". And it
+  must be done **signed in as HER**, or her history lands on his row again.
+- 🔴 **NOT CONFIRMED DONE.** Alex had the file and the steps when the session
+  ended. **Ask whether the count went 5 → 520 and whether the list reaches
+  Ιανουάριος 2022.** If the upload was refused, get the exact message — the file
+  is verified to parse here but no browser has opened it.
+- ⏭️ **The obvious follow-up nobody has checked:** if `run:logs` was orphaned by
+  the migration, **what else of hers was?** Her `run:plan` / `run:shoes` /
+  `run:profile` / `run:strength` are all in that same pre-migration row and were
+  deliberately left OUT of the recovery file to keep the blast radius at one
+  store. Diff her live bundle against that snapshot before assuming it is only
+  runs.
+- Minor, found in passing: `FRIENDLY` in `backup.html:1121` labels `runs` and
+  `run:runs`, neither of which exists — the real key is **`run:logs`**. Cosmetic
+  only (`FRIENDLY[k] || k`, so Repair still offers the store under its raw name),
+  but fix the label when next in that file.
 
 **Before that — `als-v419`, the nutrition lookup was rebuilt to be grounded,
 classified and honest** (2026-07-26, on `main`, 38 test groups in
@@ -693,6 +748,13 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **Confirm the 515-run recovery actually applied** (5 → 520, list reaching
+  Ιανουάριος 2022) and that the 25 Jul run drained on her phone. Both are the
+  open ends of the als-v421 session; details in the block above.
+- ⚠️ **Auto-import is PULL-ON-OPEN, not push.** The courier parks the run in her
+  inbox within the hour, but it only reaches her app **when she opens it**. If he
+  ever asks why a run "took until this evening", that is why — not a bug. Real
+  background delivery would need a push subscription on her device.
 - ✅ **Garmin is connected directly on `intervals.icu` — this is DONE** (proven
   live 2026-07-27, see als-v421). Every run since 15 Jul arrives as
   `source: GARMIN_CONNECT`. Don't re-pitch it.
