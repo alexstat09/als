@@ -228,7 +228,46 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v419` — the nutrition lookup was rebuilt to be grounded,
+**HEAD is `als-v421` — her watch inbox had stopped draining, silently**
+(2026-07-27, on `main`, 14 suites + smoke green; `tests/run-inbox.test.js`, 27
+assertions). Read this first if the task touches her runs, or ANY client that
+reads a Supabase row.
+
+- **The symptom:** "her runs are not coming up." **The server was healthy the
+  whole time.** Her 25 Jul 16.3 km long run was sitting in `run:inbox`
+  *downloaded*, 136 KB of real FIT bytes, undrained for days.
+- **The root cause, and it is the project's oldest rule:** `icuHdr` sent
+  `'Bearer ' + (ICU_TOKEN || ICU_SB_KEY)`. **The publishable key is a valid key
+  with no identity, so RLS answers `200` with an EMPTY array** — byte-identical
+  to "no new runs". run.html's inline script runs *before* the deferred
+  `topbar.js` / `sync.js` restore her session, and the wait was only 25×120ms =
+  3s, so a cold PWA start on a slow connection routinely lost the attempt. Every
+  other exit in the drain was a bare `return`, so nothing could ever say so.
+  **Never write `token || anonKey`. A missing identity must stop the read, not
+  soften it.**
+- Now: JWT-only, a ~12s wait, an `als:auth` listener that re-drains the moment
+  her session lands (so a cold start self-heals without her touching anything),
+  and every non-empty failure path names itself — no session / offline / HTTP
+  401 / bad json / unreadable file / storage full. **An empty inbox is the one
+  quiet exit.** Failures raise their own strip, because `#lgToast` lives inside
+  the log view and is invisible from every other tab.
+- **Storage-full no longer stalls forever on the same run.** A 16 km run carries
+  a route *and* a per-second series and is the biggest thing this page stores;
+  the old code returned without acking, so it retried the identical oversized
+  write at every open. It now sheds `series`/`route`/`laps` and retries — she
+  keeps distance, time, pace, HR — and only if *that* fails rolls back and
+  refuses to ack.
+- **`?icu=diag` is the new eye** (read-only, returns before `icuCheck()` writes).
+  It lists what intervals actually holds (id/date/name/source/type) and probes
+  both endpoints the courier needs, with real HTTP status and body. Counts alone
+  could not tell "she has not run" from "every run is being dropped"; this can.
+  `curl -s "$H/api/run-reminders?icu=diag" -H "Origin: $H"`.
+- ⚠️ **Still true at the time of writing: intervals holds nothing newer than
+  25 Jul.** If she reports a run from after that missing, the gap is UPSTREAM of
+  this app (watch → Garmin Connect → intervals), not in the courier. Check
+  `?icu=diag`'s `newest` before touching any code.
+
+**Before that — `als-v419`, the nutrition lookup was rebuilt to be grounded,
 classified and honest** (2026-07-26, on `main`, 38 test groups in
 `tests/nutrition-lookup.test.js` + all 13 suites + smoke green). Read this
 first if the task touches finding or logging a food.
@@ -654,8 +693,15 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
-- Connect Garmin directly on `intervals.icu` and remove Strava. Still blocks her
-  RUN auto-import (sleep no longer depends on it); the marathon is 8 Nov 2026.
+- ✅ **Garmin is connected directly on `intervals.icu` — this is DONE** (proven
+  live 2026-07-27, see als-v421). Every run since 15 Jul arrives as
+  `source: GARMIN_CONNECT`. Don't re-pitch it.
+- Her runs from **27 Jun → 13 Jul are permanently unimportable** (12 activities,
+  `source: STRAVA`). intervals returns `422 "Cannot read Strava activities via
+  the API"`, and even the full activity object comes back with no type, no name
+  and no distance — there is nothing to salvage server-side. If she wants them,
+  the only route is a Garmin Connect / Strava export dropped into the app's own
+  file import. Don't spend another session trying to fetch them.
 - Send his 4 gym trial templates (folder `f-cbas`). ⚠️ Zero leg sets in all of
   2026. Don't fight him on volume; argue frequency.
 - Decide the Nova → Hy3 model upgrade. Free tier requires training consent
