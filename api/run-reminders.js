@@ -379,6 +379,39 @@ async function icuCheck() {
   var seenSet = {}; seenIds.forEach(function (id) { seenSet[id] = 1; });
   items = items.filter(function (it) { return it && it.id && !seenSet[it.id]; }); // drop what the app already drained
 
+  /* ── Her cloud row is the only proof of delivery. ──────────────────────────
+     `doneIds` is what this courier downloaded and `seenIds` is what an app said
+     it took — and "said it took" used to mean a localStorage write that sync.js
+     might never have pushed. When that push failed, the run existed on exactly
+     one phone while the inbox had already thrown away the only other copy: her
+     25 Jul 16.3 km long run was acked, pruned, and invisible from every other
+     device, with nothing left to recover it from.
+     So read what her account ACTUALLY holds and re-offer anything the courier
+     delivered that is not in there. Once per activity, ever (`redelivered`), so
+     a run she deletes on purpose comes back at most once rather than hourly. */
+  var runRow = await supa.readRow('run', runner);
+  var herLogs = Array.isArray(runRow['run:logs']) ? runRow['run:logs'] : null;
+  var redone = Array.isArray(inbox.redelivered) ? inbox.redelivered.slice() : [];
+  var redoneSet = {}; redone.forEach(function (id) { redoneSet[id] = 1; });
+  var itemSet = {}; items.forEach(function (it) { itemSet[it.id] = 1; });
+  // ⚠️ A failed read and an empty history are the same value here. Treat a
+  // null/empty row as "I cannot tell" and re-deliver NOTHING — reading it as
+  // "she has no runs" would re-download her entire month.
+  function missingFromHerApp(a) {
+    if (!herLogs || !herLogs.length) return false;
+    var d = String(a.start_date_local || '').slice(0, 10);
+    if (!d) return false;
+    var km = a.distance > 0 ? a.distance / 1000 : 0;
+    for (var i = 0; i < herLogs.length; i++) {                       // mirrors the client's own findMatch()
+      var l = herLogs[i];
+      if (!l || l.date !== d) continue;
+      if (km > 0 && Math.abs((+l.distanceKm || 0) - km) >= 0.25) continue;
+      return false;
+    }
+    return true;
+  }
+  var redos = 0;
+
   // Strava-sourced activities are blocked by intervals' API ("not available") — skip them.
   // Setup requires GARMIN connected DIRECTLY to intervals so runs arrive as source=GARMIN.
   var strava = 0, cands = [];
@@ -388,8 +421,15 @@ async function icuCheck() {
   var added = 0, errs = 0, nonRun = 0;
   for (var i = 0; i < cands.length; i++) {
     var a = cands[i];
-    if (doneSet[a.id]) continue;
-    if (seenSet[a.id]) { doneSet[a.id] = 1; doneIds.push(a.id); continue; }
+    var redeliver = false;
+    if (doneSet[a.id] || seenSet[a.id]) {
+      // Already handled, UNLESS her account does not actually have it.
+      if (itemSet[a.id] || redoneSet[a.id] || redos >= 3 || !missingFromHerApp(a)) {
+        if (seenSet[a.id] && !doneSet[a.id]) { doneSet[a.id] = 1; doneIds.push(a.id); }
+        continue;
+      }
+      redeliver = true;                                              // delivered once, never landed
+    }
     if (added + nonRun + errs >= 12) break;                          // bound one invocation under maxDuration
     var mark = true;
     try {
@@ -407,6 +447,14 @@ async function icuCheck() {
             if (buf.length && buf.length <= 4 * 1024 * 1024 && icuLooksLikeActivity(buf)) {
               items.push({ id: a.id, name: (fj.name || 'Run'), date: (a.start_date_local || fj.start_date_local || ''), fit: buf.toString('base64') });
               added++;
+              // Spend the one re-delivery only when the bytes are really in hand.
+              if (redeliver) {
+                redone.push(a.id); redoneSet[a.id] = 1; redos++;
+                // And "un-see" it, or the next tick's seen-filter would prune
+                // the re-delivered item before her phone ever opened the app.
+                delete seenSet[a.id];
+                seenIds = seenIds.filter(function (x) { return x !== a.id; });
+              }
             } else { errs++; }
           }
         }
@@ -417,10 +465,12 @@ async function icuCheck() {
 
   if (items.length > 20) items = items.slice(items.length - 20);     // generous buffer; ack-pruning keeps it near-empty
   if (doneIds.length > 500) doneIds = doneIds.slice(doneIds.length - 500);
-  await supa.writeRow('run:inbox', { doneIds: doneIds, items: items }, runner);
+  if (redone.length > 200) redone = redone.slice(redone.length - 200);
+  await supa.writeRow('run:inbox', { doneIds: doneIds, items: items, redelivered: redone }, runner);
+  if (redos) await supa.writeRow('run:inbox-ack', { seenIds: seenIds }, runner);
 
   var newest = acts.map(function (a) { return a && a.start_date_local; }).filter(Boolean).sort().slice(-1)[0] || null;
-  return { total: acts.length, strava: strava, garmin: cands.length, added: added, nonRun: nonRun, errs: errs, pending: items.length, newest: newest };
+  return { total: acts.length, strava: strava, garmin: cands.length, added: added, nonRun: nonRun, errs: errs, pending: items.length, redelivered: redos, newest: newest };
 }
 
 // ── ?icu=diag — WHY is a run not arriving? ─────────────────────────────────
@@ -476,12 +526,32 @@ async function icuDiag() {
   var runner = supa.RUNNER_ID || undefined;
   var inbox = await supa.readRow('run:inbox', runner);
   var ack = await supa.readRow('run:inbox-ack', runner);
+  // The question the counts above could never answer: of the runs intervals
+  // holds, which ones are actually IN her account? A run marked delivered but
+  // absent from `run:logs` is the whole failure mode this pipeline had — it is
+  // what the courier now reconciles, and it should be readable here first.
+  var dRow = await supa.readRow('run', runner);
+  var dLogs = Array.isArray(dRow['run:logs']) ? dRow['run:logs'] : null;
+  var absent = !dLogs ? null : acts.filter(function (a) {
+    if (a.source === 'STRAVA') return false;                          // unimportable by design
+    var d = String(a.start_date_local || '').slice(0, 10); if (!d) return false;
+    var km = a.distance > 0 ? a.distance / 1000 : 0;
+    return !dLogs.some(function (l) {
+      return l && l.date === d && (!(km > 0) || Math.abs((+l.distanceKm || 0) - km) < 0.25);
+    });
+  }).map(function (a) { return { id: a.id, date: a.start_date_local, km: a.distance ? Math.round(a.distance / 10) / 100 : null }; });
   return {
     athleteId: ATH, total: acts.length, activities: list, probes: probes,
+    herApp: {
+      runs: dLogs ? dLogs.length : null,          // null = row unreadable, NOT "she has none"
+      newest: dLogs && dLogs.length ? dLogs.map(function (l) { return l && l.date; }).filter(Boolean).sort().slice(-1)[0] : null,
+      missingFromApp: absent                      // intervals has it, her account does not
+    },
     inbox: {
       pending: (inbox.items || []).map(function (it) { return { id: it.id, date: it.date, name: it.name, fitKb: it.fit ? Math.round(it.fit.length / 1365) : 0 }; }),
       doneIds: (inbox.doneIds || []).length,
       acked: (ack.seenIds || []).length,
+      redelivered: (inbox.redelivered || []).length,
       runnerRow: !!supa.RUNNER_ID
     }
   };
@@ -503,6 +573,19 @@ module.exports = async function (req, res) {
 
     if (req.query.peek !== 'run') { res.status(400).json({ error: 'unknown peek target' }); return; }
     var runRow = await supa.readRow('run', supa.RUNNER_ID);
+    // What the courier has parked but her phone has not taken yet. Without this,
+    // "she has not run since Tuesday" and "her run is sitting in the inbox
+    // waiting for her to open the app" look identical from here — and that
+    // ambiguity is exactly what read as "the running page lost a run". Auto-
+    // import is pull-on-open, so a wait is normal; not being able to SEE the
+    // wait is not.
+    var pInbox = await supa.readRow('run:inbox', supa.RUNNER_ID);
+    var pAck = await supa.readRow('run:inbox-ack', supa.RUNNER_ID);
+    var pSeen = {};
+    (Array.isArray(pAck.seenIds) ? pAck.seenIds : []).forEach(function (id) { pSeen[id] = 1; });
+    var waiting = (Array.isArray(pInbox.items) ? pInbox.items : [])
+      .filter(function (it) { return it && it.id && !pSeen[it.id]; })
+      .map(function (it) { return { id: it.id, name: it.name || 'Run', date: it.date || '' }; });
     res.setHeader('Cache-Control', 'no-store');
     // `keys` survives the 2026-07-16 debugging as the one number worth keeping:
     // readRow() returns {} for a missing row, a wrong RUNNER_ID and an error
@@ -511,7 +594,8 @@ module.exports = async function (req, res) {
     res.status(200).json({
       appKey: 'run',
       data: runRow || {},
-      keys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length
+      keys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length,
+      waiting: waiting
     });
     return;
   }

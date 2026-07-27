@@ -126,7 +126,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v423`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v424`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -234,7 +234,96 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v423` — `weight.html` was rebuilt over two passes, the second one
+**HEAD is `als-v424` — the running page now proves delivery instead of assuming
+it** (2026-07-27, on `main`, 17 suites + smoke green; `tests/run-identity.test.js`
+32 assertions, `tests/run-courier.test.js` 17, `tests/run-inbox.test.js` 36).
+Read this first if the task touches her runs, the courier, or ANY page that has
+to work out whose account it is looking at.
+
+**The report:** *"her account not seeing her runs, and it's not only her — I
+opened it on Safari and the new run wasn't there either."* Two independent
+faults, both silent, both producing a page that looked merely behind.
+
+### Fault 1 — the page guessed whose app it was, and losing the guess was invisible
+`run.html` is Chrissie's app; Alex gets a read-only window into it. Identity was
+decided twice, badly:
+
+- a synchronous scan of every `sb-*-auth-token` in localStorage. **supabase-js
+  CHUNKS a large session** across `…-auth-token.0`/`.1` and neither fragment is
+  parseable JSON, so the owner read as *not* the owner on exactly the devices
+  holding a big session.
+- then a **network probe** whose every failure — session not restored yet,
+  offline, a cold serverless start, the `_auth` rate limit — was collapsed into
+  `return false`, meaning "this is the runner".
+
+Answer "runner" for Alex and the page starts a cloud sync on **his** account and
+renders **his own pre-migration `run` row**: her runs, frozen on 13 Jul, complete
+enough to read as "the app is just behind". That is what he saw on Safari.
+Answer "peek" for Chrissie and her real app renders **empty**.
+
+Now: the decision is the **session's own `user.id`**, awaited on the same ~12s
+budget as `icuEnsureToken` and re-run on `als:auth` (so a session that lands
+*after* the wait expired still gets an answer). The only synchronous input is
+`als:uid`, which topbar.js writes from the real session — it can be absent, it
+cannot be wrong. **`?peek=1` is no longer consulted at all**: Home's Running tile
+always carries it, so honouring it put the read-only shadow up over HER app and
+hid every run behind the welcome screen. And **"I could not tell" is never
+resolved into an account** — nothing syncs, nothing drains, the local cache
+renders, and the page says so. A peek `403` now stays read-only and names itself
+instead of falling through to the runner path.
+
+### Fault 2 — the ack was destructive and it followed an UNCONFIRMED write
+The drain acked the inbox on the strength of a bare `persist()`. The ack makes
+the courier prune the FIT bytes **and** keep the activity marked done at
+intervals, so once sync.js's debounced push failed (stale JWT, offline, the tab
+closed inside the 400ms window, or the engine not started yet) the run existed in
+exactly one place on earth — that phone's localStorage — and the only other copy
+was already gone. **This is the `lastJson`-before-the-upsert shape in a new
+place.** Live proof at the time: `?icu=diag` showed her 25 Jul 16.3 km run as
+`doneIds` + `acked: 1` with `pending: []`, and Alex still could not see it.
+
+Now the loop is closed at **both** ends:
+
+- **Client:** `icuCloudHas(needIds)` reads her own `run` row back with her own
+  JWT and looks for the ids, retrying for ~11s while the push lands. Nothing is
+  marked seen and nothing is acked until they are there; an unconfirmed run says
+  so on the amber strip and the next open re-drains harmlessly (`findMatch`
+  dedupes). A run that is merely *already present locally* is confirmed too —
+  that case is precisely a run stranded by the old behaviour, so re-draining it
+  is the repair. She sees the run and the toast **before** the confirmation runs.
+- **Server:** `doneIds`/`seenIds` are demoted to bookkeeping and **her cloud row
+  is the proof**. `icuCheck()` reads `run:logs` and re-offers anything it
+  delivered that is not in there, matching on local date + distance within 250 m
+  (the client's own `findMatch` rule). Re-delivery also **un-sees** the id, or
+  the next tick's seen-filter would prune it before her phone opened. Bounded:
+  **once per activity ever** (`inbox.redelivered`) so a run she deletes on
+  purpose cannot come back hourly, and **≤3 per tick** so one invocation can't
+  flood. ⚠️ **An unreadable `run` row and an empty history are the same value**,
+  so a null row re-delivers NOTHING rather than re-downloading her whole month.
+
+### Also
+- `?icu=diag` gained **`herApp`**: how many runs her account actually holds, its
+  newest date, and `missingFromApp` — the runs intervals has that her account
+  does not. Counts could never tell "she has not run" from "every run is being
+  dropped"; this names the gap directly. Still read-only.
+- The owner's peek payload gained **`waiting`**, and the banner now says
+  «N τρέξιμο περιμένει — μπαίνει όταν ανοίξει την εφαρμογή της». Auto-import is
+  pull-on-open, so a wait is normal; not being able to SEE the wait is what read
+  as a lost run.
+- The cloud sync engine now starts **before** the drain, so the drain's `flush()`
+  is real rather than a no-op against an undefined `window.ALSSync`.
+
+🔴 **Unproven on a device.** All of it is verified by tests and by the live
+`?icu=diag`, but no phone has run it. **First real proof:** open `?icu=diag`
+after a deploy and read `herApp.missingFromApp` — if her 25 Jul run is listed,
+the next hourly tick re-delivers it and it lands the next time she opens the app.
+Ask what she saw: «Νέο τρέξιμο από το ρολόι ✓», or an amber strip naming a cause.
+
+⏭️ **Still true and NOT fixed here:** her 515 pre-migration runs are a separate
+data-restore job (see below), and six other clients still carry the
+`Bearer (token || KEY)` fallback (Known open bugs).
+
+**Before that — `als-v423`, `weight.html` was rebuilt over two passes, the second one
 driven by Alex's own review** (2026-07-27, on `main`, 15 suites + smoke green;
 `tests/weight-chart.test.js` = 161 assertions; verified live). Read this if the
 task touches the weigh-in page — and skim it before building **any chart in this
@@ -928,13 +1017,13 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 15 suites (garmin-probe is a TOOL, not a suite)
+for f in tests/*.js; do node "$f"; done   # 17 suites (garmin-probe is a TOOL, not a suite)
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` currently fails ONE assertion** ("current week
 marked") and has since before als-v422. It reads `main.html` only and the failure
-is date-dependent. **Expect 15 pass / 1 fail on a clean tree** — don't assume you
+is date-dependent. **Expect 17 pass / 1 fail on a clean tree** — don't assume you
 broke it, and don't chase it unless the task is Home's heatmap. To prove any
 failure isn't yours: `git stash push <your files>`, re-run, `git stash pop`.
 

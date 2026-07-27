@@ -42,6 +42,16 @@ var code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
 ok('icuHdr never falls back to the publishable key', !/ICU_TOKEN\s*\|\|\s*ICU_SB_KEY/.test(code),
   /ICU_TOKEN\s*\|\|\s*ICU_SB_KEY/.test(code) ? 'found ICU_TOKEN||ICU_SB_KEY' : 'Bearer is JWT-only');
 ok('the ack write still uses on_conflict=user_id,key', /on_conflict='\+\(ICU_UID\?'user_id,key'/.test(src));
+// The ack tells the server to PRUNE the FIT bytes and mark the activity done at
+// intervals, so it is destructive and irreversible. It may only ever follow a
+// confirmed cloud write, never a bare localStorage persist() — acking on a local
+// write is the same shape as advancing lastJson before the upsert, and it strands
+// the run on one device with nothing left to recover it from.
+var _confirmAt = code.indexOf('icuCloudHas(needIds)');
+var _ackAt = code.indexOf('icuAck(newSeen)');
+ok('the drain confirms the cloud before it acks', _confirmAt > 0 && _ackAt > _confirmAt,
+  'confirm@' + _confirmAt + ' ack@' + _ackAt);
+ok('the confirmation reads her row with the same JWT header', /app_state\?key=eq\.run&select=data[\s\S]{0,80}icuHdr\(\)/.test(code));
 
 // ── 2. behaviour, driven through a stubbed page ───────────────────────────
 function build(opts) {
@@ -89,8 +99,17 @@ function build(opts) {
     applyUpgrade: function () {},
     runFromParsed: function (r) { return { id: 'r' + state.logs.length, date: '2026-07-25', distanceKm: r.distanceKm, timeSec: r.timeSec, route: r.route, series: r.series, laps: r.laps || null }; },
     fetch: function (url, init) {
-      state.fetches.push({ url: String(url), auth: (init && init.headers && init.headers.Authorization) || null });
-      return Promise.resolve(opts.respond ? opts.respond(String(url)) : { ok: true, status: 200, json: function () { return Promise.resolve([]); } });
+      var u = String(url);
+      state.fetches.push({ url: u, auth: (init && init.headers && init.headers.Authorization) || null });
+      // Her cloud `run` row, read back to confirm the run actually landed before
+      // the inbox item is acked. By default it mirrors whatever the page has
+      // imported (i.e. sync.js's push succeeded); `cloudHas:false` is the device
+      // whose push never left — the case that used to strand a run silently.
+      if (u.indexOf('key=eq.run&') >= 0) {
+        var cloud = opts.cloudHas === false ? [] : state.logs.map(function (x) { return { id: x.id }; });
+        return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve([{ data: { 'run:logs': cloud } }]); } });
+      }
+      return Promise.resolve(opts.respond ? opts.respond(u) : { ok: true, status: 200, json: function () { return Promise.resolve([]); } });
     }
   };
   sandbox.atob = function (b64) { return Buffer.from(b64, 'base64').toString('binary'); };
@@ -195,6 +214,43 @@ function inboxReply(items) {
   await u.api.icuDrainInbox();
   ok('it is consumed so the drain cannot loop on it', /i1/.test(u.store['run:icuSeen'] || ''));
   ok('but it is reported, not silently dropped', /"code":"unreadable"/.test(u.store['run:icuErr'] || ''), u.store['run:icuErr'] || '(silent)');
+
+  // ── the run is on the phone but never reached the cloud ─────────────────
+  // This is the bug behind "I opened it on Safari and the new run wasn't
+  // there": the drain acked (so the server pruned the FIT bytes and marked the
+  // activity done at intervals) on the strength of a localStorage write that
+  // sync.js had not yet pushed. The run then existed on exactly one device, and
+  // Alex's read-only window — which reads the CLOUD — showed it missing.
+  console.log('\n  the run saved locally but the push has not landed');
+  var c = build({
+    session: SESSION, cloudHas: false,
+    respond: function (uu) {
+      if (uu.indexOf('key=eq.run%3Ainbox') >= 0) return inboxReply([{ id: 'i169170852', name: 'Rhodes Running', date: '2026-07-25T19:54:08', fit: FIT_B64 }]);
+      return { ok: true, status: 200, json: function () { return Promise.resolve([]); } };
+    }
+  });
+  await c.api.icuDrainInbox();
+  ok('she still sees her run immediately', c.state.logs.length === 1 && c.state.toasts.some(function (t) { return /ρολόι/.test(t); }));
+  ok('the server is NOT acked, so the FIT bytes survive', !c.state.fetches.some(function (f) { return /on_conflict/.test(f.url); }));
+  ok('the id is NOT marked seen, so the next open re-drains', !c.store['run:icuSeen']);
+  ok('and the reason is recorded, not swallowed', /"code":"unconfirmed"/.test(c.store['run:icuErr'] || ''), c.store['run:icuErr'] || '(silent)');
+  ok('it kept asking while the push had time to land', c.state.fetches.filter(function (f) { return /key=eq\.run&/.test(f.url); }).length >= 6);
+
+  // A run already present locally is the repair case for anything stranded by
+  // the old behaviour: re-draining it must confirm the CLOUD has it too, not
+  // shrug because the phone already does.
+  console.log('\n  a run already imported, still missing from the cloud');
+  var m = build({
+    session: SESSION, cloudHas: false,
+    respond: function (uu) {
+      if (uu.indexOf('key=eq.run%3Ainbox') >= 0) return inboxReply([{ id: 'i2', name: 'Rhodes Running', date: '2026-07-25T19:54:08', fit: FIT_B64 }]);
+      return { ok: true, status: 200, json: function () { return Promise.resolve([]); } };
+    }
+  });
+  m.sandbox.findMatch = function () { return { id: 'already-here' }; };
+  await m.api.icuDrainInbox();
+  ok('nothing is imported twice', m.state.logs.length === 0, m.state.logs.length + ' log(s)');
+  ok('but it is still not acked away', !m.state.fetches.some(function (f) { return /on_conflict/.test(f.url); }));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

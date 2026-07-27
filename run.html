@@ -1127,47 +1127,37 @@
     'use strict';
     var K_PROF='run:profile', K_PLAN='run:plan', K_LOGS='run:logs';
 
-    /* ── OWNER "view as her" peek mode (read-only) ──────────────────────────────
-       ?peek=1 lets the owner view the runner's app without touching any account.
-       The run:* localStorage keys are backed by an IN-MEMORY store: reads come
-       from her fetched data, writes go nowhere (never to disk, never synced). Auto
-       -import and cloud sync are disabled in the boot block below. Nothing here can
-       contaminate either account — close the tab and the in-memory copy is gone. */
+    /* ── WHO IS THIS DEVICE? ────────────────────────────────────────────────────
+       run.html is Chrissie's app. Alex (the owner) has no runs of his own, so he
+       gets a read-only WINDOW into hers: the run:* localStorage keys are backed by
+       an IN-MEMORY store, reads come from her fetched data, writes go nowhere, and
+       both auto-import and cloud sync stay off. Close the tab and the copy is gone.
+
+       ⚠️ GETTING THIS WRONG IS WHY "the new run isn't there" KEPT HAPPENING, and
+       it was never a data bug. Answer "runner" for Alex and the page starts a
+       cloud sync on HIS account and renders HIS own pre-migration `run` row — her
+       runs, frozen on 13 Jul, complete enough to read as "the app is just behind".
+       Answer "peek" for Chrissie and her real app renders EMPTY.
+
+       Both old inputs could answer wrongly without saying so:
+         · a synchronous scan of every `sb-*-auth-token` — supabase-js CHUNKS a
+           big session across `…-auth-token.0`/`.1`, and neither fragment parses,
+           so the owner read as "not the owner" on exactly the devices that had a
+           large session (his Safari);
+         · then a NETWORK probe whose every failure — no session restored yet,
+           offline, a cold serverless start, the _auth rate limit — was collapsed
+           into `return false`, i.e. "she is the runner".
+
+       So identity is now decided ONE way and never raced:
+         · the only synchronous input is `als:uid`, which topbar.js writes from the
+           real session and rewrites on an account switch. It can be ABSENT; it
+           cannot be wrong. Absent simply means we wait.
+         · the decision is the session's own `user.id`, awaited (~12s, the same
+           budget as icuEnsureToken) and re-run on the `als:auth` event.
+         · "I could not tell" is NEVER resolved into an account. Nothing syncs,
+           nothing drains, the local cache renders, and the page says so. */
     var OWNER_UID = '1655556c-97af-43ac-970f-fcbdbd8f7f0c';   // matches als-profile.js
-    // Is the OWNER (Alex) the one signed in on this device? Read straight from the
-    // stored Supabase session's JWT (sync so we can decide before data loads). The
-    // owner has no runs of his own — his running page is a read-only window into
-    // hers. The RUNNER (Chrissie) gets her normal editable app. The server
-    // re-verifies ownership on the peek fetch, so this is only UI routing.
-    /* Scan EVERY sb-*-auth-token, not just the first. A device can hold more than
-       one: a stale token from testing her account, a leftover from another Supabase
-       project, or a chunked entry (supabase-js splits big sessions across
-       `…-auth-token.0`, `.1`). The old version returned on the FIRST key it found,
-       so one stale token in front of the real one made the owner invisible — the
-       page then silently fell through to the runner path and rendered the owner's
-       own pre-migration `run` row (her runs, frozen the day she got her account).
-       That is why this worked on one machine and not another.
-       Fail only after every candidate has been checked, and never let one bad
-       entry abort the scan. */
-    function __ownerSignedIn(){
-      var found = false;
-      try{
-        for (var i=0;i<localStorage.length;i++){
-          var k=localStorage.key(i);
-          if (!k || k.indexOf('sb-')!==0 || k.indexOf('-auth-token')<=0) continue;
-          try{
-            var j=JSON.parse(localStorage.getItem(k)||'null');
-            var tok=j && (j.access_token || (j.currentSession && j.currentSession.access_token));
-            if (!tok) continue;
-            var b=(tok.split('.')[1]||'').replace(/-/g,'+').replace(/_/g,'/');
-            while (b.length % 4) b += '=';                        // base64url has no padding; atob wants it
-            var p=JSON.parse(decodeURIComponent(escape(atob(b)))); // payloads can hold non-ASCII (Greek names)
-            if (p && p.sub === OWNER_UID) { found = true; break; }
-          }catch(e){ /* chunked or malformed entry — skip it, keep scanning */ }
-        }
-      }catch(e){}
-      return found;
-    }
+    function __uidHint(){ try{ return localStorage.getItem('als:uid')||null; }catch(e){ return null; } }
     /* ── Read-only peek store ────────────────────────────────────────────────
        This used to monkey-patch localStorage.getItem/setItem to shadow run:* keys.
        That works in Chrome (Alex's PC) and NOT in Safari (his laptop web app):
@@ -1179,7 +1169,13 @@
        own. Every run:* read/write in this file now goes through lsGet/lsSet/lsRem,
        which consult this store first while peeking. Reads come from her fetched
        data; writes die in memory and never touch disk or any account. */
-    var __RUN_PEEK = /[?&]peek=1\b/.test(location.search) || __ownerSignedIn();
+    /* Pre-paint hint ONLY, and only when `als:uid` is an exact owner match. Note
+       what is NOT here: `?peek=1`. Home's Running tile always carries it (Alex is
+       the one who taps it), so honouring it would put the shadow up over HER app
+       whenever she used that tile, hiding every run behind an empty welcome
+       screen until a network round-trip corrected it. The awaited uid below is
+       the whole decision now, so the param is simply inert. */
+    var __RUN_PEEK = (__uidHint() === OWNER_UID);
     var __peekStore = null;                 // non-null == peek mode
     window.__RUN_PEEK_INSTALL = function(){
       if (!__peekStore) __peekStore = {};
@@ -4308,6 +4304,41 @@
         if(!ar.ok) console.warn('[run:inbox] ack HTTP '+ar.status);
       }catch(e){ console.warn('[run:inbox] ack failed — '+((e&&e.message)||e)); }
     }
+    /* ── Is the run REALLY in her cloud row? ───────────────────────────────────
+       ⚠️ THE ACK IS DESTRUCTIVE. Once the server has it, the courier prunes those
+       items from `run:inbox` and marks them done at intervals: the FIT bytes are
+       gone for good, and the run exists in exactly one place on earth, this
+       phone's localStorage. So acking on a bare `persist()` is the same shape as
+       advancing `lastJson` before the upsert — a local write reported as a
+       durable one. If sync.js's push then failed (stale JWT, offline, the tab
+       closed inside the 400ms debounce), the run was stranded on one device
+       forever: Alex's read-only window reads the CLOUD, so it showed the run
+       missing, and there was nothing left to recover it from.
+
+       Read her own row back with her own JWT and look for the ids. Nothing is
+       acked until they are there. An unconfirmed run costs nothing: the server
+       keeps offering the item, and the next drain is idempotent because
+       findMatch() recognises the run it already imported. */
+    async function icuCloudHas(ids){
+      if(!ids || !ids.length) return true;                        // nothing was imported → nothing to confirm
+      var want={}; ids.forEach(function(id){ if(id) want[id]=1; });
+      if(!Object.keys(want).length) return true;
+      for(var a=0;a<8;a++){
+        await new Promise(function(r){ setTimeout(r, a?1500:700); });   // let the debounced push land
+        try{ flush(); }catch(e){}
+        var rr;
+        try{ rr=await fetch(ICU_SB_URL+'/rest/v1/app_state?key=eq.run&select=data&limit=1', { headers: icuHdr(), cache:'no-store' }); }
+        catch(e){ continue; }
+        if(!rr.ok) continue;
+        var jj; try{ jj=await rr.json(); }catch(e){ continue; }
+        var cl=(jj&&jj[0]&&jj[0].data&&jj[0].data['run:logs']);
+        if(!Array.isArray(cl)) continue;
+        var have={}; cl.forEach(function(x){ if(x&&x.id) have[x.id]=1; });
+        var all=true; for(var k in want){ if(!have[k]){ all=false; break; } }
+        if(all) return true;
+      }
+      return false;
+    }
     var __icuBusy=false;
     async function icuDrainInbox(){
       if(__icuBusy) return;                                       // open + auth-arrival can fire together; one drain at a time
@@ -4337,7 +4368,7 @@
       if(!items.length) return;                                   // the ONE honest quiet exit: nothing is waiting
 
       var seen=icuSeenGet(), seenSet={}; seen.forEach(function(id){ seenSet[id]=1; });
-      var fresh=[], ups=[], consumed=[], unreadable=0;
+      var fresh=[], ups=[], consumed=[], unreadable=0, needIds=[];
       for(var i=0;i<items.length;i++){ var it=items[i]; if(!it||!it.id||seenSet[it.id]) continue;
         consumed.push(it.id);                                     // mark consumed even if a single file is unreadable, so we never loop on it
         var bytes=it.fit?icuB64ToBytes(it.fit):null;
@@ -4345,12 +4376,21 @@
         var arr=null;
         try{ arr=await expandBytes(it.name||'run.fit', bytes); }catch(e){ arr=null; }
         if(!arr||!arr.length){ unreadable++; continue; }
-        arr.forEach(function(run){ var ex=findMatch(run); if(!ex) fresh.push(run); else if(canUpgrade(ex,run)) ups.push({run:run,ex:ex}); });
+        /* needIds is what must be in the CLOUD before this item may be acked —
+           including a run that is merely already present locally. That case is
+           precisely a run stranded by an earlier ack-before-push, so re-draining
+           it is the repair, and acking it again without checking would strand it
+           a second time. */
+        arr.forEach(function(run){ var ex=findMatch(run);
+          if(!ex){ fresh.push(run); return; }
+          needIds.push(ex.id);
+          if(canUpgrade(ex,run)) ups.push({run:run,ex:ex});
+        });
       }
       if(!consumed.length) return;
 
       var base=logs.length, now=Date.now(), addedN=0;
-      fresh.forEach(function(run,i){ var o=runFromParsed(run); o.ts=now+i; logs.push(o); addedN++; });
+      fresh.forEach(function(run,i){ var o=runFromParsed(run); o.ts=now+i; logs.push(o); needIds.push(o.id); addedN++; });
       ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
       if(fresh.length||ups.length){
         if(!persist(K_LOGS,logs)){
@@ -4369,12 +4409,21 @@
         }
         flush();
       }
-      var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
-      lsSet('run:icuSeen', JSON.stringify(newSeen));
-      icuAck(newSeen);                                            // tell the server it can prune these from the inbox
+      /* Show it the instant it is on the phone. Confirming the cloud takes a few
+         seconds and she should never wait on it to see her own run. */
       if(unreadable) icuFail('unreadable', unreadable+' αρχείο από το ρολόι δεν διαβάστηκε. Μπορείς να το ανεβάσεις χειροκίνητα.');
       if(addedN>0){ render(); icuToast('Νέο τρέξιμο από το ρολόι ✓'+(addedN>1?(' · '+addedN):'')); }
       else if(ups.length>0){ render(); icuToast('Χάρτης αναβαθμίστηκε ✓ από το ρολόι'); }
+
+      // Only now, and only if the cloud really has it, may the server forget it.
+      if(!await icuCloudHas(needIds)){
+        console.warn('[run:inbox] not acked — '+needIds.length+' run(s) not in the cloud row yet');
+        icuFail('unconfirmed','Το τρέξιμο μπήκε στο τηλέφωνο ✓ — ανεβαίνει στο cloud μόλις σταθεροποιηθεί η σύνδεση.');
+        return;                                                   // the server keeps it; the next open re-drains harmlessly
+      }
+      var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
+      lsSet('run:icuSeen', JSON.stringify(newSeen));
+      icuAck(newSeen);                                            // tell the server it can prune these from the inbox
     }
     async function icuMaybeServerCheck(){
       try{ var last=0; try{ last=+lsGet('run:icuPoll')||0; }catch(e){}
@@ -4389,8 +4438,12 @@
        a cold start that beat the session simply lost that attempt until she next
        reopened the app — which is how one run stayed stuck for days. */
     document.addEventListener('als:auth', function(){
-      if(__RUN_PEEK) return;                                      // Alex viewing her app must never drain into his own account
-      ICU_TOKEN=null; icuDrainInbox();
+      ICU_TOKEN=null;
+      /* Only ever drain once the mode is SETTLED as the runner. Draining while
+         the answer is still unknown is how her inbox could be read with Alex's
+         session on his device. */
+      if(!__modeResolved) return;
+      __modeResolved.then(function(m){ if(m===false) icuDrainInbox(); });
     });
 
     /* OWNER peek: pull her 'run' bundle (owner-verified server-side), load it into
@@ -4415,12 +4468,13 @@
       try{
         var r=await fetch('/api/run-reminders?peek=run', { headers: tok?{Authorization:'Bearer '+tok}:{}, cache:'no-store' });
         if(!r.ok){
-          /* 403 = this caller is not the owner. If peek was FORCED by ?peek=1 (the
-             home tile always asks for it), that means the runner tapped it — drop
-             the param and reload into her own normal app rather than stranding her
-             behind an error banner. The param is gone, so this cannot loop. */
-          if(r.status===403 && /[?&]peek=1\b/.test(location.search)){ location.replace('run.html'); return; }
-          if(first) peekBanner(r.status===403?'Μόνο ο ιδιοκτήτης (σύνδεση ως Alex).':('Σφάλμα '+r.status), true);
+          /* We only get here once the SESSION said this device is the owner, so a
+             403 means the server disagrees with that id. Stay read-only and say
+             so: falling through to the runner path would start a cloud sync on
+             his account, which is the failure this whole block exists to prevent. */
+          if(first) peekBanner(r.status===403
+            ? '👁 Ο server δεν σε αναγνώρισε ως ιδιοκτήτη (403). Τίποτα δεν γράφτηκε.'
+            : ('👁 Σφάλμα '+r.status+' — δεν διάβασα τα δεδομένα της.'), true);
           return;
         }
         var j=await r.json();
@@ -4435,69 +4489,111 @@
         if(window.__RUN_PEEK_SET) window.__RUN_PEEK_SET((j&&j.data)||{});
         else { peekBanner('👁 Σφάλμα: το read-only store δεν φορτώθηκε.', true); return; }
         render();
-        if(first){
-          peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
-          if(!logs.length && !plan.length && !Object.keys(prof).length){
-            /* An empty page has two very different causes, and for one whole day
-               they were indistinguishable: she genuinely has no runs yet, OR her
-               data arrived and we failed to read it. Never show one message for
-               both — that is what made a broken app look merely "behind".
-               j.keys is what the SERVER found; if it sent keys and we still have
-               nothing, the fault is here, and it must say so. */
-            peekBanner((j && j.keys > 0)
-              ? ('👁 Σφάλμα: ήρθαν ' + j.keys + ' κλειδιά αλλά δεν διαβάστηκαν.')
-              : '👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
-          }
+        /* A run the courier has parked but her phone has not collected yet. Say
+           it on every refresh, not just the first: this is the honest answer to
+           "why isn't her run here", and auto-import is pull-on-open, so it clears
+           itself the moment she opens the app. */
+        var w=(j&&j.waiting)||[];
+        if(w.length){
+          var d=(w[w.length-1].date||'').slice(0,10);
+          peekBanner('👁 read-only · '+w.length+(w.length>1?' τρεξίματα περιμένουν':' τρέξιμο περιμένει')+
+            (d?(' ('+d+')'):'')+' — μπαίνει όταν ανοίξει την εφαρμογή της.', true);
+          return;
+        }
+        // Nothing waiting: repaint the plain banner on EVERY refresh, or the
+        // delivery that clears the queue would leave the amber warning up forever.
+        peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
+        if(!logs.length && !plan.length && !Object.keys(prof).length){
+          /* An empty page has two very different causes, and for one whole day
+             they were indistinguishable: she genuinely has no runs yet, OR her
+             data arrived and we failed to read it. Never show one message for
+             both — that is what made a broken app look merely "behind".
+             j.keys is what the SERVER found; if it sent keys and we still have
+             nothing, the fault is here, and it must say so. */
+          peekBanner((j && j.keys > 0)
+            ? ('👁 Σφάλμα: ήρθαν ' + j.keys + ' κλειδιά αλλά δεν διαβάστηκαν.')
+            : '👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
         }
       }catch(e){ if(first) peekBanner('Σφάλμα φόρτωσης', true); }
     }
-    /* ── WHO IS THIS? Ask the server, don't guess. ────────────────────────────
-       The browser cannot reliably answer this. __ownerSignedIn() reads tokens out
-       of localStorage, and a device can hold several (a leftover from testing her
-       account, another project, a chunked entry) — so the same account answered
-       differently on Alex's PC and his laptop.
-       Guessing wrong is harmful BOTH ways:
-         wrong "runner" for Alex    → he silently sees his own pre-migration `run`
-                                      row: her runs, months stale, and plausible
-                                      enough to look like the app is merely behind.
-         wrong "peek" for Chrissie  → her real app would render empty.
-       So the fast path is only ever an optimisation, and the server — the sole
-       authority, which re-verifies ownership on every peek fetch anyway — settles
-       it. Offline or unauthenticated resolves to the runner, so her app still
-       works with no network. */
-    var __peekPrime = null;
-    async function peekProbe(){
-      try{
-        var tok = await peekToken();
-        if (!tok) return false;                       // no session → not the owner
-        var r = await fetch('/api/run-reminders?peek=run', { headers:{Authorization:'Bearer '+tok}, cache:'no-store' });
-        if (!r.ok) return false;                      // 403 → this is her app, not a peek
-        var j = await r.json();
-        __peekPrime = (j && j.data) || {};            // reuse it; don't fetch her data twice
-        return true;
-      }catch(e){ return false; }                      // offline → behave as the runner
+    /* ── WHO IS THIS? The session's own user id, awaited. ─────────────────────
+       Not a JWT scraped out of localStorage (chunked sessions are unparseable),
+       not a network probe (every failure of which used to mean "runner"). Just
+       the id supabase-js already holds, waited for on the same ~12s budget as
+       icuEnsureToken, because a cold PWA start reaches here before topbar.js has
+       restored the session and a 3s wait loses that race on a slow connection.
+       Resolves to null ONLY when there is genuinely no session. */
+    function runUid(){
+      return new Promise(function(res){
+        var n=0;
+        (function tick(){
+          function again(){ if(n++>=60){ res(null); return; } setTimeout(tick,200); }
+          try{ var u=window.ALSAuth&&window.ALSAuth.user&&window.ALSAuth.user.id; if(u){ res(u); return; } }catch(e){}
+          var c=icuClient();
+          if(!c||!c.auth){ again(); return; }
+          c.auth.getSession().then(function(s){
+            var id=s&&s.data&&s.data.session&&s.data.session.user&&s.data.session.user.id;
+            if(id){ res(id); return; }
+            again();
+          }).catch(again);
+        })();
+      });
+    }
+    /* Take the shadow back down. The pre-paint hint can only be stale (she signed
+       in on his device), never wrong about the owner — but stale is enough to hide
+       every one of her runs behind an empty welcome screen, so undo it and repaint
+       from her real localStorage. */
+    function __peekOff(){
+      __RUN_PEEK = false; window.__RUN_PEEK = false; __peekStore = null;
+      var b=document.getElementById('runPeekBar'); if(b) b.remove();
+      render();
+    }
+    var __syncStarted = false;
+    function startCloudSync(){
+      if (__syncStarted) return; __syncStarted = true;
+      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+        window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR,K_SHOES,K_KNEE,K_SPICS], onApplied:function(){ render(); } });
+      })();
     }
     var __modeResolved = null;
     function __resolveMode(){
       if (__modeResolved) return __modeResolved;
-      if (__RUN_PEEK){ window.__RUN_PEEK_INSTALL(); startPeek(); __modeResolved = Promise.resolve(true); return __modeResolved; }
-      __modeResolved = peekProbe().then(function(isOwner){
-        if (!isOwner){ icuSync(); return false; }
-        __RUN_PEEK = true;
-        window.__RUN_PEEK_INSTALL();                  // shadow goes up BEFORE her data lands
-        startPeek();
-        return true;
+      __modeResolved = runUid().then(function(uid){
+        if (!uid){
+          /* Undecided is its own answer. Never resolve it into an account: one
+             way strands her app empty, the other syncs her runs into his row.
+             The local cache still renders; nothing is written anywhere. */
+          if (__RUN_PEEK) __peekOff();
+          icuFail('nosession','Δεν είσαι συνδεδεμένη — τα τρεξίματα δεν κατεβαίνουν ούτε ανεβαίνουν. Κάνε σύνδεση.');
+          return null;
+        }
+        if (uid === OWNER_UID){
+          __RUN_PEEK = true;
+          window.__RUN_PEEK_INSTALL();                // shadow goes up BEFORE her data lands
+          startPeek();
+          return true;
+        }
+        if (__RUN_PEEK) __peekOff();                  // hint said owner, the session says otherwise
+        /* Engine first, drain second: the drain's flush() is a no-op until
+           initCloudSync has published window.ALSSync, and the whole point of the
+           ack gate below it is that the run reaches the cloud. */
+        startCloudSync();
+        icuSync();
+        return false;
       });
       return __modeResolved;
     }
+    document.addEventListener('als:auth', function(){
+      if (!__modeResolved){ __resolveMode(); return; }
+      /* A session that lands AFTER the ~12s wait expired must still get an
+         answer. Without this, one slow cold start left the page undecided —
+         no sync, no drain — for the rest of its life. Only the undecided
+         answer is ever re-opened; a settled one is final. */
+      __modeResolved.then(function(m){ if (m === null){ __modeResolved = null; __resolveMode(); } });
+    });
     function startPeek(){
       peekBanner('👁 Προβολή της εφαρμογής της Χριστίνας · read-only');
-      if (__peekPrime){                               // the probe already fetched her data
-        try { window.__RUN_PEEK_SET(__peekPrime); } catch(e){}
-        render();
-        if (!logs.length && !plan.length && !Object.keys(prof).length) peekBanner('👁 Read-only · δεν βρέθηκαν δεδομένα ακόμη', true);
-        __peekPrime = null;
-      } else peekFetch(true);
+      peekFetch(true);
       // Keep it live: re-pull her latest on focus and every 45s, so runs she syncs
       // show up here on their own (read from the cloud, which her phone updates).
       document.addEventListener('visibilitychange', function(){ if(!document.hidden) peekFetch(false); });
@@ -4511,21 +4607,18 @@
     if(!$('view-runs').classList.contains('hidden')) requestAnimationFrame(animateRunHero);
     __resolveMode();
 
-    document.addEventListener('visibilitychange',function(){ if(document.hidden){ animStop(); } else { render(); animStart(); if(!__RUN_PEEK) icuSync(); } });
-    window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
-    document.addEventListener('DOMContentLoaded',function(){
-      /* Wait for the mode to settle before syncing ANYTHING. Starting the sync
-         while the answer is still unknown is a genuine hazard: if peek switches on
-         a moment later, the shadow would hand HER data to a sync scoped to HIS
-         user_id and write her runs into his row — the exact "never write an
-         unowned row" failure, inverted. Resolve first, then sync. */
-      __resolveMode().then(function(isPeek){
-        if(isPeek) return;                            // peek is read-only: never sync her data into any account
-        (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-          window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR,K_SHOES,K_KNEE,K_SPICS], onApplied:function(){ render(); } });
-        })();
-      });
+    document.addEventListener('visibilitychange',function(){
+      if(document.hidden){ animStop(); return; }
+      render(); animStart();
+      /* Coming back to the app is the one moment worth re-checking the inbox, but
+         only as the runner. __resolveMode() is memoised, so this rides the answer
+         already computed rather than asking again. */
+      __resolveMode().then(function(m){ if(m===false) icuSync(); });
     });
+    window.addEventListener('storage',function(ev){ if(!ev||[K_PROF,K_PLAN,K_LOGS].indexOf(ev.key)>=0) render(); });
+    // Identity resolution owns everything downstream of it — the cloud sync
+    // engine, the drain, and the read-only window — so it is the only boot call.
+    document.addEventListener('DOMContentLoaded',function(){ __resolveMode(); });
     window.__run={ vdotOf:vdotOf, zonePaces:zonePaces, parsePlan:parsePlanV2, raceTimeFor:raceTimeFor, parseActivity:parseActivity, parseFIT:parseFIT, expandBytes:expandBytes, routePath:routePath, simplifyRoute:simplifyRoute,
       heatSlowdown:heatSlowdown, comfortScore:comfortScore, bestWindow:bestWindow, runWindows:runWindows, freeBlocks:freeBlocks, indoorAdvice:indoorAdvice, adjustPaceSec:adjustPaceSec, heatCurve:heatCurve, applyMove:applyMove,
       autoVdot:autoVdot, runTSS:runTSS, fitnessSeries:fitnessSeries, pbsOf:pbsOf, formLabel:formLabel, strengthPlan:strengthPlan, mmss:mmss };
