@@ -4240,65 +4240,158 @@
     // Authorization carries her JWT. sync.js already created the session client.
     var ICU_TOKEN=null, ICU_UID=null;
     function icuClient(){ try{ return (window.ALSAuth&&window.ALSAuth.client)||window.__alsAuthClient||null; }catch(e){ return null; } }
+    /* HER session JWT, or null — and null must STOP the drain, never soften into
+       the publishable key (see icuHdr). The page's own inline script runs before
+       the deferred topbar.js/sync.js have restored the session, so a cold PWA
+       start on a slow connection routinely reaches here with no client yet: the
+       old 25×120ms = 3s wait gave up first. Wait ~12s, and `als:auth` retries. */
     function icuEnsureToken(){
       return new Promise(function(res){
         var n=0;
         (function tick(){
+          function again(){ if(n++>=60){ res(null); return; } setTimeout(tick,200); }
           var c=icuClient();
-          if(!c||!c.auth){ if(n++<25){ setTimeout(tick,120); return; } res(null); return; }
-          c.auth.getSession().then(function(s){ var ss=s&&s.data&&s.data.session; ICU_TOKEN=(ss&&ss.access_token)||null; ICU_UID=(ss&&ss.user&&ss.user.id)||null; res(ICU_TOKEN); }).catch(function(){ res(null); });
+          if(!c||!c.auth){ again(); return; }
+          c.auth.getSession().then(function(s){
+            var ss=s&&s.data&&s.data.session;
+            ICU_TOKEN=(ss&&ss.access_token)||null; ICU_UID=(ss&&ss.user&&ss.user.id)||null;
+            if(ICU_TOKEN){ res(ICU_TOKEN); return; }
+            again();
+          }).catch(again);
         })();
       });
     }
-    function icuHdr(extra){ var h={ apikey:ICU_SB_KEY, Authorization:'Bearer '+(ICU_TOKEN||ICU_SB_KEY) }; if(extra){ for(var k in extra) h[k]=extra[k]; } return h; }
-    function icuToast(msg){ try{ if(window.ALSToast){ ALSToast.show(msg); return; } }catch(e){} toast('lgToast',msg); }
+    /* ⚠️ NEVER `ICU_TOKEN||ICU_SB_KEY`. run:inbox is HER row under RLS: the bare
+       publishable key is a valid key with no identity, so Supabase answers 200
+       with an EMPTY array — byte-identical to "no new runs". That is how her
+       25 Jul 16.3 km long run sat downloaded in the cloud, undrained, silently.
+       CLAUDE.md §2: the client must send the session JWT. */
+    function icuHdr(extra){ var h={ apikey:ICU_SB_KEY, Authorization:'Bearer '+ICU_TOKEN }; if(extra){ for(var k in extra) h[k]=extra[k]; } return h; }
+    function icuToast(msg){ try{ if(window.ALSToast){ ALSToast.show(msg); return; } }catch(e){} try{ toast('lgToast',msg); }catch(e){} }
+    /* A background importer that `return`s on every failure can never tell her a
+       run is stuck — constraint 10, this project's disease. `#lgToast` lives
+       inside the log view and is invisible from any other tab, so a real failure
+       gets its own strip. It clears itself the moment a drain succeeds. */
+    function icuBanner(msg){
+      var b=document.getElementById('runIcuBar');
+      if(!b){ b=document.createElement('div'); b.id='runIcuBar';
+        b.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 74px);z-index:99980;padding:10px 34px 10px 12px;border-radius:12px;font:600 12px/1.35 -apple-system,system-ui,sans-serif;color:#2a1508;background:linear-gradient(120deg,#F2C063,#FF8A6B);box-shadow:0 6px 20px rgba(0,0,0,.28)';
+        var x=document.createElement('button'); x.type='button'; x.textContent='×';
+        x.style.cssText='position:absolute;top:4px;right:8px;border:0;background:none;color:inherit;font:700 18px/1 system-ui;padding:4px;cursor:pointer';
+        x.addEventListener('click',function(){ b.remove(); });
+        b.appendChild(document.createElement('span')); b.appendChild(x);
+        (document.body||document.documentElement).appendChild(b); }
+      b.firstChild.textContent=msg;
+    }
+    function icuBannerClear(){ var b=document.getElementById('runIcuBar'); if(b) b.remove(); }
+    /* Persist the cause too, so Alex can read WHY off her phone later. */
+    function icuFail(code,msg){
+      try{ lsSet('run:icuErr', JSON.stringify({ code:code, msg:msg, at:Date.now() })); }catch(e){}
+      try{ console.warn('[run:inbox] '+code+' — '+msg); }catch(e){}
+      icuBanner(msg);
+    }
+    function icuFine(){ try{ lsRem('run:icuErr'); }catch(e){} icuBannerClear(); }
     function icuSeenGet(){ try{ var a=JSON.parse(lsGet('run:icuSeen')); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
     function icuB64ToBytes(b64){ try{ var bin=atob(b64), n=bin.length, u=new Uint8Array(n); for(var i=0;i<n;i++) u[i]=bin.charCodeAt(i); return u; }catch(e){ return null; } }
     async function icuAck(seenIds){
       // (user_id, key) is the row's primary key; on_conflict=key matches no
       // unique constraint and Postgres rejects the write 42P10/400.
-      try{ await icuEnsureToken();
+      try{ if(!await icuEnsureToken()) return;                    // no JWT: the write would be rejected anyway
         var row={ key:'run:inbox-ack', data:{ seenIds:seenIds }, updated_at:new Date().toISOString() };
         if(ICU_UID) row.user_id=ICU_UID;
-        await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict='+(ICU_UID?'user_id,key':'key'), { method:'POST',
+        var ar=await fetch(ICU_SB_URL+'/rest/v1/app_state?on_conflict='+(ICU_UID?'user_id,key':'key'), { method:'POST',
         headers: icuHdr({ 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal' }),
-        body: JSON.stringify(row) }); }catch(e){}
+        body: JSON.stringify(row) });
+        // A failed ack costs nothing she can see (the local seen-set still stops
+        // a re-import) but it leaves the server re-offering the item forever, so
+        // it is worth saying out loud in the console rather than swallowing.
+        if(!ar.ok) console.warn('[run:inbox] ack HTTP '+ar.status);
+      }catch(e){ console.warn('[run:inbox] ack failed — '+((e&&e.message)||e)); }
     }
+    var __icuBusy=false;
     async function icuDrainInbox(){
-      try{
-        await icuEnsureToken();
-        var r=await fetch(ICU_SB_URL+'/rest/v1/app_state?select=data&key=eq.run%3Ainbox', { headers: icuHdr() });
-        if(!r.ok) return; var j=await r.json(); var data=(j&&j[0]&&j[0].data)||{};
-        var items=Array.isArray(data.items)?data.items:[]; if(!items.length) return;
-        var seen=icuSeenGet(), seenSet={}; seen.forEach(function(id){ seenSet[id]=1; });
-        var fresh=[], ups=[], consumed=[];
-        for(var i=0;i<items.length;i++){ var it=items[i]; if(!it||!it.id||seenSet[it.id]) continue;
-          consumed.push(it.id);                                  // mark consumed even if a single file is unreadable, so we never loop on it
-          var bytes=it.fit?icuB64ToBytes(it.fit):null; if(!bytes) continue;
-          try{ var arr=await expandBytes(it.name||'run.fit', bytes);
-            (arr||[]).forEach(function(run){ var ex=findMatch(run); if(!ex) fresh.push(run); else if(canUpgrade(ex,run)) ups.push({run:run,ex:ex}); });
-          }catch(e){}
+      if(__icuBusy) return;                                       // open + auth-arrival can fire together; one drain at a time
+      __icuBusy=true;
+      try{ await icuDrain_(); }
+      catch(e){ icuFail('crash','Κάτι χάλασε στο κατέβασμα των τρεξιμάτων: '+((e&&e.message)||e)); }
+      finally{ __icuBusy=false; }
+    }
+    async function icuDrain_(){
+      if(!await icuEnsureToken()){
+        icuFail('nosession','Δεν είσαι συνδεδεμένη — τα τρεξίματα από το ρολόι δεν κατεβαίνουν. Κάνε σύνδεση.');
+        return;
+      }
+      var r;
+      try{ r=await fetch(ICU_SB_URL+'/rest/v1/app_state?select=data&key=eq.run%3Ainbox', { headers: icuHdr() }); }
+      catch(e){ icuFail('offline','Χωρίς σύνδεση — δεν διάβασα τα νέα τρεξίματα. Θα ξαναπροσπαθήσω.'); return; }
+      if(!r.ok){
+        icuFail('http'+r.status, (r.status===401||r.status===403)
+          ? 'Η σύνδεσή σου έληξε — βγες και ξαναμπές για να κατέβουν τα τρεξίματα.'
+          : 'Δεν διάβασα τα νέα τρεξίματα (HTTP '+r.status+').');
+        return;
+      }
+      var j; try{ j=await r.json(); }catch(e){ icuFail('badjson','Μη αναγνώσιμη απάντηση από το cloud.'); return; }
+      var data=(j&&j[0]&&j[0].data)||{};
+      var items=Array.isArray(data.items)?data.items:[];
+      icuFine();                                                  // we genuinely reached her row: clear any stale cause
+      if(!items.length) return;                                   // the ONE honest quiet exit: nothing is waiting
+
+      var seen=icuSeenGet(), seenSet={}; seen.forEach(function(id){ seenSet[id]=1; });
+      var fresh=[], ups=[], consumed=[], unreadable=0;
+      for(var i=0;i<items.length;i++){ var it=items[i]; if(!it||!it.id||seenSet[it.id]) continue;
+        consumed.push(it.id);                                     // mark consumed even if a single file is unreadable, so we never loop on it
+        var bytes=it.fit?icuB64ToBytes(it.fit):null;
+        if(!bytes){ unreadable++; continue; }
+        var arr=null;
+        try{ arr=await expandBytes(it.name||'run.fit', bytes); }catch(e){ arr=null; }
+        if(!arr||!arr.length){ unreadable++; continue; }
+        arr.forEach(function(run){ var ex=findMatch(run); if(!ex) fresh.push(run); else if(canUpgrade(ex,run)) ups.push({run:run,ex:ex}); });
+      }
+      if(!consumed.length) return;
+
+      var base=logs.length, now=Date.now(), addedN=0;
+      fresh.forEach(function(run,i){ var o=runFromParsed(run); o.ts=now+i; logs.push(o); addedN++; });
+      ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
+      if(fresh.length||ups.length){
+        if(!persist(K_LOGS,logs)){
+          /* Storage full. A 16 km run carries a route AND a per-second series
+             and is by far the biggest thing this page ever stores, so the old
+             "return and retry" would stall on the SAME run at every open,
+             forever. Shed the heavy fields and try once more: distance, time,
+             pace, HR and elevation survive, only the map is lost. */
+          for(var q=base;q<logs.length;q++){ logs[q].series=null; logs[q].route=null; logs[q].laps=null; }
+          if(!persist(K_LOGS,logs)){
+            logs.length=base;                                     // never leave unsaved runs sitting in memory
+            icuFail('storage','Ο χώρος στο τηλέφωνο γέμισε — το τρέξιμο δεν αποθηκεύτηκε. Ελευθέρωσε λίγο και άνοιξέ το ξανά.');
+            return;                                               // do NOT ack: retry once there is room
+          }
+          icuFail('storage-lite','Ο χώρος γέμισε — κράτησα το τρέξιμο χωρίς τον χάρτη.');
         }
-        if(!consumed.length) return;
-        var now=Date.now(), addedN=0;
-        fresh.forEach(function(run,i){ var o=runFromParsed(run); o.ts=now+i; logs.push(o); addedN++; });
-        ups.forEach(function(u){ applyUpgrade(u.ex,u.run,Date.now()); });
-        if(fresh.length||ups.length){ if(!persist(K_LOGS,logs)) return; flush(); }   // storage full: persist warned; don't ack, retry later
-        var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
-        lsSet('run:icuSeen', JSON.stringify(newSeen));
-        icuAck(newSeen);                                          // tell the server it can prune these from the inbox
-        if(addedN>0){ render(); icuToast('Νέο τρέξιμο από το ρολόι ✓'+(addedN>1?(' · '+addedN):'')); }
-        else if(ups.length>0){ render(); icuToast('Χάρτης αναβαθμίστηκε ✓ από το ρολόι'); }
-      }catch(e){}
+        flush();
+      }
+      var newSeen=seen.concat(consumed); if(newSeen.length>600) newSeen=newSeen.slice(newSeen.length-600);
+      lsSet('run:icuSeen', JSON.stringify(newSeen));
+      icuAck(newSeen);                                            // tell the server it can prune these from the inbox
+      if(unreadable) icuFail('unreadable', unreadable+' αρχείο από το ρολόι δεν διαβάστηκε. Μπορείς να το ανεβάσεις χειροκίνητα.');
+      if(addedN>0){ render(); icuToast('Νέο τρέξιμο από το ρολόι ✓'+(addedN>1?(' · '+addedN):'')); }
+      else if(ups.length>0){ render(); icuToast('Χάρτης αναβαθμίστηκε ✓ από το ρολόι'); }
     }
     async function icuMaybeServerCheck(){
       try{ var last=0; try{ last=+lsGet('run:icuPoll')||0; }catch(e){}
         if(Date.now()-last < 8*60000) return;                    // throttle the intervals poll to ≤ once / 8 min; hourly cron covers the rest
         lsSet('run:icuPoll', String(Date.now()));
-        await fetch('/api/run-reminders?icu=1', { cache:'no-store' });
-      }catch(e){}
+        var pr=await fetch('/api/run-reminders?icu=1', { cache:'no-store' });
+        if(!pr.ok) console.warn('[run:inbox] courier HTTP '+pr.status);
+      }catch(e){ console.warn('[run:inbox] courier unreachable — '+((e&&e.message)||e)); }
     }
-    function icuSync(){ icuDrainInbox(); icuMaybeServerCheck().then(icuDrainInbox); }
+    function icuSync(){ icuDrainInbox().then(function(){ return icuMaybeServerCheck(); }).then(icuDrainInbox); }
+    /* topbar.js dispatches als:auth the moment her session lands. Without this,
+       a cold start that beat the session simply lost that attempt until she next
+       reopened the app — which is how one run stayed stuck for days. */
+    document.addEventListener('als:auth', function(){
+      if(__RUN_PEEK) return;                                      // Alex viewing her app must never drain into his own account
+      ICU_TOKEN=null; icuDrainInbox();
+    });
 
     /* OWNER peek: pull her 'run' bundle (owner-verified server-side), load it into
        the read-only in-memory store, and render. No writes, no sync of any kind. */
