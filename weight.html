@@ -66,9 +66,12 @@
     #wtChartContent{ transition:opacity .14s linear; }
     .wt-grid{ stroke:rgba(255,255,255,.055); stroke-width:1; shape-rendering:crispEdges; }
     .wt-ylabel{ font-size:9.5px; fill:rgba(245,242,236,.30); font-family:var(--au-mono); }
-    .wt-band{ fill:rgba(var(--sec-rgb),.085); }
-    .wt-thread{ fill:none; stroke:rgba(255,255,255,.10); stroke-width:1; stroke-linejoin:round; }
-    .wt-daily{ fill:rgba(245,242,236,.34); }
+    /* Each reading is tethered to the trend it deviates from. There is only ever
+       ONE path through the chart; the dots are scatter around it, not a second
+       route. (An earlier build drew a thread joining the dots — two competing
+       lines, which is what made the chart confusing.) */
+    .wt-whisk{ stroke:rgba(var(--sec-rgb),.34); stroke-width:1; }
+    .wt-daily{ fill:rgba(245,242,236,.42); }
     .wt-line{ fill:none; stroke:url(#wtLineGrad); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
     .wt-last-halo{ fill:rgba(var(--sec-rgb),.16); }
     .wt-last{ fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.4; }
@@ -86,8 +89,10 @@
     .wt-legend{ display:flex; justify-content:center; gap:16px; margin-top:10px; flex-wrap:wrap; }
     .wt-legend-item{ display:inline-flex; align-items:center; gap:6px; font-size:8.5px; letter-spacing:.16em; font-weight:700; color:var(--au-faint); font-family:var(--au-mono); }
     .wt-lg-trend{ width:15px; height:2.6px; background:rgb(var(--sec-rgb)); border-radius:2px; }
-    .wt-lg-daily{ width:5px; height:5px; border-radius:50%; background:rgba(245,242,236,.4); }
-    .wt-lg-band{ width:15px; height:8px; border-radius:2px; background:rgba(var(--sec-rgb),.14); }
+    /* dot on a tether — the legend swatch mirrors the mark exactly */
+    .wt-lg-daily{ position:relative; width:5px; height:11px; }
+    .wt-lg-daily::before{ content:''; position:absolute; left:2px; top:4px; width:1px; height:7px; background:rgba(var(--sec-rgb),.45); }
+    .wt-lg-daily::after{ content:''; position:absolute; left:0; top:0; width:5px; height:5px; border-radius:50%; background:rgba(245,242,236,.48); }
     .wt-lg-goal{ width:15px; height:0; border-top:1.5px dashed rgba(242,192,99,.8); }
     .wt-tap-hint{ text-align:center; font-size:9.5px; color:var(--au-faint); font-family:var(--au-mono); letter-spacing:.08em; margin-top:7px; }
 
@@ -111,21 +116,38 @@
     .wt-edit-btn{ background:transparent; border:1px solid rgba(var(--sec-rgb),.35); color:rgb(var(--sec-rgb)); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; padding:8px 16px; border-radius:999px; -webkit-tap-highlight-color:transparent; }
     .wt-edit-btn:active{ opacity:.7; }
 
-    /* ── Input row ────────────────────────────────── */
-    .wt-input-row{ margin-top:18px; }
-    .wt-date-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+    /* ── Log a weigh-in ───────────────────────────── */
+    /* Was a form: a raw date picker, a bare field, a generic button. It's a
+       daily ritual, so it opens with a question, defaults to today, and the
+       browser's date chrome stays folded away until it's actually wanted. */
+    .wt-input-row{ margin-top:20px; padding-top:18px; border-top:1px solid var(--au-line); }
+    .wt-ask{ font-family:var(--au-serif); font-style:italic; font-size:19px; line-height:1.25; color:var(--au-ivory); margin-bottom:14px; }
+    .wt-entry{ display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:stretch; }
+    .wt-step{ width:46px; border-radius:14px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.035); color:var(--au-ivory); font-size:24px; font-family:var(--au-mono); font-weight:300; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color .25s var(--au-ease), color .25s var(--au-ease), background .25s var(--au-ease); }
+    .wt-step:active{ background:rgba(var(--sec-rgb),.13); border-color:rgba(var(--sec-rgb),.42); color:rgb(var(--sec-rgb)); }
+    .wt-input-field{ position:relative; }
+    .wt-input{ width:100%; min-width:0; height:54px; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.28); border-radius:14px; color:var(--au-ivory); font-family:var(--au-mono); font-size:25px; font-weight:700; padding:0 40px 0 14px; outline:none; text-align:center; -webkit-appearance:none; font-variant-numeric:tabular-nums; transition:border-color .25s var(--au-ease); }
+    .wt-input::placeholder{ color:rgba(245,242,236,.16); font-weight:400; }
+    .wt-input:focus{ border-color:rgba(var(--sec-rgb),.62); }
+    .wt-unit-static{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--au-faint); font-size:13px; font-family:var(--au-mono); pointer-events:none; }
+    /* Reads back what he just typed BEFORE he commits it — catches a 7.04 or a
+       704 that would otherwise land in the log and bend the whole chart. */
+    .wt-feedback{ min-height:15px; margin-top:10px; text-align:center; font-family:var(--au-mono); font-size:10.5px; letter-spacing:.02em; color:var(--au-faint); transition:color .25s var(--au-ease); }
+    .wt-feedback.warn{ color:var(--au-amber); }
+    .wt-feedback.bad{ color:#FF6B8B; }
+    /* A gradient in the emerald→teal family, not a flat slab of full-saturation
+       green — at full width the solid fill out-shouted the chart above it. */
+    .wt-save-btn{ display:block; width:100%; margin-top:12px; background:linear-gradient(112deg,#34E2B0,#20CFC2 62%,#18C8C0); color:#04130D; border:none; border-radius:14px; padding:15px 22px; font-family:var(--au-sans); font-size:15px; font-weight:700; letter-spacing:.01em; cursor:pointer; box-shadow:0 4px 16px rgba(var(--sec-rgb),.18); -webkit-tap-highlight-color:transparent; transition:box-shadow .25s var(--au-ease), opacity .2s var(--au-ease); }
+    .wt-save-btn:active{ opacity:.84; box-shadow:0 2px 8px rgba(var(--sec-rgb),.16); }
+    .wt-when{ display:block; width:100%; margin-top:11px; padding:6px; background:transparent; border:none; color:var(--au-faint); font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:color .25s var(--au-ease); }
+    .wt-when:active{ color:var(--au-ivory); }
+    .wt-when.other{ color:rgb(var(--sec-rgb)); }
+    .wt-date-row{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .wt-date-label{ font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; font-family:var(--au-mono); }
     .wt-date-input{ flex:1; min-width:120px; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:10px; color:var(--au-ivory); font-family:var(--au-mono); font-size:13px; padding:9px 11px; outline:none; transition:border-color .2s; color-scheme:dark; }
     .wt-date-input:focus{ border-color:rgba(var(--sec-rgb),.5); }
     .wt-today-btn{ padding:9px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-dim); cursor:pointer; font-family:var(--au-mono); white-space:nowrap; transition:all .15s; -webkit-tap-highlight-color:transparent; }
     .wt-today-btn:active{ background:rgba(var(--sec-rgb),.12); color:rgb(var(--sec-rgb)); }
-    .wt-input-top{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px; }
-    .wt-input-field{ position:relative; }
-    .wt-input{ width:100%; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.3); border-radius:12px; color:var(--au-ivory); font-family:var(--au-mono); font-size:20px; font-weight:700; padding:12px 46px 12px 14px; outline:none; text-align:center; -webkit-appearance:none; }
-    .wt-input:focus{ border-color:rgba(var(--sec-rgb),.6); }
-    .wt-unit-static{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--au-faint); font-size:13px; font-family:var(--au-mono); pointer-events:none; }
-    .wt-save-btn{ background:rgb(var(--sec-rgb)); color:#04130D; border:none; border-radius:12px; padding:12px 22px; font-family:var(--au-sans); font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 18px rgba(var(--sec-rgb),.3); -webkit-tap-highlight-color:transparent; }
-    .wt-save-btn:active{ opacity:.8; }
 
     /* ── History list ─────────────────────────────── */
     .wt-history{ margin-top:22px; }
@@ -140,15 +162,34 @@
     .wt-mo-head-name{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-ivory); }
     .wt-mo-head-meta{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); letter-spacing:.04em; font-variant-numeric:tabular-nums; }
     .wt-mo-head-meta .up{ color:var(--au-amber); } .wt-mo-head-meta .down{ color:var(--au-emerald); }
-    .wt-history-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:11px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); }
+    /* 149 rows × 2 permanently-visible buttons is what made this read as an
+       admin table. The actions now live behind a tap on the row, and the space
+       they freed carries a position marker — so scrolling the list shows the
+       SHAPE of a month, not just its digits. */
+    .wt-history-row{ position:relative; display:flex; align-items:center; gap:10px; padding:11px 12px 16px; border-radius:11px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color .25s var(--au-ease), background .25s var(--au-ease); }
+    /* The track has to be VISIBLE, or the marker reads as a dash at a random
+       spot instead of a value on a scale. */
+    .wt-history-row::after{ content:''; position:absolute; left:12px; right:12px; bottom:7px; height:1px; background:rgba(255,255,255,.10); }
+    .wt-row-pos{ position:absolute; bottom:5.5px; width:13px; height:3px; border-radius:2px; background:rgb(var(--sec-rgb)); opacity:.6; transform:translateX(-50%); }
+    .wt-history-row.today-row .wt-row-pos, .wt-history-row.open .wt-row-pos{ opacity:1; }
     .wt-history-row.today-row{ border-color:rgba(var(--sec-rgb),.28); background:rgba(var(--sec-rgb),.05); }
-    .wt-history-date{ flex:1; font-size:13px; color:var(--au-dim); }
-    .wt-history-val{ font-size:15px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); font-variant-numeric:tabular-nums; }
-    .wt-history-delta{ font-size:11px; font-family:var(--au-mono); min-width:42px; text-align:right; font-variant-numeric:tabular-nums; }
+    .wt-history-row.open{ border-color:rgba(var(--sec-rgb),.34); background:rgba(var(--sec-rgb),.06); }
+    /* The date is the only thing allowed to give up room. Revealing Edit +
+       Delete used to squeeze the value until "70.6 kg" wrapped onto two lines. */
+    .wt-history-date{ flex:1; min-width:0; font-size:13px; color:var(--au-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wt-history-val{ flex-shrink:0; white-space:nowrap; font-size:15px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); font-variant-numeric:tabular-nums; }
+    .wt-history-delta{ flex-shrink:0; font-size:11px; font-family:var(--au-mono); min-width:42px; text-align:right; font-variant-numeric:tabular-nums; }
+    /* the delta yields to the actions — it's still one row above and below */
+    .wt-history-row.open .wt-history-delta{ display:none; }
     .wt-history-delta.up{ color:var(--au-amber); } .wt-history-delta.down{ color:var(--au-emerald); }
-    .wt-history-edit-wrap{ display:flex; gap:5px; }
+    .wt-row-chev{ flex-shrink:0; width:10px; text-align:center; color:var(--au-faint); font-size:14px; line-height:1; transition:transform .25s var(--au-ease), color .25s var(--au-ease); }
+    .wt-history-row.open .wt-row-chev{ transform:rotate(90deg); color:rgb(var(--sec-rgb)); }
+    .wt-history-edit-wrap{ display:none; gap:5px; }
+    .wt-history-row.open .wt-history-edit-wrap{ display:flex; }
+    .wt-history-row.open .wt-row-chev{ display:none; }
     .wt-h-btn{ padding:5px 9px; border-radius:7px; font-size:11px; font-weight:700; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:var(--au-faint); cursor:pointer; font-family:var(--au-sans); -webkit-tap-highlight-color:transparent; }
     .wt-h-btn:active{ background:rgba(255,255,255,.09); color:var(--au-ivory); }
+    .wt-h-btn.del{ color:rgba(255,107,139,.75); border-color:rgba(255,107,139,.2); }
     .wt-h-btn.del:active{ background:rgba(255,107,139,.14); color:#FF6B8B; }
 
     @media (prefers-reduced-motion: reduce){
@@ -240,17 +281,22 @@
       </div>
 
       <div class="wt-input-row" id="wtInputRow">
-        <div class="wt-date-row">
-          <span class="wt-date-label">Date</span>
-          <input type="date" class="wt-date-input" id="wtDateInput">
-          <button type="button" class="wt-today-btn" id="wtTodayBtn">Today</button>
-        </div>
-        <div class="wt-input-top">
+        <div class="wt-ask" id="wtAsk">What did the scale say?</div>
+        <div class="wt-entry">
+          <button type="button" class="wt-step" data-wstep="-0.1" aria-label="0.1 lower">&minus;</button>
           <div class="wt-input-field">
             <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" class="wt-input" id="wtInput" placeholder="0.0" aria-label="Weight">
             <span class="wt-unit-static" id="wtUnitStatic">kg</span>
           </div>
-          <button type="button" class="wt-save-btn" id="wtSaveBtn">Save</button>
+          <button type="button" class="wt-step" data-wstep="0.1" aria-label="0.1 higher">+</button>
+        </div>
+        <div class="wt-feedback" id="wtFeedback" aria-live="polite"></div>
+        <button type="button" class="wt-save-btn" id="wtSaveBtn">Save weigh-in</button>
+        <button type="button" class="wt-when" id="wtWhen">Logging for today · change</button>
+        <div class="wt-date-row hidden" id="wtDateRow">
+          <span class="wt-date-label">Date</span>
+          <input type="date" class="wt-date-input" id="wtDateInput">
+          <button type="button" class="wt-today-btn" id="wtTodayBtn">Today</button>
         </div>
       </div>
 
@@ -348,7 +394,12 @@
       if($('wtDateInput')) $('wtDateInput').value=key;
       $('wtLocked').classList.add('hidden');
       $('wtInputRow').classList.remove('hidden');
+      /* Editing a past day must SAY it's a past day, and show the picker. */
+      if($('wtDateRow')) $('wtDateRow').classList.toggle('hidden', key===wtDateKey(new Date()));
+      wtSyncWhen();
+      if($('wtAsk')) $('wtAsk').textContent = key===wtDateKey(new Date()) ? 'What did the scale say?' : 'Fix this weigh-in.';
       if($('wtInput')){ $('wtInput').value=entry.weight.toFixed(1); $('wtInput').focus(); $('wtInput').select(); }
+      wtRenderFeedback();
     }
 
     function wtFmtDateLabel(key){
@@ -405,6 +456,17 @@
     }
     /* A slope smaller than its own uncertainty is not a trend, it's a wobble. */
     function isSteady(tr){ return Math.abs(tr.rate) < Math.max(0.05, tr.se*1.5); }
+
+    /* His typical morning-to-morning move, so "is this reading odd?" is judged
+       against HIS body rather than a hardcoded threshold. ~0.335 kg for Alex. */
+    function typicalSwing(){
+      if(wtEntries.length<4) return null;
+      var n=Math.min(31,wtEntries.length), d=[];
+      for(var i=wtEntries.length-n+1;i<wtEntries.length;i++) d.push(Math.abs(wtEntries[i].weight-wtEntries[i-1].weight));
+      if(!d.length) return null;
+      var s=0; for(var j=0;j<d.length;j++) s+=d[j];
+      return s/d.length;
+    }
 
     function monthlyAverages(rows){
       var order=[], byKey={};
@@ -464,22 +526,28 @@
       var u=units();
       var goal=goalWeight();
 
-      /* Window by DATE, not by entry count — "30D" means the last 30 days. */
+      /* Window by DATE, not by entry count — "30D" means the last 30 days.
+         Entries are sorted ascending, so every window is a suffix; keep its
+         start index because the trend must be computed from the FULL history. */
+      var allRows=wtEntries.map(function(e){ return { dateKey:e.dateKey, weight:e.weight, t:dayNum(e.dateKey) }; });
       var todayT=dayNum(wtDateKey(new Date()));
-      var recent, fellBack=false;
-      if(wtRange===0) recent=wtEntries.slice();
-      else {
+      var startIdx=0, fellBack=false;
+      if(wtRange!==0){
         var lo=todayT-(wtRange-1);
-        recent=wtEntries.filter(function(e){ return dayNum(e.dateKey)>=lo; });
-        if(recent.length<2){ recent=wtEntries.slice(-14); fellBack=true; }
+        while(startIdx<allRows.length && allRows[startIdx].t<lo) startIdx++;
+        if(allRows.length-startIdx<2){ startIdx=Math.max(0,allRows.length-14); fellBack=true; }
       }
 
-      var rows=recent.map(function(e){ return { dateKey:e.dateKey, weight:e.weight, t:dayNum(e.dateKey) }; });
+      var rows=allRows.slice(startIdx);
       wtChartRecent=rows;
       wtChartPoints=[]; wtChartTrend=[];
       if(rows.length<2){ $('wtChartContent').innerHTML=''; return; }
 
-      var trend=trendSeries(rows);
+      /* Computed over everything, then sliced to the window. Computing it from
+         the window alone made the line "warm up" from a single sample at the
+         left edge, so the 7D trend started wherever that one morning happened
+         to land instead of continuing from the days before it. */
+      var trend=trendSeries(allRows).slice(startIdx);
       wtChartTrend=trend;
 
       var weights=rows.map(function(r){ return r.weight; });
@@ -511,20 +579,6 @@
         html+='<text class="wt-ylabel" x="'+(xL-7)+'" y="'+(y+3.4).toFixed(1)+'" text-anchor="end">'+fmtTick(v,dom.step)+'</text>';
       });
 
-      /* The fluctuation channel: trend ± spread of its own 7-day window.
-         Anything outside it is a real move, not water. */
-      if(rows.length>=4){
-        var up=[], dn=[];
-        trend.forEach(function(s,i){
-          var sd=Math.max(s.sd,0.06);
-          up.push({ x:trendPts[i].x, y:yFor(s.mean+sd) });
-          dn.push({ x:trendPts[i].x, y:yFor(s.mean-sd) });
-        });
-        var bandPath=wtSmoothPath(up)+' L '+dn[dn.length-1].x.toFixed(2)+' '+dn[dn.length-1].y.toFixed(2);
-        for(var bi=dn.length-2;bi>=0;bi--) bandPath+=' L '+dn[bi].x.toFixed(2)+' '+dn[bi].y.toFixed(2);
-        html+='<path class="wt-band" d="'+bandPath+' Z"/>';
-      }
-
       if(goalInView){
         var gy=yFor(goal);
         html+='<line class="wt-goal" x1="'+xL+'" y1="'+gy.toFixed(1)+'" x2="'+xR+'" y2="'+gy.toFixed(1)+'"/>';
@@ -532,10 +586,20 @@
         html+='<text class="wt-goal-lbl" x="'+xR+'" y="'+gLblY.toFixed(1)+'" text-anchor="end">GOAL '+goal.toFixed(1)+'</text>';
       }
 
-      /* Raw readings: a whisper of a thread plus quiet dots. They are the
-         evidence; the trend is the answer. */
-      html+='<path class="wt-thread" d="'+wtLinePath(points)+'"/>';
-      var r=points.length>90?1.3:points.length>45?1.7:2.2;
+      /* Each morning: a hairline back to the trend, then the dot. Drawn BEFORE
+         the trend line so the line stays the unobstructed hero and a reading
+         that landed exactly on it simply disappears into it — which is the
+         truth about that day. */
+      var r=points.length>90?1.4:points.length>45?1.8:2.3;
+      /* Fade the tethers as they crowd, or 149 of them wash the plot in green. */
+      var wOp=points.length>90?0.5:points.length>45?0.75:1;
+      html+='<g opacity="'+wOp+'">';
+      points.forEach(function(p,i){
+        var ty=trendPts[i].y;
+        if(Math.abs(p.y-ty)>1.2)
+          html+='<line class="wt-whisk" x1="'+p.x.toFixed(2)+'" y1="'+p.y.toFixed(2)+'" x2="'+p.x.toFixed(2)+'" y2="'+ty.toFixed(2)+'"/>';
+      });
+      html+='</g>';
       points.forEach(function(p){
         html+='<circle class="wt-daily" cx="'+p.x.toFixed(2)+'" cy="'+p.y.toFixed(2)+'" r="'+r+'"/>';
       });
@@ -566,9 +630,8 @@
         meta.classList.remove('warn');
       }
 
-      var lg='<span class="wt-legend-item"><span class="wt-lg-trend"></span>7-DAY TREND</span>'
-           + '<span class="wt-legend-item"><span class="wt-lg-daily"></span>DAILY</span>';
-      if(rows.length>=4) lg+='<span class="wt-legend-item"><span class="wt-lg-band"></span>NORMAL SWING</span>';
+      var lg='<span class="wt-legend-item"><span class="wt-lg-trend"></span>THE TREND</span>'
+           + '<span class="wt-legend-item"><span class="wt-lg-daily"></span>EACH MORNING</span>';
       if(goalInView) lg+='<span class="wt-legend-item"><span class="wt-lg-goal"></span>GOAL</span>';
       $('wtLegend').innerHTML=lg;
 
@@ -699,6 +762,60 @@
       el.classList.remove('hidden');
     }
 
+    /* ── The logging ritual ─────────────────────────────────────────────── */
+
+    /* Which day is being logged, stated in words. Silently logging to the wrong
+       date is the one mistake this form can make. */
+    function wtSyncWhen(){
+      var b=$('wtWhen'); if(!b) return;
+      var key=wtGetSelectedDate(), today=wtDateKey(new Date());
+      var label;
+      if(key===today) label='today';
+      else { var d=wtParseKey(key); label=DAYS[d.getDay()]+' '+MONTHS[d.getMonth()]+' '+d.getDate(); }
+      b.textContent='Logging for '+label+' · change';
+      b.classList.toggle('other', key!==today);
+    }
+
+    /* The entry the new reading will be compared against: the last one logged
+       BEFORE the selected date, so back-dating and editing both read correctly. */
+    function wtPrevOf(key){
+      for(var i=wtEntries.length-1;i>=0;i--) if(wtEntries[i].dateKey<key) return wtEntries[i];
+      return null;
+    }
+
+    function wtRenderFeedback(){
+      var el=$('wtFeedback'); if(!el) return;
+      el.classList.remove('warn','bad');
+      var raw=String($('wtInput').value||'').trim();
+      if(!raw){ el.textContent=''; return; }
+      var v=parseWeight(raw);
+      if(isNaN(v)){ el.textContent=''; return; }
+      var u=units();
+      if(v<=0 || v>500){ el.textContent='That is not a weight.'; el.classList.add('bad'); return; }
+      var prev=wtPrevOf(wtGetSelectedDate());
+      if(!prev){ el.textContent=wtEntries.length?'Earlier than anything you have logged.':'Your first weigh-in.'; return; }
+      var d=v-prev.weight, sw=typicalSwing();
+      var big = Math.abs(d) > Math.max(1.2, (sw==null?0.4:sw)*3.5);
+      var txt = Math.abs(d)<0.05
+        ? 'No change from '+prev.weight.toFixed(1)+' '+u+'.'
+        : (d>0?'+':'−')+Math.abs(d).toFixed(1)+' '+u+' from '+prev.weight.toFixed(1)+' '+u+'.';
+      if(big){ txt+=' Double-check that.'; el.classList.add('warn'); }
+      el.textContent=txt;
+    }
+
+    function wtStepBy(delta){
+      var cur=parseWeight($('wtInput').value);
+      if(isNaN(cur)){
+        var last=wtEntries[wtEntries.length-1];
+        cur=(last?last.weight:70)+delta;                 // seed from where he was
+      } else cur+=delta;
+      cur=Math.round(cur*10)/10;
+      if(cur<20) cur=20;
+      if(cur>400) cur=400;
+      $('wtInput').value=cur.toFixed(1);
+      wtRenderFeedback();
+    }
+
     function wtRenderStreak(){
       var el=$('wtStreak'); var streak=0; var cursor=new Date();
       if(!wtEntries.find(function(e){return e.dateKey===wtDateKey(cursor);})) cursor.setDate(cursor.getDate()-1);
@@ -730,6 +847,10 @@
         var list=byMonth[k];
         var sum=0; list.forEach(function(it){ sum+=it.e.weight; });
         var avg=sum/list.length;
+        /* Each row's marker is placed within THIS month's range, so a month of
+           tiny wobbles still reads as a shape instead of a flat line. */
+        var ws=list.map(function(it){ return it.e.weight; });
+        var mn=Math.min.apply(null,ws), mx=Math.max.apply(null,ws);
         var net=list[0].e.weight-list[list.length-1].e.weight;   // list is newest-first
         var netCls=net>0.05?'up':net<-0.05?'down':'';
         var netTxt=Math.abs(net)<0.05 ? 'flat' : (net>0?'+':'−')+Math.abs(net).toFixed(1);
@@ -744,14 +865,18 @@
           }
           var isToday=entry.dateKey===todayKey;
           var label=isToday?'Today':wtFmtDateLabel(entry.dateKey);
-          return '<div class="wt-history-row '+(isToday?'today-row':'')+'">'+
+          var frac = mx>mn ? (entry.weight-mn)/(mx-mn) : 0.5;
+          return '<div class="wt-history-row '+(isToday?'today-row':'')+'" data-wrow="'+entry.dateKey+'">'+
             '<span class="wt-history-date">'+label+'</span>'+
             '<span class="wt-history-val">'+entry.weight.toFixed(1)+' '+u+'</span>'+
             deltaHtml+
+            '<span class="wt-row-chev" aria-hidden="true">›</span>'+
             '<div class="wt-history-edit-wrap">'+
               '<button type="button" class="wt-h-btn" data-wedit="'+entry.dateKey+'">Edit</button>'+
-              '<button type="button" class="wt-h-btn del" data-wdel="'+entry.dateKey+'">✕</button>'+
-            '</div></div>';
+              '<button type="button" class="wt-h-btn del" data-wdel="'+entry.dateKey+'">Delete</button>'+
+            '</div>'+
+            '<i class="wt-row-pos" style="left:calc(12px + (100% - 24px) * '+frac.toFixed(3)+')"></i>'+
+            '</div>';
         }).join('');
         return head+rows;
       }).join('');
@@ -791,6 +916,11 @@
       wtRenderHistory();
 
       var di=$('wtDateInput'); if(di && !di.value) di.value=todayKey;
+      /* A ghost of his last reading, so the field isn't a void to type into.
+         Deliberately a PLACEHOLDER, not a value — a pre-filled number could be
+         committed unread, and a stale weigh-in is worse than an empty field. */
+      var inp=$('wtInput'); if(inp) inp.placeholder = last ? last.weight.toFixed(1) : '0.0';
+      wtSyncWhen(); wtRenderFeedback();
       updateNova(last, todayEntry);
     }
 
@@ -913,6 +1043,10 @@
       wtSaveEntry(Math.round(v*10)/10);
       $('wtInput').value='';
       if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date());
+      /* UI reset only — the write above is untouched. */
+      if($('wtDateRow')) $('wtDateRow').classList.add('hidden');
+      if($('wtAsk')) $('wtAsk').textContent='What did the scale say?';
+      wtSyncWhen(); wtRenderFeedback();
     }
     $('wtSaveBtn').addEventListener('click', doSave);
     $('wtInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
@@ -920,20 +1054,38 @@
     $('wtInput').addEventListener('input', function(){
       var clean=this.value.replace(/[^0-9.,]/g,'').replace(/([.,]).*?([.,])/g,'$1');
       if(clean!==this.value) this.value=clean;
+      wtRenderFeedback();
     });
-    $('wtTodayBtn').addEventListener('click', function(){ if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date()); });
+    document.querySelectorAll('[data-wstep]').forEach(function(b){
+      b.addEventListener('click', function(){ wtStepBy(parseFloat(b.getAttribute('data-wstep'))); });
+    });
+    $('wtWhen').addEventListener('click', function(){ $('wtDateRow').classList.toggle('hidden'); });
+    $('wtDateInput').addEventListener('change', function(){ wtSyncWhen(); wtRenderFeedback(); });
+    $('wtTodayBtn').addEventListener('click', function(){
+      if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date());
+      wtSyncWhen(); wtRenderFeedback();
+    });
     $('wtEditBtn').addEventListener('click', function(){
       $('wtLocked').classList.add('hidden'); $('wtInputRow').classList.remove('hidden');
       var todayEntry=wtEntries.find(function(e){return e.dateKey===wtDateKey(new Date());});
       if(todayEntry) $('wtInput').value=todayEntry.weight.toFixed(1);
+      wtSyncWhen(); wtRenderFeedback();
       $('wtInput').focus();
     });
 
-    /* delegated edit/delete on history rows (iOS-reliable) */
+    /* delegated edit/delete on history rows (iOS-reliable).
+       The buttons are checked FIRST — they sit inside the row, so a plain row
+       tap must be the last case or Edit would only ever toggle the row open. */
     $('wtHistory').addEventListener('click', async function(ev){
       var ed=ev.target.closest('[data-wedit]'); var dl=ev.target.closest('[data-wdel]');
       if(ed){ wtEditEntry(ed.getAttribute('data-wedit')); return; }
-      if(dl){ var k=dl.getAttribute('data-wdel'); if(await ALSConfirm({title:'Delete weigh-in?',confirmText:'Delete',danger:true})) wtDeleteEntry(k); }
+      if(dl){ var k=dl.getAttribute('data-wdel'); if(await ALSConfirm({title:'Delete weigh-in?',confirmText:'Delete',danger:true})) wtDeleteEntry(k); return; }
+      var row=ev.target.closest('[data-wrow]');
+      if(row){
+        var wasOpen=row.classList.contains('open');
+        this.querySelectorAll('.wt-history-row.open').forEach(function(r){ r.classList.remove('open'); });
+        if(!wasOpen) row.classList.add('open');
+      }
     });
 
     /* ── Redraw on width change ── */

@@ -50,9 +50,10 @@ function run(opts){
   const store={};
   const localStorage={ getItem:k=>k in store?store[k]:null, setItem:(k,v)=>{store[k]=String(v);}, removeItem:k=>{delete store[k];} };
   const pills=['7','30','90','0'].map((r,i)=>{ const e=makeEl('pill'+r); e.dataset.wrange=r; e.offsetLeft=2+i*54; if(r==='30') e._cls.add('active'); return e; });
+  const steps=['-0.1','0.1'].map(v=>{ const e=makeEl('step'+v); e._attr['data-wstep']=v; return e; });
   const document={ getElementById:get,
     querySelector:sel=>sel==='[data-wrange].active'?(pills.find(p=>p._cls.has('active'))||null):get('q:'+sel),
-    querySelectorAll:sel=>sel==='[data-wrange]'?pills:[],
+    querySelectorAll:sel=>sel==='[data-wrange]'?pills:sel==='[data-wstep]'?steps:[],
     addEventListener:()=>{}, createElement:()=>makeEl('n'), head:{appendChild:()=>{}},
     documentElement:makeEl('html'), body:makeEl('body'), hidden:false };
   const sandbox={ document, localStorage, console,
@@ -71,7 +72,26 @@ function run(opts){
   vm.createContext(sandbox);
   let threw=null;
   try{ vm.runInContext(SRC, sandbox, {filename:'inline.js'}); }catch(e){ threw=e; }
-  return { els, store, threw, pills, get,
+  return { els, store, threw, pills, steps, get,
+    type:v=>{ els['wtInput'].value=String(v); els['wtInput']._h.input.call(els['wtInput']); },
+    press:i=>steps[i]._h.click(),
+    /* Drive the delegated history handler with a synthetic row. */
+    tapRow:()=>{
+      const row={ _cls:new Set(['wt-history-row']) };
+      row.classList={ add:c=>row._cls.add(c), remove:c=>row._cls.delete(c), contains:c=>row._cls.has(c) };
+      row.closest=sel=>sel==='[data-wrow]'?row:null;
+      const ev={ target:{ closest:sel=>sel==='[data-wrow]'?row:null } };
+      els['wtHistory']._h.click.call({ querySelectorAll:()=>[] }, ev);
+      return row;
+    },
+    tapEdit:key=>{
+      let edited=null;
+      const btn={ getAttribute:()=>key, closest:sel=>sel==='[data-wedit]'?btn:null };
+      const row={ _cls:new Set(), classList:{ add:c=>row._cls.add(c), remove:()=>{}, contains:c=>row._cls.has(c) } };
+      const ev={ target:{ closest:sel=>sel==='[data-wedit]'?btn:(sel==='[data-wrow]'?row:null) } };
+      els['wtHistory']._h.click.call({ querySelectorAll:()=>[] }, ev);
+      return { rowOpened:row._cls.has('open') };
+    },
     chart:()=>(els['wtChartContent']||{}).innerHTML||'',
     all:()=>Object.keys(els).map(k=>(els[k].innerHTML||'')+' '+(els[k].textContent||'')).join(' ') };
 }
@@ -200,6 +220,149 @@ edge('duplicate + out-of-order + junk rows', {data:[
   ok((t.chart().match(/class="wt-daily"/g)||[]).length===4, 'junk: only the 4 valid rows plotted');
   ok(t.els['wtNum'].textContent==='70.4', 'junk: newest valid row is the hero');
 });
+
+console.log('\n── THE LOGGING RITUAL ─────────────────────');
+{
+  const t=run({data:REALDATA, goal:72, today:'2026-07-13'});
+  ok(!t.threw, 'ritual: no throw');
+  const last=REALDATA.slice().sort((a,b)=>a.dateKey.localeCompare(b.dateKey)).pop().weight;
+
+  ok(t.els['wtInput'].placeholder===last.toFixed(1),
+     'field ghosts his last reading ('+t.els['wtInput'].placeholder+' vs '+last.toFixed(1)+')');
+  ok(t.els['wtInput'].value==='', 'field is EMPTY, never pre-filled — a stale number must not be committable by one tap');
+  ok(/Logging for today/.test(t.els['wtWhen'].textContent), 'says which day it will log (got: '+t.els['wtWhen'].textContent+')');
+  ok(!t.els['wtWhen']._cls.has('other'), 'today is not flagged as another day');
+  /* the default lives in the markup, and nothing on boot un-hides it */
+  ok(/id="wtDateRow"[^>]*class="wt-date-row hidden"|class="wt-date-row hidden"[^>]*id="wtDateRow"/.test(HTML),
+     'the date picker ships folded away');
+  ok(t.els['wtDateRow']===undefined, 'and boot never touches it, so it stays folded');
+  ok(t.els['wtFeedback'].textContent==='', 'no feedback before he types');
+
+  /* steppers */
+  t.press(1);
+  ok(t.els['wtInput'].value===(last+0.1).toFixed(1), '+ seeds from his last reading → '+t.els['wtInput'].value);
+  t.press(1);
+  ok(t.els['wtInput'].value===(last+0.2).toFixed(1), '+ again steps by 0.1 → '+t.els['wtInput'].value);
+  t.press(0); t.press(0); t.press(0);
+  ok(t.els['wtInput'].value===(last-0.1).toFixed(1), '− steps back down → '+t.els['wtInput'].value);
+  ok(!/NaN|undefined/.test(t.els['wtInput'].value), 'stepper never produces NaN');
+
+  const t2=run({data:[], goal:null, today:'2026-07-13'});
+  t2.press(1);
+  ok(t2.els['wtInput'].value==='70.1', 'stepper on an EMPTY log falls back to a sane 70 (got '+t2.els['wtInput'].value+')');
+
+  /* live feedback */
+  const t3=run({data:REALDATA, goal:72, today:'2026-07-13'});
+  /* Today (13th) is already logged at 70.4, so the day BEFORE it — the 12th at
+     70.6 — is the correct reference. Comparing today against itself would say
+     nothing. */
+  t3.type('70.8');
+  ok(/from 70\.6 kg/.test(t3.els['wtFeedback'].textContent), 'feedback compares to the previous DAY, not to today\'s own entry (got: '+t3.els['wtFeedback'].textContent+')');
+  ok(/\+0\.2 kg/.test(t3.els['wtFeedback'].textContent), 'feedback states the delta');
+  ok(!t3.els['wtFeedback']._cls.has('warn'), 'a normal 0.2 kg move is not flagged');
+  t3.type('70.6');
+  ok(/No change/.test(t3.els['wtFeedback'].textContent), 'an identical reading says so');
+  t3.type('74.0');
+  ok(t3.els['wtFeedback']._cls.has('warn'), '+3.6 kg overnight IS flagged against his own 0.34 kg typical swing');
+  ok(/Double-check/.test(t3.els['wtFeedback'].textContent), 'the flag tells him what to do');
+  t3.type('704');
+  ok(t3.els['wtFeedback']._cls.has('bad'), 'a fat-fingered 704 is caught before saving');
+  t3.type('7.04');
+  ok(t3.els['wtFeedback']._cls.has('warn'), 'a fat-fingered 7.04 is flagged too');
+  t3.type('');
+  ok(t3.els['wtFeedback'].textContent==='', 'clearing the field clears the feedback');
+  ok(!t3.els['wtFeedback']._cls.has('warn') && !t3.els['wtFeedback']._cls.has('bad'), 'and clears its colour');
+
+  /* editing a past day must announce itself */
+  const t4=run({data:REALDATA, goal:72, today:'2026-07-13'});
+  t4.els['wtHistory']._h.click.call({ querySelectorAll:()=>[] },
+    { target:{ closest:sel=>sel==='[data-wedit]'?{ getAttribute:()=>'2026-06-20' }:null } });
+  ok(t4.els['wtDateInput'].value==='2026-06-20', 'editing a past day selects that date');
+  ok(!t4.els['wtDateRow']._cls.has('hidden'), 'and reveals the date picker');
+  ok(/Sat Jun 20/.test(t4.els['wtWhen'].textContent), 'and names the day in words (got: '+t4.els['wtWhen'].textContent+')');
+  ok(t4.els['wtWhen']._cls.has('other'), 'and flags that it is not today');
+  ok(/Fix this weigh-in/.test(t4.els['wtAsk'].textContent), 'and the prompt changes from asking to fixing');
+  ok(t4.els['wtInput'].value==='71.2', 'and loads that day\'s real value (got '+t4.els['wtInput'].value+')');
+
+  /* row tap reveals actions; the Edit button must not be swallowed by it */
+  const t5=run({data:REALDATA, goal:72, today:'2026-07-13'});
+  const row=t5.tapRow();
+  ok(row._cls.has('open'), 'tapping a row opens it');
+  ok(!t5.tapEdit('2026-06-20').rowOpened, 'tapping Edit inside a row does NOT merely toggle the row');
+  ok(t5.els['wtDateInput'].value==='2026-06-20', 'tapping Edit actually edits');
+}
+
+console.log('\n── THE HISTORY LIST ───────────────────────');
+{
+  const t=run({data:REALDATA, goal:72, today:'2026-07-13'});
+  const h=t.els['wtHistory'].innerHTML;
+  ok((h.match(/data-wrow=/g)||[]).length===149, 'every row is tappable (got '+(h.match(/data-wrow=/g)||[]).length+')');
+  ok((h.match(/wt-row-pos/g)||[]).length===149, 'every row carries a position marker');
+  ok((h.match(/wt-row-chev/g)||[]).length===149, 'every row shows there is more behind it');
+  ok((h.match(/data-wedit=/g)||[]).length===149 && (h.match(/data-wdel=/g)||[]).length===149,
+     'edit + delete survive for every entry — hidden by CSS, never removed');
+  ok(/>Delete</.test(h), 'delete is a word now, not a bare glyph');
+
+  /* the marker must actually encode the weight */
+  const fracs=[...h.matchAll(/wt-row-pos" style="left:calc\(12px \+ \(100% - 24px\) \* ([\d.]+)\)/g)].map(m=>parseFloat(m[1]));
+  ok(fracs.length===149, 'a fraction for every row');
+  ok(fracs.every(f=>f>=0 && f<=1), 'every fraction is inside 0..1');
+  ok(fracs.some(f=>f===0) && fracs.some(f=>f===1), 'each month pins its own lowest to 0 and highest to 1');
+  /* July 2026: rows are newest-first, weights 70.4(13th) .. and the month min/max */
+  const july=REALDATA.filter(e=>e.dateKey.slice(0,7)==='2026-07');
+  const jw=july.map(e=>e.weight), jmn=Math.min(...jw), jmx=Math.max(...jw);
+  const expected=((july.find(e=>e.dateKey==='2026-07-13').weight-jmn)/(jmx-jmn)).toFixed(3);
+  ok(fracs[0]===parseFloat(expected), 'the newest row\'s marker matches its place in July ('+fracs[0]+' vs '+expected+')');
+
+  /* a flat month must not divide by zero */
+  const flat=[]; const d=new Date('2026-07-01T12:00:00');
+  for(let i=0;i<10;i++){ flat.push({dateKey:d.toISOString().slice(0,10),weight:70,ts:1}); d.setDate(d.getDate()+1); }
+  const t6=run({data:flat, goal:72, today:'2026-07-13'});
+  const f6=[...t6.els['wtHistory'].innerHTML.matchAll(/\* ([\d.]+)\)/g)].map(m=>parseFloat(m[1]));
+  ok(f6.length===10 && f6.every(f=>f===0.5), 'a month with zero variation centres every marker instead of NaN');
+  ok(!/NaN/.test(t6.els['wtHistory'].innerHTML), 'no NaN in a flat month');
+}
+
+console.log('\n── CSS CONTRACT (constraint 11) ───────────');
+{
+  /* A class toggled from JS but defined nowhere fails SILENTLY — the exact
+     bug that left Home's arc band permanently lit. Every class this page
+     switches on must resolve in its own <style> or in aurora.css. */
+  const STYLE=HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const AURORA=fs.readFileSync('/Users/alexstathatos/ALS DASHBOARD ALL FILES/als/aurora.css','utf8');
+  const CSS=STYLE+'\n'+AURORA;
+  const toggled=new Set();
+  for(const m of SRC.matchAll(/classList\.(?:add|remove|toggle)\(([^)]*)\)/g)){
+    for(const q of m[1].matchAll(/'([A-Za-z][\w-]*)'/g)) toggled.add(q[1]);
+  }
+  /* classes emitted inside generated markup */
+  for(const m of SRC.matchAll(/class="([^"'{}]*?)"/g)){
+    for(const c of m[1].trim().split(/\s+/)) if(c) toggled.add(c);
+  }
+  ok(toggled.size>15, 'found the page\'s class vocabulary ('+toggled.size+' names)');
+  const missing=[...toggled].filter(c=>!new RegExp('\\.'+c.replace(/[-]/g,'\\-')+'(?![\\w-])').test(CSS));
+  ok(missing.length===0, 'every JS-toggled class is defined in CSS — missing: '+missing.join(', '));
+
+  /* the specific rules this redesign depends on */
+  const need=[
+    [/\.wt-history-row\.open[\s\S]{0,120}?\.wt-history-edit-wrap\s*\{[^}]*display:\s*flex/, 'opening a row reveals its actions'],
+    [/\.wt-history-edit-wrap\s*\{[^}]*display:\s*none/, 'and they are hidden until then'],
+    [/\.wt-history-val\s*\{[^}]*white-space:\s*nowrap/, 'the weight can never wrap onto two lines'],
+    [/\.wt-history-date\s*\{[^}]*text-overflow:\s*ellipsis/, 'only the date gives up room'],
+    [/\.wt-history-row\.open\s+\.wt-history-delta\s*\{[^}]*display:\s*none/, 'the delta yields to the actions'],
+    [/\.wt-row-pos\s*\{[^}]*position:\s*absolute/, 'the position marker is positioned'],
+    [/\.wt-chart\s*\{[^}]*touch-action:\s*pan-y/, 'the chart lets a vertical drag scroll the page'],
+    [/\.wt-pill-ind\s*\{[^}]*transition:\s*transform[^;}]*;/, 'the range pill animates transform only'],
+    [/\.wt-whisk\s*\{/, 'the tether to the trend is styled'],
+    [/\.wt-feedback\.warn\s*\{/, 'the warn state is styled'],
+    [/\.wt-feedback\.bad\s*\{/, 'the bad state is styled'],
+    [/\.wt-when\.other\s*\{/, 'a non-today date is styled']
+  ];
+  for(const [re,label] of need) ok(re.test(STYLE), label);
+  ok(!/\.wt-thread\b/.test(STYLE), 'the second competing line is gone from CSS');
+  ok(!/wt-thread/.test(SRC), 'and gone from the JS');
+  ok(!/wt-band\b/.test(SRC), 'the old envelope band is fully removed, not just unused');
+}
 
 console.log('\n── DATA SAFETY ────────────────────────────');
 const t2=run({data:REALDATA, goal:72, today:'2026-07-13'});

@@ -228,10 +228,50 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v422` — `weight.html` levelled up. Presentation only; the data
-path is byte-identical** (2026-07-27, on `main`, 15 suites + smoke green, new
-`tests/weight-chart.test.js` = 101 assertions, headless-verified). Read this if
-the task touches the weigh-in page or ANY chart in this app.
+**HEAD is `als-v423` — `weight.html`, second pass on Alex's own review.** Three
+things he was right about (2026-07-27, on `main`, 15 suites + smoke green,
+`tests/weight-chart.test.js` now 161 assertions):
+
+- ⭐ **"the chart gets its own route, that confuses me."** It did, and the fault
+  was a line I'd added: a faint `wt-thread` polyline joining the daily dots ran
+  alongside the bold trend, so the chart had **two competing paths**. Fixed by
+  deleting the thread and tethering each reading to the trend with a hairline
+  (`.wt-whisk`). There is now exactly ONE path; the dots are scatter around it,
+  and a reading that landed on the trend disappears into it. The envelope band
+  went too — the tethers say the same thing from real data instead of a computed
+  ±SD, and "is this reading odd?" moved to where it's actionable (the input).
+  **Don't reintroduce a second line through this chart.**
+- ⚠️ **The trend was computed from the VISIBLE WINDOW, so it warmed up from a
+  single sample at the left edge.** On 7D the line started wherever that one
+  morning happened to land. It's now computed over the full history and
+  `.slice(startIdx)`d to the window — every range is a suffix, so the index is
+  all that's needed.
+- **The log form and the history list were the two most generic things left.**
+  The form opened with a raw `<input type="date">`; the list was 149 rows × 2
+  always-on buttons, i.e. an admin table. Now: a serif prompt, ∓0.1 steppers
+  that seed from his last reading, a **live feedback line** that reads the delta
+  back before he commits (catches a `704` or a `7.04` — judged against
+  `typicalSwing()`, his own ~0.34 kg morning-to-morning move, not a hardcoded
+  threshold), the date picker folded behind "LOGGING FOR TODAY · CHANGE", and
+  row actions behind a tap with the freed space carrying a **position marker**
+  so scrolling shows the shape of a month.
+- ⚠️ **The field is a PLACEHOLDER, never a pre-filled value.** Ghosting his last
+  reading helps; committing a stale number in one tap does not.
+- ⚠️ **Revealing Edit + Delete squeezed the row until `70.6 kg` WRAPPED onto two
+  lines** — caught by rendering at a true 321 px card width, invisible at any
+  wider size and invisible to every assertion. `.wt-history-val` is now
+  `nowrap`, the date is the only element allowed to ellipsis, and the delta
+  hides while a row is open. **To see mobile layout in headless, pin
+  `.wp-wrap{max-width:393px}` and shoot a WIDER window** — the documented
+  right-edge clip otherwise hides the bug you're looking for.
+- **New permanent guard: the suite now enforces constraint 11 generically** —
+  it extracts every class the inline script toggles or emits and fails if one
+  isn't defined in the page's `<style>` or `aurora.css`.
+- Feedback compares against the last entry logged **before the selected date**,
+  not against the newest row, so back-dating and editing both read correctly.
+
+**`als-v422` was the first pass — presentation only, data path byte-identical.**
+Read this if the task touches the weigh-in page or ANY chart in this app.
 
 - **The chart was lying by autoscaling.** `pad = max((max−min)*0.18, 0.4)` fit the
   y-axis to whatever was visible, so a 0.6 kg wobble filled 170px and read as a
@@ -269,14 +309,16 @@ the task touches the weigh-in page or ANY chart in this app.
   `touch-action:pan-y` + gesture detection so a 214px chart no longer eats the
   page scroll, and equal-width range segments so the sliding pill animates
   **transform only**. Month labels thin from the newest end past ~9 months.
-- **Proof the data is untouched:** `wtLoad`/`wtSave`/`wtSaveEntry`/`wtDeleteEntry`/
-  `wtEditEntry`/`doSave`/`parseWeight`/`wtDateKey`/`wtGetSelectedDate` are all
-  **byte-identical to HEAD~1**, `localStorage.setItem` call sites 1 → 1, and
-  `pocoach-sync.js` wiring is unchanged. The suite asserts his 149 rows survive a
-  render unmodified.
-- 🔴 **UNCONFIRMED ON DEVICE.** Verified by 101 assertions and headless renders at
-  321/330/428 px; no phone has touched it. The gesture split (vertical drag
-  scrolls, horizontal scrubs) is the part most worth checking on iOS.
+- **Proof the data is untouched:** every storage function —
+  `wtLoad`/`wtSave`/`wtSaveEntry`/`wtDeleteEntry`/`wtGetSelectedDate`/
+  `parseWeight`/`wtDateKey` — is **byte-identical** across both passes,
+  `localStorage.setItem` call sites 1 → 1, `pocoach-sync.js` wiring unchanged,
+  and the suite asserts his 149 rows survive a render unmodified. `doSave` and
+  `wtEditEntry` gained UI-reset lines in v423 (classes + label text only, nothing
+  removed) — verified line-by-line, no storage or array writes added.
+- 🔴 **UNCONFIRMED ON DEVICE.** Verified by 161 assertions and headless renders at
+  321/330/428 px; no phone has touched it. Worth checking on iOS: the gesture
+  split (vertical drag scrolls, horizontal scrubs) and tap-to-open on the rows.
 - Pre-existing and NOT caused by this change: `tests/goals-rhythm.test.js` fails
   one date-dependent assertion ("current week marked"). It reads `main.html`
   only and fails identically with `weight.html` stashed.
