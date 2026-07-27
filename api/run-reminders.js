@@ -423,6 +423,70 @@ async function icuCheck() {
   return { total: acts.length, strava: strava, garmin: cands.length, added: added, nonRun: nonRun, errs: errs, pending: items.length, newest: newest };
 }
 
+// ── ?icu=diag — WHY is a run not arriving? ─────────────────────────────────
+// icuCheck() reports counts; counts cannot tell "she has not run" from "every
+// run she does is being silently dropped". This lists what intervals actually
+// holds (id, date, name, source, type) and PROBES the two endpoints the
+// courier depends on, so the reason is readable instead of inferred.
+// READ-ONLY: it never writes a row and never marks anything done.
+async function icuDiag() {
+  var ATH = (process.env.ICU_ATHLETE_ID || '').trim(), KEY = (process.env.ICU_API_KEY || '').trim();
+  if (!ATH || !KEY) return { skipped: 'icu env not set', athlete: !!ATH, key: !!KEY };
+  var authHeader = 'Basic ' + Buffer.from('API_KEY:' + KEY).toString('base64');
+  var now = Date.now();
+  function ymd(d) { return d.toISOString().slice(0, 10); }
+  var listUrl = 'https://intervals.icu/api/v1/athlete/' + encodeURIComponent(ATH) +
+    '/activities?oldest=' + ymd(new Date(now - 30 * 86400000)) + '&newest=' + ymd(new Date(now + 86400000));
+  var lr; try { lr = await fetch(listUrl, { headers: { Authorization: authHeader } }); }
+  catch (e) { return { error: 'list fetch failed: ' + String((e && e.message) || e) }; }
+  if (!lr.ok) return { error: 'list ' + lr.status, body: (await lr.text()).slice(0, 300) };
+  var acts; try { acts = await lr.json(); } catch (e) { return { error: 'list not json' }; }
+  if (!Array.isArray(acts)) return { error: 'list not array' };
+
+  acts.sort(function (a, b) { return (a.start_date_local || '') < (b.start_date_local || '') ? 1 : -1; });
+  var list = acts.slice(0, 25).map(function (a) {
+    return { id: a.id, date: a.start_date_local || null, name: (a.name || '').slice(0, 40),
+      source: a.source || null, type: a.type || null,
+      km: a.distance ? Math.round(a.distance / 10) / 100 : null, sec: a.moving_time || a.elapsed_time || null };
+  });
+
+  // Probe the newest of each source: can we read the full object? the FIT?
+  var probes = {};
+  var seenSrc = {};
+  for (var i = 0; i < acts.length && Object.keys(seenSrc).length < 3; i++) {
+    var a = acts[i], src = a.source || 'NONE';
+    if (seenSrc[src]) continue;
+    seenSrc[src] = 1;
+    var p = { id: a.id, date: a.start_date_local || null };
+    try {
+      var fr = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id), { headers: { Authorization: authHeader } });
+      p.full = fr.status;
+      if (fr.ok) { var fj = await fr.json(); p.fullType = fj.type || null; p.fullKm = fj.distance ? Math.round(fj.distance / 10) / 100 : null; p.fullSec = fj.moving_time || null; }
+      else p.fullBody = (await fr.text()).slice(0, 160);
+    } catch (e) { p.full = 'throw: ' + String((e && e.message) || e); }
+    try {
+      var ff = await fetch('https://intervals.icu/api/v1/activity/' + encodeURIComponent(a.id) + '/fit-file', { headers: { Authorization: authHeader } });
+      p.fit = ff.status;
+      if (ff.ok) { var buf = Buffer.from(await ff.arrayBuffer()); p.fitBytes = buf.length; p.fitLooksReal = icuLooksLikeActivity(buf); }
+      else p.fitBody = (await ff.text()).slice(0, 160);
+    } catch (e) { p.fit = 'throw: ' + String((e && e.message) || e); }
+    probes[src] = p;
+  }
+
+  var runner = supa.RUNNER_ID || undefined;
+  var inbox = await supa.readRow('run:inbox', runner);
+  var ack = await supa.readRow('run:inbox-ack', runner);
+  return {
+    athleteId: ATH, total: acts.length, activities: list, probes: probes,
+    inbox: {
+      pending: (inbox.items || []).map(function (it) { return { id: it.id, date: it.date, name: it.name, fitKb: it.fit ? Math.round(it.fit.length / 1365) : 0 }; }),
+      doneIds: (inbox.doneIds || []).length,
+      acked: (ack.seenIds || []).length,
+      runnerRow: !!supa.RUNNER_ID
+    }
+  };
+}
+
 module.exports = async function (req, res) {
   if (!auth.guardCron(req, res)) return; // QStash hourly cron (cron secret) or same-origin manual run
 
@@ -552,6 +616,13 @@ module.exports = async function (req, res) {
   if (req.query && req.query.garmin === 'diag') {
     var dg; try { dg = await garmin.diag(); } catch (e) { dg = { error: String((e && e.message) || e) }; }
     res.status(200).json({ garmin: dg }); return;
+  }
+
+  // ?icu=diag — read-only. Must return BEFORE icuCheck(), which writes.
+  if (req.query && req.query.icu === 'diag') {
+    var idg; try { idg = await icuDiag(); } catch (e) { idg = { error: String((e && e.message) || e) }; }
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ icu: idg }); return;
   }
 
   // Garmin→intervals courier runs on every hourly cron AND on demand (?icu=1 from the app).
