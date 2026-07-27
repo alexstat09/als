@@ -108,6 +108,20 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   `gym & weigh-ins · HTTP 401` (stored in `als:sync-errd`, cleared on `ok()`). A
   stuck engine is **usually a stale session** — cached reads still render so the
   page looks fine while writes 401; the fix is re-login.
+- ⭐ **A DESTRUCTIVE ACK MAY ONLY FOLLOW A CONFIRMED CLOUD WRITE.** Same rule as
+  `lastJson`, one level up. `run.html`'s watch-inbox drain acked on a plain
+  `persist()`; the ack makes the server prune the FIT bytes *and* keep the
+  activity marked done upstream, so a failed push left the run in exactly one
+  localStorage with the only other copy already deleted (als-v424). If a local
+  write triggers something irreversible elsewhere, **read the row back and find
+  the record before you let go of the source.**
+- ⭐ **Never DECIDE WHOSE ACCOUNT THIS IS by guessing, and never collapse "I
+  cannot tell" into an account.** Use the session's `user.id`, and *wait* for it
+  (~12s — a cold PWA start beats topbar.js/sync.js). ⚠️ **Do not parse
+  `sb-*-auth-token` out of localStorage**: supabase-js chunks a large session
+  across `.0`/`.1` and neither fragment is valid JSON, so the check fails on
+  exactly the devices with the most state. A wrong answer here renders the other
+  person's data, plausibly, with no error (als-v424).
 - `sync.js` merges any object child named **`logs`** with `Math.max`, so a
   counter cannot decrease unless every write stamps `_ts`.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
@@ -305,7 +319,10 @@ Now the loop is closed at **both** ends:
 - `?icu=diag` gained **`herApp`**: how many runs her account actually holds, its
   newest date, and `missingFromApp` — the runs intervals has that her account
   does not. Counts could never tell "she has not run" from "every run is being
-  dropped"; this names the gap directly. Still read-only.
+  dropped"; this names the gap directly. Still read-only. ⚠️ **The whole diag
+  payload nests under `.icu`** — `d['icu']['herApp']`, not `d['herApp']`.
+  **Use this instead of asking Alex "did you lose a run?"** It is the first
+  artefact in this project that can answer that question by itself.
 - The owner's peek payload gained **`waiting`**, and the banner now says
   «N τρέξιμο περιμένει — μπαίνει όταν ανοίξει την εφαρμογή της». Auto-import is
   pull-on-open, so a wait is normal; not being able to SEE the wait is what read
@@ -313,11 +330,34 @@ Now the loop is closed at **both** ends:
 - The cloud sync engine now starts **before** the drain, so the drain's `flush()`
   is real rather than a no-op against an undefined `window.ALSSync`.
 
-🔴 **Unproven on a device.** All of it is verified by tests and by the live
-`?icu=diag`, but no phone has run it. **First real proof:** open `?icu=diag`
-after a deploy and read `herApp.missingFromApp` — if her 25 Jul run is listed,
-the next hourly tick re-delivers it and it lands the next time she opens the app.
-Ask what she saw: «Νέο τρέξιμο από το ρολόι ✓», or an amber strip naming a cause.
+### What was PROVEN in production after the deploy (not inferred)
+Read this before re-diagnosing anything about her runs.
+
+- **`herApp.runs: 520`** → the 515-run recovery from the previous session **did
+  apply**. That question is closed; don't ask him again.
+- **`herApp.newest: 2026-07-22`**, and `missingFromApp` held **exactly one**
+  activity: the **25 Jul, 16.33 km** run. So the fault was real, it was that one
+  run, and it was one run only.
+- One `?icu=1` tick then returned **`redelivered: 1`** and the diag showed the
+  run back in `pending` with **136 KB of FIT** and `acked: 0`. The re-delivery
+  path works end to end against real data, not just fixtures.
+
+🔴 **THE ONE OPEN THING: no phone has run als-v424.** Auto-import is
+pull-on-open, so the re-delivered run lands when **she opens the app** (and the
+PWA needs a full reopen to pick up the new SW). Two paths both work: if her phone
+lacks the run, the drain takes it from the inbox; if her phone still has it
+locally — it is the device that drained it in July, so its local `run:icuSeen`
+would skip the item — sync.js pushes it up on open instead.
+
+**Check it without asking her:**
+```bash
+H=https://als-ochre.vercel.app
+curl -s "$H/api/run-reminders?icu=diag" -H "Origin: $H"   # → .icu.herApp
+```
+`newest` moves 22 Jul → 25 Jul and `missingFromApp` empties. That means the run
+is in her **account**, not merely on her phone — which is the whole point of this
+version. If instead she reports a banner, it now names its own cause: no session
+/ offline / HTTP 401 (stale session → sign out and back in) / storage full.
 
 ⏭️ **Still true and NOT fixed here:** her 515 pre-migration runs are a separate
 data-restore job (see below), and six other clients still carry the
@@ -426,49 +466,24 @@ array writes. The suite asserts his 149 rows survive a render unmodified.
   fails one date-dependent assertion ("current week marked"). It reads
   `main.html` only and fails identically with `weight.html` stashed.
 
-**Before that — `als-v421`, her watch inbox had stopped draining, silently**
-(2026-07-27, on `main`, 14 suites + smoke green; `tests/run-inbox.test.js`, 27
-assertions). Read this first if the task touches her runs, or ANY client that
-reads a Supabase row.
+**Before that — `als-v421`, the anon key in her drain** (2026-07-27).
+**Superseded by als-v424 above**, which is the block to read; the permanent rules
+live in §2. Kept here only for the parts that are still load-bearing:
 
-- **The symptom:** "her runs are not coming up." **The server was healthy the
-  whole time.** Her 25 Jul 16.3 km long run was sitting in `run:inbox`
-  *downloaded*, 136 KB of real FIT bytes, undrained for days.
-- **The root cause, and it is the project's oldest rule:** `icuHdr` sent
-  `'Bearer ' + (ICU_TOKEN || ICU_SB_KEY)`. **The publishable key is a valid key
-  with no identity, so RLS answers `200` with an EMPTY array** — byte-identical
-  to "no new runs". run.html's inline script runs *before* the deferred
-  `topbar.js` / `sync.js` restore her session, and the wait was only 25×120ms =
-  3s, so a cold PWA start on a slow connection routinely lost the attempt. Every
-  other exit in the drain was a bare `return`, so nothing could ever say so.
-  **Never write `token || anonKey`. A missing identity must stop the read, not
-  soften it.**
-- Now: JWT-only, a ~12s wait, an `als:auth` listener that re-drains the moment
-  her session lands (so a cold start self-heals without her touching anything),
-  and every non-empty failure path names itself — no session / offline / HTTP
-  401 / bad json / unreadable file / storage full. **An empty inbox is the one
-  quiet exit.** Failures raise their own strip, because `#lgToast` lives inside
+- `icuHdr` sent `'Bearer ' + (ICU_TOKEN || ICU_SB_KEY)` and RLS answered `200` +
+  `[]`, byte-identical to "no new runs". Now JWT-only with a ~12s wait and an
+  `als:auth` re-drain. **An empty inbox is the ONE quiet exit**; every other
+  failure names itself on its own amber strip, because `#lgToast` lives inside
   the log view and is invisible from every other tab.
-- **Storage-full no longer stalls forever on the same run.** A 16 km run carries
-  a route *and* a per-second series and is the biggest thing this page stores;
-  the old code returned without acking, so it retried the identical oversized
-  write at every open. It now sheds `series`/`route`/`laps` and retries — she
-  keeps distance, time, pace, HR — and only if *that* fails rolls back and
-  refuses to ack.
-- **`?icu=diag` is the new eye** (read-only, returns before `icuCheck()` writes).
-  It lists what intervals actually holds (id/date/name/source/type) and probes
-  both endpoints the courier needs, with real HTTP status and body. Counts alone
-  could not tell "she has not run" from "every run is being dropped"; this can.
-  `curl -s "$H/api/run-reminders?icu=diag" -H "Origin: $H"`.
-- ⚠️ **Still true at the time of writing: intervals holds nothing newer than
-  25 Jul.** If she reports a run from after that missing, the gap is UPSTREAM of
-  this app (watch → Garmin Connect → intervals), not in the courier. Check
-  `?icu=diag`'s `newest` before touching any code.
-- 🔴 **UNCONFIRMED ON HER DEVICE.** All of the above is verified by tests and by
-  live server probes; **no phone has run it.** The 25 Jul run was still `pending`
-  in the inbox when the session ended — **that run landing is the first real
-  proof.** Ask Alex what happened: either «Νέο τρέξιμο από το ρολόι ✓», or the
-  new amber strip naming the cause. Start there.
+- **Storage-full does not stall forever on the same run.** A 16 km run carries a
+  route *and* a per-second series and is the biggest thing this page stores; the
+  old code returned without acking and retried the identical oversized write at
+  every open. It now sheds `series`/`route`/`laps` and retries — she keeps
+  distance, time, pace, HR — and only if *that* fails rolls back and refuses to
+  ack.
+- ⚠️ **If she reports a run missing, check `?icu=diag`'s `newest` FIRST.** If
+  intervals does not have it either, the gap is upstream (watch → Garmin Connect
+  → intervals), not in this app.
 
 ### ⚠️ THE SAME SESSION UNCOVERED A BIGGER THING: her 515 runs were ORPHANED
 
