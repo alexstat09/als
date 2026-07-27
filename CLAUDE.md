@@ -228,7 +228,60 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v421` — her watch inbox had stopped draining, silently**
+**HEAD is `als-v422` — `weight.html` levelled up. Presentation only; the data
+path is byte-identical** (2026-07-27, on `main`, 15 suites + smoke green, new
+`tests/weight-chart.test.js` = 101 assertions, headless-verified). Read this if
+the task touches the weigh-in page or ANY chart in this app.
+
+- **The chart was lying by autoscaling.** `pad = max((max−min)*0.18, 0.4)` fit the
+  y-axis to whatever was visible, so a 0.6 kg wobble filled 170px and read as a
+  crisis. His day-to-day noise is **0.335 kg** — roughly a third of a whole
+  month's real movement. There is now a **3 kg minimum span** (`MIN_SPAN`), ticks
+  on real half/whole-kg values, and gridline labels rendered **inside** the SVG so
+  the two can't drift apart. Don't reintroduce a pure min/max fit.
+- **`preserveAspectRatio="none"` was the reason it looked cheap.** A 320-unit
+  viewBox stretched non-uniformly to device width, so strokes had different
+  weights on each axis, dots rendered as **ovals** and tooltip text was squashed.
+  The viewBox now tracks real CSS pixels (1 unit == 1 px) via a `ResizeObserver`.
+  ⚠️ The observer's own first callback fires **before** the chart is ever painted,
+  so it compares against **`wtLastW`** (the width last DRAWN at), not a captured
+  local — otherwise it re-renders and kills the draw-in animation.
+- **The hierarchy was inverted.** The noisy daily line had the glow and gradient;
+  the 7-day average — the only real signal — was the faintest thing on screen.
+  Now: trend is the bold gradient curve, daily readings are a whisper thread plus
+  quiet dots, and a **fluctuation channel** (trend ± SD of its own window)
+  replaces the generic gradient-fill-under-line. The trend window is by
+  **calendar date, not array index**, so a missed day widens the gap.
+- ⚠️ **A slope smaller than its own standard error is not a trend.** The first
+  build announced "↓ −0.07 kg/week · losing" over data that is statistically
+  flat. `trendRate()` now returns `{rate, se, n}` and `isSteady()` gates on
+  `|rate| < max(0.05, 1.5×se)`. Never state a direction the data can't support.
+- ⚠️ **Up is not automatically bad.** The old page painted every gain amber,
+  which is wrong for someone climbing to **72 kg**. The verdict is coloured by
+  whether he's moving *toward his own target*, read from `goals_outcomes_v1`
+  (`type:'bodyweight'`) — **read-only, never written**. No goal set = no goal
+  line, no invented target, and the stat cell falls back to LOWEST.
+- **Distance-to-goal is measured from the TREND, not the last reading**, or the
+  stat cell and Nova quote two different answers to the same question — they did,
+  +1.6 vs 1.3, until it was unified.
+- Also: month-by-month rail (his Feb→Jul arc, 69.8 → **72.1** → 70.7, so April's
+  peak is finally visible), history grouped by month with per-month avg + net,
+  `touch-action:pan-y` + gesture detection so a 214px chart no longer eats the
+  page scroll, and equal-width range segments so the sliding pill animates
+  **transform only**. Month labels thin from the newest end past ~9 months.
+- **Proof the data is untouched:** `wtLoad`/`wtSave`/`wtSaveEntry`/`wtDeleteEntry`/
+  `wtEditEntry`/`doSave`/`parseWeight`/`wtDateKey`/`wtGetSelectedDate` are all
+  **byte-identical to HEAD~1**, `localStorage.setItem` call sites 1 → 1, and
+  `pocoach-sync.js` wiring is unchanged. The suite asserts his 149 rows survive a
+  render unmodified.
+- 🔴 **UNCONFIRMED ON DEVICE.** Verified by 101 assertions and headless renders at
+  321/330/428 px; no phone has touched it. The gesture split (vertical drag
+  scrolls, horizontal scrubs) is the part most worth checking on iOS.
+- Pre-existing and NOT caused by this change: `tests/goals-rhythm.test.js` fails
+  one date-dependent assertion ("current week marked"). It reads `main.html`
+  only and fails identically with `weight.html` stashed.
+
+**Before that — `als-v421`, her watch inbox had stopped draining, silently**
 (2026-07-27, on `main`, 14 suites + smoke green; `tests/run-inbox.test.js`, 27
 assertions). Read this first if the task touches her runs, or ANY client that
 reads a Supabase row.
