@@ -505,10 +505,9 @@ gone from view, and it was **not** the v421 change.
   Open a backup file"** → then the middle **✚ "See what's different"** →
   **"Bring back 515 entries"**. Never the red ⚠ "Restore this whole day". And it
   must be done **signed in as HER**, or her history lands on his row again.
-- 🔴 **NOT CONFIRMED DONE.** Alex had the file and the steps when the session
-  ended. **Ask whether the count went 5 → 520 and whether the list reaches
-  Ιανουάριος 2022.** If the upload was refused, get the exact message — the file
-  is verified to parse here but no browser has opened it.
+- ✅ **CONFIRMED APPLIED, 2026-07-27.** `?icu=diag`'s new `herApp` block reads
+  her account server-side: **`runs: 520`**. The recovery landed exactly as
+  simulated (5 + 515, nothing removed). Don't re-open this.
 - ⏭️ **The obvious follow-up nobody has checked:** if `run:logs` was orphaned by
   the migration, **what else of hers was?** Her `run:plan` / `run:shoes` /
   `run:profile` / `run:strength` are all in that same pre-migration row and were
@@ -951,9 +950,11 @@ changes — page, merge and tests carry over untouched.
   **position markers** in the list read as useful or fussy? Also unproven on iOS:
   the chart's gesture split (vertical drag scrolls, horizontal scrubs). Details
   at the top of this section.
-- 🔴 **Confirm the 515-run recovery actually applied** (5 → 520, list reaching
-  Ιανουάριος 2022) and that the 25 Jul run drained on her phone. Both are the
-  open ends of the als-v421 session; details in the block above.
+- 🔴 **Did her 25 Jul 16.3 km run finally land?** It was re-delivered into her
+  inbox in production on 2026-07-27 (`redelivered: 1`, 136 KB of FIT waiting),
+  and auto-import is pull-on-open, so it reaches her app the next time she opens
+  it. Check `?icu=diag` → `herApp.missingFromApp` is empty and `newest` moves
+  from 22 Jul to 25 Jul. (The 515-run recovery is ✅ confirmed applied: 520.)
 - ⚠️ **Auto-import is PULL-ON-OPEN, not push.** The courier parks the run in her
   inbox within the hour, but it only reaches her app **when she opens it**. If he
   ever asks why a run "took until this evening", that is why — not a bug. Real
