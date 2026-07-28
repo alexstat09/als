@@ -631,8 +631,18 @@ module.exports = async function (req, res) {
       var db = req.body; if (typeof db === 'string') { try { db = JSON.parse(db || '{}'); } catch (e) { db = {}; } }
       var dtext = (db && db.text) || '', dtitle = (db && db.title) || '', dvid = (db && db.videoId) || '';
       var dout = await yt.distill(dtext, dtitle, dvid, (process.env.YOUTUBE_API_KEY || '').trim());
-      if (!dout.ok) { res.status(502).json({ error: dout.error || 'distill failed' }); return; }
-      res.status(200).json({ text: dout.text });
+      // ⚠️ This used to be `json({ text: dout.text })`. distill() has always
+      // computed whether it had real material to work from, and the handler
+      // dropped it on the floor — so the page could not tell a reading grounded
+      // in a real description from one generalised out of a bare title, and
+      // rendered both as a confident LESSON. Everything honest the reader knows
+      // now reaches the card: the grade, whether it is a lesson at all, which
+      // shelf, and any point removed for citing something never said.
+      if (!dout.ok) { res.status(dout.unreadable ? 422 : 502).json(dout); return; }
+      res.status(200).json({
+        text: dout.text, grade: dout.grade, kind: dout.kind, shelf: dout.shelf,
+        dropped: dout.dropped, suspect: dout.suspect, sourced: dout.sourced
+      });
     } catch (e) {
       res.status(502).json({ error: String((e && e.message) || e) });
     }

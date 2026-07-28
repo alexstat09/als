@@ -268,6 +268,36 @@
       var list=habits(); list.push({ id:uid('h-'), name:name, createdAt:Date.now() }); lsSave('habits:list',list);
       renderHabits(); var n=document.getElementById('hbNew'); if(n){ n.value=''; n.focus(); }
     }
+    /* ── ?habit=… — a habit adopted in the Library ────────────────
+       improve.html's habits world used to end at the words "track it in
+       Identity", which created nothing. It links here instead, and the row is
+       built by THIS page through addHabit() — the owner of `habits:list`.
+
+       ⚠️ That ownership is the whole point and not a detail. improve.html's
+       sync engine does not match `habits:list`, so a write from over there
+       would never push, would leave no deletion tombstone, and would later be
+       overwritten by this page's own copy. A store is written by its owner.
+
+       It also must not create a duplicate: he can follow the same link twice,
+       and the back button re-fires a page load. So an existing habit with the
+       same name just scrolls into view. */
+    function adoptFromQuery(){
+      var want='';
+      try{ want=(new URLSearchParams(location.search).get('habit')||'').trim().slice(0,120); }catch(e){ want=''; }
+      if(!want) return;
+      // Clear it from the URL first, so a refresh cannot replay the add.
+      try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+      var norm=function(s){ return String(s||'').trim().toLowerCase(); };
+      var already=habits().some(function(h){ return norm(h.name)===norm(want); });
+      if(!already){
+        var inp=document.getElementById('hbNew');
+        if(!inp) return;
+        inp.value=want;
+        addHabit();          // the owner's own save path: tombstones + sync intact
+      }
+      var sec=document.getElementById('hbNew');
+      if(sec&&sec.scrollIntoView) sec.scrollIntoView({block:'center',behavior:'smooth'});
+    }
     function toggleHabit(id){
       var log=habitLog(); var k=today(); if(!log[k]) log[k]={};
       // Store a timestamp (not 1) so a re-tick after an un-tick beats the
@@ -345,6 +375,7 @@
     /* ── boot ── */
     function renderAll(){ renderNorthStar(); renderHabits(); renderJournal(); updateNova(); }
     renderAll();
+    adoptFromQuery();   // a habit adopted in the Library arrives as ?habit=
     window._identityRerender = renderAll;
 
     document.addEventListener('click', function(ev){

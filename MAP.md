@@ -43,9 +43,12 @@ Everything in the root is live. Anything retired is in `archive/`.
 
 **Sleep** — `sleep.html` (sleep & recovery).
 
-**Mind & life** — `ideas.html`, `movies.html`, `improve.html` (**the Library** — two worlds in one
-shell: the YouTube queue and saved TikToks, plus Habits; keys `improve:videos`,
-`improve:tiktoks`, `improve:habits`, `improve:profile`, appKey `improve`), `scripture.html` (Bible reading tracker: page-based progress across all 66 books, the canon map, S.O.A.P. journal; key `bible:sessions`, appKey `scripture`).
+**Mind & life** — `ideas.html`, `movies.html`, `improve.html` (**the Library** — four worlds in one
+shell: the YouTube queue, saved TikToks, **The Room** and Habits. The Room is the
+archive read as a page — every grounded CORE line by shelf, what is due for
+recall, and the practice list the DO lines feed. Keys `improve:videos`,
+`improve:tiktoks`, `improve:habits`, `improve:profile`, **`improve:actions`**,
+appKey `improve`; `improve:paused` is device-local), `scripture.html` (Bible reading tracker: page-based progress across all 66 books, the canon map, S.O.A.P. journal; key `bible:sessions`, appKey `scripture`).
 
 **Money** — `finance.html` (the Money tab), `bills.html`.
 

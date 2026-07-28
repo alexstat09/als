@@ -421,16 +421,185 @@ ok(!/quote|source/i.test((im.quoteFor('x', withT) || 'x')), 'receipts: nothing i
 /* ── the page still registers everything it must ────────────── */
 console.log('   wiring that silently breaks if it drifts');
 ok(/improve:tiktoks/.test(html), 'wiring: the page names improve:tiktoks');
-ok(/syncedKeys:\[K_VID,K_TT,K_HAB,K_PROF\]/.test(html), 'wiring: all four keys are synced');
+ok(/syncedKeys:\[K_VID,K_TT,K_HAB,K_PROF,K_ACT\]/.test(html), 'wiring: all five keys are synced');
+// ⭐ improve:actions is the DO-line outbox. A synced key that backup.html does
+// not know about syncs perfectly and is silently UNRESTORABLE — the exact trap
+// smoke-test.sh exists to catch, pinned here too because this one is new.
+const bk = fs.readFileSync(path.join(__dirname, '..', 'backup.html'), 'utf8');
+ok(/improve:actions/.test(bk), 'wiring: improve:actions is in the vault BUNDLES');
+ok(/improve:actions/.test(html), 'wiring: the page names improve:actions');
 const backup = fs.readFileSync(path.join(__dirname, '..', 'backup.html'), 'utf8');
 ok(/'improve':\s*\{\s*keys:\[[^\]]*'improve:tiktoks'/.test(backup),
    'wiring: ⭐ improve:tiktoks is in backup BUNDLES — synced but unrestorable is the trap');
 const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
 ok(/improve\.html/.test(sw), 'wiring: improve.html is in the service worker CORE');
-// every class the script toggles must exist in the stylesheet (constraint 11)
-['hidden','open','on','sel','pulse'].forEach(function(c){
+// every class the script toggles must exist in the stylesheet (constraint 12)
+// ⭐ 'bad', 'old', 'big' and 'no-rail' are new; 'live' was REMOVED because it
+// was toggled here and defined nowhere for the page's whole life.
+['hidden','open','on','sel','pulse','bad','old','big','no-rail'].forEach(function(c){
   ok(new RegExp('\\.' + c + '[\\s,{:]').test(html), 'wiring: .' + c + ' is defined in CSS, not just toggled');
 });
+// The dead class must not come back.
+ok(!/classList\.toggle\('live'/.test(html), 'wiring: ⭐ the no-op .live toggle is gone (constraint 12)');
+// Four worlds means the pill must be a quarter wide, not a third.
+ok(/width:calc\(\(100% - 6px\)\/4\)/.test(html), 'wiring: ⭐ the world pill is sized for FOUR segments');
+eq((html.match(/data-world="/g) || []).length, 4, 'wiring: there are exactly four worlds');
+
+/* ════════════════════════════════════════════════════════════
+   THE YOUTUBE HALF IS NOW GRADED — the honesty asymmetry
+   ════════════════════════════════════════════════════════════ */
+console.log('\n── api/_youtube.js — it can finally say "there is no lesson here" ──');
+const ytm = require(path.join(__dirname, '..', 'api', '_youtube.js'));
+const M = (desc, ch) => ({ desc: desc || '', chapters: ch || [] });
+const REAL = 'A practical routine for exam season built on spaced repetition and retrieval practice. ' +
+             'We cover how to plan a week, how to recover from a bad one, and why rereading feels productive ' +
+             'while doing almost nothing for recall at all in the long run for most students.';
+eq(ytm.grade(M(''), 'spacing beats cramming, I tested it', 'x'), 'notes', 'yt grade: his own note outranks everything');
+eq(ytm.grade(M('', ['Intro','Method','Outro']), '', 'x'), 'chapters', 'yt grade: a chapter list is a real outline');
+eq(ytm.grade(M(REAL), '', 'x'), 'description', 'yt grade: a real write-up can carry a lesson');
+eq(ytm.grade(M('Full match. Subscribe for more.'), '', 'x'), 'title',
+   'yt grade: ⭐ a promo scrap is not material — it grades the same as a bare title');
+eq(ytm.grade(M('', ['Intro','Outro']), '', 'x'), 'title', 'yt grade: two chapters is not an outline');
+eq(ytm.grade(M(''), '', 'Real Madrid 5-1 Barcelona'), 'title', 'yt grade: ⭐ a bare title can NEVER reach a lesson grade');
+// 'thin' belongs to the TikTok helper and must not leak into this one — the
+// two use the same SRC map on the page, and a shared key would put TikTok's
+// sentence ("nothing was said on screen") onto a YouTube card.
+['notes','chapters','description','title','none'].forEach(function(g){
+  ok(g !== 'thin', 'yt grade: ' + g + ' does not collide with TikTok\'s vocabulary');
+});
+eq(ytm.grade(M(''), '', '(untitled)'), 'none', 'yt grade: nothing at all is unreadable, not a lesson');
+eq(ytm.grade(M(''), '', ''), 'none', 'yt grade: empty in, unreadable out');
+// The grades that may produce key points are exactly the three with material.
+['title','thin','none'].forEach(function(g){
+  ok(['notes','chapters','description'].indexOf(g) < 0, 'yt grade: ' + g + ' is not lesson-eligible');
+});
+// The shelves are REQUIRED from the TikTok helper, not restated — one taxonomy.
+ok(!/^\s*var SHELVES = \[/m.test(fs.readFileSync(path.join(__dirname,'..','api','_youtube.js'),'utf8')),
+   'yt: ⭐ the shelves are required from _tiktok.js, never a second copy');
+// Grounding runs on this path now, against the MATERIAL and not the prompt.
+const ytsrc = fs.readFileSync(path.join(__dirname, '..', 'api', '_youtube.js'), 'utf8');
+ok(/_groundKeys\(keys, mat\)/.test(ytsrc), 'yt: ⭐ key points are grounded against the material, not the instructions');
+ok(/KIND: LESSON/.test(ytsrc) && /KIND: KEEPSAKE/.test(ytsrc), 'yt: the prompt declares a KIND to be read back');
+// The courier must forward what distill worked out — it used to send text only.
+const courier = fs.readFileSync(path.join(__dirname, '..', 'api', 'run-reminders.js'), 'utf8');
+ok(/text: dout\.text, grade: dout\.grade, kind: dout\.kind/.test(courier),
+   'courier: ⭐ the grade and kind reach the page (they were computed and dropped)');
+
+/* a fabricated statistic dies on the YouTube path too */
+const ytGround = tt._groundKeys([
+  'Spacing your revision beats cramming it in at once',
+  'A Harvard study found 87% of students improved'
+], 'Title: How to study\n\nDescription:\nSpaced repetition and retrieval practice.');
+eq(ytGround.keys.length, 1, 'yt grounding: the invented statistic is removed');
+eq(ytGround.dropped[0].token, '87', 'yt grounding: it names the token that was never said');
+
+/* ════════════════════════════════════════════════════════════
+   THE PAGE — the rest of what changed
+   ════════════════════════════════════════════════════════════ */
+console.log('\n── improve.html — honesty, recall, practice ──');
+
+console.log('   an unverified reading stops calling itself a lesson');
+ok(im.isLegacyRead({ keypoints:'CORE: x' }), 'legacy: a reading with no kind and no grade is unverified');
+ok(!im.isLegacyRead({ keypoints:'CORE: x', kind:'lesson' }), 'legacy: a declared kind is not legacy');
+ok(!im.isLegacyRead({ keypoints:'CORE: x', grade:'transcript' }), 'legacy: ⭐ a graded TikTok is NOT legacy');
+ok(!im.isLegacyRead({ keypoints:'CORE: x', rver:im.RVER }), 'legacy: the reading version clears it');
+ok(!im.isLegacyRead({ ytId:'a' }), 'legacy: an unread video is not a legacy reading');
+// ⭐ the whole point: his existing TikTok wall must NOT be re-read
+im._set([], [], [{ id:'t', ttId:'1', keypoints:'CORE: x', kind:'keepsake', grade:'caption' }]);
+eq(im._state().tiktoks.filter(im.isLegacyRead).length, 0,
+   'legacy: ⭐⭐ an already-graded TikTok library is never queued for a re-read');
+// but an old YouTube reading is
+im._set([{ id:'v', ytId:'a', keypoints:'CORE: old' }], [], []);
+eq(im.ytQueue().length, 1, 'legacy: an ungraded YouTube reading IS queued to be read again');
+im._set([{ id:'v', ytId:'a', keypoints:'CORE: new', kind:'lesson', grade:'description', rver:im.RVER }], [], []);
+eq(im.ytQueue().length, 0, 'legacy: a properly graded one is left alone');
+
+console.log('   recall expands instead of nagging on a loop');
+const D2 = 86400000, N2 = Date.now();
+eq(im.STEPS[0], 3, 'recall: the first interval is 3 days');
+ok(im.STEPS[im.STEPS.length-1] > im.STEPS[0], 'recall: the intervals expand');
+const lesson = { id:'r1', kind:'lesson', keypoints:'CORE: x', distilledTs:N2-4*D2, revisitTs:N2-4*D2 };
+im._set([lesson], [], []);
+eq(im.recallQueue().length, 1, 'recall: a 4-day-old lesson is due at step 0');
+im.recallKept(lesson);
+eq(im.recallQueue().length, 0, 'recall: "still with me" pushes it away');
+eq(lesson.recall, 1, 'recall: ⭐ the interval STEPS UP rather than repeating 5 days for ever');
+im.recallLost(lesson);
+eq(lesson.recall, 0, 'recall: ⭐ "I had forgotten it" resets to the shortest interval');
+// a keepsake and an unverified reading are never recalled
+im._set([{ id:'k', kind:'keepsake', keypoints:'CORE: an edit', distilledTs:N2-90*D2 }], [], []);
+eq(im.recallQueue().length, 0, 'recall: a keepsake is never resurfaced');
+im._set([{ id:'u', ytId:'a', keypoints:'CORE: unchecked', distilledTs:N2-90*D2 }], [], []);
+eq(im.recallQueue().length, 0, 'recall: ⭐ an unverified reading is never recalled as if it were true');
+
+console.log('   a DO line can leave the page');
+im._set([], [], [], []);
+const src = { id:'v9', ytId:'z', title:'A talk', url:'u', keypoints:'KIND: LESSON\nCORE: c\nDO: call one person today' };
+im._set([src], [], [], []);
+im.addAction(src, 'call one person today');
+eq(im._state().actions.length, 1, 'practice: the DO line becomes a real item');
+eq(im._state().actions[0].from, 'v9', 'practice: it remembers which video it came from');
+im.addAction(src, 'call one person today');
+eq(im._state().actions.length, 1, 'practice: ⭐ practising the same video twice does not duplicate it');
+im.toggleAction(im._state().actions[0].id);
+ok(im._state().actions[0].done, 'practice: it can be ticked off');
+im.dropAction(im._state().actions[0].id);
+eq(im._state().actions.length, 0, 'practice: and removed');
+// ⭐ the exit must never write another page's store
+ok(!/setItem\(\s*'habits:list'|lsSave\('habits:list'|'coach:focus'/.test(html),
+   'practice: ⭐⭐ the Library never writes a store another page owns');
+ok(/identity\.html\?habit=/.test(html), 'practice: the habit leaves through a LINK, so Identity writes its own row');
+const ident = fs.readFileSync(path.join(__dirname, '..', 'identity.html'), 'utf8');
+ok(/adoptFromQuery/.test(ident), 'practice: identity.html receives it');
+ok(/history\.replaceState/.test(ident), 'practice: ⭐ the query is cleared so a refresh cannot add it twice');
+
+console.log('   search reaches the transcript, in his alphabet');
+eq(im.fold('Προσευχή'), im.fold('προσευχη'), 'search: ⭐ Greek accents fold — προσευχή matches προσευχη');
+eq(im.fold('ΟΔΟΣ'), im.fold('οδος'), 'search: a final sigma is the same letter');
+eq(im.fold('Café'), 'cafe', 'search: latin accents fold too');
+const withTx = { id:'s1', ttId:'1', transcript:'He spoke about patience and the father of compassion', ts:1 };
+ok(im.hay(withTx).indexOf('compassion') >= 0, 'search: ⭐ the TRANSCRIPT is searched (it never was)');
+im._set([], [], [{ id:'s1', ttId:'1', keypoints:'CORE: x', caption:'faith and discipline together', ts:1 }]);
+im._world('tt'); im._seek('faith discipline');
+eq(im.pool().length, 1, 'search: ⭐ every term matches in any order, not one unbroken run');
+im._seek('faith unicorn');
+eq(im.pool().length, 0, 'search: a term that is not there still excludes it');
+im._seek('');
+
+console.log('   starred is a facet, not a state');
+im._set([], [], [
+  { id:'a', ttId:'1', keypoints:'K', kind:'lesson', grade:'transcript', star:true },
+  { id:'b', ttId:'2', keypoints:'K', kind:'lesson', grade:'transcript' },
+  { id:'c', ttId:'3', keypoints:'K', kind:'keepsake', grade:'caption' }
+]);
+im._world('tt'); im._star(false); im._stateSet('lesson');
+eq(im.scoped().length, 2, 'facet: ⭐⭐ a STARRED lesson still appears under Lessons (it used to vanish)');
+im._star(true);
+eq(im.scoped().length, 1, 'facet: starred NARROWS the current view instead of replacing it');
+im._stateSet('keep');
+eq(im.scoped().length, 0, 'facet: starred + keepsakes is an honest empty, not a wrong list');
+im._star(false); im._stateSet('');
+eq(im.scoped().length, 3, 'facet: everything means everything');
+
+console.log('   a save that did not happen says so');
+const realSet = localStorage.setItem;
+localStorage.setItem = function(){ const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; };
+eq(im.persist('improve:videos', [{ id:'x' }]), false, 'storage: ⭐⭐ a failed write REPORTS failure (it used to swallow it)');
+ok(/full|saved/i.test(im.storageErr()), 'storage: and it says what went wrong, in words');
+localStorage.setItem = realSet;
+ok(im.persist('improve:videos', []), 'storage: a working write still succeeds');
+ok(!im.storageErr(), 'storage: and clears the warning');
+
+console.log('   the Room only shows what was actually checked');
+im._set(
+  [{ id:'r1', ytId:'a', keypoints:'KIND: LESSON\nCORE: One real idea', kind:'lesson', grade:'description', rver:im.RVER, concept:'Mind' }],
+  [],
+  [{ id:'r2', ttId:'1', keypoints:'KIND: KEEPSAKE\nCORE: A Lana edit', kind:'keepsake', grade:'caption', concept:'Sound' },
+   { id:'r3', ttId:'2', keypoints:'CORE: unchecked leftovers' }],
+  []);
+const room = im.roomItems();
+eq(room.length, 1, 'room: ⭐ only grounded LESSONS reach the Room');
+eq(room[0].id, 'r1', 'room: and it is the checked one');
 
 /* ════════════════════════════════════════════════════════════ */
 setTimeout(function(){

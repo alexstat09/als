@@ -149,7 +149,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v433`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v434`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -293,7 +293,122 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v433` — HOME WAS SHOWING DEMO NUMBERS, NOT HIS DATA**
+**HEAD is `als-v434` — THE LIBRARY'S YOUTUBE HALF WAS A FABRICATION ENGINE**
+(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 229
+assertions, up from 157). Read this if the task touches the Library, **or any
+feature where one code path is honest and its twin is not.**
+
+He asked for the page to be made "1000 times better" and then for all of it,
+built and pushed. The deepest finding was not a design problem.
+
+### ⭐⭐ The cause: the lesson only ever got applied to ONE of the two worlds
+`als-v426` built the TikTok reader around a rule — **classify before you
+summarise** — because three of his five real favourites had nothing to teach.
+`grade()` decides in code, `groundKeys()` strikes any point citing something
+never said, and the card carries receipts. **None of it was ever ported to the
+YouTube half**, which is the older and larger world:
+
+- `DISTILL_SYS` emitted **no `KIND:` line**, so `isLesson()` fell through to
+  `!!v.ytId` and **every YouTube video in the library was declared a LESSON,
+  unconditionally** — a match, a stream, a trailer, all of them.
+- It demanded `<3 to 5 of them>` — required padding — where the TikTok prompt
+  says *"three real points beat five padded ones."*
+- `groundKeys()` was **never called** on this path. No check at all.
+- Its input is the creator's own **description** (marketing copy), plus the
+  instruction *"where you must generalise, stay at a level that is safely
+  true"*, and with no description it was told to work **from the title alone**.
+- ⭐ `distill()` had always computed `sourced` — whether it had real material —
+  and the courier did `json({ text: dout.text })`, **dropping it on the floor.**
+  The one honesty signal this path produced never reached the page.
+
+**The lesson worth carrying: a rule enforced on one code path and not its twin
+is not a rule, it is a coincidence.** When a guarantee is added to one reader,
+grep for every other reader that makes the same promise.
+
+Now: `grade(meta, notes, title)` returns `notes` / `chapters` / `description`
+(lesson-eligible) or `title` / `none`, the prompt declares a KIND that is read
+back out of the reply, key points are grounded **against the material and not
+the prompt** (an instruction in the haystack would let a fabrication cite it),
+and the shelves are `require`d from `_tiktok.js` rather than restated — two
+copies of a taxonomy is two taxonomies with a delay.
+⚠️ There is deliberately **no `thin` grade on the YouTube side**: the page
+shares one `SRC` map, and 'thin' already means "nothing was said and nothing was
+written on screen", which is TikTok's sentence.
+
+### ⚠️ A reading made before the grader existed is UNVERIFIED, not a lesson
+`RVER` marks the boundary and those cards say so in amber until re-read.
+**The version number alone was NOT the test, and using it alone would have been
+expensive**: every TikTok predates `rver` too, and every one was already read by
+the graded path — a version check by itself would have re-read his whole TikTok
+wall for nothing. The real marker is the **absence of the honesty fields**
+(`!v.kind && !v.grade`). Re-reads run after everything unread, **25 per pass**,
+and **only replace on success** — losing a reading to fix a reading is worse
+than the label it was removing.
+
+### Other things that were quietly wrong
+- ⚠️⚠️ **`persist()` swallowed QuotaExceededError with an empty catch.** A full
+  device looked exactly like a successful save: wall painted, reader read on,
+  nothing stored. Constraint 10 with a fuse — transcripts are capped at 9,000
+  chars each. It reports now, in words, and stays on screen.
+- **A starred lesson VANISHED from the Lessons shelf.** `stateOf()` returned
+  `'star'`, which can never equal `'lesson'`, while the rail still counted it —
+  rail said 12, wall drew 9. **Starred is a facet, not a state**; it now narrows
+  whichever view is chosen.
+- **`classList.toggle('live')` on `.lb-status` — a class defined NOWHERE.**
+  Constraint 12, in the file that constraint was written about, a no-op for the
+  page's whole life. A test fails if it returns.
+- **Search never looked at the `transcript`** — the one field this library has
+  that nothing else does. It also needed the query as one unbroken run
+  ("faith discipline" found nothing) and did no Greek folding, so *προσευχή*
+  never matched *προσευχη*. Now folded (NFD + final sigma), every term matched
+  in any order, memoised per item, debounced 110ms.
+- `select()` rebuilt **every tile** to move a one-pixel ring, so held `j`/`k`
+  re-rendered per keypress and then scrolled a node it had just destroyed.
+
+### What is new
+- ⭐ **THE ROOM** (4th world, `rm`): the archive read as a page rather than a
+  grid — every grounded CORE by shelf in canonical order, what is due for
+  recall, and the practice list. No endpoint, no new data.
+  ⚠️ The world pill is `calc((100% - 6px)/4)`; **that divisor and the number of
+  tabs change together** or it stops covering its tab. Habits and the Room hide
+  the rail via `body.no-rail` — emptying the `<aside>` was not enough, it still
+  claimed a grid column.
+- ⭐ **The DO line can leave the page.** It used to render in a box and die
+  there; the Library was the only page that manufactures intentions and the only
+  one with nowhere to put them. `improve:actions` is the outbox (synced, in
+  BUNDLES). ⚠️ **It is a store this page OWNS on purpose** — writing
+  `coach:focus` or `habits:list` from here would be a write to a key another
+  engine owns: it would never push, would leave no tombstone, and would be
+  overwritten by the owner later. **Anything crossing pages leaves through a
+  LINK** — the habits world now links to `identity.html?habit=…` and *Identity*
+  builds the row through its own `addHabit()`, clearing the query with
+  `replaceState` so a refresh cannot add it twice.
+- **Recall actually expands**: 3 → 7 → 21 → 60 → 150 days, resetting on "I'd
+  forgotten it". It was one item, on a flat 5-day loop, in the empty pane that
+  disappears the moment he clicks anything. ⚠️ The interval anchors on
+  `Math.max(revisitTs, distilledTs)` — a re-read carries an old `revisitTs`, and
+  anchoring on that alone makes a reading he has never seen due on arrival.
+  ⚠️ `applyKP()` must **not** stamp `revisitTs` on a re-read, or every sweep
+  silently empties the recall queue.
+- **The wall shows weight it already knew**: a checked lesson from a real
+  transcript spans two columns. Guard sits at 300px, not 420 — on a 393px phone
+  the wall is two columns and a full-width lesson is the hierarchy working.
+
+### Open on this page
+- 🔴 **Unproven in his browser.** 229 assertions, plus headless renders of all
+  four worlds at 1440px and the wall + Room at 393px, seeded with a fixture that
+  includes a legacy reading, a pending fetch and a starred lesson. No finger has
+  touched it. The re-read of his existing YouTube readings will run on his first
+  open — it is paced and stoppable, and nothing is replaced unless it succeeds.
+- ⚠️ **The re-read costs one model call per old YouTube reading** (25 per pass).
+  If he has many, the first few opens will be busy. Stop works throughout.
+- Not built: a Room digest across shelves ("what do my 12 Faith videos agree
+  on?") — it would be a second, ungrounded synthesis layer over already-grounded
+  cores, and that needs a grounding design of its own before it ships.
+- `identity.html` has a pre-existing `transition: width` on `.hb-prog-fill`
+  (L60), untouched here — it belongs to that page's own polish pass.
+
+**Before that — `als-v433` — HOME WAS SHOWING DEMO NUMBERS, NOT HIS DATA**
 (2026-07-28, on `main`, 19 suites + smoke green; `tests/home-tiles.test.js` = 72
 assertions). His report: *"the home page has fixated numbers, different ones of
 the ones that are inside the actual pages… SOS… make sure that all my data are

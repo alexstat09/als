@@ -75,7 +75,11 @@
        on every frame — the same rule the weight page's range selector follows. */
     .lb-worlds{ position:relative; display:flex; padding:3px;
                 background:var(--au-glass); border:1px solid var(--au-line); border-radius:12px; }
-    .lb-worlds .ink{ position:absolute; top:3px; left:3px; width:calc((100% - 6px)/3); height:calc(100% - 6px); border-radius:9px;
+    /* ⚠️ /4, not /3 — the Room made this four segments. The travelling pill is
+       sized in CSS and only ever MOVED from JS, so this divisor and the number
+       of buttons must change together or the pill stops covering the tab it is
+       meant to be under. */
+    .lb-worlds .ink{ position:absolute; top:3px; left:3px; width:calc((100% - 6px)/4); height:calc(100% - 6px); border-radius:9px;
                      background:rgba(var(--acc),.13); border:1px solid rgba(var(--acc),.3);
                      transition:transform .42s var(--au-ease), background .42s var(--au-ease), border-color .42s var(--au-ease);
                      pointer-events:none; }
@@ -102,6 +106,11 @@
                 color:var(--au-faint); min-height:12px; }
     .lb-status .s-t{ color:var(--au-faint); }
     .lb-status .s-t.live{ color:rgba(var(--acc),.85); }
+    /* A device that cannot save says so in the one colour this page reserves
+       for "something is actually wrong". Not a toast — it must stay on screen
+       for as long as it is true. */
+    .lb-status .s-t.bad{ color:var(--au-coral); letter-spacing:.1em; text-transform:none;
+                         font-family:var(--au-sans); font-size:11.5px; }
     .lb-status .s-b{ font-family:var(--au-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase;
                      padding:4px 9px; border-radius:7px; border:1px solid var(--au-line-2); color:var(--au-dim);
                      transition:border-color .24s var(--au-ease), color .24s var(--au-ease), background .24s var(--au-ease); }
@@ -118,6 +127,11 @@
     .lb-body{ display:grid; grid-template-columns:214px minmax(0,1fr) 384px; gap:clamp(18px,2vw,34px); padding:22px 0 40px; align-items:start; }
     .lb-rail{ position:sticky; top:74px; }
     .lb-side{ position:sticky; top:74px; }
+    /* Habits and the Room have no shelf rail. Emptying the <aside> was not
+       enough — it is still the first grid item, so it kept claiming a column
+       and left a 214px hole beside the content. It has to leave the grid. */
+    body.no-rail .lb-rail{ display:none; }
+    body.no-rail .lb-body{ grid-template-columns:minmax(0,1fr) 384px; }
 
     /* ── rail ─────────────────────────────────────────────────── */
     .rl-h{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
@@ -149,6 +163,21 @@
     .tile .ph{ position:relative; display:block; width:100%; background:#0c0c0e; overflow:hidden; }
     .wall.yt .tile .ph{ aspect-ratio:16/9; }
     .wall.tt .tile .ph{ aspect-ratio:9/16; }
+    /* A checked lesson earns two columns of the TikTok wall (see isBig).
+       ⚠️ The poster keeps 9:16 or a double-width tile would be enormous, so the
+       extra width goes to the words — which is the point of promoting it. */
+    .wall.tt .tile.big{ grid-column:span 2; }
+    .wall.tt .tile.big .ph{ aspect-ratio:16/11; }
+    .wall.tt .tile.big .t{ font-size:13px; -webkit-line-clamp:3; }
+    .wall.tt .tile.big .core{ -webkit-line-clamp:3; }
+    /* ⚠️ A span of 2 on a grid that only HAS one column creates an implicit
+       second track and pushes the page sideways — and this page must never
+       scroll horizontally. The TikTok wall is auto-fill/minmax(126px), so it
+       drops to a single column only below ~280px of content, narrower than any
+       real phone. The guard sits there rather than at 420px, because on a
+       393px phone the wall is two columns and a full-width lesson is exactly
+       the hierarchy working, not a bug. */
+    @media (max-width:300px){ .wall.tt .tile.big{ grid-column:auto; } .wall.tt .tile.big .ph{ aspect-ratio:9/16; } }
     .tile .ph img{ width:100%; height:100%; object-fit:cover; display:block;
                    transition:transform .6s var(--au-ease), opacity .4s var(--au-ease); }
     .tile:hover .ph img{ transform:scale(1.045); }
@@ -166,6 +195,10 @@
     .tile .badge.lesson{ color:rgb(var(--acc)); border-color:rgba(var(--acc),.4); background:rgba(var(--acc),.14); }
     .tile .badge.reading{ color:var(--au-faint); }
     .tile .badge.miss{ color:var(--au-coral); border-color:rgba(255,138,107,.35); }
+    /* Read before the reader could grade — amber, because it is not broken and
+       it is not trusted either. It clears itself when the re-read lands. */
+    .tile .badge.old{ color:var(--au-amber); border-color:rgba(240,190,110,.34); background:rgba(240,190,110,.1); }
+    .pane-kind.old{ color:var(--au-amber); border-color:rgba(240,190,110,.4); background:rgba(240,190,110,.1); }
     .tile .star{ position:absolute; top:6px; right:6px; padding:4px 6px; font-size:12px; line-height:1;
                  color:rgba(245,242,236,.34); text-shadow:0 1px 6px rgba(0,0,0,.7);
                  transition:color .25s var(--au-ease), transform .25s var(--au-ease); }
@@ -285,6 +318,43 @@
     .hb-w{ font-size:11.5px; color:var(--au-faint); margin-top:6px; line-height:1.5; }
     .hb-x{ margin-left:auto; color:var(--au-faint); font-size:12px; padding:2px 5px; align-self:flex-start; }
     .hb-x:hover{ color:var(--au-rose); }
+    .hb-go{ color:rgba(var(--acc),.85); text-decoration:none; border-bottom:1px solid rgba(var(--acc),.28); }
+    .hb-go:hover{ color:rgb(var(--acc)); border-bottom-color:rgba(var(--acc),.7); }
+
+    /* ── THE ROOM ─────────────────────────────────────────────────
+       Deliberately NOT a grid. The other worlds are things; this is thought,
+       and thought is set in the serif at a measure you can actually read
+       (max-width on the idea itself, never the full 1560px shell). */
+    .rm-sec{ padding:0 0 30px; }
+    .rm-sec + .rm-sec{ border-top:1px solid var(--au-line); padding-top:24px; }
+    .rm-h{ font-family:var(--au-mono); font-size:9px; letter-spacing:.22em; text-transform:uppercase;
+           color:rgba(var(--acc),.82); margin-bottom:16px; display:flex; align-items:center; gap:9px; }
+    .rm-n{ font-family:var(--au-mono); font-size:9px; letter-spacing:.14em; color:var(--au-faint);
+           border:1px solid var(--au-line-2); border-radius:5px; padding:2px 6px; }
+    .rm-idea{ display:block; width:100%; text-align:left; padding:13px 15px; border-radius:11px;
+              border:1px solid transparent; background:none; margin-bottom:3px;
+              transition:background .24s var(--au-ease), border-color .24s var(--au-ease); }
+    .rm-idea:hover{ background:var(--au-glass); border-color:var(--au-line); }
+    .rm-idea.sel{ background:rgba(var(--acc),.08); border-color:rgba(var(--acc),.42); }
+    .rm-core{ display:block; font-family:var(--au-serif); font-size:clamp(16px,1.5vw,19px); line-height:1.44;
+              letter-spacing:-.005em; color:var(--au-ivory); max-width:64ch; }
+    .rm-from{ display:block; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.14em;
+              text-transform:uppercase; color:var(--au-faint); margin-top:9px; }
+    .rm-due{ border-left:2px solid rgba(var(--acc),.55); padding-left:16px; }
+    .rm-due .rm-core{ font-size:clamp(18px,1.8vw,22px); }
+    .rm-keys{ list-style:none; margin-top:13px; display:flex; flex-direction:column; gap:8px; }
+    .rm-keys li{ position:relative; padding-left:16px; font-size:12.5px; line-height:1.55; color:rgba(245,242,236,.8); max-width:70ch; }
+    .rm-keys li::before{ content:''; position:absolute; left:2px; top:8px; width:4px; height:4px;
+                         border-radius:50%; background:rgba(var(--acc),.7); }
+    .rm-acts{ list-style:none; display:flex; flex-direction:column; gap:9px; }
+    .rm-act{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:11px;
+             border:1px solid var(--au-line); background:var(--au-glass); }
+    .rm-act.done{ opacity:.55; }
+    .rm-act.done .rm-act-t{ text-decoration:line-through; text-decoration-color:var(--au-faint); }
+    .rm-act-b{ flex:1; min-width:0; }
+    .rm-act-t{ font-size:13px; line-height:1.45; }
+    .rm-act-m{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.13em; text-transform:uppercase;
+               color:var(--au-faint); margin-top:6px; }
 
     /* ── the "now" pane (nothing selected) ────────────────────── */
     .now-h{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
@@ -319,12 +389,14 @@
     /* ── narrower laptops, tablets, phone ─────────────────────── */
     @media (max-width:1280px){
       .lb-body{ grid-template-columns:190px minmax(0,1fr) 330px; }
+      body.no-rail .lb-body{ grid-template-columns:minmax(0,1fr) 330px; }
     }
     @media (max-width:1040px){
       /* The detail pane stops being a column and becomes a sheet over the
          wall. It is a direct child of <body>, never of a transformed
          ancestor — hard constraint 4. */
       .lb-body{ grid-template-columns:180px minmax(0,1fr); }
+      body.no-rail .lb-body{ grid-template-columns:minmax(0,1fr); }
       .lb-side{ position:fixed; z-index:60; right:0; top:0; bottom:0; width:min(420px,92vw);
                 padding:14px; overflow-y:auto; background:rgba(6,6,8,.96); backdrop-filter:blur(22px);
                 border-left:1px solid var(--au-line-2); transform:translateX(102%);
@@ -350,6 +422,13 @@
       .wall.yt{ grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
       .lb-seek{ max-width:none; }
       .lb-seek .kb{ display:none; }
+      /* Four segments do not fit a 393px phone at the laptop's 104px minimum
+         (4 × 104 + padding overflows), so on a narrow screen they share the
+         width evenly instead of each claiming a floor. The pill is still
+         (100% - 6px)/4, so it keeps covering exactly one of them. */
+      .lb-worlds{ width:100%; }
+      .lb-w{ min-width:0; padding:8px 6px; font-size:11.5px; gap:5px; }
+      .lb-w .n{ font-size:9px; }
     }
   </style>
 </head>
@@ -367,9 +446,10 @@
     <div class="lb-bar">
       <nav class="lb-worlds" id="lbWorlds" role="tablist">
         <div class="ink" id="lbInk"></div>
-        <button type="button" class="lb-w on" data-world="yt" role="tab">YouTube <span class="n" id="nYt">0</span></button>
-        <button type="button" class="lb-w" data-world="tt" role="tab">TikTok <span class="n" id="nTt">0</span></button>
-        <button type="button" class="lb-w" data-world="hb" role="tab">Habits <span class="n" id="nHb">0</span></button>
+        <button type="button" class="lb-w on" data-world="yt" role="tab" aria-selected="true">YouTube <span class="n" id="nYt">0</span></button>
+        <button type="button" class="lb-w" data-world="tt" role="tab" aria-selected="false">TikTok <span class="n" id="nTt">0</span></button>
+        <button type="button" class="lb-w" data-world="rm" role="tab" aria-selected="false">The Room <span class="n" id="nRm">0</span></button>
+        <button type="button" class="lb-w" data-world="hb" role="tab" aria-selected="false">Habits <span class="n" id="nHb">0</span></button>
       </nav>
       <div class="lb-seek">
         <span class="ic">⌕</span>
@@ -407,13 +487,46 @@
        and cannot know (see api/_tiktok.js).
        ════════════════════════════════════════════════════════════ */
     var K_VID='improve:videos', K_TT='improve:tiktoks', K_HAB='improve:habits', K_PROF='improve:profile';
+    /* ⭐ THE OUTBOX. Every lesson in this library ends in a DO line — "one small
+       concrete thing to try this week" — and until now that line was rendered
+       in a box and died there. The Library was the only page in MÉTRON that
+       MANUFACTURES intentions and the only one with nowhere to put them.
+
+       ⚠️ It is a store this page OWNS, deliberately. Writing into `coach:focus`
+       or `habits:list` from here would be a write to a key another page's sync
+       engine owns: this page's engine does not match those keys, so the write
+       would never push, and the owning page would later push its own copy
+       straight over it. A store is written by its owner or it is not written.
+       Anything that has to reach another page leaves through a LINK, and that
+       page creates the row through its own save path (see the habits world). */
+    var K_ACT='improve:actions';
 
     function $(id){ return document.getElementById(id); }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
     function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
     function loadObj(k){ var o; try{ o=JSON.parse(localStorage.getItem(k)); }catch(e){ o=null; } return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }
-    function persist(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
+    /* ⚠️⚠️ THIS CATCH USED TO BE EMPTY, AND THAT WAS A FUSE.
+       A full localStorage throws QuotaExceededError, and swallowing it made a
+       failed save look precisely like a successful one: the wall painted, the
+       reader carried on reading, the status line said nothing, and not one
+       byte was stored. That is hard constraint 10 — "no data" and "we failed
+       to write it" must never render the same way — with a timer attached,
+       because every TikTok carries up to 9,000 characters of transcript, so a
+       large enough library WILL reach the ~5MB origin limit and then lie about
+       every save after it. A save that did not happen has to say so. */
+    var storageErr='';
+    function persist(k,a){
+      try{ localStorage.setItem(k,JSON.stringify(a)); if(storageErr){ storageErr=''; try{ renderStatus(); }catch(e2){} } return true; }
+      catch(e){
+        var quota=!!(e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014));
+        storageErr=quota
+          ? 'This device is FULL — nothing is being saved. Remove some read items, or open Backups before adding more.'
+          : 'Could not save to this device ('+((e&&e.name)||'unknown error')+'). Nothing is being saved.';
+        try{ renderStatus(); }catch(e2){}
+        return false;
+      }
+    }
     function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
     function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
@@ -434,10 +547,10 @@
     }
     function normUrl(url){ if(!url) return ''; var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
 
-    var videos=loadArr(K_VID), tiktoks=loadArr(K_TT), habits=loadArr(K_HAB), profile=loadObj(K_PROF);
+    var videos=loadArr(K_VID), tiktoks=loadArr(K_TT), habits=loadArr(K_HAB), profile=loadObj(K_PROF), actions=loadArr(K_ACT);
 
-    /* view state */
-    var world='yt', shelf='', state='todo', seek='', selId=null, noteOpen=false, noteDraft=null;
+    /* view state — `starOnly` is deliberately separate from `state` (see scoped) */
+    var world='yt', shelf='', state='todo', seek='', selId=null, noteOpen=false, noteDraft=null, starOnly=false;
 
     /* Queue position lives in `ord`, never in `ts` — `ts` is the sync clock and
        every read bumps it, which would reshuffle the list under him. */
@@ -476,7 +589,37 @@
       return o;
     }
     function conceptOf(v){ return v.concept||v.rawTopic||v.topic||''; }
-    function isLesson(v){ var k=v.kind||kpParse(v.keypoints||'').kind; return k? k==='lesson' : !!v.ytId; }
+
+    /* ── WHAT COUNTS AS A LESSON ──────────────────────────────────
+       ⚠️⚠️ The fallback below used to be reached by every YouTube video in the
+       library, because the old distill prompt in api/_youtube.js never emitted
+       a KIND line for a kind to be read out of. So `!!v.ytId` was the answer,
+       and the answer was always YES: a match, a stream, a trailer and a real
+       talk all wore the LESSON badge and all promised takeaways.
+
+       api/_youtube.js grades and declares now, exactly as the TikTok half
+       always has. But a reading produced BEFORE it learned to do that is
+       neither a lesson nor a keepsake — it is UNVERIFIED. It was written by a
+       prompt told to produce "3 to 5" points from a marketing description,
+       with no grounding check behind it. RVER marks the boundary: anything
+       below it is re-read in the background and says what it is until then. */
+    var RVER=1;
+    function readVer(v){ return (typeof v.rver==='number')?v.rver:0; }
+    /* ⚠️ The version alone is NOT the test, and using it alone would have been
+       an expensive mistake: every TikTok in the library predates `rver` too,
+       and every one of them was already read by the graded, grounded path. A
+       version check by itself would have re-read his whole TikTok wall for
+       nothing. What actually marks a legacy reading is the ABSENCE of the
+       honesty fields — no declared kind and no grade means it came from a
+       reader that had no way to say "there is no lesson here". */
+    function isLegacyRead(v){
+      return !!(v && v.keypoints) && !v.kind && !v.grade && readVer(v)<RVER;
+    }
+    function isLesson(v){
+      var k=v.kind||kpParse(v.keypoints||'').kind;
+      if(k) return k==='lesson';
+      return !!v.ytId;   // pre-RVER only, and the card marks it unverified
+    }
 
     /* ── which collection is on screen ────────────────────────── */
     function coll(){ return world==='tt'?tiktoks:videos; }
@@ -498,8 +641,8 @@
        that he stops reading the list and starts reaching for it.
        ⚠️ Change this and bump CVER, which re-shelves everything once. */
     var SHELVES=['Faith','Mind','Body','Food','Money','World','Sport','Sound','Laughs'];
-    var ACCENT={ yt:'168,214,110', tt:'104,214,204', hb:'155,140,255' };
-    var TITLE={ yt:'watching', tt:'keeping', hb:'building' };
+    var ACCENT={ yt:'168,214,110', tt:'104,214,204', rm:'240,190,110', hb:'155,140,255' };
+    var TITLE={ yt:'watching', tt:'keeping', rm:'learned', hb:'building' };
 
     /* ── titles + search text ─────────────────────────────────── */
     function titleOf(v){
@@ -518,9 +661,38 @@
       var c=conceptOf(v); if(c) bits.push(c);
       return bits.join(' · ');
     }
+    /* ── SEARCH ───────────────────────────────────────────────────
+       Three separate things were wrong with it, and each one cost him real
+       results on a library he cannot scroll:
+
+       1. ⭐ THE TRANSCRIPT WAS NOT SEARCHED. The single thing this library has
+          that nothing else does is hundreds of words of what was actually SAID,
+          and it was the one field left out of the haystack. Searching a sermon
+          for a phrase from the sermon returned nothing.
+       2. The match was `hay(v).indexOf(q)`, so the whole query had to appear as
+          one unbroken run — "faith discipline" found nothing even when both
+          words were sitting in the same card.
+       3. No Greek folding. He is Greek and half of what he saves is: "προσευχη"
+          did not match "προσευχή", and a final ς never matched a σ.
+
+       fold() is applied to BOTH sides, so the query and the text are always
+       compared in the same alphabet. The result is cached per item against a
+       cheap signature — folding a 9,000-character transcript for a hundred
+       items on every keystroke is exactly how a library starts to feel cheap. */
+    function fold(s){
+      return String(s==null?'':s).toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')    // ό→ο, ά→α, é→e
+        .replace(/ς/g,'σ');                                 // final sigma is the same letter
+    }
+    var hayMemo={};
     function hay(v){
-      return (titleOf(v)+' '+(v.channel||'')+' '+(v.handle||'')+' '+(v.author||'')+' '+(v.caption||'')+' '+
-        ((v.tags||[]).join(' '))+' '+((v.screen||[]).join(' '))+' '+conceptOf(v)+' '+(v.keypoints||'')+' '+(v.note||v.notes||'')).toLowerCase();
+      var sig=(v.ts||0)+'|'+((v.keypoints||'').length)+'|'+((v.transcript||'').length)+'|'+((v.note||v.notes||'').length);
+      var m=hayMemo[v.id];
+      if(m&&m.sig===sig) return m.s;
+      var s=fold([titleOf(v),v.channel,v.handle,v.author,v.caption,(v.tags||[]).join(' '),
+        (v.screen||[]).join(' '),conceptOf(v),v.keypoints,(v.note||v.notes),v.transcript,v.music].join(' '));
+      hayMemo[v.id]={sig:sig,s:s};
+      return s;
     }
     function thumbOf(v){
       if(v.ttId) return v.cover||'';
@@ -554,18 +726,27 @@
       var e=$('status'); if(!e) return;
       var unread=unreadIn(coll()).length, running=sweeping||ttSweeping;
       var h='';
+      // A device that cannot save has to say so before anything else on the
+      // line, because every other message here is about work whose result is
+      // no longer being kept.
+      if(storageErr) h+='<span class="s-t bad">'+esc(storageErr)+'</span>';
       if(paused){
-        h='<span class="s-t">Paused'+(unread?' · '+unread+' unread':'')+'</span>'+
+        h+='<span class="s-t">Paused'+(unread?' · '+unread+' unread':'')+'</span>'+
           '<button type="button" class="s-b" data-resume="1">Resume</button>';
       } else if(running||statusMsg){
-        h='<span class="s-t'+(statusLive?' live':'')+'">'+esc(statusMsg||'Reading')+'</span>'+
+        h+='<span class="s-t'+(statusLive?' live':'')+'">'+esc(statusMsg||'Reading')+'</span>'+
           (running?'<button type="button" class="s-b" data-pause="1">Stop</button>':'');
       }
-      if(unread && world!=='hb'){
+      if(unread && world!=='hb' && world!=='rm'){
         h+='<button type="button" class="s-b warn" data-dropunread="1">Remove the '+unread+' unread</button>';
       }
       e.innerHTML=h;
-      e.classList.toggle('live',statusLive&&!paused);
+      // ⚠️ A toggle of the "live" class on this container used to sit here, and
+      // `.lb-status.live` is defined NOWHERE in the stylesheet — hard
+      // constraint 12, a class toggled from JS that CSS lacks, in the very
+      // file that constraint was written about. It did nothing for the page's
+      // whole life. The live colour is carried by `.s-t.live` above, which
+      // does exist. A test now fails if it comes back.
     }
 
     /* Removing a batch.
@@ -614,27 +795,63 @@
     /* ════════════════════════════════════════════════════════════
        THE WALL
        ════════════════════════════════════════════════════════════ */
+    /* EVERY term must appear, in any order and anywhere in the card — which is
+       what a person means by "faith discipline". */
     function pool(){
-      var q=seek.trim().toLowerCase();
-      return coll().filter(function(v){ return !q || hay(v).indexOf(q)>=0; });
+      var terms=fold(seek).split(/\s+/).filter(Boolean);
+      if(!terms.length) return coll().slice();
+      return coll().filter(function(v){
+        var h=hay(v);
+        for(var i=0;i<terms.length;i++) if(h.indexOf(terms[i])<0) return false;
+        return true;
+      });
     }
+    /* ⚠️ STARRED IS A FACET, NOT A STATE — and getting that wrong hid his own
+       favourites. stateOf() used to return 'star' for anything starred, so a
+       starred lesson could never equal 'lesson' and VANISHED from the Lessons
+       shelf, while the rail counted it and said there were more than it drew.
+       "What is this?" and "did he star it?" are two independent questions and
+       they now filter independently, so Starred combines with a shelf instead
+       of replacing it. */
     function stateOf(v){
-      if(world==='tt') return v.star?'star':(isLesson(v)?'lesson':'keep');
+      if(world==='tt') return v.keypoints ? (isLesson(v)?'lesson':'keep') : 'reading';
       return v.watched?'done':'todo';
     }
     function scoped(){
       var p=pool();
+      if(starOnly) p=p.filter(function(v){ return !!v.star; });
       if(!state) return p;
-      return p.filter(function(v){ return world==='tt' ? (state==='star'?!!v.star:stateOf(v)===state) : stateOf(v)===state; });
+      return p.filter(function(v){ return stateOf(v)===state; });
     }
     function shelved(list){ return shelf ? list.filter(function(v){ return (conceptOf(v)||'Unsorted')===shelf; }) : list; }
 
     function badgeFor(v){
       if(v.metaFail>=2) return '<span class="badge miss">unreadable</span>';
       if(v.pending) return '<span class="badge reading pulse">fetching</span>';
+      // Written before the reader could grade — it is queued to be read again,
+      // and until then it must not wear the LESSON badge it never earned.
+      if(isLegacyRead(v)) return '<span class="badge old">unverified</span>';
       if(v.keypoints) return isLesson(v)?'<span class="badge lesson">lesson</span>':'<span class="badge">keepsake</span>';
       if((v.kpFail||0)>=3) return '<span class="badge miss">retry</span>';
       return '<span class="badge reading pulse">reading</span>';
+    }
+    /* ── WEIGHT ON THE WALL ───────────────────────────────────────
+       Every tile used to be the same size, so a 552-word sermon that produced
+       five checked takeaways sat at exactly the same rank as a Lana Del Rey
+       edit whose caption was three hashtags. The page ALREADY KNEW the
+       difference — `grade` and `kind` are stored on every item — and threw the
+       knowledge away at render time.
+
+       So a real lesson now takes two columns. This is honest hierarchy: it is
+       driven by what the reader actually found in the material, never by
+       decoration, and a keepsake is not diminished — it is simply not pretending
+       to be a lesson. Starred items are promoted too, because that is HIS
+       judgement and it outranks the machine's. */
+    function isBig(v){
+      if(world!=='tt') return false;                  // 16:9 already reads big
+      if(!v.keypoints||isLegacyRead(v)) return false;
+      if(v.star) return true;
+      return isLesson(v) && (v.grade==='transcript'||v.grade==='notes'||v.grade==='screen');
     }
     function tileHTML(v){
       var th=thumbOf(v), p=kpParse(v.keypoints||'');
@@ -642,7 +859,7 @@
       // A keepsake whose caption is only hashtags takes its NAME from the core
       // sentence, so printing the core underneath would say it twice.
       if(p.core && p.core.trim()===title.trim()) p={ core:'', keys:p.keys, act:p.act };
-      return '<button type="button" class="tile'+(v.watched?' done':'')+(selId===v.id?' sel':'')+'" data-id="'+esc(v.id)+'">'+
+      return '<button type="button" class="tile'+(v.watched?' done':'')+(selId===v.id?' sel':'')+(isBig(v)?' big':'')+'" data-id="'+esc(v.id)+'">'+
         '<span class="ph">'+
           (th?'<img loading="lazy" src="'+esc(th)+'" alt="" data-cover="'+esc(v.id)+'">':'')+
           '<span class="scrim"></span>'+
@@ -664,8 +881,98 @@
         return byOrd(a,b);
       });
     }
+    /* ════════════════════════════════════════════════════════════
+       THE ROOM — everything he has actually taken, as a page
+       ────────────────────────────────────────────────────────────
+       The other three worlds are grids of thumbnails: they answer "what did I
+       save?". None of them answers the question the library exists for —
+       "what have I learned?" — because that answer is not a picture, it is a
+       few hundred sentences, and a sentence cannot be read off a poster.
+
+       So the Room is typography, not tiles. Every CORE line the reader has
+       grounded, gathered under its shelf, newest first, each one a doorway
+       back to the video it came from. Above them sit the only two things that
+       are genuinely urgent: what he is about to forget, and what he said he
+       would do. Nothing here is computed on a server and nothing here is new
+       data — it is the library he already has, finally readable.
+       ════════════════════════════════════════════════════════════ */
+    function roomItems(){
+      var terms=fold(seek).split(/\s+/).filter(Boolean);
+      return videos.concat(tiktoks).filter(function(v){
+        if(!v.keypoints||isLegacyRead(v)||!isLesson(v)) return false;
+        if(!kpParse(v.keypoints).core) return false;
+        if(!terms.length) return true;
+        var h=hay(v);
+        for(var i=0;i<terms.length;i++) if(h.indexOf(terms[i])<0) return false;
+        return true;
+      });
+    }
+    function whenAgo(ts){
+      if(!ts) return '';
+      var d=Math.floor((Date.now()-ts)/DAY);
+      if(d<=0) return 'today';
+      if(d===1) return 'yesterday';
+      if(d<7) return d+' days ago';
+      if(d<31) return Math.floor(d/7)+' week'+(d<14?'':'s')+' ago';
+      return Math.floor(d/30)+' month'+(d<60?'':'s')+' ago';
+    }
+    function renderRoom(){
+      var h='', due=recallQueue(), open=actions.filter(function(a){ return !a.done; }),
+          done=actions.filter(function(a){ return !!a.done; }), items=roomItems();
+
+      if(due.length){
+        var r=due[0], rp=kpParse(r.keypoints);
+        h+='<section class="rm-sec rm-due"><div class="rm-h">Before you forget it'+
+           (due.length>1?' <span class="rm-n">'+due.length+' due</span>':'')+'</div>'+
+           '<div class="rm-core">'+esc(rp.core||titleOf(r))+'</div>'+
+           '<div class="rm-from">'+esc(titleOf(r))+(conceptOf(r)?' · '+esc(conceptOf(r)):'')+'</div>'+
+           (rp.keys.length?'<ul class="rm-keys">'+rp.keys.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
+           '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(r.id)+'">Still with me ✓</button>'+
+           '<button type="button" class="b" data-remlost="'+esc(r.id)+'">I’d forgotten it</button>'+
+           '<button type="button" class="b" data-open="'+esc(r.id)+'">Open it</button></div></section>';
+      }
+
+      if(open.length||done.length){
+        h+='<section class="rm-sec"><div class="rm-h">What you said you’d do'+
+           (open.length?' <span class="rm-n">'+open.length+' open</span>':'')+'</div><ul class="rm-acts">'+
+           open.concat(done).map(function(a){
+             return '<li class="rm-act'+(a.done?' done':'')+'">'+
+               '<button type="button" class="hb-ck'+(a.done?' on':'')+'" data-actdone="'+esc(a.id)+'" aria-label="Done">'+(a.done?'✓':'')+'</button>'+
+               '<div class="rm-act-b"><div class="rm-act-t">'+esc(a.text)+'</div>'+
+               '<div class="rm-act-m">from '+esc(a.title||'the library')+' · '+esc(whenAgo(a.ts))+'</div></div>'+
+               '<button type="button" class="hb-x" data-actdrop="'+esc(a.id)+'" aria-label="Remove">✕</button></li>';
+           }).join('')+'</ul></section>';
+      }
+
+      if(!items.length){
+        h+='<div class="empty"><b>'+(seek.trim()?'Nothing matches':'Nothing read yet')+'</b>'+
+          (seek.trim()
+            ? 'No lesson in the Room matches “'+esc(seek.trim())+'”.'
+            : 'Once something you saved has been read and checked, the idea worth keeping from it appears here — every one of them, on one page.')+'</div>';
+      } else {
+        // Canonical shelf order, exactly as the rail — a shelf that moves
+        // cannot be learned.
+        var by={}; items.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; (by[c]=by[c]||[]).push(v); });
+        var order=SHELVES.filter(function(c){ return by[c]; })
+          .concat(Object.keys(by).filter(function(c){ return c!=='Unsorted'&&SHELVES.indexOf(c)<0; }).sort())
+          .concat(by['Unsorted']?['Unsorted']:[]);
+        order.forEach(function(c){
+          var list=by[c].slice().sort(function(a,b){ return (b.distilledTs||b.ts||0)-(a.distilledTs||a.ts||0); });
+          h+='<section class="rm-sec"><div class="rm-h">'+esc(c)+' <span class="rm-n">'+list.length+'</span></div>'+
+             list.map(function(v){
+               var kp=kpParse(v.keypoints);
+               return '<button type="button" class="rm-idea" data-id="'+esc(v.id)+'">'+
+                 '<span class="rm-core">'+esc(kp.core)+'</span>'+
+                 '<span class="rm-from">'+esc(titleOf(v))+' · '+esc(whenAgo(v.distilledTs||v.ts))+'</span></button>';
+             }).join('')+'</section>';
+        });
+      }
+      $('wall').innerHTML=h;
+    }
+
     function renderWall(){
       if(world==='hb'){ renderHabits(); return; }
+      if(world==='rm'){ renderRoom(); return; }
       var list=sortedList(), html;
       if(!coll().length){
         html='<div class="empty"><b>'+(world==='tt'?'No TikToks yet':'Nothing queued yet')+'</b>'+
@@ -686,13 +993,14 @@
         '<span class="dot"></span><span class="lab">'+esc(label)+'</span><span class="n">'+n+'</span></button>';
     }
     function renderRail(){
-      if(world==='hb'){ $('rail').innerHTML=''; return; }
+      if(world==='hb'||world==='rm'){ $('rail').innerHTML=''; return; }
       var p=pool(), h='';
+      if(starOnly) p=p.filter(function(v){ return !!v.star; });
       var states = world==='tt'
         ? [['','Everything',p.length],
            ['lesson','Lessons',p.filter(function(v){return v.keypoints&&isLesson(v);}).length],
            ['keep','Keepsakes',p.filter(function(v){return v.keypoints&&!isLesson(v);}).length],
-           ['star','Starred',p.filter(function(v){return !!v.star;}).length]]
+           ['reading','Still reading',p.filter(function(v){return !v.keypoints;}).length]]
         : [['todo','To watch',p.filter(function(v){return !v.watched;}).length],
            ['done','Watched',p.filter(function(v){return !!v.watched;}).length],
            ['','Everything',p.length]];
@@ -700,6 +1008,10 @@
       if(state && !states.some(function(s){ return s[0]===state && s[2]; })) state='';
       h+='<div class="rl-h">View</div>';
       states.forEach(function(s){ if(s[2]||!s[0]) h+=railBtn('st',s[0],s[1],s[2],state===s[0]); });
+      // The star toggle sits with the views but is its own axis — it narrows
+      // whatever view is already chosen rather than replacing it.
+      var nStar=pool().filter(function(v){ return !!v.star; }).length;
+      if(nStar||starOnly) h+=railBtn('star','1','★ Starred',nStar,starOnly);
 
       var sc=scoped(), tc={};
       sc.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; tc[c]=(tc[c]||0)+1; });
@@ -731,7 +1043,16 @@
       notes:'Read from your own notes.',
       caption:'From the caption only — there is no spoken audio to read.',
       thin:'Nothing was said and nothing was written, so this is a label, not a lesson. Add a line of your own below and it will be read properly.',
-      none:'Nothing readable at all — no caption, no text on screen, no audio captions.'
+      none:'Nothing readable at all — no caption, no text on screen, no audio captions.',
+      /* ── the YouTube grades ──────────────────────────────────────
+         YouTube gives us NO transcript — its caption endpoint is locked, and
+         three InnerTube clients were tried before that was accepted. So a
+         YouTube reading is built on the creator's own description, which is
+         written to sell the video. These three lines exist so a card can never
+         again imply it knows what was said in something nobody transcribed. */
+      chapters:'Read from the video’s own chapter list — its outline, not its words. YouTube gives us no transcript.',
+      description:'Read from the video’s own description, which the creator wrote to promote it. Nobody has read you what was actually said — YouTube gives us no transcript.',
+      title:'Little more than the title to go on — no real description and no transcript — so this names the video rather than teaching you anything. Add a line of your own below and it will be read properly.'
     };
     function paneEmptyHTML(){
       var un=videos.filter(function(v){return !v.watched;});
@@ -743,6 +1064,25 @@
       /* The pane belongs to the world you are standing in. A TikTok wall that
          reports "70% of the YouTube queue watched" is answering a question
          nobody asked from here. */
+      /* In the Room the recall card and the practice list are the PAGE — the
+         side pane must not print them a second time. It says what the archive
+         holds instead, which is the one thing the Room itself never claims. */
+      if(world==='rm'){
+        var read=videos.concat(tiktoks).filter(function(v){ return v.keypoints&&!isLegacyRead(v); });
+        var les=read.filter(isLesson).length;
+        var shelvesUsed=Object.keys(read.reduce(function(m,v){ if(conceptOf(v)) m[conceptOf(v)]=1; return m; },{})).length;
+        var done=actions.filter(function(a){ return !!a.done; }).length;
+        h+='<div class="now-sec"><div class="now-h">What you have taken</div>'+
+          '<div class="now-big">'+les+' idea'+(les===1?'':'s')+' worth keeping</div>'+
+          '<div class="now-sub">from '+read.length+' read · across '+shelvesUsed+' '+(shelvesUsed===1?'shelf':'shelves')+'</div></div>';
+        if(actions.length){
+          h+='<div class="now-sec"><div class="now-h">Practice</div>'+
+            '<div class="now-sub" style="margin-top:9px">'+done+' of '+actions.length+' done</div>'+
+            '<div class="now-bar"><i id="moFill" data-pct="'+(actions.length?Math.round(done/actions.length*100):0)+'"></i></div></div>';
+        }
+        if(!read.length) h='<div class="pane-empty">Nothing has been read yet. Save something in YouTube or TikTok and the ideas will collect here.</div>';
+        return h;
+      }
       if(world==='tt'){
         var lessons=tiktoks.filter(function(v){ return v.keypoints&&isLesson(v); });
         var newest=tiktoks.slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); })[0];
@@ -776,7 +1116,8 @@
           (rp.core?'<div style="font-size:12.5px;line-height:1.55;color:var(--au-dim);margin-top:10px">'+esc(rp.core)+'</div>':'')+
           (rp.keys.length?'<ul class="pane-keys">'+rp.keys.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
           '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(rem.id)+'">Still with me ✓</button>'+
-          '<button type="button" class="b" data-open="'+esc(rem.id)+'">Rewatch</button></div></div>';
+          '<button type="button" class="b" data-remlost="'+esc(rem.id)+'">I’d forgotten it</button>'+
+          '<button type="button" class="b" data-open="'+esc(rem.id)+'">Open it</button></div></div>';
       }
       if(!h) h='<div class="pane-empty">Pick anything on the left and it opens here — the video, and the few things worth taking from it.</div>';
       return h;
@@ -850,8 +1191,9 @@
       var p=kpParse(v.keypoints||''), lesson=isLesson(v);
       var h=stageHTML(v);
       h+='<div class="pane-in">';
-      h+='<span class="pane-kind'+(v.keypoints&&lesson?' lesson':'')+'">'+
-         (v.pending?'Fetching…':(v.keypoints?(lesson?'Lesson':'Keepsake'):(v.metaFail>=2?'Unreadable':'Reading…')))+'</span>';
+      var legacy=isLegacyRead(v);
+      h+='<span class="pane-kind'+(v.keypoints&&lesson&&!legacy?' lesson':'')+(legacy?' old':'')+'">'+
+         (v.pending?'Fetching…':(legacy?'Unverified':(v.keypoints?(lesson?'Lesson':'Keepsake'):(v.metaFail>=2?'Unreadable':'Reading…'))))+'</span>';
       h+='<div class="pane-t">'+esc(titleOf(v))+'</div>';
       var m=[]; if(v.ttId&&v.handle) m.push('@'+v.handle); if(v.channel) m.push(v.channel);
       if(v.duration) m.push(v.duration+'s'); if(v.created) m.push(new Date(v.created*1000).toLocaleDateString());
@@ -870,7 +1212,22 @@
         if(p.keys.some(function(k){ return quoteFor(k,v); }))
           h+='<div class="pane-hint">Tap a point to see the words it came from</div>';
       }
-      if(p.act&&lesson) h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+'</div>';
+      /* ⭐ The DO line used to end here, in a box, for ever. It is the only
+         thing this page produces that can change a week, so it now has
+         somewhere to go. A legacy reading's DO is not offered — it was written
+         by the prompt that padded, and it has not been checked. */
+      if(p.act&&lesson&&!legacy){
+        var act=actionFor(v.id);
+        h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+
+           '<div class="pane-acts" style="margin-top:12px">'+
+           (act
+             ? '<span class="b on">✓ On your practice list</span>'+
+               '<button type="button" class="b" data-unpractice="'+esc(act.id)+'">Take it off</button>'
+             : '<button type="button" class="b prime" data-practice="'+esc(v.id)+'">Practise this →</button>')+
+           '</div></div>';
+      } else if(p.act&&lesson&&legacy){
+        h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+'</div>';
+      }
       if(!v.keypoints&&!v.pending&&!v.err) h+='<div class="pane-src pulse" style="border-top:none;padding-top:12px">Nova is reading this one…</div>';
 
       if(v.ttId&&(v.tags||[]).length) h+='<div class="pane-m" style="margin-top:14px">'+esc(v.tags.map(function(t){return '#'+t;}).join('  '))+'</div>';
@@ -904,6 +1261,10 @@
       if(v.suspect){
         h+='<div class="pane-src" style="color:var(--au-coral)">Every point here cites something the video never mentions. Treat this one as unverified — open it, or add your own note and it will be read again.</div>';
       }
+      if(legacy){
+        h+='<div class="pane-src" style="color:var(--au-amber)">This was written before the reader could tell a lesson from a keepsake, ' +
+           'and before anything it said was checked against the source. It is queued to be read again — nothing here is lost when it is.</div>';
+      }
       if(v.grade&&SRC[v.grade]) h+='<div class="pane-src">'+esc(SRC[v.grade])+'</div>';
 
       h+='<div class="pane-acts">';
@@ -918,8 +1279,15 @@
     function renderPane(){
       $('pane').innerHTML=paneHTML();
       var fill=$('moFill');
-      if(fill){ var totV=videos.length, pct=totV?Math.round(videos.filter(function(v){return v.watched;}).length/totV*100):0;
-        requestAnimationFrame(function(){ fill.style.transform='scaleX('+(pct/100)+')'; }); }
+      if(fill){
+        // The bar is reused by the Room for practice, which states its own
+        // percentage; anywhere else it is the share of the queue watched.
+        var given=fill.getAttribute('data-pct');
+        var pct;
+        if(given!=null&&given!==''){ pct=parseInt(given,10)||0; }
+        else { var totV=videos.length; pct=totV?Math.round(videos.filter(function(v){return v.watched;}).length/totV*100):0; }
+        requestAnimationFrame(function(){ fill.style.transform='scaleX('+(pct/100)+')'; });
+      }
       var open=!!selId;
       $('side').classList.toggle('open',open);
       $('scrim').classList.toggle('on',open);
@@ -931,13 +1299,36 @@
         if(document.activeElement!==nb){ nb.focus(); nb.setSelectionRange(nb.value.length,nb.value.length); }
       }
     }
-    function select(id){ if(selId!==id){ playing=null; noteOpen=false; noteDraft=null; qOpen={}; } selId=id; renderWall(); renderPane(); }
-    function closePane(){ selId=null; playing=null; noteOpen=false; noteDraft=null; renderWall(); renderPane(); }
+    /* ⚠️ Selecting used to call renderWall(), which rebuilds every tile's markup
+       — a hundred nodes and a hundred <img> re-attachments — purely to move a
+       one-pixel ring. Held down, j/k did that per keypress, and the
+       scrollIntoView that follows then ran against a node that had just been
+       destroyed and rebuilt underneath it. A selection is a class: move the
+       class, and fall back to a full render only if there is no wall to touch. */
+    function paintSel(){
+      var host=$('main'); if(!host||!host.querySelectorAll) return false;
+      var tiles=host.querySelectorAll('.tile,.rm-idea');
+      if(!tiles||!tiles.length) return false;
+      Array.prototype.forEach.call(tiles,function(t){
+        t.classList.toggle('sel',t.getAttribute('data-id')===selId);
+      });
+      return true;
+    }
+    function select(id){
+      if(selId!==id){ playing=null; noteOpen=false; noteDraft=null; qOpen={}; }
+      selId=id;
+      if(!paintSel()) renderWall();
+      renderPane();
+    }
+    function closePane(){ selId=null; playing=null; noteOpen=false; noteDraft=null; if(!paintSel()) renderWall(); renderPane(); }
 
     /* ════════════════════════════════════════════════════════════
        INGEST — per world
        ════════════════════════════════════════════════════════════ */
     function ingestHTML(){
+      // Nothing is added to the Room directly — it is made of what the other
+      // worlds have already been read into.
+      if(world==='rm') return '';
       if(world==='hb'){
         return '<div class="ing open"><h3>Name a habit you want to grow into</h3>'+
           '<p>Then live it. Identity tracks the streak.</p>'+
@@ -1069,7 +1460,16 @@
        to surface as "Nova's busy" and give up forever.
        ════════════════════════════════════════════════════════════ */
     function applyKP(v,text,extra){
-      v.keypoints=text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
+      v.keypoints=text; v.distilledTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
+      v.rver=RVER;                       // read by a grader that can say "no"
+      // ⚠️ Do NOT reset the recall clock on a re-read. `revisitTs` is when HE
+      // last looked at it, not when a machine last wrote to it — stamping it
+      // here would push every re-read card to the back of the recall queue and
+      // quietly empty the queue every time the reader ran.
+      if(!v.revisitTs) v.revisitTs=Date.now();
+      // A fresh reading supersedes the old verdict, so clear last time's marks
+      // rather than leaving a stale "1 point was removed" under new text.
+      delete v.dropped; delete v.suspect;
       var p=kpParse(text);
       // TOPIC is only a placeholder so shelves appear during the sweep. Each
       // item guesses its theme in isolation, which is how you end up with nine
@@ -1096,30 +1496,53 @@
         var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({ text:notes||'', title:v.title, videoId:v.ytId||'' }) });
         var d={}; try{ d=await r.json(); }catch(e){}
-        if(r.ok&&d.text) return { ok:true, text:d.text };
-        return { ok:false, rate: r.status===429 || (d&&d.error==='rate') };
+        // Everything honest the server worked out now travels with the text —
+        // the grade, whether it is a lesson at all, its shelf, and any point
+        // struck for citing something the material never said. It used to
+        // return the text alone, so the page could not tell a reading built on
+        // a real description from one generalised out of a bare title.
+        if(r.ok&&d.text) return { ok:true, text:d.text, grade:d.grade, kind:d.kind, shelf:d.shelf,
+                                  dropped:d.dropped, suspect:d.suspect, sourced:d.sourced };
+        return { ok:false, rate: r.status===429 || (d&&d.error==='rate'), unreadable:r.status===422, grade:d&&d.grade };
       }catch(e){ return { ok:false }; }
+    }
+    /* Anything read before the grader existed is re-read — but only AFTER
+       everything unread, and only 25 per pass, so a long-standing library
+       drips rather than floods a free tier that is capped per minute. The next
+       time the page is opened or refocused it carries on. */
+    var REREAD_PER_PASS=25;
+    function ytQueue(){
+      var fresh=videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; });
+      var stale=videos.filter(function(v){ return v.ytId && isLegacyRead(v) && (v.kpFail||0)<3; }).slice(0,REREAD_PER_PASS);
+      return fresh.concat(stale);
     }
     var sweeping=false;
     async function sweep(){
       if(sweeping||paused) return;
-      var pend=videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; });
+      var pend=ytQueue();
       if(!pend.length){ status(''); fillConcepts(); return; }
       sweeping=true;
       var ids=pend.map(function(v){ return v.id; }), total=ids.length;
       for(var i=0;i<ids.length;i++){
         if(paused) break;                 // Stop is honoured BETWEEN videos, so
-        var v=byId(ids[i]); if(!v||v.keypoints) continue;   // one in flight still lands
-        var got=null;
+        var v=byId(ids[i]); if(!v) continue;                // one in flight still lands
+        var again=isLegacyRead(v);
+        if(v.keypoints && !again) continue;                 // already read, and read properly
+        var got=null, res=null;
         for(var att=0; att<3 && !got; att++){
-          status('Reading '+(i+1)+'/'+total,true);
-          var res=await askDistill(v,v.notes||v.note);
-          if(res.ok){ got=res.text; break; }
+          status((again?'Re-reading ':'Reading ')+(i+1)+'/'+total,true);
+          res=await askDistill(v,v.notes||v.note);
+          if(res.ok){ got=res; break; }
           if(res.rate){ status('Waiting '+(i+1)+'/'+total,true); await wait(20000+att*15000); }
           else await wait(2500);
         }
         v=byId(ids[i]); if(!v) continue;
-        if(got) applyKP(v,got);
+        // ⚠️ A re-read REPLACES a reading he already has, so it may only ever
+        // do so on success. A failed re-read must leave the old text exactly
+        // where it was — losing a reading to fix a reading would be worse than
+        // the unverified label it was trying to remove.
+        if(got) applyKP(v,got.text,{grade:got.grade,kind:got.kind,shelf:got.shelf,dropped:got.dropped,suspect:got.suspect});
+        else if(res&&res.unreadable&&!v.keypoints){ v.grade='none'; v.kpFail=3; v.ts=Date.now(); persist(K_VID,videos); flush(); }
         else { v.kpFail=(v.kpFail||0)+1; persist(K_VID,videos); }
         if(world==='yt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
         await wait(2200);   // pace: the free tier is capped per minute, not per day
@@ -1253,12 +1676,69 @@
       covBusy--;
     }
 
-    /* remember — resurface a read video's key points on a gentle schedule */
-    function dueRemember(){
-      var now=Date.now(), DAY=86400000;
-      return videos.concat(tiktoks).filter(function(v){
-        return v.keypoints&&isLesson(v)&&v.distilledTs&&(now-v.distilledTs)>=3*DAY&&(!v.revisitTs||(now-v.revisitTs)>=5*DAY);
-      }).sort(function(a,b){ return (a.revisitTs||a.distilledTs)-(b.revisitTs||b.distilledTs); })[0]||null;
+    /* ════════════════════════════════════════════════════════════
+       PRACTICE — where a DO line goes
+       ════════════════════════════════════════════════════════════ */
+    function actionFor(id){ return actions.find(function(a){ return a.from===id; })||null; }
+    function addAction(v,text){
+      text=String(text||'').trim(); if(!text) return null;
+      var ex=actionFor(v.id);
+      if(ex){ ex.text=text; ex.ts=Date.now(); }
+      else actions.push({ id:uid(), from:v.id, text:text, title:titleOf(v), url:v.url||'', done:false, ts:Date.now() });
+      persist(K_ACT,actions); flush();
+      return ex||actions[actions.length-1];
+    }
+    function dropAction(id){
+      actions=actions.filter(function(a){ return a.id!==id; });
+      persist(K_ACT,actions); flush();
+    }
+    function toggleAction(id){
+      var a=actions.find(function(x){ return x.id===id; }); if(!a) return;
+      a.done=!a.done; a.doneTs=a.done?Date.now():0; a.ts=Date.now();
+      persist(K_ACT,actions); flush();
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       RECALL — what he is about to forget
+       ────────────────────────────────────────────────────────────
+       ⚠️ This existed, and he was never going to see it. It returned exactly
+       ONE item, rendered only in the empty pane — the pane that disappears the
+       instant he clicks anything — so on a wall of a hundred TikToks it was
+       effectively unreachable. And the schedule was flat: five days, then five
+       days, then five days, for ever, whether or not the thing had stuck.
+
+       Now the interval EXPANDS with each confirmed recall (3 → 7 → 21 → 60 →
+       150 days) and collapses back to the start when he says he had forgotten
+       it. That is the whole of spaced repetition, and it needs no backend —
+       `revisitTs` and a step counter are enough.
+       ════════════════════════════════════════════════════════════ */
+    var DAY=86400000, STEPS=[3,7,21,60,150];
+    function recallStep(v){ var s=v.recall|0; return s<0?0:(s>=STEPS.length?STEPS.length-1:s); }
+    function dueAt(v){
+      if(!v.keypoints||!isLesson(v)||isLegacyRead(v)) return Infinity;
+      /* ⚠️ The anchor is the LATEST contact, not `revisitTs || distilledTs`.
+         Those two can disagree in both directions: a legacy card re-read today
+         still carries a `revisitTs` from whenever it was first written, and
+         taking that alone would make a reading he has never seen due the
+         moment it lands. Whichever happened last is the last time this idea
+         was in front of him, and that is what the interval counts from. */
+      var from=Math.max(v.revisitTs||0, v.distilledTs||0);
+      if(!from) return Infinity;
+      return from + STEPS[recallStep(v)]*DAY;
+    }
+    function recallQueue(){
+      var now=Date.now();
+      return videos.concat(tiktoks)
+        .filter(function(v){ return dueAt(v)<=now; })
+        .sort(function(a,b){ return dueAt(a)-dueAt(b); });
+    }
+    /* Kept for the empty pane, and for every test that already relies on it. */
+    function dueRemember(){ return recallQueue()[0]||null; }
+    function recallKept(v){                     // "still with me" → wait longer
+      v.recall=Math.min(recallStep(v)+1,STEPS.length-1); v.revisitTs=Date.now(); v.ts=Date.now(); saveItem(v);
+    }
+    function recallLost(v){                     // "I'd forgotten that" → start again
+      v.recall=0; v.revisitTs=Date.now(); v.ts=Date.now(); saveItem(v);
     }
 
     /* ── habits ───────────────────────────────────────────────── */
@@ -1283,7 +1763,13 @@
             '<button type="button" class="hb-ck'+(x.adopted?' on':'')+'" data-ha="'+esc(x.id)+'" aria-label="Adopted">'+(x.adopted?'✓':'')+'</button>'+
             '<div style="flex:1;min-width:0"><div class="hb-t">'+esc(x.text)+'</div>'+
             (x.why?'<div class="hb-w">'+esc(x.why)+'</div>':'')+
-            (x.adopted?'<div class="hb-w" style="color:rgba(var(--acc),.8)">Adopted · track it in Identity</div>':'')+'</div>'+
+            /* ⚠️ This was the SENTENCE "Adopted · track it in Identity" and it
+               created nothing — the one instruction on the page with no way to
+               follow it. It is a link now, and Identity builds the row through
+               its OWN save path (see identity.html's ?habit= handler): the
+               store is written by the page that owns it, so the tombstones and
+               the sync engine are the right ones. */
+            (x.adopted?'<div class="hb-w"><a class="hb-go" href="identity.html?habit='+encodeURIComponent(x.text)+'">Adopted · start the streak in Identity →</a></div>':'')+'</div>'+
             '<button type="button" class="hb-x" data-dh="'+esc(x.id)+'" aria-label="Remove">✕</button></div>';
         }).join('')+'</div>' : '<div class="empty"><b>Nothing matches</b>No habit matches “'+esc(seek.trim())+'”.</div>';
       }
@@ -1298,9 +1784,12 @@
       el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
     function metricsHTML(){
       var un=videos.filter(function(v){return !v.watched;}).length;
-      var lessons=tiktoks.filter(function(v){return v.keypoints&&isLesson(v);}).length;
-      var building=habits.filter(function(h){return !h.adopted;}).length;
-      var sets=[ ['To watch',un], ['Saved',tiktoks.length], ['Lessons',lessons], ['Building',building] ];
+      // Lessons across BOTH worlds — the masthead counts the library, not one
+      // wall of it, and a YouTube lesson is now a graded claim rather than the
+      // default every video wore.
+      var lessons=videos.concat(tiktoks).filter(function(v){return v.keypoints&&!isLegacyRead(v)&&isLesson(v);}).length;
+      var openAct=actions.filter(function(a){return !a.done;}).length;
+      var sets=[ ['To watch',un], ['Saved',tiktoks.length], ['Lessons',lessons], ['To practise',openAct] ];
       return sets.map(function(s){ return '<div class="lb-met"><b data-n="'+s[1]+'">0</b><span>'+s[0]+'</span></div>'; }).join('');
     }
     /* The segments are equal width, so the pill only ever travels — its width
@@ -1311,13 +1800,18 @@
       ink.style.transform='translateX('+(w.offsetLeft-3)+'px)';
     }
     function render(){
-      videos=loadArr(K_VID); tiktoks=loadArr(K_TT); habits=loadArr(K_HAB); profile=loadObj(K_PROF);
+      videos=loadArr(K_VID); tiktoks=loadArr(K_TT); habits=loadArr(K_HAB); profile=loadObj(K_PROF); actions=loadArr(K_ACT);
 
       document.documentElement.style.setProperty('--acc',ACCENT[world]);
       $('lbTitleEm').textContent=TITLE[world];
       $('nYt').textContent=videos.filter(function(v){return !v.watched;}).length;
       $('nTt').textContent=tiktoks.length;
+      // The Room's count is what is ASKING for him — things due for recall plus
+      // promises still open — not how many ideas it holds. A number on a tab is
+      // a call to act; the size of the archive is not one.
+      $('nRm').textContent=recallQueue().length+actions.filter(function(a){return !a.done;}).length;
       $('nHb').textContent=habits.filter(function(h){return !h.adopted;}).length;
+      if(document.body&&document.body.classList) document.body.classList.toggle('no-rail',world==='hb'||world==='rm');
 
       var first=!window.__lbAnim; window.__lbAnim=true;
       $('lbMetrics').innerHTML=metricsHTML();
@@ -1328,9 +1822,11 @@
 
       var un=videos.filter(function(v){return !v.watched;}).length;
       var building=habits.filter(function(h){return !h.adopted;}).length;
+      var dueN=recallQueue().length;
       if(videos.length||tiktoks.length||habits.length){
         $('lbSub').textContent=un+' to watch · '+tiktoks.length+' TikTok'+(tiktoks.length===1?'':'s')+' saved · '+
-          building+' habit'+(building===1?'':'s')+' in progress';
+          building+' habit'+(building===1?'':'s')+' in progress'+
+          (dueN?(' · '+dueN+' to revisit'):'');
       }
 
       // The panel shows a live count ("remove all 47"), so it repaints when the
@@ -1346,9 +1842,11 @@
 
     function setWorld(w){
       if(world===w) return;
-      world=w; shelf=''; state=(w==='tt'?'':'todo'); selId=null; playing=null; noteOpen=false; noteDraft=null;
+      world=w; shelf=''; state=(w==='tt'?'':'todo'); selId=null; playing=null; noteOpen=false; noteDraft=null; starOnly=false;
       Array.prototype.forEach.call($('lbWorlds').querySelectorAll('.lb-w'),function(b){
-        b.classList.toggle('on',b.getAttribute('data-world')===w);
+        var on=b.getAttribute('data-world')===w;
+        b.classList.toggle('on',on);
+        b.setAttribute('aria-selected',on?'true':'false');
       });
       renderIngest();          // the only moment the ingest panel is rebuilt
       render();
@@ -1361,9 +1859,18 @@
     $('lbWorlds').addEventListener('click',function(e){
       var b=e.target.closest('[data-world]'); if(b) setWorld(b.getAttribute('data-world'));
     });
-    $('seek').addEventListener('input',function(){ seek=this.value; $('seekClr').classList.toggle('hidden',!seek); render(); });
+    /* Debounced: a full render rebuilds the wall, the rail and the pane, and
+       at a hundred items doing that on every keypress is felt. 110ms is below
+       the point a person notices a delay and above the point a fast typist
+       triggers ten renders for one word. */
+    var seekTimer=null;
+    $('seek').addEventListener('input',function(){
+      seek=this.value; $('seekClr').classList.toggle('hidden',!seek);
+      clearTimeout(seekTimer); seekTimer=setTimeout(render,110);
+    });
     $('seekClr').addEventListener('click',function(){ seek=''; $('seek').value=''; this.classList.add('hidden'); render(); $('seek').focus(); });
     $('rail').addEventListener('click',function(e){
+      var sr=e.target.closest('[data-star]'); if(sr){ starOnly=!starOnly; render(); return; }
       var s=e.target.closest('[data-st]'); if(s){ state=s.getAttribute('data-st'); render(); return; }
       var c=e.target.closest('[data-sh]'); if(c){ shelf=c.getAttribute('data-sh'); render(); return; }
     });
@@ -1387,7 +1894,16 @@
       if(q){ var qk=selId+':'+q.getAttribute('data-q'); if(qOpen[qk]) delete qOpen[qk]; else qOpen[qk]=1; renderPane(); return; }
       if((el=e.target.closest('[data-play]'))){ playing=el.getAttribute('data-play'); renderPane(); return; }
       if((el=e.target.closest('[data-open]'))){ var ov=byId(el.getAttribute('data-open')); if(ov){ setWorld(ov.ttId?'tt':'yt'); select(ov.id); } return; }
-      if((el=e.target.closest('[data-remgot]'))){ var rv=byId(el.getAttribute('data-remgot')); if(rv){ rv.revisitTs=Date.now(); saveItem(rv); render(); } return; }
+      if((el=e.target.closest('[data-remgot]'))){ var rv=byId(el.getAttribute('data-remgot')); if(rv){ recallKept(rv); render(); } return; }
+      if((el=e.target.closest('[data-remlost]'))){ var lv=byId(el.getAttribute('data-remlost')); if(lv){ recallLost(lv); render(); } return; }
+      if((el=e.target.closest('[data-practice]'))){
+        var pv=byId(el.getAttribute('data-practice'));
+        if(pv){ var pk=kpParse(pv.keypoints||''); if(pk.act){ addAction(pv,pk.act); render(); } }
+        return;
+      }
+      if((el=e.target.closest('[data-unpractice]'))){ dropAction(el.getAttribute('data-unpractice')); render(); return; }
+      if((el=e.target.closest('[data-actdone]'))){ toggleAction(el.getAttribute('data-actdone')); render(); return; }
+      if((el=e.target.closest('[data-actdrop]'))){ dropAction(el.getAttribute('data-actdrop')); render(); return; }
       if((el=e.target.closest('[data-watch]'))){ var wv=byId(el.getAttribute('data-watch')); if(wv){ wv.watched=!wv.watched; wv.ts=Date.now(); saveItem(wv); render(); } return; }
       if((el=e.target.closest('[data-star]'))){ var sv=byId(el.getAttribute('data-star')); if(sv){ sv.star=!sv.star; sv.ts=Date.now(); saveItem(sv); render(); } return; }
       if((el=e.target.closest('[data-editnote]'))){ noteOpen=true; noteDraft=null; renderPane(); return; }
@@ -1432,8 +1948,11 @@
       if(e.key==='/'){ e.preventDefault(); $('seek').focus(); $('seek').select(); return; }
       if(e.key==='1'){ setWorld('yt'); return; }
       if(e.key==='2'){ setWorld('tt'); return; }
-      if(e.key==='3'){ setWorld('hb'); return; }
-      if(world==='hb') return;
+      if(e.key==='3'){ setWorld('rm'); return; }
+      if(e.key==='4'){ setWorld('hb'); return; }
+      // j/k walk a wall of tiles. The Room is a page of prose and Habits is a
+      // list — neither has a wall to walk.
+      if(world==='hb'||world==='rm') return;
       if(e.key==='j'||e.key==='k'||e.key==='ArrowRight'||e.key==='ArrowLeft'){
         var list=shelved(scoped()).sort(function(a,b){
           if(world!=='tt' && !!a.watched!==!!b.watched) return a.watched?1:-1;
@@ -1467,7 +1986,7 @@
     window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_TT||ev.key===K_HAB) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_TT,K_HAB,K_PROF], onApplied:function(){ render(); sweep(); ttSweep(); } });
+        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_TT,K_HAB,K_PROF,K_ACT], onApplied:function(){ render(); sweep(); ttSweep(); } });
       })();
     });
     window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, kpParse:kpParse, ttIdOf:ttIdOf, TT_RE:TT_RE,
@@ -1475,11 +1994,19 @@
       dueRemember:dueRemember, byOrd:byOrd, addTikToks:addTikToks, sortedList:sortedList,
       quoteFor:quoteFor, sentences:sentences,
       unreadIn:unreadIn, setPaused:setPaused, isPaused:function(){ return paused; }, K_PAUSE:K_PAUSE,
-      SHELVES:SHELVES, CVER:CVER,
+      SHELVES:SHELVES, CVER:CVER, RVER:RVER,
       removeItems:removeItems,
       setWorld:setWorld, render:render,
-      _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, world:world, state:state, shelf:shelf }; },
-      _set:function(v,h,t){ videos=v; habits=h; if(t) tiktoks=t; } };
+      fold:fold, pool:pool, scoped:scoped, stateOf:stateOf,
+      isLegacyRead:isLegacyRead, ytQueue:ytQueue,
+      recallQueue:recallQueue, recallKept:recallKept, recallLost:recallLost, dueAt:dueAt, STEPS:STEPS,
+      addAction:addAction, dropAction:dropAction, toggleAction:toggleAction, actionFor:actionFor,
+      roomItems:roomItems, persist:persist, storageErr:function(){ return storageErr; },
+      K_ACT:K_ACT, K_VID:K_VID, K_TT:K_TT,
+      _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, actions:actions, world:world, state:state, shelf:shelf, starOnly:starOnly }; },
+      _set:function(v,h,t,a){ videos=v; habits=h; if(t) tiktoks=t; if(a) actions=a; },
+      _seek:function(s){ seek=s; }, _world:function(w){ world=w; }, _star:function(b){ starOnly=!!b; },
+      _stateSet:function(s){ state=s; } };
   })();
   </script>
   <script src="nova.js" defer></script>

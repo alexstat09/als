@@ -161,40 +161,155 @@ async function videoMeta(videoId, key) {
   return { desc: c.text, chapters: c.chapters, had: !!raw };
 }
 
+/* ── HOW MUCH DO WE ACTUALLY HAVE? ────────────────────────────────
+   The TikTok half has had this since the day it shipped; this half did not,
+   and that asymmetry was the single most dishonest thing in the Library.
+
+   ⚠️⚠️ WHAT THIS PATH IS READING IS NOT THE VIDEO. YouTube's caption endpoint
+   is locked (re-verified 22/07/26, three InnerTube clients, zero tracks), so
+   unlike `_tiktok.js` there is NO transcript here, ever. All we have is the
+   creator's own DESCRIPTION — which is marketing copy — its chapter list, and
+   whatever Alex typed himself. The old prompt was handed that, told to produce
+   "3 to 5" key points and to "stay at a level that is safely true" where it
+   had to generalise, and its output was rendered on a card that called every
+   single YouTube video a LESSON. That is a fabrication engine wearing the
+   costume of the feature built to prevent one.
+
+   So the same contract as TikTok now holds on both sides of the page:
+   the grade is decided HERE, in code, before a model is allowed near it, and
+   only a lesson-eligible grade may produce key points. Everything below may
+   only NAME what the thing is. */
+function words(s) { return String(s || '').split(/\s+/).filter(Boolean).length; }
+
+function grade(meta, notes, title) {
+  var n = String(notes || '').trim();
+  var d = String((meta && meta.desc) || '').trim();
+  var ch = ((meta && meta.chapters) || []).length;
+  if (n.length >= 12) return 'notes';           // his own words outrank anything
+  if (ch >= 3) return 'chapters';               // a chapter list IS the outline
+  if (words(d) >= 40) return 'description';     // a real write-up
+  /* ⚠️ There is deliberately NO 'thin' grade here, unlike the TikTok helper.
+     Two reasons. A ten-word YouTube description ("Full match. Subscribe for
+     more.") is not thinner material than a title, it is the same nothing with
+     more words — and 'thin' already means something specific on the TikTok
+     side ("nothing was said and nothing was written on screen"), so reusing
+     the key would put TikTok's sentence on a YouTube card. One grade, one
+     meaning, one sentence. */
+  if (String(title || '').trim() && String(title).trim() !== '(untitled)') return 'title';
+  return 'none';
+}
+
+/* The shelves are REQUIRED from the TikTok helper rather than restated here.
+   Two copies of a taxonomy is two taxonomies with a delay. improve.html holds
+   the third copy on purpose (it has no server), and CVER is what re-shelves
+   the library when this list changes. */
+var ttHelp = require('./_tiktok');
+var SHELF_RULES = ttHelp.SHELF_RULES, SHELVES = ttHelp.SHELVES;
+
 var DISTILL_SYS =
   'You turn a video into the few things worth REMEMBERING, in the simplest language possible.\n' +
   'You are given its title, channel, its own description, its chapter list, and the person\'s notes if they wrote any.\n' +
+  '⚠️ You have NOT been given what is actually said in the video, and no transcript exists. A description is written to sell the video. ' +
+  'Never write a takeaway the description does not actually make.\n' +
   'Write for someone re-reading this in six months who has completely forgotten the video.\n' +
   'Rules:\n' +
-  '- Everyday words a tired person understands. No jargon, no hype, no "in this video", no timestamps, no markdown.\n' +
+  '- Everyday words a tired person understands. No jargon, no hype, no "in this video", no timestamps, no markdown, no emoji.\n' +
   '- Every key point must be a whole thought that stands on its own — something they could say out loud and be right about.\n' +
-  '- Lean on what the description, chapters and notes actually support. Where you must generalise, stay at a level that is safely true. Never invent names, numbers, dates or quotes.\n' +
+  '- Say ONLY what the material supports. Never invent a name, a number, a date, a study or a quote.\n' +
+  '- If there is no real lesson in what you were given — it is a song, a match, a stream, a trailer, or the description says nothing — ' +
+  'do not force one. Answer with KIND: KEEPSAKE and describe what it is instead.\n' +
   'Output PLAIN TEXT, exactly this shape and nothing else:\n' +
-  'TOPIC: <2-4 word Title Case theme, e.g. Mindset & Focus, History, Faith, Health, Craft & Skill, Conversations, Money>\n' +
+  'KIND: LESSON\n' +
+  'TOPIC: <exactly one of the shelves listed below>\n' +
   'CORE: <one sentence — the single idea to keep>\n' +
   'KEY:\n' +
   '- <a takeaway worth remembering>\n' +
-  '- <3 to 5 of them, most useful first>\n' +
-  'DO: <one small concrete thing to try this week>';
+  '- <ONLY as many as the material actually supports, at most 5, most useful first. Three real points beat five padded ones. Never repeat the CORE as a key point.>\n' +
+  'DO: <one small concrete thing to try this week, only if the material genuinely calls for one>\n\n' + SHELF_RULES;
+
+var LABEL_SYS =
+  'You label a video that somebody put in their queue, so they can FIND it again months later.\n' +
+  'You are given its title and channel, and at most a scrap of description. That is ALL that exists — ' +
+  'there is no transcript, so you do NOT know what happens in it.\n' +
+  'Rules:\n' +
+  '- Describe only what the material literally tells you: the subject, the person, the kind of video.\n' +
+  '- NEVER invent a lesson, a takeaway, a message or advice. If all you have is the title, then the title IS the answer.\n' +
+  '- No hype, no markdown, no emoji. Plain, short, factual.\n' +
+  'Output PLAIN TEXT, exactly this shape and nothing else:\n' +
+  'KIND: KEEPSAKE\n' +
+  'TOPIC: <exactly one of the shelves listed below>\n' +
+  'CORE: <one sentence naming what this video is — no more than you were told>\n' +
+  'KEY:\n' +
+  '- <a fact that would help them find it: who is in it, the channel, the subject>\n' +
+  '- <1 to 3 of them, and none you were not given. Each must NAME something. Never a single generic word.>\n\n' + SHELF_RULES;
 
 async function distill(text, title, videoId, key) {
   var meta = await videoMeta(videoId, key);
   var notes = String(text || '').slice(0, 6000);
-  var user = 'Title: ' + (title || '(untitled)') + '\n' +
+  var g = grade(meta, notes, title);
+  if (g === 'none') return { ok: false, error: 'nothing to read', grade: g, unreadable: true };
+  var lesson = (g === 'notes' || g === 'chapters' || g === 'description');
+
+  // ⚠️ `mat` is the MATERIAL and nothing else — it is what the grounding check
+  // measures against, so our own instructions must never be inside it. A note
+  // telling the model "do not invent a lesson" would otherwise donate the words
+  // "lesson", "title" and "description" to the haystack and let a fabricated
+  // point cite them.
+  var mat = 'Title: ' + (title || '(untitled)') + '\n' +
     (meta.chapters.length ? '\nWhat it covers, in order:\n- ' + meta.chapters.join('\n- ') + '\n' : '') +
     (meta.desc ? '\nDescription:\n' + meta.desc + '\n' : '') +
-    (notes ? '\nTheir own notes:\n' + notes + '\n' : '') +
-    (!meta.desc && !meta.chapters.length && !notes
-      ? '\n(No description available — work only from the title, and stay general enough to be certainly true.)'
-      : '');
+    (notes ? '\nTheir own notes:\n' + notes + '\n' : '');
+  var user = mat +
+    (!lesson ? '\n(There is no description and no transcript. Name what this is from the title. Do not invent a lesson.)\n' : '');
+
   var out = await model.json('text', {
-    messages: [{ role: 'system', content: DISTILL_SYS }, { role: 'user', content: user }],
-    temperature: 0.35, max_tokens: 900, reasoning: 'low'
+    messages: [{ role: 'system', content: lesson ? DISTILL_SYS : LABEL_SYS }, { role: 'user', content: user }],
+    temperature: lesson ? 0.3 : 0.15, max_tokens: 900, reasoning: 'low'
   });
-  if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model' };
-  var t = (out.raw || '').trim();
-  if (!t) return { ok: false, error: 'empty' };
-  return { ok: true, text: t, sourced: !!(meta.desc || meta.chapters.length) };
+  if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model', grade: g };
+  var t = String(out.raw || '').trim();
+  if (!t) return { ok: false, error: 'empty', grade: g };
+
+  // A label prompt cannot return a LESSON, whatever the model wrote.
+  if (!lesson) t = t.replace(/^\s*KIND\s*:.*$/im, 'KIND: KEEPSAKE');
+  else if (!/^\s*KIND\s*:/im.test(t)) t = 'KIND: LESSON\n' + t;
+  // ⚠️ Read `kind` back OUT of the reply. Being ELIGIBLE to write a lesson is
+  // not having written one — the same rule as _tiktok.js, for the same reason:
+  // a card must never promise takeaways it does not have.
+  var declared = (t.match(/^\s*KIND\s*:\s*(\w+)/im) || [])[1] || '';
+
+  // Then check every specific against the material it was supposed to come
+  // from. The title is part of the haystack — it is real material, and most
+  // honest paraphrases lean on it.
+  var lines = t.split(/\r?\n/), keys = [], keyIdx = [];
+  lines.forEach(function (ln, i) {
+    var m = ln.match(/^\s*[-•*–—]\s*(.+)$/);
+    if (m) { keys.push(m[1].trim()); keyIdx.push(i); }
+  });
+  var checked = ttHelp._groundKeys(keys, mat), body = t, dropped = [];
+  if (checked.dropped.length) {
+    dropped = checked.dropped;
+    var kill = {};
+    checked.dropped.forEach(function (d) { kill[d.text] = 1; });
+    body = lines.filter(function (ln, i) {
+      var at = keyIdx.indexOf(i);
+      return at < 0 || !kill[keys[at]];
+    }).join('\n');
+  }
+
+  // The shelf must be one we actually own, whatever the model wrote.
+  var topic = (body.match(/^\s*TOPIC\s*:\s*(.+)$/im) || [])[1] || '';
+  var shelf = '', norm = function (s) { return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ''); };
+  SHELVES.forEach(function (s) { if (!shelf && norm(topic).indexOf(norm(s)) >= 0) shelf = s; });
+
+  return {
+    ok: true, text: body, grade: g,
+    kind: /lesson/i.test(declared) ? 'lesson' : 'keepsake',
+    shelf: shelf,
+    dropped: dropped.map(function (d) { return d.token; }),
+    suspect: !!checked.suspect,
+    sourced: !!(meta.desc || meta.chapters.length)
+  };
 }
 
 /* ── organize ─────────────────────────────────────────────────────
@@ -310,4 +425,4 @@ async function organize(items, known, strict) {
   return { ok: true, concepts: map, partial: failed > 0 };
 }
 
-module.exports = { playlist: playlist, distill: distill, organize: organize, _cleanDesc: cleanDesc };
+module.exports = { playlist: playlist, distill: distill, organize: organize, grade: grade, _cleanDesc: cleanDesc };
