@@ -210,7 +210,10 @@ last week against real data, deterministic Nova briefing), `insights.html`
 weekly memory), `arc.html` (chapters; on Home the arc rests as a one-line rail
 under the dateline and expands to the full band only for the three days after a
 chapter turns, so nothing outranks the greeting on an ordinary day),
-`improve.html` (YouTube shelves + background reader), `movies.html`
+`improve.html` — **the Library** (§5): a laptop-first three-pane shell over three
+worlds, YouTube · TikTok · Habits, where a saved video is either a *lesson* with
+real takeaways or a *keepsake* naming what it is, and never a fabricated
+summary, `movies.html`
 (Letterboxd + TMDB, real recommendations), `ideas.html`, `identity.html`,
 `planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income),
 and `scripture.html` — a Bible reading tracker. Alex reads *Η Εικονογραφημένη
@@ -248,7 +251,94 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v424` — the running page now proves delivery instead of assuming
+**HEAD is `als-v426` — `improve.html` became the Library: two worlds, laptop-first**
+(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 97
+assertions; both endpoints verified live). Read this first if the task touches
+the Library, TikTok, or **any feature where an AI summarises something.**
+
+His words: *"it's literally just one scroll and unorganised by a lot… I will
+mostly use it at my laptop, an actual $1000 premium page"*, plus a second world
+for his saved TikToks that tells him *"exactly what I should be taking from the
+video, not less not more."*
+
+### The layout
+It was a 600px column of stacked cards — a phone page shown on a 15-inch screen.
+Now a **three-pane library**: shelves · the wall · the one you're looking at.
+The rail and detail pane are **`position: sticky`, never fixed**, so neither
+fights the topbar or the bottom nav (and constraint 4 can't bite). Three worlds
+behind one switch — **YouTube · TikTok · Habits** — each with its own aurora
+accent. `/` focuses search, `1`/`2`/`3` switch worlds, `j`/`k` walk the wall,
+`Enter` plays, `Esc` closes. On a phone the rail becomes a chip row and the pane
+a sheet. **`page-motion.js` is deliberately NOT loaded here**: it hides content
+behind `translateY(18px)` until scrolled into view, which is wrong for an app
+shell and is exactly the transformed ancestor that breaks fixed children.
+Nothing was dropped — playlist mirror, background reader, shelves, Sharpen (now
+"my own note"), Remember, Focus, momentum, manual add, habits. `ord` still owns
+queue order, never `ts`.
+
+### ⭐ The lesson worth carrying to every other AI feature
+**Five of his real favourites went through the pipe before a line of UI was
+written**, and they killed the obvious design:
+
+| what it was | signal | verdict |
+|---|---|---|
+| Lana Del Rey edit | `#lanadelrey #xybzca #viral` | nothing to take |
+| Ronaldo edit | hashtags only | nothing to take |
+| Jhené Aiko cover | on-screen sticker `"Stranger - Jhene Aiko"` | the song IS the answer |
+| Future clip | ASR captions (song lyrics) | nothing to take |
+| WEWOKEUP sermon | **552 words of real ASR transcript** | a genuine lesson |
+
+**Three of five had nothing to teach.** A model asked for "key takeaways" there
+returns confident fiction — this project's worst failure mode. So the reader
+**classifies before it writes**: a LESSON gets CORE / KEY / DO; everything else
+gets a **KEEPSAKE** naming what the video *is* so he can find it again, and no
+invented takeaway. `grade()` in `api/_tiktok.js` decides that **in code, before
+any model runs** — a hashtag wall can never reach a lesson-eligible grade
+(`transcript` / `screen` / `notes`).
+
+- ⭐ **Being ELIGIBLE to write a lesson is not having written one.** The rap clip
+  had a transcript, qualified, and correctly came back KEEPSAKE. `kind` is read
+  back **out of the reply**, never assumed from eligibility, or the card
+  promises takeaways it doesn't have.
+- Every card carries **receipts**: read from what was said / from the text on
+  screen / from your own note / from a caption that can't teach anything.
+
+### What TikTok actually gives us (measured, not assumed)
+The watch page's `__UNIVERSAL_DATA_FOR_REHYDRATION__` blob carries caption,
+hashtags, creator, duration, cover, sound — plus the two that matter:
+`stickersOnItem[].stickerText` (**the on-screen text**) and
+`video.subtitleInfos[]` → a **WEBVTT URL of TikTok's own ASR captions that IS
+fetchable server-side**. This is the transcript YouTube has refused us twice.
+- ⚠️ **The subtitle URL expires within the hour** — the transcript is fetched at
+  save time and the TEXT stored. Never the URL. Covers are signed too, so
+  `?tiktok=` doubles as the refresh call and a dead `<img>` triggers it.
+- ⚠️ **TikTok does NOT block Vercel** — verified from production, 200 in 1.5 s
+  with all 552 words. That was the one risk that could have killed the feature,
+  which is why the server half shipped alone first.
+- Capture is a **paste box that eats his whole Notes list at once**. There is no
+  favourites API; don't go looking for one.
+
+### Bugs found inside the build — all silent, all now pinned by tests
+- **A PENDING TikTok has an EMPTY `ttId`** (it only learns its id from the
+  server), so `!!v.ttId` routed it into the *YouTube* store. `isTikTok()` decides
+  now.
+- **The ingest panel lived inside the wall**, which the background reader
+  re-renders every few seconds — a sweep finishing would have wiped fifty
+  freshly pasted links. Ingest and wall are separate containers; the note editor
+  keeps its draft and never has focus stolen mid-typing.
+- A keepsake takes its **name** from its core sentence, and printed it twice.
+- A 9:16 poster pushed every key point below the fold; idle it's a banner.
+- The pane reported *"70% of the YouTube queue watched"* on the TikTok wall.
+
+`improve:tiktoks` is registered in backup `BUNDLES` (synced-but-unrestorable is
+the trap `smoke-test.sh` exists to catch). Home's tile is now **Library**.
+
+🔴 **Open:** no real TikTok has been added **from his browser** — the server half
+is verified live end to end, but the paste box, the wall and the embed player
+have only met seeded data in headless Chrome. The TikTok embed
+(`/embed/v2/<id>`) is the least proven piece.
+
+**Before that — `als-v424` — the running page proves delivery instead of assuming
 it** (2026-07-27, on `main`, 17 suites + smoke green; `tests/run-identity.test.js`
 32 assertions, `tests/run-courier.test.js` 17, `tests/run-inbox.test.js` 36).
 Read this first if the task touches her runs, the courier, or ANY page that has
