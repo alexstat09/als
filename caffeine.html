@@ -403,7 +403,9 @@ body::before {
 /* ══ Log sheet (native <dialog>) ════════════════════════ */
 dialog.sheet {
   width: min(560px, calc(100vw - 28px));
-  max-height: min(84vh, 720px);
+  /* The list carries its own cap, so the sheet is free to size to content and
+     stay short when a search narrows it to two rows. */
+  max-height: min(90vh, 780px);
   padding: 0; border: 1px solid var(--line-2); border-radius: 22px;
   background: rgba(13,13,15,0.97);
   backdrop-filter: blur(26px) saturate(1.25); -webkit-backdrop-filter: blur(26px) saturate(1.25);
@@ -461,7 +463,17 @@ dialog.sheet[open] { animation: sheetIn 0.36s var(--ease); }
 }
 .sh-cat:hover { color: var(--dim); }
 .sh-cat.on { color: var(--ink); border-color: rgba(var(--em-rgb),0.4); background: rgba(var(--em-rgb),0.10); }
-.sh-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 22px; scrollbar-width: thin; }
+/* ⚠️ NEVER `flex: 1` here. That is `flex: 1 1 0%`, and the dialog has only a
+   max-height, so its main size is INDEFINITE. Chrome resolves the 0% basis
+   against content; iOS Safari collapses a scrolling flex item to ZERO height
+   in that situation — which rendered the sheet with a header, a search box,
+   category chips and NO DRINKS AT ALL. Sizing from content with an explicit
+   cap is definite either way, and cannot resolve to nothing. */
+.sh-list {
+  flex: 1 1 auto; min-height: 64px; max-height: min(52vh, 430px);
+  overflow-y: auto; padding: 0 22px; scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
 .sh-list::-webkit-scrollbar { width: 4px; }
 .sh-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 .sh-group {
@@ -1678,69 +1690,92 @@ function maybeCutoffNudge() {
 //  DRINK LIBRARY — same names, same mg as before. Now filed by
 //  category so the sheet reads as a menu instead of a wall.
 // ══════════════════════════════════════════════════════════════
-const CATS = ['Coffee', 'Tea', 'Energy', 'Soda', 'Pre-workout', 'Other'];
+// Greek leads the list because it is what he actually drinks in Rhodes, and
+// packaged drinks are named in ml — the number printed on the can he buys.
+// The library was entirely US ounces, which is a size he never orders.
+const CATS = ['Greek', 'Coffee', 'Tea', 'Energy', 'Soda', 'Pre-workout', 'Other'];
 const DRINKS = [
+  // Sweetness (σκέτος / μέτριος / γλυκός) changes no caffeine, only the shot count does.
+  {c:'Greek',name:'Freddo espresso (διπλός)',mg:126},
+  {c:'Greek',name:'Freddo espresso (μονός)',mg:63},
+  {c:'Greek',name:'Freddo cappuccino',mg:126},
+  {c:'Greek',name:'Cappuccino freddo (μονός)',mg:63},
+  {c:'Greek',name:'Frappé (μέτριος, 2 κ.γ.)',mg:80},
+  {c:'Greek',name:'Frappé (μονός, 1 κ.γ.)',mg:40},
+  {c:'Greek',name:'Ελληνικός καφές',mg:65},
+  {c:'Greek',name:'Ελληνικός διπλός',mg:130},
+  {c:'Greek',name:'Nescafé 3-in-1 (stick)',mg:40},
+  {c:'Greek',name:'Espresso freddo διπλός + σιρόπι',mg:126},
   {c:'Coffee',name:'Espresso (single)',mg:63},
   {c:'Coffee',name:'Espresso (double)',mg:126},
-  {c:'Coffee',name:'Drip coffee (8 oz)',mg:95},
-  {c:'Coffee',name:'Drip coffee (12 oz)',mg:142},
-  {c:'Coffee',name:'Drip coffee (16 oz)',mg:190},
-  {c:'Coffee',name:'Cold brew (12 oz)',mg:200},
+  {c:'Coffee',name:'Drip coffee (240 ml)',mg:95},
+  {c:'Coffee',name:'Drip coffee (350 ml)',mg:142},
+  {c:'Coffee',name:'Drip coffee (470 ml)',mg:190},
+  {c:'Coffee',name:'Cold brew (350 ml)',mg:200},
   {c:'Coffee',name:'Cold brew concentrate',mg:280},
   {c:'Coffee',name:'Americano',mg:77},
   {c:'Coffee',name:'Cappuccino',mg:63},
-  {c:'Coffee',name:'Latte (12 oz)',mg:63},
-  {c:'Coffee',name:'Latte (16 oz)',mg:126},
+  {c:'Coffee',name:'Latte (350 ml)',mg:63},
+  {c:'Coffee',name:'Latte (470 ml)',mg:126},
   {c:'Coffee',name:'Flat white',mg:130},
   {c:'Coffee',name:'Macchiato',mg:77},
-  {c:'Coffee',name:'Mocha (12 oz)',mg:95},
-  {c:'Coffee',name:'French press (8 oz)',mg:107},
-  {c:'Coffee',name:'Pour-over (8 oz)',mg:100},
-  {c:'Coffee',name:'Instant coffee (8 oz)',mg:57},
+  {c:'Coffee',name:'Mocha (350 ml)',mg:95},
+  {c:'Coffee',name:'French press (240 ml)',mg:107},
+  {c:'Coffee',name:'Pour-over (240 ml)',mg:100},
+  {c:'Coffee',name:'Instant coffee (240 ml)',mg:57},
   {c:'Coffee',name:'Decaf espresso',mg:4},
-  {c:'Coffee',name:'Decaf coffee (8 oz)',mg:5},
-  {c:'Tea',name:'Black tea (8 oz)',mg:47},
-  {c:'Tea',name:'Green tea (8 oz)',mg:28},
-  {c:'Tea',name:'White tea (8 oz)',mg:15},
-  {c:'Tea',name:'Oolong tea (8 oz)',mg:37},
-  {c:'Tea',name:'Matcha (8 oz)',mg:70},
-  {c:'Tea',name:'Matcha latte (12 oz)',mg:80},
-  {c:'Tea',name:'Chai latte (12 oz)',mg:50},
-  {c:'Tea',name:'Earl Grey (8 oz)',mg:50},
-  {c:'Tea',name:'Yerba mate (8 oz)',mg:85},
-  {c:'Energy',name:'Red Bull (8.4 oz)',mg:80},
-  {c:'Energy',name:'Red Bull (12 oz)',mg:114},
-  {c:'Energy',name:'Monster Energy (16 oz)',mg:160},
-  {c:'Energy',name:'Monster Ultra (16 oz)',mg:150},
-  {c:'Energy',name:'Celsius (12 oz)',mg:200},
-  {c:'Energy',name:'Celsius Heat (16 oz)',mg:300},
-  {c:'Energy',name:'Ghost Energy (16 oz)',mg:200},
-  {c:'Energy',name:'Prime Energy (12 oz)',mg:200},
-  {c:'Energy',name:'Bang Energy (16 oz)',mg:300},
-  {c:'Energy',name:'Reign (16 oz)',mg:300},
-  {c:'Energy',name:'Rockstar (16 oz)',mg:160},
-  {c:'Energy',name:'G-Fuel (16 oz)',mg:150},
-  {c:'Energy',name:'NOS (16 oz)',mg:160},
-  {c:'Energy',name:'Alani Nu (12 oz)',mg:200},
-  {c:'Energy',name:'5-hour Energy (2 oz)',mg:200},
-  {c:'Energy',name:'Reign Storm (16 oz)',mg:300},
-  {c:'Soda',name:'Coca-Cola (12 oz)',mg:34},
-  {c:'Soda',name:'Diet Coke (12 oz)',mg:46},
-  {c:'Soda',name:'Pepsi (12 oz)',mg:38},
-  {c:'Soda',name:'Mountain Dew (12 oz)',mg:54},
-  {c:'Soda',name:'Dr Pepper (12 oz)',mg:41},
-  {c:'Soda',name:'Pepsi Zero (12 oz)',mg:69},
-  {c:'Soda',name:'Sprite (12 oz)',mg:0},
+  {c:'Coffee',name:'Decaf coffee (240 ml)',mg:5},
+  {c:'Tea',name:'Black tea (240 ml)',mg:47},
+  {c:'Tea',name:'Green tea (240 ml)',mg:28},
+  {c:'Tea',name:'White tea (240 ml)',mg:15},
+  {c:'Tea',name:'Oolong tea (240 ml)',mg:37},
+  {c:'Tea',name:'Matcha (240 ml)',mg:70},
+  {c:'Tea',name:'Matcha latte (350 ml)',mg:80},
+  {c:'Tea',name:'Chai latte (350 ml)',mg:50},
+  {c:'Tea',name:'Earl Grey (240 ml)',mg:50},
+  {c:'Tea',name:'Yerba mate (240 ml)',mg:85},
+  {c:'Energy',name:'Monster Energy (500 ml)',mg:160},
+  {c:'Energy',name:'Monster Energy (330 ml)',mg:106},
+  {c:'Energy',name:'Monster Ultra (500 ml)',mg:150},
+  {c:'Energy',name:'Monster Ultra (330 ml)',mg:99},
+  {c:'Energy',name:'Monster Juiced / Mango Loco (500 ml)',mg:160},
+  {c:'Energy',name:'Red Bull (250 ml)',mg:80},
+  {c:'Energy',name:'Red Bull (355 ml)',mg:114},
+  {c:'Energy',name:'Red Bull (473 ml)',mg:151},
+  {c:'Energy',name:'Red Bull Sugarfree (250 ml)',mg:80},
+  {c:'Energy',name:'Hell Energy (250 ml)',mg:80},
+  {c:'Energy',name:'Hell Energy (500 ml)',mg:160},
+  {c:'Energy',name:'Burn (250 ml)',mg:80},
+  {c:'Energy',name:'Celsius (355 ml)',mg:200},
+  {c:'Energy',name:'Celsius Heat (473 ml)',mg:300},
+  {c:'Energy',name:'Ghost Energy (473 ml)',mg:200},
+  {c:'Energy',name:'Prime Energy (355 ml)',mg:200},
+  {c:'Energy',name:'Bang Energy (473 ml)',mg:300},
+  {c:'Energy',name:'Reign (473 ml)',mg:300},
+  {c:'Energy',name:'Rockstar (500 ml)',mg:160},
+  {c:'Energy',name:'G-Fuel (473 ml)',mg:150},
+  {c:'Energy',name:'NOS (473 ml)',mg:160},
+  {c:'Energy',name:'Alani Nu (355 ml)',mg:200},
+  {c:'Energy',name:'5-hour Energy (60 ml)',mg:200},
+  {c:'Soda',name:'Coca-Cola (330 ml)',mg:32},
+  {c:'Soda',name:'Coca-Cola Zero (330 ml)',mg:32},
+  {c:'Soda',name:'Coca-Cola (500 ml)',mg:48},
+  {c:'Soda',name:'Pepsi (330 ml)',mg:35},
+  {c:'Soda',name:'Pepsi Max (330 ml)',mg:63},
+  {c:'Soda',name:'Mountain Dew (330 ml)',mg:50},
+  {c:'Soda',name:'Dr Pepper (330 ml)',mg:38},
+  {c:'Soda',name:'Iced tea, lemon (500 ml)',mg:20},
+  {c:'Soda',name:'Sprite / Fanta (any)',mg:0},
   {c:'Pre-workout',name:'C4 Original (1 scoop)',mg:150},
   {c:'Pre-workout',name:'C4 Extreme (1 scoop)',mg:200},
   {c:'Pre-workout',name:'Gorilla Mode (1 scoop)',mg:175},
   {c:'Pre-workout',name:'Pre-workout generic (1 scoop)',mg:200},
   {c:'Pre-workout',name:'BCAA caffeinated (1 scoop)',mg:100},
   {c:'Pre-workout',name:'Jack3d (1 scoop)',mg:135},
-  {c:'Other',name:'Dark chocolate (1 oz)',mg:12},
-  {c:'Other',name:'Milk chocolate (1 oz)',mg:6},
-  {c:'Other',name:'Hot cocoa (8 oz)',mg:5},
-  {c:'Other',name:'Chocolate milk (8 oz)',mg:5},
+  {c:'Other',name:'Dark chocolate (30 g)',mg:12},
+  {c:'Other',name:'Milk chocolate (30 g)',mg:6},
+  {c:'Other',name:'Hot cocoa (240 ml)',mg:5},
+  {c:'Other',name:'Chocolate milk (240 ml)',mg:5},
   {c:'Other',name:'Caffeine pill (100 mg)',mg:100},
   {c:'Other',name:'Caffeine pill (200 mg)',mg:200},
   {c:'Other',name:'Excedrin (1 tablet)',mg:65}
@@ -1778,12 +1813,26 @@ window.setCat = function (c) { drinkCat = c; renderCats(); renderSheetList(); };
 
 function renderSheetList() {
   const q = drinkQ.trim().toLowerCase();
-  let list = allDrinks();
+  const every = allDrinks();
+  let list = every;
   if (drinkCat !== 'All') list = list.filter(function (d) { return d.c === drinkCat; });
   if (q) list = list.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; });
 
+  // "No results for your search" and "the library itself came back empty" are
+  // different failures and must never look the same. The second one is a bug,
+  // and the page has to say so rather than showing a blank panel.
+  if (!every.length) {
+    eid('shList').innerHTML =
+      '<div class="sh-none">The drink library failed to load.<br>' +
+      '<span style="font-size:12px;font-family:var(--mono);letter-spacing:0.05em">' +
+      'Reload the page. You can still add a drink by name below.</span></div>';
+    return;
+  }
   if (!list.length) {
-    eid('shList').innerHTML = '<div class="sh-none">Nothing matches. Add it below.</div>';
+    eid('shList').innerHTML = '<div class="sh-none">Nothing matches' +
+      (q ? ' “' + esc(drinkQ.trim()) + '”' : ' in ' + esc(drinkCat)) + '.<br>' +
+      '<span style="font-size:12px;font-family:var(--mono);letter-spacing:0.05em">' +
+      'Add it by name below and it is yours from now on.</span></div>';
     return;
   }
   // Group headers only while more than one category is on screen.
