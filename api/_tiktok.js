@@ -267,7 +267,13 @@ async function read(v) {
   // A keepsake prompt cannot return a LESSON, whatever the model wrote.
   if (!lesson) t = t.replace(/^\s*KIND\s*:.*$/im, 'KIND: KEEPSAKE');
   else if (!/^\s*KIND\s*:/im.test(t)) t = 'KIND: LESSON\n' + t;
-  return { ok: true, text: t, grade: g, kind: lesson ? 'lesson' : 'keepsake' };
+  // ⚠️ `kind` is read back OUT of the text, never assumed from eligibility.
+  // Being ALLOWED to write a lesson is not the same as having written one:
+  // a rap clip has a transcript, qualifies, and correctly comes back KEEPSAKE
+  // because there was nothing to learn in it. Reporting "lesson" there would
+  // have the card promise takeaways it does not have.
+  var declared = (t.match(/^\s*KIND\s*:\s*(\w+)/im) || [])[1] || '';
+  return { ok: true, text: t, grade: g, kind: /lesson/i.test(declared) ? 'lesson' : 'keepsake' };
 }
 
 module.exports = {

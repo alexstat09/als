@@ -138,7 +138,7 @@
           return { hero: '—', note: 'north star' };
         }
         case 'ideas.html': { var a = ls('ideas:items', []); a = Array.isArray(a) ? a : []; return a.length ? { hero: a.filter(function (i) { return !i.done; }).length, note: 'open · capture' } : { hero: '—', note: 'capture' }; }
-        case 'improve.html': { var v = ls('improve:videos', []); v = Array.isArray(v) ? v : []; var w = v.filter(function (x) { return x && !x.watched; }).length; return v.length ? { hero: w, note: 'to learn · queue' } : { hero: '—', note: 'learning queue' }; }
+        case 'improve.html': { var v = ls('improve:videos', []); v = Array.isArray(v) ? v : []; var tk = ls('improve:tiktoks', []); tk = Array.isArray(tk) ? tk : []; var w = v.filter(function (x) { return x && !x.watched; }).length; if (!v.length && !tk.length) return { hero: '—', note: 'videos & TikToks' }; return { hero: w + tk.length, note: w ? (w + ' to watch · ' + tk.length + ' saved') : (tk.length + ' saved') }; }
         // Money is euros now, read from money:accounts. The old tile summed the
         // nw:* categories, which were stored in a CHF base and displayed through
         // a live FX rate — so the home screen could show a different number from

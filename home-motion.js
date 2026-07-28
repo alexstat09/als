@@ -127,7 +127,7 @@
   var ITEMS = [
     ['Fitness', 'gym.html', 'Train'], ['PR Board', 'pr.html', 'Train'], ['Running', 'run.html', 'Run'],
     ['Nutrition', 'nutrition.html', 'Body'], ['Sleep', 'sleep.html', 'Body'], ['Weight', 'weight.html', 'Body'], ['Caffeine', 'caffeine.html', 'Body'], ['Supplements', 'supps.html', 'Body'], ['Measurements', 'measure.html', 'Body'], ['Meal planner', 'planner.html', 'Body'], ['Water', 'po-water.html', 'Body'], ['Import MyFitnessPal', 'import.html', 'Body'], ['Import Strong', 'import-strong.html', 'Body'], ['Body hub', 'body.html', 'Body'],
-    ['Goals', 'main.html', 'Mind'], ['Identity', 'identity.html', 'Mind'], ['Ideas', 'ideas.html', 'Mind'], ['Improve', 'improve.html', 'Mind'],
+    ['Goals', 'main.html', 'Mind'], ['Identity', 'identity.html', 'Mind'], ['Ideas', 'ideas.html', 'Mind'], ['Library', 'improve.html', 'Mind'], ['TikToks', 'improve.html', 'Mind'], ['Habits', 'improve.html', 'Mind'],
     ['Money', 'finance.html', 'Money'], ['Movies', 'movies.html', 'Life'], ['Your Arc', 'arc.html', 'Life'],
     ['Insight Engine', 'insights.html', 'Life'], ['Αρχαία', 'arxaia.html', 'Study'], ['Ιστορία', 'istoria.html', 'Study'],
     ['Morning Briefing', 'morning.html', 'Go'], ['Weekly Review', 'weekly.html', 'Go'], ['Coach', 'coach.html', 'Go'], ['Nova', 'nova-chat.html', 'Go'], ['Backup', 'backup.html', 'Go']

@@ -5,315 +5,402 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Improve · MÉTRON</title>
+  <title>Library · MÉTRON</title>
   <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
   <script src="water.js"></script>
   <script src="topbar.js" defer></script>
-<script>window.__pmAutoSel='.gr-hero,.gr-card';(function(){var n=0,t=setInterval(function(){try{if(window.PageMotion){PageMotion.scan(window.__pmAutoSel);if(++n>=5)clearInterval(t);}}catch(e){clearInterval(t);}},700);})();</script>
-<script src="page-motion.js" defer></script>
+  <!-- ⚠️ page-motion.js is deliberately NOT loaded here, unlike the other inner
+       pages. It hides content behind `transform: translateY(18px)` until it
+       scrolls into view, and this page is a three-pane app shell rather than a
+       scrolling story: a shelf rail that reveals itself on scroll is wrong, and
+       a transformed ancestor is exactly what breaks `position:fixed` children
+       (hard constraint 4). Counting numbers use this page's own countTo(). -->
   <style>
-    :root{ --gr:168,214,110; }
+    /* ════════════════════════════════════════════════════════════════
+       THE LIBRARY — everything Alex keeps, in two worlds.
+
+       Laptop-first ON PURPOSE. His words: "I will mostly use it at my
+       laptop… it's literally just one scroll and unorganised." The old page
+       was a 600px column of stacked cards, which is a phone page shown on a
+       15-inch screen. This is a three-pane library:
+
+         [ shelves ][ the wall ][ the one you're looking at ]
+
+       The rail and the detail pane are `position: sticky`, not fixed — the
+       page scrolls normally underneath the topbar and the bottom nav, and
+       nothing has to fight either of them.
+
+       Each world carries its own accent, all three drawn from the aurora
+       palette so the page still belongs to MÉTRON: YouTube emerald-green,
+       TikTok teal, Habits violet.
+       ════════════════════════════════════════════════════════════════ */
+    :root{ --gr:168,214,110; --acc:168,214,110; }
     *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
     html,body{ min-height:100%; }
-    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans); padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+    body{ background:var(--au-void,#050506); color:var(--au-ivory); font-family:var(--au-sans);
+          padding:0 0 calc(86px + env(safe-area-inset-bottom)); }
+    ::selection{ background:rgba(var(--acc),.24); }
+    button,input,textarea{ font:inherit; color:inherit; }
+    button{ background:none; border:none; cursor:pointer; }
+    a{ color:inherit; }
 
-    .gr-hero{ max-width:600px; margin:0 auto; padding:24px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
-    .gr-eyebrow{ font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--gr),.85); margin-bottom:11px; }
-    .gr-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6.2vw,32px); line-height:1.08; letter-spacing:-.01em; }
-    .gr-hero-sub{ font-size:13px; color:var(--au-dim); margin-top:8px; max-width:36ch; line-height:1.45; }
-    .gr-orb{ flex:none; width:62px; height:62px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px;
-      background:radial-gradient(120% 120% at 30% 20%, rgba(var(--gr),.22), rgba(var(--gr),.04)); border:1px solid rgba(var(--gr),.3); box-shadow:0 0 30px rgba(var(--gr),.12); }
+    .lb{ max-width:1560px; margin:0 auto; padding:0 clamp(14px,2.4vw,36px); }
 
-    .gr-snap{ max-width:600px; margin:10px auto 0; display:grid; grid-template-columns:repeat(4,1fr);
-      background:rgba(7,8,11,.72); border:1px solid var(--au-line); border-radius:16px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
-    .gr-snap-i{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 4px; border-right:1px solid var(--au-line); text-align:center; }
-    .gr-snap-i:last-child{ border-right:none; }
-    .gr-snap-v{ font-family:var(--au-serif); font-style:italic; font-weight:400; font-size:27px; color:var(--au-ivory); letter-spacing:0; line-height:1; }
-    .gr-snap-l{ font-family:var(--au-mono); font-size:7.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); margin-top:4px; }
-    .gr-mo{ max-width:600px; margin:12px auto 0; padding:0 18px; }
-    .gr-mo-track{ height:5px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden; }
-    .gr-mo-fill{ height:100%; border-radius:3px; background:rgb(var(--gr)); width:0; transition:width .9s cubic-bezier(.16,1,.3,1); }
-    .gr-mo-cap{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
+    /* ── masthead ─────────────────────────────────────────────── */
+    .lb-top{ display:flex; align-items:flex-end; justify-content:space-between; gap:32px;
+             padding:26px 2px 20px; flex-wrap:wrap; }
+    .lb-eyebrow{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.24em; text-transform:uppercase;
+                 color:rgba(var(--acc),.72); transition:color .5s var(--au-ease); }
+    .lb-title{ font-family:var(--au-serif); font-weight:400; font-size:clamp(30px,3.4vw,46px);
+               line-height:1.02; letter-spacing:-.015em; margin-top:9px; }
+    .lb-title em{ font-style:italic; color:rgba(var(--acc),.94); transition:color .5s var(--au-ease); }
+    .lb-sub{ font-size:12.5px; color:var(--au-dim); margin-top:10px; letter-spacing:.005em; }
 
-    .gr-wrap{ max-width:600px; margin:0 auto; padding:16px 18px; display:flex; flex-direction:column; gap:16px; }
-    .gr-card{ background:rgba(255,255,255,.025); border:1px solid var(--au-line); border-radius:18px; padding:16px 16px 18px; }
-    .gr-card-hd{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
-    .gr-card-hd .dot{ width:7px; height:7px; border-radius:50%; background:rgba(var(--gr),.9); box-shadow:0 0 8px rgba(var(--gr),.6); }
-    .gr-card-hd h2{ font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); }
-    .gr-card-hd .line{ flex:1; height:1px; background:var(--au-line); }
+    .lb-metrics{ display:flex; gap:clamp(16px,2vw,34px); align-items:flex-end; padding-bottom:4px; }
+    .lb-met{ text-align:right; }
+    .lb-met b{ display:block; font-family:var(--au-serif); font-size:clamp(24px,2.5vw,34px); font-weight:400;
+               line-height:1; letter-spacing:-.01em; }
+    .lb-met span{ display:block; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.18em;
+                  text-transform:uppercase; color:var(--au-faint); margin-top:7px; }
 
-    /* focus */
-    .gr-focus{ background:linear-gradient(135deg, rgba(var(--gr),.12), rgba(var(--gr),.03)); border:1px solid rgba(var(--gr),.28); }
-    .gr-focus .lab{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--gr),.9); margin-bottom:9px; }
-    .gr-focus .big{ font-size:16px; font-weight:600; color:var(--au-ivory); line-height:1.35; }
-    .gr-focus .sub{ font-size:12.5px; color:var(--au-dim); margin-top:7px; line-height:1.4; }
-    .gr-focus a.go{ display:inline-block; margin-top:11px; font-size:12.5px; font-weight:700; color:rgb(var(--gr)); text-decoration:none; }
+    /* ── the world switch ─────────────────────────────────────── */
+    .lb-bar{ display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+             padding:0 2px 16px; border-bottom:1px solid var(--au-line); }
+    /* The three segments are deliberately EQUAL width, so the travelling pill
+       animates `transform` alone. Animating its width instead would relayout
+       on every frame — the same rule the weight page's range selector follows. */
+    .lb-worlds{ position:relative; display:flex; padding:3px;
+                background:var(--au-glass); border:1px solid var(--au-line); border-radius:12px; }
+    .lb-worlds .ink{ position:absolute; top:3px; left:3px; width:calc((100% - 6px)/3); height:calc(100% - 6px); border-radius:9px;
+                     background:rgba(var(--acc),.13); border:1px solid rgba(var(--acc),.3);
+                     transition:transform .42s var(--au-ease), background .42s var(--au-ease), border-color .42s var(--au-ease);
+                     pointer-events:none; }
+    .lb-w{ position:relative; flex:1 1 0; min-width:104px; display:flex; align-items:center; justify-content:center;
+           gap:8px; padding:8px 15px; border-radius:9px;
+           font-size:12.5px; letter-spacing:.01em; color:var(--au-dim); transition:color .3s var(--au-ease); white-space:nowrap; }
+    .lb-w:hover{ color:var(--au-ivory); }
+    .lb-w.on{ color:var(--au-ivory); }
+    .lb-w .n{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); }
+    .lb-w.on .n{ color:rgba(var(--acc),.9); }
 
-    /* form */
-    .gr-form-row{ display:flex; gap:10px; margin-bottom:11px; }
-    .gr-field{ display:flex; flex-direction:column; gap:5px; flex:1; }
-    .gr-field label{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint); }
-    .gr-in{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:11px; color:var(--au-ivory); font-family:var(--au-sans); font-size:15px; padding:11px 13px; outline:none; -webkit-appearance:none; }
-    .gr-in:focus{ border-color:rgba(var(--gr),.5); box-shadow:0 0 0 3px rgba(var(--gr),.1); }
-    textarea.gr-in{ font-size:14px; min-height:50px; resize:vertical; }
-    .gr-save{ width:100%; margin-top:3px; background:rgb(var(--gr)); color:#10210a; border:none; border-radius:13px; padding:13px; font-family:var(--au-sans); font-size:14px; font-weight:800; letter-spacing:.02em; cursor:pointer; box-shadow:0 6px 22px rgba(var(--gr),.25); transition:transform .12s; }
-    .gr-save:active{ transform:scale(.98); }
-    .gr-toast{ text-align:center; font-family:var(--au-mono); font-size:11px; font-weight:700; letter-spacing:.06em; color:rgb(var(--gr)); margin-top:9px; min-height:14px; opacity:0; transition:opacity .25s; }
-    .gr-toast.show{ opacity:1; }
+    .lb-seek{ position:relative; flex:1; min-width:190px; max-width:420px; }
+    .lb-seek input{ width:100%; background:var(--au-glass); border:1px solid var(--au-line);
+                    border-radius:11px; padding:10px 34px 10px 34px; font-size:12.5px; outline:none;
+                    transition:border-color .3s var(--au-ease), background .3s var(--au-ease); }
+    .lb-seek input:focus{ border-color:rgba(var(--acc),.4); background:var(--au-glass-2); }
+    .lb-seek input::placeholder{ color:var(--au-faint); }
+    .lb-seek .ic{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--au-faint); font-size:12px; pointer-events:none; }
+    .lb-seek .kb{ position:absolute; right:11px; top:50%; transform:translateY(-50%); font-family:var(--au-mono);
+                  font-size:9px; color:var(--au-faint); border:1px solid var(--au-line-2); border-radius:4px; padding:1px 5px; }
+    .lb-seek .clr{ position:absolute; right:8px; top:50%; transform:translateY(-50%); color:var(--au-dim); font-size:13px; padding:4px 6px; }
+    .lb-status{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+                color:var(--au-faint); min-height:12px; }
+    .lb-status.live{ color:rgba(var(--acc),.85); }
 
-    /* ── queue controls: search + filter chips ── */
-    .gr-seek{ position:relative; margin-bottom:10px; }
-    .gr-seek input{ width:100%; background:rgba(255,255,255,.04); border:1px solid var(--au-line); border-radius:12px; color:var(--au-ivory); font-family:var(--au-sans); font-size:13.5px; padding:10px 32px 10px 32px; outline:none; -webkit-appearance:none; }
-    .gr-seek input:focus{ border-color:rgba(var(--gr),.45); }
-    .gr-seek input::placeholder{ color:var(--au-faint); }
-    .gr-seek .mag{ position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--au-faint); pointer-events:none; }
-    .gr-seek .clr{ position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--au-faint); font-size:14px; cursor:pointer; padding:4px 6px; }
+    /* ── the three panes ──────────────────────────────────────── */
+    .lb-body{ display:grid; grid-template-columns:214px minmax(0,1fr) 384px; gap:clamp(18px,2vw,34px); padding:22px 0 40px; align-items:start; }
+    .lb-rail{ position:sticky; top:74px; }
+    .lb-side{ position:sticky; top:74px; }
 
-    .gr-filter{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px; }
-    .gr-filter:last-of-type{ margin-bottom:13px; }
-    .gr-fchip{ font-size:11.5px; font-weight:600; padding:5.5px 11px; border-radius:999px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); white-space:nowrap; transition:background .15s,border-color .15s,color .15s; }
-    .gr-fchip .n{ font-family:var(--au-mono); font-size:9.5px; opacity:.6; margin-left:4px; }
-    .gr-fchip.on{ background:rgba(var(--gr),.16); border-color:rgba(var(--gr),.5); color:#fff; }
-    .gr-fchip.on .n{ opacity:.8; }
-    .gr-fchip:active{ transform:scale(.97); }
-    .gr-prog{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(var(--gr),.85); white-space:nowrap; }
+    /* ── rail ─────────────────────────────────────────────────── */
+    .rl-h{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
+           color:var(--au-faint); margin:0 0 10px 10px; }
+    .rl-h:not(:first-child){ margin-top:24px; }
+    .rl-b{ display:flex; width:100%; align-items:center; gap:9px; padding:8px 10px; border-radius:9px;
+           font-size:12.5px; color:var(--au-dim); text-align:left; letter-spacing:.005em;
+           transition:background .22s var(--au-ease), color .22s var(--au-ease); }
+    .rl-b:hover{ background:var(--au-glass); color:var(--au-ivory); }
+    .rl-b.on{ background:rgba(var(--acc),.1); color:var(--au-ivory); }
+    .rl-b .dot{ width:5px; height:5px; border-radius:50%; background:var(--au-faint); flex:none; transition:background .22s var(--au-ease); }
+    .rl-b.on .dot{ background:rgb(var(--acc)); box-shadow:0 0 8px rgba(var(--acc),.6); }
+    .rl-b .lab{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .rl-b .n{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); }
+    .rl-b.on .n{ color:rgba(var(--acc),.85); }
 
-    .gr-row{ display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--au-line); }
-    .gr-row:last-child{ border-bottom:none; }
-    .gr-check{ flex:none; width:24px; height:24px; border-radius:7px; border:2px solid var(--au-line); display:flex; align-items:center; justify-content:center; font-size:13px; color:#10210a; cursor:pointer; margin-top:1px; }
-    .gr-check.on{ background:rgb(var(--gr)); border-color:rgb(var(--gr)); }
-    .gr-row-main{ flex:1; min-width:0; }
-    .gr-row-title{ font-size:14px; font-weight:600; color:var(--au-ivory); line-height:1.3; }
-    .gr-row.done .gr-row-title{ color:var(--au-faint); text-decoration:line-through; }
-    .gr-row-meta{ font-family:var(--au-mono); font-size:10px; color:var(--au-faint); margin-top:4px; letter-spacing:.02em; }
-    .gr-row-why{ font-size:12px; color:var(--au-dim); margin-top:5px; line-height:1.4; }
-    .gr-mini{ flex:none; display:flex; gap:6px; flex-direction:column; align-items:flex-end; }
-    .gr-mb{ padding:6px 10px; border-radius:9px; font-size:11.5px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; font-family:var(--au-sans); white-space:nowrap; text-decoration:none; display:inline-block; }
-    .gr-mb.open{ color:rgb(var(--gr)); border-color:rgba(var(--gr),.3); }
-    .gr-mb.del{ color:#FF8FA3; border-color:rgba(255,143,163,.25); }
-    .gr-mb:active{ background:rgba(255,255,255,.08); }
+    /* ── the wall ─────────────────────────────────────────────── */
+    .wall{ display:grid; gap:clamp(12px,1.3vw,18px); }
+    .wall.yt{ grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); }
+    .wall.tt{ grid-template-columns:repeat(auto-fill,minmax(152px,1fr)); }
 
-    .gr-empty{ text-align:center; padding:8px 6px 4px; color:var(--au-dim); font-size:13px; line-height:1.5; }
-    .gr-foot{ max-width:600px; margin:4px auto 0; padding:0 18px; text-align:center; font-size:11px; color:var(--au-faint); line-height:1.5; }
-    /* ── playlist connect ── */
-    .gr-connect{ max-width:600px; margin:12px auto 0; padding:0 18px; }
-    .gr-connect-in{ display:flex; gap:8px; align-items:center; background:rgba(255,255,255,.03); border:1px solid var(--au-line); border-radius:14px; padding:9px 11px; }
-    .gr-connect-in .yt{ flex:none; color:#FF4E45; font-weight:800; font-size:11px; font-family:var(--au-mono); letter-spacing:.04em; }
-    .gr-connect input{ flex:1; min-width:0; background:none; border:none; color:var(--au-ivory); font-family:var(--au-sans); font-size:13px; outline:none; }
-    .gr-connect input::placeholder{ color:var(--au-faint); }
-    .gr-connect .sync{ flex:none; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(var(--gr),.95); background:rgba(var(--gr),.1); border:1px solid rgba(var(--gr),.3); border-radius:9px; padding:7px 11px; cursor:pointer; display:inline-flex; gap:5px; align-items:center; }
-    .gr-connect .sync:active{ transform:scale(.97); }
-    .gr-connect .sync.spin{ opacity:.6; pointer-events:none; }
-    .gr-connect-msg{ font-family:var(--au-mono); font-size:9px; letter-spacing:.04em; color:var(--au-faint); margin:6px 2px 0; min-height:11px; }
+    .tile{ position:relative; border-radius:13px; overflow:hidden; background:var(--au-glass);
+           border:1px solid var(--au-line); cursor:pointer; text-align:left; width:100%;
+           transition:border-color .3s var(--au-ease), transform .3s var(--au-ease), background .3s var(--au-ease); }
+    .tile:hover{ border-color:rgba(var(--acc),.32); transform:translateY(-3px); background:var(--au-glass-2); }
+    .tile.sel{ border-color:rgba(var(--acc),.62); }
+    .tile.sel::after{ content:''; position:absolute; inset:0; border-radius:13px; pointer-events:none;
+                      box-shadow:0 0 0 1px rgba(var(--acc),.45), 0 14px 40px -14px rgba(var(--acc),.5); }
+    .tile .ph{ position:relative; display:block; width:100%; background:#0c0c0e; overflow:hidden; }
+    .wall.yt .tile .ph{ aspect-ratio:16/9; }
+    .wall.tt .tile .ph{ aspect-ratio:9/16; }
+    .tile .ph img{ width:100%; height:100%; object-fit:cover; display:block;
+                   transition:transform .6s var(--au-ease), opacity .4s var(--au-ease); }
+    .tile:hover .ph img{ transform:scale(1.045); }
+    .tile.done .ph img{ opacity:.4; filter:saturate(.5); }
+    .tile .scrim{ position:absolute; inset:0; pointer-events:none;
+                  background:linear-gradient(to top, rgba(4,4,5,.94) 0%, rgba(4,4,5,.62) 26%, rgba(4,4,5,0) 58%); }
+    .tile .cap{ position:absolute; left:0; right:0; bottom:0; padding:10px 11px; }
+    .tile .t{ font-size:12px; line-height:1.32; letter-spacing:.005em; color:var(--au-ivory);
+              display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .tile .m{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.1em; color:rgba(245,242,236,.5);
+              margin-top:5px; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tile .badge{ position:absolute; top:8px; left:8px; font-family:var(--au-mono); font-size:8px; letter-spacing:.14em;
+                  text-transform:uppercase; padding:3px 6px; border-radius:5px; backdrop-filter:blur(8px);
+                  background:rgba(8,8,10,.66); border:1px solid var(--au-line-2); color:var(--au-dim); }
+    .tile .badge.lesson{ color:rgb(var(--acc)); border-color:rgba(var(--acc),.4); background:rgba(var(--acc),.14); }
+    .tile .badge.reading{ color:var(--au-faint); }
+    .tile .badge.miss{ color:var(--au-coral); border-color:rgba(255,138,107,.35); }
+    .tile .star{ position:absolute; top:6px; right:6px; padding:4px 6px; font-size:12px; line-height:1;
+                 color:rgba(245,242,236,.34); text-shadow:0 1px 6px rgba(0,0,0,.7);
+                 transition:color .25s var(--au-ease), transform .25s var(--au-ease); }
+    .tile .star:hover{ color:var(--au-ivory); transform:scale(1.16); }
+    .tile .star.on{ color:var(--au-amber); }
+    .tile .dur{ position:absolute; right:7px; bottom:auto; top:8px; }
+    .tile .play{ position:absolute; inset:0; display:grid; place-items:center; opacity:0; transition:opacity .3s var(--au-ease); }
+    .tile:hover .play{ opacity:1; }
+    .tile .play span{ width:42px; height:42px; border-radius:50%; display:grid; place-items:center;
+                      background:rgba(8,8,10,.6); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.16);
+                      font-size:12px; padding-left:3px; }
+    .tile .core{ font-size:11px; line-height:1.4; color:rgba(245,242,236,.68); margin-top:6px;
+                 display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 
-    /* ── rich video card ── */
-    .gr-vid{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--au-line); align-items:flex-start; }
-    .gr-vid:last-child{ border-bottom:none; }
-    .gr-thumb{ flex:none; width:118px; aspect-ratio:16/9; border-radius:10px; overflow:hidden; position:relative; background:#0e0f13; cursor:pointer; }
-    .gr-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .gr-thumb .play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
-    .gr-thumb .play svg{ width:32px; height:22px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.6)); opacity:.94; }
-    .gr-vid.done .gr-thumb{ opacity:.45; }
-    .gr-vid-main{ flex:1; min-width:0; }
-    .gr-vid-title{ font-size:13.5px; font-weight:600; color:var(--au-ivory); line-height:1.3; }
-    .gr-vid.done .gr-vid-title{ color:var(--au-faint); }
-    .gr-vid-ch{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); margin-top:3px; letter-spacing:.02em; }
-    .gr-vid-acts{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; align-items:center; }
-    .gr-va{ font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:6px 9px; border-radius:8px; border:1px solid var(--au-line); background:rgba(255,255,255,.03); color:var(--au-dim); cursor:pointer; display:inline-flex; gap:5px; align-items:center; }
-    .gr-va.distil{ color:rgba(var(--gr),.95); border-color:rgba(var(--gr),.3); }
-    .gr-va.on{ background:rgba(var(--gr),.14); color:#fff; border-color:rgba(var(--gr),.4); }
-    .gr-va.del{ color:#FF8FA3; border-color:rgba(255,143,163,.22); margin-left:auto; }
-    .gr-va:active{ transform:scale(.96); }
+    /* ── the detail pane ──────────────────────────────────────── */
+    .pane{ border:1px solid var(--au-line); border-radius:16px; background:var(--au-glass);
+           overflow:hidden; max-height:calc(100vh - 96px); overflow-y:auto; overscroll-behavior:contain; }
+    .pane::-webkit-scrollbar{ width:7px; } .pane::-webkit-scrollbar-thumb{ background:var(--au-line-2); border-radius:4px; }
+    .pane-stage{ position:relative; width:100%; background:#08080a; }
+    .pane-stage iframe{ width:100%; height:100%; border:0; display:block; position:absolute; inset:0; }
+    .pane-stage.yt{ aspect-ratio:16/9; }
+    .pane-stage.tt{ aspect-ratio:9/16; max-height:52vh; }
+    /* ⚠️ A 9:16 poster at full width pushed every key point below the fold —
+       the pane's whole job is the takeaways, not the artwork. Idle, a TikTok
+       shows a cropped banner; it only claims the height once it is playing. */
+    .pane-stage.tt.idle{ aspect-ratio:16/10; max-height:190px; }
+    .pane-stage img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .pane-stage .over{ position:absolute; inset:0; display:grid; place-items:center;
+                       background:linear-gradient(to top, rgba(4,4,5,.8), rgba(4,4,5,.15)); }
+    .pane-stage .over span{ width:52px; height:52px; border-radius:50%; display:grid; place-items:center;
+                            background:rgba(8,8,10,.62); backdrop-filter:blur(10px);
+                            border:1px solid rgba(255,255,255,.18); font-size:14px; padding-left:3px; }
+    .pane-in{ padding:16px 17px 20px; }
+    .pane-kind{ display:inline-flex; align-items:center; gap:7px; font-family:var(--au-mono); font-size:8.5px;
+                letter-spacing:.18em; text-transform:uppercase; padding:4px 8px; border-radius:6px;
+                border:1px solid var(--au-line-2); color:var(--au-dim); }
+    .pane-kind.lesson{ color:rgb(var(--acc)); border-color:rgba(var(--acc),.4); background:rgba(var(--acc),.1); }
+    .pane-t{ font-size:14px; line-height:1.4; margin-top:11px; letter-spacing:.005em; }
+    .pane-m{ font-family:var(--au-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+             color:var(--au-faint); margin-top:8px; }
+    .pane-core{ font-family:var(--au-serif); font-size:19px; line-height:1.34; letter-spacing:-.005em;
+                margin-top:16px; padding-left:13px; border-left:2px solid rgba(var(--acc),.5); }
+    .pane-keys{ list-style:none; margin-top:16px; display:flex; flex-direction:column; gap:10px; }
+    .pane-keys li{ position:relative; padding-left:17px; font-size:12.5px; line-height:1.52; color:rgba(245,242,236,.84); }
+    .pane-keys li::before{ content:''; position:absolute; left:2px; top:8px; width:4px; height:4px;
+                           border-radius:50%; background:rgba(var(--acc),.7); }
+    .pane-do{ margin-top:16px; padding:12px 13px; border-radius:11px; background:rgba(var(--acc),.07);
+              border:1px solid rgba(var(--acc),.2); font-size:12.5px; line-height:1.5; }
+    .pane-do b{ display:block; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.18em;
+                text-transform:uppercase; color:rgba(var(--acc),.9); margin-bottom:6px; font-weight:400; }
+    .pane-src{ margin-top:16px; font-size:11px; line-height:1.5; color:var(--au-faint);
+               padding-top:13px; border-top:1px solid var(--au-line); }
+    .pane-acts{ display:flex; flex-wrap:wrap; gap:7px; margin-top:15px; }
+    .pane-note{ margin-top:14px; }
+    .pane-note textarea{ width:100%; min-height:74px; resize:vertical; background:var(--au-glass);
+                         border:1px solid var(--au-line); border-radius:10px; padding:10px 11px;
+                         font-size:12.5px; line-height:1.5; outline:none; }
+    .pane-note textarea:focus{ border-color:rgba(var(--acc),.4); }
+    .pane-empty{ padding:26px 18px; text-align:center; font-size:12.5px; color:var(--au-faint); line-height:1.6; }
 
-    /* ── the key points, living on the card itself ── */
-    .gr-core{ margin-top:8px; font-family:var(--au-serif); font-style:italic; font-size:14px; line-height:1.42; color:rgba(var(--gr),.94); letter-spacing:-.005em; }
-    .gr-vid.done .gr-core{ color:rgba(var(--gr),.6); }
-    .gr-core.pend{ font-family:var(--au-mono); font-style:normal; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); animation:grPulse 1.9s ease-in-out infinite; }
-    .gr-core.miss{ font-family:var(--au-mono); font-style:normal; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--au-faint); cursor:pointer; }
-    @keyframes grPulse{ 0%,100%{ opacity:.45; } 50%{ opacity:.95; } }
-    @media (prefers-reduced-motion:reduce){ .gr-core.pend{ animation:none; opacity:.7; } }
+    details.tx{ margin-top:14px; }
+    details.tx > summary{ cursor:pointer; list-style:none; font-family:var(--au-mono); font-size:9px;
+                          letter-spacing:.16em; text-transform:uppercase; color:var(--au-dim); padding:8px 0; }
+    details.tx > summary::-webkit-details-marker{ display:none; }
+    details.tx > summary:hover{ color:var(--au-ivory); }
+    details.tx .body{ font-size:12px; line-height:1.72; color:var(--au-dim); max-height:270px; overflow-y:auto;
+                      padding:11px 12px; background:rgba(0,0,0,.28); border-radius:10px; border:1px solid var(--au-line); }
 
-    .gr-kpwrap{ margin-top:10px; padding:11px 13px; background:rgba(var(--gr),.055); border:1px solid rgba(var(--gr),.16); border-radius:12px; }
-    .gr-keys{ list-style:none; display:flex; flex-direction:column; gap:7px; }
-    .gr-keys li{ position:relative; padding-left:14px; font-size:12.5px; line-height:1.5; color:var(--au-ivory); }
-    .gr-keys li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:50%; background:rgba(var(--gr),.75); }
-    .gr-do{ margin-top:10px; padding-top:9px; border-top:1px solid rgba(var(--gr),.14); font-size:12.5px; line-height:1.5; color:var(--au-dim); }
-    .gr-do b{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--gr),.9); display:block; margin-bottom:4px; }
-    .gr-tiny{ margin-top:11px; background:none; border:none; padding:0; font-family:var(--au-mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--au-faint); cursor:pointer; }
-    .gr-tiny:active{ color:rgba(var(--gr),.9); }
+    /* ── buttons ──────────────────────────────────────────────── */
+    .b{ padding:7px 12px; border-radius:9px; border:1px solid var(--au-line-2); font-size:11.5px;
+        color:var(--au-dim); letter-spacing:.01em; transition:all .24s var(--au-ease); }
+    .b:hover{ border-color:rgba(var(--acc),.4); color:var(--au-ivory); background:var(--au-glass); }
+    .b.on{ border-color:rgba(var(--acc),.5); color:rgb(var(--acc)); background:rgba(var(--acc),.1); }
+    .b.prime{ background:rgba(var(--acc),.15); border-color:rgba(var(--acc),.42); color:var(--au-ivory); }
+    .b.prime:hover{ background:rgba(var(--acc),.24); }
+    .b.warn:hover{ border-color:rgba(255,107,139,.5); color:var(--au-rose); }
+    .b[disabled]{ opacity:.45; pointer-events:none; }
 
-    /* ── remember card ── */
-    .gr-remember{ background:linear-gradient(135deg, rgba(var(--gr),.14), rgba(var(--gr),.03)); border:1px solid rgba(var(--gr),.3); }
-    .gr-remember .lab{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--gr),.95); margin-bottom:8px; display:flex; align-items:center; gap:7px; }
-    .gr-remember .rt{ font-size:13.5px; font-weight:700; color:var(--au-ivory); }
-    .gr-remember .rkp{ margin-top:9px; font-size:12.5px; line-height:1.55; color:var(--au-dim); white-space:pre-wrap; }
-    .gr-remember .racts{ display:flex; gap:8px; margin-top:13px; }
+    /* ── ingest ───────────────────────────────────────────────── */
+    .ing{ border:1px solid var(--au-line); border-radius:14px; background:var(--au-glass);
+          padding:14px 15px; margin-bottom:clamp(14px,1.6vw,20px); }
+    .ing h3{ font-family:var(--au-serif); font-weight:400; font-size:17px; letter-spacing:-.005em; }
+    .ing p{ font-size:11.5px; color:var(--au-faint); margin-top:5px; line-height:1.55; }
+    .ing textarea, .ing input{ width:100%; background:rgba(0,0,0,.3); border:1px solid var(--au-line);
+                               border-radius:10px; padding:10px 12px; font-size:12.5px; outline:none;
+                               margin-top:11px; line-height:1.5; }
+    .ing textarea{ min-height:78px; resize:vertical; font-family:var(--au-mono); font-size:11px; }
+    .ing textarea:focus,.ing input:focus{ border-color:rgba(var(--acc),.4); }
+    .ing-row{ display:flex; gap:8px; align-items:center; margin-top:11px; flex-wrap:wrap; }
+    .ing-msg{ font-size:11.5px; color:var(--au-dim); line-height:1.5; }
+    .ing-msg.bad{ color:var(--au-coral); }
+    .ing-fold{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; }
+    .ing-fold .chev{ color:var(--au-faint); font-size:11px; transition:transform .3s var(--au-ease); }
+    .ing.open .ing-fold .chev{ transform:rotate(180deg); }
+    .ing-hide{ display:none; } .ing.open .ing-hide{ display:block; }
 
-    /* ── dialogs ── */
-    .gr-dlg{ border:none; background:transparent; padding:0; max-width:none; }
-    .gr-dlg::backdrop{ background:rgba(0,0,0,.66); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
-    .gr-sheet{ width:min(480px,94vw); background:linear-gradient(180deg,#14150f,#0d0e0b); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:18px; color:var(--au-ivory); font-family:var(--au-sans); max-height:88vh; overflow:auto; }
-    .gr-sheet-t{ font-size:16px; font-weight:700; margin-bottom:4px; line-height:1.25; }
-    .gr-sheet-s{ font-size:12px; color:var(--au-faint); margin-bottom:12px; line-height:1.45; }
-    .gr-sheet textarea{ width:100%; min-height:120px; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:12px; color:var(--au-ivory); font-family:var(--au-sans); font-size:14px; padding:12px; outline:none; resize:vertical; line-height:1.5; }
-    .gr-sheet textarea:focus{ border-color:rgba(var(--gr),.5); }
-    .gr-sheet-btns{ display:flex; gap:9px; margin-top:14px; align-items:center; }
-    .gr-sb{ font-family:var(--au-sans); font-size:13.5px; font-weight:700; padding:11px 14px; border-radius:11px; cursor:pointer; border:1px solid transparent; }
-    .gr-sb.prime{ background:rgb(var(--gr)); color:#10210a; margin-left:auto; }
-    .gr-sb.ghost{ background:rgba(255,255,255,.05); border-color:var(--au-line); color:var(--au-dim); }
-    .gr-sb[disabled]{ opacity:.5; pointer-events:none; }
-    .gr-sheet .result{ margin-top:13px; padding:12px; background:rgba(var(--gr),.06); border:1px solid rgba(var(--gr),.18); border-radius:12px; font-size:13px; line-height:1.6; white-space:pre-wrap; color:var(--au-ivory); }
-    .gr-spin{ font-family:var(--au-mono); font-size:11px; color:rgba(var(--gr),.9); }
-    .gr-watchbox{ display:flex; flex-direction:column; gap:10px; align-items:center; }
-    .gr-watch-frame{ width:min(760px,94vw); aspect-ratio:16/9; border:none; border-radius:16px; background:#000; display:block; }
+    /* ── habits ───────────────────────────────────────────────── */
+    .hb{ display:grid; grid-template-columns:repeat(auto-fill,minmax(268px,1fr)); gap:14px; }
+    .hb-c{ border:1px solid var(--au-line); border-radius:14px; background:var(--au-glass); padding:15px 16px;
+           display:flex; gap:12px; align-items:flex-start; transition:border-color .3s var(--au-ease); }
+    .hb-c:hover{ border-color:rgba(var(--acc),.28); }
+    .hb-c.done{ opacity:.62; }
+    .hb-ck{ width:19px; height:19px; border-radius:6px; border:1.5px solid var(--au-line-2); flex:none;
+            display:grid; place-items:center; font-size:10px; color:#07110b; margin-top:1px;
+            transition:all .25s var(--au-ease); cursor:pointer; }
+    .hb-ck.on{ background:rgb(var(--acc)); border-color:rgb(var(--acc)); }
+    .hb-t{ font-size:13px; line-height:1.4; }
+    .hb-c.done .hb-t{ text-decoration:line-through; text-decoration-color:var(--au-faint); }
+    .hb-w{ font-size:11.5px; color:var(--au-faint); margin-top:6px; line-height:1.5; }
+    .hb-x{ margin-left:auto; color:var(--au-faint); font-size:12px; padding:2px 5px; align-self:flex-start; }
+    .hb-x:hover{ color:var(--au-rose); }
 
-    /* ── cinematic hero backdrop ── */
-    .gr-herobg{ position:absolute; top:0; left:0; right:0; height:340px; background-size:cover; background-position:center 28%; opacity:0; transition:opacity 1.2s ease; z-index:0; pointer-events:none; }
-    .gr-herobg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,5,6,.6) 0%, rgba(5,5,6,.82) 56%, var(--au-void,#050506) 100%); }
-    .gr-herobg.on{ opacity:.5; }
-    .gr-hero, .gr-snap, .gr-mo, .gr-connect{ position:relative; z-index:1; }
+    /* ── the "now" pane (nothing selected) ────────────────────── */
+    .now-h{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
+            color:rgba(var(--acc),.8); }
+    .now-big{ font-family:var(--au-serif); font-size:21px; line-height:1.24; margin-top:11px; letter-spacing:-.005em; }
+    .now-sub{ font-size:11.5px; color:var(--au-faint); margin-top:8px; font-family:var(--au-mono);
+              letter-spacing:.1em; text-transform:uppercase; }
+    .now-sec{ padding:17px 18px; }
+    .now-sec + .now-sec{ border-top:1px solid var(--au-line); }
+    .now-bar{ height:2px; border-radius:2px; background:var(--au-line-2); overflow:hidden; margin-top:14px; }
+    .now-bar i{ display:block; height:100%; width:100%; transform:scaleX(0); transform-origin:left center;
+                background:linear-gradient(90deg,rgba(var(--acc),.5),rgb(var(--acc)));
+                transition:transform 1.1s var(--au-ease); }
 
-    /* ── collapse manual add ── */
-    .gr-addtoggle{ width:100%; text-align:left; background:none; border:none; color:var(--au-dim); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:8px; }
-    .gr-addtoggle .chev{ margin-left:auto; transition:transform .2s; }
-    .gr-addtoggle.open .chev{ transform:rotate(180deg); }
+    /* Only ever visible on the narrow layout, where the detail pane is a sheet.
+       Declared here too so a class JS toggles is never a class CSS lacks. */
+    .lb-scrim{ display:none; }
+    .empty{ padding:46px 20px; text-align:center; color:var(--au-faint); font-size:12.5px; line-height:1.7; }
+    .empty b{ display:block; font-family:var(--au-serif); font-size:20px; color:var(--au-dim);
+              font-weight:400; margin-bottom:10px; }
     .hidden{ display:none !important; }
+
+    /* ── the reading pulse ────────────────────────────────────── */
+    @keyframes lbPulse{ 0%,100%{opacity:.32;} 50%{opacity:.85;} }
+    .pulse{ animation:lbPulse 1.9s ease-in-out infinite; }
+    @media (prefers-reduced-motion:reduce){
+      .pulse{ animation:none; }
+      .tile,.tile .ph img{ transition:none !important; }
+      .tile:hover{ transform:none; }
+    }
+
+    /* ── narrower laptops, tablets, phone ─────────────────────── */
+    @media (max-width:1280px){
+      .lb-body{ grid-template-columns:190px minmax(0,1fr) 330px; }
+    }
+    @media (max-width:1040px){
+      /* The detail pane stops being a column and becomes a sheet over the
+         wall. It is a direct child of <body>, never of a transformed
+         ancestor — hard constraint 4. */
+      .lb-body{ grid-template-columns:180px minmax(0,1fr); }
+      .lb-side{ position:fixed; z-index:60; right:0; top:0; bottom:0; width:min(420px,92vw);
+                padding:14px; overflow-y:auto; background:rgba(6,6,8,.96); backdrop-filter:blur(22px);
+                border-left:1px solid var(--au-line-2); transform:translateX(102%);
+                transition:transform .42s var(--au-ease); }
+      .lb-side.open{ transform:none; }
+      .pane{ max-height:none; border:none; background:none; }
+      .lb-scrim{ display:block; position:fixed; inset:0; z-index:59; background:rgba(2,2,3,.6); backdrop-filter:blur(3px);
+                 opacity:0; pointer-events:none; transition:opacity .35s var(--au-ease); }
+      .lb-scrim.on{ opacity:1; pointer-events:auto; }
+    }
+    @media (max-width:760px){
+      .lb-body{ grid-template-columns:minmax(0,1fr); gap:14px; }
+      /* The shelves become a scrolling chip row above the wall. */
+      .lb-rail{ position:static; display:flex; gap:7px; overflow-x:auto; padding-bottom:4px;
+                scrollbar-width:none; }
+      .lb-rail::-webkit-scrollbar{ display:none; }
+      .rl-h{ display:none; }
+      .rl-b{ width:auto; flex:none; border:1px solid var(--au-line); border-radius:999px; padding:7px 13px; }
+      .rl-b .dot{ display:none; }
+      .lb-top{ padding:18px 2px 14px; }
+      .lb-metrics{ gap:20px; }
+      .wall.tt{ grid-template-columns:repeat(auto-fill,minmax(126px,1fr)); }
+      .wall.yt{ grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+      .lb-seek{ max-width:none; }
+      .lb-seek .kb{ display:none; }
+    }
   </style>
 </head>
-<body class="au-mood-calm">
-  <div class="gr-herobg" id="grHeroBg" aria-hidden="true"></div>
-  <header class="gr-hero">
-    <div>
-      <div class="gr-eyebrow">Become</div>
-      <div class="gr-hero-line">Improve</div>
-      <div class="gr-hero-sub" id="grSub">A queue of things worth learning, and the habits you're growing into.</div>
+<body class="au-bg">
+  <div class="lb">
+    <header class="lb-top">
+      <div class="lb-id">
+        <div class="lb-eyebrow" id="lbEyebrow">MÉTRON · LIBRARY</div>
+        <h1 class="lb-title">Everything worth <em id="lbTitleEm">keeping</em></h1>
+        <p class="lb-sub" id="lbSub">A queue of things worth learning, the TikToks you saved, and the habits you're growing into.</p>
+      </div>
+      <div class="lb-metrics" id="lbMetrics"></div>
+    </header>
+
+    <div class="lb-bar">
+      <nav class="lb-worlds" id="lbWorlds" role="tablist">
+        <div class="ink" id="lbInk"></div>
+        <button type="button" class="lb-w on" data-world="yt" role="tab">YouTube <span class="n" id="nYt">0</span></button>
+        <button type="button" class="lb-w" data-world="tt" role="tab">TikTok <span class="n" id="nTt">0</span></button>
+        <button type="button" class="lb-w" data-world="hb" role="tab">Habits <span class="n" id="nHb">0</span></button>
+      </nav>
+      <div class="lb-seek">
+        <span class="ic">⌕</span>
+        <input id="seek" type="search" placeholder="Search titles, creators, key points…" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Search the library">
+        <span class="kb" id="seekKb">/</span>
+        <button type="button" class="clr hidden" id="seekClr" aria-label="Clear search">✕</button>
+      </div>
+      <div class="lb-status" id="status"></div>
     </div>
-    <div class="gr-orb" aria-hidden="true" style="color:#3FE0B0"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9M12 12C12 8 9.2 5.5 5 5.5 5 9.5 7.8 12 12 12zM12 12c0-3 2.4-5 6-5 0 3-2.4 5-6 5z"/></svg></div>
-  </header>
 
-  <div class="gr-snap">
-    <div class="gr-snap-i"><div class="gr-snap-v" id="snQueue">0</div><div class="gr-snap-l">To watch</div></div>
-    <div class="gr-snap-i"><div class="gr-snap-v" id="snDone">0</div><div class="gr-snap-l">Watched</div></div>
-    <div class="gr-snap-i"><div class="gr-snap-v" id="snHabits">0</div><div class="gr-snap-l">Building</div></div>
-    <div class="gr-snap-i"><div class="gr-snap-v" id="snAdopted">0</div><div class="gr-snap-l">Adopted</div></div>
-  </div>
-
-  <div class="gr-mo" id="grMo" style="display:none">
-    <div class="gr-mo-track"><div class="gr-mo-fill" id="grMoFill"></div></div>
-    <div class="gr-mo-cap"><span>Learning momentum</span><span id="grMoR"></span></div>
-  </div>
-
-  <div class="gr-connect">
-    <div class="gr-connect-in">
-      <span class="yt">▶ YT</span>
-      <input id="plInput" type="url" inputmode="url" placeholder="Paste a YouTube playlist link to mirror…" autocomplete="off" autocapitalize="none" spellcheck="false">
-      <button type="button" class="sync" id="plSync"><span>↻</span> Sync</button>
+    <div class="lb-body">
+      <aside class="lb-rail" id="rail"></aside>
+      <main class="lb-main" id="main">
+        <!-- The ingest panel and the wall are separate containers ON PURPOSE.
+             The background reader re-renders the wall every few seconds; if the
+             paste box lived inside it, a sweep finishing would silently wipe
+             fifty links he had just pasted. It is only rebuilt when the world
+             changes. -->
+        <div id="ingest"></div>
+        <div id="wall"></div>
+      </main>
+      <aside class="lb-side" id="side"><div class="pane" id="pane"></div></aside>
     </div>
-    <div class="gr-connect-msg" id="plMsg"></div>
   </div>
+  <div class="lb-scrim" id="scrim"></div>
 
-  <main class="gr-wrap">
-
-    <!-- Remember -->
-    <section class="gr-card gr-remember hidden" id="rememberCard">
-      <div class="lab"><span>◆</span> Remember this</div>
-      <div class="rt" id="rmTitle"></div>
-      <div class="rkp" id="rmKp"></div>
-      <div class="racts">
-        <button type="button" class="gr-sb prime" id="rmGot">Still with me ✓</button>
-        <button type="button" class="gr-sb ghost" id="rmOpen">Rewatch</button>
-      </div>
-    </section>
-
-    <!-- Focus -->
-    <section class="gr-card gr-focus hidden" id="focusCard">
-      <div class="lab">Next up</div>
-      <div class="big" id="focusBig">—</div>
-      <div class="sub" id="focusSub"></div>
-      <a class="go" id="focusLink" target="_blank" rel="noopener">Watch now →</a>
-    </section>
-
-    <!-- Add video (collapsed) -->
-    <section class="gr-card">
-      <button type="button" class="gr-addtoggle" id="addToggle">＋ Add a video manually<span class="chev">▾</span></button>
-      <div id="addForm" class="hidden" style="margin-top:13px">
-      <div class="gr-form-row">
-        <div class="gr-field" style="flex:2"><label for="vTitle">Title</label><input class="gr-in" id="vTitle" placeholder="What to watch / read" autocomplete="off"></div>
-        <div class="gr-field"><label for="vTopic">Topic</label><input class="gr-in" id="vTopic" placeholder="e.g. Mindset" autocomplete="off"></div>
-      </div>
-      <div class="gr-field" style="margin-bottom:11px"><label for="vUrl">Link <span style="color:var(--au-faint)">· optional</span></label><input class="gr-in" id="vUrl" inputmode="url" placeholder="https://…" autocomplete="off"></div>
-      <button class="gr-save" id="vSave" type="button">Add to queue</button>
-      <div class="gr-toast" id="vToast"></div>
-      </div>
-    </section>
-
-    <!-- Queue -->
-    <section class="gr-card hidden" id="queueCard">
-      <div class="gr-card-hd"><span class="dot"></span><h2>Learning queue</h2><span class="line"></span><span class="gr-prog" id="kpProg"></span></div>
-      <div class="gr-seek" id="seekWrap">
-        <span class="mag" aria-hidden="true">⌕</span>
-        <input id="vSeek" type="search" placeholder="Search titles, channels, key points…" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Search your queue">
-        <button type="button" class="clr hidden" id="vSeekClr" aria-label="Clear search">✕</button>
-      </div>
-      <div class="gr-filter" id="fState"></div>
-      <div class="gr-filter" id="fTopic"></div>
-      <div id="queueBody"></div>
-    </section>
-
-    <!-- Habits to build -->
-    <section class="gr-card">
-      <div class="gr-card-hd"><span class="dot"></span><h2>Habits to build</h2><span class="line"></span></div>
-      <div class="gr-form-row">
-        <div class="gr-field"><label for="hText">Habit</label><input class="gr-in" id="hText" placeholder="e.g. Read 20 min before bed" autocomplete="off"></div>
-      </div>
-      <div class="gr-field" style="margin-bottom:11px"><label for="hWhy">Why it matters <span style="color:var(--au-faint)">· optional</span></label><textarea class="gr-in" id="hWhy" placeholder="The person this makes you…"></textarea></div>
-      <button class="gr-save" id="hSave" type="button">Add habit</button>
-      <div class="gr-toast" id="hToast"></div>
-      <div id="habitBody" style="margin-top:14px"></div>
-    </section>
-
-    <div class="gr-empty hidden" id="grEmpty">Nothing here yet. Queue up a video worth your time, or name a habit you want to grow into.</div>
-  </main>
-  <div class="gr-foot">Mark videos watched as you go. When a habit sticks, track it for real in <a href="identity.html" style="color:rgba(var(--gr),.85)">Identity</a>. Everything syncs across devices.</div>
-
-  <dialog class="gr-dlg" id="distillDlg"><div class="gr-sheet">
-    <div class="gr-sheet-t" id="dsTitle">Sharpen</div>
-    <div class="gr-sheet-s">Nova already read this one. Add what <em>you</em> took from it — a line, a quote, anything — and she'll rewrite the key points around it.</div>
-    <textarea id="dsText" placeholder="What stayed with you from this video…"></textarea>
-    <div class="result hidden" id="dsResult"></div>
-    <div class="gr-sheet-btns">
-      <button type="button" class="gr-sb ghost" id="dsCancel">Close</button>
-      <span class="gr-spin hidden" id="dsSpin">Rewriting…</span>
-      <button type="button" class="gr-sb prime" id="dsGo">Rewrite</button>
-    </div>
-  </div></dialog>
-  <dialog class="gr-dlg" id="watchDlg"><div class="gr-watchbox">
-    <iframe class="gr-watch-frame" id="watchFrame" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
-    <button type="button" class="gr-sb ghost" id="watchClose">Close</button>
-  </div></dialog>
-
-  <script src="vendor/supabase.min.js"></script>
-  <script src="sync.js" defer></script>
   <script>
   (function(){
     'use strict';
-    var K_VID='improve:videos', K_HAB='improve:habits';
+    /* ════════════════════════════════════════════════════════════
+       Two worlds, one shell. The YouTube half keeps every behaviour it
+       had — playlist mirror, background reader, shelves, Sharpen,
+       Remember — because a redesign that quietly drops features is a
+       downgrade. The TikTok half is new, and honest about what it can
+       and cannot know (see api/_tiktok.js).
+       ════════════════════════════════════════════════════════════ */
+    var K_VID='improve:videos', K_TT='improve:tiktoks', K_HAB='improve:habits', K_PROF='improve:profile';
 
     function $(id){ return document.getElementById(id); }
-    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
     function loadArr(k){ var a; try{ a=JSON.parse(localStorage.getItem(k)); }catch(e){ a=null; } return Array.isArray(a)?a.filter(function(x){return x&&x.id;}):[]; }
+    function loadObj(k){ var o; try{ o=JSON.parse(localStorage.getItem(k)); }catch(e){ o=null; } return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }
     function persist(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
     function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
+    function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
     function srcFromUrl(url){
       if(!url) return '';
       var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u;
       var host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(e){ var m=String(url).match(/([a-z0-9-]+\.[a-z]{2,})/i); host=m?m[1]:''; }
       if(/youtube\.com|youtu\.be/i.test(host)) return 'YouTube';
+      if(/tiktok\.com/i.test(host)) return 'TikTok';
       if(/vimeo\.com/i.test(host)) return 'Vimeo';
       if(/spotify\.com/i.test(host)) return 'Spotify';
       if(/podcasts\.apple/i.test(host)) return 'Apple Podcasts';
@@ -325,31 +412,35 @@
     }
     function normUrl(url){ if(!url) return ''; var u=String(url).trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
 
-    var videos=loadArr(K_VID), habits=loadArr(K_HAB);
-    var fState='todo', fTopic='', seek='', openKp={};
+    var videos=loadArr(K_VID), tiktoks=loadArr(K_TT), habits=loadArr(K_HAB), profile=loadObj(K_PROF);
+
+    /* view state */
+    var world='yt', shelf='', state='todo', seek='', selId=null, noteOpen=false, noteDraft=null;
 
     /* Queue position lives in `ord`, never in `ts` — `ts` is the sync clock and
-       every distill bumps it, which would reshuffle the list under him. */
-    function migrateOrd(){
-      var miss=videos.filter(function(v){ return typeof v.ord!=='number'; });
+       every read bumps it, which would reshuffle the list under him. */
+    function migrateOrd(arr,key){
+      var miss=arr.filter(function(v){ return typeof v.ord!=='number'; });
       if(!miss.length) return;
-      var base=videos.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>m?v.ord:m; },-1);
+      var base=arr.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>m?v.ord:m; },-1);
       miss.sort(function(a,b){ return (a.ts||0)-(b.ts||0); }).forEach(function(v){ v.ord=++base; });
-      persist(K_VID,videos);
+      persist(key,arr);
     }
-    migrateOrd();
-    function nextOrd(){ return videos.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>=m?v.ord+1:m; },0); }
+    migrateOrd(videos,K_VID); migrateOrd(tiktoks,K_TT);
+    function nextOrd(arr){ return arr.reduce(function(m,v){ return typeof v.ord==='number'&&v.ord>=m?v.ord+1:m; },0); }
     function byOrd(a,b){ var x=typeof a.ord==='number'?a.ord:1e9, y=typeof b.ord==='number'?b.ord:1e9; return x!==y?x-y:(a.ts||0)-(b.ts||0); }
 
-    /* Nova answers in plain text (TOPIC / CORE / KEY / DO) rather than JSON,
-       because JSON is what shattered on long replies. Parse it forgivingly:
-       a missing header or a stray bullet style must never cost him the notes. */
+    /* Nova answers in plain text (KIND / TOPIC / CORE / KEY / DO) rather than
+       JSON, because JSON is what shattered on long replies. Parse it
+       forgivingly: a missing header or a stray bullet style must never cost
+       him the notes. */
     function kpParse(raw){
-      var o={topic:'',core:'',keys:[],act:''};
+      var o={kind:'',topic:'',core:'',keys:[],act:''};
       String(raw||'').split(/\r?\n/).forEach(function(ln){
         var s=ln.trim().replace(/\*\*/g,'').replace(/^#+\s*/,'').trim();
         if(!s) return;
         var m;
+        if((m=s.match(/^KIND\s*[:\-–—]\s*(\w+)/i))){ o.kind=m[1].toLowerCase(); return; }
         if((m=s.match(/^TOPIC\s*[:\-–—]\s*(.+)$/i))){ o.topic=m[1].replace(/["'`*_.]/g,'').trim().slice(0,40); return; }
         if((m=s.match(/^CORE\s*[:\-–—]\s*(.+)$/i))){ o.core=m[1].trim(); return; }
         if((m=s.match(/^(?:DO|TRY|ACTION)\s*[:\-–—]\s*(.+)$/i))){ o.act=m[1].trim(); return; }
@@ -363,40 +454,364 @@
       return o;
     }
     function conceptOf(v){ return v.concept||v.rawTopic||v.topic||''; }
+    function isLesson(v){ var k=v.kind||kpParse(v.keypoints||'').kind; return k? k==='lesson' : !!v.ytId; }
 
-    /* ── videos ───────────────────────────────────────── */
-    function topics(){ var t={}; videos.forEach(function(v){ var c=conceptOf(v); if(c) t[c]=(t[c]||0)+1; }); return Object.keys(t).sort(function(a,b){return t[b]-t[a];}); }
+    /* ── which collection is on screen ────────────────────────── */
+    function coll(){ return world==='tt'?tiktoks:videos; }
+    function collKey(){ return world==='tt'?K_TT:K_VID; }
+    function saveColl(){ persist(collKey(),coll()); flush(); }
+    function byId(id){ return videos.find(function(x){return x.id===id;})||tiktoks.find(function(x){return x.id===id;})||null; }
+    /* ⚠️ A TikTok that has not been fetched yet has an EMPTY ttId — it is
+       created from a pasted URL and only learns its id from the server. So
+       "is this a TikTok" can never be `!!v.ttId`, or a pending one would be
+       written into the YouTube store and quietly disappear from its world. */
+    function isTikTok(v){ return !!(v && (v.ttId || /tiktok\.com/i.test(v.url||'') || v.source==='TikTok')); }
+    function saveItem(v){ if(isTikTok(v)) persist(K_TT,tiktoks); else persist(K_VID,videos); flush(); }
+
+    var ACCENT={ yt:'168,214,110', tt:'104,214,204', hb:'155,140,255' };
+    var TITLE={ yt:'watching', tt:'keeping', hb:'building' };
+
+    /* ── titles + search text ─────────────────────────────────── */
+    function titleOf(v){
+      if(v.title) return v.title;
+      if(v.ttId){
+        var p=kpParse(v.keypoints||'');
+        var cap=String(v.caption||'').replace(/#[^\s#]+/g,'').trim();
+        return cap || p.core || (v.handle?('@'+v.handle):'Saved TikTok');
+      }
+      return '(untitled)';
+    }
+    function metaOf(v){
+      var bits=[];
+      if(v.ttId){ if(v.handle) bits.push('@'+v.handle); if(v.duration) bits.push(v.duration+'s'); }
+      else { if(v.channel) bits.push(v.channel); else if(v.source) bits.push(v.source); }
+      var c=conceptOf(v); if(c) bits.push(c);
+      return bits.join(' · ');
+    }
+    function hay(v){
+      return (titleOf(v)+' '+(v.channel||'')+' '+(v.handle||'')+' '+(v.author||'')+' '+(v.caption||'')+' '+
+        ((v.tags||[]).join(' '))+' '+((v.screen||[]).join(' '))+' '+conceptOf(v)+' '+(v.keypoints||'')+' '+(v.note||v.notes||'')).toLowerCase();
+    }
+    function thumbOf(v){
+      if(v.ttId) return v.cover||'';
+      return v.thumb||(v.ytId?('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'):'');
+    }
+
+    /* ── status line ──────────────────────────────────────────── */
+    function status(m,live){ var e=$('status'); if(!e) return; e.textContent=m||''; e.classList.toggle('live',!!live&&!!m); }
+
+    /* ════════════════════════════════════════════════════════════
+       THE WALL
+       ════════════════════════════════════════════════════════════ */
+    function pool(){
+      var q=seek.trim().toLowerCase();
+      return coll().filter(function(v){ return !q || hay(v).indexOf(q)>=0; });
+    }
+    function stateOf(v){
+      if(world==='tt') return v.star?'star':(isLesson(v)?'lesson':'keep');
+      return v.watched?'done':'todo';
+    }
+    function scoped(){
+      var p=pool();
+      if(!state) return p;
+      return p.filter(function(v){ return world==='tt' ? (state==='star'?!!v.star:stateOf(v)===state) : stateOf(v)===state; });
+    }
+    function shelved(list){ return shelf ? list.filter(function(v){ return (conceptOf(v)||'Unsorted')===shelf; }) : list; }
+
+    function badgeFor(v){
+      if(v.metaFail>=2) return '<span class="badge miss">unreadable</span>';
+      if(v.pending) return '<span class="badge reading pulse">fetching</span>';
+      if(v.keypoints) return isLesson(v)?'<span class="badge lesson">lesson</span>':'<span class="badge">keepsake</span>';
+      if((v.kpFail||0)>=3) return '<span class="badge miss">retry</span>';
+      return '<span class="badge reading pulse">reading</span>';
+    }
+    function tileHTML(v){
+      var th=thumbOf(v), p=kpParse(v.keypoints||'');
+      var title=titleOf(v);
+      // A keepsake whose caption is only hashtags takes its NAME from the core
+      // sentence, so printing the core underneath would say it twice.
+      if(p.core && p.core.trim()===title.trim()) p={ core:'', keys:p.keys, act:p.act };
+      return '<button type="button" class="tile'+(v.watched?' done':'')+(selId===v.id?' sel':'')+'" data-id="'+esc(v.id)+'">'+
+        '<span class="ph">'+
+          (th?'<img loading="lazy" src="'+esc(th)+'" alt="" data-cover="'+esc(v.id)+'">':'')+
+          '<span class="scrim"></span>'+
+          '<span class="play"><span>▶</span></span>'+
+          badgeFor(v)+
+          (world==='tt'?'<span class="star'+(v.star?' on':'')+'" data-star="'+esc(v.id)+'" role="button" aria-label="Star">★</span>':'')+
+          '<span class="cap">'+
+            '<span class="t">'+esc(title)+'</span>'+
+            '<span class="m">'+esc(metaOf(v))+'</span>'+
+            (p.core?'<span class="core">'+esc(p.core)+'</span>':'')+
+          '</span>'+
+        '</span></button>';
+    }
+
+    function sortedList(){
+      return shelved(scoped()).sort(function(a,b){
+        if(world!=='tt' && !!a.watched!==!!b.watched) return a.watched?1:-1;
+        if(world==='tt' && !!a.star!==!!b.star) return a.star?-1:1;
+        return byOrd(a,b);
+      });
+    }
+    function renderWall(){
+      if(world==='hb'){ renderHabits(); return; }
+      var list=sortedList(), html;
+      if(!coll().length){
+        html='<div class="empty"><b>'+(world==='tt'?'No TikToks yet':'Nothing queued yet')+'</b>'+
+          (world==='tt'
+            ? 'Paste one link or your whole notes list above.<br>Everything else — the creator, what was said, what to take from it — is worked out for you.'
+            : 'Mirror a YouTube playlist above, or add something by hand.')+'</div>';
+      } else if(!list.length){
+        html='<div class="empty"><b>Nothing here</b>'+(seek.trim()?('Nothing matches “'+esc(seek.trim())+'”.'):'This shelf is empty in the current view.')+'</div>';
+      } else {
+        html='<div class="wall '+world+'">'+list.map(tileHTML).join('')+'</div>';
+      }
+      $('wall').innerHTML=html;
+    }
+
+    /* ── the rail: shelves + states ───────────────────────────── */
+    function railBtn(kind,val,label,n,on){
+      return '<button type="button" class="rl-b'+(on?' on':'')+'" data-'+kind+'="'+esc(val)+'">'+
+        '<span class="dot"></span><span class="lab">'+esc(label)+'</span><span class="n">'+n+'</span></button>';
+    }
+    function renderRail(){
+      if(world==='hb'){ $('rail').innerHTML=''; return; }
+      var p=pool(), h='';
+      var states = world==='tt'
+        ? [['','Everything',p.length],
+           ['lesson','Lessons',p.filter(function(v){return v.keypoints&&isLesson(v);}).length],
+           ['keep','Keepsakes',p.filter(function(v){return v.keypoints&&!isLesson(v);}).length],
+           ['star','Starred',p.filter(function(v){return !!v.star;}).length]]
+        : [['todo','To watch',p.filter(function(v){return !v.watched;}).length],
+           ['done','Watched',p.filter(function(v){return !!v.watched;}).length],
+           ['','Everything',p.length]];
+      // Never strand him on an empty view.
+      if(state && !states.some(function(s){ return s[0]===state && s[2]; })) state='';
+      h+='<div class="rl-h">View</div>';
+      states.forEach(function(s){ if(s[2]||!s[0]) h+=railBtn('st',s[0],s[1],s[2],state===s[0]); });
+
+      var sc=scoped(), tc={};
+      sc.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; tc[c]=(tc[c]||0)+1; });
+      var keys=Object.keys(tc).sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return tc[b]-tc[a]||a.localeCompare(b); });
+      if(shelf&&keys.indexOf(shelf)<0) shelf='';
+      if(keys.length>1){
+        h+='<div class="rl-h">Shelves</div>';
+        h+=railBtn('sh','','All shelves',sc.length,!shelf);
+        keys.forEach(function(c){ h+=railBtn('sh',c,c,tc[c],shelf===c); });
+      }
+      $('rail').innerHTML=h;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       THE DETAIL PANE — one component, both worlds.
+       ════════════════════════════════════════════════════════════ */
+    var playing=null;   // id of the item whose player is live
+
+    /* Where the reading actually came from. The whole point of grading
+       server-side is that this line can be TRUE — "no data" and "we couldn't
+       read it" must never look the same. */
+    var SRC={
+      transcript:'Read from what is actually said in the video (TikTok’s own captions).',
+      screen:'Read from the text shown on screen.',
+      notes:'Read from your own notes.',
+      caption:'From the caption only — there is no spoken audio to read.',
+      thin:'Nothing was said and nothing was written, so this is a label, not a lesson. Add a line of your own below and it will be read properly.',
+      none:'Nothing readable at all — no caption, no text on screen, no audio captions.'
+    };
+    function paneEmptyHTML(){
+      var un=videos.filter(function(v){return !v.watched;});
+      var nextV=un.slice().sort(byOrd)[0];
+      var building=habits.filter(function(h){return !h.adopted;});
+      var nextH=building.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
+      var rem=dueRemember();
+      var h='';
+      /* The pane belongs to the world you are standing in. A TikTok wall that
+         reports "70% of the YouTube queue watched" is answering a question
+         nobody asked from here. */
+      if(world==='tt'){
+        var lessons=tiktoks.filter(function(v){ return v.keypoints&&isLesson(v); });
+        var newest=tiktoks.slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); })[0];
+        if(tiktoks.length){
+          h+='<div class="now-sec"><div class="now-h">What you’ve kept</div>'+
+            '<div class="now-big">'+lessons.length+' of '+tiktoks.length+' carry something to take</div>'+
+            '<div class="now-sub">The rest are kept for what they are</div>'+
+            (newest?'<div class="pane-acts"><button type="button" class="b prime" data-open="'+esc(newest.id)+'">Open the latest</button></div>':'')+
+          '</div>';
+        }
+      } else if(nextV||nextH){
+        h+='<div class="now-sec">'+
+          '<div class="now-h">Next up</div>'+
+          '<div class="now-big">'+esc(nextV?titleOf(nextV):nextH.text)+'</div>'+
+          '<div class="now-sub">'+esc(nextV?(metaOf(nextV)||'In your queue'):(nextH.why||'A habit you’re building'))+'</div>'+
+          '<div class="pane-acts">'+
+            (nextV?'<button type="button" class="b prime" data-open="'+esc(nextV.id)+'">Open it</button>':
+                   '<a class="b prime" href="identity.html">Track it in Identity →</a>')+
+          '</div></div>';
+      }
+      var totV=videos.length, pct=totV?Math.round(videos.filter(function(v){return v.watched;}).length/totV*100):0;
+      if(totV&&world!=='tt'){
+        h+='<div class="now-sec"><div class="now-h">Learning momentum</div>'+
+           '<div class="now-sub" style="margin-top:9px">'+pct+'% of the queue watched</div>'+
+           '<div class="now-bar"><i id="moFill"></i></div></div>';
+      }
+      if(rem){
+        var rp=kpParse(rem.keypoints);
+        h+='<div class="now-sec"><div class="now-h">Don’t let this fade</div>'+
+          '<div class="now-big" style="font-size:17px">'+esc(titleOf(rem))+'</div>'+
+          (rp.core?'<div style="font-size:12.5px;line-height:1.55;color:var(--au-dim);margin-top:10px">'+esc(rp.core)+'</div>':'')+
+          (rp.keys.length?'<ul class="pane-keys">'+rp.keys.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
+          '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(rem.id)+'">Still with me ✓</button>'+
+          '<button type="button" class="b" data-open="'+esc(rem.id)+'">Rewatch</button></div></div>';
+      }
+      if(!h) h='<div class="pane-empty">Pick anything on the left and it opens here — the video, and the few things worth taking from it.</div>';
+      return h;
+    }
+
+    function stageHTML(v){
+      var th=thumbOf(v), cls=v.ttId?'tt':'yt';
+      if(playing===v.id){
+        var src=v.ttId ? ('https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.ttId))
+                       : ('https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.ytId||'')+'?autoplay=1&rel=0');
+        return '<div class="pane-stage '+cls+'"><iframe src="'+esc(src)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="'+esc(titleOf(v))+'"></iframe></div>';
+      }
+      if(!th && !(v.ytId||v.ttId)) return '';
+      return '<div class="pane-stage '+cls+' idle" data-play="'+esc(v.id)+'" style="cursor:pointer">'+
+        (th?'<img src="'+esc(th)+'" alt="" data-cover="'+esc(v.id)+'">':'')+
+        '<div class="over"><span>▶</span></div></div>';
+    }
+
+    function paneHTML(){
+      if(!selId) return paneEmptyHTML();
+      var v=byId(selId); if(!v) return paneEmptyHTML();
+      var p=kpParse(v.keypoints||''), lesson=isLesson(v);
+      var h=stageHTML(v);
+      h+='<div class="pane-in">';
+      h+='<span class="pane-kind'+(v.keypoints&&lesson?' lesson':'')+'">'+
+         (v.pending?'Fetching…':(v.keypoints?(lesson?'Lesson':'Keepsake'):(v.metaFail>=2?'Unreadable':'Reading…')))+'</span>';
+      h+='<div class="pane-t">'+esc(titleOf(v))+'</div>';
+      var m=[]; if(v.ttId&&v.handle) m.push('@'+v.handle); if(v.channel) m.push(v.channel);
+      if(v.duration) m.push(v.duration+'s'); if(v.created) m.push(new Date(v.created*1000).toLocaleDateString());
+      if(conceptOf(v)) m.push(conceptOf(v));
+      if(m.length) h+='<div class="pane-m">'+esc(m.join(' · '))+'</div>';
+
+      if(v.err){ h+='<div class="pane-src" style="color:var(--au-coral);border-top:none;padding-top:12px">'+esc(v.err)+'</div>'; }
+
+      if(p.core && p.core.trim()!==titleOf(v).trim()) h+='<div class="pane-core">'+esc(p.core)+'</div>';
+      if(p.keys.length) h+='<ul class="pane-keys">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>';
+      if(p.act&&lesson) h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+'</div>';
+      if(!v.keypoints&&!v.pending&&!v.err) h+='<div class="pane-src pulse" style="border-top:none;padding-top:12px">Nova is reading this one…</div>';
+
+      if(v.ttId&&(v.tags||[]).length) h+='<div class="pane-m" style="margin-top:14px">'+esc(v.tags.map(function(t){return '#'+t;}).join('  '))+'</div>';
+      if(v.ttId&&v.music) h+='<div class="pane-m" style="margin-top:7px">♪ '+esc(v.music)+'</div>';
+
+      /* his own line — the escape hatch for anything the machine can't read */
+      h+='<div class="pane-note">'+
+        (noteOpen
+          ? '<textarea id="noteBox" placeholder="What you actually took from it…">'+esc(noteDraft!=null?noteDraft:(v.note||v.notes||''))+'</textarea>'+
+            '<div class="pane-acts"><button type="button" class="b prime" data-savenote="'+esc(v.id)+'">Save &amp; re-read</button>'+
+            '<button type="button" class="b" data-cancelnote="1">Cancel</button></div>'
+          : '<button type="button" class="b" data-editnote="'+esc(v.id)+'">✎ '+((v.note||v.notes)?'Edit my note':'Add my own note')+'</button>')+
+      '</div>';
+
+      if(v.ttId&&v.transcript){
+        h+='<details class="tx"><summary>▸ What was said · '+v.transcript.split(/\s+/).filter(Boolean).length+' words</summary>'+
+           '<div class="body">'+esc(v.transcript)+'</div></details>';
+      }
+      if(v.ttId&&(v.screen||[]).length){
+        h+='<details class="tx"><summary>▸ Text on screen</summary><div class="body">'+esc(v.screen.join('\n'))+'</div></details>';
+      }
+      if(v.grade&&SRC[v.grade]) h+='<div class="pane-src">'+esc(SRC[v.grade])+'</div>';
+
+      h+='<div class="pane-acts">';
+      if(world!=='tt') h+='<button type="button" class="b'+(v.watched?' on':'')+'" data-watch="'+esc(v.id)+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>';
+      else h+='<button type="button" class="b'+(v.star?' on':'')+'" data-star="'+esc(v.id)+'">'+(v.star?'★ Starred':'☆ Star')+'</button>';
+      if(v.url) h+='<a class="b" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>';
+      if((v.kpFail>=3)||(v.metaFail>=2)) h+='<button type="button" class="b" data-retry="'+esc(v.id)+'">Try again</button>';
+      h+='<button type="button" class="b warn" data-del="'+esc(v.id)+'">Remove</button>';
+      h+='</div></div>';
+      return h;
+    }
+    function renderPane(){
+      $('pane').innerHTML=paneHTML();
+      var fill=$('moFill');
+      if(fill){ var totV=videos.length, pct=totV?Math.round(videos.filter(function(v){return v.watched;}).length/totV*100):0;
+        requestAnimationFrame(function(){ fill.style.transform='scaleX('+(pct/100)+')'; }); }
+      var open=!!selId;
+      $('side').classList.toggle('open',open);
+      $('scrim').classList.toggle('on',open);
+      // Keep his half-written note alive across any re-render, and only steal
+      // focus when the box has just appeared — never while he is typing in it.
+      var nb=$('noteBox');
+      if(nb){
+        nb.addEventListener('input',function(){ noteDraft=this.value; });
+        if(document.activeElement!==nb){ nb.focus(); nb.setSelectionRange(nb.value.length,nb.value.length); }
+      }
+    }
+    function select(id){ if(selId!==id){ playing=null; noteOpen=false; noteDraft=null; } selId=id; renderWall(); renderPane(); }
+    function closePane(){ selId=null; playing=null; noteOpen=false; noteDraft=null; renderWall(); renderPane(); }
+
+    /* ════════════════════════════════════════════════════════════
+       INGEST — per world
+       ════════════════════════════════════════════════════════════ */
+    function ingestHTML(){
+      if(world==='hb'){
+        return '<div class="ing open"><h3>Name a habit you want to grow into</h3>'+
+          '<p>Then live it. Identity tracks the streak.</p>'+
+          '<input id="hText" placeholder="e.g. Read 20 min before bed" autocomplete="off">'+
+          '<textarea id="hWhy" placeholder="Why it matters — the person this makes you…" style="font-family:var(--au-sans);font-size:12.5px;min-height:58px"></textarea>'+
+          '<div class="ing-row"><button type="button" class="b prime" id="hSave">Add habit</button>'+
+          '<span class="ing-msg" id="hMsg"></span></div></div>';
+      }
+      if(world==='tt'){
+        var open=!tiktoks.length;
+        return '<div class="ing'+(open?' open':'')+'" id="ttIng">'+
+          '<button type="button" class="ing-fold" id="ttFold"><h3>Add TikToks</h3><span class="chev">▾</span></button>'+
+          '<div class="ing-hide">'+
+          '<p>One link, or paste your whole notes list at once — every TikTok link in it gets picked up, deduped and read in the background.</p>'+
+          '<textarea id="ttIn" placeholder="https://www.tiktok.com/@…/video/…&#10;https://www.tiktok.com/@…/video/…" spellcheck="false" autocapitalize="none"></textarea>'+
+          '<div class="ing-row"><button type="button" class="b prime" id="ttAdd">Add them</button>'+
+          '<span class="ing-msg" id="ttMsg"></span></div></div></div>';
+      }
+      var open=!videos.length;
+      return '<div class="ing'+(open?' open':'')+'" id="ytIng">'+
+        '<button type="button" class="ing-fold" id="ytFold"><h3>Add to the queue</h3><span class="chev">▾</span></button>'+
+        '<div class="ing-hide">'+
+        '<p>Mirror a public or unlisted YouTube playlist — it stays in step every time you sync.</p>'+
+        '<input id="plInput" type="url" inputmode="url" placeholder="Paste a YouTube playlist link…" autocomplete="off" autocapitalize="none" spellcheck="false" value="'+esc(profile.playlist?('https://www.youtube.com/playlist?list='+profile.playlist):'')+'">'+
+        '<div class="ing-row"><button type="button" class="b prime" id="plSync">↻ Sync playlist</button>'+
+        '<span class="ing-msg" id="plMsg"></span></div>'+
+        '<div style="height:1px;background:var(--au-line);margin:15px 0"></div>'+
+        '<p>Or add one by hand.</p>'+
+        '<input id="vTitle" placeholder="Title — what to watch or read" autocomplete="off">'+
+        '<input id="vUrl" type="url" inputmode="url" placeholder="Link · optional" autocomplete="off" autocapitalize="none" spellcheck="false">'+
+        '<div class="ing-row"><button type="button" class="b" id="vSave">Add to queue</button>'+
+        '<span class="ing-msg" id="vMsg"></span></div></div></div>';
+    }
+
+    function renderIngest(){ $('ingest').innerHTML=ingestHTML(); wireIngest(); }
+    function wireIngest(){
+      var f;
+      if((f=$('ttFold'))) f.addEventListener('click',function(){ $('ttIng').classList.toggle('open'); });
+      if((f=$('ytFold'))) f.addEventListener('click',function(){ $('ytIng').classList.toggle('open'); });
+      if((f=$('ttAdd'))) f.addEventListener('click',addTikToks);
+      if((f=$('plSync'))) f.addEventListener('click',syncPlaylist);
+      if((f=$('plInput'))) f.addEventListener('keydown',function(e){ if(e.key==='Enter') syncPlaylist(); });
+      if((f=$('vSave'))) f.addEventListener('click',saveVideo);
+      if((f=$('hSave'))) f.addEventListener('click',saveHabit);
+    }
+    function msg(id,m,bad){ var e=$(id); if(!e) return; e.textContent=m||''; e.classList.toggle('bad',!!bad); }
+
+    /* ── YouTube: manual add + playlist mirror ────────────────── */
     function saveVideo(){
-      var title=$('vTitle').value.trim(); if(!title){ vtoast('Add a title'); return; }
-      var url=normUrl($('vUrl').value); var topic=$('vTopic').value.trim();
-      videos.push({ id:uid(), title:title, url:url, source:srcFromUrl(url), topic:topic, watched:false, note:'', ord:nextOrd(), ts:Date.now() });
-      persist(K_VID,videos); flush(); vtoast('Queued ✓');
-      $('vTitle').value=''; $('vUrl').value=''; $('vTopic').value=''; render();
+      var t=$('vTitle'); if(!t) return;
+      var title=t.value.trim(); if(!title){ msg('vMsg','Add a title',true); return; }
+      var url=normUrl($('vUrl').value);
+      videos.push({ id:uid(), title:title, url:url, source:srcFromUrl(url), topic:'', watched:false, note:'', ord:nextOrd(videos), ts:Date.now() });
+      persist(K_VID,videos); flush();
+      t.value=''; $('vUrl').value='';
+      render(); msg('vMsg','Queued ✓');
     }
-    function toggleWatched(id){ var v=videos.find(function(x){return x.id===id;}); if(!v) return; v.watched=!v.watched; v.ts=Date.now(); persist(K_VID,videos); flush(); render(); }
-    function delVideo(id){ videos=videos.filter(function(x){return x.id!==id;}); persist(K_VID,videos); flush(); render(); }
-    function vtoast(m){ var t=$('vToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1600); }
-
-    /* ── habits ───────────────────────────────────────── */
-    function saveHabit(){
-      var text=$('hText').value.trim(); if(!text){ htoast('Name the habit'); return; }
-      habits.push({ id:uid(), text:text, why:$('hWhy').value.trim(), adopted:false, ts:Date.now() });
-      persist(K_HAB,habits); flush(); htoast('Added ✓'); $('hText').value=''; $('hWhy').value=''; render();
-    }
-    function toggleAdopted(id){ var h=habits.find(function(x){return x.id===id;}); if(!h) return; h.adopted=!h.adopted; h.ts=Date.now(); persist(K_HAB,habits); flush(); render(); }
-    function delHabit(id){ habits=habits.filter(function(x){return x.id!==id;}); persist(K_HAB,habits); flush(); render(); }
-    function htoast(m){ var t=$('hToast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},1600); }
-
-    /* ── playlist mirror + distill + remember ─────────── */
-    var K_PROF='improve:profile';
-    function loadObj(k){ var o; try{ o=JSON.parse(localStorage.getItem(k)); }catch(e){ o=null; } return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }
-    var profile=loadObj(K_PROF);
     function playlistIdOf(u){ u=String(u||'').trim(); var m=u.match(/[?&]list=([A-Za-z0-9_-]+)/); if(m) return m[1]; if(/^(PL|UU|LL|FL|OL|RD)/.test(u)) return u.replace(/[^A-Za-z0-9_-]/g,''); return ''; }
-    function $do(id){ return document.getElementById(id); }
-    function showDlg(id){ var d=$do(id); if(d.showModal){ if(!d.open) d.showModal(); } else d.setAttribute('open',''); }
-    function closeDlg(id){ var d=$do(id); if(d.open&&d.close) d.close(); else d.removeAttribute('open'); }
-    function plMsg(m){ var e=$('plMsg'); if(e) e.textContent=m||''; }
-
     function reconcileVideos(incoming){
       var byYt={}; videos.forEach(function(v){ if(v.ytId) byYt[v.ytId]=v; });
       var added=0;
@@ -405,7 +820,7 @@
         if(ex){ if(inc.title&&!ex.title) ex.title=inc.title; if(inc.thumb) ex.thumb=inc.thumb; if(inc.channel&&!ex.channel) ex.channel=inc.channel; return; } // keep watched + keypoints
         videos.push({ id:uid(), ytId:inc.videoId, title:inc.title||'(untitled)', channel:inc.channel||'',
           thumb:inc.thumb||('https://i.ytimg.com/vi/'+inc.videoId+'/hqdefault.jpg'),
-          url:'https://www.youtube.com/watch?v='+inc.videoId, source:'YouTube', topic:'', watched:false, ord:nextOrd(), ts:Date.now() });
+          url:'https://www.youtube.com/watch?v='+inc.videoId, source:'YouTube', topic:'', watched:false, ord:nextOrd(videos), ts:Date.now() });
         added++;
       });
       if(added){ persist(K_VID,videos); flush(); }
@@ -414,40 +829,70 @@
     var syncing=false;
     async function syncPlaylist(){
       if(syncing) return;
-      var raw=$('plInput').value.trim(); var pid=playlistIdOf(raw)||playlistIdOf(profile.playlist||'');
-      if(!pid){ plMsg('Paste a YouTube playlist link first'); return; }
+      var el=$('plInput'); if(!el) return;
+      var pid=playlistIdOf(el.value.trim())||playlistIdOf(profile.playlist||'');
+      if(!pid){ msg('plMsg','Paste a YouTube playlist link first',true); return; }
       profile.playlist=pid; persist(K_PROF,profile); flush();
-      syncing=true; $('plSync').classList.add('spin'); plMsg('Syncing…');
+      syncing=true; msg('plMsg','Syncing…');
       try{
         var r=await fetch('/api/run-reminders?youtube='+encodeURIComponent(pid),{cache:'no-store'});
         if(!r.ok){ var t=''; try{ t=(await r.json()).error||''; }catch(e){} throw new Error(t||('HTTP '+r.status)); }
         var data=await r.json(); var vids=(data&&data.videos)||[];
-        if(!vids.length){ plMsg('No videos found in that playlist (is it Public or Unlisted?)'); }
+        if(!vids.length) msg('plMsg','No videos found in that playlist (is it Public or Unlisted?)',true);
         else { var n=reconcileVideos(vids);
-          plMsg(n?(n+' new video'+(n>1?'s':'')+' added'+(data.full?'':' · add YOUTUBE_API_KEY in Vercel for the full list')):('Up to date · '+vids.length+' in playlist'+(data.full?'':' (recent 15)'))); }
-        render();
-        sweep();
-      }catch(e){ plMsg('Sync failed: '+(e.message||'error')); }
-      syncing=false; $('plSync').classList.remove('spin');
+          msg('plMsg', n?(n+' new video'+(n>1?'s':'')+' added'+(data.full?'':' · add YOUTUBE_API_KEY in Vercel for the full list'))
+                        :('Up to date · '+vids.length+' in playlist'+(data.full?'':' (recent 15)'))); }
+        render(); sweep();
+      }catch(e){ msg('plMsg','Sync failed: '+(e.message||'error'),true); }
+      syncing=false;
     }
 
-    /* ── the reader ───────────────────────────────────────────────
-       No button. Every video that has no key points gets read in the
-       background, one at a time, and the notes land on its card. It survives
-       reloads because the result is persisted per video, and it survives the
-       free tier's rate limit by BACKING OFF instead of failing — that limit is
-       exactly what used to surface as "Nova's busy" and give up. */
-    var vById=function(id){ return videos.find(function(x){ return x.id===id; }); };
-    function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-    function kpProg(m){ var e=$('kpProg'); if(e) e.textContent=m||''; }
-    function applyKP(v,text){
-      v.keypoints=text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
-      // TOPIC is only a placeholder so chips appear during the sweep. Each video
-      // guesses its own theme in isolation, which is how you end up with nine
-      // near-identical shelves — the canonical pass below decides the real set.
-      var p=kpParse(text); if(p.topic) v.rawTopic=p.topic;
-      persist(K_VID,videos); flush();
+    /* ── TikTok: bulk paste ───────────────────────────────────── */
+    var TT_RE=/https?:\/\/(?:(?:www\.|m\.)?tiktok\.com\/@[A-Za-z0-9_.-]{1,40}\/(?:video|photo)\/\d{6,25}|(?:vm|vt)\.tiktok\.com\/[A-Za-z0-9]{4,20}|(?:www\.)?tiktok\.com\/t\/[A-Za-z0-9]{4,20})/gi;
+    function ttIdOf(u){ var m=String(u||'').match(/\/(?:video|photo)\/(\d{6,25})/); return m?m[1]:''; }
+    function addTikToks(){
+      var box=$('ttIn'); if(!box) return;
+      var raw=box.value||'';
+      var found=raw.match(TT_RE)||[];
+      if(!found.length){ msg('ttMsg','No TikTok links found in that. Paste the share links themselves.',true); return; }
+      var haveId={}, haveUrl={};
+      tiktoks.forEach(function(v){ if(v.ttId) haveId[v.ttId]=1; if(v.url) haveUrl[v.url.split('?')[0]]=1; });
+      var added=0, dup=0, seen={};
+      found.forEach(function(u){
+        u=u.split('?')[0];
+        if(seen[u]) return; seen[u]=1;
+        var id=ttIdOf(u);
+        if((id&&haveId[id])||haveUrl[u]){ dup++; return; }
+        if(id) haveId[id]=1; haveUrl[u]=1;
+        tiktoks.push({ id:uid(), ttId:id||'', url:u, source:'TikTok', pending:true, ord:nextOrd(tiktoks), ts:Date.now() });
+        added++;
+      });
+      if(added){ persist(K_TT,tiktoks); flush(); box.value=''; }
+      msg('ttMsg', added ? (added+' added'+(dup?' · '+dup+' already saved':'')+' · reading them now…')
+                         : (dup+' already saved — nothing new.'));
+      render(); ttSweep();
     }
+
+    /* ════════════════════════════════════════════════════════════
+       THE READERS — no buttons. Both worlds fill themselves in, one
+       item at a time, and survive a reload because every result is
+       persisted the moment it lands. They survive the free tier by
+       BACKING OFF rather than failing: that limit is exactly what used
+       to surface as "Nova's busy" and give up forever.
+       ════════════════════════════════════════════════════════════ */
+    function applyKP(v,text,extra){
+      v.keypoints=text; v.distilledTs=Date.now(); v.revisitTs=Date.now(); v.ts=Date.now(); v.kpFail=0;
+      var p=kpParse(text);
+      // TOPIC is only a placeholder so shelves appear during the sweep. Each
+      // item guesses its theme in isolation, which is how you end up with nine
+      // near-identical shelves — the canonical pass below decides the real set.
+      if(p.topic) v.rawTopic=p.topic;
+      if(p.kind) v.kind=p.kind;
+      if(extra){ if(extra.grade) v.grade=extra.grade; if(extra.kind) v.kind=extra.kind; }
+      saveItem(v);
+    }
+
+    /* ── YouTube reader ───────────────────────────────────────── */
     async function askDistill(v,notes){
       try{
         var r=await fetch('/api/run-reminders?ytdistill=1',{ method:'POST', headers:{'Content-Type':'application/json'},
@@ -457,309 +902,364 @@
         return { ok:false, rate: r.status===429 || (d&&d.error==='rate') };
       }catch(e){ return { ok:false }; }
     }
-
     var sweeping=false;
-    function pendingKP(){ return videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; }); }
     async function sweep(){
       if(sweeping) return;
-      var pend=pendingKP(); if(!pend.length){ kpProg(''); fillConcepts(); return; }
+      var pend=videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; });
+      if(!pend.length){ status(''); fillConcepts(); return; }
       sweeping=true;
       var ids=pend.map(function(v){ return v.id; }), total=ids.length;
       for(var i=0;i<ids.length;i++){
-        var v=vById(ids[i]); if(!v||v.keypoints) continue;
+        var v=byId(ids[i]); if(!v||v.keypoints) continue;
         var got=null;
         for(var att=0; att<3 && !got; att++){
-          kpProg('Reading '+(i+1)+'/'+total);
-          var res=await askDistill(v,v.notes);
+          status('Reading '+(i+1)+'/'+total,true);
+          var res=await askDistill(v,v.notes||v.note);
           if(res.ok){ got=res.text; break; }
-          if(res.rate){ kpProg('Waiting '+(i+1)+'/'+total); await wait(20000+att*15000); }
+          if(res.rate){ status('Waiting '+(i+1)+'/'+total,true); await wait(20000+att*15000); }
           else await wait(2500);
         }
-        v=vById(ids[i]); if(!v) continue;
+        v=byId(ids[i]); if(!v) continue;
         if(got) applyKP(v,got);
         else { v.kpFail=(v.kpFail||0)+1; persist(K_VID,videos); }
-        renderQueue();      // cards only — the counters above haven't moved
+        if(world==='yt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
         await wait(2200);   // pace: the free tier is capped per minute, not per day
       }
-      sweeping=false; kpProg('');
-      render();
-      fillConcepts();
+      sweeping=false; status('');
+      render(); fillConcepts();
     }
 
-    /* Sharpen — his own words, folded back into the key points. */
-    var distillId=null;
-    function openDistill(id){ var v=vById(id); if(!v) return; distillId=id;
-      $('dsTitle').textContent=v.title||'Sharpen'; $('dsText').value=v.notes||'';
-      var res=$('dsResult'); res.classList.add('hidden'); res.textContent='';
-      $('dsSpin').classList.add('hidden'); $('dsGo').removeAttribute('disabled'); $('dsGo').textContent='Rewrite';
-      showDlg('distillDlg');
+    /* ── TikTok reader: fetch, then read, one video at a time ── */
+    async function ttFetchMeta(v){
+      try{
+        var r=await fetch('/api/run-reminders?tiktok='+encodeURIComponent(v.url),{cache:'no-store'});
+        var d={}; try{ d=await r.json(); }catch(e){}
+        if(r.ok&&d&&d.ok) return { ok:true, meta:d };
+        return { ok:false, error:(d&&d.error)||('HTTP '+r.status), gone:r.status===404 };
+      }catch(e){ return { ok:false, error:'no connection' }; }
     }
-    async function runDistill(){
-      var v=vById(distillId); if(!v) return;
-      var text=$('dsText').value.trim();
-      $('dsGo').setAttribute('disabled','1'); $('dsSpin').classList.remove('hidden');
-      var got=null, rate=false;
-      for(var att=0; att<2 && !got; att++){
-        if(att) await wait(rate?12000:1500);
-        var res=await askDistill(v,text); rate=!!res.rate;
-        if(res.ok) got=res.text;
+    async function ttRead(v){
+      try{
+        var r=await fetch('/api/run-reminders?ttread=1',{ method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ handle:v.handle, author:v.author, caption:v.caption, tags:v.tags, screen:v.screen,
+            transcript:v.transcript, transcriptLang:v.transcriptLang, music:v.music, duration:v.duration, note:v.note||'' }) });
+        var d={}; try{ d=await r.json(); }catch(e){}
+        if(r.ok&&d&&d.text) return { ok:true, text:d.text, grade:d.grade, kind:d.kind };
+        return { ok:false, rate:r.status===429||(d&&d.error==='rate'), unreadable:r.status===422, grade:d&&d.grade };
+      }catch(e){ return { ok:false }; }
+    }
+    function applyMeta(v,m){
+      v.ttId=m.id||v.ttId; v.url=m.url||v.url; v.handle=m.handle||''; v.author=m.author||'';
+      v.caption=m.caption||''; v.tags=m.tags||[]; v.screen=m.screen||[];
+      v.transcript=m.transcript||''; v.transcriptLang=m.transcriptLang||'';
+      v.music=m.music||''; v.duration=m.duration||0; v.cover=m.cover||''; v.created=m.created||0;
+      v.likes=m.likes||0; v.fetched=m.fetched||Date.now();
+      v.pending=false; v.metaFail=0; v.err=''; v.ts=Date.now();
+      persist(K_TT,tiktoks); flush();
+    }
+    var ttSweeping=false;
+    async function ttSweep(){
+      if(ttSweeping) return;
+      var need=tiktoks.filter(function(v){ return (v.pending||!v.handle||!v.keypoints) && (v.metaFail||0)<2 && (v.kpFail||0)<3; });
+      if(!need.length){ status(''); fillConcepts(); return; }
+      ttSweeping=true;
+      var ids=need.map(function(v){ return v.id; }), total=ids.length;
+      for(var i=0;i<ids.length;i++){
+        var v=byId(ids[i]); if(!v) continue;
+
+        if(v.pending||!v.handle){
+          status('Fetching '+(i+1)+'/'+total,true);
+          var got=await ttFetchMeta(v);
+          v=byId(ids[i]); if(!v) continue;
+          if(got.ok) applyMeta(v,got.meta);
+          else{
+            // Never a silent failure: a deleted video, a blocked request and no
+            // connection are three different sentences and the card says which.
+            v.metaFail=(v.metaFail||0)+1; v.pending=false;
+            v.err=got.gone?'TikTok says this video is gone, private or region-locked.':('Couldn’t fetch it — '+(got.error||'unknown')+'.');
+            persist(K_TT,tiktoks); flush();
+            if(world==='tt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
+            await wait(1200); continue;
+          }
+          if(world==='tt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
+        }
+
+        v=byId(ids[i]); if(!v||v.keypoints) continue;
+        status('Reading '+(i+1)+'/'+total,true);
+        var kp=null, res;
+        for(var att=0; att<3 && !kp; att++){
+          res=await ttRead(v);
+          if(res.ok){ kp=res; break; }
+          if(res.unreadable){ break; }
+          if(res.rate){ status('Waiting '+(i+1)+'/'+total,true); await wait(20000+att*15000); }
+          else await wait(2500);
+        }
+        v=byId(ids[i]); if(!v) continue;
+        if(kp) applyKP(v,kp.text,{grade:kp.grade,kind:kp.kind});
+        else if(res&&res.unreadable){ v.grade='none'; v.kpFail=3; v.ts=Date.now(); persist(K_TT,tiktoks); flush(); }
+        else { v.kpFail=(v.kpFail||0)+1; persist(K_TT,tiktoks); }
+        if(world==='tt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
+        await wait(2000);
       }
-      var out=$('dsResult'); out.classList.remove('hidden');
-      v=vById(distillId);
-      if(got&&v){ v.notes=text; applyKP(v,got); out.textContent=got; openKp[v.id]=true; render(); }
-      else out.textContent=rate ? 'Nova has hit her free-tier limit for the minute. Wait about half a minute and tap Rewrite again — your key points are already saved.'
-                                : 'Couldn’t reach Nova just now. Tap Rewrite again.';
-      $('dsGo').removeAttribute('disabled'); $('dsSpin').classList.add('hidden');
+      ttSweeping=false; status('');
+      render(); fillConcepts();
     }
 
-    /* inline watch */
-    function openWatch(ytId){ if(!ytId) return; $('watchFrame').src='https://www.youtube-nocookie.com/embed/'+ytId+'?autoplay=1&rel=0'; showDlg('watchDlg'); }
-    function closeWatch(){ $('watchFrame').src=''; closeDlg('watchDlg'); }
-
-    /* remember — resurface a distilled video's key points on a gentle schedule */
-    function dueRemember(){
-      var now=Date.now(), DAY=86400000;
-      return videos.filter(function(v){ return v.keypoints&&v.distilledTs&&(now-v.distilledTs)>=3*DAY&&(!v.revisitTs||(now-v.revisitTs)>=5*DAY); })
-        .sort(function(a,b){ return (a.revisitTs||a.distilledTs)-(b.revisitTs||b.distilledTs); })[0]||null;
-    }
-
-    /* one video card */
-    var _playSvg='<span class="play"><svg viewBox="0 0 68 48"><path d="M66.5 7.7c-.8-2.9-3-5.1-5.9-5.9C55.3.5 34 .5 34 .5s-21.3 0-26.6 1.3C4.5 2.6 2.3 4.8 1.5 7.7.2 13 .2 24 .2 24s0 11 1.3 16.3c.8 2.9 3 5.1 5.9 5.9C12.7 47.5 34 47.5 34 47.5s21.3 0 26.6-1.3c2.9-.8 5.1-3 5.9-5.9C67.8 35 67.8 24 67.8 24s0-11-1.3-16.3z" fill="#f00"/><path d="M27 34l18-10-18-10z" fill="#fff"/></svg></span>';
-    function videoCardHTML(v){
-      var p=kpParse(v.keypoints||''), open=!!openKp[v.id];
-      var line;
-      if(p.core) line='<div class="gr-core">'+esc(p.core)+'</div>';
-      else if((v.kpFail||0)>=3) line='<div class="gr-core miss" data-retry="'+v.id+'">Couldn’t read this one · tap to retry</div>';
-      else if(v.ytId) line='<div class="gr-core pend">Nova is reading this…</div>';
-      else line='';
-
-      var body='';
-      if(open&&(p.keys.length||p.act)){
-        body='<div class="gr-kpwrap">'+
-          (p.keys.length?'<ul class="gr-keys">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'')+
-          (p.act?'<div class="gr-do"><b>Try this</b>'+esc(p.act)+'</div>':'')+
-          '<button type="button" class="gr-tiny" data-distill="'+v.id+'">✎ '+(v.notes?'Edit my notes':'Add my own notes')+'</button>'+
-        '</div>';
-      }
-      var expand=(p.keys.length||p.act)
-        ? '<button type="button" class="gr-va'+(open?' on':'')+'" data-x="'+v.id+'">'+(open?'Hide ▴':(p.keys.length+' key point'+(p.keys.length===1?'':'s')+' ▾'))+'</button>' : '';
-
-      if(v.ytId){
-        return '<div class="gr-vid'+(v.watched?' done':'')+'">'+
-          '<div class="gr-thumb" data-watch="'+esc(v.ytId)+'"><img loading="lazy" src="'+esc(v.thumb||('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'))+'" alt="">'+_playSvg+'</div>'+
-          '<div class="gr-vid-main"><div class="gr-vid-title">'+esc(v.title)+'</div>'+
-          (v.channel?'<div class="gr-vid-ch">'+esc(v.channel)+'</div>':'')+ line +
-          '<div class="gr-vid-acts">'+
-            '<button type="button" class="gr-va'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>'+
-            expand+'<button type="button" class="gr-va del" data-dv="'+v.id+'">✕</button>'+
-          '</div>'+body+'</div></div>';
-      }
-      return '<div class="gr-row'+(v.watched?' done':'')+'">'+
-        '<div class="gr-check'+(v.watched?' on':'')+'" data-w="'+v.id+'">'+(v.watched?'&#10003;':'')+'</div>'+
-        '<div class="gr-row-main"><div class="gr-row-title">'+esc(v.title)+'</div>'+
-        ((v.source||conceptOf(v))?'<div class="gr-row-meta">'+[esc(v.source),esc(conceptOf(v))].filter(Boolean).join(' · ')+'</div>':'')+
-        (p.core?'<div class="gr-core">'+esc(p.core)+'</div>':'')+
-        '<div class="gr-vid-acts">'+(expand||'<button type="button" class="gr-va distil" data-distill="'+v.id+'">✦ Key points</button>')+'</div>'+body+'</div>'+
-        '<div class="gr-mini">'+(v.url?'<a class="gr-mb open" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
-        '<button type="button" class="gr-mb del" data-dv="'+v.id+'">✕</button></div></div>';
-    }
-
-    /* Most videos get their topic free, from the TOPIC line of their own key
-       points. This only mops up the stragglers — and it is CHUNKED server-side,
-       because one 42-video request is what used to come back empty. */
+    /* ── shelving ─────────────────────────────────────────────────
+       Most items get their shelf free, from the TOPIC line of their own key
+       points. This only mops up the stragglers — and it is CHUNKED
+       server-side, because one 42-item request is what used to come back
+       empty. Each world keeps its OWN label set: "Edits" belongs on the
+       TikTok wall and nowhere near the YouTube one. */
     var CVER=2, filling=false;
     async function fillConcepts(){
       if(filling) return;
-      // cver marks a shelf assigned by the CURRENT scheme. Bumping it re-shelves
-      // the whole library once — which is how he escapes the ten drifted labels
-      // the old one-shot sort left behind — and then it settles.
-      var need=videos.filter(function(v){ return v.ytId&&(!v.concept||v.cver!==CVER); });
+      var arr=coll(), key=collKey(), isTT=world==='tt';
+      var need=arr.filter(function(v){ return (isTT?v.ttId:v.ytId)&&v.keypoints&&(!v.concept||v.cver!==CVER); });
       if(!need.length) return;
-      var count={}; videos.forEach(function(v){ if(v.concept&&v.cver===CVER) count[v.concept]=(count[v.concept]||0)+1; });
+      var count={}; arr.forEach(function(v){ if(v.concept&&v.cver===CVER) count[v.concept]=(count[v.concept]||0)+1; });
       var known=Object.keys(count).sort(function(a,b){ return count[b]-count[a]; }).slice(0,8);
-      filling=true; kpProg('Sorting');
+      filling=true; status('Sorting',true);
       try{
-        var items=need.slice(0,120).map(function(v){ return { videoId:v.ytId, title:v.title, channel:v.channel, topic:v.rawTopic||'', core:kpParse(v.keypoints||'').core }; });
+        var items=need.slice(0,120).map(function(v){
+          return { videoId:(isTT?v.ttId:v.ytId), title:titleOf(v), channel:(isTT?('@'+(v.handle||'')):(v.channel||'')),
+                   topic:v.rawTopic||'', core:kpParse(v.keypoints||'').core };
+        });
         var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items:items, known:known }) });
         var d={}; try{ d=await r.json(); }catch(e){}
         if(r.ok&&d.concepts){
           var ch=0;
-          videos.forEach(function(v){
-            if(!v.ytId||v.cver===CVER) return;
-            var lab=d.concepts[v.ytId]; if(!lab) return;
+          arr.forEach(function(v){
+            var vid=isTT?v.ttId:v.ytId;
+            if(!vid||v.cver===CVER) return;
+            var lab=d.concepts[vid]; if(!lab) return;
             v.concept=String(lab).slice(0,40); v.cver=CVER; v.ts=Date.now(); ch++;
           });
-          if(ch){ persist(K_VID,videos); flush(); }
+          if(ch){ persist(key,arr); flush(); }
         }
       }catch(e){}
-      filling=false; kpProg(''); render();
+      filling=false; status(''); render();
     }
 
-    /* cinematic hero backdrop — the one he'd watch next, so it stays put */
-    function setHeroBg(){
-      var el=$('grHeroBg'); if(!el) return;
-      var pool=videos.filter(function(v){ return v.ytId||v.thumb; });
-      var pick=pool.filter(function(v){ return !v.watched; }).sort(byOrd)[0]||pool.slice().sort(byOrd)[0];
-      if(pick){ el.style.backgroundImage='url('+(pick.thumb||('https://i.ytimg.com/vi/'+pick.ytId+'/hqdefault.jpg'))+')'; el.classList.add('on'); }
-      else el.classList.remove('on');
+    /* An expired cover URL is a real, expected event — TikTok signs them and
+       they die within the hour. Re-fetch it rather than leaving a dead frame,
+       and cap it so a whole wall of dead covers can't stampede the endpoint. */
+    var covFix={}, covBusy=0;
+    async function refreshCover(id){
+      var v=byId(id); if(!v||!v.ttId||covFix[id]||covBusy>=2) return;
+      covFix[id]=1; covBusy++;
+      var got=await ttFetchMeta(v);
+      v=byId(id);
+      if(got.ok&&v){ applyMeta(v,got.meta); renderWall(); if(selId===id&&!noteOpen) renderPane(); }
+      covBusy--;
     }
 
-    /* ── the queue: search, then two rows of chips, then one flat list ──
-       42 videos stacked under AI headings was a wall. Narrowing beats
-       browsing: state first (what he actually wants is "to watch"), topic
-       second, and every count reflects what he's already narrowed to. */
-    function chipHTML(kind,val,label,n,on){
-      return '<button type="button" class="gr-fchip'+(on?' on':'')+'" data-'+(kind==='s'?'fs':'ft')+'="'+esc(val)+'">'+
-        esc(label)+(n!=null?'<span class="n">'+n+'</span>':'')+'</button>';
-    }
-    function renderQueue(){
-      var q=seek.trim().toLowerCase();
-      var pool=videos.filter(function(v){
-        if(!q) return true;
-        return (v.title+' '+(v.channel||'')+' '+conceptOf(v)+' '+(v.keypoints||'')).toLowerCase().indexOf(q)>=0;
-      });
-      var nTodo=pool.filter(function(v){ return !v.watched; }).length, nDone=pool.length-nTodo;
-      if(fState==='todo'&&!nTodo&&nDone) fState='all';        // don't strand him on an empty tab
-      if(fState==='done'&&!nDone) fState='all';
-      var scoped=pool.filter(function(v){ return fState==='all'?true:(fState==='done'?!!v.watched:!v.watched); });
-
-      var tc={}; scoped.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; tc[c]=(tc[c]||0)+1; });
-      var tks=Object.keys(tc).sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return tc[b]-tc[a]||a.localeCompare(b); });
-      if(fTopic&&tks.indexOf(fTopic)<0) fTopic='';
-
-      $('fState').innerHTML=chipHTML('s','todo','To watch',nTodo,fState==='todo')+
-        (nDone?chipHTML('s','done','Watched',nDone,fState==='done'):'')+
-        chipHTML('s','all','All',pool.length,fState==='all');
-
-      var showT=tks.length>1;
-      $('fTopic').innerHTML=showT
-        ? chipHTML('t','','Every topic',scoped.length,!fTopic)+tks.map(function(c){ return chipHTML('t',c,c,tc[c],fTopic===c); }).join('')
-        : '';
-      $('fTopic').style.display=showT?'flex':'none';
-      $('seekWrap').style.display=videos.length>6?'block':'none';
-      $('vSeekClr').classList.toggle('hidden',!seek);
-
-      var list=scoped.filter(function(v){ return !fTopic||(conceptOf(v)||'Unsorted')===fTopic; })
-        .sort(function(a,b){ if(!!a.watched!==!!b.watched) return a.watched?1:-1; return byOrd(a,b); });
-      $('queueBody').innerHTML=list.length ? list.map(videoCardHTML).join('')
-        : '<div class="gr-empty" style="padding:16px 6px">'+(q?'Nothing matches “'+esc(seek.trim())+'”.':'Nothing in this view.')+'</div>';
+    /* remember — resurface a read video's key points on a gentle schedule */
+    function dueRemember(){
+      var now=Date.now(), DAY=86400000;
+      return videos.concat(tiktoks).filter(function(v){
+        return v.keypoints&&isLesson(v)&&v.distilledTs&&(now-v.distilledTs)>=3*DAY&&(!v.revisitTs||(now-v.revisitTs)>=5*DAY);
+      }).sort(function(a,b){ return (a.revisitTs||a.distilledTs)-(b.revisitTs||b.distilledTs); })[0]||null;
     }
 
-    /* ── render ───────────────────────────────────────── */
-    function countTo(el,end){ end=parseInt(end,10); if(!el||!isFinite(end)) return; var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3); el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
-    function setNum(el,v,anim){ if(!el) return; if(anim&&typeof v==='number'&&isFinite(v)&&v>0){ countTo(el,v); } else el.textContent=v; }
+    /* ── habits ───────────────────────────────────────────────── */
+    function saveHabit(){
+      var t=$('hText'); if(!t) return;
+      var text=t.value.trim(); if(!text){ msg('hMsg','Name the habit',true); return; }
+      habits.push({ id:uid(), text:text, why:$('hWhy').value.trim(), adopted:false, ts:Date.now() });
+      persist(K_HAB,habits); flush();
+      t.value=''; $('hWhy').value='';
+      render(); msg('hMsg','Added ✓');
+    }
+    function renderHabits(){
+      var h='';
+      if(!habits.length){
+        h+='<div class="empty"><b>No habits yet</b>Name one thing you want to become, and why it matters.</div>';
+      } else {
+        var q=seek.trim().toLowerCase();
+        var list=habits.filter(function(x){ return !q||((x.text+' '+(x.why||'')).toLowerCase().indexOf(q)>=0); })
+          .sort(function(a,b){ if(!!a.adopted!==!!b.adopted) return a.adopted?1:-1; return (a.ts||0)-(b.ts||0); });
+        h+= list.length ? '<div class="hb">'+list.map(function(x){
+          return '<div class="hb-c'+(x.adopted?' done':'')+'">'+
+            '<button type="button" class="hb-ck'+(x.adopted?' on':'')+'" data-ha="'+esc(x.id)+'" aria-label="Adopted">'+(x.adopted?'✓':'')+'</button>'+
+            '<div style="flex:1;min-width:0"><div class="hb-t">'+esc(x.text)+'</div>'+
+            (x.why?'<div class="hb-w">'+esc(x.why)+'</div>':'')+
+            (x.adopted?'<div class="hb-w" style="color:rgba(var(--acc),.8)">Adopted · track it in Identity</div>':'')+'</div>'+
+            '<button type="button" class="hb-x" data-dh="'+esc(x.id)+'" aria-label="Remove">✕</button></div>';
+        }).join('')+'</div>' : '<div class="empty"><b>Nothing matches</b>No habit matches “'+esc(seek.trim())+'”.</div>';
+      }
+      $('wall').innerHTML=h;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       RENDER
+       ════════════════════════════════════════════════════════════ */
+    function countTo(el,end){ end=parseInt(end,10); if(!el||!isFinite(end)) return;
+      var dur=650,t0=performance.now(); function step(t){ var p=Math.min(1,(t-t0)/dur); p=1-Math.pow(1-p,3);
+      el.textContent=Math.round(end*p); if(p<1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+    function metricsHTML(){
+      var un=videos.filter(function(v){return !v.watched;}).length;
+      var lessons=tiktoks.filter(function(v){return v.keypoints&&isLesson(v);}).length;
+      var building=habits.filter(function(h){return !h.adopted;}).length;
+      var sets=[ ['To watch',un], ['Saved',tiktoks.length], ['Lessons',lessons], ['Building',building] ];
+      return sets.map(function(s){ return '<div class="lb-met"><b data-n="'+s[1]+'">0</b><span>'+s[0]+'</span></div>'; }).join('');
+    }
+    /* The segments are equal width, so the pill only ever travels — its width
+       is CSS's business, never an animated property. */
+    function moveInk(){
+      var w=$('lbWorlds').querySelector('.lb-w.on'), ink=$('lbInk');
+      if(!w||!ink) return;
+      ink.style.transform='translateX('+(w.offsetLeft-3)+'px)';
+    }
     function render(){
-      videos=loadArr(K_VID); habits=loadArr(K_HAB);
-      setHeroBg();
-      var unwatched=videos.filter(function(v){return !v.watched;});
-      var watched=videos.filter(function(v){return v.watched;});
-      var building=habits.filter(function(h){return !h.adopted;});
-      var adopted=habits.filter(function(h){return h.adopted;});
+      videos=loadArr(K_VID); tiktoks=loadArr(K_TT); habits=loadArr(K_HAB); profile=loadObj(K_PROF);
 
-      var first=!window.__grAnim; window.__grAnim=true;
-      setNum($('snQueue'), unwatched.length, first);
-      setNum($('snDone'), watched.length, first);
-      setNum($('snHabits'), building.length, first);
-      setNum($('snAdopted'), adopted.length, first);
-      if(videos.length||habits.length) $('grSub').textContent=unwatched.length+' to watch · '+building.length+' habit'+(building.length===1?'':'s')+' in progress';
+      document.documentElement.style.setProperty('--acc',ACCENT[world]);
+      $('lbTitleEm').textContent=TITLE[world];
+      $('nYt').textContent=videos.filter(function(v){return !v.watched;}).length;
+      $('nTt').textContent=tiktoks.length;
+      $('nHb').textContent=habits.filter(function(h){return !h.adopted;}).length;
 
-      // learning momentum — share of your queue actually watched
-      var totV=videos.length, pct=totV?Math.round(watched.length/totV*100):0, mo=$('grMo');
-      if(totV){ mo.style.display='block'; $('grMoR').textContent=pct+'% watched'; requestAnimationFrame(function(){ $('grMoFill').style.width=pct+'%'; }); }
-      else mo.style.display='none';
+      var first=!window.__lbAnim; window.__lbAnim=true;
+      $('lbMetrics').innerHTML=metricsHTML();
+      Array.prototype.forEach.call($('lbMetrics').querySelectorAll('b'),function(b){
+        var n=parseInt(b.getAttribute('data-n'),10)||0;
+        if(first&&n>0) countTo(b,n); else b.textContent=n;
+      });
 
-      // remember — resurface a distilled video's key points
-      var rem=dueRemember();
-      if(rem){ $('rememberCard').classList.remove('hidden'); $('rmTitle').textContent=rem.title;
-        var rp=kpParse(rem.keypoints);
-        $('rmKp').innerHTML=(rp.core?'<div class="gr-core" style="margin-top:0">'+esc(rp.core)+'</div>':'')+
-          (rp.keys.length?'<ul class="gr-keys" style="margin-top:9px">'+rp.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'');
-        $('rememberCard').setAttribute('data-id',rem.id); }
-      else $('rememberCard').classList.add('hidden');
+      var un=videos.filter(function(v){return !v.watched;}).length;
+      var building=habits.filter(function(h){return !h.adopted;}).length;
+      if(videos.length||tiktoks.length||habits.length){
+        $('lbSub').textContent=un+' to watch · '+tiktoks.length+' TikTok'+(tiktoks.length===1?'':'s')+' saved · '+
+          building+' habit'+(building===1?'':'s')+' in progress';
+      }
 
-      // focus
-      var nextV=unwatched.slice().sort(byOrd)[0];
-      var nextH=building.slice().sort(function(a,b){return (a.ts||0)-(b.ts||0);})[0];
-      if(nextV||nextH){
-        $('focusCard').classList.remove('hidden');
-        if(nextV){
-          $('focusBig').textContent=nextV.title;
-          $('focusSub').textContent=[nextV.channel||nextV.source,conceptOf(nextV)].filter(Boolean).join(' · ')||'In your queue';
-          if(nextV.url){ $('focusLink').style.display='inline-block'; $('focusLink').href=nextV.url; $('focusLink').textContent='Watch now →'; }
-          else $('focusLink').style.display='none';
-        } else {
-          $('focusBig').textContent=nextH.text;
-          $('focusSub').textContent=nextH.why||'A habit you’re building';
-          $('focusLink').style.display='inline-block'; $('focusLink').href='identity.html'; $('focusLink').textContent='Track it in Identity →';
-        }
-      } else $('focusCard').classList.add('hidden');
-
-      // queue — one flat list, narrowed by search + two rows of chips
-      if(videos.length){
-        $('queueCard').classList.remove('hidden');
-        renderQueue();
-      } else $('queueCard').classList.add('hidden');
-
-      // habits
-      if(habits.length){
-        var hlist=habits.slice().sort(function(a,b){ if(!!a.adopted!==!!b.adopted) return a.adopted?1:-1; return (a.ts||0)-(b.ts||0); });
-        $('habitBody').innerHTML=hlist.map(function(h){
-          return '<div class="gr-row'+(h.adopted?' done':'')+'">'+
-            '<div class="gr-check'+(h.adopted?' on':'')+'" data-ha="'+h.id+'">'+(h.adopted?'&#10003;':'')+'</div>'+
-            '<div class="gr-row-main"><div class="gr-row-title">'+esc(h.text)+'</div>'+
-            (h.why?'<div class="gr-row-why">'+esc(h.why)+'</div>':'')+
-            (h.adopted?'<div class="gr-row-meta" style="color:rgba(var(--gr),.8)">Adopted · track it in Identity</div>':'')+'</div>'+
-            '<div class="gr-mini"><button type="button" class="gr-mb del" data-dh="'+h.id+'">✕</button></div></div>';
-        }).join('');
-      } else $('habitBody').innerHTML='';
-
-      $('grEmpty').classList.toggle('hidden', videos.length>0||habits.length>0);
+      if(!$('ingest').firstChild) renderIngest();
+      renderRail();
+      renderWall();
+      renderPane();
+      moveInk();
     }
 
-    /* ── wiring ───────────────────────────────────────── */
-    $('vSave').addEventListener('click',saveVideo);
-    $('hSave').addEventListener('click',saveHabit);
-    $('fState').addEventListener('click',function(e){ var c=e.target.closest('[data-fs]'); if(!c) return; fState=c.getAttribute('data-fs'); renderQueue(); });
-    $('fTopic').addEventListener('click',function(e){ var c=e.target.closest('[data-ft]'); if(!c) return; fTopic=c.getAttribute('data-ft'); renderQueue(); });
-    $('vSeek').addEventListener('input',function(){ seek=this.value; renderQueue(); });
-    $('vSeekClr').addEventListener('click',function(){ seek=''; $('vSeek').value=''; renderQueue(); $('vSeek').focus(); });
-    $('habitBody').addEventListener('click',function(e){ var a=e.target.closest('[data-ha]'), d=e.target.closest('[data-dh]'); if(a) toggleAdopted(a.getAttribute('data-ha')); else if(d) delHabit(d.getAttribute('data-dh')); });
-    // new: playlist sync, inline watch, distill, remember
-    $('plSync').addEventListener('click',syncPlaylist);
-    $('plInput').addEventListener('keydown',function(e){ if(e.key==='Enter') syncPlaylist(); });
-    $('queueBody').addEventListener('click',function(e){
-      var x=e.target.closest('[data-x]');
-      if(x){ var xid=x.getAttribute('data-x'); if(openKp[xid]) delete openKp[xid]; else openKp[xid]=true; renderQueue(); return; }
-      var rt=e.target.closest('[data-retry]');
-      if(rt){ var rv=vById(rt.getAttribute('data-retry')); if(rv){ rv.kpFail=0; persist(K_VID,videos); renderQueue(); sweep(); } return; }
-      var ds=e.target.closest('[data-distill]'); if(ds){ openDistill(ds.getAttribute('data-distill')); return; }
-      var wt=e.target.closest('[data-watch]'); if(wt){ openWatch(wt.getAttribute('data-watch')); return; }
-      var w=e.target.closest('[data-w]'); if(w){ toggleWatched(w.getAttribute('data-w')); return; }
-      var d=e.target.closest('[data-dv]'); if(d){ delVideo(d.getAttribute('data-dv')); return; }
+    function setWorld(w){
+      if(world===w) return;
+      world=w; shelf=''; state=(w==='tt'?'':'todo'); selId=null; playing=null; noteOpen=false; noteDraft=null;
+      Array.prototype.forEach.call($('lbWorlds').querySelectorAll('.lb-w'),function(b){
+        b.classList.toggle('on',b.getAttribute('data-world')===w);
+      });
+      renderIngest();          // the only moment the ingest panel is rebuilt
+      render();
+      if(w==='tt') ttSweep(); else if(w==='yt') sweep();
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       WIRING
+       ════════════════════════════════════════════════════════════ */
+    $('lbWorlds').addEventListener('click',function(e){
+      var b=e.target.closest('[data-world]'); if(b) setWorld(b.getAttribute('data-world'));
     });
-    $('dsGo').addEventListener('click',runDistill);
-    $('dsCancel').addEventListener('click',function(){ closeDlg('distillDlg'); });
-    $('distillDlg').addEventListener('click',function(e){ if(e.target===this) closeDlg('distillDlg'); });
-    $('watchClose').addEventListener('click',closeWatch);
-    $('watchDlg').addEventListener('click',function(e){ if(e.target===this) closeWatch(); });
-    $('rmGot').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v){ v.revisitTs=Date.now(); persist(K_VID,videos); flush(); render(); } });
-    $('rmOpen').addEventListener('click',function(){ var id=$('rememberCard').getAttribute('data-id'); var v=videos.find(function(x){return x.id===id;}); if(v&&v.ytId) openWatch(v.ytId); });
-    $('addToggle').addEventListener('click',function(){ var f=$('addForm'); var open=f.classList.toggle('hidden')===false; this.classList.toggle('open',open); });
-    if(profile.playlist) $('plInput').value='https://www.youtube.com/playlist?list='+profile.playlist;
+    $('seek').addEventListener('input',function(){ seek=this.value; $('seekClr').classList.toggle('hidden',!seek); render(); });
+    $('seekClr').addEventListener('click',function(){ seek=''; $('seek').value=''; this.classList.add('hidden'); render(); $('seek').focus(); });
+    $('rail').addEventListener('click',function(e){
+      var s=e.target.closest('[data-st]'); if(s){ state=s.getAttribute('data-st'); render(); return; }
+      var c=e.target.closest('[data-sh]'); if(c){ shelf=c.getAttribute('data-sh'); render(); return; }
+    });
+    $('main').addEventListener('click',function(e){
+      var st=e.target.closest('[data-star]');
+      if(st){ e.stopPropagation(); var sv=byId(st.getAttribute('data-star')); if(sv){ sv.star=!sv.star; sv.ts=Date.now(); saveItem(sv); render(); } return; }
+      var ha=e.target.closest('[data-ha]');
+      if(ha){ var hv=habits.find(function(x){return x.id===ha.getAttribute('data-ha');}); if(hv){ hv.adopted=!hv.adopted; hv.ts=Date.now(); persist(K_HAB,habits); flush(); render(); } return; }
+      var dh=e.target.closest('[data-dh]');
+      if(dh){ habits=habits.filter(function(x){return x.id!==dh.getAttribute('data-dh');}); persist(K_HAB,habits); flush(); render(); return; }
+      var t=e.target.closest('[data-id]'); if(t) select(t.getAttribute('data-id'));
+    });
+    // An expired TikTok cover leaves a broken frame; go and get a fresh one.
+    $('main').addEventListener('error',function(e){
+      var img=e.target; if(img&&img.tagName==='IMG'&&img.getAttribute('data-cover')) refreshCover(img.getAttribute('data-cover'));
+    },true);
+
+    $('pane').addEventListener('click',function(e){
+      var el;
+      if((el=e.target.closest('[data-play]'))){ playing=el.getAttribute('data-play'); renderPane(); return; }
+      if((el=e.target.closest('[data-open]'))){ var ov=byId(el.getAttribute('data-open')); if(ov){ setWorld(ov.ttId?'tt':'yt'); select(ov.id); } return; }
+      if((el=e.target.closest('[data-remgot]'))){ var rv=byId(el.getAttribute('data-remgot')); if(rv){ rv.revisitTs=Date.now(); saveItem(rv); render(); } return; }
+      if((el=e.target.closest('[data-watch]'))){ var wv=byId(el.getAttribute('data-watch')); if(wv){ wv.watched=!wv.watched; wv.ts=Date.now(); saveItem(wv); render(); } return; }
+      if((el=e.target.closest('[data-star]'))){ var sv=byId(el.getAttribute('data-star')); if(sv){ sv.star=!sv.star; sv.ts=Date.now(); saveItem(sv); render(); } return; }
+      if((el=e.target.closest('[data-editnote]'))){ noteOpen=true; noteDraft=null; renderPane(); return; }
+      if((el=e.target.closest('[data-cancelnote]'))){ noteOpen=false; noteDraft=null; renderPane(); return; }
+      if((el=e.target.closest('[data-savenote]'))){
+        var nv=byId(el.getAttribute('data-savenote')), box=$('noteBox');
+        if(nv&&box){ nv.note=box.value.trim(); nv.notes=nv.note; nv.keypoints=''; nv.kpFail=0; nv.ts=Date.now(); saveItem(nv); }
+        noteOpen=false; noteDraft=null; render();
+        if(nv&&isTikTok(nv)) ttSweep(); else sweep();
+        return;
+      }
+      if((el=e.target.closest('[data-retry]'))){
+        var tv=byId(el.getAttribute('data-retry'));
+        if(tv){
+          tv.kpFail=0; tv.metaFail=0; tv.err='';
+          if(isTikTok(tv)&&!tv.handle) tv.pending=true;
+          saveItem(tv); render();
+          if(isTikTok(tv)) ttSweep(); else sweep();
+        }
+        return;
+      }
+      if((el=e.target.closest('[data-del]'))){
+        var id=el.getAttribute('data-del'), dv=byId(id); if(!dv) return;
+        if(isTikTok(dv)){ tiktoks=tiktoks.filter(function(x){return x.id!==id;}); persist(K_TT,tiktoks); }
+        else { videos=videos.filter(function(x){return x.id!==id;}); persist(K_VID,videos); }
+        flush(); closePane(); render(); return;
+      }
+    });
+    $('scrim').addEventListener('click',closePane);
+
+    /* keyboard — this is a laptop page, so it earns real shortcuts */
+    document.addEventListener('keydown',function(e){
+      var tag=(e.target&&e.target.tagName)||'';
+      var typing=tag==='INPUT'||tag==='TEXTAREA'||e.target.isContentEditable;
+      if(e.key==='Escape'){ if(typing){ e.target.blur(); return; } if(selId) closePane(); else if(seek){ seek=''; $('seek').value=''; render(); } return; }
+      if(typing) return;
+      if(e.key==='/'){ e.preventDefault(); $('seek').focus(); $('seek').select(); return; }
+      if(e.key==='1'){ setWorld('yt'); return; }
+      if(e.key==='2'){ setWorld('tt'); return; }
+      if(e.key==='3'){ setWorld('hb'); return; }
+      if(world==='hb') return;
+      if(e.key==='j'||e.key==='k'||e.key==='ArrowRight'||e.key==='ArrowLeft'){
+        var list=shelved(scoped()).sort(function(a,b){
+          if(world!=='tt' && !!a.watched!==!!b.watched) return a.watched?1:-1;
+          if(world==='tt' && !!a.star!==!!b.star) return a.star?-1:1;
+          return byOrd(a,b);
+        });
+        if(!list.length) return;
+        var i=list.findIndex(function(v){ return v.id===selId; });
+        var fwd=(e.key==='j'||e.key==='ArrowRight');
+        i = i<0 ? (fwd?0:list.length-1) : Math.max(0,Math.min(list.length-1,i+(fwd?1:-1)));
+        e.preventDefault(); select(list[i].id);
+        var tile=$('main').querySelector('.tile.sel'); if(tile&&tile.scrollIntoView) tile.scrollIntoView({block:'nearest',behavior:'smooth'});
+        return;
+      }
+      if(e.key==='Enter'&&selId){ playing=selId; renderPane(); return; }
+    });
+    window.addEventListener('resize',moveInk);
 
     render();
     // Give cloud sync a moment to land first — otherwise a fresh device would
     // spend its rate limit re-reading videos whose notes are already saved.
-    setTimeout(function(){ sweep(); }, 2500);
+    setTimeout(function(){ sweep(); ttSweep(); }, 2500);
 
-    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); sweep(); } });
-    window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_HAB) render(); });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); sweep(); ttSweep(); } });
+    window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_TT||ev.key===K_HAB) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
-        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_HAB,K_PROF], onApplied:function(){ render(); sweep(); } });
+        window.initCloudSync({ appKey:'improve', syncedKeys:[K_VID,K_TT,K_HAB,K_PROF], onApplied:function(){ render(); sweep(); ttSweep(); } });
       })();
     });
-    window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, topics:topics, _set:function(v,h){ videos=v; habits=h; } };
+    window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, kpParse:kpParse, ttIdOf:ttIdOf, TT_RE:TT_RE,
+      isTikTok:isTikTok, isLesson:isLesson, titleOf:titleOf, hay:hay, conceptOf:conceptOf,
+      dueRemember:dueRemember, byOrd:byOrd, addTikToks:addTikToks, sortedList:sortedList,
+      setWorld:setWorld, render:render,
+      _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, world:world, state:state, shelf:shelf }; },
+      _set:function(v,h,t){ videos=v; habits=h; if(t) tiktoks=t; } };
   })();
   </script>
   <script src="nova.js" defer></script>
