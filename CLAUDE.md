@@ -197,6 +197,34 @@ Violating any of these breaks production or loses data.
     short ones these files are full of (`ls`, `tk`, `t`, `logs`, `href`, `cap`,
     `render`, `esc`). Where a function has a helper set, pin it with a test like
     `tests/home-tiles.test.js`'s shadowing guard.
+15. **A guarantee that holds on one code path must hold on its TWIN.** A rule
+    enforced in one place and not the other is not a rule, it is a coincidence
+    with a good reputation. The Library's TikTok reader graded, grounded and
+    carried receipts from the day it shipped; its YouTube reader did none of the
+    three for two versions, so **every** YouTube video in the library wore the
+    LESSON badge and its key points were never checked (als-v434). Nobody
+    noticed because the honest half was the one being talked about. **When you
+    add a guarantee to a reader, a writer or a validator, grep for every sibling
+    that makes the same promise to the user and either port it or make the
+    difference visible on screen.** Two prompts that must agree also must not be
+    two copies: `_youtube.js` now `require`s the shelves from `_tiktok.js`,
+    because two copies of a taxonomy is two taxonomies with a delay.
+16. **A store is written by the page that OWNS it.** Writing another page's key
+    from here is a silent no-op with a delayed loss: this page's `sync.js`
+    engine does not match that key, so the write never pushes and leaves no
+    tombstone, and the owning page later pushes its own copy straight over it.
+    Anything that has to reach another page leaves through a **LINK**, and that
+    page creates the row through its own save path — `improve.html` sends an
+    adopted habit to `identity.html?habit=…`, which calls its own `addHabit()`
+    and clears the query with `replaceState` so a refresh cannot add it twice.
+    A page that needs its own outbox gets its own key (`improve:actions`).
+17. **Never wrap a storage write in an empty `catch`.** `localStorage` throws
+    `QuotaExceededError` on a full device, and swallowing it makes a failed save
+    look exactly like a successful one — the UI paints, the work continues, and
+    nothing is stored. `improve.html` shipped that for its whole life while
+    caching transcripts of up to 9,000 characters each (als-v434). This is
+    constraint 10 with a fuse: **catch it, report it in words, and keep saying
+    so for as long as it is true.**
 
 ---
 
@@ -250,12 +278,19 @@ last week against real data, deterministic Nova briefing), `insights.html`
 weekly memory), `arc.html` (chapters; on Home the arc rests as a one-line rail
 under the dateline and expands to the full band only for the three days after a
 chapter turns, so nothing outranks the greeting on an ordinary day),
-`improve.html` — **the Library** (§5): a laptop-first three-pane shell over three
-worlds, YouTube · TikTok · Habits, filed onto **nine fixed shelves** (Faith ·
-Mind · Body · Food · Money · World · Sport · Sound · Laughs). A saved video is
-either a *lesson* whose key points are checked against what was actually said —
-each one able to show the transcript sentence it came from — or a *keepsake*
-naming what the video is. It is never a fabricated summary, `movies.html`
+`improve.html` — **the Library** (§5): a laptop-first three-pane shell over four
+worlds, YouTube · TikTok · **The Room** · Habits, filed onto **nine fixed
+shelves** (Faith · Mind · Body · Food · Money · World · Sport · Sound · Laughs).
+**Both readers grade before they summarise** (als-v434): a saved video is either
+a *lesson* whose key points are checked against the material — each one able to
+show the sentence it came from — or a *keepsake* naming what the video is. It is
+never a fabricated summary, and a card always says what it was read FROM
+(a transcript, on-screen text, a chapter list, a description, or only a title).
+⚠️ **YouTube has no transcript and never will** — its caption endpoint is locked
+— so a YouTube lesson rests on the creator's own description and says so.
+**The Room** is the archive read as a page rather than a grid: every grounded
+CORE line by shelf, what is due for recall (3/7/21/60/150 days), and the
+practice list that the `DO:` lines feed via `improve:actions`, `movies.html`
 (Letterboxd + TMDB, real recommendations), `ideas.html`, `identity.html`,
 `planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income),
 and `scripture.html` — a Bible reading tracker. Alex reads *Η Εικονογραφημένη
@@ -393,6 +428,29 @@ than the label it was removing.
 - **The wall shows weight it already knew**: a checked lesson from a real
   transcript spans two columns. Guard sits at 300px, not 420 — on a 393px phone
   the wall is two columns and a full-width lesson is the hierarchy working.
+
+### ⚠️ The render harness — reusable, and it earned its keep again
+A green suite said the Room was perfect. Rendering it showed **"across 6
+SHELFVES"** in the side pane, from `'shelf'+(n===1?'':'ves')`. Assertions cannot
+see that. There is no puppeteer in this repo, but Chrome's headless shell is on
+the machine:
+
+```
+~/.cache/puppeteer/chrome-headless-shell/mac_arm-*/chrome-headless-shell-mac-arm64/chrome-headless-shell \
+  --headless --disable-gpu --hide-scrollbars --window-size=1440,1300 \
+  --virtual-time-budget=2500 --screenshot=out.png "file://$PWD/harness.html"
+```
+
+⚠️ **Hard constraint 8 applies and is not optional.** Build the harness by
+copying the page, stripping **every** `<script src>` and neutering the
+`initCloudSync(` call, then **assert both are zero before rendering** — a sync
+script in a harness writes to live Supabase. Seed by injecting a `<script>` that
+fills `localStorage` immediately *before* the page's own inline script (it is
+not deferred). Then read `stderr` for `CONSOLE` lines: with no server, the only
+expected errors are `file://` fetch failures, so anything else is real.
+⚠️ Watch the masthead: `countTo()` is a 650ms entrance animation, so a
+screenshot can catch the metrics mid-count and show numbers that look wrong but
+are not.
 
 ### Open on this page
 - 🔴 **Unproven in his browser.** 229 assertions, plus headless renders of all
