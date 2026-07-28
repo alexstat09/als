@@ -138,7 +138,12 @@
           return { hero: '—', note: 'north star' };
         }
         case 'ideas.html': { var a = ls('ideas:items', []); a = Array.isArray(a) ? a : []; return a.length ? { hero: a.filter(function (i) { return !i.done; }).length, note: 'open · capture' } : { hero: '—', note: 'capture' }; }
-        case 'improve.html': { var v = ls('improve:videos', []); v = Array.isArray(v) ? v : []; var tk = ls('improve:tiktoks', []); tk = Array.isArray(tk) ? tk : []; var w = v.filter(function (x) { return x && !x.watched; }).length; if (!v.length && !tk.length) return { hero: '—', note: 'videos & TikToks' }; return { hero: w + tk.length, note: w ? (w + ' to watch · ' + tk.length + ' saved') : (tk.length + ' saved') }; }
+        /* NOTE: never name a local `tk` in here. `var` hoists to the whole
+           function, so a `var tk` inside any case shadowed the tk() helper for
+           ALL of metric() — `var t = tk()` on line one threw TypeError every
+           call, metric() returned null, and EVERY home tile silently kept its
+           built-in demo number. Shipped als-v426, fixed als-v433. */
+        case 'improve.html': { var v = ls('improve:videos', []); v = Array.isArray(v) ? v : []; var toks = ls('improve:tiktoks', []); toks = Array.isArray(toks) ? toks : []; var w = v.filter(function (x) { return x && !x.watched; }).length; if (!v.length && !toks.length) return { hero: '—', note: 'videos & TikToks' }; return { hero: w + toks.length, note: w ? (w + ' to watch · ' + toks.length + ' saved') : (toks.length + ' saved') }; }
         // Money is euros now, read from money:accounts. The old tile summed the
         // nw:* categories, which were stored in a CHF base and displayed through
         // a live FX rate — so the home screen could show a different number from
@@ -188,8 +193,12 @@
     var val = tile.querySelector('.val'); var sub = tile.querySelector('.sub');
     if (val) {
       if (m.hero === '—') {
-        var nm = (tile.querySelector('.name') || {}).textContent || '—';
-        val.className = 'val txt'; val.textContent = nm;
+        /* The empty state used to echo the tile's own .name into the value slot,
+           so a page with nothing logged read "Nutrition / Nutrition / log food".
+           Nobody saw it while metric() was throwing (every tile kept its demo
+           number instead), and it looks broken. A dash says "no number yet"
+           without pretending to be one; the .sub already carries the invitation. */
+        val.className = 'val txt'; val.textContent = '—';
       } else if (m.txt) {
         val.className = 'val txt'; val.textContent = m.hero;
       } else {
@@ -363,8 +372,27 @@
     });
   })();
 
+  /* ── the vault line ──
+     It used to read "last backup · 2 days ago" as static markup — never painted,
+     never true. backup.html stamps `backup:lastFile` (an ISO string) whenever a
+     file is actually exported, so that is the only honest source. No stamp means
+     no backup has been taken ON THIS DEVICE, which is worth saying plainly. */
+  function paintVault() {
+    try {
+      var el = document.getElementById('vaultLast'); if (!el) return;
+      var iso = null; try { iso = localStorage.getItem('backup:lastFile'); } catch (e) { return; }
+      if (!iso) { el.textContent = 'back up your data'; return; }
+      var d = new Date(iso); if (isNaN(d.getTime())) { el.textContent = 'back up your data'; return; }
+      d.setHours(0, 0, 0, 0);
+      var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+      var age = Math.round((t0 - d) / 86400000);
+      el.textContent = 'last backup · ' + (age <= 0 ? 'today' : age === 1 ? 'yesterday' : age + ' days ago');
+    } catch (e) { }
+  }
+
   /* ── first paint (before motion animates) ── */
   function paintAll(animate) {
+    paintVault();
     paintAllTiles(animate);
     paintReadiness(animate);
     paintInsights();
@@ -492,7 +520,7 @@
   document.addEventListener('als:profile', paintGreeting);
 
   /* ── keep it live: repaint (no re-animate) on data changes ── */
-  var repaint = function () { paintGreeting(); paintArcBand(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); };
+  var repaint = function () { paintGreeting(); paintArcBand(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); paintVault(); };
   window.addEventListener('storage', repaint);
   window.addEventListener('focus', repaint);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) repaint(); });

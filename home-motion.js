@@ -19,7 +19,11 @@
   function countUp(node) {
     if (node.dataset.done) return; node.dataset.done = '1';
     var to = parseFloat(node.dataset.to), dec = parseInt(node.dataset.dec || '0', 10), comma = node.dataset.comma === '1';
-    if (reduce || isNaN(to)) { node.textContent = fmt(isNaN(to) ? 0 : to, dec, comma); return; }
+    /* No data-to means nobody has painted a real value into this node yet — it
+       is a placeholder ("—"). Writing fmt(0) there turned "we have no number"
+       into "your number is 0", which is a claim about his life. Leave it. */
+    if (isNaN(to)) return;
+    if (reduce) { node.textContent = fmt(to, dec, comma); return; }
     var dur = 750, st = performance.now();
     function f(t) { var p = Math.min(1, (t - st) / dur); p = 1 - Math.pow(1 - p, 3); node.textContent = fmt(to * p, dec, comma); if (p < 1) requestAnimationFrame(f); else node.textContent = fmt(to, dec, comma); }
     requestAnimationFrame(f);

@@ -149,7 +149,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v432`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v433`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -282,7 +282,61 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v432` — `caffeine.html` was rebuilt as ONE CONTINUOUS DAY**
+**HEAD is `als-v433` — HOME WAS SHOWING DEMO NUMBERS, NOT HIS DATA**
+(2026-07-28, on `main`, 18 suites + smoke green; `tests/home-tiles.test.js` = 72
+assertions). His report: *"the home page has fixated numbers, different ones of
+the ones that are inside the actual pages."* He was exactly right, and it was
+worse than it looked: **every tile on the home screen** had been showing the
+built-in demo values since **als-v426**. Home said **78.4 kg** while
+`po_coach_weights` said **70.4**; 1,840 kcal, 142 kg on the PR board, 6/8
+supplements, a 12-day streak, "protein 148g · on plan" — none of it his.
+
+### ⭐⭐ The cause: one `var` in a switch case took down the whole function
+The Library commit added `case 'improve.html'` with
+`var tk = ls('improve:tiktoks', [])`. **`var` hoists to the whole FUNCTION, not
+the case block**, so that name shadowed the `tk()` date helper across *all* of
+`metric()` — and `var t = tk()` on metric's **first line** threw
+`TypeError: tk is not a function` on **every call, for every tile**. `metric()`
+catches its own errors and returns `null`; `paintTile()` returns early on `null`
+and leaves the markup alone. So one unlucky variable name in one case silently
+reverted the entire home screen to its demo fixture, and it looked plausible
+enough to survive two weeks.
+
+**Three lessons, none of them about `tk`:**
+- ⚠️ **A `var` inside a `switch` case is function-scoped.** Any case may shadow
+  any sibling helper. `tests/home-tiles.test.js` now asserts that **no local in
+  `metric()` shares a name with an outer helper** — that guard catches the class,
+  not just this instance.
+- ⚠️⚠️ **A fallback that is a plausible fiction is worse than no fallback.** The
+  `try/catch` did its job — the page never broke — which is precisely why nobody
+  noticed. This is constraint 10 (silent-empty) in its most expensive form: the
+  failure didn't render as empty, it rendered as **someone else's life**.
+- **Placeholders are now `—` everywhere on Home**, never invented values. The
+  `agent` section already followed this rule and was the only part of the page
+  that stayed honest through the outage — it is the pattern, not the exception.
+
+### What changed
+- `home-live.js` — the shadowing local renamed (`toks`); `paintVault()` added so
+  the vault line reads real `backup:lastFile` instead of the static *"last backup
+  · 2 days ago"*; the empty tile state shows `—` rather than echoing the tile's
+  own `.name` (it rendered "Nutrition / Nutrition / log food").
+- `index.html` — **every** authored number deleted: 13 numeric tiles, 5 text
+  tiles, the readiness ring and its two sentences, the fabricated sparklines, and
+  4 invented insight/forecast cards (an unmeasured sleep-to-volume correlation, a
+  76.5 kg projection). Real values are injected at runtime, never authored.
+- `home-motion.js` — ⚠️ **`countUp` wrote `fmt(0)` into any `.cnt` with no
+  `data-to`**, turning "no value yet" into "your value is 0". It now returns
+  early. A placeholder must never be formatted into a number.
+
+### Open on this page
+- 🔴 **Unproven in his browser.** Verified by 72 assertions and a headless render
+  seeded from his real 14 Jul device export (readiness 87, PR 294 kg leg press,
+  515 runs, 9.2 h sleep, 70.4 kg all correct). No finger has touched it.
+- The tiles for `scripture.html` and `study.html` have **no case in `metric()`**,
+  so they stay static text. They assert nothing false, but they are the only two
+  tiles that never go live. Cheap to add if he wants them.
+
+**Before that — `als-v432`, `caffeine.html` was rebuilt as ONE CONTINUOUS DAY**
 (2026-07-28, on `main`, 19 suites + smoke green; 34 assertions in the caffeine
 harness). Read this first if the task touches caffeine, **any chart in this app**,
 or **any scroll pane inside a flex column** — most of the lessons are not about
