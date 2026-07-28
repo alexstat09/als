@@ -109,6 +109,12 @@ modal helper (native `<dialog>`).
 
 **Home only** — `home-live.js` (data → the home tiles, incl. the water chip),
 `home-motion.js` (entrance choreography).
+⭐ **`home-live.js` owns EVERY number on Home.** `index.html` authors none of
+them: each tile ships a `—` placeholder that `metric()` + `paintTile()` replace
+at runtime. **Never hardcode a value into the home markup** — a fixture there is
+indistinguishable from real data when a paint fails, which is exactly how the
+whole home screen showed demo numbers for two weeks (als-v433, CLAUDE.md §5).
+`tests/home-tiles.test.js` fails the build if an authored `data-to` reappears.
 
 **Engines (lazy-loaded)** — `insights-engine.js` (correlations, t-gated),
 `forecast-engine.js` (trend projections), `chapters-engine.js`,

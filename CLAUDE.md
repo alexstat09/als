@@ -186,6 +186,17 @@ Violating any of these breaks production or loses data.
     `flex: 1 1 auto` plus the item's own `min-height` and `max-height`. This is
     also constraint 10 in disguise: the empty pane rendered *silently*, so "no
     search results" and "the list failed to build" must say different things.
+14. **A local must never share a name with a helper it might call.** This has now
+    bitten twice. `var` is **function**-scoped, so a `var` inside a single
+    `switch` case shadows that name for the WHOLE function: `var tk` in one case
+    of `home-live.js`'s `metric()` made `tk()` unavailable on its first line and
+    silently reverted **every tile on the home screen** to demo values for two
+    weeks (als-v433). `caffeine.html`'s `loadSleep()` declared `const logs` over
+    the module-level `logs` and got away with it. **Before adding a local to a
+    long function, grep the enclosing scope for that name** — especially the
+    short ones these files are full of (`ls`, `tk`, `t`, `logs`, `href`, `cap`,
+    `render`, `esc`). Where a function has a helper set, pin it with a test like
+    `tests/home-tiles.test.js`'s shadowing guard.
 
 ---
 
@@ -283,9 +294,10 @@ which shoe it is drawing (§5).
 ## 5 · Open
 
 **HEAD is `als-v433` — HOME WAS SHOWING DEMO NUMBERS, NOT HIS DATA**
-(2026-07-28, on `main`, 18 suites + smoke green; `tests/home-tiles.test.js` = 72
+(2026-07-28, on `main`, 19 suites + smoke green; `tests/home-tiles.test.js` = 72
 assertions). His report: *"the home page has fixated numbers, different ones of
-the ones that are inside the actual pages."* He was exactly right, and it was
+the ones that are inside the actual pages… SOS… make sure that all my data are
+intact."* He was exactly right, and it was
 worse than it looked: **every tile on the home screen** had been showing the
 built-in demo values since **als-v426**. Home said **78.4 kg** while
 `po_coach_weights` said **70.4**; 1,840 kcal, 142 kg on the PR board, 6/8
@@ -327,6 +339,23 @@ enough to survive two weeks.
 - `home-motion.js` — ⚠️ **`countUp` wrote `fmt(0)` into any `.cnt` with no
   `data-to`**, turning "no value yet" into "your value is 0". It now returns
   early. A placeholder must never be formatted into a number.
+
+### His data was never involved — and that was proven, not asserted
+He opened with an SOS about it, so: this change is **read-only end to end**.
+`localStorage.setItem` sites in `home-live.js` **2 → 2** (both pre-existing: the
+water quick-add and the `arc:seen` stamp), and `git diff` adds **no** `setItem`,
+`removeItem`, `.clear()`, or sync call in any touched file. `home-live.js` only
+ever *reads* the stores the pages own. Nothing in Supabase or localStorage was
+written, migrated, or renamed. The wrong numbers were painted-on fixture, never
+stored state — which is also why the fix needed no data repair.
+
+⚠️ **Diagnostic method worth reusing:** the bug was found in ~10 minutes by
+slicing `metric()` out of `home-live.js` and running it in Node against
+`BACKUPS/2026-07-14_device-export_538-keys.json` (538 real keys). Every tile
+returned `THREW tk is not a function` in one shot. **When a surface shows the
+wrong number, run its computation against the device export before reading a
+single line of UI code** — and note that `metric()`'s own `try/catch` has to be
+rethrown in the harness or it hides the very error you are hunting.
 
 ### Open on this page
 - 🔴 **Unproven in his browser.** Verified by 72 assertions and a headless render
@@ -1342,6 +1371,12 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **Home (als-v433): do the tiles now match the pages?** He reported them
+  wrong and the fix is verified against his device export, but **he has not
+  opened it**. He needs a full PWA reopen to pick up the new SW. If any tile is
+  still off, it is a *different* bug from the one fixed — that one is pinned by
+  72 assertions — so get the tile name and compare it against the page.
+  Also his call: should the `scripture.html` / `study.html` tiles go live too?
 - 🔴 **`caffeine.html` (als-v432): does the scrub feel right on his phone now?**
   He reported the empty drink sheet and that is fixed and confirmed live, but the
   thing he originally complained about — dragging the curve — has only been proven
@@ -1413,6 +1448,11 @@ changes — page, merge and tests carry over untouched.
   `main.html`, Home's own nav sends it to `identity.html`. Both are live.
 - `_water-test.html` and `_abtest.html` are local-only and 404 in production,
   but opening `_water-test.html` seeds fake water data. Safe to delete.
+- **`_render-check.html` (1.7 MB) is sitting in the repo root** — the als-v433
+  render harness, seeded with a copy of his real device data. `_*.html` is
+  gitignored so it can never be committed or deployed, but delete it. (The
+  `rm` was denied twice in that session; it needs his approval or a manual
+  delete.) Same for anything else matching `_*.html` / `render-*.html`.
 - Bar-blur smear on the nav (low priority).
 
 ---
@@ -1421,12 +1461,13 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 19 files (garmin-probe is a TOOL, not a suite)
+for f in tests/*.js; do node "$f"; done   # 20 files (garmin-probe is a TOOL, not a suite)
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
-some dates** and has since before als-v422. It reads `main.html` only and the
+some dates** and has since before als-v422. (It passed clean again on 2026-07-28
+with all 19 suites green.) It reads `main.html` only and the
 failure is **date-dependent** — it passed clean on 2026-07-28. So a clean tree is
 **19 pass, or 18 pass / 1 fail**; either is expected. Don't assume you broke it and
 don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
