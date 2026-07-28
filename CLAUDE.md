@@ -149,7 +149,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v424`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v430`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -164,7 +164,10 @@ Violating any of these breaks production or loses data.
 10. **Silent-empty is this project's disease.** "No data" and "we failed to read
     it" must never render the same way. Use `lsGet/lsSet/lsRem`; never
     monkey-patch `localStorage` (it breaks Safari).
-11. **A class you toggle from JS must exist in CSS — grep it.** `.hidden` was
+11. **Deleting from a synced store goes through the page's normal save.** A key
+    cleared behind `sync.js`'s back leaves no tombstone, and arrays merge by
+    union — so it looks like it worked and syncs straight back (§2).
+12. **A class you toggle from JS must exist in CSS — grep it.** `.hidden` was
     toggled on Home's arc band for two versions and defined nowhere (`aurora.css`
     is that page's only stylesheet). The "new chapter" badge was permanently lit
     and a failed read drew an empty band. A no-op class fails silently, which is
@@ -220,9 +223,11 @@ weekly memory), `arc.html` (chapters; on Home the arc rests as a one-line rail
 under the dateline and expands to the full band only for the three days after a
 chapter turns, so nothing outranks the greeting on an ordinary day),
 `improve.html` — **the Library** (§5): a laptop-first three-pane shell over three
-worlds, YouTube · TikTok · Habits, where a saved video is either a *lesson* with
-real takeaways or a *keepsake* naming what it is, and never a fabricated
-summary, `movies.html`
+worlds, YouTube · TikTok · Habits, filed onto **nine fixed shelves** (Faith ·
+Mind · Body · Food · Money · World · Sport · Sound · Laughs). A saved video is
+either a *lesson* whose key points are checked against what was actually said —
+each one able to show the transcript sentence it came from — or a *keepsake*
+naming what the video is. It is never a fabricated summary, `movies.html`
 (Letterboxd + TMDB, real recommendations), `ideas.html`, `identity.html`,
 `planner.html`, `finance.html` (rebuilt as **Money** for €1000 cash, no income),
 and `scripture.html` — a Bible reading tracker. Alex reads *Η Εικονογραφημένη
@@ -260,10 +265,11 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v428` — `improve.html` became the Library: two worlds, laptop-first**
-(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 118
-assertions; both endpoints verified live). Read this first if the task touches
-the Library, TikTok, or **any feature where an AI summarises something.**
+**HEAD is `als-v430` — `improve.html` became the Library: two worlds, laptop-first**
+(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 157
+assertions; every endpoint verified live against his own videos). Read this first
+if the task touches the Library, TikTok, or **any feature where an AI summarises
+something** — most of the lessons below are not about TikTok.
 
 His words: *"it's literally just one scroll and unorganised by a lot… I will
 mostly use it at my laptop, an actual $1000 premium page"*, plus a second world
@@ -284,6 +290,61 @@ shell and is exactly the transformed ancestor that breaks fixed children.
 Nothing was dropped — playlist mirror, background reader, shelves, Sharpen (now
 "my own note"), Remember, Focus, momentum, manual add, habits. `ord` still owns
 queue order, never `ts`.
+
+### ⭐ THE NINE SHELVES — fixed, shared by both worlds
+`Faith · Mind · Body · Food · Money · World · Sport · Sound · Laughs`
+
+Alex rejected AI-named shelves outright: *"the categorys are too individual, they
+need to be more generic but στοχευμένα — if it's talking about faith it's going
+there, whatever it is, if it's improvement it goes there, if it's what to eat it
+goes there."* Letting the model name its own had produced **six labels for eight
+videos** (Music / Edits / Football / Fitness / Health / History) and a vocabulary
+that drifted with every new batch. These are **life areas, not subjects.**
+
+Defined in `api/_tiktok.js` (`SHELVES` + `SHELF_RULES`) and **mirrored in
+`improve.html`**. ⚠️ **Change one, change both, and bump `CVER`** — that
+re-shelves the whole library exactly once.
+
+- **The tie-breakers matter more than the labels**, because ambiguity is where
+  the bad filing came from: **FAITH WINS** over everything · **the SUBJECT beats
+  the FORMAT** (a football edit set to music is Sport; an edit of a singer is
+  Sound) · if it teaches, it shelves by the life area it teaches about, and if
+  it is kept for how it feels it is Sound or Laughs.
+- The sorter runs **strict** (`?ytorganize` + `strict:true`): it may **file**,
+  never **name**, and an answer outside the nine is **discarded, not adopted**.
+- **The rail is in canonical order, never by size.** A shelf that moves as videos
+  arrive cannot be learned, and the point is that he stops reading the list.
+- The reader picks its own TOPIC from the same nine and the server validates it,
+  so most videos need no sorting pass at all.
+- Verified live: sermon → Faith · Jhené Aiko cover → Sound · Ronaldo edit → Sport.
+
+### ⭐⭐ The key points are CHECKED, not trusted
+*"make sure the key takes are actually 100 percent perfect and correct."*
+Prompting for honesty is not a guarantee — the `_nut-check.js` lesson, where
+asking the model to grade its own homework returned fabricated numbers at
+confidence 1.0. So `groundKeys()` **removes any key point whose numbers or names
+never appear in the source material.** Verified against deliberate fakes: it
+catches an invented verse (*Philippians 4:13*), an invented statistic (*87%
+Harvard*) and an invented name, while keeping true paraphrases.
+
+- ⚠️⚠️ **IT TWICE PUNISHED SPELLING INSTEAD OF SUBSTANCE, and both were found by
+  running LIVE output rather than fixtures.** (1) It dropped a TRUE point because
+  the model wrote `"Second Corinthians 1:3-4"` where the speaker said "chapter 1
+  verses 3 and 4" → numbers are now checked as **digit runs**, and single digits
+  are ignored as too weak to judge on. (2) It dropped another because the screen
+  said `"Jhene Aiko"` and the model wrote `"Jhene Aiko's"` → **possessives are
+  stripped before comparing.** **Dropping a true takeaway is worse than the
+  fabrication the check exists to catch.** Both are pinned by tests against the
+  exact live strings.
+- It **never strips a card to nothing** — if every point fails, the reading is
+  flagged `suspect` and says so, rather than showing a confident blank. A
+  shortened list always names what was removed and why.
+- Faith vocabulary (God / Jesus / Lord / Bible …) is deliberately never treated
+  as a suspicious name, or every sermon would fight the check.
+- **RECEIPTS:** each key point can show the transcript sentence it came from.
+  ⚠️ Matched **in the page** by word overlap — it **SELECTS a real sentence and
+  cannot write one.** Asking a model to quote its own source invites it to invent
+  the quote too, which is the exact failure this catches.
 
 ### ⭐ The lesson worth carrying to every other AI feature
 **Five of his real favourites went through the pipe before a line of UI was
@@ -327,6 +388,26 @@ fetchable server-side**. This is the transcript YouTube has refused us twice.
 - Capture is a **paste box that eats his whole Notes list at once**. There is no
   favourites API; don't go looking for one.
 
+**Getting his favourites out of TikTok — the two routes that work:**
+1. **A console snippet on his own Favourites tab** (fastest). Scrolls to load,
+   collects `a[href*="/video/"]` in DOM order — which is **newest-first** — and
+   downloads them as a .txt. ⚠️ **Do not use DevTools' `copy()` after an
+   `await`**: the Command Line API only exists in the *top-level* console
+   evaluation, so it is gone by the time an async continuation runs
+   (`copy is not defined` — he hit exactly this). Save to a global and download
+   via a Blob instead. His uBlock also fills the console with
+   `ERR_BLOCKED_BY_CLIENT` from TikTok telemetry; it is noise.
+2. **TikTok's official data export** (Settings → Account → Download your data,
+   JSON). Complete, and the **only source with real dates**, so ordering is
+   verifiable rather than assumed. NOT YET SEEN — if he sends the file, read its
+   actual shape before writing an importer; TikTok has changed it between
+   versions. An import button for it is offered but unbuilt.
+
+**Order is preserved end to end** (verified): the paste regex keeps text order →
+`addTikToks` assigns sequential `ord` → the wall sorts on `ord` → and reading
+never reorders, because position lives in `ord`, never in `ts`. Starred items are
+the only thing that float above it.
+
 ### Bugs found inside the build — all silent, all now pinned by tests
 - **A PENDING TikTok has an EMPTY `ttId`** (it only learns its id from the
   server), so `!!v.ttId` routed it into the *YouTube* store. `isTikTok()` decides
@@ -363,8 +444,19 @@ the trap `smoke-test.sh` exists to catch). Home's tile is now **Library**.
   stamped (see the rule now in §2 — a hand-cleared key syncs straight back), and
   it lifts any pause so the next batch reads immediately.
 
-🔴 **Open:** the wall, the paste box and the controls have still only met seeded
-data in headless Chrome — he is using it live now, so his report is the test.
+### Open on this page
+- 🔴 **He is loading his first real batch of ~100 now.** Everything client-side —
+  the wall, the paste box, Stop, "Start over", the receipts toggle — has met only
+  seeded data in headless Chrome. **His report is the test.** The server half is
+  verified live end to end against his own videos.
+- **Ask him whether nine shelves is right at 100 videos**, or whether `World` and
+  `Laughs` end up nearly empty and should fold in. Renaming or merging a shelf is
+  a `SHELVES` edit + a `CVER` bump, not a rebuild.
+- Pace is ~3 s per video (fetch + read), so 100 ≈ 5 minutes of background work.
+  He can Stop at any point and nothing already read is lost.
+- Not built: the TikTok-export importer, timestamps per key point (TikTok has no
+  reliable seek parameter, so it would be decoration), and animated hover posters
+  (`dynamicCover` is available but not stored).
 
 **Before that — `als-v424` — the running page proves delivery instead of assuming
 it** (2026-07-27, on `main`, 17 suites + smoke green; `tests/run-identity.test.js`
@@ -954,7 +1046,8 @@ overnight body. Detail in the block below.
 to a page Alex himself uses before v396.
 His words: *"the surge on top of the home screen is too big, ur eye doesnt
 really see the good morning alex."* He was right. See §4 for the behaviour and
-constraint 11 for the bug it uncovered. Two things it left unsettled:
+constraint 12 (the class-in-CSS rule) for the bug it uncovered. Two things it
+left unsettled:
 
 - `ANNOUNCE_DAYS = 3` in `paintArcBand()` is a guess. **Nobody finds out whether
   it is right until a chapter actually turns** — so if he mentions the band
