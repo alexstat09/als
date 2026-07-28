@@ -347,6 +347,60 @@ ok(!/tiktok\.com\/embed/.test(html), '⭐ the TikTok embed iframe is GONE — it
 ok(/youtube-nocookie\.com\/embed/.test(html), 'YouTube still plays inline, which works');
 ok(/target="_blank" rel="noopener"/.test(html), 'a TikTok poster is a real link out');
 
+/* ── ⭐ the shelves ──────────────────────────────────────────── */
+console.log('   the nine shelves, fixed and shared');
+eq(tt.SHELVES.length, 9, 'shelves: there are nine');
+eq(tt.SHELVES.join(' '), 'Faith Mind Body Food Money World Sport Sound Laughs', 'shelves: in their canonical order');
+ok(/var SHELVES=\['Faith','Mind','Body','Food','Money','World','Sport','Sound','Laughs'\]/.test(html),
+   'shelves: ⭐ the page and the server hold the SAME list');
+ok(/CVER=3/.test(html), 'shelves: CVER was bumped, so the library re-shelves once');
+ok(/known=SHELVES\.slice\(\)/.test(html), 'shelves: the sorter is given the fixed list');
+ok(/strict:true/.test(html), 'shelves: ⭐ and told it may file but never name');
+// the rail must not reorder itself as videos arrive
+ok(/Canonical order first/.test(html), 'shelves: the rail order is fixed, never by size');
+tt.SHELVES.forEach(function(sh){
+  ok(new RegExp('- ' + sh + ' —').test(tt.SHELF_RULES), 'shelves: "' + sh + '" says what belongs on it');
+});
+ok(/FAITH WINS/.test(tt.SHELF_RULES), 'shelves: ⭐ faith outranks everything, as he asked');
+ok(/SUBJECT beats the format/.test(tt.SHELF_RULES), 'shelves: a football edit is Sport, not Sound');
+ok(/Never invent a shelf/.test(tt.SHELF_RULES), 'shelves: nothing outside the nine');
+
+/* ── ⭐ grounding: the key points are checked, not trusted ───── */
+console.log('   every specific is checked against what was said');
+const MAT = 'I apologize for not having a shirt on. Second Corinthians chapter 1 verses 3 and 4 reads praise be to the God and father of our Lord Jesus Christ, the father of compassion who comforts us in all our troubles.';
+let g = tt._groundKeys([
+  'Sharing Bible verses gives others a real experience of Jesus.',
+  'Second Corinthians 1:3-4 says God is the father of compassion.',
+  'In Philippians 4:13 Paul says he can do all things.',
+  'A study by Harvard found 87% of people feel comforted.'
+], MAT);
+eq(g.keys.length, 2, 'grounding: the two supported points survive');
+eq(g.dropped.length, 2, 'grounding: the two fabricated ones are removed');
+ok(g.dropped.some(d => d.token === '87'), 'grounding: catches an invented statistic');
+ok(g.dropped.some(d => /13/.test(d.token)), 'grounding: catches an invented verse reference');
+ok(g.keys.some(k => /1:3-4/.test(k)),
+   'grounding: ⭐ a TRUE point written "1:3-4" survives, though it was said "chapter 1 verses 3 and 4"');
+// citation formatting is not fabrication — this was a real false positive
+eq(tt._specifics('Second Corinthians 1:3-4 and John 3:16').nums.join(','), '16',
+   'grounding: single digits are ignored, multi-digit runs are checked');
+// never strip a card to nothing
+g = tt._groundKeys(['Harvard says 87% agree'], MAT);
+eq(g.keys.length, 1, 'grounding: ⭐ the last point is never removed');
+ok(g.suspect, 'grounding: it is flagged suspect instead');
+ok(/v\.suspect/.test(html), 'grounding: and the card says so');
+ok(/removed for citing something the video never mentions/.test(html),
+   'grounding: a shorter list is explained, never silent');
+
+/* ── receipts ───────────────────────────────────────────────── */
+console.log('   each key point can show the words it came from');
+const withT = { transcript: MAT, screen: [] };
+const quote = im.quoteFor('God is the father of compassion who comforts us', withT);
+ok(/father of compassion/.test(quote), 'receipts: finds the sentence the point came from');
+ok(MAT.indexOf(quote) >= 0, 'receipts: ⭐ the quote is a VERBATIM slice of the transcript');
+eq(im.quoteFor('something about tax returns and mortgages', withT), '', 'receipts: an unrelated point gets no quote');
+eq(im.quoteFor('anything at all', { transcript:'', screen:[] }), '', 'receipts: no transcript, no quote');
+ok(!/quote|source/i.test((im.quoteFor('x', withT) || 'x')), 'receipts: nothing is fabricated when there is no match');
+
 /* ── the page still registers everything it must ────────────── */
 console.log('   wiring that silently breaks if it drifts');
 ok(/improve:tiktoks/.test(html), 'wiring: the page names improve:tiktoks');

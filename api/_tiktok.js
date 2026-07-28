@@ -199,6 +199,41 @@ function grade(v) {
   return 'none';
 }
 
+/* ── THE SHELVES ──────────────────────────────────────────────────
+   A FIXED taxonomy, shared by both worlds. Alex: *"the categorys are too
+   individual, they need to be more generic but στοχευμένα — if it's talking
+   about faith it's going there, whatever it is, if it's improvement it goes
+   there, if it's what to eat it goes there."*
+
+   Letting the model name its own shelves produced six labels for eight videos
+   (Music / Edits / Football / Fitness / Health / History) — a filing cabinet
+   with one sheet per drawer, and a vocabulary that drifted every time new
+   videos arrived. These nine are life areas, not subjects. Nothing may be
+   invented outside them.
+
+   ⚠️ Changing this list means bumping CVER in improve.html, which re-shelves
+   the whole library once. */
+var SHELVES = ['Faith','Mind','Body','Food','Money','World','Sport','Sound','Laughs'];
+
+/* The rules matter as much as the labels — most of the bad filing came from
+   ambiguity, not from a missing shelf. */
+var SHELF_RULES =
+  'The shelves, and what belongs on each:\n' +
+  '- Faith — God, scripture, prayer, church, anything spiritual.\n' +
+  '- Mind — discipline, focus, habits, confidence, how to think, how to work, how to study, how to talk to people. Self-improvement of any kind.\n' +
+  '- Body — training, the gym, form, injuries, recovery, sleep, health.\n' +
+  '- Food — what to eat, meals, cooking, macros, supplements.\n' +
+  '- Money — earning, saving, investing, business, work.\n' +
+  '- World — history, society, politics, science, war, how things came to be.\n' +
+  '- Sport — football and athletes, matches, competition, sporting moments.\n' +
+  '- Sound — music, songs, covers, edits, and anything kept for how it looks or feels.\n' +
+  '- Laughs — comedy, jokes, entertainment kept for fun.\n' +
+  'Tie-breakers, in this order:\n' +
+  '1. FAITH WINS. Anything about God or scripture is Faith, even when it is also about discipline or hardship.\n' +
+  '2. The SUBJECT beats the format. A football edit set to music is Sport. An edit of a singer is Sound.\n' +
+  '3. If it TEACHES something, shelve it by the life area it teaches about. If it is kept for how it feels, it is Sound or Laughs.\n' +
+  'Never invent a shelf. Never use a person\'s name, a channel or a hashtag as a shelf.';
+
 var LESSON_SYS =
   'You turn a short video into the few things worth REMEMBERING, in the simplest language possible.\n' +
   'You are given what was actually said in it (its captions), any text shown on screen, its caption and its creator.\n' +
@@ -210,12 +245,12 @@ var LESSON_SYS =
   '- If it turns out there is no lesson here — it is a song, a performance, an edit, a joke — do not force one. Answer with KIND: KEEPSAKE and describe what it is instead.\n' +
   'Output PLAIN TEXT, exactly this shape and nothing else:\n' +
   'KIND: LESSON\n' +
-  'TOPIC: <2-4 word Title Case shelf, e.g. Faith, Mindset & Focus, Football, Music, Money, Health>\n' +
+  'TOPIC: <exactly one of the shelves listed below>\n' +
   'CORE: <one sentence — the single idea to keep>\n' +
   'KEY:\n' +
   '- <a takeaway worth remembering>\n' +
-  '- <2 to 5 of them, most useful first>\n' +
-  'DO: <one small concrete thing to try this week, only if the video genuinely calls for one>';
+  '- <ONLY as many as the video actually supports, at most 5, most useful first. Three real points beat five padded ones. Never repeat the CORE as a key point.>\n' +
+  'DO: <one small concrete thing to try this week, only if the video genuinely calls for one>\n\n' + SHELF_RULES;
 
 var KEEPSAKE_SYS =
   'You label a short video that somebody saved, so they can FIND it again months later.\n' +
@@ -227,11 +262,11 @@ var KEEPSAKE_SYS =
   '- No hype, no markdown, no emoji. Plain, short, factual.\n' +
   'Output PLAIN TEXT, exactly this shape and nothing else:\n' +
   'KIND: KEEPSAKE\n' +
-  'TOPIC: <2-4 word Title Case shelf, e.g. Edits, Football, Music, Faith, Funny>\n' +
+  'TOPIC: <exactly one of the shelves listed below>\n' +
   'CORE: <one sentence naming what this video is, e.g. "A Lana Del Rey edit." — no more than you were told>\n' +
   'KEY:\n' +
   '- <a fact that would help them find it: who is in it, the song, the artist, the creator>\n' +
-  '- <1 to 3 of them, and none you were not given>';
+  '- <1 to 3 of them, and none you were not given>\n\n' + SHELF_RULES;
 
 function material(v, g) {
   var parts = [];
@@ -248,6 +283,71 @@ function material(v, g) {
   return parts.join('\n\n');
 }
 
+/* ── GROUNDING ────────────────────────────────────────────────────
+   Alex: *"make sure the key takes are actually 100 percent perfect and
+   correct."* Prompting for honesty is not a guarantee, so the specifics are
+   CHECKED against the source afterwards — the same lesson as `_nut-check.js`,
+   where asking the model to grade its own homework produced fabricated
+   numbers at confidence 1.0.
+
+   A key point earns its place only if the hard facts inside it — numbers, and
+   names the material never mentions — actually appear in the material. Soft
+   claims are left alone: a paraphrase is the job. It is a fabricated VERSE
+   REFERENCE, a made-up statistic or an invented name we are hunting.
+
+   Deliberately conservative. It only removes a point when it can point at the
+   exact token that was never said, and it never removes the last one — a card
+   with its specifics quietly deleted would be a worse lie than the specifics. */
+function normTok(s) { return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ''); }
+
+// Words that start a sentence, or are simply common, are not "names".
+var COMMON = /^(the|a|an|and|but|or|so|if|when|then|this|that|these|those|it|its|he|she|they|we|you|your|his|her|their|our|my|i|in|on|at|to|for|with|from|of|by|as|is|are|was|were|be|been|do|does|did|not|no|yes|one|two|three|first|second|third|every|each|most|more|less|just|only|also|even|still|never|always|god|jesus|christ|lord|bible|holy|spirit|father|son)$/i;
+
+function specifics(line) {
+  var out = { nums: [], names: [] };
+  /* ⚠️ Numbers are checked as DIGIT RUNS, not as written. The first version
+     dropped a perfectly TRUE point — the model wrote "Second Corinthians 1:3-4"
+     where the speaker said "chapter 1 verses 3 and 4", so the literal token
+     "1:3" was nowhere in the transcript. Citation formatting is not
+     fabrication. Runs of a single digit are skipped entirely: "3" appears
+     inside almost any text once punctuation is stripped, so judging on it
+     would be noise either way. A fabricated "87%" or "4:13" still has a
+     multi-digit run that was never said. */
+  String(line || '').replace(/\d+/g, function (m) { if (m.length >= 2) out.nums.push(m); return m; });
+  // A capitalised word that is NOT the first word of the sentence.
+  var words = String(line || '').split(/\s+/);
+  words.forEach(function (w, i) {
+    var bare = w.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N}]+$/u, '');
+    if (!bare || i === 0) return;
+    if (!/^\p{Lu}/u.test(bare)) return;
+    if (COMMON.test(bare)) return;
+    if (bare.length < 3) return;
+    out.names.push(bare);
+  });
+  return out;
+}
+
+function groundKeys(keys, material) {
+  var hay = normTok(material);
+  var kept = [], dropped = [];
+  (keys || []).forEach(function (k) {
+    var sp = specifics(k), bad = null;
+    for (var i = 0; i < sp.nums.length && !bad; i++) {
+      var n = normTok(sp.nums[i]);
+      if (n && hay.indexOf(n) < 0) bad = sp.nums[i];
+    }
+    for (var j = 0; j < sp.names.length && !bad; j++) {
+      var nm = normTok(sp.names[j]);
+      if (nm && hay.indexOf(nm) < 0) bad = sp.names[j];
+    }
+    if (bad) dropped.push({ text: k, token: bad }); else kept.push(k);
+  });
+  // Never strip a card to nothing — if everything failed, the reading itself is
+  // suspect and the card should say so rather than show a confident blank.
+  if (!kept.length) return { keys: keys || [], dropped: [], suspect: dropped.length > 0 };
+  return { keys: kept, dropped: dropped, suspect: false };
+}
+
 /* One saved video → what is worth taking from it.
    The grade picks the prompt; the model never gets to promote itself from
    keepsake to lesson, because a model with nothing to go on will always
@@ -257,8 +357,9 @@ async function read(v) {
   var g = grade(v);
   if (g === 'none') return { ok: false, error: 'nothing to read', grade: g, unreadable: true };
   var lesson = (g === 'transcript' || g === 'screen' || g === 'notes');
+  var mat = material(v, g);
   var out = await model.json('text', {
-    messages: [{ role: 'system', content: lesson ? LESSON_SYS : KEEPSAKE_SYS }, { role: 'user', content: material(v, g) }],
+    messages: [{ role: 'system', content: lesson ? LESSON_SYS : KEEPSAKE_SYS }, { role: 'user', content: mat }],
     temperature: lesson ? 0.3 : 0.15, max_tokens: 900, reasoning: 'low'
   });
   if (!out || !out.ok) return { ok: false, error: (out && out.kind) || 'model', grade: g };
@@ -273,10 +374,39 @@ async function read(v) {
   // because there was nothing to learn in it. Reporting "lesson" there would
   // have the card promise takeaways it does not have.
   var declared = (t.match(/^\s*KIND\s*:\s*(\w+)/im) || [])[1] || '';
-  return { ok: true, text: t, grade: g, kind: /lesson/i.test(declared) ? 'lesson' : 'keepsake' };
+
+  // Then check the specifics against what was actually said.
+  var lines = t.split(/\r?\n/), keys = [], keyIdx = [];
+  lines.forEach(function (ln, i) {
+    var m = ln.match(/^\s*[-•*–—]\s*(.+)$/);
+    if (m) { keys.push(m[1].trim()); keyIdx.push(i); }
+  });
+  var checked = groundKeys(keys, mat), out = t, dropped = [];
+  if (checked.dropped.length) {
+    dropped = checked.dropped;
+    var kill = {};
+    checked.dropped.forEach(function (d) { kill[d.text] = 1; });
+    out = lines.filter(function (ln, i) {
+      var at = keyIdx.indexOf(i);
+      return at < 0 || !kill[keys[at]];
+    }).join('\n');
+  }
+  // The shelf must be one we actually own, whatever the model wrote.
+  var topic = (out.match(/^\s*TOPIC\s*:\s*(.+)$/im) || [])[1] || '';
+  var shelf = '';
+  SHELVES.forEach(function (s) { if (!shelf && normTok(topic).indexOf(normTok(s)) >= 0) shelf = s; });
+
+  return {
+    ok: true, text: out, grade: g,
+    kind: /lesson/i.test(declared) ? 'lesson' : 'keepsake',
+    shelf: shelf,
+    dropped: dropped.map(function (d) { return d.token; }),
+    suspect: !!checked.suspect
+  };
 }
 
 module.exports = {
-  meta: meta, read: read, grade: grade,
-  _canonical: canonical, _vtt: vtt, _captionWords: captionWords, _stickers: stickers
+  meta: meta, read: read, grade: grade, SHELVES: SHELVES, SHELF_RULES: SHELF_RULES,
+  _canonical: canonical, _vtt: vtt, _captionWords: captionWords, _stickers: stickers,
+  _groundKeys: groundKeys, _specifics: specifics
 };

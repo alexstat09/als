@@ -212,6 +212,14 @@
     .pane-keys li{ position:relative; padding-left:17px; font-size:12.5px; line-height:1.52; color:rgba(245,242,236,.84); }
     .pane-keys li::before{ content:''; position:absolute; left:2px; top:8px; width:4px; height:4px;
                            border-radius:50%; background:rgba(var(--acc),.7); }
+    .pane-keys li.has-q{ cursor:pointer; }
+    .pane-keys li.has-q:hover{ color:var(--au-ivory); }
+    .pane-keys li .q{ display:none; margin-top:8px; padding:9px 11px; border-radius:9px;
+                      background:rgba(0,0,0,.3); border-left:2px solid rgba(var(--acc),.35);
+                      font-family:var(--au-serif); font-size:13px; line-height:1.55; color:var(--au-dim); }
+    .pane-keys li .q.on{ display:block; }
+    .pane-hint{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.16em; text-transform:uppercase;
+                color:var(--au-faint); margin-top:11px; }
     .pane-do{ margin-top:16px; padding:12px 13px; border-radius:11px; background:rgba(var(--acc),.07);
               border:1px solid rgba(var(--acc),.2); font-size:12.5px; line-height:1.5; }
     .pane-do b{ display:block; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.18em;
@@ -482,6 +490,14 @@
     function isTikTok(v){ return !!(v && (v.ttId || /tiktok\.com/i.test(v.url||'') || v.source==='TikTok')); }
     function saveItem(v){ if(isTikTok(v)) persist(K_TT,tiktoks); else persist(K_VID,videos); flush(); }
 
+    /* ── THE SHELVES ──────────────────────────────────────────────
+       A fixed taxonomy, shared by BOTH worlds and mirrored in api/_tiktok.js
+       (SHELVES). Life areas, not subjects — "if it's faith it goes to Faith,
+       whatever it is". The RAIL ORDER IS THIS ORDER, never by size: a shelf
+       that moves as videos arrive cannot be learned, and the whole point is
+       that he stops reading the list and starts reaching for it.
+       ⚠️ Change this and bump CVER, which re-shelves everything once. */
+    var SHELVES=['Faith','Mind','Body','Food','Money','World','Sport','Sound','Laughs'];
     var ACCENT={ yt:'168,214,110', tt:'104,214,204', hb:'155,140,255' };
     var TITLE={ yt:'watching', tt:'keeping', hb:'building' };
 
@@ -687,7 +703,10 @@
 
       var sc=scoped(), tc={};
       sc.forEach(function(v){ var c=conceptOf(v)||'Unsorted'; tc[c]=(tc[c]||0)+1; });
-      var keys=Object.keys(tc).sort(function(a,b){ if(a==='Unsorted') return 1; if(b==='Unsorted') return -1; return tc[b]-tc[a]||a.localeCompare(b); });
+      // Canonical order first, then anything left over, then Unsorted last.
+      var keys=SHELVES.filter(function(c){ return tc[c]; })
+        .concat(Object.keys(tc).filter(function(c){ return c!=='Unsorted'&&SHELVES.indexOf(c)<0; }).sort())
+        .concat(tc['Unsorted']?['Unsorted']:[]);
       if(shelf&&keys.indexOf(shelf)<0) shelf='';
       if(keys.length>1){
         h+='<div class="rl-h">Shelves</div>';
@@ -701,6 +720,7 @@
        THE DETAIL PANE — one component, both worlds.
        ════════════════════════════════════════════════════════════ */
     var playing=null;   // id of the item whose player is live
+    var qOpen={};       // which key points are showing their source line
 
     /* Where the reading actually came from. The whole point of grading
        server-side is that this line can be TRUE — "no data" and "we couldn't
@@ -788,6 +808,42 @@
       return '<div class="pane-stage '+cls+' idle" data-play="'+esc(v.id)+'" style="cursor:pointer">'+inner+'</div>';
     }
 
+    /* ── RECEIPTS ─────────────────────────────────────────────────
+       "make sure the key takes are actually 100 percent perfect and correct."
+       The server drops any point citing a name or number that was never said;
+       this is the other half — for each surviving point, find the sentence in
+       the real transcript it came from, so he can check it himself.
+
+       ⚠️ The match is done HERE, in the page, by word overlap against the
+       stored transcript. It SELECTS a real sentence; it cannot write one. Ask
+       a model to quote its source and it will happily invent the quote too —
+       that is precisely the failure this is meant to catch. */
+    var STOP=/^(the|a|an|and|but|or|so|if|when|then|that|this|these|those|it|its|is|are|was|were|be|been|being|to|of|in|on|at|for|with|from|by|as|you|your|they|their|them|we|our|he|she|his|her|not|can|will|would|should|could|have|has|had|do|does|did|just|about|what|which|who|how|why|more|most|than|very|also|into|out|up|down|over|all|any|some|one|two)$/i;
+    function words(s){
+      return String(s||'').toLowerCase().split(/[^\p{L}\p{N}']+/u)
+        .filter(function(w){ return w.length>2 && !STOP.test(w); });
+    }
+    function sentences(txt){
+      return String(txt||'').split(/(?<=[.!?])\s+|\n+/)
+        .map(function(s){ return s.trim(); })
+        .filter(function(s){ return s.length>18; });
+    }
+    function quoteFor(key,v){
+      var src=sentences(v.transcript||'').concat(sentences((v.screen||[]).join('\n')));
+      if(!src.length) return '';
+      var kw=words(key); if(kw.length<2) return '';
+      var best='', bestScore=0;
+      src.forEach(function(s){
+        var sw=words(s); if(!sw.length) return;
+        var hit=0, seen={};
+        kw.forEach(function(w){ if(!seen[w]&&sw.indexOf(w)>=0){ seen[w]=1; hit++; } });
+        // Normalised so a long rambling sentence can't win on volume alone.
+        var score=hit/Math.sqrt(sw.length);
+        if(hit>=2 && score>bestScore){ bestScore=score; best=s; }
+      });
+      return bestScore>0.28 ? best.slice(0,320) : '';
+    }
+
     function paneHTML(){
       if(!selId) return paneEmptyHTML();
       var v=byId(selId); if(!v) return paneEmptyHTML();
@@ -805,7 +861,15 @@
       if(v.err){ h+='<div class="pane-src" style="color:var(--au-coral);border-top:none;padding-top:12px">'+esc(v.err)+'</div>'; }
 
       if(p.core && p.core.trim()!==titleOf(v).trim()) h+='<div class="pane-core">'+esc(p.core)+'</div>';
-      if(p.keys.length) h+='<ul class="pane-keys">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>';
+      if(p.keys.length){
+        h+='<ul class="pane-keys">'+p.keys.map(function(k,i){
+          var q=quoteFor(k,v);
+          return '<li'+(q?' class="has-q" data-q="'+i+'"':'')+'>'+esc(k)+
+            (q?'<span class="q'+(qOpen[selId+':'+i]?' on':'')+'">“'+esc(q)+'”</span>':'')+'</li>';
+        }).join('')+'</ul>';
+        if(p.keys.some(function(k){ return quoteFor(k,v); }))
+          h+='<div class="pane-hint">Tap a point to see the words it came from</div>';
+      }
       if(p.act&&lesson) h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+'</div>';
       if(!v.keypoints&&!v.pending&&!v.err) h+='<div class="pane-src pulse" style="border-top:none;padding-top:12px">Nova is reading this one…</div>';
 
@@ -827,6 +891,18 @@
       }
       if(v.ttId&&(v.screen||[]).length){
         h+='<details class="tx"><summary>▸ Text on screen</summary><div class="body">'+esc(v.screen.join('\n'))+'</div></details>';
+      }
+      /* Every specific in a key point is checked against what was actually
+         said before it reaches this card. Say so when something was pulled —
+         a quietly shorter list is exactly the kind of silence this project
+         keeps getting bitten by. */
+      if((v.dropped||[]).length){
+        h+='<div class="pane-src">Checked against what was said, and '+v.dropped.length+' point'+
+           (v.dropped.length===1?' was':'s were')+' removed for citing something the video never mentions ('+
+           esc(v.dropped.slice(0,3).join(', '))+').</div>';
+      }
+      if(v.suspect){
+        h+='<div class="pane-src" style="color:var(--au-coral)">Every point here cites something the video never mentions. Treat this one as unverified — open it, or add your own note and it will be read again.</div>';
       }
       if(v.grade&&SRC[v.grade]) h+='<div class="pane-src">'+esc(SRC[v.grade])+'</div>';
 
@@ -855,7 +931,7 @@
         if(document.activeElement!==nb){ nb.focus(); nb.setSelectionRange(nb.value.length,nb.value.length); }
       }
     }
-    function select(id){ if(selId!==id){ playing=null; noteOpen=false; noteDraft=null; } selId=id; renderWall(); renderPane(); }
+    function select(id){ if(selId!==id){ playing=null; noteOpen=false; noteDraft=null; qOpen={}; } selId=id; renderWall(); renderPane(); }
     function closePane(){ selId=null; playing=null; noteOpen=false; noteDraft=null; renderWall(); renderPane(); }
 
     /* ════════════════════════════════════════════════════════════
@@ -1000,7 +1076,17 @@
       // near-identical shelves — the canonical pass below decides the real set.
       if(p.topic) v.rawTopic=p.topic;
       if(p.kind) v.kind=p.kind;
-      if(extra){ if(extra.grade) v.grade=extra.grade; if(extra.kind) v.kind=extra.kind; }
+      if(extra){
+        if(extra.grade) v.grade=extra.grade;
+        if(extra.kind) v.kind=extra.kind;
+        // The reader picks its TOPIC from the same nine shelves and the server
+        // validates it, so a video usually needs no sorting pass at all.
+        if(extra.shelf&&SHELVES.indexOf(extra.shelf)>=0){ v.concept=extra.shelf; v.cver=CVER; }
+        if(extra.dropped&&extra.dropped.length) v.dropped=extra.dropped;
+        v.suspect=!!extra.suspect;
+      }
+      // A TOPIC line that already names a real shelf counts too.
+      if(!v.concept&&p.topic&&SHELVES.indexOf(p.topic)>=0){ v.concept=p.topic; v.cver=CVER; }
       saveItem(v);
     }
 
@@ -1057,7 +1143,7 @@
           body:JSON.stringify({ handle:v.handle, author:v.author, caption:v.caption, tags:v.tags, screen:v.screen,
             transcript:v.transcript, transcriptLang:v.transcriptLang, music:v.music, duration:v.duration, note:v.note||'' }) });
         var d={}; try{ d=await r.json(); }catch(e){}
-        if(r.ok&&d&&d.text) return { ok:true, text:d.text, grade:d.grade, kind:d.kind };
+        if(r.ok&&d&&d.text) return { ok:true, text:d.text, grade:d.grade, kind:d.kind, shelf:d.shelf, dropped:d.dropped, suspect:d.suspect };
         return { ok:false, rate:r.status===429||(d&&d.error==='rate'), unreadable:r.status===422, grade:d&&d.grade };
       }catch(e){ return { ok:false }; }
     }
@@ -1109,7 +1195,7 @@
           else await wait(2500);
         }
         v=byId(ids[i]); if(!v) continue;
-        if(kp) applyKP(v,kp.text,{grade:kp.grade,kind:kp.kind});
+        if(kp) applyKP(v,kp.text,{grade:kp.grade,kind:kp.kind,shelf:kp.shelf,dropped:kp.dropped,suspect:kp.suspect});
         else if(res&&res.unreadable){ v.grade='none'; v.kpFail=3; v.ts=Date.now(); persist(K_TT,tiktoks); flush(); }
         else { v.kpFail=(v.kpFail||0)+1; persist(K_TT,tiktoks); }
         if(world==='tt'){ renderWall(); if(selId===v.id&&!noteOpen) renderPane(); }
@@ -1125,21 +1211,20 @@
        server-side, because one 42-item request is what used to come back
        empty. Each world keeps its OWN label set: "Edits" belongs on the
        TikTok wall and nowhere near the YouTube one. */
-    var CVER=2, filling=false;
+    var CVER=3, filling=false;   // bumped with the fixed taxonomy — re-shelves once
     async function fillConcepts(){
       if(filling) return;
       var arr=coll(), key=collKey(), isTT=world==='tt';
       var need=arr.filter(function(v){ return (isTT?v.ttId:v.ytId)&&v.keypoints&&(!v.concept||v.cver!==CVER); });
       if(!need.length) return;
-      var count={}; arr.forEach(function(v){ if(v.concept&&v.cver===CVER) count[v.concept]=(count[v.concept]||0)+1; });
-      var known=Object.keys(count).sort(function(a,b){ return count[b]-count[a]; }).slice(0,8);
+      var known=SHELVES.slice();   // strict: the model may only file, never name
       filling=true; status('Sorting',true);
       try{
         var items=need.slice(0,120).map(function(v){
           return { videoId:(isTT?v.ttId:v.ytId), title:titleOf(v), channel:(isTT?('@'+(v.handle||'')):(v.channel||'')),
                    topic:v.rawTopic||'', core:kpParse(v.keypoints||'').core };
         });
-        var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items:items, known:known }) });
+        var r=await fetch('/api/run-reminders?ytorganize=1',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ items:items, known:known, strict:true }) });
         var d={}; try{ d=await r.json(); }catch(e){}
         if(r.ok&&d.concepts){
           var ch=0;
@@ -1298,6 +1383,8 @@
 
     $('pane').addEventListener('click',function(e){
       var el;
+      var q=e.target.closest('[data-q]');
+      if(q){ var qk=selId+':'+q.getAttribute('data-q'); if(qOpen[qk]) delete qOpen[qk]; else qOpen[qk]=1; renderPane(); return; }
       if((el=e.target.closest('[data-play]'))){ playing=el.getAttribute('data-play'); renderPane(); return; }
       if((el=e.target.closest('[data-open]'))){ var ov=byId(el.getAttribute('data-open')); if(ov){ setWorld(ov.ttId?'tt':'yt'); select(ov.id); } return; }
       if((el=e.target.closest('[data-remgot]'))){ var rv=byId(el.getAttribute('data-remgot')); if(rv){ rv.revisitTs=Date.now(); saveItem(rv); render(); } return; }
@@ -1386,7 +1473,9 @@
     window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, kpParse:kpParse, ttIdOf:ttIdOf, TT_RE:TT_RE,
       isTikTok:isTikTok, isLesson:isLesson, titleOf:titleOf, hay:hay, conceptOf:conceptOf,
       dueRemember:dueRemember, byOrd:byOrd, addTikToks:addTikToks, sortedList:sortedList,
+      quoteFor:quoteFor, sentences:sentences,
       unreadIn:unreadIn, setPaused:setPaused, isPaused:function(){ return paused; }, K_PAUSE:K_PAUSE,
+      SHELVES:SHELVES, CVER:CVER,
       removeItems:removeItems,
       setWorld:setWorld, render:render,
       _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, world:world, state:state, shelf:shelf }; },

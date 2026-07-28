@@ -269,15 +269,19 @@ async function organizeChunk(chunk, labels) {
   return Object.keys(map).length ? map : null;
 }
 
-async function organize(items, known) {
+/* `strict` = the caller owns the taxonomy and the model may not touch it.
+   The Library passes its nine fixed shelves that way (see _tiktok.js SHELVES).
+   Without it, every batch of new videos invented its own vocabulary and the
+   shelf list drifted — six labels for eight videos. */
+async function organize(items, known, strict) {
   items = (items || []).slice(0, 120);
   if (!items.length) return { ok: false, error: 'empty' };
   var labels = [];
   (known || []).forEach(function (l) { l = String(l || '').trim().slice(0, 40); if (l && labels.indexOf(l) < 0) labels.push(l); });
-  labels = labels.slice(0, 8);
+  labels = labels.slice(0, strict ? 12 : 8);
   // A library with shelves already keeps them, so new videos join the set he
   // knows instead of spawning near-duplicates. An empty one gets shelves named.
-  if (labels.length < 3) {
+  if (!strict && labels.length < 3) {
     var prop = [];
     try { prop = await proposeLabels(items); } catch (e) { prop = []; }
     prop.forEach(function (l) { if (labels.indexOf(l) < 0 && labels.length < 8) labels.push(l); });
@@ -290,6 +294,14 @@ async function organize(items, known) {
     try { got = await organizeChunk(chunk, labels); } catch (e) { got = null; }
     if (!got) { failed++; continue; }
     Object.keys(got).forEach(function (id) {
+      // In strict mode an answer outside the taxonomy is DISCARDED, not adopted:
+      // the whole point is that the shelf list cannot grow behind his back.
+      if (strict) {
+        var hit = '';
+        labels.forEach(function (l) { if (!hit && String(got[id]).toLowerCase().indexOf(l.toLowerCase()) >= 0) hit = l; });
+        if (!hit) return;
+        map[id] = hit; return;
+      }
       map[id] = got[id];
       if (labels.indexOf(got[id]) < 0 && labels.length < 8) labels.push(got[id]);
     });

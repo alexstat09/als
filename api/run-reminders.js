@@ -644,7 +644,7 @@ module.exports = async function (req, res) {
       var ob = req.body; if (typeof ob === 'string') { try { ob = JSON.parse(ob || '{}'); } catch (e) { ob = {}; } }
       var oitems = (ob && ob.items) || [];
       if (!oitems.length) { res.status(400).json({ error: 'no items' }); return; }
-      var oout = await yt.organize(oitems, (ob && ob.known) || []);
+      var oout = await yt.organize(oitems, (ob && ob.known) || [], !!(ob && ob.strict));
       if (!oout.ok) { res.status(502).json({ error: oout.error || 'organize failed' }); return; }
       res.status(200).json({ concepts: oout.concepts, partial: !!oout.partial });
     } catch (e) {
