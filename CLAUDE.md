@@ -149,12 +149,17 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v430`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v432`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
    (`ALSConfirm` / `ALSAlert` / `ALSPrompt`). An ancestor `transform` breaks
-   `position:fixed`, so hand-rolled overlays render off-frame.
+   `position:fixed`, so hand-rolled overlays render off-frame. Two more ways a
+   styled `<dialog>` bites, both found by LOOKING, both invisible to assertions:
+   a page-level `*{margin:0}` kills the UA's `dialog{margin:auto}` centering
+   (§5, als-v408), and **`display` must be scoped to `[open]`** — a bare
+   `dialog.x{display:flex}` beats `dialog:not([open]){display:none}` and leaves
+   the modal permanently on screen (als-v431).
 5. **A week is Mon–Sun:** `(d.getDay()+6)%7`. Settled, do not re-litigate.
 6. **Bucket `nut:logs` by `dateKey`** (the day the food is FOR), never `ts`.
 7. **Never rename, merge, or delete** an existing exercise id or one of his foods.
@@ -172,6 +177,15 @@ Violating any of these breaks production or loses data.
     is that page's only stylesheet). The "new chapter" badge was permanently lit
     and a failed read drew an empty band. A no-op class fails silently, which is
     silent-empty wearing a different hat.
+13. **A SCROLLING flex child never gets `flex: 1` when the container's height is
+    indefinite.** `flex: 1` is `flex: 1 1 0%`; against a container with only a
+    `max-height`, Chrome resolves that basis from content and looks perfect while
+    **iOS Safari collapses the item to ZERO height.** The caffeine log sheet drew
+    a header, a search box, chips and a footer with **no drinks at all** on his
+    phone — through a green suite and a clean desktop render (als-v432). Use
+    `flex: 1 1 auto` plus the item's own `min-height` and `max-height`. This is
+    also constraint 10 in disguise: the empty pane rendered *silently*, so "no
+    search results" and "the list failed to build" must say different things.
 
 ---
 
@@ -196,7 +210,10 @@ words, a full night draws the timeline. For Alex, a **My protocol** section
 (als-v396) carries a read-only wake-time **anchor tracker** — last 14 nights vs
 his 10:00 target, a ±30-min band, drift status, streak — over a collapsible
 playbook),
-`caffeine.html`, `po-water.html`, and `supps.html` — the **one** supplement page
+`caffeine.html` — rebuilt als-v431/432 as **one continuous day** rather than a
+form and three lists (§5): the energy curve IS the page, his drinks sit on it as
+points of light, and the drink library is Greek-first and metric.
+`po-water.html`, and `supps.html` — the **one** supplement page
 (als-v401): a timing timeline tuned to Alex's real routine (morning ~10–11 AM,
 afternoon ~5–6 PM, night ~11 PM — not the old generic 7–10 / 12–2 / 9–11), a
 **streak + 14-day per-supplement consistency** memory (computed from the
@@ -265,10 +282,110 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v430` — `improve.html` became the Library: two worlds, laptop-first**
-(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 157
-assertions; every endpoint verified live against his own videos). Read this first
-if the task touches the Library, TikTok, or **any feature where an AI summarises
+**HEAD is `als-v432` — `caffeine.html` was rebuilt as ONE CONTINUOUS DAY**
+(2026-07-28, on `main`, 19 suites + smoke green; 34 assertions in the caffeine
+harness). Read this first if the task touches caffeine, **any chart in this app**,
+or **any scroll pane inside a flex column** — most of the lessons are not about
+caffeine.
+
+His words: *"somethings off for me… I need it premium, looking like a 1000 dollar
+app, truly perfect."* He gave full authority to reshape it, with one condition:
+*"just make sure that my data is always protected and never lost."* No demo — live.
+
+### ⭐⭐ The three transferable traps
+
+**1. `PageMotion.countUp` is an ENTRANCE animation. NEVER call it on an update.**
+It only ever tweens **0 → target over 750ms, with no cancel.** The old ring
+re-fired it on every `mousemove` (clearing `data-done` first to force a replay), so
+scrubbing the chart spawned dozens of overlapping rAF loops writing one node — the
+number snapped to 0 and raced up on every pixel of movement, while the ring lagged
+on a *separate* 900ms CSS transition. **Two animation systems fighting over one
+value.** This is what Alex reported. The pattern that fixes it: ONE target, ONE
+displayed value, ONE rAF loop, exponential settle
+(`shown += (target-shown) * (1 - 0.001^(dt/210))`), driving text and geometry
+together — it counts *through* every number, 60→59→58. `countTo()` (set `data-to`,
+write in place once `data-done`) was already the correct helper; the ring bypassed it.
+
+**2. `preserveAspectRatio="none"` is why a chart looks cheap.** Same root cause as
+`weight.html` (below), found independently here. A fixed `viewBox="0 0 700 140"`
+stretched to whatever width the box happens to be scales x and y by **different**
+factors: hour labels squashed to half-width on a phone and stretched wide on a
+laptop, strokes elliptical, the `feGaussianBlur` glow smeared sideways. Measure the
+host, set `viewBox` in real CSS pixels, `ResizeObserver`. ⚠️ Compare the observer
+against **the width last DRAWN at** (`lastDrawnW`), never a captured local — its
+first callback fires before the first paint and would kill the draw-in animation.
+**Two pages have now shipped this bug. Grep for it before building any chart.**
+
+**3. The Safari flex collapse — see constraint 13.** Cost a second deploy and was
+the only thing he came back about.
+
+### What the page is now
+hero → **The Day** (arc + curve + 3 moments) → **Today's Load** → **Log** →
+**Today's Timeline** → **The Week** → *Caffeine & Sleep* (conditional) → **The
+Protocol**. The boxy "Smart Timing" tiles are **gone** — he said they "don't seem
+nice to the eye"; their three times now annotate the curve they describe and their
+detail lives in the sub lines, so nothing was dropped. The curve carries a soft
+dawn/dusk night gradient, HIGH/LOW zone hairlines, the caffeine-free baseline as a
+ghost line, **a pip for every drink at the minute he had it**, CUTOFF + CRASH ticks
+and a floating scrub chip. Three modes kept for parity: **Curve / Lift / Hours**.
+New and cheap: **"System clear"**, when the last of it actually leaves, solved on an
+ABSOLUTE clock (`activeMgAbs`) so a 2:55 AM answer means tomorrow (`⁺`).
+
+### Bugs found by RENDERING AND LOOKING — every one invisible to a green suite
+- **asleep/awake switched instantly → a VERTICAL WALL** at wake and bedtime in the
+  line. Now a smoothstep cross-fade over ~24 min (`EDGE_BLEND = 0.4h`); away from
+  the edges the numbers are unchanged, so peak/crash/cutoff still answer the same.
+- ⭐ **The crash detector never required the END of its 2h window to be awake**, so
+  *falling asleep* was the biggest drop of any day and the page announced *"you'll
+  crash around 11:30 PM"* — which is just bedtime. It had done this since the page
+  was built. Now it finds real dips (−16 pts, not −45).
+- `fmtH` wraps past 24, so a 2 PM cold brew read *"cleared 5:42 AM"* — before the
+  drink. `fmtHD()` appends `⁺`.
+- "TARGET" printed straight through whichever week column was tallest → the target
+  line got its own 46px right-hand lane, and `.wk-v` numbers carry a text-shadow
+  halo that knocks the dashed line out behind the digits.
+- The night shading was clipped to the plot band, leaving a hard horizontal edge
+  across the card. Full height now.
+- ✅ The long-standing apostrophe bug is **fixed**: `J()` is
+  `JSON.stringify(v).replace(/"/g,'&quot;')` into a **double**-quoted attribute.
+  Verified against `Bob's brew`, `Coke & Rum`, `say "hi"`, `</script>`.
+
+### The drink library is his now (als-v432)
+The whole thing was 64 entries in **US ounces** — *"Monster Energy (16 oz)"* is not
+something he can buy; the can in his hand says 500 ml. Now **83 entries, all metric,
+Greek first**: freddo espresso μονός/διπλός, freddo cappuccino, frappé, ελληνικός,
+Nescafé 3-in-1, plus Hell, Burn, 330 ml cans, Coke Zero, Pepsi Max.
+⚠️ **Greek sweetness (σκέτος/μέτριος/γλυκός) changes NO caffeine** — only shot count
+does, so entries are sized by shots. Renaming stock entries is data-safe: `DRINKS`
+is a constant, never persisted, and his customs still sort first under "Yours".
+
+### How data safety was PROVEN (reusable method, not a claim)
+Diff every storage/read function against `git show HEAD:<page>` with comments and
+whitespace normalised. **14 of 17 byte-identical**; the other three differed by a
+local rename, brace style and comments, with **zero writes** in any of them.
+`localStorage.setItem` sites 5 → 5, appKey `caffeine` + `syncedKeys` unchanged, and
+the midnight rollup into `caf:days` pinned by a test. Do this on any redesign.
+⚠️ Found in passing: the old `loadSleep()` declared `const logs` — **shadowing the
+module-level `logs`**. Harmless there, a landmine anywhere else. Renamed `slogs`.
+
+### Open on this page
+- 🔴 **Only the sheet fix has been reported on by him.** The scrub, the curve and
+  the week are verified by 34 assertions and headless renders at 393/500/896px —
+  no finger has touched the scrub on iOS. The `touchstart` handler is new (the page
+  previously bound only `touchmove`, so the first tap did nothing until you slid).
+- Ask whether **Lift** and **Hours** earn their place, or whether **Curve** alone is
+  enough. They were kept for parity, not because he asked for them.
+- If a drink he buys is still missing, put a real number on it rather than guessing.
+- Still deferred from the old phase work: surfacing caffeine in Nova / the morning
+  briefing, and folding sleep debt into the energy baseline.
+
+---
+
+**Before that — `als-v430`, `improve.html` became the Library: two worlds,
+laptop-first** (2026-07-28, on `main`, 17 suites + smoke green;
+`tests/library.test.js` = 157
+assertions; every endpoint verified live against his own videos). Read this if the
+task touches the Library, TikTok, or **any feature where an AI summarises
 something** — most of the lessons below are not about TikTok.
 
 His words: *"it's literally just one scroll and unorganised by a lot… I will
@@ -1171,6 +1288,12 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **`caffeine.html` (als-v432): does the scrub feel right on his phone now?**
+  He reported the empty drink sheet and that is fixed and confirmed live, but the
+  thing he originally complained about — dragging the curve — has only been proven
+  in headless Chrome. Also his call: do **Lift** and **Hours** earn their place, or
+  is **Curve** alone enough? And name any drink still missing so it gets a real
+  number instead of a guess.
 - 🔴 **`weight.html` (als-v423) has never been opened on a phone.** Two calls are
   his, not mine: does **tap-to-open** on a history row annoy him, and do the
   **position markers** in the list read as useful or fussy? Also unproven on iOS:
@@ -1244,15 +1367,16 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 17 suites (garmin-probe is a TOOL, not a suite)
+for f in tests/*.js; do node "$f"; done   # 19 files (garmin-probe is a TOOL, not a suite)
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
-⚠️ **`tests/goals-rhythm.test.js` currently fails ONE assertion** ("current week
-marked") and has since before als-v422. It reads `main.html` only and the failure
-is date-dependent. **Expect 17 pass / 1 fail on a clean tree** — don't assume you
-broke it, and don't chase it unless the task is Home's heatmap. To prove any
-failure isn't yours: `git stash push <your files>`, re-run, `git stash pop`.
+⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
+some dates** and has since before als-v422. It reads `main.html` only and the
+failure is **date-dependent** — it passed clean on 2026-07-28. So a clean tree is
+**19 pass, or 18 pass / 1 fail**; either is expected. Don't assume you broke it and
+don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
+`git stash push <your files>`, re-run, `git stash pop`.
 
 `smoke-test.sh` parses every JS file and inline `<script>`, checks every local
 link resolves, bans `on_conflict=key`, and fails if a synced key is missing from
@@ -1291,6 +1415,30 @@ swap that flag for software rendering:
 ```bash
   --use-angle=swiftshader --enable-unsafe-swiftshader
 ```
+
+**To see BEHAVIOUR, not just layout — strip only the EXTERNAL scripts.** The
+static harness above cannot open a `<dialog>`, run a `ResizeObserver`, or prove
+anything about interaction. Strip `<script ... src=...>` only, keep the page's own
+inline script, and **assert no `src=` survived**:
+
+```js
+h = h.replace(/<script[^>]*\ssrc=[^>]*>\s*<\/script>/gi, '');
+if (/<script[^>]+src=/i.test(h)) throw new Error('an external script survived');
+```
+
+That removes `sync.js`, `vendor/supabase.min.js`, `topbar.js`, `nova*.js` — every
+path to the network and to live Supabase, so constraint 8 holds — while the page
+still boots, seeds `localStorage`, and can be driven (`openSheet().click()`).
+Report measurements by writing them into `document.title` and reading them back
+with `--dump-dom`; that is how the collapsed-list height was measured.
+
+⚠️ **Headless lays out at ~500px CSS width regardless of `--window-size` in some
+invocations**, so `100vw`, `vw` units and viewport-relative `min()` do NOT
+correspond to the flag you passed — a dialog looked clipped at `--window-size=393`
+purely because `100vw` had resolved to 485. **Measure `document.documentElement
+.clientWidth` before trusting any vw-based finding**, and shoot at whatever width
+it reports. `max-width` pinning (above) is unaffected and stays the reliable way
+to inspect a true phone width.
 
 **Looking at generative graphics is not optional.** The shoe took six rounds of
 render-screenshot-`Read`-the-PNG before it was worth shipping, and every round
