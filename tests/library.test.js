@@ -321,6 +321,26 @@ const ttBody = html.slice(html.indexOf('async function ttSweep()'), html.indexOf
 ok(/if\(ttSweeping\|\|paused\) return;/.test(ttBody), 'stop: the TikTok reader refuses to start when paused');
 ok(/if\(paused\) break;/.test(ttBody), 'stop: ⭐ the TikTok reader bails BETWEEN videos');
 
+/* ── ⭐ starting over ────────────────────────────────────────── */
+console.log('   clearing a batch has to actually stick');
+im._set([], [], [
+  { id:'a', ttId:'1', url:'https://www.tiktok.com/@x/video/1', keypoints:'CORE: read' },
+  { id:'b', ttId:'2', url:'https://www.tiktok.com/@x/video/2' }
+]);
+im.setWorld('tt');
+im.removeItems(im._state().tiktoks.slice());
+eq(im._state().tiktoks.length, 0, 'reset: removing everything empties the wall');
+eq(JSON.parse(localStorage.getItem('improve:tiktoks') || '[]').length, 0, 'reset: and it is written to the store');
+// ⭐ The write MUST go through localStorage.setItem, because that is what
+// sync.js intercepts to stamp deletion tombstones. Clear the key any other way
+// and every video syncs straight back from the cloud on the next pull.
+ok(/function removeItems\([\s\S]{0,400}?persist\(K_TT,tiktoks\)/.test(html),
+   'reset: ⭐ deletion goes through persist(), so sync stamps tombstones');
+ok(!/localStorage\.removeItem\(K_TT\)|localStorage\.clear\(/.test(html),
+   'reset: ⭐ the store is never cleared behind sync\'s back');
+// a wipe must not leave the reader paused with a fresh batch waiting
+ok(/if\(paused\) setPaused\(false\);/.test(html), 'reset: clearing everything also lifts a pause');
+
 /* ── TikTok never plays inline ──────────────────────────────── */
 console.log('   TikTok opens in a real tab, not a bad embed');
 ok(!/tiktok\.com\/embed/.test(html), '⭐ the TikTok embed iframe is GONE — it is a marketing surface, not a player');

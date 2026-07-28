@@ -552,24 +552,47 @@
       e.classList.toggle('live',statusLive&&!paused);
     }
 
-    /* The undo for "I overdid it": drop everything in this world that has not
-       been read yet, and keep every one that has. Nothing that already earned
-       its key points is ever touched. */
-    async function dropUnread(){
-      var arr=coll(), gone=unreadIn(arr);
-      if(!gone.length) return;
-      var ask=window.ALSConfirm;
-      var yes = ask ? await ask({ title:'Remove '+gone.length+' unread?',
-          message:'The '+(arr.length-gone.length)+' already read stay exactly as they are. This only clears what has not been read yet.',
-          confirmText:'Remove '+gone.length, danger:true })
-        : confirm('Remove '+gone.length+' unread?');
-      if(!yes) return;
+    /* Removing a batch.
+       ⚠️ This goes through the page's normal persist() ON PURPOSE. sync.js
+       intercepts localStorage.setItem and diffs the old array against the new
+       one to stamp DELETION TOMBSTONES; clearing the key by hand would leave
+       none, and every removed video would sync straight back from the cloud
+       the next time any device pulled. Never "clear" one of these stores
+       outside this path. */
+    function removeItems(gone){
       var kill={}; gone.forEach(function(v){ kill[v.id]=1; });
       if(world==='tt'){ tiktoks=tiktoks.filter(function(v){ return !kill[v.id]; }); persist(K_TT,tiktoks); }
       else { videos=videos.filter(function(v){ return !kill[v.id]; }); persist(K_VID,videos); }
       flush();
       if(selId&&kill[selId]) closePane();
       render();
+    }
+    async function ask(o){
+      if(window.ALSConfirm) return await window.ALSConfirm(o);
+      return confirm(o.title+'\n\n'+(o.message||''));
+    }
+    /* The undo for "I overdid it": drop what has not been read yet, and keep
+       every one that has. Nothing that already earned its key points is touched. */
+    async function dropUnread(){
+      var arr=coll(), gone=unreadIn(arr);
+      if(!gone.length) return;
+      if(!await ask({ title:'Remove '+gone.length+' unread?',
+          message:'The '+(arr.length-gone.length)+' already read stay exactly as they are. This only clears what has not been read yet.',
+          confirmText:'Remove '+gone.length, danger:true })) return;
+      removeItems(gone);
+    }
+    /* Start over — clear the whole world so a cleaner batch can go in. */
+    async function dropAll(){
+      var arr=coll().slice(); if(!arr.length) return;
+      var read=arr.length-unreadIn(arr).length;
+      if(!await ask({ title:'Remove all '+arr.length+' TikToks?',
+          message:'This clears the whole TikTok wall'+(read?', including the '+read+' already read':'')+
+                  ', on every device. It cannot be undone from here — the vault keeps a daily backup.',
+          confirmText:'Remove all '+arr.length, danger:true })) return;
+      removeItems(arr);
+      // Nothing left to read, so a pause from the last batch would only be
+      // confusing when the next one lands.
+      if(paused) setPaused(false);
     }
 
     /* ════════════════════════════════════════════════════════════
@@ -855,6 +878,7 @@
           '<p>One link, or paste your whole notes list at once — every TikTok link in it gets picked up, deduped and read in the background.</p>'+
           '<textarea id="ttIn" placeholder="https://www.tiktok.com/@…/video/…&#10;https://www.tiktok.com/@…/video/…" spellcheck="false" autocapitalize="none"></textarea>'+
           '<div class="ing-row"><button type="button" class="b prime" id="ttAdd">Add them</button>'+
+          (tiktoks.length?'<button type="button" class="b warn" id="ttWipe">Start over · remove all '+tiktoks.length+'</button>':'')+
           '<span class="ing-msg" id="ttMsg"></span></div></div></div>';
       }
       var open=!videos.length;
@@ -873,12 +897,15 @@
         '<span class="ing-msg" id="vMsg"></span></div></div></div>';
     }
 
-    function renderIngest(){ $('ingest').innerHTML=ingestHTML(); wireIngest(); }
+    var lastIngestSig='';
+    function ingestSig(){ return world+':'+coll().length+':'+habits.length+':'+(profile.playlist||''); }
+    function renderIngest(){ $('ingest').innerHTML=ingestHTML(); lastIngestSig=ingestSig(); wireIngest(); }
     function wireIngest(){
       var f;
       if((f=$('ttFold'))) f.addEventListener('click',function(){ $('ttIng').classList.toggle('open'); });
       if((f=$('ytFold'))) f.addEventListener('click',function(){ $('ytIng').classList.toggle('open'); });
       if((f=$('ttAdd'))) f.addEventListener('click',addTikToks);
+      if((f=$('ttWipe'))) f.addEventListener('click',dropAll);
       if((f=$('plSync'))) f.addEventListener('click',syncPlaylist);
       if((f=$('plInput'))) f.addEventListener('keydown',function(e){ if(e.key==='Enter') syncPlaylist(); });
       if((f=$('vSave'))) f.addEventListener('click',saveVideo);
@@ -1221,7 +1248,10 @@
           building+' habit'+(building===1?'':'s')+' in progress';
       }
 
-      if(!$('ingest').firstChild) renderIngest();
+      // The panel shows a live count ("remove all 47"), so it repaints when the
+      // library changes — but NOT while he is typing in it.
+      var box=$('ttIn')||$('plInput')||$('hText');
+      if(!$('ingest').firstChild || (ingestSig()!==lastIngestSig && document.activeElement!==box)) renderIngest();
       renderRail();
       renderWall();
       renderPane();
@@ -1357,6 +1387,7 @@
       isTikTok:isTikTok, isLesson:isLesson, titleOf:titleOf, hay:hay, conceptOf:conceptOf,
       dueRemember:dueRemember, byOrd:byOrd, addTikToks:addTikToks, sortedList:sortedList,
       unreadIn:unreadIn, setPaused:setPaused, isPaused:function(){ return paused; }, K_PAUSE:K_PAUSE,
+      removeItems:removeItems,
       setWorld:setWorld, render:render,
       _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, world:world, state:state, shelf:shelf }; },
       _set:function(v,h,t){ videos=v; habits=h; if(t) tiktoks=t; } };

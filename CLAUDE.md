@@ -122,6 +122,13 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   across `.0`/`.1` and neither fragment is valid JSON, so the check fails on
   exactly the devices with the most state. A wrong answer here renders the other
   person's data, plausibly, with no error (als-v424).
+- ⭐ **Deleting from a synced store must go through the page's normal save.**
+  `sync.js` intercepts `localStorage.setItem`/`removeItem` and diffs the old
+  value against the new one to stamp **deletion tombstones**; arrays merge by
+  UNION, so anything removed without a tombstone is simply re-added from the
+  cloud on the next pull. Clearing a key by hand (console, `localStorage.clear`,
+  a bulk wipe that bypasses the store) therefore looks like it worked and
+  silently undoes itself. `ALSSync.drop(key, id)` forces one explicitly.
 - `sync.js` merges any object child named **`logs`** with `Math.max`, so a
   counter cannot decrease unless every write stamps `_ts`.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
@@ -253,8 +260,8 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v427` — `improve.html` became the Library: two worlds, laptop-first**
-(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 113
+**HEAD is `als-v428` — `improve.html` became the Library: two worlds, laptop-first**
+(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 118
 assertions; both endpoints verified live). Read this first if the task touches
 the Library, TikTok, or **any feature where an AI summarises something.**
 
@@ -335,7 +342,7 @@ fetchable server-side**. This is the transcript YouTube has refused us twice.
 `improve:tiktoks` is registered in backup `BUNDLES` (synced-but-unrestorable is
 the trap `smoke-test.sh` exists to catch). Home's tile is now **Library**.
 
-### Two things his first hour with it found (fixed in als-v427)
+### Three things his first hour with it found (als-v427 / als-v428)
 - ⚠️ **TIKTOK DOES NOT PLAY INLINE, AND MUST NOT.** Its `/embed/v2` iframe is a
   marketing surface, not a player: it forces a **white** card into a black page,
   ships its own like/comment/share chrome and a "Watch now" upsell bar, repeats
@@ -350,6 +357,11 @@ the trap `smoke-test.sh` exists to catch). Home's tile is now **Library**.
   Now `paused` (device-local `improve:paused`) is checked by **both** sweeps
   before starting **and between videos**, and "Remove the N unread" drops
   everything with no key points while never touching one already read.
+- **And then he wanted the whole batch gone** — *"clear the tiktok links i sent,
+  i want to send another batch more clearer."* **"Start over · remove all N"**
+  sits beside the paste box. It removes through `persist()` so tombstones are
+  stamped (see the rule now in §2 — a hand-cleared key syncs straight back), and
+  it lifts any pause so the next batch reads immediately.
 
 🔴 **Open:** the wall, the paste box and the controls have still only met seeded
 data in headless Chrome — he is using it live now, so his report is the test.
