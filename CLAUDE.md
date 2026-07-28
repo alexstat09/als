@@ -126,7 +126,9 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   counter cannot decrease unless every write stamps `_ts`.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
   and is silently **unrestorable**. `smoke-test.sh` enforces this.
-- Device-local by design (never synced, excluded from the vault): `gcal:*`.
+- Device-local by design (never synced, excluded from the vault): `gcal:*`,
+  `improve:paused` (pausing the Library's reader on the laptop must not stop the
+  phone, but it must survive a reload or reopening restarts the flood).
 
 ### Auth / security
 `api/_auth.js` gates endpoints (same-origin + rate limit + cron secret). RLS and
@@ -251,8 +253,8 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v426` — `improve.html` became the Library: two worlds, laptop-first**
-(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 97
+**HEAD is `als-v427` — `improve.html` became the Library: two worlds, laptop-first**
+(2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 113
 assertions; both endpoints verified live). Read this first if the task touches
 the Library, TikTok, or **any feature where an AI summarises something.**
 
@@ -333,10 +335,24 @@ fetchable server-side**. This is the transcript YouTube has refused us twice.
 `improve:tiktoks` is registered in backup `BUNDLES` (synced-but-unrestorable is
 the trap `smoke-test.sh` exists to catch). Home's tile is now **Library**.
 
-🔴 **Open:** no real TikTok has been added **from his browser** — the server half
-is verified live end to end, but the paste box, the wall and the embed player
-have only met seeded data in headless Chrome. The TikTok embed
-(`/embed/v2/<id>`) is the least proven piece.
+### Two things his first hour with it found (fixed in als-v427)
+- ⚠️ **TIKTOK DOES NOT PLAY INLINE, AND MUST NOT.** Its `/embed/v2` iframe is a
+  marketing surface, not a player: it forces a **white** card into a black page,
+  ships its own like/comment/share chrome and a "Watch now" upsell bar, repeats
+  the caption in its own fonts, and still overflows a 9:16 box — and being
+  cross-origin, none of it can be styled away. The poster is now a link that
+  opens a real TikTok tab. These are videos he has **already watched**; the pane
+  is for what to take from them. **Do not put the embed back.** YouTube still
+  plays inline, because that embed is genuinely good.
+- ⚠️ **A background reader needs a STOP, and a big paste needs an UNDO.** He hit
+  this within the hour: *"i think i send too much, how do i stop the progress."*
+  Before, the only stop was closing the tab and the only undo was one-at-a-time.
+  Now `paused` (device-local `improve:paused`) is checked by **both** sweeps
+  before starting **and between videos**, and "Remove the N unread" drops
+  everything with no key points while never touching one already read.
+
+🔴 **Open:** the wall, the paste box and the controls have still only met seeded
+data in headless Chrome — he is using it live now, so his report is the test.
 
 **Before that — `als-v424` — the running page proves delivery instead of assuming
 it** (2026-07-27, on `main`, 17 suites + smoke green; `tests/run-identity.test.js`

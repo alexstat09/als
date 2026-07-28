@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="aurora.css">
   <script src="water.js"></script>
   <script src="topbar.js" defer></script>
+  <script src="als-dialog.js" defer></script>
   <!-- ⚠️ page-motion.js is deliberately NOT loaded here, unlike the other inner
        pages. It hides content behind `transform: translateY(18px)` until it
        scrolls into view, and this page is a three-pane app shell rather than a
@@ -96,9 +97,22 @@
     .lb-seek .kb{ position:absolute; right:11px; top:50%; transform:translateY(-50%); font-family:var(--au-mono);
                   font-size:9px; color:var(--au-faint); border:1px solid var(--au-line-2); border-radius:4px; padding:1px 5px; }
     .lb-seek .clr{ position:absolute; right:8px; top:50%; transform:translateY(-50%); color:var(--au-dim); font-size:13px; padding:4px 6px; }
-    .lb-status{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+    .lb-status{ display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+                font-family:var(--au-mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
                 color:var(--au-faint); min-height:12px; }
-    .lb-status.live{ color:rgba(var(--acc),.85); }
+    .lb-status .s-t{ color:var(--au-faint); }
+    .lb-status .s-t.live{ color:rgba(var(--acc),.85); }
+    .lb-status .s-b{ font-family:var(--au-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase;
+                     padding:4px 9px; border-radius:7px; border:1px solid var(--au-line-2); color:var(--au-dim);
+                     transition:border-color .24s var(--au-ease), color .24s var(--au-ease), background .24s var(--au-ease); }
+    .lb-status .s-b:hover{ border-color:rgba(var(--acc),.45); color:var(--au-ivory); background:var(--au-glass); }
+    .lb-status .s-b.warn:hover{ border-color:rgba(255,107,139,.5); color:var(--au-rose); }
+    /* The idle TikTok poster is a link out, not a player — see stageHTML(). */
+    .pane-stage .over .watch{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+                              font-weight:400; padding:9px 14px; border-radius:9px; color:var(--au-ivory);
+                              background:rgba(8,8,10,.62); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.18);
+                              transition:background .24s var(--au-ease), border-color .24s var(--au-ease); }
+    .pane-stage:hover .over .watch{ background:rgba(var(--acc),.24); border-color:rgba(var(--acc),.5); }
 
     /* ── the three panes ──────────────────────────────────────── */
     .lb-body{ display:grid; grid-template-columns:214px minmax(0,1fr) 384px; gap:clamp(18px,2vw,34px); padding:22px 0 40px; align-items:start; }
@@ -170,7 +184,7 @@
     .pane{ border:1px solid var(--au-line); border-radius:16px; background:var(--au-glass);
            overflow:hidden; max-height:calc(100vh - 96px); overflow-y:auto; overscroll-behavior:contain; }
     .pane::-webkit-scrollbar{ width:7px; } .pane::-webkit-scrollbar-thumb{ background:var(--au-line-2); border-radius:4px; }
-    .pane-stage{ position:relative; width:100%; background:#08080a; }
+    .pane-stage{ position:relative; display:block; width:100%; background:#08080a; text-decoration:none; }
     .pane-stage iframe{ width:100%; height:100%; border:0; display:block; position:absolute; inset:0; }
     .pane-stage.yt{ aspect-ratio:16/9; }
     .pane-stage.tt{ aspect-ratio:9/16; max-height:52vh; }
@@ -497,8 +511,66 @@
       return v.thumb||(v.ytId?('https://i.ytimg.com/vi/'+v.ytId+'/hqdefault.jpg'):'');
     }
 
-    /* ── status line ──────────────────────────────────────────── */
-    function status(m,live){ var e=$('status'); if(!e) return; e.textContent=m||''; e.classList.toggle('live',!!live&&!!m); }
+    /* ── the reader's controls ────────────────────────────────────
+       Pasting a big list and then wanting OUT of it is a normal thing to do —
+       Alex hit it within an hour ("i think i send too much, how do i stop the
+       progress"). Before this, the only way to stop the reader was to close
+       the tab, and the only way to undo a paste was to remove items one at a
+       time. Both are first-class now.
+
+       `paused` is DEVICE-LOCAL and deliberately not synced: it is about this
+       tab right now, and pausing on the laptop must not stop his phone. It
+       does survive a reload, or reopening the page would restart the flood he
+       just stopped. */
+    var K_PAUSE='improve:paused';
+    var paused=(function(){ try{ return localStorage.getItem(K_PAUSE)==='1'; }catch(e){ return false; } })();
+    function setPaused(p){
+      paused=!!p;
+      try{ p?localStorage.setItem(K_PAUSE,'1'):localStorage.removeItem(K_PAUSE); }catch(e){}
+      renderStatus();
+      if(!paused){ sweep(); ttSweep(); }
+    }
+    function unreadIn(arr){ return arr.filter(function(v){ return !v.keypoints; }); }
+
+    var statusMsg='', statusLive=false;
+    function status(m,live){ statusMsg=m||''; statusLive=!!live; renderStatus(); }
+    function renderStatus(){
+      var e=$('status'); if(!e) return;
+      var unread=unreadIn(coll()).length, running=sweeping||ttSweeping;
+      var h='';
+      if(paused){
+        h='<span class="s-t">Paused'+(unread?' · '+unread+' unread':'')+'</span>'+
+          '<button type="button" class="s-b" data-resume="1">Resume</button>';
+      } else if(running||statusMsg){
+        h='<span class="s-t'+(statusLive?' live':'')+'">'+esc(statusMsg||'Reading')+'</span>'+
+          (running?'<button type="button" class="s-b" data-pause="1">Stop</button>':'');
+      }
+      if(unread && world!=='hb'){
+        h+='<button type="button" class="s-b warn" data-dropunread="1">Remove the '+unread+' unread</button>';
+      }
+      e.innerHTML=h;
+      e.classList.toggle('live',statusLive&&!paused);
+    }
+
+    /* The undo for "I overdid it": drop everything in this world that has not
+       been read yet, and keep every one that has. Nothing that already earned
+       its key points is ever touched. */
+    async function dropUnread(){
+      var arr=coll(), gone=unreadIn(arr);
+      if(!gone.length) return;
+      var ask=window.ALSConfirm;
+      var yes = ask ? await ask({ title:'Remove '+gone.length+' unread?',
+          message:'The '+(arr.length-gone.length)+' already read stay exactly as they are. This only clears what has not been read yet.',
+          confirmText:'Remove '+gone.length, danger:true })
+        : confirm('Remove '+gone.length+' unread?');
+      if(!yes) return;
+      var kill={}; gone.forEach(function(v){ kill[v.id]=1; });
+      if(world==='tt'){ tiktoks=tiktoks.filter(function(v){ return !kill[v.id]; }); persist(K_TT,tiktoks); }
+      else { videos=videos.filter(function(v){ return !kill[v.id]; }); persist(K_VID,videos); }
+      flush();
+      if(selId&&kill[selId]) closePane();
+      render();
+    }
 
     /* ════════════════════════════════════════════════════════════
        THE WALL
@@ -667,17 +739,30 @@
       return h;
     }
 
+    /* ── the stage ────────────────────────────────────────────────
+       YouTube plays inline, because youtube-nocookie's embed is a real
+       player and it looks right.
+
+       ⚠️ TIKTOK DOES NOT PLAY INLINE, ON PURPOSE. Its /embed/v2 iframe is a
+       marketing surface, not a player: it forces a WHITE card into a black
+       page, ships its own like/comment/share chrome, adds a "Watch now"
+       upsell bar, repeats the caption in its own fonts, and still overflows
+       a 9:16 box. It is cross-origin, so none of that can be styled away.
+       These are videos he has ALREADY watched — the pane exists for what to
+       take from them, and re-watching belongs in a real TikTok tab where the
+       experience is native and good. A half-working player is worse than an
+       honest link. Do not put the embed back. */
     function stageHTML(v){
-      var th=thumbOf(v), cls=v.ttId?'tt':'yt';
-      if(playing===v.id){
-        var src=v.ttId ? ('https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.ttId))
-                       : ('https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.ytId||'')+'?autoplay=1&rel=0');
+      var th=thumbOf(v), tt=isTikTok(v), cls=tt?'tt':'yt';
+      if(!tt && playing===v.id){
+        var src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.ytId||'')+'?autoplay=1&rel=0';
         return '<div class="pane-stage '+cls+'"><iframe src="'+esc(src)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="'+esc(titleOf(v))+'"></iframe></div>';
       }
       if(!th && !(v.ytId||v.ttId)) return '';
-      return '<div class="pane-stage '+cls+' idle" data-play="'+esc(v.id)+'" style="cursor:pointer">'+
-        (th?'<img src="'+esc(th)+'" alt="" data-cover="'+esc(v.id)+'">':'')+
-        '<div class="over"><span>▶</span></div></div>';
+      var inner=(th?'<img src="'+esc(th)+'" alt="" data-cover="'+esc(v.id)+'">':'')+
+        '<span class="over">'+(tt?'<b class="watch">Watch on TikTok ↗</b>':'<span>▶</span>')+'</span>';
+      if(tt && v.url) return '<a class="pane-stage '+cls+' idle" href="'+esc(v.url)+'" target="_blank" rel="noopener">'+inner+'</a>';
+      return '<div class="pane-stage '+cls+' idle" data-play="'+esc(v.id)+'" style="cursor:pointer">'+inner+'</div>';
     }
 
     function paneHTML(){
@@ -904,13 +989,14 @@
     }
     var sweeping=false;
     async function sweep(){
-      if(sweeping) return;
+      if(sweeping||paused) return;
       var pend=videos.filter(function(v){ return v.ytId && !v.keypoints && (v.kpFail||0)<3; });
       if(!pend.length){ status(''); fillConcepts(); return; }
       sweeping=true;
       var ids=pend.map(function(v){ return v.id; }), total=ids.length;
       for(var i=0;i<ids.length;i++){
-        var v=byId(ids[i]); if(!v||v.keypoints) continue;
+        if(paused) break;                 // Stop is honoured BETWEEN videos, so
+        var v=byId(ids[i]); if(!v||v.keypoints) continue;   // one in flight still lands
         var got=null;
         for(var att=0; att<3 && !got; att++){
           status('Reading '+(i+1)+'/'+total,true);
@@ -926,7 +1012,7 @@
         await wait(2200);   // pace: the free tier is capped per minute, not per day
       }
       sweeping=false; status('');
-      render(); fillConcepts();
+      render(); if(!paused) fillConcepts();
     }
 
     /* ── TikTok reader: fetch, then read, one video at a time ── */
@@ -959,12 +1045,13 @@
     }
     var ttSweeping=false;
     async function ttSweep(){
-      if(ttSweeping) return;
+      if(ttSweeping||paused) return;
       var need=tiktoks.filter(function(v){ return (v.pending||!v.handle||!v.keypoints) && (v.metaFail||0)<2 && (v.kpFail||0)<3; });
       if(!need.length){ status(''); fillConcepts(); return; }
       ttSweeping=true;
       var ids=need.map(function(v){ return v.id; }), total=ids.length;
       for(var i=0;i<ids.length;i++){
+        if(paused) break;                 // same contract as the YouTube sweep
         var v=byId(ids[i]); if(!v) continue;
 
         if(v.pending||!v.handle){
@@ -1002,7 +1089,7 @@
         await wait(2000);
       }
       ttSweeping=false; status('');
-      render(); fillConcepts();
+      render(); if(!paused) fillConcepts();
     }
 
     /* ── shelving ─────────────────────────────────────────────────
@@ -1138,6 +1225,7 @@
       renderRail();
       renderWall();
       renderPane();
+      renderStatus();
       moveInk();
     }
 
@@ -1211,6 +1299,11 @@
         flush(); closePane(); render(); return;
       }
     });
+    $('status').addEventListener('click',function(e){
+      if(e.target.closest('[data-pause]')){ setPaused(true); return; }
+      if(e.target.closest('[data-resume]')){ setPaused(false); return; }
+      if(e.target.closest('[data-dropunread]')){ dropUnread(); return; }
+    });
     $('scrim').addEventListener('click',closePane);
 
     /* keyboard — this is a laptop page, so it earns real shortcuts */
@@ -1238,16 +1331,22 @@
         var tile=$('main').querySelector('.tile.sel'); if(tile&&tile.scrollIntoView) tile.scrollIntoView({block:'nearest',behavior:'smooth'});
         return;
       }
-      if(e.key==='Enter'&&selId){ playing=selId; renderPane(); return; }
+      if(e.key==='Enter'&&selId){
+        var sv=byId(selId);
+        // TikTok opens where it actually looks good — a real tab.
+        if(sv&&isTikTok(sv)&&sv.url) window.open(sv.url,'_blank','noopener');
+        else { playing=selId; renderPane(); }
+        return;
+      }
     });
     window.addEventListener('resize',moveInk);
 
     render();
     // Give cloud sync a moment to land first — otherwise a fresh device would
     // spend its rate limit re-reading videos whose notes are already saved.
-    setTimeout(function(){ sweep(); ttSweep(); }, 2500);
+    setTimeout(function(){ if(!paused){ sweep(); ttSweep(); } }, 2500);
 
-    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); sweep(); ttSweep(); } });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); if(!paused){ sweep(); ttSweep(); } } });
     window.addEventListener('storage',function(ev){ if(!ev||ev.key===K_VID||ev.key===K_TT||ev.key===K_HAB) render(); });
     document.addEventListener('DOMContentLoaded',function(){
       (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
@@ -1257,6 +1356,7 @@
     window.__im={ srcFromUrl:srcFromUrl, normUrl:normUrl, kpParse:kpParse, ttIdOf:ttIdOf, TT_RE:TT_RE,
       isTikTok:isTikTok, isLesson:isLesson, titleOf:titleOf, hay:hay, conceptOf:conceptOf,
       dueRemember:dueRemember, byOrd:byOrd, addTikToks:addTikToks, sortedList:sortedList,
+      unreadIn:unreadIn, setPaused:setPaused, isPaused:function(){ return paused; }, K_PAUSE:K_PAUSE,
       setWorld:setWorld, render:render,
       _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, world:world, state:state, shelf:shelf }; },
       _set:function(v,h,t){ videos=v; habits=h; if(t) tiktoks=t; } };

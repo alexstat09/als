@@ -289,6 +289,44 @@ ok(!im.dueRemember(), 'remember: ⭐ a keepsake never resurfaces');
 im._set([], [], [{ id:'t2', ttId:'2', kind:'lesson', keypoints:'CORE: real', distilledTs:now-9*DAY }]);
 ok(!!im.dueRemember(), 'remember: a TikTok LESSON does resurface');
 
+/* ── stopping the reader, and undoing an oversized paste ────── */
+console.log('   the reader can be stopped, and a big paste undone');
+im._set([], [], [
+  { id:'a', ttId:'1', url:'https://www.tiktok.com/@x/video/1', keypoints:'CORE: read already' },
+  { id:'b', ttId:'2', url:'https://www.tiktok.com/@x/video/2' },
+  { id:'c', ttId:'',  url:'https://www.tiktok.com/@x/video/3', pending:true, source:'TikTok' }
+]);
+const unread = im.unreadIn(im._state().tiktoks);
+eq(unread.length, 2, 'stop: "unread" counts everything with no key points');
+ok(unread.every(v => !v.keypoints), 'stop: nothing already read is ever counted as unread');
+ok(unread.some(v => v.pending), 'stop: a still-fetching item counts as unread');
+
+// pausing must persist, or reopening the page restarts the flood he just stopped
+eq(im.isPaused(), false, 'stop: not paused to begin with');
+im.setPaused(true);
+eq(im.isPaused(), true, 'stop: pausing takes effect');
+eq(localStorage.getItem(im.K_PAUSE), '1', 'stop: the pause survives a reload');
+im.setPaused(false);
+eq(localStorage.getItem(im.K_PAUSE), null, 'stop: resuming clears it');
+// ⭐ device-local on purpose: pausing his laptop must not stop his phone
+ok(!/syncedKeys:\[[^\]]*K_PAUSE/.test(html), 'stop: ⭐ the pause flag is NOT synced');
+ok(!/improve:paused/.test(fs.readFileSync(path.join(__dirname,'..','backup.html'),'utf8')),
+   'stop: the pause flag is not in the vault either — it is not his data');
+
+// both readers must actually check it, not merely offer the button
+const sweepBody = html.slice(html.indexOf('async function sweep()'), html.indexOf('async function ttSweep()'));
+ok(/if\(sweeping\|\|paused\) return;/.test(sweepBody), 'stop: the YouTube reader refuses to start when paused');
+ok(/if\(paused\) break;/.test(sweepBody), 'stop: ⭐ the YouTube reader bails BETWEEN videos');
+const ttBody = html.slice(html.indexOf('async function ttSweep()'), html.indexOf('/* ── shelving'));
+ok(/if\(ttSweeping\|\|paused\) return;/.test(ttBody), 'stop: the TikTok reader refuses to start when paused');
+ok(/if\(paused\) break;/.test(ttBody), 'stop: ⭐ the TikTok reader bails BETWEEN videos');
+
+/* ── TikTok never plays inline ──────────────────────────────── */
+console.log('   TikTok opens in a real tab, not a bad embed');
+ok(!/tiktok\.com\/embed/.test(html), '⭐ the TikTok embed iframe is GONE — it is a marketing surface, not a player');
+ok(/youtube-nocookie\.com\/embed/.test(html), 'YouTube still plays inline, which works');
+ok(/target="_blank" rel="noopener"/.test(html), 'a TikTok poster is a real link out');
+
 /* ── the page still registers everything it must ────────────── */
 console.log('   wiring that silently breaks if it drifts');
 ok(/improve:tiktoks/.test(html), 'wiring: the page names improve:tiktoks');
