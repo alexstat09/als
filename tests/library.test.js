@@ -391,6 +391,23 @@ ok(/v\.suspect/.test(html), 'grounding: and the card says so');
 ok(/removed for citing something the video never mentions/.test(html),
    'grounding: a shorter list is explained, never silent');
 
+// ⚠️ BOTH false positives this guard produced against REAL live output. Each
+// dropped a TRUE key point over spelling rather than substance, which is worse
+// than the fabrication it exists to catch.
+const COVER_MAT = 'Text on screen: Stranger - Jhene Aiko. Caption: Trying to post content again #coversong';
+g = tt._groundKeys(['A cover of Jhene Aiko\u2019s song Stranger.', 'Produced by Beyonce\u2019s label.'], COVER_MAT);
+eq(g.keys.length, 1, 'grounding: ⭐ a POSSESSIVE is grammar, not a different name');
+ok(/Jhene Aiko/.test(g.keys[0]), 'grounding: "Jhene Aiko\u2019s" matches "Jhene Aiko"');
+eq(g.dropped[0].token, 'Beyonce', 'grounding: an invented artist is still caught');
+// Only capitalised, non-initial words count as names, so the lowercase words
+// are ignored — and "Aiko\u2019s"/"Drake\u2019s" reduce to the names themselves.
+eq(tt._specifics('He covered Drake\u2019s verse and Aiko\u2019s song').names.join(','), 'Drake,Aiko',
+   'grounding: possessive markers are stripped before comparing');
+// ⚠️ Deliberately NOT policed: the vocabulary his faith videos use constantly.
+// Flagging "God" or "Jesus" as an unverified name would fight every sermon.
+eq(tt._specifics('He said God and Jesus and Lord').names.length, 0,
+   'grounding: faith vocabulary is never treated as a suspicious name');
+
 /* ── receipts ───────────────────────────────────────────────── */
 console.log('   each key point can show the words it came from');
 const withT = { transcript: MAT, screen: [] };

@@ -266,7 +266,7 @@ var KEEPSAKE_SYS =
   'CORE: <one sentence naming what this video is, e.g. "A Lana Del Rey edit." — no more than you were told>\n' +
   'KEY:\n' +
   '- <a fact that would help them find it: who is in it, the song, the artist, the creator>\n' +
-  '- <1 to 3 of them, and none you were not given>\n\n' + SHELF_RULES;
+  '- <1 to 3 of them, and none you were not given. Each must NAME something — a person, a song, an artist, a creator. Never a bare hashtag and never a single generic word like "football" or "music".>\n\n' + SHELF_RULES;
 
 function material(v, g) {
   var parts = [];
@@ -320,6 +320,12 @@ function specifics(line) {
     var bare = w.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N}]+$/u, '');
     if (!bare || i === 0) return;
     if (!/^\p{Lu}/u.test(bare)) return;
+    // ⚠️ A POSSESSIVE IS GRAMMAR, NOT A DIFFERENT NAME. Live, this dropped a
+    // perfectly good point: the on-screen text said "Stranger - Jhene Aiko"
+    // and the model wrote "Jhene Aiko's song", so "Aikos" was nowhere in the
+    // material. Same shape as the "1:3-4" false positive — the check must
+    // compare names, not spelling.
+    bare = bare.replace(/['\u2019]s$/i, '').replace(/['\u2019]$/, '');
     if (COMMON.test(bare)) return;
     if (bare.length < 3) return;
     out.names.push(bare);
