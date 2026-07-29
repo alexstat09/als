@@ -367,8 +367,9 @@ which shoe it is drawing (§5).
 ## 5 · Open
 
 **HEAD is `als-v438` — ONE CONTROL: the bar is gone, and so is the reason
-nothing ever stayed pinned to the bottom** (2026-07-29, on `main`, 19 suites +
-smoke green; `tests/launcher.test.js` = 72 assertions, up from 56). Alex's brief:
+nothing ever stayed pinned to the bottom** (2026-07-29, `461c1d6` on `main`,
+pushed; 19 suites + smoke green; `tests/launcher.test.js` = 72 assertions, up
+from 56). Alex's brief:
 *"code it so its only the 'all' button there and even if i am at the top its
 visible at the bottom without interfering with anything nice and smoothly, as
 well as at the home page which rn doesnt have anything."*
@@ -420,11 +421,35 @@ constraint 4 with the ancestor being `<body>` and the transform being invisible.
   5-tab nav. `gym.html` gets the button but not the body padding, exactly as
   before.
 - **"This week vs last" is deleted, and `xp.js` with it** — see below.
-- Verified: button pinned to the viewport and the launcher opening on
-  `index.html`, `nutrition.html`, `gym.html`, `sleep.html` at 393px and 1100px,
-  and absent on `run.html`. ⚠️ **nutrition.html failed the first probe and was
-  a false alarm** — it is heavy enough that at 900ms the entrance animation was
-  still running. Give a probe real time before believing it.
+
+### The button, exactly as it stands (so nobody re-derives it)
+`.alx-fab` is styled in `topbar.js`'s `css` block and built by `makeAllButton()`
+in the same file. A pill: nine-dot emerald glyph + the word **ALL** in the mono
+stack, `position: fixed; right: 14px; bottom: calc(16px + safe-area)`,
+**79 × 42px**, `z-index: 39`, dark glass with `backdrop-filter`, a 0.24s-delayed
+fade-and-rise entrance, `:active` scale 0.94. `body.has-alxfab` reserves
+`calc(64px + safe-area)` — the bar's old 72px, 8px smaller — everywhere except
+`gym.html`, which never carried the bar's padding and still ends clear of the
+corner on its own. Home overrides that to 78px (it used to run 116px, to clear
+the bar *and* its own floating nav stacked above it).
+
+### How it was verified — and one false alarm worth remembering
+Probed on `index.html`, `nutrition.html`, `gym.html` and `sleep.html` at **393px
+and 1100px**: in all eight runs the button lands at `top: 762` in an 820px
+viewport (`820 − 16 − 42`, i.e. genuinely pinned), `rightGap: 14`, `opacity: 1`,
+mono font, and clicking it opens the launcher (`dialog.alx[open]`,
+`display: flex`). Absent on `run.html`, as intended.
+⚠️ **`nutrition.html` failed the first probe — `PINNED:false`, `opacity:0` — and
+it was a false alarm.** That page is heavy enough that at 900ms its entrance
+animation was still running and its layout had not settled. At 9,000ms of
+virtual time it is identical to every other page. **Give a probe real time
+before believing a failure**, and check `animationPlayState` before concluding
+anything from an opacity of 0.
+✅ **No collision with `.nova-fab`**, measured rather than assumed: on
+`finance.html` at 393px, Nova occupies **671 → 728** and the ALL pill **762 →
+804**, both at `right: 14px` — a **34px** vertical gap and no overlap. They read
+as one deliberate right-hand stack. `.nova-fab`'s `bottom: 86px` was originally
+chosen to clear the bar; it still works, so it was left alone.
 
 ### The last of the game layer (his second ask)
 *"we didnt delete the last week vs this week xp usage thingy."* Correct —
@@ -471,11 +496,26 @@ and puts a `position: fixed` element somewhere useless. **Measure with a probe
 script** (`getBoundingClientRect().top` vs `innerHeight`) rather than trusting a
 screenshot, and shorten the page if you want to *see* it in place.
 
-### Open
-- 🔴 **Unproven on his phone.** Driven headless only.
-- The `.alx-fab` sits at `right: 14px`, z-index 39 — under gym's sheets (61) and
-  modals (71). If a page turns out to have its own bottom-right control, that is
-  the collision to look for.
+### ⭐ Open — what to pick up next
+- 🔴 **Unproven on his phone.** Driven headless only, on every page listed above.
+  He was asked to fully reopen the PWA so the new service worker lands and then
+  say whether the pill sits where he wants it. **His answer is the next input;
+  do not redesign it before he replies.**
+- **Two changes already offered, either a few lines**: centre the pill instead of
+  right-aligning it, or drop the ALL label and keep the glyph alone (the shape
+  `gym.html` wore before this). Both were offered in the ship reply, so if he
+  says "make it centred" or "just the icon", that is what he means.
+- ⚠️ `.alx-fab` is `z-index: 39`, under gym's sheets (61) and modals (71). The
+  only bottom-right neighbour in the app is `.nova-fab`, which is measured clear
+  above. **A new page with its own bottom-right control is the collision to
+  look for**, and there is no assertion for that — it needs a probe.
+- **The harness and probe scripts from this session lived in the scratchpad and
+  are gone.** The recipe above is complete enough to rebuild them in a few
+  minutes; do that rather than trusting a screenshot.
+- Housekeeping, harmless: **`_render-check.html` (1.7MB) is an untracked local
+  leftover** from the als-v433 session and still contains the old `#bottombar` /
+  `has-bottombar` / `xp.js` chrome. It is not in git, so it never deploys and
+  nothing reads it. Safe to delete; ignore it otherwise.
 - Everything below this line is the previous session, kept for the lessons.
 
 ### als-v435 → als-v437, in order
