@@ -159,7 +159,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v438`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v439`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -263,6 +263,29 @@ Violating any of these breaks production or loses data.
     `<script>` for `pocoach-sync.js` at runtime**, so any harness that keeps
     `topbar.js` runs a sync engine unless the harness also blocks dynamically
     inserted scripts. The working harness is described in §5.
+    ⚠️ **The needle must be the `src=` CONTEXT, not the bare filename.** A plain
+    string ban on `sync.js` trips on the words *"sync.js's mergeArray"* in a
+    **code comment** — `nutrition.html` has several. A guard that cries wolf is
+    a guard somebody loosens, which is how the broken one above survived. Ban
+    `src="sync.js` / `src='sync.js` (als-v439).
+
+20. **Anything that rewrites `ts` on an EXISTING log entry must preserve `ts0`
+    first.** These two facts are coupled and the second only exists because of
+    the first: `sync.js`'s `mergeArray` settles a same-id conflict on the
+    **newer `ts`** with a **tie to local**, so any edit that must reach a second
+    device has to move `ts` — otherwise the other device keeps its own stale
+    copy forever and pushes it back. But `nutrition.html`'s `pruneDupes` deletes
+    entries matching on name/grams/macros within a **15-minute `ts` window**, so
+    a bulk rewrite lands every touched entry on the same instant and two
+    genuinely separate identical portions (an egg at 08:00, another at 12:00)
+    become an "accidental double-add" and **one is silently deleted**. `ts0`
+    holds when the food was actually LOGGED and the pruner judges on
+    `ts0 || ts`; the fallback keeps every pre-`ts0` entry behaving as before.
+    This was **already live in `moveEntries`** before the meal groups that
+    exposed it — "move all of Lunch to Dinner" could eat a real portion
+    (als-v439). Generally: **a timestamp doing double duty as both a sync
+    tiebreaker and a business-logic window is a latent data loss.** Separate
+    them before adding the third caller.
 
 ---
 
@@ -308,6 +331,15 @@ carries its receipts — the source, whether it was label-verified or estimated,
 and a reason whenever confidence drops. Photographing the nutrition label is
 the exact path when nothing has it. Plus photo macros, food search, per-piece weight
 guard (`unitOK()`, the 111g-Oreo fix), favourites, streaks.
+**A meal is one thing, not three rows** (als-v439, §5): foods logged together
+carry `grp` / `grpName` / `grpOf` — a fresh `grp` per LOGGING — and the diary
+draws them as ONE row that opens to its ingredients. Any slot with ≥2 foods
+offers `+ Save these 3 as one meal` right there in the diary, which both stores
+the reusable meal in `nut:meals` and groups what he just named. Entries without
+`grp` are ordinary foods and render exactly as they always have, so nothing
+needed migrating. `nut:mealDraft` (a half-built meal) is **device-local, never
+synced**. ⚠️ The `ts`/`ts0` rule that makes this safe is **constraint 20** —
+read it before touching any entry's timestamp.
 
 **Mind & life** — `main.html` (outcome goals auto-tracked from workouts, weight,
 nutrition, films, runs), `coach.html` (weekly Focus Loop with memory, grades
@@ -366,8 +398,9 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v439` — A MEAL IS ONE THING, NOT THREE ROWS** (2026-07-29, on
-`main`, 22 suites + smoke green; `tests/nut-meals.test.js` = 48 assertions).
+**HEAD is `als-v439` — A MEAL IS ONE THING, NOT THREE ROWS** (2026-07-29,
+`bd05c56` on `main`, pushed; 22 suites + smoke green; `tests/nut-meals.test.js`
+= 48 assertions).
 His brief: *"whenever i put a meal, like in a lunch and for example it contains
 of 3 ingredients like tuna pasta and tomato paste… i wanna make that a meal,
 make it possible."*
@@ -1912,6 +1945,12 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **Meal groups (als-v439) are unproven on his phone.** Two calls are his:
+  should a logged meal open **collapsed** by default (right now only the one he
+  just saved opens expanded, so nothing appears to vanish the second he names
+  it), and is `+ Save these 3 as one meal` in the right place — under the foods,
+  above the one-tap-usual link. Both are a few lines. He needs a full PWA reopen
+  for the new SW.
 - 🔴 **The launcher (als-v437) is unproven on his phone.** Does "All" feel right
   in the centre, are the six pins the right six, and do the recency notes read
   as useful or as noise? All three are cheap to change; none of them is stored.
@@ -2023,15 +2062,15 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 20 files (garmin-probe is a TOOL, not a suite)
+for f in tests/*.js; do node "$f"; done   # 23 files; 22 suites (garmin-probe is a TOOL)
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
-some dates** and has since before als-v422. (It passed clean again on 2026-07-28
-with all 19 suites green.) It reads `main.html` only and the
-failure is **date-dependent** — it passed clean on 2026-07-28. So a clean tree is
-**19 pass, or 18 pass / 1 fail**; either is expected. Don't assume you broke it and
+some dates** and has since before als-v422. (It passed clean again on 2026-07-29
+with all 22 suites green.) It reads `main.html` only and the
+failure is **date-dependent**. So a clean tree is
+**22 pass, or 21 pass / 1 fail**; either is expected. Don't assume you broke it and
 don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
 `git stash push <your files>`, re-run, `git stash pop`.
 

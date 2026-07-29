@@ -35,7 +35,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 **Fuel**
 | Page | What it is |
 |---|---|
-| `nutrition.html` | Nutrition (151 KB). Meals, macros, photo→macros. |
+| `nutrition.html` | Nutrition (155 KB). Macros, photo→macros, and **composite meals** — foods logged together share a `grp` and draw as one row that opens (als-v439; see CLAUDE.md constraint 20 before touching an entry's `ts`). |
 | `planner.html` | Meal planner. |
 | `po-water.html` | Water tracker (the home water chip links here). |
 | `caffeine.html` | Caffeine. |
