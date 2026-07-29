@@ -261,13 +261,14 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 
 /* ── Where you stand ────────────────────────────────────── */
 /* .badge / .agent-title / .agent-sub / .xpbar* lived here for the LVL pill,
-   "The Operator" and the XP progress bar. Removed with the game layer. */
+   "The Operator" and the XP progress bar. Removed with the game layer.
+   .ms-grid / .ms / .streak followed them (als-v435): the milestone badges
+   were achievements for things that are not achievements, and the streak
+   chip read `goal_streak_v1`, which has been 0 for its entire life. */
 .agent{margin-top:var(--s5); background:var(--glass); border:1px solid var(--line-2); border-radius:20px; padding:22px 22px 20px; overflow:hidden;}
 .agent-hd{display:flex; align-items:center; justify-content:space-between;}
 .agent-hd .l{font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--faint);}
-.agent-hd .r{display:flex; align-items:center; gap:10px;}
-.streak{font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--amber); border:1px solid rgba(242,192,99,0.35); border-radius:20px; padding:4px 10px;}
-.agent-split{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:22px; padding-top:20px; border-top:1px solid var(--line);}
+.agent-week{margin-top:22px; padding-top:20px; border-top:1px solid var(--line);}
 .week-hd{font-family:var(--mono); font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-bottom:12px;}
 .week-score{display:flex; align-items:baseline; gap:10px;}
 .week-score .num{font-family:var(--serif); font-style:italic; font-size:44px; color:var(--ivory); line-height:0.9;}
@@ -277,11 +278,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .wrow .wt{flex:1; height:4px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden;}
 .wrow .wf{height:100%; border-radius:4px; background:var(--emerald); opacity:0.8; transform:scaleX(0); transform-origin:left; transition:transform 1s var(--settle) .3s;}
 .agent.in .wrow .wf{transform:scaleX(1);}
-.ms-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:9px;}
-.ms{aspect-ratio:1; border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; color:var(--faint); transition:all .4s var(--settle);}
-.ms.hit{color:var(--emerald); border-color:rgba(var(--glow),0.3); background:rgba(var(--glow),0.05);}
-.ms .i{width:17px;height:17px;}
-.ms .c{font-family:var(--mono); font-size:8px; letter-spacing:0.08em; text-transform:uppercase;}
 
 /* ── Vault + reminder ───────────────────────────────────── */
 .vault{margin-top:14px; display:flex; align-items:center; gap:14px; padding:17px 20px; border:1px solid var(--line); border-radius:16px; text-decoration:none; transition:border-color .28s var(--snap), transform .28s var(--snap);}
@@ -310,7 +306,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 @media (max-width:720px){
   .grid{grid-template-columns:repeat(2,1fr);}
   .intel-cards{grid-template-columns:1fr;}
-  .agent-split{grid-template-columns:1fr; gap:20px;}
   .nova{width:48px;height:48px;}
 }
 @media (prefers-reduced-motion:reduce){
@@ -585,25 +580,20 @@ body.has-bottombar{ padding-bottom:116px !important; }
        errors and returns early when ALS.XP is missing, and the old markup shipped
        "12 day streak · LVL 14 · Training 5/5" as its fallback — a fiction about
        his life, on his home page, whenever the paint failed. -->
+  <!-- als-v435: the MILESTONES column and the streak chip left with the rest of
+       the game layer. The four badges ("100 days", "50 PRs", "30 nights",
+       "1 year") were achievements bolted onto things that are not achievements,
+       and the chip read `goal_streak_v1`, which has been {count: 0} for its
+       entire life — so the only streak this page has ever shown him was a zero
+       he never earned. This week vs last stays: it is a measurement. -->
   <section class="agent" data-reveal data-rise>
-    <div class="agent-hd"><span class="l">Where you stand</span><div class="r"><span class="streak">—</span></div></div>
-    <div class="agent-split">
-      <div>
-        <div class="week-hd">This week vs last</div>
-        <div class="week-score"><span class="num"><span class="cnt">—</span></span><div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Performance</div><span class="delta">—</span></div></div>
-        <div class="wrow"><span class="wk">Training</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-        <div class="wrow"><span class="wk">Sleep</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-        <div class="wrow"><span class="wk">Nutrition</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-      </div>
-      <div>
-        <div class="week-hd">Milestones</div>
-        <div class="ms-grid">
-          <div class="ms"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7 5.2.8-3.75 3.65.9 5.15L12 14.9l-4.65 2.4.9-5.15L4.5 8.5l5.2-.8Z"/></svg></span><span class="c">100 days</span></div>
-          <div class="ms"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0Z"/><line x1="12" y1="12" x2="12" y2="17"/><path d="M8 20h8"/></svg></span><span class="c">50 PRs</span></div>
-          <div class="ms"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8 8 0 1 1 11.2 3 6 6 0 0 0 21 12.8Z"/></svg></span><span class="c">30 nights</span></div>
-          <div class="ms"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><span class="c">1 year</span></div>
-        </div>
-      </div>
+    <div class="agent-hd"><span class="l">Where you stand</span></div>
+    <div class="agent-week">
+      <div class="week-hd">This week vs last</div>
+      <div class="week-score"><span class="num"><span class="cnt">—</span></span><div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Performance</div><span class="delta">—</span></div></div>
+      <div class="wrow"><span class="wk">Training</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
+      <div class="wrow"><span class="wk">Sleep</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
+      <div class="wrow"><span class="wk">Nutrition</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
     </div>
   </section>
 

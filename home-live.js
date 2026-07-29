@@ -307,16 +307,18 @@
      per load. Its only unique line was a count of recurring bills, which said
      the same sentence every day. Deleted, not moved: nothing was lost. */
 
-  /* ── Standing — streak, this week vs last, milestones ──
-     No level, no XP, no rank title: those measured nothing. Everything below is
-     a count of something he actually did. */
+  /* ── Standing — this week vs last ──
+     No level, no XP, no rank title, and since als-v435 no milestone badges and
+     no streak chip either. Everything below is a count of something he actually
+     did. The chip used to print `goal_streak_v1` straight onto the page; that
+     store has been {count: 0} for its whole life, so the one streak Home ever
+     showed him was a zero. A missing measurement renders nothing here — it does
+     not render a nought. */
   function paintAgent() {
     try {
       if (!(window.ALS && window.ALS.XP)) return;
       var st = window.ALS.XP.compute(); if (!st) return;
-      var data = st.data, tw = st.thisWeek, lw = st.lastWeek;
-      var setTxt = function (sel, v) { var e = document.querySelector(sel); if (e) e.textContent = v; };
-      setTxt('.agent .streak', (data.streak || 0) + ' day streak');
+      var tw = st.thisWeek, lw = st.lastWeek;
       /* week vs last */
       var wnum = document.querySelector('.agent .week-score .num .cnt') || document.querySelector('.agent .week-score .num');
       if (wnum && tw) { wnum.setAttribute('data-to', Math.round(tw.score)); wnum.textContent = '0'; }
@@ -327,16 +329,12 @@
       if (rows[0] && tw) { var wo = tw.workouts || 0; rows[0].querySelector('.wf').style.width = Math.min(100, wo / 5 * 100) + '%'; rows[0].querySelector('span:last-child').textContent = wo + '/5'; }
       if (rows[1]) { var rec = latestRecovery(); rows[1].querySelector('.wf').style.width = (rec != null ? rec : 0) + '%'; rows[1].querySelector('span:last-child').textContent = rec != null ? rec : '—'; }
       if (rows[2] && tw) { var nd = tw.nutDays || 0; rows[2].querySelector('.wf').style.width = Math.min(100, nd / 7 * 100) + '%'; rows[2].querySelector('span:last-child').textContent = nd + (nd === 1 ? ' day' : ' days'); }
-      /* milestones (honest thresholds) */
-      var ms = document.querySelectorAll('.agent .ms');
-      var thr = [data.streak >= 100, prCount() >= 50, sleepNights() >= 30, daysTracked() >= 365];
-      ms.forEach(function (el, i) { if (i < thr.length) el.classList.toggle('hit', !!thr[i]); });
     } catch (e) { }
   }
   function latestRecovery() { try { var l = ls('sleep:logs', []); l = (Array.isArray(l) ? l : []).filter(function (e) { return e && e.recovery != null; }).sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; }); return l.length ? Math.round(l[l.length - 1].recovery) : null; } catch (e) { return null; } }
-  function prCount() { try { var seen = {}, ws = ls('po_workouts', []); (Array.isArray(ws) ? ws : []).forEach(function (w) { (w && w.entries || []).forEach(function (en) { if (en && en.name) seen[en.name] = 1; }); }); return Object.keys(seen).length; } catch (e) { return 0; } }
-  function sleepNights() { try { var l = ls('sleep:logs', []); return (Array.isArray(l) ? l : []).filter(function (e) { return e && (e.hours > 0 || e.recovery != null); }).length; } catch (e) { return 0; } }
-  function daysTracked() { try { var m = metric('arc.html'); return (m && typeof m.hero === 'number') ? m.hero : 0; } catch (e) { return 0; } }
+  /* prCount() / sleepNights() / daysTracked() lived here. They existed only to
+     light the four milestone badges and had no other caller, so they left with
+     them (als-v435). latestRecovery() stays — it feeds the Sleep row above. */
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
