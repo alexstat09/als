@@ -149,6 +149,31 @@ const FICTIONS = ['78.4', '1840', 'protein 148g', '7h 41m · rested', 'deadlift 
   'stack · 2 left today', '86% conf', '76.5 kg', 'last backup · 2 days ago'];
 FICTIONS.forEach(f => ok('index.html no longer claims "' + f + '"', html.indexOf(f) === -1));
 
+/* ── The game layer is gone, all of it (als-v435 → als-v438) ──────────
+   The LVL pill, the XP bar, the Recruit-to-Legend ladder, the 20 milestone
+   badges, the streak chip that read a store fixed at 0, and finally "This week
+   vs last" — whose headline was 45% weighted on `goals:` to-do completion, a
+   store he has never used, so the score could never pass 55. Deleting that
+   panel retired xp.js: ALS.XP had no other caller anywhere in the app.
+   These assertions fail if any of it comes back by accident. */
+section('the game layer stays deleted');
+ok('xp.js no longer exists', !fs.existsSync(path.join(ALS, 'xp.js')));
+{
+  // Comments stripped first: the files that used to call it now explain why
+  // they don't, and an epitaph must not read as a caller.
+  const strip = (s) => s
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  const live = fs.readdirSync(ALS)
+    .filter(f => (f.endsWith('.js') || f.endsWith('.html')) && !f.startsWith('_'));
+  const callers = live.filter(f => /\bALS\.XP\b|["']xp\.js/.test(strip(fs.readFileSync(path.join(ALS, f), 'utf8'))));
+  is('nothing in the app still references ALS.XP or xp.js', callers, []);
+}
+ok('the "This week vs last" markup is gone from Home', !/class="agent"/.test(html));
+ok('and its CSS went with it', !/^\.agent\{/m.test(html) && !/^\.wrow\{/m.test(html));
+ok('paintAgent() has no orphaned call site', !/paintAgent\(\)\s*;/.test(src));
+
 /* countUp must not turn an unpainted placeholder into "0" — that is the same
    lie in a smaller font. */
 section('home-motion.js leaves unpainted placeholders alone');

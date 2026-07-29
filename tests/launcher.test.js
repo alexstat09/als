@@ -89,10 +89,15 @@ ok('the sheet bounds it with a max-height', /\.alx-sheet\s*\{[^}]*max-height/.te
 
 /* ── 6 · every class toggled from JS exists in CSS (constraint 12) ─ */
 section('no class is toggled that CSS never defines');
-['alx-fab', 'alx-sheet', 'alx-body', 'alx-pins', 'alx-pin', 'alx-g', 'alx-gh',
+['alx-sheet', 'alx-body', 'alx-pins', 'alx-pin', 'alx-g', 'alx-gh',
  'alx-rows', 'alx-r', 'alx-none', 'alx-search', 'alx-x', 'alx-grab',
  'alx-a-coral', 'alx-a-emerald', 'alx-a-violet', 'alx-a-amber', 'here']
   .forEach(c => ok('.' + c + ' is defined', new RegExp('\\.' + c + '[\\s,{:.]').test(SRC)));
+// .alx-fab is the exception: topbar.js creates that element, so topbar.js owns
+// its CSS. It must NOT also be styled here — launcher.js arrives on a separate
+// deferred fetch, and the only navigation control in the app cannot wait on it.
+ok('.alx-fab is styled by topbar.js, which creates it', /\.alx-fab\s*\{/.test(TOP));
+ok('and launcher.js does not style it a second time', !/\.alx-fab\s*[\{,:]/.test(SRC));
 
 /* ── 7 · nothing renderable is left as raw non-ASCII ────────────── */
 section('encoding — Greek page names cannot mojibake');
@@ -107,27 +112,73 @@ section('encoding — Greek page names cannot mojibake');
   ok('the Greek names are present as escapes', /\\u0391\\u03c1\\u03c7/.test(SRC));
 }
 
-/* ── 8 · the shell wiring ───────────────────────────────────────── */
-section('topbar.js wiring');
-ok('the All button is in the bar', /data-page="all"/.test(TOP));
-ok('it is a <button>, so the link interceptor cannot navigate on it',
-  /<button[^>]*data-page="all"/.test(TOP));
+/* ── 8 · the shell wiring: ONE control, one code path (als-v438) ─── */
+section('topbar.js wiring — the bar is gone, the All button is not');
+const TOPCODE = TOP.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+ok('the five-tab .bottombar is gone from the markup',
+  !/bottombarHtml/.test(TOPCODE) && !/class="bottombar-tab"/.test(TOPCODE));
+ok('and its CSS went with it', !/\.bottombar[\s,{:.-]/.test(TOPCODE));
+ok('nothing still adds body.has-bottombar', !/has-bottombar/.test(TOPCODE));
+ok('the All button is built as an element, not an HTML string',
+  /createElement\('button'\)/.test(TOPCODE) && /className = 'alx-fab'/.test(TOPCODE));
+ok('it is a <button>, so the shell link interceptor cannot navigate on it',
+  /\bb\.type = 'button'/.test(TOPCODE));
+ok('it keeps the id the launcher wiring already used', /b\.id = 'tbAll'/.test(TOPCODE));
+ok('it is labelled for screen readers', /aria-label', 'All pages'/.test(TOPCODE));
+ok('it carries a visible ALL label, not the icon alone', /<span>All<\/span>/.test(TOPCODE));
 {
-  const reset = TOP.match(/button\.bottombar-tab\s*\{[^}]*\}/)[0];
-  ok('button.bottombar-tab is reset to match its <a> siblings', /appearance:\s*none/.test(reset));
-  // `font: inherit` in this rule outranks .bottombar-tab and silently drops
-  // the label out of the mono stack the other four tabs use.
-  ok('the reset sets NO font property, or "ALL" leaves the mono stack',
-    !/\bfont(-family|-size|-weight)?\s*:/.test(reset));
+  // A <button> does not inherit the document font. Unlike the bar's tab (where
+  // setting font-family DROPPED "ALL" out of its siblings' mono stack), this
+  // one has no siblings left to match, so it must state its own typography.
+  const fab = TOP.match(/\.alx-fab\s*\{[^}]*\}/)[0];
+  ok('the FAB names its own font-family', /font-family:/.test(fab));
+  ok('it is pinned to the viewport, so scroll cannot move it',
+    /position:\s*fixed/.test(fab) && /bottom:/.test(fab));
+  ok('z-index 39 keeps it under gym sheets (61) and modals (71)',
+    /z-index:\s*39/.test(fab));
+  ok('it clears the iOS home indicator', /env\(safe-area-inset-bottom\)/.test(fab));
 }
-ok('the Body tab is gone', !/class="bottombar-tab" data-page="body"/.test(TOP));
 {
-  const bar = TOP.match(/const bottombarHtml = `[\s\S]*?`;/)[0];
-  const order = [...bar.matchAll(/data-page="(\w+)"/g)].map(m => m[1]);
-  is('five slots, All in the centre', order, ['home', 'mind', 'all', 'money', 'nova']);
+  // The one remaining branch. Everything that is not run.html gets the button;
+  // everything that is not run.html or gym.html also gets the bottom padding.
+  const inj = TOPCODE.match(/if \(!isRunSolo\(\)\) \{[\s\S]*?\n    \}/)[0];
+  ok('every page but run.html gets the button', /appendChild\(makeAllButton\(\)\)/.test(inj));
+  ok('and every page but gym gets the padding', /!isGymPage\(\)\) document\.body\.classList\.add\('has-alxfab'\)/.test(inj));
 }
-ok('gym.html gets a floating button instead (it has no bar of its own)',
-  /isGymPage\(\)/.test(TOP) && /alx-fab/.test(TOP));
+ok('run.html is left alone — it is Chrissie\'s app', /isRunSolo\(\)/.test(TOPCODE));
+ok('the dead five-space page map is gone with the tabs it lit',
+  !/currentPageKey/.test(TOPCODE) && /isHubPage/.test(TOPCODE));
+{
+  // Home used to hide the shared bar and draw a private one of its own. Two
+  // bottom navs on one page, the visible one a stale copy pointing Mind at a
+  // different destination. This is the assertion that stops it coming back.
+  const HOME = fs.readFileSync(ALS + '/index.html', 'utf8');
+  const HCODE = HOME.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  ok('Home has no private bottom nav', !/<nav class="nav">/.test(HCODE));
+  ok('Home no longer hides the shared control', !/#bottombar/.test(HCODE));
+  ok('Home reserves room for the button like every other page',
+    /body\.has-alxfab\s*\{/.test(HCODE));
+}
+/* ── 9 · the reason nothing pinned to the bottom ever stayed there ─
+   Constraint 4 with the ancestor being <body> itself. The page-entrance
+   animation on body animates `transform`; `animation-fill-mode: both` keeps
+   that transform APPLIED after it ends, even though it settles on `none`, and
+   a filled transform animation still makes the element a containing block for
+   fixed descendants. So `position: fixed; bottom: 16px` resolved against a
+   ~5,000px body box instead of the viewport, and the control sat at the foot
+   of the DOCUMENT. Measured: top 1301 in an 820px viewport before, 762 after.
+   This is the assertion that stops `both` coming back. */
+section('body must not become a containing block for the fixed control');
+{
+  const rule = TOP.match(/\nbody \{ animation: _tbIn[^}]*\}/)[0];
+  ok('the body entrance animation carries no fill mode',
+    !/\b(both|forwards)\b/.test(rule));
+  ok('and it is still the same entrance, not deleted', /_tbIn 0\.38s/.test(rule));
+  // The exit fade is the deliberate exception: it must persist through the
+  // navigation that removes it.
+  ok('body.tb-out keeps its forwards fill on purpose',
+    /body\.tb-out \{ animation: _tbOut[^}]*forwards/.test(TOP));
+}
 ok('launcher.js is lazy-loaded, not hard-required', /s\.src = 'launcher\.js'/.test(TOP));
 ok('a tap before the script lands still opens it', /loadLauncher\(true\)/.test(TOP));
 ok('launcher.js is precached by the service worker', /'launcher\.js'/.test(SW));

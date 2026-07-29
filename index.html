@@ -26,7 +26,6 @@
 <script src="vendor/supabase.min.js"></script>
 <script src="sync.js" defer></script>
 <script src="insights.js" defer></script>
-<script src="xp.js" defer></script>
 <script src="water.js"></script>
 <script src="topbar.js" defer></script>
 <script src="push.js" defer></script>
@@ -260,24 +259,11 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .space[data-a="amber"] .tile:hover .ic{color:var(--amber);} .space[data-a="amber"] .tile:hover{border-color:rgba(242,192,99,0.24);}
 
 /* ── Where you stand ────────────────────────────────────── */
-/* .badge / .agent-title / .agent-sub / .xpbar* lived here for the LVL pill,
-   "The Operator" and the XP progress bar. Removed with the game layer.
-   .ms-grid / .ms / .streak followed them (als-v435): the milestone badges
-   were achievements for things that are not achievements, and the streak
-   chip read `goal_streak_v1`, which has been 0 for its entire life. */
-.agent{margin-top:var(--s5); background:var(--glass); border:1px solid var(--line-2); border-radius:20px; padding:22px 22px 20px; overflow:hidden;}
-.agent-hd{display:flex; align-items:center; justify-content:space-between;}
-.agent-hd .l{font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--faint);}
-.agent-week{margin-top:22px; padding-top:20px; border-top:1px solid var(--line);}
-.week-hd{font-family:var(--mono); font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-bottom:12px;}
-.week-score{display:flex; align-items:baseline; gap:10px;}
-.week-score .num{font-family:var(--serif); font-style:italic; font-size:44px; color:var(--ivory); line-height:0.9;}
-.week-score .delta{font-family:var(--mono); font-size:11px; color:var(--emerald);}
-.wrow{display:flex; align-items:center; gap:10px; margin-top:11px; font-size:12.5px; color:var(--dim);}
-.wrow .wk{width:74px; font-family:var(--mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint);}
-.wrow .wt{flex:1; height:4px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden;}
-.wrow .wf{height:100%; border-radius:4px; background:var(--emerald); opacity:0.8; transform:scaleX(0); transform-origin:left; transition:transform 1s var(--settle) .3s;}
-.agent.in .wrow .wf{transform:scaleX(1);}
+/* This whole block is gone (als-v438), and with it the last of the game layer.
+   .badge / .agent-title / .agent-sub / .xpbar* went first with the LVL pill and
+   the XP bar; .ms-grid / .ms / .streak followed in als-v435; .agent / .agent-hd
+   / .agent-week / .week-* / .wrow* leave now with "This week vs last".
+   The reason is in the markup below where the section stood. */
 
 /* ── Vault + reminder ───────────────────────────────────── */
 .vault{margin-top:14px; display:flex; align-items:center; gap:14px; padding:17px 20px; border:1px solid var(--line); border-radius:16px; text-decoration:none; transition:border-color .28s var(--snap), transform .28s var(--snap);}
@@ -298,10 +284,8 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 .remind-body .st .num{width:20px; height:20px; flex-shrink:0; border:1px solid var(--line-2); border-radius:6px; font-family:var(--mono); font-size:10px; color:var(--emerald); display:flex; align-items:center; justify-content:center;}
 
 /* ── Bottom nav ─────────────────────────────────────────── */
-.nav{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:2px; padding:5px; border-radius:16px; z-index:5; background:rgba(12,12,13,0.7); border:1px solid var(--line-2); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);}
-.nav a{font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--faint); text-decoration:none; padding:9px 16px; border-radius:11px; transition:color .28s var(--snap), background .28s var(--snap);}
-.nav a.on{color:var(--ivory); background:rgba(var(--glow),0.1);}
-.nav a:hover{color:var(--dim);}
+/* .nav / .nav a / .nav a.on lived here — Home's private floating bottom nav.
+   Deleted with the markup (als-v438). See the #topbar block below for why. */
 
 @media (max-width:720px){
   .grid{grid-template-columns:repeat(2,1fr);}
@@ -312,7 +296,6 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
   *{animation:none!important;}
   .js [data-rise]{opacity:1!important; transform:none!important; transition:none!important;}
   .js .tile .spark polyline{stroke-dashoffset:0!important;}
-  .wrow .wf{transform:none!important; transition:none!important;}
   .focus .ring .rf{stroke-dashoffset:92.5!important; transition:none!important;}
 }
 /* ── Readiness ring (inside focus card) ── */
@@ -356,17 +339,22 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 
 .ribbon{position:fixed; top:0; left:0; right:0; z-index:9; text-align:center; font-family:var(--mono); font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); padding:6px; background:rgba(0,0,0,0.45); border-bottom:1px solid var(--line);}
 
-/* ── topbar.js injects a top + bottom bar on every page. The home uses the demo's
-   own floating .nav, so hide that chrome. topbar.js still runs the login gate,
-   registers the service worker, and lazy-loads the engines — all kept.
-   EXCEPT the account button: signing out is the only way to hand this device to
-   another person cleanly, so it must be reachable from the page everyone lands
-   on. The bar is stripped to that one control and floated to sit just LEFT of the
-   header's Nova crystal (which owns the top-right corner) — the 88px right offset
-   clears Nova on phones, where .wrap is full-width and Nova hugs the edge; on wide
-   screens Nova sits inboard, so the button simply rides near the corner. The top
-   offset matches the header padding so the button lines up with Nova. ── */
-#bottombar{ display:none !important; }
+/* ── topbar.js injects the shell on every page. The home page strips the top bar
+   to a single control: signing out is the only way to hand this device to another
+   person cleanly, so the account button must be reachable from the page everyone
+   lands on. It floats to sit just LEFT of the header's Nova crystal (which owns
+   the top-right corner) — the 88px right offset clears Nova on phones, where
+   .wrap is full-width and Nova hugs the edge; on wide screens Nova sits inboard,
+   so the button simply rides near the corner. The top offset matches the header
+   padding so the button lines up with Nova.
+
+   ⚠️ `#bottombar{display:none}` lived here and was the real cause of "the home
+   page doesn't have anything" (als-v438). Home hid the shared bottom bar and
+   drew a private <nav class="nav"> of its own — Home / Body / Mind / Money /
+   Nova, with no All button and a Mind that pointed at identity.html while the
+   shared bar's pointed at main.html. TWO bottom navs on one page, the visible
+   one a stale copy. Both are gone; the All button is the only one now, and it
+   is topbar's, so this page can no longer drift from every other page. ── */
 #topbar{
   display:flex !important; position:fixed; top:0; right:0; left:auto; width:auto;
   z-index:50; background:transparent !important; border-bottom:0 !important;
@@ -375,7 +363,10 @@ body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none
 }
 #topbar > *{ display:none !important; }
 #topbar .topbar-acct{ display:inline-flex !important; pointer-events:auto; }
-body.has-bottombar{ padding-bottom:116px !important; }
+/* Home ran 116px to clear the bar AND its own floating .nav stacked above it.
+   One control now, so this is the shared reservation plus a little air under
+   the last card. */
+body.has-alxfab{ padding-bottom:calc(78px + env(safe-area-inset-bottom)) !important; }
 </style>
 </head>
 <body id="root">
@@ -570,32 +561,24 @@ body.has-bottombar{ padding-bottom:116px !important; }
     </div>
   </section>
 
-  <!-- AGENT STATUS / XP -->
-  <!-- Was "◈ Agent status": LVL 14, 8,420 XP, "The Operator", a Recruit→Legend
-       ladder. All of it was wired to real data, but XP itself measured nothing —
-       it was an abstraction on top of the numbers, and the ranks were cosplay
-       from before the design direction settled. The measurements underneath were
-       always the real thing, so they stayed and the game left.
-       Placeholders are now "—", never invented values: paintAgent() swallows its
-       errors and returns early when ALS.XP is missing, and the old markup shipped
-       "12 day streak · LVL 14 · Training 5/5" as its fallback — a fiction about
-       his life, on his home page, whenever the paint failed. -->
-  <!-- als-v435: the MILESTONES column and the streak chip left with the rest of
-       the game layer. The four badges ("100 days", "50 PRs", "30 nights",
-       "1 year") were achievements bolted onto things that are not achievements,
-       and the chip read `goal_streak_v1`, which has been {count: 0} for its
-       entire life — so the only streak this page has ever shown him was a zero
-       he never earned. This week vs last stays: it is a measurement. -->
-  <section class="agent" data-reveal data-rise>
-    <div class="agent-hd"><span class="l">Where you stand</span></div>
-    <div class="agent-week">
-      <div class="week-hd">This week vs last</div>
-      <div class="week-score"><span class="num"><span class="cnt">—</span></span><div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Performance</div><span class="delta">—</span></div></div>
-      <div class="wrow"><span class="wk">Training</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-      <div class="wrow"><span class="wk">Sleep</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-      <div class="wrow"><span class="wk">Nutrition</span><span class="wt"><span class="wf" style="width:0%"></span></span><span>—</span></div>
-    </div>
-  </section>
+  <!-- WHERE YOU STAND / "This week vs last" — the last of the game layer, gone.
+       als-v435 deleted the LVL pill, the XP bar, the Recruit-to-Legend ladder,
+       the 20 milestone badges and the streak chip, and kept this panel on the
+       grounds that it was a measurement rather than a game.
+
+       It was not much of one. Its headline "Performance" score came from
+       xp.js's weekWindow(), and 45% of that score is `goals:` to-do completion,
+       a store he has never used: it reads 0 every week, so the number was
+       structurally capped at 55 and could not reach the top no matter how good
+       the week was. A score you cannot win is a game after all, and a worse one
+       than the ladder, because it looked like an instrument.
+
+       Deleting it retires xp.js entirely: ALS.XP had no other caller
+       (als-v438). Nothing else was reading it, and nothing measured here is
+       lost — training volume lives on gym.html and in the outcome goals on
+       main.html, sleep on sleep.html, nutrition days on nutrition.html, and
+       coach.html already grades a real week against real data. -->
+
 
   <!-- INTELLIGENCE FEED -->
   <!-- The "Intelligence feed" was here. It showed the top 2 insights and the
@@ -623,18 +606,14 @@ body.has-bottombar{ padding-bottom:116px !important; }
   </details>
 </div>
 
-<nav class="nav">
-  <a class="on" href="index.html">Home</a>
-  <a href="body.html">Body</a>
-  <a href="identity.html">Mind</a>
-  <a href="finance.html">Money</a>
-  <a href="nova-chat.html">Nova</a>
-</nav>
+<!-- Home's private <nav class="nav"> stood here: a second bottom nav, stacked
+     under the shared one this page was hiding. Gone (als-v438) — topbar.js's All
+     button is the only bottom control on any page now. -->
 
 <dialog id="peek" class="peekdlg"></dialog>
 <label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
-<script src="home-live.js?v=208" defer></script>
-<script src="home-motion.js?v=203" defer></script>
+<script src="home-live.js?v=209" defer></script>
+<script src="home-motion.js?v=204" defer></script>
 </body>
 </html>

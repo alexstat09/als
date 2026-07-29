@@ -65,9 +65,9 @@ appKey `improve`; `improve:paused` is device-local), `scripture.html` (Bible rea
 (`run.webmanifest`, starts at `/run.html`) so it installs as a standalone icon,
 **but since als-v326 it is a full citizen of the app**: Chrissie has her own
 account, so `topbar.js` now renders the shared top bar on it — and with it the
-same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav, so
-it skips the global bottom bar (same treatment as `gym.html`). The page sizes
-itself to the bar via `--tbh` / `setTbh()`.
+same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
+which is Chrissie's whole navigation, so it is the one page that gets no All
+button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `arxaia.html` (Αρχαία), `istoria.html` (Ιστορία).
 
@@ -105,19 +105,28 @@ icon-lab did — the decision is made.
 
 ## The scripts
 
-**Shell (on every page)** — `topbar.js` injects the top + bottom bar, runs the
-login gate, registers the service worker, and lazy-loads the engines below.
-`launcher.js` is the **"All" sheet** (als-v437): every page as an index, one
-press, from anywhere. It is loaded lazily by `topbar.js` and **owns no state** —
-no storage write, no key, no network — so it can be reverted with nothing to
-migrate. ⚠️ Adding a new live page means adding it to `GROUPS` there;
+**Shell (on every page)** — `topbar.js` injects the top bar and the **All**
+button, runs the login gate, registers the service worker, and lazy-loads the
+engines below. `launcher.js` is the **"All" sheet** (als-v437): every page as an
+index, one press, from anywhere. It is loaded lazily by `topbar.js` and **owns
+no state** — no storage write, no key, no network — so it can be reverted with
+nothing to migrate. ⚠️ Adding a new live page means adding it to `GROUPS` there;
 `tests/launcher.test.js` fails if a root `.html` page is unreachable from it.
-⚠️ The bottom bar is **Home · Mind · All · Money · Nova** — the Body tab was
-replaced (`body.html` is a menu; the launcher is a better one), and `gym.html`
-gets a floating `.alx-fab` instead because it carries no bar of its own.
-⚠️ **`index.html` ALSO has its own hardcoded `<nav class="nav">` (line ~626)**,
-so Home currently renders TWO bottom navs; the private one has no All button.
-That is the next thing to fix.
+
+⚠️ **There is no bottom BAR any more (als-v438).** The five tabs (Home · Mind ·
+All · Money · Nova) are gone and the single floating `.alx-fab` that `gym.html`
+had is now the one control on every page. `topbar.js` styles it, because
+`topbar.js` creates it and `launcher.js` arrives on a later fetch. `run.html`
+is the only page without it. Home's private `<nav class="nav">` and its
+`#bottombar{display:none}` override went at the same time, so Home no longer
+draws a second, stale bottom nav of its own.
+
+⚠️⚠️ **`body { animation: _tbIn … }` must never regain a fill mode.** The
+keyframes animate `transform`; a filled transform animation keeps a transform
+applied and makes `<body>` a containing block, so every `position: fixed` child
+was laid out against the ~5,000px body box instead of the viewport. That is why
+the old bar sat at the foot of the *document* rather than the screen.
+`tests/launcher.test.js` pins it.
 `sync.js` is the Supabase layer. `lock.js` is the gate. `als-dialog.js` is the
 modal helper (native `<dialog>`).
 
@@ -136,8 +145,9 @@ whole home screen showed demo numbers for two weeks (als-v433, CLAUDE.md §5).
 
 **Motion** — `aurora-motion.js`, `page-motion.js`, `aurora-bg.js`.
 
-**Other** — `water.js`, `tdee.js`, `xp.js`, `push.js`, `reminders.js`,
+**Other** — `water.js`, `tdee.js`, `push.js`, `reminders.js`,
 `pocoach-sync.js`, `gcal.js`, `error-toast.js`, `insights.js`.
+(`xp.js` was deleted in als-v438 with the last of the game layer.)
 
 **Styles** — `aurora.css` (35 pages), `aurora-page.css`, `jarvis.css`.
 Home has its own token set inline in `index.html`.
@@ -197,8 +207,10 @@ scanner leaves `window.Html5Qrcode` undefined and the Scan tab dies silently).
 5. **Run `./smoke-test.sh` before pushing.** It parses every JS file and inline
    script and checks that every local link resolves.
 
-## Known inconsistency (not yet resolved)
+## Known inconsistency — RESOLVED als-v438
 
-The **Mind tab points to two different pages**: the bottom nav in `topbar.js`
-sends it to `main.html`, while home's own nav sends it to `identity.html`.
-Both pages are live. Worth picking one.
+The **Mind tab used to point to two different pages**: the bottom nav in
+`topbar.js` sent it to `main.html`, Home's own nav sent it to `identity.html`.
+Both navs are gone. The launcher lists Goals (`main.html`) and Identity
+(`identity.html`) as the separate pages they are, so there is nothing left to
+disagree.

@@ -148,13 +148,13 @@
     return out;
   }
 
+  /* .alx-fab was styled here and is now styled in topbar.js (als-v438).
+     topbar.js CREATES that button and injects its <style> synchronously; this
+     file arrives on a separate deferred fetch. Once the button became the only
+     navigation control in the app, styling it from here meant a flash of an
+     unstyled <button> on every page load. One owner, one definition — two
+     copies of a rule is two rules with a delay. */
   var CSS = `
-.alx-fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:39;
-  width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.14);
-  background:rgba(14,14,16,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  color:#3FE0B0;display:flex;align-items:center;justify-content:center;cursor:pointer;
-  box-shadow:0 8px 26px rgba(0,0,0,.45);transition:transform .22s cubic-bezier(.2,.8,.3,1);}
-.alx-fab:active{transform:scale(.92);}
 dialog.alx{border:none;padding:0;background:transparent;max-width:100vw;max-height:100vh;
   width:100vw;height:100dvh;margin:0;overflow:visible;}
 dialog.alx::backdrop{background:rgba(4,4,6,.62);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}
@@ -209,7 +209,7 @@ dialog.alx[open]{display:flex;align-items:flex-end;justify-content:center;}
   .alx-pins{grid-template-columns:repeat(6,1fr);}
   dialog.alx[open]{align-items:center;}
   .alx-sheet{border-radius:22px;border-bottom:1px solid rgba(255,255,255,.10);max-height:82dvh;}}
-@media (prefers-reduced-motion:reduce){.alx-sheet{animation:none;}.alx-fab{transition:none;}}
+@media (prefers-reduced-motion:reduce){.alx-sheet{animation:none;}}
 `;
 
   var ICONS = {

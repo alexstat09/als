@@ -159,7 +159,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v434`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v438`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -235,6 +235,34 @@ Violating any of these breaks production or loses data.
     caching transcripts of up to 9,000 characters each (als-v434). This is
     constraint 10 with a fuse: **catch it, report it in words, and keep saying
     so for as long as it is true.**
+18. **An ANIMATION can make an ancestor a containing block, and a fill mode
+    makes it permanent.** Constraint 4 says an ancestor `transform` breaks
+    `position: fixed`. The trap is that the ancestor does not need a transform
+    *property* — an animation that touches `transform` is enough while it runs,
+    and `animation-fill-mode: both`/`forwards` keeps it applied **forever**,
+    even when the value it settles on is `none`. `topbar.js` puts a page-entrance
+    animation on **`<body>` itself**, so for as long as that rule ended in
+    `both`, every `position: fixed; bottom: 0` child in the app was laid out
+    against the **body box** rather than the viewport. On Home that box is about
+    5,000px tall: the bottom bar was never pinned to the foot of the screen, it
+    was parked at the foot of the **document**, seven screens down. Alex reported
+    it as *"even if i am at the top its visible at the bottom"* and it had been
+    true for as long as the bar existed (fixed **als-v438**). **Grep for a fill
+    mode on any animation that touches `transform` on `html`, `body`, or a page
+    wrapper**, and when something fixed is in the wrong place, measure its
+    `getBoundingClientRect().top` against `innerHeight` before touching its CSS —
+    the rule usually looks perfect, because the rule usually *is* perfect.
+19. **Never build a regex out of a string in a render harness — and never let
+    the guard share the builder with the thing it guards.** The constraint-8
+    strip that removes sync scripts before a harness renders was built with
+    `new RegExp(name.replace(...))`, the escaping was wrong by one backslash, and
+    the assertion that was supposed to catch a survivor **used the same broken
+    escaping** — so it passed while `supabase.min.js` and `pocoach-sync.js` both
+    loaded and a live 401 pull went out (als-v438). Plain string containment
+    only. And note what no static strip can ever catch: **`topbar.js` CREATES a
+    `<script>` for `pocoach-sync.js` at runtime**, so any harness that keeps
+    `topbar.js` runs a sync engine unless the harness also blocks dynamically
+    inserted scripts. The working harness is described in §5.
 
 ---
 
@@ -338,51 +366,119 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v437` — NAVIGATION: THE LAUNCHER, and the game layer is gone**
-(2026-07-29, on `main`, 21 suites + smoke green). Three ships in one session,
-`569d012` → `7076b52` → `3e1e4a5`. **Read the "NEXT SESSION" block below first
-if you are picking this up cold — he has already decided what comes next.**
-
-### ⭐⭐ NEXT SESSION — what Alex has already asked for
-He wants the bottom bar reduced to **ONLY the "All" button**. In his words:
+**HEAD is `als-v438` — ONE CONTROL: the bar is gone, and so is the reason
+nothing ever stayed pinned to the bottom** (2026-07-29, on `main`, 19 suites +
+smoke green; `tests/launcher.test.js` = 72 assertions, up from 56). Alex's brief:
 *"code it so its only the 'all' button there and even if i am at the top its
 visible at the bottom without interfering with anything nice and smoothly, as
 well as at the home page which rn doesnt have anything."*
 
-Three things that means, and one trap:
+### ⭐⭐ The finding: his second clause was a real bug, not a preference
+The handoff for this work guessed that "not visible at the top" was a padding or
+scroll-container problem and said to find out what before redesigning. It was
+neither, and it was **worse than a navigation complaint**:
 
-1. **Drop the other four tabs** (Home · Mind · Money · Nova) so the bar is the
-   single All control. Every one of those four is reachable from inside the
-   launcher already, so nothing is lost — but check `currentPageKey()` and the
-   `lit` logic in `topbar.js`, which exist only to highlight tabs that would no
-   longer be there.
-2. **It must stay visible at the top of a page**, i.e. pinned regardless of
-   scroll, and must not fight the content. The bar is already
-   `position: fixed; bottom: 0`, so "not visible at the top" is a symptom of
-   something else — find out what before redesigning. Suspect `body.has-bottombar`
-   padding, a page with its own scroll container, or the Home case below.
-3. ⚠️ **HOME IS THE TRAP AND IT IS A PRE-EXISTING BUG.** `index.html` carries
-   **its own hardcoded bottom nav** — `<nav class="nav">` at `index.html:626`,
-   `position:fixed; bottom:18px; z-index:5` — with Home/Body/Mind/Money/Nova and
-   **no All button**, *while topbar.js also injects the shared `.bottombar`
-   (z-index 40) on the same page.* **Home has TWO bottom navs stacked.** That is
-   why he says Home "doesn't have anything": he is looking at the pill nav, which
-   this session never touched. Fixing Home means deciding which of the two
-   survives — almost certainly delete Home's private `.nav` and let the shared
-   bar be the only one. Note its Mind link points at `identity.html` while
-   topbar's points at `main.html`: this is the long-standing two-destination
-   inconsistency, made physical.
+`topbar.js` puts a page-entrance animation on **`<body>` itself**, and that rule
+ended in `animation-fill-mode: both`. The keyframes animate `transform`, a
+filled transform animation keeps a transform applied even when it settles on
+`none`, and an element with a transform is a **containing block for fixed
+descendants**. So `position: fixed; bottom: 0` was resolving against the body
+box — about **5,000px** on Home. **The bottom bar was never pinned to the foot
+of the screen. It was parked at the foot of the DOCUMENT**, and had been for as
+long as the bar existed. Measured on an 820px viewport: the control sat at
+`top: 1301` before, `top: 762` after (`820 − 16 − 42`, exactly right).
 
-Also his, explicitly flagged: **"we didnt delete the last week vs this week xp
-usage thingy"** — correct, `als-v435` deliberately kept it and left the call to
-him. He has now made it. See the block below for what to delete and, more
-importantly, ⚠️ **why that panel was lying anyway: 45% of its Performance score
-is weighted on `goals:` to-do completion, which is 0, so the score is
-structurally capped at 55 no matter how good the week is.** Deleting it also
-finishes `xp.js` — nothing else calls `ALS.XP`, so the file and its SW `CORE`
-entry go with it.
+The fix is deleting one word. The permanent rule is **constraint 18**; it is
+constraint 4 with the ancestor being `<body>` and the transform being invisible.
 
-### What shipped, in order
+### What shipped
+- **The five-tab `.bottombar` is deleted**, markup and CSS. A full-width bar
+  holding one control is still a bar: it reserves a strip across the foot of
+  every page whatever is in it, which is the "interfering" he described. What
+  survives is the floating `.alx-fab` **gym.html already had** — now on every
+  page, which collapses what were TWO navigation paths into one (constraint 15
+  applied to a control rather than a guarantee). It is a pill, not the bare
+  circle gym had: it is the only navigation control left, so it says ALL.
+- ⚠️ **`topbar.js` styles it, not `launcher.js`.** `topbar.js` creates the
+  button and injects its `<style>` synchronously; `launcher.js` arrives on a
+  separate deferred fetch. Once this was the only nav in the app, styling it
+  from a file that has not landed meant a flash of an unstyled `<button>` on
+  every page load. **The file that creates the element owns its CSS**, and the
+  rule now lives in exactly one place.
+- **Home's two bottom navs are down to zero.** `index.html` was hiding the
+  shared bar with `#bottombar{display:none}` and drawing a private
+  `<nav class="nav">` of its own — Home/Body/Mind/Money/Nova, no All button, and
+  a Mind link pointing at `identity.html` while the shared bar's pointed at
+  `main.html`. **That override is why he said Home "doesn't have anything"**: it
+  was hiding the one control that had an All button. Both are gone, so Home can
+  no longer drift from every other page, and MAP.md's long-standing
+  "Mind points at two different pages" inconsistency is resolved by deletion.
+- `currentPageKey()` went with the tabs it lit. Its `BODY`/`MIND`/`MONEY` lists
+  were a second, drifting copy of the launcher's own grouping; the one question
+  the shell still asks is `isHubPage()`, for the Back button.
+- **`run.html` is the only page with no All button** — Chrissie's app, her own
+  5-tab nav. `gym.html` gets the button but not the body padding, exactly as
+  before.
+- **"This week vs last" is deleted, and `xp.js` with it** — see below.
+- Verified: button pinned to the viewport and the launcher opening on
+  `index.html`, `nutrition.html`, `gym.html`, `sleep.html` at 393px and 1100px,
+  and absent on `run.html`. ⚠️ **nutrition.html failed the first probe and was
+  a false alarm** — it is heavy enough that at 900ms the entrance animation was
+  still running. Give a probe real time before believing it.
+
+### The last of the game layer (his second ask)
+*"we didnt delete the last week vs this week xp usage thingy."* Correct —
+`als-v435` kept it on the grounds that it was a measurement rather than a game.
+It was not much of one: its headline **Performance** score comes from `xp.js`'s
+`weekWindow()`, and **45% of that score is `goals:` to-do completion, a store he
+has never used.** It reads 0 every week, so the number was **structurally capped
+at 55** and could not reach the top however good the week was. A score you
+cannot win is a game after all, and a worse one than the ladder, because it
+looked like an instrument. Gone: the section, its CSS, `paintAgent()`,
+`latestRecovery()` (its only caller), `xp.js` itself and its SW `CORE` entry.
+Nothing measured there is lost — training lives on `gym.html` and in the outcome
+goals on `main.html`, sleep on `sleep.html`, nutrition days on `nutrition.html`,
+and `coach.html` already grades a real week against real data.
+Found in passing and fixed: SW `CORE` precached `home-live.js?v=206` /
+`home-motion.js?v=202` while the page requested `208`/`203`, so both precache
+entries were dead weight. Realigned at `209`/`204`.
+
+### ⚠️ Two mistakes made while building this, both worth keeping
+- **I reintroduced the backtick-in-the-`css`-template-literal bug** that
+  als-v437 already paid for, inside a comment explaining a different trap. It
+  terminated the whole stylesheet, so `topbar.js` injected nothing and the
+  button vanished from a render — which for ten minutes looked like the fix
+  having failed. `smoke-test.sh` catches it; run it before believing a render.
+- ⚠️⚠️ **A render harness ran a sync engine against live Supabase.** The
+  constraint-8 strip built its ban regexes from strings, the escaping was wrong
+  by one backslash, and **the assertion meant to catch a survivor used the same
+  broken builder**, so it passed while `supabase.min.js` and `pocoach-sync.js`
+  both loaded and a 401 pull went out. No write occurred (the pull failed auth
+  and reads never write), but the guard was decorative. Permanent rule:
+  **constraint 19.**
+
+### ✅ The render harness that actually works (reusable)
+Plain string containment, never a regex built from a name — plus the part no
+static strip can catch, because **`topbar.js` creates a `<script>` for
+`pocoach-sync.js` at runtime**: override `document.createElement` in the harness
+so any script whose `src` matches `/sync|supabase/i` is dropped, and log each
+block. On this run it caught **three** (`als-sync-status.js`, `sync.js`,
+`pocoach-sync.js`) that the strip could never have seen. Keep the harness in the
+scratchpad and point at the repo with `<base href="file://…/als/">` plus
+`--allow-file-access-from-files`, so the repo is never written to at all.
+⚠️ The headless shell screenshots the **full page**, which expands the viewport
+and puts a `position: fixed` element somewhere useless. **Measure with a probe
+script** (`getBoundingClientRect().top` vs `innerHeight`) rather than trusting a
+screenshot, and shorten the page if you want to *see* it in place.
+
+### Open
+- 🔴 **Unproven on his phone.** Driven headless only.
+- The `.alx-fab` sits at `right: 14px`, z-index 39 — under gym's sheets (61) and
+  modals (71). If a page turns out to have its own bottom-right control, that is
+  the collision to look for.
+- Everything below this line is the previous session, kept for the lessons.
+
+### als-v435 → als-v437, in order
 
 **`als-v435` — the game layer is gone** (`569d012`). Alex: *"i dont like the
 game system with the xp, i think that should be deleted, as well it takes space

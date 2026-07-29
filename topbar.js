@@ -348,57 +348,59 @@
 }
 .topbar-back svg { width: 15px; height: 15px; display: block; }
 .topbar-back:active { background: rgba(255,255,255,0.08); color: #F5F2EC; border-color: rgba(255,255,255,0.14); }
-.bottombar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
-  display: flex; justify-content: space-around; align-items: stretch;
-  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
-  background: rgba(5,5,6,0.94);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-}
-.bottombar-tab {
-  flex: 1; position: relative;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; padding: 6px 0 4px; text-decoration: none;
-  color: rgba(255, 255, 255, 0.32);
-  font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+/* ── THE ALL BUTTON (als-v438) ─────────────────────────────────────
+   The five-tab .bottombar lived here. Alex: "code it so its only the 'all'
+   button there and even if i am at the top its visible at the bottom without
+   interfering with anything nice and smoothly."
+
+   A full-width bar holding ONE control is still a bar: it reserves a 72px strip
+   across the foot of every page whatever is in it, which is the "interfering"
+   he is describing. So the bar is gone and the control that survives it is the
+   floating button gym.html already had — now on every page, which also collapses
+   what used to be TWO navigation paths (a bar for 30 pages, a button for gym)
+   into one. A rule enforced on one path and not its twin is not a rule
+   (constraint 15); the same is true of a control.
+
+   ⚠️ These styles live in topbar.js, NOT launcher.js, on purpose. topbar.js
+   injects the button synchronously; launcher.js arrives on a separate deferred
+   fetch. Styling the only navigation control in the app from a file that has
+   not landed yet means a flash of an unstyled <button> on every page load.
+   The file that CREATES the element owns its CSS.
+
+   ⚠️ It sets font-family/size/weight explicitly. A <button> does NOT inherit
+   the document font, and the sibling-matching trap from als-v437 does not apply
+   here — this button has no siblings left to match. */
+.alx-fab {
+  position: fixed; right: 14px; z-index: 39;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 0; padding: 11px 16px 11px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.13);
+  background: rgba(9,9,11,0.80);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  color: rgba(245,242,236,0.9);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  -webkit-tap-highlight-color: transparent; transition: color 0.2s;
-}
-.bottombar-tab-icon {
-  line-height: 1; display: flex; align-items: center; justify-content: center;
-  opacity: 0.45;
-  transition: opacity 0.2s, transform 0.12s;
-}
-.bottombar-tab-icon svg { width: 21px; height: 21px; display: block; }
-/* "All" is a <button>, not a link — it opens the launcher rather than
-   navigating. These lines undo the UA button styling so it sits pixel-wise
-   identical to its four <a> siblings. */
-/* ⚠️ Deliberately sets NO font property. "font: inherit" here looked correct
-   and was not: the shorthand resets font-family, button.bottombar-tab (0,1,1)
-   outranks .bottombar-tab (0,1,0), and the label inherited the bar's SANS
-   stack — so "ALL" rendered in a different typeface from its four mono
-   siblings. Author styles already beat the UA button defaults, so the class
-   owns typography for both the <a>s and the <button>. Found by rendering the
-   bar and looking at it; no assertion could have seen it.
-   (This comment lives inside a template literal — no backticks in here.) */
-button.bottombar-tab {
-  background: none; border: none; margin: 0;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   cursor: pointer; -webkit-appearance: none; appearance: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05) inset;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.22s cubic-bezier(0.2,0.8,0.3,1), background 0.2s, border-color 0.2s;
+  animation: _alxFabIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.24s both;
 }
-.bottombar-tab.active { color: rgba(245,242,236,0.92); }
-.bottombar-tab.active .bottombar-tab-icon { opacity: 1; color: #3FE0B0; }
-.bottombar-tab.active::before {
-  content: ''; position: absolute; top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 22px; height: 2px; border-radius: 0 0 3px 3px;
-  background: rgba(63,224,176,0.75);
+.alx-fab svg { width: 18px; height: 18px; display: block; color: #3FE0B0; }
+.alx-fab:hover { background: rgba(17,17,20,0.9); border-color: rgba(255,255,255,0.2); }
+.alx-fab:active { transform: scale(0.94); }
+@keyframes _alxFabIn { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .alx-fab { animation: none; transition: none; }
 }
-.bottombar-tab:active .bottombar-tab-icon { transform: scale(0.90); }
-body.has-bottombar {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+/* The bar's 72px reservation, kept as a smaller one so the last row of a page
+   can never sit under the button. gym.html never carried the bar's padding and
+   still does not — its own layout already ends clear of the corner. */
+body.has-alxfab {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
 }
 @media (max-width: 480px) {
   .topbar { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); gap: 6px; }
@@ -407,8 +409,6 @@ body.has-bottombar {
   .topbar-water-add { width: 38px; }
   .topbar-back { padding: 7px 11px 7px 9px; }
   .topbar-finance-btn { width: 38px; height: 38px; }
-  .bottombar-tab-icon { font-size: 22px; }
-  .bottombar-tab { font-size: 10px; }
 }
 html, body { -webkit-text-size-adjust: 100%; }
 @media (max-width: 768px) {
@@ -421,7 +421,33 @@ html, body { -webkit-text-size-adjust: 100%; }
 }
 body.topbar-modal-open { overflow: hidden; }
 /* ── PAGE TRANSITIONS ─────────────────────────────────── */
-body { animation: _tbIn 0.38s cubic-bezier(0.16,1,0.3,1) both; }
+/* ⚠️⚠️ THE FILL MODE ON THIS LINE IS LOAD-BEARING. It used to end in "both",
+   and that one word is why nothing pinned to the bottom of this app ever
+   stayed on screen.
+
+   Constraint 4 says an ancestor transform breaks position:fixed. Here the
+   ancestor is <body> ITSELF: these keyframes animate transform, and an
+   animation held by animation-fill-mode "both" keeps a transform APPLIED
+   forever, even though the value it settles on is none. A filled transform
+   animation still makes the element a containing block, so every fixed child
+   with bottom:0 was laid out against the BODY BOX rather than the viewport,
+   and Home's body box is about 5,000px tall. The bottom bar was never pinned
+   to the foot of the SCREEN; it was parked at the foot of the DOCUMENT, seven
+   screens down. That is exactly what Alex reported as "even if i am at the top
+   its visible at the bottom", and it had been true of the bar for as long as
+   the bar existed.
+
+   Dropping the fill is safe and sufficient: the delay is 0, so no backwards
+   fill is needed, and the keyframes settle on opacity:1 / transform:none,
+   which is the element's normal state anyway. The forwards fill was buying
+   nothing and costing this. Measured before and after on a 4,917px Home.
+   body.tb-out keeps "forwards" on purpose: it is a page-exit fade, it is meant
+   to persist, and the navigation tears it down.
+
+   ⚠️ No backticks in this comment. It lives inside a template literal, and a
+   stray one terminates the whole stylesheet — smoke-test.sh catches it, but
+   only after it has already wasted a render. */
+body { animation: _tbIn 0.38s cubic-bezier(0.16,1,0.3,1); }
 @keyframes _tbIn  { from { opacity:0; transform:translateY(11px) scale(.993); } to { opacity:1; transform:none; } }
 @keyframes _tbOut { from { opacity:1; transform:scale(1); } to { opacity:0; transform:scale(1.018); } }
 body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important; pointer-events:none; }
@@ -480,52 +506,46 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 </header>`;
 
   const tbIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  const bottombarHtml = `
-<nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
-  <a href="index.html"     class="bottombar-tab" data-page="home">
-    <span class="bottombar-tab-icon">${tbIco('<path d="M4 11.5 12 4l8 7.5M6 10v9.5h12V10"/>')}</span><span>Home</span>
-  </a>
-  <a href="main.html"      class="bottombar-tab" data-page="mind">
-    <span class="bottombar-tab-icon">${tbIco('<path d="M9.5 4.5A3.5 3.5 0 0 0 6 8a3.3 3.3 0 0 0-2 3.2 3.4 3.4 0 0 0 1.6 3A3.5 3.5 0 0 0 9 19.5c1.4 0 2.6-.8 3-2V6.7a3.4 3.4 0 0 0-2.5-2.2zM14.5 4.5A3.5 3.5 0 0 1 18 8a3.3 3.3 0 0 1 2 3.2 3.4 3.4 0 0 1-1.6 3A3.5 3.5 0 0 1 15 19.5c-1.4 0-2.6-.8-3-2"/>')}</span><span>Mind</span>
-  </a>
-  <button type="button"    class="bottombar-tab" data-page="all" id="tbAll" aria-label="All pages">
-    <span class="bottombar-tab-icon">${tbIco('<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>')}</span><span>All</span>
-  </button>
-  <a href="finance.html"   class="bottombar-tab" data-page="money">
-    <span class="bottombar-tab-icon">${tbIco('<path d="M12 3v18M17 6.5H9.6a3.1 3.1 0 0 0 0 6.2h4.8a3.1 3.1 0 0 1 0 6.2H6.5"/>')}</span><span>Money</span>
-  </a>
-  <a href="nova-chat.html" class="bottombar-tab" data-page="nova">
-    <span class="bottombar-tab-icon">${tbIco('<path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 9 9 0 0 1-3.2-.6L4 20.5l1.3-4.1a8 8 0 0 1-1.3-4.8A8.4 8.4 0 0 1 12.5 3.3 8.4 8.4 0 0 1 21 11.6z"/>')}</span><span>Nova</span>
-  </a>
-</nav>`;
+  // The nine dots. Same glyph the "All" tab wore in the bar, so nothing he has
+  // already learned to look for changed shape.
+  const ALL_GLYPH = '<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>';
+  // ⚠️ Built as an element, never as an HTML string appended to the page — the
+  // "All" control is a <button>, and the shell's link interceptor walks anchors.
+  function makeAllButton() {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'alx-fab';
+    b.id = 'tbAll';
+    b.setAttribute('aria-label', 'All pages');
+    b.innerHTML = tbIco(ALL_GLYPH) + '<span>All</span>';
+    b.addEventListener('click', () => {
+      try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
+    });
+    return b;
+  }
 
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
   // run.html now lives inside the full app (Chrissie has her own account), so it
   // gets the shared top bar — and with it the identical Back button — just like
-  // every other page. It keeps its own 5-tab .rn-tabs nav, so it skips the global
-  // bottom bar (same treatment as gym.html) to avoid a doubled-up bottom nav.
+  // every other page. It keeps its own 5-tab .rn-tabs nav, which is Chrissie's
+  // whole navigation, so the All button stays off it — the launcher indexes an
+  // app that is not hers.
   function isRunSolo() {
     return (window.location.pathname || '').toLowerCase().endsWith('run.html');
   }
   function shouldShowChrome() { return !isEmbedded(); }
-  // Maps the current page to one of the five bottom-nav "spaces" so the right
-  // tab highlights. Pages outside the bar (Life/Reflect) return '' (no tab lit).
-  function currentPageKey() {
+  // currentPageKey() lived here: it mapped the current page onto one of the five
+  // bottom-nav "spaces" so the right tab would highlight. With one control there
+  // is nothing left to highlight, and the BODY/MIND/MONEY lists it carried were
+  // a second, drifting copy of the launcher's own grouping. The one question the
+  // shell still asks is whether this page is the hub, which decides the Back
+  // button — so that is all this answers now.
+  function isHubPage() {
     const p = (window.location.pathname || '').toLowerCase();
     const f = p.split('/').pop() || '';
-    if (f === '' || f === 'index.html' || p === '/' || p.endsWith('/')) return 'home';
-    if (f === 'nova-chat.html') return 'nova';
-    const BODY = ['body.html','gym.html','pr.html','sleep.html','weight.html','po-water.html','caffeine.html','nutrition.html','measure.html','health.html','supps.html','planner.html','import.html','import-strong.html'];
-    // arc.html used to belong to NO group, so opening the Arc lit up no tab at
-    // all — the app didn't know where its own best page lived.
-    const MIND = ['main.html','identity.html','ideas.html','improve.html','arc.html','insights.html'];
-    const MONEY = ['finance.html','bills.html'];
-    if (BODY.indexOf(f) > -1)  return 'body';
-    if (MIND.indexOf(f) > -1)  return 'mind';
-    if (MONEY.indexOf(f) > -1) return 'money';
-    return '';
+    return f === '' || f === 'index.html' || p === '/' || p.endsWith('/');
   }
 
   function isGymPage() {
@@ -534,7 +554,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   }
 
   function injectStyleAndHTML() {
-    if (document.getElementById('topbar') || document.getElementById('bottombar')) return;
+    if (document.getElementById('topbar') || document.getElementById('tbAll')) return;
     if (!shouldShowChrome()) return;
     const style = document.createElement('style');
     style.id = 'topbar-style';
@@ -543,42 +563,17 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     const topWrap = document.createElement('div');
     topWrap.innerHTML = topbarHtml.trim();
     document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
-    if (!isGymPage() && !isRunSolo()) {
-      const bottomWrap = document.createElement('div');
-      bottomWrap.innerHTML = bottombarHtml.trim();
-      document.body.appendChild(bottomWrap.firstChild);
-      // The Body tab was replaced by "All" (body.html was a menu of 7 links;
-      // the launcher is a better menu of all 31, from every page). So the many
-      // pages currentPageKey() still maps to 'body' would light nothing at all.
-      // "All" takes that duty: it lights whenever the page you are on has no
-      // tab of its own, which is honest — you are somewhere in the wider app.
-      const active = currentPageKey();
-      const lit = ['home', 'mind', 'money', 'nova'].indexOf(active) > -1 ? active : 'all';
-      document.querySelectorAll('.bottombar-tab').forEach((t) => {
-        t.classList.toggle('active', t.getAttribute('data-page') === lit);
-      });
-      const allBtn = document.getElementById('tbAll');
-      if (allBtn) allBtn.addEventListener('click', () => {
-        try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
-      });
-      document.body.classList.add('has-bottombar');
-    } else if (isGymPage()) {
-      // gym.html carries no bottom bar of its own — it opted out entirely. It
-      // is also one of the three pages he actually lives in, so without this
-      // the launcher would be missing exactly where he is most. A single
-      // floating button instead of a bar he deliberately does not have.
-      // z-index 39 keeps it UNDER gym's own sheets (61) and modals (71), so a
-      // logging sheet can never be fought for the same pixels.
-      const fab = document.createElement('button');
-      fab.type = 'button'; fab.className = 'alx-fab'; fab.id = 'tbAllFab';
-      fab.setAttribute('aria-label', 'All pages');
-      fab.innerHTML = tbIco('<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>');
-      fab.querySelector('svg').style.width = '20px';
-      fab.querySelector('svg').style.height = '20px';
-      fab.addEventListener('click', () => {
-        try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
-      });
-      document.body.appendChild(fab);
+    // ── ONE control, one code path, every page.
+    // z-index 39 keeps it UNDER gym's own sheets (61) and modals (71), so a
+    // logging sheet can never be fought for the same pixels.
+    // run.html is left alone deliberately: it is Chrissie's app and carries its
+    // own 5-tab nav.
+    if (!isRunSolo()) {
+      document.body.appendChild(makeAllButton());
+      // gym.html never carried the bar's bottom padding and does not need the
+      // button's — it ends clear of the corner on its own. Everywhere else
+      // inherits the reservation the bar used to make, 8px smaller.
+      if (!isGymPage()) document.body.classList.add('has-alxfab');
     }
     // ── Account button: their initials, and the only way to sign out.
     // (Signing out is also the ONLY safe way to hand this device to another
@@ -653,8 +648,7 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     // Show back button on every page except the hub
     const backBtn = document.getElementById('topbarBack');
     if (backBtn) {
-      const isHub = currentPageKey() === 'home';
-      if (!isHub) {
+      if (!isHubPage()) {
         backBtn.style.display = 'inline-flex';
         backBtn.addEventListener('click', () => {
           const prev = sessionStorage.getItem('_tbPrev');

@@ -93,8 +93,9 @@
     });
   }
 
-  /* subtle haptic on press */
-  document.querySelectorAll('.tile, .lbtn, .vault, .nav a').forEach(function (el) {
+  /* subtle haptic on press. `.nav a` was in this list until als-v438 — Home's
+     private bottom nav, deleted with the rest of the doubled-up chrome. */
+  document.querySelectorAll('.tile, .lbtn, .vault').forEach(function (el) {
     el.addEventListener('pointerdown', function () { haptic(6); }, { passive: true });
   });
 

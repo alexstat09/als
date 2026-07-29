@@ -307,34 +307,15 @@
      per load. Its only unique line was a count of recurring bills, which said
      the same sentence every day. Deleted, not moved: nothing was lost. */
 
-  /* ── Standing — this week vs last ──
-     No level, no XP, no rank title, and since als-v435 no milestone badges and
-     no streak chip either. Everything below is a count of something he actually
-     did. The chip used to print `goal_streak_v1` straight onto the page; that
-     store has been {count: 0} for its whole life, so the one streak Home ever
-     showed him was a zero. A missing measurement renders nothing here — it does
-     not render a nought. */
-  function paintAgent() {
-    try {
-      if (!(window.ALS && window.ALS.XP)) return;
-      var st = window.ALS.XP.compute(); if (!st) return;
-      var tw = st.thisWeek, lw = st.lastWeek;
-      /* week vs last */
-      var wnum = document.querySelector('.agent .week-score .num .cnt') || document.querySelector('.agent .week-score .num');
-      if (wnum && tw) { wnum.setAttribute('data-to', Math.round(tw.score)); wnum.textContent = '0'; }
-      var delta = document.querySelector('.agent .week-score .delta');
-      if (delta && tw && lw) { var d = Math.round(tw.score - lw.score); delta.textContent = (d >= 0 ? '+' + d : d) + ' vs last week'; delta.style.color = d >= 0 ? 'var(--emerald)' : 'var(--coral)'; }
-      /* rows */
-      var rows = document.querySelectorAll('.agent .wrow');
-      if (rows[0] && tw) { var wo = tw.workouts || 0; rows[0].querySelector('.wf').style.width = Math.min(100, wo / 5 * 100) + '%'; rows[0].querySelector('span:last-child').textContent = wo + '/5'; }
-      if (rows[1]) { var rec = latestRecovery(); rows[1].querySelector('.wf').style.width = (rec != null ? rec : 0) + '%'; rows[1].querySelector('span:last-child').textContent = rec != null ? rec : '—'; }
-      if (rows[2] && tw) { var nd = tw.nutDays || 0; rows[2].querySelector('.wf').style.width = Math.min(100, nd / 7 * 100) + '%'; rows[2].querySelector('span:last-child').textContent = nd + (nd === 1 ? ' day' : ' days'); }
-    } catch (e) { }
-  }
-  function latestRecovery() { try { var l = ls('sleep:logs', []); l = (Array.isArray(l) ? l : []).filter(function (e) { return e && e.recovery != null; }).sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; }); return l.length ? Math.round(l[l.length - 1].recovery) : null; } catch (e) { return null; } }
-  /* prCount() / sleepNights() / daysTracked() lived here. They existed only to
-     light the four milestone badges and had no other caller, so they left with
-     them (als-v435). latestRecovery() stays — it feeds the Sleep row above. */
+  /* ── Standing — "this week vs last" ──
+     paintAgent() lived here and is gone with the section it painted (als-v438),
+     the last of the game layer. Its headline came from ALS.XP.compute(), and
+     45% of that score is `goals:` to-do completion — a store he has never used,
+     so the number could not exceed 55 in any week however good. An instrument
+     that cannot read past halfway is not an instrument.
+     latestRecovery() left with it: paintAgent() was its only caller.
+     prCount() / sleepNights() / daysTracked() had already gone the same way in
+     als-v435, with the milestone badges that were their only callers. */
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -395,7 +376,6 @@
     paintReadiness(animate);
     paintInsights();
     paintForecasts();
-    paintAgent();
     paintWater();
   }
   paintAll(true);
@@ -518,7 +498,7 @@
   document.addEventListener('als:profile', paintGreeting);
 
   /* ── keep it live: repaint (no re-animate) on data changes ── */
-  var repaint = function () { paintGreeting(); paintArcBand(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintAgent(); paintWater(); paintVault(); };
+  var repaint = function () { paintGreeting(); paintArcBand(); paintAllTiles(false); paintReadiness(false); paintInsights(); paintForecasts(); paintWater(); paintVault(); };
   window.addEventListener('storage', repaint);
   window.addEventListener('focus', repaint);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) repaint(); });
