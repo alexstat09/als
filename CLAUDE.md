@@ -366,7 +366,94 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v438` — ONE CONTROL: the bar is gone, and so is the reason
+**HEAD is `als-v439` — A MEAL IS ONE THING, NOT THREE ROWS** (2026-07-29, on
+`main`, 22 suites + smoke green; `tests/nut-meals.test.js` = 48 assertions).
+His brief: *"whenever i put a meal, like in a lunch and for example it contains
+of 3 ingredients like tuna pasta and tomato paste… i wanna make that a meal,
+make it possible."*
+
+### The capability already existed — it was just nowhere near the thought
+`nut:meals`, a full builder, and *"Save this Lunch as a meal"* have all been in
+this page for versions (he has **25 seeded meals**, including one with tomato
+paste in it). What did not exist was any way to reach it from where the food
+actually is: he had to tap `+`, cross to the **7th of 8 tabs**, and find it
+there. This is the launcher lesson again — **position beats organisation.**
+
+- **The offer lives in the diary now.** Any slot holding ≥2 foods shows
+  `+ Save these 3 as one meal`, and it disappears once the slot already *is*
+  one meal. The default name is the two biggest things on the plate
+  (Tuna + pasta + tomato paste → *"Pasta & Tuna"*); the prompt lists every
+  ingredient and its kcal so he sees what he is naming.
+- ⭐ **And a logged meal now READS as one meal** — one row, its name, total
+  kcal, `3 ingredients · 265g`, that opens to the ingredients (each still
+  individually editable, movable and deletable) and can be removed as a unit.
+  Foods logged together carry `grp` / `grpName` / `grpOf`; **a fresh `grp` per
+  LOGGING**, so the same meal twice in a day is two meals, not one six-item
+  blur. Everything is additive — an entry with no `grp` renders exactly as it
+  always has, so no log he has ever made needed migrating.
+
+### ⭐⭐ The trap: making the group converge on sync can EAT a real portion
+Two coupled facts, and the second only exists because of the first:
+
+1. `sync.js`'s `mergeArray` settles a same-id conflict on the **newer `ts`** and
+   gives a **tie to local**. Stamping a group without moving `ts` would let a
+   second device keep its own ungrouped copy forever and push it back — the
+   group would silently never propagate. So a stamp **must** rewrite `ts`.
+2. Which means every stamped entry lands on the **same instant** — and
+   `pruneDupes` judged "accidental double-add" on a 15-minute `ts` window plus
+   an exact name/grams/macros match. Two genuinely separate identical portions
+   (an egg at 08:00, another at 12:00) stamped into one meal would match on
+   every field and **one would be silently deleted.**
+
+Fix: **`ts0` carries when the food was actually LOGGED**, and `pruneDupes`
+judges its window on `ts0 || ts`, never on a `ts` that something rewrote. The
+fallback means every older entry behaves exactly as before.
+⚠️ **This bug was already live in `moveEntries`** — it rewrites `ts` too, so
+"move all of Lunch to Dinner" could already eat a duplicate portion. `moveEntries`
+now carries `ts0` as well. **Anything that rewrites `ts` on an existing entry
+must preserve `ts0` first.**
+
+### Three other silent losses closed while in here
+- **Editing one ingredient dropped it out of its meal.** An edit re-creates the
+  row with a fresh id (`delEntry` + `addEntry`), so anything the row carried
+  beyond its macros was lost. `commitDiaryAdd` now carries `grp`/`ts0` across.
+- **`copyMealDay` REMAPS group ids** rather than copying them — a copy is a new
+  logging, so copying the same day twice must give two meals in the diary, not
+  one that silently doubles in size.
+- **A half-built meal no longer dies on a stray tap.** `closeSheet()` nulls
+  `editMeal`, so four ingredients used to vanish with nothing said. The draft
+  persists to `nut:mealDraft` (**device-local, never synced** — it is a
+  scratchpad mid-edit, not data) and the Meals tab *offers* to continue it.
+  ⚠️ Written only from the sites that MUTATE the meal — never from a render,
+  which is exactly how the streak got destroyed (als-v436). A test asserts
+  `renderMealEditor` / `renderTab` / `groupSlot` contain no write.
+
+### Verified by driving it, not only by asserting
+48 assertions, then the real page in headless Chrome: the offer appears on a
+3-food Lunch and **not** on a 1-food Breakfast, clicking it writes the saved
+meal and collapses the diary to one 506 kcal row (197+297+12 — the day total is
+untouched, grouping is presentation and not maths), the chevron actually
+rotates (`matrix(0,1,-1,0,0,0)`), expand/collapse works, each ingredient keeps
+its own ✕, the offer is gone afterwards, and deleting the group removes exactly
+its three rows while Breakfast survives.
+⚠️ **Found by LOOKING and invisible to all 48:** the chevron at
+`rgba(--nu,.75)` / 11px was effectively invisible against the row tint. It is
+`rgb(var(--nu))` / 14px now.
+⚠️ **My own harness guard was wrong first** — a plain-string ban on `sync.js`
+tripped on the words *"sync.js's mergeArray"* in a **code comment**. Constraint
+19 says plain strings, but the needle has to be the `src=` **context**
+(`src="sync.js`), or the guard cries wolf and gets loosened. `SYNC-NEUTERED`
+confirmed no engine ran; nothing touched live Supabase.
+
+🔴 **Unproven on his phone.** Driven headless only. He needs a full PWA reopen
+for `als-v439`. Open questions that are his, not mine: should a logged meal open
+**collapsed** by default (it currently opens expanded only for the one he just
+saved), and does he want the same one-row treatment applied retroactively to the
+meals he logs from the Meals tab (it already is) — or per-day totals per meal?
+
+---
+
+**Before that — `als-v438` — ONE CONTROL: the bar is gone, and so is the reason
 nothing ever stayed pinned to the bottom** (2026-07-29, `461c1d6` on `main`,
 pushed; 19 suites + smoke green; `tests/launcher.test.js` = 72 assertions, up
 from 56). Alex's brief:

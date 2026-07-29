@@ -203,6 +203,19 @@
     .usual-edit{flex:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(244,241,234,.6);width:42px;border-radius:12px;font-size:15px;cursor:pointer;}
     .usual-set-link{display:block;width:calc(100% - 28px);margin:2px 14px 12px;text-align:left;background:none;border:1px dashed rgba(255,255,255,.16);color:rgba(244,241,234,.5);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:12.5px;cursor:pointer;}
     .usual-set-link:active{background:rgba(255,255,255,.03);}
+    /* "these three are one meal" — offered where the food is, in the diary */
+    .meal-make{display:block;width:calc(100% - 28px);margin:2px 14px 6px;text-align:left;background:none;border:1px dashed rgba(var(--nu),.3);color:rgba(var(--nu),.85);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:12.5px;cursor:pointer;}
+    .meal-make:active{background:rgba(var(--nu),.08);}
+
+    /* A logged meal reads as ONE line that opens, not as N loose foods. */
+    .grp-hdr{background:rgba(var(--nu),.05);}
+    .grp-hdr .entry-name{color:#F4F1EA;}
+    .grp-hdr .entry-sub{color:rgba(var(--nu),.7);}
+    .grp-chev{flex:none;width:13px;margin-left:-3px;color:rgb(var(--nu));font-size:14px;line-height:1;text-align:center;transition:transform .18s ease;transform-origin:50% 50%;}
+    .grp-hdr.open .grp-chev{transform:rotate(90deg);}
+    .grp-items{background:rgba(0,0,0,.16);box-shadow:inset 2px 0 0 rgba(var(--nu),.35);}
+    .grp-items .entry{padding-left:26px;border-top-color:rgba(255,255,255,.04);}
+    .grp-items .entry-name{font-weight:500;color:rgba(244,241,234,.88);}
 
     .pp-name{font-size:16px;font-weight:700;color:#F4F1EA;margin-bottom:3px;}
     .pp-sub{font-family:var(--au-mono,ui-monospace);font-size:10.5px;color:rgba(244,241,234,.45);margin-bottom:14px;}
@@ -296,7 +309,9 @@
 
     var MEALS=['Breakfast','Lunch','Dinner','Snacks'];
     var LOGS='nut:logs', CUSTOM='nut:custom', MEALSK='nut:meals', PROFILE='nut:profile', FAVS='nut:favs', USUAL='nut:usual', PIECEK='nut:pieceG';
+    var DRAFTK='nut:mealDraft';   // a half-built meal. DEVICE-LOCAL, never synced.
     var viewDate=today(), pickEditId=null;
+    var grpOpen={};   // which logged meals are expanded — view state, in memory only, never stored
 
     // One-time seed of Alex's real saved meals (rebuilt from the verified core
     // DB at his exact portions). Stable ids + name/id dedup → idempotent across
@@ -736,11 +751,40 @@
         var kc=items.reduce(function(s,e){return s+(e.kcal||0);},0);
         html+='<div class="card meal"><div class="meal-hdr"><div class="meal-name">'+m+'</div><div class="meal-hdr-r"><span class="meal-kcal">'+r0(kc)+' kcal</span>'+(items.length?'<button type="button" class="meal-move" data-act="move-meal" data-meal="'+m+'" aria-label="Move all of '+m+' to another meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h13"/><path d="M16 19l4-4-4-4"/><path d="M20 15H7"/></svg></button>':'')+'<button type="button" class="meal-copy" data-act="copy-meal-open" data-meal="'+m+'" aria-label="Copy this meal from another day">&#10696;</button><button type="button" class="meal-add" data-act="add" data-meal="'+m+'">+</button></div></div>';
         if(!items.length) html+='<div class="meal-empty">Nothing yet — tap + to log.</div>';
-        items.forEach(function(e){ html+='<div class="entry" data-act="edit" data-id="'+e.id+'"><div class="entry-main"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-sub">'+(e.grams>0?r0(e.grams)+'g · ':'')+r0(e.p)+'P '+r0(e.c)+'C '+r0(e.f)+'F</div></div><span class="entry-kcal">'+r0(e.kcal)+'</span><button type="button" class="entry-move" data-act="move-food" data-id="'+e.id+'" aria-label="Move to another meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h13"/><path d="M16 19l4-4-4-4"/><path d="M20 15H7"/></svg></button><button type="button" class="entry-del" data-act="del" data-id="'+e.id+'">&#10005;</button></div>'; });
+        var nodes=groupSlot(items);
+        nodes.forEach(function(n){
+          if(n.solo){ html+=entryRow(n.solo); return; }
+          html+=grpRow(n);
+          if(grpOpen[n.grp]) html+='<div class="grp-items">'+n.items.map(entryRow).join('')+'</div>';
+        });
+        // The moment he has the thought "these three are one meal", the food is
+        // HERE — so the action is here too. (The Meals tab still has its own.)
+        // Hidden when the slot is already exactly one saved meal: there is
+        // nothing left to name.
+        var alreadyOneMeal = nodes.length===1 && !nodes[0].solo;
+        if(items.length>=2 && !alreadyOneMeal)
+          html+='<button type="button" class="meal-make" data-act="meal-save-slot" data-meal="'+esc(m)+'">&#43; Save these '+items.length+' as one meal</button>';
         html+=usualBtnHtml(m);
         html+='</div>';
       });
       document.getElementById('diary').innerHTML=html;
+    }
+    var MOVE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h13"/><path d="M16 19l4-4-4-4"/><path d="M20 15H7"/></svg>';
+    function entryRow(e){
+      return '<div class="entry" data-act="edit" data-id="'+e.id+'"><div class="entry-main"><div class="entry-name">'+esc(e.name)+'</div><div class="entry-sub">'+(e.grams>0?r0(e.grams)+'g · ':'')+r0(e.p)+'P '+r0(e.c)+'C '+r0(e.f)+'F</div></div><span class="entry-kcal">'+r0(e.kcal)+'</span><button type="button" class="entry-move" data-act="move-food" data-id="'+e.id+'" aria-label="Move to another meal">'+MOVE_SVG+'</button><button type="button" class="entry-del" data-act="del" data-id="'+e.id+'">&#10005;</button></div>';
+    }
+    function grpRow(n){
+      var t={kcal:0,p:0,c:0,f:0,g:0};
+      n.items.forEach(function(e){ t.kcal+=e.kcal||0; t.p+=e.p||0; t.c+=e.c||0; t.f+=e.f||0; t.g+=e.grams||0; });
+      var open=!!grpOpen[n.grp];
+      return '<div class="entry grp-hdr'+(open?' open':'')+'" data-act="grp-toggle" data-grp="'+esc(n.grp)+'" aria-expanded="'+(open?'true':'false')+'">'+
+        '<span class="grp-chev" aria-hidden="true">&#9656;</span>'+
+        '<div class="entry-main"><div class="entry-name">'+esc(n.name)+'</div>'+
+          '<div class="entry-sub">'+n.items.length+' ingredients'+(t.g>0?' · '+r0(t.g)+'g':'')+' · '+r0(t.p)+'P '+r0(t.c)+'C '+r0(t.f)+'F</div></div>'+
+        '<span class="entry-kcal">'+r0(t.kcal)+'</span>'+
+        '<button type="button" class="entry-move" data-act="grp-move" data-grp="'+esc(n.grp)+'" aria-label="Move this whole meal to another slot">'+MOVE_SVG+'</button>'+
+        '<button type="button" class="entry-del" data-act="grp-del" data-grp="'+esc(n.grp)+'" aria-label="Remove this whole meal">&#10005;</button>'+
+      '</div>';
     }
     function usualBtnHtml(meal){
       var u=usualFor(meal);
@@ -872,6 +916,70 @@
         kcal:r0(p.kcal*k),p:r1(p.p*k),c:r1(p.c*k),f:r1(p.f*k),fiber:r1(p.fiber*k),sugar:r1(p.sugar*k),sodium:r0(p.sodium*k),satfat:r1(p.satfat*k)};
     }
     function addEntry(e){ var a=getLogs(); a.push(e); saveLogs(a); _pIndexCache=null; renderAll(); }
+
+    // ── A MEAL IS ONE THING, NOT THREE ROWS ───────────────────────────────
+    // Tuna + pasta + tomato paste is one lunch. Foods that belong to the same
+    // meal carry the same `grp` — a fresh id per LOGGING, so the same meal
+    // twice in a day is two groups — plus the meal's name and the saved meal
+    // it came from. Everything here is ADDITIVE: an entry with no `grp` is an
+    // ordinary food and renders exactly as it always has, so every log he has
+    // ever made is untouched and needs no migration.
+    function grpId(){ return 'g-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+    function grpEntries(gid){ return dayLogs(viewDate).filter(function(e){ return e && e.grp===gid; }); }
+    // Order-preserving: a group takes the position of its FIRST member, so
+    // grouping never reshuffles the diary. A group of ONE is just a food —
+    // never draw a wrapper around a single item (that happens when one
+    // ingredient is moved out to another slot).
+    function groupSlot(items){
+      var out=[], byGrp={};
+      items.forEach(function(e){
+        var g=e&&e.grp;
+        if(!g){ out.push({solo:e}); return; }
+        if(!byGrp[g]){ byGrp[g]={grp:g,name:e.grpName||'Meal',items:[]}; out.push(byGrp[g]); }
+        byGrp[g].items.push(e);
+      });
+      return out.map(function(n){ return (n.items && n.items.length===1) ? {solo:n.items[0]} : n; });
+    }
+    // Stamping rewrites `ts` on purpose. sync.js's mergeArray settles a same-id
+    // conflict by keeping the NEWER `ts` and gives a TIE to local — so leaving
+    // `ts` alone would let a second device keep its own ungrouped copy forever
+    // and push it back over this one. A newer ts is what makes the group
+    // converge. `ts0` preserves when the food was actually logged; see
+    // pruneDupes, which must judge "accidental double-add" on the ORIGINAL
+    // time, never on a time that a group stamp or a move rewrote.
+    function stampGroup(ids, gid, name, ofId){
+      var kill={}; ids.forEach(function(id){ kill[id]=1; });
+      var raw=ls(LOGS,[]); if(!Array.isArray(raw)) raw=[]; var n=0;
+      raw.forEach(function(e){
+        if(!e||!kill[e.id]) return;
+        if(e.ts0==null) e.ts0=e.ts||Date.now();
+        e.grp=gid; e.grpName=name; if(ofId) e.grpOf=ofId; e.ts=Date.now(); n++;
+      });
+      if(n) saveLogs(raw); _pIndexCache=null;
+      try{ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }catch(e){}
+      return n;
+    }
+    // Batch delete — one save, one flush, one render. delEntry() re-renders the
+    // whole page per id, which for a 6-ingredient meal is six full repaints.
+    function delEntries(ids){
+      if(!ids||!ids.length) return;
+      var kill={}, d=getDeleted(), ch=false;
+      ids.forEach(function(id){ if(id==null) return; kill[id]=1; if(!d[id]){ d[id]=Date.now(); ch=true; } });
+      if(ch) save(DELK,d);                      // permanent read-time block, same as delEntry
+      var raw=ls(LOGS,[]); if(!Array.isArray(raw)) raw=[];
+      try{ if(window.ALSSync){ Object.keys(kill).forEach(function(id){ window.ALSSync.drop('nut:logs',id); }); } }catch(e){}
+      saveLogs(raw.filter(function(e){ return !(e&&kill[e.id]); })); _pIndexCache=null;
+      try{ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }catch(e){}
+      renderAll();
+    }
+    function grpDelete(gid){
+      var rows=grpEntries(gid); if(!rows.length) return;
+      var nm=rows[0].grpName||'this meal', ids=rows.map(function(e){ return e.id; });
+      function go(){ delEntries(ids); }
+      if(window.ALSConfirm) ALSConfirm({title:'Remove “'+nm+'”?',message:'This takes out all '+ids.length+' ingredients from your diary.',confirmText:'Remove',cancelText:'Keep',danger:true}).then(function(ok){ if(ok) go(); });
+      else go();
+    }
+
     function delEntry(id){
       if(id==null) return;
       banish(id);                               // permanent read-time block — resurrection-proof
@@ -888,6 +996,13 @@
     // the earliest and drop the rest, tombstoning them so they can't resurrect.
     // Deliberately conservative: exact match + a 15-min window, so it never
     // touches a legitimately repeated food.
+    // ⚠️ The window is judged on `ts0 || ts` — when the food was actually
+    // LOGGED, never on a `ts` that a move or a group stamp rewrote. Both of
+    // those set every touched entry to the same instant, which would have
+    // pulled two genuinely separate identical portions (an egg at 08:00 and
+    // another at 12:00, moved to Dinner together) into one 15-minute window
+    // and silently dropped one of them. `ts0` is absent on every older entry,
+    // so the fallback keeps the original behaviour exactly.
     function pruneDupes(){
       var logs=getLogs(); if(logs.length<2) return 0;
       var groups={}, drop={};
@@ -898,10 +1013,11 @@
       });
       Object.keys(groups).forEach(function(k){
         var arr=groups[k]; if(arr.length<2) return;
-        arr.sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
-        var keepTs=arr[0].ts||0;
+        function logTs(e){ return (e && e.ts0!=null) ? e.ts0 : ((e&&e.ts)||0); }   // when it was LOGGED
+        arr.sort(function(a,b){ return logTs(a)-logTs(b); });
+        var keepTs=logTs(arr[0]);
         for(var i=1;i<arr.length;i++){
-          if(Math.abs((arr[i].ts||0)-keepTs) <= 15*60000) drop[arr[i].id]=1;   // within 15 min → accidental dup
+          if(Math.abs(logTs(arr[i])-keepTs) <= 15*60000) drop[arr[i].id]=1;   // within 15 min → accidental dup
         }
       });
       var ids=Object.keys(drop); if(!ids.length) return 0;
@@ -917,7 +1033,7 @@
       var byId={}; getLogs().forEach(function(e){ if(e&&e.id) byId[e.id]=e; });
       var moved=0;
       ids.forEach(function(id){ var e=byId[id]; if(!e||(e.meal||'Snacks')===target) return;
-        var c={}; for(var k in e) c[k]=e[k]; c.id=uid(); c.ts=Date.now(); c.meal=target;
+        var c={}; for(var k in e) c[k]=e[k]; c.id=uid(); if(c.ts0==null) c.ts0=e.ts||Date.now(); c.ts=Date.now(); c.meal=target;
         addEntry(c); delEntry(id); moved++; });
       return moved;
     }
@@ -1121,7 +1237,11 @@
       try{ if(!sheet.open) sheet.showModal(); }catch(e){ sheet.setAttribute('open',''); } }
     function closeSheet(){ stopScan(); pickEditId=null; editMeal=null; portionTarget='diary'; mealItemEdit=-1; try{ if(sheet.open) sheet.close(); else sheet.removeAttribute('open'); }catch(e){} }
     function renderTabs(){ shTabs.innerHTML=TABS.map(function(t){ return '<button type="button" class="sh-tab'+(t[0]===curTab?' on':'')+'" data-act="tab" data-tab="'+t[0]+'">'+t[1]+'</button>'; }).join(''); }
-    function setTab(t){ stopScan(); curTab=t; renderTabs(); renderTab(); }
+    // While a meal is being built, every tab in the sheet is adding to THAT
+    // meal, not to the day. The header has to say so or "Add to Lunch" is a lie.
+    function syncSheetTitle(){ var t=document.getElementById('shTitle'); if(!t) return;
+      t.textContent = editMeal ? ('Meal · '+(editMeal.name||'untitled')) : ('Add to '+curMeal); }
+    function setTab(t){ stopScan(); curTab=t; renderTabs(); renderTab(); syncSheetTitle(); }
 
     function resRow(name,brand,sub,kind,i){ return '<div class="res" data-act="pick" data-kind="'+kind+'" data-i="'+i+'"><div class="res-main"><div class="res-name">'+esc(name)+(brand?' <span style="opacity:.5">'+esc(brand)+'</span>':'')+'</div><div class="res-sub">'+esc(sub)+'</div></div></div>'; }
 
@@ -1137,7 +1257,11 @@
         '<button type="button" class="sh-btn" data-act="quick-go">'+(portionTarget==='meal'?'Add to meal':'Add to '+esc(curMeal))+'</button>'; }
       else if(curTab==='recent'){ var rf=recentFoods(); window._rf=rf; shBody.innerHTML=rf.length?rf.map(function(f,i){return resRow(f.name,'',r0(f.per100.kcal)+' kcal /100g · '+(f.source||'').toUpperCase(),'recent',i);}).join(''):'<div class="sh-msg">Your recent foods will show here once you log a few.</div>'; }
       else if(curTab==='custom'){ shBody.innerHTML='<button type="button" class="sh-btn" data-act="custom-new">+ Create custom food</button><input class="sh-in" id="custFilter" placeholder="Search your custom foods…" autocomplete="off" autocapitalize="none" autocorrect="off" style="margin-top:10px" value="'+esc(customQ)+'"><div id="custList" style="margin-top:6px"></div>'; renderCustList(); }
-      else if(curTab==='meals'){ if(editMeal){ renderMealEditor(); return; } shBody.innerHTML='<button type="button" class="sh-btn" data-act="meal-create">+ Create a new meal</button><button type="button" class="sh-btn ghost" data-act="meal-save" style="margin-top:8px;">Save this '+esc(curMeal)+' as a meal</button><input class="sh-in" id="mealFilter" placeholder="Search your meals (name or ingredient)…" autocomplete="off" autocapitalize="none" autocorrect="off" style="margin-top:10px" value="'+esc(mealQ)+'"><div id="mealList" style="margin-top:6px"></div>'; renderMealList(); }
+      else if(curTab==='meals'){ if(editMeal){ renderMealEditor(); return; }
+        // A draft is OFFERED, never forced — it must not hijack the meal list.
+        var _dr=loadDraft(), _drN=_dr?(_dr.items||[]).length:0;
+        var _drHtml=_dr?('<button type="button" class="sh-btn ghost" data-act="draft-resume" style="border-color:rgba(var(--nu),.4);color:rgb(var(--nu))">&#8617; Continue &ldquo;'+esc(_dr.name||'your meal')+'&rdquo; &middot; '+_drN+' item'+(_drN===1?'':'s')+'</button><button type="button" class="sh-btn ghost" data-act="draft-drop" style="margin:6px 0 12px;font-size:11.5px;opacity:.55">Discard that draft</button>'):'';
+        shBody.innerHTML=_drHtml+'<button type="button" class="sh-btn" data-act="meal-create">+ Create a new meal</button><button type="button" class="sh-btn ghost" data-act="meal-save" style="margin-top:8px;">Save this '+esc(curMeal)+' as a meal</button><input class="sh-in" id="mealFilter" placeholder="Search your meals (name or ingredient)…" autocomplete="off" autocapitalize="none" autocorrect="off" style="margin-top:10px" value="'+esc(mealQ)+'"><div id="mealList" style="margin-top:6px"></div>'; renderMealList(); }
       else if(curTab==='scan'){ shBody.innerHTML='<div id="scanRegion"></div><div class="sh-hint" id="scanNote">Starting the camera…</div><div class="sh-hint">Or type the number:</div><input class="sh-in" id="bcIn" inputmode="numeric" placeholder="Barcode number" style="margin-top:8px;"><button type="button" class="sh-btn ghost" data-act="bc-go" style="margin-top:10px;">Look up barcode</button>'; startScan(); }
     }
     // Filterable Custom / Meals lists (drag-reorder stays available when the
@@ -1557,15 +1681,60 @@
       var c=ls(CUSTOM,[]); c.unshift(f); save(CUSTOM,c); showPortion(searchResultToFood(f),100);
     }
 
-    async function mealSave(){
-      var items=dayLogs(viewDate).filter(function(e){return (e.meal||'Snacks')===curMeal;});
-      if(!items.length){ shBody.insertAdjacentHTML('afterbegin','<div class="sh-msg">Nothing logged in '+curMeal+' yet.</div>'); return; }
-      var nm=await ALSPrompt({title:'Save meal',placeholder:'Meal name',value:curMeal+' set',confirmText:'Save'}); if(!nm) return;
-      var m=ls(MEALSK,[]); m.unshift({id:uid(),name:nm,ord:-Date.now(),ts:Date.now(),items:items.map(function(e){var c={};for(var k in e)c[k]=e[k];delete c.id;delete c.ts;delete c.dateKey;return c;})}); save(MEALSK,m); setTab('meals');
+    // A name he'd have typed anyway: the two biggest things on the plate. Tuna
+    // + pasta + tomato paste → "Tuna & pasta". It is only a DEFAULT — the field
+    // is his, and the prompt shows every ingredient so he can see what he is
+    // naming before he commits to it.
+    function suggestMealName(items, slot){
+      var top=items.slice().sort(function(a,b){ return (b.kcal||0)-(a.kcal||0); }).slice(0,2)
+        .map(function(e){ return String(e.name||'').split(/[,(]/)[0].trim(); })
+        .filter(function(s){ return !!s; });
+      if(!top.length) return slot+' set';
+      var nm=top.join(' & ');
+      if(nm.length>38) nm=top[0];
+      return nm.charAt(0).toUpperCase()+nm.slice(1);
+    }
+    // Save a whole diary slot as a reusable meal. Called from the diary (where
+    // the food is) and from the sheet's Meals tab (where it always lived).
+    async function mealSave(slot){
+      var mealSlot=slot||curMeal;
+      var items=dayLogs(viewDate).filter(function(e){return (e.meal||'Snacks')===mealSlot;});
+      if(!items.length){
+        if(slot){ try{ if(window.ALSAlert) ALSAlert({title:'Nothing to save yet',message:'Log the foods into '+mealSlot+' first — then save them as one meal.'}); }catch(e){} }
+        else shBody.insertAdjacentHTML('afterbegin','<div class="sh-msg">Nothing logged in '+mealSlot+' yet.</div>');
+        return;
+      }
+      var kc=items.reduce(function(s,e){return s+(e.kcal||0);},0);
+      var nm=await ALSPrompt({title:'Save as one meal',
+        message:items.map(function(e){ return e.name; }).join(' · ')+' — '+r0(kc)+' kcal',
+        placeholder:'Meal name',value:suggestMealName(items,mealSlot),confirmText:'Save meal'});
+      if(nm==null) return; nm=String(nm).trim(); if(!nm) return;
+      var newId=uid();
+      var m=ls(MEALSK,[]); if(!Array.isArray(m)) m=[];
+      // The saved meal keeps the FOODS, never a diary row's identity or its
+      // place in a group — those belong to the day it was logged on.
+      m.unshift({id:newId,name:nm,ord:-Date.now(),ts:Date.now(),items:items.map(function(e){
+        var c={}; for(var k in e) c[k]=e[k];
+        delete c.id; delete c.ts; delete c.ts0; delete c.dateKey; delete c.grp; delete c.grpName; delete c.grpOf;
+        return c; })});
+      if(!save(MEALSK,m)) return;               // storage full already said so, in words
+      // …and what he just named now READS as that meal, in today's diary, at
+      // once. Left OPEN so nothing appears to vanish the second he saves it.
+      var gid=grpId();
+      stampGroup(items.map(function(e){ return e.id; }), gid, nm, newId);
+      grpOpen[gid]=1;
+      renderAll();
+      if(slot){ try{ if(window.ALSAlert) ALSAlert({title:'“'+nm+'” saved',message:'It is in your meals now — one tap logs the whole thing next time.'}); }catch(e){} }
+      else setTab('meals');
     }
     function addSavedMealTo(ml, meal){
       if(!ml) return; var a=getLogs();
-      (ml.items||[]).forEach(function(it){ var e={}; for(var k in it) e[k]=it[k]; e.id=uid(); e.ts=Date.now(); e.dateKey=viewDate; e.meal=meal; a.push(e); });
+      // One group id per LOGGING, so the same meal twice in a day is two
+      // separate meals in the diary rather than one six-ingredient blur.
+      var gid=grpId(), nm=ml.name||'Meal', now=Date.now();
+      (ml.items||[]).forEach(function(it){ var e={}; for(var k in it) e[k]=it[k];
+        e.id=uid(); e.ts=now; e.ts0=now; e.dateKey=viewDate; e.meal=meal;
+        e.grp=gid; e.grpName=nm; if(ml.id) e.grpOf=ml.id; a.push(e); });
       saveLogs(a); _pIndexCache=null; renderAll();
     }
     function addSavedMeal(ml){ addSavedMealTo(ml, curMeal); closeSheet(); }
@@ -1576,7 +1745,7 @@
       var P=v('qaP'),C=v('qaC'),F=v('qaF'),K=v('qaK'); if(!K && (P||C||F)) K=4*P+4*C+9*F;
       if(!K && !P && !C && !F) return;
       var nm=((document.getElementById('qaN')||{}).value||'').trim()||'Quick add';
-      if(portionTarget==='meal' && editMeal){ editMeal.items.push({name:nm,grams:0,source:'quick',kcal:r0(K),p:r1(P),c:r1(C),f:r1(F),fiber:0,sugar:0,sodium:0,satfat:0}); portionTarget='diary'; gotoMealEditor(); return; }
+      if(portionTarget==='meal' && editMeal){ editMeal.items.push({name:nm,grams:0,source:'quick',kcal:r0(K),p:r1(P),c:r1(C),f:r1(F),fiber:0,sugar:0,sodium:0,satfat:0}); portionTarget='diary'; saveDraft(); gotoMealEditor(); return; }
       addEntry({id:uid(),ts:Date.now(),dateKey:viewDate,meal:curMeal,name:nm,grams:0,source:'quick',kcal:r0(K),p:r1(P),c:r1(C),f:r1(F),fiber:0,sugar:0,sodium:0,satfat:0});
       closeSheet();
     }
@@ -1586,9 +1755,20 @@
     function commitDiaryAdd(close){
       var gg=ppGrams(); if(!gg||!pickFood) return;
       if(pickFood._unit && pickFood._effG>0) savePiece(pickFood, pickFood._unit, pickFood._effG); // learn this food's piece weight
-      var wasEdit=!!pickEditId; if(pickEditId){ delEntry(pickEditId); pickEditId=null; }
+      // An edit re-creates the row with a fresh id, so anything the row carried
+      // beyond its macros has to be carried across by hand. Without this,
+      // changing the grams of ONE ingredient silently drops it out of its meal.
+      var wasEdit=!!pickEditId, keep=null;
+      if(pickEditId){
+        var old=getLogs().filter(function(x){ return x.id===pickEditId; })[0];
+        if(old) keep={grp:old.grp,grpName:old.grpName,grpOf:old.grpOf,ts0:(old.ts0!=null?old.ts0:old.ts)};
+        delEntry(pickEditId); pickEditId=null;
+      }
       if(!wasEdit && REMEMBER[pickFood.source]) saveLocalFood(pickFood);
-      addEntry(scaleEntry(pickFood,gg,pickMeal));
+      var ne=scaleEntry(pickFood,gg,pickMeal);
+      if(keep){ if(keep.ts0!=null) ne.ts0=keep.ts0;
+        if(keep.grp){ ne.grp=keep.grp; ne.grpName=keep.grpName; if(keep.grpOf) ne.grpOf=keep.grpOf; } }
+      addEntry(ne);
       if(close){ closeSheet(); return; }
       plateCount++; var tt=document.getElementById('shTitle'); if(tt) tt.textContent='Add to '+curMeal+' · '+plateCount+' added ✓';
       pickFood=null; curTab='search'; renderTabs(); renderTab();
@@ -1609,8 +1789,15 @@
     }
     function copyMealDay(dk, meal){
       var src=getLogs().filter(function(e){ return e&&e.dateKey===dk&&(e.meal||'Snacks')===meal; }); if(!src.length) return;
-      var a=getLogs();
-      src.forEach(function(it){ var e={}; for(var k in it) e[k]=it[k]; e.id=uid(); e.ts=Date.now(); e.dateKey=viewDate; e.meal=meal; a.push(e); });
+      var a=getLogs(), now=Date.now();
+      // Group ids are REMAPPED, never copied: a copy is a new logging of that
+      // meal, so copying the same day twice must give two meals in the diary,
+      // not one that silently doubles in size.
+      var remap={};
+      src.forEach(function(it){ var e={}; for(var k in it) e[k]=it[k];
+        e.id=uid(); e.ts=now; e.ts0=now; e.dateKey=viewDate; e.meal=meal;
+        if(e.grp){ e.grp = remap[e.grp] || (remap[e.grp]=grpId()); }
+        a.push(e); });
       saveLogs(a); _pIndexCache=null; copyClose(); renderAll();
     }
 
@@ -1646,7 +1833,15 @@
     // ── Meal builder/editor (create & edit your own meals, MFP-style) ──
     function mealIsSaved(id){ return (ls(MEALSK,[])||[]).some(function(m){ return m&&m.id===id; }); }
     function readMealName(){ var el=document.getElementById('mealName'); if(el&&editMeal) editMeal.name=(el.value||'').trim(); }
-    function gotoMealEditor(){ curTab='meals'; renderTabs(); renderMealEditor(); }
+    // A half-built meal survives closing the sheet. closeSheet() nulls
+    // `editMeal`, so four ingredients used to vanish on a stray tap outside the
+    // dialog with nothing said. Written ONLY from the places that mutate the
+    // meal — never from a render, which is how the streak got destroyed.
+    // Device-local: it is a scratchpad mid-edit, not data, so it never syncs.
+    function saveDraft(){ if(editMeal && ((editMeal.name||'') || (editMeal.items||[]).length)) save(DRAFTK,editMeal); }
+    function clearDraft(){ try{ localStorage.removeItem(DRAFTK); }catch(e){} }
+    function loadDraft(){ var d=ls(DRAFTK,null); return (d&&typeof d==='object'&&Array.isArray(d.items))?d:null; }
+    function gotoMealEditor(){ curTab='meals'; renderTabs(); renderMealEditor(); syncSheetTitle(); }
     function renderMealEditor(){
       var m=editMeal; if(!m){ setTab('meals'); return; }
       if(!Array.isArray(m.items)) m.items=[];
@@ -1760,6 +1955,11 @@
       else if(act==='move-meal'){ ev.stopPropagation(); var mm=el.getAttribute('data-meal'); var mmItems=dayLogs(viewDate).filter(function(e){return (e.meal||'Snacks')===mm;}); if(!mmItems.length) return; openMove('Move all of '+mm+' to…', mm, function(target){ var ids=mmItems.map(function(e){return e.id;});
           if(window.ALSConfirm){ ALSConfirm({title:'Move all of '+mm+'?',message:'Move all '+ids.length+' item'+(ids.length>1?'s':'')+' to '+target+'.',confirmText:'Move',cancelText:'Cancel'}).then(function(ok){ if(ok) moveEntries(ids,target); }); }
           else { moveEntries(ids,target); } }); }
+      else if(act==='grp-toggle'){ var gtog=el.getAttribute('data-grp'); if(grpOpen[gtog]) delete grpOpen[gtog]; else grpOpen[gtog]=1; renderDiary(); }
+      else if(act==='grp-del'){ ev.stopPropagation(); grpDelete(el.getAttribute('data-grp')); }
+      else if(act==='grp-move'){ ev.stopPropagation(); var gmv=el.getAttribute('data-grp'), grows=grpEntries(gmv); if(!grows.length) return;
+        openMove('Move “'+(grows[0].grpName||'this meal')+'” to…', grows[0].meal||'Snacks', function(target){ moveEntries(grows.map(function(e){return e.id;}), target); }); }
+      else if(act==='meal-save-slot'){ mealSave(el.getAttribute('data-meal')); }
       else if(act==='mv-pick'){ var tgt=el.getAttribute('data-meal'); var ap=window._moveApply; closeMove(); if(ap) ap(tgt); }
       else if(act==='mv-cancel'){ closeMove(); }
       else if(act==='sheet-close'){ closeSheet(); }
@@ -1775,14 +1975,16 @@
       else if(act==='meal-save'){ mealSave(); }
       else if(act==='meal-create'){ editMeal={id:uid(),name:'',items:[]}; gotoMealEditor(); }
       else if(act==='meal-edit'){ var mle=ls(MEALSK,[])[+el.getAttribute('data-i')]; if(mle){ editMeal=JSON.parse(JSON.stringify(mle)); if(!Array.isArray(editMeal.items)) editMeal.items=[]; gotoMealEditor(); } }
-      else if(act==='meal-add-food'){ readMealName(); portionTarget='meal'; mealItemEdit=-1; setTab('search'); }
+      else if(act==='draft-resume'){ var dr2=loadDraft(); if(dr2){ editMeal=dr2; if(!Array.isArray(editMeal.items)) editMeal.items=[]; gotoMealEditor(); } }
+      else if(act==='draft-drop'){ clearDraft(); setTab('meals'); }
+      else if(act==='meal-add-food'){ readMealName(); saveDraft(); portionTarget='meal'; mealItemEdit=-1; setTab('search'); }
       else if(act==='meal-photo-pick'){ var mpi=document.getElementById('mealPhotoInp'); if(mpi) mpi.click(); }
       else if(act==='meal-photo-rm'){ ev.stopPropagation(); if(editMeal){ readMealName(); delete editMeal.photo; delete _mealPics[editMeal.id]; idbDelPic(editMeal.id); renderMealEditor(); } }
-      else if(act==='meal-item-edit'){ if(!editMeal) return; readMealName(); var iti=+el.getAttribute('data-i'), it=editMeal.items[iti]; if(it){ var gk=it.grams||100,kk=100/gk; portionTarget='meal'; mealItemEdit=iti; showPortion({name:it.name,brand:'',per100:{kcal:(it.kcal||0)*kk,p:(it.p||0)*kk,c:(it.c||0)*kk,f:(it.f||0)*kk,fiber:(it.fiber||0)*kk,sugar:(it.sugar||0)*kk,sodium:(it.sodium||0)*kk,satfat:(it.satfat||0)*kk},source:it.source||'manual',servingG:it.grams}, it.grams); } }
-      else if(act==='meal-item-del'){ if(!editMeal) return; readMealName(); editMeal.items.splice(+el.getAttribute('data-i'),1); renderMealEditor(); }
-      else if(act==='meal-done'){ if(!editMeal) return; readMealName(); if(!editMeal.name) editMeal.name='My meal'; editMeal.ts=Date.now(); delete editMeal.photo; var arr=ls(MEALSK,[]); if(!Array.isArray(arr))arr=[]; var found=false; for(var mi=0;mi<arr.length;mi++){ if(arr[mi]&&arr[mi].id===editMeal.id){ if(typeof arr[mi].ord==='number'&&typeof editMeal.ord!=='number') editMeal.ord=arr[mi].ord; arr[mi]=editMeal; found=true; break; } } if(!found){ editMeal.ord=-Date.now(); arr.unshift(editMeal); } save(MEALSK,arr); editMeal=null; portionTarget='diary'; setTab('meals'); }
-      else if(act==='meal-delete'){ if(!editMeal) return; var delId=editMeal.id; var arr2=(ls(MEALSK,[])||[]).filter(function(x){return !(x&&x.id===delId);}); save(MEALSK,arr2); delete _mealPics[delId]; idbDelPic(delId); try{ if(window.ALSSync){ window.ALSSync.drop('nut:meals', delId); window.ALSSync.flush(); } }catch(e){} editMeal=null; portionTarget='diary'; setTab('meals'); }
-      else if(act==='meal-cancel'){ editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-item-edit'){ if(!editMeal) return; readMealName(); saveDraft(); var iti=+el.getAttribute('data-i'), it=editMeal.items[iti]; if(it){ var gk=it.grams||100,kk=100/gk; portionTarget='meal'; mealItemEdit=iti; showPortion({name:it.name,brand:'',per100:{kcal:(it.kcal||0)*kk,p:(it.p||0)*kk,c:(it.c||0)*kk,f:(it.f||0)*kk,fiber:(it.fiber||0)*kk,sugar:(it.sugar||0)*kk,sodium:(it.sodium||0)*kk,satfat:(it.satfat||0)*kk},source:it.source||'manual',servingG:it.grams}, it.grams); } }
+      else if(act==='meal-item-del'){ if(!editMeal) return; readMealName(); editMeal.items.splice(+el.getAttribute('data-i'),1); saveDraft(); renderMealEditor(); }
+      else if(act==='meal-done'){ if(!editMeal) return; readMealName(); if(!editMeal.name) editMeal.name='My meal'; editMeal.ts=Date.now(); delete editMeal.photo; var arr=ls(MEALSK,[]); if(!Array.isArray(arr))arr=[]; var found=false; for(var mi=0;mi<arr.length;mi++){ if(arr[mi]&&arr[mi].id===editMeal.id){ if(typeof arr[mi].ord==='number'&&typeof editMeal.ord!=='number') editMeal.ord=arr[mi].ord; arr[mi]=editMeal; found=true; break; } } if(!found){ editMeal.ord=-Date.now(); arr.unshift(editMeal); } if(!save(MEALSK,arr)) return; clearDraft(); editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-delete'){ if(!editMeal) return; var delId=editMeal.id; var arr2=(ls(MEALSK,[])||[]).filter(function(x){return !(x&&x.id===delId);}); save(MEALSK,arr2); delete _mealPics[delId]; idbDelPic(delId); try{ if(window.ALSSync){ window.ALSSync.drop('nut:meals', delId); window.ALSSync.flush(); } }catch(e){} clearDraft(); editMeal=null; portionTarget='diary'; setTab('meals'); }
+      else if(act==='meal-cancel'){ clearDraft(); editMeal=null; portionTarget='diary'; setTab('meals'); }
       else if(act==='pick'){
         var kind=el.getAttribute('data-kind'), i=+el.getAttribute('data-i');
         if(kind==='search'){ var f=window._sr[i]; if(!f) return; showPortion(searchResultToFood(f), f.usualG||f.servingG||100); }
@@ -1797,7 +1999,7 @@
       else if(act==='pp-serv'){ var gi=document.getElementById('ppG'); if(gi&&pickFood&&pickFood._effG){ gi.value=r0(pickFood._effG); ppPreview(); } }
       else if(act==='pp-meal'){ pickMeal=el.getAttribute('data-meal'); var ms=document.getElementById('ppMeals'); if(ms){ Array.prototype.forEach.call(ms.children,function(b){ b.classList.toggle('on',b.getAttribute('data-meal')===pickMeal); }); } var ab=document.querySelector('[data-act="pp-add"]'); if(ab){ if(pickEditId) ab.textContent=(pickMeal!==curMeal?'Save · moved to '+pickMeal:'Save changes'); else ab.textContent='Add to '+pickMeal; } }
       else if(act==='pp-add'){ var gg=ppGrams(); if(!gg||!pickFood) return;
-        if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(REMEMBER[pickFood.source]) saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; gotoMealEditor(); return; }
+        if(portionTarget==='meal' && editMeal){ var mit=scaleEntry(pickFood,gg,pickMeal); delete mit.id; delete mit.ts; delete mit.dateKey; delete mit.meal; if(mealItemEdit>=0){ editMeal.items[mealItemEdit]=mit; } else { editMeal.items.push(mit); } if(REMEMBER[pickFood.source]) saveLocalFood(pickFood); mealItemEdit=-1; portionTarget='diary'; saveDraft(); gotoMealEditor(); return; }
         commitDiaryAdd(true); }
       else if(act==='pp-add-more'){ commitDiaryAdd(false); }
       else if(act==='fav-toggle'){ if(!pickFood) return; var on=toggleFav(pickFood, ppGrams()||pickFood._effG||pickFood.servingG||100); el.textContent=on?'★':'☆'; }
