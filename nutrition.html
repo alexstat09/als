@@ -608,14 +608,88 @@
     // shared card eyebrow — one consistent header style across all cards
     function eb(label,note){ return '<div class="nu-eb"><span class="nu-eb-d"></span><span class="nu-eb-l">'+esc(label)+'</span>'+(note?'<span class="nu-eb-n">'+esc(note)+'</span>':'')+'</div>'; }
 
-    // ── Daily logging streak (MFP-style), seeded to continue from 788 ──
+    // ── Daily logging streak (MFP-style) ──
+    // The count is a REAL number. Alex did not want to lose the streak he had
+    // built in MyFitnessPal, so it was carried over here: seeded on 2026-07-06
+    // at 788 and counted forward since. It is a measurement with a history,
+    // not a fixture.
+    //
+    // ⚠️⚠️ THE SEED USED TO LIVE INSIDE getStreak(), WHICH RENDERS — and it
+    // WROTE. So any paint that happened before the cloud pull landed (a fresh
+    // device, a sign-out, cleared storage, or sync simply being slow) found no
+    // `nut:streak`, wrote {count:788, lastDay:today} with a FRESH `_ts`, and
+    // that timestamp beat the real count in the cloud under whole-object
+    // last-write-wins. His streak went 796 (14 Jul, proven in his device
+    // export) DOWN to 790 (29 Jul) exactly that way — and 790 is 788 + 2,
+    // while a streak can only rise by one or reset to one.
+    //
+    // That is constraint 10 with a write on the end: "I could not read it yet"
+    // and "there is nothing here" rendered identically, and then the guess was
+    // saved over the truth. So getStreak() NEVER writes now, and the seed is
+    // gone rather than guarded — the number lives in the cloud under his
+    // account and syncs down like everything else, so every future firing of
+    // that seed could only ever destroy something. It would also have handed
+    // Chrissie a fake 788-day streak the first time she logged a meal.
     var STREAK='nut:streak';
-    function getStreak(){ var s=ls(STREAK,null); if(!s||typeof s.count!=='number'){ s={count:788,lastDay:today(),_ts:Date.now()}; save(STREAK,s); } return s; }
+    function getStreak(){ var s=ls(STREAK,null); return (s&&typeof s.count==='number')?s:{count:0,lastDay:''}; }
     function streakDayDiff(a,b){ var pa=a.split('-').map(Number), pb=b.split('-').map(Number); return Math.round((Date.UTC(pa[0],pa[1]-1,pa[2])-Date.UTC(pb[0],pb[1]-1,pb[2]))/86400000); }
     // returns true when the count actually advanced today (→ celebrate)
     function bumpStreak(){ var s=getStreak(), td=today(); if(s.lastDay===td) return false; var d=streakDayDiff(td,s.lastDay); if(d<0) return false; // logging a past day never touches the streak
       s.count = (d===1) ? (s.count||0)+1 : 1; s.lastDay=td; s._ts=Date.now(); save(STREAK,s); return true; }
-    function renderStreak(){ var el=document.getElementById('streakChip'); if(el) el.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 3s5.5 4.2 5.5 9.2A5.5 5.5 0 0 1 12 17.5 5.5 5.5 0 0 1 6.5 12.2C6.5 9 9 6.5 12 3z"/></svg> '+getStreak().count; }
+    // No streak yet reads "—", never "0". A nought is a claim about his life;
+    // the dash is the absence of one. (Same rule Home learned in als-v433.)
+    function renderStreak(){ var el=document.getElementById('streakChip'); if(!el) return; var n=getStreak().count;
+      el.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 3s5.5 4.2 5.5 9.2A5.5 5.5 0 0 1 12 17.5 5.5 5.5 0 0 1 6.5 12.2C6.5 9 9 6.5 12 3z"/></svg> '+(n>0?n:'—'); }
+
+    /* ── One-time repair of the streak the old seed knocked down ──────────
+       The count is rebuilt from the LOGS rather than written as a magic
+       number, so it is correct on whatever day he happens to open the page.
+
+       The anchor is observed, not derived: his 2026-07-14 device export holds
+       `nut:streak = {count: 796, lastDay: "2026-07-14"}`. Every day after it
+       is then read out of his own diary.
+
+       Five guards, because this writes to a store that matters:
+         · once per device            (`nut:streakfix`, device-local, never synced)
+         · only with a resolved session and only on HIS account — "I cannot
+           tell" is never collapsed into an account (the run.html lesson)
+         · only if the anchor day is actually IN the logs. An unloaded diary
+           and an empty one look the same, so a diary that cannot show the
+           anchor gets no answer rather than a guessed one
+         · only if the run from the anchor is UNBROKEN. A real gap means the
+           streak legitimately reset and the anchor no longer applies, so the
+           repair stands down and leaves it to bumpStreak()
+         · only ever RAISES. It can never lower a count, which makes the
+           worst case "nothing happened" — the vault's additive-only rule. */
+    var STREAKFIX='nut:streakfix', FIX_V=1, ANCHOR_DAY='2026-07-14', ANCHOR_COUNT=796;
+    function nextDay(k){ var p=k.split('-').map(Number), d=new Date(Date.UTC(p[0],p[1]-1,p[2])); d.setUTCDate(d.getUTCDate()+1);
+      return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate()); }
+    function loggedDays(){ var s={}; getLogs().forEach(function(e){ if(e&&e.dateKey) s[e.dateKey]=1; }); return s; }
+    function trueStreak(){
+      var days=loggedDays(); if(!days[ANCHOR_DAY]) return null;      // can't see the anchor → don't guess
+      var td=today(), n=ANCHOR_COUNT, last=ANCHOR_DAY;
+      for(var k=nextDay(ANCHOR_DAY); k<=td; k=nextDay(k)){
+        if(days[k]){ n++; last=k; }
+        else if(k===td) break;                                       // today just isn't logged yet
+        else return null;                                            // a real gap → the anchor no longer applies
+      }
+      return {count:n,lastDay:last};
+    }
+    function repairStreak(){
+      try{
+        if(ls(STREAKFIX,0)>=FIX_V) return;
+        if(!localStorage.getItem('als:uid')) return;                 // no resolved session → never write
+        if(!(window.ALSProfile && window.ALSProfile.isOwner())) return; // his carry-over, his account only
+        var t=trueStreak(); if(!t) return;
+        if(getStreak().count>=t.count){ save(STREAKFIX,FIX_V); return; }
+        save(STREAK,{count:t.count,lastDay:t.lastDay,_ts:Date.now()});
+        save(STREAKFIX,FIX_V);
+        renderStreak();
+      }catch(e){ console.warn('nut repairStreak',e); }
+    }
+    // Deferred twice on purpose: identity has to resolve before it may write,
+    // and the diary has to have arrived before it may be believed.
+    function repairStreakSoon(){ try{ if(window.ALSProfile&&ALSProfile.ready) ALSProfile.ready(repairStreak); else repairStreak(); }catch(e){} }
     function showStreakPop(){ try{ var n=getStreak().count, d=document.createElement('div'); d.className='streak-pop';
       d.innerHTML='<div class="streak-pop-in"><div class="streak-pop-fl">🔥</div><div class="streak-pop-n">'+n+'</div><div class="streak-pop-l">day streak</div></div>';
       document.body.appendChild(d); requestAnimationFrame(function(){ d.classList.add('show'); });
@@ -739,6 +813,7 @@
       try{ document.getElementById('dateLbl').textContent=fmtDateLbl(viewDate); }catch(e){}
       try{ document.getElementById('todayBtn').style.visibility=viewDate===today()?'hidden':'visible'; }catch(e){}
       try{ if(dayTotals(today()).kcal>0 && bumpStreak()) showStreakPop(); }catch(e){}
+      try{ repairStreakSoon(); }catch(e){}
       try{ renderStreak(); }catch(e){ console.warn('nut renderStreak',e); }
       try{ var hEl=document.getElementById('nuHero'); if(hEl) hEl.innerHTML=heroLine(); }catch(e){ console.warn('nut heroLine',e); }
       try{ renderSummary(); }catch(e){ console.warn('nut renderSummary',e); }

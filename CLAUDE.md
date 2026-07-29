@@ -135,7 +135,17 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   and is silently **unrestorable**. `smoke-test.sh` enforces this.
 - Device-local by design (never synced, excluded from the vault): `gcal:*`,
   `improve:paused` (pausing the Library's reader on the laptop must not stop the
-  phone, but it must survive a reload or reopening restarts the flood).
+  phone, but it must survive a reload or reopening restarts the flood),
+  `nut:streakfix` (a once-per-device repair flag, like `bible:seedv`).
+- ⭐ **A DEFAULT IS NOT DATA. Never seed a store from a render.** `nut:streak`
+  carries Alex's real MyFitnessPal streak, carried over at 788 on 6 Jul 2026.
+  The seed sat inside `getStreak()` — which *renders* — and it **wrote**: any
+  paint before the cloud pull landed found the key absent, wrote the default
+  back with a **fresh `_ts`**, and beat the real count under whole-object LWW.
+  His streak fell **796 → 790** that way (als-v436), and 790 is exactly
+  788 + 2. A reader must never write, a seed belongs behind a device-local
+  flag or nowhere at all, and "I have not read it yet" must never be resolved
+  into "there is nothing here" — constraint 10 with a write on the end.
 
 ### Auth / security
 `api/_auth.js` gates endpoints (same-origin + rate limit + cron secret). RLS and
