@@ -107,6 +107,17 @@ icon-lab did — the decision is made.
 
 **Shell (on every page)** — `topbar.js` injects the top + bottom bar, runs the
 login gate, registers the service worker, and lazy-loads the engines below.
+`launcher.js` is the **"All" sheet** (als-v437): every page as an index, one
+press, from anywhere. It is loaded lazily by `topbar.js` and **owns no state** —
+no storage write, no key, no network — so it can be reverted with nothing to
+migrate. ⚠️ Adding a new live page means adding it to `GROUPS` there;
+`tests/launcher.test.js` fails if a root `.html` page is unreachable from it.
+⚠️ The bottom bar is **Home · Mind · All · Money · Nova** — the Body tab was
+replaced (`body.html` is a menu; the launcher is a better one), and `gym.html`
+gets a floating `.alx-fab` instead because it carries no bar of its own.
+⚠️ **`index.html` ALSO has its own hardcoded `<nav class="nav">` (line ~626)**,
+so Home currently renders TWO bottom navs; the private one has no All button.
+That is the next thing to fix.
 `sync.js` is the Supabase layer. `lock.js` is the gate. `als-dialog.js` is the
 modal helper (native `<dialog>`).
 

@@ -338,7 +338,142 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v434` — THE LIBRARY'S YOUTUBE HALF WAS A FABRICATION ENGINE**
+**HEAD is `als-v437` — NAVIGATION: THE LAUNCHER, and the game layer is gone**
+(2026-07-29, on `main`, 21 suites + smoke green). Three ships in one session,
+`569d012` → `7076b52` → `3e1e4a5`. **Read the "NEXT SESSION" block below first
+if you are picking this up cold — he has already decided what comes next.**
+
+### ⭐⭐ NEXT SESSION — what Alex has already asked for
+He wants the bottom bar reduced to **ONLY the "All" button**. In his words:
+*"code it so its only the 'all' button there and even if i am at the top its
+visible at the bottom without interfering with anything nice and smoothly, as
+well as at the home page which rn doesnt have anything."*
+
+Three things that means, and one trap:
+
+1. **Drop the other four tabs** (Home · Mind · Money · Nova) so the bar is the
+   single All control. Every one of those four is reachable from inside the
+   launcher already, so nothing is lost — but check `currentPageKey()` and the
+   `lit` logic in `topbar.js`, which exist only to highlight tabs that would no
+   longer be there.
+2. **It must stay visible at the top of a page**, i.e. pinned regardless of
+   scroll, and must not fight the content. The bar is already
+   `position: fixed; bottom: 0`, so "not visible at the top" is a symptom of
+   something else — find out what before redesigning. Suspect `body.has-bottombar`
+   padding, a page with its own scroll container, or the Home case below.
+3. ⚠️ **HOME IS THE TRAP AND IT IS A PRE-EXISTING BUG.** `index.html` carries
+   **its own hardcoded bottom nav** — `<nav class="nav">` at `index.html:626`,
+   `position:fixed; bottom:18px; z-index:5` — with Home/Body/Mind/Money/Nova and
+   **no All button**, *while topbar.js also injects the shared `.bottombar`
+   (z-index 40) on the same page.* **Home has TWO bottom navs stacked.** That is
+   why he says Home "doesn't have anything": he is looking at the pill nav, which
+   this session never touched. Fixing Home means deciding which of the two
+   survives — almost certainly delete Home's private `.nav` and let the shared
+   bar be the only one. Note its Mind link points at `identity.html` while
+   topbar's points at `main.html`: this is the long-standing two-destination
+   inconsistency, made physical.
+
+Also his, explicitly flagged: **"we didnt delete the last week vs this week xp
+usage thingy"** — correct, `als-v435` deliberately kept it and left the call to
+him. He has now made it. See the block below for what to delete and, more
+importantly, ⚠️ **why that panel was lying anyway: 45% of its Performance score
+is weighted on `goals:` to-do completion, which is 0, so the score is
+structurally capped at 55 no matter how good the week is.** Deleting it also
+finishes `xp.js` — nothing else calls `ALS.XP`, so the file and its SW `CORE`
+entry go with it.
+
+### What shipped, in order
+
+**`als-v435` — the game layer is gone** (`569d012`). Alex: *"i dont like the
+game system with the xp, i think that should be deleted, as well it takes space
+on the home page at the end."*
+- Deleted: `xp.js`'s **20 milestone badges** (*Hat Trick*, *Fortnight*, *Month
+  Warrior*, *Flawless*, *Operator*), the four-badge grid on Home, and the
+  streak chip in the "Where you stand" header.
+- The chip read `goal_streak_v1`, which is `{count: 0, lastProcessedDate: ""}`
+  in his device export. **The only streak Home has ever shown him was a zero he
+  never earned.** `processStreak()` itself is correct; the to-do behind it is
+  what is unused.
+- Deleted `collectData()`, which swept the WHOLE of localStorage on every home
+  load (~200 `JSON.parse` calls over his `goals:`/`po_coach_logs:` keys) to
+  decide whether four icons should glow, plus `prCount()`/`sleepNights()`/
+  `daysTracked()` in `home-live.js`, which had no other caller.
+- **Kept: "This week vs last"** — see NEXT SESSION, he now wants it gone too.
+- Home: 5,153px → 5,031px at a 393px phone width.
+
+**`als-v436` — the nutrition streak seed was destroying the streak it existed
+to preserve** (`7076b52`). The permanent rule is in **§2** ("A DEFAULT IS NOT
+DATA"); the full story is in memory `als_nutrition_streak`. Short version:
+- ⭐ **His streak is REAL, not a fixture.** He carried it over from
+  **MyFitnessPal** — seeded 788 on **2026-07-06**, and his own logging record is
+  **194 of 195 days** (1 Jan → 14 Jul), the single miss being 2 May, which sits
+  *before* the seed.
+- The seed lived inside `getStreak()` — **a function that renders** — and it
+  **wrote**. Any paint before the cloud pull landed wrote `{count:788}` back with
+  a fresh `_ts` and beat the true count under whole-object LWW. **796 → 790.**
+  A streak can only rise by one or reset to one, so a *decrease* is always a bug.
+- Now: `getStreak()` never writes, the seed is **deleted** rather than guarded
+  (the value syncs from the cloud, so any future firing could only destroy
+  something — and it would have handed Chrissie a fake 788-day streak on her
+  first meal), and `repairStreak()` rebuilds the count from his own diary,
+  anchored at the observed **14 Jul = 796**, behind five guards.
+  `nut:streakfix` is device-local. `tests/nut-streak.test.js` = 36 assertions.
+- ✅ **Confirmed live by Alex.** Do not re-open. It should read **812 on 30 Jul**
+  and climb.
+- ⚠️ His first report was *"still says 790"* — that was the **old cached page**,
+  before the new SW landed. A full PWA reopen is part of shipping.
+
+**`als-v437` — the launcher** (`3e1e4a5`). His brief: *"too many pages, most of
+them are so many scrolls away at my phone I just forget about them."* Measured,
+he was right: Home is ~5,000px at 393px, about **seven screens**, and 63% of it
+is a directory of 21 tiles — while the three pages he actually reaches (water,
+nutrition, sleep) are the three at **zero scroll** in the quick row. Position
+beats organisation.
+- `launcher.js`, injected by `topbar.js`, so it is on every page. Native
+  `<dialog>` + `showModal()`.
+- ⭐ **It is an INDEX, not a springboard.** A 4-across grid of 22 glyphs solves
+  *reaching* a page and does nothing about *forgetting* one, which was the
+  actual complaint. So: six fixed pins, then every page as a text row under
+  serif group names in the accent each space already wears on Home, plus a
+  **recency note** (`3d`, `4w`, `today`) — the one thing on screen able to say
+  *"you have not opened this in a while."*
+- ⚠️ **The recency note is deliberately NOT what `metric()` computes.**
+  `metric()` gives a page's VALUE ("28 films"); this gives its AGE. Different
+  questions, so it is not a second copy and the two cannot drift.
+- **The pins never reorder.** A list that rearranges itself by usage cannot be
+  learned. (The Library's shelf rule, applied again.)
+- ⭐ **REVERTIBLE BY CONSTRUCTION**, because he asked for that explicitly: the
+  launcher owns **no state** — zero storage writes, no key, nothing synced,
+  nothing in BUNDLES, no network call, and the six pins are **hardcoded rather
+  than stored** so the feature cannot come to own anything. `git revert 3e1e4a5`
+  + an SW bump and nothing needs migrating. `tests/launcher.test.js` asserts
+  every one of those so it stays true.
+- One assertion **fails if any future live page is added without a launcher
+  entry** — the app can no longer quietly grow pages he cannot find.
+
+### ⚠️ Two bugs that only rendering caught (both invisible to 56 assertions)
+- **"ALL" rendered in a different TYPEFACE from its four siblings.**
+  `button.bottombar-tab { font: inherit }` looked like a routine reset. The
+  shorthand resets `font-family`, `button.bottombar-tab` (0,1,1) outranks
+  `.bottombar-tab` (0,1,0), and the label fell back to the bar's sans stack.
+  **The rule now sets no font property at all** — author styles already beat the
+  UA button defaults. A test pins it.
+- **`"Search your pages…"` rendered as `pagesâ€¦`** when the host document
+  declared no charset. Every rendered non-ASCII string in `launcher.js` is now a
+  `\u` escape — which matters most for **Αρχαία / Ιστορία / Η Χρονιά**.
+- And `smoke-test.sh` caught a third: a CSS comment used **backticks inside the
+  `css` template literal** in `topbar.js` and terminated it. Run it. Always.
+
+### Open on the launcher
+- 🔴 **Unproven on his phone.** Driven headless only: the scroll pane measures
+  598px (not the zero constraint 13 warns about), search narrows to one row and
+  restores, the dialog computes `display:none` closed (the als-v431 trap), the
+  field clears on close. Rendered at 393px and 1100px.
+- `gym.html` has no bar of its own, so it gets a floating `.alx-fab` at
+  **z-index 39** — deliberately *under* gym's own sheets (61) and modals (71).
+- `run.html` was left alone on purpose: it is Chrissie's app.
+
+**Before that — `als-v434` — THE LIBRARY'S YOUTUBE HALF WAS A FABRICATION ENGINE**
 (2026-07-28, on `main`, 17 suites + smoke green; `tests/library.test.js` = 229
 assertions, up from 157). Read this if the task touches the Library, **or any
 feature where one code path is honest and its twin is not.**
@@ -1554,6 +1689,27 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴 **The launcher (als-v437) is unproven on his phone.** Does "All" feel right
+  in the centre, are the six pins the right six, and do the recency notes read
+  as useful or as noise? All three are cheap to change; none of them is stored.
+- ✅ **The nutrition streak is fixed and he confirmed it live.** Don't re-ask.
+  ⚠️ And never call that number a fixture again — it is a real MyFitnessPal
+  carry-over (memory `als_nutrition_streak`).
+- **The to-do conversation is still owed.** He said *"ill use it but we have to
+  talk about it."* The evidence to open with: nine days between 14 Jun and 7 Jul
+  hold the SAME line, `STUDY HISTORY AND ANCIENT GREEK`, never ticked. That is
+  not a to-do failing, it is a **recurring commitment typed into a one-day
+  container** — you never finish studying history. The feature he needed already
+  exists and he has never opened it: `identity.html`'s habits
+  (`habits:list` / `habits:log` are ALL absent from his export), which is the
+  navigation problem in miniature.
+- **`caffeine.html`'s `saveDays()` has an empty catch** (`caffeine.html:784`) —
+  and it is the write that must land *before* `saveLogs()` prunes the old
+  entries out of `caf:logs`. Constraint 17, and the same "destructive act after
+  an unconfirmed write" shape as als-v424. Also worth telling him: that page
+  keeps history as **daily totals only**; the individual drinks are discarded at
+  the midnight rollup by design, which is why it can look like he logged once.
+  Ask what **The Week** shows him before assuming data was lost.
 - 🔴 **Home (als-v433): do the tiles now match the pages?** He reported them
   wrong and the fix is verified against his device export, but **he has not
   opened it**. He needs a full PWA reopen to pick up the new SW. If any tile is
