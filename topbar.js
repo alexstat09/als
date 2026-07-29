@@ -20,6 +20,29 @@
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {} })();
 
+  // ── The launcher ("All"): every page, one press, from anywhere.
+  // Loaded lazily and opened on demand, so a page that is never asked for it
+  // pays only for the fetch. `loadLauncher(true)` means "open the moment it
+  // lands" — that is the path a tap takes before the script has arrived.
+  var _alxWantOpen = false;
+  function loadLauncher(openOnReady) {
+    try {
+      if (openOnReady) _alxWantOpen = true;
+      if (window.ALSLauncher) {
+        if (_alxWantOpen) { _alxWantOpen = false; window.ALSLauncher.open(); }
+        return;
+      }
+      if (document.querySelector('script[data-alx-launcher]')) return;
+      var s = document.createElement('script'); s.src = 'launcher.js'; s.defer = true;
+      s.setAttribute('data-alx-launcher', '');
+      s.onload = function () {
+        if (_alxWantOpen && window.ALSLauncher) { _alxWantOpen = false; window.ALSLauncher.open(); }
+      };
+      (document.head || document.documentElement).appendChild(s);
+    } catch (e) {}
+  }
+  loadLauncher(false);
+
   // ── Living Aurora: the data-reactive ambient background, on every page.
   (function loadAuroraBg(){ try {
     if (window.AuroraBG || document.querySelector('script[data-aurora-bg]')) return;
@@ -350,6 +373,21 @@
   transition: opacity 0.2s, transform 0.12s;
 }
 .bottombar-tab-icon svg { width: 21px; height: 21px; display: block; }
+/* "All" is a <button>, not a link — it opens the launcher rather than
+   navigating. These lines undo the UA button styling so it sits pixel-wise
+   identical to its four <a> siblings. */
+/* ⚠️ Deliberately sets NO font property. "font: inherit" here looked correct
+   and was not: the shorthand resets font-family, button.bottombar-tab (0,1,1)
+   outranks .bottombar-tab (0,1,0), and the label inherited the bar's SANS
+   stack — so "ALL" rendered in a different typeface from its four mono
+   siblings. Author styles already beat the UA button defaults, so the class
+   owns typography for both the <a>s and the <button>. Found by rendering the
+   bar and looking at it; no assertion could have seen it.
+   (This comment lives inside a template literal — no backticks in here.) */
+button.bottombar-tab {
+  background: none; border: none; margin: 0;
+  cursor: pointer; -webkit-appearance: none; appearance: none;
+}
 .bottombar-tab.active { color: rgba(245,242,236,0.92); }
 .bottombar-tab.active .bottombar-tab-icon { opacity: 1; color: #3FE0B0; }
 .bottombar-tab.active::before {
@@ -447,12 +485,12 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
   <a href="index.html"     class="bottombar-tab" data-page="home">
     <span class="bottombar-tab-icon">${tbIco('<path d="M4 11.5 12 4l8 7.5M6 10v9.5h12V10"/>')}</span><span>Home</span>
   </a>
-  <a href="body.html"      class="bottombar-tab" data-page="body">
-    <span class="bottombar-tab-icon">${tbIco('<path d="M12 20.5s-7.5-4.6-7.5-10A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 3.3c0 5.4-7.5 10-7.5 10z"/>')}</span><span>Body</span>
-  </a>
   <a href="main.html"      class="bottombar-tab" data-page="mind">
     <span class="bottombar-tab-icon">${tbIco('<path d="M9.5 4.5A3.5 3.5 0 0 0 6 8a3.3 3.3 0 0 0-2 3.2 3.4 3.4 0 0 0 1.6 3A3.5 3.5 0 0 0 9 19.5c1.4 0 2.6-.8 3-2V6.7a3.4 3.4 0 0 0-2.5-2.2zM14.5 4.5A3.5 3.5 0 0 1 18 8a3.3 3.3 0 0 1 2 3.2 3.4 3.4 0 0 1-1.6 3A3.5 3.5 0 0 1 15 19.5c-1.4 0-2.6-.8-3-2"/>')}</span><span>Mind</span>
   </a>
+  <button type="button"    class="bottombar-tab" data-page="all" id="tbAll" aria-label="All pages">
+    <span class="bottombar-tab-icon">${tbIco('<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>')}</span><span>All</span>
+  </button>
   <a href="finance.html"   class="bottombar-tab" data-page="money">
     <span class="bottombar-tab-icon">${tbIco('<path d="M12 3v18M17 6.5H9.6a3.1 3.1 0 0 0 0 6.2h4.8a3.1 3.1 0 0 1 0 6.2H6.5"/>')}</span><span>Money</span>
   </a>
@@ -509,11 +547,38 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
       const bottomWrap = document.createElement('div');
       bottomWrap.innerHTML = bottombarHtml.trim();
       document.body.appendChild(bottomWrap.firstChild);
+      // The Body tab was replaced by "All" (body.html was a menu of 7 links;
+      // the launcher is a better menu of all 31, from every page). So the many
+      // pages currentPageKey() still maps to 'body' would light nothing at all.
+      // "All" takes that duty: it lights whenever the page you are on has no
+      // tab of its own, which is honest — you are somewhere in the wider app.
       const active = currentPageKey();
+      const lit = ['home', 'mind', 'money', 'nova'].indexOf(active) > -1 ? active : 'all';
       document.querySelectorAll('.bottombar-tab').forEach((t) => {
-        t.classList.toggle('active', t.getAttribute('data-page') === active);
+        t.classList.toggle('active', t.getAttribute('data-page') === lit);
+      });
+      const allBtn = document.getElementById('tbAll');
+      if (allBtn) allBtn.addEventListener('click', () => {
+        try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
       });
       document.body.classList.add('has-bottombar');
+    } else if (isGymPage()) {
+      // gym.html carries no bottom bar of its own — it opted out entirely. It
+      // is also one of the three pages he actually lives in, so without this
+      // the launcher would be missing exactly where he is most. A single
+      // floating button instead of a bar he deliberately does not have.
+      // z-index 39 keeps it UNDER gym's own sheets (61) and modals (71), so a
+      // logging sheet can never be fought for the same pixels.
+      const fab = document.createElement('button');
+      fab.type = 'button'; fab.className = 'alx-fab'; fab.id = 'tbAllFab';
+      fab.setAttribute('aria-label', 'All pages');
+      fab.innerHTML = tbIco('<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>');
+      fab.querySelector('svg').style.width = '20px';
+      fab.querySelector('svg').style.height = '20px';
+      fab.addEventListener('click', () => {
+        try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
+      });
+      document.body.appendChild(fab);
     }
     // ── Account button: their initials, and the only way to sign out.
     // (Signing out is also the ONLY safe way to hand this device to another
