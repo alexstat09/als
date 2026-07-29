@@ -439,9 +439,42 @@ function recapWords(p) {
    Gemini only accepts PUBLIC videos, and the id is the only part we need. */
 function watchUrl(videoId) { return 'https://www.youtube.com/watch?v=' + encodeURIComponent(videoId); }
 
-async function recap(videoId, title, notes) {
+/* How long is it? One cheap Data API field, and it earns its place twice:
+   the page can say "watching 24 minutes of video" instead of a blank spinner,
+   and a timeout can NAME ITS CAUSE instead of being a mystery. Length is the
+   single thing that decides whether this call fits inside the platform's
+   60-second ceiling, so it is the one number worth knowing up front.
+   Absent key or a failed lookup returns 0 — never a guess, and never a
+   blocker. */
+function iso8601Secs(s) {
+  var m = String(s || '').match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return 0;
+  return (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0);
+}
+async function videoSecs(videoId, key) {
+  if (!videoId || !key) return 0;
+  try {
+    var r = await fetch('https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=' +
+      encodeURIComponent(videoId) + '&key=' + encodeURIComponent(key));
+    if (!r.ok) return 0;
+    var j = await r.json();
+    var it = (j.items || [])[0];
+    return iso8601Secs(it && it.contentDetails && it.contentDetails.duration);
+  } catch (e) { return 0; }
+}
+function humanMins(secs) {
+  if (!secs) return '';
+  var m = Math.round(secs / 60);
+  if (m < 1) return 'under a minute';
+  if (m < 60) return m + ' minute' + (m === 1 ? '' : 's');
+  var h = Math.floor(m / 60), rem = m % 60;
+  return h + 'h' + (rem ? ' ' + rem + 'm' : '');
+}
+
+async function recap(videoId, title, notes, ytKey) {
   var id = String(videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20);
   if (!id) return { ok: false, error: 'no video id' };
+  var secs = await videoSecs(id, ytKey);
 
   var n = String(notes || '').trim().slice(0, 1500);
   var prompt = 'Watch this video and write the page described in your instructions.\n' +
@@ -456,7 +489,8 @@ async function recap(videoId, title, notes) {
     maxTokens: 8192
   });
   if (!out || !out.ok) {
-    return { ok: false, error: (out && out.kind) || 'model', status: out && out.status, message: (out && out.message) || '' };
+    return { ok: false, error: (out && out.kind) || 'model', status: out && out.status,
+             message: (out && out.message) || '', secs: secs };
   }
 
   var text = String(out.text || '').trim();
@@ -468,12 +502,12 @@ async function recap(videoId, title, notes) {
   // It watched, and there was nothing being said. That is a real answer and it
   // must survive as one — not as a failed recap, and not as an invented lesson.
   if (p.nothing && !p.sections.length) {
-    return { ok: true, empty: true, nothing: p.nothing, shelf: matchShelf(p.shelf), model: out.model };
+    return { ok: true, empty: true, nothing: p.nothing, shelf: matchShelf(p.shelf), model: out.model, secs: secs };
   }
   // Anything that parsed to nothing at all is a FAILURE to read, never an empty
   // recap. Silent-empty is this project's disease; the caller gets a 502.
   if (!p.sections.length && !p.open) {
-    return { ok: false, error: 'parse', message: 'The reply did not contain a recap.' };
+    return { ok: false, error: 'parse', message: 'The reply did not contain a recap.', secs: secs };
   }
 
   return {
@@ -481,7 +515,7 @@ async function recap(videoId, title, notes) {
     shelf: matchShelf(p.shelf),
     words: recapWords(p),
     sections: p.sections.length,
-    model: out.model,
+    model: out.model, secs: secs,
     truncated: out.finish === 'MAX_TOKENS'
   };
 }
@@ -611,5 +645,5 @@ async function organize(items, known, strict) {
 module.exports = {
   playlist: playlist, distill: distill, organize: organize, grade: grade, recap: recap,
   _cleanDesc: cleanDesc, _parseRecap: parseRecap, _matchShelf: matchShelf,
-  _watchUrl: watchUrl, RECAP_SYS: RECAP_SYS
+  _watchUrl: watchUrl, _iso8601Secs: iso8601Secs, _humanMins: humanMins, RECAP_SYS: RECAP_SYS
 };

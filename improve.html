@@ -1437,8 +1437,10 @@
       if(isTikTok(v)||!v.ytId) return '';
       var h='<div class="pane-recap">';
       if(recapBusy[v.id]){
-        h+='<span class="lab pulse">Watching it now</span>'+
-           '<div class="sub" style="margin-top:0">This takes a minute or two — it is watching the whole video. You can keep browsing.</div>';
+        var el=Math.max(0,Math.round((Date.now()-recapBusy[v.id])/1000));
+        h+='<span class="lab pulse">Watching it now · '+el+'s</span>'+
+           '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
+           'It is taking in the whole video, not skimming a description, so give it up to a minute. You can keep browsing — this keeps going.</div>';
       }else if(hasRecap(v)){
         var rp=rcParse(v.recap);
         h+='<span class="lab">The recap</span>'+
@@ -1884,17 +1886,43 @@
        the pane, walk to another video and start a second; a shared boolean
        would silently drop the second request and look like nothing happened. */
     var recapBusy={};
+    /* ⚠️⚠️ THE 504 THAT SHIPPED.
+       The first build sent this request and waited. Watching a video runs far
+       longer than a normal API call, `run-reminders.js` is capped at 60s in
+       vercel.json, and **Gemini 3 defaults its thinking level to HIGH** — so
+       the function was killed mid-flight and Vercel answered with its own
+       gateway page. That page is HTML, so `r.json()` threw, `d` stayed empty,
+       and the card rendered the literal string "The server said 504." Alex saw
+       a number and no way forward.
+       Three separate things are fixed, and all three had to be:
+         · the CAUSE — thinking is now `low` server-side, which is what makes
+           the call fit at all (see api/_model.js);
+         · the SERVER — it aborts itself at 48s and returns typed JSON, so a
+           timeout arrives as a sentence rather than as Vercel's HTML;
+         · and HERE — a reply we cannot parse is never rendered as its status
+           code. A status code is not a message. */
+    function recapFailMsg(status){
+      if(status===504||status===502) return 'The server ran out of time watching this one. Long videos are the usual cause — a shorter one will go through.';
+      if(status===503) return 'Watching needs GEMINI_API_KEY set on the server.';
+      if(status===401||status===403) return 'The server refused the request. Try reloading the page first.';
+      return 'That did not work (error '+status+'). Try again in a moment.';
+    }
     async function askRecap(v){
       try{
         var r=await fetch('/api/run-reminders?ytrecap=1',{
           method:'POST', headers:{'content-type':'application/json'}, cache:'no-store',
           body:JSON.stringify({ videoId:v.ytId||'', title:titleOf(v), notes:(v.note||v.notes||'') })
         });
-        var d={}; try{ d=await r.json(); }catch(e){}
+        var d=null; try{ d=await r.json(); }catch(e){ d=null; }
         // ⚠️ fetch() resolves on 4xx. Check r.ok, always — the whole reason the
         // sync engine spent months reporting saves that never happened.
         if(r.ok&&d&&d.ok) return { ok:true, data:d };
-        return { ok:false, message:(d&&d.message)||(d&&d.error)||('The server said '+r.status+'.'), rate:r.status===429 };
+        return {
+          ok:false,
+          message:(d&&d.message)||(d&&d.error)||recapFailMsg(r.status),
+          rate:r.status===429,
+          timeout:r.status===504||(d&&d.error==='timeout')
+        };
       }catch(e){ return { ok:false, message:'No connection — the recap needs the network.' }; }
     }
     /* ⚠️ A recap REPLACES one he may already have, so it may only ever do so on
@@ -1902,8 +1930,14 @@
        re-recap leaves the old page exactly where it was and says why. */
     async function runRecap(id){
       var v=byId(id); if(!v||!v.ytId||recapBusy[id]) return;
-      recapBusy[id]=1; v.recapErr=''; renderPane(); renderWall();
+      recapBusy[id]=Date.now(); v.recapErr=''; renderPane(); renderWall();
+      /* A minute of nothing looks like a broken button, and a broken button
+         gets pressed four more times. The counter is the cheapest honest
+         signal that work is happening — it repaints only the recap block, so
+         it cannot fight anything he is typing. */
+      var tick=setInterval(function(){ if(recapBusy[id]&&selId===id) renderPane(); else clearInterval(tick); },1000);
       var res=await askRecap(v);
+      clearInterval(tick);
       v=byId(id);
       if(!v){ delete recapBusy[id]; return; }
       if(res.ok){
@@ -1917,6 +1951,7 @@
           v.recap=d.text||''; delete v.recapNothing;
           v.recapWords=d.words||0; v.recapSections=d.sections||0;
         }
+        if(d.secs) v.secs=d.secs;
         v.recapTs=Date.now(); v.recapTrunc=!!d.truncated; v.recapErr='';
         v.grade='watched';                 // the source line must tell the truth
         if(d.shelf&&SHELVES.indexOf(d.shelf)>=0){ v.concept=d.shelf; v.cver=CVER; }

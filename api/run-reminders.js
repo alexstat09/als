@@ -670,26 +670,34 @@ module.exports = async function (req, res) {
         res.status(503).json({ error: 'no-key', message: 'Watching a video needs GEMINI_API_KEY — it is free from Google AI Studio.' });
         return;
       }
-      var rout = await yt.recap(rvid, rtitle, rnotes);
+      var rout = await yt.recap(rvid, rtitle, rnotes, (process.env.YOUTUBE_API_KEY || '').trim());
       if (!rout.ok) {
-        var st = rout.error === 'rate' ? 429 : 502;
-        // Gemini refuses anything not PUBLIC, and a 400 here is nearly always
-        // that. Say the actionable thing rather than echoing the upstream.
+        var st = rout.error === 'rate' ? 429 : (rout.error === 'timeout' ? 504 : 502);
+        var howLong = rout.secs ? yt._humanMins(rout.secs) : '';
+        // Every failure here names itself and says what HE can do about it.
+        // Echoing an upstream string, or letting Vercel's own gateway 504
+        // through, is how this shipped saying "The server said 504." — a
+        // sentence that tells him nothing at all.
         var msg = rout.message || '';
-        if (rout.status === 400 || /permission|not found|unsupported|invalid/i.test(msg)) {
+        if (rout.error === 'timeout') {
+          msg = 'This one took too long to watch' + (howLong ? ' — it is ' + howLong + ' long' : '') +
+                '. Watching happens inside a 60-second budget on the server, and a long video can outrun it. ' +
+                'Shorter videos work; this is a limit of where the app runs, not of the video.';
+        } else if (rout.status === 400 || /permission|not found|unsupported|invalid/i.test(msg)) {
           msg = 'Gemini could not open this one. It only accepts PUBLIC videos — a private, unlisted, members-only or age-restricted video cannot be watched.';
         } else if (rout.error === 'rate') {
           msg = 'The daily video quota is spent (the free tier allows 8 hours of YouTube a day). It resets tomorrow.';
         } else if (rout.error === 'truncated') {
           msg = 'It ran out of room before finishing the recap. Try again.';
         }
-        res.status(st).json({ error: rout.error || 'recap failed', message: msg });
+        res.status(st).json({ error: rout.error || 'recap failed', message: msg, secs: rout.secs || 0 });
         return;
       }
       res.status(200).json({
         ok: true, empty: !!rout.empty, nothing: rout.nothing || '',
         text: rout.text || '', shelf: rout.shelf || '',
         words: rout.words || 0, sections: rout.sections || 0,
+        secs: rout.secs || 0,
         truncated: !!rout.truncated, model: rout.model || ''
       });
     } catch (e) {

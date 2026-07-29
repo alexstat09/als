@@ -249,10 +249,23 @@ function gemBody(opts, full) {
     temperature: opts.temperature == null ? 0.3 : opts.temperature,
     maxOutputTokens: opts.maxTokens || 8192
   };
-  // Low media resolution is ~100 tokens/sec of video against ~300 at default,
-  // and for a talking video the value is in what is SAID, not in reading small
-  // text off the frames. It is what makes an hour-long video affordable.
-  if (full) cfg.mediaResolution = 'MEDIA_RESOLUTION_LOW';
+  if (full) {
+    // Low media resolution is ~100 tokens/sec of video against ~300 at default,
+    // and for a talking video the value is in what is SAID, not in reading small
+    // text off the frames. It is what makes an hour-long video affordable.
+    cfg.mediaResolution = 'MEDIA_RESOLUTION_LOW';
+    /* ⚠️⚠️ THIS LINE IS WHY THE FIRST BUILD RETURNED 504.
+       **Gemini 3 defaults `thinking_level` to HIGH.** On a video that means it
+       reasons over the whole thing before writing a word, and the request
+       comfortably outran `run-reminders.js`'s 60s ceiling — Vercel killed the
+       function and the page got an opaque gateway 504 that said nothing.
+       A recap is a summarisation job, not a reasoning one: the material is
+       already there, it just has to be written down well. `low` is the right
+       level for it AND the difference between finishing and being killed.
+       ⚠️ `thinkingLevel` is a Gemini-3 field — on anything older it is an
+       error, which is exactly what the trimmed retry below exists to survive. */
+    cfg.thinkingConfig = { thinkingLevel: 'low' };
+  }
   var b = { contents: [{ role: 'user', parts: parts }], generationConfig: cfg };
   if (opts.system) b.systemInstruction = { parts: [{ text: String(opts.system) }] };
   return b;
@@ -267,12 +280,32 @@ function gemText(body) {
   return { text: out.trim(), finish: (c.finishReason || '').toString() };
 }
 
+/* ⚠️ A DEADLINE WE OWN, INSIDE THE ONE THE PLATFORM OWNS.
+   `run-reminders.js` is capped at 60s in vercel.json. When Gemini runs past
+   that, Vercel kills the whole function and answers with its own gateway 504 —
+   an HTML page, not our JSON — so the page rendered the literal string
+   "The server said 504." and Alex had no idea what had happened or what to do.
+   That is hard constraint 10 with a stopwatch: a timeout and a failure must
+   not look the same, and neither may be mute.
+   So we abort FIRST, with room to spare, and return a typed failure the page
+   can turn into a real sentence. */
+var GEM_DEADLINE_MS = 48000;
+
 async function gemPost(m, opts, full, k) {
-  return fetch(GEMINI_URL + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(k), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(gemBody(opts, full))
-  });
+  var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = ctl ? setTimeout(function () { ctl.abort(); }, opts.deadlineMs || GEM_DEADLINE_MS) : null;
+  try {
+    return await fetch(GEMINI_URL + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(k), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(gemBody(opts, full)),
+      signal: ctl ? ctl.signal : undefined
+    });
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+function isAbort(e) {
+  return !!e && (e.name === 'AbortError' || e.name === 'TimeoutError' || /abort/i.test(String(e.message || '')));
 }
 
 async function watch(opts) {
@@ -286,7 +319,13 @@ async function watch(opts) {
     for (var pass = 0; pass < 2; pass++) {           // pass 1 = trimmed config
       var r;
       try { r = await gemPost(chain[i], opts, pass === 0, k); }
-      catch (e) { return { ok: false, kind: 'network' }; }
+      catch (e) {
+        // ⚠️ A deadline is NOT a network error and must not fall through the
+        // chain — every model would take just as long and we would spend three
+        // timeouts to report one.
+        if (isAbort(e)) return { ok: false, kind: 'timeout', model: chain[i] };
+        return { ok: false, kind: 'network' };
+      }
 
       var body = null;
       try { body = await r.json(); } catch (e) {}
@@ -340,6 +379,7 @@ function fail(r, msgs) {
   // A 200 that carried no text. Never collapse either of these into "empty
   // result" — one means the model spent its whole budget thinking, the other
   // means it answered with nothing, and they need different fixes.
+  if (r.kind === 'timeout') return { error: 'timeout', message: msgs.timeout || 'It took too long and had to be stopped.' };
   if (r.kind === 'truncated') return { error: 'truncated', message: msgs.truncated || 'The model ran out of room before it finished writing. Try again.' };
   if (r.kind === 'empty') return { error: 'empty', message: msgs.empty || 'The model returned nothing at all.' };
   if (r.kind === 'exhausted') {

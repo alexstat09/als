@@ -409,8 +409,9 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v440` — THE RECAP: the Library can finally WATCH a video**
-(2026-07-29; 22 suites + smoke green; `tests/recap.test.js` = 133 assertions).
+**HEAD is `als-v441` — THE RECAP: the Library can finally WATCH a video**
+(2026-07-29; 22 suites + smoke green; `tests/recap.test.js` = 161 assertions).
+⚠️ **Read "the 504 it shipped with" below before touching anything timing-related.**
 His brief, and the diagnosis was inside it: *"i dont like the key points it
 provides, too vague, not that much good tbh… have like something i can press
 inside the video i just watched that makes it read the video and truly say
@@ -515,10 +516,40 @@ grey one on the same card and makes him decide which to trust every time.
 - The watched line said *"everything below"* while rendering at the FOOT of
   the pane. It points up now.
 
+### ⭐⭐ als-v441 — THE 504 IT SHIPPED WITH, AND WHY
+Alex, on the first real video: *"it said this. The server said 504."* Three
+separate faults, and every one had to be fixed:
+1. **THE CAUSE — Gemini 3 defaults `thinking_level` to HIGH.** On a video that
+   means reasoning over the whole thing before writing a word, and the call
+   comfortably outran `run-reminders.js`'s **60s** cap in `vercel.json`. A
+   recap is a summarisation job, not a reasoning one — the material is already
+   there, it only has to be written down well. `thinkingConfig.thinkingLevel:
+   'low'` is both correct for the task and the difference between finishing
+   and being killed. ⚠️ It is a Gemini-3 field and errors on anything older,
+   which is what the trimmed retry already existed to survive.
+2. **Vercel then answered with its own HTML gateway page**, so `r.json()` threw
+   and the page had nothing. `_model.js` now holds a deadline it owns —
+   `GEM_DEADLINE_MS = 48000` with an `AbortController`, inside the platform's
+   60s — and returns a typed `timeout`. ⚠️ A deadline must **not** fall through
+   the model chain: every model would take just as long, so we would spend
+   three timeouts to report one.
+3. **The page rendered the STATUS CODE as the message.** A status code is not a
+   message — constraint 10 wearing a number. `recapFailMsg()` gives every
+   status a real sentence, an unparseable reply stays `null` rather than
+   becoming an empty success object, and the wait now shows **elapsed seconds**
+   so a minute of silence never reads as a dead button.
+
+Also added: **duration**, one cheap `contentDetails` field, so a timeout can
+NAME ITS CAUSE ("it is 52 minutes long") instead of being a mystery. Unknown
+duration says nothing rather than "0 minutes".
+⚠️ **The 60s cap is the real ceiling on video length.** `maxDuration: 300` would
+lift it, but that needs Vercel **Pro** — on Hobby it is a deploy error, so it
+was deliberately NOT changed without knowing his plan. A test pins the 60 the
+48s deadline is set against; change them together or not at all.
+
 ### 🔴 Open — his, not mine
-- ⚠️⚠️ **`GEMINI_API_KEY` is not set in Vercel.** The feature is built, tested
-  and deployed, and it will return "no-key" until he adds it. Free from Google
-  AI Studio. **Nothing else is blocking.**
+- ✅ **`GEMINI_API_KEY` is set** — he added it, and the first call reached
+  Gemini (which is how the 504 was found). Nothing is blocking any more.
 - 🔴 **Unproven in his browser.** Driven headless at 1440px and 393px: the
   dialog opens centred (340/340 gap), the scroll pane measures 663px against
   1202px of content and actually scrolls, it closes to `display:none`, and

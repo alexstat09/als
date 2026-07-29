@@ -92,6 +92,37 @@ eq(t.error, 'truncated', 'fail: truncated has its own code');
 eq(e.error, 'empty', 'fail: empty has its own code');
 ok(t.message !== e.message, 'fail: truncated and empty do not say the same thing');
 
+/* ⭐⭐ THE 504 THAT SHIPPED — the whole failure path, pinned.
+   The first build returned "The server said 504." on a real video. Three
+   separate faults, and every one of them had to be fixed:
+     1. Gemini 3 defaults thinking_level to HIGH, so the call outran
+        run-reminders.js's 60s ceiling in vercel.json;
+     2. Vercel then answered with its own HTML gateway page, so r.json() threw
+        and the page had nothing to show;
+     3. ...and the page rendered the STATUS CODE as the message.
+   A status code is not a message. */
+console.log('   the 504: cause, deadline, and a sentence instead of a number');
+eq(body.generationConfig.thinkingConfig.thinkingLevel, 'low',
+  '504-cause: thinking is LOW — Gemini 3 defaults it to HIGH, which is what blew the 60s budget');
+eq(trimmed.generationConfig.thinkingConfig, undefined,
+  '504-cause: the trimmed retry drops thinkingConfig too — it errors on pre-Gemini-3 models');
+const to = model.fail({ kind:'timeout' });
+eq(to.error, 'timeout', '504: a deadline has its own code, distinct from network and upstream');
+ok(to.message !== model.fail({ kind:'network' }).message, '504: a timeout does not read like a network error');
+const modelSrc = fs.readFileSync(path.join(ROOT, 'api', '_model.js'), 'utf8');
+ok(/AbortController/.test(modelSrc), '504: the server aborts itself rather than waiting to be killed');
+ok(/GEM_DEADLINE_MS\s*=\s*(4\d|5[0-5])000/.test(modelSrc),
+  '504: the internal deadline sits comfortably inside the 60s platform cap');
+// ⚠️ A deadline must NOT fall through the model chain — every model would take
+// just as long, so we would spend three timeouts to report one.
+ok(/if \(isAbort\(e\)\) return \{ ok: false, kind: 'timeout'/.test(modelSrc),
+  '504: a timeout returns immediately instead of retrying the whole chain');
+
+// vercel.json must still hold the ceiling this is designed around.
+const vjson = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+eq(vjson.functions['api/run-reminders.js'].maxDuration, 60,
+  '504: run-reminders is still capped at 60s — the deadline above is set against this number');
+
 /* ════════════════════════════════════════════════════════════
    2 · api/_youtube.js — parsing what came back
    ════════════════════════════════════════════════════════════ */
@@ -163,6 +194,19 @@ const MESSY = yt._parseRecap('CORE: one idea\nSECTION: A\nbody text here\nFACTS:
 eq(MESSY.sections.length, 1, 'parse: survives a missing SHELF and OPEN');
 eq(MESSY.facts[0], 'a starred fact', 'parse: accepts a * bullet');
 eq(yt._parseRecap('').sections.length, 0, 'parse: empty in is not a crash');
+
+/* Duration. One cheap field that earns its place twice: the page can set
+   expectations, and a timeout can NAME ITS CAUSE instead of being a mystery. */
+console.log('   how long is it — so a timeout can name its cause');
+eq(yt._iso8601Secs('PT14M32S'), 872, 'duration: parses minutes and seconds');
+eq(yt._iso8601Secs('PT1H2M5S'), 3725, 'duration: parses hours');
+eq(yt._iso8601Secs('PT3H'), 10800, 'duration: parses a bare hour count');
+eq(yt._iso8601Secs('garbage'), 0, 'duration: unparseable is 0, never a guess');
+eq(yt._iso8601Secs(''), 0, 'duration: empty is 0');
+eq(yt._humanMins(872), '15 minutes', 'duration: reads as minutes');
+eq(yt._humanMins(3725), '1h 2m', 'duration: reads as hours and minutes');
+eq(yt._humanMins(10800), '3h', 'duration: a round hour count drops the minutes');
+eq(yt._humanMins(0), '', 'duration: nothing known says nothing — never "0 minutes"');
 
 /* The prompt is where this feature lives or dies — these are the instructions
    that stop it producing the vagueness he rejected. */
@@ -395,6 +439,30 @@ ok(/ytrecap/.test(courier), 'wiring: the courier has a ?ytrecap branch');
 ok(/yt\.recap\(/.test(courier), 'wiring: the courier actually calls recap()');
 ok(/GEMINI_API_KEY/.test(courier), 'wiring: the courier checks for the key before calling');
 ok(/PUBLIC videos/.test(courier), 'wiring: a non-public video gets an actionable message, not a raw 400');
+ok(/rout\.error === 'timeout'/.test(courier), 'wiring: the courier turns a deadline into its own message');
+ok(/60-second budget/.test(courier), 'wiring: the timeout message explains the real cause, not a code');
+ok(/yt\._humanMins/.test(courier), 'wiring: and names how long the video was, when we know');
+// ⚠️ Measured on the CALL itself, not on a window of characters near it. The
+// first version of this assertion used a 1200-char window and failed on a
+// correct file, because the branch carries a long comment — a guard that
+// cries wolf is a guard somebody loosens (constraint 19, third time today).
+ok(/yt\.recap\(rvid, rtitle, rnotes, \(process\.env\.YOUTUBE_API_KEY \|\| ''\)\.trim\(\)\)/.test(courier),
+  'wiring: the recap call passes the YouTube key through, or duration is always unknown');
+
+/* ⚠️ THE PAGE MUST NEVER RENDER A STATUS CODE AS A MESSAGE.
+   That is what "The server said 504." was, and it is constraint 10 wearing a
+   number: it told him something had failed and nothing about what to do. */
+ok(/function recapFailMsg\(status\)/.test(code), 'page: there is a real sentence for every failure status');
+ok(/recapFailMsg\(r\.status\)/.test(code), 'page: it is used as the fallback when the reply cannot be parsed');
+ok(!/'The server said '\+r\.status/.test(code), 'page: the old status-code-as-message is gone');
+ok(/504\|\|status===502/.test(code) || /status===504/.test(code),
+  'page: a gateway timeout has its own wording');
+// A reply we cannot parse (Vercel's HTML error page) must not read as success.
+ok(/var d=null; try\{ d=await r\.json\(\); \}catch\(e\)\{ d=null; \}/.test(code),
+  'page: an unparseable reply stays null rather than becoming an empty success object');
+// A minute of nothing looks like a broken button.
+ok(/Watching it now · '\+el\+'s/.test(code), 'page: the wait shows elapsed seconds, so it never looks dead');
+ok(/clearInterval\(tick\)/.test(code), 'page: and the ticker is cleared, both on success and on failure');
 ok(/ytrecap/.test(html), 'wiring: the page calls ?ytrecap');
 
 // Constraint 1: twelve routed functions, all twelve used. This feature folds
@@ -454,7 +522,7 @@ ok(!/toLocaleDateString/.test(renderRecapBody),
 // Constraint 2: the service worker was bumped, and never backwards.
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const ver = (sw.match(/var CACHE = "als-v(\d+)"/) || [])[1];
-ok(ver && parseInt(ver, 10) >= 440, 'constraint 2: sw.js CACHE is at least als-v440  (got als-v' + ver + ')');
+ok(ver && parseInt(ver, 10) >= 441, 'constraint 2: sw.js CACHE is at least als-v441  (got als-v' + ver + ')');
 
 /* It must stay OUT of the background sweep. An hour of video is a real slice
    of the daily quota; sweeping 46 videos would spend it on ones he never
