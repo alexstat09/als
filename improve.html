@@ -1026,6 +1026,11 @@
     }
     function tileHTML(v){
       var th=thumbOf(v), p=kpParse(v.keypoints||'');
+      /* One voice on the wall too. The tile wore the RECAP badge while still
+         printing the thin description-written core underneath it — "A tour of
+         Roman history" under a badge promising the opposite. Wherever a recap
+         exists it speaks: pane chip, pane body, Room row, and here. */
+      if(hasRecap(v)){ var rc=rcParse(v.recap); if(rc.core) p={ core:rc.core, keys:p.keys, act:p.act }; }
       var title=titleOf(v);
       // A keepsake whose caption is only hashtags takes its NAME from the core
       // sentence, so printing the core underneath would say it twice.
@@ -1070,6 +1075,14 @@
     function roomItems(){
       var terms=fold(seek).split(/\s+/).filter(Boolean);
       return videos.concat(tiktoks).filter(function(v){
+        // A recap earns a place here on its own — it is the only reading in
+        // the library written from the video rather than around it, so a
+        // stale `kind` on its old key points must not keep it out.
+        if(hasRecap(v)) return !terms.length || (function(){
+          var hy=hay(v);
+          for(var i=0;i<terms.length;i++) if(hy.indexOf(terms[i])<0) return false;
+          return true;
+        })();
         if(!v.keypoints||isLegacyRead(v)||!isLesson(v)) return false;
         if(!kpParse(v.keypoints).core) return false;
         if(!terms.length) return true;
@@ -1092,15 +1105,25 @@
           done=actions.filter(function(a){ return !!a.done; }), items=roomItems();
 
       if(due.length){
-        var r=due[0], rp=kpParse(r.keypoints);
+        /* ⚠️ A recapped video can be due WITHOUT any key points — dueAt() lets
+           a recap qualify on its own. Reading kpParse alone here would draw a
+           card with an empty core and no points, which is the silent-empty
+           disease with a "Before you forget it" heading on top. The recap is
+           also simply the better material, so it wins where both exist. */
+        var r=due[0], rr=hasRecap(r)?rcParse(r.recap):null, rp=kpParse(r.keypoints);
+        var core=(rr&&rr.core)||rp.core||titleOf(r);
+        var pts=(rr&&rr.facts.length)?rr.facts:rp.keys;
         h+='<section class="rm-sec rm-due"><div class="rm-h">Before you forget it'+
            (due.length>1?' <span class="rm-n">'+due.length+' due</span>':'')+'</div>'+
-           '<div class="rm-core">'+esc(rp.core||titleOf(r))+'</div>'+
+           '<div class="rm-core">'+esc(core)+'</div>'+
            '<div class="rm-from">'+esc(titleOf(r))+(conceptOf(r)?' · '+esc(conceptOf(r)):'')+'</div>'+
-           (rp.keys.length?'<ul class="rm-keys">'+rp.keys.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
+           (pts.length?'<ul class="rm-keys">'+pts.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
            '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(r.id)+'">Still with me ✓</button>'+
            '<button type="button" class="b" data-remlost="'+esc(r.id)+'">I’d forgotten it</button>'+
-           '<button type="button" class="b" data-open="'+esc(r.id)+'">Open it</button></div></section>';
+           (hasRecap(r)
+             ? '<button type="button" class="b" data-rcread="'+esc(r.id)+'">Read the recap →</button>'
+             : '<button type="button" class="b" data-open="'+esc(r.id)+'">Open it</button>')+
+           '</div></section>';
       }
 
       /* ⭐ THE PAGES HE KEEPS.
@@ -1118,8 +1141,11 @@
         return true;
       }).sort(function(a,b){ return (b.recapTs||0)-(a.recapTs||0); });
       if(recaps.length){
+        /* Capped at six. The shelf sections below carry every recap too, so an
+           uncapped list here would print the same thing twice on one screen.
+           This is the RECENT door — the shelves are the thematic one. */
         h+='<section class="rm-sec"><div class="rm-h">The pages you keep <span class="rm-n">'+recaps.length+'</span></div>'+
-           recaps.map(function(v){
+           recaps.slice(0,6).map(function(v){
              var rp=rcParse(v.recap);
              return '<button type="button" class="rm-idea" data-rcread="'+esc(v.id)+'">'+
                '<span class="rm-core">'+esc(rp.core||titleOf(v))+'</span>'+
@@ -1153,13 +1179,19 @@
           .concat(Object.keys(by).filter(function(c){ return c!=='Unsorted'&&SHELVES.indexOf(c)<0; }).sort())
           .concat(by['Unsorted']?['Unsorted']:[]);
         order.forEach(function(c){
-          var list=by[c].slice().sort(function(a,b){ return (b.distilledTs||b.ts||0)-(a.distilledTs||a.ts||0); });
+          var list=by[c].slice().sort(function(a,b){ return (b.recapTs||b.distilledTs||b.ts||0)-(a.recapTs||a.distilledTs||a.ts||0); });
           h+='<section class="rm-sec"><div class="rm-h">'+esc(c)+' <span class="rm-n">'+list.length+'</span></div>'+
              list.map(function(v){
-               var kp=kpParse(v.keypoints);
-               return '<button type="button" class="rm-idea" data-id="'+esc(v.id)+'">'+
-                 '<span class="rm-core">'+esc(kp.core)+'</span>'+
-                 '<span class="rm-from">'+esc(titleOf(v))+' · '+esc(whenAgo(v.distilledTs||v.ts))+'</span></button>';
+               /* One voice per row. Where a recap exists it speaks — showing
+                  the thin description-written core next to a shelf full of
+                  real ones is the same two-voices problem the pane just
+                  solved, and the row opens the recap rather than the tile. */
+               var rec=hasRecap(v)?rcParse(v.recap):null;
+               var core=(rec&&rec.core)||kpParse(v.keypoints).core;
+               return '<button type="button" class="rm-idea" '+(rec?'data-rcread="':'data-id="')+esc(v.id)+'">'+
+                 '<span class="rm-core">'+esc(core||titleOf(v))+'</span>'+
+                 '<span class="rm-from">'+esc(titleOf(v))+' · '+esc(whenAgo(v.recapTs||v.distilledTs||v.ts))+
+                 (rec?' · recap':'')+'</span></button>';
              }).join('')+'</section>';
         });
       }
@@ -1252,7 +1284,10 @@
       /* ⭐ The only grade on this page that means the video was actually SEEN.
          Every other line above is an apology for reading around the video;
          this one is not, and it must not be worded like one. */
-      watched:'This one was WATCHED — Gemini took in the whole video, audio and all. Everything below comes from what is actually in it, not from the description.'
+      /* ⚠️ It used to say "everything BELOW", and this line renders at the
+         FOOT of the pane — below it there is nothing but buttons. Found by
+         looking at a render. The recap is above, so it points up. */
+      watched:'This one was WATCHED — the whole video went in, audio and all. The recap above comes from what is actually said in it, not from the description the creator wrote to sell it.'
     };
     function paneEmptyHTML(){
       var un=videos.filter(function(v){return !v.watched;});
@@ -1310,14 +1345,20 @@
            '<div class="now-bar"><i id="moFill"></i></div></div>';
       }
       if(rem){
-        var rp=kpParse(rem.keypoints);
+        // Same rule as the Room's due card: a recap can be due on its own, and
+        // where both exist it is the better material.
+        var rmR=hasRecap(rem)?rcParse(rem.recap):null, rp=kpParse(rem.keypoints);
+        var rmCore=(rmR&&rmR.core)||rp.core, rmPts=(rmR&&rmR.facts.length)?rmR.facts:rp.keys;
         h+='<div class="now-sec"><div class="now-h">Don’t let this fade</div>'+
           '<div class="now-big" style="font-size:17px">'+esc(titleOf(rem))+'</div>'+
-          (rp.core?'<div style="font-size:12.5px;line-height:1.55;color:var(--au-dim);margin-top:10px">'+esc(rp.core)+'</div>':'')+
-          (rp.keys.length?'<ul class="pane-keys">'+rp.keys.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
+          (rmCore?'<div style="font-size:12.5px;line-height:1.55;color:var(--au-dim);margin-top:10px">'+esc(rmCore)+'</div>':'')+
+          (rmPts.length?'<ul class="pane-keys">'+rmPts.slice(0,3).map(function(k){return '<li>'+esc(k)+'</li>';}).join('')+'</ul>':'')+
           '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(rem.id)+'">Still with me ✓</button>'+
           '<button type="button" class="b" data-remlost="'+esc(rem.id)+'">I’d forgotten it</button>'+
-          '<button type="button" class="b" data-open="'+esc(rem.id)+'">Open it</button></div></div>';
+          (hasRecap(rem)
+            ? '<button type="button" class="b" data-rcread="'+esc(rem.id)+'">Read the recap →</button>'
+            : '<button type="button" class="b" data-open="'+esc(rem.id)+'">Open it</button>')+
+          '</div></div>';
       }
       if(!h) h='<div class="pane-empty">Pick anything on the left and it opens here — the video, and the few things worth taking from it.</div>';
       return h;
@@ -1385,6 +1426,44 @@
       return bestScore>0.28 ? best.slice(0,320) : '';
     }
 
+    /* ── THE RECAP BLOCK ──────────────────────────────────────────
+       The one control on this page that goes and WATCHES the thing. Drawn in
+       two different PLACES depending on what it is saying (see the callers):
+       an offer sits under the thin reading it replaces, a finished recap sits
+       at the top as the card's summary. Same markup either way, so the two
+       positions can never drift into two components.
+       YouTube only — the TikTok half already reads real captions. */
+    function recapBlockHTML(v){
+      if(isTikTok(v)||!v.ytId) return '';
+      var h='<div class="pane-recap">';
+      if(recapBusy[v.id]){
+        h+='<span class="lab pulse">Watching it now</span>'+
+           '<div class="sub" style="margin-top:0">This takes a minute or two — it is watching the whole video. You can keep browsing.</div>';
+      }else if(hasRecap(v)){
+        var rp=rcParse(v.recap);
+        h+='<span class="lab">The recap</span>'+
+           (rp.core?'<div class="core">'+esc(rp.core)+'</div>':'')+
+           '<div class="sub">'+esc([
+              (v.recapWords?v.recapWords+' words':''),
+              (v.recapSections?v.recapSections+' section'+(v.recapSections===1?'':'s'):''),
+              (rp.facts.length?rp.facts.length+' to keep':'')
+            ].filter(Boolean).join(' · '))+'</div>'+
+           '<div class="pane-acts"><button type="button" class="b prime" data-rcread="'+esc(v.id)+'">Read it →</button>'+
+           '<button type="button" class="b" data-rcrun="'+esc(v.id)+'">Watch again</button></div>';
+      }else if(recapEmpty(v)){
+        h+='<span class="lab">Watched — nothing to write down</span>'+
+           '<div class="core" style="font-size:14px">'+esc(v.recapNothing)+'</div>'+
+           '<div class="pane-acts"><button type="button" class="b" data-rcrun="'+esc(v.id)+'">Try again</button></div>';
+      }else{
+        h+='<span class="lab">'+(v.watched?'You’ve watched it. Get the page.':'Watched it? Get the page.')+'</span>'+
+           '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
+           'The points above come from the description. This watches the whole video and writes the recap you keep instead of it.</div>'+
+           '<div class="pane-acts"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">Watch it &amp; write the recap</button></div>';
+      }
+      if(v.recapErr) h+='<div class="sub" style="color:var(--au-coral);text-transform:none;letter-spacing:0;font-family:inherit;font-size:12px;line-height:1.5">'+esc(v.recapErr)+'</div>';
+      return h+'</div>';
+    }
+
     function paneHTML(){
       if(!selId) return paneEmptyHTML();
       var v=byId(selId); if(!v) return paneEmptyHTML();
@@ -1392,8 +1471,17 @@
       var h=stageHTML(v);
       h+='<div class="pane-in">';
       var legacy=isLegacyRead(v);
-      h+='<span class="pane-kind'+(v.keypoints&&lesson&&!legacy?' lesson':'')+(legacy?' old':'')+'">'+
-         (v.pending?'Fetching…':(legacy?'Unverified':(v.keypoints?(lesson?'Lesson':'Keepsake'):(v.metaFail>=2?'Unreadable':'Reading…'))))+'</span>';
+      /* ⚠️ The chip must agree with the TILE's badge. Caught by looking at a
+         render: the wall said RECAP and the pane, two inches away, still said
+         LESSON — the same reading described two ways on one screen. badgeFor()
+         puts a recap above everything for a reason (it is a claim about the
+         SOURCE, not about a reading) and this had not been given the same
+         rule. Constraint 15 in miniature: a guarantee on one path has to hold
+         on its twin. */
+      var recapKind=hasRecap(v);
+      h+='<span class="pane-kind'+(recapKind||(v.keypoints&&lesson&&!legacy)?' lesson':'')+(legacy&&!recapKind?' old':'')+'">'+
+         (recapKind?'Recap'
+           :(v.pending?'Fetching…':(legacy?'Unverified':(v.keypoints?(lesson?'Lesson':'Keepsake'):(v.metaFail>=2?'Unreadable':'Reading…')))))+'</span>';
       h+='<div class="pane-t">'+esc(titleOf(v))+'</div>';
       var m=[]; if(v.ttId&&v.handle) m.push('@'+v.handle); if(v.channel) m.push(v.channel);
       if(v.duration) m.push(v.duration+'s'); if(v.created) m.push(new Date(v.created*1000).toLocaleDateString());
@@ -1402,15 +1490,35 @@
 
       if(v.err){ h+='<div class="pane-src" style="color:var(--au-coral);border-top:none;padding-top:12px">'+esc(v.err)+'</div>'; }
 
-      if(p.core && p.core.trim()!==titleOf(v).trim()) h+='<div class="pane-core">'+esc(p.core)+'</div>';
-      if(p.keys.length){
-        h+='<ul class="pane-keys">'+p.keys.map(function(k,i){
-          var q=quoteFor(k,v);
-          return '<li'+(q?' class="has-q" data-q="'+i+'"':'')+'>'+esc(k)+
-            (q?'<span class="q'+(qOpen[selId+':'+i]?' on':'')+'">“'+esc(q)+'”</span>':'')+'</li>';
-        }).join('')+'</ul>';
-        if(p.keys.some(function(k){ return quoteFor(k,v); }))
-          h+='<div class="pane-hint">Tap a point to see the words it came from</div>';
+      /* ⭐ ONE CARD, ONE VOICE.
+         Once a recap exists it IS this card's summary, and the old key points
+         are the thin version of the same job — written from a description, by
+         a reader that never heard the video. Showing both puts a good summary
+         and a grey one side by side and makes him decide which to trust, every
+         time. So the recap block moves up here and the earlier reading folds
+         into a disclosure: nothing is deleted, it is simply no longer
+         competing.
+         ⚠️ The DO line does NOT fold with them — see below. It is an action,
+         not a summary, and the recap does not replace it. */
+      var recapped=hasRecap(v);
+      if(recapped) h+=recapBlockHTML(v);
+      if(recapped && (p.core||p.keys.length)){
+        h+='<details class="tx"><summary>▸ The earlier summary, from the description</summary><div class="body">'+
+           (p.core?'<div style="font-family:var(--au-serif);font-size:14px;line-height:1.45;margin-bottom:10px">'+esc(p.core)+'</div>':'')+
+           (p.keys.length?'<ul class="pane-keys" style="margin-top:0">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'')+
+           '</div></details>';
+      }
+      if(!recapped){
+        if(p.core && p.core.trim()!==titleOf(v).trim()) h+='<div class="pane-core">'+esc(p.core)+'</div>';
+        if(p.keys.length){
+          h+='<ul class="pane-keys">'+p.keys.map(function(k,i){
+            var q=quoteFor(k,v);
+            return '<li'+(q?' class="has-q" data-q="'+i+'"':'')+'>'+esc(k)+
+              (q?'<span class="q'+(qOpen[selId+':'+i]?' on':'')+'">“'+esc(q)+'”</span>':'')+'</li>';
+          }).join('')+'</ul>';
+          if(p.keys.some(function(k){ return quoteFor(k,v); }))
+            h+='<div class="pane-hint">Tap a point to see the words it came from</div>';
+        }
       }
       /* ⭐ The DO line used to end here, in a box, for ever. It is the only
          thing this page produces that can change a week, so it now has
@@ -1430,43 +1538,11 @@
       }
       if(!v.keypoints&&!v.pending&&!v.err) h+='<div class="pane-src pulse" style="border-top:none;padding-top:12px">Nova is reading this one…</div>';
 
-      /* ── THE RECAP ────────────────────────────────────────────
-         The key points above are written from the creator's description,
-         because YouTube gives us no transcript. This is the one control on
-         the page that goes and WATCHES the thing. It lives here, under the
-         thin reading it replaces, so the difference is visible at the moment
-         it matters — and only on YouTube, because the TikTok half already
-         reads real captions. */
-      if(!isTikTok(v)&&v.ytId){
-        var busy=!!recapBusy[v.id];
-        h+='<div class="pane-recap">';
-        if(busy){
-          h+='<span class="lab pulse">Watching it now</span>'+
-             '<div class="sub" style="margin-top:0">This takes a minute or two — it is watching the whole video. You can keep browsing.</div>';
-        }else if(hasRecap(v)){
-          var rp=rcParse(v.recap);
-          h+='<span class="lab">The recap</span>'+
-             (rp.core?'<div class="core">'+esc(rp.core)+'</div>':'')+
-             '<div class="sub">'+esc([
-                (v.recapWords?v.recapWords+' words':''),
-                (v.recapSections?v.recapSections+' section'+(v.recapSections===1?'':'s'):''),
-                (rp.facts.length?rp.facts.length+' to keep':'')
-              ].filter(Boolean).join(' · '))+'</div>'+
-             '<div class="pane-acts"><button type="button" class="b prime" data-rcread="'+esc(v.id)+'">Read it →</button>'+
-             '<button type="button" class="b" data-rcrun="'+esc(v.id)+'">Watch again</button></div>';
-        }else if(recapEmpty(v)){
-          h+='<span class="lab">Watched — nothing to write down</span>'+
-             '<div class="core" style="font-size:14px">'+esc(v.recapNothing)+'</div>'+
-             '<div class="pane-acts"><button type="button" class="b" data-rcrun="'+esc(v.id)+'">Try again</button></div>';
-        }else{
-          h+='<span class="lab">Watched it? Get the page.</span>'+
-             '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
-             'The points above come from the description. This watches the whole video and writes the recap you keep instead of it.</div>'+
-             '<div class="pane-acts"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">Watch it &amp; write the recap</button></div>';
-        }
-        if(v.recapErr) h+='<div class="sub" style="color:var(--au-coral);text-transform:none;letter-spacing:0;font-family:inherit;font-size:12px;line-height:1.5">'+esc(v.recapErr)+'</div>';
-        h+='</div>';
-      }
+      // When there is no recap yet this is an OFFER, and it belongs under the
+      // thin reading it is offering to replace — the difference has to be
+      // visible at the moment it matters. Once a recap exists it has already
+      // been drawn at the top, as this card's actual summary.
+      if(!recapped) h+=recapBlockHTML(v);
 
       if(v.ttId&&(v.tags||[]).length) h+='<div class="pane-m" style="margin-top:14px">'+esc(v.tags.map(function(t){return '#'+t;}).join('  '))+'</div>';
       if(v.ttId&&v.music) h+='<div class="pane-m" style="margin-top:7px">♪ '+esc(v.music)+'</div>';
@@ -2093,14 +2169,21 @@
     var DAY=86400000, STEPS=[3,7,21,60,150];
     function recallStep(v){ var s=v.recall|0; return s<0?0:(s>=STEPS.length?STEPS.length-1:s); }
     function dueAt(v){
-      if(!v.keypoints||!isLesson(v)||isLegacyRead(v)) return Infinity;
+      /* ⭐ A recap qualifies on its own, and it is the strongest thing here:
+         it was written from the video itself rather than around it. Requiring
+         `keypoints && isLesson` would have excluded exactly the readings most
+         worth not forgetting — including any video whose old key points were
+         legacy, which is most of them. */
+      if(!hasRecap(v) && (!v.keypoints||!isLesson(v)||isLegacyRead(v))) return Infinity;
       /* ⚠️ The anchor is the LATEST contact, not `revisitTs || distilledTs`.
          Those two can disagree in both directions: a legacy card re-read today
          still carries a `revisitTs` from whenever it was first written, and
          taking that alone would make a reading he has never seen due the
          moment it lands. Whichever happened last is the last time this idea
          was in front of him, and that is what the interval counts from. */
-      var from=Math.max(v.revisitTs||0, v.distilledTs||0);
+      // `recapTs` joins the anchor for the same reason the other two are here:
+      // whichever contact happened LAST is when this idea was in front of him.
+      var from=Math.max(v.revisitTs||0, v.distilledTs||0, v.recapTs||0);
       if(!from) return Infinity;
       return from + STEPS[recallStep(v)]*DAY;
     }

@@ -410,7 +410,7 @@ which shoe it is drawing (§5).
 ## 5 · Open
 
 **HEAD is `als-v440` — THE RECAP: the Library can finally WATCH a video**
-(2026-07-29; 23 suites + smoke green; `tests/recap.test.js` = 111 assertions).
+(2026-07-29; 22 suites + smoke green; `tests/recap.test.js` = 133 assertions).
 His brief, and the diagnosis was inside it: *"i dont like the key points it
 provides, too vague, not that much good tbh… have like something i can press
 inside the video i just watched that makes it read the video and truly say
@@ -488,6 +488,33 @@ one making a claim about the **source** rather than about a reading.
   **every `<a class="b">` on this page has been underlined** beside its
   `<button>` siblings for the page's whole life. All three are pinned now.
 
+### ⭐ ONE CARD, ONE VOICE — the follow-up pass
+Both open questions were answered *"do what is best"*, and both answers were
+the same answer. **A recap replaces the summary, not the action.** Showing a
+recap next to the description-written key points puts a good summary and a
+grey one on the same card and makes him decide which to trust every time.
+- The recap moves to the TOP of the pane and the earlier reading folds into
+  **"The earlier summary, from the description"** — nothing deleted, just no
+  longer competing. The **DO / practice block stays visible**: a recap replaces
+  a summary, it does not replace an action.
+- `recapBlockHTML()` is ONE function drawn in two positions (an offer sits
+  under the thin reading; a finished recap sits on top as the summary), so the
+  two placements cannot drift into two components.
+- ⚠️ **Four surfaces print a core, and all four had to learn this** — the tile,
+  the pane, the Room row, the recall card. Two were caught only by looking at
+  a render: the wall wore a **RECAP badge over "A tour of Roman history"**, and
+  the pane chip two inches away still said **LESSON**. A test now counts all
+  four, so a fifth surface cannot appear without somebody looking.
+- **A recap is due for recall on its own** — `dueAt()` no longer requires
+  `keypoints && isLesson`, which would have excluded exactly the readings most
+  worth not forgetting (any video whose old points are legacy, i.e. most of
+  them). `recapTs` joins the anchor; **opening** the reading view stamps
+  `revisitTs`, **writing** one must not, or every recap lands already due.
+- Both recall cards read the recap when there is one, or they would draw an
+  empty card under a "Before you forget it" heading.
+- The watched line said *"everything below"* while rendering at the FOOT of
+  the pane. It points up now.
+
 ### 🔴 Open — his, not mine
 - ⚠️⚠️ **`GEMINI_API_KEY` is not set in Vercel.** The feature is built, tested
   and deployed, and it will return "no-key" until he adds it. Free from Google
@@ -496,10 +523,8 @@ one making a claim about the **source** rather than about a reading.
   dialog opens centred (340/340 gap), the scroll pane measures 663px against
   1202px of content and actually scrolls, it closes to `display:none`, and
   `SYNC-NEUTERED` confirmed no engine ran.
-- Open questions: should marking a video **watched** offer the recap right
-  there (today the pane stays open on it, which works, but the tile leaves the
-  "To watch" wall), and should a recap **replace** the old key points on the
-  card rather than sitting under them.
+- Both original open questions are now **answered and built** — see "one card,
+  one voice" above. Nothing is waiting on him but the key.
 
 ---
 

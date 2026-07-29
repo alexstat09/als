@@ -181,6 +181,23 @@ ok(!/3 to 5|three to five/i.test(yt.RECAP_SYS),
 console.log('\n── improve.html — the reading view ──');
 const html = fs.readFileSync(path.join(ROOT, 'improve.html'), 'utf8');
 
+/* ⚠️ CONSTRAINT 19, THE HARD WAY — twice, in this file.
+   Two assertions below failed on their first run, and both were the GUARD
+   being wrong rather than the code. The comment above the CSS documents the
+   trap by writing the bad pattern out (`dialog.rc{display:flex}`), and the
+   comment above runRecap explains why the sweep must never call it — so a
+   plain search of the file finds the forbidden shape inside the prose warning
+   against it.
+   That is exactly how the broken sync-script guard survived: a guard that
+   cries wolf is a guard somebody loosens. So every structural assertion below
+   searches CODE, never the file as typed. */
+function stripComments(src){
+  return src.replace(/\/\*[\s\S]*?\*\//g, ' ')     // block comments (CSS and JS)
+            .replace(/^\s*\/\/.*$/gm, ' ')          // whole-line JS comments
+            .replace(/<!--[\s\S]*?-->/g, ' ');      // HTML comments
+}
+const code = stripComments(html);
+
 function makeEl(){
   const el = {
     _html:'', style:{ setProperty(){}, }, dataset:{}, open:false,
@@ -272,6 +289,56 @@ ok(/recap/.test(im.badgeFor({ id:'f', ytId:'f', recap:GOOD, keypoints:'CORE: old
   'badge: a recapped video is no longer "unverified", whatever its old key points were');
 ok(!/recap/.test(im.badgeFor(fresh)), 'badge: a video with no recap does not claim one');
 
+/* ── ONE CARD, ONE VOICE ─────────────────────────────────────
+   A good summary and a grey one on the same card makes him decide which to
+   trust every single time. Once a recap exists it IS the summary; the earlier
+   description-written reading folds away rather than being deleted. */
+console.log('   a recap replaces the summary, not the action');
+const paneSrc = (code.match(/function paneHTML\(\)\{[\s\S]*?\n    \}\n/) || [''])[0];
+ok(paneSrc.length > 400, 'one-voice: found paneHTML to check');
+ok(/var recapped=hasRecap\(v\)/.test(paneSrc), 'one-voice: the pane branches on whether a recap exists');
+ok(/The earlier summary/.test(paneSrc), 'one-voice: the old key points fold into a disclosure, not deleted');
+ok(/if\(!recapped\)\{/.test(paneSrc), 'one-voice: the inline key points only render when there is no recap');
+// ⚠️ The DO line must NOT fold with them — it is an action, and the recap does
+// not replace an action. It is rendered outside the !recapped branch.
+const doIdx = paneSrc.indexOf('pane-do'), notRecapIdx = paneSrc.indexOf('if(!recapped){');
+ok(doIdx > 0 && notRecapIdx > 0 && doIdx > notRecapIdx,
+  'one-voice: the DO / practice block survives a recap — a recap replaces a summary, not an action');
+
+// The block is ONE function used in two positions, so the two can never drift
+// into two components.
+ok(/function recapBlockHTML\(v\)/.test(code), 'one-voice: the recap block is a single function');
+eq((paneSrc.match(/recapBlockHTML\(v\)/g) || []).length, 2,
+  'one-voice: it is drawn in exactly two positions from one source');
+
+/* ── RECALL ──────────────────────────────────────────────────
+   A recap is the strongest thing in the library, so it must be able to come
+   back round on its own — including on a video whose old key points are
+   legacy, which is most of them. */
+console.log('   a recap can come back round on its own');
+const dueSrc = (code.match(/function dueAt\(v\)\{[\s\S]*?\n    \}/) || [''])[0];
+ok(/hasRecap\(v\)/.test(dueSrc), 'recall: a recap qualifies for the recall queue by itself');
+ok(/v\.recapTs\|\|0/.test(dueSrc), 'recall: recapTs joins the anchor, so the interval counts from the last contact');
+ok(/Math\.max\(v\.revisitTs\|\|0, v\.distilledTs\|\|0, v\.recapTs\|\|0\)/.test(dueSrc),
+  'recall: the anchor is the LATEST of the three, never one of them alone');
+// Opening the reading view IS revisiting it — the one place on this page where
+// stamping revisitTs is honestly true.
+ok(/function openRecap\(id\)\{[\s\S]*?revisitTs=Date\.now\(\)/.test(code),
+  'recall: opening the recap restarts its recall clock');
+// ⚠️ ...and runRecap must NOT, or every recap would land already-due.
+const runSrc = (code.match(/async function runRecap\(id\)\{[\s\S]*?\n    \}/) || [''])[0];
+ok(runSrc.length > 300, 'recall: found runRecap to check');
+ok(!/revisitTs/.test(runSrc),
+  'recall: writing a recap does NOT stamp revisitTs — that is the applyKP trap, one store over');
+
+// Both recall cards must survive a recap-only item. Reading kpParse alone
+// there would draw an empty card under a "Before you forget it" heading.
+const roomSrc = (code.match(/function renderRoom\(\)\{[\s\S]*?\n    \}/) || [''])[0];
+ok(/hasRecap\(r\)\?rcParse/.test(roomSrc), 'recall: the Room due card reads the recap when there is one');
+ok(/data-rcread="/.test(roomSrc), 'recall: the Room due card opens the recap directly');
+const emptySrc = (code.match(/function paneEmptyHTML\(\)\{[\s\S]*?\n    \}/) || [''])[0];
+ok(/hasRecap\(rem\)\?rcParse/.test(emptySrc), 'recall: the pane recall card reads the recap when there is one');
+
 /* ── THE SOURCE LINE ─────────────────────────────────────────
    Every other grade on this page is an apology for reading around the video.
    This one is not, and it must not be worded like one. */
@@ -283,6 +350,28 @@ ok(!/no transcript/i.test(im.SRC.watched),
 ok(/no transcript/i.test(im.SRC.description),
   'src: the description grade still carries that apology, because it is still true there');
 ok(im.SRC.watched !== im.SRC.description, 'src: watched and description do not say the same thing');
+// ⚠️ This line renders at the FOOT of the pane, with the recap above it.
+ok(!/below/i.test(im.SRC.watched),
+  'looked-at: the watched line does not say "below" — it sits at the foot of the pane and the recap is above it');
+
+/* The pane chip must agree with the tile badge. The wall said RECAP while the
+   pane two inches away still said LESSON — one reading, described two ways on
+   one screen. Constraint 15 in miniature. */
+console.log('   the pane chip agrees with the tile badge');
+ok(/var recapKind=hasRecap\(v\)/.test(paneSrc), 'agreement: the pane chip knows about recaps');
+ok(/recapKind\?'Recap'/.test(paneSrc), 'agreement: a recapped video says Recap in the pane, not Lesson');
+ok(/recap/.test(im.badgeFor(done)) && /Recap/.test("Recap"),
+  'agreement: and the tile badge says recap for the same item');
+// ...and the tile's own core line, which wore the RECAP badge over "A tour of
+// Roman history" — the thin core, under a badge promising the opposite.
+const tileSrc = (code.match(/function tileHTML\(v\)\{[\s\S]*?\n    \}/) || [''])[0];
+ok(/hasRecap\(v\)/.test(tileSrc), 'agreement: the tile prints the recap core, not the description-written one');
+// Every surface that can show a core must consult the recap first. If a new
+// one appears without doing so, this count changes and somebody has to look.
+const coreSurfaces = ['tileHTML','paneHTML','renderRoom','paneEmptyHTML']
+  .filter(fn => new RegExp('function ' + fn + '\\(\\)?\\w*\\)?\\{[\\s\\S]*?hasRecap').test(code));
+eq(coreSurfaces.length, 4,
+  'agreement: all four surfaces that print a core consult the recap first  (' + coreSurfaces.join(', ') + ')');
 
 /* ── SEARCH ──────────────────────────────────────────────────
    The recap is now the longest and most specific text in the library. Search
@@ -324,22 +413,7 @@ ok(!/improve:recaps/.test(html), 'constraint 16: no new store was invented for i
 const backup = fs.readFileSync(path.join(ROOT, 'backup.html'), 'utf8');
 ok(/improve:videos/.test(backup), 'constraint 16: improve:videos is in BUNDLES, so recaps are restorable');
 
-/* ⚠️ CONSTRAINT 19, THE HARD WAY — twice, in this file.
-   Both of the assertions below failed on their first run, and both were the
-   GUARD being wrong rather than the code. The comment above the CSS documents
-   the trap by writing the bad pattern out (`dialog.rc{display:flex}`), and the
-   comment above runRecap explains why the sweep must never call it — so a
-   plain search of the file finds the forbidden shape inside the prose warning
-   against it.
-   That is exactly how the broken sync-script guard survived: a guard that
-   cries wolf is a guard somebody loosens. So the needle is searched in CODE,
-   never in the file as typed. */
-function stripComments(src){
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ')     // block comments (CSS and JS)
-            .replace(/^\s*\/\/.*$/gm, ' ')          // whole-line JS comments
-            .replace(/<!--[\s\S]*?-->/g, ' ');      // HTML comments
-}
-const code = stripComments(html);
+
 
 // Constraint 4: the reading view is a native <dialog>, centred against this
 // page's global *{margin:0}, with display scoped to [open].
