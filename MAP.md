@@ -177,7 +177,7 @@ scanner leaves `window.Html5Qrcode` undefined and the Scan tab dies silently).
   `gym-classic.html` / `body-classic.html`. **Nothing links here.** Not deployed
   (see `.vercelignore`).
 - **`docs/`** — setup notes and older write-ups. Not deployed.
-- **`tests/`** — 17 suites, run with plain `node`. Three cover her runs end to
+- **`tests/`** — 22 suites, run with plain `node`. Three cover her runs end to
   end: `run-inbox` (the drain, and the ack that may never precede a confirmed
   cloud write), `run-identity` (whose app is this — owner window vs her app), and
   `run-courier` (the server's delivery bookkeeping, where her cloud row is the

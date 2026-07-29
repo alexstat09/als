@@ -5,6 +5,7 @@
 //   ?youtube=<playlistId>   → mirror a public/unlisted playlist
 //   ?ytdistill  (POST)      → one video → the few things worth remembering
 //   ?ytorganize (POST)      → label a batch of videos with concepts
+//   ?ytrecap    (POST)      → WATCH one video (Gemini) → the page you keep
 //
 // Playlist: full list via the YouTube Data API when YOUTUBE_API_KEY is set;
 // otherwise the public RSS feed (recent ~15) with no key at all. Writes
@@ -312,6 +313,188 @@ async function distill(text, title, videoId, key) {
   };
 }
 
+/* ════════════════════════════════════════════════════════════════
+   THE RECAP — the one path on this page that has actually SEEN the video.
+   ════════════════════════════════════════════════════════════════
+   Everything above works from the creator's description, because YouTube's
+   caption endpoint is locked and no transcript exists. Alex's verdict on the
+   result was right and worth keeping verbatim: *"i dont like the key points it
+   provides, too vague, not that much good tbh."* It was not a prompt problem.
+   A model handed marketing copy and asked what should stick can only produce
+   something that is safely true of any video on the subject.
+
+   `recap()` hands the YouTube URL to Gemini, which ingests the real audio and
+   frames. So this function is the ONE place in the Library where "what the
+   video says" is real rather than inferred, and everything about it — its
+   grade, its source line, its badge — has to keep that distinction visible.
+
+   What he asked this to be, in his words: *"i watch a video, i look at the
+   recap, i remember, and whenever i feel like i need a refresh, i rewatch the
+   recap and it has everything i need to remember from the video, not tiny
+   pieces."* So this is deliberately NOT the 3-5 bullets the distiller writes.
+   It is a page: an opening that orients, sections that carry the argument in
+   order, and a block of hard specifics at the end — because names, numbers and
+   dates are what fade first and what a bullet list never keeps enough of.
+
+   ⚠️⚠️ THE HONESTY LIMIT, STATED ONCE AND ENFORCED IN THE UI.
+   `groundKeys()` is deliberately NOT called here, and its absence is not an
+   oversight — it is the reason this comment exists. Grounding works by
+   checking every name and number in a claim against the MATERIAL the claim was
+   built from. Here the material is the video itself, which we never receive:
+   Gemini watches it and returns prose. There is no haystack on this side of
+   the wire to check a needle against.
+   The tempting fix — asking the model for verbatim quotes and treating those
+   as receipts — is exactly the failure the receipts system was built to catch.
+   A model that will invent a fact will invent the quote supporting it, so
+   quote-receipts here would be theatre with a checkmark on it.
+   What we do instead is tell the truth about the source (`grade: 'watched'`,
+   and its own line in SRC) and never claim a check that did not happen. A
+   reading built on the real audio is a large step up from one built on a
+   description; pretending it was independently verified would be a step back
+   down. */
+
+var RECAP_SYS =
+  'You have just watched a video. Write the page the person will read INSTEAD of ever watching it again.\n' +
+  'They watched it once, today. In six months this page is all they will have, and they will not rewatch the video.\n' +
+  'So it must carry everything worth keeping — not highlights, not a teaser, not "key takeaways".\n' +
+  '\n' +
+  'HOW TO WRITE IT\n' +
+  '- Plain, warm, direct language. Short sentences. No jargon, no hype, no filler.\n' +
+  '- Never refer to the video as a video. No "in this video", no "the narrator explains", no "we learn that".\n' +
+  '  Write the SUBSTANCE directly, the way a good book explains a thing.\n' +
+  '- Follow the video\'s own order. Its argument has a shape; keep it.\n' +
+  '- Be specific or say nothing. A sentence that would be true of any video on this subject is worthless — cut it.\n' +
+  '  Names, numbers, dates, places, causes and consequences are the whole point.\n' +
+  '- Never invent. If you did not hear it, it does not go on the page. Do not fill a gap with what is generally true\n' +
+  '  of the topic — an approximation you cannot hear in the video is a lie in six months.\n' +
+  '- No markdown, no asterisks, no bullets of your own, no emoji, no timestamps.\n' +
+  '\n' +
+  'LENGTH\n' +
+  'Scale to the video. A ten-minute video needs perhaps four sections; an hour needs eight or more.\n' +
+  'Never pad to reach a number, and never compress an hour into five lines — completeness is the point of this page.\n' +
+  '\n' +
+  'OUTPUT — plain text, exactly this shape, nothing before or after:\n' +
+  'SHELF: <exactly one of the shelves listed below>\n' +
+  'CORE: <one sentence. The single thing that should survive if everything else is forgotten.>\n' +
+  'OPEN:\n' +
+  '<two to four sentences. What this is about and what it is arguing. Enough that someone who never saw it is oriented.>\n' +
+  'SECTION: <a short heading, four words or fewer>\n' +
+  '<a full paragraph carrying that part of the argument, with its specifics>\n' +
+  'SECTION: <the next heading>\n' +
+  '<its paragraph>\n' +
+  '<...as many SECTION blocks as the video actually earns, in its own order...>\n' +
+  'FACTS:\n' +
+  '- <a hard specific worth keeping: a name, a number, a date, a term, a claim>\n' +
+  '- <as many as the video genuinely gave, up to twelve. These are what fade first. Never repeat the CORE.>\n\n' + SHELF_RULES;
+
+/* Same three-state discipline the rest of the page runs on. A video with
+   nothing being SAID in it — a song, a match, an edit — must not come back
+   wearing a recap, and the model is the wrong thing to ask, because a model
+   with nothing to go on would still rather write something than admit it. */
+var RECAP_EMPTY =
+  '\n\nIf nothing is actually explained, taught or argued in this video — it is a song, a performance, a match, ' +
+  'a trailer, gameplay, or an edit set to music — then do NOT write a recap and do NOT invent one. ' +
+  'Reply with exactly this instead, and nothing else:\n' +
+  'SHELF: <the best-fitting shelf>\n' +
+  'NOTHING: <one sentence naming what this video actually is>';
+
+function parseRecap(t) {
+  var out = { shelf: '', core: '', open: '', sections: [], facts: [], nothing: '' };
+  var lines = String(t || '').split(/\r?\n/);
+  var mode = '', cur = null, buf = [];
+  function flushOpen() { if (mode === 'open') out.open = buf.join('\n').trim(); }
+  function flushSec() { if (cur) { cur.body = buf.join('\n').trim(); if (cur.h || cur.body) out.sections.push(cur); cur = null; } }
+  lines.forEach(function (ln) {
+    var s = ln.trim();
+    var m;
+    if ((m = s.match(/^SHELF\s*:\s*(.+)$/i))) { out.shelf = m[1].trim(); return; }
+    if ((m = s.match(/^NOTHING\s*:\s*(.+)$/i))) { out.nothing = m[1].trim(); return; }
+    if ((m = s.match(/^CORE\s*:\s*(.+)$/i))) { out.core = m[1].trim(); return; }
+    if (/^OPEN\s*:\s*$/i.test(s)) { flushSec(); mode = 'open'; buf = []; return; }
+    if ((m = s.match(/^OPEN\s*:\s*(.+)$/i))) { flushSec(); mode = 'open'; buf = [m[1].trim()]; return; }
+    if ((m = s.match(/^SECTION\s*:\s*(.*)$/i))) { flushOpen(); flushSec(); mode = 'sec'; cur = { h: m[1].trim(), body: '' }; buf = []; return; }
+    if (/^FACTS\s*:\s*$/i.test(s)) { flushOpen(); flushSec(); mode = 'facts'; buf = []; return; }
+    if (mode === 'facts') {
+      var f = s.match(/^[-•*–—]\s*(.+)$/);
+      if (f) out.facts.push(f[1].trim());
+      return;
+    }
+    if (!s) { buf.push(''); return; }
+    buf.push(s);
+  });
+  flushOpen(); flushSec();
+  out.open = String(out.open || '').replace(/\n{3,}/g, '\n\n').trim();
+  out.sections = out.sections.map(function (x) {
+    x.body = String(x.body || '').replace(/\n{3,}/g, '\n\n').trim(); return x;
+  }).filter(function (x) { return x.body || x.h; });
+  return out;
+}
+
+function recapWords(p) {
+  var t = [p.core, p.open].concat(p.sections.map(function (s) { return s.h + ' ' + s.body; })).concat(p.facts).join(' ');
+  return words(t);
+}
+
+/* A public watch URL, rebuilt from the id rather than trusted from the client.
+   Gemini only accepts PUBLIC videos, and the id is the only part we need. */
+function watchUrl(videoId) { return 'https://www.youtube.com/watch?v=' + encodeURIComponent(videoId); }
+
+async function recap(videoId, title, notes) {
+  var id = String(videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20);
+  if (!id) return { ok: false, error: 'no video id' };
+
+  var n = String(notes || '').trim().slice(0, 1500);
+  var prompt = 'Watch this video and write the page described in your instructions.\n' +
+    'Its title is: ' + (String(title || '').trim() || '(untitled)') + '\n' +
+    (n ? '\nThe person watching also wrote this down. Where it overlaps what you heard, weight it — it is what they were actually struck by. Never treat it as something the video said.\n' + n + '\n' : '');
+
+  var out = await model.watch({
+    url: watchUrl(id),
+    system: RECAP_SYS + RECAP_EMPTY,
+    prompt: prompt,
+    temperature: 0.35,
+    maxTokens: 8192
+  });
+  if (!out || !out.ok) {
+    return { ok: false, error: (out && out.kind) || 'model', status: out && out.status, message: (out && out.message) || '' };
+  }
+
+  var text = String(out.text || '').trim();
+  // Models like to fence plain text anyway. Strip it before parsing or the
+  // first line of the recap is ```.
+  text = text.replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '').trim();
+  var p = parseRecap(text);
+
+  // It watched, and there was nothing being said. That is a real answer and it
+  // must survive as one — not as a failed recap, and not as an invented lesson.
+  if (p.nothing && !p.sections.length) {
+    return { ok: true, empty: true, nothing: p.nothing, shelf: matchShelf(p.shelf), model: out.model };
+  }
+  // Anything that parsed to nothing at all is a FAILURE to read, never an empty
+  // recap. Silent-empty is this project's disease; the caller gets a 502.
+  if (!p.sections.length && !p.open) {
+    return { ok: false, error: 'parse', message: 'The reply did not contain a recap.' };
+  }
+
+  return {
+    ok: true, text: text, parsed: p,
+    shelf: matchShelf(p.shelf),
+    words: recapWords(p),
+    sections: p.sections.length,
+    model: out.model,
+    truncated: out.finish === 'MAX_TOKENS'
+  };
+}
+
+/* The shelf must be one we actually own, whatever the model wrote. Same rule
+   as distill() — it may file, never name. */
+function matchShelf(topic) {
+  var norm = function (s) { return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ''); };
+  var hit = '';
+  SHELVES.forEach(function (s) { if (!hit && norm(topic).indexOf(norm(s)) >= 0) hit = s; });
+  return hit;
+}
+
 /* ── organize ─────────────────────────────────────────────────────
    Label videos with a small consistent set of concepts. Chunked, because one
    long list blows a reasoning model's token budget before it writes a word.
@@ -425,4 +608,8 @@ async function organize(items, known, strict) {
   return { ok: true, concepts: map, partial: failed > 0 };
 }
 
-module.exports = { playlist: playlist, distill: distill, organize: organize, grade: grade, _cleanDesc: cleanDesc };
+module.exports = {
+  playlist: playlist, distill: distill, organize: organize, grade: grade, recap: recap,
+  _cleanDesc: cleanDesc, _parseRecap: parseRecap, _matchShelf: matchShelf,
+  _watchUrl: watchUrl, RECAP_SYS: RECAP_SYS
+};

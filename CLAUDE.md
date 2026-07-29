@@ -21,7 +21,7 @@ No build step. No framework. No bundler. No TypeScript.
 | Shared CSS | `aurora.css` (design system) · `aurora-page.css` · `jarvis.css` (legacy) |
 | Backend | Vercel serverless, CommonJS `api/*.js` (`module.exports`) |
 | Data | Supabase Postgres + RLS + Auth |
-| AI | **FREE only**: Groq (`api/_model.js`), Gemini. **Never Anthropic, never a paid key.** |
+| AI | **FREE only**, all behind `api/_model.js`: Groq for `text`/`vision`/`web`, **Gemini for `video`** (the only provider that can watch a YouTube URL). **Never Anthropic, never a paid key.** |
 | Deps | `web-push` only. That is the entire `package.json`. |
 | Offline | `sw.js`, **network-first**, versioned `als-vNNN` |
 
@@ -55,8 +55,14 @@ QStash tick or a page that asks for it.
 ### AI calls
 `api/_model.js` is the only brain-stem. **Callers name a ROLE, never a model.**
 
-- Roles: `text` (`gpt-oss-120b` → `qwen3.6-27b` → `llama-3.3-70b`) and `vision`
-  (`qwen3.6-27b`, the only image model, and it is PREVIEW with no fallback).
+- Roles: `text` (`gpt-oss-120b` → `qwen3.6-27b` → `llama-3.3-70b`), `vision`
+  (`qwen3.6-27b`, the only image model, and it is PREVIEW with no fallback),
+  and **`video`** — the one role that is NOT Groq. It goes to Gemini
+  (`gemini-3.6-flash` → `3.5-flash` → `3.5-flash-lite`) via `watch()`, because
+  it is the only provider that can ingest a YouTube URL rather than read text
+  about it. Needs `GEMINI_API_KEY`. ⚠️ A **200 with no text** is `truncated` or
+  `empty`, never an empty answer — Gemini bills thinking against the output
+  budget, so this is the gpt-oss trap wearing another provider's clothes.
 - `llama-3.3-70b` dies **16/08/26**.
 - API: `json(role, payload)` → `{ok, obj, raw, model}`, `stream(role, payload)`.
 - ⚠️ **`gpt-oss-120b` counts hidden reasoning inside `max_tokens`.** A long call
@@ -358,6 +364,11 @@ never a fabricated summary, and a card always says what it was read FROM
 (a transcript, on-screen text, a chapter list, a description, or only a title).
 ⚠️ **YouTube has no transcript and never will** — its caption endpoint is locked
 — so a YouTube lesson rests on the creator's own description and says so.
+⭐ **THE RECAP (als-v440) is the way around that**: a button on any YouTube
+video hands its URL to **Gemini**, which watches the real thing, and returns a
+full reading page — opening, sections in the video's own order, and the hard
+specifics — shown in its own full-screen `<dialog>`. Grade `watched`, and it is
+on demand rather than swept, because it costs real quota. See §5.
 **The Room** is the archive read as a page rather than a grid: every grounded
 CORE line by shelf, what is due for recall (3/7/21/60/150 days), and the
 practice list that the `DO:` lines feed via `improve:actions`, `movies.html`
@@ -398,7 +409,101 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v439` — A MEAL IS ONE THING, NOT THREE ROWS** (2026-07-29,
+**HEAD is `als-v440` — THE RECAP: the Library can finally WATCH a video**
+(2026-07-29; 23 suites + smoke green; `tests/recap.test.js` = 111 assertions).
+His brief, and the diagnosis was inside it: *"i dont like the key points it
+provides, too vague, not that much good tbh… have like something i can press
+inside the video i just watched that makes it read the video and truly say
+anything that should stick to my brain, but very nice and organized in a nice
+text page."* Then, on what the page is for: *"i watch a video, i look at the
+recap, i remember, and whenever i feel like i need a refresh, i rewatch the
+recap and it has everything i need to remember from the video, not tiny
+pieces."*
+
+### ⭐⭐ It was never a prompt problem — the reader had never heard the video
+YouTube's caption endpoint is locked, so every "lesson" this page has ever
+written was a summary of the creator's **description** — marketing copy. A
+model given marketing copy and asked what should stick can only produce
+something safely true of any video on the subject. That is the vagueness he
+rejected, and no rewording of `DISTILL_SYS` could have fixed it.
+
+**Gemini takes a YouTube URL directly** and ingests the real audio and frames.
+Google owns YouTube, so there is nothing to scrape and nothing to break.
+- **`_model.js` has a fourth role, `video`**, and it is the only one that is
+  not Groq: `gemini-3.6-flash → 3.5-flash → 3.5-flash-lite`. Callers still
+  name a ROLE and never learn which company answered.
+- Two silent failures are handled in `watch()` rather than left to callers:
+  `mediaResolution` is a newer generationConfig field, so a 400 retries the
+  **same model** with the config trimmed (falling through the chain would burn
+  every model for a field none of them take); and a **200 with no text** is
+  `truncated` or `empty`, never an empty recap — these are thinking models and
+  thinking is billed against the output budget, the gpt-oss trap in another
+  provider's clothes.
+- Low media resolution: **~100 tokens/sec of video instead of ~300**. For a
+  talking video the value is in what is said, and it is what makes an hour
+  affordable. Free tier = **8 hours of YouTube a day**, public videos only.
+- **On demand, never swept.** An hour of video is a real slice of the day's
+  quota; sweeping 46 videos would spend it on ones he never watched. A test
+  asserts the sweep body cannot reach it.
+
+### ⚠️⚠️ The honesty limit, stated once and enforced in the UI
+`groundKeys()` is deliberately **NOT** called on this path, and its absence is
+the point. Grounding checks a claim's names and numbers against the MATERIAL
+it was built from — and here the material is the video, which we never
+receive. There is no haystack on this side of the wire.
+The tempting fix, asking for verbatim quotes as receipts, is exactly the
+failure receipts were built to catch: a model that will invent a fact will
+invent the quote supporting it. So instead there is a new grade **`watched`**
+with its own SRC line that says what actually happened and claims no check
+that did not. A recap badge outranks every other badge because it is the only
+one making a claim about the **source** rather than about a reading.
+
+### What shipped
+- `?ytrecap` on the courier (no 13th function). Every failure names itself —
+  "public videos only" and "the daily quota is spent" need different actions.
+- **A reading view, not a panel**: full-screen native `<dialog>`, one centred
+  measure, serif body, an opening, sections in the video's own order, and a
+  **Worth keeping** block of hard specifics, because names and dates fade
+  first. Opening it stamps `revisitTs` — reading it IS revisiting it.
+- **The Room gained "The pages you keep"** — his sentence describes a place he
+  comes back to, and the wall is for finding what to watch, not re-reading.
+- Stored **on the video** in `improve:videos`: already synced, already in
+  BUNDLES, no new key (constraint 16). Search reaches it, memo signature and
+  all — the omission the transcript suffered for this page's whole life.
+
+### ⚠️ Three mistakes made building this, all worth keeping
+- **`SECTION*/FACTS` inside a block comment terminated the comment** and broke
+  the whole inline script. Same family as the backtick-in-a-template-literal
+  bug als-v437 and als-v438 both paid for.
+- ⭐ **Two of my own new assertions failed, and both were the GUARD being
+  wrong** — they matched the forbidden pattern inside the *comment documenting
+  it* (`dialog.rc{display:flex}`, and "sweeping 46 videos"). That is
+  **constraint 19** exactly: a guard that cries wolf is a guard somebody
+  loosens. The suite now strips comments and searches the sweep's actual body.
+- ⭐⭐ **Three things only a screenshot caught, through 105 green assertions**:
+  the meta line rendered `7/29/2026` (US month-first, on a page read in
+  Greece — `whenAgo()` now); `showModal()` autofocused the ✕ so the recap
+  opened wearing **Chrome's blue focus ring**, the one UA colour in a page
+  with no blue in it; and `.b` never set `text-decoration`, so
+  **every `<a class="b">` on this page has been underlined** beside its
+  `<button>` siblings for the page's whole life. All three are pinned now.
+
+### 🔴 Open — his, not mine
+- ⚠️⚠️ **`GEMINI_API_KEY` is not set in Vercel.** The feature is built, tested
+  and deployed, and it will return "no-key" until he adds it. Free from Google
+  AI Studio. **Nothing else is blocking.**
+- 🔴 **Unproven in his browser.** Driven headless at 1440px and 393px: the
+  dialog opens centred (340/340 gap), the scroll pane measures 663px against
+  1202px of content and actually scrolls, it closes to `display:none`, and
+  `SYNC-NEUTERED` confirmed no engine ran.
+- Open questions: should marking a video **watched** offer the recap right
+  there (today the pane stays open on it, which works, but the tile leaves the
+  "To watch" wall), and should a recap **replace** the old key points on the
+  card rather than sitting under them.
+
+---
+
+**Before that — `als-v439` — A MEAL IS ONE THING, NOT THREE ROWS** (2026-07-29,
 `bd05c56` on `main`, pushed; 22 suites + smoke green; `tests/nut-meals.test.js`
 = 48 assertions).
 His brief: *"whenever i put a meal, like in a lunch and for example it contains

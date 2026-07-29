@@ -648,6 +648,55 @@ module.exports = async function (req, res) {
     }
     return;
   }
+  /* ── ?ytrecap — the only call in the app that WATCHES a video ──────
+     Everything else on the Library's YouTube side reads the creator's
+     description, because no transcript exists. This hands the URL to Gemini,
+     which ingests the real audio and frames.
+
+     ⚠️ It is deliberately ON DEMAND, never part of the background sweep. An
+     hour of video is a real slice of the free tier's 8-hours-a-day, and this
+     fires only when Alex presses the button on a video he has just watched.
+     ⚠️ Every failure here has to name itself. "Public videos only" and "the
+     daily quota is spent" need different actions from him, and rendering
+     either as a blank recap is the silent-empty disease this page keeps
+     catching itself doing. */
+  if (req.query && req.query.ytrecap !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var rb = req.body; if (typeof rb === 'string') { try { rb = JSON.parse(rb || '{}'); } catch (e) { rb = {}; } }
+      var rvid = (rb && rb.videoId) || '', rtitle = (rb && rb.title) || '', rnotes = (rb && rb.notes) || '';
+      if (!rvid) { res.status(400).json({ error: 'no video id' }); return; }
+      if (!(process.env.GEMINI_API_KEY || '').trim()) {
+        res.status(503).json({ error: 'no-key', message: 'Watching a video needs GEMINI_API_KEY — it is free from Google AI Studio.' });
+        return;
+      }
+      var rout = await yt.recap(rvid, rtitle, rnotes);
+      if (!rout.ok) {
+        var st = rout.error === 'rate' ? 429 : 502;
+        // Gemini refuses anything not PUBLIC, and a 400 here is nearly always
+        // that. Say the actionable thing rather than echoing the upstream.
+        var msg = rout.message || '';
+        if (rout.status === 400 || /permission|not found|unsupported|invalid/i.test(msg)) {
+          msg = 'Gemini could not open this one. It only accepts PUBLIC videos — a private, unlisted, members-only or age-restricted video cannot be watched.';
+        } else if (rout.error === 'rate') {
+          msg = 'The daily video quota is spent (the free tier allows 8 hours of YouTube a day). It resets tomorrow.';
+        } else if (rout.error === 'truncated') {
+          msg = 'It ran out of room before finishing the recap. Try again.';
+        }
+        res.status(st).json({ error: rout.error || 'recap failed', message: msg });
+        return;
+      }
+      res.status(200).json({
+        ok: true, empty: !!rout.empty, nothing: rout.nothing || '',
+        text: rout.text || '', shelf: rout.shelf || '',
+        words: rout.words || 0, sections: rout.sections || 0,
+        truncated: !!rout.truncated, model: rout.model || ''
+      });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
   if (req.query && req.query.ytorganize !== undefined) {
     res.setHeader('Cache-Control', 'no-store');
     try {

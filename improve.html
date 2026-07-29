@@ -275,9 +275,109 @@
     details.tx .body{ font-size:12px; line-height:1.72; color:var(--au-dim); max-height:270px; overflow-y:auto;
                       padding:11px 12px; background:rgba(0,0,0,.28); border-radius:10px; border:1px solid var(--au-line); }
 
+    /* ════════════════════════════════════════════════════════════
+       THE RECAP — a reading page, not a panel.
+
+       His brief: *"i watch a video, i look at the recap, i remember, and
+       whenever i feel like i need a refresh, i rewatch the recap and it has
+       everything i need to remember from the video, not tiny pieces."*
+
+       That is a document, and a 700-word document read down a 340px side pane
+       is a worse experience than the video. So the recap opens as a full
+       reading view over the library: one centred measure, serif body, the
+       generous leading of something meant to be READ rather than scanned.
+       The pane keeps a preview and the button; this is where the reading is.
+
+       ⚠️ THREE CONSTRAINTS CONVERGE ON THIS ELEMENT, and all three are silent
+       when broken, so none of them may be simplified away:
+       · constraint 4a — a native <dialog> + showModal(), never a hand-rolled
+         overlay, because an ancestor transform breaks position:fixed.
+       · constraint 4b — this page has a global `*{margin:0}` (line 42), which
+         kills the UA's own `dialog{margin:auto}` centering. Hence the explicit
+         margin below. Deleting it parks the reading view in the top-left.
+       · constraint 4c — `display` is scoped to `[open]`. A bare
+         `dialog.rc{display:flex}` beats `dialog:not([open]){display:none}` and
+         leaves the recap permanently on screen. */
+    dialog.rc{ margin:auto; width:min(760px,94vw); max-width:94vw; max-height:92vh; padding:0;
+               border:1px solid var(--au-line); border-radius:18px; background:var(--au-void,#0a0a0c);
+               color:var(--au-ivory); overflow:hidden; }
+    dialog.rc[open]{ display:flex; flex-direction:column; }
+    dialog.rc::backdrop{ background:rgba(4,4,6,.82); backdrop-filter:blur(7px); }
+    .rc-top{ display:flex; align-items:flex-start; gap:14px; padding:20px 24px 15px;
+             border-bottom:1px solid var(--au-line); flex:0 0 auto; }
+    .rc-top .grow{ min-width:0; }
+    .rc-eyebrow{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
+                 color:rgba(var(--acc),.9); }
+    .rc-h{ font-family:var(--au-serif); font-weight:400; font-size:clamp(19px,2.2vw,25px); line-height:1.22;
+           letter-spacing:-.01em; margin-top:8px; }
+    .rc-meta{ font-family:var(--au-mono); font-size:9px; letter-spacing:.13em; text-transform:uppercase;
+              color:var(--au-faint); margin-top:9px; }
+    .rc-x{ flex:0 0 auto; width:32px; height:32px; border-radius:9px; border:1px solid var(--au-line-2);
+           color:var(--au-dim); font-size:15px; line-height:1; background:none; cursor:pointer;
+           transition:color .25s var(--au-ease), border-color .25s var(--au-ease); }
+    .rc-x:hover{ color:var(--au-ivory); border-color:rgba(var(--acc),.45); }
+    /* showModal() autofocuses the first focusable child, so without this the
+       ✕ opened wearing Chrome's blue focus ring — the one UA colour in a page
+       that has no blue in it. Caught in a screenshot, invisible to assertions. */
+    .rc-x:focus{ outline:none; }
+    .rc-x:focus-visible{ outline:2px solid rgba(var(--acc),.6); outline-offset:2px; }
+    .rc-body:focus{ outline:none; }
+    /* ⚠️ constraint 13 — a SCROLLING flex child never gets `flex:1` against a
+       container whose height is indefinite. `flex:1` is `flex:1 1 0%`, and iOS
+       Safari resolves that basis to ZERO against a max-height parent while
+       Chrome looks perfect. That is exactly how the caffeine log sheet shipped
+       a header, a search box and no drinks at all on his phone. */
+    .rc-body{ flex:1 1 auto; min-height:0; max-height:none; overflow-y:auto; padding:24px 24px 30px;
+              -webkit-overflow-scrolling:touch; }
+    .rc-core{ font-family:var(--au-serif); font-size:clamp(17px,1.8vw,20px); line-height:1.42;
+              letter-spacing:-.005em; padding-left:15px; border-left:2px solid rgba(var(--acc),.55); }
+    .rc-open{ margin-top:22px; }
+    .rc-p{ font-size:14.5px; line-height:1.78; color:rgba(245,242,236,.87); letter-spacing:.002em; }
+    .rc-p + .rc-p{ margin-top:13px; }
+    .rc-open .rc-p{ font-family:var(--au-serif); font-size:15.5px; line-height:1.72; color:rgba(245,242,236,.8); }
+    .rc-sec{ margin-top:28px; padding-top:22px; border-top:1px solid var(--au-line); }
+    .rc-sec:first-of-type{ border-top:none; }
+    .rc-sh{ font-family:var(--au-mono); font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;
+            color:rgba(var(--acc),.85); margin-bottom:11px; }
+    .rc-facts{ margin-top:30px; padding:19px 20px; border-radius:13px; background:rgba(var(--acc),.055);
+               border:1px solid rgba(var(--acc),.19); }
+    .rc-facts h4{ font-family:var(--au-mono); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
+                  color:rgba(var(--acc),.9); font-weight:400; margin-bottom:13px; }
+    .rc-facts ul{ list-style:none; display:flex; flex-direction:column; gap:10px; }
+    .rc-facts li{ position:relative; padding-left:17px; font-size:13.5px; line-height:1.58;
+                  color:rgba(245,242,236,.88); }
+    .rc-facts li::before{ content:''; position:absolute; left:2px; top:8px; width:4px; height:4px;
+                          border-radius:50%; background:rgba(var(--acc),.75); }
+    .rc-src{ margin-top:26px; padding-top:16px; border-top:1px solid var(--au-line);
+             font-size:11px; line-height:1.62; color:var(--au-faint); }
+    .rc-foot{ display:flex; flex-wrap:wrap; gap:7px; padding:14px 24px calc(16px + env(safe-area-inset-bottom));
+              border-top:1px solid var(--au-line); flex:0 0 auto; background:rgba(0,0,0,.25); }
+    @media(max-width:560px){
+      dialog.rc{ width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; border:none; }
+      .rc-top{ padding:16px 17px 13px; } .rc-body{ padding:19px 17px 26px; } .rc-foot{ padding:12px 17px calc(14px + env(safe-area-inset-bottom)); }
+    }
+
+    /* the pane's own recap block — a doorway, never the document */
+    .pane-recap{ margin-top:16px; padding:14px 14px 13px; border-radius:12px;
+                 background:rgba(var(--acc),.06); border:1px solid rgba(var(--acc),.2); }
+    .pane-recap .lab{ display:block; font-family:var(--au-mono); font-size:8.5px; letter-spacing:.18em;
+                      text-transform:uppercase; color:rgba(var(--acc),.9); margin-bottom:7px; }
+    .pane-recap .core{ font-family:var(--au-serif); font-size:15px; line-height:1.42; color:var(--au-ivory); }
+    .pane-recap .sub{ font-family:var(--au-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+                      color:var(--au-faint); margin-top:9px; }
+    .badge.recap{ background:rgba(var(--acc),.9); color:#07120a; }
+
     /* ── buttons ──────────────────────────────────────────────── */
+    /* ⚠️ `text-decoration:none` found by LOOKING at a render, not by any
+       assertion. `.b` is worn by both <button> and <a> — "Open ↗" in the pane
+       and "Open the video ↗" in the recap footer are anchors — and without
+       this the anchors carry the UA underline while their <button> siblings,
+       sitting 6px away in the same row, do not. It has been true for the whole
+       life of this page. */
     .b{ padding:7px 12px; border-radius:9px; border:1px solid var(--au-line-2); font-size:11.5px;
-        color:var(--au-dim); letter-spacing:.01em; transition:all .24s var(--au-ease); }
+        color:var(--au-dim); letter-spacing:.01em; text-decoration:none;
+        transition:all .24s var(--au-ease); }
+    .b:focus-visible{ outline:2px solid rgba(var(--acc),.6); outline-offset:2px; }
     .b:hover{ border-color:rgba(var(--acc),.4); color:var(--au-ivory); background:var(--au-glass); }
     .b.on{ border-color:rgba(var(--acc),.5); color:rgb(var(--acc)); background:rgba(var(--acc),.1); }
     .b.prime{ background:rgba(var(--acc),.15); border-color:rgba(var(--acc),.42); color:var(--au-ivory); }
@@ -476,6 +576,11 @@
   </div>
   <div class="lb-scrim" id="scrim"></div>
 
+  <!-- The recap reading view. Native <dialog> on purpose (hard constraint 4):
+       this page's wall sits inside transformed ancestors, and a hand-rolled
+       fixed overlay renders off-frame there. Filled by renderRecap(). -->
+  <dialog class="rc" id="rcDlg" aria-labelledby="rcTitle"></dialog>
+
   <script>
   (function(){
     'use strict';
@@ -590,6 +695,60 @@
     }
     function conceptOf(v){ return v.concept||v.rawTopic||v.topic||''; }
 
+    /* ── THE RECAP ────────────────────────────────────────────────
+       Everything above parses the DISTILLER's output — a handful of key points
+       written from the creator's description, because YouTube has no
+       transcript. Alex's verdict on those was "too vague, not that much good",
+       and he was right about the cause without naming it: the reader had never
+       heard the video.
+
+       A recap is different in kind. api/_youtube.js hands the URL to Gemini,
+       which watches the thing, and what comes back is a PAGE — an opening,
+       sections in the video's own order, and a block of hard specifics. So it
+       gets its own parser and its own reading view rather than being crushed
+       into the key-point list it exists to replace.
+
+       Shape (see RECAP_SYS): SHELF, CORE, OPEN, any number of SECTION blocks,
+       then FACTS — or a single NOTHING line when the video turned out to have
+       nothing being said in it.
+       Parsed forgivingly for the same reason kpParse is: a missing header must
+       never cost him the words. */
+    function rcParse(raw){
+      var o={shelf:'',core:'',open:'',sections:[],facts:[],nothing:''};
+      var mode='',cur=null,buf=[];
+      function flushOpen(){ if(mode==='open') o.open=buf.join('\n').trim(); }
+      function flushSec(){ if(cur){ cur.body=buf.join('\n').trim(); if(cur.h||cur.body) o.sections.push(cur); cur=null; } }
+      String(raw||'').split(/\r?\n/).forEach(function(ln){
+        var s=ln.trim().replace(/\*\*/g,'').replace(/^#+\s*/,'').trim();
+        var m;
+        if((m=s.match(/^SHELF\s*[:\-–—]\s*(.+)$/i))){ o.shelf=m[1].replace(/["'`*_.]/g,'').trim().slice(0,40); return; }
+        if((m=s.match(/^NOTHING\s*[:\-–—]\s*(.+)$/i))){ o.nothing=m[1].trim(); return; }
+        if((m=s.match(/^CORE\s*[:\-–—]\s*(.+)$/i))){ o.core=m[1].trim(); return; }
+        if(/^OPEN\s*[:\-–—]?\s*$/i.test(s)){ flushSec(); mode='open'; buf=[]; return; }
+        if((m=s.match(/^OPEN\s*[:\-–—]\s*(.+)$/i))){ flushSec(); mode='open'; buf=[m[1].trim()]; return; }
+        if((m=s.match(/^SECTION\s*[:\-–—]\s*(.*)$/i))){ flushOpen(); flushSec(); mode='sec'; cur={h:m[1].trim(),body:''}; buf=[]; return; }
+        if(/^FACTS?\s*[:\-–—]?\s*$/i.test(s)){ flushOpen(); flushSec(); mode='facts'; buf=[]; return; }
+        if(mode==='facts'){ var f=s.match(/^[-•*–—▸]\s*(.+)$/); if(f) o.facts.push(f[1].trim()); return; }
+        if(!s){ buf.push(''); return; }
+        buf.push(s);
+      });
+      flushOpen(); flushSec();
+      o.open=o.open.replace(/\n{3,}/g,'\n\n').trim();
+      o.sections=o.sections.map(function(x){ x.body=String(x.body||'').replace(/\n{3,}/g,'\n\n').trim(); return x; })
+                           .filter(function(x){ return x.body||x.h; });
+      return o;
+    }
+    function hasRecap(v){ return !!(v&&v.recap&&String(v.recap).trim()); }
+    /* A video watched and found to contain nothing being SAID is a real answer,
+       and a DIFFERENT one from "we have not looked yet". Both used to be the
+       same blank card, which is the silent-empty disease this page keeps
+       catching itself doing. */
+    function recapEmpty(v){ return !!(v&&!hasRecap(v)&&v.recapNothing); }
+    function recapParagraphs(s){
+      return String(s||'').split(/\n{2,}/).map(function(p){ return p.replace(/\n/g,' ').trim(); })
+             .filter(function(p){ return p.length; });
+    }
+
     /* ── WHAT COUNTS AS A LESSON ──────────────────────────────────
        ⚠️⚠️ The fallback below used to be reached by every YouTube video in the
        library, because the old distill prompt in api/_youtube.js never emitted
@@ -686,11 +845,17 @@
     }
     var hayMemo={};
     function hay(v){
-      var sig=(v.ts||0)+'|'+((v.keypoints||'').length)+'|'+((v.transcript||'').length)+'|'+((v.note||v.notes||'').length);
+      // ⚠️ The recap belongs in this signature AND in the blob below. It is now
+      // the longest and most specific text this page holds — the only text
+      // written from the video itself — so leaving it out would mean searching
+      // a library while ignoring the best thing in it. Same omission the
+      // transcript suffered for the page's whole life.
+      var sig=(v.ts||0)+'|'+((v.keypoints||'').length)+'|'+((v.transcript||'').length)+
+              '|'+((v.recap||'').length)+'|'+((v.note||v.notes||'').length);
       var m=hayMemo[v.id];
       if(m&&m.sig===sig) return m.s;
       var s=fold([titleOf(v),v.channel,v.handle,v.author,v.caption,(v.tags||[]).join(' '),
-        (v.screen||[]).join(' '),conceptOf(v),v.keypoints,(v.note||v.notes),v.transcript,v.music].join(' '));
+        (v.screen||[]).join(' '),conceptOf(v),v.keypoints,(v.note||v.notes),v.transcript,v.recap,v.music].join(' '));
       hayMemo[v.id]={sig:sig,s:s};
       return s;
     }
@@ -830,6 +995,12 @@
       if(v.pending) return '<span class="badge reading pulse">fetching</span>';
       // Written before the reader could grade — it is queued to be read again,
       // and until then it must not wear the LESSON badge it never earned.
+      /* A recap outranks every other badge, and it is the only one that is not
+         a claim about a reading — it is a claim about the SOURCE. This video
+         was watched; nothing else on the wall can say that. It sits above the
+         legacy check on purpose: a recapped video is no longer unverified,
+         whatever the old key points below it were written from. */
+      if(hasRecap(v)) return '<span class="badge recap">recap</span>';
       if(isLegacyRead(v)) return '<span class="badge old">unverified</span>';
       if(v.keypoints) return isLesson(v)?'<span class="badge lesson">lesson</span>':'<span class="badge">keepsake</span>';
       if((v.kpFail||0)>=3) return '<span class="badge miss">retry</span>';
@@ -930,6 +1101,31 @@
            '<div class="pane-acts"><button type="button" class="b prime" data-remgot="'+esc(r.id)+'">Still with me ✓</button>'+
            '<button type="button" class="b" data-remlost="'+esc(r.id)+'">I’d forgotten it</button>'+
            '<button type="button" class="b" data-open="'+esc(r.id)+'">Open it</button></div></section>';
+      }
+
+      /* ⭐ THE PAGES HE KEEPS.
+         His whole reason for asking for this: *"whenever i feel like i need a
+         refresh, i rewatch the recap."* That sentence describes a place he
+         comes BACK to, and the wall is not it — the wall is for finding what
+         to watch. The Room is where the archive is read, so the recaps live
+         here, near the top, one click from open.
+         Search narrows them like everything else in the Room. */
+      var recaps=videos.filter(hasRecap).filter(function(v){
+        var terms=fold(seek).split(/\s+/).filter(Boolean);
+        if(!terms.length) return true;
+        var hy=hay(v);
+        for(var i=0;i<terms.length;i++) if(hy.indexOf(terms[i])<0) return false;
+        return true;
+      }).sort(function(a,b){ return (b.recapTs||0)-(a.recapTs||0); });
+      if(recaps.length){
+        h+='<section class="rm-sec"><div class="rm-h">The pages you keep <span class="rm-n">'+recaps.length+'</span></div>'+
+           recaps.map(function(v){
+             var rp=rcParse(v.recap);
+             return '<button type="button" class="rm-idea" data-rcread="'+esc(v.id)+'">'+
+               '<span class="rm-core">'+esc(rp.core||titleOf(v))+'</span>'+
+               '<span class="rm-from">'+esc(titleOf(v))+' · '+esc(whenAgo(v.recapTs))+
+               (v.recapWords?' · '+v.recapWords+' words':'')+'</span></button>';
+           }).join('')+'</section>';
       }
 
       if(open.length||done.length){
@@ -1052,7 +1248,11 @@
          again imply it knows what was said in something nobody transcribed. */
       chapters:'Read from the video’s own chapter list — its outline, not its words. YouTube gives us no transcript.',
       description:'Read from the video’s own description, which the creator wrote to promote it. Nobody has read you what was actually said — YouTube gives us no transcript.',
-      title:'Little more than the title to go on — no real description and no transcript — so this names the video rather than teaching you anything. Add a line of your own below and it will be read properly.'
+      title:'Little more than the title to go on — no real description and no transcript — so this names the video rather than teaching you anything. Add a line of your own below and it will be read properly.',
+      /* ⭐ The only grade on this page that means the video was actually SEEN.
+         Every other line above is an apology for reading around the video;
+         this one is not, and it must not be worded like one. */
+      watched:'This one was WATCHED — Gemini took in the whole video, audio and all. Everything below comes from what is actually in it, not from the description.'
     };
     function paneEmptyHTML(){
       var un=videos.filter(function(v){return !v.watched;});
@@ -1229,6 +1429,44 @@
         h+='<div class="pane-do"><b>Try this</b>'+esc(p.act)+'</div>';
       }
       if(!v.keypoints&&!v.pending&&!v.err) h+='<div class="pane-src pulse" style="border-top:none;padding-top:12px">Nova is reading this one…</div>';
+
+      /* ── THE RECAP ────────────────────────────────────────────
+         The key points above are written from the creator's description,
+         because YouTube gives us no transcript. This is the one control on
+         the page that goes and WATCHES the thing. It lives here, under the
+         thin reading it replaces, so the difference is visible at the moment
+         it matters — and only on YouTube, because the TikTok half already
+         reads real captions. */
+      if(!isTikTok(v)&&v.ytId){
+        var busy=!!recapBusy[v.id];
+        h+='<div class="pane-recap">';
+        if(busy){
+          h+='<span class="lab pulse">Watching it now</span>'+
+             '<div class="sub" style="margin-top:0">This takes a minute or two — it is watching the whole video. You can keep browsing.</div>';
+        }else if(hasRecap(v)){
+          var rp=rcParse(v.recap);
+          h+='<span class="lab">The recap</span>'+
+             (rp.core?'<div class="core">'+esc(rp.core)+'</div>':'')+
+             '<div class="sub">'+esc([
+                (v.recapWords?v.recapWords+' words':''),
+                (v.recapSections?v.recapSections+' section'+(v.recapSections===1?'':'s'):''),
+                (rp.facts.length?rp.facts.length+' to keep':'')
+              ].filter(Boolean).join(' · '))+'</div>'+
+             '<div class="pane-acts"><button type="button" class="b prime" data-rcread="'+esc(v.id)+'">Read it →</button>'+
+             '<button type="button" class="b" data-rcrun="'+esc(v.id)+'">Watch again</button></div>';
+        }else if(recapEmpty(v)){
+          h+='<span class="lab">Watched — nothing to write down</span>'+
+             '<div class="core" style="font-size:14px">'+esc(v.recapNothing)+'</div>'+
+             '<div class="pane-acts"><button type="button" class="b" data-rcrun="'+esc(v.id)+'">Try again</button></div>';
+        }else{
+          h+='<span class="lab">Watched it? Get the page.</span>'+
+             '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
+             'The points above come from the description. This watches the whole video and writes the recap you keep instead of it.</div>'+
+             '<div class="pane-acts"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">Watch it &amp; write the recap</button></div>';
+        }
+        if(v.recapErr) h+='<div class="sub" style="color:var(--au-coral);text-transform:none;letter-spacing:0;font-family:inherit;font-size:12px;line-height:1.5">'+esc(v.recapErr)+'</div>';
+        h+='</div>';
+      }
 
       if(v.ttId&&(v.tags||[]).length) h+='<div class="pane-m" style="margin-top:14px">'+esc(v.tags.map(function(t){return '#'+t;}).join('  '))+'</div>';
       if(v.ttId&&v.music) h+='<div class="pane-m" style="margin-top:7px">♪ '+esc(v.music)+'</div>';
@@ -1551,6 +1789,146 @@
       render(); if(!paused) fillConcepts();
     }
 
+    /* ════════════════════════════════════════════════════════════
+       THE RECAP — the one thing on this page he presses himself
+       ────────────────────────────────────────────────────────────
+       Everything else here is a background reader that fills the library in
+       while he does something else. This is not that, on purpose:
+
+       · It COSTS. Gemini watches the actual video, and the free tier allows
+         eight hours of YouTube a day. Sweeping it across a 46-video playlist
+         would spend the day's budget on videos he never watched. So it fires
+         on one video, when he asks, having just watched it.
+       · It is SLOW — watching a twenty-minute video is not a two-second call —
+         so the button has to hold its own state and say what is happening.
+         Anything that renders as a dead button for ninety seconds gets pressed
+         four more times.
+
+       ⚠️ `recapBusy` is keyed BY ID, not a single flag. He can start one, close
+       the pane, walk to another video and start a second; a shared boolean
+       would silently drop the second request and look like nothing happened. */
+    var recapBusy={};
+    async function askRecap(v){
+      try{
+        var r=await fetch('/api/run-reminders?ytrecap=1',{
+          method:'POST', headers:{'content-type':'application/json'}, cache:'no-store',
+          body:JSON.stringify({ videoId:v.ytId||'', title:titleOf(v), notes:(v.note||v.notes||'') })
+        });
+        var d={}; try{ d=await r.json(); }catch(e){}
+        // ⚠️ fetch() resolves on 4xx. Check r.ok, always — the whole reason the
+        // sync engine spent months reporting saves that never happened.
+        if(r.ok&&d&&d.ok) return { ok:true, data:d };
+        return { ok:false, message:(d&&d.message)||(d&&d.error)||('The server said '+r.status+'.'), rate:r.status===429 };
+      }catch(e){ return { ok:false, message:'No connection — the recap needs the network.' }; }
+    }
+    /* ⚠️ A recap REPLACES one he may already have, so it may only ever do so on
+       success — the same rule the re-read sweep learned the hard way. A failed
+       re-recap leaves the old page exactly where it was and says why. */
+    async function runRecap(id){
+      var v=byId(id); if(!v||!v.ytId||recapBusy[id]) return;
+      recapBusy[id]=1; v.recapErr=''; renderPane(); renderWall();
+      var res=await askRecap(v);
+      v=byId(id);
+      if(!v){ delete recapBusy[id]; return; }
+      if(res.ok){
+        var d=res.data;
+        if(d.empty){
+          // Watched, and there was nothing being said in it. A real answer, and
+          // it must not look like "we haven't looked yet".
+          delete v.recap; v.recapNothing=d.nothing||'Nothing is explained in this one.';
+          v.recapWords=0; v.recapSections=0;
+        }else{
+          v.recap=d.text||''; delete v.recapNothing;
+          v.recapWords=d.words||0; v.recapSections=d.sections||0;
+        }
+        v.recapTs=Date.now(); v.recapTrunc=!!d.truncated; v.recapErr='';
+        v.grade='watched';                 // the source line must tell the truth
+        if(d.shelf&&SHELVES.indexOf(d.shelf)>=0){ v.concept=d.shelf; v.cver=CVER; }
+        v.ts=Date.now();
+        persist(K_VID,videos); flush();
+        delete recapBusy[id];
+        render();
+        if(hasRecap(v)) openRecap(id);     // he pressed it to read it
+        return;
+      }
+      v.recapErr=res.message||'That did not work.'; v.ts=Date.now();
+      persist(K_VID,videos); flush();
+      delete recapBusy[id];
+      render();
+    }
+
+    /* ── the reading view ─────────────────────────────────────────
+       Built as a document: opening, sections in the video's own order, then
+       the hard specifics. Rendered into a native <dialog> — see the CSS block
+       for the three separate constraints that converge on this element. */
+    var rcOpenId=null;
+    function recapSourceLine(v){
+      return 'Written from the video itself — the whole thing was watched, audio and all, ' +
+             'rather than summarised from its description. Nothing here was checked against a second source, ' +
+             'so it carries no receipts: it is one careful viewing, not a verified transcript.';
+    }
+    function renderRecap(){
+      var dlg=$('rcDlg'); if(!dlg) return;
+      var v=rcOpenId?byId(rcOpenId):null;
+      if(!v||!hasRecap(v)){ dlg.innerHTML=''; return; }
+      var p=rcParse(v.recap), h='';
+      h+='<div class="rc-top"><div class="grow">'+
+           '<div class="rc-eyebrow">The recap</div>'+
+           '<h2 class="rc-h" id="rcTitle">'+esc(titleOf(v))+'</h2>'+
+           /* ⚠️ whenAgo(), not toLocaleDateString(). Found by LOOKING at the
+              render, invisible to every assertion: the raw locale date came
+              out as "7/29/2026" — US month-first, on a page read in Greece.
+              The rest of the Library already speaks in "today / 3d / 4w", so
+              this was both wrong and inconsistent in one line. */
+           '<div class="rc-meta">'+esc([
+              v.channel||'',
+              (v.recapWords?v.recapWords+' words':''),
+              (v.recapTs?whenAgo(v.recapTs):'')
+            ].filter(Boolean).join(' · '))+'</div>'+
+         '</div><button type="button" class="rc-x" id="rcX" aria-label="Close">✕</button></div>';
+      // tabindex -1 so the reading view can start focused on the TEXT. Without
+      // it showModal() lands focus on the ✕, which is both the wrong place for
+      // something you opened in order to read and the source of a UA focus ring.
+      h+='<div class="rc-body" tabindex="-1">';
+      if(p.core) h+='<div class="rc-core">'+esc(p.core)+'</div>';
+      if(p.open) h+='<div class="rc-open">'+recapParagraphs(p.open).map(function(x){ return '<p class="rc-p">'+esc(x)+'</p>'; }).join('')+'</div>';
+      p.sections.forEach(function(s){
+        h+='<section class="rc-sec">'+(s.h?'<h3 class="rc-sh">'+esc(s.h)+'</h3>':'')+
+           recapParagraphs(s.body).map(function(x){ return '<p class="rc-p">'+esc(x)+'</p>'; }).join('')+'</section>';
+      });
+      if(p.facts.length){
+        h+='<div class="rc-facts"><h4>Worth keeping</h4><ul>'+
+           p.facts.map(function(f){ return '<li>'+esc(f)+'</li>'; }).join('')+'</ul></div>';
+      }
+      // ⚠️ A truncated recap is an INCOMPLETE one. Saying so is the difference
+      // between a page he can trust and a page that quietly stops mid-argument.
+      if(v.recapTrunc) h+='<div class="rc-src" style="color:var(--au-amber)">This one hit the length limit and may stop before the end of the video. Watch it again to get a complete page.</div>';
+      h+='<div class="rc-src">'+esc(recapSourceLine(v))+'</div>';
+      h+='</div>';
+      h+='<div class="rc-foot">'+
+         (v.url?'<a class="b" href="'+esc(v.url)+'" target="_blank" rel="noopener">Open the video ↗</a>':'')+
+         '<button type="button" class="b" data-rcagain="'+esc(v.id)+'">Watch it again</button>'+
+         '<button type="button" class="b" id="rcClose">Done</button>'+
+         '</div>';
+      dlg.innerHTML=h;
+    }
+    function openRecap(id){
+      var v=byId(id); if(!v||!hasRecap(v)) return;
+      rcOpenId=id; renderRecap();
+      var dlg=$('rcDlg'); if(!dlg) return;
+      // Reading it IS revisiting it — this is the moment the recall clock should
+      // restart, and the only place on this page where that is honestly true.
+      v.revisitTs=Date.now(); v.ts=Date.now(); persist(K_VID,videos); flush();
+      if(!dlg.open){ try{ dlg.showModal(); }catch(e){ dlg.setAttribute('open',''); } }
+      var b=dlg.querySelector('.rc-body');
+      if(b){ b.scrollTop=0; try{ b.focus({preventScroll:true}); }catch(e){ b.focus(); } }
+    }
+    function closeRecap(){
+      var dlg=$('rcDlg'); rcOpenId=null;
+      if(dlg&&dlg.open){ try{ dlg.close(); }catch(e){ dlg.removeAttribute('open'); } }
+      else if(dlg){ dlg.removeAttribute('open'); }
+    }
+
     /* ── TikTok reader: fetch, then read, one video at a time ── */
     async function ttFetchMeta(v){
       try{
@@ -1799,7 +2177,18 @@
       if(!w||!ink) return;
       ink.style.transform='translateX('+(w.offsetLeft-3)+'px)';
     }
+    /* ⚠️ The recap guard at the foot of render() can close the reading view,
+       whose `close` event calls render() straight back. This flag is what
+       keeps that from re-entering — and it is cleared in a `finally`, because
+       a flag left standing by a thrown render would freeze the whole page
+       silently, which is a far worse bug than the one it guards. */
+    var rendering=false;
     function render(){
+      if(rendering) return;
+      rendering=true;
+      try{ renderAll(); } finally{ rendering=false; }
+    }
+    function renderAll(){
       videos=loadArr(K_VID); tiktoks=loadArr(K_TT); habits=loadArr(K_HAB); profile=loadObj(K_PROF); actions=loadArr(K_ACT);
 
       document.documentElement.style.setProperty('--acc',ACCENT[world]);
@@ -1837,6 +2226,14 @@
       renderWall();
       renderPane();
       renderStatus();
+      // A reading view left open on an item that has since been removed — by
+      // "remove all", by a sync pull, by the ✕ on another device — would sit
+      // there as a blank sheet. Close it rather than render nothing into it.
+      // ⚠️ closeRecap() fires the dialog's `close` event, whose listener calls
+      // render() — so `rendering` is what stops this guard from re-entering
+      // itself. It terminates either way (rcOpenId is null by then), but a
+      // render that can call itself is a trap left lying around for later.
+      if(rcOpenId){ var rv=byId(rcOpenId); if(!rv||!hasRecap(rv)) closeRecap(); }
       moveInk();
     }
 
@@ -1881,6 +2278,10 @@
       if(ha){ var hv=habits.find(function(x){return x.id===ha.getAttribute('data-ha');}); if(hv){ hv.adopted=!hv.adopted; hv.ts=Date.now(); persist(K_HAB,habits); flush(); render(); } return; }
       var dh=e.target.closest('[data-dh]');
       if(dh){ habits=habits.filter(function(x){return x.id!==dh.getAttribute('data-dh');}); persist(K_HAB,habits); flush(); render(); return; }
+      // The Room's recap rows open the reading view directly rather than
+      // selecting the tile — this list exists to be READ from, not browsed.
+      var rr=e.target.closest('[data-rcread]');
+      if(rr){ openRecap(rr.getAttribute('data-rcread')); return; }
       var t=e.target.closest('[data-id]'); if(t) select(t.getAttribute('data-id'));
     });
     // An expired TikTok cover leaves a broken frame; go and get a fresh one.
@@ -1901,6 +2302,8 @@
         if(pv){ var pk=kpParse(pv.keypoints||''); if(pk.act){ addAction(pv,pk.act); render(); } }
         return;
       }
+      if((el=e.target.closest('[data-rcread]'))){ openRecap(el.getAttribute('data-rcread')); return; }
+      if((el=e.target.closest('[data-rcrun]'))){ runRecap(el.getAttribute('data-rcrun')); return; }
       if((el=e.target.closest('[data-unpractice]'))){ dropAction(el.getAttribute('data-unpractice')); render(); return; }
       if((el=e.target.closest('[data-actdone]'))){ toggleAction(el.getAttribute('data-actdone')); render(); return; }
       if((el=e.target.closest('[data-actdrop]'))){ dropAction(el.getAttribute('data-actdrop')); render(); return; }
@@ -1927,11 +2330,26 @@
       }
       if((el=e.target.closest('[data-del]'))){
         var id=el.getAttribute('data-del'), dv=byId(id); if(!dv) return;
+        // The reading view may be open on the very item being removed.
+        if(rcOpenId===id) closeRecap();
         if(isTikTok(dv)){ tiktoks=tiktoks.filter(function(x){return x.id!==id;}); persist(K_TT,tiktoks); }
         else { videos=videos.filter(function(x){return x.id!==id;}); persist(K_VID,videos); }
         flush(); closePane(); render(); return;
       }
     });
+    /* The reading view. `close` fires for the ✕, the Done button, Escape and a
+       backdrop dismissal alike, so rcOpenId is cleared in exactly one place —
+       four listeners racing to null the same variable is how a dialog ends up
+       reopening onto the wrong video. */
+    $('rcDlg').addEventListener('click',function(e){
+      var el;
+      if((el=e.target.closest('[data-rcagain]'))){ var id=el.getAttribute('data-rcagain'); closeRecap(); runRecap(id); return; }
+      if(e.target.closest('#rcX')||e.target.closest('#rcClose')){ closeRecap(); return; }
+      // Clicking the backdrop lands on the <dialog> itself, never on its children.
+      if(e.target===this) closeRecap();
+    });
+    $('rcDlg').addEventListener('close',function(){ rcOpenId=null; render(); });
+
     $('status').addEventListener('click',function(e){
       if(e.target.closest('[data-pause]')){ setPaused(true); return; }
       if(e.target.closest('[data-resume]')){ setPaused(false); return; }
@@ -1943,6 +2361,13 @@
     document.addEventListener('keydown',function(e){
       var tag=(e.target&&e.target.tagName)||'';
       var typing=tag==='INPUT'||tag==='TEXTAREA'||e.target.isContentEditable;
+      /* ⚠️ While the recap is open it owns the keyboard completely. Without
+         this, Escape would close the dialog AND the pane behind it in one
+         press, and 1/2/3/4 would switch worlds underneath something he is
+         reading. The <dialog> handles its own Escape natively; everything
+         else here has to stay out of the way. */
+      var rcDlg=$('rcDlg');
+      if(rcDlg&&rcDlg.open) return;
       if(e.key==='Escape'){ if(typing){ e.target.blur(); return; } if(selId) closePane(); else if(seek){ seek=''; $('seek').value=''; render(); } return; }
       if(typing) return;
       if(e.key==='/'){ e.preventDefault(); $('seek').focus(); $('seek').select(); return; }
@@ -2002,6 +2427,8 @@
       recallQueue:recallQueue, recallKept:recallKept, recallLost:recallLost, dueAt:dueAt, STEPS:STEPS,
       addAction:addAction, dropAction:dropAction, toggleAction:toggleAction, actionFor:actionFor,
       roomItems:roomItems, persist:persist, storageErr:function(){ return storageErr; },
+      rcParse:rcParse, hasRecap:hasRecap, recapEmpty:recapEmpty, recapParagraphs:recapParagraphs,
+      badgeFor:badgeFor, hay:hay, SRC:SRC,
       K_ACT:K_ACT, K_VID:K_VID, K_TT:K_TT,
       _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, actions:actions, world:world, state:state, shelf:shelf, starOnly:starOnly }; },
       _set:function(v,h,t,a){ videos=v; habits=h; if(t) tiktoks=t; if(a) actions=a; },
