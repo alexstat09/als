@@ -63,6 +63,15 @@ QStash tick or a page that asks for it.
   about it. Needs `GEMINI_API_KEY`. ⚠️ A **200 with no text** is `truncated` or
   `empty`, never an empty answer — Gemini bills thinking against the output
   budget, so this is the gpt-oss trap wearing another provider's clothes.
+- ⚠️ **`watch()` has three settings that are load-bearing, not tuning.**
+  `thinkingLevel:'low'` (Gemini 3 defaults to **high**, which alone blew the
+  60s function cap), `mediaResolution: LOW` and `fps: 0.2` (~100 → ~45 tokens
+  per second of video; the argument is in the AUDIO, which is billed flat).
+  It also takes `clip:{start,end}` — that is what makes a long video
+  several requests instead of one impossible one.
+- ⚠️ **Its retry policy is Gemini's, not Groq's — see hard constraint 21.**
+  One shared deadline envelope (`GEM_DEADLINE_MS`, 48s inside the platform's
+  60), a per-model overload predicate, and no two retry reasons sharing a flag.
 - `llama-3.3-70b` dies **16/08/26**.
 - API: `json(role, payload)` → `{ok, obj, raw, model}`, `stream(role, payload)`.
 - ⚠️ **`gpt-oss-120b` counts hidden reasoning inside `max_tokens`.** A long call
@@ -293,6 +302,50 @@ Violating any of these breaks production or loses data.
     tiebreaker and a business-logic window is a latent data loss.** Separate
     them before adding the third caller.
 
+21. **A RETRY POLICY IS PER-PROVIDER. Never reuse one provider's
+    fall-through rule for another, and never let two retry reasons share a
+    counter.** `shouldFallThrough()` is correct for Groq, where a 5xx means the
+    whole platform is unwell and walking the chain makes it worse. **Google's
+    503 is per-MODEL** — "this model is experiencing high demand" on
+    `gemini-3.6-flash` says nothing about `3.5-flash-lite`. Reusing Groq's
+    predicate meant the recap gave up instantly on the one failure a fallback
+    chain exists for, and **the other two models were never tried** (als-v441).
+    Three coupled rules came out of fixing it, and each was a live bug:
+    - Give the new provider its **own predicate** (`isOverloaded()` /
+      `geminiFallThrough()`); do not bend the shared one, because four other
+      callers depend on its old meaning.
+    - **Two reasons to retry the same model must not share a flag.** The
+      overload retry first reused the config-trim counter, so it went out with
+      the config already trimmed — discarding `thinkingLevel:'low'`, the single
+      setting that makes the call fit in 60s. It would have retried its way
+      into the timeout it existed to avoid.
+    - ⭐ **A deadline across a retry chain is ONE shared envelope, never a
+      per-attempt timeout.** The moment the chain actually walked, three models
+      × 48s became 144 seconds against a 60-second function: the fix for the
+      overload would have *guaranteed* the 504 it was meant to prevent. Pass
+      what REMAINS (`left()`) to every attempt, and never start one that cannot
+      finish. And distinguish THEIR capacity (`overloaded`, clears in a minute)
+      from OUR quota (`rate`, lasts a day) — they need different sentences.
+
+22. **A scroll region whose bottom starts off-screen must NEVER carry
+    `overscroll-behavior: contain`.** `improve.html`'s detail pane is
+    `max-height: 100dvh − 96px` inside a `position: sticky; top: 74px` column,
+    but it begins ~216px down the page — so its bottom sits ~120px **below the
+    fold until the PAGE scrolls** and the sticky pins. `contain` blocks exactly
+    that chaining, so the wheel scrolled the pane's own content to its end and
+    then stopped dead: the page never moved, the sticky never pinned, and the
+    last 120px — holding *Mark watched* and *Remove* — was unreachable
+    (als-v443). Alex reported it as *"on some videos it doesn't let me scroll to
+    the very end"*, and **"some" was the diagnosis**: a box with no scroll range
+    chains anyway, so it only bit when the content overflowed.
+    Also settled there, so nobody re-derives it: use **`100dvh`, not `100vh`**
+    (on iOS `vh` counts the retracted toolbar and hides the same buttons); a
+    fixed bottom sheet needs `env(safe-area-inset-bottom)` or its last row is
+    untappable; and a **`min-height` on the sibling column does NOT** recover
+    the residual 30px of sticky clipping — measured and reverted, because at
+    maximum page scroll the containing block ends `100dvh − 126px` from the top
+    **regardless of row height**.
+
 ---
 
 ## 4 · What is built
@@ -364,11 +417,15 @@ never a fabricated summary, and a card always says what it was read FROM
 (a transcript, on-screen text, a chapter list, a description, or only a title).
 ⚠️ **YouTube has no transcript and never will** — its caption endpoint is locked
 — so a YouTube lesson rests on the creator's own description and says so.
-⭐ **THE RECAP (als-v440) is the way around that**: a button on any YouTube
+⭐ **THE RECAP (als-v440→443) is the way around that**: a button on any YouTube
 video hands its URL to **Gemini**, which watches the real thing, and returns a
 full reading page — opening, sections in the video's own order, and the hard
-specifics — shown in its own full-screen `<dialog>`. Grade `watched`, and it is
-on demand rather than swept, because it costs real quota. See §5.
+specifics — shown in its own full-screen `<dialog>`. Grade `watched`; once one
+exists it **replaces** the description-written key points on the card and they
+fold away. On demand, never swept, because it costs real quota.
+**A video over 25 minutes is watched in PARTS** — the server returns a plan of
+15-minute slices, the *page* walks them, each part is saved as it lands so a
+retry resumes, and a final call composes them into one page. See §5.
 **The Room** is the archive read as a page rather than a grid: every grounded
 CORE line by shelf, what is due for recall (3/7/21/60/150 days), and the
 practice list that the `DO:` lines feed via `improve:actions`, `movies.html`
@@ -410,7 +467,7 @@ which shoe it is drawing (§5).
 ## 5 · Open
 
 **HEAD is `als-v443` — THE RECAP: the Library can finally WATCH a video**
-(2026-07-30; 22 suites + smoke green; `tests/recap.test.js` = 230 assertions).
+(2026-07-30; **23 suites** + smoke green; `tests/recap.test.js` = 230 assertions).
 ⚠️ **Read "the 504 it shipped with" below before touching anything timing-related.**
 His brief, and the diagnosis was inside it: *"i dont like the key points it
 provides, too vague, not that much good tbh… have like something i can press
@@ -548,6 +605,36 @@ it was deliberately not changed. It is no longer the ceiling on video LENGTH:
 als-v442 below makes a long video several requests instead of one. A test pins
 the 60 the 48s deadline is set against; change them together or not at all.
 
+### ⭐⭐ "THIS MODEL IS CURRENTLY EXPERIENCING HIGH DEMAND" — Google's 503
+The second thing he hit, fixed alongside the segmenting below. **`watch()` was
+reusing Groq's fall-through rule**, where a 5xx means the whole platform is
+unwell and walking the chain only makes it worse. **Google's 503 is per-MODEL**
+— "high demand" on `gemini-3.6-flash` says nothing about `3.5-flash-lite`,
+which is older and far less contended. So the one failure a fallback chain
+exists for was the one it skipped: the call returned instantly and **the other
+two models were never tried.** This is now **hard constraint 21**.
+
+- `isOverloaded()` / `geminiFallThrough()` are the video path's OWN predicates.
+  The shared `shouldFallThrough()` was left alone rather than bent, because
+  four other callers depend on its Groq meaning.
+- A spike lasts seconds, so each model gets **one short wait and a retry**
+  before we move on — six attempts across the chain, measured at 3.6s total.
+- ⚠️⚠️ **THE BUG INSIDE THE FIX, and the reason constraint 21 has a second
+  half:** the overload retry first reused the same `pass` counter as the
+  config-trim retry, so it went out with the config **already trimmed** —
+  throwing away `thinkingLevel:'low'`, the one setting that makes the call fit
+  inside 60s. It would have retried its way straight into the timeout it
+  existed to avoid. Two reasons to retry the same model must not share a flag.
+- ⚠️⚠️ **And the budget had to become shared.** The deadline began as a
+  per-fetch timeout, harmless only while the chain never walked. The moment an
+  overloaded model started falling through, three models × 48s became 144
+  seconds against a 60-second function — **the fix for the overload would have
+  guaranteed the 504 it was meant to prevent.** `left()` now gives every
+  attempt, retry and wait what REMAINS of one envelope.
+- `overloaded` is its own error code, distinct from `rate`: that is OUR quota
+  being spent and lasts a day; this is THEIR capacity and lasts a minute. The
+  message says so and blames neither his key nor his quota.
+
 ### ⭐⭐ als-v442 — LONG VIDEOS: several ordinary requests, not one impossible one
 Alex, after a 39-minute video came back *"this took too long to watch"*:
 *"i want to be able to summarize at least 50 minute videos."*
@@ -589,6 +676,7 @@ never a bare timestamp — a shape that is sometimes a number is how a render
 prints NaN at somebody.
 
 ### ⭐ als-v443 — the end of the detail pane could not be reached
+**The permanent rule is hard constraint 22.**
 Alex: *"on some videos it doesn't let me scroll to the very end where i can
 press that i watched it."* **One cause, found by measuring rather than
 guessing** — and "some videos" was the clue that identified it.
@@ -614,15 +702,27 @@ row height, so extra height buys nothing and costs a screenful of empty column
 under a short wall. The alternatives are shrinking the pane to `100dvh − 200px`
 on every screen, or living with 30px at one scroll extreme. Living with it.
 
-### 🔴 Open — his, not mine
-- ✅ **`GEMINI_API_KEY` is set** — he added it, and the first call reached
-  Gemini (which is how the 504 was found). Nothing is blocking any more.
-- 🔴 **Unproven in his browser.** Driven headless at 1440px and 393px: the
-  dialog opens centred (340/340 gap), the scroll pane measures 663px against
-  1202px of content and actually scrolls, it closes to `display:none`, and
-  `SYNC-NEUTERED` confirmed no engine ran.
-- Both original open questions are now **answered and built** — see "one card,
-  one voice" above. Nothing is waiting on him but the key.
+### 🔴 Open — where the recap actually stands
+- ✅ **`GEMINI_API_KEY` is set.** ✅ Both original open questions were answered
+  *"do what is best"* and are **built** (see "one card, one voice").
+- 🔴 **A long video has never completed end-to-end against the real Gemini.**
+  Everything up to als-v441 he drove himself, and each failure he reported was
+  real. The segmenting of als-v442 is proven by **driving the whole flow in a
+  browser against a stubbed server** — plan → 4 parts → a 503 on part 3 → the
+  retry requesting only `[2,3]` → merge of all four notes in order → parts
+  cleaned up. What is unproven is the part only he can run: **four real
+  Gemini calls of ~13 minutes each, back to back, inside his daily quota.**
+  ⚠️ Watch for a slice that individually outruns 60s; if that happens the fix
+  is `SEG_SECS`, not the architecture.
+- 🔴 **Nothing in als-v440→443 is proven on his phone.** The reading view was
+  measured at 393px and the sheet's safe-area clearance at 393/430/820, but
+  headless only.
+- **The quality of a merged recap is unjudged.** A one-pass recap and a
+  four-part merged one are written by different prompts; only he can say
+  whether the long one reads as well. If it feels stitched, the lever is
+  `RECAP_MERGE_SYS`, not the segmenting.
+- Untouched and still true: the TikTok half, the background distiller, and the
+  nine shelves all work exactly as before — the recap is additive everywhere.
 
 ---
 
@@ -2290,13 +2390,17 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 23 files; 22 suites (garmin-probe is a TOOL)
+for f in tests/*.js; do node "$f"; done   # 24 files; 23 suites.
+# ⚠️ `tests/*.test.js` is only 21 of them. reinstall-safety.js and
+# sync-regression.js carry NO `.test.` in their names and they guard the
+# sync data-loss bugs — the most expensive bug class here. A loop over
+# `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
 ./smoke-test.sh                            # MUST pass before every push
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
 some dates** and has since before als-v422. (It passed clean again on 2026-07-29
-with all 22 suites green.) It reads `main.html` only and the
+with all 23 suites green.) It reads `main.html` only and the
 failure is **date-dependent**. So a clean tree is
 **22 pass, or 21 pass / 1 fail**; either is expected. Don't assume you broke it and
 don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
