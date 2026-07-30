@@ -707,6 +707,38 @@ ok(/\.rc-body\{[^}]*flex:1 1 auto/.test(html),
   'constraint 13: the scrolling body uses flex:1 1 auto, not flex:1');
 ok(/\.rc-body\{[^}]*min-height:0/.test(html), 'constraint 13: it carries its own min-height');
 
+/* ⭐⭐ "IT DOESN'T LET ME SCROLL TO THE VERY END WHERE I CAN PRESS THAT I
+   WATCHED IT" — the pane's own scroll refused to hand back to the page.
+   Measured, not guessed: the pane is `max-height: 100dvh - 96px` inside a
+   `position: sticky; top: 74px` column, but it starts ~216px down the page, so
+   its bottom sits ~120px BELOW the fold until the page itself scrolls.
+   `overscroll-behavior: contain` blocked exactly that — the wheel scrolled the
+   pane to its end and then stopped dead, and the last 120px (where "Mark
+   watched" and "Remove" live) could never be reached.
+   It only bit on videos whose pane content OVERFLOWS, because a box with no
+   scroll range chains anyway. That is precisely his "some videos". */
+console.log('   the end of the pane can actually be reached');
+const paneRule = (code.match(/\.pane\{[^}]*\}/) || [''])[0];
+ok(paneRule.length > 40, 'scroll: found the .pane rule');
+ok(!/overscroll-behavior/.test(paneRule),
+  'scroll: .pane does NOT contain its overscroll — chaining is what lets the page bring the end into view');
+ok(/max-height:calc\(100dvh/.test(paneRule),
+  'scroll: the cap is dvh, not vh — on iOS vh counts the retracted toolbar and hides the same buttons');
+ok(!/max-height:calc\(100vh/.test(paneRule), 'scroll: no vh left in the pane cap');
+/* And on the phone the pane is a fixed sheet ending at bottom:0, which is
+   under the home indicator. Nothing to scroll there — just a strip nobody
+   could tap. */
+const sheetRule = (code.match(/\.lb-side\{ position:fixed[^}]*\}/) || [''])[0];
+ok(sheetRule.length > 40, 'scroll: found the mobile sheet rule');
+ok(/safe-area-inset-bottom/.test(sheetRule),
+  'scroll: the mobile sheet clears the home indicator, or its last row is untappable');
+/* ⚠️ A `min-height` on .lb-main does NOT fix the residual 30px of sticky
+   clipping — measured, and reverted. At maximum page scroll the containing
+   block always ends 100dvh−126px from the top regardless of row height, so
+   extra height buys nothing and costs a screenful of empty column. */
+ok(!/\.lb-main\{[^}]*min-height/.test(code),
+  'scroll: no min-height on .lb-main — it was measured, it changed nothing, and it cost empty space');
+
 // Constraint 12: a class toggled from JS must exist in CSS.
 ok(/\.badge\.recap\{/.test(code), 'constraint 12: the .badge.recap class is actually defined');
 
@@ -729,7 +761,7 @@ ok(!/toLocaleDateString/.test(renderRecapBody),
 // Constraint 2: the service worker was bumped, and never backwards.
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const ver = (sw.match(/var CACHE = "als-v(\d+)"/) || [])[1];
-ok(ver && parseInt(ver, 10) >= 442, 'constraint 2: sw.js CACHE is at least als-v442  (got als-v' + ver + ')');
+ok(ver && parseInt(ver, 10) >= 443, 'constraint 2: sw.js CACHE is at least als-v443  (got als-v' + ver + ')');
 
 /* It must stay OUT of the background sweep. An hour of video is a real slice
    of the daily quota; sweeping 46 videos would spend it on ones he never

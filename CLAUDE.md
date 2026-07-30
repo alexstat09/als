@@ -409,8 +409,8 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v442` — THE RECAP: the Library can finally WATCH a video**
-(2026-07-30; 22 suites + smoke green; `tests/recap.test.js` = 223 assertions).
+**HEAD is `als-v443` — THE RECAP: the Library can finally WATCH a video**
+(2026-07-30; 22 suites + smoke green; `tests/recap.test.js` = 230 assertions).
 ⚠️ **Read "the 504 it shipped with" below before touching anything timing-related.**
 His brief, and the diagnosis was inside it: *"i dont like the key points it
 provides, too vague, not that much good tbh… have like something i can press
@@ -587,6 +587,32 @@ The wait now says **"Watching part 2 of 4"** with a bar, because a two-minute
 silence is how a tab gets closed. ⚠️ `recapBusy` is an OBJECT everywhere now,
 never a bare timestamp — a shape that is sometimes a number is how a render
 prints NaN at somebody.
+
+### ⭐ als-v443 — the end of the detail pane could not be reached
+Alex: *"on some videos it doesn't let me scroll to the very end where i can
+press that i watched it."* **One cause, found by measuring rather than
+guessing** — and "some videos" was the clue that identified it.
+
+`.pane` is `max-height: 100dvh − 96px` inside a `position: sticky; top: 74px`
+column, but it begins ~216px down the page (below the header), so **its bottom
+sits ~120px below the fold until the PAGE scrolls** and the sticky pins. The
+pane carried `overscroll-behavior: contain`, which blocks scroll chaining — so
+the wheel scrolled the pane's own content to its end and then **stopped dead**.
+The page never moved, the sticky never pinned, and the last 120px, which is
+exactly where *Mark watched* and *Remove* live, was unreachable.
+
+It only ever bit on videos whose pane content **overflows**, because a box with
+no scroll range chains anyway. That is precisely his "some videos".
+Also fixed: `100vh` → `100dvh` (on iOS `vh` counts the retracted toolbar and
+hides the same buttons), and the phone sheet now clears the home indicator with
+`env(safe-area-inset-bottom)` — measured 48px of clearance at 393/430/820px.
+
+⚠️ **A `min-height` on `.lb-main` does NOT fix the residual 30px of sticky
+clipping at maximum page scroll — I tried it, measured it, and reverted it.**
+The containing block's bottom at full scroll is `100dvh − 126px` regardless of
+row height, so extra height buys nothing and costs a screenful of empty column
+under a short wall. The alternatives are shrinking the pane to `100dvh − 200px`
+on every screen, or living with 30px at one scroll extreme. Living with it.
 
 ### 🔴 Open — his, not mine
 - ✅ **`GEMINI_API_KEY` is set** — he added it, and the first call reached

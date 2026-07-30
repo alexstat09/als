@@ -127,6 +127,21 @@
     .lb-body{ display:grid; grid-template-columns:214px minmax(0,1fr) 384px; gap:clamp(18px,2vw,34px); padding:22px 0 40px; align-items:start; }
     .lb-rail{ position:sticky; top:74px; }
     .lb-side{ position:sticky; top:74px; }
+    /* ⚠️ NOTE FOR ANYONE TEMPTED TO "FIX" THE LAST 30px.
+       A sticky item can only travel inside its containing block, and at the
+       very bottom of the page that block always ends `100dvh − 126px` from the
+       top (the grid's own padding plus the body's). A pane of `100dvh − 96px`
+       needs its bottom at `74 + height`, which is further down than that — so
+       at maximum page scroll the pane settles ~30px above its pin and the top
+       of the thumbnail is clipped until you scroll back up.
+       **A `min-height` on `.lb-main` does NOT fix this.** I measured it: travel
+       is `row − pane`, but the block's bottom position at max scroll is
+       independent of the row height, so the extra height buys nothing and
+       costs a screenful of empty column under a short wall. The only real
+       cures are shrinking the pane to `100dvh − 200px` (losing 104px of it on
+       every screen) or living with 30px at one scroll extreme. Living with it,
+       deliberately — the END of the pane, which is what Alex could not reach,
+       is now always reachable. */
     /* Habits and the Room have no shelf rail. Emptying the <aside> was not
        enough — it is still the first grid item, so it kept claiming a column
        and left a 214px hole beside the content. It has to leave the grid. */
@@ -214,8 +229,28 @@
                  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 
     /* ── the detail pane ──────────────────────────────────────── */
+    /* ⚠️⚠️ `overscroll-behavior: contain` USED TO BE HERE, AND IT MADE THE END
+       OF THIS PANE UNREACHABLE. Alex: *"on some videos it doesn't let me
+       scroll to the very end where i can press that i watched it."*
+
+       Measured rather than guessed. The pane is `max-height: 100dvh - 96px`
+       and its container is `position: sticky; top: 74px` — but the pane starts
+       at y≈216 (below the page header), so **its bottom sits ~120px below the
+       fold until the PAGE scrolls** and the sticky pins. `contain` blocks
+       scroll chaining, so the wheel over the pane scrolled its inner content
+       to the end and then simply stopped: the page never moved, the sticky
+       never pinned, and the last 120px — which is exactly where "Mark watched"
+       and "Remove" live — could not be reached at all.
+
+       It only ever bit on videos whose pane content OVERFLOWS, because a box
+       with no scroll range chains anyway. That is precisely his "some videos".
+
+       Chaining is the correct behaviour for a scroll region inside a page: run
+       out of pane, scroll the page, the sticky pins, the end comes into view.
+       ⚠️ `100dvh`, not `100vh` — on iOS `100vh` counts the retracted toolbar,
+       which parks the same buttons under the browser chrome. */
     .pane{ border:1px solid var(--au-line); border-radius:16px; background:var(--au-glass);
-           overflow:hidden; max-height:calc(100vh - 96px); overflow-y:auto; overscroll-behavior:contain; }
+           overflow:hidden; max-height:calc(100dvh - 96px); overflow-y:auto; }
     .pane::-webkit-scrollbar{ width:7px; } .pane::-webkit-scrollbar-thumb{ background:var(--au-line-2); border-radius:4px; }
     .pane-stage{ position:relative; display:block; width:100%; background:#08080a; text-decoration:none; }
     .pane-stage iframe{ width:100%; height:100%; border:0; display:block; position:absolute; inset:0; }
@@ -497,8 +532,15 @@
          ancestor — hard constraint 4. */
       .lb-body{ grid-template-columns:180px minmax(0,1fr); }
       body.no-rail .lb-body{ grid-template-columns:minmax(0,1fr); }
+      /* ⚠️ The sheet ends at `bottom:0`, which on a phone is under the home
+         indicator and, on iOS, under the browser's own bottom chrome — so the
+         final row of buttons was the part you could never quite reach here
+         either. The safe-area inset is the whole fix; there is no scroll bug
+         to chase on this side, only a strip nobody could tap. */
       .lb-side{ position:fixed; z-index:60; right:0; top:0; bottom:0; width:min(420px,92vw);
-                padding:14px; overflow-y:auto; background:rgba(6,6,8,.96); backdrop-filter:blur(22px);
+                padding:14px 14px calc(28px + env(safe-area-inset-bottom));
+                overflow-y:auto; -webkit-overflow-scrolling:touch;
+                background:rgba(6,6,8,.96); backdrop-filter:blur(22px);
                 border-left:1px solid var(--au-line-2); transform:translateX(102%);
                 transition:transform .42s var(--au-ease); }
       .lb-side.open{ transform:none; }
