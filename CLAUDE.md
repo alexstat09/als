@@ -174,7 +174,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v439`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v444`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -346,6 +346,31 @@ Violating any of these breaks production or loses data.
     maximum page scroll the containing block ends `100dvh − 126px` from the top
     **regardless of row height**.
 
+23. **IF A FILE WRITES A CONVENTION, IT MUST ALSO READ IT.** Constraint 15 is
+    about two code paths making the same promise; this is one file taking part
+    in a protocol on **only one side**, which is harder to see because there is
+    no twin to compare against. `api/mcp.js` had `tombstone()` — it stamped
+    `_deletes[lsKey][idKeyOf(item)] = T` on every delete, exactly like the
+    clients — and then **every read returned `b[lsKey]` raw.** So `get_*` summed
+    rows Alex had already deleted: he mis-logged **2,245 g of tuna**, corrected
+    it to 225 g, and the MCP reported 29 Jul as **4,671 kcal / 742 g protein**
+    while `nutrition.html` correctly showed **1,461 / 117** (als-v444).
+    **Nothing was corrupted** — a deleted item legitimately stays in the stored
+    array with its tombstone beside it, and every client filters on it. The
+    reader was the only participant that did not.
+    - **Grep both directions.** For any convention (`_deletes`, `ts0`, `ord`,
+      `grp`, `_ts`), list who writes it and who reads it, and make the two
+      lists match. A writer with no matching reader is a silent wrong answer,
+      not an error.
+    - ⚠️ **A filter added to a read must be provably OFF the write path**, or
+      "ignore these rows" quietly becomes "delete these rows". `liveOnly()` is
+      reachable only from `readKey`; all 29 writers go through `mutateBundle` →
+      `supa.readRow`. `tests/mcp-tombstones.test.js` asserts both halves.
+    - ⭐ **Mirror the rule, never improve it.** `addedAt`/`tombed` are copied
+      from `sync.js` verbatim (a tombstone `T` suppresses an item **unless it
+      was re-added after `T`**). Two ends of one protocol that "improve"
+      independently are two protocols.
+
 ---
 
 ## 4 · What is built
@@ -455,7 +480,9 @@ Read-only scope, device-local cache, no backend.
 
 **Infrastructure** — daily GitHub vault backups with 14-day rollback and
 additive-only repair (`backup.html`), multi-user auth, push notifications,
-`api/mcp.js` (41 read+write tools, live on Alex's Pro), sync watchdog with
+`api/mcp.js` (**43** read+write tools — 11 domain getters, `snapshot`,
+`list_keys`, and `get_raw` as the power reader; live on Alex's Pro **and now in
+Claude Code**, see §5 "Reading his live data from here"), sync watchdog with
 per-engine persisted state (`als-sync-status.js`).
 
 **Running app for Chrissie** — `run.html`, editorial Rose 5-tab PWA, Athens
@@ -466,7 +493,88 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v443` — THE RECAP: the Library can finally WATCH a video**
+**HEAD is `als-v444` — THE MCP WAS READING DELETED ROWS** (2026-07-30, `17a8e3f`
+on `main`, pushed; **25 suites** + smoke green; `tests/mcp-tombstones.test.js` =
+23 assertions). The permanent rule is **hard constraint 23**.
+⚠️ **START HERE TOMORROW — the investigation below is NOT closed.**
+
+### Reading his live data from here (new this session)
+`api/mcp.js` is now connected to **Claude Code**, not only claude.ai. So a
+session can read his real dashboard instead of the 14 Jul device export.
+
+- Server name **`metron`**, declared in `~/.claude.json` under `mcpServers`
+  (type `http`, url `https://als-ochre.vercel.app/api/mcp`, `Authorization:
+  Bearer <MCP_TOKEN>`). ⚠️ **There is no `claude` binary on his Mac** — he runs
+  the VSCode extension, so `claude mcp add` does not exist and the config was
+  written directly. A backup sits at `~/.claude.json.bak-*`.
+- Auth is a **shared secret** (`MCP_TOKEN` in Vercel), not OAuth. It is marked
+  **Sensitive** in Vercel, so it cannot be read back — a rotation is the only
+  way to obtain the value, and rotating **breaks the claude.ai connector** until
+  it is updated there too.
+- `.gitignore` now covers `.env` / `.env.*` — it did not, and `vercel env pull`
+  writes decrypted `MCP_TOKEN`, `GEMINI_API_KEY` and the Garmin pair into that
+  folder.
+- **Best first calls:** `snapshot`, then `list_keys` + `get_raw` for anything
+  without a domain getter. `improve:videos` IS readable, so the Library is
+  reachable — that was the one thing the repo alone could not confirm.
+
+### What shipped
+`readKey` now passes its value through `liveOnly()`, which drops any array item
+whose `idKeyOf()` is tombstoned in `b._deletes[lsKey]` — mirroring `sync.js`'s
+`addedAt`/`tombed` verbatim. Read-only by construction; the write path is
+untouched and a test asserts `mutateBundle` never sees the filter.
+
+### 🔴 THE OPEN BUG — the fix shipped and his numbers did NOT change
+This is the thing to pick up. **His app is correct; the MCP is not**, and after
+als-v444 the discrepancy is unchanged:
+
+| | `nutrition.html` (true) | MCP `get_nutrition` | gap |
+|---|---|---|---|
+| 29 Jul | 1,461 · 117P · 154C · 43F | 4,671 · 742P · 269C · 69F | +3,210 · **+625P** |
+| 30 Jul | 1,428 · 103P · 151C · 45F | 1,978 · 136P · 200C · 68F | +550 · +33P |
+
+- **Both gaps are macro-consistent** (+625P/+115C/+26F ≈ 3,194 against an
+  observed +3,210). So the cloud holds **extra real food entries**, not
+  corrupted fields.
+- **als-v444 IS live** — production `sw.js` line 15 reads `als-v444`, polled and
+  confirmed — and the numbers did not move. Two readings, undecided:
+  **(a)** a warm lambda still served the old code in that window, or
+  **(b)** there are **no tombstones for those rows in the cloud bundle at all**,
+  meaning the deletion never propagated in any form.
+- ⭐ **NEXT STEP, and it ends the guessing:** read `_deletes` for the
+  `nutrition` bundle directly. There is no tool for it — `get_raw` resolves
+  through `BUNDLE`, which has no `_deletes` entry — so either add a diagnostic
+  branch or read the row server-side. **Do that before theorising again.**
+- ⚠️ **If (b) is true there is a live risk:** `nut:logs` merges by UNION, so a
+  pull could bring those rows back INTO his diary. First question tomorrow is
+  literally *"does the 29th still say 1,461?"*
+
+### ⚠️ Four diagnoses that were WRONG — do not re-run them
+Each was checked and eliminated. Re-deriving them costs an hour.
+- **Not the wrong row / wrong account.** `get_body` returns **165 weigh-ins,
+  latest 70 kg**; the 14 Jul export had 149 ending 13 Jul, and +16 days is
+  exactly 165. `OWNER_ID` scoping is working.
+- **Not day-bucketing.** `get_nutrition` reads `e.dateKey` first and only falls
+  back to `ts`. Constraint 6 is honoured.
+- **Not meal-group double counting.** `grpOf` is a *reference to a saved meal's
+  id*, never a totals row, so grouped ingredients cannot be counted twice.
+- **Not `pruneDupes`.** It calls `ALSSync.drop()` per id and then `flush()` —
+  it tombstones correctly.
+- **Not clean duplication either.** 4,671 is not 2 × 1,461, and **625 g of
+  protein cannot be a duplicate of a 117 g day.** The origin is his own report:
+  he mis-logged tuna at **~2,245 g**, corrected it to ~225 g, and the original
+  row is still being counted.
+
+### ⚠️ Method note, because this session got it wrong three times
+The MCP returning data is **not** the MCP returning *correct* data. The first
+reply of the session quoted 4,671 kcal to him as "your real data" and told him
+to go fix his diary. **Always cross-check a live read against the page that owns
+it before acting on it** — and when he says a number is wrong, he is the ground
+truth, not the tool.
+
+---
+
+**Before that — `als-v443` — THE RECAP: the Library can finally WATCH a video**
 (2026-07-30; **23 suites** + smoke green; `tests/recap.test.js` = 230 assertions).
 ⚠️ **Read "the 504 it shipped with" below before touching anything timing-related.**
 His brief, and the diagnosis was inside it: *"i dont like the key points it
@@ -2273,6 +2381,16 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴🔴 **FIRST QUESTION TOMORROW: does `nutrition.html` still show 1,461 kcal
+  for 29 Jul?** If it has jumped toward 4,671, the phantom rows were pulled down
+  by a UNION merge and that is the emergency; if it still reads 1,461, the
+  divergence is cloud-only and the §5 investigation continues calmly. **Ask this
+  before anything else.**
+- **He is running a 7-day cut, 30 Jul → 5 Aug: 1,800 kcal / 160 g protein.**
+  `calTarget` is set to 1800 in `nut:profile`; **`proteinTarget` is still 120**,
+  so the ring grades him against the old number — his call whether to change it.
+  His real maintenance is ~2,250–2,400 (weight flat 70.1 → 70.7 over eight
+  weeks). Day 1 landed 1,428 / 103P by his app.
 - 🔴 **Meal groups (als-v439) are unproven on his phone.** Two calls are his:
   should a logged meal open **collapsed** by default (right now only the one he
   just saved opens expanded, so nothing appears to vanish the second he names
@@ -2390,8 +2508,8 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 24 files; 23 suites.
-# ⚠️ `tests/*.test.js` is only 21 of them. reinstall-safety.js and
+for f in tests/*.js; do node "$f"; done   # 25 files; 24 suites + 1 tool.
+# ⚠️ `tests/*.test.js` is only 22 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
 # `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
