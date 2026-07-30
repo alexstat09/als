@@ -69,7 +69,26 @@ async function getBundle(appKey) {
   if (CACHE) CACHE[appKey] = b;
   return b;
 }
-async function readKey(lsKey) { var ak = bundleFor(lsKey); if (!ak) return undefined; var b = await getBundle(ak); return b[lsKey]; }
+/* ---------- deletion tombstones: READ them, not only write them ------------
+   A bundle keeps a deleted item IN its array and records the deletion in
+   `_deletes[lsKey][idKeyOf(item)] = T`. Every CLIENT filters on that (sync.js
+   `tombed`), so the page shows the truth. This file only ever WROTE tombstones
+   (see `tombstone()` above) and never read one, so every get_* summed rows he
+   had already deleted: a 2,245 g tuna he corrected to 225 g still counted, and
+   29 Jul read 4,671 kcal / 742 g protein against the app's real 1,461 / 117.
+   ⚠️ READ-ONLY BY CONSTRUCTION. Writes go through mutateBundle -> supa.readRow
+   and never see this filter, so a tombstoned row can never be dropped from the
+   stored array by a write that passed through here. Mirrors sync.js exactly —
+   do not "improve" the rule here or the two ends disagree. */
+function addedAt(v) { if (typeof v === 'number') return v; if (v && typeof v === 'object') return (+v.ts || +v._ts || 0); return 0; }
+function tombed(tnode, key, val) { if (!tnode) return false; var t = tnode[key]; if (typeof t !== 'number') return false; return addedAt(val) <= t; }
+function liveOnly(b, lsKey, v) {
+  if (!Array.isArray(v)) return v;
+  var tn = b && b._deletes && b._deletes[lsKey];
+  if (!tn || typeof tn !== 'object') return v;
+  return v.filter(function (it) { var k = idKeyOf(it); return !(k && tombed(tn, k, it)); });
+}
+async function readKey(lsKey) { var ak = bundleFor(lsKey); if (!ak) return undefined; var b = await getBundle(ak); return liveOnly(b, lsKey, b[lsKey]); }
 async function readArr(lsKey) { var v = await readKey(lsKey); return Array.isArray(v) ? v : []; }
 
 /* ---------- mutate one bundle (read fresh -> change -> write whole row) ---------- */
