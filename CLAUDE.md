@@ -409,8 +409,8 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v441` — THE RECAP: the Library can finally WATCH a video**
-(2026-07-29; 22 suites + smoke green; `tests/recap.test.js` = 161 assertions).
+**HEAD is `als-v442` — THE RECAP: the Library can finally WATCH a video**
+(2026-07-30; 22 suites + smoke green; `tests/recap.test.js` = 223 assertions).
 ⚠️ **Read "the 504 it shipped with" below before touching anything timing-related.**
 His brief, and the diagnosis was inside it: *"i dont like the key points it
 provides, too vague, not that much good tbh… have like something i can press
@@ -542,10 +542,51 @@ separate faults, and every one had to be fixed:
 Also added: **duration**, one cheap `contentDetails` field, so a timeout can
 NAME ITS CAUSE ("it is 52 minutes long") instead of being a mystery. Unknown
 duration says nothing rather than "0 minutes".
-⚠️ **The 60s cap is the real ceiling on video length.** `maxDuration: 300` would
-lift it, but that needs Vercel **Pro** — on Hobby it is a deploy error, so it
-was deliberately NOT changed without knowing his plan. A test pins the 60 the
-48s deadline is set against; change them together or not at all.
+⚠️ **The 60s cap is still the ceiling on ONE request** — `maxDuration: 300`
+would lift it but needs Vercel **Pro**, and on Hobby it is a deploy error, so
+it was deliberately not changed. It is no longer the ceiling on video LENGTH:
+als-v442 below makes a long video several requests instead of one. A test pins
+the 60 the 48s deadline is set against; change them together or not at all.
+
+### ⭐⭐ als-v442 — LONG VIDEOS: several ordinary requests, not one impossible one
+Alex, after a 39-minute video came back *"this took too long to watch"*:
+*"i want to be able to summarize at least 50 minute videos."*
+
+**The wall was never Gemini or the video — it is that every invocation of
+`run-reminders.js` is capped at 60 seconds**, and `maxDuration: 300` needs
+Vercel Pro. No amount of tuning gets 50 minutes through one of those.
+
+So a long video stops being one impossible request:
+- **`videoMetadata` clips the video** (`startOffset`/`endOffset` as `{seconds}`
+  objects), so each slice is watched in its own 60-second window.
+- **`fps: 0.2`** — one frame per five seconds instead of the default one per
+  second. The argument lives in the AUDIO, which is billed flat at 32 tok/sec
+  whatever we do; frames are what cost, and this cuts that half by 5×.
+- `planSegments()` cuts at **15 min** per slice, **even** (four 13-minute
+  slices, never "full, full, full, and a 40-second stub"), contiguous, in
+  order. ≤25 min still goes through in **ONE pass** — two calls where one will
+  do is worse for coherence and worse for his quota.
+- Two prompts: `RECAP_SEG_SYS` takes dense notes on a slice and is told
+  **not to conclude** (it has only seen part of it); `RECAP_MERGE_SYS`
+  composes the page and is told plainly it **did not see the video** and may
+  use only the notes. The seams must not show.
+
+⚠️⚠️ **THE PAGE ORCHESTRATES, NOT THE SERVER.** A server-side loop would put
+every slice back inside a single invocation and rebuild the exact wall this
+climbs over. A test asserts the courier's recap branch contains no such loop.
+
+⭐ **Every finished part is persisted the moment it lands.** A part is the
+expensive thing here; losing four because the fifth timed out would make a long
+video worse than useless. Pressing again **resumes** — proven by driving it:
+part 3 failed with a 503, and the retry requested only `[2, 3]`, merged all
+four notes in order, then dropped the parts (this store has hit
+`QuotaExceededError` before). `recapPartsSig` stops a re-plan from mixing notes
+from two different slicings.
+
+The wait now says **"Watching part 2 of 4"** with a bar, because a two-minute
+silence is how a tab gets closed. ⚠️ `recapBusy` is an OBJECT everywhere now,
+never a bare timestamp — a shape that is sometimes a number is how a render
+prints NaN at somebody.
 
 ### 🔴 Open — his, not mine
 - ✅ **`GEMINI_API_KEY` is set** — he added it, and the first call reached

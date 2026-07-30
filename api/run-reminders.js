@@ -667,19 +667,79 @@ module.exports = async function (req, res) {
       var rvid = (rb && rb.videoId) || '', rtitle = (rb && rb.title) || '', rnotes = (rb && rb.notes) || '';
       if (!rvid) { res.status(400).json({ error: 'no video id' }); return; }
       if (!(process.env.GEMINI_API_KEY || '').trim()) {
-        res.status(503).json({ error: 'no-key', message: 'Watching a video needs GEMINI_API_KEY — it is free from Google AI Studio.' });
+        // ⚠️ 501, not 503. 503 now means "Google is busy", which is a Tuesday;
+        // a missing key is a one-time setup problem. Two very different fixes
+        // must not share a status code.
+        res.status(501).json({ error: 'no-key', message: 'Watching a video needs GEMINI_API_KEY on the server — it is free from Google AI Studio.' });
         return;
       }
+      /* ⭐ THREE SHAPES, ONE BRANCH — because a long video is several ordinary
+         requests rather than one impossible one (see _youtube.js):
+           {videoId}                  → the whole thing, or a PLAN of slices
+           {videoId, seg:{start,end}} → notes for one slice
+           {merge:true, notes:[...]}  → the slices composed into the page
+         The PAGE walks the plan. Looping here would put every slice back
+         inside one 60-second invocation and rebuild the wall we are climbing
+         over. */
+      if (rb && rb.merge) {
+        var mout = await yt.recapMerge(rtitle, (rb.notes || []));
+        if (!mout.ok) {
+          res.status(mout.error === 'overloaded' ? 503 : (mout.error === 'timeout' ? 504 : 502))
+             .json({ error: mout.error || 'merge failed',
+                     message: mout.message || 'The parts could not be put together. Press it again — the parts you already have are kept.' });
+          return;
+        }
+        res.status(200).json({
+          ok: true, text: mout.text || '', shelf: mout.shelf || '',
+          words: mout.words || 0, sections: mout.sections || 0,
+          truncated: !!mout.truncated, model: mout.model || ''
+        });
+        return;
+      }
+      if (rb && rb.seg) {
+        var sg = rb.seg;
+        var sout = await yt.recapSegment(rvid, rtitle, {
+          i: (sg.i | 0), start: Math.max(0, sg.start | 0), end: Math.max(0, sg.end | 0)
+        }, rb.total | 0);
+        if (!sout.ok) {
+          var sst = sout.error === 'overloaded' ? 503 : (sout.error === 'timeout' ? 504 : 502);
+          res.status(sst).json({
+            error: sout.error || 'segment failed', part: (sg.i | 0),
+            message: sout.error === 'overloaded'
+              ? 'Google’s video models are busy right now. Press it again — the parts already done are kept.'
+              : (sout.error === 'timeout'
+                  ? 'That part took too long. Press it again — the parts already done are kept.'
+                  : (sout.message || 'That part did not go through. Press it again.'))
+          });
+          return;
+        }
+        res.status(200).json({ ok: true, part: sout.i, note: sout.note, model: sout.model || '' });
+        return;
+      }
+
       var rout = await yt.recap(rvid, rtitle, rnotes, (process.env.YOUTUBE_API_KEY || '').trim());
+      // Too long for one window — hand the page a plan instead of an apology.
+      if (rout.ok && rout.plan) {
+        res.status(200).json({ ok: true, plan: true, secs: rout.secs || 0, segments: rout.segments || [] });
+        return;
+      }
       if (!rout.ok) {
-        var st = rout.error === 'rate' ? 429 : (rout.error === 'timeout' ? 504 : 502);
+        var st = rout.error === 'rate' ? 429
+               : rout.error === 'overloaded' ? 503
+               : rout.error === 'timeout' ? 504 : 502;
         var howLong = rout.secs ? yt._humanMins(rout.secs) : '';
         // Every failure here names itself and says what HE can do about it.
         // Echoing an upstream string, or letting Vercel's own gateway 504
         // through, is how this shipped saying "The server said 504." — a
         // sentence that tells him nothing at all.
         var msg = rout.message || '';
-        if (rout.error === 'timeout') {
+        if (rout.error === 'overloaded') {
+          // Google's capacity, not our quota. Every model in the chain was
+          // busy — including the least-contended one — so the honest advice is
+          // simply to press it again shortly. Nothing is wrong with the video,
+          // the key, or the app.
+          msg = 'Google’s video models are all busy right now — this is a spike on their side, not a problem with the video or your key. It usually clears within a minute or two. Press it again.';
+        } else if (rout.error === 'timeout') {
           msg = 'This one took too long to watch' + (howLong ? ' — it is ' + howLong + ' long' : '') +
                 '. Watching happens inside a 60-second budget on the server, and a long video can outrun it. ' +
                 'Shorter videos work; this is a limit of where the app runs, not of the video.';
@@ -687,6 +747,8 @@ module.exports = async function (req, res) {
           msg = 'Gemini could not open this one. It only accepts PUBLIC videos — a private, unlisted, members-only or age-restricted video cannot be watched.';
         } else if (rout.error === 'rate') {
           msg = 'The daily video quota is spent (the free tier allows 8 hours of YouTube a day). It resets tomorrow.';
+        } else if (rout.error === 'too-long') {
+          msg = rout.message;
         } else if (rout.error === 'truncated') {
           msg = 'It ran out of room before finishing the recap. Try again.';
         }

@@ -1437,10 +1437,24 @@
       if(isTikTok(v)||!v.ytId) return '';
       var h='<div class="pane-recap">';
       if(recapBusy[v.id]){
-        var el=Math.max(0,Math.round((Date.now()-recapBusy[v.id])/1000));
-        h+='<span class="lab pulse">Watching it now · '+el+'s</span>'+
+        var bz=recapBusy[v.id], el=Math.max(0,Math.round((Date.now()-(bz.ts||Date.now()))/1000));
+        // A long video is watched in parts, so the wait can say WHERE it is
+        // rather than only how long it has been. "part 3 of 4" is the
+        // difference between patience and closing the tab.
+        var lab=bz.merging?('Putting the parts together · '+el+'s')
+              :(bz.of?('Watching part '+bz.part+' of '+bz.of+' · '+el+'s')
+                     :('Watching it now · '+el+'s'));
+        h+='<span class="lab pulse">'+esc(lab)+'</span>'+
            '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
-           'It is taking in the whole video, not skimming a description, so give it up to a minute. You can keep browsing — this keeps going.</div>';
+           (bz.of
+             ? 'This one is long, so it is being watched in '+bz.of+' parts and then written up as one page. Each part is saved as it lands — if anything drops out, pressing again carries on from where it stopped.'
+             : 'It is taking in the whole video, not skimming a description, so give it up to a minute. You can keep browsing — this keeps going.')+
+           '</div>'+
+           /* Half a part's credit for the one in flight. A bar sitting at
+              exactly 0 through the whole of part 1 reads as broken — and it
+              is not even true, since that part IS underway. */
+           (bz.of?'<div class="now-bar" style="margin-top:11px"><i style="transform:scaleX('+
+                  Math.min(1,(bz.merging?bz.of:(bz.part-0.5))/bz.of).toFixed(3)+')"></i></div>':'');
       }else if(hasRecap(v)){
         var rp=rcParse(v.recap);
         h+='<span class="lab">The recap</span>'+
@@ -1456,6 +1470,16 @@
         h+='<span class="lab">Watched — nothing to write down</span>'+
            '<div class="core" style="font-size:14px">'+esc(v.recapNothing)+'</div>'+
            '<div class="pane-acts"><button type="button" class="b" data-rcrun="'+esc(v.id)+'">Try again</button></div>';
+      }else if(v.recapErr){
+        // After a failure the offer copy is wrong — he knows what it does, he
+        // just tried it. The error itself is the message, and the button is a
+        // retry. If parts of a long video are already banked, say so and call
+        // the button what it actually does: carry on, not start over.
+        var done=(v.recapParts||[]).filter(function(x){ return x&&String(x).trim(); }).length;
+        h+='<span class="lab" style="color:var(--au-coral)">That didn’t go through</span>'+
+           (done?'<div class="sub" style="margin-top:8px">'+done+' part'+(done===1?'':'s')+' saved · nothing is lost</div>':'')+
+           '<div class="pane-acts" style="margin-top:11px"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">'+
+           (done?'Carry on →':'Try again')+'</button></div>';
       }else{
         h+='<span class="lab">'+(v.watched?'You’ve watched it. Get the page.':'Watched it? Get the page.')+'</span>'+
            '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
@@ -1903,15 +1927,20 @@
            code. A status code is not a message. */
     function recapFailMsg(status){
       if(status===504||status===502) return 'The server ran out of time watching this one. Long videos are the usual cause — a shorter one will go through.';
-      if(status===503) return 'Watching needs GEMINI_API_KEY set on the server.';
+      // ⚠️ 503 used to say "needs GEMINI_API_KEY" and that is now WRONG in the
+      // common case: the courier returns 503 when Google's models are busy,
+      // and only the no-key branch says so in its own words. A missing key is
+      // a one-time setup problem; a busy model is a Tuesday. The server's own
+      // message wins whenever we can read one — this is only the fallback.
+      if(status===503) return 'Google’s video models are busy right now. Give it a minute and press it again.';
       if(status===401||status===403) return 'The server refused the request. Try reloading the page first.';
       return 'That did not work (error '+status+'). Try again in a moment.';
     }
-    async function askRecap(v){
+    async function postRecap(payload){
       try{
         var r=await fetch('/api/run-reminders?ytrecap=1',{
           method:'POST', headers:{'content-type':'application/json'}, cache:'no-store',
-          body:JSON.stringify({ videoId:v.ytId||'', title:titleOf(v), notes:(v.note||v.notes||'') })
+          body:JSON.stringify(payload)
         });
         var d=null; try{ d=await r.json(); }catch(e){ d=null; }
         // ⚠️ fetch() resolves on 4xx. Check r.ok, always — the whole reason the
@@ -1925,18 +1954,79 @@
         };
       }catch(e){ return { ok:false, message:'No connection — the recap needs the network.' }; }
     }
+    function askRecap(v){
+      return postRecap({ videoId:v.ytId||'', title:titleOf(v), notes:(v.note||v.notes||'') });
+    }
     /* ⚠️ A recap REPLACES one he may already have, so it may only ever do so on
        success — the same rule the re-read sweep learned the hard way. A failed
        re-recap leaves the old page exactly where it was and says why. */
     async function runRecap(id){
       var v=byId(id); if(!v||!v.ytId||recapBusy[id]) return;
-      recapBusy[id]=Date.now(); v.recapErr=''; renderPane(); renderWall();
+      // ⚠️ Always an OBJECT, never a bare timestamp. It carries progress now
+      // ("part 2 of 4"), and a shape that is sometimes a number and sometimes
+      // a record is how a render ends up printing NaN at somebody.
+      recapBusy[id]={ ts:Date.now() }; v.recapErr=''; renderPane(); renderWall();
       /* A minute of nothing looks like a broken button, and a broken button
          gets pressed four more times. The counter is the cheapest honest
          signal that work is happening — it repaints only the recap block, so
          it cannot fight anything he is typing. */
       var tick=setInterval(function(){ if(recapBusy[id]&&selId===id) renderPane(); else clearInterval(tick); },1000);
       var res=await askRecap(v);
+
+      /* ⭐⭐ A LONG VIDEO COMES BACK AS A PLAN, NOT A RECAP.
+         Alex: *"i want to be able to summarize at least 50 minute videos"*.
+         Nothing on the server can watch 50 minutes inside one 60-second
+         invocation, so it hands back a list of slices and the PAGE walks them
+         — each slice its own ordinary request — then asks for the parts to be
+         composed. See api/_youtube.js for why the loop lives here.
+
+         ⚠️ Every finished part is PERSISTED the moment it lands. A part is the
+         expensive thing in this feature; losing four of them because the fifth
+         timed out would make a long video worse than useless. Pressing again
+         resumes from what is already stored. */
+      if(res.ok&&res.data&&res.data.plan){
+        var segs=res.data.segments||[];
+        v=byId(id); if(!v){ clearInterval(tick); delete recapBusy[id]; return; }
+        v.secs=res.data.secs||0;
+        // Anything kept from an earlier attempt at THIS plan is reused. The
+        // signature guards against a re-plan (a different slicing) silently
+        // mixing notes from two different cuts of the video.
+        var sig=segs.length+'x'+(v.secs||0);
+        var have=(v.recapPartsSig===sig&&Array.isArray(v.recapParts))?v.recapParts.slice():[];
+        v.recapPartsSig=sig; v.recapParts=have; persist(K_VID,videos);
+
+        for(var si=0; si<segs.length; si++){
+          if(have[si]&&String(have[si]).trim()) continue;      // already earned
+          recapBusy[id]={ part:si+1, of:segs.length, ts:recapBusy[id]&&recapBusy[id].ts||Date.now() };
+          if(selId===id) renderPane();
+          var pres=await postRecap({
+            videoId:v.ytId||'', title:titleOf(v), total:segs.length,
+            seg:{ i:si, start:segs[si].start, end:segs[si].end }
+          });
+          v=byId(id); if(!v){ clearInterval(tick); delete recapBusy[id]; return; }
+          if(!pres.ok){
+            clearInterval(tick);
+            v.recapErr=(pres.message||'That part did not go through.')+
+              (si?(' You have '+si+' of '+segs.length+' parts saved — pressing again carries on from there.'):'');
+            v.ts=Date.now(); persist(K_VID,videos); flush();
+            delete recapBusy[id]; render(); return;
+          }
+          have[si]=pres.data.note||'';
+          v.recapParts=have; v.ts=Date.now(); persist(K_VID,videos); flush();
+        }
+
+        recapBusy[id]={ merging:true, of:segs.length, ts:recapBusy[id]&&recapBusy[id].ts||Date.now() };
+        if(selId===id) renderPane();
+        res=await postRecap({ merge:true, title:titleOf(v), notes:have, secs:v.secs||0 });
+        if(res.ok){
+          // The parts have done their job. Keeping them would double this
+          // video's footprint in a store that already hit QuotaExceededError
+          // once — and a finished recap can always be rebuilt from the video.
+          v=byId(id);
+          if(v){ delete v.recapParts; delete v.recapPartsSig; }
+        }
+      }
+
       clearInterval(tick);
       v=byId(id);
       if(!v){ delete recapBusy[id]; return; }

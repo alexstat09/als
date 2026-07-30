@@ -114,14 +114,221 @@ ok(/AbortController/.test(modelSrc), '504: the server aborts itself rather than 
 ok(/GEM_DEADLINE_MS\s*=\s*(4\d|5[0-5])000/.test(modelSrc),
   '504: the internal deadline sits comfortably inside the 60s platform cap');
 // ⚠️ A deadline must NOT fall through the model chain — every model would take
-// just as long, so we would spend three timeouts to report one.
-ok(/if \(isAbort\(e\)\) return \{ ok: false, kind: 'timeout'/.test(modelSrc),
-  '504: a timeout returns immediately instead of retrying the whole chain');
+// just as long, so we would spend three timeouts to report one. Asserted
+// BEHAVIOURALLY in the overload block below (attempt count on a hung fetch);
+// the source-text version of this check went stale the moment the function was
+// refactored, while the behaviour it cared about never changed.
 
 // vercel.json must still hold the ceiling this is designed around.
 const vjson = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 eq(vjson.functions['api/run-reminders.js'].maxDuration, 60,
   '504: run-reminders is still capped at 60s — the deadline above is set against this number');
+
+/* ⭐⭐ "THIS MODEL IS CURRENTLY EXPERIENCING HIGH DEMAND" — Google's 503.
+   The second thing Alex hit. `watch()` was reusing Groq's fall-through rule,
+   where a 5xx means the whole platform is unwell and walking the chain only
+   makes it worse. **Google's 503 is per-MODEL** — "high demand" on
+   gemini-3.6-flash says nothing about 3.5-flash-lite — so the chain returned
+   instantly and the other two models were never tried. The one failure a
+   fallback chain exists for was the one it skipped. */
+console.log('   an overloaded model falls through instead of giving up');
+const OVERLOAD = { error: { code:503, status:'UNAVAILABLE', message:'The model is overloaded. Please try again later.' } };
+const realFetch = global.fetch;
+process.env.GEMINI_API_KEY = 'test-key';
+
+(async function overloadTests(){
+  // 1 · every model busy → one honest "overloaded", not a bare timeout
+  let seen = [];
+  global.fetch = async function(u, o){
+    seen.push({
+      model: String(u).match(/models\/([^:]+):/)[1],
+      thinking: ((JSON.parse(o.body).generationConfig.thinkingConfig)||{}).thinkingLevel || null
+    });
+    return { ok:false, status:503, json: async()=>OVERLOAD };
+  };
+  const all = await model.watch({ url:'https://youtu.be/x', prompt:'p', budgetMs:20000 });
+  eq(all.kind, 'overloaded', 'overload: reported as overloaded, not exhausted or timeout');
+  ok(seen.length >= 4, 'overload: every model in the chain was actually tried  (' + seen.length + ' attempts)');
+  eq(new Set(seen.map(s => s.model)).size, model.CHAINS.video.length,
+    'overload: all three models were reached, not just the first');
+  /* ⚠️ THE BUG INSIDE THE FIX. The overload retry first reused the same `pass`
+     counter as the config-trim retry — so the retry went out with the config
+     ALREADY TRIMMED, throwing away thinkingLevel:'low', the one setting that
+     makes this call fit inside 60s. It would have retried its way straight
+     into the timeout it was there to avoid. */
+  ok(seen.every(s => s.thinking === 'low'),
+    'overload: EVERY retry keeps thinkingLevel:low — the two retry reasons do not share a flag');
+  eq(model.fail(all).error, 'overloaded', 'overload: maps to its own error code for the page');
+  ok(!/quota|key/i.test(model.fail(all).message),
+    'overload: does not blame his quota or his key — it is Google capacity');
+
+  // 2 · busy first, fine second → the chain does its job
+  global.fetch = async function(u){
+    const m2 = String(u).match(/models\/([^:]+):/)[1];
+    if (m2 === model.CHAINS.video[0]) return { ok:false, status:503, json: async()=>OVERLOAD };
+    return { ok:true, status:200, json: async()=>({ candidates:[{ finishReason:'STOP', content:{ parts:[{ text:'SHELF: World\nCORE: ok' }] } }] }) };
+  };
+  const rec = await model.watch({ url:'https://youtu.be/x', prompt:'p', budgetMs:20000 });
+  eq(rec.ok, true, 'overload: a busy first model recovers on the second');
+  eq(rec.model, model.CHAINS.video[1], 'overload: and reports WHICH model actually answered');
+
+  /* ⚠️⚠️ THE BUDGET IS SHARED BY THE WHOLE CALL, NOT BY EACH REQUEST.
+     The deadline began as a per-fetch timeout, which was harmless only while
+     the chain never walked. The moment an overloaded model started falling
+     through, three models × 48s became 144 seconds against a 60-second
+     function — the fix for the overload would have guaranteed the 504 it was
+     meant to prevent. */
+  /* ⚠️ A deadline must NOT walk the chain. Every model would take just as
+     long, so three timeouts would be spent to report one — and against a
+     60-second function that is the difference between a message and a 504.
+     Simulated with an instant AbortError so the suite does not have to sit
+     through a real one. */
+  let hungCalls = 0;
+  global.fetch = function(){
+    hungCalls++;
+    const err = new Error('The operation was aborted'); err.name = 'AbortError';
+    return Promise.reject(err);
+  };
+  const hung = await model.watch({ url:'https://youtu.be/x', prompt:'p', budgetMs:20000 });
+  eq(hung.kind, 'timeout', 'budget: an aborted call ends as a timeout');
+  eq(hungCalls, 1,
+    'budget: a deadline does NOT walk the chain — one timeout is reported, not ' + model.CHAINS.video.length);
+
+  /* And an attempt that cannot possibly finish is never STARTED. Burning the
+     last four seconds turns a reportable failure into a bare timeout that
+     says less, and on a shared budget it steals from nothing. */
+  hungCalls = 0;
+  const t0 = Date.now();
+  const noRoom = await model.watch({ url:'https://youtu.be/x', prompt:'p', budgetMs:500 });
+  eq(hungCalls, 0, 'budget: with no room left, no request is sent at all');
+  eq(noRoom.kind, 'timeout', 'budget: and it still reports honestly rather than hanging');
+  ok(Date.now() - t0 < 500, 'budget: that decision is immediate');
+
+  // The shared budget is what makes the chain safe: each attempt is given what
+  // is LEFT, never a fresh 48 seconds.
+  ok(/gemPost\(chain\[i\], opts, !trimmed, k, left\(\)\)/.test(modelSrc),
+    'budget: every attempt is given the time REMAINING, not a fresh full deadline');
+
+  /* ⭐⭐ LONG VIDEOS — "i want to be able to summarize at least 50 minute videos"
+     A 39-minute video died with "shorter videos work". The wall is not Gemini
+     and not the video: every run-reminders.js invocation is capped at 60s, and
+     raising maxDuration needs Vercel Pro. So a long video stops being ONE
+     impossible request and becomes SEVERAL ordinary ones, clipped with
+     videoMetadata and walked by the page. */
+  console.log('\n── long videos — several ordinary requests, not one impossible one ──');
+
+  // The clip is what makes any of this possible.
+  const clipped = model._gemBody({ url:'https://youtu.be/x', prompt:'p', clip:{ start:900, end:1800 } }, true);
+  const vpart = clipped.contents[0].parts.find(p => p.file_data);
+  eq(vpart.video_metadata.startOffset.seconds, 900, 'clip: the start offset rides as a {seconds} object');
+  eq(vpart.video_metadata.endOffset.seconds, 1800, 'clip: and the end offset');
+  eq(model._gemBody({ url:'https://youtu.be/x', prompt:'p' }, true).contents[0].parts.find(p => p.file_data).video_metadata.startOffset,
+    undefined, 'clip: no clip means no offsets — a whole video is not a slice of itself');
+  eq(vpart.video_metadata.fps, 0.2,
+    'clip: frames sampled at 1-per-5s — the argument is in the AUDIO, and frames are what cost');
+  eq(model._gemBody({ url:'https://youtu.be/x', prompt:'p', clip:{start:0,end:10} }, false).contents[0].parts.find(p => p.file_data).video_metadata.fps,
+    undefined, 'clip: the trimmed retry drops fps with the rest of the newer fields');
+  // ⚠️ A zero-length or inverted window must never become a clip — it would ask
+  // Gemini for nothing and get an empty answer that reads like a bad video.
+  eq(model._gemBody({ url:'https://youtu.be/x', prompt:'p', clip:{ start:100, end:100 } }, true)
+     .contents[0].parts.find(p => p.file_data).video_metadata.startOffset, undefined,
+    'clip: a zero-length window is not a clip');
+
+  // The plan. His two real numbers: 39 minutes (which failed) and 50 (which he asked for).
+  eq(yt._planSegments(0).length, 0, 'plan: nothing known, nothing planned');
+  const p39 = yt._planSegments(39 * 60), p50 = yt._planSegments(50 * 60);
+  eq(p39.length, 3, 'plan: his 39-minute video becomes 3 parts');
+  eq(p50.length, 4, 'plan: the 50-minute video he asked for becomes 4 parts');
+  ok(p50.every(s => (s.end - s.start) <= yt.SEG_SECS),
+    'plan: no slice is longer than one segment');
+  eq(p50[0].start, 0, 'plan: the first slice starts at zero');
+  eq(p50[p50.length - 1].end, 50 * 60, 'plan: the last slice reaches the end — nothing is skipped');
+  // Contiguous and in order, or the notes would have holes the merge cannot see.
+  ok(p50.every((s, i) => i === 0 || s.start === p50[i-1].end),
+    'plan: slices are contiguous — a gap would silently lose a stretch of video');
+  ok(p50.every((s, i) => s.i === i), 'plan: each slice knows its own index');
+  // Even slices read better than a full one plus a 40-second orphan.
+  const spans = p50.map(s => s.end - s.start);
+  ok(Math.max.apply(null, spans) - Math.min.apply(null, spans) <= 1,
+    'plan: slices are even, not "full, full, full, and a 40-second stub"');
+  eq(yt._planSegments(20 * 3600), null, 'plan: absurdly long returns null so the caller can SAY so');
+  // Short videos still go through whole — two calls where one will do is worse
+  // for coherence and worse for his quota.
+  ok(yt.ONE_PASS_MAX >= 1200, 'plan: videos up to at least 20 minutes still go through in ONE pass');
+
+  // recapSegment sends a clip; recapMerge sends no video at all.
+  let segBody = null, mergeBody = null;
+  global.fetch = async function(u, o){
+    const b = JSON.parse(o.body);
+    if (b.contents[0].parts.some(p => p.file_data)) segBody = b; else mergeBody = b;
+    return { ok:true, status:200, json: async()=>({ candidates:[{ finishReason:'STOP', content:{ parts:[{
+      text: mergeBody ? 'SHELF: World\nCORE: composed\nOPEN:\nopener here.\nSECTION: A\nbody.\nFACTS:\n- a fact'
+                      : 'Dense notes for this stretch of the video.' }] } }] }) };
+  };
+  const seg = await yt.recapSegment('abc123', 'T', { i:1, start:900, end:1800 }, 4);
+  eq(seg.ok, true, 'segment: returns notes for one slice');
+  eq(seg.i, 1, 'segment: and reports WHICH slice, so the page can order them');
+  const sv = segBody.contents[0].parts.find(p => p.file_data);
+  eq(sv.video_metadata.startOffset.seconds, 900, 'segment: the request actually carries the clip');
+  ok(/section 2 of 4/i.test(segBody.contents[0].parts[0].text),
+    'segment: the prompt tells the model where it is, so it does not write a conclusion');
+
+  const merged = await yt.recapMerge('T', ['notes one', 'notes two']);
+  eq(merged.ok, true, 'merge: composes the parts into a recap');
+  eq(merged.shelf, 'World', 'merge: and files it on a real shelf');
+  ok(!mergeBody.contents[0].parts.some(p => p.file_data),
+    'merge: sends NO video — it composes the notes, it does not re-watch');
+  ok(/NOTES, SECTION 1 OF 2/.test(mergeBody.contents[0].parts[0].text),
+    'merge: the parts arrive in order and say so');
+  eq((await yt.recapMerge('T', [])).ok, false, 'merge: nothing to compose is a failure, not an empty recap');
+  eq((await yt.recapMerge('T', ['', '   '])).ok, false, 'merge: blank parts are nothing to compose');
+
+  // The merge never saw the video, so it must be told plainly it may not add.
+  ok(/ONLY what is in the notes/i.test(yt.RECAP_MERGE_SYS), 'merge prompt: may use only the notes');
+  ok(/You did not see the video/i.test(yt.RECAP_MERGE_SYS), 'merge prompt: is told it did not watch');
+  ok(/Never mention sections, notes, parts/i.test(yt.RECAP_MERGE_SYS),
+    'merge prompt: the seams must not show in the finished page');
+  ok(/anything you leave out is gone/i.test(yt.RECAP_SEG_SYS),
+    'segment prompt: the note-taker knows its notes are all that survives');
+  ok(/Do not write a conclusion/i.test(yt.RECAP_SEG_SYS),
+    'segment prompt: a slice must not conclude — it has only seen part of it');
+
+  global.fetch = realFetch;
+  delete process.env.GEMINI_API_KEY;
+
+  /* ── the page walks the plan ──────────────────────────────────── */
+  console.log('   the page walks the plan and keeps every part it earns');
+  ok(/res\.data\.plan/.test(code), 'page: recognises a plan reply');
+  ok(/for\(var si=0; si<segs\.length; si\+\+\)/.test(code), 'page: walks the slices itself');
+  ok(/if\(have\[si\]&&String\(have\[si\]\)\.trim\(\)\) continue;/.test(code),
+    'page: a slice already earned is never paid for twice');
+  ok(/persist\(K_VID,videos\); flush\(\);/.test(code), 'page: every finished part is persisted as it lands');
+  ok(/recapPartsSig/.test(code),
+    'page: a re-plan cannot mix notes from two different slicings of the video');
+  ok(/merge:true/.test(code), 'page: asks for the parts to be composed at the end');
+  ok(/delete v\.recapParts/.test(code),
+    'page: the parts are dropped once the page exists — this store has hit QuotaExceededError before');
+  ok(/Carry on →/.test(code), 'page: after a part fails, the button carries on rather than starting over');
+  // ⚠️ recapBusy carries progress now, so it must be an OBJECT everywhere. A
+  // shape that is sometimes a number is how a render prints NaN at somebody.
+  ok(/recapBusy\[id\]=\{ ts:Date\.now\(\) \}/.test(code), 'page: busy state is an object from the start');
+  ok(/bz\.ts\|\|Date\.now\(\)/.test(code), 'page: elapsed reads .ts, never the object itself');
+  ok(/Watching part '\+bz\.part\+' of '\+bz\.of/.test(code), 'page: the wait says which part it is on');
+  ok(/\.now-bar\{/.test(code), 'constraint 12: the progress bar class it toggles actually exists');
+
+  // The server must NOT loop the slices itself — that would put them all back
+  // inside one 60-second invocation and rebuild the wall we climbed over.
+  const recapBranch = (courier.match(/if \(req\.query && req\.query\.ytrecap[\s\S]*?\n    return;\n  \}/) || [''])[0];
+  ok(recapBranch.length > 400, 'server: found the recap branch');
+  ok(!/for \(var .* of segments|segments\.forEach|for \(var si/.test(recapBranch),
+    'server: does NOT loop the slices — the page orchestrates, or we are back inside one 60s window');
+  ok(/rb\.merge/.test(courier) && /rb\.seg/.test(courier), 'server: routes all three request shapes');
+  ok(/rout\.plan/.test(courier), 'server: hands back a plan instead of an apology');
+
+  console.log('\n' + pass + ' passed, ' + fail + ' failed');
+  if (fail) process.exit(1);
+  console.log('✓ ' + pass + ' passed, 0 failed');
+})();
 
 /* ════════════════════════════════════════════════════════════
    2 · api/_youtube.js — parsing what came back
@@ -522,7 +729,7 @@ ok(!/toLocaleDateString/.test(renderRecapBody),
 // Constraint 2: the service worker was bumped, and never backwards.
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 const ver = (sw.match(/var CACHE = "als-v(\d+)"/) || [])[1];
-ok(ver && parseInt(ver, 10) >= 441, 'constraint 2: sw.js CACHE is at least als-v441  (got als-v' + ver + ')');
+ok(ver && parseInt(ver, 10) >= 442, 'constraint 2: sw.js CACHE is at least als-v442  (got als-v' + ver + ')');
 
 /* It must stay OUT of the background sweep. An hour of video is a real slice
    of the daily quota; sweeping 46 videos would spend it on ones he never
@@ -541,6 +748,6 @@ ok(/data-rcrun/.test(code), 'cost: a recap only happens when he presses the butt
 ok(/if\(res\.ok\)/.test(html), 'safety: the store is only touched on a confirmed success');
 ok(/recapBusy\[id\]/.test(html), 'safety: in-flight state is keyed by id, not one shared flag');
 
-console.log(pass + ' passed, ' + fail + ' failed');
-if (fail) process.exit(1);
-console.log('\n✓ ' + pass + ' passed, 0 failed');
+/* ⚠️ The summary is printed by the async overload block above, because it is
+   the last thing to finish. Printing it here would count only the synchronous
+   assertions and report a number that was true for a moment. */

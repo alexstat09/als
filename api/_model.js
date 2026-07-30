@@ -96,6 +96,28 @@ function tune(model, payload) {
    chain makes it worse), 5xx (Groq-wide, not model-specific). */
 function shouldFallThrough(status) { return status === 404 || status === 400; }
 
+/* ⚠️⚠️ GEMINI'S 503 MEANS SOMETHING DIFFERENT FROM GROQ'S.
+   The rule above is right for Groq, where a 5xx is the whole platform having a
+   bad minute and walking the chain only makes it worse. Google returns **503
+   UNAVAILABLE per MODEL** — "The model is overloaded", which the page showed
+   Alex as *"This model is currently experiencing high demand."* That is the
+   single most model-specific failure there is, and the one case a fallback
+   chain exists for. Because `watch()` reused Groq's predicate, a 503 on
+   `gemini-3.6-flash` returned instantly and **the other two models in the
+   chain were never tried.**
+   Two providers, two meanings for one status code — so the video path gets its
+   own predicate rather than bending the shared one and changing Groq's
+   behaviour underneath four other callers. */
+function isOverloaded(status, body) {
+  if (status === 503 || status === 500) return true;
+  var m = ((body && body.error && body.error.message) || '').toString();
+  var s = ((body && body.error && body.error.status) || '').toString();
+  return /UNAVAILABLE/i.test(s) || /overload|high demand|try again later|capacity/i.test(m);
+}
+function geminiFallThrough(status, body) {
+  return shouldFallThrough(status) || isOverloaded(status, body);
+}
+
 /* Groq's JSON mode is a VALIDATOR, not just a hint: if the model's output
    isn't valid JSON (usually truncated, because reasoning tokens eat the
    budget), Groq rejects the whole call with a 400 instead of returning what
@@ -244,7 +266,32 @@ function geminiKey() { return (process.env.GEMINI_API_KEY || '').trim(); }
 
 function gemBody(opts, full) {
   var parts = [{ text: String(opts.prompt || '') }];
-  if (opts.url) parts.push({ file_data: { file_uri: String(opts.url) } });
+  if (opts.url) {
+    var vp = { file_data: { file_uri: String(opts.url) } };
+    /* ⭐ CLIPPING IS WHAT MAKES A LONG VIDEO POSSIBLE AT ALL.
+       Every invocation of `run-reminders.js` is capped at 60s, and no amount
+       of tuning gets a 50-minute video through one of them. `videoMetadata`
+       lets us ask for a SLICE, so a long video becomes several ordinary
+       requests instead of one impossible one. The caller orchestrates; this
+       just carries the window.
+       ⚠️ Offsets are `{seconds}` objects, not bare numbers. */
+    var vm = null;
+    if (opts.clip && (opts.clip.end > opts.clip.start)) {
+      vm = {
+        startOffset: { seconds: Math.max(0, Math.floor(opts.clip.start)) },
+        endOffset: { seconds: Math.floor(opts.clip.end) }
+      };
+    }
+    /* Frames are sampled at 1/second by default. For a talking video that is
+       enormous waste: the argument lives in the AUDIO, which is billed at a
+       flat 32 tokens/second whatever we do here. Dropping to one frame every
+       five seconds cuts the frame half by 5× and is the difference between a
+       slice finishing inside the window and not. Still enough to catch a slide
+       or a chart being held up. */
+    if (full) { vm = vm || {}; vm.fps = opts.fps || 0.2; }
+    if (vm) vp.video_metadata = vm;
+    parts.push(vp);
+  }
   var cfg = {
     temperature: opts.temperature == null ? 0.3 : opts.temperature,
     maxOutputTokens: opts.maxTokens || 8192
@@ -290,10 +337,14 @@ function gemText(body) {
    So we abort FIRST, with room to spare, and return a typed failure the page
    can turn into a real sentence. */
 var GEM_DEADLINE_MS = 48000;
+// Below this there is no point starting another attempt: it cannot finish, and
+// burning the remaining seconds turns a reportable overload into a bare
+// timeout that says less.
+var GEM_MIN_ATTEMPT_MS = 7000;
 
-async function gemPost(m, opts, full, k) {
+async function gemPost(m, opts, full, k, ms) {
   var ctl = typeof AbortController === 'function' ? new AbortController() : null;
-  var timer = ctl ? setTimeout(function () { ctl.abort(); }, opts.deadlineMs || GEM_DEADLINE_MS) : null;
+  var timer = ctl ? setTimeout(function () { ctl.abort(); }, ms || opts.deadlineMs || GEM_DEADLINE_MS) : null;
   try {
     return await fetch(GEMINI_URL + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(k), {
       method: 'POST',
@@ -308,27 +359,57 @@ function isAbort(e) {
   return !!e && (e.name === 'AbortError' || e.name === 'TimeoutError' || /abort/i.test(String(e.message || '')));
 }
 
+function napFor(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+/* ⚠️⚠️ THE BUDGET IS SHARED BY THE WHOLE CALL, NOT BY EACH REQUEST.
+   The deadline started life as a per-fetch timeout, which was fine while the
+   chain never actually walked. The moment an overloaded model began falling
+   through to the next one, three models × 48s became 144 seconds against a
+   60-second function — so the very fix that lets us survive an overload would
+   have guaranteed the 504 it was meant to prevent.
+   `left()` is what keeps every attempt, every retry and every wait inside one
+   envelope, and it is why nothing below may use a fixed timeout. */
 async function watch(opts) {
   opts = opts || {};
   var k = geminiKey();
   if (!k) return { ok: false, kind: 'no-key' };
   var chain = chainFor('video');
-  var first = null;
+  var first = null, sawOverload = false;
+  var started = Date.now(), budget = opts.budgetMs || GEM_DEADLINE_MS;
+  function left() { return budget - (Date.now() - started); }
+  function outOfTime(model) {
+    // If a model told us it was BUSY, that is the more useful thing to report:
+    // "everything is busy, try in a minute" is actionable in a way that "it
+    // took too long" is not.
+    if (sawOverload) return { ok: false, kind: 'overloaded', status: first && first.status, message: first && first.message, model: first && first.model };
+    return { ok: false, kind: 'timeout', model: model };
+  }
 
   for (var i = 0; i < chain.length; i++) {
-    for (var pass = 0; pass < 2; pass++) {           // pass 1 = trimmed config
+    /* ⚠️ TWO REASONS TO RETRY THE SAME MODEL, AND THEY MUST NOT SHARE A FLAG.
+       `trimmed` drops the newer config fields after a 400. `overloadRetried`
+       waits out a demand spike. The first version reused one `pass` counter
+       for both — so an overload retry silently went out with the config
+       ALREADY TRIMMED, which throws away `thinkingLevel:'low'`, the single
+       setting that makes this call fit inside 60 seconds. It would have
+       retried its way straight into the timeout it was avoiding. */
+    var trimmed = false, overloadRetried = false, nextModel = false;
+
+    while (!nextModel) {
+      if (left() < GEM_MIN_ATTEMPT_MS) return outOfTime(chain[i]);
+
       var r;
-      try { r = await gemPost(chain[i], opts, pass === 0, k); }
+      try { r = await gemPost(chain[i], opts, !trimmed, k, left()); }
       catch (e) {
-        // ⚠️ A deadline is NOT a network error and must not fall through the
-        // chain — every model would take just as long and we would spend three
+        // ⚠️ A deadline is NOT a network error and must not walk the chain —
+        // every model would take just as long, so we would spend three
         // timeouts to report one.
-        if (isAbort(e)) return { ok: false, kind: 'timeout', model: chain[i] };
+        if (isAbort(e)) return outOfTime(chain[i]);
         return { ok: false, kind: 'network' };
       }
 
       var body = null;
-      try { body = await r.json(); } catch (e) {}
+      try { body = await r.json(); } catch (e2) {}
 
       if (r.ok) {
         var got = gemText(body);
@@ -341,19 +422,48 @@ async function watch(opts) {
           status: 200, model: chain[i], message: got.finish || 'no text in reply'
         };
       }
-      // Retry the SAME model once with the newer config field removed.
-      if (r.status === 400 && pass === 0) {
-        console.warn('[_model] video: ' + chain[i] + ' refused the config (' + errMsg(body) + ') — retrying without mediaResolution');
+
+      // The config was refused. Drop the newer fields and ask again — once.
+      if (r.status === 400 && !trimmed) {
+        console.warn('[_model] video: ' + chain[i] + ' refused the config (' + errMsg(body) + ') — retrying without the newer fields');
+        trimmed = true;
         continue;
       }
-      if (!shouldFallThrough(r.status)) {
+
+      /* ⭐ AN OVERLOADED MODEL IS THE ONE THING A CHAIN EXISTS FOR.
+         Google's 503 is per-MODEL — "high demand" on gemini-3.6-flash says
+         nothing about 3.5-flash-lite, which is older and far less contended.
+         A spike is usually seconds long, so one short wait on the same model
+         is worth more than jumping straight to a weaker one. Both the wait and
+         the retry are charged against the shared budget. */
+      if (isOverloaded(r.status, body)) {
+        sawOverload = true;
+        if (!first) first = { status: r.status, message: errMsg(body), model: chain[i] };
+        if (!overloadRetried && left() > GEM_MIN_ATTEMPT_MS + 1600) {
+          console.warn('[_model] video: ' + chain[i] + ' is overloaded — one short wait, then the SAME model with its config intact');
+          overloadRetried = true;
+          await napFor(1200);
+          continue;
+        }
+        console.warn('[_model] video: ' + chain[i] + ' still overloaded — falling through to the next model');
+        nextModel = true;
+        break;
+      }
+
+      if (!geminiFallThrough(r.status, body)) {
         return { ok: false, kind: r.status === 429 ? 'rate' : 'upstream', status: r.status, message: errMsg(body) };
       }
+      // A fall-through is never routine: the model we WANTED is gone or
+      // refused our payload, and everything downstream now runs on a weaker
+      // one. Say so out loud.
       console.warn('[_model] video: ' + chain[i] + ' refused (' + r.status + (errMsg(body) ? ': ' + errMsg(body) : '') + ') — trying next in chain');
       if (!first) first = { status: r.status, message: errMsg(body), model: chain[i] };
-      break;
+      nextModel = true;
     }
   }
+  // Every model was busy. That is a different sentence from "no model accepted
+  // the request", and it is the one that says: just try again in a minute.
+  if (sawOverload) return { ok: false, kind: 'overloaded', status: first && first.status, message: first && first.message, model: first && first.model };
   return { ok: false, kind: 'exhausted', status: first && first.status, message: first && first.message, model: first && first.model };
 }
 
@@ -380,6 +490,9 @@ function fail(r, msgs) {
   // result" — one means the model spent its whole budget thinking, the other
   // means it answered with nothing, and they need different fixes.
   if (r.kind === 'timeout') return { error: 'timeout', message: msgs.timeout || 'It took too long and had to be stopped.' };
+  // Google's own 503. Distinct from `rate` (our quota is spent, which is our
+  // problem and lasts a day) — this is THEIR capacity, and it lasts minutes.
+  if (r.kind === 'overloaded') return { error: 'overloaded', message: msgs.overloaded || 'Google’s video models are busy right now. This usually clears in a minute.' };
   if (r.kind === 'truncated') return { error: 'truncated', message: msgs.truncated || 'The model ran out of room before it finished writing. Try again.' };
   if (r.kind === 'empty') return { error: 'empty', message: msgs.empty || 'The model returned nothing at all.' };
   if (r.kind === 'exhausted') {

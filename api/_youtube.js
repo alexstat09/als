@@ -471,10 +471,166 @@ function humanMins(secs) {
   return h + 'h' + (rem ? ' ' + rem + 'm' : '');
 }
 
+/* ════════════════════════════════════════════════════════════════
+   LONG VIDEOS — why this is segmented, and who does the orchestrating
+   ────────────────────────────────────────────────────────────────
+   Alex: *"i want to be able to summarize at least 50 minute videos"*, after a
+   39-minute one came back "this took too long to watch".
+
+   The wall is not Gemini and not the video: **every invocation of
+   `run-reminders.js` is capped at 60 seconds** (vercel.json), and a 50-minute
+   video cannot be ingested inside one of those. Raising `maxDuration` to 300
+   would need Vercel Pro, so it is not a fix we can rely on.
+
+   So a long video stops being ONE impossible request and becomes SEVERAL
+   ordinary ones. `videoMetadata` clips the video, each slice is watched in its
+   own 60-second window, and the page walks them in order before asking for the
+   parts to be composed into one page.
+
+   ⚠️ **The PAGE orchestrates, not the server.** A server-side loop would put
+   every slice back inside a single invocation and rebuild the exact wall we
+   are climbing over. That is also why nothing here is stateful: each request
+   is one slice, and the page holds the parts it has collected — so closing the
+   tab costs nothing already earned, and a retry resumes rather than restarts.
+
+   Short videos still go through in ONE pass. Two calls where one will do is
+   worse for coherence and worse for his quota. */
+var SEG_SECS = 900;        // 15 minutes per slice
+var ONE_PASS_MAX = 1500;   // ≤25 min goes through whole, in a single call
+var MAX_SEGS = 16;         // ~4 hours, then we say so instead of failing slowly
+
+function planSegments(secs) {
+  secs = Math.max(0, Math.floor(secs || 0));
+  if (!secs) return [];
+  var n = Math.ceil(secs / SEG_SECS);
+  if (n > MAX_SEGS) return null;                 // too long — caller must say so
+  // Even slices read better than a full one plus a 40-second orphan.
+  var span = Math.ceil(secs / n), out = [];
+  for (var i = 0; i < n; i++) {
+    var start = i * span;
+    var end = Math.min(secs, start + span);
+    if (end > start) out.push({ i: i, start: start, end: end });
+  }
+  return out;
+}
+
+/* One slice → dense faithful notes, NOT a mini-recap. The merge writes the
+   page; this only has to make sure nothing worth keeping is lost, in order. */
+var RECAP_SEG_SYS =
+  'You are watching ONE SECTION of a longer video and taking notes for someone who will write the summary afterwards.\n' +
+  'They will never see the video, only your notes, so anything you leave out is gone.\n' +
+  '\n' +
+  'RULES\n' +
+  '- Write down what is actually SAID and shown, in the order it happens.\n' +
+  '- Keep every specific: names, numbers, dates, places, terms, causes and consequences. These are the whole point.\n' +
+  '- Plain sentences. No headings, no bullets, no markdown, no timestamps, no "in this section".\n' +
+  '- Never invent and never generalise to fill a gap. If this section is mostly an advert, an intro or filler, say so in one line.\n' +
+  '- Do not write a conclusion or an overview — you have only seen part of it. Just the substance, densely.\n' +
+  '\n' +
+  'Write 150-350 words of continuous prose. Nothing else.';
+
+/* The merge. It never sees the video — only the ordered notes — so its whole
+   job is composition, and it must be told plainly that it may not add. */
+var RECAP_MERGE_SYS =
+  'You are given ordered notes taken while watching one video from start to finish, section by section.\n' +
+  'Write the page the person will read INSTEAD of ever watching it again.\n' +
+  'They watched it once. In six months this page is all they will have, and they will not rewatch the video.\n' +
+  '\n' +
+  'HOW TO WRITE IT\n' +
+  '- Use ONLY what is in the notes. You did not see the video. Never add a fact, a name, a number or a claim that is not there.\n' +
+  '- Merge across the sections — the same thread often runs through several. Follow the video\'s order, not the note boundaries.\n' +
+  '- Never mention sections, notes, parts or the video itself. Write the SUBSTANCE directly, the way a good book explains a thing.\n' +
+  '- Plain, warm, direct language. Short sentences. No jargon, no hype, no filler.\n' +
+  '- Be specific or say nothing. A sentence that would be true of any video on this subject is worthless — cut it.\n' +
+  '- Drop adverts, intros and filler entirely.\n' +
+  '- No markdown, no asterisks, no bullets of your own, no emoji, no timestamps.\n' +
+  '\n' +
+  'LENGTH\n' +
+  'This was a long video, so the page earns real length — six to ten sections. Never pad, and never compress an hour into five lines.\n' +
+  '\n' +
+  'OUTPUT — plain text, exactly this shape, nothing before or after:\n' +
+  'SHELF: <exactly one of the shelves listed below>\n' +
+  'CORE: <one sentence. The single thing that should survive if everything else is forgotten.>\n' +
+  'OPEN:\n' +
+  '<two to four sentences. What this is about and what it is arguing.>\n' +
+  'SECTION: <a short heading, four words or fewer>\n' +
+  '<a full paragraph carrying that part of the argument, with its specifics>\n' +
+  '<...as many SECTION blocks as the material earns, in the video\'s own order...>\n' +
+  'FACTS:\n' +
+  '- <a hard specific worth keeping: a name, a number, a date, a term, a claim>\n' +
+  '- <as many as the notes genuinely gave, up to fourteen. Never repeat the CORE.>\n\n' + SHELF_RULES;
+
+/* Watch ONE slice. Returns prose notes, never a recap — see RECAP_SEG_SYS. */
+async function recapSegment(videoId, title, seg, total) {
+  var id = String(videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20);
+  if (!id) return { ok: false, error: 'no video id' };
+  if (!seg || !(seg.end > seg.start)) return { ok: false, error: 'bad segment' };
+
+  var out = await model.watch({
+    url: watchUrl(id),
+    clip: { start: seg.start, end: seg.end },
+    system: RECAP_SEG_SYS,
+    prompt: 'The video is called: ' + (String(title || '').trim() || '(untitled)') + '\n' +
+      'This is section ' + ((seg.i | 0) + 1) + ' of ' + (total || '?') + '. Take your notes.',
+    temperature: 0.3,
+    maxTokens: 2048
+  });
+  if (!out || !out.ok) {
+    return { ok: false, error: out && out.kind, status: out && out.status, message: (out && out.message) || '' };
+  }
+  var note = String(out.text || '').replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '').trim();
+  if (!note) return { ok: false, error: 'empty' };
+  return { ok: true, note: note, i: seg.i, model: out.model };
+}
+
+/* Compose the collected notes into the page. No video, no clip — a text call
+   through the same role, so the voice stays identical to the one-pass path. */
+async function recapMerge(title, notes) {
+  var list = (notes || []).filter(function (n) { return n && String(n).trim(); });
+  if (!list.length) return { ok: false, error: 'no notes' };
+
+  var out = await model.watch({
+    system: RECAP_MERGE_SYS,
+    prompt: 'The video is called: ' + (String(title || '').trim() || '(untitled)') + '\n\n' +
+      list.map(function (n, i) { return 'NOTES, SECTION ' + (i + 1) + ' OF ' + list.length + ':\n' + n; }).join('\n\n'),
+    temperature: 0.35,
+    maxTokens: 8192
+  });
+  if (!out || !out.ok) {
+    return { ok: false, error: out && out.kind, status: out && out.status, message: (out && out.message) || '' };
+  }
+  var text = String(out.text || '').replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '').trim();
+  var p = parseRecap(text);
+  if (!p.sections.length && !p.open) {
+    return { ok: false, error: 'parse', message: 'The parts could not be composed into a recap.' };
+  }
+  return {
+    ok: true, text: text, parsed: p,
+    shelf: matchShelf(p.shelf),
+    words: recapWords(p), sections: p.sections.length,
+    model: out.model, truncated: out.finish === 'MAX_TOKENS'
+  };
+}
+
 async function recap(videoId, title, notes, ytKey) {
   var id = String(videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20);
   if (!id) return { ok: false, error: 'no video id' };
   var secs = await videoSecs(id, ytKey);
+
+  /* ⭐ TOO LONG FOR ONE 60-SECOND WINDOW → hand back a PLAN rather than an
+     apology. This used to be where a 39-minute video died with "shorter videos
+     work"; now it is where a long one starts. The page walks the slices.
+     ⚠️ Duration UNKNOWN (no YouTube key, or the lookup failed) means we cannot
+     plan — so we attempt one pass rather than refuse. A guess about length is
+     not worth turning into a refusal, and the deadline still protects us. */
+  if (secs > ONE_PASS_MAX) {
+    var segs = planSegments(secs);
+    if (!segs) {
+      return { ok: false, error: 'too-long', secs: secs,
+               message: 'This one is ' + humanMins(secs) + ' long — past what the recap can take in, even in parts.' };
+    }
+    return { ok: true, plan: true, secs: secs, segments: segs };
+  }
 
   var n = String(notes || '').trim().slice(0, 1500);
   var prompt = 'Watch this video and write the page described in your instructions.\n' +
@@ -643,7 +799,10 @@ async function organize(items, known, strict) {
 }
 
 module.exports = {
-  playlist: playlist, distill: distill, organize: organize, grade: grade, recap: recap,
+  playlist: playlist, distill: distill, organize: organize, grade: grade,
+  recap: recap, recapSegment: recapSegment, recapMerge: recapMerge,
   _cleanDesc: cleanDesc, _parseRecap: parseRecap, _matchShelf: matchShelf,
-  _watchUrl: watchUrl, _iso8601Secs: iso8601Secs, _humanMins: humanMins, RECAP_SYS: RECAP_SYS
+  _watchUrl: watchUrl, _iso8601Secs: iso8601Secs, _humanMins: humanMins,
+  _planSegments: planSegments, SEG_SECS: SEG_SECS, ONE_PASS_MAX: ONE_PASS_MAX, MAX_SEGS: MAX_SEGS,
+  RECAP_SYS: RECAP_SYS, RECAP_SEG_SYS: RECAP_SEG_SYS, RECAP_MERGE_SYS: RECAP_MERGE_SYS
 };
