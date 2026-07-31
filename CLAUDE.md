@@ -63,12 +63,25 @@ QStash tick or a page that asks for it.
   about it. Needs `GEMINI_API_KEY`. ⚠️ A **200 with no text** is `truncated` or
   `empty`, never an empty answer — Gemini bills thinking against the output
   budget, so this is the gpt-oss trap wearing another provider's clothes.
-- ⚠️ **`watch()` has three settings that are load-bearing, not tuning.**
+- ⚠️ **`watch()` has two settings that are load-bearing and one that is not.**
   `thinkingLevel:'low'` (Gemini 3 defaults to **high**, which alone blew the
-  60s function cap), `mediaResolution: LOW` and `fps: 0.2` (~100 → ~45 tokens
-  per second of video; the argument is in the AUDIO, which is billed flat).
-  It also takes `clip:{start,end}` — that is what makes a long video
-  several requests instead of one impossible one.
+  60s function cap) and `mediaResolution: LOW` are load-bearing. **`fps` is the
+  CALLER's decision** — `0.2` is only the default, correct for a long talking
+  video where the argument is in the AUDIO (billed flat at 32 tok/sec, so frames
+  are what cost). A short clip whose argument is written ON SCREEN needs `1`;
+  see hard constraint 24. It also takes `clip:{start,end}` — that is what makes
+  a long video several requests instead of one impossible one.
+- ⭐ **A video reaches it as a URL *or* as BYTES, and only one of those is a
+  link.** `file_data.file_uri` accepts exactly one kind of public web address:
+  **YouTube**. Anything else — a TikTok, a Vimeo, a bare `.mp4` — has to be
+  uploaded, which is what `opts.bytes` + `opts.mime` are for
+  (`inline_data`). The two are **mutually exclusive and a URL wins**, so a
+  caller that supplies both cannot silently upload megabytes it did not mean to
+  send. ⚠️ **`GEM_INLINE_MAX_BYTES` is 13 MB, not 20**: Google's 20 MB ceiling
+  covers the WHOLE request and base64 inflates by 4/3. Getting it wrong does not
+  fail loudly — an oversized request returns a 400 that reads like a malformed
+  body. The cap is exported so callers can refuse a file **before** downloading
+  it.
 - ⚠️ **Its retry policy is Gemini's, not Groq's — see hard constraint 21.**
   One shared deadline envelope (`GEM_DEADLINE_MS`, 48s inside the platform's
   60), a per-model overload predicate, and no two retry reasons sharing a flag.
@@ -234,6 +247,11 @@ Violating any of these breaks production or loses data.
     difference visible on screen.** Two prompts that must agree also must not be
     two copies: `_youtube.js` now `require`s the shelves from `_tiktok.js`,
     because two copies of a taxonomy is two taxonomies with a delay.
+    ⚠️ **Two follow-ons, both earned by porting the recap to TikTok in
+    als-v446:** extracting the shared thing is how a require CYCLE gets made
+    (**constraint 25**), and the two paths may not share a LIMIT — copying the
+    first one's workaround across ships a feature broken by construction
+    (**constraint 24**, this rule's mirror image).
 16. **A store is written by the page that OWNS it.** Writing another page's key
     from here is a silent no-op with a delayed loss: this page's `sync.js`
     engine does not match that key, so the write never pushes and leaves no
@@ -371,6 +389,54 @@ Violating any of these breaks production or loses data.
       was re-added after `T`**). Two ends of one protocol that "improve"
       independently are two protocols.
 
+24. **PORTING A CAPABILITY MEANS RE-DERIVING ITS LIMIT, NOT COPYING ITS
+    WORKAROUND.** Constraint 15 says a guarantee must hold on both paths. This
+    is its mirror image and it bites in the opposite direction: **the two paths
+    may not have the same CONSTRAINT**, and carrying the first one's workaround
+    across ships a feature that is broken by construction.
+    The recap went from YouTube to TikTok in als-v446. YouTube arrives as a
+    `file_uri`, so nothing is uploaded and the only cost is TIME — hence
+    `planSegments()`, which cuts a long video into 15-minute slices because the
+    function dies at 60 seconds. **A TikTok cannot be sent as a link at any
+    price** (Gemini's `file_uri` accepts YouTube and nothing else, because
+    Google owns YouTube), so its bytes travel with the request and the wall is
+    **SIZE**, not duration. Clipping cannot shrink an upload: asking for seconds
+    0–60 of a 40 MB file still uploads 40 MB. Copying the segmenting would have
+    produced a plan the page walks, four requests, and the same failure every
+    time — with all the machinery present to make it look considered.
+    - **Name the wall before writing the adapter.** Here it was one measurement:
+      a 161-second TikTok is **7.3 MB** at its smallest encoding, a 547-second
+      one is **40 MB**, and Google's inline limit is 20 MB across the WHOLE
+      request — so ~13 MB of raw video once base64's 4/3 inflation is paid.
+    - **A limit that cannot be worked around is refused UP FRONT, by name, with
+      its real number in the sentence.** "Too big" with `40.0 MB` and `13.0 MB`
+      in it is a limit he can reason about; a generic failure is a mystery.
+    - ⚠️ **The tuning does not transfer either.** `fps: 0.2` is correct for an
+      hour of talking head, where the argument is in the audio. On a 40-second
+      TikTok whose argument is WRITTEN ON THE SCREEN it sees eight frames and
+      misses the point — so `fps` became the caller's decision and TikTok asks
+      for **1**. The live proof: the first real recap returned *"OCR A-Level
+      Chemistry A is **shown** as the primary exam board specification"*, which
+      exists nowhere but the screen.
+
+25. **A MODULE TWO SIBLINGS SHARE MUST DEPEND ON NEITHER OF THEM.** Extracting
+    shared code is the correct fix for constraint 15, and it is also how a
+    require CYCLE gets created — which fails in the worst available way.
+    `_youtube.js` already requires `_tiktok.js` (for the shelves). The recap
+    prompt ends with those same shelf rules, so the obvious `_recap.js` would
+    require `_tiktok.js` and be required back by it. **Node does not throw on a
+    cycle — it hands out a HALF-BUILT module object**, so the symptom is an
+    undefined export at some unrelated call site much later, never an error at
+    load. That is silent-empty (constraint 10) in the require graph.
+    - The fix is to **invert the dependency**: `sysFor(shelfRules)` takes the
+      shelf text as an ARGUMENT. The caller already has it; the shared file
+      reaches for nothing. `tests/tiktok-recap.test.js` asserts `_recap.js`
+      contains no `require(` at all, which is the cheapest possible guard.
+    - ⭐ **Prove the extraction changed nothing.** Both worlds' prompts and the
+      parser were asserted **byte-identical** against `git show HEAD:` before
+      anything new was built on top. A refactor that quietly reworded a shipped
+      prompt is a regression wearing a cleanup's clothes.
+
 ---
 
 ## 4 · What is built
@@ -442,15 +508,22 @@ never a fabricated summary, and a card always says what it was read FROM
 (a transcript, on-screen text, a chapter list, a description, or only a title).
 ⚠️ **YouTube has no transcript and never will** — its caption endpoint is locked
 — so a YouTube lesson rests on the creator's own description and says so.
-⭐ **THE RECAP (als-v440→443) is the way around that**: a button on any YouTube
-video hands its URL to **Gemini**, which watches the real thing, and returns a
-full reading page — opening, sections in the video's own order, and the hard
-specifics — shown in its own full-screen `<dialog>`. Grade `watched`; once one
-exists it **replaces** the description-written key points on the card and they
-fold away. On demand, never swept, because it costs real quota.
-**A video over 25 minutes is watched in PARTS** — the server returns a plan of
+⭐ **THE RECAP (als-v440→443, both worlds since als-v446) is the way around
+that**: a button on **any saved video, YouTube or TikTok**, hands it to
+**Gemini**, which watches the real thing, and returns a full reading page —
+opening, sections in the video's own order, and the hard specifics — shown in its
+own full-screen `<dialog>`. Grade `watched`; once one exists it **replaces** the
+thin key points on the card and they fold away. On demand, never swept, because
+it costs real quota. The prompt, parser and word count live once in
+**`api/_recap.js`**, shared by both worlds so they cannot drift.
+⚠️ **The two halves have DIFFERENT limits, and that is not an inconsistency —
+see hard constraint 24.** YouTube arrives as a URL, so its wall is DURATION:
+**a video over 25 minutes is watched in PARTS**, the server returns a plan of
 15-minute slices, the *page* walks them, each part is saved as it lands so a
-retry resumes, and a final call composes them into one page. See §5.
+retry resumes, and a final call composes them into one page. A TikTok cannot be
+sent as a link at all, so it arrives as BYTES and its wall is **SIZE** (~13 MB):
+it is watched in ONE pass at **1 fps** (its argument is often written on the
+screen), and one too big to send is refused up front with its real size. See §5.
 **The Room** is the archive read as a page rather than a grid: every grounded
 CORE line by shelf, what is due for recall (3/7/21/60/150 days), and the
 practice list that the `DO:` lines feed via `improve:actions`, `movies.html`
@@ -508,6 +581,8 @@ carries none of the text burned into the frame, none of what is SHOWN, and
 nothing at all when the clip has no speech. **Hard constraint 15, in the same
 file that earned it**, and with the same tell: the honest half was the one being
 talked about.
+⭐ **The two permanent rules this produced are constraints 24 and 25** — read
+those rather than re-deriving them from the story below.
 
 **The proof came back in the first live call.** Its FACTS included *"OCR A-Level
 Chemistry A is **shown** as the primary exam board specification"* and
@@ -632,6 +707,17 @@ session can read his real dashboard instead of the 14 Jul device export.
 - **Best first calls:** `snapshot`, then `list_keys` + `get_raw` for anything
   without a domain getter. `improve:videos` IS readable, so the Library is
   reachable — that was the one thing the repo alone could not confirm.
+- ⚠️ **`BUNDLE` in `api/mcp.js` is the whole allow-list, and a key missing from
+  it answers `Unknown key` — which reads exactly like "there is no data".** Half
+  the Library was unreachable that way for two versions: `improve:tiktoks` synced
+  correctly, sat in `BUNDLES` in `backup.html`, and was simply never added to the
+  read map (fixed **als-v445**). **When adding a synced key, add it in THREE
+  places** — `sync.js`'s `syncedKeys`, `backup.html`'s `BUNDLES`, and `mcp.js`'s
+  `BUNDLE`. `smoke-test.sh` enforces the second; nothing enforces the third.
+- ⚠️ **There is no reading his data any other way.** The publishable anon key
+  answers `42501 permission denied for table app_state` — RLS is on and `anon`
+  has no grant — so a bare `curl` cannot substitute, and there is no `vercel`
+  CLI on his Mac to pull a service key. The MCP is the only door.
 
 ### What shipped
 `readKey` now passes its value through `liveOnly()`, which drops any array item
@@ -2496,7 +2582,27 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
-- 🔴🔴 **FIRST QUESTION TOMORROW: does `nutrition.html` still show 1,461 kcal
+- 🔴🔴 **DOES THE TIKTOK WORLD RENDER ON HIS LAPTOP?** This blocks two separate
+  things and it is one question. His cloud `improve` row has **no
+  `improve:tiktoks` and no `improve:habits`**, while `improve:videos` reads fine
+  from the same row (43 unwatched, confirmed live). So either **(a)** his laptop
+  session is stale and the `improve` engine has been 401ing — the banner would
+  say `improve · HTTP 401`, and the fix is sign out and back in — or **(b)** the
+  als-v426 paste path never persisted, which is still flagged unproven. **If he
+  sees his TikToks on screen, it is (a) and it is a sync bug.** Until this is
+  answered, nothing can review his actual wall, and the als-v446 recap has no
+  real TikTok of his to run on.
+  - The console one-liner that hands the data over without a deploy:
+    `copy(JSON.parse(localStorage.getItem('improve:tiktoks')||'[]').map(v=>[v.ord,v.url,v.kind,v.topic].join(' | ')).join('\n'))`
+- 🔴 **The TikTok recap (als-v446) is unproven in his browser.** Every server
+  path is verified live against production, and both pane states were rendered
+  headless, but **no finger has touched the button**. Full PWA reopen needed.
+  His calls, not mine: does a **13 MB / roughly 4-minute** ceiling bite often
+  enough to be worth the Files API, and does the recap read better than the
+  caption-written key points it folds away? If it does not, the lever is the
+  prompt in `_recap.js`, which is now shared — **changing it changes YouTube
+  too**, and that is deliberate.
+- 🔴🔴 **Still open from als-v444: does `nutrition.html` still show 1,461 kcal
   for 29 Jul?** If it has jumped toward 4,671, the phantom rows were pulled down
   by a UNION merge and that is the emergency; if it still reads 1,461, the
   divergence is cloud-only and the §5 investigation continues calmly. **Ask this
@@ -2623,8 +2729,8 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 25 files; 24 suites + 1 tool.
-# ⚠️ `tests/*.test.js` is only 22 of them. reinstall-safety.js and
+for f in tests/*.js; do node "$f"; done   # 26 files; 25 suites + 1 tool.
+# ⚠️ `tests/*.test.js` is only 23 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
 # `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
@@ -2632,10 +2738,10 @@ for f in tests/*.js; do node "$f"; done   # 25 files; 24 suites + 1 tool.
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
-some dates** and has since before als-v422. (It passed clean again on 2026-07-29
-with all 23 suites green.) It reads `main.html` only and the
+some dates** and has since before als-v422. (It passed clean again on 2026-07-31
+with all **25 suites** green.) It reads `main.html` only and the
 failure is **date-dependent**. So a clean tree is
-**22 pass, or 21 pass / 1 fail**; either is expected. Don't assume you broke it and
+**25 pass, or 24 pass / 1 fail**; either is expected. Don't assume you broke it and
 don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
 `git stash push <your files>`, re-run, `git stash pop`.
 

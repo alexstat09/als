@@ -154,8 +154,17 @@ Home has its own token set inline in `index.html`.
 
 **`api/`** — 12 serverless functions, plus `_`-prefixed helpers that Vercel
 neither routes nor counts (`_model`, `_supa`, `_auth`, `_vault`, `_movies`,
-`_prices`, `_youtube`, `_garmin`, `_core-foods`, `_food-know`, `_nut-check`, …).
+`_prices`, `_youtube`, `_tiktok`, `_recap`, `_garmin`, `_core-foods`,
+`_food-know`, `_nut-check`, …).
 New server logic goes into a helper and is called from an existing function.
+
+The Library's two worlds: `_youtube.js` (playlist mirror, `?ytdistill`,
+`?ytorganize`, `?ytrecap`) and `_tiktok.js` (`?tiktok=`, `?ttread`, `?ttrecap`,
+and the **nine shelves**, which `_youtube.js` `require`s rather than restating).
+**`_recap.js` holds the reading-page contract they SHARE** — the prompt, the
+parser, the word count — so a recap cannot mean two things. ⚠️ It requires
+nothing on purpose: `_youtube` → `_tiktok` already exists, and a cycle in Node
+yields a half-built module instead of an error (hard constraint 25).
 
 Food lookup specifically: `food-search.js` (databases + barcode),
 `nutrition-web.js` (classify → retrieve → verify, and the dish-from-ingredients
