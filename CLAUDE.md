@@ -493,7 +493,122 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v444` — THE MCP WAS READING DELETED ROWS** (2026-07-30, `17a8e3f`
+**HEAD is `als-v446` — THE TIKTOK WORLD CAN BE WATCHED TOO** (2026-07-31,
+`607e65a` on `main`, pushed; **26 suites** + smoke green;
+`tests/tiktok-recap.test.js` = 96 assertions; **verified live end to end**).
+Alex: *"look what we did with youtube, about the gemini doing the notes… add it
+to tiktok so i can have the perfect summarizer, exactly the same as the youtube
+one."*
+
+### ⭐⭐ The recap was YouTube-only for three versions, and the reasoning was wrong
+The excuse was reasonable: the TikTok half already reads TikTok's own ASR
+captions, so it never had the "no transcript" problem the recap was built to
+solve. True, and still the wrong call — **a caption track is not the video.** It
+carries none of the text burned into the frame, none of what is SHOWN, and
+nothing at all when the clip has no speech. **Hard constraint 15, in the same
+file that earned it**, and with the same tell: the honest half was the one being
+talked about.
+
+**The proof came back in the first live call.** Its FACTS included *"OCR A-Level
+Chemistry A is **shown** as the primary exam board specification"* and
+*"colour-coded highlights"* — things that exist only on the SCREEN. The captions
+could not have carried either.
+
+### ⚠️⚠️ THE ONE REAL DIFFERENCE, and it changes the whole shape
+`file_data.file_uri` accepts **YouTube URLs and nothing else** — Google owns
+YouTube, which is the only reason that path is a one-liner. A TikTok cannot be
+handed over as a link at any price, so its **BYTES** travel with the request.
+That moves the wall:
+
+| | wall | what a big one does |
+|---|---|---|
+| YouTube | **DURATION** — 60s of function time per slice | becomes several requests (`planSegments`) |
+| TikTok | **SIZE** — ~13 MB per request | **refused up front, by name** |
+
+⛔ **Segmenting does NOT transfer, and copying it would be cargo-cult.** Asking
+for seconds 0–60 of a 40 MB file still uploads 40 MB. A TikTok too big to send
+is refused **before a byte moves**, with its real size in the sentence. Measured:
+a 161-second TikTok is **7.3 MB** at its smallest gear, a 547-second one is
+**40 MB**. It is the nine-minute outlier that gets turned away.
+
+### What shipped
+- **`api/_recap.js` — NEW, and the point of it is constraint 15.** The prompt,
+  the parser and the word count live there ONCE, shared by both worlds. YouTube's
+  `RECAP_SYS`, `RECAP_SEG_SYS`, `RECAP_MERGE_SYS` and `parseRecap` are **proven
+  byte-identical** to what shipped. ⚠️ **It requires NOTHING, and that is
+  load-bearing**: `_youtube.js` already requires `_tiktok.js` for the shelves, so
+  a recap helper that reached back for either would close a cycle — and Node
+  answers a cycle with a **half-built module object rather than an error**, which
+  is silent-empty in a require graph. `sysFor(shelfRules)` takes the shelf text
+  as an argument for exactly this reason.
+- **`api/_model.js`** — `watch()` takes `opts.bytes` → `inline_data`. The two are
+  mutually exclusive and **a URL wins**, so a caller supplying both cannot
+  silently upload megabytes. `GEM_INLINE_MAX_BYTES = 13 MB`, because Google's
+  20 MB limit covers the **whole request** and base64 inflates by 4/3.
+- ⭐ **`fps` is the caller's call now, and a TikTok is watched at 1 fps.** 0.2
+  exists to make an hour of talking-head affordable; on a 40-second clip whose
+  argument is WRITTEN ON SCREEN it would see eight frames and miss the point.
+- **`api/_tiktok.js`** — `videoBytes()`: watch page → **`ttwid` cookie** → smallest
+  gear → MP4. ⚠️ **The CDN 403s without that cookie** (proven on both
+  `v16-`/`v19-webapp-prime`), so the page fetch is not just where the URL comes
+  from, it is where the SESSION comes from. Those URLs are signed and expire —
+  never store one. The MP4 `ftyp` magic is checked, because TikTok serves HTML
+  error pages with HTTP 200.
+- ⚠️ **ONE budget for the download AND the watching** (constraint 21, new place).
+  A slow CDN eating 20s would otherwise leave `watch()` starting a fresh 48s
+  envelope against a 60s function — the download would have guaranteed a 504 it
+  had nothing to do with.
+- **`improve.html`** — `canRecap()` gates both worlds; a **pending TikTok has an
+  empty `ttId`** and is deliberately not offered. ⚠️⚠️ `runRecap` persists through
+  **`saveItem()`**, never a hardcoded `persist(K_VID, videos)` — that would have
+  written a TikTok recap into the YouTube array, thrown nothing, repainted
+  correctly from memory, and **lost the video on the next reload.**
+
+### ⚠️ Found by RENDERING, invisible to 93 green assertions
+**Three surfaces name where a reading came from** — the offer copy, the folded
+"earlier summary" label, and the source line — and the first pass gave a
+per-world sentence to only two. The pane rendered **"The earlier summary, from
+the description"** over a TikTok, whose earlier summary comes from its captions.
+That is constraint 15 **inside a change made for constraint 15**. All three are
+counted by a test now.
+⚠️ And the harness broke itself first: replacing `initCloudSync(` in the source
+mangled `typeof window.initCloudSync` into a syntax error and the whole page
+died silently. **Stub the global, never rewrite the call.**
+
+### Verified live (not inferred)
+| case | result |
+|---|---|
+| real 161s TikTok | **200 in 12.5s**, `gemini-3.6-flash`, 176 words, screen-derived facts |
+| 547s / 40 MB | **413** — names 40.0 MB vs the 13.0 MB limit |
+| deleted video | **404** — "deleted, private or region-locked" |
+| not a TikTok | **400** · no url → **400** |
+| YouTube, short | **200**, and correctly `empty:true` with a NOTHING sentence |
+| YouTube, 24 min | 504 with its real cause — pre-existing one-pass ceiling |
+
+### 🔴 Open on this
+- 🔴 **Unproven in his browser.** 96 assertions, a headless render of both pane
+  states, and every server path curled against production. No finger has touched
+  the button. He needs a full PWA reopen for `als-v446`.
+- **The 13 MB cap is the dial**, not the architecture. If he hits "too big" often,
+  the fix is Gemini's **Files API** (resumable upload, up to 2 GB, file persists
+  48h so a retry is free) — deliberately not built, because the dominant case is
+  a short TikTok and a second upload protocol is a second failure surface.
+- A TikTok recap does **not** run `groundKeys()`, for the same reason the YouTube
+  one does not: the material is the video, and there is no haystack on this side
+  of the wire. Grade `watched` says so.
+
+---
+
+**Before that — `als-v445`** — `improve:tiktoks` added to `api/mcp.js`'s `BUNDLE`
+read map, so a session can actually read the TikTok wall. ⚠️ **His cloud
+`improve` row has NO `improve:tiktoks` and NO `improve:habits`** — `improve:videos`
+reads fine from the same row. Either his laptop session is stale (the engine
+would be 401ing) or the v426 paste path never persisted. **Unresolved — ask him
+whether the TikTok world renders on his laptop.**
+
+---
+
+**Before that — `als-v444` — THE MCP WAS READING DELETED ROWS** (2026-07-30, `17a8e3f`
 on `main`, pushed; **25 suites** + smoke green; `tests/mcp-tombstones.test.js` =
 23 assertions). The permanent rule is **hard constraint 23**.
 ⚠️ **START HERE TOMORROW — the investigation below is NOT closed.**
