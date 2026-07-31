@@ -55,7 +55,7 @@ var BUNDLE = {
   'bm:logs': 'body-measure',
   'bills:items': 'bills', 'bills:paid': 'bills', 'bills:nospend': 'bills',
   'movies:seen': 'movies', 'movies:watch': 'movies',
-  'improve:videos': 'improve', 'improve:habits': 'improve',
+  'improve:videos': 'improve', 'improve:habits': 'improve', 'improve:tiktoks': 'improve',
   'ideas:items': 'ideas'
 };
 function bundleFor(lsKey) { if (lsKey.indexOf('stack:taken:') === 0) return 'health'; return BUNDLE[lsKey]; }
