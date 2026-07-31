@@ -786,6 +786,14 @@
        same blank card, which is the silent-empty disease this page keeps
        catching itself doing. */
     function recapEmpty(v){ return !!(v&&!hasRecap(v)&&v.recapNothing); }
+    /* ⭐ BOTH WORLDS CAN BE WATCHED NOW, and this is the one place that decides
+       it. A recap needs something the server can actually fetch: YouTube needs
+       its id, and a TikTok needs the id it only learns FROM the server — so a
+       freshly pasted, still-pending TikTok cannot be watched yet, exactly as it
+       cannot be read yet. Using `v.ttId` here is the same rule `isTikTok()`
+       warns about from the other side: an empty ttId means "not resolved", and
+       offering to watch it would send the server a link it has not confirmed. */
+    function canRecap(v){ return isTikTok(v) ? !!(v&&v.ttId) : !!(v&&v.ytId); }
     function recapParagraphs(s){
       return String(s||'').split(/\n{2,}/).map(function(p){ return p.replace(/\n/g,' ').trim(); })
              .filter(function(p){ return p.length; });
@@ -1331,6 +1339,20 @@
          looking at a render. The recap is above, so it points up. */
       watched:'This one was WATCHED — the whole video went in, audio and all. The recap above comes from what is actually said in it, not from the description the creator wrote to sell it.'
     };
+    /* ⚠️ `watched` is the ONE grade both worlds can reach, and the sentence
+       above is only true of YouTube: it contrasts the recap with the creator's
+       description, which is what a YouTube reading is built from. A TikTok
+       reading is built from its own ASR captions, so that contrast would be a
+       plain falsehood on a TikTok card — and this line exists precisely to say
+       where a reading came from. Every other grade is world-specific already,
+       so this is the only one that needs asking. */
+    function srcLine(v){
+      if(!v||!v.grade) return '';
+      if(v.grade==='watched'&&isTikTok(v))
+        return 'This one was WATCHED — the clip itself went in, the sound and the screen together. '+
+               'The recap above comes from the video, not only from the captions, so it can carry what was WRITTEN on screen and what was shown.';
+      return SRC[v.grade]||'';
+    }
     function paneEmptyHTML(){
       var un=videos.filter(function(v){return !v.watched;});
       var nextV=un.slice().sort(byOrd)[0];
@@ -1474,9 +1496,16 @@
        an offer sits under the thin reading it replaces, a finished recap sits
        at the top as the card's summary. Same markup either way, so the two
        positions can never drift into two components.
-       YouTube only — the TikTok half already reads real captions. */
+       ⭐ BOTH WORLDS. It was YouTube-only for three versions, on the reasoning
+       that the TikTok half already reads real captions — which is true and was
+       still the wrong call. A caption track is not the video: it carries none
+       of the text burned into the frame, none of what is being SHOWN, and
+       nothing at all when the clip has no speech. Hard constraint 15 is the
+       rule this was breaking, and the tell was the same one as last time — the
+       honest half was the one being talked about. */
     function recapBlockHTML(v){
-      if(isTikTok(v)||!v.ytId) return '';
+      if(!canRecap(v)) return '';
+      var tik=isTikTok(v);
       var h='<div class="pane-recap">';
       if(recapBusy[v.id]){
         var bz=recapBusy[v.id], el=Math.max(0,Math.round((Date.now()-(bz.ts||Date.now()))/1000));
@@ -1490,7 +1519,9 @@
            '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
            (bz.of
              ? 'This one is long, so it is being watched in '+bz.of+' parts and then written up as one page. Each part is saved as it lands — if anything drops out, pressing again carries on from where it stopped.'
-             : 'It is taking in the whole video, not skimming a description, so give it up to a minute. You can keep browsing — this keeps going.')+
+             : (tik
+                 ? 'It is taking in the whole clip — the sound and the screen — so give it a moment. You can keep browsing; this keeps going.'
+                 : 'It is taking in the whole video, not skimming a description, so give it up to a minute. You can keep browsing — this keeps going.'))+
            '</div>'+
            /* Half a part's credit for the one in flight. A bar sitting at
               exactly 0 through the whole of part 1 reads as broken — and it
@@ -1523,9 +1554,16 @@
            '<div class="pane-acts" style="margin-top:11px"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">'+
            (done?'Carry on →':'Try again')+'</button></div>';
       }else{
+        /* ⚠️ The two worlds are offered DIFFERENT sentences because they are
+           replacing different things, and saying "from the description" over a
+           TikTok would be a plain lie — TikTok's points come from its own ASR
+           captions. What a TikTok recap adds is everything the captions cannot
+           carry: the text burned into the frame, and what is being shown. */
         h+='<span class="lab">'+(v.watched?'You’ve watched it. Get the page.':'Watched it? Get the page.')+'</span>'+
            '<div class="sub" style="margin-top:0;text-transform:none;letter-spacing:0;font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--au-dim)">'+
-           'The points above come from the description. This watches the whole video and writes the recap you keep instead of it.</div>'+
+           (tik
+             ? 'The points above come from what was said in it. This watches the video itself — the words on screen, what is being shown — and writes the recap you keep instead of it.'
+             : 'The points above come from the description. This watches the whole video and writes the recap you keep instead of it.')+'</div>'+
            '<div class="pane-acts"><button type="button" class="b prime" data-rcrun="'+esc(v.id)+'">Watch it &amp; write the recap</button></div>';
       }
       if(v.recapErr) h+='<div class="sub" style="color:var(--au-coral);text-transform:none;letter-spacing:0;font-family:inherit;font-size:12px;line-height:1.5">'+esc(v.recapErr)+'</div>';
@@ -1571,7 +1609,14 @@
       var recapped=hasRecap(v);
       if(recapped) h+=recapBlockHTML(v);
       if(recapped && (p.core||p.keys.length)){
-        h+='<details class="tx"><summary>▸ The earlier summary, from the description</summary><div class="body">'+
+        /* ⚠️ FOUND BY RENDERING IT, and it is constraint 15 inside a change
+           that was ITSELF made for constraint 15: the offer copy above was
+           given a per-world sentence and this label, the twin surface naming
+           the very same reading, was left saying "from the description". On a
+           TikTok that is a plain falsehood — its earlier summary is written
+           from TikTok's own ASR captions. Two labels for one thing must move
+           together. */
+        h+='<details class="tx"><summary>▸ '+(isTikTok(v)?'The earlier summary, from what was said':'The earlier summary, from the description')+'</summary><div class="body">'+
            (p.core?'<div style="font-family:var(--au-serif);font-size:14px;line-height:1.45;margin-bottom:10px">'+esc(p.core)+'</div>':'')+
            (p.keys.length?'<ul class="pane-keys" style="margin-top:0">'+p.keys.map(function(k){ return '<li>'+esc(k)+'</li>'; }).join('')+'</ul>':'')+
            '</div></details>';
@@ -1647,7 +1692,8 @@
         h+='<div class="pane-src" style="color:var(--au-amber)">This was written before the reader could tell a lesson from a keepsake, ' +
            'and before anything it said was checked against the source. It is queued to be read again — nothing here is lost when it is.</div>';
       }
-      if(v.grade&&SRC[v.grade]) h+='<div class="pane-src">'+esc(SRC[v.grade])+'</div>';
+      var srcTxt=srcLine(v);
+      if(srcTxt) h+='<div class="pane-src">'+esc(srcTxt)+'</div>';
 
       h+='<div class="pane-acts">';
       if(world!=='tt') h+='<button type="button" class="b'+(v.watched?' on':'')+'" data-watch="'+esc(v.id)+'">'+(v.watched?'✓ Watched':'Mark watched')+'</button>';
@@ -1978,9 +2024,13 @@
       if(status===401||status===403) return 'The server refused the request. Try reloading the page first.';
       return 'That did not work (error '+status+'). Try again in a moment.';
     }
-    async function postRecap(payload){
+    /* `ep` names the courier branch. Two worlds, two branches — a TikTok cannot
+       go to ?ytrecap because it is not fetched by id, it is fetched, downloaded
+       and uploaded as bytes (see api/_tiktok.js for why). Everything AFTER the
+       reply is identical, which is the whole point. */
+    async function postRecap(payload,ep){
       try{
-        var r=await fetch('/api/run-reminders?ytrecap=1',{
+        var r=await fetch('/api/run-reminders?'+(ep||'ytrecap')+'=1',{
           method:'POST', headers:{'content-type':'application/json'}, cache:'no-store',
           body:JSON.stringify(payload)
         });
@@ -1997,13 +2047,14 @@
       }catch(e){ return { ok:false, message:'No connection — the recap needs the network.' }; }
     }
     function askRecap(v){
+      if(isTikTok(v)) return postRecap({ url:v.url||'', title:titleOf(v), notes:(v.note||v.notes||'') },'ttrecap');
       return postRecap({ videoId:v.ytId||'', title:titleOf(v), notes:(v.note||v.notes||'') });
     }
     /* ⚠️ A recap REPLACES one he may already have, so it may only ever do so on
        success — the same rule the re-read sweep learned the hard way. A failed
        re-recap leaves the old page exactly where it was and says why. */
     async function runRecap(id){
-      var v=byId(id); if(!v||!v.ytId||recapBusy[id]) return;
+      var v=byId(id); if(!v||!canRecap(v)||recapBusy[id]) return;
       // ⚠️ Always an OBJECT, never a bare timestamp. It carries progress now
       // ("part 2 of 4"), and a shape that is sometimes a number and sometimes
       // a record is how a render ends up printing NaN at somebody.
@@ -2035,7 +2086,7 @@
         // mixing notes from two different cuts of the video.
         var sig=segs.length+'x'+(v.secs||0);
         var have=(v.recapPartsSig===sig&&Array.isArray(v.recapParts))?v.recapParts.slice():[];
-        v.recapPartsSig=sig; v.recapParts=have; persist(K_VID,videos);
+        v.recapPartsSig=sig; v.recapParts=have; saveItem(v);
 
         for(var si=0; si<segs.length; si++){
           if(have[si]&&String(have[si]).trim()) continue;      // already earned
@@ -2050,11 +2101,11 @@
             clearInterval(tick);
             v.recapErr=(pres.message||'That part did not go through.')+
               (si?(' You have '+si+' of '+segs.length+' parts saved — pressing again carries on from there.'):'');
-            v.ts=Date.now(); persist(K_VID,videos); flush();
+            v.ts=Date.now(); saveItem(v);
             delete recapBusy[id]; render(); return;
           }
           have[si]=pres.data.note||'';
-          v.recapParts=have; v.ts=Date.now(); persist(K_VID,videos); flush();
+          v.recapParts=have; v.ts=Date.now(); saveItem(v);
         }
 
         recapBusy[id]={ merging:true, of:segs.length, ts:recapBusy[id]&&recapBusy[id].ts||Date.now() };
@@ -2088,14 +2139,23 @@
         v.grade='watched';                 // the source line must tell the truth
         if(d.shelf&&SHELVES.indexOf(d.shelf)>=0){ v.concept=d.shelf; v.cver=CVER; }
         v.ts=Date.now();
-        persist(K_VID,videos); flush();
+        /* ⚠️⚠️ `saveItem`, NOT `persist(K_VID, videos)`. This function was
+           YouTube-only, so it wrote the YouTube store by name — and a hardcoded
+           store is exactly how a TikTok ends up in the wrong array. It would
+           not have thrown: the recap would land, the card would repaint from
+           memory, and the write would go to a list this video is not in — so
+           it would vanish on the next reload and the wall would be silently
+           short one video. `saveItem` asks `isTikTok()` and persists the store
+           the item actually lives in. (Constraint 16, one level in: a store is
+           written by whoever owns the item.) */
+        saveItem(v);
         delete recapBusy[id];
         render();
         if(hasRecap(v)) openRecap(id);     // he pressed it to read it
         return;
       }
       v.recapErr=res.message||'That did not work.'; v.ts=Date.now();
-      persist(K_VID,videos); flush();
+      saveItem(v);
       delete recapBusy[id];
       render();
     }
@@ -2678,7 +2738,7 @@
       addAction:addAction, dropAction:dropAction, toggleAction:toggleAction, actionFor:actionFor,
       roomItems:roomItems, persist:persist, storageErr:function(){ return storageErr; },
       rcParse:rcParse, hasRecap:hasRecap, recapEmpty:recapEmpty, recapParagraphs:recapParagraphs,
-      badgeFor:badgeFor, hay:hay, SRC:SRC,
+      badgeFor:badgeFor, hay:hay, SRC:SRC, srcLine:srcLine, canRecap:canRecap,
       K_ACT:K_ACT, K_VID:K_VID, K_TT:K_TT,
       _state:function(){ return { videos:videos, tiktoks:tiktoks, habits:habits, actions:actions, world:world, state:state, shelf:shelf, starOnly:starOnly }; },
       _set:function(v,h,t,a){ videos=v; habits=h; if(t) tiktoks=t; if(a) actions=a; },

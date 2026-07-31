@@ -264,10 +264,33 @@ async function json(role, payload) {
       clothes. That is reported as its own kind, never as an empty recap. */
 function geminiKey() { return (process.env.GEMINI_API_KEY || '').trim(); }
 
+/* ⚠️ 20 MB IS THE WHOLE REQUEST, NOT THE FILE, AND BASE64 INFLATES BY 4/3.
+   Google's limit for an inline part is 20 MB across the entire request body —
+   prompt, system instruction and video together. So the raw byte cap that
+   actually fits is about 14 MB, not 20, and the caller must be given a number
+   it can enforce BEFORE it downloads anything. Getting this wrong does not
+   fail loudly: an oversized request comes back 400 with a message about
+   payload size, which reads exactly like a malformed body. */
+var GEM_INLINE_MAX_BYTES = 13 * 1024 * 1024;
+
 function gemBody(opts, full) {
   var parts = [{ text: String(opts.prompt || '') }];
-  if (opts.url) {
-    var vp = { file_data: { file_uri: String(opts.url) } };
+  /* TWO WAYS A VIDEO CAN ARRIVE, AND ONLY ONE OF THEM IS A URL.
+     `file_data.file_uri` accepts exactly one kind of public web address:
+     YouTube. Google owns YouTube, which is the entire reason that path exists
+     — hand it a TikTok, a Vimeo or a bare .mp4 link and it is refused.
+     Everything that is not a YouTube video therefore has to arrive as BYTES,
+     which is what `opts.bytes` is for. The two are mutually exclusive and a URL
+     wins, so a caller that accidentally supplies both cannot silently upload
+     megabytes it did not mean to send. */
+  if (opts.url || opts.bytes) {
+    var vp;
+    if (opts.url) {
+      vp = { file_data: { file_uri: String(opts.url) } };
+    } else {
+      var b64 = Buffer.isBuffer(opts.bytes) ? opts.bytes.toString('base64') : String(opts.bytes);
+      vp = { inline_data: { mime_type: String(opts.mime || 'video/mp4'), data: b64 } };
+    }
     /* ⭐ CLIPPING IS WHAT MAKES A LONG VIDEO POSSIBLE AT ALL.
        Every invocation of `run-reminders.js` is capped at 60s, and no amount
        of tuning gets a 50-minute video through one of them. `videoMetadata`
@@ -282,12 +305,18 @@ function gemBody(opts, full) {
         endOffset: { seconds: Math.floor(opts.clip.end) }
       };
     }
-    /* Frames are sampled at 1/second by default. For a talking video that is
-       enormous waste: the argument lives in the AUDIO, which is billed at a
+    /* Frames are sampled at 1/second by default. For a long talking video that
+       is enormous waste: the argument lives in the AUDIO, which is billed at a
        flat 32 tokens/second whatever we do here. Dropping to one frame every
        five seconds cuts the frame half by 5× and is the difference between a
        slice finishing inside the window and not. Still enough to catch a slide
-       or a chart being held up. */
+       or a chart being held up.
+       ⚠️ THAT REASONING DOES NOT TRANSFER TO A SHORT VIDEO, so `fps` is the
+       caller's call and 0.2 is only the default. On a 40-second TikTok the
+       argument is very often ON THE SCREEN — captions burned into the frame,
+       a list, a scoreline — and 0.2 fps would see eight frames of it and miss
+       the point entirely. A short clip is cheap enough to watch properly:
+       `_tiktok.js` asks for 1 fps deliberately. */
     if (full) { vm = vm || {}; vm.fps = opts.fps || 0.2; }
     if (vm) vp.video_metadata = vm;
     parts.push(vp);
@@ -506,6 +535,7 @@ function fail(r, msgs) {
 module.exports = {
   stream: stream, json: json, watch: watch, parse: parse, fail: fail,
   chainFor: chainFor, tune: tune, CHAINS: CHAINS,
+  GEM_INLINE_MAX_BYTES: GEM_INLINE_MAX_BYTES, _gemBody: gemBody,
   GROQ_URL: GROQ_URL, GEMINI_URL: GEMINI_URL,
   _gemBody: gemBody, _gemText: gemText
 };

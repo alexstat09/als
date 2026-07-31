@@ -767,6 +767,75 @@ module.exports = async function (req, res) {
     }
     return;
   }
+  /* ── ?ttrecap — the SAME page, for a TikTok ────────────────────────
+     The twin of ?ytrecap above, and deliberately its twin rather than its
+     cousin: same prompt, same parser, same reading view, same `watched` grade
+     (hard constraint 15 — a guarantee enforced on one path and not the other is
+     a coincidence with a good reputation).
+
+     ⭐ ONE SHAPE, NOT THREE. ?ytrecap carries {videoId} / {seg} / {merge}
+     because YouTube's wall is DURATION and a long video is several requests.
+     TikTok's wall is SIZE, and clipping cannot shrink an upload, so segmenting
+     would be cargo-cult here — there is nothing to orchestrate and the page
+     never walks a plan. A TikTok too big to send is refused by name, up front,
+     with its real size in the sentence.
+
+     ⚠️ On demand, never swept — same reason as ?ytrecap. Watching costs real
+     quota and the background reader must never spend it on a video he has not
+     asked about. */
+  if (req.query && req.query.ttrecap !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      var trb = req.body; if (typeof trb === 'string') { try { trb = JSON.parse(trb || '{}'); } catch (e) { trb = {}; } }
+      var turl = (trb && trb.url) || '', ttitle = (trb && trb.title) || '', tnotes = (trb && trb.notes) || '';
+      if (!turl) { res.status(400).json({ error: 'no url' }); return; }
+      if (!(process.env.GEMINI_API_KEY || '').trim()) {
+        // 501, not 503: "Google is busy" is a Tuesday, a missing key is a
+        // one-time setup problem, and they need different fixes.
+        res.status(501).json({ error: 'no-key', message: 'Watching a video needs GEMINI_API_KEY on the server — it is free from Google AI Studio.' });
+        return;
+      }
+      var trout = await tt.recap(turl, ttitle, tnotes);
+      if (!trout.ok) {
+        var tst = trout.error === 'rate' ? 429
+                : trout.error === 'overloaded' ? 503
+                : trout.error === 'timeout' ? 504
+                : trout.error === 'too-big' ? 413
+                : trout.error === 'gone' ? 404
+                : trout.error === 'not-tiktok' ? 400 : 502;
+        // Every failure names itself and says what HE can do about it. A status
+        // code is not a message — that is constraint 10 wearing a number, and
+        // it is exactly how the YouTube recap shipped saying "The server said
+        // 504."
+        var tmsg = trout.message || '';
+        if (trout.error === 'overloaded') {
+          tmsg = 'Google’s video models are all busy right now — this is a spike on their side, not a problem with the video or your key. It usually clears within a minute or two. Press it again.';
+        } else if (trout.error === 'timeout' && !tmsg) {
+          tmsg = 'This one took too long to watch. Watching happens inside a 60-second budget on the server. Press it again.';
+        } else if (trout.error === 'rate') {
+          tmsg = 'The daily video quota is spent. It resets tomorrow.';
+        } else if (trout.error === 'truncated') {
+          tmsg = 'It ran out of room before finishing the recap. Try again.';
+        } else if (trout.error === 'parse') {
+          tmsg = 'It watched the video but did not write a recap. Press it again.';
+        } else if (!tmsg) {
+          tmsg = 'The recap did not go through. Press it again.';
+        }
+        res.status(tst).json({ error: trout.error || 'recap failed', message: tmsg, secs: trout.secs || 0 });
+        return;
+      }
+      res.status(200).json({
+        ok: true, empty: !!trout.empty, nothing: trout.nothing || '',
+        text: trout.text || '', shelf: trout.shelf || '',
+        words: trout.words || 0, sections: trout.sections || 0,
+        secs: trout.secs || 0,
+        truncated: !!trout.truncated, model: trout.model || ''
+      });
+    } catch (e) {
+      res.status(502).json({ error: String((e && e.message) || e) });
+    }
+    return;
+  }
   if (req.query && req.query.ytorganize !== undefined) {
     res.setHeader('Cache-Control', 'no-store');
     try {

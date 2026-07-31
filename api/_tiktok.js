@@ -39,6 +39,11 @@
 
 var UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 var model = require('./_model');
+// ⚠️ `_recap.js` requires NOTHING, which is what keeps this safe: `_youtube.js`
+// requires this file for the shelves, so a recap helper that reached back for
+// either of them would close a cycle — and Node answers a cycle with a
+// half-built module rather than an error. See the header of `_recap.js`.
+var rc = require('./_recap');
 
 function timeout(ms) { var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal; }
 
@@ -411,8 +416,261 @@ async function read(v) {
   };
 }
 
+/* ════════════════════════════════════════════════════════════════
+   THE RECAP — the model WATCHES the TikTok
+   ════════════════════════════════════════════════════════════════
+   Everything above reads TikTok's own ASR captions, which is already more than
+   the YouTube half has ever had. But a caption track is not the video: it
+   carries none of the text burned into the frame, none of what is being shown,
+   and nothing at all when the clip has no speech. This is the same step up the
+   YouTube world got in als-v440 — and it has to be the SAME page at the end of
+   it, which is why the prompt and parser come from `_recap.js`.
+
+   ⭐⭐ THE ONE REAL DIFFERENCE FROM YOUTUBE, AND IT CHANGES THE WHOLE SHAPE.
+   `file_data.file_uri` accepts YouTube URLs and nothing else — Google owns
+   YouTube, which is the only reason that path is a one-liner. A TikTok cannot
+   be handed over as a link at any price, so its BYTES have to travel with the
+   request. That moves the wall:
+
+     YouTube  → the wall is DURATION. 60 seconds of function time per slice, so
+                a long video becomes several requests (`planSegments`).
+     TikTok   → the wall is SIZE. ~13 MB of video per request, and CLIPPING
+                CANNOT HELP — asking for seconds 0-60 of a 40 MB file still
+                means uploading 40 MB. Segmenting does not transfer here, and
+                pretending it does would produce a feature that fails at the
+                fourth part every time.
+
+   So a TikTok that is too big is refused BEFORE anything is downloaded, by
+   name, with its real size in the message. In practice this is a non-event:
+   a 161-second TikTok measures 7.3 MB at its smallest gear, and TikTok's own
+   format tops out around ten minutes. It is the nine-minute outlier that gets
+   turned away, and it gets turned away honestly. */
+
+// Same envelope discipline as `watch()` — see hard constraint 21. The download
+// and the watching share ONE budget, because they share one 60-second function.
+var TT_RECAP_BUDGET_MS = 48000;
+// Below this there is no point handing what is left to the model: it cannot
+// finish, and a bare timeout says less than "the download ate the window".
+var TT_MIN_WATCH_MS = 9000;
+
+/* TikTok's video CDN answers 403 to a bare request — PROVEN, not assumed, on
+   both v16- and v19-webapp-prime: no cookie, no bytes, whatever the UA and
+   Referer say. The thing that unlocks it is the `ttwid` cookie the WATCH PAGE
+   sets, so the page fetch is not just where the URL comes from, it is where the
+   session comes from. Both halves must therefore be the same visit.
+   ⚠️ These URLs are signed and short-lived, exactly like the subtitle and cover
+   URLs this file already refuses to store. Never persist one. */
+function cookiesOf(r) {
+  var list = [];
+  try { if (r.headers.getSetCookie) list = r.headers.getSetCookie() || []; } catch (e) { list = []; }
+  if (!list.length) {
+    var one = '';
+    try { one = r.headers.get('set-cookie') || ''; } catch (e2) { one = ''; }
+    if (one) list = [one];
+  }
+  return list.map(function (s) { return String(s).split(';')[0]; }).filter(Boolean).join('; ');
+}
+
+/* Every encoding TikTok offers, smallest first. `DataSize` is TikTok's own byte
+   count and it is what lets us refuse an oversized video without downloading a
+   single byte of it. A gear with no size is sorted LAST rather than dropped —
+   it might be the only one there is, and an unknown size is still checked
+   against the real Content-Length before anything is buffered. */
+function gearsOf(v) {
+  var out = [];
+  ((v && v.bitrateInfo) || []).forEach(function (b) {
+    var pa = b && b.PlayAddr;
+    var u = (pa && pa.UrlList && pa.UrlList[0]) || '';
+    if (!u) return;
+    out.push({ name: String(b.GearName || ''), size: Number(pa.DataSize || 0) || 0, url: u });
+  });
+  // The plain playAddr is the fallback when bitrateInfo is absent entirely.
+  if (!out.length && v && v.playAddr) out.push({ name: 'playAddr', size: Number(v.size || 0) || 0, url: String(v.playAddr) });
+  return out.sort(function (a, b) { return (a.size || Infinity) - (b.size || Infinity); });
+}
+
+function mib(n) { return (Number(n || 0) / 1048576).toFixed(1) + ' MB'; }
+
+/* One visit: the watch page for the session and the URLs, then the bytes. */
+async function videoBytes(rawUrl, maxBytes, deadlineAt) {
+  var cap = Math.max(1, maxBytes | 0);
+  var c = await canonical(rawUrl);
+  if (!c) return { ok: false, error: 'not-tiktok', message: 'That is not a TikTok video link.' };
+
+  var r;
+  try {
+    r = await fetch(c.url, { headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9' }, signal: timeout(12000) });
+  } catch (e) {
+    return { ok: false, error: 'unreachable', message: 'TikTok could not be reached: ' + String((e && e.message) || e) };
+  }
+  if (!r.ok) return { ok: false, error: 'http', status: r.status, message: 'TikTok answered ' + r.status + ' for that video.' };
+
+  var cookie = cookiesOf(r);
+  var data = universal(await r.text());
+  var vd = data && data.__DEFAULT_SCOPE__ && data.__DEFAULT_SCOPE__['webapp.video-detail'];
+  // ⚠️ A blocked datacenter IP and a deleted video both arrive as "no item".
+  // They need different actions from Alex, so they never share a message.
+  if (!vd) return { ok: false, error: 'blocked', message: 'TikTok returned a page with no video data — the request was probably blocked.' };
+  if (vd.statusCode) return { ok: false, error: 'gone', message: 'TikTok says: ' + (vd.statusMsg || 'status ' + vd.statusCode) + ' (deleted, private or region-locked).' };
+  var it = (vd.itemInfo && vd.itemInfo.itemStruct) || null;
+  if (!it) return { ok: false, error: 'blocked', message: 'TikTok returned no video in the response.' };
+
+  var v = it.video || {};
+  var secs = Number(v.duration || 0) || 0;
+  var gears = gearsOf(v);
+  if (!gears.length) return { ok: false, error: 'no-source', message: 'TikTok did not offer a playable file for this one.' };
+
+  var pick = null;
+  for (var i = 0; i < gears.length && !pick; i++) if (!gears[i].size || gears[i].size <= cap) pick = gears[i];
+  if (!pick) {
+    // Refused before a byte moves. Naming the real size is what makes this a
+    // limit he can understand rather than a mysterious failure.
+    return {
+      ok: false, error: 'too-big', secs: secs, smallest: gears[0].size,
+      message: 'This one is too big to send — its smallest version is ' + mib(gears[0].size) +
+               ' and a video has to arrive whole, under ' + mib(cap) + '. ' +
+               'TikTok can only be watched by uploading it, so unlike YouTube this is a size limit, not a length one.'
+    };
+  }
+
+  var left = deadlineAt ? (deadlineAt - Date.now()) : 20000;
+  if (left < TT_MIN_WATCH_MS) return { ok: false, error: 'timeout', message: 'Reading the TikTok page used up the time budget.' };
+
+  var br;
+  try {
+    br = await fetch(pick.url, {
+      headers: {
+        'User-Agent': UA, 'Referer': c.url, 'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9', 'Cookie': cookie
+      },
+      signal: timeout(Math.min(left - 4000, 22000))
+    });
+  } catch (e) {
+    return { ok: false, error: 'download', message: 'The video itself could not be downloaded: ' + String((e && e.message) || e) };
+  }
+  if (!br.ok) return { ok: false, error: 'download', status: br.status, message: 'TikTok’s video server answered ' + br.status + '.' };
+
+  /* Trust the header before the body. `DataSize` is TikTok's claim;
+     Content-Length is the transfer's own, and if they disagree the second one
+     is the one that will actually land in memory. */
+  var len = Number(br.headers.get('content-length') || 0) || 0;
+  if (len && len > cap) {
+    return { ok: false, error: 'too-big', secs: secs, smallest: len,
+             message: 'This one is too big to send — it is ' + mib(len) + ' and the limit is ' + mib(cap) + '.' };
+  }
+
+  var buf;
+  try { buf = Buffer.from(await br.arrayBuffer()); }
+  catch (e) { return { ok: false, error: 'download', message: 'The video download did not complete: ' + String((e && e.message) || e) }; }
+
+  // Last guard: a chunked response has no Content-Length, so this is the only
+  // place an oversized body is certain to be caught.
+  if (!buf.length) return { ok: false, error: 'download', message: 'The video download came back empty.' };
+  if (buf.length > cap) {
+    return { ok: false, error: 'too-big', secs: secs, smallest: buf.length,
+             message: 'This one is too big to send — it is ' + mib(buf.length) + ' and the limit is ' + mib(cap) + '.' };
+  }
+  /* An MP4 starts `....ftyp`. TikTok serves its own error pages with HTTP 200
+     and text/html, and a 33 KB HTML page base64-encoded into a video part comes
+     back from Gemini as an unhelpful 400. Checking the magic turns that into a
+     sentence. (Constraint 10: "we failed to read it" must not look like data.) */
+  var magic = buf.slice(4, 8).toString('latin1');
+  if (magic !== 'ftyp') {
+    return { ok: false, error: 'not-video',
+             message: 'TikTok sent something that is not a video file (it was probably an error page).' };
+  }
+
+  return {
+    ok: true, bytes: buf, mime: 'video/mp4', secs: secs, gear: pick.name, size: buf.length,
+    caption: String(it.desc || '').trim().slice(0, 300),
+    author: (it.author && (it.author.nickname || it.author.uniqueId)) || ''
+  };
+}
+
+/* ⚠️ ONE BUDGET FOR THE DOWNLOAD **AND** THE WATCHING — constraint 21's second
+   half, in a new place. The YouTube recap only ever spends time inside
+   `watch()`, so its 48-second deadline is the whole story. Here the bytes have
+   to be fetched FIRST, and a slow CDN that ate 20 seconds would leave `watch()`
+   starting a fresh 48-second envelope against a 60-second function — the
+   download would have guaranteed the 504 it had nothing to do with. So the
+   deadline is stamped once, at the top, and what REMAINS is handed to the
+   model. */
+async function recap(rawUrl, title, notes) {
+  var deadlineAt = Date.now() + TT_RECAP_BUDGET_MS;
+
+  var got = await videoBytes(rawUrl, model.GEM_INLINE_MAX_BYTES, deadlineAt);
+  if (!got.ok) return { ok: false, error: got.error, status: got.status, message: got.message, secs: got.secs || 0 };
+
+  var left = deadlineAt - Date.now();
+  if (left < TT_MIN_WATCH_MS) {
+    return { ok: false, error: 'timeout', secs: got.secs,
+             message: 'Downloading the video used most of the time budget, so there was not enough left to watch it. Press it again.' };
+  }
+
+  var n = String(notes || '').trim().slice(0, 1500);
+  var name = String(title || '').trim() || got.caption || '(untitled)';
+  var prompt = 'Watch this video and write the page described in your instructions.\n' +
+    'It is a TikTok' + (got.secs ? ' of about ' + got.secs + ' seconds' : '') +
+    (got.author ? ', by ' + got.author : '') + '.\n' +
+    'Its title is: ' + name + '\n' +
+    (n ? '\nThe person watching also wrote this down. Where it overlaps what you heard, weight it — it is what they were actually struck by. Never treat it as something the video said.\n' + n + '\n' : '');
+
+  var out = await model.watch({
+    bytes: got.bytes, mime: got.mime,
+    /* ⭐ 1 FPS, NOT THE 0.2 THE YOUTUBE PATH USES, AND IT IS THE POINT.
+       0.2 fps exists to make an hour of talking head affordable. A TikTok is
+       seconds long and its argument is very often WRITTEN ON THE SCREEN — at
+       0.2 fps a 40-second clip is eight frames and the text is simply missed.
+       At 1 fps the same clip costs a few thousand tokens, which is nothing. */
+    fps: 1,
+    system: rc.sysFor(SHELF_RULES, got.secs > 0 && got.secs < 180) + rc.EMPTY,
+    prompt: prompt,
+    temperature: 0.35,
+    maxTokens: 8192,
+    budgetMs: left
+  });
+  if (!out || !out.ok) {
+    return { ok: false, error: (out && out.kind) || 'model', status: out && out.status,
+             message: (out && out.message) || '', secs: got.secs };
+  }
+
+  var text = rc.unfence(out.text);
+  var p = rc.parseRecap(text);
+
+  // It watched, and there was nothing being said. That is a real answer and it
+  // must survive as one — not as a failed recap, and not as an invented lesson.
+  // This is the case the TikTok world hits MOST: three of Alex's own five
+  // favourites had nothing to teach.
+  if (p.nothing && !p.sections.length) {
+    return { ok: true, empty: true, nothing: p.nothing, shelf: matchShelfTT(p.shelf), model: out.model, secs: got.secs };
+  }
+  // Anything that parsed to nothing at all is a FAILURE to read, never an empty
+  // recap. Silent-empty is this project's disease; the caller gets a 502.
+  if (!p.sections.length && !p.open) {
+    return { ok: false, error: 'parse', message: 'The reply did not contain a recap.', secs: got.secs };
+  }
+
+  return {
+    ok: true, text: text, parsed: p,
+    shelf: matchShelfTT(p.shelf),
+    words: rc.recapWords(p), sections: p.sections.length,
+    model: out.model, secs: got.secs, size: got.size, gear: got.gear,
+    truncated: out.finish === 'MAX_TOKENS'
+  };
+}
+
+/* The shelf must be one we actually own, whatever the model wrote — the same
+   rule `read()` applies above and `_youtube.js` applies to its own recap. */
+function matchShelfTT(topic) {
+  var hit = '';
+  SHELVES.forEach(function (s) { if (!hit && normTok(topic).indexOf(normTok(s)) >= 0) hit = s; });
+  return hit;
+}
+
 module.exports = {
-  meta: meta, read: read, grade: grade, SHELVES: SHELVES, SHELF_RULES: SHELF_RULES,
+  meta: meta, read: read, grade: grade, recap: recap, SHELVES: SHELVES, SHELF_RULES: SHELF_RULES,
   _canonical: canonical, _vtt: vtt, _captionWords: captionWords, _stickers: stickers,
-  _groundKeys: groundKeys, _specifics: specifics
+  _groundKeys: groundKeys, _specifics: specifics,
+  _gearsOf: gearsOf, _cookiesOf: cookiesOf, _videoBytes: videoBytes, _matchShelf: matchShelfTT,
+  _mib: mib, TT_RECAP_BUDGET_MS: TT_RECAP_BUDGET_MS, TT_MIN_WATCH_MS: TT_MIN_WATCH_MS
 };

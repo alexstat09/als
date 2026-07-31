@@ -30,6 +30,7 @@
 
 var UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 var model = require('./_model');
+var rc = require('./_recap');
 
 function decode(s) {
   return s == null ? s : String(s)
@@ -328,112 +329,18 @@ async function distill(text, title, videoId, key) {
    video says" is real rather than inferred, and everything about it — its
    grade, its source line, its badge — has to keep that distinction visible.
 
-   What he asked this to be, in his words: *"i watch a video, i look at the
-   recap, i remember, and whenever i feel like i need a refresh, i rewatch the
-   recap and it has everything i need to remember from the video, not tiny
-   pieces."* So this is deliberately NOT the 3-5 bullets the distiller writes.
-   It is a page: an opening that orients, sections that carry the argument in
-   order, and a block of hard specifics at the end — because names, numbers and
-   dates are what fade first and what a bullet list never keeps enough of.
+   The SHAPE of that page — the prompt, the parser, the word count — lives in
+   `_recap.js`, NOT here. It is shared verbatim with the TikTok world, which
+   watches its videos too (as bytes, since Gemini only takes a URL for
+   YouTube). Hard constraint 15: a guarantee that holds on one code path must
+   hold on its twin, and two copies of a prompt are two prompts with a delay.
+   ⚠️ `_recap.js` requires nothing, so this file requiring it cannot close a
+   cycle with `_tiktok.js` (which this file already requires for the shelves). */
 
-   ⚠️⚠️ THE HONESTY LIMIT, STATED ONCE AND ENFORCED IN THE UI.
-   `groundKeys()` is deliberately NOT called here, and its absence is not an
-   oversight — it is the reason this comment exists. Grounding works by
-   checking every name and number in a claim against the MATERIAL the claim was
-   built from. Here the material is the video itself, which we never receive:
-   Gemini watches it and returns prose. There is no haystack on this side of
-   the wire to check a needle against.
-   The tempting fix — asking the model for verbatim quotes and treating those
-   as receipts — is exactly the failure the receipts system was built to catch.
-   A model that will invent a fact will invent the quote supporting it, so
-   quote-receipts here would be theatre with a checkmark on it.
-   What we do instead is tell the truth about the source (`grade: 'watched'`,
-   and its own line in SRC) and never claim a check that did not happen. A
-   reading built on the real audio is a large step up from one built on a
-   description; pretending it was independently verified would be a step back
-   down. */
-
-var RECAP_SYS =
-  'You have just watched a video. Write the page the person will read INSTEAD of ever watching it again.\n' +
-  'They watched it once, today. In six months this page is all they will have, and they will not rewatch the video.\n' +
-  'So it must carry everything worth keeping — not highlights, not a teaser, not "key takeaways".\n' +
-  '\n' +
-  'HOW TO WRITE IT\n' +
-  '- Plain, warm, direct language. Short sentences. No jargon, no hype, no filler.\n' +
-  '- Never refer to the video as a video. No "in this video", no "the narrator explains", no "we learn that".\n' +
-  '  Write the SUBSTANCE directly, the way a good book explains a thing.\n' +
-  '- Follow the video\'s own order. Its argument has a shape; keep it.\n' +
-  '- Be specific or say nothing. A sentence that would be true of any video on this subject is worthless — cut it.\n' +
-  '  Names, numbers, dates, places, causes and consequences are the whole point.\n' +
-  '- Never invent. If you did not hear it, it does not go on the page. Do not fill a gap with what is generally true\n' +
-  '  of the topic — an approximation you cannot hear in the video is a lie in six months.\n' +
-  '- No markdown, no asterisks, no bullets of your own, no emoji, no timestamps.\n' +
-  '\n' +
-  'LENGTH\n' +
-  'Scale to the video. A ten-minute video needs perhaps four sections; an hour needs eight or more.\n' +
-  'Never pad to reach a number, and never compress an hour into five lines — completeness is the point of this page.\n' +
-  '\n' +
-  'OUTPUT — plain text, exactly this shape, nothing before or after:\n' +
-  'SHELF: <exactly one of the shelves listed below>\n' +
-  'CORE: <one sentence. The single thing that should survive if everything else is forgotten.>\n' +
-  'OPEN:\n' +
-  '<two to four sentences. What this is about and what it is arguing. Enough that someone who never saw it is oriented.>\n' +
-  'SECTION: <a short heading, four words or fewer>\n' +
-  '<a full paragraph carrying that part of the argument, with its specifics>\n' +
-  'SECTION: <the next heading>\n' +
-  '<its paragraph>\n' +
-  '<...as many SECTION blocks as the video actually earns, in its own order...>\n' +
-  'FACTS:\n' +
-  '- <a hard specific worth keeping: a name, a number, a date, a term, a claim>\n' +
-  '- <as many as the video genuinely gave, up to twelve. These are what fade first. Never repeat the CORE.>\n\n' + SHELF_RULES;
-
-/* Same three-state discipline the rest of the page runs on. A video with
-   nothing being SAID in it — a song, a match, an edit — must not come back
-   wearing a recap, and the model is the wrong thing to ask, because a model
-   with nothing to go on would still rather write something than admit it. */
-var RECAP_EMPTY =
-  '\n\nIf nothing is actually explained, taught or argued in this video — it is a song, a performance, a match, ' +
-  'a trailer, gameplay, or an edit set to music — then do NOT write a recap and do NOT invent one. ' +
-  'Reply with exactly this instead, and nothing else:\n' +
-  'SHELF: <the best-fitting shelf>\n' +
-  'NOTHING: <one sentence naming what this video actually is>';
-
-function parseRecap(t) {
-  var out = { shelf: '', core: '', open: '', sections: [], facts: [], nothing: '' };
-  var lines = String(t || '').split(/\r?\n/);
-  var mode = '', cur = null, buf = [];
-  function flushOpen() { if (mode === 'open') out.open = buf.join('\n').trim(); }
-  function flushSec() { if (cur) { cur.body = buf.join('\n').trim(); if (cur.h || cur.body) out.sections.push(cur); cur = null; } }
-  lines.forEach(function (ln) {
-    var s = ln.trim();
-    var m;
-    if ((m = s.match(/^SHELF\s*:\s*(.+)$/i))) { out.shelf = m[1].trim(); return; }
-    if ((m = s.match(/^NOTHING\s*:\s*(.+)$/i))) { out.nothing = m[1].trim(); return; }
-    if ((m = s.match(/^CORE\s*:\s*(.+)$/i))) { out.core = m[1].trim(); return; }
-    if (/^OPEN\s*:\s*$/i.test(s)) { flushSec(); mode = 'open'; buf = []; return; }
-    if ((m = s.match(/^OPEN\s*:\s*(.+)$/i))) { flushSec(); mode = 'open'; buf = [m[1].trim()]; return; }
-    if ((m = s.match(/^SECTION\s*:\s*(.*)$/i))) { flushOpen(); flushSec(); mode = 'sec'; cur = { h: m[1].trim(), body: '' }; buf = []; return; }
-    if (/^FACTS\s*:\s*$/i.test(s)) { flushOpen(); flushSec(); mode = 'facts'; buf = []; return; }
-    if (mode === 'facts') {
-      var f = s.match(/^[-•*–—]\s*(.+)$/);
-      if (f) out.facts.push(f[1].trim());
-      return;
-    }
-    if (!s) { buf.push(''); return; }
-    buf.push(s);
-  });
-  flushOpen(); flushSec();
-  out.open = String(out.open || '').replace(/\n{3,}/g, '\n\n').trim();
-  out.sections = out.sections.map(function (x) {
-    x.body = String(x.body || '').replace(/\n{3,}/g, '\n\n').trim(); return x;
-  }).filter(function (x) { return x.body || x.h; });
-  return out;
-}
-
-function recapWords(p) {
-  var t = [p.core, p.open].concat(p.sections.map(function (s) { return s.h + ' ' + s.body; })).concat(p.facts).join(' ');
-  return words(t);
-}
+var RECAP_SYS = rc.sysFor(SHELF_RULES);
+var RECAP_EMPTY = rc.EMPTY;
+var parseRecap = rc.parseRecap;
+var recapWords = rc.recapWords;
 
 /* A public watch URL, rebuilt from the id rather than trusted from the client.
    Gemini only accepts PUBLIC videos, and the id is the only part we need. */
