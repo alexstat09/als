@@ -56,7 +56,8 @@ const EXEMPT = new Set([
   'index.html',       // the Home tab
   'nova-chat.html',   // the Nova tab
   'health.html', 'bills.html', 'trends.html', // retired to redirects
-  'study.html',       // retired als-v447 → the Notion «Η ΧΡΟΝΙΑ»
+  // study.html is NOT exempt: it is a redirect stub, but it is also the app's
+  // only door to the Notion «Η ΧΡΟΝΙΑ», so it carries a real launcher entry.
   'istoria.html'      // retired als-v447 → arxaia.html (the one he uses)
 ]);
 const live = fs.readdirSync(ALS)

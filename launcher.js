@@ -88,6 +88,10 @@
       { href: 'finance.html', name: 'Money', k: null }
     ]},
     { name: 'Study', accent: 'emerald', items: [
+      // ext: opens in a new tab. study.html is a redirect stub to the Notion
+      // \u00ab\u0397 \u03a7\u03a1\u039f\u039d\u0399\u0391\u00bb workspace, and it uses location.replace() \u2014 so navigating the
+      // PWA to it in place would leave him off-site with no history to go back to.
+      { href: 'study.html',   name: '\u0397 \u03a7\u03c1\u03bf\u03bd\u03b9\u03ac', k: null, ext: true },
       { href: 'arxaia.html',  name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1',   k: null }
     ]},
     { name: 'Reflect', accent: 'coral', items: [
@@ -266,6 +270,7 @@ dialog.alx[open]{display:flex;align-items:flex-end;justify-content:center;}
       g.items.forEach(function (it) {
         var isHere = it.href.toLowerCase() === cur;
         html += '<a class="alx-r' + (isHere ? ' here' : '') + '" href="' + esc(it.href) + '" ' +
+                (it.ext ? 'target="_blank" rel="noopener" ' : '') +
                 'data-name="' + esc(it.name.toLowerCase()) + '"' + (it.k ? ' data-k="' + esc(it.k) + '"' : '') + '>' +
                 '<span class="d"></span><span class="n">' + esc(it.name) + '</span>' +
                 '<span class="a"></span></a>';

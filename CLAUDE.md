@@ -187,7 +187,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v447`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v448`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -568,36 +568,90 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v447` — THE STUDY SPACE IS ONE PAGE NOW** (2026-08-03, on `main`,
-pushed; 24 suites + smoke green — the 25th is the known date-dependent
-`goals-rhythm` assertion, which reads `main.html` and was untouched).
+**HEAD is `als-v448` — THE STUDY SPACE IS ONE PAGE AND ONE DOOR** (2026-08-03,
+on `main`, pushed; 24 suites + smoke green — the 25th is the known
+date-dependent `goals-rhythm` assertion, which reads `main.html` and was
+untouched).
+
+⭐⭐ **THE BIG THING THIS SESSION IS NOT IN THIS REPO.** «Η Χρονιά» was rebuilt
+**in Notion**, and the Notion MCP is now reachable from Claude Code — the blocker
+that parked this since als-v412 is **dead**. Read the section below before
+touching anything about studying.
+
+### The Notion workspace (built 2026-08-03, live)
+
+**«Η ΧΡΟΝΙΑ»** — `https://app.notion.com/p/3b1b261e904881eb9346c8ab8f18f167`.
+Workspace `Alex's Notion`, account **astathatos09@outlook.com** (⚠️ NOT his
+gmail). Children: **Data** (all 9 databases) · **Weekly Review** · **The Goal** ·
+**Archive**.
+
+- His locked decisions: **"Marble & serif"** (monochrome gray/brown, Unsplash
+  marble covers, almost no emoji) · **Greek content, English structure**
+  (property names and select options in English, subject/unit names in Greek) ·
+  one teacher so **no teacher field** · grades **out of 100** · φροντιστήριο only
+  for now, with a `Track` select ready for school in September.
+- ⭐ **Target = ΝΟΜΙΚΗ ΘΕΣΣΑΛΟΝΙΚΗΣ (ΑΠΘ, κωδ. 119), βάση 2025 = 17.280.**
+  Συντελεστές **Έκθεση 30% · Αρχαία 30% · Ιστορία 20% · Λατινικά 20%** — so
+  **Έκθεση is not a side subject**, it ties with Αρχαία, and he needs ~86,4%
+  weighted against a 20.000 ceiling. That framing is built into The Goal page.
+- **The engine is the Syllabus DB**: a spaced-repetition ladder, same night →
+  +3d → +10d → +30d → +90d, off `Taught on` + `Reviews`, surfaced as
+  **ΠΡΟΣ ΕΠΑΝΑΛΗΨΗ**. Proven live by marking a unit taught-today, seeing it
+  appear, then reverting the row.
+- Seeded: 4 subjects · **Ιστορία's 5 ενότητες only** · all 15 Θ1 timetable slots
+  · the Target row. **Αρχαία/Λατινικά/Έκθεση ύλη is deliberately EMPTY** until
+  he sends the φροντιστήριο's official list — never invent it.
+
+⚠️ **Notion API gotchas, learned by hitting them:** formulas cannot
+forward-reference another formula in the same `CREATE TABLE`; **`dateBetween()`
+rejects a `date | empty` value**, so coerce inside with
+`if(empty(prop("X")), now(), prop("X"))` (an outer `if(empty(...))` guard does
+NOT narrow the type); page icons must be a real emoji (`◇ ◐ ○` return 400);
+use `SELECT`, never `STATUS` (the DDL cannot seed custom status options);
+`replace_content` refuses to orphan child pages, so include their `<page url>`
+tags; **block order after `replace_content` is not guaranteed — re-fetch and
+verify**; linked views created with `parent_page_id` always **append**, so
+alternate `insert_content` (heading) → `create_view`; and buttons/automations
+cannot be created at all.
+
+### What changed in this repo
 
 Alex: *"retire the study html and the history one because i never touched those
-two, KEEP ONLY the ancient greek."*
+two, KEEP ONLY the ancient greek"*, then *"add a door to the notion from inside
+the app."*
 
-- **`study.html` → the Notion «Η ΧΡΟΝΙΑ»**, `3b1b261e-9048-81eb-9346-c8ab8f18f167`.
-  It is the only redirect in this repo that points **off-site**, and deliberately
-  so: the successor is not a sibling page, it is that workspace. Built the same
-  day — 9 databases, a spaced-repetition ladder (same night → +3d → +10d → +30d
-  → +90d), the live Θ1 timetable, a countdown to 2027-05-28, and the ΑΠΘ Νομική
-  target (βάση 17.280; **Έκθεση 30% = Αρχαία 30%**, Ιστορία/Λατινικά 20%).
+- **`study.html` → the Notion page.** The **only off-site redirect in the repo**,
+  deliberately: the successor is not a sibling page. It **owns the workspace
+  URL** — every door points at this stub rather than repeating the id, so if that
+  page ever moves there is one file to change.
 - **`istoria.html` → `arxaia.html`**, the one study tool he actually uses.
 - ⚠️ **NEITHER IS A DATA DELETION.** `istoria:v1` and the seven `study:*` keys
   stay in localStorage, in their Supabase rows and in the Vault; the `istoria`
   engine stays declared in `sync.js` and both keys stay in `backup.html`'s
   `BUNDLES`, so they remain restorable. Nothing is tombstoned. Reviving either
   page is `git revert` + an SW bump, with progress intact.
-- Repointed: Home's Study section (one tile left), `launcher.js`, `home-motion.js`'s
-  search index, and `home-live.js`'s `metric()` case. `tests/home-tiles.test.js`
-  drops `istoria.html` from `DESTS`; **both files were added to
-  `tests/launcher.test.js`'s `EXEMPT`** — that suite fails on any live `.html`
-  with no launcher entry, and a retired stub is exactly the exception it carries
-  for `health`/`bills`/`trends`.
-- Both stubs **stay in `sw.js` `CORE`**, same as the other retired pages, so the
-  redirect still works offline.
-- 🔴 **Unproven on his phone.** He needs a full PWA reopen for `als-v447`. Open,
-  and his call: there is now **no door to Notion from inside the app** — a Home
-  tile pointing at `study.html` (which redirects) would restore one in a minute.
+- **The door (als-v448), in all three places a page is findable**: a Home tile in
+  the Study space, a `launcher.js` row, and `home-motion.js`'s search index.
+  ⭐ **All three carry `target="_blank"`**, via a new `ext: true` flag on the
+  launcher item — the stub uses `location.replace()`, so navigating the installed
+  PWA to it in place would strand him off-site **with no history to go back to**.
+- `home-live.js`'s `metric()` lost its `istoria.html` case;
+  `tests/home-tiles.test.js` dropped it from `DESTS`.
+- ⚠️ **`tests/launcher.test.js` has an `EXEMPT` set and it matters**: that suite
+  fails on any live `.html` with no launcher entry, and **a retired stub is still
+  a live file**. `istoria.html` is exempt; `study.html` is deliberately **not**,
+  because it has a real entry now. Add every future redirect there.
+- Both stubs **stay in `sw.js` `CORE`**, like the other retired pages, so the
+  redirect works offline.
+
+Verified: 403 links, `SMOKE_OK`, launcher 72/72, home-tiles 75/75, and the Study
+section rendered headless — exactly two tiles (456×148, stacked, no overlap),
+`study.html` carrying `target="_blank" rel="noopener"`.
+
+🔴 **Unproven on his phone.** He needs a full PWA reopen for `als-v448`.
+🔴 **Still owed by him, for the Notion side:** set the page font to **Serif**
+(the API cannot), add the two database templates (Exams post-mortem, Weekly
+Review), and send the **ύλη for Αρχαία, Λατινικά and Έκθεση**.
 
 ---
 
