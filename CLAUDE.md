@@ -539,8 +539,12 @@ read-fraction, current book pulses, tap-to-filter), the S.O.A.P. journal, streak
 + Mon–Sun week. His notebook history + the 4 finished Gospels are seeded. Synced
 via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 
-**Study** — `arxaia.html` **only**. `istoria.html` and `study.html` were retired
-to redirects in **als-v447** (see §5): Alex never opened either, and «Η Χρονιά»
+**Study** — `arxaia.html` and **`latinika.html`** (als-v449). Λατινικά is the one
+subject a computer can know *exactly*, so the page is a **drill, not a notebook**:
+`latin-engine.js` derives every form from rules, generates unlimited exercises,
+grades them itself, and keeps a per-CELL mastery map (γεν. πληθ. γ΄ κλίσης, not
+"nouns"). Notion owns the plan; this owns the practice. `istoria.html` and
+`study.html` were retired to redirects in **als-v447** (see §5): Alex never opened either, and «Η Χρονιά»
 now lives in Notion. Their data (`istoria:v1`, the seven `study:*` keys) is
 untouched in Supabase and the Vault.
 
@@ -567,6 +571,90 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**HEAD is `als-v449` — ΛΑΤΙΝΙΚΑ: THE SUBJECT A COMPUTER CAN KNOW EXACTLY**
+(2026-08-03, on `main`, pushed; 25 suites + smoke green — the 26th is the known
+date-dependent `goals-rhythm`, which reads `main.html` and was untouched).
+
+Alex asked for "ένα τέλειο page" for studying and said he was too bored to decide
+what goes in it. The answer came from what makes Λατινικά different from his
+other three subjects: **its morphology is deterministic.** Ιστορία needs verbatim
+content and Αρχαία needs vocabulary, but given a lemma, a genitive and a pattern,
+every Latin form is computable — so the page does not store notes, it **examines
+him and knows which cell he misses.**
+
+### The architecture, and why the engine is a separate file
+`latin-engine.js` is DOM-free so `tests/latin-engine.test.js` can check it.
+**A generator that emits a wrong form teaches a wrong form with total
+confidence**, so three rules are load-bearing:
+1. **A pattern is drillable only if it is in `VERIFIED`, and a pattern only gets
+   into `VERIFIED` once this test file holds a full HAND-WRITTEN paradigm for
+   it.** The last assertion in the suite compares the two sets, so adding a
+   pattern without its table fails the build. 15 patterns, 137 assertions.
+2. **Irregulars are literal tables** (`sum`, `possum`), never generated.
+3. ⭐ **`uniqueForms()` / `uniqueVerbForms()` gate the "τι τύπος είναι;"
+   question.** `fugae` is gen.sg AND dat.sg AND nom.pl AND voc.pl; `legit` is
+   present AND perfect; `legeris` sits in three cells at once. Asking about any
+   of them has no single right answer, and **marking a right answer wrong is
+   worse than not asking.** They are excluded by construction.
+
+⭐⭐ **THE TEST SUITE CAUGHT A REAL BUG ON ITS FIRST RUN, and it was mine.** The
+passive future perfect took `-erint` for its auxiliary. The auxiliary is **sum in
+the matching tense**, and the FUTURE of sum ends `-erunt`: `nuntiati erunt`, not
+`nuntiati erint`, which is not a Latin form at all. `-erint` belongs to the
+*active* future perfect (`nuntiaverint`). Five patterns were wrong and every one
+would have been taught as fact. **The hand-written table was the only thing that
+could see it** — regenerating expectations from the engine would have agreed with
+the bug perfectly.
+
+### What is in the page
+Opens straight into `Σήμερα · 12 ερωτήσεις`, never a menu. Three modes:
+**Γρήγορο** (adaptive, weighted to weak and due cells), **Κλίση ολόκληρη**
+(fill the whole table, graded cell by cell with the answer under each miss), and
+**Ο Χάρτης** — the signature: the paradigm grid IS the chart, each cell tinted
+coral→emerald by his own accuracy, so `ΓΕΝ ΠΛΗΘ 30%` reads at a glance.
+- **Spaced repetition uses the SAME ladder as the Notion Syllabus DB** (same
+  night → +3 → +10 → +30 → +90). One system, two homes.
+- ⭐ **Distractors come from neighbouring cells of the SAME word** (`iubemur`,
+  `iubentur`, `iubetis` against `iussit`), so recognition alone cannot get him
+  there. Verified in a driven browser render, not asserted.
+- **Tap-first, typing optional.** Latin on a Greek iPhone keyboard means a
+  language switch per question; he would abandon it in three days.
+- **Mastery is keyed by PATTERN, not by word**, so "γεν. πληθ. γ΄ κλίσης"
+  carries from `hostis` to the next third-declension noun he meets.
+
+### The ύλη, and the rule it obeys
+Seeded with **the ten words from his own 03/08 exercise only** — the ones we
+checked together — and seeding is **empty-only**, so a synced device never
+re-seeds. Everything else he adds himself: lemma + genitive (or the four
+principal parts), with the **full paradigm previewed live** so he can check it
+against the φροντιστήριο's sheet before saving. Same rule as the Notion side:
+**never invent his ύλη.**
+
+### Wiring (a synced key lives in THREE places, plus the three a page is findable)
+`lat:v1` / appKey `latinika` → the page's `initCloudSync`, `backup.html`
+`BUNDLES`, and `api/mcp.js` `BUNDLE` (so a future session can read his progress).
+Findable from the Home tile, the `launcher.js` row (Greek as `\u` escapes) and
+`home-motion.js`'s search index. `home-live.js` `metric()` gained a
+`latinika.html` case — **all four locals are prefixed `lat*`**, because
+constraint 14 was earned in that exact function. `sw.js` `CORE` carries the page
+and the engine; `CACHE` → `als-v449`.
+⚠️ The Study space's two drill tools are now a **pair** of half-width tiles; only
+Η Χρονιά keeps the wide slot. `arxaia.html` lost its `w2`.
+
+### 🔴 Open
+- 🔴 **Unproven on his phone.** Verified by 137 engine assertions, a driven
+  headless render of the quiz (correct AND miss states), the full-declension
+  grader for both a noun and a verb, and the map computing a three-declension
+  aggregate correctly. **No finger has touched it.** Full PWA reopen needed.
+- 🔴 **Still owed by him: the φροντιστήριο's Λατινικά ύλη**, which is what turns
+  ten words into a real syllabus. Not a blocker — he can add words himself.
+- **Phase 2, deliberately not built:** επίθετα + παραθετικά, αντωνυμίες,
+  μετοχές/απαρέμφατα. Phase 3 (συντακτικό) needs the official texts.
+- ⚠️ **`arxaia.html`'s 31-day plan is bound to JULY dates and has expired** — it
+  shows "Μέρα 1" forever now. Found while working next to it, not fixed here.
+
+---
 
 **HEAD is `als-v448` — THE STUDY SPACE IS ONE PAGE AND ONE DOOR** (2026-08-03,
 on `main`, pushed; 24 suites + smoke green — the 25th is the known

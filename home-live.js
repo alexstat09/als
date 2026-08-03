@@ -172,6 +172,15 @@
           return { hero: '—', note: 'your story' };
         }
         case 'insights.html': { var n = 0; try { if (window.ALSInsights) n = (window.ALSInsights.compute() || []).length; } catch (e) { } return n ? { hero: n, note: 'patterns found' } : { hero: '—', note: 'connecting' }; }
+        case 'latinika.html': {
+          var latSt = ls('lat:v1', {}); var latCells = latSt.cells || []; var latR = 0, latW = 0;
+          for (var li = 0; li < latCells.length; li++) { latR += (+latCells[li].r || 0); latW += (+latCells[li].w || 0); }
+          var latT = latR + latW;
+          /* '—' when nothing has been answered: a placeholder is never formatted
+             into a number here (the als-v433 rule). */
+          return latT ? { hero: Math.round(latR / latT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03ba\u03bb\u03af\u03c3\u03b7' }
+                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+        }
         case 'arxaia.html': { var st = ls('arxaia:v1', {}); var days2 = st.days || {}; var dd = 0; for (var n1 = 1; n1 <= 31; n1++) { if (days2[n1] && days2[n1].done) dd++; } var day = Math.min(dd + 1, 31); return dd ? { hero: day, unit: '/ 31', note: 'Άγνωστο · SOS' } : { hero: 1, unit: '/ 31', note: 'Άγνωστο · start' }; }
       }
     } catch (e) { }

@@ -92,7 +92,8 @@
       // \u00ab\u0397 \u03a7\u03a1\u039f\u039d\u0399\u0391\u00bb workspace, and it uses location.replace() \u2014 so navigating the
       // PWA to it in place would leave him off-site with no history to go back to.
       { href: 'study.html',   name: '\u0397 \u03a7\u03c1\u03bf\u03bd\u03b9\u03ac', k: null, ext: true },
-      { href: 'arxaia.html',  name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1',   k: null }
+      { href: 'arxaia.html',  name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1',   k: null },
+      { href: 'latinika.html', name: '\u039b\u03b1\u03c4\u03b9\u03bd\u03b9\u03ba\u03ac', k: 'lat:v1' }
     ]},
     { name: 'Reflect', accent: 'coral', items: [
       { href: 'morning.html', name: 'Morning briefing', k: null },

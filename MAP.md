@@ -69,7 +69,12 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
-**Study** — `arxaia.html` (Αρχαία) is the only study page left. `istoria.html`
+**Study** — `arxaia.html` (Αρχαία) and `latinika.html` (Λατινικά, als-v449) are
+the study pages. Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
+every declension and conjugation from rules, so the page can generate unlimited
+exercises AND grade them, and the heatmap shows which cell he actually misses.
+A pattern is only drillable once `tests/latin-engine.test.js` holds a
+hand-verified paradigm for it. Key `lat:v1`, appKey `latinika`. `istoria.html`
 and `study.html` («Η Χρονιά») were **retired to redirects als-v447** — he never
 used either. Ιστορία → `arxaia.html`; Η Χρονιά → the Notion **«Η ΧΡΟΝΙΑ»**
 workspace, which replaced it. `istoria:v1` and the seven `study:*` keys are

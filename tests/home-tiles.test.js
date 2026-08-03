@@ -68,6 +68,7 @@ const DATA = {
   'caf:logs': JSON.stringify([{ ts: new Date(TODAY + 'T08:00:00').getTime(), mg: 150 }]),
   'goal_streak_v1': JSON.stringify({ count: 12 }),
   'arxaia:v1': JSON.stringify({ days: { 1: { done: true } } }),
+  'lat:v1': JSON.stringify({ cells: [{ id: 'n3:gen:pl', r: 7, w: 3 }] }),
   'istoria:v1': JSON.stringify({ seen: { t1: { c: 2 } }, miss: {} }),
   ['goals:' + TODAY]: JSON.stringify([{ done: true }, { done: false }])
 };
@@ -95,7 +96,7 @@ const api = loadMetric();
 const DESTS = ['gym.html', 'pr.html', 'sleep.html', 'nutrition.html', 'supps.html',
   'measure.html', 'weight.html', 'caffeine.html', 'main.html', 'identity.html',
   'ideas.html', 'improve.html', 'finance.html', 'movies.html', 'run.html',
-  'arc.html', 'insights.html', 'arxaia.html'];
+  'arc.html', 'insights.html', 'arxaia.html', 'latinika.html'];
 
 DESTS.forEach(h => {
   let m, err = null;
