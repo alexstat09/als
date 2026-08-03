@@ -187,7 +187,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v444`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v447`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -539,8 +539,10 @@ read-fraction, current book pulses, tap-to-filter), the S.O.A.P. journal, streak
 + Mon–Sun week. His notebook history + the 4 finished Gospels are seeded. Synced
 via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 
-**Study** — `arxaia.html`, `istoria.html`, and `study.html` (the Πανελλήνιες
-command center «Η Χρονιά»; see §5 — live but its direction has pivoted to Notion).
+**Study** — `arxaia.html` **only**. `istoria.html` and `study.html` were retired
+to redirects in **als-v447** (see §5): Alex never opened either, and «Η Χρονιά»
+now lives in Notion. Their data (`istoria:v1`, the seven `study:*` keys) is
+untouched in Supabase and the Vault.
 
 **Nova** — `nova-chat.html` plus `api/nova-chat.js`. Four read-only tools, every
 result bound. Empty is not an error and she must never invent a number.
@@ -566,7 +568,40 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v446` — THE TIKTOK WORLD CAN BE WATCHED TOO** (2026-07-31,
+**HEAD is `als-v447` — THE STUDY SPACE IS ONE PAGE NOW** (2026-08-03, on `main`,
+pushed; 24 suites + smoke green — the 25th is the known date-dependent
+`goals-rhythm` assertion, which reads `main.html` and was untouched).
+
+Alex: *"retire the study html and the history one because i never touched those
+two, KEEP ONLY the ancient greek."*
+
+- **`study.html` → the Notion «Η ΧΡΟΝΙΑ»**, `3b1b261e-9048-81eb-9346-c8ab8f18f167`.
+  It is the only redirect in this repo that points **off-site**, and deliberately
+  so: the successor is not a sibling page, it is that workspace. Built the same
+  day — 9 databases, a spaced-repetition ladder (same night → +3d → +10d → +30d
+  → +90d), the live Θ1 timetable, a countdown to 2027-05-28, and the ΑΠΘ Νομική
+  target (βάση 17.280; **Έκθεση 30% = Αρχαία 30%**, Ιστορία/Λατινικά 20%).
+- **`istoria.html` → `arxaia.html`**, the one study tool he actually uses.
+- ⚠️ **NEITHER IS A DATA DELETION.** `istoria:v1` and the seven `study:*` keys
+  stay in localStorage, in their Supabase rows and in the Vault; the `istoria`
+  engine stays declared in `sync.js` and both keys stay in `backup.html`'s
+  `BUNDLES`, so they remain restorable. Nothing is tombstoned. Reviving either
+  page is `git revert` + an SW bump, with progress intact.
+- Repointed: Home's Study section (one tile left), `launcher.js`, `home-motion.js`'s
+  search index, and `home-live.js`'s `metric()` case. `tests/home-tiles.test.js`
+  drops `istoria.html` from `DESTS`; **both files were added to
+  `tests/launcher.test.js`'s `EXEMPT`** — that suite fails on any live `.html`
+  with no launcher entry, and a retired stub is exactly the exception it carries
+  for `health`/`bills`/`trends`.
+- Both stubs **stay in `sw.js` `CORE`**, same as the other retired pages, so the
+  redirect still works offline.
+- 🔴 **Unproven on his phone.** He needs a full PWA reopen for `als-v447`. Open,
+  and his call: there is now **no door to Notion from inside the app** — a Home
+  tile pointing at `study.html` (which redirects) would restore one in a minute.
+
+---
+
+**Before that — `als-v446` — THE TIKTOK WORLD CAN BE WATCHED TOO** (2026-07-31,
 `607e65a` on `main`, pushed; **26 suites** + smoke green;
 `tests/tiktok-recap.test.js` = 96 assertions; **verified live end to end**).
 Alex: *"look what we did with youtube, about the gemini doing the notes… add it

@@ -95,7 +95,7 @@ const api = loadMetric();
 const DESTS = ['gym.html', 'pr.html', 'sleep.html', 'nutrition.html', 'supps.html',
   'measure.html', 'weight.html', 'caffeine.html', 'main.html', 'identity.html',
   'ideas.html', 'improve.html', 'finance.html', 'movies.html', 'run.html',
-  'arc.html', 'insights.html', 'arxaia.html', 'istoria.html'];
+  'arc.html', 'insights.html', 'arxaia.html'];
 
 DESTS.forEach(h => {
   let m, err = null;

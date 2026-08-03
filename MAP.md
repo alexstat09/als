@@ -69,7 +69,11 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
-**Study** — `arxaia.html` (Αρχαία), `istoria.html` (Ιστορία).
+**Study** — `arxaia.html` (Αρχαία) is the only study page left. `istoria.html`
+and `study.html` («Η Χρονιά») were **retired to redirects als-v447** — he never
+used either. Ιστορία → `arxaia.html`; Η Χρονιά → the Notion **«Η ΧΡΟΝΙΑ»**
+workspace, which replaced it. `istoria:v1` and the seven `study:*` keys are
+untouched in Supabase and in the Vault.
 
 **Tools** — `import.html` (MyFitnessPal), `import-strong.html` (Strong), `backup.html` (backup & restore).
 

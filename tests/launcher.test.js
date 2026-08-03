@@ -55,7 +55,9 @@ is('every href points at a file that exists', missing, []);
 const EXEMPT = new Set([
   'index.html',       // the Home tab
   'nova-chat.html',   // the Nova tab
-  'health.html', 'bills.html', 'trends.html' // retired to redirects
+  'health.html', 'bills.html', 'trends.html', // retired to redirects
+  'study.html',       // retired als-v447 → the Notion «Η ΧΡΟΝΙΑ»
+  'istoria.html'      // retired als-v447 → arxaia.html (the one he uses)
 ]);
 const live = fs.readdirSync(ALS)
   .filter(f => f.endsWith('.html'))

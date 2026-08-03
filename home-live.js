@@ -173,7 +173,6 @@
         }
         case 'insights.html': { var n = 0; try { if (window.ALSInsights) n = (window.ALSInsights.compute() || []).length; } catch (e) { } return n ? { hero: n, note: 'patterns found' } : { hero: '—', note: 'connecting' }; }
         case 'arxaia.html': { var st = ls('arxaia:v1', {}); var days2 = st.days || {}; var dd = 0; for (var n1 = 1; n1 <= 31; n1++) { if (days2[n1] && days2[n1].done) dd++; } var day = Math.min(dd + 1, 31); return dd ? { hero: day, unit: '/ 31', note: 'Άγνωστο · SOS' } : { hero: 1, unit: '/ 31', note: 'Άγνωστο · start' }; }
-        case 'istoria.html': { var st2 = ls('istoria:v1', {}); var seen = st2.seen || {}, miss = st2.miss || {}, terms = 0; for (var k in seen) { if (/^t/.test(k) && seen[k].c >= 2 && !(miss[k] > 0)) terms++; } return terms ? { hero: terms, unit: 'όροι', note: 'Προσφυγικό' } : { hero: '—', note: 'Προσφυγικό' }; }
       }
     } catch (e) { }
     return null;
