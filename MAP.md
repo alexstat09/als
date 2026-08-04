@@ -10,7 +10,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 
 ---
 
-## The 34 live pages
+## The 35 live pages
 
 **Home & shell**
 | Page | What it is |
@@ -69,8 +69,14 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
-**Study** — `arxaia.html` (Αρχαία) and `latinika.html` (Λατινικά, als-v449) are
-the study pages. Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
+**Study** — `arxaia.html` (Αρχαία), `latinika.html` (Λατινικά, als-v449) and
+`tonos.html` (Τονισμός, als-v450) are the study pages. **Τονισμός is the same
+shape as Λατινικά**: `tonos-engine.js` reads a hand-accented word apart with
+Unicode combining marks, derives its syllables, accent position, breathing and
+name, and then CHECKS all of it against the three laws — so a wrong quantity
+declaration fails the build instead of teaching him a wrong accent. The corpus
+declares only what no rule can derive (the quantity of a δίχρονο α/ι/υ). Mastery
+is per RULE, not per word. Key `ton:v1`, appKey `tonos`. Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
 every declension and conjugation from rules, so the page can generate unlimited
 exercises AND grade them, and the heatmap shows which cell he actually misses.
 A pattern is only drillable once `tests/latin-engine.test.js` holds a

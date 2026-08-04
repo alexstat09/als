@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Τονισμός">
+  <title>Τονισμός · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <!-- Cloud sync από την πρώτη μέρα: μια σελίδα μελέτης που ζει μόνο στο
+       κινητό χάνει τα πάντα σε επανεγκατάσταση του PWA. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="tonos-engine.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.tn-hero,.tn-today,.tn-map,.tn-rules,.tn-words,.tn-foot';</script>
+  <script src="page-motion.js" defer></script>
+<style>
+  :root{ --tn:229,184,110; --warn:255,138,107; --good:63,224,176; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .tn-wrap{ max-width:600px; margin:0 auto; padding:0 18px; }
+  .gr{ font-family:var(--au-serif,Georgia,serif); }
+
+  /* ── hero ─────────────────────────────────────────── */
+  .tn-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
+  .tn-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--tn),.92); margin-bottom:12px; }
+  .tn-h{ font-family:var(--au-serif,Georgia,serif); font-weight:400;
+    font-size:clamp(27px,7vw,36px); line-height:1.06; letter-spacing:-.01em; }
+  .tn-h b{ font-weight:400; color:rgb(var(--tn)); font-variant-numeric:tabular-nums; }
+  .tn-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.55; }
+  .tn-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* ── σήμερα ───────────────────────────────────────── */
+  .tn-today{ margin-top:22px; }
+  .tn-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--tn),.28);
+    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer;
+    background:linear-gradient(140deg,rgba(var(--tn),.13),rgba(var(--tn),.03) 60%,transparent);
+    transition:transform .38s cubic-bezier(.16,1,.3,1),border-color .38s; }
+  .tn-cta:active{ transform:scale(.985); }
+  .tn-cta:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:3px; }
+  .tn-cta-l{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; color:rgba(var(--tn),.9); }
+  .tn-cta-t{ font-family:var(--au-serif,Georgia,serif); font-size:25px; margin-top:7px; }
+  .tn-cta-m{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:5px; }
+  .tn-modes{ display:flex; gap:8px; margin-top:12px; }
+  .tn-mode{ flex:1; border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    border-radius:12px; padding:11px 6px; font-size:11.5px; font-family:inherit; cursor:pointer;
+    transition:color .3s,border-color .3s; }
+  .tn-mode:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(var(--tn),.4); }
+  .tn-mode:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+
+  /* ── κεφαλίδα ενότητας ────────────────────────────── */
+  .tn-sh{ display:flex; align-items:baseline; gap:10px; margin:34px 0 14px; }
+  .tn-sh h2{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:21px; }
+  .tn-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); margin-left:auto; }
+
+  /* ── ο χάρτης ─────────────────────────────────────── */
+  .tn-cells{ display:flex; flex-direction:column; gap:5px; }
+  .tn-cell{ display:flex; align-items:center; gap:12px; border:1px solid var(--au-line,#26262f);
+    border-radius:12px; padding:12px 14px; background:rgba(255,255,255,.014);
+    width:100%; color:inherit; font-family:inherit; text-align:left; cursor:pointer; }
+  .tn-cell:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+  .tn-cell .lb{ font-size:14px; }
+  .tn-cell .bar{ margin-left:auto; width:64px; height:6px; border-radius:4px;
+    background:rgba(255,255,255,.07); overflow:hidden; flex:none; }
+  .tn-cell .bar i{ display:block; height:100%; border-radius:4px; }
+  .tn-cell .pc{ font-family:var(--au-mono,monospace); font-size:11px; width:42px; text-align:right;
+    color:var(--au-faint,#5c5964); font-variant-numeric:tabular-nums; flex:none; }
+  .tn-legend{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:11px; color:var(--au-faint,#5c5964); }
+  .tn-lg{ width:44px; height:7px; border-radius:4px;
+    background:linear-gradient(90deg,rgba(var(--warn),.75),rgba(255,255,255,.14),rgba(var(--good),.8)); }
+
+  /* ── ο κανόνας (η επανάληψη) ──────────────────────── */
+  .tn-rules details{ border:1px solid var(--au-line,#26262f); border-radius:14px; margin-bottom:8px;
+    background:rgba(255,255,255,.012); overflow:hidden; }
+  .tn-rules summary{ padding:14px 16px; cursor:pointer; font-size:14px; list-style:none;
+    display:flex; align-items:center; gap:10px; }
+  .tn-rules summary::-webkit-details-marker{ display:none; }
+  .tn-rules summary::after{ content:'+'; margin-left:auto; color:rgba(var(--tn),.8);
+    font-family:var(--au-mono,monospace); font-size:15px; }
+  .tn-rules details[open] summary::after{ content:'−'; }
+  .tn-rb{ padding:0 16px 16px; font-size:13.5px; line-height:1.7; color:var(--au-dim,#9a97a3); }
+  .tn-rb b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .tn-rb i{ font-family:var(--au-serif,Georgia,serif); font-style:normal; color:rgb(var(--tn)); }
+  .tn-rb p{ margin-bottom:10px; }
+  .tn-rb p:last-child{ margin-bottom:0; }
+  .tn-rb table{ width:100%; border-collapse:collapse; margin:4px 0 12px; }
+  .tn-rb th{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); text-align:left; font-weight:400; padding:0 8px 6px 0; }
+  .tn-rb td{ padding:6px 8px 6px 0; border-top:1px solid var(--au-line,#26262f); vertical-align:top; font-size:13px; }
+  .tn-rb .warn{ color:rgb(var(--warn)); }
+
+  /* ── λέξεις ───────────────────────────────────────── */
+  .tn-words ul{ list-style:none; display:flex; flex-direction:column; gap:1px;
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .tn-w{ display:flex; align-items:center; gap:12px; padding:11px 14px; background:rgba(255,255,255,.014);
+    width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer; }
+  .tn-w:hover{ background:rgba(var(--tn),.05); }
+  .tn-w:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:-2px; }
+  .tn-w .l{ font-family:var(--au-serif,Georgia,serif); font-size:18px; }
+  .tn-w .g{ font-size:12px; color:var(--au-dim,#9a97a3); }
+  .tn-w .t{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); white-space:nowrap; }
+  .tn-more{ width:100%; margin-top:10px; border:1px dashed var(--au-line,#26262f); background:transparent;
+    color:var(--au-dim,#9a97a3); border-radius:12px; padding:12px; font-family:inherit; font-size:12.5px; cursor:pointer; }
+  .tn-more:hover{ color:rgb(var(--tn)); border-color:rgba(var(--tn),.4); }
+  .tn-more:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+
+  .tn-foot{ margin:30px 0 0; font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.65; }
+
+  /* ── συνεδρία ─────────────────────────────────────── */
+  .tn-sess{ position:fixed; inset:0; z-index:60; background:var(--au-void,#050506);
+    display:none; flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px); }
+  .tn-sess.on{ display:flex; }
+  .tn-sbar{ display:flex; align-items:center; gap:12px; }
+  .tn-x{ width:34px; height:34px; border-radius:50%; border:1px solid var(--au-line,#26262f);
+    background:transparent; color:var(--au-dim,#9a97a3); font-size:15px; cursor:pointer; flex:none; }
+  .tn-x:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+  .tn-prog{ flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; }
+  /* Σταθερό πλάτος + scaleX: κινούμε μόνο transform (GPU), ποτέ layout. */
+  .tn-prog i{ display:block; height:100%; width:100%; background:rgb(var(--tn));
+    transform:scaleX(0); transform-origin:left; transition:transform .45s cubic-bezier(.16,1,.3,1); }
+  .tn-count{ font-family:var(--au-mono,monospace); font-size:11px; color:var(--au-faint,#5c5964);
+    font-variant-numeric:tabular-nums; flex:none; }
+
+  /* ⚠️ flex:1 1 auto + min-height:0, ΠΟΤΕ flex:1 σε δοχείο με αόριστο ύψος
+     (σταθερή αρχή 13 — ο iOS Safari το καταρρέει στο μηδέν). */
+  .tn-qwrap{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; flex-direction:column; justify-content:center;
+    max-width:520px; width:100%; margin:0 auto; padding:14px 0 4px; }
+  .tn-qtag{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--tn),.85); margin-bottom:14px; }
+  .tn-qword{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(32px,10vw,48px); line-height:1.05; }
+  .tn-qstate{ font-size:16px; line-height:1.5; }
+  .tn-qgloss{ font-size:12.5px; color:var(--au-faint,#5c5964); margin-top:8px; }
+  .tn-qask{ font-size:15px; color:var(--au-dim,#9a97a3); margin-top:14px; line-height:1.5; }
+  .tn-qask b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .tn-opts{ display:flex; flex-direction:column; gap:9px; margin-top:22px; }
+  .tn-opt{ border:1px solid var(--au-line,#26262f); background:rgba(255,255,255,.02); color:var(--au-ivory,#f5f2ec);
+    border-radius:14px; padding:15px 17px; font-family:var(--au-serif,Georgia,serif); font-size:21px;
+    text-align:left; cursor:pointer; transition:border-color .3s,background .3s,transform .3s cubic-bezier(.16,1,.3,1); }
+  .tn-opt.plain{ font-family:inherit; font-size:15px; }
+  .tn-opt:active{ transform:scale(.99); }
+  .tn-opt:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+  .tn-opt.ok{ border-color:rgba(var(--good),.75); background:rgba(var(--good),.12); color:rgb(var(--good)); }
+  .tn-opt.no{ border-color:rgba(var(--warn),.7); background:rgba(var(--warn),.1); color:rgb(var(--warn)); }
+  .tn-opt[disabled]{ cursor:default; }
+  .tn-feed{ margin-top:16px; min-height:44px; font-size:13.5px; color:var(--au-dim,#9a97a3); line-height:1.55; }
+  .tn-feed .v{ color:rgb(var(--good)); font-weight:600; }
+  .tn-feed .x{ color:rgb(var(--warn)); font-weight:600; }
+  .tn-next{ width:100%; border:1px solid rgba(var(--tn),.35); background:rgba(var(--tn),.1); color:rgb(var(--tn));
+    border-radius:14px; padding:15px; font-family:inherit; font-size:14px; cursor:pointer; visibility:hidden; flex:none; }
+  .tn-next.on{ visibility:visible; }
+  .tn-next:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+
+  /* σύνοψη */
+  .tn-sum{ text-align:center; padding:10px 0; }
+  .tn-sum .big{ font-family:var(--au-serif,Georgia,serif); font-size:64px; line-height:1;
+    font-variant-numeric:tabular-nums; }
+  .tn-sum .big small{ font-size:24px; color:var(--au-dim,#9a97a3); }
+  .tn-sum .msg{ color:var(--au-dim,#9a97a3); font-size:14px; margin-top:14px; line-height:1.55; }
+  .tn-miss{ text-align:left; margin-top:20px; display:flex; flex-direction:column; gap:8px; }
+  .tn-miss div{ border-top:1px solid var(--au-line,#26262f); padding-top:8px; font-size:13px;
+    color:var(--au-dim,#9a97a3); line-height:1.5; }
+  .tn-miss b{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:17px;
+    color:rgb(var(--tn)); display:block; margin-bottom:2px; }
+
+  /* ⚠️ Σταθερή αρχή 4: το page-level *{margin:0} σκοτώνει το dialog{margin:auto}
+     του browser, οπότε το κεντράρουμε ρητά. Και το display ΜΟΝΟ σε [open]. */
+  dialog.tn-dlg{ border:1px solid var(--au-line,#26262f); background:var(--au-ink,#0c0c11);
+    color:var(--au-ivory,#f5f2ec); border-radius:18px; padding:0; max-width:min(94vw,440px); width:100%;
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); }
+  dialog.tn-dlg[open]{ display:block; }
+  dialog.tn-dlg::backdrop{ background:rgba(0,0,0,.72); }
+  .tn-dbody{ padding:20px; display:flex; flex-direction:column; gap:12px; max-height:78vh; overflow:auto; }
+  .tn-dbody h3{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:30px; }
+  .tn-dbody .gl{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:-6px; }
+  .tn-ref{ display:flex; flex-direction:column; gap:0; }
+  .tn-ref .r{ display:grid; grid-template-columns:104px 1fr; gap:10px; align-items:baseline;
+    border-top:1px solid var(--au-line,#26262f); padding:7px 0; }
+  .tn-ref .r:first-child{ border-top:none; }
+  .tn-ref .k{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); }
+  .tn-ref .v{ font-size:14px; }
+  .tn-ref .v em{ font-style:normal; color:rgb(var(--tn)); }
+  .tn-dact button{ width:100%; border-radius:12px; padding:13px; font-family:inherit; font-size:13.5px; cursor:pointer;
+    border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3); }
+  .tn-dact button:focus-visible{ outline:2px solid rgb(var(--tn)); outline-offset:2px; }
+
+  .tn-toast{ position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(10px); z-index:80; opacity:0; pointer-events:none;
+    background:var(--au-ink,#0c0c11); border:1px solid var(--au-line,#26262f); border-radius:12px;
+    padding:11px 16px; font-size:13px; color:var(--au-ivory,#f5f2ec); max-width:90vw; text-align:center;
+    transition:opacity .3s,transform .3s cubic-bezier(.16,1,.3,1); }
+  .tn-toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+
+<div class="tn-wrap">
+
+  <header class="tn-hero" data-rise>
+    <div class="tn-eyebrow">Αρχαία · ο τονισμός</div>
+    <h1 class="tn-h" id="tnHead">Ο χάρτης είναι <b>άδειος</b>.</h1>
+    <p class="tn-hsub" id="tnSub">Κάνε την πρώτη εξέταση και θα ξέρω ακριβώς ποιος κανόνας σε κόβει.</p>
+  </header>
+
+  <section class="tn-today" data-rise>
+    <button class="tn-cta" id="tnCta">
+      <div class="tn-cta-l">Σήμερα</div>
+      <div class="tn-cta-t" id="tnCtaT">12 ερωτήσεις</div>
+      <div class="tn-cta-m" id="tnCtaM">~3 λεπτά · μεικτή εξέταση</div>
+    </button>
+    <div class="tn-modes">
+      <button class="tn-mode" id="tnModeLong">Μαραθώνιος · 25</button>
+      <button class="tn-mode" id="tnModeWeak">Τα αδύναμά μου</button>
+      <button class="tn-mode" id="tnModeSpirit">Μόνο πνεύματα</button>
+    </div>
+  </section>
+
+  <section class="tn-map" data-rise>
+    <div class="tn-sh"><h2>Ο χάρτης</h2><span class="n" id="tnMapN">κανένα δεδομένο</span></div>
+    <div class="tn-cells" id="tnCells"></div>
+    <div class="tn-legend"><span class="tn-lg"></span><span>αδύναμο → σταθερό · πάτα ένα κελί για να το εξασκήσεις μόνο του</span></div>
+  </section>
+
+  <!-- Η ΕΠΑΝΑΛΗΨΗ. Στατικό markup επίτηδες: δεν μπορεί να «σιωπήσει» άδειο
+       αν κάτι αποτύχει στο JS (σταθερή αρχή 10). -->
+  <section class="tn-rules" data-rise>
+    <div class="tn-sh"><h2>Ο κανόνας</h2><span class="n">η επανάληψη</span></div>
+
+    <details>
+      <summary>Η ποσότητα, η βάση των πάντων</summary>
+      <div class="tn-rb">
+        <table>
+          <tr><th>Κατηγορία</th><th>Γράμματα</th></tr>
+          <tr><td><b>Βραχέα</b></td><td><i>ε, ο</i> · πάντα, χωρίς εξαίρεση</td></tr>
+          <tr><td><b>Μακρά</b></td><td><i>η, ω</i> · πάντα, χωρίς εξαίρεση</td></tr>
+          <tr><td><b>Δίχρονα</b></td><td><i>α, ι, υ</i> · τα μαθαίνεις από τη λέξη</td></tr>
+          <tr><td><b>Δίφθογγοι</b></td><td><i>αι ει οι υι αυ ευ ου ηυ</i> · μακροί</td></tr>
+          <tr><td><b>Καταχρηστικοί</b></td><td><i>ᾳ ῃ ῳ</i> · μακροί</td></tr>
+        </table>
+        <p class="warn"><b>Η μεγάλη εξαίρεση:</b> τα <b>τελικά -αι και -οι</b> μετρούν <b>ΒΡΑΧΕΑ</b>.
+          Γι' αυτό <i>ἄνθρωποι</i> και <i>πολῖται</i>.</p>
+        <p>Εξαιρέσεις της εξαίρεσης, όπου ξαναγίνονται μακρά:
+          <b>η ευκτική</b> (<i>παιδεύοι</i>, όχι «παίδευοι») και το επίρρημα <i>οἴκοι</i>.</p>
+        <p>Το τελικό <b>-α στα ουδέτερα του πληθυντικού</b> είναι βραχύ:
+          <i>δῶρα</i> με περισπωμένη, αλλά <i>δώρων</i> με οξεία.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Τα τρία σημεία · πού μπαίνουν</summary>
+      <div class="tn-rb">
+        <table>
+          <tr><th></th><th>Λήγ.</th><th>Παραλ.</th><th>Προπαραλ.</th></tr>
+          <tr><td><b>Ὀξεία</b></td><td>ναι</td><td>ναι</td><td>ναι</td></tr>
+          <tr><td><b>Περισπωμένη</b></td><td>ναι</td><td>ναι</td><td class="warn">ποτέ</td></tr>
+          <tr><td><b>Βαρεία</b></td><td>ναι</td><td class="warn">ποτέ</td><td class="warn">ποτέ</td></tr>
+        </table>
+        <p><b>Περισπωμένη μπαίνει ΜΟΝΟ σε μακρό φωνήεν ή δίφθογγο.</b> Ποτέ σε ε ή ο.</p>
+        <p><b>Βαρεία</b> μόνο στη λήγουσα, και μόνο όταν ακολουθεί άλλη λέξη χωρίς σημείο στίξης:
+          <i>ἀγαθός</i> → <i>ἀγαθὸς ἀνήρ</i>.</p>
+        <table>
+          <tr><th>Τόνος στη…</th><th>με ὀξεία</th><th>με περισπ.</th></tr>
+          <tr><td>Λήγουσα</td><td><i>ὀξύτονη</i></td><td><i>περισπώμενη</i></td></tr>
+          <tr><td>Παραλήγουσα</td><td><i>παροξύτονη</i></td><td><i>προπερισπώμενη</i></td></tr>
+          <tr><td>Προπαραλήγουσα</td><td><i>προπαροξύτονη</i></td><td>—</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>Οι τρεις νόμοι · λύνουν το 95%</summary>
+      <div class="tn-rb">
+        <p><b>① Τρισυλλαβία.</b> Ο τόνος δεν ανεβαίνει ποτέ πάνω από την <b>προπαραλήγουσα</b>.</p>
+        <p><b>② Ο νόμος της λήγουσας.</b> Αν η λήγουσα είναι <b>μακρά</b>, ο τόνος δεν πάει στην προπαραλήγουσα.<br>
+          <i>ἄνθρωπος</i> ⟶ <i>ἀνθρώπου, ἀνθρώπων</i></p>
+        <p><b>③ Ο νόμος της παραλήγουσας.</b> Μακρή τονισμένη παραλήγουσα <b>+</b> βραχεία λήγουσα ⟶
+          <b>ΠΕΡΙΣΠΩΜΕΝΗ</b>. Σε κάθε άλλη περίπτωση ⟶ ὀξεία.<br>
+          <i>δῶρον, νῆσος, γλῶσσα, σῶμα</i> — αλλά <i>δώρου, νήσων, γλώσσης</i></p>
+        <p class="warn">Δεν διαλέγεις εσύ οξεία ή περισπωμένη. <b>Η ποσότητα το επιβάλλει.</b></p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Οι δίφθογγοι · πού κάθεται το σημάδι</summary>
+      <div class="tn-rb">
+        <p><b>Τόνος και πνεύμα μπαίνουν στο ΔΕΥΤΕΡΟ φωνήεν:</b>
+          <i>αἴρω, εὑρίσκω, οἶκος, οὐρανός, αὐτός</i>.</p>
+        <table>
+          <tr><th>Περίπτωση</th><th>Πού</th><th>Παράδειγμα</th></tr>
+          <tr><td>Καταχρηστικοί ᾳ ῃ ῳ</td><td>στο <b>πρώτο</b></td><td><i>ᾄδω, ᾧ, τῇ</i></td></tr>
+          <tr><td>Κεφαλαία</td><td><b>πριν</b> το γράμμα</td><td><i>Ἀθῆναι, Ἕλλην</i></td></tr>
+          <tr><td>Με διαλυτικά</td><td>στο <b>πρώτο</b></td><td><i>ἀΐδιος</i></td></tr>
+        </table>
+        <p>Σειρά: πνεύμα <b>αριστερά</b> από οξεία/βαρεία (<i>ἄ, ἅ</i>) · πνεύμα <b>μαζί</b> με περισπωμένη (<i>ὦ, ὧ</i>).</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Δασεία ή ψιλή · το κόλπο του «h»</summary>
+      <div class="tn-rb">
+        <p><b>Οι τρεις σίγουροι κανόνες:</b> κάθε αρχικό <b>υ-</b> παίρνει <b>ΠΑΝΤΑ δασεία</b>
+          (<i>ὕπνος, ὕδωρ, ὑπέρ, υἱός</i>) · κάθε αρχικό <b>ρ-</b> παίρνει δασεία (<i>ῥήτωρ, ῥόδον</i>) ·
+          κάθε λέξη από φωνήεν παίρνει υποχρεωτικά ένα από τα δύο.</p>
+        <p class="warn"><b>Το κόλπο:</b> αν το διεθνές παράγωγο έχει <b>h</b> ⟶ ΔΑΣΕΙΑ. Αν δεν έχει ⟶ ΨΙΛΗ.
+          Δουλεύει επειδή η δασεία <i>ήταν</i> ο ήχος «h».</p>
+        <table>
+          <tr><th>Δασεία (με h)</th><th>Ψιλή (χωρίς h)</th></tr>
+          <tr><td><i>ἱστορία</i> · history</td><td><i>ἄνθρωπος</i> · anthropology</td></tr>
+          <tr><td><i>ὥρα</i> · hour</td><td><i>ὄνομα</i> · onomatopoeia</td></tr>
+          <tr><td><i>ὕδωρ</i> · hydro-</td><td><i>ἔργον</i> · energy</td></tr>
+          <tr><td><i>ἵππος</i> · hippo-</td><td><i>οἶκος</i> · eco-</td></tr>
+          <tr><td><i>ὅλος</i> · holo-</td><td><i>αὐτός</i> · auto-</td></tr>
+          <tr><td><i>αἷμα</i> · haemo-</td><td><i>ἀρχή</i> · archi-</td></tr>
+          <tr><td><i>ὁδός</i> · μέθοδος, method</td><td><i>ὀρθός</i> · ortho-</td></tr>
+          <tr><td><i>εὑρίσκω</i> · heuristic</td><td><i>ἦθος</i> · ethos</td></tr>
+          <tr><td><i>ἕξ, ἑπτά</i> · hexa-, hepta-</td><td><i>ἰσο-</i> · iso-</td></tr>
+        </table>
+        <p><b>Το δεύτερο κόλπο, καθαρά ελληνικό:</b> μπροστά από δασεία το <b>π γίνεται φ</b>,
+          το <b>τ γίνεται θ</b>, το <b>κ γίνεται χ</b>. <i>ἐπί + ἡμέρα → ἐφήμερος</i>,
+          <i>μετά + ὁδός → μέθοδος</i>, <i>κατά + ἡμέρα → καθημερινός</i>.
+          Αν το βλέπεις να συμβαίνει, η λέξη δασύνεται.</p>
+        <p><b>Η λίστα-παγίδα.</b> Δασύνονται: <i>ὁ, ἡ, οἱ, αἱ · ὅς · οὗτος, αὕτη · ἡμεῖς, ὑμεῖς ·
+          ὅπλον · ὁδός · Ἕλλην · ἡμέρα · ἥλιος · ἵππος · ἱερός · ἵνα · ὅλος · ὅμοιος · ὅτε, ὅπως ·
+          ἕκαστος, ἕτερος, ἅπας · ἑορτή · ἁμαρτάνω · ἁρπάζω · ἕπομαι · ἵστημι · εὑρίσκω · ὥρα · ὕλη</i>.<br>
+          Ψιλή, αν και μοιάζουν: <i>ἄνθρωπος · ἀνήρ · ὄνομα · ἔχω</i> (αλλά ο μέλλοντας <i>ἕξω</i> δασύνεται!)
+          <i>· ἔργον · οἶκος · οὐρανός · οὐ · ἀγαθός · ἀγορά · Ἀθῆναι · ἐγώ · ἐν, εἰς, ἐκ, ἐπί ·
+          ὀλίγος · ὄρος · ἐλευθερία · ἐλπίς · αἰτία · ἀλήθεια</i>.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Ο αλγόριθμος σε 5 βήματα</summary>
+      <div class="tn-rb">
+        <p><b>1.</b> Αρχίζει από φωνήεν; ⟶ βάλε πνεύμα (υ- / ρ- = δασεία, αλλιώς ο κανόνας του «h»).</p>
+        <p><b>2.</b> Τι είναι η <b>λήγουσα</b>; μακρά ή βραχεία; <span class="warn">(τελικά -αι/-οι = βραχέα)</span></p>
+        <p><b>3.</b> Πόσο πίσω επιτρέπεται; μακρή λήγουσα ⟶ το πολύ παραλήγουσα ·
+          βραχεία ⟶ μπορεί και προπαραλήγουσα.</p>
+        <p><b>4.</b> Πού πέφτει ο τόνος αυτής της λέξης; (από τη γραμματική)</p>
+        <p><b>5.</b> Ὀξεία ή περισπωμένη; παραλήγουσα μακρή+τονισμένη &amp; λήγουσα βραχεία ⟶ ΠΕΡΙΣΠΩΜΕΝΗ.
+          Αλλιώς ⟶ ὀξεία.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="tn-words" data-rise>
+    <div class="tn-sh"><h2>Οι λέξεις</h2><span class="n" id="tnWordsN">—</span></div>
+    <ul id="tnWordList"></ul>
+    <button class="tn-more" id="tnMore">Δείξε όλες</button>
+  </section>
+
+  <p class="tn-foot" data-rise>
+    Κάθε λέξη εδώ είναι τονισμένη στο χέρι και ελεγμένη από τους νόμους: 481 έλεγχοι
+    πριν φτάσει στην οθόνη. Ο χάρτης μετράει <b>κανόνες</b>, όχι λέξεις, γιατί ο κανόνας
+    ταξιδεύει στην επόμενη λέξη που θα δεις στο διαγώνισμα.
+  </p>
+</div>
+
+<!-- ── η συνεδρία ─────────────────────────────────────── -->
+<div class="tn-sess" id="tnSess" role="dialog" aria-modal="true" aria-label="Εξέταση">
+  <div class="tn-sbar">
+    <button class="tn-x" id="tnClose" aria-label="Κλείσιμο">✕</button>
+    <div class="tn-prog"><i id="tnProg"></i></div>
+    <div class="tn-count" id="tnCount">0/0</div>
+  </div>
+  <div class="tn-qwrap" id="tnQ"></div>
+  <button class="tn-next" id="tnNext">Επόμενη</button>
+</div>
+
+<dialog class="tn-dlg" id="tnDlg">
+  <div class="tn-dbody" id="tnDlgBody"></div>
+</dialog>
+
+<div class="tn-toast" id="tnToast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var T = window.TonosEngine;
+  var KEY = 'ton:v1';
+
+  /* ── κατάσταση ────────────────────────────────────
+     ⚠️ Σταθερή αρχή 17: ΠΟΤΕ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
+     πετάει QuotaExceededError και μια σιωπηλή αποτυχία μοιάζει ίδια με
+     επιτυχία — η προσπάθειά του θα εξαφανιζόταν χωρίς να πει τίποτα. */
+  var state = null, sess = null, listAll = false;
+
+  function toast(m){
+    var t = document.getElementById('tnToast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 3400);
+  }
+  function blank(){
+    var c = {}, i;
+    for (i = 0; i < T.CELLS.length; i++) c[T.CELLS[i].id] = { r:0, w:0, due:0, streak:0 };
+    return { v:1, cells:c, days:[] };
+  }
+  function load(){
+    var s;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
+    catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο. Δεν έσβησε τίποτα.'); return blank(); }
+    if (!s || !s.cells) return blank();
+    var base = blank(), i;                     /* νέο κελί σε παλιά αποθήκη */
+    for (i = 0; i < T.CELLS.length; i++){
+      var id = T.CELLS[i].id;
+      if (s.cells[id]) base.cells[id] = s.cells[id];
+    }
+    base.days = s.days || [];
+    return base;
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
+  }
+  function today(){
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+  }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ── χρώμα ακρίβειας: κοράλλι → σμαραγδί ──────────── */
+  function tint(acc){
+    if (acc == null) return 'rgba(255,255,255,.10)';
+    var w = [255,138,107], g = [63,224,176], i, o = [];
+    for (i = 0; i < 3; i++) o.push(Math.round(w[i] + (g[i]-w[i]) * acc));
+    return 'rgb(' + o.join(',') + ')';
+  }
+
+  /* ── ο χάρτης ─────────────────────────────────────── */
+  function renderMap(){
+    var box = document.getElementById('tnCells'), html = '', i, seen = 0;
+    for (i = 0; i < T.CELLS.length; i++){
+      var c = T.CELLS[i], s = state.cells[c.id], t = s.r + s.w;
+      var acc = t ? s.r / t : null;
+      if (t) seen++;
+      var due = t && Date.now() >= (s.due || 0);
+      html += '<button class="tn-cell" data-cell="' + c.id + '">' +
+        '<span class="lb">' + esc(c.label) + '</span>' +
+        (due ? '<span class="pc" style="color:rgba(229,184,110,.9);width:auto">επανάληψη</span>' : '') +
+        '<span class="bar"><i style="width:' + (acc == null ? 0 : Math.max(6, Math.round(acc*100))) +
+          '%;background:' + tint(acc) + '"></i></span>' +
+        '<span class="pc">' + (t ? Math.round(acc*100) + '%' : '—') + '</span>' +
+        '</button>';
+    }
+    box.innerHTML = html;
+    document.getElementById('tnMapN').textContent = seen ? seen + ' από 9 κανόνες' : 'κανένα δεδομένο';
+    var btns = box.querySelectorAll('[data-cell]');
+    for (i = 0; i < btns.length; i++) btns[i].addEventListener('click', function(){
+      startSession(T.build(10, state.cells, Math.random, [this.getAttribute('data-cell')]));
+    });
+  }
+
+  /* ── οι λέξεις ────────────────────────────────────── */
+  function renderWords(){
+    var ul = document.getElementById('tnWordList'), html = '', i;
+    var ws = T.WORDS, n = listAll ? ws.length : 12;
+    for (i = 0; i < n && i < ws.length; i++){
+      var e = ws[i];
+      html += '<button class="tn-w" data-w="' + i + '">' +
+        '<span class="l">' + esc(e.w) + '</span>' +
+        '<span class="g">' + esc(e.g) + '</span>' +
+        '<span class="t">' + esc(T.nameOf(e) || '') + '</span></button>';
+    }
+    ul.innerHTML = html;
+    document.getElementById('tnWordsN').textContent = ws.length + ' λέξεις';
+    document.getElementById('tnMore').textContent = listAll ? 'Δείξε λιγότερες' : 'Δείξε όλες (' + ws.length + ')';
+    var bs = ul.querySelectorAll('[data-w]');
+    for (i = 0; i < bs.length; i++) bs[i].addEventListener('click', function(){
+      showWord(T.WORDS[+this.getAttribute('data-w')]);
+    });
+  }
+
+  function qName(q){ return q === 'μ' ? 'μακρά' : q === 'β' ? 'βραχεία' : 'δίχρονο — δεν κρίνεται εδώ'; }
+  function showWord(e){
+    var a = T.analyze(e.w), rows = [];
+    rows.push(['σημασία', esc(e.g)]);
+    rows.push(['συλλαβές', a.n + ' · <em>' + a.nuc.map(function(n){ return n.v; }).join(' · ') + '</em>']);
+    rows.push(['λήγουσα', qName(T.quantity(e,1))]);
+    if (a.n > 1) rows.push(['παραλήγουσα', qName(T.quantity(e,2))]);
+    rows.push(['τόνος', (a.accType === 'π' ? 'περισπωμένη' : 'οξεία') + ' στη' +
+      (a.accIdx === 1 ? ' λήγουσα' : a.accIdx === 2 ? 'ν παραλήγουσα' : 'ν προπαραλήγουσα')]);
+    rows.push(['ονομασία', '<em>' + esc(T.nameOf(e)) + '</em>']);
+    if (a.needsBreath) rows.push(['πνεύμα', (a.breath === 'δ' ? 'δασεία' : 'ψιλή') + (e.d ? ' · ' + esc(e.d) : '')]);
+    if (e.opt) rows.push(['προσοχή', 'ΕΥΚΤΙΚΗ — το τελικό -οι μετράει μακρό']);
+    var f = T.forcedType(e);
+    if (f) rows.push(['γιατί', f === 'π'
+      ? 'μακρή παραλήγουσα + βραχεία λήγουσα ⟶ <em>περισπωμένη</em>'
+      : 'δεν πληρούνται και οι δύο όροι ⟶ <em>οξεία</em>']);
+
+    document.getElementById('tnDlgBody').innerHTML =
+      '<h3>' + esc(e.w) + '</h3>' +
+      '<div class="tn-ref">' + rows.map(function(r){
+        return '<div class="r"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="tn-dact"><button id="tnDlgX">Κλείσιμο</button></div>';
+    var d = document.getElementById('tnDlg');
+    d.showModal();
+    document.getElementById('tnDlgX').addEventListener('click', function(){ d.close(); });
+  }
+
+  /* ── η συνεδρία ───────────────────────────────────── */
+  function startSession(qs){
+    if (!qs || !qs.length){ toast('Δεν βρήκα ερώτηση γι\' αυτό. Δοκίμασε τη μεικτή εξέταση.'); return; }
+    sess = { qs: qs, i: 0, right: 0, miss: [], answered: false };
+    document.getElementById('tnSess').classList.add('on');
+    document.body.style.overflow = 'hidden';
+    renderCard();
+  }
+  function endSession(){
+    var s = sess; sess = null;
+    document.getElementById('tnSess').classList.remove('on');
+    document.body.style.overflow = '';
+    render();
+    return s;
+  }
+
+  function renderCard(){
+    var q = sess.qs[sess.i], box = document.getElementById('tnQ'), i;
+    sess.answered = false;
+    document.getElementById('tnCount').textContent = (sess.i + 1) + '/' + sess.qs.length;
+    document.getElementById('tnProg').style.transform = 'scaleX(' + (sess.i / sess.qs.length) + ')';
+    document.getElementById('tnNext').classList.remove('on');
+
+    var head = q.statement
+      ? '<div class="tn-qstate">«' + esc(q.statement) + '»</div>'
+      : '<div class="tn-qword">' + esc(q.word) + '</div>';
+    var gloss = q.gloss ? '<div class="tn-qgloss">' + esc(q.gloss) + '</div>' : '';
+
+    box.innerHTML =
+      '<div class="tn-qtag">' + esc(q.tag) + '</div>' + head + gloss +
+      '<div class="tn-qask">' + q.ask + '</div>' +
+      '<div class="tn-opts" id="tnOpts">' +
+        q.opts.map(function(o, n){
+          return '<button class="tn-opt' + (q.plain ? ' plain' : '') + '" data-n="' + n + '">' + esc(o) + '</button>';
+        }).join('') +
+      '</div><div class="tn-feed" id="tnFeed"></div>';
+
+    var bs = box.querySelectorAll('[data-n]');
+    for (i = 0; i < bs.length; i++) bs[i].addEventListener('click', function(){ answer(+this.getAttribute('data-n')); });
+    box.scrollTop = 0;
+  }
+
+  function answer(n){
+    if (sess.answered) return;
+    sess.answered = true;
+    var q = sess.qs[sess.i], ok = (n === q.ans), i;
+    var bs = document.getElementById('tnOpts').querySelectorAll('[data-n]');
+    for (i = 0; i < bs.length; i++){
+      bs[i].setAttribute('disabled','');
+      if (i === q.ans) bs[i].classList.add('ok');
+      else if (i === n) bs[i].classList.add('no');
+    }
+    document.getElementById('tnFeed').innerHTML =
+      (ok ? '<span class="v">Σωστά.</span> ' : '<span class="x">Λάθος.</span> ') + esc(q.why);
+
+    /* ── μαστορική ανά ΚΑΝΟΝΑ + σκάλα επανάληψης ───────
+       Ίδια σκάλα με τα Λατινικά και το Notion Syllabus DB. */
+    var c = state.cells[q.cell];
+    if (ok){ c.r++; c.streak = (c.streak || 0) + 1; }
+    else { c.w++; c.streak = 0; sess.miss.push(q); }
+    c.due = T.nextDue(c.streak);
+    if (ok) sess.right++;
+    save();
+
+    var nx = document.getElementById('tnNext');
+    nx.textContent = (sess.i + 1 >= sess.qs.length) ? 'Δες το αποτέλεσμα' : 'Επόμενη';
+    nx.classList.add('on');
+    nx.focus({ preventScroll:true });
+  }
+
+  document.getElementById('tnNext').addEventListener('click', function(){
+    if (!sess || !sess.answered) return;
+    sess.i++;
+    if (sess.i >= sess.qs.length) return summary();
+    renderCard();
+  });
+
+  function summary(){
+    var q = sess, pct = Math.round(q.right / q.qs.length * 100);
+    document.getElementById('tnProg').style.transform = 'scaleX(1)';
+    document.getElementById('tnCount').textContent = q.qs.length + '/' + q.qs.length;
+    document.getElementById('tnNext').classList.remove('on');
+
+    var msg = pct === 100 ? 'Τέλειο. Ο χάρτης σου μόλις έγινε πιο πράσινος.'
+            : pct >= 80 ? 'Πολύ καλά. Τα λάθη από κάτω επιστρέφουν σύντομα.'
+            : pct >= 50 ? 'Μισός δρόμος. Διάβασε ξανά τον κανόνα που σε έκοψε.'
+                        : 'Άνοιξε «Ο κανόνας» πριν την επόμενη εξέταση. Δεν είναι μνήμη, είναι σύστημα.';
+
+    document.getElementById('tnQ').innerHTML =
+      '<div class="tn-sum"><div class="big">' + q.right + '<small>/' + q.qs.length + '</small></div>' +
+      '<div class="msg">' + msg + '</div>' +
+      (q.miss.length
+        ? '<div class="tn-miss">' + q.miss.map(function(m){
+            return '<div><b>' + esc(m.statement ? '«' + m.statement + '»' : m.opts[m.ans]) + '</b>' + esc(m.why) + '</div>';
+          }).join('') + '</div>'
+        : '') +
+      '</div>';
+
+    var d = today(), found = false, i;
+    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d){ state.days[i].q += q.qs.length; state.days[i].r += q.right; found = true; }
+    if (!found) state.days.push({ id:d, q:q.qs.length, r:q.right });
+    if (state.days.length > 90) state.days = state.days.slice(-90);
+    save();
+
+    var nx = document.getElementById('tnNext');
+    nx.textContent = 'Τέλος';
+    nx.classList.add('on');
+    nx.onclick = function(){ nx.onclick = null; endSession(); };
+  }
+
+  document.getElementById('tnClose').addEventListener('click', function(){ if (sess) endSession(); });
+  document.addEventListener('keydown', function(e){
+    if (!sess) return;
+    if (e.key === 'Escape') endSession();
+    else if (e.key === 'Enter' && sess.answered) document.getElementById('tnNext').click();
+    else if (/^[1-4]$/.test(e.key) && !sess.answered){
+      var b = document.querySelector('.tn-opt[data-n="' + (+e.key - 1) + '"]');
+      if (b) b.click();
+    }
+  });
+
+  /* ── κύριο render ─────────────────────────────────── */
+  function render(){
+    var r = 0, w = 0, seen = 0, weak = null, weakAcc = 2, due = 0, i;
+    for (i = 0; i < T.CELLS.length; i++){
+      var c = state.cells[T.CELLS[i].id], t = c.r + c.w;
+      if (!t) continue;
+      seen++; r += c.r; w += c.w;
+      if (Date.now() >= (c.due || 0)) due++;
+      if (t >= 3){ var acc = c.r / t; if (acc < weakAcc){ weakAcc = acc; weak = T.CELLS[i].id; } }
+    }
+    var total = r + w, pct = total ? Math.round(r / total * 100) : 0;
+    var head = document.getElementById('tnHead'), sub = document.getElementById('tnSub');
+
+    if (!total){
+      head.innerHTML = 'Ο χάρτης είναι <b>άδειος</b>.';
+      sub.innerHTML = 'Κάνε την πρώτη εξέταση και θα ξέρω ακριβώς ποιος κανόνας σε κόβει.';
+    } else {
+      head.innerHTML = '<b>' + pct + '%</b> σωστά,<br>σε ' + seen + ' κανόνες.';
+      sub.innerHTML = weak
+        ? 'Το πιο αδύναμό σου: <b>' + esc(T.cellLabel(weak)) + '</b>. Μπαίνει πρώτο στην επόμενη εξέταση.'
+        : 'Συνέχισε: χρειάζονται τρεις απαντήσεις σε έναν κανόνα για να τον κρίνω.';
+    }
+
+    var d = today(), doneToday = 0;
+    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) doneToday = state.days[i].q;
+    document.getElementById('tnCtaM').textContent = doneToday
+      ? '~3 λεπτά · ' + doneToday + ' έγιναν σήμερα'
+      : '~3 λεπτά · ' + (due ? due + ' κανόνες για επανάληψη' : 'μεικτή εξέταση');
+
+    renderMap();
+    renderWords();
+  }
+
+  /* ── καλωδίωση ────────────────────────────────────── */
+  document.getElementById('tnCta').addEventListener('click', function(){ startSession(T.build(12, state.cells)); });
+  document.getElementById('tnModeLong').addEventListener('click', function(){ startSession(T.build(25, state.cells)); });
+  document.getElementById('tnModeWeak').addEventListener('click', function(){
+    var weakest = [], i;
+    for (i = 0; i < T.CELLS.length; i++){
+      var c = state.cells[T.CELLS[i].id], t = c.r + c.w;
+      if (t >= 2 && c.r / t < 0.8) weakest.push(T.CELLS[i].id);
+    }
+    if (!weakest.length){ toast('Δεν έχω ακόμα αρκετά λάθη σου. Κάνε μια μεικτή πρώτα.'); return; }
+    startSession(T.build(12, state.cells, Math.random, weakest));
+  });
+  document.getElementById('tnModeSpirit').addEventListener('click', function(){
+    startSession(T.build(12, state.cells, Math.random, ['spirit','spos']));
+  });
+  document.getElementById('tnMore').addEventListener('click', function(){ listAll = !listAll; renderWords(); });
+
+  state = load();
+  render();
+
+  /* ── cloud sync ───────────────────────────────────── */
+  (function initTonosSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey:'tonos',
+        syncedKeys:[KEY],
+        onApplied:function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+          state = load();
+          if (!sess){ try{ render(); }catch(e){} }
+        }
+      });
+    })();
+  })();
+})();
+</script>
+</body>
+</html>

@@ -57,7 +57,8 @@ var BUNDLE = {
   'movies:seen': 'movies', 'movies:watch': 'movies',
   'improve:videos': 'improve', 'improve:habits': 'improve', 'improve:tiktoks': 'improve',
   'ideas:items': 'ideas',
-  'lat:v1': 'latinika'
+  'lat:v1': 'latinika',
+  'ton:v1': 'tonos'
 };
 function bundleFor(lsKey) { if (lsKey.indexOf('stack:taken:') === 0) return 'health'; return BUNDLE[lsKey]; }
 
