@@ -437,6 +437,27 @@ Violating any of these breaks production or loses data.
       anything new was built on top. A refactor that quietly reworded a shipped
       prompt is a regression wearing a cleanup's clothes.
 
+26. **A CLASS NAME IS A NAME, AND A SHORT ONE INSIDE A NESTED COMPONENT IS
+    CONSTRAINT 14 IN CSS.** `istoria.html` marked a missed recall element
+    `.rc-el.n`. The same page already styled `.rc-slot .n` — the point NUMBER —
+    at `width: 14px; flex: none;` in the **mono** stack, and the element is a
+    descendant of `.rc-slot`, so that rule matched it too. The text rendered
+    fourteen pixels wide, **one word per line, in the wrong typeface**, on a
+    page whose 570 assertions were all green (als-v452).
+    - **Grep the stylesheet for every class defined as a DESCENDANT** before
+      adding a short class name inside a nested component. That grep found
+      **15** of them in this one file (`.n .v .l .g .t .s .c .k .d`). A
+      one-letter class two levels down is a name collision waiting for a
+      sibling.
+    - ⭐ **MEASURE BEFORE YOU THEORISE.** Three rounds were lost to plausible
+      wrong causes — an invalid `<ul>` inside a `<span>`, a flex-in-flex
+      collapse — because the symptom (narrow, wrapping text) *looks* like a
+      layout bug. One probe printing the width at **every level** showed the
+      container at `268` while the child sat at `19`, which identifies a
+      SELECTOR problem rather than a sizing one in a single run. The
+      screenshot-and-`Read` loop of §6 is what surfaced it at all; no assertion
+      can see a typeface.
+
 ---
 
 ## 4 · What is built
@@ -544,9 +565,24 @@ via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 subject a computer can know *exactly*, so the page is a **drill, not a notebook**:
 `latin-engine.js` derives every form from rules, generates unlimited exercises,
 grades them itself, and keeps a per-CELL mastery map (γεν. πληθ. γ΄ κλίσης, not
-"nouns"). Notion owns the plan; this owns the practice. `istoria.html` and
-`study.html` were retired to redirects in **als-v447** (see §5): Alex never opened either, and «Η Χρονιά»
-now lives in Notion. Their data (`istoria:v1`, the seven `study:*` keys) is
+"nouns"). Notion owns the plan; this owns the practice.
+
+⭐ **`istoria.html` is LIVE again (als-v451/452)** and it is the opposite kind of
+page, deliberately. History has no rule to derive an answer from, so the dangerous
+failure is a *plausible wrong fact* rather than an error, and the guarantee is
+**grounding** instead of generation: `tests/istoria-data.test.js` holds the
+textbook pasted BY HAND, every verbatim paragraph must exist inside it, and every
+skeleton point carries an `anchor` phrase that must appear verbatim in its own
+unit's text. A point the book does not make cannot ship. Three levels of truth stay
+visibly separate on screen (the book's words / my plain-Greek vocabulary /
+out-of-syllabus context) and the test forbids the last two from carrying an anchor.
+A unit is read in **seven layers** and then RECALLED against a blank screen, out
+loud: the page listens with the browser's own speech recognition, **says nothing
+while he recites**, and grades **element by element** at the end. Keys `ist:v1`,
+appKey `istoria`. Full detail in §5.
+
+`study.html` («Η Χρονιά») is still a redirect to the Notion workspace that replaced
+it (als-v447). The retired page's `istoria:v1` and the seven `study:*` keys are
 untouched in Supabase and the Vault.
 
 **Nova** — `nova-chat.html` plus `api/nova-chat.js`. Four read-only tools, every
@@ -901,7 +937,7 @@ and the engine; `CACHE` → `als-v449`.
 
 ---
 
-**HEAD is `als-v448` — THE STUDY SPACE IS ONE PAGE AND ONE DOOR** (2026-08-03,
+**Before that — `als-v448` — THE STUDY SPACE IS ONE PAGE AND ONE DOOR** (2026-08-03,
 on `main`, pushed; 24 suites + smoke green — the 25th is the known
 date-dependent `goals-rhythm` assertion, which reads `main.html` and was
 untouched).
@@ -3004,6 +3040,18 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴🔴 **ΙΣΤΟΡΙΑ (als-v452): does the microphone actually hear him, on his
+  phone?** This is the one thing no harness can answer. Everything was driven
+  with a STUBBED speech engine — real `webkitSpeechRecognition` on iOS Safari
+  has never run. Two questions are his: **does it hear him**, and **is 90% of
+  the elements too strict** a bar for the ladder to advance (`I.PASS` in
+  `istoria-data.js` is the one-line dial). ⚠️ If he reports an element that
+  does not register while he says it correctly, **get the exact wording** and
+  add an alternative phrasing to that element's `say` — tuning from a real
+  recitation beats guessing, and a false miss is worse than a false hit here.
+- 🔴 **Still owed by him: the next Ιστορία ύλη.** The page only grows with what
+  the φροντιστήριο actually assigns. ⛔ **Never add a unit without curl-ing the
+  official book** — see §5's als-v451 block for the exact method.
 - 🔴🔴 **DOES THE TIKTOK WORLD RENDER ON HIS LAPTOP?** This blocks two separate
   things and it is one question. His cloud `improve` row has **no
   `improve:tiktoks` and no `improve:habits`**, while `improve:videos` reads fine
@@ -3151,8 +3199,8 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 26 files; 25 suites + 1 tool.
-# ⚠️ `tests/*.test.js` is only 23 of them. reinstall-safety.js and
+for f in tests/*.js; do node "$f"; done   # 29 files; 28 suites + 1 tool.
+# ⚠️ `tests/*.test.js` is only 26 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
 # `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
