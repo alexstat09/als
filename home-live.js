@@ -181,6 +181,21 @@
           return latT ? { hero: Math.round(latR / latT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03ba\u03bb\u03af\u03c3\u03b7' }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
+        case 'istoria.html': {
+          /* όλα τα locals με πρόθεμα ist* — η σταθερή αρχή 14 κερδήθηκε
+             σε ΑΥΤΗ ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση. */
+          var istSt = ls('ist:v1', {}); var istU = istSt.units || {}; var istNow = Date.now();
+          var istL = 0, istD = 0, istKey;
+          for (istKey in istU) {
+            if (!Object.prototype.hasOwnProperty.call(istU, istKey)) continue;
+            if (!istU[istKey].learnedAt) continue;
+            istL++;
+            if (istU[istKey].due && istNow >= istU[istKey].due) istD++;
+          }
+          /* '\u2014' όταν δεν έχει μάθει τίποτα — ποτέ placeholder σαν αριθμός (als-v433). */
+          return istL ? { hero: istL, note: istD ? istD + ' \u03c0\u03c1\u03bf\u03c2 \u03b5\u03c0\u03b1\u03bd\u03ac\u03bb\u03b7\u03c8\u03b7' : '\u03c5\u03c0\u03bf\u03b5\u03bd\u03cc\u03c4\u03b7\u03c4\u03b5\u03c2' }
+                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+        }
         case 'tonos.html': {
           var tonSt = ls('ton:v1', {}); var tonCells = tonSt.cells || {}; var tonR = 0, tonW = 0;
           for (var tonK in tonCells) { if (!Object.prototype.hasOwnProperty.call(tonCells, tonK)) continue; tonR += (+tonCells[tonK].r || 0); tonW += (+tonCells[tonK].w || 0); }

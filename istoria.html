@@ -3,40 +3,989 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ιστορία">
   <title>Ιστορία · MÉTRON</title>
   <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <meta http-equiv="refresh" content="0; url=arxaia.html">
-  <link rel="canonical" href="arxaia.html">
-  <style>
-    html,body{ height:100%; margin:0; background:#050506; color:#8A8A93;
-      font:500 13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
-      display:flex; align-items:center; justify-content:center; letter-spacing:.1em; text-transform:uppercase; }
-    a{ color:#D4AF6E; }
-  </style>
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="istoria-data.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.is-hero,.is-next,.is-due,.is-syl,.is-tl,.is-miss';</script>
+  <script src="page-motion.js" defer></script>
+<style>
+  /* Το βιολετί της aurora. Τα Λατινικά είναι σμαραγδί, ο Τονισμός χρυσός —
+     τρία εργαλεία μελέτης, τρία χρώματα, κανένα μπέρδεμα με μια ματιά. */
+  :root{ --is:155,140,255; --warn:255,138,107; --good:63,224,176; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .is-wrap{ max-width:620px; margin:0 auto; padding:0 18px; }
+
+  /* ── hero ─────────────────────────────────────────── */
+  .is-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
+  .is-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--is),.92); margin-bottom:12px; }
+  .is-h{ font-family:var(--au-serif,Georgia,serif); font-weight:400;
+    font-size:clamp(27px,7vw,36px); line-height:1.06; letter-spacing:-.01em; }
+  .is-h b{ font-weight:400; color:rgb(var(--is)); font-variant-numeric:tabular-nums; }
+  .is-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.55; }
+  .is-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* ── ΓΙΑ ΑΥΡΙΟ ────────────────────────────────────── */
+  .is-next{ margin-top:22px; }
+  .is-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--is),.28);
+    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer; font-family:inherit;
+    background:linear-gradient(140deg,rgba(var(--is),.14),rgba(var(--is),.03) 60%,transparent);
+    transition:transform .38s cubic-bezier(.16,1,.3,1),border-color .38s; }
+  .is-cta:active{ transform:scale(.985); }
+  .is-cta:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:3px; }
+  .is-cta-l{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; color:rgba(var(--is),.9); }
+  .is-cta-t{ font-family:var(--au-serif,Georgia,serif); font-size:24px; margin-top:7px; line-height:1.2; }
+  .is-cta-m{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:6px; line-height:1.5; }
+  .is-alt{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .is-altb{ flex:1 1 40%; border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    border-radius:12px; padding:11px 8px; font-size:11.5px; font-family:inherit; cursor:pointer;
+    transition:color .3s,border-color .3s; }
+  .is-altb:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(var(--is),.4); }
+  .is-altb:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+
+  /* ── κεφαλίδα ενότητας ────────────────────────────── */
+  .is-sh{ display:flex; align-items:baseline; gap:10px; margin:34px 0 14px; }
+  .is-sh h2{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:21px; }
+  .is-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); margin-left:auto; text-align:right; }
+
+  /* ── λίστες ενοτήτων ──────────────────────────────── */
+  .is-rows{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--au-line,#26262f);
+    border-radius:14px; overflow:hidden; }
+  .is-row{ display:flex; align-items:center; gap:12px; padding:13px 14px; background:rgba(255,255,255,.014);
+    width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer;
+    transition:background .3s; }
+  .is-row:hover{ background:rgba(var(--is),.055); }
+  .is-row:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:-2px; }
+  .is-row .tx{ min-width:0; flex:1 1 auto; }
+  .is-row .l{ display:block; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .is-row .g{ display:block; font-size:11.5px; color:var(--au-faint,#5c5964); margin-top:3px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .is-row .bar{ width:52px; height:6px; border-radius:4px; background:rgba(255,255,255,.07);
+    overflow:hidden; flex:none; }
+  .is-row .bar i{ display:block; height:100%; border-radius:4px; }
+  .is-row .t{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); white-space:nowrap; flex:none; }
+  .is-row .t.due{ color:rgb(var(--is)); }
+  .is-grp{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); padding:14px 14px 8px; background:rgba(255,255,255,.014); }
+
+  /* ── χρονογραμμή ──────────────────────────────────── */
+  .is-tlist{ list-style:none; border-left:1px solid var(--au-line,#26262f); margin-left:6px; padding-left:0; }
+  .is-tl-i{ position:relative; padding:0 0 16px 20px; }
+  .is-tl-i::before{ content:''; position:absolute; left:-4px; top:5px; width:7px; height:7px; border-radius:50%;
+    background:rgba(var(--is),.85); }
+  .is-tl-y{ font-family:var(--au-mono,monospace); font-size:12px; color:rgb(var(--is)); font-variant-numeric:tabular-nums; }
+  .is-tl-l{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:2px; }
+
+  /* ── τα λάθη μου ──────────────────────────────────── */
+  .is-mrow{ display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:rgba(var(--warn),.05);
+    width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer; }
+  .is-mrow:focus-visible{ outline:2px solid rgb(var(--warn)); outline-offset:-2px; }
+  .is-mrow > span:first-child{ min-width:0; flex:1 1 auto; }
+  .is-mrow .l{ display:block; font-size:13.5px; line-height:1.4; }
+  .is-mrow .g{ display:block; font-size:11px; color:var(--au-faint,#5c5964); margin-top:3px; }
+  .is-mrow .c{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:11px; color:rgb(var(--warn));
+    flex:none; white-space:nowrap; }
+
+  .is-empty{ border:1px dashed var(--au-line,#26262f); border-radius:14px; padding:20px 18px;
+    font-size:13px; color:var(--au-faint,#5c5964); line-height:1.6; }
+
+  .is-foot{ margin:38px 0 10px; font-size:11px; line-height:1.65; color:var(--au-faint,#5c5964); }
+  .is-foot a{ color:rgba(var(--is),.8); }
+
+  /* ══ ΤΟ ΜΑΘΗΜΑ — πλήρης οθόνη ══════════════════════
+     Ζει ΕΞΩ από το .is-wrap και έξω από κάθε [data-rise], γιατί το
+     page-motion.js βάζει transform στα rise στοιχεία και ένας πρόγονος με
+     transform σπάει το position:fixed (σταθερές αρχές 4 και 18). */
+  .is-view{ position:fixed; inset:0; z-index:60; background:var(--au-void,#050506);
+    overflow-y:auto; -webkit-overflow-scrolling:touch; display:none;
+    padding:0 0 calc(40px + env(safe-area-inset-bottom)); }
+  .is-view.on{ display:block; }
+  .is-vwrap{ max-width:620px; margin:0 auto; padding:0 18px; }
+  .is-vtop{ position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px;
+    padding:calc(env(safe-area-inset-top) + 12px) 18px 12px;
+    background:linear-gradient(180deg,var(--au-void,#050506) 72%,transparent);
+    max-width:620px; margin:0 auto; }
+  .is-x{ border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    width:34px; height:34px; border-radius:10px; font-size:16px; line-height:1; cursor:pointer; flex:none;
+    font-family:inherit; }
+  .is-x:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .is-vtitle{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .is-lhead{ padding:6px 0 2px; }
+  .is-lkicker{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--is),.9); }
+  .is-lh{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:clamp(24px,6.4vw,32px);
+    line-height:1.12; margin-top:9px; }
+  .is-lmeta{ font-size:12px; color:var(--au-faint,#5c5964); margin-top:8px; }
+
+  /* στρώση */
+  .is-layer{ margin-top:32px; }
+  .is-lnum{ display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .is-lnum .k{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em;
+    color:rgba(var(--is),.75); }
+  .is-lnum h3{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:19px; }
+  .is-lnum .hint{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); }
+
+  .is-simple p{ font-size:15px; line-height:1.72; color:var(--au-ivory,#f5f2ec); margin-bottom:13px; }
+  .is-simple p:last-child{ margin-bottom:0; }
+
+  /* ΤΟ ΚΕΙΜΕΝΟ — σερίφ, μεγαλύτερο, αναγνώσιμο. Είναι το βιβλίο. */
+  .is-book{ border-left:2px solid rgba(var(--is),.35); padding-left:16px; }
+  .is-book p{ font-family:var(--au-serif,Georgia,serif); font-size:16.5px; line-height:1.78;
+    margin-bottom:15px; color:var(--au-ivory,#f5f2ec); }
+  .is-book p:last-child{ margin-bottom:0; }
+  .is-src{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); margin-top:14px; }
+
+  /* πίνακας του βιβλίου */
+  .is-tbl{ margin-top:22px; border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .is-tbl-h{ padding:13px 14px 11px; background:rgba(255,255,255,.02); }
+  .is-tbl-n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em; text-transform:uppercase;
+    color:rgba(var(--is),.8); }
+  .is-tbl-c{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:5px; line-height:1.5; }
+  .is-tbl-s{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .is-tbl table{ width:100%; border-collapse:collapse; min-width:340px; }
+  .is-tbl th{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); text-align:left; font-weight:400; padding:10px 12px; white-space:nowrap;
+    border-bottom:1px solid var(--au-line,#26262f); }
+  .is-tbl td{ padding:8px 12px; font-size:13px; border-top:1px solid rgba(255,255,255,.035);
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .is-tbl td:first-child{ color:var(--au-dim,#9a97a3); }
+  .is-tbl-r{ padding:13px 14px; font-size:13px; line-height:1.65; color:var(--au-dim,#9a97a3);
+    border-top:1px solid var(--au-line,#26262f); background:rgba(var(--is),.035); }
+  .is-tbl-r b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* Ο ΣΚΕΛΕΤΟΣ */
+  .is-hook{ border:1px solid rgba(var(--is),.3); border-radius:14px; padding:15px 16px;
+    background:rgba(var(--is),.05); margin-bottom:16px; }
+  .is-hook-l{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--is),.85); }
+  .is-hook-t{ font-family:var(--au-serif,Georgia,serif); font-size:17px; line-height:1.45; margin-top:8px; }
+  .is-hook-w{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:9px; line-height:1.6; }
+  .is-pts{ list-style:none; counter-reset:pt; }
+  .is-pt{ counter-increment:pt; position:relative; padding:0 0 16px 34px; }
+  .is-pt::before{ content:counter(pt); position:absolute; left:0; top:1px; width:22px; height:22px;
+    border-radius:7px; border:1px solid rgba(var(--is),.32); color:rgba(var(--is),.95);
+    font-family:var(--au-mono,monospace); font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .is-pt .lb{ font-size:15px; font-weight:600; line-height:1.4; }
+  .is-pt .dt{ font-size:13.5px; color:var(--au-dim,#9a97a3); line-height:1.65; margin-top:5px; }
+  .is-pt .hk{ font-size:12.5px; color:rgba(var(--is),.9); line-height:1.6; margin-top:7px;
+    border-left:2px solid rgba(var(--is),.3); padding-left:10px; }
+
+  /* όροι / λεξιλόγιο / πλαίσιο */
+  .is-defs{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--au-line,#26262f);
+    border-radius:14px; overflow:hidden; }
+  .is-def{ padding:13px 15px; background:rgba(255,255,255,.014); }
+  .is-def .t{ font-size:14px; font-weight:600; }
+  .is-def .d{ font-size:13px; color:var(--au-dim,#9a97a3); line-height:1.65; margin-top:4px; }
+  .is-def .nt{ font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.55; margin-top:6px; }
+  .is-def.book{ background:rgba(var(--is),.05); }
+  .is-def.book .d{ font-family:var(--au-serif,Georgia,serif); font-size:14.5px; color:var(--au-ivory,#f5f2ec); }
+  .is-tag{ display:inline-block; font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.14em;
+    text-transform:uppercase; padding:3px 7px; border-radius:5px; margin-bottom:8px; }
+  .is-tag.b{ background:rgba(var(--is),.14); color:rgb(var(--is)); }
+  .is-tag.m{ background:rgba(255,255,255,.06); color:var(--au-dim,#9a97a3); }
+  .is-tag.c{ background:rgba(var(--warn),.13); color:rgb(var(--warn)); }
+
+  .is-go{ width:100%; margin-top:34px; border:1px solid rgba(var(--is),.4); border-radius:16px;
+    padding:17px; background:rgba(var(--is),.09); color:var(--au-ivory,#f5f2ec); font-family:inherit;
+    font-size:15px; cursor:pointer; transition:transform .3s cubic-bezier(.16,1,.3,1); }
+  .is-go:active{ transform:scale(.985); }
+  .is-go:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:3px; }
+  .is-go span{ display:block; font-size:12px; color:var(--au-dim,#9a97a3); margin-top:5px; }
+
+  /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
+  .rc-ask{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(20px,5.4vw,26px); line-height:1.3;
+    margin:4px 0 6px; }
+  .rc-sub{ font-size:12.5px; color:var(--au-faint,#5c5964); line-height:1.55; margin-bottom:20px; }
+  .rc-slots{ list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .rc-slot{ display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; font-family:inherit;
+    border:1px solid var(--au-line,#26262f); border-radius:13px; padding:14px 15px; cursor:pointer;
+    background:rgba(255,255,255,.012); color:inherit;
+    transition:border-color .45s cubic-bezier(.16,1,.3,1),background .45s; }
+  .rc-slot:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .rc-slot .n{ font-family:var(--au-mono,monospace); font-size:10px; color:var(--au-faint,#5c5964);
+    padding-top:3px; flex:none; width:14px; }
+  .rc-slot .v{ min-width:0; flex:1 1 auto; }
+  .rc-slot .dots{ font-family:var(--au-mono,monospace); font-size:15px; letter-spacing:.3em;
+    color:rgba(255,255,255,.16); }
+  .rc-slot .lb{ display:block; font-size:14.5px; font-weight:600; line-height:1.4; }
+  .rc-slot .dt{ display:block; font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.6; margin-top:4px; }
+  .rc-slot .mk{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em;
+    text-transform:uppercase; flex:none; padding-top:3px; }
+  .rc-slot.got{ border-color:rgba(var(--good),.45); background:rgba(var(--good),.055); }
+  .rc-slot.got .mk{ color:rgb(var(--good)); }
+  .rc-slot.shown{ border-color:rgba(var(--warn),.4); background:rgba(var(--warn),.04); }
+  .rc-slot.shown .mk{ color:rgb(var(--warn)); }
+
+  .rc-bar{ position:fixed; left:0; right:0; bottom:0; z-index:3;
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,transparent,var(--au-void,#050506) 26%); }
+  .rc-inner{ max-width:620px; margin:0 auto; }
+  .rc-heard{ font-size:12px; color:var(--au-faint,#5c5964); line-height:1.45; min-height:17px;
+    margin-bottom:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-family:var(--au-mono,monospace); }
+  .rc-heard b{ color:rgba(var(--is),.95); font-weight:400; }
+  .rc-btns{ display:flex; gap:9px; }
+  .rc-mic{ flex:1 1 auto; border:1px solid rgba(var(--is),.4); border-radius:14px; padding:15px 12px;
+    background:rgba(var(--is),.09); color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:14px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; }
+  .rc-mic:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .rc-mic.live{ border-color:rgba(var(--good),.6); background:rgba(var(--good),.11); }
+  .rc-mic.off{ border-color:var(--au-line,#26262f); background:transparent; color:var(--au-faint,#5c5964);
+    cursor:not-allowed; }
+  .rc-dot{ width:9px; height:9px; border-radius:50%; background:rgba(var(--is),.7); flex:none; }
+  .rc-mic.live .rc-dot{ background:rgb(var(--good)); animation:rcPulse 1.25s ease-in-out infinite; }
+  @keyframes rcPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.55); opacity:.45; } }
+  .rc-done{ flex:0 0 auto; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:15px 20px;
+    background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit; font-size:14px; cursor:pointer; }
+  .rc-done:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .rc-note{ font-size:10.5px; color:var(--au-faint,#5c5964); line-height:1.5; margin-top:9px; text-align:center; }
+  .rc-note.warn{ color:rgb(var(--warn)); }
+
+  /* σύνοψη */
+  .rc-sum-n{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(36px,11vw,54px); line-height:1;
+    color:rgb(var(--is)); font-variant-numeric:tabular-nums; }
+  .rc-sum-t{ font-family:var(--au-serif,Georgia,serif); font-size:21px; line-height:1.35; margin-top:12px; }
+  .rc-sum-s{ font-size:13px; color:var(--au-dim,#9a97a3); line-height:1.65; margin-top:10px; }
+  .rc-sum-l{ list-style:none; margin-top:22px; display:flex; flex-direction:column; gap:1px;
+    border:1px solid var(--au-line,#26262f); border-radius:13px; overflow:hidden; }
+  .rc-sum-l li{ padding:12px 14px; background:rgba(var(--warn),.05); font-size:13.5px; line-height:1.5; }
+  .rc-again{ display:flex; gap:9px; margin-top:26px; }
+  .rc-again button{ flex:1; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:15px;
+    background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit; font-size:14px; cursor:pointer; }
+  .rc-again button.pri{ border-color:rgba(var(--is),.4); background:rgba(var(--is),.09);
+    color:var(--au-ivory,#f5f2ec); }
+  .rc-again button:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+
+  .is-toast{ position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(10px); z-index:90; opacity:0; pointer-events:none;
+    background:var(--au-ink,#0c0c11); border:1px solid var(--au-line,#26262f); border-radius:12px;
+    padding:11px 16px; font-size:13px; color:var(--au-ivory,#f5f2ec); max-width:90vw; text-align:center;
+    line-height:1.5; transition:opacity .3s,transform .3s cubic-bezier(.16,1,.3,1); }
+  .is-toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
 </head>
 <body>
-  <!-- ════════════════════════════════════════════════════════════════
-       Ιστορία lived here — two modes (Όροι flashcards for Ομάδα Α΄, Νόημα
-       recall cards for Ομάδα Β΄) over Το Προσφυγικό Ζήτημα and Τα Πολιτικά
-       Κόμματα, every anchor verified against ebooks.edu.gr. It was correct and
-       he never opened it: "i never touched those two" (2026-08-03). The
-       Ιστορία ύλη now lives as five ενότητες in the Notion «Η ΧΡΟΝΙΑ» syllabus,
-       on a real spaced-repetition ladder.
 
-       arxaia.html SURVIVES and is the one study tool he actually uses, so this
-       redirects there rather than off-site.
+<div class="is-wrap">
 
-       ⚠️ NOT A DELETION AND NOT A DATA WIPE. `istoria:v1` — his seen/miss
-       counts and plan progress — stays exactly where it is: in localStorage, in
-       the `istoria` Supabase row and in the Vault's daily backups. Nothing
-       tombstones it. The `istoria` engine stays declared in sync.js and the key
-       stays in backup.html's BUNDLES, so it remains restorable. Reviving the
-       page is `git revert` plus an SW bump, and the progress would still be
-       there. The full page is in git history.
-       ════════════════════════════════════════════════════════════════ -->
-  <p>Moved to <a href="arxaia.html">Αρχαία</a>…</p>
-  <script>location.replace('arxaia.html');</script>
+  <header class="is-hero" data-rise>
+    <div class="is-eyebrow">Ιστορία · Θέματα Νεοελληνικής Ιστορίας</div>
+    <h1 class="is-h" id="isHead">Η ύλη ξεκινά.</h1>
+    <p class="is-hsub" id="isSub">Κάθε μάθημα μπαίνει εδώ σε επτά στρώσεις — και μετά η σελίδα σε εξετάζει.</p>
+  </header>
+
+  <section class="is-next" data-rise>
+    <button class="is-cta" id="isCta">
+      <div class="is-cta-l" id="isCtaL">Για αύριο</div>
+      <div class="is-cta-t" id="isCtaT">—</div>
+      <div class="is-cta-m" id="isCtaM">—</div>
+    </button>
+    <div class="is-alt">
+      <button class="is-altb" id="isAltRecall">Κατευθείαν στην ανάκληση</button>
+      <button class="is-altb" id="isAltWeak">Τα αδύναμά μου</button>
+    </div>
+  </section>
+
+  <section class="is-due" data-rise id="isDueSec" hidden>
+    <div class="is-sh"><h2>Προς επανάληψη</h2><span class="n" id="isDueN"></span></div>
+    <div class="is-rows" id="isDue"></div>
+  </section>
+
+  <section class="is-syl" data-rise>
+    <div class="is-sh"><h2>Η ύλη</h2><span class="n" id="isSylN"></span></div>
+    <div class="is-rows" id="isSyl"></div>
+  </section>
+
+  <section class="is-tl" data-rise>
+    <div class="is-sh"><h2>Η χρονογραμμή</h2><span class="n">μία για όλες τις ενότητες</span></div>
+    <ul class="is-tlist" id="isTl"></ul>
+  </section>
+
+  <section class="is-miss" data-rise>
+    <div class="is-sh"><h2>Τα λάθη μου</h2><span class="n" id="isMissN"></span></div>
+    <div id="isMiss"></div>
+  </section>
+
+  <footer class="is-foot">
+    Κάθε αυτολεξεί παράγραφος εδώ είναι ελεγμένη λέξη-προς-λέξη απέναντι στο επίσημο σχολικό βιβλίο
+    στο <a href="https://ebooks.edu.gr" target="_blank" rel="noopener">ebooks.edu.gr</a>, και κάθε σημείο
+    του σκελετού κουβαλάει μια φράση-άγκυρα που πρέπει να υπάρχει μέσα σ’ αυτό το κείμενο.
+    Ό,τι είναι δικό μου — λεξιλόγιο, πλαίσιο, γάντζοι — φοράει τη δική του ετικέτα και ποτέ του βιβλίου.
+  </footer>
+
+</div>
+
+<!-- ΤΟ ΜΑΘΗΜΑ. Εκτός .is-wrap: κανένας πρόγονος με transform. -->
+<div class="is-view" id="isLesson">
+  <div class="is-vtop">
+    <button class="is-x" id="isLx" aria-label="Κλείσιμο">✕</button>
+    <div class="is-vtitle" id="isLt"></div>
+  </div>
+  <div class="is-vwrap" id="isLb"></div>
+</div>
+
+<!-- Η ΑΝΑΚΛΗΣΗ. -->
+<div class="is-view" id="isRecall">
+  <div class="is-vtop">
+    <button class="is-x" id="isRx" aria-label="Κλείσιμο">✕</button>
+    <div class="is-vtitle" id="isRt"></div>
+  </div>
+  <div class="is-vwrap" id="isRb"></div>
+</div>
+
+<div class="is-toast" id="isToast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var I = window.ISTORIA;
+  var KEY = 'ist:v1';
+  var DAY = 86400000;
+
+  var state = null, cur = null, sess = null;
+
+  /* ── βοηθήματα ────────────────────────────────────── */
+  function toast(m){
+    var t = document.getElementById('isToast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 4200);
+  }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function today(){
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+  }
+
+  /* ── κατάσταση ────────────────────────────────────
+     ⚠️ Σταθερή αρχή 17: ποτέ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
+     πετάει QuotaExceededError και μια σιωπηλή αποτυχία είναι ίδια με
+     επιτυχία. Και σταθερή αρχή 10: «δεν διάβασα ακόμη» ≠ «δεν υπάρχει». */
+  function blank(){ return { v:1, units:{}, pts:{}, days:[] }; }
+
+  function u(id){
+    if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0 };
+    return state.units[id];
+  }
+  function pt(id, i){
+    var k = id + ':' + i;
+    if (!state.pts[k]) state.pts[k] = { r:0, w:0 };
+    return state.pts[k];
+  }
+  function load(){
+    var s;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
+    catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο — δεν έσβησε τίποτα. Ξαναδοκίμασε.'); return blank(); }
+    if (!s || typeof s !== 'object') return blank();
+    var b = blank();
+    b.units = s.units || {};
+    b.pts   = s.pts   || {};
+    b.days  = s.days  || [];
+    return b;
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
+  }
+
+  function tint(acc){
+    if (acc == null) return 'rgba(255,255,255,.10)';
+    var w = [255,138,107], g = [63,224,176], o = [], i;
+    for (i = 0; i < 3; i++) o.push(Math.round(w[i] + (g[i] - w[i]) * acc));
+    return 'rgb(' + o.join(',') + ')';
+  }
+  function ago(ts){
+    if (!ts) return '';
+    var d = Math.floor((Date.now() - ts) / DAY);
+    return d <= 0 ? 'σήμερα' : d === 1 ? 'χθες' : d + 'μ';
+  }
+  function inDays(ts){
+    var d = Math.ceil((ts - Date.now()) / DAY);
+    return d <= 0 ? 'τώρα' : d === 1 ? 'αύριο' : 'σε ' + d + 'μ';
+  }
+
+  /* ── ποια ενότητα είναι «για αύριο» ────────────────
+     Δεν κρατάω ξεχωριστό πεδίο «ανατέθηκε». Οι ενότητες μπαίνουν στο corpus
+     ΑΚΡΙΒΩΣ όταν τις βάζει το φροντιστήριο, οπότε η ημερομηνία προσθήκης ΕΙΝΑΙ
+     η ανάθεση. Ένα δεύτερο πεδίο θα ήταν μια δεύτερη αλήθεια με καθυστέρηση. */
+  function fresh(){
+    var out = [], i, un;
+    for (i = 0; i < I.UNITS.length; i++){
+      un = I.UNITS[i];
+      if (!u(un.id).learnedAt) out.push(un);
+    }
+    out.sort(function(a,b){ return a.added < b.added ? 1 : a.added > b.added ? -1 : 0; });
+    if (!out.length) return [];
+    var newest = out[0].added;
+    return out.filter(function(x){ return x.added === newest; });
+  }
+  function due(){
+    var out = [], i, un, s;
+    for (i = 0; i < I.UNITS.length; i++){
+      un = I.UNITS[i]; s = u(un.id);
+      if (s.learnedAt && s.due && Date.now() >= s.due) out.push(un);
+    }
+    return out.sort(function(a,b){ return u(a.id).due - u(b.id).due; });
+  }
+  function weakest(){
+    var rows = [], i, j, un, p, s, tot;
+    for (i = 0; i < I.UNITS.length; i++){
+      un = I.UNITS[i];
+      for (j = 0; j < un.skeleton.points.length; j++){
+        s = state.pts[un.id + ':' + j]; if (!s) continue;
+        tot = s.r + s.w; if (!tot || !s.w) continue;
+        rows.push({ u:un, i:j, p:un.skeleton.points[j], w:s.w, acc:s.r/tot });
+      }
+    }
+    return rows.sort(function(a,b){ return a.acc - b.acc || b.w - a.w; });
+  }
+
+  /* ══ HOME ══════════════════════════════════════════ */
+  function renderHome(){
+    var f = fresh(), d = due(), learned = 0, i, un;
+    for (i = 0; i < I.UNITS.length; i++) if (u(I.UNITS[i].id).learnedAt) learned++;
+
+    /* hero */
+    var head = document.getElementById('isHead'), sub = document.getElementById('isSub');
+    if (!learned){
+      head.innerHTML = 'Η ύλη <b>ξεκινά</b>.';
+      sub.innerHTML = 'Πρώτα διάβασέ την, μετά πες την απέξω με κλειστό βιβλίο. Η δεύτερη κίνηση είναι που τη χτίζει.';
+    } else {
+      head.innerHTML = '<b>' + learned + '</b> από ' + I.UNITS.length + ' υποενότητες<br>είναι στο κεφάλι σου.';
+      sub.innerHTML = d.length
+        ? '<b>' + d.length + '</b> ' + (d.length === 1 ? 'θέλει' : 'θέλουν') + ' επανάληψη σήμερα. Αυτό είναι που σε κρατάει μπροστά τον Μάιο, όχι το να τρέξεις μπροστά.'
+        : 'Τίποτα δεν έχει λήξει. Είσαι μπροστά.';
+    }
+
+    /* ΓΙΑ ΑΥΡΙΟ */
+    var cl = document.getElementById('isCtaL'), ct = document.getElementById('isCtaT'), cm = document.getElementById('isCtaM');
+    if (f.length){
+      cl.textContent = 'Για αύριο';
+      ct.textContent = f.length === 1 ? f[0].title : f.length + ' υποενότητες';
+      cm.textContent = f[0].chapter + ' · ' + (f.length === 1 ? '~10 λεπτά' : 'ξεκίνα από την πρώτη');
+      document.getElementById('isCta').dataset.go = 'lesson:' + f[0].id;
+    } else if (d.length){
+      cl.textContent = 'Σήμερα';
+      ct.textContent = 'Επανάληψη · ' + d[0].title;
+      cm.textContent = 'Κλειστό βιβλίο. ' + d[0].skeleton.points.length + ' σημεία, ~3 λεπτά.';
+      document.getElementById('isCta').dataset.go = 'recall:' + d[0].id;
+    } else {
+      cl.textContent = 'Καθαρά';
+      ct.textContent = 'Δεν χρωστάς τίποτα';
+      cm.textContent = learned ? 'Η επόμενη επανάληψη ' + inDays(nearestDue()) + '. Πες μου τι σας έβαλαν και μπαίνει εδώ.'
+                               : 'Πες μου τι σας έβαλαν και μπαίνει εδώ.';
+      document.getElementById('isCta').dataset.go = '';
+    }
+
+    /* ΠΡΟΣ ΕΠΑΝΑΛΗΨΗ */
+    var ds = document.getElementById('isDueSec');
+    ds.hidden = !d.length;
+    if (d.length){
+      document.getElementById('isDueN').textContent = d.length + ' ' + (d.length === 1 ? 'ενότητα' : 'ενότητες');
+      document.getElementById('isDue').innerHTML = d.map(function(x){
+        return row(x, 'recall', u(x.id).due ? 'έληξε ' + ago(u(x.id).due) : 'τώρα');
+      }).join('');
+    }
+
+    /* Η ΥΛΗ */
+    var groups = {}, order = [];
+    for (i = 0; i < I.UNITS.length; i++){
+      un = I.UNITS[i];
+      if (!groups[un.chapter]){ groups[un.chapter] = []; order.push(un.chapter); }
+      groups[un.chapter].push(un);
+    }
+    document.getElementById('isSylN').textContent = learned + '/' + I.UNITS.length + ' μαθημένες';
+    document.getElementById('isSyl').innerHTML = order.map(function(g){
+      return '<div class="is-grp">' + esc(g) + '</div>' +
+        groups[g].map(function(x){ return row(x, 'lesson', null); }).join('');
+    }).join('');
+
+    renderTl();
+    renderMiss();
+  }
+
+  function nearestDue(){
+    var t = 0, i, s;
+    for (i = 0; i < I.UNITS.length; i++){
+      s = u(I.UNITS[i].id);
+      if (s.learnedAt && s.due && (!t || s.due < t)) t = s.due;
+    }
+    return t;
+  }
+
+  function row(un, act, tag){
+    var s = u(un.id), acc = s.best || 0, learned = !!s.learnedAt;
+    var right = tag ? '<span class="t due">' + esc(tag) + '</span>'
+      : learned ? '<span class="t">' + esc(inDays(s.due)) + '</span>'
+                : '<span class="t">νέο</span>';
+    var bar = learned
+      ? '<span class="bar"><i style="width:' + Math.round(acc*100) + '%;background:' + tint(acc) + '"></i></span>'
+      : '';
+    return '<button class="is-row" data-go="' + act + ':' + esc(un.id) + '">' +
+      '<span class="tx"><span class="l">' + esc(un.title) + '</span>' +
+      '<span class="g">' + esc(un.section) + ' · ' + un.skeleton.points.length + ' σημεία</span></span>' +
+      bar + right + '</button>';
+  }
+
+  function renderTl(){
+    var all = [], i, j, un;
+    for (i = 0; i < I.UNITS.length; i++){
+      un = I.UNITS[i];
+      for (j = 0; j < (un.timeline || []).length; j++) all.push({ y:un.timeline[j].y, l:un.timeline[j].l, u:un });
+    }
+    all.sort(function(a,b){ return a.y - b.y; });
+    var el = document.getElementById('isTl');
+    if (!all.length){ el.innerHTML = '<li class="is-tl-i"><div class="is-tl-l">Καμία χρονολογία ακόμη.</div></li>'; return; }
+    el.innerHTML = all.map(function(x){
+      return '<li class="is-tl-i"><div class="is-tl-y">' + esc(x.y) + '</div>' +
+        '<div class="is-tl-l">' + esc(x.l) + '</div></li>';
+    }).join('');
+  }
+
+  function renderMiss(){
+    var w = weakest(), el = document.getElementById('isMiss'), n = document.getElementById('isMissN');
+    if (!w.length){
+      n.textContent = 'τίποτα ακόμη';
+      el.innerHTML = '<div class="is-empty">Μόλις κάνεις την πρώτη ανάκληση, ό,τι δεν θυμηθείς κάθεται εδώ — και επιστρέφει πιο συχνά από τα υπόλοιπα.</div>';
+      return;
+    }
+    n.textContent = w.length + ' ' + (w.length === 1 ? 'σημείο' : 'σημεία');
+    el.innerHTML = '<div class="is-rows">' + w.slice(0, 6).map(function(x){
+      return '<button class="is-mrow" data-go="lesson:' + esc(x.u.id) + '">' +
+        '<span><span class="l">' + esc(x.p.label) + '</span>' +
+        '<span class="g">' + esc(x.u.title) + '</span></span>' +
+        '<span class="c">' + Math.round(x.acc*100) + '%</span></button>';
+    }).join('') + '</div>';
+  }
+
+  /* ══ ΤΟ ΜΑΘΗΜΑ — οι επτά στρώσεις ══════════════════ */
+  function layer(k, title, hint, body){
+    return '<section class="is-layer"><div class="is-lnum"><span class="k">' + esc(k) + '</span>' +
+      '<h3>' + esc(title) + '</h3>' + (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') +
+      '</div>' + body + '</section>';
+  }
+
+  function tableHTML(t){
+    if (!t) return '';
+    return '<div class="is-tbl"><div class="is-tbl-h">' +
+      '<div class="is-tbl-n">' + esc(t.n) + '</div>' +
+      '<div class="is-tbl-c">' + esc(t.cap) + '</div></div>' +
+      '<div class="is-tbl-s"><table><thead><tr>' +
+      t.head.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      t.rows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') +
+      '</tbody></table></div>' +
+      (t.read ? '<div class="is-tbl-r"><b>Τι να δεις εδώ.</b> ' + esc(t.read) + '</div>' : '') +
+      '</div>';
+  }
+
+  function openLesson(id){
+    var un = I.unit(id); if (!un) return;
+    cur = un;
+    document.getElementById('isLt').textContent = un.chapter + ' · ' + un.title;
+
+    var h = '<div class="is-lhead">' +
+      '<div class="is-lkicker">Ενότητα ' + esc(un.enotita) + ' · ' + esc(un.section) + '</div>' +
+      '<h2 class="is-lh">' + esc(un.title) + '</h2>' +
+      '<div class="is-lmeta">' + esc(un.chapter) + '</div></div>';
+
+    /* 1 · ΜΕ ΑΠΛΑ ΛΟΓΙΑ — πάντα πρώτο. Δεν αποστηθίζεις ό,τι δεν κατάλαβες. */
+    h += layer('01', 'Με απλά λόγια', 'διάβασε αυτό πρώτο',
+      '<div class="is-simple">' + un.simple.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '</div>');
+
+    /* 2 · ΤΟ ΚΕΙΜΕΝΟ */
+    h += layer('02', 'Το κείμενο', 'αυτολεξεί από το βιβλίο',
+      '<div class="is-book">' + un.text.map(function(b){ return '<p>' + esc(b.p) + '</p>'; }).join('') + '</div>' +
+      '<div class="is-src">Θέματα Νεοελληνικής Ιστορίας · ' + esc(un.chapter) + '</div>' +
+      tableHTML(un.table));
+
+    /* 3+4 · Ο ΣΚΕΛΕΤΟΣ ΚΑΙ Ο ΓΑΝΤΖΟΣ */
+    var sk = un.skeleton;
+    h += layer('03', 'Ο σκελετός', sk.points.length + ' σημεία',
+      '<div class="is-hook"><div class="is-hook-l">Ο γάντζος</div>' +
+      '<div class="is-hook-t">' + esc(sk.hook) + '</div>' +
+      (sk.hookWhy ? '<div class="is-hook-w">' + esc(sk.hookWhy) + '</div>' : '') + '</div>' +
+      '<ol class="is-pts">' + sk.points.map(function(p){
+        return '<li class="is-pt"><div class="lb">' + esc(p.label) + '</div>' +
+          '<div class="dt">' + esc(p.detail) + '</div>' +
+          (p.hook ? '<div class="hk">' + esc(p.hook) + '</div>' : '') + '</li>';
+      }).join('') + '</ol>');
+
+    /* 5 · ΟΙ ΟΡΟΙ + ΛΕΞΙΛΟΓΙΟ + ΠΛΑΙΣΙΟ.
+       Τρία επίπεδα αλήθειας, τρεις ετικέτες. Ποτέ δεν μοιάζουν μεταξύ τους. */
+    var defs = '';
+    if ((un.terms || []).length){
+      defs += '<div class="is-tag b">Όροι · λόγια του βιβλίου</div><div class="is-defs">' +
+        un.terms.map(function(t){
+          return '<div class="is-def book"><div class="t">' + esc(t.t) + '</div>' +
+            '<div class="d">' + esc(t.d) + '</div>' +
+            (t.note ? '<div class="nt">' + esc(t.note) + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+    }
+    if ((un.vocab || []).length){
+      defs += '<div class="is-tag m" style="margin-top:20px">Λεξιλόγιο · δικά μου λόγια</div><div class="is-defs">' +
+        un.vocab.map(function(v){
+          return '<div class="is-def"><div class="t">' + esc(v.t) + '</div><div class="d">' + esc(v.d) + '</div></div>';
+        }).join('') + '</div>';
+    }
+    if ((un.context || []).length){
+      defs += '<div class="is-tag c" style="margin-top:20px">Πλαίσιο · ΕΚΤΟΣ ύλης</div><div class="is-defs">' +
+        un.context.map(function(c){
+          return '<div class="is-def"><div class="t">' + esc(c.t) + '</div><div class="d">' + esc(c.d) + '</div></div>';
+        }).join('') + '</div>';
+    }
+    if (defs) h += layer('04', 'Οι λέξεις', 'τι σημαίνει τι', defs);
+
+    /* 5 · Η ΑΝΑΚΛΗΣΗ */
+    h += '<button class="is-go" id="isGo">Κλείσε το βιβλίο και πες το' +
+      '<span>' + sk.points.length + ' σημεία από μνήμης · με φωνή ή με το δάχτυλο</span></button>';
+
+    document.getElementById('isLb').innerHTML = h;
+    document.getElementById('isGo').addEventListener('click', function(){ openRecall(un.id); });
+    show('isLesson');
+  }
+
+  /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, micWant = false, heardFinal = '', heardTmp = '', restarts = 0;
+
+  function openRecall(id){
+    var un = I.unit(id); if (!un) return;
+    cur = un;
+    sess = { id:id, marks:un.skeleton.points.map(function(){ return 0; }) };  /* 0 κρυφό · 1 είπε · 2 αποκάλυψε */
+    heardFinal = ''; heardTmp = ''; restarts = 0;
+    document.getElementById('isRt').textContent = un.title;
+    drawRecall();
+    show('isRecall');
+  }
+
+  function drawRecall(){
+    var un = cur, sk = un.skeleton;
+    var h = '<div class="is-lhead"><div class="is-lkicker">Η ανάκληση</div>' +
+      '<div class="rc-ask">' + esc(sk.ask) + '</div>' +
+      '<div class="rc-sub">Πες τα δυνατά. Ό,τι πεις ανάβει μόνο του. Πάτα ένα κενό μόνο αν δεν το θυμάσαι: ' +
+      'αυτό μετράει ως χαμένο, και σωστά.</div></div>';
+
+    h += '<ol class="rc-slots" id="rcSlots">' + sk.points.map(function(p, i){
+      return slotHTML(p, i);
+    }).join('') + '</ol>';
+
+    document.getElementById('isRb').innerHTML = h + '<div style="height:150px"></div>';
+
+    /* η μπάρα ζει έξω από τη ροή για να μένει καρφωμένη κάτω */
+    var bar = document.getElementById('rcBar');
+    if (!bar){
+      bar = document.createElement('div');
+      bar.className = 'rc-bar'; bar.id = 'rcBar';
+      document.getElementById('isRecall').appendChild(bar);
+    }
+    bar.innerHTML = '<div class="rc-inner">' +
+      '<div class="rc-heard" id="rcHeard"></div>' +
+      '<div class="rc-btns">' +
+      '<button class="rc-mic' + (SR ? '' : ' off') + '" id="rcMic">' +
+      '<span class="rc-dot"></span><span id="rcMicT">' + (SR ? 'Πες το' : 'Χωρίς μικρόφωνο') + '</span></button>' +
+      '<button class="rc-done" id="rcDone">Τέλος</button></div>' +
+      '<div class="rc-note" id="rcNote">' + (SR
+        ? 'Όσο ακούει, η φωνή σου περνάει από την αναγνώριση του browser. Σταματάει μόλις το κλείσεις.'
+        : 'Ο browser σου δεν κάνει αναγνώριση φωνής. Πες τα δυνατά ούτως ή άλλως και πάτα τα κενά για να ελέγξεις.') +
+      '</div></div>';
+    bar.style.display = '';
+
+    document.getElementById('rcMic').addEventListener('click', micToggle);
+    document.getElementById('rcDone').addEventListener('click', finish);
+    var sl = document.getElementById('rcSlots');
+    sl.addEventListener('click', function(e){
+      var b = e.target.closest('.rc-slot'); if (!b) return;
+      var i = +b.dataset.i;
+      if (sess.marks[i]) return;
+      sess.marks[i] = 2;
+      paintSlot(i);
+    });
+  }
+
+  function slotHTML(p, i){
+    var m = sess.marks[i];
+    var inner = m
+      ? '<span class="lb">' + esc(p.label) + '</span><span class="dt">' + esc(p.detail) + '</span>'
+      : '<span class="dots">·····</span>';
+    var mark = m === 1 ? '<span class="mk">το είπες</span>'
+             : m === 2 ? '<span class="mk">δεν το θυμήθηκες</span>' : '';
+    return '<li><button class="rc-slot' + (m === 1 ? ' got' : m === 2 ? ' shown' : '') + '" data-i="' + i + '">' +
+      '<span class="n">' + (i+1) + '</span><span class="v">' + inner + '</span>' + mark + '</button></li>';
+  }
+
+  function paintSlot(i){
+    var li = document.getElementById('rcSlots').children[i];
+    if (li) li.innerHTML = slotHTML(cur.skeleton.points[i], i);
+  }
+
+  /* ── το μικρόφωνο ──────────────────────────────────
+     ⚠️ Σταθερή αρχή 10 σε νέο μέρος: «δεν υπάρχει αναγνώριση φωνής», «δεν
+     έδωσες άδεια» και «δεν είπες τίποτα» ΔΕΝ γίνεται να μοιάζουν ίδια. Το
+     κάθε ένα λέει το όνομά του, και η γραμμή «άκουσα» αποδεικνύει ότι ακούει. */
+  function micSay(msg, warn){
+    var n = document.getElementById('rcNote'); if (!n) return;
+    n.textContent = msg;
+    n.className = 'rc-note' + (warn ? ' warn' : '');
+  }
+  function micUI(on){
+    var b = document.getElementById('rcMic'), t = document.getElementById('rcMicT');
+    if (!b) return;
+    b.classList.toggle('live', !!on);
+    t.textContent = on ? 'Ακούω…' : (SR ? 'Πες το' : 'Χωρίς μικρόφωνο');
+  }
+  function micToggle(){
+    if (!SR){
+      micSay('Ο browser σου δεν έχει αναγνώριση φωνής (τη διαθέτουν Chrome και Safari). Πάτα τα κενά με το δάχτυλο: η άσκηση δουλεύει το ίδιο.', true);
+      return;
+    }
+    if (micWant) micStop(); else micStart();
+  }
+  function micStart(){
+    micWant = true; restarts = 0;
+    try {
+      rec = new SR();
+      rec.lang = 'el-GR';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+      rec.onresult = onHeard;
+      rec.onerror = onMicErr;
+      rec.onend = function(){
+        if (!micWant) { micUI(false); return; }
+        /* Ο Chrome κόβει μόνος του μετά από σιωπή και το Safari μετά από κάθε
+           φράση — άρα η επανεκκίνηση ΔΕΝ είναι προαιρετική. Με φρένο, ώστε μια
+           μόνιμη αποτυχία να μη γίνει βρόχος που καίει μπαταρία. */
+        if (restarts++ > 60){ micWant = false; micUI(false); micSay('Το μικρόφωνο σταματούσε συνέχεια, οπότε το έκλεισα. Συνέχισε με το δάχτυλο.', true); return; }
+        try { rec.start(); } catch(e){ micWant = false; micUI(false); }
+      };
+      rec.start();
+      micUI(true);
+      micSay('Ακούω. Πες τα σημεία με τη σειρά που θέλεις, ανάβουν μόνα τους.');
+    } catch(e){
+      micWant = false; micUI(false);
+      micSay('Δεν μπόρεσα να ανοίξω το μικρόφωνο: ' + (e && e.message ? e.message : 'άγνωστο σφάλμα') + '.', true);
+    }
+  }
+  function micStop(){
+    micWant = false;
+    try { if (rec) rec.stop(); } catch(e){}
+    micUI(false);
+    micSay('Το μικρόφωνο είναι κλειστό.');
+  }
+  function onMicErr(e){
+    var k = e && e.error;
+    if (k === 'no-speech') return;              /* φυσιολογικό, ξαναρχίζει μόνο του */
+    if (k === 'aborted') return;
+    micWant = false; micUI(false);
+    if (k === 'not-allowed' || k === 'service-not-allowed')
+      micSay('Δεν έδωσες άδεια για το μικρόφωνο. Δώσ’ την από τις ρυθμίσεις του browser, ή συνέχισε με το δάχτυλο.', true);
+    else if (k === 'audio-capture')
+      micSay('Δεν βρίσκω μικρόφωνο σε αυτή τη συσκευή.', true);
+    else if (k === 'network')
+      micSay('Η αναγνώριση φωνής θέλει δίκτυο και δεν το βρήκε. Με το δάχτυλο δουλεύει και χωρίς δίκτυο.', true);
+    else
+      micSay('Το μικρόφωνο σταμάτησε (' + esc(k || 'άγνωστο') + ').', true);
+  }
+  function onHeard(e){
+    var i, r;
+    heardTmp = '';
+    for (i = e.resultIndex; i < e.results.length; i++){
+      r = e.results[i];
+      if (r.isFinal) heardFinal += ' ' + r[0].transcript;
+      else heardTmp += ' ' + r[0].transcript;
+    }
+    var hay = heardFinal + ' ' + heardTmp;
+
+    var hEl = document.getElementById('rcHeard');
+    if (hEl){
+      var tail = hay.trim().slice(-90);
+      hEl.innerHTML = tail ? 'άκουσα · <b>' + esc(tail) + '</b>' : '';
+    }
+
+    var pts = cur.skeleton.points, hit = 0;
+    for (i = 0; i < pts.length; i++){
+      if (sess.marks[i]) continue;
+      if (I.said(pts[i], hay)){ sess.marks[i] = 1; paintSlot(i); hit++; }
+    }
+    if (hit){
+      var left = sess.marks.filter(function(m){ return !m; }).length;
+      micSay(left ? 'Μένουν ' + left + '.' : 'Τα είπες όλα. Πάτα «Τέλος».');
+      if (!left){ micStop(); }
+    }
+  }
+
+  /* ── τέλος + βαθμολόγηση ──────────────────────────── */
+  function finish(){
+    micStop();
+    var un = cur, pts = un.skeleton.points;
+    var got = 0, missed = [], i;
+    for (i = 0; i < pts.length; i++){
+      if (sess.marks[i] === 1){ got++; pt(un.id, i).r++; }
+      else { pt(un.id, i).w++; missed.push(pts[i]); }
+    }
+    var acc = pts.length ? got / pts.length : 0;
+    var s = u(un.id);
+    s.runs = (s.runs || 0) + 1;
+    s.last = Date.now();
+    s.best = Math.max(s.best || 0, acc);
+    if (!s.learnedAt) s.learnedAt = Date.now();
+
+    /* Η σκάλα προχωράει μόνο σε καθαρή ανάκληση. Αλλιώς ξανά αύριο — μια
+       σκάλα που ανεβαίνει σε αποτυχία απλώς κρύβει ό,τι δεν ξέρει. */
+    if (acc >= 0.7){ s.reviews = (s.reviews || 0) + 1; s.due = I.nextDue(s.reviews, Date.now()); }
+    else { s.due = Date.now() + DAY; }
+
+    var d = today(), day = null;
+    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) day = state.days[i];
+    if (!day){ day = { id:d, q:0 }; state.days.push(day); }
+    day.q += pts.length;
+    if (state.days.length > 400) state.days = state.days.slice(-400);
+
+    save();
+    summary(got, pts.length, missed, s);
+  }
+
+  function summary(got, total, missed, s){
+    var bar = document.getElementById('rcBar');
+    if (bar) bar.style.display = 'none';
+
+    var verdict = got === total ? 'Ολόκληρο, από μνήμης.'
+      : got / total >= 0.7 ? 'Το κρατάς.'
+      : got ? 'Μισό. Ξαναδιάβασέ το και ξαναπές το.'
+      : 'Δεν ήρθε τίποτα. Αυτό δεν είναι αποτυχία: είναι η μέτρηση πριν την επανάληψη.';
+
+    var when = got / total >= 0.7
+      ? 'Επόμενη επανάληψη ' + inDays(s.due) + '.'
+      : 'Ξανά αύριο. Η σκάλα δεν προχωράει σε μισή ανάκληση.';
+
+    var h = '<div class="is-lhead" style="padding-top:24px">' +
+      '<div class="is-lkicker">Η ανάκληση</div>' +
+      '<div class="rc-sum-n">' + got + '<span style="color:var(--au-faint,#5c5964);font-size:.42em"> / ' + total + '</span></div>' +
+      '<div class="rc-sum-t">' + esc(verdict) + '</div>' +
+      '<div class="rc-sum-s">' + esc(when) + '</div></div>';
+
+    if (missed.length){
+      h += '<div class="is-tag c" style="margin-top:26px">Αυτά δεν ήρθαν</div>' +
+        '<ul class="rc-sum-l">' + missed.map(function(p){
+          return '<li>' + esc(p.label) + '</li>';
+        }).join('') + '</ul>' +
+        '<div class="rc-sum-s">Κάθονται στα «Λάθη μου» και θα επιστρέψουν πιο συχνά από τα υπόλοιπα.</div>';
+    }
+
+    h += '<div class="rc-again">' +
+      '<button id="rcRe" class="pri">Ξανά τώρα</button>' +
+      '<button id="rcBack">Τέλος</button></div>';
+
+    document.getElementById('isRb').innerHTML = h;
+    document.getElementById('rcRe').addEventListener('click', function(){ openRecall(cur.id); });
+    document.getElementById('rcBack').addEventListener('click', function(){ hide('isRecall'); renderHome(); });
+    document.getElementById('isRecall').scrollTop = 0;
+  }
+
+  /* ── όψεις ────────────────────────────────────────── */
+  function show(id){
+    document.getElementById(id).classList.add('on');
+    document.body.style.overflow = 'hidden';
+    document.getElementById(id).scrollTop = 0;
+  }
+  function hide(id){
+    document.getElementById(id).classList.remove('on');
+    if (!document.querySelector('.is-view.on')) document.body.style.overflow = '';
+    if (id === 'isRecall'){
+      micStop();
+      var bar = document.getElementById('rcBar');
+      if (bar) bar.remove();
+    }
+  }
+
+  function go(spec){
+    if (!spec) return;
+    var p = spec.split(':');
+    if (p[0] === 'lesson') openLesson(p[1]);
+    else if (p[0] === 'recall') openRecall(p[1]);
+  }
+
+  /* ── καλωδίωση ────────────────────────────────────── */
+  document.getElementById('isCta').addEventListener('click', function(){
+    var g = this.dataset.go;
+    if (!g){ toast('Δεν έχεις εκκρεμότητα. Στείλε μου τι σας έβαλαν και μπαίνει εδώ.'); return; }
+    go(g);
+  });
+  document.getElementById('isAltRecall').addEventListener('click', function(){
+    var f = fresh(), d = due();
+    var target = d[0] || f[0] || I.UNITS[0];
+    if (!target){ toast('Δεν υπάρχει ύλη ακόμη.'); return; }
+    openRecall(target.id);
+  });
+  document.getElementById('isAltWeak').addEventListener('click', function(){
+    var w = weakest();
+    if (!w.length){ toast('Δεν έχω ακόμη λάθη σου. Κάνε μια ανάκληση πρώτα.'); return; }
+    openRecall(w[0].u.id);
+  });
+  document.getElementById('isLx').addEventListener('click', function(){ hide('isLesson'); renderHome(); });
+  document.getElementById('isRx').addEventListener('click', function(){ hide('isRecall'); renderHome(); });
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-go]');
+    if (b && b.dataset.go && b.id !== 'isCta') go(b.dataset.go);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('isRecall').classList.contains('on')) { hide('isRecall'); renderHome(); }
+    else if (document.getElementById('isLesson').classList.contains('on')) { hide('isLesson'); renderHome(); }
+  });
+
+  state = load();
+  renderHome();
+
+  /* ── cloud sync ───────────────────────────────────
+     Από την πρώτη μέρα: μια σελίδα μελέτης που ζει μόνο στο κινητό χάνει τα
+     πάντα σε επανεγκατάσταση του PWA. ⚠️ Το κλειδί είναι ΝΕΟ (`ist:v1`) — το
+     παλιό `istoria:v1` της αποσυρμένης σελίδας μένει άθικτο στην ίδια γραμμή. */
+  (function initIstoriaSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey:'istoria',
+        syncedKeys:[KEY],
+        onApplied:function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+          state = load();
+          if (!document.querySelector('.is-view.on')){ try{ renderHome(); }catch(e){} }
+        }
+      });
+    })();
+  })();
+})();
+</script>
 </body>
 </html>

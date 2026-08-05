@@ -58,7 +58,8 @@ var BUNDLE = {
   'improve:videos': 'improve', 'improve:habits': 'improve', 'improve:tiktoks': 'improve',
   'ideas:items': 'ideas',
   'lat:v1': 'latinika',
-  'ton:v1': 'tonos'
+  'ton:v1': 'tonos',
+  'ist:v1': 'istoria'
 };
 function bundleFor(lsKey) { if (lsKey.indexOf('stack:taken:') === 0) return 'health'; return BUNDLE[lsKey]; }
 

@@ -70,21 +70,31 @@ which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `arxaia.html` (Αρχαία), `latinika.html` (Λατινικά, als-v449) and
-`tonos.html` (Τονισμός, als-v450) are the study pages. **Τονισμός is the same
+`tonos.html` (Τονισμός, als-v450) and `istoria.html` (Ιστορία, als-v451) are the study pages. **Τονισμός is the same
 shape as Λατινικά**: `tonos-engine.js` reads a hand-accented word apart with
 Unicode combining marks, derives its syllables, accent position, breathing and
 name, and then CHECKS all of it against the three laws — so a wrong quantity
 declaration fails the build instead of teaching him a wrong accent. The corpus
 declares only what no rule can derive (the quantity of a δίχρονο α/ι/υ). Mastery
-is per RULE, not per word. Key `ton:v1`, appKey `tonos`. Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
+is per RULE, not per word. Key `ton:v1`, appKey `tonos`.
+**`istoria.html` is back (als-v451)** and it is the opposite kind of page: history
+has no rule to derive from, so the guarantee is GROUNDING instead. `istoria-data.js`
+holds the corpus; every verbatim paragraph is checked word-for-word against the real
+textbook pasted by hand into `tests/istoria-data.test.js`, and **every skeleton point
+carries an `anchor` phrase that must exist inside that text**, so a point the book
+does not make cannot ship. Three levels of truth stay visibly separate on screen: the
+book's words, my plain-Greek vocabulary, and out-of-syllabus context. A unit is read
+in seven layers and then RECALLED against a blank screen, **out loud** — the page
+listens with the browser's own speech recognition and lights each point as he says
+it. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
+the same row). Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
 every declension and conjugation from rules, so the page can generate unlimited
 exercises AND grade them, and the heatmap shows which cell he actually misses.
 A pattern is only drillable once `tests/latin-engine.test.js` holds a
-hand-verified paradigm for it. Key `lat:v1`, appKey `latinika`. `istoria.html`
-and `study.html` («Η Χρονιά») were **retired to redirects als-v447** — he never
-used either. Ιστορία → `arxaia.html`; Η Χρονιά → the Notion **«Η ΧΡΟΝΙΑ»**
-workspace, which replaced it. `istoria:v1` and the seven `study:*` keys are
-untouched in Supabase and in the Vault.
+hand-verified paradigm for it. Key `lat:v1`, appKey `latinika`. `study.html`
+(«Η Χρονιά») is still a **redirect** to the Notion **«Η ΧΡΟΝΙΑ»** workspace that
+replaced it (als-v447); its seven `study:*` keys are untouched in Supabase and in
+the Vault.
 
 **Tools** — `import.html` (MyFitnessPal), `import-strong.html` (Strong), `backup.html` (backup & restore).
 

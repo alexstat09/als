@@ -94,7 +94,8 @@
       { href: 'study.html',   name: '\u0397 \u03a7\u03c1\u03bf\u03bd\u03b9\u03ac', k: null, ext: true },
       { href: 'arxaia.html',  name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1',   k: null },
       { href: 'latinika.html', name: '\u039b\u03b1\u03c4\u03b9\u03bd\u03b9\u03ba\u03ac', k: 'lat:v1' },
-      { href: 'tonos.html',    name: '\u03a4\u03bf\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2', k: 'ton:v1' }
+      { href: 'tonos.html',    name: '\u03a4\u03bf\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2', k: 'ton:v1' },
+      { href: 'istoria.html',  name: '\u0399\u03c3\u03c4\u03bf\u03c1\u03af\u03b1', k: 'ist:v1' }
     ]},
     { name: 'Reflect', accent: 'coral', items: [
       { href: 'morning.html', name: 'Morning briefing', k: null },
