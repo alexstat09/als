@@ -40,14 +40,14 @@
     'money', 'bills', 'life', 'mind', 'movies', 'ideas', 'goals',
     'coach', 'insights', 'arc', 'weekly', 'morning', 'nova-chat',
     'planner', 'measure', 'supps', 'improve', 'backup', 'studio',
-    'arxaia', 'istoria'
+    'istoria'
   ];
 
   // Alex's revision pages for the Greek Πανελλήνιες exams. They are HIS content,
   // not a product feature — nobody else should be shown them. (Cosmetic only:
   // the data behind them is protected by RLS like everything else.)
   var OWNER_UID = '1655556c-97af-43ac-970f-fcbdbd8f7f0c';
-  var OWNER_ONLY = ['arxaia', 'istoria'];
+  var OWNER_ONLY = ['istoria'];   // 'arxaia' left with the page, als-v453
 
   var DEFAULTS = {
     name: '',

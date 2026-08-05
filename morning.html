@@ -838,7 +838,6 @@ body::after {
       <!-- The briefing covered body, fuel, recovery and money but never once
            mentioned the exams. Both keys already exist and already sync; nobody
            was reading them. -->
-      <div class="mb-intel-row"><span class="mb-intel-key">ΑΡΧΑΙΑ</span><span class="mb-intel-val" id="intelArxaia">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">ΙΣΤΟΡΙΑ</span><span class="mb-intel-val" id="intelIstoria">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">LAST TRAINED</span><span class="mb-intel-val" id="intelTrained">—</span></div>
       <div class="mb-intel-row"><span class="mb-intel-key">WORKOUTS THIS WEEK</span><span class="mb-intel-val" id="intelWorkouts">—</span></div>
@@ -1205,28 +1204,10 @@ function loadIntel(){
     set('intelWorkouts', sessions+' session'+(sessions!==1?'s':''));
   } catch(e){ set('intelWorkouts','—'); }
 
-  /* Study. Mirrors arxaia.html's own suggestedDay(): 1 Jul 2026 = Μέρα 1, a
-     31-day plan, and inside July the day IS the date. Kept deliberately thin —
-     the plan data itself lives in arxaia.html and must not be duplicated here. */
-  try{
-    const el=document.getElementById('intelArxaia');
-    if(el){
-      const START=new Date(2026,6,1);
-      const t=new Date(); t.setHours(0,0,0,0);
-      const day=Math.floor((t-START)/86400000)+1;
-      const raw=localStorage.getItem('arxaia:v1');
-      if(day<1)            el.textContent='Starts 1 Jul';
-      else if(day>31)      el.textContent='Plan complete';
-      /* absent ≠ "not done today". If this device has never pulled the key we
-         must not accuse him of skipping — say we don't know. */
-      else if(raw==null)   el.textContent='Day '+day+'/31 · —';
-      else {
-        const st=JSON.parse(raw)||{}, days=st.days||{}, d=days[day];
-        if(d&&d.done) el.textContent='Day '+day+'/31 ✓'+(d.total?' · '+d.correct+'/'+d.total:'');
-        else          el.textContent='Day '+day+'/31 · today not done';
-      }
-    }
-  } catch(e){}
+  /* The ΑΡΧΑΙΑ line was here. It mirrored arxaia.html's suggestedDay() (1 Jul
+     2026 = Μέρα 1, a 31-day plan), which is exactly why the page was retired in
+     als-v453: the plan was bound to July dates, so both it and this line read
+     "Plan complete" forever after 31 Jul. `arxaia:v1` is untouched. */
 
   /* Ιστορία has no fixed plan — report what is actually mastered (seen twice,
      no outstanding misses), which is istoria.html's own termMastered() rule. */
@@ -1542,7 +1523,9 @@ function pullEverything(){
   ro('caffeine', ['caf:logs']);                                      // caffeine, first coffee
   ro('goals',    [], ['goals:']);                                    // today's mission
   ro('finance',  ['nw_currency'], ['nw:']);                          // net worth
-  ro('arxaia',   ['arxaia:v1']);                                     // ΑΡΧΑΙΑ
+  /* ro('arxaia', ['arxaia:v1']) was here. Dropped als-v453 with the ΑΡΧΑΙΑ line
+     it fed: nothing on this page reads that key now. The key itself stays in
+     Supabase and in backup.html's BUNDLES, so it is still restorable. */
   ro('istoria',  ['istoria:v1']);                                    // ΙΣΤΟΡΙΑ
   ro('nova-chat',['nova:memory']);                                   // what Nova remembers
 }

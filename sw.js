@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v452";
+var CACHE = "als-v453";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -20,7 +20,7 @@ var CORE = [
   /* ⚠️ These two carry a ?v= query, so the precached URL must match the one
      index.html actually requests or the entry is dead weight. They had drifted
      (SW 206/202 vs page 208/203); realigned als-v438. */
-  'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=209', 'home-motion.js?v=204',
+  'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=210', 'home-motion.js?v=205',
   'latin-engine.js', 'tonos-engine.js', 'istoria-data.js',
   'water.js', 'topbar.js', 'launcher.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
   /* xp.js was here. Deleted als-v438 with "This week vs last", its last caller. */

@@ -205,7 +205,8 @@
           return tonT ? { hero: Math.round(tonR / tonT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03c4\u03cc\u03bd\u03bf\u03b9' }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
-        case 'arxaia.html': { var st = ls('arxaia:v1', {}); var days2 = st.days || {}; var dd = 0; for (var n1 = 1; n1 <= 31; n1++) { if (days2[n1] && days2[n1].done) dd++; } var day = Math.min(dd + 1, 31); return dd ? { hero: day, unit: '/ 31', note: 'Άγνωστο · SOS' } : { hero: 1, unit: '/ 31', note: 'Άγνωστο · start' }; }
+        /* 'arxaia.html' had a case here. Retired als-v453 — the tile is gone and
+           the page is a redirect stub, so a metric for it would never be painted. */
       }
     } catch (e) { }
     return null;

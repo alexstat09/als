@@ -56,6 +56,7 @@ const EXEMPT = new Set([
   'index.html',       // the Home tab
   'nova-chat.html',   // the Nova tab
   'health.html', 'bills.html', 'trends.html', // retired to redirects
+  'arxaia.html',      // retired als-v453; a stub is still a live file
   // study.html is NOT exempt: it is a redirect stub, but it is also the app's
   // only door to the Notion «Η ΧΡΟΝΙΑ», so it carries a real launcher entry.
 ]);
@@ -106,12 +107,18 @@ section('encoding — Greek page names cannot mojibake');
 {
   // A headless render decoded "Search your pages…" as "pagesâ€¦" when the host
   // document declared no charset. Escapes remove the class of bug entirely,
-  // which matters most for Αρχαία / Ιστορία / Η Χρονιά.
+  // which matters most for Λατινικά / Τονισμός / Ιστορία / Η Χρονιά.
   const rendered = [...SRC.matchAll(/name: '([^']*)'/g)].map(m => m[1])
     .concat([...SRC.matchAll(/placeholder="([^"]*)"/g)].map(m => m[1]));
   const raw = rendered.filter(s => /[^\x00-\x7F]/.test(s));
   is('no raw non-ASCII in any rendered string', raw, []);
-  ok('the Greek names are present as escapes', /\\u0391\\u03c1\\u03c7/.test(SRC));
+  /* ⚠️ Counted, never pinned to one WORD. This assertion used to match Αρχαία's
+     own escapes and failed the moment that page was retired (als-v453) — which
+     is the wrong signal entirely, because the rule it guards was never broken.
+     It exists so the check above cannot pass vacuously by every Greek name
+     being deleted, so a COUNT is what it should have been asking for. */
+  const escaped = rendered.filter(s => /\\u03[0-9a-f]{2}/i.test(s));
+  ok('the Greek names are still present, as escapes', escaped.length >= 4);
 }
 
 /* ── 8 · the shell wiring: ONE control, one code path (als-v438) ─── */

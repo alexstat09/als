@@ -69,8 +69,13 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
-**Study** — `arxaia.html` (Αρχαία), `latinika.html` (Λατινικά, als-v449) and
-`tonos.html` (Τονισμός, als-v450) and `istoria.html` (Ιστορία, als-v451) are the study pages. **Τονισμός is the same
+**Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
+als-v450) and `istoria.html` (Ιστορία, als-v451) are the study pages.
+⚠️ **`arxaia.html` is a REDIRECT STUB since als-v453** — its 31-day plan was
+bound to July 2026 dates and read «Μέρα 1» forever after, so Alex had it
+deleted. It points at `study.html`, which owns the Notion URL. `arxaia:v1` is
+untouched in Supabase, in `backup.html`'s `BUNDLES` and in `api/mcp.js`'s
+`BUNDLE`, so nothing was lost. **Τονισμός is the same
 shape as Λατινικά**: `tonos-engine.js` reads a hand-accented word apart with
 Unicode combining marks, derives its syllables, accent position, breathing and
 name, and then CHECKS all of it against the three laws — so a wrong quantity

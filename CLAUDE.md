@@ -187,7 +187,7 @@ never write an unowned row.**
 Violating any of these breaks production or loses data.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v452`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v453`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -560,7 +560,7 @@ read-fraction, current book pulses, tap-to-filter), the S.O.A.P. journal, streak
 + Mon–Sun week. His notebook history + the 4 finished Gospels are seeded. Synced
 via appKey `scripture` / key `bible:sessions`; reachable from Home → Life.
 
-**Study** — `arxaia.html`, **`latinika.html`** (als-v449) and **`tonos.html`**
+**Study** — **`latinika.html`** (als-v449) and **`tonos.html`**
 (als-v450, ο τονισμός: 9 rules, 97 hand-accented words, 481 assertions). Λατινικά is the one
 subject a computer can know *exactly*, so the page is a **drill, not a notebook**:
 `latin-engine.js` derives every form from rules, generates unlimited exercises,
@@ -582,8 +582,9 @@ while he recites**, and grades **element by element** at the end. Keys `ist:v1`,
 appKey `istoria`. Full detail in §5.
 
 `study.html` («Η Χρονιά») is still a redirect to the Notion workspace that replaced
-it (als-v447). The retired page's `istoria:v1` and the seven `study:*` keys are
-untouched in Supabase and the Vault.
+it (als-v447), and **`arxaia.html` joined it as a redirect stub in als-v453** —
+see §5. The seven `study:*` keys and `arxaia:v1` are untouched in Supabase and
+the Vault.
 
 **Nova** — `nova-chat.html` plus `api/nova-chat.js`. Four read-only tools, every
 result bound. Empty is not an error and she must never invent a number.
@@ -609,7 +610,65 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v452` — Η ΕΞΕΤΑΣΗ ΕΓΙΝΕ ΑΛΗΘΙΝΗ**
+**HEAD is `als-v453` — ΑΡΧΑΙΑ IS RETIRED** (2026-08-05, on `main`; 28 suites +
+smoke green). Alex: *"delete ARXAIA page on the app, its bad."*
+
+### The page had been failing in the open for a month, and it is written down twice
+`arxaia.html`'s 31-day plan was **bound to July 2026 dates**. Once July ended
+`suggestedDay()` could only answer «Μέρα 1», so a study tool told him he had not
+started a plan he was a month past. That is flagged as *"Ισχύει ακόμη"* in the
+als-v449 **and** als-v450 blocks below and nobody acted on it — his verdict is
+the same finding, arrived at by using the thing.
+- ⭐ **Retired the way this repo already retires pages: a REDIRECT STUB**, like
+  `study.html` and `health.html`. A bookmark or a home-screen shortcut must land
+  somewhere real rather than on a 404, and the page is precached in SW `CORE`, so
+  an installed PWA would otherwise serve a cached 404 offline. It **stays in
+  `CORE`** for exactly that reason.
+- It redirects at **`study.html`, not at the Notion id**. That stub owns the
+  workspace URL (als-v448), so there is still ONE file to change if the page
+  moves. Two hops on purpose.
+- ⚠️ **NOT A DATA DELETION.** `arxaia:v1` is untouched in localStorage, in its
+  Supabase row and in the Vault; it stays in `backup.html`'s `BUNDLES` and
+  `api/mcp.js`'s `BUNDLE`, so it is still restorable and still readable from
+  here. Nothing is tombstoned. Reviving the page is `git revert` + an SW bump,
+  with his progress intact.
+- **Unwired from all six places a page is findable or live:** the Home tile
+  (`index.html`), the `launcher.js` row, `home-motion.js`'s search index,
+  `home-live.js`'s `metric()` case, `als-profile.js`'s `ALL_PAGES` **and**
+  `OWNER_ONLY`, and `morning.html` — which lost both the `ΑΡΧΑΙΑ` intel row and
+  its `ro('arxaia', …)` read-only pull, since nothing on that page reads the key
+  now. `home-live.js?v=210` / `home-motion.js?v=205`, realigned in `index.html`
+  and SW `CORE` together (constraint from als-v438).
+- **`tests/launcher.test.js`'s `EXEMPT` gained `arxaia.html`** — a retired stub is
+  still a live file, and that suite fails on any live page with no launcher entry.
+
+### ⚠️ A TEST THAT PINS A GUARANTEE TO ONE WORD FAILS WHEN THE WORD LEAVES
+`launcher.test.js` asserted `/\\u0391\\u03c1\\u03c7/` — **Αρχ**, literally — to
+prove the Greek page names ship as `\u` escapes rather than raw bytes. Deleting
+the page failed it, and **the rule it guards was never broken**: every remaining
+Greek name is still escaped. A guard that fires on a change it does not describe
+is noise, and noise is what gets a guard loosened (constraint 19).
+- It counts now: **≥4 rendered names carrying a `\u03xx` escape.** That still
+  stops the sibling assertion passing vacuously (by every Greek name being
+  deleted) without naming any one page.
+- ⭐ The general form: **assert the PROPERTY, not an instance of it.** A guard
+  written against one value has that value's lifetime, not the rule's.
+
+⚠️ **Ιστορία lost its `w2`, and this is the third time the Study grid has had to
+be re-balanced.** One wide tile plus four halves closed the 2-column phone grid
+exactly; with Αρχαία gone a wide tile would strand Τονισμός alone on a third row.
+Four halves, two clean rows — the same call als-v450 made when Η Χρονιά lost its
+own `w2`. **Adding or removing a Study tile means checking that span**, and the
+rule is simply that `w2` is affordable only at an ODD number of tiles.
+
+🔴 **Unproven on his phone** — he needs a full PWA reopen for `als-v453`. The
+one thing to watch: the tile is gone from Home, so if he *wants* Αρχαία practice
+back, the answer is a `latinika.html`-shaped drill page, not a revert of the
+dated plan.
+
+---
+
+**Before that — `als-v452` — Η ΕΞΕΤΑΣΗ ΕΓΙΝΕ ΑΛΗΘΙΝΗ**
 (2026-08-05, on `main`; 28 suites + smoke green; `tests/istoria-data.test.js` = 570
 assertions, up from 399). Ο Αλεξ διέλυσε την πρώτη έκδοση της ανάκλησης μέσα σε ένα
 μήνυμα: *«λεω μια λεξη που θελει να ακουσει και μου λεει οτι το βρηκα το ποιντ ενω
