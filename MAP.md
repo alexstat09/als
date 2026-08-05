@@ -84,9 +84,11 @@ textbook pasted by hand into `tests/istoria-data.test.js`, and **every skeleton 
 carries an `anchor` phrase that must exist inside that text**, so a point the book
 does not make cannot ship. Three levels of truth stay visibly separate on screen: the
 book's words, my plain-Greek vocabulary, and out-of-syllabus context. A unit is read
-in seven layers and then RECALLED against a blank screen, **out loud** — the page
-listens with the browser's own speech recognition and lights each point as he says
-it. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
+in seven layers and then RECALLED against a blank screen, **out loud**. The page
+listens with the browser's own speech recognition, says nothing while he recites,
+and then grades **element by element** (als-v452): each point breaks into the
+separate facts inside it, so a point is complete only when every one of them was
+said, and the summary shows exactly which were missed. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
 the same row). Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
 every declension and conjugation from rules, so the page can generate unlimited
 exercises AND grade them, and the heatmap shows which cell he actually misses.

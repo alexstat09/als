@@ -230,17 +230,30 @@
   .rc-slot:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
   .rc-slot .n{ font-family:var(--au-mono,monospace); font-size:10px; color:var(--au-faint,#5c5964);
     padding-top:3px; flex:none; width:14px; }
-  .rc-slot .v{ min-width:0; flex:1 1 auto; }
+  .rc-slot .v{ display:block; min-width:0; flex:1 1 auto; }
   .rc-slot .dots{ font-family:var(--au-mono,monospace); font-size:15px; letter-spacing:.3em;
     color:rgba(255,255,255,.16); }
   .rc-slot .lb{ display:block; font-size:14.5px; font-weight:600; line-height:1.4; }
   .rc-slot .dt{ display:block; font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.6; margin-top:4px; }
   .rc-slot .mk{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em;
     text-transform:uppercase; flex:none; padding-top:3px; }
-  .rc-slot.got{ border-color:rgba(var(--good),.45); background:rgba(var(--good),.055); }
-  .rc-slot.got .mk{ color:rgb(var(--good)); }
-  .rc-slot.shown{ border-color:rgba(var(--warn),.4); background:rgba(var(--warn),.04); }
-  .rc-slot.shown .mk{ color:rgb(var(--warn)); }
+  .rc-slot.full{ border-color:rgba(var(--good),.45); background:rgba(var(--good),.05); }
+  .rc-slot.full .mk{ color:rgb(var(--good)); }
+  .rc-slot.part{ border-color:rgba(242,192,99,.45); background:rgba(242,192,99,.045); }
+  .rc-slot.part .mk{ color:#F2C063; }
+  .rc-slot.miss,.rc-slot.shown{ border-color:rgba(var(--warn),.42); background:rgba(var(--warn),.045); }
+  .rc-slot.miss .mk,.rc-slot.shown .mk{ color:rgb(var(--warn)); }
+  .rc-slot.graded{ cursor:default; }
+
+  /* Η ΛΙΣΤΑ ΣΤΟΙΧΕΙΩΝ — εδώ φαίνεται ΤΙ ακριβώς ξέχασε. */
+  .rc-els{ list-style:none; margin-top:9px; }
+  .rc-el{ position:relative; padding:0 0 5px 19px; font-size:12.5px; line-height:1.5; }
+  .rc-el:last-child{ padding-bottom:0; }
+  .rc-el .s{ position:absolute; left:0; top:0; font-family:var(--au-mono,monospace); font-size:11px; }
+  .rc-el.did .s{ color:rgb(var(--good)); }
+  .rc-el.lost .s{ color:rgb(var(--warn)); }
+  .rc-el.did{ color:var(--au-dim,#9a97a3); }
+  .rc-el.lost{ color:var(--au-ivory,#f5f2ec); }
 
   .rc-bar{ position:fixed; left:0; right:0; bottom:0; z-index:3;
     padding:12px 18px calc(12px + env(safe-area-inset-bottom));
@@ -388,16 +401,18 @@
      ⚠️ Σταθερή αρχή 17: ποτέ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
      πετάει QuotaExceededError και μια σιωπηλή αποτυχία είναι ίδια με
      επιτυχία. Και σταθερή αρχή 10: «δεν διάβασα ακόμη» ≠ «δεν υπάρχει». */
-  function blank(){ return { v:1, units:{}, pts:{}, days:[] }; }
+  function blank(){ return { v:1, units:{}, els:{}, days:[] }; }
 
   function u(id){
     if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0 };
     return state.units[id];
   }
-  function pt(id, i){
-    var k = id + ':' + i;
-    if (!state.pts[k]) state.pts[k] = { r:0, w:0 };
-    return state.pts[k];
+  /* ΑΝΑ ΣΤΟΙΧΕΙΟ, όχι ανά σημείο. Το «τι ξεχνάω» είναι «την αγρανάπαυση»,
+     ποτέ «το σημείο 6» — και μόνο το πρώτο μπορεί να διαβαστεί σαν πρόταση. */
+  function el(id, pi, ei){
+    var k = id + ':' + pi + ':' + ei;
+    if (!state.els[k]) state.els[k] = { r:0, w:0 };
+    return state.els[k];
   }
   function load(){
     var s;
@@ -406,7 +421,7 @@
     if (!s || typeof s !== 'object') return blank();
     var b = blank();
     b.units = s.units || {};
-    b.pts   = s.pts   || {};
+    b.els   = s.els   || {};
     b.days  = s.days  || [];
     return b;
   }
@@ -455,13 +470,16 @@
     return out.sort(function(a,b){ return u(a.id).due - u(b.id).due; });
   }
   function weakest(){
-    var rows = [], i, j, un, p, s, tot;
+    var rows = [], i, j, k, un, pts, must, st, tot;
     for (i = 0; i < I.UNITS.length; i++){
-      un = I.UNITS[i];
-      for (j = 0; j < un.skeleton.points.length; j++){
-        s = state.pts[un.id + ':' + j]; if (!s) continue;
-        tot = s.r + s.w; if (!tot || !s.w) continue;
-        rows.push({ u:un, i:j, p:un.skeleton.points[j], w:s.w, acc:s.r/tot });
+      un = I.UNITS[i]; pts = un.skeleton.points;
+      for (j = 0; j < pts.length; j++){
+        must = pts[j].must || [];
+        for (k = 0; k < must.length; k++){
+          st = state.els[un.id + ':' + j + ':' + k]; if (!st) continue;
+          tot = st.r + st.w; if (!tot || !st.w) continue;
+          rows.push({ u:un, p:pts[j], k:must[k].k, w:st.w, acc:st.r/tot });
+        }
       }
     }
     return rows.sort(function(a,b){ return a.acc - b.acc || b.w - a.w; });
@@ -494,7 +512,7 @@
     } else if (d.length){
       cl.textContent = 'Σήμερα';
       ct.textContent = 'Επανάληψη · ' + d[0].title;
-      cm.textContent = 'Κλειστό βιβλίο. ' + d[0].skeleton.points.length + ' σημεία, ~3 λεπτά.';
+      cm.textContent = 'Κλειστό βιβλίο. ' + d[0].skeleton.points.length + ' σημεία, ~4 λεπτά.';
       document.getElementById('isCta').dataset.go = 'recall:' + d[0].id;
     } else {
       cl.textContent = 'Καθαρά';
@@ -531,6 +549,12 @@
     renderMiss();
   }
 
+  function elCount(un){
+    var t = 0, i, pts = un.skeleton.points;
+    for (i = 0; i < pts.length; i++) t += (pts[i].must || []).length;
+    return t;
+  }
+
   function nearestDue(){
     var t = 0, i, s;
     for (i = 0; i < I.UNITS.length; i++){
@@ -550,7 +574,7 @@
       : '';
     return '<button class="is-row" data-go="' + act + ':' + esc(un.id) + '">' +
       '<span class="tx"><span class="l">' + esc(un.title) + '</span>' +
-      '<span class="g">' + esc(un.section) + ' · ' + un.skeleton.points.length + ' σημεία</span></span>' +
+      '<span class="g">' + esc(un.section) + ' · ' + un.skeleton.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία</span></span>' +
       bar + right + '</button>';
   }
 
@@ -570,17 +594,19 @@
   }
 
   function renderMiss(){
-    var w = weakest(), el = document.getElementById('isMiss'), n = document.getElementById('isMissN');
+    /* ⚠️ Σταθερή αρχή 14: το local ΔΕΝ λέγεται `el` — υπάρχει βοηθητική el()
+       στο ίδιο scope και θα τη σκίαζε για ΟΛΗ τη συνάρτηση. */
+    var w = weakest(), box = document.getElementById('isMiss'), n = document.getElementById('isMissN');
     if (!w.length){
       n.textContent = 'τίποτα ακόμη';
-      el.innerHTML = '<div class="is-empty">Μόλις κάνεις την πρώτη ανάκληση, ό,τι δεν θυμηθείς κάθεται εδώ — και επιστρέφει πιο συχνά από τα υπόλοιπα.</div>';
+      box.innerHTML = '<div class="is-empty">Μόλις κάνεις την πρώτη ανάκληση, ό,τι δεν θυμηθείς κάθεται εδώ και επιστρέφει πιο συχνά από τα υπόλοιπα.</div>';
       return;
     }
-    n.textContent = w.length + ' ' + (w.length === 1 ? 'σημείο' : 'σημεία');
-    el.innerHTML = '<div class="is-rows">' + w.slice(0, 6).map(function(x){
+    n.textContent = w.length + ' ' + (w.length === 1 ? 'στοιχείο' : 'στοιχεία');
+    box.innerHTML = '<div class="is-rows">' + w.slice(0, 8).map(function(x){
       return '<button class="is-mrow" data-go="lesson:' + esc(x.u.id) + '">' +
-        '<span><span class="l">' + esc(x.p.label) + '</span>' +
-        '<span class="g">' + esc(x.u.title) + '</span></span>' +
+        '<span><span class="l">' + esc(x.k) + '</span>' +
+        '<span class="g">' + esc(x.p.label) + ' · ' + esc(x.u.title) + '</span></span>' +
         '<span class="c">' + Math.round(x.acc*100) + '%</span></button>';
     }).join('') + '</div>';
   }
@@ -665,7 +691,7 @@
 
     /* 5 · Η ΑΝΑΚΛΗΣΗ */
     h += '<button class="is-go" id="isGo">Κλείσε το βιβλίο και πες το' +
-      '<span>' + sk.points.length + ' σημεία από μνήμης · με φωνή ή με το δάχτυλο</span></button>';
+      '<span>' + sk.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία \u00b7 σε ακούει και σου λέει στο τέλος τι ξέχασες</span></button>';
 
     document.getElementById('isLb').innerHTML = h;
     document.getElementById('isGo').addEventListener('click', function(){ openRecall(un.id); });
@@ -679,7 +705,10 @@
   function openRecall(id){
     var un = I.unit(id); if (!un) return;
     cur = un;
-    sess = { id:id, marks:un.skeleton.points.map(function(){ return 0; }) };  /* 0 κρυφό · 1 είπε · 2 αποκάλυψε */
+    /* 0 = κλειστό · 2 = το αποκάλυψε ο ίδιος (μετράει ως χαμένο).
+       ⭐ ΔΕΝ υπάρχει πια κατάσταση «το είπε» ΚΑΤΑ τη διάρκεια. Η βαθμολόγηση
+       γίνεται ΜΙΑ φορά, στο τέλος, πάνω σε ολόκληρη την απαγγελία. */
+    sess = { id:id, marks:un.skeleton.points.map(function(){ return 0; }), graded:null };
     heardFinal = ''; heardTmp = ''; restarts = 0;
     document.getElementById('isRt').textContent = un.title;
     drawRecall();
@@ -690,8 +719,9 @@
     var un = cur, sk = un.skeleton;
     var h = '<div class="is-lhead"><div class="is-lkicker">Η ανάκληση</div>' +
       '<div class="rc-ask">' + esc(sk.ask) + '</div>' +
-      '<div class="rc-sub">Πες τα δυνατά. Ό,τι πεις ανάβει μόνο του. Πάτα ένα κενό μόνο αν δεν το θυμάσαι: ' +
-      'αυτό μετράει ως χαμένο, και σωστά.</div></div>';
+      '<div class="rc-sub">Πες τα όλα δυνατά, με όποια σειρά θέλεις. Δεν σε διακόπτω και δεν σου ' +
+      'δίνω τίποτα μέχρι να τελειώσεις: μόλις πατήσεις «Τέλος» σου λέω σημείο προς σημείο τι ' +
+      'είπες και τι ξέχασες. Πάτα ένα κενό μόνο αν δεν το θυμάσαι καθόλου.</div></div>';
 
     h += '<ol class="rc-slots" id="rcSlots">' + sk.points.map(function(p, i){
       return slotHTML(p, i);
@@ -732,13 +762,31 @@
 
   function slotHTML(p, i){
     var m = sess.marks[i];
-    var inner = m
+    var inner = m === 2
       ? '<span class="lb">' + esc(p.label) + '</span><span class="dt">' + esc(p.detail) + '</span>'
       : '<span class="dots">·····</span>';
-    var mark = m === 1 ? '<span class="mk">το είπες</span>'
-             : m === 2 ? '<span class="mk">δεν το θυμήθηκες</span>' : '';
-    return '<li><button class="rc-slot' + (m === 1 ? ' got' : m === 2 ? ' shown' : '') + '" data-i="' + i + '">' +
+    var mark = m === 2 ? '<span class="mk">δεν το θυμήθηκες</span>' : '';
+    return '<li><button class="rc-slot' + (m === 2 ? ' shown' : '') + '" data-i="' + i + '">' +
       '<span class="n">' + (i+1) + '</span><span class="v">' + inner + '</span>' + mark + '</button></li>';
+  }
+
+  /* Το ΒΑΘΜΟΛΟΓΗΜΕΝΟ σημείο: κάθε στοιχείο ξεχωριστά, με ✓ ή ✗. Αυτή είναι
+     όλη η διαφορά από πριν — βλέπει ΤΙ ξέχασε, όχι αν «πέτυχε». */
+  function gradedHTML(p, i, g, tapped){
+    var cls = tapped ? 'shown' : g.full ? 'full' : g.n ? 'part' : 'miss';
+    var mk = tapped ? 'το έδειξες'
+           : g.full ? 'πλήρες'
+           : g.n ? g.n + '/' + g.total
+                 : '0/' + g.total;
+    var els = '<ul class="rc-els">' + p.must.map(function(e, j){
+      var y = !tapped && g.hits[j];
+      return '<li class="rc-el ' + (y ? 'did' : 'lost') + '"><span class="s">' + (y ? '\u2713' : '\u2717') + '</span>' +
+        esc(e.k) + '</li>';
+    }).join('') + '</ul>';
+    return '<li><div class="rc-slot graded ' + cls + '">' +
+      '<span class="n">' + (i+1) + '</span>' +
+      '<div class="v"><div class="lb">' + esc(p.label) + '</div>' + els + '</div>' +
+      '<span class="mk">' + esc(mk) + '</span></div></li>';
   }
 
   function paintSlot(i){
@@ -830,74 +878,93 @@
       hEl.innerHTML = tail ? 'άκουσα · <b>' + esc(tail) + '</b>' : '';
     }
 
-    var pts = cur.skeleton.points, hit = 0;
-    for (i = 0; i < pts.length; i++){
-      if (sess.marks[i]) continue;
-      if (I.said(pts[i], hay)){ sess.marks[i] = 1; paintSlot(i); hit++; }
-    }
-    if (hit){
-      var left = sess.marks.filter(function(m){ return !m; }).length;
-      micSay(left ? 'Μένουν ' + left + '.' : 'Τα είπες όλα. Πάτα «Τέλος».');
-      if (!left){ micStop(); }
-    }
+    /* ⭐ ΤΙΠΟΤΑ ΔΕΝ ΒΑΘΜΟΛΟΓΕΙΤΑΙ ΕΔΩ. Το μόνο ζωντανό feedback είναι ότι
+       ΑΚΟΥΕΙ. Ένα πράσινο τικ στη μέση της απαγγελίας είναι ψεύτικη ανταμοιβή
+       και σπάει ακριβώς την προσπάθεια ανάκλησης που χτίζει τη μνήμη. */
+    var words = I.fold(hay).split(' ').filter(Boolean).length;
+    micSay(words ? 'Ακούω. ' + words + ' λέξεις μέχρι τώρα. Πάτα «Τέλος» όταν τελειώσεις.' : 'Ακούω.');
   }
 
   /* ── τέλος + βαθμολόγηση ──────────────────────────── */
   function finish(){
     micStop();
-    var un = cur, pts = un.skeleton.points;
-    var got = 0, missed = [], i;
+    var un = cur, pts = un.skeleton.points, i, j;
+
+    /* ⭐ Η ΜΟΝΗ ΒΑΘΜΟΛΟΓΗΣΗ, ΚΑΙ ΓΙΝΕΤΑΙ ΤΩΡΑ — πάνω σε ΟΛΗ την απαγγελία. */
+    var g = I.gradeUnit(un, heardFinal + ' ' + heardTmp);
+
+    /* Ένα σημείο που το αποκάλυψε ο ίδιος μετράει χαμένο ολόκληρο, ό,τι κι αν
+       ακούστηκε: ζήτησε την απάντηση, δεν την ανακάλεσε. */
+    var said = 0, total = 0, missedEls = [], full = 0, part = 0;
     for (i = 0; i < pts.length; i++){
-      if (sess.marks[i] === 1){ got++; pt(un.id, i).r++; }
-      else { pt(un.id, i).w++; missed.push(pts[i]); }
+      var tapped = sess.marks[i] === 2, gp = g.points[i];
+      total += gp.total;
+      for (j = 0; j < pts[i].must.length; j++){
+        var hit = !tapped && gp.hits[j], e = el(un.id, i, j);
+        if (hit){ e.r++; said++; }
+        else { e.w++; missedEls.push(pts[i].must[j].k); }
+      }
+      if (!tapped && gp.full) full++;
+      else if (!tapped && gp.n) part++;
     }
-    var acc = pts.length ? got / pts.length : 0;
-    var s = u(un.id);
+    sess.graded = { g:g, said:said, total:total, full:full, part:part, missedEls:missedEls };
+
+    var cov = total ? said / total : 0, s = u(un.id);
     s.runs = (s.runs || 0) + 1;
     s.last = Date.now();
-    s.best = Math.max(s.best || 0, acc);
+    s.best = Math.max(s.best || 0, cov);
     if (!s.learnedAt) s.learnedAt = Date.now();
 
-    /* Η σκάλα προχωράει μόνο σε καθαρή ανάκληση. Αλλιώς ξανά αύριο — μια
-       σκάλα που ανεβαίνει σε αποτυχία απλώς κρύβει ό,τι δεν ξέρει. */
-    if (acc >= 0.7){ s.reviews = (s.reviews || 0) + 1; s.due = I.nextDue(s.reviews, Date.now()); }
+    /* Η σκάλα προχωράει μόνο σε ΠΡΑΓΜΑΤΙΚΑ καθαρή ανάκληση (I.PASS = 90% των
+       στοιχείων). Μια σκάλα που ανεβαίνει σε μισή απαγγελία κρύβει ακριβώς
+       ό,τι δεν ξέρει, που είναι το αντίθετο από τον λόγο που υπάρχει. */
+    if (cov >= I.PASS){ s.reviews = (s.reviews || 0) + 1; s.due = I.nextDue(s.reviews, Date.now()); }
     else { s.due = Date.now() + DAY; }
 
     var d = today(), day = null;
     for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) day = state.days[i];
     if (!day){ day = { id:d, q:0 }; state.days.push(day); }
-    day.q += pts.length;
+    day.q += total;
     if (state.days.length > 400) state.days = state.days.slice(-400);
 
     save();
-    summary(got, pts.length, missed, s);
+    summary(cov, s);
   }
 
-  function summary(got, total, missed, s){
+  function summary(cov, s){
     var bar = document.getElementById('rcBar');
     if (bar) bar.style.display = 'none';
 
-    var verdict = got === total ? 'Ολόκληρο, από μνήμης.'
-      : got / total >= 0.7 ? 'Το κρατάς.'
-      : got ? 'Μισό. Ξαναδιάβασέ το και ξαναπές το.'
+    var G = sess.graded, pts = cur.skeleton.points, pct = Math.round(cov * 100);
+
+    var verdict = cov >= 1 ? 'Ολόκληρο, από μνήμης.'
+      : cov >= I.PASS ? 'Το κρατάς.'
+      : cov >= 0.6 ? 'Το ξέρεις χοντρικά, αλλά όχι απέξω.'
+      : cov > 0 ? 'Ξαναδιάβασέ το και ξαναπές το.'
       : 'Δεν ήρθε τίποτα. Αυτό δεν είναι αποτυχία: είναι η μέτρηση πριν την επανάληψη.';
 
-    var when = got / total >= 0.7
+    var when = cov >= I.PASS
       ? 'Επόμενη επανάληψη ' + inDays(s.due) + '.'
-      : 'Ξανά αύριο. Η σκάλα δεν προχωράει σε μισή ανάκληση.';
+      : 'Ξανά αύριο. Η σκάλα προχωράει στο ' + Math.round(I.PASS * 100) + '% των στοιχείων, κι εσύ είσαι στο ' + pct + '%.';
+
+    var shape = G.full + ' πλήρη · ' + G.part + ' μισά · ' + (pts.length - G.full - G.part) + ' καθόλου';
 
     var h = '<div class="is-lhead" style="padding-top:24px">' +
       '<div class="is-lkicker">Η ανάκληση</div>' +
-      '<div class="rc-sum-n">' + got + '<span style="color:var(--au-faint,#5c5964);font-size:.42em"> / ' + total + '</span></div>' +
+      '<div class="rc-sum-n">' + G.said + '<span style="color:var(--au-faint,#5c5964);font-size:.42em"> / ' + G.total + '</span></div>' +
+      '<div class="rc-sum-s" style="margin-top:7px">στοιχεία · ' + esc(shape) + '</div>' +
       '<div class="rc-sum-t">' + esc(verdict) + '</div>' +
       '<div class="rc-sum-s">' + esc(when) + '</div></div>';
 
-    if (missed.length){
-      h += '<div class="is-tag c" style="margin-top:26px">Αυτά δεν ήρθαν</div>' +
-        '<ul class="rc-sum-l">' + missed.map(function(p){
-          return '<li>' + esc(p.label) + '</li>';
-        }).join('') + '</ul>' +
-        '<div class="rc-sum-s">Κάθονται στα «Λάθη μου» και θα επιστρέψουν πιο συχνά από τα υπόλοιπα.</div>';
+    h += '<div class="is-tag m" style="margin-top:26px">Σημείο προς σημείο</div>' +
+      '<ol class="rc-slots" style="margin-top:10px">' + pts.map(function(p, i){
+        return gradedHTML(p, i, G.g.points[i], sess.marks[i] === 2);
+      }).join('') + '</ol>';
+
+    if (G.missedEls.length){
+      h += '<div class="rc-sum-s" style="margin-top:18px">' + G.missedEls.length +
+        (G.missedEls.length === 1 ? ' στοιχείο κάθεται' : ' στοιχεία κάθονται') +
+        ' στα «Λάθη μου» και θα επιστρέψουν πιο συχνά από τα υπόλοιπα.</div>';
     }
 
     h += '<div class="rc-again">' +
