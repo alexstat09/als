@@ -184,7 +184,9 @@ never write an unowned row.**
 
 ## 3 · Hard constraints
 
-Violating any of these breaks production or loses data.
+Violating any of these breaks production, loses data, or — for the last few —
+ships something that is confidently wrong on his screen while every test is green.
+Each one was paid for once already.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
 2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v454`. Never
@@ -457,6 +459,29 @@ Violating any of these breaks production or loses data.
       SELECTOR problem rather than a sizing one in a single run. The
       screenshot-and-`Read` loop of §6 is what surfaced it at all; no assertion
       can see a typeface.
+
+27. **A DISTRACTOR THAT CAN BE ELIMINATED WITHOUT KNOWLEDGE IS NOT A DISTRACTOR,
+    AND A QUESTION THAT CONTAINS ITS OWN ANSWER IS NOT A QUESTION.** This app now
+    has four drill pages and they all grade him, so a quiz that *looks* rigorous
+    while testing nothing is the same class of failure as one that marks a right
+    answer wrong (the Λατινικά uniqueness gate, als-v449) — both teach with total
+    confidence and neither shows up in a test suite.
+    `arxaia.html` asked **«αἰδέομαι – αἰδοῦμαι → μέλλοντας;»** and offered
+    `ᾐδεσάμην · αἰδοῦμαι · αἰδέομαι · αἰδέσομαι`. Two of the four options were
+    literally the words in the prompt, so **four choices were silently two**. The
+    same root gave a second bug: «ἀγγέλλω → ενεστώτας ἐνεργητικῆς;» writes its own
+    answer into the question and examines nothing at all.
+    - `givenAway()` cuts both: a cell whose form appears in the prompt is never a
+      production question (it falls back to recognition, and **if that cannot be
+      built either it is simply not asked** — no question beats a broken one), and
+      no word of the prompt is ever offered as a wrong option.
+    - ⭐ **Generalise before building any new drill:** list what the prompt puts on
+      screen, and subtract it from both the answer space and the trap pool. In the
+      ΣΤΗΛΗ mode this turned from a patch into the design — the present tense IS
+      the lemma, so it is *given* as the starting point of the chant rather than
+      asked.
+    - **Only a render caught it.** 208 assertions were green. When a drill page
+      ships, drive one real session in headless Chrome and READ the options.
 
 ---
 
@@ -3238,6 +3263,17 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴🔴 **ΑΡΧΑΙΑ (als-v454): the rest of the φροντιστήριο handout.** The page grows
+  ONLY by him photographing a page into the chat — **there is deliberately no OCR**
+  (his call: *«κανε το απλα να στο στελνω εγω εδω και να μπαινει εκει»*), so the
+  loop is: photo → I transcribe by hand into `arxaia-data.js` → the second
+  transcription in `tests/arxaia-engine.test.js` must agree → push.
+  ⛔ **Never add a verb without its photograph** — same rule as the Notion side and
+  as Τονισμός. Page 1 (ἄγαμαι → αἰδέομαι, 6 verbs / 57 cells) is in.
+  Also unproven: **no finger has touched the page**; he needs a full PWA reopen for
+  `als-v454`. His call, not mine: is **12 questions** the right session length, and
+  does he want **ανάκληση με τη φωνή** here the way Ιστορία has it (deliberately
+  not built — principal parts are said out loud, so it is the obvious phase 2).
 - 🔴🔴 **ΙΣΤΟΡΙΑ (als-v452): does the microphone actually hear him, on his
   phone?** This is the one thing no harness can answer. Everything was driven
   with a STUBBED speech engine — real `webkitSpeechRecognition` on iOS Safari
@@ -3397,8 +3433,8 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 29 files; 28 suites + 1 tool.
-# ⚠️ `tests/*.test.js` is only 26 of them. reinstall-safety.js and
+for f in tests/*.js; do node "$f"; done   # 30 files; 29 suites + 1 tool.
+# ⚠️ `tests/*.test.js` is only 27 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
 # `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
@@ -3406,10 +3442,10 @@ for f in tests/*.js; do node "$f"; done   # 29 files; 28 suites + 1 tool.
 ```
 
 ⚠️ **`tests/goals-rhythm.test.js` fails ONE assertion ("current week marked") on
-some dates** and has since before als-v422. (It passed clean again on 2026-07-31
-with all **25 suites** green.) It reads `main.html` only and the
+some dates** and has since before als-v422. (It passed clean again on 2026-08-05
+with all **29 suites** green.) It reads `main.html` only and the
 failure is **date-dependent**. So a clean tree is
-**25 pass, or 24 pass / 1 fail**; either is expected. Don't assume you broke it and
+**29 pass, or 28 pass / 1 fail**; either is expected. Don't assume you broke it and
 don't chase it unless the task is Home's heatmap. To prove any failure isn't yours:
 `git stash push <your files>`, re-run, `git stash pop`.
 
