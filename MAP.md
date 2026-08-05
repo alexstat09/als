@@ -70,12 +70,23 @@ which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
-als-v450) and `istoria.html` (Ιστορία, als-v451) are the study pages.
-⚠️ **`arxaia.html` is a REDIRECT STUB since als-v453** — its 31-day plan was
-bound to July 2026 dates and read «Μέρα 1» forever after, so Alex had it
-deleted. It points at `study.html`, which owns the Notion URL. `arxaia:v1` is
-untouched in Supabase, in `backup.html`'s `BUNDLES` and in `api/mcp.js`'s
-`BUNDLE`, so nothing was lost. **Τονισμός is the same
+als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
+als-v454) are the study pages.
+⭐ **`arxaia.html` is LIVE again (als-v454)** and it is a rebuild, not a revert:
+the retired page was a 31-day plan bound to July 2026 dates, and **nothing in
+the new one is bound to a date at all**, so it cannot go stale the same way.
+It drills the **αρχικοί χρόνοι** and nothing else. The ύλη is TRANSCRIBED BY
+HAND from photos of his φροντιστήριο handout into `arxaia-data.js` — there is
+no OCR and no generation, because a principal part is exactly the thing no rule
+can derive. `arxaia-engine.js` never invents a form; it audits the transcription
+(ending signature per tense, augment on the historic tenses, a breathing on
+every initial vowel, an accent on every word), gates reverse questions on
+uniqueness, and builds traps from neighbouring cells of the same verb.
+⭐ **Nothing written in the prompt is asked or used as a trap** — the lemma
+«αἰδέομαι – αἰδοῦμαι» spells out its own present, so that cell is never a
+production question and neither word is ever a wrong option. New key **`arx:v1`**,
+appKey `arxaia`; the dead plan's `arxaia:v1` is untouched beside it in the same
+row, in `BUNDLES` and in `api/mcp.js`'s `BUNDLE`. **Τονισμός is the same
 shape as Λατινικά**: `tonos-engine.js` reads a hand-accented word apart with
 Unicode combining marks, derives its syllables, accent position, breathing and
 name, and then CHECKS all of it against the three laws — so a wrong quantity

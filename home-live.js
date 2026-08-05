@@ -205,8 +205,16 @@
           return tonT ? { hero: Math.round(tonR / tonT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03c4\u03cc\u03bd\u03bf\u03b9' }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
-        /* 'arxaia.html' had a case here. Retired als-v453 — the tile is gone and
-           the page is a redirect stub, so a metric for it would never be painted. */
+        case 'arxaia.html': {
+          /* όλα τα locals με πρόθεμα arx* — η σταθερή αρχή 14 κερδήθηκε σε ΑΥΤΗ
+             ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση. */
+          var arxSt = ls('arx:v1', {}); var arxCells = arxSt.cells || []; var arxR = 0, arxW = 0;
+          for (var arxI = 0; arxI < arxCells.length; arxI++) { arxR += (+arxCells[arxI].r || 0); arxW += (+arxCells[arxI].w || 0); }
+          var arxT = arxR + arxW;
+          /* '\u2014' όταν δεν έχει απαντήσει τίποτα — ποτέ placeholder σαν αριθμό (als-v433). */
+          return arxT ? { hero: Math.round(arxR / arxT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03b1\u03c1\u03c7\u03b9\u03ba\u03bf\u03af \u03c7\u03c1\u03cc\u03bd\u03bf\u03b9' }
+                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+        }
       }
     } catch (e) { }
     return null;

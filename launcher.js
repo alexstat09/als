@@ -92,8 +92,9 @@
       // \u00ab\u0397 \u03a7\u03a1\u039f\u039d\u0399\u0391\u00bb workspace, and it uses location.replace() \u2014 so navigating the
       // PWA to it in place would leave him off-site with no history to go back to.
       { href: 'study.html',   name: '\u0397 \u03a7\u03c1\u03bf\u03bd\u03b9\u03ac', k: null, ext: true },
-      // Arxaia was here. Retired als-v453 (its 31-day plan expired in July);
-      // arxaia.html is a redirect stub now and sits in tests/launcher.test.js's EXEMPT.
+      // \u0391\u03c1\u03c7\u03b1\u03af\u03b1 came back als-v454 \u2014 rebuilt as the \u03b1\u03c1\u03c7\u03b9\u03ba\u03bf\u03af \u03c7\u03c1\u03cc\u03bd\u03bf\u03b9 drill,
+      // with nothing bound to a date this time. New key `arx:v1`.
+      { href: 'arxaia.html',   name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1', k: 'arx:v1' },
       { href: 'latinika.html', name: '\u039b\u03b1\u03c4\u03b9\u03bd\u03b9\u03ba\u03ac', k: 'lat:v1' },
       { href: 'tonos.html',    name: '\u03a4\u03bf\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2', k: 'ton:v1' },
       { href: 'istoria.html',  name: '\u0399\u03c3\u03c4\u03bf\u03c1\u03af\u03b1', k: 'ist:v1' }

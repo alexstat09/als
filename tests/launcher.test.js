@@ -56,7 +56,6 @@ const EXEMPT = new Set([
   'index.html',       // the Home tab
   'nova-chat.html',   // the Nova tab
   'health.html', 'bills.html', 'trends.html', // retired to redirects
-  'arxaia.html',      // retired als-v453; a stub is still a live file
   // study.html is NOT exempt: it is a redirect stub, but it is also the app's
   // only door to the Notion «Η ΧΡΟΝΙΑ», so it carries a real launcher entry.
 ]);

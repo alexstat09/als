@@ -3,48 +3,833 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Αρχαία">
   <title>Αρχαία · MÉTRON</title>
   <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="canonical" href="study.html">
-  <style>
-    html,body{ height:100%; margin:0; background:#050506; color:#8A8A93;
-      font:500 13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
-      display:flex; align-items:center; justify-content:center; letter-spacing:.1em; text-transform:uppercase; }
-    a{ color:#D4AF6E; }
-  </style>
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <!-- Cloud sync από την πρώτη μέρα: μια σελίδα μελέτης που ζει μόνο στο
+       κινητό χάνει τα πάντα σε επανεγκατάσταση του PWA. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="arxaia-data.js"></script>
+  <script src="arxaia-engine.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.ar-hero,.ar-today,.ar-map,.ar-fams,.ar-verbs,.ar-foot';</script>
+  <script src="page-motion.js" defer></script>
+<!-- ════════════════════════════════════════════════════════════════
+     ΑΥΤΗ Η ΣΕΛΙΔΑ ΞΑΝΑΓΕΝΝΗΘΗΚΕ, ΔΕΝ ΕΠΑΝΗΛΘΕ.
+
+     Στη θέση αυτή ζούσε ένα 31ήμερο πλάνο «Αγνώστου» δεμένο σε ΗΜΕΡΟΜΗΝΙΕΣ
+     ΙΟΥΛΙΟΥ 2026. Μόλις τέλειωσε ο Ιούλιος έδειχνε «Μέρα 1» για πάντα, και μια
+     σελίδα μελέτης που λέει ψέματα για το πού βρίσκεσαι είναι χειρότερη από
+     καμία σελίδα. Αποσύρθηκε στην als-v453 («delete ARXAIA page on the app,
+     its bad») και έγινε redirect stub.
+
+     Η als-v454 τη γράφει από την αρχή για ΤΟ ΕΝΑ ΠΡΑΓΜΑ που ζήτησε ο ίδιος:
+     τους ΑΡΧΙΚΟΥΣ ΧΡΟΝΟΥΣ. Δεν υπάρχει πλάνο, δεν υπάρχει ημερολόγιο, δεν
+     υπάρχει τίποτα δεμένο σε ημερομηνία — άρα η αιτία θανάτου της παλιάς
+     σελίδας δεν μπορεί να ξανασυμβεί εδώ. Η μόνη έννοια χρόνου είναι η σκάλα
+     επανάληψης, που είναι σχετική («σε 3 μέρες»), ποτέ απόλυτη.
+
+     ⚠️ ΤΟ `arxaia:v1` ΔΕΝ ΑΓΓΙΖΕΤΑΙ. Είναι το κλειδί του νεκρού πλάνου και
+     μένει άθικτο σε localStorage, Supabase και Vault. Η νέα σελίδα γράφει σε
+     ΔΙΚΟ ΤΗΣ κλειδί, `arx:v1`. Δύο κλειδιά, ένα appKey (`arxaia`).
+     ════════════════════════════════════════════════════════════════ -->
+<style>
+  :root{ --ar:108,186,224; --warn:255,138,107; --good:63,224,176; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .ar-wrap{ max-width:600px; margin:0 auto; padding:0 18px; }
+  /* Το πολυτονικό θέλει γραμματοσειρά που όντως το κουβαλάει πλήρες.
+     Palatino και Times το έχουν σε iOS/macOS· η στοίβα πέφτει σε serif. */
+  .gr{ font-family:'Palatino','Palatino Linotype','Times New Roman',Georgia,serif; }
+
+  /* ── hero ─────────────────────────────────────────── */
+  .ar-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
+  .ar-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--ar),.92); margin-bottom:12px; }
+  .ar-h{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400;
+    font-size:clamp(27px,7vw,36px); line-height:1.04; letter-spacing:-.01em; }
+  .ar-h b{ font-weight:400; color:rgb(var(--ar)); font-variant-numeric:tabular-nums; }
+  .ar-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.5; }
+  .ar-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* ── σήμερα ───────────────────────────────────────── */
+  .ar-today{ margin-top:22px; }
+  .ar-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--ar),.28);
+    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer;
+    background:linear-gradient(140deg,rgba(var(--ar),.13),rgba(var(--ar),.03) 60%,transparent);
+    transition:transform .38s cubic-bezier(.16,1,.3,1),border-color .38s; }
+  .ar-cta:active{ transform:scale(.985); }
+  .ar-cta:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:3px; }
+  .ar-cta-l{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; color:rgba(var(--ar),.9); }
+  .ar-cta-t{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:25px; margin-top:7px; }
+  .ar-cta-m{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:5px; }
+  .ar-modes{ display:flex; gap:8px; margin-top:12px; }
+  .ar-mode{ flex:1; border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    border-radius:12px; padding:11px 8px; font-size:12px; font-family:inherit; cursor:pointer;
+    transition:color .3s,border-color .3s; }
+  .ar-mode:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(var(--ar),.4); }
+  .ar-mode:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+
+  /* ── τίτλοι ενοτήτων ──────────────────────────────── */
+  .ar-sh{ display:flex; align-items:baseline; gap:10px; margin:34px 0 14px; }
+  .ar-sh h2{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:21px; }
+  .ar-sh .lbl{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); margin-left:auto; text-align:right; }
+
+  /* ── ο χάρτης ─────────────────────────────────────── */
+  .ar-seg{ display:flex; gap:4px; padding:3px; border:1px solid var(--au-line,#26262f); border-radius:12px; margin-bottom:14px; }
+  .ar-seg button{ flex:1; border:none; background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit;
+    font-size:12px; padding:8px 6px; border-radius:9px; cursor:pointer; transition:background .3s,color .3s; }
+  .ar-seg button[aria-selected="true"]{ background:rgba(var(--ar),.14); color:rgb(var(--ar)); }
+  .ar-seg button:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:1px; }
+
+  .ar-grid{ display:grid; grid-template-columns:76px repeat(6,1fr); gap:5px; }
+  .ar-gh{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); display:flex; align-items:flex-end; justify-content:center; padding-bottom:3px; }
+  .ar-rowlem{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:12.5px;
+    color:var(--au-dim,#9a97a3); display:flex; align-items:center; overflow:hidden;
+    white-space:nowrap; text-overflow:ellipsis; padding-right:4px; }
+  .ar-cell{ aspect-ratio:1; min-height:32px; border-radius:7px; border:1px solid var(--au-line,#26262f);
+    display:grid; place-items:center; font-family:var(--au-mono,monospace); font-size:9.5px;
+    color:var(--au-faint,#5c5964); font-variant-numeric:tabular-nums; }
+  .ar-cell.has{ color:var(--au-void,#050506); border-color:transparent; font-weight:700; }
+  .ar-cell.void{ border-style:dashed; border-color:rgba(255,255,255,.07); color:rgba(255,255,255,.16); }
+  .ar-legend{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:11px; color:var(--au-faint,#5c5964); }
+  .ar-lg{ width:44px; height:7px; border-radius:4px; flex:none;
+    background:linear-gradient(90deg,rgba(var(--warn),.75),rgba(255,255,255,.14),rgba(var(--good),.85)); }
+
+  /* ── οι οικογένειες ───────────────────────────────── */
+  .ar-fam{ border:1px solid var(--au-line,#26262f); border-radius:16px; padding:16px 17px; margin-bottom:10px;
+    background:rgba(255,255,255,.014); }
+  .ar-fam h3{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:17px; }
+  .ar-fam h3 .hint{ font-family:var(--au-mono,monospace); font-style:normal; font-size:9px; letter-spacing:.12em;
+    text-transform:uppercase; color:rgba(var(--ar),.85); display:block; margin-top:5px; }
+  .ar-fam .rule{ font-size:12.5px; line-height:1.62; color:var(--au-dim,#9a97a3); margin-top:9px; }
+  .ar-fam .mem{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .ar-fam .mem button{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:14px;
+    border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-ivory,#f5f2ec);
+    border-radius:999px; padding:5px 12px; cursor:pointer; transition:border-color .3s,background .3s; }
+  .ar-fam .mem button:hover{ border-color:rgba(var(--ar),.5); background:rgba(var(--ar),.07); }
+  .ar-fam .mem button:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+
+  /* ── τα ρήματα ────────────────────────────────────── */
+  .ar-verbs ul{ list-style:none; display:flex; flex-direction:column; gap:1px;
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .ar-v{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:rgba(255,255,255,.014);
+    width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer; }
+  .ar-v:hover{ background:rgba(var(--ar),.05); }
+  .ar-v:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:-2px; }
+  .ar-v .lem{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:17px; flex:none; }
+  .ar-v .gl{ font-size:12px; color:var(--au-dim,#9a97a3); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .ar-v .cnt{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); white-space:nowrap; flex:none; }
+
+  .ar-foot{ margin:30px 0 0; font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.65; }
+  .ar-foot b{ color:var(--au-dim,#9a97a3); font-weight:600; }
+
+  /* ── η εξέταση ────────────────────────────────────── */
+  .ar-sess{ position:fixed; inset:0; z-index:60; background:var(--au-void,#050506);
+    display:none; flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px); }
+  .ar-sess.on{ display:flex; }
+  .ar-sbar{ display:flex; align-items:center; gap:12px; flex:none; }
+  .ar-x{ width:34px; height:34px; border-radius:50%; border:1px solid var(--au-line,#26262f);
+    background:transparent; color:var(--au-dim,#9a97a3); font-size:15px; cursor:pointer; flex:none; }
+  .ar-x:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+  .ar-prog{ flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; }
+  /* Σταθερό πλάτος + scaleX: κινούμε μόνο transform (GPU), ποτέ layout. */
+  .ar-prog i{ display:block; height:100%; width:100%; background:rgb(var(--ar));
+    transform:scaleX(0); transform-origin:left; transition:transform .45s cubic-bezier(.16,1,.3,1); }
+  .ar-count{ font-family:var(--au-mono,monospace); font-size:11px; color:var(--au-faint,#5c5964);
+    font-variant-numeric:tabular-nums; flex:none; }
+
+  /* ⚠️ Σταθερή αρχή 13: ΠΟΤΕ `flex:1` σε παιδί που κάνει scroll μέσα σε
+     container αόριστου ύψους — το iOS Safari το καταρρέει στο μηδέν. */
+  .ar-qwrap{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; flex-direction:column; justify-content:center; }
+  .ar-qin{ max-width:520px; width:100%; margin:0 auto; padding:14px 0 4px; }
+  .ar-qtag{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--ar),.85); text-align:center; }
+
+  /* Η ΣΤΗΛΗ — η αλυσίδα χτίζεται μπροστά του καθώς απαντάει. */
+  .ar-chain{ display:flex; flex-direction:column; gap:3px; margin:15px 0 2px; }
+  .ar-crow{ display:flex; align-items:baseline; gap:10px; padding:6px 10px; border-radius:8px;
+    background:rgba(255,255,255,.02); transition:background .4s; }
+  .ar-crow .ck{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.14em;
+    color:var(--au-faint,#5c5964); width:32px; flex:none; }
+  .ar-crow .cv{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:16px;
+    color:var(--au-dim,#9a97a3); }
+  .ar-crow .cv.empty{ font-family:var(--au-mono,monospace); font-size:11px; color:rgba(255,255,255,.2); }
+  .ar-crow.now{ background:rgba(var(--ar),.11); }
+  .ar-crow.now .ck{ color:rgb(var(--ar)); }
+  .ar-crow.now .cv{ color:rgba(var(--ar),.7); }
+  .ar-crow.done .cv{ color:var(--au-ivory,#f5f2ec); }
+
+  .ar-prompt{ font-family:'Palatino','Palatino Linotype','Times New Roman',Georgia,serif;
+    font-size:clamp(29px,8.5vw,42px); line-height:1.18; text-align:center; margin:16px 0 7px; }
+  .ar-ask{ font-size:14px; color:var(--au-dim,#9a97a3); text-align:center; line-height:1.5; }
+  .ar-ask b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .ar-hint{ font-size:11.5px; color:var(--au-faint,#5c5964); text-align:center; margin-top:10px; }
+
+  .ar-opts{ display:flex; flex-direction:column; gap:8px; margin-top:22px; }
+  .ar-opt{ border:1px solid var(--au-line,#26262f); background:rgba(255,255,255,.015); color:var(--au-ivory,#f5f2ec);
+    border-radius:13px; padding:14px 16px; font-family:'Palatino','Palatino Linotype',Georgia,serif;
+    font-size:19px; cursor:pointer; text-align:center; transition:border-color .3s,background .3s,opacity .3s; }
+  .ar-opt.words{ font-family:var(--au-sans,-apple-system,sans-serif); font-size:14px; letter-spacing:.04em; }
+  .ar-opt:hover:not(:disabled){ border-color:rgba(var(--ar),.45); }
+  .ar-opt:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+  .ar-opt:disabled{ cursor:default; }
+  .ar-opt.right{ border-color:rgba(var(--good),.6); background:rgba(var(--good),.1); color:rgb(var(--good)); }
+  .ar-opt.wrong{ border-color:rgba(var(--warn),.55); background:rgba(var(--warn),.08); color:rgb(var(--warn)); }
+  .ar-opt.mute{ opacity:.32; }
+
+  .ar-type{ display:flex; gap:8px; margin-top:22px; }
+  .ar-type input{ flex:1 1 auto; min-width:0; border:1px solid var(--au-line,#26262f);
+    background:rgba(255,255,255,.02); color:var(--au-ivory,#f5f2ec); border-radius:13px; padding:14px 16px;
+    font-size:18px; font-family:'Palatino','Palatino Linotype',Georgia,serif; text-align:center; }
+  .ar-type input:focus{ outline:2px solid rgba(var(--ar),.6); outline-offset:0; }
+  .ar-type button{ flex:none; border:1px solid rgba(var(--ar),.4); background:rgba(var(--ar),.1);
+    color:rgb(var(--ar)); border-radius:13px; padding:0 18px; font-family:inherit; font-size:14px; cursor:pointer; }
+
+  /* ── η αποκάλυψη — εδώ γίνεται η διδασκαλία ───────── */
+  .ar-rev{ margin-top:18px; border-top:1px solid var(--au-line,#26262f); padding-top:16px; }
+  .ar-rev .cellsum{ font-size:12px; color:var(--au-dim,#9a97a3); line-height:1.6; }
+  .ar-rev .cellsum b{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:16px;
+    color:var(--au-ivory,#f5f2ec); font-weight:400; display:block; margin-top:3px; }
+  .ar-why{ margin-top:12px; font-size:12.5px; line-height:1.65; color:var(--au-dim,#9a97a3);
+    border-left:2px solid rgba(var(--ar),.45); padding-left:12px; }
+  .ar-why .tag{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:rgba(var(--ar),.8); display:block; margin-bottom:5px; }
+  .ar-next{ width:100%; margin-top:18px; border:1px solid rgba(var(--ar),.35); background:rgba(var(--ar),.08);
+    color:rgb(var(--ar)); border-radius:13px; padding:14px; font-family:inherit; font-size:14px; cursor:pointer; }
+  .ar-next:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+
+  /* ── το τέλος ─────────────────────────────────────── */
+  .ar-done{ text-align:center; }
+  .ar-done .big{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:44px; color:rgb(var(--ar)); }
+  .ar-done .msg{ font-size:14px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.6; }
+  .ar-done .list{ margin-top:22px; text-align:left; display:flex; flex-direction:column; gap:9px; }
+  .ar-done .list .miss{ font-size:12px; color:var(--au-dim,#9a97a3); }
+  .ar-done .list .miss b{ font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:16px;
+    color:var(--au-ivory,#f5f2ec); font-weight:400; display:block; margin-bottom:2px; }
+
+  /* ── ο πίνακας ενός ρήματος ───────────────────────── */
+  /* ⚠️ Το page-level *{margin:0} σκοτώνει το dialog{margin:auto} του UA, οπότε
+     το κεντράρισμα γράφεται ρητά — αλλιώς ο διάλογος βγαίνει εκτός κάδρου. */
+  .ar-dlg{ border:none; padding:0; background:transparent; max-width:min(560px,94vw); width:100%;
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); }
+  .ar-dlg::backdrop{ background:rgba(3,3,5,.82); backdrop-filter:blur(5px); }
+  /* Το showModal() εστιάζει το πρώτο εστιάσιμο παιδί, οπότε ο διάλογος άνοιγε
+     φορώντας το ΜΠΛΕ ΔΑΧΤΥΛΙΔΙ του Chrome πάνω στο «Κλείσιμο» — το μοναδικό
+     χρώμα του UA σε μια σελίδα που δεν το έχει πουθενά. Το focus πηγαίνει στο
+     ίδιο το σώμα (tabindex=-1), που δεν χρειάζεται ορατό δαχτυλίδι επειδή ο
+     χρήστης μόλις το άνοιξε ο ίδιος· το Tab δουλεύει κανονικά από εκεί. */
+  .ar-dbody{ background:#0b0b0f; border:1px solid var(--au-line,#26262f); border-radius:20px;
+    padding:22px 20px; max-height:86vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .ar-dbody:focus{ outline:none; }
+  .ar-dh{ font-size:25px; }
+  .ar-dg{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:4px; }
+  .ar-tbl{ width:100%; border-collapse:collapse; margin-top:18px; }
+  .ar-tbl th{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); font-weight:700; text-align:left; padding:0 6px 8px; }
+  .ar-tbl td{ padding:7px 6px; border-top:1px solid rgba(255,255,255,.05); vertical-align:top;
+    font-family:'Palatino','Palatino Linotype',Georgia,serif; font-size:15px; line-height:1.45; }
+  .ar-tbl td.tk{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.12em;
+    color:var(--au-faint,#5c5964); width:38px; padding-top:11px; }
+  .ar-tbl td .alt{ display:block; color:var(--au-dim,#9a97a3); font-size:14px; }
+  .ar-tbl td .no{ font-family:var(--au-mono,monospace); font-size:11px; color:rgba(255,255,255,.2); }
+  .ar-dclose{ width:100%; margin-top:18px; border:1px solid var(--au-line,#26262f); background:transparent;
+    color:var(--au-dim,#9a97a3); border-radius:12px; padding:12px; font-family:inherit; font-size:13px; cursor:pointer; }
+  .ar-dclose:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+
+  @media (prefers-reduced-motion:reduce){ *{ transition-duration:.01ms !important; } }
+</style>
 </head>
 <body>
-  <!-- ════════════════════════════════════════════════════════════════
-       Αρχαία (Άγνωστο) lived here — a 31-day plan and a 132-word SOS list.
-       Retired als-v453 on Alex's verdict: "delete ARXAIA page on the app,
-       its bad."
 
-       It had already been flagged twice, in als-v449 and als-v450: the
-       31-day plan was bound to JULY 2026 DATES, so once July ended the page
-       showed «Μέρα 1» forever. A study page that lies about where you are is
-       worse than no page.
+<div class="ar-wrap">
 
-       The successor is «Η ΧΡΟΝΙΑ» in Notion, which owns the ύλη and the
-       spaced-repetition ladder for every subject, Αρχαία included. This
-       redirects at study.html rather than repeating the workspace id —
-       that stub OWNS the Notion URL, so there stays one file to change if
-       the page ever moves. (Two hops, on purpose: single source of truth
-       beats one fewer redirect.) Λατινικά and Τονισμός remain the in-app
-       drill tools; they derive answers from rules and cannot go stale.
+  <header class="ar-hero">
+    <div class="ar-eyebrow">Αρχαία Ελληνικά</div>
+    <h1 class="ar-h">Αρχικοί χρόνοι<br><b id="arStat">—</b></h1>
+    <p class="ar-hsub" id="arSub">—</p>
+  </header>
 
-       It is a redirect rather than a deletion because a bookmark or a
-       home-screen shortcut should land somewhere real instead of on a 404.
+  <section class="ar-today">
+    <button class="ar-cta" id="arGo">
+      <div class="ar-cta-l">Σήμερα</div>
+      <div class="ar-cta-t" id="arGoT">—</div>
+      <div class="ar-cta-m" id="arGoM">—</div>
+    </button>
+    <div class="ar-modes">
+      <button class="ar-mode" id="arChainBtn">Η στήλη</button>
+      <button class="ar-mode" id="arRevBtn">Ανάποδα</button>
+    </div>
+  </section>
 
-       ⚠️ NOT A DATA DELETION. `arxaia:v1` is untouched in localStorage, in
-       its Supabase row and in the Vault; the `arxaia` engine stays declared
-       in `sync.js` and the key stays in `backup.html`'s BUNDLES and
-       `api/mcp.js`'s BUNDLE, so it remains restorable. Nothing is
-       tombstoned. The page itself is in git history — reviving it is a
-       `git revert` plus an SW bump, with his progress intact.
-       ════════════════════════════════════════════════════════════════ -->
-  <p>Μεταφέρθηκε στη <a href="study.html">Χρονιά</a>…</p>
-  <script>location.replace('study.html');</script>
+  <section class="ar-map">
+    <div class="ar-sh"><h2>Ο χάρτης</h2><span class="lbl" id="arMapN"></span></div>
+    <div class="ar-seg" role="tablist" id="arSeg">
+      <button role="tab" aria-selected="true" data-voice="act">Ενεργητική</button>
+      <button role="tab" aria-selected="false" data-voice="mp">Μέση – παθητική</button>
+    </div>
+    <div class="ar-grid" id="arGrid"></div>
+    <div class="ar-legend"><span class="ar-lg"></span><span>βαμμένο από τα δικά σου λάθη</span></div>
+  </section>
+
+  <section class="ar-fams">
+    <div class="ar-sh"><h2>Οι οικογένειες</h2><span class="lbl">γιατί συμπεριφέρονται έτσι</span></div>
+    <div id="arFams"></div>
+  </section>
+
+  <section class="ar-verbs">
+    <div class="ar-sh"><h2>Τα ρήματα</h2><span class="lbl" id="arVerbsN"></span></div>
+    <ul id="arList"></ul>
+  </section>
+
+  <p class="ar-foot" id="arFoot"></p>
+</div>
+
+<!-- ══ η εξέταση ══ -->
+<div class="ar-sess" id="arSess" role="dialog" aria-modal="true" aria-label="Εξέταση">
+  <div class="ar-sbar">
+    <button class="ar-x" id="arQuit" aria-label="Κλείσιμο">✕</button>
+    <div class="ar-prog"><i id="arBar"></i></div>
+    <div class="ar-count" id="arCount"></div>
+  </div>
+  <div class="ar-qwrap"><div class="ar-qin" id="arQ"></div></div>
+</div>
+
+<dialog class="ar-dlg" id="arDlg"><div class="ar-dbody" id="arDlgBody" tabindex="-1"></div></dialog>
+
+<script>
+(function(){
+  'use strict';
+  var D = window.ArxaiaData, E = window.ArxaiaEngine;
+  var KEY = 'arx:v1';
+  var BOXES = [0, 3, 10, 30, 90];      /* η ίδια σκάλα με τα Λατινικά και το Notion */
+  var DAY = 86400000;
+  var SESSION_N = 12;
+
+  /* ── αποθήκευση ──────────────────────────────────── */
+  function lsGet(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+  function lsSet(k, v){
+    try{ localStorage.setItem(k, JSON.stringify(v)); return true; }
+    catch(e){ note('Ο χώρος της συσκευής γέμισε — η πρόοδος ΔΕΝ αποθηκεύτηκε.'); return false; }
+  }
+  function note(msg){
+    var f = document.getElementById('arFoot');
+    if (f) f.innerHTML = '<b style="color:rgb(255,138,107)">' + msg + '</b>';
+  }
+  function todayKey(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  var state = null, sess = null, revealed = {};
+
+  /* Η ΥΛΗ ΔΕΝ ΖΕΙ ΕΔΩ. Ζει στο arxaia-data.js, μεταγραμμένη στο χέρι από τη
+     φωτογραφία του φυλλαδίου. Το αποθηκευμένο state κρατάει ΜΟΝΟ την πρόοδό
+     του — ποτέ αντίγραφο των ρημάτων. Έτσι μια καινούργια σελίδα φυλλαδίου
+     εμφανίζεται αμέσως σε κάθε συσκευή χωρίς migration, και ένας διορθωμένος
+     τύπος διορθώνεται παντού με το επόμενο deploy. */
+  function load(){
+    var s = lsGet(KEY, null);
+    if (!s || typeof s !== 'object') s = {};
+    if (!Array.isArray(s.cells)) s.cells = [];
+    if (!Array.isArray(s.days))  s.days  = [];
+    if (!s.opts || typeof s.opts !== 'object') s.opts = { typing:false };
+    return s;
+  }
+  function save(){ state.ts = Date.now(); lsSet(KEY, state); }
+
+  function cellOf(id){
+    for (var i = 0; i < state.cells.length; i++) if (state.cells[i].id === id) return state.cells[i];
+    return null;
+  }
+  function bump(id, right){
+    var c = cellOf(id);
+    if (!c){ c = { id:id, r:0, w:0, box:0, due:0, ts:0 }; state.cells.push(c); }
+    if (right){ c.r++; c.box = Math.min(c.box + 1, BOXES.length - 1); }
+    else { c.w++; c.box = 0; }
+    c.due = Date.now() + BOXES[c.box] * DAY;
+    c.ts = Date.now();
+  }
+  function mastery(id){ var c = cellOf(id); if (!c) return null; var t = c.r + c.w; return t ? c.r / t : null; }
+  function solid(id){ var c = cellOf(id); return !!c && c.box >= 2 && c.r > c.w; }
+
+  /* ── επιλογή ερωτήσεων ───────────────────────────── */
+  function priority(id){
+    var c = cellOf(id);
+    if (!c) return 100;                                  /* δεν το έχει δει ποτέ */
+    var t = c.r + c.w, wrongRate = t ? c.w / t : 0;
+    if (Date.now() >= (c.due || 0)) return 80 + wrongRate * 40;
+    return 8 + wrongRate * 30;
+  }
+
+  /* Το ΕΙΔΟΣ της ερώτησης ανεβαίνει σκάλα μαζί με το κελί: πρώτα βγάζει τον
+     τύπο από το λήμμα, και μόνο όταν το κελί έχει ωριμάσει του ζητείται να
+     τον αναγνωρίσει ή να πει από ποιο ρήμα είναι. Έτσι δεν πέφτει στα βαθιά
+     την πρώτη μέρα. */
+  function buildQ(cell, mode){
+    var c = cellOf(cell.id), box = c ? c.box : 0, q = null;
+    /* Το λήμμα «αἰδέομαι – αἰδοῦμαι» γράφει ήδη τον ενεστώτα του, οπότε αυτό το
+       κελί δεν μπορεί να ρωτηθεί ως παραγωγή — μόνο ανάποδα. Αν ούτε αυτό
+       στέκει, ΔΕΝ ρωτιέται: μια ερώτηση χωρίς μία σωστή απάντηση είναι
+       χειρότερη από καμία ερώτηση. */
+    if (E.givenAway(cell.verb, cell)){
+      return E.reverse(cell.verb, cell, Math.random) ||
+             E.whichVerb(D.VERBS, cell.verb, cell, Math.random) || null;
+    }
+    if (mode === 'rev'){
+      q = E.reverse(cell.verb, cell, Math.random) || E.whichVerb(D.VERBS, cell.verb, cell, Math.random);
+      return q || E.production(cell.verb, cell, Math.random);
+    }
+    if (box >= 2 && Math.random() < 0.42){
+      q = Math.random() < 0.5 ? E.reverse(cell.verb, cell, Math.random)
+                              : E.whichVerb(D.VERBS, cell.verb, cell, Math.random);
+    }
+    return q || E.production(cell.verb, cell, Math.random);
+  }
+
+  function buildSession(mode, n){
+    var pool = E.drillCells(D.VERBS), i, out = [], lastVerb = null, seen = {}, q;
+    if (!pool.length) return [];
+    for (i = 0; i < pool.length; i++) pool[i]._s = priority(pool[i].id) + Math.random() * 22;
+    pool.sort(function(a,b){ return b._s - a._s; });
+
+    /* Χτίζουμε την ερώτηση ΜΕΣΑ στον βρόχο: ένα κελί που δεν δίνει έγκυρη
+       ερώτηση απλώς προσπερνιέται, ώστε η συνεδρία να βγαίνει πάντα με τις
+       12 που υποσχέθηκε αντί να λιγοστεύει σιωπηλά. */
+    for (i = 0; i < pool.length && out.length < n; i++){
+      if (seen[pool[i].id]) continue;
+      if (pool[i].verb.id === lastVerb && out.length) continue;   /* όχι δύο σερί ίδιο ρήμα */
+      q = buildQ(pool[i], mode);
+      seen[pool[i].id] = 1;
+      if (!q) continue;
+      lastVerb = pool[i].verb.id; out.push(q);
+    }
+    for (i = 0; i < pool.length && out.length < n; i++){          /* χαλαρώνει τον κανόνα αν η ύλη είναι μικρή */
+      if (seen[pool[i].id]) continue;
+      q = buildQ(pool[i], mode); seen[pool[i].id] = 1;
+      if (q) out.push(q);
+    }
+    return out;
+  }
+
+  /* Η ΣΤΗΛΗ: ένα ρήμα, μία φωνή, τα έξι κελιά με τη σειρά που τα λες φωναχτά.
+     Διαλέγει τη στήλη που τον δυσκολεύει περισσότερο. */
+  function pickChain(){
+    var best = null, bestScore = -1, i, j, k;
+    for (i = 0; i < D.VERBS.length; i++){
+      for (j = 0; j < D.VOICES.length; j++){
+        var col = E.chain(D.VERBS[i], D.VOICES[j]);
+        if (!col.length) continue;
+        var drill = col.filter(function(c){ return c.drillable; });
+        if (drill.length < 3) continue;
+        var s = 0;
+        for (k = 0; k < drill.length; k++) s += priority(drill[k].id);
+        s = s / drill.length + Math.random() * 18;
+        if (s > bestScore){ bestScore = s; best = { verb:D.VERBS[i], voice:D.VOICES[j], col:col }; }
+      }
+    }
+    return best;
+  }
+
+  function startChain(){
+    var pick = pickChain();
+    if (!pick) return;
+    var qs = [], given = [], i, c;
+    for (i = 0; i < pick.col.length; i++){
+      c = pick.col[i];
+      if (!c.drillable) continue;
+      /* Ο ενεστώτας είναι το λήμμα: η αφετηρία που λες φωναχτά, όχι ερώτηση.
+         Δίνεται συμπληρωμένος και η αλυσίδα χτίζεται από εκεί και κάτω. */
+      if (E.givenAway(pick.verb, c)){ given.push(c.id); continue; }
+      var q = E.production(pick.verb, c, Math.random);
+      if (q) qs.push(q); else given.push(c.id);
+    }
+    if (!qs.length) return;
+    start(qs, { chain: pick, given: given });
+  }
+
+  /* ── η εξέταση ───────────────────────────────────── */
+  var elSess  = document.getElementById('arSess'),
+      elQ     = document.getElementById('arQ'),
+      elBar   = document.getElementById('arBar'),
+      elCount = document.getElementById('arCount');
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+      return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c];
+    });
+  }
+
+  function start(qs, ctx){
+    if (!qs || !qs.length) return;
+    sess = { qs:qs, i:0, right:0, missed:[], ctx:ctx || null, answered:false };
+    revealed = {};
+    if (ctx && ctx.given) for (var gi = 0; gi < ctx.given.length; gi++) revealed[ctx.given[gi]] = 1;
+    elSess.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    renderQ();
+  }
+  function quit(){
+    sess = null;
+    elSess.classList.remove('on');
+    document.body.style.overflow = '';
+    render();
+  }
+
+  function chainHtml(){
+    if (!sess || !sess.ctx || !sess.ctx.chain) return '';
+    var col = sess.ctx.chain.col, cur = sess.qs[sess.i], html = '', i, c, val, cls, isNow;
+    for (i = 0; i < col.length; i++){
+      c = col[i];
+      isNow = !!(cur && c.id === cur.cell);
+      cls = 'ar-crow' + (isNow ? ' now' : (revealed[c.id] ? ' done' : ''));
+      if (!c.forms) val = '<span class="cv empty">δεν έχει</span>';
+      else if (revealed[c.id]) val = '<span class="cv">' + esc(c.forms.join(' · ')) + '</span>';
+      else if (isNow) val = '<span class="cv">;</span>';
+      else val = '<span class="cv empty">·····</span>';
+      html += '<div class="' + cls + '"><span class="ck">' + D.TENSE_SHORT[c.tense] + '</span>' + val + '</div>';
+    }
+    return '<div class="ar-chain">' + html + '</div>';
+  }
+
+  function renderQ(){
+    if (!sess) return;
+    if (sess.i >= sess.qs.length) return renderDone();
+    var q = sess.qs[sess.i], i;
+    sess.answered = false;
+
+    elBar.style.transform = 'scaleX(' + (sess.i / sess.qs.length) + ')';
+    elCount.textContent = (sess.i + 1) + '/' + sess.qs.length;
+
+    var tag = q.type === 'prod' ? (sess.ctx && sess.ctx.chain
+                ? 'Η στήλη · ' + D.VOICE_EL[sess.ctx.chain.voice] : 'Ο τύπος')
+            : q.type === 'rev'  ? 'Αναγνώριση' : 'Το ρήμα';
+
+    var html = '<div class="ar-qtag">' + tag + '</div>';
+    html += chainHtml();
+    html += '<div class="ar-prompt">' + esc(q.prompt) + '</div>';
+    html += '<div class="ar-ask">' + (q.type === 'prod' ? '<b>' + esc(q.ask) + '</b>' : esc(q.ask)) + '</div>';
+
+    if (q.type === 'prod' && state.opts.typing){
+      html += '<div class="ar-type"><input id="arIn" type="text" autocomplete="off" autocapitalize="off" ' +
+              'autocorrect="off" spellcheck="false" placeholder="γράψε τον τύπο">' +
+              '<button id="arSubmit">OK</button></div>' +
+              '<div class="ar-hint">ο τόνος δεν μετράει όταν πληκτρολογείς</div>';
+    } else {
+      html += '<div class="ar-opts">';
+      for (i = 0; i < q.options.length; i++){
+        var o = q.options[i],
+            val = (typeof o === 'string') ? o : o.id,
+            lab = (typeof o === 'string') ? o : o.label;
+        html += '<button class="ar-opt' + (typeof o === 'string' ? '' : ' words') +
+                '" data-v="' + esc(val) + '">' + esc(lab) + '</button>';
+      }
+      html += '</div>';
+    }
+    html += '<div id="arRevBox"></div>';
+    elQ.innerHTML = html;
+    elQ.parentNode.scrollTop = 0;
+
+    var opts = elQ.querySelectorAll('.ar-opt');
+    for (i = 0; i < opts.length; i++){
+      opts[i].addEventListener('click', function(){ answer(this.getAttribute('data-v'), false, this); });
+    }
+    var input = document.getElementById('arIn');
+    if (input){
+      document.getElementById('arSubmit').addEventListener('click', function(){ answer(input.value, true, null); });
+      input.addEventListener('keydown', function(e){ if (e.key === 'Enter') answer(input.value, true, null); });
+      setTimeout(function(){ try{ input.focus(); }catch(e){} }, 60);
+    }
+  }
+
+  function answer(given, typed, btn){
+    if (!sess || sess.answered) return;
+    if (typed && !String(given).trim()) return;
+    var q = sess.qs[sess.i], i, v;
+    var right = E.correct(q, given, typed);
+    sess.answered = true;
+    bump(q.cell, right);
+    if (right) sess.right++; else sess.missed.push(q);
+    revealed[q.cell] = 1;
+    save();
+
+    var opts = elQ.querySelectorAll('.ar-opt');
+    for (i = 0; i < opts.length; i++){
+      v = opts[i].getAttribute('data-v');
+      var words = opts[i].className.indexOf('words') >= 0 ? ' words' : '';
+      opts[i].disabled = true;
+      if (q.answers.indexOf(v) >= 0) opts[i].className = 'ar-opt' + words + ' right';
+      else if (btn && opts[i] === btn) opts[i].className = 'ar-opt' + words + ' wrong';
+      else opts[i].className = 'ar-opt' + words + ' mute';
+    }
+    var input = document.getElementById('arIn');
+    if (input){
+      input.disabled = true;
+      input.style.borderColor = right ? 'rgba(63,224,176,.6)' : 'rgba(255,138,107,.6)';
+    }
+
+    /* η αποκάλυψη: ΟΛΟΚΛΗΡΟ το κελί (γιατί συχνά έχει δύο σωστούς τύπους) και,
+       όταν έπεσε έξω, ο κανόνας της οικογένειας — εκεί γίνεται η διδασκαλία. */
+    var parts = q.cell.split('.'), voice = parts[1], tense = parts[2];
+    var forms = (q.verb[voice] && q.verb[voice][tense]) || [];
+    var box = '<div class="ar-rev"><div class="cellsum">' +
+      esc(q.verb.lemma) + ' · ' + esc(E.askLabel(voice, tense)) +
+      '<b>' + esc(forms.join('  ·  ')) + '</b></div>';
+    if (!right){
+      var fam = D.FAMS[q.verb.fam];
+      box += '<div class="ar-why"><span class="tag">' + esc(fam ? fam.label : 'γιατί') + '</span>' +
+             esc(q.verb.why) + '</div>';
+    }
+    box += '<button class="ar-next" id="arNext">' +
+           (sess.i + 1 >= sess.qs.length ? 'Τέλος' : 'Επόμενο') + '</button></div>';
+    document.getElementById('arRevBox').innerHTML = box;
+
+    if (sess.ctx && sess.ctx.chain){
+      var ch = elQ.querySelector('.ar-chain');
+      if (ch) ch.outerHTML = chainHtml();
+    }
+    var nx = document.getElementById('arNext');
+    nx.addEventListener('click', next);
+    /* Καμία εστίαση εδώ: το μάτι πρέπει να πάει στην ΕΞΗΓΗΣΗ, όχι στο κουμπί. */
+    setTimeout(function(){
+      try{ nx.scrollIntoView({ block:'nearest', behavior:'smooth' }); }catch(e){}
+    }, 40);
+  }
+
+  function next(){ if (!sess) return; sess.i++; renderQ(); }
+
+  function renderDone(){
+    var d = todayKey(), i;
+    if (state.days.indexOf(d) < 0){ state.days.push(d); state.days = state.days.slice(-400); }
+    save();
+    elBar.style.transform = 'scaleX(1)';
+    elCount.textContent = sess.qs.length + '/' + sess.qs.length;
+
+    var pct = Math.round(sess.right / sess.qs.length * 100);
+    var msg = pct === 100 ? 'Καθαρό. Αυτά τα κελιά ξαναέρχονται σε λίγες μέρες.'
+            : pct >= 70   ? 'Καλά. Τα λάθη γύρισαν στην αρχή της σκάλας.'
+            : 'Αυτά είναι τα κελιά που κάνουν τη διαφορά — τα ξαναβλέπεις αύριο.';
+
+    var html = '<div class="ar-done"><div class="big">' + sess.right + '/' + sess.qs.length + '</div>' +
+               '<div class="msg">' + msg + '</div>';
+    if (sess.missed.length){
+      html += '<div class="list">';
+      for (i = 0; i < sess.missed.length; i++){
+        var q = sess.missed[i], p = q.cell.split('.');
+        var fs = (q.verb[p[1]] && q.verb[p[1]][p[2]]) || [];
+        html += '<div class="miss"><b>' + esc(fs.join(' · ')) + '</b>' +
+                esc(q.verb.lemma + ' · ' + E.askLabel(p[1], p[2])) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '<button class="ar-next" id="arNext">Τέλος</button></div>';
+    elQ.innerHTML = html;
+    elQ.parentNode.scrollTop = 0;
+    document.getElementById('arNext').addEventListener('click', quit);
+  }
+
+  document.getElementById('arQuit').addEventListener('click', quit);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && sess) quit(); });
+
+  /* ══ η σελίδα ══ */
+  var mapVoice = 'act';
+
+  /* κοράλλι → σμαραγδί, από τη ΔΙΚΗ ΤΟΥ ακρίβεια. Ένα κελί που δεν έχει
+     δοκιμαστεί δεν παίρνει χρώμα καθόλου: «δεν ξέρω» δεν είναι «κακό». */
+  function tint(m){
+    if (m === null) return null;
+    var warn = [255,138,107], good = [63,224,176], c = [], i;
+    for (i = 0; i < 3; i++) c.push(Math.round(warn[i] + (good[i] - warn[i]) * m));
+    return 'rgba(' + c.join(',') + ',' + (0.34 + Math.abs(m - 0.5) * 1.0).toFixed(2) + ')';
+  }
+
+  function renderMap(){
+    var g = document.getElementById('arGrid'), html = '<div class="ar-gh"></div>', i, j, v, cid, m, bg, forms;
+    for (i = 0; i < D.TENSES.length; i++) html += '<div class="ar-gh">' + D.TENSE_SHORT[D.TENSES[i]] + '</div>';
+    for (i = 0; i < D.VERBS.length; i++){
+      v = D.VERBS[i];
+      if (!v[mapVoice]) continue;      /* αποθετικό: δεν έχει καθόλου αυτή τη φωνή */
+      html += '<div class="ar-rowlem">' + esc(v.lemma.split(' – ')[0]) + '</div>';
+      for (j = 0; j < D.TENSES.length; j++){
+        forms = v[mapVoice] ? v[mapVoice][D.TENSES[j]] : null;
+        if (!forms || !forms.length){ html += '<div class="ar-cell void">—</div>'; continue; }
+        cid = E.cellId(v.id, mapVoice, D.TENSES[j]);
+        m = mastery(cid);
+        bg = tint(m);
+        html += '<div class="ar-cell' + (bg ? ' has' : '') + '"' + (bg ? ' style="background:' + bg + '"' : '') +
+                ' title="' + esc(v.lemma + ' · ' + E.askLabel(mapVoice, D.TENSES[j])) + '">' +
+                (m === null ? '·' : Math.round(m * 100)) + '</div>';
+      }
+    }
+    g.innerHTML = html;
+    var cells = E.drillCells(D.VERBS).filter(function(c){ return c.voice === mapVoice; });
+    var tried = cells.filter(function(c){ return mastery(c.id) !== null; }).length;
+    document.getElementById('arMapN').textContent = tried + '/' + cells.length + ' δοκιμασμένα';
+  }
+
+  function renderFams(){
+    var fams = E.byFamily(D.VERBS), html = '', i, j, bs;
+    for (i = 0; i < fams.length; i++){
+      var f = fams[i];
+      html += '<div class="ar-fam"><h3>' + esc(f.info.label) +
+              '<span class="hint">' + esc(f.info.hint) + '</span></h3>' +
+              '<div class="rule">' + esc(f.info.rule) + '</div><div class="mem">';
+      for (j = 0; j < f.verbs.length; j++){
+        html += '<button data-v="' + esc(f.verbs[j].id) + '">' +
+                esc(f.verbs[j].lemma.split(' – ')[0]) + '</button>';
+      }
+      html += '</div></div>';
+    }
+    document.getElementById('arFams').innerHTML = html;
+    bs = document.querySelectorAll('#arFams button[data-v]');
+    for (i = 0; i < bs.length; i++){
+      bs[i].addEventListener('click', function(){ openVerb(this.getAttribute('data-v')); });
+    }
+  }
+
+  function renderList(){
+    var html = '', i, v, cs, done, bs;
+    for (i = 0; i < D.VERBS.length; i++){
+      v = D.VERBS[i];
+      cs = E.cellsOf(v).filter(function(c){ return c.drillable; });
+      done = cs.filter(function(c){ return solid(c.id); }).length;
+      html += '<li><button class="ar-v" data-v="' + esc(v.id) + '">' +
+              '<span class="lem">' + esc(v.lemma) + '</span>' +
+              '<span class="gl">' + esc(v.gloss) + '</span>' +
+              '<span class="cnt">' + done + '/' + cs.length + '</span></button></li>';
+    }
+    document.getElementById('arList').innerHTML = html;
+    bs = document.querySelectorAll('#arList button[data-v]');
+    for (i = 0; i < bs.length; i++){
+      bs[i].addEventListener('click', function(){ openVerb(this.getAttribute('data-v')); });
+    }
+    document.getElementById('arVerbsN').textContent = D.VERBS.length + ' στην ύλη';
+  }
+
+  function openVerb(id){
+    var v = null, i, j, k;
+    for (i = 0; i < D.VERBS.length; i++) if (D.VERBS[i].id === id) v = D.VERBS[i];
+    if (!v) return;
+    var fam = D.FAMS[v.fam];
+    var html = '<div class="ar-dh gr">' + esc(v.lemma) + '</div><div class="ar-dg">' + esc(v.gloss) + '</div>';
+    html += '<table class="ar-tbl"><tr><th></th><th>' + (v.act ? 'Ενεργητική' : '&nbsp;') +
+            '</th><th>Μέση – παθητική</th></tr>';
+    for (i = 0; i < D.TENSES.length; i++){
+      var t = D.TENSES[i];
+      html += '<tr><td class="tk">' + D.TENSE_SHORT[t] + '</td>';
+      for (j = 0; j < D.VOICES.length; j++){
+        var voice = D.VOICES[j], f = v[voice] ? v[voice][t] : null;
+        if (!v[voice]){ html += '<td><span class="no">—</span></td>'; continue; }
+        if (!f || !f.length){ html += '<td><span class="no">δεν έχει</span></td>'; continue; }
+        var txt = esc(f[0]);
+        for (k = 1; k < f.length; k++) txt += '<span class="alt">' + esc(f[k]) + '</span>';
+        if (E.noDrilled(v, voice, t)) txt = '(' + txt + ')';
+        html += '<td>' + txt + '</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</table>';
+    html += '<div class="ar-why" style="margin-top:18px"><span class="tag">' +
+            esc(fam ? fam.label : 'γιατί') + '</span>' + esc(v.why) + '</div>';
+    html += '<button class="ar-dclose" id="arDClose">Κλείσιμο</button>';
+
+    document.getElementById('arDlgBody').innerHTML = html;
+    var dlg = document.getElementById('arDlg');
+    document.getElementById('arDClose').addEventListener('click', function(){ dlg.close(); });
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+    try{ document.getElementById('arDlgBody').focus({ preventScroll:true }); }catch(e){}
+  }
+
+  function render(){
+    var cells = E.drillCells(D.VERBS);
+    var solidN = cells.filter(function(c){ return solid(c.id); }).length;
+    var fresh = cells.filter(function(c){ return !cellOf(c.id); }).length;
+    var due = cells.filter(function(c){ var x = cellOf(c.id); return x && Date.now() >= (x.due || 0); }).length;
+
+    document.getElementById('arStat').textContent = solidN + ' από ' + cells.length + ' κελιά στέρεα';
+    document.getElementById('arSub').innerHTML =
+      '<b>' + D.VERBS.length + ' ρήματα</b> · ' + cells.length + ' κελιά που εξετάζονται · ' +
+      esc(D.SHEET.source) + ', σελ. ' + D.SHEET.pages[D.SHEET.pages.length - 1].n;
+
+    document.getElementById('arGoT').textContent = Math.min(SESSION_N, cells.length) + ' ερωτήσεις';
+    var when = due && fresh ? due + ' για επανάληψη · ' + fresh + ' καινούργια'
+             : due            ? due + ' κελιά για επανάληψη'
+             : fresh          ? fresh + ' κελιά που δεν έχεις δει ποτέ'
+             :                  'μεικτή εξέταση';
+    document.getElementById('arGoM').textContent = '~3 λεπτά · ' + when;
+
+    renderMap(); renderFams(); renderList();
+
+    document.getElementById('arFoot').innerHTML =
+      'Η ύλη είναι μεταγραμμένη <b>στο χέρι</b> από τη φωτογραφία του φυλλαδίου σου και ελέγχεται ' +
+      'από 201 assertions — κατάληξη ανά χρόνο, αύξηση στους ιστορικούς χρόνους, πνεύμα σε κάθε ' +
+      'αρχικό φωνήεν, τόνος παντού. <b>Καινούργια σελίδα: στείλε τη φωτογραφία και μπαίνει.</b>';
+  }
+
+  document.getElementById('arGo').addEventListener('click', function(){
+    start(buildSession('quick', SESSION_N), null);
+  });
+  document.getElementById('arRevBtn').addEventListener('click', function(){
+    start(buildSession('rev', SESSION_N), null);
+  });
+  document.getElementById('arChainBtn').addEventListener('click', startChain);
+
+  var segBtns = document.querySelectorAll('#arSeg button');
+  (function(){
+    for (var s = 0; s < segBtns.length; s++){
+      segBtns[s].addEventListener('click', function(){
+        mapVoice = this.getAttribute('data-voice');
+        for (var i = 0; i < segBtns.length; i++){
+          segBtns[i].setAttribute('aria-selected', segBtns[i] === this ? 'true' : 'false');
+        }
+        renderMap();
+      });
+    }
+  })();
+
+  state = load();
+  save();
+  render();
+
+  /* ── cloud sync ──────────────────────────────────── */
+  (function initArxaiaSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey:'arxaia',
+        syncedKeys:[KEY],
+        onApplied:function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+          state = load();
+          if (!sess) { try{ render(); }catch(e){} }
+        }
+      });
+    })();
+  })();
+})();
+</script>
 </body>
 </html>

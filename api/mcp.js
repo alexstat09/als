@@ -59,7 +59,8 @@ var BUNDLE = {
   'ideas:items': 'ideas',
   'lat:v1': 'latinika',
   'ton:v1': 'tonos',
-  'ist:v1': 'istoria'
+  'ist:v1': 'istoria',
+  'arx:v1': 'arxaia'
 };
 function bundleFor(lsKey) { if (lsKey.indexOf('stack:taken:') === 0) return 'health'; return BUNDLE[lsKey]; }
 
