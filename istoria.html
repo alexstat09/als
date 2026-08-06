@@ -87,6 +87,20 @@
   .is-row .t{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--au-faint,#5c5964); white-space:nowrap; flex:none; }
   .is-row .t.due{ color:rgb(var(--is)); }
+  /* ⭐ ΔΗΛΩΜΕΝΟ: ΚΑΜΙΑ μπάρα, γιατί δεν υπάρχει ακρίβεια να δείξει, και η
+     λέξη το λέει καθαρότερα από κάθε σχήμα. ⚠️ Η μπάρα φεύγει και ΓΙΑ ΛΟΓΟ
+     ΧΩΡΟΥ: μετρημένο, η ετικέτα «ΔΗΛΩΜΕΝΟ» είναι 49px έναντι 22 του «ΝΕΟ»,
+     και μαζί με μπάρα άφηνε τη γραμμή στα 202px — ξανάτρωγε τα νούμερα. */
+  /* ⚠️ ΜΕΤΡΗΜΕΝΟ, ΟΧΙ ΔΙΑΛΕΓΜΕΝΟ: η λέξη ΔΕΝ μπαίνει στη δεξιά ετικέτα.
+     Εκεί είναι `flex:none` πάνω σε ελαστικό κείμενο, οπότε το «ΔΗΛΩΜΕΝΟ»
+     (49px έναντι 22 του «ΝΕΟ») έριχνε τη γραμμή στα 272px και έκοβε τα
+     νούμερα των παλιών ενοτήτων (285 και 283 χρειάζονται). Παίρνει τη ΘΕΣΗ
+     ΤΗΣ ΜΠΑΡΑΣ, που είναι ούτως ή άλλως 52px και ούτως ή άλλως άδεια εδώ:
+     ίδια πλάτη με μια μετρημένη γραμμή, άρα κανένα κόστος στο κείμενο.
+     Ονόματα κλάσεων χωρίς ένθεση, σταθερή αρχή 26. */
+  .is-rowdec{ width:52px; flex:none; font-family:var(--au-mono,monospace); font-size:8px;
+    letter-spacing:0; text-transform:uppercase; color:var(--au-dim,#9a97a3); text-align:right;
+    white-space:nowrap; overflow:hidden; }
   .is-grp{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
     color:var(--au-faint,#5c5964); padding:14px 14px 8px; background:rgba(255,255,255,.014); }
 
@@ -217,6 +231,31 @@
   .is-go:active{ transform:scale(.985); }
   .is-go:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:3px; }
   .is-go span{ display:block; font-size:12px; color:var(--au-dim,#9a97a3); margin-top:5px; }
+
+  /* ⭐⭐ ΤΟ «ΤΟ ΞΕΡΩ ΑΠΕΞΩ», ΚΑΙ ΓΙΑΤΙ ΔΕΝ ΜΟΙΑΖΕΙ ΜΕ ΤΟ «ΠΕΣ ΤΟ».
+     Το `.is-go` είναι γεμάτο, στο χρώμα της σελίδας, με συμπαγές περίγραμμα:
+     εκεί γίνεται η μέτρηση. Αυτό εδώ είναι ΔΙΑΦΑΝΟ και ΔΙΑΚΕΚΟΜΜΕΝΟ, γιατί
+     είναι λόγος και όχι απόδειξη. Δύο κουμπιά που φαίνονται ίδια θα έλεγαν
+     ότι αξίζουν το ίδιο. */
+  .is-claim{ margin-top:12px; }
+  .is-claim-b{ width:100%; border:1px dashed rgba(255,255,255,.20); border-radius:16px; padding:15px;
+    background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit; font-size:14px; cursor:pointer;
+    text-align:center; transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s,color .3s; }
+  .is-claim-b:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.36); }
+  .is-claim-b:active{ transform:scale(.985); }
+  .is-claim-b:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:3px; }
+  .is-claim-b span{ display:block; font-size:11.5px; color:var(--au-faint,#5c5964); margin-top:5px;
+    line-height:1.55; }
+  .is-claim-on{ border:1px dashed rgba(255,255,255,.26); border-radius:16px; padding:15px 16px;
+    background:rgba(255,255,255,.028); }
+  .is-claim-head{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--au-dim,#9a97a3); }
+  .is-claim-note{ font-size:12.5px; color:var(--au-faint,#5c5964); line-height:1.6; margin-top:7px; }
+  .is-claim-undo{ margin-top:11px; border:1px solid var(--au-line,#26262f); background:transparent;
+    color:var(--au-dim,#9a97a3); font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.12em;
+    text-transform:uppercase; padding:8px 13px; border-radius:9px; cursor:pointer; transition:color .3s,border-color .3s; }
+  .is-claim-undo:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.3); }
+  .is-claim-undo:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
 
   /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
   .rc-ask{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(20px,5.4vw,26px); line-height:1.3;
@@ -404,9 +443,28 @@
   function blank(){ return { v:1, units:{}, els:{}, days:[] }; }
 
   function u(id){
-    if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0 };
+    if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0, claimed:0 };
     return state.units[id];
   }
+
+  /* ══ ⭐⭐ ΔΗΛΩΜΕΝΟ ΑΠΕΞΩ — ΤΟ ΚΟΥΜΠΙ ΠΟΥ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΓΙΝΕΙ ΠΑΡΑΘΥΡΑΚΙ
+     Δικό του αίτημα: «οταν το χω μαθει απεξω αλλα δεν εχω χρονο να το πω».
+     Πραγματική ανάγκη — αλλά η als-v452 υπάρχει επειδή ένα εργαλείο που
+     ανταμείβει έναν ΙΣΧΥΡΙΣΜΟ διδάσκει ότι ο ισχυρισμός αρκεί. Άρα η δήλωση
+     ΔΕΝ γίνεται δεύτερος δρόμος για την ίδια ανταμοιβή:
+
+       • ΔΕΝ ακουμπάει το `best` (η μετρημένη ακρίβεια) ούτε τα `runs`.
+       • ΔΕΝ ανεβάζει τη σκάλα. Τα σκαλιά 0/+3/+10/+30/+90 κερδίζονται με
+         μέτρηση· μια δήλωση αγοράζει CLAIM_DAYS μέρες παρκάρισμα, όχι σκαλί.
+       • ΤΟ ΛΕΕΙ ΣΤΗΝ ΟΘΟΝΗ, παντού και για όσο ισχύει.
+       • Μια ΠΡΑΓΜΑΤΙΚΗ ανάκληση το σβήνει: `runs > 0` σημαίνει ότι υπάρχει
+         μέτρηση, και η μέτρηση κερδίζει πάντα τη δήλωση.
+
+     Αυτό που κερδίζει είναι το μόνο που ζήτησε: φεύγει από το «ΓΙΑ ΑΥΡΙΟ» και
+     μπαίνει στον κύκλο επανάληψης χωρίς να χρειαστεί να μιλήσει τώρα. */
+  var CLAIM_DAYS = 2;
+
+  function claimedOnly(s){ return !!s.claimed && !s.runs; }
   /* ΑΝΑ ΣΤΟΙΧΕΙΟ, όχι ανά σημείο. Το «τι ξεχνάω» είναι «την αγρανάπαυση»,
      ποτέ «το σημείο 6» — και μόνο το πρώτο μπορεί να διαβαστεί σαν πρόταση. */
   function el(id, pi, ei){
@@ -487,8 +545,16 @@
 
   /* ══ HOME ══════════════════════════════════════════ */
   function renderHome(){
-    var f = fresh(), d = due(), learned = 0, i, un;
-    for (i = 0; i < I.UNITS.length; i++) if (u(I.UNITS[i].id).learnedAt) learned++;
+    var f = fresh(), d = due(), learned = 0, decN = 0, i, un, st;
+    for (i = 0; i < I.UNITS.length; i++){
+      st = u(I.UNITS[i].id);
+      if (st.learnedAt) learned++;
+      if (claimedOnly(st)) decN++;
+    }
+    /* ⭐ Η γραμμή που δεν αφήνει έναν ισχυρισμό να περάσει για μέτρηση. */
+    var decLine = !decN ? ''
+      : decN === 1 ? ' <b>1</b> από αυτές είναι δηλωμένη, όχι μετρημένη.'
+                   : ' <b>' + decN + '</b> από αυτές είναι δηλωμένες, όχι μετρημένες.';
 
     /* hero */
     var head = document.getElementById('isHead'), sub = document.getElementById('isSub');
@@ -497,9 +563,9 @@
       sub.innerHTML = 'Πρώτα διάβασέ την, μετά πες την απέξω με κλειστό βιβλίο. Η δεύτερη κίνηση είναι που τη χτίζει.';
     } else {
       head.innerHTML = '<b>' + learned + '</b> από ' + I.UNITS.length + ' υποενότητες<br>είναι στο κεφάλι σου.';
-      sub.innerHTML = d.length
+      sub.innerHTML = (d.length
         ? '<b>' + d.length + '</b> ' + (d.length === 1 ? 'θέλει' : 'θέλουν') + ' επανάληψη σήμερα. Αυτό είναι που σε κρατάει μπροστά τον Μάιο, όχι το να τρέξεις μπροστά.'
-        : 'Τίποτα δεν έχει λήξει. Είσαι μπροστά.';
+        : 'Τίποτα δεν έχει λήξει. Είσαι μπροστά.') + decLine;
     }
 
     /* ΓΙΑ ΑΥΡΙΟ */
@@ -565,11 +631,16 @@
   }
 
   function row(un, act, tag){
-    var s = u(un.id), acc = s.best || 0, learned = !!s.learnedAt;
+    var s = u(un.id), acc = s.best || 0, learned = !!s.learnedAt, dec = claimedOnly(s);
+    /* ⭐ Σταθερή αρχή 10 σε νέο μέρος: μια ΔΗΛΩΣΗ και μια ΜΕΤΡΗΣΗ δεν
+       επιτρέπεται να τυπώνονται ίδια. Η δηλωμένη παίρνει τη ΛΕΞΗ στη θέση
+       της μπάρας ακρίβειας, γιατί ακρίβεια δεν υπάρχει: κανείς δεν την
+       άκουσε. Η ημερομηνία δεξιά μένει, όπως σε κάθε άλλη γραμμή. */
     var right = tag ? '<span class="t due">' + esc(tag) + '</span>'
       : learned ? '<span class="t">' + esc(inDays(s.due)) + '</span>'
                 : '<span class="t">νέο</span>';
-    var bar = learned
+    var bar = dec ? '<span class="is-rowdec">δηλωμένο</span>'
+      : learned
       ? '<span class="bar"><i style="width:' + Math.round(acc*100) + '%;background:' + tint(acc) + '"></i></span>'
       : '';
     return '<button class="is-row" data-go="' + act + ':' + esc(un.id) + '">' +
@@ -609,6 +680,54 @@
         '<span class="g">' + esc(x.p.label) + ' · ' + esc(x.u.title) + '</span></span>' +
         '<span class="c">' + Math.round(x.acc*100) + '%</span></button>';
     }).join('') + '</div>';
+  }
+
+  /* ⭐ ΕΝΑ ΜΠΛΟΚ, ΔΥΟ ΘΕΣΕΙΣ (μάθημα + ανάκληση), ώστε να μη γίνουν δύο
+     διαφορετικά κουμπιά με δύο διαφορετικές υποσχέσεις. */
+  function claimInner(un){
+    var s = u(un.id);
+    if (claimedOnly(s)){
+      return '<div class="is-claim-on">' +
+        '<div class="is-claim-head">Δηλωμένο απέξω · ' + esc(ago(s.claimed)) + '</div>' +
+        '<div class="is-claim-note">Το είπες εσύ, δεν το άκουσε κανείς. Δεν μετράει σαν ανάκληση και η σκάλα ' +
+        'δεν προχώρησε. Σε ξαναρωτάω ' + esc(inDays(s.due)) + ', και τότε θέλει κανονική ανάκληση.</div>' +
+        '<button class="is-claim-undo" data-unclaim="' + esc(un.id) + '">Αναίρεση</button></div>';
+    }
+    return '<button class="is-claim-b" data-claim="' + esc(un.id) + '">Το ξέρω απέξω' +
+      '<span>Αν δεν προλαβαίνεις να το πεις τώρα. Φεύγει από το «για αύριο» και γυρίζει σε ' +
+      CLAIM_DAYS + ' μέρες για κανονική ανάκληση. Δεν μετράει σαν μέτρηση.</span></button>';
+  }
+
+  function paintClaim(boxId, un){
+    var box = document.getElementById(boxId); if (!box) return;
+    box.innerHTML = claimInner(un);
+    var c = box.querySelector('[data-claim]'), x = box.querySelector('[data-unclaim]');
+    if (c) c.addEventListener('click', function(){ doClaim(un.id); paintClaim(boxId, un); });
+    if (x) x.addEventListener('click', function(){ undoClaim(un.id); paintClaim(boxId, un); });
+  }
+
+  function doClaim(id){
+    var s = u(id);
+    /* Μια μέτρηση δεν αντικαθίσταται ΠΟΤΕ από μια δήλωση. */
+    if (s.runs){ toast('Αυτή την έχεις ήδη πει απέξω και μετρήθηκε. Η μέτρηση μένει.'); return; }
+    s.claimed = Date.now();
+    if (!s.learnedAt) s.learnedAt = Date.now();
+    s.due = Date.now() + CLAIM_DAYS * DAY;
+    /* ⚠️ Αν δήλωσε ΜΕΣΑ από την ανάκληση, η ανάκληση τελείωσε. Αλλιώς η μπάρα
+       μένει καρφωμένη από κάτω και ένα «Τέλος» με σιωπή θα έγραφε μέτρηση 0%
+       πάνω από τη δήλωση που μόλις έκανε. */
+    micStop();
+    var bar = document.getElementById('rcBar'); if (bar) bar.style.display = 'none';
+    save(); renderHome();
+    toast('Το κράτησα ως δηλωμένο. Σε ξαναρωτάω σε ' + CLAIM_DAYS + ' μέρες, με κανονική ανάκληση.');
+  }
+
+  function undoClaim(id){
+    var s = u(id);
+    if (!claimedOnly(s)) return;      /* φρουρός: ποτέ μη μηδενίσεις μετρημένη πρόοδο */
+    s.claimed = 0; s.learnedAt = 0; s.due = 0;
+    save(); renderHome();
+    toast('Το ξαναγύρισα σε αδιάβαστο.');
   }
 
   /* ══ ΤΟ ΜΑΘΗΜΑ — οι επτά στρώσεις ══════════════════ */
@@ -691,10 +810,12 @@
 
     /* 5 · Η ΑΝΑΚΛΗΣΗ */
     h += '<button class="is-go" id="isGo">Κλείσε το βιβλίο και πες το' +
-      '<span>' + sk.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία \u00b7 σε ακούει και σου λέει στο τέλος τι ξέχασες</span></button>';
+      '<span>' + sk.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία \u00b7 σε ακούει και σου λέει στο τέλος τι ξέχασες</span></button>' +
+      '<div class="is-claim" id="isClaimL"></div>';
 
     document.getElementById('isLb').innerHTML = h;
     document.getElementById('isGo').addEventListener('click', function(){ openRecall(un.id); });
+    paintClaim('isClaimL', un);
     show('isLesson');
   }
 
@@ -727,7 +848,10 @@
       return slotHTML(p, i);
     }).join('') + '</ol>';
 
-    document.getElementById('isRb').innerHTML = h + '<div style="height:150px"></div>';
+    /* Ίδιο μπλοκ, δεύτερη θέση: μπήκε στην ανάκληση και δεν προλαβαίνει. */
+    document.getElementById('isRb').innerHTML = h +
+      '<div class="is-claim" id="isClaimR"></div><div style="height:150px"></div>';
+    paintClaim('isClaimR', un);
 
     /* η μπάρα ζει έξω από τη ροή για να μένει καρφωμένη κάτω */
     var bar = document.getElementById('rcBar');
