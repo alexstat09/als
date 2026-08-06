@@ -592,7 +592,14 @@
     if (f.length){
       cl.textContent = 'Για αύριο';
       ct.textContent = f.length === 1 ? f[0].title : f.length + ' υποενότητες';
-      cm.textContent = f[0].chapter + ' · ' + (f.length === 1 ? '~10 λεπτά' : 'ξεκίνα από την πρώτη');
+      /* ⚠️ ΜΕΧΡΙ ΤΗΝ als-v459 ΤΥΠΩΝΟΤΑΝ ΠΑΝΤΑ ΤΟ ΚΕΦΑΛΑΙΟ ΤΗΣ ΠΡΩΤΗΣ.
+         Ήταν αόρατο όσο η ύλη ζούσε ολόκληρη στο κεφάλαιο Α· με το «Το
+         εμπόριο» οι δύο αδιάβαστες υποενότητες είναι σε ΔΥΟ κεφάλαια και η
+         κάρτα ονόμαζε μόνο το ένα — δηλαδή έκρυβε τη μισή ανάθεση. */
+      var chs = [], q;
+      for (q = 0; q < f.length; q++) if (chs.indexOf(f[q].chapter) < 0) chs.push(f[q].chapter);
+      cm.textContent = (chs.length === 1 ? chs[0] : chs.length + ' κεφάλαια') +
+        ' · ' + (f.length === 1 ? '~10 λεπτά' : 'ξεκίνα από την πρώτη');
       document.getElementById('isCta').dataset.go = 'lesson:' + f[0].id;
     } else if (d.length){
       cl.textContent = 'Σήμερα';
