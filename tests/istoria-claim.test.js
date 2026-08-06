@@ -80,9 +80,19 @@ ok(/if\s*\(\s*!claimedOnly\(s\)\s*\)\s*return/.test(UNDO),
 ok(/!s\.runs/.test(bodyOf(CODE, 'claimedOnly')),
   '⭐ «δηλωμένο» σημαίνει ΚΑΙ «δεν έχει μετρηθεί» — η μέτρηση σβήνει τη δήλωση');
 
-var FIN = bodyOf(CODE, 'finish');
-ok(/cov\s*>=\s*I\.PASS/.test(FIN) && /s\.reviews\s*=/.test(FIN),
+/* ⚠️ Η σκάλα ζει στο regrade() από την als-v457 (το «το είπα αυτό» πρέπει να
+   μπορεί να ξαναβαθμολογήσει).  Ο έλεγχος δεν καρφώνεται σε ΜΙΑ συνάρτηση —
+   ζητάει να υπάρχει ΑΚΡΙΒΩΣ ΕΝΑ σημείο σε ΟΛΟ το script που ανεβάζει σκαλί,
+   και αυτό να είναι κλειδωμένο πίσω από το I.PASS. */
+ok((CODE.match(/s\.reviews\s*=\s*[^;]*\+\s*1/g) || []).length === 1,
+  'υπάρχει ΑΚΡΙΒΩΣ ΕΝΑ σημείο που ανεβάζει τη σκάλα');
+var LAD = bodyOf(CODE, 'regrade');
+ok(/cov\s*>=\s*I\.PASS/.test(LAD) && /s\.reviews\s*=\s*sess\.base\.reviews\s*\+\s*1/.test(LAD),
   'η σκάλα ανεβαίνει μόνο σε μετρημένη ανάκληση ≥ I.PASS');
+ok(/s\.reviews\s*=\s*sess\.base\.reviews;/.test(LAD),
+  '⭐ και ΞΑΝΑΠΕΦΤΕΙ στη βάση αλλιώς — αλλιώς μια διόρθωση θα ανέβαζε σκαλί δύο φορές');
+ok(/s\.best\s*=\s*Math\.max\(sess\.base\.best/.test(LAD),
+  '⭐ και η ακρίβεια μετριέται από τη φωτογραφία, όχι σωρευτικά');
 
 /* ── 2 · ΕΝΑ ΜΠΛΟΚ, ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15) ────────────────────── */
 ok((CODE.match(/function claimInner\(/g) || []).length === 1,

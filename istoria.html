@@ -289,6 +289,19 @@
   .rc-el{ position:relative; padding:0 0 5px 19px; font-size:12.5px; line-height:1.5; }
   .rc-el:last-child{ padding-bottom:0; }
   .rc-el .s{ position:absolute; left:0; top:0; font-family:var(--au-mono,monospace); font-size:11px; }
+  /* ⭐ Η ΔΙΟΡΘΩΣΗ ΚΑΙ Η ΑΠΟΔΕΙΞΗ. Ονόματα χωρίς ένθεση, σταθερή αρχή 26. */
+  .rc-said{ display:inline-block; margin-left:8px; vertical-align:baseline;
+    border:1px dashed rgba(255,255,255,.22); background:transparent; color:var(--au-faint,#5c5964);
+    font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.08em; text-transform:uppercase;
+    padding:3px 8px; border-radius:7px; cursor:pointer; transition:color .3s,border-color .3s; }
+  .rc-said:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.4); }
+  .rc-said:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .rc-tr{ margin-top:22px; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:13px 15px; }
+  .rc-tr summary{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--au-dim,#9a97a3); cursor:pointer; }
+  .rc-tr-b{ margin-top:11px; font-size:13px; line-height:1.65; color:var(--au-ivory,#f5f2ec);
+    max-height:290px; overflow-y:auto; overscroll-behavior:contain; }
+  .rc-tr-n{ margin-top:11px; font-size:11.5px; line-height:1.6; color:var(--au-faint,#5c5964); }
   .rc-el.did .s{ color:rgb(var(--good)); }
   .rc-el.lost .s{ color:rgb(var(--warn)); }
   .rc-el.did{ color:var(--au-dim,#9a97a3); }
@@ -440,7 +453,11 @@
      ⚠️ Σταθερή αρχή 17: ποτέ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
      πετάει QuotaExceededError και μια σιωπηλή αποτυχία είναι ίδια με
      επιτυχία. Και σταθερή αρχή 10: «δεν διάβασα ακόμη» ≠ «δεν υπάρχει». */
-  function blank(){ return { v:1, units:{}, els:{}, days:[] }; }
+  /* `heard` = οι ΔΙΚΕΣ ΤΟΥ φράσεις ανά στοιχείο, όσες επιβεβαίωσε με το
+     «το είπα αυτό». Ζει ΜΕΣΑ στο ist:v1 και όχι σε δικό του κλειδί:
+     σταθερή αρχή 16, ο ιδιοκτήτης του store είναι αυτή η σελίδα, και έτσι
+     συγχρονίζεται και μπαίνει στο backup χωρίς καμία νέα καλωδίωση. */
+  function blank(){ return { v:1, units:{}, els:{}, days:[], heard:{} }; }
 
   function u(id){
     if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0, claimed:0 };
@@ -481,6 +498,7 @@
     b.units = s.units || {};
     b.els   = s.els   || {};
     b.days  = s.days  || [];
+    b.heard = s.heard || {};
     return b;
   }
   function save(){
@@ -822,6 +840,10 @@
   /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var rec = null, micWant = false, heardFinal = '', heardTmp = '', restarts = 0;
+  /* Πόσες εκδοχές του ίδιου ήχου κρατάμε, και μετά από πόση σιωπή λέμε ότι
+     δεν ακούμε τίποτα — σταθερή αρχή 10: «ανοιχτό αλλά δεν ακούει» πρέπει να
+     είναι διαφορετική πρόταση από «ακούω». */
+  var ALTS = 4, SILENCE_MS = 20000, lastHeardAt = 0, silenceTimer = null;
 
   function openRecall(id){
     var un = I.unit(id); if (!un) return;
@@ -904,8 +926,13 @@
                  : '0/' + g.total;
     var els = '<ul class="rc-els">' + p.must.map(function(e, j){
       var y = !tapped && g.hits[j];
+      /* \u2b50 \u0397 \u03b4\u03b9\u03cc\u03c1\u03b8\u03c9\u03c3\u03b7 \u03c0\u03c1\u03bf\u03c3\u03c6\u03ad\u03c1\u03b5\u03c4\u03b1\u03b9 \u039c\u039f\u039d\u039f \u03c3\u03b5 \u03c7\u03b1\u03bc\u03ad\u03bd\u03bf \u03c3\u03c4\u03bf\u03b9\u03c7\u03b5\u03af\u03bf \u03ba\u03b1\u03b9 \u039c\u039f\u039d\u039f \u03b1\u03bd \u03c5\u03c0\u03ac\u03c1\u03c7\u03b5\u03b9
+         \u03b1\u03c0\u03b1\u03b3\u03b3\u03b5\u03bb\u03af\u03b1. \u03a3\u03b5 \u03c3\u03b7\u03bc\u03b5\u03af\u03bf \u03c0\u03bf\u03c5 \u03c4\u03bf \u03b1\u03c0\u03bf\u03ba\u03ac\u03bb\u03c5\u03c8\u03b5 \u03bf \u03af\u03b4\u03b9\u03bf\u03c2 \u03b4\u03b5\u03bd \u03c0\u03c1\u03bf\u03c3\u03c6\u03ad\u03c1\u03b5\u03c4\u03b1\u03b9
+         \u03ba\u03b1\u03b8\u03cc\u03bb\u03bf\u03c5: \u03b5\u03ba\u03b5\u03af \u03b6\u03ae\u03c4\u03b7\u03c3\u03b5 \u03c4\u03b7\u03bd \u03b1\u03c0\u03ac\u03bd\u03c4\u03b7\u03c3\u03b7, \u03b4\u03b5\u03bd \u03c4\u03b7\u03bd \u03b1\u03bd\u03b1\u03ba\u03ac\u03bb\u03b5\u03c3\u03b5. */
+      var fix = (!y && !tapped && sess.heard)
+        ? '<button class="rc-said" data-said="' + i + ':' + j + '">\u03c4\u03bf \u03b5\u03af\u03c0\u03b1 \u03b1\u03c5\u03c4\u03cc</button>' : '';
       return '<li class="rc-el ' + (y ? 'did' : 'lost') + '"><span class="s">' + (y ? '\u2713' : '\u2717') + '</span>' +
-        esc(e.k) + '</li>';
+        esc(e.k) + fix + '</li>';
     }).join('') + '</ul>';
     return '<li><div class="rc-slot graded ' + cls + '">' +
       '<span class="n">' + (i+1) + '</span>' +
@@ -942,18 +969,37 @@
   }
   function micStart(){
     micWant = true; restarts = 0;
+    lastHeardAt = Date.now();
+    clearInterval(silenceTimer);
+    /* Ένα ανοιχτό μικρόφωνο που δεν πιάνει τίποτα ΔΕΝ επιτρέπεται να μοιάζει
+       με ένα που ακούει: στη σιωπή το λέει, και το ξαναπαίρνει πίσω μόλις
+       ακούσει λέξη. */
+    silenceTimer = setInterval(function(){
+      if (!micWant) return;
+      if (Date.now() - lastHeardAt > SILENCE_MS)
+        micSay('Το μικρόφωνο είναι ανοιχτό αλλά δεν έχω πιάσει λέξη εδώ και ' +
+          Math.round((Date.now() - lastHeardAt) / 1000) + ' δευτερόλεπτα. Μίλα λίγο πιο δυνατά, ή πάτα τα κενά με το δάχτυλο.', true);
+    }, 5000);
     try {
       rec = new SR();
       rec.lang = 'el-GR';
       rec.continuous = true;
       rec.interimResults = true;
-      rec.maxAlternatives = 1;
+      rec.maxAlternatives = ALTS;
       rec.onresult = onHeard;
       rec.onerror = onMicErr;
       rec.onend = function(){
+        /* ⭐⭐ ΤΟ BUG ΠΟΥ ΕΣΒΗΝΕ ΛΟΓΙΑ ΤΟΥ (als-v457).
+           Ο Chrome κόβει τη συνεδρία στη ΣΙΩΠΗ, δηλαδή ακριβώς στις παύσεις
+           ανάμεσα στα σημεία. Η φράση που ήταν ακόμη «στον αέρα» (interim,
+           δεν πρόλαβε να γίνει final) ΔΕΝ σωζόταν εδώ, και το επόμενο
+           onresult την έσβηνε με `heardTmp = ''`. Δηλαδή η σελίδα ΤΟΝ ΑΚΟΥΓΕ
+           και μετά πετούσε αυτό που άκουσε, χωρίς κανένα σημάδι στην οθόνη.
+           Αυτό εξηγεί το «λέω κάτι και δεν το ακούει». ΣΩΖΕΤΑΙ ΠΡΩΤΑ. */
+        if (heardTmp.trim()){ heardFinal += ' ' + heardTmp; heardTmp = ''; }
         if (!micWant) { micUI(false); return; }
         /* Ο Chrome κόβει μόνος του μετά από σιωπή και το Safari μετά από κάθε
-           φράση — άρα η επανεκκίνηση ΔΕΝ είναι προαιρετική. Με φρένο, ώστε μια
+           φράση, άρα η επανεκκίνηση ΔΕΝ είναι προαιρετική. Με φρένο, ώστε μια
            μόνιμη αποτυχία να μη γίνει βρόχος που καίει μπαταρία. */
         if (restarts++ > 60){ micWant = false; micUI(false); micSay('Το μικρόφωνο σταματούσε συνέχεια, οπότε το έκλεισα. Συνέχισε με το δάχτυλο.', true); return; }
         try { rec.start(); } catch(e){ micWant = false; micUI(false); }
@@ -968,6 +1014,7 @@
   }
   function micStop(){
     micWant = false;
+    clearInterval(silenceTimer); silenceTimer = null;
     try { if (rec) rec.stop(); } catch(e){}
     micUI(false);
     micSay('Το μικρόφωνο είναι κλειστό.');
@@ -987,11 +1034,25 @@
       micSay('Το μικρόφωνο σταμάτησε (' + esc(k || 'άγνωστο') + ').', true);
   }
   function onHeard(e){
-    var i, r;
+    var i, k, r;
     heardTmp = '';
+    lastHeardAt = Date.now();
     for (i = e.resultIndex; i < e.results.length; i++){
       r = e.results[i];
-      if (r.isFinal) heardFinal += ' ' + r[0].transcript;
+      if (r.isFinal){
+        /* ⭐ ΚΡΑΤΑΜΕ ΟΛΕΣ ΤΙΣ ΕΚΔΟΧΕΣ, ΟΧΙ ΜΟΝΟ ΤΗΝ ΠΡΩΤΗ.
+           Η μηχανή γυρίζει έως ALTS υποψήφιες μεταγραφές ΤΟΥ ΙΔΙΟΥ ήχου.
+           Αν πεις «αγρανάπαυση» και η 1η εκδοχή είναι «αγρά ανάπαυση» ενώ η
+           3η σωστή, μέχρι τώρα χανόταν — ζητούσαμε maxAlternatives = 1.
+           Είναι όλες μεταγραφές του ΙΔΙΟΥ πράγματος που είπε, οπότε δεν
+           προσθέτουν λόγια που δεν είπε. */
+        /* ⚠️ `|| 1` ΕΠΙΤΗΔΕΣ. Το SpeechRecognitionResult είναι array-like και
+           ΕΧΕΙ length, αλλά αν κάποια μηχανή δώσει αντικείμενο χωρίς αυτό, το
+           `k < undefined` είναι false και δεν θα κρατούσαμε ΤΙΠΟΤΑ — δηλαδή
+           θα σιωπούσε ολόκληρη η απαγγελία. Καλύτερα μία εκδοχή παρά καμία. */
+        var nAlt = r.length || 1;
+        for (k = 0; k < nAlt && k < ALTS; k++) if (r[k]) heardFinal += ' ' + r[k].transcript;
+      }
       else heardTmp += ' ' + r[0].transcript;
     }
     var hay = heardFinal + ' ' + heardTmp;
@@ -1010,49 +1071,101 @@
   }
 
   /* ── τέλος + βαθμολόγηση ──────────────────────────── */
+  /* Οι φράσεις που έχει επιβεβαιώσει ο ίδιος, στη μορφή που θέλει η μηχανή. */
+  function aliasesFor(uid){
+    var out = {}, k, pre = uid + ':';
+    for (k in state.heard) if (state.heard.hasOwnProperty(k) && k.indexOf(pre) === 0)
+      out[k.slice(pre.length)] = state.heard[k];
+    return out;
+  }
+
   function finish(){
     micStop();
-    var un = cur, pts = un.skeleton.points, i, j;
+    var un = cur, pts = un.skeleton.points, i, j, base = {};
 
-    /* ⭐ Η ΜΟΝΗ ΒΑΘΜΟΛΟΓΗΣΗ, ΚΑΙ ΓΙΝΕΤΑΙ ΤΩΡΑ — πάνω σε ΟΛΗ την απαγγελία. */
-    var g = I.gradeUnit(un, heardFinal + ' ' + heardTmp);
-
-    /* Ένα σημείο που το αποκάλυψε ο ίδιος μετράει χαμένο ολόκληρο, ό,τι κι αν
-       ακούστηκε: ζήτησε την απάντηση, δεν την ανακάλεσε. */
-    var said = 0, total = 0, missedEls = [], full = 0, part = 0;
-    for (i = 0; i < pts.length; i++){
-      var tapped = sess.marks[i] === 2, gp = g.points[i];
-      total += gp.total;
+    /* Φωτογραφία ΠΡΙΝ αγγίξουμε τίποτα, ώστε το «το είπα αυτό» να μπορεί να
+       ξαναβαθμολογήσει από την αρχή αντί να προσθέτει πάνω σε προσθήκη. */
+    for (i = 0; i < pts.length; i++)
       for (j = 0; j < pts[i].must.length; j++){
-        var hit = !tapped && gp.hits[j], e = el(un.id, i, j);
-        if (hit){ e.r++; said++; }
-        else { e.w++; missedEls.push(pts[i].must[j].k); }
+        var e0 = el(un.id, i, j);
+        base[i + ':' + j] = { r: e0.r, w: e0.w };
       }
-      if (!tapped && gp.full) full++;
-      else if (!tapped && gp.n) part++;
-    }
-    sess.graded = { g:g, said:said, total:total, full:full, part:part, missedEls:missedEls };
+    var s = u(un.id);
+    sess.heard = (heardFinal + ' ' + heardTmp).trim();
+    sess.base = { els: base, reviews: s.reviews || 0, best: s.best || 0 };
 
-    var cov = total ? said / total : 0, s = u(un.id);
     s.runs = (s.runs || 0) + 1;
     s.last = Date.now();
-    s.best = Math.max(s.best || 0, cov);
     if (!s.learnedAt) s.learnedAt = Date.now();
-
-    /* Η σκάλα προχωράει μόνο σε ΠΡΑΓΜΑΤΙΚΑ καθαρή ανάκληση (I.PASS = 90% των
-       στοιχείων). Μια σκάλα που ανεβαίνει σε μισή απαγγελία κρύβει ακριβώς
-       ό,τι δεν ξέρει, που είναι το αντίθετο από τον λόγο που υπάρχει. */
-    if (cov >= I.PASS){ s.reviews = (s.reviews || 0) + 1; s.due = I.nextDue(s.reviews, Date.now()); }
-    else { s.due = Date.now() + DAY; }
 
     var d = today(), day = null;
     for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) day = state.days[i];
     if (!day){ day = { id:d, q:0 }; state.days.push(day); }
-    day.q += total;
-    if (state.days.length > 400) state.days = state.days.slice(-400);
 
+    /* ⭐ Η ΜΟΝΗ ΒΑΘΜΟΛΟΓΗΣΗ, ΚΑΙ ΓΙΝΕΤΑΙ ΤΩΡΑ — πάνω σε ΟΛΗ την απαγγελία. */
+    var G = regrade();
+    day.q += G.total;
+    if (state.days.length > 400) state.days = state.days.slice(-400);
     save();
-    summary(cov, s);
+    summary(G.cov, u(un.id));
+  }
+
+  /* ⭐⭐ ΞΑΝΑΤΡΕΧΕΙ ΟΛΟΚΛΗΡΗ, ΠΑΝΤΑ ΑΠΟ ΤΗ ΦΩΤΟΓΡΑΦΙΑ.
+     Καλείται μία φορά στο «Τέλος» και ξανά σε κάθε «το είπα αυτό». Επειδή
+     ξεκινάει πάντα από το `sess.base`, δέκα πατήματα δίνουν το ίδιο
+     αποτέλεσμα με ένα — καμία διπλομέτρηση σε στατιστικά ή σκάλα. */
+  function regrade(){
+    var un = cur, pts = un.skeleton.points, i, j;
+    var g = I.gradeUnit(un, sess.heard, aliasesFor(un.id));
+    var said = 0, total = 0, missedEls = [], full = 0, part = 0;
+
+    for (i = 0; i < pts.length; i++){
+      /* Ένα σημείο που το αποκάλυψε ο ίδιος μετράει χαμένο ολόκληρο, ό,τι κι
+         αν ακούστηκε: ζήτησε την απάντηση, δεν την ανακάλεσε. */
+      var tapped = sess.marks[i] === 2, gp = g.points[i];
+      total += gp.total;
+      for (j = 0; j < pts[i].must.length; j++){
+        var hit = !tapped && gp.hits[j], e = el(un.id, i, j), b = sess.base.els[i + ':' + j];
+        e.r = b.r + (hit ? 1 : 0);
+        e.w = b.w + (hit ? 0 : 1);
+        if (hit) said++; else missedEls.push(pts[i].must[j].k);
+      }
+      if (!tapped && gp.full) full++;
+      else if (!tapped && gp.n) part++;
+    }
+
+    var cov = total ? said / total : 0, s = u(un.id);
+    s.best = Math.max(sess.base.best, cov);
+    /* Η σκάλα προχωράει μόνο σε ΠΡΑΓΜΑΤΙΚΑ καθαρή ανάκληση (I.PASS = 90% των
+       στοιχείων). Μια σκάλα που ανεβαίνει σε μισή απαγγελία κρύβει ακριβώς
+       ό,τι δεν ξέρει, που είναι το αντίθετο από τον λόγο που υπάρχει. */
+    if (cov >= I.PASS){ s.reviews = sess.base.reviews + 1; s.due = I.nextDue(s.reviews, Date.now()); }
+    else { s.reviews = sess.base.reviews; s.due = Date.now() + DAY; }
+
+    sess.graded = { g:g, said:said, total:total, full:full, part:part, missedEls:missedEls, cov:cov };
+    return sess.graded;
+  }
+
+  /* ⭐ «ΤΟ ΕΙΠΑ ΑΥΤΟ» — ΔΙΑΛΕΓΕΙ ΤΗ ΦΡΑΣΗ ΤΟΥ, ΔΕΝ ΤΗ ΓΡΑΦΕΙ.
+     Κρατάει την πρόταση από ΟΣΑ ΠΡΑΓΜΑΤΙ ΕΙΠΕ που μοιάζει περισσότερο με το
+     στοιχείο. Ένα σύστημα που μπορεί να ΓΡΑΨΕΙ την απόδειξη μπορεί και να την
+     εφεύρει — ίδια αρχή με τα receipts της βιβλιοθήκης. Αν δεν βρεθεί καμία,
+     το λέει και δεν αποθηκεύει τίποτα. */
+  function saidIt(i, j){
+    var e = cur.skeleton.points[i].must[j];
+    var sen = I.bestSentence(sess.heard, e.k);
+    if (!sen){
+      toast('Δεν βρήκα τίποτα κοντινό σε όσα άκουσα, οπότε δεν το μετράω. Δες παρακάτω τι άκουσα.');
+      return;
+    }
+    var k = cur.id + ':' + i + ':' + j, list = state.heard[k] || [];
+    if (list.indexOf(sen) < 0) list.push(sen);
+    if (list.length > 6) list = list.slice(-6);
+    state.heard[k] = list;
+    var G = regrade();
+    save(); renderHome();
+    summary(G.cov, u(cur.id));
+    toast('Το κράτησα: «' + sen.slice(0, 60) + '». Την επόμενη φορά θα το πιάσω μόνο του.');
   }
 
   function summary(cov, s){
@@ -1091,6 +1204,16 @@
         ' στα «Λάθη μου» και θα επιστρέψουν πιο συχνά από τα υπόλοιπα.</div>';
     }
 
+    /* ⭐ Η ΑΠΟΔΕΙΞΗ. Χωρίς αυτό, το «δεν με άκουσε» είναι μυστήριο και για τους
+       δύο μας. Με αυτό είναι δεδομένο: βλέπει ΑΚΡΙΒΩΣ τι έφτασε. */
+    if (sess.heard){
+      h += '<details class="rc-tr"><summary>Τι άκουσα · ' +
+        I.fold(sess.heard).split(' ').filter(Boolean).length + ' λέξεις</summary>' +
+        '<div class="rc-tr-b">' + esc(sess.heard) + '</div>' +
+        '<div class="rc-tr-n">Αν δεις εδώ κάτι που το είπες σωστά αλλά μετρήθηκε χαμένο, πάτα «το είπα αυτό» ' +
+        'δίπλα του πιο πάνω: κρατάω τη δική σου φράση και την επόμενη φορά την πιάνω μόνη της.</div></details>';
+    }
+
     h += '<div class="rc-again">' +
       '<button id="rcRe" class="pri">Ξανά τώρα</button>' +
       '<button id="rcBack">Τέλος</button></div>';
@@ -1098,6 +1221,11 @@
     document.getElementById('isRb').innerHTML = h;
     document.getElementById('rcRe').addEventListener('click', function(){ openRecall(cur.id); });
     document.getElementById('rcBack').addEventListener('click', function(){ hide('isRecall'); renderHome(); });
+    document.getElementById('isRb').addEventListener('click', function(ev){
+      var b = ev.target.closest('.rc-said'); if (!b) return;
+      var p = b.dataset.said.split(':');
+      saidIt(+p[0], +p[1]);
+    });
     document.getElementById('isRecall').scrollTop = 0;
   }
 
