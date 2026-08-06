@@ -72,6 +72,29 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
 als-v454) are the study pages.
+⭐⭐ **`arxaia.html` WAS REBUILT AGAIN IN ΙΣΤΟΡΙΑ'S SHAPE (als-v458)**, because
+Alex reported the drill *"περισσοτερο με μπερδευε"* while Ιστορία *"με βοηθαει
+πολυ"*. The diagnosis: **Ιστορία is a LESSON that ends in an exam; Αρχαία was
+only an exam** — it opened on «Σήμερα · 12 ερωτήσεις» of four different kinds in
+random order, with no teaching first. Now **the unit is a PAGE of the handout**
+(one per φροντιστήριο lesson, `added` IS the assignment) and it is read in
+layers — `01 ΜΕ ΑΠΛΑ ΛΟΓΙΑ` → `02 Ο ΠΙΝΑΚΑΣ` **re-sorted by family, never
+alphabetically** → `03 ΤΙ ΒΓΑΙΝΕΙ ΜΟΝΟ ΤΟΥ` (ΠΡΤ and ΥΠΡ are derived, so 12
+cells become 3) → `04 ΟΙ ΑΛΥΣΙΔΕΣ` → **Η ΑΝΑΚΛΗΣΗ, out loud**. Nothing was
+dropped: the families became the ORDER, the ΣΤΗΛΗ became the recall, the ΧΑΡΤΗΣ
+became «τα λάθη μου» per CELL. Recognition (multiple choice) belongs to the
+unbuilt **spelling** pass, which is where it was always right.
+⚠️ **The voice checks WHICH form, not how it is spelled** («ἤγγειλα» and
+«ήγγηλα» sound identical) and the page says so on screen.
+⭐ **`greek-ear.js` is the shared ear** (constraint 15): Greek homophone folding,
+number expansion, `bestSentence`, and **stress position** — the last one exists
+because `ἀγγέλλω` (ΕΝΣ) and `ἀγγελῶ` (ΜΕΛ) are the same sound, which will recur
+on every υγρόληκτο verb. It requires nothing (constraint 25).
+⚠️ In Αρχαία the ear needed a NEW limit, not a copied workaround (constraint 24):
+forms are whole words that hide inside each other — **«ἄγω» is literally inside
+«ἀγορεύω»** — so matching is word-by-word with rejoined split words, never a
+substring of the whole blob. Below, the als-v454 build it replaced:
+
 ⭐ **`arxaia.html` is LIVE again (als-v454)** and it is a rebuild, not a revert:
 the retired page was a 31-day plan bound to July 2026 dates, and **nothing in
 the new one is bound to a date at all**, so it cannot go stale the same way.
