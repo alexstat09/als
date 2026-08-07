@@ -189,7 +189,7 @@ ships something that is confidently wrong on his screen while every test is gree
 Each one was paid for once already.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v458`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v461`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -631,8 +631,18 @@ A unit is read in **seven layers** and then RECALLED against a blank screen, out
 loud: the page listens with the browser's own speech recognition, **says nothing
 while he recites**, and grades **element by element** at the end. Keys `ist:v1`,
 appKey `istoria`. Full detail in §5.
+**Six units as of als-v461**, and the corpus grows ONLY with what the φροντιστήριο
+assigns: `a1a` Ο πληθυσμός · `a1b` Οι μετακινήσεις · `a2` Οι παραγωγικές δυνάμεις
++ η «Μεγάλη Ιδέα» · `b1` Το εμπόριο (οι πρώτες παράγραφοι) · `b1b` Το εμπόριο (η
+συνέχεια, **δύο πίνακες**) · `b2` Η εμπορική ναυτιλία (η πρώτη παράγραφος).
 
-⭐ **`arxaia.html` is LIVE again (als-v454)** — rebuilt, not reverted. It drills
+⭐ **`arxaia.html` is LIVE again (als-v454), and since als-v460 it is TWO WORLDS
+behind one door** — it opens on a CHOICE, never on a world. **ΑΓΝΩΣΤΟ** = the
+drill below (`arx:v1`). **ΓΝΩΣΤΟ** = «Οι φιλοσοφικές ιδέες του Σωκράτη», 6 units
+in Ιστορία's own shape (`arx:gn`, appKey `arxaia-gn`) — and **its voice recall
+WORKS**, because that material is modern Greek. `lesson-grade.js` is the grader
+both pages share, with a divergence guard. Full detail in §5.
+The ΑΓΝΩΣΤΟ half was rebuilt, not reverted. It drills
 the **αρχικοί χρόνοι** and nothing else, and **nothing in it is bound to a date**,
 which is what killed the old page. It is a third kind of guarantee: Λατινικά
 *generates* and Ιστορία *grounds*, but a principal part can be neither derived nor
@@ -749,6 +759,50 @@ which shoe it is drawing (§5).
 560 σε `clientW` 462) και **το `body` δεν φεύγει πλάγια**.
 ⚠️ Στον Πίνακα 3 πρέπει να κυλήσει για να δει την 5η στήλη — γι' αυτό η
 σύγκριση 1860-70 vs 1900-10 είναι γραμμένη ΜΕ ΛΟΓΙΑ στο «Τι να δεις εδώ».
+
+---
+
+**Before that — `als-v460` — ΑΡΧΑΙΑ: ΔΥΟ ΚΟΣΜΟΙ ΠΙΣΩ ΑΠΟ ΜΙΑ ΠΟΡΤΑ** (2026-08-07,
+`20a6447`). Δικά του λόγια: *«βαλε το μεσα στα αρχαια αλλα πριν μπαινω να διαλεγω
+ειτε αρχαια αγνωστο ειτε αρχαια γνωστο»*.
+
+- Η `arxaia.html` ανοίγει σε **ΕΠΙΛΟΓΗ, ποτέ σε κόσμο**, και η επιλογή εμφανίζεται
+  ΚΑΘΕ φορά. **ΑΓΝΩΣΤΟ** = οι αρχικοί χρόνοι (`arx:v1`), άθικτο από την als-v458.
+  **ΓΝΩΣΤΟ** = «Οι φιλοσοφικές ιδέες του Σωκράτη», 6 ενότητες από τις σελίδες 3-4-5
+  του φυλλαδίου του, **στο σχήμα της Ιστορίας** (`arxaia-gnosto-data.js`, `arx:gn`,
+  appKey `arxaia-gn` — δηλωμένο και στα τρία μέρη: `sync.js`, `backup.html`
+  `BUNDLES`, `api/mcp.js` `BUNDLE`).
+- ⭐⭐ **Η ΦΩΝΗ ΔΟΥΛΕΥΕΙ ΕΔΩ, και δεν αντιφάσκει με τη σταθερή αρχή 28.** Η αρχή 28
+  σκότωσε την αναγνώριση για αρχαίους ΤΥΠΟΥΣ· το ΓΝΩΣΤΟ είναι **ερμηνεία σε νέα
+  ελληνικά**, άρα το `el-GR` το ακούει κανονικά. Μην «διορθώσεις» το ένα με βάση
+  το άλλο.
+- **`lesson-grade.js` = κοινός βαθμολογητής** για Ιστορία και ΓΝΩΣΤΟ, με **φρουρό
+  απόκλισης**: αν οι δύο υλοποιήσεις δώσουν διαφορετικό σκορ, σκάει.
+- Η εγγύηση είναι **ΓΕΙΩΣΗ**, όπως στην Ιστορία: η μεταγραφή του φυλλαδίου
+  επικολλημένη ΣΤΟ ΧΕΡΙ στο test, anchors παντού. Δύο κανονικοποιήσεις δηλωμένες
+  (`εφήυρε→εφηύρε`, `Ἕν→Ἓν`) — και **το test βρήκε ΤΡΙΤΗ που είχα κάνει σιωπηλά**:
+  πρόταση κομμένη στην αλλαγή σελίδας.
+- ⛔ **ΚΑΜΙΑ αυτόματη αναγνώριση φωτογραφίας**, απόφασή του. Στέλνει φωτογραφία →
+  μεταγραφή στο χέρι → test → push.
+
+---
+
+**Before that — `als-v459` — ΙΣΤΟΡΙΑ: Β → 1. Το εμπόριο (οι πρώτες παράγραφοι)**
+(2026-08-06, `1168225`). Η `b1`, 10 σημεία / 32 στοιχεία. Δύο πράγματα από εδώ
+είναι μόνιμα και ισχύουν ακόμη:
+
+- ⭐⭐ **Ο GUARD «κανένα σημείο δεν ανάβει στοιχείο ΑΛΛΟΥ σημείου»** — απαγγέλλει
+  ένα σημείο με τα λόγια του βιβλίου και ελέγχει όλα τα υπόλοιπα. Έπιασε αμέσως
+  πραγματικό bug που είχε επιζήσει στο `a2` (το `['πρωτ','υλ']` άναβε από τη λέξη
+  «πρωτοβουλίες») και **άλλες 6 συγκρούσεις στην als-v461**. Είναι το πιο
+  παραγωγικό test της σελίδας.
+- ⚠️ **ΜΕΡΙΚΗ ΑΝΑΘΕΣΗ, ΔΗΛΩΜΕΝΗ ΣΤΟΝ ΤΙΤΛΟ.** Το φροντιστήριο έβαλε «τις πρώτες
+  4 παραγράφους»· στο βιβλίο είναι **ΤΡΕΙΣ** παράγραφοι κειμένου — η τέταρτη που
+  μέτρησε ο καθηγητής είναι το πλαίσιο-πηγή «Οι εμποροπανηγύρεις», που
+  παρεμβάλλεται τυπογραφικά ανάμεσα στη 2η και την 3η. Μπήκε στο `context`
+  (είναι ΠΗΓΗ σε καθαρεύουσα, δεν λέγεται απέξω), ποτέ στο `text`.
+- ⚠️ **Η κάρτα «ΓΙΑ ΑΥΡΙΟ» έδειχνε τη μισή ανάθεση** — τύπωνε πάντα
+  `f[0].chapter`, αόρατο όσο όλη η ύλη ήταν στο κεφάλαιο Α.
 
 ---
 
@@ -3467,9 +3521,11 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
-- 🔴🔴🔴 **ΑΡΧΑΙΑ: Η ΑΝΑΚΛΗΣΗ ΜΕ ΦΩΝΗ ΕΙΝΑΙ ΝΕΚΡΗ — ΘΕΛΕΙ ΑΛΛΟΝ ΤΡΟΠΟ.**
+- 🔴🔴 **ΑΡΧΑΙΑ ΑΓΝΩΣΤΟ: Η ΑΝΑΚΛΗΣΗ ΜΕ ΦΩΝΗ ΕΙΝΑΙ ΝΕΚΡΗ — ΘΕΛΕΙ ΑΛΛΟΝ ΤΡΟΠΟ.**
   Το δοκίμασε και είπε *«δν μπορει να ακουσει αρχαια, λεει νεα ελληνικα»*.
-  **Αυτό είναι το πρώτο πράγμα της επόμενης συνεδρίας.** Η διάταξη της σελίδας
+  ⚠️ **ΑΦΟΡΑ ΜΟΝΟ ΤΟΥΣ ΑΡΧΙΚΟΥΣ ΧΡΟΝΟΥΣ.** Το ΓΝΩΣΤΟ της als-v460 ακούει μια
+  χαρά (νέα ελληνικά) και η Ιστορία επίσης — μην «διορθώσεις» ό,τι δουλεύει.
+  Η διάταξη της σελίδας
   (σελίδα = μονάδα, οι 4 στρώσεις) δούλεψε και ΜΕΝΕΙ· μόνο η εξέταση αλλάζει.
   Υποψήφιοι δρόμοι, **ασυζήτητοι μαζί του**: ⭐ πληκτρολόγηση **χωρίς τόνους**
   (το αυτί ήδη τους αγνοεί, άρα το πολυτονικό πρόβλημα εξαφανίζεται και ήταν ο
@@ -3503,6 +3559,12 @@ changes — page, merge and tests carry over untouched.
   does not register while he says it correctly, **get the exact wording** and
   add an alternative phrasing to that element's `say` — tuning from a real
   recitation beats guessing, and a false miss is worse than a false hit here.
+- 🔴 **ΙΣΤΟΡΙΑ (als-v461): unproven on his phone, and it is the WEEKEND's work.**
+  `b1b` + `b2` are due at the φροντιστήριο **Τρίτη 11/8**. He needs a full PWA
+  reopen. **Το επόμενο κομμάτι είναι ήδη γνωστό**: οι δύο υπόλοιπες παράγραφοι
+  της «2. Η εμπορική ναυτιλία» (τα δύσκολα χρόνια 1821-1830 · η Σύρος) + ο
+  **Πίνακας 5**, όλα στο ίδιο `index1_3.html`, ήδη κατεβασμένο και ελεγμένο.
+  ⛔ Δεν μπαίνουν μέχρι να τα βάλει το φροντιστήριο.
 - 🔴 **Still owed by him: the next Ιστορία ύλη.** The page only grows with what
   the φροντιστήριο actually assigns. ⛔ **Never add a unit without curl-ing the
   official book** — see §5's als-v451 block for the exact method.
@@ -3653,7 +3715,7 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 30 files; 29 suites + 1 tool.
+for f in tests/*.js; do node "$f"; done   # 34 files; 33 suites + 1 tool.
 # ⚠️ `tests/*.test.js` is only 27 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
