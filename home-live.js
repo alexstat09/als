@@ -218,9 +218,23 @@
             var arxC = arxCells[arxKeys[arxI]] || {};
             arxR += (+arxC.r || 0); arxW += (+arxC.w || 0);
           }
-          var arxT = arxR + arxW;
+          var arxAgT = arxR + arxW;
+          /* ⚠️ als-v460, ΣΤΑΘΕΡΗ ΑΡΧΗ 23: η σελίδα έχει ΔΥΟ κόσμους τώρα
+             (ΑΓΝΩΣΤΟ = arx:v1, ΓΝΩΣΤΟ = arx:gn) και το πλακίδιο διάβαζε μόνο
+             τον έναν. Αν δούλευε μόνο το Γνωστό, το Home θα έλεγε «ξεκίνα»
+             για πάντα — ένα εύλογο ΛΑΘΟΣ, όχι error. */
+          var arxGnSt = ls('arx:gn', {}); var arxGnEls = arxGnSt.els || {};
+          var arxGnKeys = Object.keys(arxGnEls);
+          for (var arxJ = 0; arxJ < arxGnKeys.length; arxJ++) {
+            var arxE = arxGnEls[arxGnKeys[arxJ]] || {};
+            arxR += (+arxE.r || 0); arxW += (+arxE.w || 0);
+          }
+          var arxT = arxR + arxW, arxGnT = arxT - arxAgT;
+          var arxNote = (arxAgT && arxGnT) ? 'σωστά · γνωστό + άγνωστο'
+            : arxGnT ? 'σωστά · το γνωστό'
+                     : 'σωστά · αρχικοί χρόνοι';
           /* '\u2014' όταν δεν έχει απαντήσει τίποτα — ποτέ placeholder σαν αριθμό (als-v433). */
-          return arxT ? { hero: Math.round(arxR / arxT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03b1\u03c1\u03c7\u03b9\u03ba\u03bf\u03af \u03c7\u03c1\u03cc\u03bd\u03bf\u03b9' }
+          return arxT ? { hero: Math.round(arxR / arxT * 100), unit: '%', note: arxNote }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
       }

@@ -72,6 +72,40 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
 als-v454) are the study pages.
+
+⭐⭐ **`arxaia.html` IS TWO WORLDS BEHIND ONE DOOR (als-v460).** His words:
+*«βαλε το μεσα στα αρχαια αλλα πριν μπαινω να διαλεγω ειτε αρχαια αγνωστο ειτε
+αρχαια γνωστο»*. The page now opens on a **chooser**, never on a world, and the
+chooser is shown **every time** — a door that opens itself into yesterday's
+world is not a door. Each card carries a status line, and both use the same
+colour rule: **accent only when something is due**, faint otherwise.
+- **ΑΓΝΩΣΤΟ** = the αρχικοί χρόνοι drill, unchanged. Key `arx:v1`, appKey `arxaia`.
+- **ΓΝΩΣΤΟ** = *«Οι φιλοσοφικές ιδέες του Σωκράτη»*, 6 units from pages 3-4-5 of
+  his φροντιστήριο handout, read in four layers and then RECALLED out loud.
+  Key **`arx:gn`**, appKey **`arxaia-gn`**. ⚠️ Its `initCloudSync` writes the key
+  **literally**, not through `var KEY` — two worlds in one file means no `var KEY`
+  is unambiguous any more, and `smoke-test.sh` resolves that name statically.
+- ⚠️ **The voice recall WORKS here**, unlike the ΑΓΝΩΣΤΟ side: this material is
+  **modern** Greek prose, so `el-GR` transcribes it properly. Hard constraint 28
+  killed voice for ancient FORMS only.
+- ⭐ **A FOURTH level of truth.** Ιστορία has three (book / my words / out of
+  syllabus); this adds **`mine`** — his own handwritten margin notes, in their own
+  colour, and `tests/arxaia-gnosto.test.js` forbids them an `anchor` so they can
+  never look like text he must recite.
+- ⭐ **`verbatim: true`** marks the **two** paragraphs the teacher assigned word
+  for word (gn2, gn3 — the two after the Apology excerpt). The badge shows on the
+  row, the lesson head and the recall. The test pins that there are exactly two.
+- **`lesson-grade.js`** is the shared grader (`matched` / `gradePoint` /
+  `gradeUnit` / `bodyOf` / `nextDue`, PASS 0.9, ladder 0/3/10/30/90). ⚠️ It
+  requires **only `greek-ear.js`** — constraint 25. `istoria-data.js` still holds
+  its own copies on purpose (that page works and is used daily), so the test
+  asserts the two implementations are **byte-identical**. If that fails, change
+  BOTH or neither.
+- **Script order in the head is load-bearing and tested**: `greek-ear.js` →
+  `lesson-grade.js` → `arxaia-gnosto-data.js`.
+- ⚠️ `home-live.js`'s `arxaia.html` tile reads **both** keys now (constraint 23) —
+  it read only `arx:v1`, so a term spent on ΓΝΩΣΤΟ alone would have left Home
+  saying «ξεκίνα» for ever. All locals stay `arx*` prefixed (constraint 14).
 ⭐⭐ **`arxaia.html` WAS REBUILT AGAIN IN ΙΣΤΟΡΙΑ'S SHAPE (als-v458)**, because
 Alex reported the drill *"περισσοτερο με μπερδευε"* while Ιστορία *"με βοηθαει
 πολυ"*. The diagnosis: **Ιστορία is a LESSON that ends in an exam; Αρχαία was
