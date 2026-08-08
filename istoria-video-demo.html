@@ -115,8 +115,15 @@ body{
 /* ═══════════════════════════════════════════════════════════════════════
    ΚΙΝΗΣΗ — κάθε σκηνή ανάβει τις δικές της animations όταν παίρνει .on
    ═══════════════════════════════════════════════════════════════════════ */
-.scene .an{animation-play-state:paused;animation-fill-mode:both}
-.scene.on .an{animation-play-state:running}
+/* ⚠️ Εδώ υπήρχαν `.scene .an` κανόνες. Το `.scene` ΔΕΝ υπάρχει πια στο DOM
+   (als-v464: ένα μόνιμο καρέ αντί για 15 divs), άρα ήταν νεκροί επιλογείς —
+   σταθερή αρχή 12 ανάποδα. Δεν έσπασε τίποτα μόνο επειδή κάθε animation
+   κουβαλάει `both` inline. Τώρα τα στοιχεία μπαίνουν στο DOM τη στιγμή που
+   αρχίζει η σκηνή τους, οπότε ξεκινούν μόνα τους: δεν χρειάζεται παύση.  */
+.an{animation-fill-mode:both}
+/* Ο θίασος ανασαίνει. Ένα εντελώς ακίνητο σώμα διαβάζεται σαν αυτοκόλλητο. */
+.idle{transform-box:fill-box;transform-origin:50% 90%;animation:breathe 3.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scaleY(1) translateY(0)}50%{transform:scaleY(1.022) translateY(-1.5px)}}
 
 @keyframes popIn{from{opacity:0;transform:scale(.6)}60%{transform:scale(1.06)}to{opacity:1;transform:scale(1)}}
 @keyframes slamIn{from{opacity:0;transform:scale(2.4) rotate(-7deg)}70%{opacity:1;transform:scale(.93) rotate(1.5deg)}to{opacity:1;transform:scale(1) rotate(0)}}
@@ -329,18 +336,59 @@ function mapLabel(x, y, txt, size, cam, cls, fill){
 function BG(fill){ return '<rect x="-200" y="-40" width="1420" height="850" fill="' + fill + '"/>'; }
 
 /* ══ Ο ΘΙΑΣΟΣ — απλές φιγούρες, στρογγυλά πρόσωπα, χοντρό περίγραμμα ══ */
+/* ══════════════════════════════════════════════════════════════════════════
+   Ο ΘΙΑΣΟΣ
+   Η έκφραση δεν ζει στα μάτια — ζει στα ΦΡΥΔΙΑ και στο ΣΤΟΜΑ. Δύο κουκκίδες
+   και μια γραμμή είναι εικονίδιο· δύο κουκκίδες, φρύδια, στόμα και μια κλίση
+   κεφαλιού είναι χαρακτήρας. Αυτό είναι όλη η διαφορά.
+   ══════════════════════════════════════════════════════════════════════ */
+var MOODS = {
+  /*            φρύδι αρ.        φρύδι δεξ.      στόμα                              μάτι  */
+  flat:  { bl:[-2,-2], br:[2,-2], m:'<path d="M-8 8 h16" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>', e:1 },
+  sad:   { bl:[-7, 3], br:[7, 3], m:'<path d="M-8 11 q8 -8 16 0" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>', e:1 },
+  worry: { bl:[-6, 2], br:[6, 2], m:'<path d="M-8 9 q4 -5 8 0 t8 0" fill="none" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round"/>', e:1 },
+  shock: { bl:[-3,-8], br:[3,-8], m:'<ellipse cx="0" cy="10" rx="7.5" ry="9.5" fill="var(--ink)"/>', e:1.32 },
+  yell:  { bl:[ 6, 3], br:[-6, 3], m:'<path d="M-10 6 q10 16 20 0 q-10 5 -20 0Z" fill="var(--ink)"/>', e:1.1 },
+  tired: { bl:[-4, 1], br:[4, 1], m:'<path d="M-6 10 h12" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>', e:0 },
+  glad:  { bl:[-3,-4], br:[3,-4], m:'<path d="M-8 6 q8 9 16 0" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>', e:1 }
+};
+/* Τα σώματα. Το σχήμα λέει ποιος είναι πριν προλάβει να μιλήσει κανείς. */
+var BODIES = {
+  villager: 'M-22 64 q0 -42 22 -42 q22 0 22 42 Z',
+  farmer  : 'M-25 64 q0 -44 25 -44 q25 0 25 44 Z',
+  merchant: 'M-20 64 q-2 -40 20 -40 q22 0 20 40 Z',
+  child   : 'M-15 46 q0 -28 15 -28 q15 0 15 28 Z'
+};
+
 function person(x, y, s, opt){
   opt = opt || {};
-  var body = opt.body || '#6E7F5A', mood = opt.mood || 'flat';
-  var face = mood==='sad'  ? '<path d="M-8 8 q8 -7 16 0" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>'
-           : mood==='open' ? '<ellipse cx="0" cy="7" rx="7" ry="9" fill="var(--ink)"/>'
-           :                 '<path d="M-8 7 h16" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>';
-  return '<g transform="translate('+x+','+y+') scale('+s+')">'+
-      '<path class="ol" stroke-width="5" fill="'+body+'" d="M-22 62 q0 -40 22 -40 q22 0 22 40 Z"/>'+
-      '<circle class="ol" stroke-width="5" fill="#F7F1E4" cx="0" cy="0" r="25"/>'+
-      '<circle fill="var(--ink)" cx="-9" cy="-4" r="3.4"/><circle fill="var(--ink)" cx="9" cy="-4" r="3.4"/>'+
-      face+
-      (opt.hat ? '<path class="ol" stroke-width="4.5" fill="#8B6F47" d="M-27 -14 q27 -20 54 0 q-27 -9 -54 0 Z"/>' : '')+
+  var body = opt.body || '#6E7F5A';
+  var M = MOODS[opt.mood] || MOODS.flat;
+  var B = BODIES[opt.type] || BODIES.villager;
+  var tilt = opt.tilt || 0;
+  var er = 3.4 * (M.e || 1);
+
+  /* Τα μάτια: κουκκίδες, ή κλειστές γραμμές όταν είναι εξαντλημένος. */
+  var eyes = M.e === 0
+    ? '<path d="M-13 -4 h8 M5 -4 h8" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round"/>'
+    : '<circle fill="var(--ink)" cx="-9" cy="-4" r="' + er + '"/><circle fill="var(--ink)" cx="9" cy="-4" r="' + er + '"/>';
+
+  /* ⭐ ΤΑ ΦΡΥΔΙΑ. Η γωνία τους ΕΙΝΑΙ το συναίσθημα. */
+  var brows = '<path d="M-15 ' + (-15 + M.bl[1]) + ' l11 ' + M.bl[0] * .55 + '" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+              '<path d="M4 ' + (-15 + M.br[1]) + ' l11 ' + (-M.br[0] * .55) + '" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" fill="none"/>';
+
+  return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')">' +
+      '<g class="idle">' +
+        '<path class="ol" stroke-width="5" fill="' + body + '" d="' + B + '"/>' +
+        (opt.arms ? '<path d="M-23 32 l-13 15 M23 32 l13 15" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" fill="none"/>' : '') +
+        '<g transform="rotate(' + tilt + ')">' +
+          '<circle class="ol" stroke-width="5" fill="#F7F1E4" cx="0" cy="0" r="25"/>' +
+          eyes + brows + M.m +
+          (opt.hat   ? '<path class="ol" stroke-width="4.5" fill="#6E5433" d="M-30 -14 q30 -24 60 0 q-30 -10 -60 0 Z"/>' +
+                       '<path d="M-19 -19 q19 -7 38 0" stroke="#4A3620" stroke-width="4" fill="none" stroke-linecap="round"/>' : '') +
+          (opt.scarf ? '<path class="ol" stroke-width="4" fill="#A8563F" d="M-24 18 q24 12 48 0 q-24 20 -48 0 Z"/>' : '') +
+        '</g>' +
+      '</g>' +
     '</g>';
 }
 function tree(x,y,s,bare){
@@ -418,8 +466,8 @@ s01: function(){ return ''+
     tree(150,600,1.1,true)+tree(880,596,.95,true)+
   '</g>'+
   '<g class="an" style="animation:fadeUp .9s .15s both">'+
-    person(420,520,1.35,{body:'#8A7A5E',mood:'sad',hat:true})+
-    person(600,540,1.15,{body:'#6E7F5A',mood:'sad'})+
+    person(420,520,1.35,{body:'#8A7A5E',mood:'tired',type:'farmer',hat:true,tilt:-5,arms:true})+
+    person(600,540,1.15,{body:'#6E7F5A',mood:'worry',tilt:4})+
   '</g>'+
   /* παλιό ξύλινο αλέτρι = απαρχαιωμένες δομές */
   '<g class="an" style="animation:fadeUp .9s .35s both">'+
@@ -528,13 +576,14 @@ s07: function(){
 
 /* ── 8 · Η ΠΥΚΝΟΤΗΤΑ — 15 → 43, ΕΝΩ Η ΔΥΤΙΚΗ ΕΥΡΩΠΗ ΤΡΙΨΗΦΙΑ ──────── */
 s08: function(){
-  function grid(cx, cy, n, cols, r, delay, col){
+  function grid(cx, cy, n, cols, r, delay, col, step){
+    step = step || 0.028;
     var out = '', i, gx, gy;
     for (i = 0; i < n; i++){
       gx = cx + (i % cols) * (r * 2.5);
       gy = cy + Math.floor(i / cols) * (r * 2.5);
       out += '<circle class="an ol" stroke-width="2.5" fill="'+col+'" cx="'+gx+'" cy="'+gy+'" r="'+r+'"'+
-             ' style="animation:popIn .3s '+(delay + i * 0.028)+'s both;transform-origin:'+gx+'px '+gy+'px"/>';
+             ' style="animation:popIn .3s '+(delay + i * step)+'s both;transform-origin:'+gx+'px '+gy+'px"/>';
     }
     return out;
   }
@@ -560,7 +609,9 @@ s08: function(){
     '<text class="num" x="836" y="214" text-anchor="middle" font-size="128" fill="var(--ink)">1 0 0 +</text>'+
     '<text class="lbl" x="836" y="256" text-anchor="middle" font-size="28">ΤΡΙΨΗΦΙΟΙ</text>'+
   '</g>'+
-  grid(716, 300, 96, 12, 5.4, 9.0, 'var(--ink)');
+  /* ΡΥΘΜΟΣ: οι 96 κουκκίδες απλώνονται ως το τέλος της σκηνής (βήμα 0,042
+     αντί 0,028), ώστε να μη μένουν 3 νεκρά δευτερόλεπτα. Καμία νέα λέξη. */
+  grid(716, 300, 96, 12, 5.4, 9.0, 'var(--ink)', 0.042);
 },
 
 /* ── 9 · Η ΕΞΑΝΤΛΗΣΗ ΤΟΥ ΤΟΠΟΥ ΚΑΙ ΤΩΝ ΑΝΘΡΩΠΩΝ ──────────────────── */
@@ -572,8 +623,8 @@ s09: function(){ return ''+
     tree(140,596,1,false)+tree(300,614,.8,false)+tree(760,600,.9,false)+
   '</g>'+
   '<g class="an" style="animation:fadeUp .9s .5s both">'+
-    person(470,540,1.3,{body:'#7C6A50',mood:'sad',hat:true})+
-    person(640,566,1.05,{body:'#6E7F5A',mood:'sad'})+
+    person(470,540,1.3,{body:'#7C6A50',mood:'tired',type:'farmer',hat:true,tilt:-6,arms:true})+
+    person(640,566,1.05,{body:'#6E7F5A',mood:'sad',tilt:7,scarf:true})+
   '</g>'+
   '<g class="an" style="animation:slamIn .55s 1.5s both;transform-origin:500px 170px">'+
     '<text class="stamp" x="500" y="186" text-anchor="middle" font-size="66" fill="var(--terr)">ΕΞΑΝΤΛΗΣΗ</text>'+
@@ -605,7 +656,7 @@ s10: function(){ return ''+
     '<text class="stamp" x="500" y="400" text-anchor="middle" font-size="72" fill="var(--gold)">ΑΓΡΑΝΑΠΑΥΣΗ</text>'+
     '<text class="lbl" x="500" y="450" text-anchor="middle" font-size="27">ΤΑ ΧΩΡΑΦΙΑ ΕΜΟΙΑΖΑΝ ΧΕΡΣΑ</text>'+
   '</g>'+
-  '<g class="an" style="animation:fadeUp .7s 10.6s both">'+person(140,650,.85,{body:'#8A7A5E',mood:'flat',hat:true})+'</g>'+
+  '<g class="an" style="animation:fadeUp .7s 10.6s both">'+person(140,650,.85,{body:'#8A7A5E',mood:'worry',type:'farmer',hat:true,arms:true,tilt:-4})+'</g>'+
   '<g class="an" style="animation:fadeIn .6s 11.2s both">'+
     '<text class="lbl" x="140" y="556" text-anchor="middle" font-size="24">ΠΑΣΧΙΖΑΝ ΝΑ ΒΕΛΤΙΩΣΟΥΝ</text>'+
     '<text class="lbl" x="140" y="584" text-anchor="middle" font-size="24">ΤΙΣ ΑΠΟΔΟΣΕΙΣ</text>'+
@@ -639,9 +690,17 @@ s12: function(){
   var out = '', i, x, y;
   for (i = 0; i < 26; i++){
     x = 120 + (i % 9) * 92;
-    y = 430 + Math.floor(i / 9) * 108;
-    out += '<g class="an" style="animation:popIn .34s '+(0.5 + i * 0.19)+'s both;transform-origin:'+x+'px '+y+'px">'+
-           person(x, y, .46, {body: i % 3 === 0 ? '#7C6A50' : (i % 3 === 1 ? '#6E7F5A' : '#8A7A5E')}) + '</g>';
+    y = 396 + Math.floor(i / 9) * 82;
+    /* ΡΥΘΜΟΣ: το πλήθος απλώνεται σε ΟΛΗ τη σκηνή (0,28s ανά φιγούρα αντί
+       για 0,19s), ώστε να μη μένουν 4,6 δευτερόλεπτα χωρίς κανένα γεγονός.
+       ⛔ Λύνεται με ΚΙΝΗΣΗ, ποτέ με δικά μου λόγια στην οθόνη: μια δική μου
+       φράση με την ίδια εμφάνιση που έχουν τα λόγια του βιβλίου θα ισοπέδωνε
+       τα τρία επίπεδα αλήθειας που η σελίδα κρατάει χωριστά. */
+    out += '<g class="an" style="animation:popIn .34s '+(0.5 + i * 0.28)+'s both;transform-origin:'+x+'px '+y+'px">'+
+           person(x, y, .54, { body: i % 3 === 0 ? '#7C6A50' : (i % 3 === 1 ? '#6E7F5A' : '#8A7A5E'),
+             mood: ['flat','glad','worry','flat','tired','glad'][i % 6],
+             type: i % 4 === 3 ? 'child' : 'villager',
+             tilt: ((i * 37) % 13) - 6, hat: i % 5 === 0 }) + '</g>';
   }
   return ''+
   BG('var(--parch)')+
@@ -703,7 +762,7 @@ s15: function(){ return ''+
   /* η ακτή με το λιμάνι, δεξιά */
   '<path class="ol" stroke-width="6" fill="var(--land)" d="M760 190 q-40 100 -10 200 q-34 110 10 200 q40 90 0 170 H1220 V150 Z"/>'+
   '<g class="an" style="animation:fadeIn .6s .1s both">'+
-    person(880,540,.8,{body:'#7C6A50',mood:'sad'})+person(950,590,.7,{body:'#6E7F5A',mood:'sad'})+
+    person(880,540,.8,{body:'#7C6A50',mood:'shock',tilt:-8})+person(950,590,.7,{body:'#6E7F5A',mood:'sad',scarf:true,tilt:6})+
   '</g>'+
   /* ο στόλος μπαίνει και κλείνει τη θάλασσα */
   '<g class="an" style="animation:sail 2.0s .2s both">'+
@@ -876,13 +935,26 @@ function buildStage(){
 
 var designCam = function(){ return { x: DESIGN.x, y: DESIGN.y, w: DESIGN.w, h: DESIGN.h }; };
 
+/* ⭐ ΡΥΘΜΟΣ — ΤΟ ΚΑΔΡΟ ΑΝΑΠΝΕΕΙ.
+   Ένα εντελώς ακίνητο καρέ διαβάζεται σαν παγωμένη εικόνα, όσο καλό κι αν
+   είναι. Οι χαρτογραφικές σκηνές κινούνται ήδη με την κάμερα· οι υπόλοιπες
+   παίρνουν ένα αργό, συνεχές push-in. Τίποτα δεν μένει ποτέ ακίνητο. */
+var BREATHE = 0.055;          /* πόσο μπαίνει μέσα σε μια ολόκληρη σκηνή */
+var sceneT0 = 0, sceneDur = 4;
+
 function applyCam(){
   film.setAttribute('viewBox', camNow.x + ' ' + camNow.y + ' ' + camNow.w + ' ' + camNow.h);
   /* Οι μη-χαρτογραφικές σκηνές ζουν στον χώρο σχεδίασης και «κολλάνε» πάνω
      στην κάμερα, ώστε να μένουν ακίνητες όσο εκείνη ταξιδεύει από κάτω. */
   if (!curIsMap){
-    var k = camNow.w / DESIGN.w;
-    fxHost.setAttribute('transform', 'translate(' + (camNow.x - DESIGN.x * k) + ',' + (camNow.y - DESIGN.y * k) + ') scale(' + k + ')');
+    var prog = Math.min(1, (performance.now() - sceneT0) / (sceneDur * 1000));
+    var z = 1 + BREATHE * prog;                  /* αργό, συνεχές μπες-μέσα */
+    var k = (camNow.w / DESIGN.w) * z;
+    /* Το ζουμ γίνεται γύρω από το ΚΕΝΤΡΟ του κάδρου, όχι από τη γωνία. */
+    var cx = camNow.x + camNow.w / 2, cy = camNow.y + camNow.h / 2;
+    var tx = cx - (DESIGN.x + DESIGN.w / 2) * k;
+    var ty = cy - (DESIGN.y + DESIGN.h / 2) * k;
+    fxHost.setAttribute('transform', 'translate(' + tx + ',' + ty + ') scale(' + k + ')');
   } else {
     fxHost.removeAttribute('transform');
   }
@@ -911,6 +983,7 @@ function splitMap(svg){
 
 function showScene(i){
   var sc = scenes[i];
+  sceneT0 = performance.now(); sceneDur = sc.dur || 4;   /* για την αναπνοή του κάδρου */
   var out = SCENES[sc.id] ? SCENES[sc.id]() : null;
 
   /* ⚠️ Μια σκηνή που λείπει το ΛΕΕΙ. Ποτέ άδειο κάδρο. */
