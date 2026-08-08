@@ -509,6 +509,50 @@ Each one was paid for once already.
       a guard that will get loosened** (constraint 19), and it is also the
       warning sign that you are testing your model instead of the world.
 
+29. **A CLASSIFIER WITH ONE DIMENSION LIES SILENTLY. Give it a second, and
+    then LOOK at what it produced.** Building the real map, islands were sorted
+    into groups by a lon/lat **bounding box** — correct for islands, and the
+    box is declared explicitly so it can be audited. But the centroid of
+    **ΗΠΕΙΡΟΣ** (20.8, 39.6) falls inside the Ionian box, so an entire mainland
+    region was filed as an Ionian island. The consequence was not cosmetic:
+    the **1864** map would have annexed territory Greece did not hold until
+    **1913**, and taught it as fact.
+    - The fix is a **second, independent** discriminator: `ISLE_MAX_AREA`. A
+      piece leaves its region only if it is also SMALL. One dimension is a
+      coincidence; two is a rule.
+    - ⭐ **The build script ran clean and produced a wrong map.** No assertion
+      existed that could see it — it was found by rendering the geometry and
+      reading the picture. The test that now exists (`every region present`)
+      was written *after* the eye caught it. **Any generated dataset gets
+      rendered and looked at before anything is built on top of it.**
+    - Same shape as 27 and 28: the output was plausible, confident and wrong.
+
+30. **WHEN THE MEDIA'S DURATION *IS* THE TIMELINE, EVERY HARDCODED TIME IS A
+    LATENT SILENT-EMPTY.** The video's scene length is defined by the length of
+    its narration audio — that is what makes sync unbreakable. The cost is that
+    **re-recording the narration silently re-cuts every scene.** When Alex
+    recorded the narration in his own voice, `s08` went from 15.11s to 13.20s
+    while its last dots were scheduled at **13.29s**. They would never have
+    drawn: no error, no blank frame, just missing — constraint 10 wearing a
+    stopwatch.
+    - **The fix is never a new number.** `CUR_DUR` is exposed to every scene and
+      `fitStep()` derives the spacing from it, so a future recording cannot
+      break it. Re-tuning a constant would have survived exactly one re-take.
+    - `tests/video-timing.test.js` now fails on any animation that starts or
+      ends after its scene, **and prints which scenes still carry fixed timing**
+      (`s08,s10,s12,s15`) so the next person knows where the risk sits.
+    - ⚠️⚠️ **THE MEASURING INSTRUMENT WAS WRONG TWICE IN ONE SESSION, AND BOTH
+      TIMES IT ACCUSED CORRECT CODE.** The contact sheet carried its own
+      `viewBox` with `slice` and reported text as clipped that was not clipped
+      at all. Then the driven test asserted the map node was identical across
+      *all six* map scenes — but the map is SUPPOSED to change when territory
+      or highlighting changes — and it read the camera's `viewBox` immediately
+      after a scene change, when a continuous camera has deliberately not
+      arrived yet, scoring **continuity itself as a failure**. A harness must
+      read its parameters **from the thing it measures**, and assert the
+      INTENT (`camTgt`) rather than a snapshot. This is constraint 19's family:
+      before believing a failure, check the instrument.
+
 ---
 
 ## 4 · What is built
@@ -653,6 +697,51 @@ Over that sit mechanical checks no eye catches on the 40th line: ending signatur
 per tense, augment on the historic tenses, a breathing on every initial vowel,
 an accent on every word. Keys `arx:v1`, appKey `arxaia`. Full detail in §5.
 
+⭐⭐ **ΤΟ ΒΙΝΤΕΟ — `istoria-video-demo.html` + `vid/<unit>/`** (als-v462→466).
+Κάθε ενότητα γίνεται animated βίντεο ~2-3 λεπτών, **στο επίπεδο του καναλιού
+«Historically»**, που παίζει ΜΕΣΑ στην εφαρμογή, offline, χωρίς MP4 και χωρίς
+καμία υπηρεσία στο runtime. Πλήρες brief: **`docs/VIDEO_SPEC.md` — διάβασέ το
+πριν αγγίξεις οτιδήποτε εδώ.**
+- **Η αφήγηση είναι το `text[]` του βιβλίου, ΑΥΤΟΛΕΞΕΙ**, κομμένο μόνο σε
+  τελείες. Ένα αρχείο ήχου **ανά σκηνή**, ώστε *διάρκεια σκηνής = διάρκεια
+  ήχου* — δεν υπάρχει τίποτα να ξεσυγχρονιστεί. ⚠️ Και είναι ακριβώς ο λόγος
+  που ισχύει η **σταθερή αρχή 30**.
+- **Η φωνή είναι του ΑΛΕΞ** (als-v466). Η macOS «Μελίνα» και η
+  `el-GR-AthinaNeural` δοκιμάστηκαν και απορρίφθηκαν — *«ακομα κτλβαινω οτι
+  ειναι AI»*. `tools/record-narration.js` είναι το στούντιο: μία πρόταση τη
+  φορά, ηχογράφηση/ακρόαση/επανάληψη, το αρχείο πάει κατευθείαν στη θέση του.
+  Κρατάει την προηγούμενη αφήγηση σε `_prev/` (εκτός git) πριν γράψει.
+  `tools/gen-narration.js` μένει για TTS (Google Chirp 3 HD = 1.000.000
+  χαρ./μήνα δωρεάν· ElevenLabs = 10.000). Κλειδιά μόνο από `.env`.
+- **Ο ΧΑΡΤΗΣ ΕΙΝΑΙ ΑΛΗΘΙΝΟΣ** — `greece-geo.js` (63KB, 16 περιοχές),
+  παραγόμενο από `tools/build-geo.js` (Natural Earth 10m, public domain, Web
+  Mercator). ⛔ Μην το πειράξεις στο χέρι. `GEO_LL(lon,lat)` βάζει κάθε ετικέτα
+  σε **πραγματικές συντεταγμένες** (επαληθευμένο με 8 πόλεις).
+- **Οι ΚΑΤΑΣΤΑΣΕΙΣ ΣΥΝΟΡΩΝ** (`STATES`: 1832/1864/1881/1913/1920) κουβαλούν
+  `source` η καθεμία. Τα ΓΕΓΟΝΟΤΑ είναι του βιβλίου· τα ΣΧΗΜΑΤΑ είναι σημερινές
+  περιφέρειες, δηλαδή **προσέγγιση** — και όπου φαίνεται, γράφεται ΣΤΗΝ ΟΘΟΝΗ.
+  ⚠️ Τα **Δωδεκάνησα** είναι ξεχωριστό κλειδί ώστε να μη μπορούν να μπουν ποτέ
+  σε χάρτη πριν το **1947**. Δες **σταθερή αρχή 29**.
+- **ΕΝΑ ΚΑΡΕ ΠΟΥ ΔΕΝ ΚΟΒΕΙ.** Ένα `<svg>` για όλη την ταινία· ο χάρτης ζει σε
+  `<g class="mapg">` και **δεν ξαναχτίζεται όταν δεν άλλαξε** (ο προβολέας
+  συγκρίνει το markup). ⚠️ Γι' αυτό **τίποτα μέσα στη `mapSVG` δεν επιτρέπεται
+  να εξαρτάται από την κάμερα** — τα πάχη είναι `vector-effect:
+  non-scaling-stroke`. Η κάμερα δεν μηδενίζει ποτέ: οι σκηνές δηλώνουν ΣΤΟΧΟ.
+- **Ο θίασος** έχει 7 διαθέσεις (τα ΦΡΥΔΙΑ κάνουν τη δουλειά), 4 σώματα, κλίση
+  κεφαλιού και ανάσα. **Ο ήχος είναι συνθετικός** (WebAudio, μηδέν αρχεία) και
+  ⭐ **διαβάζει τα ίδια τα animation delays** της σκηνής, οπότε δεν χρειάζεται
+  χρονισμός στο χέρι πουθενά.
+- ⛔ **ΚΑΜΙΑ ΔΙΚΗ ΜΑΣ ΛΕΞΗ ΜΕ ΤΗΝ ΕΜΦΑΝΙΣΗ ΤΩΝ ΛΟΓΙΩΝ ΤΟΥ ΒΙΒΛΙΟΥ.** Δύο φορές
+  μέσα σε μία συνεδρία πήγα να γεμίσω νεκρό χρόνο με σφραγίδα δικής μου
+  διατύπωσης· και οι δύο αφαιρέθηκαν. Ο ρυθμός λύνεται με **κίνηση**. Τα τρία
+  επίπεδα αλήθειας της σελίδας δεν ισοπεδώνονται για τρία δευτερόλεπτα.
+- Καλωδίωση: **μηδέν αλλαγή στο `vercel.json`**, καμία 13η function, μηδέν
+  εξωτερικά scripts, μηδέν επαφή με Supabase. Ο ήχος **δεν** μπαίνει στο SW
+  `CORE` (πολλά MB) — φορτώνεται κατά ζήτηση.
+- 🔴 **Δεν είναι ακόμα καλωδιωμένο μέσα στην `istoria.html`.** Είναι
+  αυτοτελής σελίδα. Το «▶ ΤΟ ΒΙΝΤΕΟ» ανά ενότητα + το recap + το «Τώρα πες το»
+  (που το δένει με την ΑΝΑΚΛΗΣΗ) είναι το επόμενο, §11 του brief.
+
 `study.html` («Η Χρονιά») is still a redirect to the Notion workspace that replaced
 it (als-v447). The seven `study:*` keys and the dead plan's `arxaia:v1` are
 untouched in Supabase and the Vault.
@@ -681,7 +770,44 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v461` — ΙΣΤΟΡΙΑ: ΤΟ ΥΠΟΛΟΙΠΟ ΤΟΥ ΕΜΠΟΡΙΟΥ + Η ΝΑΥΤΙΛΙΑ**
+**HEAD is `als-v466` — ΤΟ ΒΙΝΤΕΟ ΤΗΣ ΙΣΤΟΡΙΑΣ** (2026-08-08, on `main`, pushed;
+**35 suites** + smoke green). Πέντε deploys σε μία συνεδρία: v462 το πρώτο
+βίντεο + ο αληθινός χάρτης · v463 ο χάρτης μπήκε ΜΕΣΑ με κάμερα · v464 ένα
+καρέ που δεν κόβει + ήχος · v465 ο θίασος και ο ρυθμός · v466 η φωνή του Αλεξ.
+
+Δικά του λόγια: *«οταν κανω επαναληψεις πολυ μετα… ενα βιντεο ανιματεδ οπως
+αυτο του Historically θα με εσωζε»*, και μετά *«ΠΡΕΠΕΙ ΝΑ ΕΙΝΑΙ ΑΠΙΣΤΕΥΤΟ
+ΕΝΤΕΡΤΑΙΝΙΝΓΚ ΚΑΙ ΝΑ ΤΑ ΜΑΘΑΙΝΩ ΠΑΝΕΥΚΟΛΑ»*.
+
+**Η πλήρης περιγραφή είναι στο §4 και το συμβόλαιο στο `docs/VIDEO_SPEC.md`.**
+Οι μόνιμοι κανόνες που γεννήθηκαν εδώ είναι οι **σταθερές αρχές 29 και 30** —
+διάβασέ τες αντί να ξαναβγάλεις το συμπέρασμα από την ιστορία.
+
+### ⭐ Η μία απόφαση που όρισε τα πάντα
+Το στυλ του Historically **δεν είναι AI βίντεο** — είναι επίπεδο διάνυσμα,
+χάρτες και μεγάλοι αριθμοί. Άρα φτιάχνεται με **SVG στον browser**, όχι με
+μοντέλο παραγωγής βίντεο. Και αυτό δεν είναι μόνο φθηνότερο:
+**ένα video model δεν μπορεί να ζωγραφίσει σωστό πίνακα ή σωστό σύνορο του
+1881** — θα βγάλει κάτι που *μοιάζει* σωστό, που ακυρώνει ολόκληρη τη γείωση
+της σελίδας. Δωρεάν, offline, και **διορθώνεται μόνο του όταν διορθωθεί το
+corpus**.
+⭐ **Το κείμενο του βιβλίου ΕΙΝΑΙ ήδη η σωστή διάρκεια** — μετρημένο: οι έξι
+ενότητες βγάζουν 0:54 έως 2:57. Δεν γράφτηκε σενάριο· δεν χρειαζόταν.
+
+### 🔴 Τι ΔΕΝ έγινε ακόμα
+- **Δεν είναι καλωδιωμένο στην `istoria.html`.** Αυτοτελής σελίδα προς το παρόν.
+- **Το recap και το «Τώρα πες το»** — το κομμάτι που το κάνει να ΔΙΔΑΣΚΕΙ αντί
+  να εντυπωσιάζει, δένοντάς το με την ΑΝΑΚΛΗΣΗ. Είναι το επόμενο.
+- **Μόνο η `a1a`** έχει βίντεο. Οι άλλες πέντε τρέχουν με την ίδια μηχανή.
+- 🔴 **Αδοκίμαστο στο κινητό του.** Οδηγήθηκε με 16 ελέγχους σε πραγματική
+  αναπαραγωγή και ρέντερ στα 1280px· **κανένα δάχτυλο δεν το έχει αγγίξει.**
+- ⚠️ **Το brief είναι γραμμένο για ΙΣΤΟΡΙΑ.** Ο Αλεξ θέλει κάθε μάθημα, αλλά
+  **Λατινικά και Αρχαία Γνωστό δεν έχουν χάρτες ούτε αριθμούς** — θέλουν δικό
+  τους οπτικό λεξιλόγιο πριν πούμε «όλα τα μαθήματα».
+
+---
+
+**Before that — `als-v461` — ΙΣΤΟΡΙΑ: ΤΟ ΥΠΟΛΟΙΠΟ ΤΟΥ ΕΜΠΟΡΙΟΥ + Η ΝΑΥΤΙΛΙΑ**
 (2026-08-07, on `main`; **34 suites** + smoke green; `tests/istoria-data.test.js`
 = **3.644 assertions**, από 2.080). Δύο νέες ενότητες: `b1b` «Το εμπόριο (η
 συνέχεια)» (16 σημεία / 50 στοιχεία, 5 παράγραφοι, **Πίνακες 3 ΚΑΙ 4**) και `b2`
@@ -3521,6 +3647,14 @@ Shortcut (Garmin Connect has written full sleep stages to Apple Health since Dec
 changes — page, merge and tests carry over untouched.
 
 **Needs Alex, not code**
+- 🔴🔴 **ΤΟ ΒΙΝΤΕΟ: το άκουσε ολόκληρο με τη φωνή του;** Δύο ερωτήσεις είναι
+  δικές του, όχι δικές μου: **υπάρχει πρόταση που θέλει να ξαναπεί** (τότε
+  `node tools/record-narration.js` και μόνο εκείνη), και **ταιριάζει ο ρυθμός
+  της εικόνας** με την απαγγελία του. ⚠️ Κάθε νέα ηχογράφηση ξανακόβει τις
+  σκηνές — **τρέξε `tests/video-timing.test.js` μετά, πάντα** (σταθερή αρχή 30).
+- 🔴 **ΤΟ ΒΙΝΤΕΟ: δική του απόφαση πόσο χιούμορ** θέλει στον θίασο, και αν
+  θέλει μουσική υπόκρουση πιο δυνατά ή καθόλου (τώρα είναι πολύ χαμηλά).
+  Οι υπόλοιπες 5 ενότητες περιμένουν το «ναι» του στο στυλ.
 - 🔴🔴 **ΑΡΧΑΙΑ ΑΓΝΩΣΤΟ: Η ΑΝΑΚΛΗΣΗ ΜΕ ΦΩΝΗ ΕΙΝΑΙ ΝΕΚΡΗ — ΘΕΛΕΙ ΑΛΛΟΝ ΤΡΟΠΟ.**
   Το δοκίμασε και είπε *«δν μπορει να ακουσει αρχαια, λεει νεα ελληνικα»*.
   ⚠️ **ΑΦΟΡΑ ΜΟΝΟ ΤΟΥΣ ΑΡΧΙΚΟΥΣ ΧΡΟΝΟΥΣ.** Το ΓΝΩΣΤΟ της als-v460 ακούει μια
@@ -3715,8 +3849,8 @@ changes — page, merge and tests carry over untouched.
 
 ```bash
 export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"
-for f in tests/*.js; do node "$f"; done   # 34 files; 33 suites + 1 tool.
-# ⚠️ `tests/*.test.js` is only 27 of them. reinstall-safety.js and
+for f in tests/*.js; do node "$f"; done   # 35 files; 35 suites + 1 tool.
+# ⚠️ `tests/*.test.js` is only 32 of them. reinstall-safety.js and
 # sync-regression.js carry NO `.test.` in their names and they guard the
 # sync data-loss bugs — the most expensive bug class here. A loop over
 # `*.test.js` silently skips both. Only garmin-probe.js is a TOOL.
