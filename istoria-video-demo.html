@@ -45,10 +45,12 @@ body{
   background:var(--parch);border-radius:14px;overflow:hidden;
   box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
 }
+/* ΕΝΑ καρέ για όλη την ταινία. Δεν υπάρχουν πια «σκηνές» ως στοιχεία DOM —
+   υπάρχει ο χάρτης, που επιβιώνει, και οι επικαλύψεις, που εναλλάσσονται. */
 .stage{position:absolute;inset:0}
-.scene{position:absolute;inset:0;opacity:0;visibility:hidden}
-.scene.on{opacity:1;visibility:visible}
-.scene svg{width:100%;height:100%;display:block}
+.film{width:100%;height:100%;display:block}
+.maph{transition:opacity .34s ease}
+.fxh{transition:opacity .22s ease}
 
 /* ═══ Ο ΥΠΟΤΙΤΛΟΣ — τα λόγια του βιβλίου ═══ */
 .cap{
@@ -180,6 +182,9 @@ body{
     <button class="btn sm" id="cc" aria-label="Υπότιτλοι">
       <svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm3.5 4.5a2.5 2.5 0 100 5h1.5v-1.6H7a.9.9 0 110-1.8h1v-1.6H6.5zm7 0a2.5 2.5 0 100 5H15v-1.6h-1a.9.9 0 110-1.8h1V9.5h-1.5z"/></svg>
     </button>
+    <button class="btn sm" id="mute" aria-label="Σίγαση ήχου (M)">
+      <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4m-2.5 7.9a7 7 0 000-15.8v2.1a5 5 0 010 11.6z"/></svg>
+    </button>
     <button class="btn sm" id="fs" aria-label="Πλήρης οθόνη">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM4 15h2v3h3v2H4zm14 0h2v5h-5v-2h3z"/></svg>
     </button>
@@ -268,20 +273,28 @@ var camStr = function(c){ return c.x + ' ' + c.y + ' ' + c.w + ' ' + c.h; };
 function K(cam){ return cam.w / 1352; }
 
 /* ── Η ΖΩΓΡΑΦΙΚΗ ΤΟΥ ΧΑΡΤΗ ────────────────────────────────────────── */
+/* ⭐⭐ Ο ΧΑΡΤΗΣ ΤΥΛΙΓΕΤΑΙ ΣΕ <g class="mapg"> ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ ΦΕΡΟΝ.
+   Ο προβολέας συγκρίνει αυτό το κομμάτι με ό,τι είναι ήδη στην οθόνη και,
+   αν είναι ΙΔΙΟ, ΔΕΝ το ξαναφτιάχνει. Έτσι ο χάρτης επιβιώνει από σκηνή σε
+   σκηνή — δεν κόβει ποτέ. Αυτό είναι η διαφορά «βίντεο» / «διαφάνειες».
+   ⚠️ ΜΗΝ βάλεις ένθετο <g> μέσα στη mapSVG: ο προβολέας κόβει στο ΠΡΩΤΟ
+      </g> και ένα ένθετο group θα έσπαγε τον διαχωρισμό. */
 function mapSVG(year, cam, opt){
   opt = opt || {};
-  var k = K(cam), sw = 2.6 * k;
+  var sw = 1.7;   /* ΜΟΝΑΔΕΣ ΟΘΟΝΗΣ (vector-effect), όχι χάρτη. ⚠️ Τίποτα εδώ
+     μέσα δεν επιτρέπεται να εξαρτάται από την κάμερα: αν εξαρτηθεί, το markup
+     αλλάζει σε κάθε ζουμ και ο χάρτης ξαναχτίζεται σε κάθε σκηνή. */
   var own = territoryAt(year);
   var dim = opt.dim || [];
-  var s = '';
+  var s = '<g class="mapg">';
 
   /* θάλασσα, απλωμένη πολύ πέρα από κάθε κάμερα */
   s += '<rect x="-3000" y="-3000" width="9000" height="9000" fill="var(--sea)"/>';
   /* γείτονες + ό,τι δεν είναι ακόμα ελληνικό, ουδέτερα */
-  s += '<path d="' + GEO._neighbours + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round"/>';
+  s += '<path d="' + GEO._neighbours + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
   Object.keys(GEO).forEach(function(key){
     if (key === '_neighbours' || own.indexOf(key) >= 0) return;
-    s += '<path d="' + GEO[key] + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round"/>';
+    s += '<path d="' + GEO[key] + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
   });
   /* η ελληνική επικράτεια */
   /* ⭐ `hi` = ΘΕΤΙΚΗ επισήμανση («αυτά εδώ»), αντί να ξεθωριάζουμε τα υπόλοιπα.
@@ -293,17 +306,19 @@ function mapSVG(year, cam, opt){
     var faded  = dim.indexOf(key) >= 0;
     var lit    = hi.indexOf(key) >= 0;
     s += '<path d="' + GEO[key] + '" fill="' + (lit ? 'var(--gold)' : 'var(--terr)') + '" stroke="var(--ink)" ' +
-         'stroke-width="' + (lit ? sw * 1.5 : sw) + '" stroke-linejoin="round"' +
+         'stroke-width="' + (lit ? sw * 1.8 : sw) + '" stroke-linejoin="round" vector-effect="non-scaling-stroke"' +
          (faded ? ' opacity=".38"' : '') +
          (isNew ? ' class="an" style="animation:fadeIn .7s ' + (opt.revealAt || 0) + 's both"' : '') + '/>';
   });
-  /* ⚠️ Το σύνορο μιας ΠΡΟΣΕΓΓΙΣΤΙΚΗΣ κατάστασης σχεδιάζεται διακεκομμένο. */
-  var st = stateAt(year);
-  if (st && st.approx && !opt.noApprox){
-    s += '<text class="lbl" x="' + (cam.x + cam.w * .5) + '" y="' + (cam.y + cam.h - 16 * k) + '" text-anchor="middle" ' +
+  return s + '</g>';
+}
+/* Η δήλωση προσέγγισης ζει στην ΕΠΙΚΑΛΥΨΗ, ποτέ μέσα στον χάρτη — ο χάρτης
+   πρέπει να παραμένει byte-ίδιος από σκηνή σε σκηνή για να μην ξαναχτίζεται. */
+function approxNote(year, cam){
+  var st = stateAt(year); if (!st || !st.approx) return '';
+  var k = K(cam);
+  return '<text class="lbl" x="' + (cam.x + cam.w * .5) + '" y="' + (cam.y + cam.h - 16 * k) + '" text-anchor="middle" ' +
          'font-size="' + (26 * k) + '" stroke="var(--sea)" stroke-width="' + (5 * k) + '" opacity=".9">ΣΥΝΟΡΑ ΚΑΤΑ ΠΡΟΣΕΓΓΙΣΗ</text>';
-  }
-  return s;
 }
 /* Ετικέτα σε συντεταγμένες ΧΑΡΤΗ, μεγέθους ΚΑΜΕΡΑΣ. */
 function mapLabel(x, y, txt, size, cam, cls, fill){
@@ -421,7 +436,7 @@ s01: function(){ return ''+
 s02: function(){
   var from = camOf(T1832, .55), to = camOf(T1832, .22), cam = to;
   return { camFrom: from, camTo: to, svg:
-    mapSVG(1832, cam) +
+    mapSVG(1832, cam) + approxNote(1832, cam) +
     '<g class="an" style="animation:slamIn .5s .35s both;transform-origin:' + (cam.x + cam.w * .22) + 'px ' + (cam.y + cam.h * .2) + 'px">' +
       mapLabel(cam.x + cam.w * .22, cam.y + cam.h * .21, 'ΜΙΚΡΗ', 74, cam, 'stamp', 'var(--gold)') +
     '</g>' +
@@ -499,7 +514,7 @@ s07: function(){
   var cam = camOf(['thessalia','kmakedonia','sterea'], .18), kk = K(cam);
   var o = LL('olympos');
   return { camFrom: camOf(T1881, .16), camTo: cam, svg:
-    mapSVG(1881, cam, { noApprox: true }) +
+    mapSVG(1881, cam, { reveal: ['ionia','thessalia'], revealAt: 0, noApprox: true }) +
     '<g class="an" style="animation:popIn .5s 1.0s both;transform-origin:' + o[0] + 'px ' + o[1] + 'px">' +
       '<path class="ol" stroke-width="' + (2.6 * kk) + '" fill="#8E7B5E" d="M' + o[0] + ' ' + (o[1] - 26 * kk) +
         'L' + (o[0] + 22 * kk) + ' ' + (o[1] + 8 * kk) + 'H' + (o[0] - 22 * kk) + 'Z"/>' +
@@ -724,12 +739,24 @@ s15: function(){ return ''+
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Ο ΠΡΟΒΟΛΕΑΣ
+   Ο ΠΡΟΒΟΛΕΑΣ — ΕΝΑ ΚΑΡΕ ΠΟΥ ΔΕΝ ΚΟΒΕΙ ΠΟΤΕ
+
+   Παλιά: 15 ξεχωριστά <svg>, ένα ανά σκηνή, που άναβαν/έσβηναν. Κάθε αλλαγή
+   σκηνής ήταν ΚΟΨΙΜΟ και ο χάρτης ξαναχτιζόταν από το μηδέν.
+   Τώρα: ΕΝΑ <svg> για όλη την ταινία. Ο χάρτης ζει μέσα του και επιβιώνει
+   από σκηνή σε σκηνή· η κάμερα δεν μηδενίζει ποτέ, συνεχίζει από εκεί που
+   βρίσκεται· μόνο οι επικαλύψεις εναλλάσσονται.
    ══════════════════════════════════════════════════════════════════════ */
 var MANIFEST_URL = 'vid/a1a/manifest.json';
 var AUDIO_DIR    = 'vid/a1a/';
 
-var scenes = [], idx = -1, playing = false, els = [], audios = [], total = 0, capsOn = true;
+/* Ο χώρος σχεδίασης των ΜΗ-χαρτογραφικών σκηνών. Μεταφέρεται πάνω στην
+   τρέχουσα κάμερα, ώστε να μένει ακίνητος όσο η κάμερα κινείται από κάτω. */
+var DESIGN = { x: -176, y: 0, w: 1352, h: 760 };
+
+var scenes = [], idx = -1, playing = false, audios = [], total = 0, capsOn = true;
+var film = null, mapHost = null, fxHost = null, curMap = '', curIsMap = false;
+var camNow = null, camTgt = null, camLast = 0;
 
 var $stage = document.getElementById('stage');
 var $cap   = document.getElementById('cap');
@@ -744,74 +771,188 @@ var $frame = document.getElementById('frame');
 var ICON_PLAY  = 'M8 5v14l11-7z';
 var ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
 
-function fmt(s){ s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+function fmt(s){ s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
-function build(){
-  scenes.forEach(function(sc, i){
-    var d = document.createElement('div');
-    d.className = 'scene';
-    /* ⚠️ Ο ΙΔΙΟΣ renderer με το show(), ποτέ δεύτερο αντίγραφο — αλλιώς οι δύο
-       δρόμοι ξεσυγχρονίζονται και η κάμερα δουλεύει μόνο στον έναν. */
-    $stage.appendChild(d);
-    renderScene(d, sc);
-    els.push(d);
+/* ══════════════════════════════════════════════════════════════════════════
+   Ο ΗΧΟΣ — συνθετικός, χωρίς ούτε ένα αρχείο.
+   ⚠️ Το iOS δεν επιτρέπει ήχο πριν από άγγιγμα· το AudioContext γεννιέται
+   στο πάτημα του ▶ και ποτέ νωρίτερα.
+   ══════════════════════════════════════════════════════════════════════ */
+var AC = null, master = null, bed = null, muted = false;
 
-    var a = new Audio(AUDIO_DIR + sc.id + '.m4a');
-    a.preload = 'auto';
-    audios.push(a);
+function audioInit(){
+  if (AC) return;
+  var Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;                       /* χωρίς WebAudio: σιωπή, όχι σφάλμα */
+  AC = new Ctx();
+  master = AC.createGain(); master.gain.value = muted ? 0 : 1; master.connect(AC.destination);
+  startBed();
+}
+function noise(sec){
+  var n = Math.floor(AC.sampleRate * sec), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+  for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+/* Η σφραγίδα που προσγειώνεται: χαμηλός χτύπος + μια πινελιά θορύβου. */
+function sfxThud(t){
+  if (!AC) return; t = t || AC.currentTime;
+  var o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(46, t + .16);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .012);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .34);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + .36);
 
-    var t = document.createElement('i');
-    t.style.left = (sc.start / total * 100) + '%';
-    $ticks.appendChild(t);
+  var s = AC.createBufferSource(), f = AC.createBiquadFilter(), ng = AC.createGain();
+  s.buffer = noise(.12); f.type = 'lowpass'; f.frequency.value = 1500;
+  ng.gain.setValueAtTime(.16, t); ng.gain.exponentialRampToValueAtTime(.0001, t + .12);
+  s.connect(f); f.connect(ng); ng.connect(master); s.start(t); s.stop(t + .12);
+}
+/* Το πέρασμα της κάμερας. */
+function sfxWhoosh(t){
+  if (!AC) return; t = t || AC.currentTime;
+  var s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noise(.7); f.type = 'bandpass'; f.Q.value = 1.1;
+  f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(2100, t + .3);
+  f.frequency.exponentialRampToValueAtTime(420, t + .66);
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.1, t + .16);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .68);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + .7);
+}
+/* Κάτι μικρό που εμφανίζεται. */
+function sfxTick(t){
+  if (!AC) return; t = t || AC.currentTime;
+  var o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle'; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(500, t + .07);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.075, t + .008);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .1);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + .11);
+}
+/* Το μουσικό στρώμα: δικές μας ημιτονοειδείς, ΠΟΛΥ χαμηλά, ώστε να μην
+   παλεύει με την αφήγηση. Καμία ξένη ηχογράφηση, κανένα δικαίωμα τρίτου. */
+function startBed(){
+  bed = AC.createGain(); bed.gain.value = 0; bed.connect(master);
+  [110, 164.81, 220, 329.63].forEach(function(f, i){
+    var o = AC.createOscillator(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain();
+    o.type = i > 1 ? 'sine' : 'triangle'; o.frequency.value = f;
+    g.gain.value = [.055, .04, .03, .016][i];
+    lfo.frequency.value = .045 + i * .017; lg.gain.value = g.gain.value * .55;
+    lfo.connect(lg); lg.connect(g.gain);
+    o.connect(g); g.connect(bed); o.start(); lfo.start();
   });
-  $time.textContent = '0:00 / ' + fmt(total);
+  bed.gain.linearRampToValueAtTime(.34, AC.currentTime + 4);
+}
+function setMuted(m){
+  muted = m;
+  if (master) master.gain.setTargetAtTime(m ? 0 : 1, AC.currentTime, .05);
+  var b = document.getElementById('mute');
+  if (b) b.style.opacity = m ? .42 : 1;
+}
+/* ⭐ Ο ήχος ΔΙΑΒΑΖΕΙ τα ίδια τα animation delays της σκηνής και μπαίνει
+   ακριβώς εκεί. Δεν γράφεται χρονισμός στο χέρι πουθενά, άρα δεν μπορεί
+   να ξεσυγχρονιστεί όταν αλλάξει μια σκηνή. */
+var sfxTimers = [];
+function scheduleSFX(markup){
+  sfxTimers.forEach(clearTimeout); sfxTimers = [];
+  if (!AC || muted) return;
+  var re = /animation:(slamIn|popIn)\s+[\d.]+s\s+([\d.]+)s/g, m, n = 0;
+  while ((m = re.exec(markup)) && n < 26){
+    (function(kind, at){
+      sfxTimers.push(setTimeout(function(){ kind === 'slamIn' ? sfxThud() : sfxTick(); }, at * 1000));
+    })(m[1], parseFloat(m[2]));
+    n++;
+  }
 }
 
-/* ── Η ΚΑΜΕΡΑ ────────────────────────────────────────────────────────────
-   Μια σκηνή μπορεί να επιστρέψει είτε σκέτο SVG (σταθερό κάδρο) είτε
-   { svg, camFrom, camTo }. Στη δεύτερη περίπτωση το viewBox κινείται όσο
-   διαρκεί ο ήχος της σκηνής — αυτό είναι που το κάνει βίντεο και όχι
-   παρουσίαση διαφανειών.                                                 */
-var DEFAULT_VB = '-176 0 1352 760';
-var camRAF = 0;
-var ease = function(t){ return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+/* ══════════════════════════════════════════════════════════════════════════
+   Η ΣΚΗΝΗ
+   ══════════════════════════════════════════════════════════════════════ */
+function buildStage(){
+  $stage.innerHTML = '<svg class="film" preserveAspectRatio="xMidYMid meet">' +
+                       '<g class="maph"></g><g class="fxh"></g></svg>';
+  film    = $stage.firstChild;
+  mapHost = film.children[0];
+  fxHost  = film.children[1];
+}
 
-function renderScene(el, sc){
+var designCam = function(){ return { x: DESIGN.x, y: DESIGN.y, w: DESIGN.w, h: DESIGN.h }; };
+
+function applyCam(){
+  film.setAttribute('viewBox', camNow.x + ' ' + camNow.y + ' ' + camNow.w + ' ' + camNow.h);
+  /* Οι μη-χαρτογραφικές σκηνές ζουν στον χώρο σχεδίασης και «κολλάνε» πάνω
+     στην κάμερα, ώστε να μένουν ακίνητες όσο εκείνη ταξιδεύει από κάτω. */
+  if (!curIsMap){
+    var k = camNow.w / DESIGN.w;
+    fxHost.setAttribute('transform', 'translate(' + (camNow.x - DESIGN.x * k) + ',' + (camNow.y - DESIGN.y * k) + ') scale(' + k + ')');
+  } else {
+    fxHost.removeAttribute('transform');
+  }
+}
+function camLoop(now){
+  requestAnimationFrame(camLoop);
+  if (!camNow || !camTgt) return;
+  var dt = Math.min(64, now - (camLast || now)); camLast = now;
+  /* Εκθετική προσέγγιση: ανεξάρτητη από ρυθμό καρέ, ποτέ απότομη. */
+  var a = 1 - Math.pow(0.0016, dt / 1000);
+  camNow.x += (camTgt.x - camNow.x) * a;
+  camNow.y += (camTgt.y - camNow.y) * a;
+  camNow.w += (camTgt.w - camNow.w) * a;
+  camNow.h += (camTgt.h - camNow.h) * a;
+  applyCam();
+}
+
+/* Κόβει το κομμάτι του χάρτη από την υπόλοιπη σκηνή.
+   ⚠️ Στηρίζεται στο ότι η mapSVG ΔΕΝ περιέχει ένθετο <g> — δηλωμένο εκεί. */
+function splitMap(svg){
+  var i = svg.indexOf('<g class="mapg">');
+  if (i < 0) return { map: null, fx: svg };
+  var j = svg.indexOf('</g>', i);
+  return { map: svg.slice(i, j + 4), fx: svg.slice(0, i) + svg.slice(j + 4) };
+}
+
+function showScene(i){
+  var sc = scenes[i];
   var out = SCENES[sc.id] ? SCENES[sc.id]() : null;
-  /* ⚠️ Μια σκηνή που λείπει το ΛΕΕΙ. Δεν μένει άδεια. */
+
+  /* ⚠️ Μια σκηνή που λείπει το ΛΕΕΙ. Ποτέ άδειο κάδρο. */
   if (out == null){
-    el.innerHTML = '<svg viewBox="' + DEFAULT_VB + '" preserveAspectRatio="xMidYMid meet">' +
-      '<rect x="-200" y="-40" width="1420" height="850" fill="var(--parch)"/>' +
-      '<text class="lbl" x="500" y="380" text-anchor="middle" font-size="34">ΛΕΙΠΕΙ Η ΣΚΗΝΗ ' + sc.id + '</text></svg>';
-    return;
+    curIsMap = false; camTgt = designCam(); if (!camNow) camNow = designCam();
+    mapHost.innerHTML = '';
+    fxHost.innerHTML = '<rect x="-200" y="-40" width="1420" height="850" fill="var(--parch)"/>' +
+      '<text class="lbl" x="500" y="380" text-anchor="middle" font-size="34">ΛΕΙΠΕΙ Η ΣΚΗΝΗ ' + sc.id + '</text>';
+    applyCam(); return;
   }
   if (typeof out === 'string') out = { svg: out };
-  var vb = out.camFrom ? camStr(out.camFrom) : DEFAULT_VB;
-  el.innerHTML = '<svg viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + out.svg + '</svg>';
 
-  cancelAnimationFrame(camRAF);
-  if (!out.camFrom || !out.camTo) return;
-  var a = out.camFrom, b = out.camTo;
-  if (a.x === b.x && a.y === b.y && a.w === b.w) return;
-  var svg = el.firstChild, t0 = performance.now(), dur = Math.max(600, sc.dur * 1000);
-  (function step(now){
-    var t = ease(Math.min(1, (now - t0) / dur));
-    svg.setAttribute('viewBox',
-      (a.x + (b.x - a.x) * t) + ' ' + (a.y + (b.y - a.y) * t) + ' ' +
-      (a.w + (b.w - a.w) * t) + ' ' + (a.h + (b.h - a.h) * t));
-    if (t < 1) camRAF = requestAnimationFrame(step);
-  })(t0);
+  var parts = splitMap(out.svg);
+  var wantCam = out.camTo || out.cam || (parts.map ? null : designCam());
+  curIsMap = !!parts.map;
+
+  if (!camNow) camNow = wantCam ? { x:wantCam.x, y:wantCam.y, w:wantCam.w, h:wantCam.h } : designCam();
+  if (wantCam) camTgt = wantCam;
+
+  /* ⭐⭐ ΤΟ ΚΑΡΔΙΑΚΟ ΣΗΜΕΙΟ: αν ο χάρτης είναι ΙΔΙΟΣ, δεν τον αγγίζουμε.
+     Καμία επανασχεδίαση, κανένα τρεμόπαιγμα — ο χάρτης απλώς συνεχίζει. */
+  if (parts.map !== curMap){
+    mapHost.innerHTML = parts.map || '';
+    curMap = parts.map || '';
+  }
+  mapHost.style.opacity = parts.map ? 1 : 0;
+
+  /* Οι επικαλύψεις εναλλάσσονται απαλά — ποτέ σκληρό κόψιμο. */
+  fxHost.style.opacity = 0;
+  fxHost.innerHTML = parts.fx;
+  applyCam();
+  requestAnimationFrame(function(){ fxHost.style.opacity = 1; });
+
+  scheduleSFX(parts.fx);
+  if (AC && !muted) sfxWhoosh();
 }
 
 function show(i){
   if (i === idx) return;
-  if (els[idx]) els[idx].classList.remove('on');
   idx = i;
-  if (!els[idx]) return;
-  /* ξαναγέννηση του SVG ⇒ οι animations ξαναπαίζουν από την αρχή */
-  renderScene(els[idx], scenes[idx]);
-  els[idx].classList.add('on');
-  $cap.textContent = scenes[idx].text;
+  showScene(i);
+  $cap.textContent = scenes[i].text;
 }
 
 function playFrom(i){
@@ -820,20 +961,21 @@ function playFrom(i){
   var a = audios[i];
   a.currentTime = 0;
   var p = a.play();
-  if (p && p.catch) p.catch(function(){ /* iOS: χρειάζεται άγγιγμα — το poster το δίνει */ });
+  if (p && p.catch) p.catch(function(){});
   a.onended = function(){ if (playing) playFrom(i + 1); };
 }
 
-function tick(){
-  if (playing && audios[idx]){
-    var el = scenes[idx].start + (audios[idx].currentTime || 0);
-    $fill.style.width = (el / total * 100) + '%';
-    $time.textContent = fmt(el) + ' / ' + fmt(total);
-  }
-  requestAnimationFrame(tick);
+function meter(){
+  requestAnimationFrame(meter);
+  if (!playing || !audios[idx]) return;
+  var el = scenes[idx].start + (audios[idx].currentTime || 0);
+  $fill.style.width = (el / total * 100) + '%';
+  $time.textContent = fmt(el) + ' / ' + fmt(total);
 }
 
 function start(){
+  audioInit();
+  if (AC && AC.state === 'suspended') AC.resume();
   $poster.classList.add('gone');
   playing = true;
   $ppI.setAttribute('d', ICON_PAUSE);
@@ -843,6 +985,8 @@ function pause(){
   playing = false;
   $ppI.setAttribute('d', ICON_PLAY);
   if (audios[idx]) audios[idx].pause();
+  sfxTimers.forEach(clearTimeout); sfxTimers = [];
+  if (bed) bed.gain.setTargetAtTime(.08, AC.currentTime, .3);
 }
 function stop(ended){
   pause();
@@ -856,13 +1000,14 @@ function jump(i){
 }
 
 $poster.onclick = start;
-$pp.onclick = function(){ playing ? pause() : start(); };
+$pp.onclick = function(){ if (playing) pause(); else { if (bed && AC) bed.gain.setTargetAtTime(.34, AC.currentTime, .5); start(); } };
 document.getElementById('back').onclick = function(){ jump(idx - 1); };
 document.getElementById('fwd').onclick  = function(){ jump(idx + 1); };
 document.getElementById('cc').onclick   = function(){ capsOn = !capsOn; $frame.classList.toggle('nocap', !capsOn); };
-document.getElementById('fs').onclick    = function(){
+document.getElementById('mute').onclick = function(){ audioInit(); setMuted(!muted); };
+document.getElementById('fs').onclick   = function(){
   if (document.fullscreenElement) document.exitFullscreen();
-  else $frame.requestFullscreen && $frame.requestFullscreen();
+  else if ($frame.requestFullscreen) $frame.requestFullscreen();
 };
 document.getElementById('track').onclick = function(e){
   var r = this.getBoundingClientRect(), t = (e.clientX - r.left) / r.width * total, i = 0;
@@ -873,6 +1018,7 @@ document.addEventListener('keydown', function(e){
   if (e.code === 'Space'){ e.preventDefault(); playing ? pause() : start(); }
   if (e.code === 'ArrowRight') jump(idx + 1);
   if (e.code === 'ArrowLeft')  jump(idx - 1);
+  if (e.code === 'KeyM'){ audioInit(); setMuted(!muted); }
 });
 
 /* ⚠️ Σταθερή αρχή 10: μια αποτυχία φόρτωσης ΔΕΝ μοιάζει με άδειο βίντεο. */
@@ -882,20 +1028,26 @@ fetch(MANIFEST_URL)
     var t = 0;
     scenes = list.map(function(s){ var o = { id: s.id, text: s.text, dur: s.dur, start: t }; t += s.dur; return o; });
     total = t;
-    build();
+    buildStage();
+    scenes.forEach(function(sc){
+      var a = new Audio(AUDIO_DIR + sc.id + '.m4a'); a.preload = 'auto'; audios.push(a);
+      var tk = document.createElement('i'); tk.style.left = (sc.start / total * 100) + '%'; $ticks.appendChild(tk);
+    });
+    $time.textContent = '0:00 / ' + fmt(total);
     show(0);
   })
   .catch(function(err){
-    $poster.innerHTML = '<div style="max-width:600px">'+
-      '<div class="k" style="color:#E08C7A">ΔΕΝ ΦΟΡΤΩΣΕ Ο ΗΧΟΣ</div>'+
-      '<div class="t" style="font-size:26px">' + String(err.message) + '</div>'+
-      '<div class="s">Λείπει το <code>' + MANIFEST_URL + '</code>. Άνοιξέ το μέσα από τοπικό server:<br>'+
-      '<code style="color:#DFA845">cd als &amp;&amp; python3 -m http.server 8080</code><br>και μετά <code style="color:#DFA845">localhost:8080/istoria-video-demo.html</code></div></div>';
-    $poster.onclick = null;
-    $poster.style.cursor = 'default';
+    $poster.innerHTML = '<div style="max-width:620px">' +
+      '<div class="k" style="color:#E08C7A">ΔΕΝ ΦΟΡΤΩΣΕ Ο ΗΧΟΣ</div>' +
+      '<div class="t" style="font-size:26px">' + String(err.message) + '</div>' +
+      '<div class="s">Λείπει το <code>' + MANIFEST_URL + '</code>. Άνοιξέ το μέσα από τοπικό server:<br>' +
+      '<code style="color:#DFA845">python3 -m http.server 8080</code></div></div>';
+    $poster.onclick = null; $poster.style.cursor = 'default';
   });
 
-requestAnimationFrame(tick);
+requestAnimationFrame(camLoop);
+requestAnimationFrame(meter);
+
 </script>
 </body>
 </html>
