@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ΙΣΤΟΡΙΑ · ΤΟ ΒΙΝΤΕΟ — α. Ο πληθυσμός</title>
+<style>
+/* ═══ Ο ΚΟΣΜΟΣ ═══════════════════════════════════════════════════════════
+   Επίπεδο διάνυσμα, χοντρά περιγράμματα, γήινη παλέτα. Δικός μας θίασος,
+   δικά μας χρώματα — το λεξιλόγιο της κίνησης, όχι αντίγραφο κανενός.     */
+:root{
+  --ink:#2B2119;          /* το περίγραμμα, παντού */
+  --parch:#EADCC0;        /* περγαμηνή */
+  --parch2:#DCC9A4;
+  --sea:#7FA3B4;
+  --sea-d:#5F8497;
+  --land:#CBB894;
+  --land-d:#B39E78;
+  --terr:#C4574A;         /* η ελληνική επικράτεια */
+  --terr-d:#A3443A;
+  --gold:#DFA845;
+  --green:#7E9A5C;
+  --bone:#F5EDDD;
+  --dust:#8E7B5E;
+
+  /* Δύο στοίβες, όχι μία. Ο τίτλος φωνάζει, ο υπότιτλος διαβάζεται.
+     ⚠️ Μόνο συστημικές γραμματοσειρές — καμία εξωτερική φόρτωση. */
+  --display:'Haettenschweiler','Arial Narrow',Impact,'Avenir Next Condensed','Helvetica Neue',sans-serif;
+  --body:'Avenir Next','Segoe UI',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:#1A1510;
+  font-family:var(--body);
+  color:var(--bone);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+/* ═══ Ο ΠΡΟΒΟΛΕΑΣ ═══ */
+.player{width:100%;max-width:1120px;padding:0 14px}
+.frame{
+  position:relative;width:100%;aspect-ratio:16/9;
+  background:var(--parch);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+}
+.stage{position:absolute;inset:0}
+.scene{position:absolute;inset:0;opacity:0;visibility:hidden}
+.scene.on{opacity:1;visibility:visible}
+.scene svg{width:100%;height:100%;display:block}
+
+/* ═══ Ο ΥΠΟΤΙΤΛΟΣ — τα λόγια του βιβλίου ═══ */
+.cap{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:44px 30px 20px;
+  background:linear-gradient(to top,rgba(20,15,10,.88) 30%,rgba(20,15,10,0));
+  font-size:clamp(13px,1.65vw,19px);line-height:1.5;
+  text-align:center;color:#F6EEDF;
+  text-shadow:0 2px 6px rgba(0,0,0,.6);
+  font-weight:500;
+}
+.frame.nocap .cap{display:none}
+
+/* ═══ ΧΕΙΡΙΣΤΗΡΙΑ ═══ */
+.bar{display:flex;align-items:center;gap:13px;margin-top:13px}
+.btn{
+  width:46px;height:46px;flex:none;border:0;border-radius:50%;
+  background:var(--gold);color:#241B10;cursor:pointer;
+  display:grid;place-items:center;transition:transform .16s, filter .16s;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.93)}
+.btn svg{width:20px;height:20px;fill:currentColor}
+.btn.sm{width:36px;height:36px;background:rgba(255,255,255,.1);color:var(--bone)}
+.btn.sm svg{width:15px;height:15px}
+.track{
+  flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.13);
+  position:relative;cursor:pointer;
+}
+.fill{position:absolute;inset:0;width:0;border-radius:4px;background:var(--gold)}
+.ticks{position:absolute;inset:0}
+.ticks i{position:absolute;top:0;bottom:0;width:1px;background:rgba(26,21,16,.45)}
+.time{
+  font-variant-numeric:tabular-nums;font-size:12.5px;letter-spacing:.06em;
+  color:rgba(246,238,223,.62);flex:none;min-width:78px;text-align:right;
+}
+.meta{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:11px;gap:14px;flex-wrap:wrap;
+}
+.meta h1{font-size:16px;font-weight:600;letter-spacing:.01em}
+.meta h1 b{color:var(--gold);font-weight:600}
+.meta .note{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:rgba(246,238,223,.42)}
+
+/* ═══ ΤΟ ΠΟΣΤΕΡ (πριν πατήσει play) ═══ */
+.poster{
+  position:absolute;inset:0;z-index:6;cursor:pointer;
+  background:radial-gradient(120% 100% at 50% 40%,#3A2E20,#181209);
+  display:grid;place-items:center;text-align:center;padding:24px;
+}
+.poster.gone{display:none}
+.poster .k{font-size:11px;letter-spacing:.34em;color:var(--gold);margin-bottom:12px}
+.poster .t{font-family:var(--display);font-size:clamp(34px,6vw,72px);font-weight:800;letter-spacing:.01em;line-height:1}
+.poster .s{margin-top:12px;font-size:13.5px;color:rgba(246,238,223,.55);letter-spacing:.02em}
+/* Σκιά πτώσης, όχι λάμψη — το κουμπί κάθεται πάνω στο πόστερ, δεν φωσφορίζει. */
+.poster .play{
+  margin-top:24px;width:70px;height:70px;border-radius:50%;background:var(--gold);
+  display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,0,0,.45);
+}
+.poster .play svg{width:26px;height:26px;fill:#241B10;margin-left:4px}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ΚΙΝΗΣΗ — κάθε σκηνή ανάβει τις δικές της animations όταν παίρνει .on
+   ═══════════════════════════════════════════════════════════════════════ */
+.scene .an{animation-play-state:paused;animation-fill-mode:both}
+.scene.on .an{animation-play-state:running}
+
+@keyframes popIn{from{opacity:0;transform:scale(.6)}60%{transform:scale(1.06)}to{opacity:1;transform:scale(1)}}
+@keyframes slamIn{from{opacity:0;transform:scale(2.4) rotate(-7deg)}70%{opacity:1;transform:scale(.93) rotate(1.5deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+@keyframes grow{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes sail{from{transform:translateX(-260px)}to{transform:translateX(0)}}
+@keyframes fell{from{transform:rotate(0)}to{transform:rotate(78deg)}}
+@keyframes drain{to{opacity:.18}}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+@keyframes pulseRing{0%{opacity:.85;transform:scale(.5)}100%{opacity:0;transform:scale(2.3)}}
+
+/* βοηθητικά */
+.ol{stroke:var(--ink);stroke-linejoin:round;stroke-linecap:round}
+/* Ο ΤΙΤΛΟΣ ΦΩΝΑΖΕΙ — στενή display στοίβα, όπως στα ντοκιμαντέρ.
+   Ο υπότιτλος από κάτω μένει στη --body, γιατί αυτόν τον ΔΙΑΒΑΖΕΙ. */
+.stamp{font-family:var(--display);font-weight:800;letter-spacing:.02em;paint-order:stroke fill;stroke:var(--ink);stroke-width:7px;stroke-linejoin:round}
+.lbl{font-family:var(--body);font-weight:700;letter-spacing:.05em;paint-order:stroke fill;stroke:var(--parch);stroke-width:5px;stroke-linejoin:round;fill:var(--ink)}
+.num{font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums;paint-order:stroke fill;stroke:var(--ink);stroke-width:8px;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<div class="player">
+
+  <div class="meta">
+    <h1>ΕΝΟΤΗΤΑ Α · 1. Τα δημογραφικά δεδομένα — <b>α. Ο πληθυσμός</b></h1>
+    <div class="note">Η αφήγηση είναι το βιβλίο, αυτολεξεί</div>
+  </div>
+
+  <div class="frame" id="frame">
+    <div class="stage" id="stage"></div>
+    <div class="cap" id="cap"></div>
+
+    <div class="poster" id="poster">
+      <div>
+        <div class="k">ΙΣΤΟΡΙΑ · ΕΝΟΤΗΤΑ Α</div>
+        <div class="t">Ο ΠΛΗΘΥΣΜΟΣ</div>
+        <div class="s">Μικρή · άδεια · ρημαγμένη — κι όμως γέμιζε</div>
+        <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn" id="pp" aria-label="Παύση/Αναπαραγωγή">
+      <svg id="ppIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="btn sm" id="back" aria-label="Προηγούμενη σκηνή">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+    </button>
+    <button class="btn sm" id="fwd" aria-label="Επόμενη σκηνή">
+      <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+    </button>
+    <div class="track" id="track">
+      <div class="fill" id="fill"></div>
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="time" id="time">0:00 / 1:44</div>
+    <button class="btn sm" id="cc" aria-label="Υπότιτλοι">
+      <svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm3.5 4.5a2.5 2.5 0 100 5h1.5v-1.6H7a.9.9 0 110-1.8h1v-1.6H6.5zm7 0a2.5 2.5 0 100 5H15v-1.6h-1a.9.9 0 110-1.8h1V9.5h-1.5z"/></svg>
+    </button>
+    <button class="btn sm" id="fs" aria-label="Πλήρης οθόνη">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM4 15h2v3h3v2H4zm14 0h2v5h-5v-2h3z"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════════════════
+   Ο ΧΑΡΤΗΣ — μία φορά, ξαναχρησιμοποιείται σε ΚΑΘΕ ενότητα για πάντα.
+   ⚠️ Στιλιζαρισμένος, όχι χαρτογραφικά ακριβής. Τα ΓΕΓΟΝΟΤΑ πάνω του
+   (ποια περιοχή, ποια χρονιά) είναι ακριβή· το περίγραμμα είναι σχέδιο.
+   ══════════════════════════════════════════════════════════════════════ */
+var GEO = {
+  /* ο πυρήνας του 1830: Ρούμελη + Μωριάς.
+     ⭐ Ο Μωριάς έχει τα ΤΡΙΑ ΔΑΧΤΥΛΑ του — είναι το ένα σχήμα που κάνει
+     έναν χάρτη να διαβάζεται αμέσως ως «Ελλάδα». */
+  roumeli : 'M392 340 L470 330 L548 334 L610 346 L642 392 L648 438 L620 454 L566 438 L520 462 L452 452 L410 414 L386 372 Z',
+  morias  : 'M520 462 L548 502 L558 538 L550 592 L532 590 L522 548 L508 558 L500 608 L482 606 L476 552 L462 560 L448 598 L430 592 L428 540 L396 520 L372 486 L390 462 L442 450 Z',
+  /* βόρεια, που ΔΕΝ ανήκαν το 1830 */
+  ipiros  : 'M378 248 L442 238 L470 262 L464 296 L470 330 L392 340 L368 300 Z',
+  thess   : 'M470 262 L556 250 L612 266 L622 310 L610 346 L548 334 L470 330 L464 296 Z',
+  maked   : 'M410 166 L520 146 L626 154 L704 180 L716 214 L648 250 L556 250 L470 262 L442 238 L396 212 Z',
+  /* νησιά */
+  evia    : 'M606 332 L634 346 L668 404 L678 444 L658 452 L632 406 L604 354 Z',
+  kriti   : 'M528 656 L610 644 L706 650 L792 662 L800 684 L700 684 L606 692 L526 678 Z'
+};
+var CYCL = [[668,452,13],[698,438,10],[712,472,15],[682,488,11],[726,504,12],[654,494,9],[704,518,10],[738,464,9],[672,522,8],[716,438,8]];
+var SPOR = [[636,296,11],[664,286,9],[688,302,10],[652,316,7]];
+var ION  = [[330,296,12],[318,340,14],[338,384,11],[324,428,15],[348,470,10],[334,508,9]];
+
+/* Το φόντο πρέπει να καλύπτει ΟΛΟ το viewBox, που είναι φαρδύτερο από 1000.
+   ⚠️ Αλλιώς μένουν λευκές λωρίδες δεξιά-αριστερά στο 16:9 κάδρο. */
+function BG(fill){ return '<rect x="-200" y="-40" width="1420" height="850" fill="'+fill+'"/>'; }
+
+function isles(list, fill){
+  return list.map(function(c){
+    return '<circle class="ol" fill="'+(fill||'var(--land)')+'" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" stroke-width="4"/>';
+  }).join('');
+}
+
+/* Το φόντο κάθε χάρτη: θάλασσα + ξένη στεριά */
+function seaBg(){
+  return BG('var(--sea)')+
+    '<g opacity=".22" stroke="var(--sea-d)" stroke-width="3" fill="none">'+
+      '<path d="M60 120 q28 -13 56 0 t56 0"/><path d="M820 240 q28 -13 56 0 t56 0"/>'+
+      '<path d="M120 620 q28 -13 56 0 t56 0"/><path d="M760 560 q28 -13 56 0 t56 0"/>'+
+      '<path d="M420 700 q28 -13 56 0 t56 0"/>'+
+    '</g>'+
+    /* γύρω στεριά (Βαλκάνια / Μ. Ασία), ουδέτερη */
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="M-200 -40 H1220 V150 L980 168 L820 138 L700 176 L560 140 L400 160 L250 130 L60 158 L-200 132 Z"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="M1220 190 V810 H840 L806 660 L830 560 L790 470 L826 380 L800 290 L862 230 Z"/>';
+}
+
+/* ══ Ο ΘΙΑΣΟΣ — απλές φιγούρες, στρογγυλά πρόσωπα, χοντρό περίγραμμα ══ */
+function person(x, y, s, opt){
+  opt = opt || {};
+  var body = opt.body || '#6E7F5A', mood = opt.mood || 'flat';
+  var face = mood==='sad'  ? '<path d="M-8 8 q8 -7 16 0" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>'
+           : mood==='open' ? '<ellipse cx="0" cy="7" rx="7" ry="9" fill="var(--ink)"/>'
+           :                 '<path d="M-8 7 h16" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/>';
+  return '<g transform="translate('+x+','+y+') scale('+s+')">'+
+      '<path class="ol" stroke-width="5" fill="'+body+'" d="M-22 62 q0 -40 22 -40 q22 0 22 40 Z"/>'+
+      '<circle class="ol" stroke-width="5" fill="#F7F1E4" cx="0" cy="0" r="25"/>'+
+      '<circle fill="var(--ink)" cx="-9" cy="-4" r="3.4"/><circle fill="var(--ink)" cx="9" cy="-4" r="3.4"/>'+
+      face+
+      (opt.hat ? '<path class="ol" stroke-width="4.5" fill="#8B6F47" d="M-27 -14 q27 -20 54 0 q-27 -9 -54 0 Z"/>' : '')+
+    '</g>';
+}
+function tree(x,y,s,bare){
+  return '<g transform="translate('+x+','+y+') scale('+s+')" style="transform-origin:'+x+'px '+y+'px">'+
+    '<rect class="ol" stroke-width="4" fill="#7A5C3C" x="-6" y="-26" width="12" height="34" rx="3"/>'+
+    (bare
+      ? '<g stroke="var(--ink)" stroke-width="4.5" stroke-linecap="round" fill="none"><path d="M0 -26 l-16 -18"/><path d="M0 -26 l15 -20"/><path d="M0 -34 l-9 -18"/></g>'
+      : '<circle class="ol" stroke-width="5" fill="var(--green)" cx="0" cy="-42" r="27"/>')+
+  '</g>';
+}
+function goat(x,y,s){
+  return '<g transform="translate('+x+','+y+') scale('+s+')">'+
+    '<path class="ol" stroke-width="4.5" fill="#EFE6D4" d="M-24 0 h44 q9 0 9 11 v9 q0 8 -9 8 h-44 q-8 0 -8 -8 v-9 q0 -11 8 -11 Z"/>'+
+    '<circle class="ol" stroke-width="4.5" fill="#EFE6D4" cx="28" cy="-8" r="13"/>'+
+    '<path d="M22 -18 l-6 -12 M32 -19 l5 -12" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" fill="none"/>'+
+    '<circle fill="var(--ink)" cx="33" cy="-9" r="2.6"/>'+
+    '<path d="M-16 28 v12 M-2 28 v12 M12 28 v12" stroke="var(--ink)" stroke-width="4.5" stroke-linecap="round"/>'+
+  '</g>';
+}
+function ship(x,y,s,flag){
+  return '<g transform="translate('+x+','+y+') scale('+s+')">'+
+    '<path class="ol" stroke-width="5" fill="#5B4630" d="M-52 12 h104 l-16 26 h-72 Z"/>'+
+    '<rect class="ol" stroke-width="4.5" fill="#7A5C3C" x="-3" y="-56" width="7" height="68"/>'+
+    '<path class="ol" stroke-width="4.5" fill="'+(flag||'#F0E7D6')+'" d="M6 -52 q34 20 0 44 Z"/>'+
+    '<path class="ol" stroke-width="4.5" fill="#F0E7D6" d="M-6 -48 q-30 18 0 38 Z"/>'+
+  '</g>';
+}
+function hills(){
+  return '<path class="ol" stroke-width="5" fill="var(--land-d)" d="M-200 560 q240 -88 390 -32 q150 54 300 -18 q180 -76 530 24 V810 H-200 Z"/>'+
+         '<path class="ol" stroke-width="5" fill="var(--land)" d="M-200 644 q290 -66 480 -14 q190 50 380 -14 q170 -48 360 -8 V810 H-200 Z"/>';
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ΟΙ ΣΚΗΝΕΣ — μία ανά πρόταση του βιβλίου.
+   Η διάρκεια ΔΕΝ γράφεται εδώ· έρχεται από το manifest.json του ήχου.
+   ══════════════════════════════════════════════════════════════════════ */
+var SCENES = {
+
+/* ── 1 · ΦΤΩΧΗ ─────────────────────────────────────────────────────── */
+s01: function(){ return ''+
+  BG('var(--parch2)')+
+  '<circle cx="500" cy="250" r="200" fill="var(--gold)" opacity=".16"/>'+
+  hills()+
+  '<g class="an" style="animation:fadeIn .8s both">'+
+    tree(150,600,1.1,true)+tree(880,596,.95,true)+
+  '</g>'+
+  '<g class="an" style="animation:fadeUp .9s .15s both">'+
+    person(420,520,1.35,{body:'#8A7A5E',mood:'sad',hat:true})+
+    person(600,540,1.15,{body:'#6E7F5A',mood:'sad'})+
+  '</g>'+
+  /* παλιό ξύλινο αλέτρι = απαρχαιωμένες δομές */
+  '<g class="an" style="animation:fadeUp .9s .35s both">'+
+    '<path class="ol" stroke-width="6" fill="none" d="M700 640 l90 -34 M700 640 l-8 -46"/>'+
+    '<path class="ol" stroke-width="6" fill="#7A5C3C" d="M690 636 l30 -12 l14 26 l-30 12 Z"/>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .55s .9s both;transform-origin:500px 170px">'+
+    '<text class="stamp" x="500" y="185" text-anchor="middle" font-size="86" fill="var(--terr)">ΦΤΩΧΗ</text>'+
+    '<text class="lbl" x="500" y="240" text-anchor="middle" font-size="27">ΑΠΑΡΧΑΙΩΜΕΝΕΣ ΠΑΡΑΓΩΓΙΚΕΣ ΔΟΜΕΣ</text>'+
+  '</g>';
+},
+
+/* ── 2 · ΜΙΚΡΗ ΚΑΙ ΟΛΙΓΑΝΘΡΩΠΗ ─────────────────────────────────────── */
+s02: function(){ return ''+
+  seaBg()+
+  '<g class="an" style="animation:popIn .7s both;transform-origin:500px 430px">'+
+    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
+    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
+    isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .5s .55s both;transform-origin:180px 200px">'+
+    '<text class="stamp" x="180" y="215" text-anchor="middle" font-size="66" fill="var(--gold)">ΜΙΚΡΗ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .5s 1.15s both;transform-origin:250px 300px">'+
+    '<text class="stamp" x="250" y="300" text-anchor="middle" font-size="52" fill="#F2E7D2">ΟΛΙΓΑΝΘΡΩΠΗ</text>'+
+  '</g>';
+},
+
+/* ── 3 · Η ΓΡΑΜΜΗ ΑΜΒΡΑΚΙΚΟΥ–ΠΑΓΑΣΗΤΙΚΟΥ ──────────────────────────── */
+s03: function(){ return ''+
+  seaBg()+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
+  isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
+  /* η γραμμή χαράζεται δυτικά → ανατολικά */
+  '<path class="an" d="M352 334 L640 322" fill="none" stroke="var(--ink)" stroke-width="9"'+
+    ' stroke-linecap="round" stroke-dasharray="300" stroke-dashoffset="300"'+
+    ' style="animation:drawLine 1.5s .25s both"/>'+
+  '<g class="an" style="animation:popIn .45s 1.35s both;transform-origin:352px 334px">'+
+    '<circle class="ol" stroke-width="5" fill="var(--gold)" cx="352" cy="334" r="15"/>'+
+    '<text class="lbl" x="330" y="300" text-anchor="end" font-size="30">ΑΜΒΡΑΚΙΚΟΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:popIn .45s 1.7s both;transform-origin:640px 322px">'+
+    '<circle class="ol" stroke-width="5" fill="var(--gold)" cx="640" cy="322" r="15"/>'+
+    '<text class="lbl" x="664" y="292" font-size="30">ΠΑΓΑΣΗΤΙΚΟΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .5s 2.2s both">'+
+    '<text class="lbl" x="500" y="716" text-anchor="middle" font-size="34">ΤΑ ΣΥΝΟΡΑ ΤΟΥ ΝΕΟΥ ΚΡΑΤΟΥΣ</text>'+
+  '</g>';
+},
+
+/* ── 4 · ΑΠΟ ΤΟ ΑΙΓΑΙΟ, ΜΟΝΟ ΔΥΟ ──────────────────────────────────── */
+s04: function(){ return ''+
+  seaBg()+
+  '<g opacity=".5">'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
+    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
+  '</g>'+
+  /* όλα τα υπόλοιπα νησιά, σβηστά */
+  '<g fill="var(--land-d)" opacity=".55">'+
+    isles([[790,330,12],[812,392,10],[834,452,13],[806,510,10],[850,300,9],[770,560,11],[828,566,9]],'var(--land-d)')+
+  '</g>'+
+  /* οι δύο που ανήκαν — ανάβουν */
+  '<g class="an" fill="var(--terr)" style="animation:fadeIn .01s both">'+
+    SPOR.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.25+i*0.07)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
+    CYCL.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.9+i*0.06)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s .5s both;transform-origin:770px 250px">'+
+    '<text class="stamp" x="770" y="262" text-anchor="middle" font-size="34" fill="var(--gold)">Β. ΣΠΟΡΑΔΕΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s 1.25s both;transform-origin:820px 620px">'+
+    '<text class="stamp" x="820" y="620" text-anchor="middle" font-size="34" fill="var(--gold)">ΚΥΚΛΑΔΕΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .5s 1.9s both">'+
+    '<text class="stamp" x="160" y="120" font-size="46" fill="#F2E7D2">ΜΟΝΟ</text>'+
+    '<text class="lbl" x="160" y="162" font-size="26">ΑΥΤΑ ΤΑ ΔΥΟ</text>'+
+  '</g>';
+},
+
+/* ── 5 · Ο ΚΟΡΜΟΣ: ΡΟΥΜΕΛΗ ΚΑΙ ΜΩΡΙΑΣ ─────────────────────────────── */
+s05: function(){ return ''+
+  seaBg()+
+  '<g opacity=".42">'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
+    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+    isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
+  '</g>'+
+  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"'+
+    ' style="animation:popIn .55s .1s both;transform-origin:500px 388px"/>'+
+  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"'+
+    ' style="animation:popIn .55s .95s both;transform-origin:480px 500px"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--terr)" opacity=".55" d="'+GEO.evia+'"/>'+
+  '<g class="an" style="animation:slamIn .45s .45s both;transform-origin:760px 380px">'+
+    '<text class="stamp" x="760" y="392" text-anchor="middle" font-size="52" fill="var(--gold)">ΡΟΥΜΕΛΗ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s 1.3s both;transform-origin:250px 560px">'+
+    '<text class="stamp" x="250" y="560" text-anchor="middle" font-size="52" fill="var(--gold)">ΜΩΡΙΑΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .55s 1.9s both">'+
+    '<text class="lbl" x="500" y="716" text-anchor="middle" font-size="30">Ο ΚΟΡΜΟΣ ΤΗΣ ΧΩΡΑΣ</text>'+
+  '</g>';
+},
+
+/* ── 6 · 1864 ΙΟΝΙΑ · 1881 ΘΕΣΣΑΛΙΑ ───────────────────────────────── */
+s06: function(){ return ''+
+  seaBg()+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
+  isles(CYCL,'var(--terr)')+
+  /* 1864 — τα Ιόνια ανάβουν */
+  ION.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.35+i*0.08)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
+  '<g class="an" style="animation:slamIn .5s .3s both;transform-origin:180px 400px">'+
+    '<text class="num" x="180" y="400" text-anchor="middle" font-size="96" fill="var(--gold)">1864</text>'+
+    '<text class="lbl" x="180" y="448" text-anchor="middle" font-size="32">ΙΟΝΙΑ ΝΗΣΙΑ</text>'+
+  '</g>'+
+  /* 1881 — η Θεσσαλία */
+  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.thess+'"'+
+    ' style="animation:popIn .6s 3.1s both;transform-origin:540px 300px"/>'+
+  '<g class="an" style="animation:slamIn .5s 3.1s both;transform-origin:830px 180px">'+
+    '<text class="num" x="830" y="180" text-anchor="middle" font-size="96" fill="var(--gold)">1881</text>'+
+    '<text class="lbl" x="830" y="228" text-anchor="middle" font-size="32">ΘΕΣΣΑΛΙΑ</text>'+
+  '</g>';
+},
+
+/* ── 7 · ΤΑ ΒΟΡΕΙΑ ΣΥΝΟΡΑ: ΟΛΥΜΠΟΣ ΚΑΙ ΜΑΚΕΔΟΝΙΑ ─────────────────── */
+s07: function(){ return ''+
+  seaBg()+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.thess+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
+  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
+  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
+  isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+isles(ION,'var(--terr)')+
+  /* το σύνορο ανεβαίνει βόρεια */
+  '<path class="an" d="M400 262 L470 254 L556 250 L620 264 L700 250" fill="none"'+
+    ' stroke="var(--gold)" stroke-width="10" stroke-linecap="round"'+
+    ' stroke-dasharray="330" stroke-dashoffset="330" style="animation:drawLine 1.3s .2s both"/>'+
+  /* ο Όλυμπος */
+  '<g class="an" style="animation:popIn .5s 1.4s both;transform-origin:566px 236px">'+
+    '<path class="ol" stroke-width="5" fill="#8E7B5E" d="M566 186 L614 250 H518 Z"/>'+
+    '<path fill="#F7F1E4" d="M566 186 L588 216 q-22 10 -44 0 Z"/>'+
+    '<text class="lbl" x="566" y="150" text-anchor="middle" font-size="30" stroke="var(--sea)">ΟΛΥΜΠΟΣ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .55s 1.9s both">'+
+    '<text class="lbl" x="828" y="128" text-anchor="middle" font-size="32" stroke="var(--land)">ΜΑΚΕΔΟΝΙΑ</text>'+
+  '</g>';
+},
+
+/* ── 8 · Η ΠΥΚΝΟΤΗΤΑ — 15 → 43, ΕΝΩ Η ΔΥΤΙΚΗ ΕΥΡΩΠΗ ΤΡΙΨΗΦΙΑ ──────── */
+s08: function(){
+  function grid(cx, cy, n, cols, r, delay, col){
+    var out = '', i, gx, gy;
+    for (i = 0; i < n; i++){
+      gx = cx + (i % cols) * (r * 2.5);
+      gy = cy + Math.floor(i / cols) * (r * 2.5);
+      out += '<circle class="an ol" stroke-width="2.5" fill="'+col+'" cx="'+gx+'" cy="'+gy+'" r="'+r+'"'+
+             ' style="animation:popIn .3s '+(delay + i * 0.028)+'s both;transform-origin:'+gx+'px '+gy+'px"/>';
+    }
+    return out;
+  }
+  return ''+
+  BG('var(--parch)')+
+  '<line x1="666" y1="70" x2="666" y2="690" stroke="var(--ink)" stroke-width="4" opacity=".22"/>'+
+  '<text class="lbl" x="333" y="86" text-anchor="middle" font-size="30">ΕΛΛΑΔΑ · ΚΑΤΟΙΚΟΙ ΑΝΑ τ.χλμ.</text>'+
+  /* 1828 → 15 */
+  '<g class="an" style="animation:slamIn .5s .15s both;transform-origin:180px 210px">'+
+    '<text class="num" x="180" y="210" text-anchor="middle" font-size="118" fill="var(--terr)">15</text>'+
+    '<text class="lbl" x="180" y="252" text-anchor="middle" font-size="30">1828</text>'+
+  '</g>'+
+  grid(120, 300, 15, 5, 11, 0.4, 'var(--terr)')+
+  /* 1911 → 43 */
+  '<g class="an" style="animation:slamIn .5s 4.4s both;transform-origin:490px 210px">'+
+    '<text class="num" x="490" y="210" text-anchor="middle" font-size="118" fill="var(--gold)">43</text>'+
+    '<text class="lbl" x="490" y="252" text-anchor="middle" font-size="30">1911</text>'+
+  '</g>'+
+  grid(400, 300, 43, 8, 9, 4.7, 'var(--gold)')+
+  /* Δυτική Ευρώπη — τριψήφιοι */
+  '<text class="lbl" x="836" y="86" text-anchor="middle" font-size="30">ΔΥΤΙΚΗ ΕΥΡΩΠΗ</text>'+
+  '<g class="an" style="animation:slamIn .6s 8.6s both;transform-origin:836px 214px">'+
+    '<text class="num" x="836" y="214" text-anchor="middle" font-size="128" fill="var(--ink)">1 0 0 +</text>'+
+    '<text class="lbl" x="836" y="256" text-anchor="middle" font-size="28">ΤΡΙΨΗΦΙΟΙ</text>'+
+  '</g>'+
+  grid(716, 300, 96, 12, 5.4, 9.0, 'var(--ink)');
+},
+
+/* ── 9 · Η ΕΞΑΝΤΛΗΣΗ ΤΟΥ ΤΟΠΟΥ ΚΑΙ ΤΩΝ ΑΝΘΡΩΠΩΝ ──────────────────── */
+s09: function(){ return ''+
+  BG('var(--parch2)')+
+  '<circle cx="500" cy="220" r="150" fill="var(--gold)" opacity=".2"/>'+
+  hills()+
+  '<g class="an" style="animation:drain 2.6s .3s both">'+
+    tree(140,596,1,false)+tree(300,614,.8,false)+tree(760,600,.9,false)+
+  '</g>'+
+  '<g class="an" style="animation:fadeUp .9s .5s both">'+
+    person(470,540,1.3,{body:'#7C6A50',mood:'sad',hat:true})+
+    person(640,566,1.05,{body:'#6E7F5A',mood:'sad'})+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .55s 1.5s both;transform-origin:500px 170px">'+
+    '<text class="stamp" x="500" y="186" text-anchor="middle" font-size="66" fill="var(--terr)">ΕΞΑΝΤΛΗΣΗ</text>'+
+    '<text class="lbl" x="500" y="238" text-anchor="middle" font-size="28">ΤΟΥ ΤΟΠΟΥ ΚΑΙ ΤΩΝ ΑΝΘΡΩΠΩΝ</text>'+
+  '</g>';
+},
+
+/* ── 10 · ΥΠΕΡΒΟΣΚΗΣΗ · ΥΛΟΤΟΜΙΑ · ΑΓΡΑΝΑΠΑΥΣΗ ───────────────────── */
+s10: function(){ return ''+
+  BG('var(--parch2)')+
+  hills()+
+  /* τα δέντρα πέφτουν ένα ένα */
+  '<g class="an" style="animation:fell .5s 1.2s both;transform-origin:150px 620px">'+tree(150,620,1,false)+'</g>'+
+  '<g class="an" style="animation:fell .5s 2.0s both;transform-origin:300px 632px">'+tree(300,632,.9,false)+'</g>'+
+  '<g class="an" style="animation:fell .5s 2.8s both;transform-origin:820px 616px">'+tree(820,616,.95,false)+'</g>'+
+  '<g class="an" style="animation:slamIn .45s 1.2s both;transform-origin:230px 190px">'+
+    '<text class="stamp" x="230" y="130" text-anchor="middle" font-size="52" fill="var(--terr)">ΥΛΟΤΟΜΙΑ</text>'+
+  '</g>'+
+  /* τα γίδια */
+  '<g class="an" style="animation:fadeUp .7s 4.0s both">'+goat(470,600,1)+goat(620,626,.85)+goat(370,646,.75)+'</g>'+
+  '<g class="an" style="animation:slamIn .45s 4.2s both;transform-origin:540px 262px">'+
+    '<text class="stamp" x="790" y="130" text-anchor="middle" font-size="52" fill="var(--terr)">ΥΠΕΡΒΟΣΚΗΣΗ</text>'+
+  '</g>'+
+  /* το χέρσο χωράφι: αυλάκια που αδειάζουν */
+  '<g class="an" style="animation:fadeIn .8s 7.6s both" stroke="var(--land-d)" stroke-width="5" fill="none" opacity=".9">'+
+    '<path d="M60 700 q220 -26 440 0"/><path d="M60 724 q220 -26 440 0"/><path d="M500 700 q220 -26 440 0"/><path d="M500 724 q220 -26 440 0"/>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .5s 8.0s both;transform-origin:500px 400px">'+
+    '<text class="stamp" x="500" y="400" text-anchor="middle" font-size="72" fill="var(--gold)">ΑΓΡΑΝΑΠΑΥΣΗ</text>'+
+    '<text class="lbl" x="500" y="450" text-anchor="middle" font-size="27">ΤΑ ΧΩΡΑΦΙΑ ΕΜΟΙΑΖΑΝ ΧΕΡΣΑ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeUp .7s 10.6s both">'+person(140,650,.85,{body:'#8A7A5E',mood:'flat',hat:true})+'</g>'+
+  '<g class="an" style="animation:fadeIn .6s 11.2s both">'+
+    '<text class="lbl" x="140" y="556" text-anchor="middle" font-size="24">ΠΑΣΧΙΖΑΝ ΝΑ ΒΕΛΤΙΩΣΟΥΝ</text>'+
+    '<text class="lbl" x="140" y="584" text-anchor="middle" font-size="24">ΤΙΣ ΑΠΟΔΟΣΕΙΣ</text>'+
+  '</g>';
+},
+
+/* ── 11 · ΤΑ ΠΕΡΙΦΡΑΓΜΕΝΑ ΠΕΡΙΒΟΛΙΑ ──────────────────────────────── */
+s11: function(){ return ''+
+  BG('var(--parch2)')+
+  hills()+
+  /* ένα μικρό πράσινο περιβόλι, χαμένο σε γυμνό τοπίο */
+  '<g class="an" style="animation:popIn .7s .3s both;transform-origin:500px 560px">'+
+    '<rect class="ol" stroke-width="5" fill="var(--green)" x="392" y="500" width="216" height="128" rx="8" opacity=".85"/>'+
+    '<g stroke="var(--ink)" stroke-width="5" stroke-linecap="round">'+
+      '<path d="M392 494 v140 M436 494 v140 M480 494 v140 M524 494 v140 M568 494 v140 M608 494 v140"/>'+
+      '<path d="M382 512 h236 M382 606 h236"/>'+
+    '</g>'+
+    tree(444,592,.5,false)+tree(556,592,.5,false)+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .8s 1.3s both">'+
+    tree(120,620,.85,true)+tree(880,608,.8,true)+tree(760,646,.6,true)+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .55s 2.0s both;transform-origin:500px 250px">'+
+    '<text class="stamp" x="500" y="220" text-anchor="middle" font-size="48" fill="var(--ink)">ΠΟΛΥ ΛΙΓΟ ΒΕΛΤΙΩΝΑΝ</text>'+
+    '<text class="stamp" x="500" y="300" text-anchor="middle" font-size="70" fill="var(--terr)">ΕΓΚΑΤΑΛΕΙΨΗ</text>'+
+  '</g>';
+},
+
+/* ── 12 · ΚΙ ΟΜΩΣ, Ο ΠΛΗΘΥΣΜΟΣ ΑΥΞΑΝΟΤΑΝ ────────────────────────── */
+s12: function(){
+  var out = '', i, x, y;
+  for (i = 0; i < 26; i++){
+    x = 120 + (i % 9) * 92;
+    y = 430 + Math.floor(i / 9) * 108;
+    out += '<g class="an" style="animation:popIn .34s '+(0.5 + i * 0.19)+'s both;transform-origin:'+x+'px '+y+'px">'+
+           person(x, y, .46, {body: i % 3 === 0 ? '#7C6A50' : (i % 3 === 1 ? '#6E7F5A' : '#8A7A5E')}) + '</g>';
+  }
+  return ''+
+  BG('var(--parch)')+
+  '<g class="an" style="animation:slamIn .5s .1s both;transform-origin:500px 150px">'+
+    '<text class="stamp" x="500" y="130" text-anchor="middle" font-size="44" fill="var(--ink)">ΠΑΡ’ ΟΛΑ ΑΥΤΑ</text>'+
+    '<text class="stamp" x="500" y="216" text-anchor="middle" font-size="78" fill="var(--terr)">ΑΥΞΑΝΟΤΑΝ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .6s 4.6s both">'+
+    '<text class="lbl" x="500" y="300" text-anchor="middle" font-size="30">ΤΑ ΠΕΡΙΘΩΡΙΑ ΔΕΝ ΕΞΑΝΤΛΟΥΝΤΑΝ ΠΟΤΕ</text>'+
+    '<text class="lbl" x="500" y="340" text-anchor="middle" font-size="26">— ΤΟΣΟ ΑΡΑΙΟΚΑΤΟΙΚΗΜΕΝΗ ΗΤΑΝ</text>'+
+  '</g>'+
+  out;
+},
+
+/* ── 13 · ΤΑ ΠΛΕΟΝΑΣΜΑΤΑ ΠΕΝΙΧΡΑ ─────────────────────────────────── */
+s13: function(){ return ''+
+  BG('var(--parch)')+
+  /* ένα βαρέλι που μόλις ξεπερνά τη γραμμή της επιβίωσης */
+  '<g class="an" style="animation:fadeUp .8s .2s both">'+
+    '<path class="ol" stroke-width="6" fill="var(--land)" d="M330 300 h340 q26 0 22 34 l-30 300 q-4 26 -30 26 H368 q-26 0 -30 -26 l-30 -300 q-4 -34 22 -34 Z"/>'+
+    '<path fill="var(--gold)" opacity=".95" d="M322 540 h356 l-22 120 q-4 20 -28 20 H372 q-24 0 -28 -20 Z"/>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .6s 1.4s both">'+
+    '<path d="M270 540 H730" stroke="var(--ink)" stroke-width="7" stroke-dasharray="16 12"/>'+
+    '<text class="lbl" x="750" y="548" font-size="27">ΕΠΙΒΙΩΣΗ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .5s 2.1s both;transform-origin:500px 170px">'+
+    '<text class="stamp" x="500" y="150" text-anchor="middle" font-size="46" fill="var(--ink)">ΤΟ ΠΕΡΙΣΣΕΥΜΑ</text>'+
+    '<text class="stamp" x="500" y="228" text-anchor="middle" font-size="76" fill="var(--terr)">ΠΕΝΙΧΡΟ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .6s 3.2s both">'+
+    '<path d="M786 528 L786 448" stroke="var(--terr)" stroke-width="7" stroke-linecap="round"/>'+
+    '<text class="lbl" x="800" y="440" font-size="24">ΟΣΟ ΠΕΡΙΣΣΕΥΕ</text>'+
+  '</g>';
+},
+
+/* ── 14 · Η ΚΑΤΑΣΤΡΟΦΗ ΕΡΧΟΤΑΝ ΕΥΚΟΛΑ ───────────────────────────── */
+s14: function(){ return ''+
+  BG('var(--parch)')+
+  '<g class="an" style="animation:shake .5s .1s 3 both">'+
+    '<path class="ol" stroke-width="6" fill="var(--land)" d="M330 300 h340 q26 0 22 34 l-30 300 q-4 26 -30 26 H368 q-26 0 -30 -26 l-30 -300 q-4 -34 22 -34 Z"/>'+
+    '<path fill="var(--gold)" opacity=".95" d="M322 540 h356 l-22 120 q-4 20 -28 20 H372 q-24 0 -28 -20 Z"/>'+
+    /* η ρωγμή */
+    '<path class="an" d="M500 300 l-26 90 l34 60 l-30 90 l26 120" fill="none" stroke="var(--ink)"'+
+      ' stroke-width="9" stroke-linecap="round" stroke-dasharray="380" stroke-dashoffset="380"'+
+      ' style="animation:drawLine .7s .5s both"/>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s 1.2s both;transform-origin:500px 170px">'+
+    '<text class="stamp" x="500" y="186" text-anchor="middle" font-size="82" fill="var(--terr)">ΚΑΤΑΣΤΡΟΦΗ</text>'+
+  '</g>';
+},
+
+/* ── 15 · 1854 · Ο ΝΑΥΤΙΚΟΣ ΑΠΟΚΛΕΙΣΜΟΣ ─────────────────────────── */
+s15: function(){ return ''+
+  BG('var(--sea)')+
+  '<g opacity=".2" stroke="var(--sea-d)" stroke-width="4" fill="none">'+
+    '<path d="M40 640 q34 -16 68 0 t68 0"/><path d="M700 700 q34 -16 68 0 t68 0"/>'+
+  '</g>'+
+  /* η ακτή με το λιμάνι, δεξιά */
+  '<path class="ol" stroke-width="6" fill="var(--land)" d="M760 190 q-40 100 -10 200 q-34 110 10 200 q40 90 0 170 H1220 V150 Z"/>'+
+  '<g class="an" style="animation:fadeIn .6s .1s both">'+
+    person(880,540,.8,{body:'#7C6A50',mood:'sad'})+person(950,590,.7,{body:'#6E7F5A',mood:'sad'})+
+  '</g>'+
+  /* ο στόλος μπαίνει και κλείνει τη θάλασσα */
+  '<g class="an" style="animation:sail 2.0s .2s both">'+
+    '<g class="an" style="animation:bob 3s .2s infinite both">'+ship(190,250,.95,'#C4574A')+'</g>'+
+    '<g class="an" style="animation:bob 3s .6s infinite both">'+ship(300,430,1.05,'#3C5A8C')+'</g>'+
+    '<g class="an" style="animation:bob 3s 1.0s infinite both">'+ship(180,610,.9,'#C4574A')+'</g>'+
+    '<g class="an" style="animation:bob 3s .4s infinite both">'+ship(430,180,.8,'#3C5A8C')+'</g>'+
+    '<g class="an" style="animation:bob 3s .8s infinite both">'+ship(450,560,.85,'#C4574A')+'</g>'+
+  '</g>'+
+  /* η γραμμή του αποκλεισμού */
+  '<path class="an" d="M120 120 L560 640" fill="none" stroke="var(--ink)" stroke-width="11"'+
+    ' stroke-linecap="round" stroke-dasharray="24 20 700" stroke-dashoffset="700"'+
+    ' style="animation:drawLine 1.4s 2.2s both" opacity=".55"/>'+
+  '<g class="an" style="animation:slamIn .55s 2.6s both;transform-origin:500px 120px">'+
+    '<text class="num" x="500" y="120" text-anchor="middle" font-size="104" fill="var(--gold)">1854</text>'+
+    '<text class="lbl" x="500" y="168" text-anchor="middle" font-size="28" stroke="var(--sea)">ΝΑΥΤΙΚΟΣ ΑΠΟΚΛΕΙΣΜΟΣ · ΑΓΓΛΟΓΑΛΛΟΙ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:fadeIn .5s 5.0s both">'+
+    '<text class="lbl" x="500" y="236" text-anchor="middle" font-size="26" stroke="var(--sea)">ΚΡΙΜΑΪΚΟΣ ΠΟΛΕΜΟΣ</text>'+
+  '</g>'+
+  /* οι τρεις συνέπειες */
+  '<g class="an" style="animation:slamIn .45s 8.4s both;transform-origin:230px 700px">'+
+    '<text class="stamp" x="230" y="712" text-anchor="middle" font-size="48" fill="#F2E7D2">ΠΕΙΝΑ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s 9.2s both;transform-origin:500px 700px">'+
+    '<text class="stamp" x="500" y="712" text-anchor="middle" font-size="48" fill="#F2E7D2">ΑΡΡΩΣΤΙΑ</text>'+
+  '</g>'+
+  '<g class="an" style="animation:slamIn .45s 10.0s both;transform-origin:790px 700px">'+
+    '<text class="stamp" x="790" y="712" text-anchor="middle" font-size="48" fill="var(--terr)">ΑΠΩΛΕΙΕΣ</text>'+
+  '</g>';
+}
+
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Ο ΠΡΟΒΟΛΕΑΣ
+   ══════════════════════════════════════════════════════════════════════ */
+var MANIFEST_URL = 'vid/a1a/manifest.json';
+var AUDIO_DIR    = 'vid/a1a/';
+
+var scenes = [], idx = -1, playing = false, els = [], audios = [], total = 0, capsOn = true;
+
+var $stage = document.getElementById('stage');
+var $cap   = document.getElementById('cap');
+var $fill  = document.getElementById('fill');
+var $ticks = document.getElementById('ticks');
+var $time  = document.getElementById('time');
+var $pp    = document.getElementById('pp');
+var $ppI   = document.getElementById('ppIcon');
+var $poster= document.getElementById('poster');
+var $frame = document.getElementById('frame');
+
+var ICON_PLAY  = 'M8 5v14l11-7z';
+var ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
+
+function fmt(s){ s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+function build(){
+  scenes.forEach(function(sc, i){
+    var d = document.createElement('div');
+    d.className = 'scene';
+    /* ⚠️ αν λείπει σκηνή, το λέει — δεν σβήνει σιωπηλά */
+    d.innerHTML = '<svg viewBox="-176 0 1352 760" preserveAspectRatio="xMidYMid meet">' +
+      (SCENES[sc.id] ? SCENES[sc.id]()
+        : '<rect width="1000" height="760" fill="var(--parch)"/><text class="lbl" x="500" y="380" text-anchor="middle" font-size="34">ΛΕΙΠΕΙ Η ΣΚΗΝΗ ' + sc.id + '</text>') +
+      '</svg>';
+    $stage.appendChild(d);
+    els.push(d);
+
+    var a = new Audio(AUDIO_DIR + sc.id + '.m4a');
+    a.preload = 'auto';
+    audios.push(a);
+
+    var t = document.createElement('i');
+    t.style.left = (sc.start / total * 100) + '%';
+    $ticks.appendChild(t);
+  });
+  $time.textContent = '0:00 / ' + fmt(total);
+}
+
+function show(i){
+  if (i === idx) return;
+  if (els[idx]) els[idx].classList.remove('on');
+  idx = i;
+  if (!els[idx]) return;
+  /* ξαναγέννηση του SVG ⇒ οι animations ξαναπαίζουν από την αρχή */
+  var sc = scenes[idx];
+  els[idx].innerHTML = '<svg viewBox="-176 0 1352 760" preserveAspectRatio="xMidYMid meet">' +
+    (SCENES[sc.id] ? SCENES[sc.id]() : '') + '</svg>';
+  els[idx].classList.add('on');
+  $cap.textContent = sc.text;
+}
+
+function playFrom(i){
+  if (i >= scenes.length){ stop(true); return; }
+  show(i);
+  var a = audios[i];
+  a.currentTime = 0;
+  var p = a.play();
+  if (p && p.catch) p.catch(function(){ /* iOS: χρειάζεται άγγιγμα — το poster το δίνει */ });
+  a.onended = function(){ if (playing) playFrom(i + 1); };
+}
+
+function tick(){
+  if (playing && audios[idx]){
+    var el = scenes[idx].start + (audios[idx].currentTime || 0);
+    $fill.style.width = (el / total * 100) + '%';
+    $time.textContent = fmt(el) + ' / ' + fmt(total);
+  }
+  requestAnimationFrame(tick);
+}
+
+function start(){
+  $poster.classList.add('gone');
+  playing = true;
+  $ppI.setAttribute('d', ICON_PAUSE);
+  playFrom(idx < 0 ? 0 : idx);
+}
+function pause(){
+  playing = false;
+  $ppI.setAttribute('d', ICON_PLAY);
+  if (audios[idx]) audios[idx].pause();
+}
+function stop(ended){
+  pause();
+  if (ended){ $fill.style.width = '100%'; $time.textContent = fmt(total) + ' / ' + fmt(total); idx = -1; }
+}
+function jump(i){
+  i = Math.max(0, Math.min(scenes.length - 1, i));
+  if (audios[idx]) audios[idx].pause();
+  if (playing) playFrom(i);
+  else { show(i); $fill.style.width = (scenes[i].start / total * 100) + '%'; $time.textContent = fmt(scenes[i].start) + ' / ' + fmt(total); }
+}
+
+$poster.onclick = start;
+$pp.onclick = function(){ playing ? pause() : start(); };
+document.getElementById('back').onclick = function(){ jump(idx - 1); };
+document.getElementById('fwd').onclick  = function(){ jump(idx + 1); };
+document.getElementById('cc').onclick   = function(){ capsOn = !capsOn; $frame.classList.toggle('nocap', !capsOn); };
+document.getElementById('fs').onclick    = function(){
+  if (document.fullscreenElement) document.exitFullscreen();
+  else $frame.requestFullscreen && $frame.requestFullscreen();
+};
+document.getElementById('track').onclick = function(e){
+  var r = this.getBoundingClientRect(), t = (e.clientX - r.left) / r.width * total, i = 0;
+  for (var k = 0; k < scenes.length; k++) if (scenes[k].start <= t) i = k;
+  jump(i);
+};
+document.addEventListener('keydown', function(e){
+  if (e.code === 'Space'){ e.preventDefault(); playing ? pause() : start(); }
+  if (e.code === 'ArrowRight') jump(idx + 1);
+  if (e.code === 'ArrowLeft')  jump(idx - 1);
+});
+
+/* ⚠️ Σταθερή αρχή 10: μια αποτυχία φόρτωσης ΔΕΝ μοιάζει με άδειο βίντεο. */
+fetch(MANIFEST_URL)
+  .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(list){
+    var t = 0;
+    scenes = list.map(function(s){ var o = { id: s.id, text: s.text, dur: s.dur, start: t }; t += s.dur; return o; });
+    total = t;
+    build();
+    show(0);
+  })
+  .catch(function(err){
+    $poster.innerHTML = '<div style="max-width:600px">'+
+      '<div class="k" style="color:#E08C7A">ΔΕΝ ΦΟΡΤΩΣΕ Ο ΗΧΟΣ</div>'+
+      '<div class="t" style="font-size:26px">' + String(err.message) + '</div>'+
+      '<div class="s">Λείπει το <code>' + MANIFEST_URL + '</code>. Άνοιξέ το μέσα από τοπικό server:<br>'+
+      '<code style="color:#DFA845">cd als &amp;&amp; python3 -m http.server 8080</code><br>και μετά <code style="color:#DFA845">localhost:8080/istoria-video-demo.html</code></div></div>';
+    $poster.onclick = null;
+    $poster.style.cursor = 'default';
+  });
+
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
