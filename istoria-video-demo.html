@@ -187,53 +187,131 @@ body{
 
 </div>
 
+<!-- Η ΑΛΗΘΙΝΗ ΓΕΩΜΕΤΡΙΑ. Καθαρά δεδομένα: κανένα fetch, κανένα sync, καμία
+     πρόσβαση σε localStorage. Παράγεται από tools/build-geo.js. -->
+<script src="greece-geo.js"></script>
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════════
-   Ο ΧΑΡΤΗΣ — μία φορά, ξαναχρησιμοποιείται σε ΚΑΘΕ ενότητα για πάντα.
-   ⚠️ Στιλιζαρισμένος, όχι χαρτογραφικά ακριβής. Τα ΓΕΓΟΝΟΤΑ πάνω του
-   (ποια περιοχή, ποια χρονιά) είναι ακριβή· το περίγραμμα είναι σχέδιο.
+   Ο ΧΑΡΤΗΣ — ΑΛΗΘΙΝΟΣ. Η γεωμετρία έρχεται από το greece-geo.js
+   (Natural Earth 10m, public domain, Web Mercator). Δεν σχεδιάζεται τίποτα
+   με το χέρι εδώ.
    ══════════════════════════════════════════════════════════════════════ */
-var GEO = {
-  /* ο πυρήνας του 1830: Ρούμελη + Μωριάς.
-     ⭐ Ο Μωριάς έχει τα ΤΡΙΑ ΔΑΧΤΥΛΑ του — είναι το ένα σχήμα που κάνει
-     έναν χάρτη να διαβάζεται αμέσως ως «Ελλάδα». */
-  roumeli : 'M392 340 L470 330 L548 334 L610 346 L642 392 L648 438 L620 454 L566 438 L520 462 L452 452 L410 414 L386 372 Z',
-  morias  : 'M520 462 L548 502 L558 538 L550 592 L532 590 L522 548 L508 558 L500 608 L482 606 L476 552 L462 560 L448 598 L430 592 L428 540 L396 520 L372 486 L390 462 L442 450 Z',
-  /* βόρεια, που ΔΕΝ ανήκαν το 1830 */
-  ipiros  : 'M378 248 L442 238 L470 262 L464 296 L470 330 L392 340 L368 300 Z',
-  thess   : 'M470 262 L556 250 L612 266 L622 310 L610 346 L548 334 L470 330 L464 296 Z',
-  maked   : 'M410 166 L520 146 L626 154 L704 180 L716 214 L648 250 L556 250 L470 262 L442 238 L396 212 Z',
-  /* νησιά */
-  evia    : 'M606 332 L634 346 L668 404 L678 444 L658 452 L632 406 L604 354 Z',
-  kriti   : 'M528 656 L610 644 L706 650 L792 662 L800 684 L700 684 L606 692 L526 678 Z'
-};
-var CYCL = [[668,452,13],[698,438,10],[712,472,15],[682,488,11],[726,504,12],[654,494,9],[704,518,10],[738,464,9],[672,522,8],[716,438,8]];
-var SPOR = [[636,296,11],[664,286,9],[688,302,10],[652,316,7]];
-var ION  = [[330,296,12],[318,340,14],[338,384,11],[324,428,15],[348,470,10],[334,508,9]];
+var VB = (typeof GEO_VB !== 'undefined') ? GEO_VB : null;
+var AR = 16 / 9;
 
-/* Το φόντο πρέπει να καλύπτει ΟΛΟ το viewBox, που είναι φαρδύτερο από 1000.
-   ⚠️ Αλλιώς μένουν λευκές λωρίδες δεξιά-αριστερά στο 16:9 κάδρο. */
-function BG(fill){ return '<rect x="-200" y="-40" width="1420" height="850" fill="'+fill+'"/>'; }
+/* ── ΟΙ ΚΑΤΑΣΤΑΣΕΙΣ ΤΩΝ ΣΥΝΟΡΩΝ ────────────────────────────────────────
+   ⚠️ ΔΙΑΒΑΣΕ ΑΥΤΟ ΠΡΙΝ ΑΛΛΑΞΕΙΣ ΟΤΙΔΗΠΟΤΕ ΕΔΩ.
+   Τα ΓΕΓΟΝΟΤΑ (ποια χρονιά, ποια περιοχή) είναι του ΒΙΒΛΙΟΥ. Τα ΣΧΗΜΑΤΑ
+   είναι σημερινές περιφέρειες, που είναι ΠΡΟΣΕΓΓΙΣΗ του ιστορικού συνόρου.
+   Όπου η προσέγγιση είναι ορατή, το λέμε ΣΤΗΝ ΟΘΟΝΗ — μια προσέγγιση που
+   παριστάνει ακρίβεια είναι χειρότερη από καμία.                        */
+var STATES = [
+  { y: 1832, add: ['sterea','attiki','peloponnisos','dytiki','kyklades','sporades'],
+    approx: true,
+    note: 'Η γραμμή Αμβρακικού–Παγασητικού δεν πέφτει ακριβώς σε σημερινά όρια.',
+    source: 'Το κείμενο της ενότητας a1a' },
+  { y: 1864, add: ['ionia'], source: 'a1a: «Το 1864 προστέθηκαν τα Ιόνια νησιά»' },
+  { y: 1881, add: ['thessalia'], approx: true,
+    note: 'Μαζί με τη Θεσσαλία ήρθε και η Άρτα, που εδώ δεν ξεχωρίζει από την Ήπειρο.',
+    source: 'a1a: «και το 1881 η Θεσσαλία»' },
+  { y: 1913, add: ['ipeiros','dmakedonia','kmakedonia','kriti','voreio'],
+    source: 'a1a Πίνακας 1: η έκταση 63.211 → 120.000 τ.χλμ. (1911 → 1914)' },
+  { y: 1920, add: ['thraki'], source: 'a1a Πίνακας 1: 150.833 τ.χλμ. το 1920' }
+];
+/* Ποτέ σε χάρτη πριν το 1947 — και γι' αυτό είναι ξεχωριστό κλειδί. */
+var NEVER_YET = ['dodekanisa'];
 
-function isles(list, fill){
-  return list.map(function(c){
-    return '<circle class="ol" fill="'+(fill||'var(--land)')+'" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" stroke-width="4"/>';
-  }).join('');
+function territoryAt(year){
+  var keys = [];
+  STATES.forEach(function(s){ if (s.y <= year) keys = keys.concat(s.add); });
+  return keys;
+}
+function stateAt(year){
+  var found = null;
+  STATES.forEach(function(s){ if (s.y <= year) found = s; });
+  return found;
 }
 
-/* Το φόντο κάθε χάρτη: θάλασσα + ξένη στεριά */
-function seaBg(){
-  return BG('var(--sea)')+
-    '<g opacity=".22" stroke="var(--sea-d)" stroke-width="3" fill="none">'+
-      '<path d="M60 120 q28 -13 56 0 t56 0"/><path d="M820 240 q28 -13 56 0 t56 0"/>'+
-      '<path d="M120 620 q28 -13 56 0 t56 0"/><path d="M760 560 q28 -13 56 0 t56 0"/>'+
-      '<path d="M420 700 q28 -13 56 0 t56 0"/>'+
-    '</g>'+
-    /* γύρω στεριά (Βαλκάνια / Μ. Ασία), ουδέτερη */
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="M-200 -40 H1220 V150 L980 168 L820 138 L700 176 L560 140 L400 160 L250 130 L60 158 L-200 132 Z"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="M1220 190 V810 H840 L806 660 L830 560 L790 470 L826 380 L800 290 L862 230 Z"/>';
+/* ── ΚΑΜΕΡΑ ───────────────────────────────────────────────────────────
+   Τα πλαίσια ΥΠΟΛΟΓΙΖΟΝΤΑΙ από τη γεωμετρία, δεν γράφονται με το χέρι —
+   έτσι δεν μπορούν να ξεσυγχρονιστούν αν αλλάξει ο χάρτης.            */
+var _bbCache = {};
+function bboxOf(keys){
+  var ck = keys.join('|');
+  if (_bbCache[ck]) return _bbCache[ck];
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  keys.forEach(function(k){
+    var d = GEO[k]; if (!d) return;
+    var n = d.match(/-?\d+(?:\.\d+)?/g); if (!n) return;
+    for (var i = 0; i + 1 < n.length; i += 2){
+      var x = +n[i], y = +n[i + 1];
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  });
+  return (_bbCache[ck] = { x0: x0, y0: y0, x1: x1, y1: y1 });
 }
+/* Επιστρέφει πλαίσιο 16:9 που περικλείει τις περιοχές, με περιθώριο. */
+function camOf(keys, pad){
+  var b = bboxOf(keys);
+  pad = pad == null ? 0.16 : pad;
+  var w = (b.x1 - b.x0), h = (b.y1 - b.y0);
+  w += w * pad * 2; h += h * pad * 2;
+  if (w / h < AR) w = h * AR; else h = w / AR;
+  var cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+  return { x: cx - w / 2, y: cy - h / 2, w: w, h: h };
+}
+var camStr = function(c){ return c.x + ' ' + c.y + ' ' + c.w + ' ' + c.h; };
+/* Οι γραμματοσειρές μετριούνται σε ΜΟΝΑΔΕΣ ΤΗΣ ΚΑΜΕΡΑΣ, αλλιώς μια ετικέτα
+   που δείχνει σωστή σε πλατύ πλάνο γίνεται τεράστια σε κοντινό. */
+function K(cam){ return cam.w / 1352; }
+
+/* ── Η ΖΩΓΡΑΦΙΚΗ ΤΟΥ ΧΑΡΤΗ ────────────────────────────────────────── */
+function mapSVG(year, cam, opt){
+  opt = opt || {};
+  var k = K(cam), sw = 2.6 * k;
+  var own = territoryAt(year);
+  var dim = opt.dim || [];
+  var s = '';
+
+  /* θάλασσα, απλωμένη πολύ πέρα από κάθε κάμερα */
+  s += '<rect x="-3000" y="-3000" width="9000" height="9000" fill="var(--sea)"/>';
+  /* γείτονες + ό,τι δεν είναι ακόμα ελληνικό, ουδέτερα */
+  s += '<path d="' + GEO._neighbours + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round"/>';
+  Object.keys(GEO).forEach(function(key){
+    if (key === '_neighbours' || own.indexOf(key) >= 0) return;
+    s += '<path d="' + GEO[key] + '" fill="var(--land)" stroke="var(--ink)" stroke-width="' + sw + '" stroke-linejoin="round"/>';
+  });
+  /* η ελληνική επικράτεια */
+  /* ⭐ `hi` = ΘΕΤΙΚΗ επισήμανση («αυτά εδώ»), αντί να ξεθωριάζουμε τα υπόλοιπα.
+     Το ξεθώριασμα όλης της στεριάς έκανε το καρέ να μοιάζει ξεπλυμένο. */
+  var hi = opt.hi || [];
+  own.forEach(function(key){
+    if (!GEO[key]) return;
+    var isNew  = opt.reveal && opt.reveal.indexOf(key) >= 0;
+    var faded  = dim.indexOf(key) >= 0;
+    var lit    = hi.indexOf(key) >= 0;
+    s += '<path d="' + GEO[key] + '" fill="' + (lit ? 'var(--gold)' : 'var(--terr)') + '" stroke="var(--ink)" ' +
+         'stroke-width="' + (lit ? sw * 1.5 : sw) + '" stroke-linejoin="round"' +
+         (faded ? ' opacity=".38"' : '') +
+         (isNew ? ' class="an" style="animation:fadeIn .7s ' + (opt.revealAt || 0) + 's both"' : '') + '/>';
+  });
+  /* ⚠️ Το σύνορο μιας ΠΡΟΣΕΓΓΙΣΤΙΚΗΣ κατάστασης σχεδιάζεται διακεκομμένο. */
+  var st = stateAt(year);
+  if (st && st.approx && !opt.noApprox){
+    s += '<text class="lbl" x="' + (cam.x + cam.w * .5) + '" y="' + (cam.y + cam.h - 16 * k) + '" text-anchor="middle" ' +
+         'font-size="' + (26 * k) + '" stroke="var(--sea)" stroke-width="' + (5 * k) + '" opacity=".9">ΣΥΝΟΡΑ ΚΑΤΑ ΠΡΟΣΕΓΓΙΣΗ</text>';
+  }
+  return s;
+}
+/* Ετικέτα σε συντεταγμένες ΧΑΡΤΗ, μεγέθους ΚΑΜΕΡΑΣ. */
+function mapLabel(x, y, txt, size, cam, cls, fill){
+  return '<text class="' + (cls || 'stamp') + '" x="' + x + '" y="' + y + '" text-anchor="middle" ' +
+         'font-size="' + (size * K(cam)) + '" ' + (fill ? 'fill="' + fill + '" ' : '') +
+         'stroke-width="' + (6 * K(cam)) + '">' + txt + '</text>';
+}
+function BG(fill){ return '<rect x="-200" y="-40" width="1420" height="850" fill="' + fill + '"/>'; }
 
 /* ══ Ο ΘΙΑΣΟΣ — απλές φιγούρες, στρογγυλά πρόσωπα, χοντρό περίγραμμα ══ */
 function person(x, y, s, opt){
@@ -284,6 +362,36 @@ function hills(){
    ΟΙ ΣΚΗΝΕΣ — μία ανά πρόταση του βιβλίου.
    Η διάρκεια ΔΕΝ γράφεται εδώ· έρχεται από το manifest.json του ήχου.
    ══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   ΟΙ ΣΚΗΝΕΣ ΤΟΥ ΧΑΡΤΗ — αληθινή γεωμετρία, αληθινές συντεταγμένες.
+   Κάθε ετικέτα μπαίνει με GEO_LL(lon, lat). Τίποτα «με το μάτι».
+   Επιστρέφουν ΑΝΤΙΚΕΙΜΕΝΟ { svg, camFrom, camTo } ώστε η κάμερα να κινείται.
+   ══════════════════════════════════════════════════════════════════════ */
+var T1832 = ['sterea','attiki','peloponnisos','dytiki','kyklades','sporades'];
+var T1864 = T1832.concat(['ionia']);
+var T1881 = T1864.concat(['thessalia']);
+var TNORTH = T1881.concat(['kmakedonia','dmakedonia']);
+
+/* Πραγματικά σημεία, σε μοίρες. Αλλάζεις εδώ, όχι σε pixel. */
+var P = {
+  amvrakikos:[20.98,38.98], pagasitikos:[23.05,39.30],
+  roumeli:[22.10,38.62],    morias:[22.10,37.45],
+  ionia:[20.30,38.30],      thessalia:[22.20,39.52],
+  olympos:[22.35,40.09],    makedonia:[22.30,40.95],
+  kyklades:[25.30,36.92],   sporades:[23.90,39.32]
+};
+function LL(k){ return GEO_LL(P[k][0], P[k][1]); }
+function pin(k, txt, size, cam, dy, colour, dx){
+  var p = LL(k), kk = K(cam);
+  return '<circle class="ol" fill="var(--gold)" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (7 * kk) + '" stroke-width="' + (2.4 * kk) + '"/>' +
+         mapLabel(p[0] + (dx || 0) * kk, p[1] + (dy || -14) * kk, txt, size, cam, 'lbl', colour);
+}
+function stampAt(k, txt, size, cam, dy, colour){
+  var p = LL(k);
+  return mapLabel(p[0], p[1] + (dy || 0) * K(cam), txt, size, cam, 'stamp', colour || 'var(--gold)');
+}
+
+
 var SCENES = {
 
 /* ── 1 · ΦΤΩΧΗ ─────────────────────────────────────────────────────── */
@@ -310,156 +418,97 @@ s01: function(){ return ''+
 },
 
 /* ── 2 · ΜΙΚΡΗ ΚΑΙ ΟΛΙΓΑΝΘΡΩΠΗ ─────────────────────────────────────── */
-s02: function(){ return ''+
-  seaBg()+
-  '<g class="an" style="animation:popIn .7s both;transform-origin:500px 430px">'+
-    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
-    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
-    isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
-  '</g>'+
-  '<g class="an" style="animation:slamIn .5s .55s both;transform-origin:180px 200px">'+
-    '<text class="stamp" x="180" y="215" text-anchor="middle" font-size="66" fill="var(--gold)">ΜΙΚΡΗ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:slamIn .5s 1.15s both;transform-origin:250px 300px">'+
-    '<text class="stamp" x="250" y="300" text-anchor="middle" font-size="52" fill="#F2E7D2">ΟΛΙΓΑΝΘΡΩΠΗ</text>'+
-  '</g>';
+s02: function(){
+  var from = camOf(T1832, .55), to = camOf(T1832, .22), cam = to;
+  return { camFrom: from, camTo: to, svg:
+    mapSVG(1832, cam) +
+    '<g class="an" style="animation:slamIn .5s .35s both;transform-origin:' + (cam.x + cam.w * .22) + 'px ' + (cam.y + cam.h * .2) + 'px">' +
+      mapLabel(cam.x + cam.w * .22, cam.y + cam.h * .21, 'ΜΙΚΡΗ', 74, cam, 'stamp', 'var(--gold)') +
+    '</g>' +
+    '<g class="an" style="animation:slamIn .5s 1.15s both;transform-origin:' + (cam.x + cam.w * .26) + 'px ' + (cam.y + cam.h * .33) + 'px">' +
+      mapLabel(cam.x + cam.w * .26, cam.y + cam.h * .34, 'ΟΛΙΓΑΝΘΡΩΠΗ', 54, cam, 'stamp', '#F2E7D2') +
+    '</g>'
+  };
 },
 
 /* ── 3 · Η ΓΡΑΜΜΗ ΑΜΒΡΑΚΙΚΟΥ–ΠΑΓΑΣΗΤΙΚΟΥ ──────────────────────────── */
-s03: function(){ return ''+
-  seaBg()+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
-  isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
-  /* η γραμμή χαράζεται δυτικά → ανατολικά */
-  '<path class="an" d="M352 334 L640 322" fill="none" stroke="var(--ink)" stroke-width="9"'+
-    ' stroke-linecap="round" stroke-dasharray="300" stroke-dashoffset="300"'+
-    ' style="animation:drawLine 1.5s .25s both"/>'+
-  '<g class="an" style="animation:popIn .45s 1.35s both;transform-origin:352px 334px">'+
-    '<circle class="ol" stroke-width="5" fill="var(--gold)" cx="352" cy="334" r="15"/>'+
-    '<text class="lbl" x="330" y="300" text-anchor="end" font-size="30">ΑΜΒΡΑΚΙΚΟΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:popIn .45s 1.7s both;transform-origin:640px 322px">'+
-    '<circle class="ol" stroke-width="5" fill="var(--gold)" cx="640" cy="322" r="15"/>'+
-    '<text class="lbl" x="664" y="292" font-size="30">ΠΑΓΑΣΗΤΙΚΟΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:fadeIn .5s 2.2s both">'+
-    '<text class="lbl" x="500" y="716" text-anchor="middle" font-size="34">ΤΑ ΣΥΝΟΡΑ ΤΟΥ ΝΕΟΥ ΚΡΑΤΟΥΣ</text>'+
-  '</g>';
+s03: function(){
+  var cam = camOf(T1832, .22), kk = K(cam);
+  var a = LL('amvrakikos'), b = LL('pagasitikos');
+  var len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  return { camFrom: cam, camTo: cam, svg:
+    mapSVG(1832, cam, { noApprox: true }) +
+    '<path class="an" d="M' + a[0] + ' ' + a[1] + 'L' + b[0] + ' ' + b[1] + '" fill="none" stroke="var(--ink)"' +
+      ' stroke-width="' + (7 * kk) + '" stroke-linecap="round" stroke-dasharray="' + len + '" stroke-dashoffset="' + len + '"' +
+      ' style="animation:drawLine 1.5s .25s both"/>' +
+    '<g class="an" style="animation:popIn .45s 1.3s both;transform-origin:' + a[0] + 'px ' + a[1] + 'px">' + pin('amvrakikos','ΑΜΒΡΑΚΙΚΟΣ', 34, cam, -26, null, -70) + '</g>' +
+    '<g class="an" style="animation:popIn .45s 1.7s both;transform-origin:' + b[0] + 'px ' + b[1] + 'px">' + pin('pagasitikos','ΠΑΓΑΣΗΤΙΚΟΣ', 34, cam, 46, null, 72) + '</g>' +
+    '<g class="an" style="animation:fadeIn .5s 2.2s both">' +
+      mapLabel(cam.x + cam.w * .5, cam.y + cam.h * .94, 'ΤΑ ΣΥΝΟΡΑ ΤΟΥ ΝΕΟΥ ΚΡΑΤΟΥΣ', 30, cam, 'lbl') +
+    '</g>'
+  };
 },
 
 /* ── 4 · ΑΠΟ ΤΟ ΑΙΓΑΙΟ, ΜΟΝΟ ΔΥΟ ──────────────────────────────────── */
-s04: function(){ return ''+
-  seaBg()+
-  '<g opacity=".5">'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
-    '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
-  '</g>'+
-  /* όλα τα υπόλοιπα νησιά, σβηστά */
-  '<g fill="var(--land-d)" opacity=".55">'+
-    isles([[790,330,12],[812,392,10],[834,452,13],[806,510,10],[850,300,9],[770,560,11],[828,566,9]],'var(--land-d)')+
-  '</g>'+
-  /* οι δύο που ανήκαν — ανάβουν */
-  '<g class="an" fill="var(--terr)" style="animation:fadeIn .01s both">'+
-    SPOR.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.25+i*0.07)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
-    CYCL.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.9+i*0.06)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
-  '</g>'+
-  '<g class="an" style="animation:slamIn .45s .5s both;transform-origin:770px 250px">'+
-    '<text class="stamp" x="770" y="262" text-anchor="middle" font-size="34" fill="var(--gold)">Β. ΣΠΟΡΑΔΕΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:slamIn .45s 1.25s both;transform-origin:820px 620px">'+
-    '<text class="stamp" x="820" y="620" text-anchor="middle" font-size="34" fill="var(--gold)">ΚΥΚΛΑΔΕΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:fadeIn .5s 1.9s both">'+
-    '<text class="stamp" x="160" y="120" font-size="46" fill="#F2E7D2">ΜΟΝΟ</text>'+
-    '<text class="lbl" x="160" y="162" font-size="26">ΑΥΤΑ ΤΑ ΔΥΟ</text>'+
-  '</g>';
+s04: function(){
+  var to = camOf(T1832.concat(['voreio','dodekanisa']), .12), cam = to;
+  return { camFrom: camOf(T1832, .22), camTo: to, svg:
+    mapSVG(1832, cam, { hi: ['kyklades','sporades'], noApprox: true }) +
+    '<g class="an" style="animation:slamIn .45s .6s both;transform-origin:' + LL('sporades')[0] + 'px ' + LL('sporades')[1] + 'px">' +
+      stampAt('sporades', 'Β. ΣΠΟΡΑΔΕΣ', 40, cam, -34) + '</g>' +
+    '<g class="an" style="animation:slamIn .45s 1.5s both;transform-origin:' + LL('kyklades')[0] + 'px ' + LL('kyklades')[1] + 'px">' +
+      stampAt('kyklades', 'ΚΥΚΛΑΔΕΣ', 40, cam, 52) + '</g>' +
+    '<g class="an" style="animation:fadeIn .5s 2.4s both">' +
+      mapLabel(cam.x + cam.w * .21, cam.y + cam.h * .88, 'ΜΟΝΟ ΑΥΤΑ ΤΑ ΔΥΟ', 46, cam, 'stamp', '#F2E7D2') +
+    '</g>'
+  };
 },
 
 /* ── 5 · Ο ΚΟΡΜΟΣ: ΡΟΥΜΕΛΗ ΚΑΙ ΜΩΡΙΑΣ ─────────────────────────────── */
-s05: function(){ return ''+
-  seaBg()+
-  '<g opacity=".42">'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.thess+'"/>'+
-    '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-    isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+
-  '</g>'+
-  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"'+
-    ' style="animation:popIn .55s .1s both;transform-origin:500px 388px"/>'+
-  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"'+
-    ' style="animation:popIn .55s .95s both;transform-origin:480px 500px"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--terr)" opacity=".55" d="'+GEO.evia+'"/>'+
-  '<g class="an" style="animation:slamIn .45s .45s both;transform-origin:760px 380px">'+
-    '<text class="stamp" x="760" y="392" text-anchor="middle" font-size="52" fill="var(--gold)">ΡΟΥΜΕΛΗ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:slamIn .45s 1.3s both;transform-origin:250px 560px">'+
-    '<text class="stamp" x="250" y="560" text-anchor="middle" font-size="52" fill="var(--gold)">ΜΩΡΙΑΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:fadeIn .55s 1.9s both">'+
-    '<text class="lbl" x="500" y="716" text-anchor="middle" font-size="30">Ο ΚΟΡΜΟΣ ΤΗΣ ΧΩΡΑΣ</text>'+
-  '</g>';
+s05: function(){
+  var cam = camOf(['sterea','attiki','peloponnisos','dytiki'], .2);
+  return { camFrom: camOf(T1832, .2), camTo: cam, svg:
+    mapSVG(1832, cam, { dim: ['kyklades','sporades'], noApprox: true }) +
+    '<g class="an" style="animation:slamIn .45s .45s both;transform-origin:' + LL('roumeli')[0] + 'px ' + LL('roumeli')[1] + 'px">' +
+      stampAt('roumeli', 'ΡΟΥΜΕΛΗ', 46, cam) + '</g>' +
+    '<g class="an" style="animation:slamIn .45s 1.35s both;transform-origin:' + LL('morias')[0] + 'px ' + LL('morias')[1] + 'px">' +
+      stampAt('morias', 'ΜΩΡΙΑΣ', 46, cam) + '</g>' +
+    '<g class="an" style="animation:fadeIn .55s 2.1s both">' +
+      mapLabel(cam.x + cam.w * .5, cam.y + cam.h * .95, 'Ο ΚΟΡΜΟΣ ΤΗΣ ΧΩΡΑΣ', 28, cam, 'lbl') +
+    '</g>'
+  };
 },
 
 /* ── 6 · 1864 ΙΟΝΙΑ · 1881 ΘΕΣΣΑΛΙΑ ───────────────────────────────── */
-s06: function(){ return ''+
-  seaBg()+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
-  isles(CYCL,'var(--terr)')+
-  /* 1864 — τα Ιόνια ανάβουν */
-  ION.map(function(c,i){return '<circle class="ol an" stroke-width="4" fill="var(--terr)" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" style="animation:popIn .4s '+(0.35+i*0.08)+'s both;transform-origin:'+c[0]+'px '+c[1]+'px"/>';}).join('')+
-  '<g class="an" style="animation:slamIn .5s .3s both;transform-origin:180px 400px">'+
-    '<text class="num" x="180" y="400" text-anchor="middle" font-size="96" fill="var(--gold)">1864</text>'+
-    '<text class="lbl" x="180" y="448" text-anchor="middle" font-size="32">ΙΟΝΙΑ ΝΗΣΙΑ</text>'+
-  '</g>'+
-  /* 1881 — η Θεσσαλία */
-  '<path class="ol an" stroke-width="6" fill="var(--terr)" d="'+GEO.thess+'"'+
-    ' style="animation:popIn .6s 3.1s both;transform-origin:540px 300px"/>'+
-  '<g class="an" style="animation:slamIn .5s 3.1s both;transform-origin:830px 180px">'+
-    '<text class="num" x="830" y="180" text-anchor="middle" font-size="96" fill="var(--gold)">1881</text>'+
-    '<text class="lbl" x="830" y="228" text-anchor="middle" font-size="32">ΘΕΣΣΑΛΙΑ</text>'+
-  '</g>';
+s06: function(){
+  var cam = camOf(T1881, .16);
+  /* ⭐ Δύο προσθήκες, με τη ΣΕΙΡΑ ΤΟΥΣ. Το έδαφος ανάβει, δεν κόβει. */
+  return { camFrom: camOf(T1832, .16), camTo: cam, svg:
+    mapSVG(1881, cam, { reveal: ['ionia','thessalia'], revealAt: 0, noApprox: true }) +
+    '<g class="an" style="animation:slamIn .5s .35s both;transform-origin:' + LL('ionia')[0] + 'px ' + LL('ionia')[1] + 'px">' +
+      mapLabel(cam.x + cam.w * .13, cam.y + cam.h * .60, '1864', 82, cam, 'num', 'var(--gold)') +
+      mapLabel(cam.x + cam.w * .13, cam.y + cam.h * .68, 'ΙΟΝΙΑ ΝΗΣΙΑ', 32, cam, 'stamp', 'var(--gold)') + '</g>' +
+    '<g class="an" style="animation:slamIn .5s 3.3s both;transform-origin:' + LL('thessalia')[0] + 'px ' + LL('thessalia')[1] + 'px">' +
+      mapLabel(cam.x + cam.w * .84, cam.y + cam.h * .20, '1881', 82, cam, 'num', 'var(--gold)') +
+      mapLabel(cam.x + cam.w * .84, cam.y + cam.h * .28, 'ΘΕΣΣΑΛΙΑ', 32, cam, 'stamp', 'var(--gold)') + '</g>'
+  };
 },
 
 /* ── 7 · ΤΑ ΒΟΡΕΙΑ ΣΥΝΟΡΑ: ΟΛΥΜΠΟΣ ΚΑΙ ΜΑΚΕΔΟΝΙΑ ─────────────────── */
-s07: function(){ return ''+
-  seaBg()+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.maked+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--land)" d="'+GEO.ipiros+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.thess+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.roumeli+'"/>'+
-  '<path class="ol" stroke-width="6" fill="var(--terr)" d="'+GEO.morias+'"/>'+
-  '<path class="ol" stroke-width="5" fill="var(--terr)" d="'+GEO.evia+'"/>'+
-  isles(CYCL,'var(--terr)')+isles(SPOR,'var(--terr)')+isles(ION,'var(--terr)')+
-  /* το σύνορο ανεβαίνει βόρεια */
-  '<path class="an" d="M400 262 L470 254 L556 250 L620 264 L700 250" fill="none"'+
-    ' stroke="var(--gold)" stroke-width="10" stroke-linecap="round"'+
-    ' stroke-dasharray="330" stroke-dashoffset="330" style="animation:drawLine 1.3s .2s both"/>'+
-  /* ο Όλυμπος */
-  '<g class="an" style="animation:popIn .5s 1.4s both;transform-origin:566px 236px">'+
-    '<path class="ol" stroke-width="5" fill="#8E7B5E" d="M566 186 L614 250 H518 Z"/>'+
-    '<path fill="#F7F1E4" d="M566 186 L588 216 q-22 10 -44 0 Z"/>'+
-    '<text class="lbl" x="566" y="150" text-anchor="middle" font-size="30" stroke="var(--sea)">ΟΛΥΜΠΟΣ</text>'+
-  '</g>'+
-  '<g class="an" style="animation:fadeIn .55s 1.9s both">'+
-    '<text class="lbl" x="828" y="128" text-anchor="middle" font-size="32" stroke="var(--land)">ΜΑΚΕΔΟΝΙΑ</text>'+
-  '</g>';
+s07: function(){
+  var cam = camOf(['thessalia','kmakedonia','sterea'], .18), kk = K(cam);
+  var o = LL('olympos');
+  return { camFrom: camOf(T1881, .16), camTo: cam, svg:
+    mapSVG(1881, cam, { noApprox: true }) +
+    '<g class="an" style="animation:popIn .5s 1.0s both;transform-origin:' + o[0] + 'px ' + o[1] + 'px">' +
+      '<path class="ol" stroke-width="' + (2.6 * kk) + '" fill="#8E7B5E" d="M' + o[0] + ' ' + (o[1] - 26 * kk) +
+        'L' + (o[0] + 22 * kk) + ' ' + (o[1] + 8 * kk) + 'H' + (o[0] - 22 * kk) + 'Z"/>' +
+      '<path fill="#F7F1E4" d="M' + o[0] + ' ' + (o[1] - 26 * kk) + 'L' + (o[0] + 10 * kk) + ' ' + (o[1] - 11 * kk) +
+        'q' + (-10 * kk) + ' ' + (5 * kk) + ' ' + (-20 * kk) + ' 0Z"/>' +
+      mapLabel(o[0], o[1] - 46 * kk, 'ΟΛΥΜΠΟΣ', 36, cam, 'lbl') + '</g>' +
+    '<g class="an" style="animation:fadeIn .55s 1.7s both">' +
+      stampAt('makedonia', 'ΜΑΚΕΔΟΝΙΑ', 52, cam, 0, '#F2E7D2') + '</g>'
+  };
 },
 
 /* ── 8 · Η ΠΥΚΝΟΤΗΤΑ — 15 → 43, ΕΝΩ Η ΔΥΤΙΚΗ ΕΥΡΩΠΗ ΤΡΙΨΗΦΙΑ ──────── */
@@ -701,12 +750,10 @@ function build(){
   scenes.forEach(function(sc, i){
     var d = document.createElement('div');
     d.className = 'scene';
-    /* ⚠️ αν λείπει σκηνή, το λέει — δεν σβήνει σιωπηλά */
-    d.innerHTML = '<svg viewBox="-176 0 1352 760" preserveAspectRatio="xMidYMid meet">' +
-      (SCENES[sc.id] ? SCENES[sc.id]()
-        : '<rect width="1000" height="760" fill="var(--parch)"/><text class="lbl" x="500" y="380" text-anchor="middle" font-size="34">ΛΕΙΠΕΙ Η ΣΚΗΝΗ ' + sc.id + '</text>') +
-      '</svg>';
+    /* ⚠️ Ο ΙΔΙΟΣ renderer με το show(), ποτέ δεύτερο αντίγραφο — αλλιώς οι δύο
+       δρόμοι ξεσυγχρονίζονται και η κάμερα δουλεύει μόνο στον έναν. */
     $stage.appendChild(d);
+    renderScene(d, sc);
     els.push(d);
 
     var a = new Audio(AUDIO_DIR + sc.id + '.m4a');
@@ -720,17 +767,51 @@ function build(){
   $time.textContent = '0:00 / ' + fmt(total);
 }
 
+/* ── Η ΚΑΜΕΡΑ ────────────────────────────────────────────────────────────
+   Μια σκηνή μπορεί να επιστρέψει είτε σκέτο SVG (σταθερό κάδρο) είτε
+   { svg, camFrom, camTo }. Στη δεύτερη περίπτωση το viewBox κινείται όσο
+   διαρκεί ο ήχος της σκηνής — αυτό είναι που το κάνει βίντεο και όχι
+   παρουσίαση διαφανειών.                                                 */
+var DEFAULT_VB = '-176 0 1352 760';
+var camRAF = 0;
+var ease = function(t){ return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+
+function renderScene(el, sc){
+  var out = SCENES[sc.id] ? SCENES[sc.id]() : null;
+  /* ⚠️ Μια σκηνή που λείπει το ΛΕΕΙ. Δεν μένει άδεια. */
+  if (out == null){
+    el.innerHTML = '<svg viewBox="' + DEFAULT_VB + '" preserveAspectRatio="xMidYMid meet">' +
+      '<rect x="-200" y="-40" width="1420" height="850" fill="var(--parch)"/>' +
+      '<text class="lbl" x="500" y="380" text-anchor="middle" font-size="34">ΛΕΙΠΕΙ Η ΣΚΗΝΗ ' + sc.id + '</text></svg>';
+    return;
+  }
+  if (typeof out === 'string') out = { svg: out };
+  var vb = out.camFrom ? camStr(out.camFrom) : DEFAULT_VB;
+  el.innerHTML = '<svg viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + out.svg + '</svg>';
+
+  cancelAnimationFrame(camRAF);
+  if (!out.camFrom || !out.camTo) return;
+  var a = out.camFrom, b = out.camTo;
+  if (a.x === b.x && a.y === b.y && a.w === b.w) return;
+  var svg = el.firstChild, t0 = performance.now(), dur = Math.max(600, sc.dur * 1000);
+  (function step(now){
+    var t = ease(Math.min(1, (now - t0) / dur));
+    svg.setAttribute('viewBox',
+      (a.x + (b.x - a.x) * t) + ' ' + (a.y + (b.y - a.y) * t) + ' ' +
+      (a.w + (b.w - a.w) * t) + ' ' + (a.h + (b.h - a.h) * t));
+    if (t < 1) camRAF = requestAnimationFrame(step);
+  })(t0);
+}
+
 function show(i){
   if (i === idx) return;
   if (els[idx]) els[idx].classList.remove('on');
   idx = i;
   if (!els[idx]) return;
   /* ξαναγέννηση του SVG ⇒ οι animations ξαναπαίζουν από την αρχή */
-  var sc = scenes[idx];
-  els[idx].innerHTML = '<svg viewBox="-176 0 1352 760" preserveAspectRatio="xMidYMid meet">' +
-    (SCENES[sc.id] ? SCENES[sc.id]() : '') + '</svg>';
+  renderScene(els[idx], scenes[idx]);
   els[idx].classList.add('on');
-  $cap.textContent = sc.text;
+  $cap.textContent = scenes[idx].text;
 }
 
 function playFrom(i){

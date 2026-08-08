@@ -148,7 +148,16 @@ fs.writeFileSync('greece-geo.js',
       Β. Σποράδες 1832 αλλά διοικητικά «Θεσσαλία»). */
 var GEO_VB = { w: ${W}, h: ${H} };
 var GEO = ${JSON.stringify(PATHS)};
-if (typeof module !== 'undefined') module.exports = { GEO: GEO, GEO_VB: GEO_VB };
+/* Η προβολή, ώστε ένα σημείο να μπαίνει με ΠΡΑΓΜΑΤΙΚΕΣ συντεταγμένες και όχι
+   «με το μάτι». GEO_LL(lon, lat) -> [x, y] στο ίδιο σύστημα με τα paths. */
+var GEO_PROJ = { R: ${R}, x0: ${bb.x0}, y1: ${bb.y1}, s: ${S} };
+function GEO_LL(lon, lat){
+  var P = GEO_PROJ, r = Math.PI / 180;
+  var mx = P.R * lon * r;
+  var my = P.R * Math.log(Math.tan(Math.PI / 4 + lat * r / 2));
+  return [ (mx - P.x0) * P.s, (P.y1 - my) * P.s ];
+}
+if (typeof module !== 'undefined') module.exports = { GEO: GEO, GEO_VB: GEO_VB, GEO_PROJ: GEO_PROJ, GEO_LL: GEO_LL };
 `);
 
 console.log('viewBox 0 0 ' + W + ' ' + H);
