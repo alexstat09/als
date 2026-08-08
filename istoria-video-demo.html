@@ -602,7 +602,7 @@ s08: function(){
     '<text class="num" x="490" y="210" text-anchor="middle" font-size="118" fill="var(--gold)">43</text>'+
     '<text class="lbl" x="490" y="252" text-anchor="middle" font-size="30">1911</text>'+
   '</g>'+
-  grid(400, 300, 43, 8, 9, 4.7, 'var(--gold)')+
+  grid(400, 300, 43, 8, 9, 4.7, 'var(--gold)', fitStep(4.7, 43, 0.3, 0.028))+
   /* Δυτική Ευρώπη — τριψήφιοι */
   '<text class="lbl" x="836" y="86" text-anchor="middle" font-size="30">ΔΥΤΙΚΗ ΕΥΡΩΠΗ</text>'+
   '<g class="an" style="animation:slamIn .6s 8.6s both;transform-origin:836px 214px">'+
@@ -611,7 +611,7 @@ s08: function(){
   '</g>'+
   /* ΡΥΘΜΟΣ: οι 96 κουκκίδες απλώνονται ως το τέλος της σκηνής (βήμα 0,042
      αντί 0,028), ώστε να μη μένουν 3 νεκρά δευτερόλεπτα. Καμία νέα λέξη. */
-  grid(716, 300, 96, 12, 5.4, 9.0, 'var(--ink)', 0.042);
+  grid(716, 300, 96, 12, 5.4, 9.0, 'var(--ink)', fitStep(9.0, 96, 0.3, 0.042));
 },
 
 /* ── 9 · Η ΕΞΑΝΤΛΗΣΗ ΤΟΥ ΤΟΠΟΥ ΚΑΙ ΤΩΝ ΑΝΘΡΩΠΩΝ ──────────────────── */
@@ -813,6 +813,18 @@ var AUDIO_DIR    = 'vid/a1a/';
    τρέχουσα κάμερα, ώστε να μένει ακίνητος όσο η κάμερα κινείται από κάτω. */
 var DESIGN = { x: -176, y: 0, w: 1352, h: 760 };
 
+/* ⭐ Η ΔΙΑΡΚΕΙΑ ΤΗΣ ΤΡΕΧΟΥΣΑΣ ΣΚΗΝΗΣ. Οι σκηνές τη διαβάζουν ώστε ο χρονισμός
+   τους να ΒΓΑΙΝΕΙ από τον ήχο αντί να είναι καρφωμένος. Χωρίς αυτό, μια νέα
+   ηχογράφηση που κόβει 2 δευτερόλεπτα αφήνει γεγονότα να μην παίζονται ΠΟΤΕ
+   — σιωπηλά, χωρίς κανένα σφάλμα. */
+var CUR_DUR = 8;
+/* Το μεγαλύτερο βήμα ώστε n στοιχεία που ξεκινούν στο startAt να προλάβουν. */
+function fitStep(startAt, n, animDur, fallback){
+  if (n < 2) return fallback || 0.03;
+  var room = CUR_DUR - 0.35 - startAt - (animDur || 0.3);
+  return Math.max(0.012, Math.min(fallback || 0.045, room / (n - 1)));
+}
+
 var scenes = [], idx = -1, playing = false, audios = [], total = 0, capsOn = true;
 var film = null, mapHost = null, fxHost = null, curMap = '', curIsMap = false;
 var camNow = null, camTgt = null, camLast = 0;
@@ -984,6 +996,7 @@ function splitMap(svg){
 function showScene(i){
   var sc = scenes[i];
   sceneT0 = performance.now(); sceneDur = sc.dur || 4;   /* για την αναπνοή του κάδρου */
+  CUR_DUR = sc.dur || 4;   /* ⭐ οι σκηνές το διαβάζουν για να χωρέσουν μέσα του */
   var out = SCENES[sc.id] ? SCENES[sc.id]() : null;
 
   /* ⚠️ Μια σκηνή που λείπει το ΛΕΕΙ. Ποτέ άδειο κάδρο. */
