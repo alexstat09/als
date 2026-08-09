@@ -87,6 +87,15 @@ body{
   font-variant-numeric:tabular-nums;font-size:12.5px;letter-spacing:.06em;
   color:rgba(246,238,223,.62);flex:none;min-width:78px;text-align:right;
 }
+/* ⚠️ ΣΤΟ ΚΙΝΗΤΟ Η ΜΠΑΡΑ ΔΕΝ ΧΩΡΑΓΕ. Στα 390px το ελάχιστο πλάτος της
+   (46 + 5×36 + 78 του χρόνου + 6×13 κενά = 382) ξεπερνούσε τα 362 διαθέσιμα
+   και το κουμπί πλήρους οθόνης έβγαινε έξω. Δεν φαινόταν ποτέ μόνο επειδή το
+   `body` έκοβε την οριζόντια υπερχείλιση — δηλαδή ένα κουμπί ήταν άφαντο,
+   σιωπηλά. Μικρότερα κενά και ελεύθερος χρόνος το χωρούν. */
+@media (max-width:520px){
+  .bar{gap:8px}
+  .time{min-width:0;font-size:11.5px}
+}
 .meta{
   display:flex;justify-content:space-between;align-items:baseline;
   margin-bottom:11px;gap:14px;flex-wrap:wrap;
@@ -111,6 +120,86 @@ body{
   display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,0,0,.45);
 }
 .poster .play svg{width:26px;height:26px;fill:#241B10;margin-left:4px}
+
+/* ═══ ΤΟ ΤΕΛΟΣ — Ο ΣΚΕΛΕΤΟΣ ΚΑΙ «ΤΩΡΑ ΠΕΣ ΤΟ» ═══════════════════════════
+   ⭐ Το βίντεο τελειώνει· η ενότητα ΔΕΝ τελειώνει. Ό,τι μόλις είδε
+   επιστρέφει σαν σκελετός 8 σημείων, και δίπλα του το κουμπί που τον βάζει
+   να τον ΠΕΙ. Χωρίς αυτό το βίντεο είναι θέαμα, όχι διάβασμα.
+
+   ⚠️ Τα σημεία ΔΕΝ γράφονται εδώ. Διαβάζονται ζωντανά από το istoria-data.js
+   — το ΙΔΙΟ αρχείο που βαθμολογεί την ανάκληση. Αν τα αντιγράφαμε, θα
+   ξέφευγαν σιωπηλά την πρώτη φορά που αλλάξει ο σκελετός.
+
+   ⚠️ ΟΧΙ `.ol` — αυτό το όνομα το κρατάει ήδη ο χάρτης (γραμμή SVG). Όλα
+   εδώ έχουν πρόθεμα `ro-`.                                               */
+.ro{
+  position:absolute;inset:0;z-index:7;display:none;
+  background:linear-gradient(180deg,rgba(20,15,10,.93),rgba(20,15,10,.985));
+  padding:clamp(14px,2.6vw,30px);overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+/* ⭐⭐ ΤΟ ΚΑΡΕ ΨΗΛΩΝΕΙ ΓΙΑ ΝΑ ΧΩΡΕΣΕΙ Η ΚΑΡΤΑ.
+   Στο κινητό του (430px) το 16:9 δίνει καρέ 216px. Η κάρτα κοβόταν στο 4ο
+   σημείο και ζητούσε κύλιση μέσα σε κουτάκι — δηλαδή ο σκελετός υπήρχε αλλά
+   δεν διαβαζόταν, που είναι ίδιο με το να λείπει. Η ταινία ΤΕΛΕΙΩΣΕ· το 16:9
+   δεν εξυπηρετεί πια τίποτα. Το `min-height` κρατά το ύψος 16:9 ως ΚΑΤΩΤΑΤΟ,
+   ώστε στην οθόνη υπολογιστή να μη ζαρώνει το καρέ.
+   (πλάτος καρέ = min(100vw - 28px, 1092px)· ύψος 16:9 = αυτό / 1,7778) */
+.frame.ro-open{aspect-ratio:auto}
+.frame.ro-open .cap{display:none}
+body.ro-open{overflow:auto;align-items:flex-start;padding:18px 0}
+.ro.on{
+  display:flex;animation:fadeIn .5s both;
+  position:relative;inset:auto;overflow:visible;
+  min-height:min(calc(56.25vw - 16px), 614px);
+}
+/* `margin:auto` αντί για `align-items:center`: κεντράρει όταν χωράει, και
+   ΔΕΝ κόβει την κορυφή όταν δεν χωράει (μικρό κινητό, πλαγιαστό). */
+.ro-w{width:100%;margin:auto}
+.ro-k{font-size:10.5px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase}
+.ro-hook{
+  font-family:var(--display);font-weight:800;line-height:1.05;
+  font-size:clamp(19px,3.1vw,38px);margin:6px 0 clamp(10px,1.6vw,20px);color:#F6EEDF;
+}
+/* ⚠️ Το `hookWhy` του βιβλίου ΔΕΝ μπαίνει εδώ. Εξηγεί τις ΠΕΝΤΕ κινήσεις του
+   γάντζου και δίπλα σε αριθμημένη λίστα ΟΚΤΩ σημείων διαβάζεται σαν αντίφαση.
+   Ανήκει στο μάθημα, όχι στην κάρτα ανάκλησης. Η θέση μένει για το ΣΦΑΛΜΑ. */
+.ro-note:empty{display:none}
+.ro-list{list-style:none;display:grid;gap:clamp(5px,.85vw,11px)}
+@media (min-width:760px){ .ro-list{grid-template-columns:1fr 1fr;column-gap:22px} }
+.ro-item{
+  display:flex;gap:10px;align-items:baseline;
+  animation:fadeUp .42s both;animation-delay:calc(var(--i) * .062s);
+}
+.ro-n{
+  font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums;
+  color:var(--gold);font-size:clamp(13px,1.5vw,18px);flex:none;
+  min-width:1.2em;text-align:right;opacity:.85;
+}
+.ro-t{font-size:clamp(11.5px,1.28vw,15.5px);font-weight:600;line-height:1.32;color:#F6EEDF}
+/* Τα λόγια του βιβλίου κρατούν τη ΔΙΚΗ τους όψη — πλάγια, σε εισαγωγικά,
+   με χρυσό περιθώριο. Ποτέ δεν μοιάζουν με δικά μας λόγια. */
+.ro-a{
+  display:block;font-style:italic;font-weight:400;
+  font-size:clamp(10px,1.06vw,12.5px);line-height:1.35;
+  color:rgba(246,238,223,.56);border-left:2px solid rgba(223,168,69,.5);
+  padding-left:7px;margin-top:3px;
+}
+.ro-act{display:flex;gap:10px;flex-wrap:wrap;margin-top:clamp(10px,1.8vw,20px)}
+.ro-btn{
+  border:0;border-radius:999px;cursor:pointer;text-decoration:none;
+  padding:clamp(8px,1.1vw,13px) clamp(14px,1.9vw,24px);
+  font-family:var(--body);font-size:clamp(11.5px,1.2vw,14.5px);font-weight:700;
+  background:var(--gold);color:#241B10;letter-spacing:.01em;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:transform .16s,filter .16s;
+}
+.ro-btn:hover{filter:brightness(1.08)}
+.ro-btn:active{transform:scale(.96)}
+.ro-btn.ghost{background:rgba(255,255,255,.1);color:var(--bone)}
+/* ⚠️ Σταθερή αρχή 10: μια αποτυχία φόρτωσης των δεδομένων ΔΕΝ γίνεται
+   άδεια κάρτα. Το λέει, και το κουμπί της ανάκλησης μένει ζωντανό. */
+.ro-err{font-size:12.5px;line-height:1.5;color:#E08C7A;margin:8px 0 4px}
 
 /* ═══════════════════════════════════════════════════════════════════════
    ΚΙΝΗΣΗ — κάθε σκηνή ανάβει τις δικές της animations όταν παίρνει .on
@@ -169,6 +258,18 @@ body{
         <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
       </div>
     </div>
+
+    <!-- ΤΟ ΤΕΛΟΣ. Γεμίζει από το istoria-data.js όταν τελειώσει η ταινία. -->
+    <div class="ro" id="ro"><div class="ro-w">
+      <div class="ro-k">Αυτά είδες μόλις</div>
+      <div class="ro-hook" id="roHook"></div>
+      <div class="ro-note" id="roNote"></div>
+      <ol class="ro-list" id="roList"></ol>
+      <div class="ro-act">
+        <a class="ro-btn" id="roSay" href="istoria.html#recall:a1a">🎙 Τώρα πες το</a>
+        <button class="ro-btn ghost" id="roAgain" type="button">↻ Ξανά από την αρχή</button>
+      </div>
+    </div></div>
   </div>
 
   <div class="bar">
@@ -202,6 +303,14 @@ body{
 <!-- Η ΑΛΗΘΙΝΗ ΓΕΩΜΕΤΡΙΑ. Καθαρά δεδομένα: κανένα fetch, κανένα sync, καμία
      πρόσβαση σε localStorage. Παράγεται από tools/build-geo.js. -->
 <script src="greece-geo.js"></script>
+<!-- ⭐ Η ΙΔΙΑ ΥΛΗ ΠΟΥ ΒΑΘΜΟΛΟΓΕΙ ΤΗΝ ΑΝΑΚΛΗΣΗ. Ο σκελετός του τέλους τη
+     διαβάζει ζωντανά αντί να την αντιγράφει — αλλιώς οι δύο σελίδες θα
+     δίδασκαν διαφορετικά πράγματα και κανείς δεν θα το έβλεπε.
+     ⚠️ Η ΣΕΙΡΑ ΕΙΝΑΙ ΦΕΡΟΥΣΑ: το istoria-data.js ΠΕΤΑΕΙ αν λείπει το
+     greek-ear.js. Το ίδιο ζευγάρι, με την ίδια σειρά, φορτώνει και η
+     istoria.html (γρ. 19-20). -->
+<script src="greek-ear.js"></script>
+<script src="istoria-data.js"></script>
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════════
@@ -806,8 +915,12 @@ s15: function(){ return ''+
    από σκηνή σε σκηνή· η κάμερα δεν μηδενίζει ποτέ, συνεχίζει από εκεί που
    βρίσκεται· μόνο οι επικαλύψεις εναλλάσσονται.
    ══════════════════════════════════════════════════════════════════════ */
-var MANIFEST_URL = 'vid/a1a/manifest.json';
-var AUDIO_DIR    = 'vid/a1a/';
+/* ⭐ ΜΙΑ ΜΟΝΟ ΤΑΥΤΟΤΗΤΑ ΕΝΟΤΗΤΑΣ. Ο ήχος, ο σκελετός του τέλους και ο
+   σύνδεσμος προς την ανάκληση βγαίνουν ΟΛΑ από εδώ — ώστε η επόμενη
+   ενότητα να είναι μία γραμμή, όχι κυνήγι σε τρία σημεία. */
+var UNIT         = 'a1a';
+var MANIFEST_URL = 'vid/' + UNIT + '/manifest.json';
+var AUDIO_DIR    = 'vid/' + UNIT + '/';
 
 /* Ο χώρος σχεδίασης των ΜΗ-χαρτογραφικών σκηνών. Μεταφέρεται πάνω στην
    τρέχουσα κάμερα, ώστε να μένει ακίνητος όσο η κάμερα κινείται από κάτω. */
@@ -1063,6 +1176,7 @@ function start(){
   audioInit();
   if (AC && AC.state === 'suspended') AC.resume();
   $poster.classList.add('gone');
+  hideOutro();
   playing = true;
   $ppI.setAttribute('d', ICON_PAUSE);
   playFrom(idx < 0 ? 0 : idx);
@@ -1076,9 +1190,13 @@ function pause(){
 }
 function stop(ended){
   pause();
-  if (ended){ $fill.style.width = '100%'; $time.textContent = fmt(total) + ' / ' + fmt(total); idx = -1; }
+  if (ended){
+    $fill.style.width = '100%'; $time.textContent = fmt(total) + ' / ' + fmt(total); idx = -1;
+    showOutro();   /* ⭐ το βίντεο τελείωσε· η ενότητα όχι */
+  }
 }
 function jump(i){
+  hideOutro();
   i = Math.max(0, Math.min(scenes.length - 1, i));
   if (audios[idx]) audios[idx].pause();
   if (playing) playFrom(i);
@@ -1106,6 +1224,83 @@ document.addEventListener('keydown', function(e){
   if (e.code === 'ArrowLeft')  jump(idx - 1);
   if (e.code === 'KeyM'){ audioInit(); setMuted(!muted); }
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ΤΟ ΤΕΛΟΣ — Ο ΣΚΕΛΕΤΟΣ ΚΑΙ «ΤΩΡΑ ΠΕΣ ΤΟ»
+
+   ⭐ Εδώ το βίντεο σταματάει να είναι θέαμα. Ο θεατής μόλις άκουσε 1:44
+   αφήγηση· αν κλείσει τώρα την καρτέλα, κράτησε εικόνες. Ο σκελετός τού
+   δίνει πίσω τη ΔΟΜΗ — τα ίδια 8 σημεία με τα οποία θα βαθμολογηθεί — και
+   το κουμπί τον στέλνει να τα ΠΕΙ όσο είναι ακόμη ζεστά.
+
+   ⚠️ ΤΡΙΑ ΕΠΙΠΕΔΑ ΑΛΗΘΕΙΑΣ, ΟΠΤΙΚΑ ΧΩΡΙΣΤΑ, ΟΠΩΣ ΠΑΝΤΟΥ ΣΕ ΑΥΤΟ ΤΟ ΕΡΓΟ:
+   ο τίτλος κάθε σημείου είναι ΔΙΚΑ ΜΑΣ απλά ελληνικά (όρθια γραφή), το
+   `anchor` από κάτω είναι ΤΟ ΒΙΒΛΙΟ αυτολεξεί (πλάγια, με χρυσή μπάρα).
+   ⛔ Καμία δική μας φράση δεν παίρνει ποτέ την όψη του βιβλίου.
+   ══════════════════════════════════════════════════════════════════════ */
+var $ro = document.getElementById('ro');
+
+function roEsc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildOutro(){
+  document.getElementById('roSay').href = 'istoria.html#recall:' + UNIT;
+
+  var $hook = document.getElementById('roHook');
+  var $note = document.getElementById('roNote');
+  var $list = document.getElementById('roList');
+
+  var unit = (window.ISTORIA && window.ISTORIA.unit) ? window.ISTORIA.unit(UNIT) : null;
+  var sk   = unit && unit.skeleton;
+
+  /* ⚠️ Σταθερή αρχή 10 ξανά: «δεν φόρτωσε η ύλη» ΔΕΝ επιτρέπεται να μοιάζει
+     με «η ενότητα δεν έχει σκελετό». Το λέει καθαρά — και το κουμπί της
+     ανάκλησης μένει, γιατί εκείνη διαβάζει τη δική της ύλη. */
+  if (!sk || !sk.points || !sk.points.length){
+    $hook.textContent = 'Ο σκελετός δεν φορτώθηκε';
+    $note.innerHTML = '<div class="ro-err">Λείπει το <code>greek-ear.js</code> ή το ' +
+                      '<code>istoria-data.js</code>, ή η ενότητα «' + roEsc(UNIT) + '». ' +
+                      'Η ταινία έπαιξε κανονικά· αυτό που λείπει είναι η επανάληψη στο τέλος. ' +
+                      'Το κουμπί της ανάκλησης δουλεύει.</div>';
+    $list.innerHTML = '';
+    return;
+  }
+
+  $hook.textContent = sk.hook || '';
+  $note.textContent = '';
+
+  var h = '';
+  for (var i = 0; i < sk.points.length; i++){
+    var p = sk.points[i];
+    h += '<li class="ro-item" style="--i:' + i + '">' +
+           '<span class="ro-n">' + (i + 1) + '</span>' +
+           '<span class="ro-t">' + roEsc(p.label) +
+             (p.anchor ? '<span class="ro-a">«' + roEsc(p.anchor) + '»</span>' : '') +
+           '</span>' +
+         '</li>';
+  }
+  $list.innerHTML = h;
+}
+
+/* Η κίνηση της λίστας είναι `animation ... both` με καθυστέρηση ανά σημείο.
+   Ξαναχτίζουμε στο άνοιγμα ώστε ο σκελετός να ΜΠΑΙΝΕΙ κάθε φορά, αντί να
+   βρίσκεται ήδη εκεί σαν στατική εικόνα. */
+function showOutro(){
+  buildOutro();
+  $ro.classList.add('on');
+  $frame.classList.add('ro-open');            /* το καρέ ψηλώνει όσο χρειάζεται */
+  document.body.classList.add('ro-open');     /* …και η σελίδα επιτρέπει κύλιση */
+  $ro.scrollTop = 0;
+}
+function hideOutro(){
+  $ro.classList.remove('on');
+  $frame.classList.remove('ro-open');
+  document.body.classList.remove('ro-open');
+}
+
+document.getElementById('roAgain').onclick = function(){ jump(0); start(); };
 
 /* ⚠️ Σταθερή αρχή 10: μια αποτυχία φόρτωσης ΔΕΝ μοιάζει με άδειο βίντεο. */
 fetch(MANIFEST_URL)

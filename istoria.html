@@ -1291,8 +1291,25 @@
     else if (document.getElementById('isLesson').classList.contains('on')) { hide('isLesson'); renderHome(); }
   });
 
+  /* ══ ⭐ ΒΑΘΥΣ ΣΥΝΔΕΣΜΟΣ — ΑΠΟ ΤΟ ΒΙΝΤΕΟ ΚΑΤΕΥΘΕΙΑΝ ΣΤΗΝ ΑΝΑΚΛΗΣΗ
+     Το istoria-video-demo.html τελειώνει με «Τώρα πες το» και στέλνει εδώ
+     ως `#recall:a1a`. Χωρίς αυτό ο σύνδεσμος θα άνοιγε την αρχική και θα
+     ζητούσε να ξαναβρεί μόνος του την ενότητα που μόλις είδε — ακριβώς τη
+     στιγμή που η ύλη είναι πιο ζεστή.
+     ⚠️ Άγνωστο id ΔΕΝ γίνεται σιωπηλή αρχική: το `go` σταματάει με `return`
+     και κανείς δεν μαθαίνει γιατί. Το λέμε. */
+  function fromHash(){
+    var h = (location.hash || '').replace(/^#/, '');
+    var m = /^(lesson|recall):([A-Za-z0-9_-]+)$/.exec(h);
+    if (!m) return;
+    if (!I.unit(m[2])){ toast('Δεν βρήκα ενότητα «' + m[2] + '». Έμεινες στην αρχική.'); return; }
+    go(m[1] + ':' + m[2]);
+  }
+  window.addEventListener('hashchange', fromHash);
+
   state = load();
   renderHome();
+  fromHash();
 
   /* ── cloud sync ───────────────────────────────────
      Από την πρώτη μέρα: μια σελίδα μελέτης που ζει μόνο στο κινητό χάνει τα

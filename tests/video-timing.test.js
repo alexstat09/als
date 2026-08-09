@@ -104,5 +104,55 @@ man.forEach(m => {
    είναι, ώστε αν κάποια γίνει πρόβλημα να περάσει σε fitStep(). */
 console.log('  note οι σκηνές που δεν αντέχουν 25% συντόμευση: ' + (tight.join(',') || 'καμία'));
 
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · ΤΟ ΤΕΛΟΣ — Ο ΣΚΕΛΕΤΟΣ ΚΑΙ «ΤΩΡΑ ΠΕΣ ΤΟ»
+
+   Η κάρτα του τέλους δείχνει τα ΙΔΙΑ 8 σημεία με τα οποία τον βαθμολογεί η
+   ανάκληση. Αν κάποτε αντιγραφούν μέσα στη σελίδα του βίντεο, οι δύο σελίδες
+   θα διδάσκουν διαφορετικά πράγματα και ΚΑΝΕΙΣ δεν θα το δει: η κάρτα θα
+   φαίνεται μια χαρά, απλώς λάθος. Γι' αυτό ελέγχουμε την ΠΗΓΗ, όχι την όψη.
+   ══════════════════════════════════════════════════════════════════════ */
+const ISTORIA = require(path.join(ROOT, 'istoria-data.js'));
+const unit = ISTORIA.unit(ctx.UNIT);
+
+is('η ταυτότητα ενότητας του βίντεο υπάρχει στην ύλη',
+   !!unit, 'το istoria-video-demo.html δείχνει σε «' + ctx.UNIT + '»');
+
+is('η ενότητα έχει σκελετό με σημεία',
+   !!(unit && unit.skeleton && unit.skeleton.points && unit.skeleton.points.length),
+   'χωρίς σημεία η κάρτα του τέλους είναι άδεια');
+
+/* ⭐ Η ΠΡΑΓΜΑΤΙΚΗ ΕΓΓΥΗΣΗ: κανένα σημείο δεν είναι γραμμένο μέσα στη σελίδα. */
+const copied = (unit && unit.skeleton ? unit.skeleton.points : [])
+  .map(p => p.label).filter(l => l && html.indexOf(l) >= 0);
+is('ο σκελετός ΔΕΝ είναι αντιγραμμένος μέσα στη σελίδα του βίντεο',
+   copied.length === 0, 'βρέθηκαν αυτούσια: ' + copied.join(' · '));
+
+/* Η σειρά φόρτωσης είναι φέρουσα: το istoria-data.js ΠΕΤΑΕΙ χωρίς το αυτί. */
+const iEar  = html.indexOf('src="greek-ear.js"');
+const iData = html.indexOf('src="istoria-data.js"');
+is('το greek-ear.js φορτώνει ΠΡΙΝ το istoria-data.js',
+   iEar >= 0 && iData >= 0 && iEar < iData,
+   'ear@' + iEar + ' data@' + iData + ' — χωρίς αυτό ο σκελετός δεν φορτώνει ποτέ');
+
+/* ── Ο σύνδεσμος «Τώρα πες το» πρέπει να ΑΝΟΙΓΕΙ κάτι ─────────────────
+   Παίρνουμε την ΑΛΗΘΙΝΗ έκφραση της istoria.html και της δίνουμε την
+   αλήθινή διεύθυνση που εκπέμπει το βίντεο. Δύο αρχεία, ένας έλεγχος. */
+const ist = fs.readFileSync(path.join(ROOT, 'istoria.html'), 'utf8');
+const lit = ist.match(/var m = (\/\^\(lesson\|recall\).*?\/)\.exec\(h\)/);
+is('η istoria.html αντιδρά σε βαθύ σύνδεσμο', !!lit && /hashchange/.test(ist),
+   'λείπει το fromHash ή ο hashchange');
+if (lit){
+  const rx = new Function('return ' + lit[1])();
+  const hash = 'recall:' + ctx.UNIT;
+  const hit = rx.exec(hash);
+  is('το «Τώρα πες το» οδηγεί σε ανάκληση που υπάρχει',
+     !!hit && !!ISTORIA.unit(hit[2]), 'το #' + hash + ' δεν αναγνωρίζεται');
+}
+
+is('το βίντεο χτίζει τον σύνδεσμο από την ίδια ταυτότητα ενότητας',
+   html.indexOf("'istoria.html#recall:' + UNIT") >= 0,
+   'ο σύνδεσμος είναι καρφωμένος και θα ξεμείνει στην a1a');
+
 console.log('\n' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
