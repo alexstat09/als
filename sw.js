@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v467";
+var CACHE = "als-v468";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -26,6 +26,10 @@ var CORE = [
      Χωρίς αυτά στο CORE, η arxaia.html φορτώνει offline και ο ΕΝΑΣ από τους
      δύο κόσμους της είναι άδειος — δηλαδή σιωπηλά μισή σελίδα. */
   'lesson-grade.js', 'arxaia-gnosto-data.js',
+  /* als-v468: η σφραγίδα που κρατάει την πρόοδο των σελίδων μελέτης ζωντανή
+     μέσα από το sync. Χωρίς αυτό στο CORE, μια offline εκκίνηση γράφει
+     ασφράγιστη πρόοδο και το επόμενο sync τη γυρίζει πίσω. */
+  'study-stamp.js',
   'water.js', 'topbar.js', 'launcher.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
   /* xp.js was here. Deleted als-v438 with "This week vs last", its last caller. */
   'insights.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'page-motion.js', 'aurora-bg.js', 'insights-engine.js', 'forecast-engine.js', 'chapters-engine.js', 'error-toast.js', 'als-dialog.js', 'nova-actions.js', 'gcal.js', 'als-sync-status.js',

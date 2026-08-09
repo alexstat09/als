@@ -25,6 +25,10 @@
        λέει την αιτία. -->
   <script src="lesson-grade.js"></script>
   <script src="arxaia-gnosto-data.js"></script>
+  <!-- ⭐ als-v468: και οι ΔΥΟ κόσμοι της σελίδας κρατούσαν την πρόοδό τους σε
+       χάρτη εγγραφών, που το sync.js συγχώνευε ανά πεδίο με «κερδίζει το
+       remote». Δες το κεφάλαιο του study-stamp.js. -->
+  <script src="study-stamp.js"></script>
   <script src="als-dialog.js" defer></script>
   <script>window.__pmAutoSel='.ar-hero,.ar-next,.ar-due,.ar-syl,.ar-miss';</script>
   <script src="page-motion.js" defer></script>
@@ -778,6 +782,24 @@
     if (!state.cells[k]) state.cells[k] = { r:0, w:0 };
     return state.cells[k];
   }
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468. Το `sync.js` συγχωνεύει τα φωλιασμένα
+     βαθμωτά με «κερδίζει το remote», οπότε κάθε ΔΕΥΤΕΡΗ ανάκληση μιας
+     σελίδας γύριζε πίσω στην παλιά της τιμή μέσα σε 400ms. Οι δύο χάρτες
+     εγγραφών εδώ είναι `pages` (η σκάλα) και `cells` (τα κελιά ρημάτων).
+     Όλο το γιατί ζει στο `study-stamp.js`. */
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(
+        function(){ return state ? [state.pages, state.cells] : []; },
+        /* Παλιές εγγραφές: η σελίδα ξέρει πότε δούλεψε πάνω της. Τα κελιά
+           δεν κρατούν χρόνο, οπότε παίρνουν 0 και σφραγίζονται στην πρώτη
+           πραγματική τους αλλαγή. */
+        function(i, k, rec){ return i === 0 ? (rec.last || rec.learnedAt || 0) : 0; }
+      )
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+
   function load(){
     var s;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
@@ -792,7 +814,12 @@
     b.heard = s.heard || {};
     return b;
   }
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ, το κλειδώνει test: κάθε
+     ανάγνωση από τον δίσκο ξανασπέρνει το αποτύπωμα, αλλιώς το επόμενο save
+     θα σφράγιζε σαν δική μας αλλαγή ό,τι μόλις ήρθε από το cloud. */
+  function reload(){ state = load(); STAMP.seed(); }
   function save(){
+    STAMP.stamp();
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
   }
@@ -1412,7 +1439,7 @@
   });
 
   /* ── εκκίνηση ─────────────────────────────────────── */
-  state = load();
+  reload();
   renderHome();
 
   (function(){
@@ -1425,7 +1452,7 @@
         onApplied:function(){
           /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
              συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
-          state = load();
+          reload();
           if (!sess) { try{ renderHome(); }catch(e){} }
         }
       });
@@ -1484,6 +1511,9 @@
     return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
   }
 
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468, ίδια ιστορία με τον ΑΓΝΩΣΤΟ κόσμο πιο πάνω και
+     με την Ιστορία: χωρίς `_ts` το sync.js επανέφερε κάθε δεύτερη ανάκληση.
+     Εδώ οι χάρτες είναι `units` και `els`. Δες το `study-stamp.js`. */
   function blank(){ return { v:1, units:{}, els:{}, days:[], heard:{} }; }
   function u(id){
     if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0, claimed:0 };
@@ -1509,7 +1539,23 @@
     b.heard = s.heard || {};
     return b;
   }
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(
+        function(){ return state ? [state.units, state.els] : []; },
+        function(i, k, rec){
+          if (i === 0) return rec.last || rec.learnedAt || 0;
+          var p = state.units[k.split(':')[0]];
+          return p ? (p.last || p.learnedAt || 0) : 0;
+        }
+      )
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ, το κλειδώνει test. */
+  function reload(){ state = load(); STAMP.seed(); }
   function save(){
+    STAMP.stamp();
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
   }
@@ -2420,7 +2466,7 @@
   });
 
   document.body.style.overflow = 'hidden';   /* η πόρτα είναι ανοιχτή στο load */
-  if (G){ state = load(); renderHome(); }
+  if (G){ reload(); renderHome(); }
   paintDoorStatus();
 
   /* ── cloud sync ───────────────────────────────────
@@ -2439,7 +2485,7 @@
         onApplied:function(){
           /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
              συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
-          state = load();
+          reload();
           if (!document.querySelector('.ar-view.on')){ try{ renderHome(); }catch(e){} }
         }
       });

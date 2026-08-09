@@ -159,6 +159,12 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   silently undoes itself. `ALSSync.drop(key, id)` forces one explicitly.
 - `sync.js` merges any object child named **`logs`** with `Math.max`, so a
   counter cannot decrease unless every write stamps `_ts`.
+- ⭐ **At a SCALAR leaf, the merge keeps the REMOTE value.** That is what makes
+  it converge, and it is why a store shaped `{units: {id: {…scalars}}}` cannot
+  hold a local edit at all: the next pull puts the old cloud copy back and
+  pushes the revert up. Give every record in a nested map a `_ts` (see hard
+  constraint 31 and `study-stamp.js`) so `mergeValue`/`mergeObject` switch to
+  per-object last-write-wins. Arrays of `{id, ts}` already get this for free.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
   and is silently **unrestorable**. `smoke-test.sh` enforces this.
 - Device-local by design (never synced, excluded from the vault): `gcal:*`,
@@ -189,7 +195,7 @@ ships something that is confidently wrong on his screen while every test is gree
 Each one was paid for once already.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v461`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v468`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -552,6 +558,45 @@ Each one was paid for once already.
       read its parameters **from the thing it measures**, and assert the
       INTENT (`camTgt`) rather than a snapshot. This is constraint 19's family:
       before believing a failure, check the instrument.
+
+31. **A RECORD STORED IN A NESTED OBJECT MAP MUST CARRY `_ts`, OR THE CLOUD
+    QUIETLY UNDOES EVERY EDIT AFTER THE FIRST.** `sync.js`'s `mergeObject`
+    recurses into nested objects and, at the leaves, resolves a **scalar**
+    conflict with `out[key] = rv` — remote wins, to converge. So a store
+    shaped `{ units: { a1a: { due, reviews, best, … } } }` has **no local
+    edit that survives**: the page writes, `schedulePush` fires 400ms later,
+    the pull merges the *old* cloud copy back over it, `applyLocal` writes
+    the reverted value to localStorage, and the same cycle pushes the revert
+    upstream. Deterministic, not a race. Alex recited a whole chapter,
+    Ιστορία said *«τέλεια, ξανά σε 10 μέρες»*, and the home screen said
+    *«έληξε χθες»* before he could put the phone down.
+    - **It hid for weeks because the FIRST write of any record works.** A key
+      absent from the cloud takes the local branch (`rv === undefined`). Only
+      the *second* recital of a unit is reverted, so the page looked correct
+      the day it shipped and broke on the day it mattered.
+    - ⚠️ Worse than reverting: the merge is **per field**, so a record could
+      end up with `reviews` from one generation and `best` from another.
+      `due`/`reviews`/`best`/`runs` are one measurement, not four numbers.
+    - **The mechanism already existed and nothing used it.** `mergeValue` and
+      `mergeObject` both honour an explicit `_ts` as per-object LWW. Λατινικά
+      survived by accident — its cells are an ARRAY of `{id, ts}` and
+      `mergeArray` keeps the newer. Same law, two shapes, one of them wired.
+    - ⭐ **`study-stamp.js` stamps in `save()`, not at the twelve places that
+      write.** A stamp sprinkled per assignment is one someone forgets, and
+      forgetting is invisible: right screen, right localStorage, wrong value
+      400ms later. It diffs each record against its last known signature and
+      stamps only what actually changed. Three defences, all load-bearing:
+      an **all-falsy record never gets stamped** (a `u(id)` shell created by
+      a *render* would otherwise beat the real cloud record — constraint 10
+      with a write on the end, the `nut:streak` bug again); **seeding is not
+      stamping** (a merge that just arrived must not be re-stamped as ours);
+      and **legacy records adopt their real `last`, never `now`** (otherwise
+      "whichever device opened the page last wins").
+    - `tests/study-sync-persist.test.js` drives the **real** `sync.js` and the
+      **real** `study-stamp.js` in a vm. Reverting the fix fails 11 of 32
+      assertions, including his exact scene. It also locks the wiring
+      statically: a bare `state = load()` outside `reload()` breaks the build,
+      because that one is silent too.
 
 ---
 

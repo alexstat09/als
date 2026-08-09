@@ -19,6 +19,9 @@
   <script src="vendor/supabase.min.js"></script>
   <script src="sync.js" defer></script>
   <script src="tonos-engine.js"></script>
+  <!-- ⭐ als-v468: τα κελιά είναι χάρτης εγγραφών, που το sync.js συγχώνευε
+       ανά πεδίο με «κερδίζει το remote». Δες το study-stamp.js. -->
+  <script src="study-stamp.js"></script>
   <script src="als-dialog.js" defer></script>
   <script>window.__pmAutoSel='.tn-hero,.tn-today,.tn-map,.tn-rules,.tn-words,.tn-foot';</script>
   <script src="page-motion.js" defer></script>
@@ -429,7 +432,25 @@
     base.days = s.days || [];
     return base;
   }
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468. Χωρίς `_ts` το `sync.js` κατεβαίνει μέσα στα
+     κελιά και για κάθε βαθμωτό πεδίο κρατάει το remote, οπότε κάθε σωστή
+     απάντηση πάνω σε κελί που ΥΠΗΡΧΕ ήδη στο cloud γύριζε πίσω μέσα σε
+     400ms: το `streak` και το `due` δεν προχωρούσαν ποτέ. Ένας χάρτης εδώ,
+     τα `cells`. Όλο το γιατί ζει στο `study-stamp.js`.
+     ⚠️ Το `blank()` γεννάει ΟΛΑ τα κελιά μηδενικά, οπότε ο κανόνας «άδεια
+     εγγραφή δεν παίρνει σφραγίδα» δεν είναι θεωρητικός εδώ: χωρίς αυτόν μια
+     φρέσκια συσκευή θα έστελνε 40 μηδενικά με σημερινή σφραγίδα και θα
+     έσβηνε την πρόοδό του. */
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(function(){ return state ? [state.cells] : []; })
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ, το κλειδώνει test. */
+  function reload(){ state = load(); STAMP.seed(); }
   function save(){
+    STAMP.stamp();
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
   }
@@ -690,7 +711,7 @@
   });
   document.getElementById('tnMore').addEventListener('click', function(){ listAll = !listAll; renderWords(); });
 
-  state = load();
+  reload();
   render();
 
   /* ── cloud sync ───────────────────────────────────── */
@@ -704,7 +725,7 @@
         onApplied:function(){
           /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
              συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
-          state = load();
+          reload();
           if (!sess){ try{ render(); }catch(e){} }
         }
       });

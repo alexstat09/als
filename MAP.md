@@ -103,6 +103,13 @@ colour rule: **accent only when something is due**, faint otherwise.
   BOTH or neither.
 - **Script order in the head is load-bearing and tested**: `greek-ear.js` →
   `lesson-grade.js` → `arxaia-gnosto-data.js`.
+- ⭐⭐ **`study-stamp.js`** (als-v468) is what keeps a repeat recital from being
+  undone by the next sync. Every study page whose progress lives in a nested
+  **object map** (`ist:v1` units/els · `arx:v1` pages/cells · `arx:gn`
+  units/els · `ton:v1` cells) wires it: `reload()` seeds, `save()` stamps. See
+  hard constraint 31 — without it `sync.js` resolves each scalar leaf in favour
+  of the cloud and every edit after a record's first reverts in ~400ms.
+  Λατινικά needs nothing: its cells are an array of `{id, ts}`.
 - ⚠️ `home-live.js`'s `arxaia.html` tile reads **both** keys now (constraint 23) —
   it read only `arx:v1`, so a term spent on ΓΝΩΣΤΟ alone would have left Home
   saying «ξεκίνα» for ever. All locals stay `arx*` prefixed (constraint 14).

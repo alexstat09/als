@@ -18,6 +18,9 @@
   <script src="sync.js" defer></script>
   <script src="greek-ear.js"></script>
   <script src="istoria-data.js"></script>
+  <!-- ⭐ als-v468: χωρίς αυτό η επανάληψη γυρνάει πίσω 400ms μετά το «τέλεια».
+       Δες το κεφάλαιο του study-stamp.js — δεν είναι προαιρετικό. -->
+  <script src="study-stamp.js"></script>
   <script src="als-dialog.js" defer></script>
   <script>window.__pmAutoSel='.is-hero,.is-next,.is-due,.is-syl,.is-tl,.is-miss';</script>
   <script src="page-motion.js" defer></script>
@@ -490,6 +493,31 @@
     if (!state.els[k]) state.els[k] = { r:0, w:0 };
     return state.els[k];
   }
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ. Χωρίς αυτήν το `sync.js` κατεβαίνει μέσα στο `units` και
+     για κάθε ΒΑΘΜΩΤΟ πεδίο κρατάει το remote, οπότε η επανάληψη που μόλις
+     έγινε γύριζε στην παλιά της τιμή μέσα σε 400ms: «τέλεια, σε 10 μέρες»
+     στην οθόνη και «έληξε χθες» μόλις γύριζε πίσω. Όλο το γιατί ζει στο
+     `study-stamp.js`. Οι δύο χάρτες εγγραφών είναι `units` και `els`. */
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(
+        function(){ return state ? [state.units, state.els] : []; },
+        /* Παλιές εγγραφές (γραμμένες πριν την als-v468) παίρνουν την ώρα της
+           τελευταίας ΑΛΗΘΙΝΗΣ δραστηριότητας. Τα στοιχεία δανείζονται το
+           `last` της ενότητάς τους: το κλειδί τους ΕΙΝΑΙ `unitId:σημείο:θέση`. */
+        function(i, k, rec){
+          if (i === 0) return rec.last || rec.learnedAt || 0;
+          var p = state.units[k.split(':')[0]];
+          return p ? (p.last || p.learnedAt || 0) : 0;
+        }
+      )
+    /* Σταθερή αρχή: ένας φρουρός που λείπει δεν σωπαίνει. Αν το αρχείο δεν
+       φόρτωσε, η πρόοδος σώζεται τοπικά αλλά ο συγχρονισμός μπορεί να την
+       επαναφέρει, και αυτό πρέπει να το ΔΕΙ. */
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+
   function load(){
     var s;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
@@ -502,7 +530,13 @@
     b.heard = s.heard || {};
     return b;
   }
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ — το κλειδώνει test. Κάθε
+     ανάγνωση από το δίσκο πρέπει να ξανασπείρει το αποτύπωμα, αλλιώς το
+     επόμενο save θα σφράγιζε σαν «δική μου αλλαγή» ό,τι μόλις ήρθε από το
+     cloud, και μια παλιά συσκευή θα νικούσε μια νεότερη. */
+  function reload(){ state = load(); STAMP.seed(); }
   function save(){
+    STAMP.stamp();
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
   }
@@ -1307,7 +1341,7 @@
   }
   window.addEventListener('hashchange', fromHash);
 
-  state = load();
+  reload();
   renderHome();
   fromHash();
 
@@ -1325,7 +1359,7 @@
         onApplied:function(){
           /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
              συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
-          state = load();
+          reload();
           if (!document.querySelector('.is-view.on')){ try{ renderHome(); }catch(e){} }
         }
       });
