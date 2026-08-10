@@ -59,7 +59,7 @@ ok('a peek 403 never falls through to the runner path',
 // ── 2. behaviour ──────────────────────────────────────────────────────────
 function build(opts) {
   opts = opts || {};
-  var state = { peeked: 0, synced: 0, drained: 0, rendered: 0, banners: [], fails: [], initCalls: [] };
+  var state = { peeked: 0, synced: 0, drained: 0, rendered: 0, banners: [], icuBanners: [], fails: [], initCalls: [] };
   var sandbox = {
     console: { warn: function () {}, log: function () {} },
     setTimeout: setTimeout, clearTimeout: clearTimeout, setInterval: function () {},
@@ -79,6 +79,7 @@ function build(opts) {
       return { auth: { getSession: function () { return Promise.resolve({ data: { session: opts.session } }); } } };
     },
     icuFail: function (codeName, msg) { state.fails.push(codeName); },
+    icuBanner: function (m) { state.icuBanners.push(m); },
     icuSync: function () { state.synced++; },
     icuDrainInbox: function () { state.drained++; return Promise.resolve(); },
     render: function () { state.rendered++; },
@@ -88,7 +89,14 @@ function build(opts) {
   sandbox.window = {
     addEventListener: function () {},
     __RUN_PEEK_INSTALL: function () { sandbox.__peekStore = {}; sandbox.window.__RUN_PEEK = true; },
-    initCloudSync: function (cfg) { state.initCalls.push(cfg); }
+    // A healthy device: vendor/supabase.min.js has executed. startCloudSync now
+    // waits for THIS as well as for initCloudSync, because sync.js returns
+    // silently without it — which used to leave the page with no engine, no
+    // deletion tombstones and no push for its whole life.
+    supabase: opts.noSupabase ? undefined : { createClient: function () { return {}; } },
+    // Mirror what sync.js really does: ALSSync is published synchronously, and
+    // startCloudSync reads it back to confirm the call actually took.
+    initCloudSync: function (cfg) { state.initCalls.push(cfg); sandbox.window.ALSSync = { flush: function () {}, drop: function () {} }; }
   };
   if (opts.alsAuthUser) sandbox.window.ALSAuth = { user: { id: opts.alsAuthUser } };
   sandbox.self = sandbox.window;
@@ -184,6 +192,25 @@ var HIS = { user: { id: OWNER }, access_token: 'HIS.JWT' };
   await twice.api.resolve(); await twice.api.resolve();
   ok('the engine is not started a second time', twice.state.initCalls.length === 1);
   ok('the inbox is not re-synced from the resolver', twice.state.synced === 1);
+  ok('a healthy start says nothing about sync', twice.state.icuBanners.length === 0);
+
+  /* ── the engine must not be able to fail to start SILENTLY ──────────────
+     sync.js's very first line returns when window.supabase is undefined, and
+     startCloudSync used to set __syncStarted and call it anyway. One slow
+     vendor script then left the page with no setItem interception — so no
+     deletion tombstones — and every edit local-only until the next open
+     reverted it. That is the same class of fault as the resurrected session
+     this suite's sibling (run-plan-delete) pins. */
+  console.log('\n  vendor/supabase.min.js never executed');
+  var nosb = build({ session: null, alsAuthUser: RUNNER, noSupabase: true });
+  // collapse the 200ms poll so the ~20s give-up happens inside the test
+  var ticks = 0;
+  nosb.sandbox.setTimeout = function (fn) { if (ticks++ < 400) fn(); return 0; };
+  await nosb.api.resolve();
+  await new Promise(function (r) { setTimeout(r, 20); });
+  ok('the engine is never started', nosb.state.initCalls.length === 0);
+  ok('and it does NOT fail silently', nosb.state.icuBanners.length === 1,
+    JSON.stringify(nosb.state.icuBanners[0] || '').slice(0, 60));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
   process.exit(fail ? 1 : 0);

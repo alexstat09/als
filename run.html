@@ -1225,6 +1225,77 @@
         return false; } return true; }
     function flush(){ if(window.ALSSync&&window.ALSSync.flush) window.ALSSync.flush(); }
 
+    /* ── DELETION TOMBSTONES THAT DO NOT NEED THE SYNC ENGINE TO EXIST YET ──
+       ⚠️⚠️ THIS IS WHY A DELETED SESSION CAME BACK A SECOND LATER, and it was
+       never a merge bug. sync.js stamps deletion tombstones from its
+       localStorage.setItem interceptor, and that interceptor only exists once
+       initCloudSync has run — which waits on the session id (0.5–3s on a cold
+       PWA start, up to 12s). But this page paints a FULLY INTERACTIVE plan at
+       boot, long before that. So an ✕ tapped in those first seconds filtered
+       the array, saved, and repainted — with no tombstone anywhere — and then
+       the engine's first pull unioned the session straight back by id
+       (sync.js's mergeArray) and pushed the resurrection up to the cloud, where
+       it became permanent. Same window strands a delete made while signed out.
+
+       The fix is not to block her: it is to stamp the tombstone OURSELVES, into
+       the exact key sync.js reads (`__synctomb__` + appKey). Whenever the
+       engine does start, buildMerged() unions this in and the delete is
+       honoured — whether that is 200ms or two days later.
+
+       Mirrors sync.js's rule verbatim and deliberately (hard constraint 23):
+       T = max(now, item.ts + 1), so the tombstone DOMINATES the item's own
+       stamp and a future-dated ts (device clock skew) cannot outlive it. Never
+       downgrade an existing tombstone — keep the larger, like ALSSync.drop.
+       ⚠️ TOMB_KEY is not a `run:` key, so it is invisible to lsGet/lsSet's peek
+       shadow AND to sync.js's own matches() — no recursion, no push loop. */
+    var TOMB_KEY='__synctomb__run';           // === '__synctomb__' + appKey in sync.js
+    function runDrop(key,id,itemTs){
+      if(__peekStore) return;                 // read-only window: never write to his disk
+      if(id==null) return;
+      try{
+        var t=JSON.parse(localStorage.getItem(TOMB_KEY)||'{}');
+        if(!t||typeof t!=='object'||Array.isArray(t)) t={};
+        var node=t[key];
+        if(!node||typeof node!=='object'||Array.isArray(node)){ node={}; t[key]=node; }
+        var k='id:'+id, cur=(typeof node[k]==='number')?node[k]:0;
+        node[k]=Math.max(cur, Date.now(), (+itemTs||0)+1);
+        localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+      }catch(e){}
+    }
+    /* The same thing for a key removed from an OBJECT MAP (run:shoePics), which
+       sync.js tombstones under the raw key rather than an `id:` prefix. Mirrored,
+       not improved: two ends of one protocol that diverge are two protocols. */
+    function runDropKey(key,mapKey){
+      if(__peekStore) return;
+      if(mapKey==null) return;
+      try{
+        var t=JSON.parse(localStorage.getItem(TOMB_KEY)||'{}');
+        if(!t||typeof t!=='object'||Array.isArray(t)) t={};
+        var node=t[key];
+        if(!node||typeof node!=='object'||Array.isArray(node)){ node={}; t[key]=node; }
+        var cur=(typeof node[mapKey]==='number')?node[mapKey]:0;
+        node[mapKey]=Math.max(cur, Date.now());
+        localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+      }catch(e){}
+    }
+    /* Peek is Alex's READ-ONLY window into her app: every run:* write dies in
+       __peekStore. Painting "deleted ✓" over a write that goes nowhere is the
+       same lie as a silent-empty read — say so instead.
+       ⚠️ NOT the inline toast by default. #asToast lives inside #addPane and
+       #planToast inside #pastePane, and one of those two is always hidden — so
+       a refusal painted there is a SILENT refusal, which is the exact failure
+       this guard exists to prevent. ALSToast floats above the page (topbar.js
+       injects error-toast.js); the element toast is used only when it is really
+       on screen, and icuBanner draws its own element as the last resort. */
+    function peekBlocked(toastId){
+      if(!__peekStore) return false;
+      var msg='Read-only · η εφαρμογή είναι της Χριστίνας. Τίποτα δεν αποθηκεύτηκε.';
+      try{ if(window.ALSToast){ ALSToast.show(msg,'error'); return true; } }catch(e){}
+      try{ var t=$(toastId); if(t && t.offsetParent!==null){ toast(toastId,msg); return true; } }catch(e){}
+      try{ icuBanner(msg); }catch(e){}
+      return true;
+    }
+
     /* ── date helpers (local, Monday-first weeks) ── */
     function dkOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
     function todayDk(){ return dkOf(new Date()); }
@@ -3506,7 +3577,10 @@
     }
     function clearShoePhoto(sid){
       if(!shoePics[sid]) return;
-      delete shoePics[sid]; persist(K_SPICS,shoePics); flush(); render(); toast('shoeToast','Η φωτογραφία αφαιρέθηκε');
+      if(peekBlocked('shoeToast')) return;
+      delete shoePics[sid];
+      if(persist(K_SPICS,shoePics)) runDropKey(K_SPICS,sid);   // a map key, not an {id} row
+      flush(); render(); toast('shoeToast','Η φωτογραφία αφαιρέθηκε');
     }
 
     /* ── one GL context, shared by every shoe ──────────────────────────────
@@ -3754,7 +3828,7 @@
       catch(e){ finishCard(); }
     }
 
-    function saveShoes(){ persist(K_SHOES,shoes); flush(); }
+    function saveShoes(){ var ok=persist(K_SHOES,shoes); flush(); return ok; }
     function saveKnee(){ persist(K_KNEE,kneeLog); flush(); }
     async function addShoe(){
       var name; try{ if(window.ALSPrompt) name=await ALSPrompt({title:'Νέο παπούτσι · new shoe', placeholder:'π.χ. Hoka Bondi 9', confirmText:'Προσθήκη'}); else name=window.prompt('Όνομα παπουτσιού;'); }catch(e){ name=window.prompt('Όνομα παπουτσιού;'); }
@@ -3783,10 +3857,12 @@
     function retireShoe(id,val){ var s=shoes.filter(function(x){return x.id===id;})[0]; if(!s) return; s.retired=val; if(val) s.def=false; s.ts=Date.now(); saveShoes(); render();
       if(val && shoeKm(id)>=60) toast('shoeToast','Πάτα «Κάρτα ✧» για ενθύμιο'); }
     async function delShoe(id){ var s=shoes.filter(function(x){return x.id===id;})[0]; if(!s) return;
+      if(peekBlocked('shoeToast')) return;
       if(window.ALSConfirm){ if(!(await ALSConfirm({title:'Διαγραφή παπουτσιού;',message:'Τα τρεξίματα μένουν, φεύγει μόνο η ετικέτα.',confirmText:'Διαγραφή',danger:true}))) return; }
       shoes=shoes.filter(function(x){return x.id!==id;});
-      if(shoePics[id]){ delete shoePics[id]; persist(K_SPICS,shoePics); }
-      saveShoes(); render();
+      if(shoePics[id]){ delete shoePics[id]; if(persist(K_SPICS,shoePics)) runDropKey(K_SPICS,id); }
+      if(saveShoes()) runDrop(K_SHOES,id,s.ts);
+      render();
     }
     function logKnee(level){ var tdk=todayDk(), e=kneeOn(tdk);
       if(e){ e.level=level; e.ts=Date.now(); } else kneeLog.push({ id:uid(), date:tdk, level:level, ts:Date.now() });
@@ -3948,6 +4024,7 @@
     }
     function addSession(){
       var dk=$('asDate').value; if(!dk){ toast('asToast','Pick a day'); return; }
+      if(peekBlocked('asToast')) return;
       if(editingId){
         var ex=plan.find(function(x){return x.id===editingId;});
         if(ex){ ex.date=dk; ex.type=$('asType').value; ex.struct=$('asStruct').value.trim()||$('asType').value;
@@ -3963,6 +4040,7 @@
     }
     function doParse(){
       var txt=$('planText').value; if(!txt.trim()){ toast('planToast','Paste the plan first'); return; }
+      if(peekBlocked('planToast')) return;
       var res=parsePlanV2(txt);
       if(!res.sessions.length){ toast('planToast','Couldn’t find any days · Δεν βρέθηκαν μέρες'); return; }
       var ws=weekStart(new Date()), now=Date.now();
@@ -3976,8 +4054,15 @@
       });
       // upsert only the days this paste covers — re-pasting Mon+Tue must NOT wipe Wed–Sun
       var covered={}; parsed.forEach(function(o){ covered[o.date]=1; });
+      /* ⚠️ THIS IS A BULK DELETE AND IT NEEDS TOMBSTONES LIKE ANY OTHER. Superseding
+         the old rows only removes them HERE; run:plan merges by union of id, so
+         without a tombstone the cloud re-adds every one of them on the next pull
+         and she ends up with the programme twice. That is how the duplicates this
+         fix exists for were made in the first place. */
+      var superseded=plan.filter(function(s){ return s.src==='plan' && covered[s.date]; });
       plan=plan.filter(function(s){ return !(s.src==='plan' && covered[s.date]); });
-      plan=plan.concat(parsed); persist(K_PLAN,plan);
+      plan=plan.concat(parsed);
+      if(persist(K_PLAN,plan)) superseded.forEach(function(s){ runDrop(K_PLAN,s.id,s.ts); });
       if(res.preamble){ prof.weekNote=res.preamble; saveProf(); } // only overwrite the coach note when this paste actually carries one
       flush();
       toast('planToast','Read '+parsed.length+' day'+(parsed.length>1?'s':'')+' ✓ Διαβάστηκαν'); $('planText').value=''; render();
@@ -4132,11 +4217,20 @@
       toast('lgToast','Καταγράφηκε ✓ Run saved');
       $('lgKm').value=''; $('lgTime').value=''; $('lgNote').value=''; $('lgRpe').value=''; render();
     }
+    /* runDrop AFTER a confirmed persist, never before: a failed write (storage
+       full) leaves the item in place, and a tombstone over a live item would
+       delete something she never removed. */
     async function delRun(id){ var r=logs.find(function(x){return x.id===id;}); if(!r) return;
+      if(peekBlocked('lgToast')) return;
       if(window.ALSConfirm){ if(!(await ALSConfirm({title:'Delete run?',message:'Remove this '+(r.distanceKm)+'km run?',confirmText:'Delete',danger:true}))) return; }
-      logs=logs.filter(function(x){return x.id!==id;}); persist(K_LOGS,logs); flush(); render(); }
+      logs=logs.filter(function(x){return x.id!==id;});
+      if(persist(K_LOGS,logs)) runDrop(K_LOGS,id,r.ts);
+      flush(); render(); }
     async function delSess(id){ var s=plan.find(function(x){return x.id===id;}); if(!s) return;
-      plan=plan.filter(function(x){return x.id!==id;}); if(movingId===id) movingId=null; persist(K_PLAN,plan); flush(); render(); }
+      if(peekBlocked('asToast')) return;
+      plan=plan.filter(function(x){return x.id!==id;}); if(movingId===id) movingId=null;
+      if(persist(K_PLAN,plan)) runDrop(K_PLAN,id,s.ts);
+      flush(); render(); }
     function applyMove(list, id, targetDk, now){
       var s=null; for(var i=0;i<list.length;i++) if(list[i].id===id) s=list[i];
       if(!s) return list; var fromDk=s.date; if(fromDk===targetDk) return list;
@@ -4551,8 +4645,33 @@
     var __syncStarted = false;
     function startCloudSync(){
       if (__syncStarted) return; __syncStarted = true;
-      (function start(){ if(typeof window.initCloudSync!=='function'){ setTimeout(start,200); return; }
+      var tries = 0;
+      function noEngine(why){
+        try{ console.warn('[run] cloud sync never started — ' + why); }catch(e){}
+        icuBanner('Ο συγχρονισμός δεν ξεκίνησε — ό,τι αλλάξεις μένει μόνο σε αυτό το τηλέφωνο. Κλείσε και άνοιξε ξανά την εφαρμογή.');
+      }
+      (function start(){
+        /* ⚠️ initCloudSync RETURNS SILENTLY when `window.supabase` is undefined
+           (sync.js's first line), and this only ever waited for initCloudSync
+           ITSELF. So a vendor script that had not executed yet left the page with
+           no engine for the rest of its life: no setItem interception, therefore
+           no deletion tombstones, no push, and every edit local-only until the
+           next open reverted it. Wait for the LIBRARY too, not just the function.
+
+           ⚠️ The wait is on the PRECONDITIONS, and initCloudSync is then called
+           exactly once. Retrying the CALL would be worse than the bug: a second
+           successful call chains a second localStorage.setItem override and a
+           second push loop onto the same page. */
+        if(typeof window.initCloudSync!=='function' || !window.supabase){
+          if(tries++ < 100){ setTimeout(start,200); return; }   // ~20s, then say so
+          noEngine('supabase client unavailable');
+          return;
+        }
         window.initCloudSync({ appKey:'run', syncedKeys:[K_PROF,K_PLAN,K_LOGS,K_SHIFT,K_STR,K_SHOES,K_KNEE,K_SPICS], onApplied:function(){ render(); } });
+        /* ALSSync is published SYNCHRONOUSLY by initCloudSync, so its absence
+           means the call bailed out on something a retry cannot fix. Say so
+           rather than leaving the page quietly unsynced. */
+        if(!window.ALSSync) noEngine('initCloudSync bailed out');
       })();
     }
     var __modeResolved = null;
