@@ -195,7 +195,7 @@ ships something that is confidently wrong on his screen while every test is gree
 Each one was paid for once already.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v468`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v469`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -598,6 +598,37 @@ Each one was paid for once already.
       statically: a bare `state = load()` outside `reload()` breaks the build,
       because that one is silent too.
 
+32. **A PAGE THAT PAINTS AN EDITABLE UI BEFORE ITS SYNC ENGINE EXISTS HAS A
+    WINDOW IN WHICH EVERY DELETE IS UNDONE.** Constraint 11 says a delete must go
+    through the page's normal save so `sync.js` can stamp a tombstone. This is the
+    hole underneath it: that interception **only exists once `initCloudSync` has
+    run**, and `run.html` waits on the session id first — 0.5–3s on a cold PWA
+    start, up to 12s — while rendering a fully interactive plan at boot. Chrissie's
+    coach programme was in her app twice; she tapped ✕ and the session **came back
+    a second later**, every time, because the delete left no tombstone, the first
+    pull unioned it back by id, and the push then made the resurrection the
+    cloud's truth (als-v469).
+    - ⭐ **The fix is not to block the user, it is to stamp the tombstone
+      yourself.** `run.html`'s `runDrop()`/`runDropKey()` write into the exact key
+      the engine reads (`'__synctomb__' + appKey`), so the delete is honoured
+      whenever the engine starts — 200ms later or two days later. **Mirror the
+      rule verbatim, never improve it** (constraint 23): `T = max(now, ts + 1)`,
+      arrays keyed `id:<id>`, object maps keyed by the raw key.
+    - **Stamp only after a CONFIRMED `persist()`.** A tombstone over an item that
+      is still there (storage full) deletes something the user kept.
+    - ⚠️ **Grep for the BULK deletes too, not just the ✕.** `doParse` supersedes
+      the previous week on every re-paste; without tombstones the cloud re-adds
+      all of it, which is how the duplicates were made in the first place.
+    - ⚠️ **`initCloudSync` RETURNS SILENTLY when `window.supabase` is undefined**,
+      and `startCloudSync` set `__syncStarted` before calling it — so one slow
+      vendor script left the page with no engine for its whole life. Wait for the
+      **preconditions**, call **once** (a second successful call chains a second
+      `setItem` override), and say so on screen if it never starts.
+    - ⭐ **Only a driven browser proved it.** 35 suites were green while the ✕ was
+      being undone on her phone. `tests/run-plan-delete.test.js` drives the real
+      `sync.js` and the real helpers sliced out of `run.html`; reverting the fix
+      fails 11 of 37, including her exact scene.
+
 ---
 
 ## 4 · What is built
@@ -815,7 +846,32 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
-**HEAD is `als-v466` — ΤΟ ΒΙΝΤΕΟ ΤΗΣ ΙΣΤΟΡΙΑΣ** (2026-08-08, on `main`, pushed;
+**HEAD is `als-v469` — ΤΟ ΣΒΗΣΙΜΟ ΜΕΝΕΙ ΣΒΗΣΜΕΝΟ** (2026-08-10, `1fea86f` on
+`main`, pushed and live; **36 suites** + smoke green;
+`tests/run-plan-delete.test.js` = 37 assertions).
+Alex: *"she accidentally put her programme of her coach 2 times… when i tried
+for her to press the X button to delete the extras it just came back a second
+after."* Both halves of that sentence were the same bug, and **the permanent
+rule is hard constraint 32 — read it instead of re-deriving this.**
+
+- The ✕ worked; it just left **no tombstone**, because `sync.js`'s `setItem`
+  interception does not exist until `initCloudSync` has run, and `run.html`
+  paints an interactive plan at boot while still waiting on the session id.
+  The first pull unioned the session back by id and pushed the resurrection up.
+- Fixed by stamping the tombstone from the page itself (`runDrop`/`runDropKey`)
+  into `'__synctomb__' + appKey`, on **every** deletion — `delSess`, `delRun`,
+  `delShoe`, `clearShoePhoto`, and `doParse`'s bulk supersede, which is what
+  made the duplicates.
+- `startCloudSync` can no longer fail silently, and `peekBlocked()` stops Alex's
+  read-only window reporting saves that die in `__peekStore`.
+- 🔴 **Unproven on HER phone.** Driven in real Chrome (4 sessions, ✕ with the
+  engine off → tombstone written; peek → refused, 3/3 rows stay) and pinned by
+  the new suite. **She needs a full PWA reopen for `als-v469`**, and then the
+  duplicates can be cleared normally — the ✕ sticks now whenever it is tapped.
+
+---
+
+**Before that — `als-v466` — ΤΟ ΒΙΝΤΕΟ ΤΗΣ ΙΣΤΟΡΙΑΣ** (2026-08-08, on `main`, pushed;
 **35 suites** + smoke green). Πέντε deploys σε μία συνεδρία: v462 το πρώτο
 βίντεο + ο αληθινός χάρτης · v463 ο χάρτης μπήκε ΜΕΣΑ με κάμερα · v464 ένα
 καρέ που δεν κόβει + ήχος · v465 ο θίασος και ο ρυθμός · v466 η φωνή του Αλεξ.
