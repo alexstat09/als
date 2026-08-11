@@ -12,10 +12,15 @@
        Συμπεριλαμβάνεται ο ΠΑΛΙΟΣ ΠΙΝΑΚΑΣ του `arx:v1` — το σχήμα άλλαξε στην
        als-v458 και τα δύο ζουν ακόμη σε συσκευές.
 
-   2 · Η ΤΑΥΤΟΤΗΤΑ. Τα τέσσερα πλακίδια μελέτης του Home συγκρίνονται με
-       `git show HEAD:home-live.js` πάνω στα ΙΔΙΑ δεδομένα. Ένα refactor που
-       αλλάζει σιωπηλά μια τιμή που ήδη βγαίνει στην οθόνη είναι regression με
-       ρούχα καθαρίσματος, και καμία πράσινη βεβαίωση δεν το βλέπει.
+   2 · Η ΤΑΥΤΟΤΗΤΑ. Τα τέσσερα πλακίδια μελέτης του Home συγκρίνονται με την
+       ΤΕΛΕΥΤΑΙΑ ΑΝΑΘΕΩΡΗΣΗ ΠΟΥ ΕΙΧΕ ΤΟΥΣ ΠΑΛΙΟΥΣ ΑΝΑΓΝΩΣΤΕΣ, πάνω στα ΙΔΙΑ
+       δεδομένα. Ένα refactor που αλλάζει σιωπηλά μια τιμή που ήδη βγαίνει στην
+       οθόνη είναι regression με ρούχα καθαρίσματος, και καμία πράσινη βεβαίωση
+       δεν το βλέπει.
+       ⚠️ ΟΧΙ ΤΟ `HEAD`. Η πρώτη γραφή διάβαζε `git show HEAD:home-live.js` και
+       κοκκίνισε τη στιγμή που έγινε commit το refactor: το «πριν» γίνεται το
+       «μετά» και η απόδειξη συγκρίνει τον κώδικα με τον εαυτό του. Η αναφορά
+       βρίσκεται μόνη της, ώστε ένα rebase να μην τη σκοτώσει σιωπηλά.
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 const fs = require('fs');
@@ -210,21 +215,40 @@ const SCENES = {
 };
 const STUDY_TILES = ['latinika.html', 'tonos.html', 'istoria.html', 'arxaia.html'];
 
-let head = null;
-try {
-  head = execFileSync('git', ['show', 'HEAD:home-live.js'], { cwd: ALS, encoding: 'utf8' });
-} catch (e) { head = null; }
+/* ⚠️⚠️ Η ΠΡΩΤΗ ΓΡΑΦΗ ΑΥΤΟΥ ΕΔΕΙΧΝΕ ΣΤΟ `HEAD`, ΚΑΙ ΚΟΚΚΙΝΙΣΕ ΤΗ ΣΤΙΓΜΗ ΠΟΥ
+   ΕΓΙΝΕ COMMIT ΤΟ REFACTOR. Μια απόδειξη «πριν/μετά» που διαβάζει το `HEAD`
+   συγκρίνει τον νέο κώδικα με τον εαυτό του από τη δεύτερη μέρα και μετά: το
+   «πριν» εξαφανίζεται ακριβώς επειδή πέτυχε. Η αναφορά πρέπει να είναι η
+   ΤΕΛΕΥΤΑΙΑ ΑΝΑΘΕΩΡΗΣΗ ΠΟΥ ΕΙΧΕ ΤΟΥΣ ΠΑΛΙΟΥΣ ΑΝΑΓΝΩΣΤΕΣ — και βρίσκεται μόνη
+   της, ώστε ένα rebase ή ένα squash να μην τη σκοτώσει σιωπηλά. */
+const OLD_READER = /latSt\.cells|istSt\.units|tonSt\.cells|arxGnSt\.els/;
+function preRefactor() {
+  let revs = [];
+  try {
+    revs = execFileSync('git', ['log', '--format=%H', '--', 'home-live.js'],
+      { cwd: ALS, encoding: 'utf8' }).split('\n').filter(Boolean);
+  } catch (e) { return null; }
+  for (let i = 0; i < revs.length && i < 40; i++) {
+    let src;
+    try { src = execFileSync('git', ['show', revs[i] + ':home-live.js'], { cwd: ALS, encoding: 'utf8' }); }
+    catch (e) { continue; }
+    if (OLD_READER.test(src)) return { rev: revs[i].slice(0, 7), src: src };
+  }
+  return null;
+}
+const before = preRefactor();
+const head = before && before.src;
 
 if (!head) {
   /* ⚠️ Ποτέ σιωπηλό πέρασμα. Ένα test που δεν μπόρεσε να τρέξει δεν είναι
      test που πέρασε — αυτό ακριβώς είναι η σταθερή αρχή 10 σε harness. */
   fail++;
-  console.log('  ✗ FAIL  could not read `git show HEAD:home-live.js` — the identity proof did not run');
+  console.log('  ✗ FAIL  no revision of home-live.js with the four hand-written readers was reachable — the identity proof did not run');
 } else {
   const now = fs.readFileSync(path.join(ALS, 'home-live.js'), 'utf8');
-  ok('HEAD:home-live.js still had the four hand-written readers we replaced',
-    /latSt\.cells|istSt\.units|tonSt\.cells|arxGnSt\.els/.test(head));
-  ok('the working copy no longer does', !/latSt\.cells|istSt\.units|tonSt\.cells|arxGnSt\.els/.test(now));
+  console.log('  · comparing against ' + before.rev + ' — the last revision with the hand-written readers');
+  ok('that revision really did carry the four hand-written readers', OLD_READER.test(head));
+  ok('the working copy no longer does', !OLD_READER.test(now));
 
   Object.keys(SCENES).forEach(name => {
     const data = SCENES[name];

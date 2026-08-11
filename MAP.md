@@ -74,6 +74,18 @@ als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχα
 als-v454) are the study pages, and **`homework.html` (Το χρέος, als-v470)** is
 the room above them.
 
+🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
+Read `docs/HOMEWORK_SPEC.md` §15 (phases) and §16 (acceptance) before you touch
+it or describe it. Live and wrong right now: **`est` can never be produced for
+recall** (so the «10′/20′/45′/90′» chips cannot filter and the card shows «—»
+forever — the render's `~18′` came from a seeded fixture), **the week horizon
+asks a question with no button**, **the 14:30 and 21:45 rituals are empty without
+Google Calendar and have no manual path**, and **the title builder strips his
+stopwords** instead of keeping his words verbatim. Unbuilt: the third task state
+(ΣΤΟ ΠΡΟΓΡΑΜΜΑ), replanning, the Phase-7 edit, and any exam surface. On the phone
+**capture is the fourth section down**, which §1.3 names as the thing that killed
+`study.html`.
+
 ⭐⭐ **`homework.html` IS THE ONLY SURFACE THAT SEES BOTH DEBTS.** Every night he
 closes four subjects' worth of debt: **new work** the φροντιστήριο gave him at
 15:15–18:00, and **old work his memory is quietly losing**. Five stores already
