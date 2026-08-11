@@ -67,7 +67,15 @@ const DATA = {
   'run:logs': JSON.stringify([{ id: 'r1', date: '2026-07-13', distanceKm: 7.2 }]),
   'caf:logs': JSON.stringify([{ ts: new Date(TODAY + 'T08:00:00').getTime(), mg: 150 }]),
   'goal_streak_v1': JSON.stringify({ count: 12 }),
-  'lat:v1': JSON.stringify({ cells: [{ id: 'n3:gen:pl', r: 7, w: 3 }] }),
+  /* Οι πέντε σκάλες. Το σχήμα ΤΟΥΣ είναι το bug, και ζει στο
+     tests/ladders.test.js με χειρόγραφα fixtures ανά σχήμα — εδώ αρκεί μία
+     τιμή ανά αποθήκη ώστε κάθε πλακίδιο να έχει πραγματικά δεδομένα. */
+  'lat:v1': JSON.stringify({ cells: [{ id: 'n3:gen:pl', r: 7, w: 3, box: 1, due: 1 }] }),
+  'ton:v1': JSON.stringify({ cells: { dasia: { r: 4, w: 1, due: 1, streak: 2 } } }),
+  'ist:v1': JSON.stringify({ units: { a1a: { learnedAt: 5, reviews: 1, due: 1 } }, els: { 'a1a:0:0': { r: 9, w: 1 } } }),
+  'arx:v1': JSON.stringify({ pages: { p1: { learnedAt: 5, reviews: 1, due: 1 } }, cells: { 'ago:act:aor': { r: 3, w: 1 } } }),
+  'arx:gn': JSON.stringify({ units: { gn1: { learnedAt: 5, reviews: 1, due: 1 } }, els: { 'gn1:0:0': { r: 5, w: 5 } } }),
+  'hw:v1': JSON.stringify({ v: 1, tasks: { t1: { id: 't1', done: 0 } } }),
   'istoria:v1': JSON.stringify({ seen: { t1: { c: 2 } }, miss: {} }),
   ['goals:' + TODAY]: JSON.stringify([{ done: true }, { done: false }])
 };
@@ -84,7 +92,12 @@ function loadMetric() {
   const body = src.slice(src.indexOf(START), src.indexOf(END))
     .replace('    } catch (e) { }\n    return null;', '    } catch (e) { throw e; }\n    return null;');
   const make = new Function('window', 'localStorage', 'Date', body + '\nreturn { metric: metric };');
-  return make({}, { getItem: k => (k in DATA ? DATA[k] : null) }, PinnedDate);
+  /* ⭐ als-v470: τα τέσσερα πλακίδια μελέτης διαβάζουν πλέον μέσα από το
+     `ladders.js` (ένας αναγνώστης για τέσσερα σχήματα, σταθερή αρχή 15).
+     Χωρίς αυτό στο `window`, το metric() γυρίζει σωστά `null` και το πλακίδιο
+     μένει ανέγγιχτο — που εδώ θα φαινόταν σαν το bug του als-v433. */
+  const LAD = require(path.join(ALS, 'ladders.js'));
+  return make({ ALSLadders: LAD }, { getItem: k => (k in DATA ? DATA[k] : null) }, PinnedDate);
 }
 
 /* ── 1 · every tile resolves to real data ────────────────────────── */
@@ -96,7 +109,7 @@ const DESTS = ['gym.html', 'pr.html', 'sleep.html', 'nutrition.html', 'supps.htm
   'measure.html', 'weight.html', 'caffeine.html', 'main.html', 'identity.html',
   'ideas.html', 'improve.html', 'finance.html', 'movies.html', 'run.html',
   'arc.html', 'insights.html', 'latinika.html', 'tonos.html', 'istoria.html',
-  'arxaia.html'];
+  'arxaia.html', 'homework.html'];
 
 DESTS.forEach(h => {
   let m, err = null;
@@ -121,7 +134,10 @@ section('metric() declares no local that shadows an outer helper');
 
 /* helpers defined in the home-live.js IIFE and called from inside metric() */
 const HELPERS = ['ls', 'tk', 'activeDate', 'dawn', 'relDay', 'fmtN', 'href', 'cap',
-  'render', 'workoutsThisWeek', 'metric', 'wSpark', 'recSpark', 'sparkPts', 'esc'];
+  'render', 'workoutsThisWeek', 'metric', 'wSpark', 'recSpark', 'sparkPts', 'esc',
+  /* als-v470: οι δύο νέοι, και είναι ακριβώς το είδος ονόματος που ξαναγεννάει
+     το bug — τέσσερα cases τους καλούν στην πρώτη τους γραμμή. */
+  'lads', 'ladder'];
 
 const mStart = src.indexOf('function metric(h)');
 ok('metric() found in source', mStart > -1);

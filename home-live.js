@@ -27,6 +27,35 @@
   function fmtN(n) { return Number(n).toLocaleString('en-US'); }
   function href(t) { var h = t.getAttribute('href') || ''; return h.split('#')[0].split('?')[0]; }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  /* ⭐ ΟΙ ΠΕΝΤΕ ΣΚΑΛΕΣ ΔΙΑΒΑΖΟΝΤΑΙ ΑΠΟ ΕΝΑ ΜΕΡΟΣ (als-v470).
+     Τέσσερις χειροποίητοι αναγνώστες των `lat:v1` / `ist:v1` / `ton:v1` /
+     `arx:v1`+`arx:gn` ζούσαν μέσα στο metric(). Το `homework.html` χρειάζεται
+     ΤΟΥΣ ΙΔΙΟΥΣ, και ένα πέμπτο αντίγραφο είναι η σταθερή αρχή 15: μια
+     εγγύηση που ισχύει στον έναν δρόμο και όχι στον δίδυμό του δεν είναι
+     εγγύηση. Το `ladders.js` κρατάει τα τέσσερα σχήματα σε ΕΝΑ σημείο.
+     ⚠️ Καμία τιμή δεν άλλαξε: το `tests/ladders.test.js` συγκρίνει τα
+     τέσσερα πλακίδια με το `git show HEAD:home-live.js` και απαιτεί
+     ΤΑΥΤΟΣΗΜΗ έξοδο. Ένα refactor που αλλάζει σιωπηλά μια τιμή που έχει ήδη
+     βγει στην οθόνη είναι regression με ρούχα καθαρίσματος.
+     Ένα `null` εδώ σημαίνει «δεν φόρτωσε το ladders.js» — τα cases που το
+     χρησιμοποιούν επιστρέφουν null, οπότε το πλακίδιο μένει όπως ήταν αντί να
+     πει ψέματα με ένα μηδέν. */
+  var LADS = null;
+  function lads() {
+    if (!window.ALSLadders) return null;
+    /* ⚠️ Ο αναγνώστης δίνεται ΑΠ' ΕΞΩ, ποτέ δεν τον βρίσκει μόνο του το
+       `ladders.js`: αυτό είναι που το κρατάει καθαρό από περιβάλλον
+       (σταθερή αρχή 25) και είναι ό,τι επιτρέπει στο test να το τρέξει σε
+       `vm` χωρίς localStorage. Εδώ περνάει το ΙΔΙΟ handle που διαβάζει και
+       το `ls()` δύο γραμμές πιο πάνω. */
+    if (!LADS) {
+      try { LADS = window.ALSLadders.read({ get: function (k) { return localStorage.getItem(k); } }); }
+      catch (e) { return null; }
+    }
+    return LADS;
+  }
+  function ladder(k) { var L = lads(); if (!L) return null; var s = L.byKey[k]; return (s && s.ok) ? s : null; }
+
   /* render html into host, but only rewrite the DOM when it actually changed
      (no 30s-repaint flicker) and always reveal freshly-injected [data-rise]
      cards ourselves — the motion observer fires once per section then unobserves,
@@ -172,70 +201,77 @@
           return { hero: '—', note: 'your story' };
         }
         case 'insights.html': { var n = 0; try { if (window.ALSInsights) n = (window.ALSInsights.compute() || []).length; } catch (e) { } return n ? { hero: n, note: 'patterns found' } : { hero: '—', note: 'connecting' }; }
+        /* ── ΟΙ ΤΕΣΣΕΡΙΣ ΠΟΥ ΔΙΑΒΑΖΟΥΝ ΣΚΑΛΑ ─────────────────────────────
+           Τα τέσσερα σχήματα ζουν στο `ladders.js` τώρα, όχι εδώ. Οι τιμές
+           είναι ΟΙ ΙΔΙΕΣ — το κλειδώνει το `tests/ladders.test.js` απέναντι
+           στο `git show HEAD:home-live.js`. Ένα `null` (δεν φόρτωσε το
+           `ladders.js`) αφήνει το πλακίδιο ανέγγιχτο· δεν το μηδενίζει. */
         case 'latinika.html': {
-          var latSt = ls('lat:v1', {}); var latCells = latSt.cells || []; var latR = 0, latW = 0;
-          for (var li = 0; li < latCells.length; li++) { latR += (+latCells[li].r || 0); latW += (+latCells[li].w || 0); }
-          var latT = latR + latW;
-          /* '—' when nothing has been answered: a placeholder is never formatted
-             into a number here (the als-v433 rule). */
-          return latT ? { hero: Math.round(latR / latT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03ba\u03bb\u03af\u03c3\u03b7' }
-                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+          var latS = ladder('lat:v1'); if (!latS) return null;
+          /* '\u2014' when nothing has been answered: a placeholder is never
+             formatted into a number here (the als-v433 rule). */
+          return latS.samples ? { hero: Math.round(latS.accuracy * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03ba\u03bb\u03af\u03c3\u03b7' }
+                              : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
         case 'istoria.html': {
           /* όλα τα locals με πρόθεμα ist* — η σταθερή αρχή 14 κερδήθηκε
              σε ΑΥΤΗ ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση. */
-          var istSt = ls('ist:v1', {}); var istU = istSt.units || {}; var istNow = Date.now();
-          var istL = 0, istD = 0, istKey;
-          for (istKey in istU) {
-            if (!Object.prototype.hasOwnProperty.call(istU, istKey)) continue;
-            if (!istU[istKey].learnedAt) continue;
-            istL++;
-            if (istU[istKey].due && istNow >= istU[istKey].due) istD++;
-          }
+          var istS = ladder('ist:v1'); if (!istS) return null;
+          var istL = istS.learned, istD = istS.overdue;
           /* '\u2014' όταν δεν έχει μάθει τίποτα — ποτέ placeholder σαν αριθμός (als-v433). */
           return istL ? { hero: istL, note: istD ? istD + ' \u03c0\u03c1\u03bf\u03c2 \u03b5\u03c0\u03b1\u03bd\u03ac\u03bb\u03b7\u03c8\u03b7' : '\u03c5\u03c0\u03bf\u03b5\u03bd\u03cc\u03c4\u03b7\u03c4\u03b5\u03c2' }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
         case 'tonos.html': {
-          var tonSt = ls('ton:v1', {}); var tonCells = tonSt.cells || {}; var tonR = 0, tonW = 0;
-          for (var tonK in tonCells) { if (!Object.prototype.hasOwnProperty.call(tonCells, tonK)) continue; tonR += (+tonCells[tonK].r || 0); tonW += (+tonCells[tonK].w || 0); }
-          var tonT = tonR + tonW;
-          /* '\u2014' when nothing has been answered \u2014 a placeholder is never
+          var tonS = ladder('ton:v1'); if (!tonS) return null;
+          /* '\u2014' when nothing has been answered — a placeholder is never
              formatted into a number here (the als-v433 rule). */
-          return tonT ? { hero: Math.round(tonR / tonT * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03c4\u03cc\u03bd\u03bf\u03b9' }
-                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+          return tonS.samples ? { hero: Math.round(tonS.accuracy * 100), unit: '%', note: '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03c4\u03cc\u03bd\u03bf\u03b9' }
+                              : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
         case 'arxaia.html': {
           /* όλα τα locals με πρόθεμα arx* — η σταθερή αρχή 14 κερδήθηκε σε ΑΥΤΗ
-             ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση. */
-          /* ⚠️ als-v458: τα κελιά έγιναν ΑΝΤΙΚΕΙΜΕΝΟ (κλειδί ρήμα:φωνή:χρόνος) αντί
-             για πίνακα. Το Object.keys δουλεύει ΚΑΙ στα δύο σχήματα, οπότε παλιά
-             δεδομένα εξακολουθούν να μετριούνται — σταθερή αρχή 23: ό,τι γράφει
-             κάποιος πρέπει να το διαβάζει κι αυτός που το διαβάζει. */
-          var arxSt = ls('arx:v1', {}); var arxCells = arxSt.cells || {}; var arxR = 0, arxW = 0;
-          var arxKeys = Object.keys(arxCells);
-          for (var arxI = 0; arxI < arxKeys.length; arxI++) {
-            var arxC = arxCells[arxKeys[arxI]] || {};
-            arxR += (+arxC.r || 0); arxW += (+arxC.w || 0);
-          }
-          var arxAgT = arxR + arxW;
-          /* ⚠️ als-v460, ΣΤΑΘΕΡΗ ΑΡΧΗ 23: η σελίδα έχει ΔΥΟ κόσμους τώρα
-             (ΑΓΝΩΣΤΟ = arx:v1, ΓΝΩΣΤΟ = arx:gn) και το πλακίδιο διάβαζε μόνο
-             τον έναν. Αν δούλευε μόνο το Γνωστό, το Home θα έλεγε «ξεκίνα»
-             για πάντα — ένα εύλογο ΛΑΘΟΣ, όχι error. */
-          var arxGnSt = ls('arx:gn', {}); var arxGnEls = arxGnSt.els || {};
-          var arxGnKeys = Object.keys(arxGnEls);
-          for (var arxJ = 0; arxJ < arxGnKeys.length; arxJ++) {
-            var arxE = arxGnEls[arxGnKeys[arxJ]] || {};
-            arxR += (+arxE.r || 0); arxW += (+arxE.w || 0);
-          }
-          var arxT = arxR + arxW, arxGnT = arxT - arxAgT;
-          var arxNote = (arxAgT && arxGnT) ? 'σωστά · γνωστό + άγνωστο'
-            : arxGnT ? 'σωστά · το γνωστό'
-                     : 'σωστά · αρχικοί χρόνοι';
+             ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση.
+             ⚠️ als-v460, ΣΤΑΘΕΡΗ ΑΡΧΗ 23: η σελίδα έχει ΔΥΟ κόσμους (ΑΓΝΩΣΤΟ =
+             `arx:v1`, ΓΝΩΣΤΟ = `arx:gn`) και το πλακίδιο διάβαζε μόνο τον έναν.
+             Αν δούλευε μόνο το Γνωστό, το Home θα έλεγε «ξεκίνα» για πάντα —
+             ένα εύλογο ΛΑΘΟΣ, όχι error. Και τα δύο, πάντα.
+             ⚠️ als-v458: τα κελιά του `arx:v1` έγιναν ΑΝΤΙΚΕΙΜΕΝΟ αντί για
+             πίνακα· και τα δύο σχήματα ζουν ακόμη και τα διαβάζει το
+             `ladders.js`, όχι αυτό το αρχείο. */
+          var arxAg = ladder('arx:v1'), arxGn = ladder('arx:gn');
+          if (!arxAg || !arxGn) return null;
+          var arxAgT = arxAg.samples, arxGnT = arxGn.samples;
+          var arxR = arxAg.right + arxGn.right, arxT = arxAgT + arxGnT;
+          var arxNote = (arxAgT && arxGnT) ? '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03b3\u03bd\u03c9\u03c3\u03c4\u03cc + \u03ac\u03b3\u03bd\u03c9\u03c3\u03c4\u03bf'
+            : arxGnT ? '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03c4\u03bf \u03b3\u03bd\u03c9\u03c3\u03c4\u03cc'
+                     : '\u03c3\u03c9\u03c3\u03c4\u03ac \u00b7 \u03b1\u03c1\u03c7\u03b9\u03ba\u03bf\u03af \u03c7\u03c1\u03cc\u03bd\u03bf\u03b9';
           /* '\u2014' όταν δεν έχει απαντήσει τίποτα — ποτέ placeholder σαν αριθμό (als-v433). */
           return arxT ? { hero: Math.round(arxR / arxT * 100), unit: '%', note: arxNote }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
+        }
+        /* ΤΟ ΧΡΕΟΣ — το ένα πλακίδιο που βλέπει ΚΑΙ ΤΙΣ ΠΕΝΤΕ σκάλες μαζί με
+           τις εργασίες του φροντιστηρίου. ⚠️ Όλα τα locals με πρόθεμα `hw*`
+           (σταθερή αρχή 14: ένα `var` μέσα σε ΕΝΑ case σκιάζει το όνομα σε
+           ΟΛΗ τη συνάρτηση, και κόστισε δύο εβδομάδες ψεύτικων πλακιδίων). */
+        case 'homework.html': {
+          var hwL = lads();
+          var hwSt = ls('hw:v1', {}); var hwTasks = (hwSt && hwSt.tasks) || {};
+          var hwOpen = 0, hwK;
+          for (hwK in hwTasks) {
+            if (!Object.prototype.hasOwnProperty.call(hwTasks, hwK)) continue;
+            if (hwTasks[hwK] && !hwTasks[hwK].done) hwOpen++;
+          }
+          var hwDue = 0, hwBlind = 0, hwI;
+          if (!hwL) return null;
+          for (hwI = 0; hwI < hwL.stores.length; hwI++) {
+            if (hwL.stores[hwI].ok) hwDue += hwL.stores[hwI].overdue; else hwBlind++;
+          }
+          /* Τρεις διαφορετικές προτάσεις, ποτέ η ίδια (σταθερή αρχή 10):
+             «δεν διάβασα μια αποθήκη» \u2260 «δεν χρωστάς» \u2260 «να τι χρωστάς». */
+          if (hwBlind) return { hero: '\u2014', note: hwBlind + (hwBlind === 1 ? ' \u03b1\u03c0\u03bf\u03b8\u03ae\u03ba\u03b7 \u03b4\u03b5\u03bd \u03b4\u03b9\u03b1\u03b2\u03ac\u03c3\u03c4\u03b7\u03ba\u03b5' : ' \u03b1\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c2 \u03b4\u03b5\u03bd \u03b4\u03b9\u03b1\u03b2\u03ac\u03c3\u03c4\u03b7\u03ba\u03b1\u03bd') };
+          if (!hwDue && !hwOpen) return { hero: '\u2014', note: '\u03ba\u03b1\u03b8\u03b1\u03c1\u03ac' };
+          return { hero: hwDue + hwOpen, note: hwDue + ' \u03b1\u03bd\u03ac\u03ba\u03bb\u03b7\u03c3\u03b7 \u00b7 ' + hwOpen + ' \u03b5\u03c1\u03b3\u03b1\u03c3\u03af' + (hwOpen === 1 ? '\u03b1' : '\u03b5\u03c2') };
         }
       }
     } catch (e) { }

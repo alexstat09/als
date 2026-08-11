@@ -71,7 +71,42 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
-als-v454) are the study pages.
+als-v454) are the study pages, and **`homework.html` (Το χρέος, als-v470)** is
+the room above them.
+
+⭐⭐ **`homework.html` IS THE ONLY SURFACE THAT SEES BOTH DEBTS.** Every night he
+closes four subjects' worth of debt: **new work** the φροντιστήριο gave him at
+15:15–18:00, and **old work his memory is quietly losing**. Five stores already
+compute a `due` and none of them can see the other four. This page can, and that
+is the whole feature — true without a single AI call.
+- **It owns exactly one key**, `hw:v1` (+ `hw:pics`), appKey `homework`. The five
+  study stores are **READ-ONLY** here (σταθερή αρχή 16); anything that has to
+  reach another page leaves through a **LINK**. `tests/homework-plan.test.js`
+  drives the shipped helpers and asserts nothing else is ever written.
+- ⭐⭐ **`ladders.js` is why the page could be built at all.** The five stores have
+  **FOUR different shapes** — `lat:v1.cells` is an **ARRAY**, `ton:v1.cells` and
+  `arx:v1.cells` are **MAPS** (`arx:v1` was an array until als-v458), `ist:v1`
+  and `arx:gn` keep the ladder in `.units` with accuracy in a separate `.els`
+  map, and `arx:v1` keeps its ladder in **`.pages`** while its cells are keyed by
+  VERB. A naive `store.cells.forEach` returns **silent zero** for at least two.
+  `home-live.js` was refactored onto it in the same commit and
+  `tests/ladders.test.js` proves the four Home tiles are **byte-identical** to
+  `git show HEAD:`.
+- **The day, not the evening.** The morning block (11:15–15:00) is bigger than
+  the evening one, so the unit is Η ΜΕΡΑ with the φροντιστήριο as its spine.
+  21:45–22:30 is reserved for **today's three lessons** and never for homework.
+- **Ο ΧΡΟΝΟΣ shows the SUBTRACTION**, never asserts a number: horizon − each
+  named block − the declared travel constant = what is left. It deliberately does
+  **not** use `GCal.day(0).gaps` (its 30-minute floor would stop the lines from
+  adding up, and the only thing that makes that number trustworthy is that it can
+  be checked by eye). `gcal:*` is **device-local and never synced**, so an
+  unauthorised device says so in words and falls back to a labelled blueprint.
+- **Capture is a one-line deterministic parser**, never a model — plus
+  `add_homework` / `get_homework` inside the existing `api/mcp.js` (zero new
+  serverless functions). ⛔ **No photograph is ever read by a machine here.**
+- ⚠️ **The parser must not treat `-` as a date separator.** «ασκήσεις 4-7 για
+  Τρίτη» read `4-7` as 4 July — an exercise RANGE becoming a deadline, with his
+  own words vanishing into it. Greek dates are `20/8` or `20.8`; the dash is his.
 
 ⭐⭐ **`arxaia.html` IS TWO WORLDS BEHIND ONE DOOR (als-v460).** His words:
 *«βαλε το μεσα στα αρχαια αλλα πριν μπαινω να διαλεγω ειτε αρχαια αγνωστο ειτε

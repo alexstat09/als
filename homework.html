@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Το χρέος">
+  <title>Το χρέος · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <!-- Cloud sync από την πρώτη μέρα: μια σελίδα που ζει μόνο στο κινητό χάνει
+       τα πάντα σε επανεγκατάσταση του PWA. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <!-- ⭐ ΟΙ ΠΕΝΤΕ ΣΚΑΛΕΣ, ΕΝΑΣ ΑΝΑΓΝΩΣΤΗΣ. Τέσσερα διαφορετικά σχήματα ζουν
+       εδώ μέσα και ένα πέμπτο χειροποίητο αντίγραφο θα γύριζε σιωπηλό μηδέν
+       για τουλάχιστον δύο από αυτά. Δες ladders.js. -->
+  <script src="ladders.js"></script>
+  <!-- ⭐ als-v468: οι εργασίες είναι ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ, που το sync.js
+       συγχωνεύει ανά ΒΑΘΜΩΤΟ πεδίο με «κερδίζει το remote» — άρα κάθε
+       δεύτερη αλλαγή γυρίζει πίσω σε 400ms αν δεν φέρει `_ts`.
+       Όλο το γιατί ζει στο study-stamp.js. -->
+  <script src="study-stamp.js"></script>
+  <!-- Το ημερολόγιο είναι ΤΟΠΙΚΟ ΣΤΗ ΣΥΣΚΕΥΗ (τα `gcal:*` δεν συγχρονίζονται
+       ποτέ). Σε συσκευή χωρίς εξουσιοδότηση η μέρα ΔΕΝ είναι άδεια — είναι
+       άγνωστη, και το λέμε με λέξεις. -->
+  <script src="gcal.js"></script>
+  <!-- Τα corpora δίνουν ΤΙΤΛΟΥΣ. Ένα «b1b» στην οθόνη δεν σημαίνει τίποτα·
+       «Η αγροτική μεταρρύθμιση» σημαίνει. Και τα τρία είναι ήδη στο CORE του
+       service worker, άρα έρχονται από την cache. -->
+  <!-- ⚠️ ΤΑ ΚΕΛΙΑ ΕΧΟΥΝ ΟΝΟΜΑΤΑ, ΚΑΙ ΤΑ ΞΕΡΟΥΝ ΟΙ ΜΗΧΑΝΕΣ ΤΟΥΣ. Χωρίς αυτά
+       τα δύο, το χρέος των Λατινικών γράφεται «n3:gen:pl» και του Τονισμού
+       «dasia» — τιμές μηχανής στην οθόνη ενός ανθρώπου. Το είδα σε render,
+       δεν το υπέθεσα. Και τα δύο είναι ήδη στο CORE του service worker. -->
+  <script src="latin-engine.js"></script>
+  <script src="tonos-engine.js"></script>
+  <script src="istoria-data.js"></script>
+  <script src="arxaia-gnosto-data.js"></script>
+  <script src="arxaia-data.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.hw-hero,.hw-start,.hw-debt,.hw-tasks,.hw-day,.hw-week,.hw-foot';</script>
+  <script src="page-motion.js" defer></script>
+<style>
+  /* ── ΤΑ ΧΡΩΜΑΤΑ ΕΙΝΑΙ ΤΑΥΤΟΤΗΤΑ, ΟΧΙ ΔΙΑΚΟΣΜΗΣΗ ─────────────────────
+     Ένα χρώμα ανά μάθημα, και μόνο για να ξέρει σε μισό δευτερόλεπτο ποιανού
+     είναι η γραμμή. Ο Τονισμός δανείζεται το βιολετί των Αρχαίων γιατί
+     δασείες και δίφθογγοι ΕΙΝΑΙ ύλη των Αρχαίων — δεν είναι έκτο μάθημα. */
+  :root{
+    --hw-ist:242,192,99;      /* Ιστορία  · amber  */
+    --hw-arx:155,140,255;     /* Αρχαία   · violet */
+    --hw-lat:24,200,192;      /* Λατινικά · teal   */
+    --hw-ekt:255,138,107;     /* Έκθεση   · coral  */
+    --hw-late:255,107,139;    /* ληξιπρόθεσμο */
+    --hw-good:52,226,176;
+  }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .hw-wrap{ max-width:1180px; margin:0 auto; padding:0 18px; }
+  .hw-serif{ font-family:var(--au-serif,Georgia,serif); font-weight:400; }
+  .hw-mono{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-variant-numeric:tabular-nums; }
+
+  /* ── ΟΙ ΔΥΟ ΣΤΗΛΕΣ ──────────────────────────────────────────────────
+     Στα 1280px μια σελίδα 580px σε μαύρο χωράφι είναι ~55% άδεια. Λύση:
+     ραχοκοκαλιά ~320px + περιεχόμενο, ΠΟΤΕ πιο φαρδιά μονή στήλη.
+     ⚠️ sticky, ΠΟΤΕ fixed (σταθ. 18) · κανένα overscroll-behavior:contain
+     (σταθ. 22) · 100dvh, ποτέ 100vh. */
+  .hw-cols{ display:block; }
+  @media (min-width:1000px){
+    .hw-cols{ display:grid; grid-template-columns:320px minmax(0,1fr); gap:34px; align-items:start; }
+    .hw-spine{ position:sticky; top:74px; max-height:calc(100dvh - 96px); overflow-y:auto; }
+  }
+
+  /* ── ΤΟ ΚΕΦΑΛΙ ──────────────────────────────────────────────────── */
+  .hw-hero{ padding:26px 0 14px; }
+  .hw-eyebrow{ font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-hero h1{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:clamp(30px,7vw,44px); line-height:1.05; margin-top:8px; letter-spacing:-.01em; }
+  .hw-hero .hw-sub{ color:var(--au-dim,rgba(245,242,236,.56)); font-size:14px; line-height:1.55; margin-top:10px; max-width:46ch; }
+
+  /* ── Ο ΧΡΟΝΟΣ · η αφαίρεση φαίνεται ολόκληρη ──────────────────────
+     Ένα σίγουρο λάθος «2ω 18λ» στην κορυφή καταστρέφει την εμπιστοσύνη σε
+     ό,τι είναι από κάτω. Άρα η σελίδα ΔΕΝ δηλώνει τον αριθμό — τον ΧΤΙΖΕΙ
+     μπροστά του, γραμμή γραμμή, και το άθροισμα ελέγχεται με το μάτι. */
+  .hw-clock{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:16px; padding:16px 16px 12px; background:var(--au-glass,rgba(255,255,255,.022)); }
+  .hw-clock-hd{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .hw-clock-hd .hw-lbl{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-clock-hd .hw-val{ font-size:15px; }
+  .hw-sum{ margin-top:12px; border-top:1px solid var(--au-line,rgba(255,255,255,.06)); padding-top:10px; }
+  .hw-sum-row{ display:flex; justify-content:space-between; gap:12px; font-size:12.5px; padding:3px 0; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-sum-row .hw-num{ flex:none; }
+  .hw-sum-row.hw-total{ color:var(--au-ivory,#f5f2ec); font-size:15px; padding-top:9px; margin-top:6px; border-top:1px solid var(--au-line-2,rgba(255,255,255,.1)); }
+  .hw-sum-row.hw-total .hw-num{ font-size:22px; }
+  .hw-note{ margin-top:9px; font-size:11.5px; line-height:1.5; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-note.hw-warn{ color:rgb(var(--hw-ekt)); }
+
+  /* ── ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ ─────────────────────────────────────────────── */
+  .hw-start{ margin-top:16px; border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:18px; padding:18px 16px 16px; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012)); }
+  .hw-start .hw-kicker{ font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-start .hw-what{ font-family:var(--au-serif,Georgia,serif); font-size:26px; line-height:1.12; margin-top:8px; }
+  .hw-start .hw-meta{ margin-top:7px; font-size:12.5px; color:var(--au-dim,rgba(245,242,236,.56)); }
+  /* ⭐ Ο ΛΟΓΟΣ, ΠΟΤΕ ΤΟ ΣΚΟΡ. Η πρόταση που φαίνεται είναι ΑΚΡΙΒΩΣ οι όροι
+     που παρήγαγαν την κατάταξη — δεν είναι λεζάντα, είναι ο υπολογισμός. */
+  .hw-why{ margin-top:10px; font-size:13px; line-height:1.5; }
+  .hw-why .hw-cl{ color:var(--au-ivory,#f5f2ec); }
+  .hw-why .hw-plus{ color:var(--au-faint,rgba(245,242,236,.3)); padding:0 4px; }
+  .hw-cta{ display:block; width:100%; margin-top:14px; padding:15px 16px; border:0; border-radius:13px; cursor:pointer;
+    background:var(--au-ivory,#f5f2ec); color:#08080a; font:600 15px/1 var(--au-sans,-apple-system,sans-serif); letter-spacing:.02em; text-align:center; text-decoration:none; }
+  .hw-cta:active{ transform:scale(.985); }
+  .hw-chips{ display:flex; gap:7px; margin-top:12px; flex-wrap:wrap; }
+  .hw-chip{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent; color:var(--au-dim,rgba(245,242,236,.56));
+    border-radius:999px; padding:7px 13px; font-size:12px; cursor:pointer; font-family:inherit; }
+  .hw-chip.hw-on{ border-color:rgba(245,242,236,.5); color:var(--au-ivory,#f5f2ec); }
+
+  /* ── ΤΙΤΛΟΙ ΕΝΟΤΗΤΩΝ ─────────────────────────────────────────────── */
+  .hw-sec{ margin-top:34px; }
+  .hw-sec-hd{ display:flex; align-items:baseline; gap:12px; padding-bottom:9px; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-sec-hd .hw-n{ font-family:var(--au-serif,Georgia,serif); font-size:20px; }
+  .hw-sec-hd .hw-s{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-left:auto; text-align:right; }
+
+  /* ── ΤΟ ΧΡΕΟΣ · οι πέντε σκάλες ─────────────────────────────────── */
+  .hw-row{ display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-row .hw-tick{ width:3px; align-self:stretch; border-radius:2px; background:rgba(var(--hw-c),.85); flex:none; }
+  .hw-row .hw-body, .hw-task .hw-body{ flex:1 1 auto; min-width:0; }
+  .hw-row .hw-name{ font-size:14.5px; line-height:1.3; }
+  .hw-row .hw-line2{ font-size:12px; color:var(--au-dim,rgba(245,242,236,.56)); margin-top:3px; line-height:1.45; }
+  .hw-row .hw-right{ flex:none; text-align:right; }
+  .hw-row .hw-when{ font-size:12.5px; }
+  .hw-row .hw-when.hw-late{ color:rgb(var(--hw-late)); }
+  .hw-row .hw-when.hw-ok{ color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-go{ display:inline-block; margin-top:5px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--au-ivory,#f5f2ec); text-decoration:none; border-bottom:1px solid rgba(245,242,236,.28); padding-bottom:1px; }
+  /* Δύο κανάλια, δύο κωδικοποιήσεις: το ΧΡΩΜΑ λέει «έληξε», η ΜΠΑΡΑ λέει
+     ακρίβεια. Ποτέ το ίδιο πράγμα σε δύο γλώσσες. */
+  .hw-bar{ height:2px; border-radius:2px; background:rgba(255,255,255,.08); margin-top:7px; overflow:hidden; max-width:190px; }
+  .hw-bar span{ display:block; height:100%; background:rgba(var(--hw-c),.9); }
+  .hw-unknown{ color:var(--au-faint,rgba(245,242,236,.3)); font-size:11.5px; margin-top:6px; }
+
+  /* ── ΟΙ ΕΡΓΑΣΙΕΣ ─────────────────────────────────────────────────── */
+  .hw-capture{ margin-top:14px; }
+  .hw-input{ width:100%; background:var(--au-glass,rgba(255,255,255,.022)); border:1px solid var(--au-line-2,rgba(255,255,255,.1));
+    color:var(--au-ivory,#f5f2ec); border-radius:13px; padding:14px 15px; font:400 15px/1.35 var(--au-sans,-apple-system,sans-serif); }
+  .hw-input:focus{ outline:none; border-color:rgba(245,242,236,.35); }
+  .hw-input::placeholder{ color:var(--au-faint,rgba(245,242,236,.3)); }
+  textarea.hw-input{ min-height:96px; resize:vertical; }
+  .hw-parse{ margin-top:10px; display:none; }
+  .hw-parse.hw-open{ display:block; }
+  .hw-pchips{ display:flex; flex-wrap:wrap; gap:7px; }
+  .hw-pchip{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:999px; padding:7px 12px; font-size:12px;
+    background:transparent; color:var(--au-ivory,#f5f2ec); cursor:pointer; font-family:inherit; text-align:left; }
+  /* ⭐ Ό,τι ΔΕΝ αναγνωρίστηκε είναι ορατά γκρι. Η σελίδα δεν ισχυρίζεται ποτέ
+     ότι κατάλαβε κάτι που μάντεψε. */
+  .hw-pchip.hw-miss{ color:var(--au-faint,rgba(245,242,236,.3)); border-style:dashed; }
+  .hw-pchip .hw-k{ font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); display:block; margin-bottom:2px; }
+  .hw-acts{ display:flex; gap:8px; margin-top:11px; flex-wrap:wrap; }
+  .hw-btn{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent; color:var(--au-ivory,#f5f2ec);
+    border-radius:11px; padding:10px 15px; font:500 13px/1 var(--au-sans,-apple-system,sans-serif); cursor:pointer; }
+  .hw-btn.hw-solid{ background:var(--au-ivory,#f5f2ec); color:#08080a; border-color:transparent; font-weight:600; }
+  .hw-btn.hw-quiet{ color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-btn:disabled{ opacity:.4; cursor:default; }
+
+  .hw-task{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-task .hw-tick{ width:3px; align-self:stretch; border-radius:2px; background:rgba(var(--hw-c),.85); flex:none; }
+  .hw-task.hw-done{ opacity:.42; }
+  .hw-task.hw-done .hw-title{ text-decoration:line-through; }
+  .hw-title{ font-size:14.5px; line-height:1.35; overflow-wrap:anywhere; }
+  .hw-tmeta{ font-size:11.5px; color:var(--au-dim,rgba(245,242,236,.56)); margin-top:4px; line-height:1.45; }
+  .hw-tacts{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .hw-mini{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent; color:var(--au-dim,rgba(245,242,236,.56));
+    border-radius:9px; padding:6px 10px; font:500 11.5px/1 var(--au-sans,-apple-system,sans-serif); cursor:pointer; text-decoration:none; display:inline-block; }
+  .hw-mini.hw-lead{ color:var(--au-ivory,#f5f2ec); border-color:rgba(245,242,236,.3); }
+  .hw-mini.hw-danger{ color:rgb(var(--hw-late)); }
+
+  /* ── Η ΜΕΡΑ · μία γραμμή, όχι πλέγμα ημερολογίου ─────────────────── */
+  .hw-line{ position:relative; height:64px; margin-top:20px; border-radius:10px; background:rgba(255,255,255,.03); overflow:hidden; }
+  .hw-blk{ position:absolute; top:0; bottom:0; border-radius:6px; }
+  .hw-blk.hw-study{ background:rgba(52,226,176,.16); border:1px solid rgba(52,226,176,.34); }
+  .hw-blk.hw-school{ background:rgba(255,255,255,.11); border:1px solid rgba(255,255,255,.18); }
+  .hw-blk.hw-quietblk{ background:rgba(255,255,255,.045); }
+  .hw-blk .hw-cap{ position:absolute; top:5px; left:6px; right:4px; font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--au-dim,rgba(245,242,236,.56)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hw-now{ position:absolute; top:-4px; bottom:-4px; width:1px; background:var(--au-ivory,#f5f2ec); }
+  .hw-now::after{ content:''; position:absolute; top:0; left:-2px; width:5px; height:5px; border-radius:50%; background:var(--au-ivory,#f5f2ec); }
+  /* ⚠️ ΟΙ ΕΤΙΚΕΤΕΣ ΚΑΘΟΝΤΑΙ ΣΤΗ ΔΙΚΗ ΤΟΥΣ ΣΤΙΓΜΗ, ΟΧΙ ΣΕ ΙΣΕΣ ΑΠΟΣΤΑΣΕΙΣ.
+     Με `justify-content:space-between` οι έξι ώρες μοιράζονταν ίσα ενώ οι
+     αποστάσεις τους στον χρόνο δεν είναι ίσες (10→13 είναι 3 ώρες, 22:00→00:15
+     είναι 2ω15), οπότε ο άξονας έδειχνε αλλού από τα μπλοκ που ονομάτιζε. Ένας
+     άξονας που δεν ευθυγραμμίζεται με τα δεδομένα του είναι επινοημένος
+     αριθμός σε άλλη μορφή. Φάνηκε μόνο κοιτώντας το render. */
+  .hw-ticks{ position:relative; height:14px; margin-top:6px; font-size:10px; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-ticks span{ position:absolute; top:0; transform:translateX(-50%); white-space:nowrap; }
+  .hw-ticks span:first-child{ transform:none; }
+  .hw-ticks span:last-child{ transform:translateX(-100%); }
+  .hw-slots{ margin-top:16px; }
+  .hw-slot{ padding:12px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-slot .hw-slot-hd{ display:flex; gap:10px; align-items:baseline; }
+  .hw-slot .hw-time{ font-size:12px; color:var(--au-faint,rgba(245,242,236,.3)); flex:none; width:96px; }
+  .hw-slot .hw-slot-n{ font-size:13.5px; }
+  .hw-slot .hw-fill{ margin:7px 0 0 96px; font-size:12.5px; color:var(--au-dim,rgba(245,242,236,.56)); line-height:1.55; }
+  @media (max-width:560px){ .hw-slot .hw-fill{ margin-left:0; } }
+
+  /* ── Ο ΟΡΙΖΟΝΤΑΣ ─────────────────────────────────────────────────── */
+  .hw-week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:18px; align-items:end; }
+  .hw-col{ background:transparent; border:0; padding:0; cursor:pointer; font-family:inherit; text-align:center; }
+  .hw-stack{ height:96px; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; overflow:hidden; }
+  .hw-seg{ border-radius:3px; background:rgba(var(--hw-c),.75); min-height:3px; }
+  .hw-col .hw-dow{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-top:7px; }
+  .hw-col.hw-today .hw-dow{ color:var(--au-ivory,#f5f2ec); }
+  .hw-col.hw-pile .hw-dow{ color:rgb(var(--hw-late)); }
+  .hw-week-say{ margin-top:14px; font-size:13px; line-height:1.6; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-week-say b{ color:var(--au-ivory,#f5f2ec); font-weight:500; }
+
+  /* ── ΑΔΕΙΟ / ΣΦΑΛΜΑ / ΑΓΝΩΣΤΟ — τρεις διαφορετικές προτάσεις ─────── */
+  .hw-empty{ padding:18px 0 4px; font-size:13.5px; line-height:1.65; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-empty b{ color:var(--au-ivory,#f5f2ec); font-weight:500; }
+  .hw-blind{ border-left:2px solid rgb(var(--hw-ekt)); padding:9px 0 9px 12px; margin-top:12px; font-size:12.5px; line-height:1.55; color:rgb(var(--hw-ekt)); }
+  .hw-banner{ display:none; margin:14px 0 0; border:1px solid rgba(255,138,107,.4); background:rgba(255,138,107,.08);
+    color:rgb(var(--hw-ekt)); border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.55; }
+  .hw-banner.hw-open{ display:block; }
+
+  /* ── ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ (ΓΡΑΠΤΑ) ─────────────────────────────
+     ⚠️ Native <dialog> + showModal (σταθ. 4). Το `display` είναι σκοπίμως
+     ΜΟΝΟ στο [open]: ένα σκέτο `dialog.x{display:flex}` νικάει το
+     `dialog:not([open]){display:none}` του UA και αφήνει το modal μόνιμα
+     στην οθόνη (als-v431). Και `margin:auto` ρητά, γιατί το `*{margin:0}`
+     αυτής της σελίδας σκοτώνει το κεντράρισμα του UA (als-v408). */
+  dialog.hw-dlg{ border:0; padding:0; background:transparent; max-width:none; max-height:none; }
+  dialog.hw-dlg::backdrop{ background:rgba(4,4,6,.82); backdrop-filter:blur(3px); }
+  dialog.hw-dlg[open]{ display:flex; align-items:center; justify-content:center; margin:auto; width:min(560px,calc(100vw - 28px)); }
+  .hw-sheet{ width:100%; background:#0b0b0d; border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:20px; padding:22px 20px; }
+  .hw-sheet h3{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:23px; line-height:1.15; }
+  .hw-elapsed{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:44px; letter-spacing:-.02em; margin:20px 0 4px; font-variant-numeric:tabular-nums; }
+  .hw-shot{ width:100%; border-radius:13px; margin-top:14px; display:block; }
+
+  .hw-foot{ margin:44px 0 10px; padding-top:18px; border-top:1px solid var(--au-line,rgba(255,255,255,.06));
+    font-size:11.5px; line-height:1.7; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-off{ display:none; }
+</style>
+</head>
+<body>
+
+<main class="hw-wrap">
+  <div class="hw-cols">
+
+    <!-- ══ Η ΡΑΧΟΚΟΚΑΛΙΑ ══════════════════════════════════════════ -->
+    <div class="hw-spine">
+      <header class="hw-hero">
+        <div class="hw-eyebrow">Το χρέος</div>
+        <h1 id="hwH1">Η μέρα</h1>
+        <p class="hw-sub" id="hwSub">Ό,τι σου έδωσαν και ό,τι ξεχνάς, στο ίδιο σημείο.</p>
+      </header>
+
+      <div class="hw-banner" id="hwBanner"></div>
+
+      <!-- Ο ΧΡΟΝΟΣ: η αφαίρεση, ολόκληρη -->
+      <section class="hw-clock" id="hwClock" aria-live="polite"></section>
+
+      <!-- ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ -->
+      <section class="hw-start" id="hwStart"></section>
+    </div>
+
+    <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ ═════════════════════════════════════════ -->
+    <div class="hw-main">
+
+      <!-- ΤΟ ΧΡΕΟΣ ΤΗΣ ΜΝΗΜΗΣ -->
+      <section class="hw-sec hw-debt">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Η μνήμη</span>
+          <span class="hw-s" id="hwDebtS">πέντε σκάλες</span>
+        </div>
+        <div id="hwDebtBody"></div>
+      </section>
+
+      <!-- ΟΙ ΕΡΓΑΣΙΕΣ -->
+      <section class="hw-sec hw-tasks">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Οι εργασίες</span>
+          <span class="hw-s" id="hwTasksS"></span>
+        </div>
+
+        <div class="hw-capture">
+          <input class="hw-input" id="hwLine" type="text" enterkeyhint="done"
+            autocomplete="off" autocapitalize="sentences" spellcheck="false"
+            placeholder="Ιστορία b2 απέξω Τρίτη">
+          <div class="hw-parse" id="hwParse">
+            <div class="hw-pchips" id="hwPchips"></div>
+            <div class="hw-acts">
+              <button class="hw-btn hw-solid" id="hwSave" type="button">Κράτησέ το</button>
+              <button class="hw-btn hw-quiet" id="hwShot" type="button">Φωτογραφία</button>
+              <button class="hw-btn hw-quiet" id="hwCancel" type="button">Άκυρο</button>
+            </div>
+          </div>
+          <div class="hw-acts" id="hwDumpActs">
+            <button class="hw-btn hw-quiet" id="hwDumpOpen" type="button">Άδειασε το κεφάλι σου</button>
+            <button class="hw-btn hw-quiet hw-off" id="hwSweep" type="button">Καθάρισε τα τελειωμένα</button>
+          </div>
+          <div class="hw-off" id="hwDumpWrap" style="margin-top:10px">
+            <textarea class="hw-input" id="hwDump" placeholder="Μία γραμμή τη φορά. Ό,τι δεν καταλάβω μένει σημείωση — μια σκέψη που γράφτηκε αξίζει περισσότερο από μια οργανωμένη που δεν γράφτηκε ποτέ."></textarea>
+            <div class="hw-acts">
+              <button class="hw-btn hw-solid" id="hwDumpGo" type="button">Δες τι κατάλαβα</button>
+              <button class="hw-btn hw-quiet" id="hwDumpClose" type="button">Κλείσε</button>
+            </div>
+          </div>
+          <input type="file" id="hwFile" accept="image/*" class="hw-off">
+        </div>
+
+        <div id="hwTaskBody"></div>
+      </section>
+
+      <!-- Η ΜΕΡΑ -->
+      <section class="hw-sec hw-day">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Η μέρα</span>
+          <span class="hw-s" id="hwDayS"></span>
+        </div>
+        <div class="hw-line" id="hwLineBar"></div>
+        <div class="hw-ticks" id="hwTicks"></div>
+        <div class="hw-slots" id="hwSlots"></div>
+      </section>
+
+      <!-- Ο ΟΡΙΖΟΝΤΑΣ -->
+      <section class="hw-sec hw-week">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Ο ορίζοντας</span>
+          <span class="hw-s">Δευτέρα → Κυριακή</span>
+        </div>
+        <div class="hw-week-grid" id="hwWeekGrid"></div>
+        <div class="hw-week-say" id="hwWeekSay"></div>
+      </section>
+
+      <footer class="hw-foot" id="hwFoot"></footer>
+    </div>
+  </div>
+</main>
+
+<!-- ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ -->
+<dialog class="hw-dlg" id="hwFocus">
+  <div class="hw-sheet">
+    <div class="hw-eyebrow" id="hwFocusKicker">Γραπτό</div>
+    <h3 id="hwFocusTitle"></h3>
+    <div class="hw-elapsed" id="hwFocusClock">00:00</div>
+    <div class="hw-note" id="hwFocusNote"></div>
+    <img class="hw-shot hw-off" id="hwFocusImg" alt="Η φωτογραφία της εργασίας">
+    <div class="hw-acts">
+      <button class="hw-btn hw-solid" id="hwFocusDone" type="button">Έγινε</button>
+      <button class="hw-btn" id="hwFocusPause" type="button">Παύση</button>
+      <button class="hw-btn hw-quiet" id="hwFocusShot" type="button">Δες τη φωτογραφία</button>
+      <button class="hw-btn hw-quiet" id="hwFocusClose" type="button">Κλείσε</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΧΡΕΟΣ — homework.html
+
+     Μία πρόταση: κάθε βράδυ κλείνει το χρέος τεσσάρων μαθημάτων — καινούρια
+     δουλειά που έδωσε το φροντιστήριο, και παλιά δουλειά που χάνει σιωπηλά η
+     μνήμη του. Αυτή η σελίδα είναι το μόνο σημείο που βλέπει ΚΑΙ ΤΑ ΔΥΟ, και
+     λέει ποιο πληρώνεται πρώτο.
+
+     ⚠️ ΚΑΤΕΧΕΙ ΑΚΡΙΒΩΣ ΕΝΑ ΚΛΕΙΔΙ ΔΕΔΟΜΕΝΩΝ: `hw:v1` (+ `hw:pics` για τις
+     φωτογραφίες). Τα πέντε study stores είναι ΜΟΝΟ ΑΝΑΓΝΩΣΗΣ — σταθερή αρχή
+     16: μια εγγραφή σε ξένο κλειδί από εδώ είναι σιωπηλό no-op με
+     καθυστερημένη απώλεια, γιατί η μηχανή sync αυτής της σελίδας δεν δηλώνει
+     εκείνο το κλειδί, άρα δεν φεύγει ποτέ και δεν αφήνει ταφόπλακα — και η
+     σελίδα που το κατέχει σπρώχνει μετά το δικό της αντίγραφο από πάνω.
+     Ό,τι πρέπει να φτάσει σε άλλη σελίδα φεύγει με ΣΥΝΔΕΣΜΟ.
+     Το κλειδώνει το tests/homework-plan.test.js.
+     ══════════════════════════════════════════════════════════════════ */
+
+  var KEY  = 'hw:v1';
+  var PKEY = 'hw:pics';
+  var APP  = 'homework';
+
+  /* ── μικροεργαλεία ─────────────────────────────────────────────── */
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+  function dkOf(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function today(){ return dkOf(new Date()); }
+  function midnight(off){ var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + (off||0)); return d; }
+  function atMin(base, mins){ var d = new Date(base.getFullYear(), base.getMonth(), base.getDate()); d.setMinutes(mins); return d; }
+  function hm(str){ var p = String(str).split(':'); return (+p[0])*60 + (+p[1]||0); }
+  function clock(mins){ return pad2(Math.floor(mins/60) % 24) + ':' + pad2(Math.round(mins) % 60); }
+  function dur(mins){
+    mins = Math.max(0, Math.round(mins));
+    var h = Math.floor(mins/60), m = mins % 60;
+    return h ? (h + 'ω ' + (m ? m + 'λ' : '')).trim() : m + 'λ';
+  }
+  /* ΗΜΕΡΟΛΟΓΙΑΚΕΣ μέρες, ποτέ ώρες που πέρασαν — αλλιώς κάθε απόγευμα
+     στρογγυλεύει προς τα πάνω κατά μία μέρα (το μάθημα του relDay). */
+  function daysBetween(aKey, bKey){
+    var a = new Date(aKey + 'T00:00:00'), b = new Date(bKey + 'T00:00:00');
+    return Math.round((a - b) / 86400000);
+  }
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 5: η εβδομάδα είναι ΔΕΥΤΕΡΑ→ΚΥΡΙΑΚΗ. Κλειστό θέμα. */
+  function dowMon(d){ return (d.getDay() + 6) % 7; }
+
+  var DOW_EL  = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
+  /* Το Σάββατο είναι ΟΥΔΕΤΕΡΟ. Ένα σκέτο «Η » μπροστά σε κάθε μέρα γράφει «Η
+     Σάββατο» μία φορά την εβδομάδα, στα ελληνικά που είναι 100% του κειμένου
+     αυτής της σελίδας. */
+  var DOW_ART = ['Η','Η','Η','Η','Η','Το','Η'];
+  function dayName(i){ return DOW_ART[i] + ' ' + DOW_EL[i]; }
+  var DOW_SH  = ['Δε','Τρ','Τε','Πε','Πα','Σα','Κυ'];
+
+  /* ── ΤΑ ΤΕΣΣΕΡΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────────
+     ⚠️ Τα ids είναι ΤΙΜΕΣ ΜΗΧΑΝΗΣ και ΠΑΓΩΜΕΝΑ. Ό,τι βλέπει άνθρωπος είναι
+     ελληνικό και ζει ΕΔΩ, σε έναν χάρτη — πουθενά αλλού.
+     Ο συντελεστής είναι ΔΙΚΟΣ ΤΟΥ αριθμός (Έκθεση 30 · Αρχαία 30 · Ιστορία
+     20 · Λατινικά 20) και χρησιμοποιείται ΜΟΝΟ για να σπάσει ισοπαλία. Ποτέ
+     δεν βγαίνει στην οθόνη. */
+  var SUBJ = {
+    istoria:  { label:'Ιστορία',  rgb:'var(--hw-ist)', weight:20, page:'istoria.html'  },
+    arxaia:   { label:'Αρχαία',   rgb:'var(--hw-arx)', weight:30, page:'arxaia.html'   },
+    latinika: { label:'Λατινικά', rgb:'var(--hw-lat)', weight:20, page:'latinika.html' },
+    /* ⭐ Η Έκθεση είναι 30% των μορίων του — ισόπαλη με τα Αρχαία — και ΔΕΝ
+       έχει σελίδα, ούτε corpus, ούτε άσκηση. Δεν την κρύβουμε: είναι κανονικό
+       μάθημα εδώ, κρατάει προθεσμία, φωτογραφία και χρονόμετρο, και λέει
+       καθαρά ότι δεν υπάρχει σελίδα ακόμη. Ένα κενό που φαίνεται είναι
+       καλύτερο από ένα κρυμμένο. */
+    ekthesi:  { label:'Έκθεση',   rgb:'var(--hw-ekt)', weight:30, page:null }
+  };
+  var KINDS = {
+    apexo:      'απέξω',
+    askisi:     'άσκηση',
+    grapto:     'γραπτό',
+    diagonisma: 'διαγώνισμα'
+  };
+  /* ΑΠΕΞΩ ανήκει στη σελίδα που το βαθμολογεί· ΓΡΑΠΤΟ ανήκει ΕΔΩ. Η διαφορά
+     δεν είναι διακοσμητική — ορίζει ποιος κάνει τη δουλειά και ποιος τη
+     βαθμολογεί (καμία βαθμολογία εδώ, ποτέ). */
+  function isWritten(kind){ return kind === 'grapto' || kind === 'askisi'; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΠΡΟΓΡΑΜΜΑ — ΔΗΛΩΜΕΝΟ, ΟΧΙ ΜΑΝΤΕΜΕΝΟ
+     Είναι η εφεδρεία για συσκευή χωρίς εξουσιοδοτημένο ημερολόγιο, και
+     βγαίνει στην οθόνη με το όνομά της: «κατά το πρόγραμμα, όχι από το
+     ημερολόγιο». ⚠️ ΑΛΛΑΖΕΙ ΟΤΑΝ ΑΝΟΙΞΕΙ ΤΟ ΣΧΟΛΕΙΟ, ΜΕΣΑ ΣΕΠΤΕΜΒΡΙΟΥ 2026.
+     ══════════════════════════════════════════════════════════════════ */
+  var PLAN = {
+    wake:    '10:00',
+    morning: ['11:15','15:00'],   /* ΤΟ ΜΕΓΑΛΟ ΠΑΡΑΘΥΡΟ — εδώ πεθαίνει η δουλειά */
+    recap:   ['14:30','15:00'],   /* η επανάληψη του σημερινού 15:15 μαθήματος */
+    school:  ['15:15','18:00'],   /* ΦΡΟΝΤΙΣΤΗΡΙΟ — εδώ ΓΕΝΝΙΕΤΑΙ η εργασία   */
+    gym:     ['18:45','20:30'],
+    dinner:  ['21:00','21:40'],
+    review:  ['21:45','22:30'],   /* ΞΑΝΑΔΙΑΒΑΣΜΑ των τριών σημερινών          */
+    wind:    ['00:00','00:15'],
+    travel:  15,                  /* λεπτά, μονή διαδρομή */
+    schoolDays: [0,1,2,3,4]       /* Δευτέρα→Παρασκευή, δείκτης Δευτέρας */
+  };
+  var DAY_START = hm(PLAN.wake);          /* 10:00 */
+  var DAY_END   = hm(PLAN.wind[1]) + 1440; /* 00:15 της επόμενης */
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΑΠΟΘΗΚΗ
+     ══════════════════════════════════════════════════════════════════ */
+  var state = null, pics = null, quotaHit = false;
+
+  function blank(){ return { v:1, tasks:{}, samples:{} }; }
+
+  function banner(msg){
+    var b = $('hwBanner');
+    if (!msg){ b.classList.remove('hw-open'); b.textContent = ''; return; }
+    b.textContent = msg; b.classList.add('hw-open');
+  }
+
+  function readJSON(k, dflt){
+    var raw;
+    try { raw = localStorage.getItem(k); }
+    catch(e){ banner('Δεν μπορώ να διαβάσω την αποθήκη αυτής της συσκευής. Δεν έσβησε τίποτα — αλλά ό,τι βλέπεις μπορεί να είναι ελλιπές.'); return null; }
+    if (raw == null || raw === '') return dflt;
+    try { return JSON.parse(raw); }
+    catch(e){ banner('Η αποθήκη «' + k + '» δεν διαβάζεται. ΔΕΝ την έσβησα — μην προσθέσεις τίποτα μέχρι να το κοιτάξουμε.'); return null; }
+  }
+
+  function load(){
+    var s = readJSON(KEY, null);
+    if (s === null) return null;                 /* αδιάβαστη ≠ άδεια */
+    if (!s || typeof s !== 'object' || Array.isArray(s)) return blank();
+    var b = {}, k;
+    for (k in s) if (Object.prototype.hasOwnProperty.call(s,k)) b[k] = s[k];  /* τίποτα δεν χάνεται */
+    b.v = 1;
+    b.tasks   = (s.tasks   && typeof s.tasks   === 'object' && !Array.isArray(s.tasks))   ? s.tasks   : {};
+    b.samples = (s.samples && typeof s.samples === 'object' && !Array.isArray(s.samples)) ? s.samples : {};
+    return b;
+  }
+  function loadPics(){
+    var p = readJSON(PKEY, {});
+    if (p === null) return {};
+    return (p && typeof p === 'object' && !Array.isArray(p)) ? p : {};
+  }
+
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ. Οι εργασίες είναι ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ. Χωρίς `_ts` το
+     `mergeObject` του sync.js κατεβαίνει ως τα βαθμωτά και κρατάει το remote,
+     οπότε ΚΑΘΕ αλλαγή μετά την πρώτη γυρίζει πίσω μέσα σε ~400ms — και
+     κρύβεται, γιατί η ΠΡΩΤΗ εγγραφή κάθε record δουλεύει πάντα.
+     ⚠️ Η σφραγίδα μπαίνει ΣΤΟ save(), όχι στα δώδεκα σημεία που γράφουν.
+     Δες study-stamp.js. */
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(
+        function(){ return state ? [state.tasks, state.samples] : []; },
+        /* Παλιές εγγραφές παίρνουν τον ΠΡΑΓΜΑΤΙΚΟ τους χρόνο, ποτέ το τώρα:
+           αλλιώς «όποια συσκευή άνοιξε τελευταία τη σελίδα κερδίζει». */
+        function(i, k, rec){ return i === 0 ? (+rec.done || +rec.ts || 0) : 0; }
+      )
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) banner('Δεν φόρτωσε το study-stamp.js. Ό,τι γράφεις μένει στη συσκευή, αλλά ο συγχρονισμός μπορεί να το γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` πουθενά αλλού: κάθε ανάγνωση από τον
+     δίσκο πρέπει να ΞΑΝΑΣΠΕΡΝΕΙ το αποτύπωμα, αλλιώς το επόμενο save θα
+     σφράγιζε σαν δική μας αλλαγή ό,τι μόλις ήρθε από το cloud. */
+  function reload(){
+    var s = load();
+    if (s === null){ if (!state) state = blank(); return false; }
+    state = s; STAMP.seed(); pics = loadPics(); return true;
+  }
+
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 17: ΠΟΤΕ ΑΔΕΙΟ catch ΓΥΡΩ ΑΠΟ ΕΓΓΡΑΦΗ. Το localStorage
+     πετάει QuotaExceededError σε γεμάτη συσκευή, και το να το καταπίνεις
+     κάνει μια αποτυχημένη αποθήκευση να μοιάζει ΑΚΡΙΒΩΣ με μια πετυχημένη.
+     Επιστρέφει true ΜΟΝΟ σε επιβεβαιωμένη εγγραφή — και κάθε ταφόπλακα
+     περιμένει αυτό το true. */
+  var QUOTA_MSG = 'Ο χώρος αυτής της συσκευής γέμισε: ΔΕΝ αποθηκεύτηκε. Σβήσε μερικές φωτογραφίες εργασιών από εδώ και ξαναδοκίμασε — και θα το λέω μέχρι να λυθεί.';
+  function persist(k, obj){
+    try {
+      localStorage.setItem(k, JSON.stringify(obj));
+      /* Το μήνυμα φεύγει ΜΟΝΟ όταν μια εγγραφή ξαναπετύχει, και μόνο αν αυτό
+         ήταν το μήνυμα που έγραψε — ένα banner που καθαρίζεται από τύχη είναι
+         χειρότερο από κανένα. */
+      if (quotaHit){ quotaHit = false; if ($('hwBanner').textContent === QUOTA_MSG) banner(''); }
+      return true;
+    }
+    catch(e){ quotaHit = true; banner(QUOTA_MSG); return false; }
+  }
+  function save(){ STAMP.stamp(); return persist(KEY, state); }
+  function savePics(){ return persist(PKEY, pics); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΟΙ ΤΑΦΟΠΛΑΚΕΣ — ΧΩΡΙΣ ΝΑ ΧΡΕΙΑΖΕΤΑΙ ΝΑ ΥΠΑΡΧΕΙ Η ΜΗΧΑΝΗ SYNC
+
+     ⚠️⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 32, ΚΑΤΑ ΛΕΞΗ ΑΠΟ ΤΗΝ als-v469. Το sync.js σφραγίζει
+     ταφόπλακες από τον interceptor του `localStorage.setItem`, και εκείνος
+     υπάρχει ΜΟΝΟ αφού τρέξει το initCloudSync — που περιμένει τη συνεδρία
+     (0,5–3s σε κρύα εκκίνηση PWA, ως 12s). Αυτή η σελίδα ζωγραφίζει ΠΛΗΡΩΣ
+     ΔΙΑΔΡΑΣΤΙΚΗ λίστα στο boot, και θα σβήσει εργασία μέσα στο πρώτο
+     δευτερόλεπτο. Χωρίς ταφόπλακα, το πρώτο pull την ξαναφέρνει και το push
+     κάνει την ανάσταση αλήθεια του cloud.
+
+     Η θεραπεία δεν είναι να τον μπλοκάρουμε: είναι να σφραγίσουμε ΕΜΕΙΣ, στο
+     ΑΚΡΙΒΩΣ ίδιο κλειδί που διαβάζει η μηχανή. Ο κανόνας αντιγράφεται ΚΑΤΑ
+     ΛΕΞΗ, ποτέ «βελτιωμένος» (σταθερή αρχή 23): T = max(now, ts+1), ώστε η
+     ταφόπλακα να ΚΥΡΙΑΡΧΕΙ πάνω στη σφραγίδα του αντικειμένου και να μην τη
+     νικάει μια μελλοντική ώρα από απόκλιση ρολογιού.
+     ⚠️ Το TOMB_KEY δεν είναι `hw:` κλειδί, άρα είναι αόρατο και στο
+     matches() του sync.js — κανένας βρόχος push.
+     ══════════════════════════════════════════════════════════════════ */
+  var TOMB_KEY = '__synctomb__' + APP;
+  function tombPath(lsKey, path, id, ts){
+    if (id == null) return;
+    try {
+      var t = JSON.parse(localStorage.getItem(TOMB_KEY) || '{}');
+      if (!t || typeof t !== 'object' || Array.isArray(t)) t = {};
+      var node = t[lsKey];
+      if (!node || typeof node !== 'object' || Array.isArray(node)){ node = {}; t[lsKey] = node; }
+      var i;
+      for (i = 0; i < path.length; i++){
+        var nx = node[path[i]];
+        if (!nx || typeof nx !== 'object' || Array.isArray(nx)){ nx = {}; node[path[i]] = nx; }
+        node = nx;
+      }
+      var cur = (typeof node[id] === 'number') ? node[id] : 0;
+      node[id] = Math.max(cur, Date.now(), (+ts || 0) + 1);
+      localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+    } catch(e){
+      /* Μια ταφόπλακα που δεν γράφτηκε είναι ένα σβήσιμο που θα γυρίσει.
+         Δεν το κρύβουμε πίσω από ένα άδειο catch. */
+      banner('Το σβήσιμο γράφτηκε σε αυτή τη συσκευή αλλά ΔΕΝ σφραγίστηκε για τον συγχρονισμό. Μπορεί να ξαναεμφανιστεί. Ανανέωσε και ξαναδοκίμασε.');
+    }
+  }
+  /* Οι εργασίες ζουν σε ΦΩΛΙΑΣΜΕΝΟ χάρτη (`hw:v1` → `tasks` → id), άρα η
+     ταφόπλακα είναι φωλιασμένη κι αυτή — έτσι ακριβώς την ψάχνει το
+     diffTomb/subTomb του sync.js. Οι φωτογραφίες είναι χάρτης πρώτου
+     επιπέδου. Δύο σχήματα, ένας κανόνας. */
+  function tombTask(id, ts){ tombPath(KEY,  ['tasks'], id, ts); }
+  function tombPic(id, ts){  tombPath(PKEY, [],        id, ts); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΟΙ ΠΕΝΤΕ ΣΚΑΛΕΣ (ΜΟΝΟ ΑΝΑΓΝΩΣΗ)
+     ══════════════════════════════════════════════════════════════════ */
+  var LAD = null;
+  function ladders(){
+    if (!window.ALSLadders){
+      return { stores: [], byKey: {}, items: [], broken: 'reader' };
+    }
+    LAD = window.ALSLadders.read({ get: function(k){ return localStorage.getItem(k); } });
+    return LAD;
+  }
+
+  /* Οι ΤΙΤΛΟΙ έρχονται από τα ίδια τα corpora, ποτέ από αντίγραφο εδώ: ένα
+     δεύτερο αντίγραφο μιας ύλης είναι δύο ύλες με καθυστέρηση. Αν λείπει το
+     corpus, μένει το id — που είναι άσχημο αλλά ΑΛΗΘΙΝΟ. */
+  function unitTitle(store, id){
+    try {
+      if (store === 'lat:v1' && window.LatinEngine && window.LatinEngine.cellLabel)
+        return window.LatinEngine.cellLabel(id) || id;
+      if (store === 'ton:v1' && window.TonosEngine && window.TonosEngine.cellLabel)
+        return window.TonosEngine.cellLabel(id) || id;
+      if (store === 'ist:v1' && window.ISTORIA){
+        var u = window.ISTORIA.unit(id);
+        if (u) return u.title || u.section || id;
+      }
+      if (store === 'arx:gn' && window.ARXGN){
+        var g = window.ARXGN.unit(id);
+        if (g) return g.title || g.section || id;
+      }
+      if (store === 'arx:v1' && window.ArxaiaData && window.ArxaiaData.page){
+        var p = window.ArxaiaData.page(id);
+        if (p) return 'Σελίδα ' + (p.n || 1) + ' · ' + (p.range || '');
+      }
+    } catch(e){}
+    return id;
+  }
+  /* Όλες οι ενότητες που ΞΕΡΕΙ ο parser. Βγαίνουν από τα corpora, όχι από
+     χειρόγραφη λίστα εδώ: μια λίστα που αντιγράφεται είναι μια λίστα που
+     ξεμένει πίσω την επόμενη φορά που θα προστεθεί ενότητα. */
+  function knownUnits(){
+    var out = [];
+    try {
+      if (window.ISTORIA && window.ISTORIA.UNITS)
+        window.ISTORIA.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'istoria', page:'istoria.html', title:u.title||'', deep:true }); });
+      if (window.ARXGN && window.ARXGN.UNITS)
+        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia', page:'arxaia.html', title:u.title||'', deep:false }); });
+      if (window.ArxaiaData && window.ArxaiaData.PAGES)
+        window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia', page:'arxaia.html', title:p.range||'', deep:false }); });
+    } catch(e){}
+    return out;
+  }
+
+  /* ⚠️ ΤΟ ΒΑΘΥ LINK ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Μόνο η istoria.html διαβάζει hash
+     (`#recall:<id>` — istoria.html:1336). Οι άλλες δύο δεν έχουν, οπότε ο
+     σύνδεσμος πάει στη σελίδα σκέτη. Ένα ωραίο link που προσγειώνεται σε
+     αδιέξοδο είναι χειρότερο από ένα απλό που δουλεύει. */
+  function deepLink(page, unitId){
+    if (page === 'istoria.html' && unitId) return page + '#recall:' + encodeURIComponent(unitId);
+    return page || '#';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΗΜΕΡΟΛΟΓΙΟ — ή η ΔΗΛΩΜΕΝΗ εφεδρεία του
+     ⚠️ Τα `gcal:*` είναι ΤΟΠΙΚΑ ΣΤΗ ΣΥΣΚΕΥΗ και δεν συγχρονίζονται ποτέ. Σε
+     συσκευή χωρίς εξουσιοδότηση η μέρα ΔΕΝ είναι άδεια, είναι ΑΓΝΩΣΤΗ, και
+     αυτό λέγεται με λέξεις (σταθερή αρχή 10).
+     ══════════════════════════════════════════════════════════════════ */
+  function calState(){
+    if (!window.GCal) return 'noscript';
+    try {
+      if (!GCal.isConnected()) return 'unauthorised';
+      var c = GCal.cached();
+      if (!c || !c.events) return 'unread';
+      return 'live';
+    } catch(e){ return 'unread'; }
+  }
+
+  /* Τα ΜΠΛΟΚ μιας μέρας: {from, to, name, cls} σε λεπτά από τα μεσάνυχτα.
+     Πηγή: το ημερολόγιο όταν υπάρχει· αλλιώς το δηλωμένο πρόγραμμα. */
+  function blocksFor(off){
+    var st = calState(), base = midnight(off), out = [], src = st === 'live' ? 'cal' : 'plan';
+    function push(fromMin, toMin, name, cls){
+      if (toMin <= fromMin) return;
+      out.push({ from:fromMin, to:toMin, name:name, cls:cls });
+    }
+    if (st === 'live'){
+      var d = null;
+      try { d = GCal.day(off); } catch(e){ d = null; }
+      if (d){
+        d.events.forEach(function(e){
+          if (e.allDay) return;
+          var s = GCal.startOf(e), en = GCal.endOf(e);
+          if (isNaN(s) || isNaN(en)) return;
+          var f = (s - base) / 60000, t = (en - base) / 60000;
+          var c = e._class || GCal.classify(e);
+          push(f, t, e.title, c === 'school' ? 'school' : c === 'exam' ? 'school' : 'quiet');
+        });
+        /* ΤΟ ΞΑΝΑΔΙΑΒΑΣΜΑ ΚΑΙ ΤΟ ΜΕΓΑΛΟ ΠΑΡΑΘΥΡΟ δεν είναι ραντεβού — δεν
+           είναι στο ημερολόγιο και δεν πρέπει να είναι. Είναι ο σκελετός της
+           μέρας, και ζωγραφίζονται πάντα. */
+        push(hm(PLAN.morning[0]), hm(PLAN.morning[1]), 'Το μεγάλο παράθυρο', 'study');
+        push(hm(PLAN.review[0]),  hm(PLAN.review[1]),  'Ξαναδιάβασμα', 'study');
+        out.sort(function(a,b){ return a.from - b.from; });
+        return { src:src, cal:st, blocks:out };
+      }
+    }
+    var isSchoolDay = PLAN.schoolDays.indexOf(dowMon(base)) >= 0;
+    push(hm(PLAN.morning[0]), hm(PLAN.morning[1]), 'Το μεγάλο παράθυρο', 'study');
+    if (isSchoolDay) push(hm(PLAN.school[0]), hm(PLAN.school[1]), 'Φροντιστήριο', 'school');
+    push(hm(PLAN.gym[0]),    hm(PLAN.gym[1]),    'Γυμναστήριο', 'quiet');
+    push(hm(PLAN.dinner[0]), hm(PLAN.dinner[1]), 'Φαγητό', 'quiet');
+    push(hm(PLAN.review[0]), hm(PLAN.review[1]), 'Ξαναδιάβασμα', 'study');
+    out.sort(function(a,b){ return a.from - b.from; });
+    return { src:src, cal:st, blocks:out };
+  }
+
+  /* Τα ΜΑΘΗΜΑΤΑ μιας μέρας στο φροντιστήριο, όσο μπορεί να τα ξέρει το
+     ημερολόγιο. Χωρίς ημερολόγιο δεν τα ΜΑΝΤΕΥΟΥΜΕ — γυρίζουμε άδειο και το
+     λέμε. */
+  function lessonsFor(off){
+    if (calState() !== 'live') return null;
+    var out = [];
+    try {
+      var d = GCal.day(off);
+      d.events.forEach(function(e){
+        var c = e._class || GCal.classify(e);
+        if (c !== 'school' && c !== 'exam') return;
+        /* ⚠️ Ένα μάθημα που δεν λέει το μάθημά του στον τίτλο ΕΞΑΚΟΛΟΥΘΕΙ να
+           είναι μάθημα. Το πετούσα, και το «ξαναδιάβασμα» έμενε άδειο σε ένα
+           ημερολόγιο που έγραφε σκέτο «Φροντιστήριο» — σιωπηλό μηδέν. */
+        out.push({ subject:subjectOfText(e.title), title:e.title, exam:c === 'exam' });
+      });
+    } catch(e){ return null; }
+    return out;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Ο ΧΡΟΝΟΣ — Η ΑΦΑΙΡΕΣΗ ΠΟΥ ΦΑΙΝΕΤΑΙ
+
+     Δεν χρησιμοποιεί το `GCal.day(0).gaps` κατευθείαν, επίτηδες: εκείνο
+     πετάει κάθε κενό κάτω από 30 λεπτά (MIN_GAP) και ανοίγει στις 10:00
+     ό,τι κι αν λέει ο ορίζοντας — οπότε ο αριθμός στην κορυφή ΔΕΝ θα έβγαινε
+     από τις γραμμές από κάτω. Και το μόνο πράγμα που κάνει αυτόν τον αριθμό
+     αξιόπιστο είναι ότι ελέγχεται με το μάτι. Ίδια γεγονότα, δική μας
+     αριθμητική, ένα άθροισμα.
+     ══════════════════════════════════════════════════════════════════ */
+  function budget(){
+    var now = new Date();
+    var nowMin = now.getHours()*60 + now.getMinutes();
+    var day = blocksFor(0);
+    var horizonMin, horizonName;
+
+    if (nowMin < hm(PLAN.review[0])){ horizonMin = hm(PLAN.review[0]); horizonName = 'Ως το ξαναδιάβασμα ' + PLAN.review[0]; }
+    else if (nowMin < hm(PLAN.review[1])){ horizonMin = hm(PLAN.review[1]); horizonName = 'Το ξαναδιάβασμα τρέχει τώρα'; }
+    else if (nowMin < 24*60){ horizonMin = 24*60 + hm(PLAN.wind[1]); horizonName = 'Ως τα φώτα ' + PLAN.wind[1]; }
+    else { horizonMin = hm(PLAN.wind[1]); horizonName = 'Ως τα φώτα ' + PLAN.wind[1]; }
+
+    var gross = Math.max(0, horizonMin - nowMin);
+    var lines = [], spent = 0, sawSchool = false;
+
+    /* ⚠️ ΤΑ ΜΠΛΟΚ ΠΡΕΠΕΙ ΝΑ ΕΝΩΘΟΥΝ ΠΡΙΝ ΑΦΑΙΡΕΘΟΥΝ. Δύο γεγονότα που
+       επικαλύπτονται στο ημερολόγιο θα αφαιρούνταν ΔΥΟ ΦΟΡΕΣ, και ο αριθμός
+       στην κορυφή θα έπεφτε κάτω από την αλήθεια — ή και στο μηδέν. Ενώνουμε
+       πρώτα, και κάθε γραμμή που φαίνεται ΕΙΝΑΙ ένα ενωμένο διάστημα, ώστε το
+       άθροισμα των γραμμών να είναι ΑΚΡΙΒΩΣ ο αριθμός που αφαιρέθηκε. */
+    var clipped = [];
+    day.blocks.forEach(function(b){
+      if (b.cls === 'study') return;                 /* το παράθυρο ΕΙΝΑΙ ο χρόνος, δεν αφαιρείται */
+      var f = Math.max(b.from, nowMin), t = Math.min(b.to, horizonMin);
+      if (t <= f) return;
+      clipped.push({ from:f, to:t, name:b.name, school:b.cls === 'school' });
+    });
+    clipped.sort(function(a,b){ return a.from - b.from; });
+    var merged = [];
+    clipped.forEach(function(c){
+      var last = merged[merged.length - 1];
+      if (last && c.from <= last.to){
+        last.to = Math.max(last.to, c.to);
+        if (last.names.indexOf(c.name) < 0) last.names.push(c.name);
+        last.school = last.school || c.school;
+      } else {
+        merged.push({ from:c.from, to:c.to, names:[c.name], school:c.school });
+      }
+    });
+    merged.forEach(function(m){
+      var mins = m.to - m.from;
+      spent += mins;
+      lines.push({ label:m.names.join(' + ') + ' ' + clock(m.from) + '–' + clock(m.to), mins:mins });
+      if (m.school) sawSchool = true;
+    });
+
+    /* Η ώρα ΠΡΙΝ ανοίξει το μεγάλο παράθυρο δεν είναι χρόνος μελέτης, και δεν
+       επιτρέπεται να φουσκώνει το «μένουν». Παίρνει το όνομά της και μπαίνει
+       σαν κανονική αφαίρεση, ώστε να ελέγχεται όπως όλα τα άλλα. */
+    var winStart = hm(PLAN.morning[0]);
+    if (nowMin < winStart && winStart < horizonMin){
+      var pre = 0, i2;
+      for (i2 = 0; i2 < merged.length; i2++){
+        var f2 = Math.max(merged[i2].from, nowMin), t2 = Math.min(merged[i2].to, winStart);
+        if (t2 > f2) pre += t2 - f2;
+      }
+      var gap = (winStart - nowMin) - pre;
+      if (gap > 0){
+        spent += gap;
+        lines.push({ label:'Πριν το παράθυρο ' + clock(nowMin) + '–' + PLAN.morning[0], mins:gap });
+      }
+    }
+
+    /* Ο δρόμος ΔΕΝ είναι στο ημερολόγιο και δεν πρόκειται να μπει. Είναι
+       δηλωμένη σταθερά, μπαίνει σαν ΔΙΚΗ ΤΗΣ γραμμή, και άρα ελέγχεται. */
+    if (sawSchool){
+      var trips = (nowMin <= hm(PLAN.school[0])) ? 2 : 1;
+      var travel = trips * PLAN.travel;
+      spent += travel;
+      lines.push({ label:'Δρόμος ×' + trips, mins:travel });
+    }
+
+    return {
+      nowMin:nowMin, horizonMin:horizonMin, horizonName:horizonName,
+      gross:gross, spent:spent, free:Math.max(0, gross - spent),
+      lines:lines, cal:day.cal, src:day.src
+    };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Ο ΧΡΟΝΟΣ ΠΟΥ ΜΑΘΑΙΝΕΤΑΙ
+
+     ⛔ ΠΟΤΕ ΕΠΙΝΟΗΜΕΝΗ ΕΚΤΙΜΗΣΗ. Το `est` είναι `null` μέχρι να ΜΕΤΡΗΘΕΙ. Την
+     πρώτη φορά που κάνει μια Ιστορία η σελίδα δεν μαθαίνει τίποτα· την τρίτη
+     μπορεί να πει «συνήθως 18 λεπτά». Μέχρι τότε δείχνει «—», ποτέ μαντεψιά:
+     μια εύλογη μυθοπλασία είναι χειρότερη από ένα άδειο πεδίο (als-v433).
+     Ένας κυλιόμενος ΔΙΑΜΕΣΟΣ ανά subject×kind, ελάχιστο 3 δείγματα, είναι
+     ΟΛΟ το «μαθαίνω από την πραγματικότητα» — και είναι τίμιο.
+     ══════════════════════════════════════════════════════════════════ */
+  var EST_MIN_SAMPLES = 3, EST_WINDOW = 7;
+  function sampleKey(subject, kind){ return subject + '|' + kind; }
+  function estimate(subject, kind){
+    var rec = state.samples[sampleKey(subject, kind)];
+    if (!rec || !Array.isArray(rec.mins) || rec.mins.length < EST_MIN_SAMPLES) return null;
+    var a = rec.mins.slice(-EST_WINDOW).slice().sort(function(x,y){ return x - y; });
+    var mid = Math.floor(a.length / 2);
+    return a.length % 2 ? a[mid] : Math.round((a[mid-1] + a[mid]) / 2);
+  }
+  function recordSample(subject, kind, mins){
+    mins = Math.round(mins);
+    if (!(mins > 0) || mins > 600) return;          /* ένα ξεχασμένο χρονόμετρο δεν είναι μέτρηση */
+    var k = sampleKey(subject, kind), rec = state.samples[k];
+    if (!rec || !Array.isArray(rec.mins)) rec = state.samples[k] = { mins:[] };
+    rec.mins.push(mins);
+    if (rec.mins.length > 30) rec.mins = rec.mins.slice(-30);
+  }
+  function estText(subject, kind){
+    var e = estimate(subject, kind);
+    return e == null ? '—' : '~' + e + '′';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Ο PARSER — ΝΤΕΤΕΡΜΙΝΙΣΤΙΚΟΣ ΚΑΙ ΚΛΕΙΣΤΟΣ, ΠΟΤΕ ΜΟΝΤΕΛΟ
+
+     ⛔ ΚΑΜΙΑ ΑΝΑΓΝΩΡΙΣΗ ΦΩΤΟΓΡΑΦΙΑΣ ΕΔΩ, ΜΕ ΚΑΝΕΝΑ ΕΠΙΧΕΙΡΗΜΑ. Ο ρόλος
+     `vision` είναι ΕΝΑ preview μοντέλο ΧΩΡΙΣ εφεδρεία, τα ελληνικά
+     χειρόγραφα είναι ακριβώς αυτό που αποτυγχάνει να διαβάσει με τη
+     μεγαλύτερη σιγουριά, και μια ΛΑΘΟΣ προθεσμία είναι χειρότερη από καμία.
+     Η φωτογραφία μπαίνει σαν ΠΗΓΗ (βλέπεται, δεν διαβάζεται) και ο δρόμος
+     της μεταγραφής περνάει από τη ΣΥΖΗΤΗΣΗ, όπου ένα λάθος διόρθωμα απέχει
+     ένα μήνυμα — δες `add_homework` στο api/mcp.js.
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* Χωρίς τόνους και πεζά, ώστε «ΙΣΤΟΡΊΑ» και «ιστορια» να είναι το ίδιο. */
+  function fold(s){
+    var t = String(s == null ? '' : s).toLowerCase();
+    try { t = t.normalize('NFD').replace(/[̀-ͯ]/g,''); } catch(e){}
+    return t.replace(/[^Ͱ-Ͽἀ-῿a-z0-9\/]/g,'');
+  }
+
+  /* Πραγματικές συντομογραφίες και ορθογραφίες, όχι θεωρητικές. */
+  var SUBJ_ALIAS = [
+    ['istoria',  ['ιστορια','ιστ','ισ','ιστοριας','history']],
+    ['arxaia',   ['αρχαια','αρχ','αγνωστο','γνωστο','αρχαιων','αρχαιαελληνικα']],
+    ['latinika', ['λατινικα','λατ','λατινικων','latin']],
+    ['ekthesi',  ['εκθεση','εκθ','νεοελληνικη','νεοελληνικηγλωσσα','γλωσσα','εκθεσης']]
+  ];
+  var KIND_ALIAS = [
+    ['apexo',      ['απεξω','αποστηθιση','παπαγαλια','προφορικα']],
+    ['diagonisma', ['διαγωνισμα','τεστ','test','εξεταση']],
+    ['grapto',     ['γραπτο','γραψιμο','εκθεση','κειμενο','παραγραφο','παραγραφος']],
+    ['askisi',     ['ασκηση','ασκησεις','ασκ','φυλλαδιο','θεματα','μεταφραση']]
+  ];
+  var WHEN_ALIAS = [
+    ['auri',  ['αυριο']],
+    ['meth',  ['μεθαυριο']],
+    ['sim',   ['σημερα']]
+  ];
+  var DOW_ALIAS = [
+    ['δευτερα',0],['τριτη',1],['τεταρτη',2],['πεμπτη',3],['παρασκευη',4],['σαββατο',5],['κυριακη',6],
+    ['δευτ',0],['τετ',2],['πεμπ',3],['παρ',4],['σαβ',5],['κυρ',6]
+  ];
+
+  /* Ένα weekday λύνεται στην ΕΠΟΜΕΝΗ εμφάνισή του. «Τρίτη» ειπωμένο Τρίτη
+     σημαίνει την επόμενη Τρίτη — αν εννοούσε σήμερα, θα έλεγε «σήμερα». */
+  function nextDow(target){
+    var d = midnight(0), cur = dowMon(d), diff = (target - cur + 7) % 7;
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    return dkOf(d);
+  }
+  function offDate(off){ return dkOf(midnight(off)); }
+
+  function subjectOfText(text){
+    var f = fold(text), i, j;
+    for (i = 0; i < SUBJ_ALIAS.length; i++)
+      for (j = 0; j < SUBJ_ALIAS[i][1].length; j++)
+        if (f.indexOf(SUBJ_ALIAS[i][1][j]) >= 0) return SUBJ_ALIAS[i][0];
+    return null;
+  }
+
+  function parseLine(raw){
+    var text = String(raw == null ? '' : raw).trim();
+    var toks = text.split(/\s+/).filter(Boolean);
+    var used = {}, out = { subject:null, unit:null, due:null, kind:null, title:'', raw:text };
+    var units = knownUnits();
+    var i, j, k, f;
+
+    /* 1 · ΜΑΘΗΜΑ */
+    for (i = 0; i < toks.length && !out.subject; i++){
+      f = fold(toks[i]); if (!f) continue;
+      for (j = 0; j < SUBJ_ALIAS.length && !out.subject; j++)
+        for (k = 0; k < SUBJ_ALIAS[j][1].length; k++)
+          if (f === SUBJ_ALIAS[j][1][k]){ out.subject = SUBJ_ALIAS[j][0]; used[i] = 1; break; }
+    }
+
+    /* 2 · ΕΝΟΤΗΤΑ — μόνο ids που ΥΠΑΡΧΟΥΝ στα corpora. Ένα token που δεν
+       αναγνωρίζεται μένει στον τίτλο, ΠΟΤΕ δεν μαντεύεται. */
+    for (i = 0; i < toks.length && !out.unit; i++){
+      if (used[i]) continue;
+      f = fold(toks[i]); if (!f) continue;
+      for (j = 0; j < units.length; j++){
+        if (fold(units[j].id) === f){ out.unit = units[j]; used[i] = 1; break; }
+      }
+    }
+    /* Αν βρέθηκε ενότητα αλλά όχι μάθημα, το μάθημα προκύπτει από την ίδια
+       την ενότητα — αυτό ΔΕΝ είναι μαντεψιά, είναι το corpus. */
+    if (out.unit && !out.subject) out.subject = out.unit.subject;
+
+    /* 3 · ΕΙΔΟΣ */
+    for (i = 0; i < toks.length && !out.kind; i++){
+      if (used[i]) continue;
+      f = fold(toks[i]); if (!f) continue;
+      for (j = 0; j < KIND_ALIAS.length && !out.kind; j++)
+        for (k = 0; k < KIND_ALIAS[j][1].length; k++)
+          if (f === KIND_ALIAS[j][1][k]){ out.kind = KIND_ALIAS[j][0]; used[i] = 1; break; }
+    }
+
+    /* 4 · ΗΜΕΡΟΜΗΝΙΑ. Τίποτα δεν βρέθηκε → `due: null`, και η κάρτα λέει
+       «χωρίς ημερομηνία» αντί να επινοήσει μία. */
+    for (i = 0; i < toks.length && !out.due; i++){
+      if (used[i]) continue;
+      f = fold(toks[i]); if (!f) continue;
+      if (f === 'σημερα'){ out.due = offDate(0); used[i] = 1; break; }
+      if (f === 'αυριο'){ out.due = offDate(1); used[i] = 1; break; }
+      if (f === 'μεθαυριο'){ out.due = offDate(2); used[i] = 1; break; }
+      /* ⚠️ ΤΟ ΠΑΥΛΑΚΙ ΔΕΝ ΕΙΝΑΙ ΧΩΡΙΣΤΙΚΟ ΗΜΕΡΟΜΗΝΙΑΣ ΕΔΩ. Η ίδια η γραμμή
+         του παραδείγματος — «ασκήσεις 4-7 για Τρίτη» — έκανε το «4-7» να
+         διαβαστεί ως 4 Ιουλίου: μια ΕΥΡΟΣ ΑΣΚΗΣΕΩΝ που γίνεται προθεσμία, με
+         τη γραμμή του να εξαφανίζεται στην πορεία. Μια ΛΑΘΟΣ προθεσμία είναι
+         χειρότερη από καμία. Στα ελληνικά η ημερομηνία γράφεται 20/8 ή 20.8· η
+         παύλα μένει δική του. */
+      var dm = /^(\d{1,2})[\/\.](\d{1,2})$/.exec(toks[i]);
+      if (dm){
+        var dd = +dm[1], mm = +dm[2];
+        if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12){
+          var y = new Date().getFullYear();
+          var cand = new Date(y, mm-1, dd); cand.setHours(0,0,0,0);
+          if (cand < midnight(0)) cand = new Date(y+1, mm-1, dd);   /* πάντα μπροστά */
+          out.due = dkOf(cand); used[i] = 1; break;
+        }
+      }
+      for (j = 0; j < DOW_ALIAS.length; j++){
+        if (f === DOW_ALIAS[j][0]){ out.due = nextDow(DOW_ALIAS[j][1]); used[i] = 1; break; }
+      }
+      if (out.due) break;
+    }
+
+    /* 5 · Ο ΤΙΤΛΟΣ — ΤΑ ΔΙΚΑ ΤΟΥ ΛΟΓΙΑ, ΑΥΤΟΥΣΙΑ. Ό,τι περίσσεψε, με την
+       αρχική ορθογραφία και τους τόνους του. Καμία ξαναγραφή, ποτέ. */
+    var rest = [];
+    for (i = 0; i < toks.length; i++){
+      var w = fold(toks[i]);
+      if (used[i]) continue;
+      if (w === 'για' || w === 'το' || w === 'τα' || w === 'τη' || w === 'την' || w === 'στο' || w === 'στη') continue;
+      rest.push(toks[i]);
+    }
+    out.title = rest.join(' ').trim();
+    /* Το default είναι δηλωμένο, φαίνεται σαν chip, και αλλάζει με ένα πάτημα.
+       Η Έκθεση είναι εξ ορισμού ΓΡΑΠΤΟ — αυτό δεν είναι μαντεψιά, είναι το
+       μάθημα. */
+    if (!out.kind) out.kind = (out.subject === 'ekthesi') ? 'grapto' : 'askisi';
+    return out;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΟΙ ΕΡΓΑΣΙΕΣ
+     ══════════════════════════════════════════════════════════════════ */
+  function uid(){ return 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function taskList(){
+    var out = [], k;
+    for (k in state.tasks){
+      if (!Object.prototype.hasOwnProperty.call(state.tasks, k)) continue;
+      var t = state.tasks[k];
+      if (t && typeof t === 'object' && t.id) out.push(t);
+    }
+    out.sort(function(a,b){
+      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      var ad = a.due || '9999-99-99', bd = b.due || '9999-99-99';
+      if (ad !== bd) return ad < bd ? -1 : 1;
+      return (b.ts || 0) - (a.ts || 0);
+    });
+    return out;
+  }
+  function addTask(p){
+    var id = uid(), now = Date.now();
+    state.tasks[id] = {
+      id:id, ts:now,
+      subject: p.subject || 'ekthesi',
+      title: p.title || (p.unit ? unitTitle(storeOfUnit(p.unit), p.unit.id) : ''),
+      due: p.due || null,
+      kind: p.kind || 'askisi',
+      link: p.unit ? { page:p.unit.page, unit:p.unit.id } : null,
+      est: null,                    /* ⛔ null μέχρι να ΜΕΤΡΗΘΕΙ */
+      done: 0,
+      src: p.src || null,
+      note: p.note || '',
+      elapsed: 0
+    };
+    if (!save()){ delete state.tasks[id]; return null; }
+    return id;
+  }
+  function storeOfUnit(u){
+    if (!u) return null;
+    if (u.subject === 'istoria') return 'ist:v1';
+    if (String(u.id).indexOf('gn') === 0 || String(u.id).indexOf('gk') === 0) return 'arx:gn';
+    return 'arx:v1';
+  }
+  function dropTask(id){
+    var t = state.tasks[id];
+    if (!t) return;
+    delete state.tasks[id];
+    /* ⚠️ Η ΤΑΦΟΠΛΑΚΑ ΜΠΑΙΝΕΙ ΜΟΝΟ ΜΕΤΑ ΑΠΟ ΕΠΙΒΕΒΑΙΩΜΕΝΗ ΕΓΓΡΑΦΗ. Μια
+       ταφόπλακα πάνω σε κάτι που είναι ακόμη εκεί (γεμάτος δίσκος) σβήνει
+       κάτι που ο χρήστης κράτησε. */
+    if (save()) tombTask(id, t.ts);
+    else state.tasks[id] = t;
+  }
+  /* ⚠️ ΟΙ ΜΑΖΙΚΕΣ ΔΙΑΓΡΑΦΕΣ ΘΕΛΟΥΝ ΤΟΝ ΙΔΙΟ ΚΑΝΟΝΑ, ΟΧΙ ΜΟΝΟ ΤΟ ✕. Χωρίς
+     ταφόπλακες το cloud τις ξαναπροσθέτει ΟΛΕΣ — έτσι φτιάχτηκαν τα
+     διπλότυπα της als-v469 στην πρώτη θέση. */
+  function sweepDone(){
+    var gone = [], k;
+    for (k in state.tasks){
+      if (!Object.prototype.hasOwnProperty.call(state.tasks, k)) continue;
+      if (state.tasks[k] && state.tasks[k].done) gone.push(state.tasks[k]);
+    }
+    if (!gone.length) return 0;
+    gone.forEach(function(t){ delete state.tasks[t.id]; });
+    if (!save()){ gone.forEach(function(t){ state.tasks[t.id] = t; }); return 0; }
+    gone.forEach(function(t){ tombTask(t.id, t.ts); });
+    return gone.length;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΟΙ ΦΩΤΟΓΡΑΦΙΕΣ — ΠΗΓΗ, ΠΟΤΕ ΕΙΣΟΔΟΣ
+
+     ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 17. Το `run:shoePics` κόβει στα 26 KB· εδώ ο κανόνας
+     είναι σκληρός: ≤1200px, JPEG q0.72, ΑΝΩΤΑΤΟ 40 KB ανά φωτογραφία, το
+     πολύ 12 συνολικά. Ό,τι πέφτει έξω το λέμε με μια πρόταση στην οθόνη.
+     Ζουν σε ΔΙΚΟ ΤΟΥΣ κλειδί και είναι σκόπιμα ΕΞΩ από τον δρόμο ανάγνωσης
+     της σκάλας, ώστε μια γεμάτη αποθήκη φωτογραφιών να μην μπορεί ποτέ να
+     χαλάσει τη σύσταση.
+     ══════════════════════════════════════════════════════════════════ */
+  var PIC_MAX_BYTES = 40 * 1024, PIC_MAX_EDGE = 1200, PIC_KEEP = 12;
+
+  function shrink(file, cb){
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      try {
+        var w = img.width, h = img.height, sc = Math.min(1, PIC_MAX_EDGE / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        var q = 0.72, data = c.toDataURL('image/jpeg', q);
+        while (data.length * 0.75 > PIC_MAX_BYTES && q > 0.3){ q -= 0.12; data = c.toDataURL('image/jpeg', q); }
+        URL.revokeObjectURL(url);
+        if (data.length * 0.75 > PIC_MAX_BYTES){ cb(null, 'Η φωτογραφία δεν συμπιέζεται κάτω από 40 KB. Τράβα την πιο κοντά, με λιγότερο φόντο.'); return; }
+        cb(data, null);
+      } catch(e){ URL.revokeObjectURL(url); cb(null, 'Δεν μπόρεσα να επεξεργαστώ αυτή τη φωτογραφία.'); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); cb(null, 'Δεν μπόρεσα να ανοίξω αυτή τη φωτογραφία.'); };
+    img.src = url;
+  }
+
+  function addPic(dataUrl){
+    var id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+    var attached = {}, k;
+    for (k in state.tasks){
+      if (!Object.prototype.hasOwnProperty.call(state.tasks, k)) continue;
+      var t = state.tasks[k];
+      if (t && t.src && t.src.id) attached[t.src.id] = 1;
+    }
+    var all = Object.keys(pics).map(function(pk){ return pics[pk]; })
+                    .filter(function(p){ return p && p.id; })
+                    .sort(function(a,b){ return (a.ts||0) - (b.ts||0); });
+    var dropped = 0;
+    while (all.length >= PIC_KEEP){
+      var victim = null, i;
+      for (i = 0; i < all.length; i++) if (!attached[all[i].id]){ victim = all[i]; break; }
+      if (!victim) break;                         /* όλες δεμένες: δεν πετάμε δουλειά του */
+      delete pics[victim.id];
+      all = all.filter(function(p){ return p.id !== victim.id; });
+      if (savePics()) tombPic(victim.id, victim.ts);
+      dropped++;
+    }
+    pics[id] = { id:id, ts:Date.now(), d:dataUrl };
+    if (!savePics()){ delete pics[id]; return { id:null, dropped:dropped }; }
+    return { id:id, dropped:dropped };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ — Η ΣΥΣΤΑΣΗ
+
+     ⛔ ΠΟΤΕ ΔΕΝ ΖΩΓΡΑΦΙΖΕΤΑΙ ΣΚΟΡ. ⭐ ΠΑΝΤΑ ΖΩΓΡΑΦΙΖΕΤΑΙ Ο ΛΟΓΟΣ, στα
+     ελληνικά, ΚΑΙ ΕΙΝΑΙ Η ΙΔΙΑ ΠΡΟΤΑΣΗ ΠΟΥ ΠΑΡΗΓΑΓΕ ΤΟ ΣΚΟΡ — κάθε όρος
+     προσθέτει ταυτόχρονα βάρος και μία λέξη. Δεν υπάρχει τρόπος να
+     διαφωνήσουν, γιατί είναι το ίδιο πράγμα.
+     ══════════════════════════════════════════════════════════════════ */
+  function candidates(free){
+    var out = [], L = LAD || ladders();
+    var tomorrow = lessonsFor(1);
+    var tomorrowSubj = {};
+    if (tomorrow) tomorrow.forEach(function(l){ tomorrowSubj[l.subject] = 1; });
+    var exam = null;
+    try { exam = (calState() === 'live' && window.GCal) ? GCal.nextExam() : null; } catch(e){ exam = null; }
+    var examSubj = exam ? subjectOfText(exam.ev.title) : null;
+    var t0 = today();
+
+    /* 1 · ΤΟ ΧΡΕΟΣ ΤΗΣ ΜΝΗΜΗΣ — η δεξαμενή που δεν βλέπει τίποτε άλλο. */
+    L.stores.forEach(function(s){
+      if (!s.ok) return;
+      var late = s.items.filter(function(it){ return it.due && Date.now() >= it.due && (it.learned || it.samples > 0); });
+      if (!late.length) return;
+      late.sort(function(a,b){ return a.due - b.due; });
+      var it = late[0];
+      var why = [], score = 0;
+      var d = window.ALSLadders.daysLate(it.due, Date.now());
+      why.push('έληξε' + (d > 0 ? ' πριν ' + d + (d === 1 ? ' μέρα' : ' μέρες') : ' σήμερα'));
+      score += 30 + Math.min(d, 10) * 3;
+      /* «αδύνατο» = κάτω από το PASS της ΔΙΚΗΣ ΤΟΥ σελίδας (0.9 — lesson-grade.js),
+         ή, για τα κελιά, ότι έπεσε στο σκαλί 0 με τουλάχιστον τρεις μετρήσεις.
+         Και τα δύο βγαίνουν από τη μηχανική της σελίδας που το κατέχει. */
+      var weak = (it.accuracy != null && it.samples >= 5 && it.accuracy < 0.9)
+              || (it.accuracy != null && it.samples >= 3 && it.rung === 0);
+      if (weak){ why.push('αδύνατο'); score += 20; }
+      if (tomorrowSubj[s.subject]){ why.push('αύριο το έχεις'); score += 15; }
+      if (examSubj && examSubj === s.subject && exam.days <= 7){ why.push('διαγώνισμα σε ' + exam.days + (exam.days === 1 ? ' μέρα' : ' μέρες')); score += 35; }
+      out.push({
+        kind:'ladder', store:s.key, subject:s.subject, weight:s.weight,
+        title:s.label, unitId:it.unitId, unitLabel:unitTitle(s.key, it.unitId),
+        href:deepLink(s.page, s.deep ? it.unitId : null),
+        cta:'Πες το', est:null, why:why, score:score, more:late.length - 1
+      });
+    });
+
+    /* 2 · ΟΙ ΕΡΓΑΣΙΕΣ */
+    taskList().forEach(function(t){
+      if (t.done) return;
+      var why = [], score = 0;
+      if (t.due){
+        var d = daysBetween(t.due, t0);
+        if (d < 0){ why.push('πέρασε η προθεσμία'); score += 55; }
+        else if (d === 0){ why.push('για σήμερα'); score += 40; }
+        else if (d === 1){ why.push('για αύριο'); score += 25; }
+        else if (d <= 3){ why.push('σε ' + d + ' μέρες'); score += 10; }
+      } else {
+        why.push('χωρίς ημερομηνία');
+      }
+      if (t.kind === 'diagonisma'){ why.push('διαγώνισμα'); score += 30; }
+      if (tomorrowSubj[t.subject]){ why.push('αύριο το έχεις'); score += 15; }
+      var e = estimate(t.subject, t.kind);
+      if (e != null && free != null && e <= free){ why.push('χωράει'); score += 8; }
+      out.push({
+        kind:'task', task:t, subject:t.subject, weight:(SUBJ[t.subject]||{}).weight || 0,
+        title:(SUBJ[t.subject]||{}).label || '', unitId:t.link && t.link.unit,
+        unitLabel:t.title,
+        href:t.link ? deepLink(t.link.page, t.link.unit) : null,
+        cta:isWritten(t.kind) ? 'Κάτσε να το γράψεις' : 'Πες το',
+        est:e, why:why, score:score, more:0
+      });
+    });
+
+    out.sort(function(a,b){
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.weight !== a.weight) return b.weight - a.weight;   /* ισοπαλία → βαρύτερο μάθημα */
+      return 0;
+    });
+    return out;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΖΩΓΡΑΦΙΚΗ
+     ══════════════════════════════════════════════════════════════════ */
+  var windowPick = null;        /* «έχω 20 λεπτά»: null = όλη η μέρα */
+
+  function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-ekt)'; }
+
+  function renderClock(){
+    var b = budget();
+    var lines = b.lines.map(function(l){
+      return '<div class="hw-sum-row"><span>− ' + esc(l.label) + '</span><span class="hw-num hw-mono">−' + esc(dur(l.mins)) + '</span></div>';
+    }).join('');
+    /* Τέσσερις ΔΙΑΦΟΡΕΤΙΚΕΣ προτάσεις για τέσσερις διαφορετικές καταστάσεις
+       του ημερολογίου. Σταθερή αρχή 10: «δεν έχω δεδομένα» και «απέτυχα να
+       διαβάσω» δεν ζωγραφίζονται ποτέ ίδια. */
+    var note =
+      b.cal === 'live'         ? { txt:'Από το ημερολόγιό σου, σε αυτή τη συσκευή.', warn:false } :
+      b.cal === 'unauthorised' ? { txt:'Δεν έχω το ημερολόγιο σε αυτή τη συσκευή — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο. Άνοιξέ το από τις Ρυθμίσεις για την αληθινή μέρα.', warn:true } :
+      b.cal === 'unread'       ? { txt:'Το ημερολόγιο είναι συνδεδεμένο αλλά δεν το διάβασα ακόμη — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο.', warn:true } :
+                                 { txt:'Δεν φόρτωσε το gcal.js — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο.', warn:true };
+
+    $('hwClock').innerHTML =
+      '<div class="hw-clock-hd"><span class="hw-lbl">' + esc(b.horizonName) + '</span>' +
+      '<span class="hw-val hw-mono">' + esc(dur(b.gross)) + '</span></div>' +
+      '<div class="hw-sum">' + lines +
+      '<div class="hw-sum-row hw-total"><span>Μένουν</span><span class="hw-num hw-mono">' + esc(dur(b.free)) + '</span></div></div>' +
+      '<div class="hw-note' + (note.warn ? ' hw-warn' : '') + '">' + esc(note.txt) + '</div>';
+    return b;
+  }
+
+  function renderStart(free){
+    var host = $('hwStart');
+    var pool = candidates(free);
+    /* Το φίλτρο του παραθύρου είναι ΣΚΛΗΡΟ, αλλά μόνο πάνω σε ΜΕΤΡΗΜΕΝΟ
+       χρόνο. Ό,τι δεν έχει μετρηθεί δεν κόβεται — και το λέει. */
+    if (windowPick != null) pool = pool.filter(function(c){ return c.est == null || c.est <= windowPick; });
+
+    var chips = [10,20,45,90].map(function(m){
+      return '<button class="hw-chip' + (windowPick === m ? ' hw-on' : '') + '" data-win="' + m + '" type="button">' + m + '′</button>';
+    }).join('') + '<button class="hw-chip' + (windowPick == null ? ' hw-on' : '') + '" data-win="0" type="button">όλη η μέρα</button>';
+
+    if (!pool.length){
+      /* ⭐ «ΤΕΛΕΙΩΣΕΣ» ΕΙΝΑΙ ΑΛΗΘΙΝΗ ΑΠΑΝΤΗΣΗ. Ο στόχος δεν είναι ο μέγιστος
+         χρόνος μελέτης, και η σελίδα δεν κατασκευάζει δουλειά. */
+      var L = LAD || ladders();
+      var next = null, anyStarted = 0;
+      L.stores.forEach(function(s){
+        if (!s.ok) return;
+        if (s.started) anyStarted++;
+        if (s.nextDue && (next == null || s.nextDue < next)) next = s.nextDue;
+      });
+      /* ⭐ «ΤΕΛΕΙΩΣΕΣ» ΕΙΝΑΙ ΑΛΗΘΙΝΗ ΑΠΑΝΤΗΣΗ — αλλά ΜΟΝΟ όταν υπήρχε κάτι να
+         τελειώσει. Σε μια σελίδα που δεν έχει δει ποτέ δεδομένα είναι απλώς
+         ψέμα, και ο στόχος δεν ήταν ποτέ ο μέγιστος χρόνος μελέτης· ήταν να
+         λέει την αλήθεια για το πού βρίσκεται. */
+      var head, meta;
+      if (windowPick != null){
+        head = 'Τίποτα δεν χωράει σε ' + windowPick + '′.';
+        meta = 'Άλλαξε παράθυρο ή δες τη μέρα ολόκληρη.';
+      } else if (!anyStarted && !taskList().length){
+        head = 'Άδειο, όχι τελειωμένο.';
+        meta = 'Δεν έχεις ξεκινήσει καμία σελίδα μελέτης και δεν έχεις γράψει καμία εργασία. Κάνε μία ανάκληση, ή γράψε μία γραμμή πιο κάτω — από την επόμενη φορά ξέρω τι ξεχνάς.';
+      } else {
+        head = 'Τελείωσες.';
+        meta = 'Κανένα χρέος, καμία προθεσμία.' + (next ? (' Το επόμενο ξυπνάει ' + fmtDue(dkOf(new Date(next))) + '.') : '');
+      }
+      host.innerHTML =
+        '<div class="hw-kicker">Ξεκίνα από εδώ</div>' +
+        '<div class="hw-what">' + esc(head) + '</div>' +
+        '<div class="hw-meta">' + esc(meta) + '</div>' +
+        '<div class="hw-chips">' + chips + '</div>';
+      wireChips();
+      return;
+    }
+
+    var c = pool[0];
+    var why = c.why.map(function(w){ return '<span class="hw-cl">' + esc(w) + '</span>'; }).join('<span class="hw-plus">+</span>');
+    var estTxt = c.kind === 'task'
+      ? (c.est == null ? '—' : '~' + c.est + '′')
+      : estText(c.subject, 'apexo');
+    var head = c.kind === 'ladder'
+      ? esc(c.title) + (c.unitLabel && c.unitLabel !== c.unitId ? ' · ' + esc(c.unitLabel) : '')
+      : esc(c.unitLabel || (SUBJ[c.subject] || {}).label || '');
+    var meta = c.kind === 'ladder'
+      ? 'Ανάκληση · ' + estTxt + (c.more > 0 ? ' · και άλλα ' + c.more + ' εκεί' : '')
+      : ((SUBJ[c.subject] || {}).label || '') + ' · ' + (KINDS[c.task.kind] || '') + ' · ' + estTxt;
+
+    var cta = c.href
+      ? '<a class="hw-cta" href="' + esc(c.href) + '">' + esc(c.cta) + '</a>'
+      : '<button class="hw-cta" type="button" data-focus="' + esc(c.task.id) + '">' + esc(c.cta) + '</button>';
+    /* Ένα ΓΡΑΠΤΟ ανήκει ΕΔΩ — δεν υπάρχει σελίδα που να το κάνει, και δεν
+       υπάρχει αλήθεια εδάφους για το «έγραψα καλή έκθεση». Άρα ανοίγει το
+       παράθυρο γραψίματος και το μόνο του αποτέλεσμα είναι ο μετρημένος
+       χρόνος και το «έγινε». Ποτέ ποσοστό. */
+    if (c.kind === 'task' && isWritten(c.task.kind))
+      cta = '<button class="hw-cta" type="button" data-focus="' + esc(c.task.id) + '">' + esc(c.cta) + '</button>';
+
+    host.innerHTML =
+      '<div class="hw-kicker">Ξεκίνα από εδώ</div>' +
+      '<div class="hw-what">' + head + '</div>' +
+      '<div class="hw-meta">' + esc(meta) + '</div>' +
+      '<div class="hw-why">' + why + '</div>' +
+      cta +
+      '<div class="hw-chips">' + chips + '</div>';
+    wireChips();
+    var fb = host.querySelector('[data-focus]');
+    if (fb) fb.addEventListener('click', function(){ openFocus(fb.getAttribute('data-focus')); });
+  }
+
+  function wireChips(){
+    $('hwStart').querySelectorAll('[data-win]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var v = +b.getAttribute('data-win');
+        windowPick = v ? v : null;
+        renderStart(budget().free);
+      });
+    });
+  }
+
+  function fmtDue(dateKey){
+    if (!dateKey) return 'χωρίς ημερομηνία';
+    var d = daysBetween(dateKey, today());
+    if (d < 0) return 'πέρασε ' + (-d) + (d === -1 ? ' μέρα' : ' μέρες');
+    if (d === 0) return 'σήμερα';
+    if (d === 1) return 'αύριο';
+    if (d === 2) return 'μεθαύριο';
+    if (d <= 6) return DOW_EL[dowMon(new Date(dateKey + 'T00:00:00'))];
+    var dd = new Date(dateKey + 'T00:00:00');
+    return dd.getDate() + '/' + (dd.getMonth() + 1);
+  }
+
+  function renderDebt(){
+    var L = ladders();
+    var host = $('hwDebtBody');
+    if (L.broken){
+      host.innerHTML = '<div class="hw-blind">Δεν φόρτωσε το <b>ladders.js</b>, οπότε ΔΕΝ ξέρω τι χρωστάς στη μνήμη σου. Αυτό δεν σημαίνει «τίποτα» — σημαίνει «δεν ξέρω». Ανανέωσε τη σελίδα.</div>';
+      $('hwDebtS').textContent = 'άγνωστο';
+      return;
+    }
+    var rows = '', blind = [], totalLate = 0;
+    L.stores.forEach(function(s){
+      if (!s.ok){
+        blind.push(s.label);
+        return;
+      }
+      var late = s.items.filter(function(it){ return it.due && Date.now() >= it.due && (it.learned || it.samples > 0); });
+      late.sort(function(a,b){ return a.due - b.due; });
+      totalLate += late.length;
+      var worst = late[0] || null;
+      var soon = s.nextDue;
+      var rgb = subjRgb(s.subject);
+
+      var when, cls;
+      if (worst){
+        var d = window.ALSLadders.daysLate(worst.due, Date.now());
+        when = d <= 0 ? 'σήμερα' : 'πριν ' + d + (d === 1 ? ' μέρα' : ' μέρες');
+        cls = 'hw-late';
+      } else if (soon){
+        when = fmtDue(dkOf(new Date(soon))); cls = 'hw-ok';
+      } else if (!s.started){
+        /* Μία φορά, όχι τρεις. Η γραμμή από κάτω το λέει ήδη· ένα «δεν
+           ξεκίνησε» ΚΑΙ εδώ ΚΑΙ εκεί ΚΑΙ σε μια μπάρα είναι τρεις φωνές για
+           ένα γεγονός, και κάνει τη σελίδα να φαίνεται σαν να μετράει κάτι. */
+        when = '—'; cls = 'hw-ok';
+      } else {
+        when = 'εντάξει'; cls = 'hw-ok';
+      }
+
+      /* ⚠️⚠️ ΤΕΣΣΕΡΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΕΣΣΕΡΙΣ ΠΡΟΤΑΣΕΙΣ. Η πρώτη γραφή αυτού
+         έγραφε «0 κομμάτια ζωντανά» για μια αποθήκη που δεν άνοιξε ΠΟΤΕ — ένα
+         μηδέν που μοιάζει μέτρηση, δηλαδή ακριβώς η σταθερή αρχή 10. Φάνηκε
+         μόνο ρεντεράροντας τη σελίδα ΑΔΕΙΑ, που είναι και ο λόγος που
+         ρεντεράρεται άδεια. */
+      var line2;
+      if (!s.started){
+        line2 = 'δεν το έχεις ξεκινήσει ακόμη';
+      } else if (worst){
+        var lbl = unitTitle(s.key, worst.unitId);
+        line2 = late.length + ' προς ανάκληση · ' + esc(lbl);
+      } else if (!s.learned){
+        line2 = s.untouched
+          ? (s.untouched + (s.untouched === 1 ? ' κομμάτι ανοιχτό, καμία ανάκληση ακόμη' : ' κομμάτια ανοιχτά, καμία ανάκληση ακόμη'))
+          : 'ξεκίνησε, χωρίς μέτρηση ακόμη';
+      } else {
+        line2 = s.learned + (s.learned === 1 ? ' κομμάτι ζωντανό' : ' κομμάτια ζωντανά') +
+                (s.untouched ? ' · ' + s.untouched + ' ακόμη κλειστά' : '');
+      }
+
+      /* Δύο κανάλια: το ΧΡΩΜΑ λέει «έληξε», η ΜΠΑΡΑ λέει ακρίβεια. Και όταν
+         δεν υπάρχει μέτρηση, δεν ζωγραφίζεται μπάρα στο μηδέν — γράφεται με
+         λέξεις ότι δεν έχει μετρηθεί. */
+      var acc = !s.started ? ''
+        : (s.accuracy == null)
+          ? '<div class="hw-unknown">καμία μέτρηση ακόμη</div>'
+          : '<div class="hw-bar"><span style="width:' + Math.round(s.accuracy * 100) + '%"></span></div>';
+
+      rows +=
+        '<div class="hw-row" style="--hw-c:' + rgb + '">' +
+          '<span class="hw-tick"></span>' +
+          '<div class="hw-body">' +
+            '<div class="hw-name">' + esc(s.label) + '</div>' +
+            '<div class="hw-line2">' + line2 + '</div>' + acc +
+          '</div>' +
+          '<div class="hw-right">' +
+            '<div class="hw-when ' + cls + '">' + esc(when) + '</div>' +
+            '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep && worst ? worst.unitId : null)) + '">Πες το</a>' +
+          '</div>' +
+        '</div>';
+    });
+
+    if (blind.length){
+      rows += '<div class="hw-blind">Δεν μπόρεσα να διαβάσω: <b>' + esc(blind.join(' · ')) +
+              '</b>. Το χρέος εκεί είναι <b>άγνωστο</b> — όχι μηδέν.</div>';
+    }
+    if (!rows) rows = '<div class="hw-empty">Καμία από τις πέντε σκάλες δεν έχει δεδομένα ακόμη. Άνοιξε μία σελίδα μελέτης και κάνε μία ανάκληση — από την επόμενη φορά ξέρω τι ξεχνάς.</div>';
+
+    host.innerHTML = rows;
+    var started = 0;
+    L.stores.forEach(function(s){ if (s.ok && s.started) started++; });
+    /* «όλα ζωντανά» για πέντε αποθήκες που δεν άνοιξαν ποτέ είναι ψέμα με
+       καθησυχαστικό τόνο — η χειρότερη μορφή του. */
+    $('hwDebtS').textContent = blind.length
+      ? (blind.length + (blind.length === 1 ? ' άγνωστη' : ' άγνωστες'))
+      : !started ? 'καμία δεν ξεκίνησε'
+      : totalLate ? (totalLate + ' προς ανάκληση')
+      : 'όλα ζωντανά';
+  }
+
+  function renderTasks(){
+    var list = taskList(), host = $('hwTaskBody');
+    var open = list.filter(function(t){ return !t.done; }).length;
+    $('hwTasksS').textContent = list.length ? (open + ' ανοιχτές · ' + (list.length - open) + ' έγιναν') : '';
+    $('hwSweep').classList.toggle('hw-off', list.length === open);
+
+    if (!list.length){
+      host.innerHTML = '<div class="hw-empty"><b>Γράψε μία γραμμή.</b><br>Για παράδειγμα: <span class="hw-mono">Ιστορία b2 απέξω Τρίτη</span> — μάθημα, ενότητα, είδος, προθεσμία. Ό,τι δεν καταλάβω μένει γκρι και το φτιάχνεις με ένα πάτημα.</div>';
+      return;
+    }
+
+    host.innerHTML = list.map(function(t){
+      var s = SUBJ[t.subject] || SUBJ.ekthesi;
+      var e = estimate(t.subject, t.kind);
+      var bits = [s.label, KINDS[t.kind] || ''];
+      bits.push(t.due ? fmtDue(t.due) : 'χωρίς ημερομηνία');
+      bits.push(e == null ? '—' : '~' + e + '′');
+      if (t.elapsed > 60000) bits.push(Math.round(t.elapsed / 60000) + '′ γραμμένα');
+      /* ⭐ Η Έκθεση δεν έχει σελίδα ακόμη, και το λέει — ένα κενό που
+         φαίνεται είναι καλύτερο από ένα κρυμμένο. */
+      var goHref = t.link ? deepLink(t.link.page, t.link.unit) : (s.page || null);
+      var go = goHref
+        ? '<a class="hw-mini hw-lead" href="' + esc(goHref) + '">Άνοιξε</a>'
+        : '<span class="hw-mini" style="opacity:.55">δεν υπάρχει σελίδα ακόμη</span>';
+      var focus = isWritten(t.kind)
+        ? '<button class="hw-mini hw-lead" type="button" data-focus="' + esc(t.id) + '">Γράψ’ το</button>' : '';
+      var pic = (t.src && t.src.id && pics[t.src.id])
+        ? '<button class="hw-mini" type="button" data-pic="' + esc(t.src.id) + '">Πηγή</button>' : '';
+      return '<div class="hw-task' + (t.done ? ' hw-done' : '') + '" style="--hw-c:' + s.rgb + '">' +
+        '<span class="hw-tick"></span>' +
+        '<div class="hw-body">' +
+          '<div class="hw-title">' + esc(t.title || s.label) + '</div>' +
+          '<div class="hw-tmeta">' + esc(bits.filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="hw-tacts">' +
+            '<button class="hw-mini' + (t.done ? '' : ' hw-lead') + '" type="button" data-done="' + esc(t.id) + '">' + (t.done ? 'Ξανά ανοιχτό' : 'Έγινε') + '</button>' +
+            focus + go + pic +
+            '<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    host.querySelectorAll('[data-done]').forEach(function(b){
+      b.addEventListener('click', function(){ toggleDone(b.getAttribute('data-done')); });
+    });
+    host.querySelectorAll('[data-del]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-del'), t = state.tasks[id];
+        if (!t) return;
+        var ask = window.ALSConfirm
+          ? ALSConfirm({ title:'Να το σβήσω;', message:'«' + (t.title || '') + '»',
+                         confirmText:'Σβήσ’ το', danger:true })
+          : Promise.resolve(confirm('Να σβήσω «' + (t.title || '') + '»;'));
+        Promise.resolve(ask).then(function(yes){ if (yes){ dropTask(id); paint(); } });
+      });
+    });
+    host.querySelectorAll('[data-focus]').forEach(function(b){
+      b.addEventListener('click', function(){ openFocus(b.getAttribute('data-focus')); });
+    });
+    host.querySelectorAll('[data-pic]').forEach(function(b){
+      b.addEventListener('click', function(){ showPic(b.getAttribute('data-pic')); });
+    });
+  }
+
+  function toggleDone(id){
+    var t = state.tasks[id]; if (!t) return;
+    if (t.done){ t.done = 0; }
+    else {
+      t.done = Date.now();
+      /* Η μέτρηση μπαίνει ΜΟΝΟ αν υπήρξε πραγματικός χρόνος στο ρολόι. Ένα
+         «έγινε» χωρίς χρονόμετρο δεν είναι μέτρηση και δεν διδάσκει τίποτα. */
+      if (t.elapsed > 60000) recordSample(t.subject, t.kind, t.elapsed / 60000);
+    }
+    if (!save()){ t.done = t.done ? 0 : Date.now(); return; }
+    paint();
+  }
+
+  /* ── Η ΜΕΡΑ · ο σκελετός, όχι πλέγμα ημερολογίου ─────────────────── */
+  function renderDay(){
+    var day = blocksFor(0);
+    var now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
+    var span = DAY_END - DAY_START;
+    function pct(min){ return Math.max(0, Math.min(100, ((min - DAY_START) / span) * 100)); }
+
+    var bars = day.blocks.map(function(b){
+      var from = Math.max(b.from, DAY_START), to = Math.min(b.to, DAY_END);
+      if (to <= from) return '';
+      var cls = b.cls === 'study' ? 'hw-study' : b.cls === 'school' ? 'hw-school' : 'hw-quietblk';
+      var l = pct(from), w = pct(to) - l;
+      return '<div class="hw-blk ' + cls + '" style="left:' + l.toFixed(2) + '%;width:' + w.toFixed(2) + '%">' +
+             (w > 11 ? '<span class="hw-cap">' + esc(b.name) + '</span>' : '') + '</div>';
+    }).join('');
+    var nowM = nowMin < DAY_START ? nowMin + 1440 : nowMin;
+    var marker = (nowM >= DAY_START && nowM <= DAY_END)
+      ? '<div class="hw-now" style="left:' + pct(nowM).toFixed(2) + '%"></div>' : '';
+    $('hwLineBar').innerHTML = bars + marker;
+    /* Η ίδια `pct()` που τοποθετεί τα μπλοκ τοποθετεί και τις ώρες, ώστε να
+       μην μπορούν να διαφωνήσουν. */
+    $('hwTicks').innerHTML = ['10:00','13:00','16:00','19:00','22:00','00:15']
+      .map(function(t, i, all){
+        var m = hm(t); if (i === all.length - 1) m += 1440;
+        return '<span style="left:' + pct(m).toFixed(2) + '%">' + t + '</span>';
+      }).join('');
+    $('hwDayS').textContent = day.cal === 'live' ? 'από το ημερολόγιο' : 'κατά το πρόγραμμα';
+
+    /* ⭐ ΟΙ ΔΥΟ ΘΕΣΕΙΣ ΕΧΟΥΝ ΔΙΑΦΟΡΕΤΙΚΗ ΔΟΥΛΕΙΑ, ΚΑΙ ΔΕΝ ΑΝΤΑΛΛΑΣΣΟΝΤΑΙ.
+       Το ΜΕΓΑΛΟ ΠΑΡΑΘΥΡΟ παίρνει εργασίες + χρέος μνήμης. Το ΞΑΝΑΔΙΑΒΑΣΜΑ
+       παίρνει ΤΑ ΣΗΜΕΡΙΝΑ ΤΡΙΑ ΜΑΘΗΜΑΤΑ και τίποτε άλλο: η ίδια προσπάθεια
+       αξίζει ~3× την ίδια μέρα σε σχέση με μία εβδομάδα μετά. */
+    var free = budget().free;
+    var pool = candidates(free).slice(0, 3);
+    var morning = pool.length
+      ? pool.map(function(c){ return esc(c.kind === 'ladder' ? (c.title + ' · ' + (c.unitLabel || c.unitId)) : (c.unitLabel || '')); }).join('<br>')
+      : 'Καθαρά. Δεν χρωστάς τίποτα σε αυτό το παράθυρο.';
+
+    var todayLessons = lessonsFor(0);
+    var review;
+    if (todayLessons === null){
+      review = 'Δεν ξέρω τα σημερινά σου μαθήματα χωρίς το ημερολόγιο — άνοιξέ το και θα γεμίζει μόνο του με τα τρία της μέρας.';
+    } else if (!todayLessons.length){
+      review = 'Το ημερολόγιο δεν δείχνει μάθημα σήμερα, οπότε δεν υπάρχει τίποτα να ξαναδιαβάσεις απόψε.';
+    } else {
+      review = todayLessons.map(function(l){ return esc(l.title); }).join('<br>');
+    }
+    /* Το μάθημα των 15:15 είναι το ΠΡΩΤΟ χρονικά — τα events του GCal.day()
+       έρχονται ταξινομημένα. Αν το ημερολόγιο δεν λέει ποιο μάθημα είναι,
+       δείχνουμε τον ΤΙΤΛΟ του, όχι κενό. */
+    var recapSubj = null;
+    if (todayLessons && todayLessons.length){
+      var first = todayLessons[0];
+      recapSubj = (SUBJ[first.subject] && SUBJ[first.subject].label) || first.title;
+    }
+
+    $('hwSlots').innerHTML =
+      slot(PLAN.morning[0] + '–' + PLAN.morning[1], 'Το μεγάλο παράθυρο',
+           'Εδώ πεθαίνει η δουλειά: εργασίες και χρέος μνήμης.', morning) +
+      slot(PLAN.recap[0] + '–' + PLAN.recap[1], 'Η επανάληψη πριν',
+           'Το μάθημα των 15:15, μισή ώρα πριν.',
+           recapSubj ? esc(recapSubj) : 'Χρειάζεται το ημερολόγιο για να ξέρω ποιο μάθημα έχεις στις 15:15.') +
+      slot(PLAN.school[0] + '–' + PLAN.school[1], 'Φροντιστήριο',
+           'Εδώ ΓΕΝΝΙΕΤΑΙ η εργασία. Γράψε τη γραμμή πριν βγεις.', '') +
+      slot(PLAN.review[0] + '–' + PLAN.review[1], 'Ξαναδιάβασμα',
+           'Τα ΣΗΜΕΡΙΝΑ τρία, την ίδια νύχτα. Ποτέ εργασία με προθεσμία.', review);
+  }
+  function slot(time, name, why, fill){
+    return '<div class="hw-slot">' +
+      '<div class="hw-slot-hd"><span class="hw-time hw-mono">' + esc(time) + '</span>' +
+      '<span class="hw-slot-n">' + esc(name) + '</span></div>' +
+      '<div class="hw-fill">' + esc(why) + (fill ? '<br><span style="color:var(--au-ivory,#f5f2ec)">' + fill + '</span>' : '') + '</div>' +
+    '</div>';
+  }
+
+  /* ── Ο ΟΡΙΖΟΝΤΑΣ · πίεση, όχι ημερολόγιο ─────────────────────────
+     Η σύγκρουση ΕΙΝΑΙ το νόημα: όταν τρία πράγματα πέφτουν Πέμπτη, το λέει
+     ΔΕΥΤΕΡΑ. Και ποτέ δεν μετακινεί δουλειά μόνο του. */
+  function weekLoad(){
+    var L = LAD || ladders(), start = midnight(-dowMon(new Date()));
+    var days = [], i;
+    for (i = 0; i < 7; i++){
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      days.push({ date:d, key:dkOf(d), segs:[], load:0, items:[] });
+    }
+    function bucket(key){
+      var i2; for (i2 = 0; i2 < 7; i2++) if (days[i2].key === key) return days[i2];
+      return null;
+    }
+    /* ΕΡΓΑΣΙΕΣ: μετρημένος χρόνος όπου υπάρχει· αλλιώς μία μονάδα βάρους που
+       λέγεται «ένα πράγμα», ποτέ επινοημένα λεπτά στην οθόνη. */
+    taskList().forEach(function(t){
+      if (t.done || !t.due) return;
+      var b = bucket(t.due); if (!b) return;
+      var e = estimate(t.subject, t.kind);
+      b.load += (e == null ? 25 : e);
+      b.segs.push({ rgb:subjRgb(t.subject), mins:(e == null ? 25 : e) });
+      b.items.push((SUBJ[t.subject] || {}).label + ' · ' + (t.title || KINDS[t.kind]));
+    });
+    /* ΧΡΕΟΣ ΜΝΗΜΗΣ: ό,τι λήγει μέσα στην εβδομάδα. */
+    L.stores.forEach(function(s){
+      if (!s.ok) return;
+      s.items.forEach(function(it){
+        if (!it.due || !(it.learned || it.samples > 0)) return;
+        var key = dkOf(new Date(it.due));
+        var b = bucket(key); if (!b) return;
+        b.load += 15;
+        b.segs.push({ rgb:subjRgb(s.subject), mins:15 });
+        b.items.push(s.label + ' · ανάκληση');
+      });
+    });
+    /* ΔΙΑΓΩΝΙΣΜΑΤΑ από το ημερολόγιο. */
+    if (calState() === 'live'){
+      for (i = 0; i < 7; i++){
+        var off = Math.round((days[i].date - midnight(0)) / 86400000);
+        if (off < 0 || off >= (window.GCal ? GCal.DAYS : 7)) continue;
+        var ls = lessonsFor(off) || [];
+        ls.forEach(function(l){
+          if (!l.exam) return;
+          days[i].load += 45;
+          days[i].segs.push({ rgb:subjRgb(l.subject), mins:45 });
+          days[i].items.push('Διαγώνισμα · ' + l.title);
+        });
+      }
+    }
+    return days;
+  }
+
+  function renderWeek(){
+    var days = weekLoad();
+    var max = Math.max(60, Math.max.apply(null, days.map(function(d){ return d.load; })));
+    var todayKey = today();
+    var heaviest = days.slice().sort(function(a,b){ return b.load - a.load; })[0];
+
+    $('hwWeekGrid').innerHTML = days.map(function(d, i){
+      var h = Math.round((d.load / max) * 96);
+      var segs = d.segs.map(function(sg){
+        var sh = Math.max(3, Math.round((sg.mins / Math.max(1, d.load)) * h));
+        return '<div class="hw-seg" style="--hw-c:' + sg.rgb + ';height:' + sh + 'px"></div>';
+      }).join('');
+      var pile = d.items.length >= 3;
+      return '<button class="hw-col' + (d.key === todayKey ? ' hw-today' : '') + (pile ? ' hw-pile' : '') +
+        '" type="button" data-day="' + i + '">' +
+        '<div class="hw-stack">' + segs + '</div>' +
+        '<div class="hw-dow">' + DOW_SH[i] + '</div></button>';
+    }).join('');
+
+    var say;
+    if (!heaviest || !heaviest.items.length){
+      say = 'Καμία πίεση αυτή την εβδομάδα — τίποτα με προθεσμία, τίποτα ληξιπρόθεσμο.';
+    } else if (heaviest.items.length >= 3 && heaviest.key !== todayKey){
+      say = '<b>' + esc(DOW_EL[dowMon(heaviest.date)]) + ': ' + heaviest.items.length + ' πράγματα μαζί.</b> ' +
+            'Θέλεις να φέρω το ελαφρύτερο μία μέρα μπροστά;';
+    } else {
+      say = '<b>' + esc(dayName(dowMon(heaviest.date))) + '</b> είναι η βαρύτερη μέρα: ' + heaviest.items.length +
+            (heaviest.items.length === 1 ? ' πράγμα.' : ' πράγματα.');
+    }
+    $('hwWeekSay').innerHTML = say;
+
+    $('hwWeekGrid').querySelectorAll('[data-day]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var d = days[+b.getAttribute('data-day')];
+        /* Μία γραμμή ανά πράγμα: το `.als-dlg-msg` είναι `white-space: pre-wrap`
+           (als-dialog.js:47), οπότε τα newline επιβιώνουν. */
+        var body = d.items.length ? d.items.join('\n') : 'Τίποτα με προθεσμία, τίποτα ληξιπρόθεσμο.';
+        var head = dayName(dowMon(d.date)) + ' ' + d.date.getDate() + '/' + (d.date.getMonth() + 1);
+        if (window.ALSAlert) ALSAlert({ title:head, message:body });
+        else alert(head + '\n\n' + body);
+      });
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ — ΓΙΑ ΤΑ ΓΡΑΠΤΑ
+
+     Η μισή του δουλειά είναι ΓΡΑΠΤΗ, δικά του λόγια. Άρα αυτή η σελίδα δεν
+     είναι λεπτός δρομολογητής. Το παράθυρο ησυχάζει το περιβάλλον, μετράει
+     πραγματικό χρόνο, κρατάει τη ΦΩΤΟΓΡΑΦΙΑ ΤΗΣ ΠΗΓΗΣ ένα πάτημα μακριά, και
+     ΣΥΝΕΧΙΖΕΙ από εκεί που έμεινε αντί να ξεκινάει από την αρχή.
+     ⛔ ΚΑΜΙΑ ΒΑΘΜΟΛΟΓΙΑ. Δεν υπάρχει αλήθεια εδάφους για το «έγραψα καλή
+     έκθεση», και ένα κατασκευασμένο ποσοστό εκεί θα ήταν η ίδια αρρώστια της
+     als-v433 σε νέο μέρος. Το «έγινε» είναι γεγονός· οτιδήποτε άλλο θα ήταν
+     μαντεψιά ντυμένη αριθμό.
+     ══════════════════════════════════════════════════════════════════ */
+  var focusId = null, focusStart = 0, focusTimer = null;
+
+  function focusMs(){
+    var t = state.tasks[focusId];
+    return (t ? (t.elapsed || 0) : 0) + (focusStart ? (Date.now() - focusStart) : 0);
+  }
+  function paintFocusClock(){
+    var ms = focusMs(), s = Math.floor(ms / 1000);
+    $('hwFocusClock').textContent = pad2(Math.floor(s / 60)) + ':' + pad2(s % 60);
+  }
+  function openFocus(id){
+    var t = state.tasks[id]; if (!t) return;
+    focusId = id; focusStart = Date.now();
+    var s = SUBJ[t.subject] || SUBJ.ekthesi;
+    $('hwFocusKicker').textContent = s.label + ' · ' + (KINDS[t.kind] || '');
+    $('hwFocusTitle').textContent = t.title || s.label;
+    var e = estimate(t.subject, t.kind);
+    $('hwFocusNote').textContent = (t.elapsed > 60000 ? 'Συνεχίζεις από τα ' + Math.round(t.elapsed / 60000) + '′. ' : '') +
+      (e == null ? 'Δεν έχω μετρήσει αρκετές φορές ώστε να πω πόσο παίρνει.' : 'Συνήθως ~' + e + '′.');
+    var img = $('hwFocusImg');
+    img.classList.add('hw-off'); img.removeAttribute('src');
+    $('hwFocusShot').classList.toggle('hw-off', !(t.src && t.src.id && pics[t.src.id]));
+    paintFocusClock();
+    clearInterval(focusTimer); focusTimer = setInterval(paintFocusClock, 1000);
+    $('hwFocus').showModal();
+  }
+  function stopFocus(markDone){
+    var t = focusId ? state.tasks[focusId] : null;
+    clearInterval(focusTimer); focusTimer = null;
+    if (t){
+      t.elapsed = focusMs();
+      if (markDone){
+        t.done = Date.now();
+        if (t.elapsed > 60000) recordSample(t.subject, t.kind, t.elapsed / 60000);
+      }
+      save();
+    }
+    focusStart = 0; focusId = null;
+    try { $('hwFocus').close(); } catch(e){}
+    paint();
+  }
+  function showPic(pid){
+    var p = pics[pid];
+    if (!p || !p.d){
+      if (window.ALSAlert) ALSAlert('Η φωτογραφία δεν υπάρχει σε αυτή τη συσκευή. Δεν σβήστηκε από εδώ — απλώς δεν έχει κατέβει ακόμη.');
+      return;
+    }
+    var img = $('hwFocusImg');
+    img.src = p.d; img.classList.remove('hw-off');
+    if (!$('hwFocus').open){
+      $('hwFocusKicker').textContent = 'Η πηγή';
+      $('hwFocusTitle').textContent = 'Η φωτογραφία, όπως τη τράβηξες';
+      $('hwFocusClock').textContent = '';
+      $('hwFocusNote').textContent = 'Αποθηκεύεται και φαίνεται. Ποτέ δεν διαβάζεται από μηχανή.';
+      $('hwFocus').showModal();
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΣΥΛΛΗΨΗ
+     ══════════════════════════════════════════════════════════════════ */
+  var draft = null, draftPic = null;
+
+  function chip(kind, label, value, missing){
+    return '<button class="hw-pchip' + (missing ? ' hw-miss' : '') + '" type="button" data-fix="' + kind + '">' +
+      '<span class="hw-k">' + esc(label) + '</span>' + esc(value) + '</button>';
+  }
+  function renderParse(){
+    if (!draft){ $('hwParse').classList.remove('hw-open'); return; }
+    var u = draft.unit;
+    $('hwPchips').innerHTML =
+      chip('subject', 'Μάθημα', draft.subject ? SUBJ[draft.subject].label : 'δεν το βρήκα', !draft.subject) +
+      chip('unit', 'Ενότητα', u ? (u.id + (u.title ? ' · ' + u.title : '')) : 'καμία', !u) +
+      chip('kind', 'Είδος', KINDS[draft.kind] || 'άσκηση', false) +
+      chip('due', 'Προθεσμία', draft.due ? fmtDue(draft.due) : 'χωρίς ημερομηνία', !draft.due) +
+      chip('title', 'Τίτλος', draft.title || '(κενός)', !draft.title) +
+      (draftPic ? chip('pic', 'Πηγή', 'φωτογραφία', false) : '');
+    $('hwParse').classList.add('hw-open');
+    $('hwPchips').querySelectorAll('[data-fix]').forEach(function(b){
+      b.addEventListener('click', function(){ fixChip(b.getAttribute('data-fix')); });
+    });
+  }
+  function cycle(list, cur){
+    var i = list.indexOf(cur);
+    return list[(i + 1) % list.length];
+  }
+  function fixChip(which){
+    if (!draft) return;
+    if (which === 'subject'){ draft.subject = cycle(['istoria','arxaia','latinika','ekthesi'], draft.subject); renderParse(); return; }
+    if (which === 'kind'){ draft.kind = cycle(['askisi','apexo','grapto','diagonisma'], draft.kind); renderParse(); return; }
+    if (which === 'due'){
+      var order = [null, offDate(0), offDate(1), offDate(2), offDate(3), offDate(7)];
+      var idx = order.indexOf(draft.due);
+      draft.due = order[(idx + 1) % order.length];
+      renderParse(); return;
+    }
+    if (which === 'unit'){
+      var units = knownUnits().filter(function(x){ return !draft.subject || x.subject === draft.subject; });
+      if (!units.length){ if (window.ALSAlert) ALSAlert('Δεν υπάρχουν ενότητες για αυτό το μάθημα στα δεδομένα της εφαρμογής.'); return; }
+      var ids = [null].concat(units.map(function(x){ return x.id; }));
+      var cur = draft.unit ? draft.unit.id : null;
+      var nxt = ids[(ids.indexOf(cur) + 1) % ids.length];
+      draft.unit = nxt ? units.filter(function(x){ return x.id === nxt; })[0] : null;
+      if (draft.unit && !draft.subject) draft.subject = draft.unit.subject;
+      renderParse(); return;
+    }
+    if (which === 'title'){
+      var ask = window.ALSPrompt ? ALSPrompt('Ο τίτλος, με τα δικά σου λόγια:', draft.title || '') : Promise.resolve(prompt('Τίτλος:', draft.title || ''));
+      Promise.resolve(ask).then(function(v){ if (v != null){ draft.title = String(v).trim(); renderParse(); } });
+      return;
+    }
+    if (which === 'pic'){ if (draftPic) showPicData(draftPic); return; }
+  }
+  function showPicData(dataUrl){
+    var img = $('hwFocusImg');
+    img.src = dataUrl; img.classList.remove('hw-off');
+    $('hwFocusKicker').textContent = 'Η πηγή';
+    $('hwFocusTitle').textContent = 'Η φωτογραφία, όπως τη τράβηξες';
+    $('hwFocusClock').textContent = '';
+    $('hwFocusNote').textContent = 'Αποθηκεύεται και φαίνεται. Ποτέ δεν διαβάζεται από μηχανή.';
+    $('hwFocus').showModal();
+  }
+
+  function commitDraft(){
+    if (!draft) return;
+    if (!draft.subject && !draft.title){ banner('Δεν κατάλαβα τίποτα από αυτή τη γραμμή. Πάτα ένα chip και πες μου τι είναι.'); return; }
+    var src = null;
+    if (draftPic){
+      var res = addPic(draftPic);
+      if (res.id){
+        src = { type:'photo', id:res.id };
+        if (res.dropped) banner('Κράτησα τη φωτογραφία και πέταξα ' + res.dropped + ' παλιά που δεν ήταν δεμένη σε εργασία. Το όριο είναι ' + PIC_KEEP + '.');
+      }
+      /* Αν η φωτογραφία δεν χώρεσε, η ΕΡΓΑΣΙΑ σώζεται όπως και να 'χει — το
+         banner ήδη λέει τι έγινε. Ποτέ σιωπηλή απώλεια. */
+    }
+    var id = addTask({ subject:draft.subject, title:draft.title, due:draft.due, kind:draft.kind, unit:draft.unit, src:src });
+    if (!id) return;                                   /* το persist απέτυχε, το banner το λέει */
+    draft = null; draftPic = null;
+    $('hwLine').value = '';
+    $('hwParse').classList.remove('hw-open');
+    paint();
+  }
+
+  /* ── ΤΟ ΑΔΕΙΑΣΜΑ ΤΟΥ ΚΕΦΑΛΙΟΥ — και μένει χαζό ─────────────────── */
+  function runDump(){
+    var raw = $('hwDump').value || '';
+    var lines = raw.split(/[\n,]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    if (!lines.length) return;
+    var made = 0;
+    lines.forEach(function(l){
+      var p = parseLine(l);
+      /* Μια γραμμή που δεν λύνεται γίνεται σκέτη σημείωση με `due: null` —
+         που είναι μια χαρά, γιατί μια σκέψη που γράφτηκε αξίζει περισσότερο
+         από μια οργανωμένη που δεν γράφτηκε ποτέ. */
+      if (!p.title && !p.subject) p.title = l;
+      if (addTask({ subject:p.subject, title:p.title || l, due:p.due, kind:p.kind, unit:p.unit })) made++;
+    });
+    $('hwDump').value = '';
+    $('hwDumpWrap').classList.add('hw-off');
+    banner(made ? ('Κράτησα ' + made + (made === 1 ? ' γραμμή. Έλεγξέ τες — ό,τι δεν κατάλαβα έμεινε σημείωση.' : ' γραμμές. Έλεγξέ τες — ό,τι δεν κατάλαβα έμεινε σημείωση.')) : '');
+    paint();
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΚΑΛΩΔΙΩΣΗ
+     ══════════════════════════════════════════════════════════════════ */
+  function paint(){
+    var b = renderClock();
+    renderDebt();
+    renderStart(b.free);
+    renderTasks();
+    renderDay();
+    renderWeek();
+    $('hwFoot').innerHTML =
+      'Διαβάζει και τις πέντε σκάλες μελέτης· γράφει ΜΟΝΟ τις δικές του εργασίες.<br>' +
+      'Καμία μηχανή δεν διαβάζει τις φωτογραφίες σου εδώ — η μεταγραφή γίνεται στη συζήτηση, μπροστά σου.';
+  }
+
+  $('hwLine').addEventListener('input', function(){
+    var v = $('hwLine').value.trim();
+    if (!v){ draft = null; $('hwParse').classList.remove('hw-open'); return; }
+    draft = parseLine(v);
+    renderParse();
+  });
+  $('hwLine').addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); if (draft) commitDraft(); }
+  });
+  $('hwSave').addEventListener('click', commitDraft);
+  $('hwCancel').addEventListener('click', function(){
+    draft = null; draftPic = null; $('hwLine').value = ''; $('hwParse').classList.remove('hw-open');
+  });
+  $('hwShot').addEventListener('click', function(){ $('hwFile').click(); });
+  $('hwFile').addEventListener('change', function(){
+    var f = $('hwFile').files && $('hwFile').files[0];
+    $('hwFile').value = '';
+    if (!f) return;
+    shrink(f, function(data, err){
+      if (err){ banner(err); return; }
+      draftPic = data;
+      if (!draft) draft = parseLine($('hwLine').value || '');
+      renderParse();
+      banner('');
+    });
+  });
+  $('hwDumpOpen').addEventListener('click', function(){ $('hwDumpWrap').classList.toggle('hw-off'); });
+  $('hwDumpClose').addEventListener('click', function(){ $('hwDumpWrap').classList.add('hw-off'); });
+  $('hwDumpGo').addEventListener('click', runDump);
+  $('hwSweep').addEventListener('click', function(){
+    var ask = window.ALSConfirm
+      ? ALSConfirm({ title:'Να σβήσω όσες έχουν γίνει;',
+                     message:'Φεύγουν από εδώ και από το cloud. Οι σκάλες μελέτης δεν αγγίζονται.',
+                     confirmText:'Σβήσ’ τες', danger:true })
+      : Promise.resolve(confirm('Να σβήσω όσες έχουν γίνει;'));
+    Promise.resolve(ask).then(function(yes){ if (!yes) return; var n = sweepDone(); if (n) banner(''); paint(); });
+  });
+  $('hwFocusDone').addEventListener('click', function(){ stopFocus(true); });
+  $('hwFocusPause').addEventListener('click', function(){ stopFocus(false); });
+  $('hwFocusClose').addEventListener('click', function(){ stopFocus(false); });
+  $('hwFocusShot').addEventListener('click', function(){
+    var t = focusId ? state.tasks[focusId] : null;
+    if (t && t.src && t.src.id) showPic(t.src.id);
+  });
+  $('hwFocus').addEventListener('close', function(){
+    if (focusTimer){ clearInterval(focusTimer); focusTimer = null; }
+    if (focusId) stopFocus(false);
+  });
+
+  /* Η μέρα κυλάει ενώ η σελίδα είναι ανοιχτή: ο δείκτης ΤΩΡΑ και ο χρόνος
+     που μένει ξαναζωγραφίζονται μόνοι τους. Καμία επανάληψη εισόδου —
+     `PageMotion` σκανάρει ΜΟΝΟ τα στατικά κελύφη των ενοτήτων, ώστε ένα
+     repaint να μην ξαναπαίζει ποτέ animation εισόδου. */
+  reload();
+  paint();
+  setInterval(function(){ if (!document.hidden) paint(); }, 60000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden){ reload(); paint(); } });
+  window.addEventListener('focus', function(){ reload(); paint(); });
+
+  /* Το ημερολόγιο ανανεώνεται σιωπηλά αν έχει ήδη δοθεί άδεια σε αυτή τη
+     συσκευή. Αν όχι, ΔΕΝ ζητάμε τίποτα — η άδεια θέλει κλικ, και η σελίδα
+     λέει καθαρά ότι δουλεύει με το πρόγραμμα. */
+  try { if (window.GCal && GCal.isConnected()) GCal.refresh(function(){ paint(); }); } catch(e){}
+
+  /* ══════════════════════════════════════════════════════════════════
+     CLOUD SYNC
+     ⚠️ Η αναμονή είναι στις ΠΡΟΫΠΟΘΕΣΕΙΣ, και το initCloudSync καλείται
+     ΑΚΡΙΒΩΣ ΜΙΑ ΦΟΡΑ: το initCloudSync ΕΠΙΣΤΡΕΦΕΙ ΣΙΩΠΗΛΑ όταν το
+     `window.supabase` δεν υπάρχει ακόμη, και μια δεύτερη επιτυχημένη κλήση
+     αλυσιδώνει δεύτερο override του setItem πάνω στην ίδια σελίδα.
+     Αν δεν ξεκινήσει ποτέ, το λέμε στην οθόνη (σταθερή αρχή 32).
+     ══════════════════════════════════════════════════════════════════ */
+  (function startCloudSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof window.initCloudSync !== 'function' || !window.supabase){
+        if (tries++ < 100){ setTimeout(wait, 200); return; }
+        banner('Ο συγχρονισμός δεν ξεκίνησε — ό,τι γράψεις μένει μόνο σε αυτή τη συσκευή. Κλείσε και άνοιξε ξανά την εφαρμογή.');
+        return;
+      }
+      window.initCloudSync({
+        /* ⚠️ ΓΡΑΜΜΕΝΟ ΚΥΡΙΟΛΕΚΤΙΚΑ, ΕΠΙΤΗΔΕΣ — ΚΑΙ ΤΟ ΣΧΟΛΙΟ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ
+           ΝΑ ΓΡΑΨΕΙ ΤΟ ΣΧΗΜΑ ΠΟΥ ΠΕΡΙΓΡΑΦΕΙ. Ο φρουρός του smoke-test.sh που
+           ελέγχει ότι κάθε συγχρονισμένο κλειδί υπάρχει στα BUNDLES του
+           backup.html ψάχνει το ΠΡΩΤΟ κυριολεκτικό appKey μέσα σε 1200
+           χαρακτήρες από εδώ. Μια σταθερά κάνει τον έλεγχο να προσπεράσει
+           ΣΙΩΠΗΛΑ όλη τη σελίδα — και τότε τα `hw:*` θα συγχρονίζονταν τέλεια
+           και δεν θα επαναφέρονταν ΠΟΤΕ από αντίγραφο ασφαλείας.
+           ⚠️ Η πρώτη γραφή αυτού του σχολίου έγραφε το ίδιο το μοτίβο μέσα
+           στα εισαγωγικά, ο φρουρός το διάβασε ΑΝΤΙ για τη γραμμή από κάτω,
+           και κατηγόρησε μια σελίδα που ήταν σωστή: σταθερή αρχή 19, ένας
+           φρουρός που τρώει το σχόλιο που τον τεκμηριώνει.
+           Το `tests/homework-plan.test.js` απαιτεί να συμφωνεί με το APP. */
+        appKey: 'homework',
+        syncedKeys: [KEY, PKEY],
+        onApplied: function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+          reload();
+          if (!focusId) paint();
+        }
+      });
+      /* Το ALSSync δημοσιεύεται ΣΥΓΧΡΟΝΑ από το initCloudSync, άρα η απουσία
+         του σημαίνει ότι η κλήση βγήκε σε κάτι που δεν το φτιάχνει retry. */
+      if (!window.ALSSync) banner('Ο συγχρονισμός δεν ξεκίνησε — ό,τι γράψεις μένει μόνο σε αυτή τη συσκευή. Κλείσε και άνοιξε ξανά την εφαρμογή.');
+    })();
+  })();
+
+})();
+</script>
+</body>
+</html>

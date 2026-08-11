@@ -61,7 +61,10 @@ var BUNDLE = {
   'ton:v1': 'tonos',
   'ist:v1': 'istoria',
   'arx:v1': 'arxaia',
-  'arx:gn': 'arxaia-gn'
+  'arx:gn': 'arxaia-gn',
+  /* ⚠️ ΤΙΠΟΤΑ ΔΕΝ ΕΠΙΒΑΛΛΕΙ ΑΥΤΟΝ ΤΟΝ ΧΑΡΤΗ. Ένα κλειδί που λείπει από εδώ
+     απαντάει `Unknown key`, που διαβάζεται ΑΚΡΙΒΩΣ σαν «δεν υπάρχει εργασία». */
+  'hw:v1': 'homework', 'hw:pics': 'homework'
 };
 function bundleFor(lsKey) { if (lsKey.indexOf('stack:taken:') === 0) return 'health'; return BUNDLE[lsKey]; }
 
@@ -87,11 +90,41 @@ async function getBundle(appKey) {
    do not "improve" the rule here or the two ends disagree. */
 function addedAt(v) { if (typeof v === 'number') return v; if (v && typeof v === 'object') return (+v.ts || +v._ts || 0); return 0; }
 function tombed(tnode, key, val) { if (!tnode) return false; var t = tnode[key]; if (typeof t !== 'number') return false; return addedAt(val) <= t; }
+/* ⚠️ ΤΟ ΙΔΙΟ ΛΑΘΟΣ, ΕΝΑ ΕΠΙΠΕΔΟ ΠΙΟ ΒΑΘΙΑ (als-v470). Αυτό διάβαζε μόνο
+   ΠΙΝΑΚΕΣ, ενώ το diffTomb του sync.js κατεβαίνει ΑΝΑΔΡΟΜΙΚΑ μέσα σε
+   φωλιασμένα αντικείμενα: ένα σβησμένο task ζει στο
+   `_deletes['hw:v1'].tasks[id]`, ένα ξεσβησμένο habit tick στο
+   `_deletes['habits:log'][date][id]`. Κάθε τέτοιο σβήσιμο ήταν αόρατο εδώ —
+   δηλαδή ξανά ακριβώς το 4.671 kcal, με άλλο σχήμα.
+   ⭐ Ο κανόνας ΑΝΤΙΓΡΑΦΕΤΑΙ, δεν βελτιώνεται: μια ταφόπλακα T καταπίνει ένα
+   στοιχείο ΕΚΤΟΣ αν ξαναμπήκε ΜΕΤΑ το T, και το `_ts` δεν είναι κλειδί χάρτη.
+   ⚠️ ΜΟΝΟ ΑΝΑΓΝΩΣΗ ΕΞ ΟΡΙΣΜΟΥ: οι εγγραφές πάνε από mutateBundle →
+   supa.readRow και δεν περνάνε ποτέ από εδώ. Όλα σε ΜΙΑ συνάρτηση, γιατί το
+   tests/mcp-tombstones.test.js την κόβει ονομαστικά από το αρχείο. */
 function liveOnly(b, lsKey, v) {
-  if (!Array.isArray(v)) return v;
   var tn = b && b._deletes && b._deletes[lsKey];
   if (!tn || typeof tn !== 'object') return v;
-  return v.filter(function (it) { var k = idKeyOf(it); return !(k && tombed(tn, k, it)); });
+  function arrLive(node, a) {
+    return a.filter(function (it) { var k = idKeyOf(it); return !(k && tombed(node, k, it)); });
+  }
+  function objLive(node, o) {
+    var out = {}, k, child, sub;
+    for (k in o) {
+      if (!Object.prototype.hasOwnProperty.call(o, k)) continue;
+      if (k === '_ts') { out[k] = o[k]; continue; }
+      if (tombed(node, k, o[k])) continue;
+      child = o[k];
+      sub = (node[k] && typeof node[k] === 'object' && !Array.isArray(node[k])) ? node[k] : null;
+      out[k] = !sub ? child
+             : Array.isArray(child) ? arrLive(sub, child)
+             : (child && typeof child === 'object') ? objLive(sub, child)
+             : child;
+    }
+    return out;
+  }
+  if (Array.isArray(v)) return arrLive(tn, v);
+  if (v && typeof v === 'object') return objLive(tn, v);
+  return v;
 }
 async function readKey(lsKey) { var ak = bundleFor(lsKey); if (!ak) return undefined; var b = await getBundle(ak); return liveOnly(b, lsKey, b[lsKey]); }
 async function readArr(lsKey) { var v = await readKey(lsKey); return Array.isArray(v) ? v : []; }
@@ -154,8 +187,24 @@ var TOOLS = [
   { name: 'delete_idea', description: 'Delete an idea (by text).', inputSchema: { type: 'object', properties: { idea: { type: 'string' } }, required: ['idea'] } },
   { name: 'remove_from_watchlist', description: 'Remove a film (by title) from the watchlist.', inputSchema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } },
   { name: 'unmark_bill_paid', description: 'Undo marking a bill (by name) paid for the month.', inputSchema: { type: 'object', properties: { bill: { type: 'string' }, date: { type: 'string' } }, required: ['bill'] } },
-  { name: 'remove_no_spend_day', description: 'Undo a no-spend day.', inputSchema: { type: 'object', properties: { date: { type: 'string' } } } }
+  { name: 'remove_no_spend_day', description: 'Undo a no-spend day.', inputSchema: { type: 'object', properties: { date: { type: 'string' } } } },
+
+  /* ── ΤΟ ΧΡΕΟΣ (als-v470) — homework.html ──────────────────────────────
+     ⛔ ΔΕΝ ΥΠΑΡΧΕΙ ΚΑΙ ΔΕΝ ΘΑ ΥΠΑΡΞΕΙ ΠΑΡΑΜΕΤΡΟΣ ΕΛΕΥΘΕΡΟΥ ΚΕΙΜΕΝΟΥ ΕΔΩ.
+     Το εργαλείο δέχεται μόνο ΗΔΗ ΑΝΑΛΥΜΕΝΑ πεδία, ένα task ανά κλήση, και τα
+     γυρίζει πίσω αυτούσια. Έτσι η μεταγραφή γίνεται ΜΠΡΟΣΤΑ ΤΟΥ, στη
+     συζήτηση, όπου ένα λάθος απέχει ένα μήνυμα — αντί για ένα preview μοντέλο
+     όρασης ΧΩΡΙΣ εφεδρεία, σιωπηλά, σε έναν server, να επινοεί προθεσμία.
+     Μια ΛΑΘΟΣ προθεσμία είναι χειρότερη από καμία (als-v433). */
+  { name: 'add_homework', description: 'Add ONE homework task to Alex\'s command centre (homework.html). ⚠️ PROTOCOL: this tool takes only ALREADY-PARSED fields — there is deliberately no free-text or image parameter. If he sends a photo or a sentence, read it IN THE CONVERSATION, show him the parse, and only call this once he confirms. One task per call; a batch is N visible calls. Omit `due` entirely when no deadline was stated — never guess one.', inputSchema: { type: 'object', properties: { subject: { type: 'string', description: 'istoria | arxaia | latinika | ekthesi' }, title: { type: 'string', description: 'HIS OWN WORDS, verbatim. Never rewritten or tidied.' }, due: { type: 'string', description: 'YYYY-MM-DD, or today/tomorrow. OMIT IT if no deadline was stated.' }, kind: { type: 'string', description: 'apexo | askisi | grapto | diagonisma' }, unit: { type: 'string', description: 'A unit id that already exists in the corpora (a1a a1b a2 b1 b1b b2 gn1..gn6 gk1 p1). Omit if unsure.' }, note: { type: 'string' } }, required: ['subject', 'title'] } },
+  { name: 'get_homework', description: 'His open and recently finished homework tasks, and the deadlines on them. Call this before add_homework so you do not add the same thing twice.', inputSchema: { type: 'object', properties: { include_done: { type: 'boolean' } } } }
 ];
+
+/* Τα ΤΕΣΣΕΡΑ μαθήματα. Τα ids είναι τιμές μηχανής και ΠΑΓΩΜΕΝΑ — τα ίδια
+   ακριβώς με το homework.html. Η σελίδα του κάθε μαθήματος βγαίνει από εδώ,
+   δεν μαντεύεται· η Έκθεση δεν έχει σελίδα ακόμη και το λέει με ένα null. */
+var HW_SUBJECTS = { istoria: 'istoria.html', arxaia: 'arxaia.html', latinika: 'latinika.html', ekthesi: null };
+var HW_KINDS = ['apexo', 'askisi', 'grapto', 'diagonisma'];
 
 var READABLE = Object.keys(BUNDLE).concat(['stack:taken:<date>']);
 
@@ -589,6 +638,81 @@ async function callTool(name, a) {
       if (idx < 0) return; var rem = ns[idx]; ns.splice(idx, 1); b['bills:nospend'] = ns; tombstone(b, 'bills:nospend', rem); rnmsg = 'Removed no-spend mark on ' + rnd + '.';
     });
     return rnmsg;
+  }
+
+  /* ---- ΤΟ ΧΡΕΟΣ ---- */
+  if (name === 'get_homework') {
+    /* ⚠️ ΜΕΣΑ ΑΠΟ readKey → liveOnly. Οι εργασίες ζουν σε ΦΩΛΙΑΣΜΕΝΟ χάρτη,
+       άρα χωρίς τον αναδρομικό φιλτραρισμό θα ανέσταινα εργασίες που έχει ήδη
+       τσεκάρει — το ίδιο ακριβώς λάθος που έλεγε 4.671 kcal αντί για 1.461. */
+    var hwSt = await readKey('hw:v1');
+    var hwTasks = (hwSt && hwSt.tasks && typeof hwSt.tasks === 'object') ? hwSt.tasks : {};
+    var hwOut = [], hwK;
+    for (hwK in hwTasks) {
+      if (!Object.prototype.hasOwnProperty.call(hwTasks, hwK)) continue;
+      var ht = hwTasks[hwK];
+      if (!ht || typeof ht !== 'object' || !ht.id) continue;
+      if (ht.done && !a.include_done) continue;
+      hwOut.push(ht);
+    }
+    if (!hwOut.length) return a.include_done ? 'No homework recorded at all.' : 'Nothing open. (Pass include_done to see what he has finished.)';
+    hwOut.sort(function (x, y) { return String(x.due || '9999-99-99') < String(y.due || '9999-99-99') ? -1 : 1; });
+    return hwOut.map(function (t) {
+      return [
+        t.done ? '· DONE' : '·',
+        (t.subject || '?') + (t.kind ? '/' + t.kind : ''),
+        JSON.stringify(String(t.title || '')),
+        t.due ? ('due ' + t.due) : 'NO DEADLINE',
+        (t.link && t.link.unit) ? ('unit ' + t.link.unit) : ''
+      ].filter(Boolean).join('  ');
+    }).join('\n');
+  }
+
+  if (name === 'add_homework') {
+    var hsub = String(a.subject || '').trim().toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(HW_SUBJECTS, hsub))
+      return 'subject must be one of: ' + Object.keys(HW_SUBJECTS).join(', ') + '.';
+    var htitle = String(a.title == null ? '' : a.title).trim();
+    if (!htitle) return 'title is required — and it must be HIS words, not a tidied version of them.';
+    var hkind = String(a.kind || '').trim().toLowerCase();
+    /* Το default παράγεται από το μάθημα, δεν επινοείται: μια Έκθεση ΕΙΝΑΙ γραπτό. */
+    if (HW_KINDS.indexOf(hkind) < 0) hkind = (hsub === 'ekthesi') ? 'grapto' : 'askisi';
+    /* ⛔ ΠΟΤΕ ΠΡΟΘΕΣΜΙΑ ΑΠΟ ΤΟ ΠΟΥΘΕΝΑ. Αν δεν δόθηκε `due`, μένει null και η
+       κάρτα λέει «χωρίς ημερομηνία». Το resolveDate() ΓΥΡΙΖΕΙ ΣΗΜΕΡΑ σε
+       ό,τι δεν καταλάβει, οπότε καλείται ΜΟΝΟ όταν όντως δόθηκε κάτι. */
+    var hdue = null;
+    if (a.due != null && String(a.due).trim() !== '') hdue = await resolveDate(a.due);
+    var hunit = (a.unit == null || String(a.unit).trim() === '') ? null : String(a.unit).trim();
+    var hnow = Date.now();
+    var hrec = {
+      id: uid('h'), ts: hnow,
+      /* ⭐⭐ ΣΤΑΘΕΡΗ ΑΡΧΗ 31. Μια εγγραφή γραμμένη από το MCP μέσα σε
+         φωλιασμένο χάρτη ΧΩΡΙΣ `_ts` ΧΑΝΕΙ από ό,τι έχει το κινητό του στην
+         επόμενη συγχώνευση — και η απώλεια είναι αόρατη: σωστή συζήτηση,
+         σωστή γραμμή στη βάση, εξαφανισμένη σε 400ms. */
+      _ts: hnow,
+      subject: hsub, title: htitle, due: hdue, kind: hkind,
+      link: (hunit && HW_SUBJECTS[hsub]) ? { page: HW_SUBJECTS[hsub], unit: hunit } : null,
+      est: null,          /* ⛔ null μέχρι να ΜΕΤΡΗΘΕΙ στη σελίδα */
+      done: 0, src: null, note: String(a.note || ''), elapsed: 0
+    };
+    await mutateBundle('homework', function (b) {
+      var st = b['hw:v1'];
+      if (!st || typeof st !== 'object' || Array.isArray(st)) st = { v: 1, tasks: {}, samples: {} };
+      if (!st.tasks || typeof st.tasks !== 'object' || Array.isArray(st.tasks)) st.tasks = {};
+      if (!st.samples || typeof st.samples !== 'object' || Array.isArray(st.samples)) st.samples = {};
+      st.tasks[hrec.id] = hrec;
+      b['hw:v1'] = st;
+    });
+    /* Ένα task ανά κλήση, γυρισμένο πίσω ΟΛΟΚΛΗΡΟ, ώστε ένα λάθος να φαίνεται
+       στη συζήτηση αντί να ανακαλυφθεί σε μια εβδομάδα. */
+    return 'Added to Το χρέος:\n' +
+      '  subject: ' + hrec.subject + '\n' +
+      '  title:   ' + JSON.stringify(hrec.title) + '\n' +
+      '  kind:    ' + hrec.kind + '\n' +
+      '  due:     ' + (hrec.due || 'NONE — the card will say «χωρίς ημερομηνία»') + '\n' +
+      '  unit:    ' + (hunit || 'none') + '\n' +
+      'If any line is wrong, tell me and I will fix it.';
   }
 
   throw new Error('Unknown tool: ' + name);
