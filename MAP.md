@@ -75,7 +75,9 @@ als-v454) are the study pages, and **`homework.html` (Το χρέος, als-v470)
 the room above them.
 
 🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
-Read `docs/HOMEWORK_SPEC.md` §15 (phases) and §16 (acceptance) before you touch
+Read **`docs/XREOS_V2_SPEC.md` first** (the current truth — it says what changes
+and in what order; ✅ its Φάση 0, ΤΟ ΣΥΜΒΟΛΑΙΟ, shipped als-v471), then
+`docs/HOMEWORK_SPEC.md` §15 (phases) and §16 (acceptance) before you touch
 it or describe it. Live and wrong right now: **`est` can never be produced for
 recall** (so the «10′/20′/45′/90′» chips cannot filter and the card shows «—»
 forever — the render's `~18′` came from a seeded fixture), **the week horizon
@@ -111,7 +113,7 @@ is the whole feature — true without a single AI call.
   is enough). `ladders.js` is the only reader and derives `typical` (median
   minutes per mode, **finished sessions only**, ≥3 samples or `null`), `byHour`
   and `abandoned`. **`tonos.html` is the only writer so far** — the contract is
-  proven on one page before it is written into five (`docs/HOMEWORK_SPEC_V2.md`
+  proven on one page before it is written into five (`docs/XREOS_V2_SPEC.md`
   §2.3). Full brief in that file; the record shape is repeated in `ladders.js`.
 - **The day, not the evening.** The morning block (11:15–15:00) is bigger than
   the evening one, so the unit is Η ΜΕΡΑ with the φροντιστήριο as its spine.

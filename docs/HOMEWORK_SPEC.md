@@ -2,7 +2,7 @@
 
 **The MÉTRON study command center. Implementation contract.**
 
-Read `CLAUDE.md` first — all 34 σταθερές αρχές apply. This file does not repeat
+Read `CLAUDE.md` first — all 35 σταθερές αρχές apply. This file does not repeat
 them; it says which ones bite here and where.
 
 ---
@@ -242,7 +242,7 @@ he will not maintain.
 ⚠️ `subject` ids are **machine values and frozen**. Human-facing labels are Greek
 and live in one map.
 
-### 4.7 ⭐⭐ ΤΟ ΣΥΜΒΟΛΑΙΟ — `sessions` (added als-v471, superseded brief in `HOMEWORK_SPEC_V2.md` §2)
+### 4.7 ⭐⭐ ΤΟ ΣΥΜΒΟΛΑΙΟ — `sessions` (added als-v471, superseded brief in `XREOS_V2_SPEC.md` §2)
 
 §4.5 above reads **five `due` timestamps**. That is enough to sort and never enough
 to understand: it cannot know that the recall took 18 minutes, that it was
