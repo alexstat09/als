@@ -242,6 +242,39 @@ he will not maintain.
 ⚠️ `subject` ids are **machine values and frozen**. Human-facing labels are Greek
 and live in one map.
 
+### 4.7 ⭐⭐ ΤΟ ΣΥΜΒΟΛΑΙΟ — `sessions` (added als-v471, superseded brief in `HOMEWORK_SPEC_V2.md` §2)
+
+§4.5 above reads **five `due` timestamps**. That is enough to sort and never enough
+to understand: it cannot know that the recall took 18 minutes, that it was
+abandoned halfway, or that Λατινικά go well in the morning and badly at 23:00.
+
+So every study page owes this page a session log, written **inside its own store**
+(σταθερή αρχή 16 — no new key, no new appKey, nothing added to `BUNDLES`/`BUNDLE`,
+no migration):
+
+```js
+// ist:v1.sessions · arx:gn.sessions · arx:v1.sessions · lat:v1.sessions · ton:v1.sessions
+{ id, ts, ms, unit, mode, asked, right, pass, fin }
+```
+
+- **`ms` is the point.** It is the one number nothing else in the app can compute.
+- **`fin: 0` is the most valuable field and the one nobody records.** An
+  abandonment is signal, not noise.
+- **No `_ts`, and that is safe by construction.** σταθερή αρχή 31 is about records
+  that get REWRITTEN; a session never changes after it is written, so `mergeArray`
+  only ever unions by `id`. The `id` carries randomness so two devices in the same
+  millisecond cannot collapse into one.
+- **No pruning**, deliberately, unlike `days` (90). ~300 sessions × ~120 bytes =
+  36 KB/year, comfortably under the 64 KiB that kills `flushOnUnload` (σταθερή
+  αρχή 34). Revisit **with a measurement** if it ever matters.
+- `ladders.js` is the **only** reader. It derives `typical` (median minutes per
+  mode, **finished sessions only** — an abandonment at 40s is a true signal about
+  WHETHER and a lie about HOW LONG), `byHour` (local hours) and `abandoned`.
+- ⛔ **No page is unlocked before its own `sessions` is written** — the contract is
+  proven on ONE page (`tonos.html`) before it is written into five.
+- ⛔ Until a store reports, `est` and the `10′/20′/45′/90′` chips **stay off that
+  row**. §7.3 stands: `null` until measured, never a guess.
+
 ---
 
 ## 5 · CAPTURE — his decision, and it overrides the original brief
@@ -633,7 +666,8 @@ Named so they are not "discovered" later as omissions:
 
 | | | done when |
 |---|---|---|
-| **0** | **`ladders.js`** — the shared reader (§4.5), `home-live.js` refactored onto it, fixtures per shape | Home's four tiles are byte-identical to before, and one call returns all five ladders |
+| **0** | **`ladders.js`** — the shared reader (§4.5), `home-live.js` refactored onto it, fixtures per shape | ✅ als-v470. Home's four tiles are byte-identical to before, and one call returns all five ladders |
+| **0b** | **ΤΟ ΣΥΜΒΟΛΑΙΟ** (§4.7) — `sessions` read by `ladders.js`, written by `tonos.html` | ✅ als-v471. A real Τονισμός exam produces a duration the command center reads. **The other four pages still owe theirs** |
 | **1** | **THE DEBT.** Draw what is due, across all five. One column, no capture, no plan. | It tells him something he could not otherwise know, on his phone, today |
 | **2** | **START HERE** + the reason clause + «ΕΧΩ 20 ΛΕΠΤΑ» + deep links out | Pressing START lands on the right unit of the right page |
 | **3** | **CAPTURE** — the one-line parser, the chip confirmation, the photo as source, brain dump | He adds tomorrow's homework in three taps at the φροντιστήριο |

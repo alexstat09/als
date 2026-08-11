@@ -177,6 +177,130 @@ is('χθες βράδυ → 1 μέρα, όχι 0 και όχι 1.5', L.daysLate(
 is('σήμερα το πρωί → 0', L.daysLate(Date.parse('2026-08-11T08:00:00'), noon), 0);
 
 /* ══════════════════════════════════════════════════════════════════════
+   4b · ΤΟ ΣΥΜΒΟΛΑΙΟ — οι συνεδρίες (als-v471)
+
+   ⭐ ΤΑ FIXTURES ΕΙΝΑΙ ΧΕΙΡΟΓΡΑΦΑ ΚΑΙ ΟΙ ΑΝΑΜΕΝΟΜΕΝΕΣ ΤΙΜΕΣ ΥΠΟΛΟΓΙΣΜΕΝΕΣ
+   ΣΤΟ ΧΕΡΙ. Μια διάμεσος βγαλμένη από τον ίδιο τον `median()` συμφωνεί με
+   κάθε bug του τέλεια — το μάθημα του `-erint`/`-erunt`.
+
+   ⚠️ Οι ώρες γράφονται ΧΩΡΙΣ `Z`, δηλαδή ΤΟΠΙΚΕΣ, γιατί το `byHour` μετράει
+   τη δική ΤΟΥ ώρα («μετά τις 22:00»). Με `Z` το test θα περνούσε στην Αθήνα
+   και θα κοκκίνιζε σε UTC runner — μια βεβαίωση που εξαρτάται από τη ζώνη
+   της μηχανής είναι βεβαίωση για τη μηχανή.
+   ══════════════════════════════════════════════════════════════════════ */
+section('4b · sessions: the contract, read');
+
+const MIN = 60000;
+const at = s => Date.parse('2026-08-' + s);        /* τοπική ώρα, επίτηδες */
+
+/* Τονισμός — τέσσερις τελειωμένες, δύο παρατημένες.
+   ΣΤΟ ΧΕΡΙ: τελειωμένες = 6′ 10′ 8′ 20′ → ταξινομημένες 6 8 10 20 →
+   διάμεσος (8+10)/2 = 9′.  Στις 09:00 τρεις τελειωμένες: 6 10 8 → 8′.
+   Στις 23:00 τρεις συνεδρίες αλλά ΜΙΑ τελειωμένη → καμία διάμεσος. */
+const SESS_TON = [
+  { id: 's1', ts: at('05T09:20:00'), ms:  6 * MIN, unit: '',       mode: 'drill', asked: 12, right: 12, pass: 1, fin: 1 },
+  { id: 's2', ts: at('06T09:40:00'), ms: 10 * MIN, unit: '',       mode: 'drill', asked: 12, right: 10, pass: 0, fin: 1 },
+  { id: 's3', ts: at('07T09:10:00'), ms:  8 * MIN, unit: 'spirit', mode: 'drill', asked: 10, right:  9, pass: 0, fin: 1 },
+  { id: 's4', ts: at('08T23:05:00'), ms: 20 * MIN, unit: '',       mode: 'drill', asked: 12, right:  6, pass: 0, fin: 1 },
+  { id: 's5', ts: at('09T23:30:00'), ms:  2 * MIN, unit: '',       mode: 'drill', asked:  3, right:  1, pass: 0, fin: 0 },
+  { id: 's6', ts: at('10T23:50:00'), ms:  1 * MIN, unit: 'spos',   mode: 'drill', asked:  1, right:  0, pass: 0, fin: 0 }
+];
+/* Ιστορία — ΔΥΟ τελειωμένες ανακλήσεις (κάτω από το κατώφλι) και μία
+   παρατημένη διδασκαλία. Και τα δύο modes ΠΡΕΠΕΙ να εμφανίζονται με `null`:
+   «δεν το έχει ξανακάνει» και «το έχει κάνει, δεν φτάνουν τα δείγματα»
+   είναι δύο διαφορετικές προτάσεις. */
+const SESS_IST = [
+  { id: 'r2', ts: at('07T11:30:00'), ms: 22 * MIN, unit: 'a1a', mode: 'recall', asked: 30, right: 27, pass: 1, fin: 1 },
+  { id: 'r1', ts: at('06T11:00:00'), ms: 18 * MIN, unit: 'a1a', mode: 'recall', asked: 30, right: 21, pass: 0, fin: 1 },
+  { id: 'r3', ts: at('08T11:10:00'), ms:  4 * MIN, unit: 'b1b', mode: 'lesson', asked:  5, right:  4, pass: 0, fin: 0 }
+];
+
+const withSess = Object.keys(FIX).reduce((o, k) => (o[k] = JSON.parse(JSON.stringify(FIX[k])), o), {});
+withSess['ton:v1'].sessions = SESS_TON;
+withSess['ist:v1'].sessions = SESS_IST;
+const RS = L.read({ get: k => (k in withSess ? JSON.stringify(withSess[k]) : null), now: NOW });
+
+is('ton:v1 — και οι έξι διαβάστηκαν', RS.byKey['ton:v1'].sessions.length, 6);
+is('η ΔΙΑΜΕΣΟΣ των ΤΕΛΕΙΩΜΕΝΩΝ, σε λεπτά (χειρόγραφο: 6·8·10·20 → 9)',
+  RS.byKey['ton:v1'].typical.drill, 9);
+is('και σε ms, γιατί το «έχω 20 λεπτά» φιλτράρει σε ms',
+  RS.byKey['ton:v1'].typicalMs.drill, 9 * MIN);
+
+section('4b.1 · μια παρατημένη ΔΕΝ μετράει για το «πόσο κρατάει»');
+/* Οι δύο εγκαταλείψεις είναι 2′ και 1′. Αν μετρούσαν, η διάμεσος θα ήταν
+   (6+8)/2 = 7′ και τα chips θα του υπόσχονταν χρόνο που δεν υπάρχει. */
+ok('η διάμεσος δεν είναι η διάμεσος ΟΛΩΝ (που θα ήταν 7′)',
+  RS.byKey['ton:v1'].typical.drill !== 7);
+is('αλλά η εγκατάλειψη ΜΕΤΡΙΕΤΑΙ — τις τελευταίες 6, οι 2 παρατήθηκαν',
+  RS.byKey['ton:v1'].abandoned, { of: 6, count: 2 });
+is('το παράθυρο είναι δηλωμένο, όχι μαντεμένο', L.ABANDON_WINDOW, 10);
+
+section('4b.2 · κάτω από τρία δείγματα δεν λέγεται «συνήθως»');
+is('δύο τελειωμένες ανακλήσεις → null, ΠΟΤΕ ο μέσος όρος τους',
+  RS.byKey['ist:v1'].typical.recall, null);
+ok('αλλά το mode ΥΠΑΡΧΕΙ ως κλειδί — «το έχει κάνει» ≠ «δεν το ξέρω»',
+  'recall' in RS.byKey['ist:v1'].typical);
+is('ένα mode που δεν τελείωσε ποτέ → κλειδί με null, όχι μηδέν',
+  RS.byKey['ist:v1'].typical.lesson, null);
+ok('ένα mode που δεν έχει ξαναγίνει δεν έχει καν κλειδί',
+  !('drill' in RS.byKey['ist:v1'].typical));
+is('το κατώφλι είναι δηλωμένο', L.MIN_SAMPLES, 3);
+
+section('4b.3 · η ώρα είναι ΤΟΠΙΚΗ, και οι μετρήσεις ωμές');
+const H = RS.byKey['ton:v1'].byHour;
+is('στις 09:00 τρεις συνεδρίες, όλες τελειωμένες', [H[9].n, H[9].done], [3, 3]);
+is('διάμεσος 09:00 (χειρόγραφο: 6·10·8 → 8′)', H[9].ms, 8 * MIN);
+is('στις 23:00 τρεις συνεδρίες, ΜΙΑ τελειωμένη', [H[23].n, H[23].done], [3, 1]);
+is('άρα καμία διάμεσος εκεί — ένα δείγμα δεν είναι συνήθεια', H[23].ms, null);
+is('η ακρίβεια των 09:00 είναι 31/34, όχι στρογγυλεμένη σε ποσοστό',
+  [H[9].right, H[9].asked], [31, 34]);
+is('μια ώρα που δεν άγγιξε ποτέ έχει accuracy null, ΠΟΤΕ 0', H[3].accuracy, null);
+is('και οι 24 γραμμές υπάρχουν πάντα', H.length, 24);
+
+section('4b.4 · η σειρά μπαίνει ΕΔΩ (το mergeArray δεν ταξινομεί)');
+/* Το `mergeArray` γεμίζει έναν χάρτη με τα remote και γράφει από πάνω τα
+   local: η σειρά εξόδου είναι σειρά χάρτη. Το fixture της Ιστορίας είναι
+   γραμμένο ανάποδα επίτηδες. */
+is('οι συνεδρίες βγαίνουν ΑΥΞΟΥΣΑ κατά ts',
+  RS.byKey['ist:v1'].sessions.map(s => s.id), ['r1', 'r2', 'r3']);
+is('και το ενιαίο ρεύμα όλων των αποθηκών επίσης',
+  RS.sessions.map(s => s.id), ['s1', 's2', 'r1', 's3', 'r2', 'r3', 's4', 's5', 's6']);
+ok('κάθε συνεδρία ξέρει από ποια αποθήκη ήρθε',
+  RS.sessions.every(s => !!s.store && !!s.page && !!s.subject));
+
+section('4b.5 · απόν ≠ σπασμένο ≠ άδειο (σταθερή αρχή 10, ξανά)');
+is('μια αποθήκη που δεν αναφέρει ακόμη → [] και sessionsOk:true',
+  [RS.byKey['lat:v1'].sessions.length, RS.byKey['lat:v1'].sessionsOk], [0, true]);
+is('και ΚΑΝΕΝΑ παράγωγο — null, ποτέ 0',
+  [RS.byKey['lat:v1'].typical, RS.byKey['lat:v1'].byHour, RS.byKey['lat:v1'].abandoned],
+  [null, null, null]);
+const RBROKE = L.read({
+  get: k => k === 'ton:v1' ? JSON.stringify({ v: 1, cells: {}, days: [], sessions: { s1: {} } }) : null,
+  now: NOW
+});
+is('λάθος σχήμα → sessionsOk:false, και η σκάλα διαβάζεται κανονικά',
+  [RBROKE.byKey['ton:v1'].sessionsOk, RBROKE.byKey['ton:v1'].ok], [false, true]);
+
+section('4b.6 · μια χαλασμένη εγγραφή πέφτει, και ΦΑΙΝΕΤΑΙ ότι έπεσε');
+const RJUNK = L.read({
+  get: k => k === 'ton:v1' ? JSON.stringify({
+    v: 1, cells: {}, days: [], sessions: [
+      SESS_TON[0],
+      7,                                                                  /* όχι αντικείμενο */
+      { id: 'b1', ts: 0, ms: 5 * MIN, asked: 1, right: 0 },               /* ts άκυρο */
+      { id: 'b2', ts: at('05T10:00:00'), ms: 'πολύ', asked: 1, right: 0 },/* ms άκυρο */
+      { id: 'b3', ts: at('05T10:00:00'), ms: 5 * MIN, right: 0 },         /* asked απόν */
+      { id: 'b4', ts: at('05T10:00:00'), ms: -1, asked: 1, right: 0 }     /* αρνητικό */
+    ]
+  }) : null,
+  now: NOW
+});
+is('πέντε χαλασμένες φεύγουν, η μία καλή μένει',
+  [RJUNK.byKey['ton:v1'].sessions.length, RJUNK.byKey['ton:v1'].sessionsDropped], [1, 5]);
+ok('ένα bug του γραφέα δεν κρύβεται πίσω από ένα σιωπηλό μηδέν',
+  RJUNK.byKey['ton:v1'].sessionsDropped > 0);
+
+/* ══════════════════════════════════════════════════════════════════════
    5 · Η ΑΠΟΔΕΙΞΗ ΤΗΣ ΤΑΥΤΟΤΗΤΑΣ — τα τέσσερα πλακίδια του Home
    ══════════════════════════════════════════════════════════════════════ */
 section('5 · Home\'s study tiles are byte-identical to git show HEAD:');
@@ -211,7 +335,11 @@ const SCENES = {
   'empty': {},
   'legacy arx:v1 array': Object.assign(
     Object.keys(FIX).reduce((o, k) => (o[k] = JSON.stringify(FIX[k]), o), {}),
-    { 'arx:v1': JSON.stringify(LEGACY['arx:v1']) })
+    { 'arx:v1': JSON.stringify(LEGACY['arx:v1']) }),
+  /* ⭐ Η als-v471 προσθέτει ένα πεδίο ΜΕΣΑ σε αποθήκες που ήδη ζωγραφίζουν
+     πλακίδια στο Home. Ό,τι είναι «καθαρά προσθετικό» αποδεικνύεται, δεν
+     δηλώνεται: ΙΔΙΑ δεδομένα συν τις συνεδρίες, ίδια τέσσερα νούμερα. */
+  'with sessions': Object.keys(withSess).reduce((o, k) => (o[k] = JSON.stringify(withSess[k]), o), {})
 };
 const STUDY_TILES = ['latinika.html', 'tonos.html', 'istoria.html', 'arxaia.html'];
 

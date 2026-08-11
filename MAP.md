@@ -104,6 +104,15 @@ is the whole feature — true without a single AI call.
   `home-live.js` was refactored onto it in the same commit and
   `tests/ladders.test.js` proves the four Home tiles are **byte-identical** to
   `git show HEAD:`.
+- ⭐⭐ **ΤΟ ΣΥΜΒΟΛΑΙΟ (als-v471) — `sessions`.** Every study page owes the
+  command center a session log **inside its own store** (`ton:v1.sessions`,
+  `ist:v1.sessions`, …): `{id, ts, ms, unit, mode, asked, right, pass, fin}`,
+  append-only, no `_ts` (records never change, so `mergeArray`'s union by `id`
+  is enough). `ladders.js` is the only reader and derives `typical` (median
+  minutes per mode, **finished sessions only**, ≥3 samples or `null`), `byHour`
+  and `abandoned`. **`tonos.html` is the only writer so far** — the contract is
+  proven on one page before it is written into five (`docs/HOMEWORK_SPEC_V2.md`
+  §2.3). Full brief in that file; the record shape is repeated in `ladders.js`.
 - **The day, not the evening.** The morning block (11:15–15:00) is bigger than
   the evening one, so the unit is Η ΜΕΡΑ with the φροντιστήριο as its spine.
   21:45–22:30 is reserved for **today's three lessons** and never for homework.

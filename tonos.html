@@ -417,8 +417,13 @@
   function blank(){
     var c = {}, i;
     for (i = 0; i < T.CELLS.length; i++) c[T.CELLS[i].id] = { r:0, w:0, due:0, streak:0 };
-    return { v:1, cells:c, days:[] };
+    return { v:1, cells:c, days:[], sessions:[] };
   }
+  /* ⚠️⚠️ ΤΟ `load()` ΞΑΝΑΧΤΙΖΕΙ ΤΗΝ ΚΑΤΑΣΤΑΣΗ ΑΠΟ ΤΟ `blank()` ΚΑΙ ΑΝΤΙΓΡΑΦΕΙ
+     ΜΟΝΟ ΟΣΑ ΟΝΟΜΑΖΕΙ. Άρα κάθε πεδίο που δεν γράφεται εδώ ΣΒΗΝΕΤΑΙ σε κάθε
+     φόρτωση — και ο συγχρονισμός το κάνει χειρότερο, γιατί μια συνεδρία που
+     κατεβαίνει από άλλη συσκευή θα εξαφανιζόταν στο επόμενο `save()`. Το
+     `sessions` ΠΡΕΠΕΙ να αντιγράφεται εδώ. */
   function load(){
     var s;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
@@ -430,6 +435,7 @@
       if (s.cells[id]) base.cells[id] = s.cells[id];
     }
     base.days = s.days || [];
+    base.sessions = Array.isArray(s.sessions) ? s.sessions : [];
     return base;
   }
   /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468. Χωρίς `_ts` το `sync.js` κατεβαίνει μέσα στα
@@ -543,12 +549,71 @@
   /* ── η συνεδρία ───────────────────────────────────── */
   function startSession(qs){
     if (!qs || !qs.length){ toast('Δεν βρήκα ερώτηση γι\' αυτό. Δοκίμασε τη μεικτή εξέταση.'); return; }
-    sess = { qs: qs, i: 0, right: 0, miss: [], answered: false };
+    sess = { qs: qs, i: 0, done: 0, right: 0, miss: [], answered: false,
+             t0: Date.now(), logged: false };
     document.getElementById('tnSess').classList.add('on');
     document.body.style.overflow = 'hidden';
     renderCard();
   }
+
+  /* ⭐⭐ ΤΟ ΣΥΜΒΟΛΑΙΟ — als-v471. Η ΠΡΩΤΗ σελίδα που αναφέρει πίσω.
+     Το `homework.html` ξέρει μόνο πέντε `due`: μπορεί να ταξινομήσει, δεν
+     μπορεί να καταλάβει. Εδώ γεννιέται το ΜΟΝΟ πράγμα που δεν μπορεί να
+     υπολογίσει από αλλού — η διάρκεια — και το πιο πολύτιμο, το `fin:0`.
+
+     Η εγγραφή μπαίνει ΜΕΣΑ στο `ton:v1`, όπως ο `plag` μπαίνει μέσα στο
+     `ist:v1` (σταθερή αρχή 16): καμία νέα αποθήκη, κανένα νέο appKey, καμία
+     αλλαγή σε `BUNDLES`/`BUNDLE`, κανένα migration.
+
+     ⚠️ ΧΩΡΙΣ `_ts`, ΚΑΙ ΕΙΝΑΙ ΣΩΣΤΟ. Η σταθερή αρχή 31 αφορά εγγραφές που
+     ξαναγράφονται· καμία συνεδρία δεν αλλάζει ΠΟΤΕ αφού γραφτεί, άρα το
+     `mergeArray` δεν έχει σύγκρουση να λύσει — μόνο ένωση κατά `id`. Το `id`
+     κουβαλάει τυχαιότητα ώστε δύο συσκευές στο ίδιο χιλιοστό να μη
+     συγχωνευθούν σε μία.
+
+     ⚠️ ΚΑΝΕΝΑ ΚΛΑΔΕΜΑ, επίτηδες, σε αντίθεση με το `days` (90). ~300
+     συνεδρίες × ~120 bytes = 36 KB τον χρόνο, με τις Πανελλήνιες τον Ιούνιο
+     2027 — άνετα κάτω από τα 64 KiB που κόβουν το `flushOnUnload` (σταθερή
+     αρχή 34). Ένα κλάδεμα θα ήθελε ταφόπλακες για κάτι που δεν το ζητάει
+     κανείς. Αν ποτέ χρειαστεί, γίνεται τότε, ΜΕ ΜΕΤΡΗΣΗ. */
+  function logSession(finished){
+    if (!sess || sess.logged) return;
+    /* Ένα άνοιγμα χωρίς ούτε μία απάντηση είναι παραπάτημα, όχι εγκατάλειψη —
+       και δεν υπάρχει διάρκεια να μετρηθεί σε κάτι που δεν ρωτήθηκε ποτέ. */
+    if (!sess.done) return;
+    sess.logged = true;
+    if (!Array.isArray(state.sessions)) state.sessions = [];
+
+    /* Το `unit` είναι id ΤΗΣ ΣΚΑΛΑΣ αυτής της σελίδας, δηλαδή κελί-κανόνας.
+       Βγαίνει από τις ΙΔΙΕΣ τις ερωτήσεις, όχι από τον καλούντα: μια μεικτή
+       εξέταση αγγίζει πολλά κελιά και τότε η τίμια απάντηση είναι ''. */
+    var cell = sess.qs[0].cell, i;
+    for (i = 1; i < sess.qs.length; i++) if (sess.qs[i].cell !== cell){ cell = ''; break; }
+
+    /* ⭐ ΤΟ `pass` ΕΙΝΑΙ Ο ΚΑΝΟΝΑΣ ΤΗΣ ΙΔΙΑΣ ΤΗΣ ΣΕΛΙΔΑΣ, ΟΧΙ ΚΑΤΩΦΛΙ ΠΟΥ
+       ΕΦΕΥΡΑ. Ο Τονισμός δεν έχει `PASS` σαν την Ιστορία· η σκάλα του
+       προχωράει ΑΝΑ ΚΕΛΙ και ένα λάθος μηδενίζει το `streak` (δες `answer()`).
+       Άρα το αντίστοιχό του σε επίπεδο συνεδρίας είναι ακριβώς: προχώρησαν
+       ΟΛΑ τα κελιά που άγγιξε — δηλαδή καθαρό πέρασμα, μηδέν λάθη. Μια
+       παρατημένη συνεδρία δεν περνάει, εξ ορισμού. */
+    state.sessions.push({
+      id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      ts: sess.t0,
+      ms: Math.max(0, Date.now() - sess.t0),
+      unit: cell,
+      mode: 'drill',
+      asked: sess.done,
+      right: sess.right,
+      pass: (finished && sess.right === sess.done) ? 1 : 0,
+      fin: finished ? 1 : 0
+    });
+  }
+
   function endSession(){
+    /* ⭐ Η ΕΓΚΑΤΑΛΕΙΨΗ ΕΙΝΑΙ ΣΗΜΑ, ΟΧΙ ΘΟΡΥΒΟΣ. Τρεις φορές που το παράτησε
+       στη μέση λένε κάτι που καμία ακρίβεια δεν λέει — και είναι το μόνο
+       πεδίο του συμβολαίου που δεν καταγράφει κανείς άλλος. */
+    if (sess && !sess.logged){ logSession(0); save(); }
     var s = sess; sess = null;
     document.getElementById('tnSess').classList.remove('on');
     document.body.style.overflow = '';
@@ -585,6 +650,10 @@
   function answer(n){
     if (sess.answered) return;
     sess.answered = true;
+    /* ⚠️ ΞΕΧΩΡΙΣΤΟΣ ΜΕΤΡΗΤΗΣ, ΟΧΙ `sess.i`. Στη σύνοψη το `i` έχει ήδη γίνει
+       `qs.length` ΚΑΙ το `answered` έχει μείνει `true` από την τελευταία
+       ερώτηση, οπότε `i + (answered?1:0)` δίνει μία παραπάνω. */
+    sess.done++;
     var q = sess.qs[sess.i], ok = (n === q.ans), i;
     var bs = document.getElementById('tnOpts').querySelectorAll('[data-n]');
     for (i = 0; i < bs.length; i++){
@@ -618,6 +687,20 @@
   });
 
   function summary(){
+    /* ⚠️⚠️ ΦΡΟΥΡΟΣ ΕΠΑΝΕΙΣΟΔΟΥ — als-v471, ΠΡΟΫΠΑΡΧΟΝ BUG ΑΠΟ ΤΗΝ als-v450.
+       Το «Τέλος» είναι το ΙΔΙΟ κουμπί με το «Επόμενη», και κουβαλάει ΔΥΟ
+       χειριστές: τον ακροατή που μπήκε στο boot και το `onclick` που του
+       βάζει ο ίδιος ο summary() παρακάτω. Στο κλικ τρέχουν ΚΑΙ ΤΑ ΔΥΟ, με
+       τη σειρά — και ο ακροατής βρίσκει το `sess` ακόμη ζωντανό και
+       `answered:true`, κάνει `i++` και ξαναμπαίνει εδώ. Αποτέλεσμα: το
+       `state.days` έπαιρνε ΔΕΥΤΕΡΗ φορά τις ίδιες 12 ερωτήσεις, οπότε το
+       «N έγιναν σήμερα» έδειχνε το διπλάσιο της αλήθειας.
+       ⭐ Βρέθηκε ΟΔΗΓΩΝΤΑΣ την πραγματική σελίδα, και μόνο αφού διορθώθηκε
+       το ίδιο το harness: η πρώτη του γραφή διάβαζε το `onclick` ΜΕΤΑ τους
+       ακροατές, οπότε τα δύο κλικ κατέρρεαν σε ένα και το bug έμενε αόρατο
+       πίσω από πράσινο (σταθερή αρχή 30 — έλεγξε το όργανο). */
+    if (sess.summed) return;
+    sess.summed = 1;
     var q = sess, pct = Math.round(q.right / q.qs.length * 100);
     document.getElementById('tnProg').style.transform = 'scaleX(1)';
     document.getElementById('tnCount').textContent = q.qs.length + '/' + q.qs.length;
@@ -642,6 +725,7 @@
     for (i = 0; i < state.days.length; i++) if (state.days[i].id === d){ state.days[i].q += q.qs.length; state.days[i].r += q.right; found = true; }
     if (!found) state.days.push({ id:d, q:q.qs.length, r:q.right });
     if (state.days.length > 90) state.days = state.days.slice(-90);
+    logSession(1);
     save();
 
     var nx = document.getElementById('tnNext');
