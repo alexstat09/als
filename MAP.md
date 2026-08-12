@@ -227,7 +227,21 @@ listens with the browser's own speech recognition, says nothing while he recites
 and then grades **element by element** (als-v452): each point breaks into the
 separate facts inside it, so a point is complete only when every one of them was
 said, and the summary shows exactly which were missed. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
-the same row). Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
+the same row).
+
+⭐ **`istoria-demo.html` (als-v473) sits BESIDE it and does not replace it** — his
+explicit instruction, and `docs/ISTORIA_SPEC.md`'s Φάση 0.5. The unit of examination
+there is the **πλαγιότιτλος του καθηγητή**, not the υποενότητα: he writes the
+teacher's own words as a title and PICKS paragraphs, and `I.pointsOf()` resolves them
+to points deterministically because every skeleton `anchor` already lives in exactly
+one paragraph (77/77, enforced by `tests/istoria-plag.test.js`). No new syllabus, no
+model, no server. **It writes the SAME `ist:v1` / appKey `istoria`** — a new `plag`
+map plus a measured `pace` — so nothing changed in `BUNDLES` or `BUNDLE`.
+⚠️ That sharing is why `istoria.html`'s `load()` had to stop being an allow-list
+(constraint 35): it was silently deleting any field it did not name. The one grader
+lives in `lesson-grade.js` **and** its deliberate twin inside `istoria-data.js`;
+both gained `gradePoints()` in the same commit, proven identical.
+Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
 every declension and conjugation from rules, so the page can generate unlimited
 exercises AND grade them, and the heatmap shows which cell he actually misses.
 A pattern is only drillable once `tests/latin-engine.test.js` holds a

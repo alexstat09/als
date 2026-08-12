@@ -1645,8 +1645,17 @@
      Η διακοπή στη μέση της ανάκλησης σπάει ακριβώς την προσπάθεια που χτίζει
      τη μνήμη, και ένα πράσινο τικ στη μέση είναι ψεύτικη ανταμοιβή. */
   /* `aliases` = { 'pi:ei': ['η φράση που είπε', …] } */
-  function gradeUnit(unit, heard, aliases) {
-    var pts = (unit && unit.skeleton && unit.skeleton.points) || [];
+  /* ⭐ Η ΕΞΑΓΩΓΗ (als-v473). Ο βαθμολογητής έπαιρνε ΕΝΟΤΗΤΑ· τώρα παίρνει
+     ΛΙΣΤΑ ΣΗΜΕΙΩΝ, γιατί η μονάδα εξέτασης έγινε ο πλαγιότιτλος του καθηγητή
+     και ένας πλαγιότιτλος είναι μια ΕΠΙΛΟΓΗ σημείων — κάποτε από δύο ενότητες
+     (η `b1` και η `b1b` είναι η ίδια ενότητα του βιβλίου, κομμένη στα δύο).
+     ⚠️ Το ΙΔΙΟ σώμα ζει και στο `lesson-grade.js`, επίτηδες (σταθερή αρχή 15):
+     δεν ξεβιδώνω τη σελίδα που δουλεύει κάθε μέρα. Το
+     `tests/arxaia-gnosto.test.js` συγκρίνει τις δύο υλοποιήσεις συνάρτηση προς
+     συνάρτηση, και το `tests/istoria-plag.test.js` αποδεικνύει ότι η εξαγωγή
+     ΔΕΝ άλλαξε ούτε ένα αποτέλεσμα της `gradeUnit`. */
+  function gradePoints(points, heard, aliases) {
+    var pts = points || [];
     var out = [], said = 0, total = 0, i, j, a;
     for (i = 0; i < pts.length; i++) {
       a = null;
@@ -1658,6 +1667,10 @@
       out.push(g); said += g.n; total += g.total;
     }
     return { points: out, said: said, total: total, coverage: total ? said / total : 0 };
+  }
+
+  function gradeUnit(unit, heard, aliases) {
+    return gradePoints((unit && unit.skeleton && unit.skeleton.points) || [], heard, aliases);
   }
 
   /* Η σκάλα προχωράει μόνο εδώ πάνω. Δηλωμένο, όχι κρυφό. */
@@ -1680,6 +1693,97 @@
     return (from || Date.now()) + step * 86400000;
   }
 
+  function unitById(id) {
+    for (var i = 0; i < UNITS.length; i++) if (UNITS[i].id === id) return UNITS[i];
+    return null;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     ⭐⭐ Ο RESOLVER — Ο ΠΛΑΓΙΟΤΙΤΛΟΣ ΔΕΝ ΚΟΥΒΑΛΑΕΙ ΠΕΡΙΕΧΟΜΕΝΟ (als-v473)
+
+     Η ανατροπή: η μονάδα εξέτασης δεν είναι η ενότητα, είναι ο πλαγιότιτλος
+     του καθηγητή του. Ένας πλαγιότιτλος μπορεί να πιάνει δύο παραγράφους, και
+     η `b1b` είναι 50 στοιχεία σε ΜΙΑ απαγγελία — που δεν εξασκεί κανέναν.
+
+     ⭐ ΤΟ ΜΕΤΡΗΜΕΝΟ ΓΕΓΟΝΟΣ ΠΟΥ ΤΟ ΚΑΝΕΙ ΔΩΡΕΑΝ: κάθε σημείο κουβαλάει ήδη
+     `anchor` — φράση που υπάρχει ΑΥΤΟΛΕΞΕΙ μέσα στο `text` της ενότητάς του.
+     Άρα η άγκυρα λέει ΗΔΗ σε ποια παράγραφο ανήκει το σημείο. Μετρήθηκε πάνω
+     σε όλο το corpus πριν γραφτεί αυτή η συνάρτηση:
+
+         units 7 · TOTAL points 77 · unique-paragraph 77 · multi 0 · NONE 0
+
+     ⚠️ ΑΥΤΟ ΕΙΝΑΙ ΠΡΟΫΠΟΘΕΣΗ, ΟΧΙ ΠΑΡΑΤΗΡΗΣΗ. Το `tests/istoria-plag.test.js`
+     σκάει αν ΟΠΟΙΟΔΗΠΟΤΕ σημείο μελλοντικής ενότητας λύνεται σε 0 ή σε >1
+     παραγράφους — αλλιώς ο πλαγιότιτλος θα ζητούσε σιωπηλά λάθος στοιχεία,
+     που είναι ακριβώς το είδος σφάλματος που δεν φαίνεται στην οθόνη.
+
+     Συνέπεια: ΚΑΝΕΝΑ νέο στοιχείο ύλης, κανένα μοντέλο, καμία AI. Ο
+     πλαγιότιτλος είναι ΔΕΙΚΤΕΣ πάνω σε ό,τι είναι ήδη ελεγμένο, και η γείωση
+     μένει άθικτη: τα σημεία εξακολουθούν να κουβαλάνε τις άγκυρές τους.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Τα σημεία της ενότητας `unitId` που η άγκυρά τους ζει στην παράγραφο `pi`.
+     Η σειρά είναι η σειρά των σημείων, δηλαδή η σειρά του βιβλίου. */
+  function paraPoints(unitId, pi) {
+    var un = unitById(unitId);
+    if (!un || !un.text || !un.text[pi]) return [];
+    var par = fold(un.text[pi].p);
+    var pts = (un.skeleton && un.skeleton.points) || [], out = [], i, a;
+    for (i = 0; i < pts.length; i++) {
+      a = fold(pts[i].anchor || '');
+      if (a && par.indexOf(a) >= 0) out.push({ unitId: unitId, pointIndex: i, point: pts[i] });
+    }
+    return out;
+  }
+
+  /* Πόσες παράγραφοι λύνουν αυτή την άγκυρα. 1 = καλά· 0 ή >1 = σφάλμα corpus,
+     και η σελίδα το λέει ΜΕ ΛΕΞΕΙΣ αντί να ζητήσει σιωπηλά λιγότερα. */
+  function anchorHits(unitId, pointIndex) {
+    var un = unitById(unitId);
+    if (!un) return [];
+    var pt = ((un.skeleton && un.skeleton.points) || [])[pointIndex];
+    if (!pt) return [];
+    var a = fold(pt.anchor || ''), out = [], i;
+    if (!a) return [];
+    for (i = 0; i < (un.text || []).length; i++) if (fold(un.text[i].p).indexOf(a) >= 0) out.push(i);
+    return out;
+  }
+
+  /* ⭐ Ο ΕΝΑΣ ΚΑΝΟΝΑΣ, ντετερμινιστικός:
+       1. για κάθε {u,p} του `picks` πάρε την παράγραφο `text[p]` της `u`
+       2. διάλεξε κάθε σημείο της `u` που η άγκυρά του υπάρχει μέσα της
+       3. πέτα ό,τι είναι στο `drop`
+       4. σειρά = η σειρά του `picks`, και μέσα σε παράγραφο η σειρά των σημείων.
+          Η σειρά της απαγγελίας — ποτέ αλφαβητικά, ποτέ κατά ts.
+     → [ {unitId, pointIndex, point} ] */
+  function pointsOf(plag) {
+    var picks = (plag && plag.picks) || [];
+    var dropped = {}, drop = (plag && plag.drop) || [];
+    var out = [], seen = {}, i, j, list, key;
+    for (i = 0; i < drop.length; i++) dropped[drop[i]] = 1;
+    for (i = 0; i < picks.length; i++) {
+      if (!picks[i]) continue;
+      list = paraPoints(picks[i].u, picks[i].p);
+      for (j = 0; j < list.length; j++) {
+        key = list[j].unitId + ':' + list[j].pointIndex;
+        /* Η ίδια παράγραφος διαλεγμένη δύο φορές δεν διπλασιάζει στοιχεία. */
+        if (dropped[key] || seen[key]) continue;
+        seen[key] = 1;
+        out.push(list[j]);
+      }
+    }
+    return out;
+  }
+
+  /* Πόσα ΣΤΟΙΧΕΙΑ κοστίζει μια απαγγελία. Ο μετρητής είναι μέρος της
+     απόφασης, όχι διακοσμητικό: αυτός τον σταματάει να ξαναφτιάξει έναν
+     πλαγιότιτλο 50 στοιχείων και να ξαναπέσει στο πρόβλημα που λύνουμε. */
+  function elCount(points) {
+    var n = 0, i;
+    for (i = 0; i < (points || []).length; i++) n += ((points[i].point || points[i]).must || []).length;
+    return n;
+  }
+
   root.ISTORIA = {
     UNITS: UNITS,
     LADDER: LADDER,
@@ -1691,14 +1795,16 @@
     ALIAS_MIN: ALIAS_MIN,
     matched: matched,
     gradePoint: gradePoint,
+    gradePoints: gradePoints,
     gradeUnit: gradeUnit,
     PASS: PASS,
     bodyOf: bodyOf,
     nextDue: nextDue,
-    unit: function (id) {
-      for (var i = 0; i < UNITS.length; i++) if (UNITS[i].id === id) return UNITS[i];
-      return null;
-    }
+    paraPoints: paraPoints,
+    anchorHits: anchorHits,
+    pointsOf: pointsOf,
+    elCount: elCount,
+    unit: unitById
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = root.ISTORIA;

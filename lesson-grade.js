@@ -62,8 +62,15 @@
     return { hits: hits, n: n, total: must.length, full: must.length > 0 && n === must.length, part: n > 0 && n < must.length };
   }
 
-  function gradeUnit(unit, heard, aliases) {
-    var pts = (unit && unit.skeleton && unit.skeleton.points) || [];
+  /* ⭐ Η ΕΞΑΓΩΓΗ (als-v473). Ο βαθμολογητής έπαιρνε ΕΝΟΤΗΤΑ· τώρα παίρνει
+     ΛΙΣΤΑ ΣΗΜΕΙΩΝ, γιατί η μονάδα εξέτασης έγινε ο πλαγιότιτλος του καθηγητή
+     και ένας πλαγιότιτλος είναι μια ΕΠΙΛΟΓΗ σημείων — κάποτε από δύο ενότητες.
+     ⚠️ Η `gradeUnit` μένει ΙΔΙΑ συμπεριφορά, byte για byte στο αποτέλεσμα: το
+     tests/istoria-plag.test.js τρέχει το ΠΑΛΙΟ σώμα και το ΝΕΟ πάνω στις ίδιες
+     απαγγελίες και των 7 ενοτήτων και απαιτεί ταυτόσημη έξοδο (σταθερή αρχή 25).
+     ⚠️ Και ΕΔΩ ΚΑΙ στο istoria-data.js, ή σε κανένα — σταθερή αρχή 15. */
+  function gradePoints(points, heard, aliases) {
+    var pts = points || [];
     var out = [], said = 0, total = 0, i, j, a;
     for (i = 0; i < pts.length; i++) {
       a = null;
@@ -75,6 +82,10 @@
       out.push(g); said += g.n; total += g.total;
     }
     return { points: out, said: said, total: total, coverage: total ? said / total : 0 };
+  }
+
+  function gradeUnit(unit, heard, aliases) {
+    return gradePoints((unit && unit.skeleton && unit.skeleton.points) || [], heard, aliases);
   }
 
   function bodyOf(u) {
@@ -93,6 +104,7 @@
   root.LESSONGRADE = {
     matched: matched,
     gradePoint: gradePoint,
+    gradePoints: gradePoints,
     gradeUnit: gradeUnit,
     bodyOf: bodyOf,
     nextDue: nextDue,

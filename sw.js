@@ -12,11 +12,18 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v472";
+var CACHE = "als-v473";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
   'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'latinika.html', 'tonos.html', 'istoria.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
+  /* als-v473: ο ΠΛΑΓΙΟΤΙΤΛΟΣ, δίπλα στη ζωντανή Ιστορία και όχι πάνω της.
+     ⚠️ Είναι η ΜΟΝΗ `-demo` σελίδα στο CORE, επίτηδες: οι υπόλοιπες είναι
+     αντικείμενα κρίσης, αυτή είναι εργαλείο μελέτης — απαγγέλλει στο
+     φροντιστήριο και στον δρόμο, δηλαδή ακριβώς εκεί που δεν έχει δίκτυο.
+     Ο βαθμολογητής της (`istoria-data.js`, `greek-ear.js`, `study-stamp.js`)
+     είναι ήδη εδώ· χωρίς τη σελίδα θα ήταν μισό εργαλείο offline. */
+  'istoria-demo.html',
   /* ⚠️ These two carry a ?v= query, so the precached URL must match the one
      index.html actually requests or the entry is dead weight. They had drifted
      (SW 206/202 vs page 208/203); realigned als-v438. */
