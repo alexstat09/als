@@ -241,6 +241,12 @@ map plus a measured `pace` — so nothing changed in `BUNDLES` or `BUNDLE`.
 (constraint 35): it was silently deleting any field it did not name. The one grader
 lives in `lesson-grade.js` **and** its deliberate twin inside `istoria-data.js`;
 both gained `gradePoints()` in the same commit, proven identical.
+⭐ **als-v474 το έβαλε ΜΕΣΑ στο MÉTRON**: Home tile (w2), `launcher.js`,
+search index, `als-profile.js` (⚠️ **ΚΑΙ** `OWNER_ONLY` — «άγνωστη σελίδα =
+ορατή» την είχε δώσει στον λογαριασμό της Χριστίνας για μία έκδοση), και ένα
+`metric()` case που διαβάζει `ist:v1.plag` **έξω από το `ladders.js`**, επειδή
+εκεί το `ist:v1` είναι ήδη πιασμένο και μια δεύτερη εγγραφή θα σκίαζε σιωπηλά
+το πλακίδιο «Ιστορία».
 Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
 every declension and conjugation from rules, so the page can generate unlimited
 exercises AND grade them, and the heatmap shows which cell he actually misses.

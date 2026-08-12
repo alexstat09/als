@@ -40,14 +40,19 @@
     'money', 'bills', 'life', 'mind', 'movies', 'ideas', 'goals',
     'coach', 'insights', 'arc', 'weekly', 'morning', 'nova-chat',
     'planner', 'measure', 'supps', 'improve', 'backup', 'studio',
-    'istoria', 'arxaia', 'homework'
+    'istoria', 'istoria-demo', 'arxaia', 'homework'
   ];
 
   // Alex's revision pages for the Greek Πανελλήνιες exams. They are HIS content,
   // not a product feature — nobody else should be shown them. (Cosmetic only:
   // the data behind them is protected by RLS like everything else.)
   var OWNER_UID = '1655556c-97af-43ac-970f-fcbdbd8f7f0c';
-  var OWNER_ONLY = ['istoria', 'arxaia', 'homework'];   // 'arxaia' rejoined als-v454; 'homework' als-v470
+  // ⚠️ 'istoria-demo' joined als-v474, and it was a REAL GAP for one version:
+  // «unknown pages default to visible» is the right default for a product
+  // feature and the WRONG one for his Πανελλήνιες revision — so the πλαγιότιτλοι
+  // page was visible on Chrissie's account the moment it shipped. Any new study
+  // page belongs in BOTH lists, in the commit that creates it.
+  var OWNER_ONLY = ['istoria', 'istoria-demo', 'arxaia', 'homework'];   // 'arxaia' rejoined als-v454; 'homework' als-v470
 
   var DEFAULTS = {
     name: '',

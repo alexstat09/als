@@ -222,6 +222,41 @@
           return istL ? { hero: istL, note: istD ? istD + ' \u03c0\u03c1\u03bf\u03c2 \u03b5\u03c0\u03b1\u03bd\u03ac\u03bb\u03b7\u03c8\u03b7' : '\u03c5\u03c0\u03bf\u03b5\u03bd\u03cc\u03c4\u03b7\u03c4\u03b5\u03c2' }
                       : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
+        /* ⚠️⚠️ ΑΥΤΟ ΤΟ CASE ΔΕΝ ΠΕΡΝΑΕΙ ΑΠΟ ΤΟ `ladders.js`, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
+           Οι πλαγιότιτλοι ζουν στο ΙΔΙΟ `ist:v1`, σε ΔΙΚΟ τους πεδίο (`plag`).
+           Το `STORES` του `ladders.js` κλειδώνεται ΚΑΤΑ ΚΛΕΙΔΙ και το `ist:v1`
+           είναι ήδη πιασμένο από την Ιστορία — μια δεύτερη εγγραφή θα σκίαζε
+           σιωπηλά την πρώτη μέσα στο `byKey`, και το πλακίδιο «Ιστορία» θα
+           άρχιζε να δείχνει πρόοδο πλαγιότιτλων χωρίς να το πει κανείς.
+           Άρα εδώ διαβάζεται ΑΛΛΟ ΠΕΔΙΟ, όχι δεύτερη εκδοχή του ίδιου: καμία
+           δεύτερη αλήθεια, καμία σύγκρουση. Ο σωστός δρόμος (έκτη σκάλα μέσα
+           στο `ladders.js`, με `id` ξεχωριστό από το `key`) ανοίγει ΜΟΝΟ όταν
+           αποφασίσει ο Αλεξ ότι η μία σελίδα αντικαθιστά την άλλη — τότε το
+           χρωστάει και το `homework.html`.
+           ⚠️ Όλα τα locals με πρόθεμα plg* — σταθερή αρχή 14, που κερδήθηκε σε
+           ΑΥΤΗ ακριβώς τη συνάρτηση. */
+        case 'istoria-demo.html': {
+          var plgStore = ls('ist:v1', null);
+          var plgMap = (plgStore && typeof plgStore === 'object' && plgStore.plag) || null;
+          var plgN = 0, plgDue = 0, plgKey, plgRec, plgNow = Date.now();
+          if (plgMap && typeof plgMap === 'object') {
+            for (plgKey in plgMap) {
+              if (!Object.prototype.hasOwnProperty.call(plgMap, plgKey)) continue;
+              plgRec = plgMap[plgKey];
+              if (!plgRec || typeof plgRec !== 'object') continue;
+              plgN++;
+              /* Ποτέ ειπωμένος = οφείλεται ΤΩΡΑ. Ίδιος κανόνας με τη σελίδα. */
+              if (!plgRec.runs && !plgRec.claimed) plgDue++;
+              else if (plgRec.due && plgNow >= plgRec.due) plgDue++;
+            }
+          }
+          /* '—' όσο δεν υπάρχει κανένας — ποτέ placeholder σαν αριθμός
+             (als-v433), και ποτέ «0» που να διαβάζεται σαν μέτρηση (αρχή 33). */
+          if (!plgN) return { hero: '—', note: '\u03c6\u03c4\u03b9\u03ac\u03be\u03b5 \u03c4\u03bf\u03bd \u03c0\u03c1\u03ce\u03c4\u03bf' };
+          return plgDue
+            ? { hero: plgDue, note: '\u03c0\u03c1\u03bf\u03c2 \u03b1\u03bd\u03ac\u03ba\u03bb\u03b7\u03c3\u03b7' }
+            : { hero: plgN, note: '\u03c0\u03bb\u03b1\u03b3\u03b9\u03cc\u03c4\u03b9\u03c4\u03bb\u03bf\u03b9 \u00b7 \u03cc\u03bb\u03bf\u03b9 \u03b5\u03bd\u03c4\u03ac\u03be\u03b5\u03b9' };
+        }
         case 'tonos.html': {
           var tonS = ladder('ton:v1'); if (!tonS) return null;
           /* '\u2014' when nothing has been answered — a placeholder is never
