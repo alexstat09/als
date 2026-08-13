@@ -38,13 +38,29 @@
        τα δύο, το χρέος των Λατινικών γράφεται «n3:gen:pl» και του Τονισμού
        «dasia» — τιμές μηχανής στην οθόνη ενός ανθρώπου. Το είδα σε render,
        δεν το υπέθεσα. Και τα δύο είναι ήδη στο CORE του service worker. -->
+  <!-- ⛔⛔ ΑΥΤΑ ΤΑ ΔΥΟ ΕΛΕΙΠΑΝ ΑΠΟ ΤΗΝ als-v470, ΚΑΙ ΣΚΟΤΩΝΑΝ ΤΑ ΤΡΙΑ ΑΠΟ ΚΑΤΩ.
+       Τα `istoria-data.js` / `arxaia-gnosto-data.js` / `arxaia-data.js` ΠΕΤΑΝΕ
+       στη φόρτωση αν λείπει το `greek-ear.js` (και το `lesson-grade.js` για το
+       ΓΝΩΣΤΟ) — σωστά, γιατί δεν σιωπούν. Άρα σε αυτή τη σελίδα τα `ISTORIA`,
+       `ARXGN` και `ArxaiaData` ήταν **undefined για όλη τη ζωή της**:
+       το `knownUnits()` γύριζε ΑΔΕΙΟ (ο parser δεν αναγνώριζε ΚΑΜΙΑ ενότητα,
+       ποτέ) και το `unitTitle()` έπεφτε πάντα στο id — δηλαδή «b1b» και
+       «n3:gen:pl» στην οθόνη, ακριβώς αυτό που το σχόλιο από κάτω λέει ότι
+       υπάρχει για να αποτρέψει.
+       ⚠️ ΓΙΑΤΙ ΤΟ ΕΚΡΥΨΑΝ 97 ΠΡΑΣΙΝΕΣ ΒΕΒΑΙΩΣΕΙΣ: το tests/homework-plan.test.js
+       φόρτωνε ΤΟ ΙΔΙΟ αυτά τα δύο στο context του, οπότε ο parser δοκιμαζόταν σε
+       ένα περιβάλλον που η σελίδα δεν είχε ποτέ. Ένα harness που φορτώνει
+       παραπάνω απ' όσα φορτώνει η σελίδα εξετάζει άλλη σελίδα (σταθ. 15/23).
+       Και τα δύο είναι ΗΔΗ στο CORE του service worker. -->
+  <script src="greek-ear.js"></script>
+  <script src="lesson-grade.js"></script>
   <script src="latin-engine.js"></script>
   <script src="tonos-engine.js"></script>
   <script src="istoria-data.js"></script>
   <script src="arxaia-gnosto-data.js"></script>
   <script src="arxaia-data.js"></script>
   <script src="als-dialog.js" defer></script>
-  <script>window.__pmAutoSel='.hw-hero,.hw-start,.hw-debt,.hw-tasks,.hw-day,.hw-week,.hw-foot';</script>
+  <script>window.__pmAutoSel='.hw-hero,.hw-start,.hw-grab,.hw-day,.hw-debt,.hw-foot';</script>
   <script src="page-motion.js" defer></script>
 <style>
   /* ── ΤΑ ΧΡΩΜΑΤΑ ΕΙΝΑΙ ΤΑΥΤΟΤΗΤΑ, ΟΧΙ ΔΙΑΚΟΣΜΗΣΗ ─────────────────────
@@ -117,16 +133,23 @@
   .hw-cta{ display:block; width:100%; margin-top:14px; padding:15px 16px; border:0; border-radius:13px; cursor:pointer;
     background:var(--au-ivory,#f5f2ec); color:#08080a; font:600 15px/1 var(--au-sans,-apple-system,sans-serif); letter-spacing:.02em; text-align:center; text-decoration:none; }
   .hw-cta:active{ transform:scale(.985); }
-  .hw-chips{ display:flex; gap:7px; margin-top:12px; flex-wrap:wrap; }
-  .hw-chip{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent; color:var(--au-dim,rgba(245,242,236,.56));
-    border-radius:999px; padding:7px 13px; font-size:12px; cursor:pointer; font-family:inherit; }
-  .hw-chip.hw-on{ border-color:rgba(245,242,236,.5); color:var(--au-ivory,#f5f2ec); }
+  /* ⭐ ΤΑ CHIPS «10′/20′/45′/90′» ΕΦΥΓΑΝ ΣΤΗ ΦΑΣΗ 1, ΚΑΙ Η ΑΙΤΙΑ ΑΞΙΖΕΙ ΝΑ
+     ΜΕΙΝΕΙ ΓΡΑΜΜΕΝΗ: φιλτράριζαν πάνω στο `est`, που για ΑΝΑΚΛΗΣΗ δεν μπορεί
+     να γεννηθεί ποτέ (το `recordSample` καλείται μόνο από το focus mode, και
+     το focus mode δίνεται μόνο σε ΓΡΑΠΤΑ). Ένα χειριστήριο που δεν μπορεί να
+     χειριστεί τίποτα είναι η ίδια αποτυχία με έναν σύνδεσμο σε αδιέξοδο.
+     Ξαναγυρίζουν στη ΦΑΣΗ 7, μετρημένα από πραγματικά `sessions`. */
 
   /* ── ΤΙΤΛΟΙ ΕΝΟΤΗΤΩΝ ─────────────────────────────────────────────── */
   .hw-sec{ margin-top:34px; }
   .hw-sec-hd{ display:flex; align-items:baseline; gap:12px; padding-bottom:9px; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
   .hw-sec-hd .hw-n{ font-family:var(--au-serif,Georgia,serif); font-size:20px; }
   .hw-sec-hd .hw-s{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-left:auto; text-align:right; }
+  /* ΤΟ ΧΡΕΟΣ είναι ΕΝΑ μπλοκ με δύο λίστες — η μνήμη και οι εργασίες. Δύο
+     ενότητες θα έλεγαν δύο φορές ότι κάτι χρωστιέται. */
+  .hw-sub2{ display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin:22px 0 2px; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-sub2 .hw-s2{ letter-spacing:.12em; text-align:right; }
 
   /* ── ΤΟ ΧΡΕΟΣ · οι πέντε σκάλες ─────────────────────────────────── */
   .hw-row{ display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
@@ -209,16 +232,23 @@
   .hw-slot .hw-fill{ margin:7px 0 0 96px; font-size:12.5px; color:var(--au-dim,rgba(245,242,236,.56)); line-height:1.55; }
   @media (max-width:560px){ .hw-slot .hw-fill{ margin-left:0; } }
 
-  /* ── Ο ΟΡΙΖΟΝΤΑΣ ─────────────────────────────────────────────────── */
-  .hw-week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:18px; align-items:end; }
-  .hw-col{ background:transparent; border:0; padding:0; cursor:pointer; font-family:inherit; text-align:center; }
-  .hw-stack{ height:96px; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; overflow:hidden; }
-  .hw-seg{ border-radius:3px; background:rgba(var(--hw-c),.75); min-height:3px; }
-  .hw-col .hw-dow{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-top:7px; }
-  .hw-col.hw-today .hw-dow{ color:var(--au-ivory,#f5f2ec); }
-  .hw-col.hw-pile .hw-dow{ color:rgb(var(--hw-late)); }
-  .hw-week-say{ margin-top:14px; font-size:13px; line-height:1.6; color:var(--au-dim,rgba(245,242,236,.56)); }
-  .hw-week-say b{ color:var(--au-ivory,#f5f2ec); font-weight:500; }
+  /* ── Η ΣΥΣΣΩΡΕΥΣΗ · ΜΙΑ ΠΡΟΤΑΣΗ ΜΕ ΚΟΥΜΠΙ, ΟΧΙ ΕΝΟΤΗΤΑ ──────────────
+     ⭐ Ο ΟΡΙΖΟΝΤΑΣ ήταν επτά μπάρες και μια ερώτηση ΧΩΡΙΣ κουμπί, και οι
+     μπάρες είχαν ύψος από επινοημένα λεπτά (25′ ανά εργασία, 15′ ανά
+     ανάκληση) επειδή το `est` δεν γεννιέται ποτέ. Έφυγε ολόκληρος. Ό,τι
+     επιβίωσε είναι το ΜΟΝΟ που δικαιολογούσε μια εβδομαδιαία όψη: να δείχνει
+     τη ΣΥΣΣΩΡΕΥΣΗ αρκετά νωρίς ώστε να προλάβει να μετακινηθεί κάτι — και το
+     «να μετακινηθεί» είναι κουμπί που το ΚΑΝΕΙ, ποτέ ερώτηση στον αέρα. */
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 12: κάθε κλάση που εναλλάσσεται από JS ΠΡΕΠΕΙ να υπάρχει
+     εδώ. Ο περιέκτης παίρνει `hw-off` όταν δεν υπάρχει τίποτα να πει. */
+  .hw-over-wrap{ display:block; }
+  .hw-over{ margin-top:18px; border-left:2px solid rgb(var(--hw-late)); padding:10px 0 10px 13px;
+    font-size:13px; line-height:1.6; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-over b{ color:var(--au-ivory,#f5f2ec); font-weight:500; }
+  .hw-over .hw-acts{ margin-top:10px; }
+  .hw-moved{ margin-top:18px; border-left:2px solid rgba(52,226,176,.6); padding:10px 0 10px 13px;
+    font-size:13px; line-height:1.6; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-moved b{ color:var(--au-ivory,#f5f2ec); font-weight:500; }
 
   /* ── ΑΔΕΙΟ / ΣΦΑΛΜΑ / ΑΓΝΩΣΤΟ — τρεις διαφορετικές προτάσεις ─────── */
   .hw-empty{ padding:18px 0 4px; font-size:13.5px; line-height:1.65; color:var(--au-dim,rgba(245,242,236,.56)); }
@@ -252,11 +282,14 @@
 <main class="hw-wrap">
   <div class="hw-cols">
 
-    <!-- ══ Η ΡΑΧΟΚΟΚΑΛΙΑ ══════════════════════════════════════════ -->
+    <!-- ══ Η ΡΑΧΟΚΟΚΑΛΙΑ · ΜΙΑ ΑΠΟΦΑΣΗ ════════════════════════════
+         ⚠️ Ο τίτλος ΔΕΝ λέγεται δύο φορές. Ως την als-v477 το h1 έγραφε «Η
+         μέρα» ΚΑΙ μια ενότητα από κάτω λεγόταν «Η μέρα» — το ίδιο πράγμα σε
+         δύο μεγέθη, στην ίδια οθόνη. Το h1 είναι το ΟΝΟΜΑ της σελίδας. -->
     <div class="hw-spine">
       <header class="hw-hero">
-        <div class="hw-eyebrow">Το χρέος</div>
-        <h1 id="hwH1">Η μέρα</h1>
+        <div class="hw-eyebrow">MÉTRON</div>
+        <h1 id="hwH1">Το χρέος</h1>
         <p class="hw-sub" id="hwSub">Ό,τι σου έδωσαν και ό,τι ξεχνάς, στο ίδιο σημείο.</p>
       </header>
 
@@ -269,23 +302,19 @@
       <section class="hw-start" id="hwStart"></section>
     </div>
 
-    <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ ═════════════════════════════════════════ -->
+    <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ · ΤΡΙΑ ΜΠΛΟΚ ════════════════════════════
+         ⭐ ΤΕΣΣΕΡΑ ΜΠΛΟΚ ΣΥΝΟΛΙΚΑ, ΚΑΙ ΚΑΝΕΝΑ ΔΕΝ ΛΕΕΙ ΟΤΙ ΛΕΕΙ ΑΛΛΟ:
+         ΜΙΑ ΑΠΟΦΑΣΗ (η ραχοκοκαλιά) · Η ΣΥΛΛΗΨΗ · Η ΜΕΡΑ · ΤΟ ΧΡΕΟΣ.
+         Ήταν πέντε ενότητες με τρεις επικαλύψεις: η σύσταση ζωγραφιζόταν στην
+         κάρτα, ΞΑΝΑ μέσα στο «μεγάλο παράθυρο» της ΜΕΡΑΣ, και ΞΑΝΑ ως γραμμή
+         στη ΜΝΗΜΗ ή στις ΕΡΓΑΣΙΕΣ. -->
     <div class="hw-main">
 
-      <!-- ΤΟ ΧΡΕΟΣ ΤΗΣ ΜΝΗΜΗΣ -->
-      <section class="hw-sec hw-debt">
+      <!-- ① Η ΣΥΛΛΗΨΗ — μία γραμμή, και έξω -->
+      <section class="hw-sec hw-grab">
         <div class="hw-sec-hd">
-          <span class="hw-n">Η μνήμη</span>
-          <span class="hw-s" id="hwDebtS">πέντε σκάλες</span>
-        </div>
-        <div id="hwDebtBody"></div>
-      </section>
-
-      <!-- ΟΙ ΕΡΓΑΣΙΕΣ -->
-      <section class="hw-sec hw-tasks">
-        <div class="hw-sec-hd">
-          <span class="hw-n">Οι εργασίες</span>
-          <span class="hw-s" id="hwTasksS"></span>
+          <span class="hw-n">Η σύλληψη</span>
+          <span class="hw-s">μία γραμμή</span>
         </div>
 
         <div class="hw-capture">
@@ -302,7 +331,6 @@
           </div>
           <div class="hw-acts" id="hwDumpActs">
             <button class="hw-btn hw-quiet" id="hwDumpOpen" type="button">Άδειασε το κεφάλι σου</button>
-            <button class="hw-btn hw-quiet hw-off" id="hwSweep" type="button">Καθάρισε τα τελειωμένα</button>
           </div>
           <div class="hw-off" id="hwDumpWrap" style="margin-top:10px">
             <textarea class="hw-input" id="hwDump" placeholder="Μία γραμμή τη φορά. Ό,τι δεν καταλάβω μένει σημείωση — μια σκέψη που γράφτηκε αξίζει περισσότερο από μια οργανωμένη που δεν γράφτηκε ποτέ."></textarea>
@@ -313,11 +341,9 @@
           </div>
           <input type="file" id="hwFile" accept="image/*" class="hw-off">
         </div>
-
-        <div id="hwTaskBody"></div>
       </section>
 
-      <!-- Η ΜΕΡΑ -->
+      <!-- ② Η ΜΕΡΑ — και μέσα της, η μία πρόταση για τη συσσώρευση -->
       <section class="hw-sec hw-day">
         <div class="hw-sec-hd">
           <span class="hw-n">Η μέρα</span>
@@ -326,16 +352,24 @@
         <div class="hw-line" id="hwLineBar"></div>
         <div class="hw-ticks" id="hwTicks"></div>
         <div class="hw-slots" id="hwSlots"></div>
+        <div class="hw-over-wrap hw-off" id="hwOver"></div>
       </section>
 
-      <!-- Ο ΟΡΙΖΟΝΤΑΣ -->
-      <section class="hw-sec hw-week">
+      <!-- ③ ΤΟ ΧΡΕΟΣ — δύο λίστες, ένα μπλοκ -->
+      <section class="hw-sec hw-debt">
         <div class="hw-sec-hd">
-          <span class="hw-n">Ο ορίζοντας</span>
-          <span class="hw-s">Δευτέρα → Κυριακή</span>
+          <span class="hw-n">Το χρέος</span>
+          <span class="hw-s">η μνήμη και οι εργασίες</span>
         </div>
-        <div class="hw-week-grid" id="hwWeekGrid"></div>
-        <div class="hw-week-say" id="hwWeekSay"></div>
+
+        <div class="hw-sub2"><span>Η μνήμη</span><span class="hw-s2" id="hwDebtS">πέντε σκάλες</span></div>
+        <div id="hwDebtBody"></div>
+
+        <div class="hw-sub2"><span>Οι εργασίες</span><span class="hw-s2" id="hwTasksS"></span></div>
+        <div id="hwTaskBody"></div>
+        <div class="hw-acts">
+          <button class="hw-btn hw-quiet hw-off" id="hwSweep" type="button">Καθάρισε τα τελειωμένα</button>
+        </div>
       </section>
 
       <footer class="hw-foot" id="hwFoot"></footer>
@@ -416,7 +450,6 @@
      αυτής της σελίδας. */
   var DOW_ART = ['Η','Η','Η','Η','Η','Το','Η'];
   function dayName(i){ return DOW_ART[i] + ' ' + DOW_EL[i]; }
-  var DOW_SH  = ['Δε','Τρ','Τε','Πε','Πα','Σα','Κυ'];
 
   /* ── ΤΑ ΤΕΣΣΕΡΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────────
      ⚠️ Τα ids είναι ΤΙΜΕΣ ΜΗΧΑΝΗΣ και ΠΑΓΩΜΕΝΑ. Ό,τι βλέπει άνθρωπος είναι
@@ -471,6 +504,10 @@
      ΑΠΟΘΗΚΗ
      ══════════════════════════════════════════════════════════════════ */
   var state = null, pics = null, quotaHit = false;
+  /* Ό,τι μόλις μετακινήθηκε με το χέρι του, ώστε μια πράξη να μην γίνεται
+     σιωπηλά. Καθαρίζει στο επόμενο πραγματικό reload (αλλαγή καρτέλας,
+     συγχρονισμός) — μετά από εκείνο δεν είναι πια «μόλις». */
+  var moved = null;
 
   function blank(){ return { v:1, tasks:{}, samples:{} }; }
 
@@ -530,6 +567,9 @@
   function reload(){
     var s = load();
     if (s === null){ if (!state) state = blank(); return false; }
+    /* Η επιβεβαίωση της μετακίνησης αφορά ΤΗ ΔΙΚΗ ΤΟΥ πράξη σε αυτή τη ματιά.
+       Μόλις έρθει κατάσταση από τον δίσκο ή το cloud, δεν είναι πια νέα. */
+    moved = null;
     state = s; STAMP.seed(); pics = loadPics(); return true;
   }
 
@@ -853,9 +893,19 @@
     rec.mins.push(mins);
     if (rec.mins.length > 30) rec.mins = rec.mins.slice(-30);
   }
-  function estText(subject, kind){
+  /* ⚠️⚠️ ΓΙΑΤΙ ΔΕΝ ΥΠΑΡΧΕΙ ΠΙΑ `estText()`, ΚΑΙ ΓΙΑΤΙ ΤΟ `estimate()` ΜΕΝΕΙ.
+     Το `estText` γύριζε «—» και ΤΥΠΩΝΟΤΑΝ — για την ΑΝΑΚΛΗΣΗ γύριζε «—» για
+     πάντα, by construction, γιατί το `recordSample` καλείται μόνο από το focus
+     mode και το focus mode δίνεται μόνο σε ΓΡΑΠΤΑ. Μια παύλα σε κάθε κάρτα
+     ανάκλησης δεν είναι τιμιότητα, είναι μια στήλη που δεν γεμίζει ποτέ.
+     ⛔ Το `estimate()`/`recordSample()` ΔΕΝ σβήνονται: για τα ΓΡΑΠΤΑ ο χρόνος
+     είναι ΑΛΗΘΙΝΑ μετρημένος από το χρονόμετρο, και το `state.samples` είναι
+     δεδομένα του — δεν διαγράφεται πεδίο αποθήκης. Ό,τι έχει μετρηθεί
+     τυπώνεται· ό,τι δεν έχει, ΔΕΝ τυπώνεται καθόλου (φάση 7: το ξαναχτίζει
+     πάνω στα πραγματικά `sessions`). */
+  function estBit(subject, kind){
     var e = estimate(subject, kind);
-    return e == null ? '—' : '~' + e + '′';
+    return e == null ? null : '~' + e + '′';
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1208,10 +1258,122 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════
+     Η ΣΥΣΣΩΡΕΥΣΗ — ΕΝΑ ΓΕΓΟΝΟΣ ΚΑΙ ΜΙΑ ΠΡΑΞΗ, ΠΟΤΕ ΕΝΑ ΓΡΑΦΗΜΑ
+
+     ⭐ Ο ΟΡΙΖΟΝΤΑΣ ΗΤΑΝ ΕΝΟΤΗΤΑ ΚΑΙ ΕΓΙΝΕ ΜΙΑ ΠΡΟΤΑΣΗ. Επτά μπάρες, ένα
+     modal με λίστα, και μια ερώτηση — «Θέλεις να φέρω το ελαφρύτερο μία μέρα
+     μπροστά;» — που ΔΕΝ ΕΙΧΕ ΚΟΥΜΠΙ. Το ύψος κάθε μπάρας βγαινε από
+     ΕΠΙΝΟΗΜΕΝΑ λεπτά (25′ ανά εργασία, 15′ ανά ανάκληση) επειδή το `est` δεν
+     γεννιέται ποτέ, δηλαδή ένας άξονας που δεν ευθυγραμμίζεται με τα δεδομένα
+     του (σταθερή αρχή 33). Μια εβδομαδιαία όψη δικαιολογείται ΜΟΝΟ αν
+     αποκαλύπτει ΣΥΣΣΩΡΕΥΣΗ αρκετά νωρίς ώστε να προλάβει να μετακινηθεί κάτι.
+     Άρα μένει ακριβώς αυτό: ΠΛΗΘΟΣ ΠΡΑΓΜΑΤΩΝ (μετρήσιμο, όχι λεπτά που δεν
+     ξέρουμε) και ΕΝΑ ΚΟΥΜΠΙ ΠΟΥ ΤΟ ΚΑΝΕΙ.
+
+     ⛔ ΜΕΤΑΚΙΝΕΙΤΑΙ ΜΟΝΟ ΕΡΓΑΣΙΑ — γράφεται ΜΟΝΟ το `hw:v1`. Μια ανάκληση
+     ανήκει στη σκάλα της σελίδας που την κατέχει (σταθερή αρχή 16) και ένα
+     διαγώνισμα έχει ημερομηνία που δεν την ορίζουμε εμείς. Όταν δεν
+     μετακινείται τίποτα, λέγεται το ΓΕΓΟΝΟΣ χωρίς ερώτηση.
+     ══════════════════════════════════════════════════════════════════ */
+  var PILE_AT = 3;
+
+  function pileDay(pool){
+    var t0 = today(), start = midnight(-dowMon(new Date()));
+    var days = {}, order = [], i;
+    for (i = 0; i < 7; i++){
+      var dd = new Date(start); dd.setDate(start.getDate() + i);
+      var k = dkOf(dd);
+      days[k] = { key:k, date:dd, items:0, tasks:[], ladder:0, exam:0 };
+      order.push(k);
+    }
+
+    /* ΕΡΓΑΣΙΕΣ με προθεσμία μέσα στην εβδομάδα. */
+    taskList().forEach(function(t){
+      if (t.done || !t.due) return;
+      var b = days[t.due]; if (!b) return;
+      b.items++; b.tasks.push(t);
+    });
+    /* ΧΡΕΟΣ ΜΝΗΜΗΣ: ό,τι ξυπνάει μέσα στην εβδομάδα. Μετριέται, δεν μετακινείται. */
+    var L = LAD || ladders();
+    L.stores.forEach(function(s){
+      if (!s.ok) return;
+      s.items.forEach(function(it){
+        if (!it.due || !(it.learned || it.samples > 0)) return;
+        var b = days[dkOf(new Date(it.due))]; if (!b) return;
+        b.items++; b.ladder++;
+      });
+    });
+    /* ΔΙΑΓΩΝΙΣΜΑΤΑ, όσο τα ξέρει το ημερολόγιο. */
+    if (calState() === 'live'){
+      for (i = 0; i < 7; i++){
+        var b2 = days[order[i]];
+        var off = Math.round((b2.date - midnight(0)) / 86400000);
+        if (off < 0 || off >= (window.GCal ? GCal.DAYS : 7)) continue;
+        (lessonsFor(off) || []).forEach(function(l){
+          if (!l.exam) return;
+          b2.items++; b2.exam++;
+        });
+      }
+    }
+
+    /* ΜΟΝΟ ΤΟ ΜΕΛΛΟΝ. Μια συσσώρευση σήμερα ή χθες δεν προλαβαίνει να
+       αποφευχθεί, και «φέρ' το μια μέρα μπροστά» θα σήμαινε στο παρελθόν. */
+    var worst = null;
+    order.forEach(function(k){
+      var b = days[k];
+      if (daysBetween(k, t0) <= 0) return;
+      if (b.items < PILE_AT) return;
+      if (!worst || b.items > worst.items) worst = b;
+    });
+    if (!worst) return null;
+
+    /* Η ΜΕΡΑ ΠΡΙΝ. Αν έχει περάσει, δεν προσφέρεται τίποτα. */
+    var prev = new Date(worst.date); prev.setDate(prev.getDate() - 1);
+    var prevKey = dkOf(prev);
+    var canPrev = daysBetween(prevKey, t0) >= 0;
+
+    /* ⭐ «ΤΟ ΛΙΓΟΤΕΡΟ ΕΠΕΙΓΟΝ» ΔΕΝ ΕΙΝΑΙ ΓΝΩΜΗ: είναι η ΤΕΛΕΥΤΑΙΑ θέση στην
+       ΙΔΙΑ κατάταξη που παράγει και τη σύσταση από πάνω — ίδια πράξη, ίδιες
+       λέξεις. Δεν χρησιμοποιείται πουθενά `est`, γιατί δεν υπάρχει. */
+    var rank = {};
+    (pool || []).forEach(function(c, i2){ if (c.kind === 'task') rank[c.task.id] = i2; });
+    var movable = worst.tasks.filter(function(t){ return t.kind !== 'diagonisma'; });
+    movable.sort(function(a,b){
+      var ra = rank[a.id] == null ? -1 : rank[a.id], rb = rank[b.id] == null ? -1 : rank[b.id];
+      if (ra !== rb) return rb - ra;                 /* πιο κάτω στην κατάταξη = λιγότερο επείγον */
+      return (a.ts || 0) - (b.ts || 0);              /* ισοπαλία → το παλιότερο γραμμένο */
+    });
+
+    var move = (canPrev && movable.length) ? movable[0] : null;
+
+    return {
+      key:worst.key, date:worst.date, items:worst.items,
+      /* Η ΣΥΝΘΕΣΗ της μέρας, ώστε η πρόταση του «δεν μετακινείται τίποτα» να
+         ονομάζει ΤΟ ΠΡΑΓΜΑΤΙΚΟ εμπόδιο αντί για ένα γενικό «δεν γίνεται». */
+      ladder:worst.ladder, exam:worst.exam,
+      tasks:worst.tasks.length, fixed:worst.tasks.length - movable.length,
+      prevKey:prevKey, canPrev:canPrev, move:move
+    };
+  }
+
+  /* ⭐ ΤΟ ΚΟΥΜΠΙ ΤΟ ΚΑΝΕΙ ΠΡΑΓΜΑΤΙΚΑ, ΚΑΙ ΓΡΑΦΕΙ ΜΟΝΟ `hw:v1`. Ποτέ μόνο του
+     — μόνο όταν το πατήσει. Η σφραγίδα `_ts` μπαίνει από το save() (σταθερή
+     αρχή 31), αλλιώς η αλλαγή γυρίζει πίσω σε ~400ms από το cloud. */
+  function bringForward(id){
+    var t = state.tasks[id];
+    if (!t || t.done || !t.due) return null;
+    var d = new Date(t.due + 'T00:00:00'); d.setDate(d.getDate() - 1);
+    var nd = dkOf(d);
+    if (daysBetween(nd, today()) < 0) return null;   /* ΠΟΤΕ στο παρελθόν */
+    var old = t.due;
+    t.due = nd;
+    if (!save()){ t.due = old; return null; }        /* γεμάτη αποθήκη: τίποτα δεν άλλαξε */
+    return { id:id, from:old, to:nd, title:t.title || '' };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
      ΖΩΓΡΑΦΙΚΗ
      ══════════════════════════════════════════════════════════════════ */
-  var windowPick = null;        /* «έχω 20 λεπτά»: null = όλη η μέρα */
-
   function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-ekt)'; }
 
   function renderClock(){
@@ -1237,16 +1399,14 @@
     return b;
   }
 
-  function renderStart(free){
+  /* ⭐ ΜΙΑ ΑΠΟΦΑΣΗ. Η κάρτα δείχνει ΕΝΑ πράγμα και ΚΑΝΕΝΑ άλλο σημείο της
+     οθόνης δεν το ξαναλέει: το «μεγάλο παράθυρο» της ΜΕΡΑΣ μετράει, η ΜΝΗΜΗ
+     δείχνει ΤΑ ΥΠΟΛΟΙΠΑ, η λίστα εργασιών παραλείπει αυτό ακριβώς το id.
+     Γι' αυτό η κάρτα κουβαλάει και τις ΠΡΑΞΕΙΣ της εργασίας (Έγινε · Πηγή ·
+     ✕) — αλλιώς η μία εργασία που είναι πάνω θα ήταν και η μόνη που δεν
+     σβήνεται από πουθενά. */
+  function renderStart(pool){
     var host = $('hwStart');
-    var pool = candidates(free);
-    /* Το φίλτρο του παραθύρου είναι ΣΚΛΗΡΟ, αλλά μόνο πάνω σε ΜΕΤΡΗΜΕΝΟ
-       χρόνο. Ό,τι δεν έχει μετρηθεί δεν κόβεται — και το λέει. */
-    if (windowPick != null) pool = pool.filter(function(c){ return c.est == null || c.est <= windowPick; });
-
-    var chips = [10,20,45,90].map(function(m){
-      return '<button class="hw-chip' + (windowPick === m ? ' hw-on' : '') + '" data-win="' + m + '" type="button">' + m + '′</button>';
-    }).join('') + '<button class="hw-chip' + (windowPick == null ? ' hw-on' : '') + '" data-win="0" type="button">όλη η μέρα</button>';
 
     if (!pool.length){
       /* ⭐ «ΤΕΛΕΙΩΣΕΣ» ΕΙΝΑΙ ΑΛΗΘΙΝΗ ΑΠΑΝΤΗΣΗ. Ο στόχος δεν είναι ο μέγιστος
@@ -1263,10 +1423,7 @@
          ψέμα, και ο στόχος δεν ήταν ποτέ ο μέγιστος χρόνος μελέτης· ήταν να
          λέει την αλήθεια για το πού βρίσκεται. */
       var head, meta;
-      if (windowPick != null){
-        head = 'Τίποτα δεν χωράει σε ' + windowPick + '′.';
-        meta = 'Άλλαξε παράθυρο ή δες τη μέρα ολόκληρη.';
-      } else if (!anyStarted && !taskList().length){
+      if (!anyStarted && !taskList().length){
         head = 'Άδειο, όχι τελειωμένο.';
         meta = 'Δεν έχεις ξεκινήσει καμία σελίδα μελέτης και δεν έχεις γράψει καμία εργασία. Κάνε μία ανάκληση, ή γράψε μία γραμμή πιο κάτω — από την επόμενη φορά ξέρω τι ξεχνάς.';
       } else {
@@ -1274,25 +1431,26 @@
         meta = 'Κανένα χρέος, καμία προθεσμία.' + (next ? (' Το επόμενο ξυπνάει ' + fmtDue(dkOf(new Date(next))) + '.') : '');
       }
       host.innerHTML =
-        '<div class="hw-kicker">Ξεκίνα από εδώ</div>' +
+        '<div class="hw-kicker">Μία απόφαση</div>' +
         '<div class="hw-what">' + esc(head) + '</div>' +
-        '<div class="hw-meta">' + esc(meta) + '</div>' +
-        '<div class="hw-chips">' + chips + '</div>';
-      wireChips();
+        '<div class="hw-meta">' + esc(meta) + '</div>';
       return;
     }
 
     var c = pool[0];
     var why = c.why.map(function(w){ return '<span class="hw-cl">' + esc(w) + '</span>'; }).join('<span class="hw-plus">+</span>');
-    var estTxt = c.kind === 'task'
-      ? (c.est == null ? '—' : '~' + c.est + '′')
-      : estText(c.subject, 'apexo');
     var head = c.kind === 'ladder'
       ? esc(c.title) + (c.unitLabel && c.unitLabel !== c.unitId ? ' · ' + esc(c.unitLabel) : '')
       : esc(c.unitLabel || (SUBJ[c.subject] || {}).label || '');
-    var meta = c.kind === 'ladder'
-      ? 'Ανάκληση · ' + estTxt + (c.more > 0 ? ' · και άλλα ' + c.more + ' εκεί' : '')
-      : ((SUBJ[c.subject] || {}).label || '') + ' · ' + (KINDS[c.task.kind] || '') + ' · ' + estTxt;
+    /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. Ο χρόνος μπαίνει στη
+       γραμμή ΜΟΝΟ όταν υπάρχει μέτρηση — αλλιώς η γραμμή δεν τον αναφέρει
+       καθόλου, αντί να κουβαλάει ένα «—» που δεν γεμίζει ποτέ. */
+    /* «και άλλα 1 εκεί» δεν είναι ελληνικά. Βρέθηκε ΚΟΙΤΑΖΟΝΤΑΣ το render. */
+    var bits = c.kind === 'ladder'
+      ? ['Ανάκληση'].concat(c.more > 0 ? [(c.more === 1 ? 'και άλλη 1 εκεί' : 'και άλλες ' + c.more + ' εκεί')] : [])
+      : [(SUBJ[c.subject] || {}).label || '', KINDS[c.task.kind] || '']
+          .concat(c.est == null ? [] : ['~' + c.est + '′']);
+    var meta = bits.filter(Boolean).join(' · ');
 
     var cta = c.href
       ? '<a class="hw-cta" href="' + esc(c.href) + '">' + esc(c.cta) + '</a>'
@@ -1304,26 +1462,29 @@
     if (c.kind === 'task' && isWritten(c.task.kind))
       cta = '<button class="hw-cta" type="button" data-focus="' + esc(c.task.id) + '">' + esc(c.cta) + '</button>';
 
+    /* Οι πράξεις της εργασίας ταξιδεύουν ΜΑΖΙ της, γιατί η λίστα από κάτω δεν
+       τη δείχνει πια. Χωρίς αυτό, η πιο επείγουσα εργασία θα ήταν η μόνη που
+       δεν σβήνεται. */
+    var acts = '';
+    if (c.kind === 'task'){
+      var t = c.task;
+      acts = '<div class="hw-tacts">' +
+        '<button class="hw-mini" type="button" data-done="' + esc(t.id) + '">Έγινε</button>' +
+        ((t.src && t.src.id && pics[t.src.id]) ? '<button class="hw-mini" type="button" data-pic="' + esc(t.src.id) + '">Πηγή</button>' : '') +
+        '<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>' +
+      '</div>';
+    }
+
     host.innerHTML =
-      '<div class="hw-kicker">Ξεκίνα από εδώ</div>' +
+      '<div class="hw-kicker">Μία απόφαση</div>' +
       '<div class="hw-what">' + head + '</div>' +
       '<div class="hw-meta">' + esc(meta) + '</div>' +
       '<div class="hw-why">' + why + '</div>' +
-      cta +
-      '<div class="hw-chips">' + chips + '</div>';
-    wireChips();
-    var fb = host.querySelector('[data-focus]');
-    if (fb) fb.addEventListener('click', function(){ openFocus(fb.getAttribute('data-focus')); });
-  }
-
-  function wireChips(){
-    $('hwStart').querySelectorAll('[data-win]').forEach(function(b){
-      b.addEventListener('click', function(){
-        var v = +b.getAttribute('data-win');
-        windowPick = v ? v : null;
-        renderStart(budget().free);
-      });
-    });
+      cta + acts;
+    /* ⚠️ ΕΝΑΣ handler ανά κουμπί. Το `data-focus` της κάρτας το δένει ΚΑΙ ΑΥΤΟ
+       το wireTaskActs — μια δεύτερη, «σίγουρη» ανάθεση εδώ θα άνοιγε το
+       χρονόμετρο δύο φορές με ένα πάτημα. */
+    wireTaskActs(host);
   }
 
   function fmtDue(dateKey){
@@ -1338,7 +1499,11 @@
     return dd.getDate() + '/' + (dd.getMonth() + 1);
   }
 
-  function renderDebt(){
+  /* `featured` = ΑΚΡΙΒΩΣ ό,τι δείχνει η κάρτα ΜΙΑ ΑΠΟΦΑΣΗ, ώστε αυτή η λίστα
+     να δείχνει ΤΑ ΥΠΟΛΟΙΠΑ. Η γραμμή της σκάλας μένει (είναι η κατάσταση της
+     αποθήκης, όχι η υποψηφιότητα), αλλά δεν ξαναγράφει το ΙΔΙΟ όνομα ενότητας
+     ούτε δίνει δεύτερο κουμπί για τον ίδιο προορισμό. */
+  function renderDebt(featured){
     var L = ladders();
     var host = $('hwDebtBody');
     if (L.broken){
@@ -1354,14 +1519,23 @@
       }
       var late = s.items.filter(function(it){ return it.due && Date.now() >= it.due && (it.learned || it.samples > 0); });
       late.sort(function(a,b){ return a.due - b.due; });
-      totalLate += late.length;
-      var worst = late[0] || null;
+      totalLate += late.length;                      /* η κεφαλίδα μετράει ΟΛΑ, πάντα */
+      /* Η υποψηφιότητα της κάρτας είναι ΠΑΝΤΑ το `late[0]` αυτής της αποθήκης
+         (ίδια ταξινόμηση, στο candidates()), οπότε η «υπόλοιπη» λίστα είναι
+         απλώς η ουρά της. */
+      var up = !!(featured && featured.kind === 'ladder' && featured.store === s.key);
+      var rest = up ? late.slice(1) : late;
+      var worst = rest[0] || null;
       var soon = s.nextDue;
       var rgb = subjRgb(s.subject);
 
+      /* Η ΚΑΤΑΣΤΑΣΗ της αποθήκης κρίνεται από ΟΛΟ το χρέος της, και όταν κάτι
+         της είναι ληξιπρόθεσμο το λέει — ακόμη κι αν το ένα που χρωστάει είναι
+         αυτό που στέκεται πάνω. Το αντίθετο θα ζωγράφιζε «εντάξει» δίπλα σε μια
+         κάρτα που λέει «έληξε πριν 4 μέρες». */
       var when, cls;
-      if (worst){
-        var d = window.ALSLadders.daysLate(worst.due, Date.now());
+      if (late[0]){
+        var d = window.ALSLadders.daysLate(late[0].due, Date.now());
         when = d <= 0 ? 'σήμερα' : 'πριν ' + d + (d === 1 ? ' μέρα' : ' μέρες');
         cls = 'hw-late';
       } else if (soon){
@@ -1383,6 +1557,12 @@
       var line2;
       if (!s.started){
         line2 = 'δεν το έχεις ξεκινήσει ακόμη';
+      } else if (up){
+        /* Η ΕΠΙΚΑΛΥΨΗ ΧΡΕΟΥΣ / ΑΠΟΦΑΣΗΣ, ΚΛΕΙΣΤΗ. Η κάρτα ονομάζει την
+           ενότητα· εδώ γράφεται μόνο ΤΙ ΜΕΝΕΙ από πίσω της. */
+        line2 = rest.length
+          ? ('η πρώτη είναι η απόφαση · ' + rest.length + ' ακόμη προς ανάκληση')
+          : 'η μία που χρωστάς είναι η απόφαση, πάνω';
       } else if (worst){
         var lbl = unitTitle(s.key, worst.unitId);
         line2 = late.length + ' προς ανάκληση · ' + esc(lbl);
@@ -1403,6 +1583,15 @@
           ? '<div class="hw-unknown">καμία μέτρηση ακόμη</div>'
           : '<div class="hw-bar"><span style="width:' + Math.round(s.accuracy * 100) + '%"></span></div>';
 
+      /* Δεύτερο κουμπί για τον ΙΔΙΟ προορισμό δεν μπαίνει ποτέ: όταν η πρώτη
+         ενότητα είναι πάνω, η γραμμή δείχνει την ΕΠΟΜΕΝΗ — και όταν δεν έχει
+         επόμενη, δεν δείχνει κουμπί καθόλου. */
+      var go = up
+        ? (rest.length
+            ? '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep ? worst.unitId : null)) + '">Η επόμενη</a>'
+            : '')
+        : '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep && worst ? worst.unitId : null)) + '">Πες το</a>';
+
       rows +=
         '<div class="hw-row" style="--hw-c:' + rgb + '">' +
           '<span class="hw-tick"></span>' +
@@ -1411,8 +1600,7 @@
             '<div class="hw-line2">' + line2 + '</div>' + acc +
           '</div>' +
           '<div class="hw-right">' +
-            '<div class="hw-when ' + cls + '">' + esc(when) + '</div>' +
-            '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep && worst ? worst.unitId : null)) + '">Πες το</a>' +
+            '<div class="hw-when ' + cls + '">' + esc(when) + '</div>' + go +
           '</div>' +
         '</div>';
     });
@@ -1435,23 +1623,33 @@
       : 'όλα ζωντανά';
   }
 
-  function renderTasks(){
+  function renderTasks(featured){
     var list = taskList(), host = $('hwTaskBody');
     var open = list.filter(function(t){ return !t.done; }).length;
-    $('hwTasksS').textContent = list.length ? (open + ' ανοιχτές · ' + (list.length - open) + ' έγιναν') : '';
+    /* ⭐ Η ΜΙΑ ΠΟΥ ΕΙΝΑΙ ΠΑΝΩ ΔΕΝ ΞΑΝΑΓΡΑΦΕΤΑΙ ΕΔΩ. Ο μετρητής όμως μετράει
+       ΟΛΕΣ — αλλιώς η κεφαλίδα θα έλεγε ψέματα για το πόσα χρωστάει. */
+    var upId = (featured && featured.kind === 'task') ? featured.task.id : null;
+    var shown = upId ? list.filter(function(t){ return t.id !== upId; }) : list;
+    $('hwTasksS').textContent = list.length
+      ? (open + ' ανοιχτές · ' + (list.length - open) + ' έγιναν' + (upId ? ' · η μία είναι πάνω' : ''))
+      : '';
     $('hwSweep').classList.toggle('hw-off', list.length === open);
 
     if (!list.length){
       host.innerHTML = '<div class="hw-empty"><b>Γράψε μία γραμμή.</b><br>Για παράδειγμα: <span class="hw-mono">Ιστορία b2 απέξω Τρίτη</span> — μάθημα, ενότητα, είδος, προθεσμία. Ό,τι δεν καταλάβω μένει γκρι και το φτιάχνεις με ένα πάτημα.</div>';
       return;
     }
+    if (!shown.length){
+      host.innerHTML = '<div class="hw-empty">Η μόνη σου εργασία είναι <b>η απόφαση</b>, πάνω — μαζί με τα κουμπιά της.</div>';
+      return;
+    }
 
-    host.innerHTML = list.map(function(t){
+    host.innerHTML = shown.map(function(t){
       var s = SUBJ[t.subject] || SUBJ.ekthesi;
-      var e = estimate(t.subject, t.kind);
       var bits = [s.label, KINDS[t.kind] || ''];
       bits.push(t.due ? fmtDue(t.due) : 'χωρίς ημερομηνία');
-      bits.push(e == null ? '—' : '~' + e + '′');
+      /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. */
+      var eb = estBit(t.subject, t.kind); if (eb) bits.push(eb);
       if (t.elapsed > 60000) bits.push(Math.round(t.elapsed / 60000) + '′ γραμμένα');
       /* ⭐ Η Έκθεση δεν έχει σελίδα ακόμη, και το λέει — ένα κενό που
          φαίνεται είναι καλύτερο από ένα κρυμμένο. */
@@ -1477,6 +1675,13 @@
       '</div>';
     }).join('');
 
+    wireTaskActs(host);
+  }
+
+  /* ⭐ ΜΙΑ ΥΛΟΠΟΙΗΣΗ ΓΙΑ ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15). Οι ίδιες πράξεις
+     ζωγραφίζονται και στην κάρτα ΜΙΑ ΑΠΟΦΑΣΗ και στη λίστα· δύο αντίγραφα του
+     ίδιου handler θα ήταν δύο συμπεριφορές με καθυστέρηση. */
+  function wireTaskActs(host){
     host.querySelectorAll('[data-done]').forEach(function(b){
       b.addEventListener('click', function(){ toggleDone(b.getAttribute('data-done')); });
     });
@@ -1513,7 +1718,7 @@
   }
 
   /* ── Η ΜΕΡΑ · ο σκελετός, όχι πλέγμα ημερολογίου ─────────────────── */
-  function renderDay(){
+  function renderDay(pool){
     var day = blocksFor(0);
     var now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
     var span = DAY_END - DAY_START;
@@ -1544,11 +1749,16 @@
        Το ΜΕΓΑΛΟ ΠΑΡΑΘΥΡΟ παίρνει εργασίες + χρέος μνήμης. Το ΞΑΝΑΔΙΑΒΑΣΜΑ
        παίρνει ΤΑ ΣΗΜΕΡΙΝΑ ΤΡΙΑ ΜΑΘΗΜΑΤΑ και τίποτε άλλο: η ίδια προσπάθεια
        αξίζει ~3× την ίδια μέρα σε σχέση με μία εβδομάδα μετά. */
-    var free = budget().free;
-    var pool = candidates(free).slice(0, 3);
-    var morning = pool.length
-      ? pool.map(function(c){ return esc(c.kind === 'ladder' ? (c.title + ' · ' + (c.unitLabel || c.unitId)) : (c.unitLabel || '')); }).join('<br>')
-      : 'Καθαρά. Δεν χρωστάς τίποτα σε αυτό το παράθυρο.';
+    /* ⚠️ ΕΔΩ ΗΤΑΝ Η ΤΡΙΤΗ ΓΡΑΦΗ ΤΟΥ ΙΔΙΟΥ ΠΡΑΓΜΑΤΟΣ. Το «μεγάλο παράθυρο»
+       τύπωνε τις τρεις πρώτες υποψηφιότητες — δηλαδή την κάρτα ΜΙΑ ΑΠΟΦΑΣΗ
+       ξανά, και μετά ξανά μέσα στο ΧΡΕΟΣ. Το παράθυρο ΜΕΤΡΑΕΙ τώρα· η
+       ονομασία γίνεται μία φορά, πάνω, και η λίστα ζει μία φορά, κάτω. */
+    var n = pool.length;
+    var morning = !n
+      ? 'Καθαρά. Δεν χρωστάς τίποτα σε αυτό το παράθυρο.'
+      : n === 1
+        ? 'Ένα πράγμα, και είναι η απόφαση από πάνω.'
+        : n + ' πράγματα. Το πρώτο είναι η απόφαση· τα υπόλοιπα στο ΧΡΕΟΣ.';
 
     var todayLessons = lessonsFor(0);
     var review;
@@ -1570,7 +1780,7 @@
 
     $('hwSlots').innerHTML =
       slot(PLAN.morning[0] + '–' + PLAN.morning[1], 'Το μεγάλο παράθυρο',
-           'Εδώ πεθαίνει η δουλειά: εργασίες και χρέος μνήμης.', morning) +
+           'Εδώ πεθαίνει η δουλειά: εργασίες και χρέος μνήμης.', esc(morning)) +
       slot(PLAN.recap[0] + '–' + PLAN.recap[1], 'Η επανάληψη πριν',
            'Το μάθημα των 15:15, μισή ώρα πριν.',
            recapSubj ? esc(recapSubj) : 'Χρειάζεται το ημερολόγιο για να ξέρω ποιο μάθημα έχεις στις 15:15.') +
@@ -1587,102 +1797,67 @@
     '</div>';
   }
 
-  /* ── Ο ΟΡΙΖΟΝΤΑΣ · πίεση, όχι ημερολόγιο ─────────────────────────
+  /* ── Η ΣΥΣΣΩΡΕΥΣΗ · μία πρόταση, και ένα κουμπί που την εκτελεί ───
      Η σύγκρουση ΕΙΝΑΙ το νόημα: όταν τρία πράγματα πέφτουν Πέμπτη, το λέει
-     ΔΕΥΤΕΡΑ. Και ποτέ δεν μετακινεί δουλειά μόνο του. */
-  function weekLoad(){
-    var L = LAD || ladders(), start = midnight(-dowMon(new Date()));
-    var days = [], i;
-    for (i = 0; i < 7; i++){
-      var d = new Date(start); d.setDate(start.getDate() + i);
-      days.push({ date:d, key:dkOf(d), segs:[], load:0, items:[] });
-    }
-    function bucket(key){
-      var i2; for (i2 = 0; i2 < 7; i2++) if (days[i2].key === key) return days[i2];
-      return null;
-    }
-    /* ΕΡΓΑΣΙΕΣ: μετρημένος χρόνος όπου υπάρχει· αλλιώς μία μονάδα βάρους που
-       λέγεται «ένα πράγμα», ποτέ επινοημένα λεπτά στην οθόνη. */
-    taskList().forEach(function(t){
-      if (t.done || !t.due) return;
-      var b = bucket(t.due); if (!b) return;
-      var e = estimate(t.subject, t.kind);
-      b.load += (e == null ? 25 : e);
-      b.segs.push({ rgb:subjRgb(t.subject), mins:(e == null ? 25 : e) });
-      b.items.push((SUBJ[t.subject] || {}).label + ' · ' + (t.title || KINDS[t.kind]));
-    });
-    /* ΧΡΕΟΣ ΜΝΗΜΗΣ: ό,τι λήγει μέσα στην εβδομάδα. */
-    L.stores.forEach(function(s){
-      if (!s.ok) return;
-      s.items.forEach(function(it){
-        if (!it.due || !(it.learned || it.samples > 0)) return;
-        var key = dkOf(new Date(it.due));
-        var b = bucket(key); if (!b) return;
-        b.load += 15;
-        b.segs.push({ rgb:subjRgb(s.subject), mins:15 });
-        b.items.push(s.label + ' · ανάκληση');
-      });
-    });
-    /* ΔΙΑΓΩΝΙΣΜΑΤΑ από το ημερολόγιο. */
-    if (calState() === 'live'){
-      for (i = 0; i < 7; i++){
-        var off = Math.round((days[i].date - midnight(0)) / 86400000);
-        if (off < 0 || off >= (window.GCal ? GCal.DAYS : 7)) continue;
-        var ls = lessonsFor(off) || [];
-        ls.forEach(function(l){
-          if (!l.exam) return;
-          days[i].load += 45;
-          days[i].segs.push({ rgb:subjRgb(l.subject), mins:45 });
-          days[i].items.push('Διαγώνισμα · ' + l.title);
-        });
-      }
-    }
-    return days;
-  }
+     ΔΕΥΤΕΡΑ. Και ποτέ δεν μετακινεί δουλειά μόνο του — μόνο όταν το πατήσει. */
+  function renderOver(pool){
+    var host = $('hwOver');
+    var p = pileDay(pool);
 
-  function renderWeek(){
-    var days = weekLoad();
-    var max = Math.max(60, Math.max.apply(null, days.map(function(d){ return d.load; })));
-    var todayKey = today();
-    var heaviest = days.slice().sort(function(a,b){ return b.load - a.load; })[0];
+    /* Μια πράξη δεν γίνεται σιωπηλά: αν μόλις μετακινήθηκε κάτι, αυτό λέγεται
+       πρώτο, με το όνομά του και τη νέα του μέρα. */
+    var ack = moved
+      ? '<div class="hw-moved">Το «<b>' + esc(moved.title || '—') + '</b>» πήγε ' +
+        esc(dayName(dowMon(new Date(moved.to + 'T00:00:00')))) + ', ' + esc(fmtDue(moved.to)) + '.</div>'
+      : '';
 
-    $('hwWeekGrid').innerHTML = days.map(function(d, i){
-      var h = Math.round((d.load / max) * 96);
-      var segs = d.segs.map(function(sg){
-        var sh = Math.max(3, Math.round((sg.mins / Math.max(1, d.load)) * h));
-        return '<div class="hw-seg" style="--hw-c:' + sg.rgb + ';height:' + sh + 'px"></div>';
-      }).join('');
-      var pile = d.items.length >= 3;
-      return '<button class="hw-col' + (d.key === todayKey ? ' hw-today' : '') + (pile ? ' hw-pile' : '') +
-        '" type="button" data-day="' + i + '">' +
-        '<div class="hw-stack">' + segs + '</div>' +
-        '<div class="hw-dow">' + DOW_SH[i] + '</div></button>';
-    }).join('');
+    if (!p){
+      /* ⭐ ΤΙΠΟΤΑ ΔΕΝ ΜΕΝΕΙ ΣΤΗΝ ΟΘΟΝΗ ΜΟΝΟ ΓΙΑ ΝΑ ΚΟΙΤΑΖΕΤΑΙ. Χωρίς
+         συσσώρευση δεν υπάρχει πρόταση — και δεν επινοείται μία. */
+      host.innerHTML = ack;
+      host.className = 'hw-over-wrap' + (ack ? '' : ' hw-off');
+      return;
+    }
 
-    var say;
-    if (!heaviest || !heaviest.items.length){
-      say = 'Καμία πίεση αυτή την εβδομάδα — τίποτα με προθεσμία, τίποτα ληξιπρόθεσμο.';
-    } else if (heaviest.items.length >= 3 && heaviest.key !== todayKey){
-      say = '<b>' + esc(DOW_EL[dowMon(heaviest.date)]) + ': ' + heaviest.items.length + ' πράγματα μαζί.</b> ' +
-            'Θέλεις να φέρω το ελαφρύτερο μία μέρα μπροστά;';
+    var dow = dayName(dowMon(p.date));
+    var head = '<b>' + esc(dow) + ' έχει ' + p.items + (p.items === 1 ? ' πράγμα' : ' πράγματα') + '.</b>';
+
+    var body, acts = '';
+    if (p.move){
+      body = ' Το λιγότερο επείγον είναι «' + esc(p.move.title || (SUBJ[p.move.subject] || {}).label || '') + '».';
+      acts = '<div class="hw-acts"><button class="hw-btn" type="button" data-fwd="' + esc(p.move.id) + '">' +
+             'Φέρ’ το ' + esc(fmtDue(p.prevKey)) + '</button></div>';
+    } else if (!p.canPrev){
+      body = ' Η προηγούμενη μέρα έχει ήδη περάσει, οπότε δεν υπάρχει πού να πάει.';
+    } else if (p.tasks && p.fixed === p.tasks && !p.ladder){
+      body = ' Είναι όλα διαγωνίσματα — η ημερομηνία τους δεν ορίζεται από εδώ.';
+    } else if (!p.tasks){
+      body = p.exam
+        ? ' Είναι ανακλήσεις και διαγώνισμα: το χρέος της μνήμης το ορίζει η σκάλα της σελίδας του, και το διαγώνισμα ο καθηγητής.'
+        : ' Είναι όλα ανακλήσεις — τις ορίζει η σκάλα της σελίδας τους, όχι αυτή η σελίδα.';
     } else {
-      say = '<b>' + esc(dayName(dowMon(heaviest.date))) + '</b> είναι η βαρύτερη μέρα: ' + heaviest.items.length +
-            (heaviest.items.length === 1 ? ' πράγμα.' : ' πράγματα.');
+      body = ' Καμία από τις εργασίες της δεν μετακινείται από εδώ.';
     }
-    $('hwWeekSay').innerHTML = say;
 
-    $('hwWeekGrid').querySelectorAll('[data-day]').forEach(function(b){
+    host.innerHTML = ack + '<div class="hw-over">' + head + esc(body) + acts + '</div>';
+    host.className = 'hw-over-wrap';
+
+    host.querySelectorAll('[data-fwd]').forEach(function(b){
       b.addEventListener('click', function(){
-        var d = days[+b.getAttribute('data-day')];
-        /* Μία γραμμή ανά πράγμα: το `.als-dlg-msg` είναι `white-space: pre-wrap`
-           (als-dialog.js:47), οπότε τα newline επιβιώνουν. */
-        var body = d.items.length ? d.items.join('\n') : 'Τίποτα με προθεσμία, τίποτα ληξιπρόθεσμο.';
-        var head = dayName(dowMon(d.date)) + ' ' + d.date.getDate() + '/' + (d.date.getMonth() + 1);
-        if (window.ALSAlert) ALSAlert({ title:head, message:body });
-        else alert(head + '\n\n' + body);
+        var r = bringForward(b.getAttribute('data-fwd'));
+        if (!r) return;                              /* το persist απέτυχε — το banner το λέει */
+        moved = r;
+        paint();
       });
     });
   }
+
+  /* ⛔ ΤΙ ΕΦΥΓΕ ΑΠΟ ΕΔΩ, ΓΡΑΜΜΕΝΟ ΩΣΤΕ ΝΑ ΜΗΝ ΞΑΝΑΓΡΑΦΤΕΙ: το `weekLoad()`
+     έδινε βάρος σε ΛΕΠΤΑ (25′ ανά εργασία, 15′ ανά ανάκληση, 45′ ανά
+     διαγώνισμα) που κανείς δεν είχε μετρήσει, και το `renderWeek()` ζωγράφιζε
+     επτά μπάρες με ύψος από αυτά τα λεπτά — επινοημένοι αριθμοί σε μορφή
+     γραφήματος (σταθερή αρχή 33), κάτω από μια ερώτηση χωρίς κουμπί.
+     Το `pileDay()` μετράει ΠΡΑΓΜΑΤΑ, και το κουμπί το κάνει. */
 
   /* ══════════════════════════════════════════════════════════════════
      ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ — ΓΙΑ ΤΑ ΓΡΑΠΤΑ
@@ -1863,13 +2038,21 @@
   /* ══════════════════════════════════════════════════════════════════
      ΚΑΛΩΔΙΩΣΗ
      ══════════════════════════════════════════════════════════════════ */
+  /* ⭐ Η ΚΑΤΑΤΑΞΗ ΥΠΟΛΟΓΙΖΕΤΑΙ ΜΙΑ ΦΟΡΑ ΚΑΙ ΜΟΙΡΑΖΕΤΑΙ. Πριν τη φάση 1 το
+     `candidates()` έτρεχε δύο φορές και το `budget()` τρεις μέσα σε ένα paint,
+     οπότε η κάρτα και η ΜΕΡΑ μπορούσαν να διαφωνήσουν αν άλλαζε το λεπτό
+     ανάμεσά τους. Ένας υπολογισμός, μία αλήθεια — και το `featured` είναι
+     ΑΚΡΙΒΩΣ ό,τι δείχνει η κάρτα, ώστε κανένα άλλο μπλοκ να μην το ξαναπεί. */
   function paint(){
+    ladders();                       /* ΜΙΑ φρέσκια ανάγνωση, πριν από όλους */
     var b = renderClock();
-    renderDebt();
-    renderStart(b.free);
-    renderTasks();
-    renderDay();
-    renderWeek();
+    var pool = candidates(b.free);
+    var featured = pool[0] || null;
+    renderStart(pool);
+    renderDebt(featured);
+    renderTasks(featured);
+    renderDay(pool);
+    renderOver(pool);
     $('hwFoot').innerHTML =
       'Διαβάζει και τις πέντε σκάλες μελέτης· γράφει ΜΟΝΟ τις δικές του εργασίες.<br>' +
       'Καμία μηχανή δεν διαβάζει τις φωτογραφίες σου εδώ — η μεταγραφή γίνεται στη συζήτηση, μπροστά σου.';

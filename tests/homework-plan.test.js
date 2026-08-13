@@ -40,6 +40,12 @@ ok('homework.html still opens its helper block where we slice from', PAGE.indexO
 ok('and still has the ΖΩΓΡΑΦΙΚΗ marker we slice to', PAGE.indexOf(END) > PAGE.indexOf(START));
 const BODY = PAGE.slice(PAGE.indexOf(START), PAGE.lastIndexOf('/* ═', PAGE.indexOf(END)));
 
+/* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 19, ΚΑΙ ΜΕ ΚΟΣΤΟΣΕ ΔΥΟ ΨΕΥΤΙΚΕΣ ΑΠΟΤΥΧΙΕΣ ΣΕ ΑΥΤΟ ΤΟ
+   ΑΡΧΕΙΟ: κάθε φρουρός «αυτό δεν υπάρχει πια» έπιανε το ΣΧΟΛΙΟ που τεκμηριώνει
+   την ίδια την απαγόρευση. Ένας φρουρός που φωνάζει «λύκος» είναι ένας φρουρός
+   που κάποιος χαλαρώνει. Οι απαγορεύσεις ελέγχονται πάνω στον ΚΩΔΙΚΑ. */
+const CODE = PAGE.replace(/\/\*[\s\S]*?\*\//g, ' ');
+
 /* Οι σταθερές του αρχείου κόβονται μαζί — αν η σελίδα μετονομάσει ένα κλειδί,
    τα tests πρέπει να μετακομίσουν μαζί της αντί να ελέγχουν ένα string που το
    πιστεύει μόνο το test. */
@@ -124,6 +130,7 @@ function makeEnv(opts) {
     '\nreturn { parseLine:parseLine, budget:budget, candidates:candidates, reload:reload,' +
     ' addTask:addTask, dropTask:dropTask, sweepDone:sweepDone, taskList:taskList,' +
     ' estimate:estimate, recordSample:recordSample, save:save, blocksFor:blocksFor,' +
+    ' pileDay:pileDay, bringForward:bringForward,' +
     ' dowMon:dowMon, offDate:offDate, nextDow:nextDow, ladders:ladders, subjectOfText:subjectOfText,' +
     ' state:function(){ return state; } };})()';
   const api = vm.runInContext(src, ctx, { filename: 'homework.html:script' });
@@ -334,6 +341,121 @@ section('4b · and statically, on the call context rather than the word');
 ok('the page contains exactly one initCloudSync registration',
   (PAGE.match(/initCloudSync\(\{/g) || []).length === 1);
 ok('and it declares both of its keys', /syncedKeys:\s*\[KEY,\s*PKEY\]/.test(PAGE));
+
+/* ══════════════════════════════════════════════════════════════════════
+   4c · ⭐⭐ ΤΟ HARNESS ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΦΟΡΤΩΝΕΙ ΠΕΡΙΣΣΟΤΕΡΑ ΑΠ' ΟΣΑ Η ΣΕΛΙΔΑ
+
+   Αυτή η βεβαίωση γεννήθηκε από πραγματικό, ΖΩΝΤΑΝΟ σφάλμα της als-v470 που
+   επέζησε 97 πράσινων βεβαιώσεων: η `homework.html` φόρτωνε τα τρία corpora
+   ΧΩΡΙΣ το `greek-ear.js` / `lesson-grade.js`, που εκείνα απαιτούν με `throw`
+   στη φόρτωση. Άρα `ISTORIA`/`ARXGN`/`ArxaiaData` ήταν **undefined στη
+   ζωντανή σελίδα**: ο parser δεν αναγνώριζε ΚΑΜΙΑ ενότητα και κάθε τίτλος
+   έπεφτε στο id («b1b», «n3:gen:pl»). Το test δεν το έβλεπε επειδή ΤΟ ΙΔΙΟ
+   φόρτωνε τα δύο που έλειπαν — δηλαδή εξέταζε σελίδα που δεν υπάρχει.
+
+   ⭐ Ο κανόνας που μένει: ένα harness που φορτώνει ΠΑΡΑΠΑΝΩ από τη σελίδα δεν
+   την ελέγχει, την κολακεύει. Κάθε αρχείο του context πρέπει να είναι και
+   `<script src>` της σελίδας.
+   ══════════════════════════════════════════════════════════════════════ */
+section('4c · every file the test context loads is also loaded by the PAGE');
+const PAGE_SRCS = (PAGE.match(/<script[^>]*\ssrc="([^"]+)"/g) || [])
+  .map(s => s.replace(/^.*src="/, '').replace(/".*$/, ''));
+const CTX_FILES = ['ladders.js', 'study-stamp.js', 'greek-ear.js', 'lesson-grade.js',
+  'istoria-data.js', 'arxaia-gnosto-data.js', 'arxaia-data.js', 'gcal.js'];
+CTX_FILES.forEach(f => ok('homework.html itself loads ' + f, PAGE_SRCS.indexOf(f) > -1));
+/* Και η άλλη κατεύθυνση: ό,τι ΠΕΤΑΕΙ χωρίς εξάρτηση, η σελίδα πρέπει να το
+   φορτώνει ΠΡΙΝ από αυτό — μια σωστή λίστα με λάθος σειρά είναι το ίδιο κενό. */
+[['greek-ear.js', 'istoria-data.js'], ['greek-ear.js', 'arxaia-gnosto-data.js'],
+ ['lesson-grade.js', 'arxaia-gnosto-data.js'], ['greek-ear.js', 'arxaia-data.js']]
+  .forEach(pair => ok(pair[0] + ' is loaded BEFORE ' + pair[1],
+    PAGE_SRCS.indexOf(pair[0]) > -1 && PAGE_SRCS.indexOf(pair[0]) < PAGE_SRCS.indexOf(pair[1])));
+/* Και ότι ο parser ΟΝΤΩΣ βλέπει ενότητες — αλλιώς όλα τα παραπάνω μπορεί να
+   ισχύουν και το corpus να είναι άδειο για άλλο λόγο. */
+ok('and with them the parser really resolves a unit id', E.api.parseLine('ιστ b2').unit !== null);
+
+/* ══════════════════════════════════════════════════════════════════════
+   4d · ΦΑΣΗ 1 — ΤΟ ΞΑΚΡΙΣΜΑ: ΤΙ ΕΦΥΓΕ, ΚΑΙ ΤΙ ΔΕΝ ΛΕΓΕΤΑΙ ΔΥΟ ΦΟΡΕΣ
+   ══════════════════════════════════════════════════════════════════════ */
+section('4d · φάση 1 · no control exists that cannot control something');
+ok('the 10′/20′/45′/90′ chips are GONE', PAGE.indexOf('data-win') < 0);
+ok('and so is the window filter they drove', PAGE.indexOf('windowPick') < 0);
+ok('the horizon SECTION is gone — no seven-bar week grid',
+  PAGE.indexOf('hw-week-grid') < 0 && PAGE.indexOf('hwWeekGrid') < 0);
+ok('and the invented per-item minutes went with it',
+  PAGE.indexOf('e == null ? 25 : e') < 0);
+ok('the page is FOUR blocks: one decision + three sections',
+  (PAGE.match(/class="hw-sec /g) || []).length === 3);
+/* ⭐ Η ερώτηση χωρίς κουμπί ήταν κριτήριο αποδοχής που έπεφτε. Είτε υπάρχει
+   κουμπί που την εκτελεί, είτε δεν υπάρχει ερώτηση. */
+ok('the old buttonless question is gone',
+  PAGE.indexOf('Θέλεις να φέρω το ελαφρύτερο μία μέρα μπροστά;') < 0);
+ok('and the sentence that replaced it carries a real button', PAGE.indexOf('data-fwd=') > -1);
+ok('which is wired to a function that performs it', /\[data-fwd\][\s\S]{0,400}bringForward\(/.test(PAGE));
+
+section('4d · «—» is never printed for a measurement that cannot exist');
+ok('no ladder card prints an est placeholder', CODE.indexOf('estText') < 0);
+ok('a measured est is printed only when it exists',
+  PAGE.indexOf("e == null ? null : '~' + e") > -1);
+ok("and the task row pushes it only when non-null", /if \(eb\) bits\.push\(eb\)/.test(PAGE));
+
+section('4d · the ΧΡΕΟΣ / ΑΠΟΦΑΣΗ overlap is closed');
+{
+  /* Η κάρτα δείχνει ΕΝΑ· η λίστα δείχνει ΤΑ ΥΠΟΛΟΙΠΑ. Ο έλεγχος είναι στο
+     ίδιο το `paint()`: μία κατάταξη, ένα `featured`, τρεις παραλήπτες. */
+  /* Μία δήλωση + ΜΙΑ κλήση. Πριν τη φάση 1 υπήρχαν ΔΥΟ κλήσεις μέσα σε ένα
+     paint (η κάρτα και η ΜΕΡΑ), που μπορούσαν να διαφωνήσουν. */
+  is('candidates() is declared once and CALLED once per paint',
+    (CODE.match(/candidates\(/g) || []).length, 2);
+  ok('and the same featured item is handed to every renderer',
+    /renderStart\(pool\)[\s\S]{0,200}renderDebt\(featured\)[\s\S]{0,80}renderTasks\(featured\)/.test(PAGE));
+  ok('the memory row drops the featured unit rather than repeating it',
+    PAGE.indexOf('var rest = up ? late.slice(1) : late;') > -1);
+  ok('the task list omits exactly the featured id',
+    PAGE.indexOf("list.filter(function(t){ return t.id !== upId; })") > -1);
+  ok('and the day window counts instead of re-listing the top three',
+    PAGE.indexOf('candidates(free).slice(0, 3)') < 0);
+  /* ⚠️ Αν η κάρτα κρύβει την εργασία από τη λίστα, ΠΡΕΠΕΙ να κουβαλάει τις
+     πράξεις της — αλλιώς η πιο επείγουσα είναι η μόνη που δεν σβήνεται. */
+  ok('the card carries the hidden task\'s own actions', /acts = '<div class="hw-tacts">/.test(PAGE));
+  ok('and both places wire them through ONE implementation',
+    (PAGE.match(/wireTaskActs\(/g) || []).length === 3);
+}
+
+section('4d · the move writes hw:v1 and NOTHING else, and never into the past');
+{
+  const F = makeEnv({ now: TUE, store: LADFIX });
+  /* Πέμπτη 13/8 → η μετακίνηση πάει Τετάρτη 12/8, που είναι ΑΥΡΙΟ. */
+  const id = F.api.addTask({ subject: 'latinika', title: 'ασκήσεις', due: '2026-08-13', kind: 'askisi' });
+  const before = F.writes.length;
+  const r = F.api.bringForward(id);
+  is('it moved exactly one day back', r && r.to, '2026-08-12');
+  is('and the store agrees', F.api.taskList().filter(t => t.id === id)[0].due, '2026-08-12');
+  const touched = Array.from(new Set(F.writes.slice(before)));
+  is('and the ONLY key it wrote is hw:v1', touched, ['hw:v1']);
+
+  /* ⛔ Μια εργασία για ΣΗΜΕΡΑ δεν έχει πού να πάει. Ποτέ στο χθες. */
+  const id2 = F.api.addTask({ subject: 'latinika', title: 'σήμερα', due: '2026-08-11', kind: 'askisi' });
+  is('a task due TODAY is refused, never moved into yesterday', F.api.bringForward(id2), null);
+  is('and it is untouched on disk', F.api.taskList().filter(t => t.id === id2)[0].due, '2026-08-11');
+}
+
+section('4d · the pile is named only when it is real, in the FUTURE, and countable');
+{
+  const F = makeEnv({ now: TUE, store: LADFIX });
+  is('two things on a day is not a pile', F.api.pileDay([]), null);
+  ['α', 'β', 'γ'].forEach(n => F.api.addTask({ subject: 'latinika', title: n, due: '2026-08-13', kind: 'askisi' }));
+  const p = F.api.pileDay(F.api.candidates(null));
+  ok('three IS a pile', !!p);
+  is('and it counts THINGS, never invented minutes', p.items, 3);
+  is('the day before it is offered', p.prevKey, '2026-08-12');
+  ok('and something movable was chosen', !!p.move);
+  /* ⛔ Ένα διαγώνισμα δεν μετακινείται από εδώ — την ημερομηνία δεν την ορίζουμε εμείς. */
+  const G = makeEnv({ now: TUE, store: LADFIX });
+  ['α', 'β', 'γ'].forEach(n => G.api.addTask({ subject: 'latinika', title: n, due: '2026-08-13', kind: 'diagonisma' }));
+  const q = G.api.pileDay(G.api.candidates(null));
+  is('a pile of exams is stated as a fact…', q.items, 3);
+  is('…with NO button', q.move, null);
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    5 · ΑΔΕΙΟ ≠ ΣΦΑΛΜΑ ≠ ΑΓΝΩΣΤΟ (σταθερή αρχή 10)

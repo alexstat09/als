@@ -78,15 +78,20 @@ the room above them.
 Read **`docs/XREOS_V2_SPEC.md` first** (the current truth — it says what changes
 and in what order; ✅ its Φάση 0, ΤΟ ΣΥΜΒΟΛΑΙΟ, shipped als-v471), then
 `docs/HOMEWORK_SPEC.md` §15 (phases) and §16 (acceptance) before you touch
-it or describe it. Live and wrong right now: **`est` can never be produced for
-recall** (so the «10′/20′/45′/90′» chips cannot filter and the card shows «—»
-forever — the render's `~18′` came from a seeded fixture), **the week horizon
-asks a question with no button**, **the 14:30 and 21:45 rituals are empty without
-Google Calendar and have no manual path**, and **the title builder strips his
-stopwords** instead of keeping his words verbatim. Unbuilt: the third task state
-(ΣΤΟ ΠΡΟΓΡΑΜΜΑ), replanning, the Phase-7 edit, and any exam surface. On the phone
-**capture is the fourth section down**, which §1.3 names as the thing that killed
-`study.html`.
+it or describe it. ✅ **Φάση 1 (ΤΟ ΞΑΚΡΙΣΜΑ) shipped als-v478**: the page is
+**four blocks — ΜΙΑ ΑΠΟΦΑΣΗ · Η ΣΥΛΛΗΨΗ · Η ΜΕΡΑ · ΤΟ ΧΡΕΟΣ** — the dead `est`
+placeholders and the «10′/20′/45′/90′» chips are gone, the seven-bar horizon is
+one sentence with a **button that actually moves a task** (`hw:v1` only, never a
+ladder, never an exam, never into the past), and nothing is drawn twice: one
+ranking per paint, the card shows the top item and every list below shows **the
+rest**. Still live and wrong: **the 14:30 and 21:45 rituals are empty without
+Google Calendar and have no manual path** (φάση 3), and **the title builder
+strips his stopwords** instead of keeping his words verbatim (φάση 2). Unbuilt:
+the third task state (ΣΤΟ ΠΡΟΓΡΑΜΜΑ), replanning, exams, ΤΟ ΕΔΑΦΟΣ, and measured
+`est`. On the phone **capture is still the fourth thing down**, which §1.3 names
+as the thing that killed `study.html` — that is φάση 2 and is NOT done.
+⚠️ **`hw:pics` still shares the `homework` appKey** (σταθερή αρχή 34): photos can
+still starve `flushOnUnload`'s 64 KiB keepalive for the tasks.
 
 ⭐⭐ **`homework.html` IS THE ONLY SURFACE THAT SEES BOTH DEBTS.** Every night he
 closes four subjects' worth of debt: **new work** the φροντιστήριο gave him at
