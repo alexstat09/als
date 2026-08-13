@@ -347,5 +347,68 @@ ok('γράφει μόνο μέσω του KEY της (κανένα ξένο stor
   writes.every(w => w === 'KEY' || w === 'k' || /TOMB/.test(w)));
 
 /* ══════════════════════════════════════════════════════════════════════ */
+section('8 · ΤΟ ΜΑΘΗΜΑ ΣΕ ΤΡΕΙΣ ΖΩΝΕΣ (als-v477)');
+
+/* ⛔⛔ Η ΓΡΑΜΜΗ ΠΟΥ ΑΝ ΦΥΓΕΙ, Η ΔΙΑΤΑΞΗ ΚΑΤΑΡΡΕΕΙ ΣΙΩΠΗΛΑ.
+   Το `#ipLb` κουβαλάει `is-vwrap` = `max-width:660px`. Χωρίς την υπέρβαση, η
+   νέα διάταξη ζει μέσα σε αυτό το κλουβί και η στήλη κειμένου μαζεύεται στα
+   **48px** — μετρημένο, και ΚΑΝΕΝΑ assertion δεν το βλέπει, γιατί το markup
+   είναι σωστό και μόνο η γεωμετρία είναι λάθος. */
+ok('το κλουβί των 660px είναι σπασμένο ΜΟΝΟ για το μάθημα',
+  /#ipLb\.is-vwrap\{\s*max-width:none/.test(src));
+ok('…και οι αδελφές όψεις (συντάκτης/ανάκληση) ΜΕΝΟΥΝ στενές',
+  !/#ipEb\.is-vwrap\{\s*max-width:none/.test(src) && !/#ipRb\.is-vwrap\{\s*max-width:none/.test(src));
+
+ok('το κείμενο ΔΕΝ απλώνεται — μένει 640px, το σωστό μήκος γραμμής',
+  /grid-template-columns:minmax\(0,640px\) minmax\(230px,300px\)/.test(src));
+ok('οι τρεις ζώνες ανοίγουν στα ≥1180px', /@media \(min-width:1180px\)/.test(src));
+ok('η ράχη είναι sticky, ΠΟΤΕ fixed (σταθ. 18)',
+  /\.ls-rail\{[^}]*position:sticky/.test(src) && !/\.ls-rail\{[^}]*position:fixed/.test(src));
+ok('⛔ κανένα overscroll-behavior:contain στη ράχη (σταθ. 22)',
+  !/\.ls-rail\{[^}]*overscroll-behavior/.test(src));
+ok('η ράχη χρησιμοποιεί 100dvh, όχι 100vh', /\.ls-rail\{[^}]*100dvh/.test(src));
+
+const lesSrc = slice('openLesson');
+ok('κάθε παράγραφος γίνεται ΖΩΝΗ με τα σημεία της δίπλα', /class="ls-band"/.test(lesSrc));
+ok('⭐ το `detail` ΔΕΝ ξαναγράφεται στη λίστα σημείων — είναι ήδη αριστερά',
+  !/x\.point\.detail/.test(lesSrc) && !/class="dt"/.test(lesSrc));
+ok('οι γάντζοι βγαίνουν σε ΠΛΗΡΕΣ ΠΛΑΤΟΣ, δεν κρύβονται',
+  /class="ls-hooks"/.test(lesSrc) && /\.ls-hooks\{[^}]*\}/.test(src) &&
+  /grid-column:1 \/ -1/.test(src));
+ok('η ράχη είναι πλοήγηση: πας στη ζώνη', /scrollIntoView/.test(lesSrc));
+ok('ο πίνακας βγαίνει από τη στήλη κειμένου', /class="ls-full"/.test(lesSrc));
+ok('οι λέξεις γίνονται πλέγμα στο laptop',
+  /\.ls-defs\{[^}]*grid-template-columns:repeat\(3/.test(src));
+
+/* ⭐⭐ Η ΣΕΛΙΔΑ ΒΑΦΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΟΥ ΛΑΘΗ — ΚΑΙ ΔΕΝ ΓΡΑΦΕΙ ΠΟΤΕ. */
+const accSrc = slice('pointAcc');
+ok('⛔ ο μετρητής αδυναμίας ΔΙΑΒΑΖΕΙ, δεν δημιουργεί εγγραφή (καμία κλήση `el(`)',
+  !/\bel\(/.test(accSrc) && /state\.els\[/.test(accSrc));
+ok('«δεν εξετάστηκε ποτέ» ΔΕΝ είναι μηδέν (σταθ. 33)',
+  /tested:false, acc:null/.test(accSrc));
+
+const box8 = ctx();
+vm.runInContext(slice('pointAcc'), box8);
+const pt = { must: [{ k: 'a' }, { k: 'b' }] };
+is('χωρίς μετρήσεις → tested:false', box8.pointAcc('u', 0, pt), { tested: false, acc: null });
+box8.state.els['u:0:0'] = { r: 1, w: 4 };
+box8.state.els['u:0:1'] = { r: 0, w: 3 };
+const w1 = box8.pointAcc('u', 0, pt);
+ok('με μετρήσεις → tested:true και ακρίβεια κάτω του κατωφλιού', w1.tested && w1.acc < 0.7);
+box8.state.els['u:0:0'] = { r: 9, w: 0 };
+box8.state.els['u:0:1'] = { r: 9, w: 0 };
+ok('καθαρή ιστορία → πάνω από το κατώφλι, δεν τραβάει το μάτι', box8.pointAcc('u', 0, pt).acc >= 0.7);
+is('…και ο μετρητής ΔΕΝ δημιούργησε καμία νέα εγγραφή',
+  Object.keys(box8.state.els).sort(), ['u:0:0', 'u:0:1']);
+
+ok('⛔ η αδυναμία ΔΕΝ γίνεται τέταρτο χρώμα — λέγεται με κουκκίδα και φως',
+  /\.ls-pt\.weak \.ls-pt-lb::before/.test(src) && !/--warn/.test(slice('openLesson')));
+
+/* ⚠️ ΜΙΑ ΚΑΛΩΔΙΩΣΗ ΓΙΑ ΤΙΣ ΔΥΟ ΕΠΙΦΑΝΕΙΕΣ (σταθ. 15): το άναμμα δουλεύει
+   ΚΑΙ στο «Το υλικό του» ΚΑΙ στο μάθημα, από τον ίδιο χειριστή. */
+ok('το άναμμα καλωδιώνεται και στις δύο επιφάνειες',
+  /\['ipStudy', 'ipLb'\]/.test(slice('wireStudy')));
+
+/* ══════════════════════════════════════════════════════════════════════ */
 console.log('\n' + (fail ? `✗ ${fail} FAILED, ${pass} passed` : `✓ ${pass} assertions passed`));
 process.exit(fail ? 1 : 0);

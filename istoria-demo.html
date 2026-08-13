@@ -605,6 +605,128 @@
   .sd-more summary:hover{ color:var(--au-ivory,#f5f2ec); }
   .sd-more[open] summary{ color:var(--au-ivory,#f5f2ec); }
 
+  /* ══ ΤΟ ΜΑΘΗΜΑ ΣΤΟ LAPTOP — ΤΡΕΙΣ ΖΩΝΕΣ ΑΝΤΙ ΓΙΑ ΜΙΑ ΚΟΛΟΝΑ ══════════
+     Δικά του λόγια: «μου σπάει τα νεύρα που είναι μια στήλη όλα στη σειρά
+     και πρέπει να σκρολάρω». ΜΕΤΡΗΜΕΝΟ πριν αλλάξει τίποτα, στα 1440×813:
+     a1a 4.505px · a1b 3.898 · a2 5.723 · b1 5.401 · b1b 8.436 · b2 4.126 ·
+     b2b 8.919 · b3 7.476 — δηλαδή ΕΩΣ 11 ΟΘΟΝΕΣ σκρολ, σε στήλη 660px μέσα
+     σε οθόνη 1440px (54% της οθόνης μαύρο).
+     ⛔ Η ΛΥΣΗ ΔΕΝ ΕΙΝΑΙ ΠΙΟ ΦΑΡΔΙΑ ΣΤΗΛΗ: στα 660px το σερίφ βγάζει ~75
+     χαρακτήρες, που είναι ΤΟ ΣΩΣΤΟ μήκος γραμμής. Φαρδύτερο = χειρότερο.
+     Ο χώρος πάει σε ΔΕΥΤΕΡΗ και ΤΡΙΤΗ ΣΤΗΛΗ, και το κείμενο μένει 640px. */
+  /* ⛔⛔ ΤΟ ΚΛΟΥΒΙ. Το `#ipLb` κουβαλάει `is-vwrap`, δηλαδή `max-width:660px`
+     — το ίδιο κλουβί που δημιουργεί το πρόβλημα. Χωρίς αυτή τη γραμμή η νέα
+     διάταξη ζει ΜΕΣΑ του και η στήλη κειμένου μαζεύεται στα **48px**
+     (μετρημένο). Οι αδελφές όψεις (συντάκτης, ανάκληση) ΜΕΝΟΥΝ στενές —
+     εκεί η στενή στήλη είναι σωστή. */
+  #ipLb.is-vwrap{ max-width:none; padding:0; }
+  .ls-wrap{ max-width:1240px; margin:0 auto; padding:0 18px; }
+  .ls-rail{ display:none; }
+  @media (min-width:1180px){
+    .ls-grid{ display:grid; grid-template-columns:190px minmax(0,1fr); gap:40px; align-items:start; }
+    /* `sticky`, ΠΟΤΕ `fixed` (σταθ. 18) · `100dvh` (σταθ. 22) · ΚΑΝΕΝΑ
+       `overscroll-behavior:contain` — το κάτω άκρο αυτής της στήλης ξεκινάει
+       μέσα στην οθόνη, αλλά ο κανόνας δεν μπαίνει «για καλό». */
+    .ls-rail{ display:block; position:sticky; top:60px; align-self:start;
+      max-height:calc(100dvh - 84px); overflow-y:auto; -webkit-overflow-scrolling:touch;
+      padding-bottom:20px; }
+  }
+
+  .ls-rail-k{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--au-faint,#5c5964);
+    padding-bottom:9px; border-bottom:1px solid var(--au-line,#26262f); margin-bottom:12px; }
+  /* ⚠️ ΟΧΙ παχιά χρωματιστή γραμμή στο πλάι — η σελίδα έχει ΔΙΚΟ της ιδίωμα
+     για κατάσταση, την ΚΟΥΚΚΙΔΑ (`.ip-dot` στη ραχοκοκαλιά). Εδώ: μια
+     τρίχα για δομή, και η αδυναμία λέγεται με ΦΩΣ, όχι με πάχος. */
+  .ls-rail-i{ display:block; width:100%; text-align:left; background:transparent; border:0;
+    border-left:1px solid rgba(255,255,255,.07); padding:7px 0 8px 12px; margin-bottom:7px;
+    cursor:pointer; transition:border-color .18s,background .18s; border-radius:0 6px 6px 0; }
+  .ls-rail-i:hover{ border-left-color:rgba(var(--is),.55); background:rgba(255,255,255,.022); }
+  .ls-rail-i:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  .ls-rail-n{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px;
+    letter-spacing:.1em; color:var(--au-faint,#5c5964); }
+  .ls-rail-t{ display:block; font-size:12px; color:var(--au-dim,#9a97a3); line-height:1.5; margin-top:2px; }
+  /* ⭐ Ο ΧΑΡΤΗΣ ΔΥΣΚΟΛΙΑΣ: το πλάτος της μπάρας είναι ΤΟ ΚΟΣΤΟΣ σε στοιχεία,
+     οπότε φαίνεται με τη ματιά ποια παράγραφος είναι η βαριά. */
+  .ls-rail-bar{ height:3px; border-radius:2px; background:rgba(var(--is),.42); margin-top:7px; }
+  .ls-rail-i.weak .ls-rail-t{ color:var(--au-ivory,#f5f2ec); }
+  .ls-rail-i.weak .ls-rail-bar{ background:rgb(var(--is)); }
+
+  /* ══ Η ΖΩΝΗ: μια παράγραφος = ένα μπλοκ με ΑΚΡΗ, όχι κομμάτι ποταμού ══ */
+  .ls-band{ padding:26px 0; border-top:1px solid rgba(255,255,255,.06); scroll-margin-top:74px; }
+  .ls-band:first-of-type{ border-top:none; padding-top:6px; }
+  @media (min-width:1180px){
+    .ls-band{ display:grid; grid-template-columns:minmax(0,640px) minmax(230px,300px); gap:32px; align-items:start; }
+  }
+  .ls-pn{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.16em; color:var(--au-faint,#5c5964); margin-bottom:7px; }
+  /* ⚠️ Τα ΝΟΥΜΕΡΑ είναι ό,τι χάνεται πρώτο σε εξέταση ιστορίας. Παίρνουν
+     στοιχισμένα ψηφία — ΜΟΝΟ αυτά· ό,τι μαρκάρεται χωρίς κανόνα γίνεται θόρυβος. */
+  .ls-text{ font-family:var(--au-serif,Georgia,serif); font-size:16.5px; line-height:1.82;
+    color:var(--au-ivory,#f5f2ec); margin:0; font-variant-numeric:tabular-nums lining-nums; }
+
+  .ls-pts{ list-style:none; margin:16px 0 0; padding:0; display:grid; gap:11px; }
+  @media (min-width:1180px){ .ls-pts{ margin-top:22px; } }
+  .ls-pt{ border-left:1px solid rgba(255,255,255,.07); padding:2px 0 2px 13px;
+    transition:border-color .18s,background .18s; border-radius:0 6px 6px 0; position:relative; }
+  .ls-pt-lb{ display:block; font-size:13px; font-weight:600; color:var(--au-ivory,#f5f2ec); line-height:1.45; }
+  .ls-pt-n{ display:block; font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px;
+    letter-spacing:.1em; color:var(--au-faint,#5c5964); margin-top:5px; }
+  /* ⭐⭐ ΟΙ ΓΑΝΤΖΟΙ ΒΓΑΙΝΟΥΝ ΑΠΟ ΤΗ ΣΤΕΝΗ ΣΤΗΛΗ, ΚΑΙ ΕΙΝΑΙ Η ΜΙΣΗ ΔΙΑΦΟΡΑ.
+     ΜΕΤΡΗΜΕΝΟ: μέσα στα 300px ένας γάντζος 200 χαρακτήρων πιάνει ~10 γραμμές·
+     σε πλήρες πλάτος πιάνει 2. Δεν κρύβεται τίποτα — ΑΛΛΑΖΕΙ ΘΕΣΗ, και
+     διαβάζεται καλύτερα. (Η πρώτη μου γραφή τους άφησε μέσα στη στήλη και το
+     κέρδος έπεσε από 65% σε 20% — φάνηκε ΜΟΝΟ στη μέτρηση.) */
+  .ls-hooks{ margin-top:20px; padding-top:16px; border-top:1px dashed rgba(255,255,255,.08); }
+  @media (min-width:1180px){ .ls-hooks{ grid-column:1 / -1; } }
+  .ls-hk{ display:flex; gap:10px; align-items:baseline; margin-bottom:9px; }
+  .ls-hk:last-child{ margin-bottom:0; }
+  .ls-hk-n{ flex:none; font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px;
+    letter-spacing:.1em; color:rgba(var(--is),.8); padding-top:3px; }
+  .ls-hk-t{ font-size:12px; color:var(--au-faint,#5c5964); line-height:1.65; }
+  /* ⭐⭐ Η ΣΕΛΙΔΑ ΞΕΡΕΙ ΗΔΗ ΤΙ ΞΕΧΝΑΕΙ — το `state.els` κρατάει σωστά/λάθη ανά
+     στοιχείο από ΚΑΘΕ ανάκληση. Ως τώρα φαινόταν μόνο ΜΕΤΑ, σε λίστα.
+     ⛔ ΚΑΝΕΝΑ ΤΕΤΑΡΤΟ ΧΡΩΜΑ: η σελίδα έχει ήδη τρία με νόημα (βιβλίο /
+     δικά μου / εκτός ύλης). Η αδυναμία δείχνεται με ΒΑΡΟΣ και ΣΗΜΑΔΙ. */
+  /* Η αδυναμία λέγεται με ΚΟΥΚΚΙΔΑ + ΦΩΣ — το ιδίωμα που η σελίδα χρησιμοποιεί
+     ήδη παντού (`.ip-dot`). Ποτέ με πάχος περιγράμματος, και ποτέ με 4ο χρώμα. */
+  .ls-pt.weak{ border-left-color:rgba(var(--is),.45); }
+  .ls-pt.weak .ls-pt-lb{ color:#fff; }
+  .ls-pt.weak .ls-pt-lb::before{ content:''; display:inline-block; width:5px; height:5px;
+    border-radius:50%; background:rgb(var(--is)); margin-right:7px; vertical-align:middle;
+    transform:translateY(-1px); }
+  .ls-pt.weak .ls-pt-n{ color:rgba(var(--is),.95); }
+  mark.ls-a{ background:transparent; color:inherit; padding:0;
+    border-bottom:1px dotted rgba(var(--is),.5); transition:background .18s,border-color .18s; }
+  mark.ls-a.weak{ border-bottom:2px solid rgba(var(--is),.85); }
+  /* ΙΔΙΑ κλάση με το «Το υλικό του», ώστε ΕΝΑΣ χειριστής να ανάβει και τα δύο
+     (σταθερή αρχή 15: μία εγγύηση, ένα μονοπάτι — όχι δύο αντίγραφα). */
+  mark.ls-a.sd-lit, .ls-pt.sd-lit{ background:rgba(var(--is),.14); }
+  .ls-pt.sd-lit{ border-left-color:rgb(var(--is)); }
+
+  /* Ο πίνακας ΣΠΑΕΙ ΕΞΩ από τη στήλη κειμένου: ο Πίνακας 3 είναι 696px και
+     σερνόταν μέσα σε κουτί 624px. Εδώ έχει ~1.010px και χωράει ολόκληρος. */
+  .ls-full{ margin-top:30px; }
+  .ls-defs{ display:flex; flex-direction:column; gap:1px;
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  @media (min-width:1180px){
+    .ls-defs{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; }
+  }
+  /* ⚠️ Η ΠΡΩΤΗ ΟΘΟΝΗ ΞΑΝΑΓΙΝΟΤΑΝ ΣΤΕΝΗ ΚΟΛΟΝΑ. Το «με απλά λόγια» και ο
+     γάντζος έμπαιναν ο ένας κάτω από τον άλλο σε 640px, αφήνοντας ~370px
+     κενά για 1.200 pixel ύψους — δηλαδή ακριβώς το παράπονο, στην κορυφή.
+     Μπαίνουν ΔΙΠΛΑ, στο ΙΔΙΟ πλέγμα με τις ζώνες, ώστε το μάτι να μάθει μία
+     γεωμετρία και να την ξαναβρίσκει παντού. Βρέθηκε στο ρέντερ. */
+  @media (min-width:1180px){
+    .ls-top{ display:grid; grid-template-columns:minmax(0,640px) minmax(230px,300px);
+      gap:32px; align-items:start; }
+    .ls-top .is-hook{ margin-top:22px; }
+  }
+  .ls-meta{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9.5px; font-weight:700;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint,#5c5964); margin-top:8px; }
+  .ls-acts{ margin-top:34px; }
+  @media (min-width:1180px){ .ls-acts{ max-width:672px; } }
+
   @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
 </style>
 </head>
@@ -1263,7 +1385,8 @@
      τίποτα. Ένα εφέ δεν δικαιολογεί να πειραχτούν τα λόγια του βιβλίου, και
      ένας δείκτης βγαλμένος από folded κείμενο δεν δείχνει στο ίδιο σημείο
      (το fold αλλάζει μήκος). Το test το κλειδώνει και προς τις δύο πλευρές. */
-  function markAnchors(raw, pts){
+  function markAnchors(raw, pts, cls, weak){
+    var C = cls || 'sd-anchor';
     var hits = [], i, a, at;
     for (i = 0; i < pts.length; i++){
       a = (pts[i].point && pts[i].point.anchor) || '';
@@ -1277,12 +1400,30 @@
     for (i = 0; i < hits.length; i++){
       if (hits[i].at < cursor) continue;          /* επικάλυψη → κερδίζει η πρώτη */
       out += esc(raw.slice(cursor, hits[i].at)) +
-        '<mark class="sd-anchor" data-pt="' + esc(hits[i].key) + '">' +
+        '<mark class="' + C + (weak && weak[hits[i].key] ? ' weak' : '') +
+        '" data-pt="' + esc(hits[i].key) + '">' +
         esc(raw.slice(hits[i].at, hits[i].end)) + '</mark>';
       cursor = hits[i].end;
     }
     return out + esc(raw.slice(cursor));
   }
+
+  /* ⭐⭐ ΠΟΣΟ ΤΟΥ ΞΕΦΕΥΓΕΙ ΑΥΤΟ ΤΟ ΣΗΜΕΙΟ — ΜΟΝΟ ΑΠΟ ΜΕΤΡΗΜΕΝΕΣ ΑΝΑΚΛΗΣΕΙΣ.
+     ⛔ ΔΙΑΒΑΖΕΙ, ΔΕΝ ΓΡΑΦΕΙ: σκόπιμα ΔΕΝ καλεί το `el()`, που ΔΗΜΙΟΥΡΓΕΙ
+     εγγραφή. Ένας renderer που γράφει είναι ακριβώς το bug που κατέστρεψε
+     το `nut:streak` (als-v436).
+     ⛔ Και «δεν εξετάστηκε ποτέ» ΔΕΝ είναι μηδέν (σταθερή αρχή 33): γυρίζει
+     `tested:false` και η οθόνη δεν βάφει τίποτα. */
+  function pointAcc(uid, pi, p){
+    var must = (p && p.must) || [], r = 0, w = 0, i, e;
+    for (i = 0; i < must.length; i++){
+      e = state.els[uid + ':' + pi + ':' + i];
+      if (e){ r += e.r || 0; w += e.w || 0; }
+    }
+    if (!(r + w)) return { tested:false, acc:null };
+    return { tested:true, acc: r / (r + w) };
+  }
+  var WEAK_AT = 0.7;   /* κάτω από αυτό, το σημείο τραβάει το μάτι */
 
   /* Ποιες παράγραφοι ΕΙΝΑΙ το υλικό αυτού του στόχου. Πλαγιότιτλος = ΟΙ ΔΙΚΕΣ
      ΤΟΥ, με τη σειρά που τις διάλεξε. Ενότητα χωρίς πλαγιότιτλους = όλες της,
@@ -1347,7 +1488,7 @@
     /* ⛔ ΤΑ ΤΡΙΑ ΕΠΙΠΕΔΑ ΑΛΗΘΕΙΑΣ ΜΕΝΟΥΝ ΟΠΤΙΚΑ ΞΕΧΩΡΙΣΤΑ. Δεν ισοπεδώνονται
        για ομορφιά: το βιβλίο, τα δικά μου λόγια, και το ΕΚΤΟΣ ύλης. */
     if (terms.length)
-      defs += '<div class="is-tag b">Όροι · λόγια του βιβλίου</div><div class="is-defs">' +
+      defs += '<div class="is-tag b">Όροι · λόγια του βιβλίου</div><div class="is-defs ls-defs">' +
         terms.map(function(t){
           return '<div class="is-def book"><div class="t">' + esc(t.t) + '</div>' +
             '<div class="d">' + esc(t.d) + '</div>' +
@@ -1449,23 +1590,28 @@
 
   /* Το άναμμα: ακουμπάς σημείο → ανάβει η φράση του μέσα στην παράγραφο.
      Delegated, ώστε ένα re-render να μη χρειάζεται ξανά καλωδίωση. */
-  function litPoint(key, on){
-    var box = document.getElementById('ipStudy'); if (!box) return;
+  function litPoint(box, key, on){
+    if (!box) return;
     var nodes = box.querySelectorAll('[data-pt="' + (key || '').replace(/"/g, '') + '"]'), i;
     for (i = 0; i < nodes.length; i++) nodes[i].classList.toggle('sd-lit', !!on);
   }
+  /* ΜΙΑ καλωδίωση για ΤΙΣ ΔΥΟ επιφάνειες που δείχνουν κείμενο δίπλα σε σημεία:
+     το «Το υλικό του» της αρχικής και το ΜΑΘΗΜΑ. Delegated, οπότε ένα
+     re-render δεν χρειάζεται ξανά τίποτα. */
   function wireStudy(){
-    var box = document.getElementById('ipStudy'); if (!box) return;
-    ['mouseover', 'focusin'].forEach(function(ev){
-      box.addEventListener(ev, function(e){
-        var n = e.target.closest && e.target.closest('[data-pt]');
-        if (n) litPoint(n.getAttribute('data-pt'), true);
+    ['ipStudy', 'ipLb'].forEach(function(id){
+      var box = document.getElementById(id); if (!box) return;
+      ['mouseover', 'focusin'].forEach(function(ev){
+        box.addEventListener(ev, function(e){
+          var n = e.target.closest && e.target.closest('[data-pt]');
+          if (n) litPoint(box, n.getAttribute('data-pt'), true);
+        });
       });
-    });
-    ['mouseout', 'focusout'].forEach(function(ev){
-      box.addEventListener(ev, function(e){
-        var n = e.target.closest && e.target.closest('[data-pt]');
-        if (n) litPoint(n.getAttribute('data-pt'), false);
+      ['mouseout', 'focusout'].forEach(function(ev){
+        box.addEventListener(ev, function(e){
+          var n = e.target.closest && e.target.closest('[data-pt]');
+          if (n) litPoint(box, n.getAttribute('data-pt'), false);
+        });
       });
     });
   }
@@ -1536,33 +1682,89 @@
     cur = un;
     document.getElementById('ipLt').textContent = un.chapter + ' · ' + un.title;
 
-    var h = '<div class="is-lhead">' +
+    var sk = un.skeleton, paras = un.text || [];
+    var nEls = I.elCount(sk.points.map(function(p){ return { point:p }; }));
+
+    /* Κόστος ΚΑΙ αδυναμία ανά παράγραφο — η ίδια `I.paraPoints()` που χτίζει
+       την απαγγελία, ώστε ο χάρτης να μη γίνει δεύτερη αλήθεια. */
+    var weakOf = {}, perPara = paras.map(function(_, pi){
+      var pts = I.paraPoints(un.id, pi), weak = 0;
+      pts.forEach(function(x){
+        var a = pointAcc(un.id, x.pointIndex, x.point);
+        if (a.tested && a.acc < WEAK_AT){ weak++; weakOf[x.unitId + ':' + x.pointIndex] = 1; }
+      });
+      return { pts:pts, els:I.elCount(pts), weak:weak };
+    });
+    var maxEls = Math.max.apply(null, perPara.map(function(x){ return x.els; }).concat([1]));
+
+    /* ── Η ΡΑΧΗ: πού είμαι · τι μένει · ΠΟΥ ΠΟΝΑΕΙ (μόνο σε laptop) ── */
+    var rail = '<div class="ls-rail-k">Οι παράγραφοι</div>' + perPara.map(function(x, pi){
+      var first = (paras[pi].p || '').slice(0, 58).replace(/\s+\S*$/, '') + '…';
+      return '<button class="ls-rail-i' + (x.weak ? ' weak' : '') + '" data-band="' + pi + '">' +
+        '<span class="ls-rail-n">' + (pi + 1) + ' · ' + x.els + ' ΣΤ.' +
+          (x.weak ? ' · ' + x.weak + (x.weak === 1 ? ' ΑΔΥΝΑΜΟ' : ' ΑΔΥΝΑΜΑ') : '') + '</span>' +
+        '<span class="ls-rail-t">' + esc(first) + '</span>' +
+        '<span class="ls-rail-bar" style="width:' + Math.round(x.els / maxEls * 100) + '%"></span>' +
+      '</button>';
+    }).join('');
+
+    var h = '<div class="ls-wrap"><div class="ls-grid">' +
+      '<aside class="ls-rail">' + rail + '</aside><div class="ls-main">' +
+      '<div class="is-lhead">' +
       '<div class="is-lkicker">Ενότητα ' + esc(un.enotita) + ' · ' + esc(un.section) + '</div>' +
       '<h2 class="is-lh">' + esc(un.title) + '</h2>' +
-      '<div class="is-lmeta">' + esc(un.chapter) + '</div></div>';
+      '<div class="is-lmeta">' + esc(un.chapter) + '</div>' +
+      '<div class="ls-meta">' + paras.length + (paras.length === 1 ? ' παράγραφος' : ' παράγραφοι') +
+        ' · ' + sk.points.length + ' σημεία · ' + nEls + ' στοιχεία</div></div>';
 
-    h += layer('01', 'Με απλά λόγια', 'διάβασε αυτό πρώτο',
-      '<div class="is-simple">' + un.simple.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '</div>');
-
-    h += layer('02', 'Το κείμενο', 'αυτολεξεί από το βιβλίο',
-      '<div class="is-book">' + un.text.map(function(b){ return '<p>' + esc(b.p) + '</p>'; }).join('') + '</div>' +
-      '<div class="is-src">Θέματα Νεοελληνικής Ιστορίας · ' + esc(un.chapter) + '</div>' +
-      tablesOf(un).map(tableHTML).join(''));
-
-    var sk = un.skeleton;
-    h += layer('03', 'Ο σκελετός', sk.points.length + ' σημεία',
+    h += '<div class="ls-top">' +
+      '<div>' + layer('01', 'Με απλά λόγια', 'δικά μου λόγια',
+        '<div class="is-simple">' + un.simple.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '</div>') + '</div>' +
       '<div class="is-hook"><div class="is-hook-l">Ο γάντζος</div>' +
       '<div class="is-hook-t">' + esc(sk.hook) + '</div>' +
-      (sk.hookWhy ? '<div class="is-hook-w">' + esc(sk.hookWhy) + '</div>' : '') + '</div>' +
-      '<ol class="is-pts">' + sk.points.map(function(p){
-        return '<li class="is-pt"><div class="lb">' + esc(p.label) + '</div>' +
-          '<div class="dt">' + esc(p.detail) + '</div>' +
-          (p.hook ? '<div class="hk">' + esc(p.hook) + '</div>' : '') + '</li>';
-      }).join('') + '</ol>');
+      (sk.hookWhy ? '<div class="is-hook-w">' + esc(sk.hookWhy) + '</div>' : '') + '</div></div>';
+
+    /* ⭐⭐ ΟΙ ΖΩΝΕΣ. Κάθε παράγραφος με ΤΑ ΣΗΜΕΙΑ ΤΗΣ ΔΙΠΛΑ — όχι από κάτω.
+       ⛔ Το `detail` του σημείου ΔΕΝ ξαναγράφεται: είναι η πρόταση του βιβλίου
+       που κάθεται ΗΔΗ αριστερά. Ήταν το 35% του ύψους και ήταν επανάληψη. */
+    h += layer('02', 'Το κείμενο', 'αυτολεξεί από το βιβλίο · δίπλα του τα σημεία του',
+      paras.map(function(b, pi){
+        var pts = perPara[pi].pts;
+        return '<div class="ls-band" id="lsB' + pi + '">' +
+          '<div><div class="ls-pn">' + (pi + 1) + ' / ' + paras.length + '</div>' +
+          '<p class="ls-text">' + markAnchors(b.p, pts, 'ls-a', weakOf) + '</p></div>' +
+          (pts.length
+            ? '<ul class="ls-pts">' + pts.map(function(x, ix){
+                var wk = weakOf[x.unitId + ':' + x.pointIndex];
+                return '<li class="ls-pt' + (wk ? ' weak' : '') + '" data-pt="' +
+                  esc(x.unitId + ':' + x.pointIndex) + '">' +
+                  '<span class="ls-pt-lb">' + esc(x.point.label) + '</span>' +
+                  '<span class="ls-pt-n">' + (ix + 1) + ' · ' + ((x.point.must || []).length) + ' στοιχεία' +
+                    (wk ? ' · ΣΟΥ ΞΕΦΕΥΓΕΙ' : '') + '</span>' +
+                '</li>';
+              }).join('') + '</ul>'
+            : '<div class="sd-none">Καμία άγκυρα σημείου δεν ζει σε αυτή την παράγραφο.</div>') +
+          (pts.some(function(x){ return !!x.point.hook; })
+            ? '<div class="ls-hooks">' + pts.map(function(x, ix){
+                return x.point.hook
+                  ? '<div class="ls-hk" data-pt="' + esc(x.unitId + ':' + x.pointIndex) + '">' +
+                    '<span class="ls-hk-n">' + (ix + 1) + '</span>' +
+                    '<span class="ls-hk-t">' + esc(x.point.hook) + '</span></div>'
+                  : '';
+              }).join('') + '</div>'
+            : '') +
+        '</div>';
+      }).join('') +
+      '<div class="is-src">Θέματα Νεοελληνικής Ιστορίας · ' + esc(un.chapter) + '</div>');
+
+    /* Ο πίνακας παίρνει ΟΛΟ το πλάτος της κύριας ζώνης — ο Πίνακας 3 (696px)
+       σερνόταν μέσα σε κουτί 624px· εδώ χωράει ολόκληρος. */
+    var tbl = tablesOf(un).map(tableHTML).join('');
+    if (tbl) h += '<div class="ls-full">' + tbl + '</div>';
 
     var defs = '';
     if ((un.terms || []).length){
-      defs += '<div class="is-tag b">Όροι · λόγια του βιβλίου</div><div class="is-defs">' +
+      defs += '<div class="is-tag b">Όροι · λόγια του βιβλίου</div><div class="is-defs ls-defs">' +
         un.terms.map(function(t){
           return '<div class="is-def book"><div class="t">' + esc(t.t) + '</div>' +
             '<div class="d">' + esc(t.d) + '</div>' +
@@ -1570,18 +1772,20 @@
         }).join('') + '</div>';
     }
     if ((un.vocab || []).length){
-      defs += '<div class="is-tag m" style="margin-top:20px">Λεξιλόγιο · δικά μου λόγια</div><div class="is-defs">' +
+      defs += '<div class="is-tag m" style="margin-top:20px">Λεξιλόγιο · δικά μου λόγια</div><div class="is-defs ls-defs">' +
         un.vocab.map(function(v){
           return '<div class="is-def"><div class="t">' + esc(v.t) + '</div><div class="d">' + esc(v.d) + '</div></div>';
         }).join('') + '</div>';
     }
     if ((un.context || []).length){
-      defs += '<div class="is-tag c" style="margin-top:20px">Πλαίσιο · ΕΚΤΟΣ ύλης</div><div class="is-defs">' +
+      defs += '<div class="is-tag c" style="margin-top:20px">Πλαίσιο · ΕΚΤΟΣ ύλης</div><div class="is-defs ls-defs">' +
         un.context.map(function(c){
           return '<div class="is-def"><div class="t">' + esc(c.t) + '</div><div class="d">' + esc(c.d) + '</div></div>';
         }).join('') + '</div>';
     }
-    if (defs) h += layer('04', 'Οι λέξεις', 'τι σημαίνει τι', defs);
+    if (defs) h += '<div class="ls-full">' + layer('04', 'Οι λέξεις', 'τι σημαίνει τι', defs) + '</div>';
+
+    h += '<div class="ls-acts">';
 
     /* ⭐ Η ΠΡΑΞΗ ΤΗΣ ΣΕΛΙΔΑΣ ΕΙΝΑΙ Ο ΠΛΑΓΙΟΤΙΤΛΟΣ, ΟΧΙ Η ΕΝΟΤΗΤΑ. Η ολόκληρη
        ενότητα μένει διαθέσιμη, αλλά δεν είναι πια το προεπιλεγμένο. */
@@ -1598,11 +1802,19 @@
     h += '<button class="is-go" id="ipGoUnit" style="background:transparent;border-color:var(--au-line,#26262f)">Πες ΟΛΟΚΛΗΡΗ την υποενότητα' +
       '<span>' + sk.points.length + ' σημεία, ' + I.elCount(sk.points.map(function(p){ return { point:p }; })) +
       ' στοιχεία · όλη μαζί, όπως πριν</span></button>' +
-      '<div class="is-claim" id="ipClaimL"></div><div style="height:40px"></div>';
+      '<div class="is-claim" id="ipClaimL"></div><div style="height:40px"></div>' +
+      '</div></div></div></div>';   /* ls-acts · ls-main · ls-grid · ls-wrap */
 
     document.getElementById('ipLb').innerHTML = h;
     document.getElementById('ipNewFromLesson').addEventListener('click', function(){ openEditor(null, un.id); });
     document.getElementById('ipGoUnit').addEventListener('click', function(){ openRecall('u', un.id); });
+    /* Η ράχη είναι ΠΛΟΗΓΗΣΗ: πας στη ζώνη, δεν την ψάχνεις σκρολάροντας. */
+    [].forEach.call(document.querySelectorAll('#ipLb [data-band]'), function(b){
+      b.addEventListener('click', function(){
+        var t = document.getElementById('lsB' + b.getAttribute('data-band'));
+        if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
     paintClaim('ipClaimL', u(un.id), false);
     show('ipLesson');
   }
