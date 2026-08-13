@@ -21,11 +21,15 @@
     training: { on: true, hour: 14, emoji: '💪', label: 'Training nudge',    when: 'when it’s been 3+ days' },
     protein:  { on: true, hour: 19, emoji: '🍗', label: 'Protein check',     when: 'evening if you’re behind' },
     caffeine: { on: true, hour: 14, emoji: '☕️', label: 'Caffeine cutoff',    when: 'if you’ve had any today' },
+    // ⭐ The only reminder with a DESTINATION: it opens homework.html#capture,
+    // the capture field itself, at the moment he walks out of φροντιστήριο.
+    // Fires weekdays only, and only if nothing was written down today.
+    homework: { on: true, hour: 18, emoji: '📓', label: 'Homework capture',   when: 'leaving φροντιστήριο — write the line' },
     journal:  { on: true, hour: 22, emoji: '🧭', label: 'Evening wind-down',  when: 'habits + journal before bed' },
     winddown: { on: false, hour: 22, emoji: '🌙', label: 'Bedtime wind-down',  when: 'at your target bedtime — screens off' },
     weekly:   { on: true, hour: 9,  emoji: '🧠', label: 'Weekly insight',     when: 'Monday morning — your #1 pattern' }
   };
-  var ORDER = ['weighin', 'recovery', 'training', 'protein', 'caffeine', 'journal', 'winddown', 'weekly'];
+  var ORDER = ['weighin', 'recovery', 'training', 'protein', 'caffeine', 'homework', 'journal', 'winddown', 'weekly'];
 
   function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function fmtHour(h) { var ap = h < 12 ? 'am' : 'pm'; var hr = h % 12; if (hr === 0) hr = 12; return hr + ap; }

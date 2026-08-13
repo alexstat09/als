@@ -84,12 +84,31 @@ placeholders and the «10′/20′/45′/90′» chips are gone, the seven-bar h
 one sentence with a **button that actually moves a task** (`hw:v1` only, never a
 ladder, never an exam, never into the past), and nothing is drawn twice: one
 ranking per paint, the card shows the top item and every list below shows **the
-rest**. Still live and wrong: **the 14:30 and 21:45 rituals are empty without
-Google Calendar and have no manual path** (φάση 3), and **the title builder
-strips his stopwords** instead of keeping his words verbatim (φάση 2). Unbuilt:
-the third task state (ΣΤΟ ΠΡΟΓΡΑΜΜΑ), replanning, exams, ΤΟ ΕΔΑΦΟΣ, and measured
-`est`. On the phone **capture is still the fourth thing down**, which §1.3 names
-as the thing that killed `study.html` — that is φάση 2 and is NOT done.
+rest**.
+✅ **Φάση 2 (ΟΙ ΤΡΕΙΣ ΠΟΡΤΕΣ) shipped als-v479** — one file, three doors:
+`homework.html` (full) · **`#capture`** (the field, focused, everything else
+folded) · **`#tonight`** (today's lessons, in order, with their real times).
+**On the phone capture is now FIRST with no hash**, done with `order` +
+`display:contents` so there is still exactly **one markup tree** and the laptop's
+sticky spine is untouched. The **18:00 push opens `#capture` directly** — one
+entry in the existing reminder cron, a `url` on the payload, and `sw.js` learning
+to `navigate` rather than only focus (⛔ no 13th `api/*.js`). And **his words are
+now stored verbatim**: stopwords come off only when they are the entire title.
+⛔ **Deep links here are DECLARED, not guessed** — the closed `DOORS` table in
+the page is what the cron's `url` is asserted against, from both ends.
+⛔⛔ **Two live bugs fell out of rendering it**, both invisible to 140 green
+assertions: `subjectOfText()` matched **substrings**, and «φροντ**ιστ**ήριο»
+contains «ιστ» — so **every lesson in his calendar was labelled Ιστορία** since
+als-v470 (σταθερή αρχή 38); and behind `#capture` the one visible block was born
+`opacity:0` waiting for an IntersectionObserver, i.e. a **black screen** at the
+one moment the feature exists for (σταθερή αρχή 39).
+Still live and wrong: **the 14:30 and 21:45 rituals are still empty without
+Google Calendar and have no manual path** (φάση 3 — the door says so honestly
+rather than pretending). Unbuilt: the third task state (ΣΤΟ ΠΡΟΓΡΑΜΜΑ),
+replanning, exams, ΤΟ ΕΔΑΦΟΣ, and measured `est`.
+⚠️ On iPhone the capture door **cannot raise the keyboard by itself** — iOS
+refuses a programmatic `focus()` without a user gesture, and a push arrival is
+not one. The field is first and carries the caret; the keyboard is one tap.
 ⚠️ **`hw:pics` still shares the `homework` appKey** (σταθερή αρχή 34): photos can
 still starve `flushOnUnload`'s 64 KiB keepalive for the tasks.
 

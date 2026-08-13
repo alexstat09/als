@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v478";
+var CACHE = "als-v479";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -108,16 +108,39 @@ self.addEventListener('push', function (e) {
     body: data.body || '',
     tag: data.tag || 'als', renotify: true,
     icon: 'icon-192.png', badge: 'icon-192.png',
-    vibrate: [300, 140, 300]
+    vibrate: [300, 140, 300],
+    /* ⭐ Ο ΠΡΟΟΡΙΣΜΟΣ ΤΑΞΙΔΕΥΕΙ ΜΕ ΤΗΝ ΕΙΔΟΠΟΙΗΣΗ. Το `notificationclick` δεν
+       βλέπει το αρχικό payload — μόνο ό,τι μπήκε στο `data` εδώ. Χωρίς αυτή τη
+       γραμμή, το `url` που στέλνει ο server φτάνει ως εδώ και πεθαίνει σιωπηλά,
+       και κάθε push προσγειώνεται στο ίδιο μέρος όπως πάντα (δύο άκρα ενός
+       πρωτοκόλλου, το ένα καλωδιωμένο — σταθερή αρχή 23). */
+    data: { url: data.url || '' }
   }));
 });
 
+/* Ένα push μπορεί πλέον να ονομάσει ΠΟΥ ανοίγει. Η υπενθύμιση των 18:00 πάει
+   κατευθείαν στο `homework.html#capture`, δηλαδή στο πεδίο σύλληψης, όρθιος,
+   βγαίνοντας από το φροντιστήριο. Χωρίς `url` η συμπεριφορά μένει ΑΚΡΙΒΩΣ η
+   παλιά — εστίασε ό,τι είναι ανοιχτό, αλλιώς άνοιξε το gym.html.
+   ⚠️ Το `client.navigate()` απορρίπτεται όταν ο client δεν ελέγχεται από αυτόν
+   τον SW· τότε πέφτουμε πίσω στο σκέτο focus αντί να μείνει το πάτημα χωρίς
+   κανένα αποτέλεσμα. */
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || '';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
-      for (var i = 0; i < list.length; i++) { if ('focus' in list[i]) return list[i].focus(); }
-      if (self.clients.openWindow) return self.clients.openWindow('gym.html');
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        if (!('focus' in c)) continue;
+        if (url && 'navigate' in c) {
+          return c.navigate(url)
+            .then(function (nc) { return (nc || c).focus(); })
+            .catch(function () { return c.focus(); });
+        }
+        return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url || 'gym.html');
     })
   );
 });

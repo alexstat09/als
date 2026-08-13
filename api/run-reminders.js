@@ -66,6 +66,20 @@ function recoveryDipFrom(sleepLogs) {
   return null;
 }
 
+// ⚠️ ΤΡΙΤΟ ΑΝΤΙΓΡΑΦΟ ΤΟΥ ΙΔΙΟΥ ΔΥΟ-ΓΡΑΜΜΩΝ ΚΑΝΟΝΑ, ΚΑΙ ΓΡΑΜΜΕΝΟ ΩΣΤΕ ΝΑ
+// ΒΡΙΣΚΕΤΑΙ ΜΕ grep: το `_deletes` γράφεται από το sync.js και διαβάζεται από
+// το `liveOnly()` του api/mcp.js. Ένα σβησμένο στοιχείο ΜΕΝΕΙ στον
+// αποθηκευμένο χάρτη με την ταφόπλακά του δίπλα, και κάθε αναγνώστης το
+// φιλτράρει — εκτός από όποιον δεν συμμετέχει στο πρωτόκολλο (σταθερή αρχή 23:
+// έτσι το MCP έλεγε 4.671 kcal ενώ η εφαρμογή έλεγε 1.461).
+// ⭐ ΑΝΤΙΓΡΑΦΕΤΑΙ ΚΑΤΑ ΛΕΞΗ, ΠΟΤΕ «ΒΕΛΤΙΩΜΕΝΟ»: μια ταφόπλακα T καταπίνει ένα
+// στοιχείο ΕΚΤΟΣ αν ξαναμπήκε ΜΕΤΑ το T. Δεν αντιγράφεται ολόκληρο το
+// αναδρομικό `liveOnly` επειδή εδώ διαβάζεται ΑΚΡΙΒΩΣ ΕΝΑ δηλωμένο μονοπάτι
+// (`_deletes['hw:v1'].tasks`) — δύο αντίγραφα ενός αναδρομικού περιπάτου θα
+// ήταν δύο πρωτόκολλα με καθυστέρηση (σταθερή αρχή 15/25).
+function addedAt(v) { if (typeof v === 'number') return v; if (v && typeof v === 'object') return (+v.ts || +v._ts || 0); return 0; }
+function tombed(tnode, key, val) { if (!tnode) return false; var t = tnode[key]; if (typeof t !== 'number') return false; return addedAt(val) <= t; }
+
 // Names the still-due supplements in a window into one push line.
 function suppBody(list) {
   if (!list || !list.length) return '';
@@ -111,6 +125,27 @@ var REMINDERS = [
   { id: 'supp-evening', defHour: 23, title: 'Night stack 🌙',
     cond: function (c) { return c.suppEvening && c.suppEvening.length > 0; },
     body: function (c) { return suppBody(c.suppEvening); } },
+
+  // ⭐ Η ΣΥΛΛΗΨΗ — 18:00, ΤΗ ΣΤΙΓΜΗ ΠΟΥ ΒΓΑΙΝΕΙ ΑΠΟ ΤΟ ΦΡΟΝΤΙΣΤΗΡΙΟ.
+  // Η μόνη υπενθύμιση με ΠΡΟΟΡΙΣΜΟ: ανοίγει κατευθείαν στο πεδίο σύλληψης, όχι
+  // στη σελίδα. Αν η εργασία δεν μπαίνει, το μισό homework.html είναι για πάντα
+  // άδειο — γι' αυτό η σύλληψη είναι υπαρξιακή και όχι ευκολία.
+  // ⚠️ ΤΟ `url` ΕΙΝΑΙ ΔΗΛΩΜΕΝΟ ΒΑΘΥ LINK, ΟΧΙ ΕΠΙΝΟΗΜΕΝΟ: το `#capture` υπάρχει
+  // στον πίνακα DOORS της homework.html και το κλειδώνει το
+  // tests/homework-plan.test.js και από τις δύο μεριές. Ένα hash που καμία
+  // σελίδα δεν διαβάζει είναι αδιέξοδο που φοράει κουμπί.
+  // ⚠️ Δεν χτυπάει αν έχει ΗΔΗ γράψει κάτι σήμερα, και δεν χτυπάει Σαββατοκύριακο
+  // — το φροντιστήριο είναι Δευτέρα–Παρασκευή, όπως το δηλώνει το `PLAN.schoolDays`
+  // της ίδιας της σελίδας. Μια υπενθύμιση που χτυπάει όταν δεν ισχύει είναι μια
+  // υπενθύμιση που κλείνει.
+  { id: 'homework', defHour: 18, title: 'Τι σου έδωσαν σήμερα; 📓',
+    url: 'homework.html#capture',
+    cond: function (c) { return c.schoolDay && !c.capturedToday; },
+    body: function (c) {
+      return c.openTasks > 0
+        ? ('Γράψε τη γραμμή πριν τη ξεχάσεις — μία πρόταση αρκεί. Έχεις ήδη ' + c.openTasks + ' ανοιχτ' + (c.openTasks === 1 ? 'ή' : 'ές') + '.')
+        : 'Γράψε τη γραμμή πριν τη ξεχάσεις — μάθημα, ενότητα, προθεσμία. Δέκα δευτερόλεπτα.';
+    } },
 
   { id: 'journal', defHour: 22, title: 'Close out your day 🧭',
     cond: function (c) { return c.habitsLeft > 0 || !c.journaledToday; },
@@ -180,6 +215,26 @@ async function buildContext(tz, today) {
   var suppLunch = suppDue(['lunch']);
   var suppEvening = suppDue(['evening']);
 
+  // ⭐ ΤΟ ΧΡΕΟΣ — ό,τι χρειάζεται η υπενθύμιση της ΣΥΛΛΗΨΗΣ, και τίποτε άλλο.
+  // Ο ΜΟΝΟΣ λόγος που ο server διαβάζει το `hw:v1` είναι για να ΜΗΝ χτυπήσει
+  // όταν έχει ήδη γράψει σήμερα. Δεν παίρνει καμία απόφαση για τη σελίδα.
+  var hwRow = await supa.readRow('homework');
+  var hwTasks = ((hwRow || {})['hw:v1'] || {}).tasks || {};
+  var hwTomb = (((hwRow || {})._deletes || {})['hw:v1'] || {}).tasks || null;
+  var capturedToday = false, openTasks = 0;
+  Object.keys(hwTasks).forEach(function (id) {
+    var t = hwTasks[id];
+    if (!t || typeof t !== 'object' || !t.id) return;
+    if (tombed(hwTomb, id, t)) return;
+    if (t.ts && tsToDateKey(t.ts, tz) === today) capturedToday = true;
+    if (!t.done) openTasks++;
+  });
+  // Δευτέρα–Παρασκευή, ΑΚΡΙΒΩΣ όπως το δηλώνει το `PLAN.schoolDays` της
+  // homework.html. ⚠️ ΑΛΛΑΖΕΙ ΟΤΑΝ ΑΝΟΙΞΕΙ ΤΟ ΣΧΟΛΕΙΟ, ΜΕΣΑ ΣΕΠΤΕΜΒΡΙΟΥ 2026 —
+  // και τότε αλλάζει ΚΑΙ ΕΔΩ ΚΑΙ ΕΚΕΙ, στο ίδιο commit.
+  var schoolDow = dowOf(today);
+  var schoolDay = schoolDow >= 1 && schoolDow <= 5;
+
   var recoveryDip = recoveryDipFrom((await supa.readRow('sleep'))['sleep:logs']);
 
   // Weekly insight (computed in-app, stored in the 'insight' row). Ignore if
@@ -193,6 +248,7 @@ async function buildContext(tz, today) {
     protein: protein, proteinTarget: proteinTarget, cafToday: cafToday,
     habitsLeft: habitsLeft, journaledToday: journaledToday, recoveryDip: recoveryDip,
     topInsight: topInsight,
+    capturedToday: capturedToday, openTasks: openTasks, schoolDay: schoolDay,
     suppMorning: suppMorning, suppLunch: suppLunch, suppEvening: suppEvening };
 }
 
@@ -1013,7 +1069,10 @@ module.exports = async function (req, res) {
     var fired = [], dead = {};
     for (var i = 0; i < toSend.length; i++) {
       var r = toSend[i];
-      var payload = JSON.stringify({ title: r.title, body: r.body(ctx), tag: 'als-' + r.id });
+      // `url` μπαίνει ΜΟΝΟ όταν η υπενθύμιση το δηλώνει. Χωρίς αυτό, ο service
+      // worker κρατάει τη συμπεριφορά που είχε πάντα (εστίασε ό,τι είναι
+      // ανοιχτό) — καμία υπάρχουσα υπενθύμιση δεν αλλάζει προορισμό.
+      var payload = JSON.stringify({ title: r.title, body: r.body(ctx), tag: 'als-' + r.id, url: r.url || '' });
       for (var j = 0; j < endpoints.length; j++) {
         var ep = endpoints[j];
         try { await webpush.sendNotification(subs[ep], payload); }

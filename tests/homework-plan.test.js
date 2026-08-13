@@ -130,7 +130,7 @@ function makeEnv(opts) {
     '\nreturn { parseLine:parseLine, budget:budget, candidates:candidates, reload:reload,' +
     ' addTask:addTask, dropTask:dropTask, sweepDone:sweepDone, taskList:taskList,' +
     ' estimate:estimate, recordSample:recordSample, save:save, blocksFor:blocksFor,' +
-    ' pileDay:pileDay, bringForward:bringForward,' +
+    ' pileDay:pileDay, bringForward:bringForward, doorOf:doorOf, tonightView:tonightView,' +
     ' dowMon:dowMon, offDate:offDate, nextDow:nextDow, ladders:ladders, subjectOfText:subjectOfText,' +
     ' state:function(){ return state; } };})()';
   const api = vm.runInContext(src, ctx, { filename: 'homework.html:script' });
@@ -191,7 +191,12 @@ is('Δευτέρα → η επόμενη Δευτέρα', P('ιστ Δευτέρ
 }
 {
   const r = P('Λατινικά ασκήσεις 4-7 για Τρίτη');
-  is('τα λόγια του μένουν αυτούσια, με τόνους και κεφαλαία', r.title, '4-7');
+  /* ⚠️ ΤΟ ΔΗΛΩΜΕΝΟ ΤΙΜΗΜΑ ΤΟΥ ΑΥΤΟΥΣΙΟΥ ΤΙΤΛΟΥ. Το «για» ΟΡΦΑΝΕΨΕ επειδή
+     πήραμε τη λέξη του («Τρίτη»), και μένει. Το να το διώξουμε «επειδή
+     κρέμεται» είναι ακριβώς η ξαναγραφή που η als-v479 έβγαλε, με καλύτερη
+     δικαιολογία — και η ίδια ακριβώς γραμμή κώδικα θα έτρωγε το «για την» της
+     Κρήτης από κάτω. */
+  is('τα λόγια του μένουν αυτούσια — ΚΑΙ η ορφανή πρόθεση, που είναι δική του', r.title, '4-7 για');
   is('και η προθεσμία λύνεται κανονικά', r.due, '2026-08-18');
 }
 is('μια ενότητα χωρίς μάθημα δίνει το μάθημα από το corpus, όχι από εικασία',
@@ -455,6 +460,229 @@ section('4d · the pile is named only when it is real, in the FUTURE, and counta
   const q = G.api.pileDay(G.api.candidates(null));
   is('a pile of exams is stated as a fact…', q.items, 3);
   is('…with NO button', q.move, null);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4e · ⭐⭐ ΦΑΣΗ 2 · ΤΑ ΛΟΓΙΑ ΤΟΥ ΑΠΟΘΗΚΕΥΟΝΤΑΙ ΑΥΤΟΥΣΙΑ
+
+   Ζωντανό λάθος από την als-v470 ως την als-v478: ο parser έκοβε τα
+   «για/το/τα/τη/την/στο/στη» από ΟΠΟΥΔΗΠΟΤΕ μέσα στη γραμμή. Η σελίδα
+   ξανάγραφε τα λόγια του και μετά τα έδειχνε σαν δικά του — που είναι
+   χειρότερο από το να μην τα κρατούσε καθόλου, γιατί δεν φαίνεται.
+   ⭐ Ο κανόνας του §6.2: φεύγουν ΜΟΝΟ όταν είναι ΟΛΟΚΛΗΡΟΣ ο τίτλος.
+   ══════════════════════════════════════════════════════════════════════ */
+section('4e · φάση 2 · his words, VERBATIM');
+{
+  /* ⭐ Η ΓΡΑΜΜΗ ΤΟΥ BRIEF, ΚΑΤΑ ΛΕΞΗ. Αυτή είναι ΟΛΟΚΛΗΡΟ το κριτήριο. */
+  const LINE = 'διάβασε το κείμενο για την Κρήτη';
+  const r = P(LINE);
+  is('«διάβασε το κείμενο για την Κρήτη» αποθηκεύεται ΑΚΡΙΒΩΣ έτσι', r.title, LINE);
+  is('τίποτα δεν μαντεύτηκε ως μάθημα', r.subject, null);
+  is('καμία ενότητα', r.unit, null);
+  is('καμία ημερομηνία', r.due, null);
+  /* ⚠️ ΤΟ ΔΕΥΤΕΡΟ ΜΙΣΟ ΤΟΥ ΙΔΙΟΥ ΛΑΘΟΥΣ: το «κείμενο» ήταν alias των ΓΡΑΠΤΩΝ,
+     οπότε η λέξη ΚΑΤΑΝΑΛΩΝΟΤΑΝ (έφευγε από τον τίτλο) ΚΑΙ η εργασία
+     κατατασσόταν ως παραγωγή γραπτού — ενώ «διάβασε το κείμενο» είναι
+     ανάγνωση. Το σήμα του γραπτού είναι το ΡΗΜΑ, όπως το λέει και το §6.2. */
+  is('και «κείμενο» δεν είναι πια ΓΡΑΠΤΟ — είναι ουσιαστικό της γλώσσας του', r.kind, 'askisi');
+}
+is('το ΡΗΜΑ είναι το σήμα του γραπτού · γράψε', P('γράψε έκθεση 300 λέξεις').kind, 'grapto');
+is('· γράψτε', P('λατ γράψτε παράγραφο').kind, 'grapto');
+is('και ο τίτλος του γραπτού κρατάει τα λόγια του', P('γράψε έκθεση 300 λέξεις').title, '300 λέξεις');
+{
+  /* Η ΜΟΝΗ περίπτωση που φεύγουν: όταν δεν έχει μείνει τίποτα άλλο. Τότε δεν
+     είναι τίτλος, είναι υπόλειμμα σύνταξης. */
+  const r = P('ιστ για την Τρίτη');
+  is('μια γραμμή που άφησε ΜΟΝΟ λέξεις-σκουπίδια δίνει κενό τίτλο', r.title, '');
+  is('και τα πραγματικά της πεδία λύθηκαν κανονικά', [r.subject, r.due], ['istoria', '2026-08-18']);
+}
+ok('η θέση της λέξης ΔΕΝ την κρίνει πια — ο έλεγχος είναι σε ΟΛΟΚΛΗΡΟ τον τίτλο',
+  CODE.indexOf("w === 'για' || w === 'το'") < 0 && /allStop/.test(CODE));
+ok('και ο πίνακας των λέξεων ζει σε ΕΝΑ σημείο', (CODE.match(/TITLE_STOP\s*=/g) || []).length === 1);
+
+/* ══════════════════════════════════════════════════════════════════════
+   4e2 · ⛔⛔ ΤΟ ΛΑΘΟΣ ΠΟΥ ΕΛΕΓΕ «ΙΣΤΟΡΙΑ» ΓΙΑ ΟΛΑ ΤΟΥ ΤΑ ΜΑΘΗΜΑΤΑ
+
+   Ζωντανό από την als-v470. Το `subjectOfText` έψαχνε ΥΠΟΣΥΜΒΟΛΟΣΕΙΡΑ μέσα σε
+   ΟΛΟΚΛΗΡΟ τον τίτλο του γεγονότος, και η λέξη «φροντιστήριο» περιέχει
+   «ιστ» (φροντ-ΙΣΤ-ήριο). Άρα ΚΑΘΕ μάθημα στο ημερολόγιό του γυρνούσε
+   `istoria`: το ξαναδιάβασμα των 21:45 ονόμαζε λάθος μάθημα, το «αύριο το
+   έχεις» έδινε βάρος στη λάθος σκάλα, το διαγώνισμα χρεωνόταν λάθος.
+   ⭐ ΚΑΜΙΑ από τις 140 βεβαιώσεις δεν το έβλεπε, γιατί καμία δεν έδινε στη
+   συνάρτηση ΤΙΤΛΟ ΗΜΕΡΟΛΟΓΙΟΥ — μόνο πληκτρολογημένες γραμμές, όπου ο parser
+   συγκρίνει ΑΝΑ TOKEN. Βρέθηκε ρεντεράροντας την πόρτα `#tonight` με αληθινό
+   ημερολόγιο και ΔΙΑΒΑΖΟΝΤΑΣ τις τρεις γραμμές.
+   ══════════════════════════════════════════════════════════════════════ */
+section('4e2 · a subject is matched as a WORD, never as a substring');
+{
+  const S = E.api.subjectOfText;
+  is('«Ιστορία — φροντιστήριο» → istoria', S('Ιστορία — φροντιστήριο'), 'istoria');
+  /* ⛔ ΑΥΤΕΣ ΟΙ ΔΥΟ ΕΛΕΓΑΝ «istoria». Είναι ΟΛΟΚΛΗΡΟ το bug. */
+  is('«Αρχαία — φροντιστήριο» → arxaia, ΟΧΙ istoria', S('Αρχαία — φροντιστήριο'), 'arxaia');
+  is('«Λατινικά — φροντιστήριο» → latinika, ΟΧΙ istoria', S('Λατινικά — φροντιστήριο'), 'latinika');
+  is('και σκέτο «Φροντιστήριο» δεν είναι ΚΑΝΕΝΑ μάθημα', S('Φροντιστήριο'), null);
+  is('«Έκθεση — φροντιστήριο» → ekthesi', S('Έκθεση — φροντιστήριο'), 'ekthesi');
+  /* Το πρόθεμα μένει επιτρεπτό: εκεί η ΛΕΞΗ ξεκινάει με το μάθημα. */
+  is('«Αρχαία(Άγνωστο)» εξακολουθεί να λύνεται', S('Αρχαία(Άγνωστο)'), 'arxaia');
+  is('όπως και μια σκέτη συντομογραφία', S('Λατ 3ο'), 'latinika');
+  is('ένας άσχετος τίτλος δεν αποκτά μάθημα', S('Γυμναστήριο'), null);
+  ok('και το υπερβολικά κοντό «ισ» δεν είναι πια alias', PAGE.indexOf("'ιστ','ισ'") < 0);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4f · ⭐⭐ ΦΑΣΗ 2 · ΟΙ ΤΡΕΙΣ ΠΟΡΤΕΣ
+
+   Ένα αρχείο, τρεις στιγμές. Η ΣΥΛΛΗΨΗ στις 18:00 είναι υπαρξιακή: αν η
+   εργασία δεν μπαίνει, το μισό προϊόν είναι για πάντα άδειο. Ως την als-v478
+   ήταν το ΤΕΤΑΡΤΟ πράγμα στο κινητό.
+   ══════════════════════════════════════════════════════════════════════ */
+section('4f · φάση 2 · the doors are DECLARED, never guessed');
+{
+  const D = E.api.doorOf;
+  is('#capture ανοίγει την πόρτα της σύλληψης', D('#capture'), 'capture');
+  is('#tonight την πόρτα των 21:45', D('#tonight'), 'tonight');
+  is('χωρίς hash → ολόκληρη η σελίδα', D(''), '');
+  is('και ένα ΑΓΝΩΣΤΟ hash δεν κρύβει τίποτα — δεν επινοείται πόρτα', D('#recall:a1a'), '');
+  is('ούτε καν ένα που μοιάζει', D('#captures'), '');
+  is('null/undefined είναι επίσης «ολόκληρη»', D(null), '');
+}
+/* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 12: κάθε κλάση που εναλλάσσεται από JS ΠΡΕΠΕΙ να υπάρχει στο
+   CSS. Μια κλάση χωρίς κανόνα είναι σιωπηλό no-op — εδώ θα σήμαινε «η πόρτα
+   δεν έκρυψε τίποτα» και η σελίδα θα φαινόταν απλώς… ίδια. */
+['hw-door', 'hw-door-capture', 'hw-door-tonight', 'hw-tonight', 'hw-doorbar'].forEach(c => {
+  ok('the class ' + c + ' is toggled AND defined in CSS', PAGE.indexOf('.' + c + '{') > -1 || PAGE.indexOf('.' + c + ' ') > -1);
+});
+ok('a door hides the other blocks rather than duplicating them',
+  /body\.hw-door \.hw-hero[\s\S]{0,160}display:none/.test(PAGE));
+ok('but NEVER the banner — a save error behind a door would be silent loss',
+  PAGE.indexOf('body.hw-door .hw-banner') < 0);
+ok('every door has a way out, so it is not a dead end', PAGE.indexOf('data-door="full"') > -1);
+ok('and the way out is wired to something that performs it',
+  /\[data-door\][\s\S]{0,400}applyDoor\(\)/.test(PAGE));
+ok('arriving at a door later (push into an open tab) is handled',
+  /hashchange[\s\S]{0,80}applyDoor/.test(PAGE));
+/* ⛔⛔ ΤΟ ΠΙΟ ΑΚΡΙΒΟ ΠΟΥ ΒΡΗΚΕ ΤΟ RENDER ΤΗΣ ΦΑΣΗΣ 2. Πίσω από το `#capture`
+   το `.hw-grab` είναι ΤΟ ΜΟΝΟ περιεχόμενο, και το page-motion.js το γεννάει
+   `opacity:0` περιμένοντας IntersectionObserver. Ρεντεραρίστηκε ΑΚΡΙΒΩΣ έτσι:
+   μπάρα ορατή, πεδίο ΑΦΑΝΤΟ — μαύρη οθόνη στη μία στιγμή που όλη η δυνατότητα
+   υπάρχει γι' αυτήν. Μια πόρτα δεν έχει είσοδο· ΕΙΝΑΙ η είσοδος. */
+ok('nothing behind a door is born invisible waiting for an observer',
+  /body\.hw-door \[data-rise\]\{ opacity:1 !important/.test(PAGE));
+ok('and the capture field does not stretch to the full laptop width',
+  /body\.hw-door \.hw-wrap\{ max-width:720px/.test(PAGE));
+
+section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop does not');
+{
+  /* ⛔ Δύο δέντρα markup είναι δύο σελίδες με καθυστέρηση: η μία διορθώνεται
+     και η άλλη όχι. Η αναδιάταξη γίνεται με `order`, όχι με αντίγραφο. */
+  is('η σύλληψη υπάρχει ΜΙΑ φορά στο markup', (PAGE.match(/class="hw-sec hw-grab"/g) || []).length, 1);
+  is('όπως και το πεδίο της', (PAGE.match(/id="hwLine"/g) || []).length, 1);
+  const phone = (PAGE.match(/@media \(max-width:999px\)\{([\s\S]*?)\n  \}/) || [])[1] || '';
+  ok('υπάρχει media query ΜΟΝΟ για το κινητό', phone.length > 0);
+  const orderOf = cls => {
+    const m = phone.match(new RegExp('\\.' + cls + '\\{[^}]*order:(\\d+)'));
+    return m ? +m[1] : null;
+  };
+  const grab = orderOf('hw-grab');
+  ok('η ΣΥΛΛΗΨΗ έχει δηλωμένη σειρά στο κινητό', grab !== null);
+  [['hw-hero', 'ο τίτλος'], ['hw-clock', 'το ρολόι'], ['hw-start', 'η απόφαση'],
+   ['hw-day', 'η μέρα'], ['hw-debt', 'το χρέος']].forEach(p => {
+    const o = orderOf(p[0]);
+    ok('στο κινητό η σύλληψη έρχεται ΠΡΙΝ ' + p[1], o !== null && grab < o);
+  });
+  ok('τα δύο δοχεία διαλύονται ώστε τα εγγόνια να ταξινομούνται μεταξύ τους',
+    /\.hw-spine, \.hw-main\{ display:contents/.test(phone));
+  /* ⛔ ΤΟ LAPTOP ΔΕΝ ΑΓΓΙΧΤΗΚΕ — 99% της ανάγνωσής του γίνεται εκεί. */
+  ok('η ραχοκοκαλιά του laptop μένει sticky σε δύο στήλες',
+    /@media \(min-width:1000px\)\{[\s\S]{0,400}grid-template-columns:320px[\s\S]{0,200}position:sticky/.test(PAGE));
+  /* ⚠️ ΠΡΙΝ ΠΙΣΤΕΨΕΙΣ ΜΙΑ ΑΠΟΤΥΧΙΑ, ΕΛΕΓΞΕ ΤΟ ΟΡΓΑΝΟ (σταθερή αρχή 30). Η
+     πρώτη γραφή αυτού ήταν σκέτο `/order:\d/`, που ταιριάζει μέσα στο
+     `border:1px` — και κατηγόρησε σωστό CSS σε ολόκληρο το αρχείο. Η ιδιότητα
+     ξεκινάει πάντα μετά από `{`, `;` ή κενό. */
+  const ORDER_RE = /[;{\s]order:\s*\d/g;
+  ok('και καμία αναδιάταξη δεν διαρρέει έξω από το media query του κινητού',
+    (PAGE.match(ORDER_RE) || []).length === (phone.match(ORDER_RE) || []).length);
+}
+
+section('4f · φάση 2 · the 21:45 door is the SAME reader, not a second copy');
+{
+  /* σταθερή αρχή 15: μία εγγύηση σε δύο θέσεις, ή είναι σύμπτωση με καλή φήμη.
+     Μία δήλωση + δύο κλήσεις (η ΜΕΡΑ και η πόρτα). */
+  is('tonightView() is declared once and read from both places',
+    (CODE.match(/tonightView\(/g) || []).length, 3);
+  ok('and the three calendar states are three DIFFERENT sentences, not two',
+    /TONIGHT_TXT = \{[\s\S]{0,400}unknown:[\s\S]{0,400}none:/.test(PAGE));
+  ok('«δεν έχω ημερολόγιο» is not written as «δεν έχεις μάθημα»',
+    PAGE.indexOf('Δεν ξέρω τα σημερινά σου μαθήματα χωρίς το ημερολόγιο') > -1 &&
+    PAGE.indexOf('Το ημερολόγιο δεν δείχνει μάθημα σήμερα') > -1);
+  /* ⭐ Ο σύνδεσμος προς την πόρτα υπάρχει ΜΟΝΟ όταν η πόρτα έχει περιεχόμενο. */
+  ok('the entrance to #tonight appears only when the door has something in it',
+    /tv\.state === 'live'\)\s*\n\s*review \+=[\s\S]{0,80}#tonight/.test(PAGE));
+  ok('the door is NOT a fifth block — it never wears hw-sec',
+    PAGE.indexOf('class="hw-tonight"') > -1 && PAGE.indexOf('hw-sec hw-tonight') < 0);
+}
+/* Και ο μετρητής των μπλοκ ΔΕΝ κουνήθηκε: η φάση 1 τα έκανε τέσσερα και η
+   φάση 2 δεν έχει δικαίωμα να προσθέσει πέμπτο. */
+is('the page is STILL four blocks', (PAGE.match(/class="hw-sec /g) || []).length, 3);
+
+/* ══════════════════════════════════════════════════════════════════════
+   4g · ⭐⭐ ΦΑΣΗ 2 · ΤΟ PUSH ΤΩΝ 18:00 — ΚΑΙ ΤΑ ΤΕΣΣΕΡΑ ΑΚΡΑ ΤΟΥ
+
+   Ένα βαθύ link είναι πρωτόκολλο με τέσσερις συμμετέχοντες: ο cron που το
+   στέλνει, το payload που το κουβαλάει, ο service worker που το ανοίγει, και
+   η σελίδα που το διαβάζει. Αν ΕΝΑΣ δεν συμμετέχει, το πάτημα προσγειώνεται
+   αλλού και ΚΑΝΕΝΑ test της σελίδας δεν το βλέπει (σταθερή αρχή 23).
+   ══════════════════════════════════════════════════════════════════════ */
+section('4g · φάση 2 · the 18:00 push lands ON the capture field');
+{
+  const REM = fs.readFileSync(path.join(ALS, 'api/run-reminders.js'), 'utf8');
+  const SW = fs.readFileSync(path.join(ALS, 'sw.js'), 'utf8');
+  const CLIENT = fs.readFileSync(path.join(ALS, 'reminders.js'), 'utf8');
+
+  /* ① ο cron το στέλνει, στις 18:00, με προορισμό */
+  const entry = (REM.match(/\{ id: 'homework',[\s\S]{0,600}?\n    \} \},/) || [])[0] || '';
+  ok('run-reminders has a homework reminder', entry.length > 0);
+  ok('it fires at 18:00', /defHour: 18/.test(entry));
+  const URL_ = (entry.match(/url: '([^']+)'/) || [])[1];
+  is('and it names a destination', URL_, 'homework.html#capture');
+  ok('it does not nag on a day he already wrote something down', /!c\.capturedToday/.test(entry));
+  ok('nor at the weekend, when there is no φροντιστήριο', /c\.schoolDay/.test(entry));
+  ok('and both facts are actually computed from his row',
+    /capturedToday: capturedToday, openTasks: openTasks, schoolDay: schoolDay/.test(REM));
+  /* ⚠️ σταθερή αρχή 23: ένας αναγνώστης που αγνοεί τις ταφόπλακες λέει λάθος
+     απάντηση σιωπηλά. Το ίδιο λάθος έλεγε 4.671 kcal αντί για 1.461. */
+  ok('the server READS the tombstones it is handed, like every other reader',
+    /_deletes[\s\S]{0,120}hw:v1[\s\S]{0,80}tasks/.test(REM) && /tombed\(hwTomb, id, t\)/.test(REM));
+
+  /* ② το payload το κουβαλάει */
+  ok('the payload carries the url', /tag: 'als-' \+ r\.id, url: r\.url \|\| ''/.test(REM));
+
+  /* ③ ο service worker το ανοίγει — ΚΑΙ ΤΑ ΔΥΟ ΑΚΡΑ ΤΟΥ, γιατί το
+        notificationclick δεν βλέπει ποτέ το αρχικό payload */
+  ok('showNotification stores the url in data', /data: \{ url: data\.url \|\| '' \}/.test(SW));
+  ok('and notificationclick reads it back', /e\.notification\.data && e\.notification\.data\.url/.test(SW));
+  ok('an open tab is NAVIGATED, not just focused', /'navigate' in c[\s\S]{0,120}c\.navigate\(url\)/.test(SW));
+  ok('a rejected navigate still focuses something, never nothing', /\.catch\(function \(\) \{ return c\.focus\(\); \}\)/.test(SW));
+  ok('a push with NO url behaves exactly as before', /openWindow\(url \|\| 'gym\.html'\)/.test(SW));
+
+  /* ④ η σελίδα το διαβάζει — και αυτή είναι η βεβαίωση που κάνει το link
+        ΔΗΛΩΜΕΝΟ αντί για επινοημένο */
+  /* ⚠️ ΠΟΤΕ ΜΗΝ ΑΦΗΣΕΙΣ ΤΟΝ ΦΡΟΥΡΟ ΝΑ ΠΕΤΑΞΕΙ ΑΝΤΙ ΝΑ ΚΟΚΚΙΝΙΣΕΙ: στη μετάλλαξη
+     «βγάλε το url» αυτό έσκαγε με stack trace αντί για μια γραμμή που λέει τι
+     χάλασε — και ένα crash είναι ένα αποτέλεσμα που κάποιος διαβάζει ως «το
+     test είναι χαλασμένο». */
+  const file = String(URL_ || '').split('#')[0], hash = '#' + String(URL_ || '').split('#')[1];
+  ok('the file the server sends actually exists', !!file && fs.existsSync(path.join(ALS, file)));
+  is('and the page opens the capture door on exactly that hash', E.api.doorOf(hash), 'capture');
+
+  /* ⑤ ο χρήστης μπορεί να τη σβήσει, όπως κάθε άλλη */
+  ok('the reminder is visible and switchable in the settings card', /homework: \{ on: true, hour: 18/.test(CLIENT));
+  ok('and it is in the rendered order', /'caffeine', 'homework'/.test(CLIENT));
+
+  /* ⛔ ΚΑΝΕΝΑ 13ο api/*.js — τα deploys σπάνε. Δουλειά server = μέσα σε
+     υπάρχουσα συνάρτηση. */
+  const fns = JSON.parse(fs.readFileSync(path.join(ALS, 'vercel.json'), 'utf8')).functions || {};
+  ok('no 13th serverless function was added', Object.keys(fns).length <= 12);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
