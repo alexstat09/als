@@ -438,6 +438,9 @@
   /* ── ΤΙΤΛΟΙ ΕΝΟΤΗΤΩΝ ─────────────────────────────────────────────── */
   .hw-sec{ margin-top:34px; }
   .hw-sec-hd{ display:flex; align-items:baseline; gap:12px; padding-bottom:9px; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  /* Χωρίς όνομα, μόνο μετρητής: η γραμμή δεν χρειάζεται σύνορο — το πρώτο
+     `.hw-tghd` από κάτω φέρνει το δικό του. Δύο γραμμές στη σειρά είναι θόρυβος. */
+  .hw-sec-hd.hw-sec-count{ border-bottom:0; padding-bottom:0; justify-content:flex-end; }
   .hw-sec-hd .hw-n{ font-family:var(--au-serif,Georgia,serif); font-size:20px; }
   .hw-sec-hd .hw-s{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-left:auto; text-align:right; }
   /* ΤΟ ΧΡΕΟΣ είναι ΕΝΑ μπλοκ με δύο λίστες — η μνήμη και οι εργασίες. Δύο
@@ -484,17 +487,118 @@
   .hw-btn.hw-quiet{ color:var(--au-dim,rgba(245,242,236,.56)); }
   .hw-btn:disabled{ opacity:.4; cursor:default; }
 
-  .hw-task{ display:flex; gap:12px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
-  .hw-task .hw-tick{ width:3px; align-self:stretch; border-radius:2px; background:rgba(var(--hw-c),.85); flex:none; }
-  .hw-task.hw-done{ opacity:.42; }
-  .hw-task.hw-done .hw-title{ text-decoration:line-through; }
+  /* ══ ΟΙ ΕΡΓΑΣΙΕΣ ΓΙΝΟΝΤΑΙ ΟΜΑΔΕΣ · als-v487 ═══════════════════════
+     ⭐⭐ Η ΔΙΑΓΝΩΣΗ ΠΡΙΝ ΤΟ ΣΧΕΔΙΟ: το πρόβλημα δεν ήταν το χρώμα, ήταν ότι
+     κάθε γραμμή φορούσε ΕΞΙ κουμπιά. Έξι chips × έξι εργασίες = 36 στόχοι σε
+     μία οθόνη, χωρίς καμία ιεραρχία — πίνακας διαχείρισης, όχι σελίδα του.
+     ⛔ Η απάντηση είναι ΣΥΓΚΡΑΤΗΣΗ: σε ηρεμία η γραμμή δείχνει ΜΗΔΕΝ κουμπιά,
+     μόνο τον κύκλο και την ημερομηνία. Οι πράξεις έρχονται στο hover. */
+  .hw-tg{ margin-top:26px; }
+  .hw-tg:first-child{ margin-top:8px; }
+  .hw-tghd{ display:flex; align-items:center; gap:11px; padding-bottom:9px; }
+  /* Η κάθετη γραμμή είναι Η ΤΑΥΤΟΤΗΤΑ του μαθήματος, ίδια γλώσσα με τις κάρτες
+     και με τη γραμμή της κάθε εργασίας — ένα χρώμα, τρεις θέσεις. */
+  .hw-tghd .tg-b{ width:2px; height:13px; border-radius:2px; background:rgb(var(--hw-c)); flex:none; }
+  .hw-tghd .tg-n{ font:400 10px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-ivory,#F5F2EC); white-space:nowrap; }
+  .hw-tghd .tg-l{ flex:1 1 auto; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+  .hw-tghd .tg-s{ font:400 10px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.16em;
+    color:var(--au-faint,rgba(245,242,236,.3)); white-space:nowrap; }
+
+  .hw-task{ display:flex; gap:13px; align-items:center; padding:13px 10px 13px 0;
+    margin:0 -10px 0 0; border-radius:12px;
+    border-bottom:1px solid var(--au-line,rgba(255,255,255,.06));
+    transition:.26s cubic-bezier(.16,1,.3,1); }
+  .hw-task:last-child{ border-bottom:0; }
+  .hw-task:hover{ background:var(--au-glass,rgba(255,255,255,.022)); border-bottom-color:transparent; }
+
+  /* ⭐ Ο ΚΥΚΛΟΣ ΑΝΤΙΚΑΘΙΣΤΑ ΤΟ ΚΟΥΜΠΙ «ΕΓΙΝΕ» — ΔΕΝ ΠΡΟΣΘΕΤΕΙ ΤΡΟΠΟ.
+     Ίδιο `data-done`, ίδια `toggleDone()`, μία υλοποίηση (σταθ. 15). */
+  .hw-ck{ width:19px; height:19px; flex:none; border-radius:50%; cursor:pointer;
+    border:1.5px solid rgba(var(--hw-c),.55); background:transparent; padding:0;
+    position:relative; transition:.26s cubic-bezier(.16,1,.3,1); }
+  .hw-ck:hover{ border-color:rgb(var(--hw-c)); transform:scale(1.08); }
+  .hw-ck::after{ content:''; position:absolute; inset:3px; border-radius:50%;
+    background:rgb(var(--hw-c)); opacity:0; transform:scale(.5);
+    transition:.26s cubic-bezier(.16,1,.3,1); }
+  .hw-task.hw-done .hw-ck::after{ opacity:1; transform:scale(1); }
+
+  .hw-task.hw-done{ opacity:.5; }
+  /* ⛔ ΚΑΜΙΑ ΔΙΑΓΡΑΦΗ ΜΕ ΓΡΑΜΜΗ. Είναι το φτηνότερο σήμα που υπάρχει· το
+     «έγινε» το λέει ο γεμάτος κύκλος και το σβήσιμο ολόκληρης της γραμμής. */
   .hw-title{ font-size:14.5px; line-height:1.35; overflow-wrap:anywhere; }
-  .hw-tmeta{ font-size:11.5px; color:var(--au-dim,rgba(245,242,236,.56)); margin-top:4px; line-height:1.45; }
+  .hw-tmeta{ font-size:11px; font-family:var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.06em; color:var(--au-faint,rgba(245,242,236,.3));
+    margin-top:4px; line-height:1.45; }
+
+  /* ⭐⭐ Η ΔΕΞΙΑ ΖΩΝΗ — ΔΙΑΣΤΑΥΡΩΣΗ ΣΤΗΝ ΙΔΙΑ ΘΕΣΗ, ΜΗΔΕΝ ΜΕΤΑΤΟΠΙΣΗ.
+     Οι πράξεις είναι ΑΠΟΛΥΤΑ τοποθετημένες πάνω από την ημερομηνία, οπότε
+     εμφανίζονται χωρίς να κουνήσουν ούτε ένα pixel της διάταξης. Το
+     `min-width` κρατάει τη θέση τους δεσμευμένη ΚΑΙ σε ηρεμία — αλλιώς οι
+     πράξεις θα πατούσαν πάνω στον τίτλο τη στιγμή που εμφανίζονται. */
+  .hw-tright{ flex:none; position:relative; min-width:214px; height:30px;
+    display:flex; align-items:center; justify-content:flex-end; }
+  .hw-tdate{ font:400 11px/1.35 var(--au-mono,ui-monospace,monospace); letter-spacing:.05em;
+    text-align:right; color:var(--au-faint,rgba(245,242,236,.3));
+    transition:opacity .2s cubic-bezier(.16,1,.3,1); }
+  /* ⚠️ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΙΑ ΒΑΡΗ (σταθ. 10): ΔΙΚΗ ΤΟΥ επιλογή = ivory ·
+     ΠΑΡΑΓΟΜΕΝΗ = σβηστή με «η επόμενη» · ΚΑΜΙΑ = σβηστή. Ποτέ ίδιες. */
+  .hw-tdate.is-own{ color:var(--au-ivory,#F5F2EC); }
+  .hw-tdate.is-late{ color:rgb(var(--hw-late)); }
+  .hw-tdate i{ font-style:normal; opacity:.62; }
+  /* ⚠️ ΟΙ ΠΡΑΞΕΙΣ ΕΙΝΑΙ ΦΑΡΔΥΤΕΡΕΣ ΑΠΟ ΤΗ ΔΕΣΜΕΥΜΕΝΗ ΖΩΝΗ ΚΑΙ ΜΕΓΑΛΩΝΟΥΝ
+     ΠΡΟΣ ΤΑ ΑΡΙΣΤΕΡΑ — άρα σε μακρύ τίτλο θα πατούσαν πάνω του. Το φόντο του
+     καμβά με σβήσιμο στα αριστερά τις κάνει να ΚΑΘΟΝΤΑΙ πάνω στη γραμμή αντί
+     να μπερδεύονται μαζί της. Χωρίς αυτό, ο τίτλος «Αρχαία άγνωστο επανάληψη
+     α β γ κλίση πολύ καλά» διαβάζεται ΜΕΣΑ από τα κουμπιά. */
+  /* ⛔⛔ ΣΤΑΘΕΡΗ ΑΡΧΗ 26, ΚΑΙ ΤΗΝ ΞΑΝΑΠΑΤΗΣΑ ΣΕ ΑΥΤΟ ΤΟ COMMIT: το `.hw-tacts`
+     ΔΕΝ ανήκει μόνο στη γραμμή — το φοράει ΚΑΙ η κάρτα ΜΙΑ ΑΠΟΦΑΣΗ, που ΔΕΝ
+     είναι `.hw-task`. Ένας γυμνός κανόνας `.hw-tacts{opacity:0}` άφηνε τα
+     κουμπιά της κάρτας **μόνιμα αόρατα και άκλικα** — δηλαδή η ΠΙΟ ΕΠΕΙΓΟΥΣΑ
+     εργασία θα ήταν η μόνη που δεν σβήνεται από πουθενά. Το έπιασε βεβαίωση,
+     όχι το μάτι. **Ο,τι κρύβει, κρύβει ΜΕΣΑ στο συστατικό του.** */
   .hw-tacts{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .hw-task .hw-tacts{ position:absolute; right:0; top:50%; transform:translateY(-50%);
+    margin-top:0; flex-wrap:nowrap; opacity:0; pointer-events:none; padding-left:26px;
+    background:linear-gradient(90deg, transparent, var(--au-canvas,#060607) 24px);
+    transition:opacity .2s cubic-bezier(.16,1,.3,1); }
+  .hw-task:hover .hw-tdate, .hw-task:focus-within .hw-tdate{ opacity:0; }
+  .hw-task:hover .hw-tacts, .hw-task:focus-within .hw-tacts{ opacity:1; pointer-events:auto; }
+
+  /* ⛔⛔ ΣΤΟ ΚΙΝΗΤΟ ΔΕΝ ΥΠΑΡΧΕΙ HOVER, ΑΡΑ ΟΙ ΠΡΑΞΕΙΣ ΘΑ ΗΤΑΝ ΑΠΡΟΣΙΤΕΣ.
+     Ένα σχέδιο που κρύβει τη μοναδική διαδρομή πίσω από χειρονομία που η
+     συσκευή δεν έχει δεν είναι κομψό — είναι σπασμένο. Εδώ ξεδιπλώνεται. */
+  @media (max-width:999px){
+    .hw-task{ flex-wrap:wrap; align-items:flex-start; padding:14px 0; }
+    .hw-task:hover{ background:none; }
+    .hw-tright{ min-width:0; width:100%; height:auto; display:block;
+      margin:8px 0 0 32px; }
+    .hw-tdate{ text-align:left; display:block; }
+    .hw-task .hw-tacts{ position:static; transform:none; opacity:1; pointer-events:auto;
+      margin-top:8px; flex-wrap:wrap; padding-left:0; background:none; }
+  }
   .hw-mini{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent; color:var(--au-dim,rgba(245,242,236,.56));
     border-radius:9px; padding:6px 10px; font:500 11.5px/1 var(--au-sans,-apple-system,sans-serif); cursor:pointer; text-decoration:none; display:inline-block; }
   .hw-mini.hw-lead{ color:var(--au-ivory,#f5f2ec); border-color:rgba(245,242,236,.3); }
   .hw-mini.hw-danger{ color:rgb(var(--hw-late)); }
+
+  /* ══ ΤΟ ΔΙΠΛΩΜΑ ΤΩΝ ΤΕΛΕΙΩΜΕΝΩΝ · als-v487 ═══════════════════════
+     ⭐ Ως τώρα τα τελειωμένα ήταν ΑΝΑΚΑΤΕΜΕΝΑ με τα ανοιχτά στην ίδια λίστα
+     (σκέτο `opacity:.42`). «Τι χρωστάω» και «τι έκανα» είναι δύο ερωτήσεις.
+     ⭐⭐ ΚΑΙ ΕΔΩ ΠΡΟΣΓΕΙΩΝΕΤΑΙ ΤΟ «DONE ≠ LEARNED»: η λίστα «τι έχω πει ότι
+     έκανα» είναι ΑΚΡΙΒΩΣ η λίστα που θα ρωτηθεί «ναι, αλλά το ξέρεις;».
+     ⚠️ Native `<details>`: μηδέν state, μηδέν JS, δουλεύει με πληκτρολόγιο. */
+  .hw-fold{ margin-top:24px; border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-fold > summary{ list-style:none; cursor:pointer; display:flex; align-items:center;
+    gap:10px; padding:15px 0 4px; font:400 10px/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    transition:color .26s cubic-bezier(.16,1,.3,1); }
+  .hw-fold > summary::-webkit-details-marker{ display:none; }
+  .hw-fold > summary:hover{ color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-fold .fd-a{ display:inline-block; font-size:9px; transform:rotate(0deg);
+    transition:transform .26s cubic-bezier(.16,1,.3,1); }
+  .hw-fold[open] .fd-a{ transform:rotate(90deg); }
+  .hw-fold .fd-l{ flex:1 1 auto; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
 
   /* ⛔⛔ Η ΜΕΡΑ ΕΦΥΓΕ ΣΤΟ ΞΑΚΡΙΣΜΑ (als-v484): χρονογραμμή + έξι ώρες + τέσσερα
      slots με πεζή εξήγηση από κάτω = ~40% του ύψους της αρχικής οθόνης, για να
@@ -727,14 +831,19 @@
            δεν είναι ποτέ στην ίδια οθόνη, άρα δεν υπάρχει επικάλυψη να λυθεί —
            και μια λίστα «όλες μου οι εργασίες» που κρύβει μία δεν είναι λίστα. -->
       <section class="hw-tasks" id="hwTasks">
-        <div class="hw-sec-hd">
-          <span class="hw-n">Οι εργασίες μου</span>
+        <!-- ⚠️ ΤΟ ΟΝΟΜΑ ΔΕΝ ΛΕΓΕΤΑΙ ΔΥΟ ΦΟΡΕΣ (als-v487). Η μπάρα της πόρτας
+             γράφει ΗΔΗ «Οι εργασίες μου» δύο εκατοστά πιο πάνω — το ίδιο λάθος
+             που διορθώθηκε στον τίτλο στην als-v477 («Η μέρα» σε δύο μεγέθη,
+             στην ίδια οθόνη). Μένει ΜΟΝΟ ο μετρητής, που λέει κάτι νέο. -->
+        <div class="hw-sec-hd hw-sec-count">
           <span class="hw-s" id="hwTasksS"></span>
         </div>
+        <!-- ⛔ ΤΟ «ΚΑΘΑΡΙΣΕ ΤΑ ΤΕΛΕΙΩΜΕΝΑ» ΕΦΥΓΕ ΑΠΟ ΕΔΩ (als-v487): κρεμόταν
+             ΚΑΤΩ από το κλειστό δίπλωμα, δηλαδή ένα κουμπί που δρα πάνω σε
+             περιεχόμενο το οποίο δεν φαίνεται. Ζει μέσα στο δίπλωμα τώρα, μαζί
+             με αυτά που σβήνει — η αιτία και το αποτέλεσμα στην ίδια οθόνη.
+             Το βρήκε το render, όχι βεβαίωση. -->
         <div id="hwTaskBody"></div>
-        <div class="hw-acts">
-          <button class="hw-btn hw-quiet hw-off" id="hwSweep" type="button">Καθάρισε τα τελειωμένα</button>
-        </div>
         <!-- ⭐ Η ΣΥΣΣΩΡΕΥΣΗ ΗΡΘΕ ΕΔΩ ΑΠΟ ΤΗ ΜΕΡΑ, ΚΑΙ ΕΙΝΑΙ ΠΙΟ ΣΩΣΤΑ ΕΔΩ:
              μετακινεί ΕΡΓΑΣΙΑ, γράφει ΜΟΝΟ `hw:v1`, και τώρα κάθεται κάτω από
              τη λίστα που αλλάζει όταν το πατήσεις — η αιτία και το αποτέλεσμα
@@ -2217,6 +2326,104 @@
      ίδιο λάθος με το `|| 'ekthesi'` του addTask, μία γραμμή πιο πέρα. */
   function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-unk)'; }
 
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐⭐ ΟΙ ΟΜΑΔΕΣ — Η ΔΙΑΤΑΞΗ ΛΕΕΙ ΤΟΥΣ ΣΥΝΤΕΛΕΣΤΕΣ ΤΟΥ (als-v486)
+
+     ⚠️⚠️ ΚΑΘΕ ΜΑΘΗΜΑ ΤΟΥ `SUBJ_ORDER` ΠΡΕΠΕΙ ΝΑ ΑΝΗΚΕΙ ΣΕ ΟΜΑΔΑ. Δύο λίστες
+     που πρέπει να συμφωνούν είναι ΑΚΡΙΒΩΣ ο τρόπος με τον οποίο γεννιέται το
+     σιωπηλό-άδειο αυτού του project: πρόσθεσε ένα μάθημα στο `SUBJ_ORDER`,
+     ξέχνα το εδώ, και ΕΞΑΦΑΝΙΖΕΤΑΙ από την οθόνη χωρίς κανένα σφάλμα. Γι'
+     αυτό τα αζήτητα ΔΕΝ πέφτουν στο πάτωμα: μαζεύονται σε τελευταία ομάδα
+     («ΤΑ ΥΠΟΛΟΙΠΑ») και το `tests/homework-plan.test.js` απαιτεί να είναι
+     ΑΔΕΙΑ. Η κάλυψη είναι βεβαίωση, το δίχτυ είναι ασφάλεια — και τα δύο. */
+  var L4_GROUPS = [
+    { note:'Αρχαία · ένα γραπτό · 30%',          subs:['arxaia_gn','arxaia_agn'] },
+    { note:'Έκθεση · 30%',                       subs:['ekthesi'] },
+    { note:'Ιστορία · Λατινικά · 20% το καθένα', subs:['istoria','latinika'] }
+  ];
+  function l4Groups(){
+    var seen = {}, out = L4_GROUPS.map(function(g){
+      var subs = g.subs.filter(function(s){
+        if (SUBJ_ORDER.indexOf(s) < 0) return false;   /* μάθημα που έφυγε */
+        seen[s] = 1; return true;
+      });
+      return { note:g.note, subs:subs };
+    }).filter(function(g){ return g.subs.length; });
+    var rest = SUBJ_ORDER.filter(function(s){ return !seen[s]; });
+    if (rest.length) out.push({ note:'Τα υπόλοιπα', subs:rest });
+    return out;
+  }
+  /* ⚠️ ΤΟ ΒΑΡΟΣ ΓΡΑΦΕΤΑΙ ΜΙΑ ΦΟΡΑ ΑΝΑ ΓΡΑΠΤΟ, ΚΑΙ ΒΓΑΙΝΕΙ ΑΠΟ ΤΑ ΔΕΔΟΜΕΝΑ.
+     Όταν δύο μαθήματα της ίδιας ομάδας δηλώνουν ΤΟ ΙΔΙΟ `exam`, το «30%»
+     ανήκει στην επικεφαλίδα και η κάρτα φοράει το ΤΙ ΤΗ ΞΕΧΩΡΙΖΕΙ (ΓΝΩΣΤΟ /
+     ΑΓΝΩΣΤΟ). Αλλιώς δύο κάρτες με «30% των μορίων» η καθεμία διαβάζονται 60
+     — το ίδιο λάθος που η als-v485 απέτρεψε στην ΑΡΙΘΜΗΤΙΚΗ, εδώ στο ΜΑΤΙ. */
+  function l4SharedExam(subs){
+    if (subs.length < 2) return false;
+    var e = (SUBJ[subs[0]] || {}).exam;
+    return !!e && subs.every(function(s){ return (SUBJ[s] || {}).exam === e; });
+  }
+  function l4Kicker(sub){
+    var lbl = String((SUBJ[sub] || {}).label || '');
+    var i = lbl.indexOf('·');
+    return (i >= 0 ? lbl.slice(i + 1) : lbl).trim().toUpperCase();
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐⭐ ΟΙ ΟΜΑΔΕΣ ΒΓΑΙΝΟΥΝ ΑΠΟ ΤΟ ΓΡΑΠΤΟ, ΟΧΙ ΑΠΟ ΤΟ ΚΛΕΙΔΙ · als-v487
+
+     ⛔⛔ ΤΟ ΜΕΤΡΗΣΑ ΣΤΑ ΑΛΗΘΙΝΑ ΤΟΥ ΔΕΔΟΜΕΝΑ ΠΡΙΝ ΤΟ ΣΧΕΔΙΑΣΩ, ΚΑΙ ΑΥΤΟ ΑΛΛΑΞΕ
+     ΤΗΝ ΑΠΑΝΤΗΣΗ: από τις έξι ανοιχτές εργασίες του, **οι ΤΡΕΙΣ κάθονται στο
+     παλιό σκέτο `arxaia`** — κλειδί που ΔΕΝ υπάρχει στο `SUBJ_ORDER`. Μια
+     ομαδοποίηση οδηγημένη από το `SUBJ_ORDER` θα τις ΕΞΑΦΑΝΙΖΕ, σιωπηλά, και
+     θα άφηνε τρεις άδειες στήλες δίπλα.
+     ⭐ Η λύση δεν είναι migration στα δεδομένα του: ομαδοποιούμε ανά
+     `exam || subject`. Το `arxaia`, το `arxaia_gn` και το `arxaia_agn`
+     δηλώνουν ΟΛΑ `exam:'arxaia'`, άρα πέφτουν κάτω από ΜΙΑ κεφαλίδα «Αρχαία»
+     — ο ίδιος κανόνας που η als-v485 έβαλε στην αριθμητική («αθροίζουμε ανά
+     `exam`, ποτέ ανά κλειδί»), εφαρμοσμένος στην ΟΘΟΝΗ.
+     ⛔ Η ΣΕΙΡΑ ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ ΕΔΩ: διαβάζεται από το `L4_GROUPS`, δηλαδή από
+     την ΙΔΙΑ δήλωση που ταξινομεί τις κάρτες. Δύο επιφάνειες, μία σειρά. */
+  function taskGroupId(t){
+    var m = SUBJ[t.subject] || SUBJ.unknown;
+    return m.exam || t.subject;
+  }
+  function taskGroupRank(gid){
+    for (var i = 0; i < L4_GROUPS.length; i++){
+      var subs = L4_GROUPS[i].subs;
+      for (var j = 0; j < subs.length; j++){
+        var m = SUBJ[subs[j]] || {};
+        if ((m.exam || subs[j]) === gid) return i;
+      }
+    }
+    return 99;                     /* άγνωστο/παλιό → τελευταίο, ΠΟΤΕ κρυφό */
+  }
+  function taskGroups(list){
+    var by = {}, out = [];
+    list.forEach(function(t){
+      var gid = taskGroupId(t), g = by[gid];
+      if (!g){
+        var meta = SUBJ[gid] || SUBJ[t.subject] || SUBJ.unknown;
+        g = by[gid] = { id:gid, label:meta.label || '', weight:meta.weight || 0,
+                        rgb:subjRgb(t.subject), rank:taskGroupRank(gid), items:[] };
+        out.push(g);
+      }
+      g.items.push(t);
+    });
+    out.sort(function(a, b){
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.label < b.label ? -1 : 1;
+    });
+    return out;
+  }
+
+
+  /* ── ΤΕΛΟΣ ΤΗΣ ΟΜΑΔΟΠΟΙΗΣΗΣ ─────────────────────────────────────────
+     ⛔ ΜΗ ΒΑΛΕΙΣ ΖΩΓΡΑΦΙΚΗ ΠΑΝΩ ΑΠΟ ΑΥΤΗ ΤΗ ΓΡΑΜΜΗ. Το `tests/homework-plan.
+     test.js` κόβει ΑΚΡΙΒΩΣ αυτό το μπλοκ (subjRgb → εδώ) και το τρέχει σε vm
+     μαζί με το SUBJ, ώστε η ομαδοποίηση να ελέγχεται με ΑΛΗΘΙΝΕΣ εργασίες
+     αντί για regex. Ζωγραφική εδώ μέσα σπάει τη φέτα, δυνατά. */
+
   /* ⭐ ΜΙΑ ΑΠΟΦΑΣΗ. Η κάρτα δείχνει ΕΝΑ πράγμα και ΚΑΝΕΝΑ άλλο σημείο της
      οθόνης δεν το ξαναλέει: το «μεγάλο παράθυρο» της ΜΕΡΑΣ μετράει, η ΜΝΗΜΗ
      δείχνει ΤΑ ΥΠΟΛΟΙΠΑ, η λίστα εργασιών παραλείπει αυτό ακριβώς το id.
@@ -2341,15 +2548,20 @@
        ΟΛΕΣ — αλλιώς η κεφαλίδα θα έλεγε ψέματα για το πόσα χρωστάει. */
     var upId = (featured && featured.kind === 'task') ? featured.task.id : null;
     var shown = upId ? list.filter(function(t){ return t.id !== upId; }) : list;
+    /* ⚠️ ΤΟ ΕΝΑ ΔΕΝ ΕΙΝΑΙ ΠΛΗΘΥΝΤΙΚΟΣ, ΚΑΙ ΤΟ ΕΙΔΕ ΜΟΝΟ ΤΟ RENDER: με μία
+       τελειωμένη εργασία η γραμμή έγραφε «1 έγιναν». Ελληνικά που δεν στέκουν
+       σε μια σελίδα που τα λόγια της τα διαβάζει ΑΥΤΟΣ. */
+    var dn = list.length - open;
     $('hwTasksS').textContent = list.length
-      ? (open + ' ανοιχτές · ' + (list.length - open) + ' έγιναν' + (upId ? ' · η μία είναι πάνω' : ''))
+      ? (open + (open === 1 ? ' ανοιχτή' : ' ανοιχτές') +
+         ' · ' + dn + (dn === 1 ? ' έγινε' : ' έγιναν') +
+         (upId ? ' · η μία είναι πάνω' : ''))
       : '';
     /* Η πόρτα λέει ΤΟ ΙΔΙΟ πράγμα, από τον ίδιο υπολογισμό — ποτέ δεύτερη
        μέτρηση που μπορεί να διαφωνήσει (σταθ. 15). */
     $('hwDoorsT').textContent = list.length
       ? (open ? (open + (open === 1 ? ' ανοιχτή' : ' ανοιχτές')) : 'όλες έγιναν')
       : 'καμία ακόμη';
-    $('hwSweep').classList.toggle('hw-off', list.length === open);
 
     if (!list.length){
       host.innerHTML = '<div class="hw-empty"><b>Γράψε μία γραμμή.</b><br>Για παράδειγμα: <span class="hw-mono">Ιστορία b2 απέξω Τρίτη</span> — μάθημα, ενότητα, είδος, προθεσμία. Ό,τι δεν καταλάβω μένει γκρι και το φτιάχνεις με ένα πάτημα.</div>';
@@ -2360,48 +2572,108 @@
       return;
     }
 
-    host.innerHTML = shown.map(function(t){
-      var s = SUBJ[t.subject] || SUBJ.unknown;
-      var bits = [s.label, KINDS[t.kind] || ''];
-      /* ⭐ ΜΙΑ ΠΑΡΑΓΟΜΕΝΗ ΗΜΕΡΟΜΗΝΙΑ ΤΟ ΛΕΕΙ. Το «Τρίτη» και το «Τρίτη, η
-         επόμενη Ιστορία σου» είναι δύο διαφορετικά πράγματα: το πρώτο το
-         διάλεξε ο ίδιος, το δεύτερο το υπολόγισα εγώ από το πρόγραμμα και
-         μπορεί να είναι λάθος αν το πρόγραμμα άλλαξε. Σιωπηλά ίδια =
-         σταθερή αρχή 10 σε μορφή ημερομηνίας. */
-      var dd = dueOf(t);
-      bits.push(dd.key ? (fmtDue(dd.key) + (dd.auto ? ' (η επόμενη)' : '')) : 'χωρίς ημερομηνία');
-      /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. */
-      var eb = estBit(t.subject, t.kind); if (eb) bits.push(eb);
-      if (t.elapsed > 60000) bits.push(Math.round(t.elapsed / 60000) + '′ γραμμένα');
-      /* ⭐ Η Έκθεση δεν έχει σελίδα ακόμη, και το λέει — ένα κενό που
-         φαίνεται είναι καλύτερο από ένα κρυμμένο. */
-      var goHref = t.link ? deepLink(t.link.page, t.link.unit) : (s.page || null);
-      var go = goHref
-        ? '<a class="hw-mini hw-lead" href="' + esc(goHref) + '">Άνοιξε</a>'
-        : '<span class="hw-mini" style="opacity:.55">δεν υπάρχει σελίδα ακόμη</span>';
-      var focus = isWritten(t.kind)
-        ? '<button class="hw-mini hw-lead" type="button" data-focus="' + esc(t.id) + '">Γράψ’ το</button>' : '';
-      var pic = (t.src && t.src.id && pics[t.src.id])
-        ? '<button class="hw-mini" type="button" data-pic="' + esc(t.src.id) + '">Πηγή</button>' : '';
-      return '<div class="hw-task' + (t.done ? ' hw-done' : '') + '" style="--hw-c:' + s.rgb + '">' +
-        '<span class="hw-tick"></span>' +
-        '<div class="hw-body">' +
-          '<div class="hw-title">' + esc(t.title || s.label) + '</div>' +
-          '<div class="hw-tmeta">' + esc(bits.filter(Boolean).join(' · ')) + '</div>' +
-          '<div class="hw-tacts">' +
-            '<button class="hw-mini' + (t.done ? '' : ' hw-lead') + '" type="button" data-done="' + esc(t.id) + '">' + (t.done ? 'Ξανά ανοιχτό' : 'Έγινε') + '</button>' +
-            /* ⭐ Το δίδυμο του κουμπιού της κάρτας (σταθ. 15). Σε τελειωμένη
-               εργασία ΔΕΝ βγαίνει: η προθεσμία ενός πράγματος που έγινε δεν
-               είναι απόφαση, είναι ιστορία. */
-            (t.done ? '' : '<button class="hw-mini" type="button" data-when="' + esc(t.id) + '">' + esc(fmtDue(dueOf(t).key)) + '</button>') +
-            focus + go + pic +
-            '<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    /* ⭐ ΑΝΟΙΧΤΑ ΚΑΙ ΤΕΛΕΙΩΜΕΝΑ ΠΑΥΟΥΝ ΝΑ ΕΙΝΑΙ ΑΝΑΚΑΤΕΜΕΝΑ. Ως τώρα ζούσαν
+       στην ίδια λίστα με σκέτο `opacity`, δηλαδή «τι χρωστάω» και «τι έκανα»
+       απαντιόνταν από την ίδια στήλη. Είναι δύο ερωτήσεις. */
+    var openL = shown.filter(function(t){ return !t.done; });
+    var doneL = shown.filter(function(t){ return !!t.done; });
+
+    function groupHtml(g){
+      return '<div class="hw-tg" style="--hw-c:' + g.rgb + '">' +
+        '<div class="hw-tghd">' +
+          '<span class="tg-b"></span>' +
+          '<span class="tg-n">' + esc(g.label) + '</span>' +
+          '<span class="tg-l"></span>' +
+          '<span class="tg-s">' + (g.weight ? g.weight + '% · ' : '') + g.items.length + '</span>' +
+        '</div>' + g.items.map(taskRow).join('') + '</div>';
+    }
+
+    var html = taskGroups(openL).map(groupHtml).join('');
+    if (doneL.length){
+      html += '<details class="hw-fold">' +
+        '<summary><span class="fd-a">▶</span><span>' +
+          (doneL.length === 1 ? 'Έγινε' : 'Έγιναν') + '</span>' +
+        '<span class="fd-l"></span><span>' + doneL.length + '</span></summary>' +
+        taskGroups(doneL).map(groupHtml).join('') +
+        /* Το σκούπισμα ζει ΜΕΣΑ στο δίπλωμα, δίπλα σε αυτά που σβήνει. */
+        '<div class="hw-acts"><button class="hw-btn hw-quiet" type="button" ' +
+          'data-sweep="1">Καθάρισε τα τελειωμένα</button></div>' +
+      '</details>';
+    }
+    host.innerHTML = html;
 
     wireTaskActs(host);
+  }
+
+  /* ══ Η ΓΡΑΜΜΗ · als-v487 ═════════════════════════════════════════
+     ΜΙΑ υλοποίηση, δύο θέσεις (ανοιχτά + δίπλωμα). Σε ηρεμία δείχνει ΜΗΔΕΝ
+     κουμπιά: κύκλος, τίτλος, είδος, ημερομηνία. Οι πράξεις έρχονται στο hover
+     ΑΠΟΛΥΤΑ τοποθετημένες πάνω στην ημερομηνία, άρα μηδέν μετατόπιση. */
+  function taskRow(t){
+    var s = SUBJ[t.subject] || SUBJ.unknown;
+    /* ⭐ ΤΟ ΕΙΔΟΣ ΚΑΙ Ο ΧΡΟΝΟΣ ΜΟΝΟ. Το ΜΑΘΗΜΑ έφυγε από τη γραμμή: το λέει
+       πια η κεφαλίδα της ομάδας από πάνω, και η χρωματική ταυτότητα στον
+       κύκλο. Δύο φορές το ίδιο, σε απόσταση ενός εκατοστού (σταθ. 15). */
+    var meta = [KINDS[t.kind] || ''];
+    /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. */
+    var eb = estBit(t.subject, t.kind); if (eb) meta.push(eb);
+    if (t.elapsed > 60000) meta.push(Math.round(t.elapsed / 60000) + '′ γραμμένα');
+
+    /* ⭐⭐ ΜΙΑ ΠΑΡΑΓΟΜΕΝΗ ΗΜΕΡΟΜΗΝΙΑ ΤΟ ΛΕΕΙ, ΚΑΙ ΤΩΡΑ ΤΟ ΛΕΕΙ ΚΑΙ ΜΕ ΒΑΡΟΣ.
+       «Τρίτη» και «Τρίτη, η επόμενη Ιστορία σου» είναι δύο διαφορετικά
+       πράγματα: το πρώτο το διάλεξε ΑΥΤΟΣ, το δεύτερο το υπολόγισα ΕΓΩ από το
+       πρόγραμμα και μπορεί να είναι λάθος αν το πρόγραμμα άλλαξε. Σιωπηλά
+       ίδια = σταθερή αρχή 10 σε μορφή ημερομηνίας. Δική του = ivory ·
+       παραγόμενη = σβηστή με «η επόμενη» · καμία = «χωρίς ημερομηνία». */
+    var dd = dueOf(t), dcls = 'hw-tdate', dtxt;
+    /* ⛔ ΜΙΑ ΤΕΛΕΙΩΜΕΝΗ ΕΡΓΑΣΙΑ ΔΕΝ ΤΥΠΩΝΕΙ ΠΡΟΘΕΣΜΙΑ, ΚΑΙ ΤΟ ΕΙΔΕ ΤΟ RENDER:
+       το δίπλωμα έγραφε «Δευτέρα · η επόμενη» πάνω σε κάτι που έγινε. Η
+       ημερομηνία εκεί είναι ΠΑΡΑΓΟΜΕΝΗ από το πρόγραμμα, δηλαδή απαντάει
+       «πότε θα το ξανακάνεις» σε κάτι που δεν ρωτήθηκε. Δεν είναι άγνωστη
+       μέτρηση — είναι μέγεθος που ΔΕΝ ΥΠΑΡΧΕΙ, άρα δεν γράφεται καθόλου
+       (σταθ. 33, ίδια απόφαση με τη χειροκίνητη γραμμή της als-v480). */
+    if (t.done){
+      dtxt = '';
+    } else if (!dd.key){
+      dtxt = 'χωρίς ημερομηνία';
+    } else {
+      dtxt = esc(fmtDue(dd.key)) + (dd.auto ? ' <i>· η επόμενη</i>' : '');
+      if (!dd.auto) dcls += ' is-own';
+      /* ⚠️ Το ληξιπρόθεσμο χρώμα ΜΟΝΟ σε ανοιχτή εργασία: η προθεσμία ενός
+         πράγματος που έγινε δεν είναι απόφαση, είναι ιστορία. */
+      if (!t.done && dd.key < today()) dcls += ' is-late';
+    }
+
+    /* ⭐ Η Έκθεση δεν έχει σελίδα ακόμη, και το λέει — ένα κενό που φαίνεται
+       είναι καλύτερο από ένα κρυμμένο. */
+    var goHref = t.link ? deepLink(t.link.page, t.link.unit) : (s.page || null);
+    var acts = [];
+    /* ⛔ ΣΕ ΤΕΛΕΙΩΜΕΝΗ ΔΕΝ ΒΓΑΙΝΕΙ «ΠΟΤΕ»: δεν είναι απόφαση πια. */
+    if (!t.done) acts.push('<button class="hw-mini" type="button" data-when="' + esc(t.id) + '">Πότε</button>');
+    if (!t.done && isWritten(t.kind))
+      acts.push('<button class="hw-mini hw-lead" type="button" data-focus="' + esc(t.id) + '">Γράψ’ το</button>');
+    acts.push(goHref
+      ? '<a class="hw-mini hw-lead" href="' + esc(goHref) + '">Άνοιξε</a>'
+      : '<span class="hw-mini" style="opacity:.55">χωρίς σελίδα</span>');
+    if (t.src && t.src.id && pics[t.src.id])
+      acts.push('<button class="hw-mini" type="button" data-pic="' + esc(t.src.id) + '">Πηγή</button>');
+    acts.push('<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>');
+
+    /* ⭐ Ο ΚΥΚΛΟΣ ΕΙΝΑΙ ΤΟ ΠΑΛΙΟ ΚΟΥΜΠΙ «ΕΓΙΝΕ» — ΙΔΙΟ `data-done`, ΙΔΙΑ
+       `toggleDone()`. Δεν προστέθηκε τρόπος· αντικαταστάθηκε ένα chip. */
+    return '<div class="hw-task' + (t.done ? ' hw-done' : '') + '" style="--hw-c:' + s.rgb + '">' +
+      '<button class="hw-ck" type="button" data-done="' + esc(t.id) + '" aria-pressed="' +
+        (t.done ? 'true' : 'false') + '" aria-label="' +
+        (t.done ? 'Ξανά ανοιχτό' : 'Έγινε') + '"></button>' +
+      '<div class="hw-body">' +
+        '<div class="hw-title">' + esc(t.title || s.label) + '</div>' +
+        '<div class="hw-tmeta">' + esc(meta.filter(Boolean).join(' · ')) + '</div>' +
+      '</div>' +
+      '<div class="hw-tright">' +
+        '<span class="' + dcls + '">' + dtxt + '</span>' +
+        '<div class="hw-tacts">' + acts.join('') + '</div>' +
+      '</div>' +
+    '</div>';
   }
 
   /* ⭐ ΜΙΑ ΥΛΟΠΟΙΗΣΗ ΓΙΑ ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15). Οι ίδιες πράξεις
@@ -2552,49 +2824,6 @@
     latinika: 'Το μάθημα που ένας υπολογιστής ξέρει ΑΚΡΙΒΩΣ.',
     ekthesi:  'Ισοβαθμεί με τα Αρχαία και δεν έχει σελίδα ακόμη.'
   };
-  /* ══════════════════════════════════════════════════════════════════
-     ⭐⭐ ΟΙ ΟΜΑΔΕΣ — Η ΔΙΑΤΑΞΗ ΛΕΕΙ ΤΟΥΣ ΣΥΝΤΕΛΕΣΤΕΣ ΤΟΥ (als-v486)
-
-     ⚠️⚠️ ΚΑΘΕ ΜΑΘΗΜΑ ΤΟΥ `SUBJ_ORDER` ΠΡΕΠΕΙ ΝΑ ΑΝΗΚΕΙ ΣΕ ΟΜΑΔΑ. Δύο λίστες
-     που πρέπει να συμφωνούν είναι ΑΚΡΙΒΩΣ ο τρόπος με τον οποίο γεννιέται το
-     σιωπηλό-άδειο αυτού του project: πρόσθεσε ένα μάθημα στο `SUBJ_ORDER`,
-     ξέχνα το εδώ, και ΕΞΑΦΑΝΙΖΕΤΑΙ από την οθόνη χωρίς κανένα σφάλμα. Γι'
-     αυτό τα αζήτητα ΔΕΝ πέφτουν στο πάτωμα: μαζεύονται σε τελευταία ομάδα
-     («ΤΑ ΥΠΟΛΟΙΠΑ») και το `tests/homework-plan.test.js` απαιτεί να είναι
-     ΑΔΕΙΑ. Η κάλυψη είναι βεβαίωση, το δίχτυ είναι ασφάλεια — και τα δύο. */
-  var L4_GROUPS = [
-    { note:'Αρχαία · ένα γραπτό · 30%',          subs:['arxaia_gn','arxaia_agn'] },
-    { note:'Έκθεση · 30%',                       subs:['ekthesi'] },
-    { note:'Ιστορία · Λατινικά · 20% το καθένα', subs:['istoria','latinika'] }
-  ];
-  function l4Groups(){
-    var seen = {}, out = L4_GROUPS.map(function(g){
-      var subs = g.subs.filter(function(s){
-        if (SUBJ_ORDER.indexOf(s) < 0) return false;   /* μάθημα που έφυγε */
-        seen[s] = 1; return true;
-      });
-      return { note:g.note, subs:subs };
-    }).filter(function(g){ return g.subs.length; });
-    var rest = SUBJ_ORDER.filter(function(s){ return !seen[s]; });
-    if (rest.length) out.push({ note:'Τα υπόλοιπα', subs:rest });
-    return out;
-  }
-  /* ⚠️ ΤΟ ΒΑΡΟΣ ΓΡΑΦΕΤΑΙ ΜΙΑ ΦΟΡΑ ΑΝΑ ΓΡΑΠΤΟ, ΚΑΙ ΒΓΑΙΝΕΙ ΑΠΟ ΤΑ ΔΕΔΟΜΕΝΑ.
-     Όταν δύο μαθήματα της ίδιας ομάδας δηλώνουν ΤΟ ΙΔΙΟ `exam`, το «30%»
-     ανήκει στην επικεφαλίδα και η κάρτα φοράει το ΤΙ ΤΗ ΞΕΧΩΡΙΖΕΙ (ΓΝΩΣΤΟ /
-     ΑΓΝΩΣΤΟ). Αλλιώς δύο κάρτες με «30% των μορίων» η καθεμία διαβάζονται 60
-     — το ίδιο λάθος που η als-v485 απέτρεψε στην ΑΡΙΘΜΗΤΙΚΗ, εδώ στο ΜΑΤΙ. */
-  function l4SharedExam(subs){
-    if (subs.length < 2) return false;
-    var e = (SUBJ[subs[0]] || {}).exam;
-    return !!e && subs.every(function(s){ return (SUBJ[s] || {}).exam === e; });
-  }
-  function l4Kicker(sub){
-    var lbl = String((SUBJ[sub] || {}).label || '');
-    var i = lbl.indexOf('·');
-    return (i >= 0 ? lbl.slice(i + 1) : lbl).trim().toUpperCase();
-  }
-
   function renderLessons4(){
     var L = ladders(), host = $('hwL4Grid');
     if (L.broken){
@@ -3220,7 +3449,13 @@
   $('hwDumpOpen').addEventListener('click', function(){ $('hwDumpWrap').classList.toggle('hw-off'); });
   $('hwDumpClose').addEventListener('click', function(){ $('hwDumpWrap').classList.add('hw-off'); });
   $('hwDumpGo').addEventListener('click', runDump);
-  $('hwSweep').addEventListener('click', function(){
+  /* ⚠️ ΤΟ ΚΟΥΜΠΙ ΓΕΝΝΙΕΤΑΙ ΠΛΕΟΝ ΣΕ ΚΑΘΕ RENDER, μέσα στο δίπλωμα — άρα ο
+     ακροατής δεν μπορεί να δεθεί ΜΙΑ φορά σε ένα id στο boot. Δένεται στο
+     δοχείο που ΔΕΝ ξαναγράφεται (`hwTasks`), οπότε παραμένει ΕΝΑΣ ακροατής
+     για όλη τη ζωή της σελίδας — όχι ένας ανά ζωγραφιά. */
+  $('hwTasks').addEventListener('click', function(e){
+    var b = e.target && e.target.closest ? e.target.closest('[data-sweep]') : null;
+    if (!b) return;
     var ask = window.ALSConfirm
       ? ALSConfirm({ title:'Να σβήσω όσες έχουν γίνει;',
                      message:'Φεύγουν από εδώ και από το cloud. Οι σκάλες μελέτης δεν αγγίζονται.',

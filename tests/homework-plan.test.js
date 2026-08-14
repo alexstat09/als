@@ -46,6 +46,17 @@ const BODY = PAGE.slice(PAGE.indexOf(START), PAGE.lastIndexOf('/* ═', PAGE.ind
    που κάποιος χαλαρώνει. Οι απαγορεύσεις ελέγχονται πάνω στον ΚΩΔΙΚΑ. */
 const CODE = PAGE.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
+/* ⭐⭐ Η ΟΜΑΔΟΠΟΙΗΣΗ ΕΙΝΑΙ ΛΟΓΙΚΗ, ΟΧΙ ΖΩΓΡΑΦΙΚΗ, άρα ΔΟΚΙΜΑΖΕΤΑΙ.
+   Ζει σε ΕΝΑ συνεχόμενο μπλοκ (`subjRgb` → ο φρουρός «ΤΕΛΟΣ ΤΗΣ
+   ΟΜΑΔΟΠΟΙΗΣΗΣ»), που κόβεται εδώ και τρέχει στο ΙΔΙΟ vm με το `SUBJ`.
+   ⛔ Αν κάποιος βάλει ζωγραφική μέσα στο μπλοκ, η φέτα το φέρνει εδώ και
+   σκάει — δυνατά, όχι σιωπηλά. */
+const GSTART = PAGE.indexOf('  function subjRgb(sub)');
+const GSENT = PAGE.indexOf('ΤΕΛΟΣ ΤΗΣ ΟΜΑΔΟΠΟΙΗΣΗΣ');
+ok('η ομαδοποίηση ζει σε ΕΝΑ κομμάτι που μπορεί να κοπεί', GSTART > -1 && GSENT > GSTART);
+const GROUPING = PAGE.slice(GSTART, PAGE.lastIndexOf('/*', GSENT));
+ok('και το κομμάτι ΔΕΝ κουβαλάει ζωγραφική', !/\$\('hw[A-Z]/.test(GROUPING));
+
 /* Οι σταθερές του αρχείου κόβονται μαζί — αν η σελίδα μετονομάσει ένα κλειδί,
    τα tests πρέπει να μετακομίσουν μαζί της αντί να ελέγχουν ένα string που το
    πιστεύει μόνο το test. */
@@ -127,7 +138,10 @@ function makeEnv(opts) {
     ctx.Date = PinnedDate;
   }
   const src = '(function(){' + CONSTS.map(c => c.src).join('\n') + '\n' + BODY +
-    '\nreturn { parseLine:parseLine, budget:budget, candidates:candidates, reload:reload,' +
+    '\n' + GROUPING +
+    '\nreturn { taskGroups:taskGroups, taskGroupId:taskGroupId, taskGroupRank:taskGroupRank,' +
+    ' l4Groups:l4Groups, SUBJ_ORDER:SUBJ_ORDER,' +
+    ' parseLine:parseLine, budget:budget, candidates:candidates, reload:reload,' +
     ' addTask:addTask, dropTask:dropTask, sweepDone:sweepDone, taskList:taskList,' +
     ' estimate:estimate, recordSample:recordSample, save:save, blocksFor:blocksFor,' +
     ' pileDay:pileDay, bringForward:bringForward, doorOf:doorOf, tonightView:tonightView,' +
@@ -378,8 +392,14 @@ section('4b · «δεν ξέρω ποιο μάθημα» δεν γίνεται �
   is('κανένα fallback δεν δείχνει πια στην Έκθεση',
     (PAGE.match(/SUBJ\[t\.subject\] \|\| SUBJ\.ekthesi/g) || []).length, 0);
   /* als-v485: τρίτο σημείο — το φύλλο «Πότε» ζωγραφίζει κι αυτό εργασία. */
+  /* ⚠️ als-v487: τα σημεία έγιναν ΠΕΝΤΕ — η ομαδοποίηση πρόσθεσε δύο
+     (`taskGroupId` + `taskGroups`). Ο αριθμός δεν είναι το ζητούμενο· το
+     ζητούμενο είναι ότι **κανένα** δεν πέφτει στην Έκθεση. Γι' αυτό ο
+     έλεγχος είναι ΚΑΙ ο μηδενικός από πάνω, που δαγκώνει σε κάθε νέο δρόμο. */
   is('και ΟΛΑ δείχνουν στο unknown',
-    (PAGE.match(/SUBJ\[t\.subject\] \|\| SUBJ\.unknown/g) || []).length, 3);
+    (PAGE.match(/SUBJ\[[a-z.]+\] \|\| SUBJ\.unknown/g) || []).length, 5);
+  is('κανένα fallback δεν δείχνει σε ΜΑΘΗΜΑ',
+    (PAGE.match(/\|\| SUBJ\.(?!unknown)[a-z_]+/g) || []).length, 0);
 }
 /* Και στατικά, γιατί ένας δυναμικός έλεγχος βλέπει μόνο τους δρόμους που
    πέρασε: καμία από τις πέντε αποθήκες δεν εμφανίζεται ποτέ σαν όρισμα
@@ -453,7 +473,7 @@ section('4d · «—» is never printed for a measurement that cannot exist');
 ok('no ladder card prints an est placeholder', CODE.indexOf('estText') < 0);
 ok('a measured est is printed only when it exists',
   PAGE.indexOf("e == null ? null : '~' + e") > -1);
-ok("and the task row pushes it only when non-null", /if \(eb\) bits\.push\(eb\)/.test(PAGE));
+ok("and the task row pushes it only when non-null", /if \(eb\) meta\.push\(eb\)/.test(PAGE));
 
 section('4d · the ΧΡΕΟΣ / ΑΠΟΦΑΣΗ overlap is closed');
 {
@@ -1259,8 +1279,17 @@ section('6 · ΤΑ ΜΑΘΗΜΑΤΑ — δωμάτιο, όχι πέμπτο μπ
       subs.filter(s => inGroups.indexOf(s) < 0).join(',') || '(κανένα)', '(κανένα)');
     ok('και καμία ομάδα δεν ονομάζει μάθημα που δεν υπάρχει',
       inGroups.every(s => subs.indexOf(s) > -1));
-    ok('⛔ ΚΑΙ ΤΟ ΔΙΧΤΥ ΥΠΑΡΧΕΙ ΠΑΡΟΛΑ ΑΥΤΑ — αζήτητο μάθημα ΔΕΝ πέφτει στο πάτωμα',
-      /out\.push\(\{ note:'Τα υπόλοιπα', subs:rest \}\)/.test(CODE));
+    /* ⚠️⚠️ ΑΥΤΟ ΗΤΑΝ REGEX ΚΑΙ ΔΕΝ ΔΑΓΚΩΝΕ: ένα `if (0)` μπροστά στην κλήση
+       άφηνε το κείμενο στη θέση του και ο έλεγχος περνούσε ΕΝΩ ΤΟ ΔΙΧΤΥ ΗΤΑΝ
+       ΝΕΚΡΟ (η ίδια παγίδα με το σχολιασμένο `renderLessons4()` της
+       als-v484). Ελέγχεται ΣΥΜΠΕΡΙΦΟΡΙΚΑ τώρα, πάνω στην πραγματική έξοδο. */
+    {
+      const E2 = makeEnv({ now: TUE });
+      const covered = {};
+      E2.api.l4Groups().forEach(g => g.subs.forEach(x => { covered[x] = 1; }));
+      is('⛔ ΚΑΘΕ μάθημα του SUBJ_ORDER βγαίνει ΣΤΗΝ ΟΘΟΝΗ, όχι μόνο στη δήλωση',
+        E2.api.SUBJ_ORDER.filter(x => !covered[x]).join(',') || '(κανένα)', '(κανένα)');
+    }
   }
 
   /* ⚠️ ΤΟ 30% ΓΡΑΦΕΤΑΙ ΜΙΑ ΦΟΡΑ ΑΝΑ ΓΡΑΠΤΟ. Δύο κάρτες Αρχαίων με «30% των
@@ -1334,9 +1363,13 @@ section('7 · ΟΙ ΕΡΓΑΣΙΕΣ γίνονται δωμάτιο');
   ok('το ladders.js διαβάζεται ακόμη σε κάθε paint', /\n\s{4}ladders\(\);/.test(PAINT));
   ok('και η μνήμη ζωγραφίζεται ΟΛΟΚΛΗΡΗ πίσω από την πόρτα των μαθημάτων',
     /\n\s{4}renderLessons4\(\);/.test(PAINT) && PAGE.indexOf('id="hwL4Grid"') > -1);
+  /* ⚠️ Το παράθυρο ήταν 700 και έσπασε στην als-v487 όταν μπήκε ένα σχόλιο
+     στο markup. Ένα παράθυρο χαρακτήρων μετράει ΣΧΟΛΙΑ, όχι δομή — γι' αυτό
+     μετράει πια ότι το `hwOver` είναι ΜΕΣΑ στο ίδιο `<section>`, που είναι το
+     πράγμα που πραγματικά μας νοιάζει (η αιτία δίπλα στο αποτέλεσμα). */
   ok('η συσσώρευση ζωγραφίζεται κι αυτή, στη νέα της θέση',
     /\n\s{4}renderOver\(pool\);/.test(PAINT) &&
-    /<section class="hw-tasks"[\s\S]{0,700}id="hwOver"/.test(PAGE));
+    /<section class="hw-tasks"[\s\S]*?id="hwOver"[\s\S]*?<\/section>/.test(PAGE));
 }
 
 section('7b · Η ΠΛΟΗΓΗΣΗ — ένα μέρος με δωμάτια');
@@ -1367,6 +1400,120 @@ section('7b · Η ΠΛΟΗΓΗΣΗ — ένα μέρος με δωμάτια');
   /* Κάθε πόρτα λέει τι χρωστάει, από τον ΙΔΙΟ υπολογισμό με την κεφαλίδα της. */
   ok('η πόρτα των εργασιών μετράει τις ανοιχτές', PAGE.indexOf("$('hwDoorsT').textContent") > -1);
   ok('και δεν λέει «0» για καμία', PAGE.indexOf("'καμία ακόμη'") > -1);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   12 · als-v487 · ΟΙ ΕΡΓΑΣΙΕΣ ΓΙΝΟΝΤΑΙ ΟΜΑΔΕΣ
+
+   ⛔⛔ ΤΟ FIXTURE ΕΙΝΑΙ ΟΙ ΑΛΗΘΙΝΕΣ ΤΟΥ ΕΡΓΑΣΙΕΣ, τραβηγμένες από το MCP
+   πριν σχεδιαστεί οτιδήποτε — και είναι ΟΛΟ το νόημα αυτής της ενότητας:
+   **οι ΤΡΕΙΣ από τις έξι ανοιχτές κάθονται στο ΠΑΛΙΟ σκέτο `arxaia`**, που
+   ΔΕΝ υπάρχει στο `SUBJ_ORDER`. Μια ομαδοποίηση οδηγημένη από εκείνη τη
+   λίστα θα τις εξαφάνιζε ΣΙΩΠΗΛΑ. Ένα επινοημένο fixture με καθαρά
+   `arxaia_gn`/`arxaia_agn` θα περνούσε και δεν θα απεδείκνυε τίποτα.
+   ══════════════════════════════════════════════════════════════════════ */
+section('12 · οι εργασίες γίνονται ομάδες (als-v487)');
+{
+  const T = (id, subject, kind, title, done) => ({
+    id, ts: 1, subject, kind, title, due: null, link: null,
+    est: null, done: done || 0, src: null, note: '', elapsed: 0
+  });
+  const REAL = [
+    T('t1', 'ekthesi',  'askisi', 'ΜΤΦΡΑΣΗ 1ης ενοτητας…', 1),
+    T('t2', 'arxaia',   'apexo',  'Αρχαία άγνωστο Αρχικοί χρόνοι'),
+    T('t3', 'arxaia',   'apexo',  'Αρχαία άγνωστο επανάληψη α β γ κλίση'),
+    T('t4', 'arxaia',   'askisi', 'Αρχαία γνωστό παλιά άσκηση Α1'),
+    T('t5', 'latinika', 'askisi', 'Λατινικά εισαγωγή διάβασμα'),
+    T('t6', 'istoria',  'askisi', 'Ιστορία πηγή'),
+    T('t7', 'istoria',  'apexo',  'Ιστορία διάβασμα απέξω αγροτικό ζήτημα')
+  ];
+  const G = makeEnv({ now: TUE });
+  const open = REAL.filter(t => !t.done);
+  const gs = G.api.taskGroups(open);
+
+  /* ⭐ Η ΑΠΟΔΕΙΞΗ: ΚΑΜΙΑ εργασία δεν πέφτει στο πάτωμα. */
+  is('καμία από τις 6 ανοιχτές δεν χάνεται',
+    gs.reduce((n, g) => n + g.items.length, 0), open.length);
+  is('και οι τρεις του ΠΑΛΙΟΥ `arxaia` κάθονται μαζί, κάτω από «Αρχαία»',
+    gs.filter(g => g.id === 'arxaia').map(g => g.items.length), [3]);
+  is('τρεις ομάδες, με τη σειρά των συντελεστών',
+    gs.map(g => g.id), ['arxaia', 'istoria', 'latinika']);
+  is('και το βάρος κάθε ομάδας βγαίνει από τα δεδομένα',
+    gs.map(g => g.weight), [30, 20, 20]);
+
+  /* ⚠️ Ό,τι δηλώνει το ΙΔΙΟ γραπτό μπαίνει στην ΙΔΙΑ ομάδα — αλλιώς το «30%»
+     γράφεται δύο φορές και διαβάζεται 60 (η αριθμητική της als-v485, στο μάτι). */
+  ['arxaia', 'arxaia_gn', 'arxaia_agn'].forEach(s =>
+    is('το ' + s + ' δείχνει στο γραπτό «arxaia»',
+      G.api.taskGroupId({ subject: s }), 'arxaia'));
+  is('ενώ η Ιστορία μένει δική της', G.api.taskGroupId({ subject: 'istoria' }), 'istoria');
+
+  /* ⛔ ΤΙΠΟΤΑ ΔΕΝ ΚΡΥΒΕΤΑΙ: ένα άγνωστο μάθημα παίρνει την τελευταία θέση,
+     ΠΟΤΕ καμία. Αυτό είναι το δίχτυ κάτω από τη δηλωμένη σειρά. */
+  is('ένα ΑΓΝΩΣΤΟ μάθημα παίρνει την τελευταία θέση, όχι καμία',
+    G.api.taskGroupRank('κατι-ανυπαρκτο'), 99);
+  {
+    const withUnknown = open.concat([T('t8', 'unknown', 'askisi', 'κάτι που δεν κατάλαβα')]);
+    const gu = G.api.taskGroups(withUnknown);
+    is('και εμφανίζεται, τελευταίο', gu[gu.length - 1].items.length, 1);
+    is('χωρίς να χάσει τις υπόλοιπες',
+      gu.reduce((n, g) => n + g.items.length, 0), withUnknown.length);
+  }
+
+  /* Η ΣΕΙΡΑ ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ ΕΔΩ — διαβάζεται από το `L4_GROUPS`, δηλαδή από
+     την ίδια δήλωση που ταξινομεί τις κάρτες της αρχικής οθόνης. */
+  ok('η σειρά διαβάζεται από το L4_GROUPS, δεν ξαναγράφεται',
+    /for \(var i = 0; i < L4_GROUPS\.length; i\+\+\)/.test(CODE));
+
+  /* ⭐ ΣΕ ΗΡΕΜΙΑ Η ΓΡΑΜΜΗ ΔΕΙΧΝΕΙ ΜΗΔΕΝ ΚΟΥΜΠΙΑ — αυτό ήταν το παράπονο. */
+  ok('οι πράξεις κρύβονται σε ηρεμία', /\.hw-tacts\{[^}]*opacity:0/.test(PAGE));
+  ok('και έρχονται στο hover ΧΩΡΙΣ να κουνήσουν τη διάταξη',
+    /\.hw-task:hover \.hw-tacts[^{]*\{ opacity:1/.test(PAGE) &&
+    /\.hw-tacts\{ position:absolute/.test(PAGE));
+  /* ⛔⛔ ΚΑΙ ΣΤΟ ΚΙΝΗΤΟ ΞΑΝΑΕΜΦΑΝΙΖΟΝΤΑΙ. Χωρίς αυτό, η μοναδική διαδρομή
+     προς το ✕ κρύβεται πίσω από χειρονομία που η συσκευή ΔΕΝ έχει. */
+  ok('στο κινητό οι πράξεις είναι ΠΑΝΤΑ ορατές',
+    /@media \(max-width:999px\)\{[\s\S]*?\.hw-tacts\{ position:static[^}]*opacity:1/.test(PAGE));
+
+  /* Ο κύκλος ΑΝΤΙΚΑΘΙΣΤΑ το κουμπί, δεν προσθέτει δεύτερο δρόμο (σταθ. 15). */
+  ok('ο κύκλος κουβαλάει το ΙΔΙΟ data-done', /class="hw-ck"[^>]*data-done=/.test(CODE));
+  /* ⛔⛔ ΚΑΙ Η ΚΑΡΤΑ ΜΙΑ ΑΠΟΦΑΣΗ ΦΟΡΑΕΙ ΤΟ ΙΔΙΟ `.hw-tacts` ΧΩΡΙΣ ΝΑ ΕΙΝΑΙ
+     `.hw-task` — σταθερή αρχή 26. Ένας γυμνός κανόνας που κρύβει το
+     `.hw-tacts` αφήνει τα κουμπιά της κάρτας ΜΟΝΙΜΑ ΑΟΡΑΤΑ, δηλαδή η πιο
+     επείγουσα εργασία γίνεται η μόνη που δεν σβήνεται. */
+  ok('η απόκρυψη είναι ΣΤΕΝΗ — μόνο μέσα στη γραμμή',
+    /\.hw-task \.hw-tacts\{[^}]*opacity:0/.test(PAGE) &&
+    !/^\s*\.hw-tacts\{[^}]*opacity:0/m.test(PAGE));
+  ok('και η κάρτα κρατάει τις δικές της πράξεις ορατές',
+    /\.hw-tacts\{ display:flex; gap:6px; margin-top:9px/.test(PAGE));
+
+  /* Τα τελειωμένα φεύγουν από τη ροή — «τι χρωστάω» και «τι έκανα» είναι δύο
+     ερωτήσεις, και ως τώρα απαντιόνταν από την ίδια στήλη. */
+  ok('τα τελειωμένα ζουν σε δίπλωμα', /<details class="hw-fold">/.test(CODE));
+  ok('και το σκούπισμα ζει ΜΕΣΑ του', /data-sweep="1"[\s\S]{0,80}<\/details>/.test(CODE));
+  ok('δεμένο στο δοχείο, όχι σε κουμπί που ξαναγεννιέται',
+    /\$\('hwTasks'\)\.addEventListener\('click'/.test(CODE));
+  /* ⚠️ Ένα δεν είναι πληθυντικός — το είδε ΜΟΝΟ το render. */
+  ok('και το ΕΝΑ δεν γράφεται πληθυντικός',
+    /doneL\.length === 1 \? 'Έγινε' : 'Έγιναν'/.test(CODE) &&
+    /dn === 1 \? ' έγινε' : ' έγιναν'/.test(CODE));
+
+  /* Το όνομα του δωματίου δεν λέγεται δύο φορές (η μπάρα το γράφει ήδη). */
+  is('το όνομα «Οι εργασίες μου» δεν επαναλαμβάνεται μέσα στο δωμάτιο',
+    (PAGE.match(/<span class="hw-n">Οι εργασίες μου<\/span>/g) || []).length, 0);
+
+  /* ⭐ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ ΗΜΕΡΟΜΗΝΙΑΣ, ΤΡΙΑ ΒΑΡΗ (σταθ. 10). */
+  ok('η δική του ημερομηνία ξεχωρίζει από την παραγόμενη',
+    /if \(!dd\.auto\) dcls \+= ' is-own'/.test(CODE) &&
+    /dd\.auto \? ' <i>· η επόμενη<\/i>' : ''/.test(CODE));
+  ok('και το ληξιπρόθεσμο χρώμα ΔΕΝ μπαίνει σε τελειωμένη',
+    /if \(!t\.done && dd\.key < today\(\)\)/.test(CODE));
+  /* ⛔ Και μια τελειωμένη δεν τυπώνει ΚΑΘΟΛΟΥ προθεσμία: η ημερομηνία εκεί
+     είναι παραγόμενη από το πρόγραμμα, δηλαδή απαντάει σε ερώτηση που δεν
+     έγινε. Δεν είναι άγνωστη μέτρηση, είναι μέγεθος που δεν υπάρχει. */
+  ok('μια τελειωμένη εργασία δεν τυπώνει προθεσμία',
+    /if \(t\.done\)\{\s*dtxt = '';/.test(CODE));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
