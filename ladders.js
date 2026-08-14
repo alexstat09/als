@@ -98,13 +98,25 @@
   var STORES = [
     { key: 'ist:v1', page: 'istoria.html',  subject: 'istoria',  label: 'Ιστορία',
       kind: 'units', ladder: 'units', acc: 'els',   weight: 20, deep: 'recall' },
-    { key: 'arx:gn', page: 'arxaia.html',   subject: 'arxaia',   label: 'Αρχαία · γνωστό',
+    /* ⭐⭐ ΤΟ ΓΝΩΣΤΟ ΚΑΙ ΤΟ ΑΓΝΩΣΤΟ ΕΙΝΑΙ ΔΥΟ ΜΑΘΗΜΑΤΑ, als-v485. ΔΙΚΟ ΤΟΥ
+       ΓΕΓΟΝΟΣ, 14/08/26: *«το κάνω με ΔΙΑΦΟΡΕΤΙΚΟΥΣ ΚΑΘΗΓΗΤΕΣ και είναι
+       κυριολεκτικά δύο τελείως διαφορετικά πράγματα»*. Δύο καθηγητές, δύο
+       φυλλάδια, δύο μέρες στο πρόγραμμα, δύο εργασίες — άρα δύο μαθήματα.
+       ⚠️⚠️ ΑΛΛΑ ΕΝΑΣ ΣΥΝΤΕΛΕΣΤΗΣ, ΚΑΙ ΑΥΤΟ ΔΕΝ ΕΙΝΑΙ ΑΣΥΝΕΠΕΙΑ: το 30% είναι
+       γεγονός για το ΓΡΑΠΤΟ των Πανελληνίων, που είναι ΕΝΑ — ένα μάθημα, ένας
+       βαθμός. Ένα 15/15 θα ήταν **επινοημένος αριθμός** (σταθ. 33): κανείς δεν
+       είπε ποτέ ότι το γνωστό αξίζει όσο το άγνωστο. Άρα και τα δύο κουβαλάνε
+       30 και δηλώνουν το ΙΔΙΟ `exam` — ο καταναλωτής αθροίζει ΑΝΑ `exam`, ποτέ
+       ανά store, αλλιώς τα μόριά του βγαίνουν 110%. */
+    { key: 'arx:gn', page: 'arxaia.html',   subject: 'arxaia_gn',  exam: 'arxaia', label: 'Αρχαία · γνωστό',
       kind: 'units', ladder: 'units', acc: 'els',   weight: 30, deep: null },
-    { key: 'arx:v1', page: 'arxaia.html',   subject: 'arxaia',   label: 'Αρχαία · αρχικοί χρόνοι',
+    { key: 'arx:v1', page: 'arxaia.html',   subject: 'arxaia_agn', exam: 'arxaia', label: 'Αρχαία · αρχικοί χρόνοι',
       kind: 'units', ladder: 'pages', acc: 'cells', weight: 30, deep: null },
     { key: 'lat:v1', page: 'latinika.html', subject: 'latinika', label: 'Λατινικά',
       kind: 'cells', ladder: 'cells', acc: null,    weight: 20, deep: null },
-    { key: 'ton:v1', page: 'tonos.html',    subject: 'arxaia',   label: 'Τονισμός',
+    /* Ο τονισμός δανείζεται τη σκάλα του ΑΓΝΩΣΤΟΥ — εκεί τον έβαλε ο ίδιος
+       (12/08/26) και εκεί τον εξετάζει ο ίδιος καθηγητής. */
+    { key: 'ton:v1', page: 'tonos.html',    subject: 'arxaia_agn', exam: 'arxaia', label: 'Τονισμός',
       kind: 'cells', ladder: 'cells', acc: null,    weight: 30, deep: null }
   ];
 
@@ -198,7 +210,7 @@
     if (!isFinite(right) || right < 0) return null;
     return {
       id: String(rec.id != null ? rec.id : def.key + ':' + i),
-      store: def.key, page: def.page, subject: def.subject,
+      store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject,
       ts: ts, ms: ms,
       unit: rec.unit == null ? '' : String(rec.unit),
       mode: rec.mode == null ? '' : String(rec.mode),
@@ -271,6 +283,8 @@
   function readStore(def, get, now) {
     var out = {
       key: def.key, page: def.page, subject: def.subject, label: def.label,
+      /* `exam` = το ΓΡΑΠΤΟ στο οποίο μετράει. Απόν όπου μάθημα === γραπτό. */
+      exam: def.exam || def.subject,
       weight: def.weight, deep: def.deep,
       ok: true, why: '', started: false,
       items: [],
@@ -346,7 +360,7 @@
            σημαίνει «έπεσε στο σκαλί 0», δηλαδή το έχει μόλις χάσει. */
         var rung = ('box' in rec) ? num(rec.box) : ('streak' in rec) ? num(rec.streak) : 0;
         out.items.push({
-          store: def.key, page: def.page, subject: def.subject, unitId: id,
+          store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject, unitId: id,
           label: id, due: due, accuracy: samples ? right / samples : null,
           learned: learned, samples: samples, rung: rung, weight: def.weight
         });
@@ -355,7 +369,7 @@
         right = a ? a.r : 0; wrong = a ? a.w : 0; samples = right + wrong;
         learned = !!num(rec.learnedAt);
         out.items.push({
-          store: def.key, page: def.page, subject: def.subject, unitId: id,
+          store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject, unitId: id,
           label: id, due: due, accuracy: a && samples ? right / samples : null,
           learned: learned, samples: samples, rung: num(rec.reviews), weight: def.weight
         });

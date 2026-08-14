@@ -204,6 +204,24 @@
   body.hw-door-capture .hw-grab > .hw-sec-hd{ display:none; }
   .hw-tonight{ display:none; }
   body.hw-door-tonight .hw-tonight{ display:block; }
+  .hw-programma{ display:none; }
+  body.hw-door-programma .hw-programma{ display:block; }
+  /* ⚠️ ΜΙΑ ΓΡΑΜΜΗ ΑΝΑ ΜΕΡΑ, ΚΑΙ Η ΜΕΡΑ ΕΧΕΙ ΣΤΑΘΕΡΟ ΠΛΑΤΟΣ. Οι τρεις ώρες
+     είναι ΣΕΙΡΑ, όχι πλέγμα: σε 320px ένα grid 3 στηλών κόβει τα «Αρχαία ·
+     άγνωστο» στη μέση, που είναι ακριβώς το λάθος των πορτών στην als-v483. */
+  .hw-tt{ margin-top:6px; }
+  .hw-ttrow{ display:flex; gap:12px; align-items:flex-start; padding:11px 0;
+    border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-ttrow.hw-today{ background:rgba(255,255,255,.03); margin:0 -10px; padding-left:10px; padding-right:10px; border-radius:8px; }
+  .hw-ttd{ flex:none; width:74px; font:400 11px/1.5 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-ttrow.hw-today .hw-ttd{ color:var(--au-ivory,#f5f2ec); }
+  .hw-ttl{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .hw-ttslot{ display:flex; gap:9px; align-items:baseline; font-size:13.5px; }
+  .hw-ttslot .hw-tick{ width:3px; align-self:stretch; min-height:15px; border-radius:2px;
+    background:rgba(var(--hw-c),.85); flex:none; }
+  .hw-ttat{ flex:none; font:400 11px/1.4 var(--au-mono,ui-monospace,monospace); color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-ttfree{ font-size:12.5px; color:var(--au-faint,rgba(245,242,236,.3)); }
   /* ══ ΦΑΣΗ 2 · ΟΙ ΕΡΓΑΣΙΕΣ ΕΙΝΑΙ ΔΩΜΑΤΙΟ ═══════════════════════════
      Κρυφές στο ΚΕΝΤΡΟ, ορατές μόνο πίσω από το hash τους. ⭐ Η ΣΥΛΛΗΨΗ ΜΕΝΕΙ
      ΟΡΑΤΗ εδώ επίτηδες — το δωμάτιο των εργασιών είναι ακριβώς το μέρος που
@@ -550,6 +568,16 @@
           <span class="dl-n">Απόψε</span>
           <span class="dl-s" id="hwDoorsN">—</span>
         </a>
+        <!-- ⭐ ΤΟ ΠΡΟΓΡΑΜΜΑ ΕΙΝΑΙ ΑΝΑΦΟΡΑ, ΟΧΙ ΠΡΑΞΗ — άρα ΠΟΡΤΑ, όχι μπλοκ.
+             Ο κανόνας του ξακρίσματος (als-v484) λέει ότι στην αρχική οθόνη
+             μπαίνει μόνο ό,τι είναι ΠΡΑΞΗ ή ΔΡΟΜΟΣ ΠΡΟΣ ΠΡΑΞΗ. Ένας πίνακας
+             15 ωρών που ήδη ΖΕΙ κάθε μέρα είναι το πιο καθαρό παράδειγμα
+             «υπάρχει για να το κοιτάς». Αυτό που δουλεύει καθημερινά δεν
+             είναι το πλέγμα — είναι το «(η επόμενη)» πάνω σε κάθε εργασία. -->
+        <a class="hw-doorlink" href="#programma">
+          <span class="dl-n">Το πρόγραμμα</span>
+          <span class="dl-s" id="hwDoorsP">—</span>
+        </a>
       </nav>
     </div>
 
@@ -649,6 +677,16 @@
         <div class="hw-l4grid" id="hwL4Grid"></div>
       </section>
 
+      <!-- ══ ΤΟ ΠΡΟΓΡΑΜΜΑ · als-v485 ═══════════════════════════════
+           ⛔ ΔΕΝ φοράει `hw-sec`: το μόνο μπλοκ της σελίδας μένει η ΣΥΛΛΗΨΗ. -->
+      <section class="hw-programma" id="hwProgramma">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Το πρόγραμμα</span>
+          <span class="hw-s" id="hwProgS"></span>
+        </div>
+        <div id="hwProgBody"></div>
+      </section>
+
       <section class="hw-tonight" id="hwTonight">
         <div class="hw-sec-hd">
           <span class="hw-n">Απόψε</span>
@@ -659,6 +697,20 @@
     </div>
   </div>
 </main>
+
+<!-- ⭐ ΠΟΤΕ ΘΑ ΤΟ ΚΑΝΩ · als-v485. Ζει στο ΙΔΙΟ `dialog.hw-dlg`, άρα ο κανόνας
+     «display ΜΟΝΟ στο [open]» (σταθ. 4) ισχύει ήδη και δεν ξαναγράφεται. -->
+<dialog class="hw-dlg" id="hwWhen">
+  <div class="hw-sheet" tabindex="-1">
+    <div class="hw-eyebrow">Πότε</div>
+    <h3 id="hwWhenTitle"></h3>
+    <p class="hw-lead" id="hwWhenLead"></p>
+    <div class="hw-pick" id="hwWhenGrid"></div>
+    <div class="hw-acts">
+      <button class="hw-btn hw-quiet" id="hwWhenClose" type="button">Άκυρο</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ -->
 <dialog class="hw-dlg" id="hwFocus">
@@ -763,7 +815,24 @@
      δεν βγαίνει στην οθόνη. */
   var SUBJ = {
     istoria:  { label:'Ιστορία',  rgb:'var(--hw-ist)', weight:20, page:'istoria.html'  },
-    arxaia:   { label:'Αρχαία',   rgb:'var(--hw-arx)', weight:30, page:'arxaia.html'   },
+    /* ⭐⭐ ΔΥΟ ΜΑΘΗΜΑΤΑ, ΕΝΑ ΓΡΑΠΤΟ (als-v485). Δικό του γεγονός, 14/08/26:
+       *«το κάνω με ΔΙΑΦΟΡΕΤΙΚΟΥΣ ΚΑΘΗΓΗΤΕΣ και είναι κυριολεκτικά δύο τελείως
+       διαφορετικά πράγματα»*. Δύο καθηγητές, δύο μέρες, δύο εργασίες.
+       ⚠️⚠️ ΚΑΙ ΤΑ ΔΥΟ ΔΗΛΩΝΟΥΝ `exam:'arxaia'` ΜΕ ΤΟ ΙΔΙΟ 30. Το 30% είναι
+       γεγονός για το ΓΡΑΠΤΟ, που είναι ΕΝΑ. Ένα 15/15 θα ήταν επινοημένος
+       αριθμός (σταθ. 33) — κανείς δεν είπε ότι το γνωστό αξίζει όσο το
+       άγνωστο. Ο,τι ΑΘΡΟΙΖΕΙ συντελεστές αθροίζει ΑΝΑ `exam`, ποτέ ανά κλειδί,
+       αλλιώς τα μόριά του βγαίνουν 110%. */
+    arxaia_gn:  { label:'Αρχαία · γνωστό',  rgb:'var(--hw-arx)', weight:30, page:'arxaia.html', exam:'arxaia' },
+    arxaia_agn: { label:'Αρχαία · άγνωστο', rgb:'var(--hw-arx)', weight:30, page:'arxaia.html', exam:'arxaia' },
+    /* ⛔ ΤΟ ΠΑΛΙΟ ΣΚΕΤΟ «arxaia» ΔΕΝ ΣΒΗΝΕΤΑΙ ΠΟΤΕ. Κάθε εργασία που έγραψε
+       πριν την als-v485 το κουβαλάει, και ένα κλειδί χωρίς εγγραφή εδώ θα την
+       έκανε ΓΚΡΙ «χωρίς μάθημα» — δηλαδή θα «έχανε» δουλειά του για να
+       εξυπηρετήσει μια δική μας αναδιοργάνωση. Ζει, βάφεται σωστά, μετράει
+       κανονικά· απλώς δεν προσφέρεται πια σε ΝΕΑ επιλογή (λείπει από το
+       `SUBJ_ORDER`), γιατί από εδώ και πέρα η απάντηση είναι πάντα μία από τις
+       δύο. ⚠️ Δεν παίρνει αυτόματη ημερομηνία — δες `nextLessonFor()`. */
+    arxaia:   { label:'Αρχαία',   rgb:'var(--hw-arx)', weight:30, page:'arxaia.html', exam:'arxaia', legacy:true },
     latinika: { label:'Λατινικά', rgb:'var(--hw-lat)', weight:20, page:'latinika.html' },
     /* ⭐ Η Έκθεση είναι 30% των μορίων του — ισόπαλη με τα Αρχαία — και ΔΕΝ
        έχει σελίδα, ούτε corpus, ούτε άσκηση. Δεν την κρύβουμε: είναι κανονικό
@@ -829,7 +898,108 @@
      στο ΙΔΙΟ commit. Ο load() αντιγράφει πρώτα ΟΛΑ τα κλειδιά (τίποτα δεν
      χάνεται) και μετά κανονικοποιεί όσα ξέρει — αλλά ένα πεδίο που λείπει από
      το blank() γεννιέται undefined σε καθαρή συσκευή. */
-  function blank(){ return { v:1, tasks:{}, samples:{}, lessons:{} }; }
+  function blank(){ return { v:1, tasks:{}, samples:{}, lessons:{}, timetable:{} }; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΕΒΔΟΜΑΔΙΑΙΟ ΠΡΟΓΡΑΜΜΑ — als-v485
+
+     ⭐⭐ ΓΙΑΤΙ ΥΠΑΡΧΕΙ, ΚΑΙ ΔΕΝ ΕΙΝΑΙ ΔΙΑΚΟΣΜΗΣΗ: ο Αλεξ δεν σκέφτεται «για
+     τις 18 Αυγούστου», σκέφτεται **«για την επόμενη φορά που έχω Ιστορία»**.
+     Έτσι δίνει το φροντιστήριο τις εργασίες και έτσι τις θυμάται. Άρα το
+     πρόγραμμα είναι η ΜΗΧΑΝΗ που δίνει ημερομηνία σε κάθε εργασία, και ο
+     πίνακας που βλέπει είναι απλώς το μέρος που τη διορθώνει.
+
+     ΣΧΗΜΑ — ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ ΑΝΑ ΜΕΡΑ, ΜΕ `_ts` (σταθ. 31):
+       { mon: { slots:[{at:'15:15', subject:'arxaia_agn'}, …], _ts }, … }
+     ⚠️⚠️ Η μέρα είναι ΜΙΑ εγγραφή, όχι τρεις: αλλάζοντας μία ώρα αλλάζεις όλη
+     τη μέρα, οπότε το LWW παίζει σε ΟΛΟΚΛΗΡΗ τη μέρα και δεν μπορούν δύο
+     συσκευές να συνθέσουν μισή-μισή μια μέρα που δεν υπήρξε ποτέ.
+
+     ⛔⛔ ΤΟ ΣΠΟΡΟ ΔΕΝ ΣΦΡΑΓΙΖΕΤΑΙ ΜΕ `now`, ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ ΟΛΟ ΤΟ ΘΕΜΑ.
+     Ο σπόρος γράφει `_ts: SEED_TS` — τη στιγμή που ΜΕΤΑΓΡΑΦΗΚΕ το πρόγραμμα
+     από το ημερολόγιό του (14/08/26), όχι το «τώρα» της συσκευής. Με `now` μια
+     καθαρή εγκατάσταση θα έσπερνε ΝΕΟΤΕΡΗ σφραγίδα από μια αληθινή διόρθωση
+     που έκανε στο κινητό, και το LWW θα έσβηνε τη διόρθωσή του: ΑΚΡΙΒΩΣ το bug
+     του `nut:streak` (als-v436) σε νέο σχήμα. Κάθε πραγματική αλλαγή είναι εξ
+     ορισμού νεότερη από τον σπόρο και νικάει πάντα.
+     ⛔ Και ΔΕΝ σπέρνεται ΠΟΤΕ από render — μόνο από το boot, μία φορά, και μόνο
+     αν δεν υπάρχει ΤΙΠΟΤΑ (σταθ. «a default is not data»).
+     ══════════════════════════════════════════════════════════════════ */
+  var TT_DAYS = ['mon','tue','wed','thu','fri','sat','sun'];   /* δείκτης = dowMon */
+  var TT_SLOTS = ['15:15','16:15','17:15'];                    /* ΦΡΟΝΤΙΣΤΗΡΙΟ ΠΥΘΑΓΟΡΑΣ */
+  var SEED_TS = Date.UTC(2026, 7, 14);                         /* 14/08/2026, ΠΟΤΕ «now» */
+  /* Μεταγραμμένο από ΔΙΚΑ ΤΟΥ events του Google Calendar (γραμμένα 30/07/26).
+     ⛔ Δεν είναι μαντεψιά και δεν είναι κλειδωμένο: τον Σεπτέμβρη ανοίγει το
+     σχολείο και θα αλλάξει — γι' αυτό ζει στην αποθήκη και όχι εδώ. */
+  var TT_SEED = {
+    mon: ['arxaia_agn','latinika','ekthesi'],
+    tue: ['istoria','arxaia_gn','latinika'],
+    wed: ['istoria','arxaia_agn','ekthesi'],
+    thu: ['istoria','arxaia_agn','ekthesi'],
+    fri: ['istoria','arxaia_gn','latinika'],
+    sat: [], sun: []
+  };
+
+  function ttDay(d){
+    var m = state && state.timetable, r = m && m[d];
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    return Array.isArray(r.slots) ? r.slots : null;
+  }
+  /* Τα μαθήματα μιας μέρας, ΚΑΘΑΡΑ — αγνοεί ό,τι δεν είναι γνωστό μάθημα, ώστε
+     μια παλιά ή χαλασμένη εγγραφή να μη ζωγραφίζει σκουπίδι στην οθόνη του. */
+  function ttSubjects(d){
+    var sl = ttDay(d);
+    if (!sl) return null;                     /* ΔΕΝ ΞΕΡΩ ≠ ΚΕΝΗ ΜΕΡΑ (σταθ. 33) */
+    var out = [];
+    sl.forEach(function(x){
+      if (x && typeof x === 'object' && SUBJ[x.subject]) out.push(x.subject);
+    });
+    return out;
+  }
+  function ttSeedIfEmpty(){
+    if (!state) return;
+    if (!state.timetable || typeof state.timetable !== 'object' || Array.isArray(state.timetable)) state.timetable = {};
+    var k, any = false;
+    for (k in state.timetable) if (Object.prototype.hasOwnProperty.call(state.timetable, k)){ any = true; break; }
+    if (any) return;                          /* υπάρχει ήδη — ο σπόρος σιωπά */
+    TT_DAYS.forEach(function(d){
+      state.timetable[d] = {
+        slots: TT_SEED[d].map(function(sub, i){ return { at:TT_SLOTS[i] || '', subject:sub }; }),
+        _ts: SEED_TS
+      };
+    });
+    save();
+  }
+  /* ⭐ Η ΚΑΡΔΙΑ: «για την επόμενη φορά που έχεις αυτό το μάθημα».
+     ⛔ ΠΟΤΕ ΣΗΜΕΡΑ. Η εργασία γεννιέται ΜΕΣΑ στο μάθημα των 15:15–18:00, άρα
+     «η επόμενη φορά» είναι εξ ορισμού ΜΕΤΑ τη σημερινή. Ένα «για σήμερα» θα
+     ήταν προθεσμία που έχει ήδη περάσει τη στιγμή που γράφεται.
+     ⛔ ΚΑΙ ΠΟΤΕ ΓΙΑ ΤΟ ΚΛΗΡΟΝΟΜΙΚΟ «arxaia»: δύο καθηγητές, δύο μέρες — μια
+     αυθαίρετη επιλογή ανάμεσά τους είναι εύλογη λάθος τιμή, το ακριβότερο
+     είδος σφάλματος αυτού του repo. Μένει χωρίς, και το λέει. */
+  function nextLessonFor(sub){
+    if (!sub || !SUBJ[sub] || SUBJ[sub].legacy) return null;
+    var base = new Date(today() + 'T00:00:00');
+    for (var i = 1; i <= 14; i++){
+      var d = new Date(base); d.setDate(d.getDate() + i);
+      var subs = ttSubjects(TT_DAYS[dowMon(d)]);
+      if (subs && subs.indexOf(sub) >= 0) return dkOf(d);
+    }
+    return null;
+  }
+  /* ⭐⭐ Η ΠΡΟΘΕΣΜΙΑ ΠΑΡΑΓΕΤΑΙ, ΔΕΝ ΓΡΑΦΕΤΑΙ — ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
+     Αν την έγραφα στην εργασία τη στιγμή της δημιουργίας: (α) οι έξι εργασίες
+     που μπήκαν από το MCP δεν θα έπαιρναν ΠΟΤΕ ημερομηνία, (β) αλλάζοντας το
+     πρόγραμμα τον Σεπτέμβρη θα έμεναν όλες κολλημένες στις παλιές μέρες, και
+     (γ) θα ήταν migration πάνω σε δικά του δεδομένα. Παράγεται σε κάθε
+     ανάγνωση: μηδέν εγγραφές, μηδέν migration, και το πρόγραμμα είναι πάντα η
+     αλήθεια. Ό,τι διάλεξε ΡΗΤΑ (`t.due`) νικάει πάντα — είναι διόρθωση. */
+  function dueOf(t){
+    if (!t) return { key:null, auto:false };
+    if (t.due) return { key:t.due, auto:false };
+    var n = nextLessonFor(t.subject);
+    return { key:n, auto:!!n };
+  }
 
   function banner(msg){
     var b = $('hwBanner');
@@ -856,6 +1026,11 @@
     b.tasks   = (s.tasks   && typeof s.tasks   === 'object' && !Array.isArray(s.tasks))   ? s.tasks   : {};
     b.samples = (s.samples && typeof s.samples === 'object' && !Array.isArray(s.samples)) ? s.samples : {};
     b.lessons = (s.lessons && typeof s.lessons === 'object' && !Array.isArray(s.lessons)) ? s.lessons : {};
+    /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35: κάθε νέο πεδίο γράφεται ΚΑΙ στο `blank()` ΚΑΙ εδώ.
+       Το `for (k in s)` από πάνω το κρατάει ζωντανό· αυτή η γραμμή είναι
+       ΚΑΝΟΝΙΚΟΠΟΙΗΣΗ ΤΥΠΟΥ, ώστε ένας πίνακας ή ένα string να μη φτάσει ποτέ
+       στον `ttDay()` και να τον σπάσει. */
+    b.timetable = (s.timetable && typeof s.timetable === 'object' && !Array.isArray(s.timetable)) ? s.timetable : {};
     return b;
   }
   function loadPics(){
@@ -878,7 +1053,10 @@
            [λατινικά], και το cloud γυρίζει [ιστορία, λατινικά]. Με σφραγίδα
            ΑΝΑ ΜΕΡΑ, το `mergeObject` σταματάει στην εγγραφή και κρατάει
            ΟΛΟΚΛΗΡΗ τη νεότερη επιλογή. Το κλειδώνει το homework-sync.test.js. */
-        function(){ return state ? [state.tasks, state.samples, state.lessons] : []; },
+        /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 31: το `timetable` είναι ΦΩΛΙΑΣΜΕΝΟΣ ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ,
+           άρα ΠΡΕΠΕΙ να σφραγίζεται — αλλιώς η δεύτερη διόρθωση μιας μέρας
+           γυρίζει πίσω από το cloud μέσα σε 400ms, ντετερμινιστικά. */
+        function(){ return state ? [state.tasks, state.samples, state.lessons, state.timetable] : []; },
         /* Παλιές εγγραφές παίρνουν τον ΠΡΑΓΜΑΤΙΚΟ τους χρόνο, ποτέ το τώρα:
            αλλιώς «όποια συσκευή άνοιξε τελευταία τη σελίδα κερδίζει».
            ⚠️ Το `lessons` γεννιέται ΜΕ σφραγίδα από την πρώτη του μέρα (δεν
@@ -1034,9 +1212,9 @@
       if (window.ISTORIA && window.ISTORIA.UNITS)
         window.ISTORIA.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'istoria', page:'istoria.html', title:u.title||'', deep:true }); });
       if (window.ARXGN && window.ARXGN.UNITS)
-        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia', page:'arxaia.html', title:u.title||'', deep:false }); });
+        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia_gn', page:'arxaia.html', title:u.title||'', deep:false }); });
       if (window.ArxaiaData && window.ArxaiaData.PAGES)
-        window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia', page:'arxaia.html', title:p.range||'', deep:false }); });
+        window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia_agn', page:'arxaia.html', title:p.range||'', deep:false }); });
     } catch(e){}
     return out;
   }
@@ -1146,7 +1324,8 @@
      διαβάζει ΚΑΙ το `api/run-reminders.js` όταν στέλνει το push των 18:00.
      ══════════════════════════════════════════════════════════════════ */
   var DOORS = { capture:'Η σύλληψη', tonight:'Απόψε',
-               mathimata:'Τα μαθήματά μου', ergasies:'Οι εργασίες μου' };
+               mathimata:'Τα μαθήματά μου', ergasies:'Οι εργασίες μου',
+               programma:'Το πρόγραμμα' };
   function doorOf(hash){
     var h = String(hash == null ? '' : hash).replace(/^#/, '');
     return Object.prototype.hasOwnProperty.call(DOORS, h) ? h : '';
@@ -1176,7 +1355,8 @@
      ακριβώς μία εύλογη επινοημένη τιμή.
      ══════════════════════════════════════════════════════════════════ */
   var MAX_LESSONS = 3;
-  var SUBJ_ORDER = ['istoria','arxaia','latinika','ekthesi'];
+  /* ⚠️ Το σκέτο `arxaia` ΛΕΙΠΕΙ επίτηδες: είναι κληρονομιά, όχι επιλογή. */
+  var SUBJ_ORDER = ['istoria','arxaia_gn','arxaia_agn','latinika','ekthesi'];
 
   /* Ο αναγνώστης ΔΕΝ ΓΡΑΦΕΙ ΠΟΤΕ — ούτε καν ένα κέλυφος. Ένα `u(id)` μέσα σε
      render είναι το bug του `nut:streak`, και εδώ θα σφράγιζε άδεια επιλογή
@@ -1413,7 +1593,16 @@
     /* ⛔ ΤΟ «ισ» ΕΦΥΓΕ. Δεν το γράφει κανείς, και ως ΥΠΟΣΥΜΒΟΛΟΣΕΙΡΑ έπιανε
        οτιδήποτε — δες τον κανόνα ΛΕΞΗΣ στο subjectOfText από κάτω. */
     ['istoria',  ['ιστορια','ιστ','ιστοριας','history']],
-    ['arxaia',   ['αρχαια','αρχ','αγνωστο','γνωστο','αρχαιων','αρχαιαελληνικα']],
+    /* ⚠️⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 38, ΣΤΗΝ ΠΙΟ ΕΠΙΚΙΝΔΥΝΗ ΤΗΣ ΜΟΡΦΗ: το «γνωστο» ΕΙΝΑΙ
+       ΥΠΟΣΥΜΒΟΛΟΣΕΙΡΑ του «αγνωστο». Σώζεται ΜΟΝΟ επειδή ο ταιριαστής δουλεύει
+       ΑΝΑ TOKEN με πρόθεμα — «άγνωστο» ξεκινάει από «αγν», «γνωστό» από «γνω»,
+       άρα ως ΟΛΟΚΛΗΡΕΣ λέξεις δεν συγχέονται ποτέ. ⛔ Μην το γυρίσεις ποτέ σε
+       `indexOf` πάνω σε ολόκληρη τη γραμμή: «αρχαία άγνωστο» θα γινόταν ΓΝΩΣΤΟ.
+       ⚠️ Η ΣΕΙΡΑ ΜΕΤΡΑΕΙ — τα δύο ειδικά ΠΡΙΝ το γενικό, αλλιώς το σκέτο
+       «αρχαια» θα άρπαζε τη γραμμή πριν προλάβει να ειπωθεί ποιο από τα δύο. */
+    ['arxaia_agn', ['αγνωστο','αρχαιααγνωστο']],
+    ['arxaia_gn',  ['γνωστο','αρχαιαγνωστο']],
+    ['arxaia',   ['αρχαια','αρχ','αρχαιων','αρχαιαελληνικα']],
     ['latinika', ['λατινικα','λατ','λατινικων','latin']],
     ['ekthesi',  ['εκθεση','εκθ','νεοελληνικη','νεοελληνικηγλωσσα','γλωσσα','εκθεσης']]
   ];
@@ -1471,13 +1660,39 @@
      parseLine, που πάντα συνέκρινε ΑΝΑ TOKEN. Το πρόθεμα μένει επιτρεπτό
      («Αρχαία(Άγνωστο)» → «αρχαιααγνωστο») γιατί εκεί η λέξη ΞΕΚΙΝΑΕΙ με το
      μάθημα· το «φροντιστηριο» δεν ξεκινάει με τίποτα δικό μας. */
+  /* ⛔⛔ ΤΟ ΔΕΥΤΕΡΟ ΠΕΡΑΣΜΑ, ΚΑΙ ΤΟ ΕΠΙΑΣΕ ΒΕΒΑΙΩΣΗ ΠΡΙΝ ΤΟΝ ΔΕΙ ΑΝΘΡΩΠΟΣ.
+     Η πρώτη γραφή της als-v485 έβαλε τα `arxaia_agn`/`arxaia_gn` ΠΑΝΩ από το
+     σκέτο `arxaia` στον πίνακα, νομίζοντας ότι η σειρά του ΠΙΝΑΚΑ αποφασίζει.
+     ΔΕΝ αποφασίζει: ο εξωτερικός βρόχος είναι πάνω στα **TOKENS**, οπότε στο
+     «Αρχαία γνωστό» το ΠΡΩΤΟ token («αρχαια») ταιριάζει το γενικό και
+     επιστρέφει ΑΜΕΣΩΣ — η λέξη «γνωστό» δεν διαβαζόταν ποτέ. Αποτέλεσμα: κάθε
+     γραμμή του θα φακελωνόταν στο κληρονομικό μάθημα, δηλαδή **καμία εργασία
+     Αρχαίων δεν θα έπαιρνε ποτέ αυτόματη ημερομηνία** — σιωπηλά, με πράσινο
+     suite, ακριβώς η οικογένεια της σταθερής αρχής 38.
+     ⭐ Ο ΚΑΝΟΝΑΣ: όταν δύο ετικέτες είναι ΓΕΝΙΚΗ και ΕΙΔΙΚΗ, η προτεραιότητα
+     ΔΕΝ λύνεται με σειρά σε πίνακα — θέλει δεύτερο πέρασμα πάνω σε ΟΛΗ τη
+     γραμμή. Και ο έλεγχος γίνεται ΑΝΑ TOKEN, γιατί «γνωστο» είναι
+     υποσυμβολοσειρά του «αγνωστο» (σταθ. 38).
+     ⚠️ Το «ΓΝ»/«ΑΓΝ» του ημερολογίου του ταιριάζει ΑΚΡΙΒΩΣ (===), ποτέ ως
+     πρόθεμα: ένα alias δύο χαρακτήρων ως πρόθεμα είναι το λάθος που πλήρωσε η
+     als-v479 («ισ» → «Ισπανικά»). Ολόκληρο token «γν» είναι μονοσήμαντο. */
+  function refineArxaia(sub, toks){
+    if (sub !== 'arxaia') return sub;
+    for (var i = 0; i < toks.length; i++){
+      var f = fold(toks[i]); if (!f) continue;
+      if (f === 'αγν' || f.indexOf('αγνωστ') === 0) return 'arxaia_agn';
+      if (f === 'γν'  || f.indexOf('γνωστ')  === 0) return 'arxaia_gn';
+    }
+    return sub;
+  }
+
   function subjectOfText(text){
     var toks = String(text == null ? '' : text).split(/\s+/), i, j, k, f;
     for (i = 0; i < toks.length; i++){
       f = fold(toks[i]); if (!f) continue;
       for (j = 0; j < SUBJ_ALIAS.length; j++)
         for (k = 0; k < SUBJ_ALIAS[j][1].length; k++)
-          if (f.indexOf(SUBJ_ALIAS[j][1][k]) === 0) return SUBJ_ALIAS[j][0];
+          if (f.indexOf(SUBJ_ALIAS[j][1][k]) === 0) return refineArxaia(SUBJ_ALIAS[j][0], toks);
     }
     return null;
   }
@@ -1496,6 +1711,13 @@
         for (k = 0; k < SUBJ_ALIAS[j][1].length; k++)
           if (f === SUBJ_ALIAS[j][1][k]){ out.subject = SUBJ_ALIAS[j][0]; used[i] = 1; break; }
     }
+    /* ⭐ ΤΟ ΙΔΙΟ ΔΕΥΤΕΡΟ ΠΕΡΑΣΜΑ ΚΑΙ ΕΔΩ (σταθ. 15): ο δρόμος του ΗΜΕΡΟΛΟΓΙΟΥ
+       και ο δρόμος της ΠΛΗΚΤΡΟΛΟΓΗΜΕΝΗΣ γραμμής δίνουν την ίδια υπόσχεση, άρα
+       πρέπει να την τηρούν και οι δύο — μία εγγύηση σε ένα μονοπάτι και όχι
+       στο δίδυμό του δεν είναι εγγύηση.
+       ⛔ Το token του «γνωστό» ΔΕΝ σημειώνεται ως `used`: είναι λέξη ΤΟΥ, και
+       ο τίτλος του μένει αυτούσιος («Αρχαία γνωστό άσκηση Α1» — als-v479). */
+    out.subject = refineArxaia(out.subject, toks);
 
     /* 2 · ΕΝΟΤΗΤΑ — μόνο ids που ΥΠΑΡΧΟΥΝ στα corpora. Ένα token που δεν
        αναγνωρίζεται μένει στον τίτλο, ΠΟΤΕ δεν μαντεύεται. */
@@ -1589,7 +1811,7 @@
     }
     out.sort(function(a,b){
       if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-      var ad = a.due || '9999-99-99', bd = b.due || '9999-99-99';
+      var ad = dueOf(a).key || '9999-99-99', bd = dueOf(b).key || '9999-99-99';
       if (ad !== bd) return ad < bd ? -1 : 1;
       return (b.ts || 0) - (a.ts || 0);
     });
@@ -1751,8 +1973,9 @@
     taskList().forEach(function(t){
       if (t.done) return;
       var why = [], score = 0;
-      if (t.due){
-        var d = daysBetween(t.due, t0);
+      var tdue = dueOf(t).key;
+      if (tdue){
+        var d = daysBetween(tdue, t0);
         if (d < 0){ why.push('πέρασε η προθεσμία'); score += 55; }
         else if (d === 0){ why.push('για σήμερα'); score += 40; }
         else if (d === 1){ why.push('για αύριο'); score += 25; }
@@ -1814,8 +2037,9 @@
 
     /* ΕΡΓΑΣΙΕΣ με προθεσμία μέσα στην εβδομάδα. */
     taskList().forEach(function(t){
-      if (t.done || !t.due) return;
-      var b = days[t.due]; if (!b) return;
+      var pd = dueOf(t).key;
+      if (t.done || !pd) return;
+      var b = days[pd]; if (!b) return;
       b.items++; b.tasks.push(t);
     });
     /* ΧΡΕΟΣ ΜΝΗΜΗΣ: ό,τι ξυπνάει μέσα στην εβδομάδα. Μετριέται, δεν μετακινείται. */
@@ -1886,14 +2110,19 @@
      αρχή 31), αλλιώς η αλλαγή γυρίζει πίσω σε ~400ms από το cloud. */
   function bringForward(id){
     var t = state.tasks[id];
-    if (!t || t.done || !t.due) return null;
-    var d = new Date(t.due + 'T00:00:00'); d.setDate(d.getDate() - 1);
+    if (!t || t.done) return null;
+    /* ⚠️ Αν η προθεσμία ήταν ΠΑΡΑΓΟΜΕΝΗ, η μετακίνηση τη ΓΡΑΦΕΙ: από τη στιγμή
+       που την κουνάει με το χέρι, είναι δική του απόφαση και δεν επιτρέπεται
+       να την ξαναϋπολογίσει το πρόγραμμα από κάτω του. */
+    var from = dueOf(t).key;
+    if (!from) return null;
+    var d = new Date(from + 'T00:00:00'); d.setDate(d.getDate() - 1);
     var nd = dkOf(d);
     if (daysBetween(nd, today()) < 0) return null;   /* ΠΟΤΕ στο παρελθόν */
     var old = t.due;
     t.due = nd;
     if (!save()){ t.due = old; return null; }        /* γεμάτη αποθήκη: τίποτα δεν άλλαξε */
-    return { id:id, from:old, to:nd, title:t.title || '' };
+    return { id:id, from:from, to:nd, title:t.title || '' };
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1974,6 +2203,11 @@
       var t = c.task;
       acts = '<div class="hw-tacts">' +
         '<button class="hw-mini" type="button" data-done="' + esc(t.id) + '">Έγινε</button>' +
+        /* ⭐ Η ΙΔΙΑ ΠΡΑΞΗ ΣΤΙΣ ΔΥΟ ΘΕΣΕΙΣ (σταθ. 15): η κάρτα ΜΙΑ ΑΠΟΦΑΣΗ και η
+           λίστα των εργασιών. Η κάρτα δείχνει την πιο επείγουσα και η λίστα
+           ΔΕΝ τη δείχνει — αν το κουμπί ζούσε μόνο στη λίστα, η μία εργασία
+           που ΘΕΛΕΙ ημερομηνία θα ήταν η μόνη χωρίς τρόπο να την πάρει. */
+        '<button class="hw-mini" type="button" data-when="' + esc(t.id) + '">' + esc(fmtDue(dueOf(t).key)) + '</button>' +
         ((t.src && t.src.id && pics[t.src.id]) ? '<button class="hw-mini" type="button" data-pic="' + esc(t.src.id) + '">Πηγή</button>' : '') +
         '<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>' +
       '</div>';
@@ -2044,7 +2278,13 @@
     host.innerHTML = shown.map(function(t){
       var s = SUBJ[t.subject] || SUBJ.unknown;
       var bits = [s.label, KINDS[t.kind] || ''];
-      bits.push(t.due ? fmtDue(t.due) : 'χωρίς ημερομηνία');
+      /* ⭐ ΜΙΑ ΠΑΡΑΓΟΜΕΝΗ ΗΜΕΡΟΜΗΝΙΑ ΤΟ ΛΕΕΙ. Το «Τρίτη» και το «Τρίτη, η
+         επόμενη Ιστορία σου» είναι δύο διαφορετικά πράγματα: το πρώτο το
+         διάλεξε ο ίδιος, το δεύτερο το υπολόγισα εγώ από το πρόγραμμα και
+         μπορεί να είναι λάθος αν το πρόγραμμα άλλαξε. Σιωπηλά ίδια =
+         σταθερή αρχή 10 σε μορφή ημερομηνίας. */
+      var dd = dueOf(t);
+      bits.push(dd.key ? (fmtDue(dd.key) + (dd.auto ? ' (η επόμενη)' : '')) : 'χωρίς ημερομηνία');
       /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. */
       var eb = estBit(t.subject, t.kind); if (eb) bits.push(eb);
       if (t.elapsed > 60000) bits.push(Math.round(t.elapsed / 60000) + '′ γραμμένα');
@@ -2065,6 +2305,10 @@
           '<div class="hw-tmeta">' + esc(bits.filter(Boolean).join(' · ')) + '</div>' +
           '<div class="hw-tacts">' +
             '<button class="hw-mini' + (t.done ? '' : ' hw-lead') + '" type="button" data-done="' + esc(t.id) + '">' + (t.done ? 'Ξανά ανοιχτό' : 'Έγινε') + '</button>' +
+            /* ⭐ Το δίδυμο του κουμπιού της κάρτας (σταθ. 15). Σε τελειωμένη
+               εργασία ΔΕΝ βγαίνει: η προθεσμία ενός πράγματος που έγινε δεν
+               είναι απόφαση, είναι ιστορία. */
+            (t.done ? '' : '<button class="hw-mini" type="button" data-when="' + esc(t.id) + '">' + esc(fmtDue(dueOf(t).key)) + '</button>') +
             focus + go + pic +
             '<button class="hw-mini hw-danger" type="button" data-del="' + esc(t.id) + '">✕</button>' +
           '</div>' +
@@ -2092,6 +2336,14 @@
           : Promise.resolve(confirm('Να σβήσω «' + (t.title || '') + '»;'));
         Promise.resolve(ask).then(function(yes){ if (yes){ dropTask(id); paint(); } });
       });
+    });
+    /* ⛔⛔ ΤΟ ΚΕΝΟ ΠΟΥ ΒΡΕΘΗΚΕ ΔΙΑΒΑΖΟΝΤΑΣ, als-v485: ΔΕΝ ΥΠΗΡΧΕ ΚΑΝΕΝΑΣ
+       ΤΡΟΠΟΣ ΝΑ ΑΛΛΑΞΕΙ Η ΠΡΟΘΕΣΜΙΑ ΜΙΑΣ ΕΡΓΑΣΙΑΣ ΠΟΥ ΥΠΑΡΧΕΙ ΗΔΗ. Το chip
+       «Προθεσμία» ζούσε ΜΟΝΟ μέσα στο `renderParse()` — τα δύο δευτερόλεπτα
+       πριν πατήσει «Κράτησέ το». Μετά πάγωνε για πάντα, και οι έξι εργασίες
+       που μπήκαν από τη συζήτηση ήταν κλειδωμένες χωρίς κανέναν δρόμο. */
+    host.querySelectorAll('[data-when]').forEach(function(b){
+      b.addEventListener('click', function(){ openWhen(b.getAttribute('data-when')); });
     });
     host.querySelectorAll('[data-focus]').forEach(function(b){
       b.addEventListener('click', function(){ openFocus(b.getAttribute('data-focus')); });
@@ -2209,7 +2461,9 @@
      ══════════════════════════════════════════════════════════════════ */
   var L4_TAG = {
     istoria:  'Σε ακούει και σε βαθμολογεί ανά στοιχείο.',
-    arxaia:   'Γνωστό, άγνωστο και ο τονισμός — μία πόρτα.',
+    arxaia_gn:  'Ο Σωκράτης, σε νέα ελληνικά. Σε ακούει.',
+    arxaia_agn: 'Αρχικοί χρόνοι και ο τονισμός. Άλλος καθηγητής.',
+    arxaia:     'Παλιές εργασίες, πριν χωρίσουν τα δύο.',
     latinika: 'Το μάθημα που ένας υπολογιστής ξέρει ΑΚΡΙΒΩΣ.',
     ekthesi:  'Ισοβαθμεί με τα Αρχαία και δεν έχει σελίδα ακόμη.'
   };
@@ -2297,7 +2551,111 @@
     $('hwDoorsS').textContent = say;
   }
 
+  /* ── ΤΟ ΠΡΟΓΡΑΜΜΑ, ΖΩΓΡΑΦΙΣΜΕΝΟ ─────────────────────────────────────
+     ⭐ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΕΙΣ ΠΡΟΤΑΣΕΙΣ (σταθ. 10/33): μέρα που ΔΕΝ ΞΕΡΩ
+     (καμία εγγραφή) · μέρα ΧΩΡΙΣ φροντιστήριο (εγγραφή, άδεια) · μέρα με ώρες.
+     Οι δύο πρώτες ΔΕΝ γράφονται ίδια — «δεν ξέρω» δεν είναι «δεν έχεις». */
+  function renderProgramma(){
+    var body = $('hwProgBody'), todayIdx = dowMon(new Date());
+    var known = 0, hours = 0;
+    var html = TT_DAYS.map(function(d, i){
+      var subs = ttSubjects(d), sl = ttDay(d) || [];
+      if (subs) known++;
+      var inner;
+      if (!subs){
+        inner = '<div class="hw-ttfree">δεν ξέρω αυτή τη μέρα</div>';
+      } else if (!subs.length){
+        inner = '<div class="hw-ttfree">χωρίς φροντιστήριο</div>';
+      } else {
+        hours += subs.length;
+        inner = sl.filter(function(x){ return x && SUBJ[x.subject]; }).map(function(x){
+          var m = SUBJ[x.subject];
+          return '<div class="hw-ttslot" style="--hw-c:' + subjRgb(x.subject) + '">' +
+                   '<span class="hw-tick"></span>' +
+                   '<span class="hw-ttat hw-mono">' + esc(x.at || '') + '</span>' +
+                   '<span>' + esc(m.label) + '</span>' +
+                 '</div>';
+        }).join('');
+      }
+      return '<div class="hw-ttrow' + (i === todayIdx ? ' hw-today' : '') + '">' +
+               '<div class="hw-ttd">' + esc(DOW_EL[i]) + '</div>' +
+               '<div class="hw-ttl">' + inner + '</div>' +
+             '</div>';
+    }).join('');
+
+    body.innerHTML = '<div class="hw-tt">' + html + '</div>' +
+      '<div class="hw-empty">Αυτό είναι που δίνει ημερομηνία στις εργασίες σου: μια εργασία χωρίς μέρα πάει <b>στην επόμενη φορά που έχεις το μάθημα</b>. ' +
+      'Τον Σεπτέμβρη που ανοίγει το σχολείο θα αλλάξει — πες μου το νέο και το γράφω.</div>';
+
+    /* Η υπογραμμή της πόρτας λέει ΤΗ ΣΗΜΕΡΙΝΗ μέρα, γιατί αυτό είναι το μόνο
+       κομμάτι του προγράμματος που αφορά τη στιγμή που κοιτάει. */
+    var t = ttSubjects(TT_DAYS[todayIdx]);
+    var say = !known ? 'άγνωστο'
+            : !t ? 'δεν ξέρω σήμερα'
+            : !t.length ? 'σήμερα ελεύθερα'
+            : (t.length + (t.length === 1 ? ' ώρα σήμερα' : ' ώρες σήμερα'));
+    $('hwProgS').textContent = known ? (hours + ' ώρες τη βδομάδα') : 'άγνωστο';
+    $('hwDoorsP').textContent = say;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΠΟΤΕ ΘΑ ΤΟ ΚΑΝΩ — als-v485
+
+     ⭐⭐ ΜΕΡΕΣ, ΟΧΙ ΜΕΤΑΤΟΠΙΣΕΙΣ. Το chip της σύλληψης κύκλωνε «σήμερα → αύριο
+     → +2 → +3 → +7», που είναι η γλώσσα ΤΟΥ ΚΩΔΙΚΑ. Εκείνος λέει «για Τρίτη»,
+     γιατί έτσι το λέει ο καθηγητής. Οι επτά επόμενες μέρες, με το όνομά τους.
+     ⭐ Και κάθε μέρα που ΕΧΕΙ αυτό το μάθημα φοράει ✦: δεν είναι διακόσμηση,
+     είναι το ίδιο γεγονός που παράγει την αυτόματη ημερομηνία, ορατό τη στιγμή
+     που διαλέγει. Αν διαλέξει άλλη μέρα, ξέρει ΤΙ αλλάζει.
+     ⛔ «Άσε το πρόγραμμα να αποφασίσει» ΣΒΗΝΕΙ το `t.due` — δεν γράφει τιμή.
+     Μια παραγόμενη τιμή που γράφτηκε στην αποθήκη παύει να είναι παραγόμενη
+     και παγώνει την επόμενη φορά που θα αλλάξει το πρόγραμμα. */
+  var whenId = null;
+  function openWhen(id){
+    var t = state.tasks[id]; if (!t) return;
+    whenId = id;
+    var m = SUBJ[t.subject] || SUBJ.unknown;
+    $('hwWhenTitle').textContent = t.title || '(χωρίς τίτλο)';
+    var nx = nextLessonFor(t.subject);
+    $('hwWhenLead').textContent = nx
+      ? ('Η επόμενη ' + m.label + ' σου είναι ' + fmtDue(nx) + '.')
+      : (m.legacy
+          ? ('Το «' + m.label + '» είναι παλιό μάθημα — δεν ξέρω αν είναι γνωστό ή άγνωστο, οπότε δεν διαλέγω μέρα μόνος μου.')
+          : ('Δεν βρίσκω ' + m.label + ' στο πρόγραμμά σου, οπότε δεν μπορώ να προτείνω μέρα.'));
+
+    var picked = t.due || null, rows = '';
+    for (var i = 0; i <= 7; i++){
+      var dk = offDate(i), dt = new Date(dk + 'T00:00:00');
+      var subs = ttSubjects(TT_DAYS[dowMon(dt)]);
+      var hit = !!(subs && t.subject && subs.indexOf(t.subject) >= 0);
+      rows += '<button class="hw-pick-b" type="button" data-day="' + esc(dk) + '"' +
+              ' style="--hw-c:' + subjRgb(t.subject) + '"' +
+              ' aria-pressed="' + (picked === dk ? 'true' : 'false') + '">' +
+                '<span class="hw-tick"></span>' +
+                '<span>' + esc(fmtDue(dk)) + '</span>' +
+                (hit ? '<span class="hw-ord">✦</span>' : '') +
+              '</button>';
+    }
+    rows += '<button class="hw-pick-b" type="button" data-day=""' +
+            ' aria-pressed="' + (picked ? 'false' : 'true') + '">' +
+              '<span>Άσε το πρόγραμμα να αποφασίσει</span>' +
+            '</button>';
+    var grid = $('hwWhenGrid');
+    grid.innerHTML = rows;
+    grid.querySelectorAll('[data-day]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var t2 = state.tasks[whenId]; if (!t2) return;
+        var v = b.getAttribute('data-day') || null, old = t2.due || null;
+        t2.due = v;
+        if (!save()){ t2.due = old; return; }   /* γεμάτη αποθήκη: το banner το λέει */
+        $('hwWhen').close(); whenId = null; paint();
+      });
+    });
+    openSheet('hwWhen');
+  }
+
   function renderTonight(){
+
     var tv = tonightView(), body = $('hwTonightBody');
     var acts = '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
     /* ⭐ Η ΤΡΙΤΗ ΠΟΡΤΑ ΓΡΑΦΕΤΑΙ ΑΠΟ ΤΟΝ ΙΔΙΟ `tonightView()` ΠΟΥ ΓΡΑΦΕΙ ΤΟ
@@ -2579,7 +2937,7 @@
   }
   function fixChip(which){
     if (!draft) return;
-    if (which === 'subject'){ draft.subject = cycle(['istoria','arxaia','latinika','ekthesi'], draft.subject); renderParse(); return; }
+    if (which === 'subject'){ draft.subject = cycle(SUBJ_ORDER, draft.subject); renderParse(); return; }
     if (which === 'kind'){ draft.kind = cycle(['askisi','apexo','grapto','diagonisma'], draft.kind); renderParse(); return; }
     if (which === 'due'){
       var order = [null, offDate(0), offDate(1), offDate(2), offDate(3), offDate(7)];
@@ -2682,6 +3040,7 @@
     renderOver(pool);                /* η συσσώρευση ζει ΜΕΣΑ στις εργασίες τώρα */
     renderTonight();                 /* η πόρτα των 21:45 ζει στο ΙΔΙΟ paint */
     renderLessons4();                /* και τα μαθήματα — ΕΝΑ paint, μία αλήθεια */
+    renderProgramma();               /* και το πρόγραμμα, από το ΙΔΙΟ state */
   }
 
   $('hwLine').addEventListener('input', function(){
@@ -2741,6 +3100,7 @@
     if (!clearLessons(pickDay)) return;
     closePicker(); paint();
   });
+  $('hwWhenClose').addEventListener('click', function(){ $('hwWhen').close(); whenId = null; });
   $('hwPickClose').addEventListener('click', closePicker);
 
   $('hwFocus').addEventListener('close', function(){
@@ -2770,6 +3130,9 @@
   window.addEventListener('hashchange', function(){ applyDoor(); });
 
   reload();
+  /* ⛔ ΜΕΤΑ τον reload() και ΠΡΙΝ το πρώτο paint: ο σπόρος είναι ΕΓΓΡΑΦΗ και
+     δεν επιτρέπεται να ζει μέσα σε ζωγραφική (το bug του `nut:streak`). */
+  ttSeedIfEmpty();
   paint();
   applyDoor();
   setInterval(function(){ if (!document.hidden) paint(); }, 60000);
