@@ -113,9 +113,30 @@
   /* Το κέντρο: μία στήλη, κεντραρισμένη, σε ΚΑΘΕ πλάτος. Το `.hw-spine` και το
      `.hw-main` διαλύονται ώστε τα τέσσερα πράγματα να στοιχηθούν σε μία σειρά
      ανάγνωσης — ΕΝΑ markup δέντρο, ποτέ δεύτερο (ίδια τεχνική με το κινητό). */
-  body:not(.hw-door) .hw-wrap{ max-width:560px; }
+  /* ⭐⭐ als-v486 — ΤΟ ΚΕΝΤΡΟ ΦΑΡΔΑΙΝΕΙ ΣΤΑ 880, ΑΛΛΑ Η ΠΡΟΖΑ ΜΕΝΕΙ ΣΤΑ 560.
+     Η als-v484 το είχε κλείσει στα 560 και ήταν ΣΩΣΤΟ ΤΟΤΕ: το κέντρο ήταν
+     τέσσερις γραμμές κειμένου, και μια διάταξη πολλών στηλών είναι απάντηση
+     στον ΟΓΚΟ (σταθ. 36). Τώρα ο όγκος ΥΠΑΡΧΕΙ — πέντε κάρτες μαθημάτων — άρα
+     ο ίδιος κανόνας δίνει την ΑΝΤΙΘΕΤΗ απάντηση, και γι' αυτό ξαναμετριέται
+     αντί να επικαλείται τον εαυτό του.
+     ⛔ Ο,ΤΙ ΕΙΝΑΙ ΓΡΑΜΜΗ ΚΕΙΜΕΝΟΥ Ή ΠΕΔΙΟ ΜΕΝΕΙ ΣΤΑ 560: ο κανόνας των 75
+     χαρακτήρων δεν καταργείται επειδή δίπλα του κάθεται ένα πλέγμα, και ένα
+     input 880px είναι το ίδιο λάθος με το input 1.144px της als-v477. */
+  body:not(.hw-door) .hw-wrap{ max-width:880px; }
   body:not(.hw-door) .hw-cols{ display:flex; flex-direction:column; }
   body:not(.hw-door) .hw-spine, body:not(.hw-door) .hw-main{ display:contents; }
+  /* ⛔⛔ ΚΑΙ ΣΤΟΙΧΙΖΟΝΤΑΙ ΑΡΙΣΤΕΡΑ, ΟΧΙ ΚΕΝΤΡΟ — ΤΟ ΒΡΗΚΕ ΜΟΝΟ ΤΟ RENDER.
+     Η πρώτη γραφή τα κεντράριζε (`margin-left:auto`) μέσα στα 880, οπότε η
+     πρόζα ξεκινούσε 160px δεξιότερα από τις κάρτες: ΔΥΟ αριστερές ακμές στην
+     ίδια κύλιση, ζιγκ-ζαγκ σε κάθε εναλλαγή πλάτους. Καμία βεβαίωση δεν το
+     βλέπει — το markup ήταν σωστό και το `max-width` ίσχυε κανονικά.
+     ⭐ Ο κανόνας: ΜΙΑ αριστερή ακμή. Η στήλη κειμένου δεν κολυμπάει μέσα στο
+     πλέγμα· ξεκινάει από το ΙΔΙΟ σημείο και απλώς σταματάει νωρίτερα. */
+  body:not(.hw-door) .hw-hero,
+  body:not(.hw-door) .hw-banner,
+  body:not(.hw-door) .hw-start,
+  body:not(.hw-door) .hw-doors,
+  body:not(.hw-door) .hw-grab{ width:100%; max-width:560px; margin-left:0; margin-right:auto; }
   /* ⚠️ Η ΣΕΙΡΑ ΤΟΥ LAPTOP ΔΕΝ ΕΙΝΑΙ Η ΣΕΙΡΑ ΤΟΥ ΚΙΝΗΤΟΥ, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
      Στις 18:00 είναι όρθιος με την τσάντα και η ΣΥΛΛΗΨΗ πρέπει να είναι πρώτη
      (als-v479, δική του εντολή). Στο laptop κάθεται να ΔΙΑΒΑΣΕΙ: εκεί διαβάζει
@@ -124,8 +145,12 @@
     body:not(.hw-door) .hw-hero{ order:1; }
     body:not(.hw-door) .hw-banner{ order:2; }
     body:not(.hw-door) .hw-start{ order:3; }
-    body:not(.hw-door) .hw-doors{ order:4; }
-    body:not(.hw-door) .hw-grab{ order:5; }
+    /* ⭐ ΤΑ ΜΑΘΗΜΑΤΑ ΜΠΑΙΝΟΥΝ ΑΜΕΣΩΣ ΜΕΤΑ ΤΗΝ ΑΠΟΦΑΣΗ: η απόφαση λέει το ΕΝΑ,
+       οι κάρτες λένε το ΟΛΟ — και οι δύο είναι δρόμοι, όχι θέαμα. Τα εργαλεία
+       πάνε μετά, γιατί είναι ο δρόμος για κάτι ΑΛΛΟ. */
+    body:not(.hw-door) .hw-lessons4{ order:4; }
+    body:not(.hw-door) .hw-doors{ order:5; }
+    body:not(.hw-door) .hw-grab{ order:6; }
   }
 
   /* ── ⭐⭐ ΣΤΟ ΚΙΝΗΤΟ Η ΣΥΛΛΗΨΗ ΕΙΝΑΙ ΠΡΩΤΗ ─────────────────────────
@@ -150,10 +175,10 @@
     .hw-grab{ order:2; margin-top:18px; }
     .hw-hero{ order:3; }
     .hw-start{ order:4; }
-    /* Η πόρτα κάθεται ΑΜΕΣΩΣ κάτω από την απόφαση: όταν το «ξεκίνα από εδώ»
-       στέλνει σε μάθημα, ο δρόμος προς τα μαθήματα είναι η επόμενη κίνηση. */
-    .hw-doors{ order:5; }
-    .hw-lessons4{ order:6; }
+    /* Ίδια σειρά με το laptop από την απόφαση και κάτω: μαθήματα, μετά
+       εργαλεία. Ό,τι αλλάζει στο κινητό είναι ΜΟΝΟ ότι η σύλληψη ανεβαίνει. */
+    .hw-lessons4{ order:5; }
+    .hw-doors{ order:6; }
     .hw-tonight{ order:7; }
   }
 
@@ -196,7 +221,7 @@
      ένας σύνδεσμος προς εκεί που ήδη βρίσκεσαι. Καμία βεβαίωση δεν το βλέπει:
      το markup ήταν σωστό, η ΘΕΣΗ ήταν λάθος. */
   body.hw-door .hw-hero, body.hw-door .hw-start,
-  body.hw-door .hw-doors{ display:none; }
+  body.hw-door .hw-lessons4, body.hw-door .hw-doors{ display:none; }
   body.hw-door-tonight .hw-grab{ display:none; }
   /* Πίσω από την πόρτα της σύλληψης, η μπάρα ΗΔΗ γράφει «Η σύλληψη» — η
      κεφαλίδα της ενότητας θα το έλεγε δεύτερη φορά, στην ίδια οθόνη, δύο
@@ -250,13 +275,7 @@
      γίνεται καλύτερο επειδή είναι φαρδύτερο· 75 χαρακτήρες είναι το σωστό
      μήκος γραμμής και πιο φαρδύ είναι χειρότερο. */
   body.hw-door .hw-wrap{ max-width:720px; }
-  /* ⚠️ ΕΞΑΙΡΕΣΗ, ΚΑΙ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΗ: τα ΜΑΘΗΜΑΤΑ είναι πλέγμα καρτών, όχι
-     γραμμή κειμένου. Στα 720 οι δύο στήλες βγαίνουν 340px και ο τίτλος
-     «Αρχαία · αρχικοί χρόνοι» τυλίγεται. Ο κανόνας των 75 χαρακτήρων αφορά
-     ΠΡΟΖΑ — μια κάρτα δεν διαβάζεται σε γραμμές. */
-  body.hw-door-mathimata .hw-wrap{ max-width:1080px; }
   body.hw-door-ergasies .hw-wrap{ max-width:840px; }
-  body.hw-door-mathimata .hw-grab{ display:none; }
 
   /* ── Η ΠΟΡΤΑ ΠΡΟΣ ΤΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────
      ⚠️ Ζει στη ΡΑΧΟΚΟΚΑΛΙΑ, όχι σε `hw-sec`: δεν είναι μπλοκ. Είναι
@@ -272,11 +291,18 @@
   .hw-doorlink .dl-s{ margin-left:auto; font:400 11px/1 var(--au-mono,ui-monospace,monospace);
     letter-spacing:.1em; color:var(--au-faint,rgba(245,242,236,.3)); white-space:nowrap; }
 
-  /* ── ΤΟ ΔΩΜΑΤΙΟ ΤΩΝ ΜΑΘΗΜΑΤΩΝ ────────────────────────────────────
-     Κρυφό σε ΟΛΗ τη σελίδα, όπως το «Απόψε». Εμφανίζεται μόνο πίσω από το
-     δικό του hash, άρα δεν μπορεί να προσθέσει ύψος στην αρχική οθόνη. */
-  .hw-lessons4{ display:none; }
-  body.hw-door-mathimata .hw-lessons4{ display:block; }
+  /* ══ ΤΑ ΜΑΘΗΜΑΤΑ ΕΙΝΑΙ Η ΑΡΧΙΚΗ ΟΘΟΝΗ · als-v486 ══════════════════
+     ⭐⭐ Ως την als-v485 οι πέντε κάρτες ζούσαν ΜΟΝΟ πίσω από το `#mathimata`
+     και μπροστά έμενε μια γραμμή κειμένου «Τα μαθήματά μου —». Το πιο όμορφο
+     ΚΑΙ το πιο πληροφοριακό πράγμα της σελίδας ήταν κρυμμένο πίσω από πόρτα,
+     ενώ ο κανόνας του ξακρίσματος (ΠΡΑΞΗ ή ΔΡΟΜΟΣ ΠΡΟΣ ΠΡΑΞΗ) το ΕΠΙΤΡΕΠΕ
+     ρητά: η κάρτα λέει τι χρωστάς και σε πάει εκεί — είναι δρόμος, όχι θέαμα.
+     ⛔ ΚΑΙ Η ΠΟΡΤΑ ΠΕΘΑΝΕ ΜΑΖΙ, ΕΠΙΤΗΔΕΣ. Το δωμάτιο περιείχε ΑΚΡΙΒΩΣ αυτές
+     τις κάρτες και τίποτα άλλο — μετρημένο, όχι υποτιθέμενο. Κρατώντας το θα
+     είχαμε το ΙΔΙΟ περιεχόμενο σε δύο θέσεις της ίδιας κύλισης, που είναι
+     ακριβώς η αμαρτία που έδιωξε το «Τι ξεχνάω» στην als-v484.
+     ⛔ ΚΑΜΙΑ ΑΠΟΘΗΚΗ ΔΕΝ ΑΓΓΙΧΤΗΚΕ: ό,τι σβήστηκε είναι ΟΘΟΝΗ, ποτέ δεδομένα. */
+  .hw-lessons4{ display:block; }
   .hw-l4grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
   .hw-l4{ display:flex; flex-direction:column; position:relative; overflow:hidden;
     text-decoration:none; color:inherit;
@@ -317,6 +343,61 @@
   @media (max-width:999px){
     .hw-l4grid{ grid-template-columns:1fr; }
     .hw-l4 h3{ font-size:26px; }
+  }
+
+  /* ══ Η ΠΙΝΑΚΙΔΑ · als-v486 ═══════════════════════════════════════
+     Το ΜΟΝΟ πράγμα που δανειστήκαμε αυτούσιο από το Notion template που του
+     άρεσε: φαρδιά μπάρα, ελάχιστα πιο ανοιχτή από τον καμβά, κεντραρισμένος
+     πλάγιος serif με αραιά γράμματα. Δεν είναι διακόσμηση — είναι ΡΥΘΜΟΣ:
+     κατεβαίνοντας, η ενότητα αναγγέλλει τον εαυτό της αντί να αρχίζει.
+     ⚠️ Δεν παίρνει `data-rise`: μπαίνει και βγαίνει από πόρτες, και ό,τι
+     γεννιέται `opacity:0` πίσω από πόρτα μένει αόρατο (σταθ. 39). */
+  .hw-plate{ display:flex; align-items:center; justify-content:center;
+    margin:34px 0 4px; padding:11px 20px; border-radius:12px;
+    background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
+    border:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .hw-plate span{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+    font-size:19px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--au-ivory,#F5F2EC); }
+  .hw-plate-s{ text-align:center; margin-top:9px;
+    font:400 10.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.16em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+
+  /* ══ Η ΓΕΩΜΕΤΡΙΑ ΕΙΝΑΙ ΟΙ ΣΥΝΤΕΛΕΣΤΕΣ · als-v486 ══════════════════
+     ⭐⭐ Στο Notion και οι έξι τάξεις παίρνουν ΤΟ ΙΔΙΟ κουτί, άρα η διάταξη
+     δεν λέει τίποτα. Εδώ λέει τη στρατηγική του χωρίς λεζάντα: τα Αρχαία
+     στέκονται μαζί κάτω από ΕΝΑ γραπτό, η Έκθεση πιάνει ΟΛΟΚΛΗΡΗ γραμμή
+     επειδή είναι κι αυτή 30%, και τα δύο εικοσάρια μοιράζονται τη σειρά.
+     ⚠️ ΤΟ 30% ΓΡΑΦΕΤΑΙ ΜΙΑ ΦΟΡΑ ΑΝΑ ΓΡΑΠΤΟ, ΠΑΝΩ ΑΠΟ ΤΗΝ ΟΜΑΔΑ. Δύο κάρτες
+     που έγραφαν «30% των μορίων» η καθεμία διαβάζονται 60 — ο ίδιος κίνδυνος
+     που η als-v485 έλυσε στο άθροισμα (αθροίζουμε ανά `exam`, ποτέ ανά
+     κλειδί), απλώς εδώ τον έκανε το ΜΑΤΙ αντί για την αριθμητική. */
+  .hw-l4g{ margin-top:18px; }
+  .hw-l4ghd{ display:flex; align-items:center; gap:12px; margin-bottom:11px; }
+  .hw-l4ghd .g-n{ font:400 10px/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-l4ghd .g-l{ flex:1 1 auto; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+  .hw-l4.wide{ grid-column:1 / -1; }
+
+  /* ══ ΣΤΟ ΚΙΝΗΤΟ ΟΙ ΚΑΡΤΕΣ ΣΥΜΠΤΥΣΣΟΝΤΑΙ, ΚΑΙ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΟ ══════
+     ⭐ Η als-v484 έφερε την αρχική στα 756px @393. Πέντε κάρτες πλήρους ύψους
+     θα την ξαναφούσκωναν πάνω από το διπλάσιο — και στο κινητό η σελίδα είναι
+     Η ΣΥΛΛΗΨΗ, όχι το διάβασμα (99% της ανάγνωσής του είναι laptop). Άρα εδώ
+     η κάρτα κρατάει ΟΛΗ την πληροφορία και χάνει μόνο τον αέρα: ο τίτλος
+     μικραίνει, η περιγραφή φεύγει, οι γραμμές γίνονται μία σειρά.
+     ⛔ Η ΠΛΗΡΟΦΟΡΙΑ ΔΕΝ ΚΟΒΕΤΑΙ, Ο ΧΩΡΟΣ ΚΟΒΕΤΑΙ. Το «Χρωστάς τώρα» είναι ο
+     λόγος που υπάρχει η κάρτα και μένει ορατό σε κάθε πλάτος. */
+  @media (max-width:999px){
+    .hw-l4{ padding:16px 17px 14px; }
+    .hw-l4 h3{ font-size:21px; margin:7px 0 0; }
+    .hw-l4 .l4t{ display:none; }
+    .hw-l4 .l4rows{ margin-top:12px; padding-top:10px; }
+    .hw-l4 .l4r{ font-size:11px; padding:2px 0; }
+    .hw-l4 .l4note{ margin-top:12px; padding-top:10px; }
+    .hw-l4g{ margin-top:14px; }
+    .hw-plate{ margin:26px 0 4px; padding:9px 16px; }
+    .hw-plate span{ font-size:16px; }
   }
 
   /* ── ΤΟ ΚΕΦΑΛΙ ──────────────────────────────────────────────────── */
@@ -513,7 +594,6 @@
     <span class="hw-brand">MÉTRON · <b>School Studies</b></span>
     <a href="#kentro"    data-room="">Κέντρο</a>
     <a href="#ergasies"  data-room="ergasies">Εργασίες</a>
-    <a href="#mathimata" data-room="mathimata">Μαθήματα</a>
   </nav>
 
   <!-- ══ Η ΜΠΑΡΑ ΤΗΣ ΠΟΡΤΑΣ ══════════════════════════════════════
@@ -552,10 +632,13 @@
           <span class="dl-n">Οι εργασίες μου</span>
           <span class="dl-s" id="hwDoorsT">—</span>
         </a>
-        <a class="hw-doorlink" href="#mathimata">
-          <span class="dl-n">Τα μαθήματά μου</span>
-          <span class="dl-s" id="hwDoorsS">—</span>
-        </a>
+        <!-- ⛔⛔ ΕΔΩ ΗΤΑΝ Η ΠΟΡΤΑ «ΤΑ ΜΑΘΗΜΑΤΑ ΜΟΥ». ΕΦΥΓΕ ΣΤΗΝ als-v486, ΚΑΙ
+             ΟΧΙ ΓΙΑ ΝΑ ΛΙΓΟΣΤΕΨΕΙ: οι πέντε κάρτες που περιείχε το δωμάτιό της
+             στέκονται τώρα ΜΠΡΟΣΤΑ, στην αρχική οθόνη. Κρατώντας και τα δύο, ο
+             σύνδεσμος θα οδηγούσε σε αντίγραφο του τι μόλις είδες — η αμαρτία
+             που έδιωξε το «Τι ξεχνάω» στην als-v484.
+             ⭐ Ο,ΤΙ ΜΕΝΕΙ ΕΔΩ ΕΙΝΑΙ ΕΡΓΑΛΕΙΟ, ΟΧΙ ΜΑΘΗΜΑ — γι' αυτό μένει
+             γραμμή και δεν παίρνει κάρτα ούτε χρώμα. -->
         <!-- ⭐⭐ ΤΡΙΤΗ ΠΟΡΤΑ, ΚΑΙ ΕΙΝΑΙ ΑΠΑΙΤΗΣΗ ΤΟΥ ΞΑΚΡΙΣΜΑΤΟΣ, ΟΧΙ ΠΡΟΣΘΗΚΗ.
              Ως την als-v483 η ΜΟΝΗ είσοδος στο `#tonight` από τη σελίδα ήταν ο
              σύνδεσμος «Μόνο αυτό» μέσα στη ΜΕΡΑ (η άλλη είναι το push των 21:45,
@@ -670,11 +753,9 @@
            ⚠️ ΔΕΝ φοράει `hw-sec`: το μόνο μπλοκ της σελίδας είναι η ΣΥΛΛΗΨΗ,
            όπως και το «Απόψε». -->
       <section class="hw-lessons4" id="hwLessons4">
-        <div class="hw-sec-hd">
-          <span class="hw-n">Τα μαθήματά μου</span>
-          <span class="hw-s" id="hwL4S"></span>
-        </div>
-        <div class="hw-l4grid" id="hwL4Grid"></div>
+        <div class="hw-plate"><span>Τα μαθήματά μου</span></div>
+        <div class="hw-plate-s" id="hwL4S"></div>
+        <div id="hwL4Grid"></div>
       </section>
 
       <!-- ══ ΤΟ ΠΡΟΓΡΑΜΜΑ · als-v485 ═══════════════════════════════
@@ -1323,9 +1404,13 @@
      δηλώνονται, δεν μαντεύονται) — και αυτή η λίστα είναι η δήλωση που
      διαβάζει ΚΑΙ το `api/run-reminders.js` όταν στέλνει το push των 18:00.
      ══════════════════════════════════════════════════════════════════ */
+  /* ⛔ ΤΟ `mathimata` ΒΓΗΚΕ ΑΠΟ ΤΗ ΛΙΣΤΑ ΣΤΗΝ als-v486 — τα μαθήματα ζουν στην
+     αρχική οθόνη τώρα, άρα δεν υπάρχει δωμάτιο να ανοίξει. Επειδή η λίστα
+     είναι ΚΛΕΙΣΤΗ, ένα παλιό `homework.html#mathimata` (bookmark, ιστορικό)
+     δεν σπάει και δεν κρύβει τίποτα: το `doorOf()` το διαβάζει ως άγνωστο και
+     γυρίζει την ΠΛΗΡΗ σελίδα — που είναι ακριβώς εκεί που ήθελε να πάει. */
   var DOORS = { capture:'Η σύλληψη', tonight:'Απόψε',
-               mathimata:'Τα μαθήματά μου', ergasies:'Οι εργασίες μου',
-               programma:'Το πρόγραμμα' };
+               ergasies:'Οι εργασίες μου', programma:'Το πρόγραμμα' };
   function doorOf(hash){
     var h = String(hash == null ? '' : hash).replace(/^#/, '');
     return Object.prototype.hasOwnProperty.call(DOORS, h) ? h : '';
@@ -2467,12 +2552,54 @@
     latinika: 'Το μάθημα που ένας υπολογιστής ξέρει ΑΚΡΙΒΩΣ.',
     ekthesi:  'Ισοβαθμεί με τα Αρχαία και δεν έχει σελίδα ακόμη.'
   };
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐⭐ ΟΙ ΟΜΑΔΕΣ — Η ΔΙΑΤΑΞΗ ΛΕΕΙ ΤΟΥΣ ΣΥΝΤΕΛΕΣΤΕΣ ΤΟΥ (als-v486)
+
+     ⚠️⚠️ ΚΑΘΕ ΜΑΘΗΜΑ ΤΟΥ `SUBJ_ORDER` ΠΡΕΠΕΙ ΝΑ ΑΝΗΚΕΙ ΣΕ ΟΜΑΔΑ. Δύο λίστες
+     που πρέπει να συμφωνούν είναι ΑΚΡΙΒΩΣ ο τρόπος με τον οποίο γεννιέται το
+     σιωπηλό-άδειο αυτού του project: πρόσθεσε ένα μάθημα στο `SUBJ_ORDER`,
+     ξέχνα το εδώ, και ΕΞΑΦΑΝΙΖΕΤΑΙ από την οθόνη χωρίς κανένα σφάλμα. Γι'
+     αυτό τα αζήτητα ΔΕΝ πέφτουν στο πάτωμα: μαζεύονται σε τελευταία ομάδα
+     («ΤΑ ΥΠΟΛΟΙΠΑ») και το `tests/homework-plan.test.js` απαιτεί να είναι
+     ΑΔΕΙΑ. Η κάλυψη είναι βεβαίωση, το δίχτυ είναι ασφάλεια — και τα δύο. */
+  var L4_GROUPS = [
+    { note:'Αρχαία · ένα γραπτό · 30%',          subs:['arxaia_gn','arxaia_agn'] },
+    { note:'Έκθεση · 30%',                       subs:['ekthesi'] },
+    { note:'Ιστορία · Λατινικά · 20% το καθένα', subs:['istoria','latinika'] }
+  ];
+  function l4Groups(){
+    var seen = {}, out = L4_GROUPS.map(function(g){
+      var subs = g.subs.filter(function(s){
+        if (SUBJ_ORDER.indexOf(s) < 0) return false;   /* μάθημα που έφυγε */
+        seen[s] = 1; return true;
+      });
+      return { note:g.note, subs:subs };
+    }).filter(function(g){ return g.subs.length; });
+    var rest = SUBJ_ORDER.filter(function(s){ return !seen[s]; });
+    if (rest.length) out.push({ note:'Τα υπόλοιπα', subs:rest });
+    return out;
+  }
+  /* ⚠️ ΤΟ ΒΑΡΟΣ ΓΡΑΦΕΤΑΙ ΜΙΑ ΦΟΡΑ ΑΝΑ ΓΡΑΠΤΟ, ΚΑΙ ΒΓΑΙΝΕΙ ΑΠΟ ΤΑ ΔΕΔΟΜΕΝΑ.
+     Όταν δύο μαθήματα της ίδιας ομάδας δηλώνουν ΤΟ ΙΔΙΟ `exam`, το «30%»
+     ανήκει στην επικεφαλίδα και η κάρτα φοράει το ΤΙ ΤΗ ΞΕΧΩΡΙΖΕΙ (ΓΝΩΣΤΟ /
+     ΑΓΝΩΣΤΟ). Αλλιώς δύο κάρτες με «30% των μορίων» η καθεμία διαβάζονται 60
+     — το ίδιο λάθος που η als-v485 απέτρεψε στην ΑΡΙΘΜΗΤΙΚΗ, εδώ στο ΜΑΤΙ. */
+  function l4SharedExam(subs){
+    if (subs.length < 2) return false;
+    var e = (SUBJ[subs[0]] || {}).exam;
+    return !!e && subs.every(function(s){ return (SUBJ[s] || {}).exam === e; });
+  }
+  function l4Kicker(sub){
+    var lbl = String((SUBJ[sub] || {}).label || '');
+    var i = lbl.indexOf('·');
+    return (i >= 0 ? lbl.slice(i + 1) : lbl).trim().toUpperCase();
+  }
+
   function renderLessons4(){
     var L = ladders(), host = $('hwL4Grid');
     if (L.broken){
       host.innerHTML = '<div class="hw-blind">Δεν φόρτωσε το <b>ladders.js</b>, οπότε ΔΕΝ ξέρω πού βρίσκεσαι σε κανένα μάθημα. Αυτό δεν σημαίνει «τίποτα» — σημαίνει «δεν ξέρω». Ανανέωσε τη σελίδα.</div>';
       $('hwL4S').textContent = 'άγνωστο';
-      $('hwDoorsS').textContent = 'άγνωστο';
       return;
     }
 
@@ -2480,33 +2607,57 @@
     var byS = {};
     L.stores.forEach(function(s){ (byS[s.subject] = byS[s.subject] || []).push(s); });
 
+    var groups = l4Groups();
     var html = '', totalLate = 0, anyBlind = false, anyStarted = false;
-    SUBJ_ORDER.forEach(function(sub){
-      var meta = SUBJ[sub], list = byS[sub] || [];
+    groups.forEach(function(g){
+      var shared = l4SharedExam(g.subs);
+      /* Μία κάρτα μόνη της στη σειρά της απλώνεται σε ΟΛΟ το πλάτος: το κενό
+         δίπλα της θα ήταν κενό χωρίς νόημα, και η Έκθεση είναι 30% — δεν
+         αξίζει μισή σειρά επειδή δεν έχει ακόμη σελίδα. */
+      var wide = g.subs.length === 1;
+      var cards = g.subs.map(function(sub){
+        return l4Card(sub, byS[sub] || [], shared, wide, function(n){ totalLate += n; },
+                      function(){ anyBlind = true; }, function(){ anyStarted = true; });
+      }).join('');
+      html += '<div class="hw-l4g">' +
+                '<div class="hw-l4ghd"><span class="g-n">' + esc(g.note) + '</span>' +
+                '<span class="g-l"></span></div>' +
+                '<div class="hw-l4grid">' + cards + '</div>' +
+              '</div>';
+    });
+    host.innerHTML = html;
+    l4Summary(totalLate, anyBlind, anyStarted);
+  }
+
+  /* Μία κάρτα. Ο,τι ήταν μέσα στον βρόχο, ΑΥΤΟΥΣΙΟ — καμία αλλαγή στο τι
+     λέει, μόνο στο πού κάθεται. */
+  function l4Card(sub, list, shared, wide, addLate, sawBlind, sawStarted){
+      var meta = SUBJ[sub];
       var rgb = subjRgb(sub);
-      var w = '<div class="l4w">' + meta.weight + '% των μορίων</div>';
+      var cls = 'hw-l4' + (wide ? ' wide' : '');
+      var w = '<div class="l4w">' + (shared ? esc(l4Kicker(sub))
+                                            : meta.weight + '% των μορίων') + '</div>';
       var head = w + '<h3>' + esc(meta.label) + '</h3>' +
                  '<p class="l4t">' + esc(L4_TAG[sub] || '') + '</p>';
 
       /* ΚΑΜΙΑ ΣΕΛΙΔΑ. Δεν κρύβεται και δεν παίρνει ψεύτικο νούμερο. */
       if (!meta.page || !list.length){
-        html += '<div class="hw-l4 soon" style="--c:' + rgb + '">' + head +
+        return '<div class="' + cls + ' soon" style="--c:' + rgb + '">' + head +
                 '<span class="l4note">' +
                 (meta.page ? 'δεν έχει ξεκινήσει' : 'δεν υπάρχει σελίδα ακόμη') +
                 '</span></div>';
-        return;
       }
 
       var blind = [], pieces = 0, learned = 0, late = 0, next = null, started = false;
       list.forEach(function(s){
-        if (!s.ok){ blind.push(s.label); anyBlind = true; return; }
-        if (s.started){ started = true; anyStarted = true; }
+        if (!s.ok){ blind.push(s.label); sawBlind(); return; }
+        if (s.started){ started = true; sawStarted(); }
         pieces  += s.items.length;
         learned += s.learned;
         late    += s.overdue;
         if (s.nextDue != null && (next == null || s.nextDue < next)) next = s.nextDue;
       });
-      totalLate += late;
+      addLate(late);
 
       var rows = '';
       if (blind.length){
@@ -2515,9 +2666,8 @@
         rows += '<div class="l4r"><span>Δεν διάβασα</span><b>' + esc(blind.join(' · ')) + '</b></div>';
       }
       if (!started && !blind.length){
-        html += '<a class="hw-l4" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' + head +
+        return '<a class="' + cls + '" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' + head +
                 '<span class="l4note">δεν το έχεις ξεκινήσει</span></a>';
-        return;
       }
       if (started){
         rows += '<div class="l4r"><span>Κομμάτια</span><b>' + pieces + '</b></div>';
@@ -2532,23 +2682,22 @@
                                       : '<b>—</b>')) +
                 '</div>';
       }
-      html += '<a class="hw-l4" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' +
+      return '<a class="' + cls + '" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' +
               head + '<div class="l4rows">' + rows + '</div></a>';
-    });
+  }
 
-    host.innerHTML = html;
-
-    /* Η κεφαλίδα και η πόρτα λένε ΤΟ ΙΔΙΟ πράγμα, από τον ίδιο υπολογισμό. */
-    /* ⚠️ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΟΧΙ ΔΥΟ (σταθ. 33). Η πρώτη γραφή έλεγε «όλα στην
-       ώρα τους» σε κάποιον που δεν έχει ανοίξει ΠΟΤΕ μάθημα — καθησυχασμός για
-       κάτι που δεν μετρήθηκε. «Δεν χρωστάς» και «δεν ξεκίνησες» είναι
-       διαφορετικές προτάσεις, και μόνο η δεύτερη είναι αλήθεια εδώ. */
-    var say = anyBlind ? 'κάτι δεν διαβάστηκε'
+  /* ⚠️ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΟΧΙ ΔΥΟ (σταθ. 33). Η πρώτη γραφή έλεγε «όλα στην
+     ώρα τους» σε κάποιον που δεν έχει ανοίξει ΠΟΤΕ μάθημα — καθησυχασμός για
+     κάτι που δεν μετρήθηκε. «Δεν χρωστάς» και «δεν ξεκίνησες» είναι
+     διαφορετικές προτάσεις, και μόνο η δεύτερη είναι αλήθεια εδώ.
+     ⛔ Το `hwDoorsS` ΕΦΥΓΕ ΜΑΖΙ ΜΕ ΤΗΝ ΠΟΡΤΑ (als-v486): γράφοντας σε στοιχείο
+     που δεν υπάρχει πια, το `paint()` θα πέταγε TypeError και θα σταματούσε
+     ΠΡΙΝ το πρόγραμμα — η σελίδα θα ζωγράφιζε μισή, σιωπηλά. */
+  function l4Summary(totalLate, anyBlind, anyStarted){
+    $('hwL4S').textContent = anyBlind ? 'κάτι δεν διαβάστηκε'
             : (!anyStarted ? 'δεν έχεις ξεκινήσει'
             : (totalLate ? (totalLate + (totalLate === 1 ? ' έληξε' : ' έληξαν'))
                          : 'όλα στην ώρα τους'));
-    $('hwL4S').textContent = say;
-    $('hwDoorsS').textContent = say;
   }
 
   /* ── ΤΟ ΠΡΟΓΡΑΜΜΑ, ΖΩΓΡΑΦΙΣΜΕΝΟ ─────────────────────────────────────
@@ -2813,12 +2962,11 @@
     cl.toggle('hw-door', !!d);
     cl.toggle('hw-door-capture', d === 'capture');
     cl.toggle('hw-door-tonight', d === 'tonight');
-    cl.toggle('hw-door-mathimata', d === 'mathimata');
     cl.toggle('hw-door-ergasies', d === 'ergasies');
     /* Η γραμμή των δωματίων δείχνει ΠΟΥ είσαι. Το ΚΕΝΤΡΟ είναι η απουσία
        δωματίου, άρα το `#capture`/`#tonight` δεν ανάβουν τίποτα — σωστά:
        είναι στιγμές, δεν είναι μέρη. */
-    var room = (d === 'ergasies' || d === 'mathimata') ? d : '';
+    var room = (d === 'ergasies') ? d : '';
     var links = $('hwNav').getElementsByTagName('a'), li;
     for (li = 0; li < links.length; li++){
       if (links[li].getAttribute('data-room') === room) links[li].setAttribute('aria-current', 'page');
