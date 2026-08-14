@@ -452,11 +452,20 @@ section('4d · the ΧΡΕΟΣ / ΑΠΟΦΑΣΗ overlap is closed');
      paint (η κάρτα και η ΜΕΡΑ), που μπορούσαν να διαφωνήσουν. */
   is('candidates() is declared once and CALLED once per paint',
     (CODE.match(/candidates\(/g) || []).length, 2);
-  ok('and the same featured item is handed to every renderer',
-    /renderStart\(pool\)[\s\S]{0,200}renderDebt\(featured\)[\s\S]{0,80}renderTasks\(featured\)/.test(PAGE));
+  ok('and the same featured item is handed to the renderers that SHARE its screen',
+    /renderStart\(pool\)[\s\S]{0,200}renderDebt\(featured\)/.test(PAGE));
   ok('the memory row drops the featured unit rather than repeating it',
     PAGE.indexOf('var rest = up ? late.slice(1) : late;') > -1);
-  ok('the task list omits exactly the featured id',
+  /* ⭐⭐ ΦΑΣΗ 2 ΑΝΤΙΣΤΡΕΦΕΙ ΑΥΤΟ, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ, ΟΧΙ ΠΑΛΙΝΔΡΟΜΗΣΗ.
+     Η επικάλυψη υπήρχε επειδή κάρτα και λίστα ήταν στην ΙΔΙΑ οθόνη. Τώρα η
+     λίστα ζει στο δικό της δωμάτιο (`#ergasies`) και δεν είναι ΠΟΤΕ ταυτόχρονα
+     ορατή με την κάρτα — άρα δεν υπάρχει τίποτα να αφαιρεθεί, και μια λίστα
+     «όλες μου οι εργασίες» που κρύβει μία δεν είναι λίστα.
+     Ο μηχανισμός ΜΕΝΕΙ στη συνάρτηση (δέχεται `featured` και τον τιμά), αλλά
+     το `paint()` της δίνει ρητά `null`. */
+  ok('but the task LIST is handed null — it lives in its own room now',
+    /renderTasks\(null\)/.test(PAGE));
+  ok('and the omit mechanism still exists, unused, for a screen that shares both',
     PAGE.indexOf("list.filter(function(t){ return t.id !== upId; })") > -1);
   ok('and the day window counts instead of re-listing the top three',
     PAGE.indexOf('candidates(free).slice(0, 3)') < 0);
@@ -1142,6 +1151,55 @@ section('6b · το όνομα είναι «School Studies» παντού που
   ok('και το κλειδί μένει hw:v1', PAGE.indexOf("'hw:v1'") > -1);
   /* Ελληνικός δρόμος αναζήτησης: δεν ψάχνει «School» στα ελληνικά. */
   ok('βρίσκεται ΚΑΙ στα ελληνικά', mot.indexOf("['Εργασίες', 'homework.html', 'Study']") > -1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   7 · ΦΑΣΗ 2+3 — ΤΡΙΑ ΔΩΜΑΤΙΑ, ΜΙΑ ΠΛΟΗΓΗΣΗ
+   ══════════════════════════════════════════════════════════════════════ */
+section('7 · ΟΙ ΕΡΓΑΣΙΕΣ γίνονται δωμάτιο');
+{
+  ok('το `ergasies` είναι ΔΗΛΩΜΕΝΗ πόρτα', /DOORS = \{[\s\S]{0,140}ergasies:/.test(PAGE));
+  ok('το δωμάτιο υπάρχει', PAGE.indexOf('class="hw-tasks"') > -1);
+  ok('και ΔΕΝ είναι πέμπτο μπλοκ', PAGE.indexOf('hw-sec hw-tasks') < 0);
+  is('τα μπλοκ μένουν τρία', (PAGE.match(/class="hw-sec /g) || []).length, 3);
+  ok('κρυφό εξ ορισμού', /\.hw-tasks\{ display:none/.test(PAGE));
+  ok('ορατό μόνο στην πόρτα του', /body\.hw-door-ergasies \.hw-tasks\{ display:block/.test(PAGE));
+
+  /* ⭐⭐ Η ΛΙΣΤΑ ΔΕΙΧΝΕΙ ΟΛΕΣ. Αυτό είναι το σημείο που θα «έχανε» εργασία. */
+  ok('το paint δίνει null, άρα καμία εργασία δεν κρύβεται', /renderTasks\(null\)/.test(PAGE));
+
+  /* Η σύλληψη ΜΕΝΕΙ ορατή εδώ: το δωμάτιο των εργασιών είναι ακριβώς το μέρος
+     που θυμάσαι μια ακόμη. Κρύβεται μόνο στα ΜΑΘΗΜΑΤΑ. */
+  ok('η σύλληψη δεν κρύβεται στις εργασίες',
+    PAGE.indexOf('body.hw-door-ergasies .hw-grab{ display:none') < 0);
+  ok('αλλά κρύβεται στα μαθήματα',
+    /body\.hw-door-mathimata \.hw-grab\{ display:none/.test(PAGE));
+
+  /* Η ΜΝΗΜΗ ξέμεινε μόνη της και πήρε το όνομά της. */
+  ok('το μπλοκ της μνήμης λέγεται «Τι ξεχνάω»',
+    /<span class="hw-n">Τι ξεχνάω<\/span>/.test(PAGE));
+  ok('και οι εργασίες δεν είναι πια υπο-λίστα του', PAGE.indexOf('hw-sub2') < 0);
+}
+
+section('7b · Η ΠΛΟΗΓΗΣΗ — ένα μέρος με δωμάτια');
+{
+  ok('η γραμμή υπάρχει', PAGE.indexOf('class="hw-nav"') > -1);
+  ['#kentro', '#ergasies', '#mathimata'].forEach(h =>
+    ok('οδηγεί στο ' + h, PAGE.indexOf('href="' + h + '"') > -1));
+  ok('δείχνει ΠΟΥ είσαι', /aria-current/.test(PAGE));
+  /* ⛔ Οι ΣΤΙΓΜΕΣ δεν είναι μέρη: το push των 18:00 και το 21:45 έχουν ΕΝΑ
+     πράγμα να κάνουν, και η μπάρα τους κρατάει τη μία έξοδο. */
+  ok('η πλοήγηση φεύγει στις στιγμές',
+    /body\.hw-door-capture \.hw-nav, body\.hw-door-tonight \.hw-nav\{ display:none/.test(PAGE));
+
+  /* ⚠️ ΜΕΤΡΗΜΕΝΟ: οι πόρτες ζουν σε στήλη ~300px. Δύο στήλες τις έκοβαν στη
+     μέση («Τα μαθήματά μου 3 έ…»). Η διάταξη του δείγματος ήταν για ΠΛΗΡΕΣ
+     πλάτος και δεν μεταφέρεται χωρίς αυτό. */
+  ok('οι πόρτες είναι ΜΙΑ στήλη', /\.hw-doors\{ display:grid; grid-template-columns:1fr;/.test(PAGE));
+  ok('και είναι δύο', (PAGE.match(/class="hw-doorlink"/g) || []).length === 2);
+  /* Κάθε πόρτα λέει τι χρωστάει, από τον ΙΔΙΟ υπολογισμό με την κεφαλίδα της. */
+  ok('η πόρτα των εργασιών μετράει τις ανοιχτές', PAGE.indexOf("$('hwDoorsT').textContent") > -1);
+  ok('και δεν λέει «0» για καμία', PAGE.indexOf("'καμία ακόμη'") > -1);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

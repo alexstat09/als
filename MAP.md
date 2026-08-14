@@ -71,7 +71,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
-als-v454) are the study pages, and **`homework.html` (School Studies, als-v482)** is
+als-v454) are the study pages, and **`homework.html` (School Studies, als-v483)** is
 the room above them.
 
 🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
@@ -94,6 +94,15 @@ from a link in the spine. ⚠️ The grouping is **read from `ladders.js`'s own
 `subject` field, never re-derived here** — which is why ο τονισμός correctly
 sits inside Αρχαία. Additive: the page is still THREE `hw-sec` blocks, the room
 is `display:none` outside its hash, and `renderLessons4()` never writes.
+✅ **ΦΑΣΕΙΣ 2+3 shipped als-v483** — the page is now **three rooms behind one
+nav**: ΚΕΝΤΡΟ (default) · **`#ergasies`** (ΟΙ ΕΡΓΑΣΙΕΣ, its own room) ·
+**`#mathimata`**. ⭐ `renderTasks` is handed **`null`** — the card and the list
+are never on one screen, so nothing is omitted and «all my homework» really is
+all of it. The debt block kept only the memory half and is now called
+**«Τι ξεχνάω»**. ⛔ `#capture`/`#tonight` are **moments, not rooms**: they hide
+the nav and keep their own one-exit bar, so the 18:00 push is untouched.
+⚠️ The doors are ONE column — they live in the ~300px spine and two columns
+clipped them; the demo's 2-col grid assumed FULL width.
 The page is now named **School Studies** in all six human-facing places;
 ⛔ the filename, `hw:v1` and the appKey are machine-read and stay frozen.
 **On the phone capture is now FIRST with no hash**, done with `order` +
