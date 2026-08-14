@@ -90,7 +90,7 @@
     { name: 'Study', accent: 'emerald', items: [
       // \u03a4\u039f \u03a7\u03a1\u0395\u039f\u03a3 (als-v470): \u03c4\u03bf \u03bc\u03cc\u03bd\u03bf \u03c3\u03b7\u03bc\u03b5\u03af\u03bf \u03c0\u03bf\u03c5 \u03b2\u03bb\u03ad\u03c0\u03b5\u03b9 \u039a\u0391\u0399 \u03c4\u03b9\u03c2 \u03c0\u03ad\u03bd\u03c4\u03b5
       // \u03c3\u03ba\u03ac\u03bb\u03b5\u03c2 \u03bc\u03b1\u03b6\u03af \u03bc\u03b5 \u03c4\u03b9\u03c2 \u03b5\u03c1\u03b3\u03b1\u03c3\u03af\u03b5\u03c2 \u03c4\u03bf\u03c5 \u03c6\u03c1\u03bf\u03bd\u03c4\u03b9\u03c3\u03c4\u03b7\u03c1\u03af\u03bf\u03c5.
-      { href: 'homework.html', name: '\u03a4\u03bf \u03c7\u03c1\u03ad\u03bf\u03c2', k: 'hw:v1' },
+      { href: 'homework.html', name: 'School Studies', k: 'hw:v1' },
       // ext: opens in a new tab. study.html is a redirect stub to the Notion
       // \u00ab\u0397 \u03a7\u03a1\u039f\u039d\u0399\u0391\u00bb workspace, and it uses location.replace() \u2014 so navigating the
       // PWA to it in place would leave him off-site with no history to go back to.

@@ -71,7 +71,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
-als-v454) are the study pages, and **`homework.html` (Το χρέος, als-v470)** is
+als-v454) are the study pages, and **`homework.html` (School Studies, als-v482)** is
 the room above them.
 
 🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
@@ -88,6 +88,14 @@ rest**.
 ✅ **Φάση 2 (ΟΙ ΤΡΕΙΣ ΠΟΡΤΕΣ) shipped als-v479** — one file, three doors:
 `homework.html` (full) · **`#capture`** (the field, focused, everything else
 folded) · **`#tonight`** (today's lessons, in order, with their real times).
+✅ **ΦΑΣΗ 1 ΤΟΥ ΚΕΝΤΡΟΥ shipped als-v482** — a FOURTH door, **`#mathimata`**
+(«Τα μαθήματά μου»): the four subjects over the five ladder stores, entered
+from a link in the spine. ⚠️ The grouping is **read from `ladders.js`'s own
+`subject` field, never re-derived here** — which is why ο τονισμός correctly
+sits inside Αρχαία. Additive: the page is still THREE `hw-sec` blocks, the room
+is `display:none` outside its hash, and `renderLessons4()` never writes.
+The page is now named **School Studies** in all six human-facing places;
+⛔ the filename, `hw:v1` and the appKey are machine-read and stay frozen.
 **On the phone capture is now FIRST with no hash**, done with `order` +
 `display:contents` so there is still exactly **one markup tree** and the laptop's
 sticky spine is untouched. The **18:00 push opens `#capture` directly** — one

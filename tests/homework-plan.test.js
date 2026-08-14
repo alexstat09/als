@@ -1053,5 +1053,96 @@ ok('and it adds no server code at all — no api/ endpoint is referenced', PAGE.
 ok('the photograph is stored and shown, never interpreted',
   PAGE.indexOf('Ποτέ δεν διαβάζεται από μηχανή.') > -1);
 
+/* ══════════════════════════════════════════════════════════════════════
+   6 · ΦΑΣΗ 1 — ΤΑ ΜΑΘΗΜΑΤΑ ΓΙΝΟΝΤΑΙ ΔΩΜΑΤΙΟ
+
+   Οι τέσσερις σελίδες μελέτης ήταν ΑΔΕΡΦΙΑ στο Home, ποτέ δωμάτια. Αυτό το
+   δωμάτιο είναι η πρώτη φορά που η εφαρμογή λέει «αυτά είναι τα μαθήματά μου».
+   ⛔ Είναι ΠΡΟΣΘΕΤΙΚΟ: τίποτα υπάρχον δεν άλλαξε συμπεριφορά.
+   ══════════════════════════════════════════════════════════════════════ */
+section('6 · ΤΑ ΜΑΘΗΜΑΤΑ — δωμάτιο, όχι πέμπτο μπλοκ');
+{
+  /* Η σελίδα παραμένει ΤΕΣΣΕΡΑ μπλοκ. Το δωμάτιο, όπως και το «Απόψε»,
+     δεν φοράει ποτέ `hw-sec` — αλλιώς μεγαλώνει η αρχική οθόνη. */
+  is('τα μπλοκ μένουν τρία `hw-sec`', (PAGE.match(/class="hw-sec /g) || []).length, 3);
+  ok('το δωμάτιο ΔΕΝ φοράει hw-sec',
+    PAGE.indexOf('class="hw-lessons4"') > -1 && PAGE.indexOf('hw-sec hw-lessons4') < 0);
+
+  /* Η πόρτα είναι δηλωμένη, άρα ένα άγνωστο hash δεν ανοίγει τίποτα. */
+  ok('το `mathimata` είναι ΔΗΛΩΜΕΝΗ πόρτα', /var DOORS = \{[^}]*mathimata:/.test(PAGE));
+  ['hw-door-mathimata', 'hw-lessons4', 'hw-doors', 'hw-doorlink', 'hw-l4grid', 'hw-l4']
+    .forEach(c => ok('η κλάση ' + c + ' ορίζεται στο CSS',
+      new RegExp('\\.' + c + '[\\s,{:]').test(PAGE)));
+
+  /* Κρυφό παντού, ορατό ΜΟΝΟ πίσω από το δικό του hash. */
+  ok('το δωμάτιο είναι κρυφό εξ ορισμού', /\.hw-lessons4\{ display:none/.test(PAGE));
+  ok('και ανοίγει μόνο στην πόρτα του',
+    /body\.hw-door-mathimata \.hw-lessons4\{ display:block/.test(PAGE));
+
+  /* ⛔⛔ ΤΟ ΒΡΗΚΕ ΤΟ RENDER: η πόρτα ζωγραφιζόταν ΜΕΣΑ στο δωμάτιο — ένας
+     σύνδεσμος προς εκεί που ήδη βρίσκεσαι. Σωστό markup, λάθος θέση. */
+  ok('η πόρτα κρύβεται πίσω από ΚΑΘΕ πόρτα',
+    /body\.hw-door \.hw-doors/.test(PAGE));
+
+  /* ⚠️⚠️ ΜΕΤΡΗΜΕΝΟ: το `.hw-l4grid` δηλώνεται ΜΕΤΑ το media query των 999px,
+     οπότε με ίδια ειδικότητα κέρδιζε ο βασικός κανόνας και οι κάρτες έμεναν
+     ΔΥΟ ΣΤΗΛΕΣ στο κινητό (`mq999=true` αλλά `cols=170.5px 170.5px`).
+     Το query ΠΡΕΠΕΙ να έρχεται μετά. */
+  const baseAt = PAGE.indexOf('.hw-l4grid{ display:grid');
+  const mqAt = PAGE.indexOf('.hw-l4grid{ grid-template-columns:1fr; }');
+  ok('ο βασικός κανόνας του πλέγματος υπάρχει', baseAt > -1);
+  ok('η κατάρρευση σε ΜΙΑ στήλη υπάρχει', mqAt > -1);
+  ok('και έρχεται ΜΕΤΑ τον βασικό, αλλιώς δεν ισχύει ποτέ', mqAt > baseAt);
+
+  /* ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΕΙΣ ΠΡΟΤΑΣΕΙΣ (σταθ. 33). «Δεν ξεκίνησες» δεν είναι
+     «δεν χρωστάς», και καμία από τις δύο δεν είναι «δεν διάβασα». */
+  ['δεν έχεις ξεκινήσει', 'όλα στην ώρα τους', 'κάτι δεν διαβάστηκε',
+   'δεν υπάρχει σελίδα ακόμη'].forEach(s =>
+    ok('λέει «' + s + '»', PAGE.indexOf(s) > -1));
+  ok('«δεν ξεκίνησες» και «όλα στην ώρα τους» είναι ΞΕΧΩΡΙΣΤΕΣ προτάσεις',
+    /!anyStarted \? 'δεν έχεις ξεκινήσει'/.test(PAGE));
+
+  /* ⚠️ «ΞΕΚΙΝΗΜΕΝΑ», ΟΧΙ «ΤΑ ΞΕΡΕΙΣ»: το `learned` του ladders.js είναι
+     `samples > 0` — το άγγιξες, δεν το κατέχεις. Η αισιόδοξη λέξη δίπλα σε
+     «1 έληξε» είναι αντίφαση στην ίδια κάρτα. */
+  ok('η ετικέτα λέει «Ξεκινημένα»', PAGE.indexOf('<span>Ξεκινημένα</span>') > -1);
+  ok('και ΠΟΤΕ «Τα ξέρεις»', PAGE.indexOf('<span>Τα ξέρεις</span>') < 0);
+
+  /* Η ομαδοποίηση ΔΙΑΒΑΖΕΤΑΙ, δεν επινοείται εδώ (σταθ. 15): το `ton:v1`
+     είναι δηλωμένο `subject:'arxaia'` μέσα στο ladders.js. */
+  const LADSRC = fs.readFileSync(path.join(ALS, 'ladders.js'), 'utf8');
+  ok('ο τονισμός ανήκει στα Αρχαία, και το λέει ο ΚΟΙΝΟΣ αναγνώστης',
+    /key: 'ton:v1'[\s\S]{0,120}subject: 'arxaia'/.test(LADSRC));
+  ok('το δωμάτιο δεν ξαναγράφει τη δική του ομαδοποίηση',
+    PAGE.indexOf("byS[s.subject]") > -1);
+
+  /* ⛔ ΔΙΑΒΑΖΕΙ, ΔΕΝ ΓΡΑΦΕΙ. */
+  const L4 = PAGE.slice(PAGE.indexOf('function renderLessons4'),
+                        PAGE.indexOf('function renderTonight'));
+  ok('ο renderer δεν γράφει ΠΟΤΕ σε αποθήκη', !/setItem|removeItem/.test(L4));
+  ok('ούτε καλεί save()', !/\bsave\s*\(/.test(L4));
+  ok('η κεφαλίδα και η πόρτα λένε το ΙΔΙΟ, από τον ίδιο υπολογισμό',
+    /hwL4S'\)\.textContent = say;[\s\S]{0,80}hwDoorsS'\)\.textContent = say;/.test(L4));
+}
+
+section('6b · το όνομα είναι «School Studies» παντού που το βλέπει');
+{
+  const idx = fs.readFileSync(path.join(ALS, 'index.html'), 'utf8');
+  const lau = fs.readFileSync(path.join(ALS, 'launcher.js'), 'utf8');
+  const mot = fs.readFileSync(path.join(ALS, 'home-motion.js'), 'utf8');
+  ok('ο τίτλος της καρτέλας', PAGE.indexOf('<title>School Studies · MÉTRON</title>') > -1);
+  ok('το εικονίδιο της αρχικής οθόνης του iPhone',
+    PAGE.indexOf('content="School Studies"') > -1);
+  ok('ο τίτλος μέσα στη σελίδα', PAGE.indexOf('>School Studies</h1>') > -1);
+  ok('το πλακίδιο στο Home', idx.indexOf('<div class="name">School Studies</div>') > -1);
+  ok('η γραμμή στο ALL', lau.indexOf("name: 'School Studies'") > -1);
+  ok('και η αναζήτηση', mot.indexOf("['School Studies', 'homework.html', 'Study']") > -1);
+  /* ⚠️ Ο ΦΑΚΕΛΟΣ ΚΑΙ ΤΑ ΚΛΕΙΔΙΑ ΕΙΝΑΙ ΠΑΓΩΜΕΝΑ — τα διαβάζει ΜΗΧΑΝΗ. */
+  ok('το αρχείο μένει homework.html', lau.indexOf("href: 'homework.html'") > -1);
+  ok('και το κλειδί μένει hw:v1', PAGE.indexOf("'hw:v1'") > -1);
+  /* Ελληνικός δρόμος αναζήτησης: δεν ψάχνει «School» στα ελληνικά. */
+  ok('βρίσκεται ΚΑΙ στα ελληνικά', mot.indexOf("['Εργασίες', 'homework.html', 'Study']") > -1);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

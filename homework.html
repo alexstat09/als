@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Το χρέος">
-  <title>Το χρέος · MÉTRON</title>
+  <meta name="apple-mobile-web-app-title" content="School Studies">
+  <title>School Studies · MÉTRON</title>
   <meta name="theme-color" content="#050506">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -130,10 +130,14 @@
     .hw-hero{ order:3; }
     .hw-clock{ order:4; }
     .hw-start{ order:5; }
-    .hw-day{ order:6; }
-    .hw-debt{ order:7; }
-    .hw-tonight{ order:8; }
-    .hw-foot{ order:9; }
+    /* Η πόρτα κάθεται ΑΜΕΣΩΣ κάτω από την απόφαση: όταν το «ξεκίνα από εδώ»
+       στέλνει σε μάθημα, ο δρόμος προς τα μαθήματα είναι η επόμενη κίνηση. */
+    .hw-doors{ order:6; }
+    .hw-day{ order:7; }
+    .hw-debt{ order:8; }
+    .hw-lessons4{ order:9; }
+    .hw-tonight{ order:10; }
+    .hw-foot{ order:11; }
   }
 
   /* ── ΟΙ ΠΟΡΤΕΣ · `#capture` ΚΑΙ `#tonight` ────────────────────────
@@ -148,7 +152,12 @@
     font:500 12px/1 var(--au-sans,-apple-system,sans-serif); cursor:pointer; }
   body.hw-door .hw-cols{ display:block; }
   body.hw-door .hw-spine{ position:static; max-height:none; overflow:visible; }
+  /* ⚠️ ΤΟ `.hw-doors` ΑΝΗΚΕΙ ΕΔΩ, ΚΑΙ ΤΟ ΕΔΕΙΞΕ ΜΟΝΟ ΤΟ RENDER: χωρίς αυτό, η
+     πόρτα «Τα μαθήματά μου» ζωγραφιζόταν ΜΕΣΑ στο δωμάτιο των μαθημάτων —
+     ένας σύνδεσμος προς εκεί που ήδη βρίσκεσαι. Καμία βεβαίωση δεν το βλέπει:
+     το markup ήταν σωστό, η ΘΕΣΗ ήταν λάθος. */
   body.hw-door .hw-hero, body.hw-door .hw-clock, body.hw-door .hw-start,
+  body.hw-door .hw-doors,
   body.hw-door .hw-day, body.hw-door .hw-debt, body.hw-door .hw-foot{ display:none; }
   body.hw-door-tonight .hw-grab{ display:none; }
   /* Πίσω από την πόρτα της σύλληψης, η μπάρα ΗΔΗ γράφει «Η σύλληψη» — η
@@ -174,6 +183,72 @@
      γίνεται καλύτερο επειδή είναι φαρδύτερο· 75 χαρακτήρες είναι το σωστό
      μήκος γραμμής και πιο φαρδύ είναι χειρότερο. */
   body.hw-door .hw-wrap{ max-width:720px; }
+  /* ⚠️ ΕΞΑΙΡΕΣΗ, ΚΑΙ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΗ: τα ΜΑΘΗΜΑΤΑ είναι πλέγμα καρτών, όχι
+     γραμμή κειμένου. Στα 720 οι δύο στήλες βγαίνουν 340px και ο τίτλος
+     «Αρχαία · αρχικοί χρόνοι» τυλίγεται. Ο κανόνας των 75 χαρακτήρων αφορά
+     ΠΡΟΖΑ — μια κάρτα δεν διαβάζεται σε γραμμές. */
+  body.hw-door-mathimata .hw-wrap{ max-width:1080px; }
+  body.hw-door-mathimata .hw-grab{ display:none; }
+
+  /* ── Η ΠΟΡΤΑ ΠΡΟΣ ΤΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────
+     ⚠️ Ζει στη ΡΑΧΟΚΟΚΑΛΙΑ, όχι σε `hw-sec`: τα μπλοκ μένουν ΤΕΣΣΕΡΑ. Είναι
+     πέρασμα, όχι περιεχόμενο — γι' αυτό δεν έχει δικό του χρώμα ούτε αριθμό. */
+  .hw-doors{ margin-top:16px; }
+  .hw-doorlink{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;
+    border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:14px;
+    background:var(--au-glass,rgba(255,255,255,.022)); padding:15px 17px;
+    transition:.28s cubic-bezier(.16,1,.3,1); }
+  .hw-doorlink:hover{ background:var(--au-glass-2,rgba(255,255,255,.04)); border-color:rgba(255,255,255,.16); }
+  .hw-doorlink .dl-n{ font-size:15px; }
+  .hw-doorlink .dl-s{ margin-left:auto; font:400 11px/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.1em; color:var(--au-faint,rgba(245,242,236,.3)); white-space:nowrap; }
+
+  /* ── ΤΟ ΔΩΜΑΤΙΟ ΤΩΝ ΜΑΘΗΜΑΤΩΝ ────────────────────────────────────
+     Κρυφό σε ΟΛΗ τη σελίδα, όπως το «Απόψε». Εμφανίζεται μόνο πίσω από το
+     δικό του hash, άρα δεν μπορεί να προσθέσει ύψος στην αρχική οθόνη. */
+  .hw-lessons4{ display:none; }
+  body.hw-door-mathimata .hw-lessons4{ display:block; }
+  .hw-l4grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  .hw-l4{ display:flex; flex-direction:column; position:relative; overflow:hidden;
+    text-decoration:none; color:inherit;
+    border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:18px;
+    background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+    padding:24px 24px 20px; transition:.3s cubic-bezier(.16,1,.3,1); }
+  .hw-l4::after{ content:''; position:absolute; inset:0; pointer-events:none; opacity:.13;
+    background:radial-gradient(380px 180px at 88% -18%, rgb(var(--c)), transparent 68%); }
+  a.hw-l4:hover{ transform:translateY(-2px); border-color:rgba(255,255,255,.17); }
+  a.hw-l4:hover::after{ opacity:.22; }
+  .hw-l4 .l4w{ font:400 10px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.15em;
+    color:rgb(var(--c)); }
+  .hw-l4 h3{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400;
+    font-size:30px; margin:11px 0 6px; letter-spacing:-.01em; }
+  .hw-l4 .l4t{ color:var(--au-dim,rgba(245,242,236,.56)); font-size:13.5px; margin:0 0 20px;
+    flex:1 1 auto; }
+  .hw-l4 .l4rows{ border-top:1px solid var(--au-line,rgba(255,255,255,.06)); padding-top:13px; }
+  .hw-l4 .l4r{ display:flex; justify-content:space-between; gap:14px; padding:4px 0;
+    font:400 11.5px/1.5 var(--au-mono,ui-monospace,monospace);
+    color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-l4 .l4r b{ color:var(--au-ivory,#F5F2EC); font-weight:500; }
+  .hw-l4 .l4r b.late{ color:rgb(var(--hw-late)); }
+  /* ΚΑΜΙΑ ΣΕΛΙΔΑ = διακεκομμένο περίγραμμα και ΚΑΝΕΝΑ νούμερο. Ένα κενό που
+     φαίνεται είναι καλύτερο από ένα κρυμμένο (σταθ. 33: «δεν υπάρχει» ≠ 0). */
+  .hw-l4.soon{ background:none; border-style:dashed; }
+  .hw-l4.soon h3{ color:var(--au-dim,rgba(245,242,236,.56)); }
+  .hw-l4.soon::after{ opacity:.05; }
+  .hw-l4 .l4note{ font:400 10.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    border-top:1px solid var(--au-line,rgba(255,255,255,.06)); padding-top:13px; }
+  /* ⚠️⚠️ ΑΥΤΟ ΤΟ MEDIA QUERY ΖΕΙ ΕΔΩ, ΚΑΙ ΟΧΙ ΜΕ ΤΑ ΑΛΛΑ ΤΟΥ ΚΙΝΗΤΟΥ ΣΤΗ
+     ΓΡΑΜΜΗ 125 — ΚΑΙ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΟ. Το `.hw-l4grid` δηλώνεται πιο ΚΑΤΩ από
+     εκείνο το μπλοκ, οπότε με ΙΔΙΑ ΕΙΔΙΚΟΤΗΤΑ κέρδιζε ο μεταγενέστερος και οι
+     κάρτες έμεναν ΔΥΟ ΣΤΗΛΕΣ στα 393px (μετρημένο: `mq999=true` αλλά
+     `cols=170.5px 170.5px`). Ένα media query που ΤΑΙΡΙΑΖΕΙ και δεν ΙΣΧΥΕΙ
+     είναι το χειρότερο είδος — φαίνεται σωστό στον κώδικα.
+     ⛔ Μη το μετακινήσεις πάνω «για τάξη». */
+  @media (max-width:999px){
+    .hw-l4grid{ grid-template-columns:1fr; }
+    .hw-l4 h3{ font-size:26px; }
+  }
 
   /* ── ΤΟ ΚΕΦΑΛΙ ──────────────────────────────────────────────────── */
   .hw-hero{ padding:26px 0 14px; }
@@ -403,7 +478,7 @@
     <div class="hw-spine">
       <header class="hw-hero">
         <div class="hw-eyebrow">MÉTRON</div>
-        <h1 id="hwH1">Το χρέος</h1>
+        <h1 id="hwH1">School Studies</h1>
         <p class="hw-sub" id="hwSub">Ό,τι σου έδωσαν και ό,τι ξεχνάς, στο ίδιο σημείο.</p>
       </header>
 
@@ -414,6 +489,17 @@
 
       <!-- ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ -->
       <section class="hw-start" id="hwStart"></section>
+
+      <!-- ══ Η ΠΟΡΤΑ ΠΡΟΣ ΤΑ ΜΑΘΗΜΑΤΑ ═══════════════════════════════
+           Ως τώρα οι τέσσερις σελίδες μελέτης ήταν ΑΔΕΡΦΙΑ στο Home, όχι
+           δωμάτια. Δεν υπήρχε πουθενά ένα μέρος που να λέει «αυτά είναι τα
+           μαθήματά μου». Η πόρτα είναι πέρασμα, όχι πέμπτο μπλοκ. -->
+      <nav class="hw-doors">
+        <a class="hw-doorlink" href="#mathimata">
+          <span class="dl-n">Τα μαθήματά μου</span>
+          <span class="dl-s" id="hwDoorsS">—</span>
+        </a>
+      </nav>
     </div>
 
     <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ · ΤΡΙΑ ΜΠΛΟΚ ════════════════════════════
@@ -489,6 +575,21 @@
       <!-- ΑΠΟΨΕ — η πόρτα των 21:45. ΔΕΝ είναι πέμπτο μπλοκ: είναι κρυφή σε
            ολόκληρη τη σελίδα και εμφανίζεται μόνο στο `#tonight`. Γι' αυτό δεν
            φοράει `hw-sec` — τα μπλοκ παραμένουν ΤΕΣΣΕΡΑ. -->
+      <!-- ══ ΤΑ ΜΑΘΗΜΑΤΑ ΜΟΥ · ΦΑΣΗ 1 ═══════════════════════════════
+           Τέσσερα μαθήματα, ΟΧΙ πέντε αποθήκες: ο Τονισμός δεν είναι μάθημα —
+           δική του απόφαση, 12/08/26 — και το `ladders.js` το ξέρει ήδη
+           (`ton:v1` έχει `subject:'arxaia'`). Άρα η ομαδοποίηση δεν επινοείται
+           εδώ, ΔΙΑΒΑΖΕΤΑΙ από τον κοινό αναγνώστη.
+           ⚠️ ΔΕΝ φοράει `hw-sec`: τα μπλοκ της σελίδας παραμένουν ΤΕΣΣΕΡΑ,
+           όπως και το «Απόψε». -->
+      <section class="hw-lessons4" id="hwLessons4">
+        <div class="hw-sec-hd">
+          <span class="hw-n">Τα μαθήματά μου</span>
+          <span class="hw-s" id="hwL4S"></span>
+        </div>
+        <div class="hw-l4grid" id="hwL4Grid"></div>
+      </section>
+
       <section class="hw-tonight" id="hwTonight">
         <div class="hw-sec-hd">
           <span class="hw-n">Απόψε</span>
@@ -986,7 +1087,7 @@
      δηλώνονται, δεν μαντεύονται) — και αυτή η λίστα είναι η δήλωση που
      διαβάζει ΚΑΙ το `api/run-reminders.js` όταν στέλνει το push των 18:00.
      ══════════════════════════════════════════════════════════════════ */
-  var DOORS = { capture:'Η σύλληψη', tonight:'Απόψε' };
+  var DOORS = { capture:'Η σύλληψη', tonight:'Απόψε', mathimata:'Τα μαθήματά μου' };
   function doorOf(hash){
     var h = String(hash == null ? '' : hash).replace(/^#/, '');
     return Object.prototype.hasOwnProperty.call(DOORS, h) ? h : '';
@@ -1739,7 +1840,9 @@
   /* ══════════════════════════════════════════════════════════════════
      ΖΩΓΡΑΦΙΚΗ
      ══════════════════════════════════════════════════════════════════ */
-  function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-ekt)'; }
+  /* ⚠️ Το fallback είναι το ΓΚΡΙ του «δεν ξέρω», όχι το χρώμα της Έκθεσης —
+     ίδιο λάθος με το `|| 'ekthesi'` του addTask, μία γραμμή πιο πέρα. */
+  function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-unk)'; }
 
   function renderClock(){
     var b = budget();
@@ -2246,6 +2349,108 @@
      μην μπορεί να πει τι είχε — μια πόρτα που λέει «δεν ξέρω» και σταματάει
      είναι αδιέξοδο, όσο τίμια κι αν το λέει.
      ══════════════════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΑ ΜΑΘΗΜΑΤΑ ΜΟΥ — ΤΕΣΣΕΡΑ ΜΑΘΗΜΑΤΑ ΠΑΝΩ ΣΕ ΠΕΝΤΕ ΑΠΟΘΗΚΕΣ
+
+     ⭐ Η ΟΜΑΔΟΠΟΙΗΣΗ ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ ΕΔΩ. Το `ladders.js` δίνει ήδη `subject`
+     σε κάθε αποθήκη, και το `ton:v1` το έχει δηλωμένο ως `'arxaia'` — δηλαδή
+     «ο τονισμός δεν είναι μάθημα», δική του απόφαση. Αν το ξαναγράφαμε εδώ,
+     θα ήταν δεύτερη αλήθεια με καθυστέρηση (σταθ. 15).
+
+     ⛔ ΚΑΝΕΝΑ ΝΟΥΜΕΡΟ ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Τρεις καταστάσεις, τρεις προτάσεις
+     (σταθ. 10/33): αδιάβαστη αποθήκη → «άγνωστο» · διαβασμένη και άδεια →
+     «δεν το ξεκίνησες» · αριθμοί → μόνο όταν υπάρχουν.
+     ══════════════════════════════════════════════════════════════════ */
+  var L4_TAG = {
+    istoria:  'Σε ακούει και σε βαθμολογεί ανά στοιχείο.',
+    arxaia:   'Γνωστό, άγνωστο και ο τονισμός — μία πόρτα.',
+    latinika: 'Το μάθημα που ένας υπολογιστής ξέρει ΑΚΡΙΒΩΣ.',
+    ekthesi:  'Ισοβαθμεί με τα Αρχαία και δεν έχει σελίδα ακόμη.'
+  };
+  function renderLessons4(){
+    var L = ladders(), host = $('hwL4Grid');
+    if (L.broken){
+      host.innerHTML = '<div class="hw-blind">Δεν φόρτωσε το <b>ladders.js</b>, οπότε ΔΕΝ ξέρω πού βρίσκεσαι σε κανένα μάθημα. Αυτό δεν σημαίνει «τίποτα» — σημαίνει «δεν ξέρω». Ανανέωσε τη σελίδα.</div>';
+      $('hwL4S').textContent = 'άγνωστο';
+      $('hwDoorsS').textContent = 'άγνωστο';
+      return;
+    }
+
+    /* Οι αποθήκες κάθε μαθήματος, στη σειρά που τις δίνει ο αναγνώστης. */
+    var byS = {};
+    L.stores.forEach(function(s){ (byS[s.subject] = byS[s.subject] || []).push(s); });
+
+    var html = '', totalLate = 0, anyBlind = false, anyStarted = false;
+    SUBJ_ORDER.forEach(function(sub){
+      var meta = SUBJ[sub], list = byS[sub] || [];
+      var rgb = subjRgb(sub);
+      var w = '<div class="l4w">' + meta.weight + '% των μορίων</div>';
+      var head = w + '<h3>' + esc(meta.label) + '</h3>' +
+                 '<p class="l4t">' + esc(L4_TAG[sub] || '') + '</p>';
+
+      /* ΚΑΜΙΑ ΣΕΛΙΔΑ. Δεν κρύβεται και δεν παίρνει ψεύτικο νούμερο. */
+      if (!meta.page || !list.length){
+        html += '<div class="hw-l4 soon" style="--c:' + rgb + '">' + head +
+                '<span class="l4note">' +
+                (meta.page ? 'δεν έχει ξεκινήσει' : 'δεν υπάρχει σελίδα ακόμη') +
+                '</span></div>';
+        return;
+      }
+
+      var blind = [], pieces = 0, learned = 0, late = 0, next = null, started = false;
+      list.forEach(function(s){
+        if (!s.ok){ blind.push(s.label); anyBlind = true; return; }
+        if (s.started){ started = true; anyStarted = true; }
+        pieces  += s.items.length;
+        learned += s.learned;
+        late    += s.overdue;
+        if (s.nextDue != null && (next == null || s.nextDue < next)) next = s.nextDue;
+      });
+      totalLate += late;
+
+      var rows = '';
+      if (blind.length){
+        /* ⚠️ Μία αδιάβαστη αποθήκη ΔΕΝ μηδενίζει το μάθημα — το κάνει άγνωστο,
+           και το λέει με το ΟΝΟΜΑ της. */
+        rows += '<div class="l4r"><span>Δεν διάβασα</span><b>' + esc(blind.join(' · ')) + '</b></div>';
+      }
+      if (!started && !blind.length){
+        html += '<a class="hw-l4" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' + head +
+                '<span class="l4note">δεν το έχεις ξεκινήσει</span></a>';
+        return;
+      }
+      if (started){
+        rows += '<div class="l4r"><span>Κομμάτια</span><b>' + pieces + '</b></div>';
+        /* ⚠️ «ΞΕΚΙΝΗΜΕΝΑ», ΟΧΙ «ΤΑ ΞΕΡΕΙΣ». Το `learned` του ladders.js είναι
+           `samples > 0` ή `learnedAt` — δηλαδή ΤΟ ΑΓΓΙΞΕΣ, όχι το κατέχεις.
+           Η πρώτη γραφή έλεγε «Τα ξέρεις 3/3» ΔΙΠΛΑ σε «1 έληξε», που είναι
+           αντίφαση στην ίδια κάρτα· και το χειρότερο, η αισιόδοξη εκδοχή. */
+        rows += '<div class="l4r"><span>Ξεκινημένα</span><b>' + learned + ' / ' + pieces + '</b></div>';
+        rows += '<div class="l4r"><span>Χρωστάς τώρα</span>' +
+                (late ? '<b class="late">' + late + (late === 1 ? ' έληξε' : ' έληξαν') + '</b>'
+                      : (next != null ? '<b>' + esc(fmtDue(dkOf(new Date(next)))) + '</b>'
+                                      : '<b>—</b>')) +
+                '</div>';
+      }
+      html += '<a class="hw-l4" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' +
+              head + '<div class="l4rows">' + rows + '</div></a>';
+    });
+
+    host.innerHTML = html;
+
+    /* Η κεφαλίδα και η πόρτα λένε ΤΟ ΙΔΙΟ πράγμα, από τον ίδιο υπολογισμό. */
+    /* ⚠️ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΟΧΙ ΔΥΟ (σταθ. 33). Η πρώτη γραφή έλεγε «όλα στην
+       ώρα τους» σε κάποιον που δεν έχει ανοίξει ΠΟΤΕ μάθημα — καθησυχασμός για
+       κάτι που δεν μετρήθηκε. «Δεν χρωστάς» και «δεν ξεκίνησες» είναι
+       διαφορετικές προτάσεις, και μόνο η δεύτερη είναι αλήθεια εδώ. */
+    var say = anyBlind ? 'κάτι δεν διαβάστηκε'
+            : (!anyStarted ? 'δεν έχεις ξεκινήσει'
+            : (totalLate ? (totalLate + (totalLate === 1 ? ' έληξε' : ' έληξαν'))
+                         : 'όλα στην ώρα τους'));
+    $('hwL4S').textContent = say;
+    $('hwDoorsS').textContent = say;
+  }
+
   function renderTonight(){
     var tv = tonightView(), body = $('hwTonightBody');
     var acts = '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
@@ -2394,6 +2599,7 @@
     cl.toggle('hw-door', !!d);
     cl.toggle('hw-door-capture', d === 'capture');
     cl.toggle('hw-door-tonight', d === 'tonight');
+    cl.toggle('hw-door-mathimata', d === 'mathimata');
     $('hwDoorName').textContent = d ? DOORS[d] : '';
     if (d === 'tonight') renderTonight();
     if (d === 'capture'){ try { $('hwLine').focus(); } catch(e){} }
@@ -2602,6 +2808,7 @@
     renderDay(pool);
     renderOver(pool);
     renderTonight();                 /* η πόρτα των 21:45 ζει στο ΙΔΙΟ paint */
+    renderLessons4();                /* και τα μαθήματα — ΕΝΑ paint, μία αλήθεια */
     $('hwFoot').innerHTML =
       'Διαβάζει και τις πέντε σκάλες μελέτης· γράφει ΜΟΝΟ τις δικές του εργασίες.<br>' +
       'Καμία μηχανή δεν διαβάζει τις φωτογραφίες σου εδώ — η μεταγραφή γίνεται στη συζήτηση, μπροστά σου.';
