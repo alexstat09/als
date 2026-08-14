@@ -78,6 +78,9 @@
     --hw-arx:155,140,255;     /* Αρχαία   · violet */
     --hw-lat:24,200,192;      /* Λατινικά · teal   */
     --hw-ekt:255,138,107;     /* Έκθεση   · coral  */
+    --hw-unk:150,148,143;     /* «δεν ξέρω» · ΓΚΡΙ ΕΠΙΤΗΔΕΣ — μια άγνωστη
+                                 ταυτότητα δεν παίρνει ποτέ χρώμα μαθήματος,
+                                 αλλιώς ξαναμοιάζει με μάθημα */
     --hw-late:255,107,139;    /* ληξιπρόθεσμο */
     --hw-good:52,226,176;
   }
@@ -609,7 +612,18 @@
        μάθημα εδώ, κρατάει προθεσμία, φωτογραφία και χρονόμετρο, και λέει
        καθαρά ότι δεν υπάρχει σελίδα ακόμη. Ένα κενό που φαίνεται είναι
        καλύτερο από ένα κρυμμένο. */
-    ekthesi:  { label:'Έκθεση',   rgb:'var(--hw-ekt)', weight:30, page:null }
+    ekthesi:  { label:'Έκθεση',   rgb:'var(--hw-ekt)', weight:30, page:null },
+    /* ⛔⛔ ΤΟ ΠΕΜΠΤΟ, ΚΑΙ ΔΕΝ ΕΙΝΑΙ ΜΑΘΗΜΑ — ΕΙΝΑΙ «ΔΕΝ ΞΕΡΩ».
+       Ως τώρα ο `addTask` έγραφε `p.subject || 'ekthesi'`, οπότε μια γραμμή
+       που ο parser ΔΕΝ αναγνώρισε φακελωνόταν σιωπηλά στην Έκθεση. Μετρημένο
+       στα ΑΛΗΘΙΝΑ του δεδομένα: η ΜΟΝΗ εργασία που έχει γράψει ποτέ
+       («ΜΤΦΡΑΣΗ 1ης ενοτητας…», που είναι ΑΡΧΑΙΑ) κάθεται στην Έκθεση.
+       Είναι η σταθερή αρχή 10 στην πιο ακριβή της θέση: «δεν κατάλαβα ποιο
+       μάθημα» και «είναι Έκθεση» ζωγραφίζονταν ΙΔΙΑ.
+       ⚠️ ΔΕΝ μπαίνει στο `SUBJ_ORDER` ούτε στο φύλλο των σημερινών: κανείς δεν
+       «είχε» άγνωστο μάθημα. Βάρος 0 — δεν κερδίζει ΠΟΤΕ ισοπαλία σε
+       συντελεστή που δεν του ανήκει. */
+    unknown:  { label:'Χωρίς μάθημα', rgb:'var(--hw-unk)', weight:0, page:null }
   };
   var KINDS = {
     apexo:      'απέξω',
@@ -1425,7 +1439,7 @@
     var id = uid(), now = Date.now();
     state.tasks[id] = {
       id:id, ts:now,
-      subject: p.subject || 'ekthesi',
+      subject: p.subject || 'unknown',
       title: p.title || (p.unit ? unitTitle(storeOfUnit(p.unit), p.unit.id) : ''),
       due: p.due || null,
       kind: p.kind || 'askisi',
@@ -1996,7 +2010,7 @@
     }
 
     host.innerHTML = shown.map(function(t){
-      var s = SUBJ[t.subject] || SUBJ.ekthesi;
+      var s = SUBJ[t.subject] || SUBJ.unknown;
       var bits = [s.label, KINDS[t.kind] || ''];
       bits.push(t.due ? fmtDue(t.due) : 'χωρίς ημερομηνία');
       /* ⛔ ΚΑΜΙΑ ΠΑΥΛΑ ΓΙΑ ΧΡΟΝΟ ΠΟΥ ΔΕΝ ΜΕΤΡΗΘΗΚΕ. */
@@ -2418,7 +2432,7 @@
   function openFocus(id){
     var t = state.tasks[id]; if (!t) return;
     focusId = id; focusStart = Date.now();
-    var s = SUBJ[t.subject] || SUBJ.ekthesi;
+    var s = SUBJ[t.subject] || SUBJ.unknown;
     $('hwFocusKicker').textContent = s.label + ' · ' + (KINDS[t.kind] || '');
     $('hwFocusTitle').textContent = t.title || s.label;
     var e = estimate(t.subject, t.kind);

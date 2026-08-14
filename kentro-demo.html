@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ΤΟ ΚΕΝΤΡΟ · δείγμα</title>
+<link rel="stylesheet" href="aurora.css">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   ΤΟ ΚΕΝΤΡΟ — ΑΠΟΜΟΝΩΜΕΝΟ ΔΕΙΓΜΑ
+   Κανένα sync script. Καμία αποθήκη. Δεν διαβάζει και δεν γράφει
+   ΤΙΠΟΤΑ. Όλα τα περιεχόμενα είναι δείγμα, σημειωμένο στην οθόνη.
+   Τρία δωμάτια, ένα αρχείο: #kentro · #ergasies · #mathimata
+   ═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root{
+  --ist: #F2C063;   /* Ιστορία  — amber  */
+  --arx: #9B8CFF;   /* Αρχαία   — violet */
+  --ekt: #34E2B0;   /* Έκθεση   — emerald */
+  --lat: #18C8C0;   /* Λατινικά — teal   */
+  --gut: 28px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body{
+  margin:0; min-height:100vh;
+  background: var(--au-canvas);
+  color: var(--au-ivory);
+  font-family: var(--au-sans);
+  font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the quiet aurora ground — one fixed wash, never animated */
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(900px 520px at 82% -8%,  rgba(155,140,255,0.10), transparent 62%),
+    radial-gradient(760px 460px at 4% 104%, rgba(52,226,176,0.07),  transparent 60%);
+}
+
+.wrap{ position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 var(--gut) 96px; }
+
+/* ── the mono label: this app's telemetry voice ─────────────── */
+.lab{
+  font-family: var(--au-mono); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color: var(--au-faint);
+}
+
+/* ── top bar ────────────────────────────────────────────────── */
+.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:20px;
+  padding:16px 0 14px;
+  background:linear-gradient(var(--au-canvas) 68%, transparent);
+  backdrop-filter:saturate(140%) blur(6px);
+}
+.brand{
+  font-family:var(--au-mono); font-size:10px; letter-spacing:.22em;
+  color:var(--au-dim); text-transform:uppercase; white-space:nowrap;
+}
+.brand b{ color:var(--au-ivory); font-weight:500; }
+
+nav{ display:flex; gap:2px; margin-left:auto; }
+nav a{
+  font-family:var(--au-mono); font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; text-decoration:none;
+  color:var(--au-faint); padding:7px 13px; border-radius:999px;
+  border:1px solid transparent; transition:.28s var(--au-ease);
+}
+nav a:hover{ color:var(--au-dim); }
+nav a[aria-current]{
+  color:var(--au-ivory);
+  background:var(--au-glass-2);
+  border-color:var(--au-line-2);
+}
+
+.demo-flag{
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--au-mono); font-size:9.5px; letter-spacing:.15em;
+  color:var(--au-amber); text-transform:uppercase;
+  padding:4px 10px; border:1px solid rgba(242,192,99,.28);
+  border-radius:999px; background:rgba(242,192,99,.05);
+}
+
+/* ── rooms ──────────────────────────────────────────────────── */
+/* ⚠️ A hash scrolls its target to viewport TOP, which is UNDER the sticky bar —
+   measured at 393px: the capture field sat at top:0, fully hidden, and it is
+   the single most used control on this page. scroll-margin-top is the fix;
+   every room shares one document position, so in practice nothing scrolls. */
+.room{ display:none; scroll-margin-top:120px; }
+.room:target{ display:block; }
+/* #kentro is the default room when no hash is present */
+body:not(:has(.room:target)) #kentro{ display:block; }
+
+/* ── the capture line — the single most used control ────────── */
+.capture{
+  display:flex; align-items:center; gap:12px;
+  margin:26px 0 40px; padding:0 0 0 18px;
+  border:1px solid var(--au-line-2); border-radius:14px;
+  background:var(--au-glass);
+  transition:.3s var(--au-ease);
+}
+.capture:focus-within{
+  border-color:rgba(52,226,176,.34);
+  background:rgba(52,226,176,.035);
+}
+.capture input{
+  flex:1 1 auto; min-width:0; background:none; border:0; outline:none;
+  color:var(--au-ivory); font-family:var(--au-sans); font-size:15px;
+  padding:15px 0;
+}
+.capture input::placeholder{ color:var(--au-faint); }
+.capture .cbtn{
+  flex:0 0 auto; margin:6px; padding:9px 15px; border-radius:9px;
+  border:1px solid var(--au-line-2); background:var(--au-glass-2);
+  color:var(--au-dim); font-family:var(--au-mono); font-size:10px;
+  letter-spacing:.13em; text-transform:uppercase; cursor:pointer;
+  transition:.24s var(--au-ease);
+}
+.capture .cbtn:hover{ color:var(--au-ivory); border-color:var(--au-line-2); background:rgba(255,255,255,.07); }
+
+/* ── the date ───────────────────────────────────────────────── */
+.date-block{ margin:6px 0 34px; }
+.date-block h1{
+  font-family:var(--au-serif); font-style:italic; font-weight:400;
+  font-size:clamp(38px, 6.4vw, 62px); line-height:1.02;
+  margin:6px 0 0; letter-spacing:-.012em;
+}
+.date-block .sub{ color:var(--au-dim); font-size:14px; margin-top:10px; }
+
+/* ── section heads ──────────────────────────────────────────── */
+.sec{ margin:0 0 14px; display:flex; align-items:baseline; gap:14px; }
+.sec h2{
+  font-family:var(--au-mono); font-size:10.5px; letter-spacing:.19em;
+  text-transform:uppercase; color:var(--au-dim); font-weight:500; margin:0;
+}
+.sec .rule{ flex:1 1 auto; height:1px; background:var(--au-line); }
+.sec .cnt{ font-family:var(--au-mono); font-size:10.5px; color:var(--au-faint); }
+
+.block{ margin:0 0 46px; }
+
+/* ── ΑΥΡΙΟ — the hero ───────────────────────────────────────── */
+.tomorrow{
+  border:1px solid var(--au-line-2); border-radius:18px;
+  background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  padding:26px 28px;
+}
+.tomorrow .head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.tomorrow .head .big{
+  font-family:var(--au-serif); font-style:italic; font-size:29px; line-height:1;
+}
+.tomorrow .head .when{ color:var(--au-dim); font-size:13.5px; }
+
+.slots{ display:flex; flex-direction:column; }
+.slot{
+  display:grid; grid-template-columns:64px 1fr auto; align-items:center;
+  gap:16px; padding:11px 0; border-top:1px solid var(--au-line);
+}
+.slot:first-child{ border-top:0; }
+.slot .t{ font-family:var(--au-mono); font-size:12px; color:var(--au-faint); }
+.slot .n{ display:flex; align-items:center; gap:10px; font-size:15px; }
+.slot .owed{
+  font-family:var(--au-mono); font-size:10.5px; letter-spacing:.08em;
+  color:var(--au-dim); text-align:right;
+}
+.dot{ width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:var(--c, var(--au-faint)); }
+
+/* ── ΤΩΡΑ — one recommendation, with its reason ─────────────── */
+.now{
+  display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center;
+  border:1px solid rgba(52,226,176,.22); border-radius:18px;
+  background:linear-gradient(140deg, rgba(52,226,176,.07), rgba(52,226,176,.015));
+  padding:24px 26px;
+}
+.now .what{ font-family:var(--au-serif); font-style:italic; font-size:27px; line-height:1.1; }
+.now .why{ margin-top:9px; color:var(--au-dim); font-size:14px; }
+.now .why em{ font-style:normal; color:var(--au-ivory); }
+.go{
+  flex:0 0 auto; text-decoration:none; white-space:nowrap;
+  padding:13px 22px; border-radius:11px;
+  border:1px solid rgba(52,226,176,.34); background:rgba(52,226,176,.1);
+  color:#8DF3D2; font-family:var(--au-mono); font-size:11px;
+  letter-spacing:.15em; text-transform:uppercase;
+  transition:.26s var(--au-ease);
+}
+.go:hover{ background:rgba(52,226,176,.18); color:#B6F8E4; }
+
+/* ── Ο ΧΡΟΝΟΣ — the subtraction, shown not asserted ─────────── */
+.calc{ font-family:var(--au-mono); font-size:13px; max-width:420px; }
+.calc .r{ display:flex; justify-content:space-between; gap:20px; padding:7px 0; color:var(--au-dim); }
+.calc .r span:last-child{ color:var(--au-faint); }
+.calc .r.tot{
+  border-top:1px solid var(--au-line-2); margin-top:5px; padding-top:11px;
+  color:var(--au-ivory);
+}
+.calc .r.tot span:last-child{ color:var(--au-ivory); font-size:15px; }
+
+/* ── ΤΙ ΞΕΧΝΑΩ — quiet by design ────────────────────────────── */
+.decay{ display:flex; flex-direction:column; }
+/* the status column fits its longest honest sentence («δεν υπάρχει σελίδα»);
+   a wrapped status reads as a broken row, not as a state. */
+.decay .d{
+  display:grid; grid-template-columns:1fr 88px 132px; gap:16px; align-items:center;
+  padding:12px 0; border-top:1px solid var(--au-line);
+  color:var(--au-dim); font-size:14px;
+}
+.decay .d:first-child{ border-top:0; }
+.decay .d .nm{ display:flex; align-items:center; gap:10px; color:var(--au-ivory); }
+.decay .d .st{ font-family:var(--au-mono); font-size:11px; text-align:right; }
+.decay .d .bar{ height:3px; border-radius:2px; background:rgba(255,255,255,.07); overflow:hidden; }
+.decay .d .bar i{ display:block; height:100%; border-radius:2px; background:var(--c); }
+.decay .d.due .st{ color:var(--au-amber); }
+.decay .d.unknown .st{ color:var(--au-faint); font-style:italic; }
+
+/* ── the two doors ──────────────────────────────────────────── */
+.doors{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.door{
+  display:block; text-decoration:none; color:inherit;
+  border:1px solid var(--au-line-2); border-radius:18px;
+  background:var(--au-glass); padding:26px 26px 24px;
+  transition:.32s var(--au-ease);
+}
+.door:hover{ background:var(--au-glass-2); border-color:rgba(255,255,255,.16); transform:translateY(-2px); }
+.door h3{
+  font-family:var(--au-serif); font-style:italic; font-weight:400;
+  font-size:27px; margin:12px 0 8px;
+}
+.door p{ margin:0; color:var(--au-dim); font-size:14px; }
+.door .arrow{ margin-top:18px; color:var(--au-faint); font-family:var(--au-mono); font-size:11px; letter-spacing:.14em; }
+
+/* ── ΟΙ ΕΡΓΑΣΙΕΣ ────────────────────────────────────────────── */
+.task{
+  display:grid; grid-template-columns:auto 1fr auto; gap:16px; align-items:start;
+  padding:16px 0; border-top:1px solid var(--au-line);
+}
+.task:first-child{ border-top:0; }
+.tick{
+  width:19px; height:19px; margin-top:2px; border-radius:6px; cursor:pointer;
+  border:1px solid var(--au-line-2); background:var(--au-glass);
+  transition:.22s var(--au-ease);
+}
+.tick:hover{ border-color:var(--au-dim); }
+.task .body .ttl{ font-size:15.5px; line-height:1.4; }
+.task .body .meta{
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  margin-top:7px; font-family:var(--au-mono); font-size:10.5px;
+  letter-spacing:.09em; color:var(--au-faint); text-transform:uppercase;
+}
+.task .body .meta .sj{ color:var(--c); }
+.task .body .meta .pill{
+  padding:2.5px 8px; border-radius:999px; border:1px solid var(--au-line-2);
+}
+.task .when{
+  font-family:var(--au-mono); font-size:11px; color:var(--au-dim);
+  text-align:right; white-space:nowrap; padding-top:3px;
+}
+.task .when.none{ color:var(--au-faint); font-style:italic; text-transform:none; letter-spacing:0; }
+.task.done .body .ttl{ color:var(--au-faint); text-decoration:line-through; }
+.task.done .tick{ background:rgba(52,226,176,.14); border-color:rgba(52,226,176,.35); }
+
+/* NEUTRAL on purpose. The four subject hues are identity, never decoration —
+   a violet source chip on an amber Ιστορία row reads as «this is Αρχαία». */
+.src{
+  display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  padding:2.5px 8px; border-radius:999px;
+  border:1px solid var(--au-line-2); color:var(--au-dim); background:var(--au-glass-2);
+}
+.src:hover{ color:var(--au-ivory); }
+
+/* ── ΤΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────────────── */
+.lessons{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+/* flex column + a growing tag, so the stat rows of two side-by-side cards sit
+   on the same line however long a description runs. */
+.lesson{
+  display:flex; flex-direction:column; text-decoration:none; color:inherit; position:relative;
+  border:1px solid var(--au-line-2); border-radius:20px;
+  background:linear-gradient(155deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+  padding:28px 28px 24px; overflow:hidden;
+  transition:.32s var(--au-ease);
+}
+.lesson::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(420px 200px at 88% -18%, var(--c), transparent 68%);
+  opacity:.13; transition:.42s var(--au-ease);
+}
+.lesson:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,.17); }
+.lesson:hover::after{ opacity:.22; }
+.lesson .w{ font-family:var(--au-mono); font-size:10px; letter-spacing:.15em; color:var(--c); }
+.lesson h3{
+  font-family:var(--au-serif); font-style:italic; font-weight:400;
+  font-size:34px; margin:12px 0 6px; letter-spacing:-.01em;
+}
+.lesson .tag{ color:var(--au-dim); font-size:14px; margin:0 0 22px; flex:1 1 auto; }
+.lesson .rows{ border-top:1px solid var(--au-line); padding-top:14px; }
+.lesson .rw{
+  display:flex; justify-content:space-between; gap:14px;
+  font-family:var(--au-mono); font-size:11.5px; color:var(--au-faint);
+  padding:5px 0;
+}
+.lesson .rw b{ color:var(--au-ivory); font-weight:500; }
+.lesson.soon{ background:none; border-style:dashed; }
+.lesson.soon h3{ color:var(--au-dim); }
+.lesson.soon::after{ opacity:.05; }
+.lesson.soon .note{
+  font-family:var(--au-mono); font-size:10.5px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--au-faint);
+  border-top:1px solid var(--au-line); padding-top:14px; display:block;
+}
+
+/* ── empty / honesty states ─────────────────────────────────── */
+.said{ color:var(--au-dim); font-size:14px; max-width:56ch; }
+.said b{ color:var(--au-ivory); font-weight:500; }
+
+/* ── phone ──────────────────────────────────────────────────── */
+@media (max-width: 760px){
+  :root{ --gut:18px; }
+  .doors, .lessons{ grid-template-columns:1fr; }
+  .now{ grid-template-columns:1fr; gap:18px; }
+  .now .go{ justify-self:start; }
+  .slot{ grid-template-columns:56px 1fr; }
+  .slot .owed{ grid-column:2; text-align:left; }
+  /* the status sizes itself and the NAME gives way — a wrapped «δεν υπάρχει
+     σελίδα» stacked three lines deep and read as a broken row. */
+  .decay .d{ grid-template-columns:1fr auto; }
+  .decay .d .bar{ display:none; }
+  .decay .d .st{ white-space:nowrap; }
+  /* the name is a bare text node inside a flex row, so it becomes an anonymous
+     box no selector can reach — clip it from the PARENT instead. */
+  .decay .d .nm{ min-width:0; overflow:hidden; white-space:nowrap; }
+  nav a{ padding:7px 10px; letter-spacing:.08em; }
+  .brand{ display:none; }
+  .lesson h3{ font-size:29px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; }
+}
+</style>
+</head>
+<body class="au-bg">
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">MÉTRON · <b>ΤΟ ΚΕΝΤΡΟ</b></div>
+    <nav>
+      <a href="#kentro"    id="n-kentro">Κέντρο</a>
+      <a href="#ergasies"  id="n-ergasies">Εργασίες</a>
+      <a href="#mathimata" id="n-mathimata">Μαθήματα</a>
+    </nav>
+  </div>
+
+  <!-- ═══════════ ΔΩΜΑΤΙΟ 1 · ΤΟ ΚΕΝΤΡΟ ═══════════ -->
+  <section class="room" id="kentro">
+
+    <div class="capture">
+      <input type="text" placeholder="Ιστορία b2 απέξω Τρίτη" aria-label="Γράψε μια εργασία">
+      <button class="cbtn" type="button">Πρόσθεσε</button>
+    </div>
+
+    <div class="date-block">
+      <div class="lab">Παρασκευή</div>
+      <h1>15 Αυγούστου</h1>
+      <div class="sub">Φροντιστήριο 15:15–18:00 · γυμναστήριο 18:45 · ξαναδιάβασμα 21:45</div>
+    </div>
+
+    <!-- ΑΥΡΙΟ -->
+    <div class="block">
+      <div class="sec"><h2>Αύριο</h2><div class="rule"></div><div class="cnt">από το ημερολόγιο</div></div>
+      <div class="tomorrow">
+        <div class="head">
+          <div class="big">Τρία μαθήματα, δύο εργασίες.</div>
+          <div class="when">Σάββατο 16 Αυγούστου</div>
+        </div>
+        <div class="slots">
+          <div class="slot">
+            <div class="t">15:15</div>
+            <div class="n"><i class="dot" style="--c:var(--ist)"></i> Ιστορία</div>
+            <div class="owed">1 εργασία · b3 απέξω</div>
+          </div>
+          <div class="slot">
+            <div class="t">16:15</div>
+            <div class="n"><i class="dot" style="--c:var(--arx)"></i> Αρχαία · γνωστό</div>
+            <div class="owed">1 εργασία · μετάφραση</div>
+          </div>
+          <div class="slot">
+            <div class="t">17:15</div>
+            <div class="n"><i class="dot" style="--c:var(--lat)"></i> Λατινικά</div>
+            <div class="owed">τίποτα</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ΤΩΡΑ -->
+    <div class="block">
+      <div class="sec"><h2>Ξεκίνα από εδώ</h2><div class="rule"></div></div>
+      <div class="now">
+        <div>
+          <div class="what">Ιστορία · Η διανομή των εθνικών γαιών</div>
+          <div class="why">έληξε στη σκάλα <em>πριν 2 μέρες</em> · <em>το έχεις αύριο</em> · 18 σημεία</div>
+        </div>
+        <a class="go" href="#">Άνοιξε</a>
+      </div>
+    </div>
+
+    <!-- Ο ΧΡΟΝΟΣ -->
+    <div class="block">
+      <div class="sec"><h2>Ο χρόνος</h2><div class="rule"></div><div class="cnt">ως το ξαναδιάβασμα</div></div>
+      <div class="calc">
+        <div class="r"><span>Από τώρα ως τις 21:45</span><span>6h 20m</span></div>
+        <div class="r"><span>− φροντιστήριο 15:15–18:00</span><span>−2h 45m</span></div>
+        <div class="r"><span>− δρόμος ×2</span><span>−30m</span></div>
+        <div class="r"><span>− γυμναστήριο 18:45–20:30</span><span>−1h 45m</span></div>
+        <div class="r tot"><span>Μένουν</span><span>1h 20m</span></div>
+      </div>
+    </div>
+
+    <!-- ΤΙ ΞΕΧΝΑΩ -->
+    <div class="block">
+      <div class="sec"><h2>Τι ξεχνάω</h2><div class="rule"></div><div class="cnt">οι πέντε σκάλες</div></div>
+      <div class="decay">
+        <div class="d due">
+          <div class="nm"><i class="dot" style="--c:var(--ist)"></i> Ιστορία · b3</div>
+          <div class="bar" style="--c:var(--ist)"><i style="width:38%"></i></div>
+          <div class="st">έληξε 2 μέρες</div>
+        </div>
+        <div class="d due">
+          <div class="nm"><i class="dot" style="--c:var(--arx)"></i> Αρχαία · αρχικοί χρόνοι</div>
+          <div class="bar" style="--c:var(--arx)"><i style="width:52%"></i></div>
+          <div class="st">έληξε σήμερα</div>
+        </div>
+        <div class="d">
+          <div class="nm"><i class="dot" style="--c:var(--arx)"></i> Αρχαία · Σωκράτης gn4</div>
+          <div class="bar" style="--c:var(--arx)"><i style="width:81%"></i></div>
+          <div class="st">σε 6 μέρες</div>
+        </div>
+        <div class="d">
+          <div class="nm"><i class="dot" style="--c:var(--lat)"></i> Λατινικά</div>
+          <div class="bar" style="--c:var(--lat)"><i style="width:64%"></i></div>
+          <div class="st">σε 3 μέρες</div>
+        </div>
+        <div class="d unknown">
+          <div class="nm"><i class="dot" style="--c:var(--ekt)"></i> Έκθεση</div>
+          <div class="bar" style="--c:var(--ekt)"><i style="width:0%"></i></div>
+          <div class="st">δεν υπάρχει σελίδα</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ΟΙ ΔΥΟ ΠΟΡΤΕΣ -->
+    <div class="block">
+      <div class="doors">
+        <a class="door" href="#ergasies">
+          <div class="lab">Δωμάτιο</div>
+          <h3>Οι εργασίες μου</h3>
+          <p>Ό,τι μου έβαλαν, οργανωμένο. 4 ανοιχτές, 1 για αύριο.</p>
+          <div class="arrow">Άνοιξε →</div>
+        </a>
+        <a class="door" href="#mathimata">
+          <div class="lab">Δωμάτιο</div>
+          <h3>Τα μαθήματά μου</h3>
+          <p>Ιστορία · Αρχαία · Έκθεση · Λατινικά, και τι χρωστάει το καθένα.</p>
+          <div class="arrow">Άνοιξε →</div>
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════ ΔΩΜΑΤΙΟ 2 · ΟΙ ΕΡΓΑΣΙΕΣ ═══════════ -->
+  <section class="room" id="ergasies">
+
+    <div class="capture">
+      <input type="text" placeholder="Γράψε μια γραμμή, ή στείλε μου φωτογραφία στο chat" aria-label="Γράψε μια εργασία">
+      <button class="cbtn" type="button">Πρόσθεσε</button>
+    </div>
+
+    <div class="date-block">
+      <div class="lab">Δωμάτιο</div>
+      <h1>Οι εργασίες μου</h1>
+      <div class="sub">Τέσσερις ανοιχτές. Καμία χωρίς ημερομηνία δεν κρύβεται.</div>
+    </div>
+
+    <div class="block">
+      <div class="sec"><h2>Αύριο</h2><div class="rule"></div><div class="cnt">1</div></div>
+      <div class="task">
+        <div class="tick" role="checkbox" aria-checked="false" tabindex="0"></div>
+        <div class="body">
+          <div class="ttl">Η διανομή των εθνικών γαιών · απέξω, σημεία 1-18</div>
+          <div class="meta" style="--c:var(--ist)">
+            <span class="sj">Ιστορία</span>
+            <span class="pill">Απέξω</span>
+            <span class="pill">b3</span>
+            <span class="src">Φωτογραφία</span>
+          </div>
+        </div>
+        <div class="when">Σάβ 16/8</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="sec"><h2>Αυτή την εβδομάδα</h2><div class="rule"></div><div class="cnt">2</div></div>
+      <div class="task">
+        <div class="tick" role="checkbox" aria-checked="false" tabindex="0"></div>
+        <div class="body">
+          <div class="ttl">Μετάφραση 2ης ενότητας + τα σχόλια</div>
+          <div class="meta" style="--c:var(--arx)">
+            <span class="sj">Αρχαία · γνωστό</span>
+            <span class="pill">Γραπτό</span>
+            <span class="src">Φωτογραφία</span>
+          </div>
+        </div>
+        <div class="when">Δευ 18/8</div>
+      </div>
+      <div class="task">
+        <div class="tick" role="checkbox" aria-checked="false" tabindex="0"></div>
+        <div class="body">
+          <div class="ttl">Ασκήσεις 4-7 στη σελίδα 31</div>
+          <div class="meta" style="--c:var(--lat)">
+            <span class="sj">Λατινικά</span>
+            <span class="pill">Άσκηση</span>
+          </div>
+        </div>
+        <div class="when">Τρί 19/8</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="sec"><h2>Χωρίς ημερομηνία</h2><div class="rule"></div><div class="cnt">1</div></div>
+      <div class="task">
+        <div class="tick" role="checkbox" aria-checked="false" tabindex="0"></div>
+        <div class="body">
+          <div class="ttl">Παραγωγή λόγου, «η γλώσσα των νέων», 400 λέξεις</div>
+          <div class="meta" style="--c:var(--ekt)">
+            <span class="sj">Έκθεση</span>
+            <span class="pill">Γραπτό</span>
+          </div>
+        </div>
+        <div class="when none">χωρίς ημερομηνία</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="sec"><h2>Έγιναν</h2><div class="rule"></div><div class="cnt">1</div></div>
+      <div class="task done">
+        <div class="tick" role="checkbox" aria-checked="true" tabindex="0"></div>
+        <div class="body">
+          <div class="ttl">Μετάφραση 1ης ενότητας καθώς και σχόλια + σχεδιαγραμματική απόδοση</div>
+          <div class="meta" style="--c:var(--arx)">
+            <span class="sj">Αρχαία · γνωστό</span>
+            <span class="pill">Γραπτό</span>
+          </div>
+        </div>
+        <div class="when">έγινε</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════ ΔΩΜΑΤΙΟ 3 · ΤΑ ΜΑΘΗΜΑΤΑ ═══════════ -->
+  <section class="room" id="mathimata">
+
+    <div class="date-block">
+      <div class="lab">Δωμάτιο</div>
+      <h1>Τα μαθήματά μου</h1>
+      <div class="sub">Τέσσερα μαθήματα. Δύο ζωντανά, δύο σε σειρά.</div>
+    </div>
+
+    <div class="block">
+      <div class="lessons">
+
+        <a class="lesson" href="istoria.html" style="--c:var(--ist)">
+          <div class="w">20% των μορίων</div>
+          <h3>Ιστορία</h3>
+          <p class="tag">Η σελίδα που σε ακούει και σε βαθμολογεί ανά στοιχείο.</p>
+          <div class="rows">
+            <div class="rw"><span>Ενότητες</span><b>8</b></div>
+            <div class="rw"><span>Σημεία</span><b>95</b></div>
+            <div class="rw"><span>Χρωστάς τώρα</span><b>b3 · έληξε</b></div>
+          </div>
+        </a>
+
+        <a class="lesson" href="arxaia.html" style="--c:var(--arx)">
+          <div class="w">30% των μορίων</div>
+          <h3>Αρχαία</h3>
+          <p class="tag">Δύο κόσμοι: το γνωστό με τη φωνή, το άγνωστο με τους αρχικούς χρόνους.</p>
+          <div class="rows">
+            <div class="rw"><span>Γνωστό · ενότητες</span><b>7</b></div>
+            <div class="rw"><span>Άγνωστο · ρήματα</span><b>6</b></div>
+            <div class="rw"><span>Χρωστάς τώρα</span><b>αρχικοί · έληξε</b></div>
+          </div>
+        </a>
+
+        <a class="lesson soon" href="#mathimata" style="--c:var(--ekt)">
+          <div class="w">30% των μορίων</div>
+          <h3>Έκθεση</h3>
+          <p class="tag">Ισοβαθμεί με τα Αρχαία και δεν έχει ακόμα σελίδα.</p>
+          <span class="note">Επόμενη στη σειρά</span>
+        </a>
+
+        <a class="lesson soon" href="latinika.html" style="--c:var(--lat)">
+          <div class="w">20% των μορίων</div>
+          <h3>Λατινικά</h3>
+          <p class="tag">Υπάρχει σαν drill· περιμένει το ίδιο χτίσιμο με την Ιστορία.</p>
+          <span class="note">Ζωντανό, όχι τελειωμένο</span>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="sec"><h2>Σημείωση</h2><div class="rule"></div></div>
+      <p class="said">Κάθε μάθημα κρατάει <b>τη δική του σκάλα</b> — 0 / +3 / +10 / +30 / +90 μέρες.
+      Το κέντρο τις διαβάζει και τις τέσσερις, αλλά δεν γράφει ποτέ σε καμία:
+      τη δουλειά την κάνει η σελίδα του μαθήματος και γυρνάς εδώ.</p>
+    </div>
+
+  </section>
+
+  <div style="margin-top:56px; display:flex; justify-content:center;">
+    <span class="demo-flag">Δείγμα · τα περιεχόμενα είναι ενδεικτικά</span>
+  </div>
+
+</div>
+
+<script>
+/* ── nav state + default room. No storage, no network, no sync. ── */
+(function(){
+  'use strict';
+  var ROOMS = ['kentro','ergasies','mathimata'];
+
+  function paint(){
+    var h = (location.hash || '#kentro').slice(1);
+    if (ROOMS.indexOf(h) < 0) h = 'kentro';
+    ROOMS.forEach(function(r){
+      var a = document.getElementById('n-' + r);
+      if (r === h) a.setAttribute('aria-current','page');
+      else a.removeAttribute('aria-current');
+    });
+    window.scrollTo(0,0);
+  }
+
+  /* :target drives display; a missing hash must still show ΤΟ ΚΕΝΤΡΟ.
+     The :has() fallback above covers modern browsers; this covers the rest. */
+  function ensureHash(){ if (!location.hash) location.replace('#kentro'); }
+
+  addEventListener('hashchange', paint);
+  ensureHash();
+  paint();
+
+  /* the ticks are real toggles so the two states can be judged by eye */
+  document.querySelectorAll('.tick').forEach(function(t){
+    function flip(){
+      var on = t.getAttribute('aria-checked') === 'true';
+      t.setAttribute('aria-checked', on ? 'false' : 'true');
+      t.closest('.task').classList.toggle('done', !on);
+    }
+    t.addEventListener('click', flip);
+    t.addEventListener('keydown', function(e){
+      if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
