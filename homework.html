@@ -66,7 +66,7 @@
        ακριβώς η περίπτωση όπου ένας observer μπορεί να μην ξαναχτυπήσει — και
        το σύμπτωμα θα ήταν ΑΟΡΑΤΗ πόρτα, δηλαδή σιωπηλό-άδειο. Η πόρτα δεν
        στέκεται ποτέ δίπλα στις άλλες ενότητες, οπότε δεν χάνει τίποτα. -->
-  <script>window.__pmAutoSel='.hw-hero,.hw-start,.hw-grab,.hw-day,.hw-debt,.hw-foot';</script>
+  <script>window.__pmAutoSel='.hw-hero,.hw-start,.hw-grab';</script>
   <script src="page-motion.js" defer></script>
 <style>
   /* ── ΤΑ ΧΡΩΜΑΤΑ ΕΙΝΑΙ ΤΑΥΤΟΤΗΤΑ, ΟΧΙ ΔΙΑΚΟΣΜΗΣΗ ─────────────────────
@@ -96,15 +96,36 @@
   .hw-serif{ font-family:var(--au-serif,Georgia,serif); font-weight:400; }
   .hw-mono{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-variant-numeric:tabular-nums; }
 
-  /* ── ΟΙ ΔΥΟ ΣΤΗΛΕΣ ──────────────────────────────────────────────────
-     Στα 1280px μια σελίδα 580px σε μαύρο χωράφι είναι ~55% άδεια. Λύση:
-     ραχοκοκαλιά ~320px + περιεχόμενο, ΠΟΤΕ πιο φαρδιά μονή στήλη.
-     ⚠️ sticky, ΠΟΤΕ fixed (σταθ. 18) · κανένα overscroll-behavior:contain
-     (σταθ. 22) · 100dvh, ποτέ 100vh. */
+  /* ── ⭐⭐ ΤΟ ΚΕΝΤΡΟ ΕΙΝΑΙ ΜΙΑ ΣΤΗΛΗ. ΤΟ ΒΡΗΚΕ ΤΟ RENDER, als-v484. ────
+     Οι δύο στήλες (320px ραχοκοκαλιά + περιεχόμενο) υπήρχαν για να μη μένει
+     μαύρο το 55% της οθόνης στα 1280 — σωστό όσο η δεξιά στήλη κρατούσε
+     ΤΕΣΣΕΡΑ μπλοκ. Το ξάκρισμα της άφησε ΕΝΑ: μετρήθηκε στα 1440 και η δεξιά
+     στήλη ήταν **146px περιεχομένου σε 790px πλάτος**, δηλαδή η διάταξη έλυνε
+     ένα πρόβλημα που μόλις είχε πάψει να υπάρχει και δημιουργούσε το ίδιο
+     ανάποδα: δύο κοντές στήλες σε τεράστιο κενό.
+     ⭐ Ο ΚΑΝΟΝΑΣ ΠΟΥ ΓΕΝΙΚΕΥΕΤΑΙ: **μια διάταξη πολλών στηλών είναι απάντηση
+     στον ΟΓΚΟ του περιεχομένου, όχι στο πλάτος της οθόνης.** Όταν κόβεις
+     περιεχόμενο, ξαναμέτρα τη διάταξη που το κρατούσε — αλλιώς κρατάς το
+     σκελετό ενός πράγματος που δεν υπάρχει πια (σταθ. 36, από την ανάποδη).
+     ⛔ ΤΑ ΔΩΜΑΤΙΑ ΔΕΝ ΑΓΓΙΖΟΝΤΑΙ: πίσω από πόρτα το `body.hw-door .hw-cols`
+     ήταν ΗΔΗ `display:block` με δικά τους πλάτη, γιατί εκεί ΥΠΑΡΧΕΙ όγκος. */
   .hw-cols{ display:block; }
+  /* Το κέντρο: μία στήλη, κεντραρισμένη, σε ΚΑΘΕ πλάτος. Το `.hw-spine` και το
+     `.hw-main` διαλύονται ώστε τα τέσσερα πράγματα να στοιχηθούν σε μία σειρά
+     ανάγνωσης — ΕΝΑ markup δέντρο, ποτέ δεύτερο (ίδια τεχνική με το κινητό). */
+  body:not(.hw-door) .hw-wrap{ max-width:560px; }
+  body:not(.hw-door) .hw-cols{ display:flex; flex-direction:column; }
+  body:not(.hw-door) .hw-spine, body:not(.hw-door) .hw-main{ display:contents; }
+  /* ⚠️ Η ΣΕΙΡΑ ΤΟΥ LAPTOP ΔΕΝ ΕΙΝΑΙ Η ΣΕΙΡΑ ΤΟΥ ΚΙΝΗΤΟΥ, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
+     Στις 18:00 είναι όρθιος με την τσάντα και η ΣΥΛΛΗΨΗ πρέπει να είναι πρώτη
+     (als-v479, δική του εντολή). Στο laptop κάθεται να ΔΙΑΒΑΣΕΙ: εκεί διαβάζει
+     πρώτα ποιος είναι ο χώρος και τι να κάνει, και γράφει όταν το θυμηθεί. */
   @media (min-width:1000px){
-    .hw-cols{ display:grid; grid-template-columns:320px minmax(0,1fr); gap:34px; align-items:start; }
-    .hw-spine{ position:sticky; top:74px; max-height:calc(100dvh - 96px); overflow-y:auto; }
+    body:not(.hw-door) .hw-hero{ order:1; }
+    body:not(.hw-door) .hw-banner{ order:2; }
+    body:not(.hw-door) .hw-start{ order:3; }
+    body:not(.hw-door) .hw-doors{ order:4; }
+    body:not(.hw-door) .hw-grab{ order:5; }
   }
 
   /* ── ⭐⭐ ΣΤΟ ΚΙΝΗΤΟ Η ΣΥΛΛΗΨΗ ΕΙΝΑΙ ΠΡΩΤΗ ─────────────────────────
@@ -128,16 +149,12 @@
     .hw-banner{ order:1; }
     .hw-grab{ order:2; margin-top:18px; }
     .hw-hero{ order:3; }
-    .hw-clock{ order:4; }
-    .hw-start{ order:5; }
+    .hw-start{ order:4; }
     /* Η πόρτα κάθεται ΑΜΕΣΩΣ κάτω από την απόφαση: όταν το «ξεκίνα από εδώ»
        στέλνει σε μάθημα, ο δρόμος προς τα μαθήματα είναι η επόμενη κίνηση. */
-    .hw-doors{ order:6; }
-    .hw-day{ order:7; }
-    .hw-debt{ order:8; }
-    .hw-lessons4{ order:9; }
-    .hw-tonight{ order:10; }
-    .hw-foot{ order:11; }
+    .hw-doors{ order:5; }
+    .hw-lessons4{ order:6; }
+    .hw-tonight{ order:7; }
   }
 
   /* ── ΟΙ ΠΟΡΤΕΣ · `#capture` ΚΑΙ `#tonight` ────────────────────────
@@ -178,9 +195,8 @@
      πόρτα «Τα μαθήματά μου» ζωγραφιζόταν ΜΕΣΑ στο δωμάτιο των μαθημάτων —
      ένας σύνδεσμος προς εκεί που ήδη βρίσκεσαι. Καμία βεβαίωση δεν το βλέπει:
      το markup ήταν σωστό, η ΘΕΣΗ ήταν λάθος. */
-  body.hw-door .hw-hero, body.hw-door .hw-clock, body.hw-door .hw-start,
-  body.hw-door .hw-doors,
-  body.hw-door .hw-day, body.hw-door .hw-debt, body.hw-door .hw-foot{ display:none; }
+  body.hw-door .hw-hero, body.hw-door .hw-start,
+  body.hw-door .hw-doors{ display:none; }
   body.hw-door-tonight .hw-grab{ display:none; }
   /* Πίσω από την πόρτα της σύλληψης, η μπάρα ΗΔΗ γράφει «Η σύλληψη» — η
      κεφαλίδα της ενότητας θα το έλεγε δεύτερη φορά, στην ίδια οθόνη, δύο
@@ -225,7 +241,7 @@
   body.hw-door-mathimata .hw-grab{ display:none; }
 
   /* ── Η ΠΟΡΤΑ ΠΡΟΣ ΤΑ ΜΑΘΗΜΑΤΑ ────────────────────────────────────
-     ⚠️ Ζει στη ΡΑΧΟΚΟΚΑΛΙΑ, όχι σε `hw-sec`: τα μπλοκ μένουν ΤΕΣΣΕΡΑ. Είναι
+     ⚠️ Ζει στη ΡΑΧΟΚΟΚΑΛΙΑ, όχι σε `hw-sec`: δεν είναι μπλοκ. Είναι
      πέρασμα, όχι περιεχόμενο — γι' αυτό δεν έχει δικό του χρώμα ούτε αριθμό. */
   .hw-doors{ margin-top:16px; }
 
@@ -291,21 +307,14 @@
   .hw-hero h1{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:clamp(30px,7vw,44px); line-height:1.05; margin-top:8px; letter-spacing:-.01em; }
   .hw-hero .hw-sub{ color:var(--au-dim,rgba(245,242,236,.56)); font-size:14px; line-height:1.55; margin-top:10px; max-width:46ch; }
 
-  /* ── Ο ΧΡΟΝΟΣ · η αφαίρεση φαίνεται ολόκληρη ──────────────────────
-     Ένα σίγουρο λάθος «2ω 18λ» στην κορυφή καταστρέφει την εμπιστοσύνη σε
-     ό,τι είναι από κάτω. Άρα η σελίδα ΔΕΝ δηλώνει τον αριθμό — τον ΧΤΙΖΕΙ
-     μπροστά του, γραμμή γραμμή, και το άθροισμα ελέγχεται με το μάτι. */
-  .hw-clock{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:16px; padding:16px 16px 12px; background:var(--au-glass,rgba(255,255,255,.022)); }
-  .hw-clock-hd{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
-  .hw-clock-hd .hw-lbl{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
-  .hw-clock-hd .hw-val{ font-size:15px; }
-  .hw-sum{ margin-top:12px; border-top:1px solid var(--au-line,rgba(255,255,255,.06)); padding-top:10px; }
-  .hw-sum-row{ display:flex; justify-content:space-between; gap:12px; font-size:12.5px; padding:3px 0; color:var(--au-dim,rgba(245,242,236,.56)); }
-  .hw-sum-row .hw-num{ flex:none; }
-  .hw-sum-row.hw-total{ color:var(--au-ivory,#f5f2ec); font-size:15px; padding-top:9px; margin-top:6px; border-top:1px solid var(--au-line-2,rgba(255,255,255,.1)); }
-  .hw-sum-row.hw-total .hw-num{ font-size:22px; }
-  .hw-note{ margin-top:9px; font-size:11.5px; line-height:1.5; color:var(--au-faint,rgba(245,242,236,.3)); }
-  .hw-note.hw-warn{ color:rgb(var(--hw-ekt)); }
+  /* ⛔⛔ Ο ΧΡΟΝΟΣ ΕΦΥΓΕ ΣΤΟ ΞΑΚΡΙΣΜΑ (als-v484), ΚΑΙ Η ΑΙΤΙΑ ΑΞΙΖΕΙ ΝΑ ΜΕΙΝΕΙ:
+     ήταν πέντε γραμμές αφαίρεσης στην κορυφή της οθόνης που ανοίγει, δηλαδή
+     ΑΡΙΘΜΗΤΙΚΗ ΠΡΙΝ ΤΗΝ ΠΡΑΞΗ. Το `budget()` ΔΕΝ σβήστηκε — τρέχει ακόμη σε
+     κάθε paint και τροφοδοτεί το `candidates()`, άρα η κατάταξη ξέρει τον
+     ελεύθερο χρόνο· απλώς δεν τον ΖΩΓΡΑΦΙΖΕΙ. Ένας αριθμός που δεν αλλάζει
+     καμία απόφαση είναι ύψος, όχι πληροφορία.
+     ⚠️ Το `.hw-note` ΜΕΝΕΙ: το φοράει και το `#hwFocusNote` του παραθύρου
+     γραψίματος. Έφυγε μόνο το `.hw-warn`, που ήταν αποκλειστικά του ρολογιού. */
 
   /* ── ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ ─────────────────────────────────────────────── */
   .hw-start{ margin-top:16px; border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:18px; padding:18px 16px 16px; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012)); }
@@ -388,33 +397,16 @@
   .hw-mini.hw-lead{ color:var(--au-ivory,#f5f2ec); border-color:rgba(245,242,236,.3); }
   .hw-mini.hw-danger{ color:rgb(var(--hw-late)); }
 
-  /* ── Η ΜΕΡΑ · μία γραμμή, όχι πλέγμα ημερολογίου ─────────────────── */
-  .hw-line{ position:relative; height:64px; margin-top:20px; border-radius:10px; background:rgba(255,255,255,.03); overflow:hidden; }
-  .hw-blk{ position:absolute; top:0; bottom:0; border-radius:6px; }
-  .hw-blk.hw-study{ background:rgba(52,226,176,.16); border:1px solid rgba(52,226,176,.34); }
-  .hw-blk.hw-school{ background:rgba(255,255,255,.11); border:1px solid rgba(255,255,255,.18); }
-  .hw-blk.hw-quietblk{ background:rgba(255,255,255,.045); }
-  .hw-blk .hw-cap{ position:absolute; top:5px; left:6px; right:4px; font-size:9px; letter-spacing:.12em; text-transform:uppercase;
-    color:var(--au-dim,rgba(245,242,236,.56)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .hw-now{ position:absolute; top:-4px; bottom:-4px; width:1px; background:var(--au-ivory,#f5f2ec); }
-  .hw-now::after{ content:''; position:absolute; top:0; left:-2px; width:5px; height:5px; border-radius:50%; background:var(--au-ivory,#f5f2ec); }
-  /* ⚠️ ΟΙ ΕΤΙΚΕΤΕΣ ΚΑΘΟΝΤΑΙ ΣΤΗ ΔΙΚΗ ΤΟΥΣ ΣΤΙΓΜΗ, ΟΧΙ ΣΕ ΙΣΕΣ ΑΠΟΣΤΑΣΕΙΣ.
-     Με `justify-content:space-between` οι έξι ώρες μοιράζονταν ίσα ενώ οι
-     αποστάσεις τους στον χρόνο δεν είναι ίσες (10→13 είναι 3 ώρες, 22:00→00:15
-     είναι 2ω15), οπότε ο άξονας έδειχνε αλλού από τα μπλοκ που ονομάτιζε. Ένας
-     άξονας που δεν ευθυγραμμίζεται με τα δεδομένα του είναι επινοημένος
-     αριθμός σε άλλη μορφή. Φάνηκε μόνο κοιτώντας το render. */
-  .hw-ticks{ position:relative; height:14px; margin-top:6px; font-size:10px; color:var(--au-faint,rgba(245,242,236,.3)); }
-  .hw-ticks span{ position:absolute; top:0; transform:translateX(-50%); white-space:nowrap; }
-  .hw-ticks span:first-child{ transform:none; }
-  .hw-ticks span:last-child{ transform:translateX(-100%); }
-  .hw-slots{ margin-top:16px; }
-  .hw-slot{ padding:12px 0; border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
-  .hw-slot .hw-slot-hd{ display:flex; gap:10px; align-items:baseline; }
-  .hw-slot .hw-time{ font-size:12px; color:var(--au-faint,rgba(245,242,236,.3)); flex:none; width:96px; }
-  .hw-slot .hw-slot-n{ font-size:13.5px; }
-  .hw-slot .hw-fill{ margin:7px 0 0 96px; font-size:12.5px; color:var(--au-dim,rgba(245,242,236,.56)); line-height:1.55; }
-  @media (max-width:560px){ .hw-slot .hw-fill{ margin-left:0; } }
+  /* ⛔⛔ Η ΜΕΡΑ ΕΦΥΓΕ ΣΤΟ ΞΑΚΡΙΣΜΑ (als-v484): χρονογραμμή + έξι ώρες + τέσσερα
+     slots με πεζή εξήγηση από κάτω = ~40% του ύψους της αρχικής οθόνης, για να
+     του ζωγραφίσει ΤΟ ΠΡΟΓΡΑΜΜΑ ΠΟΥ ΖΕΙ. Το πρόγραμμα δεν είναι πληροφορία γι'
+     αυτόν — είναι η μέρα του. Και οι εξηγήσεις κάτω από κάθε slot ήταν εγώ που
+     του εξηγούσα τον σχεδιασμό μου, μέσα στη σελίδα που έπρεπε να τον υπηρετεί.
+     ⛔ ΤΙΠΟΤΑ ΛΕΙΤΟΥΡΓΙΚΟ ΔΕΝ ΧΑΘΗΚΕ: το `pickBtn` («πες μου τα σημερινά») ζει
+     ΚΑΙ στην πόρτα `#tonight`, που έχει πλέον δική της είσοδο από τις πόρτες —
+     γι' αυτό προστέθηκε εκεί, μια πόρτα χωρίς είσοδο είναι νεκρή (σταθ. 15).
+     Η ΣΥΣΣΩΡΕΥΣΗ (`hwOver`) μετακόμισε ΜΕΣΑ στο δωμάτιο των εργασιών: μετακινεί
+     ΕΡΓΑΣΙΑ, άρα ανήκει εκεί που ζουν οι εργασίες. */
 
   /* ── Η ΣΥΣΣΩΡΕΥΣΗ · ΜΙΑ ΠΡΟΤΑΣΗ ΜΕ ΚΟΥΜΠΙ, ΟΧΙ ΕΝΟΤΗΤΑ ──────────────
      ⭐ Ο ΟΡΙΖΟΝΤΑΣ ήταν επτά μπάρες και μια ερώτηση ΧΩΡΙΣ κουμπί, και οι
@@ -483,8 +475,9 @@
      κάνει τίποτα χωρίς εξήγηση είναι χειριστήριο που δεν χειρίζεται. */
   .hw-hint{ margin-top:13px; font-size:12px; line-height:1.55; color:var(--au-dim,rgba(245,242,236,.56)); min-height:19px; }
 
-  .hw-foot{ margin:44px 0 10px; padding-top:18px; border-top:1px solid var(--au-line,rgba(255,255,255,.06));
-    font-size:11.5px; line-height:1.7; color:var(--au-faint,rgba(245,242,236,.3)); }
+  /* ⛔ ΤΟ ΥΠΟΣΕΛΙΔΟ ΕΦΥΓΕ: δύο γραμμές που δικαιολογούσαν την ΑΡΧΙΤΕΚΤΟΝΙΚΗ της
+     σελίδας («διαβάζει πέντε σκάλες, γράφει μόνο τις εργασίες του»). Αυτό είναι
+     σημείωση προς εμένα, όχι προς αυτόν, και ζει στο CLAUDE.md. */
   .hw-off{ display:none; }
 </style>
 </head>
@@ -529,9 +522,6 @@
 
       <div class="hw-banner" id="hwBanner"></div>
 
-      <!-- Ο ΧΡΟΝΟΣ: η αφαίρεση, ολόκληρη -->
-      <section class="hw-clock" id="hwClock" aria-live="polite"></section>
-
       <!-- ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ -->
       <section class="hw-start" id="hwStart"></section>
 
@@ -548,15 +538,34 @@
           <span class="dl-n">Τα μαθήματά μου</span>
           <span class="dl-s" id="hwDoorsS">—</span>
         </a>
+        <!-- ⭐⭐ ΤΡΙΤΗ ΠΟΡΤΑ, ΚΑΙ ΕΙΝΑΙ ΑΠΑΙΤΗΣΗ ΤΟΥ ΞΑΚΡΙΣΜΑΤΟΣ, ΟΧΙ ΠΡΟΣΘΗΚΗ.
+             Ως την als-v483 η ΜΟΝΗ είσοδος στο `#tonight` από τη σελίδα ήταν ο
+             σύνδεσμος «Μόνο αυτό» μέσα στη ΜΕΡΑ (η άλλη είναι το push των 21:45,
+             που ΔΕΝ έχει χτυπήσει ποτέ). Κόβοντας τη ΜΕΡΑ χωρίς αυτό, το
+             ξαναδιάβασμα ΚΑΙ το «πες μου τα σημερινά» θα γίνονταν απρόσιτα —
+             δηλαδή το ξάκρισμα θα έσβηνε ΔΥΝΑΤΟΤΗΤΑ, όχι οθόνη.
+             ⚠️ Μένει ΠΟΡΤΑ, όχι tab στην πλοήγηση: το `#tonight` είναι ΣΤΙΓΜΗ
+             (21:45), και οι στιγμές δεν είναι μέρη (σταθ. της als-v483). -->
+        <a class="hw-doorlink" href="#tonight">
+          <span class="dl-n">Απόψε</span>
+          <span class="dl-s" id="hwDoorsN">—</span>
+        </a>
       </nav>
     </div>
 
-    <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ · ΤΡΙΑ ΜΠΛΟΚ ════════════════════════════
-         ⭐ ΤΕΣΣΕΡΑ ΜΠΛΟΚ ΣΥΝΟΛΙΚΑ, ΚΑΙ ΚΑΝΕΝΑ ΔΕΝ ΛΕΕΙ ΟΤΙ ΛΕΕΙ ΑΛΛΟ:
-         ΜΙΑ ΑΠΟΦΑΣΗ (η ραχοκοκαλιά) · Η ΣΥΛΛΗΨΗ · Η ΜΕΡΑ · ΤΟ ΧΡΕΟΣ.
-         Ήταν πέντε ενότητες με τρεις επικαλύψεις: η σύσταση ζωγραφιζόταν στην
-         κάρτα, ΞΑΝΑ μέσα στο «μεγάλο παράθυρο» της ΜΕΡΑΣ, και ΞΑΝΑ ως γραμμή
-         στη ΜΝΗΜΗ ή στις ΕΡΓΑΣΙΕΣ. -->
+    <!-- ══ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ · ΤΟ ΞΑΚΡΙΣΜΑ (als-v484) ════════════════
+         ⭐⭐ Η ΑΡΧΙΚΗ ΟΘΟΝΗ ΕΙΝΑΙ ΤΕΣΣΕΡΑ ΠΡΑΓΜΑΤΑ, ΚΑΙ ΤΑ ΤΡΙΑ ΕΙΝΑΙ ΠΡΑΞΕΙΣ:
+         ΤΟ ΟΝΟΜΑ · Η ΣΥΛΛΗΨΗ (γράψε τι σου έβαλαν) · ΜΙΑ ΑΠΟΦΑΣΗ (ένα κουμπί) ·
+         ΟΙ ΤΡΕΙΣ ΠΟΡΤΕΣ. Τίποτε άλλο.
+         ⚠️ Η ΑΙΤΙΑ, με τα λόγια του: «νιώθω ότι έχει πολλά πράγματα που δεν
+         κάνουν και τίποτα». Είχε δίκιο και η διάγνωση ήταν πιο άσχημη από το
+         παράπονο: η σελίδα δεν ΣΧΕΔΙΑΣΤΗΚΕ, ΣΥΣΣΩΡΕΥΤΗΚΕ. Κάθε φάση πρόσθετε
+         δωμάτιο και ΚΡΑΤΟΥΣΕ ό,τι υπήρχε, οπότε στο τέλος οκτώ μπλοκ πάλευαν
+         για την ίδια οθόνη — και τρία από αυτά δεν είχαν ΚΑΝΕΝΑ κουμπί.
+         ⭐ Ο ΚΑΝΟΝΑΣ ΓΙΑ ΤΗ ΣΥΝΕΧΕΙΑ: στην αρχική οθόνη μπαίνει κάτι μόνο αν
+         είναι ΠΡΑΞΗ ή ΔΡΟΜΟΣ ΠΡΟΣ ΠΡΑΞΗ. Οτιδήποτε υπάρχει «για να το κοιτάς»
+         ζει πίσω από πόρτα ή δεν ζει. -->
+
     <div class="hw-main">
 
       <!-- ① Η ΣΥΛΛΗΨΗ — μία γραμμή, και έξω -->
@@ -592,29 +601,14 @@
         </div>
       </section>
 
-      <!-- ② Η ΜΕΡΑ — και μέσα της, η μία πρόταση για τη συσσώρευση -->
-      <section class="hw-sec hw-day">
-        <div class="hw-sec-hd">
-          <span class="hw-n">Η μέρα</span>
-          <span class="hw-s" id="hwDayS"></span>
-        </div>
-        <div class="hw-line" id="hwLineBar"></div>
-        <div class="hw-ticks" id="hwTicks"></div>
-        <div class="hw-slots" id="hwSlots"></div>
-        <div class="hw-over-wrap hw-off" id="hwOver"></div>
-      </section>
-
-      <!-- ③ ΤΙ ΞΕΧΝΑΩ — η μνήμη, και ΜΟΝΟ αυτή
-           ⚠️ ΦΑΣΗ 2: οι εργασίες έφυγαν από εδώ και πήραν δικό τους δωμάτιο.
-           Ήταν δύο λίστες σε ένα μπλοκ επειδή δεν υπήρχε αλλού να πάνε· τώρα
-           υπάρχει, και το «χρέος της μνήμης» στέκεται μόνο του με το όνομά του. -->
-      <section class="hw-sec hw-debt">
-        <div class="hw-sec-hd">
-          <span class="hw-n">Τι ξεχνάω</span>
-          <span class="hw-s" id="hwDebtS">πέντε σκάλες</span>
-        </div>
-        <div id="hwDebtBody"></div>
-      </section>
+      <!-- ⛔⛔ ΕΔΩ ΗΤΑΝ Η ΜΕΡΑ ΚΑΙ ΤΟ «ΤΙ ΞΕΧΝΑΩ». ΕΦΥΓΑΝ ΣΤΟ ΞΑΚΡΙΣΜΑ (als-v484).
+           Η ΜΕΡΑ ζωγράφιζε το πρόγραμμα που ΖΕΙ· το «Τι ξεχνάω» έλεγε ΤΟ ΙΔΙΟ
+           πράγμα με το δωμάτιο «Τα μαθήματά μου» — οι ίδιες πέντε σκάλες, οι
+           ίδιες ληξιπρόθεσμες ενότητες, οι ίδιοι σύνδεσμοι — σε δύο θέσεις της
+           ίδιας κύλισης. ⛔ ΤΟ `ladders.js` ΚΑΙ ΤΟ ΔΩΜΑΤΙΟ ΔΕΝ ΑΓΓΙΧΤΗΚΑΝ: η
+           μνήμη φαίνεται ΟΛΟΚΛΗΡΗ πίσω από την πόρτα «Τα μαθήματά μου».
+           ⭐ Ο κανόνας του ξακρίσματος, με μία πρόταση: **ό,τι σβήνω είναι
+           ΟΘΟΝΗ, ποτέ ΑΠΟΘΗΚΗ** — καμία γραμμή δεδομένων δεν αγγίχτηκε εδώ. -->
 
       <!-- ══ ΟΙ ΕΡΓΑΣΙΕΣ ΜΟΥ · ΦΑΣΗ 2 ═══════════════════════════════
            Δωμάτιο, όχι μπλοκ — γι' αυτό ΔΕΝ φοράει `hw-sec`. Εδώ φαίνονται
@@ -630,17 +624,22 @@
         <div class="hw-acts">
           <button class="hw-btn hw-quiet hw-off" id="hwSweep" type="button">Καθάρισε τα τελειωμένα</button>
         </div>
+        <!-- ⭐ Η ΣΥΣΣΩΡΕΥΣΗ ΗΡΘΕ ΕΔΩ ΑΠΟ ΤΗ ΜΕΡΑ, ΚΑΙ ΕΙΝΑΙ ΠΙΟ ΣΩΣΤΑ ΕΔΩ:
+             μετακινεί ΕΡΓΑΣΙΑ, γράφει ΜΟΝΟ `hw:v1`, και τώρα κάθεται κάτω από
+             τη λίστα που αλλάζει όταν το πατήσεις — η αιτία και το αποτέλεσμα
+             στην ίδια οθόνη, αντί για δύο μπλοκ απόσταση. -->
+        <div class="hw-over-wrap hw-off" id="hwOver"></div>
       </section>
 
       <!-- ΑΠΟΨΕ — η πόρτα των 21:45. ΔΕΝ είναι πέμπτο μπλοκ: είναι κρυφή σε
            ολόκληρη τη σελίδα και εμφανίζεται μόνο στο `#tonight`. Γι' αυτό δεν
-           φοράει `hw-sec` — τα μπλοκ παραμένουν ΤΕΣΣΕΡΑ. -->
+           φοράει `hw-sec` — μετά το ξάκρισμα το ΜΟΝΟ μπλοκ είναι η ΣΥΛΛΗΨΗ. -->
       <!-- ══ ΤΑ ΜΑΘΗΜΑΤΑ ΜΟΥ · ΦΑΣΗ 1 ═══════════════════════════════
            Τέσσερα μαθήματα, ΟΧΙ πέντε αποθήκες: ο Τονισμός δεν είναι μάθημα —
            δική του απόφαση, 12/08/26 — και το `ladders.js` το ξέρει ήδη
            (`ton:v1` έχει `subject:'arxaia'`). Άρα η ομαδοποίηση δεν επινοείται
            εδώ, ΔΙΑΒΑΖΕΤΑΙ από τον κοινό αναγνώστη.
-           ⚠️ ΔΕΝ φοράει `hw-sec`: τα μπλοκ της σελίδας παραμένουν ΤΕΣΣΕΡΑ,
+           ⚠️ ΔΕΝ φοράει `hw-sec`: το μόνο μπλοκ της σελίδας είναι η ΣΥΛΛΗΨΗ,
            όπως και το «Απόψε». -->
       <section class="hw-lessons4" id="hwLessons4">
         <div class="hw-sec-hd">
@@ -657,8 +656,6 @@
         </div>
         <div id="hwTonightBody"></div>
       </section>
-
-      <footer class="hw-foot" id="hwFoot"></footer>
     </div>
   </div>
 </main>
@@ -815,8 +812,9 @@
     travel:  15,                  /* λεπτά, μονή διαδρομή */
     schoolDays: [0,1,2,3,4]       /* Δευτέρα→Παρασκευή, δείκτης Δευτέρας */
   };
-  var DAY_START = hm(PLAN.wake);          /* 10:00 */
-  var DAY_END   = hm(PLAN.wind[1]) + 1440; /* 00:15 της επόμενης */
+  /* ⛔ Τα `DAY_START`/`DAY_END` έφυγαν μαζί με τη χρονογραμμή (als-v484): ήταν
+     τα άκρα ΤΟΥ ΑΞΟΝΑ της, και τίποτε άλλο δεν τα διάβαζε. Ένας σταθερός
+     αριθμός που δεν έχει αναγνώστη είναι κώδικας που κάποιος θα «διορθώσει». */
 
   /* ══════════════════════════════════════════════════════════════════
      ΑΠΟΘΗΚΗ
@@ -1905,29 +1903,6 @@
      ίδιο λάθος με το `|| 'ekthesi'` του addTask, μία γραμμή πιο πέρα. */
   function subjRgb(sub){ return (SUBJ[sub] && SUBJ[sub].rgb) || 'var(--hw-unk)'; }
 
-  function renderClock(){
-    var b = budget();
-    var lines = b.lines.map(function(l){
-      return '<div class="hw-sum-row"><span>− ' + esc(l.label) + '</span><span class="hw-num hw-mono">−' + esc(dur(l.mins)) + '</span></div>';
-    }).join('');
-    /* Τέσσερις ΔΙΑΦΟΡΕΤΙΚΕΣ προτάσεις για τέσσερις διαφορετικές καταστάσεις
-       του ημερολογίου. Σταθερή αρχή 10: «δεν έχω δεδομένα» και «απέτυχα να
-       διαβάσω» δεν ζωγραφίζονται ποτέ ίδια. */
-    var note =
-      b.cal === 'live'         ? { txt:'Από το ημερολόγιό σου, σε αυτή τη συσκευή.', warn:false } :
-      b.cal === 'unauthorised' ? { txt:'Δεν έχω το ημερολόγιο σε αυτή τη συσκευή — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο. Άνοιξέ το από τις Ρυθμίσεις για την αληθινή μέρα.', warn:true } :
-      b.cal === 'unread'       ? { txt:'Το ημερολόγιο είναι συνδεδεμένο αλλά δεν το διάβασα ακόμη — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο.', warn:true } :
-                                 { txt:'Δεν φόρτωσε το gcal.js — τα παραπάνω είναι κατά το πρόγραμμα, όχι από το ημερολόγιο.', warn:true };
-
-    $('hwClock').innerHTML =
-      '<div class="hw-clock-hd"><span class="hw-lbl">' + esc(b.horizonName) + '</span>' +
-      '<span class="hw-val hw-mono">' + esc(dur(b.gross)) + '</span></div>' +
-      '<div class="hw-sum">' + lines +
-      '<div class="hw-sum-row hw-total"><span>Μένουν</span><span class="hw-num hw-mono">' + esc(dur(b.free)) + '</span></div></div>' +
-      '<div class="hw-note' + (note.warn ? ' hw-warn' : '') + '">' + esc(note.txt) + '</div>';
-    return b;
-  }
-
   /* ⭐ ΜΙΑ ΑΠΟΦΑΣΗ. Η κάρτα δείχνει ΕΝΑ πράγμα και ΚΑΝΕΝΑ άλλο σημείο της
      οθόνης δεν το ξαναλέει: το «μεγάλο παράθυρο» της ΜΕΡΑΣ μετράει, η ΜΝΗΜΗ
      δείχνει ΤΑ ΥΠΟΛΟΙΠΑ, η λίστα εργασιών παραλείπει αυτό ακριβώς το id.
@@ -2032,125 +2007,13 @@
      να δείχνει ΤΑ ΥΠΟΛΟΙΠΑ. Η γραμμή της σκάλας μένει (είναι η κατάσταση της
      αποθήκης, όχι η υποψηφιότητα), αλλά δεν ξαναγράφει το ΙΔΙΟ όνομα ενότητας
      ούτε δίνει δεύτερο κουμπί για τον ίδιο προορισμό. */
-  function renderDebt(featured){
-    var L = ladders();
-    var host = $('hwDebtBody');
-    if (L.broken){
-      host.innerHTML = '<div class="hw-blind">Δεν φόρτωσε το <b>ladders.js</b>, οπότε ΔΕΝ ξέρω τι χρωστάς στη μνήμη σου. Αυτό δεν σημαίνει «τίποτα» — σημαίνει «δεν ξέρω». Ανανέωσε τη σελίδα.</div>';
-      $('hwDebtS').textContent = 'άγνωστο';
-      return;
-    }
-    var rows = '', blind = [], totalLate = 0;
-    L.stores.forEach(function(s){
-      if (!s.ok){
-        blind.push(s.label);
-        return;
-      }
-      var late = s.items.filter(function(it){ return it.due && Date.now() >= it.due && (it.learned || it.samples > 0); });
-      late.sort(function(a,b){ return a.due - b.due; });
-      totalLate += late.length;                      /* η κεφαλίδα μετράει ΟΛΑ, πάντα */
-      /* Η υποψηφιότητα της κάρτας είναι ΠΑΝΤΑ το `late[0]` αυτής της αποθήκης
-         (ίδια ταξινόμηση, στο candidates()), οπότε η «υπόλοιπη» λίστα είναι
-         απλώς η ουρά της. */
-      var up = !!(featured && featured.kind === 'ladder' && featured.store === s.key);
-      var rest = up ? late.slice(1) : late;
-      var worst = rest[0] || null;
-      var soon = s.nextDue;
-      var rgb = subjRgb(s.subject);
-
-      /* Η ΚΑΤΑΣΤΑΣΗ της αποθήκης κρίνεται από ΟΛΟ το χρέος της, και όταν κάτι
-         της είναι ληξιπρόθεσμο το λέει — ακόμη κι αν το ένα που χρωστάει είναι
-         αυτό που στέκεται πάνω. Το αντίθετο θα ζωγράφιζε «εντάξει» δίπλα σε μια
-         κάρτα που λέει «έληξε πριν 4 μέρες». */
-      var when, cls;
-      if (late[0]){
-        var d = window.ALSLadders.daysLate(late[0].due, Date.now());
-        when = d <= 0 ? 'σήμερα' : 'πριν ' + d + (d === 1 ? ' μέρα' : ' μέρες');
-        cls = 'hw-late';
-      } else if (soon){
-        when = fmtDue(dkOf(new Date(soon))); cls = 'hw-ok';
-      } else if (!s.started){
-        /* Μία φορά, όχι τρεις. Η γραμμή από κάτω το λέει ήδη· ένα «δεν
-           ξεκίνησε» ΚΑΙ εδώ ΚΑΙ εκεί ΚΑΙ σε μια μπάρα είναι τρεις φωνές για
-           ένα γεγονός, και κάνει τη σελίδα να φαίνεται σαν να μετράει κάτι. */
-        when = '—'; cls = 'hw-ok';
-      } else {
-        when = 'εντάξει'; cls = 'hw-ok';
-      }
-
-      /* ⚠️⚠️ ΤΕΣΣΕΡΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΕΣΣΕΡΙΣ ΠΡΟΤΑΣΕΙΣ. Η πρώτη γραφή αυτού
-         έγραφε «0 κομμάτια ζωντανά» για μια αποθήκη που δεν άνοιξε ΠΟΤΕ — ένα
-         μηδέν που μοιάζει μέτρηση, δηλαδή ακριβώς η σταθερή αρχή 10. Φάνηκε
-         μόνο ρεντεράροντας τη σελίδα ΑΔΕΙΑ, που είναι και ο λόγος που
-         ρεντεράρεται άδεια. */
-      var line2;
-      if (!s.started){
-        line2 = 'δεν το έχεις ξεκινήσει ακόμη';
-      } else if (up){
-        /* Η ΕΠΙΚΑΛΥΨΗ ΧΡΕΟΥΣ / ΑΠΟΦΑΣΗΣ, ΚΛΕΙΣΤΗ. Η κάρτα ονομάζει την
-           ενότητα· εδώ γράφεται μόνο ΤΙ ΜΕΝΕΙ από πίσω της. */
-        line2 = rest.length
-          ? ('η πρώτη είναι η απόφαση · ' + rest.length + ' ακόμη προς ανάκληση')
-          : 'η μία που χρωστάς είναι η απόφαση, πάνω';
-      } else if (worst){
-        var lbl = unitTitle(s.key, worst.unitId);
-        line2 = late.length + ' προς ανάκληση · ' + esc(lbl);
-      } else if (!s.learned){
-        line2 = s.untouched
-          ? (s.untouched + (s.untouched === 1 ? ' κομμάτι ανοιχτό, καμία ανάκληση ακόμη' : ' κομμάτια ανοιχτά, καμία ανάκληση ακόμη'))
-          : 'ξεκίνησε, χωρίς μέτρηση ακόμη';
-      } else {
-        line2 = s.learned + (s.learned === 1 ? ' κομμάτι ζωντανό' : ' κομμάτια ζωντανά') +
-                (s.untouched ? ' · ' + s.untouched + ' ακόμη κλειστά' : '');
-      }
-
-      /* Δύο κανάλια: το ΧΡΩΜΑ λέει «έληξε», η ΜΠΑΡΑ λέει ακρίβεια. Και όταν
-         δεν υπάρχει μέτρηση, δεν ζωγραφίζεται μπάρα στο μηδέν — γράφεται με
-         λέξεις ότι δεν έχει μετρηθεί. */
-      var acc = !s.started ? ''
-        : (s.accuracy == null)
-          ? '<div class="hw-unknown">καμία μέτρηση ακόμη</div>'
-          : '<div class="hw-bar"><span style="width:' + Math.round(s.accuracy * 100) + '%"></span></div>';
-
-      /* Δεύτερο κουμπί για τον ΙΔΙΟ προορισμό δεν μπαίνει ποτέ: όταν η πρώτη
-         ενότητα είναι πάνω, η γραμμή δείχνει την ΕΠΟΜΕΝΗ — και όταν δεν έχει
-         επόμενη, δεν δείχνει κουμπί καθόλου. */
-      var go = up
-        ? (rest.length
-            ? '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep ? worst.unitId : null)) + '">Η επόμενη</a>'
-            : '')
-        : '<a class="hw-go" href="' + esc(deepLink(s.page, s.deep && worst ? worst.unitId : null)) + '">Πες το</a>';
-
-      rows +=
-        '<div class="hw-row" style="--hw-c:' + rgb + '">' +
-          '<span class="hw-tick"></span>' +
-          '<div class="hw-body">' +
-            '<div class="hw-name">' + esc(s.label) + '</div>' +
-            '<div class="hw-line2">' + line2 + '</div>' + acc +
-          '</div>' +
-          '<div class="hw-right">' +
-            '<div class="hw-when ' + cls + '">' + esc(when) + '</div>' + go +
-          '</div>' +
-        '</div>';
-    });
-
-    if (blind.length){
-      rows += '<div class="hw-blind">Δεν μπόρεσα να διαβάσω: <b>' + esc(blind.join(' · ')) +
-              '</b>. Το χρέος εκεί είναι <b>άγνωστο</b> — όχι μηδέν.</div>';
-    }
-    if (!rows) rows = '<div class="hw-empty">Καμία από τις πέντε σκάλες δεν έχει δεδομένα ακόμη. Άνοιξε μία σελίδα μελέτης και κάνε μία ανάκληση — από την επόμενη φορά ξέρω τι ξεχνάς.</div>';
-
-    host.innerHTML = rows;
-    var started = 0;
-    L.stores.forEach(function(s){ if (s.ok && s.started) started++; });
-    /* «όλα ζωντανά» για πέντε αποθήκες που δεν άνοιξαν ποτέ είναι ψέμα με
-       καθησυχαστικό τόνο — η χειρότερη μορφή του. */
-    $('hwDebtS').textContent = blind.length
-      ? (blind.length + (blind.length === 1 ? ' άγνωστη' : ' άγνωστες'))
-      : !started ? 'καμία δεν ξεκίνησε'
-      : totalLate ? (totalLate + ' προς ανάκληση')
-      : 'όλα ζωντανά';
-  }
+  /* ⛔⛔ Ο `renderDebt()` ΕΦΥΓΕ ΣΤΟ ΞΑΚΡΙΣΜΑ (als-v484) ΚΑΙ ΔΕΝ ΧΑΘΗΚΕ ΤΙΠΟΤΑ:
+     ζωγράφιζε ΑΚΡΙΒΩΣ ό,τι ζωγραφίζει ο `renderLessons4()` — τις ίδιες πέντε
+     σκάλες, τις ίδιες ληξιπρόθεσμες ενότητες, τους ίδιους deep links — μόνο ως
+     επίπεδη λίστα αντί για κάρτες ανά μάθημα. Δύο αναγνώστες της ίδιας αλήθειας
+     στην ίδια κύλιση είναι δύο ευκαιρίες να διαφωνήσουν (σταθ. 15).
+     ⛔ ΚΑΜΙΑ ΑΠΩΛΕΙΑ ΙΚΑΝΟΤΗΤΑΣ: το «τι ξεχνάω» φαίνεται ολόκληρο πίσω από την
+     πόρτα «Τα μαθήματά μου», μαζί με τον φρουρό του `L.broken` (σταθ. 10). */
 
   function renderTasks(featured){
     var list = taskList(), host = $('hwTaskBody');
@@ -2251,81 +2114,6 @@
     paint();
   }
 
-  /* ── Η ΜΕΡΑ · ο σκελετός, όχι πλέγμα ημερολογίου ─────────────────── */
-  function renderDay(pool){
-    var day = blocksFor(0);
-    var now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
-    var span = DAY_END - DAY_START;
-    function pct(min){ return Math.max(0, Math.min(100, ((min - DAY_START) / span) * 100)); }
-
-    var bars = day.blocks.map(function(b){
-      var from = Math.max(b.from, DAY_START), to = Math.min(b.to, DAY_END);
-      if (to <= from) return '';
-      var cls = b.cls === 'study' ? 'hw-study' : b.cls === 'school' ? 'hw-school' : 'hw-quietblk';
-      var l = pct(from), w = pct(to) - l;
-      return '<div class="hw-blk ' + cls + '" style="left:' + l.toFixed(2) + '%;width:' + w.toFixed(2) + '%">' +
-             (w > 11 ? '<span class="hw-cap">' + esc(b.name) + '</span>' : '') + '</div>';
-    }).join('');
-    var nowM = nowMin < DAY_START ? nowMin + 1440 : nowMin;
-    var marker = (nowM >= DAY_START && nowM <= DAY_END)
-      ? '<div class="hw-now" style="left:' + pct(nowM).toFixed(2) + '%"></div>' : '';
-    $('hwLineBar').innerHTML = bars + marker;
-    /* Η ίδια `pct()` που τοποθετεί τα μπλοκ τοποθετεί και τις ώρες, ώστε να
-       μην μπορούν να διαφωνήσουν. */
-    $('hwTicks').innerHTML = ['10:00','13:00','16:00','19:00','22:00','00:15']
-      .map(function(t, i, all){
-        var m = hm(t); if (i === all.length - 1) m += 1440;
-        return '<span style="left:' + pct(m).toFixed(2) + '%">' + t + '</span>';
-      }).join('');
-    $('hwDayS').textContent = day.cal === 'live' ? 'από το ημερολόγιο' : 'κατά το πρόγραμμα';
-
-    /* ⭐ ΟΙ ΔΥΟ ΘΕΣΕΙΣ ΕΧΟΥΝ ΔΙΑΦΟΡΕΤΙΚΗ ΔΟΥΛΕΙΑ, ΚΑΙ ΔΕΝ ΑΝΤΑΛΛΑΣΣΟΝΤΑΙ.
-       Το ΜΕΓΑΛΟ ΠΑΡΑΘΥΡΟ παίρνει εργασίες + χρέος μνήμης. Το ΞΑΝΑΔΙΑΒΑΣΜΑ
-       παίρνει ΤΑ ΣΗΜΕΡΙΝΑ ΤΡΙΑ ΜΑΘΗΜΑΤΑ και τίποτε άλλο: η ίδια προσπάθεια
-       αξίζει ~3× την ίδια μέρα σε σχέση με μία εβδομάδα μετά. */
-    /* ⚠️ ΕΔΩ ΗΤΑΝ Η ΤΡΙΤΗ ΓΡΑΦΗ ΤΟΥ ΙΔΙΟΥ ΠΡΑΓΜΑΤΟΣ. Το «μεγάλο παράθυρο»
-       τύπωνε τις τρεις πρώτες υποψηφιότητες — δηλαδή την κάρτα ΜΙΑ ΑΠΟΦΑΣΗ
-       ξανά, και μετά ξανά μέσα στο ΧΡΕΟΣ. Το παράθυρο ΜΕΤΡΑΕΙ τώρα· η
-       ονομασία γίνεται μία φορά, πάνω, και η λίστα ζει μία φορά, κάτω. */
-    var n = pool.length;
-    var morning = !n
-      ? 'Καθαρά. Δεν χρωστάς τίποτα σε αυτό το παράθυρο.'
-      : n === 1
-        ? 'Ένα πράγμα, και είναι η απόφαση από πάνω.'
-        : n + ' πράγματα. Το πρώτο είναι η απόφαση· τα υπόλοιπα στο ΧΡΕΟΣ.';
-
-    /* Ο ΙΔΙΟΣ αναγνώστης που τροφοδοτεί την πόρτα `#tonight` (σταθερή αρχή 15). */
-    var tv = tonightView();
-    var filled = tv.state === 'live' || tv.state === 'mine';
-    var review = filled
-      ? tv.items.map(function(x){ return esc(x.title); }).join('<br>')
-      : esc(TONIGHT_TXT[tv.state]);
-    /* ⭐ Η ΠΟΡΤΑ ΤΩΝ 21:45 ΕΧΕΙ ΕΙΣΟΔΟ ΜΟΝΟ ΟΤΑΝ ΕΧΕΙ ΠΕΡΙΕΧΟΜΕΝΟ. Ένας
-       σύνδεσμος που προσγειώνεται σε «δεν ξέρω» είναι αδιέξοδο με κουμπί. */
-    if (filled)
-      review += '<br><a class="hw-go" href="#tonight">Μόνο αυτό</a>';
-    /* ⭐ ΦΑΣΗ 3 · ΚΑΘΕ ΜΙΑ ΑΠΟ ΤΙΣ ΤΕΣΣΕΡΙΣ ΚΑΤΑΣΤΑΣΕΙΣ ΕΧΕΙ ΤΟ ΙΔΙΟ ΚΟΥΜΠΙ,
-       γιατί σε ΚΑΜΙΑ από αυτές δεν είναι σωστό να μην μπορεί να πει τι είχε. */
-    review += '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
-
-    /* Το μάθημα των 15:15 είναι το ΠΡΩΤΟ της μέρας — τα events του `GCal.day()`
-       έρχονται ταξινομημένα, και οι δικές του επιλογές μένουν στη σειρά που τις
-       πάτησε. Αν δεν το ξέρουμε, το λέμε ΜΑΖΙ με τον δρόμο για να το μάθουμε. */
-    var recapSubj = (filled && tv.items.length) ? tv.items[0].title : null;
-
-    $('hwSlots').innerHTML =
-      slot(PLAN.morning[0] + '–' + PLAN.morning[1], 'Το μεγάλο παράθυρο',
-           'Εδώ πεθαίνει η δουλειά: εργασίες και χρέος μνήμης.', esc(morning)) +
-      slot(PLAN.recap[0] + '–' + PLAN.recap[1], 'Η επανάληψη πριν',
-           'Το μάθημα των 15:15, μισή ώρα πριν.',
-           recapSubj ? esc(recapSubj) : 'Δεν ξέρω ακόμη ποιο μάθημα έχεις στις 15:15.') +
-      slot(PLAN.school[0] + '–' + PLAN.school[1], 'Φροντιστήριο',
-           'Εδώ ΓΕΝΝΙΕΤΑΙ η εργασία. Γράψε τη γραμμή πριν βγεις.', '') +
-      slot(PLAN.review[0] + '–' + PLAN.review[1], 'Ξαναδιάβασμα',
-           'Τα ΣΗΜΕΡΙΝΑ τρία, την ίδια νύχτα. Ποτέ εργασία με προθεσμία.', review);
-
-    wirePick($('hwSlots'));
-  }
   /* ⭐ ΕΝΑ ΚΟΥΜΠΙ, ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15): η ΜΕΡΑ και η πόρτα `#tonight`.
      Η λέξη αλλάζει με την κατάσταση επειδή η ΠΡΑΞΗ αλλάζει — «πες μου» όταν δεν
      ξέρει κανείς, «άλλαξέ τα» όταν υπάρχει ήδη απάντηση. */
@@ -2340,14 +2128,6 @@
       b.addEventListener('click', openLessons);
     });
   }
-  function slot(time, name, why, fill){
-    return '<div class="hw-slot">' +
-      '<div class="hw-slot-hd"><span class="hw-time hw-mono">' + esc(time) + '</span>' +
-      '<span class="hw-slot-n">' + esc(name) + '</span></div>' +
-      '<div class="hw-fill">' + esc(why) + (fill ? '<br><span style="color:var(--au-ivory,#f5f2ec)">' + fill + '</span>' : '') + '</div>' +
-    '</div>';
-  }
-
   /* ── Η ΣΥΣΣΩΡΕΥΣΗ · μία πρόταση, και ένα κουμπί που την εκτελεί ───
      Η σύγκρουση ΕΙΝΑΙ το νόημα: όταν τρία πράγματα πέφτουν Πέμπτη, το λέει
      ΔΕΥΤΕΡΑ. Και ποτέ δεν μετακινεί δουλειά μόνο του — μόνο όταν το πατήσει. */
@@ -2520,6 +2300,16 @@
   function renderTonight(){
     var tv = tonightView(), body = $('hwTonightBody');
     var acts = '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
+    /* ⭐ Η ΤΡΙΤΗ ΠΟΡΤΑ ΓΡΑΦΕΤΑΙ ΑΠΟ ΤΟΝ ΙΔΙΟ `tonightView()` ΠΟΥ ΓΡΑΦΕΙ ΤΟ
+       ΔΩΜΑΤΙΟ, ποτέ από δεύτερη μέτρηση (σταθ. 15) — αλλιώς η πόρτα θα μπορούσε
+       να λέει «3 μαθήματα» και το δωμάτιο «δεν ξέρω». Και τα «άγνωστα» ΔΕΝ
+       γίνονται μηδέν: «δεν ξέρω ακόμη» είναι διαφορετική πρόταση (σταθ. 33). */
+    $('hwDoorsN').textContent =
+      (tv.state === 'live' || tv.state === 'mine')
+        ? (tv.items.length + (tv.items.length === 1 ? ' μάθημα' : ' μαθήματα'))
+        : tv.state === 'mineNone' ? 'κανένα, το είπες'
+        : tv.state === 'none'     ? 'κανένα σήμερα'
+        : 'δεν ξέρω ακόμη';
     if (tv.state !== 'live' && tv.state !== 'mine'){
       $('hwTonightS').textContent =
         tv.state === 'unknown' ? 'άγνωστα' : tv.state === 'mineNone' ? 'κανένα, το είπες' : 'κανένα σήμερα';
@@ -2875,24 +2665,23 @@
      ΑΚΡΙΒΩΣ ό,τι δείχνει η κάρτα, ώστε κανένα άλλο μπλοκ να μην το ξαναπεί. */
   function paint(){
     ladders();                       /* ΜΙΑ φρέσκια ανάγνωση, πριν από όλους */
-    var b = renderClock();
+    /* ⭐⭐ ΤΟ `budget()` ΜΕΝΕΙ ΑΚΡΙΒΩΣ ΟΠΩΣ ΗΤΑΝ — ΕΦΥΓΕ ΜΟΝΟ Η ΖΩΓΡΑΦΙΚΗ ΤΟΥ.
+       Ο ελεύθερος χρόνος ΤΡΟΦΟΔΟΤΕΙ την κατάταξη (`candidates(b.free)`), άρα η
+       μία απόφαση παραμένει η ίδια απόφαση· απλώς η αριθμητική δεν κάθεται
+       πλέον πέντε γραμμές πάνω από το κουμπί. ⛔ Μην «απλοποιήσεις» το
+       `budget()` επειδή δεν φαίνεται: είναι είσοδος, όχι οθόνη. */
+    var b = budget();
     var pool = candidates(b.free);
-    var featured = pool[0] || null;
     renderStart(pool);
-    renderDebt(featured);
     /* ⭐ ΦΑΣΗ 2: ΟΧΙ `featured`. Η κάρτα της απόφασης ζει στο ΚΕΝΤΡΟ και η
        λίστα στο δικό της δωμάτιο — ποτέ στην ίδια οθόνη, άρα καμία
        επικάλυψη. Και μια λίστα «όλες μου οι εργασίες» που κρύβει μία
        δεν είναι λίστα: θα ήταν ακριβώς το «λείπει μια εργασία» που
        τον έκανε να μη μας εμπιστεύεται. */
     renderTasks(null);
-    renderDay(pool);
-    renderOver(pool);
+    renderOver(pool);                /* η συσσώρευση ζει ΜΕΣΑ στις εργασίες τώρα */
     renderTonight();                 /* η πόρτα των 21:45 ζει στο ΙΔΙΟ paint */
     renderLessons4();                /* και τα μαθήματα — ΕΝΑ paint, μία αλήθεια */
-    $('hwFoot').innerHTML =
-      'Διαβάζει και τις πέντε σκάλες μελέτης· γράφει ΜΟΝΟ τις δικές του εργασίες.<br>' +
-      'Καμία μηχανή δεν διαβάζει τις φωτογραφίες σου εδώ — η μεταγραφή γίνεται στη συζήτηση, μπροστά σου.';
   }
 
   $('hwLine').addEventListener('input', function(){

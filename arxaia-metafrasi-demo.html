@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ΜΕΤΑΦΡΑΣΗ · Αριστοτέλης — DEMO</title>
+<meta name="theme-color" content="#07060b">
+<!-- ══════════════════════════════════════════════════════════════════════
+     DEMO, ΑΠΟΜΟΝΩΜΕΝΟ. Κανένα sync script, κανένα shared js, ένα αρχείο.
+     (Σταθερή αρχή: κάθε render harness χωρίς sync — το περιστατικό των
+     weigh-ins.) Η πρόοδος γράφεται σε ΔΙΚΟ ΤΟΥ κλειδί `arx:mtf:demo`,
+     ώστε να μην αγγίζει ποτέ τα `arx:v1` / `arx:gn`.
+
+     ΤΙ ΛΥΝΕΙ: «πρέπει να μάθω τη μετάφραση απέξω, αλλά να ξέρω και ποια
+     αρχαία λέξη αντιστοιχεί στην ελληνική».  Δύο ΔΙΑΦΟΡΕΤΙΚΕΣ ικανότητες,
+     άρα δύο διαφορετικές ασκήσεις — όχι μία.
+
+     ⭐ Η ΕΓΓΥΗΣΗ ΕΙΝΑΙ Η ΣΥΝΑΡΜΟΛΟΓΗΣΗ.
+     Δεν αποθηκεύω πουθενά «το κείμενο» και χωριστά «τα ζευγάρια», γιατί
+     τότε τα δύο μπορούν να αποκλίνουν σιωπηλά.  Το κείμενο ΠΑΡΑΓΕΤΑΙ από
+     τα κομμάτια: η ένωση όλων των tokens ΠΡΕΠΕΙ να δίνει αυτολεξεί το
+     κείμενο που μου έδωσε.  Το `selfCheck()` το ελέγχει σε κάθε φόρτωση
+     και ΦΩΝΑΖΕΙ κόκκινα αν αποκλίνει έστω κατά έναν χαρακτήρα.
+     Άρα δεν μπορεί να υπάρξει «σωστή αντιστοίχιση σε λάθος κείμενο».
+     ══════════════════════════════════════════════════════════════════ -->
+<style>
+:root{
+  --bg:#07060b; --bg2:#0d0b14; --ink:#f2eefb; --dim:#9b93b3; --dim2:#6f6888;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.05);
+  --v:#a98bff; --v2:#7c5cf0; --vglow:rgba(169,139,255,.18);
+  --gold:#e8c26a; --ok:#5fd39a; --bad:#ff7a8a;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1100px 620px at 78% -8%, rgba(124,92,240,.20), transparent 62%),
+    radial-gradient(760px 520px at 6% 102%, rgba(169,139,255,.10), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font:16px/1.65 ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  min-height:100vh; padding:0 0 120px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+
+/* ── header ─────────────────────────────────────────────── */
+header{padding:38px 0 20px}
+.eyebrow{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--v);opacity:.85;font-weight:600}
+h1{font:600 30px/1.14 ui-serif,"New York",Georgia,serif;margin:10px 0 6px;letter-spacing:-.01em}
+.sub{color:var(--dim);font-size:13.5px;margin:0}
+.demo-tag{display:inline-block;margin-top:14px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--dim2)}
+
+/* ── tabs ───────────────────────────────────────────────── */
+.tabs{display:flex;gap:6px;margin:24px 0 22px;background:rgba(255,255,255,.035);
+  border:1px solid var(--line2);border-radius:14px;padding:5px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--dim);
+  font:600 11.5px/1 ui-sans-serif,system-ui;letter-spacing:.1em;text-transform:uppercase;
+  padding:11px 13px;border-radius:10px;cursor:pointer;
+  transition:background .18s,color .18s,box-shadow .18s}
+.tab[aria-selected="true"]{background:linear-gradient(180deg,rgba(169,139,255,.22),rgba(124,92,240,.12));
+  color:var(--ink);box-shadow:0 0 0 1px rgba(169,139,255,.25) inset}
+.pane{display:none;animation:fade .3s ease}
+.pane.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── generic card ───────────────────────────────────────── */
+.card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));
+  border:1px solid var(--line);border-radius:var(--r);padding:18px;margin:0 0 14px}
+.lab{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim2);font-weight:600;margin:0 0 10px}
+
+/* ── the reader ─────────────────────────────────────────── */
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);
+  font:600 12px/1 ui-sans-serif,system-ui;padding:11px 14px;border-radius:11px;cursor:pointer;
+  transition:background .16s,border-color .16s,color .16s}
+.btn:hover{background:rgba(255,255,255,.08)}
+.btn.on{background:linear-gradient(180deg,rgba(169,139,255,.28),rgba(124,92,240,.15));
+  border-color:rgba(169,139,255,.4)}
+.btn.pri{background:linear-gradient(180deg,var(--v),var(--v2));border-color:transparent;color:#0d0a18}
+
+.per{border:1px solid var(--line2);border-radius:14px;padding:15px 15px 13px;margin:0 0 11px;
+  background:rgba(255,255,255,.022)}
+.per-n{font-size:9.5px;letter-spacing:.2em;color:var(--dim2);font-weight:700;margin:0 0 9px}
+.anc{font:500 18.5px/1.85 ui-serif,"New York",Georgia,serif;color:#efe9ff;margin:0 0 12px}
+.mod{font-size:14.5px;line-height:1.8;color:#cfc7e2;
+  border-top:1px dashed var(--line);padding-top:11px;margin:0}
+.mod.hidden{filter:blur(7px);opacity:.5;cursor:pointer;user-select:none}
+.mod.hidden::after{content:'πάτα για αποκάλυψη'}
+.mod.hidden > *{visibility:hidden}
+.mod.hidden{position:relative}
+.mod.hidden::after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  filter:none;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);
+  visibility:visible}
+
+/* Linked chunks.
+   ⚠️ ΒΡΕΘΗΚΕ ΚΟΙΤΑΖΟΝΤΑΣ, αόρατο σε κάθε assertion: με μόνιμη υπογράμμιση
+   σε κάθε ζευγάρι, ΣΧΕΔΟΝ ΟΛΟ το κείμενο ήταν υπογραμμισμένο — που δεν
+   ξεχωρίζει τίποτα, μόνο θορυβεί. Το ΧΡΩΜΑ κάνει ήδη τη δουλειά: φωτεινό
+   = έχει ζευγάρι, γκρι (.plain) = δεν έχει. Η υπογράμμιση μένει στο hover. */
+.k{cursor:pointer;border-radius:5px;padding:1px 2px;margin:0 -2px;
+  transition:background .14s,color .14s}
+.k:hover{background:rgba(169,139,255,.13);text-decoration:underline;
+  text-decoration-color:rgba(169,139,255,.5);text-underline-offset:4px}
+.k.lit{background:var(--v);color:#0d0a18;text-decoration:none;
+  box-shadow:0 0 22px var(--vglow)}
+.plain{color:var(--dim2)}
+
+/* the note bar */
+.note{position:sticky;bottom:14px;z-index:20;margin-top:16px;
+  background:rgba(18,14,30,.93);backdrop-filter:blur(14px);
+  border:1px solid rgba(169,139,255,.28);border-radius:14px;padding:14px 16px;
+  box-shadow:0 14px 40px rgba(0,0,0,.55)}
+.note.empty{border-color:var(--line2);background:rgba(255,255,255,.03);box-shadow:none}
+.note-pair{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:15px}
+.note-a{font:600 17px/1.4 ui-serif,"New York",Georgia,serif;color:var(--v)}
+.note-arrow{color:var(--dim2)}
+.note-m{color:var(--ink)}
+.note-why{font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.6}
+.note-hint{font-size:12px;color:var(--dim2);text-align:center}
+
+/* ── key table ──────────────────────────────────────────── */
+.krow{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:11px 0;border-bottom:1px solid var(--line2);align-items:baseline}
+.krow:last-child{border-bottom:0}
+.krow .ka{font:600 15.5px/1.5 ui-serif,"New York",Georgia,serif;color:#e6dcff}
+.krow .km{font-size:13.5px;color:var(--dim);line-height:1.5}
+.krow .kw{grid-column:1/-1;font-size:12px;color:var(--gold);opacity:.8;line-height:1.55;margin-top:-2px}
+.search{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:11px;
+  color:var(--ink);font:14px ui-sans-serif,system-ui;padding:12px 14px;margin:0 0 14px}
+.search::placeholder{color:var(--dim2)}
+.search:focus{outline:0;border-color:rgba(169,139,255,.45)}
+
+/* families */
+.fam{border-left:2px solid var(--v);padding-left:14px;margin:0 0 18px}
+.fam h3{font:600 15px/1.4 ui-serif,Georgia,serif;margin:0 0 4px;color:#e6dcff}
+.fam p{margin:0 0 8px;font-size:12.5px;color:var(--dim)}
+.fam ul{margin:0;padding-left:0;list-style:none}
+.fam li{font-size:13.5px;padding:4px 0;color:var(--dim)}
+.fam li b{color:#e6dcff;font:600 14.5px ui-serif,Georgia,serif}
+
+/* ── quiz ───────────────────────────────────────────────── */
+.q-head{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);font-weight:600}
+.q-prompt{font-size:13px;color:var(--dim);margin:0 0 8px}
+.q-word{font:600 24px/1.35 ui-serif,"New York",Georgia,serif;color:#efe9ff;margin:0 0 20px}
+.q-word.gr{font-family:ui-sans-serif,system-ui;font-size:20px;font-weight:600}
+.opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:rgba(255,255,255,.03);
+  color:var(--ink);border-radius:12px;padding:14px 16px;margin:0 0 9px;cursor:pointer;
+  transition:background .16s,border-color .16s,opacity .16s;
+  font:500 16px/1.4 ui-serif,"New York",Georgia,serif}
+.opt.gr{font-family:ui-sans-serif,system-ui;font-size:14.5px}
+.opt:hover:not(:disabled){background:rgba(255,255,255,.07);border-color:rgba(169,139,255,.3)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:rgba(95,211,154,.14)}
+.opt.wrong{border-color:var(--bad);background:rgba(255,122,138,.12);opacity:.85}
+.q-after{margin-top:14px;padding-top:14px;border-top:1px solid var(--line2);font-size:13px;color:var(--dim);line-height:1.6}
+.q-after b{color:var(--v);font-family:ui-serif,Georgia,serif}
+.score{display:flex;gap:18px;font-size:12px;color:var(--dim2)}
+.score b{color:var(--ink);font-size:15px}
+
+/* ── recall (cloze) ─────────────────────────────────────── */
+.rc-anc{font:500 18px/1.85 ui-serif,"New York",Georgia,serif;color:#efe9ff;margin:0 0 16px}
+.rc-in{width:100%;min-height:96px;background:rgba(255,255,255,.05);border:1px solid var(--line);
+  border-radius:12px;color:var(--ink);font:15px/1.7 ui-sans-serif,system-ui;padding:13px 15px;resize:vertical}
+.rc-in:focus{outline:0;border-color:rgba(169,139,255,.45)}
+.rc-res{margin-top:14px;font-size:14px;line-height:1.8}
+.hit{color:var(--ok)}
+.miss{color:var(--bad);text-decoration:underline;text-decoration-style:wavy;text-decoration-color:rgba(255,122,138,.5)}
+.rc-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin:14px 0 6px}
+/* scaleX, όχι width: το width ξαναϋπολογίζει layout σε κάθε frame. */
+.rc-bar i{display:block;height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--v2),var(--v));border-radius:999px;
+  transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.pct{font:600 30px/1 ui-serif,Georgia,serif}
+
+.err{background:rgba(255,122,138,.14);border:1px solid var(--bad);border-radius:12px;padding:14px;
+  font-size:13px;color:#ffd7dd;margin:0 0 16px;white-space:pre-wrap}
+.foot{margin-top:34px;padding-top:18px;border-top:1px solid var(--line2);font-size:11.5px;color:var(--dim2);line-height:1.7}
+@media(max-width:520px){
+  h1{font-size:25px}
+  .anc{font-size:17px}
+  .krow{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Αρχαία · Γνωστό</div>
+  <h1>Ἀριστοτέλης, <i>Μετὰ τὰ Φυσικά</i></h1>
+  <p class="sub">Η μετάφραση απέξω, και ποια αρχαία λέξη κρύβεται πίσω από κάθε ελληνική.</p>
+  <div class="demo-tag">demo · απομονωμένο · τίποτα δεν συγχρονίζεται</div>
+</header>
+
+<div id="err"></div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true"  data-p="read">01 · Η αντιστοιχία</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="key">02 · Το κλειδί</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="quiz">03 · Ποια λέξη;</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="recall">04 · Απέξω</button>
+</nav>
+
+<!-- ═══ 01 ═══ -->
+<section class="pane on" id="p-read">
+  <div class="ctrls">
+    <button class="btn" id="tgHide">Κρύψε τη μετάφραση</button>
+    <button class="btn" id="tgAnc">Κρύψε τα αρχαία</button>
+    <button class="btn" id="tgClr">Καθάρισε</button>
+  </div>
+  <div id="reader"></div>
+  <div class="note empty" id="note"><div class="note-hint">Πάτα οποιαδήποτε υπογραμμισμένη λέξη και θα ανάψει το ζευγάρι της.</div></div>
+</section>
+
+<!-- ═══ 02 ═══ -->
+<section class="pane" id="p-key">
+  <input class="search" id="kSearch" placeholder="Ψάξε λέξη — αρχαία ή ελληνική…">
+  <div class="card">
+    <p class="lab">Όλα τα ζευγάρια <span id="kCount" style="color:var(--v)"></span></p>
+    <div id="kTable"></div>
+  </div>
+  <div class="card">
+    <p class="lab">⚠ Οι οικογένειες — εδώ σε πιάνουν</p>
+    <div id="fams"></div>
+  </div>
+</section>
+
+<!-- ═══ 03 ═══ -->
+<section class="pane" id="p-quiz">
+  <div class="card">
+    <div class="q-head">
+      <span id="qDir">—</span>
+      <span class="score"><span>σωστά <b id="qOk">0</b></span><span>από <b id="qN">0</b></span></span>
+    </div>
+    <p class="q-prompt" id="qPrompt">—</p>
+    <div class="q-word" id="qWord">—</div>
+    <div id="qOpts"></div>
+    <div class="q-after" id="qAfter" hidden></div>
+  </div>
+  <div class="ctrls">
+    <button class="btn" id="qMode" data-m="mix">Και οι δύο κατευθύνσεις</button>
+    <button class="btn pri" id="qNext">Επόμενη</button>
+  </div>
+</section>
+
+<!-- ═══ 04 ═══ -->
+<section class="pane" id="p-recall">
+  <div class="card">
+    <p class="lab">Περίοδος <span id="rcN" style="color:var(--v)"></span></p>
+    <div class="rc-anc" id="rcAnc"></div>
+    <textarea class="rc-in" id="rcIn" placeholder="Γράψε τη μετάφραση από μνήμη. Τόνοι δεν μετράνε."></textarea>
+    <div class="ctrls" style="margin:12px 0 0">
+      <button class="btn pri" id="rcGo">Έλεγξε</button>
+      <button class="btn" id="rcSkip">Δείξε τη</button>
+      <button class="btn" id="rcNext">Επόμενη →</button>
+    </div>
+    <div id="rcOut"></div>
+  </div>
+  <div class="card">
+    <p class="lab">Πρόοδος</p>
+    <div class="rc-bar"><i id="rcBar" style="width:0%"></i></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span class="pct" id="rcPct">—</span>
+      <span style="font-size:12px;color:var(--dim2)" id="rcInfo">καμία περίοδος ακόμη</span>
+    </div>
+  </div>
+</section>
+
+<p class="foot">
+  Το κείμενο και η μετάφραση είναι <b>αυτολεξεί</b> όπως τα έδωσε ο Άλεξ (9 Αυγ 2026).
+  Οι <i>εξηγήσεις</i> στα ζευγάρια είναι δικές μου προσθήκες και φαίνονται σε άλλο χρώμα.
+  Ποτέ δεν περνάνε για κείμενο που πρέπει να ειπωθεί απέξω.
+</p>
+
+</div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════════
+   ΤΑ ΔΕΔΟΜΕΝΑ.  Κάθε περίοδος = δύο πίνακες από tokens [κείμενο, κλειδί].
+   Το κλειδί `null` σημαίνει «δεν αντιστοιχεί σε τίποτα» (στίξη, σύνδεσμος
+   που χάνεται στη μετάφραση).  Ένα κλειδί μπορεί να εμφανιστεί ΠΟΛΛΕΣ
+   φορές και στις δύο πλευρές — έτσι λύνονται τα «Ὁ … ἀπορῶν» και το
+   «Είναι … φανερό», που στο πρωτότυπο και στη μετάφραση σπάνε αλλιώς.
+   ═══════════════════════════════════════════════════════════════════ */
+
+var P = { /* key -> {a: αρχαίο, m: ελληνικό, w: γιατί (δική μου εξήγηση)} */
+ k0:{a:'γὰρ',m:'Γιατί',w:'Αιτιολογικός σύνδεσμος. Στη μτφρ. πάει ΜΠΡΟΣΤΑ — τα αρχαία τον βάζουν πάντα δεύτερο (εγκλιτικό).'},
+ k1:{a:'διὰ τὸ θαυμάζειν',m:'από περιέργεια και θαυμασμό',w:'«διὰ + αιτιατική» = αιτία. Το ΕΝΑΡΘΡΟ ΑΠΑΡΕΜΦΑΤΟ «τὸ θαυμάζειν» γίνεται ΟΥΣΙΑΣΤΙΚΟ στα νέα. Ο μεταφραστής το ανοίγει σε ΔΥΟ λέξεις (περιέργεια + θαυμασμός) γιατί το θαυμάζω σημαίνει «απορώ», όχι «θαυμάζω» με τη σημερινή έννοια.'},
+ k2:{a:'οἱ ἄνθρωποι',m:'οι άνθρωποι',w:'Το υποκείμενο. Ίδιο και στα δύο.'},
+ k3:{a:'καὶ νῦν',m:'όπως συμβαίνει και τώρα',w:'Δύο λέξεις γίνονται τέσσερις: η μτφρ. εξηγεί ότι το «και τώρα» αντιδιαστέλλεται με το «τὸ πρῶτον».'},
+ k4:{a:'καὶ τὸ πρῶτον',m:'για πρώτη φορά',w:'«τὸ πρῶτον» = επιρρηματική αιτιατική, «την πρώτη φορά / αρχικά».'},
+ k5:{a:'ἤρξαντο',m:'άρχισαν',w:'ἄρχομαι + απαρέμφατο. Αόριστος μέσης φωνής — ΠΡΟΣΟΧΗ, ξαναγυρίζει παρακάτω ως «ἤρξατο» (ενικός).'},
+ k6:{a:'φιλοσοφεῖν',m:'να φιλοσοφούν',w:'Απαρέμφατο ως αντικείμενο του ἤρξαντο. Στα νέα γίνεται «να + ρήμα».'},
+
+ a1:{a:'ἐξ ἀρχῆς',m:'Στην αρχή',w:'Εμπρόθετος χρόνου.'},
+ a2:{a:'τὰ πρόχειρα',m:'της καθημερινής ζωής',w:'⭐ Η πιο «ελεύθερη» απόδοση όλου του κειμένου. πρόχειρος = αυτός που είναι ΜΠΡΟΣΤΑ ΣΤΟ ΧΕΡΙ, δίπλα μας. Ο μεταφραστής το δίνει με γενική: «της καθημερινής ζωής».'},
+ a3:{a:'τῶν ἀτόπων',m:'τα παράξενα',w:'ἄ-τοπος = αυτός που δεν έχει τόπο, ο ασυνήθιστος. ΠΡΟΣΟΧΗ στη σύνταξη: «τὰ πρόχειρα ΤΩΝ ἀτόπων» = τα πρόχειρα ΑΠΟ ΤΑ παράξενα (διαιρετική γενική).'},
+ a4:{a:'θαυμάσαντες',m:'θεώρησαν άξια θαυμασμού',w:'Μετοχή αορίστου. Στα νέα γίνεται ΚΥΡΙΟ ΡΗΜΑ — τυπικό: η αρχαία μετοχή σπάνια μένει μετοχή.'},
+
+ b1:{a:'εἶτα',m:'και',w:'Κυριολεκτικά «έπειτα». Η μτφρ. το χαμηλώνει σε απλό «και».'},
+ b2:{a:'κατὰ μικρὸν',m:'σιγά σιγά',w:'Εμπρόθετος τρόπου, στερεότυπη έκφραση = βαθμιαία.'},
+ b3:{a:'οὕτω',m:'με αυτόν τον τρόπο',w:'Τροπικό επίρρημα. Ζευγάρι με το «οὕτω» της τελευταίας περιόδου («έτσι»).'},
+ b4:{a:'προϊόντες',m:'προχωρώντας',w:'πρό-ειμι. Μετοχή ενεστώτα — εδώ ΜΕΝΕΙ μετοχή στα νέα.'},
+
+ c0:{a:'καὶ',m:'και',w:'Επιδοτικό: «και για τα πιο σημαντικά», δηλαδή όχι μόνο για τα πρόχειρα.'},
+ c1:{a:'περὶ τῶν μειζόνων',m:'για τα πιο σημαντικά',w:'μείζων = συγκριτικός του μέγας.'},
+ c2:{a:'διαπορήσαντες',m:'άρχισαν να προβληματίζονται',w:'δια-απορῶ = βρίσκομαι σε πλήρη αμηχανία. Πάλι μετοχή → κύριο ρήμα.'},
+
+ d1:{a:'οἷον',m:'όπως λ.χ.',w:'Εισάγει παραδείγματα. Μία λέξη.'},
+ d2:{a:'τῶν τῆς σελήνης παθημάτων',m:'τα φαινόμενα της σελήνης',w:'πάθημα = ό,τι ΠΑΘΑΙΝΕΙ κάτι, άρα «φαινόμενο». Πρόσεξε τη ΓΕΝΙΚΗ ΜΕΣΑ ΣΕ ΓΕΝΙΚΗ (τῶν … τῆς σελήνης … παθημάτων).'},
+ d3:{a:'τῶν περὶ τὸν ἥλιον',m:'του ήλιου',w:'Κατά λέξη «των σχετικών με τον ήλιο». Η μτφρ. το συμπτύσσει σε μια γενική.'},
+ d4:{a:'τὰ ἄστρα',m:'τα άστρα',w:'Ίδιο.'},
+ d5:{a:'τῆς τοῦ παντὸς γενέσεως',m:'τη γέννηση του σύμπαντος',w:'τὸ πᾶν = το σύμπαν, το όλον. γένεσις = γέννηση, δημιουργία.'},
+
+ e1:{a:'ὁ … ἀπορῶν',m:'Αυτός … που απορεί',w:'⭐ ΕΠΙΘΕΤΙΚΗ ΜΕΤΟΧΗ με άρθρο = αναφορική πρόταση στα νέα («αυτός που…»). Ο κανόνας που εξετάζεται πιο συχνά.'},
+ e2:{a:'δ’',m:'όμως',w:'δέ αντιθετικό. Εκθλίβεται μπροστά από φωνήεν.'},
+ e3:{a:'θαυμάζων',m:'που θαυμάζει',w:'Δεύτερη επιθετική μετοχή, μοιράζεται το ίδιο άρθρο «ὁ».'},
+ e4:{a:'οἴεται',m:'αντιλαμβάνεται',w:'⚠ Κυριολεκτικά «ΝΟΜΙΖΕΙ / θεωρεί». Η μτφρ. λέει «αντιλαμβάνεται» — αν σου ζητήσουν κατά λέξη, πες «νομίζει».'},
+ e5:{a:'ἀγνοεῖν',m:'ότι αγνοεί',w:'Ειδικό απαρέμφατο μετά το οἴεται → «ότι + ρήμα».'},
+
+ f1:{a:'διὸ',m:'γι’ αυτό',w:'δι’ ὅ. Συμπερασματικό.'},
+ f2:{a:'ὁ φιλόμυθος',m:'όποιος αγαπά τους μύθους',w:'Σύνθετο φίλος + μῦθος. Μία λέξη γίνεται τέσσερις.'},
+ f3:{a:'φιλόσοφός',m:'φιλόσοφος',w:'Κατηγορούμενο. Ο διπλός τόνος («φιλόσοφός») είναι από το εγκλιτικό «πώς» που ακολουθεί.'},
+ f4:{a:'πώς',m:'κατά κάποιο τρόπο',w:'⚠ ΕΓΚΛΙΤΙΚΟ «πως» = κάπως — ΟΧΙ το ερωτηματικό «πῶς;». Κλασική παγίδα.'},
+ f5:{a:'ἐστιν',m:'είναι',w:'Συνδετικό ρήμα.'},
+ f6:{a:'γὰρ',m:'αφού',w:'Ίδια λέξη με την αρχή, ΑΛΛΗ απόδοση: εδώ «αφού», εκεί «γιατί».'},
+ f7:{a:'ὁ … μῦθος',m:'οι μύθοι',w:'⚠ ΕΝΙΚΟΣ στα αρχαία, ΠΛΗΘΥΝΤΙΚΟΣ στη μτφρ. Ο ενικός με άρθρο δηλώνει το είδος.'},
+ f8:{a:'σύγκειται',m:'συντίθενται',w:'σύν + κεῖμαι = είμαι συγκείμενος, αποτελούμαι.'},
+ f9:{a:'ἐκ θαυμασίων',m:'από γεγονότα θαυμάσια',w:'Επίθετο χωρίς ουσιαστικό στα αρχαία· η μτφρ. προσθέτει «γεγονότα» για να σταθεί.'},
+
+ g1:{a:'ὥστ’',m:'λοιπόν',w:'Συμπερασματικό «ώστε». Η μτφρ. το ρίχνει σε ένα «λοιπόν».'},
+ g2:{a:'εἴπερ',m:'Εφόσον',w:'εἰ + περ = αν πράγματι.'},
+ g3:{a:'διὰ τὸ φεύγειν',m:'για να ξεφύγουν',w:'Πάλι «διὰ + έναρθρο απαρέμφατο». Εδώ όμως η μτφρ. το δίνει ΤΕΛΙΚΑ («για να»), όχι αιτιολογικά.'},
+ g4:{a:'τὴν ἄγνοιαν',m:'από την άγνοιά τους',w:'Αντικείμενο του φεύγειν σε ΑΙΤΙΑΤΙΚΗ· στα νέα θέλει «από».'},
+ g5:{a:'ἐφιλοσόφησαν',m:'οι άνθρωποι φιλοσόφησαν',w:'Αόριστος. Το υποκείμενο «οι άνθρωποι» δεν υπάρχει στα αρχαία — εννοείται.'},
+ g6:{a:'φανερὸν',m:'είναι φανερό',w:'Απρόσωπη έκφραση «φανερόν [ἐστι]» — το ρήμα λείπει στα αρχαία.'},
+ g7:{a:'ὅτι',m:'ότι',w:'Ειδικός σύνδεσμος.'},
+ g8:{a:'διὰ τὸ εἰδέναι',m:'για την ίδια τη γνώση',w:'⭐ ΤΡΙΤΟ «διὰ + έναρθρο απαρέμφατο» στο ίδιο κείμενο. οἶδα = γνωρίζω· εἰδέναι = το να γνωρίζει κανείς.'},
+ g9:{a:'τὸ ἐπίστασθαι',m:'την επιστήμη',w:'⚠ ΜΗΝ το μπερδέψεις με το «εἰδέναι» δίπλα του: ἐπίσταμαι = κατέχω σε βάθος, ξέρω επιστημονικά. Από εδώ η λέξη ΕΠΙΣΤΗΜΗ.'},
+ g10:{a:'ἐδίωκον',m:'επιζήτησαν',w:'διώκω = κυνηγώ, επιδιώκω. ΠΑΡΑΤΑΤΙΚΟΣ στα αρχαία, αόριστος στη μτφρ.'},
+ g11:{a:'οὐ',m:'όχι',w:'Άρνηση.'},
+ g12:{a:'χρήσεώς τινος',m:'κάποιας χρησιμότητας',w:'Γενική· «τινος» αόριστη αντωνυμία, εγκλιτική.'},
+ g13:{a:'ἕνεκεν',m:'χάριν',w:'Πρόθεση που μπαίνει ΜΕΤΑ τη γενική της. Επανέρχεται 3 φορές στο τέλος ως «ἕνεκα».'},
+
+ h1:{a:'Μαρτυρεῖ',m:'φαίνεται',w:'Κυριολεκτικά «το μαρτυρεί / το βεβαιώνει». Ενεργητικό στα αρχαία, παθητικό στη μτφρ.'},
+ h2:{a:'αὐτὸ τὸ συμβεβηκός',m:'από την πορεία των πραγμάτων',w:'⭐ Το ΥΠΟΚΕΙΜΕΝΟ των αρχαίων γίνεται ΕΜΠΡΟΘΕΤΟΣ στη μτφρ. συμβεβηκός = αυτό που έχει συμβεί, το γεγονός (μετοχή παρακειμένου του συμβαίνω).'},
+
+ i1:{a:'σχεδὸν',m:'σχεδόν',w:'Ίδιο.'},
+ i2:{a:'πάντων … τῶν ἀναγκαίων',m:'όλες … οι άμεσες ανάγκες τους',w:'Γενική, μέρος της γενικής απόλυτης.'},
+ i3:{a:'ὑπαρχόντων',m:'ικανοποιήθηκαν',w:'⭐⭐ ΓΕΝΙΚΗ ΑΠΟΛΥΤΗ: «πάντων ὑπαρχόντων» = αφού υπήρχαν όλα. Η μτφρ. τη λύνει σε χρονική («Μόνο όταν… ικανοποιήθηκαν»). Το ΠΙΟ πιθανό σημείο συντακτικής ερώτησης.'},
+ i4:{a:'τῶν πρὸς ῥᾳστώνην',m:'την άνεση',w:'ῥᾳστώνη = ευκολία, ανάπαυση.'},
+ i5:{a:'διαγωγὴν',m:'την απόλαυσή τους',w:'διαγωγή = τρόπος ζωής, ευχάριστη διαβίωση.'},
+ i6:{a:'ἡ τοιαύτη φρόνησις',m:'αυτού του είδους την πνευματική αναζήτηση',w:'φρόνησις εδώ = στοχασμός, γνώση — όχι «σύνεση».'},
+ i7:{a:'ἤρξατο ζητεῖσθαι',m:'στράφηκαν σ’',w:'⚠ Κατά λέξη «άρχισε να αναζητείται» (ΠΑΘΗΤΙΚΟ, υποκ. η φρόνησις). Η μτφρ. το γυρίζει σε ΕΝΕΡΓΗΤΙΚΟ με νέο υποκείμενο «οι άνθρωποι».'},
+
+ j1:{a:'Δῆλον',m:'Είναι … φανερό',w:'Πάλι απρόσωπο, πάλι λείπει το «ἐστι».'},
+ j2:{a:'οὖν',m:'λοιπόν',w:'Συμπερασματικό, εγκλιτικό στη θέση.'},
+ j3:{a:'ὡς',m:'ότι',w:'Ειδικός σύνδεσμος — εδώ ΟΧΙ «όπως».'},
+ j4:{a:'δι’ οὐδεμίαν … χρείαν ἑτέραν',m:'δεν … για να καλύψει άλλη ανάγκη',w:'⭐ Η άρνηση στα αρχαία είναι ΜΕΣΑ στο «οὐδεμίαν» (καμία)· στα νέα βγαίνει έξω και γίνεται «δεν». Πρόσεξε τη διάσπαση: «δι’ οὐδεμίαν … χρείαν ἑτέραν» — τρεις λέξεις χωρισμένες από άλλες τρεις.'},
+ j5:{a:'αὐτὴν',m:'τη γνώση αυτή … την',w:'Αναφέρεται στη φιλοσοφία/επιστήμη. Η μτφρ. το ΟΝΟΜΑΖΕΙ για να μη χαθεί.'},
+ j6:{a:'ζητοῦμεν',m:'επιζητούμε',w:'Α΄ πληθυντικό ενεστώτα.'},
+
+ l1:{a:'ἀλλ’',m:'αλλά',w:'Αντιθετικό.'},
+ l2:{a:'ὥσπερ',m:'όπως',w:'Παραβολικό — ζευγαρώνει με το «οὕτω» της επόμενης περιόδου.'},
+ l3:{a:'ἄνθρωπος',m:'εκείνος ο άνθρωπος',w:'Χωρίς άρθρο στα αρχαία = «ένας άνθρωπος, όποιος».'},
+ l4:{a:'φαμέν',m:'λέγεται',w:'⚠ Κατά λέξη «ΛΕΜΕ» (α΄ πληθ.). Η μτφρ. το κάνει απρόσωπο.'},
+ l5:{a:'ἐλεύθερος',m:'ελεύθερος',w:'Κατηγορούμενο.'},
+ l6:{a:'ὁ αὑτοῦ ἕνεκα … ὤν',m:'που υπάρχει για τον εαυτό του',w:'⭐⭐ ΠΡΟΣΕΞΕ ΤΗ ΔΑΣΕΙΑ: «αὑτοῦ» (= ἑαυτοῦ, του εαυτού του) ΔΕΝ είναι «αὐτοῦ» (= αυτού). Επιθετική μετοχή του εἰμί με άρθρο.'},
+ l7:{a:'μὴ ἄλλου',m:'όχι για κάποιον άλλον',w:'Άρνηση «μή» επειδή είναι υποθετική/γενική έννοια, όχι «οὐ».'},
+
+ m1:{a:'οὕτω',m:'έτσι',w:'Κλείνει το «ὥσπερ».'},
+ m2:{a:'αὐτὴν',m:'αυτήν',w:'Τη φιλοσοφία. Το ρήμα «επιζητούμε» εννοείται από πάνω.'},
+ m3:{a:'ὡς μόνην οὖσαν ἐλευθέραν',m:'ως τη μόνη ελεύθερη',w:'Κατηγορηματική μετοχή με «ὡς» = «επειδή είναι η μόνη ελεύθερη».'},
+ m4:{a:'τῶν ἐπιστημῶν',m:'επιστήμη',w:'⚠ ΔΙΑΙΡΕΤΙΚΗ ΓΕΝΙΚΗ: «η μόνη ελεύθερη ΑΠΟ ΤΙΣ επιστήμες». Η μτφρ. τη συμπτύσσει σε ενικό.'},
+
+ n1:{a:'μόνη',m:'η μόνη',w:'Επαναλαμβάνει το «μόνην» — έμφαση.'},
+ n2:{a:'γὰρ',m:'γιατί',w:'Τρίτο «γὰρ» του κειμένου.'},
+ n3:{a:'αὕτη … ἐστιν',m:'είναι',w:'⚠ «αὕτη» με ΨΙΛΗ = αυτή εδώ (δεικτική). Μην τη μπερδέψεις με το «αὑτῆς» δίπλα, που έχει ΔΑΣΕΙΑ.'},
+ n4:{a:'αὑτῆς ἕνεκέν',m:'που υπάρχει γι’ αυτήν την ίδια',w:'⭐ ΔΑΣΕΙΑ ξανά: «αὑτῆς» = ἑαυτῆς. Κλείνει το επιχείρημα με την ίδια λέξη που άνοιξε τον ορισμό του ελεύθερου («αὑτοῦ ἕνεκα»).'}
+};
+
+var SEGS = [
+{n:1,
+ a:[['Διὰ ','k1'],['γὰρ ','k0'],['τὸ θαυμάζειν ','k1'],['οἱ ἄνθρωποι ','k2'],['καὶ νῦν ','k3'],['καὶ τὸ πρῶτον ','k4'],['ἤρξαντο ','k5'],['φιλοσοφεῖν','k6'],[', ',0]],
+ m:[['Γιατί','k0'],[', ',0],['όπως συμβαίνει και τώρα','k3'],[', ',0],['οι άνθρωποι','k2'],[' ',0],['άρχισαν','k5'],[' ',0],['για πρώτη φορά','k4'],[' ',0],['να φιλοσοφούν','k6'],[' ',0],['από περιέργεια και θαυμασμό','k1'],['. ',0]]},
+{n:2,
+ a:[['ἐξ ἀρχῆς ','a1'],['μὲν ',0],['τὰ πρόχειρα ','a2'],['τῶν ἀτόπων ','a3'],['θαυμάσαντες','a4'],[', ',0]],
+ m:[['Στην αρχή','a1'],[' ',0],['θεώρησαν άξια θαυμασμού','a4'],[' ',0],['τα παράξενα','a3'],[' ',0],['της καθημερινής ζωής','a2'],[' ',0]]},
+{n:3,
+ a:[['εἶτα ','b1'],['κατὰ μικρὸν ','b2'],['οὕτω ','b3'],['προϊόντες ','b4']],
+ m:[['και','b1'],[', ',0],['προχωρώντας','b4'],[' ',0],['σιγά σιγά','b2'],[' ',0],['με αυτόν τον τρόπο','b3'],[', ',0]]},
+{n:4,
+ a:[['καὶ ','c0'],['περὶ τῶν μειζόνων ','c1'],['διαπορήσαντες','c2'],[', ',0]],
+ m:[['άρχισαν να προβληματίζονται','c2'],[' ',0],['και','c0'],[' ',0],['για τα πιο σημαντικά','c1'],[', ',0]]},
+{n:5,
+ a:[['οἷον ','d1'],['περί τε ',0],['τῶν τῆς σελήνης παθημάτων ','d2'],['καὶ ',0],['τῶν περὶ τὸν ἥλιον ','d3'],['καὶ ',0],['τὰ ἄστρα ','d4'],['καὶ περὶ ',0],['τῆς τοῦ παντὸς γενέσεως','d5'],['. ',0]],
+ m:[['όπως λ.χ.','d1'],[' για ',0],['τα φαινόμενα της σελήνης','d2'],[' και ',0],['του ήλιου','d3'],[', για ',0],['τα άστρα','d4'],[', για ',0],['τη γέννηση του σύμπαντος','d5'],['. ',0]]},
+{n:6,
+ a:[['Ὁ ','e1'],['δ’ ','e2'],['ἀπορῶν ','e1'],['καὶ ',0],['θαυμάζων ','e3'],['οἴεται ','e4'],['ἀγνοεῖν ','e5']],
+ m:[['Αυτός','e1'],[' ',0],['όμως','e2'],[' ',0],['που απορεί','e1'],[' και ',0],['που θαυμάζει','e3'],[', ',0],['αντιλαμβάνεται','e4'],[' ',0],['ότι αγνοεί','e5'],[' ',0]]},
+{n:7,
+ a:[['(',0],['διὸ ','f1'],['καὶ ',0],['ὁ φιλόμυθος ','f2'],['φιλόσοφός ','f3'],['πώς ','f4'],['ἐστιν','f5'],['· ',0],['ὁ ','f7'],['γὰρ ','f6'],['μῦθος ','f7'],['σύγκειται ','f8'],['ἐκ θαυμασίων','f9'],[')· ',0]],
+ m:[['(',0],['γι’ αυτό','f1'],[' και ',0],['όποιος αγαπά τους μύθους','f2'],[' ',0],['είναι','f5'],[' ',0],['κατά κάποιο τρόπο','f4'],[' και ',0],['φιλόσοφος','f3'],[', ',0],['αφού','f6'],[' ',0],['οι μύθοι','f7'],[' ',0],['συντίθενται','f8'],[' ',0],['από γεγονότα θαυμάσια','f9'],['). ',0]]},
+{n:8,
+ a:[['ὥστ’ ','g1'],['εἴπερ ','g2'],['διὰ τὸ φεύγειν ','g3'],['τὴν ἄγνοιαν ','g4'],['ἐφιλοσόφησαν','g5'],[', ',0],['φανερὸν ','g6'],['ὅτι ','g7'],['διὰ τὸ εἰδέναι ','g8'],['τὸ ἐπίστασθαι ','g9'],['ἐδίωκον ','g10'],['καὶ ',0],['οὐ ','g11'],['χρήσεώς τινος ','g12'],['ἕνεκεν','g13'],['. ',0]],
+ m:[['Εφόσον','g2'],[' ',0],['λοιπόν','g1'],[' ',0],['οι άνθρωποι φιλοσόφησαν','g5'],[' ',0],['για να ξεφύγουν','g3'],[' ',0],['από την άγνοιά τους','g4'],[', ',0],['είναι φανερό','g6'],[' ',0],['ότι','g7'],[' ',0],['επιζήτησαν','g10'],[' ',0],['την επιστήμη','g9'],[' ',0],['για την ίδια τη γνώση','g8'],[' και ',0],['όχι','g11'],[' ',0],['χάριν','g13'],[' ',0],['κάποιας χρησιμότητας','g12'],['. ',0]]},
+{n:9,
+ a:[['Μαρτυρεῖ ','h1'],['δὲ ',0],['αὐτὸ τὸ συμβεβηκός','h2'],['· ',0]],
+ m:[['Αυτό ',0],['φαίνεται','h1'],[' και ',0],['από την πορεία των πραγμάτων','h2'],['. ',0]]},
+{n:10,
+ a:[['σχεδὸν ','i1'],['γὰρ ',0],['πάντων ','i2'],['ὑπαρχόντων ','i3'],['τῶν ἀναγκαίων ','i2'],['καὶ ',0],['τῶν πρὸς ῥᾳστώνην ','i4'],['καὶ ',0],['διαγωγὴν ','i5'],['ἡ τοιαύτη φρόνησις ','i6'],['ἤρξατο ζητεῖσθαι','i7'],['. ',0]],
+ m:[['Μόνο όταν ',0],['όλες','i2'],[' ',0],['σχεδόν','i1'],[' ',0],['οι άμεσες ανάγκες τους','i2'],[' ',0],['ικανοποιήθηκαν','i3'],[', και το ίδιο συνέβη με ',0],['την άνεση','i4'],[' και ',0],['την απόλαυσή τους','i5'],[', μόνο τότε οι άνθρωποι ',0],['στράφηκαν σ’','i7'],[' ',0],['αυτού του είδους την πνευματική αναζήτηση','i6'],['. ',0]]},
+{n:11,
+ a:[['Δῆλον ','j1'],['οὖν ','j2'],['ὡς ','j3'],['δι’ οὐδεμίαν ','j4'],['αὐτὴν ','j5'],['ζητοῦμεν ','j6'],['χρείαν ἑτέραν','j4'],[', ',0]],
+ m:[['Είναι','j1'],[' ',0],['λοιπόν','j2'],[' ',0],['φανερό','j1'],[' ',0],['ότι','j3'],[' ',0],['τη γνώση αυτή','j5'],[' ',0],['δεν','j4'],[' ',0],['την','j5'],[' ',0],['επιζητούμε','j6'],[' ',0],['για να καλύψει άλλη ανάγκη','j4'],[', ',0]]},
+{n:12,
+ a:[['ἀλλ’ ','l1'],['ὥσπερ ','l2'],['ἄνθρωπος','l3'],[', ',0],['φαμέν','l4'],[', ',0],['ἐλεύθερος ','l5'],['ὁ αὑτοῦ ἕνεκα ','l6'],['καὶ ',0],['μὴ ἄλλου ','l7'],['ὤν','l6'],[', ',0]],
+ m:[['αλλά','l1'],[', ',0],['όπως','l2'],[' ',0],['λέγεται','l4'],[' ότι ',0],['ελεύθερος','l5'],[' είναι ',0],['εκείνος ο άνθρωπος','l3'],[' ',0],['που υπάρχει για τον εαυτό του','l6'],[' και ',0],['όχι για κάποιον άλλον','l7'],[', ',0]]},
+{n:13,
+ a:[['οὕτω ','m1'],['καὶ ',0],['αὐτὴν ','m2'],['ὡς μόνην οὖσαν ἐλευθέραν ','m3'],['τῶν ἐπιστημῶν','m4'],['· ',0]],
+ m:[['έτσι','m1'],[' επιζητούμε και ',0],['αυτήν','m2'],[' ',0],['ως τη μόνη ελεύθερη','m3'],[' ',0],['επιστήμη','m4'],['. ',0]]},
+{n:14,
+ a:[['μόνη ','n1'],['γὰρ ','n2'],['αὕτη ','n3'],['αὑτῆς ἕνεκέν ','n4'],['ἐστιν','n3'],['.',0]],
+ m:[['γιατί','n2'],[' ',0],['είναι','n3'],[' ',0],['η μόνη','n1'],[' ',0],['που υπάρχει γι’ αυτήν την ίδια','n4'],['.',0]]}
+];
+
+/* ── ΤΟ ΚΕΙΜΕΝΟ ΠΟΥ ΜΟΥ ΕΔΩΣΕ, ΑΥΤΟΛΕΞΕΙ. Ο μοναδικός κριτής. ────── */
+var TRUE_A = 'Διὰ γὰρ τὸ θαυμάζειν οἱ ἄνθρωποι καὶ νῦν καὶ τὸ πρῶτον ἤρξαντο φιλοσοφεῖν, ἐξ ἀρχῆς μὲν τὰ πρόχειρα τῶν ἀτόπων θαυμάσαντες, εἶτα κατὰ μικρὸν οὕτω προϊόντες καὶ περὶ τῶν μειζόνων διαπορήσαντες, οἷον περί τε τῶν τῆς σελήνης παθημάτων καὶ τῶν περὶ τὸν ἥλιον καὶ τὰ ἄστρα καὶ περὶ τῆς τοῦ παντὸς γενέσεως. Ὁ δ’ ἀπορῶν καὶ θαυμάζων οἴεται ἀγνοεῖν (διὸ καὶ ὁ φιλόμυθος φιλόσοφός πώς ἐστιν· ὁ γὰρ μῦθος σύγκειται ἐκ θαυμασίων)· ὥστ’ εἴπερ διὰ τὸ φεύγειν τὴν ἄγνοιαν ἐφιλοσόφησαν, φανερὸν ὅτι διὰ τὸ εἰδέναι τὸ ἐπίστασθαι ἐδίωκον καὶ οὐ χρήσεώς τινος ἕνεκεν. Μαρτυρεῖ δὲ αὐτὸ τὸ συμβεβηκός· σχεδὸν γὰρ πάντων ὑπαρχόντων τῶν ἀναγκαίων καὶ τῶν πρὸς ῥᾳστώνην καὶ διαγωγὴν ἡ τοιαύτη φρόνησις ἤρξατο ζητεῖσθαι. Δῆλον οὖν ὡς δι’ οὐδεμίαν αὐτὴν ζητοῦμεν χρείαν ἑτέραν, ἀλλ’ ὥσπερ ἄνθρωπος, φαμέν, ἐλεύθερος ὁ αὑτοῦ ἕνεκα καὶ μὴ ἄλλου ὤν, οὕτω καὶ αὐτὴν ὡς μόνην οὖσαν ἐλευθέραν τῶν ἐπιστημῶν· μόνη γὰρ αὕτη αὑτῆς ἕνεκέν ἐστιν.';
+
+var TRUE_M = 'Γιατί, όπως συμβαίνει και τώρα, οι άνθρωποι άρχισαν για πρώτη φορά να φιλοσοφούν από περιέργεια και θαυμασμό. Στην αρχή θεώρησαν άξια θαυμασμού τα παράξενα της καθημερινής ζωής και, προχωρώντας σιγά σιγά με αυτόν τον τρόπο, άρχισαν να προβληματίζονται και για τα πιο σημαντικά, όπως λ.χ. για τα φαινόμενα της σελήνης και του ήλιου, για τα άστρα, για τη γέννηση του σύμπαντος. Αυτός όμως που απορεί και που θαυμάζει, αντιλαμβάνεται ότι αγνοεί (γι’ αυτό και όποιος αγαπά τους μύθους είναι κατά κάποιο τρόπο και φιλόσοφος, αφού οι μύθοι συντίθενται από γεγονότα θαυμάσια). Εφόσον λοιπόν οι άνθρωποι φιλοσόφησαν για να ξεφύγουν από την άγνοιά τους, είναι φανερό ότι επιζήτησαν την επιστήμη για την ίδια τη γνώση και όχι χάριν κάποιας χρησιμότητας. Αυτό φαίνεται και από την πορεία των πραγμάτων. Μόνο όταν όλες σχεδόν οι άμεσες ανάγκες τους ικανοποιήθηκαν, και το ίδιο συνέβη με την άνεση και την απόλαυσή τους, μόνο τότε οι άνθρωποι στράφηκαν σ’ αυτού του είδους την πνευματική αναζήτηση. Είναι λοιπόν φανερό ότι τη γνώση αυτή δεν την επιζητούμε για να καλύψει άλλη ανάγκη, αλλά, όπως λέγεται ότι ελεύθερος είναι εκείνος ο άνθρωπος που υπάρχει για τον εαυτό του και όχι για κάποιον άλλον, έτσι επιζητούμε και αυτήν ως τη μόνη ελεύθερη επιστήμη. γιατί είναι η μόνη που υπάρχει γι’ αυτήν την ίδια.';
+
+var FAMS = [
+ {h:'θαυμάζω — τέσσερις φορές, τέσσερις αποδόσεις',
+  p:'Η ίδια ρίζα διατρέχει όλο το κείμενο. Η μτφρ. ΔΕΝ τη δίνει ποτέ ίδια — γι’ αυτό σε μπερδεύει.',
+  l:['<b>τὸ θαυμάζειν</b> → από περιέργεια και θαυμασμό','<b>θαυμάσαντες</b> → θεώρησαν άξια θαυμασμού','<b>θαυμάζων</b> → που θαυμάζει','<b>ἐκ θαυμασίων</b> → από γεγονότα θαυμάσια']},
+ {h:'φιλοσοφῶ / ἄρχομαι — τα ίδια ρήματα δύο φορές',
+  p:'Πρόσεξε πρόσωπο και χρόνο: το ένα ζευγάρι είναι πληθυντικός, το άλλο ενικός.',
+  l:['<b>ἤρξαντο</b> (πληθ.) → άρχισαν &nbsp;·&nbsp; <b>ἤρξατο</b> (ενικ.) → άρχισε [να αναζητείται]','<b>φιλοσοφεῖν</b> → να φιλοσοφούν &nbsp;·&nbsp; <b>ἐφιλοσόφησαν</b> → φιλοσόφησαν']},
+ {h:'⚠ ΔΑΣΕΙΑ ή ΨΙΛΗ; — η πιο ακριβή παγίδα',
+  p:'Δύο γράμματα διαφορά, εντελώς άλλη λέξη. Το πνεύμα ΕΙΝΑΙ η σημασία.',
+  l:['<b>αὑτοῦ</b> / <b>αὑτῆς</b> (δασεία) = ΕΑΥΤΟΥ, εαυτής','<b>αὐτὴν</b> / <b>αὕτη</b> (ψιλή) = αυτήν, αυτή εδώ','Στην τελευταία αράδα υπάρχουν <b>και τα δύο</b>: «αὕτη αὑτῆς ἕνεκέν ἐστιν».']},
+ {h:'εἰδέναι ≠ ἐπίστασθαι',
+  p:'Στέκονται δίπλα δίπλα στην ίδια πρόταση και σημαίνουν άλλο πράγμα.',
+  l:['<b>εἰδέναι</b> (οἶδα) → η γνώση, το να ξέρεις','<b>ἐπίστασθαι</b> (ἐπίσταμαι) → η ΕΠΙΣΤΗΜΗ, η γνώση σε βάθος']},
+ {h:'ἕνεκα / ἕνεκεν — μπαίνει ΜΕΤΑ τη λέξη του',
+  p:'Τρεις φορές, και κάθε φορά η γενική προηγείται. Στα νέα η πρόθεση πάει μπροστά.',
+  l:['<b>χρήσεώς τινος ἕνεκεν</b> → χάριν κάποιας χρησιμότητας','<b>ὁ αὑτοῦ ἕνεκα … ὤν</b> → που υπάρχει για τον εαυτό του','<b>αὑτῆς ἕνεκέν ἐστιν</b> → υπάρχει γι’ αυτήν την ίδια']},
+ {h:'Οι μετοχές — ο κανόνας που ΠΑΝΤΑ ρωτιέται',
+  p:'Σχεδόν καμία αρχαία μετοχή δεν μένει μετοχή στη μετάφραση.',
+  l:['<b>θαυμάσαντες, διαπορήσαντες</b> → ΚΥΡΙΑ ΡΗΜΑΤΑ («θεώρησαν», «άρχισαν να»)','<b>ὁ ἀπορῶν, ὁ … ὤν</b> → ΑΝΑΦΟΡΙΚΕΣ («αυτός που…», «που υπάρχει…»)','<b>πάντων ὑπαρχόντων</b> (γενική απόλυτη) → ΧΡΟΝΙΚΗ («όταν ικανοποιήθηκαν»)','<b>προϊόντες</b> → μένει μετοχή («προχωρώντας»)']}
+];
+
+/* ═══ helpers ═══ */
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+function norm(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ς/g,'σ').toLowerCase()
+  .replace(/[’'`΄´]/g,'').replace(/[.,·;:()\[\]!?«»"]/g,' ').replace(/\s+/g,' ').trim();}
+function join(seg,side){return seg[side].map(function(t){return t[0]}).join('');}
+function clean(s){return s.replace(/\s+/g,' ').trim();}
+
+/* ⭐ Ο ΕΛΕΓΧΟΣ. Αν τα κομμάτια δεν ξαναφτιάχνουν το κείμενο, ΦΩΝΑΖΕΙ. */
+function selfCheck(){
+  var a=clean(SEGS.map(function(s){return join(s,'a')}).join(''));
+  var m=clean(SEGS.map(function(s){return join(s,'m')}).join(''));
+  var bad=[];
+  if(a!==clean(TRUE_A)) bad.push('ΑΡΧΑΙΟ: τα κομμάτια δεν δίνουν το κείμενο.\nπαρήχθη: '+a.slice(0,160)+'…');
+  if(m!==clean(TRUE_M)) bad.push('ΜΕΤΑΦΡΑΣΗ: τα κομμάτια δεν δίνουν το κείμενο.\nπαρήχθη: '+m.slice(0,160)+'…');
+  var used={},k;
+  SEGS.forEach(function(s){['a','m'].forEach(function(side){s[side].forEach(function(t){if(t[1])used[t[1]]=1})})});
+  for(k in P){ if(!used[k]) bad.push('Το ζευγάρι «'+k+'» ('+P[k].a+') δεν χρησιμοποιείται πουθενά.'); }
+  for(k in used){ if(!P[k]) bad.push('Χρησιμοποιείται κλειδί «'+k+'» που δεν έχει ζευγάρι.'); }
+  if(bad.length) $('#err').innerHTML='<div class="err">⛔ ΤΟ ΑΡΧΕΙΟ ΕΙΝΑΙ ΑΣΥΜΦΩΝΟ ΜΕ ΤΟ ΚΕΙΜΕΝΟ:\n\n'+bad.join('\n\n')+'</div>';
+  return !bad.length;
+}
+
+/* ═══ 01 · reader ═══ */
+var lit=null;
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function renderSide(seg,side){
+  return seg[side].map(function(t){
+    if(!t[1]) return '<span class="plain">'+esc(t[0])+'</span>';
+    return '<span class="k" data-k="'+t[1]+'">'+esc(t[0])+'</span>';
+  }).join('');
+}
+function buildReader(){
+  $('#reader').innerHTML = SEGS.map(function(s){
+    return '<div class="per"><div class="per-n">ΠΕΡΙΟΔΟΣ '+s.n+'</div>'+
+           '<div class="anc">'+renderSide(s,'a')+'</div>'+
+           '<div class="mod">'+renderSide(s,'m')+'</div></div>';
+  }).join('');
+}
+function light(k){
+  $$('.k.lit').forEach(function(e){e.classList.remove('lit')});
+  var note=$('#note');
+  if(!k||k===lit){ lit=null; note.className='note empty';
+    note.innerHTML='<div class="note-hint">Πάτα οποιαδήποτε υπογραμμισμένη λέξη και θα ανάψει το ζευγάρι της.</div>'; return; }
+  lit=k;
+  $$('.k[data-k="'+k+'"]').forEach(function(e){e.classList.add('lit')});
+  var p=P[k];
+  note.className='note';
+  note.innerHTML='<div class="note-pair"><span class="note-a">'+esc(p.a)+'</span>'+
+    '<span class="note-arrow">→</span><span class="note-m">'+esc(p.m)+'</span></div>'+
+    (p.w?'<div class="note-why">'+p.w+'</div>':'');
+}
+$('#reader').addEventListener('click',function(e){
+  var t=e.target.closest('.k');
+  var h=e.target.closest('.mod.hidden');
+  if(h){ h.classList.remove('hidden'); return; }
+  if(t) light(t.dataset.k);
+});
+$('#tgHide').addEventListener('click',function(){
+  this.classList.toggle('on');
+  var on=this.classList.contains('on');
+  $$('#reader .mod').forEach(function(e){e.classList.toggle('hidden',on)});
+  this.textContent = on ? 'Δείξε τη μετάφραση' : 'Κρύψε τη μετάφραση';
+});
+$('#tgAnc').addEventListener('click',function(){
+  this.classList.toggle('on');
+  var on=this.classList.contains('on');
+  $$('#reader .anc').forEach(function(e){e.style.display=on?'none':''});
+  this.textContent = on ? 'Δείξε τα αρχαία' : 'Κρύψε τα αρχαία';
+});
+$('#tgClr').addEventListener('click',function(){light(null)});
+
+/* ═══ 02 · key + families ═══ */
+function buildKey(q){
+  q=norm(q||'');
+  var rows=Object.keys(P).filter(function(k){
+    if(!q) return true;
+    return norm(P[k].a).indexOf(q)>=0 || norm(P[k].m).indexOf(q)>=0;
+  });
+  $('#kCount').textContent='· '+rows.length;
+  $('#kTable').innerHTML = rows.map(function(k){
+    var p=P[k];
+    return '<div class="krow"><div class="ka">'+esc(p.a)+'</div><div class="km">'+esc(p.m)+'</div>'+
+      (p.w?'<div class="kw">'+p.w+'</div>':'')+'</div>';
+  }).join('') || '<div class="km" style="color:var(--dim2)">τίποτα</div>';
+}
+$('#kSearch').addEventListener('input',function(){buildKey(this.value)});
+function buildFams(){
+  $('#fams').innerHTML=FAMS.map(function(f){
+    return '<div class="fam"><h3>'+f.h+'</h3><p>'+f.p+'</p><ul>'+
+      f.l.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>';
+  }).join('');
+}
+
+/* ═══ 03 · quiz ═══
+   ⭐ Ο ΚΑΝΟΝΑΣ ΤΩΝ ΑΡΧΙΚΩΝ ΧΡΟΝΩΝ ΞΑΝΑ: μια επιλογή που αποκλείεται
+   χωρίς γνώση δεν είναι παγίδα. Εδώ ο κίνδυνος είναι η ΚΟΙΝΗ ΡΙΖΑ —
+   αν η ερώτηση λέει «θαυμασμό» και μια επιλογή είναι «θαυμάσαντες»,
+   η απάντηση χαρίζεται.  Άρα οι αντιπερισπασμοί ΔΕΝ επιτρέπεται να
+   μοιράζονται ορατή ρίζα με την εκφώνηση αν δεν τη μοιράζεται και η
+   σωστή — και αντίστροφα προτιμώνται όσοι ΤΗ μοιράζονται με τη σωστή. */
+var qKeys=Object.keys(P), qCur=null, qOk=0, qN=0, qMode='mix';
+function stem(s){return norm(s).split(' ').map(function(w){return w.slice(0,4)}).filter(function(w){return w.length>3})}
+function shareStem(x,y){var A=stem(x),B=stem(y);return A.some(function(a){return B.indexOf(a)>=0})}
+function pick(n,arr){var c=arr.slice(),o=[];while(o.length<n&&c.length)o.push(c.splice(Math.floor(Math.random()*c.length),1)[0]);return o}
+function newQ(){
+  var dir = qMode==='mix' ? (Math.random()<.5?'a2m':'m2a') : qMode;
+  var key = pick(1,qKeys)[0];
+  var promptTxt = dir==='m2a' ? P[key].m : P[key].a;
+  var answerTxt = dir==='m2a' ? P[key].a : P[key].m;
+  var gives = shareStem(promptTxt,answerTxt);
+  var pool = qKeys.filter(function(k){
+    if(k===key) return false;
+    var cand = dir==='m2a' ? P[k].a : P[k].m;
+    if(norm(cand)===norm(answerTxt)) return false;
+    /* αν η σωστή ΔΕΝ μοιράζεται ρίζα με την εκφώνηση, καμία επιλογή δεν πρέπει να μοιράζεται */
+    if(!gives && shareStem(promptTxt,cand)) return false;
+    return true;
+  });
+  var opts = pick(3,pool).concat([key]);
+  opts = pick(opts.length,opts);
+  qCur={key:key,dir:dir,opts:opts};
+  $('#qDir').textContent = dir==='m2a' ? 'Ελληνικά → Αρχαία' : 'Αρχαία → Ελληνικά';
+  $('#qPrompt').textContent = dir==='m2a' ? 'Ποια αρχαία λέξη μεταφράστηκε έτσι;' : 'Πώς αποδίδεται στη μετάφραση;';
+  var w=$('#qWord'); w.textContent=promptTxt; w.className='q-word'+(dir==='m2a'?' gr':'');
+  $('#qAfter').hidden=true;
+  $('#qOpts').innerHTML = opts.map(function(k){
+    var t = dir==='m2a' ? P[k].a : P[k].m;
+    return '<button class="opt'+(dir==='m2a'?'':' gr')+'" data-k="'+k+'">'+esc(t)+'</button>';
+  }).join('');
+}
+$('#qOpts').addEventListener('click',function(e){
+  var b=e.target.closest('.opt'); if(!b||!qCur) return;
+  $$('#qOpts .opt').forEach(function(x){x.disabled=true});
+  var right = b.dataset.k===qCur.key;
+  b.classList.add(right?'right':'wrong');
+  if(!right) $('#qOpts .opt[data-k="'+qCur.key+'"]').classList.add('right');
+  qN++; if(right) qOk++;
+  $('#qOk').textContent=qOk; $('#qN').textContent=qN;
+  var p=P[qCur.key];
+  $('#qAfter').hidden=false;
+  $('#qAfter').innerHTML='<b>'+esc(p.a)+'</b> → '+esc(p.m)+(p.w?'<br>'+p.w:'');
+  qCur=null;
+});
+$('#qNext').addEventListener('click',newQ);
+$('#qMode').addEventListener('click',function(){
+  qMode = qMode==='mix' ? 'm2a' : (qMode==='m2a' ? 'a2m' : 'mix');
+  this.textContent = qMode==='mix'?'Και οι δύο κατευθύνσεις':(qMode==='m2a'?'Μόνο: Ελληνικά → Αρχαία':'Μόνο: Αρχαία → Ελληνικά');
+  newQ();
+});
+
+/* ═══ 04 · recall ═══
+   Δεν βαθμολογώ «σωστό/λάθος» — δείχνω ΠΟΙΕΣ λέξεις της μετάφρασης
+   έλειψαν.  Οι τόνοι αγνοούνται (norm), γιατί η μετάφραση μαθαίνεται
+   ως ΝΟΗΜΑ, όχι ως ορθογραφία. */
+var LSK='arx:mtf:demo';
+var rcI=0, rcScore={};
+try{ rcScore=JSON.parse(localStorage.getItem(LSK)||'{}')||{}; }catch(e){ rcScore={}; }
+function saveRc(){ try{ localStorage.setItem(LSK,JSON.stringify(rcScore)); }catch(e){} }
+function rcShow(){
+  var s=SEGS[rcI];
+  $('#rcN').textContent=s.n+' / '+SEGS.length;
+  $('#rcAnc').innerHTML=renderSide(s,'a');
+  $('#rcIn').value=''; $('#rcOut').innerHTML='';
+  rcBarUpd();
+}
+function rcBarUpd(){
+  var vals=SEGS.map(function(s){return rcScore[s.n]});
+  var done=vals.filter(function(v){return typeof v==='number'});
+  var avg = done.length ? Math.round(done.reduce(function(a,b){return a+b},0)/done.length) : 0;
+  $('#rcBar').style.transform='scaleX('+(done.length/SEGS.length)+')';
+  $('#rcPct').textContent = done.length ? avg+'%' : '—';
+  $('#rcInfo').textContent = done.length ? done.length+' από '+SEGS.length+' περιόδους · μέσος όρος' : 'καμία περίοδος ακόμη';
+}
+$('#rcGo').addEventListener('click',function(){
+  var s=SEGS[rcI];
+  var target=norm(join(s,'m')).split(' ').filter(Boolean);
+  var got={}; norm($('#rcIn').value).split(' ').filter(Boolean).forEach(function(w){got[w]=(got[w]||0)+1});
+  var hits=0;
+  var html=target.map(function(w){
+    if(got[w]){ got[w]--; hits++; return '<span class="hit">'+esc(w)+'</span>'; }
+    return '<span class="miss">'+esc(w)+'</span>';
+  }).join(' ');
+  var pct=Math.round(hits/target.length*100);
+  rcScore[s.n]=pct; saveRc();
+  $('#rcOut').innerHTML='<div class="rc-res"><div style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px">'+
+    pct+'% — '+hits+' από '+target.length+' λέξεις</div>'+html+
+    '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line2);color:var(--dim)">'+
+    join(s,'m')+'</div></div>';
+  rcBarUpd();
+});
+$('#rcSkip').addEventListener('click',function(){
+  var s=SEGS[rcI];
+  $('#rcOut').innerHTML='<div class="rc-res" style="color:var(--dim)">'+renderSide(s,'m')+'</div>';
+});
+$('#rcNext').addEventListener('click',function(){ rcI=(rcI+1)%SEGS.length; rcShow(); });
+$('#rcOut').addEventListener('click',function(e){ var t=e.target.closest('.k'); if(t) light(t.dataset.k); });
+$('#rcAnc').addEventListener('click',function(e){ var t=e.target.closest('.k'); if(t) light(t.dataset.k); });
+
+/* ═══ tabs ═══ */
+$$('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    $$('.tab').forEach(function(x){x.setAttribute('aria-selected','false')});
+    t.setAttribute('aria-selected','true');
+    $$('.pane').forEach(function(p){p.classList.remove('on')});
+    $('#p-'+t.dataset.p).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+/* ═══ boot ═══ */
+selfCheck();
+buildReader(); buildKey(''); buildFams(); newQ(); rcShow();
+</script>
+</body>
+</html>
