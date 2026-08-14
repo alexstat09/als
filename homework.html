@@ -341,10 +341,37 @@
   dialog.hw-dlg{ border:0; padding:0; background:transparent; max-width:none; max-height:none; }
   dialog.hw-dlg::backdrop{ background:rgba(4,4,6,.82); backdrop-filter:blur(3px); }
   dialog.hw-dlg[open]{ display:flex; align-items:center; justify-content:center; margin:auto; width:min(560px,calc(100vw - 28px)); }
-  .hw-sheet{ width:100%; background:#0b0b0d; border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:20px; padding:22px 20px; }
+  /* Το `tabindex="-1"` υπάρχει για να ΔΕΧΕΤΑΙ την εστίαση αντί για το πρώτο
+     κουμπί (δες openSheet). Ένα δοχείο που δέχεται εστίαση δεν πρέπει να
+     ζωγραφίζει δαχτυλίδι — δεν είναι χειριστήριο. */
+  .hw-sheet{ width:100%; background:#0b0b0d; border:1px solid var(--au-line-2,rgba(255,255,255,.1)); border-radius:20px; padding:22px 20px; outline:none; }
   .hw-sheet h3{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:23px; line-height:1.15; }
   .hw-elapsed{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:44px; letter-spacing:-.02em; margin:20px 0 4px; font-variant-numeric:tabular-nums; }
   .hw-shot{ width:100%; border-radius:13px; margin-top:14px; display:block; }
+  .hw-sheet .hw-lead{ margin-top:9px; font-size:13px; line-height:1.6; color:var(--au-dim,rgba(245,242,236,.56)); }
+
+  /* ── ΤΟ ΦΥΛΛΟ ΤΩΝ ΣΗΜΕΡΙΝΩΝ · ΦΑΣΗ 3 ─────────────────────────────
+     Τέσσερα μαθήματα, ως τρία, τέλος. Ζει μέσα στο ΙΔΙΟ `dialog.hw-dlg`, άρα
+     ο κανόνας «display ΜΟΝΟ στο [open]» (σταθ. 4) ισχύει ήδη από πάνω και δεν
+     ξαναγράφεται — μια δεύτερη γραφή του θα ήταν δεύτερη ευκαιρία να γίνει
+     λάθος.
+     ⚠️ Το `.hw-tick` της κάρτας είναι ΑΠΟΓΟΝΟΣ (`.hw-row .hw-tick`), οπότε το
+     δικό μας δηλώνεται κι αυτό ως απόγονος: μια σκέτη `.hw-tick{}` εδώ θα
+     έβαφε ΚΑΙ τις γραμμές των εργασιών (σταθερή αρχή 26). */
+  .hw-pick{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:18px; }
+  .hw-pick-b{ display:flex; align-items:center; gap:11px; text-align:left;
+    border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:transparent;
+    color:var(--au-ivory,#f5f2ec); border-radius:13px; padding:13px 13px;
+    font:400 14px/1.2 var(--au-sans,-apple-system,sans-serif); cursor:pointer; }
+  .hw-pick-b .hw-tick{ width:3px; align-self:stretch; min-height:19px; border-radius:2px;
+    background:rgba(var(--hw-c),.85); flex:none; }
+  .hw-pick-b .hw-ord{ margin-left:auto; flex:none; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
+    font-size:11px; letter-spacing:.06em; color:rgb(var(--hw-c)); }
+  .hw-pick-b[aria-pressed="true"]{ border-color:rgba(var(--hw-c),.55); background:rgba(var(--hw-c),.09); }
+  .hw-pick-b:disabled{ opacity:.34; cursor:default; }
+  /* Ο περιορισμός ΛΕΓΕΤΑΙ, δεν επιβάλλεται σιωπηλά: ένα τέταρτο πάτημα που δεν
+     κάνει τίποτα χωρίς εξήγηση είναι χειριστήριο που δεν χειρίζεται. */
+  .hw-hint{ margin-top:13px; font-size:12px; line-height:1.55; color:var(--au-dim,rgba(245,242,236,.56)); min-height:19px; }
 
   .hw-foot{ margin:44px 0 10px; padding-top:18px; border-top:1px solid var(--au-line,rgba(255,255,255,.06));
     font-size:11.5px; line-height:1.7; color:var(--au-faint,rgba(245,242,236,.3)); }
@@ -474,7 +501,7 @@
 
 <!-- ΤΟ ΠΑΡΑΘΥΡΟ ΓΡΑΨΙΜΑΤΟΣ -->
 <dialog class="hw-dlg" id="hwFocus">
-  <div class="hw-sheet">
+  <div class="hw-sheet" tabindex="-1">
     <div class="hw-eyebrow" id="hwFocusKicker">Γραπτό</div>
     <h3 id="hwFocusTitle"></h3>
     <div class="hw-elapsed" id="hwFocusClock">00:00</div>
@@ -485,6 +512,27 @@
       <button class="hw-btn" id="hwFocusPause" type="button">Παύση</button>
       <button class="hw-btn hw-quiet" id="hwFocusShot" type="button">Δες τη φωτογραφία</button>
       <button class="hw-btn hw-quiet" id="hwFocusClose" type="button">Κλείσε</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ══ ΤΟ ΦΥΛΛΟ ΤΩΝ ΣΗΜΕΡΙΝΩΝ · ΦΑΣΗ 3 ═══════════════════════════════
+     Ο ΧΕΙΡΟΚΙΝΗΤΟΣ ΔΡΟΜΟΣ ΓΙΑ ΤΙΣ 21:45. Ως την als-v479 το ξαναδιάβασμα
+     εξαρτιόταν 100% από το Google Calendar, και τα `gcal:*` είναι ΤΟΠΙΚΑ ΣΤΗ
+     ΣΥΣΚΕΥΗ — άρα στο κινητό, όπου ΘΑ χρησιμοποιηθεί, η μία τελετουργία που
+     αξίζει ~3× έλεγε «δεν ξέρω» και σταματούσε.
+     Τέσσερα μαθήματα, ως τρία, ένα πάτημα ανά μάθημα. -->
+<dialog class="hw-dlg" id="hwLessons">
+  <div class="hw-sheet" tabindex="-1">
+    <div class="hw-eyebrow">Απόψε</div>
+    <h3>Ποια μαθήματα είχες σήμερα;</h3>
+    <p class="hw-lead" id="hwPickLead"></p>
+    <div class="hw-pick" id="hwPickGrid"></div>
+    <div class="hw-hint" id="hwPickHint"></div>
+    <div class="hw-acts">
+      <button class="hw-btn hw-solid" id="hwPickSave" type="button">Έτοιμο</button>
+      <button class="hw-btn hw-quiet hw-off" id="hwPickCal" type="button">Άσε το ημερολόγιο</button>
+      <button class="hw-btn hw-quiet" id="hwPickClose" type="button">Άκυρο</button>
     </div>
   </div>
 </dialog>
@@ -604,7 +652,11 @@
      συγχρονισμός) — μετά από εκείνο δεν είναι πια «μόλις». */
   var moved = null;
 
-  function blank(){ return { v:1, tasks:{}, samples:{} }; }
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35: ΚΑΘΕ ΝΕΟ ΠΕΔΙΟ ΓΡΑΦΕΤΑΙ ΚΑΙ ΕΔΩ ΚΑΙ ΣΤΟΝ load(),
+     στο ΙΔΙΟ commit. Ο load() αντιγράφει πρώτα ΟΛΑ τα κλειδιά (τίποτα δεν
+     χάνεται) και μετά κανονικοποιεί όσα ξέρει — αλλά ένα πεδίο που λείπει από
+     το blank() γεννιέται undefined σε καθαρή συσκευή. */
+  function blank(){ return { v:1, tasks:{}, samples:{}, lessons:{} }; }
 
   function banner(msg){
     var b = $('hwBanner');
@@ -630,6 +682,7 @@
     b.v = 1;
     b.tasks   = (s.tasks   && typeof s.tasks   === 'object' && !Array.isArray(s.tasks))   ? s.tasks   : {};
     b.samples = (s.samples && typeof s.samples === 'object' && !Array.isArray(s.samples)) ? s.samples : {};
+    b.lessons = (s.lessons && typeof s.lessons === 'object' && !Array.isArray(s.lessons)) ? s.lessons : {};
     return b;
   }
   function loadPics(){
@@ -646,9 +699,19 @@
      Δες study-stamp.js. */
   var STAMP = (typeof window.StudyStamp === 'function')
     ? window.StudyStamp(
-        function(){ return state ? [state.tasks, state.samples] : []; },
+        /* ⭐⭐ ΤΟ `lessons` ΕΙΝΑΙ ΤΟ ΤΡΙΤΟ, ΚΑΙ ΧΩΡΙΣ ΑΥΤΟ ΜΙΑ ΔΙΟΡΘΩΣΗ ΓΙΝΕΤΑΙ
+           ΠΡΟΣΘΕΣΗ. Ένας πίνακας από strings πέφτει στο `allPrim` του
+           `mergeArray` και ΕΝΩΝΕΤΑΙ: διορθώνει σε μία συσκευή [ιστορία] →
+           [λατινικά], και το cloud γυρίζει [ιστορία, λατινικά]. Με σφραγίδα
+           ΑΝΑ ΜΕΡΑ, το `mergeObject` σταματάει στην εγγραφή και κρατάει
+           ΟΛΟΚΛΗΡΗ τη νεότερη επιλογή. Το κλειδώνει το homework-sync.test.js. */
+        function(){ return state ? [state.tasks, state.samples, state.lessons] : []; },
         /* Παλιές εγγραφές παίρνουν τον ΠΡΑΓΜΑΤΙΚΟ τους χρόνο, ποτέ το τώρα:
-           αλλιώς «όποια συσκευή άνοιξε τελευταία τη σελίδα κερδίζει». */
+           αλλιώς «όποια συσκευή άνοιξε τελευταία τη σελίδα κερδίζει».
+           ⚠️ Το `lessons` γεννιέται ΜΕ σφραγίδα από την πρώτη του μέρα (δεν
+           υπάρχει παλιά εγγραφή του σε καμία συσκευή), άρα δεν έχει «παλιό
+           χρόνο» να ανακτήσει — και ένα `Date.now()` εδώ θα σήμαινε ακριβώς το
+           «όποια συσκευή άνοιξε τελευταία κερδίζει» που η σφραγίδα αποτρέπει. */
         function(i, k, rec){ return i === 0 ? (+rec.done || +rec.ts || 0) : 0; }
       )
     : (function(){ var said = 0; return {
@@ -661,7 +724,17 @@
      σφράγιζε σαν δική μας αλλαγή ό,τι μόλις ήρθε από το cloud. */
   function reload(){
     var s = load();
-    if (s === null){ if (!state) state = blank(); return false; }
+    /* ⭐⭐ Η ΣΠΟΡΑ ΓΙΝΕΤΑΙ ΚΑΙ ΕΔΩ, ΚΑΙ ΤΟ ΓΙΑΤΙ ΤΟ ΒΡΗΚΕ Η ΦΑΣΗ 3.
+       Αυτός ο κλάδος πιάνει ΚΑΙ την αδιάβαστη ΚΑΙ την ΑΠΟΥΣΑ αποθήκη — δηλαδή
+       κάθε καθαρή εγκατάσταση. Χωρίς `STAMP.seed()` εδώ, το `snap` μένει
+       `null`, το πρώτο `save()` μετράει ως «πρώτο» και ο STAMP σκόπιμα ΔΕΝ
+       σφραγίζει τίποτα (η αποτυχία του γέρνει προς «δεν κέρδισα»).
+       Για τις ΕΡΓΑΣΙΕΣ αυτό ήταν σχεδόν αβλαβές: η πρώτη εγγραφή μιας εργασίας
+       δεν έχει αντίπαλο στο cloud, και η επόμενη αλλαγή σφραγίζει κανονικά.
+       Για το `lessons` είναι ΑΚΡΙΒΩΣ το bug που η φάση 3 υπάρχει για να
+       αποτρέψει: η ΠΡΩΤΗ επιλογή μιας μέρας είναι συνήθως και η ΜΟΝΗ, οπότε
+       χωρίς σφραγίδα μια διόρθωση σε δεύτερη συσκευή γίνεται ΠΡΟΣΘΕΣΗ. */
+    if (s === null){ if (!state){ state = blank(); STAMP.seed(); } return false; }
     /* Η επιβεβαίωση της μετακίνησης αφορά ΤΗ ΔΙΚΗ ΤΟΥ πράξη σε αυτή τη ματιά.
        Μόλις έρθει κατάσταση από τον δίσκο ή το cloud, δεν είναι πια νέα. */
     moved = null;
@@ -734,8 +807,14 @@
      ταφόπλακα είναι φωλιασμένη κι αυτή — έτσι ακριβώς την ψάχνει το
      diffTomb/subTomb του sync.js. Οι φωτογραφίες είναι χάρτης πρώτου
      επιπέδου. Δύο σχήματα, ένας κανόνας. */
-  function tombTask(id, ts){ tombPath(KEY,  ['tasks'], id, ts); }
-  function tombPic(id, ts){  tombPath(PKEY, [],        id, ts); }
+  function tombTask(id, ts){ tombPath(KEY,  ['tasks'],   id, ts); }
+  function tombPic(id, ts){  tombPath(PKEY, [],          id, ts); }
+  /* Η ΑΚΥΡΩΣΗ ΜΙΑΣ ΕΠΙΛΟΓΗΣ ΕΙΝΑΙ ΣΒΗΣΙΜΟ, ΚΑΙ ΕΝΑ ΣΒΗΣΙΜΟ ΧΩΡΙΣ ΤΑΦΟΠΛΑΚΑ
+     ΓΥΡΙΖΕΙ. Ίδιο σχήμα με τις εργασίες: φωλιασμένος χάρτης, κλειδί η μέρα.
+     ⚠️ Το `addedAt()` του sync.js διαβάζει `ts || _ts`, και η εγγραφή της μέρας
+     κουβαλάει ΜΟΝΟ `_ts` — άρα του δίνουμε ΑΥΤΟ ως `ts`, ώστε το
+     `T = max(now, ts+1)` να κυριαρχεί πάνω στη σφραγίδα της. */
+  function tombLesson(dk, ts){ tombPath(KEY, ['lessons'], dk, ts); }
 
   /* ══════════════════════════════════════════════════════════════════
      ΟΙ ΠΕΝΤΕ ΣΚΑΛΕΣ (ΜΟΝΟ ΑΝΑΓΝΩΣΗ)
@@ -899,23 +978,111 @@
     return Object.prototype.hasOwnProperty.call(DOORS, h) ? h : '';
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐⭐ ΦΑΣΗ 3 · ΤΑ ΤΡΙΑ ΣΗΜΕΡΙΝΑ — Ο ΧΕΙΡΟΚΙΝΗΤΟΣ ΔΡΟΜΟΣ
+
+     Το `hw:v1.lessons` είναι ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ ανά μέρα:
+         { '2026-08-14': { subjects:['istoria','arxaia'], _ts } }
+
+     ⚠️⚠️ ΓΙΑΤΙ ΕΓΓΡΑΦΗ ΚΑΙ ΟΧΙ ΣΚΕΤΟΣ ΠΙΝΑΚΑΣ, ΚΑΙ ΕΙΝΑΙ ΟΛΟΚΛΗΡΟΣ Ο ΛΟΓΟΣ
+     ΠΟΥ ΑΥΤΟ ΤΟ ΣΧΗΜΑ ΔΟΥΛΕΥΕΙ: ένας πίνακας από strings πέφτει στο `allPrim`
+     του `mergeArray` και ΕΝΩΝΕΤΑΙ. Διορθώνει σε μία συσκευή [ιστορία] →
+     [λατινικά] και το cloud γυρίζει [ιστορία, λατινικά] — μια ΔΙΟΡΘΩΣΗ γίνεται
+     ΠΡΟΣΘΕΣΗ, σιωπηλά. Με `_ts` ανά μέρα, το `mergeObject` σταματάει στην
+     εγγραφή («κερδίζει ο νεότερος, ΟΛΟΚΛΗΡΟΣ») και ο πίνακας από μέσα δεν
+     συγχωνεύεται ποτέ. Το `state.lessons` είναι στο readMaps του STAMP.
+
+     ⭐ Η ΕΠΙΛΟΓΗ ΤΟΥ ΝΙΚΑΕΙ ΤΟ ΗΜΕΡΟΛΟΓΙΟ, γιατί είναι ΔΙΟΡΘΩΣΗ και όχι
+     δεύτερη γνώμη. Το φύλλο προ-συμπληρώνεται από το ημερολόγιο όταν υπάρχει,
+     άρα «διορθώνω» και «συμπληρώνω» είναι η ίδια κίνηση.
+
+     ⛔ ΑΠΑΝΤΑΕΙ «ΤΙ ΕΙΧΑ», ΠΟΤΕ «ΤΙ ΘΑ ΕΧΩ». Γι' αυτό ΔΕΝ τροφοδοτεί το «αύριο
+     το έχεις» της κατάταξης — εκείνο μένει ημερολόγιο, γιατί μια χειροκίνητη
+     καταγραφή του παρελθόντος δεν προβλέπει τίποτα και η als-v433 κόστισε
+     ακριβώς μία εύλογη επινοημένη τιμή.
+     ══════════════════════════════════════════════════════════════════ */
+  var MAX_LESSONS = 3;
+  var SUBJ_ORDER = ['istoria','arxaia','latinika','ekthesi'];
+
+  /* Ο αναγνώστης ΔΕΝ ΓΡΑΦΕΙ ΠΟΤΕ — ούτε καν ένα κέλυφος. Ένα `u(id)` μέσα σε
+     render είναι το bug του `nut:streak`, και εδώ θα σφράγιζε άδεια επιλογή
+     πάνω από την αληθινή του cloud. Επιστρέφει `null` = δεν έχει πει τίποτα,
+     `[]` = ΕΙΠΕ ότι δεν είχε μάθημα. Δύο διαφορετικά πράγματα. */
+  function myLessons(dk){
+    var m = state && state.lessons, r = m && m[dk];
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    if (!Array.isArray(r.subjects)) return null;
+    var out = [], i, s;
+    for (i = 0; i < r.subjects.length && out.length < MAX_LESSONS; i++){
+      s = r.subjects[i];
+      if (SUBJ[s] && out.indexOf(s) < 0) out.push(s);
+    }
+    return out;
+  }
+
+  /* Γράφει την επιλογή της μέρας. Επιστρέφει false σε αποτυχία εγγραφής, και
+     ΞΑΝΑΦΕΡΝΕΙ την προηγούμενη τιμή στη μνήμη — αλλιώς η οθόνη θα έδειχνε κάτι
+     που ο δίσκος δεν κρατάει (σταθερή αρχή 17). */
+  function setLessons(dk, subs){
+    if (!state.lessons || typeof state.lessons !== 'object' || Array.isArray(state.lessons)) state.lessons = {};
+    var clean = [], i;
+    for (i = 0; i < (subs || []).length && clean.length < MAX_LESSONS; i++)
+      if (SUBJ[subs[i]] && clean.indexOf(subs[i]) < 0) clean.push(subs[i]);
+    var had = Object.prototype.hasOwnProperty.call(state.lessons, dk), prev = state.lessons[dk];
+    state.lessons[dk] = { subjects: clean };
+    if (save()) return true;
+    if (had) state.lessons[dk] = prev; else delete state.lessons[dk];
+    return false;
+  }
+
+  /* Ακυρώνει την επιλογή και επιστρέφει τη μέρα στο ημερολόγιο. ⚠️ Η ταφόπλακα
+     μπαίνει ΜΟΝΟ μετά από ΕΠΙΒΕΒΑΙΩΜΕΝΗ εγγραφή: μια ταφόπλακα πάνω σε κάτι
+     που είναι ακόμη εκεί σβήνει κάτι που ο χρήστης κράτησε. */
+  function clearLessons(dk){
+    var m = state && state.lessons;
+    if (!m || !Object.prototype.hasOwnProperty.call(m, dk)) return false;
+    var prev = m[dk];
+    delete m[dk];
+    if (!save()){ m[dk] = prev; return false; }
+    tombLesson(dk, (prev && +prev._ts) || 0);
+    return true;
+  }
+
   /* ⭐ ΜΙΑ ΥΛΟΠΟΙΗΣΗ ΓΙΑ ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15). Τα σημερινά μαθήματα
      ζωγραφίζονται ΚΑΙ στο ΞΑΝΑΔΙΑΒΑΣΜΑ της ΜΕΡΑΣ ΚΑΙ πίσω από την πόρτα
      `#tonight`. Δύο αντίγραφα της ίδιας ανάγνωσης θα ήταν δύο απαντήσεις για
      το ίδιο βράδυ, με καθυστέρηση.
-     ⚠️ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΠΟΤΕ ΔΥΟ: «δεν έχω ημερολόγιο» δεν είναι «δεν έχεις
-     μάθημα». Το πρώτο είναι άγνοια, το δεύτερο μέτρηση (σταθερή αρχή 10). */
+     ⚠️ ΤΕΣΣΕΡΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΠΟΤΕ ΔΥΟ: «δεν έχω ημερολόγιο» δεν είναι «δεν
+     έχεις μάθημα», και «ΕΙΠΕ ότι δεν είχε» δεν είναι «το ημερολόγιο δεν
+     δείχνει». Άγνοια, μέτρηση και δήλωση, τρία διαφορετικά πράγματα με τρεις
+     διαφορετικές προτάσεις (σταθερή αρχή 10/33). */
   function tonightView(){
+    var mine = myLessons(today());
+    if (mine){
+      if (!mine.length) return { state:'mineNone', items:[] };
+      return { state:'mine', items:mine.map(function(s){
+        /* ⚠️ ΚΑΜΙΑ ΩΡΑ ΕΔΩ, ΚΑΙ ΟΥΤΕ ΜΙΑ ΠΑΥΛΑ. Μια χειροκίνητη επιλογή δεν
+           κουβαλάει ώρα — δεν είναι «άγνωστη μέτρηση», είναι μέγεθος που δεν
+           υπάρχει. Η ΣΕΙΡΑ είναι η σειρά που τα πάτησε, και τη λέει η θέση της
+           γραμμής· ένα «1ο» δίπλα της θα ήταν το ίδιο πράγμα δύο φορές. */
+        return { subject:s, title:(SUBJ[s] || {}).label || s, at:null, src:'mine' };
+      }) };
+    }
     var l = lessonsFor(0);
     if (l === null) return { state:'unknown', items:[] };
     if (!l.length)  return { state:'none', items:[] };
     return { state:'live', items:l.map(function(x){
-      return { subject:x.subject, title:x.title, at:x.at };
+      return { subject:x.subject, title:x.title, at:x.at, src:'cal' };
     }) };
   }
+  /* ⭐ ΚΑΜΙΑ ΑΠΟ ΤΙΣ ΤΡΕΙΣ ΑΔΕΙΕΣ ΠΡΟΤΑΣΕΙΣ ΔΕΝ ΕΙΝΑΙ ΠΙΑ ΑΔΙΕΞΟΔΟ: και οι
+     τρεις στέκονται δίπλα σε ΚΟΥΜΠΙ που τις λύνει. Ως την als-v479 η πρώτη
+     έλεγε «άνοιξέ το και θα γεμίζει μόνο του» — δηλαδή έστελνε σε μια ρύθμιση
+     άλλης σελίδας για κάτι που τώρα λύνεται με τέσσερα πατήματα εδώ. */
   var TONIGHT_TXT = {
-    unknown:'Δεν ξέρω τα σημερινά σου μαθήματα χωρίς το ημερολόγιο — άνοιξέ το και θα γεμίζει μόνο του με τα τρία της μέρας.',
-    none:'Το ημερολόγιο δεν δείχνει μάθημα σήμερα, οπότε δεν υπάρχει τίποτα να ξαναδιαβάσεις απόψε.'
+    unknown:'Δεν ξέρω τα σημερινά σου μαθήματα χωρίς το ημερολόγιο. Πες μου εσύ ποια είχες — κρατάνε, και συγχρονίζονται.',
+    none:'Το ημερολόγιο δεν δείχνει μάθημα σήμερα. Αν είχες, πες μου το εσύ και μετράει αυτό.',
+    mineNone:'Είπες ότι σήμερα δεν είχες μάθημα, οπότε δεν υπάρχει τίποτα να ξαναδιαβάσεις απόψε.'
   };
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1946,29 +2113,49 @@
 
     /* Ο ΙΔΙΟΣ αναγνώστης που τροφοδοτεί την πόρτα `#tonight` (σταθερή αρχή 15). */
     var tv = tonightView();
-    var review = tv.state === 'live'
+    var filled = tv.state === 'live' || tv.state === 'mine';
+    var review = filled
       ? tv.items.map(function(x){ return esc(x.title); }).join('<br>')
       : esc(TONIGHT_TXT[tv.state]);
     /* ⭐ Η ΠΟΡΤΑ ΤΩΝ 21:45 ΕΧΕΙ ΕΙΣΟΔΟ ΜΟΝΟ ΟΤΑΝ ΕΧΕΙ ΠΕΡΙΕΧΟΜΕΝΟ. Ένας
        σύνδεσμος που προσγειώνεται σε «δεν ξέρω» είναι αδιέξοδο με κουμπί. */
-    if (tv.state === 'live')
+    if (filled)
       review += '<br><a class="hw-go" href="#tonight">Μόνο αυτό</a>';
-    /* Το μάθημα των 15:15 είναι το ΠΡΩΤΟ χρονικά — τα events του GCal.day()
-       έρχονται ταξινομημένα. Αν το ημερολόγιο δεν λέει ποιο μάθημα είναι,
-       δείχνουμε τον ΤΙΤΛΟ του, όχι κενό. */
-    var recapSubj = (tv.state === 'live' && tv.items.length)
-      ? (tv.items[0].label || tv.items[0].title) : null;
+    /* ⭐ ΦΑΣΗ 3 · ΚΑΘΕ ΜΙΑ ΑΠΟ ΤΙΣ ΤΕΣΣΕΡΙΣ ΚΑΤΑΣΤΑΣΕΙΣ ΕΧΕΙ ΤΟ ΙΔΙΟ ΚΟΥΜΠΙ,
+       γιατί σε ΚΑΜΙΑ από αυτές δεν είναι σωστό να μην μπορεί να πει τι είχε. */
+    review += '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
+
+    /* Το μάθημα των 15:15 είναι το ΠΡΩΤΟ της μέρας — τα events του `GCal.day()`
+       έρχονται ταξινομημένα, και οι δικές του επιλογές μένουν στη σειρά που τις
+       πάτησε. Αν δεν το ξέρουμε, το λέμε ΜΑΖΙ με τον δρόμο για να το μάθουμε. */
+    var recapSubj = (filled && tv.items.length) ? tv.items[0].title : null;
 
     $('hwSlots').innerHTML =
       slot(PLAN.morning[0] + '–' + PLAN.morning[1], 'Το μεγάλο παράθυρο',
            'Εδώ πεθαίνει η δουλειά: εργασίες και χρέος μνήμης.', esc(morning)) +
       slot(PLAN.recap[0] + '–' + PLAN.recap[1], 'Η επανάληψη πριν',
            'Το μάθημα των 15:15, μισή ώρα πριν.',
-           recapSubj ? esc(recapSubj) : 'Χρειάζεται το ημερολόγιο για να ξέρω ποιο μάθημα έχεις στις 15:15.') +
+           recapSubj ? esc(recapSubj) : 'Δεν ξέρω ακόμη ποιο μάθημα έχεις στις 15:15.') +
       slot(PLAN.school[0] + '–' + PLAN.school[1], 'Φροντιστήριο',
            'Εδώ ΓΕΝΝΙΕΤΑΙ η εργασία. Γράψε τη γραμμή πριν βγεις.', '') +
       slot(PLAN.review[0] + '–' + PLAN.review[1], 'Ξαναδιάβασμα',
            'Τα ΣΗΜΕΡΙΝΑ τρία, την ίδια νύχτα. Ποτέ εργασία με προθεσμία.', review);
+
+    wirePick($('hwSlots'));
+  }
+  /* ⭐ ΕΝΑ ΚΟΥΜΠΙ, ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15): η ΜΕΡΑ και η πόρτα `#tonight`.
+     Η λέξη αλλάζει με την κατάσταση επειδή η ΠΡΑΞΗ αλλάζει — «πες μου» όταν δεν
+     ξέρει κανείς, «άλλαξέ τα» όταν υπάρχει ήδη απάντηση. */
+  function pickBtn(st){
+    var mine = st === 'mine' || st === 'mineNone';
+    return '<button class="hw-btn hw-quiet" type="button" data-pick="1">' +
+      (mine ? 'Άλλαξέ τα' : st === 'live' ? 'Δεν ήταν αυτά' : 'Πες μου τα σημερινά') +
+      '</button>';
+  }
+  function wirePick(host){
+    host.querySelectorAll('[data-pick]').forEach(function(b){
+      b.addEventListener('click', openLessons);
+    });
   }
   function slot(time, name, why, fill){
     return '<div class="hw-slot">' +
@@ -2040,31 +2227,144 @@
      τα σημερινά μαθήματα είναι μια απόφαση παραπάνω από όσες αντέχει.
      ⛔ ΚΑΜΙΑ εργασία με προθεσμία εδώ: η ίδια προσπάθεια αξίζει ~3× την ίδια
      νύχτα, και το χρέος πάει στο πρωινό παράθυρο.
-     🔴 ΔΗΛΩΜΕΝΟ ΚΕΝΟ: χωρίς εξουσιοδοτημένο ημερολόγιο η πόρτα λέει ότι ΔΕΝ
-     ΞΕΡΕΙ. Το να το γεμίζει ΜΟΝΟΣ του (`hw:v1.lessons` + φύλλο επιλογής) είναι
-     η ΦΑΣΗ 3 και δεν χτίστηκε εδώ.
+     ⭐⭐ ΦΑΣΗ 3: Η ΠΟΡΤΑ ΓΕΜΙΖΕΙ ΠΛΕΟΝ ΧΩΡΙΣ ΗΜΕΡΟΛΟΓΙΟ. Και στις τέσσερις
+     καταστάσεις υπάρχει το ΙΔΙΟ κουμπί, γιατί σε καμία τους δεν είναι σωστό να
+     μην μπορεί να πει τι είχε — μια πόρτα που λέει «δεν ξέρω» και σταματάει
+     είναι αδιέξοδο, όσο τίμια κι αν το λέει.
      ══════════════════════════════════════════════════════════════════ */
   function renderTonight(){
     var tv = tonightView(), body = $('hwTonightBody');
-    if (tv.state !== 'live'){
-      $('hwTonightS').textContent = tv.state === 'unknown' ? 'άγνωστα' : 'κανένα σήμερα';
-      body.innerHTML = '<div class="hw-empty">' + esc(TONIGHT_TXT[tv.state]) + '</div>';
+    var acts = '<div class="hw-acts">' + pickBtn(tv.state) + '</div>';
+    if (tv.state !== 'live' && tv.state !== 'mine'){
+      $('hwTonightS').textContent =
+        tv.state === 'unknown' ? 'άγνωστα' : tv.state === 'mineNone' ? 'κανένα, το είπες' : 'κανένα σήμερα';
+      body.innerHTML = '<div class="hw-empty">' + esc(TONIGHT_TXT[tv.state]) + acts + '</div>';
+      wirePick(body);
       return;
     }
-    $('hwTonightS').textContent = PLAN.review[0] + '–' + PLAN.review[1];
+    /* Η ΠΗΓΗ ΛΕΓΕΤΑΙ, ΓΙΑΤΙ ΔΕΝ ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΠΡΑΓΜΑ. «Από το ημερολόγιο»
+       σημαίνει μετρημένο· «όπως τα διάλεξες» σημαίνει ότι το είπε ο ίδιος —
+       και μόνο το δεύτερο μπορεί να είναι λάθος με τρόπο που να τον αφορά. */
+    $('hwTonightS').textContent = PLAN.review[0] + '–' + PLAN.review[1] +
+      ' · ' + (tv.state === 'mine' ? 'όπως τα διάλεξες' : 'από το ημερολόγιο');
     /* ⚠️ ΚΑΜΙΑ ΕΤΙΚΕΤΑ ΜΑΘΗΜΑΤΟΣ ΕΔΩ. Ο τίτλος του ημερολογίου γράφει ήδη
        «Αρχαία — φροντιστήριο»: μια δεύτερη γραμμή «Αρχαία» από κάτω είναι το
        ίδιο πράγμα δύο φορές, μισό εκατοστό μακριά. Το ΜΑΘΗΜΑ το λέει το χρώμα
        της γραμμής, η ΩΡΑ λέει τη σειρά — δύο κανάλια, δύο διαφορετικά
-       πράγματα, ποτέ το ίδιο σε δύο γλώσσες. */
+       πράγματα, ποτέ το ίδιο σε δύο γλώσσες.
+       ⭐ ΚΑΙ ΓΙ' ΑΥΤΟ Η ΧΕΙΡΟΚΙΝΗΤΗ ΕΠΙΛΟΓΗ ΔΕΝ ΤΥΠΩΝΕΙ «—»: εκεί η ώρα δεν
+       είναι άγνωστη μέτρηση, είναι μέγεθος που δεν υπάρχει. Δέκα παύλες σε μια
+       στήλη μοιάζουν με σφάλμα ανάγνωσης, και δεν είναι (σταθ. 33). */
     body.innerHTML = tv.items.map(function(x){
       return '<div class="hw-row" style="--hw-c:' + subjRgb(x.subject) + '">' +
         '<span class="hw-tick"></span>' +
         '<div class="hw-body"><div class="hw-name">' + esc(x.title) + '</div></div>' +
-        '<div class="hw-right"><div class="hw-when hw-ok hw-mono">' +
-          (x.at == null ? '—' : esc(clock(x.at))) + '</div></div>' +
+        (x.src === 'mine' ? '' :
+          '<div class="hw-right"><div class="hw-when hw-ok hw-mono">' +
+            (x.at == null ? '—' : esc(clock(x.at))) + '</div></div>') +
       '</div>';
+    }).join('') + acts;
+    wirePick(body);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΟ ΦΥΛΛΟ — ΤΕΣΣΕΡΑ ΜΑΘΗΜΑΤΑ, ΩΣ ΤΡΙΑ, ΤΕΛΟΣ
+
+     ⭐ Η ΣΕΙΡΑ ΕΙΝΑΙ Η ΣΕΙΡΑ ΠΟΥ ΤΑ ΠΑΤΑΕΙ, και είναι η μόνη σειρά που
+     μπορούμε να ξέρουμε: το φροντιστήριο δίνει τρία μαθήματα στη σειρά, και
+     εκείνος τα θυμάται με τη σειρά τους. Μια αλφαβητική ή «κατά συντελεστή»
+     σειρά θα ήταν δική μας εφεύρεση πάνω στα δικά του γεγονότα.
+     ⚠️ Το προσωρινό `pickBuf` ΔΕΝ είναι η αποθήκη: τίποτα δεν γράφεται στον
+     δίσκο μέχρι το «Έτοιμο», ώστε ένα «Άκυρο» να είναι πραγματικά άκυρο.
+     ══════════════════════════════════════════════════════════════════ */
+  var pickBuf = null, pickDay = null;
+
+  function openLessons(){
+    pickDay = today();
+    var mine = myLessons(pickDay);
+    if (mine){
+      pickBuf = mine.slice();
+    } else {
+      /* ΠΡΟ-ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ ΤΟ ΗΜΕΡΟΛΟΓΙΟ, όταν υπάρχει: «διορθώνω» και
+         «συμπληρώνω» γίνονται η ίδια κίνηση, και σε συνδεδεμένη συσκευή το
+         «Δεν ήταν αυτά» κοστίζει ένα πάτημα αντί για τέσσερα. */
+      var cal = lessonsFor(0) || [];
+      pickBuf = [];
+      cal.forEach(function(l){
+        if (l.subject && SUBJ[l.subject] && pickBuf.indexOf(l.subject) < 0 && pickBuf.length < MAX_LESSONS)
+          pickBuf.push(l.subject);
+      });
+    }
+    renderPicker();
+    openSheet('hwLessons');
+  }
+
+  function renderPicker(){
+    var has = !!myLessons(pickDay), live = calState() === 'live';
+    $('hwPickLead').textContent = has
+      ? 'Αυτά κρατάει η εφαρμογή για σήμερα. Πάτα για να βγάλεις ή να βάλεις.'
+      : live
+        ? 'Συμπληρωμένα από το ημερολόγιό σου. Διόρθωσέ τα αν ήταν άλλα.'
+        : 'Πάτα τα με τη σειρά που τα είχες. Δεν χρειάζεται ημερολόγιο.';
+
+    $('hwPickGrid').innerHTML = SUBJ_ORDER.map(function(s){
+      var i = pickBuf.indexOf(s), on = i >= 0, full = pickBuf.length >= MAX_LESSONS;
+      return '<button class="hw-pick-b" type="button" data-subj="' + esc(s) + '"' +
+        ' style="--hw-c:' + subjRgb(s) + '" aria-pressed="' + (on ? 'true' : 'false') + '"' +
+        (!on && full ? ' disabled' : '') + '>' +
+        '<span class="hw-tick"></span>' + esc((SUBJ[s] || {}).label || s) +
+        (on ? '<span class="hw-ord">' + (i + 1) + '</span>' : '') +
+      '</button>';
     }).join('');
+
+    /* Ο περιορισμός ΛΕΓΕΤΑΙ. Ένα τέταρτο πάτημα που δεν κάνει τίποτα χωρίς
+       εξήγηση είναι χειριστήριο που δεν χειρίζεται (σταθερή αρχή, φάση 1). */
+    $('hwPickHint').textContent = pickBuf.length >= MAX_LESSONS
+      ? 'Τρία το πολύ — ξεδιάλεξε ένα για να βάλεις άλλο.'
+      : pickBuf.length
+        ? 'Με τη σειρά που τα είχες.'
+        /* ⚠️ Η πρώτη γραφή έλεγε «Ή πάτα «Έτοιμο» χωρίς καμία επιλογή» — και το
+           κουμπί σε ΑΥΤΗ ΑΚΡΙΒΩΣ την κατάσταση ΔΕΝ γράφει «Έτοιμο», γράφει
+           «Δεν είχα μάθημα σήμερα». Η οδηγία ονόμαζε κουμπί που δεν ήταν στην
+           οθόνη. Φάνηκε ΜΟΝΟ στο render. */
+        : 'Διάλεξε όσα είχες σήμερα. Αν δεν είχες κανένα, πες το από κάτω.';
+
+    $('hwPickSave').textContent = pickBuf.length ? 'Έτοιμο' : 'Δεν είχα μάθημα σήμερα';
+    /* Η επιστροφή στο ημερολόγιο προσφέρεται ΜΟΝΟ όταν υπάρχει ημερολόγιο να
+       επιστρέψεις — αλλιώς το κουμπί θα υποσχόταν κάτι που δεν υπάρχει. */
+    $('hwPickCal').classList.toggle('hw-off', !(has && live));
+
+    $('hwPickGrid').querySelectorAll('[data-subj]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var s = b.getAttribute('data-subj'), i = pickBuf.indexOf(s);
+        if (i >= 0) pickBuf.splice(i, 1);
+        else if (pickBuf.length < MAX_LESSONS) pickBuf.push(s);
+        renderPicker();
+      });
+    });
+  }
+
+  function closePicker(){
+    var d = $('hwLessons');
+    try { d.close(); } catch(e){ d.removeAttribute('open'); }
+  }
+
+  /* ⭐⭐ ΤΟ ΜΠΛΕ ΔΑΧΤΥΛΙΔΙ ΤΟΥ CHROME ΕΙΝΑΙ ΤΟ ΜΟΝΟ ΜΠΛΕ ΣΕ ΜΙΑ ΣΕΛΙΔΑ ΧΩΡΙΣ
+     ΜΠΛΕ, ΚΑΙ ΤΟ ΕΙΔΕ ΜΟΝΟ ΤΟ PNG. Το `showModal()` εστιάζει ΤΟ ΠΡΩΤΟ εστιάσιμο
+     παιδί, οπότε το φύλλο των σημερινών άνοιγε με το «Ιστορία» φωτισμένο σε
+     χρώμα συστήματος — και έμοιαζε επιλεγμένο ενώ δεν ήταν. Ίδιο ακριβώς
+     εύρημα με το recap της als-v443 και τον διάλογο της als-v454.
+     Η εστίαση πάει στο ΣΩΜΑ του φύλλου (`tabindex="-1"`, `outline:none`), που
+     κρατάει το πληκτρολόγιο μέσα στο modal χωρίς να ανάβει χειριστήριο.
+     ⭐ ΜΙΑ ΥΛΟΠΟΙΗΣΗ ΓΙΑ ΚΑΙ ΤΑ ΔΥΟ ΦΥΛΛΑ (σταθερή αρχή 15): το παράθυρο
+     γραψίματος άνοιγε με το ίδιο δαχτυλίδι από την als-v470 και θα έμενε το
+     μόνο που το φοράει — μια εγγύηση σε μία θέση και όχι στο δίδυμό της είναι
+     σύμπτωση με καλή φήμη. */
+  function openSheet(id){
+    var d = $(id);
+    try { d.showModal(); } catch(e){ d.setAttribute('open',''); }
+    var body = d.querySelector('.hw-sheet');
+    if (body){ try { body.focus(); } catch(e){} }
   }
 
   /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 12: ΚΑΘΕ ΚΛΑΣΗ ΠΟΥ ΕΝΑΛΛΑΣΣΕΤΑΙ ΑΠΟ ΕΔΩ ΥΠΑΡΧΕΙ ΣΤΟ CSS
@@ -2129,7 +2429,7 @@
     $('hwFocusShot').classList.toggle('hw-off', !(t.src && t.src.id && pics[t.src.id]));
     paintFocusClock();
     clearInterval(focusTimer); focusTimer = setInterval(paintFocusClock, 1000);
-    $('hwFocus').showModal();
+    openSheet('hwFocus');
   }
   function stopFocus(markDone){
     var t = focusId ? state.tasks[focusId] : null;
@@ -2159,7 +2459,7 @@
       $('hwFocusTitle').textContent = 'Η φωτογραφία, όπως τη τράβηξες';
       $('hwFocusClock').textContent = '';
       $('hwFocusNote').textContent = 'Αποθηκεύεται και φαίνεται. Ποτέ δεν διαβάζεται από μηχανή.';
-      $('hwFocus').showModal();
+      openSheet('hwFocus');
     }
   }
 
@@ -2225,7 +2525,7 @@
     $('hwFocusTitle').textContent = 'Η φωτογραφία, όπως τη τράβηξες';
     $('hwFocusClock').textContent = '';
     $('hwFocusNote').textContent = 'Αποθηκεύεται και φαίνεται. Ποτέ δεν διαβάζεται από μηχανή.';
-    $('hwFocus').showModal();
+    openSheet('hwFocus');
   }
 
   function commitDraft(){
@@ -2337,6 +2637,21 @@
     var t = focusId ? state.tasks[focusId] : null;
     if (t && t.src && t.src.id) showPic(t.src.id);
   });
+  /* ── ΤΟ ΦΥΛΛΟ ΤΩΝ ΣΗΜΕΡΙΝΩΝ ──────────────────────────────────────
+     ⚠️ ΚΑΘΕ ΜΙΑ ΑΠΟ ΤΙΣ ΤΡΕΙΣ ΠΡΑΞΕΙΣ ΚΛΕΙΝΕΙ ΤΟ ΦΥΛΛΟ ΜΟΝΟ ΑΝ ΠΕΤΥΧΕ. Ένα
+     φύλλο που κλείνει πάνω σε αποτυχημένη εγγραφή αφήνει τον χρήστη να νομίζει
+     ότι σώθηκε — και το banner από πίσω θα ήταν κρυμμένο πίσω από την κίνηση
+     του κλεισίματος (σταθερές αρχές 10/17). */
+  $('hwPickSave').addEventListener('click', function(){
+    if (!setLessons(pickDay, pickBuf)) return;   /* το banner λέει γιατί */
+    closePicker(); paint();
+  });
+  $('hwPickCal').addEventListener('click', function(){
+    if (!clearLessons(pickDay)) return;
+    closePicker(); paint();
+  });
+  $('hwPickClose').addEventListener('click', closePicker);
+
   $('hwFocus').addEventListener('close', function(){
     if (focusTimer){ clearInterval(focusTimer); focusTimer = null; }
     if (focusId) stopFocus(false);

@@ -141,7 +141,8 @@ function makeEnv(cloudRow) {
   const api = vm.runInContext(
     '(function(){' + CONSTS.join('\n') + '\n' + BODY +
     '\nreturn { reload:reload, save:save, addTask:addTask, dropTask:dropTask, sweepDone:sweepDone,' +
-    ' taskList:taskList, state:function(){ return state; } };})()',
+    ' taskList:taskList, myLessons:myLessons, setLessons:setLessons, clearLessons:clearLessons,' +
+    ' state:function(){ return state; } };})()',
     ctx, { filename: 'homework.html:script' });
   return { ctx, store, cloud, api, localStorage };
 }
@@ -317,6 +318,119 @@ function task(id, ts, extra) {
     is('the task is still on disk, because the write failed', tasksIn(env), ['d1']);
     is('and NOTHING was tombstoned', tombsFor(env), []);
     is('the in-memory state was rolled back to match the disk', Object.keys(env.api.state().tasks), ['d1']);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Γ · ⭐⭐ ΦΑΣΗ 3 — ΜΙΑ ΔΙΟΡΘΩΣΗ ΤΩΝ ΣΗΜΕΡΙΝΩΝ ΔΕΝ ΓΙΝΕΤΑΙ ΠΡΟΣΘΕΣΗ
+
+     Αυτή είναι Η σκηνή που κάνει το σχήμα του §7.1 υποχρεωτικό, και ο λόγος
+     που το `lessons` είναι ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ αντί για σκέτο πίνακα από strings.
+     Ένας πίνακας από strings πέφτει στο `allPrim` του `mergeArray` και
+     ΕΝΩΝΕΤΑΙ — άρα «διόρθωσα, ήταν Λατινικά και όχι Ιστορία» γυρίζει από το
+     cloud ως «Ιστορία ΚΑΙ Λατινικά». Το βράδυ των 21:45 θα ξαναδιάβαζε ένα
+     μάθημα που δεν έκανε ποτέ, και τίποτα στην οθόνη δεν θα το έλεγε.
+     ══════════════════════════════════════════════════════════════════ */
+  const DK = '2026-08-14';
+  function lessonsIn(env) {
+    const s = JSON.parse(env.store[KEY] || '{}');
+    return ((s.lessons || {})[DK] || {}).subjects || null;
+  }
+
+  section('Γ · φάση 3 — a CORRECTION on a second device stays a correction');
+  {
+    /* Το κινητό έγραψε [ιστορία] και έσπρωξε ΜΙΣΗ ΩΡΑ ΜΕΤΑ από την τελευταία
+       γνωστή κατάσταση του laptop — δηλαδή το cloud είναι ΝΕΟΤΕΡΟ. Μετά ο
+       Αλεξ κάθεται στο laptop και διορθώνει. Χωρίς φρέσκια σφραγίδα, το laptop
+       χάνει σιωπηλά· χωρίς ΕΓΓΡΑΦΗ (σκέτος πίνακας), κερδίζουν ΚΑΙ ΤΑ ΔΥΟ. */
+    const cloudTs = T + 1800e3;
+    const env = makeEnv({ 'hw:v1': { v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: cloudTs } } } });
+    env.store[KEY] = JSON.stringify({ v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: T } } });
+    env.api.reload();
+    startEngine(env);
+    await sleep(120);
+
+    ok('η διόρθωση γράφτηκε', env.api.setLessons(DK, ['latinika']));
+    await sleep(900);          /* schedulePush 400ms → pull + merge + push */
+
+    is('⭐ ΤΟ LAPTOP ΚΡΑΤΑΕΙ ΑΚΡΙΒΩΣ ΟΣΑ ΕΙΠΕ — καμία ένωση', lessonsIn(env), ['latinika']);
+    is('ΚΑΙ ΤΟ CLOUD ΤΟ ΕΜΑΘΕ ΩΣ ΔΙΟΡΘΩΣΗ', env.cloud.row[KEY].lessons[DK].subjects, ['latinika']);
+    ok('γιατί η σφραγίδα της μέρας προχώρησε πάνω από του κινητού',
+      +JSON.parse(env.store[KEY]).lessons[DK]._ts > cloudTs);
+  }
+
+  section('Γ · ο καθρέφτης — ΧΩΡΙΣ σφραγίδα, η ίδια σκηνή ΕΝΩΝΕΙ (αυτό είναι το bug)');
+  {
+    /* Η απόδειξη ότι το παραπάνω μετράει κάτι πραγματικό και όχι τον εαυτό του:
+       η ΙΔΙΑ σκηνή, με την εγγραφή της μέρας ΧΩΡΙΣ `_ts`, πάνω στο ΑΛΗΘΙΝΟ
+       sync.js. Το `mergeObject` δεν σταματάει στην εγγραφή, κατεβαίνει ως τον
+       πίνακα, και ο πίνακας από strings ΕΝΩΝΕΤΑΙ. */
+    const env = makeEnv({ 'hw:v1': { v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'] } } } });
+    env.store[KEY] = JSON.stringify({ v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['latinika'] } } });
+    startEngine(env);
+    await sleep(900);
+    is('ΧΩΡΙΣ σφραγίδα η διόρθωση γίνεται ΠΡΟΣΘΕΣΗ — αυτό είναι το bug',
+      lessonsIn(env), ['istoria', 'latinika']);
+  }
+
+  section('Γ · «δεν είχα μάθημα» επιβιώνει κι αυτό — ένα άδειο ΔΕΝ είναι απουσία');
+  {
+    /* Το πιο εύθραυστο σχήμα: ο τοπικός πίνακας είναι ΑΔΕΙΟΣ. Ένα `mergeArray`
+       που κατέβαινε ως εδώ θα έδινε πίσω ΟΛΟΚΛΗΡΟ τον πίνακα του cloud, και η
+       δήλωσή του «σήμερα δεν είχα μάθημα» θα εξαφανιζόταν αθόρυβα. */
+    const env = makeEnv({ 'hw:v1': { v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria', 'arxaia'], _ts: T + 1800e3 } } } });
+    env.store[KEY] = JSON.stringify({ v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria', 'arxaia'], _ts: T } } });
+    env.api.reload();
+    startEngine(env);
+    await sleep(120);
+    ok('το λέει', env.api.setLessons(DK, []));
+    await sleep(900);
+    is('και το άδειο ΜΕΝΕΙ άδειο', lessonsIn(env), []);
+    is('σε κάθε συσκευή', env.cloud.row[KEY].lessons[DK].subjects, []);
+  }
+
+  section('Γ · η ακύρωση σφραγίζεται, αλλιώς το πρώτο pull την ξανακάνει επιλογή');
+  {
+    const env = makeEnv({ 'hw:v1': { v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: T } } } });
+    env.store[KEY] = JSON.stringify({ v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: T } } });
+    env.api.reload();
+    /* ΚΑΜΙΑ ΜΗΧΑΝΗ ΑΚΟΜΗ — σταθερή αρχή 32, το ίδιο παράθυρο με το ✕. */
+    ok('«άσε το ημερολόγιο» πριν ξεκινήσει ο συγχρονισμός', env.api.clearLessons(DK));
+    const t = JSON.parse(env.store[TOMB] || '{}');
+    is('η σελίδα σφράγισε μόνη της, στο ΦΩΛΙΑΣΜΕΝΟ μονοπάτι',
+      Object.keys((t[KEY] && t[KEY].lessons) || {}), [DK]);
+    startEngine(env);
+    await sleep(900);
+    is('και το pull ΔΕΝ την ανασταίνει', lessonsIn(env), null);
+    ok('ούτε το push την ξαναγράφει στο cloud',
+      !((env.cloud.row[KEY].lessons || {})[DK]));
+  }
+
+  section('Γ · μια ακύρωση που ΔΕΝ γράφτηκε δεν σφραγίζεται ποτέ');
+  {
+    const env = makeEnv({ 'hw:v1': { v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: T } } } });
+    env.store[KEY] = JSON.stringify({ v: 1, tasks: {}, samples: {},
+      lessons: { [DK]: { subjects: ['istoria'], _ts: T } } });
+    env.api.reload();
+    const realSet = env.ctx.window.localStorage.setItem;
+    env.ctx.window.localStorage.setItem = function (k, v) {
+      if (k === KEY) { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; }
+      return realSet.call(this, k, v);
+    };
+    is('η ακύρωση αναφέρει αποτυχία', env.api.clearLessons(DK), false);
+    env.ctx.window.localStorage.setItem = realSet;
+    is('η επιλογή είναι ακόμη στον δίσκο', lessonsIn(env), ['istoria']);
+    is('και στη μνήμη — καμία απόκλιση οθόνης/δίσκου', env.api.myLessons(DK), ['istoria']);
+    is('και ΤΙΠΟΤΑ δεν σφραγίστηκε',
+      Object.keys(((JSON.parse(env.store[TOMB] || '{}'))[KEY] || {}).lessons || {}), []);
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

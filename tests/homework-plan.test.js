@@ -131,6 +131,8 @@ function makeEnv(opts) {
     ' addTask:addTask, dropTask:dropTask, sweepDone:sweepDone, taskList:taskList,' +
     ' estimate:estimate, recordSample:recordSample, save:save, blocksFor:blocksFor,' +
     ' pileDay:pileDay, bringForward:bringForward, doorOf:doorOf, tonightView:tonightView,' +
+    ' myLessons:myLessons, setLessons:setLessons, clearLessons:clearLessons, lessonsFor:lessonsFor,' +
+    ' calState:calState, today:today,' +
     ' dowMon:dowMon, offDate:offDate, nextDow:nextDow, ladders:ladders, subjectOfText:subjectOfText,' +
     ' state:function(){ return state; } };})()';
   const api = vm.runInContext(src, ctx, { filename: 'homework.html:script' });
@@ -615,9 +617,14 @@ section('4f · φάση 2 · the 21:45 door is the SAME reader, not a second cop
   ok('«δεν έχω ημερολόγιο» is not written as «δεν έχεις μάθημα»',
     PAGE.indexOf('Δεν ξέρω τα σημερινά σου μαθήματα χωρίς το ημερολόγιο') > -1 &&
     PAGE.indexOf('Το ημερολόγιο δεν δείχνει μάθημα σήμερα') > -1);
-  /* ⭐ Ο σύνδεσμος προς την πόρτα υπάρχει ΜΟΝΟ όταν η πόρτα έχει περιεχόμενο. */
+  /* ⭐ Ο σύνδεσμος προς την πόρτα υπάρχει ΜΟΝΟ όταν η πόρτα έχει περιεχόμενο.
+     ⚠️ Η φάση 3 πρόσθεσε ΔΕΥΤΕΡΗ γεμάτη κατάσταση (`mine`), οπότε η συνθήκη
+     ονομάστηκε `filled` αντί να γίνει `||` σε δύο σημεία — δύο αντίγραφα της
+     ίδιας συνθήκης είναι δύο συνθήκες με καθυστέρηση (σταθερή αρχή 15). */
+  ok("«γεμάτο» ορίζεται ΜΙΑ φορά και σημαίνει ημερολόγιο Ή δική του επιλογή",
+    /var filled = tv\.state === 'live' \|\| tv\.state === 'mine';/.test(PAGE));
   ok('the entrance to #tonight appears only when the door has something in it',
-    /tv\.state === 'live'\)\s*\n\s*review \+=[\s\S]{0,80}#tonight/.test(PAGE));
+    /if \(filled\)\s*\n\s*review \+=[\s\S]{0,80}#tonight/.test(PAGE));
   ok('the door is NOT a fifth block — it never wears hw-sec',
     PAGE.indexOf('class="hw-tonight"') > -1 && PAGE.indexOf('hw-sec hw-tonight') < 0);
 }
@@ -683,6 +690,281 @@ section('4g · φάση 2 · the 18:00 push lands ON the capture field');
      υπάρχουσα συνάρτηση. */
   const fns = JSON.parse(fs.readFileSync(path.join(ALS, 'vercel.json'), 'utf8')).functions || {};
   ok('no 13th serverless function was added', Object.keys(fns).length <= 12);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4h · ⭐⭐ ΦΑΣΗ 3 · ΤΑ ΤΡΙΑ ΣΗΜΕΡΙΝΑ — ΤΟ 21:45 ΓΕΜΙΖΕΙ ΧΩΡΙΣ ΗΜΕΡΟΛΟΓΙΟ
+
+   Το κριτήριο αποδοχής είναι μία πρόταση: «το 21:45 γεμίζει ΧΩΡΙΣ ημερολόγιο,
+   και οι τρεις καταστάσεις ημερολογίου βγάζουν τρεις διαφορετικές προτάσεις».
+   Άρα ελέγχεται ΑΚΡΙΒΩΣ αυτό, σε συσκευή που ΔΕΝ έχει ημερολόγιο — που είναι
+   και η μόνη συσκευή στην οποία ΘΑ χρησιμοποιηθεί (τα `gcal:*` είναι τοπικά).
+   ══════════════════════════════════════════════════════════════════════ */
+section('4h · φάση 3 · χωρίς ημερολόγιο, η μέρα είναι ΑΓΝΩΣΤΗ — όχι άδεια');
+{
+  const E3 = makeEnv({});
+  is('η συσκευή όντως δεν έχει ημερολόγιο', E3.api.calState(), 'unauthorised');
+  is('και δεν το μαντεύει', E3.api.lessonsFor(0), null);
+  const v = E3.api.tonightView();
+  is('η πόρτα λέει ΑΓΝΩΣΤΑ', v.state, 'unknown');
+  is('χωρίς να επινοεί μάθημα', v.items, []);
+  /* ⭐ ΤΟ ΚΡΙΤΗΡΙΟ. Τρία πατήματα και ένα «Έτοιμο», σε συσκευή χωρίς GCal. */
+  ok('τα λέει ο ίδιος, και γράφονται', E3.api.setLessons(E3.api.today(), ['arxaia', 'istoria', 'latinika']));
+  const w = E3.api.tonightView();
+  is('ΤΟ 21:45 ΓΕΜΙΣΕ ΧΩΡΙΣ ΗΜΕΡΟΛΟΓΙΟ', w.state, 'mine');
+  is('με τα τρία, ΣΤΗ ΣΕΙΡΑ ΠΟΥ ΤΑ ΠΑΤΗΣΕ', w.items.map(x => x.subject), ['arxaia', 'istoria', 'latinika']);
+  is('και με ελληνικά ονόματα, ποτέ τιμές μηχανής', w.items.map(x => x.title), ['Αρχαία', 'Ιστορία', 'Λατινικά']);
+  is('η πηγή δηλώνεται σε κάθε γραμμή', w.items.map(x => x.src), ['mine', 'mine', 'mine']);
+  /* ⭐ σταθερή αρχή 33: η ώρα εδώ δεν είναι ΑΓΝΩΣΤΗ μέτρηση, είναι μέγεθος που
+     ΔΕΝ ΥΠΑΡΧΕΙ — και μια στήλη με τρεις παύλες διαβάζεται ως σφάλμα. */
+  is('καμία επινοημένη ώρα', w.items.map(x => x.at), [null, null, null]);
+  ok('και η γραμμή του δεν ζωγραφίζει ΚΑΘΟΛΟΥ στήλη ώρας',
+    /x\.src === 'mine' \? '' :[\s\S]{0,220}x\.at == null \? '—'/.test(PAGE));
+}
+
+section('4h · φάση 3 · «δεν είχα μάθημα» ΕΙΝΑΙ απάντηση, και όχι η ίδια με «δεν ξέρω»');
+{
+  const E3 = makeEnv({});
+  is('πριν πει οτιδήποτε, δεν υπάρχει εγγραφή', E3.api.myLessons(E3.api.today()), null);
+  ok('λέει ότι δεν είχε', E3.api.setLessons(E3.api.today(), []));
+  is('και ΑΥΤΟ είναι εγγραφή, όχι απουσία', E3.api.myLessons(E3.api.today()), []);
+  is('με δική της πρόταση', E3.api.tonightView().state, 'mineNone');
+  /* Οι τέσσερις προτάσεις είναι τέσσερις ΔΙΑΦΟΡΕΤΙΚΕΣ προτάσεις. */
+  const T = (PAGE.match(/var TONIGHT_TXT = \{[\s\S]*?\n  \};/) || [''])[0];
+  ['unknown:', 'none:', 'mineNone:'].forEach(k => ok('TONIGHT_TXT έχει ' + k, T.indexOf(k) > -1));
+  const said = (T.match(/'([^']{20,})'/g) || []);
+  is('και είναι τρεις ξεχωριστές', new Set(said).size, 3);
+  /* ⛔ Η ΠΑΛΙΑ ΠΡΟΤΑΣΗ ΗΤΑΝ ΑΔΙΕΞΟΔΟ ΜΕΤΑ ΤΗ ΦΑΣΗ 3: έστελνε σε μια ρύθμιση
+     άλλης σελίδας για κάτι που λύνεται με τέσσερα πατήματα εδώ. */
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 19, ΓΙΑ ΤΡΙΤΗ ΦΟΡΑ ΣΕ ΑΥΤΟ ΤΟ ΑΡΧΕΙΟ: η πρώτη γραφή αυτού
+     έψαχνε στο PAGE και έπιανε το ΣΧΟΛΙΟ που τεκμηριώνει την ίδια την
+     αφαίρεση. Οι απαγορεύσεις ελέγχονται πάνω στον ΚΩΔΙΚΑ. */
+  ok('καμία άδεια κατάσταση δεν στέλνει πια στο ημερολόγιο ως μόνη λύση',
+    CODE.indexOf('άνοιξέ το και θα γεμίζει μόνο του') < 0);
+  ok('και κάθε μία από τις τέσσερις καταστάσεις κουβαλάει το ΙΔΙΟ κουμπί',
+    /pickBtn\(tv\.state\)/.test(CODE) && (CODE.match(/pickBtn\(/g) || []).length === 3);
+}
+
+section('4h · φάση 3 · η επιλογή του ΝΙΚΑΕΙ το ημερολόγιο, γιατί είναι διόρθωση');
+{
+  /* Ένα αληθινό ημερολόγιο, με τους τίτλους που γράφει ΕΚΕΙΝΟΣ — «φροντιστήριο»
+     μέσα σε κάθε έναν, που είναι η λέξη που κόστισε τη σταθερή αρχή 38. */
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const at = (h, m) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).toISOString();
+  const evs = [
+    { id: 'e1', title: 'Ιστορία — φροντιστήριο', start: at(15, 15), end: at(16, 15) },
+    { id: 'e2', title: 'Αρχαία — φροντιστήριο', start: at(16, 15), end: at(17, 15) },
+    { id: 'e3', title: 'Λατινικά — φροντιστήριο', start: at(17, 15), end: at(18, 0) }
+  ];
+  const E3 = makeEnv({ store: {
+    'gcal:connected': '1',
+    'gcal:events': JSON.stringify({ ts: Date.now(), events: evs, cals: [] })
+  } });
+  is('το ημερολόγιο διαβάζεται', E3.api.calState(), 'live');
+  const cal = E3.api.tonightView();
+  is('και γεμίζει μόνο του', cal.state, 'live');
+  is('με τα τρία σωστά μαθήματα (σταθερή αρχή 38)', cal.items.map(x => x.subject), ['istoria', 'arxaia', 'latinika']);
+  is('και τις ΑΛΗΘΙΝΕΣ τους ώρες', cal.items.map(x => x.at), [915, 975, 1035]);
+
+  /* Ο καθηγητής άλλαξε το τρίτο. Η διόρθωσή ΤΟΥ είναι η αλήθεια. */
+  ok('διορθώνει', E3.api.setLessons(E3.api.today(), ['istoria', 'ekthesi']));
+  const fix = E3.api.tonightView();
+  is('η επιλογή του κερδίζει το ημερολόγιο', fix.state, 'mine');
+  is('και είναι ΑΚΡΙΒΩΣ ό,τι είπε — καμία ένωση με το ημερολόγιο', fix.items.map(x => x.subject), ['istoria', 'ekthesi']);
+  /* Και μπορεί να την πάρει πίσω: ένα χειριστήριο που δεν αναιρείται δεν είναι
+     διόρθωση, είναι μονόδρομος. */
+  ok('την ακυρώνει', E3.api.clearLessons(E3.api.today()));
+  is('και η μέρα γυρίζει στο ημερολόγιο', E3.api.tonightView().state, 'live');
+  /* ⚠️ ΠΟΤΕ ΜΗΝ ΑΦΗΣΕΙΣ ΤΟΝ ΦΡΟΥΡΟ ΝΑ ΠΕΤΑΞΕΙ ΑΝΤΙ ΝΑ ΚΟΚΚΙΝΙΣΕΙ (als-v479,
+     ξανά): η πρώτη γραφή αυτού έκανε `[KEY].lessons` σε σκέτο literal, οπότε
+     στη μετάλλαξη «βγάλε την ταφόπλακα» έσκαγε με stack trace — και ένα crash
+     είναι αποτέλεσμα που κάποιος διαβάζει ως «το test είναι χαλασμένο». */
+  const tmb = JSON.parse(E3.store['__synctomb__' + APP] || '{}');
+  is('με ταφόπλακα, αλλιώς το πρώτο pull την ξαναφέρνει',
+    Object.keys(((tmb[KEY] || {}).lessons) || {}), [E3.api.today()]);
+}
+
+section('4h · φάση 3 · ο αναγνώστης δεν γράφει, και ο γραφέας γράφει ΜΟΝΟ hw:v1');
+{
+  const E3 = makeEnv({});
+  const before = E3.writes.length;
+  E3.api.myLessons(E3.api.today());
+  E3.api.tonightView();
+  is('⭐ ΜΙΑ ΑΝΑΓΝΩΣΗ ΔΕΝ ΓΡΑΦΕΙ ΠΟΤΕ (το bug του nut:streak)', E3.writes.length, before);
+  E3.api.setLessons(E3.api.today(), ['istoria']);
+  is('και η εγγραφή αγγίζει ΜΟΝΟ το hw:v1', E3.writes.slice(before), [KEY]);
+  const rec = JSON.parse(E3.store[KEY]).lessons[E3.api.today()];
+  ok('⭐⭐ Η ΕΓΓΡΑΦΗ ΤΗΣ ΜΕΡΑΣ ΚΟΥΒΑΛΑΕΙ `_ts` — χωρίς αυτό η διόρθωση γίνεται πρόσθεση',
+    typeof rec._ts === 'number' && rec._ts > 0);
+  is('και κρατάει τον πίνακα των μαθημάτων', rec.subjects, ['istoria']);
+
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 17: ΜΙΑ ΑΠΟΤΥΧΗΜΕΝΗ ΕΓΓΡΑΦΗ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΜΟΙΑΖΕΙ ΜΕ
+     ΠΕΤΥΧΗΜΕΝΗ, ΚΑΙ Η ΜΝΗΜΗ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΑΠΟΚΛΙΝΕΙ ΑΠΟ ΤΟΝ ΔΙΣΚΟ. Χωρίς
+     επαναφορά, η οθόνη θα έδειχνε τη νέα επιλογή, το φύλλο θα έκλεινε, και το
+     επόμενο επιτυχημένο save θα την έγραφε ΣΑΝ ΝΑ ΤΗΝ ΕΙΧΕ ΔΙΑΛΕΞΕΙ — δηλαδή
+     ένα σιωπηλό ψέμα με καθυστέρηση. */
+  const t9 = E3.api.today(), realSet = E3.ctx.window.localStorage.setItem;
+  E3.ctx.window.localStorage.setItem = function (k) {
+    if (k === KEY) { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; }
+    return realSet.apply(this, arguments);
+  };
+  is('μια αλλαγή που δεν γράφτηκε αναφέρει αποτυχία', E3.api.setLessons(t9, ['arxaia', 'latinika']), false);
+  E3.ctx.window.localStorage.setItem = realSet;
+  is('ο δίσκος κρατάει την ΠΑΛΙΑ επιλογή', JSON.parse(E3.store[KEY]).lessons[t9].subjects, ['istoria']);
+  is('ΚΑΙ Η ΜΝΗΜΗ ΤΟ ΙΔΙΟ — καμία απόκλιση οθόνης/δίσκου', E3.api.myLessons(t9), ['istoria']);
+
+  /* Και η ΠΡΩΤΗ επιλογή μιας μέρας, που δεν είχε τι να επαναφέρει: το κλειδί
+     δεν επιτρέπεται να μείνει πίσω σαν φάντασμα. */
+  const E8 = makeEnv({}), t8 = E8.api.today(), rs8 = E8.ctx.window.localStorage.setItem;
+  E8.ctx.window.localStorage.setItem = function (k) {
+    if (k === KEY) { const e = new Error('QuotaExceededError'); e.name = 'QuotaExceededError'; throw e; }
+    return rs8.apply(this, arguments);
+  };
+  is('η πρώτη επιλογή που απέτυχε αναφέρει κι αυτή αποτυχία', E8.api.setLessons(t8, ['istoria']), false);
+  E8.ctx.window.localStorage.setItem = rs8;
+  is('και ΔΕΝ αφήνει φάντασμα στη μνήμη', E8.api.myLessons(t8), null);
+}
+
+section('4h · φάση 3 · τρία το πολύ, καμία διπλοεγγραφή, καμία άγνωστη τιμή');
+{
+  const E3 = makeEnv({}), t = E3.api.today();
+  E3.api.setLessons(t, ['istoria', 'arxaia', 'latinika', 'ekthesi']);
+  /* ⚠️ ΚΑΙ ΤΑ ΔΥΟ ΑΚΡΑ, ΧΩΡΙΣΤΑ. Μετρημένο: με έλεγχο μόνο μέσω `myLessons` η
+     μετάλλαξη «βγάλε το όριο του γραφέα» περνούσε ΚΑΘΑΡΗ, γιατί το όριο του
+     αναγνώστη την έκρυβε. Ο δίσκος δεν επιτρέπεται να κρατάει κάτι που η οθόνη
+     δεν μπορεί να παραγάγει — αλλιώς μια επόμενη έκδοση που «απλοποιεί» τον
+     αναγνώστη το ξαναβγάζει στην επιφάνεια. */
+  is('ο ΓΡΑΦΕΑΣ κρατάει τρία στον δίσκο', JSON.parse(E3.store[KEY]).lessons[t].subjects.length, 3);
+  is('και ο ΑΝΑΓΝΩΣΤΗΣ τρία στην οθόνη', E3.api.myLessons(t).length, 3);
+  E3.api.setLessons(t, ['istoria', 'istoria', 'arxaia']);
+  is('και ένα διπλό μετράει μία φορά', E3.api.myLessons(t), ['istoria', 'arxaia']);
+  E3.api.setLessons(t, ['istoria', 'xxx', 'arxaia']);
+  is('ο ΓΡΑΦΕΑΣ δεν αποθηκεύει τιμή που δεν είναι μάθημα',
+    JSON.parse(E3.store[KEY]).lessons[t].subjects, ['istoria', 'arxaia']);
+  /* ⚠️ ΚΑΙ Ο ΑΝΑΓΝΩΣΤΗΣ ΧΩΡΙΣΤΑ, ΓΙΑΤΙ ΕΙΝΑΙ ΑΛΛΟ ΑΚΡΟ ΤΟΥ ΙΔΙΟΥ ΠΡΩΤΟΚΟΛΛΟΥ
+     (σταθερή αρχή 23). Η πρώτη γραφή αυτού περνούσε από τον `setLessons`, άρα
+     έλεγχε ΔΥΟ ΦΟΡΕΣ τον γραφέα και ΠΟΤΕ τον αναγνώστη — μετρημένο: η
+     μετάλλαξη «βγάλε το φίλτρο του myLessons» περνούσε ΚΑΘΑΡΗ. Η αληθινή πηγή
+     μιας άγνωστης τιμής είναι μια ΑΛΛΗ έκδοση ή μια άλλη συσκευή, που γράφει
+     κατευθείαν στην αποθήκη — άρα έτσι σπέρνεται. */
+  const E5 = makeEnv({ store: { [KEY]: JSON.stringify({ v: 1, tasks: {}, samples: {},
+    lessons: { [t]: { subjects: ['istoria', 'xxx', 'arxaia', 'istoria', 'ekthesi'], _ts: 1 } } }) } });
+  is('και ο ΑΝΑΓΝΩΣΤΗΣ την πετάει κι αυτός, όσο κι αν την έγραψε άλλος',
+    E5.api.myLessons(t), ['istoria', 'arxaia', 'ekthesi']);
+  is('και κόβει στα τρία ό,τι κι αν βρει', E5.api.myLessons(t).length, 3);
+  /* Σκουπίδια από άλλη έκδοση/συσκευή ΔΕΝ σκάνε και ΔΕΝ ζωγραφίζονται. */
+  const E4 = makeEnv({ store: { [KEY]: JSON.stringify({ v: 1, tasks: {}, samples: {}, lessons: { [t]: { subjects: 'όχι πίνακας' } } }) } });
+  is('ένα σχήμα που δεν αναγνωρίζεται διαβάζεται ως «δεν είπε τίποτα»', E4.api.myLessons(t), null);
+  is('και η πόρτα πέφτει τίμια πίσω στο ημερολόγιο', E4.api.tonightView().state, 'unknown');
+  ok('⚠️ και ΔΕΝ σβήστηκε — η αποθήκη του δεν είναι ποτέ σε εύρος',
+    JSON.parse(E4.store[KEY]).lessons[t].subjects === 'όχι πίνακας');
+}
+
+section('4h · φάση 3 · η καλωδίωση που κάνει τη σφραγίδα να ισχύει');
+{
+  /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35: ένα πεδίο που λείπει από blank() Ή από load() σβήνεται
+     σιωπηλά στην επόμενη φόρτωση — και με sync σβήνεται η δουλειά ΑΛΛΗΣ συσκευής. */
+  ok('το lessons υπάρχει στο blank()', /function blank\(\)\{ return \{ v:1, tasks:\{\}, samples:\{\}, lessons:\{\} \}; \}/.test(PAGE));
+  /* ⭐⭐ ΚΑΙ ΤΟ `load()` ΕΛΕΓΧΕΤΑΙ ΜΕ ΣΥΜΠΕΡΙΦΟΡΑ, ΟΧΙ ΜΕ REGEX. Μετρημένο σε
+     αυτή τη συνεδρία: η μετάλλαξη «βγάλε το lessons από τον load()» (ένα
+     `if(0)` μπροστά) περνούσε ΚΑΘΑΡΗ από τον στατικό φρουρό, γιατί το μοτίβο
+     εξακολουθούσε να υπάρχει στο αρχείο. Η σταθερή αρχή 35 ζητάει ακριβώς
+     αυτό: σπείρε πεδίο, κάνε load+save, ζήτα το πίσω από τον ΔΙΣΚΟ. */
+  const DKX = '2026-08-10';
+  const E6 = makeEnv({ store: { [KEY]: JSON.stringify({
+    v: 1, tasks: {}, samples: {},
+    lessons: { [DKX]: { subjects: ['latinika'], _ts: 12345 } },
+    /* Ένα πεδίο που ΔΕΝ ξέρει ο load(): αν επιβιώνει, η μορφή «αντίγραψε πρώτα
+       ΟΛΑ τα κλειδιά» είναι πραγματικά εκεί και όχι λίστα επιτρεπομένων. */
+    apoAlliEkdosi: { hello: 1 }
+  }) } });
+  ok('η επιλογή του επιβιώνει ενός load + save', E6.api.save() === true);
+  const disk = JSON.parse(E6.store[KEY]);
+  is('ΚΑΙ ΕΙΝΑΙ ΑΚΡΙΒΩΣ ΟΤΙ ΗΤΑΝ', ((disk.lessons || {})[DKX] || {}).subjects, ['latinika']);
+  is('χωρίς να της αλλάξει η σφραγίδα — μια σπορά ΔΕΝ είναι σφράγισμα', disk.lessons[DKX]._ts, 12345);
+  ok('και ένα ΑΓΝΩΣΤΟ πεδίο άλλης έκδοσης δεν σβήνεται σιωπηλά (σταθ. 35)',
+    disk.apoAlliEkdosi && disk.apoAlliEkdosi.hello === 1);
+  /* ⚠️ ΚΑΙ ΤΩΡΑ ΤΟ ΚΟΜΜΑΤΙ ΠΟΥ Η ΠΡΟΗΓΟΥΜΕΝΗ ΒΕΒΑΙΩΣΗ ΔΕΝ ΜΠΟΡΟΥΣΕ ΝΑ ΔΕΙ.
+     Μετρημένο: η μετάλλαξη «βγάλε τη γραμμή του lessons από τον load()»
+     περνούσε ΚΑΘΑΡΗ ακόμη και με τη συμπεριφορική βεβαίωση, γιατί το
+     `for (k in s) b[k] = s[k]` ΗΔΗ αντιγράφει το πεδίο — άρα εκείνη η γραμμή
+     δεν κάνει επιβίωση, κάνει ΚΑΝΟΝΙΚΟΠΟΙΗΣΗ ΤΥΠΟΥ. Άρα ελέγχεται με ΛΑΘΟΣ
+     ΤΥΠΟ, που είναι το μόνο πράγμα που κάνει. */
+  const E7 = makeEnv({ store: { [KEY]: JSON.stringify({ v: 1, tasks: {}, samples: {}, lessons: ['όχι χάρτης'] }) } });
+  const st7 = E7.api.state();
+  ok('ένα lessons λάθος τύπου κανονικοποιείται σε χάρτη, δεν πέφτει στη σελίδα',
+    st7.lessons && typeof st7.lessons === 'object' && !Array.isArray(st7.lessons));
+  is('και η μέρα διαβάζεται ως «δεν είπε τίποτα»', E7.api.myLessons(E7.api.today()), null);
+  ok('ενώ ο γραφέας εξακολουθεί να μπορεί να γράψει από πάνω του',
+    E7.api.setLessons(E7.api.today(), ['istoria']) === true);
+  /* ⭐ Και το πιο σημαντικό: μπαίνει στο readMaps του study-stamp.js, αλλιώς
+     καμία εγγραφή δεν παίρνει ποτέ `_ts` και το merge τις ΕΝΩΝΕΙ. */
+  ok('το state.lessons είναι στο readMaps του STAMP',
+    /return state \? \[state\.tasks, state\.samples, state\.lessons\] : \[\];/.test(PAGE));
+  ok('και η ταφόπλακά του είναι στο ΦΩΛΙΑΣΜΕΝΟ μονοπάτι, όπως των εργασιών',
+    /tombPath\(KEY, \['lessons'\], dk, ts\)/.test(PAGE));
+  /* ⛔ ΑΠΑΝΤΑΕΙ «ΤΙ ΕΙΧΑ», ΠΟΤΕ «ΤΙ ΘΑ ΕΧΩ». Το «αύριο το έχεις» της κατάταξης
+     μένει ημερολόγιο· μια χειροκίνητη καταγραφή του παρελθόντος δεν προβλέπει. */
+  const cand = (CODE.match(/function candidates\(free\)\{[\s\S]*?\n  \}/) || [''])[0];
+  ok('η χειροκίνητη επιλογή ΔΕΝ τροφοδοτεί την πρόβλεψη του αύριο',
+    cand.indexOf('myLessons') < 0 && /var tomorrow = lessonsFor\(1\);/.test(cand));
+}
+
+section('4h · φάση 3 · το φύλλο είναι χειριστήριο που χειρίζεται');
+{
+  /* σταθερή αρχή 4: native <dialog>, και το display ΜΟΝΟ στο [open]. Το φύλλο
+     δανείζεται το ΥΠΑΡΧΟΝ `dialog.hw-dlg`, άρα ο κανόνας δεν ξαναγράφεται. */
+  ok('είναι native <dialog> με την υπάρχουσα κλάση', /<dialog class="hw-dlg" id="hwLessons">/.test(PAGE));
+  ok('και ανοίγει με showModal', /function openSheet\(id\)\{[\s\S]{0,200}showModal\(\)/.test(CODE));
+  ok("και ανοίγει ΜΕΣΩ του openSheet, όχι με δικό του showModal", /openSheet\('hwLessons'\)/.test(CODE));
+  /* ⭐⭐ ΤΟ ΜΠΛΕ ΔΑΧΤΥΛΙΔΙ, ΚΑΙ ΤΟ ΕΙΔΕ ΜΟΝΟ ΤΟ PNG. Το `showModal()` εστιάζει
+     το ΠΡΩΤΟ εστιάσιμο παιδί, οπότε το φύλλο άνοιγε με το «Ιστορία» φωτισμένο
+     σε χρώμα συστήματος — και έμοιαζε ΕΠΙΛΕΓΜΕΝΟ ενώ δεν ήταν, σε ένα φύλλο
+     που όλη του η δουλειά είναι «τι έχεις επιλέξει». Ίδιο εύρημα με als-v443
+     και als-v454. Καμία βεβαίωση δεν βλέπει χρώμα δαχτυλιδιού· αυτή βλέπει τον
+     μηχανισμό που το αποτρέπει. */
+  ok('η εστίαση πάει στο ΣΩΜΑ του φύλλου, όχι στο πρώτο κουμπί',
+    /var body = d\.querySelector\('\.hw-sheet'\);[\s\S]{0,90}body\.focus\(\)/.test(CODE));
+  ok('και το σώμα δέχεται εστίαση χωρίς να ζωγραφίζει δαχτυλίδι',
+    (PAGE.match(/<div class="hw-sheet" tabindex="-1">/g) || []).length === 2 &&
+    /\.hw-sheet\{[^}]*outline:none/.test(PAGE));
+  /* ⭐ ΣΤΑΘΕΡΗ ΑΡΧΗ 15: ΚΑΙ ΤΑ ΔΥΟ ΦΥΛΛΑ, ή είναι σύμπτωση με καλή φήμη. Το
+     παράθυρο γραψίματος φορούσε το ίδιο δαχτυλίδι από την als-v470 και θα
+     έμενε το μόνο που το φοράει. */
+  is('ΚΑΝΕΝΑ φύλλο δεν ανοίγει παρακάμπτοντας τον κοινό δρόμο',
+    (CODE.match(/showModal\(\)/g) || []).length, 1);
+  is('και τα δύο περνούν από αυτόν', (CODE.match(/openSheet\('/g) || []).length, 4);
+  ok('το display μένει δηλωμένο ΜΟΝΟ στο [open]', PAGE.indexOf('dialog.hw-dlg[open]{ display:flex') > -1);
+  ok('και δεν γεννήθηκε δεύτερος κανόνας που να το νικάει', (PAGE.match(/dialog\.hw-dlg\{/g) || []).length === 1);
+  /* Κάθε κλάση που εναλλάσσεται από JS υπάρχει στο CSS (σταθερή αρχή 12). */
+  ['hw-pick', 'hw-pick-b', 'hw-ord', 'hw-hint'].forEach(c =>
+    ok('η κλάση ' + c + ' ορίζεται στο CSS', PAGE.indexOf('.' + c + '{') > -1 || PAGE.indexOf('.' + c + ' ') > -1));
+  /* ⭐ Το τέταρτο πάτημα δεν είναι σιωπηλό no-op: το κουμπί απενεργοποιείται
+     ΚΑΙ ο λόγος γράφεται. */
+  ok('στα τρία, τα υπόλοιπα απενεργοποιούνται', /!on && full \? ' disabled' : ''/.test(CODE));
+  ok('και το γιατί λέγεται με λέξεις', PAGE.indexOf('Τρία το πολύ') > -1);
+  /* ⚠️ Ένα φύλλο που κλείνει πάνω σε αποτυχημένη εγγραφή λέει ψέματα. */
+  ok('το «Έτοιμο» κλείνει ΜΟΝΟ σε επιβεβαιωμένη εγγραφή',
+    /if \(!setLessons\(pickDay, pickBuf\)\) return;[\s\S]{0,80}closePicker\(\)/.test(CODE));
+  ok('και η ακύρωση το ίδιο', /if \(!clearLessons\(pickDay\)\) return;[\s\S]{0,60}closePicker\(\)/.test(CODE));
+  ok('«Άσε το ημερολόγιο» εμφανίζεται ΜΟΝΟ όταν υπάρχει ημερολόγιο να γυρίσεις',
+    /hwPickCal'\)\.classList\.toggle\('hw-off', !\(has && live\)\)/.test(CODE));
+  ok('τίποτα δεν γράφεται στον δίσκο πριν το «Έτοιμο» — το pickBuf είναι προσωρινό',
+    /var pickBuf = null, pickDay = null;/.test(CODE));
+  /* ⭐ §7.1: «ΠΡΟ-ΣΥΜΠΛΗΡΩΜΕΝΟ ΑΠΟ ΤΟ GCal ΟΤΑΝ ΥΠΑΡΧΕΙ». Χωρίς αυτό, σε
+     συνδεδεμένη συσκευή το «δεν ήταν αυτά» θα κόστιζε τέσσερα πατήματα αντί
+     για ένα, και «διορθώνω» δεν θα ήταν πια η ίδια κίνηση με «συμπληρώνω».
+     ⚠️ Ελέγχεται ΣΤΑΤΙΚΑ επειδή ο `openLessons` ζει κάτω από το όριο που κόβει
+     αυτό το suite· η συμπεριφορά επαληθεύτηκε ΚΑΙ σε render (h-cal-then-mine,
+     1440px: τα τρία του ημερολογίου ήρθαν ήδη επιλεγμένα, 1·2·3, με τη σειρά
+     της ώρας τους). Μια βεβαίωση που δεν δαγκώνει είναι διακόσμηση: η
+     μετάλλαξη «σβήσε την προ-συμπλήρωση» ΠΡΕΠΕΙ να κοκκινίσει εδώ. */
+  ok('το φύλλο προ-συμπληρώνεται από το ημερολόγιο όταν δεν έχει πει τίποτα',
+    /var cal = lessonsFor\(0\) \|\| \[\];[\s\S]{0,400}pickBuf\.push\(l\.subject\)/.test(CODE));
+  ok('και η προ-συμπλήρωση σέβεται το ίδιο όριο και την ίδια μοναδικότητα',
+    /pickBuf\.indexOf\(l\.subject\) < 0 && pickBuf\.length < MAX_LESSONS/.test(CODE));
+  ok('ενώ μια ΥΠΑΡΧΟΥΣΑ επιλογή του δεν ξαναγράφεται ποτέ από το ημερολόγιο',
+    /if \(mine\)\{\s*\n\s*pickBuf = mine\.slice\(\);/.test(CODE));
 }
 
 /* ══════════════════════════════════════════════════════════════════════
