@@ -96,8 +96,19 @@
        δίφθογγοι είναι ύλη των Αρχαίων, οπότε δανείζεται τον δικό τους. Ο
        αριθμός χρησιμοποιείται ΜΟΝΟ για ισοπαλία, ποτέ δεν βγαίνει στην οθόνη. */
   var STORES = [
+    /* ⭐⭐ als-v489: Η ΙΣΤΟΡΙΑ ΕΧΕΙ ΔΥΟ ΣΚΑΛΕΣ ΣΤΟ ΙΔΙΟ ΚΛΕΙΔΙ, ΚΑΙ Η ΣΕΙΡΑ
+       ΤΟΥΣ ΕΙΝΑΙ Η ΑΠΟΦΑΣΗ. Η μονάδα εξέτασης είναι πλέον ο ΠΛΑΓΙΟΤΙΤΛΟΣ —
+       τα λόγια του καθηγητή του — και ζει στο `ist:v1.plag`. Οι υποενότητες
+       (`ist:v1.units`) μένουν ως ΕΦΕΔΡΕΙΑ, γιατί ώσπου να φτιάξει τον πρώτο
+       πλαγιότιτλο είναι η μόνη αλήθεια που υπάρχει — και η ίδια η σελίδα
+       συμπεριφέρεται ΑΚΡΙΒΩΣ έτσι (`nowTarget()`).
+       ⚠️ Χωρίς το `altLadder`, το School Studies θα του πρότεινε «πες την
+       υποενότητα b1b» τη στιγμή που η σελίδα του λέει «πες ΑΥΤΟΝ τον
+       πλαγιότιτλο» — δύο επιφάνειες, δύο απαντήσεις, την ίδια μέρα. Σταθερή
+       αρχή 23: το χρέος μετριέται όπως το μετράει η σελίδα που το κατέχει. */
     { key: 'ist:v1', page: 'istoria.html',  subject: 'istoria',  label: 'Ιστορία',
-      kind: 'units', ladder: 'units', acc: 'els',   weight: 20, deep: 'recall' },
+      kind: 'units', ladder: 'units', altLadder: 'plag', acc: 'els',
+      weight: 20, deep: 'recall' },
     /* ⭐⭐ ΤΟ ΓΝΩΣΤΟ ΚΑΙ ΤΟ ΑΓΝΩΣΤΟ ΕΙΝΑΙ ΔΥΟ ΜΑΘΗΜΑΤΑ, als-v485. ΔΙΚΟ ΤΟΥ
        ΓΕΓΟΝΟΣ, 14/08/26: *«το κάνω με ΔΙΑΦΟΡΕΤΙΚΟΥΣ ΚΑΘΗΓΗΤΕΣ και είναι
        κυριολεκτικά δύο τελείως διαφορετικά πράγματα»*. Δύο καθηγητές, δύο
@@ -287,6 +298,8 @@
       exam: def.exam || def.subject,
       weight: def.weight, deep: def.deep,
       ok: true, why: '', started: false,
+      /* ποια σκάλα διαβάστηκε τελικά — δες το `altLadder` παρακάτω */
+      ladderUsed: def.ladder,
       items: [],
       right: 0, wrong: 0, samples: 0, accuracy: null,
       learned: 0, untouched: 0, overdue: 0, nextDue: null,
@@ -346,8 +359,18 @@
       });
     }
 
-    /* ── η ΣΚΑΛΑ ── */
-    var ladder = st[def.ladder];
+    /* ── η ΣΚΑΛΑ ──
+       ⭐ als-v489: μια σελίδα μπορεί να έχει ΔΕΥΤΕΡΗ σκάλα στο ΙΔΙΟ κλειδί, και
+       τότε εκείνη είναι η αληθινή μονάδα εξέτασης. Πέφτουμε πίσω στην πρώτη
+       ΜΟΝΟ όταν η δεύτερη είναι άδεια — «άδεια» σημαίνει «δεν έφτιαξε ακόμη
+       κανέναν», όχι «δεν υπάρχει τέτοιο πράγμα» (σταθερή αρχή 33). */
+    var ladder = st[def.ladder], onAlt = false;
+    if (def.altLadder && isMap(st[def.altLadder])) {
+      var altN = 0;
+      each(st[def.altLadder], function () { altN++; });
+      if (altN) { ladder = st[def.altLadder]; onAlt = true; }
+    }
+    out.ladderUsed = onAlt ? def.altLadder : def.ladder;
     each(ladder, function (id, rec) {
       var due = num(rec.due) || null;
       var samples, right, wrong, learned;
@@ -361,8 +384,26 @@
         var rung = ('box' in rec) ? num(rec.box) : ('streak' in rec) ? num(rec.streak) : 0;
         out.items.push({
           store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject, unitId: id,
+          unitKind: 'unit', title: null,
           label: id, due: due, accuracy: samples ? right / samples : null,
           learned: learned, samples: samples, rung: rung, weight: def.weight
+        });
+      } else if (onAlt) {
+        /* ⭐ Ο ΠΛΑΓΙΟΤΙΤΛΟΣ ΚΟΥΒΑΛΑΕΙ ΤΗ ΔΙΚΗ ΤΟΥ ΑΚΡΙΒΕΙΑ, ΚΑΙ ΔΕΝ ΜΠΟΡΕΙ ΝΑ
+           ΔΑΝΕΙΣΤΕΙ ΤΗΝ ΑΛΛΗ. Το `accByUnit` κλειδώνεται σε ids ΥΠΟΕΝΟΤΗΤΩΝ
+           (`els` = `unitId:pi:ei`), οπότε ένα `accByUnit[plagId]` είναι ΠΑΝΤΑ
+           κενό — και ένα «0%» εκεί θα διαβαζόταν σαν μέτρηση αντί για «δεν
+           εξετάστηκε» (σταθερή αρχή 33). Η σελίδα κρατάει το `best` (0..1) και
+           το `runs` πάνω στην ίδια την εγγραφή· αυτά είναι η αλήθεια εδώ.
+           ⭐ Και το `title` βγαίνει ΑΠΟ ΤΗΝ ΕΓΓΡΑΦΗ, όχι από corpus: είναι τα
+           λόγια του καθηγητή του, δεν υπάρχουν πουθενά αλλού. */
+        samples = num(rec.runs);
+        learned = !!num(rec.learnedAt) || !!num(rec.claimed);
+        out.items.push({
+          store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject, unitId: id,
+          unitKind: 'plag', title: (typeof rec.title === 'string' ? rec.title : '') || null,
+          label: id, due: due, accuracy: samples ? num(rec.best) : null,
+          learned: learned, samples: samples, rung: num(rec.reviews), weight: def.weight
         });
       } else {
         var a = accByUnit[id] || null;
@@ -370,6 +411,7 @@
         learned = !!num(rec.learnedAt);
         out.items.push({
           store: def.key, page: def.page, subject: def.subject, exam: def.exam || def.subject, unitId: id,
+          unitKind: 'unit', title: null,
           label: id, due: due, accuracy: a && samples ? right / samples : null,
           learned: learned, samples: samples, rung: num(rec.reviews), weight: def.weight
         });

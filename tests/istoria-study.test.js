@@ -34,7 +34,7 @@ function is(name, got, want) {
 function ok(name, cond) { is(name, !!cond, true); }
 function section(s) { console.log('\n' + s); }
 
-const PAGE = fs.readFileSync(path.join(ALS, 'istoria-demo.html'), 'utf8');
+const PAGE = fs.readFileSync(path.join(ALS, 'istoria.html'), 'utf8');
 const I = require(path.join(ALS, 'istoria-data.js'));
 
 /* ── Κόψε ΜΙΑ συνάρτηση από το αρχείο, με ισοζύγιο αγκυλών ────────────
@@ -42,7 +42,7 @@ const I = require(path.join(ALS, 'istoria-data.js'));
    επιτρέπεται να περάσει σιωπηλά (σταθερή αρχή 19). */
 function slice(name) {
   const at = PAGE.indexOf('function ' + name + '(');
-  if (at < 0) throw new Error('istoria-demo.html: λείπει η function ' + name + ' — η εγγύηση έφυγε');
+  if (at < 0) throw new Error('istoria.html: λείπει η function ' + name + ' — η εγγύηση έφυγε');
   let i = PAGE.indexOf('{', at), depth = 0, j = i;
   for (; j < PAGE.length; j++) {
     if (PAGE[j] === '{') depth++;

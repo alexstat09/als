@@ -139,15 +139,22 @@ is('το greek-ear.js φορτώνει ΠΡΙΝ το istoria-data.js',
    Παίρνουμε την ΑΛΗΘΙΝΗ έκφραση της istoria.html και της δίνουμε την
    αλήθινή διεύθυνση που εκπέμπει το βίντεο. Δύο αρχεία, ένας έλεγχος. */
 const ist = fs.readFileSync(path.join(ROOT, 'istoria.html'), 'utf8');
-const lit = ist.match(/var m = (\/\^\(lesson\|recall\).*?\/)\.exec\(h\)/);
-is('η istoria.html αντιδρά σε βαθύ σύνδεσμο', !!lit && /hashchange/.test(ist),
-   'λείπει το fromHash ή ο hashchange');
+/* ⚠️⚠️ als-v489: Η ΣΕΛΙΔΑ ΑΠΕΚΤΗΣΕ ΔΕΥΤΕΡΗ ΜΟΝΑΔΑ (τον πλαγιότιτλο), οπότε η
+   κανονική της μορφή είναι πλέον `#recall:u:<id>` / `#recall:p:<id>`. ΤΟ ΒΙΝΤΕΟ
+   ΟΜΩΣ ΕΚΠΕΜΠΕΙ ΑΚΟΜΗ ΤΗΝ ΠΑΛΙΑ, `#recall:<id>`, και αυτό είναι δεκτό — αρκεί
+   η σελίδα να τη δέχεται ΡΗΤΑ. Αν κάποιος βγάλει τη γραμμή `legacy`, το κουμπί
+   «Τώρα πες το» θα σταματούσε ΣΙΩΠΗΛΑ (η `fromHash` κάνει `return` χωρίς λέξη)
+   — σταθερή αρχή 10. Άρα ο έλεγχος δείχνει σε ΕΚΕΙΝΗ τη γραμμή, όχι σε μια
+   διατύπωση που άλλαξε. */
+const lit = ist.match(/var legacy = (\/\^recall:.*?\/)\.exec\(h\)/);
+is('η istoria.html δέχεται ΑΚΟΜΗ τον παλιό βαθύ σύνδεσμο', !!lit && /hashchange/.test(ist),
+   'λείπει η γραμμή legacy της fromHash ή ο hashchange');
 if (lit){
   const rx = new Function('return ' + lit[1])();
   const hash = 'recall:' + ctx.UNIT;
   const hit = rx.exec(hash);
   is('το «Τώρα πες το» οδηγεί σε ανάκληση που υπάρχει',
-     !!hit && !!ISTORIA.unit(hit[2]), 'το #' + hash + ' δεν αναγνωρίζεται');
+     !!hit && !!ISTORIA.unit(hit[1]), 'το #' + hash + ' δεν αναγνωρίζεται');
 }
 
 is('το βίντεο χτίζει τον σύνδεσμο από την ίδια ταυτότητα ενότητας',

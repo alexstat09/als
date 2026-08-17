@@ -214,48 +214,51 @@
                               : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
         }
         case 'istoria.html': {
-          /* όλα τα locals με πρόθεμα ist* — η σταθερή αρχή 14 κερδήθηκε
-             σε ΑΥΤΗ ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει όλη τη συνάρτηση. */
-          var istS = ladder('ist:v1'); if (!istS) return null;
-          var istL = istS.learned, istD = istS.overdue;
-          /* '\u2014' όταν δεν έχει μάθει τίποτα — ποτέ placeholder σαν αριθμός (als-v433). */
-          return istL ? { hero: istL, note: istD ? istD + ' \u03c0\u03c1\u03bf\u03c2 \u03b5\u03c0\u03b1\u03bd\u03ac\u03bb\u03b7\u03c8\u03b7' : '\u03c5\u03c0\u03bf\u03b5\u03bd\u03cc\u03c4\u03b7\u03c4\u03b5\u03c2' }
-                      : { hero: '\u2014', note: '\u03be\u03b5\u03ba\u03af\u03bd\u03b1' };
-        }
-        /* ⚠️⚠️ ΑΥΤΟ ΤΟ CASE ΔΕΝ ΠΕΡΝΑΕΙ ΑΠΟ ΤΟ `ladders.js`, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
-           Οι πλαγιότιτλοι ζουν στο ΙΔΙΟ `ist:v1`, σε ΔΙΚΟ τους πεδίο (`plag`).
-           Το `STORES` του `ladders.js` κλειδώνεται ΚΑΤΑ ΚΛΕΙΔΙ και το `ist:v1`
-           είναι ήδη πιασμένο από την Ιστορία — μια δεύτερη εγγραφή θα σκίαζε
-           σιωπηλά την πρώτη μέσα στο `byKey`, και το πλακίδιο «Ιστορία» θα
-           άρχιζε να δείχνει πρόοδο πλαγιότιτλων χωρίς να το πει κανείς.
-           Άρα εδώ διαβάζεται ΑΛΛΟ ΠΕΔΙΟ, όχι δεύτερη εκδοχή του ίδιου: καμία
-           δεύτερη αλήθεια, καμία σύγκρουση. Ο σωστός δρόμος (έκτη σκάλα μέσα
-           στο `ladders.js`, με `id` ξεχωριστό από το `key`) ανοίγει ΜΟΝΟ όταν
-           αποφασίσει ο Αλεξ ότι η μία σελίδα αντικαθιστά την άλλη — τότε το
-           χρωστάει και το `homework.html`.
-           ⚠️ Όλα τα locals με πρόθεμα plg* — σταθερή αρχή 14, που κερδήθηκε σε
-           ΑΥΤΗ ακριβώς τη συνάρτηση. */
-        case 'istoria-demo.html': {
-          var plgStore = ls('ist:v1', null);
-          var plgMap = (plgStore && typeof plgStore === 'object' && plgStore.plag) || null;
-          var plgN = 0, plgDue = 0, plgKey, plgRec, plgNow = Date.now();
-          if (plgMap && typeof plgMap === 'object') {
-            for (plgKey in plgMap) {
-              if (!Object.prototype.hasOwnProperty.call(plgMap, plgKey)) continue;
-              plgRec = plgMap[plgKey];
-              if (!plgRec || typeof plgRec !== 'object') continue;
-              plgN++;
+          /* ⭐⭐ als-v489: Η ΣΕΛΙΔΑ ΤΩΝ ΠΛΑΓΙΟΤΙΤΛΩΝ ΕΓΙΝΕ Η ΙΣΤΟΡΙΑ, ΑΡΑ ΤΟ
+             ΠΛΑΚΙΔΙΟ ΜΕΤΡΑΕΙ ΑΥΤΟ ΠΟΥ ΜΕΤΡΑΕΙ Η ΣΕΛΙΔΑ. Ως την als-v488 υπήρχαν
+             ΔΥΟ cases, ένα ανά πόρτα, και εδώ η μόνη αλήθεια ήταν το
+             `ist:v1.units`. Αν έμενε έτσι, το πλακίδιο θα έλεγε ΣΙΩΠΗΛΑ λάθος
+             ημερομηνία: η μονάδα εξέτασης είναι πλέον ο πλαγιότιτλος και το
+             `due` της υποενότητας είναι ΠΑΡΑΓΩΓΟ (σταθερή αρχή 23).
+             ⭐ Η ΣΕΙΡΑ ΕΙΝΑΙ Η ΙΔΙΑ ΜΕ ΤΟΥ `nowTarget()` ΤΗΣ ΣΕΛΙΔΑΣ, επίτηδες:
+             πλαγιότιτλοι πρώτα, και ΜΟΝΟ όταν δεν υπάρχει κανένας πέφτουμε στις
+             υποενότητες. Έτσι το πλακίδιο και η σελίδα δεν μπορούν να πουν δύο
+             διαφορετικά πράγματα την ίδια μέρα.
+             ⚠️ Το `plag` διαβάζεται ΕΔΩ και όχι από το `ladders.js` γιατί το
+             `STORES` κλειδώνεται ΚΑΤΑ ΚΛΕΙΔΙ και το `ist:v1` είναι ήδη πιασμένο·
+             δεύτερη εγγραφή με το ίδιο key θα σκίαζε σιωπηλά την πρώτη μέσα στο
+             `byKey`. Η έκτη σκάλα με `id` ξεχωριστό από το `key` είναι ο σωστός
+             δρόμος και ανοίγει όταν το χρειαστεί ΚΑΙ το `homework.html`.
+             ⚠️ Όλα τα locals με πρόθεμα ist* — η σταθερή αρχή 14 κερδήθηκε σε
+             ΑΥΤΗ ακριβώς τη συνάρτηση: ένα var μέσα σε case σκιάζει ΟΛΗ τη
+             συνάρτηση. */
+          var istStore = ls('ist:v1', null);
+          var istMap = (istStore && typeof istStore === 'object' && istStore.plag) || null;
+          var istN = 0, istPDue = 0, istKey, istRec, istNow = Date.now();
+          if (istMap && typeof istMap === 'object') {
+            for (istKey in istMap) {
+              if (!Object.prototype.hasOwnProperty.call(istMap, istKey)) continue;
+              istRec = istMap[istKey];
+              if (!istRec || typeof istRec !== 'object') continue;
+              istN++;
               /* Ποτέ ειπωμένος = οφείλεται ΤΩΡΑ. Ίδιος κανόνας με τη σελίδα. */
-              if (!plgRec.runs && !plgRec.claimed) plgDue++;
-              else if (plgRec.due && plgNow >= plgRec.due) plgDue++;
+              if (!istRec.runs && !istRec.claimed) istPDue++;
+              else if (istRec.due && istNow >= istRec.due) istPDue++;
             }
           }
-          /* '—' όσο δεν υπάρχει κανένας — ποτέ placeholder σαν αριθμός
-             (als-v433), και ποτέ «0» που να διαβάζεται σαν μέτρηση (αρχή 33). */
-          if (!plgN) return { hero: '—', note: '\u03c6\u03c4\u03b9\u03ac\u03be\u03b5 \u03c4\u03bf\u03bd \u03c0\u03c1\u03ce\u03c4\u03bf' };
-          return plgDue
-            ? { hero: plgDue, note: '\u03c0\u03c1\u03bf\u03c2 \u03b1\u03bd\u03ac\u03ba\u03bb\u03b7\u03c3\u03b7' }
-            : { hero: plgN, note: '\u03c0\u03bb\u03b1\u03b3\u03b9\u03cc\u03c4\u03b9\u03c4\u03bb\u03bf\u03b9 \u00b7 \u03cc\u03bb\u03bf\u03b9 \u03b5\u03bd\u03c4\u03ac\u03be\u03b5\u03b9' };
+          if (istN) {
+            return istPDue
+              ? { hero: istPDue, note: 'προς ανάκληση' }
+              : { hero: istN, note: 'πλαγιότιτλοι · όλοι εντάξει' };
+          }
+          /* Κανένας πλαγιότιτλος ακόμη → οι υποενότητες, ΑΚΡΙΒΩΣ όπως πριν.
+             ⭐ Δεν είναι «άδειο»: είναι η κατάσταση της πρώτης μέρας, και η
+             σελίδα συμπεριφέρεται ΑΚΡΙΒΩΣ έτσι (σταθερή αρχή 33). */
+          var istS = ladder('ist:v1'); if (!istS) return null;
+          var istL = istS.learned, istD = istS.overdue;
+          /* '—' όταν δεν έχει μάθει τίποτα — ποτέ placeholder σαν αριθμός (als-v433). */
+          return istL ? { hero: istL, note: istD ? istD + ' προς επανάληψη' : 'υποενότητες' }
+                      : { hero: '—', note: 'ξεκίνα' };
         }
         case 'tonos.html': {
           var tonS = ladder('ton:v1'); if (!tonS) return null;

@@ -100,11 +100,8 @@
       { href: 'arxaia.html',   name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1', k: 'arx:v1' },
       { href: 'latinika.html', name: '\u039b\u03b1\u03c4\u03b9\u03bd\u03b9\u03ba\u03ac', k: 'lat:v1' },
       { href: 'tonos.html',    name: '\u03a4\u03bf\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2', k: 'ton:v1' },
-      { href: 'istoria.html',  name: '\u0399\u03c3\u03c4\u03bf\u03c1\u03af\u03b1', k: 'ist:v1' },
-      // Πλαγιότιτλοι (als-v474) — ίδια ύλη, άλλη μονάδα εξέτασης.
-      // Ένα `-demo` αρχείο δεν χρειάζεται γραμμή εδώ (το test το εξαιρεί),
-      // αλλά αυτό δεν είναι αντικείμενο κρίσης — είναι εργαλείο μελέτης.
-      { href: 'istoria-demo.html', name: '\u03a0\u03bb\u03b1\u03b3\u03b9\u03cc\u03c4\u03b9\u03c4\u03bb\u03bf\u03b9', k: 'ist:v1' }
+      // als-v489: η σελίδα των πλαγιότιτλων ΕΓΙΝΕ η Ιστορία: μία γραμμή, μία πόρτα.
+      { href: 'istoria.html',  name: '\u0399\u03c3\u03c4\u03bf\u03c1\u03af\u03b1', k: 'ist:v1' }
     ]},
     { name: 'Reflect', accent: 'coral', items: [
       { href: 'morning.html', name: 'Morning briefing', k: null },

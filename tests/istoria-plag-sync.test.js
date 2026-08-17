@@ -344,7 +344,7 @@ const blankStore = extra => Object.assign({ v: 1, units: {}, els: {}, days: [], 
 
   section('4β · Η σελίδα σφραγίζει και ταφοπλακώνει ΜΕ ΤΟΝ ΙΔΙΟ κανόνα');
   {
-    const p = fs.readFileSync(path.join(ALS, 'istoria-demo.html'), 'utf8');
+    const p = fs.readFileSync(path.join(ALS, 'istoria.html'), 'utf8');
     ok('η σελίδα δίνει και τους τρεις χάρτες + τον ρυθμό στη σφραγίδα',
       /\[state\.units, state\.els, state\.plag, \{ pace: state\.pace \}\]/.test(p));
     ok('η ταφόπλακα της σελίδας ξεπερνάει ΚΑΙ τα δύο timestamps',

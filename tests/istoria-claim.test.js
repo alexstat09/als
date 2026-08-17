@@ -43,9 +43,52 @@ ok(JS.length > 20000, 'βρέθηκε το inline script (' + JS.length + ' χα
 function noComments(s) {
   return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 }
+/* ⚠️⚠️ ΕΝΑΣ ΣΑΡΩΤΗΣ, ΟΧΙ ΤΡΙΑ REGEX — ΚΑΙ Ο ΛΟΓΟΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΟΣ.
+   Η παλιά μορφή ήταν «σβήσε τα μονά, μετά τα διπλά». Αυτό ακυρώνεται από ΔΥΟ
+   εντελώς συνηθισμένα πράγματα σε αυτή τη σελίδα:
+     · ένα εισαγωγικό μέσα σε REGEX  — το `esc()` γράφει `.replace(/"/g,'&quot;')`,
+       οπότε το πέρασμα των μονών άφηνε ΟΡΦΑΝΟ το `"` και το επόμενο πέρασμα
+       κατάπινε **21.329 χαρακτήρες**·
+     · μια απόστροφος μέσα σε ΔΙΠΛΑ εισαγωγικά — 7 ακόμη «συμβολοσειρές» ως
+       563 χαρακτήρων, που έτρωγαν ολόκληρες `function …`.
+   Και στις δύο περιπτώσεις ο φρουρός «καλείται όνομα που δεν δηλώνεται»
+   κατήγγειλε ΣΩΣΤΟ κώδικα, δηλαδή έκλαιγε — και ένας φρουρός που κλαίει είναι
+   φρουρός που κάποιος χαλαρώνει (σταθερή αρχή 19). Μια σάρωση αριστερά-προς-
+   δεξιά που ξέρει τι ΕΙΝΑΙ literal δεν έχει αυτή την κατηγορία λάθους. */
 function noStrings(s) {
-  return s.replace(/'(?:\\.|[^'\\])*'/g, "''").replace(/"(?:\\.|[^"\\])*"/g, '""');
+  var out = '', i = 0, n = s.length, prev = '';
+  while (i < n) {
+    var c = s[i];
+    if (c === "'" || c === '"' || c === '`') {
+      var q = c; i++;
+      while (i < n && s[i] !== q) { if (s[i] === '\\') i++; i++; }
+      i++; out += q + q; prev = q; continue;
+    }
+    /* Regex literal ή διαίρεση; Το κρίνει ο προηγούμενος ΜΗ-ΚΕΝΟΣ χαρακτήρας:
+       μετά από τελεστή ή άνοιγμα παρένθεσης δεν μπορεί να είναι διαίρεση. */
+    if (c === '/' && '(,=:!&|?{};[+\n'.indexOf(prev || '\n') >= 0) {
+      var j = i + 1, cls = false, closed = false;
+      for (; j < n; j++) {
+        var d = s[j];
+        if (d === '\\') { j++; continue; }
+        if (d === '\n') break;
+        if (d === '[') cls = true;
+        else if (d === ']') cls = false;
+        else if (d === '/' && !cls) { closed = true; break; }
+      }
+      if (closed) {
+        out += '/RX/'; i = j + 1;
+        while (i < n && 'gimsuy'.indexOf(s[i]) >= 0) i++;
+        prev = '/'; continue;
+      }
+    }
+    out += c;
+    if (!/\s/.test(c)) prev = c;
+    i++;
+  }
+  return out;
 }
+
 var TEXT = noComments(JS);        /* με strings — για έλεγχο περιεχομένου */
 var CODE = noStrings(TEXT);       /* χωρίς strings — για έλεγχο δομής */
 
@@ -66,15 +109,15 @@ ok(CLAIM.length > 60, 'υπάρχει doClaim()');
 ok(CLAIM.indexOf('reviews') < 0, '⭐ doClaim ΔΕΝ αγγίζει το reviews — η σκάλα κερδίζεται με μέτρηση');
 ok(CLAIM.indexOf('best') < 0, '⭐ doClaim ΔΕΝ αγγίζει το best — δεν υπάρχει ακρίβεια χωρίς ανάκληση');
 ok(CLAIM.indexOf('I.nextDue') < 0, '⭐ doClaim ΔΕΝ καλεί τη σκάλα επανάληψης');
-ok(/s\.claimed\s*=\s*Date\.now\(\)/.test(CLAIM), 'doClaim σφραγίζει το claimed');
-ok(/s\.due\s*=\s*Date\.now\(\)\s*\+\s*CLAIM_DAYS/.test(CLAIM), 'doClaim δίνει σταθερό παρκάρισμα CLAIM_DAYS');
-ok(/if\s*\(\s*s\.runs\s*\)/.test(CLAIM), '⭐ doClaim αρνείται να πατήσει υπάρχουσα ΜΕΤΡΗΣΗ');
+ok(/\brec\.claimed\s*=\s*Date\.now\(\)/.test(CLAIM), 'doClaim σφραγίζει το claimed');
+ok(/\brec\.due\s*=\s*Date\.now\(\)\s*\+\s*CLAIM_DAYS/.test(CLAIM), 'doClaim δίνει σταθερό παρκάρισμα CLAIM_DAYS');
+ok(/if\s*\(\s*rec\.runs\s*\)/.test(CLAIM), '⭐ doClaim αρνείται να πατήσει υπάρχουσα ΜΕΤΡΗΣΗ');
 ok(CLAIM_T.indexOf('rcBar') >= 0 && CLAIM_T.indexOf('micStop()') >= 0,
   '⭐ doClaim κλείνει την ανάκληση — αλλιώς ένα «Τέλος» με σιωπή γράφει 0% πάνω στη δήλωση');
 
 var UNDO = bodyOf(CODE, 'undoClaim');
 ok(UNDO.length > 40, 'υπάρχει undoClaim()');
-ok(/if\s*\(\s*!claimedOnly\(s\)\s*\)\s*return/.test(UNDO),
+ok(/if\s*\(\s*!claimedOnly\(rec\)\s*\)\s*return/.test(UNDO),
   '⭐ undoClaim ΔΕΝ μηδενίζει ποτέ μετρημένη πρόοδο');
 
 ok(/!s\.runs/.test(bodyOf(CODE, 'claimedOnly')),
@@ -97,22 +140,29 @@ ok(/s\.best\s*=\s*Math\.max\(sess\.base\.best/.test(LAD),
 /* ── 2 · ΕΝΑ ΜΠΛΟΚ, ΔΥΟ ΘΕΣΕΙΣ (σταθερή αρχή 15) ────────────────────── */
 ok((CODE.match(/function claimInner\(/g) || []).length === 1,
   'το κουμπί χτίζεται από ΜΙΑ συνάρτηση');
-ok((TEXT.match(/paintClaim\('isClaim/g) || []).length === 2,
-  'και μπαίνει σε ΔΥΟ θέσεις (μάθημα + ανάκληση), ώστε να μη γίνουν δύο υποσχέσεις');
-ok(TEXT.indexOf('isClaimL') > 0, 'θέση 1: το μάθημα');
-ok(TEXT.indexOf('isClaimR') > 0, 'θέση 2: η ανάκληση');
+/* ⭐ als-v489: ΤΡΕΙΣ ΘΕΣΕΙΣ ΤΩΡΑ, ΟΧΙ ΔΥΟ — ΤΟ ΤΩΡΑ, το μάθημα και η ανάκληση.
+   Ο αριθμός δεν είναι το ζητούμενο· το ζητούμενο είναι ότι τις ζωγραφίζει ΜΙΑ
+   συνάρτηση, ώστε να μη γίνουν τρεις διαφορετικές υποσχέσεις (σταθερή αρχή 15). */
+ok((TEXT.match(/paintClaim\('ipClaim/g) || []).length === 3,
+  'και μπαίνει σε ΤΡΕΙΣ θέσεις, ώστε να μη γίνουν τρεις υποσχέσεις');
+ok(TEXT.indexOf('ipClaimNow') > 0, 'θέση 1: ΤΟ ΤΩΡΑ');
+ok(TEXT.indexOf('ipClaimL') > 0, 'θέση 2: το μάθημα');
+ok(TEXT.indexOf('ipClaimR') > 0, 'θέση 3: η ανάκληση');
 
-/* ── 3 · ΔΗΛΩΜΕΝΟ ΚΑΙ ΜΕΤΡΗΜΕΝΟ ΔΕΝ ΤΥΠΩΝΟΝΤΑΙ ΙΔΙΑ (σταθερή αρχή 10) ─ */
-var ROW = bodyOf(TEXT, 'row');
-ok(/claimedOnly\(s\)/.test(ROW), 'η γραμμή της ύλης ξέρει τη διαφορά');
-ok(/var bar = dec \? '<span class="is-rowdec"/.test(ROW), 'το δηλωμένο ΔΕΝ παίρνει μπάρα ακρίβειας');
-ok(ROW.indexOf('is-rowdec') >= 0, 'και λέει το όνομά του στη θέση της μπάρας');
-ok(SRC.indexOf('.is-rowdec{') > 0, 'σταθερή αρχή 12: η .is-rowdec ΟΡΙΖΕΤΑΙ στο CSS');
+/* ── 3 · ΔΗΛΩΜΕΝΟ ΚΑΙ ΜΕΤΡΗΜΕΝΟ ΔΕΝ ΤΥΠΩΝΟΝΤΑΙ ΙΔΙΑ (σταθερή αρχή 10) ─
+   ⚠️ Η διάκριση μετακόμισε από τη `row()` της λίστας ύλης στο `chipOf()` της
+   ραχοκοκαλιάς, γιατί η λίστα ύλης έγινε ραχοκοκαλιά. Ο ΝΟΜΟΣ είναι ο ίδιος
+   και γι' αυτό ο έλεγχος επιβιώνει: μια ΔΗΛΩΣΗ δεν επιτρέπεται να πάρει ποτέ
+   ποσοστό, γιατί ποσοστό σημαίνει ότι κάποιος το άκουσε. */
+var CHIP = bodyOf(TEXT, 'chipOf');
+ok(CHIP.length > 60, 'υπάρχει chipOf()');
+ok(/claimedOnly\(rec\)/.test(CHIP), 'το τσιπάκι της ύλης ξέρει τη διαφορά');
+ok(/claimedOnly\(rec\)\)\s*return\s*\{[^}]*δηλωμένο/.test(CHIP),
+  '⭐ το δηλωμένο γυρίζει ΝΩΡΙΣ και ΔΕΝ φτάνει ποτέ στον υπολογισμό ποσοστού');
+ok(CHIP.indexOf('δηλωμένο') >= 0, 'και λέει το όνομά του στη θέση του ποσοστού');
 ['is-claim', 'is-claim-b', 'is-claim-on', 'is-claim-head', 'is-claim-note', 'is-claim-undo'].forEach(function (c) {
   ok(SRC.indexOf('.' + c + '{') > 0, 'σταθερή αρχή 12: η .' + c + ' ΟΡΙΖΕΤΑΙ στο CSS');
 });
-ok(/δηλωμένη, όχι μετρημένη/.test(TEXT) && /δηλωμένες, όχι μετρημένες/.test(TEXT),
-  '⭐ το Home το λέει με λέξεις, δεν αφήνει τη δήλωση να περάσει για μέτρηση');
 ok(/Το είπες εσύ, δεν το άκουσε κανείς/.test(TEXT),
   '⭐ και το ίδιο το κουμπί το λέει, για όσο ισχύει');
 

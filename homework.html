@@ -1409,12 +1409,17 @@
     return out;
   }
 
-  /* ⚠️ ΤΟ ΒΑΘΥ LINK ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Μόνο η istoria.html διαβάζει hash
-     (`#recall:<id>` — istoria.html:1336). Οι άλλες δύο δεν έχουν, οπότε ο
-     σύνδεσμος πάει στη σελίδα σκέτη. Ένα ωραίο link που προσγειώνεται σε
-     αδιέξοδο είναι χειρότερο από ένα απλό που δουλεύει. */
-  function deepLink(page, unitId){
-    if (page === 'istoria.html' && unitId) return page + '#recall:' + encodeURIComponent(unitId);
+  /* ⚠️ ΤΟ ΒΑΘΥ LINK ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Μόνο η istoria.html διαβάζει hash. Οι
+     άλλες δύο δεν έχουν, οπότε ο σύνδεσμος πάει στη σελίδα σκέτη. Ένα ωραίο
+     link που προσγειώνεται σε αδιέξοδο είναι χειρότερο από ένα απλό που
+     δουλεύει.
+     ⭐ als-v489: η istoria.html δέχεται ΔΥΟ μονάδες — `#recall:p:<id>` για
+     πλαγιότιτλο και `#recall:u:<id>` για υποενότητα. Το `kind` ΔΕΝ μαντεύεται
+     εδώ: έρχεται από το `ladders.js`, που ξέρει ΠΟΙΑ σκάλα διάβασε. Ένα λάθος
+     γράμμα εδώ βγάζει «Δεν βρήκα πλαγιότιτλο …» σε κάτι που υπάρχει. */
+  function deepLink(page, unitId, kind){
+    if (page === 'istoria.html' && unitId)
+      return page + '#recall:' + (kind === 'plag' ? 'p' : 'u') + ':' + encodeURIComponent(unitId);
     return page || '#';
   }
 
@@ -2157,8 +2162,12 @@
       if (examSubj && examSubj === s.subject && exam.days <= 7){ why.push('διαγώνισμα σε ' + exam.days + (exam.days === 1 ? ' μέρα' : ' μέρες')); score += 35; }
       out.push({
         kind:'ladder', store:s.key, subject:s.subject, weight:s.weight,
-        title:s.label, unitId:it.unitId, unitLabel:unitTitle(s.key, it.unitId),
-        href:deepLink(s.page, s.deep ? it.unitId : null),
+        /* ⭐ als-v489: ΤΟΝ ΤΙΤΛΟ ΤΟΥ ΠΛΑΓΙΟΤΙΤΛΟΥ ΤΟΝ ΞΕΡΕΙ ΜΟΝΟ Η ΕΓΓΡΑΦΗ ΤΟΥ.
+           Είναι τα λόγια του καθηγητή του και δεν υπάρχουν σε κανένα corpus,
+           οπότε το `unitTitle()` θα έπεφτε στο id («p_l4k9x») — ακριβώς το
+           «b1b στην οθόνη ενός ανθρώπου» που κόστισε η σταθερή αρχή 37. */
+        title:s.label, unitId:it.unitId, unitLabel: it.title || unitTitle(s.key, it.unitId),
+        href:deepLink(s.page, s.deep ? it.unitId : null, it.unitKind),
         cta:'Πες το', est:null, why:why, score:score, more:late.length - 1
       });
     });

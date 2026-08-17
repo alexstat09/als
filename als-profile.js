@@ -40,7 +40,7 @@
     'money', 'bills', 'life', 'mind', 'movies', 'ideas', 'goals',
     'coach', 'insights', 'arc', 'weekly', 'morning', 'nova-chat',
     'planner', 'measure', 'supps', 'improve', 'backup', 'studio',
-    'istoria', 'istoria-demo', 'arxaia', 'homework'
+    'istoria', 'arxaia', 'homework'
   ];
 
   // Alex's revision pages for the Greek Πανελλήνιες exams. They are HIS content,

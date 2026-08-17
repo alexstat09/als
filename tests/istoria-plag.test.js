@@ -31,8 +31,13 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const I = require(path.join(ROOT, 'istoria-data.js'));
 const LG = require(path.join(ROOT, 'lesson-grade.js'));
-const PAGE = fs.readFileSync(path.join(ROOT, 'istoria-demo.html'), 'utf8');
-const LIVE = fs.readFileSync(path.join(ROOT, 'istoria.html'), 'utf8');
+const PAGE = fs.readFileSync(path.join(ROOT, 'istoria.html'), 'utf8');
+/* ⭐ als-v489: ΗΤΑΝ ΔΥΟ ΑΡΧΕΙΑ, ΕΓΙΝΕ ΕΝΑ. Το `istoria-demo.html` πήρε τη θέση
+   και το όνομα της ζωντανής σελίδας, οπότε `LIVE === PAGE`. Το alias μένει
+   επίτηδες: η §7β από κάτω ελέγχει την ΕΓΓΥΗΣΗ της σταθερής αρχής 35 (ο
+   `load()` αντιγράφει ΠΡΩΤΑ όλα τα κλειδιά), και εκείνη η εγγύηση δεν αφορούσε
+   ποτέ το όνομα του αρχείου — αφορά τη σελίδα που κατέχει το `ist:v1`. */
+const LIVE = PAGE;
 
 /* ⚠️ ΟΙ ΣΤΑΤΙΚΕΣ ΒΕΒΑΙΩΣΕΙΣ ΔΙΑΒΑΖΟΥΝ ΚΩΔΙΚΑ, ΟΧΙ ΣΧΟΛΙΑ. Αυτή η σελίδα
    γράφει τους κανόνες της μέσα στα σχόλιά της («ΚΑΝΕΝΑ σκέτο `state =
@@ -402,7 +407,12 @@ section('7β · Η ΖΩΝΤΑΝΗ σελίδα δεν χάλασε — και δ
      επιτρεπομένων: ό,τι δεν ονόμαζε ρητά ΔΕΝ επιβίωνε της φόρτωσης, και το
      επόμενο save το έγραφε σβησμένο στον δίσκο. Με δύο σελίδες πάνω στο ίδιο
      store αυτό είναι ΑΠΩΛΕΙΑ ΔΕΔΟΜΕΝΩΝ, όχι ατέλεια. */
-  ok(/for \(k in s\) if \(Object\.prototype\.hasOwnProperty\.call\(s, k\)\) b\[k\] = s\[k\];/.test(LIVECODE),
+  /* ⚠️ Η ΒΕΒΑΙΩΣΗ ΕΙΝΑΙ Η ΕΓΓΥΗΣΗ, ΟΧΙ Η ΔΙΑΤΥΠΩΣΗ. Ο έλεγχος ήταν καρφωμένος
+     στο αυτούσιο `Object.prototype.hasOwnProperty.call(s, k)` της παλιάς
+     σελίδας· η σημερινή το περνάει από τον βοηθό της `has()`. Ίδιος νόμος,
+     άλλη γραφή — και ένας φρουρός που σκάει σε αλλαγή που ΔΕΝ περιγράφει
+     είναι θόρυβος, δηλαδή φρουρός που κάποιος χαλαρώνει (σταθερή αρχή 19). */
+  ok(/for \(k in s\) if \((?:has\(s, k\)|Object\.prototype\.hasOwnProperty\.call\(s, k\))\) b\[k\] = s\[k\];/.test(LIVECODE),
     'η istoria.html αντιγράφει ΠΡΩΤΑ όλα τα κλειδιά και μετά κανονικοποιεί');
 
   /* Και η ΣΥΜΠΕΡΙΦΟΡΑ της δεν άλλαξε σε τίποτα άλλο: τα τέσσερα πεδία που
@@ -413,8 +423,10 @@ section('7β · Η ΖΩΝΤΑΝΗ σελίδα δεν χάλασε — και δ
   });
   ok(/function reload\(\)\{ state = load\(\); STAMP\.seed\(\); \}/.test(LIVECODE),
     'ο κύκλος reload/seed της ζωντανής είναι άθικτος');
-  ok(/appKey:'istoria'/.test(LIVECODE), 'η ζωντανή κρατάει τον appKey της');
-  ok(!/istoria-demo/.test(LIVECODE), 'η ζωντανή σελίδα ΔΕΝ ξέρει καν ότι υπάρχει η νέα');
+  ok(/APP = 'istoria'/.test(LIVECODE), 'η σελίδα κρατάει τον appKey της');
+  /* ⭐ Και ΚΑΜΙΑ αναφορά στο παλιό όνομα: ένα `istoria-demo.html` που επιβίωσε
+     κάπου μέσα στη σελίδα είναι σύνδεσμος προς αρχείο που ΔΕΝ ΥΠΑΡΧΕΙ πια. */
+  ok(!/istoria-demo/.test(LIVE), 'κανένα ίχνος του παλιού ονόματος δεν έμεινε στη σελίδα');
 
   /* Και το ίδιο το σχήμα, με προσομοίωση του κύκλου φόρτωσης/αποθήκευσης:
      ένα ΑΓΝΩΣΤΟ πεδίο πρέπει να ζητηθεί πίσω μετά από load+save. Κανένα
@@ -426,11 +438,13 @@ section('7β · Η ΖΩΝΤΑΝΗ σελίδα δεν χάλασε — και δ
     const seeded = { units: { a1a: { runs: 1 } }, els: {}, days: [], heard: {}, plag: { p_x: { id: 'p_x', title: 'δικός του' } }, pace: { secs: 40, els: 20 } };
     /* Ο ΑΛΗΘΙΝΟΣ `load()` της ζωντανής σελίδας, κομμένος από το αρχείο και
        τρεχούμενος όπως είναι. Ένα αντίγραφο εδώ θα συμφωνούσε με το λάθος. */
-    const fn = new Function('RAW', 'KEY', 'toast', 'blank', 'localStorage',
+    const fn = new Function('RAW', 'KEY', 'toast', 'blank', 'localStorage', 'has',
       m[0] + ' return load();');
     const out = fn(JSON.stringify(seeded), 'ist:v1', function () {},
-      function () { return { v: 1, units: {}, els: {}, days: [], heard: {} }; },
-      { getItem: function () { return JSON.stringify(seeded); } });
+      function () { return { v: 1, units: {}, els: {}, days: [], heard: {}, plag: {}, sessions: [], pace: { secs: 0, els: 0 } }; },
+      { getItem: function () { return JSON.stringify(seeded); } },
+      /* ο ΙΔΙΟΣ βοηθός που έχει η σελίδα, όχι δικό μου ισοδύναμο */
+      function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); });
     eq(out.plag, seeded.plag, '⭐ ο load() της ζωντανής ΔΕΝ σβήνει πια το plag άλλης σελίδας');
     eq(out.pace, seeded.pace, '…ούτε το pace');
     eq(out.units, seeded.units, '…και κρατάει κανονικά τα δικά του');

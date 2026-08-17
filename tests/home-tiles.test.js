@@ -109,7 +109,7 @@ const DESTS = ['gym.html', 'pr.html', 'sleep.html', 'nutrition.html', 'supps.htm
   'measure.html', 'weight.html', 'caffeine.html', 'main.html', 'identity.html',
   'ideas.html', 'improve.html', 'finance.html', 'movies.html', 'run.html',
   'arc.html', 'insights.html', 'latinika.html', 'tonos.html', 'istoria.html',
-  'arxaia.html', 'homework.html', 'istoria-demo.html'];
+  'arxaia.html', 'homework.html'];
 
 DESTS.forEach(h => {
   let m, err = null;

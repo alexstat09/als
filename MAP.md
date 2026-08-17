@@ -410,7 +410,28 @@ separate facts inside it, so a point is complete only when every one of them was
 said, and the summary shows exactly which were missed. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
 the same row).
 
-⭐ **`istoria-demo.html` (als-v473) sits BESIDE it and does not replace it** — his
+⭐⭐ **als-v489: ΤΟ `istoria-demo.html` ΕΓΙΝΕ Η `istoria.html`.** Δική του απόφαση
+(17/08/26): *«θέλω να παραμείνει μόνο το πλαγιότιτλοι page, και να σβηστεί το
+history page· μόλις συμβεί αυτό να ονομαστεί το πλαγιότιτλοι page history και να
+μπει μέσα στο School Studies»*. Η παλιά σελίδα σβήστηκε, το αρχείο μετονομάστηκε
+στη θέση της, και **το URL δεν άλλαξε** — bookmarks και home-screen shortcut
+ζουν. Καθαρίστηκαν στο ίδιο commit: `index.html` (Study 7 → **6** πλακίδια,
+2 φαρδιά· μετρημένο σε render 393px: 4 σειρές, κανένα ορφανό) · `launcher.js` ·
+`home-motion.js` (οι λέξεις «Πλαγιότιτλοι/Πλαγιότιτλος» δείχνουν εδώ) ·
+`als-profile.js` · `home-live.js` (**ένα** case τώρα: `plag` πρώτα, εφεδρεία τα
+`units`, ίδια σειρά με το `nowTarget()` της σελίδας) · `sw.js` `CORE` + `CACHE`.
+⚠️ **Ο ΠΑΛΙΟΣ ΒΑΘΥΣ ΣΥΝΔΕΣΜΟΣ `#recall:<id>` ΖΕΙ ΑΚΟΜΗ, ΕΠΙΤΗΔΕΣ** — τον στέλνουν
+το `istoria-video-demo.html` και το `homework.html`, και χωρίς αυτόν η `fromHash`
+έκανε `return` **χωρίς λέξη** (σταθερή αρχή 10). Το `tests/video-timing.test.js`
+δείχνει πλέον σε ΕΚΕΙΝΗ τη γραμμή.
+⭐ **Και το School Studies βλέπει τους ΠΛΑΓΙΟΤΙΤΛΟΥΣ:** το `ladders.js` απέκτησε
+`altLadder: 'plag'` (δεύτερη σκάλα στο ΙΔΙΟ κλειδί· εφεδρεία οι υποενότητες όσο
+δεν υπάρχει κανένας), τα items κουβαλάνε `unitKind` + `title`, και το
+`deepLink()` γράφει `#recall:p:` ή `#recall:u:`. Οδηγημένο σε αληθινό Chrome:
+η κάρτα «Μία απόφαση» γράφει **«Ιστορία · Γιατί δεν μοιράστηκαν οι εθνικές
+γαίες»** — τα λόγια του καθηγητή, όχι «b3».
+
+Το ιστορικό, γιατί εξηγεί το σχήμα: **`istoria-demo.html` (als-v473) sat BESIDE it and did not replace it** — his
 explicit instruction, and `docs/ISTORIA_SPEC.md`'s Φάση 0.5. The unit of examination
 there is the **πλαγιότιτλος του καθηγητή**, not the υποενότητα: he writes the
 teacher's own words as a title and PICKS paragraphs, and `I.pointsOf()` resolves them
