@@ -29,6 +29,60 @@ function section(s) { console.log('\n' + s); }
 
 const PAGE = fs.readFileSync(path.join(ALS, 'homework.html'), 'utf8');
 
+/* ══ ⛔⛔ Ο ΦΡΟΥΡΟΣ ΤΟΥ ΤΕΡΜΑΤΙΣΜΟΥ ΖΕΙ ΕΔΩ, ΣΤΗΝ ΑΡΧΗ, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ.
+   Ως την als-v490 ένα `process.exit()` καθόταν στη ΜΕΣΗ αυτού του αρχείου και
+   ολόκληρη η ενότητα 8 (ΤΟ ΠΡΟΓΡΑΜΜΑ, als-v485) ήταν νεκρός κώδικας — 92
+   βεβαιώσεις που το suite δεν έτρεξε ΠΟΤΕ, ενώ τύπωνε «passed».
+   ⭐⭐ Ο ΛΟΓΟΣ ΠΟΥ ΕΙΝΑΙ ΠΡΩΤΟΣ: γράφτηκε πρώτα στο ΤΕΛΟΣ, και η μετάλλαξη
+   «βάλε δεύτερο τερματισμό στη μέση» ΠΕΡΑΣΕ ΚΑΘΑΡΗ — γιατί ο φρουρός ζούσε
+   πίσω από το πράγμα που φυλούσε. **Ένας φρουρός δεν μπορεί να φυλάξει κάτι
+   που συμβαίνει πριν από αυτόν.**
+   ⚠️ Η βελόνα γράφεται ΚΟΜΜΕΝΗ, αλλιώς μετράει τον εαυτό της (σταθ. 19). */
+/* ⭐⭐ ΚΑΙ Ο ΤΕΛΕΥΤΑΙΟΣ ΦΡΟΥΡΟΣ ΕΙΝΑΙ EXIT HOOK, ΓΙΑΤΙ ΤΙΠΟΤΑ ΑΛΛΟ ΔΕΝ
+   ΜΠΟΡΕΙ ΝΑ ΠΙΑΣΕΙ ΕΝΑ `process.exit()` ΣΤΗ ΜΕΣΗ. Δοκιμάστηκε: με τον έλεγχο
+   ως ΒΕΒΑΙΩΣΗ (είτε στην αρχή είτε στο τέλος) η μετάλλαξη «βάλε τερματισμό στο
+   9c» ΠΕΡΝΑΕΙ ΚΑΘΑΡΗ — ο μετρητής κοκκινίζει κανονικά, αλλά το exit(0) φεύγει
+   πριν τυπωθεί ο απολογισμός, οπότε το CI βλέπει κωδικό 0 και σιωπή.
+   ⭐ Ο κανόνας: **ένα test που τερματίζει ΧΩΡΙΣ να τυπώσει τον απολογισμό του
+   είναι σπασμένο, όποιος κι αν το τερμάτισε.** Ο hook τρέχει ακόμη και μετά
+   από `process.exit`, και ΑΛΛΑΖΕΙ τον κωδικό εξόδου — που είναι το μόνο πράγμα
+   που το CI διαβάζει. */
+let REPORTED = false;
+process.on('exit', function (code) {
+  if (REPORTED) return;
+  process.stdout.write('\n\u274c ΤΟ ΑΡΧΕΙΟ ΤΕΡΜΑΤΙΣΕ ΧΩΡΙΣ ΑΠΟΛΟΓΙΣΜΟ — ' +
+    'κάποιος τερματισμός στη μέση έκανε τις υπόλοιπες βεβαιώσεις ΚΕΙΜΕΝΟ.\n');
+  process.exitCode = 1;
+  if (code === 0) process.reallyExit(1);
+});
+
+section('0b · ΤΟ STYLESHEET ΚΛΕΙΝΕΙ');
+{
+  /* ⛔⛔ ΕΝΑ `{` ΠΑΡΑΠΑΝΩ ΚΑΝΕΙ ΚΑΘΕ ΕΠΟΜΕΝΟ ΚΑΝΟΝΑ ΝΑ ΖΕΙ ΜΕΣΑ ΣΤΟ ΤΕΛΕΥΤΑΙΟ
+     ΑΝΟΙΧΤΟ BLOCK. Συνέβη στην als-v490: προσθέτοντας δύο κανόνες στο
+     `@media (max-width:999px)` έφυγε το κλείσιμό του, και **ΟΛΟ το CSS από
+     εκείνο το σημείο και κάτω ίσχυε μόνο κάτω από 999px** — δηλαδή η μισή
+     σελίδα ήταν άστυλη στο laptop, που είναι το 99% της ανάγνωσής του.
+     ⭐ Δεν το είδε κανένα μάτι και καμία από τις 500+ βεβαιώσεις. Το έπιασε η
+     ΜΕΤΡΗΣΗ: `document.scrollWidth` 1698 σε viewport 1440. */
+  const css = PAGE.slice(PAGE.indexOf('<style>') + 7, PAGE.indexOf('</style>'))
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  is('οι αγκύλες του stylesheet ισορροπούν',
+    (css.match(/\{/g) || []).length - (css.match(/\}/g) || []).length, 0);
+  is('και υπάρχει ΑΚΡΙΒΩΣ ΕΝΑ </style>', (PAGE.match(/<\/style>/g) || []).length, 1);
+}
+
+section('0 · ΤΟ ΑΡΧΕΙΟ ΤΡΕΧΕΙ ΟΛΟΚΛΗΡΟ');
+{
+  const SELF = fs.readFileSync(__filename, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const NEEDLE = 'process' + '.exit(';
+  is('υπάρχει ΑΚΡΙΒΩΣ ΕΝΑΣ τερματισμός σε όλο το αρχείο',
+    SELF.split(NEEDLE).length - 1, 1);
+  const lastAssert = Math.max(SELF.lastIndexOf('  ok('), SELF.lastIndexOf('  is('));
+  ok('και είναι ΜΕΤΑ την τελευταία βεβαίωση', SELF.lastIndexOf(NEEDLE) > lastAssert);
+}
+
 /* ── ΤΟ ΚΟΨΙΜΟ ────────────────────────────────────────────────────────
    Το inline script είναι ένα IIFE δεμένο στο DOM που δεν εξάγει τίποτα, οπότε
    κόβεται. Οι δείκτες ελέγχονται, ώστε ένα refactor να σκάει ΕΔΩ, δυνατά,
@@ -720,10 +774,16 @@ section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop 
   ok('καμία αναδιάταξη δεν ζει ΕΞΩ από media query',
     (PAGE.match(ORDER_RE) || []).length ===
     (phone.match(ORDER_RE) || []).length + (laptop.match(ORDER_RE) || []).length);
+  /* ⭐ ΒΕΒΑΙΩΣΕ ΤΗΝ ΙΔΙΟΤΗΤΑ, ΟΧΙ ΕΝΑ ΣΤΙΓΜΙΟΤΥΠΟ ΤΗΣ (als-v453, ξανά). Η
+     πρώτη γραφή απαιτούσε ΑΚΡΙΒΩΣ `body:not(.hw-door) .hw-x{ order:`, οπότε
+     κοκκίνισε μπροστά σε `body:not(.hw-door).hw-t-capture .hw-apog{ order:3 }`
+     — που ΤΗΡΕΙ τον κανόνα και είναι απλώς πιο ειδικό. Ένας φρουρός που κράζει
+     λύκο είναι φρουρός που κάποιος χαλαρώνει (σταθ. 19), άρα ελέγχει ΚΑΘΕ
+     γραμμή με `order:` ότι ο επιλογέας της αποκλείει τις πόρτες. */
+  const laptopOrderLines = laptop.split('\n').filter(l => /[;{\s]order:\s*\d/.test(l));
+  ok('υπάρχουν σειρές laptop να ελεγχθούν', laptopOrderLines.length > 0);
   ok('και κάθε σειρά του laptop ισχύει ΜΟΝΟ στο κέντρο, ποτέ πίσω από πόρτα',
-    (laptop.match(ORDER_RE) || []).length > 0 &&
-    (laptop.match(/body:not\(\.hw-door\) \.hw-[a-z0-9]+\{ order:/g) || []).length ===
-    (laptop.match(ORDER_RE) || []).length);
+    laptopOrderLines.every(l => l.indexOf('body:not(.hw-door)') > -1));
 }
 
 section('4f · φάση 2 · the 21:45 door is the SAME reader, not a second copy');
@@ -1519,8 +1579,14 @@ section('12 · οι εργασίες γίνονται ομάδες (als-v487)');
     /if \(t\.done\)\{\s*dtxt = '';/.test(CODE));
 }
 
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+/* ⛔⛔ ΕΔΩ ΚΑΘΟΤΑΝ ΕΝΑ `process.exit()`, ΣΤΗ ΜΕΣΗ ΤΟΥ ΑΡΧΕΙΟΥ, ΚΑΙ ΚΑΘΕ
+   ΒΕΒΑΙΩΣΗ ΑΠΟ ΚΑΤΩ ΗΤΑΝ ΚΕΙΜΕΝΟ. Ολόκληρη η ενότητα 8 (ΤΟ ΠΡΟΓΡΑΜΜΑ,
+   als-v485) δεν έτρεξε ΠΟΤΕ — 92 βεβαιώσεις που το suite μετρούσε ως
+   ανύπαρκτες ενώ τύπωνε «passed». Βρέθηκε στην als-v490 προσθέτοντας από
+   κάτω και βλέποντας ότι δεν εμφανίζονταν.
+   ⭐ Σταθερή αρχή 40 σε νέα μορφή: **ένας φρουρός μετά από `process.exit`
+   ΕΙΝΑΙ κείμενο.** Ο απολογισμός ζει ΜΟΝΟ στο τέλος, και υπάρχει βεβαίωση
+   που μετράει ότι ο τερματισμός είναι ΕΝΑΣ. */
 
 /* ══════════════════════════════════════════════════════════════════════
    8 · ⭐⭐ ΤΟ ΠΡΟΓΡΑΜΜΑ — als-v485
@@ -1573,7 +1639,11 @@ section('8b · «για την επόμενη φορά» — και ΠΟΤΕ σ�
   }
   /* Μια ΠΑΡΑΓΟΜΕΝΗ ημερομηνία το λέει: «Τρίτη» και «Τρίτη, την υπολόγισα εγώ»
      είναι δύο διαφορετικά πράγματα (σταθ. 10 σε μορφή ημερομηνίας). */
-  ok('η παραγόμενη ημερομηνία δηλώνεται στην οθόνη', /dd\.auto \? ' \(η επόμενη\)' : ''/.test(PAGE));
+  /* ⭐ Η ΙΔΙΟΤΗΤΑ, ΟΧΙ Η ΔΙΑΤΥΠΩΣΗ. Το κείμενο άλλαξε στην als-v487 σε
+     «<i>· η επόμενη</i>» και αυτή η γραμμή έψαχνε ακόμη το παλιό string.
+     Κανείς δεν το είδε επειδή ζούσε κάτω από τον τερματισμό. */
+  ok('η παραγόμενη ημερομηνία δηλώνεται στην οθόνη',
+    /dd\.auto \?[^:]*η επόμενη/.test(PAGE));
 }
 
 section('8c · ΤΟ ΓΕΝΙΚΟ ΔΕΝ ΝΙΚΑΕΙ ΤΟ ΕΙΔΙΚΟ — το δεύτερο πέρασμα');
@@ -1653,3 +1723,206 @@ section('8f · ΠΟΤΕ ΘΑ ΤΟ ΚΑΝΩ — μέρες, όχι μετατοπ
   ok('το «φέρ’ το μια μέρα πριν» ξεκινάει από την ΙΣΧΥΟΥΣΑ ημερομηνία',
     /var from = dueOf\(t\)\.key;/.test(CODE));
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   9 · als-v490 — Η ΑΠΟΓΡΑΦΗ, Η ΥΛΗ, ΤΟ ΦΩΣ
+
+   ⭐⭐ ΟΙ ΦΡΟΥΡΟΙ ΕΙΝΑΙ ΣΥΜΠΕΡΙΦΟΡΙΚΟΙ ΟΠΟΥ ΜΠΟΡΟΥΝ: κόβεται η ΑΛΗΘΙΝΗ
+   συνάρτηση από τη σελίδα και τρέχει σε vm. Έναν φρουρό που ικανοποιείται
+   από ΚΕΙΜΕΝΟ τον ικανοποιεί κάποια στιγμή κείμενο (σταθ. 40).
+   ══════════════════════════════════════════════════════════════════════ */
+section('9a · als-v490 · ΤΟ ΚΕΝΟ ΚΟΥΤΙ ΔΕΝ ΓΕΝΝΑΕΙ ΕΡΓΑΣΙΑ');
+{
+  const slice = CODE.slice(CODE.indexOf('function apografiSave()'),
+                           CODE.indexOf('function renderApogOrder()'));
+  ok('η apografiSave κόπηκε από τη σελίδα', slice.length > 400);
+
+  function runSave(values) {
+    const added = [], lessons = [];
+    const inputs = values.map((v, i) => ({
+      value: v, getAttribute: () => ['istoria', 'arxaia_gn', 'latinika'][i]
+    }));
+    const el = () => ({ textContent:'', classList:{add(){},remove(){}}, querySelectorAll:() => inputs });
+    const ctx = {
+      SUBJ:{ istoria:{label:'Ιστορία'}, arxaia_gn:{label:'Αρχαία · γνωστό'}, latinika:{label:'Λατινικά'} },
+      $: () => el(),
+      addTask: (o) => { added.push(o); return 'id' + added.length; },
+      setLessons: (dk, subs) => { lessons.push(subs); return true; },
+      dkOf: () => '2026-08-18', apogRefDate: () => new Date(),
+      banner: () => {}, paint: () => {}, renderApogOrder: () => {},
+      esc: String, apogPicked: []
+    };
+    ctx.window = ctx; vm.createContext(ctx);
+    vm.runInContext(slice + '\napografiSave();', ctx);
+    return { added, lessons };
+  }
+
+  /* ⚠️ ΤΟ FIXTURE ΕΧΕΙ ΚΕΦΑΛΑΙΑ ΚΑΙ ΤΟΝΟΥΣ ΕΠΙΤΗΔΕΣ. Η πρώτη γραφή έδινε
+     «β4 απέξω», που είναι ΗΔΗ πεζό — οπότε ένα `toLowerCase()` στον γραφέα
+     περνούσε απαρατήρητο. Ένα fixture που δεν μπορεί να δείξει τη διαφορά
+     δεν ελέγχει τίποτα. */
+  const r1 = runSave(['ΜΤΦΡΑΣΗ 1ης Ενότητας + Σχόλια', 'μετάφραση 3ης', '']);
+  is('ΔΥΟ γεμάτα + ΕΝΑ κενό → ΔΥΟ εργασίες, ποτέ τρεις', r1.added.length, 2);
+  is('και τα λόγια του μπαίνουν ΑΥΤΟΥΣΙΑ, με τα κεφαλαία του',
+    r1.added[0].title, 'ΜΤΦΡΑΣΗ 1ης Ενότητας + Σχόλια');
+  /* ⭐ ΤΟ ΜΑΘΗΜΑ ΔΙΝΕΤΑΙ ΑΠΟ ΤΟ ΠΡΟΓΡΑΜΜΑ — γι' αυτό είναι `arxaia_gn` και ΟΧΙ
+     το legacy `arxaia`, που δεν παίρνει ΠΟΤΕ αυτόματη ημερομηνία. */
+  is('και το μάθημα είναι το ΣΩΣΤΟ κλειδί, όχι το legacy', r1.added[1].subject, 'arxaia_gn');
+  is('η ΜΕΡΑ γράφεται με ΟΛΑ τα μαθήματα, όχι μόνο όσα είχαν εργασία',
+    r1.lessons[0], ['istoria', 'arxaia_gn', 'latinika']);
+
+  const r2 = runSave(['', '', '']);
+  is('ΚΑΝΕΝΑ γεμάτο → ΚΑΜΙΑ εργασία', r2.added.length, 0);
+  is('αλλά η μέρα κρατιέται ΚΑΙ ΤΟΤΕ — «τι είχα» δεν εξαρτάται από «τι μου έβαλαν»',
+    r2.lessons[0], ['istoria', 'arxaia_gn', 'latinika']);
+  is('τα σκέτα κενά δεν μετράνε ως περιεχόμενο', runSave(['  ', 'κάτι', '   ']).added.length, 1);
+}
+
+section('9b · ΣΑΒΒΑΤΟΚΥΡΙΑΚΟ: ΚΑΜΙΑ ΑΠΟΓΡΑΦΗ');
+{
+  const slice = CODE.slice(CODE.indexOf('function apogRefDate('), CODE.indexOf('  var apogPicked'));
+  const mk = (slots) => {
+    const ctx = { SUBJ:{ istoria:{}, latinika:{} },
+      TT_DAYS:['mon','tue','wed','thu','fri','sat','sun'],
+      dowMon: (d) => (d.getDay() + 6) % 7,
+      ttDay: (d) => slots[d] === undefined ? null : slots[d] };
+    ctx.window = ctx; vm.createContext(ctx); vm.runInContext(slice, ctx); return ctx;
+  };
+  const weekday = mk({ tue:[{at:'15:15',subject:'istoria'}] });
+  const sat = mk({ sat: [] });
+  const unknown = mk({});
+  const TUE = new Date('2026-08-18T18:15:00'), SAT = new Date('2026-08-22T18:15:00');
+
+  is('καθημερινή με πρόγραμμα → slots', weekday.apogSlots(TUE).length, 1);
+  is('ΣΑΒΒΑΤΟ με ΑΔΕΙΑ εγγραφή → μηδέν slots', sat.apogSlots(SAT).length, 0);
+  is('μέρα ΧΩΡΙΣ εγγραφή → null, ποτέ άδειος πίνακας (σταθ. 33)', unknown.apogSlots(TUE), null);
+  is('«έχει slots;» false το Σάββατο', sat.apogHasSlots(SAT), false);
+  is('«έχει slots;» false και σε άγνωστη μέρα', unknown.apogHasSlots(TUE), false);
+  is('στις 02:30 η απογραφή ρωτάει για ΧΘΕΣ', weekday.apogRefDate(new Date('2026-08-19T02:30:00')).getDate(), 18);
+  is('στις 18:15 ρωτάει για ΣΗΜΕΡΑ', weekday.apogRefDate(TUE).getDate(), 18);
+
+  /* ⭐ ΣΥΜΠΕΡΙΦΟΡΙΚΟ: η ΙΔΙΑ η renderApografi πρέπει να ΚΡΥΒΕΙ τη section όταν
+     δεν υπάρχουν slots. Ένας έλεγχος μόνο στα slots δεν αποδεικνύει ότι κάτι
+     κρύφτηκε — και το Σάββατο είναι ακριβώς η μέρα που κανείς δεν κοιτάζει. */
+  const rslice = CODE.slice(CODE.indexOf('function renderApografi()'),
+                            CODE.indexOf('function apografiSave()'));
+  function renderWith(slots) {
+    const cls = { off:false };
+    const sec = { classList:{ add:(c)=>{ if(c==='hw-off') cls.off=true; },
+                              remove:(c)=>{ if(c==='hw-off') cls.off=false; } } };
+    const host = { innerHTML:'' };
+    const ctx = { SUBJ:{ istoria:{label:'Ιστορία'} }, esc:String,
+      apogSlots: () => slots,
+      apogRefDate: () => new Date('2026-08-22T18:15:00'),
+      $: (id) => id === 'hwApogFill' ? host : (id === 'hwApog' ? sec : { textContent:'' }) };
+    ctx.window = ctx; vm.createContext(ctx);
+    /* ⚠️ ΜΙΑ ΜΕΤΑΛΛΑΞΗ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΠΕΤΑΞΕΙ ΤΟ SUITE. Σβήνοντας τον
+       φρουρό της κενής μέρας, η renderApografi κάνει `null.length` και το
+       αρχείο σκάει — αποτέλεσμα που κάποιος διαβάζει ως «χαλασμένο test»
+       αντί για «η σελίδα έσπασε». Πιάνεται και γίνεται ΚΟΚΚΙΝΗ ΓΡΑΜΜΗ. */
+    try { vm.runInContext(rslice + '\nrenderApografi();', ctx); }
+    catch (e) { return { hidden: 'THREW: ' + e.message.slice(0, 40), html: 'THREW' }; }
+    return { hidden: cls.off, html: host.innerHTML };
+  }
+  is('ΣΑΒΒΑΤΟ (κενά slots) → η ΑΠΟΓΡΑΦΗ ΚΡΥΒΕΤΑΙ', renderWith([]).hidden, true);
+  is('και δεν ζωγραφίζει ούτε ένα κουτί', renderWith([]).html, '');
+  is('άγνωστη μέρα (null) → κρύβεται ΚΑΙ ΤΟΤΕ', renderWith(null).hidden, true);
+  is('καθημερινή → ΔΕΝ κρύβεται', renderWith([{at:'15:15',subject:'istoria'}]).hidden, false);
+  ok('και ζωγραφίζει κουτί με το μάθημα ΑΠΟ ΤΟ ΠΡΟΓΡΑΜΜΑ',
+    renderWith([{at:'15:15',subject:'istoria'}]).html.indexOf('data-apog="istoria"') > -1);
+}
+
+section('9c · ΤΟ ΦΩΣ ΚΑΙ Η ΦΑΣΗ');
+{
+  const slice = CODE.slice(CODE.indexOf('function hwLite('), CODE.indexOf('function paintPhase('));
+  const ctx = { document:{ documentElement:{ style:{ setProperty(){} } } }, apogHasSlots: () => true };
+  ctx.window = ctx; vm.createContext(ctx); vm.runInContext(slice, ctx);
+  const at = (h2, m) => ctx.hwLite(new Date(2026, 7, 18, h2, m));
+  ok('το φως κορυφώνει το απόγευμα', at(15, 0) > 0.99);
+  ok('και πέφτει τα μεσάνυχτα', at(3, 0) < 0.05);
+  ok('το βράδυ είναι πιο σκοτεινό από το απόγευμα', at(21, 30) < at(18, 15));
+  ok('και μένει πάντα μέσα στο 0..1', [0,4,9,14,19,23].every(x => at(x,0) >= 0 && at(x,0) <= 1));
+  const ph = (h2, m) => ctx.hwPhase(new Date(2026, 7, 18, h2, m));
+  is('στις 18:15 η φάση είναι capture', ph(18, 15), 'capture');
+  is('στις 21:30 δεν είναι', ph(21, 30), 'idle');
+  is('στις 16:00 (φροντιστήριο) δεν είναι', ph(16, 0), 'idle');
+  /* Μια μέρα χωρίς μαθήματα δεν έχει ποτέ φάση σύλληψης. */
+  const ctx2 = { document:ctx.document, apogHasSlots: () => false };
+  ctx2.window = ctx2; vm.createContext(ctx2); vm.runInContext(slice, ctx2);
+  is('Σαββατοκύριακο → ποτέ capture', ctx2.hwPhase(new Date(2026,7,22,18,15)), 'idle');
+}
+
+section('9d · Η ΥΛΗ ΒΓΑΙΝΕΙ ΑΠΟ CORPUS, ΠΟΤΕ ΓΡΑΜΜΕΝΗ ΣΤΟ ΧΕΡΙ');
+{
+  const face = CODE.slice(CODE.indexOf('function faceFor('), CODE.indexOf('function barFor('));
+  ok('η faceFor διαβάζει το ΙΣΤΟΡΙΑ corpus', /ISTORIA\.UNITS/.test(face));
+  ok('και το ΑΡΧΑΙΑ ΓΝΩΣΤΟ corpus', /ARXGN\.UNITS/.test(face));
+  ok('και τα ΡΗΜΑΤΑ του ΑΓΝΩΣΤΟΥ', /ArxaiaData\.VERBS/.test(face));
+  ok('και γυρίζει ΚΕΝΟ όταν δεν υπάρχει αληθινό κείμενο', /if \(!txt\) return '';/.test(face));
+  ok('ο ΠΛΑΓΙΟΤΙΤΛΟΣ παίρνει τίτλο από την ΕΓΓΡΑΦΗ, όχι από corpus', /unitKind === 'plag'/.test(face));
+  const bare = face.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  ok('ΚΑΝΕΝΑ μακρύ ελληνικό literal μέσα στη faceFor (μηδέν ύλη στο χέρι)',
+    !/['"][^'"]*[α-ωΑ-Ωἀ-ῼ][^'"]{40,}['"]/.test(bare));
+}
+
+section('9e · ΚΑΝΕΝΑΣ ΕΠΙΝΟΗΜΕΝΟΣ ΑΡΙΘΜΟΣ (σταθ. 33)');
+{
+  const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
+  vm.runInContext(CODE.slice(CODE.indexOf('function barFor(')).split('\n').slice(0, 7).join('\n'), ctx);
+  is('ΜΗΔΕΝ κομμάτια → ΚΑΜΙΑ μπάρα (μια άδεια μπάρα διαβάζεται 0%)', ctx.barFor(0, 0), '');
+  ok('με κομμάτια → μπάρα', ctx.barFor(9, 7).indexOf('hw-bar') > -1);
+  ok('και το νούμερο είναι ΞΕΚΙΝΗΜΕΝΑ, ποτέ «τα ξέρεις»', ctx.barFor(9, 7).indexOf('ΞΕΚΙΝΗΜΕΝΑ') > -1);
+  ok('7 από 9 γράφεται όπως μετρήθηκε', ctx.barFor(9, 7).indexOf('7 ΑΠΟ 9') > -1);
+}
+
+section('9f · ΟΙ ΦΩΤΟΓΡΑΦΙΕΣ ΕΙΝΑΙ ΑΡΧΕΙΑ, ΠΟΤΕ BYTES ΣΕ ΑΠΟΘΗΚΗ (σταθ. 34)');
+{
+  const IMGS = ['hw-cover.jpg', 'hw-consistency.jpg', 'hw-side.jpg', 'hw-banner.jpg'];
+  const SW = fs.readFileSync(path.join(ALS, 'sw.js'), 'utf8');
+  IMGS.forEach(f => {
+    ok('υπάρχει το αρχείο ' + f, fs.existsSync(path.join(ALS, f)));
+    ok('η σελίδα το ζητάει ως ΑΡΧΕΙΟ: ' + f, PAGE.indexOf('src="' + f + '"') > -1);
+    ok('και είναι στο SW CORE: ' + f, SW.indexOf("'" + f + "'") > -1 || SW.indexOf('"' + f + '"') > -1);
+  });
+  ok('ΚΑΜΙΑ base64 εικόνα μέσα στη σελίδα', PAGE.indexOf('data:image/') < 0);
+  ok('και το hw:pics δεν απέκτησε νέο γραφέα', (CODE.match(/hw:pics/g) || []).length <= 6);
+}
+
+section('9g · ΤΙ ΚΡΥΒΕΙ ΠΙΣΩ ΑΠΟ ΠΟΡΤΑ, ΚΑΙ ΠΩΣ');
+{
+  const doorRule = PAGE.slice(PAGE.indexOf('body.hw-door .hw-cover'),
+                              PAGE.indexOf('body.hw-door .hw-cover') + 260);
+  ok('η ατμόσφαιρα κρύβεται με display:none', /display:none/.test(doorRule));
+  ok('και ΠΟΤΕ με opacity:0 (σταθ. 39)', !/opacity:\s*0/.test(doorRule));
+  ok('η ΑΠΟΓΡΑΦΗ ξαναγυρίζει μέσα στην πόρτα #capture',
+    /body\.hw-door-capture \.hw-apog\{ display:block; \}/.test(PAGE));
+  ok('ό,τι ΚΡΥΒΕΙ νικάει ό,τι ΤΟΠΟΘΕΤΕΙ (σταθ. 4)',
+    /\.hw-apog \.ap-ft\.hw-off[\s\S]{0,200}display:none !important/.test(PAGE));
+  const phase = CODE.slice(CODE.indexOf('function paintPhase('), CODE.indexOf('function apogRefDate('));
+  ok('η φάση αλλάζει ΜΟΝΟ κλάση, δεν σβήνει τίποτα',
+    !/display\s*=|\.remove\(\)|innerHTML/.test(phase));
+}
+
+section('9h · Η ΣΕΙΡΑ ΤΟΥ FLEX — κάθε αδελφός με order ΔΗΛΩΝΕΙ order');
+{
+  const i = PAGE.indexOf('als-v490');
+  const desk = PAGE.slice(PAGE.indexOf('@media (min-width:1000px){', i));
+  ['hw-strip','hw-banner','hw-start','hw-apog','hw-lessons4','hw-doors','hw-grab'].forEach(c => {
+    ok('το .' + c + ' δηλώνει order στο laptop', new RegExp('\\.' + c + '\\{ order:\\d').test(desk));
+  });
+}
+
+section('9i · Η ΣΕΛΙΔΑ ΠΑΡΑΜΕΝΕΙ ΜΟΝΟ-ΑΝΑΓΝΩΣΗΣ ΣΤΙΣ ΠΕΝΤΕ ΑΠΟΘΗΚΕΣ (σταθ. 16)');
+{
+  ['ist:v1','arx:gn','arx:v1','lat:v1','ton:v1'].forEach(k => {
+    ok('καμία εγγραφή στο ' + k,
+      !new RegExp("(setItem|lsSet)\\s*\\(\\s*['\"]" + k.replace(':','\\:')).test(CODE));
+  });
+  ok('και κανένα corpus δεν γράφεται',
+    !/ISTORIA\.[A-Z]+\s*=|ARXGN\.[A-Z]+\s*=|ArxaiaData\.[A-Z]+\s*=/.test(CODE));
+}
+
+REPORTED = true;
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

@@ -177,9 +177,13 @@
     .hw-start{ order:4; }
     /* Ίδια σειρά με το laptop από την απόφαση και κάτω: μαθήματα, μετά
        εργαλεία. Ό,τι αλλάζει στο κινητό είναι ΜΟΝΟ ότι η σύλληψη ανεβαίνει. */
-    .hw-lessons4{ order:5; }
-    .hw-doors{ order:6; }
-    .hw-tonight{ order:7; }
+    .hw-lessons4{ order:6; }
+    .hw-doors{ order:7; }
+    .hw-tonight{ order:8; }
+    /* als-v490 — η λωρίδα ΠΑΝΩ απ' όλα (είναι η κορδέλα της κουβέρτας)· η
+       ΑΠΟΓΡΑΦΗ αμέσως μετά τη σύλληψη, γιατί στις 18:00 είναι η ίδια κίνηση. */
+    .hw-strip{ order:0; }
+    .hw-apog{ order:5; }
   }
 
   /* ── ΟΙ ΠΟΡΤΕΣ · `#capture` ΚΑΙ `#tonight` ────────────────────────
@@ -682,9 +686,278 @@
      σελίδας («διαβάζει πέντε σκάλες, γράφει μόνο τις εργασίες του»). Αυτό είναι
      σημείωση προς εμένα, όχι προς αυτόν, και ζει στο CLAUDE.md. */
   .hw-off{ display:none; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     als-v490 — Η ΑΤΜΟΣΦΑΙΡΑ ΤΟΥ NOTION, ΠΑΝΩ ΣΕ ΑΛΗΘΙΝΟΥΣ ΑΡΙΘΜΟΥΣ
+
+     ⭐ Η ΑΝΑΓΝΩΣΗ ΤΟΥ REFERENCE ΕΙΝΑΙ ΤΟ ΜΙΣΟ ΤΗΣ ΔΟΥΛΕΙΑΣ, ΞΑΝΑ. Το Notion
+     template που αγαπούσε δείχνει υπέροχο ΕΠΕΙΔΗ ΕΙΝΑΙ ΑΔΕΙΟ: έξι κάρτες
+     «everything is done! 100%» τρία εκατοστά πάνω από ένα «112 days overdue».
+     Κρατήθηκε η ΔΙΑΘΕΣΗ (κουβέρτα, βαρύ serif, πινακίδα, περιθώριο με ψυχή,
+     ΕΝΑ χρώμα) και ΤΙΠΟΤΑ από την αριθμητική του — οι αριθμοί εδώ βγαίνουν
+     από το `ladders.js` και κρατάνε τις τρεις καταστάσεις της σταθ. 33.
+
+     ⛔ ΤΟ ΧΡΩΜΑ ΤΩΝ ΜΑΘΗΜΑΤΩΝ ΔΕΝ ΣΒΗΝΕΤΑΙ — ζει στον κύκλο της εργασίας και
+     στη λεπτή γραμμή της κάρτας, όπου απαντάει «ποιανού είναι αυτό». Αυτό που
+     αλλάζει είναι ότι **η ΠΡΟΟΔΟΣ έχει ένα και μόνο χρώμα**, το χρυσό, ώστε
+     ένας αριθμός να ξεχωρίζει από μια ταυτότητα. */
+  :root{
+    --hw-gold:201,169,97;              /* ΤΟ χρώμα της προόδου, μόνο αυτό */
+    --hw-lite:0;                       /* 0..1 — το φως της κουβέρτας, το γράφει η JS */
+  }
+
+  /* ── ① Η ΚΟΥΒΕΡΤΑ ────────────────────────────────────────────────
+     Η σελίδα ξεκινάει με ΔΙΑΘΕΣΗ, όχι με πληροφορία. ⚠️ Ζει ΕΞΩ από το
+     `.hw-wrap` γιατί είναι full-bleed· η σφραγίδα ξαναμπαίνει στο πλέγμα με
+     δικό της wrapper, ώστε να στοιχίζεται με τη ΜΙΑ αριστερή ακμή. */
+  .hw-cover{ position:relative; height:clamp(190px,26vw,320px); overflow:hidden;
+    background:#000; margin-bottom:0; }
+  .hw-cover img{ width:100%; height:100%; object-fit:cover; object-position:50% 6%;
+    /* το φως ανεβαίνει το απόγευμα και πέφτει το βράδυ — ΜΙΑ μεταβλητή */
+    filter:brightness(calc(.34 + .30 * var(--hw-lite))) saturate(.80) contrast(1.06) blur(.6px);
+    transform:scale(1.16); }
+  .hw-cover::after{ content:''; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(52% 78% at 80% -6%, rgba(232,196,122,calc(.10 + .26 * var(--hw-lite))), transparent 62%),
+      linear-gradient(to bottom, rgba(5,5,6,.24) 0%, rgba(5,5,6,.05) 26%,
+                      rgba(5,5,6,.74) 78%, var(--au-void,#050506) 100%); }
+  .hw-stamp{ width:84px; height:84px; border-radius:14px; overflow:hidden;
+    border:1px solid rgba(245,242,236,.16); box-shadow:0 14px 40px rgba(0,0,0,.7);
+    background:#111; margin-top:-46px; position:relative; z-index:3; }
+  .hw-stamp img{ width:100%; height:100%; object-fit:cover; object-position:50% 22%; }
+
+  /* Ο τίτλος γίνεται ΒΑΡΥΣ SERIF — το βάρος βιβλίου του reference. */
+  .hw-mast{ padding-top:14px; }
+  .hw-mast h1{ font-family:var(--au-serif,Georgia,serif); font-weight:700;
+    font-size:clamp(30px,5.2vw,54px); line-height:1.03; letter-spacing:-.015em;
+    margin:0 0 8px; text-wrap:balance; }
+  .hw-mast .hw-sub{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+    color:rgba(245,242,236,.40); font-size:clamp(14px,1.7vw,18px); margin:0; }
+
+  /* Η ΛΕΥΚΗ ΛΩΡΙΔΑ — αυτούσια από το Notion του, μια λωρίδα φως σε σκοτεινή
+     σελίδα. ⚠️ Το `aspect-ratio` κόβει ΑΝΑΛΟΓΙΚΑ το γκρι τετράγωνο που
+     κουβαλάει η εικόνα του (ένα emoji φακέλου που δεν φόρτωσε ποτέ σωστά)·
+     ένα σταθερό `height` σε px θα το ξανάδειχνε σε άλλο πλάτος. */
+  .hw-strip{ margin:20px 0 26px; border-radius:3px; overflow:hidden; background:#fff;
+    padding:8px 0; box-shadow:0 2px 30px rgba(0,0,0,.5); }
+  .hw-strip img{ width:100%; display:block; aspect-ratio:1400/38;
+    object-fit:cover; object-position:50% 100%; }
+
+  /* ── ΤΟ ΠΕΡΙΘΩΡΙΟ — ΨΥΧΗ, ΠΟΤΕ ΔΕΔΟΜΕΝΑ ─────────────────────────
+     ⚠️ Το «sidebar 25% / arena 75%» είχε ΑΠΟΡΡΙΦΘΕΙ στην als-v484, και σωστά:
+     εκείνο ήθελε να βάλει ΔΕΔΟΜΕΝΑ σε στήλη που μετρήθηκε άδεια. Αυτό εδώ
+     είναι άλλο πράγμα — κρατάει ΜΟΝΟ εικόνες, δηλαδή ό,τι ανεβάζει το ηθικό
+     και δεν ανταγωνίζεται τίποτα για προσοχή. Κάτω από 1000px ΦΕΥΓΕΙ ΕΝΤΕΛΩΣ,
+     γιατί στο κινητό ο χώρος ανήκει στη ΣΥΛΛΗΨΗ. */
+  .hw-rail{ display:none; }
+  @media (min-width:1180px){
+    body:not(.hw-door) .hw-rail{ display:flex; flex-direction:column; gap:14px;
+      position:fixed; left:max(18px,calc(50vw - 590px)); top:120px; width:176px; z-index:2; }
+    body:not(.hw-door) .hw-rail .hw-pic{ border-radius:9px; overflow:hidden; line-height:0;
+      border:1px solid rgba(245,242,236,.08); opacity:.68; transition:opacity .3s; }
+    body:not(.hw-door) .hw-rail .hw-pic:hover{ opacity:1; }
+    body:not(.hw-door) .hw-rail .hw-pic img{ width:100%; display:block; }
+    body:not(.hw-door) .hw-rail .hw-pic.lite{ background:#fff; }
+  }
+
+  /* ── ⑤ Η ΥΛΗ ΜΕΣΑ ΣΤΗΝ ΚΑΡΤΑ ────────────────────────────────────
+     ⭐⭐ ΤΟ ΠΑΝΩ ΜΙΣΟ ΤΗΣ ΚΑΡΤΑΣ ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΤΟ ΚΕΙΜΕΝΟ ΠΟΥ ΔΙΑΒΑΖΕΙ, όχι
+     stock φωτογραφία. Στο Notion η ΙΣΤΟΡΙΑ φορούσε καπουτσίνο και η ΑΡΧΑΙΑ
+     πληκτρολόγιο — εικόνες που δεν ξέρουν τι μάθημα είναι. Εδώ η κάρτα των
+     Αρχαίων δείχνει αρχαία, και μάλιστα ΤΗΣ ΕΝΟΤΗΤΑΣ ΠΟΥ ΧΡΩΣΤΑΕΙ.
+     ⛔ ΔΕΝ ΕΙΝΑΙ ΔΙΑΚΟΣΜΗΤΙΚΗ ΛΕΞΗ ΠΙΣΩ ΑΠΟ ΚΑΡΤΑ — αυτό το απέρριψε ρητά
+     («έχει κάτι λέξεις που είναι εκτός πλαισίου και περίεργα»). Εκείνο ήταν
+     ΚΑΤΗΓΟΡΙΕΣ ύλης σε serif ΠΙΣΩ από την κάρτα, χωρίς πηγή. Αυτό είναι το
+     ΑΥΤΟΛΕΞΕΙ κείμενο του βιβλίου, ΜΕΣΑ στην κάρτα, με τον τίτλο του από πάνω. */
+  .hw-face{ position:relative; overflow:hidden; height:88px; margin:-2px -2px 10px;
+    padding:12px 14px 0; border-radius:11px 11px 0 0; background:rgba(245,242,236,.022); }
+  .hw-face p{ font-family:var(--au-serif,Georgia,serif); font-size:12.5px; line-height:1.7;
+    margin:0; color:rgba(245,242,236,.46);
+    -webkit-mask-image:linear-gradient(to bottom,#000 34%,transparent 88%);
+    mask-image:linear-gradient(to bottom,#000 34%,transparent 88%); }
+  .hw-face::after{ content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(to bottom,transparent 58%,rgba(10,10,11,.92) 100%); }
+  .hw-face .hw-faceu{ position:absolute; left:14px; right:14px; bottom:7px; z-index:2;
+    font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9.5px;
+    letter-spacing:.10em; text-transform:uppercase; color:rgba(245,242,236,.34);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Η ΜΠΑΡΑ ΠΡΟΟΔΟΥ — ΧΡΥΣΗ ΠΑΝΤΟΥ, γιατί μετράει το ΙΔΙΟ πράγμα σε κάθε
+     μάθημα. ⚠️ Ζωγραφίζεται ΜΟΝΟ όταν υπάρχει μέτρηση· «δεν εξετάστηκε» δεν
+     παίρνει άδεια μπάρα, γιατί μια άδεια μπάρα διαβάζεται 0% (σταθ. 33). */
+  .hw-bar{ height:2px; background:rgba(245,242,236,.09); border-radius:2px;
+    overflow:hidden; margin:9px 0 5px; }
+  .hw-bar i{ display:block; height:100%; background:rgb(var(--hw-gold)); border-radius:2px; }
+  .hw-pct{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:10px;
+    letter-spacing:.05em; color:rgba(245,242,236,.38); }
+
+  /* ── ② Η ΑΠΟΓΡΑΦΗ ───────────────────────────────────────────────
+     Γυρνάει 18:15 με την τσάντα. Τα μαθήματα ΕΙΝΑΙ ΗΔΗ ΕΚΕΙ, από το
+     `hw:v1.timetable` — γράφει μόνο ΤΙ του έβαλαν.
+     ⭐ Στα δεδομένα του, οι 6 από τις 7 εργασίες γράφτηκαν σε **53
+     δευτερόλεπτα**, δηλαδή όλες μαζί. Η «μία γραμμή» ζητούσε τον ίδιο κύκλο
+     έξι φορές· αυτό ζητάει ΕΝΑ. */
+  .hw-apog{ background:rgba(245,242,236,.026); border:1px solid rgba(245,242,236,.08);
+    border-radius:13px; overflow:hidden; }
+  .hw-apog .ap-hd{ padding:15px 18px 13px; border-bottom:1px solid rgba(245,242,236,.07); }
+  .hw-apog .ap-d{ font-family:var(--au-serif,Georgia,serif); font-size:19px; margin:0; }
+  .hw-apog .ap-n{ color:rgba(245,242,236,.36); font-size:12.5px; margin:4px 0 0; }
+  .hw-slot{ display:flex; gap:13px; padding:13px 18px; align-items:flex-start;
+    border-bottom:1px solid rgba(245,242,236,.06); }
+  .hw-slot:last-of-type{ border-bottom:0; }
+  .hw-slot .sl-at{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11px;
+    color:rgba(245,242,236,.32); padding-top:11px; width:36px; flex:none; }
+  .hw-slot .sl-f{ flex:1; min-width:0; }
+  .hw-slot .sl-l{ font-family:var(--au-serif,Georgia,serif); font-size:14px;
+    letter-spacing:.05em; color:rgba(245,242,236,.62); margin-bottom:6px; }
+  .hw-slot input{ width:100%; background:transparent; border:0;
+    border-bottom:1px solid rgba(245,242,236,.14); color:var(--au-ivory,#f5f2ec);
+    font-family:inherit; font-size:15px; padding:5px 0 8px; outline:0;
+    transition:border-color .2s; border-radius:0; }
+  .hw-slot input:focus{ border-bottom-color:rgb(var(--hw-gold)); }
+  .hw-slot input::placeholder{ color:rgba(245,242,236,.17); }
+  .hw-apog .ap-ft{ padding:14px 18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+  /* ── ③ Η ΚΑΤΑΤΑΞΗ — ΤΑ ΙΔΙΑ ΚΟΥΤΙΑ, ΔΕΥΤΕΡΟ ΠΡΟΣΩΠΟ ────────────
+     Δικά του λόγια: «αφού τα συμπληρώσω να τα οργανώσω». Η απογραφή δεν
+     εξαφανίζεται — ΜΕΤΑΜΟΡΦΩΝΕΤΑΙ, στο ίδιο σημείο της οθόνης. */
+  .hw-ordl{ padding:4px 18px 2px; }
+  .hw-ordl .or-r{ display:flex; gap:13px; align-items:center; padding:12px 0;
+    border-bottom:1px solid rgba(245,242,236,.06); }
+  .hw-ordl .or-r:last-child{ border-bottom:0; }
+  .hw-ordl .or-n{ font-family:var(--au-serif,Georgia,serif); font-size:24px;
+    color:rgb(var(--hw-gold)); width:24px; flex:none; text-align:center; line-height:1; }
+  .hw-ordl .or-t{ flex:1; min-width:0; }
+  .hw-ordl .or-t1{ font-size:14px; margin-bottom:2px; }
+  .hw-ordl .or-t2{ color:rgba(245,242,236,.36); font-size:11.5px; }
+  .hw-ordl .or-mv{ display:flex; gap:5px; flex:none; }
+  .hw-ordl .or-b{ background:transparent; border:1px solid rgba(245,242,236,.10);
+    color:rgba(245,242,236,.42); border-radius:6px; width:26px; height:26px;
+    cursor:pointer; font-size:12px; line-height:1; font-family:inherit; transition:.16s; }
+  .hw-ordl .or-b:hover{ border-color:rgb(var(--hw-gold)); color:rgb(var(--hw-gold)); }
+  .hw-ordl .or-b:focus-visible{ outline:2px solid rgb(var(--hw-gold)); outline-offset:2px; }
+
+
+
+  /* ⛔ ΠΙΣΩ ΑΠΟ ΠΟΡΤΑ Η ΑΤΜΟΣΦΑΙΡΑ ΦΕΥΓΕΙ. Το `#capture` είναι μια στιγμή στις
+     18:00 με την τσάντα στον ώμο — μια κουβέρτα 320px εκεί είναι 320px που
+     πρέπει να προσπεράσει. ⚠️ `display:none`, ΠΟΤΕ `opacity:0`: πίσω από πόρτα
+     τίποτα δεν επιτρέπεται να υπάρχει και να μη φαίνεται (σταθ. 39). */
+  body.hw-door .hw-cover,
+  body.hw-door .hw-stamp,
+  body.hw-door .hw-strip,
+  body.hw-door .hw-rail,
+  body.hw-door .hw-apog{ display:none; }
+  /* Η ΑΠΟΓΡΑΦΗ ΕΙΝΑΙ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ ΤΗΣ ΠΟΡΤΑΣ `#capture`, όχι κρυμμένη από
+     αυτήν — εκεί ακριβώς τη θέλει το push των 18:00. */
+  body.hw-door-capture .hw-apog{ display:block; }
+
+  /* ══ als-v490 · ΤΕΣΣΕΡΑ ΠΟΥ ΒΡΗΚΕ ΤΟ RENDER, ΑΟΡΑΤΑ ΣΤΟΝ ΚΩΔΙΚΑ ══════
+
+     ① ⛔⛔ ΤΟ `.hw-off` ΕΧΑΝΕ ΑΠΟ ΤΟ `.hw-apog .ap-ft`, ΚΑΙ ΕΙΝΑΙ Η ΣΤΑΘ. 4
+        ΣΕ ΝΕΑ ΘΕΣΗ. Ένα `display:none` με ΕΝΑ όνομα κλάσης (0,1,0) δεν νικάει
+        ποτέ ένα `display:flex` γραμμένο ως απόγονο (0,2,0) — ακριβώς όπως το
+        `dialog.x{display:flex}` νικούσε το `dialog:not([open])` στην als-v431.
+        Το αποτέλεσμα: η απογραφή έδειχνε ΚΑΙ «Κράτησέ τα» ΚΑΙ «Άλλαξέ τα»
+        ταυτόχρονα — δύο καταστάσεις της ίδιας οθόνης, μαζί.
+        ⭐ Ο κανόνας: ό,τι ΚΡΥΒΕΙ πρέπει να νικάει ό,τι ΤΟΠΟΘΕΤΕΙ. */
+  .hw-apog .ap-ft.hw-off,
+  .hw-apog .hw-ordl.hw-off,
+  .hw-apog .hw-slot.hw-off,
+  #hwApogFill.hw-off{ display:none !important; }
+
+  /* ② ⛔ Η ΛΕΥΚΗ ΛΩΡΙΔΑ ΠΗΓΑΙΝΕ ΠΡΩΤΗ, ΠΑΝΩ ΑΠΟ ΤΟΝ ΤΙΤΛΟ. Τα αδέλφια της
+        έχουν ρητό `order` (hero 1, banner 2, start 3)· ένα στοιχείο χωρίς
+        `order` παίρνει 0, δηλαδή προηγείται ΟΛΩΝ. Το markup ήταν σωστό και η
+        σειρά ανάγνωσης λάθος — καμία βεβαίωση δεν το βλέπει.
+        ⭐ Ο κανόνας: μπαίνεις σε flex container με `order`, δηλώνεις `order`. */
+  @media (min-width:1000px){
+    body:not(.hw-door) .hw-strip{ order:2; }
+    body:not(.hw-door) .hw-banner{ order:3; }
+    body:not(.hw-door) .hw-start{ order:4; }
+    body:not(.hw-door) .hw-apog{ order:5; }
+    body:not(.hw-door) .hw-lessons4{ order:6; }
+    body:not(.hw-door) .hw-doors{ order:7; }
+    body:not(.hw-door) .hw-grab{ order:8; }
+    /* ⭐ ΣΤΙΣ 18:00 Η ΑΠΟΓΡΑΦΗ ΑΝΕΒΑΙΝΕΙ ΠΑΝΩ ΑΠΟ ΤΗΝ ΑΠΟΦΑΣΗ — και ΜΟΝΟ
+       τότε. Μετακίνηση, ποτέ απόκρυψη: στις 10 το πρωί υπάρχει, πιο κάτω. */
+    body:not(.hw-door).hw-t-capture .hw-apog{ order:3; }
+    body:not(.hw-door).hw-t-capture .hw-banner{ order:4; }
+    body:not(.hw-door).hw-t-capture .hw-start{ order:5; }
+  }
+
+  /* ③ Η ΣΦΡΑΓΙΔΑ ΚΑΘΟΤΑΝ ΠΑΝΩ ΣΤΟ «MÉTRON». Το eyebrow είναι το πρώτο παιδί
+        του hero και η σφραγίδα μπήκε πριν από αυτό με αρνητικό margin. */
+  .hw-mast .hw-stamp + .hw-eyebrow{ margin-top:10px; }
+
+  /* ④ Η ΛΕΖΑΝΤΑ ΤΗΣ ΥΛΗΣ ΠΑΤΟΥΣΕ ΠΑΝΩ ΣΤΟ ΚΕΙΜΕΝΟ. Το σβήσιμο τελείωνε πολύ
+        χαμηλά, οπότε η τελευταία γραμμή του corpus έβγαινε ΚΑΤΩ από την
+        ετικέτα. Το κείμενο σταματάει ΠΡΙΝ φτάσει εκεί. */
+  .hw-face{ height:96px; }
+  .hw-face p{ max-height:58px; overflow:hidden;
+    -webkit-mask-image:linear-gradient(to bottom,#000 40%,transparent 96%);
+    mask-image:linear-gradient(to bottom,#000 40%,transparent 96%); }
+  .hw-face::after{ background:linear-gradient(to bottom,transparent 40%,rgba(10,10,11,.96) 86%); }
+
+  /* ⑤ ΤΟ ΠΕΡΙΘΩΡΙΟ ΚΑΘΟΤΑΝ ΜΕΣΑ ΣΤΗΝ ΚΟΥΒΕΡΤΑ (top:120 σε κουβέρτα 320px),
+        δηλαδή δύο εικόνες πάνω σε μια τρίτη. Κεντράρεται κάθετα τώρα, ώστε να
+        μην μπορεί να συναντήσει ούτε την κουβέρτα ούτε το topbar. */
+  @media (min-width:1180px){
+    body:not(.hw-door) .hw-rail{ top:50%; transform:translateY(-50%); }
+  }
+
+
+  /* ⑥ ΤΟ ΟΝΟΜΑ ΔΕΝ ΛΕΓΕΤΑΙ ΔΥΟ ΦΟΡΕΣ — ο ίδιος κανόνας που διόρθωσε το «Η
+        μέρα» στην als-v477. Το topbar γράφει ΗΔΗ «MÉTRON · SCHOOL STUDIES»
+        δύο εκατοστά πιο πάνω· με τη σφραγίδα από κάτω, το eyebrow έγινε τρίτη
+        αναφορά του ίδιου πράγματος στην ίδια οθόνη. */
+  .hw-mast .hw-eyebrow{ display:none; }
+
+  /* ⑦ Η ΚΟΥΒΕΡΤΑ ΗΤΑΝ 320px ΚΑΙ ΤΟ ΚΑΤΩ ΜΙΣΟ ΤΗΣ ΗΤΑΝ ΜΑΥΡΟ. Μια κουβέρτα
+        υπάρχει για να δίνει διάθεση σε ένα δευτερόλεπτο· ό,τι παραπάνω είναι
+        απόσταση που πρέπει να προσπεράσει. Κοντύτερη, και το κάδρο πιάνει το
+        ζεστό ξύλο αντί για το θολό κεφάλι. */
+  .hw-cover{ height:clamp(150px,17vw,220px); }
+  .hw-cover img{ object-position:50% 30%; transform:scale(1.30); }
+
+
+  /* ⑧ ⛔⛔ Η ΛΕΥΚΗ ΛΩΡΙΔΑ ΚΟΒΟΤΑΝ ΣΤΗ ΜΕΣΗ ΣΤΟ ΚΙΝΗΤΟ: «ig, Study hard, make
+        it happen.» — το «Dream B» έλειπε. Το `object-fit:cover` με στενό
+        `aspect-ratio` μεγεθύνει για να καλύψει, και σε 361px πλάτος έτρωγε τα
+        άκρα ΤΗΣ ΦΡΑΣΗΣ. Ένα crop που δουλεύει στα 880 και σπάει στα 393 δεν
+        είναι crop, είναι τύχη.
+        ⭐ Η ΑΠΟΦΑΣΗ: Η ΛΩΡΙΔΑ ΤΟΥ ΜΠΑΙΝΕΙ ΑΥΤΟΥΣΙΑ. Το γκρι τετράγωνο είναι
+        δικό ΤΟΥ (ένα emoji φακέλου του Notion που δεν φόρτωσε ποτέ σωστά) και
+        υπάρχει έτσι στη σελίδα που αγάπησε. Καλύτερα η αυθεντική εικόνα με το
+        σημάδι της, παρά μια «διορθωμένη» που χάνει τη μισή φράση. */
+  .hw-strip img{ aspect-ratio:auto; height:auto; object-fit:contain; object-position:50% 50%; }
+
+  /* ⑨ Η ΣΦΡΑΓΙΔΑ ΠΑΤΟΥΣΕ ΠΑΝΩ ΣΤΟ «Άδειασε το κεφάλι σου». Στο κινητό η
+        ΣΥΛΛΗΨΗ είναι ΠΡΩΤΗ (als-v479, δική του εντολή), οπότε ο τίτλος δεν
+        κάθεται κάτω από την κουβέρτα — και μια σφραγίδα με αρνητικό margin
+        κρέμεται τότε πάνω σε ό,τι τυχαίνει να είναι από πάνω.
+        Μια σφραγίδα χωρίς την κουβέρτα της δεν είναι σφραγίδα. */
+  @media (max-width:999px){ .hw-stamp{ display:none; } }
+
 </style>
 </head>
 <body>
+
+<!-- ══ ① Η ΚΟΥΒΕΡΤΑ · als-v490 ═══════════════════════════════════════
+     ⚠️ ΕΞΩ από το `.hw-wrap` επίτηδες: είναι full-bleed. Πίσω από πόρτα
+     κρύβεται (`body.hw-door`) — μια πόρτα είναι μια στιγμή, όχι μια είσοδος.
+     ⛔ Οι εικόνες είναι ΑΡΧΕΙΑ ΤΟΥ REPO, ποτέ bytes σε αποθήκη: το `hw:pics`
+     μοιράζεται appKey με τις εργασίες, και >64 KiB σε συγχρονισμένη γραμμή
+     σκοτώνει σιωπηλά το `flushOnUnload` για ΟΛΗ την εφαρμογή (σταθ. 34). -->
+<div class="hw-cover" id="hwCover" aria-hidden="true">
+  <img src="hw-cover.jpg" alt="" width="560" height="560" decoding="async">
+</div>
+
+<!-- ΤΟ ΠΕΡΙΘΩΡΙΟ — ΨΥΧΗ, ΠΟΤΕ ΔΕΔΟΜΕΝΑ. Εμφανίζεται μόνο ≥1180px. -->
+<aside class="hw-rail" id="hwRail" aria-hidden="true">
+  <div class="hw-pic lite"><img src="hw-consistency.jpg" alt="" loading="lazy" decoding="async"></div>
+  <div class="hw-pic"><img src="hw-side.jpg" alt="" loading="lazy" decoding="async"></div>
+</aside>
 
 <main class="hw-wrap">
 
@@ -716,16 +989,54 @@
          μέρα» ΚΑΙ μια ενότητα από κάτω λεγόταν «Η μέρα» — το ίδιο πράγμα σε
          δύο μεγέθη, στην ίδια οθόνη. Το h1 είναι το ΟΝΟΜΑ της σελίδας. -->
     <div class="hw-spine">
-      <header class="hw-hero">
+      <header class="hw-hero hw-mast">
+        <!-- Η σφραγίδα κάθεται ΠΑΝΩ στην κουβέρτα, όπως το «WORK ON YOU, FOR
+             YOU» του Notion του. Κρύβεται πίσω από πόρτα μαζί της. -->
+        <div class="hw-stamp" id="hwStamp" aria-hidden="true">
+          <img src="hw-cover.jpg" alt="" width="200" height="200" decoding="async">
+        </div>
         <div class="hw-eyebrow">MÉTRON</div>
         <h1 id="hwH1">School Studies</h1>
         <p class="hw-sub" id="hwSub">Ό,τι σου έδωσαν και ό,τι ξεχνάς, στο ίδιο σημείο.</p>
       </header>
 
+      <!-- Η ΛΕΥΚΗ ΛΩΡΙΔΑ — η μία λωρίδα φως, αυτούσια από το Notion του. -->
+      <div class="hw-strip" id="hwStrip" aria-hidden="true">
+        <img src="hw-banner.jpg" alt="" width="1400" height="93" decoding="async">
+      </div>
+
       <div class="hw-banner" id="hwBanner"></div>
 
       <!-- ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ -->
       <section class="hw-start" id="hwStart"></section>
+
+      <!-- ══ ② Η ΑΠΟΓΡΑΦΗ · als-v490 ═════════════════════════════════
+           ⭐ ΤΡΑΒΗΧΤΗΚΑΝ ΤΑ ΑΛΗΘΙΝΑ ΤΟΥ ΔΕΔΟΜΕΝΑ ΠΡΙΝ ΣΧΕΔΙΑΣΤΕΙ (σταθ. 40):
+           οι 6 από τις 7 εργασίες του γράφτηκαν σε **53 δευτερόλεπτα**, στις
+           14/08 17:53→17:54. Δηλαδή δεν γράφει «μία γραμμή όταν του τη
+           βάλουν» — γράφει ΟΛΗ ΤΗ ΜΕΡΑ ΜΑΖΙ, μόλις γυρίσει. Η «μία γραμμή»
+           του ζητούσε τον ίδιο κύκλο έξι φορές.
+           ⚠️ ΤΟ ΜΑΘΗΜΑ ΔΕΝ ΜΑΝΤΕΥΕΤΑΙ ΕΔΩ — το δίνει το πρόγραμμα. Γι' αυτό
+           και γεννιέται με το ΣΩΣΤΟ κλειδί (`arxaia_gn` / `arxaia_agn`) αντί
+           για το legacy `arxaia`, και γι' αυτό η σταθ. 38 («φροντ*ιστ*ήριο»
+           περιέχει «ιστ») δεν μπορεί καν να προκύψει σε αυτόν τον δρόμο.
+           ⛔ ΤΟ ΚΕΝΟ ΚΟΥΤΙ ΔΕΝ ΓΡΑΦΕΙ ΤΙΠΟΤΑ. -->
+      <section class="hw-apog hw-off" id="hwApog">
+        <div class="ap-hd">
+          <p class="ap-d" id="hwApogT">Τι σου έβαλαν σήμερα;</p>
+          <p class="ap-n" id="hwApogN"></p>
+        </div>
+        <div id="hwApogFill"></div>
+        <div class="ap-ft" id="hwApogFt">
+          <button class="hw-btn hw-solid" id="hwApogSave" type="button">Κράτησέ τα</button>
+          <span class="hw-s" id="hwApogHint">Κενό κουτί = δεν σου έβαλε τίποτα.</span>
+        </div>
+        <div class="hw-ordl hw-off" id="hwApogOrd"></div>
+        <div class="ap-ft hw-off" id="hwApogOrdFt">
+          <button class="hw-btn hw-quiet" id="hwApogBack" type="button">Άλλαξέ τα</button>
+          <span class="hw-s">Αυτή είναι η σειρά της βραδιάς.</span>
+        </div>
+      </section>
 
       <!-- ══ Η ΠΟΡΤΑ ΠΡΟΣ ΤΑ ΜΑΘΗΜΑΤΑ ═══════════════════════════════
            Ως τώρα οι τέσσερις σελίδες μελέτης ήταν ΑΔΕΡΦΙΑ στο Home, όχι
@@ -2875,7 +3186,12 @@
       var cls = 'hw-l4' + (wide ? ' wide' : '');
       var w = '<div class="l4w">' + (shared ? esc(l4Kicker(sub))
                                             : meta.weight + '% των μορίων') + '</div>';
-      var head = w + '<h3>' + esc(meta.label) + '</h3>' +
+      /* ⭐ als-v490 · ΤΟ ΠΡΟΣΩΠΟ ΤΗΣ ΚΑΡΤΑΣ ΕΙΝΑΙ Η ΥΛΗ ΤΟΥ ΜΑΘΗΜΑΤΟΣ, και
+         βγαίνει από το ΙΔΙΟ corpus που διαβάζει η σελίδα του. Υπάρχει και
+         όταν δεν έχει ξεκινήσει — η ύλη δεν εξαρτάται από το αν την άγγιξε.
+         Όπου δεν υπάρχει αληθινό κείμενο, γυρίζει ΚΕΝΟ. */
+      var face = faceFor(sub, list);
+      var head = face + w + '<h3>' + esc(meta.label) + '</h3>' +
                  '<p class="l4t">' + esc(L4_TAG[sub] || '') + '</p>';
 
       /* ΚΑΜΙΑ ΣΕΛΙΔΑ. Δεν κρύβεται και δεν παίρνει ψεύτικο νούμερο. */
@@ -2919,6 +3235,11 @@
                       : (next != null ? '<b>' + esc(fmtDue(dkOf(new Date(next)))) + '</b>'
                                       : '<b>—</b>')) +
                 '</div>';
+        /* ⭐ Η ΜΠΑΡΑ ΕΙΝΑΙ ΤΟ ΕΝΑ ΧΡΩΜΑ ΤΗΣ ΣΕΛΙΔΑΣ, και μετράει ΤΟ ΙΔΙΟ
+           πράγμα σε κάθε μάθημα — γι' αυτό δεν παίρνει το χρώμα του μαθήματος.
+           ⚠️ Δεν ζωγραφίζεται καθόλου χωρίς κομμάτια: μια άδεια μπάρα
+           διαβάζεται 0%, δηλαδή μέτρηση που δεν έγινε (σταθ. 33). */
+        rows += barFor(pieces, learned);
       }
       return '<a class="' + cls + '" href="' + esc(meta.page) + '" style="--c:' + rgb + '">' +
               head + '<div class="l4rows">' + rows + '</div></a>';
@@ -3407,6 +3728,240 @@
      οπότε η κάρτα και η ΜΕΡΑ μπορούσαν να διαφωνήσουν αν άλλαζε το λεπτό
      ανάμεσά τους. Ένας υπολογισμός, μία αλήθεια — και το `featured` είναι
      ΑΚΡΙΒΩΣ ό,τι δείχνει η κάρτα, ώστε κανένα άλλο μπλοκ να μην το ξαναπεί. */
+
+  /* ══════════════════════════════════════════════════════════════════
+     als-v490 · Η ΑΠΟΓΡΑΦΗ, Η ΚΑΤΑΤΑΞΗ, Η ΥΛΗ ΚΑΙ ΤΟ ΦΩΣ
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* ── ΤΟ ΦΩΣ ΤΗΣ ΚΟΥΒΕΡΤΑΣ ────────────────────────────────────────
+     Μία μεταβλητή 0..1 που ακολουθεί την ώρα: κορυφώνει γύρω στις 15:00 και
+     σβήνει το βράδυ. ⚠️ ΔΕΝ κρύβει τίποτα και δεν αλλάζει κανέναν αριθμό —
+     είναι φως, όχι πληροφορία. */
+  function hwLite(now){
+    var d = now || new Date(), m = d.getHours() * 60 + d.getMinutes();
+    var t = Math.cos((m - 900) / 1440 * 2 * Math.PI);   /* 1 στις 15:00 */
+    return Math.max(0, Math.min(1, (t + 1) / 2));
+  }
+  function paintCoverLight(now){
+    try { document.documentElement.style.setProperty('--hw-lite', hwLite(now).toFixed(3)); }
+    catch (e) {}
+  }
+
+  /* ── Η ΩΡΑ ΟΡΙΖΕΙ ΤΙ ΕΙΝΑΙ ΠΡΩΤΟ, ΠΟΤΕ ΤΙ ΥΠΑΡΧΕΙ ──────────────
+     Το πρόγραμμά του: φροντιστήριο 15:15–18:00, γυμναστήριο 18:45–20:30,
+     διάβασμα 21:00+. Άρα υπάρχει ΕΝΑ παράθυρο που η απογραφή είναι το πιο
+     χρήσιμο πράγμα στη σελίδα, και είναι μόλις γυρίσει.
+     ⛔ Καμία φάση δεν ΣΒΗΝΕΙ μπλοκ. Η κλάση μετακινεί με `order`, τίποτα άλλο. */
+  function hwPhase(now){
+    var d = now || new Date(), mins = d.getHours() * 60 + d.getMinutes();
+    if (!apogHasSlots(d)) return 'idle';       /* Σαββατοκύριακο ή μέρα χωρίς φροντιστήριο */
+    if (mins >= 18 * 60 && mins < 20 * 60 + 30) return 'capture';
+    return 'idle';
+  }
+  function paintPhase(now){
+    var ph = hwPhase(now), b = document.body;
+    b.classList.toggle('hw-t-capture', ph === 'capture');
+  }
+
+  /* ── ΤΑ ΣΗΜΕΡΙΝΑ SLOTS ──────────────────────────────────────────
+     ⭐ Η ΠΗΓΗ ΕΙΝΑΙ ΤΟ ΠΡΟΓΡΑΜΜΑ ΤΟΥ, ΟΧΙ ΜΑΝΤΕΨΙΑ ΑΠΟ ΚΕΙΜΕΝΟ. Γι' αυτό ο
+     δρόμος αυτός δεν μπορεί καν να πάθει τη σταθ. 38 («φροντ*ιστ*ήριο» ⊃
+     «ιστ»), και γι' αυτό μια εργασία Αρχαίων γεννιέται με το ΣΩΣΤΟ κλειδί
+     (`arxaia_gn` / `arxaia_agn`) αντί για το legacy `arxaia`.
+     ⚠️ ΓΥΡΝΑΕΙ ΤΗ ΜΕΡΑ ΠΟΥ ΑΠΑΝΤΑΕΙ: μετά τα μεσάνυχτα και ως τις 6 το πρωί
+     η ερώτηση «τι σου έβαλαν» αφορά ακόμη τη ΧΘΕΣΙΝΗ μέρα. */
+  function apogRefDate(now){
+    var d = new Date(now || Date.now());
+    if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+    return d;
+  }
+  function apogSlots(now){
+    var d = apogRefDate(now), sl = ttDay(TT_DAYS[dowMon(d)]);
+    if (!sl) return null;                       /* ΔΕΝ ΞΕΡΩ ≠ ΚΕΝΗ ΜΕΡΑ (σταθ. 33) */
+    var out = [];
+    sl.forEach(function(x){
+      if (x && typeof x === 'object' && SUBJ[x.subject])
+        out.push({ at: (typeof x.at === 'string' ? x.at : ''), subject: x.subject });
+    });
+    return out;
+  }
+  function apogHasSlots(now){ var s = apogSlots(now); return !!(s && s.length); }
+
+  /* Η κατάσταση ζει ΜΟΝΟ στη μνήμη. Ό,τι κρατιέται γράφεται μέσα από τους
+     κανονικούς δρόμους (`addTask` + `setLessons`), ώστε ο συγχρονισμός και οι
+     ταφόπλακες να ισχύουν χωρίς καμία νέα καλωδίωση (σταθ. 11/16). */
+  var apogPicked = [];
+
+  function renderApografi(){
+    var host = $('hwApogFill'), sec = $('hwApog');
+    if (!host || !sec) return;
+    var slots = apogSlots();
+    /* Σαββατοκύριακο, ή μέρα που δεν ξέρω: ΚΑΜΙΑ απογραφή. Η μονή γραμμή της
+       ΣΥΛΛΗΨΗΣ μένει για ό,τι έρχεται εκτός προγράμματος. */
+    if (!slots || !slots.length){ sec.classList.add('hw-off'); return; }
+    sec.classList.remove('hw-off');
+
+    var d = apogRefDate(), isYd = (new Date()).getDate() !== d.getDate();
+    $('hwApogT').textContent = 'Τι σου έβαλαν' + (isYd ? ' χθες;' : ' σήμερα;');
+    $('hwApogN').textContent = slots.length + (slots.length === 1 ? ' μάθημα' : ' μαθήματα') +
+      ' · τα ξέρω από το πρόγραμμά σου';
+
+    host.innerHTML = slots.map(function(s, i){
+      var m = SUBJ[s.subject];
+      return '<div class="hw-slot">' +
+        '<div class="sl-at">' + esc(s.at || '—') + '</div>' +
+        '<div class="sl-f">' +
+          '<div class="sl-l">' + esc((m && m.label ? m.label : s.subject).toUpperCase()) + '</div>' +
+          '<input type="text" autocomplete="off" autocapitalize="sentences" spellcheck="false"' +
+            ' data-apog="' + esc(s.subject) + '" data-i="' + i + '"' +
+            ' placeholder="' + (i === 0 ? 'π.χ. β4 απέξω + η άσκηση' : 'άσε το κενό αν δεν έβαλε τίποτα') + '">' +
+        '</div></div>';
+    }).join('');
+  }
+
+  /* ⛔ ΚΕΝΟ ΚΟΥΤΙ = ΔΕΝ ΕΒΑΛΕ ΤΙΠΟΤΑ. Δεν γεννιέται εργασία, δεν επινοείται
+     τίτλος. ⭐ Και τα λόγια του μπαίνουν ΑΥΤΟΥΣΙΑ — καμία ξαναγραφή (§4.6). */
+  function apografiSave(){
+    var host = $('hwApogFill');
+    if (!host) return;
+    var picked = [], subs = [];
+    Array.prototype.forEach.call(host.querySelectorAll('input[data-apog]'), function(inp){
+      var v = String(inp.value == null ? '' : inp.value).trim();
+      var sub = inp.getAttribute('data-apog');
+      if (SUBJ[sub] && subs.indexOf(sub) < 0) subs.push(sub);
+      if (!v) return;
+      picked.push({ subject: sub, title: v });
+    });
+
+    /* Η ΜΕΡΑ ΓΡΑΦΕΤΑΙ ΑΚΟΜΗ ΚΙ ΑΝ ΔΕΝ ΤΟΥ ΕΒΑΛΑΝ ΤΙΠΟΤΑ: «είχα αυτά τα τρία
+       μαθήματα» είναι γεγονός ανεξάρτητο από το αν υπάρχει εργασία, και είναι
+       αυτό που τροφοδοτεί το ξαναδιάβασμα των 21:45. Ως τώρα το `lessons`
+       ήταν ΑΔΕΙΟ — ούτε μία μέρα σε τέσσερις. */
+    setLessons(dkOf(apogRefDate()), subs);
+
+    if (!picked.length){
+      $('hwApogHint').textContent = 'Δεν έγραψες τίποτα — κράτησα μόνο ποια μαθήματα είχες.';
+      paint();
+      return;
+    }
+
+    var made = [];
+    picked.forEach(function(p){
+      var id = addTask({ subject: p.subject, title: p.title, kind: 'askisi' });
+      if (id) made.push({ id: id, subject: p.subject, title: p.title });
+    });
+    if (!made.length){ banner('Δεν μπόρεσα να κρατήσω τις εργασίες — ο δίσκος μπορεί να είναι γεμάτος.'); return; }
+
+    apogPicked = made;
+    renderApogOrder();
+    paint();
+  }
+
+  /* ── ③ Η ΚΑΤΑΤΑΞΗ — ΤΑ ΙΔΙΑ ΚΟΥΤΙΑ, ΔΕΥΤΕΡΟ ΠΡΟΣΩΠΟ ────────────
+     Δικά του λόγια: «αφού τα συμπληρώσω να τα οργανώσω». */
+  function renderApogOrder(){
+    var box = $('hwApogOrd'), ft = $('hwApogOrdFt');
+    if (!box) return;
+    if (!apogPicked.length){ box.classList.add('hw-off'); if (ft) ft.classList.add('hw-off'); return; }
+    $('hwApogFill').classList.add('hw-off');
+    $('hwApogFt').classList.add('hw-off');
+    box.classList.remove('hw-off'); if (ft) ft.classList.remove('hw-off');
+    $('hwApogT').textContent = 'Με ποια σειρά;';
+    $('hwApogN').textContent = apogPicked.length +
+      (apogPicked.length === 1 ? ' εργασία απόψε' : ' εργασίες απόψε');
+    box.innerHTML = apogPicked.map(function(it, n){
+      var m = SUBJ[it.subject];
+      return '<div class="or-r">' +
+        '<div class="or-n">' + (n + 1) + '</div>' +
+        '<div class="or-t"><div class="or-t1">' + esc(it.title) + '</div>' +
+        '<div class="or-t2">' + esc(m && m.label ? m.label : it.subject) + '</div></div>' +
+        '<div class="or-mv">' +
+          '<button class="or-b" type="button" data-aup="' + n + '" aria-label="πιο πάνω">&#8593;</button>' +
+          '<button class="or-b" type="button" data-adn="' + n + '" aria-label="πιο κάτω">&#8595;</button>' +
+        '</div></div>';
+    }).join('');
+  }
+  function apogBack(){
+    apogPicked = [];
+    $('hwApogOrd').classList.add('hw-off');
+    $('hwApogOrdFt').classList.add('hw-off');
+    $('hwApogFill').classList.remove('hw-off');
+    $('hwApogFt').classList.remove('hw-off');
+    renderApografi();
+  }
+
+  /* ── ⑤ Η ΥΛΗ ΤΗΣ ΚΑΡΤΑΣ ────────────────────────────────────────
+     ⭐⭐ ΤΟ ΚΕΙΜΕΝΟ ΒΓΑΙΝΕΙ ΑΠΟ ΤΟ CORPUS, ΠΟΤΕ ΓΡΑΜΜΕΝΟ ΣΤΟ ΧΕΡΙ. Και δεν
+     είναι τυχαίο απόσπασμα: είναι Η ΕΝΟΤΗΤΑ ΠΟΥ ΧΡΩΣΤΑΕΙ — αυτή με το
+     νωρίτερο `due`, δηλαδή αυτό που έχει να πει. Αν δεν χρωστάει τίποτα,
+     δείχνει την πρώτη, γιατί μια κάρτα χωρίς πρόσωπο δεν λέει τίποτα.
+     ⛔ ΟΠΟΥ ΔΕΝ ΥΠΑΡΧΕΙ ΑΛΗΘΙΝΟ ΚΕΙΜΕΝΟ ΔΕΝ ΜΠΑΙΝΕΙ ΤΙΠΟΤΑ. Τα Λατινικά
+     παράγουν μορφές αντί να έχουν κείμενο, και η Έκθεση δεν έχει σελίδα —
+     ένα εφευρημένο απόσπασμα εκεί θα ήταν διακοσμητική λέξη πίσω από κάρτα,
+     που την έχει απορρίψει ρητά. */
+  function corpusUnit(list, id){
+    if (!list || !list.length) return null;
+    var i;
+    for (i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
+    return list[0];
+  }
+  function faceFor(sub, list){
+    var pick = null, i, s, it;
+    /* ποιο κομμάτι χρωστάει: το νωρίτερο `due` σε όλες τις αποθήκες του */
+    for (i = 0; i < (list || []).length; i++){
+      s = list[i]; if (!s || !s.ok) continue;
+      (s.items || []).forEach(function(x){
+        if (!x || !x.due) return;
+        if (!pick || x.due < pick.due) pick = x;
+      });
+    }
+    var uid = pick ? pick.unitId : null, txt = '', cap = '';
+
+    try {
+      if (sub === 'istoria' && typeof ISTORIA !== 'undefined' && ISTORIA.UNITS){
+        /* ⚠️ Ο ΠΛΑΓΙΟΤΙΤΛΟΣ ΔΕΝ ΕΙΝΑΙ ΕΝΟΤΗΤΑ ΤΟΥ CORPUS. Τα ids του γεννιούνται
+           από τη σελίδα (`p_…`) και ο τίτλος είναι τα λόγια του καθηγητή του —
+           δεν υπάρχουν πουθενά αλλού (als-v489). Άρα ο τίτλος βγαίνει από την
+           ΕΓΓΡΑΦΗ και το κείμενο από την πρώτη ενότητα. */
+        it = (pick && pick.unitKind === 'plag') ? null : corpusUnit(ISTORIA.UNITS, uid);
+        if (!it) it = ISTORIA.UNITS[0];
+        if (it){
+          txt = ISTORIA.bodyOf ? String(ISTORIA.bodyOf(it) || '') : '';
+          cap = (pick && pick.title) ? pick.title : String(it.section || it.title || '');
+        }
+      } else if (sub === 'arxaia_gn' && typeof ARXGN !== 'undefined' && ARXGN.UNITS){
+        it = corpusUnit(ARXGN.UNITS, uid) || ARXGN.UNITS[0];
+        if (it){
+          txt = ARXGN.bodyOf ? String(ARXGN.bodyOf(it) || '') : '';
+          cap = String(it.section || it.title || '');
+        }
+      } else if (sub === 'arxaia_agn' && typeof ArxaiaData !== 'undefined' && ArxaiaData.VERBS){
+        /* Οι αρχικοί χρόνοι ΕΙΝΑΙ η ύλη — τα ίδια τα λήμματα, στη σειρά του
+           φυλλαδίου. Δεν υπάρχει «κείμενο» να δείξω, υπάρχουν ΤΥΠΟΙ. */
+        txt = ArxaiaData.VERBS.slice(0, 6).map(function(v){
+          return String(v && v.lemma || '');
+        }).filter(Boolean).join(' · ');
+        cap = ArxaiaData.VERBS.length + ' ρήματα στο φυλλάδιο';
+      }
+    } catch (e) { txt = ''; cap = ''; }
+
+    txt = txt.replace(/\s+/g, ' ').trim();
+    if (!txt) return '';
+    if (txt.length > 260) txt = txt.slice(0, 260).replace(/\s+\S*$/, '') + '…';
+    return '<div class="hw-face"><p>' + esc(txt) + '</p>' +
+           (cap ? '<div class="hw-faceu">' + esc(cap) + '</div>' : '') + '</div>';
+  }
+
+  /* Η ΜΠΑΡΑ: ζωγραφίζεται ΜΟΝΟ όταν υπάρχει μέτρηση. ⚠️ Ένα «0%» για κάτι που
+     δεν εξετάστηκε διαβάζεται ως αποτυχία ενώ σημαίνει «δεν ρωτήθηκε»
+     (σταθ. 33) — γι' αυτό η απουσία μέτρησης γυρίζει ΚΕΝΟ, όχι μηδέν. */
+  function barFor(pieces, learned){
+    if (!pieces) return '';
+    var pc = Math.round(learned / pieces * 100);
+    return '<div class="hw-bar"><i style="width:' + pc + '%"></i></div>' +
+           '<div class="hw-pct">' + learned + ' ΑΠΟ ' + pieces + ' ΞΕΚΙΝΗΜΕΝΑ</div>';
+  }
+
   function paint(){
     ladders();                       /* ΜΙΑ φρέσκια ανάγνωση, πριν από όλους */
     /* ⭐⭐ ΤΟ `budget()` ΜΕΝΕΙ ΑΚΡΙΒΩΣ ΟΠΩΣ ΗΤΑΝ — ΕΦΥΓΕ ΜΟΝΟ Η ΖΩΓΡΑΦΙΚΗ ΤΟΥ.
@@ -3427,7 +3982,38 @@
     renderTonight();                 /* η πόρτα των 21:45 ζει στο ΙΔΙΟ paint */
     renderLessons4();                /* και τα μαθήματα — ΕΝΑ paint, μία αλήθεια */
     renderProgramma();               /* και το πρόγραμμα, από το ΙΔΙΟ state */
+    /* ⚠️ als-v490 · ΤΕΛΕΥΤΑΙΑ ΕΠΙΤΗΔΕΣ. Η als-v486 έμαθε ότι μια γραφή σε
+       στοιχείο που δεν υπάρχει πετάει TypeError ΜΕΣΑ στο `paint()` και
+       σταματάει τη ζωγραφιά — μισή σελίδα, σιωπηλά. Ό,τι μπήκε τελευταίο
+       ζωγραφίζεται τελευταίο, ώστε στη χειρότερη περίπτωση να λείπει ΤΟ ΝΕΟ
+       και όχι οι εργασίες του. */
+    if (!apogPicked.length) renderApografi(); else renderApogOrder();
+    paintCoverLight();
+    paintPhase();
   }
+
+  /* ── als-v490 · Η ΑΠΟΓΡΑΦΗ ─────────────────────────────────────── */
+  $('hwApogSave').addEventListener('click', apografiSave);
+  $('hwApogBack').addEventListener('click', apogBack);
+  /* Enter στο τελευταίο κουτί = «Κράτησέ τα». Στα ενδιάμεσα πάει στο επόμενο —
+     στις 18:00 είναι όρθιος και το πληκτρολόγιο του iPhone δεν πρέπει να
+     κλείνει ανάμεσα σε δύο μαθήματα. */
+  $('hwApogFill').addEventListener('keydown', function(e){
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var all = $('hwApogFill').querySelectorAll('input[data-apog]');
+    var i = Array.prototype.indexOf.call(all, e.target);
+    if (i >= 0 && i < all.length - 1) all[i + 1].focus(); else apografiSave();
+  });
+  $('hwApogOrd').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('.or-b') : null;
+    if (!b) return;
+    var u = b.getAttribute('data-aup'), d = b.getAttribute('data-adn'), i, j;
+    if (u !== null){ i = +u; j = i - 1; } else if (d !== null){ i = +d; j = i + 1; } else return;
+    if (j < 0 || j >= apogPicked.length) return;
+    var t = apogPicked[i]; apogPicked[i] = apogPicked[j]; apogPicked[j] = t;
+    renderApogOrder();
+  });
 
   $('hwLine').addEventListener('input', function(){
     var v = $('hwLine').value.trim();

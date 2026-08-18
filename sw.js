@@ -12,11 +12,17 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v489";
+var CACHE = "als-v490";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
   'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'latinika.html', 'tonos.html', 'istoria.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
+  /* als-v490 — Η ΑΤΜΟΣΦΑΙΡΑ ΤΗΣ SCHOOL STUDIES. Οι φωτογραφίες είναι ΑΡΧΕΙΑ
+     επίτηδες: bytes εικόνας μέσα σε συγχρονισμένη γραμμή σκοτώνουν σιωπηλά το
+     `flushOnUnload` για ΟΛΗ την εφαρμογή (σταθ. 34).
+     ⚠️ Ένα αρχείο που λείπει εδώ απορρίπτει ΟΛΟΚΛΗΡΗ την εγκατάσταση του SW —
+     και τα τέσσερα επαληθεύτηκαν ότι υπάρχουν πριν γραφτεί αυτή η γραμμή. */
+  'hw-cover.jpg', 'hw-consistency.jpg', 'hw-side.jpg', 'hw-banner.jpg',
   /* ⛔ als-v489: ΤΟ `istoria-demo.html` ΕΦΥΓΕ ΑΠΟ ΕΔΩ ΣΤΟ ΙΔΙΟ COMMIT ΠΟΥ
      ΕΦΥΓΕ ΤΟ ΑΡΧΕΙΟ. Ένα αρχείο που λείπει μέσα σε `cache.addAll()` απορρίπτει
      ΟΛΟΚΛΗΡΗ την εγκατάσταση του service worker — δηλαδή θα χαλούσε η offline
