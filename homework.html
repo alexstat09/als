@@ -749,16 +749,14 @@
      είναι άλλο πράγμα — κρατάει ΜΟΝΟ εικόνες, δηλαδή ό,τι ανεβάζει το ηθικό
      και δεν ανταγωνίζεται τίποτα για προσοχή. Κάτω από 1000px ΦΕΥΓΕΙ ΕΝΤΕΛΩΣ,
      γιατί στο κινητό ο χώρος ανήκει στη ΣΥΛΛΗΨΗ. */
-  .hw-rail{ display:none; }
-  @media (min-width:1180px){
-    body:not(.hw-door) .hw-rail{ display:flex; flex-direction:column; gap:14px;
-      position:fixed; left:max(18px,calc(50vw - 590px)); top:120px; width:176px; z-index:2; }
-    body:not(.hw-door) .hw-rail .hw-pic{ border-radius:9px; overflow:hidden; line-height:0;
-      border:1px solid rgba(245,242,236,.08); opacity:.68; transition:opacity .3s; }
-    body:not(.hw-door) .hw-rail .hw-pic:hover{ opacity:1; }
-    body:not(.hw-door) .hw-rail .hw-pic img{ width:100%; display:block; }
-    body:not(.hw-door) .hw-rail .hw-pic.lite{ background:#fff; }
-  }
+  /* ⛔ ΤΟ FIXED RAIL ΕΦΥΓΕ, ΚΑΙ Ο ΛΟΓΟΣ ΓΕΝΙΚΕΥΕΤΑΙ. Ήταν σωστά
+     `position:fixed` — μετρημένο `top:232` σε ΚΑΘΕ θέση scroll — και ακριβώς
+     γι' αυτό ήταν λάθος: έμενε καρφωμένο στην ΟΘΟΝΗ ενώ όλη η σελίδα γλιστρούσε
+     από δίπλα, οπότε οι δύο εικόνες φαινόταν να «πηγαίνουν πάνω-κάτω» ως προς
+     το περιεχόμενο. Στο Notion του κυλάνε ΜΑΖΙ με τη σελίδα.
+     ⭐ Ο κανόνας: **«στάσιμο» σημαίνει κολλημένο σε σημείο της ΣΕΛΙΔΑΣ, όχι της
+     οθόνης.** Ό,τι μένει ακίνητο στην οθόνη ΚΙΝΕΙΤΑΙ ως προς το κείμενο.
+     Δες `.hw-gut` παρακάτω. */
 
   /* ── ⑤ Η ΥΛΗ ΜΕΣΑ ΣΤΗΝ ΚΑΡΤΑ ────────────────────────────────────
      ⭐⭐ ΤΟ ΠΑΝΩ ΜΙΣΟ ΤΗΣ ΚΑΡΤΑΣ ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΤΟ ΚΕΙΜΕΝΟ ΠΟΥ ΔΙΑΒΑΖΕΙ, όχι
@@ -846,7 +844,6 @@
   body.hw-door .hw-cover,
   body.hw-door .hw-stamp,
   body.hw-door .hw-strip,
-  body.hw-door .hw-rail,
   body.hw-door .hw-apog{ display:none; }
   /* Η ΑΠΟΓΡΑΦΗ ΕΙΝΑΙ ΤΟ ΠΕΡΙΕΧΟΜΕΝΟ ΤΗΣ ΠΟΡΤΑΣ `#capture`, όχι κρυμμένη από
      αυτήν — εκεί ακριβώς τη θέλει το push των 18:00. */
@@ -873,6 +870,12 @@
         ⭐ Ο κανόνας: μπαίνεις σε flex container με `order`, δηλώνεις `order`. */
   @media (min-width:1000px){
     body:not(.hw-door) .hw-strip{ order:2; }
+    /* ⚠️ ΤΑ ΠΕΡΙΘΩΡΙΑ ΔΗΛΩΝΟΥΝ ORDER ΟΠΩΣ ΚΑΘΕ ΑΔΕΛΦΟΣ. Έχουν ύψος μηδέν, άρα
+       δεν σπρώχνουν τίποτα· η θέση τους στη σειρά είναι ΜΟΝΟ η άγκυρα του
+       absolute παιδιού τους. Ίδιο order με τον γείτονα που τα κρατάει, και η
+       σειρά του DOM αποφασίζει ποιο κάθεται μετά. */
+    body:not(.hw-door) .hw-gut-l{ order:2; }
+    body:not(.hw-door) .hw-gut-r{ order:6; }
     body:not(.hw-door) .hw-banner{ order:3; }
     body:not(.hw-door) .hw-start{ order:4; }
     body:not(.hw-door) .hw-apog{ order:5; }
@@ -899,12 +902,6 @@
     mask-image:linear-gradient(to bottom,#000 40%,transparent 96%); }
   .hw-face::after{ background:linear-gradient(to bottom,transparent 40%,rgba(10,10,11,.96) 86%); }
 
-  /* ⑤ ΤΟ ΠΕΡΙΘΩΡΙΟ ΚΑΘΟΤΑΝ ΜΕΣΑ ΣΤΗΝ ΚΟΥΒΕΡΤΑ (top:120 σε κουβέρτα 320px),
-        δηλαδή δύο εικόνες πάνω σε μια τρίτη. Κεντράρεται κάθετα τώρα, ώστε να
-        μην μπορεί να συναντήσει ούτε την κουβέρτα ούτε το topbar. */
-  @media (min-width:1180px){
-    body:not(.hw-door) .hw-rail{ top:50%; transform:translateY(-50%); }
-  }
 
 
   /* ⑥ ΤΟ ΟΝΟΜΑ ΔΕΝ ΛΕΓΕΤΑΙ ΔΥΟ ΦΟΡΕΣ — ο ίδιος κανόνας που διόρθωσε το «Η
@@ -939,6 +936,40 @@
         Μια σφραγίδα χωρίς την κουβέρτα της δεν είναι σφραγίδα. */
   @media (max-width:999px){ .hw-stamp{ display:none; } }
 
+
+  /* ── ΤΟ ΠΕΡΙΘΩΡΙΟ · als-v490 ─────────────────────────────────────
+     ⭐ Η ΤΕΧΝΙΚΗ: δοχείο ΥΨΟΥΣ ΜΗΔΕΝ μέσα στη ροή, με absolute παιδί που
+     βγαίνει στο περιθώριο. Έτσι η εικόνα **αγκυρώνεται στο σημείο της ροής
+     όπου μπαίνει** — κυλάει μαζί με τη σελίδα και δεν ακολουθεί το μάτι — και
+     ταυτόχρονα **δεν καταλαμβάνει καθόλου ύψος**, οπότε δεν σπρώχνει τίποτα
+     και δεν αλλάζει καμία από τις μετρήσεις της σελίδας.
+     ⚠️ ΓΙΑΤΙ ΟΧΙ ΠΑΙΔΙ ΤΟΥ ΜΠΛΟΚ: το `#hwStart` το ξαναγράφει ολόκληρο ο
+     `renderStart()` σε κάθε `paint()`, άρα μια εικόνα μέσα του θα χανόταν στο
+     πρώτο repaint. Το δοχείο κάθεται ΔΙΠΛΑ, ποτέ μέσα.
+     ⚠️ ΓΙΑΤΙ ΟΧΙ ΣΤΗΝ ΑΠΟΓΡΑΦΗ, που είναι πιο κοντά στη λωρίδα: η απογραφή
+     ΚΡΥΒΕΤΑΙ το Σαββατοκύριακο, και μια εικόνα που εξαφανίζεται δύο μέρες τη
+     βδομάδα δεν είναι διάκοσμος. */
+  .hw-gut{ display:none; }
+  /* Χρειάζονται 880 (κέντρο) + 2 × (176 εικόνα + 28 αέρας) = **1288px**.
+     Κάτω από αυτό δεν χωράνε, άρα δεν υπάρχουν — ποτέ πάνω από το κείμενο. */
+  @media (min-width:1300px){
+    body:not(.hw-door) .hw-gut{ display:block; position:relative; height:0; }
+    body:not(.hw-door) .hw-gut > .hw-pic{
+      position:absolute; width:176px; border-radius:9px; overflow:hidden;
+      line-height:0; border:1px solid rgba(245,242,236,.08);
+      opacity:.62; transition:opacity .35s ease; }
+    body:not(.hw-door) .hw-gut > .hw-pic:hover{ opacity:.92; }
+    body:not(.hw-door) .hw-gut > .hw-pic img{ width:100%; height:auto; display:block; }
+    body:not(.hw-door) .hw-gut > .hw-pic.lite{ background:#fff; }
+    /* ΑΡΙΣΤΕΡΑ — το «consistency», κοντά στο «Dream Big, Study hard». Το
+       αρνητικό `top` το ανεβάζει προς τη λωρίδα, δικό του αίτημα. */
+    body:not(.hw-door) .hw-gut-l > .hw-pic{ right:calc(100% + 28px); top:6px; }
+    /* ΔΕΞΙΑ — το αυτοκίνητο, στα πλάγια από τις κάρτες των μαθημάτων. */
+    body:not(.hw-door) .hw-gut-r > .hw-pic{ left:calc(100% + 28px); top:84px; }
+  }
+  /* ⛔ Πίσω από πόρτα φεύγουν, όπως όλη η ατμόσφαιρα. */
+  body.hw-door .hw-gut{ display:none; }
+
 </style>
 </head>
 <body>
@@ -952,12 +983,6 @@
 <div class="hw-cover" id="hwCover" aria-hidden="true">
   <img src="hw-cover.jpg" alt="" width="560" height="560" decoding="async">
 </div>
-
-<!-- ΤΟ ΠΕΡΙΘΩΡΙΟ — ΨΥΧΗ, ΠΟΤΕ ΔΕΔΟΜΕΝΑ. Εμφανίζεται μόνο ≥1180px. -->
-<aside class="hw-rail" id="hwRail" aria-hidden="true">
-  <div class="hw-pic lite"><img src="hw-consistency.jpg" alt="" loading="lazy" decoding="async"></div>
-  <div class="hw-pic"><img src="hw-side.jpg" alt="" loading="lazy" decoding="async"></div>
-</aside>
 
 <main class="hw-wrap">
 
@@ -1005,10 +1030,30 @@
         <img src="hw-banner.jpg" alt="" width="1400" height="93" decoding="async">
       </div>
 
+      <!-- ⭐ ΑΡΙΣΤΕΡΑ, ΚΑΤΩ ΑΠΟ ΤΗ ΛΩΡΙΔΑ. Δικά του: «το consistency κάτω
+           αριστερά κοντά στο dream big study hard». Κάθεται ΑΜΕΣΩΣ μετά τη
+           λωρίδα στη ροή, οπότε αγκυρώνεται στο ύψος της και κυλάει μαζί της.
+           ⚠️ ΠΑΙΡΝΕΙ ΡΗΤΟ `order`: ένας αδελφός χωρίς order σε flex container
+           παίρνει 0 και προηγείται ΟΛΩΝ — το ίδιο λάθος έστειλε αυτή τη λωρίδα
+           πάνω από τον τίτλο λίγες ώρες πριν, και το ξανάκανε εδώ (μετρημένο:
+           pageY 157, μέσα στην κουβέρτα, αντί για 524). -->
+      <div class="hw-gut hw-gut-l" aria-hidden="true">
+        <div class="hw-pic lite"><img src="hw-consistency.jpg" alt="" width="699" height="465" loading="lazy" decoding="async"></div>
+      </div>
+
       <div class="hw-banner" id="hwBanner"></div>
 
       <!-- ΞΕΚΙΝΑ ΑΠΟ ΕΔΩ -->
-      <section class="hw-start" id="hwStart"></section>
+      <section class="hw-start" id="hwStart">
+        <!-- ⭐ ΤΟ ΠΕΡΙΘΩΡΙΟ ΑΡΙΣΤΕΡΑ. Ζει ΜΕΣΑ στο μπλοκ του ώστε να κυλάει
+             ΜΑΖΙ του: το προηγούμενο ήταν `position:fixed`, δηλαδή καρφωμένο
+             στην ΟΘΟΝΗ — έμενε ακίνητο ενώ όλη η σελίδα γλιστρούσε από δίπλα,
+             και το ανέφερε ως «πηγαίνουν πάνω-κάτω». Μετρημένο: `top:232` σε
+             κάθε θέση scroll, δηλαδή σωστά fixed και λάθος πράγμα.
+             ⚠️ Το `hwStart` ΞΑΝΑΓΡΑΦΕΤΑΙ από το `renderStart()`, οπότε η εικόνα
+             ΔΕΝ μπορεί να ζει εδώ μέσα ως παιδί — μπαίνει ΔΙΠΛΑ, με το μπλοκ
+             relative. Δες `.hw-gut` στο CSS. -->
+      </section>
 
       <!-- ══ ② Η ΑΠΟΓΡΑΦΗ · als-v490 ═════════════════════════════════
            ⭐ ΤΡΑΒΗΧΤΗΚΑΝ ΤΑ ΑΛΗΘΙΝΑ ΤΟΥ ΔΕΔΟΜΕΝΑ ΠΡΙΝ ΣΧΕΔΙΑΣΤΕΙ (σταθ. 40):
@@ -1172,6 +1217,11 @@
            εδώ, ΔΙΑΒΑΖΕΤΑΙ από τον κοινό αναγνώστη.
            ⚠️ ΔΕΝ φοράει `hw-sec`: το μόνο μπλοκ της σελίδας είναι η ΣΥΛΛΗΨΗ,
            όπως και το «Απόψε». -->
+      <!-- ⭐ ΚΑΙ ΤΟ ΔΕΞΙ, ΣΤΟ ΥΨΟΣ ΤΩΝ ΚΑΡΤΩΝ. Δικά του: «το άλλο από τη κάτω
+           δεξιά πλευρά, δηλαδή στα πλάγια από εκεί που βάζω τα μαθήματά μου». -->
+      <div class="hw-gut hw-gut-r" aria-hidden="true">
+        <div class="hw-pic"><img src="hw-side.jpg" alt="" width="735" height="912" loading="lazy" decoding="async"></div>
+      </div>
       <section class="hw-lessons4" id="hwLessons4">
         <div class="hw-plate"><span>Τα μαθήματά μου</span></div>
         <div class="hw-plate-s" id="hwL4S"></div>
