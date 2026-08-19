@@ -21,16 +21,15 @@
   <script src="greek-ear.js"></script>
   <script src="ekthesi-data.js"></script>
   <script src="ekthesi-engine.js"></script>
-  <!-- ⭐ als-v468: τα λήμματα είναι χάρτης εγγραφών, που το sync.js συγχώνευε
-       ανά πεδίο με «κερδίζει το remote». Δες το study-stamp.js. -->
+  <!-- ⭐ als-v468: οι εγγραφές είναι χάρτης, που το sync.js συγχώνευε ανά πεδίο
+       με «κερδίζει το remote». Δες το study-stamp.js. -->
   <script src="study-stamp.js"></script>
   <script src="als-dialog.js" defer></script>
-  <script>window.__pmAutoSel='.ek-hero,.ek-today,.ek-passes,.ek-map,.ek-why,.ek-foot';</script>
+  <script>window.__pmAutoSel='.ek-head,.ek-cta,.ek-page';</script>
   <script src="page-motion.js" defer></script>
 <style>
-  /* Το κοράλλι είναι ΤΟ ΧΡΩΜΑ ΤΗΣ ΕΚΘΕΣΗΣ, ίδιο με το `--hw-ekt` του
-     homework.html. Ένα μάθημα, ένα χρώμα, σε όλη την εφαρμογή. */
-  :root{ --ek:255,138,107; --warn:255,107,139; --good:63,224,176; --hint:229,184,110; }
+  /* Κοραλλί = ΤΟ ΧΡΩΜΑ ΤΗΣ ΕΚΘΕΣΗΣ, ίδιο με το `--hw-ekt` του homework.html. */
+  :root{ --ek:255,138,107; --hint:229,184,110; --good:63,224,176; }
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ min-height:100%; }
   body{
@@ -39,232 +38,170 @@
     -webkit-font-smoothing:antialiased;
     padding:0 0 calc(96px + env(safe-area-inset-bottom));
   }
-  .ek-wrap{ max-width:600px; margin:0 auto; padding:0 18px; }
-  .gr{ font-family:var(--au-serif,Georgia,serif); }
-  .mono{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); }
+  .wrap{ max-width:640px; margin:0 auto; padding:0 20px; }
 
-  /* ── hero ─────────────────────────────────────────── */
-  .ek-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
-  .ek-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
-    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--ek),.92); margin-bottom:12px; }
-  .ek-h{ font-family:var(--au-serif,Georgia,serif); font-weight:400;
-    font-size:clamp(27px,7vw,36px); line-height:1.06; letter-spacing:-.01em; }
-  .ek-h b{ font-weight:400; color:rgb(var(--ek)); font-variant-numeric:tabular-nums; }
-  .ek-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.55; }
-  .ek-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐ ΤΥΠΟΓΡΑΦΙΑ ΛΕΞΙΚΟΥ, ΟΧΙ DASHBOARD.
+     Καμία κάρτα, κανένα στρογγυλεμένο κουτί, κανένα περίγραμμα σε ολόκληρη
+     την ανάγνωση. Τα λεξικά έχουν δική τους τυπογραφία εκατό χρόνων —
+     έντονο λήμμα, λεπτή γραμμή, μικροσκοπικά αραιωμένα κεφαλαία για τις
+     ετικέτες, πλάγιο για την ετυμολογία — και είναι ΠΥΚΝΗ χωρίς να είναι
+     θορυβώδης. Ένα chip με border-radius 999px χωράει τρεις λέξεις· μια
+     καλοστημένη σειρά λεξικού χωράει επτά και διαβάζεται πιο εύκολα.
+     ══════════════════════════════════════════════════════════════════ */
 
-  /* ── σήμερα ───────────────────────────────────────── */
-  .ek-today{ margin-top:22px; }
-  .ek-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--ek),.28);
-    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer;
-    background:linear-gradient(140deg,rgba(var(--ek),.13),rgba(var(--ek),.03) 60%,transparent);
-    transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s; }
-  .ek-cta:active{ transform:scale(.985); }
-  .ek-cta[disabled]{ opacity:.5; cursor:default; }
-  .ek-ctak{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
-    letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--ek),.95); }
-  .ek-ctat{ font-family:var(--au-serif,Georgia,serif); font-size:21px; margin-top:8px; line-height:1.2; }
-  .ek-ctas{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:7px; line-height:1.5; }
+  .ek-head{ padding:calc(env(safe-area-inset-top) + 24px) 0 0; }
+  .ek-kicker{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.26em; text-transform:uppercase; color:rgba(var(--ek),.9); }
+  .ek-count{ display:flex; align-items:baseline; gap:11px; margin-top:14px; }
+  .ek-n{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(42px,12vw,58px);
+    line-height:.9; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .ek-of{ font-size:13px; color:var(--au-dim,#9a97a3); }
+  .ek-bar{ height:2px; background:rgba(255,255,255,.07); margin-top:18px; overflow:hidden; }
+  .ek-bar i{ display:block; height:100%; background:rgb(var(--ek)); width:0;
+    transition:width .9s cubic-bezier(.2,.8,.2,1); }
 
-  /* ── τα περάσματα ─────────────────────────────────── */
-  .ek-passes{ margin-top:26px; }
-  .ek-sec{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
-    letter-spacing:.22em; text-transform:uppercase; color:var(--au-dim,#9a97a3); margin-bottom:12px; }
-  .ek-plist{ display:grid; gap:8px; }
-  .ek-p{ display:flex; align-items:flex-start; gap:13px; width:100%; text-align:left; cursor:pointer;
-    border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:13px 15px; color:inherit;
-    background:rgba(255,255,255,.022); transition:border-color .18s, background .18s, transform .18s; }
-  .ek-p:active{ transform:scale(.99); }
-  .ek-p.on{ border-color:rgba(var(--ek),.35); background:rgba(var(--ek),.07); }
-  .ek-p[disabled]{ opacity:.42; cursor:default; }
-  .ek-pn{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11px; font-weight:700;
-    color:rgba(var(--ek),.9); width:14px; flex:none; padding-top:2px; font-variant-numeric:tabular-nums; }
-  .ek-pb{ flex:1; min-width:0; }
-  .ek-pt{ font-size:13.5px; font-weight:600; letter-spacing:.01em; }
-  .ek-pd{ font-size:11.5px; color:var(--au-dim,#9a97a3); margin-top:3px; line-height:1.45; }
-  .ek-pm{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9.5px; flex:none;
-    color:var(--au-dim,#9a97a3); padding-top:3px; font-variant-numeric:tabular-nums; }
-  .ek-pm.done{ color:rgb(var(--good)); }
+  .ek-cta{ display:block; width:100%; text-align:left; cursor:pointer; color:inherit;
+    margin-top:24px; padding:17px 0; border:0; border-top:1px solid rgba(255,255,255,.09);
+    border-bottom:1px solid rgba(255,255,255,.09); background:none;
+    transition:opacity .18s; font-family:inherit; }
+  .ek-cta:active{ opacity:.6; }
+  .ek-cta[disabled]{ opacity:.45; cursor:default; }
+  .ek-ctat{ font-family:var(--au-serif,Georgia,serif); font-size:20px; }
+  .ek-ctas{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:5px; line-height:1.5; }
 
-  /* ── ο χάρτης των λημμάτων ────────────────────────── */
-  .ek-map{ margin-top:28px; }
-  .ek-grid{ display:flex; flex-wrap:wrap; gap:7px; }
-  .ek-w{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; color:inherit;
-    border:1px solid rgba(255,255,255,.10); border-radius:999px; padding:7px 13px;
-    background:rgba(255,255,255,.025); font-size:13px; transition:border-color .18s, transform .18s; }
-  .ek-w:active{ transform:scale(.97); }
-  .ek-w i{ width:6px; height:6px; border-radius:50%; flex:none; font-style:normal; }
-  .ek-w u{ text-decoration:none; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
-    font-size:9.5px; color:var(--au-dim,#9a97a3); font-variant-numeric:tabular-nums; }
-  .ek-w.due{ border-color:rgba(var(--warn),.45); }
-  .ek-legend{ margin-top:13px; font-size:11px; color:var(--au-dim,#9a97a3); line-height:1.6; }
-  .ek-legend i{ display:inline-block; width:6px; height:6px; border-radius:50%; margin:0 5px 0 11px;
-    vertical-align:middle; font-style:normal; }
-  .ek-legend i:first-child{ margin-left:0; }
+  /* ── η σελίδα του λεξικού ─────────────────────────── */
+  .ek-page{ margin-top:34px; }
+  .ek-src{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.22em; text-transform:uppercase; color:var(--au-dim,#9a97a3);
+    padding-bottom:9px; border-bottom:1px solid rgba(255,255,255,.14); }
 
-  /* ── γιατί ────────────────────────────────────────── */
-  .ek-why{ margin-top:30px; border:1px solid rgba(255,255,255,.07); border-radius:16px;
-    padding:17px 19px; background:rgba(255,255,255,.018); }
-  .ek-why p{ font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.65; }
-  .ek-why p + p{ margin-top:10px; }
-  .ek-why b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
-  .ek-foot{ margin-top:26px; font-size:11px; color:rgba(154,151,163,.7); line-height:1.6; }
+  .ent{ padding:21px 0 19px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .ent h2{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:23px;
+    letter-spacing:-.01em; line-height:1.1; color:var(--au-ivory,#f5f2ec);
+    transition:color .6s ease; }
+  /* ⭐ Ο ΜΟΝΟΣ ΔΕΙΚΤΗΣ ΠΡΟΟΔΟΥ ΜΕΣΑ ΣΤΗ ΣΕΛΙΔΑ, ΚΑΙ ΕΙΝΑΙ Η ΙΔΙΑ Η ΤΥΠΟΓΡΑΦΙΑ.
+     Όταν η λέξη γίνει ολόκληρη δική του, ο τίτλος της γίνεται κοραλλί.
+     Σκρολάροντας βλέπει τι κατέκτησε χωρίς μετρητή, χωρίς τικ, χωρίς μπάρα. */
+  .ent.full h2{ color:rgb(var(--ek)); }
 
-  /* ── Η ΣΥΝΕΔΡΙΑ ───────────────────────────────────────
-     ⚠️ ΟΛΟΣΕΛΙΔΗ ΚΑΙ `position:fixed` ΧΩΡΙΣ ΚΑΝΕΝΑΝ ΠΡΟΓΟΝΟ ΜΕ transform.
-     Ένας πρόγονος με transform σπάει το fixed και το πλαίσιο φεύγει εκτός
-     κάδρου — έχει ήδη συμβεί σε αυτό το project. Γι' αυτό ζει ΕΞΩ από το
-     `.ek-wrap`, παιδί του <body>. */
-  .ek-sess{ position:fixed; inset:0; z-index:70; background:var(--au-void,#050506);
+  .ent .row{ display:flex; gap:11px; margin-top:9px; align-items:baseline; }
+  .ent .lab{ flex:none; width:31px; padding-top:2px;
+    font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:8.5px; font-weight:700;
+    letter-spacing:.14em; color:rgba(154,151,163,.55); }
+  .ent .ws{ flex:1; min-width:0; font-family:var(--au-serif,Georgia,serif);
+    font-size:16px; line-height:1.62; }
+  /* Έντονο ιβουάρ = δικό σου. Σβηστό = δεν το έχεις ακόμα. ΚΑΝΕΝΑ κόκκινο:
+     το «δεν το έχω» δεν είναι λάθος, είναι απλώς σκοτεινό. */
+  .ent .w{ color:rgba(154,151,163,.34); transition:color .8s ease; }
+  .ent .w.on{ color:var(--au-ivory,#f5f2ec); }
+  .ent .w.fresh{ color:rgb(var(--hint)); }
+  .ent .sep{ color:rgba(154,151,163,.22); }
+  .ent .root{ margin-top:11px; padding-left:42px; font-family:var(--au-serif,Georgia,serif);
+    font-style:italic; font-size:13px; line-height:1.55; color:rgba(154,151,163,.72); }
+
+  .ek-foot{ margin-top:26px; font-size:11px; line-height:1.65; color:rgba(154,151,163,.6); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΕΞΑΣΚΗΣΗ — ΕΝΑ ΠΡΑΓΜΑ ΤΗ ΦΟΡΑ
+
+     ⚠️ `position:fixed` ΧΩΡΙΣ ΚΑΝΕΝΑΝ ΠΡΟΓΟΝΟ ΜΕ transform — ένας τέτοιος
+     πρόγονος σπάει το fixed και το πλαίσιο φεύγει εκτός κάδρου. Έχει ήδη
+     συμβεί σε αυτό το project. Γι' αυτό ζει ΕΞΩ από το `.wrap`.
+     ══════════════════════════════════════════════════════════════════ */
+  .drill{ position:fixed; inset:0; z-index:70; background:var(--au-void,#050506);
     display:none; flex-direction:column; }
-  .ek-sess.on{ display:flex; }
-  .ek-sbar{ flex:none; display:flex; align-items:center; gap:12px;
-    padding:calc(env(safe-area-inset-top) + 13px) 18px 13px;
-    border-bottom:1px solid rgba(255,255,255,.07); }
-  .ek-sx{ font-size:19px; line-height:1; color:var(--au-dim,#9a97a3); cursor:pointer;
-    background:none; border:0; padding:4px 6px; }
-  .ek-sk{ flex:1; min-width:0; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
-    font-size:9px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
-    color:rgba(var(--ek),.95); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .ek-sc{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11px;
-    color:var(--au-dim,#9a97a3); flex:none; font-variant-numeric:tabular-nums; }
-  .ek-sprog{ flex:none; height:2px; background:rgba(255,255,255,.07); }
-  .ek-sprog i{ display:block; height:100%; background:rgb(var(--ek)); width:0;
+  .drill.on{ display:flex; }
+  .d-bar{ flex:none; display:flex; align-items:center; gap:14px;
+    padding:calc(env(safe-area-inset-top) + 14px) 20px 14px; }
+  .d-x{ background:none; border:0; padding:4px 6px; font-size:19px; line-height:1;
+    color:var(--au-dim,#9a97a3); cursor:pointer; }
+  .d-n{ flex:1; font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:10px;
+    letter-spacing:.16em; color:var(--au-dim,#9a97a3); font-variant-numeric:tabular-nums; text-align:right; }
+  .d-prog{ flex:none; height:2px; background:rgba(255,255,255,.07); }
+  .d-prog i{ display:block; height:100%; background:rgb(var(--ek)); width:0;
     transition:width .3s cubic-bezier(.2,.8,.2,1); }
-  .ek-sbody{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px 18px 26px; }
-  .ek-sin{ max-width:600px; margin:0 auto; }
-  .ek-sfoot{ flex:none; padding:13px 18px calc(env(safe-area-inset-bottom) + 15px);
-    border-top:1px solid rgba(255,255,255,.07); display:flex; gap:9px; }
-  .ek-btn{ flex:1; border:1px solid rgba(var(--ek),.32); border-radius:13px; padding:14px;
-    background:rgba(var(--ek),.10); color:var(--au-ivory,#f5f2ec); font-size:14px;
-    font-weight:600; cursor:pointer; font-family:inherit; transition:transform .16s, opacity .16s; }
-  .ek-btn:active{ transform:scale(.985); }
-  .ek-btn.ghost{ flex:0 0 auto; padding:14px 17px; border-color:rgba(255,255,255,.12);
-    background:rgba(255,255,255,.03); color:var(--au-dim,#9a97a3); font-weight:500; }
-  .ek-btn[disabled]{ opacity:.4; cursor:default; }
+  .d-body{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:34px 20px 24px; }
+  .d-in{ max-width:640px; margin:0 auto; }
 
-  /* το ερέθισμα */
-  .ek-q{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(28px,8vw,38px);
-    line-height:1.08; letter-spacing:-.01em; }
-  .ek-qsub{ font-size:11.5px; color:var(--au-dim,#9a97a3); margin-top:9px; line-height:1.55; }
-  .ek-root{ margin-top:15px; border-left:2px solid rgba(var(--hint),.45); padding:2px 0 2px 13px;
-    font-size:13px; color:rgba(229,184,110,.92); line-height:1.55; font-family:var(--au-serif,Georgia,serif); }
-  .ek-root.hid{ display:none; }
-  .ek-reveal{ margin-top:15px; border:1px dashed rgba(255,255,255,.14); border-radius:12px;
-    padding:12px 15px; font-size:12.5px; color:var(--au-dim,#9a97a3); cursor:pointer;
-    background:none; width:100%; text-align:left; font-family:inherit; }
+  .d-q{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(32px,9vw,44px);
+    line-height:1.05; letter-spacing:-.02em; }
+  .d-ask{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--ek),.92); margin-bottom:13px; }
+  .d-has{ margin-top:15px; font-family:var(--au-serif,Georgia,serif); font-size:13.5px;
+    line-height:1.6; color:rgba(154,151,163,.62); }
+  .d-has b{ color:rgba(245,242,236,.8); font-weight:400; }
 
-  /* οι ομάδες */
-  .ek-g{ margin-top:20px; }
-  .ek-gl{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; }
-  .ek-gn{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
-    letter-spacing:.2em; text-transform:uppercase; color:var(--au-dim,#9a97a3); }
-  .ek-gc{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:10px;
-    color:rgba(var(--ek),.9); font-variant-numeric:tabular-nums; }
-  .ek-ta{ width:100%; min-height:74px; resize:vertical; border:1px solid rgba(255,255,255,.11);
-    border-radius:13px; padding:12px 14px; background:rgba(255,255,255,.028);
-    color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:15px; line-height:1.6; }
-  .ek-ta:focus{ outline:none; border-color:rgba(var(--ek),.45); background:rgba(var(--ek),.05); }
-  .ek-ta[readonly]{ opacity:.62; }
-  .ek-cues{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
-  .ek-cue{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:12px;
-    letter-spacing:.08em; color:rgba(229,184,110,.85); border:1px solid rgba(var(--hint),.24);
-    border-radius:8px; padding:5px 9px; background:rgba(var(--hint),.05); cursor:pointer; }
-  .ek-cue.got{ color:rgba(63,224,176,.85); border-color:rgba(var(--good),.3);
-    background:rgba(var(--good),.06); letter-spacing:0; }
+  .d-ta{ width:100%; margin-top:26px; border:0; border-bottom:1px solid rgba(255,255,255,.18);
+    background:none; color:var(--au-ivory,#f5f2ec); font-family:var(--au-serif,Georgia,serif);
+    font-size:24px; padding:9px 2px; line-height:1.3; }
+  .d-ta:focus{ outline:none; border-bottom-color:rgba(var(--ek),.6); }
+  .d-ta[readonly]{ opacity:.5; }
 
-  /* το αποτέλεσμα */
-  .ek-rows{ display:grid; gap:5px; margin-top:9px; }
-  .ek-r{ display:flex; align-items:baseline; gap:9px; font-size:14px; line-height:1.45; }
-  .ek-r em{ font-style:normal; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
-    font-size:10px; flex:none; width:15px; }
-  .ek-r span{ flex:1; min-width:0; }
-  .ek-r small{ font-size:10.5px; color:var(--au-dim,#9a97a3); font-family:var(--au-mono,ui-monospace,Menlo,monospace);
-    letter-spacing:.05em; text-transform:uppercase; flex:none; }
-  .ek-r.ok em{ color:rgb(var(--good)); }
-  .ek-r.spell em, .ek-r.form em{ color:rgb(var(--hint)); }
-  .ek-r.spell span, .ek-r.form span{ color:rgba(229,184,110,.95); }
-  .ek-r.missed em{ color:rgb(var(--warn)); }
-  .ek-r.missed span{ color:rgba(255,107,139,.95); }
-  .ek-note{ margin-top:11px; font-size:12px; line-height:1.6; color:var(--au-dim,#9a97a3); }
-  .ek-note b{ color:rgba(229,184,110,.95); font-weight:600; }
-  .ek-note.cross{ color:rgba(255,107,139,.9); }
-  .ek-score{ font-family:var(--au-serif,Georgia,serif); font-size:26px; margin-top:4px; }
-  .ek-score b{ color:rgb(var(--ek)); font-weight:400; font-variant-numeric:tabular-nums; }
+  .d-cue{ margin-top:15px; display:inline-block; background:none; border:0; cursor:pointer;
+    font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:14px; letter-spacing:.12em;
+    color:rgba(229,184,110,.8); padding:4px 0; }
+  .d-cue:active{ opacity:.6; }
 
-  /* toast */
-  .ek-toast{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 22px);
+  .d-ans{ margin-top:28px; }
+  .d-verdict{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; }
+  .d-verdict.yes{ color:rgb(var(--good)); }
+  .d-verdict.no{ color:rgba(154,151,163,.8); }
+  .d-word{ font-family:var(--au-serif,Georgia,serif); font-size:28px; margin-top:9px; line-height:1.2; }
+  .d-why{ margin-top:11px; font-size:12.5px; line-height:1.6; color:var(--au-dim,#9a97a3); }
+  .d-why b{ color:rgba(229,184,110,.95); font-weight:600; }
+  .d-root{ margin-top:17px; font-family:var(--au-serif,Georgia,serif); font-style:italic;
+    font-size:13px; line-height:1.55; color:rgba(154,151,163,.7); }
+
+  .d-foot{ flex:none; padding:14px 20px calc(env(safe-area-inset-bottom) + 16px); }
+  .d-btn{ width:100%; border:1px solid rgba(var(--ek),.3); background:rgba(var(--ek),.09);
+    color:var(--au-ivory,#f5f2ec); border-radius:12px; padding:15px; font-size:14.5px;
+    font-weight:600; cursor:pointer; font-family:inherit; transition:transform .16s; }
+  .d-btn:active{ transform:scale(.985); }
+
+  .toast{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 22px);
     transform:translate(-50%,14px); z-index:90; max-width:min(520px,calc(100vw - 36px));
-    border:1px solid rgba(255,255,255,.12); border-radius:13px; padding:12px 16px;
-    background:rgba(18,18,22,.96); color:var(--au-ivory,#f5f2ec); font-size:12.5px; line-height:1.5;
+    border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px 16px;
+    background:rgba(18,18,22,.96); font-size:12.5px; line-height:1.5;
     opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; }
-  .ek-toast.on{ opacity:1; transform:translate(-50%,0); }
+  .toast.on{ opacity:1; transform:translate(-50%,0); }
 </style>
 </head>
 <body>
 
-<div class="ek-wrap">
-  <header class="ek-hero">
-    <div class="ek-eyebrow">Έκθεση · 30% των μορίων</div>
-    <h1 class="ek-h" id="ekH">Λεξιλόγιο</h1>
-    <p class="ek-hsub" id="ekHSub">Φορτώνει…</p>
+<div class="wrap">
+  <header class="ek-head">
+    <div class="ek-kicker">Έκθεση · λεξιλόγιο</div>
+    <div class="ek-count"><span class="ek-n" id="ekN">—</span><span class="ek-of" id="ekOf"></span></div>
+    <div class="ek-bar"><i id="ekBar"></i></div>
   </header>
 
-  <section class="ek-today">
-    <button class="ek-cta" id="ekCta" type="button">
-      <span class="ek-ctak" id="ekCtaK">—</span>
-      <span class="ek-ctat gr" id="ekCtaT">—</span>
-      <span class="ek-ctas" id="ekCtaS"></span>
-    </button>
-  </section>
+  <button class="ek-cta" id="ekCta" type="button">
+    <span class="ek-ctat" id="ekCtaT">—</span>
+    <span class="ek-ctas" id="ekCtaS"></span>
+  </button>
 
-  <section class="ek-passes">
-    <div class="ek-sec">Τα πέντε περάσματα</div>
-    <div class="ek-plist" id="ekPasses"></div>
-  </section>
-
-  <section class="ek-map">
-    <div class="ek-sec" id="ekMapT">Οι λέξεις</div>
-    <div class="ek-grid" id="ekGrid"></div>
-    <p class="ek-legend">
-      <i style="background:rgba(255,255,255,.14)"></i>δεν το είδες
-      <i style="background:rgb(255,107,139)"></i>αδύναμο
-      <i style="background:rgb(229,184,110)"></i>μισό
-      <i style="background:rgb(63,224,176)"></i>στέρεο
-      <br>Το κόκκινο περίγραμμα σημαίνει ότι λήγει σήμερα.
-    </p>
-  </section>
-
-  <section class="ek-why">
-    <p><b>Γιατί όχι σκέτες κάρτες.</b> Το «Αδέκαστος → ;» ζητάει ελεύθερη
-    ανάκληση <b>συνόλου</b>: θυμάσαι το πρώτο και το δεύτερο και κολλάς στο
-    τέταρτο, όχι επειδή δεν το ξέρεις αλλά επειδή δεν υπάρχει τίποτα να το
-    τραβήξει. Γι' αυτό το τρίτο πέρασμα σου δίνει νήμα και το τέταρτο σου το
-    παίρνει.</p>
-    <p><b>Η ρίζα δίνει τζάμπα το μισό αντώνυμο.</b> αδράνεια↔<b>δράση</b>,
-    αεργία↔<b>εργατικότητα</b>, άδολος↔<b>δόλιος</b>, αθώος↔<b>ένοχος</b>.
-    Δεν τα αποστηθίζεις — τα ξεγυμνώνεις.</p>
-    <p><b>Μόνο το ΓΥΜΝΟ μετράει στη σκάλα.</b> Ό,τι γράφεις με νήμα μετράει
-    για σένα, όχι για τη μέτρηση. Μια σελίδα που σε βαθμολογεί ενώ σου
-    κρατάει το χέρι σου λέει ψέματα την παραμονή του διαγωνίσματος.</p>
+  <section class="ek-page">
+    <div class="ek-src" id="ekSrc"></div>
+    <div id="ekEntries"></div>
   </section>
 
   <p class="ek-foot" id="ekFoot"></p>
 </div>
 
-<!-- ⚠️ ΕΞΩ από το .ek-wrap, παιδί του <body> — δες το σχόλιο στο CSS. -->
-<div class="ek-sess" id="ekSess" aria-hidden="true">
-  <div class="ek-sbar">
-    <button class="ek-sx" id="ekSx" type="button" aria-label="Κλείσιμο">✕</button>
-    <div class="ek-sk" id="ekSk">—</div>
-    <div class="ek-sc" id="ekSc"></div>
+<!-- ⚠️ ΕΞΩ από το .wrap — δες το σχόλιο στο CSS. -->
+<div class="drill" id="drill" aria-hidden="true">
+  <div class="d-bar">
+    <button class="d-x" id="dX" type="button" aria-label="Κλείσιμο">✕</button>
+    <div class="d-n" id="dN"></div>
   </div>
-  <div class="ek-sprog"><i id="ekSprog"></i></div>
-  <div class="ek-sbody" id="ekSbody"><div class="ek-sin" id="ekSin"></div></div>
-  <div class="ek-sfoot" id="ekSfoot"></div>
+  <div class="d-prog"><i id="dProg"></i></div>
+  <div class="d-body"><div class="d-in" id="dIn"></div></div>
+  <div class="d-foot"><button class="d-btn" id="dBtn" type="button">Έλεγχος</button></div>
 </div>
 
-<div class="ek-toast" id="ekToast" role="status"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 (function(){
@@ -273,22 +210,21 @@
   var D = window.EkthesiData, E = window.EkthesiEngine;
   var KEY = 'ekt:v1', DAY = 86400000;
 
-  /* ⚠️ Σταθερή αρχή 10: εξάρτηση που δεν φόρτωσε ΔΕΝ επιτρέπεται να μοιάζει
-     με «δεν έχεις ύλη». Το SILENT-EMPTY είναι η επαναλαμβανόμενη αρρώστια
-     αυτού του project — λέμε ΤΙ έσπασε, δεν ζωγραφίζουμε άδεια σελίδα. */
+  /* ⚠️ Σταθερή αρχή 10: εξάρτηση που δεν φόρτωσε ΔΕΝ επιτρέπεται να μοιάζει με
+     «δεν έχεις ύλη». Το SILENT-EMPTY είναι η αρρώστια αυτού του project. */
   if (!D || !E){
-    document.getElementById('ekHSub').innerHTML =
+    document.getElementById('ekFoot').innerHTML =
       '<b style="color:rgb(255,107,139)">Δεν φόρτωσαν τα αρχεία της Έκθεσης.</b> ' +
-      'Η ύλη σου δεν χάθηκε — απλώς δεν διαβάστηκε. Ανανέωσε τη σελίδα.';
+      'Η ύλη σου δεν χάθηκε — δεν διαβάστηκε. Ανανέωσε τη σελίδα.';
     return;
   }
 
-  var state = null, sess = null;
+  var state = null, sess = null, fresh = {};
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function toast(m){
-    var t = $('ekToast');
+    var t = $('toast');
     t.textContent = m; t.classList.add('on');
     clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 4200);
   }
@@ -296,17 +232,22 @@
   /* ══════════════════════════════════════════════════════════════════
      ΑΠΟΘΗΚΗ
 
-     words : { cardId → {learnedAt, reviews, due, best, runs, _ts} }
-     els   : { cardId:groupId:index → {r, w, _ts} }   ΑΝΑ ΣΤΟΙΧΕΙΟ
-     sessions : ΠΙΝΑΚΑΣ, το συμβόλαιο του ladders.js
+     ⭐⭐ Η ΜΟΝΑΔΑ ΠΡΟΟΔΟΥ ΕΙΝΑΙ ΤΟ ΣΤΟΙΧΕΙΟ, ΟΧΙ Η ΛΕΞΗ. Δικό του, 19/08/26:
+     ο καθηγητής **δεν βαθμολογεί** — «όσα περισσότερα ξέρεις, καλύτερο για σένα
+     όταν γράψεις έκθεση». Άρα δεν υπάρχει «πέρασες τη λέξη»: υπάρχουν 89
+     λέξεις που μαζεύεις. Κάθε μία έχει το δικό της κουτί Leitner και το δικό
+     της ραντεβού.
 
-     ⚠️⚠️ ΤΟ `load()` ΞΑΝΑΧΤΙΖΕΙ ΑΠΟ ΤΟ `blank()` ΚΑΙ ΑΝΤΙΓΡΑΦΕΙ ΜΟΝΟ ΟΣΑ
-     ΟΝΟΜΑΖΕΙ. Κάθε πεδίο που δεν γράφεται εδώ ΣΒΗΝΕΤΑΙ σε κάθε φόρτωση, και
-     ο συγχρονισμός το κάνει χειρότερο: μια συνεδρία που κατεβαίνει από άλλη
-     συσκευή θα εξαφανιζόταν στο επόμενο `save()`. Το `sessions` ΠΡΕΠΕΙ να
-     αντιγράφεται εδώ. (Το ίδιο σχόλιο ζει στο tonos.html — ίδιο λάθος.)
+     els   : { cardId:groupId:index → {box, due, r, w, _ts} }  ← Η ΑΛΗΘΕΙΑ
+     words : { cardId → {learnedAt, reviews, due, ...} }       ← ΠΑΡΑΓΩΓΟ
+
+     ⚠️ ΤΟ `words` ΔΕΝ ΕΙΝΑΙ ΔΕΥΤΕΡΗ ΑΛΗΘΕΙΑ, ΕΙΝΑΙ ΜΕΤΑΦΡΑΣΗ. Το `ladders.js`
+     διαβάζει σκάλα ΑΝΑ ΕΝΟΤΗΤΑ για να πει στο School Studies τι χρωστάει, και
+     δεν ξέρει από στοιχεία. Το παράγουμε από τα `els` σε κάθε γράψιμο, ποτέ
+     δεν το επεξεργαζόμαστε χωριστά — δύο αριθμοί που «πρέπει» να συμφωνούν
+     είναι δύο αριθμοί που ΘΑ αποκλίνουν.
      ══════════════════════════════════════════════════════════════════ */
-  function blank(){ return { v:1, words:{}, els:{}, sessions:[] }; }
+  function blank(){ return { v:2, words:{}, els:{}, sessions:[] }; }
 
   function load(){
     var s;
@@ -314,507 +255,344 @@
     catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο. ΔΕΝ έσβησε τίποτα.'); return blank(); }
     if (!s) return blank();
     var b = blank(), k;
-    /* ⚠️ Κρατάμε ΚΑΙ κλειδιά που δεν αναγνωρίζουμε. Ένα λήμμα που έφυγε
-       προσωρινά από το `ekthesi-data.js` δεν επιτρέπεται να πάρει μαζί του
-       την πρόοδό του — θα ήταν σιωπηλή διαγραφή δουλειάς του. */
-    if (s.words && typeof s.words === 'object') for (k in s.words) if (s.words[k] && typeof s.words[k] === 'object') b.words[k] = s.words[k];
+    /* ⚠️ Κρατάμε ΚΑΙ κλειδιά που δεν αναγνωρίζουμε. Στοιχείο που έφυγε
+       προσωρινά από το `ekthesi-data.js` δεν παίρνει μαζί του την πρόοδο. */
     if (s.els   && typeof s.els   === 'object') for (k in s.els)   if (s.els[k]   && typeof s.els[k]   === 'object') b.els[k]   = s.els[k];
+    if (s.words && typeof s.words === 'object') for (k in s.words) if (s.words[k] && typeof s.words[k] === 'object') b.words[k] = s.words[k];
     b.sessions = Array.isArray(s.sessions) ? s.sessions : [];
     return b;
   }
 
   /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468. Χωρίς `_ts` το sync.js κατεβαίνει μέσα στις
-     εγγραφές και για κάθε βαθμωτό πεδίο κρατάει το remote, οπότε κάθε
-     επανάληψη πάνω σε λήμμα που ΥΠΗΡΧΕ ήδη στο cloud γυρνούσε πίσω μέσα σε
-     400ms. Δύο χάρτες εδώ. Όλο το γιατί ζει στο study-stamp.js.
-     ⚠️ Ο παλιός χρόνος βγαίνει από την τελευταία ΑΛΗΘΙΝΗ δραστηριότητα, όχι
-     από το `Date.now()` — αλλιώς όποια συσκευή άνοιξε τελευταία τη σελίδα
-     κερδίζει (κανόνας 3). */
+     εγγραφές και κρατάει το remote ανά πεδίο, οπότε κάθε λέξη που μόλις
+     κέρδισε πάνω σε στοιχείο που ΥΠΗΡΧΕ στο cloud γύριζε πίσω σε 400ms.
+     Όλο το γιατί ζει στο study-stamp.js. */
   var STAMP = (typeof window.StudyStamp === 'function')
     ? window.StudyStamp(
-        function(){ return state ? [state.words, state.els] : []; },
-        function(i, k, rec){ return i === 0 ? (+rec.last || +rec.learnedAt || 0) : 0; })
+        function(){ return state ? [state.els, state.words] : []; },
+        function(i, k, rec){ return i ? (+rec.last || +rec.learnedAt || 0) : (+rec.last || 0); })
     : (function(){ var said = 0; return {
         seed: function(){},
-        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε.'); }
       }; })();
 
   /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ. */
   function reload(){ state = load(); STAMP.seed(); }
   function save(){
+    syncWords();
     STAMP.stamp();
-    /* ⚠️ Σταθερή αρχή 17: ΠΟΤΕ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
-       πετάει QuotaExceededError και μια σιωπηλή αποτυχία μοιάζει ίδια με
-       επιτυχία — η βραδιά του θα εξαφανιζόταν χωρίς να πει τίποτα. */
+    /* ⚠️ Σταθερή αρχή 17: ΠΟΤΕ άδειο catch σε γράψιμο. Γεμάτο κινητό πετάει
+       QuotaExceededError και η σιωπηλή αποτυχία μοιάζει ίδια με επιτυχία. */
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
   }
 
-  /* ── εγγραφές ─────────────────────────────────────────────────────
-     ⚠️ Το `w()` ΔΙΑΒΑΖΕΙ και μπορεί να γεννήσει κέλυφος. Ένα μηδενικό
+  /* ── στοιχεία ─────────────────────────────────────────────────────
+     ⚠️ Το `it()` ΔΙΑΒΑΖΕΙ και μπορεί να γεννήσει κέλυφος. Ένα μηδενικό
      κέλυφος ΔΕΝ παίρνει σφραγίδα (κανόνας 1 του study-stamp) — αλλιώς θα
      νικούσε την αληθινή εγγραφή του cloud και θα έσβηνε την πρόοδο. */
-  function w(id){
-    var r = state.words[id];
-    if (!r){ r = { learnedAt:0, reviews:0, due:0, best:0, runs:0, last:0 }; state.words[id] = r; }
-    return r;
-  }
-  function elKey(cardId, gid, i){ return cardId + ':' + gid + ':' + i; }
-  function el(k){
+  function key(c, g, i){ return c.id + ':' + g.id + ':' + i; }
+  function it(k){
     var r = state.els[k];
-    if (!r){ r = { r:0, w:0 }; state.els[k] = r; }
+    if (!r){ r = { box:0, due:0, r:0, w:0, last:0 }; state.els[k] = r; }
     return r;
   }
-  /* null = ΔΕΝ ΞΕΡΟΥΜΕ. Ποτέ 0 — «δεν το ρώτησα ποτέ» και «το ρώτησα και το
-     έχασε» είναι δύο διαφορετικά πράγματα και βάφονται διαφορετικά. */
-  function elAcc(k){
-    var r = state.els[k]; if (!r) return null;
-    var n = (+r.r || 0) + (+r.w || 0);
-    return n ? (+r.r || 0) / n : null;
-  }
-  function cardAcc(c){
-    var s = 0, n = 0, gi, ii, a;
-    for (gi = 0; gi < c.groups.length; gi++)
-      for (ii = 0; ii < c.groups[gi].items.length; ii++){
-        a = elAcc(elKey(c.id, c.groups[gi].id, ii));
-        if (a !== null){ s += a; n++; }
-      }
-    return n ? s / n : null;
+  function have(k){ return (+it(k).box || 0) >= 1; }
+
+  /* ⭐⭐ «ΤΟ ΕΧΩ» ΚΑΙ «ΜΟΥ ΖΗΤΕΙΤΑΙ ΤΩΡΑ» ΕΙΝΑΙ ΔΥΟ ΔΙΑΦΟΡΕΤΙΚΑ ΠΡΑΓΜΑΤΑ, ΚΑΙ
+     Η ΣΥΓΧΥΣΗ ΤΟΥΣ ΗΤΑΝ BUG ΠΟΥ ΘΑ ΕΜΦΑΝΙΖΟΤΑΝ ΜΟΝΟ ΣΤΗΝ ΠΡΩΤΗ ΕΠΑΝΑΛΗΨΗ.
+     Η πρώτη γραφή απέρριπτε ΚΑΘΕ στοιχείο που ήδη κατείχε με «το έχεις ήδη,
+     δώσε άλλο» — άρα μια λέξη που ήρθε για ΕΠΑΝΑΛΗΨΗ (κατεχόμενη, αλλά
+     ληξιπρόθεσμη) δεν μπορούσε να απαντηθεί ΠΟΤΕ σωστά: ατέρμονος βρόχος
+     στην τρίτη βραδιά, με τη σελίδα να δείχνει μια χαρά ως τότε.
+     Σε παιχνίδι είναι ό,τι δεν κατέχει Ή ό,τι έληξε. */
+  function live(k){
+    var r = state.els[k];
+    return !r || !(+r.box) || (+r.due || 0) <= Date.now();
   }
 
-  /* ── ο σημερινός κόσμος ───────────────────────────────────────── */
-  var SET = D.SETS[D.SETS.length - 1];          /* η τελευταία σελίδα που μπήκε */
-  function cards(){ return SET.cards; }
-  function isNew(c){ return !w(c.id).learnedAt; }
-  function isDue(c){ var r = w(c.id); return !!r.learnedAt && r.due <= Date.now(); }
-  function newOnes(){ return cards().filter(isNew); }
-  function dueOnes(){ return cards().filter(isDue); }
-  function wednesday(){ return new Date().getDay() === 3; }
-
-  function tint(a){
-    if (a === null || a === undefined) return 'rgba(255,255,255,.14)';
-    var lo = [255,107,139], hi = [63,224,176], o = [], i;
-    for (i = 0; i < 3; i++) o.push(Math.round(lo[i] + (hi[i]-lo[i]) * a));
-    return 'rgb(' + o.join(',') + ')';
-  }
-  function inDays(ms){
-    var d = Math.round((ms - Date.now()) / DAY);
-    if (d <= 0) return 'τώρα';
-    if (d === 1) return 'αύριο';
-    return d + 'μ';
-  }
-
-  /* ══════════════════════════════════════════════════════════════════
-     ΤΑ ΠΕΝΤΕ ΠΕΡΑΣΜΑΤΑ
-
-     ⭐ ΚΑΘΕ ΠΕΡΑΣΜΑ ΕΙΝΑΙ ΑΛΛΗ ΚΑΤΕΥΘΥΝΣΗ ΑΝΑΚΛΗΣΗΣ, ΟΧΙ ΑΛΛΗ ΔΥΣΚΟΛΙΑ.
-     Πέντε φορές το ίδιο πράγμα είναι πέντε φορές ίδια αποτυχία· πέντε
-     διαφορετικές πόρτες στο ίδιο δωμάτιο είναι μάθηση.
-
-       1 ΓΝΩΡΙΜΙΑ  λέξη + ρίζα + στοιχεία       → κωδικοποίηση, μηδέν γράψιμο
-       2 Η ΡΙΖΑ    ρίζα → ποιο λήμμα;            → παράγει το ΛΗΜΜΑ
-       3 ΜΕ ΝΗΜΑ   λέξη → στοιχεία, με νήματα    → παράγει τα ΣΤΟΙΧΕΙΑ, με βοήθεια
-       4 ΓΥΜΝΟ     λέξη → στοιχεία, τίποτα       → ⭐ ΤΟ ΜΟΝΟ ΠΟΥ ΜΕΤΡΑΕΙ
-       5 ΑΝΑΠΟΔΑ   στοιχείο → ποιο λήμμα;        → το κάνει ΧΡΗΣΙΜΟ στο γράψιμο
-
-     ⭐⭐ ΜΟΝΟ ΤΟ 4 ΚΑΙ ΤΟ 5 ΓΡΑΦΟΥΝ ΑΚΡΙΒΕΙΑ, ΚΑΙ ΜΟΝΟ ΤΟ 4 ΚΟΥΝΑΕΙ ΤΗ
-     ΣΚΑΛΑ. Τα 1-3 του κρατάνε το χέρι — μια μέτρηση παρμένη με βοήθεια θα
-     έλεγε «το ξέρεις» για κάτι που ξέρει ΜΕ ΤΟ ΝΗΜΑ, και θα το προγραμμάτιζε
-     ξανά σε 10 μέρες. Αυτό είναι ακριβώς η ψευδαίσθηση ευχέρειας που κάνει
-     τους ανθρώπους να διαβάζουν τρεις ώρες και να γράφουν 2 στα 5.
-     ══════════════════════════════════════════════════════════════════ */
-  var PASSES = [
-    { n:1, id:'meet',  t:'Γνωριμία',  d:'Λέξη, ρίζα, στοιχεία. Δεν γράφεις τίποτα.',        mode:'lesson' },
-    { n:2, id:'root',  t:'Η ρίζα',    d:'Σου δίνω μόνο την ανάλυση. Ποια λέξη είναι;',      mode:'lesson' },
-    { n:3, id:'cued',  t:'Με νήμα',   d:'Γράφεις τα στοιχεία, με αρχικά που μαζεύονται.',    mode:'drill'  },
-    { n:4, id:'bare',  t:'Γυμνό',     d:'Λέξη και άδειο κουτί. Μόνο αυτό μετράει.',          mode:'recall' },
-    { n:5, id:'rev',   t:'Ανάποδα',   d:'Σου δίνω συνώνυμο. Ποια λέξη το έχει;',            mode:'recall' }
-  ];
-  function passBy(id){ for (var i = 0; i < PASSES.length; i++) if (PASSES[i].id === id) return PASSES[i]; return null; }
-
-  /* ══════════════════════════════════════════════════════════════════
-     Η ΣΥΝΕΔΡΙΑ
-     ══════════════════════════════════════════════════════════════════ */
-  function startPass(id, list){
-    var p = passBy(id);
-    if (!p) return;
-    var qs = buildQs(p, list && list.length ? list : cards());
-    if (!qs.length){ toast('Δεν υπάρχει τίποτα για αυτό το πέρασμα.'); return; }
-    sess = { pass:p, qs:qs, i:0, t0:Date.now(), asked:0, right:0, touched:0, logged:false, shown:false, res:null };
-    $('ekSess').classList.add('on');
-    $('ekSess').setAttribute('aria-hidden','false');
-    document.body.style.overflow = 'hidden';
-    renderQ();
-  }
-
-  function buildQs(p, list){
-    var qs = [], i, gi, ii, c, g;
-    if (p.id === 'rev'){
-      /* ⭐ ΤΟ ΑΝΑΠΟΔΑ ΡΩΤΑΕΙ ΣΤΟΙΧΕΙΑ ΠΟΥ ΔΕΝ ΕΙΝΑΙ ΔΙΦΟΡΟΥΜΕΝΑ. Το «αγνός»
-         ζει ΚΑΙ στο Άδολος ΚΑΙ στο Αθώος — μια ερώτηση «ποιο λήμμα;» με δύο
-         σωστές απαντήσεις τον τιμωρεί για σωστή γνώση. Τα κόβουμε ΠΡΙΝ
-         ρωτηθούν, δεν τα «συγχωρούμε» μετά. */
-      var owner = {}, dup = {}, key;
-      for (i = 0; i < cards().length; i++){
-        c = cards()[i];
-        for (gi = 0; gi < c.groups.length; gi++)
-          for (ii = 0; ii < c.groups[gi].items.length; ii++){
-            key = revKey(c.groups[gi].items[ii].w);
-            if (owner[key] && owner[key] !== c.id) dup[key] = 1;
-            owner[key] = c.id;
-          }
-      }
-      for (i = 0; i < list.length; i++){
-        c = list[i];
-        for (gi = 0; gi < c.groups.length; gi++){
-          g = c.groups[gi];
-          for (ii = 0; ii < g.items.length; ii++){
-            if (dup[revKey(g.items[ii].w)]) continue;
-            qs.push({ card:c, group:g, idx:ii, item:g.items[ii] });
-          }
-        }
-      }
-      shuffle(qs);
-      if (qs.length > 24) qs = qs.slice(0, 24);
-      return qs;
-    }
-    for (i = 0; i < list.length; i++) qs.push({ card:list[i] });
-    if (p.id === 'bare' || p.id === 'cued' || p.id === 'root') shuffle(qs);
-    return qs;
-  }
-
-  /* ⚠️ Το κλειδί του διπλότυπου είναι ΦΩΝΗΤΙΚΟ, όχι `toLowerCase()`. Δύο
-     λήμματα μπορούν να μοιράζονται λέξη γραμμένη με άλλον τόνο ή τελικό
-     σίγμα, και μια πεζογραφημένη σύγκριση θα τα έβλεπε διαφορετικά — δηλαδή
-     θα άφηνε να περάσει ακριβώς η διφορούμενη ερώτηση που θέλουμε να κόψουμε. */
-  function revKey(word){ return window.GREEKEAR ? window.GREEKEAR.pho(word) : String(word).toLowerCase(); }
-
-  /* Fisher-Yates. Η σειρά του βιβλίου είναι αλφαβητική, και μια αλφαβητική
-     σειρά είναι από μόνη της νήμα: το «Α...» μετά το «Αδράνεια» περιορίζει
-     τις επιλογές. Στα περάσματα που ΜΕΤΡΑΝΕ, το νήμα φεύγει. */
-  function shuffle(a){
-    for (var i = a.length - 1; i > 0; i--){
-      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
-    }
-  }
-
-  function renderQ(){
-    var q = sess.qs[sess.i], p = sess.pass;
-    $('ekSk').textContent = p.n + ' · ' + p.t;
-    $('ekSc').textContent = (sess.i + 1) + '/' + sess.qs.length;
-    $('ekSprog').style.width = (sess.i / sess.qs.length * 100) + '%';
-    $('ekSbody').scrollTop = 0;
-    sess.shown = false; sess.res = null;
-    if (p.id === 'meet') renderMeet(q);
-    else if (p.id === 'root') renderRoot(q);
-    else if (p.id === 'rev') renderRev(q);
-    else renderWrite(q, p.id === 'cued');
-  }
-
-  function groupsHtml(c, opts){
-    var h = '', gi, ii, g, it, cls;
-    for (gi = 0; gi < c.groups.length; gi++){
-      g = c.groups[gi];
-      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
-           '<span class="ek-gc">' + g.items.length + '</span></div><div class="ek-rows">';
-      for (ii = 0; ii < g.items.length; ii++){
-        it = g.items[ii];
-        cls = opts && opts.plain ? '' : ' ok';
-        h += '<div class="ek-r' + cls + '"><em>·</em><span>' + esc(it.w) + '</span></div>';
-      }
-      h += '</div></div>';
-    }
-    return h;
-  }
-
-  /* ── 1 · ΓΝΩΡΙΜΙΑ ────────────────────────────────────────────────── */
-  function renderMeet(q){
-    var c = q.card;
-    $('ekSin').innerHTML =
-      '<div class="ek-q gr">' + esc(c.q) + '</div>' +
-      '<div class="ek-qsub">' + D.countItems(c) + ' στοιχεία · ' + c.groups.length + ' ' +
-        (c.groups.length === 1 ? 'στήλη' : 'στήλες') + '</div>' +
-      '<div class="ek-root">' + esc(c.note) + '</div>' +
-      groupsHtml(c, { plain:true });
-    foot([{ t:'Το είδα', main:true, go:function(){ next(true); } }]);
-  }
-
-  /* ── 2 · Η ΡΙΖΑ ──────────────────────────────────────────────────── */
-  function renderRoot(q){
-    var c = q.card;
-    $('ekSin').innerHTML =
-      '<div class="ek-qsub">Η ανάλυση. Ποια λέξη είναι;</div>' +
-      '<div class="ek-root" style="margin-top:12px;font-size:16px">' + esc(c.note) + '</div>' +
-      '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">Η λέξη</span>' +
-        '<span class="ek-gc">' + E.cue(c.q, 1) + '</span></div>' +
-      '<textarea class="ek-ta" id="ekIn" rows="1" style="min-height:52px" ' +
-        'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea></div>' +
-      '<div id="ekOut"></div>';
-    foot([{ t:'Έλεγχος', main:true, go:checkRoot }]);
-    focusIn();
-  }
-  function checkRoot(){
-    if (sess.shown){ next(sess.res); return; }
-    var c = sess.qs[sess.i].card, v = $('ekIn').value, r = E.gradeGroup(v, [c.q]);
-    var st = r.rows[0].status, good = st !== 'missed';
-    sess.shown = true; sess.res = good;
-    sess.asked++; if (good) sess.right++;
-    $('ekIn').setAttribute('readonly','readonly');
-    $('ekOut').innerHTML =
-      '<div class="ek-rows" style="margin-top:14px"><div class="ek-r ' + (good ? st : 'missed') + '">' +
-      '<em>' + (good ? '✓' : '✗') + '</em><span>' + esc(c.q) + '</span>' +
-      (st === 'spell' ? '<small>ορθογραφία</small>' : st === 'form' ? '<small>κατάληξη</small>' : '') +
-      '</div></div>';
-    footMain('Επόμενο');
-  }
-
-  /* ── 3 & 4 · ΜΕ ΝΗΜΑ / ΓΥΜΝΟ ─────────────────────────────────────── */
-  function renderWrite(q, cued){
-    var c = q.card, h, gi, ii, g;
-    h = '<div class="ek-q gr">' + esc(c.q) + '</div>' +
-        '<div class="ek-qsub">' + (cued
-          ? 'Γράψε ό,τι θυμάσαι. Τα νήματα είναι από κάτω — πάτα ένα αν κολλήσεις.'
-          : 'Τίποτα από κάτω. Ακριβώς όπως στο χαρτί.') + '</div>' +
-        (cued ? '<div class="ek-root">' + esc(c.note) + '</div>' : '');
-    for (gi = 0; gi < c.groups.length; gi++){
-      g = c.groups[gi];
-      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
-           '<span class="ek-gc">' + g.items.length + '</span></div>' +
-           '<textarea class="ek-ta" data-g="' + esc(g.id) + '" ' +
-             'placeholder="χωρισμένα με κόμμα" ' +
-             'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea>';
-      if (cued){
-        h += '<div class="ek-cues" data-cues="' + esc(g.id) + '">';
-        for (ii = 0; ii < g.items.length; ii++)
-          h += '<button class="ek-cue" type="button" data-c="' + gi + ':' + ii + '">' + esc(E.cue(g.items[ii].w, 1)) + '</button>';
-        h += '</div>';
-      }
-      h += '</div>';
-    }
-    h += '<div id="ekOut"></div>';
-    $('ekSin').innerHTML = h;
-    if (cued) bindCues(c);
-    foot([{ t:'Έλεγχος', main:true, go:function(){ checkWrite(cued); } }]);
-    focusIn();
-  }
-
-  /* ⭐ ΤΟ ΝΗΜΑ ΜΑΖΕΥΕΤΑΙ ΜΕ ΤΟ ΠΑΤΗΜΑ, ΔΕΝ ΔΙΝΕΙ ΤΗ ΛΕΞΗ. Ένα κουμπί που
-     συμπληρώνει την απάντηση δεν είναι βοήθεια, είναι αντιγραφή — και θα
-     μόλυνε το μόνο πράγμα που έχει αξία εδώ, τη δική του παραγωγή. */
-  function bindCues(c){
-    var btns = $('ekSin').querySelectorAll('[data-c]'), i;
-    for (i = 0; i < btns.length; i++){
-      btns[i].addEventListener('click', function(){
-        var p = this.getAttribute('data-c').split(':'),
-            it = c.groups[+p[0]].items[+p[1]],
-            lvl = (+this.getAttribute('data-lvl') || 1) + 2;
-        if (lvl >= it.w.length){ lvl = it.w.length - 1; }
-        this.setAttribute('data-lvl', lvl);
-        this.textContent = E.cue(it.w, lvl);
-      });
-    }
-  }
-
-  function checkWrite(cued){
-    if (sess.shown){ next(sess.res); return; }
-    var c = sess.qs[sess.i].card, tas = $('ekSin').querySelectorAll('[data-g]'),
-        ans = {}, i, r, gi, ii, h, row, g, res, k;
-    for (i = 0; i < tas.length; i++){ ans[tas[i].getAttribute('data-g')] = tas[i].value; tas[i].setAttribute('readonly','readonly'); }
-    r = E.gradeCard(ans, c);
-    sess.shown = true;
-    sess.asked += r.total; sess.right += r.got;
-    sess.res = r.score >= E.PASS;
-
-    /* ⭐⭐ Η ΜΕΤΡΗΣΗ ΓΡΑΦΕΤΑΙ ΜΟΝΟ ΣΤΟ ΓΥΜΝΟ. Δες το μεγάλο σχόλιο των
-       περασμάτων: ακρίβεια παρμένη με νήμα είναι ψευδαίσθηση ευχέρειας. */
-    if (!cued){
-      for (gi = 0; gi < c.groups.length; gi++){
-        g = c.groups[gi]; res = r.groups[g.id];
-        for (ii = 0; ii < g.items.length; ii++){
-          k = el(elKey(c.id, g.id, ii));
-          if (res.rows[ii].status === 'missed') k.w = (+k.w || 0) + 1;
-          else k.r = (+k.r || 0) + 1;
-        }
-      }
-      bumpLadder(c, r.score);
-      save();
-    }
-
-    h = '<div class="ek-score gr">' + (cued ? '' : 'Γυμνό · ') + '<b>' + r.got + '</b>/' + r.total + '</div>';
-    for (gi = 0; gi < c.groups.length; gi++){
-      g = c.groups[gi]; res = r.groups[g.id];
-      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
-           '<span class="ek-gc">' + res.got + '/' + res.total + '</span></div><div class="ek-rows">';
-      for (ii = 0; ii < res.rows.length; ii++){
-        row = res.rows[ii];
-        h += '<div class="ek-r ' + row.status + '"><em>' + (row.status === 'missed' ? '✗' : '✓') + '</em>' +
-             '<span>' + esc(row.item) + '</span>' +
-             (row.status === 'spell' ? '<small>ορθογραφία</small>' :
-              row.status === 'form'  ? '<small>κατάληξη</small>' : '') + '</div>';
-      }
-      h += '</div>';
-      /* ⭐ Η ΠΙΟ ΧΡΗΣΙΜΗ ΓΡΑΜΜΗ ΤΗΣ ΣΕΛΙΔΑΣ: σωστή λέξη, λάθος στήλη. */
-      if (res.cross.length){
-        h += '<p class="ek-note cross">Στη λάθος στήλη: ';
-        for (ii = 0; ii < res.cross.length; ii++)
-          h += (ii ? ', ' : '') + '<b>' + esc(res.cross[ii].word) + '</b> — είναι ' + esc(res.cross[ii].label.toLowerCase());
-        h += '.</p>';
-      }
-      if (res.extras.length)
-        h += '<p class="ek-note">Εκτός λεξικού, δεν μετράει αλλά ούτε κόβει: ' +
-             esc(res.extras.join(', ')) + '.</p>';
-      h += '</div>';
-    }
-    if (r.spell || r.form)
-      h += '<p class="ek-note"><b>Μέτρησαν, αλλά πρόσεξέ τα:</b> ' +
-           (r.spell ? r.spell + ' με λάθος ορθογραφία' : '') +
-           (r.spell && r.form ? ' · ' : '') +
-           (r.form ? r.form + ' με λάθος κατάληξη' : '') +
-           '. Στο χαρτί αυτά κοστίζουν.</p>';
-    if (cued) h += '<div class="ek-root" style="margin-top:16px">' + esc(c.note) + '</div>';
-    $('ekOut').innerHTML = h;
-    footMain('Επόμενο');
-  }
-
-  /* ── 5 · ΑΝΑΠΟΔΑ ─────────────────────────────────────────────────── */
-  function renderRev(q){
-    $('ekSin').innerHTML =
-      '<div class="ek-qsub">' + esc(q.group.label === 'Συνώνυμα' ? 'Συνώνυμο του…' : 'Αντώνυμο του…') + '</div>' +
-      '<div class="ek-q gr" style="margin-top:8px">' + esc(q.item.w) + '</div>' +
-      '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">Η λέξη</span>' +
-        '<span class="ek-gc">' + E.cue(q.card.q, 1) + '</span></div>' +
-      '<textarea class="ek-ta" id="ekIn" rows="1" style="min-height:52px" ' +
-        'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea></div>' +
-      '<div id="ekOut"></div>';
-    foot([{ t:'Έλεγχος', main:true, go:checkRev }]);
-    focusIn();
-  }
-  function checkRev(){
-    if (sess.shown){ next(sess.res); return; }
-    var q = sess.qs[sess.i], r = E.gradeGroup($('ekIn').value, [q.card.q]),
-        st = r.rows[0].status, good = st !== 'missed', k;
-    sess.shown = true; sess.res = good;
-    sess.asked++; if (good) sess.right++;
-    k = el(elKey(q.card.id, q.group.id, q.idx));
-    if (good) k.r = (+k.r || 0) + 1; else k.w = (+k.w || 0) + 1;
-    save();
-    $('ekIn').setAttribute('readonly','readonly');
-    $('ekOut').innerHTML =
-      '<div class="ek-rows" style="margin-top:14px"><div class="ek-r ' + (good ? st : 'missed') + '">' +
-      '<em>' + (good ? '✓' : '✗') + '</em><span>' + esc(q.card.q) + '</span>' +
-      (st === 'spell' ? '<small>ορθογραφία</small>' : st === 'form' ? '<small>κατάληξη</small>' : '') +
-      '</div></div>' +
-      '<div class="ek-root" style="margin-top:14px">' + esc(q.card.note) + '</div>';
-    footMain('Επόμενο');
-  }
-
-  /* ── η σκάλα ─────────────────────────────────────────────────────── */
-  function bumpLadder(c, score){
-    var r = w(c.id), now = Date.now();
-    r.runs = (+r.runs || 0) + 1;
+  /* ⭐ Η ΣΚΑΛΑ, ΑΝΑ ΣΤΟΙΧΕΙΟ. `E.LADDER` = [0,1,3,10,30,90] μέρες. Το «1» δεν
+     είναι διακόσμηση: μαθαίνει Τετάρτη βράδυ για Πέμπτη πρωί, οπότε η πρώτη
+     επανάληψη ΕΧΕΙ ήδη ημερομηνία και δεν την ορίζουμε εμείς.
+     ⚠️ ΤΟ ΛΑΘΟΣ ΔΕΝ ΤΙΜΩΡΕΙ, ΤΟ ΕΠΑΝΑΦΕΡΕΙ. Πέφτει ένα κουτί, όχι στο μηδέν:
+     λέξη που την είχε τρεις φορές και της ξέφυγε μία δεν είναι άγνωστη. */
+  function bump(k, how){
+    var r = it(k), now = Date.now();
     r.last = now;
-    if (score > (+r.best || 0)) r.best = score;
-    if (!r.learnedAt) r.learnedAt = now;
-    if (score >= E.PASS){
-      r.reviews = (+r.reviews || 0) + 1;
-      r.due = E.nextDue(r.reviews, now);
-    } else {
-      /* ⭐ Η ΑΠΟΤΥΧΙΑ ΔΕΝ ΜΗΔΕΝΙΖΕΙ, ΑΛΛΑ ΦΕΡΝΕΙ ΑΥΡΙΟ. Ένα λήμμα που το
-         πήρε τρεις φορές και το έχασε μία δεν είναι άγνωστο· είναι
-         ξεχασμένο. Το `reviews` κρατιέται, το ραντεβού έρχεται μπροστά. */
+    if (how === 'got'){
+      r.r = (+r.r || 0) + 1;
+      r.box = Math.min((+r.box || 0) + 1, E.LADDER.length - 1);
+      r.due = E.nextDue(r.box, now);
+    } else if (how === 'cued'){
+      /* ⭐⭐ ΤΟ ΝΗΜΑ ΔΕΝ ΤΙΜΩΡΕΙ. Πρώτη γραφή αυτού του αρχείου έριχνε κουτί
+         όταν απαντούσε ΣΩΣΤΑ με νήμα — δηλαδή τον έκανε να χάνει έδαφος
+         επειδή ζήτησε βοήθεια, που είναι ο πιο σίγουρος τρόπος να μη
+         ξαναζητήσει ποτέ. Το κουτί ΜΕΝΕΙ· απλώς δεν ανεβαίνει και το
+         ραντεβού έρχεται αύριο, γιατί «το ήξερα με βοήθεια» δεν είναι
+         «το ξέρω». */
       r.due = now + DAY;
+    } else {
+      r.w = (+r.w || 0) + 1;
+      r.box = Math.max((+r.box || 0) - 1, 0);
+      r.due = E.nextDue(r.box, now);
     }
   }
 
-  /* ── ροή ─────────────────────────────────────────────────────────── */
+  /* ⚠️ ΜΕΤΑΦΡΑΣΗ ΓΙΑ ΤΟ ladders.js, ΠΑΡΑΓΟΜΕΝΗ — ποτέ χειροκίνητη.
+     `learnedAt` = πότε άγγιξε πρώτη φορά τη λέξη · `reviews` = πόσα στοιχεία
+     της κατέχει · `due` = το ΝΩΡΙΤΕΡΟ ραντεβού των στοιχείων της.
+     ⛔ Λέξη που δεν αγγίχτηκε ΠΟΤΕ μένει `learnedAt:0, due:0` — αλλιώς το
+     School Studies θα του χρωστούσε 16 λέξεις που δεν είδε ποτέ. */
+  function syncWords(){
+    D.ALL.forEach(function(c){
+      var seen = 0, own = 0, first = 0, soon = 0, last = 0;
+      c.groups.forEach(function(g){
+        g.items.forEach(function(_, i){
+          var r = state.els[key(c, g, i)];
+          if (!r || !(+r.last)) return;
+          seen++;
+          if ((+r.box || 0) >= 1) own++;
+          if (!first || +r.last < first) first = +r.last;
+          if (+r.last > last) last = +r.last;
+          if (!soon || (+r.due || 0) < soon) soon = +r.due || 0;
+        });
+      });
+      if (!seen){ delete state.words[c.id]; return; }
+      var w = state.words[c.id] || (state.words[c.id] = {});
+      w.learnedAt = first; w.reviews = own; w.due = soon; w.last = last;
+      w.best = D.countItems(c) ? own / D.countItems(c) : 0;
+      w.runs = seen;
+    });
+  }
+
+  /* ── ο κόσμος ─────────────────────────────────────────────────── */
+  var SET = D.SETS[D.SETS.length - 1];
+  function cards(){ return SET.cards; }
+  function totalItems(){ return D.setItems(SET); }
+  function ownedItems(){
+    var n = 0;
+    cards().forEach(function(c){ c.groups.forEach(function(g){
+      g.items.forEach(function(_, i){ if (have(key(c, g, i))) n++; });
+    }); });
+    return n;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΙ ΡΩΤΑΕΙ, ΚΑΙ ΜΕ ΠΟΙΑ ΣΕΙΡΑ
+
+     ⭐ ΔΕΝ ΣΕ ΞΑΝΑΡΩΤΑΕΙ ΠΟΤΕ Ο,ΤΙ ΕΧΕΙΣ. Στη δεύτερη βραδιά δεν ξαναγράφει
+     τρεις λέξεις για να φτάσει στην τέταρτη. Η ουρά είναι όσα ΔΕΝ κατέχει,
+     συν όσα έληξαν.
+
+     ⭐ ΠΛΑΤΟΣ ΠΡΙΝ ΒΑΘΟΣ, ΜΕ ΕΝΑΛΛΑΓΗ. Παίρνει ΕΝΑ στοιχείο από κάθε λέξη
+     πριν γυρίσει για δεύτερο. Δεν είναι κανόνας που πρέπει να περάσει —
+     είναι απλώς η σειρά, γιατί εκεί είναι πυκνότερη η αξία: μετά από 16
+     ερωτήσεις έχει ακουμπήσει ΚΑΘΕ λέξη της σελίδας.
+     ══════════════════════════════════════════════════════════════════ */
+  var ROUND = 24;
+
+  function queue(){
+    var now = Date.now(), byCard = [], out = [];
+    cards().forEach(function(c){
+      var mine = [];
+      c.groups.forEach(function(g){
+        g.items.forEach(function(item, i){
+          var k = key(c, g, i), r = state.els[k];
+          if (!r || !(+r.box)) { mine.push({ c:c, g:g, i:i, k:k, item:item, due:0 }); return; }
+          if ((+r.due || 0) <= now) mine.push({ c:c, g:g, i:i, k:k, item:item, due:+r.due || 0 });
+        });
+      });
+      if (mine.length) byCard.push(mine);
+    });
+    /* εναλλαγή: ένα από κάθε λέξη, γύρο-γύρο */
+    for (var depth = 0; ; depth++){
+      var any = false;
+      for (var j = 0; j < byCard.length; j++)
+        if (byCard[j][depth]){ out.push(byCard[j][depth]); any = true; }
+      if (!any) break;
+    }
+    return out;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΕΞΑΣΚΗΣΗ
+     ══════════════════════════════════════════════════════════════════ */
+  function start(){
+    var q = queue();
+    if (!q.length){ toast('Τίποτα δεν σε περιμένει αυτή τη στιγμή.'); return; }
+    sess = { q:q.slice(0, ROUND), i:0, t0:Date.now(), asked:0, right:0, logged:false, shown:false, cue:0 };
+    fresh = {};
+    $('drill').classList.add('on');
+    $('drill').setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    ask();
+  }
+
+  function ask(){
+    var q = sess.q[sess.i], c = q.c, g = q.g, mine = [], i;
+    sess.shown = false; sess.cue = 0;
+    $('dN').textContent = (sess.i + 1) + ' / ' + sess.q.length;
+    $('dProg').style.width = (sess.i / sess.q.length * 100) + '%';
+    $('drill').querySelector('.d-body').scrollTop = 0;
+
+    /* ⚠️ ΔΕΙΧΝΕΙ ΜΟΝΟ Ο,ΤΙ ΕΙΝΑΙ ΚΛΕΙΔΩΜΕΝΟ. Ένα στοιχείο που ήρθε για
+       επανάληψη είναι κατεχόμενο ΚΑΙ ζητούμενο — αν έμπαινε στο «έχεις ήδη»,
+       η σελίδα θα του τύπωνε την απάντηση ακριβώς πάνω από το κουτί. */
+    for (i = 0; i < g.items.length; i++){
+      var kk = key(c, g, i);
+      if (have(kk) && !live(kk)) mine.push(g.items[i].w);
+    }
+
+    $('dIn').innerHTML =
+      '<div class="d-ask">' + esc(g.id === 'ant' ? 'Αντώνυμο' : 'Συνώνυμο') + '</div>' +
+      '<div class="d-q">' + esc(c.q) + '</div>' +
+      (mine.length
+        ? '<div class="d-has">έχεις ήδη · <b>' + esc(mine.join(' · ')) + '</b></div>'
+        : '') +
+      '<input class="d-ta" id="dTa" type="text" autocapitalize="off" autocorrect="off" ' +
+        'autocomplete="off" spellcheck="false" enterkeyhint="done">' +
+      '<button class="d-cue" id="dCue" type="button">' + esc(E.cue(q.item.w, 0)) + '</button>' +
+      '<div class="d-ans" id="dAns"></div>';
+
+    $('dBtn').textContent = 'Έλεγχος';
+    /* ⭐ ΤΟ ΝΗΜΑ ΜΑΖΕΥΕΤΑΙ, ΔΕΝ ΔΙΝΕΙ ΤΗ ΛΕΞΗ. Ένα κουμπί που συμπληρώνει την
+       απάντηση δεν είναι βοήθεια, είναι αντιγραφή. Και ό,τι απαντηθεί ΜΕ
+       νήμα δεν ανάβει — δεν τιμωρεί, κρατάει τον μετρητή να λέει αλήθεια. */
+    $('dCue').addEventListener('click', function(){
+      sess.cue = Math.min(sess.cue + 2, Math.max(0, q.item.w.length - 1));
+      this.textContent = E.cue(q.item.w, sess.cue);
+    });
+    $('dTa').addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); go(); }
+    });
+    if (window.innerWidth >= 520) try { $('dTa').focus(); } catch(e){}
+  }
+
+  function go(){
+    if (sess.shown){ next(); return; }
+    var q = sess.q[sess.i], c = q.c, g = q.g, typed = $('dTa').value, i, k, hit = -1, dupe = -1, st = '';
+
+    /* ⭐ ΔΕΧΕΤΑΙ ΟΠΟΙΟΔΗΠΟΤΕ ΣΤΟΙΧΕΙΟ ΤΗΣ ΣΤΗΛΗΣ ΠΟΥ ΔΕΝ ΕΧΕΙ ΑΚΟΜΗ, όχι μόνο
+       αυτό που έτυχε να προγραμματιστεί. Ρώτησα «δώσε ένα συνώνυμο» — θα ήταν
+       ψέμα να πω «λάθος» σε συνώνυμο του βιβλίου επειδή σκόπευα άλλο. */
+    for (i = 0; i < g.items.length && hit < 0; i++){
+      var r = E.gradeGroup(typed, [g.items[i]]).rows[0];
+      if (r.status === 'missed') continue;
+      if (!live(key(c, g, i))) { if (dupe < 0) dupe = i; continue; }
+      hit = i; st = r.status;
+    }
+    /* Αν έπιασε ΠΟΛΛΑ, κερδίζει το προγραμματισμένο — αυτό είναι που έληξε. */
+    if (hit >= 0 && hit !== q.i && live(key(c, g, q.i)) &&
+        E.gradeGroup(typed, [g.items[q.i]]).rows[0].status !== 'missed'){
+      st = E.gradeGroup(typed, [g.items[q.i]]).rows[0].status;
+      hit = q.i;
+    }
+
+    /* ⭐⭐ ΣΩΣΤΗ ΛΕΞΗ, ΛΑΘΟΣ ΣΤΗΛΗ — Η ΚΑΛΥΤΕΡΗ ΑΝΑΤΡΟΦΟΔΟΤΗΣΗ ΠΟΥ ΥΠΑΡΧΕΙ ΕΔΩ.
+       Αν του ζητήθηκε συνώνυμο και έγραψε αντώνυμο ΤΗΣ ΙΔΙΑΣ λέξης, δεν είναι
+       άγνωστη λέξη: είναι ακριβώς η σύγχυση που θα του κοστίσει στο χαρτί, και
+       πουθενά αλλού δεν φαίνεται. Δεν μετράει σωστό, δεν μετράει λάθος —
+       ξαναρωτάει, αφού πρώτα του πει τι έκανε. */
+    if (hit < 0){
+      var other = null;
+      c.groups.forEach(function(og){
+        if (other || og.id === g.id) return;
+        og.items.forEach(function(oi){
+          if (other) return;
+          var rr = E.gradeGroup(typed, [oi]).rows[0];
+          if (rr.status !== 'missed') other = { w:oi.w, label:og.label.toLowerCase() };
+        });
+      });
+      if (other){
+        $('dAns').innerHTML = '<div class="d-why">Το <b>' + esc(other.w) + '</b> είναι ' +
+          esc(other.label.replace(/α$/, 'ο')) + ' του «' + esc(c.q) + '», όχι ' +
+          esc(g.id === 'ant' ? 'αντώνυμο' : 'συνώνυμο') + '. Δοκίμασε ξανά.</div>';
+        $('dTa').value = ''; try { $('dTa').focus(); } catch(e){}
+        return;
+      }
+    }
+
+    /* Το ξαναγράψιμο ενός που ΗΔΗ έχει δεν είναι λάθος και δεν προχωράει. */
+    if (hit < 0 && dupe >= 0){
+      $('dAns').innerHTML = '<div class="d-why">Το <b>' + esc(g.items[dupe].w) +
+        '</b> το έχεις ήδη. Δώσε ένα άλλο.</div>';
+      $('dTa').value = ''; try { $('dTa').focus(); } catch(e){}
+      return;
+    }
+
+    sess.shown = true;
+    sess.asked++;
+    var how = hit < 0 ? 'miss' : (sess.cue ? 'cued' : 'got');
+    k = key(c, g, hit >= 0 ? hit : q.i);
+    bump(k, how);
+    if (how === 'got'){ sess.right++; fresh[k] = 1; }
+    save();
+
+    var word = g.items[hit >= 0 ? hit : q.i].w;
+    $('dTa').setAttribute('readonly','readonly');
+    $('dIn').querySelector('#dCue').style.display = 'none';
+    $('dAns').innerHTML =
+      '<div class="d-verdict ' + (hit >= 0 ? 'yes' : 'no') + '">' +
+        (hit >= 0 ? (sess.cue ? 'Με το νήμα' : 'Δικό σου') : 'Δεν το είχες') + '</div>' +
+      '<div class="d-word">' + esc(word) + '</div>' +
+      (st === 'spell' ? '<div class="d-why">Γράφεται <b>' + esc(word) + '</b> — η ορθογραφία μετράει στο χαρτί.</div>' :
+       st === 'form'  ? '<div class="d-why">Η κατάληξη: <b>' + esc(word) + '</b>.</div>' : '') +
+      '<div class="d-root">' + esc(c.note) + '</div>';
+    $('dBtn').textContent = sess.i + 1 >= sess.q.length ? 'Τέλος' : 'Επόμενο';
+  }
+
   function next(){
-    sess.touched++;
     sess.i++;
-    if (sess.i >= sess.qs.length){ finish(); return; }
-    renderQ();
+    if (sess.i >= sess.q.length){ finish(); return; }
+    ask();
   }
 
-  function foot(btns){
-    var h = '', i;
-    for (i = 0; i < btns.length; i++)
-      h += '<button class="ek-btn' + (btns[i].main ? '' : ' ghost') + '" type="button" data-b="' + i + '">' + esc(btns[i].t) + '</button>';
-    $('ekSfoot').innerHTML = h;
-    var bs = $('ekSfoot').querySelectorAll('[data-b]');
-    for (i = 0; i < bs.length; i++)
-      bs[i].addEventListener('click', (function(fn){ return function(){ fn(); }; })(btns[+bs[i].getAttribute('data-b')].go));
-  }
-  function footMain(label){
-    var b = $('ekSfoot').querySelector('.ek-btn:not(.ghost)');
-    if (b) b.textContent = label;
-  }
-  function focusIn(){
-    /* Σε iPhone το αυτόματο focus σηκώνει το πληκτρολόγιο και κρύβει το
-       ερέθισμα. Εστιάζουμε ΜΟΝΟ σε ποντίκι/tablet, όχι σε στενή οθόνη. */
-    if (window.innerWidth < 520) return;
-    var i = $('ekIn') || $('ekSin').querySelector('.ek-ta');
-    if (i) try { i.focus(); } catch(e){}
+  function finish(){
+    log(1); save();
+    var got = sess.right, left = queue().length;
+    $('dProg').style.width = '100%';
+    $('dN').textContent = '';
+    $('dIn').innerHTML =
+      '<div class="d-ask">Ο γύρος τελείωσε</div>' +
+      '<div class="d-q">' + got + (got === 1 ? ' καινούρια' : ' καινούριες') + '</div>' +
+      '<div class="d-has">' + (left
+        ? 'Μένουν ' + left + ' στη σελίδα. Μπορείς να συνεχίσεις ή να σταματήσεις εδώ.'
+        : 'Τίποτα άλλο δεν σε περιμένει σήμερα.') + '</div>';
+    $('dBtn').textContent = left ? 'Άλλος ένας γύρος' : 'Δες τη σελίδα';
+    $('dBtn').onclick = function(){ close(); if (left) start(); };
   }
 
-  /* ⚠️ ΤΟ `logSession` ΕΙΝΑΙ ΤΟ ΣΥΜΒΟΛΑΙΟ ΤΟΥ ladders.js, ΑΥΤΟΛΕΞΕΙ.
-     Το `fin` (τελείωσε ή το παράτησε) είναι το μόνο πεδίο που δεν
-     καταγράφει κανείς άλλος — και τρεις εγκαταλείψεις στη σειρά λένε κάτι
-     που καμία ακρίβεια δεν λέει. */
-  function logSession(finished){
-    if (!sess || sess.logged) return;
-    /* ⭐ ΤΟ ΚΡΙΤΗΡΙΟ ΕΙΝΑΙ «ΕΚΑΝΕ ΚΑΤΙ», ΟΧΙ «ΡΩΤΗΘΗΚΕ». Η Γνωριμία δεν ρωτάει
-       τίποτα εξ ορισμού — κι όμως είναι πραγματικός χρόνος πάνω στην ύλη, και
-       το `ms` είναι ακριβώς αυτό που δεν μπορεί να υπολογίσει κανένας άλλος
-       (δες το συμβόλαιο στο ladders.js). Με φρουρό το `asked`, το πρώτο
-       πέρασμα δεν καταγραφόταν ΠΟΤΕ και ο μετρητής του έδειχνε «—» για πάντα.
-       ⚠️ Καταγράφεται με `asked:0` και `pass:0` — μηδέν μέτρηση, όχι ψεύτικο
-       100% (σταθ. 33: «δεν μέτρησα» ≠ «τα πήρε όλα»). */
-    if (!sess.touched) return;    /* άνοιξε και έκλεισε → δεν έγινε τίποτα */
+  /* ⚠️ ΤΟ ΣΥΜΒΟΛΑΙΟ ΤΟΥ ladders.js, ΑΥΤΟΛΕΞΕΙ. Το `fin` (τελείωσε ή το
+     παράτησε) είναι το μόνο πεδίο που δεν καταγράφει κανείς άλλος. */
+  function log(finished){
+    if (!sess || sess.logged || !sess.asked) return;
     sess.logged = true;
     if (!Array.isArray(state.sessions)) state.sessions = [];
-    var unit = sess.qs[0].card.id, i;
-    for (i = 1; i < sess.qs.length; i++) if (sess.qs[i].card.id !== unit){ unit = ''; break; }
+    var unit = sess.q[0].c.id, i;
+    for (i = 1; i < sess.i + 1 && i < sess.q.length; i++) if (sess.q[i].c.id !== unit){ unit = ''; break; }
     state.sessions.push({
       id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
       ts: sess.t0,
       ms: Math.max(0, Date.now() - sess.t0),
       unit: unit,
-      mode: sess.pass.mode,
+      mode: 'recall',
       asked: sess.asked,
       right: sess.right,
-      pass: (finished && sess.asked && sess.right / sess.asked >= E.PASS) ? 1 : 0,
+      pass: (finished && sess.asked && sess.right === sess.asked) ? 1 : 0,
       fin: finished ? 1 : 0
     });
   }
 
-  function finish(){
-    logSession(1);
-    save();
-    var p = sess.pass, right = sess.right, asked = sess.asked;
-    $('ekSprog').style.width = '100%';
-    $('ekSin').innerHTML =
-      '<div class="ek-eyebrow" style="margin-top:20px">Πέρασμα ' + p.n + ' · ' + esc(p.t) + '</div>' +
-      '<div class="ek-q gr">' + (asked ? right + '<span style="color:var(--au-dim,#9a97a3)">/' + asked + '</span>' : 'Τέλος') + '</div>' +
-      '<p class="ek-qsub">' + esc(nextWord(p)) + '</p>';
-    $('ekSc').textContent = '';
-    foot([{ t: p.n < 5 ? 'Πέρασμα ' + (p.n + 1) : 'Τέλος', main:true, go:function(){
-      var nxt = p.n < 5 ? PASSES[p.n] : null;
-      close();
-      if (nxt) startPass(nxt.id, lastList);
-    } }, { t:'Κλείσιμο', go:close }]);
-  }
-  function nextWord(p){
-    if (p.id === 'meet') return 'Τώρα η ρίζα, ανάποδα: σου δίνω την ανάλυση και βρίσκεις τη λέξη.';
-    if (p.id === 'root') return 'Τώρα γράφεις τα στοιχεία, με νήματα να σε τραβάνε.';
-    if (p.id === 'cued') return 'Τώρα το γυμνό. Αυτό είναι που μετράει και αυτό είναι η Πέμπτη.';
-    if (p.id === 'bare') return 'Τελευταίο: ανάποδα, για να τις χρησιμοποιείς — όχι μόνο να τις περνάς.';
-    return 'Τελείωσε η σελίδα. Ό,τι έχασες θα ξαναέρθει μόνο του.';
-  }
-
   function close(){
-    if (sess && !sess.logged){ logSession(0); save(); }
+    if (sess && !sess.logged){ log(0); save(); }
     sess = null;
-    $('ekSess').classList.remove('on');
-    $('ekSess').setAttribute('aria-hidden','true');
+    /* ⚠️ Η ΟΘΟΝΗ ΤΕΛΟΥΣ ΑΛΛΑΖΕΙ ΤΟ ΚΟΥΜΠΙ. Αν κλείσει από το ✕ ΕΝΩ είναι
+       εκεί, ο επόμενος γύρος ξεκινούσε με κολλημένο handler και το «Έλεγχος»
+       έκλεινε τη σελίδα. Η επαναφορά ζει ΕΔΩ, στο ένα σημείο απ' όπου
+       περνάνε ΟΛΟΙ οι δρόμοι εξόδου. */
+    $('dBtn').onclick = go;
+    $('drill').classList.remove('on');
+    $('drill').setAttribute('aria-hidden','true');
     document.body.style.overflow = '';
     render();
   }
@@ -822,115 +600,91 @@
   /* ══════════════════════════════════════════════════════════════════
      Η ΣΕΛΙΔΑ
      ══════════════════════════════════════════════════════════════════ */
-  var lastList = null;
-
   function render(){
-    var all = cards(), nw = newOnes(), du = dueOnes(),
-        learned = all.length - nw.length, i, c, a, r, h;
+    var total = totalItems(), own = ownedItems(), waiting = queue().length, h = '';
 
-    $('ekH').innerHTML = 'Λεξιλόγιο <b>' + learned + '</b>/' + all.length;
-    $('ekHSub').innerHTML =
-      esc(SET.label) + ' · ' + esc(SET.range) + '.<br>' +
-      '<b>' + D.setItems(SET) + ' στοιχεία</b> σε ' + all.length + ' λέξεις.';
+    $('ekN').textContent = own;
+    $('ekOf').textContent = own === 1 ? 'λέξη δική σου, από ' + total : 'λέξεις δικές σου, από ' + total;
+    $('ekBar').style.width = total ? (own / total * 100) + '%' : '0';
+    $('ekSrc').textContent = SET.label + ' · ' + SET.range;
 
-    /* ── το κουμπί ───────────────────────────────────────────────── */
-    if (nw.length){
-      lastList = nw;
-      $('ekCtaK').textContent = wednesday() ? 'Τετάρτη · για αύριο' : 'Καινούρια ύλη';
-      $('ekCtaT').textContent = nw.length + (nw.length === 1 ? ' λέξη' : ' λέξεις') + ' που δεν έχεις δει';
-      $('ekCtaS').textContent = 'Πέντε περάσματα, με τη σειρά. Ξεκίνα από τη Γνωριμία.';
+    if (waiting){
+      $('ekCtaT').textContent = own ? 'Συνέχισε' : 'Ξεκίνα';
+      $('ekCtaS').textContent = waiting + (waiting === 1 ? ' λέξη σε περιμένει' : ' λέξεις σε περιμένουν') +
+        ' · γύρος ' + Math.min(waiting, ROUND);
       $('ekCta').disabled = false;
-      $('ekCta').onclick = function(){ startPass('meet', nw); };
-    } else if (du.length){
-      lastList = du;
-      $('ekCtaK').textContent = 'Επανάληψη';
-      $('ekCtaT').textContent = du.length + (du.length === 1 ? ' λέξη έληξε' : ' λέξεις έληξαν');
-      $('ekCtaS').textContent = 'Κατευθείαν γυμνό. Δεν χρειάζεσαι τα πρώτα περάσματα για ύλη που ξέρεις.';
-      $('ekCta').disabled = false;
-      $('ekCta').onclick = function(){ startPass('bare', du); };
     } else {
-      lastList = all;
-      $('ekCtaK').textContent = 'Καθαρά';
-      $('ekCtaT').textContent = 'Τίποτα δεν λήγει σήμερα';
-      $('ekCtaS').textContent = nextDueLine(all);
-      $('ekCta').disabled = false;
-      $('ekCta').onclick = function(){ startPass('bare', all); };
+      $('ekCtaT').textContent = 'Καθαρά';
+      $('ekCtaS').textContent = nextLine();
+      $('ekCta').disabled = true;
     }
 
-    /* ── τα περάσματα ────────────────────────────────────────────── */
-    h = '';
-    for (i = 0; i < PASSES.length; i++){
-      var p = PASSES[i], done = countPass(p);
-      h += '<button class="ek-p' + (i === 0 && nw.length ? ' on' : '') + '" type="button" data-p="' + p.id + '">' +
-           '<span class="ek-pn">' + p.n + '</span>' +
-           '<span class="ek-pb"><span class="ek-pt">' + esc(p.t) + '</span>' +
-           '<span class="ek-pd">' + esc(p.d) + '</span></span>' +
-           '<span class="ek-pm' + (done ? ' done' : '') + '">' + (done ? '×' + done : '—') + '</span>' +
-           '</button>';
-    }
-    $('ekPasses').innerHTML = h;
-    var pb = $('ekPasses').querySelectorAll('[data-p]');
-    for (i = 0; i < pb.length; i++)
-      pb[i].addEventListener('click', function(){ startPass(this.getAttribute('data-p'), lastList); });
-
-    /* ── ο χάρτης ────────────────────────────────────────────────── */
-    h = '';
-    for (i = 0; i < all.length; i++){
-      c = all[i]; a = cardAcc(c); r = w(c.id);
-      h += '<button class="ek-w' + (isDue(c) ? ' due' : '') + '" type="button" data-w="' + esc(c.id) + '">' +
-           '<i style="background:' + tint(a) + '"></i>' + esc(c.q) +
-           (r.learnedAt ? '<u>' + esc(inDays(r.due)) + '</u>' : '') +
-           '</button>';
-    }
-    $('ekGrid').innerHTML = h;
-    var wb = $('ekGrid').querySelectorAll('[data-w]');
-    for (i = 0; i < wb.length; i++)
-      wb[i].addEventListener('click', function(){
-        var c = D.card(this.getAttribute('data-w'));
-        if (c) startPass(isNew(c) ? 'meet' : 'bare', [c]);
+    cards().forEach(function(c){
+      var all = D.countItems(c), mine = 0, body = '';
+      c.groups.forEach(function(g){
+        body += '<div class="row"><span class="lab">' + esc(g.short) + '</span><span class="ws">';
+        g.items.forEach(function(item, i){
+          var k = key(c, g, i), on = have(k);
+          if (on) mine++;
+          body += (i ? '<span class="sep"> · </span>' : '') +
+                  '<span class="w' + (on ? ' on' : '') + (fresh[k] ? ' fresh' : '') + '">' + esc(item.w) + '</span>';
+        });
+        body += '</span></div>';
       });
+      h += '<article class="ent' + (all && mine === all ? ' full' : '') + '">' +
+           '<h2>' + esc(c.q) + '</h2>' + body +
+           '<div class="root">' + esc(c.note) + '</div></article>';
+    });
+    $('ekEntries').innerHTML = h;
 
-    $('ekMapT').textContent = 'Οι λέξεις · ' + all.length;
-    $('ekFoot').innerHTML = footLine();
-  }
-
-  function nextDueLine(all){
-    var soon = 0, i, r;
-    for (i = 0; i < all.length; i++){
-      r = w(all[i].id);
-      if (r.learnedAt && (!soon || r.due < soon)) soon = r.due;
+    /* ⭐ Η ΣΤΙΓΜΗ ΤΗΣ ΕΠΙΣΤΡΟΦΗΣ: όσες μόλις κέρδισε μπαίνουν χρυσές και
+       σβήνουν σε ιβουάρ. Καμία γιορτή, κανένα confetti — μια μεταβολή
+       χρώματος 0.8s που λέει «αυτές είναι οι καινούριες σου». */
+    if (Object.keys(fresh).length){
+      setTimeout(function(){
+        var els = $('ekEntries').querySelectorAll('.w.fresh'), i;
+        for (i = 0; i < els.length; i++) els[i].classList.remove('fresh');
+        fresh = {};
+      }, 900);
     }
-    if (!soon) return 'Μπορείς να κάνεις ένα γυμνό πέρασμα όποτε θες.';
-    return 'Το επόμενο ραντεβού: ' + inDays(soon) + '. Ένα γυμνό πέρασμα πάντα επιτρέπεται.';
+
+    $('ekFoot').textContent = footLine();
   }
 
-  function countPass(p){
-    var n = 0, i, s = state.sessions || [];
-    for (i = 0; i < s.length; i++) if (s[i] && s[i].mode === p.mode && s[i].fin) n++;
-    return n;
+  function nextLine(){
+    var soon = 0;
+    cards().forEach(function(c){ c.groups.forEach(function(g){
+      g.items.forEach(function(_, i){
+        var r = state.els[key(c, g, i)];
+        if (r && +r.due && (!soon || +r.due < soon)) soon = +r.due;
+      });
+    }); });
+    if (!soon) return 'Δεν έχεις ξεκινήσει ακόμα.';
+    var d = Math.round((soon - Date.now()) / DAY);
+    return d <= 0 ? 'Έτοιμο τώρα.' : d === 1 ? 'Οι επόμενες αύριο.' : 'Οι επόμενες σε ' + d + ' μέρες.';
   }
 
   function footLine(){
     var s = state.sessions || [], ms = 0, i;
     for (i = 0; i < s.length; i++) ms += (+s[i].ms || 0);
-    if (!s.length) return esc(SET.src) + '.';
-    return esc(SET.src) + ' · ' + s.length + ' συνεδρίες, ' +
-           Math.round(ms / 60000) + ' λεπτά συνολικά.';
+    if (!s.length) return SET.src + '.';
+    return SET.src + ' · ' + s.length + (s.length === 1 ? ' γύρος' : ' γύροι') +
+           ', ' + Math.round(ms / 60000) + ' λεπτά.';
   }
 
   /* ── εκκίνηση ───────────────────────────────────────────────────── */
-  $('ekSx').addEventListener('click', close);
+  $('ekCta').addEventListener('click', start);
+  $('dX').addEventListener('click', close);
+  $('dBtn').onclick = go;
 
   reload();
   render();
 
   /* ── cloud sync ───────────────────────────────────────────────────
-     ⚠️⚠️ ΤΟ ΣΥΜΒΟΛΑΙΟ ΕΙΝΑΙ `initCloudSync({appKey, syncedKeys, onApplied})`
-     ΚΑΙ ΤΙΠΟΤΑ ΑΛΛΟ. Το sync.js ΔΕΝ στέλνει event στο window — μια πρώτη
-     γραφή αυτής της σελίδας άκουγε ένα ανύπαρκτο 'als-sync' και ΔΕΝ θα
-     είχε σκάσει ποτέ: απλώς η πρόοδος από το άλλο κινητό δεν θα φαινόταν
-     ως το επόμενο refresh. Ακριβώς το SILENT-EMPTY που κυνηγάει αυτό το
-     project. Αντιγράφεται ΑΥΤΟΛΕΞΕΙ από το tonos.html. */
+     ⚠️⚠️ ΤΟ ΣΥΜΒΟΛΑΙΟ ΕΙΝΑΙ `initCloudSync({appKey, syncedKeys, onApplied})`.
+     Το sync.js ΔΕΝ στέλνει event στο window — μια πρώτη γραφή αυτής της
+     σελίδας άκουγε ένα ανύπαρκτο 'als-sync' και ΔΕΝ θα είχε σκάσει ποτέ.
+     Αντιγράφεται αυτολεξεί από το tonos.html. */
   (function initEkthesiSync(){
     var tries = 0;
     (function wait(){
@@ -939,10 +693,8 @@
         appKey:'ekthesi',
         syncedKeys:[KEY],
         onApplied:function(){
-          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
-             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη.
-             ⚠️ ΠΟΤΕ μέσα σε συνεδρία: θα του άλλαζε το έδαφος κάτω από τα
-             πόδια στη μέση μιας ερώτησης. */
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς εισερχόμενη συγχώνευση
+             χάνεται από παλιό αντίγραφο στη μνήμη. ⚠️ ΠΟΤΕ μέσα σε γύρο. */
           reload();
           if (!sess){ try{ render(); }catch(e){} }
         }

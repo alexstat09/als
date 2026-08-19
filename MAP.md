@@ -76,26 +76,48 @@ als-v454) and `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 
 ⭐⭐ **`ekthesi.html` closed the last empty 30%.** Έκθεση ties with Αρχαία for
 weight and had **zero data** until als-v495 — `homework.html` said so in as many
-words (`page:null` → «δεν υπάρχει σελίδα ακόμη»). It now owns the
-synonym/antonym lexicon: `ekthesi-data.js` (the material, **hand-verified from
-the photographed book page, never model-read at runtime**) and
-`ekthesi-engine.js` (the grader). Store `ekt:v1` — `words` (the ladder, one
-record per λήμμα) + `els` (accuracy per ΣΤΟΙΧΕΙΟ, keys `cardId:groupId:index`
-where **groupId is a word, not a number**) + `sessions`.
+words (`page:null` → «δεν υπάρχει σελίδα ακόμη»). It owns the synonym/antonym
+lexicon: `ekthesi-data.js` (the material, **hand-verified from the photographed
+book page, never model-read at runtime**) and `ekthesi-engine.js` (the grader).
+Store `ekt:v1` — `els` (**the truth**: one Leitner record per ΣΤΟΙΧΕΙΟ, keys
+`cardId:groupId:index` where **groupId is a word, not a number**) + `words` (a
+**derived translation** for `ladders.js`, rebuilt on every save, never edited by
+hand) + `sessions`.
 
-⭐ **It is the only study page graded on WRITING, not speech,** and that is why
-it has its own engine instead of `lesson-grade.js`. Recitation pages can forgive
-spelling because speech recognition does the typing; here Alex types, and the
-exam is on paper. So the grader answers in **three tiers that count** — `ok`
-(exact) · `spell` (same sound, wrong letters) · `form` (same stem, wrong ending)
-— and two that don't: `cross` (right word, wrong column) and `extra` (outside
-the book — **never penalised**). A card carries a `note`: the ρίζα, because
-α-privative hands back half the antonym column for free.
+⛔⛔ **THERE IS NO SCORE, AND THAT IS HIS DECISION** (19/08/26): *«δεν μας
+βαθμολογεί· όσα περισσότερα ξέρεις καλύτερο για σένα όταν γράψεις έκθεση — δεν
+θέλω να με σκοτώνεις σε βαθμολογίες»*. The teacher gives a word and wants as
+many synonyms/antonyms as he can recall. So there is no `PASS`, no percentage,
+no `✗`. The unit of progress is **the item**: 89 words you collect, and the only
+question is «το έχεις ή όχι ακόμη». The counter only goes up. Anything that
+looks like a mark is pressure with nothing behind it.
 
-⚠️ Only the **ΓΥΜΝΟ** pass (4 of 5) moves the ladder, and only passes 4–5 write
-accuracy. The two cued passes deliberately measure nothing — accuracy taken with
-a hint is the fluency illusion, and it would reschedule a word he only knows
-*with the hint*.
+⭐ **It is the only study page graded on WRITING, not speech,** which is why it
+has its own engine instead of `lesson-grade.js`. Recitation pages can forgive
+spelling because speech recognition does the typing; here Alex types and the
+exam is on paper. Three tiers count — `ok` / `spell` / `form` — plus `cross`
+(right word, **wrong column**: it re-asks, charges nothing, and is the most
+useful feedback the page can give) and `extra` (outside the book — **never
+penalised**).
+
+**Two screens, and that is the whole page.** *Η ΣΕΛΙΔΑ*: the lexicon typeset as
+a lexicon — no cards, no chips, no borders — where words you own are bright
+ivory and the rest are dim; a fully-owned entry turns its own headword coral,
+the only progress indicator inside the page. *Η ΕΞΑΣΚΗΣΗ*: **one item at a
+time** — word, column, one line to type. It never re-asks what you own, it
+serves one item per word before deepening (breadth first), and the shrinking
+cue is always one tap away.
+
+⚠️ **The cue never punishes.** A correct answer given with the cue leaves the
+box where it is and books tomorrow — it does not advance and it does **not**
+drop. An early build dropped a box for asking for help, which is the surest way
+to make him never ask again.
+
+⚠️⚠️ **«το έχω» ≠ «μου ζητείται τώρα».** An owned item that falls due is *both*,
+and conflating them meant a review could never be answered — the page replied
+«το έχεις ήδη, δώσε άλλο» forever. Invisible until the third night. `live()`
+is the distinction; `tests/ekthesi-page.test.js` drives the real page to prove
+it.
 
 🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
 Read **`docs/XREOS_V2_SPEC.md` first** (the current truth — it says what changes
