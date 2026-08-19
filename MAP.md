@@ -70,9 +70,32 @@ which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
-als-v450), `istoria.html` (Ιστορία, als-v451) and `arxaia.html` (Αρχαία,
-als-v454) are the study pages, and **`homework.html` (School Studies, als-v483)** is
-the room above them.
+als-v450), `istoria.html` (Ιστορία, als-v451), `arxaia.html` (Αρχαία,
+als-v454) and `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
+**`homework.html` (School Studies, als-v483)** is the room above them.
+
+⭐⭐ **`ekthesi.html` closed the last empty 30%.** Έκθεση ties with Αρχαία for
+weight and had **zero data** until als-v495 — `homework.html` said so in as many
+words (`page:null` → «δεν υπάρχει σελίδα ακόμη»). It now owns the
+synonym/antonym lexicon: `ekthesi-data.js` (the material, **hand-verified from
+the photographed book page, never model-read at runtime**) and
+`ekthesi-engine.js` (the grader). Store `ekt:v1` — `words` (the ladder, one
+record per λήμμα) + `els` (accuracy per ΣΤΟΙΧΕΙΟ, keys `cardId:groupId:index`
+where **groupId is a word, not a number**) + `sessions`.
+
+⭐ **It is the only study page graded on WRITING, not speech,** and that is why
+it has its own engine instead of `lesson-grade.js`. Recitation pages can forgive
+spelling because speech recognition does the typing; here Alex types, and the
+exam is on paper. So the grader answers in **three tiers that count** — `ok`
+(exact) · `spell` (same sound, wrong letters) · `form` (same stem, wrong ending)
+— and two that don't: `cross` (right word, wrong column) and `extra` (outside
+the book — **never penalised**). A card carries a `note`: the ρίζα, because
+α-privative hands back half the antonym column for free.
+
+⚠️ Only the **ΓΥΜΝΟ** pass (4 of 5) moves the ladder, and only passes 4–5 write
+accuracy. The two cued passes deliberately measure nothing — accuracy taken with
+a hint is the fluency illusion, and it would reschedule a word he only knows
+*with the hint*.
 
 🔴🔴 **IT IS PHASES 0–4 OF AN 8-PHASE SPEC, AND IT WAS REPORTED AS FINISHED.**
 Read **`docs/XREOS_V2_SPEC.md` first** (the current truth — it says what changes

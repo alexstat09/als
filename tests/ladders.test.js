@@ -48,9 +48,9 @@ ok('ladders.js requires nothing (no require cycle can be made from it)', !/\breq
    φρουρός που φωνάζει «λύκος» είναι ένας φρουρός που κάποιος θα χαλαρώσει. */
 ok('ladders.js never writes a store (σταθερή αρχή 16)', !/\.(setItem|removeItem)\s*\(/.test(SRC));
 ok('ladders.js touches no DOM', !/\bdocument\b/.test(SRC));
-ok('it still exports the five stores', L.STORES.length === 5);
-is('the five keys, in a fixed order', L.STORES.map(s => s.key),
-  ['ist:v1', 'arx:gn', 'arx:v1', 'lat:v1', 'ton:v1']);
+ok('it still exports the six stores', L.STORES.length === 6);
+is('the six keys, in a fixed order', L.STORES.map(s => s.key),
+  ['ist:v1', 'arx:gn', 'arx:v1', 'lat:v1', 'ton:v1', 'ekt:v1']);
 
 /* ── 1 · ΤΑ ΤΕΣΣΕΡΑ ΣΧΗΜΑΤΑ, ΧΕΙΡΟΓΡΑΦΑ ────────────────────────────────
    Κάθε ένα γράφτηκε κοιτώντας τη ΣΕΛΙΔΑ που το παράγει, όχι τον αναγνώστη:
@@ -58,7 +58,8 @@ is('the five keys, in a fixed order', L.STORES.map(s => s.key),
      ton:v1  tonos.html:419      ΧΑΡΤΗΣ   {r, w, due, streak}
      arx:v1  arxaia.html:774/782 pages ΧΑΡΤΗΣ + cells ΧΑΡΤΗΣ (πρώην ΠΙΝΑΚΑΣ)
      ist:v1  istoria.html:467/493 units ΧΑΡΤΗΣ + els ΧΑΡΤΗΣ `unitId:pi:ei`
-     arx:gn  arxaia.html:1519/1525 ίδιο σχήμα με το ist:v1 */
+     arx:gn  arxaia.html:1519/1525 ίδιο σχήμα με το ist:v1
+     ekt:v1  ekthesi.html          words ΧΑΡΤΗΣ + els ΧΑΡΤΗΣ `cardId:groupId:i` */
 const NOW = Date.parse('2026-08-11T12:00:00Z');
 const DAY = 86400000;
 const LATE = NOW - 2 * DAY;      // έληξε προχθές
@@ -107,6 +108,26 @@ const FIX = {
     units: { gn1: { learnedAt: NOW - 6 * DAY, reviews: 1, due: SOON, best: 0.91, last: NOW - 6 * DAY, runs: 2, claimed: 0 } },
     els: { 'gn1:0:0': { r: 6, w: 4 } },
     days: [], heard: {}
+  },
+  /* ⭐ als-v495 · Η ΕΚΘΕΣΗ. Η μονάδα είναι το ΛΗΜΜΑ, τα κλειδιά ακρίβειας
+     είναι `cardId:groupId:index` — δηλαδή το `groupId` είναι ΛΕΞΗ ('syn',
+     'ant'), όχι αριθμός όπως στο ist:v1. Ο αναγνώστης δεν επιτρέπεται να
+     υποθέσει αριθμό εκεί μέσα.
+     ⚠️ Το `p547-athlos` είναι ΑΘΙΚΤΟ επίτηδες: ένα λήμμα που δεν το άγγιξε
+     ποτέ δεν χρωστάει, και ένας αφελής αναγνώστης το μετράει ληξιπρόθεσμο
+     επειδή `due: 0 <= now`. */
+  'ekt:v1': {                                     /* words ΧΑΡΤΗΣ + els ΧΑΡΤΗΣ */
+    v: 1,
+    words: {
+      'p547-adais':   { learnedAt: NOW - 12 * DAY, reviews: 2, due: LATE, best: 0.86, last: NOW - 4 * DAY, runs: 3 },
+      'p547-adolos':  { learnedAt: NOW - 3 * DAY,  reviews: 1, due: SOON, best: 1,    last: NOW - 3 * DAY, runs: 1 },
+      'p547-athlos':  { learnedAt: 0, reviews: 0, due: 0, best: 0, last: 0, runs: 0 }   /* άθικτο */
+    },
+    els: {
+      'p547-adais:syn:0': { r: 4, w: 0 }, 'p547-adais:syn:1': { r: 2, w: 2 },
+      'p547-adais:ant:0': { r: 3, w: 1 }, 'p547-adolos:syn:0': { r: 5, w: 0 }
+    },
+    sessions: []
   }
 };
 const getFix = k => (k in FIX ? JSON.stringify(FIX[k]) : null);
@@ -120,6 +141,19 @@ L.STORES.forEach(s => {
 });
 
 is('lat:v1 — ΠΙΝΑΚΑΣ: 11 σωστά / 3 λάθη', [R.byKey['lat:v1'].right, R.byKey['lat:v1'].wrong], [11, 3]);
+/* ⭐ Η Έκθεση: 14 σωστά / 3 λάθη στα ΣΤΟΙΧΕΙΑ (τα κλειδιά τους έχουν ΛΕΞΗ
+   στη μέση, `p547-adais:syn:0`, όχι αριθμό — ένας αναγνώστης που περιμένει
+   αριθμό γυρίζει σιωπηλά μηδέν εδώ). */
+is('ekt:v1 — η ακρίβεια ζει στα els, η σκάλα στα words',
+   [R.byKey['ekt:v1'].right, R.byKey['ekt:v1'].wrong], [14, 3]);
+/* ⚠️⚠️ ΑΘΙΚΤΟ ≠ ΛΗΞΙΠΡΟΘΕΣΜΟ, ΚΑΙ ΕΔΩ ΕΙΝΑΙ ΕΥΚΟΛΟ ΝΑ ΣΠΑΣΕΙ: η ekthesi.html
+   γεννάει κέλυφος `{learnedAt:0, due:0}` για ΚΑΘΕ λήμμα μόλις ζωγραφίσει τον
+   χάρτη, άρα και τα 16 υπάρχουν στην αποθήκη από το πρώτο άνοιγμα. Αν ποτέ
+   γράψει `due` σε λήμμα που δεν μαθεύτηκε, το School Studies θα του χρωστάει
+   16 λέξεις που δεν είδε ποτέ. */
+is('ekt:v1 — 3 εγγραφές, 2 μαθεμένες, 1 άθικτη, 1 ληξιπρόθεσμη',
+   [R.byKey['ekt:v1'].items.length, R.byKey['ekt:v1'].learned,
+    R.byKey['ekt:v1'].untouched, R.byKey['ekt:v1'].overdue], [3, 2, 1, 1]);
 is('ton:v1 — ΧΑΡΤΗΣ: 14 σωστά / 6 λάθη', [R.byKey['ton:v1'].right, R.byKey['ton:v1'].wrong], [14, 6]);
 is('arx:v1 — η ακρίβεια ζει στα cells, η σκάλα στα pages', [R.byKey['arx:v1'].right, R.byKey['arx:v1'].wrong, R.byKey['arx:v1'].items.length], [5, 3, 1]);
 is('ist:v1 — η ακρίβεια ζει στα els, ανά ενότητα με πρόθεμα', [R.byKey['ist:v1'].right, R.byKey['ist:v1'].wrong], [22, 3]);

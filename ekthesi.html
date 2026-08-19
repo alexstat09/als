@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Έκθεση">
+  <title>Έκθεση · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <!-- Cloud sync από την πρώτη μέρα: μια σελίδα μελέτης που ζει μόνο στο
+       κινητό χάνει τα πάντα σε επανεγκατάσταση του PWA. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="greek-ear.js"></script>
+  <script src="ekthesi-data.js"></script>
+  <script src="ekthesi-engine.js"></script>
+  <!-- ⭐ als-v468: τα λήμματα είναι χάρτης εγγραφών, που το sync.js συγχώνευε
+       ανά πεδίο με «κερδίζει το remote». Δες το study-stamp.js. -->
+  <script src="study-stamp.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.ek-hero,.ek-today,.ek-passes,.ek-map,.ek-why,.ek-foot';</script>
+  <script src="page-motion.js" defer></script>
+<style>
+  /* Το κοράλλι είναι ΤΟ ΧΡΩΜΑ ΤΗΣ ΕΚΘΕΣΗΣ, ίδιο με το `--hw-ekt` του
+     homework.html. Ένα μάθημα, ένα χρώμα, σε όλη την εφαρμογή. */
+  :root{ --ek:255,138,107; --warn:255,107,139; --good:63,224,176; --hint:229,184,110; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .ek-wrap{ max-width:600px; margin:0 auto; padding:0 18px; }
+  .gr{ font-family:var(--au-serif,Georgia,serif); }
+  .mono{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); }
+
+  /* ── hero ─────────────────────────────────────────── */
+  .ek-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
+  .ek-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--ek),.92); margin-bottom:12px; }
+  .ek-h{ font-family:var(--au-serif,Georgia,serif); font-weight:400;
+    font-size:clamp(27px,7vw,36px); line-height:1.06; letter-spacing:-.01em; }
+  .ek-h b{ font-weight:400; color:rgb(var(--ek)); font-variant-numeric:tabular-nums; }
+  .ek-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.55; }
+  .ek-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* ── σήμερα ───────────────────────────────────────── */
+  .ek-today{ margin-top:22px; }
+  .ek-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--ek),.28);
+    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer;
+    background:linear-gradient(140deg,rgba(var(--ek),.13),rgba(var(--ek),.03) 60%,transparent);
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s; }
+  .ek-cta:active{ transform:scale(.985); }
+  .ek-cta[disabled]{ opacity:.5; cursor:default; }
+  .ek-ctak{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--ek),.95); }
+  .ek-ctat{ font-family:var(--au-serif,Georgia,serif); font-size:21px; margin-top:8px; line-height:1.2; }
+  .ek-ctas{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:7px; line-height:1.5; }
+
+  /* ── τα περάσματα ─────────────────────────────────── */
+  .ek-passes{ margin-top:26px; }
+  .ek-sec{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.22em; text-transform:uppercase; color:var(--au-dim,#9a97a3); margin-bottom:12px; }
+  .ek-plist{ display:grid; gap:8px; }
+  .ek-p{ display:flex; align-items:flex-start; gap:13px; width:100%; text-align:left; cursor:pointer;
+    border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:13px 15px; color:inherit;
+    background:rgba(255,255,255,.022); transition:border-color .18s, background .18s, transform .18s; }
+  .ek-p:active{ transform:scale(.99); }
+  .ek-p.on{ border-color:rgba(var(--ek),.35); background:rgba(var(--ek),.07); }
+  .ek-p[disabled]{ opacity:.42; cursor:default; }
+  .ek-pn{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11px; font-weight:700;
+    color:rgba(var(--ek),.9); width:14px; flex:none; padding-top:2px; font-variant-numeric:tabular-nums; }
+  .ek-pb{ flex:1; min-width:0; }
+  .ek-pt{ font-size:13.5px; font-weight:600; letter-spacing:.01em; }
+  .ek-pd{ font-size:11.5px; color:var(--au-dim,#9a97a3); margin-top:3px; line-height:1.45; }
+  .ek-pm{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9.5px; flex:none;
+    color:var(--au-dim,#9a97a3); padding-top:3px; font-variant-numeric:tabular-nums; }
+  .ek-pm.done{ color:rgb(var(--good)); }
+
+  /* ── ο χάρτης των λημμάτων ────────────────────────── */
+  .ek-map{ margin-top:28px; }
+  .ek-grid{ display:flex; flex-wrap:wrap; gap:7px; }
+  .ek-w{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; color:inherit;
+    border:1px solid rgba(255,255,255,.10); border-radius:999px; padding:7px 13px;
+    background:rgba(255,255,255,.025); font-size:13px; transition:border-color .18s, transform .18s; }
+  .ek-w:active{ transform:scale(.97); }
+  .ek-w i{ width:6px; height:6px; border-radius:50%; flex:none; font-style:normal; }
+  .ek-w u{ text-decoration:none; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
+    font-size:9.5px; color:var(--au-dim,#9a97a3); font-variant-numeric:tabular-nums; }
+  .ek-w.due{ border-color:rgba(var(--warn),.45); }
+  .ek-legend{ margin-top:13px; font-size:11px; color:var(--au-dim,#9a97a3); line-height:1.6; }
+  .ek-legend i{ display:inline-block; width:6px; height:6px; border-radius:50%; margin:0 5px 0 11px;
+    vertical-align:middle; font-style:normal; }
+  .ek-legend i:first-child{ margin-left:0; }
+
+  /* ── γιατί ────────────────────────────────────────── */
+  .ek-why{ margin-top:30px; border:1px solid rgba(255,255,255,.07); border-radius:16px;
+    padding:17px 19px; background:rgba(255,255,255,.018); }
+  .ek-why p{ font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.65; }
+  .ek-why p + p{ margin-top:10px; }
+  .ek-why b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .ek-foot{ margin-top:26px; font-size:11px; color:rgba(154,151,163,.7); line-height:1.6; }
+
+  /* ── Η ΣΥΝΕΔΡΙΑ ───────────────────────────────────────
+     ⚠️ ΟΛΟΣΕΛΙΔΗ ΚΑΙ `position:fixed` ΧΩΡΙΣ ΚΑΝΕΝΑΝ ΠΡΟΓΟΝΟ ΜΕ transform.
+     Ένας πρόγονος με transform σπάει το fixed και το πλαίσιο φεύγει εκτός
+     κάδρου — έχει ήδη συμβεί σε αυτό το project. Γι' αυτό ζει ΕΞΩ από το
+     `.ek-wrap`, παιδί του <body>. */
+  .ek-sess{ position:fixed; inset:0; z-index:70; background:var(--au-void,#050506);
+    display:none; flex-direction:column; }
+  .ek-sess.on{ display:flex; }
+  .ek-sbar{ flex:none; display:flex; align-items:center; gap:12px;
+    padding:calc(env(safe-area-inset-top) + 13px) 18px 13px;
+    border-bottom:1px solid rgba(255,255,255,.07); }
+  .ek-sx{ font-size:19px; line-height:1; color:var(--au-dim,#9a97a3); cursor:pointer;
+    background:none; border:0; padding:4px 6px; }
+  .ek-sk{ flex:1; min-width:0; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
+    font-size:9px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--ek),.95); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ek-sc{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11px;
+    color:var(--au-dim,#9a97a3); flex:none; font-variant-numeric:tabular-nums; }
+  .ek-sprog{ flex:none; height:2px; background:rgba(255,255,255,.07); }
+  .ek-sprog i{ display:block; height:100%; background:rgb(var(--ek)); width:0;
+    transition:width .3s cubic-bezier(.2,.8,.2,1); }
+  .ek-sbody{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px 18px 26px; }
+  .ek-sin{ max-width:600px; margin:0 auto; }
+  .ek-sfoot{ flex:none; padding:13px 18px calc(env(safe-area-inset-bottom) + 15px);
+    border-top:1px solid rgba(255,255,255,.07); display:flex; gap:9px; }
+  .ek-btn{ flex:1; border:1px solid rgba(var(--ek),.32); border-radius:13px; padding:14px;
+    background:rgba(var(--ek),.10); color:var(--au-ivory,#f5f2ec); font-size:14px;
+    font-weight:600; cursor:pointer; font-family:inherit; transition:transform .16s, opacity .16s; }
+  .ek-btn:active{ transform:scale(.985); }
+  .ek-btn.ghost{ flex:0 0 auto; padding:14px 17px; border-color:rgba(255,255,255,.12);
+    background:rgba(255,255,255,.03); color:var(--au-dim,#9a97a3); font-weight:500; }
+  .ek-btn[disabled]{ opacity:.4; cursor:default; }
+
+  /* το ερέθισμα */
+  .ek-q{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(28px,8vw,38px);
+    line-height:1.08; letter-spacing:-.01em; }
+  .ek-qsub{ font-size:11.5px; color:var(--au-dim,#9a97a3); margin-top:9px; line-height:1.55; }
+  .ek-root{ margin-top:15px; border-left:2px solid rgba(var(--hint),.45); padding:2px 0 2px 13px;
+    font-size:13px; color:rgba(229,184,110,.92); line-height:1.55; font-family:var(--au-serif,Georgia,serif); }
+  .ek-root.hid{ display:none; }
+  .ek-reveal{ margin-top:15px; border:1px dashed rgba(255,255,255,.14); border-radius:12px;
+    padding:12px 15px; font-size:12.5px; color:var(--au-dim,#9a97a3); cursor:pointer;
+    background:none; width:100%; text-align:left; font-family:inherit; }
+
+  /* οι ομάδες */
+  .ek-g{ margin-top:20px; }
+  .ek-gl{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .ek-gn{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.2em; text-transform:uppercase; color:var(--au-dim,#9a97a3); }
+  .ek-gc{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:10px;
+    color:rgba(var(--ek),.9); font-variant-numeric:tabular-nums; }
+  .ek-ta{ width:100%; min-height:74px; resize:vertical; border:1px solid rgba(255,255,255,.11);
+    border-radius:13px; padding:12px 14px; background:rgba(255,255,255,.028);
+    color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:15px; line-height:1.6; }
+  .ek-ta:focus{ outline:none; border-color:rgba(var(--ek),.45); background:rgba(var(--ek),.05); }
+  .ek-ta[readonly]{ opacity:.62; }
+  .ek-cues{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .ek-cue{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:12px;
+    letter-spacing:.08em; color:rgba(229,184,110,.85); border:1px solid rgba(var(--hint),.24);
+    border-radius:8px; padding:5px 9px; background:rgba(var(--hint),.05); cursor:pointer; }
+  .ek-cue.got{ color:rgba(63,224,176,.85); border-color:rgba(var(--good),.3);
+    background:rgba(var(--good),.06); letter-spacing:0; }
+
+  /* το αποτέλεσμα */
+  .ek-rows{ display:grid; gap:5px; margin-top:9px; }
+  .ek-r{ display:flex; align-items:baseline; gap:9px; font-size:14px; line-height:1.45; }
+  .ek-r em{ font-style:normal; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
+    font-size:10px; flex:none; width:15px; }
+  .ek-r span{ flex:1; min-width:0; }
+  .ek-r small{ font-size:10.5px; color:var(--au-dim,#9a97a3); font-family:var(--au-mono,ui-monospace,Menlo,monospace);
+    letter-spacing:.05em; text-transform:uppercase; flex:none; }
+  .ek-r.ok em{ color:rgb(var(--good)); }
+  .ek-r.spell em, .ek-r.form em{ color:rgb(var(--hint)); }
+  .ek-r.spell span, .ek-r.form span{ color:rgba(229,184,110,.95); }
+  .ek-r.missed em{ color:rgb(var(--warn)); }
+  .ek-r.missed span{ color:rgba(255,107,139,.95); }
+  .ek-note{ margin-top:11px; font-size:12px; line-height:1.6; color:var(--au-dim,#9a97a3); }
+  .ek-note b{ color:rgba(229,184,110,.95); font-weight:600; }
+  .ek-note.cross{ color:rgba(255,107,139,.9); }
+  .ek-score{ font-family:var(--au-serif,Georgia,serif); font-size:26px; margin-top:4px; }
+  .ek-score b{ color:rgb(var(--ek)); font-weight:400; font-variant-numeric:tabular-nums; }
+
+  /* toast */
+  .ek-toast{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 22px);
+    transform:translate(-50%,14px); z-index:90; max-width:min(520px,calc(100vw - 36px));
+    border:1px solid rgba(255,255,255,.12); border-radius:13px; padding:12px 16px;
+    background:rgba(18,18,22,.96); color:var(--au-ivory,#f5f2ec); font-size:12.5px; line-height:1.5;
+    opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; }
+  .ek-toast.on{ opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+
+<div class="ek-wrap">
+  <header class="ek-hero">
+    <div class="ek-eyebrow">Έκθεση · 30% των μορίων</div>
+    <h1 class="ek-h" id="ekH">Λεξιλόγιο</h1>
+    <p class="ek-hsub" id="ekHSub">Φορτώνει…</p>
+  </header>
+
+  <section class="ek-today">
+    <button class="ek-cta" id="ekCta" type="button">
+      <span class="ek-ctak" id="ekCtaK">—</span>
+      <span class="ek-ctat gr" id="ekCtaT">—</span>
+      <span class="ek-ctas" id="ekCtaS"></span>
+    </button>
+  </section>
+
+  <section class="ek-passes">
+    <div class="ek-sec">Τα πέντε περάσματα</div>
+    <div class="ek-plist" id="ekPasses"></div>
+  </section>
+
+  <section class="ek-map">
+    <div class="ek-sec" id="ekMapT">Τα λήμματα</div>
+    <div class="ek-grid" id="ekGrid"></div>
+    <p class="ek-legend">
+      <i style="background:rgba(255,255,255,.14)"></i>δεν το είδες
+      <i style="background:rgb(255,107,139)"></i>αδύναμο
+      <i style="background:rgb(229,184,110)"></i>μισό
+      <i style="background:rgb(63,224,176)"></i>στέρεο
+      <br>Το κόκκινο περίγραμμα σημαίνει ότι λήγει σήμερα.
+    </p>
+  </section>
+
+  <section class="ek-why">
+    <p><b>Γιατί όχι σκέτες κάρτες.</b> Το «Αδέκαστος → ;» ζητάει ελεύθερη
+    ανάκληση <b>συνόλου</b>: θυμάσαι το πρώτο και το δεύτερο και κολλάς στο
+    τέταρτο, όχι επειδή δεν το ξέρεις αλλά επειδή δεν υπάρχει τίποτα να το
+    τραβήξει. Γι' αυτό το τρίτο πέρασμα σου δίνει νήμα και το τέταρτο σου το
+    παίρνει.</p>
+    <p><b>Η ρίζα δίνει τζάμπα το μισό αντώνυμο.</b> αδράνεια↔<b>δράση</b>,
+    αεργία↔<b>εργατικότητα</b>, άδολος↔<b>δόλιος</b>, αθώος↔<b>ένοχος</b>.
+    Δεν τα αποστηθίζεις — τα ξεγυμνώνεις.</p>
+    <p><b>Μόνο το ΓΥΜΝΟ μετράει στη σκάλα.</b> Ό,τι γράφεις με νήμα μετράει
+    για σένα, όχι για τη μέτρηση. Μια σελίδα που σε βαθμολογεί ενώ σου
+    κρατάει το χέρι σου λέει ψέματα την παραμονή του διαγωνίσματος.</p>
+  </section>
+
+  <p class="ek-foot" id="ekFoot"></p>
+</div>
+
+<!-- ⚠️ ΕΞΩ από το .ek-wrap, παιδί του <body> — δες το σχόλιο στο CSS. -->
+<div class="ek-sess" id="ekSess" aria-hidden="true">
+  <div class="ek-sbar">
+    <button class="ek-sx" id="ekSx" type="button" aria-label="Κλείσιμο">✕</button>
+    <div class="ek-sk" id="ekSk">—</div>
+    <div class="ek-sc" id="ekSc"></div>
+  </div>
+  <div class="ek-sprog"><i id="ekSprog"></i></div>
+  <div class="ek-sbody" id="ekSbody"><div class="ek-sin" id="ekSin"></div></div>
+  <div class="ek-sfoot" id="ekSfoot"></div>
+</div>
+
+<div class="ek-toast" id="ekToast" role="status"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var D = window.EkthesiData, E = window.EkthesiEngine;
+  var KEY = 'ekt:v1', DAY = 86400000;
+
+  /* ⚠️ Σταθερή αρχή 10: εξάρτηση που δεν φόρτωσε ΔΕΝ επιτρέπεται να μοιάζει
+     με «δεν έχεις ύλη». Το SILENT-EMPTY είναι η επαναλαμβανόμενη αρρώστια
+     αυτού του project — λέμε ΤΙ έσπασε, δεν ζωγραφίζουμε άδεια σελίδα. */
+  if (!D || !E){
+    document.getElementById('ekHSub').innerHTML =
+      '<b style="color:rgb(255,107,139)">Δεν φόρτωσαν τα αρχεία της Έκθεσης.</b> ' +
+      'Η ύλη σου δεν χάθηκε — απλώς δεν διαβάστηκε. Ανανέωσε τη σελίδα.';
+    return;
+  }
+
+  var state = null, sess = null;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function toast(m){
+    var t = $('ekToast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 4200);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΑΠΟΘΗΚΗ
+
+     words : { cardId → {learnedAt, reviews, due, best, runs, _ts} }
+     els   : { cardId:groupId:index → {r, w, _ts} }   ΑΝΑ ΣΤΟΙΧΕΙΟ
+     sessions : ΠΙΝΑΚΑΣ, το συμβόλαιο του ladders.js
+
+     ⚠️⚠️ ΤΟ `load()` ΞΑΝΑΧΤΙΖΕΙ ΑΠΟ ΤΟ `blank()` ΚΑΙ ΑΝΤΙΓΡΑΦΕΙ ΜΟΝΟ ΟΣΑ
+     ΟΝΟΜΑΖΕΙ. Κάθε πεδίο που δεν γράφεται εδώ ΣΒΗΝΕΤΑΙ σε κάθε φόρτωση, και
+     ο συγχρονισμός το κάνει χειρότερο: μια συνεδρία που κατεβαίνει από άλλη
+     συσκευή θα εξαφανιζόταν στο επόμενο `save()`. Το `sessions` ΠΡΕΠΕΙ να
+     αντιγράφεται εδώ. (Το ίδιο σχόλιο ζει στο tonos.html — ίδιο λάθος.)
+     ══════════════════════════════════════════════════════════════════ */
+  function blank(){ return { v:1, words:{}, els:{}, sessions:[] }; }
+
+  function load(){
+    var s;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
+    catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο. ΔΕΝ έσβησε τίποτα.'); return blank(); }
+    if (!s) return blank();
+    var b = blank(), k;
+    /* ⚠️ Κρατάμε ΚΑΙ κλειδιά που δεν αναγνωρίζουμε. Ένα λήμμα που έφυγε
+       προσωρινά από το `ekthesi-data.js` δεν επιτρέπεται να πάρει μαζί του
+       την πρόοδό του — θα ήταν σιωπηλή διαγραφή δουλειάς του. */
+    if (s.words && typeof s.words === 'object') for (k in s.words) if (s.words[k] && typeof s.words[k] === 'object') b.words[k] = s.words[k];
+    if (s.els   && typeof s.els   === 'object') for (k in s.els)   if (s.els[k]   && typeof s.els[k]   === 'object') b.els[k]   = s.els[k];
+    b.sessions = Array.isArray(s.sessions) ? s.sessions : [];
+    return b;
+  }
+
+  /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468. Χωρίς `_ts` το sync.js κατεβαίνει μέσα στις
+     εγγραφές και για κάθε βαθμωτό πεδίο κρατάει το remote, οπότε κάθε
+     επανάληψη πάνω σε λήμμα που ΥΠΗΡΧΕ ήδη στο cloud γυρνούσε πίσω μέσα σε
+     400ms. Δύο χάρτες εδώ. Όλο το γιατί ζει στο study-stamp.js.
+     ⚠️ Ο παλιός χρόνος βγαίνει από την τελευταία ΑΛΗΘΙΝΗ δραστηριότητα, όχι
+     από το `Date.now()` — αλλιώς όποια συσκευή άνοιξε τελευταία τη σελίδα
+     κερδίζει (κανόνας 3). */
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(
+        function(){ return state ? [state.words, state.els] : []; },
+        function(i, k, rec){ return i === 0 ? (+rec.last || +rec.learnedAt || 0) : 0; })
+    : (function(){ var said = 0; return {
+        seed: function(){},
+        stamp: function(){ if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται στο κινητό, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε τη σελίδα.'); }
+      }; })();
+
+  /* ⚠️ ΚΑΝΕΝΑ ΣΚΕΤΟ `state = load()` ΠΟΥΘΕΝΑ. */
+  function reload(){ state = load(); STAMP.seed(); }
+  function save(){
+    STAMP.stamp();
+    /* ⚠️ Σταθερή αρχή 17: ΠΟΤΕ άδειο catch σε γράψιμο. Ένα γεμάτο κινητό
+       πετάει QuotaExceededError και μια σιωπηλή αποτυχία μοιάζει ίδια με
+       επιτυχία — η βραδιά του θα εξαφανιζόταν χωρίς να πει τίποτα. */
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ toast('Ο χώρος του κινητού γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
+  }
+
+  /* ── εγγραφές ─────────────────────────────────────────────────────
+     ⚠️ Το `w()` ΔΙΑΒΑΖΕΙ και μπορεί να γεννήσει κέλυφος. Ένα μηδενικό
+     κέλυφος ΔΕΝ παίρνει σφραγίδα (κανόνας 1 του study-stamp) — αλλιώς θα
+     νικούσε την αληθινή εγγραφή του cloud και θα έσβηνε την πρόοδο. */
+  function w(id){
+    var r = state.words[id];
+    if (!r){ r = { learnedAt:0, reviews:0, due:0, best:0, runs:0, last:0 }; state.words[id] = r; }
+    return r;
+  }
+  function elKey(cardId, gid, i){ return cardId + ':' + gid + ':' + i; }
+  function el(k){
+    var r = state.els[k];
+    if (!r){ r = { r:0, w:0 }; state.els[k] = r; }
+    return r;
+  }
+  /* null = ΔΕΝ ΞΕΡΟΥΜΕ. Ποτέ 0 — «δεν το ρώτησα ποτέ» και «το ρώτησα και το
+     έχασε» είναι δύο διαφορετικά πράγματα και βάφονται διαφορετικά. */
+  function elAcc(k){
+    var r = state.els[k]; if (!r) return null;
+    var n = (+r.r || 0) + (+r.w || 0);
+    return n ? (+r.r || 0) / n : null;
+  }
+  function cardAcc(c){
+    var s = 0, n = 0, gi, ii, a;
+    for (gi = 0; gi < c.groups.length; gi++)
+      for (ii = 0; ii < c.groups[gi].items.length; ii++){
+        a = elAcc(elKey(c.id, c.groups[gi].id, ii));
+        if (a !== null){ s += a; n++; }
+      }
+    return n ? s / n : null;
+  }
+
+  /* ── ο σημερινός κόσμος ───────────────────────────────────────── */
+  var SET = D.SETS[D.SETS.length - 1];          /* η τελευταία σελίδα που μπήκε */
+  function cards(){ return SET.cards; }
+  function isNew(c){ return !w(c.id).learnedAt; }
+  function isDue(c){ var r = w(c.id); return !!r.learnedAt && r.due <= Date.now(); }
+  function newOnes(){ return cards().filter(isNew); }
+  function dueOnes(){ return cards().filter(isDue); }
+  function wednesday(){ return new Date().getDay() === 3; }
+
+  function tint(a){
+    if (a === null || a === undefined) return 'rgba(255,255,255,.14)';
+    var lo = [255,107,139], hi = [63,224,176], o = [], i;
+    for (i = 0; i < 3; i++) o.push(Math.round(lo[i] + (hi[i]-lo[i]) * a));
+    return 'rgb(' + o.join(',') + ')';
+  }
+  function inDays(ms){
+    var d = Math.round((ms - Date.now()) / DAY);
+    if (d <= 0) return 'τώρα';
+    if (d === 1) return 'αύριο';
+    return d + 'μ';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     ΤΑ ΠΕΝΤΕ ΠΕΡΑΣΜΑΤΑ
+
+     ⭐ ΚΑΘΕ ΠΕΡΑΣΜΑ ΕΙΝΑΙ ΑΛΛΗ ΚΑΤΕΥΘΥΝΣΗ ΑΝΑΚΛΗΣΗΣ, ΟΧΙ ΑΛΛΗ ΔΥΣΚΟΛΙΑ.
+     Πέντε φορές το ίδιο πράγμα είναι πέντε φορές ίδια αποτυχία· πέντε
+     διαφορετικές πόρτες στο ίδιο δωμάτιο είναι μάθηση.
+
+       1 ΓΝΩΡΙΜΙΑ  λέξη + ρίζα + στοιχεία       → κωδικοποίηση, μηδέν γράψιμο
+       2 Η ΡΙΖΑ    ρίζα → ποιο λήμμα;            → παράγει το ΛΗΜΜΑ
+       3 ΜΕ ΝΗΜΑ   λέξη → στοιχεία, με νήματα    → παράγει τα ΣΤΟΙΧΕΙΑ, με βοήθεια
+       4 ΓΥΜΝΟ     λέξη → στοιχεία, τίποτα       → ⭐ ΤΟ ΜΟΝΟ ΠΟΥ ΜΕΤΡΑΕΙ
+       5 ΑΝΑΠΟΔΑ   στοιχείο → ποιο λήμμα;        → το κάνει ΧΡΗΣΙΜΟ στο γράψιμο
+
+     ⭐⭐ ΜΟΝΟ ΤΟ 4 ΚΑΙ ΤΟ 5 ΓΡΑΦΟΥΝ ΑΚΡΙΒΕΙΑ, ΚΑΙ ΜΟΝΟ ΤΟ 4 ΚΟΥΝΑΕΙ ΤΗ
+     ΣΚΑΛΑ. Τα 1-3 του κρατάνε το χέρι — μια μέτρηση παρμένη με βοήθεια θα
+     έλεγε «το ξέρεις» για κάτι που ξέρει ΜΕ ΤΟ ΝΗΜΑ, και θα το προγραμμάτιζε
+     ξανά σε 10 μέρες. Αυτό είναι ακριβώς η ψευδαίσθηση ευχέρειας που κάνει
+     τους ανθρώπους να διαβάζουν τρεις ώρες και να γράφουν 2 στα 5.
+     ══════════════════════════════════════════════════════════════════ */
+  var PASSES = [
+    { n:1, id:'meet',  t:'Γνωριμία',  d:'Λέξη, ρίζα, στοιχεία. Δεν γράφεις τίποτα.',        mode:'lesson' },
+    { n:2, id:'root',  t:'Η ρίζα',    d:'Σου δίνω μόνο την ανάλυση. Ποιο λήμμα είναι;',      mode:'lesson' },
+    { n:3, id:'cued',  t:'Με νήμα',   d:'Γράφεις τα στοιχεία, με αρχικά που μαζεύονται.',    mode:'drill'  },
+    { n:4, id:'bare',  t:'Γυμνό',     d:'Λέξη και άδειο κουτί. Μόνο αυτό μετράει.',          mode:'recall' },
+    { n:5, id:'rev',   t:'Ανάποδα',   d:'Σου δίνω συνώνυμο. Ποιο λήμμα το έχει;',            mode:'recall' }
+  ];
+  function passBy(id){ for (var i = 0; i < PASSES.length; i++) if (PASSES[i].id === id) return PASSES[i]; return null; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΣΥΝΕΔΡΙΑ
+     ══════════════════════════════════════════════════════════════════ */
+  function startPass(id, list){
+    var p = passBy(id);
+    if (!p) return;
+    var qs = buildQs(p, list && list.length ? list : cards());
+    if (!qs.length){ toast('Δεν υπάρχει τίποτα για αυτό το πέρασμα.'); return; }
+    sess = { pass:p, qs:qs, i:0, t0:Date.now(), asked:0, right:0, touched:0, logged:false, shown:false, res:null };
+    $('ekSess').classList.add('on');
+    $('ekSess').setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    renderQ();
+  }
+
+  function buildQs(p, list){
+    var qs = [], i, gi, ii, c, g;
+    if (p.id === 'rev'){
+      /* ⭐ ΤΟ ΑΝΑΠΟΔΑ ΡΩΤΑΕΙ ΣΤΟΙΧΕΙΑ ΠΟΥ ΔΕΝ ΕΙΝΑΙ ΔΙΦΟΡΟΥΜΕΝΑ. Το «αγνός»
+         ζει ΚΑΙ στο Άδολος ΚΑΙ στο Αθώος — μια ερώτηση «ποιο λήμμα;» με δύο
+         σωστές απαντήσεις τον τιμωρεί για σωστή γνώση. Τα κόβουμε ΠΡΙΝ
+         ρωτηθούν, δεν τα «συγχωρούμε» μετά. */
+      var owner = {}, dup = {}, key;
+      for (i = 0; i < cards().length; i++){
+        c = cards()[i];
+        for (gi = 0; gi < c.groups.length; gi++)
+          for (ii = 0; ii < c.groups[gi].items.length; ii++){
+            key = revKey(c.groups[gi].items[ii].w);
+            if (owner[key] && owner[key] !== c.id) dup[key] = 1;
+            owner[key] = c.id;
+          }
+      }
+      for (i = 0; i < list.length; i++){
+        c = list[i];
+        for (gi = 0; gi < c.groups.length; gi++){
+          g = c.groups[gi];
+          for (ii = 0; ii < g.items.length; ii++){
+            if (dup[revKey(g.items[ii].w)]) continue;
+            qs.push({ card:c, group:g, idx:ii, item:g.items[ii] });
+          }
+        }
+      }
+      shuffle(qs);
+      if (qs.length > 24) qs = qs.slice(0, 24);
+      return qs;
+    }
+    for (i = 0; i < list.length; i++) qs.push({ card:list[i] });
+    if (p.id === 'bare' || p.id === 'cued' || p.id === 'root') shuffle(qs);
+    return qs;
+  }
+
+  /* ⚠️ Το κλειδί του διπλότυπου είναι ΦΩΝΗΤΙΚΟ, όχι `toLowerCase()`. Δύο
+     λήμματα μπορούν να μοιράζονται λέξη γραμμένη με άλλον τόνο ή τελικό
+     σίγμα, και μια πεζογραφημένη σύγκριση θα τα έβλεπε διαφορετικά — δηλαδή
+     θα άφηνε να περάσει ακριβώς η διφορούμενη ερώτηση που θέλουμε να κόψουμε. */
+  function revKey(word){ return window.GREEKEAR ? window.GREEKEAR.pho(word) : String(word).toLowerCase(); }
+
+  /* Fisher-Yates. Η σειρά του βιβλίου είναι αλφαβητική, και μια αλφαβητική
+     σειρά είναι από μόνη της νήμα: το «Α...» μετά το «Αδράνεια» περιορίζει
+     τις επιλογές. Στα περάσματα που ΜΕΤΡΑΝΕ, το νήμα φεύγει. */
+  function shuffle(a){
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+  }
+
+  function renderQ(){
+    var q = sess.qs[sess.i], p = sess.pass;
+    $('ekSk').textContent = p.n + ' · ' + p.t;
+    $('ekSc').textContent = (sess.i + 1) + '/' + sess.qs.length;
+    $('ekSprog').style.width = (sess.i / sess.qs.length * 100) + '%';
+    $('ekSbody').scrollTop = 0;
+    sess.shown = false; sess.res = null;
+    if (p.id === 'meet') renderMeet(q);
+    else if (p.id === 'root') renderRoot(q);
+    else if (p.id === 'rev') renderRev(q);
+    else renderWrite(q, p.id === 'cued');
+  }
+
+  function groupsHtml(c, opts){
+    var h = '', gi, ii, g, it, cls;
+    for (gi = 0; gi < c.groups.length; gi++){
+      g = c.groups[gi];
+      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
+           '<span class="ek-gc">' + g.items.length + '</span></div><div class="ek-rows">';
+      for (ii = 0; ii < g.items.length; ii++){
+        it = g.items[ii];
+        cls = opts && opts.plain ? '' : ' ok';
+        h += '<div class="ek-r' + cls + '"><em>·</em><span>' + esc(it.w) + '</span></div>';
+      }
+      h += '</div></div>';
+    }
+    return h;
+  }
+
+  /* ── 1 · ΓΝΩΡΙΜΙΑ ────────────────────────────────────────────────── */
+  function renderMeet(q){
+    var c = q.card;
+    $('ekSin').innerHTML =
+      '<div class="ek-q gr">' + esc(c.q) + '</div>' +
+      '<div class="ek-qsub">' + D.countItems(c) + ' στοιχεία · ' + c.groups.length + ' ' +
+        (c.groups.length === 1 ? 'στήλη' : 'στήλες') + '</div>' +
+      '<div class="ek-root">' + esc(c.note) + '</div>' +
+      groupsHtml(c, { plain:true });
+    foot([{ t:'Το είδα', main:true, go:function(){ next(true); } }]);
+  }
+
+  /* ── 2 · Η ΡΙΖΑ ──────────────────────────────────────────────────── */
+  function renderRoot(q){
+    var c = q.card;
+    $('ekSin').innerHTML =
+      '<div class="ek-qsub">Η ανάλυση. Ποιο λήμμα είναι;</div>' +
+      '<div class="ek-root" style="margin-top:12px;font-size:16px">' + esc(c.note) + '</div>' +
+      '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">Το λήμμα</span>' +
+        '<span class="ek-gc">' + E.cue(c.q, 1) + '</span></div>' +
+      '<textarea class="ek-ta" id="ekIn" rows="1" style="min-height:52px" ' +
+        'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea></div>' +
+      '<div id="ekOut"></div>';
+    foot([{ t:'Έλεγχος', main:true, go:checkRoot }]);
+    focusIn();
+  }
+  function checkRoot(){
+    if (sess.shown){ next(sess.res); return; }
+    var c = sess.qs[sess.i].card, v = $('ekIn').value, r = E.gradeGroup(v, [c.q]);
+    var st = r.rows[0].status, good = st !== 'missed';
+    sess.shown = true; sess.res = good;
+    sess.asked++; if (good) sess.right++;
+    $('ekIn').setAttribute('readonly','readonly');
+    $('ekOut').innerHTML =
+      '<div class="ek-rows" style="margin-top:14px"><div class="ek-r ' + (good ? st : 'missed') + '">' +
+      '<em>' + (good ? '✓' : '✗') + '</em><span>' + esc(c.q) + '</span>' +
+      (st === 'spell' ? '<small>ορθογραφία</small>' : st === 'form' ? '<small>κατάληξη</small>' : '') +
+      '</div></div>';
+    footMain('Επόμενο');
+  }
+
+  /* ── 3 & 4 · ΜΕ ΝΗΜΑ / ΓΥΜΝΟ ─────────────────────────────────────── */
+  function renderWrite(q, cued){
+    var c = q.card, h, gi, ii, g;
+    h = '<div class="ek-q gr">' + esc(c.q) + '</div>' +
+        '<div class="ek-qsub">' + (cued
+          ? 'Γράψε ό,τι θυμάσαι. Τα νήματα είναι από κάτω — πάτα ένα αν κολλήσεις.'
+          : 'Τίποτα από κάτω. Ακριβώς όπως στο χαρτί.') + '</div>' +
+        (cued ? '<div class="ek-root">' + esc(c.note) + '</div>' : '');
+    for (gi = 0; gi < c.groups.length; gi++){
+      g = c.groups[gi];
+      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
+           '<span class="ek-gc">' + g.items.length + '</span></div>' +
+           '<textarea class="ek-ta" data-g="' + esc(g.id) + '" ' +
+             'placeholder="χωρισμένα με κόμμα" ' +
+             'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea>';
+      if (cued){
+        h += '<div class="ek-cues" data-cues="' + esc(g.id) + '">';
+        for (ii = 0; ii < g.items.length; ii++)
+          h += '<button class="ek-cue" type="button" data-c="' + gi + ':' + ii + '">' + esc(E.cue(g.items[ii].w, 1)) + '</button>';
+        h += '</div>';
+      }
+      h += '</div>';
+    }
+    h += '<div id="ekOut"></div>';
+    $('ekSin').innerHTML = h;
+    if (cued) bindCues(c);
+    foot([{ t:'Έλεγχος', main:true, go:function(){ checkWrite(cued); } }]);
+    focusIn();
+  }
+
+  /* ⭐ ΤΟ ΝΗΜΑ ΜΑΖΕΥΕΤΑΙ ΜΕ ΤΟ ΠΑΤΗΜΑ, ΔΕΝ ΔΙΝΕΙ ΤΗ ΛΕΞΗ. Ένα κουμπί που
+     συμπληρώνει την απάντηση δεν είναι βοήθεια, είναι αντιγραφή — και θα
+     μόλυνε το μόνο πράγμα που έχει αξία εδώ, τη δική του παραγωγή. */
+  function bindCues(c){
+    var btns = $('ekSin').querySelectorAll('[data-c]'), i;
+    for (i = 0; i < btns.length; i++){
+      btns[i].addEventListener('click', function(){
+        var p = this.getAttribute('data-c').split(':'),
+            it = c.groups[+p[0]].items[+p[1]],
+            lvl = (+this.getAttribute('data-lvl') || 1) + 2;
+        if (lvl >= it.w.length){ lvl = it.w.length - 1; }
+        this.setAttribute('data-lvl', lvl);
+        this.textContent = E.cue(it.w, lvl);
+      });
+    }
+  }
+
+  function checkWrite(cued){
+    if (sess.shown){ next(sess.res); return; }
+    var c = sess.qs[sess.i].card, tas = $('ekSin').querySelectorAll('[data-g]'),
+        ans = {}, i, r, gi, ii, h, row, g, res, k;
+    for (i = 0; i < tas.length; i++){ ans[tas[i].getAttribute('data-g')] = tas[i].value; tas[i].setAttribute('readonly','readonly'); }
+    r = E.gradeCard(ans, c);
+    sess.shown = true;
+    sess.asked += r.total; sess.right += r.got;
+    sess.res = r.score >= E.PASS;
+
+    /* ⭐⭐ Η ΜΕΤΡΗΣΗ ΓΡΑΦΕΤΑΙ ΜΟΝΟ ΣΤΟ ΓΥΜΝΟ. Δες το μεγάλο σχόλιο των
+       περασμάτων: ακρίβεια παρμένη με νήμα είναι ψευδαίσθηση ευχέρειας. */
+    if (!cued){
+      for (gi = 0; gi < c.groups.length; gi++){
+        g = c.groups[gi]; res = r.groups[g.id];
+        for (ii = 0; ii < g.items.length; ii++){
+          k = el(elKey(c.id, g.id, ii));
+          if (res.rows[ii].status === 'missed') k.w = (+k.w || 0) + 1;
+          else k.r = (+k.r || 0) + 1;
+        }
+      }
+      bumpLadder(c, r.score);
+      save();
+    }
+
+    h = '<div class="ek-score gr">' + (cued ? '' : 'Γυμνό · ') + '<b>' + r.got + '</b>/' + r.total + '</div>';
+    for (gi = 0; gi < c.groups.length; gi++){
+      g = c.groups[gi]; res = r.groups[g.id];
+      h += '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">' + esc(g.label) + '</span>' +
+           '<span class="ek-gc">' + res.got + '/' + res.total + '</span></div><div class="ek-rows">';
+      for (ii = 0; ii < res.rows.length; ii++){
+        row = res.rows[ii];
+        h += '<div class="ek-r ' + row.status + '"><em>' + (row.status === 'missed' ? '✗' : '✓') + '</em>' +
+             '<span>' + esc(row.item) + '</span>' +
+             (row.status === 'spell' ? '<small>ορθογραφία</small>' :
+              row.status === 'form'  ? '<small>κατάληξη</small>' : '') + '</div>';
+      }
+      h += '</div>';
+      /* ⭐ Η ΠΙΟ ΧΡΗΣΙΜΗ ΓΡΑΜΜΗ ΤΗΣ ΣΕΛΙΔΑΣ: σωστή λέξη, λάθος στήλη. */
+      if (res.cross.length){
+        h += '<p class="ek-note cross">Στη λάθος στήλη: ';
+        for (ii = 0; ii < res.cross.length; ii++)
+          h += (ii ? ', ' : '') + '<b>' + esc(res.cross[ii].word) + '</b> — είναι ' + esc(res.cross[ii].label.toLowerCase());
+        h += '.</p>';
+      }
+      if (res.extras.length)
+        h += '<p class="ek-note">Εκτός λεξικού, δεν μετράει αλλά ούτε κόβει: ' +
+             esc(res.extras.join(', ')) + '.</p>';
+      h += '</div>';
+    }
+    if (r.spell || r.form)
+      h += '<p class="ek-note"><b>Μέτρησαν, αλλά πρόσεξέ τα:</b> ' +
+           (r.spell ? r.spell + ' με λάθος ορθογραφία' : '') +
+           (r.spell && r.form ? ' · ' : '') +
+           (r.form ? r.form + ' με λάθος κατάληξη' : '') +
+           '. Στο χαρτί αυτά κοστίζουν.</p>';
+    if (cued) h += '<div class="ek-root" style="margin-top:16px">' + esc(c.note) + '</div>';
+    $('ekOut').innerHTML = h;
+    footMain('Επόμενο');
+  }
+
+  /* ── 5 · ΑΝΑΠΟΔΑ ─────────────────────────────────────────────────── */
+  function renderRev(q){
+    $('ekSin').innerHTML =
+      '<div class="ek-qsub">' + esc(q.group.label === 'Συνώνυμα' ? 'Συνώνυμο του…' : 'Αντώνυμο του…') + '</div>' +
+      '<div class="ek-q gr" style="margin-top:8px">' + esc(q.item.w) + '</div>' +
+      '<div class="ek-g"><div class="ek-gl"><span class="ek-gn">Το λήμμα</span>' +
+        '<span class="ek-gc">' + E.cue(q.card.q, 1) + '</span></div>' +
+      '<textarea class="ek-ta" id="ekIn" rows="1" style="min-height:52px" ' +
+        'autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea></div>' +
+      '<div id="ekOut"></div>';
+    foot([{ t:'Έλεγχος', main:true, go:checkRev }]);
+    focusIn();
+  }
+  function checkRev(){
+    if (sess.shown){ next(sess.res); return; }
+    var q = sess.qs[sess.i], r = E.gradeGroup($('ekIn').value, [q.card.q]),
+        st = r.rows[0].status, good = st !== 'missed', k;
+    sess.shown = true; sess.res = good;
+    sess.asked++; if (good) sess.right++;
+    k = el(elKey(q.card.id, q.group.id, q.idx));
+    if (good) k.r = (+k.r || 0) + 1; else k.w = (+k.w || 0) + 1;
+    save();
+    $('ekIn').setAttribute('readonly','readonly');
+    $('ekOut').innerHTML =
+      '<div class="ek-rows" style="margin-top:14px"><div class="ek-r ' + (good ? st : 'missed') + '">' +
+      '<em>' + (good ? '✓' : '✗') + '</em><span>' + esc(q.card.q) + '</span>' +
+      (st === 'spell' ? '<small>ορθογραφία</small>' : st === 'form' ? '<small>κατάληξη</small>' : '') +
+      '</div></div>' +
+      '<div class="ek-root" style="margin-top:14px">' + esc(q.card.note) + '</div>';
+    footMain('Επόμενο');
+  }
+
+  /* ── η σκάλα ─────────────────────────────────────────────────────── */
+  function bumpLadder(c, score){
+    var r = w(c.id), now = Date.now();
+    r.runs = (+r.runs || 0) + 1;
+    r.last = now;
+    if (score > (+r.best || 0)) r.best = score;
+    if (!r.learnedAt) r.learnedAt = now;
+    if (score >= E.PASS){
+      r.reviews = (+r.reviews || 0) + 1;
+      r.due = E.nextDue(r.reviews, now);
+    } else {
+      /* ⭐ Η ΑΠΟΤΥΧΙΑ ΔΕΝ ΜΗΔΕΝΙΖΕΙ, ΑΛΛΑ ΦΕΡΝΕΙ ΑΥΡΙΟ. Ένα λήμμα που το
+         πήρε τρεις φορές και το έχασε μία δεν είναι άγνωστο· είναι
+         ξεχασμένο. Το `reviews` κρατιέται, το ραντεβού έρχεται μπροστά. */
+      r.due = now + DAY;
+    }
+  }
+
+  /* ── ροή ─────────────────────────────────────────────────────────── */
+  function next(){
+    sess.touched++;
+    sess.i++;
+    if (sess.i >= sess.qs.length){ finish(); return; }
+    renderQ();
+  }
+
+  function foot(btns){
+    var h = '', i;
+    for (i = 0; i < btns.length; i++)
+      h += '<button class="ek-btn' + (btns[i].main ? '' : ' ghost') + '" type="button" data-b="' + i + '">' + esc(btns[i].t) + '</button>';
+    $('ekSfoot').innerHTML = h;
+    var bs = $('ekSfoot').querySelectorAll('[data-b]');
+    for (i = 0; i < bs.length; i++)
+      bs[i].addEventListener('click', (function(fn){ return function(){ fn(); }; })(btns[+bs[i].getAttribute('data-b')].go));
+  }
+  function footMain(label){
+    var b = $('ekSfoot').querySelector('.ek-btn:not(.ghost)');
+    if (b) b.textContent = label;
+  }
+  function focusIn(){
+    /* Σε iPhone το αυτόματο focus σηκώνει το πληκτρολόγιο και κρύβει το
+       ερέθισμα. Εστιάζουμε ΜΟΝΟ σε ποντίκι/tablet, όχι σε στενή οθόνη. */
+    if (window.innerWidth < 520) return;
+    var i = $('ekIn') || $('ekSin').querySelector('.ek-ta');
+    if (i) try { i.focus(); } catch(e){}
+  }
+
+  /* ⚠️ ΤΟ `logSession` ΕΙΝΑΙ ΤΟ ΣΥΜΒΟΛΑΙΟ ΤΟΥ ladders.js, ΑΥΤΟΛΕΞΕΙ.
+     Το `fin` (τελείωσε ή το παράτησε) είναι το μόνο πεδίο που δεν
+     καταγράφει κανείς άλλος — και τρεις εγκαταλείψεις στη σειρά λένε κάτι
+     που καμία ακρίβεια δεν λέει. */
+  function logSession(finished){
+    if (!sess || sess.logged) return;
+    /* ⭐ ΤΟ ΚΡΙΤΗΡΙΟ ΕΙΝΑΙ «ΕΚΑΝΕ ΚΑΤΙ», ΟΧΙ «ΡΩΤΗΘΗΚΕ». Η Γνωριμία δεν ρωτάει
+       τίποτα εξ ορισμού — κι όμως είναι πραγματικός χρόνος πάνω στην ύλη, και
+       το `ms` είναι ακριβώς αυτό που δεν μπορεί να υπολογίσει κανένας άλλος
+       (δες το συμβόλαιο στο ladders.js). Με φρουρό το `asked`, το πρώτο
+       πέρασμα δεν καταγραφόταν ΠΟΤΕ και ο μετρητής του έδειχνε «—» για πάντα.
+       ⚠️ Καταγράφεται με `asked:0` και `pass:0` — μηδέν μέτρηση, όχι ψεύτικο
+       100% (σταθ. 33: «δεν μέτρησα» ≠ «τα πήρε όλα»). */
+    if (!sess.touched) return;    /* άνοιξε και έκλεισε → δεν έγινε τίποτα */
+    sess.logged = true;
+    if (!Array.isArray(state.sessions)) state.sessions = [];
+    var unit = sess.qs[0].card.id, i;
+    for (i = 1; i < sess.qs.length; i++) if (sess.qs[i].card.id !== unit){ unit = ''; break; }
+    state.sessions.push({
+      id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      ts: sess.t0,
+      ms: Math.max(0, Date.now() - sess.t0),
+      unit: unit,
+      mode: sess.pass.mode,
+      asked: sess.asked,
+      right: sess.right,
+      pass: (finished && sess.asked && sess.right / sess.asked >= E.PASS) ? 1 : 0,
+      fin: finished ? 1 : 0
+    });
+  }
+
+  function finish(){
+    logSession(1);
+    save();
+    var p = sess.pass, right = sess.right, asked = sess.asked;
+    $('ekSprog').style.width = '100%';
+    $('ekSin').innerHTML =
+      '<div class="ek-eyebrow" style="margin-top:20px">Πέρασμα ' + p.n + ' · ' + esc(p.t) + '</div>' +
+      '<div class="ek-q gr">' + (asked ? right + '<span style="color:var(--au-dim,#9a97a3)">/' + asked + '</span>' : 'Τέλος') + '</div>' +
+      '<p class="ek-qsub">' + esc(nextWord(p)) + '</p>';
+    $('ekSc').textContent = '';
+    foot([{ t: p.n < 5 ? 'Πέρασμα ' + (p.n + 1) : 'Τέλος', main:true, go:function(){
+      var nxt = p.n < 5 ? PASSES[p.n] : null;
+      close();
+      if (nxt) startPass(nxt.id, lastList);
+    } }, { t:'Κλείσιμο', go:close }]);
+  }
+  function nextWord(p){
+    if (p.id === 'meet') return 'Τώρα η ρίζα, ανάποδα: σου δίνω την ανάλυση και βρίσκεις το λήμμα.';
+    if (p.id === 'root') return 'Τώρα γράφεις τα στοιχεία, με νήματα να σε τραβάνε.';
+    if (p.id === 'cued') return 'Τώρα το γυμνό. Αυτό είναι που μετράει και αυτό είναι η Πέμπτη.';
+    if (p.id === 'bare') return 'Τελευταίο: ανάποδα, για να τις χρησιμοποιείς — όχι μόνο να τις περνάς.';
+    return 'Τελείωσε η σελίδα. Ό,τι έχασες θα ξαναέρθει μόνο του.';
+  }
+
+  function close(){
+    if (sess && !sess.logged){ logSession(0); save(); }
+    sess = null;
+    $('ekSess').classList.remove('on');
+    $('ekSess').setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    render();
+  }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΣΕΛΙΔΑ
+     ══════════════════════════════════════════════════════════════════ */
+  var lastList = null;
+
+  function render(){
+    var all = cards(), nw = newOnes(), du = dueOnes(),
+        learned = all.length - nw.length, i, c, a, r, h;
+
+    $('ekH').innerHTML = 'Λεξιλόγιο <b>' + learned + '</b>/' + all.length;
+    $('ekHSub').innerHTML =
+      esc(SET.label) + ' · ' + esc(SET.range) + '.<br>' +
+      '<b>' + D.setItems(SET) + ' στοιχεία</b> σε ' + all.length + ' λήμματα.';
+
+    /* ── το κουμπί ───────────────────────────────────────────────── */
+    if (nw.length){
+      lastList = nw;
+      $('ekCtaK').textContent = wednesday() ? 'Τετάρτη · για αύριο' : 'Καινούρια ύλη';
+      $('ekCtaT').textContent = nw.length + (nw.length === 1 ? ' λήμμα' : ' λήμματα') + ' που δεν έχεις δει';
+      $('ekCtaS').textContent = 'Πέντε περάσματα, με τη σειρά. Ξεκίνα από τη Γνωριμία.';
+      $('ekCta').disabled = false;
+      $('ekCta').onclick = function(){ startPass('meet', nw); };
+    } else if (du.length){
+      lastList = du;
+      $('ekCtaK').textContent = 'Επανάληψη';
+      $('ekCtaT').textContent = du.length + (du.length === 1 ? ' λήμμα έληξε' : ' λήμματα έληξαν');
+      $('ekCtaS').textContent = 'Κατευθείαν γυμνό. Δεν χρειάζεσαι τα πρώτα περάσματα για ύλη που ξέρεις.';
+      $('ekCta').disabled = false;
+      $('ekCta').onclick = function(){ startPass('bare', du); };
+    } else {
+      lastList = all;
+      $('ekCtaK').textContent = 'Καθαρά';
+      $('ekCtaT').textContent = 'Τίποτα δεν λήγει σήμερα';
+      $('ekCtaS').textContent = nextDueLine(all);
+      $('ekCta').disabled = false;
+      $('ekCta').onclick = function(){ startPass('bare', all); };
+    }
+
+    /* ── τα περάσματα ────────────────────────────────────────────── */
+    h = '';
+    for (i = 0; i < PASSES.length; i++){
+      var p = PASSES[i], done = countPass(p);
+      h += '<button class="ek-p' + (i === 0 && nw.length ? ' on' : '') + '" type="button" data-p="' + p.id + '">' +
+           '<span class="ek-pn">' + p.n + '</span>' +
+           '<span class="ek-pb"><span class="ek-pt">' + esc(p.t) + '</span>' +
+           '<span class="ek-pd">' + esc(p.d) + '</span></span>' +
+           '<span class="ek-pm' + (done ? ' done' : '') + '">' + (done ? '×' + done : '—') + '</span>' +
+           '</button>';
+    }
+    $('ekPasses').innerHTML = h;
+    var pb = $('ekPasses').querySelectorAll('[data-p]');
+    for (i = 0; i < pb.length; i++)
+      pb[i].addEventListener('click', function(){ startPass(this.getAttribute('data-p'), lastList); });
+
+    /* ── ο χάρτης ────────────────────────────────────────────────── */
+    h = '';
+    for (i = 0; i < all.length; i++){
+      c = all[i]; a = cardAcc(c); r = w(c.id);
+      h += '<button class="ek-w' + (isDue(c) ? ' due' : '') + '" type="button" data-w="' + esc(c.id) + '">' +
+           '<i style="background:' + tint(a) + '"></i>' + esc(c.q) +
+           (r.learnedAt ? '<u>' + esc(inDays(r.due)) + '</u>' : '') +
+           '</button>';
+    }
+    $('ekGrid').innerHTML = h;
+    var wb = $('ekGrid').querySelectorAll('[data-w]');
+    for (i = 0; i < wb.length; i++)
+      wb[i].addEventListener('click', function(){
+        var c = D.card(this.getAttribute('data-w'));
+        if (c) startPass(isNew(c) ? 'meet' : 'bare', [c]);
+      });
+
+    $('ekMapT').textContent = 'Τα λήμματα · ' + all.length;
+    $('ekFoot').innerHTML = footLine();
+  }
+
+  function nextDueLine(all){
+    var soon = 0, i, r;
+    for (i = 0; i < all.length; i++){
+      r = w(all[i].id);
+      if (r.learnedAt && (!soon || r.due < soon)) soon = r.due;
+    }
+    if (!soon) return 'Μπορείς να κάνεις ένα γυμνό πέρασμα όποτε θες.';
+    return 'Το επόμενο ραντεβού: ' + inDays(soon) + '. Ένα γυμνό πέρασμα πάντα επιτρέπεται.';
+  }
+
+  function countPass(p){
+    var n = 0, i, s = state.sessions || [];
+    for (i = 0; i < s.length; i++) if (s[i] && s[i].mode === p.mode && s[i].fin) n++;
+    return n;
+  }
+
+  function footLine(){
+    var s = state.sessions || [], ms = 0, i;
+    for (i = 0; i < s.length; i++) ms += (+s[i].ms || 0);
+    if (!s.length) return esc(SET.src) + '.';
+    return esc(SET.src) + ' · ' + s.length + ' συνεδρίες, ' +
+           Math.round(ms / 60000) + ' λεπτά συνολικά.';
+  }
+
+  /* ── εκκίνηση ───────────────────────────────────────────────────── */
+  $('ekSx').addEventListener('click', close);
+
+  reload();
+  render();
+
+  /* ── cloud sync ───────────────────────────────────────────────────
+     ⚠️⚠️ ΤΟ ΣΥΜΒΟΛΑΙΟ ΕΙΝΑΙ `initCloudSync({appKey, syncedKeys, onApplied})`
+     ΚΑΙ ΤΙΠΟΤΑ ΑΛΛΟ. Το sync.js ΔΕΝ στέλνει event στο window — μια πρώτη
+     γραφή αυτής της σελίδας άκουγε ένα ανύπαρκτο 'als-sync' και ΔΕΝ θα
+     είχε σκάσει ποτέ: απλώς η πρόοδος από το άλλο κινητό δεν θα φαινόταν
+     ως το επόμενο refresh. Ακριβώς το SILENT-EMPTY που κυνηγάει αυτό το
+     project. Αντιγράφεται ΑΥΤΟΛΕΞΕΙ από το tonos.html. */
+  (function initEkthesiSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey:'ekthesi',
+        syncedKeys:[KEY],
+        onApplied:function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη.
+             ⚠️ ΠΟΤΕ μέσα σε συνεδρία: θα του άλλαζε το έδαφος κάτω από τα
+             πόδια στη μέση μιας ερώτησης. */
+          reload();
+          if (!sess){ try{ render(); }catch(e){} }
+        }
+      });
+    })();
+  })();
+})();
+</script>
+</body>
+</html>
