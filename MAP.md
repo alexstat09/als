@@ -408,7 +408,8 @@ listens with the browser's own speech recognition, says nothing while he recites
 and then grades **element by element** (als-v452): each point breaks into the
 separate facts inside it, so a point is complete only when every one of them was
 said, and the summary shows exactly which were missed. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
-the same row).
+the same row). **ΔΕΚΑ ενότητες, 130 σημεία, 436 στοιχεία (als-v493)** — τελευταία
+η `b4` «Η εκμετάλλευση των ορυχείων», ολόκληρη η υποενότητα σε 5 παραγράφους.
 
 ⭐⭐ **als-v489: ΤΟ `istoria-demo.html` ΕΓΙΝΕ Η `istoria.html`.** Δική του απόφαση
 (17/08/26): *«θέλω να παραμείνει μόνο το πλαγιότιτλοι page, και να σβηστεί το
@@ -436,7 +437,7 @@ explicit instruction, and `docs/ISTORIA_SPEC.md`'s Φάση 0.5. The unit of exa
 there is the **πλαγιότιτλος του καθηγητή**, not the υποενότητα: he writes the
 teacher's own words as a title and PICKS paragraphs, and `I.pointsOf()` resolves them
 to points deterministically because every skeleton `anchor` already lives in exactly
-one paragraph (77/77, enforced by `tests/istoria-plag.test.js`). No new syllabus, no
+one paragraph (130/130 as of als-v493, enforced by `tests/istoria-plag.test.js`). No new syllabus, no
 model, no server. **It writes the SAME `ist:v1` / appKey `istoria`** — a new `plag`
 map plus a measured `pace` — so nothing changed in `BUNDLES` or `BUNDLE`.
 ⚠️ That sharing is why `istoria.html`'s `load()` had to stop being an allow-list
