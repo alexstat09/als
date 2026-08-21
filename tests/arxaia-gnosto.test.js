@@ -399,6 +399,25 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   ok(/#gnLesson \.al-per\{ ?display:grid/.test(flat),
     'το αρχαίο και η μετάφραση κάθονται ΔΙΠΛΑ, όχι στοιβαγμένα');
   ok(/#gnLesson #alKeys\{ ?columns:2/.test(flat), 'το κλειδί ανοίγει σε δύο κολόνες');
+
+  /* ══ Ο ΒΑΘΥΣ ΣΥΝΔΕΣΜΟΣ ΑΠΟ ΤΟ SCHOOL STUDIES — als-v501 ═════════════
+     Δύο άκρα, και τα δύο πρέπει να στέκουν: η `arxaia.html` να ΔΙΑΒΑΖΕΙ τον
+     κόσμο από το hash, και το `homework.html` να τον ΣΤΕΛΝΕΙ. Αν σπάσει το
+     ένα, ο σύνδεσμος προσγειώνεται σιωπηλά στην πόρτα — καμία ένδειξη ότι
+     κάτι χάλασε, που είναι ακριβώς ο τρόπος να μη διορθωθεί ποτέ. */
+  ok(/location\.hash/.test(page), 'η arxaia.html διαβάζει κόσμο από το hash');
+  ['gnosto', 'agnosto'].forEach(function (w) {
+    ok(page.indexOf("'" + w + "'") > 0, 'δέχεται και τη μακριά μορφή «#' + w + '»');
+  });
+  var hw = fs.readFileSync(path.join(__dirname, '..', 'homework.html'), 'utf8');
+  ok(hw.indexOf("page:'arxaia.html#gn'") > 0,  'το School Studies στέλνει στο ΓΝΩΣΤΟ');
+  ok(hw.indexOf("page:'arxaia.html#ag'") > 0,  'και στον ΑΓΝΩΣΤΟ');
+  /* ⛔ Το ladders.js ΔΕΝ επιτρέπεται να πάρει hash: το home-live.js κάνει
+     `switch` πάνω στην τιμή του `page` και ένα «arxaia.html#gn» θα έριχνε
+     σιωπηλά το πλακίδιο του Home στο default. */
+  var lad = fs.readFileSync(path.join(__dirname, '..', 'ladders.js'), 'utf8');
+  ok(!/page: 'arxaia\.html#/.test(lad),
+    '⛔ το ladders.js κρατάει ΣΚΕΤΟ arxaia.html — το home-live.js κάνει switch πάνω του');
   /* ⛔ Ο ΦΡΟΥΡΟΣ ΤΗΣ ΔΙΑΡΡΟΗΣ: καμία από τις κοινές κλάσεις δεν επιτρέπεται
      να πάρει πλάτος χωρίς πρόθεμα. Το `.al-per{display:grid}` σκέτο θα
      έσπαγε τον Άγνωστο χωρίς κανένα error. */

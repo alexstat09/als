@@ -1947,6 +1947,39 @@
     var b = e.target.closest('[data-world]'); if (!b) return;
     pickWorld(b.dataset.world);
   });
+
+  /* ══════════════════════════════════════════════════════════════════
+     Ο ΒΑΘΥΣ ΣΥΝΔΕΣΜΟΣ — als-v501.  Δικά του λόγια: «εφόσον έχω φτιάξει το
+     school studies και μέσα βρίσκεται το αρχαία άγνωστο και γνωστό, θέλω
+     όταν πατάω μέσα στο καθένα να με βάζει κατευθείαν στο γνωστό όταν
+     πάτησα το γνωστό».
+
+     ⭐ ΔΕΝ ΑΝΑΙΡΕΙ ΤΟΝ ΚΑΝΟΝΑ ΤΗΣ ΠΟΡΤΑΣ, ΤΟΝ ΣΥΜΠΛΗΡΩΝΕΙ.  Ο κανόνας ήταν
+     «μια πόρτα που ανοίγει μόνη της στον ΧΘΕΣΙΝΟ κόσμο δεν είναι πόρτα» —
+     δηλαδή απαγορεύεται να ΘΥΜΑΤΑΙ. Ένα `#gn` δεν είναι μνήμη· είναι
+     ΕΠΙΛΟΓΗ που έγινε ήδη, μια οθόνη πιο πίσω. Η πόρτα μένει ακέραιη για
+     όποιον έρχεται σκέτος.
+
+     ⚠️ ΔΕΧΕΤΑΙ ΔΥΟ ΜΟΡΦΕΣ ΤΗΝ ΚΑΘΕΜΙΑ, όπως η istoria.html: είναι φθηνότερο
+     να συμφωνούν εδώ, μία φορά, παρά να θυμάται κάθε μελλοντικός καλών ποια
+     είναι η σωστή.  Και ό,τι ΔΕΝ αναγνωρίζεται το ΛΕΕΙ (σταθερή αρχή 10) —
+     ένας σύνδεσμος που σε αφήνει σιωπηλά στην πόρτα δεν διδάσκει τίποτα. */
+  function fromHash(){
+    var h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    if (!h) return false;
+    if (h === 'gn' || h === 'gnosto'){ pickWorld('gn'); return true; }
+    if (h === 'ag' || h === 'agnosto'){ pickWorld('ag'); return true; }
+    toast('Δεν κατάλαβα το «#' + h + '». Διάλεξε κόσμο.');
+    return false;
+  }
+  /* Αλλαγή hash ΕΝΩ η σελίδα είναι ανοιχτή: έρχεται δεύτερο πάτημα από το
+     School Studies στην ίδια καρτέλα, και πρέπει να μετακινεί τον κόσμο. */
+  window.addEventListener('hashchange', function(){
+    var v = document.querySelectorAll('.ar-view.on'), i;
+    for (i = 0; i < v.length; i++) v[i].classList.remove('on');
+    document.body.style.overflow = '';
+    fromHash();
+  });
   document.addEventListener('click', function(e){
     var d = e.target.closest('[data-door]');
     if (d){ openDoor(); return; }
@@ -1962,6 +1995,10 @@
   document.body.style.overflow = 'hidden';   /* η πόρτα είναι ανοιχτή στο load */
   if (G){ reload(); renderHome(); }
   paintDoorStatus();
+  /* ⚠️ ΤΕΛΕΥΤΑΙΟ ΚΑΙ ΜΕΤΑ ΤΟ renderHome(): ο κόσμος πρέπει να είναι ήδη
+     γεμάτος πριν αποκαλυφθεί, αλλιώς ο βαθύς σύνδεσμος προσγειώνεται σε
+     άδεια οθόνη — silent-empty, η ασθένεια αυτού του project. */
+  fromHash();
 
   /* ── cloud sync ───────────────────────────────────
      ⚠️ ΞΕΧΩΡΙΣΤΟ appKey ΚΑΙ ΞΕΧΩΡΙΣΤΟ ΚΛΕΙΔΙ από τον Άγνωστο. Το `arx:gn`

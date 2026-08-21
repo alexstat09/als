@@ -453,6 +453,20 @@ colour rule: **accent only when something is due**, faint otherwise.
     80 pairs in two columns. One width for everything would ruin one or the other.
   - ⛔ **PURE CSS, the lesson-building code was not touched.** After two
     targeting mistakes in als-v499, a redesign is not allowed near the logic.
+- ⭐⭐ **THE DOOR CAN NOW BE SKIPPED — BUT ONLY BY A CHOICE ALREADY MADE (als-v501).**
+  `arxaia.html` reads `location.hash`: **`#gn` / `#gnosto`** lands straight in
+  ΓΝΩΣΤΟ, **`#ag` / `#agnosto`** in ΑΓΝΩΣΤΟ, and `homework.html` sends it.
+  - ⚠️ **This does not repeal the door rule, it completes it.** The rule was
+    *«a door that opens itself into yesterday's world is not a door»* — i.e. it
+    may not **remember**. A hash is not memory; it is a choice made one screen
+    earlier. Arrive bare and the door is still there, every time.
+  - An unrecognised hash **says so** and leaves you at the door.
+  - ⛔ **`ladders.js` keeps a bare `arxaia.html`** — `home-live.js` `switch`es on
+    that value and a hash would silently drop its tile to the default. The world
+    is appended in `homework.html` instead (`SUBJECTS`, `knownUnits`,
+    `worldLink()`), and the test forbids the hash from reaching `ladders.js`.
+  - ⚠️ `fromHash()` runs **after** `renderHome()`: a deep link must never land on
+    a world that has not been filled yet.
   - ⚠️⚠️ **`#arLesson` SHARES 8 OF THESE CLASSES AND STAYS AT 620px.** Every rule
     is scoped to `#gnLesson`; a bare `.al-per{display:grid}` would silently
     reflow the ΑΓΝΩΣΤΟ world. The test greps for exactly that leak.

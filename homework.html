@@ -1393,8 +1393,15 @@
        αριθμός (σταθ. 33) — κανείς δεν είπε ότι το γνωστό αξίζει όσο το
        άγνωστο. Ο,τι ΑΘΡΟΙΖΕΙ συντελεστές αθροίζει ΑΝΑ `exam`, ποτέ ανά κλειδί,
        αλλιώς τα μόριά του βγαίνουν 110%. */
-    arxaia_gn:  { label:'Αρχαία · γνωστό',  rgb:'var(--hw-arx)', weight:30, page:'arxaia.html', exam:'arxaia' },
-    arxaia_agn: { label:'Αρχαία · άγνωστο', rgb:'var(--hw-arx)', weight:30, page:'arxaia.html', exam:'arxaia' },
+    /* ⭐ als-v501: ΟΙ ΔΥΟ ΚΟΣΜΟΙ ΤΩΝ ΑΡΧΑΙΩΝ ΕΧΟΥΝ ΞΕΧΩΡΙΣΤΗ ΔΙΕΥΘΥΝΣΗ.
+       Δικά του λόγια: «όταν πατάω μέσα στο καθένα να με βάζει κατευθείαν
+       στο γνωστό όταν πάτησα το γνωστό». Η `arxaia.html` διαβάζει το hash
+       και παρακάμπτει την πόρτα ΜΟΝΟ όταν η επιλογή έχει ήδη γίνει εδώ.
+       ⚠️ Το hash μπαίνει στο `page` και όχι σε ξεχωριστό πεδίο, ώστε να το
+       κληρονομούν ΟΛΟΙ οι δρόμοι που χτίζουν href από εδώ. Ελέγχθηκε ότι
+       κανείς δεν συγκρίνει το `page` με ισότητα. */
+    arxaia_gn:  { label:'Αρχαία · γνωστό',  rgb:'var(--hw-arx)', weight:30, page:'arxaia.html#gn', exam:'arxaia' },
+    arxaia_agn: { label:'Αρχαία · άγνωστο', rgb:'var(--hw-arx)', weight:30, page:'arxaia.html#ag', exam:'arxaia' },
     /* ⛔ ΤΟ ΠΑΛΙΟ ΣΚΕΤΟ «arxaia» ΔΕΝ ΣΒΗΝΕΤΑΙ ΠΟΤΕ. Κάθε εργασία που έγραψε
        πριν την als-v485 το κουβαλάει, και ένα κλειδί χωρίς εγγραφή εδώ θα την
        έκανε ΓΚΡΙ «χωρίς μάθημα» — δηλαδή θα «έχανε» δουλειά του για να
@@ -1953,9 +1960,9 @@
       if (window.ISTORIA && window.ISTORIA.UNITS)
         window.ISTORIA.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'istoria', page:'istoria.html', title:u.title||'', deep:true }); });
       if (window.ARXGN && window.ARXGN.UNITS)
-        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia_gn', page:'arxaia.html', title:u.title||'', deep:false }); });
+        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia_gn', page:'arxaia.html#gn', title:u.title||'', deep:false }); });
       if (window.ArxaiaData && window.ArxaiaData.PAGES)
-        window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia_agn', page:'arxaia.html', title:p.range||'', deep:false }); });
+        window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia_agn', page:'arxaia.html#ag', title:p.range||'', deep:false }); });
     } catch(e){}
     return out;
   }
@@ -1972,6 +1979,16 @@
     if (page === 'istoria.html' && unitId)
       return page + '#recall:' + (kind === 'plag' ? 'p' : 'u') + ':' + encodeURIComponent(unitId);
     return page || '#';
+  }
+  /* ⭐ als-v501: το `ladders.js` κρατάει σκέτο `arxaia.html` επίτηδες — το
+     `home-live.js` κάνει `switch` πάνω σε αυτή την τιμή και ένα hash θα του
+     έσπαγε το πλακίδιο. Άρα ο κόσμος μπαίνει ΕΔΩ, από το `subject`, και
+     ΜΟΝΟ όταν λείπει (οι δρόμοι του `SUBJECTS` τον φέρνουν ήδη). */
+  function worldLink(href, subject){
+    if (!href || href.indexOf('arxaia.html') !== 0 || href.indexOf('#') >= 0) return href;
+    if (subject === 'arxaia_gn')  return 'arxaia.html#gn';
+    if (subject === 'arxaia_agn') return 'arxaia.html#ag';
+    return href;
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -2689,7 +2706,7 @@
            οπότε το `unitTitle()` θα έπεφτε στο id («p_l4k9x») — ακριβώς το
            «b1b στην οθόνη ενός ανθρώπου» που κόστισε η σταθερή αρχή 37. */
         title:s.label, unitId:it.unitId, unitLabel: it.title || unitTitle(s.key, it.unitId),
-        href:deepLink(s.page, s.deep ? it.unitId : null, it.unitKind),
+        href:worldLink(deepLink(s.page, s.deep ? it.unitId : null, it.unitKind), s.subject),
         cta:'Πες το', est:null, why:why, score:score, more:late.length - 1
       });
     });
