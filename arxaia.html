@@ -749,10 +749,6 @@
       <div class="ar-cta-t" id="arCtaT">—</div>
       <div class="ar-cta-m" id="arCtaM">—</div>
     </button>
-    <div class="ar-alt">
-      <button class="ar-altb" id="arAltRecall">Κατευθείαν στην ανάκληση</button>
-      <button class="ar-altb" id="arAltWeak">Τα αδύναμά μου</button>
-    </div>
   </section>
 
   <section class="ar-due" data-rise id="arDueSec" hidden>
@@ -763,11 +759,6 @@
   <section class="ar-syl" data-rise>
     <div class="ar-sh"><h2>Το φυλλάδιο</h2><span class="n" id="arSylN"></span></div>
     <div class="ar-rows" id="arSyl"></div>
-  </section>
-
-  <section class="ar-miss" data-rise>
-    <div class="ar-sh"><h2>Τα λάθη μου</h2><span class="n" id="arMissN"></span></div>
-    <div id="arMiss"></div>
   </section>
 
   <footer class="ar-foot">
@@ -789,14 +780,6 @@
 </div>
 
 <!-- Η ΑΝΑΚΛΗΣΗ. -->
-<div class="ar-view" id="arRecall">
-  <div class="ar-vtop">
-    <button class="ar-x" id="arRx" aria-label="Κλείσιμο">✕</button>
-    <div class="ar-vtitle" id="arRt"></div>
-  </div>
-  <div class="ar-vwrap" id="arRb"></div>
-</div>
-
 <!-- ════════════════════════════════════════════════════════════════
      Ο ΚΟΣΜΟΣ ΤΟΥ ΓΝΩΣΤΟΥ — ΔΥΟ ΕΙΔΗ ΔΟΥΛΕΙΑΣ, ΟΧΙ ΕΝΑ (als-v497).
 
@@ -867,10 +850,6 @@
           <div class="ar-cta-t" id="gnCtaT">—</div>
           <div class="ar-cta-m" id="gnCtaM">—</div>
         </button>
-        <div class="ar-alt">
-          <button class="ar-altb" id="gnAltRecall">Κατευθείαν στην ανάκληση</button>
-          <button class="ar-altb" id="gnAltWeak">Τα αδύναμά μου</button>
-        </div>
       </section>
 
       <section class="ar-due" id="gnDueSec" hidden>
@@ -883,12 +862,6 @@
         <div class="gn-sh"><span class="t">Τα κείμενα</span><span class="r"></span>
           <span class="n" id="gnSylN"></span></div>
         <div class="ar-rows" id="gnSyl"></div>
-      </section>
-
-      <section class="ar-miss">
-        <div class="gn-sh"><span class="t">Τα λάθη μου</span><span class="r"></span>
-          <span class="n" id="gnMissN"></span></div>
-        <div id="gnMiss"></div>
       </section>
 
     </div>
@@ -911,14 +884,6 @@
     <div class="ar-vtitle" id="gnLt"></div>
   </div>
   <div class="ar-vwrap" id="gnLb"></div>
-</div>
-
-<div class="ar-view" id="gnRecall">
-  <div class="ar-vtop">
-    <button class="ar-x" id="gnRx" aria-label="Κλείσιμο">✕</button>
-    <div class="ar-vtitle" id="gnRt"></div>
-  </div>
-  <div class="ar-vwrap" id="gnRb"></div>
 </div>
 
 <div class="ar-toast" id="arToast"></div>
@@ -1047,24 +1012,6 @@
     return t;
   }
   /* Τα κελιά που τον ρίχνουν, με το ΟΝΟΜΑ τους. */
-  function weakest(){
-    var out = [];
-    A.PAGES.forEach(function(p){
-      A.verbsOf(p).forEach(function(v){
-        A.chains(v).forEach(function(c){
-          c.cells.forEach(function(cell){
-            if (!cell.drill) return;
-            var k = cellKey(v.id, c.voice, cell.tense), s = state.cells[k];
-            if (!s || !(s.r + s.w)) return;
-            var acc = s.r / (s.r + s.w);
-            if (acc < 0.8) out.push({ k:k, v:v, voice:c.voice, tense:cell.tense, forms:cell.forms, acc:acc, n:s.r + s.w, p:p });
-          });
-        });
-      });
-    });
-    return out.sort(function(a,b){ return a.acc - b.acc || b.n - a.n; });
-  }
-
   /* ══ ΤΟ ΣΠΙΤΙ ═════════════════════════════════════ */
   function renderHome(){
     var f = fresh(), d = due(), learned = 0, decN = 0, i, p, st;
@@ -1119,7 +1066,6 @@
     document.getElementById('arSylN').textContent = learned + '/' + A.PAGES.length + ' μαθημένες';
     document.getElementById('arSyl').innerHTML = A.PAGES.map(function(x){ return row(x, 'lesson', null); }).join('');
 
-    renderMiss();
   }
 
   function row(p, act, tag){
@@ -1137,21 +1083,6 @@
       bar + right + '</button>';
   }
 
-  function renderMiss(){
-    var w = weakest(), box = document.getElementById('arMiss'), n = document.getElementById('arMissN');
-    if (!w.length){
-      n.textContent = 'τίποτα ακόμη';
-      box.innerHTML = '<div class="ar-empty">Μόλις κάνεις την πρώτη ανάκληση, όποιος χρόνος δεν έρθει κάθεται εδώ και επιστρέφει πιο συχνά από τους υπόλοιπους.</div>';
-      return;
-    }
-    n.textContent = w.length + (w.length === 1 ? ' κελί' : ' κελιά');
-    box.innerHTML = '<div class="ar-rows">' + w.slice(0, 8).map(function(x){
-      return '<button class="ar-mrow" data-go="lesson:' + esc(x.p.id) + '">' +
-        '<span><span class="l">' + esc(A.TENSE_EL[x.tense]) + ' · ' + esc(x.v.lemma) + '</span>' +
-        '<span class="g">' + esc(A.VOICE_EL[x.voice]) + ' · ' + esc(x.forms.join(' / ')) + '</span></span>' +
-        '<span class="c">' + Math.round(x.acc*100) + '%</span></button>';
-    }).join('') + '</div>';
-  }
 
   /* ══ «ΤΟ ΞΕΡΩ ΑΠΕΞΩ» — ίδιος κανόνας με την Ιστορία ══
      Η δήλωση ΔΕΝ είναι μέτρηση: δεν αγγίζει τη σκάλα ούτε την ακρίβεια, και
@@ -1182,10 +1113,6 @@
     var s = pg(id);
     if (s.runs){ toast('Αυτή την έχεις ήδη πει απέξω και μετρήθηκε. Η μέτρηση μένει.'); return; }
     s.claimed = Date.now();
-    if (!s.learnedAt) s.learnedAt = Date.now();
-    s.due = Date.now() + CLAIM_DAYS * DAY;
-    micStop();
-    var bar = document.getElementById('rcBar'); if (bar) bar.style.display = 'none';
     save(); renderHome();
     toast('Το κράτησα ως δηλωμένο. Σε ξαναρωτάω σε ' + CLAIM_DAYS + ' μέρες, με κανονική ανάκληση.');
   }
@@ -1269,321 +1196,27 @@
     h += layer('04', 'Οι αλυσίδες', 'πες τες φωναχτά, σαν τραγούδι',
       A.verbsOf(p).map(chainHTML).join(''));
 
-    h += '<button class="ar-go" id="arGo">Κλείσε το φυλλάδιο και πες το' +
-      '<span>' + A.cellCount(p) + ' κελιά · σε ακούει και σου λέει στο τέλος ποιον χρόνο ξέχασες</span></button>' +
       '<div class="ar-claim" id="arClaimL"></div>';
 
     document.getElementById('arLb').innerHTML = h;
-    document.getElementById('arGo').addEventListener('click', function(){ openRecall(p.id); });
     paintClaim('arClaimL', p);
     show('arLesson');
   }
 
-  /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var rec = null, micWant = false, heardFinal = '', heardTmp = '', restarts = 0;
-  var ALTS = 4, SILENCE_MS = 20000, lastHeardAt = 0, silenceTimer = null;
+  /* ⛔⛔ ΕΔΩ ΖΟΥΣΕ Η ΑΝΑΚΛΗΣΗ ΜΕ ΤΗ ΦΩΝΗ ΤΟΥ ΑΓΝΩΣΤΟΥ — ΕΦΥΓΕ, als-v499.
+     «Α, βγάλε το και από άγνωστο και από γνωστό.»
 
-  function openRecall(id){
-    var p = A.page(id); if (!p) return;
-    cur = p;
-    sess = { id:id, graded:null, heard:'', base:null };
-    heardFinal = ''; heardTmp = ''; restarts = 0;
-    document.getElementById('arRt').textContent = 'Σελίδα ' + p.n + ' · ' + p.range;
-    drawRecall();
-    show('arRecall');
-  }
+     ⭐ ΕΔΩ Η ΑΦΑΙΡΕΣΗ ΔΙΟΡΘΩΝΕΙ ΚΑΙ ΚΑΤΙ ΧΑΛΑΣΜΕΝΟ. Δικά του λόγια τον
+     Αύγουστο: «δν μπορει να ακουσει αρχαια, λεει νεα ελληνικα». Το `el-GR`
+     έχει γλωσσικό μοντέλο ΝΕΩΝ ελληνικών: δεν μεταγράφει φωνητικά έναν
+     άγνωστο αρχαίο τύπο, τον ΑΝΤΙΚΑΘΙΣΤΑ με υπαρκτή νεοελληνική λέξη. Άρα
+     εδώ δεν χάνεται μέτρηση — φεύγει μια μέτρηση που ΔΕΝ ΙΣΧΥΕ ΠΟΤΕ.
 
-  function slotHTML(v, c, graded){
-    var cls = '', mk = '';
-    if (graded){
-      var mine = graded.cells.filter(function(x){ return x.vid === v.id && x.voice === c.voice; });
-      var tot = 0, got = 0;
-      mine.forEach(function(x){ tot += x.hits.length; got += x.n; });
-      cls = got === tot ? ' full' : got ? ' part' : ' miss';
-      mk = got + '/' + tot;
-    }
-    var h = '<li><div class="ar-slot' + cls + '">' +
-      '<div class="lem">' + esc(v.lemma) + (mk ? ' <span class="vo" style="float:right">' + esc(mk) + '</span>' : '') + '</div>' +
-      '<div class="vo">' + esc(A.VOICE_EL[c.voice]) + '</div>' +
-      '<ul class="ar-cells">';
-    c.cells.forEach(function(cell){
-      h += '<li class="ar-cell"><span class="tn">' + esc(A.TENSE_SHORT[cell.tense]) + '</span><span class="fm">';
-      if (!graded){
-        h += '<span class="dots">' + new Array(Math.min(cell.forms.length, 3) + 1).join('· · · ') + '</span>';
-      } else {
-        var g = null;
-        graded.cells.forEach(function(x){ if (x.vid === v.id && x.voice === c.voice && x.tense === cell.tense) g = x; });
-        cell.forms.forEach(function(f, i){
-          var y = g && g.hits[i];
-          var fix = (!y && sess.heard && cell.drill)
-            ? '<button class="rc-said" data-said="' + esc(v.id) + '|' + esc(c.voice) + '|' + esc(cell.tense) + '|' + i + '">το είπα αυτό</button>' : '';
-          h += '<span class="ar-f ' + (y ? 'did' : 'lost') + '"><span class="mk">' + (y ? '✓' : '✗') + '</span>' +
-            esc(f) + fix + '</span>';
-        });
-        if (!cell.drill) h += '<span class="ar-f"><span class="mk">·</span>δεν εξετάζεται</span>';
-      }
-      h += '</span></li>';
-    });
-    return h + '</ul></div></li>';
-  }
+     ΤΙ ΕΜΕΙΝΕ: το «Το ξέρω απέξω» (δήλωση) και ΟΛΟΚΛΗΡΟ το μάθημα με τις
+     στρώσεις, τους πίνακες και τις αλυσίδες. Τα αποθηκευμένα `cells` του
+     `arx:v1` ΔΕΝ σβήστηκαν.
+     ⚠️ Η ΑΝΑΓΝΩΡΙΣΗ ΦΩΝΗΣ ΖΕΙ ΜΟΝΟ ΣΤΗΝ `istoria.html`. Μην τη φέρεις πίσω. */
 
-  function drawRecall(){
-    var p = cur;
-    var h = '<div class="ar-lhead"><div class="ar-lkicker">Η ανάκληση</div>' +
-      '<div class="rc-ask">Πες τους αρχικούς χρόνους της σελίδας ' + esc(p.n) + '.</div>' +
-      '<div class="rc-sub">Ρήμα-ρήμα, με τη σειρά που τα βλέπεις, φωναχτά. Δεν σε διακόπτω και δεν σου ' +
-      'δίνω τίποτα μέχρι να τελειώσεις: μόλις πατήσεις «Τέλος» σου λέω χρόνο προς χρόνο τι είπες και τι ξέχασες.</div></div>';
-
-    h += '<ol class="rc-slots" id="rcSlots">' + A.verbsOf(p).map(function(v){
-      return A.chains(v).map(function(c){ return slotHTML(v, c, null); }).join('');
-    }).join('') + '</ol>';
-
-    document.getElementById('arRb').innerHTML = h + '<div style="height:150px"></div>';
-
-    var bar = document.getElementById('rcBar');
-    if (!bar){
-      bar = document.createElement('div');
-      bar.className = 'rc-bar'; bar.id = 'rcBar';
-      document.getElementById('arRecall').appendChild(bar);
-    }
-    bar.innerHTML = '<div class="rc-inner">' +
-      '<div class="rc-heard" id="rcHeard"></div>' +
-      '<div class="rc-btns">' +
-      '<button class="rc-mic' + (SR ? '' : ' off') + '" id="rcMic">' +
-      '<span class="rc-dot"></span><span id="rcMicT">' + (SR ? 'Πες το' : 'Χωρίς μικρόφωνο') + '</span></button>' +
-      '<button class="rc-done" id="rcDone">Τέλος</button></div>' +
-      '<div class="rc-note" id="rcNote">' + (SR
-        ? 'Όσο ακούει, η φωνή σου περνάει από την αναγνώριση του browser. Σταματάει μόλις το κλείσεις.'
-        : 'Ο browser σου δεν κάνει αναγνώριση φωνής. Πες τα δυνατά ούτως ή άλλως και πάτα «Τέλος» για να δεις την ύλη.') +
-      '</div></div>';
-    bar.style.display = '';
-
-    document.getElementById('rcMic').addEventListener('click', micToggle);
-    document.getElementById('rcDone').addEventListener('click', finish);
-  }
-
-  function micSay(msg, warn){
-    var n = document.getElementById('rcNote'); if (!n) return;
-    n.textContent = msg;
-    n.className = 'rc-note' + (warn ? ' warn' : '');
-  }
-  function micUI(on){
-    var b = document.getElementById('rcMic'), t = document.getElementById('rcMicT');
-    if (!b) return;
-    b.classList.toggle('live', !!on);
-    t.textContent = on ? 'Ακούω…' : (SR ? 'Πες το' : 'Χωρίς μικρόφωνο');
-  }
-  function micToggle(){
-    if (!SR){
-      micSay('Ο browser σου δεν έχει αναγνώριση φωνής (τη διαθέτουν Chrome και Safari). Πάτα «Τέλος» για να δεις ολόκληρη την ύλη.', true);
-      return;
-    }
-    if (micWant) micStop(); else micStart();
-  }
-  function micStart(){
-    micWant = true; restarts = 0;
-    lastHeardAt = Date.now();
-    clearInterval(silenceTimer);
-    silenceTimer = setInterval(function(){
-      if (!micWant) return;
-      if (Date.now() - lastHeardAt > SILENCE_MS)
-        micSay('Το μικρόφωνο είναι ανοιχτό αλλά δεν έχω πιάσει λέξη εδώ και ' +
-          Math.round((Date.now() - lastHeardAt) / 1000) + ' δευτερόλεπτα. Μίλα λίγο πιο δυνατά.', true);
-    }, 5000);
-    try {
-      rec = new SR();
-      rec.lang = 'el-GR';
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = ALTS;
-      rec.onresult = onHeard;
-      rec.onerror = onMicErr;
-      rec.onend = function(){
-        /* ⭐⭐ Ο Chrome κόβει στη ΣΙΩΠΗ, δηλαδή ακριβώς στις παύσεις ανάμεσα
-           στα ρήματα. Η φράση που είναι «στον αέρα» σώζεται ΠΡΙΝ σβηστεί. */
-        if (heardTmp.trim()){ heardFinal += ' ' + heardTmp; heardTmp = ''; }
-        if (!micWant) { micUI(false); return; }
-        if (restarts++ > 60){ micWant = false; micUI(false); micSay('Το μικρόφωνο σταματούσε συνέχεια, οπότε το έκλεισα.', true); return; }
-        try { rec.start(); } catch(e){ micWant = false; micUI(false); }
-      };
-      rec.start();
-      micUI(true);
-      micSay('Ακούω. Πες τα ρήματα με τη σειρά· δεν σε διακόπτω.');
-    } catch(e){
-      micWant = false; micUI(false);
-      micSay('Δεν μπόρεσα να ανοίξω το μικρόφωνο: ' + (e && e.message ? e.message : 'άγνωστο σφάλμα') + '.', true);
-    }
-  }
-  function micStop(){
-    micWant = false;
-    clearInterval(silenceTimer); silenceTimer = null;
-    try { if (rec) rec.stop(); } catch(e){}
-    micUI(false);
-    micSay('Το μικρόφωνο είναι κλειστό.');
-  }
-  function onMicErr(e){
-    var k = e && e.error;
-    if (k === 'no-speech' || k === 'aborted') return;
-    micWant = false; micUI(false);
-    if (k === 'not-allowed' || k === 'service-not-allowed')
-      micSay('Δεν έδωσες άδεια για το μικρόφωνο. Δώσ’ την από τις ρυθμίσεις του browser.', true);
-    else if (k === 'audio-capture') micSay('Δεν βρίσκω μικρόφωνο σε αυτή τη συσκευή.', true);
-    else if (k === 'network') micSay('Η αναγνώριση φωνής θέλει δίκτυο και δεν το βρήκε.', true);
-    else micSay('Το μικρόφωνο σταμάτησε (' + esc(k || 'άγνωστο') + ').', true);
-  }
-  function onHeard(e){
-    var i, k, r;
-    heardTmp = '';
-    lastHeardAt = Date.now();
-    for (i = e.resultIndex; i < e.results.length; i++){
-      r = e.results[i];
-      if (r.isFinal){
-        /* ⭐ ΟΛΕΣ οι εκδοχές του ΙΔΙΟΥ ήχου, όχι μόνο η πρώτη. */
-        var nAlt = r.length || 1;
-        for (k = 0; k < nAlt && k < ALTS; k++) if (r[k]) heardFinal += ' ' + r[k].transcript;
-      }
-      else heardTmp += ' ' + r[0].transcript;
-    }
-    var hay = heardFinal + ' ' + heardTmp;
-    var hEl = document.getElementById('rcHeard');
-    if (hEl){
-      var tail = hay.trim().slice(-90);
-      hEl.innerHTML = tail ? 'άκουσα · <b>' + esc(tail) + '</b>' : '';
-    }
-    /* ⭐ ΤΙΠΟΤΑ ΔΕΝ ΒΑΘΜΟΛΟΓΕΙΤΑΙ ΕΔΩ. Ένα τικ στη μέση είναι ψεύτικη
-       ανταμοιβή και σπάει την προσπάθεια ανάκλησης που χτίζει τη μνήμη. */
-    var words = EAR.fold(hay).split(' ').filter(Boolean).length;
-    micSay(words ? 'Ακούω. ' + words + ' λέξεις μέχρι τώρα. Πάτα «Τέλος» όταν τελειώσεις.' : 'Ακούω.');
-  }
-
-  function aliasesFor(pid){
-    var out = {}, k, pre = pid + '|';
-    for (k in state.heard) if (state.heard.hasOwnProperty(k) && k.indexOf(pre) === 0)
-      out[k.slice(pre.length)] = state.heard[k];
-    return out;
-  }
-
-  function finish(){
-    micStop();
-    var p = cur, base = {}, i;
-    A.verbsOf(p).forEach(function(v){
-      A.chains(v).forEach(function(c){
-        c.cells.forEach(function(cell){
-          if (!cell.drill) return;
-          var k = cellKey(v.id, c.voice, cell.tense), e0 = cel(k);
-          base[k] = { r:e0.r, w:e0.w };
-        });
-      });
-    });
-    var s = pg(p.id);
-    sess.heard = (heardFinal + ' ' + heardTmp).trim();
-    sess.base = { cells: base, reviews: s.reviews || 0, best: s.best || 0 };
-    s.runs = (s.runs || 0) + 1;
-    s.last = Date.now();
-    if (!s.learnedAt) s.learnedAt = Date.now();
-
-    var d = today(), day = null;
-    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) day = state.days[i];
-    if (!day){ day = { id:d, q:0 }; state.days.push(day); }
-
-    var G = regrade();
-    day.q += G.total;
-    if (state.days.length > 400) state.days = state.days.slice(-400);
-    save();
-    summary(G.coverage, pg(p.id));
-  }
-
-  /* ⭐⭐ ΞΑΝΑΤΡΕΧΕΙ ΟΛΟΚΛΗΡΗ, ΠΑΝΤΑ ΑΠΟ ΤΗ ΦΩΤΟΓΡΑΦΙΑ — άρα δέκα πατήματα
-     «το είπα αυτό» δίνουν το ίδιο αποτέλεσμα με ένα. */
-  function regrade(){
-    var p = cur, G = A.gradePage(p, sess.heard, aliasesFor(p.id));
-    G.cells.forEach(function(x){
-      var k = cellKey(x.vid, x.voice, x.tense), b = sess.base.cells[k] || { r:0, w:0 }, e = cel(k);
-      e.r = b.r + x.n;
-      e.w = b.w + (x.hits.length - x.n);
-    });
-    var s = pg(p.id), cov = G.coverage;
-    s.best = Math.max(sess.base.best, cov);
-    if (cov >= A.PASS){ s.reviews = sess.base.reviews + 1; s.due = A.nextDue(s.reviews, Date.now()); }
-    else { s.reviews = sess.base.reviews; s.due = Date.now() + DAY; }
-    sess.graded = G;
-    return G;
-  }
-
-  /* ⭐ ΔΙΑΛΕΓΕΙ ΤΗ ΦΡΑΣΗ ΤΟΥ, ΔΕΝ ΤΗ ΓΡΑΦΕΙ. */
-  function saidIt(vid, voice, tense, idx){
-    var v = A.verb(vid), form = null;
-    A.chains(v).forEach(function(c){ if (c.voice !== voice) return;
-      c.cells.forEach(function(cell){ if (cell.tense === tense) form = cell.forms[idx]; }); });
-    if (!form) return;
-    var sen = A.bestSentence(sess.heard, form);
-    if (!sen){
-      toast('Δεν βρήκα τίποτα κοντινό σε όσα άκουσα, οπότε δεν το μετράω. Δες παρακάτω τι άκουσα.');
-      return;
-    }
-    var k = cur.id + '|' + vid + ':' + voice + ':' + tense + ':' + idx, list = state.heard[k] || [];
-    if (list.indexOf(sen) < 0) list.push(sen);
-    if (list.length > 6) list = list.slice(-6);
-    state.heard[k] = list;
-    var G = regrade();
-    save(); renderHome();
-    summary(G.coverage, pg(cur.id));
-    toast('Το κράτησα: «' + sen.slice(0, 60) + '». Την επόμενη φορά θα το πιάσω μόνο του.');
-  }
-
-  function summary(cov, s){
-    var bar = document.getElementById('rcBar');
-    if (bar) bar.style.display = 'none';
-    var G = sess.graded, pct = Math.round(cov * 100), p = cur;
-
-    var verdict = cov >= 1 ? 'Ολόκληρη η σελίδα, από μνήμης.'
-      : cov >= A.PASS ? 'Την κρατάς.'
-      : cov >= 0.6 ? 'Την ξέρεις χοντρικά, αλλά όχι απέξω.'
-      : cov > 0 ? 'Ξαναδιάβασέ την και ξαναπές την.'
-      : 'Δεν ήρθε τίποτα. Αυτό δεν είναι αποτυχία: είναι η μέτρηση πριν την επανάληψη.';
-    var when = cov >= A.PASS
-      ? 'Επόμενη επανάληψη ' + inDays(s.due) + '.'
-      : 'Ξανά αύριο. Η σκάλα προχωράει στο ' + Math.round(A.PASS * 100) + '% των τύπων, κι εσύ είσαι στο ' + pct + '%.';
-    var full = G.cells.filter(function(x){ return x.full; }).length;
-
-    var h = '<div class="ar-lhead" style="padding-top:24px">' +
-      '<div class="ar-lkicker">Η ανάκληση</div>' +
-      '<div class="rc-sum-n">' + G.said + '<span style="color:var(--au-faint,#5c5964);font-size:.42em"> / ' + G.total + '</span></div>' +
-      '<div class="rc-sum-s" style="margin-top:7px">τύποι · ' + full + ' από ' + G.cells.length + ' κελιά καθαρά</div>' +
-      '<div class="rc-sum-t">' + esc(verdict) + '</div>' +
-      '<div class="rc-sum-s">' + esc(when) + '</div></div>';
-
-    h += '<div class="ar-tag m" style="margin-top:26px">Χρόνο προς χρόνο</div>' +
-      '<ol class="rc-slots" style="margin-top:10px">' + A.verbsOf(p).map(function(v){
-        return A.chains(v).map(function(c){ return slotHTML(v, c, G); }).join('');
-      }).join('') + '</ol>';
-
-    if (sess.heard){
-      h += '<details class="rc-tr"><summary>Τι άκουσα · ' +
-        EAR.fold(sess.heard).split(' ').filter(Boolean).length + ' λέξεις</summary>' +
-        '<div class="rc-tr-b">' + esc(sess.heard) + '</div>' +
-        '<div class="rc-tr-n">⚠️ Η φωνή ελέγχει ΠΟΙΟΣ είναι ο τύπος, όχι πώς γράφεται: το «ἤγγειλα» και το ' +
-        '«ήγγηλα» ακούγονται ίδια. Αν δεις εδώ κάτι που το είπες σωστά αλλά μετρήθηκε χαμένο, πάτα ' +
-        '«το είπα αυτό» δίπλα του πιο πάνω.</div></details>';
-    }
-
-    h += '<div class="rc-again">' +
-      '<button id="rcRe" class="pri">Ξανά τώρα</button>' +
-      '<button id="rcBack">Τέλος</button></div>';
-
-    document.getElementById('arRb').innerHTML = h;
-    document.getElementById('rcRe').addEventListener('click', function(){ openRecall(cur.id); });
-    document.getElementById('rcBack').addEventListener('click', function(){ hide('arRecall'); renderHome(); });
-    document.getElementById('arRb').addEventListener('click', function(ev){
-      var b = ev.target.closest('.rc-said'); if (!b) return;
-      var q = b.dataset.said.split('|');
-      saidIt(q[0], q[1], q[2], +q[3]);
-    });
-    document.getElementById('arRecall').scrollTop = 0;
-  }
-
-  /* ── όψεις ────────────────────────────────────────── */
   function show(id){
     document.getElementById(id).classList.add('on');
     document.body.style.overflow = 'hidden';
@@ -1593,30 +1226,19 @@
     document.getElementById(id).classList.remove('on');
     document.body.style.overflow = '';
     var bar = document.getElementById('rcBar');
-    if (bar && id === 'arRecall') bar.style.display = 'none';
-    if (id === 'arRecall') micStop();
   }
 
   function go(v){
     if (!v) return;
     var q = v.split(':');
     if (q[0] === 'lesson') openLesson(q[1]);
-    else if (q[0] === 'recall') openRecall(q[1]);
+    else toast('Δεν ξέρω τι να ανοίξω («' + v + '»).');
   }
   document.addEventListener('click', function(e){
     var b = e.target.closest('[data-go]'); if (!b) return;
     go(b.dataset.go);
   });
   document.getElementById('arLx').addEventListener('click', function(){ hide('arLesson'); renderHome(); });
-  document.getElementById('arRx').addEventListener('click', function(){ hide('arRecall'); renderHome(); });
-  document.getElementById('arAltRecall').addEventListener('click', function(){
-    var f = fresh(), d = due();
-    var p = f[0] || d[0] || A.PAGES[0];
-    if (p) openRecall(p.id);
-  });
-  document.getElementById('arAltWeak').addEventListener('click', function(){
-    document.querySelector('.ar-miss').scrollIntoView({ behavior:'smooth' });
-  });
 
   /* ── εκκίνηση ─────────────────────────────────────── */
   reload();
@@ -1780,28 +1402,19 @@
     }
     return t;
   }
-  function weakest(){
-    var rows = [], i, j, k, un, pts, must, st, tot;
-    for (i = 0; i < G.UNITS.length; i++){
-      un = G.UNITS[i]; pts = un.skeleton.points;
-      for (j = 0; j < pts.length; j++){
-        must = pts[j].must || [];
-        for (k = 0; k < must.length; k++){
-          st = state.els[un.id + ':' + j + ':' + k]; if (!st) continue;
-          tot = st.r + st.w; if (!tot || !st.w) continue;
-          rows.push({ u:un, p:pts[j], k:must[k].k, w:st.w, acc:st.r/tot });
-        }
-      }
-    }
-    return rows.sort(function(a,b){ return a.acc - b.acc || b.w - a.w; });
-  }
+  /* ══ HOME ══════════════════════════════════════════
+     ⚠️ ΤΟ `elCount` ΠΑΡΑΣΥΡΘΗΚΕ ΚΑΙ ΕΠΕΣΤΡΕΨΕ (als-v499). Κόβοντας το
+     `weakest()` πήρα μαζί και αυτό, επειδή κάθονταν στην ίδια περιοχή. Το
+     IIFE έσκαγε στο load με «elCount is not defined» — δηλαδή ΟΛΟΣ ο
+     Γνωστός μαύρος, χωρίς κανένα ορατό σημάδι στη σελίδα.
+     ⭐ Το έπιασε ο οδηγός σε vm, ΟΧΙ το μάτι μου: μια διαγραφή κατά ΠΕΡΙΟΧΗ
+     πρέπει πάντα να τρέχει μετά, όχι μόνο να διαβάζεται. */
   function elCount(un){
     var t = 0, i, pts = un.skeleton.points;
     for (i = 0; i < pts.length; i++) t += (pts[i].must || []).length;
     return t;
   }
 
-  /* ══ HOME ══════════════════════════════════════════ */
   function renderHome(){
     if (!G) return;
     var f = fresh(), d = due(), learned = 0, decN = 0, i, un, st;
@@ -1839,8 +1452,9 @@
     } else if (d.length){
       cl.textContent = 'Σήμερα';
       ct.textContent = 'Επανάληψη · ' + d[0].title;
-      cm.textContent = 'Κλειστό βιβλίο. ' + d[0].skeleton.points.length + ' σημεία, ~4 λεπτά.';
-      cta.dataset.gngo = 'recall:' + d[0].id;
+      cm.textContent = 'Ξαναδιάβασέ το και πες το μόνος σου. ' +
+        d[0].skeleton.points.length + ' σημεία, ~4 λεπτά.';
+      cta.dataset.gngo = 'lesson:' + d[0].id;
     } else {
       cl.textContent = 'Καθαρά';
       ct.textContent = 'Δεν χρωστάς τίποτα';
@@ -1870,7 +1484,6 @@
         groups[g].map(function(x){ return row(x, 'lesson', null); }).join('');
     }).join('');
 
-    renderMiss();
     paintDoorStatus();
   }
 
@@ -1891,21 +1504,7 @@
       bar + right + '</button>';
   }
 
-  function renderMiss(){
-    var w = weakest(), box = document.getElementById('gnMiss'), n = document.getElementById('gnMissN');
-    if (!w.length){
-      n.textContent = 'τίποτα ακόμη';
-      box.innerHTML = '<div class="ar-empty">Μόλις κάνεις την πρώτη ανάκληση, ό,τι δεν θυμηθείς κάθεται εδώ και επιστρέφει πιο συχνά από τα υπόλοιπα.</div>';
-      return;
-    }
-    n.textContent = w.length + ' ' + (w.length === 1 ? 'στοιχείο' : 'στοιχεία');
-    box.innerHTML = '<div class="ar-rows">' + w.slice(0, 8).map(function(x){
-      return '<button class="ar-mrow" data-gngo="lesson:' + esc(x.u.id) + '">' +
-        '<span><span class="l">' + esc(x.k) + '</span>' +
-        '<span class="g">' + esc(x.p.label) + ' · ' + esc(x.u.title) + '</span></span>' +
-        '<span class="c">' + Math.round(x.acc*100) + '%</span></button>';
-    }).join('') + '</div>';
-  }
+
 
   /* ⭐ «ΤΟ ΞΕΡΩ ΑΠΕΞΩ» — ίδιοι κανόνες με την Ιστορία και τον Άγνωστο:
      δεν ακουμπάει `best` ούτε `runs`, δεν ανεβάζει σκάλα, το λέει στην
@@ -1915,13 +1514,14 @@
     if (claimedOnly(s)){
       return '<div class="ar-claim-on">' +
         '<div class="ar-claim-head">Δηλωμένο απέξω · ' + esc(ago(s.claimed)) + '</div>' +
-        '<div class="ar-claim-note">Το είπες εσύ, δεν το άκουσε κανείς. Δεν μετράει σαν ανάκληση και η σκάλα ' +
-        'δεν προχώρησε. Σε ξαναρωτάω ' + esc(inDays(s.due)) + ', και τότε θέλει κανονική ανάκληση.</div>' +
+        '<div class="ar-claim-note">Το είπες εσύ, δεν το άκουσε κανείς — εδώ δεν ακούει τίποτα, ' +
+        'με δική σου εντολή. Σε ξαναρωτάω ' + esc(inDays(s.due)) + '.</div>' +
         '<button class="ar-claim-undo" data-gnunclaim="' + esc(un.id) + '">Αναίρεση</button></div>';
     }
     return '<button class="ar-claim-b" data-gnclaim="' + esc(un.id) + '">Το ξέρω απέξω' +
-      '<span>Αν δεν προλαβαίνεις να το πεις τώρα. Φεύγει από το «ξεκίνα από εδώ» και γυρίζει σε ' +
-      CLAIM_DAYS + ' μέρες για κανονική ανάκληση. Δεν μετράει σαν μέτρηση.</span></button>';
+      '<span>Πες το δυνατά με κλειστό βιβλίο και κρίνε μόνος σου. Φεύγει από το «ξεκίνα από ' +
+      'εδώ» και γυρίζει σε ' + CLAIM_DAYS + ' μέρες. Είναι δήλωση, όχι μέτρηση — και δεν ' +
+      'υπάρχει τίποτα εδώ που να μετράει.</span></button>';
   }
   function paintClaim(boxId, un){
     var box = document.getElementById(boxId); if (!box) return;
@@ -1932,16 +1532,13 @@
   }
   function doClaim(id){
     var s = u(id);
-    if (s.runs){ toast('Αυτή την έχεις ήδη πει απέξω και μετρήθηκε. Η μέτρηση μένει.'); return; }
+    /* Μια παλιά ΜΕΤΡΗΣΗ δεν σβήνεται από μια νέα ΔΗΛΩΣΗ. */
+    if (s.runs){ toast('Αυτή την είχες πει όταν υπήρχε ακροατής, και μετρήθηκε. Η μέτρηση μένει.'); return; }
     s.claimed = Date.now();
     if (!s.learnedAt) s.learnedAt = Date.now();
     s.due = Date.now() + CLAIM_DAYS * DAY;
-    /* Αν δήλωσε ΜΕΣΑ από την ανάκληση, η ανάκληση τελείωσε — αλλιώς ένα
-       «Τέλος» με σιωπή θα έγραφε μέτρηση 0% πάνω από τη δήλωση. */
-    micStop();
-    var bar = document.getElementById('gnBar'); if (bar) bar.style.display = 'none';
     save(); renderHome();
-    toast('Το κράτησα ως δηλωμένο. Σε ξαναρωτάω σε ' + CLAIM_DAYS + ' μέρες, με κανονική ανάκληση.');
+    toast('Το κράτησα ως δηλωμένο. Σε ξαναρωτάω σε ' + CLAIM_DAYS + ' μέρες.');
   }
   function undoClaim(id){
     var s = u(id);
@@ -2124,13 +1721,13 @@
     defs += defBlock(un.mine,    'mine', 'y', 'Δικές σου σημειώσεις · από το περιθώριο', !defs);
     if (defs) h += layer(nx(), 'Οι λέξεις', 'τι σημαίνει τι', defs);
 
-    h += '<button class="ar-go" id="gnGo">Κλείσε το βιβλίο και πες το' +
-      '<span>' + sk.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία · σε ακούει και σου λέει στο τέλος τι ξέχασες</span></button>' +
-      '<div class="ar-claim" id="gnClaimL"></div>';
+    /* ⛔ ΚΑΝΕΝΑ ΚΟΥΜΠΙ «ΠΕΣ ΤΟ» ΠΛΕΟΝ — δεν υπάρχει ποιος να ακούσει, και
+       ένα κουμπί που υπόσχεται ακροατή είναι χειρότερο από κανένα κουμπί.
+       Στη θέση του μένει ΜΟΝΟ η δήλωση, που ήταν πάντα ειλικρινής. */
+    h += '<div class="ar-claim" id="gnClaimL"></div>';
 
     var lb = document.getElementById('gnLb');
     lb.innerHTML = h;
-    document.getElementById('gnGo').addEventListener('click', function(){ openRecall(un.id); });
     paintClaim('gnClaimL', un);
 
     /* ── η αντιστοιχία γίνεται ζωντανή ─────────────────────────────
@@ -2160,371 +1757,24 @@
     show('gnLesson');
   }
 
-  /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var rec = null, micWant = false, heardFinal = '', heardTmp = '', restarts = 0;
-  var ALTS = 4, SILENCE_MS = 20000, lastHeardAt = 0, silenceTimer = null;
+  /* ⛔⛔ ΕΔΩ ΖΟΥΣΕ Η ΑΝΑΚΛΗΣΗ ΜΕ ΤΗ ΦΩΝΗ ΤΟΥ ΓΝΩΣΤΟΥ — ΕΦΥΓΕ ΟΛΟΚΛΗΡΗ, als-v499.
+     Δικά του λόγια: «δεν θέλω να υπάρχει ο μηχανισμός που με ακούει να το
+     λέω σωστά, δεν με νοιάζει, μόνο στην ιστορία το θέλω αυτό πουθενά
+     αλλού» — και μετά ρητά: «Α, βγάλε το και από άγνωστο και από γνωστό».
 
-  function openRecall(id){
-    var un = G.unit(id); if (!un) return;
-    cur = un;
-    /* 0 = κλειστό · 2 = το αποκάλυψε ο ίδιος (μετράει ως χαμένο).
-       ⭐ Καμία βαθμολόγηση ΚΑΤΑ τη διάρκεια — μία φορά, στο τέλος. */
-    sess = { id:id, marks:un.skeleton.points.map(function(){ return 0; }), graded:null };
-    heardFinal = ''; heardTmp = ''; restarts = 0;
-    document.getElementById('gnRt').textContent = un.title;
-    drawRecall();
-    show('gnRecall');
-  }
+     ⚠️ ΓΙΑΤΙ ΕΦΥΓΕ ΟΛΟΚΛΗΡΗ ΚΑΙ ΟΧΙ ΜΟΝΟ ΤΟ ΚΟΥΜΠΙ ΤΟΥ ΜΙΚΡΟΦΩΝΟΥ:
+     η ανάκληση ΗΤΑΝ το μικρόφωνο. Η βαθμολόγηση γινόταν αποκλειστικά από
+     τη μεταγραφή, και το «το είπα αυτό» ΔΙΑΛΕΓΕ τη φράση μέσα από τα λόγια
+     του — «ένα σύστημα που μπορεί να γράψει την απόδειξη μπορεί και να την
+     εφεύρει». Χωρίς ακροατή δεν υπάρχει απόδειξη, άρα κάθε νούμερο που θα
+     κρατούσαμε θα ήταν ποσοστό που δεν μέτρησε κανείς.
 
-  function drawRecall(){
-    var un = cur, sk = un.skeleton;
-    var h = '<div class="ar-lhead"><div class="ar-lkicker">Η ανάκληση</div>' +
-      '<div class="rc-ask">' + esc(sk.ask) + '</div>' +
-      '<div class="rc-sub">Πες τα όλα δυνατά, με όποια σειρά θέλεις. Δεν σε διακόπτω και δεν σου ' +
-      'δίνω τίποτα μέχρι να τελειώσεις: μόλις πατήσεις «Τέλος» σου λέω σημείο προς σημείο τι ' +
-      'είπες και τι ξέχασες. Πάτα ένα κενό μόνο αν δεν το θυμάσαι καθόλου.' +
-      '</div></div>';
+     ΤΙ ΕΜΕΙΝΕ ΣΤΗ ΘΕΣΗ ΤΗΣ: το «Το ξέρω απέξω» — ΔΗΛΩΣΗ, και η σελίδα το
+     λέει ήδη έτσι. Η σκάλα τρέχει σε αυτό.
+     ⛔ Τα αποθηκευμένα δεδομένα ΔΕΝ σβήστηκαν — είναι δικά του. Απλώς δεν
+     γράφει κανείς πια εκεί.
+     ⚠️ Η ΑΝΑΓΝΩΡΙΣΗ ΦΩΝΗΣ ΖΕΙ ΜΟΝΟ ΣΤΗΝ `istoria.html`. Μην τη φέρεις πίσω. */
 
-    h += '<ol class="rc-slots" id="gnSlots">' + sk.points.map(function(p, i){
-      return slotHTML(p, i);
-    }).join('') + '</ol>';
-
-    document.getElementById('gnRb').innerHTML = h +
-      '<div class="ar-claim" id="gnClaimR"></div><div style="height:150px"></div>';
-    paintClaim('gnClaimR', un);
-
-    /* η μπάρα ζει έξω από τη ροή για να μένει καρφωμένη κάτω */
-    var bar = document.getElementById('gnBar');
-    if (!bar){
-      bar = document.createElement('div');
-      bar.className = 'rc-bar'; bar.id = 'gnBar';
-      document.getElementById('gnRecall').appendChild(bar);
-    }
-    bar.innerHTML = '<div class="rc-inner">' +
-      '<div class="rc-heard" id="gnHeard"></div>' +
-      '<div class="rc-btns">' +
-      '<button class="rc-mic' + (SR ? '' : ' off') + '" id="gnMic">' +
-      '<span class="rc-dot"></span><span id="gnMicT">' + (SR ? 'Πες το' : 'Χωρίς μικρόφωνο') + '</span></button>' +
-      '<button class="rc-done" id="gnDone">Τέλος</button></div>' +
-      '<div class="rc-note" id="gnNote">' + (SR
-        ? 'Όσο ακούει, η φωνή σου περνάει από την αναγνώριση του browser. Σταματάει μόλις το κλείσεις.'
-        : 'Ο browser σου δεν κάνει αναγνώριση φωνής. Πες τα δυνατά ούτως ή άλλως και πάτα τα κενά για να ελέγξεις.') +
-      '</div></div>';
-    bar.style.display = '';
-
-    document.getElementById('gnMic').addEventListener('click', micToggle);
-    document.getElementById('gnDone').addEventListener('click', finish);
-    document.getElementById('gnSlots').addEventListener('click', function(e){
-      var b = e.target.closest('.rc-slot'); if (!b) return;
-      var i = +b.dataset.i;
-      if (sess.marks[i]) return;
-      sess.marks[i] = 2;
-      paintSlot(i);
-    });
-  }
-
-  function slotHTML(p, i){
-    var m = sess.marks[i];
-    var inner = m === 2
-      ? '<span class="lb">' + esc(p.label) + '</span><span class="dt">' + esc(p.detail) + '</span>'
-      : '<span class="dots">·····</span>';
-    var mark = m === 2 ? '<span class="mk">δεν το θυμήθηκες</span>' : '';
-    return '<li><button class="rc-slot' + (m === 2 ? ' shown' : '') + '" data-i="' + i + '">' +
-      '<span class="n">' + (i+1) + '</span><span class="v">' + inner + '</span>' + mark + '</button></li>';
-  }
-
-  /* Το ΒΑΘΜΟΛΟΓΗΜΕΝΟ σημείο: κάθε στοιχείο ξεχωριστά, με ✓ ή ✗.
-     ⚠️ Σταθερή αρχή 26: οι κλάσεις είναι `did`/`lost`, ΠΟΤΕ μονογράμματες —
-     το `.rc-slot .n` της ίδιας σελίδας είναι 14px mono και θα τις έπιανε. */
-  function gradedHTML(p, i, g, tapped){
-    var cls = tapped ? 'shown' : g.full ? 'full' : g.n ? 'part' : 'miss';
-    var mk = tapped ? 'το έδειξες'
-           : g.full ? 'πλήρες'
-           : g.n ? g.n + '/' + g.total
-                 : '0/' + g.total;
-    var els = '<ul class="rc-els">' + p.must.map(function(e, j){
-      var y = !tapped && g.hits[j];
-      /* Η διόρθωση προσφέρεται ΜΟΝΟ σε χαμένο στοιχείο και ΜΟΝΟ αν υπάρχει
-         απαγγελία. Σε σημείο που το αποκάλυψε ο ίδιος δεν προσφέρεται
-         καθόλου: εκεί ζήτησε την απάντηση, δεν την ανακάλεσε. */
-      var fix = (!y && !tapped && sess.heard)
-        ? '<button class="rc-said" data-gnsaid="' + i + ':' + j + '">το είπα αυτό</button>' : '';
-      return '<li class="rc-el ' + (y ? 'did' : 'lost') + '"><span class="s">' + (y ? '✓' : '✗') + '</span>' +
-        esc(e.k) + fix + '</li>';
-    }).join('') + '</ul>';
-    return '<li><div class="rc-slot graded ' + cls + '">' +
-      '<span class="n">' + (i+1) + '</span>' +
-      '<div class="v"><div class="lb">' + esc(p.label) + '</div>' + els + '</div>' +
-      '<span class="mk">' + esc(mk) + '</span></div></li>';
-  }
-
-  function paintSlot(i){
-    var li = document.getElementById('gnSlots').children[i];
-    if (li) li.innerHTML = slotHTML(cur.skeleton.points[i], i);
-  }
-
-  /* ── το μικρόφωνο ──────────────────────────────────
-     Σταθερή αρχή 10: «δεν υπάρχει αναγνώριση», «δεν έδωσες άδεια», «δεν
-     έχει δίκτυο» και «δεν είπες τίποτα» λένε ΤΕΣΣΕΡΙΣ διαφορετικές
-     προτάσεις — αλλιώς ένα κλειστό μικρόφωνο μοιάζει με ένα που δεν
-     καταλαβαίνει. */
-  function micSay(msg, warn){
-    var n = document.getElementById('gnNote'); if (!n) return;
-    n.textContent = msg;
-    n.className = 'rc-note' + (warn ? ' warn' : '');
-  }
-  function micUI(on){
-    var b = document.getElementById('gnMic'), t = document.getElementById('gnMicT');
-    if (!b) return;
-    b.classList.toggle('live', !!on);
-    t.textContent = on ? 'Ακούω…' : (SR ? 'Πες το' : 'Χωρίς μικρόφωνο');
-  }
-  function micToggle(){
-    if (!SR){
-      micSay('Ο browser σου δεν έχει αναγνώριση φωνής (τη διαθέτουν Chrome και Safari). Πάτα τα κενά με το δάχτυλο: η άσκηση δουλεύει το ίδιο.', true);
-      return;
-    }
-    if (micWant) micStop(); else micStart();
-  }
-  function micStart(){
-    micWant = true; restarts = 0;
-    lastHeardAt = Date.now();
-    clearInterval(silenceTimer);
-    silenceTimer = setInterval(function(){
-      if (!micWant) return;
-      if (Date.now() - lastHeardAt > SILENCE_MS)
-        micSay('Το μικρόφωνο είναι ανοιχτό αλλά δεν έχω πιάσει λέξη εδώ και ' +
-          Math.round((Date.now() - lastHeardAt) / 1000) + ' δευτερόλεπτα. Μίλα λίγο πιο δυνατά, ή πάτα τα κενά με το δάχτυλο.', true);
-    }, 5000);
-    try {
-      rec = new SR();
-      rec.lang = 'el-GR';
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = ALTS;
-      rec.onresult = onHeard;
-      rec.onerror = onMicErr;
-      rec.onend = function(){
-        /* ⭐⭐ ΣΩΖΕΤΑΙ ΠΡΩΤΑ Η ΗΜΙΤΕΛΗΣ ΦΡΑΣΗ (als-v457).
-           Ο Chrome κόβει τη συνεδρία στη ΣΙΩΠΗ, δηλαδή ακριβώς στις παύσεις
-           ανάμεσα στα σημεία. Ό,τι ήταν ακόμη «στον αέρα» χανόταν, και η
-           σελίδα τον άκουγε και πετούσε αυτό που άκουσε. */
-        if (heardTmp.trim()){ heardFinal += ' ' + heardTmp; heardTmp = ''; }
-        if (!micWant) { micUI(false); return; }
-        if (restarts++ > 60){ micWant = false; micUI(false); micSay('Το μικρόφωνο σταματούσε συνέχεια, οπότε το έκλεισα. Συνέχισε με το δάχτυλο.', true); return; }
-        try { rec.start(); } catch(e){ micWant = false; micUI(false); }
-      };
-      rec.start();
-      micUI(true);
-      micSay('Ακούω. Πες τα σημεία με τη σειρά που θέλεις.');
-    } catch(e){
-      micWant = false; micUI(false);
-      micSay('Δεν μπόρεσα να ανοίξω το μικρόφωνο: ' + (e && e.message ? e.message : 'άγνωστο σφάλμα') + '.', true);
-    }
-  }
-  function micStop(){
-    micWant = false;
-    clearInterval(silenceTimer); silenceTimer = null;
-    try { if (rec) rec.stop(); } catch(e){}
-    micUI(false);
-    micSay('Το μικρόφωνο είναι κλειστό.');
-  }
-  function onMicErr(e){
-    var k = e && e.error;
-    if (k === 'no-speech') return;
-    if (k === 'aborted') return;
-    micWant = false; micUI(false);
-    if (k === 'not-allowed' || k === 'service-not-allowed')
-      micSay('Δεν έδωσες άδεια για το μικρόφωνο. Δώσ’ την από τις ρυθμίσεις του browser, ή συνέχισε με το δάχτυλο.', true);
-    else if (k === 'audio-capture')
-      micSay('Δεν βρίσκω μικρόφωνο σε αυτή τη συσκευή.', true);
-    else if (k === 'network')
-      micSay('Η αναγνώριση φωνής θέλει δίκτυο και δεν το βρήκε. Με το δάχτυλο δουλεύει και χωρίς δίκτυο.', true);
-    else
-      micSay('Το μικρόφωνο σταμάτησε (' + esc(k || 'άγνωστο') + ').', true);
-  }
-  function onHeard(e){
-    var i, k, r;
-    heardTmp = '';
-    lastHeardAt = Date.now();
-    for (i = e.resultIndex; i < e.results.length; i++){
-      r = e.results[i];
-      if (r.isFinal){
-        /* ⭐ ΚΡΑΤΑΜΕ ΟΛΕΣ ΤΙΣ ΕΚΔΟΧΕΣ. Είναι μεταγραφές του ΙΔΙΟΥ ήχου, οπότε
-           δεν προσθέτουν λόγια που δεν είπε.
-           ⚠️ `|| 1` επίτηδες: χωρίς length, το `k < undefined` είναι false
-           και δεν θα κρατούσαμε ΤΙΠΟΤΑ — θα σιωπούσε όλη η απαγγελία. */
-        var nAlt = r.length || 1;
-        for (k = 0; k < nAlt && k < ALTS; k++) if (r[k]) heardFinal += ' ' + r[k].transcript;
-      }
-      else heardTmp += ' ' + r[0].transcript;
-    }
-    var hay = heardFinal + ' ' + heardTmp;
-
-    var hEl = document.getElementById('gnHeard');
-    if (hEl){
-      var tail = hay.trim().slice(-90);
-      hEl.innerHTML = tail ? 'άκουσα · <b>' + esc(tail) + '</b>' : '';
-    }
-    /* ⭐ ΤΙΠΟΤΑ ΔΕΝ ΒΑΘΜΟΛΟΓΕΙΤΑΙ ΕΔΩ. Το μόνο ζωντανό feedback είναι ότι
-       ΑΚΟΥΕΙ: ένα τικ στη μέση σπάει την προσπάθεια που χτίζει τη μνήμη. */
-    var words = G.fold(hay).split(' ').filter(Boolean).length;
-    micSay(words ? 'Ακούω. ' + words + ' λέξεις μέχρι τώρα. Πάτα «Τέλος» όταν τελειώσεις.' : 'Ακούω.');
-  }
-
-  /* ── τέλος + βαθμολόγηση ──────────────────────────── */
-  function aliasesFor(uid){
-    var out = {}, k, pre = uid + ':';
-    for (k in state.heard) if (state.heard.hasOwnProperty(k) && k.indexOf(pre) === 0)
-      out[k.slice(pre.length)] = state.heard[k];
-    return out;
-  }
-
-  function finish(){
-    micStop();
-    var un = cur, pts = un.skeleton.points, i, j, base = {};
-    /* Φωτογραφία ΠΡΙΝ αγγίξουμε τίποτα, ώστε το «το είπα αυτό» να
-       ξαναβαθμολογεί από την αρχή αντί να προσθέτει πάνω σε προσθήκη. */
-    for (i = 0; i < pts.length; i++)
-      for (j = 0; j < pts[i].must.length; j++){
-        var e0 = el(un.id, i, j);
-        base[i + ':' + j] = { r: e0.r, w: e0.w };
-      }
-    var s = u(un.id);
-    sess.heard = (heardFinal + ' ' + heardTmp).trim();
-    sess.base = { els: base, reviews: s.reviews || 0, best: s.best || 0 };
-
-    s.runs = (s.runs || 0) + 1;
-    s.last = Date.now();
-    if (!s.learnedAt) s.learnedAt = Date.now();
-
-    var d = today(), day = null;
-    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) day = state.days[i];
-    if (!day){ day = { id:d, q:0 }; state.days.push(day); }
-
-    var GR = regrade();
-    day.q += GR.total;
-    if (state.days.length > 400) state.days = state.days.slice(-400);
-    save();
-    summary(GR.cov, u(un.id));
-  }
-
-  /* ⭐⭐ ΞΑΝΑΤΡΕΧΕΙ ΟΛΟΚΛΗΡΗ, ΠΑΝΤΑ ΑΠΟ ΤΗ ΦΩΤΟΓΡΑΦΙΑ, ώστε δέκα πατήματα
-     «το είπα αυτό» να δίνουν το ίδιο αποτέλεσμα με ένα. */
-  function regrade(){
-    var un = cur, pts = un.skeleton.points, i, j;
-    var g = G.gradeUnit(un, sess.heard, aliasesFor(un.id));
-    var said = 0, total = 0, missedEls = [], full = 0, part = 0;
-
-    for (i = 0; i < pts.length; i++){
-      /* Σημείο που το αποκάλυψε ο ίδιος μετράει χαμένο ΟΛΟΚΛΗΡΟ, ό,τι κι αν
-         ακούστηκε: ζήτησε την απάντηση, δεν την ανακάλεσε. */
-      var tapped = sess.marks[i] === 2, gp = g.points[i];
-      total += gp.total;
-      for (j = 0; j < pts[i].must.length; j++){
-        var hit = !tapped && gp.hits[j], e = el(un.id, i, j), b = sess.base.els[i + ':' + j];
-        e.r = b.r + (hit ? 1 : 0);
-        e.w = b.w + (hit ? 0 : 1);
-        if (hit) said++; else missedEls.push(pts[i].must[j].k);
-      }
-      if (!tapped && gp.full) full++;
-      else if (!tapped && gp.n) part++;
-    }
-
-    var cov = total ? said / total : 0, s = u(un.id);
-    s.best = Math.max(sess.base.best, cov);
-    /* Η σκάλα προχωράει ΜΟΝΟ σε πραγματικά καθαρή ανάκληση. Μια σκάλα που
-       ανεβαίνει σε μισή απαγγελία κρύβει ακριβώς ό,τι δεν ξέρει. */
-    if (cov >= G.PASS){ s.reviews = sess.base.reviews + 1; s.due = G.nextDue(s.reviews, Date.now()); }
-    else { s.reviews = sess.base.reviews; s.due = Date.now() + DAY; }
-
-    sess.graded = { g:g, said:said, total:total, full:full, part:part, missedEls:missedEls, cov:cov };
-    return sess.graded;
-  }
-
-  /* ⭐ «ΤΟ ΕΙΠΑ ΑΥΤΟ» — ΔΙΑΛΕΓΕΙ τη φράση του, δεν τη ΓΡΑΦΕΙ. Ένα σύστημα
-     που μπορεί να γράψει την απόδειξη μπορεί και να την εφεύρει. */
-  function saidIt(i, j){
-    var e = cur.skeleton.points[i].must[j];
-    var sen = G.bestSentence(sess.heard, e.k);
-    if (!sen){
-      toast('Δεν βρήκα τίποτα κοντινό σε όσα άκουσα, οπότε δεν το μετράω. Δες παρακάτω τι άκουσα.');
-      return;
-    }
-    var k = cur.id + ':' + i + ':' + j, list = state.heard[k] || [];
-    if (list.indexOf(sen) < 0) list.push(sen);
-    if (list.length > 6) list = list.slice(-6);
-    state.heard[k] = list;
-    var GR = regrade();
-    save(); renderHome();
-    summary(GR.cov, u(cur.id));
-    toast('Το κράτησα: «' + sen.slice(0, 60) + '». Την επόμενη φορά θα το πιάσω μόνο του.');
-  }
-
-  function summary(cov, s){
-    var bar = document.getElementById('gnBar');
-    if (bar) bar.style.display = 'none';
-
-    var GR = sess.graded, pts = cur.skeleton.points, pct = Math.round(cov * 100);
-
-    var verdict = cov >= 1 ? 'Ολόκληρο, από μνήμης.'
-      : cov >= G.PASS ? 'Το κρατάς.'
-      : cov >= 0.6 ? 'Το ξέρεις χοντρικά, αλλά όχι απέξω.'
-      : cov > 0 ? 'Ξαναδιάβασέ το και ξαναπές το.'
-      : 'Δεν ήρθε τίποτα. Αυτό δεν είναι αποτυχία: είναι η μέτρηση πριν την επανάληψη.';
-
-    var when = cov >= G.PASS
-      ? 'Επόμενη επανάληψη ' + inDays(s.due) + '.'
-      : 'Ξανά αύριο. Η σκάλα προχωράει στο ' + Math.round(G.PASS * 100) + '% των στοιχείων, κι εσύ είσαι στο ' + pct + '%.';
-
-    var shape = GR.full + ' πλήρη · ' + GR.part + ' μισά · ' + (pts.length - GR.full - GR.part) + ' καθόλου';
-
-    var h = '<div class="ar-lhead" style="padding-top:24px">' +
-      '<div class="ar-lkicker">Η ανάκληση</div>' +
-      '<div class="rc-sum-n">' + GR.said + '<span style="color:var(--au-faint,#5c5964);font-size:.42em"> / ' + GR.total + '</span></div>' +
-      '<div class="rc-sum-s" style="margin-top:7px">στοιχεία · ' + esc(shape) + '</div>' +
-      '<div class="rc-sum-t">' + esc(verdict) + '</div>' +
-      '<div class="rc-sum-s">' + esc(when) + '</div></div>';
-
-    h += '<div class="ar-tag m" style="margin-top:26px">Σημείο προς σημείο</div>' +
-      '<ol class="rc-slots" style="margin-top:10px">' + pts.map(function(p, i){
-        return gradedHTML(p, i, GR.g.points[i], sess.marks[i] === 2);
-      }).join('') + '</ol>';
-
-    if (GR.missedEls.length){
-      h += '<div class="rc-sum-s" style="margin-top:18px">' + GR.missedEls.length +
-        (GR.missedEls.length === 1 ? ' στοιχείο κάθεται' : ' στοιχεία κάθονται') +
-        ' στα «Λάθη μου» και θα επιστρέψουν πιο συχνά από τα υπόλοιπα.</div>';
-    }
-
-    /* ⭐ Η ΑΠΟΔΕΙΞΗ. Χωρίς αυτό, το «δεν με άκουσε» είναι μυστήριο και για
-       τους δύο μας. Με αυτό, βλέπει ΑΚΡΙΒΩΣ τι έφτασε. */
-    if (sess.heard){
-      h += '<details class="rc-tr"><summary>Τι άκουσα · ' +
-        G.fold(sess.heard).split(' ').filter(Boolean).length + ' λέξεις</summary>' +
-        '<div class="rc-tr-b">' + esc(sess.heard) + '</div>' +
-        '<div class="rc-tr-n">Αν δεις εδώ κάτι που το είπες σωστά αλλά μετρήθηκε χαμένο, πάτα «το είπα αυτό» ' +
-        'δίπλα του πιο πάνω: κρατάω τη δική σου φράση και την επόμενη φορά την πιάνω μόνη της.</div></details>';
-    }
-
-    h += '<div class="rc-again">' +
-      '<button id="gnRe" class="pri">Ξανά τώρα</button>' +
-      '<button id="gnBack">Τέλος</button></div>';
-
-    var rb = document.getElementById('gnRb');
-    rb.innerHTML = h;
-    document.getElementById('gnRe').addEventListener('click', function(){ openRecall(cur.id); });
-    document.getElementById('gnBack').addEventListener('click', function(){ hide('gnRecall'); renderHome(); });
-    rb.addEventListener('click', function(ev){
-      var b = ev.target.closest('.rc-said'); if (!b) return;
-      var q = b.dataset.gnsaid.split(':');
-      saidIt(+q[0], +q[1]);
-    });
-    document.getElementById('gnRecall').scrollTop = 0;
-  }
-
-  /* ── όψεις ────────────────────────────────────────── */
   function show(id){
     document.getElementById(id).classList.add('on');
     document.body.style.overflow = 'hidden';
@@ -2533,17 +1783,14 @@
   function hide(id){
     document.getElementById(id).classList.remove('on');
     if (!document.querySelector('.ar-view.on') && !DOOR.classList.contains('on')) document.body.style.overflow = '';
-    if (id === 'gnRecall'){
-      micStop();
-      var bar = document.getElementById('gnBar');
-      if (bar) bar.remove();
-    }
   }
   function go(spec){
     if (!spec) return;
+    /* ⚠️ ΜΟΝΟ `lesson:` πλέον. Το `recall:` έφυγε μαζί με τη φωνή, και
+       ΔΕΝ αφήνουμε σιωπηλό κλάδο: ένα spec που δεν αναγνωρίζεται το λέει. */
     var p = spec.split(':');
     if (p[0] === 'lesson') openLesson(p[1]);
-    else if (p[0] === 'recall') openRecall(p[1]);
+    else toast('Δεν ξέρω τι να ανοίξω («' + spec + '»).');
   }
 
   /* ══ Η ΠΟΡΤΑ ═══════════════════════════════════════
@@ -2609,8 +1856,6 @@
   function openDoor(){
     var v = document.querySelectorAll('.ar-view.on'), i;
     for (i = 0; i < v.length; i++) v[i].classList.remove('on');
-    micStop();
-    var bar = document.getElementById('gnBar'); if (bar) bar.remove();
     WAG.hidden = true; WGN.hidden = true;
     DOOR.classList.add('on');
     document.body.style.overflow = 'hidden';
@@ -2635,21 +1880,9 @@
     if (b && b.dataset.gngo) go(b.dataset.gngo);
   });
   document.getElementById('gnLx').addEventListener('click', function(){ hide('gnLesson'); renderHome(); });
-  document.getElementById('gnRx').addEventListener('click', function(){ hide('gnRecall'); renderHome(); });
-  document.getElementById('gnAltRecall').addEventListener('click', function(){
-    var d = due(), f = fresh(), target = d[0] || f[0] || G.UNITS[0];
-    if (!target){ toast('Δεν υπάρχει ύλη ακόμη.'); return; }
-    openRecall(target.id);
-  });
-  document.getElementById('gnAltWeak').addEventListener('click', function(){
-    var w = weakest();
-    if (!w.length){ toast('Δεν έχω ακόμη λάθη σου. Κάνε μια ανάκληση πρώτα.'); return; }
-    openRecall(w[0].u.id);
-  });
   document.addEventListener('keydown', function(e){
     if (e.key !== 'Escape') return;
-    if (document.getElementById('gnRecall').classList.contains('on')) { hide('gnRecall'); renderHome(); }
-    else if (document.getElementById('gnLesson').classList.contains('on')) { hide('gnLesson'); renderHome(); }
+    if (document.getElementById('gnLesson').classList.contains('on')) { hide('gnLesson'); renderHome(); }
   });
 
   document.body.style.overflow = 'hidden';   /* η πόρτα είναι ανοιχτή στο load */

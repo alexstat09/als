@@ -418,6 +418,34 @@ colour rule: **accent only when something is due**, faint otherwise.
     resolves the selector out of the page and asserts it matches exactly as
     many plates as there are declared packets. Mutation-tested: reverting the
     selector fails the suite.
+- ⛔⛔ **NO MICROPHONE IN ΑΡΧΑΙΑ AT ALL (als-v499).** His words: *«δεν θέλω να
+  υπάρχει ο μηχανισμός που με ακούει να το λέω σωστά, δεν με νοιάζει, μόνο στην
+  ιστορία το θέλω αυτό πουθενά αλλού»*, then *«Α, βγάλε το και από άγνωστο και
+  από γνωστό»*. **Speech recognition now lives in `istoria.html` only**, and the
+  test guards it from **both** sides — forbidden in `arxaia.html`, required in
+  `istoria.html`, so nobody can satisfy the rule by deleting it everywhere.
+  - ⚠️ **THE RECALL *WAS* THE MICROPHONE — that is why it left whole.** Grading
+    ran only off the transcript, and «το είπα αυτό» *selected* the phrase out of
+    his own words («ένα σύστημα που μπορεί να γράψει την απόδειξη μπορεί και να
+    την εφεύρει»). With no listener there is no evidence, so anything kept would
+    have been a percentage nobody measured.
+  - **What replaced it: «Το ξέρω απέξω»** — already built, already honest, always
+    labelled ΔΗΛΩΜΕΝΟ. The ladder runs on it. Gone with the recall: «Τα λάθη
+    μου», «Τα αδύναμά μου», «Κατευθείαν στην ανάκληση», per-element accuracy.
+  - ⭐ On the ΑΓΝΩΣΤΟ side the removal also **fixes something broken**: `el-GR`
+    has a *modern* Greek model and replaces an unknown ancient form with a real
+    modern word (his words: «δν μπορει να ακουσει αρχαια»). No measurement was
+    lost — one that never held was.
+  - ⛔ **Stored data untouched.** `arx:gn.els` / `.heard` and `arx:v1.cells` stay;
+    nothing writes them any more. His only ΓΝΩΣΤΟ recall was 7 Aug on `gn4`,
+    a unit already archived — checked with `get_raw` before cutting.
+  - ⚠️⚠️ **A DELETION-BY-REGION TRAP, PAID FOR TWICE.** Cutting `weakest()` also
+    swallowed `elCount()` sitting in the same region: the whole ΓΝΩΣΤΟΣ world
+    died at load with `elCount is not defined` — a black screen, no visible
+    error. **The vm driver caught it, reading did not.** And `s.index()` on a
+    comment both worlds share targeted the *wrong* world; only an assertion
+    stopped it. Region deletes in this file must be driven afterwards, never
+    just re-read.
   - ⚠️ The **lesson and recall views are still 620px** (`.ar-vwrap`). They were
     deliberately left alone — that redesign has not been reviewed. Obvious
     next step, and the `align` layer (ancient ‖ translation) is what gains most.
