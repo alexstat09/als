@@ -388,6 +388,26 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   ok(fs.readFileSync(path.join(__dirname, '..', 'istoria.html'), 'utf8').indexOf('SpeechRecognition') > 0,
     'και η istoria.html ΤΗΝ ΚΡΑΤΑΕΙ — εκεί την θέλει');
 
+  /* ══ Η ΟΨΗ ΜΑΘΗΜΑΤΟΣ ΣΕ ΠΛΑΤΟΣ LAPTOP — als-v500 ═════════════════════
+     Η ζωντανή σελίδα κρατάει ΔΥΟ όψεις μαθήματος με ΤΙΣ ΙΔΙΕΣ κλάσεις:
+     `#gnLesson` (Γνωστό, φαρδιά) και `#arLesson` (Άγνωστο, 620px). Άρα ο
+     μόνος πραγματικός κίνδυνος εδώ είναι ένας κανόνας ΧΩΡΙΣ πρόθεμα, που
+     θα ξεχείλωνε σιωπηλά και τον Άγνωστο. Αυτό κλειδώνεται. */
+  var flat = page.replace(/\s+/g, ' ');
+  ok(/#gnLesson \.ar-vwrap\{ ?max-width:1180px/.test(flat),
+    'η όψη μαθήματος του Γνωστού ανοίγει στα 1180px');
+  ok(/#gnLesson \.al-per\{ ?display:grid/.test(flat),
+    'το αρχαίο και η μετάφραση κάθονται ΔΙΠΛΑ, όχι στοιβαγμένα');
+  ok(/#gnLesson #alKeys\{ ?columns:2/.test(flat), 'το κλειδί ανοίγει σε δύο κολόνες');
+  /* ⛔ Ο ΦΡΟΥΡΟΣ ΤΗΣ ΔΙΑΡΡΟΗΣ: καμία από τις κοινές κλάσεις δεν επιτρέπεται
+     να πάρει πλάτος χωρίς πρόθεμα. Το `.al-per{display:grid}` σκέτο θα
+     έσπαγε τον Άγνωστο χωρίς κανένα error. */
+  ['.al-per{ display:grid', '.ar-vwrap{ max-width:1180px', '#alKeys{ columns:2'].forEach(function (r) {
+    var bare = flat.indexOf(r.replace(/\s+/g, ' ')) >= 0;
+    var scoped = flat.indexOf('#gnLesson ' + r.replace(/\s+/g, ' ')) >= 0;
+    ok(!bare || scoped, '⛔ ο κανόνας «' + r + '» πρέπει να είναι κλειδωμένος στο #gnLesson');
+  });
+
   /* Η διάγνωση ήταν το πλάτος. Αν κάποιος το ξαναγυρίσει στα 620, η
      σελίδα ξαναγίνεται λωρίδα σε laptop — και αυτό ήταν ΟΛΟ το παράπονο. */
   ok(/#gnWrap\.ar-wrap\{[^}]*max-width:1240px/.test(page.replace(/\s+/g, ' ').replace(/ \{/g, '{')),

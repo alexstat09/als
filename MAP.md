@@ -446,9 +446,16 @@ colour rule: **accent only when something is due**, faint otherwise.
     comment both worlds share targeted the *wrong* world; only an assertion
     stopped it. Region deletes in this file must be driven afterwards, never
     just re-read.
-  - ⚠️ The **lesson and recall views are still 620px** (`.ar-vwrap`). They were
-    deliberately left alone — that redesign has not been reviewed. Obvious
-    next step, and the `align` layer (ancient ‖ translation) is what gains most.
+  - ⭐⭐ **THE LESSON VIEW IS LAPTOP-WIDE TOO (als-v500).** `#gnLesson` opens at
+    **1180px** and **each layer takes its own measure**: prose stays at a ~70ch
+    reading width (at 1180 it would be unreadable), while **Η αντιστοιχία** and
+    **Το κλειδί** take the full width — ancient ‖ translation side by side, and
+    80 pairs in two columns. One width for everything would ruin one or the other.
+  - ⛔ **PURE CSS, the lesson-building code was not touched.** After two
+    targeting mistakes in als-v499, a redesign is not allowed near the logic.
+  - ⚠️⚠️ **`#arLesson` SHARES 8 OF THESE CLASSES AND STAYS AT 620px.** Every rule
+    is scoped to `#gnLesson`; a bare `.al-per{display:grid}` would silently
+    reflow the ΑΓΝΩΣΤΟ world. The test greps for exactly that leak.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
