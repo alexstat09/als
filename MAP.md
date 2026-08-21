@@ -71,7 +71,8 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451), `arxaia.html` (Αρχαία,
-als-v454) and `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
+als-v454, **+ `arxaia-sokratis.html` / `arxaia-platon.html`, als-v497**) and
+`ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 **`homework.html` (School Studies, als-v483)** is the room above them.
 
 ⭐⭐ **`ekthesi.html` closed the last empty 30%.** Έκθεση ties with Αρχαία for
@@ -364,11 +365,38 @@ chooser is shown **every time** — a door that opens itself into yesterday's
 world is not a door. Each card carries a status line, and both use the same
 colour rule: **accent only when something is due**, faint otherwise.
 - **ΑΓΝΩΣΤΟ** = the αρχικοί χρόνοι drill, unchanged. Key `arx:v1`, appKey `arxaia`.
-- **ΓΝΩΣΤΟ** = *«Οι φιλοσοφικές ιδέες του Σωκράτη»*, 6 units from pages 3-4-5 of
-  his φροντιστήριο handout, read in four layers and then RECALLED out loud.
+- **ΓΝΩΣΤΟ** = **two kinds of work since als-v497**, not one.
   Key **`arx:gn`**, appKey **`arxaia-gn`**. ⚠️ Its `initCloudSync` writes the key
   **literally**, not through `var KEY` — two worlds in one file means no `var KEY`
   is unambiguous any more, and `smoke-test.sh` resolves that name statically.
+- ⭐⭐ **Η ΕΙΣΑΓΩΓΗ LEFT THE RECALL ENGINE (als-v497).** It used to be six units,
+  *«Οι φιλοσοφικές ιδέες του Σωκράτη»*, read in four layers and then recalled
+  out loud — Ιστορία's shape. His words: *«το γνωστό δεν το μαθαίνουμε απέξω
+  αλλά πρέπει απλά να ξέρουμε όλες τις πληροφορίες που δίνει»*. Right engine,
+  **wrong material**. The εισαγωγή is now **two standalone study packets**,
+  linked from the top of the ΓΝΩΣΤΟ world: **`arxaia-sokratis.html`** (η δίκη
+  και ο θάνατος του Σωκράτη) and **`arxaia-platon.html`** (ο βίος του Πλάτωνα).
+  - ⛔ **They carry NO progress, NO deadline, NO grade** — that was the entire
+    point. `tests/arxaia-gnosto.test.js` §9 forbids `localStorage` inside them.
+  - ⛔ **They went in VERBATIM, on explicit instruction** («ακριβώς όπως είναι,
+    χωρίς καμία αλλαγή»). Copied with `cp`, never retyped. The **only** edit is
+    one `← Αρχαία` line, and §9 strips exactly that line and compares the rest
+    against a **pinned sha256**. If you "improve" a sentence in there, the test
+    fails — which is the intent.
+  - ⛔ **The six units were NOT deleted**: `archive/arxaia-gnosto-eisagogi.js`
+    (the corpus, with his margin notes) and
+    `archive/arxaia-gnosto-eisagogi.source.txt` (his raw, **uncorrected**
+    transcription). §9 proves both are still there. The handout does not exist
+    online — if that transcription goes, it is gone.
+  - ⚠️ **`verbatim` is retired.** It meant one specific thing (the two
+    paragraphs ΓΤΠ demanded word-for-word) and left with them. Texts declare
+    `byHeart`. The test forbids the field from coming back.
+- **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
+  ancient original + official translation, and the translation genuinely is
+  said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
+  ⚠️ `homework.html` builds its unit index from `ARXGN.UNITS`, so the parser no
+  longer resolves `gn1`…`gn6` — checked against his live homework first: **no
+  row references them**, so nothing of his degraded.
 - ⚠️ **The voice recall WORKS here**, unlike the ΑΓΝΩΣΤΟ side: this material is
   **modern** Greek prose, so `el-GR` transcribes it properly. Hard constraint 28
   killed voice for ancient FORMS only.
