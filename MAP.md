@@ -391,6 +391,36 @@ colour rule: **accent only when something is due**, faint otherwise.
   - ⚠️ **`verbatim` is retired.** It meant one specific thing (the two
     paragraphs ΓΤΠ demanded word-for-word) and left with them. Texts declare
     `byHeart`. The test forbids the field from coming back.
+- ⭐⭐ **THE ΓΝΩΣΤΟ WORLD IS LAPTOP-WIDE NOW (als-v498).** His words: *«ούτε το
+  αισθητικό ούτε ότι είναι φτιαγμένο για κινητή χρήση ενώ θα διαβάζω συνήθως
+  από το λάπτοπ»*. The diagnosis was **measurable, not taste**: `.ar-wrap` is
+  620px, so on his ~2000px laptop the page was a ribbon in a field of black
+  and the two packets — now the main thing — read as two empty list rows.
+  - **Every rule is locked to `#gnWrap`.** ΑΓΝΩΣΤΟ and the door share the same
+    `.ar-*` classes and are untouched. ⛔ Never write a bare `.ar-row` /
+    `.ar-wrap` rule in that block. Below 1040px it collapses back to one
+    column at 640px — the phone is not sacrificed.
+  - ⭐⭐ **THE FONT WAS THE REAL CULPRIT, AND IT IS CHECKABLE.** `aurora.css`
+    *names* Instrument Serif in `--au-serif`, but the `@import` lives in
+    `aurora-page.css`, which only **ideas · caffeine · main** load. So every
+    serif headline on `arxaia.html` had been **Georgia** (the fallback) its
+    whole life. The page now links the font directly — *not* `aurora-page.css`,
+    which would also repaint the background and the ΑΓΝΩΣΤΟ world.
+    ⚠️ CDN failure degrades to Georgia and the page still stands; the
+    "never CDN" rule is about **sync deps**, where failure is silent.
+  - **The material is not invented here**: the warm sky, the 1px inner top
+    highlight and the hairline that lights on hover are `aurora.css`'s own
+    `.au-card` signatures — they had simply never reached this page.
+  - ⚠️⚠️ **A SILENT REGRESSION THIS CHANGE CAUSED, AND THE GUARD FOR IT.**
+    `paintDoorStatus()` counts the packets from the DOM. The plates changed
+    class (`.ar-row[href]` → `.gn-pl`), the selector returned **0**, and the
+    door line dropped its packet count with **no error**. §8 of the test now
+    resolves the selector out of the page and asserts it matches exactly as
+    many plates as there are declared packets. Mutation-tested: reverting the
+    selector fails the suite.
+  - ⚠️ The **lesson and recall views are still 620px** (`.ar-vwrap`). They were
+    deliberately left alone — that redesign has not been reviewed. Obvious
+    next step, and the `align` layer (ancient ‖ translation) is what gains most.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
