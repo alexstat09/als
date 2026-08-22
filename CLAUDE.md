@@ -197,7 +197,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v501`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v502`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1053,12 +1053,12 @@ task due on the **next φροντιστήριο day**, whenever it was assigned,
 of that day's hours, with overdue on top. The deadline is derived from his
 timetable and **pinned to the day the work was set** (`t.ts`), so nothing can
 slide out of being late. Full detail in §5. Then the four drill pages:
-**`latinika.html`** (als-v449) and **`tonos.html`**
-(als-v450, ο τονισμός: 9 rules, 97 hand-accented words, 481 assertions). Λατινικά is the one
-subject a computer can know *exactly*, so the page is a **drill, not a notebook**:
-`latin-engine.js` derives every form from rules, generates unlimited exercises,
-grades them itself, and keeps a per-CELL mastery map (γεν. πληθ. γ΄ κλίσης, not
-"nouns"). Notion owns the plan; this owns the practice.
+**`latinika.html`** (**als-v502**) and **`tonos.html`**
+(als-v450, ο τονισμός: 9 rules, 97 hand-accented words, 481 assertions).
+⭐⭐ **Τα Λατινικά ΔΕΝ είναι πια drill.** Δική του εντολή (22/08/26) η σελίδα
+έγινε **ΒΙΒΛΙΟΘΗΚΗ ΕΝΟΤΗΤΩΝ**: μία κάρτα ανά Lectio, και μέσα το πακέτο του —
+`latinika-lectio16.html` / `latinika-lectio17.html`, **αυτούσια, με sha256
+καρφωμένο**. Λεπτομέρειες + τι ΔΕΝ χάθηκε: `MAP.md` και §5.
 
 ⭐ **`istoria.html` is LIVE again (als-v451/452)** and it is the opposite kind of
 page, deliberately. History has no rule to derive an answer from, so the dangerous
@@ -1209,6 +1209,45 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-08-22 — `als-v502` — ΤΑ ΛΑΤΙΝΙΚΑ ΕΓΙΝΑΝ ΒΙΒΛΙΟΘΗΚΗ**
+(`tests/latinika-lectio.test.js` **275/0**· smoke green 50 html· 45 σουίτες,
+εκτός της γνωστής `ladders` (4 fail, **κόκκινη ΚΑΙ ΠΡΙΝ**, επαληθευμένο με
+`git stash` σε καθαρό HEAD)· η `launcher` **ΕΓΙΝΕ ΠΡΑΣΙΝΗ** — ήταν κόκκινη από
+την als-v460).
+
+Δικά του λόγια: *«πρόσθεσε αυτές τις δύο μεταφράσεις όπως είναι ακριβώς … και
+σβήσε αυτό με τις κλίσεις που έχει μέσα, οργάνωσέ τες ώστε εκεί όπου κάνω
+browse για να διαλέξω να είναι ωραία»*.
+
+1. **ΤΑ ΔΥΟ ΠΑΚΕΤΑ ΜΠΗΚΑΝ ΑΥΤΟΥΣΙΑ.** Ένα `cp` για το XVII (το αρχείο που
+   έστειλε), αντιγραφή κατά λέξη για το XVI (ήταν artifact). Η ΜΟΝΗ διαφορά
+   είναι η γραμμή «← Λατινικά», και το test το αποδεικνύει: το stripped
+   sha256 του `latinika-lectio17.html` **ΕΙΝΑΙ** το sha256 του
+   `~/Downloads/lectio17_1.html`.
+2. ⭐⭐ **ΤΑ ΝΟΥΜΕΡΑ ΤΗΣ ΒΙΒΛΙΟΘΗΚΗΣ ΜΕΤΡΙΟΥΝΤΑΙ ΑΠΟ ΤΑ ΠΑΚΕΤΑ.** «16
+   προτάσεις», «5 παγίδες», το «27» του hero — καθένα διαβάζεται από το ίδιο
+   το αρχείο και συγκρίνεται με την κάρτα. Στα Αρχαία τα είχα γράψει με το
+   μάτι και ο Πλάτων ήταν λάθος (σταθ. 33).
+3. ⭐⭐ **ΤΟ RENDER ΒΡΗΚΕ ΤΟ ΜΟΝΟ BUG ΤΗΣ ΑΛΛΑΓΗΣ, ΞΑΝΑ.** Το «Άνοιξε →» ήταν
+   ΠΡΩΤΟ παιδί της κάρτας: στο desktop είναι `absolute` και δεν φαίνεται πού
+   ζει στο DOM, αλλά κάτω από 560px γίνεται `static` και **προσγειωνόταν πάνω
+   από τον αριθμό της ενότητας**. Καμία δήλωση δεν το έπιανε. *Ένα
+   `position:absolute` κρύβει τη σειρά του DOM μέχρι το πρώτο breakpoint.*
+4. ⛔ **ΣΒΗΣΤΗΚΕ ΑΠΟ ΤΗ ΣΕΛΙΔΑ, ΟΧΙ ΑΠΟ ΤΟ REPO.** `archive/latinika-drill.html`
+   κρατάει ΟΛΗ τη μηχανή· το `lat:v1` **συγχρονίζεται ακόμη από τη
+   `latinika.html`** ώστε να μη μείνει ορφανό. Ο `study-sync-persist` φρουρός
+   γύρισε ανάποδα και έγινε πιο δυνατός: *η ζωντανή σελίδα ΔΕΝ γράφει, άρα δεν
+   μπορεί να ξανασφραγίσει σαν δική της πρόοδο που ήρθε από το cloud.*
+5. ⛔ **ΤΑ ΚΛΕΙΔΙΑ ΤΩΝ ΕΝΟΤΗΤΩΝ ΕΞΩ ΑΠΟ ΤΟ SYNC, ΕΠΙΤΗΔΕΣ.** `lectio16:v1`
+   είναι πίνακας από πρωτόγονα → `allPrim` → **ΕΝΩΣΗ**. Στο sync, το
+   «μηδένισε» θα γύριζε πίσω από την άλλη συσκευή (σταθ. 31).
+6. 🔴 **ΑΝΟΙΧΤΑ**: (α) το πλακίδιο του Home και η σκάλα του School Studies
+   **ΠΑΓΩΝΟΥΝ** στα παλιά κελιά — αληθινά αλλά ακίνητα· να ξαναζωντανέψουν
+   θέλει νέο `kind` στο `ladders.js`, **ποτέ μαντεψιά από το «το ξέρω»**.
+   (β) ⚠️ *Βρέθηκε, ΔΕΝ διορθώθηκε*: `latinika` · `tonos` · `ekthesi` **λείπουν
+   και από τα δύο** `ALL_PAGES`/`OWNER_ONLY` του `als-profile.js`, άρα είναι
+   ορατά στον λογαριασμό της Χριστίνας. (γ) 🔴 αδοκίμαστο στο κινητό του.
 
 **2026-08-21 — `als-v497` → `als-v501` — ΤΑ ΑΡΧΑΙΑ ΞΑΝΑΓΡΑΦΤΗΚΑΝ ΓΙΑ LAPTOP,
 ΚΑΙ ΤΟ ΜΙΚΡΟΦΩΝΟ ΕΦΥΓΕ** (`tests/arxaia-gnosto.test.js` **338/0**· smoke green

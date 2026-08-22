@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Λατινικά">
+  <title>Λατινικά · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <!-- Cloud sync from day one: a study page that lives only on the phone loses
+       everything on a PWA reinstall, which has already happened to him once. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="latin-engine.js"></script>
+  <script src="als-dialog.js" defer></script>
+  <script>window.__pmAutoSel='.lt-hero,.lt-today,.lt-map,.lt-words,.lt-foot';</script>
+  <script src="page-motion.js" defer></script>
+<style>
+  :root{ --lt:63,224,176; --warn:255,138,107; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{
+    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+  .lt-wrap{ max-width:600px; margin:0 auto; padding:0 18px; }
+  .lat{ font-family:var(--au-serif,Georgia,serif); font-style:italic; }
+
+  /* ── hero ─────────────────────────────────────────── */
+  .lt-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
+  .lt-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--lt),.92); margin-bottom:12px; }
+  .lt-h{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400;
+    font-size:clamp(27px,7vw,36px); line-height:1.04; letter-spacing:-.01em; }
+  .lt-h b{ font-weight:400; color:rgb(var(--lt)); font-variant-numeric:tabular-nums; }
+  .lt-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.5; }
+  .lt-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  /* ── today ────────────────────────────────────────── */
+  .lt-today{ margin-top:22px; }
+  .lt-cta{ display:block; width:100%; text-align:left; border:1px solid rgba(var(--lt),.28);
+    border-radius:18px; padding:18px 20px; color:inherit; cursor:pointer;
+    background:linear-gradient(140deg,rgba(var(--lt),.13),rgba(var(--lt),.03) 60%,transparent);
+    transition:transform .38s cubic-bezier(.16,1,.3,1),border-color .38s; }
+  .lt-cta:active{ transform:scale(.985); }
+  .lt-cta:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:3px; }
+  .lt-cta-l{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
+    text-transform:uppercase; color:rgba(var(--lt),.9); }
+  .lt-cta-t{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:25px; margin-top:7px; }
+  .lt-cta-m{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:5px; }
+  .lt-modes{ display:flex; gap:8px; margin-top:12px; }
+  .lt-mode{ flex:1; border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    border-radius:12px; padding:11px 8px; font-size:12px; font-family:inherit; cursor:pointer;
+    transition:color .3s,border-color .3s; }
+  .lt-mode:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(var(--lt),.4); }
+  .lt-mode:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+
+  /* ── section head ─────────────────────────────────── */
+  .lt-sh{ display:flex; align-items:baseline; gap:10px; margin:34px 0 14px; }
+  .lt-sh h2{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:21px; }
+  .lt-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); margin-left:auto; }
+
+  /* ── ο χάρτης ─────────────────────────────────────── */
+  .lt-seg{ display:flex; gap:4px; padding:3px; border:1px solid var(--au-line,#26262f); border-radius:12px; margin-bottom:14px; }
+  .lt-seg button{ flex:1; border:none; background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit;
+    font-size:12px; padding:8px 6px; border-radius:9px; cursor:pointer; transition:background .3s,color .3s; }
+  .lt-seg button[aria-selected="true"]{ background:rgba(var(--lt),.14); color:rgb(var(--lt)); }
+  .lt-seg button:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:1px; }
+
+  .lt-filters{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .lt-chip{ border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
+    border-radius:999px; padding:5px 12px; font-size:11.5px; font-family:inherit; cursor:pointer; }
+  .lt-chip[aria-pressed="true"]{ border-color:rgba(var(--lt),.5); color:rgb(var(--lt)); background:rgba(var(--lt),.08); }
+  .lt-chip:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+
+  .lt-grid{ display:grid; gap:5px; }
+  .lt-grid.nouns{ grid-template-columns:56px 1fr 1fr; }
+  .lt-grid.verbs{ grid-template-columns:52px repeat(6,1fr); }
+  .lt-gh{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); display:flex; align-items:center; justify-content:center; padding-bottom:2px; }
+  .lt-gh.rw{ justify-content:flex-start; }
+  .lt-rl{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); display:flex; align-items:center; }
+  .lt-cell{ aspect-ratio:1; min-height:34px; border-radius:7px; border:1px solid var(--au-line,#26262f);
+    display:grid; place-items:center; font-family:var(--au-mono,monospace); font-size:10px;
+    color:var(--au-faint,#5c5964); font-variant-numeric:tabular-nums; }
+  .lt-grid.nouns .lt-cell{ aspect-ratio:auto; min-height:38px; font-size:11px; }
+  .lt-cell.has{ color:var(--au-ivory,#f5f2ec); border-color:transparent; }
+  .lt-legend{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:11px; color:var(--au-faint,#5c5964); }
+  .lt-lg{ width:44px; height:7px; border-radius:4px;
+    background:linear-gradient(90deg,rgba(var(--warn),.75),rgba(255,255,255,.14),rgba(var(--lt),.8)); }
+  .lt-empty{ border:1px dashed var(--au-line,#26262f); border-radius:14px; padding:22px 18px; text-align:center;
+    color:var(--au-dim,#9a97a3); font-size:13px; line-height:1.6; }
+
+  /* ── λέξεις ───────────────────────────────────────── */
+  .lt-words ul{ list-style:none; display:flex; flex-direction:column; gap:1px;
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .lt-w{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:rgba(255,255,255,.014);
+    width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer; }
+  .lt-w:hover{ background:rgba(var(--lt),.05); }
+  .lt-w:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:-2px; }
+  .lt-w .l{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:17px; }
+  .lt-w .g{ font-size:12px; color:var(--au-dim,#9a97a3); }
+  .lt-w .t{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); white-space:nowrap; }
+  .lt-add{ width:100%; margin-top:10px; border:1px dashed var(--au-line,#26262f); background:transparent;
+    color:var(--au-dim,#9a97a3); border-radius:12px; padding:12px; font-family:inherit; font-size:12.5px; cursor:pointer; }
+  .lt-add:hover{ color:rgb(var(--lt)); border-color:rgba(var(--lt),.4); }
+  .lt-add:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+
+  .lt-foot{ margin:30px 0 0; font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.65; }
+
+  /* ── session ──────────────────────────────────────── */
+  .lt-sess{ position:fixed; inset:0; z-index:60; background:var(--au-void,#050506);
+    display:none; flex-direction:column; padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px); }
+  .lt-sess.on{ display:flex; }
+  .lt-sbar{ display:flex; align-items:center; gap:12px; }
+  .lt-x{ width:34px; height:34px; border-radius:50%; border:1px solid var(--au-line,#26262f);
+    background:transparent; color:var(--au-dim,#9a97a3); font-size:15px; cursor:pointer; flex:none; }
+  .lt-x:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+  .lt-prog{ flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; }
+  /* Σταθερό πλάτος + scaleX: το app κινεί μόνο transform/opacity (GPU), ποτέ layout. */
+  .lt-prog i{ display:block; height:100%; width:100%; background:rgb(var(--lt));
+    transform:scaleX(0); transform-origin:left;
+    transition:transform .45s cubic-bezier(.16,1,.3,1); }
+  .lt-count{ font-family:var(--au-mono,monospace); font-size:11px; color:var(--au-faint,#5c5964);
+    font-variant-numeric:tabular-nums; flex:none; }
+  .lt-qwrap{ flex:1; display:flex; flex-direction:column; justify-content:center; max-width:520px;
+    width:100%; margin:0 auto; padding:8px 0 4px; }
+  .lt-qtag{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(var(--lt),.85); margin-bottom:14px; }
+  .lt-qword{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:clamp(30px,9vw,42px); line-height:1.05; }
+  .lt-qask{ font-size:15px; color:var(--au-dim,#9a97a3); margin-top:12px; line-height:1.5; }
+  .lt-qask b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .lt-opts{ display:flex; flex-direction:column; gap:9px; margin-top:26px; }
+  .lt-opt{ border:1px solid var(--au-line,#26262f); background:rgba(255,255,255,.02); color:var(--au-ivory,#f5f2ec);
+    border-radius:14px; padding:15px 17px; font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:19px;
+    text-align:left; cursor:pointer; transition:border-color .3s,background .3s,transform .3s cubic-bezier(.16,1,.3,1); }
+  .lt-opt.plain{ font-family:inherit; font-style:normal; font-size:15px; }
+  .lt-opt:active{ transform:scale(.99); }
+  .lt-opt:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+  .lt-opt.ok{ border-color:rgba(var(--lt),.75); background:rgba(var(--lt),.12); color:rgb(var(--lt)); }
+  .lt-opt.no{ border-color:rgba(var(--warn),.7); background:rgba(var(--warn),.1); color:rgb(var(--warn)); }
+  .lt-opt[disabled]{ cursor:default; }
+  .lt-type{ display:flex; gap:8px; margin-top:24px; }
+  .lt-type input{ flex:1; background:rgba(255,255,255,.03); border:1px solid var(--au-line,#26262f);
+    border-radius:14px; padding:15px 16px; color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:19px; }
+  .lt-type input:focus{ outline:none; border-color:rgba(var(--lt),.55); }
+  .lt-type button{ border:1px solid rgba(var(--lt),.4); background:rgba(var(--lt),.1); color:rgb(var(--lt));
+    border-radius:14px; padding:0 18px; font-family:inherit; font-size:13px; cursor:pointer; }
+  .lt-feed{ margin-top:18px; min-height:46px; font-size:13.5px; color:var(--au-dim,#9a97a3); line-height:1.5; }
+  .lt-feed .a{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:17px; color:var(--au-ivory,#f5f2ec); }
+  .lt-next{ width:100%; border:1px solid rgba(var(--lt),.35); background:rgba(var(--lt),.1); color:rgb(var(--lt));
+    border-radius:14px; padding:15px; font-family:inherit; font-size:14px; cursor:pointer; visibility:hidden; }
+  .lt-next.on{ visibility:visible; }
+  .lt-next:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+
+  /* κλίση — table fill */
+  .lt-fill{ width:100%; border-collapse:collapse; margin-top:18px; }
+  .lt-fill th{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); text-align:left; font-weight:400; padding:0 8px 8px 0; }
+  .lt-fill td{ padding:3px 6px 3px 0; }
+  .lt-fill input{ width:100%; background:rgba(255,255,255,.03); border:1px solid var(--au-line,#26262f);
+    border-radius:9px; padding:9px 10px; color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:15px; }
+  .lt-fill input:focus{ outline:none; border-color:rgba(var(--lt),.55); }
+  .lt-fill input.ok{ border-color:rgba(var(--lt),.6); color:rgb(var(--lt)); }
+  .lt-fill input.no{ border-color:rgba(var(--warn),.6); color:rgb(var(--warn)); }
+  .lt-fill .sol{ display:block; font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:12.5px;
+    color:rgba(var(--lt),.9); padding:3px 0 0 4px; }
+
+  /* summary */
+  .lt-sum{ text-align:center; padding:10px 0; }
+  .lt-sum .big{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:64px; line-height:1;
+    font-variant-numeric:tabular-nums; }
+  .lt-sum .big small{ font-size:24px; color:var(--au-dim,#9a97a3); }
+  .lt-sum .msg{ color:var(--au-dim,#9a97a3); font-size:14px; margin-top:14px; line-height:1.55; }
+  .lt-miss{ text-align:left; margin-top:20px; display:flex; flex-direction:column; gap:7px; }
+  .lt-miss div{ display:flex; gap:10px; align-items:baseline; font-size:13px; color:var(--au-dim,#9a97a3);
+    border-top:1px solid var(--au-line,#26262f); padding-top:7px; }
+  .lt-miss b{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:16px;
+    color:rgb(var(--lt)); }
+
+  dialog.lt-dlg{ border:1px solid var(--au-line,#26262f); background:var(--au-ink,#0c0c11);
+    color:var(--au-ivory,#f5f2ec); border-radius:18px; padding:0; max-width:min(94vw,460px); width:100%; }
+  dialog.lt-dlg::backdrop{ background:rgba(0,0,0,.72); }
+  .lt-dbody{ padding:20px; display:flex; flex-direction:column; gap:12px; max-height:78vh; overflow:auto; }
+  .lt-dbody h3{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:22px; }
+  .lt-dbody label{ font-size:11px; color:var(--au-faint,#5c5964); display:block; margin-bottom:5px;
+    letter-spacing:.08em; text-transform:uppercase; font-family:var(--au-mono,monospace); }
+  .lt-dbody input,.lt-dbody select{ width:100%; background:rgba(255,255,255,.03); border:1px solid var(--au-line,#26262f);
+    border-radius:11px; padding:11px 12px; color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:15px; }
+  .lt-dbody input:focus,.lt-dbody select:focus{ outline:none; border-color:rgba(var(--lt),.55); }
+  .lt-drow{ display:flex; gap:10px; }
+  .lt-drow > div{ flex:1; }
+  .lt-prev{ border:1px solid var(--au-line,#26262f); border-radius:12px; padding:12px; font-size:13px;
+    font-family:var(--au-serif,Georgia,serif); font-style:italic; line-height:1.7; color:var(--au-dim,#9a97a3); }
+  .lt-prev b{ color:rgb(var(--lt)); font-weight:400; }
+  .lt-dact{ display:flex; gap:8px; }
+  .lt-dact button{ flex:1; border-radius:12px; padding:13px; font-family:inherit; font-size:13.5px; cursor:pointer;
+    border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3); }
+  .lt-dact button.go{ border-color:rgba(var(--lt),.45); background:rgba(var(--lt),.12); color:rgb(var(--lt)); }
+  .lt-dact button:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:2px; }
+
+  .lt-ref{ display:flex; flex-direction:column; gap:2px; }
+  .lt-ref .r{ display:grid; grid-template-columns:62px 1fr 1fr; gap:10px; align-items:baseline;
+    border-top:1px solid var(--au-line,#26262f); padding:6px 0; }
+  .lt-ref .r:first-child{ border-top:none; }
+  .lt-ref .k{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--au-faint,#5c5964); }
+  .lt-ref .v{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:16px; }
+  .lt-ref .v i{ font-style:italic; color:rgb(var(--lt)); }
+
+  @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+
+<div class="lt-wrap">
+
+  <header class="lt-hero">
+    <div class="lt-eyebrow">Λατινικά · 20% των μορίων</div>
+    <h1 class="lt-h" id="ltHead">Ο χάρτης είναι <b>άδειος</b>.</h1>
+    <p class="lt-hsub" id="ltSub">Κάνε την πρώτη άσκηση και θα ξέρω ακριβώς ποιο κελί σε κόβει.</p>
+  </header>
+
+  <section class="lt-today">
+    <button class="lt-cta" id="ltCta">
+      <div class="lt-cta-l" id="ltCtaL">Σήμερα</div>
+      <div class="lt-cta-t" id="ltCtaT">12 ερωτήσεις</div>
+      <div class="lt-cta-m" id="ltCtaM">~4 λεπτά · μεικτή εξέταση</div>
+    </button>
+    <div class="lt-modes">
+      <button class="lt-mode" id="ltModeFill">Κλίση ολόκληρη</button>
+      <button class="lt-mode" id="ltModeType">Πληκτρολόγιο: όχι</button>
+    </div>
+  </section>
+
+  <section class="lt-map">
+    <div class="lt-sh"><h2>Ο χάρτης</h2><span class="n" id="ltMapN">—</span></div>
+    <div class="lt-seg" role="tablist">
+      <button role="tab" id="ltTabN" aria-selected="true">Ουσιαστικά</button>
+      <button role="tab" id="ltTabV" aria-selected="false">Ρήματα</button>
+    </div>
+    <div class="lt-filters" id="ltFilters"></div>
+    <div id="ltMapBody"></div>
+    <div class="lt-legend"><span class="lt-lg"></span><span>αδύναμο → δυνατό · το άδειο δεν το έχεις συναντήσει</span></div>
+  </section>
+
+  <section class="lt-words">
+    <div class="lt-sh"><h2>Οι λέξεις σου</h2><span class="n" id="ltWordsN">—</span></div>
+    <ul id="ltWordList"></ul>
+    <button class="lt-add" id="ltAdd">+ Πρόσθεσε λέξη από την ύλη σου</button>
+  </section>
+
+  <p class="lt-foot">
+    Κάθε τύπος παράγεται από κανόνα και ελέγχεται από το <b>tests/latin-engine.test.js</b> πριν φύγει.
+    Μοτίβο χωρίς επαληθευμένο πίνακα δεν μπαίνει ποτέ σε ερώτηση.
+  </p>
+
+</div>
+
+<!-- ── session ─────────────────────────────────────── -->
+<div class="lt-sess" id="ltSess" role="dialog" aria-label="Εξέταση">
+  <div class="lt-sbar">
+    <button class="lt-x" id="ltClose" aria-label="Κλείσιμο">✕</button>
+    <div class="lt-prog"><i id="ltProg"></i></div>
+    <div class="lt-count" id="ltCount">0/0</div>
+  </div>
+  <div class="lt-qwrap" id="ltQ"></div>
+  <button class="lt-next" id="ltNext">Επόμενη</button>
+</div>
+
+<dialog class="lt-dlg" id="ltDlg"><div class="lt-dbody" id="ltDlgBody"></div></dialog>
+
+<script>
+(function(){
+  'use strict';
+  var L = window.LatinEngine;
+  var KEY = 'lat:v1';
+  var BOXES = [0, 3, 10, 30, 90];          /* ίδια σκάλα με το Notion */
+  var DAY = 86400000;
+
+  /* ── storage ─────────────────────────────────────── */
+  function lsGet(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+  function today(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+  var state = null;
+
+  /* Οι λέξεις της άσκησης της 03/08/26 — οι μόνες που έχουν ελεγχθεί μαζί του.
+     Μπαίνουν ΜΟΝΟ σε άδεια λίστα: μια συγχρονισμένη συσκευή δεν ξανασπέρνει. */
+  var SEED = [
+    { id:'fuga',      kind:'noun', pat:'n1',    lemma:'fuga',      gen:'fugae',      gender:'f', gloss:'η φυγή' },
+    { id:'numerus',   kind:'noun', pat:'n2m',   lemma:'numerus',   gen:'numeri',     gender:'m', gloss:'ο αριθμός' },
+    { id:'signum',    kind:'noun', pat:'n2n',   lemma:'signum',    gen:'signi',      gender:'n', gloss:'το σημείο, η σημαία' },
+    { id:'hostis',    kind:'noun', pat:'n3mfi', lemma:'hostis',    gen:'hostis',     gender:'m', gloss:'ο εχθρός' },
+    { id:'equitatus', kind:'noun', pat:'n4m',   lemma:'equitatus', gen:'equitatus',  gender:'m', gloss:'το ιππικό' },
+    { id:'dies',      kind:'noun', pat:'n5',    lemma:'dies',      gen:'diei',       gender:'m', gloss:'η ημέρα' },
+    { id:'nuntio', kind:'verb', pat:'v1', lemma:'nuntio', perf:'nuntiavi', sup:'nuntiatum', inf:'nuntiare', gloss:'αναγγέλλω' },
+    { id:'occupo', kind:'verb', pat:'v1', lemma:'occupo', perf:'occupavi', sup:'occupatum', inf:'occupare', gloss:'καταλαμβάνω' },
+    { id:'iubeo',  kind:'verb', pat:'v2', lemma:'iubeo',  perf:'iussi',    sup:'iussum',    inf:'iubere',  gloss:'διατάζω' },
+    { id:'deleo',  kind:'verb', pat:'v2', lemma:'deleo',  perf:'delevi',   sup:'deletum',   inf:'delere',  gloss:'καταστρέφω' }
+  ];
+
+  function load(){
+    var s = lsGet(KEY, null);
+    if (!s || typeof s !== 'object') s = {};
+    if (!Array.isArray(s.words)) s.words = [];
+    if (!Array.isArray(s.cells)) s.cells = [];
+    if (!Array.isArray(s.days))  s.days  = [];
+    if (!s.opts || typeof s.opts !== 'object') s.opts = { typing:false };
+    if (!s.words.length){
+      var now = Date.now();
+      s.words = SEED.map(function(w){ var c = {}; for (var k in w) c[k] = w[k]; c.ts = now; c.seed = true; return c; });
+    }
+    return s;
+  }
+  function save(){ state.ts = Date.now(); lsSet(KEY, state); }
+
+  function cellOf(id){
+    for (var i = 0; i < state.cells.length; i++) if (state.cells[i].id === id) return state.cells[i];
+    return null;
+  }
+  function bumpCell(id, right){
+    var c = cellOf(id);
+    if (!c){ c = { id:id, r:0, w:0, box:0, due:0, ts:0 }; state.cells.push(c); }
+    if (right){ c.r++; c.box = Math.min(c.box + 1, BOXES.length - 1); }
+    else { c.w++; c.box = 0; }
+    c.due = Date.now() + BOXES[c.box] * DAY;
+    c.ts = Date.now();
+  }
+  function mastery(c){ if (!c) return null; var t = c.r + c.w; return t ? c.r / t : null; }
+
+  /* ── λέξεις που επιτρέπεται να εξεταστούν ────────── */
+  function usable(){ return state.words.filter(function(w){ return L.drillable(w); }); }
+
+  /* ── slots ───────────────────────────────────────── */
+  function slotsFor(w){
+    var out = [], i, j, k;
+    if (w.kind === 'noun'){
+      var p = L.declineNoun(w); if (!p) return out;
+      for (i = 0; i < L.NUMBERS.length; i++) for (j = 0; j < L.CASES.length; j++){
+        out.push({ w:w, kind:'noun', num:L.NUMBERS[i], cas:L.CASES[j],
+                   form:p[L.NUMBERS[i]][L.CASES[j]], cell:L.nounCell(w, L.NUMBERS[i], L.CASES[j]) });
+      }
+    } else {
+      var c = L.conjugate(w); if (!c) return out;
+      for (i = 0; i < L.VOICES.length; i++){
+        var voice = c[L.VOICES[i]] || {};
+        for (k in voice){
+          if (!Object.prototype.hasOwnProperty.call(voice, k)) continue;
+          /* Οι περιφραστικοί παθητικοί είναι δύο λέξεις — τους δείχνουμε στον
+             πίνακα αναφοράς, αλλά δεν τους ζητάμε ως γραπτή απάντηση. */
+          if (L.VOICES[i] === 'pass' && (k === 'perf' || k === 'plup' || k === 'futp')) continue;
+          for (j = 0; j < voice[k].length; j++){
+            out.push({ w:w, kind:'verb', voice:L.VOICES[i], tense:k, person:j,
+                       form:voice[k][j], cell:L.verbCell(w, L.VOICES[i], k, j) });
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  function slotAsk(s){
+    if (s.kind === 'noun') return L.CASE_EL[s.cas] + ' ' + L.NUM_EL[s.num];
+    return L.PERSON_EL[s.person] + ' ' + L.VOICE_EL[s.voice] + ' ' + L.TENSE_EL[s.tense];
+  }
+  function slotShort(s){
+    if (s.kind === 'noun') return L.CASE_SHORT[s.cas] + ' ' + L.NUM_SHORT[s.num];
+    return L.TENSE_SHORT[s.tense] + ' ' + (s.voice === 'act' ? 'ενεργ.' : 'παθ.') + ' ' + L.PERSON_EL[s.person];
+  }
+
+  /* ── χτίσιμο εξέτασης ────────────────────────────── */
+  function priority(cell){
+    var c = cellOf(cell);
+    if (!c) return 100;                                   /* δεν το έχει δει ποτέ */
+    var t = c.r + c.w, wrongRate = t ? c.w / t : 0;
+    if (Date.now() >= (c.due || 0)) return 80 + wrongRate * 40;
+    return 8 + wrongRate * 30;
+  }
+
+  function buildSession(n){
+    var words = usable(), pool = [], i;
+    for (i = 0; i < words.length; i++) pool = pool.concat(slotsFor(words[i]));
+    if (!pool.length) return [];
+    for (i = 0; i < pool.length; i++) pool[i]._s = priority(pool[i].cell) + Math.random() * 22;
+    pool.sort(function(a,b){ return b._s - a._s; });
+
+    var out = [], lastWord = null, seenCell = {};
+    for (i = 0; i < pool.length && out.length < n; i++){
+      var s = pool[i];
+      if (s.w.id === lastWord && out.length) continue;    /* όχι δύο σερί ίδια λέξη */
+      if (seenCell[s.cell]) continue;                     /* όχι το ίδιο κελί δις */
+      seenCell[s.cell] = 1; lastWord = s.w.id; out.push(s);
+    }
+    for (i = 0; i < pool.length && out.length < n; i++){   /* γέμισμα αν η ύλη είναι μικρή */
+      if (out.indexOf(pool[i]) < 0) out.push(pool[i]);
+    }
+    return out.slice(0, n).map(makeQuestion);
+  }
+
+  function makeQuestion(s){
+    var pool = s.kind === 'noun' ? L.nounPool(L.declineNoun(s.w)) : L.verbPool(L.conjugate(s.w));
+    var alt = null;
+    if (s.kind === 'verb' && s.voice === 'act' && s.tense === 'perf' && s.person === 5) alt = L.conjugate(s.w).altPerf3pl;
+
+    /* Ερώτηση αναγνώρισης, μόνο αν ο τύπος είναι ΜΟΝΑΔΙΚΟΣ στο παράδειγμα. */
+    var uniq = s.kind === 'noun' ? L.uniqueForms(L.declineNoun(s.w)) : L.uniqueVerbForms(L.conjugate(s.w));
+    var isUnique = uniq.some(function(u){ return u.form === s.form; });
+    var reverse = isUnique && Math.random() < 0.25;
+
+    if (reverse){
+      var others = uniq.filter(function(u){ return u.form !== s.form; });
+      for (var i = others.length - 1; i > 0; i--){ var j = Math.floor(Math.random()*(i+1)); var t = others[i]; others[i]=others[j]; others[j]=t; }
+      var labels = others.slice(0,3).map(function(u){
+        return s.kind === 'noun'
+          ? L.CASE_EL[u.cas] + ' ' + L.NUM_EL[u.num]
+          : L.PERSON_EL[u.person] + ' ' + L.VOICE_EL[u.voice] + ' ' + L.TENSE_EL[u.tense];
+      });
+      return { slot:s, type:'id', prompt:s.form, ask:'Τι τύπος είναι;',
+               answer:slotAsk(s), options:shuffle(labels.concat([slotAsk(s)])), alt:null };
+    }
+    return { slot:s, type:'form', prompt:s.w.lemma + (s.w.kind === 'noun' ? ', ' + s.w.gen : ''),
+             ask:slotAsk(s), answer:s.form, alt:alt,
+             options:shuffle(L.distractors(pool, s.form, 3).concat([s.form])) };
+  }
+  function shuffle(a){ for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+  /* ── session runtime ─────────────────────────────── */
+  var sess = null;
+  var elSess = document.getElementById('ltSess'), elQ = document.getElementById('ltQ'),
+      elProg = document.getElementById('ltProg'), elCount = document.getElementById('ltCount'),
+      elNext = document.getElementById('ltNext');
+  function setProg(frac){ elProg.style.transform = 'scaleX(' + Math.max(0, Math.min(1, frac)) + ')'; }
+
+  function startSession(qs){
+    if (!qs.length){ toast('Πρόσθεσε πρώτα λέξεις από την ύλη σου.'); return; }
+    sess = { qs:qs, i:0, ok:0, miss:[] };
+    elSess.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    renderQ();
+  }
+  function endSession(){
+    elSess.classList.remove('on'); document.body.style.overflow = '';
+    sess = null; render();
+  }
+
+  function renderQ(){
+    var q = sess.qs[sess.i];
+    elCount.textContent = (sess.i + 1) + '/' + sess.qs.length;
+    setProg(sess.i / sess.qs.length);
+    elNext.classList.remove('on');
+
+    var h = '<div class="lt-qtag">' + (q.type === 'id' ? 'Αναγνώριση' : 'Σχηματισμός') + '</div>';
+    h += '<div class="lt-qword">' + esc(q.prompt) + '</div>';
+    h += '<div class="lt-qask">' + (q.type === 'id' ? esc(q.ask) : 'Δώσε τον τύπο: <b>' + esc(q.ask) + '</b>') + '</div>';
+
+    if (state.opts.typing && q.type === 'form'){
+      h += '<div class="lt-type"><input id="ltIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="latin" aria-label="Η απάντησή σου"><button id="ltGo">OK</button></div>';
+      h += '<div class="lt-feed" id="ltFeed"></div>';
+    } else {
+      h += '<div class="lt-opts" id="ltOpts">';
+      for (var i = 0; i < q.options.length; i++){
+        h += '<button class="lt-opt' + (q.type === 'id' ? ' plain' : '') + '" data-v="' + esc(q.options[i]) + '">' + esc(q.options[i]) + '</button>';
+      }
+      h += '</div><div class="lt-feed" id="ltFeed"></div>';
+    }
+    elQ.innerHTML = h;
+
+    if (state.opts.typing && q.type === 'form'){
+      var inp = document.getElementById('ltIn');
+      document.getElementById('ltGo').addEventListener('click', function(){ answer(inp.value); });
+      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') answer(inp.value); });
+      setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 60);
+    } else {
+      var btns = elQ.querySelectorAll('.lt-opt');
+      for (var b = 0; b < btns.length; b++){
+        btns[b].addEventListener('click', function(){ answer(this.getAttribute('data-v')); });
+      }
+    }
+  }
+
+  function answer(given){
+    var q = sess.qs[sess.i];
+    if (q._done) return;
+    q._done = true;
+    var right = L.isCorrect(given, q.answer, q.alt);
+    bumpCell(q.slot.cell, right);
+    if (right) sess.ok++; else sess.miss.push(q);
+
+    var btns = elQ.querySelectorAll('.lt-opt');
+    for (var i = 0; i < btns.length; i++){
+      var v = btns[i].getAttribute('data-v');
+      btns[i].disabled = true;
+      if (L.normalise(v) === L.normalise(q.answer)) btns[i].classList.add('ok');
+      else if (L.normalise(v) === L.normalise(given)) btns[i].classList.add('no');
+    }
+    var inp = document.getElementById('ltIn');
+    if (inp){ inp.disabled = true; inp.classList.add(right ? 'ok' : 'no'); }
+
+    var f = document.getElementById('ltFeed');
+    if (f){
+      f.innerHTML = right
+        ? '<span style="color:rgb(var(--lt))">Σωστά.</span> ' + (q.alt ? 'Δεκτό και <span class="a">' + esc(q.alt) + '</span>.' : '')
+        : 'Η απάντηση: <span class="a">' + esc(q.answer) + '</span>' + (q.type === 'form' ? ' \u00b7 ' + esc(slotShort(q.slot)) : '');
+    }
+    save();
+    elNext.classList.add('on');
+    try{ if (navigator.vibrate) navigator.vibrate(right ? 8 : [4,40,4]); }catch(e){}
+  }
+
+  elNext.addEventListener('click', function(){
+    if (!sess) return;
+    sess.i++;
+    if (sess.i >= sess.qs.length) finish(); else renderQ();
+  });
+  document.getElementById('ltClose').addEventListener('click', function(){ if (sess) endSession(); });
+
+  function finish(){
+    var pct = Math.round(sess.ok / sess.qs.length * 100);
+    var d = today(), row = null, i;
+    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) row = state.days[i];
+    if (!row){ row = { id:d, q:0, ok:0, ts:0 }; state.days.push(row); }
+    row.q += sess.qs.length; row.ok += sess.ok; row.ts = Date.now();
+    save();
+
+    setProg(1); elCount.textContent = sess.qs.length + '/' + sess.qs.length;
+    var msg = pct === 100 ? 'Καθαρό. Αυτά τα κελιά ξαναγυρίζουν σε 3 μέρες.'
+            : pct >= 75 ? 'Καλά. Τα λάθη μπαίνουν ξανά αύριο.'
+            : 'Τα κελιά που έπεσαν επανέρχονται αύριο, από την αρχή της σκάλας.';
+    var h = '<div class="lt-sum"><div class="big">' + sess.ok + '<small>/' + sess.qs.length + '</small></div>';
+    h += '<div class="msg">' + msg + '</div>';
+    if (sess.miss.length){
+      h += '<div class="lt-miss">';
+      for (i = 0; i < sess.miss.length; i++){
+        h += '<div><b>' + esc(sess.miss[i].answer) + '</b><span>' + esc(sess.miss[i].slot.w.lemma + ' · ' + slotShort(sess.miss[i].slot)) + '</span></div>';
+      }
+      h += '</div>';
+    }
+    h += '</div>';
+    elQ.innerHTML = h;
+    elNext.textContent = 'Τέλος';
+    elNext.classList.add('on');
+    elNext.onclick = function(){ elNext.textContent = 'Επόμενη'; elNext.onclick = null; endSession(); };
+  }
+
+  /* ── ΚΛΙΣΗ: γέμισε ολόκληρο τον πίνακα ───────────── */
+  function startFill(w){
+    var isNoun = w.kind === 'noun';
+    var para = isNoun ? L.declineNoun(w) : L.conjugate(w);
+    if (!para){ toast('Αυτή η λέξη δεν είναι πλήρης.'); return; }
+    var tense = null;
+    if (!isNoun){
+      var ts = ['pres','impf','fut','perf','plup','futp'];
+      tense = ts[Math.floor(Math.random() * ts.length)];
+    }
+    sess = { fill:true, w:w, tense:tense, ok:0, n:isNoun ? 12 : 6 };
+    elSess.classList.add('on'); document.body.style.overflow = 'hidden';
+    elCount.textContent = isNoun ? '12 κελιά' : '6 πρόσωπα';
+    setProg(0);
+
+    var h = '<div class="lt-qtag">Κλίση ολόκληρη</div>';
+    h += '<div class="lt-qword">' + esc(w.lemma) + '</div>';
+    h += '<div class="lt-qask">' + (isNoun
+        ? esc(w.gen + ' · ' + (L.NOUN_PATTERNS[w.pat] ? L.NOUN_PATTERNS[w.pat].label : ''))
+        : '<b>' + esc(L.TENSE_EL[tense]) + '</b> ενεργητικής οριστικής') + '</div>';
+    h += '<table class="lt-fill"><tbody>';
+    if (isNoun){
+      h += '<tr><th></th><th>Ενικός</th><th>Πληθυντικός</th></tr>';
+      for (var c = 0; c < L.CASES.length; c++){
+        h += '<tr><th>' + L.CASE_SHORT[L.CASES[c]] + '</th>' +
+             '<td><input data-k="sg:' + L.CASES[c] + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="' + L.CASE_EL[L.CASES[c]] + ' ενικού"></td>' +
+             '<td><input data-k="pl:' + L.CASES[c] + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="' + L.CASE_EL[L.CASES[c]] + ' πληθυντικού"></td></tr>';
+      }
+    } else {
+      for (var p = 0; p < 6; p++){
+        h += '<tr><th>' + esc(L.PERSON_LAT[p]) + '</th>' +
+             '<td colspan="2"><input data-k="' + p + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="' + esc(L.PERSON_EL[p]) + '"></td></tr>';
+      }
+    }
+    h += '</tbody></table><div class="lt-feed" id="ltFeed"></div>';
+    elQ.innerHTML = h;
+    elNext.textContent = 'Διόρθωσε';
+    elNext.classList.add('on');
+    elNext.onclick = function(){ gradeFill(w, para, tense); };
+  }
+
+  function gradeFill(w, para, tense){
+    var isNoun = w.kind === 'noun', inputs = elQ.querySelectorAll('input'), ok = 0, total = inputs.length, i;
+    for (i = 0; i < inputs.length; i++){
+      var k = inputs[i].getAttribute('data-k'), expect, cell, altv = null;
+      if (isNoun){
+        var parts = k.split(':');
+        expect = para[parts[0]][parts[1]];
+        cell = L.nounCell(w, parts[0], parts[1]);
+        if (para.alt && para.alt[parts[0] + '.' + parts[1]]) altv = para.alt[parts[0] + '.' + parts[1]];
+      } else {
+        expect = para.act[tense][+k];
+        cell = L.verbCell(w, 'act', tense, +k);
+        if (tense === 'perf' && +k === 5) altv = para.altPerf3pl;
+      }
+      var right = L.isCorrect(inputs[i].value, expect, altv);
+      inputs[i].classList.add(right ? 'ok' : 'no');
+      inputs[i].disabled = true;
+      if (!right){
+        var s = document.createElement('span');
+        s.className = 'sol'; s.textContent = expect;
+        inputs[i].parentNode.appendChild(s);
+      }
+      bumpCell(cell, right);
+      if (right) ok++;
+    }
+    save();
+    setProg(ok / total);
+    var f = document.getElementById('ltFeed');
+    if (f) f.innerHTML = '<span class="a">' + ok + '/' + total + '</span> σωστά. Τα κόκκινα ξαναέρχονται αύριο.';
+    elNext.textContent = 'Τέλος';
+    elNext.onclick = function(){ elNext.textContent = 'Επόμενη'; elNext.onclick = null; endSession(); };
+  }
+
+  /* ── ο χάρτης ────────────────────────────────────── */
+  var mapTab = 'noun', mapFilter = 'all';
+
+  function heat(m){
+    if (m === null) return { bg:'rgba(255,255,255,.025)', cls:'' };
+    /* coral → ουδέτερο → emerald, με ένταση ανάλογη της απόστασης από το 50% */
+    if (m >= 0.5){ var a = (m - 0.5) * 2; return { bg:'rgba(var(--lt),' + (0.10 + a * 0.42).toFixed(3) + ')', cls:'has' }; }
+    var b = (0.5 - m) * 2; return { bg:'rgba(var(--warn),' + (0.10 + b * 0.40).toFixed(3) + ')', cls:'has' };
+  }
+
+  function renderMap(){
+    var body = document.getElementById('ltMapBody'), filters = document.getElementById('ltFilters');
+    var i, h = '';
+
+    if (mapTab === 'noun'){
+      var decls = ['all','1','2','3','4','5'], names = { all:'Όλες', 1:'Α΄', 2:'Β΄', 3:'Γ΄', 4:'Δ΄', 5:'Ε΄' };
+      h = '';
+      for (i = 0; i < decls.length; i++){
+        h += '<button class="lt-chip" data-f="' + decls[i] + '" aria-pressed="' + (mapFilter === decls[i]) + '">' + names[decls[i]] + '</button>';
+      }
+      filters.innerHTML = h;
+
+      h = '<div class="lt-grid nouns"><div class="lt-gh rw"></div><div class="lt-gh">Ενικός</div><div class="lt-gh">Πληθ.</div>';
+      for (i = 0; i < L.CASES.length; i++){
+        h += '<div class="lt-rl">' + L.CASE_SHORT[L.CASES[i]] + '</div>';
+        for (var n = 0; n < L.NUMBERS.length; n++){
+          var agg = aggregate('n', L.CASES[i], L.NUMBERS[n]);
+          var hh = heat(agg.m);
+          /* Το ποσοστό, όχι το πλήθος προσπαθειών: «22%» απαντά με μια ματιά,
+             «23» δεν λέει τίποτα χωρίς το άλλο μισό του κλάσματος. */
+          h += '<div class="lt-cell ' + hh.cls + '" style="background:' + hh.bg + '" title="' + agg.title + '">' + (agg.m === null ? '' : Math.round(agg.m * 100) + '%') + '</div>';
+        }
+      }
+      h += '</div>';
+      body.innerHTML = h;
+    } else {
+      var vs = ['act','pass'];
+      h = '';
+      for (i = 0; i < vs.length; i++){
+        h += '<button class="lt-chip" data-f="' + vs[i] + '" aria-pressed="' + (mapFilter === vs[i] || (mapFilter === 'all' && vs[i] === 'act')) + '">' + (vs[i] === 'act' ? 'Ενεργητική' : 'Παθητική') + '</button>';
+      }
+      filters.innerHTML = h;
+      var voice = (mapFilter === 'pass') ? 'pass' : 'act';
+      var tenses = voice === 'act' ? ['pres','impf','fut','perf','plup','futp'] : ['pres','impf','fut'];
+
+      h = '<div class="lt-grid verbs"><div class="lt-gh rw"></div>';
+      for (i = 0; i < 6; i++) h += '<div class="lt-gh">' + (i < 3 ? (i+1) + 'εν' : (i-2) + 'πλ') + '</div>';
+      for (var t = 0; t < tenses.length; t++){
+        h += '<div class="lt-rl">' + L.TENSE_SHORT[tenses[t]] + '</div>';
+        for (var p = 0; p < 6; p++){
+          var a2 = aggregate('v', voice, tenses[t], p);
+          var h2 = heat(a2.m);
+          h += '<div class="lt-cell ' + h2.cls + '" style="background:' + h2.bg + '" title="' + a2.title + '"></div>';
+        }
+      }
+      h += '</div>';
+      body.innerHTML = h;
+    }
+
+    var chips = filters.querySelectorAll('.lt-chip');
+    for (i = 0; i < chips.length; i++){
+      chips[i].addEventListener('click', function(){ mapFilter = this.getAttribute('data-f'); renderMap(); });
+    }
+  }
+
+  /* Συγκεντρώνει κελιά: «γεν. πληθ.» σε όλες τις κλίσεις, ή σε μία. */
+  function aggregate(kind, a, b, c){
+    var r = 0, w = 0, i;
+    for (i = 0; i < state.cells.length; i++){
+      var id = state.cells[i].id, parts = id.split(':');
+      if (kind === 'n'){
+        if (parts[0].charAt(0) !== 'n') continue;
+        if (mapFilter !== 'all' && parts[0] !== 'n' + mapFilter) continue;
+        if (parts[1] !== a || parts[2] !== b) continue;
+      } else {
+        if (parts[0].charAt(0) !== 'v') continue;
+        if (parts[1] !== a || parts[2] !== b || +parts[3] !== c) continue;
+      }
+      r += state.cells[i].r; w += state.cells[i].w;
+    }
+    var t = r + w;
+    return { m: t ? r / t : null, t: t, title: t ? (r + '/' + t + ' σωστά') : 'δεν το έχεις συναντήσει' };
+  }
+
+  /* ── λέξεις ──────────────────────────────────────── */
+  function renderWords(){
+    var ul = document.getElementById('ltWordList'), h = '', i;
+    var ws = state.words.slice().sort(function(a,b){ return (a.kind === b.kind) ? a.lemma.localeCompare(b.lemma) : (a.kind === 'noun' ? -1 : 1); });
+    for (i = 0; i < ws.length; i++){
+      var w = ws[i], pat = w.kind === 'noun' ? L.NOUN_PATTERNS[w.pat] : L.VERB_PATTERNS[w.pat];
+      var okw = L.drillable(w);
+      h += '<li><button class="lt-w" data-id="' + esc(w.id) + '">' +
+           '<span><span class="l">' + esc(w.lemma) + '</span> <span class="g">' + esc(w.gloss || '') + '</span></span>' +
+           '<span class="t">' + esc(okw ? (pat ? pat.label : '') : 'ατελής') + '</span></button></li>';
+    }
+    ul.innerHTML = h;
+    document.getElementById('ltWordsN').textContent = ws.length + ' λέξεις';
+    var bs = ul.querySelectorAll('.lt-w');
+    for (i = 0; i < bs.length; i++) bs[i].addEventListener('click', function(){ showWord(this.getAttribute('data-id')); });
+  }
+
+  function findWord(id){ for (var i = 0; i < state.words.length; i++) if (state.words[i].id === id) return state.words[i]; return null; }
+
+  function showWord(id){
+    var w = findWord(id); if (!w) return;
+    var h = '<h3>' + esc(w.lemma) + '</h3>';
+    h += '<div style="font-size:12.5px;color:var(--au-dim,#9a97a3);margin-top:-6px">' + esc(w.gloss || '') + '</div>';
+    if (w.kind === 'noun'){
+      var p = L.declineNoun(w);
+      if (p){
+        h += '<div class="lt-ref"><div class="r"><span class="k"></span><span class="k">Ενικός</span><span class="k">Πληθ.</span></div>';
+        for (var c = 0; c < L.CASES.length; c++){
+          h += '<div class="r"><span class="k">' + L.CASE_SHORT[L.CASES[c]] + '</span><span class="v">' + esc(p.sg[L.CASES[c]]) + '</span><span class="v">' + esc(p.pl[L.CASES[c]]) + '</span></div>';
+        }
+        h += '</div>';
+      }
+    } else {
+      var cj = L.conjugate(w);
+      if (cj){
+        h += '<div class="lt-ref">';
+        var ts = ['pres','impf','fut','perf','plup','futp'];
+        for (var t = 0; t < ts.length; t++){
+          h += '<div class="r" style="grid-template-columns:52px 1fr"><span class="k">' + L.TENSE_SHORT[ts[t]] + '</span><span class="v">' + esc(cj.act[ts[t]][0]) + ' · ' + esc(cj.act[ts[t]][2]) + ' · ' + esc(cj.act[ts[t]][5]) + '</span></div>';
+        }
+        h += '</div><div style="font-size:11.5px;color:var(--au-faint,#5c5964)">α΄ ενικό · γ΄ ενικό · γ΄ πληθυντικό, ενεργητικής</div>';
+      }
+    }
+    h += '<div class="lt-dact"><button id="ltDx">Κλείσιμο</button><button class="go" id="ltDfill">Κλίνε την</button></div>';
+    openDlg(h, function(){
+      document.getElementById('ltDx').addEventListener('click', closeDlg);
+      document.getElementById('ltDfill').addEventListener('click', function(){ closeDlg(); startFill(w); });
+    });
+  }
+
+  /* ── προσθήκη λέξης ──────────────────────────────── */
+  function addWordDialog(){
+    var nOpts = '', vOpts = '', k;
+    for (k in L.NOUN_PATTERNS) if (L.VERIFIED[k]) nOpts += '<option value="' + k + '">' + L.NOUN_PATTERNS[k].label + '</option>';
+    for (k in L.VERB_PATTERNS) if (L.VERIFIED[k]) vOpts += '<option value="' + k + '">' + L.VERB_PATTERNS[k].label + '</option>';
+
+    var h = '<h3>Πρόσθεσε λέξη</h3>' +
+      '<div style="font-size:12.5px;color:var(--au-dim,#9a97a3);margin-top:-6px">Γράψε την ακριβώς όπως τη δίνει η ύλη σου. Ο πίνακας από κάτω φτιάχνεται ζωντανά — έλεγξέ τον πριν τη σώσεις.</div>' +
+      '<div class="lt-seg" style="margin:0"><button id="ltKn" aria-selected="true">Ουσιαστικό</button><button id="ltKv" aria-selected="false">Ρήμα</button></div>' +
+      '<div id="ltFn">' +
+        '<div class="lt-drow"><div><label>Ονομαστική</label><input id="ltNl" placeholder="hostis" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+        '<div><label>Γενική</label><input id="ltNg" placeholder="hostis" autocapitalize="off" autocorrect="off" spellcheck="false"></div></div>' +
+        '<div style="margin-top:10px"><label>Κλίση</label><select id="ltNp">' + nOpts + '</select></div>' +
+      '</div>' +
+      '<div id="ltFv" style="display:none">' +
+        '<div class="lt-drow"><div><label>Ενεστώτας</label><input id="ltVl" placeholder="iubeo" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+        '<div><label>Παρακείμενος</label><input id="ltVp" placeholder="iussi" autocapitalize="off" autocorrect="off" spellcheck="false"></div></div>' +
+        '<div class="lt-drow" style="margin-top:10px"><div><label>Σουπίνο</label><input id="ltVs" placeholder="iussum" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+        '<div><label>Απαρέμφατο</label><input id="ltVi" placeholder="iubere" autocapitalize="off" autocorrect="off" spellcheck="false"></div></div>' +
+        '<div style="margin-top:10px"><label>Συζυγία</label><select id="ltVp2">' + vOpts + '</select></div>' +
+      '</div>' +
+      '<div style="margin-top:2px"><label>Μετάφραση</label><input id="ltGl" placeholder="ο εχθρός"></div>' +
+      '<div class="lt-prev" id="ltPrev">—</div>' +
+      '<div class="lt-dact"><button id="ltCx">Άκυρο</button><button class="go" id="ltSv">Σώσε</button></div>';
+
+    openDlg(h, function(){
+      var kind = 'noun';
+      var $ = function(id){ return document.getElementById(id); };
+      function draft(){
+        if (kind === 'noun') return { id:'', kind:'noun', pat:$('ltNp').value, lemma:$('ltNl').value.trim(), gen:$('ltNg').value.trim(), gloss:$('ltGl').value.trim() };
+        return { id:'', kind:'verb', pat:$('ltVp2').value, lemma:$('ltVl').value.trim(), perf:$('ltVp').value.trim(), sup:$('ltVs').value.trim(), inf:$('ltVi').value.trim(), gloss:$('ltGl').value.trim() };
+      }
+      function preview(){
+        var d = draft(), out = '—';
+        if (d.kind === 'noun' && d.lemma && d.gen){
+          var p = L.declineNoun(d);
+          if (p) out = L.CASES.map(function(c){ return '<b>' + L.CASE_SHORT[c] + '</b> ' + esc(p.sg[c]) + ' · ' + esc(p.pl[c]); }).join('<br>');
+        } else if (d.kind === 'verb' && d.inf && d.perf){
+          var cj = L.conjugate(d);
+          if (cj) out = ['pres','impf','fut','perf','plup','futp'].map(function(t){
+            return '<b>' + L.TENSE_SHORT[t] + '</b> ' + esc(cj.act[t][0]) + ' · ' + esc(cj.act[t][1]) + ' · ' + esc(cj.act[t][5]);
+          }).join('<br>');
+        }
+        $('ltPrev').innerHTML = out;
+      }
+      function setKind(k){
+        kind = k;
+        $('ltKn').setAttribute('aria-selected', k === 'noun'); $('ltKv').setAttribute('aria-selected', k === 'verb');
+        $('ltFn').style.display = k === 'noun' ? '' : 'none';
+        $('ltFv').style.display = k === 'verb' ? '' : 'none';
+        preview();
+      }
+      $('ltKn').addEventListener('click', function(){ setKind('noun'); });
+      $('ltKv').addEventListener('click', function(){ setKind('verb'); });
+      var ids = ['ltNl','ltNg','ltNp','ltVl','ltVp','ltVs','ltVi','ltVp2','ltGl'];
+      for (var i = 0; i < ids.length; i++){
+        var el = $(ids[i]);
+        if (el){ el.addEventListener('input', preview); el.addEventListener('change', preview); }
+      }
+      $('ltCx').addEventListener('click', closeDlg);
+      $('ltSv').addEventListener('click', function(){
+        var d = draft();
+        if (!d.lemma){ toast('Λείπει το λήμμα.'); return; }
+        if (!L.drillable(d)){ toast('Λείπει κάτι — δες τον πίνακα, είναι άδειος.'); return; }
+        d.id = d.lemma.toLowerCase().replace(/[^a-z]/g, '') + '-' + Date.now().toString(36);
+        d.ts = Date.now();
+        state.words.push(d); save(); closeDlg(); render();
+        toast(d.lemma + ' μπήκε στην ύλη.');
+      });
+      preview();
+    });
+  }
+
+  /* ── dialog + toast ──────────────────────────────── */
+  var dlg = document.getElementById('ltDlg'), dlgBody = document.getElementById('ltDlgBody');
+  function openDlg(html, after){
+    dlgBody.innerHTML = html;
+    if (after) after();
+    try{ dlg.showModal(); }catch(e){ dlg.setAttribute('open',''); }
+  }
+  function closeDlg(){ try{ dlg.close(); }catch(e){ dlg.removeAttribute('open'); } }
+  dlg.addEventListener('click', function(e){ if (e.target === dlg) closeDlg(); });
+
+  function toast(msg){
+    if (window.ALSAlert){ try{ window.ALSAlert(msg); return; }catch(e){} }
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:90;background:rgba(20,20,26,.96);border:1px solid rgba(63,224,176,.3);color:#f5f2ec;padding:11px 16px;border-radius:12px;font-size:13px;max-width:88vw;text-align:center';
+    document.body.appendChild(t);
+    setTimeout(function(){ try{ t.remove(); }catch(e){} }, 2600);
+  }
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ── hero + κύριο render ─────────────────────────── */
+  function render(){
+    var seen = 0, r = 0, w = 0, weak = null, weakM = 2, i;
+    for (i = 0; i < state.cells.length; i++){
+      var c = state.cells[i], t = c.r + c.w;
+      if (!t) continue;
+      seen++; r += c.r; w += c.w;
+      if (t >= 3){ var m = c.r / t; if (m < weakM){ weakM = m; weak = c.id; } }
+    }
+    var total = r + w, pct = total ? Math.round(r / total * 100) : 0;
+    var head = document.getElementById('ltHead'), sub = document.getElementById('ltSub');
+
+    if (!total){
+      head.innerHTML = 'Ο χάρτης είναι <b>άδειος</b>.';
+      sub.innerHTML = 'Κάνε την πρώτη άσκηση και θα ξέρω ακριβώς ποιο κελί σε κόβει.';
+    } else {
+      head.innerHTML = '<b>' + pct + '%</b> σωστά,<br>σε ' + seen + ' κελιά.';
+      sub.innerHTML = weak
+        ? 'Το πιο αδύναμό σου αυτή τη στιγμή: <b>' + esc(L.cellLabel(weak)) + '</b>. Μπαίνει πρώτο στην επόμενη εξέταση.'
+        : 'Συνέχισε — χρειάζονται τρεις απαντήσεις σε ένα κελί για να το κρίνω.';
+    }
+    document.getElementById('ltMapN').textContent = seen ? seen + ' κελιά ενεργά' : 'κανένα δεδομένο';
+
+    var due = 0;
+    for (i = 0; i < state.cells.length; i++) if (Date.now() >= (state.cells[i].due || 0)) due++;
+    var d = today(), doneToday = 0;
+    for (i = 0; i < state.days.length; i++) if (state.days[i].id === d) doneToday = state.days[i].q;
+    document.getElementById('ltCtaT').textContent = '12 ερωτήσεις';
+    document.getElementById('ltCtaM').textContent = doneToday
+      ? '~4 λεπτά · ' + doneToday + ' έγιναν σήμερα'
+      : '~4 λεπτά · ' + (due ? due + ' κελιά για επανάληψη' : 'μεικτή εξέταση');
+
+    document.getElementById('ltModeType').textContent = 'Πληκτρολόγιο: ' + (state.opts.typing ? 'ναι' : 'όχι');
+    renderMap();
+    renderWords();
+  }
+
+  /* ── wiring ──────────────────────────────────────── */
+  document.getElementById('ltCta').addEventListener('click', function(){ startSession(buildSession(12)); });
+  document.getElementById('ltModeType').addEventListener('click', function(){
+    state.opts.typing = !state.opts.typing; save();
+    this.textContent = 'Πληκτρολόγιο: ' + (state.opts.typing ? 'ναι' : 'όχι');
+  });
+  document.getElementById('ltModeFill').addEventListener('click', function(){
+    var ws = usable();
+    if (!ws.length){ toast('Πρόσθεσε πρώτα λέξεις.'); return; }
+    startFill(ws[Math.floor(Math.random() * ws.length)]);
+  });
+  document.getElementById('ltAdd').addEventListener('click', addWordDialog);
+  document.getElementById('ltTabN').addEventListener('click', function(){
+    mapTab = 'noun'; mapFilter = 'all';
+    this.setAttribute('aria-selected','true'); document.getElementById('ltTabV').setAttribute('aria-selected','false');
+    renderMap();
+  });
+  document.getElementById('ltTabV').addEventListener('click', function(){
+    mapTab = 'verb'; mapFilter = 'act';
+    this.setAttribute('aria-selected','true'); document.getElementById('ltTabN').setAttribute('aria-selected','false');
+    renderMap();
+  });
+
+  state = load();
+  save();
+  render();
+
+  /* ── cloud sync ──────────────────────────────────── */
+  (function initLatinSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey:'latinika',
+        syncedKeys:[KEY],
+        onApplied:function(){
+          /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε, αλλιώς μια εισερχόμενη
+             συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+          state = load();
+          if (!sess) { try{ render(); }catch(e){} }
+        }
+      });
+    })();
+  })();
+})();
+</script>
+</body>
+</html>

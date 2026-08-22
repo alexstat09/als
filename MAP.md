@@ -69,7 +69,8 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
-**Study** — `latinika.html` (Λατινικά, als-v449), `tonos.html` (Τονισμός,
+**Study** — `latinika.html` (Λατινικά, **als-v502 · + `latinika-lectio16.html` /
+`latinika-lectio17.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451), `arxaia.html` (Αρχαία,
 als-v454, **+ `arxaia-sokratis.html` / `arxaia-platon.html`, als-v497**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
@@ -604,11 +605,36 @@ search index, `als-profile.js` (⚠️ **ΚΑΙ** `OWNER_ONLY` — «άγνωσ�
 `metric()` case που διαβάζει `ist:v1.plag` **έξω από το `ladders.js`**, επειδή
 εκεί το `ist:v1` είναι ήδη πιασμένο και μια δεύτερη εγγραφή θα σκίαζε σιωπηλά
 το πλακίδιο «Ιστορία».
-Λατινικά is a *drill*, not a notebook: `latin-engine.js` derives
-every declension and conjugation from rules, so the page can generate unlimited
-exercises AND grade them, and the heatmap shows which cell he actually misses.
-A pattern is only drillable once `tests/latin-engine.test.js` holds a
-hand-verified paradigm for it. Key `lat:v1`, appKey `latinika`. `study.html`
+⭐⭐ **Λατινικά ΔΕΝ είναι πια drill — είναι ΒΙΒΛΙΟΘΗΚΗ ΕΝΟΤΗΤΩΝ (als-v502).**
+Δική του εντολή, 22/08/26: *«πρόσθεσε αυτές τις δύο μεταφράσεις όπως είναι
+ακριβώς … και σβήσε αυτό με τις κλίσεις που έχει μέσα»*. Η `latinika.html`
+είναι τώρα ΜΟΝΟ το browse: μία κάρτα ανά ενότητα, με τα νούμερά της
+**μετρημένα από τα ίδια τα πακέτα** (σκηνές / προτάσεις / παγίδες) και την
+πρόοδό του διαβασμένη ζωντανά. Τα δύο πακέτα, `latinika-lectio16.html`
+(Lectio XVI, 16 προτάσεις) και `latinika-lectio17.html` (Lectio XVII, 11
+ενότητες), μπήκαν **αυτούσια** — η μόνη προσθήκη είναι η γραμμή «← Λατινικά»,
+και το `tests/latinika-lectio.test.js` το κλειδώνει με **sha256** (ίδιο σχήμα
+με το §9 των Αρχαίων· το `8596fc…` του XVII είναι, byte προς byte, το hash του
+αρχείου που έστειλε).
+- ⛔ **Τίποτα δεν χάθηκε.** Ολόκληρη η μηχανή κλίσεων σώζεται στο
+  `archive/latinika-drill.html`, το `latin-engine.js` και τα 137 assertions του
+  μένουν, και **η `latinika.html` συνεχίζει να συγχρονίζει το `lat:v1`** ώστε
+  τα κελιά του να μη μείνουν ορφανά σε μία συσκευή. Τα διαβάζουν ακόμη
+  `ladders.js`, `home-live.js`, `backup.html`, `api/mcp.js`.
+- ⚠️ Το πλακίδιο του Home λέει ακόμη «% σωστά · κλίση» και είναι **αληθινό αλλά
+  παγωμένο**: δείχνει ό,τι όντως έκανε, απλώς δεν μεγαλώνει πια. ΔΕΝ
+  επινοήθηκε νούμερο για να το γεμίσει (σταθ. 33). Η σκάλα των Λατινικών στο
+  School Studies παγώνει με τον ίδιο τρόπο — αν χρειαστεί να ξαναζωντανέψει,
+  θέλει **νέο `kind` στο `ladders.js`**, όχι μαντεψιά από το «το ξέρω».
+- ⛔ **Τα `lectio16:v1` / `lectio17_known_v1` ΔΕΝ συγχρονίζονται, επίτηδες:**
+  το πρώτο είναι πίνακας από πρωτόγονα, πέφτει στο `allPrim` του `mergeArray`
+  και **ενώνεται** — το «μηδένισε» θα γύριζε πίσω από την άλλη συσκευή σαν να
+  μην έγινε ποτέ (σταθ. 31). Οι σελίδες το λένε ήδη μόνες τους: «η πρόοδος
+  αποθηκεύεται σε αυτή τη συσκευή».
+Το παλιό συμβόλαιο του drill, για όποιον ξαναγυρίσει σε αυτό: `latin-engine.js`
+derives every declension and conjugation from rules, and a pattern is only
+drillable once `tests/latin-engine.test.js` holds a hand-verified paradigm for
+it. Key `lat:v1`, appKey `latinika`. `study.html`
 («Η Χρονιά») is still a **redirect** to the Notion **«Η ΧΡΟΝΙΑ»** workspace that
 replaced it (als-v447); its seven `study:*` keys are untouched in Supabase and in
 the Vault.

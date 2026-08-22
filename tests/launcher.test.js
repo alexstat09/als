@@ -62,8 +62,36 @@ const EXEMPT = new Set([
 const live = fs.readdirSync(ALS)
   .filter(f => f.endsWith('.html'))
   .filter(f => !f.startsWith('_') && !f.includes('-demo') && !f.startsWith('render-'));
-const unreachable = live.filter(f => !EXEMPT.has(f) && hrefs.indexOf(f) < 0);
+
+// ⭐ als-v502: ΚΑΙ ΜΙΑ ΣΕΛΙΔΑ ΠΟΥ ΤΗΝ ΑΝΟΙΓΕΙ ΑΛΛΗ ΣΕΛΙΔΑ ΕΙΝΑΙ ΠΡΟΣΒΑΣΙΜΗ.
+// Ο σκοπός του ελέγχου είναι «καμία σελίδα που δεν μπορεί να βρει» — και ένα
+// ΠΑΚΕΤΟ ΜΕΛΕΤΗΣ το βρίσκει από τον γονιό του, όχι από το launcher. Ως τώρα ο
+// έλεγχος ήταν ΚΟΚΚΙΝΟΣ από την als-v460 (arxaia-sokratis / arxaia-platon):
+// ένας μόνιμα κόκκινος φρουρός δεν φυλάει τίποτα, τον μαθαίνεις να τον
+// αγνοείς. ⚠️ Η προσβασιμότητα ΑΠΟΔΕΙΚΝΥΕΤΑΙ (υπάρχει href σε ζωντανή
+// σελίδα), δεν ΔΗΛΩΝΕΤΑΙ σε λίστα — μια λίστα θα έμενε αληθινή και αφού
+// σβηνόταν ο σύνδεσμος.
+const linkedFrom = new Set();
+live.forEach(f => {
+  const src = fs.readFileSync(ALS + '/' + f, 'utf8');
+  [...src.matchAll(/href="([^"?#]+\.html)"/g)].forEach(m => {
+    if (m[1] !== f) linkedFrom.add(m[1]);
+  });
+});
+const unreachable = live.filter(f =>
+  !EXEMPT.has(f) && hrefs.indexOf(f) < 0 && !linkedFrom.has(f));
 is('no live page is unreachable from the launcher', unreachable, []);
+
+// …και ό,τι γλιτώνει έτσι πρέπει να έχει ΟΝΤΩΣ γονιό, ονομαστικά.
+const CHILDREN = {
+  'arxaia-sokratis.html': 'arxaia.html', 'arxaia-platon.html': 'arxaia.html',
+  'latinika-lectio16.html': 'latinika.html', 'latinika-lectio17.html': 'latinika.html'
+};
+Object.keys(CHILDREN).forEach(kid => {
+  if (!fs.existsSync(ALS + '/' + kid)) return;
+  const parent = fs.readFileSync(ALS + '/' + CHILDREN[kid], 'utf8');
+  ok(kid + ' opens from ' + CHILDREN[kid], parent.indexOf('href="' + kid + '"') > 0);
+});
 
 /* ── 3 · the pinned six never reorder ───────────────────────────── */
 section('the pins are fixed, not ranked');
