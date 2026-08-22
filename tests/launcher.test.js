@@ -85,6 +85,7 @@ is('no live page is unreachable from the launcher', unreachable, []);
 // …και ό,τι γλιτώνει έτσι πρέπει να έχει ΟΝΤΩΣ γονιό, ονομαστικά.
 const CHILDREN = {
   'arxaia-sokratis.html': 'arxaia.html', 'arxaia-platon.html': 'arxaia.html',
+  'latinika-eisagogi.html': 'latinika.html',
   'latinika-lectio16.html': 'latinika.html', 'latinika-lectio17.html': 'latinika.html'
 };
 Object.keys(CHILDREN).forEach(kid => {

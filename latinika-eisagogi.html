@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Εισαγωγή · Λατινικά · MÉTRON</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Εισαγωγή">
+<meta name="theme-color" content="#050506">
+<link rel="stylesheet" href="aurora.css">
+<!-- ══════════════════════════════════════════════════════════════════
+     Η ΕΙΣΑΓΩΓΗ ΤΩΝ ΛΑΤΙΝΙΚΩΝ — als-v503
+     Αυτόνομο πακέτο μελέτης, ίδιο σχήμα με τα latinika-lectio16/17.html:
+     δεν φορτώνει topbar/sync/profile, γυρίζει πίσω με έναν σύνδεσμο.
+     ⛔ ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΑΥΤΟΥΣΙΟ. Ζει στο DATA[] παρακάτω, χωριστά από
+     το σχέδιο, ώστε μια διόρθωση λέξης να είναι ΜΙΑ γραμμή.
+     ══════════════════════════════════════════════════════════════════ -->
+<style>
+:root{
+  --lt:63,224,176;          /* το πράσινο των Λατινικών */
+  --sos:255,108,108;
+  --ink:rgba(245,242,236,.80);
+  --serif:Georgia,"Times New Roman",serif;
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html{ scroll-behavior:smooth; scroll-padding-top:90px; }
+body{
+  background:#050506; color:var(--au-ivory,#f5f2ec);
+  font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  padding-bottom:120px;
+}
+/* μια πολύ αχνή λάμψη ψηλά — η σελίδα να μη ξεκινάει από το τίποτα */
+body::before{
+  content:""; position:fixed; inset:0 0 auto; height:60vh; pointer-events:none; z-index:0;
+  background:radial-gradient(120% 70% at 50% -10%,rgba(var(--lt),.075),transparent 62%);
+}
+
+/* ── γραμμή ανάγνωσης ─────────────────────────────── */
+#prog{ position:fixed; top:0; left:0; right:0; height:2px; z-index:60; background:rgba(255,255,255,.05); }
+#prog i{ display:block; height:100%; width:100%; transform:scaleX(0); transform-origin:left;
+  background:linear-gradient(90deg,rgba(var(--lt),.35),rgb(var(--lt))); }
+
+/* ── περιεχόμενα (ράγα αριστερά, desktop) ─────────── */
+#toc{ display:none; }
+@media (min-width:1180px){
+  #toc{ display:block; position:fixed; top:50%; transform:translateY(-50%); left:34px; z-index:40; width:210px; }
+  #toc .lbl{ font-family:var(--au-mono,monospace); font-size:8.5px; font-weight:700; letter-spacing:.26em;
+    text-transform:uppercase; color:rgba(245,242,236,.26); margin-bottom:14px; padding-left:15px; }
+  #toc a{ position:relative; display:block; padding:6px 0 6px 15px; font-size:12px; line-height:1.35;
+    color:rgba(245,242,236,.32); text-decoration:none; transition:color .35s; }
+  #toc a::before{ content:""; position:absolute; left:0; top:calc(50% - 2px); width:4px; height:4px; border-radius:50%;
+    background:rgba(245,242,236,.18); transition:background .35s,transform .35s; }
+  #toc a:hover{ color:rgba(245,242,236,.62); }
+  #toc a.on{ color:var(--au-ivory,#f5f2ec); }
+  #toc a.on::before{ background:rgb(var(--lt)); transform:scale(1.6); }
+  #toc a.done::before{ background:rgba(var(--lt),.45); }
+}
+/* ── περιεχόμενα (chips, κινητό) ──────────────────── */
+#chips{ position:sticky; top:0; z-index:45; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none;
+  padding:12px 18px; margin-bottom:8px;
+  background:linear-gradient(180deg,rgba(5,5,6,.96) 55%,rgba(5,5,6,0));
+  -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+#chips::-webkit-scrollbar{ display:none; }
+#chips a{ flex:none; font-family:var(--au-mono,monospace); font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; text-decoration:none; color:rgba(245,242,236,.42);
+  border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:999px; padding:7px 13px;
+  transition:color .3s,border-color .3s,background .3s; }
+#chips a.on{ color:rgb(var(--lt)); border-color:rgba(var(--lt),.4); background:rgba(var(--lt),.07); }
+@media (min-width:1180px){ #chips{ display:none; } }
+
+.wrap{ position:relative; z-index:1; max-width:680px; margin:0 auto; padding:0 22px; }
+
+/* ── hero ─────────────────────────────────────────── */
+.back{ display:inline-block; margin:26px 0 -8px; text-decoration:none;
+  font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:12px; letter-spacing:.08em;
+  color:rgba(245,242,236,.34); transition:color .3s; }
+.back:hover{ color:rgba(245,242,236,.7); }
+.hero{ padding:28px 0 0; }
+.eyebrow{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.26em;
+  text-transform:uppercase; color:rgba(var(--lt),.9); }
+.hero h1{ font-family:var(--serif); font-style:italic; font-weight:400;
+  font-size:clamp(38px,10vw,62px); line-height:.98; letter-spacing:-.02em; margin:18px 0 0; }
+.hero h1 em{ font-style:italic; color:rgb(var(--lt)); }
+.lede{ margin-top:20px; font-size:15px; line-height:1.72; color:var(--au-dim,rgba(245,242,236,.56)); max-width:46ch; }
+.lede b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+.meta{ display:flex; flex-wrap:wrap; gap:0; margin-top:26px; padding-top:18px;
+  border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
+.meta i{ font-style:normal; font-family:var(--au-mono,monospace); font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:rgba(245,242,236,.3); padding:0 14px;
+  border-left:1px solid var(--au-line,rgba(255,255,255,.06)); }
+.meta i:first-child{ padding-left:0; border-left:none; }
+
+/* ── κεφάλαιο ─────────────────────────────────────── */
+/* ⚠️ ΤΟ ΚΕΙΜΕΝΟ ΓΕΝΝΙΕΤΑΙ ΟΡΑΤΟ. Η είσοδος μπαίνει ΜΟΝΟ αφού η JS δηλώσει
+   ότι μπορεί να την ξεκλειδώσει (html.anim) — αλλιώς ένα IntersectionObserver
+   που δεν χτύπησε αφήνει ολόκληρα κεφάλαια αόρατα, και αυτό ΔΕΝ ξεχωρίζει
+   από «δεν υπάρχει τίποτα εδώ». */
+.sec{ margin-top:78px; }
+html.anim .sec{ opacity:0; transform:translateY(16px);
+  transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1); }
+html.anim .sec.in{ opacity:1; transform:none; }
+.sec > header{ margin-bottom:30px; }
+.sec .kicker{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.sec .kicker b{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:15px;
+  color:rgba(var(--lt),.75); font-variant-numeric:tabular-nums; }
+.sec .kicker span{ flex:1; height:1px; background:linear-gradient(90deg,rgba(var(--lt),.3),transparent); }
+.sec .kicker u{ text-decoration:none; font-family:var(--serif); font-style:italic; font-size:15px;
+  color:rgba(var(--lt),.75); }
+.sec h2{ font-family:var(--serif); font-style:italic; font-weight:400;
+  font-size:clamp(27px,6.2vw,34px); line-height:1.12; letter-spacing:-.01em; }
+.sec h2 .supt{ display:inline-block; margin-top:11px; font-style:normal;
+  font-family:var(--au-mono,monospace); font-size:10px; font-weight:700; letter-spacing:.2em;
+  text-transform:uppercase; color:rgba(var(--lt),.7); }
+
+/* ── σώμα κειμένου ────────────────────────────────── */
+p.t{ font-size:16px; line-height:1.82; color:var(--ink); margin-top:18px; }
+p.t:first-child{ margin-top:0; }
+p.t b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+/* λατινικοί όροι: το κείμενο τους έχει ήδη έντονους — τους δίνουμε ΤΟΝΟ, όχι εξήγηση */
+.la{ font-family:var(--serif); font-style:italic; color:rgb(var(--lt)); font-weight:400;
+  letter-spacing:.01em; white-space:nowrap; }
+.ttl{ font-family:var(--serif); font-style:italic; color:var(--au-ivory,#f5f2ec); }
+
+/* υπότιτλος μέσα σε κεφάλαιο (Πεζογραφία / Ποίηση / Γενικά χαρακτηριστικά) */
+.sub{ display:flex; align-items:baseline; gap:11px; margin:44px 0 22px; }
+.sub h3{ font-family:var(--au-mono,monospace); font-size:9.5px; font-weight:700; letter-spacing:.24em;
+  text-transform:uppercase; color:rgba(var(--lt),.85); white-space:nowrap; }
+.sub span{ flex:1; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+
+/* ── αριθμημένη σκάλα (οι 3 λόγοι) ────────────────── */
+.num{ margin-top:24px; }
+.num li{ position:relative; list-style:none; padding-left:52px; margin-top:20px; }
+.num li::before{ content:attr(data-n); position:absolute; left:0; top:-6px;
+  font-family:var(--serif); font-style:italic; font-size:30px; line-height:1;
+  color:rgba(var(--lt),.42); }
+.num li p{ font-size:15.5px; line-height:1.78; color:var(--ink); }
+
+/* ── κουκκίδες ────────────────────────────────────── */
+.dots li{ position:relative; list-style:none; padding-left:24px; margin-top:22px; }
+.dots li::before{ content:""; position:absolute; left:2px; top:.78em; width:5px; height:5px; border-radius:50%;
+  background:rgba(var(--lt),.55); }
+.dots li p{ font-size:15.5px; line-height:1.8; color:var(--ink); }
+.dots li p + p{ margin-top:14px; }
+.dots li b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+/* ── χρονογραμμή των εποχών ───────────────────────── */
+.tl{ position:relative; margin-top:26px; padding-left:38px; }
+.tl::before{ content:""; position:absolute; left:9px; top:8px; bottom:8px; width:1px;
+  background:linear-gradient(180deg,rgba(var(--lt),.6),rgba(var(--lt),.14) 60%,transparent); }
+.tl .ev{ position:relative; margin-bottom:30px; }
+.tl .ev:last-child{ margin-bottom:0; }
+.tl .ev::before{ content:""; position:absolute; left:-33px; top:8px; width:9px; height:9px; border-radius:50%;
+  background:#050506; border:1.5px solid rgba(var(--lt),.75); }
+.tl .ev .nm{ font-family:var(--serif); font-style:italic; font-size:23px; line-height:1.2; }
+.tl .ev .ex{ margin-top:12px; padding-left:15px; border-left:1px solid rgba(var(--lt),.22);
+  font-size:14px; line-height:1.7; color:var(--ink); }
+.tl .ev .ex b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+.tl .ev .yr{ margin-top:7px; font-size:14px; line-height:1.7; color:var(--ink); }
+
+/* ── τα δύο πιάτα: imitatio / aemulatio ───────────── */
+.plates{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:26px; }
+.plate{ border:1px solid rgba(var(--lt),.22); border-radius:16px; padding:20px 18px;
+  background:linear-gradient(160deg,rgba(var(--lt),.07),transparent 70%); }
+.plate .gr{ font-size:13px; line-height:1.5; color:var(--au-dim,rgba(245,242,236,.56)); }
+.plate .lat{ font-family:var(--serif); font-style:italic; font-size:26px; color:rgb(var(--lt)); margin-top:6px; }
+@media (max-width:520px){ .plates{ grid-template-columns:1fr; } }
+
+/* ── τα είδη ──────────────────────────────────────── */
+.genres{ display:grid; grid-template-columns:1fr; gap:2px; margin-top:26px;
+  border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:18px; overflow:hidden;
+  background:var(--au-line,rgba(255,255,255,.06)); }
+.gen{ background:#08080a; padding:26px 22px; }
+.gen h4{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:24px;
+  color:rgb(var(--lt)); margin-bottom:4px; }
+/* ⚠️ το .genres έχει overflow:hidden για τις γωνίες του — ένα SOS στο περιθώριο
+   θα κοβόταν ΣΙΩΠΗΛΑ. Εδώ κάθεται δίπλα στον τίτλο. */
+.gen h4.sos::after{ position:static; display:inline-block; margin-left:10px; vertical-align:5px; }
+.gen p{ font-size:15px; line-height:1.78; color:var(--ink); margin-top:14px; }
+.gen p:first-of-type{ margin-top:12px; }
+
+/* ── πρόσωπα ──────────────────────────────────────── */
+.per{ position:relative; margin-top:26px; padding:0 0 0 22px;
+  border-left:1px solid var(--au-line,rgba(255,255,255,.06)); }
+.per::before{ content:""; position:absolute; left:-1px; top:4px; width:1px; height:26px; background:rgb(var(--lt)); }
+.per .nm{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:23px; line-height:1.15; }
+.per > .wk{ display:block; margin-top:5px; font-family:var(--serif); font-style:italic;
+  font-size:14px; color:rgba(var(--lt),.72); }
+.per p{ font-size:15.5px; line-height:1.8; color:var(--ink); margin-top:13px; }
+
+/* ── σήμα SOS (δικό του, κόκκινο) ─────────────────── */
+.sos{ position:relative; }
+.sos::after{ content:"SOS"; position:absolute; left:-46px; top:.35em;
+  font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.12em;
+  color:rgb(var(--sos)); }
+@media (max-width:900px){
+  .sos::after{ position:static; display:inline-block; margin-left:8px; vertical-align:2px; }
+}
+
+/* ── υποσημειώσεις ────────────────────────────────── */
+.fn{ margin-top:34px; padding-top:16px; border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
+.fn p{ font-size:12px; line-height:1.7; color:rgba(245,242,236,.34); margin-top:7px; }
+.fn sup{ color:rgba(var(--lt),.8); margin-right:5px; }
+sup.r{ font-size:.65em; color:rgba(var(--lt),.85); vertical-align:super; }
+
+/* ── λεζάντα εικόνας των σημειώσεων ────────────────
+   Οι σημειώσεις έχουν εικόνες που εδώ δεν υπάρχουν. Η ΛΕΖΑΝΤΑ όμως είναι
+   κείμενο και μένει — σταθ. 10: δεν προσποιούμαστε ότι δεν υπήρχε τίποτα. */
+.fig{ margin-top:20px; padding-left:16px; border-left:2px solid rgba(var(--lt),.28);
+  font-family:var(--au-mono,monospace); font-size:10px; letter-spacing:.13em;
+  text-transform:uppercase; line-height:1.7; color:rgba(245,242,236,.34); }
+.gen .fig{ margin-top:18px; }
+
+/* ── χώρισμα του βιβλίου ──────────────────────────── */
+.part{ display:flex; align-items:center; gap:16px; margin:96px 0 -30px; }
+.part span{ flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--lt),.28),transparent); }
+.part b{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:17px;
+  color:rgba(var(--lt),.85); text-align:center; letter-spacing:.01em; }
+
+/* ── «το διάβασα» ─────────────────────────────────── */
+.mark{ margin-top:34px; }
+.mark button{ font-family:var(--au-mono,monospace); font-size:10px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:rgba(245,242,236,.4); background:transparent; cursor:pointer;
+  border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:999px; padding:10px 18px;
+  transition:color .35s,border-color .35s,background .35s; }
+.mark button:hover{ color:rgba(245,242,236,.72); border-color:rgba(255,255,255,.14); }
+.mark button.on{ color:rgb(var(--lt)); border-color:rgba(var(--lt),.4); background:rgba(var(--lt),.07); }
+
+/* ── πόδι ─────────────────────────────────────────── */
+.foot{ margin-top:90px; padding-top:24px; border-top:1px solid var(--au-line,rgba(255,255,255,.06));
+  font-size:11.5px; line-height:1.8; color:rgba(245,242,236,.28); }
+.foot b{ color:rgba(245,242,236,.5); font-weight:400; }
+
+@media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; }
+  html{ scroll-behavior:auto; } html.anim .sec{ opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+
+<div id="prog"><i></i></div>
+<nav id="toc"><div class="lbl">Η εισαγωγή</div></nav>
+<nav id="chips"></nav>
+
+<div class="wrap">
+
+  <a class="back" href="latinika.html">&#8592; Λατινικά</a>
+
+  <header class="hero">
+    <div class="eyebrow">Λατινικά Γ΄ Λυκείου · Εισαγωγή</div>
+    <h1>Λατινική γλώσσα<br>και <em>λογοτεχνία</em></h1>
+    <p class="lede">Όλη η εισαγωγή, <b>λέξη προς λέξη</b> — οργανωμένη σε οκτώ κεφάλαια, με τη χρονογραμμή των εποχών και ένα πρόσωπο ανά κάρτα.</p>
+    <div class="meta"><i id="mSec">8 κεφάλαια</i><i>αυτούσιο κείμενο</i><i id="mRead">—</i></div>
+  </header>
+
+  <main id="main"></main>
+
+  <p class="foot">Το κείμενο είναι <b>αυτούσιο</b> από τις σημειώσεις του φροντιστηρίου· τα κόκκινα <b>SOS</b> είναι δικά σου. Η ένδειξη «το διάβασα» ζει <b>σε αυτή τη συσκευή</b>.</p>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   ΤΟ ΚΕΙΜΕΝΟ. Αυτούσιο. Κάθε αλλαγή γίνεται ΕΔΩ και πουθενά αλλού.
+   Επιτρεπόμενη σήμανση μέσα στα κείμενα:
+     <b>…</b>        ό,τι ήταν έντονο στις σημειώσεις
+     <span class=la> λατινικός όρος
+     <span class=wk> τίτλος έργου
+   ══════════════════════════════════════════════════════════════════ */
+var DATA = [
+{
+ id:'glossa', n:'I', title:'Η λατινική γλώσσα', fnMark:'2',
+ blocks:[
+  {t:'p', x:'Η Λατινική ήταν η διάλεκτος των κατοίκων της περιοχής του Λατίου (σήμερα Lazio), όπου βρίσκεται και η Ρώμη. Παρουσιάζει αρκετές ομοιότητες με την Ελληνική, επειδή:'},
+  {t:'num', items:[
+    'τα Λατινικά ανήκουν στην <b>ινδοευρωπαϊκή γλωσσική οικογένεια</b>, όπως και τα Ελληνικά (π.χ. duo-δύο, fero-φέρω, pater-πατήρ),',
+    'Έλληνες και Ρωμαίοι είχαν επαφές ήδη από την εποχή του ελληνικού αποικισμού στην κεντρική και κάτω Ιταλία, καθώς και στη Σικελία (8ος/7ος αι. π.Χ.),',
+    'οι Ρωμαίοι κατέκτησαν τον ελληνικό κόσμο (2ος π.Χ. αι. κ.ε.).'
+  ]},
+  {t:'p', x:'Το <b>λατινικό αλφάβητο</b>, που χρησιμοποιείται σήμερα παγκοσμίως, έχει <b>ελληνική προέλευση</b>: οι Ρωμαίοι γνώρισαν μια παραλλαγή ελληνικού αλφαβήτου από την ελληνική αποικία της Κύμης (8ος/7ος αι. π.Χ.) –κατά την πιθανότερη τουλάχιστον εκδοχή.'},
+  {t:'p', x:'Μέχρι τον 3ο αι. π.Χ. έχουν σωθεί ελάχιστα γραπτά μνημεία χωρίς ιδιαίτερη λογοτεχνική αξία. Αξιόλογα λατινικά λογοτεχνικά κείμενα παράγονται μετά τη «συνάντηση» των Ρωμαίων με τους Έλληνες (περίπου το 240 π.Χ.).'},
+  {t:'fig', cap:'Ινδοευρωπαϊκές γλώσσες [πηγή: Βικιπαίδεια]'},
+  {t:'fn', items:['<sup>2</sup> Οι Ρωμαίοι, ενώ για τις περισσότερες περιπτώσεις χρησιμοποιούσαν το εθνικό ουσιαστικό «Ρωμαίος» και το επίθετο «ρωμαϊκός», για τη γλώσσα τους διατήρησαν το επίθετο «λατινική».']}
+ ]
+},
+{
+ id:'genesi', n:'II', title:'Η γένεση της ρωμαϊκής λογοτεχνίας',
+ blocks:[
+  {t:'p', x:'Η ρωμαϊκή λογοτεχνία γεννήθηκε υπό την επίδραση της ελληνικής. Το <b>240 π.Χ.</b> ένας Έλληνας από τον Τάραντα (Ν. Ιταλία), ο <b>Λίβιος Ανδρόνικος</b>, ανεβάζει στη Ρώμη θεατρικές παραστάσεις με ελληνικά έργα διασκευασμένα στα Λατινικά. Ο ίδιος αποδίδει στα Λατινικά και την <span class="ttl">Οδύσσεια</span> του Ομήρου. Στις ρίζες, λοιπόν, της ρωμαϊκής γραμματείας βρίσκονται το ελληνικό δράμα και ο Όμηρος. Συνολικά η συγγραφική παραγωγή των Ρωμαίων παρέμεινε στενά συνδεδεμένη με ελληνικά πρότυπα ακόμη και σε μεταγενέστερους χρόνους.'},
+  {t:'fig', cap:'Λίβιος Ανδρόνικος'}
+ ]
+},
+{
+ id:'epoxes', n:'III', title:'Εποχές της ρωμαϊκής λογοτεχνίας',
+ blocks:[
+  {t:'p', x:'Η ρωμαϊκή λογοτεχνία διαιρείται σε:'},
+  {t:'tl', items:[
+   {nm:'Προκλασική ή αρχαϊκή εποχή', yr:'(από τις απαρχές μέχρι περίπου το 100 π.Χ.).'},
+   {nm:'Κλασική εποχή', yr:'(από το 100 π.Χ. περίπου ως τον θάνατο του Αυγούστου, το 14 μ.Χ.).',
+    ex:'Μέχρι το 31 π.Χ. έχουμε τη <b>ρεπουμπλικανική περίοδο</b> και από το 31 π.Χ. ως το 14 μ.Χ. την <b>αυγούστεια περίοδο</b>.'},
+   {nm:'Μετακλασική εποχή', yr:'(από το 14 μ.Χ. ως τα μέσα του 3ου αι. μ.Χ.).'},
+   {nm:'Ύστερη Αρχαιότητα', yr:'(από τα μέσα του 3ου μ.Χ. αι. μέχρι τον 6ο μ.Χ. αι.).'}
+  ]}
+ ]
+},
+{
+ id:'genika', n:'IV', title:'Γενικά χαρακτηριστικά της ρωμαϊκής λογοτεχνίας',
+ blocks:[
+  {t:'dots', items:[
+   {x:'Είναι στενή και διαρκής η σχέση της με την ελληνική γραμματεία.', more:[
+     'Οι Ρωμαίοι λογοτέχνες κάθε εποχής, από τον Πλαύτο ως τον Βοήθιο, γνωρίζουν και τη λατινική και την ελληνική γλώσσα και λογοτεχνία.',
+     'Πλήθος ελληνικές λέξεις μεταφέρονται στο λατινικό λεξιλόγιο. Πολλές επιβιώνουν μέχρι σήμερα στις λατινογενείς γλώσσες.'
+   ]},
+   {x:'Οι Ρωμαίοι λογοτέχνες έχουν ελληνικά πρότυπα: η ελληνική κωμωδία είναι το πρότυπο του Πλαύτου, ο Όμηρος εμπνέει τον Βεργίλιο, οι αρχαϊκοί Έλληνες λυρικοί τον Οράτιο, η αττική τραγωδία τον Σενέκα.'},
+   {x:'Οι Ρωμαίοι προσεγγίζουν τα ελληνικά πρότυπα μέσα από τη <b>δημιουργική-πρόσληψη</b> (<span class="la">imitatio</span>) και τον <b>ανταγωνισμό</b> (<span class="la">aemulatio</span>).'}
+  ]},
+  {t:'plates', items:[
+   {gr:'δημιουργική-πρόσληψη', lat:'imitatio'},
+   {gr:'ανταγωνισμό', lat:'aemulatio'}
+  ]},
+  {t:'dots', items:[
+   {x:'Αρχικά οι Ρωμαίοι λογοτέχνες μιμούνται δημιουργικά κυρίως Έλληνες. Αργότερα, όμως, στους μετακλασικούς χρόνους, όταν η ρωμαϊκή λογοτεχνία έχει ωριμάσει, οι Ρωμαίοι μιμούνται και συναγωνίζονται τους μεγάλους λογοτέχνες της κλασικής Ρώμης, π.χ. τον Κικέρωνα και τον Βεργίλιο.'},
+   {x:'Επειδή η ρωμαϊκή λογοτεχνική παραγωγή, όπως σημειώθηκε, αρχίζει στα μέσα του 3ου αι. π.Χ., οι Ρωμαίοι γνωρίζουν εξαρχής ολόκληρη την ελληνική λογοτεχνία στην ωριμότητά της. Έτσι, επιλέγουν τα πρότυπά τους από όλες τις περιόδους της ελληνικής λογοτεχνίας: και από την ελληνιστική λογοτεχνία (3ος-1ος αι. π.Χ.) και από την κλασική (5ος-4ος αι. π.Χ.) και από την αρχαϊκή (8ος-6ος αι. π.Χ.). Οι Ρωμαίοι δηλαδή δεν είναι «υποχρεωμένοι» να επηρεαστούν από τους Έλληνες ακολουθώντας τη χρονολογική εξέλιξη της ελληνικής λογοτεχνίας. Επιλέγουν τα πρότυπά τους από το σύνολο των ελληνικών έργων που έχουν στη διάθεσή τους.', more:[
+     'Κατά συνέπεια, η ρωμαϊκή λογοτεχνία δεν παρουσιάζει χρονολογική εξέλιξη των ειδών παρόμοια με την ελληνική: λ.χ. η κωμωδία είναι το πρώτο είδος που ωριμάζει στη Ρώμη, ενώ στην Ελλάδα ήταν το τελευταίο. Το ρωμαϊκό έπος ωριμάζει τελευταίο, ενώ τα ομηρικά έπη ήταν τα πρώτα σημαντικά ελληνικά λογοτεχνικά κείμενα.',
+     'Οι Ρωμαίοι δεν μιμούνται δουλικά τους Έλληνες. Συχνά μεταμορφώνουν τα ελληνικά είδη: λ.χ. η ρωμαϊκή ελεγεία απέχει πάρα πολύ από την ελληνική ελεγεία.',
+     'Οι Ρωμαίοι παράγουν και νέα είδη: π.χ. η σάτιρα είναι ένα σχεδόν καθαρά ρωμαϊκό είδος.|SOS'
+   ]},
+   {x:'Κάθε Ρωμαίος λογοτέχνης συνήθως εστιάζει σε ένα είδος ή σε μικρό αριθμό λογοτεχνικών ειδών. Δείχνει μεγάλο ενδιαφέρον για αισθητική ποιότητα και τελειοποιημένη τεχνική στο είδος που θεραπεύει.'}
+  ]}
+ ]
+},
+{
+ id:'proklasiki', n:'V', title:'Προκλασική εποχή', sup:'απαρχές-περ. 100 π.Χ.',
+ part:'Η εξέλιξη της ρωμαϊκής λογοτεχνίας',
+ blocks:[
+  {t:'sub', h:'Γενικά χαρακτηριστικά'},
+  {t:'dots', items:[
+   {x:'<b>Στην κοινωνική ζωή</b>: στο ρωμαϊκό θρησκευτικό σύστημα έχουν ενταχθεί οι ελληνικοί θεοί. Όλο και περισσότεροι Ρωμαίοι έρχονται σε επαφή με τον ελληνικό πολιτισμό. Μορφωμένοι Έλληνες εγκαθίστανται, συχνά χωρίς τη θέλησή τους, στη Ρώμη και μυούν τους Ρωμαίους στην ελληνική γλώσσα και λογοτεχνία. Ελληνικά έργα τέχνης μεταφέρονται στη Ρώμη. Οι νέοι γοητεύονται από την ελληνική «μόδα», εισάγονται ελληνικά και ανατολικά έθιμα, που απομακρύνουν τους Ρωμαίους από τα παραδοσιακά λιτά ρωμαϊκά ήθη.', more:[
+     'Παράλληλα με όσους θαυμάζουν την ελληνική κουλτούρα, υπάρχουν και συντηρητικοί Ρωμαίοι που βλέπουν με καχυποψία την ελληνική επίδραση. Τέτοιος ήταν ο <b>Κάτων</b>: ενδεικτικό της νοοτροπίας του ήταν ότι φοβόταν, ανάμεσα σε άλλα, πως οι Έλληνες γιατροί συνωμοτούσαν, για να εξοντώσουν τους Ρωμαίους.'
+   ]},
+   {x:'<b>Στο κράτος και στην πολιτική ζωή</b>: στην Ανατολή ολοκληρώνεται η κατάκτηση της Ελλάδας. Η Ρώμη ύστερα από τρεις πολέμους εξολοθρεύει τη δεύτερη μεγάλη μεσογειακή δύναμη της εποχής, την Καρχηδόνα, ισοπεδώνει την πόλη (146 π.Χ.) και απομένει μόνη κυρίαρχη στη Μεσόγειο.', more:[
+     'Το <b>ρωμαϊκό πολίτευμα</b> (<span class="la">res publica</span>) έχει διαμορφωθεί ως ένα είδος «αριστοκρατικής δημοκρατίας». Σημειώνονται πολιτικο-κοινωνικές αναταραχές λόγω των μεγάλων κοινωνικών ανισοτήτων. Ενδεικτικές είναι οι μεταρρυθμιστικές απόπειρες των <b>Γράκχων</b>. Υπάρχουν διαστήματα ηρεμίας και συμβιβασμού αλλά οι εμφύλιες συρράξεις θα συνεχιστούν για αρκετές δεκαετίες και μετά το 100 π.Χ.'
+   ]},
+   {x:'<b>Στα γράμματα</b>: συντελείται η ιστορική συνάντηση των Ρωμαίων με τους Έλληνες. Οι Έλληνες έχουν ήδη δημιουργήσει ώριμη λογοτεχνία.|SOS', more:[
+     'Οι Ρωμαίοι τη θαυμάζουν: αρχικά κυρίως μιμούνται και στη συνέχεια μετασχηματίζουν δημιουργικά τα ελληνικά πρότυπα.'
+   ]}
+  ]},
+  {t:'genres', items:[
+   {h:'Κωμωδία', ps:[
+    'Το πρώτο είδος που ωριμάζει στη Ρώμη είναι η κωμωδία. Οι Ρωμαίοι κωμωδιογράφοι επηρεάζονται περισσότερο όχι από την αττική κωμωδία του 5ου-4ου αι. π.Χ. και τον Αριστοφάνη αλλά από τη λεγόμενη <b>Νέα Κωμωδία</b> της ελληνιστικής περιόδου, κυρίως από τον Μένανδρο. Τα έργα τους έχουν κατά κανόνα υποθέσεις ελληνικές και όχι ρωμαϊκές.',
+    'Οι δύο πιο γνωστοί Ρωμαίοι κωμωδιογράφοι είναι ο <b>Πλαύτος</b> (3ος αι. π.Χ.) και ο <b>Τερέντιος</b> (2ος αι. π.Χ.). Η επίδρασή τους είναι εμφανής στις γαλλικές κωμωδίες του Μολιέρου. Η ρωμαϊκή κωμωδία ψυχαγώγησε επί αιώνες τη Δύση και άσκησε σοβαρές επιδράσεις σε μεγάλους διανοούμενους και λογοτέχνες, όπως ο Πετράρχης, ο Γκαίτε, ο Μολιέρος, ο Σαίξπηρ και ο Θερβάντες.'
+   ], fig:'Τερέντιος'},
+   {h:'Τραγωδία', ps:[
+    'Την ίδια περίοδο οι Ρωμαίοι συνθέτουν τραγωδίες, επηρεασμένοι από τα δράματα της Μεγάλης Ελλάδας. Τα θέματα της ρωμαϊκής τραγωδίας προέρχονται από την ελληνική λογοτεχνία. Οι Ρωμαίοι δείχνουν ιδιαίτερη προτίμηση στην <b>τρωική θεματολογία</b>, ίσως γιατί θεωρούσαν ότι τους αφορά περισσότερο: είχε ήδη διαμορφωθεί ο εθνικός ρωμαϊκός μύθος κατά τον οποίο γενάρχης της Ρώμης ήταν ο Τρώας Αινείας.',
+    'Γράφονται, βέβαια, και τραγωδίες με θέματα καθαρά ρωμαϊκού ιστορικού περιεχομένου.'
+   ]},
+   {h:'Έπος', ps:[
+    'Ο <b>Λίβιος Ανδρόνικος</b>, όπως είπαμε, απέδωσε στα Λατινικά την Οδύσσεια (σε σατούρνιο στίχο, ένα ιταλικό μέτρο).',
+    'Ο <b>Έννιος</b> βλέπει τον εαυτό του ως δεύτερο Όμηρο και συνθέτει ένα ιστορικό έπος (Χρονικά–<span class="la">Annales</span>) σε δακτυλικό εξάμετρο, το μέτρο των ομηρικών επών. Οι Ρωμαίοι θεωρούσαν αυτό το έργο ως το «εθνικό» τους έπος μέχρι τη σύνθεση της Αινειάδας του Βεργιλίου.'
+   ]},
+   {h:'Σάτιρα', sos:true, ps:[
+    'Η σάτιρα είναι ένα νέο, καθαρά ρωμαϊκό είδος, με το οποίο σχολιάζονται σκωπτικά επιφανείς Ρωμαίοι, πολιτικοί ή λογοτέχνες, αλλά και άσημα πρόσωπα.'
+   ]},
+   {h:'Πεζογραφία', ps:[
+    'Το αρχαιότερο πεζό λατινικό έργο που σώζεται ανήκει στον <b>Κάτωνα</b>, που, όπως είπαμε, ήταν παθιασμένος με τα πατροπαράδοτα ρωμαϊκά ιδεώδη και καχύποπτος απέναντι στις ξένες επιρροές. Έχει τίτλο <span class="ttl">Για τη γεωργία</span> (<span class="la">De agricultura</span>), παρουσιάζει τη ζωή του γεωργού και περιέχει γεωργικές οδηγίες και συμβουλές οργάνωσης του οίκου.'
+   ]}
+  ]},
+  {t:'fig', cap:'Ελληνορωμαϊκή γραμματεία [πηγή: Ίδρυμα Μείζονος Ελληνισμού]'}
+ ]
+},
+{
+ id:'klasiki', n:'VI', title:'Κλασική εποχή', sup:'περ. 100 π.Χ.-14 μ.Χ.',
+ blocks:[
+  {t:'sub', h:'Γενικά χαρακτηριστικά'},
+  {t:'p', x:'<b>Στην πολιτική ζωή και το κράτος</b>: κορυφώνεται η ένταση μεταξύ των δύο παρατάξεων της Γερουσίας (Senatus): των <span class="la">populares</span> («δημοκρατικών») και των <span class="la">optimates</span> («αριστοκρατικών»). Εμφύλιες συρράξεις, προγραφές και δολοφονίες ταράζουν το εσωτερικό. Χαρακτηριστικό γεγονός είναι η δολοφονία του Ιούλιου Καίσαρα το 44 π.Χ..'},
+  {t:'plates', items:[
+   {gr:'«δημοκρατικών»', lat:'populares'},
+   {gr:'«αριστοκρατικών»', lat:'optimates'}
+  ]},
+  {t:'p', x:'Ο κύκλος των εμφυλίων θα κλείσει το 31 π.Χ. στο Άκτιο, στον Αμβρακικό κόλπο: ο υιοθετημένος γιος του Ιούλιου Καίσαρα, ο Οκταβιανός, θα νικήσει τον στόλο του πολιτικού του αντιπάλου, του Μάρκου Αντωνίου, και της βασίλισσας του ελληνιστικού κράτους της Αιγύπτου, της Κλεοπάτρας, που ήταν σύμμαχος του Αντωνίου. Ο Οκταβιανός θα μείνει μόνος κυρίαρχος στην πολιτική ζωή της Ρώμης και θα ξεκινήσει μια νέα εποχή για το απέραντο ρωμαϊκό κράτος.'},
+  {t:'p', x:'Μετά την επικράτηση του Οκταβιανού, η «αριστοκρατική δημοκρατία» της Ρώμης μετασχηματίζεται σταδιακά σε απολυταρχία, με την κυριαρχία ενός πολιτικού προσώπου. Το παραδοσιακό, αριστοκρατικό στην ουσία του, πολίτευμα της <span class="la">res publica</span>, μεταβάλλεται στην πράξη.'},
+  {t:'p', x:'Χωρίς να καταργείται η Γερουσία, το κράτος ελέγχεται πλέον από έναν ισχυρό άνδρα, τον νικητή των εμφυλίων Οκταβιανό. Αυτός λαμβάνει τον τίτλο «<b>Αύγουστος</b>», που στο εξής θα συνοδεύει κάθε αυτοκράτορα στη Ρώμη (και αργότερα στη Νέα Ρώμη/Κωνσταντινούπολη).'},
+  {t:'p', x:'Με τον Οκταβιανό αρχίζει μια περίοδος χωρίς μεγάλες αναταράξεις στο εσωτερικό και χωρίς μεγάλα προβλήματα εκτός συνόρων. Η λεγόμενη «<b>ρωμαϊκή ειρήνη</b>» (<span class="la">pax Romana</span>) θα διαρκέσει περίπου δύο αιώνες και, γενικά, θα φέρει ευημερία για την ανθρωπότητα.'},
+  {t:'p', x:'Η Ρώμη αποκτά πλήρη αυτοσυνειδησία ως οικουμενική δύναμη με θεϊκές-ηρωικές καταβολές, που χάνονται στον χώρο του μύθου, και θεωρεί πως διαθέτει προοπτικές αιώνιας κυριαρχίας. Αυτή η αντίληψη διαπερνά και τη λογοτεχνία της αυγούστειας περιόδου.'},
+  {t:'p', x:'<b>Στην κοινωνική ζωή</b>: διευρύνεται η επίδραση του ελληνικού τρόπου ζωής. Εισάγονται λατρείες από την Ανατολή, όπως η λατρεία της Κυβέλης, της Ίσιδας κ.ά.'},
+  {t:'p', x:'Παρατηρείται αυξανόμενη εισχώρηση νέων ηθών, μείωση των γεννήσεων, απομάκρυνση από τον πατροπαράδοτο λιτό ρωμαϊκό βίο. Γι’ αυτό ο Αύγουστος προσπαθεί να επαναφέρει τις παραδοσιακές ρωμαϊκές αξίες και να ενισχύσει τη θρησκεία και την οικογένεια, αλλά χωρίς μεγάλη επιτυχία. Ωστόσο, νέοι ναοί χτίζονται, παλιά ιερά ανακαινίζονται, η Ρώμη γίνεται μια εντυπωσιακή «πόλη του μαρμάρου».'},
+  {t:'p', x:'<b>Στα γράμματα</b>: η επίδραση των Ελλήνων παραμένει καταλυτική, γίνεται όμως βαθύτερη και ουσιαστικότερη. Οι Ρωμαίοι δεν περιορίζονται σε απλή μίμηση. Τα ελληνικά είδη παίρνουν νέα ζωή από τη ρωμαϊκή πρόσληψη και μεταμορφώνονται.'},
+  {t:'p', x:'Οι Ρωμαίοι συγγραφείς και ποιητές συναγωνίζονται τους σπουδαίους Έλληνες δημιουργούς των ελληνιστικών, κλασικών και αρχαϊκών χρόνων: π.χ. ο Κικέρων τους Έλληνες ρήτορες και φιλοσόφους, ο Βεργίλιος τον Θεόκριτο και τον Όμηρο, ο Οράτιος την αιολική ποίηση.'},
+  {t:'p', x:'Τα έργα της εποχής αυτής διαμόρφωσαν την έννοια του «<b>κλασικού</b>»: ως προς τη μορφή παρουσιάζουν αισθητική τελειότητα· στο περιεχόμενο τα διακρίνει ιδεολογική ωριμότητα. Κείμενα, όπως αυτά του Κικέρωνα, του Βεργιλίου, του Ορατίου, του Οβιδίου, εμπνέουν την ευρωπαϊκή λογοτεχνία μέχρι τις μέρες μας.'},
+  {t:'p', x:'Στη ρεπουμπλικανική περίοδο (ή χρόνους του Κικέρωνα, 100-31 π.Χ.) ανθεί κυρίως η <b>πεζογραφία</b>.'},
+  {t:'p', x:'Στην περίοδο του Αυγούστου (31 π.Χ.-14 μ.Χ.) ακμάζει κυρίως η <b>ποίηση</b>.'}
+ ]
+},
+{
+ id:'republic', n:'VII', pre:'Α.', title:'Η ρεπουμπλικανική περίοδος ή οι χρόνοι του Κικέρωνα', sup:'100-31 π.Χ.',
+ blocks:[
+  {t:'sub', h:'Πεζογραφία'},
+  {t:'p', x:'Εμφανίζονται κορυφαίοι πεζογράφοι.'},
+  {t:'per', nm:'Ο Κικέρων', ps:[
+   'Ο <b>Κικέρων</b> ήταν ένας σημαντικός πολιτικός της εποχής του και ένας από τους μεγαλύτερους ρήτορες της αρχαιότητας. Έγραψε πάνω από εκατό πολιτικούς και δικανικούς λόγους, καθώς και θεωρητικά κείμενα για τη ρητορική τέχνη. Συνέθεσε, επίσης, φιλοσοφικούς διαλόγους επηρεασμένος από τον Πλάτωνα και άλλα φιλοσοφικά ρεύματα. Η ποιότητα του λόγου και ο πλούτος των ιδεών του τον καθιέρωσαν ανάμεσα στους μεγάλους της παγκόσμιας λογοτεχνίας.'
+  ]},
+  {t:'per', nm:'Ο Ιούλιος Καίσαρ', ps:[
+   'Ο <b>Ιούλιος Καίσαρ</b> είναι πιο γνωστός ως στρατηγός και πολιτικός. Ήταν όμως ταυτόχρονα ένας από τους πιο μορφωμένους ανθρώπους της εποχής του. Δεν ήταν ιστορικός με τη στενή έννοια, αλλά έγραψε ένα είδος στρατιωτικών απομνημονευμάτων σε λιτή γλώσσα.'
+  ]},
+  {t:'per', nm:'Ο Σαλλούστιος Κρίσπος', ps:[
+   'Ο <b>Σαλλούστιος Κρίσπος</b>, ο πρώτος σπουδαίος Ρωμαίος ιστορικός, ήταν θαυμαστής του Θουκυδίδη και διέπρεψε στην ιστορική μονογραφία.<sup class="r">3</sup>'
+  ]},
+  {t:'sub', h:'Ποίηση'},
+  {t:'p', x:'Εμφανίζεται το πρώτο «μοντερνιστικό» κίνημα της ρωμαϊκής λογοτεχνίας, οι «<b>νεωτερικοί</b>». Είναι επηρεασμένοι από τον αλεξανδρινό Καλλίμαχο (3ος αι. π.Χ.) και την ελληνιστική ποίηση. Δημιουργούν συνήθως σύντομα και πολύ προσεγμένα στη μορφή ποιήματα. Αποφεύγουν τα μεγάλα παραδοσιακά θέματα του έπους, όπως τα ηρωικά κατορθώματα και ο πόλεμος. Στρέφονται σε πιο προσωπικά θέματα, όπως ο έρωτας.'},
+  {t:'per', nm:'Ο Κάτουλλος', ps:[
+   'Ο πιο γνωστός εκπρόσωπος των «νεωτερικών» είναι ο λυρικός ποιητής <b>Κάτουλλος</b>. Στα ποιήματά του κυρίαρχη λογοτεχνική περσόνα είναι μια γυναίκα που ερωτεύθηκε με πάθος και την αναφέρει με το ψευδώνυμο «<b>Λεσβία</b>». Η Λεσβία έγινε διαχρονικό σύμβολο ερωτικής ποιητικής έμπνευσης και ο Κάτουλλος ο πρώτος «ρομαντικός» ποιητής της ευρωπαϊκής λογοτεχνίας.'
+  ]},
+  {t:'per', nm:'Ο Λουκρήτιος', wk:'De rerum natura', ps:[
+   'Ο <b>Λουκρήτιος</b> γράφει το έπος <span class="ttl">Για τη φύση των πραγμάτων</span> (<span class="la">De rerum natura</span>). Δεν πρόκειται για ηρωικό έπος, αλλά έχει φιλοσοφικό περιεχόμενο. Μεταφέρει την επικούρεια φιλοσοφία σε στίχους, μάχεται τη δεισιδαιμονία και επιχειρεί να απαλλάξει τον άνθρωπο από το φόβο του θανάτου.'
+  ]},
+  {t:'fig', cap:'Γάιος Βαλέριος Κάτουλλος'},
+  {t:'fig', cap:'Λουκρήτιος'},
+  {t:'fn', items:['<sup>3</sup> Η ιστορική μονογραφία είναι μια πραγματεία που εξετάζει με τρόπο ολοκληρωμένο ένα θέμα περιορισμένης έκτασης και ενδιαφέροντος, για παράδειγμα αποκλειστικά έναν πόλεμο.']}
+ ]
+},
+{
+ id:'avgousteioi', n:'VIII', pre:'Β.', title:'Οι Αυγούστειοι χρόνοι', sup:'31 π.Χ.-14 μ.Χ.',
+ blocks:[
+  {t:'sub', h:'Ποίηση'},
+  {t:'p', x:'Εμφανίζονται κορυφαίοι ποιητές.'},
+  {t:'per', nm:'Ο Βεργίλιος', wk:'Αινειάδα', ps:[
+   'Ο <b>Βεργίλιος</b> είναι ο ποιητής της <b>Αινειάδας</b>, που συνδυάζει στοιχεία της Ιλιάδας και της Οδύσσειας. Θέμα της είναι η αναχώρηση του Αινεία από την Τροία, οι περιπλανήσεις του και η εγκατάστασή του στο Λάτιο. Ο Βεργίλιος είναι αυτός που δίνει την τελική μορφή στον ιδρυτικό μύθο της Ρώμης, σύμφωνα με τον οποίο την «αιώνια πόλη» ίδρυσε ο Ρωμύλος, απόγονος του Τρώα Αινεία.',
+   'Η Αινειάδα συνοψίζει τις βλέψεις και τις προοπτικές της εποχής του Αυγούστου για οικουμενική και αιώνια κυριαρχία των Ρωμαίων, αιτιολογώντας το ρωμαϊκό <span class="la">imperium</span>. Αναγνωρίστηκε εξαρχής ως το <b>εθνικό έπος</b> των Ρωμαίων. Ο ποιητής της επέδρασε ίσως όσο κανείς στην ευρωπαϊκή λογοτεχνία μέχρι και σήμερα. Ο Αυγουστίνος, ο Πετράρχης, ο Δάντης, ο Σίλλερ είναι μερικοί μόνο από τους μεγάλους Ευρωπαίους λογοτέχνες για τους οποίους αποτέλεσε πρότυπο.'
+  ]},
+  {t:'per', nm:'Ο Οράτιος', wk:'Carmina', ps:[
+   'Ο <b>Οράτιος</b> είναι ο πιο σημαντικός λυρικός ποιητής, αυτός που μετέφερε το αιολικό μέλος στη Ρώμη. Συνθέτει τις Ωδές (<span class="la">Carmina</span>) με πρότυπα τους Έλληνες λυρικούς. Γράφει όμως και σάτιρα και επιδίδεται και στο είδος της ποιητικής επιστολής.'
+  ], fig:'Κόιντος Οράτιος Φλάκκος'},
+  {t:'p', x:'Οι τρεις κορυφαίοι Ρωμαίοι <b>ελεγειακοί</b> ήταν ο Τίβουλλος, ο Προπέρτιος και ο Οβίδιος. Βρίσκονται υπό την επιρροή του κινήματος των «νεωτερικών» (βλ. παραπάνω) και ενδιαφέρονται για τη μορφική τελειότητα των έργων τους. Αλλάζουν ριζικά την ελληνική ελεγεία, που είχε ποικιλία θεμάτων (ήταν πολεμική, πολιτική, φιλοσοφική κ.ο.κ.). Στην ανανεωμένη ρωμαϊκή ελεγεία θεματικό κέντρο είναι ο έρωτας, τον οποίο οι ελεγειακοί συνδέουν άμεσα με την ερωτική ποίηση και με συζητήσεις για την αξία των ποιητικών ειδών.'},
+  {t:'per', nm:'Ο Οβίδιος', wk:'Metamorphoses', ps:[
+   'Ο τελευταίος από τους ελεγειακούς, ο <b>Οβίδιος</b>, γράφει και επική ποίηση, αλλά την ανανεώνει: δημιούργησε μια μυθολογική «<b>αντι-Αινειάδα</b>», τις <b>Μεταμορφώσεις</b> (<span class="la">Metamorphoses</span>). Το επικό αυτό ποίημα περιλαμβάνει 250 περίπου μύθους, κυρίως ελληνικής προέλευσης, που περιέχουν κάποιο στοιχείο μεταμόρφωσης (π.χ. ο μύθος της Δάφνης, που μεταμορφώνεται στο φυτό δάφνη, για να γλιτώσει από το ερωτικό κυνήγι του Απόλλωνα).',
+   'Την ελληνική μυθολογία οι καλλιτέχνες της Αναγέννησης, η Ευρώπη (αλλά ακόμη και η σύγχρονη Ελλάδα) γνώρισε κυρίως από αυτή τη θαυμαστή μυθολογική «εγκυκλοπαίδεια» των οβιδιακών Μεταμορφώσεων.'
+  ]},
+  {t:'sub', h:'Πεζογραφία'},
+  {t:'per', nm:'Ο Τίτος Λίβιος', ps:[
+   'Ο ιστορικός <b>Τίτος Λίβιος</b> παρουσίασε τη διαδρομή της Ρώμης από την ίδρυσή της μέχρι περίπου το τέλος του 1ου αι. π.Χ. Έννοιες, όπως ο <b>mos maiorum</b> (το ήθος των προγόνων), η <b>pietas</b> (η αίσθηση του καθήκοντος, η ευσέβεια), η <b>virtus</b> (η αρετή), οι παραδοσιακές δηλαδή ρωμαϊκές αξίες, κυριαρχούν στην ιστοριογραφία του.'
+  ]},
+  {t:'per', nm:'Ο Βιτρούβιος', wk:'De architectura', ps:[
+   'Την ίδια εποχή στον χώρο της «επιστημονικής» λογοτεχνίας ο <b>Βιτρούβιος</b> με το σύγγραμμά του <span class="ttl">Για την αρχιτεκτονική</span> (<span class="la">De architectura</span>) αποδεικνύει τις προχωρημένες αρχιτεκτονικές γνώσεις της εποχής.'
+  ]}
+ ]
+}
+];
+
+/* ══════════════════════════════════════════════════════════════════
+   ΤΟ ΣΧΕΔΙΟ. Από εδώ και κάτω δεν υπάρχει ούτε μια λέξη των σημειώσεων.
+   ══════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var KEY = 'eisagogi:v1';
+
+/* σταθ. 10 — «δεν το διάβασες» και «δεν μπόρεσα να διαβάσω» δεν είναι το ίδιο */
+function readState(){
+  var raw;
+  try{ raw = localStorage.getItem(KEY); }catch(e){ return { ok:false, map:{} }; }
+  if (!raw) return { ok:true, map:{} };
+  try{
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return { ok:false, map:{} };
+    return { ok:true, map:o };
+  }catch(e){ return { ok:false, map:{} }; }
+}
+var ST = readState();
+
+function el(tag, cls, html){
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+}
+/* «…|SOS» στο τέλος ενός κειμένου = το κόκκινο σημάδι του στο περιθώριο */
+function sos(str){
+  var hit = /\|SOS$/.test(str);
+  return { html: str.replace(/\|SOS$/, ''), sos: hit };
+}
+
+var main = document.getElementById('main');
+
+DATA.forEach(function(S){
+  var sec = el('section', 'sec');
+  sec.id = S.id;
+
+  /* «Η εξέλιξη της ρωμαϊκής λογοτεχνίας» είναι δικός του τίτλος ΠΑΝΩ από
+     κεφάλαιο — μπαίνει έξω από τη <section> ως χώρισμα του βιβλίου. */
+  if (S.part){
+    var pt = el('div','part','<span></span><b>'+S.part+'</b><span></span>');
+    main.appendChild(pt);
+  }
+
+  var head = document.createElement('header');
+  head.appendChild(el('div','kicker',
+    '<b>'+S.n+'</b><span></span>' + (S.pre ? '<u>'+S.pre+'</u>' : '')));
+  head.appendChild(el('h2', null,
+    S.title + (S.fnMark ? '<sup class="r">'+S.fnMark+'</sup>' : '') +
+    (S.sup ? '<br><span class="supt">'+S.sup+'</span>' : '')));
+  sec.appendChild(head);
+
+  S.blocks.forEach(function(B){
+    if (B.t === 'p'){
+      var r = sos(B.x);
+      var p = el('p', 't' + (r.sos ? ' sos' : ''), r.html);
+      sec.appendChild(p);
+    }
+    else if (B.t === 'sub'){
+      sec.appendChild(el('div','sub','<h3>'+B.h+'</h3><span></span>'));
+    }
+    else if (B.t === 'num'){
+      var ol = el('ol','num');
+      B.items.forEach(function(x,i){
+        var li = document.createElement('li');
+        li.setAttribute('data-n', i+1);
+        li.appendChild(el('p',null,x));
+        ol.appendChild(li);
+      });
+      sec.appendChild(ol);
+    }
+    else if (B.t === 'dots'){
+      var ul = el('ul','dots');
+      B.items.forEach(function(IT){
+        var r = sos(IT.x);
+        var li = el('li', r.sos ? 'sos' : null);
+        li.appendChild(el('p','lead',r.html));
+        /* οι παράγραφοι που στις σημειώσεις είναι εσοχή κάτω από την κουκκίδα */
+        (IT.more || []).forEach(function(m){
+          var rm = sos(m);
+          var q = el('p', rm.sos ? 'sos' : null, rm.html);
+          li.appendChild(q);
+        });
+        ul.appendChild(li);
+      });
+      sec.appendChild(ul);
+    }
+    else if (B.t === 'tl'){
+      var tl = el('div','tl');
+      B.items.forEach(function(E){
+        var ev = el('div','ev');
+        ev.appendChild(el('div','nm',E.nm));
+        ev.appendChild(el('div','yr',E.yr));
+        if (E.ex) ev.appendChild(el('div','ex',E.ex));
+        tl.appendChild(ev);
+      });
+      sec.appendChild(tl);
+    }
+    else if (B.t === 'plates'){
+      var pl = el('div','plates');
+      B.items.forEach(function(x){
+        pl.appendChild(el('div','plate','<div class="gr">'+x.gr+'</div><div class="lat">'+x.lat+'</div>'));
+      });
+      sec.appendChild(pl);
+    }
+    else if (B.t === 'genres'){
+      var gs = el('div','genres');
+      B.items.forEach(function(G){
+        var g = el('div','gen');
+        g.appendChild(el('h4', G.sos ? 'sos' : null, G.h));
+        G.ps.forEach(function(x){ g.appendChild(el('p',null,x)); });
+        if (G.fig) g.appendChild(el('div','fig',G.fig));
+        gs.appendChild(g);
+      });
+      sec.appendChild(gs);
+    }
+    else if (B.t === 'per'){
+      var pr = el('div','per');
+      pr.appendChild(el('div','nm',B.nm));
+      if (B.wk) pr.appendChild(el('span','wk',B.wk));
+      B.ps.forEach(function(x){ pr.appendChild(el('p',null,x)); });
+      if (B.fig) pr.appendChild(el('div','fig',B.fig));
+      sec.appendChild(pr);
+    }
+    else if (B.t === 'fig'){
+      sec.appendChild(el('div','fig',B.cap));
+    }
+    else if (B.t === 'fn'){
+      var f = el('div','fn');
+      B.items.forEach(function(x){ f.appendChild(el('p',null,x)); });
+      sec.appendChild(f);
+    }
+  });
+
+  /* «το διάβασα» */
+  var wrapB = el('div','mark');
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  function paint(){
+    var on = !!ST.map[S.id];
+    btn.className = on ? 'on' : '';
+    btn.textContent = on ? '✓ το διάβασα' : 'το διάβασα';
+    var a = document.querySelector('#toc a[href="#'+S.id+'"]');
+    if (a) a.classList.toggle('done', on);
+  }
+  btn.addEventListener('click', function(){
+    if (!ST.ok){ btn.textContent = 'δεν μπορώ να αποθηκεύσω εδώ'; return; }
+    ST.map[S.id] = !ST.map[S.id];
+    try{ localStorage.setItem(KEY, JSON.stringify(ST.map)); }
+    catch(e){ btn.textContent = 'δεν αποθηκεύτηκε'; return; }
+    paint(); tally();
+  });
+  wrapB.appendChild(btn);
+  sec.appendChild(wrapB);
+  S._paint = paint;
+
+  main.appendChild(sec);
+});
+
+/* ── περιεχόμενα ──────────────────────────────────── */
+var toc = document.getElementById('toc'), chips = document.getElementById('chips');
+DATA.forEach(function(S){
+  var a = el('a', null, S.title);
+  a.href = '#'+S.id;
+  toc.appendChild(a);
+  var c = el('a', null, S.n);
+  c.href = '#'+S.id;
+  c.setAttribute('data-id', S.id);
+  chips.appendChild(c);
+});
+DATA.forEach(function(S){ S._paint(); });
+
+function tally(){
+  var n = 0;
+  DATA.forEach(function(S){ if (ST.map[S.id]) n++; });
+  var m = document.getElementById('mRead');
+  m.textContent = !ST.ok ? 'η πρόοδος δεν διαβάστηκε'
+                : n === 0 ? 'κανένα διαβασμένο'
+                : n + ' από ' + DATA.length + ' διαβασμένα';
+}
+tally();
+document.getElementById('mSec').textContent = DATA.length + ' κεφάλαια';
+
+/* ── κίνηση: μόνο transform/opacity ───────────────── */
+var bar = document.querySelector('#prog i');
+function onScroll(){
+  var h = document.documentElement.scrollHeight - window.innerHeight;
+  bar.style.transform = 'scaleX(' + (h > 0 ? Math.min(1, window.scrollY / h) : 0) + ')';
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+onScroll();
+
+function revealAll(){ document.querySelectorAll('.sec').forEach(function(s){ s.classList.add('in'); }); }
+
+if ('IntersectionObserver' in window){
+  /* Από εδώ και πέρα η JS ΕΓΓΥΑΤΑΙ ότι θα τα ανάψει — μόνο τώρα σβήνουν. */
+  document.documentElement.classList.add('anim');
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { rootMargin:'0px 0px -12% 0px', threshold:0.05 });
+  document.querySelectorAll('.sec').forEach(function(s){ io.observe(s); });
+  /* δίχτυ: ό,τι δεν χτύπησε σε 1.5s ανάβει έτσι κι αλλιώς */
+  setTimeout(revealAll, 1500);
+
+  /* scroll-spy */
+  var spy = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      var id = e.target.id;
+      document.querySelectorAll('#toc a,#chips a').forEach(function(a){
+        a.classList.toggle('on', a.getAttribute('href') === '#'+id);
+      });
+      var c = chips.querySelector('a[data-id="'+id+'"]');
+      if (c) chips.scrollTo({ left: Math.max(0, c.offsetLeft - 70), behavior:'smooth' });
+    });
+  }, { rootMargin:'-14% 0px -70% 0px' });
+  document.querySelectorAll('.sec').forEach(function(s){ spy.observe(s); });
+} else {
+  revealAll();
+}
+})();
+</script>
+</body>
+</html>

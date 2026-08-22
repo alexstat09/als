@@ -75,6 +75,7 @@
   .lt-lec:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:3px; }
   .lt-lec .rn{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:34px; line-height:1;
     color:rgba(var(--lt),.5); }
+  .lt-eis .rn{ font-size:30px; }
   .lt-lec .src{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
     text-transform:uppercase; color:var(--au-faint,#5c5964); margin-top:14px; }
   .lt-lec .t{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:25px;
@@ -119,6 +120,18 @@
     <h1 class="lt-h" id="ltHead">Δύο ενότητες.<br><b>27</b> προτάσεις.</h1>
     <p class="lt-hsub" id="ltSub">Διάλεξε ενότητα. Μέσα, κάθε λέξη δείχνει <b>πού πάει</b> και <b>τι είναι συντακτικά</b> — και μετά κρύβεις τη μια γλώσσα και δοκιμάζεσαι.</p>
   </header>
+
+  <div class="lt-sh"><h2>Η εισαγωγή</h2><span class="r"></span><span class="n">8 κεφάλαια</span></div>
+
+  <a class="lt-lec lt-eis" href="latinika-eisagogi.html">
+    <div class="rn">§</div>
+    <div class="src">Λατινικά Γ΄ Λυκείου · Εισαγωγή</div>
+    <div class="t">Λατινική γλώσσα και λογοτεχνία</div>
+    <div class="d">Από την ινδοευρωπαϊκή ρίζα ως τον Τίτο Λίβιο: οι εποχές, τα είδη, και ένα πρόσωπο ανά κάρτα — αυτούσιο το κείμενο του φροντιστηρίου.</div>
+    <div class="in"><i>8 κεφάλαια</i><i>χρονογραμμή εποχών</i><i>χωρίς βαθμό</i></div>
+    <div class="pr"><span class="bar"><i></i></span><span class="pct" id="eisPct">—</span></div>
+    <div class="go">Άνοιξε →</div>
+  </a>
 
   <div class="lt-sh"><h2>Οι ενότητες</h2><span class="r"></span><span class="n" id="ltN">—</span></div>
 
@@ -205,6 +218,29 @@
       requestAnimationFrame(function(){ el.style.transform = 'scaleX(' + frac + ')'; });
     }); })(bar, n / L.total);
   }
+
+  /* ⭐ Η ΕΙΣΑΓΩΓΗ ΜΕΤΡΑΕΙ ΧΩΡΙΣΤΑ ΚΑΙ ΔΕΝ ΜΠΑΙΝΕΙ ΣΤΟ ΣΥΝΟΛΟ ΤΩΝ ΠΡΟΤΑΣΕΩΝ.
+     Είναι ΑΝΑΓΝΩΣΜΑ, όχι ενότητα προς εξάσκηση: το «τις λες απέξω» δεν έχει
+     νόημα εδώ, και ένα ανακατεμένο σύνολο θα έλεγε ψέματα και για τα δύο.
+     Το `eisagogi:v1` είναι ΧΑΡΤΗΣ {id:true} — τρίτο σχήμα στη σελίδα. */
+  (function eisagogi(){
+    var EIS_TOTAL = 8;
+    var card = document.querySelector('.lt-eis');
+    if (!card) return;
+    var bar = card.querySelector('.bar i'), pct = document.getElementById('eisPct');
+    var r = read('eisagogi:v1');
+    if (!r.ok){ pct.textContent = 'δεν διαβάστηκε'; pct.className = 'pct dead'; return; }
+    var n = 0;
+    if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)){
+      for (var k in r.data) if (Object.prototype.hasOwnProperty.call(r.data, k) && r.data[k]) n++;
+    } else if (r.data !== null){
+      pct.textContent = 'δεν διαβάστηκε'; pct.className = 'pct dead'; return;
+    }
+    if (n > EIS_TOTAL) n = EIS_TOTAL;
+    pct.textContent = n ? n + '/' + EIS_TOTAL + ' διαβασμένα' : 'δεν ξεκίνησε';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      bar.style.transform = 'scaleX(' + (n / EIS_TOTAL) + ')'; }); });
+  })();
 
   var head = document.getElementById('ltHead'), sub = document.getElementById('ltSub');
   document.getElementById('ltN').textContent = LECS.length + ' · ' + grandTotal + ' προτάσεις';
