@@ -612,8 +612,15 @@ section('4d · the ΧΡΕΟΣ / ΑΠΟΦΑΣΗ overlap is closed');
      (το μπλοκ της αρχικής και η πόρτα «Απόψε»). Ο κύκλος «Έγινε» του σχεδίου
      είναι ΤΟ ΙΔΙΟ `data-done` με τις εργασίες, άρα περνάει από τον ΙΔΙΟ
      handler — ποτέ δεύτερο αντίγραφο που θα σβήνει με άλλον τρόπο. */
+  /* ⚠️ als-v508: ΕΞΙ — προστέθηκε ο host της ΡΑΓΑΣ (`hwDoneWrap`), όπου
+     ζωγραφίζεται πλέον το δίπλωμα των τελειωμένων. Ο αριθμός ανεβαίνει ΜΟΝΟ
+     όταν προστίθεται ΘΕΣΗ· αν κάποτε ανέβει επειδή γράφτηκε δεύτερος handler,
+     αυτός ο φρουρός δεν το βλέπει — γι' αυτό δίπλα του ζει η βεβαίωση ότι τα
+     τελειωμένα καλωδιώνονται ΚΑΙ αυτά (αλλιώς κύκλοι που δεν γυρίζουν). */
   ok('and both places wire them through ONE implementation',
-    (PAGE.match(/wireTaskActs\(/g) || []).length === 5);
+    (PAGE.match(/wireTaskActs\(/g) || []).length === 6);
+  ok('και ο host της ράγας καλωδιώνεται ΚΑΙ ΑΥΤΟΣ',
+    /if \(dhost && dhtml\) wireTaskActs\(dhost\);/.test(PAGE));
 }
 
 section('4d · the move writes hw:v1 and NOTHING else, and never into the past');
@@ -806,8 +813,18 @@ section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop 
     /body:not\(\.hw-door\) \.hw-grab\{ width:100%; max-width:560px/.test(PAGE) &&
     ['hw-hero', 'hw-banner', 'hw-start', 'hw-doors'].every(c =>
       new RegExp('body:not\\(\\.hw-door\\) \\.' + c + ',').test(PAGE)));
-  ok('⛔ και το ΔΩΜΑΤΙΟ των εργασιών δεν αγγίχτηκε — κρατάει το πλάτος του',
-    /body\.hw-door-ergasies \.hw-wrap\{ max-width:840px/.test(PAGE));
+  /* ⭐ als-v508: ΤΟ ΔΩΜΑΤΙΟ ΤΩΝ ΕΡΓΑΣΙΩΝ ΦΑΡΔΑΙΝΕΙ ΕΠΙΤΗΔΕΣ, 840 → 1180.
+     Μετρήθηκε: στα 840 η στήλη ήταν 804px σε οθόνη 1440, δηλαδή **44% μαύρο
+     περιθώριο** — ΤΟ ΛΑΠΤΟΠ ΔΕΝ ΕΙΝΑΙ ΜΕΓΑΛΟ ΚΙΝΗΤΟ (σταθ. 51).
+     ⛔ Ο φρουρός φυλάει τώρα αυτό που ΠΡΕΠΕΙ: ότι φαρδαίνει ΜΟΝΟ αυτή η
+     πόρτα. Το `#capture` και το `#tonight` είναι ΕΝΑ πεδίο και τρεις γραμμές
+     — εκεί το 720 είναι σωστό, και ένα φαρδύτερο input είναι το λάθος των
+     1.144px της als-v477. */
+  ok('⭐ το ΔΩΜΑΤΙΟ των εργασιών φαρδαίνει για laptop',
+    /body\.hw-door-ergasies \.hw-wrap\{ max-width:1180px/.test(PAGE));
+  ok('⛔ αλλά ΜΟΝΟ αυτό — οι άλλες πόρτες μένουν στα 720',
+    /body\.hw-door \.hw-wrap\{ max-width:720px/.test(PAGE) &&
+    !/body\.hw-door-(capture|tonight|programma) \.hw-wrap\{ max-width:(?!720)/.test(PAGE));
   /* ⚠️ ΠΡΙΝ ΠΙΣΤΕΨΕΙΣ ΜΙΑ ΑΠΟΤΥΧΙΑ, ΕΛΕΓΞΕ ΤΟ ΟΡΓΑΝΟ (σταθερή αρχή 30). Η
      πρώτη γραφή αυτού ήταν σκέτο `/order:\d/`, που ταιριάζει μέσα στο
      `border:1px` — και κατηγόρησε σωστό CSS σε ολόκληρο το αρχείο. Η ιδιότητα
@@ -819,9 +836,19 @@ section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop 
      φορτίο είναι ότι ΚΑΜΙΑ σειρά δεν ζει ΕΞΩ από media query — αλλιώς θα
      εφαρμοζόταν και πίσω από τις πόρτες, όπου δεν υπάρχει flex να την τιμήσει. */
   const laptop = (PAGE.match(/@media \(min-width:1000px\)\{[\s\S]*?\n  \}/g) || []).join('');
+  /* ⚠️⚠️ ΤΟ ΟΡΓΑΝΟ ΗΤΑΝ ΛΑΘΟΣ ΚΑΙ ΚΑΤΗΓΟΡΗΣΕ ΣΩΣΤΟ CSS (σταθ. 30, ξανά).
+     Το `phone` παραπάνω είναι `match` ΧΩΡΙΣ `/g`, άρα κρατάει ΜΟΝΟ ΤΟ ΠΡΩΤΟ
+     `@media (max-width:999px)` της σελίδας — σωστό για το `orderOf`, που
+     ρωτάει για τη σειρά ΤΟΥ ΚΕΝΤΡΟΥ και δεν πρέπει να μπερδεύεται με άλλα
+     block. Λάθος όμως εδώ: μόλις η als-v508 πρόσθεσε ΔΕΥΤΕΡΟ phone block (η
+     σειρά του δωματίου των εργασιών), οι τρεις σειρές του μετρήθηκαν στο
+     ΣΥΝΟΛΟ και όχι στο άθροισμα, και ο φρουρός κοκκίνισε για κανόνα που
+     ΤΗΡΕΙΤΑΙ. Ο κανόνας που φυλάει είναι «καμία σειρά ΕΞΩ από media query»,
+     άρα πρέπει να δει ΟΛΑ τα phone blocks. Δύο σταθερές, μία δουλειά η καθεμία. */
+  const phoneAll = (PAGE.match(/@media \(max-width:999px\)\{[\s\S]*?\n  \}/g) || []).join('');
   ok('καμία αναδιάταξη δεν ζει ΕΞΩ από media query',
     (PAGE.match(ORDER_RE) || []).length ===
-    (phone.match(ORDER_RE) || []).length + (laptop.match(ORDER_RE) || []).length);
+    (phoneAll.match(ORDER_RE) || []).length + (laptop.match(ORDER_RE) || []).length);
   /* ⭐ ΒΕΒΑΙΩΣΕ ΤΗΝ ΙΔΙΟΤΗΤΑ, ΟΧΙ ΕΝΑ ΣΤΙΓΜΙΟΤΥΠΟ ΤΗΣ (als-v453, ξανά). Η
      πρώτη γραφή απαιτούσε ΑΚΡΙΒΩΣ `body:not(.hw-door) .hw-x{ order:`, οπότε
      κοκκίνισε μπροστά σε `body:not(.hw-door).hw-t-capture .hw-apog{ order:3 }`

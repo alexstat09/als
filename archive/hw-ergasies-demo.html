@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Οι εργασίες μου · DEMO</title>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DEMO — ΤΟ ΔΩΜΑΤΙΟ ΤΩΝ ΕΡΓΑΣΙΩΝ, ΞΑΝΑΣΧΕΔΙΑΣΜΕΝΟ
+
+     ⛔ ΑΠΟΜΟΝΩΜΕΝΟ. Κανένα sync script, καμία `localStorage` εγγραφή,
+     κανένα `hw:v1`. Τα δεδομένα είναι ΜΕΣΑ στο αρχείο (`DEMO`). Αυτή η
+     σελίδα δεν μπορεί να αγγίξει τα αληθινά του δεδομένα ακόμη κι αν
+     θέλει — δεν ξέρει πώς.
+
+     Η ΔΙΑΓΝΩΣΗ ΠΟΥ ΤΟ ΓΕΝΝΗΣΕ (μετρημένη σε render 1440×900 του live):
+     · 12 διαφορετικά μεγέθη γραμματοσειράς σε ΜΙΑ οθόνη
+     · το μεγαλύτερο στοιχείο (20px) ήταν η ΕΤΙΚΕΤΑ ΤΟΥ INPUT· οι εργασίες
+       —το περιεχόμενο— ήταν 14.5px, το 4ο μεγαλύτερο. Ιεραρχία ανάποδα.
+     · 214px νεκρό δεξί περιθώριο ανά γραμμή για ημερομηνία 93px
+     · κάθε γραμμή 57px: το εκπρόθεσμο και το μεθαυρινό ΙΔΙΟ βάρος
+     · η ταυτότητα του μαθήματος = tick 2×13px (26 τετραγωνικά pixel)
+     · πίσω από την πόρτα ΜΗΔΕΝ υπογραφή σελίδας — ούτε εξώφυλλο, ούτε
+       serif, ούτε εικόνα. Το Κέντρο είναι περιοδικό, το δωμάτιο ήταν
+       πίνακας διαχείρισης.
+     ══════════════════════════════════════════════════════════════════ -->
+
+<link rel="stylesheet" href="aurora.css">
+<style>
+  /* ⚠️⚠️ Η ΓΡΑΜΜΑΤΟΣΕΙΡΑ ΤΩΝ ΕΛΛΗΝΙΚΩΝ ΔΕΝ ΕΙΝΑΙ Η `--au-serif`.
+     Η `--au-serif` είναι "Instrument Serif", Georgia, … — και η Instrument
+     Serif έχει **0 ελληνικά γλυφά**, άρα κάθε ελληνικός τίτλος έπεφτε στη
+     **Georgia**. Αυτό ακριβώς ήταν το «οι τόνοι δεν είναι σωστοί» των
+     Αρχαίων: ΗΤΑΝ Η ΓΡΑΜΜΑΤΟΣΕΙΡΑ, ΟΧΙ ΤΑ ΔΕΔΟΜΕΝΑ.
+     Εδώ κρατάμε την ΙΔΙΑ απόφαση που κατέληξαν τα Αρχαία (`--ar-gr`). */
+  :root{
+    --hw-gr:"GFS Didot","Times New Roman",Times,serif;
+
+    /* Τα χρώματα των μαθημάτων είναι ΑΥΤΟΥΣΙΑ από το homework.html. */
+    --hw-ist:242,192,99;      /* Ιστορία  · amber  */
+    --hw-arx:155,140,255;     /* Αρχαία   · violet */
+    --hw-lat:24,200,192;      /* Λατινικά · teal   */
+    --hw-ekt:255,138,107;     /* Έκθεση   · coral  */
+    --hw-late:255,107,139;    /* ληξιπρόθεσμο      */
+
+    /* ⭐⭐ Η ΚΛΙΜΑΚΑ — ΚΑΙ Ο ΑΡΙΘΜΟΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΟΣ, ΟΧΙ ΔΗΛΩΜΕΝΟΣ.
+       Το live μετρήθηκε στα **12 διαφορετικά μεγέθη σε μία οθόνη**. Εδώ
+       έγραψα πρώτα «είναι 5» και η ίδια μέτρηση βρήκε **11** — τα κουμπιά,
+       τα πεδία και το βελάκι είχαν καθένα το δικό του. Ένα σχόλιο που
+       επιβιώνει της αλήθειας του είναι το πιο ήσυχο είδος ψέματος.
+       ⛔ ΚΑΝΕΝΑ `font-size` σε αυτό το αρχείο εκτός από αυτά τα ΕΞΙ.
+       (Το `--t-ctl` είναι το έβδομο και μόνο για ΤΟ ΓΕΜΑΤΟ ΚΟΥΜΠΙ.) */
+    --t-mono:10px;    /* ετικέτες, κεφαλαία, μετρητές, βελάκι */
+    --t-meta:12px;    /* μάθημα, προθεσμία, μικρές πράξεις    */
+    --t-ctl:13.5px;   /* ΤΟ γεμάτο κουμπί, μόνο               */
+    --t-body:16px;    /* εργασία, πεδίο γραψίματος            */
+    --t-title:17.5px; /* όνομα ομάδας, τίτλος κάρτας          */
+    --t-loud:19.5px;  /* εκπρόθεσμη εργασία, το lead          */
+    --t-mast:46px;    /* ο τίτλος του δωματίου                */
+
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    background:var(--au-canvas,#060607); color:var(--au-ivory,#F5F2EC);
+    font-family:var(--au-sans,-apple-system,sans-serif);
+    -webkit-font-smoothing:antialiased;
+  }
+  .off{ display:none !important; }
+
+  /* ══ Η ΝΑΥΤΙΛΙΑ — αυτούσια από το live, για να μη μοιάζει ξένη σελίδα ══ */
+  .hw-nav{ max-width:1180px; margin:0 auto; padding:18px 24px 0;
+    display:flex; align-items:center; gap:14px; position:relative; z-index:3; }
+  .hw-brand{ font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.22em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .hw-brand b{ color:var(--au-dim,rgba(245,242,236,.56)); font-weight:400; }
+  .hw-nav a{ font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    text-decoration:none; padding:8px 13px; border-radius:999px; border:1px solid transparent;
+    transition:.26s var(--ease); }
+  .hw-nav a:hover{ color:var(--au-ivory,#F5F2EC); }
+  .hw-nav a.on{ color:var(--au-ivory,#F5F2EC); border-color:var(--au-line-2,rgba(255,255,255,.1));
+    background:var(--au-glass,rgba(255,255,255,.022)); }
+  .hw-nav .sp{ margin-left:auto; }
+
+  /* ══ ① Η ΥΠΟΓΡΑΦΗ ΠΕΡΝΑΕΙ ΤΗΝ ΠΟΡΤΑ ═══════════════════════════════
+     Το δωμάτιο αποκτά ΤΟ ΙΔΙΟ εξώφυλλο, τον ΙΔΙΟ serif και το ΙΔΙΟ italic
+     lead με το Κέντρο. Δεν είναι διακόσμηση: ήταν ο λόγος που η πόρτα
+     έμοιαζε να οδηγεί σε άλλο προϊόν. */
+  .mast{ position:relative; max-width:1180px; margin:0 auto; padding:0 24px; }
+  .mast-img{ position:absolute; inset:-92px 0 auto 0; height:300px; overflow:hidden;
+    z-index:0; pointer-events:none; }
+  .mast-img img{ width:100%; height:100%; object-fit:cover; opacity:.30;
+    filter:saturate(.72); }
+  /* Το σβήσιμο ΠΡΟΣ ΤΟ ΚΑΝΒΑ είναι αυτό που κάνει την εικόνα «χαρτί» και όχι
+     «banner». Δύο βαθμίδες: κάθετη προς τα κάτω, οριζόντια στις άκρες. */
+  .mast-img::after{ content:''; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(6,6,7,.45) 0%, rgba(6,6,7,.72) 46%, var(--au-canvas,#060607) 97%),
+               linear-gradient(90deg, var(--au-canvas,#060607), transparent 22%, transparent 78%, var(--au-canvas,#060607)); }
+  .mast-in{ position:relative; z-index:1; padding:62px 0 4px; }
+  .eyebrow{ font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.26em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .mast h1{ font-family:var(--hw-gr); font-weight:400; font-size:var(--t-mast);
+    line-height:1.02; letter-spacing:-.012em; margin:13px 0 0; color:var(--au-ivory,#F5F2EC); }
+  /* ⭐ ΤΟ LEAD ΔΕΝ ΕΙΝΑΙ ΚΑΙΝΟΥΡΙΟ ΚΕΙΜΕΝΟ. Είναι ο μετρητής που ΗΔΗ υπήρχε
+     («6 ΑΝΟΙΧΤΕΣ · 2 ΕΓΙΝΑΝ», 11px γκρι, δεξιά) στοιχειοθετημένος ως
+     πρόταση. Καμία λέξη δεν προστέθηκε στη σελίδα. */
+  .mast .lead{ font-family:var(--hw-gr); font-style:italic; font-size:var(--t-loud);
+    line-height:1.4; color:var(--au-dim,rgba(245,242,236,.56)); margin:11px 0 0; }
+  .mast .lead b{ color:var(--au-ivory,#F5F2EC); font-weight:400; font-style:italic; }
+
+  /* ══ ② Η ΓΕΩΜΕΤΡΙΑ ΛΕΕΙ ΤΟΥΣ ΣΥΝΤΕΛΕΣΤΕΣ ══════════════════════════
+     ⚠️⚠️ ΑΘΡΟΙΖΕΙ ΑΝΑ `exam`, ΠΟΤΕ ΑΝΑ ΚΛΕΙΔΙ. Το `arxaia_gn` και το
+     `arxaia_agn` δηλώνουν ΚΑΙ ΤΑ ΔΥΟ 30, γιατί το ΓΡΑΠΤΟ είναι ΕΝΑ.
+     Αθροίζοντας ανά κλειδί βγαίνει 110% — επινοημένος αριθμός.
+     Εδώ: Αρχαία 30 · Έκθεση 30 · Ιστορία 20 · Λατινικά 20 = 100. */
+  .weights{ display:flex; gap:3px; margin:26px 0 0; height:5px; }
+  .weights i{ display:block; height:100%; border-radius:3px;
+    background:rgba(var(--c),.85); transition:.4s var(--ease); }
+  .wkey{ display:flex; flex-wrap:wrap; gap:16px; margin:11px 0 0; }
+  .wkey span{ font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    display:inline-flex; align-items:center; gap:6px; }
+  .wkey i{ width:6px; height:6px; border-radius:50%; background:rgb(var(--c)); flex:none; }
+
+  /* ══ Η ΔΙΑΤΑΞΗ — ΔΥΟ ΣΤΗΛΕΣ ═══════════════════════════════════════
+     ⭐ ΤΟ ΛΑΠΤΟΠ ΔΕΝ ΕΙΝΑΙ ΜΕΓΑΛΟ ΚΙΝΗΤΟ. Στο live, 804px στήλης σε οθόνη
+     1440px άφηναν **636px (44%) μαύρο περιθώριο** και η σελίδα διαβαζόταν
+     σαν screenshot κινητού που επιπλέει στο σκοτάδι. Η δεξιά ράγα δεν είναι
+     «κάτι παραπάνω» — είναι ο λόγος που η σελίδα πατάει στην οθόνη.
+     ⛔ ΚΑΝΕΝΑ `min-width` σε αυτή τη διάταξη. Το grid μετράει ΤΟΝ ΓΟΝΕΑ·
+     ένα media query μετράει το VIEWPORT, και εκεί γεννήθηκαν οι δύο
+     στήλες των 280px στα Αρχαία. */
+  .cols{ max-width:1180px; margin:0 auto; padding:34px 24px 120px;
+    display:grid; grid-template-columns:minmax(0,1fr) 316px; gap:44px; align-items:start; }
+
+  /* ══ ③ ΤΟ ΧΡΩΜΑ ΓΙΝΕΤΑΙ ΠΕΡΙΟΧΗ, ΟΧΙ ΓΡΑΤΖΟΥΝΙΑ ══════════════════
+     Ήταν tick 2×13px = 26 τετραγωνικά pixel. Γίνεται ζώνη: ράγα 3px στο
+     ΥΨΟΣ ΟΛΗΣ ΤΗΣ ΟΜΑΔΑΣ + απόχρωση από πίσω. Σκανάρεις με το ΜΑΤΙ αντί να
+     διαβάζεις κεφαλαία 10px. Ίδια τέσσερα χρώματα, καμία νέα γλώσσα. */
+  .grp{ position:relative; border-radius:18px; padding:19px 22px 7px 23px;
+    margin:0 0 15px; overflow:hidden;
+    background:linear-gradient(177deg, rgba(var(--c),.055), rgba(var(--c),.014) 62%, transparent);
+    border:1px solid rgba(var(--c),.10); }
+  .grp::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg, rgba(var(--c),.95), rgba(var(--c),.22)); }
+  .grp-hd{ display:flex; align-items:baseline; gap:12px; padding-bottom:9px;
+    border-bottom:1px solid rgba(var(--c),.13); }
+  .grp-n{ font-family:var(--hw-gr); font-size:var(--t-title); line-height:1.1;
+    color:var(--au-ivory,#F5F2EC); }
+  .grp-s{ margin-left:auto; font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.16em; text-transform:uppercase; color:rgba(var(--c),.62); white-space:nowrap; }
+
+  /* ══ ④ Η ΓΡΑΜΜΗ ═══════════════════════════════════════════════════
+     Grid τριών στηλών, ΧΩΡΙΣ absolute και ΧΩΡΙΣ 214px δεσμευμένου κενού.
+     Η δεξιά ζώνη έπεσε 214px → 104px· τα 110px που γλίτωσαν πήγαν στον
+     τίτλο, που είναι το μόνο πράγμα εδώ που κάποιος διαβάζει. */
+  .task{ display:grid; grid-template-columns:21px minmax(0,1fr) 104px;
+    gap:14px; align-items:center; padding:13px 10px 13px 0; margin-right:-10px;
+    border-radius:11px; border-bottom:1px solid rgba(255,255,255,.05);
+    transition:background .26s var(--ease); }
+  .task:last-of-type{ border-bottom:0; }
+  .task:hover{ background:rgba(255,255,255,.026); border-bottom-color:transparent; }
+
+  /* Ο κύκλος — ίδια συμπεριφορά με το live, μεγαλύτερος κατά 2px ώστε να
+     είναι στόχος και όχι σημάδι. */
+  /* `font-size:0` επειδή ο κύκλος ΔΕΝ έχει κείμενο: χωρίς αυτό κουβαλάει το
+     13.33px default του UA και μολύνει κάθε μέτρηση της κλίμακας. */
+  .ck{ width:21px; height:21px; border-radius:50%; padding:0; cursor:pointer; font-size:0;
+    border:1.5px solid rgba(var(--c),.5); background:transparent; position:relative;
+    transition:.26s var(--ease); }
+  .ck:hover{ border-color:rgb(var(--c)); transform:scale(1.09); }
+  .ck::after{ content:''; position:absolute; inset:3.5px; border-radius:50%;
+    background:rgb(var(--c)); opacity:0; transform:scale(.4); transition:.26s var(--ease); }
+  .task.done .ck::after{ opacity:1; transform:scale(1); }
+  .task.done{ opacity:.42; }
+
+  /* ⑤ Ο ΤΙΤΛΟΣ ΓΙΝΕΤΑΙ SERIF. Αυτό, μόνο του, κάνει τη λίστα να διαβάζεται
+     σαν ΤΟ ΙΔΙΟ ΕΓΓΡΑΦΟ με το «School Studies» και το «Για σήμερα». Το
+     mono επιβιώνει ΜΟΝΟ για μετα-δεδομένα. Δύο γραμματοσειρές με δουλειά,
+     αντί για πέντε χωρίς. */
+  .t-ttl{ font-family:var(--hw-gr); font-size:var(--t-body); line-height:1.32;
+    color:var(--au-ivory,#F5F2EC); overflow-wrap:anywhere; }
+  .t-meta{ font:400 var(--t-meta)/1.4 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.05em; color:var(--au-faint,rgba(245,242,236,.3)); margin-top:4px; }
+
+  /* ══ ⑥ Η ΠΡΟΘΕΣΜΙΑ ΑΠΟΚΤΑ ΒΑΡΟΣ — ΣΕ ΜΕΓΕΘΟΣ, ΟΧΙ ΜΟΝΟ ΣΕ ΧΡΩΜΑ ═══
+     ⛔ ΤΟ ΧΡΩΜΑ ΜΟΝΟ ΤΟΥ ΑΠΕΤΥΧΕ ΚΑΙ ΞΕΡΟΥΜΕ ΓΙΑΤΙ: το εκπρόθεσμο ήταν
+     11px κόκκινο mono στη ΔΕΞΙΑ άκρη, 800px μακριά από το βλέμμα, στην ΙΔΙΑ
+     γραμμή 57px με το μεθαυρινό. Τρεις καταστάσεις → τρία ΜΕΓΕΘΗ. */
+  .task.late .t-ttl{ font-size:var(--t-loud); line-height:1.24; }
+  .task.soon .t-ttl{ font-size:var(--t-body); }
+  .task.later .t-ttl{ font-size:var(--t-body); color:var(--au-dim,rgba(245,242,236,.56)); }
+  .task.later .t-meta{ opacity:.72; }
+
+  /* Η κόκκινη ράγα δεν επαναλαμβάνει το χρώμα του μαθήματος — λέει ΑΛΛΟ
+     πράγμα («πέρασε»), άρα δικαιούται δικό της κανάλι (σταθ.: ποτέ το ίδιο
+     πράγμα σε δύο γλώσσες). */
+  .task.late{ position:relative; }
+  /* ⚠️ ΗΤΑΝ `left:-23px`, ΔΗΛΑΔΗ ΑΚΡΙΒΩΣ ΠΑΝΩ ΣΤΗ ΡΑΓΑ ΤΗΣ ΟΜΑΔΑΣ (padding-left
+     23px → x=0 του `.grp`, εκεί που ζει το `.grp::before`). Το βιολετί γινόταν
+     δίχρωμο για το ύψος μιας γραμμής και διαβαζόταν ΣΠΑΣΜΕΝΟ, όχι επείγον.
+     Δύο σήματα δεν μοιράζονται pixel: το χρώμα του μαθήματος μένει στην άκρη
+     της κάρτας, το «πέρασε» κάθεται ΜΕΣΑ, δικό του. */
+  .task.late::before{ content:''; position:absolute; left:-13px; top:7px; bottom:7px;
+    width:2px; border-radius:2px; background:rgb(var(--hw-late)); }
+
+  .t-right{ position:relative; min-height:32px; display:flex; align-items:center;
+    justify-content:flex-end; }
+  .t-due{ font:400 var(--t-meta)/1.3 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.04em; text-align:right; color:var(--au-faint,rgba(245,242,236,.3));
+    transition:opacity .2s var(--ease); }
+  /* ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΙΑ ΒΑΡΗ: δική του επιλογή = ivory · παραγόμενη =
+     σβηστή με «η επόμενη» · καμία = σβηστή. Ποτέ ίδιες. */
+  .t-due.own{ color:var(--au-ivory,#F5F2EC); }
+  .t-due.is-late{ color:rgb(var(--hw-late)); }
+  .t-due i{ font-style:normal; opacity:.55; display:block; font-size:var(--t-mono); }
+  /* ⚠️ Το «χωρίς ημερομηνία» είναι 16 χαρακτήρες σε ζώνη 104px: έσπαγε στα
+     δύο και διαβαζόταν σαν ΔΥΟ πράγματα. Δεν κονταίνει η φράση — είναι δική
+     του διατύπωση από το live — αλλά είναι η **ΑΠΟΥΣΙΑ** μέτρησης, άρα
+     δικαιούται το πιο ήσυχο μέγεθος της κλίμακας (σταθ. 33: το «δεν έχει»
+     δεν ζωγραφίζεται σαν μέτρηση). */
+  .t-due.none{ font-size:var(--t-mono); line-height:1.5; letter-spacing:.1em;
+    text-transform:uppercase; }
+
+  /* ⛔⛔ ΣΤΑΘΕΡΗ ΑΡΧΗ 26 — ΤΟ ΞΕΡΟΥΜΕ ΚΑΙ ΤΟ ΤΗΡΟΥΜΕ ΕΔΩ:
+     ΠΟΤΕ γυμνός κανόνας `.t-acts{opacity:0}`. Το κρύψιμο ζει ΜΕΣΑ στο
+     συστατικό του (`.task .t-acts`), ώστε αν αύριο τις φορέσει και κάρτα,
+     να μη γίνουν μόνιμα αόρατες και άκλικες. */
+  .t-acts{ display:flex; gap:6px; }
+  .task .t-acts{ position:absolute; right:0; top:50%; transform:translateY(-50%);
+    flex-wrap:nowrap; opacity:0; pointer-events:none; padding-left:30px;
+    background:linear-gradient(90deg, transparent, var(--au-canvas,#060607) 26px);
+    transition:opacity .2s var(--ease); }
+  .task:hover .t-due, .task:focus-within .t-due{ opacity:0; }
+  .task:hover .t-acts, .task:focus-within .t-acts{ opacity:1; pointer-events:auto; }
+
+  .mini{ border:1px solid var(--au-line-2,rgba(255,255,255,.1)); background:rgba(6,6,7,.7);
+    color:var(--au-dim,rgba(245,242,236,.56)); border-radius:9px; padding:6px 10px;
+    font:500 var(--t-meta)/1 var(--au-sans,-apple-system,sans-serif); cursor:pointer;
+    white-space:nowrap; transition:.2s var(--ease); }
+  .mini:hover{ color:var(--au-ivory,#F5F2EC); border-color:rgba(245,242,236,.3); }
+  .mini.danger:hover{ color:rgb(var(--hw-late)); border-color:rgba(255,107,139,.4); }
+
+  /* ══ Η ΔΕΞΙΑ ΡΑΓΑ ═════════════════════════════════════════════════
+     ⭐ Η ΣΥΛΛΗΨΗ ΕΦΥΓΕ ΑΠΟ ΤΗΝ ΚΟΡΥΦΗ. Ήταν το ΜΕΓΑΛΥΤΕΡΟ πράγμα στο
+     δωμάτιο (20px serif) και έσπρωχνε τη λίστα 270px κάτω — δηλαδή το
+     κουτί που ΓΡΑΦΕΙΣ φώναζε πιο δυνατά από αυτό που ΧΡΩΣΤΑΣ. Στη ράγα
+     είναι sticky: πάντα προσιτή, ποτέ πρωταγωνίστρια. */
+  .rail{ position:sticky; top:22px; display:flex; flex-direction:column; gap:18px; }
+  .card{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:17px;
+    background:var(--au-glass,rgba(255,255,255,.022)); padding:18px; }
+  .card h3{ font-family:var(--hw-gr); font-weight:400; font-size:var(--t-title); margin:9px 0 0;
+    color:var(--au-ivory,#F5F2EC); }
+  .card .hint{ font:400 var(--t-meta)/1.5 var(--au-sans,-apple-system,sans-serif);
+    color:var(--au-faint,rgba(245,242,236,.3)); margin:6px 0 0; }
+  .inp{ width:100%; margin-top:12px; background:rgba(0,0,0,.28);
+    border:1px solid var(--au-line-2,rgba(255,255,255,.1)); color:var(--au-ivory,#F5F2EC);
+    border-radius:12px; padding:12px 13px; resize:vertical; min-height:82px;
+    font:400 var(--t-body)/1.45 var(--au-sans,-apple-system,sans-serif); transition:.2s var(--ease); }
+  /* ⚠️ ΤΟ ΠΕΔΙΟ ΔΕΝ ΠΑΕΙ ΚΑΤΩ ΑΠΟ 16px: το iOS Safari ΖΟΥΜΑΡΕΙ τη σελίδα σε
+     κάθε focus αν το input είναι μικρότερο, και η σύλληψη είναι ΑΚΡΙΒΩΣ η
+     στιγμή που χρησιμοποιείται από κινητό (18:00, μόλις γυρίσει). */
+  .inp:focus{ outline:none; border-color:rgba(245,242,236,.32); background:rgba(0,0,0,.42); }
+  .inp::placeholder{ color:var(--au-faint,rgba(245,242,236,.3)); }
+  .btn{ width:100%; margin-top:10px; border:0; border-radius:12px; cursor:pointer;
+    background:var(--au-ivory,#F5F2EC); color:#08080a; padding:12px 15px;
+    font:600 var(--t-ctl)/1 var(--au-sans,-apple-system,sans-serif); transition:.2s var(--ease); }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn:disabled{ opacity:.34; cursor:default; transform:none; }
+
+  /* ⛔⛔ ΕΔΩ ΕΙΧΑ ΒΑΛΕΙ ΤΟ `hw-side.jpg` ΚΑΙ ΤΟ ΕΒΓΑΛΑ ΑΦΟΥ ΤΟ ΕΙΔΑ.
+     Είναι stock φωτογραφία αυτοκινήτου με **watermark TikTok** (@reemrxr1) —
+     από το Notion template, που το CLAUDE.md ήδη περιγράφει ως «ΔΙΑΘΕΣΗ, όχι
+     σύστημα». Στο live ζει σε ΠΕΡΙΘΩΡΙΟ, μικρή και σβηστή. Σε ράγα 316px
+     γινόταν το ΔΕΥΤΕΡΟ μεγαλύτερο στοιχείο της σελίδας, με το watermark
+     ευανάγνωστο. Η υπογραφή του δωματίου είναι το εξώφυλλο στην κορυφή·
+     δεν χρειάζεται δεύτερη εικόνα να τη διεκδικεί. */
+
+  /* ══ ΤΟ ΔΙΠΛΩΜΑ ΤΩΝ ΤΕΛΕΙΩΜΕΝΩΝ — native <details>, μηδέν JS ═════ */
+  .fold{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:17px;
+    padding:2px 18px 6px; background:rgba(255,255,255,.012); }
+  .fold>summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px;
+    padding:15px 0 8px; font:400 var(--t-mono)/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    transition:color .26s var(--ease); }
+  .fold>summary::-webkit-details-marker{ display:none; }
+  .fold>summary:hover{ color:var(--au-dim,rgba(245,242,236,.56)); }
+  .fold .a{ font-size:var(--t-mono); transition:transform .26s var(--ease); display:inline-block; }
+  .fold[open] .a{ transform:rotate(90deg); }
+  .fold .l{ flex:1 1 auto; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+  /* Στη ράγα δεν υπάρχει χώρος για δεξιά ζώνη — και δεν χρειάζεται:
+     μια τελειωμένη εργασία δεν έχει προθεσμία να πει. */
+  .fold .task{ grid-template-columns:21px minmax(0,1fr); padding:11px 0; margin-right:0; }
+  .fold .task .t-right{ display:none; }
+  .fold .task .t-ttl{ font-size:var(--t-body); }
+  .fold .task:hover{ background:none; }
+
+  .empty{ font-family:var(--hw-gr); font-style:italic; font-size:var(--t-title);
+    color:var(--au-faint,rgba(245,242,236,.3)); padding:30px 2px; }
+
+  /* ══ ΚΙΝΗΤΟ ═══════════════════════════════════════════════════════
+     ⛔⛔ ΣΤΟ ΚΙΝΗΤΟ ΔΕΝ ΥΠΑΡΧΕΙ HOVER. Ένα σχέδιο που κρύβει τη μοναδική
+     διαδρομή πίσω από χειρονομία που η συσκευή ΔΕΝ ΕΧΕΙ δεν είναι κομψό,
+     είναι σπασμένο. Εδώ ξεδιπλώνεται. */
+  @media (max-width:999px){
+    /* ⭐ ΣΤΟ ΚΙΝΗΤΟ Η ΣΥΛΛΗΨΗ ΕΙΝΑΙ ΠΡΩΤΗ ΚΑΙ ΤΟ ΔΙΠΛΩΜΑ ΤΕΛΕΥΤΑΙΟ —
+       δηλαδή η ράγα ΣΠΑΕΙ γύρω από τη λίστα, δεν πέφτει ολόκληρη από πάνω.
+       Δική του εντολή από την als-v479: στις 18:00 το πεδίο πρέπει να είναι
+       το ΠΡΩΤΟ πράγμα. Ένα `display:contents` βγάζει τα παιδιά της ράγας
+       στο ίδιο grid, οπότε παίρνουν δικό τους `order` — ΕΝΑ δέντρο markup,
+       ποτέ δεύτερο. ⚠️ Κάθε αδελφός παίρνει ΡΗΤΟ order: όποιος δεν έχει
+       παίρνει 0 και προηγείται όλων (το λάθος της als-v486). */
+    .cols{ grid-template-columns:minmax(0,1fr); gap:26px; padding:26px 18px 90px; }
+    .rail{ display:contents; }
+    .card{ order:1; }
+    main{ order:2; }
+    .fold{ order:3; }
+    :root{ --t-mast:34px; }
+    .task{ grid-template-columns:21px minmax(0,1fr); }
+    .t-right{ grid-column:2; height:auto; display:block; margin-top:8px; }
+    .t-due{ text-align:left; }
+    .t-due i{ display:inline; }
+    .task .t-acts{ position:static; transform:none; opacity:1; pointer-events:auto;
+      margin-top:9px; flex-wrap:wrap; padding-left:0; background:none; }
+    .task:hover .t-due{ opacity:1; }
+    .task.late::before{ left:-13px; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<nav class="hw-nav">
+  <span class="hw-brand">MÉTRON · <b>School Studies</b></span>
+  <span class="sp"></span>
+  <a href="#">Κέντρο</a>
+  <a href="#" class="on">Εργασίες</a>
+</nav>
+
+<header class="mast">
+  <div class="mast-img" aria-hidden="true"><img src="hw-cover.jpg" alt=""></div>
+  <div class="mast-in">
+    <div class="eyebrow">Το χρέος</div>
+    <h1>Οι εργασίες μου</h1>
+    <p class="lead" id="lead"></p>
+    <div class="weights" id="weights" aria-hidden="true"></div>
+    <div class="wkey" id="wkey"></div>
+  </div>
+</header>
+
+<div class="cols">
+  <main>
+    <div id="list"></div>
+  </main>
+
+  <aside class="rail">
+    <div class="card">
+      <div class="eyebrow">Η σύλληψη</div>
+      <h3>Άδειασε το κεφάλι σου</h3>
+      <p class="hint">Μία γραμμή ανά εργασία. Το μάθημα και η μέρα αναγνωρίζονται μόνα τους.</p>
+      <textarea class="inp" id="cap" placeholder="Ιστορία β2 απέξω Τρίτη
+Λατινικά lectio 18 μετάφραση"></textarea>
+      <button class="btn" id="capBtn" disabled>Κράτησέ τα</button>
+    </div>
+
+    <!-- ⭐ ΤΟ ΔΙΠΛΩΜΑ ΗΡΘΕ ΕΔΩ, ΚΑΙ ΤΟ ΕΔΕΙΞΕ ΤΟ RENDER: με τη σύλληψη μόνη
+         της, η ράγα τελείωνε στα 570px και έμεναν **~500px μαύρο** κάτω δεξιά
+         — η ίδια αρρώστια που ήρθαμε να λύσουμε, μετακομισμένη.
+         Και είναι ΠΙΟ ΣΩΣΤΑ εδώ: «τι χρωστάω» και «τι έκανα» είναι ΔΥΟ
+         ερωτήσεις (η ίδια διάκριση που γέννησε το δίπλωμα στην als-v487).
+         Η μία παίρνει την κύρια στήλη, η άλλη τη ράγα. -->
+    <details class="fold" id="fold">
+      <summary><span class="a">▶</span> Έγιναν <span class="l"></span> <span id="doneN"></span></summary>
+      <div id="doneList"></div>
+    </details>
+  </aside>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ⛔ ΑΠΟΜΟΝΩΣΗ. Καμία `localStorage`, κανένα `fetch`, κανένα sync. Αν αυτό
+     το αρχείο αποκτήσει ποτέ γραμμή που γράφει έξω από τη μνήμη της σελίδας,
+     είναι λάθος αρχείο — τα demo δεν αγγίζουν δεδομένα (η καταστροφή των
+     ζυγίσεων ήρθε ακριβώς από harness με ζωντανό sync). */
+
+  var SUBJ = {
+    /* ⛔⛔ ΤΟ ΠΑΛΙΟ ΣΚΕΤΟ `arxaia` ΔΕΝ ΣΒΗΝΕΤΑΙ ΠΟΤΕ, ΚΑΙ ΤΟ ΞΕΧΑΣΑ ΣΤΗΝ
+       ΠΡΩΤΗ ΓΡΑΦΗ. Στα ΑΛΗΘΙΝΑ του δεδομένα οι ΤΡΕΙΣ από τις έξι ανοιχτές
+       εργασίες κάθονται εκεί (σταθ. 40) — μια όψη οδηγημένη από λίστα που
+       δεν το ονομάζει θα τις έριχνε στο πάτωμα ΧΩΡΙΣ ΚΑΝΕΝΑ ΣΦΑΛΜΑ, δίπλα
+       σε ομάδες που δείχνουν μια χαρά. Γι' αυτό η ομαδοποίηση διαβάζει
+       `exam`, ΙΔΙΟΤΗΤΑ ΤΩΝ ΔΕΔΟΜΕΝΩΝ, και ποτέ λίστα προβολής. */
+    arxaia:     { label:'Αρχαία',           short:'Αρχαία',   c:'var(--hw-arx)', weight:30, exam:'arxaia'   },
+    arxaia_gn:  { label:'Αρχαία · γνωστό',  short:'Αρχαία',   c:'var(--hw-arx)', weight:30, exam:'arxaia'   },
+    arxaia_agn: { label:'Αρχαία · άγνωστο', short:'Αρχαία',   c:'var(--hw-arx)', weight:30, exam:'arxaia'   },
+    ekthesi:    { label:'Έκθεση',           short:'Έκθεση',   c:'var(--hw-ekt)', weight:30, exam:'ekthesi'  },
+    istoria:    { label:'Ιστορία',          short:'Ιστορία',  c:'var(--hw-ist)', weight:20, exam:'istoria'  },
+    latinika:   { label:'Λατινικά',         short:'Λατινικά', c:'var(--hw-lat)', weight:20, exam:'latinika' }
+  };
+  /* Η σειρά των ομάδων = ΣΥΝΤΕΛΕΣΤΗΣ, μετά αλφαβητικά. Το βαρύτερο μάθημα
+     κάθεται ψηλότερα γιατί αυτό λένε τα δεδομένα, όχι το γούστο μου. */
+  var GRP_ORDER = ['arxaia','ekthesi','istoria','latinika'];
+  var GRP_NAME  = { arxaia:'Αρχαία', ekthesi:'Έκθεση', istoria:'Ιστορία', latinika:'Λατινικά' };
+  var GRP_C     = { arxaia:'var(--hw-arx)', ekthesi:'var(--hw-ekt)', istoria:'var(--hw-ist)', latinika:'var(--hw-lat)' };
+  var GRP_W     = { arxaia:30, ekthesi:30, istoria:20, latinika:20 };
+
+  function dk(off){
+    var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+off);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function daysTo(key){
+    if (!key) return null;
+    var a = new Date(key+'T00:00:00'), b = new Date(); b.setHours(0,0,0,0);
+    return Math.round((a-b)/86400000);
+  }
+  var DOW = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];
+  function fmtDue(key){
+    if (!key) return 'χωρίς ημερομηνία';
+    var d = daysTo(key);
+    if (d < 0)  return 'πέρασε ' + (-d) + (d === -1 ? ' μέρα' : ' μέρες');
+    if (d === 0) return 'σήμερα';
+    if (d === 1) return 'αύριο';
+    if (d === 2) return 'μεθαύριο';
+    if (d <= 6) { var x = new Date(key+'T00:00:00'); return DOW[(x.getDay()+6)%7]; }
+    var y = new Date(key+'T00:00:00');
+    return y.getDate()+'/'+(y.getMonth()+1);
+  }
+  /* ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΙΑ ΜΕΓΕΘΗ. Το «later» περιλαμβάνει και το
+     `due === null` — μια εργασία χωρίς μέρα ΔΕΝ είναι επείγουσα, αλλά ούτε
+     εξαφανίζεται. */
+  function tier(key){
+    var d = daysTo(key);
+    if (d === null) return 'later';
+    if (d < 0) return 'late';
+    if (d <= 1) return 'soon';
+    return 'later';
+  }
+
+  /* ── ΤΑ ΔΕΔΟΜΕΝΑ ΤΟΥ DEMO ──────────────────────────────────────────
+     Σχήμα αυτούσιο από το `hw:v1` → `tasks`, ώστε ό,τι δουλεύει εδώ να
+     μεταφέρεται χωρίς μετάφραση: `{id, subject, title, due, done, ts}`,
+     `due` = dateKey (`YYYY-MM-DD`) ή `null`, `auto` = παραγόμενη από το
+     πρόγραμμα αντί για δική του επιλογή. */
+  var TASKS = [
+    { id:'t1', subject:'arxaia_agn', title:'Αρχαία άγνωστο — αρχικοί χρόνοι β΄ ομάδα, όλο το φυλλάδιο', due:dk(-1), auto:false, done:false },
+    { id:'t2', subject:'arxaia_gn',  title:'Γνωστό — ενότητα 2, μετάφραση και λεξιλόγιο', due:dk(0), auto:false, done:false },
+    { id:'t3', subject:'ekthesi',    title:'Έκθεση — λεξιλόγιο σελ. 3, παράγραφος 250 λέξεις', due:dk(2), auto:false, done:false },
+    { id:'t4', subject:'istoria',    title:'Ιστορία — το αγροτικό ζήτημα, ερωτήσεις 1-4 σελ. 44', due:dk(1), auto:false, done:false },
+    { id:'t5', subject:'istoria',    title:'Ιστορία — επανάληψη Κόμματα', due:dk(1), auto:true, done:false },
+    { id:'t6', subject:'latinika',   title:'Λατινικά — Lectio XVII, μετάφραση και ασκήσεις', due:dk(1), auto:false, done:false },
+    /* Το legacy κλειδί, με ΑΧΡΟΝΗ εργασία — και τα δύο υπάρχουν στα αληθινά του. */
+    { id:'t9', subject:'arxaia',     title:'ΜΤΦΡΑΣΗ 1ης ενότητας, όλο το κείμενο', due:null, auto:false, done:false },
+    { id:'t7', subject:'latinika',   title:'Λατινικά — Lectio XVI ασκήσεις', due:dk(-3), auto:false, done:true },
+    { id:'t8', subject:'arxaia_gn',  title:'Γνωστό — ενότητα 1 επανάληψη', due:dk(-4), auto:false, done:true }
+  ];
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ⚠️ ΤΟ ΟΝΟΜΑ ΔΕΝ ΛΕΓΕΤΑΙ ΔΥΟ ΦΟΡΕΣ — τεκμηριωμένος κανόνας ΑΥΤΗΣ της
+     σελίδας (als-v477: «Η μέρα» σε δύο μεγέθη· als-v487: ο τίτλος του δωματίου
+     πάνω από τον εαυτό του). Τον ΠΑΤΗΣΑ στην πρώτη γραφή: κάθε γραμμή έγραφε
+     «Ιστορία» ΜΕΣΑ στην ομάδα «Ιστορία». Το meta κρατάει ΜΟΝΟ ό,τι ΞΕΧΩΡΙΖΕΙ
+     τη γραμμή από την κεφαλίδα της — δηλαδή στα Αρχαία «γνωστό»/«άγνωστο»,
+     και πουθενά αλλού τίποτα. */
+  function metaOf(label, groupName){
+    if (!label || label === groupName) return '';
+    if (label.indexOf(groupName) === 0)
+      return label.slice(groupName.length).replace(/^\s*·\s*/, '');
+    return label;
+  }
+
+  function taskHTML(t, groupName){
+    var s = SUBJ[t.subject] || { label:'—', short:'—', c:'var(--hw-arx)' };
+    var meta = metaOf(s.label, groupName || '');
+    var tr = t.done ? 'later' : tier(t.due);
+    var due = fmtDue(t.due);
+    var dueCls = t.done ? '' : (tr === 'late' ? ' is-late' : (t.due && !t.auto ? ' own' : ''));
+    if (!t.due) dueCls += ' none';
+    return '<div class="task ' + (t.done ? 'done later' : tr) + '" style="--c:' + s.c + '" data-id="' + esc(t.id) + '">' +
+      '<button class="ck" type="button" aria-label="Έγινε"></button>' +
+      '<div>' +
+        '<div class="t-ttl">' + esc(t.title) + '</div>' +
+        (meta ? '<div class="t-meta">' + esc(meta) + '</div>' : '') +
+      '</div>' +
+      '<div class="t-right">' +
+        '<div class="t-due' + dueCls + '">' + esc(due) +
+          (t.auto && t.due ? '<i>η επόμενη</i>' : '') + '</div>' +
+        '<div class="t-acts">' +
+          '<button class="mini" type="button" data-act="when">Πότε</button>' +
+          '<button class="mini danger" type="button" data-act="del">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function render(){
+    var open = TASKS.filter(function(t){ return !t.done; });
+    var done = TASKS.filter(function(t){ return t.done; });
+
+    /* ── Ο ΤΙΤΛΟΣ ΤΗΣ ΣΕΛΙΔΑΣ. Ο μετρητής, στοιχειοθετημένος. ── */
+    var lateN = open.filter(function(t){ return tier(t.due) === 'late'; }).length;
+    var word = function(n, a, b){ return n + ' ' + (n === 1 ? a : b); };
+    var lead;
+    if (!open.length) lead = 'Δεν χρωστάς τίποτα.';
+    else {
+      lead = '<b>' + word(open.length, 'ανοιχτή', 'ανοιχτές') + '</b>';
+      if (lateN) lead += ', ' + word(lateN, 'πέρασε την προθεσμία', 'πέρασαν την προθεσμία');
+      lead += ' · ' + word(done.length, 'έγινε', 'έγιναν');
+    }
+    document.getElementById('lead').innerHTML = lead;
+
+    /* ── Η ΓΕΩΜΕΤΡΙΑ ΤΩΝ ΣΥΝΤΕΛΕΣΤΩΝ. Αθροίζει ΑΝΑ exam. ── */
+    var wRow = '', kRow = '';
+    GRP_ORDER.forEach(function(g){
+      wRow += '<i style="--c:' + GRP_C[g] + ';flex:' + GRP_W[g] + '"></i>';
+      kRow += '<span style="--c:' + GRP_C[g] + '"><i></i>' + GRP_NAME[g] + ' ' + GRP_W[g] + '%</span>';
+    });
+    document.getElementById('weights').innerHTML = wRow;
+    document.getElementById('wkey').innerHTML = kRow;
+
+    /* ── ΟΙ ΟΜΑΔΕΣ ── */
+    var html = '';
+    GRP_ORDER.forEach(function(g){
+      var items = open.filter(function(t){
+        var s = SUBJ[t.subject]; return s && s.exam === g;
+      });
+      if (!items.length) return;
+      /* Μέσα στην ομάδα: πρώτα το πιο επείγον. `null` πάει τελευταίο. */
+      items.sort(function(a, b){
+        var da = daysTo(a.due), db = daysTo(b.due);
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      });
+      var lateHere = items.filter(function(t){ return tier(t.due) === 'late'; }).length;
+      html += '<section class="grp" style="--c:' + GRP_C[g] + '">' +
+        '<div class="grp-hd">' +
+          '<span class="grp-n">' + GRP_NAME[g] + '</span>' +
+          '<span class="grp-s">' + GRP_W[g] + '% · ' + items.length +
+            (lateHere ? ' · ' + lateHere + ' πέρασε' : '') + '</span>' +
+        '</div>' +
+        items.map(function(t){ return taskHTML(t, GRP_NAME[g]); }).join('') +
+      '</section>';
+    });
+    document.getElementById('list').innerHTML = html ||
+      '<p class="empty">Δεν χρωστάς τίποτα. Αυτό είναι όλο.</p>';
+
+    document.getElementById('doneN').textContent = done.length;
+    document.getElementById('doneList').innerHTML = done.map(function(t){
+      var sx = SUBJ[t.subject]; return taskHTML(t, ''); }).join('');
+    document.getElementById('fold').classList.toggle('off', !done.length);
+  }
+
+  /* Ο κύκλος γυρίζει την εργασία — ΜΙΑ υλοποίηση, όπως στο live. Στο demo
+     ζει μόνο στη μνήμη· τίποτα δεν αποθηκεύεται πουθενά. */
+  document.addEventListener('click', function(e){
+    var row = e.target.closest('.task'); if (!row) return;
+    var t = TASKS.filter(function(x){ return x.id === row.dataset.id; })[0];
+    if (!t) return;
+    if (e.target.closest('.ck')){ t.done = !t.done; render(); return; }
+    var act = e.target.closest('[data-act]');
+    if (act && act.dataset.act === 'del'){
+      TASKS = TASKS.filter(function(x){ return x.id !== t.id; }); render();
+    }
+  });
+
+  var cap = document.getElementById('cap'), capBtn = document.getElementById('capBtn');
+  cap.addEventListener('input', function(){ capBtn.disabled = !cap.value.trim(); });
+
+  render();
+})();
+</script>
+</body>
+</html>
