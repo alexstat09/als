@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v504";
+var CACHE = "als-v505";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -36,7 +36,7 @@ var CORE = [
   /* ΤΟ ΓΝΩΣΤΟ (als-v460): ο κοινός βαθμολογητής + το corpus του Σωκράτη.
      Χωρίς αυτά στο CORE, η arxaia.html φορτώνει offline και ο ΕΝΑΣ από τους
      δύο κόσμους της είναι άδειος — δηλαδή σιωπηλά μισή σελίδα. */
-  'lesson-grade.js', 'arxaia-gnosto-data.js',
+  'lesson-grade.js', 'arxaia-gnosto-data.js', 'arxaia-syntax-data.js',
   /* als-v468: η σφραγίδα που κρατάει την πρόοδο των σελίδων μελέτης ζωντανή
      μέσα από το sync. Χωρίς αυτό στο CORE, μια offline εκκίνηση γράφει
      ασφράγιστη πρόοδο και το επόμενο sync τη γυρίζει πίσω. */

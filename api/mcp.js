@@ -62,6 +62,7 @@ var BUNDLE = {
   'ist:v1': 'istoria',
   'arx:v1': 'arxaia',
   'arx:gn': 'arxaia-gn',
+  'arx:syn': 'arxaia-syn',
   /* ⚠️ ΤΙΠΟΤΑ ΔΕΝ ΕΠΙΒΑΛΛΕΙ ΑΥΤΟΝ ΤΟΝ ΧΑΡΤΗ. Ένα κλειδί που λείπει από εδώ
      απαντάει `Unknown key`, που διαβάζεται ΑΚΡΙΒΩΣ σαν «δεν υπάρχει εργασία». */
   'hw:v1': 'homework', 'hw:pics': 'homework'
