@@ -47,8 +47,8 @@ const S = require(path.join(ALS, 'arxaia-syntax-data.js'));
 /* Η βελόνα: το inline μπλοκ που κουβαλάει τη μηχανή του συντακτικού. */
 const inline = (PAGE.match(/<script>([\s\S]*?)<\/script>/g) || [])
   .map(b => b.replace(/^<script>/, '').replace(/<\/script>$/, ''));
-const CARRY = inline.filter(b => /function renderDrill\(/.test(b) && /__synDoorStatus/.test(b));
-if (CARRY.length !== 1) throw new Error('arxaia.html δεν έχει πια ΑΚΡΙΒΩΣ ένα inline script με renderDrill() + __synDoorStatus');
+const CARRY = inline.filter(b => /function renderDrill\(/.test(b) && /function compare\(/.test(b));
+if (CARRY.length !== 1) throw new Error('arxaia.html δεν έχει πια ΑΚΡΙΒΩΣ ένα inline script με renderDrill() + compare()');
 const BODY = CARRY[0];
 
 /* ══ ΤΟ ΣΤΟΥΜΠΩΜΕΝΟ DOM ══════════════════════════════════════════════ */
@@ -130,43 +130,98 @@ const goodOf  = h => [...h.matchAll(/class="sy-opt good" data-opt="([^"]*)"/g)].
 const qOf     = h => { const m = h.match(/<div class="sy-q">([\s\S]*?)<\/div>/); return m ? m[1] : null; };
 function itemOf(h, u){ const t = qOf(h); return u.drill.find(d => d.q === t) || null; }
 
-/* ══ Α · Η ΒΙΒΛΙΟΘΗΚΗ ΓΕΜΙΖΕΙ ═══════════════════════════════════════ */
-section('Α · Η ΒΙΒΛΙΟΘΗΚΗ');
+/* ══ Α · ΤΟ ΡΑΦΙ ═══════════════════════════════════════════════════ */
+section('Α · ΤΟ ΡΑΦΙ ΤΟΥ ΣΥΝΤΑΚΤΙΚΟΥ');
 {
   const E = makeEnv();
-  const cards = E.el('synCards').innerHTML;
-  is('τρεις κάρτες', (cards.match(/data-unit="/g) || []).length, 3);
-  ok('η κάρτα λέει τον τίτλο του κεφαλαίου', cards.includes('Η πρόταση και τα είδη της'));
-  ok('η κάρτα λέει τη σελίδα του φυλλαδίου', cards.includes('Σελ. 92 · Κεφάλαιο 2'));
-  ok('χωρίς πρόοδο, το λέει — δεν τυπώνει μηδενικά', cards.includes('καμία δεν έχει φύγει'));
-  ok('και είναι σβησμένη, όχι τονισμένη', cards.includes('class="s q"'));
-  is('η κεφαλίδα μετράει τις ερωτήσεις', E.el('synN').textContent, '48 ερωτήσεις');
-  ok('η γραμμή της πόρτας γράφτηκε', /48 ερωτήσεις/.test(E.el('agSsy').textContent));
-  is('η πόρτα είναι σβησμένη χωρίς πρόοδο', E.el('agSsy').className, 's q');
+  const rows = E.el('synCards').innerHTML;
+  is('τρεις γραμμές περιεχομένων', (rows.match(/data-unit="/g) || []).length, 3);
+  ok('ίδιο markup με τους αρχικούς χρόνους (ένα φύλλο στυλ για τα δύο ράφια)',
+     rows.includes('class="ar-row"') && rows.includes('class="tx"') && rows.includes('class="l"'));
+  ok('με ρωμαϊκό αριθμό', rows.includes('<span class="rn">II</span>'));
+  ok('και τον τίτλο του κεφαλαίου', rows.includes('Το υποκείμενο και τα απρόσωπα'));
+  ok('η γραμμή περιεχομένων ΜΕΤΡΙΕΤΑΙ από την ύλη',
+     rows.includes('Ο χάρτης · 6 διακόπτες · 19 ερωτήσεις'));
+  ok('⭐ «αδιάβαστο» ΛΕΓΕΤΑΙ — δεν τυπώνεται 0/15', rows.includes('αδιάβαστο') && !rows.includes('>0/'));
+  ok('χωρίς πρόοδο δεν υπάρχει μπάρα', !rows.includes('class="bar"'));
+  is('η επικεφαλίδα του ραφιού', E.el('synN').textContent, '3 κεφάλαια');
   is('ΤΙΠΟΤΑ δεν γράφτηκε σε localStorage από ένα render', E.writes, []);
 }
 
-/* ══ Β · Ο ΧΑΡΤΗΣ ═══════════════════════════════════════════════════ */
-section('Β · Ο ΧΑΡΤΗΣ ΔΕΙΧΝΕΙ ΤΟ ΦΥΛΛΑΔΙΟ');
+/* ══ Β · ΤΑ ΤΡΙΑ ΣΧΗΜΑΤΑ ════════════════════════════════════════════
+   ⭐ Η ΚΑΡΔΙΑ ΤΗΣ als-v506. Η ύλη δεν είναι ένα είδος· ένας renderer για
+   όλα ήταν το λάθος της προηγούμενης έκδοσης. */
+section('Β1 · ΤΟ ΔΕΝΤΡΟ (σελ. 91)');
+{
+  const E = makeEnv();
+  fire(E.el('synCards'), 'click', tgt({ dataset:{ unit:'syn1' } }));
+  const h = E.el('synBody').innerHTML;
+  ok('η όψη άνοιξε', E.el('synLesson').classList.contains('on'));
+  ok('⛔ ΚΑΜΙΑ αριθμημένη λίστα — αυτό ήταν το παράπονο', !h.includes('<ol'));
+  ok('υπάρχει ρίζα', h.includes('class="tr-root"') && h.includes('ΟΙ ΠΡΟΤΑΣΕΙΣ'));
+  is('δύο δέντρα, με φωλιασμένα κλαδιά', (h.match(/class="tr-kids/g) || []).length, 4);
+  ok('τα φύλλα είναι εκεί', h.includes('Ενδοιαστικές') && h.includes('Συμπερασματικές'));
+  ok('με την εκφορά τους', h.includes('εκφέρονται με υποτακτική, ευκτική, προστακτική'));
+  is('⭐ Η ΠΑΓΙΔΑ ΕΙΝΑΙ ΟΡΑΤΗ: το ◆ μπαίνει ΑΚΡΙΒΩΣ δύο φορές',
+     (h.match(/class="mk">◆/g) || []).length, 2);
+  ok('και εξηγείται', h.includes('το μόνο είδος που εμφανίζεται ΚΑΙ στις δύο ομάδες'));
+}
+
+section('Β2 · Η ΑΝΤΙΠΑΡΑΒΟΛΗ (σελ. 93)');
+{
+  const E = makeEnv();
+  fire(E.el('synCards'), 'click', tgt({ dataset:{ unit:'syn3' } }));
+  const h = E.el('synBody').innerHTML;
+  is('ο τίτλος της όψης', E.el('synLt').textContent, 'Σελ. 93 · Η δοτική προσωπική · απαρέμφατο και μετοχή');
+  is('τρεις αντιπαραβολές', (h.match(/class="cmp-g"/g) || []).length, 3);
+  ok('η πρώτη έχει πέντε στήλες', h.includes('repeat(5,minmax(178px,1fr))'));
+  ok('και τα πέντε ονόματα', ['κτητική','του ενεργούντος προσώπου','του κρίνοντος προσώπου','(αντι)χαριστική','ηθική']
+     .every(n => h.includes('<span class="cmp-nm">' + n + '</span>')));
+  ok('⭐ οι γραμμές είναι τα πεδία σύγκρισης', h.includes('ΤΟ ΣΗΜΑΔΙ') && h.includes('ΦΑΝΕΡΩΝΕΙ') && h.includes('ΠΑΡΑΔΕΙΓΜΑ'));
+  ok('⭐ η ΜΟΝΗ διαφορά των δύο που μπερδεύονται στοιχίζεται',
+     h.includes('ΩΦΕΛΕΙΑ ή ΒΛΑΒΗ') && h.includes('ΧΑΡΑ ή ΛΥΠΗ'));
+  ok('και ονομάζεται', h.includes('Η παγίδα') && h.includes('πραγματικό κέρδος ή ζημιά, έναντι συναισθήματος'));
+  ok('⛔ ΤΟ ΦΥΛΛΑΔΙΟ ΚΑΘΕΤΑΙ ΑΥΤΟΥΣΙΟ ΑΠΟ ΚΑΤΩ — η συμπύκνωση δεν το κρύβει',
+     h.includes('Το φυλλάδιο') && h.includes('Φανερώνει τον κτήτορα. Βρίσκεται κοντά στα ρήματα εἰμί, ὑπάρχω, γίγνομαι π.χ. ἦσαν τῷ πατρὶ παῖδες δύο.'));
+  ok('όπου το φυλλάδιο ΔΕΝ δίνει παράδειγμα, το κελί το λέει', h.includes('class="none">—'));
+  ok('ο όρος του κρίνοντος είναι σημασμένος ως προειδοποίηση',
+     h.includes('class="cmp-warn">⚠ ΜΟΝΟ όταν ΔΕΝ είναι απρόσωπα'));
+  ok('ΤΑ ΚΕΝΑ ΦΑΙΝΟΝΤΑΙ', h.includes('Τι δεν διάβασα') && h.includes('class="sy-gap"'));
+}
+
+section('Β3 · Η ΠΛΑΚΑ (σελ. 92)');
 {
   const E = makeEnv();
   fire(E.el('synCards'), 'click', tgt({ dataset:{ unit:'syn2' } }));
   const h = E.el('synBody').innerHTML;
-  is('ο τίτλος της όψης', E.el('synLt').textContent, 'Σελ. 92 · Το υποκείμενο και τα απρόσωπα');
-  ok('η όψη άνοιξε', E.el('synLesson').classList.contains('on'));
+  is('τα 7 υποκείμενα + τα 21 απρόσωπα = 28 δείγματα', (h.match(/class="pl-i"/g) || []).length, 28);
   ok('το φυλλάδιο είναι εκεί', h.includes('Το υποκείμενο του ρήματος μιας πρότασης μπορεί να είναι:'));
-  ok('η ΕΞΑΙΡΕΣΗ της αττικής σύνταξης', h.includes('τὰ παιδία παίζει'));
-  is('και τα 21 απρόσωπα', (h.match(/<div class="sy-v">/g) || []).length, 21);
-  ok('με τη σημασία τους', h.includes('είναι στην εξουσία κάποιου'));
-  ok('οι ΔΙΑΚΟΠΤΕΣ έχουν δική τους ενότητα', h.includes('Οι διακόπτες') && h.includes('δικά μου λόγια'));
-  ok('και είναι σημασμένοι ως δικοί μου', h.includes('class="sy-sw"'));
-  ok('τα ΔΙΚΑ ΤΟΥ χειρόγραφα, χωριστά', h.includes('Τα δικά σου') && h.includes('class="sy-mine"'));
-  ok('και δεν φοράνε την όψη της ύλης', !h.includes('<div class="sy-note">' + 'θρυλεῖται'));
+  ok('με τη σημασία των ρημάτων', h.includes('είναι στην εξουσία κάποιου'));
+  ok('η ΕΞΑΙΡΕΣΗ της αττικής σύνταξης, σημασμένη', h.includes('τὰ παιδία παίζει') && h.includes('sy-note warn'));
+  ok('υπάρχει αναζήτηση', h.includes('id="plSearch"'));
+  /* Ο δείκτης αναζήτησης είναι ΧΩΡΙΣ τόνους: «μετ» πρέπει να πιάνει και τα
+     δύο. Το φιλτράρισμα ζει στο DOM, ο δείκτης εδώ — και ο δείκτης είναι
+     αυτό που μπορεί να είναι σιωπηλά λάθος. */
+  const idx = [...h.matchAll(/data-f="([^"]*)"/g)].map(m => m[1]);
+  /* Δείκτη έχει ΜΟΝΟ η πλάκα με αναζήτηση (τα 21 ρήματα). Τα 7 υποκείμενα
+     δεν έχουν — επτά δείγματα δεν ψάχνονται, διαβάζονται. */
+  is('δείκτη έχουν τα 21 ρήματα, όχι τα 7 υποκείμενα', idx.length, 21);
+  is('⭐ «μετ» πιάνει ΚΑΙ το μέτεστι ΚΑΙ το μεταμέλει',
+     idx.filter(x => x.indexOf('μετ') === 0).length, 2);
+  ok('ο δείκτης δεν κρατάει τόνους', !/[άέήίόύώἀ-῾]/.test(idx.join('')));
+  ok('⛔ το ΚΕΙΜΕΝΟ όμως κρατάει τους τόνους του', h.includes('<b>μέτεστι</b>'));
+}
 
-  fire(E.el('synCards'), 'click', tgt({ dataset:{ unit:'syn3' } }));
-  const h3 = E.el('synBody').innerHTML;
-  ok('ΤΑ ΚΕΝΑ ΦΑΙΝΟΝΤΑΙ — δεν σωπαίνουν', h3.includes('Τι δεν διάβασα') && h3.includes('class="sy-gap"'));
-  ok('και οι πέντε δοτικές είναι μέσα', h3.includes('(αντι)χαριστική') && h3.includes('κρίνοντος'));
+section('Β4 · ΟΙ ΔΙΑΚΟΠΤΕΣ ΚΑΙ ΤΑ ΔΙΚΑ ΤΟΥ');
+{
+  const E = makeEnv();
+  fire(E.el('synCards'), 'click', tgt({ dataset:{ unit:'syn2' } }));
+  const h = E.el('synBody').innerHTML;
+  ok('οι διακόπτες έχουν δική τους ενότητα και δική τους όψη',
+     h.includes('Οι διακόπτες') && h.includes('δικά μου λόγια') && h.includes('class="sy-sw"'));
+  ok('τα ΔΙΚΑ ΤΟΥ χειρόγραφα, χωριστά και σε δικό τους χρώμα',
+     h.includes('Τα δικά σου') && h.includes('class="sy-mine"'));
+  ok('και ΔΕΝ φοράνε την όψη του φυλλαδίου', !h.includes('<div class="sy-note"><p>θρυλεῖται'));
 }
 
 /* ══ Γ+Δ · ΤΟ ΛΑΘΟΣ ═════════════════════════════════════════════════ */
@@ -250,7 +305,8 @@ section('Ε · ΔΥΟ ΣΩΣΤΑ ΜΕ ΤΗΝ ΠΡΩΤΗ ΚΑΙ ΦΕΥΓΕΙ');
   let st = JSON.parse(E.store['arx:syn']);
   is('μετά από ΕΝΑ σωστό, τίποτα δεν έχει φύγει ακόμη',
      Object.keys(st.items).filter(k => st.items[k].s >= 2).length, 0);
-  ok('η γραμμή της πόρτας το ξέρει', /καμία δεν έχει φύγει/.test(E.el('agSsy').textContent) === false || true);
+  ok('το ράφι δείχνει ακόμη «αδιάβαστο» — ένα σωστό δεν είναι πρόοδος',
+     E.el('synCards').innerHTML.includes('αδιάβαστο'));
 
   for (let i = 0; i < u.drill.length; i++){ answer(true); next(); }
   st = JSON.parse(E.store['arx:syn']);
@@ -299,7 +355,9 @@ section('Θ · Η ΛΕΞΗ ΑΝΑΒΕΙ ΜΕΣΑ ΣΤΗΝ ΠΡΟΤΑΣΗ');
   ok('η πρόταση εμφανίζεται ολόκληρη', h.includes('class="sy-gr"'));
   ok('⭐ και η ζητούμενη λέξη είναι σημασμένη', h.includes('<mark>' + target.mark + '</mark>'));
   ok('η υπόλοιπη πρόταση δεν χάθηκε', h.includes(target.gr.split(target.mark)[0].trim().split(' ').pop()));
-  ok('η κάρτα μετράει σωστά', E2.el('synCards').innerHTML.includes((u.drill.length - 1) + ' από ' + u.drill.length + ' έφυγαν'));
+  ok('η γραμμή περιεχομένων μετράει σωστά',
+     E2.el('synCards').innerHTML.includes('<span class="t">' + (u.drill.length - 1) + '/' + u.drill.length + '</span>'));
+  ok('και το ράφι συνολικά', E2.el('synN').textContent === (u.drill.length - 1) + '/' + S.totalDrill() + ' έφυγαν');
   void E;
 }
 
@@ -318,6 +376,73 @@ section('Ι · ΤΙ ΓΡΑΦΤΗΚΕ');
   is('γράφτηκε ΜΟΝΟ το arx:syn', [...new Set(E.writes)], ['arx:syn']);
   is('το arx:v1 των αρχικών χρόνων είναι άθικτο', E.store['arx:v1'], '{"pages":{}}');
   is('το arx:gn του γνωστού είναι άθικτο', E.store['arx:gn'], '{"units":{}}');
+}
+
+
+/* ══ Κ · Η ΔΡΟΜΟΛΟΓΗΣΗ ΧΩΡΙΣ ΠΟΡΤΑ ═════════════════════════════════
+   ⭐⭐ ΤΟ ΠΙΟ ΕΠΙΚΙΝΔΥΝΟ ΚΟΜΜΑΤΙ ΤΗΣ als-v506. Η πόρτα ήταν το δίχτυ:
+   ό,τι δεν αναγνωριζόταν προσγειωνόταν σε αυτήν. Τώρα δεν υπάρχει, οπότε
+   ΚΑΘΕ διαδρομή πρέπει να καταλήγει σε κόσμο — αλλιώς λευκή οθόνη, που
+   είναι η ασθένεια αυτού του project και ΔΕΝ φαίνεται ως σφάλμα.
+
+   Τραβάει τις ΑΛΗΘΙΝΕΣ `pickWorld` / `fromHash` από τη σελίδα (ταίριασμα
+   αγκυλών, όχι αντιγραφή) και τις τρέχει με στουμπωμένους κόσμους. */
+section('Κ · ΚΑΘΕ ΔΙΑΔΡΟΜΗ ΚΑΤΑΛΗΓΕΙ ΣΕ ΚΟΣΜΟ');
+{
+  function grab(src, name){
+    const at = src.indexOf('function ' + name + '(');
+    if (at < 0) throw new Error('η arxaia.html δεν έχει πια function ' + name + '()');
+    let i = src.indexOf('{', at), d = 0;
+    for (let j = i; j < src.length; j++){
+      if (src[j] === '{') d++;
+      else if (src[j] === '}'){ d--; if (!d) return src.slice(at, j + 1); }
+    }
+    throw new Error('δεν έκλεισε η ' + name);
+  }
+  const gn = inline.filter(b => /function fromHash\(/.test(b))[0];
+  ok('η δρομολόγηση ζει σε ΕΝΑ σημείο', !!gn);
+
+  function route(hash){
+    const seen = { gn:false, ag:false, toast:null };
+    const box = {
+      location:{ hash }, console,
+      WAG:{ hidden:true }, WGN:{ hidden:true },
+      document:{ body:{ style:{} } },
+      window:{},
+      reveal(w){ if (w === box.WAG) seen.ag = true; if (w === box.WGN) seen.gn = true; w.hidden = false; },
+      renderHome(){}, toast(m){ seen.toast = m; }
+    };
+    box.window.scrollTo = function(){};
+    vm.createContext(box);
+    vm.runInContext(grab(gn, 'pickWorld') + '\n' + grab(gn, 'fromHash') + '\nfromHash();', box);
+    return seen;
+  }
+
+  let r = route('#gn');
+  is('#gn → Γνωστό', [r.gn, r.ag], [true, false]);
+  r = route('#gnosto');
+  ok('#gnosto επίσης', r.gn);
+  r = route('#ag');
+  is('#ag → Άγνωστο', [r.gn, r.ag], [false, true]);
+  r = route('#agnosto');
+  ok('#agnosto επίσης', r.ag);
+  r = route('#syn');
+  ok('⭐ ο ΠΑΛΙΟΣ σύνδεσμος #syn δεν πεθαίνει — πάει στο Άγνωστο', r.ag);
+  ok('και σιωπηλά, χωρίς μήνυμα λάθους', !r.toast);
+  r = route('');
+  is('⛔ ΣΚΕΤΟ arxaia.html → Άγνωστο, ΠΟΤΕ κενό', [r.ag, r.toast], [true, null]);
+  r = route('#αστειο');
+  ok('άγνωστο hash → ΠΑΛΙ κόσμος, όχι λευκή οθόνη', r.ag);
+  ok('και το ΛΕΕΙ ότι δεν το κατάλαβε', !!r.toast && /Άγνωστο/.test(r.toast));
+}
+
+/* ══ Λ · Η ΠΟΡΤΑ ΕΦΥΓΕ ΟΛΟΚΛΗΡΗ ════════════════════════════════════ */
+section('Λ · ΚΑΝΕΝΑ ΛΕΙΨΑΝΟ ΤΗΣ ΠΟΡΤΑΣ');
+{
+  ['agDoor', 'ag-door', 'ag-pick', 'paintDoorStatus', 'openDoor', '__synDoorStatus', 'data-door', 'synWrap']
+    .forEach(t => ok('δεν υπάρχει «' + t + '»', PAGE.indexOf(t) === -1));
+  is('δύο σύνδεσμοι πίσω στο School Studies (ένας ανά κόσμο)',
+     (PAGE.match(/class="ag-back" href="homework\.html"/g) || []).length, 2);
 }
 
 console.log(`\n${fail ? '✗' : '✓'} arxaia-syntax-page: ${pass} πέρασαν, ${fail} έπεσαν\n`);

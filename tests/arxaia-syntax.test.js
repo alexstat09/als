@@ -44,18 +44,21 @@ eq(D.UNITS.map(u => u.id).join(','), 'syn1,syn2,syn3', 'τα ids είναι στ
    δικούς μου διακόπτες, όχι τις ερωτήσεις, όχι τα δικά του χειρόγραφα.
    Ελέγχεται ΤΟ ΦΥΛΛΑΔΙΟ, τίποτε άλλο.                               */
 console.log('\n── 2. ΔΙΠΛΗ ΜΕΤΑΓΡΑΦΗ — Η ΠΡΟΖΑ ───────────────────────────');
+/* ⚠️ Ο ΣΥΛΛΕΚΤΗΣ ΠΕΡΠΑΤΑΕΙ ΟΛΑ ΤΑ ΣΧΗΜΑΤΑ (δέντρο / αντιπαραβολή / πλάκα
+   / σημείωση). Αν προστεθεί σχήμα και ξεχαστεί εδώ, η δεύτερη μεταγραφή
+   θα «λείπει» και το τεστ θα κοκκινίσει — που είναι το σωστό: μια ύλη που
+   ο συλλέκτης δεν βλέπει είναι ύλη που κανείς δεν ελέγχει. */
 function flat(node, out){
   if (node == null) return out;
   if (typeof node === 'string'){ out.push(node); return out; }
   if (Array.isArray(node)){ node.forEach(n => flat(n, out)); return out; }
-  ['h','lead','tag','t','tnote','note','text'].forEach(k => {
-    if (typeof node[k] === 'string') out.push(node[k]);
-  });
-  if (node.groups) flat(node.groups, out);
-  if (node.items) flat(node.items, out);
-  if (node.sub) flat(node.sub, out);
+  ['h','lead','tag','t','tnote','note','text','root','full','name','when','shows','ex','g','v','why','legend']
+    .forEach(k => { if (typeof node[k] === 'string') out.push(node[k]); });
+  ['groups','items','sub','branches','leaves','cols','rows','sign'].forEach(k => { if (node[k]) flat(node[k], out); });
+  if (node.pair) flat(node.pair.why, out);
   return out;
 }
+
 const mapText = D.UNITS.map(u => flat(u.map, []).join(' ')).join(' ¶ ')
   .replace(/\s+/g, ' ').normalize('NFC');
 
