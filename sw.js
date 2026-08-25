@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v509";
+var CACHE = "als-v510";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -32,7 +32,7 @@ var CORE = [
      index.html actually requests or the entry is dead weight. They had drifted
      (SW 206/202 vs page 208/203); realigned als-v438. */
   'aurora.css', 'aurora-page.css', 'jarvis.css', 'home-live.js?v=214', 'home-motion.js?v=206',
-  'latin-engine.js', 'tonos-engine.js', 'greek-ear.js', 'istoria-data.js', 'arxaia-data.js', 'arxaia-engine.js',
+  'latin-engine.js', 'tonos-engine.js', 'tonos-fyllo.js', 'greek-ear.js', 'istoria-data.js', 'arxaia-data.js', 'arxaia-engine.js',
   /* ΤΟ ΓΝΩΣΤΟ (als-v460): ο κοινός βαθμολογητής + το corpus του Σωκράτη.
      Χωρίς αυτά στο CORE, η arxaia.html φορτώνει offline και ο ΕΝΑΣ από τους
      δύο κόσμους της είναι άδειος — δηλαδή σιωπηλά μισή σελίδα. */

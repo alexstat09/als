@@ -58,6 +58,9 @@
   <script src="lesson-grade.js"></script>
   <script src="arxaia-gnosto-data.js"></script>
   <script src="arxaia-syntax-data.js"></script>
+  <!-- ΜΟΝΟ για να ξέρει το ράφι πόσες λέξεις έχει το ασκησάκι.
+       Η ΜΗΧΑΝΗ του τονισμού ΔΕΝ φορτώνεται εδώ — δεν τρέχει τίποτα. -->
+  <script src="tonos-fyllo.js"></script>
   <!-- ⭐ als-v468: και οι ΔΥΟ κόσμοι της σελίδας κρατούσαν την πρόοδό τους σε
        χάρτη εγγραφών, που το sync.js συγχώνευε ανά πεδίο με «κερδίζει το
        remote». Δες το κεφάλαιο του study-stamp.js. -->
@@ -1092,6 +1095,20 @@
   <div class="ag-cols" data-rise>
 
     <div class="ag-main">
+
+      <!-- ⭐ ΤΟΝΙΣΜΟΣ — als-v510, ΠΡΩΤΟ ΡΑΦΙ γιατί είναι σελ. 5-7 του
+           φυλλαδίου και τα ράφια είναι στη ΣΕΙΡΑ ΤΟΥ ΒΙΒΛΙΟΥ ΤΟΥ.
+           ⛔ Η ΣΕΛΙΔΑ ΤΟΥ ΤΟΝΙΣΜΟΥ ΚΡΑΤΑΕΙ ΤΟ `ton:v1` — δεν μετακομίζει
+           εδώ (σταθ. 16: μια αποθήκη τη γράφει η σελίδα που την ΚΑΤΕΧΕΙ).
+           Αυτό εδώ είναι ΕΙΣΟΔΟΣ και ΑΝΑΓΝΩΣΗ, τίποτε άλλο — ίδιο σχήμα με
+           τα δύο πακέτα της εισαγωγής στον Γνωστό, που εγκρίθηκε στην
+           als-v497. Δύο σελίδες που γράφουν το ίδιο κλειδί είναι δύο
+           αλήθειες με καθυστέρηση. -->
+      <section class="sh">
+        <div class="gn-sh"><span class="t">Τονισμός</span><span class="r"></span><span class="n" id="tonShN"></span></div>
+        <div class="ar-rows sh-rows" id="tonSh"></div>
+        <p class="sh-note">Οι τόνοι, τα πνεύματα και οι δασυνόμενες — σελ. 5, 6 και 7. Ανοίγει στη δική του σελίδα, με τη δική του πρόοδο.</p>
+      </section>
 
       <section class="sh">
         <div class="gn-sh"><span class="t">Ρήματα</span><span class="r"></span><span class="n" id="arSylN"></span></div>
@@ -2417,6 +2434,45 @@
       : S.UNITS.length + (S.UNITS.length === 1 ? ' κεφάλαιο' : ' κεφάλαια');
   }
   window.__synRender = renderLib;
+
+  /* ══ ΤΟ ΡΑΦΙ ΤΟΥ ΤΟΝΙΣΜΟΥ ═══════════════════════════════════════════
+     ⛔⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ. Καμία γραμμή εδώ δεν γράφει στο `ton:v1` — το
+     κατέχει η `tonos.html` (σταθ. 16). Ένα `setItem` από εδώ δεν θα
+     έσπρωχνε ποτέ (άλλη μηχανή sync), δεν θα άφηνε ταφόπλακα, και η
+     σελίδα-ιδιοκτήτης θα το έγραφε από πάνω αργότερα.
+     ⚠️ Και «δεν το άνοιξε ποτέ» ΔΕΝ είναι μηδέν (σταθ. 33): αδιάβαστο
+     ράφι λέει «αδιάβαστο», ποτέ «0/16». */
+  (function tonShelf(){
+    var box = document.getElementById('tonSh'), cnt = document.getElementById('tonShN');
+    if (!box) return;
+    var st = null;
+    try { st = JSON.parse(localStorage.getItem('ton:v1') || 'null'); } catch(e){ st = undefined; }
+
+    var F = window.TonosFyllo, total = (F && F.DRILL) ? F.DRILL.length : 0;
+    var steps = (st && st.steps && typeof st.steps === 'object') ? st.steps : null;
+    var done = 0, k;
+    if (steps) for (k in steps) if (Object.prototype.hasOwnProperty.call(steps, k)) done++;
+
+    /* Τρεις καταστάσεις, τρεις προτάσεις — ποτέ η ίδια για δύο πράγματα. */
+    var stt, sub;
+    if (st === undefined){ stt = 'δεν διαβάστηκε'; sub = 'Η πρόοδος υπάρχει — δεν μπόρεσα να τη διαβάσω από αυτή τη συσκευή.'; }
+    else if (!st){ stt = 'αδιάβαστο'; sub = 'Οι οκτώ κανόνες, οι 75 δασυνόμενες, οι δέκα άτονες'; }
+    else if (!total){ stt = 'ανοιχτό'; sub = 'Οι οκτώ κανόνες και ο χάρτης των κανόνων'; }
+    else if (done >= total){ stt = 'ολοκληρώθηκε'; sub = 'Και οι ' + total + ' λέξεις του ασκησακιού βγήκαν καθαρές'; }
+    else { stt = done ? done + '/' + total : 'αδιάβαστο';
+           sub = 'Τα σκαλοπάτια · οι οκτώ κανόνες · οι δασυνόμενες'; }
+
+    box.innerHTML =
+      '<a class="ar-row" href="tonos.html">' +
+        '<span class="tx">' +
+          '<span class="l"><span class="rn">I</span>Τόνοι, πνεύματα, δασυνόμενες</span>' +
+          '<span class="g">' + esc(sub) + '</span>' +
+        '</span>' +
+        (done && total ? '<span class="bar"><i style="width:' + Math.round(done / total * 100) + '%;background:' + tint(done / total) + '"></i></span>' : '') +
+        '<span class="t">' + esc(stt) + '</span>' +
+      '</a>';
+    cnt.textContent = 'σελ. 5 · 6 · 7';
+  })();
 
   /* ⛔ ΧΩΡΙΣ ΤΟΝΟΥΣ ΚΑΙ ΧΩΡΙΣ ΠΝΕΥΜΑΤΑ, ΓΙΑ ΤΗΝ ΑΝΑΖΗΤΗΣΗ ΜΟΝΟ.
      Γράφεις «μετ» και μένουν το μέτεστι και το μεταμέλει. Το ίδιο το
