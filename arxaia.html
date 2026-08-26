@@ -152,7 +152,11 @@
   /* ── λίστες ενοτήτων ──────────────────────────────── */
   .ar-rows{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--au-line,#26262f);
     border-radius:14px; overflow:hidden; }
-  .ar-row{ display:flex; align-items:center; gap:12px; padding:13px 14px; background:rgba(255,255,255,.014);
+  /* ⚠️ ΤΟ ΡΑΦΙ ΕΙΝΑΙ ΚΑΙ ΚΟΥΜΠΙ ΚΑΙ ΣΥΝΔΕΣΜΟΣ. Τα ράφια που ανοίγουν
+     ΑΛΛΗ ΣΕΛΙΔΑ (Τονισμός, Ουσιαστικά) είναι <a>, και ο UA τα υπογράμμιζε
+     δίπλα στα <button> αδέρφια τους — δύο όψεις για την ίδια γραμμή.
+     Ίδιο εύρημα με το `.b` του launcher (als-v437): το είδε ΜΟΝΟ το render. */
+  .ar-row{ text-decoration:none; display:flex; align-items:center; gap:12px; padding:13px 14px; background:rgba(255,255,255,.014);
     width:100%; border:none; color:inherit; font-family:inherit; text-align:left; cursor:pointer;
     transition:background .3s; }
   .ar-row:hover{ background:rgba(var(--ar),.055); }
@@ -402,6 +406,84 @@
     padding:0 0 calc(40px + env(safe-area-inset-bottom)); }
   .ar-view.on{ display:block; }
   .ar-vwrap{ max-width:620px; margin:0 auto; padding:0 18px; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Η ΟΨΗ ΤΩΝ ΡΗΜΑΤΩΝ ΣΕ ΠΛΑΤΟΣ ΛΑΠΤΟΠ — als-v513
+
+     ⛔⛔ ΤΟ ΝΟΥΜΕΡΟ ΠΙΣΩ ΑΠΟ ΤΟ «ΔΕΝ ΜΟΥ ΑΡΕΣΕ»: το `#arLesson` έμενε στα
+     **620px** ενώ ο ΓΝΩΣΤΟΣ πήρε 1180 στην als-v500. Ο ΑΓΝΩΣΤΟΣ δεν το
+     πήρε ποτέ — άρα οι αρχικοί χρόνοι διαβάζονταν σε λωρίδα μέσα σε μαύρο
+     2000px, σε λάπτοπ. Ήταν γραμμένο ως ανοιχτό στη μνήμη και έμεινε.
+
+     ⭐⭐⭐ ΚΑΙ Η ΑΝΑΔΙΑΤΑΞΗ ΠΟΥ ΤΟ ΚΑΝΕΙ ΚΑΛΥΤΕΡΟ ΑΠΟ ΤΟ ΒΙΒΛΙΟ:
+     το φυλλάδιο τυπώνει κάθε ρήμα ΚΑΘΕΤΑ (έξι σειρές ΕΝΣ→ΥΠΡ) γιατί σε
+     χαρτί δεν χωράει αλλιώς. Σε πλάτος λάπτοπ γυρίζει ΟΡΙΖΟΝΤΙΑ: οι
+     ΧΡΟΝΟΙ γίνονται στήλες, οι ΦΩΝΕΣ γραμμές. Τότε συμβαίνει αυτό που το
+     χαρτί ΔΕΝ μπορεί: τα ρήματα της ίδιας οικογένειας ΣΤΟΙΧΙΖΟΝΤΑΙ ΚΑΘΕΤΑ,
+     και βλέπεις ότι όλα τα υγρόληκτα κάνουν -ῶ στον μέλλοντα κοιτώντας ΜΙΑ
+     στήλη. Ο κανόνας γίνεται ΣΧΗΜΑ αντί για πρόταση.
+     ══════════════════════════════════════════════════════════════════ */
+  #arLesson .ar-vwrap{ max-width:1180px; padding:0 40px; }
+  /* ΚΑΘΕ ΣΤΡΩΣΗ ΤΟ ΔΙΚΟ ΤΗΣ ΠΛΑΤΟΣ (σταθ. 51): η πρόζα σε μέτρο
+     ανάγνωσης, ο πίνακας σε ΟΛΟ το πλάτος — εκεί είναι όλο το κέρδος. */
+  #arLesson .ar-simple{ max-width:74ch; }
+  #arLesson .ar-defs{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:0 34px; }
+
+  /* ── Η ΟΙΚΟΓΕΝΕΙΑ ΕΙΝΑΙ Η ΜΟΝΑΔΑ, ΟΧΙ ΤΟ ΡΗΜΑ ─────────────────── */
+  #arLesson .vf{ margin-top:34px; }
+  #arLesson .vf:first-child{ margin-top:6px; }
+  #arLesson .vf-h{ display:flex; align-items:baseline; gap:14px; margin-bottom:4px; }
+  #arLesson .vf-h .t{ font-family:var(--au-mono,monospace); font-size:9.5px; letter-spacing:.22em;
+    text-transform:uppercase; color:rgb(var(--ar)); }
+  #arLesson .vf-h .hint{ font-size:13px; color:var(--au-dim,#9a97a3); }
+  #arLesson .vf-h .r{ flex:1 1 auto; height:1px; background:var(--au-line,#26262f); }
+  #arLesson .vf-rule{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+    font-size:14.5px; line-height:1.7; color:var(--au-dim,#9a97a3); max-width:78ch; margin:10px 0 16px; }
+
+  #arLesson .vg-s{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  #arLesson .vg{ display:grid;
+    grid-template-columns:172px 52px repeat(6, minmax(0,1fr));
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  #arLesson .vg-c{ padding:11px 13px; border-top:1px solid var(--au-line,#26262f);
+    border-left:1px solid var(--au-line,#26262f); min-width:0; }
+  #arLesson .vg-c.c0{ border-left:none; }
+  #arLesson .vg-c.r0{ border-top:none; }
+  #arLesson .vg-c.hd{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); padding:10px 13px; background:rgba(255,255,255,.018); }
+  /* Η ΛΕΞΗ-ΚΕΦΑΛΙ: λήμμα + σημασία, και το κελί καλύπτει ΚΑΙ ΤΙΣ ΔΥΟ φωνές. */
+  #arLesson .vg-lem{ grid-row:span 2; display:flex; flex-direction:column; justify-content:center;
+    gap:5px; background:rgba(255,255,255,.014); }
+  #arLesson .vg-lem.one{ grid-row:span 1; }
+  #arLesson .vg-lem b{ font-family:var(--ar-gr); font-weight:400; font-size:19px;
+    color:var(--au-ivory,#f5f2ec); line-height:1.25; }
+  #arLesson .vg-lem i{ font-style:normal; font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.45; }
+  /* ΔΙΚΗ ΤΗΣ ΣΤΗΛΗ, ώστε οι έξι χρόνοι να μένουν ίσοι και να μη σπάει λέξη. */
+  #arLesson .vg-v{ display:flex; align-items:center; justify-content:center;
+    font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964);
+    background:rgba(255,255,255,.014); padding:11px 4px; }
+  #arLesson .vg-f{ font-family:var(--ar-gr); font-size:16px; line-height:1.5;
+    color:var(--au-ivory,#f5f2ec); word-break:break-word; }
+  #arLesson .vg-f .alt{ display:block; color:var(--au-dim,#9a97a3); font-size:14.5px; }
+  #arLesson .vg-f.none{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.14em;
+    color:var(--au-faint,#5c5964); }
+  /* ⭐ ΔΗΛΩΜΕΝΗ ΑΠΟΚΛΙΣΗ: το κελί που σπάει τον κανόνα ΤΟ ΛΕΕΙ, γιατί
+     ακριβώς αυτό ρωτάει το διαγώνισμα. */
+  #arLesson .vg-c.dev{ background:rgba(255,138,107,.055); }
+  #arLesson .vg-f .dv{ display:block; margin-top:5px; font-family:var(--au-sans,sans-serif);
+    font-size:11.5px; line-height:1.45; color:rgb(var(--warn,255,138,107)); }
+  #arLesson .vg-why{ grid-column:1/-1; padding:13px 15px; border-top:1px solid var(--au-line,#26262f);
+    font-size:13.5px; line-height:1.68; color:var(--au-dim,#9a97a3); }
+  #arLesson .vg-why b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+
+  @media (max-width:1040px){
+    #arLesson .ar-vwrap{ max-width:640px; padding:0 18px; }
+    #arLesson .ar-defs{ grid-template-columns:1fr; }
+    /* στο στενό ο πίνακας ΚΥΛΑΕΙ — εκεί η οριζόντια ανάγνωση είναι σωστή */
+    #arLesson .vg{ min-width:max-content; grid-template-columns:140px 46px repeat(6, minmax(108px,1fr)); }
+  }
+
   .ar-vtop{ position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px;
     padding:calc(env(safe-area-inset-top) + 12px) 18px 12px;
     background:linear-gradient(180deg,var(--au-void,#050506) 72%,transparent);
@@ -682,26 +764,6 @@
   @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
 
   /* ── ο πίνακας του φυλλαδίου, ανά ρήμα ─────────────────── */
-  .ar-verb{ border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; margin-top:14px; }
-  .ar-vh{ padding:13px 15px 11px; background:rgba(255,255,255,.02); }
-  .ar-vl{ font-family:var(--ar-gr); font-size:21.5px; line-height:1.2; }
-  .ar-vg{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:4px; }
-  .ar-vf{ display:inline-block; margin-top:9px; font-family:var(--au-mono,monospace); font-size:8px;
-    letter-spacing:.14em; text-transform:uppercase; padding:4px 9px; border-radius:6px;
-    background:rgba(var(--ar),.14); color:rgb(var(--ar)); }
-  .ar-grid{ display:grid; grid-template-columns:44px 1fr 1fr; font-size:13px; }
-  .ar-grid > div{ padding:8px 10px; border-top:1px solid rgba(255,255,255,.045); min-width:0; }
-  .ar-gh{ font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.12em;
-    text-transform:uppercase; color:var(--au-faint,#5c5964); border-top:none!important; }
-  .ar-gt{ font-family:var(--au-mono,monospace); font-size:9px; color:var(--au-faint,#5c5964); }
-  .ar-gf{ font-family:var(--ar-gr); font-size:14px; line-height:1.55; }
-  .ar-gf i{ display:block; font-style:normal; }
-  .ar-gf .no{ color:var(--au-faint,#5c5964); }
-  .ar-why{ padding:11px 15px 13px; font-size:12.5px; line-height:1.6; color:var(--au-dim,#9a97a3);
-    border-top:1px solid rgba(255,255,255,.045); background:rgba(255,255,255,.012); }
-  .ar-mine{ display:inline-block; font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--au-faint,#5c5964); border:1px solid var(--au-line,#26262f);
-    padding:2px 7px; border-radius:5px; margin-right:7px; }
   /* ── οι αλυσίδες: αυτό που λες φωναχτά ─────────────────── */
   .ar-chain{ margin-top:12px; padding:12px 14px; border:1px solid var(--au-line,#26262f); border-radius:12px; }
   .ar-chain b{ display:block; font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.14em;
@@ -713,12 +775,6 @@
   .ar-slot .lem{ font-family:var(--ar-gr); font-size:18.5px; }
   .ar-slot .vo{ font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--au-faint,#5c5964); margin-top:3px; }
-  .ar-cells{ list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-  .ar-cell{ display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.5; }
-  .ar-cell .tn{ font-family:var(--au-mono,monospace); font-size:8.5px; color:var(--au-faint,#5c5964);
-    width:30px; flex:none; padding-top:3px; }
-  .ar-cell .fm{ font-family:var(--ar-gr); font-size:14px; min-width:0; flex:1 1 auto; }
-  .ar-cell .dots{ font-family:var(--au-mono,monospace); letter-spacing:.28em; color:var(--au-faint,#5c5964); }
   .ar-f{ display:block; }
   .ar-f.did{ color:rgb(var(--good)); }
   .ar-f.lost{ color:rgb(var(--warn)); }
@@ -1541,34 +1597,84 @@
       '</div>' + body + '</section>';
   }
 
-  function cellHTML(v, voice, tense){
-    var box = v[voice], forms = box && box[tense];
-    if (!forms || !forms.length) return '<span class="no">—</span>';
-    var par = box.noDrill && box.noDrill[tense];
-    return forms.map(function(f){ return '<i>' + (par ? '(' + esc(f) + ')' : esc(f)) + '</i>'; }).join('');
+
+
+  /* ══════════════════════════════════════════════════════════════════
+     Ο ΠΙΝΑΚΑΣ ΤΩΝ ΡΗΜΑΤΩΝ — ΟΡΙΖΟΝΤΙΟΣ, ΟΜΑΔΟΠΟΙΗΜΕΝΟΣ ΚΑΤΑ ΟΙΚΟΓΕΝΕΙΑ
+     (als-v513)
+
+     ⭐⭐⭐ ΓΙΑΤΙ ΕΙΝΑΙ ΚΑΛΥΤΕΡΟ ΑΠΟ ΤΟ ΒΙΒΛΙΟ, ΚΑΙ ΕΙΝΑΙ ΜΕΤΡΗΣΙΜΟ:
+     το φυλλάδιο τυπώνει κάθε ρήμα ΚΑΘΕΤΑ (ΕΝΣ→ΥΠΡ σε έξι σειρές) επειδή σε
+     χαρτί δεν χωράει αλλιώς, και τα βάζει ΑΛΦΑΒΗΤΙΚΑ — τη χειρότερη σειρά
+     για μνήμη. Εδώ οι ΧΡΟΝΟΙ είναι ΣΤΗΛΕΣ και τα ρήματα μπαίνουν ΚΑΤΑ
+     ΟΙΚΟΓΕΝΕΙΑ, οπότε συμβαίνει αυτό που το χαρτί δεν μπορεί: κοιτάς ΜΙΑ
+     στήλη και βλέπεις ότι ΟΛΑ τα υγρόληκτα κάνουν -ῶ στον μέλλοντα.
+     Ο κανόνας γίνεται ΣΧΗΜΑ αντί για πρόταση που πρέπει να θυμάσαι.
+
+     ⛔ Η ΣΕΙΡΑ ΜΕΣΑ ΣΤΗΝ ΟΙΚΟΓΕΝΕΙΑ ΕΙΝΑΙ ΤΟΥ `order`, δηλαδή η σειρά που
+     τα μαθαίνει — όχι αλφαβητική και όχι του πίνακα.
+     ⛔ Το `fam`/`why` είναι ΔΙΚΑ ΜΟΥ λόγια και φοράνε τη δική τους όψη·
+     ό,τι είναι του φυλλαδίου μένει γυμνό (τέσσερα επίπεδα αλήθειας). */
+  function famGroups(p){
+    var order = [], seen = {}, out = [];
+    A.verbsOf(p).forEach(function(v){
+      if (!seen[v.fam]){ seen[v.fam] = []; order.push(v.fam); }
+      seen[v.fam].push(v);
+    });
+    order.forEach(function(f){ out.push({ fam: f, verbs: seen[f] }); });
+    return out;
   }
 
-  function verbHTML(v){
-    var fam = A.FAMS[v.fam] || {};
-    var h = '<div class="ar-verb"><div class="ar-vh">' +
-      '<div class="ar-vl">' + esc(v.lemma) + '</div>' +
-      '<div class="ar-vg">' + esc(v.gloss) + '</div>' +
-      '<span class="ar-vf">' + esc(fam.label || '') + '</span></div>';
+  function famHTML(g){
+    var fam = A.FAMS[g.fam] || {};
+    var h = '<section class="vf">' +
+      '<div class="vf-h"><span class="t">' + esc(fam.label || g.fam) + '</span>' +
+        (fam.hint ? '<span class="hint">' + esc(fam.hint) + '</span>' : '') +
+        '<span class="r"></span></div>';
+    if (fam.rule) h += '<p class="vf-rule">' + esc(fam.rule) + '</p>';
+    h += '<div class="vg-s"><div class="vg">';
 
-    h += '<div class="ar-grid">' +
-      '<div class="ar-gh"></div><div class="ar-gh">Ενεργητική</div><div class="ar-gh">Μέση – παθητική</div>';
+    /* κεφαλίδα: κενό + οι έξι χρόνοι */
+    h += '<div class="vg-c hd r0 c0"></div><div class="vg-c hd r0"></div>';
     A.TENSES.forEach(function(t){
-      var a = v.act && v.act[t], m = v.mp && v.mp[t];
-      if (!(a && a.length) && !(m && m.length)) return;
-      h += '<div class="ar-gt">' + esc(A.TENSE_SHORT[t]) + '</div>' +
-        '<div class="ar-gf">' + (v.act ? cellHTML(v, 'act', t) : '<span class="no">—</span>') + '</div>' +
-        '<div class="ar-gf">' + (v.mp ? cellHTML(v, 'mp', t) : '<span class="no">—</span>') + '</div>';
+      h += '<div class="vg-c hd r0">' + esc(A.TENSE_SHORT[t]) + '</div>';
     });
-    h += '</div>';
 
-    h += '<div class="ar-why"><span class="ar-mine">δικά μου λόγια</span>' + esc(v.why) + '</div></div>';
+    g.verbs.forEach(function(v){
+      var rows = [];
+      if (v.act) rows.push('act');
+      if (v.mp)  rows.push('mp');
+      /* ⚠️ Ρήμα χωρίς καμία φωνή δεν υπάρχει — αν συμβεί, ΤΟ ΛΕΕΙ αντί να
+         ζωγραφίσει άδεια γραμμή (σταθ. 10). */
+      if (!rows.length){
+        h += '<div class="vg-c c0 vg-lem one"><b>' + esc(v.lemma) + '</b></div>' +
+             '<div class="vg-c vg-f none" style="grid-column:2/-1">δεν δηλώνεται καμία φωνή</div>';
+        return;
+      }
+      h += '<div class="vg-c c0 vg-lem' + (rows.length === 1 ? ' one' : '') + '">' +
+             '<b>' + esc(v.lemma) + '</b><i>' + esc(v.gloss) + '</i></div>';
+      rows.forEach(function(voice){
+        h += '<div class="vg-c vg-v">' + (voice === 'act' ? 'ΕΝΕΡΓ' : 'ΜΕΣΗ') + '</div>';
+        A.TENSES.forEach(function(t){
+          var forms = v[voice] && v[voice][t];
+          var dev = v.dev && v.dev[voice + '.' + t];
+          var cls = 'vg-c' + (dev ? ' dev' : '');
+          h += '<div class="' + cls + '">' +
+               '<span class="vg-f' + (forms && forms.length ? '' : ' none') + '">' +
+                 (forms && forms.length
+                   ? esc(forms[0]) + (forms.length > 1 ? '<span class="alt">' + esc(forms.slice(1).join(' · ')) + '</span>' : '')
+                   : '—') +
+                 (dev ? '<span class="dv">' + esc(dev) + '</span>' : '') +
+               '</span></div>';
+        });
+      });
+      h += '<div class="vg-why"><b>Γιατί:</b> ' + esc(v.why) + '</div>';
+    });
+
+    h += '</div></div></section>';
     return h;
   }
+
 
   function chainHTML(v){
     return A.chains(v).map(function(c){
@@ -1593,8 +1699,8 @@
       '<div class="ar-simple">' + p.simple.map(function(x){ return '<p>' + esc(x) + '</p>'; }).join('') + '</div>');
 
     /* 2 · Ο ΠΙΝΑΚΑΣ — ΞΑΝΑΤΑΞΙΝΟΜΗΜΕΝΟΣ. Η σειρά ΕΙΝΑΙ το επιχείρημα. */
-    h += layer('02', 'Ο πίνακας', 'όχι αλφαβητικά — με τη σειρά που τα μαθαίνεις',
-      A.verbsOf(p).map(verbHTML).join(''));
+    h += layer('02', 'Ο πίνακας', 'κατά ΟΙΚΟΓΕΝΕΙΑ, και οι χρόνοι σε στήλες — κοίτα ΜΙΑ στήλη και δες τον κανόνα',
+      famGroups(p).map(famHTML).join(''));
 
     /* 3 · ΤΙ ΒΓΑΙΝΕΙ ΜΟΝΟ ΤΟΥ — η στρώση που μικραίνει το βουνό. */
     h += layer('03', 'Τι βγαίνει μόνο του', '12 κελιά γίνονται 3',
