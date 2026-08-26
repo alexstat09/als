@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Κλίσεις">
+  <title>Οι τρεις κλίσεις · MÉTRON</title>
+  <meta name="theme-color" content="#050506">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- ⛔ Η ΓΡΑΜΜΑΤΟΣΕΙΡΑ ΤΩΝ ΠΟΛΥΤΟΝΙΚΩΝ (σταθ. 43 · als-v504). Georgia =
+       ΜΗΔΕΝ πολυτονικά γλυφικά, οπότε απαγορεύεται ακόμη και ως fallback. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=GFS+Didot&amp;display=swap">
+  <link rel="stylesheet" href="aurora.css">
+  <script src="water.js"></script>
+  <script src="als-profile.js" defer></script>
+  <script src="topbar.js" defer></script>
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="arxaia-klisi-data.js"></script>
+  <script src="study-stamp.js"></script>
+  <script src="als-dialog.js" defer></script>
+<style>
+  :root{ --kl:139,197,232; --warn:255,138,107; --good:63,224,176;
+    --ar-gr:"GFS Didot","Times New Roman",Times,serif; }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{ background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
+    -webkit-font-smoothing:antialiased; padding:0 0 calc(96px + env(safe-area-inset-bottom)); }
+
+  /* ⛔ ΣΤΑΘ. 51: πλήρης όψη ΠΡΩΤΑ, το τηλέφωνο τη ΜΑΖΕΥΕΙ. Κανένα min-width. */
+  .kl-wrap{ max-width:1240px; margin:0 auto; padding:0 40px; }
+  .gr{ font-family:var(--ar-gr); }
+
+  .kl-back{ display:inline-block; margin:26px 0 0; font-family:var(--au-mono,monospace);
+    font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--au-dim,#9a97a3); text-decoration:none; }
+  .kl-back:hover{ color:rgb(var(--kl)); }
+
+  .kl-hero{ padding:34px 0 34px; }
+  .kl-eyebrow{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700;
+    letter-spacing:.26em; text-transform:uppercase; color:rgb(var(--kl)); }
+  .kl-h{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic; font-weight:400;
+    font-size:clamp(30px,4.1vw,52px); line-height:1.06; margin-top:14px; }
+  .kl-h b{ font-weight:400; font-style:normal; color:rgb(var(--kl)); }
+  .kl-hsub{ font-size:15.5px; line-height:1.7; color:var(--au-dim,#9a97a3);
+    max-width:70ch; margin-top:18px; }
+
+  .kl-sh{ display:flex; align-items:baseline; gap:14px; margin-bottom:6px; }
+  .kl-sh h2{ font-family:var(--au-serif,"Times New Roman",serif); font-weight:400;
+    font-style:italic; font-size:25px; }
+  .kl-sh .r{ flex:1 1 auto; height:1px; background:var(--au-line,#26262f); }
+  .kl-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); }
+  .kl-sec{ margin-top:64px; }
+  .kl-lead{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-size:16.5px; line-height:1.78; color:var(--au-dim,#9a97a3);
+    max-width:74ch; margin:16px 0 24px; }
+  .kl-lead b{ font-style:normal; font-weight:600; color:var(--au-ivory,#f5f2ec); }
+
+  /* ══ ΤΟ ΔΕΝΤΡΟ — ό,τι ΔΙΑΚΛΑΔΩΝΕΤΑΙ (σταθ. 53) ═════════════════════ */
+  .tr-root{ display:inline-block; font-family:var(--au-mono,monospace); font-size:9.5px;
+    letter-spacing:.22em; text-transform:uppercase; color:rgb(var(--kl));
+    padding:9px 16px; border:1px solid rgba(var(--kl),.34); border-radius:9px; }
+  .tr-lead{ font-family:var(--ar-gr); font-size:17px; line-height:1.8;
+    color:var(--au-ivory,#f5f2ec); max-width:76ch; margin:16px 0 6px; }
+  .tr-kids{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:0; margin-top:22px; }
+  .tr-b{ padding:20px 26px 10px; border-left:1px solid var(--au-line,#26262f); }
+  .tr-b:first-child{ border-left:none; padding-left:0; }
+  .tr-bt{ font-family:var(--au-mono,monospace); font-size:9.5px; letter-spacing:.22em;
+    text-transform:uppercase; color:rgb(var(--kl)); }
+  .tr-bn{ display:block; margin-top:8px; font-size:13.5px; line-height:1.6;
+    color:var(--au-dim,#9a97a3); }
+  .tr-l{ padding:15px 0 13px; border-top:1px solid var(--au-line,#26262f); }
+  .tr-l:first-of-type{ margin-top:14px; }
+  .tr-l .nm{ font-size:15px; color:var(--au-ivory,#f5f2ec); }
+  .tr-l .nm .sos{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.14em;
+    color:rgb(var(--warn)); margin-left:8px; vertical-align:2px; }
+  .tr-l .tl{ display:block; margin-top:7px; font-size:13.5px; line-height:1.62;
+    color:var(--au-dim,#9a97a3); }
+  .tr-l .ex{ display:block; margin-top:7px; font-family:var(--ar-gr); font-size:16px;
+    line-height:1.6; color:rgb(var(--kl)); }
+  .tr-l .go{ display:inline-block; margin-top:9px; background:none; border:none;
+    font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--au-dim,#9a97a3); cursor:pointer;
+    border-bottom:1px solid var(--au-line,#26262f); padding:0 0 2px; }
+  .tr-l .go:hover{ color:rgb(var(--kl)); border-bottom-color:rgba(var(--kl),.5); }
+
+  /* ══ Η ΑΝΤΙΠΑΡΑΒΟΛΗ — ό,τι ΜΠΕΡΔΕΥΕΤΑΙ με τα αδέρφια του ══════════ */
+  .cmp{ overflow-x:auto; -webkit-overflow-scrolling:touch; margin-top:20px; }
+  .cmp-g{ display:grid; grid-template-columns:118px repeat(3,minmax(0,1fr));
+    border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .cmp-c{ padding:15px 18px; border-top:1px solid var(--au-line,#26262f);
+    border-left:1px solid var(--au-line,#26262f); font-size:14.5px; line-height:1.6; }
+  .cmp-c.c0{ border-left:none; }
+  .cmp-c.r0{ border-top:none; }
+  .cmp-c.hd{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-size:20px; color:rgb(var(--kl)); }
+  .cmp-c.key{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); }
+  .cmp-c .v{ font-family:var(--ar-gr); font-size:17px; color:var(--au-ivory,#f5f2ec); }
+  .cmp-c .s{ display:block; margin-top:5px; font-size:13px; color:var(--au-dim,#9a97a3); }
+
+  /* ══ ΟΙ ΠΙΝΑΚΕΣ — ΠΛΑΚΑ, τη ΣΥΜΒΟΥΛΕΥΕΣΑΙ ════════════════════════ */
+  .pl-top{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:18px; }
+  .pl-top input{ flex:0 1 320px; background:rgba(255,255,255,.02);
+    border:1px solid var(--au-line,#26262f); border-radius:11px; padding:11px 15px;
+    color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:14.5px; }
+  .pl-top input::placeholder{ color:var(--au-dim,#9a97a3); }
+  .pl-top input:focus{ outline:none; border-color:rgba(var(--kl),.5); }
+  .pl-top .n{ font-family:var(--au-mono,monospace); font-size:9.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--au-faint,#5c5964); }
+  .pl{ display:grid; grid-template-columns:repeat(auto-fill,minmax(268px,1fr));
+    gap:26px 30px; margin-top:22px; }
+  .pl-i.off{ display:none; }
+  .pl-i h3{ font-family:var(--ar-gr); font-weight:400; font-size:21px;
+    color:var(--au-ivory,#f5f2ec); }
+  .pl-i .cat{ display:block; margin-top:5px; font-family:var(--au-mono,monospace);
+    font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgb(var(--kl)); }
+  .pl-t{ width:100%; border-collapse:collapse; margin-top:12px; }
+  .pl-t td{ padding:5px 0; font-size:15px; vertical-align:baseline; }
+  .pl-t .c{ width:38px; font-family:var(--au-mono,monospace); font-size:8.5px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--au-faint,#5c5964); }
+  .pl-t .f{ font-family:var(--ar-gr); font-size:16.5px; color:var(--au-ivory,#f5f2ec); }
+  .pl-t .a{ font-family:var(--ar-gr); font-size:14px; color:var(--au-dim,#9a97a3);
+    padding-right:5px; text-align:right; width:42px; }
+  .pl-empty{ padding:24px 0; font-size:14.5px; color:var(--au-dim,#9a97a3); }
+
+  /* ══ Η ΕΞΑΣΚΗΣΗ — «τι είναι αυτός ο τύπος;» ══════════════════════ */
+  .ex-g{ display:grid; grid-template-columns:1.1fr .9fr; gap:44px; align-items:start; margin-top:20px; }
+  .ex-card{ border:1px solid var(--au-line,#26262f); border-radius:20px; overflow:hidden; }
+  .ex-q{ text-align:center; padding:34px 20px 30px; background:rgba(255,255,255,.014); }
+  .ex-q .form{ display:block; font-family:var(--ar-gr); font-size:42px; line-height:1.1;
+    color:var(--au-ivory,#f5f2ec); }
+  .ex-q .ask{ display:block; margin-top:12px; font-size:14.5px; color:var(--au-dim,#9a97a3); }
+  .ex-body{ padding:20px 24px 24px; border-top:1px solid var(--au-line,#26262f); }
+  .ex-opts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  .ex-opt{ width:100%; min-height:52px; padding:12px 16px; background:rgba(255,255,255,.02);
+    border:1px solid var(--au-line,#26262f); border-radius:13px; color:var(--au-ivory,#f5f2ec);
+    font-family:inherit; font-size:14px; line-height:1.4; cursor:pointer;
+    transition:border-color .16s,background .16s; }
+  .ex-opt:hover{ border-color:rgba(var(--kl),.45); }
+  .ex-opt:focus-visible{ outline:2px solid rgb(var(--kl)); outline-offset:-2px; }
+  .ex-opt.ok{ border-color:rgba(var(--good),.6); background:rgba(var(--good),.09); color:rgb(var(--good)); }
+  .ex-opt.no{ border-color:rgba(var(--warn),.55); background:rgba(var(--warn),.08); color:rgb(var(--warn)); }
+  .ex-opt[disabled]{ cursor:default; }
+  .ex-next{ margin-top:16px; padding:12px 22px; background:rgba(var(--kl),.1);
+    border:1px solid rgba(var(--kl),.35); border-radius:12px; color:rgb(var(--kl));
+    font-family:inherit; font-size:14px; cursor:pointer; }
+  .ex-pane{ position:sticky; top:88px; min-width:0; }
+  .ex-hint{ padding:20px 22px; border:1px dashed var(--au-line,#26262f); border-radius:14px;
+    font-size:14px; line-height:1.65; color:var(--au-dim,#9a97a3); }
+  .ex-why{ padding:20px 22px; border-radius:14px; background:rgba(var(--kl),.07);
+    border:1px solid rgba(var(--kl),.26); }
+  .ex-why .t{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.24em;
+    text-transform:uppercase; color:rgb(var(--kl)); }
+  .ex-why .big{ display:block; margin-top:10px; font-family:var(--ar-gr); font-size:20px;
+    color:var(--au-ivory,#f5f2ec); }
+  .ex-why .say{ display:block; margin-top:10px; font-size:14px; line-height:1.62;
+    color:var(--au-dim,#9a97a3); }
+
+  /* ══ ΟΙ ΚΑΝΟΝΕΣ ═══════════════════════════════════════════════════ */
+  .ru{ margin-top:18px; border:1px solid var(--au-line,#26262f); border-radius:14px; overflow:hidden; }
+  .ru-r{ display:grid; grid-template-columns:58px minmax(0,1.4fr) minmax(0,1fr);
+    border-top:1px solid var(--au-line,#26262f); }
+  .ru-r:first-child{ border-top:none; }
+  .ru-c{ padding:15px 18px; border-left:1px solid var(--au-line,#26262f);
+    font-size:14.5px; line-height:1.6; }
+  .ru-c:first-child{ border-left:none; }
+  .ru-k{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.14em;
+    text-transform:uppercase; color:rgb(var(--kl)); }
+  .ru-f{ font-family:var(--au-serif,"Times New Roman",serif); color:var(--au-ivory,#f5f2ec); }
+  .ru-s{ color:var(--au-dim,#9a97a3); font-size:13.5px; }
+
+  /* ══ ΤΑ SOS ΤΟΥ — ΔΙΚΟ ΤΟΥ ΧΕΡΙ, ΔΙΚΟ ΤΟΥ ΧΡΩΜΑ ══════════════════ */
+  .sos{ margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1px 0; }
+  .sos-i{ padding:14px 0; border-top:1px solid rgba(255,138,107,.2); display:flex; gap:14px; align-items:baseline; }
+  .sos-i .p{ flex:none; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.14em;
+    color:rgb(var(--warn)); width:56px; }
+  .sos-i .t{ font-size:14.5px; line-height:1.6; color:var(--au-ivory,#f5f2ec); }
+
+  .kl-gaps{ margin-top:44px; padding:18px 22px; border-radius:14px;
+    border:1px dashed rgba(255,138,107,.34); background:rgba(255,138,107,.04); }
+  .kl-gaps .t{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.22em;
+    text-transform:uppercase; color:rgb(var(--warn)); }
+  .kl-gaps li{ margin-top:10px; font-size:14px; line-height:1.65;
+    color:var(--au-dim,#9a97a3); list-style:none; }
+  .kl-gaps li b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .kl-foot{ margin:56px 0 0; padding-top:22px; border-top:1px solid var(--au-line,#26262f);
+    font-size:13.5px; line-height:1.7; color:var(--au-dim,#9a97a3); max-width:76ch; }
+
+  #klToast{ position:fixed; left:50%; bottom:96px; transform:translate(-50%,14px);
+    background:rgba(20,20,24,.97); border:1px solid var(--au-line,#26262f); border-radius:12px;
+    padding:11px 16px; font-size:13.5px; color:var(--au-ivory,#f5f2ec); max-width:90vw;
+    text-align:center; opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; z-index:60; }
+  #klToast.on{ opacity:1; transform:translate(-50%,0); }
+
+  /* ⛔ ΤΟ ΤΗΛΕΦΩΝΟ ΜΑΖΕΥΕΙ. Ένα σημείο θραύσης για ΟΛΗ τη σελίδα. */
+  @media (max-width:1040px){
+    .kl-wrap{ max-width:640px; padding:0 18px; }
+    .ex-g{ grid-template-columns:1fr; gap:22px; }
+    .ex-pane{ position:static; }
+    .ex-q .form{ font-size:34px; }
+    .tr-b{ padding:18px 0 8px; border-left:none; border-top:1px solid var(--au-line,#26262f); }
+    .tr-b:first-child{ border-top:none; }
+    .cmp-g{ min-width:max-content; grid-template-columns:104px repeat(3,minmax(200px,1fr)); }
+    .ru-r{ grid-template-columns:52px 1fr; }
+    .ru-c.ru-s{ grid-column:2; border-left:none; border-top:1px solid var(--au-line,#26262f); }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="kl-wrap">
+  <a class="kl-back" href="arxaia.html#ag">← Αρχαία · άγνωστο</a>
+
+  <header class="kl-hero">
+    <div class="kl-eyebrow">Αρχαία · άγνωστο · σελ. 8 → 21</div>
+    <h1 class="kl-h">Το φυλλάδιο δίνει πίνακες.<br>Το διαγώνισμα δίνει <b>μία λέξη</b>.</h1>
+    <p class="kl-hsub">Σου δείχνουν έναν τύπο και ρωτάνε τι είναι. Άρα δεν μαθαίνεις πενήντα πίνακες· μαθαίνεις <b>μία απόφαση</b>, και το φυλλάδιο σού λέει ποια είναι στη σελ. 12: <b>κόψε το «-ος» της γενικής</b>. Ό,τι μένει είναι ο χαρακτήρας, και ο χαρακτήρας τα λύνει όλα.</p>
+  </header>
+
+  <!-- ⭐ Η ΕΞΑΣΚΗΣΗ ΠΡΩΤΗ: είναι Η ΠΡΑΞΗ. Η ύλη είναι από κάτω, για όταν
+       τη χρειαστεί — όχι από πάνω, να την προσπερνάει κάθε φορά. -->
+  <section class="kl-sec" id="secEx" style="margin-top:24px">
+    <div class="kl-sh"><h2>Τι είναι αυτός ο τύπος;</h2><span class="r"></span><span class="n" id="exN">—</span></div>
+    <p class="kl-lead">Ακριβώς η ερώτηση του διαγωνίσματος. Δίνεται η <b>γενική</b> μαζί με τον τύπο, γιατί αυτή είναι που απαντάει, και επειδή στο διαγώνισμα την έχεις κι εκεί.</p>
+    <div class="ex-g">
+      <div class="ex-card" id="exCard"></div>
+      <div class="ex-pane" id="exPane"></div>
+    </div>
+  </section>
+
+  <section class="kl-sec">
+    <div class="kl-sh"><h2>Το δέντρο</h2><span class="r"></span><span class="n">Γ΄ κλίση · ο χαρακτήρας</span></div>
+    <div id="tree"></div>
+  </section>
+
+  <section class="kl-sec">
+    <div class="kl-sh"><h2>Οι τρεις κλίσεις</h2><span class="r"></span><span class="n">αντικριστά</span></div>
+    <p class="kl-lead">Ίδια γραμμή, τρεις στήλες: διαβάζεις <b>οριζόντια</b> και βλέπεις τι αλλάζει. Η γραμμή που κάνει τη δουλειά είναι η <b>γενική ενικού</b>: από εκεί καταλαβαίνεις σε ποια κλίση βρίσκεσαι.</p>
+    <div class="cmp"><div class="cmp-g" id="cmp"></div></div>
+  </section>
+
+  <section class="kl-sec">
+    <div class="kl-sh"><h2>Οι κανόνες</h2><span class="r"></span><span class="n">αυτούσιοι από το φυλλάδιο</span></div>
+    <div class="ru" id="rules"></div>
+  </section>
+
+  <section class="kl-sec">
+    <div class="kl-sh"><h2>Τα SOS σου</h2><span class="r"></span><span class="n" id="sosN">—</span></div>
+    <p class="kl-lead">Δεν τα διάλεξα εγώ. Τα έγραψες <b>εσύ με το χέρι σου</b> στο περιθώριο, σε οκτώ σημεία. Άρα σου τα υπέδειξε ο καθηγητής σου.</p>
+    <div class="sos" id="sos"></div>
+  </section>
+
+  <section class="kl-sec">
+    <div class="kl-sh"><h2>Οι πίνακες</h2><span class="r"></span><span class="n" id="plN">—</span></div>
+    <p class="kl-lead">Τους <b>συμβουλεύεσαι</b>, δεν τους μαθαίνεις με τη σειρά. Η αναζήτηση δουλεύει <b>χωρίς τόνους</b>: γράψε «πατ» και βγαίνει και ἡ πατρίς και ὁ πατήρ.</p>
+    <div class="pl-top">
+      <input id="plS" type="search" placeholder="γράψε χωρίς τόνους — «πολ», «πατ», «ναυ»…" autocomplete="off" spellcheck="false">
+      <span class="n" id="plHit"></span>
+    </div>
+    <div class="pl" id="pl"></div>
+    <p class="pl-empty" id="plEmpty" hidden>Καμία λέξη με αυτό. Δοκίμασε λιγότερα γράμματα.</p>
+  </section>
+
+  <div class="kl-gaps" id="gaps" hidden>
+    <span class="t">Τι δεν μπήκε, και γιατί</span>
+    <ul id="gapsL"></ul>
+  </div>
+
+  <footer class="kl-foot">
+    Κάθε τύπος εδώ είναι μεταγραμμένος <b>στο χέρι</b> από τις φωτογραφίες του φυλλαδίου σου,
+    και μια δεύτερη ανεξάρτητη μεταγραφή στο test πρέπει να συμφωνεί γράμμα προς γράμμα.
+    Από πάνω τρέχουν μηχανικοί έλεγχοι που κανένα μάτι δεν κάνει στον 40ό τύπο:
+    τόνος σε κάθε λέξη, πνεύμα σε κάθε αρχικό φωνήεν, και το σημαντικότερο,
+    <b>ό,τι ισχυρίζεται το δέντρο πρέπει να ισχύει πάνω στους πίνακες</b>.
+    Ό,τι είναι δικό μου (τα σημάδια αναγνώρισης) φοράει τη δική του όψη και ποτέ του φυλλαδίου.
+  </footer>
+</div>
+
+<div id="klToast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+  var K = window.ArxKlisi;
+  var KEY = 'arx:kl';
+
+  function esc(s){ return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function toast(m){
+    var t = document.getElementById('klToast'); if (!t) return;
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 4200);
+  }
+
+  /* ⛔ ΜΙΑ ΥΛΗ ΠΟΥ ΔΕΝ ΦΟΡΤΩΣΕ ΤΟ ΛΕΕΙ ΔΥΝΑΤΑ (σταθ. 10). Άδεια σελίδα και
+     σελίδα που δεν διαβάστηκε δεν επιτρέπεται να μοιάζουν. */
+  if (!K){
+    document.getElementById('tree').innerHTML =
+      '<p class="pl-empty">Δεν φόρτωσε το <b>arxaia-klisi-data.js</b>. Η ύλη ΔΕΝ λείπει — απλώς δεν έφτασε στη σελίδα. Ανανέωσε.</p>';
+    return;
+  }
+
+  /* ── Η ΠΡΟΟΔΟΣ ─────────────────────────────────────────────────────
+     ⚠️ ΣΤΑΘ. 31: χάρτης εγγραφών μέσα σε συγχρονισμένο κλειδί ΧΡΕΙΑΖΕΤΑΙ
+     σφραγίδα `_ts`, αλλιώς το sync συγχωνεύει πεδίο-πεδίο με «κερδίζει το
+     remote» και η πρόοδος γυρίζει πίσω μετά από 400ms, σιωπηλά. */
+  var state = null;
+  function blank(){ return { v:1, items:{}, runs:0 }; }
+  function load(){
+    var s;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
+    catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο — δεν έσβησε τίποτα.'); return blank(); }
+    if (!s || typeof s !== 'object') return blank();
+    /* ⭐ ΣΤΑΘ. 35: αντιγράφουμε ΟΛΑ τα κλειδιά πρώτα, μετά κανονικοποιούμε
+       όσα ξέρουμε — έτσι ένα πεδίο από νεότερη έκδοση ΔΕΝ σβήνεται. */
+    var b = blank(), k;
+    for (k in s) if (Object.prototype.hasOwnProperty.call(s, k)) b[k] = s[k];
+    b.v = 1;
+    if (!b.items || typeof b.items !== 'object') b.items = {};
+    if (typeof b.runs !== 'number') b.runs = 0;
+    return b;
+  }
+  var STAMP = (typeof window.StudyStamp === 'function')
+    ? window.StudyStamp(function(){ return state ? [state.items] : []; },
+                        function(i, k, r){ return r.last || 0; })
+    : (function(){ var said = 0; return { seed:function(){}, stamp:function(){
+        if (!said++) toast('Δεν φόρτωσε το study-stamp.js. Η πρόοδος γράφεται τοπικά, αλλά ο συγχρονισμός μπορεί να τη γυρίσει πίσω. Ανανέωσε.'); } }; })();
+  function reload(){ state = load(); STAMP.seed(); }
+  function save(){
+    STAMP.stamp();
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ toast('Ο χώρος γέμισε: η πρόοδος ΔΕΝ αποθηκεύτηκε.'); }
+  }
+  reload();
+
+  /* ── αναζήτηση χωρίς τόνους ─────────────────────────────────────────
+     ⛔ Ο ΔΕΙΚΤΗΣ χάνει τόνους· το ΚΕΙΜΕΝΟ ποτέ. */
+  function fold(w){
+    return String(w).normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/ς/g, 'σ');
+  }
+
+  /* ══ ΤΟ ΔΕΝΤΡΟ ═════════════════════════════════════════════════════ */
+  function renderTree(){
+    var T = K.TREE, h = '';
+    h += '<span class="tr-root">' + esc(T.root) + '</span>';
+    h += '<p class="tr-lead">' + esc(T.lead) + '</p>';
+    h += '<div class="tr-kids">';
+    T.kids.forEach(function(b){
+      h += '<div class="tr-b"><span class="tr-bt">' + esc(b.t) + '</span>' +
+           '<span class="tr-bn">' + esc(b.tell) + '</span>';
+      h += branch(b.kids || []);
+      h += '</div>';
+    });
+    h += '</div>';
+    document.getElementById('tree').innerHTML = h;
+  }
+  function branch(kids){
+    var h = '';
+    kids.forEach(function(k){
+      if (k.kids && k.kids.length){
+        h += '<div class="tr-l"><span class="nm">' + esc(k.t) +
+             (k.sos ? '<span class="sos">SOS</span>' : '') + '</span>' +
+             '<span class="tl">' + esc(k.tell) + '</span></div>' + branch(k.kids);
+        return;
+      }
+      h += '<div class="tr-l"><span class="nm">' + esc(k.t) +
+           (k.sos ? '<span class="sos">SOS</span>' : '') + '</span>' +
+           '<span class="tl">' + esc(k.tell) + '</span>' +
+           (k.ex ? '<span class="ex">' + esc(k.ex) + '</span>' : '') +
+           (k.para ? '<button class="go" data-para="' + esc(k.para) + '">δες τον πίνακα</button>' : '') +
+           '</div>';
+    });
+    return h;
+  }
+
+  /* ══ Η ΑΝΤΙΠΑΡΑΒΟΛΗ ═══════════════════════════════════════════════
+     ⭐ Η γραμμή που κάνει τη δουλειά είναι η ΓΕΝΙΚΗ, και γι᾿ αυτό τονίζεται. */
+  var CMP = [
+    { k: 'Παράδειγμα', a: ['ἡ ὥρα'], b: ['ὁ ἄνθρωπος'], g: ['ὁ κόραξ'] },
+    { k: 'Γενική ενικού', a: ['τῆς ὥρας', 'σε -ας / -ης / -ου'],
+      b: ['τοῦ ἀνθρώπου', 'ΠΑΝΤΑ σε -ου'],
+      g: ['τοῦ κόρακος', 'σε -ος (ή -εως)'] },
+    { k: 'Πώς το λες', a: ['κατάληξη -α, -η, -ας, -ης'], b: ['κατάληξη -ος, -ον'],
+      g: ['ό,τι δεν είναι Α΄ ή Β΄'] },
+    { k: 'Δοτ. πληθ.', a: ['ταῖς ὥραις'], b: ['τοῖς ἀνθρώποις'], g: ['τοῖς κόραξι'] },
+    { k: 'Γεν. πληθ.', a: ['τῶν ὡρῶν', 'ΠΑΝΤΑ περισπωμένη'], b: ['τῶν ἀνθρώπων'], g: ['τῶν κοράκων'] }
+  ];
+  function renderCmp(){
+    var h = '';
+    ['', 'Α΄ κλίση', 'Β΄ κλίση', 'Γ΄ κλίση'].forEach(function(t, i){
+      h += '<div class="cmp-c r0' + (i === 0 ? ' c0 key' : ' hd') + '">' + esc(t) + '</div>';
+    });
+    CMP.forEach(function(r){
+      h += '<div class="cmp-c c0 key">' + esc(r.k) + '</div>';
+      ['a','b','g'].forEach(function(col){
+        var v = r[col];
+        h += '<div class="cmp-c"><span class="v">' + esc(v[0]) + '</span>' +
+             (v[1] ? '<span class="s">' + esc(v[1]) + '</span>' : '') + '</div>';
+      });
+    });
+    document.getElementById('cmp').innerHTML = h;
+  }
+
+  /* ══ ΟΙ ΚΑΝΟΝΕΣ ════════════════════════════════════════════════════ */
+  var KNAME = { a:'Α΄ κλίση', b:'Β΄ κλίση', att:'Αττικόκλιτα', g:'Γ΄ κλίση' };
+  function renderRules(){
+    var h = '';
+    K.RULES.forEach(function(r){
+      h += '<div class="ru-r">' +
+             '<div class="ru-c ru-k">' + esc((KNAME[r.k] || r.k).slice(0,2)) + ' ' + r.n + '</div>' +
+             '<div class="ru-c ru-f">' + esc(r.full) + '</div>' +
+             '<div class="ru-c ru-s">' + esc(r.say) + '</div>' +
+           '</div>';
+    });
+    document.getElementById('rules').innerHTML = h;
+  }
+
+  function renderSos(){
+    document.getElementById('sos').innerHTML = K.SOS.map(function(s){
+      return '<div class="sos-i"><span class="p">σελ. ' + s.p + '</span><span class="t">' + esc(s.t) + '</span></div>';
+    }).join('');
+    document.getElementById('sosN').textContent = K.SOS.length + ' σημεία';
+  }
+
+  /* ══ ΟΙ ΠΙΝΑΚΕΣ ════════════════════════════════════════════════════ */
+  function renderPl(){
+    var h = '';
+    K.PARA.forEach(function(p){
+      var idx = fold(p.t + ' ' + p.sg.join(' ') + ' ' + (p.pl || []).join(' ') + ' ' + p.end);
+      h += '<div class="pl-i" id="pl-' + esc(p.id) + '" data-k="' + esc(idx) + '">' +
+             '<h3>' + esc(p.t) + '</h3><span class="cat">' + esc(p.end) + '</span>' +
+             '<table class="pl-t"><tbody>';
+      K.CASES.forEach(function(c, i){
+        h += '<tr><td class="c">' + esc(c) + '</td>' +
+             '<td class="a">' + esc(p.art[i]) + '</td>' +
+             '<td class="f">' + esc(p.sg[i]) + '</td>' +
+             '<td class="f">' + esc(p.pl ? p.pl[i] : '—') + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    });
+    document.getElementById('pl').innerHTML = h;
+    document.getElementById('plN').textContent = K.PARA.length + ' πίνακες';
+  }
+
+  /* ══ Η ΕΞΑΣΚΗΣΗ ════════════════════════════════════════════════════
+     ⭐ Η ΕΡΩΤΗΣΗ ΕΙΝΑΙ ΤΟΥ ΔΙΑΓΩΝΙΣΜΑΤΟΣ: δίνεται ένας ΠΛΑΓΙΟΣ τύπος και
+     ζητείται η κατηγορία. ⛔ Η ονομαστική ΔΕΝ ρωτιέται ποτέ — γράφει την
+     απάντηση μέσα στην ερώτηση (σταθ. 27, `givenAway`). */
+  var LABEL = {
+    'fon-os':'φωνηεντόληκτο, μονόθεμο σε -ως', 'fon-ys':'φωνηεντόληκτο, μονόθεμο σε -υς',
+    'fon-dipl':'φωνηεντόληκτο, διπλόθεμο σε -ις', 'fon-eus':'φωνηεντόληκτο σε -εύς',
+    'ouran':'ουρανικόληκτο', 'cheil':'χειλικόληκτο', 'odont':'οδοντικόληκτο',
+    'odont-nt':'οδοντικόληκτο με θέμα σε -ντ', 'enrin':'ενρινόληκτο', 'ygro':'υγρόληκτο',
+    'sygkop':'συγκοπτόμενο', 'sigma':'σιγμόληκτο', 'anom':'ετερόκλιτο', 'metapl':'μεταπλαστό'
+  };
+  var TELL = {};
+  (function collect(n){
+    (n.kids || []).forEach(function(k){ if (k.para) TELL[k.para] = k.tell; collect(k); });
+  })(K.TREE);
+
+  var exCur = null;
+  function exPool(){ return K.PARA.filter(function(p){ return p.k === 'g' && p.cat && LABEL[p.cat]; }); }
+
+  function exPick(){
+    var pool = exPool();
+    if (!pool.length) return null;
+    var p = pool[Math.floor(Math.random() * pool.length)];
+    /* ⛔⛔ ΣΤΑΘ. 27, ΚΑΙ ΤΗΝ ΠΛΗΡΩΣΑ ΕΔΩ: Ο,ΤΙ ΓΡΑΦΕΤΑΙ ΣΤΗΝ ΕΡΩΤΗΣΗ ΔΕΝ
+       ΡΩΤΙΕΤΑΙ.  Η κάρτα δείχνει τη ΓΕΝΙΚΗ ως κλειδί (σωστό: αυτή είναι η
+       μέθοδος). Άρα δύο θέσεις ΑΠΑΓΟΡΕΥΟΝΤΑΙ ως ερώτημα:
+         · η ΟΝΟΜΑΣΤΙΚΗ (θέση 0) — είναι το λήμμα, γράφεται δίπλα·
+         · η ΓΕΝΙΚΗ ΕΝΙΚΟΥ (θέση 1) — είναι ΤΟ ΙΔΙΟ ΤΟ ΚΛΕΙΔΙ.
+       Το πρώτο render έβγαλε «Σωκράτους» με υπότιτλο «γενική Σωκράτους»:
+       η ερώτηση τύπωνε την απάντησή της δύο φορές. Καμία βεβαίωση δεν το
+       βλέπει — και τα δύο πεδία είναι σωστά γεμάτα. */
+    var slots = [], i;
+    for (i = 2; i <= 4; i++){ if (p.sg[i] && p.sg[i] !== p.sg[0]) slots.push({ num:'ενικός', i:i }); }
+    if (p.pl) for (i = 0; i <= 4; i++){ if (p.pl[i]) slots.push({ num:'πληθυντικός', i:i }); }
+    if (!slots.length) return null;
+    var s = slots[Math.floor(Math.random() * slots.length)];
+    var right = LABEL[p.cat];
+    var opts = [right], others = Object.keys(LABEL).map(function(k){ return LABEL[k]; })
+      .filter(function(l){ return l !== right; });
+    while (opts.length < 4 && others.length){
+      opts.push(others.splice(Math.floor(Math.random() * others.length), 1)[0]);
+    }
+    for (i = opts.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1)), t = opts[i]; opts[i] = opts[j]; opts[j] = t;
+    }
+    return { p:p, slot:s, right:right, opts:opts, done:false, missed:false };
+  }
+
+  function renderEx(){
+    var card = document.getElementById('exCard'), pane = document.getElementById('exPane');
+    var cleared = 0, k;
+    for (k in state.items) if (state.items[k] && state.items[k].ok) cleared++;
+    document.getElementById('exN').textContent = state.runs
+      ? cleared + ' κατηγορίες καθαρές · ' + state.runs + ' ερωτήσεις'
+      : Object.keys(LABEL).length + ' κατηγορίες';
+
+    if (!exCur) exCur = exPick();
+    if (!exCur){
+      card.innerHTML = '<div class="ex-q"><span class="ask">Δεν υπάρχει αρκετή ύλη για ερώτηση.</span></div>';
+      pane.innerHTML = '';
+      return;
+    }
+    var c = exCur, form = c.slot.num === 'ενικός' ? c.p.sg[c.slot.i] : c.p.pl[c.slot.i];
+    /* ⚠️ Φρουρός στο ΙΔΙΟ ΤΟ RENDER: αν ο τύπος που ρωτάω εμφανίζεται και
+       στο κλειδί, η ερώτηση αυτοακυρώνεται. Δεν σιωπά — αλλάζει ερώτηση. */
+    if (form === c.p.sg[1]){ exCur = exPick(); return renderEx(); }
+    var h = '<div class="ex-q"><span class="form">' + esc(form) + '</span>' +
+              '<span class="ask">' + esc(c.p.t) + ' · γενική ' + esc(c.p.sg[1]) +
+              ' · ζητείται ' + esc(K.CASES[c.slot.i]) + ' ' + esc(c.slot.num) + '</span></div>' +
+            '<div class="ex-body"><div class="ex-opts">';
+    c.opts.forEach(function(o){
+      h += '<button class="ex-opt" data-o="' + esc(o) + '">' + esc(o) + '</button>';
+    });
+    h += '</div>';
+    if (c.done) h += '<button class="ex-next" id="exNext">Επόμενος τύπος</button>';
+    h += '</div>';
+    card.innerHTML = h;
+
+    if (!c.done){
+      pane.innerHTML = '<div class="ex-hint">Κοίτα τη <b>γενική</b>, όχι την ονομαστική. Κόψε το «-ος» και δες τι μένει στο τέλος του θέματος: αυτός είναι ο χαρακτήρας, και αυτός απαντάει.</div>';
+    } else {
+      pane.innerHTML = '<div class="ex-why"><span class="t">' + esc(c.right) + '</span>' +
+        '<span class="big">' + esc(c.p.t) + ', ' + esc(c.p.sg[1]) + '</span>' +
+        '<span class="say">' + esc(TELL[c.p.id] || c.p.end) + '</span></div>';
+    }
+    wireEx();
+  }
+
+  function wireEx(){
+    var bs = document.querySelectorAll('#exCard .ex-opt'), i;
+    for (i = 0; i < bs.length; i++) bs[i].addEventListener('click', function(){
+      if (exCur.done) return;
+      answerEx(this, this.getAttribute('data-o'));
+    });
+    var n = document.getElementById('exNext');
+    if (n) n.addEventListener('click', function(){ exCur = null; renderEx(); });
+  }
+
+  function answerEx(btn, given){
+    var c = exCur, all = document.querySelectorAll('#exCard .ex-opt'), i;
+    if (given !== c.right){ c.missed = true; btn.classList.add('no'); }
+    for (i = 0; i < all.length; i++){
+      all[i].disabled = true;
+      if (all[i].getAttribute('data-o') === c.right) all[i].classList.add('ok');
+    }
+    c.done = true;
+    /* ⚠️ Μία εγγραφή ΑΝΑ ΚΑΤΗΓΟΡΙΑ, όχι ανά λέξη: ο κανόνας αναγνώρισης
+       ταξιδεύει στην επόμενη λέξη του διαγωνίσματος — η λέξη δεν. */
+    var rec = state.items[c.p.cat] || (state.items[c.p.cat] = { r:0, w:0, ok:0, last:0 });
+    if (c.missed){ rec.w++; rec.ok = 0; } else { rec.r++; rec.ok = 1; }
+    rec.last = Date.now();
+    state.runs++;
+    save();
+    renderEx();
+  }
+
+  /* ══ ΤΑ ΚΕΝΑ — ΦΑΙΝΟΝΤΑΙ (σταθ. 10/33) ═══════════════════════════ */
+  function renderGaps(){
+    if (!K.GAPS || !K.GAPS.length) return;
+    document.getElementById('gaps').hidden = false;
+    document.getElementById('gapsL').innerHTML = K.GAPS.map(function(g){
+      return '<li>' + esc(g).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') + '</li>';
+    }).join('');
+  }
+
+  /* ── καλωδίωση ─────────────────────────────────────────────────── */
+  document.getElementById('plS').addEventListener('input', function(){
+    var q = fold(this.value.trim()), items = document.querySelectorAll('#pl .pl-i'), hit = 0, i;
+    for (i = 0; i < items.length; i++){
+      var on = !q || items[i].getAttribute('data-k').indexOf(q) >= 0;
+      items[i].classList.toggle('off', !on);
+      if (on) hit++;
+    }
+    document.getElementById('plHit').textContent = q ? hit + ' βρέθηκαν' : '';
+    document.getElementById('plEmpty').hidden = hit > 0;
+  });
+  document.getElementById('tree').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('.go') : null;
+    if (!b) return;
+    var el = document.getElementById('pl-' + b.getAttribute('data-para'));
+    if (!el){ toast('Δεν βρήκα αυτόν τον πίνακα.'); return; }
+    el.classList.remove('off');
+    el.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+
+  renderTree(); renderCmp(); renderRules(); renderSos(); renderPl(); renderGaps(); renderEx();
+
+  /* ── cloud sync ────────────────────────────────────────────────── */
+  (function initKlSync(){
+    var tries = 0;
+    (function wait(){
+      if (typeof initCloudSync !== 'function' || !window.supabase){ if (tries++ < 40) setTimeout(wait, 200); return; }
+      initCloudSync({
+        appKey: 'arxaia-kl',
+        syncedKeys: ['arx:kl'],
+        onApplied: function(){ reload(); renderEx(); }
+      });
+    })();
+  })();
+})();
+</script>
+</body>
+</html>

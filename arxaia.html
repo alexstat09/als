@@ -61,6 +61,7 @@
   <!-- ΜΟΝΟ για να ξέρει το ράφι πόσες λέξεις έχει το ασκησάκι.
        Η ΜΗΧΑΝΗ του τονισμού ΔΕΝ φορτώνεται εδώ — δεν τρέχει τίποτα. -->
   <script src="tonos-fyllo.js"></script>
+  <script src="arxaia-klisi-data.js"></script>
   <!-- ⭐ als-v468: και οι ΔΥΟ κόσμοι της σελίδας κρατούσαν την πρόοδό τους σε
        χάρτη εγγραφών, που το sync.js συγχώνευε ανά πεδίο με «κερδίζει το
        remote». Δες το κεφάλαιο του study-stamp.js. -->
@@ -1108,6 +1109,14 @@
         <div class="gn-sh"><span class="t">Τονισμός</span><span class="r"></span><span class="n" id="tonShN"></span></div>
         <div class="ar-rows sh-rows" id="tonSh"></div>
         <p class="sh-note">Οι τόνοι, τα πνεύματα και οι δασυνόμενες — σελ. 5, 6 και 7. Ανοίγει στη δική του σελίδα, με τη δική του πρόοδο.</p>
+      </section>
+
+      <!-- ⭐ ΟΥΣΙΑΣΤΙΚΑ — als-v511, ΔΕΥΤΕΡΟ ράφι: σελ. 8-21, δηλαδή μετά
+           τον τονισμό (5-7) και πριν τα ρήματα (141-148). ΣΕΙΡΑ ΤΟΥ ΒΙΒΛΙΟΥ. -->
+      <section class="sh">
+        <div class="gn-sh"><span class="t">Ουσιαστικά</span><span class="r"></span><span class="n" id="klShN"></span></div>
+        <div class="ar-rows sh-rows" id="klSh"></div>
+        <p class="sh-note">Οι τρεις κλίσεις, και το δέντρο που απαντάει «τι είναι αυτός ο τύπος». Δεν λήγει: μετράει μόνο ποιες κατηγορίες αναγνωρίζεις.</p>
       </section>
 
       <section class="sh">
@@ -2472,6 +2481,45 @@
         '<span class="t">' + esc(stt) + '</span>' +
       '</a>';
     cnt.textContent = 'σελ. 5 · 6 · 7';
+  })();
+
+  /* ══ ΤΟ ΡΑΦΙ ΤΩΝ ΟΥΣΙΑΣΤΙΚΩΝ ═══════════════════════════════════════
+     ⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ, ίδιος κανόνας με τον Τονισμό (σταθ. 16): το `arx:kl`
+     το κατέχει η `arxaia-klisi.html`. Και «δεν το άνοιξε ποτέ» ΔΕΝ είναι
+     μηδέν (σταθ. 33) — τρεις καταστάσεις, τρεις προτάσεις. */
+  (function klShelf(){
+    var box = document.getElementById('klSh'), cnt = document.getElementById('klShN');
+    if (!box) return;
+    var st = null;
+    try { st = JSON.parse(localStorage.getItem('arx:kl') || 'null'); } catch(e){ st = undefined; }
+
+    var K = window.ArxKlisi;
+    var cats = 0, done = 0, k;
+    if (K && K.PARA){
+      var seen = {};
+      for (k = 0; k < K.PARA.length; k++) if (K.PARA[k].cat) seen[K.PARA[k].cat] = 1;
+      cats = Object.keys(seen).length;
+    }
+    if (st && st.items) for (k in st.items)
+      if (Object.prototype.hasOwnProperty.call(st.items, k) && st.items[k].ok) done++;
+
+    var stt, sub;
+    if (st === undefined){ stt = 'δεν διαβάστηκε'; sub = 'Η πρόοδος υπάρχει — δεν μπόρεσα να τη διαβάσω από αυτή τη συσκευή.'; }
+    else if (!st){ stt = 'αδιάβαστο'; sub = 'Το δέντρο · οι τρεις κλίσεις αντικριστά · 27 πίνακες · τα 8 SOS σου'; }
+    else if (cats && done >= cats){ stt = 'ολοκληρώθηκε'; sub = 'Και οι ' + cats + ' κατηγορίες αναγνωρίζονται καθαρά'; }
+    else { stt = done ? done + '/' + cats : 'αδιάβαστο';
+           sub = 'Το δέντρο · οι τρεις κλίσεις αντικριστά · 27 πίνακες · τα 8 SOS σου'; }
+
+    box.innerHTML =
+      '<a class="ar-row" href="arxaia-klisi.html">' +
+        '<span class="tx">' +
+          '<span class="l"><span class="rn">I</span>Οι τρεις κλίσεις</span>' +
+          '<span class="g">' + esc(sub) + '</span>' +
+        '</span>' +
+        (done && cats ? '<span class="bar"><i style="width:' + Math.round(done / cats * 100) + '%;background:' + tint(done / cats) + '"></i></span>' : '') +
+        '<span class="t">' + esc(stt) + '</span>' +
+      '</a>';
+    cnt.textContent = 'σελ. 8 → 21';
   })();
 
   /* ⛔ ΧΩΡΙΣ ΤΟΝΟΥΣ ΚΑΙ ΧΩΡΙΣ ΠΝΕΥΜΑΤΑ, ΓΙΑ ΤΗΝ ΑΝΑΖΗΤΗΣΗ ΜΟΝΟ.

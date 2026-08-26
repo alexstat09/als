@@ -12,11 +12,11 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v510";
+var CACHE = "als-v511";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
-  'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'arxaia-sokratis.html', 'arxaia-platon.html', 'latinika.html', 'latinika-eisagogi.html', 'latinika-lectio16.html', 'latinika-lectio17.html', 'tonos.html', 'istoria.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
+  'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'arxaia-sokratis.html', 'arxaia-platon.html', 'arxaia-klisi.html', 'arxaia-klisi-data.js', 'latinika.html', 'latinika-eisagogi.html', 'latinika-lectio16.html', 'latinika-lectio17.html', 'tonos.html', 'istoria.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
   /* als-v490 — Η ΑΤΜΟΣΦΑΙΡΑ ΤΗΣ SCHOOL STUDIES. Οι φωτογραφίες είναι ΑΡΧΕΙΑ
      επίτηδες: bytes εικόνας μέσα σε συγχρονισμένη γραμμή σκοτώνουν σιωπηλά το
      `flushOnUnload` για ΟΛΗ την εφαρμογή (σταθ. 34).

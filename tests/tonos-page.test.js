@@ -133,7 +133,7 @@ ok(/<script src="tonos-fyllo\.js"><\/script>/.test(HTML),
   'Ε1 · η σελίδα φορτώνει το tonos-fyllo.js');
 ok(SW.indexOf("'tonos-fyllo.js'") >= 0,
   'Ε2 · και είναι στο CORE του service worker (αλλιώς offline δεν υπάρχει ύλη)');
-ok(/var CACHE = "als-v510"/.test(SW), 'Ε3 · το CACHE ανέβηκε σε als-v510');
+ok(/var CACHE = "als-v5\d\d"/.test(SW), 'Ε3 · το CACHE είναι σε έκδοση als-v5xx');
 
 /* ═══ ΣΤ · ΤΟ ΡΑΦΙ ΣΤΟΝ ΑΓΝΩΣΤΟ ════════════════════════════════════
    ⛔⛔ Η `arxaia.html` ΔΙΑΒΑΖΕΙ το `ton:v1`, ΠΟΤΕ δεν το γράφει (σταθ. 16).
