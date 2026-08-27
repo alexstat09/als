@@ -117,7 +117,7 @@
 
   <header class="lt-hero">
     <div class="lt-eyebrow">Λατινικά · 20% των μορίων</div>
-    <h1 class="lt-h" id="ltHead">Δύο ενότητες.<br><b>27</b> προτάσεις.</h1>
+    <h1 class="lt-h" id="ltHead">Τρεις ενότητες.<br><b>38</b> προτάσεις.</h1>
     <p class="lt-hsub" id="ltSub">Διάλεξε ενότητα. Μέσα, κάθε λέξη δείχνει <b>πού πάει</b> και <b>τι είναι συντακτικά</b> — και μετά κρύβεις τη μια γλώσσα και δοκιμάζεσαι.</p>
   </header>
 
@@ -155,6 +155,16 @@
     <div class="go">Άνοιξε →</div>
   </a>
 
+  <a class="lt-lec" href="latinika-lectio18.html" data-lec="18">
+    <div class="rn">III</div>
+    <div class="src">Lectio XVIII · Lectio duodevicesima</div>
+    <div class="t">Ο Ηρακλής στην Ιταλία</div>
+    <div class="d">Τα βόδια του Γηρυόνη φτάνουν εκεί όπου θα χτιστεί η Ρώμη· ο Κάκος τα σέρνει ανάποδα από τις ουρές, και το ίδιο τους το μουγκρητό τον προδίδει.</div>
+    <div class="in"><i>3 σκηνές</i><i>11 ενότητες</i><i>7 παγίδες</i></div>
+    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
+    <div class="go">Άνοιξε →</div>
+  </a>
+
   <p class="lt-foot" id="ltFoot">Η πρόοδος κάθε ενότητας («το ξέρω») ζει <b>σε αυτή τη συσκευή</b> — έτσι το λένε και οι ίδιες οι σελίδες, και έτσι μένει αληθινό το «μηδένισε».</p>
 
 </div>
@@ -178,18 +188,22 @@
      ΤΑ ΔΙΚΑ ΤΟΥΣ ΣΧΗΜΑΤΑ — κι αυτά είναι ΔΥΟ διαφορετικά σχήματα:
        lectio16:v1        ΠΙΝΑΚΑΣ  [0,3,7]            (δείκτες προτάσεων)
        lectio17_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (ένα κλειδί ανά ενότητα)
+       lectio18_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (als-v516, ίδια μηχανή με το XVII)
      Ένας αφελής αναγνώστης γυρίζει ΣΙΩΠΗΛΟ ΜΗΔΕΝ στο ένα από τα δύο.
      ⛔ ΚΑΙ ΔΕΝ ΣΥΓΧΡΟΝΙΖΟΝΤΑΙ, ΕΠΙΤΗΔΕΣ: το `lectio16:v1` είναι πίνακας από
      πρωτόγονα, άρα το mergeArray της sync.js θα τα ΕΝΩΝΕ — και το «μηδένισε»
      θα γύριζε πίσω από την άλλη συσκευή σαν να μην έγινε ποτέ (σταθ. 31). */
+  function countMap(d){
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+    var n = 0;
+    for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k) && d[k]) n++;
+    return n;
+  }
   var LECS = [
     { id:'16', key:'lectio16:v1',       total:16, count:function(d){
         return Array.isArray(d) ? d.length : null; } },
-    { id:'17', key:'lectio17_known_v1', total:11, count:function(d){
-        if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
-        var n = 0;
-        for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k) && d[k]) n++;
-        return n; } }
+    { id:'17', key:'lectio17_known_v1', total:11, count:countMap },
+    { id:'18', key:'lectio18_known_v1', total:11, count:countMap }
   ];
 
   var knownTotal = 0, grandTotal = 0, readable = 0;
@@ -247,14 +261,14 @@
 
   if (!readable){
     /* Δεν διαβάστηκε ΤΙΠΟΤΑ: ούτε λέξη για πρόοδο. */
-    head.innerHTML = 'Δύο ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
+    head.innerHTML = 'Τρεις ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
     sub.innerHTML = 'Δεν μπόρεσα να διαβάσω την πρόοδό σου σε αυτή τη συσκευή. Οι ενότητες ανοίγουν κανονικά.';
   } else if (!knownTotal){
-    head.innerHTML = 'Δύο ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
+    head.innerHTML = 'Τρεις ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
   } else {
     head.innerHTML = '<b>' + knownTotal + '</b> από <b>' + grandTotal + '</b><br>τις λες απέξω.';
     sub.innerHTML = knownTotal >= grandTotal
-      ? 'Και οι δύο ενότητες κλειδωμένες. Ξαναπέρασέ τες με κρυμμένα τα λατινικά — από τα ελληνικά προς το κείμενο είναι η δύσκολη κατεύθυνση.'
+      ? 'Και οι τρεις ενότητες κλειδωμένες. Ξαναπέρασέ τες με κρυμμένα τα λατινικά — από τα ελληνικά προς το κείμενο είναι η δύσκολη κατεύθυνση.'
       : 'Μένουν <b>' + (grandTotal - knownTotal) + '</b>. Μέσα σε κάθε ενότητα, κάθε λέξη δείχνει πού πάει και τι είναι συντακτικά.';
   }
 
