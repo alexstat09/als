@@ -311,5 +311,30 @@ if [ -n "$RAWGROQ" ]; then
   exit 1
 fi
 
+# ── EGRESS ────────────────────────────────────────────────────────────────
+# 28/08/26: Supabase restricted the ENTIRE project — HTTP 402 on REST *and*
+# Auth — for exceeding the free tier's 5 GB monthly egress. The cause was
+# pocoach-sync.js's 15s reconciler calling syncNow(), which downloads the whole
+# po-coach row (all gym history, every weigh-in). topbar.js injects that engine
+# into every page, so an idle app cost roughly a megabyte four times a minute.
+# sync.js had always probed updated_at first. Both must, forever.
+BADTICK="$(grep -nE "setInterval\(\s*syncNow" sync.js pocoach-sync.js 2>/dev/null)"
+if [ -n "$BADTICK" ]; then
+  echo ""
+  echo "  ✗ EGRESS   a sync engine's interval calls syncNow (full-row pull) instead of a probe:"
+  echo "$BADTICK" | sed 's/^/               /'
+  echo "             this is the bug that got the Supabase project switched off."
+  echo "SMOKE_FAIL egress"
+  exit 1
+fi
+for f in sync.js pocoach-sync.js; do
+  if ! grep -qE "select=updated_at|select\('updated_at'\)" "$f"; then
+    echo ""
+    echo "  ✗ EGRESS   $f has no cheap updated_at probe — every tick drags the whole row down."
+    echo "SMOKE_FAIL egress"
+    exit 1
+  fi
+done
+
 echo "$OUT" | grep -q '^SMOKE_OK$' && exit 0
 exit 1

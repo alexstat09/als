@@ -186,6 +186,13 @@
         <span class="vs-dot" id="vsFileDot"></span>
         <span class="vs-txt"><span class="vs-t">A file in your hand</span><span class="vs-s" id="vsFileS">Checking…</span></span>
       </div>
+      <!-- als-v518: the limit that switched the whole project off on 28/08/26
+           was invisible until it was hit. Now it is a number on the page he
+           already opens to ask "am I safe?". -->
+      <div class="vs-row">
+        <span class="vs-dot" id="vsEgressDot"></span>
+        <span class="vs-txt"><span class="vs-t">Data allowance</span><span class="vs-s" id="vsEgressS">Checking…</span></span>
+      </div>
     </div>
 
     <!-- SYNC CHECK — "is everything on THIS device also in the cloud?"
@@ -883,6 +890,30 @@
         var fd = daysSince(lastFile);
         setDot('vsFileDot', fd < 40 ? 'ok' : 'warn');
         fs_.innerHTML = 'Last download <b>' + agoWords(lastFile) + '</b>.';
+      }
+
+      /* 4) Data allowance — the one that bit. Supabase's free tier includes 5 GB
+            of egress a month; going over restricts the WHOLE project (REST and
+            Auth alike, HTTP 402) until the cycle resets. On 28/08/26 that
+            happened with no warning of any kind, because nothing measured it.
+            This is a floor, not a bill: this device only, sync engines only —
+            so it must never be phrased as if it were the real total. */
+      var es = $('vsEgressS'), eg = null;
+      try { eg = window.ALSEgress && window.ALSEgress.read(); } catch(e){}
+      if (!eg || (!eg.reads && !eg.bytes)) {
+        setDot('vsEgressDot', 'ok');
+        es.textContent = 'Nothing measured on this device yet this month.';
+      } else if (eg.bytes === 0 && eg.nolen) {
+        setDot('vsEgressDot', 'warn');
+        es.innerHTML = '<b>Can’t measure on this browser</b> — ' + eg.reads +
+          ' cloud read' + (eg.reads === 1 ? '' : 's') + ' this month, but it hides the size. Check Supabase → Usage → Egress.';
+      } else {
+        var mb = eg.bytes / 1048576;
+        var pct = Math.round(eg.pct * 10) / 10;
+        setDot('vsEgressDot', pct < 40 ? 'ok' : (pct < 75 ? 'warn' : 'bad'));
+        es.innerHTML = '<b>' + (mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : mb.toFixed(1) + ' MB') +
+          '</b> pulled down this device this month — about <b>' + pct + '%</b> of the free 5 GB. ' +
+          'Counts this device and the sync engines only, so the real figure is higher; Supabase → Usage → Egress is the truth.';
       }
     }
 

@@ -151,15 +151,26 @@
       try{ if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }catch(e){}
     }
     // `confirmed` = the caller already asked (the account button does).
+    // ⚠️ The reassurance in this dialog — "your data stays safe in the cloud" —
+    // is only TRUE when the cloud is reachable. In local-only mode it is a lie
+    // that costs everything logged since the outage began, so the confirmation
+    // is forced (even for callers that already asked) and it says the opposite.
     async function doSignOut(confirmed){
       try{
         var ok = true;
-        if (!confirmed && typeof window.ALSConfirm === 'function') {
-          ok = await window.ALSConfirm({
+        var stranded = !!window.ALS_LOCAL_ONLY;
+        if ((!confirmed || stranded) && typeof window.ALSConfirm === 'function') {
+          ok = await window.ALSConfirm(stranded ? {
+            title: 'Do NOT sign out yet',
+            message: 'This device is not syncing right now, so everything you have logged since it went offline exists ONLY here. Signing out erases it. Wait until the banner says the cloud is back.',
+            confirmText: 'Erase anyway'
+          } : {
             title: 'Sign out?',
             message: 'This device will be cleared. Your data stays safe in the cloud and comes back when you sign in.',
             confirmText: 'Sign out'
           });
+        } else if (stranded && typeof window.ALSConfirm !== 'function') {
+          return;                        // no way to warn → refuse rather than wipe
         }
         if (!ok) return;
       }catch(e){}
@@ -243,13 +254,117 @@
       setTimeout(function(){ try{ em.focus(); }catch(e){} }, 60);
     }
 
-    // Hard safety: if the session check stalls, fall through to the login form
-    // (never a stuck "Securing…"/black screen).
-    var killTimer=setTimeout(function(){ if(!settled) showLogin('login'); }, 3000);
+    /* ── "No session" is TWO different facts wearing one face. ──────────────
+       On 28/08/26 Supabase restricted this project for exceeding the free
+       tier's monthly egress. REST *and* Auth both answered HTTP 402, so the
+       silent token refresh that runs about once an hour failed, supabase-js
+       dropped the session, and this gate did the only thing it knew: it threw
+       up a login form — over an app whose data was sitting untouched in
+       localStorage, and whose login could not possibly succeed.
 
-    var gp; try{ gp=client.auth.getSession(); }catch(e){ showLogin('login'); return; }
-    Promise.resolve(gp).then(function(r){ var s=r&&r.data&&r.data.session; if(s) done(s); else showLogin('login'); })
-      .catch(function(){ showLogin('login'); });
+       Metron is local-first. Supabase COPIES data between devices; it does not
+       hold it. So a server that is down is not a reason to lock him out of his
+       own phone. It is a reason to say so.
+
+       The rule, and it is deliberately narrow:
+         • never signed in on this device  → the wall stands, always;
+         • the server answers normally     → you really are signed out, wall;
+         • 402 / 429 / 5xx / unreachable   → the SERVER is why, run local-only.
+       Only the server's own refusal opens the door, never a client-side error,
+       and never on a device that has no prior session to fall back on. */
+    /* Run on this device's own data — and SAY SO, permanently. Rendering local
+       data exactly like synced data is this project's oldest recurring bug
+       (silent-empty), so the banner is not dismissible and does not fade. It
+       lives on <html>, not <body>: the page backgrounds use transforms, and a
+       transformed ancestor silently breaks position:fixed — the same trap that
+       forced the login gate to become a native <dialog>. */
+    function localBanner(){
+      var el = document.getElementById('alsLocalBar');
+      if (el) return el;
+      el = document.createElement('div');
+      el.id = 'alsLocalBar';
+      el.setAttribute('role','status');
+      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;'
+        + 'padding:calc(4px + env(safe-area-inset-top)) 12px 5px;'
+        + 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;'
+        + 'letter-spacing:.08em;text-transform:uppercase;text-align:center;'
+        + 'background:#3A2A08;color:#FFC65C;border-bottom:1px solid rgba(255,198,92,.28);'
+        + '-webkit-tap-highlight-color:transparent;';
+      el.textContent = 'Offline · saving to this device only';
+      (document.documentElement || document.body).appendChild(el);
+      return el;
+    }
+    /* The outage ends without the page knowing. Poll the tiny auth health
+       endpoint (a few hundred bytes, and NOT the database) and hand him a
+       button rather than reloading under him — a reload mid-entry would throw
+       away exactly the data this mode exists to protect. */
+    function watchForRecovery(){
+      var iv = setInterval(function(){
+        serverIsDown().then(function(down){
+          if (down) return;
+          clearInterval(iv);
+          var el = localBanner();
+          el.style.background = '#07301F'; el.style.color = '#34E2B0';
+          el.style.borderBottom = '1px solid rgba(52,226,176,.3)';
+          el.style.cursor = 'pointer';
+          el.textContent = 'Cloud is back · tap to sync';
+          el.addEventListener('click', function(){ location.reload(); });
+        }).catch(function(){});
+      }, 60000);
+    }
+    function localOnly(){
+      settle();
+      // Sync engines read this and stand down. Without it they fall back to the
+      // publishable key, which RLS answers with 200 and an EMPTY array — the
+      // one failure in this app that is indistinguishable from "nothing new".
+      window.ALS_LOCAL_ONLY = true;
+      window.ALSAuth = { user: null, localOnly: true, client: client, signOut: doSignOut, purgeLocal: purgeLocal };
+      closeOv();
+      localBanner();
+      /* Deliberately NOT dispatching `als:auth`. Every listener of it needs a
+         real session — als-onboard.js would re-run the wizard, settings.html
+         would render an empty account, run.html would hunt for an intervals.icu
+         token. They correctly do nothing when no session ever arrives. */
+      try{ document.dispatchEvent(new CustomEvent('als:localonly')); }catch(e){}
+      watchForRecovery();
+    }
+
+    var decided = false;
+    function hasSignedInHere(){
+      // `als:uid` is written by guardAccountSwitch on every successful sign-in.
+      // ⚠️ Deliberately NOT reading sb-*-auth-token: supabase-js chunks a large
+      // session across .0/.1 and neither fragment parses, so that test fails on
+      // exactly the devices carrying the most data.
+      try { return !!localStorage.getItem(UIDKEY); } catch(e){ return false; }
+    }
+    function serverIsDown(){
+      var ctl = null, timer = null;
+      try { ctl = new AbortController(); timer = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, 4000); } catch(e){}
+      return fetch(TOPBAR_SUPABASE_URL + '/auth/v1/health', {
+        headers: { apikey: TOPBAR_SUPABASE_KEY }, cache: 'no-store', signal: ctl ? ctl.signal : undefined
+      }).then(function(r){
+        if (r.ok) return false;                 // auth is alive → you are genuinely signed out
+        // 402 restricted (egress / spend cap) · 429 throttled · 5xx broken.
+        // A 401/403/404 here is a CLIENT-shaped answer from a live server, so
+        // it must NOT open the door.
+        return r.status === 402 || r.status === 429 || r.status >= 500;
+      }).catch(function(){ return true; })      // aborted or unreachable → no network
+       .then(function(v){ try{ clearTimeout(timer); }catch(e){} return v; });
+    }
+    function noSession(){
+      if (decided) return; decided = true;
+      if (!hasSignedInHere()) { showLogin('login'); return; }
+      serverIsDown().then(function(down){ if (down) localOnly(); else showLogin('login'); })
+                    .catch(function(){ localOnly(); });
+    }
+
+    // Hard safety: if the session check stalls, decide anyway (never a stuck
+    // "Securing…"/black screen). noSession() re-enters safely via `decided`.
+    var killTimer=setTimeout(function(){ if(!settled) noSession(); }, 3000);
+
+    var gp; try{ gp=client.auth.getSession(); }catch(e){ noSession(); return; }
+    Promise.resolve(gp).then(function(r){ var s=r&&r.data&&r.data.session; if(s){ decided=true; done(s); } else noSession(); })
+      .catch(function(){ noSession(); });
   })();
 
   // -------- CSS --------

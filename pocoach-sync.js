@@ -163,8 +163,8 @@
      `on_conflict=user_id,key` gets past constraint resolution. Keep these three
      helpers as the ONLY way this file addresses a row. */
   function conflictCols() { return SESSION_UID ? 'user_id,key' : 'key'; }
-  function rowFor(data) {
-    var r = { key: APP_KEY, data: data, updated_at: new Date().toISOString() };
+  function rowFor(data, iso) {
+    var r = { key: APP_KEY, data: data, updated_at: iso || new Date().toISOString() };
     if (SESSION_UID) r.user_id = SESSION_UID;
     return r;
   }
@@ -175,6 +175,9 @@
   // sync.js succeeding cleared pocoach-sync's failures every 15s and the alarm
   // could never fire. Weigh-ins are this engine's, and only this engine can
   // say whether they landed.
+  // Report a response to the egress meter (als-sync-status.js). No-op if absent.
+  function egress(r, n) { try { if (window.ALSEgress) window.ALSEgress.add(r, n); } catch (e) {} }
+
   function ss(m, detail) { try { var s = window.ALSSyncStatus; if (s && s[m]) s[m]('gym & weigh-ins', detail); } catch (e) {} }
 
   /* Call whichever page-specific rerender hooks are present */
@@ -295,25 +298,49 @@
      just-logged workout is worse than a tombstone another device will re-push. */
   var pulled = false;
 
+  /* ⚠️ THE LEAK THAT GOT THE WHOLE SUPABASE PROJECT SWITCHED OFF (28/08/26).
+     This engine's 15s reconciler used to call syncNow() directly, and syncNow
+     downloads the ENTIRE po-coach row every time: all gym history, every
+     template, every exercise, every weigh-in — roughly a megabyte. topbar.js
+     injects this engine into EVERY page, so simply having Metron open cost
+     ~1 MB x 4/min, whether or not anything had changed. sync.js never did this:
+     it asks the cheap question first ("has updated_at moved?") and pulls the
+     blob only when the answer is yes. That asymmetry burned the free tier's
+     5 GB monthly egress and Supabase restricted the project — REST and Auth
+     both returned HTTP 402, which the app could only render as a login wall.
+     `lastStamp` is that cheap question's answer: the updated_at we last saw,
+     set by a pull AND by our own confirmed push (which is why rowFor now takes
+     the stamp instead of minting its own — otherwise every write we made would
+     look like a remote change and drag the blob back down on the next tick).
+     If the column is ever written by a DB trigger instead of by us, the stamps
+     stop matching and this degrades to exactly the old behaviour: slower, never
+     wrong. */
+  var lastStamp = null;
+
   /* Push current local state to Supabase (keepalive=true for pagehide).
      Resolves TRUE only when the cloud confirmed the write — the caller uses that
      to decide whether lastJson may advance. Never advance it on a promise. */
   function push(keepalive, body) {
+    if (window.ALS_LOCAL_ONLY) return Promise.resolve(false);
     if (!pulled && !keepalive) { syncNow(); return Promise.resolve(false); }
     // A keepalive push has no time to round-trip, so it uses whatever token is
     // already cached. Every other push waits for one: the 400ms debounce used to
     // fire before the first ensureToken() had resolved, sending the anon key,
     // which RLS rejects.
     var ready = keepalive ? Promise.resolve() : ensureToken();
+    var iso = new Date().toISOString();
     return ready.then(function () {
       return fetch(REST + '?on_conflict=' + conflictCols(), {
         method: 'POST',
         headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-        body: JSON.stringify(rowFor(body || pushBody())),
+        body: JSON.stringify(rowFor(body || pushBody(), iso)),
         keepalive: !!keepalive
       });
     }).then(function(r) {
-      if (r && r.ok) { ss('ok'); return true; }
+      // Same discipline as lastJson: the stamp advances ONLY on a confirmed
+      // write. Advancing it on the attempt would make the next probe believe
+      // the cloud already holds our data and skip the pull that would prove it.
+      if (r && r.ok) { lastStamp = iso; ss('ok'); return true; }
       // Read the body: a 400 here means the REQUEST is wrong (wrong conflict
       // target, bad column), which no amount of retrying can fix. Four days of
       // weigh-ins were lost to a failure nobody could name.
@@ -332,13 +359,22 @@
   /* Pull from Supabase → merge → push merged → rerender if changed.
      ensureToken() first: without the caller's JWT the pull returns nothing under
      RLS, and a fresh device would render an empty history. */
+  /* Local-only mode (topbar.js): Supabase is restricted or unreachable and the
+     user has been told so by a permanent banner on every page. Standing down is
+     therefore NOT a silent failure — it is the one case where the app already
+     says out loud that it is not syncing. Running anyway would fall back to the
+     publishable key in hdrs(), which RLS answers with 200 and an empty array:
+     the single response in this system that is indistinguishable from "nothing
+     new", and the reason a fresh device once rendered a blank history. */
   function syncNow() {
+    if (window.ALS_LOCAL_ONLY) return;
     ensureToken().then(function () {
-    fetch(REST + '?key=eq.' + APP_KEY + scopeQ() + '&select=data', { headers: hdrs() })
-      .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    fetch(REST + '?key=eq.' + APP_KEY + scopeQ() + '&select=data,updated_at', { headers: hdrs() })
+      .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); egress(r); return r.json(); })
       .then(function(rows) {
         try { window.POCOACH_LAST_SYNC = Date.now(); } catch (e) {} // a pull completed → cloud is reachable
         pulled = true;                                             // we now hold the cloud's tombstones
+        lastStamp = (Array.isArray(rows) && rows[0] && rows[0].updated_at) || null;
         var remote  = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : null;
         var local   = readLocal();
         var merged  = mergeData(local, remote);
@@ -367,6 +403,44 @@
         console.warn('[pocoach-sync] pull failed — will retry:', (e && e.message) || e);
         ss('fail', 'read failed'); return false;
       });
+    });
+  }
+
+  /* Ask ONLY for the timestamp: ~80 bytes instead of the whole row. Returns
+     {ok:false} on any failure — and a failed probe deliberately does NOT fall
+     through to syncNow(). The pull would fail the same way, and hammering a
+     project that has already been restricted for egress is precisely the
+     behaviour this change exists to stop. The banner is told, and we retry in
+     15 seconds. */
+  function probe() {
+    return ensureToken().then(function () {
+      return fetch(REST + '?key=eq.' + APP_KEY + scopeQ() + '&select=updated_at', { headers: hdrs() });
+    }).then(function (r) {
+      if (!r || !r.ok) return { ok: false, status: (r && r.status) || 0 };
+      egress(r);
+      return r.json().then(function (rows) {
+        return { ok: true, stamp: (Array.isArray(rows) && rows[0] && rows[0].updated_at) || null };
+      });
+    }).catch(function () { return { ok: false, status: 0 }; });
+  }
+
+  /* The 15s reconciler. Only three things justify dragging the whole row down:
+       • we have never pulled — we do not hold the cloud's tombstones yet, and
+         merging without them resurrects everything the other device deleted;
+       • the row moved — another device wrote;
+       • we still owe the cloud something — an unpushed edit, or a deletion the
+         cloud is still holding (tombDropped).
+     Anything else is a no-op that used to cost a megabyte. */
+  function syncTick() {
+    if (window.ALS_LOCAL_ONLY) return;
+    if (!pulled) { syncNow(); return; }
+    probe().then(function (p) {
+      if (!p.ok) { ss('fail', p.status ? 'HTTP ' + p.status : 'read failed'); return; }
+      if (p.stamp !== lastStamp) { syncNow(); return; }
+      var b = null;
+      try { b = JSON.stringify(pushBody()); } catch (e) { syncNow(); return; }
+      if (b !== lastJson || tombDropped) { syncNow(); return; }
+      ss('ok');                       // probe confirmed the cloud matches us
     });
   }
 
@@ -467,15 +541,16 @@
         var data = (Array.isArray(rows) && rows[0] && rows[0].data) ? rows[0].data : {};
         if (Array.isArray(data[key])) data[key] = data[key].filter(function(e) { return !(e && gone[String(e.id)]); });
         data._deletes = unionTombG(data._deletes || {}, loadTomb());
+        var iso = new Date().toISOString();
         return fetch(REST + '?on_conflict=' + conflictCols(), {
           method: 'POST',
           headers: Object.assign({}, hdrs(), { 'Prefer': 'resolution=merge-duplicates' }),
-          body: JSON.stringify(rowFor(data))
+          body: JSON.stringify(rowFor(data, iso))
         }).then(function(r) {
           // fetch() resolves on 4xx/5xx too — without this check a rejected write
           // still advanced lastJson and reported success.
           if (!(r && r.ok)) { console.warn('[pocoach-sync] delete push rejected: http ' + (r && r.status)); return false; }
-          lastJson = JSON.stringify(data); pulled = true; return true;
+          lastJson = JSON.stringify(data); lastStamp = iso; pulled = true; return true;
         });
       })
       .catch(function() { return false; });   // offline: the local tombstone still holds
@@ -515,9 +590,10 @@
      weigh-ins did not, and the weigh-ins are what kept going missing. */
   document.addEventListener('visibilitychange', function() { syncNow(); });
 
-  /* Initial sync + 15s polling */
+  /* One real sync on load (we need the cloud's tombstones before we may push),
+     then the cheap reconciler forever. */
   syncNow();
-  setInterval(syncNow, 15000);
+  setInterval(syncTick, 15000);
 
   /* Supabase Realtime — instant updates on the receiving device */
   if (window.supabase) {
@@ -531,7 +607,13 @@
           .on('postgres_changes', {
             event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + APP_KEY
           }, function(payload) {
-            if (payload && payload.new && payload.new.data) applyRealtime(payload.new.data);
+            if (!payload || !payload.new || !payload.new.data) return;
+            // Learn the stamp BEFORE applying: if applyRealtime pushes a union
+            // back, push() overwrites it with our own — which is the right
+            // order. Without this the next probe sees a stamp it has never
+            // seen and re-downloads the row we were just handed for free.
+            if (payload.new.updated_at) lastStamp = payload.new.updated_at;
+            applyRealtime(payload.new.data);
           })
           .subscribe();
       });

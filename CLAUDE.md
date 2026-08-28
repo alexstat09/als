@@ -167,7 +167,8 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   per-object last-write-wins. Arrays of `{id, ts}` already get this for free.
 - Every synced key must be known to `BUNDLES` in `backup.html` or it syncs fine
   and is silently **unrestorable**. `smoke-test.sh` enforces this.
-- Device-local by design (never synced, excluded from the vault): `gcal:*`,
+- Device-local by design (never synced, excluded from the vault): `als:egress`
+  (the egress meter — a per-device count, meaningless if merged), `gcal:*`,
   `improve:paused` (pausing the Library's reader on the laptop must not stop the
   phone, but it must survive a reload or reopening restarts the flood),
   `nut:streakfix` (a once-per-device repair flag, like `bible:seedv`).
@@ -197,7 +198,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v517`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v518`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1113,6 +1114,48 @@ count is a brief someone reads as complete.
       περιγράφουν τον ίδιο κόσμο, βάλ' τα να διαφωνήσουν φωναχτά. Ισχύει για
       κάθε επόμενη σελίδα ύλης: κλίσεις, συντακτικό, γραμματική.
 
+55. **⭐⭐⭐ A POLL THAT DOWNLOADS THE WHOLE ROW IS A LEAK, AND A QUOTA YOU
+    CANNOT SEE IS A QUOTA YOU MEET BY BEING SWITCHED OFF.** On 28/08/26
+    Supabase restricted this entire project — REST **and Auth** both answering
+    **HTTP 402** — for spending the free tier's 5 GB of monthly egress.
+    `pocoach-sync.js`'s 15-second reconciler called `syncNow()`, which pulls the
+    complete `po-coach` row (all gym history, every template, every weigh-in,
+    ~1 MB); `topbar.js` injects that engine into **every page**, so simply
+    having Métron open cost about a megabyte four times a minute, forever,
+    whether or not anything had changed. `sync.js` had asked the cheap question
+    first — `select=updated_at` — since it was written. The whole outage was
+    that asymmetry.
+    - ⭐ **EVERY interval that talks to the cloud probes before it pulls.**
+      `smoke-test.sh` now fails on `setInterval(syncNow` in either engine and
+      on a missing `select=updated_at`; `tests/egress-guard.test.js` drives the
+      real engine and asserts **ten idle ticks cost zero blob pulls**. The
+      stamp advances only on a CONFIRMED write, exactly like `lastJson` — a
+      writer that mints its own timestamp makes its own writes look like remote
+      changes and re-downloads the row it just sent.
+    - ⭐ **Don't pay to transfer what you are about to throw away.** The Vault
+      filtered `backup:snap:*` and `run:inbox` out **after** downloading them,
+      so the nightly backup dragged ~14 previous snapshots down the wire to
+      write one. The filter belongs in the query (`key=not.like.backup:*`).
+      ⚠️ Never put a pattern containing `_` or `%` in a PostgREST `like` — `_`
+      matches ANY single character, so `not.like.__*` would exclude nearly
+      every row in the table.
+    - ⛔ **A DEAD SERVER IS NOT A LOGOUT.** The 402 broke the hourly token
+      refresh, supabase-js dropped the session, and the gate showed a login
+      form — over a local-first app whose data was intact in localStorage, and
+      whose login could not possibly succeed. `topbar.js` now runs **local-only
+      mode** instead, with a permanent banner and the sync engines stood down
+      (`window.ALS_LOCAL_ONLY`). The door is deliberately narrow and
+      `tests/auth-localonly.test.js` pins it: **never** without a prior
+      sign-in on that device, **never** on a client-shaped answer from a live
+      server (200/401/403/404), **only** on 402/429/5xx/unreachable. Signing
+      out in that mode is the one way to actually lose the data, so the
+      confirmation is forced and it says the opposite of the usual one.
+    - ⭐ **The meter is the real fix.** `ALSEgress` (in `als-sync-status.js`,
+      device-local key `als:egress`) counts bytes per month and `backup.html`
+      shows it against the 5 GB. It states its own limits — this device, sync
+      engines only, `Content-Length` preferred — because a floor sold as a
+      total is the same lie as a green pill (σταθ. 33). When it cannot measure
+      it says so rather than showing a reassuring 0.
 
 ---
 

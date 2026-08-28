@@ -229,6 +229,62 @@
     }
   };
 
+  /* ══ THE EGRESS METER (als-v518) ══════════════════════════════════════
+     On 28/08/26 Supabase restricted this entire project — REST and Auth both
+     answering HTTP 402 — because the month's free egress allowance (5 GB) had
+     been spent. Nobody saw it coming, because nothing in the app has ever
+     shown how much it was using. A limit you cannot see is a limit you find
+     out about by being switched off.
+
+     So: count the bytes the sync engines pull down, per calendar month, and
+     let backup.html show the number.
+
+     Honest about its own accuracy, which matters more than the number:
+       • it counts RESPONSES only — egress is server→client; uploads are not
+         billed the same way;
+       • it prefers Content-Length (post-compression, i.e. close to what is
+         actually billed) and falls back to the decoded payload length, which
+         OVER-states;
+       • it sees only this device and only the client engines — the serverless
+         functions and the nightly Vault are invisible to it.
+     Therefore: a floor, not a bill. Its job is to make a trend visible early,
+     not to reconcile with Supabase to the byte. Device-local by design — never
+     synced, never in the vault, so it can never be merged or restored. */
+  var EG_KEY = 'als:egress';
+  function egMonth(){ var d = new Date(); return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2); }
+  function egLoad(){
+    var m = egMonth(), v = null;
+    try { v = JSON.parse(localStorage.getItem(EG_KEY) || 'null'); } catch (e) {}
+    if (!v || typeof v !== 'object' || v.month !== m) v = { month: m, bytes: 0, reads: 0, nolen: 0, since: Date.now() };
+    return v;
+  }
+  window.ALSEgress = {
+    LIMIT: 5 * 1024 * 1024 * 1024,          // the free tier's monthly allowance
+    /* `res` may be a Response (header preferred) or a number of bytes. */
+    add: function (res, fallbackBytes) {
+      try {
+        var n = 0;
+        if (typeof res === 'number') n = res;
+        else if (res && res.headers && res.headers.get) n = +(res.headers.get('content-length') || 0);
+        if (!n) n = +fallbackBytes || 0;
+        var v = egLoad();
+        v.reads += 1;
+        // A browser/proxy that omits Content-Length would otherwise leave this
+        // reading a confident 0 — a meter that says "you have used nothing"
+        // when it simply cannot see. Count the blind reads so the UI can say
+        // so instead of showing a reassuring number it has not earned.
+        if (!(n > 0)) { v.nolen = (v.nolen || 0) + 1; localStorage.setItem(EG_KEY, JSON.stringify(v)); return; }
+        v.bytes += n;
+        localStorage.setItem(EG_KEY, JSON.stringify(v));
+      } catch (e) {}
+    },
+    read: function () {
+      var v = egLoad();
+      return { month: v.month, bytes: v.bytes, reads: v.reads, nolen: v.nolen || 0, since: v.since,
+               pct: Math.min(100, (v.bytes / this.LIMIT) * 100) };
+    }
+  };
+
   // A page that OPENS with data already stranded (logged on the phone, app
   // closed before it landed, reopened later) must show it without waiting for
   // an engine to fail again.

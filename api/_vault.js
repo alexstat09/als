@@ -115,7 +115,12 @@ async function runBackup(opts) {
     return { skipped: 'already backed up today', lastDate: index.lastDate, days: days.length };
   }
 
-  var all = await supa.readAllRows();
+  // Ask Postgres not to send what isExcluded() would only throw away. The
+  // client-side filter below is unchanged and still authoritative — this is
+  // purely about not paying to transfer ~14 previous snapshots (and the watch
+  // inbox's FIT bytes) every single day. See readAllRows' warning before adding
+  // a pattern: no `_` and no `%`.
+  var all = await supa.readAllRows(null, '&key=not.like.backup:*&key=not.eq.run:inbox');
   // HARD SAFETY: a failed read must never be written as an empty snapshot. An
   // empty backup that someone later restores would erase everything.
   if (all === null) return { error: 'could not read app_state — nothing written' };

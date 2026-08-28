@@ -332,6 +332,10 @@
         const { data, error } = await scoped(supa.from('app_state').select('data,updated_at').eq('key', appKey)).maybeSingle();
         if (error) return { ok: false };
         pulled = true;
+        // supabase-js does not surface response headers, so this is the DECODED
+        // size — an over-estimate against the compressed bytes Supabase bills.
+        // Over-stating is the safe direction for a warning meter.
+        if (data && data.data) { try { if (window.ALSEgress) window.ALSEgress.add(JSON.stringify(data.data).length); } catch (e) {} }
         if (data) { if (data.updated_at) lastRemoteStamp = data.updated_at; if (data.data) return { ok: true, data: data.data }; }
         return { ok: true, data: null };     // genuinely no row yet — safe to push ours
       } catch (e) {}
@@ -349,8 +353,15 @@
     }
 
     // pull -> merge -> apply locally -> push merged superset
+  /* Local-only mode (topbar.js): Supabase is restricted or unreachable and the
+     user has been told so by a permanent banner on every page. Standing down is
+     therefore NOT a silent failure — it is the one case where the app already
+     says out loud that it is not syncing. Running anyway would fall back to the
+     publishable key in the engine, which RLS answers with 200 and an empty array:
+     the single response in this system that is indistinguishable from "nothing
+     new", and the reason a fresh device once rendered a blank history. */
     async function syncNow() {
-      if (!supa) return;
+      if (!supa || window.ALS_LOCAL_ONLY) return;
       const got = await pull();
       // Couldn't read the cloud → say so and retry on the next tick. Pushing
       // now would overwrite whatever is up there with whatever happens to be
@@ -391,7 +402,7 @@
     // unpushed local edits. Steady-state idle = one small timestamp read/cycle
     // instead of dragging the whole run:logs blob down every 15 seconds.
     async function syncTick() {
-      if (!supa) return;
+      if (!supa || window.ALS_LOCAL_ONLY) return;
       const stamp = await probe();
       if (stamp === undefined) return;                         // network hiccup — retry next tick
       if (stamp !== lastRemoteStamp) { await syncNow(); return; } // remote moved → reconcile

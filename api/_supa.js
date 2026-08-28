@@ -87,9 +87,21 @@ async function writeRow(key, data, who) {
 // partial lie — a caller must not mistake "the fetch failed" for "you have no
 // data"). Scoping matters doubly here: an unscoped snapshot would sweep someone
 // else's private data into Alex's backup repo.
-async function readAllRows(who) {
+//
+// `skip` is an optional PostgREST filter appended to the query, so a caller can
+// refuse rows SERVER-SIDE instead of downloading them and throwing them away.
+// The Vault has always discarded `backup:snap:*` (they are its own previous
+// snapshots) and `run:inbox` (raw watch FIT bytes) — but it discarded them
+// AFTER paying to download them, which meant the daily backup dragged ~14
+// nested copies of the account down the wire to save one. That is egress, it is
+// billed, and it was a meaningful slice of the 5 GB that got this project
+// restricted on 28/08/26.
+// ⚠️ Only ever pass patterns without SQL LIKE metacharacters. `_` matches ANY
+// single character, so a filter like `not.like.__*` would silently exclude
+// nearly every row — which is why the `__` prefix rule stays client-side.
+async function readAllRows(who, skip) {
   try {
-    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=key,data,updated_at' + ownerFilter(who), { headers: headers() });
+    var r = await fetch(SUPABASE_URL + '/rest/v1/app_state?select=key,data,updated_at' + ownerFilter(who) + (skip || ''), { headers: headers() });
     if (!r.ok) return null;
     var j = await r.json();
     return Array.isArray(j) ? j : null;
