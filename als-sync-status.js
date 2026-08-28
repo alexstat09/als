@@ -251,7 +251,19 @@
      not to reconcile with Supabase to the byte. Device-local by design — never
      synced, never in the vault, so it can never be merged or restored. */
   var EG_KEY = 'als:egress';
-  function egMonth(){ var d = new Date(); return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2); }
+  /* ⚠️ NOT the calendar month. Supabase bills a free organisation on the
+     anniversary of its creation, and this one reads "28 Jul 2026 – 28 Aug 2026"
+     on its own usage page. A meter that rolled over on the 1st would show a
+     comfortable number for the first 27 days of every cycle and reset itself
+     three days before the allowance actually refills — i.e. it would be at its
+     most reassuring exactly when the risk was highest. Anchor it to the day the
+     bill does. If the plan ever changes, change this and nothing else. */
+  var EG_CYCLE_DAY = 28;
+  function egMonth(){
+    var d = new Date(), y = d.getUTCFullYear(), m = d.getUTCMonth();
+    if (d.getUTCDate() < EG_CYCLE_DAY) { m -= 1; if (m < 0) { m = 11; y -= 1; } }
+    return y + '-' + ('0' + (m + 1)).slice(-2) + '-' + EG_CYCLE_DAY;   // cycle START date
+  }
   function egLoad(){
     var m = egMonth(), v = null;
     try { v = JSON.parse(localStorage.getItem(EG_KEY) || 'null'); } catch (e) {}
