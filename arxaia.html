@@ -2274,14 +2274,34 @@
 
     /* ── η αντιστοιχία γίνεται ζωντανή ─────────────────────────────
        Ένας listener στο περίβλημα, όχι ένας ανά λέξη: τα κομμάτια είναι
-       εκατοντάδες και ξαναχτίζονται σε κάθε άνοιγμα. */
+       εκατοντάδες και ξαναχτίζονται σε κάθε άνοιγμα.
+
+       ⛔⛔ ΚΑΙ ΔΕΝΕΤΑΙ ΜΙΑ ΜΟΝΟ ΦΟΡΑ, ΠΟΤΕ ΑΝΑ ΑΝΟΙΓΜΑ. Το `innerHTML`
+       αλλάζει τα ΠΑΙΔΙΑ· το `#gnLb` ΕΠΙΒΙΩΝΕΙ, άρα ένα
+       `addEventListener` εδώ μέσα ΣΥΣΣΩΡΕΥΕΤΑΙ: 1η ενότητα → 1 ακροατής,
+       2η → 2, 3η → 3. Και επειδή το `alnLight()` κάνει TOGGLE (`k ===
+       alnLit` σβήνει), ΔΥΟ ακροατές σημαίνουν άναψε-και-έσβησε στο ίδιο
+       κλικ: **η λέξη δεν κάνει ΤΙΠΟΤΑ**, χωρίς κανένα σφάλμα. Με τρεις
+       ξαναδουλεύει, με τέσσερις πεθαίνει — άρα ζούσε ή πέθαινε ανάλογα με
+       το ΠΛΗΘΟΣ των μαθημάτων που είχε ανοίξει, που είναι ο χειρότερος
+       τρόπος να σπάει κάτι. Ο Άλεξ το βρήκε ανοίγοντας 1η → 3η.
+       ⭐ Ο φρουρός είναι στο ΣΤΟΙΧΕΙΟ, όχι σε local: το `openLesson`
+       τρέχει καθαρό σε κάθε κλήση.
+       ⚠️ Και γι' αυτό ο handler διαβάζει το `cur`, ΟΧΙ το `un` — ένας
+       μόνιμος ακροατής που κρατάει κλείσιμο πάνω στην ΠΡΩΤΗ ενότητα θα
+       βαθμολογούσε για πάντα με τα ζευγάρια εκείνης. Το `alnLight()`
+       διάβαζε ήδη `cur`, άρα το `un` εδώ ήταν λανθασμένο εξ αρχής. */
     if (un.align && !G.alignCheck(un).length){
-      lb.addEventListener('click', function(e){
-        var m = e.target.closest('.al-m.hid');
-        if (m){ m.classList.remove('hid'); return; }
-        var k = e.target.closest('.al-k');
-        if (k) alnLight(k.dataset.alk);
-      });
+      if (!lb.__alnBound){
+        lb.__alnBound = 1;
+        lb.addEventListener('click', function(e){
+          if (!cur || !cur.align || G.alignCheck(cur).length) return;
+          var m = e.target.closest('.al-m.hid');
+          if (m){ m.classList.remove('hid'); return; }
+          var k = e.target.closest('.al-k');
+          if (k) alnLight(k.dataset.alk);
+        });
+      }
       var hb = document.getElementById('alHide');
       hb.addEventListener('click', function(){
         var on = !hb.classList.contains('on');
