@@ -617,6 +617,31 @@
   .al-pair .pm{ font-size:15px; color:var(--au-ivory,#f5f2ec); }
   .al-why{ font-size:13.5px; line-height:1.62; color:var(--au-dim,#9a97a3); margin-top:8px; }
   .al-hint{ font-size:11.5px; color:var(--au-faint,#5c5964); text-align:center; }
+
+  /* ══ als-v524 · Η ΚΡΙΣΗ ΑΝΑ ΠΕΡΙΟΔΟ ════════════════════════════════
+     ⛔ ΤΥΠΟΓΡΑΦΙΑ, ΟΧΙ ΣΗΜΑΤΑ. Η als-v523 μόλις έβγαλε ένδεκα κάρτες· θα
+     ήταν κωμικό να τις ξαναφέρω ως ένδεκα badges. Το σημάδι είναι ΕΝΑΣ
+     ΧΑΡΑΚΤΗΡΑΣ δίπλα στον αριθμό στίχου: ● το έχει, ○ όχι ακόμη.
+     ⛔ ΚΑΝΕΝΑ ΚΟΚΚΙΝΟ: δεν είναι λάθος, είναι «δεν το έχω ΑΚΟΜΗ». */
+  .al-tally{ font-size:13.5px; color:var(--au-dim,#9a97a3); margin:-4px 0 20px; }
+  .al-n{ display:flex; align-items:baseline; gap:7px; }
+  .al-mk{ font-size:9px; line-height:1; }
+  .al-per.got .al-mk{ color:rgb(var(--ar)); }
+  .al-per.gap .al-mk{ color:var(--au-dim,#9a97a3); }
+  /* Η περίοδος που ΔΕΝ έχει ακόμη κρατάει έναν ήσυχο τόνο στον αριθμό της,
+     ώστε να τη βρίσκει σκρολάροντας χωρίς να ουρλιάζει η σελίδα. */
+  .al-per.gap .al-n{ color:var(--au-dim,#9a97a3); }
+  .al-jd{ display:none; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .al-per.just .al-jd{ display:flex; }
+  .al-jd .q{ font-size:12px; color:var(--au-faint,#5c5964);
+    font-family:var(--au-sans,-apple-system,sans-serif); }
+  .al-jb{ font-family:var(--au-sans,-apple-system,sans-serif); font-size:12.5px;
+    font-weight:600; color:var(--au-ivory,#f5f2ec); background:transparent;
+    border:1px solid var(--au-line,#26262f); border-radius:999px;
+    padding:6px 13px; cursor:pointer; transition:border-color .14s, color .14s; }
+  .al-jb:hover{ border-color:rgba(var(--ar),.5); }
+  .al-jb[data-jd="g"]{ border-color:rgba(var(--ar),.34); color:rgb(var(--ar)); }
+  @media (prefers-reduced-motion: reduce){ .al-jb{ transition:none; } }
   .al-ctl{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px; }
   .al-b{ border:1px solid var(--au-line,#26262f); background:rgba(255,255,255,.04);
     color:var(--au-ivory,#f5f2ec); font-size:12px; font-weight:600; padding:10px 13px;
@@ -1892,12 +1917,35 @@
   /* ⭐⭐ Η ΣΦΡΑΓΙΔΑ — als-v468, ίδια ιστορία με τον ΑΓΝΩΣΤΟ κόσμο πιο πάνω και
      με την Ιστορία: χωρίς `_ts` το sync.js επανέφερε κάθε δεύτερη ανάκληση.
      Εδώ οι χάρτες είναι `units` και `els`. Δες το `study-stamp.js`. */
-  function blank(){ return { v:1, units:{}, els:{}, days:[], heard:{} }; }
+  function blank(){ return { v:1, units:{}, els:{}, per:{}, days:[], heard:{} }; }
   function u(id){
     if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0, claimed:0 };
     return state.units[id];
   }
   function claimedOnly(s){ return !!s.claimed && !s.runs; }
+  /* ⭐ als-v524 — Η ΜΝΗΜΗ ΑΝΑ ΠΕΡΙΟΔΟ.
+     Επίπεδος χάρτης `unitId:n`, ίδιο σχήμα με το `els` — όχι φωλιά, ώστε να
+     μη γεννιέται ενδιάμεσο αντικείμενο που κανείς δεν σφραγίζει.
+     `g` = πότε είπε «το είχα», `m` = πότε είπε «όχι ακόμη». Νικάει το
+     ΝΕΟΤΕΡΟ, οπότε αλλάζει γνώμη όσες φορές θέλει χωρίς διαγραφή ιστορικού.
+     ⛔ ΔΕΝ ΑΓΓΙΖΕΙ ΤΗ ΣΚΑΛΑ. Είναι ΔΗΛΩΣΗ, όπως το «Το ξέρω απέξω» — δεν
+     βαθμολογεί κανείς εδώ, και ένας αριθμός που μοιάζει με βαθμό είναι
+     πίεση χωρίς αντίκρισμα (το μάθημα της Έκθεσης, als-v496). */
+  function pr(id, n){
+    var k = id + ':' + n;
+    if (!state.per[k]) state.per[k] = { g:0, m:0 };
+    return state.per[k];
+  }
+  function prGot(id, n){ var p = state.per[id + ':' + n]; return !!p && p.g > p.m; }
+  function prSeen(id, n){ var p = state.per[id + ':' + n]; return !!p && (p.g || p.m); }
+  function prTally(un){
+    var segs = (un.align && un.align.segs) || [], got = 0, seen = 0, i;
+    for (i = 0; i < segs.length; i++){
+      if (prGot(un.id, segs[i].n)) got++;
+      if (prSeen(un.id, segs[i].n)) seen++;
+    }
+    return { got:got, seen:seen, all:segs.length };
+  }
   function el(id, pi, ei){
     var k = id + ':' + pi + ':' + ei;
     if (!state.els[k]) state.els[k] = { r:0, w:0 };
@@ -1910,18 +1958,41 @@
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); }
     catch(e){ toast('Δεν μπόρεσα να διαβάσω την πρόοδο του Γνωστού — δεν έσβησε τίποτα. Ξαναδοκίμασε.'); return blank(); }
     if (!s || typeof s !== 'object') return blank();
-    var b = blank();
-    b.units = s.units || {};
-    b.els   = s.els   || {};
-    b.days  = s.days  || [];
-    b.heard = s.heard || {};
+    /* ⚠️⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35, ΚΛΕΙΝΕΙ ΕΔΩ. Αυτός ο `load()` ήταν ΛΙΣΤΑ
+       ΕΠΙΤΡΕΠΟΜΕΝΩΝ (`b.units = s.units || {}` και μόνο τα ονομασμένα), που
+       σημαίνει ότι ΚΑΘΕ πεδίο που δεν ονομάζεται ρητά **δεν επιβιώνει της
+       φόρτωσης** — και με sync δεν είναι ενοχλητικό, είναι ΑΠΩΛΕΙΑ: μια
+       εγγραφή που κατέβηκε από άλλη συσκευή εξαφανιζόταν στο πρώτο render
+       και το push την έκανε αλήθεια παντού. Το `arx:gn` ήταν γραμμένο 🔴
+       ΠΑΓΙΔΑ στον πίνακα της als-v471 ακριβώς γι' αυτό.
+       Αντιγράφω ΠΡΩΤΑ ό,τι υπάρχει και κανονικοποιώ ΜΕΤΑ όσα ξέρω — το ίδιο
+       σχήμα που έχει ήδη ο ΑΓΝΩΣΤΟΣ («τίποτα δεν χάνεται») και που η
+       als-v473 έβαλε στην Ιστορία. Έτσι το `per` που προσθέτω σήμερα δεν
+       χρειάζεται να θυμηθεί κανείς να το γράψει και σε δεύτερο σημείο. */
+    var b = blank(), k;
+    for (k in s) if (Object.prototype.hasOwnProperty.call(s, k)) b[k] = s[k];
+    b.v     = 1;
+    if (!b.units || typeof b.units !== 'object') b.units = {};
+    if (!b.els   || typeof b.els   !== 'object') b.els   = {};
+    if (!b.per   || typeof b.per   !== 'object') b.per   = {};
+    if (!b.heard || typeof b.heard !== 'object') b.heard = {};
+    if (!Array.isArray(b.days)) b.days = [];
     return b;
   }
   var STAMP = (typeof window.StudyStamp === 'function')
     ? window.StudyStamp(
-        function(){ return state ? [state.units, state.els] : []; },
+        /* ⚠️⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 31: ΚΑΘΕ ΦΩΛΙΑΣΜΕΝΟΣ ΧΑΡΤΗΣ ΘΕΛΕΙ `_ts`, ΑΛΛΙΩΣ
+           ΤΟ CLOUD ΑΝΑΙΡΕΙ ΚΑΘΕ ΕΓΓΡΑΦΗ ΜΕΤΑ ΤΗΝ ΠΡΩΤΗ. Στα σκαλάρια φύλλα
+           το `mergeObject` κρατάει την ΑΠΟΜΑΚΡΥΣΜΕΝΗ τιμή για να συγκλίνει,
+           οπότε ένα `per` χωρίς σφραγίδα θα δούλευε την πρώτη φορά (το
+           κλειδί λείπει από το cloud) και θα γύριζε πίσω από τη ΔΕΥΤΕΡΗ —
+           δηλαδή θα έσπαγε ακριβώς τη μέρα που θα μετρούσε.
+           Ο `per` μπαίνει ΤΡΙΤΟΣ, και ο δείκτης 2 δηλώνει το δικό του
+           legacy `last`: το νεότερο από τα δύο πατήματα. */
+        function(){ return state ? [state.units, state.els, state.per] : []; },
         function(i, k, rec){
           if (i === 0) return rec.last || rec.learnedAt || 0;
+          if (i === 2) return Math.max(rec.g || 0, rec.m || 0);
           var p = state.units[k.split(':')[0]];
           return p ? (p.last || p.learnedAt || 0) : 0;
         }
@@ -2001,8 +2072,16 @@
      `elCount` στην als-v499, με άλλο πρόσωπο. Σταθερή αρχή 10. */
   function bits(un){
     if (un.skeleton) return un.skeleton.points.length + ' σημεία, ' + elCount(un) + ' στοιχεία';
-    if (un.align) return un.align.segs.length + ' περίοδοι, ' +
-      Object.keys(un.align.pairs).length + ' ζευγάρια λέξεων';
+    if (un.align){
+      /* ⚠️ ΜΠΑΤΖΕΤ ΓΡΑΜΜΗΣ 50 ΧΑΡΑΚΤΗΡΕΣ (als-v493): με τον μετρητή η
+         γραμμή βγαίνει 44, οπότε χωράει. Και ⛔ ΤΙΠΟΤΑ όσο δεν έχει κρίνει
+         καμία περίοδο — ένα «0» εκεί θα ήταν μέτρηση που δεν έγινε ποτέ
+         (σταθ. 33), όχι πληροφορία. */
+      var t = prTally(un);
+      return un.align.segs.length + ' περίοδοι, ' +
+        Object.keys(un.align.pairs).length + ' ζευγάρια' +
+        (t.seen ? ' · τις έχεις ' + t.got : ' λέξεων');
+    }
     return '';
   }
 
@@ -2166,6 +2245,18 @@
     }).join('');
   }
 
+  /* ⛔ ΚΑΜΙΑ ΒΑΘΜΟΛΟΓΙΑ, ΚΑΝΕΝΑ ΠΟΣΟΣΤΟ, ΚΑΝΕΝΑ ΚΟΚΚΙΝΟ. Είναι δήλωσή του,
+     όχι μέτρηση δική μου — και ένας αριθμός που μοιάζει με βαθμό είναι πίεση
+     χωρίς αντίκρισμα (als-v496). ⚠️ Και οι τρεις καταστάσεις λένε ΑΛΛΗ
+     πρόταση: «δεν ξεκίνησες» ≠ «τα έχεις όλα» ≠ «τόσα από τόσα» — σταθ. 33,
+     ένα «0 από 11» σε κάτι που δεν άνοιξε ποτέ είναι επινοημένος αριθμός. */
+  function tallyText(t){
+    if (!t.all) return '';
+    if (!t.seen) return 'Κρύψε τη μετάφραση και πες την περίοδο-περίοδο.';
+    if (t.got === t.all) return 'Τις έχεις και τις ' + t.all + '.';
+    return 'Τις έχεις ' + t.got + ' από ' + t.all + '.';
+  }
+
   function alignHTML(un){
     /* ⭐ Σταθερή αρχή 10, στην πιο επικίνδυνη μορφή της: μια ΛΑΘΟΣ
        αντιστοίχιση μοιάζει σωστή. Αν τα κομμάτια δεν ξαναφτιάχνουν το
@@ -2184,16 +2275,73 @@
        σκέτο `getElementById('alClr')` θα πετούσε TypeError μέσα στο
        `openLesson` και θα μαύριζε ΟΛΟΚΛΗΡΗ την όψη (το περιστατικό
        `elCount` της als-v499, σε νέο μέρος). */
+    /* ⭐⭐ als-v524 — ΤΟ ΚΡΥΨΙΜΟ ΓΙΝΕΤΑΙ ΑΝΑ ΠΕΡΙΟΔΟ, ΚΑΙ Η ΚΡΙΣΗ ΜΑΖΙ ΤΟΥ.
+       Ως χθες η εξάσκηση ήταν ΑΝΑΓΝΩΡΙΣΗ: κρύβεις τις πάντα, τις ξεσκεπάζεις,
+       τίποτα δεν καταγράφεται, και ο μετρητής ανέβαινε ΜΟΝΟ με τη δήλωση «Το
+       ξέρω απέξω» — μία δήλωση για ένδεκα περιόδους.
+       ⭐ Ο μηχανισμός του ανά-περίοδο ΞΕΣΚΕΠΑΣΜΑΤΟΣ ΥΠΗΡΧΕ ΗΔΗ (ο delegated
+       handler βγάζει το `.hid` από ΜΙΑ `.al-m`)· αυτό που έλειπε ήταν η
+       ΚΡΙΣΗ και η μνήμη της. Άρα η προσθήκη είναι ένα στρώμα, όχι δεύτερο:
+       ίδια λίστα, απλώς κρύβεται και θυμάται ανά γραμμή.
+       ⚠️ Τα κουμπιά κρίσης υπάρχουν στο DOM αλλά φαίνονται ΜΟΝΟ όταν η
+       περίοδος μόλις αποκαλύφθηκε (`.al-per.just`) — αλλιώς θα ήταν 22
+       κουμπιά μόνιμα στην οθόνη, δηλαδή ακριβώς το «χρώμιο» που μόλις
+       βγάλαμε στην als-v523. */
+    /* ⚠️ ΤΟ ΔΕΥΤΕΡΟ ΚΟΥΜΠΙ ΓΡΑΦΕΤΑΙ ΠΑΝΤΑ ΚΑΙ ΚΡΥΒΕΤΑΙ ΜΕ `display`, ΠΟΤΕ
+       ΜΕ ΣΥΝΘΗΚΗ ΣΤΟ MARKUP. Αν το παρέλειπα όταν δεν υπάρχει ακόμη τίποτα
+       κριμένο, τότε μόλις έκρινε την ΠΡΩΤΗ περίοδο το κουμπί θα έπρεπε να
+       γεννηθεί — δηλαδή ξαναχτίσιμο όλης της όψης μέσα σε κλικ, που θα
+       έσβηνε τα `.hid` και τα `.just` που μόλις έφτιαξε. */
+    var tal = prTally(un);
     return '<div class="al-ctl">' +
         '<button class="al-b" id="alHide">Κρύψε τη μετάφραση</button>' +
+        '<button class="al-b" id="alHideGap"' +
+          (tal.got && tal.got < tal.all ? '' : ' style="display:none"') +
+          '>Κρύψε όσα δεν είχα</button>' +
       '</div>' +
+      '<div class="al-tally" id="alTally">' + esc(tallyText(tal)) + '</div>' +
       un.align.segs.map(function(sg){
-        return '<div class="al-per"><div class="al-n">' + sg.n + '</div>' +
+        var got = prGot(un.id, sg.n), seen = prSeen(un.id, sg.n);
+        return '<div class="al-per' + (got ? ' got' : seen ? ' gap' : '') +
+            '" data-aln="' + sg.n + '">' +
+          '<div class="al-n">' + sg.n +
+            '<span class="al-mk">' + (got ? '●' : seen ? '○' : '') + '</span></div>' +
           '<div class="al-a">' + alnSide(sg, 'a') + '</div>' +
-          '<div class="al-m">' + alnSide(sg, 'm') + '</div></div>';
+          '<div class="al-m">' + alnSide(sg, 'm') +
+            '<div class="al-jd"><span class="q">Το είπες σωστά;</span>' +
+              '<button class="al-jb" data-jd="g">Το είχα</button>' +
+              '<button class="al-jb" data-jd="m">Όχι ακόμη</button></div>' +
+          '</div></div>';
       }).join('') +
       '<div class="al-note q" id="alNote"><div class="al-hint">Πάτα οποιαδήποτε λέξη και ανάβει το ζευγάρι της, ' +
       'όπου κι αν βρίσκεται στην πρόταση.</div></div>';
+  }
+
+  /* ⭐ als-v524 — Η ΚΡΙΣΗ ΓΡΑΦΕΤΑΙ, ΚΑΙ Η ΟΘΟΝΗ ΕΝΗΜΕΡΩΝΕΤΑΙ ΕΠΙΤΟΠΟΥ.
+     ⛔ ΚΑΝΕΝΑ ΞΑΝΑΧΤΙΣΙΜΟ ΤΗΣ ΟΨΗΣ: ένα `openLesson()` εδώ θα έσβηνε ό,τι
+     είναι κρυμμένο και ό,τι μόλις αποκαλύφθηκε, δηλαδή θα του χαλούσε τη
+     ροή στη μέση της εξάσκησης. Αλλάζουν ΜΟΝΟ τα δύο σημάδια που άλλαξαν. */
+  function alnJudge(per, got){
+    if (!cur || !per) return;
+    var n = per.getAttribute('data-aln'); if (!n) return;
+    var rec = pr(cur.id, n);
+    if (got) rec.g = Date.now(); else rec.m = Date.now();
+    save();
+    per.classList.remove('just');
+    per.classList.toggle('got', got);
+    per.classList.toggle('gap', !got);
+    var mk = per.querySelector('.al-mk');
+    if (mk) mk.textContent = got ? '●' : '○';
+    alnTally();
+  }
+  function alnTally(){
+    if (!cur || !cur.align) return;
+    var t = prTally(cur), el = document.getElementById('alTally');
+    if (el) el.textContent = tallyText(t);
+    var gb = document.getElementById('alHideGap');
+    /* Δεν προσφέρω «κρύψε όσα δεν είχα» όταν δεν έχει κανένα, ούτε όταν τα
+       έχει όλα — και στις δύο περιπτώσεις το κουμπί δεν θα έκανε τίποτα. */
+    if (gb) gb.style.display = (t.got && t.got < t.all) ? '' : 'none';
   }
 
   function alnLight(k){
@@ -2364,11 +2512,30 @@
         lb.__alnBound = 1;
         lb.addEventListener('click', function(e){
           if (!cur || !cur.align || G.alignCheck(cur).length) return;
+          /* ⚠️ Η ΚΡΙΣΗ ΕΛΕΓΧΕΤΑΙ ΠΡΩΤΗ. Τα κουμπιά ζουν ΜΕΣΑ στην `.al-m`,
+             οπότε αν έμπαινε μετά το κρύψιμο/ξεσκέπασμα θα δούλευε μεν —
+             κανένα τους δεν είναι `.al-k` — αλλά η σειρά θα ήταν τυχαία.
+             Πρώτα η πιο συγκεκριμένη περίπτωση, πάντα. */
+          var jb = e.target.closest('.al-jb');
+          if (jb){ alnJudge(jb.closest('.al-per'), jb.getAttribute('data-jd') === 'g'); return; }
+          /* Ξεσκέπασμα ΜΙΑΣ περιόδου → εμφανίζεται η κρίση ΤΗΣ. */
           var m = e.target.closest('.al-m.hid');
-          if (m){ m.classList.remove('hid'); return; }
+          if (m){
+            m.classList.remove('hid');
+            var p = m.closest('.al-per');
+            if (p) p.classList.add('just');
+            return;
+          }
           var k = e.target.closest('.al-k');
           if (k) alnLight(k.dataset.alk);
         });
+      }
+      /* ⚠️ ΚΑΘΕ ΑΛΛΑΓΗ ΚΡΥΨΙΜΑΤΟΣ ΣΒΗΝΕΙ ΤΑ `.just`. Το `.just` σημαίνει
+         «μόλις την αποκάλυψες, κρίνε την»· αν επιβίωνε ενός μαζικού
+         κρυψίματος, θα έμεναν κουμπιά κρίσης κάτω από κρυμμένο κείμενο. */
+      function alnClearJust(){
+        var js = lb.querySelectorAll('.al-per.just'), i;
+        for (i = 0; i < js.length; i++) js[i].classList.remove('just');
       }
       var hb = document.getElementById('alHide');
       hb.addEventListener('click', function(){
@@ -2377,7 +2544,23 @@
         hb.textContent = on ? 'Δείξε τη μετάφραση' : 'Κρύψε τη μετάφραση';
         var ms = lb.querySelectorAll('.al-m'), i;
         for (i = 0; i < ms.length; i++) ms[i].classList.toggle('hid', on);
+        alnClearJust();
       });
+      /* ⭐ ΤΟ ΚΕΡΔΟΣ ΤΗΣ ΚΑΤΑΓΡΑΦΗΣ: εξασκείται ΜΟΝΟ σε ό,τι του ξεφεύγει.
+         Χωρίς αυτό, η μνήμη ανά περίοδο θα ήταν διακοσμητική — θα έγραφε
+         κάτι που καμία επόμενη οθόνη δεν θα χρησιμοποιούσε ποτέ. */
+      var gb = document.getElementById('alHideGap');
+      gb.addEventListener('click', function(){
+        var pers = lb.querySelectorAll('.al-per'), i, m;
+        for (i = 0; i < pers.length; i++){
+          m = pers[i].querySelector('.al-m');
+          if (m) m.classList.toggle('hid', !pers[i].classList.contains('got'));
+        }
+        alnClearJust();
+        hb.classList.remove('on');
+        hb.textContent = 'Κρύψε τη μετάφραση';
+      });
+      alnTally();
       var fi = document.getElementById('alFind');
       if (fi) fi.addEventListener('input', function(){
         document.getElementById('alKeys').innerHTML = keyRows(un, fi.value);

@@ -191,5 +191,132 @@ section('Ε · ΚΑΝΕΝΑ ΔΕΥΤΕΡΟ ΔΕΣΙΜΟ ΔΕΝ ΞΑΝΑΜΠΑΙ�
      /\bcur\b/.test(GUARD) && !/\bun\b/.test(GUARD));
 }
 
+/* ══ ΣΤ · Η ΚΡΙΣΗ ΑΝΑ ΠΕΡΙΟΔΟ (als-v524) ═════════════════════════════
+   Τρέχει τις ΑΛΗΘΙΝΕΣ συναρτήσεις, κομμένες από τη σελίδα με μέτρημα
+   αγκυλών. ⚠️ Το `function load(){` υπάρχει ΤΡΕΙΣ φορές στο αρχείο (τρία
+   IIFE με ίδια ονόματα — σταθ. 44), οπότε ο σωστός βρίσκεται ΑΠΟ ΤΟ ΜΗΝΥΜΑ
+   ΤΟΥ ΓΝΩΣΤΟΥ και ΠΡΟΣ ΤΑ ΠΙΣΩ. Ένα σκέτο indexOf θα έκοβε τον Άγνωστο. */
+function sliceFrom(src, at){
+  let depth = 0;
+  for (let j = src.indexOf('{', at); j < src.length; j++){
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}'){ depth--; if (!depth) return src.slice(at, j + 1); }
+  }
+  throw new Error('δεν κλείνει');
+}
+/* ⚠️⚠️ ΣΤΑΘ. 44, ΚΑΙ ΤΟ ΕΠΙΑΣΕ Η ΑΠΟΤΥΧΙΑ ΤΟΥ ΙΔΙΟΥ ΜΟΥ ΤΟΥ TEST:
+   `blank`, `load`, `u`, `save` υπάρχουν **ΤΡΕΙΣ ΦΟΡΕΣ** στο αρχείο (Άγνωστο /
+   Γνωστό / Συντακτικό), με ΤΑ ΙΔΙΑ ΟΝΟΜΑΤΑ. Ένα σκέτο `indexOf` πιάνει το
+   ΠΡΩΤΟ, δηλαδή του ΑΓΝΩΣΤΟΥ — και το `blank()` εκείνου δεν έχει `per`, οπότε
+   το test κατηγορούσε σωστό κώδικα. Κόβω ΜΟΝΟ μέσα από την περιοχή του
+   Γνωστού, που αρχίζει στο δικό του `KEY`. */
+const GNSTART = CODE.indexOf("var KEY = 'arx:gn';");
+if (GNSTART < 0) throw new Error("δεν βρέθηκε η περιοχή του Γνωστού (var KEY = 'arx:gn')");
+const GN = CODE.slice(GNSTART);
+function fn(name){
+  const at = GN.indexOf('function ' + name + '(');
+  if (at < 0) throw new Error('δεν βρέθηκε η ' + name + ' μέσα στον Γνωστό');
+  return sliceFrom(GN, at);
+}
+function gnostoLoad(){ return fn('load'); }
+
+function gnEnv(stored){
+  const store = {};
+  if (stored != null) store[(/var KEY = '([^']+)'/.exec(CODE.slice(GNSTART))||[])[1]] = JSON.stringify(stored);
+  /* ⚠️ Το `KEY` ζει ΕΞΩ από τον `load()`, στο IIFE. Χωρίς αυτό το sandbox
+     διαβάζει `getItem(undefined)`, ο `load()` γυρίζει σωστά `blank()`, και το
+     test κατηγορεί σωστό κώδικα για απώλεια δεδομένων. Σταθ. 30, ξανά — και
+     το διαβάζω από το ΑΡΧΕΙΟ, ώστε μια μετονομασία κλειδιού να σκάσει εδώ. */
+  const KEY = (/var KEY = '([^']+)'/.exec(CODE.slice(GNSTART)) || [])[1];
+  if (!KEY) throw new Error('δεν διαβάστηκε το KEY του Γνωστού');
+  const sb = {
+    KEY: KEY, state: null, toasts: [],
+    localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k,v)=>{store[k]=String(v);} },
+    JSON, Object, Array, Math, Date, console
+  };
+  sb.toast = m => sb.toasts.push(m);
+  vm.createContext(sb);
+  ['blank','pr','prGot','prSeen','prTally','tallyText'].forEach(n => vm.runInContext(fn(n), sb, {filename:'arxaia.html#'+n}));
+  vm.runInContext(gnostoLoad(), sb, {filename:'arxaia.html#gnLoad'});
+  vm.runInContext('state = load();', sb);
+  return sb;
+}
+
+section('ΣΤ1 · ⚠️ ΣΤΑΘ. 35 — Ο load() ΔΕΝ ΕΙΝΑΙ ΛΙΣΤΑ ΕΠΙΤΡΕΠΟΜΕΝΩΝ');
+{
+  /* Ένα πεδίο που ΔΕΝ ονομάζει ο load() πρέπει να επιβιώνει, αλλιώς μια
+     εγγραφή που κατέβηκε από ΑΛΛΗ ΣΥΣΚΕΥΗ σβήνεται στο πρώτο render και το
+     push κάνει το σβήσιμο αλήθεια παντού. Αυτή ήταν 🔴 ΠΑΓΙΔΑ στο `arx:gn`
+     από την als-v471, και κλείνει εδώ. */
+  const E = gnEnv({ v:1, units:{a:{last:1}}, els:{}, per:{'gk3:1':{g:5,m:0}},
+                    days:[1], heard:{x:1}, sessions:[{id:'ΑΛΛΗ_ΣΥΣΚΕΥΗ'}] });
+  is('⭐ άγνωστο πεδίο ΕΠΙΒΙΩΝΕΙ της φόρτωσης',
+     JSON.stringify(E.state.sessions), JSON.stringify([{id:'ΑΛΛΗ_ΣΥΣΚΕΥΗ'}]));
+  is('το `per` φορτώνεται', JSON.stringify(E.state.per['gk3:1']), JSON.stringify({g:5,m:0}));
+  is('τα γνωστά πεδία μένουν ανέπαφα', JSON.stringify(E.state.units), JSON.stringify({a:{last:1}}));
+  /* Και ο load() ΔΕΝ σκάει σε σκουπίδια. */
+  const B = gnEnv({ v:1, units:'ΟΧΙ ΑΝΤΙΚΕΙΜΕΝΟ', per:null, days:'ΟΧΙ ΠΙΝΑΚΑΣ' });
+  is('λάθος τύποι κανονικοποιούνται, δεν σκάνε', 
+     [typeof B.state.units, typeof B.state.per, Array.isArray(B.state.days)].join(','), 'object,object,true');
+  const N = gnEnv(null);
+  is('άδεια αποθήκη → καθαρό blank με `per`', JSON.stringify(N.state.per), '{}');
+}
+
+section('ΣΤ2 · Η ΜΝΗΜΗ ΑΝΑ ΠΕΡΙΟΔΟ');
+{
+  const E = gnEnv({ v:1 });
+  const run = expr => vm.runInContext(expr, E);
+  run(`pr('gk3', 1).g = 100;`);
+  run(`pr('gk3', 2).m = 200;`);
+  run(`pr('gk3', 3).g = 300; pr('gk3', 3).m = 400;`);   /* άλλαξε γνώμη → ΔΕΝ την έχει */
+  run(`pr('gk3', 4).m = 500; pr('gk3', 4).g = 600;`);   /* άλλαξε γνώμη → την ΕΧΕΙ */
+  is('«το είχα» → την έχει',            run(`prGot('gk3',1)`), true);
+  is('«όχι ακόμη» → δεν την έχει',      run(`prGot('gk3',2)`), false);
+  is('⭐ νικάει το ΝΕΟΤΕΡΟ πάτημα (g→m)', run(`prGot('gk3',3)`), false);
+  is('⭐ και προς την άλλη κατεύθυνση (m→g)', run(`prGot('gk3',4)`), true);
+  is('περίοδος που δεν άγγιξε ποτέ',    run(`prSeen('gk3',9)`), false);
+  is('⛔ και ΔΕΝ γεννιέται εγγραφή από ΑΝΑΓΝΩΣΗ (το bug του nut:streak)',
+     run(`(prGot('gk3',9), prSeen('gk3',9), state.per['gk3:9'] === undefined)`), true);
+  const t = run(`prTally({ id:'gk3', align:{ segs:[{n:1},{n:2},{n:3},{n:4},{n:5}] } })`);
+  is('ο μετρητής μετράει σωστά', JSON.stringify(t), JSON.stringify({got:2, seen:4, all:5}));
+}
+
+section('ΣΤ3 · ⛔ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΕΙΣ ΠΡΟΤΑΣΕΙΣ, ΚΑΜΙΑ ΒΑΘΜΟΛΟΓΙΑ');
+{
+  const E = gnEnv({ v:1 });
+  const say = o => vm.runInContext('tallyText(' + JSON.stringify(o) + ')', E);
+  const none = say({got:0,seen:0,all:11}), some = say({got:7,seen:9,all:11}), all = say({got:11,seen:11,all:11});
+  ok('«δεν ξεκίνησες» δεν τυπώνει αριθμό (σταθ. 33)', !/\d/.test(none) && none.length > 0);
+  ok('«τόσα από τόσα» τα λέει και τα δύο', /7/.test(some) && /11/.test(some));
+  /* ⚠️ Η ΠΡΩΤΗ ΓΡΑΦΗ ΑΥΤΗΣ ΤΗΣ ΓΡΑΜΜΗΣ ΔΕΝ ΔΑΓΚΩΝΕ, και το έδειξε η
+     μετάλλαξη: με το «τα έχεις όλα» σβησμένο, βγαίνει «Τις έχεις 11 από 11»
+     — που είναι ΔΙΑΦΟΡΕΤΙΚΟ από το «7 από 11» και περιέχει «11», άρα
+     περνούσε. Το «11 από 11» όμως είναι ΑΚΡΙΒΩΣ η πρόταση που δεν θέλουμε:
+     όταν τα έχει όλα, ο μετρητής δεν είναι μέτρηση, είναι νέα. Ο έλεγχος
+     πρέπει να αρνείται το ΠΡΟΤΥΠΟ «N από N», όχι απλώς μια διαφορά. */
+  ok('«τα έχεις όλα» ΔΕΝ λέει «N από N»', all !== some && /11/.test(all) && all.indexOf('από') < 0);
+  is('⛔ και οι τρεις είναι ΔΙΑΦΟΡΕΤΙΚΕΣ', new Set([none, some, all]).size, 3);
+  is('⛔ κανένα ποσοστό πουθενά', [none,some,all].filter(x => x.indexOf('%') >= 0).length, 0);
+}
+
+section('ΣΤ4 · Η ΚΑΛΩΔΙΩΣΗ ΠΟΥ ΣΩΖΕΙ ΤΑ ΔΕΔΟΜΕΝΑ');
+{
+  /* ⚠️ ΣΤΑΘ. 31: φωλιασμένος χάρτης ΧΩΡΙΣ `_ts` δουλεύει την ΠΡΩΤΗ φορά και
+     γυρίζει πίσω από τη ΔΕΥΤΕΡΗ — σπάει ακριβώς τη μέρα που μετράει. */
+  ok('το `per` δηλώνεται στο readMaps του STAMP',
+     /\[state\.units,\s*state\.els,\s*state\.per\]/.test(CODE));
+  ok('και ο δείκτης 2 δηλώνει το δικό του legacy `last`',
+     /i === 2\)\s*return Math\.max\(rec\.g/.test(CODE));
+  ok('το `per` υπάρχει στο blank()', /blank\(\)\{ return \{ v:1, units:\{\}, els:\{\}, per:\{\}/.test(CODE));
+  ok('η κρίση ΓΡΑΦΕΙ (καλεί save)', /function alnJudge\([\s\S]{0,400}?save\(\);/.test(CODE));
+  /* ⛔ Η κρίση είναι ΔΗΛΩΣΗ. Δεν επιτρέπεται να αγγίξει τη σκάλα, αλλιώς
+     ένας ισχυρισμός θα γινόταν μετρημένη πρόοδος (το μάθημα της als-v456). */
+  const judge = fn('alnJudge');
+  is('⛔ η κρίση ΔΕΝ αγγίζει τη σκάλα',
+     ['reviews','due','learnedAt','best','runs','claimed'].filter(k => judge.indexOf(k) >= 0).join(','), '');
+  ok('⛔ και ΔΕΝ ξαναχτίζει την όψη (θα έσβηνε το κρυμμένο κείμενο)',
+     judge.indexOf('openLesson') < 0 && judge.indexOf('innerHTML') < 0);
+}
+
 console.log('\n  ' + pass + ' πέρασαν, ' + fail + ' απέτυχαν\n');
 process.exit(fail ? 1 : 0);
