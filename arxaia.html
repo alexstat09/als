@@ -335,13 +335,22 @@
   #gnLesson .ar-simple p{ font-size:16px; line-height:1.78; }
 
   /* 02 · Η ΑΝΤΙΣΤΟΙΧΙΑ — αρχαίο ‖ μετάφραση, η μία στρώση που ήθελε πλάτος */
-  #gnLesson .al-per{ display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0;
-    border-radius:16px; overflow:hidden; margin-bottom:12px; }
-  #gnLesson .al-per .al-n{ grid-column:1/-1; padding:12px 20px 0; margin:0; }
-  #gnLesson .al-a{ padding:10px 20px 18px; font-size:19.5px; line-height:2;
-    border-right:1px solid var(--au-line,#26262f); }
-  #gnLesson .al-m{ padding:10px 20px 18px; font-size:14.5px; line-height:1.85;
-    border-top:none; margin-top:0; }
+  /* ⭐ als-v523: ΔΥΟ ΣΤΗΛΕΣ ΣΕΛΙΔΑΣ, ΟΧΙ ΔΥΟ ΚΕΛΙΑ ΠΙΝΑΚΑ.
+     Ο κάθετος διαχωριστής έκοβε τη σελίδα στα δύο σαν φύλλο υπολογισμού·
+     τη δουλειά του την κάνει ΚΕΝΟ (`column-gap`), όπως σε κάθε τυπωμένη
+     αντιπαραβολή. ⚠️ Το `overflow:hidden` έφυγε μαζί με το radius — υπήρχε
+     ΜΟΝΟ για να κόβει τις γωνίες, και τώρα δεν υπάρχουν γωνίες.
+     ⚠️ Μετρημένο στα 1180px: κάθε στήλη ~562px, δηλαδή ~51ch το αρχαίο και
+     ~57ch η μετάφραση — και τα δύο μέσα στο μέτρο ανάγνωσης (σταθ. 51). */
+  #gnLesson .al-per{ display:grid; grid-template-columns:1fr 1fr;
+    column-gap:56px; row-gap:0; padding:0; margin:0;
+    border-radius:0; overflow:visible; }
+  #gnLesson .al-per + .al-per{ margin-top:26px; padding-top:26px;
+    border-top:1px solid rgba(255,255,255,.055); }
+  #gnLesson .al-per .al-n{ grid-column:1/-1; padding:0; margin:0 0 11px; }
+  #gnLesson .al-a{ padding:0; font-size:19px; line-height:1.95; border-right:none; }
+  #gnLesson .al-m{ padding:0; font-size:17px; line-height:1.82;
+    border-top:none; padding-top:0; margin-top:0; }
 
   /* 03 · ΤΟ ΚΛΕΙΔΙ — 80 ζευγάρια σε δύο κολόνες.
      `columns` και όχι grid: τα ζευγάρια έχουν άνισο ύψος (η εξήγηση άλλοτε
@@ -365,9 +374,14 @@
      κολόνα, δηλαδή ακριβώς ό,τι ήταν πριν. */
   @media(max-width:1040px){
     #gnLesson .ar-vwrap{ max-width:640px; padding:0 18px; }
-    #gnLesson .al-per{ grid-template-columns:1fr; }
+    /* ⚠️ ΣΤΟΙΒΑΓΜΕΝΑ, ΟΙ ΔΥΟ ΓΛΩΣΣΕΣ ΞΑΝΑΘΕΛΟΥΝ ΟΡΙΟ. Στο λάπτοπ τις
+       χωρίζει το `column-gap`· εδώ κάθονται η μία κάτω από την άλλη, οπότε
+       η τριχοειδής γραμμή επιστρέφει μαζί με το padding που η όψη λάπτοπ
+       μηδενίζει. Χωρίς αυτό, αρχαίο και μετάφραση κολλάνε σε ένα μπλοκ. */
+    #gnLesson .al-per{ grid-template-columns:1fr; column-gap:0; }
     #gnLesson .al-a{ border-right:none; }
-    #gnLesson .al-m{ border-top:1px dashed var(--au-line,#26262f); }
+    #gnLesson .al-m{ border-top:1px solid rgba(255,255,255,.05);
+      padding-top:13px; margin-top:13px; }
     #gnLesson #alKeys, #gnLesson .ar-pts{ columns:1; }
     #gnLesson .ar-defs{ grid-template-columns:1fr; }
     #gnLesson .ar-layer{ margin-top:34px; }
@@ -527,18 +541,63 @@
      υπογράμμιση σε κάθε ζευγάρι, ΣΧΕΔΟΝ ΟΛΟ το κείμενο ήταν υπογραμμισμένο
      — που δεν ξεχωρίζει τίποτα, μόνο θορυβεί. Το ΧΡΩΜΑ κάνει τη δουλειά:
      φωτεινό = έχει ζευγάρι, σβηστό (.al-x) = δεν έχει. */
-  .al-per{ border:1px solid var(--au-line,#26262f); border-radius:14px; padding:14px 15px 12px;
-    margin-bottom:10px; background:rgba(255,255,255,.015); }
-  .al-n{ font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.16em;
-    color:var(--au-faint,#5c5964); margin-bottom:8px; }
-  .al-a{ font-family:var(--ar-gr); font-size:17.5px; line-height:1.95;
-    color:var(--au-ivory,#f5f2ec); }
-  .al-m{ font-size:14px; line-height:1.8; color:var(--au-dim,#9a97a3);
-    border-top:1px dashed var(--au-line,#26262f); padding-top:10px; margin-top:11px; }
+  /* ⭐⭐⭐ als-v523 — ΣΕΛΙΔΑ ΒΙΒΛΙΟΥ, ΟΧΙ ΠΙΝΑΚΑΣ ΑΠΟ ΚΑΡΤΕΣ.
+     Δικά του: «νιώθω ότι είναι το background του κάπως για σάιτ ιστοσελίδα
+     παρά για διάβασμα». Μετρήθηκε πριν συζητηθεί αισθητική, και ήταν ΤΡΙΑ
+     νούμερα, κανένα τους γούστο:
+
+       1. ⛔ Η ΙΕΡΑΡΧΙΑ ΗΤΑΝ ΑΝΑΠΟΔΗ. Η ΜΕΤΑΦΡΑΣΗ — αυτό ακριβώς που λέει
+          απέξω, το λέει και η πινακίδα `byHeart` — ήταν 14.5px / 5.89:1 σε
+          system sans, δίπλα σε αρχαίο 19.5px / 18.23:1 σε Didot. Το πιο
+          σημαντικό κείμενο της οθόνης ήταν το πιο δυσανάγνωστο: σταθ. 52
+          αυτούσια, σε νέο μέρος.
+       2. ⛔ ΟΙ ΛΕΞΕΙΣ ΧΩΡΙΣ ΖΕΥΓΑΡΙ (`.al-x`) ΗΤΑΝ ΣΤΟ 2.38:1. Δεν είναι
+          ετικέτες — είναι η ΠΡΟΤΑΣΗ που διαβάζει. Το «λέει ΟΤΙ δεν ήρθε»
+          έσπαγε οπτικά στη μέση επειδή το «ότι» δεν έχει ζευγάρι, που
+          είναι λάθος λόγος να σβήσεις λέξη του κειμένου.
+       3. ⛔ ΕΝΔΕΚΑ ΠΑΝΟΜΟΙΟΤΥΠΕΣ ΚΑΡΤΕΣ (φόντο + περίγραμμα + radius:14),
+          στοιβαγμένες. ΑΥΤΟ ήταν το «σάιτ»: κανένα βιβλίο δεν βάζει κάθε
+          περίοδο σε πλαίσιο. Σταθ. 53, «πλέγμα από πανομοιότυπα κουτάκια».
+
+     ⭐ Η ΘΕΡΑΠΕΙΑ ΔΕΝ ΕΙΝΑΙ ΑΛΛΟ ΦΟΝΤΟ — ΕΙΝΑΙ ΝΑ ΦΥΓΟΥΝ ΤΑ ΠΛΑΙΣΙΑ.
+     Το μαύρο δεν έφταιγε ποτέ. Οι περίοδοι χωρίζονται με ΑΕΡΑ και μια
+     τριχοειδή γραμμή, και **ΜΙΑ γραμματοσειρά κρατάει τις δύο στήλες**:
+     GFS Didot, που έχει πλήρη ελληνικά ΚΑΙ πολυτονικά (μετρημένο στην
+     als-v504) και φορτώνεται ήδη. Δύο διαφορετικές οικογένειες δίπλα-δίπλα
+     διαβάζονταν ως «κείμενο ‖ διεπαφή»· μία τις κάνει ΕΝΑ κείμενο σε δύο
+     φωνές, που είναι ακριβώς τι ΕΙΝΑΙ μια μετάφραση.
+     ⛔ Η Georgia παραμένει απαγορευμένη ακόμη και ως fallback (als-v504). */
+  /* ⚠️⚠️ Ο ΔΙΑΧΩΡΙΣΤΗΣ ΜΠΑΙΝΕΙ **ΑΝΑΜΕΣΑ**, ΜΕ `+`, ΠΟΤΕ ΩΣ border-bottom
+     ΜΕ `:last-of-type`. Το πρώτο γράψιμο το είχε έτσι και **ΤΟ ΕΠΙΑΣΕ Η
+     ΜΕΤΡΗΣΗ**: η τελευταία περίοδος κρατούσε τη γραμμή της, γιατί το
+     `:last-of-type` κοιτάει τον ΤΥΠΟ (`div`) και μετά τις περιόδους
+     ακολουθεί το `.al-note`, που είναι κι αυτό `div` — άρα «τελευταίο div»
+     δεν ήταν ποτέ η τελευταία περίοδος. Ο αδελφικός επιλογέας δεν έχει
+     αυτό το πρόβλημα εξ ορισμού: γραμμή υπάρχει μόνο εκεί που υπάρχουν
+     ΔΥΟ περίοδοι να χωριστούν. */
+  .al-per{ padding:0; margin:0; }
+  .al-per + .al-per{ margin-top:24px; padding-top:24px;
+    border-top:1px solid rgba(255,255,255,.055); }
+  /* Ο αριθμός περιόδου ως ΑΡΙΘΜΟΣ ΣΤΙΧΟΥ: η λέξη «ΠΕΡΙΟΔΟΣ» έντεκα φορές
+     ήταν θόρυβος, και τα 8px ήταν το μικρότερο κείμενο όλης της εφαρμογής.
+     Μένει `--au-faint` γιατί είναι ΕΤΙΚΕΤΑ, όχι κείμενο ανάγνωσης. */
+  .al-n{ font-family:var(--ar-gr); font-size:13px; line-height:1;
+    color:var(--au-faint,#5c5964); margin-bottom:10px; }
+  .al-a{ font-family:var(--ar-gr); font-size:18px; line-height:1.95;
+    color:rgba(245,242,236,.82); }
+  .al-m{ font-family:var(--ar-gr); font-size:17px; line-height:1.78;
+    color:var(--au-ivory,#f5f2ec);
+    border-top:1px solid rgba(255,255,255,.05); padding-top:13px; margin-top:13px; }
   .al-k{ cursor:pointer; border-radius:5px; padding:1px 2px; margin:0 -2px;
     transition:background .14s, color .14s; }
   .al-k.on{ background:rgb(var(--ar)); color:#12101a; box-shadow:0 0 20px rgba(var(--ar),.35); }
-  .al-x{ color:var(--au-faint,#5c5964); }
+  /* ⚠️ ΜΙΑ ΛΕΞΗ ΧΩΡΙΣ ΖΕΥΓΑΡΙ ΕΙΝΑΙ ΑΚΟΜΗ ΛΕΞΗ ΤΟΥ ΚΕΙΜΕΝΟΥ. Ήταν
+     `--au-faint` = **2.38:1**, δηλαδή σβησμένη κάτω από κάθε όριο
+     αναγνωσιμότητας — και επειδή είναι τα «ότι», τα «μὲν» και η στίξη, η
+     πρόταση έσπαγε οπτικά στη μέση. Στο `--au-dim` (5.89:1) διαβάζεται
+     κανονικά και απλώς ΔΕΝ ΑΝΑΒΕΙ: η διαφορά «έχει ζευγάρι» τη λέει το
+     ΠΑΤΗΜΑ, δεν χρειάζεται να τη λέει μόνιμα η αντίθεση. */
+  .al-x{ color:var(--au-dim,#9a97a3); }
   /* Κρύψιμο της μετάφρασης: ΘΟΛΩΝΕΙ, δεν σβήνει — το ύψος δεν αναπηδά. */
   .al-m.hid > *{ visibility:hidden; }
   .al-m.hid{ position:relative; cursor:pointer; }
@@ -553,8 +612,10 @@
   .al-pair{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; }
   .al-pair .pa{ font-family:var(--ar-gr); font-size:17.5px; color:rgb(var(--ar)); }
   .al-pair .ar{ color:var(--au-faint,#5c5964); }
-  .al-pair .pm{ font-size:14.5px; color:var(--au-ivory,#f5f2ec); }
-  .al-why{ font-size:12.5px; line-height:1.6; color:var(--au-dim,#9a97a3); margin-top:7px; }
+  /* ⚠️ ΤΟ «ΓΙΑΤΙ» ΕΙΝΑΙ ΚΕΙΜΕΝΟ ΑΝΑΓΝΩΣΗΣ, ΟΧΙ ΛΕΖΑΝΤΑ — είναι όλη η αξία
+     της αντιστοιχίας. Ήταν 12.5px, κάτω από το όριο των 13.5 της σταθ. 52. */
+  .al-pair .pm{ font-size:15px; color:var(--au-ivory,#f5f2ec); }
+  .al-why{ font-size:13.5px; line-height:1.62; color:var(--au-dim,#9a97a3); margin-top:8px; }
   .al-hint{ font-size:11.5px; color:var(--au-faint,#5c5964); text-align:center; }
   .al-ctl{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px; }
   .al-b{ border:1px solid var(--au-line,#26262f); background:rgba(255,255,255,.04);
@@ -2115,12 +2176,19 @@
         'θα σου μάθαινε λάθος πράγμα. Το κείμενο και η μετάφραση από πάνω είναι σωστά.<br>' +
         esc(bad.join(' · ')) + '</div>';
     }
+    /* ⛔ ΤΟ «ΚΑΘΑΡΙΣΕ» ΕΦΥΓΕ (als-v523), και δεν χάθηκε λειτουργία: το
+       `alnLight()` κάνει TOGGLE, άρα η ίδια η αναμμένη λέξη το σβήνει, και
+       οποιαδήποτε άλλη το αλλάζει. Ήταν κουμπί που έκανε κάτι που γινόταν
+       ήδη μόνο του — και σε μια όψη που θέλει να διαβάζεται, το λιγότερο
+       χρώμιο είναι η δουλειά. ⚠️ Έφυγε ΚΑΙ ο ακροατής του παρακάτω: ένα
+       σκέτο `getElementById('alClr')` θα πετούσε TypeError μέσα στο
+       `openLesson` και θα μαύριζε ΟΛΟΚΛΗΡΗ την όψη (το περιστατικό
+       `elCount` της als-v499, σε νέο μέρος). */
     return '<div class="al-ctl">' +
         '<button class="al-b" id="alHide">Κρύψε τη μετάφραση</button>' +
-        '<button class="al-b" id="alClr">Καθάρισε</button>' +
       '</div>' +
       un.align.segs.map(function(sg){
-        return '<div class="al-per"><div class="al-n">ΠΕΡΙΟΔΟΣ ' + sg.n + '</div>' +
+        return '<div class="al-per"><div class="al-n">' + sg.n + '</div>' +
           '<div class="al-a">' + alnSide(sg, 'a') + '</div>' +
           '<div class="al-m">' + alnSide(sg, 'm') + '</div></div>';
       }).join('') +
@@ -2310,7 +2378,6 @@
         var ms = lb.querySelectorAll('.al-m'), i;
         for (i = 0; i < ms.length; i++) ms[i].classList.toggle('hid', on);
       });
-      document.getElementById('alClr').addEventListener('click', function(){ alnLight(null); });
       var fi = document.getElementById('alFind');
       if (fi) fi.addEventListener('input', function(){
         document.getElementById('alKeys').innerHTML = keyRows(un, fi.value);
