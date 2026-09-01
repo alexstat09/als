@@ -1157,6 +1157,36 @@ count is a brief someone reads as complete.
       total is the same lie as a green pill (σταθ. 33). When it cannot measure
       it says so rather than showing a reassuring 0.
 
+56. **⛔⛔ `ALSConfirm` / `ALSAlert` / `ALSPrompt` RETURN A PROMISE. THEY TAKE
+    NO CALLBACK — and passing one is SILENT.** `istoria.html` called
+    `ask(message, function(yes){ …delete… })`. `als-dialog.js` reads the second
+    argument as the dialog's **options object**, so the function was ignored and
+    **the delete body never ran**: Alex pressed the confirm button, the dialog
+    closed as if it had worked, and the πλαγιότιτλος was still there. He
+    reported it as "δεν μπορώ να το σβήσω" (als-v525).
+    - ⭐⭐ **The half that was written correctly was the half nobody ever sees.**
+      The fallback branch (`window.confirm`) took the callback properly; the
+      real branch did not. Σταθερή αρχή 15 at its worst — the guarantee lived
+      in one of a pair, and it was the unreachable one. **When a call site has
+      a fallback, the fallback is not proof the primary works; it is the reason
+      nobody noticed it doesn't.**
+    - ⚠️⚠️ **A regex over the BODY of a callback says nothing about whether
+      anyone CALLS it.** `tests/istoria-plag-sync.test.js` §4β had asserted, and
+      still asserted while broken, that the tombstone is written in the right
+      ORDER inside that callback — a perfect green over dead code. **Assert the
+      CALL, not the contents.**
+    - ⭐ **The guard, repo-wide, no grandfather list:** §5 of that test walks
+      every `.html`/`.js` outside `archive/`/`_quarantine/` and fails on a
+      function or arrow passed as the second top-level argument to any of the
+      three. The call site itself also refuses to trust the return value: if it
+      is not thenable it falls through to `window.confirm` rather than going
+      quiet (σταθ. 10).
+    - ⭐ **A control below 3:1 is a control that is not there.** The same page's
+      row buttons (▲▼✎) were `--au-faint` on `--au-void` = **2,38:1**, which is
+      why the edit affordance read as decoration and the only delete path felt
+      non-existent. Now `rgba(245,242,236,.46)` = **4,24:1** (σταθ. 52 in the
+      chrome, not the content).
+
 ---
 
 ## 4 · What is built

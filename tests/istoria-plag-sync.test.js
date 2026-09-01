@@ -353,6 +353,103 @@ const blankStore = extra => Object.assign({ v: 1, units: {}, els: {}, days: [], 
       /save\(\);[\s\S]{0,400}?back\.plag && has\(back\.plag, id\)[\s\S]{0,400}?tombPlag\(id, ts\)/.test(p));
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     5 · ⛔⛔ ΣΤΑΘΕΡΗ ΑΡΧΗ 56 — ΤΟ `ALSConfirm` ΕΠΙΣΤΡΕΦΕΙ ΥΠΟΣΧΕΣΗ
+
+     ΤΟ BUG ΠΟΥ ΠΛΗΡΩΘΗΚΕ: η `istoria.html` καλούσε το `ALSConfirm` με
+     CALLBACK δεύτερο όρισμα. Το `als-dialog.js` διαβάζει το δεύτερο όρισμα
+     ως ΕΠΙΛΟΓΕΣ, άρα η συνάρτηση αγνοούνταν ΣΙΩΠΗΛΑ και ο κώδικας του
+     σβησίματος δεν έτρεχε ΠΟΤΕ: ο διάλογος έκλεινε σαν να έγινε, και ο
+     πλαγιότιτλος έμενε στη λίστα.
+
+     ⚠️⚠️ ΓΙΑΤΙ ΚΑΜΙΑ ΑΠΟ ΤΙΣ ΥΠΑΡΧΟΥΣΕΣ ΒΕΒΑΙΩΣΕΙΣ ΔΕΝ ΤΟ ΕΙΔΕ, ΚΑΙ ΕΙΝΑΙ
+     ΤΟ ΜΑΘΗΜΑ: το §4β από πάνω επιβεβαίωνε με regex ότι η ΣΕΙΡΑ μέσα στο
+     σώμα του callback είναι σωστή — και ήταν, τέλεια, για κώδικα που δεν
+     εκτελούνταν. Μια βεβαίωση που διαβάζει το ΠΕΡΙΕΧΟΜΕΝΟ ενός callback δεν
+     λέει τίποτα για το αν κάποιος τον ΚΑΛΕΙ. Γι’ αυτό εδώ ελέγχεται η
+     ΚΛΗΣΗ, και ελέγχεται σε ΚΑΘΕ σελίδα του repo, όχι μόνο σε αυτή
+     (σταθερή αρχή 15: ο φρουρός χωρίς grandfather list).
+     ══════════════════════════════════════════════════════════════════ */
+  section('5 · Κανείς στο repo δεν δίνει callback στο ALSConfirm/ALSAlert/ALSPrompt');
+  {
+    const SKIP = new Set(['archive', '_quarantine', 'node_modules', '.git', 'tests', 'docs']);
+    const files = [];
+    (function walk(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (SKIP.has(e.name)) continue;
+        const f = path.join(dir, e.name);
+        if (e.isDirectory()) walk(f);
+        else if (/\.(html|js)$/.test(e.name) && e.name !== 'als-dialog.js') files.push(f);
+      }
+    })(ALS);
+
+    /* Η βελόνα: `ALSConfirm(` … `,` … `function` πριν κλείσει η κλήση. Κοιτάμε
+       ΜΟΝΟ τα πρώτα 400 σημεία μετά το άνοιγμα — αρκετά για ένα δεύτερο
+       όρισμα, λίγα για να μπερδευτεί με το επόμενο block. */
+    const CALLBACK = /\bALS(?:Confirm|Alert|Prompt)\s*\(([\s\S]{0,400}?)\)\s*[;,)]/g;
+    const offenders = [];
+    for (const f of files) {
+      const src = fs.readFileSync(f, 'utf8');
+      let m;
+      CALLBACK.lastIndex = 0;
+      while ((m = CALLBACK.exec(src))) {
+        /* ένα `function(` ΩΣ ΟΡΙΣΜΑ: μετά από κόμμα στο ΠΡΩΤΟ επίπεδο. */
+        const args = m[1];
+        let depth = 0, topLevelComma = -1;
+        for (let i = 0; i < args.length; i++) {
+          const c = args[i];
+          if (c === '(' || c === '{' || c === '[') depth++;
+          else if (c === ')' || c === '}' || c === ']') depth--;
+          else if (c === ',' && depth === 0) { topLevelComma = i; break; }
+        }
+        if (topLevelComma < 0) continue;
+        const rest = args.slice(topLevelComma + 1).trim();
+        if (/^(function\b|\(?[A-Za-z_$][\w$]*\s*\)?\s*=>)/.test(rest))
+          offenders.push(path.relative(ALS, f) + ' → ' + m[0].replace(/\s+/g, ' ').slice(0, 90));
+      }
+    }
+    is('⛔ ΚΑΝΕΝΑ callback ως 2ο όρισμα σε ALSConfirm/Alert/Prompt', offenders, []);
+  }
+
+  section('5β · Η ίδια η σελίδα: ο φρουρός thenable + ΜΙΑ διαδρομή σβησίματος');
+  {
+    const p = fs.readFileSync(path.join(ALS, 'istoria.html'), 'utf8');
+
+    ok('⭐ ο askYes περνάει ΑΝΤΙΚΕΙΜΕΝΟ επιλογών στο ALSConfirm',
+      /window\.ALSConfirm\(\{\s*title:\s*title,\s*message:\s*message/.test(p));
+    ok('⭐⭐ …και δεν εμπιστεύεται την επιστροφή: ΜΟΝΟ αν είναι thenable',
+      /if \(r && typeof r\.then === 'function'\)\{[\s\S]{0,160}?r\.then\(/.test(p));
+    ok('…αλλιώς πέφτει στο window.confirm, ΠΟΤΕ σιωπή (σταθερή αρχή 10)',
+      /cb\(window\.confirm\(title \+ '\\n\\n' \+ message\)\);/.test(p));
+    ok('⛔ η απόρριψη της υπόσχεσης ΔΕΝ σβήνει τίποτα',
+      /r\.then\(function\(yes\)\{ cb\(!!yes\); \}, function\(\)\{ cb\(false\); \}\)/.test(p));
+    ok('τα κουμπιά του διαλόγου είναι ΕΛΛΗΝΙΚΑ, όχι Cancel/Confirm',
+      /confirmText:\s*'Σβήσ’ τον',\s*cancelText:\s*'Άσ’ τον'/.test(p));
+
+    /* ⭐ ΣΤΑΘΕΡΗ ΑΡΧΗ 15: δύο κουμπιά, ΜΙΑ διαδρομή. Αν κάποιος ξαναγράψει
+       τη μία, η ταφόπλακα δεν μπορεί να μείνει μόνο στην άλλη. */
+    ok('⭐ το ✕ της γραμμής υπάρχει στο markup', /data-del="' \+ esc\(pl\.id\) \+ '"/.test(p));
+    ok('…και το πιάνει η ΜΙΑ καθολική καλωδίωση',
+      /closest\('\[data-del\]'\)\)\)\{ deletePlag\(b\.dataset\.del, repaintPlags\); return; \}/.test(p));
+    ok('…και ο συντάκτης καλεί ΤΗΝ ΙΔΙΑ deletePlag', /function deleteEditor\(\)\{ deletePlag\(ed && ed\.id,/.test(p));
+    is('⭐⭐ υπάρχει ΑΚΡΙΒΩΣ ΜΙΑ συνάρτηση που γράφει ταφόπλακα πλαγιότιτλου',
+      (p.match(/\n\s+tombPlag\(id, ts\);/g) || []).length, 1);
+    is('…και ΑΚΡΙΒΩΣ ΕΝΑ `delete state.plag[`',
+      (p.match(/delete state\.plag\[/g) || []).length, 1);
+
+    /* Η οθόνη του μαθήματος ξαναχτίζεται ΚΡΑΤΩΝΤΑΣ την κύλιση — το `show()`
+       τη μηδενίζει, οπότε χωρίς αυτό το σβήσιμο τον πετάει στην κορυφή. */
+    ok('το repaintPlags κρατάει την κύλιση του μαθήματος',
+      /var y = lv\.scrollTop;[\s\S]{0,80}?openLesson\(cur\.id\);[\s\S]{0,40}?lv\.scrollTop = y;/.test(p));
+
+    /* Το χειριστήριο πρέπει να ΦΑΙΝΕΤΑΙ ότι υπάρχει: 3:1 είναι το κατώφλι
+       για non-text, και το `--au-faint` (.30) δίνει 2,38:1. */
+    const mini = /\.ip-mini\{[^}]*\}/.exec(p);
+    ok('το .ip-mini ΔΕΝ χρωματίζεται πια με --au-faint (2,38:1)',
+      !!mini && !/--au-faint/.test(mini[0]));
+    ok('…αλλά με χρώμα πάνω από το κατώφλι 3:1', !!mini && /rgba\(245,242,236,\.46\)/.test(mini[0]));
+  }
+
   console.log('\n' + pass + ' πέρασαν, ' + fail + ' απέτυχαν');
   process.exit(fail ? 1 : 0);
 })();

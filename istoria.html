@@ -185,11 +185,20 @@
   .ip-plag-m{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.06em;
     color:var(--au-faint,#5c5964); font-variant-numeric:tabular-nums; }
   .ip-plag-acts{ display:flex; gap:4px; margin-left:auto; }
-  .ip-mini{ border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-faint,#5c5964);
-    font-family:var(--au-mono,monospace); font-size:9px; padding:3px 6px; border-radius:6px;
+  /* ⚠️⚠️ ΜΕΤΡΗΜΕΝΟ, ΟΧΙ ΓΟΥΣΤΟ (σταθερή αρχή 52): το `--au-faint` πάνω στο
+     `--au-void` δίνει **2,38:1** — ΚΑΤΩ από το 3:1 που χρειάζεται ένα ΧΕΙΡΙΣΤΗΡΙΟ
+     για να φαίνεται ότι υπάρχει. Γι’ αυτό ο Αλεξ «δεν μπορούσε να το σβήσει»:
+     το ✎ ήταν εκεί και δεν διαβαζόταν. Το .46 δίνει **4,24:1** και μένει ήσυχο. */
+  .ip-mini{ border:1px solid var(--au-line,#26262f); background:transparent;
+    color:rgba(245,242,236,.46);
+    font-family:var(--au-mono,monospace); font-size:9px; padding:4px 7px; border-radius:6px;
     cursor:pointer; flex:none; line-height:1; transition:color .3s,border-color .3s; }
   .ip-mini:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.32); }
   .ip-mini:focus-visible{ outline:2px solid rgb(var(--is)); outline-offset:2px; }
+  /* Το ✕ κάθεται δίπλα στα άλλα ΑΤΟΝΟ και γίνεται κόκκινο μόνο όταν το
+     ακουμπάς: το σβήσιμο δεν διαφημίζεται, αλλά ούτε κρύβεται. */
+  .ip-mini.del:hover{ color:rgb(var(--warn)); border-color:rgba(var(--warn),.45); }
+  .ip-mini.del:focus-visible{ outline:2px solid rgb(var(--warn)); outline-offset:2px; }
   .ip-add{ display:inline-block; margin:3px 0 2px 17px; border:1px dashed rgba(255,255,255,.18);
     background:transparent; color:var(--au-faint,#5c5964); font-family:var(--au-mono,monospace);
     font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; padding:5px 9px; border-radius:7px;
@@ -1252,7 +1261,10 @@
           '<span class="ip-plag-acts">' +
             (idx > 0 ? '<button class="ip-mini" data-up="' + esc(pl.id) + '" title="πιο πάνω">▲</button>' : '') +
             (idx < total - 1 ? '<button class="ip-mini" data-down="' + esc(pl.id) + '" title="πιο κάτω">▼</button>' : '') +
-            '<button class="ip-mini" data-edit="' + esc(pl.id) + '" title="άλλαξέ τον">✎</button>' +
+            '<button class="ip-mini" data-edit="' + esc(pl.id) + '" title="άλλαξέ τον" aria-label="Άλλαξε τον πλαγιότιτλο">✎</button>' +
+            /* ⭐ ΤΟ ΣΒΗΣΙΜΟ ΕΙΝΑΙ ΟΡΑΤΟ ΣΤΗ ΓΡΑΜΜΗ, ΟΧΙ ΚΡΥΜΜΕΝΟ ΔΥΟ ΟΘΟΝΕΣ
+               ΜΕΣΑ. Ένα λάθος όνομα διορθώνεται εκεί που φαίνεται. */
+            '<button class="ip-mini del" data-del="' + esc(pl.id) + '" title="σβήσ’ τον" aria-label="Σβήσε τον πλαγιότιτλο">✕</button>' +
           '</span>' +
         '</div>' +
       '</div></li>';
@@ -1993,15 +2005,51 @@
     toast('Ο πλαγιότιτλος μπήκε: ' + pts.length + ' σημεία, ' + I.elCount(pts) + ' στοιχεία.');
   }
 
-  function deleteEditor(){
-    var rec = state.plag[ed.id]; if (!rec) return;
-    var ask = (window.ALSConfirm ? window.ALSConfirm : function(m, cb){ cb(window.confirm(m)); });
-    ask('Να σβήσω τον πλαγιότιτλο «' + rec.title + '»; Η πρόοδος στα στοιχεία του μένει — αυτά ανήκουν στα σημεία του βιβλίου, όχι σε αυτόν.', function(yes){
+  /* ══════════════════════════════════════════════════════════════════
+     ⛔⛔ ΣΤΑΘΕΡΗ ΑΡΧΗ 56 — ΤΟ `ALSConfirm` ΕΠΙΣΤΡΕΦΕΙ ΥΠΟΣΧΕΣΗ, ΔΕΝ ΠΑΙΡΝΕΙ
+     CALLBACK. Αυτό ήταν το bug που έκανε το σβήσιμο ΨΕΥΤΙΚΟ για τρεις
+     εκδόσεις (als-v525): η σελίδα έδινε συνάρτηση ως ΔΕΥΤΕΡΟ όρισμα, το
+     `als-dialog.js` τη διάβαζε ως ΕΠΙΛΟΓΕΣ του διαλόγου, την αγνοούσε
+     σιωπηλά, και ο κώδικας του σβησίματος ΔΕΝ ΕΤΡΕΧΕ ΠΟΤΕ. Ο Αλεξ πατούσε
+     «Confirm», ο διάλογος έκλεινε σαν να έγινε, και ο πλαγιότιτλος έμενε.
+     ⚠️ ΓΙΑΤΙ ΔΕΝ ΤΟ ΕΙΔΕ ΚΑΝΕΝΑ TEST: η ΜΟΝΗ διαδρομή που ήταν γραμμένη
+     σωστά ήταν η εφεδρική (`window.confirm`) — αυτή που δεν τρέχει ποτέ σε
+     αληθινό κινητό. Σταθερή αρχή 15 με το χειρότερο πρόσωπό της: η εγγύηση
+     ζούσε στο μισό ζευγάρι, και ήταν το μισό που κανείς δεν βλέπει.
+     ⛔ ΠΟΤΕ ΞΑΝΑ callback σε αυτό το API. Ο φρουρός ζει ΕΔΩ, στον κώδικα:
+     αν η επιστροφή ΔΕΝ είναι thenable, πέφτουμε στο `window.confirm` αντί να
+     σωπάσουμε. Μια ερώτηση που δεν απαντιέται ποτέ είναι σταθερή αρχή 10.
+     ══════════════════════════════════════════════════════════════════ */
+  function askYes(title, message, cb){
+    var r = null;
+    if (typeof window.ALSConfirm === 'function'){
+      try {
+        r = window.ALSConfirm({ title:title, message:message,
+          confirmText:'Σβήσ’ τον', cancelText:'Άσ’ τον', danger:true });
+      } catch(e){ r = null; }
+      if (r && typeof r.then === 'function'){
+        r.then(function(yes){ cb(!!yes); }, function(){ cb(false); });
+        return;
+      }
+    }
+    cb(window.confirm(title + '\n\n' + message));
+  }
+
+  /* ⭐⭐ ΜΙΑ ΔΙΑΔΡΟΜΗ ΣΒΗΣΙΜΑΤΟΣ, ΔΥΟ ΚΟΥΜΠΙΑ (σταθερή αρχή 15). Το ✕ της
+     γραμμής και το κουμπί του συντάκτη καλούν ΤΗΝ ΙΔΙΑ συνάρτηση, ώστε η
+     ταφόπλακα να μην μπορεί να υπάρχει στη μία διαδρομή και να λείπει από
+     την άλλη — ακριβώς το σχήμα που μόλις πληρώθηκε από πάνω. */
+  function deletePlag(id, done){
+    var rec = id ? state.plag[id] : null;
+    if (!rec){ toast('Δεν βρήκα αυτόν τον πλαγιότιτλο.'); return; }
+    askYes('Να σβήσω τον πλαγιότιτλο;',
+      '«' + (rec.title || '') + '» — η πρόοδος στα στοιχεία του μένει: αυτά ανήκουν στα σημεία του βιβλίου, όχι σε αυτόν.',
+      function(yes){
       if (!yes) return;
       /* ⚠️ Το `addedAt()` του sync.js διαβάζει `ts` ΠΡΩΤΑ και μετά `_ts`, οπότε
          η ταφόπλακα πρέπει να ξεπερνάει ΚΑΙ ΤΑ ΔΥΟ — αλλιώς μια εγγραφή που
          γεννήθηκε μετά τη σφραγίδα της θα διάβαζε σαν «ξαναμπήκε μετά». */
-      var id = rec.id, ts = Math.max(+rec._ts || 0, +rec.ts || 0);
+      var ts = Math.max(+rec._ts || 0, +rec.ts || 0);
       delete state.plag[id];
       /* ⭐ ΤΑΦΟΠΛΑΚΑ ΜΟΝΟ ΜΕΤΑ ΑΠΟ ΕΠΙΒΕΒΑΙΩΜΕΝΟ ΓΡΑΨΙΜΟ: ταφόπλακα πάνω από
          κάτι που είναι ακόμη εκεί σβήνει κάτι που κράτησε. */
@@ -2014,10 +2062,25 @@
         return;
       }
       tombPlag(id, ts);
-      hide('ipEd');
-      renderHome();
+      if (done) done();
       toast('Σβήστηκε, και σφραγίστηκε ώστε να μην ξαναγυρίσει από το cloud.');
     });
+  }
+
+  function deleteEditor(){ deletePlag(ed && ed.id, function(){ hide('ipEd'); renderHome(); }); }
+
+  /* Το ✕ πατιέται ΚΑΙ από τη ραχοκοκαλιά ΚΑΙ από μέσα στο μάθημα. Η δεύτερη
+     οθόνη ξαναχτίζεται ΚΡΑΤΩΝΤΑΣ την κύλισή της — το `show()` μηδενίζει το
+     `scrollTop`, και χωρίς αυτό ένα σβήσιμο θα τον πετούσε στην κορυφή μιας
+     σελίδας 6.000 pixel, μακριά από τη λίστα που μόλις κοίταζε. */
+  function repaintPlags(){
+    renderHome();
+    var lv = document.getElementById('ipLesson');
+    if (lv && lv.classList.contains('on') && cur){
+      var y = lv.scrollTop;
+      openLesson(cur.id);
+      lv.scrollTop = y;
+    }
   }
 
   function moveOrd(id, dir){
@@ -2564,6 +2627,7 @@
     if (e.target.closest('#ipEb')) return;
     if ((b = e.target.closest('[data-new]'))){ openEditor(null, b.dataset.new); return; }
     if ((b = e.target.closest('[data-edit]'))){ openEditor(b.dataset.edit, null); return; }
+    if ((b = e.target.closest('[data-del]'))){ deletePlag(b.dataset.del, repaintPlags); return; }
     if ((b = e.target.closest('[data-up]'))){ moveOrd(b.dataset.up, -1); return; }
     if ((b = e.target.closest('[data-down]'))){ moveOrd(b.dataset.down, 1); return; }
     if ((b = e.target.closest('[data-year]'))){
