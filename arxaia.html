@@ -22,7 +22,13 @@
        κανείς δεν ζήτησε. Παίρνουμε τη γραμματοσειρά, όχι το overlay.
        ⚠️ ΑΝ ΠΕΣΕΙ ΤΟ CDN, πέφτει σε Georgia και η σελίδα στέκει ολόκληρη.
        Μια γραμματοσειρά ΔΕΝ είναι εξάρτηση δεδομένων — ο κανόνας «ποτέ CDN»
-       αφορά τον συγχρονισμό, όπου η αποτυχία είναι ΣΙΩΠΗΛΗ. Εδώ φαίνεται. -->
+       αφορά τον συγχρονισμό, όπου η αποτυχία είναι ΣΙΩΠΗΛΗ. Εδώ φαίνεται.
+       ⚠️⚠️ als-v526 — ΤΟ ΠΑΡΑΠΑΝΩ ΙΣΧΥΕΙ ΠΛΕΟΝ ΜΟΝΟ ΓΙΑ ΤΗΝ ΜΠΑΡΑ. Κανένας
+       κανόνας ΑΥΤΗΣ της σελίδας δεν ζητάει `--au-serif` πια: και οι 23 τίτλοι
+       πέρασαν στο `--ar-gr`, γιατί η Instrument Serif έχει ΜΗΔΕΝ ελληνικά
+       γλυφά και τους τύπωνε όλους σε Georgia. Ο σύνδεσμος ΜΕΝΕΙ επειδή το
+       `topbar.js` εξακολουθεί να διαβάζει `--au-serif`· αν φύγει, η μπάρα
+       αυτής της σελίδας πέφτει σε Georgia. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;display=swap">
@@ -42,7 +48,21 @@
        ⛔ Η GEORGIA ΔΕΝ ΞΑΝΑΜΠΑΙΝΕΙ ΠΟΤΕ ΣΕ ΑΥΤΗ ΤΗΝ ΑΛΥΣΙΔΑ, ούτε ως fallback:
        είναι ΑΚΡΙΒΩΣ η γραμματοσειρά που γεννάει το bug. Αν πέσει το CDN,
        πέφτουμε στο Times New Roman και οι τόνοι μένουν σωστοί. -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=GFS+Didot&amp;display=swap">
+  <!-- ⭐⭐ als-v526 — Η ALEGREYA ΜΠΡΟΣΤΑ ΑΠΟ ΤΗΝ DIDOT, ΚΑΙ ΔΕΝ ΕΙΝΑΙ ΓΟΥΣΤΟ.
+       Η GFS Didot έλυσε το ΣΩΣΤΟ πρόβλημα (als-v504: πλήρες πολυτονικό, τέλος
+       στις τρεις γραμματοσειρές μέσα στην ίδια λέξη) αλλά είναι σχεδιασμένη
+       για ΤΙΤΛΟΥΣ: πολύ λεπτές γραμμές, που στα 18px κάτω από περισπωμένη
+       χάνονται. Η Alegreya είναι σχεδιασμένη για ΣΩΜΑ κειμένου.
+       ⚠️ Η ΚΑΛΥΨΗ ΜΕΤΡΗΘΗΚΕ, ΔΕΝ ΕΙΚΑΣΤΗΚΕ (cmap, U+1F00-1FFF):
+         Alegreya 233/233 · GFS Didot 233/233 · EB Garamond, Literata,
+         Cardo, Gentium Plus, Noto Serif → 233/233 η καθεμιά.
+       Δηλαδή η κάλυψη δεν περιόριζε ΠΟΤΕ την επιλογή — μόνο το σχέδιο.
+       ⚠️ Το πρώτο μέτρημα έλεγε «0 πολυτονικά για όλες»: το Google Fonts
+       χωρίς User-Agent δεν σερβίρει τα υποσύνολα. Το ΟΡΓΑΝΟ έφταιγε.
+       ⛔ Η GEORGIA ΠΑΡΑΜΕΝΕΙ ΑΠΑΓΟΡΕΥΜΕΝΗ, ούτε ως fallback. Αν πέσει το
+       CDN πέφτουμε σε GFS Didot και μετά Times New Roman — και οι δύο
+       κρατούν τους τόνους σωστούς. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400&amp;family=GFS+Didot&amp;display=swap">
   <script src="water.js"></script>
   <script src="als-profile.js" defer></script>
   <script src="topbar.js" defer></script>
@@ -103,7 +123,18 @@
   :root{ --ar:214,178,120; --warn:255,138,107; --good:63,224,176;
     /* ⭐ Η ΜΙΑ ΣΤΟΙΒΑ ΓΙΑ ΚΑΘΕ ΑΡΧΑΙΟ ΓΡΑΜΜΑ ΤΗΣ ΣΕΛΙΔΑΣ. Δες το σχόλιο
        στο <head>. ΟΠΟΥ τυπώνεται πολυτονικό, μπαίνει ΑΥΤΗ και μόνο αυτή. */
-    --ar-gr:"GFS Didot","Times New Roman",Times,serif; }
+    --ar-gr:"Alegreya","GFS Didot","Times New Roman",Times,serif; }
+  /* ⭐⭐ als-v526 — ΚΑΙ ΟΙ ΤΙΤΛΟΙ ΜΠΗΚΑΝ ΕΔΩ ΜΕΣΑ (23 σημεία).
+     Έγραφαν `var(--au-serif,Georgia,serif)`, και το `--au-serif` ΟΡΙΖΕΤΑΙ
+     στο aurora.css ως «Instrument Serif», Georgia, Times. Άρα το εναλλακτικό
+     `,Georgia,serif` μέσα στο var() δεν έπαιζε ΠΟΤΕ — αλλά η ίδια η τιμή
+     κουβαλούσε τη Georgia δεύτερη. Και η Instrument Serif έχει ΜΗΔΕΝ
+     ελληνικά γλυφά (μετρημένο: latin + latin-ext, τίποτε άλλο), οπότε
+     ΚΑΘΕ ελληνικός τίτλος αυτής της σελίδας τυπωνόταν στη Georgia — τη
+     γραμματοσειρά που η als-v504 απαγόρευσε ονομαστικά, και που έχει
+     ΜΗΔΕΝ πολυτονικά. Δηλαδή ένας τίτλος με περισπωμένη έσπαγε σε δύο
+     γραμματοσειρές, ακριβώς το bug που θεωρούσαμε κλεισμένο.
+     Τώρα όλη η σελίδα τυπώνεται από ΜΙΑ στοίβα. */
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ min-height:100%; }
   body{
@@ -118,7 +149,7 @@
   .ar-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
   .ar-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
     letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--ar),.92); margin-bottom:12px; }
-  .ar-h{ font-family:var(--au-serif,Georgia,serif); font-weight:400;
+  .ar-h{ font-family:var(--ar-gr); font-weight:400;
     font-size:clamp(27px,7vw,36px); line-height:1.06; letter-spacing:-.01em; }
   .ar-h b{ font-weight:400; color:rgb(var(--ar)); font-variant-numeric:tabular-nums; }
   .ar-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:10px; line-height:1.55; }
@@ -134,7 +165,7 @@
   .ar-cta:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:3px; }
   .ar-cta-l{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
     text-transform:uppercase; color:rgba(var(--ar),.9); }
-  .ar-cta-t{ font-family:var(--au-serif,Georgia,serif); font-size:24px; margin-top:7px; line-height:1.2; }
+  .ar-cta-t{ font-family:var(--ar-gr); font-size:24px; margin-top:7px; line-height:1.2; }
   .ar-cta-m{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:6px; line-height:1.5; }
   .ar-alt{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
   .ar-altb{ flex:1 1 40%; border:1px solid var(--au-line,#26262f); background:transparent; color:var(--au-dim,#9a97a3);
@@ -145,7 +176,7 @@
 
   /* ── κεφαλίδα ενότητας ────────────────────────────── */
   .ar-sh{ display:flex; align-items:baseline; gap:10px; margin:34px 0 14px; }
-  .ar-sh h2{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:21px; }
+  .ar-sh h2{ font-family:var(--ar-gr); font-weight:400; font-size:21px; }
   .ar-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
     color:var(--au-faint,#5c5964); margin-left:auto; text-align:right; }
 
@@ -237,9 +268,9 @@
   .gn-pl:hover{ border-color:rgba(242,192,99,.26); transform:translateY(-2px);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 24px 48px -30px #000; }
   .gn-pl:focus-visible{ outline:2px solid rgba(242,192,99,.6); outline-offset:3px; }
-  .gn-pl .rn{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:38px;
+  .gn-pl .rn{ font-family:var(--ar-gr); font-style:italic; font-size:38px;
     line-height:1; color:var(--au-amber,#F2C063); opacity:.5; }
-  .gn-pl .t{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:26px; line-height:1.16;
+  .gn-pl .t{ font-family:var(--ar-gr); font-weight:400; font-size:26px; line-height:1.16;
     letter-spacing:-.012em; color:var(--au-ivory,#f5f2ec); margin:11px 0 0; max-width:24ch; }
   .gn-pl .d{ margin:9px 0 0; font-size:13.5px; line-height:1.6; color:var(--au-dim,#9a97a3); max-width:48ch; }
   .gn-pl .in{ display:flex; flex-wrap:wrap; row-gap:6px; margin-top:20px; padding-top:14px;
@@ -251,7 +282,7 @@
     font-size:10px; font-weight:600; letter-spacing:.2em; text-transform:uppercase;
     color:var(--au-amber,#F2C063); opacity:.55; transition:opacity .5s var(--au-ease,ease); }
   .gn-pl:hover .go{ opacity:1; }
-  .gn-note{ margin:14px 0 0; font-family:var(--au-serif,Georgia,serif); font-style:italic;
+  .gn-note{ margin:14px 0 0; font-family:var(--ar-gr); font-style:italic;
     font-size:15px; line-height:1.62; color:var(--au-faint,#5c5964); max-width:62ch; }
 
   /* ── η δεξιά στήλη ───────────────────────────────────────────────── */
@@ -348,8 +379,12 @@
   #gnLesson .al-per + .al-per{ margin-top:26px; padding-top:26px;
     border-top:1px solid rgba(255,255,255,.055); }
   #gnLesson .al-per .al-n{ grid-column:1/-1; padding:0; margin:0 0 11px; }
-  #gnLesson .al-a{ padding:0; font-size:19px; line-height:1.95; border-right:none; }
-  #gnLesson .al-m{ padding:0; font-size:17px; line-height:1.82;
+  /* ⭐ als-v526 — ΙΔΙΟ ΜΕΓΕΘΟΣ, ΙΔΙΟ ΥΨΟΣ ΓΡΑΜΜΗΣ ΣΤΙΣ ΔΥΟ ΣΤΗΛΕΣ.
+     Ήταν 19px/1.95 το αρχαίο και 17px/1.82 η μετάφραση: δύο στήλες σε
+     διαφορετικό μέγεθος διαβάζονται ως δύο ΔΙΑΦΟΡΕΤΙΚΑ έγγραφα, όχι ως
+     αντιπαραβολή. Το πλάτος ήταν ΗΔΗ ίσο (`1fr 1fr`) από την als-v523. */
+  #gnLesson .al-a{ padding:0; font-size:18px; line-height:1.62; border-right:none; }
+  #gnLesson .al-m{ padding:0; font-size:18px; line-height:1.62;
     border-top:none; padding-top:0; margin-top:0; }
 
   /* 03 · ΤΟ ΚΛΕΙΔΙ — 80 ζευγάρια σε δύο κολόνες.
@@ -452,7 +487,7 @@
     text-transform:uppercase; color:rgb(var(--ar)); }
   #arLesson .vf-h .hint{ font-size:13px; color:var(--au-dim,#9a97a3); }
   #arLesson .vf-h .r{ flex:1 1 auto; height:1px; background:var(--au-line,#26262f); }
-  #arLesson .vf-rule{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+  #arLesson .vf-rule{ font-family:var(--ar-gr); font-style:italic;
     font-size:14.5px; line-height:1.7; color:var(--au-dim,#9a97a3); max-width:78ch; margin:10px 0 16px; }
 
   #arLesson .vg-s{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -512,7 +547,7 @@
   .ar-lhead{ padding:6px 0 2px; }
   .ar-lkicker{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
     color:rgba(var(--ar),.9); }
-  .ar-lh{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:clamp(24px,6.4vw,32px);
+  .ar-lh{ font-family:var(--ar-gr); font-weight:400; font-size:clamp(24px,6.4vw,32px);
     line-height:1.12; margin-top:9px; }
   .ar-lmeta{ font-size:12px; color:var(--au-faint,#5c5964); margin-top:8px; }
 
@@ -521,7 +556,7 @@
   .ar-lnum{ display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
   .ar-lnum .k{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em;
     color:rgba(var(--ar),.75); }
-  .ar-lnum h3{ font-family:var(--au-serif,Georgia,serif); font-weight:400; font-size:19px; }
+  .ar-lnum h3{ font-family:var(--ar-gr); font-weight:400; font-size:19px; }
   .ar-lnum .hint{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--au-faint,#5c5964); }
 
@@ -530,7 +565,7 @@
 
   /* ΤΟ ΚΕΙΜΕΝΟ — σερίφ, μεγαλύτερο, αναγνώσιμο. Είναι το βιβλίο. */
   .ar-book{ border-left:2px solid rgba(var(--ar),.35); padding-left:16px; }
-  .ar-book p{ font-family:var(--au-serif,Georgia,serif); font-size:16.5px; line-height:1.78;
+  .ar-book p{ font-family:var(--ar-gr); font-size:16.5px; line-height:1.78;
     margin-bottom:15px; color:var(--au-ivory,#f5f2ec); }
   .ar-book p:last-child{ margin-bottom:0; }
   .ar-src{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.12em; text-transform:uppercase;
@@ -581,11 +616,32 @@
   /* Ο αριθμός περιόδου ως ΑΡΙΘΜΟΣ ΣΤΙΧΟΥ: η λέξη «ΠΕΡΙΟΔΟΣ» έντεκα φορές
      ήταν θόρυβος, και τα 8px ήταν το μικρότερο κείμενο όλης της εφαρμογής.
      Μένει `--au-faint` γιατί είναι ΕΤΙΚΕΤΑ, όχι κείμενο ανάγνωσης. */
+  /* ⚠️ als-v526: ΒΓΗΚΕ ΑΠΟ ΤΟ `--au-faint`. Ναι, είναι ετικέτα και όχι
+     κείμενο ανάγνωσης — αλλά στο 2,39:1 ο αριθμός στίχου δεν διαβαζόταν
+     καθόλου, δηλαδή δεν έκανε τη δουλειά της ετικέτας. Στο .5 = 4,86:1
+     φαίνεται χωρίς να τραβάει το μάτι από το κείμενο. */
   .al-n{ font-family:var(--ar-gr); font-size:13px; line-height:1;
-    color:var(--au-faint,#5c5964); margin-bottom:10px; }
-  .al-a{ font-family:var(--ar-gr); font-size:18px; line-height:1.95;
-    color:rgba(245,242,236,.82); }
-  .al-m{ font-family:var(--ar-gr); font-size:17px; line-height:1.78;
+    color:rgba(245,242,236,.5); margin-bottom:10px; }
+  /* ⭐⭐⭐ als-v526 — ΔΥΟ ΜΕΤΡΗΜΕΝΑ ΛΑΘΗ, ΚΑΙ ΤΑ ΔΥΟ ΑΟΡΑΤΑ ΣΕ ΚΑΘΕ
+     ΛΕΙΤΟΥΡΓΙΚΗ ΒΕΒΑΙΩΣΗ, ΓΙΑΤΙ Η ΣΕΛΙΔΑ ΔΟΥΛΕΥΕ ΤΕΛΕΙΑ:
+
+     1. ΤΟ ΥΨΟΣ ΓΡΑΜΜΗΣ 1.95. Στα 18-19px αφήνει ~37px κενό ανάμεσα στις
+        γραμμές — οι γραμμές παύουν να είναι παράγραφος και γίνονται
+        ΛΩΡΙΔΕΣ, και το μάτι χάνει την επιστροφή στην αρχή της επόμενης.
+        Είναι ο νούμερο ένα λόγος που κούραζε. 1.62 = μέτρο βιβλίου.
+     2. ⛔ Η ΙΕΡΑΡΧΙΑ ΗΤΑΝ ΑΝΑΠΟΔΗ. Το αρχαίο καθόταν στο .82 (12,07:1)
+        ενώ η μετάφραση στο 1.0 (18,13:1): ΑΥΤΟ ΠΟΥ ΜΕΛΕΤΑΕΙ ήταν πιο
+        αχνό από το βοήθημα δίπλα του. Τώρα και τα δύο 18px στο ίδιο
+        μελάνι — «ένα κείμενο σε δύο φωνές», που είναι η αρχή που δηλώνει
+        ήδη το σχόλιο της als-v523 παραπάνω.
+     ⚠️ ΚΑΙ ΤΑ ΔΥΟ ΜΕΝΟΥΝ ΣΤΟ `--au-ivory`. Δοκίμασα τη μετάφραση στο .74
+     (9,86:1) για να ξεχωρίζει — και το `tests/arxaia-laptop.test.js`
+     έχει δίκιο που το απαγορεύει: η μετάφραση είναι ΑΥΤΟ ΠΟΥ ΛΕΕΙ ΑΠΕΞΩ,
+     δική του απόφαση της als-v523, και δεν την ξαναρίχνω σε δεύτερη
+     κατηγορία για λόγους ύφους. */
+  .al-a{ font-family:var(--ar-gr); font-size:18px; line-height:1.62;
+    color:var(--au-ivory,#f5f2ec); }
+  .al-m{ font-family:var(--ar-gr); font-size:18px; line-height:1.62;
     color:var(--au-ivory,#f5f2ec);
     border-top:1px solid rgba(255,255,255,.05); padding-top:13px; margin-top:13px; }
   .al-k{ cursor:pointer; border-radius:5px; padding:1px 2px; margin:0 -2px;
@@ -691,7 +747,7 @@
     background:rgba(var(--ar),.05); margin-bottom:16px; }
   .ar-hook-l{ font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.2em; text-transform:uppercase;
     color:rgba(var(--ar),.85); }
-  .ar-hook-t{ font-family:var(--au-serif,Georgia,serif); font-size:17px; line-height:1.45; margin-top:8px; }
+  .ar-hook-t{ font-family:var(--ar-gr); font-size:17px; line-height:1.45; margin-top:8px; }
   .ar-hook-w{ font-size:12.5px; color:var(--au-dim,#9a97a3); margin-top:9px; line-height:1.6; }
   .ar-pts{ list-style:none; counter-reset:pt; }
   .ar-pt{ counter-increment:pt; position:relative; padding:0 0 16px 34px; }
@@ -711,7 +767,7 @@
   .ar-def .d{ font-size:13px; color:var(--au-dim,#9a97a3); line-height:1.65; margin-top:4px; }
   .ar-def .nt{ font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.55; margin-top:6px; }
   .ar-def.book{ background:rgba(var(--ar),.05); }
-  .ar-def.book .d{ font-family:var(--au-serif,Georgia,serif); font-size:14.5px; color:var(--au-ivory,#f5f2ec); }
+  .ar-def.book .d{ font-family:var(--ar-gr); font-size:14.5px; color:var(--au-ivory,#f5f2ec); }
   .ar-tag{ display:inline-block; font-family:var(--au-mono,monospace); font-size:8px; letter-spacing:.14em;
     text-transform:uppercase; padding:3px 7px; border-radius:5px; margin-bottom:8px; }
   .ar-tag.b{ background:rgba(var(--ar),.14); color:rgb(var(--ar)); }
@@ -750,95 +806,18 @@
   .ar-claim-undo:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.3); }
   .ar-claim-undo:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
 
-  /* ══ Η ΑΝΑΚΛΗΣΗ ═══════════════════════════════════ */
-  .rc-ask{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(20px,5.4vw,26px); line-height:1.3;
-    margin:4px 0 6px; }
-  .rc-sub{ font-size:12.5px; color:var(--au-faint,#5c5964); line-height:1.55; margin-bottom:20px; }
-  .rc-slots{ list-style:none; display:flex; flex-direction:column; gap:8px; }
-  .rc-slot{ display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; font-family:inherit;
-    border:1px solid var(--au-line,#26262f); border-radius:13px; padding:14px 15px; cursor:pointer;
-    background:rgba(255,255,255,.012); color:inherit;
-    transition:border-color .45s cubic-bezier(.16,1,.3,1),background .45s; }
-  .rc-slot:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
-  .rc-slot .n{ font-family:var(--au-mono,monospace); font-size:10px; color:var(--au-faint,#5c5964);
-    padding-top:3px; flex:none; width:14px; }
-  .rc-slot .v{ display:block; min-width:0; flex:1 1 auto; }
-  .rc-slot .dots{ font-family:var(--au-mono,monospace); font-size:15px; letter-spacing:.3em;
-    color:rgba(255,255,255,.16); }
-  .rc-slot .lb{ display:block; font-size:14.5px; font-weight:600; line-height:1.4; }
-  .rc-slot .dt{ display:block; font-size:12.5px; color:var(--au-dim,#9a97a3); line-height:1.6; margin-top:4px; }
-  .rc-slot .mk{ margin-left:auto; font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.1em;
-    text-transform:uppercase; flex:none; padding-top:3px; }
-  .rc-slot.full{ border-color:rgba(var(--good),.45); background:rgba(var(--good),.05); }
-  .rc-slot.full .mk{ color:rgb(var(--good)); }
-  .rc-slot.part{ border-color:rgba(242,192,99,.45); background:rgba(242,192,99,.045); }
-  .rc-slot.part .mk{ color:#F2C063; }
-  .rc-slot.miss,.rc-slot.shown{ border-color:rgba(var(--warn),.42); background:rgba(var(--warn),.045); }
-  .rc-slot.miss .mk,.rc-slot.shown .mk{ color:rgb(var(--warn)); }
-  .rc-slot.graded{ cursor:default; }
-
-  /* Η ΛΙΣΤΑ ΣΤΟΙΧΕΙΩΝ — εδώ φαίνεται ΤΙ ακριβώς ξέχασε. */
-  .rc-els{ list-style:none; margin-top:9px; }
-  .rc-el{ position:relative; padding:0 0 5px 19px; font-size:12.5px; line-height:1.5; }
-  .rc-el:last-child{ padding-bottom:0; }
-  .rc-el .s{ position:absolute; left:0; top:0; font-family:var(--au-mono,monospace); font-size:11px; }
-  /* ⭐ Η ΔΙΟΡΘΩΣΗ ΚΑΙ Η ΑΠΟΔΕΙΞΗ. Ονόματα χωρίς ένθεση, σταθερή αρχή 26. */
-  .rc-said{ display:inline-block; margin-left:8px; vertical-align:baseline;
-    border:1px dashed rgba(255,255,255,.22); background:transparent; color:var(--au-faint,#5c5964);
-    font-family:var(--au-mono,monospace); font-size:8.5px; letter-spacing:.08em; text-transform:uppercase;
-    padding:3px 8px; border-radius:7px; cursor:pointer; transition:color .3s,border-color .3s; }
-  .rc-said:hover{ color:var(--au-ivory,#f5f2ec); border-color:rgba(255,255,255,.4); }
-  .rc-said:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
-  .rc-tr{ margin-top:22px; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:13px 15px; }
-  .rc-tr summary{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--au-dim,#9a97a3); cursor:pointer; }
-  .rc-tr-b{ margin-top:11px; font-size:13px; line-height:1.65; color:var(--au-ivory,#f5f2ec);
-    max-height:290px; overflow-y:auto; overscroll-behavior:contain; }
-  .rc-tr-n{ margin-top:11px; font-size:11.5px; line-height:1.6; color:var(--au-faint,#5c5964); }
-  .rc-el.did .s{ color:rgb(var(--good)); }
-  .rc-el.lost .s{ color:rgb(var(--warn)); }
-  .rc-el.did{ color:var(--au-dim,#9a97a3); }
-  .rc-el.lost{ color:var(--au-ivory,#f5f2ec); }
-
-  .rc-bar{ position:fixed; left:0; right:0; bottom:0; z-index:3;
-    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
-    background:linear-gradient(180deg,transparent,var(--au-void,#050506) 26%); }
-  .rc-inner{ max-width:620px; margin:0 auto; }
-  .rc-heard{ font-size:12px; color:var(--au-faint,#5c5964); line-height:1.45; min-height:17px;
-    margin-bottom:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-family:var(--au-mono,monospace); }
-  .rc-heard b{ color:rgba(var(--ar),.95); font-weight:400; }
-  .rc-btns{ display:flex; gap:9px; }
-  .rc-mic{ flex:1 1 auto; border:1px solid rgba(var(--ar),.4); border-radius:14px; padding:15px 12px;
-    background:rgba(var(--ar),.09); color:var(--au-ivory,#f5f2ec); font-family:inherit; font-size:14px;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; }
-  .rc-mic:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
-  .rc-mic.live{ border-color:rgba(var(--good),.6); background:rgba(var(--good),.11); }
-  .rc-mic.off{ border-color:var(--au-line,#26262f); background:transparent; color:var(--au-faint,#5c5964);
-    cursor:not-allowed; }
-  .rc-dot{ width:9px; height:9px; border-radius:50%; background:rgba(var(--ar),.7); flex:none; }
-  .rc-mic.live .rc-dot{ background:rgb(var(--good)); animation:rcPulse 1.25s ease-in-out infinite; }
-  @keyframes rcPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.55); opacity:.45; } }
-  .rc-done{ flex:0 0 auto; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:15px 20px;
-    background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit; font-size:14px; cursor:pointer; }
-  .rc-done:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
-  .rc-note{ font-size:10.5px; color:var(--au-faint,#5c5964); line-height:1.5; margin-top:9px; text-align:center; }
-  .rc-note.warn{ color:rgb(var(--warn)); }
-
-  /* σύνοψη */
-  .rc-sum-n{ font-family:var(--au-serif,Georgia,serif); font-size:clamp(36px,11vw,54px); line-height:1;
-    color:rgb(var(--ar)); font-variant-numeric:tabular-nums; }
-  .rc-sum-t{ font-family:var(--au-serif,Georgia,serif); font-size:21px; line-height:1.35; margin-top:12px; }
-  .rc-sum-s{ font-size:13px; color:var(--au-dim,#9a97a3); line-height:1.65; margin-top:10px; }
-  .rc-sum-l{ list-style:none; margin-top:22px; display:flex; flex-direction:column; gap:1px;
-    border:1px solid var(--au-line,#26262f); border-radius:13px; overflow:hidden; }
-  .rc-sum-l li{ padding:12px 14px; background:rgba(var(--warn),.05); font-size:13.5px; line-height:1.5; }
-  .rc-again{ display:flex; gap:9px; margin-top:26px; }
-  .rc-again button{ flex:1; border:1px solid var(--au-line,#26262f); border-radius:14px; padding:15px;
-    background:transparent; color:var(--au-dim,#9a97a3); font-family:inherit; font-size:14px; cursor:pointer; }
-  .rc-again button.pri{ border-color:rgba(var(--ar),.4); background:rgba(var(--ar),.09);
-    color:var(--au-ivory,#f5f2ec); }
-  .rc-again button:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
+  /* ⛔ als-v526 — ΕΦΥΓΕ ΤΟ ΜΠΛΟΚ «Η ΑΝΑΚΛΗΣΗ» (23 κανόνες .rc-* και το
+     `@keyframes rcPulse`, που το κινούσε μόνο ο `.rc-mic.live .rc-dot`).
+     Ήταν το ντύσιμο της απαγγελίας στο μικρόφωνο, που έφυγε από ΕΔΩ στην
+     als-v497 μαζί με τις έξι ερμηνευτικές ενότητες της εισαγωγής («το
+     γνωστό δεν το μαθαίνουμε απέξω»). Το CSS έμεινε πίσω και ΚΑΜΙΑ από
+     τις 23 κλάσεις δεν παραγόταν πια — μετρημένο, όχι εικαζόμενο.
+     ⭐ ΠΩΣ ΒΡΕΘΗΚΕ: ο έλεγχος ιδιότητας του `tests/arxaia-gnosto.test.js`
+     απαιτεί κάθε κανόνας που ονομάζει `--ar-gr` να παράγεται όντως. Οι
+     κανόνες αυτοί έγραφαν `--au-serif`, άρα ζούσαν ΕΞΩ από τη σάρωση·
+     μόλις πέρασαν στο `--ar-gr` μαζί με τους υπόλοιπους τίτλους, τρεις
+     τους κοκκίνισαν αμέσως και τράβηξαν μαζί και τους άλλους είκοσι.
+     Ζουν κανονικά στο `istoria.html`, που τις ΧΡΗΣΙΜΟΠΟΙΕΙ. */
 
   .ar-toast{ position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom));
     transform:translateX(-50%) translateY(10px); z-index:90; opacity:0; pointer-events:none;
@@ -948,7 +927,7 @@
   #agWrap .ar-cta-t{ font-size:21px; letter-spacing:-.01em; }
   #agWrap .ar-cta-m{ font-family:var(--au-mono,monospace); font-size:11.5px; letter-spacing:.02em;
     color:var(--au-dim,#9a97a3); }
-  #agWrap .sh-note{ margin-top:15px; font-family:var(--au-serif,Georgia,serif); font-style:italic;
+  #agWrap .sh-note{ margin-top:15px; font-family:var(--ar-gr); font-style:italic;
     font-size:14.5px; line-height:1.62; color:var(--au-dim,#9a97a3); max-width:58ch; }
   #agWrap .ar-foot{ margin:70px 0 0; padding-top:22px; border-top:1px solid var(--au-line,#26262f);
     font-size:12.5px; line-height:1.8; max-width:78ch; }
@@ -966,7 +945,7 @@
   #agWrap .sh-rows .ar-row .l{ display:flex; align-items:baseline; font-size:15.5px;
     white-space:normal; overflow:visible; text-overflow:clip;
     transition:color .4s var(--au-ease,ease); }
-  #agWrap .sh-rows .ar-row .l .rn{ flex:none; font-family:var(--au-serif,Georgia,serif);
+  #agWrap .sh-rows .ar-row .l .rn{ flex:none; font-family:var(--ar-gr);
     font-style:italic; font-size:14px; color:rgba(var(--ar),.75); margin-right:13px; min-width:26px; }
   #agWrap .sh-rows .ar-row .l::after{ content:''; flex:1 1 auto; min-width:16px; margin:0 12px;
     border-bottom:1px dotted rgba(255,255,255,.2); transform:translateY(-4px); }
@@ -1001,7 +980,7 @@
   #synLesson .sy-tab:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:-2px; }
 
   #synLesson .sy-sec{ margin-bottom:56px; }
-  #synLesson .sy-h{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400;
+  #synLesson .sy-h{ font-family:var(--ar-gr); font-style:italic; font-weight:400;
     font-size:clamp(24px,2.6vw,34px); line-height:1.12; letter-spacing:-.015em;
     max-width:22ch; text-wrap:balance; margin:0 0 12px; }
   #synLesson .sy-lead{ font-family:var(--ar-gr); font-size:16.5px; line-height:1.78;
@@ -1044,7 +1023,7 @@
   #synLesson .cmp-g > .cmp-c.r0{ border-top:none; }
   #synLesson .cmp-key{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.22em;
     text-transform:uppercase; color:var(--au-dim,#9a97a3); background:rgba(255,255,255,.018); }
-  #synLesson .cmp-nm{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:19px;
+  #synLesson .cmp-nm{ font-family:var(--ar-gr); font-style:italic; font-size:19px;
     line-height:1.22; color:var(--au-ivory,#f5f2ec); }
   #synLesson .cmp-c.hi{ background:rgba(var(--ar),.05); }
   #synLesson .cmp-c.hi .cmp-nm{ color:rgb(var(--ar)); }
@@ -1080,7 +1059,7 @@
     border-left:1px solid rgba(255,255,255,.05); }
   #synLesson .pl-i b{ font-family:var(--ar-gr); font-weight:600; font-size:19px;
     color:var(--au-ivory,#f5f2ec); }
-  #synLesson .pl-i .nn{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+  #synLesson .pl-i .nn{ font-family:var(--ar-gr); font-style:italic;
     font-size:13px; color:rgba(var(--ar),.7); margin-right:9px; }
   /* Η σημασία ΕΙΝΑΙ ο λόγος που κοιτάς τον πίνακα. Δεν είναι υποσημείωση. */
   #synLesson .pl-i i{ display:block; font-style:normal; font-size:13.5px; line-height:1.55;
@@ -1120,7 +1099,7 @@
   #synLesson .sw-g{ columns:2; column-gap:52px; }
   #synLesson .sy-sw{ break-inside:avoid; padding:0 0 20px; margin-bottom:20px;
     border-bottom:1px solid var(--au-line,#26262f); }
-  #synLesson .sy-sw .nm{ display:block; font-family:var(--au-serif,Georgia,serif);
+  #synLesson .sy-sw .nm{ display:block; font-family:var(--ar-gr);
     font-style:italic; font-size:19px; line-height:1.2; color:var(--au-ivory,#f5f2ec); }
   #synLesson .sy-sw .ask{ display:block; font-size:15px; color:rgb(var(--ar)); line-height:1.55;
     margin-top:9px; }
@@ -1138,7 +1117,7 @@
   #synLesson .dr{ max-width:660px; }
   #synLesson .sy-count{ font-family:var(--au-mono,monospace); font-size:9.5px; letter-spacing:.2em;
     text-transform:uppercase; color:var(--au-dim,#9a97a3); margin-bottom:22px; }
-  #synLesson .sy-q{ font-family:var(--au-serif,Georgia,serif); font-size:22px; line-height:1.38;
+  #synLesson .sy-q{ font-family:var(--ar-gr); font-size:22px; line-height:1.38;
     letter-spacing:-.01em; text-wrap:balance; margin-bottom:18px; }
   #synLesson .sy-gr{ font-family:var(--ar-gr); font-size:26px; line-height:1.62;
     border:1px solid var(--au-line,#26262f); border-radius:16px; padding:20px 22px;
@@ -1172,7 +1151,7 @@
   #synLesson .sy-next:hover{ background:rgba(var(--ar),.14); border-color:rgba(var(--ar),.6); }
   #synLesson .sy-next:focus-visible{ outline:2px solid rgb(var(--ar)); outline-offset:2px; }
   #synLesson .sy-done{ padding:44px 0; }
-  #synLesson .sy-done h3{ font-family:var(--au-serif,Georgia,serif); font-style:italic;
+  #synLesson .sy-done h3{ font-family:var(--ar-gr); font-style:italic;
     font-size:30px; line-height:1.14; }
   #synLesson .sy-done p{ font-size:15px; color:var(--au-dim,#9a97a3); line-height:1.7;
     margin-top:13px; max-width:56ch; }
