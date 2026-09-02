@@ -2230,17 +2230,18 @@
       if (window.ISTORIA && window.ISTORIA.UNITS)
         window.ISTORIA.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'istoria', page:'istoria.html', title:u.title||'', deep:true }); });
       if (window.ARXGN && window.ARXGN.UNITS)
-        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia_gn', page:'arxaia.html#gn', title:u.title||'', deep:false }); });
+        window.ARXGN.UNITS.forEach(function(u){ out.push({ id:u.id, subject:'arxaia_gn', page:'arxaia.html#gn', title:u.title||'', deep:true }); });
       if (window.ArxaiaData && window.ArxaiaData.PAGES)
         window.ArxaiaData.PAGES.forEach(function(p){ out.push({ id:p.id, subject:'arxaia_agn', page:'arxaia.html#ag', title:p.range||'', deep:false }); });
     } catch(e){}
     return out;
   }
 
-  /* ⚠️ ΤΟ ΒΑΘΥ LINK ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Μόνο η istoria.html διαβάζει hash. Οι
-     άλλες δύο δεν έχουν, οπότε ο σύνδεσμος πάει στη σελίδα σκέτη. Ένα ωραίο
-     link που προσγειώνεται σε αδιέξοδο είναι χειρότερο από ένα απλό που
-     δουλεύει.
+  /* ⚠️ ΤΟ ΒΑΘΥ LINK ΔΕΝ ΕΠΙΝΟΕΙΤΑΙ. Το διαβάζουν ΔΥΟ σελίδες: η istoria.html
+     και — από την als-v530 — ο ΓΝΩΣΤΟΣ της arxaia.html (`#gn/<id>`). Ο
+     ΑΓΝΩΣΤΟΣ δεν διαβάζει ακόμη ενότητα, οπότε μένει `deep:false` και ο
+     σύνδεσμος πάει στον κόσμο σκέτο. Ένα ωραίο link που προσγειώνεται σε
+     αδιέξοδο είναι χειρότερο από ένα απλό που δουλεύει.
      ⭐ als-v489: η istoria.html δέχεται ΔΥΟ μονάδες — `#recall:p:<id>` για
      πλαγιότιτλο και `#recall:u:<id>` για υποενότητα. Το `kind` ΔΕΝ μαντεύεται
      εδώ: έρχεται από το `ladders.js`, που ξέρει ΠΟΙΑ σκάλα διάβασε. Ένα λάθος
@@ -2248,6 +2249,12 @@
   function deepLink(page, unitId, kind){
     if (page === 'istoria.html' && unitId)
       return page + '#recall:' + (kind === 'plag' ? 'p' : 'u') + ':' + encodeURIComponent(unitId);
+    /* ⭐ als-v530: ΚΑΙ Ο ΓΝΩΣΤΟΣ ΔΙΑΒΑΖΕΙ ΠΛΕΟΝ ΕΝΟΤΗΤΑ ΑΠΟ ΤΟ HASH.
+       Μέχρι χθες ο σύνδεσμος σταματούσε στο `#gn` — στη λίστα — και το
+       μάθημα έμενε ένα πάτημα μακριά. Όποιος κοίταζε τι άλλαξε ΜΕΣΑ στο
+       μάθημα έβλεπε την ίδια ακριβώς οθόνη με πριν. */
+    if (page.indexOf('arxaia.html#gn') === 0 && unitId)
+      return 'arxaia.html#gn/' + encodeURIComponent(unitId);
     return page || '#';
   }
   /* ⭐ als-v501: το `ladders.js` κρατάει σκέτο `arxaia.html` επίτηδες — το

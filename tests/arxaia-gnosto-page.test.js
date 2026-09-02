@@ -318,5 +318,36 @@ section('ΣΤ4 · Η ΚΑΛΩΔΙΩΣΗ ΠΟΥ ΣΩΖΕΙ ΤΑ ΔΕΔΟΜΕΝΑ'
      judge.indexOf('openLesson') < 0 && judge.indexOf('innerHTML') < 0);
 }
 
+/* ══ als-v530 · Ο ΣΥΝΔΕΣΜΟΣ ΦΤΑΝΕΙ ΩΣ ΤΗΝ ΕΝΟΤΗΤΑ ══════════════════════
+   Δικά του: «γιατί δεν βλέπω καμία αλλαγή στην ενότητα 3η; νιώθω ότι δεν
+   έχει περάσει τίποτα στο dashboard». Είχε περάσει· ο σύνδεσμος του School
+   Studies τον άφηνε στο `#gn` — στη ΛΙΣΤΑ — και όλη η δουλειά ζει ΜΕΣΑ στο
+   μάθημα. Δηλαδή η οθόνη που έβλεπε ήταν όντως απαράλλαχτη.
+   ⚠️ Αυτό είναι ΤΟ ΙΔΙΟ ΓΕΝΟΣ ΣΦΑΛΜΑΤΟΣ με το silent-empty αυτού του
+   project: τίποτα δεν έσπασε, απλώς η αλήθεια δεν έφτασε στην οθόνη. */
+{
+  const H = fs.readFileSync(path.join(ALS, 'arxaia.html'), 'utf8');
+  const W = fs.readFileSync(path.join(ALS, 'homework.html'), 'utf8');
+  const from = /function fromHash\(\)\{[\s\S]*?\n  \}/.exec(H);
+  ok('η fromHash δέχεται «#gn/<id>»',
+     !!from && /\^\(\?:gn\|gnosto\)\[/.test(from[0]));
+  ok('και ανοίγει το μάθημα', !!from && /openLesson\(un\.id\)/.test(from[0]));
+  /* ⛔ ΠΟΤΕ ΛΕΥΚΗ ΟΘΟΝΗ, ΠΟΤΕ ΣΙΩΠΗ: άγνωστο id το ΛΕΕΙ και αφήνει λίστα. */
+  ok('⛔ άγνωστη ενότητα το ΛΕΕΙ αντί να σιωπήσει',
+     !!from && /toast\('Δεν βρήκα την ενότητα/.test(from[0]));
+  ok('και το σκέτο «#gn» σημαίνει ό,τι σήμαινε',
+     !!from && /h === 'gn' \|\| h === 'gnosto'/.test(from[0]));
+
+  /* Και η ΑΛΛΗ άκρη: χωρίς αυτήν, ο βαθύς σύνδεσμος δεν παράγεται ποτέ. */
+  ok('το School Studies χτίζει «arxaia.html#gn/<id>»',
+     /return 'arxaia\.html#gn\/' \+ encodeURIComponent\(unitId\)/.test(W));
+  ok('και οι ενότητες του Γνωστού δηλώνονται deep',
+     /subject:'arxaia_gn'[^}]*deep:true/.test(W));
+  /* ⚠️ Ο ΑΓΝΩΣΤΟΣ ΔΕΝ διαβάζει ενότητα — αν γίνει ποτέ deep χωρίς να
+     μάθει να τη διαβάζει, ο σύνδεσμος προσγειώνεται σε αδιέξοδο. */
+  ok('⛔ ο Άγνωστος μένει ρητά ΟΧΙ-deep',
+     /subject:'arxaia_agn'[^}]*deep:false/.test(W));
+}
+
 console.log('\n  ' + pass + ' πέρασαν, ' + fail + ' απέτυχαν\n');
 process.exit(fail ? 1 : 0);
