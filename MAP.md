@@ -561,10 +561,15 @@ listens with the browser's own speech recognition, says nothing while he recites
 and then grades **element by element** (als-v452): each point breaks into the
 separate facts inside it, so a point is complete only when every one of them was
 said, and the summary shows exactly which were missed. Key `ist:v1`, appKey `istoria` (the retired page's `istoria:v1` is untouched in
-the same row). **ΕΝΤΕΚΑ ενότητες, 154 σημεία, 513 στοιχεία (als-v494)** — τελευταία
-η `b5` «Η δημιουργία τραπεζικού συστήματος», ολόκληρη η υποενότητα σε 5
-παραγράφους (24 σημεία / 77 στοιχεία, η ΜΕΓΑΛΥΤΕΡΗ του corpus)· πριν από αυτήν
-η `b4` «Η εκμετάλλευση των ορυχείων».
+the same row). **ΔΕΚΑΟΧΤΩ ενότητες, 286 σημεία, 952 στοιχεία (als-v534)** — τελευταίες
+η `b10` «10. Η πτώχευση του 1893 και ο Διεθνής Οικονομικός Έλεγχος», ολόκληρη η
+υποενότητα σε 4 παραγράφους (27 σημεία / 79 στοιχεία), και η `c1` «1. Το
+αγροτικό ζήτημα», **ΜΟΝΟ οι τρεις πρώτες παράγραφοι** (18 σημεία / 50 στοιχεία).
+⭐ Η `c1` είναι η ΠΡΩΤΗ κάρτα του κεφαλαίου **Γ. Οι οικονομικές εξελίξεις κατά
+τον 20ό αιώνα**, άρα και η πρώτη που γειώνεται σε ΑΛΛΗ σελίδα του ebook
+(`index1_4.html`, δικό της sha256) — όλες οι προηγούμενες ζούσαν στο
+`index1_3.html`. Με τη `b10` το κεφάλαιο **Β κλείνει ως το «10.»**· η «11. Το
+εξωελλαδικό ελληνικό κεφάλαιο» δεν έχει ανατεθεί.
 
 ⭐⭐ **als-v489: ΤΟ `istoria-demo.html` ΕΓΙΝΕ Η `istoria.html`.** Δική του απόφαση
 (17/08/26): *«θέλω να παραμείνει μόνο το πλαγιότιτλοι page, και να σβηστεί το
