@@ -180,14 +180,27 @@ section('Δ · Ο HANDLER ΑΚΟΛΟΥΘΕΙ ΤΗΝ ΕΝΟΤΗΤΑ ΠΟΥ ΕΙΝ
   is('χωρίς ανοιχτή ενότητα → το κλικ ΔΕΝ σκάει και δεν περνάει', E.calls.length, 1);
 }
 
-/* ══ Ε · ΣΤΑΤΙΚΑ: ΕΝΑ ΜΟΝΟ ΣΗΜΕΙΟ ΔΕΣΙΜΑΤΟΣ ════════════════════════ */
-section('Ε · ΚΑΝΕΝΑ ΔΕΥΤΕΡΟ ΔΕΣΙΜΟ ΔΕΝ ΞΑΝΑΜΠΑΙΝΕΙ');
+/* ══ Ε · ΣΤΑΤΙΚΑ: ΚΑΘΕ ΔΕΣΙΜΟ ΕΧΕΙ ΤΟΝ ΦΡΟΥΡΟ ΤΟΥ ════════════════════
+   ⭐⭐ als-v533 — Η ΒΕΒΑΙΩΣΗ ΗΤΑΝ ΜΕΤΡΗΜΑ ΚΑΙ ΕΓΙΝΕ ΙΔΙΟΤΗΤΑ.
+   Έλεγε «ΑΚΡΙΒΩΣ ένα lb.addEventListener», που ήταν σωστό όσο υπήρχε ένας
+   ακροατής — αλλά αυτό που κρατάει την als-v522 κλειστή ΔΕΝ είναι το
+   πλήθος: είναι ότι ΚΑΘΕ ακροατής στο `lb` κάθεται πίσω από δικό του
+   φρουρό στο ΣΤΟΙΧΕΙΟ. Με το μέτρημα, η μπάρα των κουμπιών (σωστά δεμένη,
+   με δικό της `__tabBound`) κοκκίνιζε· και ένας δεύτερος ΑΦΡΟΥΡΗΤΟΣ που
+   αντικαθιστούσε τον πρώτο θα περνούσε. Η βεβαίωση κοίταζε το λάθος
+   πράγμα προς ΚΑΙ ΤΙΣ ΔΥΟ κατευθύνσεις. */
+section('Ε · ΚΑΝΕΝΑ ΑΦΡΟΥΡΗΤΟ ΔΕΣΙΜΟ ΣΤΟ #gnLb');
 {
-  const binds = (CODE.match(/lb\.addEventListener\(\s*'click'/g) || []).length;
-  is('ΑΚΡΙΒΩΣ ένα lb.addEventListener(\'click\'', binds, 1);
-  ok('και κάθεται ΜΕΣΑ στον φρουρό __alnBound', /lb\.addEventListener\(\s*'click'/.test(GUARD));
-  ok('ο φρουρός σφραγίζει το στοιχείο, όχι local', /lb\.__alnBound\s*=\s*1/.test(GUARD));
-  ok('ο handler διαβάζει `cur`, ποτέ `un`',
+  const re = /lb\.addEventListener\(\s*'click'/g;
+  const spots = [];
+  let m;
+  while ((m = re.exec(CODE))) spots.push(m.index);
+  ok('υπάρχει τουλάχιστον ένα lb.addEventListener(\'click\'', spots.length >= 1);
+  const naked = spots.filter(i => !/if \(!lb\.__[A-Za-z]+\)\s*\{\s*lb\.__[A-Za-z]+\s*=\s*1;/
+    .test(CODE.slice(Math.max(0, i - 400), i)));
+  is('⛔ κάθε δέσιμο κάθεται πίσω από φρουρό `if (!lb.__…Bound)`', naked.length, 0);
+  ok('και ο φρουρός σφραγίζει το ΣΤΟΙΧΕΙΟ, όχι local', /lb\.__alnBound\s*=\s*1/.test(GUARD));
+  ok('ο handler της αντιστοιχίας διαβάζει `cur`, ποτέ `un`',
      /\bcur\b/.test(GUARD) && !/\bun\b/.test(GUARD));
 }
 
