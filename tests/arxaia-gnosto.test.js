@@ -44,9 +44,19 @@ var IST = require(path.join(__dirname, '..', 'istoria-data.js'));
 /* ⭐ ΤΑ ΔΥΟ ΠΑΚΕΤΑ ΤΗΣ ΕΙΣΑΓΩΓΗΣ, ΜΕ ΤΟ ΑΠΟΤΥΠΩΜΑ ΤΟΥΣ.
    Το `sha` είναι το sha256 του αρχείου ΧΩΡΙΣ τη γραμμή «← Αρχαία» —
    δηλαδή ακριβώς αυτό που παρέδωσε ο Άλεξ. Δες την ενότητα 9. */
+/* ⭐⭐ ΤΟ ΤΡΙΤΟ ΠΑΚΕΤΟ ΔΕΝ ΕΧΕΙ `sha`, ΚΑΙ ΕΙΝΑΙ ΣΚΟΠΙΜΟ (σταθ. 50: το
+   ΕΙΔΟΣ της εγγύησης ακολουθεί το ΠΟΙΟΣ έγραψε το αρχείο).  Τον Σωκράτη
+   και τον Πλάτωνα τους ΕΣΤΕΙΛΕ ο Άλεξ — εκεί η εγγύηση που έχει νόημα
+   είναι «δεν άλλαξα ούτε λέξη» = sha256 του αρχείου του.  Τον Αριστοτέλη
+   τον ΕΓΡΑΨΑ ΕΓΩ, άρα ένα sha256 πάνω στο δικό μου αρχείο θα συμφωνούσε
+   με κάθε λάθος μου τέλεια· η εγγύησή του είναι ΓΕΙΩΣΗ στο σχολικό
+   βιβλίο και ζει ολόκληρη στο tests/arxaia-aristotelis.test.js.
+   ⛔ Ό,τι ΔΕΝ αλλάζει για κανένα από τα τρία: δείχνονται από τον Γνωστό,
+   δεν γράφουν πουθενά, και είναι στο SW CORE. */
 var PACKS = [
-  { file: 'arxaia-sokratis.html', sha: '3d478f4f7b6d6457aed1fb902e42a42307f976729989b1d76dba037a1b74d481' },
-  { file: 'arxaia-platon.html',   sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' }
+  { file: 'arxaia-sokratis.html',    sha: '3d478f4f7b6d6457aed1fb902e42a42307f976729989b1d76dba037a1b74d481' },
+  { file: 'arxaia-platon.html',      sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' },
+  { file: 'arxaia-aristotelis.html', mine: true }
 ];
 
 var pass = 0, fail = 0;
@@ -194,7 +204,7 @@ function hayFor(u) {
   return null;
 }
 
-console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα δύο πακέτα\n');
+console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα τρία πακέτα\n');
 
 /* ══ 1 · ΔΟΜΗ ═══════════════════════════════════════════════════════════
    ⭐ ΚΑΝΕΝΑ ΚΑΡΦΩΤΟ ΠΛΗΘΟΣ. Το corpus ΜΕΓΑΛΩΝΕΙ — κάθε νέο κείμενο του
@@ -780,11 +790,17 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
     var backs = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') >= 0; });
     eq(backs.length, 1, pk.file + ': ακριβώς μία γραμμή επιστροφής «← Αρχαία»');
 
-    var stripped = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') < 0; }).join('\n');
-    var sum = crypto.createHash('sha256').update(stripped, 'utf8').digest('hex');
-    eq(sum, pk.sha,
-      '⛔ ΤΟ ΠΑΚΕΤΟ ' + pk.file + ' ΑΛΛΑΞΕ. Μπήκε αυτούσιο κατόπιν ρητής εντολής.\n' +
-      '      Αν η αλλαγή είναι σκόπιμη, ΑΥΤΟΣ είναι ο νέος hash — και θέλει τη δική του κουβέντα.');
+    if (pk.sha) {
+      var stripped = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') < 0; }).join('\n');
+      var sum = crypto.createHash('sha256').update(stripped, 'utf8').digest('hex');
+      eq(sum, pk.sha,
+        '⛔ ΤΟ ΠΑΚΕΤΟ ' + pk.file + ' ΑΛΛΑΞΕ. Μπήκε αυτούσιο κατόπιν ρητής εντολής.\n' +
+        '      Αν η αλλαγή είναι σκόπιμη, ΑΥΤΟΣ είναι ο νέος hash — και θέλει τη δική του κουβέντα.');
+    } else {
+      ok(pk.mine === true, pk.file + ': δηλωμένο ως δικό μου γράψιμο, άρα χωρίς hash');
+      ok(fs.existsSync(path.join(__dirname, 'arxaia-aristotelis.test.js')),
+        pk.file + ': η γείωσή του ζει στο tests/arxaia-aristotelis.test.js — ΤΡΕΞΕ ΚΑΙ ΑΥΤΟ');
+    }
 
     ok(raw.indexOf('localStorage') < 0, pk.file + ': ⛔ δεν αποθηκεύει τίποτα — καμία πρόοδος, κανένας βαθμός');
     ok(raw.indexOf('arx:gn') < 0, pk.file + ': δεν αγγίζει το κλειδί του Γνωστού');
