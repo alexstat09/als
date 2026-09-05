@@ -1169,7 +1169,7 @@ section('4h · φάση 3 · η καλωδίωση που κάνει τη σφρ
 {
   /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35: ένα πεδίο που λείπει από blank() Ή από load() σβήνεται
      σιωπηλά στην επόμενη φόρτωση — και με sync σβήνεται η δουλειά ΑΛΛΗΣ συσκευής. */
-  ok('το lessons υπάρχει στο blank()', /function blank\(\)\{ return \{ v:1, tasks:\{\}, samples:\{\}, lessons:\{\}, timetable:\{\} \}; \}/.test(PAGE));
+  ok('το lessons υπάρχει στο blank()', /function blank\(\)\{ return \{ v:1, tasks:\{\}, samples:\{\}, lessons:\{\}, timetable:\{\}, exams:\{\} \}; \}/.test(PAGE));
   /* ⚠️ ΣΤΑΘΕΡΗ ΑΡΧΗ 35, για το ΝΕΟ πεδίο: ΚΑΙ στο blank() ΚΑΙ στον load(). */
   ok('και το timetable κανονικοποιείται στον load()',
     /b\.timetable = \(s\.timetable && typeof s\.timetable === 'object' && !Array\.isArray\(s\.timetable\)\) \? s\.timetable : \{\};/.test(PAGE));
@@ -1208,7 +1208,7 @@ section('4h · φάση 3 · η καλωδίωση που κάνει τη σφρ
   /* ⭐ Και το πιο σημαντικό: μπαίνει στο readMaps του study-stamp.js, αλλιώς
      καμία εγγραφή δεν παίρνει ποτέ `_ts` και το merge τις ΕΝΩΝΕΙ. */
   ok('το state.lessons είναι στο readMaps του STAMP',
-    /return state \? \[state\.tasks, state\.samples, state\.lessons, state\.timetable\] : \[\];/.test(PAGE));
+    /return state \? \[state\.tasks, state\.samples, state\.lessons, state\.timetable, state\.exams\] : \[\];/.test(PAGE));
   ok('και η ταφόπλακά του είναι στο ΦΩΛΙΑΣΜΕΝΟ μονοπάτι, όπως των εργασιών',
     /tombPath\(KEY, \['lessons'\], dk, ts\)/.test(PAGE));
   /* ⛔ ΑΠΑΝΤΑΕΙ «ΤΙ ΕΙΧΑ», ΠΟΤΕ «ΤΙ ΘΑ ΕΧΩ», και ο κανόνας ισχύει ΠΙΟ ΔΥΝΑΤΑ
@@ -1239,15 +1239,20 @@ section('4h · φάση 3 · το φύλλο είναι χειριστήριο �
      μηχανισμό που το αποτρέπει. */
   ok('η εστίαση πάει στο ΣΩΜΑ του φύλλου, όχι στο πρώτο κουμπί',
     /var body = d\.querySelector\('\.hw-sheet'\);[\s\S]{0,90}body\.focus\(\)/.test(CODE));
+  /* ⚠️ ΤΕΣΣΕΡΑ ΑΠΟ ΤΗΝ als-v537 — μπήκε το φύλλο του ΒΑΘΜΟΥ. Ο αριθμός είναι
+     επίτηδες καρφωτός: ένα ΝΕΟ φύλλο που θα ξεχνούσε το `tabindex="-1"` θα
+     άνοιγε φορώντας το μπλε δαχτυλίδι του Chrome, και κανένα άλλο assertion
+     δεν βλέπει χρώμα. Ανεβάζεις τον αριθμό ΜΟΝΟ αφού δώσεις στο νέο φύλλο τον
+     ίδιο δρόμο (σταθ. 15). */
   ok('και το σώμα δέχεται εστίαση χωρίς να ζωγραφίζει δαχτυλίδι',
-    (PAGE.match(/<div class="hw-sheet" tabindex="-1">/g) || []).length === 3 &&
+    (PAGE.match(/<div class="hw-sheet" tabindex="-1">/g) || []).length === 4 &&
     /\.hw-sheet\{[^}]*outline:none/.test(PAGE));
   /* ⭐ ΣΤΑΘΕΡΗ ΑΡΧΗ 15: ΚΑΙ ΤΑ ΔΥΟ ΦΥΛΛΑ, ή είναι σύμπτωση με καλή φήμη. Το
      παράθυρο γραψίματος φορούσε το ίδιο δαχτυλίδι από την als-v470 και θα
      έμενε το μόνο που το φοράει. */
   is('ΚΑΝΕΝΑ φύλλο δεν ανοίγει παρακάμπτοντας τον κοινό δρόμο',
     (CODE.match(/showModal\(\)/g) || []).length, 1);
-  is('και ΟΛΑ περνούν από αυτόν', (CODE.match(/openSheet\('/g) || []).length, 5);
+  is('και ΟΛΑ περνούν από αυτόν', (CODE.match(/openSheet\('/g) || []).length, 6);
   ok('το display μένει δηλωμένο ΜΟΝΟ στο [open]', PAGE.indexOf('dialog.hw-dlg[open]{ display:flex') > -1);
   ok('και δεν γεννήθηκε δεύτερος κανόνας που να το νικάει', (PAGE.match(/dialog\.hw-dlg\{/g) || []).length === 1);
   /* Κάθε κλάση που εναλλάσσεται από JS υπάρχει στο CSS (σταθερή αρχή 12). */
@@ -1445,9 +1450,26 @@ section('6 · ΤΑ ΜΑΘΗΜΑΤΑ — δωμάτιο, όχι πέμπτο μπ
      και ζει στο boot· ένας renderer που σπέρνει είναι το bug του `nut:streak`
      (als-v436) — «δεν το διάβασα ακόμη» γίνεται «δεν υπάρχει» ΜΕ σφραγίδα. */
   {
-    const PR = CODE.slice(CODE.indexOf('function renderProgramma('),
-                          CODE.indexOf('var whenId = null;'));
+    /* ⚠️⚠️ ΣΤΑΘ. 44, ΠΛΗΡΩΜΕΝΗ ΣΤΗΝ als-v537: η φέτα τελείωνε στο
+       `var whenId = null;` και ανάμεσά τους μπήκαν ΟΙ ΔΙΑΓΩΝΙΣΜΑΤΑ — που
+       περιέχουν `save()` νόμιμα, στον γραφέα τους. Η φέτα ρούφηξε ξένο κώδικα
+       και κατηγόρησε τον renderProgramma για γραφή που δεν κάνει. **Το όριο
+       μιας φέτας είναι το ΕΠΟΜΕΝΟ ΟΝΟΜΑ, όχι το επόμενο που θυμόμουν** — και
+       ψάχνεται ΜΕΤΑ την αρχή της, αλλιώς ένα δεύτερο `examList` πιο πάνω θα
+       γύριζε αρνητικό μήκος. */
+    const prAt = CODE.indexOf('function renderProgramma(');
+    const prEnd = CODE.indexOf('function examList(){', prAt);
+    if (prAt < 0 || prEnd < 0) throw new Error('homework.html: η φέτα του renderProgramma δεν βρέθηκε');
+    const PR = CODE.slice(prAt, prEnd);
     ok('ο ζωγράφος του προγράμματος ΔΕΝ γράφει', !/\bsave\s*\(|setItem/.test(PR));
+    /* ⛔ ΚΑΙ Ο ΖΩΓΡΑΦΟΣ ΤΩΝ ΔΙΑΓΩΝΙΣΜΑΤΩΝ, ΜΕ ΤΟΝ ΙΔΙΟ ΚΑΝΟΝΑ (σταθ. 15): ο
+       σπόρος του `examSeedOnce` είναι ΕΓΓΡΑΦΗ και ζει στο boot. Ένας renderer
+       που σπέρνει είναι το bug του `nut:streak`. */
+    const dgAt = CODE.indexOf('function renderDiag(){');
+    const dgEnd = CODE.indexOf('var dgEditId = null', dgAt);
+    if (dgAt < 0 || dgEnd < 0) throw new Error('homework.html: η φέτα του renderDiag δεν βρέθηκε');
+    ok('ούτε ο ζωγράφος των διαγωνισμάτων γράφει',
+      !/\bsave\s*\(|setItem/.test(CODE.slice(dgAt, dgEnd)));
     ok('και ο σπόρος τρέχει στο BOOT, όχι σε render',
       /reload\(\);[\s\S]{0,400}ttSeedIfEmpty\(\);[\s\S]{0,60}paint\(\);/.test(CODE));
   }
@@ -1584,10 +1606,12 @@ section('7b · Η ΠΛΟΗΓΗΣΗ — ένα μέρος με δωμάτια');
      μέση («Τα μαθήματά μου 3 έ…»). Η διάταξη του δείγματος ήταν για ΠΛΗΡΕΣ
      πλάτος και δεν μεταφέρεται χωρίς αυτό. */
   ok('οι πόρτες είναι ΜΙΑ στήλη', /\.hw-doors\{ display:grid; grid-template-columns:1fr;/.test(PAGE));
-  /* ⭐ ΤΡΕΙΣ ΜΕΤΑ ΤΗΝ als-v486, ΚΑΙ ΕΙΝΑΙ ΟΡΙΣΜΟΣ: ό,τι μένει εδώ είναι
-     ΕΡΓΑΛΕΙΟ (εργασίες · απόψε · πρόγραμμα). Τα ΜΑΘΗΜΑΤΑ πήραν κάρτα, γιατί
-     μια πόρτα που οδηγεί σε αντίγραφο της οθόνης που ήδη βλέπεις είναι ύψος. */
-  is('και είναι ΤΡΕΙΣ — μόνο εργαλεία', (PAGE.match(/class="hw-doorlink"/g) || []).length, 3);
+  /* ⭐ ΤΕΣΣΕΡΙΣ ΑΠΟ ΤΗΝ als-v537, ΚΑΙ Ο ΟΡΙΣΜΟΣ ΔΕΝ ΑΛΛΑΞΕ: ό,τι μένει εδώ
+     είναι ΕΡΓΑΛΕΙΟ (εργασίες · απόψε · πρόγραμμα · διαγωνίσματα). Τα ΜΑΘΗΜΑΤΑ
+     πήραν κάρτα, γιατί μια πόρτα που οδηγεί σε αντίγραφο της οθόνης που ήδη
+     βλέπεις είναι ύψος — και τα διαγωνίσματα περνούν τον κανόνα επειδή είναι
+     ΔΡΟΜΟΣ ΠΡΟΣ ΠΡΑΞΗ, όχι κατάλογος να τον κοιτάς. */
+  is('και είναι ΤΕΣΣΕΡΙΣ — μόνο εργαλεία', (PAGE.match(/class="hw-doorlink"/g) || []).length, 4);
   ok('καμία τους δεν είναι μάθημα', PAGE.indexOf('<span class="dl-n">Τα μαθήματά μου</span>') < 0);
   ok('η τρίτη είναι το «Απόψε», που αλλιώς θα έμενε χωρίς είσοδο',
     /href="#tonight"[\s\S]{0,60}Απόψε/.test(PAGE));
@@ -1741,9 +1765,9 @@ section('8 · το πρόγραμμα είναι ΑΠΟΘΗΚΗ, όχι σταθ
   ok('και σπέρνει ΜΟΝΟ σε εντελώς άδειο (εμπρός-φρουρός `any`)',
     /if \(any\) return;/.test(CODE));
   ok('⚠️ σταθ. 31 — το timetable σφραγίζεται από τον STAMP',
-    /state\.lessons, state\.timetable\] : \[\]/.test(CODE));
+    /state\.lessons, state\.timetable, state\.exams\] : \[\]/.test(CODE));
   ok('⚠️ σταθ. 35 — και ζει ΚΑΙ στο blank() ΚΑΙ στον load()',
-    /timetable:\{\} \}; \}/.test(PAGE) && /b\.timetable = /.test(PAGE));
+    /timetable:\{\}, exams:\{\} \}; \}/.test(PAGE) && /b\.timetable = /.test(PAGE));
 }
 
 section('8b · «για την επόμενη φορά» — και ΠΟΤΕ σήμερα');
