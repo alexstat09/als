@@ -396,7 +396,8 @@ colour rule: **accent only when something is due**, faint otherwise.
   αλλά πρέπει απλά να ξέρουμε όλες τις πληροφορίες που δίνει»*. Right engine,
   **wrong material**. The εισαγωγή is now **four standalone study packets**,
   linked from the top of the ΓΝΩΣΤΟ world: **`arxaia-sokratis-ideas.html`**
-  (οι φιλοσοφικές ιδέες — als-v538), **`arxaia-sokratis.html`** (η δίκη
+  (οι φιλοσοφικές ιδέες — als-v538, ευθυγραμμισμένο **byte-για-byte με τη δίκη**
+  στην als-v539: ίδιες 4 καρτέλες, ίδιος υπότιτλος, ίδιο CSS), **`arxaia-sokratis.html`** (η δίκη
   και ο θάνατος του Σωκράτη), **`arxaia-platon.html`** (ο βίος του Πλάτωνα)
   and **`arxaia-aristotelis.html`** (ο βίος και τα έργα — als-v536).
 
