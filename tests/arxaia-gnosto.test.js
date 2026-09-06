@@ -54,9 +54,16 @@ var IST = require(path.join(__dirname, '..', 'istoria-data.js'));
    ⛔ Ό,τι ΔΕΝ αλλάζει για κανένα από τα τρία: δείχνονται από τον Γνωστό,
    δεν γράφουν πουθενά, και είναι στο SW CORE. */
 var PACKS = [
+  /* ⭐⭐ als-v538 — ΤΟ ΤΕΤΑΡΤΟ ΠΑΚΕΤΟ, ΚΑΙ ΜΠΑΙΝΕΙ ΠΡΩΤΟ.  Είναι το «Δ2. Οι
+     φιλοσοφικές ιδέες του Σωκράτη» του βιβλίου, που ΠΡΟΗΓΕΙΤΑΙ του «Δ3. Η
+     δίκη και ο θάνατος» — γι' αυτό κάθεται πάνω από το arxaia-sokratis.html.
+     ⛔ ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ `mine`: ο Άλεξ έστειλε ΦΩΤΟΓΡΑΦΙΕΣ, όχι αρχείο, άρα
+     δεν υπάρχει «δικό του» sha να φυλαχτεί.  Η γείωσή του ζει ολόκληρη στο
+     tests/arxaia-sokratis-ideas.test.js, απέναντι στο ebooks.edu.gr. */
+  { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js' },
   { file: 'arxaia-sokratis.html',    sha: '3d478f4f7b6d6457aed1fb902e42a42307f976729989b1d76dba037a1b74d481' },
   { file: 'arxaia-platon.html',      sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' },
-  { file: 'arxaia-aristotelis.html', mine: true }
+  { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' }
 ];
 
 var pass = 0, fail = 0;
@@ -204,7 +211,7 @@ function hayFor(u) {
   return null;
 }
 
-console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα τρία πακέτα\n');
+console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα τέσσερα πακέτα\n');
 
 /* ══ 1 · ΔΟΜΗ ═══════════════════════════════════════════════════════════
    ⭐ ΚΑΝΕΝΑ ΚΑΡΦΩΤΟ ΠΛΗΘΟΣ. Το corpus ΜΕΓΑΛΩΝΕΙ — κάθε νέο κείμενο του
@@ -798,8 +805,8 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
         '      Αν η αλλαγή είναι σκόπιμη, ΑΥΤΟΣ είναι ο νέος hash — και θέλει τη δική του κουβέντα.');
     } else {
       ok(pk.mine === true, pk.file + ': δηλωμένο ως δικό μου γράψιμο, άρα χωρίς hash');
-      ok(fs.existsSync(path.join(__dirname, 'arxaia-aristotelis.test.js')),
-        pk.file + ': η γείωσή του ζει στο tests/arxaia-aristotelis.test.js — ΤΡΕΞΕ ΚΑΙ ΑΥΤΟ');
+      ok(!!pk.ground && fs.existsSync(path.join(__dirname, pk.ground)),
+        pk.file + ': η γείωσή του ζει στο tests/' + pk.ground + ' — ΤΡΕΞΕ ΚΑΙ ΑΥΤΟ');
     }
 
     ok(raw.indexOf('localStorage') < 0, pk.file + ': ⛔ δεν αποθηκεύει τίποτα — καμία πρόοδος, κανένας βαθμός');

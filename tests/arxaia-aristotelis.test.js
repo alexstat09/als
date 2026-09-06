@@ -361,8 +361,8 @@ var gnStart = arx.indexOf('id="gnWrap"');
 ok(gnStart > 0, 'υπάρχει ο κόσμος του Γνωστού');
 var gnBlock = arx.slice(gnStart, arx.indexOf('id="gnLesson"'));
 ok(gnBlock.indexOf('href="' + PAGE_F + '"') > 0, 'ο Γνωστός δείχνει στο πακέτο του Αριστοτέλη');
-eq((gnBlock.match(/class="gn-pl"/g) || []).length, 3, 'οι πλάκες της εισαγωγής είναι πια ΤΡΕΙΣ');
-ok(gnBlock.indexOf('3 πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — 3 πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
+eq((gnBlock.match(/class="gn-pl"/g) || []).length, 4, 'οι πλάκες της εισαγωγής είναι πια ΤΕΣΣΕΡΙΣ (als-v538)');
+ok(gnBlock.indexOf('4 πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — 4 πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
 
 var plate = gnBlock.slice(gnBlock.indexOf('href="' + PAGE_F + '"'));
 plate = plate.slice(0, plate.indexOf('</a>'));
@@ -370,7 +370,10 @@ ok(plate.indexOf('<i>' + CARDS.length + ' κάρτες</i>') > 0,
   '⛔ η πλάκα διαφημίζει άλλο πλήθος καρτών από τις πραγματικές (' + CARDS.length + ')');
 ok(plate.indexOf('<i>' + QUIZ.length + ' ερωτήσεις</i>') > 0,
   '⛔ η πλάκα διαφημίζει άλλο πλήθος ερωτήσεων από τις πραγματικές (' + QUIZ.length + ')');
-ok(plate.indexOf('<div class="rn">III</div>') > 0, 'είναι το τρίτο πακέτο, με νούμερο III');
+/* ⭐ als-v538: ΜΠΗΚΕ ΠΑΚΕΤΟ ΠΡΙΝ ΑΠΟ ΑΥΤΟ (οι φιλοσοφικές ιδέες του
+   Σωκράτη, Δ2 του βιβλίου, που προηγείται της δίκης) — άρα ο Αριστοτέλης
+   είναι ΤΕΤΑΡΤΟΣ. Το νούμερο είναι ΘΕΣΗ, όχι ταυτότητα. */
+ok(plate.indexOf('<div class="rn">IV</div>') > 0, 'είναι το τέταρτο πακέτο, με νούμερο IV');
 
 var sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 ok(sw.indexOf("'" + PAGE_F + "'") > 0, '⛔ το πακέτο ΛΕΙΠΕΙ από το SW CORE — θα πεθάνει offline');

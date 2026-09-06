@@ -73,7 +73,8 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451), `arxaia.html` (Αρχαία,
-als-v454, **+ `arxaia-sokratis.html` / `arxaia-platon.html`, als-v497**) and
+als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
+`arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 **`homework.html` (School Studies, als-v483)** is the room above them.
 
@@ -393,9 +394,24 @@ colour rule: **accent only when something is due**, faint otherwise.
   *«Οι φιλοσοφικές ιδέες του Σωκράτη»*, read in four layers and then recalled
   out loud — Ιστορία's shape. His words: *«το γνωστό δεν το μαθαίνουμε απέξω
   αλλά πρέπει απλά να ξέρουμε όλες τις πληροφορίες που δίνει»*. Right engine,
-  **wrong material**. The εισαγωγή is now **two standalone study packets**,
-  linked from the top of the ΓΝΩΣΤΟ world: **`arxaia-sokratis.html`** (η δίκη
-  και ο θάνατος του Σωκράτη) and **`arxaia-platon.html`** (ο βίος του Πλάτωνα).
+  **wrong material**. The εισαγωγή is now **four standalone study packets**,
+  linked from the top of the ΓΝΩΣΤΟ world: **`arxaia-sokratis-ideas.html`**
+  (οι φιλοσοφικές ιδέες — als-v538), **`arxaia-sokratis.html`** (η δίκη
+  και ο θάνατος του Σωκράτη), **`arxaia-platon.html`** (ο βίος του Πλάτωνα)
+  and **`arxaia-aristotelis.html`** (ο βίος και τα έργα — als-v536).
+
+  ⭐⭐ **als-v538 — ΤΟ ΠΡΩΤΟ ΠΑΚΕΤΟ ΜΠΗΚΕ ΤΕΛΕΥΤΑΙΟ, ΚΑΙ ΚΑΘΕΤΑΙ ΠΡΩΤΟ.**
+  Ο Άλεξ έστειλε **τρεις φωτογραφίες** του φυλλαδίου του (σελ. 3-5). Οι τρεις
+  σελίδες είναι, λέξη προς λέξη, το **«Δ2. Οι φιλοσοφικές ιδέες του Σωκράτη»**
+  του σχολικού βιβλίου (`old.ebooks.edu.gr/.../DSGL-C128/680/4510,20309/`),
+  που **ΠΡΟΗΓΕΙΤΑΙ** του «Δ3. Η δίκη και ο θάνατος» — γι' αυτό η πλάκα του
+  είναι η **I** και η δίκη έγινε **II**. ⛔ **ΤΙΠΟΤΑ ΔΕΝ ΜΕΤΑΓΡΑΦΗΚΕ ΑΠΟ
+  ΦΩΤΟΓΡΑΦΙΑ**: μια φωτογραφία υπό γωνία είναι η χειρότερη πηγή για πολυτονικό
+  ενώ το ίδιο κείμενο κατεβαίνει καθαρό με curl. Η φωτογραφία ΒΡΗΚΕ το
+  κεφάλαιο· το βιβλίο το έδωσε. Ό,τι είναι ΜΟΝΟ στη φωτογραφία (οι κόκκινοι
+  πλαγιότιτλοι, οι δύο εξηγήσεις στο περιθώριο) ζει σε **δική του κάρτα με
+  ✍️** και δηλώνεται στο υποσέλιδο· οι ημερομηνίες φροντιστηρίου **δεν
+  μπήκαν πουθενά** (κανένα πακέτο δεν κρατάει προθεσμία).
   - ⛔ **They carry NO progress, NO deadline, NO grade** — that was the entire
     point. `tests/arxaia-gnosto.test.js` §9 forbids `localStorage` inside them.
   - ⛔ **They went in VERBATIM, on explicit instruction** («ακριβώς όπως είναι,
