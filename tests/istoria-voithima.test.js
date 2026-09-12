@@ -147,7 +147,34 @@ ok('η istoria.html δίνει τον σύνδεσμο', HOME.includes('href="is
 ok('και η κλάση του συνδέσμου υπάρχει στο CSS της (σταθ. 12)',
    HOME.includes('class="ip-aid"') && /\.ip-aid\{/.test(HOME));
 ok('το βοήθημα δίνει τον δρόμο πίσω (καμία topbar εδώ)',
-   PAGE.includes('href="istoria.html"') && CSS.includes('.back{'));
+   PAGE.includes('href="homework.html"') && CSS.includes('.back{'));
+
+/* ⭐⭐ ΔΥΟ ΠΟΡΤΕΣ ΠΟΥ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΓΙΝΟΥΝ ΜΙΑ (als-v544).
+   Δικά του λόγια: το School Studies ανοίγει ΤΟ ΒΟΗΘΗΜΑ, αλλά η μηχανή
+   ανάκλησης «δεν θέλω να τη χάσω… να υπάρχει». Αν κάποιος ενώσει
+   `door` και `page`, ΚΑΘΕ βαθύ link επανάληψης προσγειώνεται σε
+   σελίδα με ΜΙΑ ενότητα — δηλαδή σε αδιέξοδο, σιωπηλά. */
+const HW = fs.readFileSync(path.join(ALS, 'homework.html'), 'utf8');
+ok('⭐ η ΚΑΡΤΑ Ιστορία στο School Studies ανοίγει το βοήθημα',
+   /istoria:\s*\{[^}]*door:\s*'istoria-voithima\.html'/.test(HW));
+ok('⭐ αλλά το ΒΑΘΥ link ενότητας μένει στη μηχανή ανάκλησης',
+   /istoria:\s*\{[^}]*page:\s*'istoria\.html'/.test(HW));
+ok('  και ο deepLink() στοχεύει ακόμη την istoria.html',
+   HW.includes("if (page === 'istoria.html' && unitId)"));
+ok('  και ο knownUnits() στέλνει τις ενότητες εκεί',
+   HW.includes("subject:'istoria', page:'istoria.html'"));
+ok('  η κάρτα διαβάζει door ΠΡΙΝ το page, και στα δύο σημεία',
+   (HW.match(/meta\.door \|\| meta\.page/g) || []).length === 2);
+
+/* Η ΠΑΛΙΑ ΣΕΛΙΔΑ ΔΕΝ ΧΑΝΕΤΑΙ — και δεν μένει ορφανή χωρίς πόρτα. */
+ok('⭐ η μηχανή ανάκλησης υπάρχει ακόμη ως αρχείο',
+   fs.existsSync(path.join(ALS, 'istoria.html')));
+ok('  κρατάει το μικρόφωνο (σταθ. 42)', HOME.includes('greek-ear.js'));
+ok('  και το βοήθημα δίνει ΡΗΤΗ πόρτα προς αυτήν',
+   PAGE.includes('class="oldlink" href="istoria.html"') && CSS.includes('.oldlink{'));
+ok('  ο σύνδεσμος λέει ΤΙ είναι, όχι «παλιά»',
+   PAGE.includes('Η μηχανή ανάκλησης') && !PAGE.includes('Η παλιά σελίδα'));
+ok('  και ο service worker την κρατάει offline', SW.includes("'istoria.html'"));
 ok('ο service worker την κατεβάζει για offline', SW.includes("'istoria-voithima.html'"));
 const cache = /var CACHE = "(als-v\d+)"/.exec(SW);
 ok('και το CACHE προχώρησε (σταθ. 2)', cache && +cache[1].slice(5) >= 542);
