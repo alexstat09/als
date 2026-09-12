@@ -169,7 +169,7 @@ is('ένα <body>, ένα </body>', (PAGE.match(/\n<body>/g) || []).length + '/'
 section('9 · ⭐ ΤΟ BOOT ΤΡΕΧΕΙ, ΔΕΝ ΤΟ ΔΙΑΒΑΖΟΥΜΕ');
 const vm = require('vm');
 
-function boot(startTab){
+function boot(hash){
   const src = [...PAGE.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   const painted = {}, cache = {};
   const el = id => ({
@@ -181,15 +181,16 @@ function boot(startTab){
     setAttribute(){}, getAttribute(){ return null; }, removeAttribute(){},
     addEventListener(){}, removeEventListener(){}, focus(){}, select(){}, scrollIntoView(){},
     appendChild(){}, append(){}, prepend(){}, insertBefore(){}, remove(){},
+    insertAdjacentHTML(pos, html){ this.innerHTML = this._html + html; },
     closest(){ return null; }, contains(){ return false; },
-    querySelector(){ return el(); }, querySelectorAll(){ return []; },
+    querySelector(){ return null; }, querySelectorAll(){ return []; },
     getBoundingClientRect(){ return { top:0, left:0, width:800, height:20, bottom:20, right:800 }; },
     offsetTop: 0, offsetHeight: 20, offsetWidth: 800, scrollHeight: 20
   });
   const doc = {
     documentElement: el('html'), body: el('body'), fonts: { ready: Promise.resolve() },
     querySelector(s){ const k = s.startsWith('#') ? s.slice(1) : s; return cache[k] || (cache[k] = el(k)); },
-    querySelectorAll(){ return []; },
+    querySelectorAll(sel){ return sel && sel[0] === '.' ? Object.keys(cache).filter(k => k.indexOf(sel.slice(1)) === 0).map(k => cache[k]) : []; },
     getElementById(k){ return cache[k] || (cache[k] = el(k)); },
     createElement(){ return el(); }, addEventListener(){}, removeEventListener(){},
     createRange(){ return { setStart(){}, setEnd(){}, getBoundingClientRect(){ return { top:0,left:0,width:0,height:0 }; } }; }
@@ -206,7 +207,7 @@ function boot(startTab){
     requestAnimationFrame: () => 0, cancelAnimationFrame(){},
     addEventListener(){}, removeEventListener(){},
     ResizeObserver: class { observe(){} disconnect(){} },
-    location: { hash: '', href: 'file://x' }, history: { replaceState(){} },
+    location: { hash: hash || '', href: 'file://x', replace(h){ this.hash = h; } }, history: { replaceState(){} },
     /* ⛔ ΨΕΥΤΙΚΟ ΕΠΙΤΗΔΕΣ. Σταθερή αρχή 8: κανένας συγχρονισμός σε harness —
        θα έγραφε στο ΖΩΝΤΑΝΟ Supabase. Εδώ μετράμε μόνο ΟΤΙ κλήθηκε. */
     initCloudSync: () => { win.__sync = true; }, supabase: {},
@@ -215,21 +216,37 @@ function boot(startTab){
   win.window = win; win.self = win; win.globalThis = win;
   const ctx = vm.createContext(win);
   let error = null;
-  for (const s of src) {
-    const code = startTab ? s.replace('let tab = store.get("istoria:tab", "explain");', 'let tab = "' + startTab + '";') : s;
-    try { vm.runInContext(code, ctx, { timeout: 8000 }); }
+  for (const sc of src) {
+    try { vm.runInContext(sc, ctx, { timeout: 8000 }); }
     catch (e) { error = e.name + ': ' + e.message; break; }
   }
   return { error, painted, win };
 }
 
-const B = boot(null);
+const B = boot('');                    /* καμία διαδρομή → η ΑΡΧΙΚΗ */
 is('⭐ ΚΑΝΕΝΑ σφάλμα στη φόρτωση', B.error || 'NONE', 'NONE');
 is('χτίζονται 7 καρτέλες', ((B.painted.tabs || '').match(/role="tab"/g) || []).length, 7);
-is('χτίζονται 7 πάνελ', ((B.painted.panels || '').match(/role="tabpanel"/g) || []).length, 7);
-ok('ο τίτλος της ενότητας μπαίνει στο hero', (B.painted.hero || '').includes('Παγκόσμιος πόλεμος'));
-ok('το μενού ενοτήτων γεμίζει', (B.painted.chapterSel || '').includes('<option'));
+ok('η ΑΡΧΙΚΗ ζωγραφίζει τον τίτλο της', (B.painted.hero || '').includes('Όλη η ύλη,'));
+ok('  και τις τρεις κάρτες', (B.painted.viewHome || '').includes('Συνέχισε από εκεί που σταμάτησες')
+   && (B.painted.viewHome || '').includes('Όλοι οι ορισμοί μου') && (B.painted.viewHome || '').includes('Όλες οι χρονολογίες'));
+ok('  και τον χάρτη ύλης, και με τα τρία υπόμνημα', (B.painted.viewHome || '').includes('Κεφάλαια &amp; ενότητες')
+   && (B.painted.viewHome || '').includes('Δεν έχει φτιαχτεί ακόμα') && (B.painted.viewHome || '').includes('Εκτός εξεταστέας ύλης'));
 ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initCloudSync κλήθηκε)', B.win.__sync === true);
+
+const C = boot('#/k1-g4/explain');     /* διαδρομή ενότητας */
+is('η διαδρομή #/k1-g4 φορτώνει την ενότητα χωρίς σφάλμα', C.error || 'NONE', 'NONE');
+is('χτίζονται 7 πάνελ', ((C.painted.panels || '').match(/role="tabpanel"/g) || []).length, 7);
+ok('ο τίτλος της ενότητας μπαίνει στο hero', (C.painted.hero || '').includes('Παγκόσμιος πόλεμος'));
+ok('το μενού ενοτήτων γεμίζει, ομαδοποιημένο ανά κεφάλαιο', (C.painted.chapterSel || '').includes('<optgroup'));
+ok('και μπαίνει Προηγούμενη/Επόμενη στο τέλος των καρτελών', (C.painted['panel-explain'] || '').includes('class="pn"'));
+
+const D = boot('#/orismoi'), E = boot('#/xronologies');
+is('η διαδρομή #/orismoi ζωγραφίζει', D.error || 'NONE', 'NONE');
+ok('  με τον τίτλο της', (D.painted.hero || '').includes('Όλοι οι ορισμοί μου'));
+is('η διαδρομή #/xronologies ζωγραφίζει', E.error || 'NONE', 'NONE');
+ok('  και δείχνει ΜΟΝΟ χρονολογίες βιβλίου', (E.painted.viewList || '').includes('Χρονολογία βιβλίου'));
+ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδώ έγραψα IC.gap αντί για IC.arrowD)',
+   !/undefined/.test((B.painted.viewHome || '') + (D.painted.viewList || '') + (E.painted.viewList || '')));
 
 /* Κάθε καρτέλα ζωγραφίζει ΜΟΝΗ ΤΗΣ, και ελέγχεται με ΔΙΚΟ ΤΗΣ σημάδι — όχι
    με μήκος. Ένα μήκος περνάει και με σκελετό χωρίς περιεχόμενο (σταθ. 10).
@@ -242,11 +259,46 @@ ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initClou
  ['facts',     'panel-facts',    'Μην τα γράψεις στις εξετάσεις'],
  ['text',      'rtext',          'Η συμμετοχή της Ελλάδας'],
  ['sources',   'panel-sources',  'Πηγές της ενότητας']].forEach(([id, box, needle]) => {
-  const r = boot(id);
+  const r = boot('#/k1-g4/' + id);
   is('η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
   ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
      (r.painted[box] || '').includes(needle));
 });
+
+/* ══ 10 · Η ΥΛΗ ΚΑΙ ΤΑ ID ════════════════════════════════════════════
+   Τα id είναι ΣΥΜΒΟΛΑΙΟ: κουβαλάνε τις σημειώσεις του. Ένα διπλό id
+   σημαίνει δύο ενότητες που μοιράζονται πλαγιότιτλους — αθόρυβα. */
+section('10 · Ο ΣΚΕΛΕΤΟΣ ΟΛΟΥ ΤΟΥ ΒΙΒΛΙΟΥ');
+const yliBlock = PAGE.match(/const YLI = (\[[\s\S]*?\]);\n<\/script>/);
+const Y = yliBlock ? JSON.parse(yliBlock[1]) : [];
+is('πέντε κεφάλαια', Y.length, 5);
+const allU = Y.flatMap(c => c.secs.flatMap(sx => sx.units));
+is('105 ενότητες συνολικά', allU.length, 105);
+const ids = allU.map(u => u.id);
+const dups = ids.filter((x, i) => ids.indexOf(x) !== i);
+is('⭐ ΜΗΔΕΝ διπλά id', dups.length + (dups.length ? ' → ' + [...new Set(dups)].join(', ') : ''), 0);
+ok('⭐ το «k1-g4» υπάρχει και είναι η έτοιμη ενότητα', ids.includes('k1-g4'));
+ok('κάθε έτοιμη ενότητα των CHAPTERS έχει θέση στον χάρτη',
+   PAGE.match(/id: "([^"]+)",\n  num:/g).map(m => m.match(/"([^"]+)"/)[1]).every(id => ids.includes(id)));
+/* Το κεφ. 3 έχει ΔΥΟ μέρη που ξεκινούν και τα δύο από το «Α». */
+const k3 = ids.filter(i => i.indexOf('k3-') === 0), k3b = ids.filter(i => i.indexOf('k3b-') === 0);
+ok('⭐ ο 20ός αιώνας του Προσφυγικού πήρε δικό του πρόθεμα (k3b-)', k3b.length >= 10);
+ok('  και ο 19ος κράτησε το k3-', k3.length >= 11);
+ok('  ώστε «Η μέριμνα» και «Η έξοδος» να ΜΗΝ μοιράζονται id',
+   ids.includes('k3-b1') && ids.includes('k3b-b1'));
+/* Το «1.Η έξοδος» γράφεται ΧΩΡΙΣ κενό στο βιβλίο και το είχα χάσει. */
+ok('⚠️ «Η έξοδος» υπάρχει (χάθηκε μια φορά επειδή το βιβλίο γράφει «1.Η»)',
+   allU.some(u => u.title === 'Η έξοδος'));
+ok('⚠️ «Τα δημογραφικά δεδομένα» υπάρχει (ζει σε span.bold, όχι div.title)',
+   allU.some(u => u.title === 'Τα δημογραφικά δεδομένα'));
+ok('⚠️ «Η «νέα γενιά»» υπάρχει (γράφεται «3.Η» χωρίς κενό)',
+   allU.some(u => u.title.indexOf('νέα γενιά') >= 0));
+is('εντός εξεταστέας ύλης', allU.filter(u => u.yli).length, 69);
+ok('και το εκτός ύλης ΔΕΝ κρύβεται — απλώς σημειώνεται',
+   allU.some(u => !u.yli) && PAGE.includes('ΕΚΤΟΣ ΥΛΗΣ'));
+ok('η σελίδα ονομάζει την Υ.Α. που στηρίζει τη σήμανση', PAGE.includes('90176/Δ2/06-07-2026'));
+ok('⛔ κανένα @media(min-width) μπήκε με τις νέες οθόνες',
+   !/@media[^{]*min-width/.test(CSS));
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
