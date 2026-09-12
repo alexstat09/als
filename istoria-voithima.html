@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Βοήθημα Ιστορίας">
+<title>Ιστορία · το βοήθημα · MÉTRON</title>
+<meta name="theme-color" content="#0E121B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<!-- ⛔⛔ ΚΑΜΙΑ `topbar.js` ΕΔΩ, ΚΑΙ ΕΙΝΑΙ ΚΑΝΟΝΑΣ, ΟΧΙ ΠΑΡΑΛΕΙΨΗ.
+     Σταθερή αρχή 18: το topbar.js βάζει animation με fill-mode στο ΙΔΙΟ ΤΟ
+     <body>, κι έτσι το body γίνεται containing block. Αυτή η σελίδα έχει
+     ΤΕΣΣΕΡΑ `position:fixed` παιδιά — `.selbar` (η μπάρα επιλογής κειμένου),
+     `.pop` (ο συντάκτης πλαγιότιτλου), `.tip` και `.toast`. Με topbar.js
+     και τα τέσσερα θα σχεδιάζονταν εκτός οθόνης, χωρίς κανένα σφάλμα.
+     Ίδιο σχήμα με τα δορυφορικά πακέτα των Αρχαίων: η σελίδα δίνει μόνη της
+     τον δρόμο πίσω (`.back`).
+     ⚠️ Οι γραμματοσειρές είναι CDN ΕΠΙΤΗΔΕΣ (σταθερή αρχή 43): η πτώση τους
+     είναι ΟΡΑΤΗ (πέφτει στο system stack), δεν είναι σιωπηλή σαν εξάρτηση
+     δεδομένων. Κανένα δεδομένο δεν έρχεται από CDN εδώ. -->
+<script src="vendor/supabase.min.js"></script>
+<script src="sync.js" defer></script>
+<style>
+:root{
+  --band:#0E121B; --glow:rgba(242,179,91,.20);
+  --bg:#161B26; --surface:#1F2635; --surface-2:#1C2230; --sunk:#262E40;
+  --ink:#EDE7DA; --ink-2:#D2CBBC; --muted:#8E95A6; --faint:#5E6780;
+  --line:#2C3446; --line-2:#3B4459;
+  --pen:#F2B35B; --pen-2:#F7C987; --pen-soft:rgba(242,179,91,.14); --on-pen:#1A1408;
+  --hl:#FFE066; --hl-mark:rgba(255,222,89,.22); --hl-ink:#FFE9A3; --hl-soft:rgba(255,222,89,.09);
+  --pol:#A9A4F2; --pol-soft:rgba(169,164,242,.13);
+  --mil:#F28B78; --mil-soft:rgba(242,139,120,.13);
+  --eco:#6FD1AE; --eco-soft:rgba(111,209,174,.12);
+  --ally:#7CB8F0; --ally-soft:rgba(124,184,240,.13);
+  --good:#6FD1AE; --bad:#F28B78;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px -14px rgba(0,0,0,.6);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.4),0 30px 80px -24px rgba(0,0,0,.75);
+  --glass:rgba(14,18,27,.94);
+  --f-display:"Geologica","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{scroll-padding-top:96px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-inline:clamp(16px,3.2vw,44px);padding-block:0 96px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pen);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1200px;margin-inline:auto}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ─── top bar ─── */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:-.01em}
+.brand-mark{width:30px;height:30px;border-radius:9px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:15px}
+.brand small{display:block;font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:12.5px;letter-spacing:0}
+.top-ctrl{display:flex;align-items:center;gap:8px}
+.select{appearance:none;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:8px 36px 8px 12px;font-size:14px;max-width:min(360px,70vw)}
+.iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2)}
+.iconbtn:hover{border-color:var(--line-2);color:var(--ink)}
+.iconbtn svg{width:18px;height:18px}
+
+/* ─── hero ─── */
+.hero{padding-block:22px 26px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
+.crumbs{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.crumbs span+span::before{content:"/";margin-right:10px;color:var(--faint)}
+.hero h1{font-family:var(--f-display);font-weight:800;font-size:clamp(36px,5.6vw,68px);line-height:1;letter-spacing:-.04em;margin:14px 0 0;text-wrap:balance;display:flex;align-items:flex-start;gap:.28em;flex-wrap:wrap}
+.hero h1 .unit{font-family:var(--f-mono);font-weight:700;font-size:.3em;letter-spacing:0;color:var(--pen);border:1.5px solid currentColor;border-radius:999px;padding:.3em .7em;margin-top:.35em;white-space:nowrap}
+.stats{display:flex;gap:26px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:2px;min-width:70px}
+.stat b{font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* ─── tabs ─── */
+.tabs{position:sticky;top:0;z-index:30;background:var(--glass);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line);margin-inline:calc(-1 * clamp(16px,3.2vw,44px));padding-inline:clamp(16px,3.2vw,44px)}
+.tabs-in{max-width:1200px;margin-inline:auto;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-in::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:9px;border:0;background:none;padding:16px 14px 14px;font-size:14.5px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab svg{width:18px;height:18px;flex:none}
+.tab kbd{font-family:var(--f-mono);font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 5px;line-height:17px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--pen)}
+.tab[aria-selected="true"] svg{color:var(--pen)}
+
+.panel{padding-block:36px 0}
+.panel[hidden]{display:none}
+.panel.enter{animation:enter .28s ease-out}
+@keyframes enter{from{opacity:.001;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel.enter{animation:none}*{scroll-behavior:auto!important;transition:none!important}}
+
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.h2{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,2.6vw,32px);letter-spacing:-.03em;line-height:1.15;margin:0 0 6px;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+.sec{margin-top:56px}
+.sec-h{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+
+/* category chips */
+.cat{--c:var(--muted);--cs:var(--sunk);display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--c);background:var(--cs);border-radius:999px;padding:3px 9px 3px 8px;font-weight:700;white-space:nowrap}
+.cat::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pol{--c:var(--pol);--cs:var(--pol-soft)}
+.mil{--c:var(--mil);--cs:var(--mil-soft)}
+.eco{--c:var(--eco);--cs:var(--eco-soft)}
+.ally{--c:var(--ally);--cs:var(--ally-soft)}
+.gen{--c:var(--ink-2);--cs:var(--sunk)}
+.legend{display:flex;gap:8px;flex-wrap:wrap}
+
+.linkbtn{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:0;color:var(--pen);font-weight:500;font-size:14px;text-align:left}
+.linkbtn:hover{text-decoration:underline;text-underline-offset:3px}
+.linkbtn svg{width:15px;height:15px;flex:none}
+.quote-btn{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--line-2);background:transparent;border-radius:12px;padding:10px 14px;text-align:left;color:var(--ink-2);font-size:14px;line-height:1.5;width:100%}
+.quote-btn:hover{border-color:var(--pen);color:var(--ink)}
+.quote-btn .ql{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--pen);white-space:nowrap;padding-top:2px}
+.quote-btn q{font-style:normal;quotes:none}
+.quote-btn q::before,.quote-btn q::after{content:""}
+
+/* ─── explain ─── */
+.ex-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:48px;align-items:start}
+.lede{font-size:clamp(19px,1.7vw,22px);line-height:1.6;color:var(--ink);margin:0;max-width:60ch;text-wrap:pretty}
+.lede b{font-weight:600;background:linear-gradient(transparent 62%,var(--pen-soft) 62%)}
+.glance{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;position:sticky;top:84px;box-shadow:var(--shadow)}
+.glance h3{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:-.01em;margin:0 0 14px}
+.glance dl{margin:0;display:grid;gap:14px}
+.glance dt{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.glance dd{margin:0;font-size:14.5px;line-height:1.5}
+.glance .nums{display:grid;gap:6px}
+.glance .nums div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:6px;font-size:13.5px}
+.glance .nums div:last-child{border:0;padding:0}
+.glance .nums b{font-family:var(--f-mono);font-weight:700;font-size:13px;white-space:nowrap}
+.kw{display:flex;flex-wrap:wrap;gap:6px}
+.kw span{font-size:13px;background:var(--sunk);border-radius:7px;padding:2px 8px}
+
+.acts{display:grid;gap:0;margin-top:8px;position:relative}
+.act{display:grid;grid-template-columns:64px minmax(0,1fr);gap:0 20px;position:relative;padding-bottom:40px}
+.act:not(:last-child)::before{content:"";position:absolute;left:21px;top:48px;bottom:6px;width:2px;background:linear-gradient(var(--line-2),var(--line))}
+.act-n{width:44px;height:44px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line-2);display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:15px;color:var(--ink)}
+.act-when{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.02em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.act h3{font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2vw,24px);letter-spacing:-.025em;line-height:1.2;margin:8px 0 10px;text-wrap:balance}
+.act p{margin:0 0 14px;max-width:64ch;color:var(--ink-2);font-size:16.5px;line-height:1.7}
+.act p b{color:var(--ink);font-weight:600}
+.think{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:6px 0 14px;max-width:64ch;font-size:15px;line-height:1.6;color:var(--ink-2)}
+.think .tl{display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ally);margin-bottom:4px}
+.act .quote-btn{max-width:64ch}
+
+.concepts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.concept{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.concept h4{font-family:var(--f-display);font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+.concept p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.65}
+.pitfalls{display:grid;gap:12px}
+.pit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.pit>div{padding:14px 16px;font-size:15px;line-height:1.55;display:flex;gap:10px;align-items:flex-start}
+.pit>div:first-child{background:var(--surface-2);color:var(--muted);border-right:1px solid var(--line)}
+.pit>div:first-child s{text-decoration-color:var(--bad);text-decoration-thickness:1.5px}
+.pit svg{width:18px;height:18px;flex:none;margin-top:2px}
+.pit .no{color:var(--bad)} .pit .ok{color:var(--good)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px}
+.chain .c{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:500}
+.chain .c.end{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chain svg{width:16px;height:16px;color:var(--faint);flex:none}
+
+/* ─── diagram ─── */
+.dg{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(18px,3vw,40px);box-shadow:var(--shadow)}
+.dg-top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;padding-bottom:26px;margin-bottom:30px;border-bottom:1px solid var(--line)}
+.dg-top h2{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em;margin:0}
+.dg-top p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.st{position:relative}
+.st-h{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.st-l{width:38px;height:38px;border-radius:11px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:17px;flex:none}
+.st-h h3{font-family:var(--f-display);font-weight:700;font-size:clamp(17px,1.7vw,20px);letter-spacing:-.02em;margin:0;line-height:1.2}
+.st-h .when{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.row{display:grid;gap:12px}
+.r5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.r3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.n{--c:var(--ink-2);--cs:var(--sunk);background:var(--cs);border-radius:14px;padding:12px 14px 13px;display:flex;flex-direction:column;gap:3px;position:relative}
+.n i{font-style:normal;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--c);font-weight:700}
+.n b{font-family:var(--f-display);font-weight:700;font-size:15.5px;letter-spacing:-.015em;line-height:1.25;color:var(--ink)}
+.n span{font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.n .yr{font-family:var(--f-mono);font-weight:700;color:var(--c)}
+.fan{height:22px;margin:4px 10% 0;border:2px solid var(--line-2);border-top:0;border-radius:0 0 14px 14px;position:relative}
+.fan::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:14px;background:var(--line-2);transform:translateX(-50%)}
+.fanpad{height:16px}
+.result{background:var(--ink);color:var(--bg);border-radius:14px;padding:14px 18px;display:flex;gap:14px;align-items:center;font-size:15.5px;line-height:1.5;position:relative}
+.result::before{content:"";position:absolute;left:50%;top:-9px;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--line-2);border-bottom:0}
+.result b{font-weight:700}
+.result .tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;white-space:nowrap}
+.result.warn{background:var(--mil-soft);color:var(--ink);border:1.5px solid var(--mil)}
+.darr{display:flex;flex-direction:column;align-items:center;padding-block:10px;color:var(--line-2)}
+.darr .ln{width:2px;height:22px;background:currentColor}
+.darr svg{width:16px;height:12px;margin-top:-2px}
+.darr .lb{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 12px;margin:4px 0}
+.hchain{display:flex;align-items:stretch;gap:0}
+.hchain .n{flex:1}
+.hchain .ar{display:grid;place-items:center;width:34px;flex:none;color:var(--faint)}
+.hchain .ar svg{width:18px;height:18px}
+.two{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+.card{border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--surface)}
+.card h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:700}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px}
+.tbl th{text-align:left;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 10px 8px 0;border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .amt{font-family:var(--f-mono);font-weight:700;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tbl .cur{color:var(--muted);font-size:13px}
+.fine{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:22px 1fr;gap:10px;font-size:14.5px;line-height:1.45}
+.checks svg{width:20px;height:20px;color:var(--ally)}
+.funded{margin-top:18px}
+.note-mini{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--ink-2);margin-top:14px}
+.note-mini .cat{flex:none}
+.cols3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;align-items:stretch}
+.vchain{display:flex;flex-direction:column;gap:0}
+.vchain .vd{display:flex;justify-content:center;color:var(--faint);height:18px}
+.vchain .vd svg{width:14px;height:18px}
+.vchain .n{padding-block:10px}
+.cause{display:flex;flex-direction:column;justify-content:center}
+
+.note100{display:grid;grid-template-columns:1fr 40px 1fr;align-items:stretch;max-width:760px;margin:6px auto 0}
+.half{position:relative;border-radius:14px;padding:16px 18px;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;border:1.5px solid var(--eco);background:
+  repeating-radial-gradient(circle at 0% 50%, transparent 0 9px, color-mix(in srgb,var(--eco) 12%, transparent) 9px 10px),
+  var(--eco-soft)}
+.half.right{border-color:var(--pen);background:
+  repeating-radial-gradient(circle at 100% 50%, transparent 0 9px, color-mix(in srgb,var(--pen) 12%, transparent) 9px 10px),
+  var(--pen-soft)}
+.half .den{font-family:var(--f-mono);font-weight:700;font-size:13px;color:var(--eco);display:flex;justify-content:space-between}
+.half.right .den{color:var(--pen)}
+.half .big{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,3.4vw,40px);letter-spacing:-.04em;line-height:1;color:var(--ink)}
+.half .what{font-size:14px;line-height:1.4;color:var(--ink-2)}
+.half .what b{color:var(--ink)}
+.cut{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted)}
+.cut .dash{flex:1;border-left:2px dashed var(--line-2)}
+.cut svg{width:22px;height:22px;transform:rotate(90deg)}
+.outcomes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.oc{border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;border:1px solid var(--line)}
+.oc svg{width:22px;height:22px}
+.oc b{display:block;font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:-.015em;line-height:1.25}
+.oc span{font-size:13.5px;color:var(--ink-2);line-height:1.45}
+.oc.ok svg{color:var(--good)} .oc.re svg{color:var(--pen)} .oc.no{background:var(--mil-soft);border-color:transparent} .oc.no svg{color:var(--bad)}
+.dg-sum{margin-top:40px;padding-top:30px;border-top:1px solid var(--line)}
+.dg-sum h3{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:-.02em;margin:0 0 14px}
+.tscroll{overflow-x:auto}
+.sumtbl{min-width:640px}
+.sumtbl td:first-child{font-family:var(--f-mono);font-weight:700;white-space:nowrap;font-size:13.5px}
+.sumtbl td:nth-child(2){min-width:220px}
+
+/* ─── timeline ─── */
+.tl-bar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+.keys{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2)}
+.keys span{display:inline-flex;align-items:center;gap:8px}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--ink);display:inline-block;flex:none}
+.dot.hollow{background:var(--bg);border:2px dashed var(--muted)}
+.switch{display:inline-flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;user-select:none}
+.switch input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line-2);position:relative;cursor:pointer;transition:background .15s;flex:none;margin:0}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked{background:var(--pen)}
+.switch input:checked::after{transform:translateX(16px)}
+.tlw{position:relative;padding-right:190px}
+.tl{display:grid;grid-template-columns:132px 44px minmax(0,1fr);position:relative}
+.tl::before{content:"";position:absolute;left:calc(132px + 21px);top:20px;bottom:20px;width:2px;background:var(--line-2)}
+.ev{display:contents}
+.ev .yr{text-align:right;padding-top:6px;font-family:var(--f-mono);font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1;color:var(--ink)}
+.ev .yr small{display:block;font-size:11.5px;font-weight:500;letter-spacing:.02em;color:var(--muted);margin-top:6px}
+.ev.ctx .yr{color:var(--muted)}
+.ev .nd{display:flex;justify-content:center;padding-top:8px;position:relative;z-index:1}
+.ev .nd i{width:18px;height:18px;border-radius:50%;background:var(--c);box-shadow:0 0 0 5px var(--bg)}
+.ev.ctx .nd i{background:var(--bg);border:2.5px dashed var(--c)}
+.ev .bd{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);display:grid;gap:8px}
+.ev.ctx .bd{background:transparent;box-shadow:none;border-style:dashed}
+.ev .bd h4{font-family:var(--f-display);font-weight:700;font-size:17.5px;letter-spacing:-.02em;line-height:1.25;margin:0}
+.ev .bd p{margin:0;font-size:15px;line-height:1.6;color:var(--ink-2)}
+.ev .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;border-radius:6px;padding:3px 7px;white-space:nowrap}
+.badge.book{background:var(--ink);color:var(--bg)}
+.badge.ctx{border:1px solid var(--line-2);color:var(--muted)}
+.gap{display:contents}
+.gap>div:first-child{}
+.gap .ga{display:flex;flex-direction:column;align-items:center;color:var(--muted);padding-block:6px;position:relative;z-index:1}
+.gap .ga svg{width:16px;height:22px;background:var(--bg);padding-block:2px}
+.gap .gl{align-self:center;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);padding-block:14px}
+.gap .gl b{color:var(--ink-2);font-weight:700}
+.spans{position:absolute;top:0;right:0;width:170px;bottom:0}
+.span{position:absolute;display:flex;gap:8px;align-items:stretch}
+.span .bar{width:8px;border-radius:999px;background:var(--c);opacity:.9}
+.span.ctx .bar{background:repeating-linear-gradient(180deg,var(--c) 0 6px,transparent 6px 10px)}
+.span .lab{writing-mode:vertical-rl;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--c);font-weight:700;white-space:nowrap;padding-top:4px}
+.span .lab em{font-style:normal;color:var(--muted);font-weight:500}
+
+/* ─── glossary ─── */
+.gl-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+.search{flex:1;min-width:220px;max-width:420px;position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px 11px 40px;font-size:15px}
+.search input:focus{outline:none;border-color:var(--pen);box-shadow:0 0 0 3px var(--pen-soft)}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13.5px;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gcount{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+.ggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:grid;gap:8px;align-content:start}
+.gcard .gh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.gcard h4{font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:-.02em;margin:0;line-height:1.25}
+.gcard .mean{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink)}
+.gcard .ctxline{margin:0;font-size:13.5px;line-height:1.55;color:var(--muted);border-left:2px solid var(--line-2);padding-left:10px}
+.gcard .ctxline mark{background:var(--pen-soft);color:var(--ink);border-radius:3px;padding:0 2px}
+.gcard .sicnote{font-size:13px;color:var(--hl-ink);background:var(--hl-soft);border-radius:8px;padding:6px 10px}
+.empty{padding:40px;text-align:center;color:var(--muted);border:1px dashed var(--line-2);border-radius:16px;grid-column:1/-1}
+
+/* ─── facts ─── */
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 24px;display:grid;gap:10px;align-content:start}
+.fact .fh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fact .big{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:-.04em;line-height:1;color:var(--c)}
+.fact h4{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.025em;line-height:1.25;margin:2px 0 0;text-wrap:balance}
+.fact p{margin:0;font-size:15.5px;line-height:1.65;color:var(--ink-2)}
+.fact .link{border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--ink-2);display:grid;gap:8px}
+.fact .link .ll{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.outside{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--ally);border:1px solid color-mix(in srgb,var(--ally) 40%,transparent);border-radius:6px;padding:3px 7px;white-space:nowrap}
+.banner{display:flex;gap:14px;align-items:flex-start;background:var(--ally-soft);border-radius:14px;padding:14px 18px;margin-bottom:24px;font-size:14.5px;line-height:1.55;color:var(--ink)}
+.banner svg{width:20px;height:20px;color:var(--ally);flex:none;margin-top:1px}
+
+/* ─── text / reader ─── */
+.rd-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start}
+.reader{position:relative;padding-left:216px;min-height:200px}
+.margin{position:absolute;left:0;top:0;width:200px;bottom:0}
+.rtext{max-width:68ch}
+.rtext p{font-size:18.5px;line-height:2;margin:0 0 1.2em;color:var(--ink);text-wrap:pretty}
+.rtext p:last-child{margin-bottom:0}
+.rhead{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.025em;margin:0 0 18px;display:flex;gap:10px;align-items:baseline}
+.rhead .num{font-family:var(--f-mono);color:var(--pen)}
+.seg.w{text-decoration:underline;text-decoration-style:dotted;text-decoration-color:var(--faint);text-decoration-thickness:1.5px;text-underline-offset:5px;cursor:help}
+.seg.w:hover{text-decoration-color:var(--pen);color:var(--pen-2)}
+.seg.df{background:linear-gradient(transparent 12%,var(--hl-mark) 12%,var(--hl-mark) 90%,transparent 90%);border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone;cursor:pointer}
+.seg.sic{text-decoration:underline wavy var(--ally) 1.5px;text-underline-offset:5px;cursor:help}
+.seg.hot{background-color:var(--pen-soft)}
+.seg.df.hot{background:linear-gradient(transparent 12%,var(--hl-mark) 12%,var(--hl-mark) 90%,transparent 90%),var(--pen-soft)}
+.seg.flash{animation:flash 2.2s ease-out}
+@keyframes flash{0%,35%{background-color:color-mix(in srgb,var(--pen) 30%,transparent)}100%{background-color:transparent}}
+.hm{display:inline-block;width:0;height:1em;vertical-align:baseline;position:relative}
+.hm.s{width:auto;height:auto}
+.hm.s::before{content:attr(data-n);display:inline-grid;place-items:center;vertical-align:.18em;margin:0 6px 0 2px;font-family:var(--f-mono);font-size:10px;font-weight:700;color:var(--on-pen);background:var(--pen);border-radius:999px;min-width:18px;height:18px;padding:0 5px;line-height:1}
+.hm.e{width:11px}
+.hm.e::after{content:"";position:absolute;left:2px;top:-.15em;width:7px;height:1.05em;border-right:2px solid var(--pen);border-bottom:2px solid var(--pen);border-bottom-right-radius:3px}
+.mnote{position:absolute;right:26px;width:170px;text-align:right;border:0;background:none;padding:2px 0;display:grid;gap:2px;justify-items:end;color:var(--pen)}
+.mnote .mn{font-family:var(--f-mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--pen)}
+.mnote .mt{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:-.015em;line-height:1.3;color:var(--pen-2);text-wrap:balance}
+.mnote:hover .mt{text-decoration:underline;text-underline-offset:3px}
+.mbr{position:absolute;right:10px;width:9px;border:2px solid var(--pen);border-right:0;border-radius:6px 0 0 6px;opacity:.55;pointer-events:none}
+.mbr.hot{opacity:1}
+
+.side{position:sticky;top:84px;display:grid;gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.box-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.box-h h4{margin:0;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:-.01em;display:flex;gap:8px;align-items:center}
+.box-h h4 .ct{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500}
+.sw-h{width:12px;height:12px;border-radius:4px;background:var(--pen);flex:none}
+.sw-d{width:12px;height:12px;border-radius:4px;background:var(--hl);flex:none}
+.olist{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:340px;overflow:auto}
+.olist li{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;border-radius:10px;padding:7px 8px}
+.olist li:hover{background:var(--surface-2)}
+.olist .go{border:0;background:none;padding:0;text-align:left;display:grid;gap:1px}
+.olist .go b{font-size:14px;font-weight:600;line-height:1.35}
+.olist .go span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.olist .go .n2{font-family:var(--f-mono);color:var(--pen);font-weight:700;margin-right:6px}
+.xbtn{border:0;background:none;color:var(--faint);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;opacity:0}
+.olist li:hover .xbtn,.xbtn:focus-visible{opacity:1}
+.xbtn:hover{color:var(--bad);background:var(--mil-soft)}
+.xbtn svg{width:14px;height:14px}
+.hint{font-size:13.5px;line-height:1.55;color:var(--muted);margin:0}
+.hint ol{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+.hint b{color:var(--ink-2)}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;padding-block:5px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--line-2)}
+.btn svg{width:16px;height:16px}
+.btn.primary{background:var(--pen);color:var(--on-pen);border-color:var(--pen)}
+.btn.primary:hover{background:var(--pen-2);border-color:var(--pen-2)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:13px}
+.sync{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.sync.cloud i{background:var(--good)}
+.sync.local i{background:var(--ally)}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap}
+
+.selbar{position:fixed;z-index:60;display:flex;gap:4px;background:var(--ink);border-radius:12px;padding:5px;box-shadow:var(--shadow-lg);transform:translate(-50%,-100%)}
+.selbar[hidden]{display:none}
+.selbar button{border:0;background:none;color:var(--bg);font-size:13.5px;font-weight:500;padding:7px 11px;border-radius:8px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.selbar button:hover{background:color-mix(in srgb,var(--bg) 16%,transparent)}
+.selbar .sw-h,.selbar .sw-d{width:10px;height:10px}
+.pop{position:fixed;z-index:70;width:min(360px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:16px}
+.pop[hidden]{display:none}
+.pop h5{margin:0 0 4px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pop .pv{font-size:13.5px;color:var(--ink-2);line-height:1.5;background:var(--surface-2);border-radius:10px;padding:8px 10px;margin:8px 0 12px;max-height:120px;overflow:auto}
+.pop label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.pop input,.pop textarea,.fld input,.fld textarea{width:100%;border:1px solid var(--line-2);background:var(--surface);border-radius:10px;padding:9px 12px;font-size:15px}
+.pop input:focus,.pop textarea:focus,.fld input:focus,.fld textarea:focus{outline:none;border-color:var(--pen);box-shadow:0 0 0 3px var(--pen-soft)}
+.pop .acts2{display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pop .acts2 .rowbtns{margin-left:auto}
+.tip{position:fixed;z-index:65;max-width:320px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 13px;font-size:14px;line-height:1.5;box-shadow:var(--shadow-lg);pointer-events:none}
+.tip[hidden]{display:none}
+.tip b{display:block;font-family:var(--f-display);font-weight:700;font-size:15px;margin-bottom:2px}
+.tip .ts{display:block;margin-top:6px;padding-top:6px;border-top:1px solid color-mix(in srgb,var(--bg) 25%,transparent);color:var(--hl)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);border-radius:12px;padding:11px 16px;font-size:14px;box-shadow:var(--shadow-lg);display:flex;gap:12px;align-items:center;max-width:calc(100vw - 32px)}
+.toast[hidden]{display:none}
+.toast button{border:0;background:none;color:var(--hl);font-weight:600;padding:0}
+
+/* ─── sources ─── */
+.src-grid{display:grid;gap:16px}
+.src{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px}
+.src .ref{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em;line-height:1.5}
+.src h4{font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:-.02em;margin:6px 0 10px;line-height:1.25}
+.src .gist{margin:0;font-size:15.5px;line-height:1.7;color:var(--ink-2)}
+.src .gl2{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.src .mine-note{font-size:14px;color:var(--muted);font-style:italic;margin:10px 0 0;line-height:1.55}
+.src aside{border-left:1px solid var(--line);padding-left:24px;display:grid;gap:14px;align-content:start}
+.keep{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.keep li{display:grid;grid-template-columns:18px 1fr;gap:8px;font-size:14px;line-height:1.5}
+.keep svg{width:16px;height:16px;color:var(--good);margin-top:3px}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.how div{border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--surface)}
+.how b{display:block;font-family:var(--f-display);font-weight:700;font-size:16px;margin:8px 0 6px;letter-spacing:-.01em}
+.how p{margin:0;font-size:14.5px;color:var(--ink-2);line-height:1.6}
+.how .k{font-family:var(--f-mono);font-weight:700;color:var(--pen);font-size:12px}
+.fld{display:grid;gap:6px}
+.fld label{font-size:13px;font-weight:600}
+.addsrc{background:var(--surface);border:1px dashed var(--line-2);border-radius:18px;padding:20px 22px;display:grid;gap:14px}
+.mysrc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;display:grid;gap:10px}
+.mysrc h4{margin:0;font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:-.02em}
+.mysrc .body{white-space:pre-wrap;font-size:15.5px;line-height:1.75;color:var(--ink);background:var(--surface-2);border-radius:12px;padding:14px 16px}
+.mysrc .mn2{font-size:14.5px;color:var(--ink-2);white-space:pre-wrap;line-height:1.6}
+
+/* ─── responsive ─── */
+@media (max-width:1100px){
+  .r5{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rd-grid{grid-template-columns:1fr}
+  .side{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .ex-grid{grid-template-columns:1fr}
+  .glance{position:static}
+  .concepts,.how{grid-template-columns:1fr}
+  .two,.cols3{grid-template-columns:1fr}
+  .hchain{flex-direction:column}
+  .hchain .ar{width:auto;height:26px}
+  .hchain .ar svg{transform:rotate(90deg)}
+  .outcomes{grid-template-columns:1fr}
+  .src{grid-template-columns:1fr}
+  .src aside{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+  .ggrid,.fgrid{grid-template-columns:1fr}
+  .reader{padding-left:0}
+  .margin{display:none}
+  .hm.s::before{content:attr(data-n) " · " attr(data-t);display:inline-flex;height:auto;padding:2px 9px;font-family:var(--f-display);font-size:12.5px;border-radius:7px;vertical-align:.12em}
+  .tlw{padding-right:0}
+  .spans{display:none}
+  .hero{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .r5,.r3{grid-template-columns:1fr}
+  .side{grid-template-columns:1fr}
+  .pit{grid-template-columns:1fr}
+  .pit>div:first-child{border-right:0;border-bottom:1px solid var(--line)}
+  .tl{grid-template-columns:78px 34px minmax(0,1fr)}
+  .tl::before{left:calc(78px + 16px)}
+  .ev .yr{font-size:19px}
+  .tab kbd{display:none}
+  .note100{grid-template-columns:1fr;gap:10px}
+  .cut{flex-direction:row;height:28px}
+  .cut .dash{border-left:0;border-top:2px dashed var(--line-2);height:0}
+  .cut svg{transform:none}
+  .act{grid-template-columns:48px minmax(0,1fr);gap:0 14px}
+  .act-n{width:36px;height:36px;border-radius:11px}
+  .act:not(:last-child)::before{left:17px;top:40px}
+  .rtext p{font-size:17px;line-height:1.9}
+}
+@media print{
+  .top,.tabs,.side,.selbar{display:none!important}
+  body{background:#fff}
+}
+
+/* ─── Νυχτερινό διάβασμα: μπάντα, καρτέλες, αντεστραμμένα στοιχεία ─── */
+.band{background:var(--band);margin-inline:calc(-1 * clamp(16px,3.2vw,44px));padding-inline:clamp(16px,3.2vw,44px);position:relative;overflow:hidden}
+.band::after{content:"";position:absolute;inset:0;background:radial-gradient(900px 320px at 88% -20%,var(--glow),transparent 70%);pointer-events:none}
+.band>.wrap{position:relative;z-index:1}
+.hero h1 .unit{background:var(--pen);color:var(--on-pen);border-color:var(--pen)}
+.tabs{background:var(--band);border-bottom:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+.tab{border-bottom:0;border-radius:12px 12px 0 0;margin-top:6px;padding:12px 16px 13px}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--ink)}
+.tab[aria-selected="true"] svg{color:var(--pen)}
+.tab kbd{border-color:var(--line-2)}
+.brand-mark,.st-l{background:var(--pen);color:var(--on-pen)}
+.result{background:var(--band);color:var(--ink);border:1px solid var(--line)}
+.result b{color:var(--pen)}
+.result::before{border-top-color:var(--line-2)}
+.chain .c.end{background:var(--pen);color:var(--on-pen);border-color:var(--pen)}
+.rtext p{color:var(--ink-2)}
+.mnote .mt{color:var(--pen-2)}
+.switch input::after{background:var(--ink)}
+.switch input:checked::after{background:var(--on-pen)}
+
+/* ─── ΤΑ ΔΥΟ ΠΟΥ ΠΡΟΣΤΕΘΗΚΑΝ ΜΠΑΙΝΟΝΤΑΣ ΣΤΟ MÉTRON ───
+   Καμία topbar.js εδώ, άρα η έξοδος είναι της σελίδας· και ο συγχρονισμός
+   που ΔΕΝ ξεκίνησε πρέπει να το λέει με λέξεις (σταθερές αρχές 10/32). */
+.back{display:inline-block;margin:16px 0 0;color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:600;letter-spacing:.01em}
+.back:hover{color:var(--pen)}
+.gate{margin-top:14px;background:var(--mil-soft);border:1px solid var(--mil);border-radius:12px;padding:11px 15px;font-size:14px;line-height:1.55;color:var(--ink)}
+.gate[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="band"><div class="wrap">
+  <a class="back" href="istoria.html">&#8592; Ιστορία</a>
+  <div class="gate" id="gate" hidden></div>
+  <header class="top">
+    <div class="brand"><div class="brand-mark">Ι</div><div>Ιστορία Προσανατολισμού<small>Βοήθημα ανά ενότητα</small></div></div>
+    <div class="top-ctrl">
+      <label class="sr" for="chapterSel">Ενότητα</label>
+      <select class="select" id="chapterSel"></select>
+    </div>
+  </header>
+  <section class="hero" id="hero"></section>
+</div></div>
+<nav class="tabs" aria-label="Ενότητες βοηθήματος"><div class="tabs-in" id="tabs" role="tablist"></div></nav>
+<main class="wrap" id="panels"></main>
+
+<div class="selbar" id="selbar" hidden role="toolbar" aria-label="Επιλογή κειμένου">
+  <button type="button" id="selHead"><span class="sw-h"></span>Πλαγιότιτλος</button>
+  <button type="button" id="selDef"><span class="sw-d"></span>Ορισμός</button>
+</div>
+<div class="pop" id="pop" hidden role="dialog"></div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   ΠΕΡΙΕΧΟΜΕΝΟ ΕΝΟΤΗΤΩΝ — κάθε νέα ενότητα = ένα νέο αντικείμενο εδώ
+   ════════════════════════════════════════════════════════════════ */
+const CHAPTERS = [{
+  id: "k1-g4",
+  num: "4",
+  title: "Ο Α΄ Παγκόσμιος πόλεμος",
+  crumbs: ["Κεφ. 1 · Από την αγροτική οικονομία στην αστικοποίηση", "Γ. Οι οικονομικές εξελίξεις κατά τον 20ό αιώνα"],
+  period: "1915 – 1926",
+
+  paragraphs: [
+    "Η συμμετοχή της Ελλάδας στον Α' Παγκόσμιο πόλεμο έγινε κάτω από δύσκολες και περίπλοκες συνθήκες. Η σύγκρουση του παλατιού με τον Βενιζέλο, ο Διχασμός, όπως ονομάστηκε, η άσκοπη και δαπανηρή επιστράτευση του 1915, η δημιουργία της κυβέρνησης της Εθνικής Άμυνας στη Θεσσαλονίκη και η διάσπαση της χώρας σε δυο ουσιαστικά κράτη, ο συμμαχικός αποκλεισμός και οι συγκρούσεις, είχαν οπωσδήποτε μεγάλο οικονομικό και κοινωνικό κόστος και υπονόμευσαν πολλά από τα κεκτημένα της προηγούμενης περιόδου. Όταν, με την επέμβαση των Συμμάχων, ενοποιήθηκε το 1917 η χώρα υπό τον Βενιζέλο, στάθηκε αδύνατο να αναλάβει, χωρίς εξωτερική αρωγή, το κόστος της συμμετοχής στον πόλεμο. Οι Σύμμαχοι προχώρησαν τότε σ' έναν ιδιόμορφο δανεισμό της χώρας, που θα είχε οδυνηρές συνέπειες στο μέλλον.",
+    "Η Γαλλία, η Μεγάλη Βρετανία και οι ΗΠΑ ενέκριναν κατ' αρχήν μεγάλο δάνεια προς την Ελλάδα: 12.000.000 λίρες Αγγλίας, 300.000.000 γαλλικά φράγκα και 50.000.000 δολάρια ΗΠΑ. Ο δανεισμός ήταν όμως θεωρητικός. Το ποσά αυτά δεν εκταμιεύτηκαν ούτε δόθηκαν στην Ελλάδα. Θεωρήθηκαν κάλυμμα για την έκδοση πρόσθετου χαρτονομίσματος, με το οποίο η κυβέρνηση Βενιζέλου θα χρηματοδοτούσε την πολεμική της προσπάθεια. Ένα είδος αποθέματος, δηλαδή, σε χρυσό και σε συνάλλαγμα, που δεν βρισκόταν όμως υπό τον έλεγχο της χώρας. Η Ελλάδα, πάντως, χρηματοδότησε με τον τρόπο αυτό την πολεμική συμμετοχή της στο μακεδονικό μέτωπο, την εκστρατεία στην Ουκρανία και την Κριμαία, και την πρώτη φάση της στρατιωτικής εμπλοκής στη Μικρά Ασία. Οι συνέπειες αυτής της ιδιόμορφης νομισματικής ισορροπίας δεν άργησαν να φανούν.",
+    "Το Νοέμβριο του 1920 η φιλοσυμμαχική κυβέρνηση του Βενιζέλου έχασε τις εκλογές και την εξουσία ανέλαβαν τα φιλοβασιλικά κόμματα που έσπευσαν να επαναφέρουν τον ανεπιθύμητο στους Συμμάχους βασιλιά Κωνσταντίνο. Οι Σύμμαχοι, σε αντίποινα, έσπευσαν να αποσύρουν την κάλυψη του χαρτονομίσματος και έτσι, ένα σημαντικό τμήμα της νομισματικής κυκλοφορίας βρέθηκε χωρίς αντίκρυσμα. Επιπλέον, από το 1918 και μετά, ο κρατικός ισολογισμός έκλεινε με παθητικό, ενώ ταυτόχρονα η παρουσία στη Μικρά Ασία εξελίχθηκε σε σκληρό και δαπανηρό πόλεμο. Το Μάρτιο του 1922 τα δημοσιονομικά δεδομένα έφτασαν σε πλήρες αδιέξοδο, το οποίο αντιμετωπίστηκε με έναν απρόσμενο τρόπο. Λίγους μήνες πριν από την κατάρρευση του Ελληνικού Μετώπου στη Μικρά Ασία, η Κυβέρνηση προέβει σε ένα πρωτότυπο εσωτερικό αναγκαστικό δάνειο, με διχοτόμηση του χαρτονομίσματος. Το αριστερό τμήμα εξακολουθούσε να κυκλοφορεί στο 50% της αναγραφόμενης αξίας, ενώ το δεξιό ανταλλάχθηκε με ομολογίες του Δημοσίου. Η επιχείρηση στέφθηκε από επιτυχία, το κράτος απέκτησε 1.200.000.000 δραχμές και το πείραμα επαναλήφθηκε το 1926. Φυσικά, ο νομισματικός αυτός ελιγμός δεν στάθηκε ικανός να προλάβει τη Μικρασιατική καταστροφή και τις βαρύτατες συνέπειές της."
+  ],
+
+  /* Σημεία όπου το ψηφιακό σχολικό βιβλίο έχει τυπογραφικό λάθος */
+  sic: [
+    { m: "μεγάλο δάνεια", fix: "μεγάλα δάνεια" },
+    { m: "Το ποσά αυτά", fix: "Τα ποσά αυτά" },
+    { m: "προέβει", fix: "προέβη" }
+  ],
+
+  explain: {
+    lede: "Η Ελλάδα μπήκε στον Α΄ Παγκόσμιο πόλεμο <b>διχασμένη και οικονομικά εξαντλημένη</b>. Για να πληρώσει τον πόλεμο, οι Σύμμαχοι της «δάνεισαν» ποσά που <b>δεν της έδωσαν ποτέ</b>: τα άφησαν ως εγγύηση, για να τυπώνει η ίδια χαρτονόμισμα. Όταν το 1920 η Ελλάδα έφερε πίσω τον βασιλιά που οι Σύμμαχοι δεν ήθελαν, εκείνοι <b>τράβηξαν την εγγύηση</b>. Με άδειο ταμείο και πόλεμο στη Μικρά Ασία, το κράτος το 1922 έκανε κάτι πρωτοφανές: <b>έκοψε τα χαρτονομίσματα στη μέση</b>.",
+    glance: {
+      who: "Ελευθέριος Βενιζέλος · βασιλιάς Κωνσταντίνος · οι Σύμμαχοι (Γαλλία, Μεγάλη Βρετανία, ΗΠΑ)",
+      keywords: ["Διχασμός", "ιδιόμορφος δανεισμός", "κάλυμμα", "αντίκρυσμα", "παθητικό", "αναγκαστικό δάνειο", "διχοτόμηση"],
+      numbers: [["Μ. Βρετανία", "12.000.000 λίρες"], ["Γαλλία", "300.000.000 φράγκα"], ["ΗΠΑ", "50.000.000 δολάρια"], ["Αριστερό μισό", "50% της αξίας"], ["Κέρδος κράτους", "1.200.000.000 δρχ."]]
+    },
+    acts: [
+      { when: "1915 – 1917", cat: "pol", title: "Μια χώρα, δύο κυβερνήσεις",
+        body: "Ο βασιλιάς Κωνσταντίνος ήθελε η Ελλάδα να μείνει <b>ουδέτερη</b>. Ο Βενιζέλος ήθελε να μπει στον πόλεμο <b>με το μέρος των Συμμάχων</b>. Η σύγκρουσή τους ονομάστηκε <b>Διχασμός</b>. Το 1915 έγινε επιστράτευση που δεν οδήγησε πουθενά, αλλά κόστισε πολλά. Ο Βενιζέλος έφτιαξε δική του κυβέρνηση στη Θεσσαλονίκη (<b>Εθνική Άμυνα</b>), οπότε στην ουσία υπήρχαν δύο κράτη. Ήρθαν και ο συμμαχικός αποκλεισμός και οι συγκρούσεις. Αποτέλεσμα: <b>τεράστιο οικονομικό και κοινωνικό κόστος</b>, και χάθηκε μεγάλο μέρος της προόδου των προηγούμενων χρόνων.",
+        think: "Σκέψου μια οικογένεια όπου οι γονείς μαλώνουν τόσο που χωρίζουν το σπίτι στα δύο, με δύο κουζίνες και δύο λογαριασμούς. Ξοδεύουν διπλά, δεν προχωράει κανείς, και όσα είχαν μαζέψει τα προηγούμενα χρόνια αρχίζουν να χάνονται.",
+        quote: "υπονόμευσαν πολλά από τα κεκτημένα της προηγούμενης περιόδου" },
+      { when: "1917", cat: "pol", title: "Ενωμένη ξανά, αλλά χωρίς λεφτά",
+        body: "Οι Σύμμαχοι επεμβαίνουν και η χώρα <b>ενώνεται ξανά υπό τον Βενιζέλο</b> (1917). Τώρα η Ελλάδα μπαίνει κανονικά στον πόλεμο. Το ταμείο όμως είναι άδειο: <b>δεν μπορεί να πληρώσει μόνη της</b> τον πόλεμο και χρειάζεται βοήθεια από έξω («εξωτερική αρωγή»). Γι' αυτό οι Σύμμαχοι σκέφτονται έναν <b>ιδιόμορφο</b> τρόπο να τη «δανείσουν».",
+        think: "Είναι σαν να σε βάζουν στην ομάδα για ένα τουρνουά με ακριβή συμμετοχή, ενώ εσύ δεν έχεις ούτε για το εισιτήριο του λεωφορείου.",
+        quote: "στάθηκε αδύνατο να αναλάβει, χωρίς εξωτερική αρωγή, το κόστος της συμμετοχής στον πόλεμο" },
+      { when: "1917 – 1920", cat: "ally", title: "Το «δάνειο» που δεν ήρθε ποτέ",
+        body: "Γαλλία, Μεγάλη Βρετανία και ΗΠΑ ενέκριναν δάνεια: <b>12.000.000 λίρες, 300.000.000 φράγκα, 50.000.000 δολάρια</b>. Κανένα όμως από αυτά τα χρήματα δεν ήρθε στην Ελλάδα. Ήταν ένα δάνειο <b>μόνο στα χαρτιά</b>. Τα ποσά λειτούργησαν ως <b>κάλυμμα</b>, δηλαδή εγγύηση: επειδή «υπήρχαν» στο εξωτερικό, η κυβέρνηση μπορούσε να <b>τυπώνει επιπλέον χαρτονόμισμα</b> και να πληρώνει τον πόλεμο (μακεδονικό μέτωπο, Ουκρανία & Κριμαία, αρχή της Μικράς Ασίας). Το κλειδί όμως το κρατούσαν οι Σύμμαχοι, όχι η Ελλάδα.",
+        think: "Ένας πλούσιος θείος σου λέει: «Λεφτά δεν σου δίνω, αλλά αν ρωτήσει κανείς, πες ότι εγγυώμαι εγώ». Με αυτή την εγγύηση όλοι δέχονται τα χαρτάκια-«χρωστάω» που γράφεις. Αν όμως ο θείος θυμώσει και πάρει πίσω την εγγύηση, τα χαρτάκια σου δεν αξίζουν πια τίποτα.",
+        quote: "Ο δανεισμός ήταν όμως θεωρητικός" },
+      { when: "1920 – 1922", cat: "ally", title: "Οι Σύμμαχοι παίρνουν πίσω την εγγύηση",
+        body: "Τον <b>Νοέμβριο του 1920</b> ο Βενιζέλος χάνει τις εκλογές. Τα φιλοβασιλικά κόμματα φέρνουν πίσω τον <b>Κωνσταντίνο</b>, που οι Σύμμαχοι δεν ήθελαν. Για <b>αντίποινα</b>, οι Σύμμαχοι <b>αποσύρουν την κάλυψη</b>, και μεγάλο μέρος από τα χρήματα που κυκλοφορούσαν μένει <b>χωρίς αντίκρυσμα</b>. Ταυτόχρονα, από το <b>1918</b> ο κρατικός ισολογισμός έβγαινε με έλλειμμα (<b>παθητικό</b>) και ο πόλεμος στη Μικρά Ασία γινόταν όλο και πιο ακριβός. Τον <b>Μάρτιο του 1922</b> τα οικονομικά του κράτους φτάνουν σε <b>πλήρες αδιέξοδο</b>.",
+        think: "Ο θείος θύμωσε και πήρε πίσω την εγγύηση. Εσύ ήδη ξόδευες περισσότερα απ' όσα έβγαζες, και τώρα έχεις και έναν πόλεμο να πληρώνεις κάθε μέρα.",
+        quote: "Οι Σύμμαχοι, σε αντίποινα, έσπευσαν να αποσύρουν την κάλυψη του χαρτονομίσματος" },
+      { when: "1922 · 1926", cat: "eco", title: "Το ψαλίδι: η διχοτόμηση του χαρτονομίσματος",
+        body: "Η λύση ήταν ένα <b>εσωτερικό αναγκαστικό δάνειο</b>: το κράτος δανείστηκε <b>υποχρεωτικά από τους ίδιους τους πολίτες του</b>. Κάθε χαρτονόμισμα κόπηκε στα δύο. Το <b>αριστερό κομμάτι</b> συνέχισε να κυκλοφορεί με το <b>50%</b> της αξίας του. Το <b>δεξί</b> το έδινες στο κράτος και έπαιρνες <b>ομολογίες του Δημοσίου</b>, δηλαδή υπόσχεση ότι θα σου επιστραφούν τα χρήματα αργότερα. Το μέτρο πέτυχε: το κράτος πήρε <b>1.200.000.000 δραχμές</b> και το ίδιο «πείραμα» έγινε ξανά το <b>1926</b>. Δεν μπόρεσε όμως να αποτρέψει τη <b>Μικρασιατική καταστροφή</b>.",
+        think: "Έχεις στην τσέπη ένα χαρτονόμισμα των 100. Το κράτος το κόβει. Με το αριστερό κομμάτι ψωνίζεις σαν να είχες 50. Το δεξί το «δανείζεις» υποχρεωτικά στο κράτος, και εκείνο σου δίνει ένα χαρτί που γράφει «θα σου τα επιστρέψω».",
+        quote: "με διχοτόμηση του χαρτονομίσματος" }
+    ],
+    concepts: [
+      { t: "Κάλυμμα & αντίκρυσμα", b: "Ένα χαρτονόμισμα είναι απλώς χαρτί. Αξίζει κάτι επειδή υπάρχει κάτι πίσω του, π.χ. χρυσός ή ξένο νόμισμα. Αυτό είναι το <b>κάλυμμα</b>. Όταν το κάλυμμα φύγει, το χαρτί μένει <b>χωρίς αντίκρυσμα</b>, δηλαδή χωρίς πραγματική αξία πίσω του." },
+      { t: "Γιατί «ιδιόμορφος» δανεισμός;", b: "Γιατί ήταν δάνειο <b>χωρίς χρήματα</b>. Τα ποσά δεν εκταμιεύτηκαν ποτέ. Έμειναν στα χέρια των Συμμάχων ως απόθεμα σε χρυσό και συνάλλαγμα, και η Ελλάδα απλώς τύπωνε χρήμα με βάση αυτά. Άρα η χώρα <b>εξαρτιόταν πλήρως</b> από τη διάθεση των Συμμάχων." },
+      { t: "Γιατί «εσωτερικό αναγκαστικό» δάνειο;", b: "<b>Εσωτερικό</b>, γιατί δανειστές ήταν οι ίδιοι οι Έλληνες πολίτες, όχι ξένα κράτη ή τράπεζες. <b>Αναγκαστικό</b>, γιατί κανείς δεν ρωτήθηκε: το μισό χαρτονόμισμα άλλαζε υποχρεωτικά με ομολογίες." }
+    ],
+    pitfalls: [
+      { no: "Οι Σύμμαχοι έδωσαν στην Ελλάδα 12 εκ. λίρες, 300 εκ. φράγκα και 50 εκ. δολάρια.", ok: "Τα δάνεια εγκρίθηκαν μόνο «κατ' αρχήν». Τα ποσά δεν εκταμιεύτηκαν ούτε δόθηκαν. Ήταν κάλυμμα για έκδοση χαρτονομίσματος." },
+      { no: "Το δάνειο του 1922 το πήρε η Ελλάδα από τους Συμμάχους.", ok: "Ήταν εσωτερικό αναγκαστικό δάνειο: το πλήρωσαν οι Έλληνες πολίτες με τα μισά τους χαρτονομίσματα." },
+      { no: "Οι Σύμμαχοι απέσυραν την κάλυψη επειδή η Ελλάδα έχανε στη Μικρά Ασία.", ok: "Την απέσυραν σε αντίποινα για την επαναφορά του Κωνσταντίνου, μετά τις εκλογές του Νοεμβρίου 1920." },
+      { no: "Το δεξί κομμάτι κυκλοφορούσε στο 50%.", ok: "Το αριστερό κυκλοφορούσε στο 50% της αναγραφόμενης αξίας. Το δεξί ανταλλάχθηκε με ομολογίες του Δημοσίου." },
+      { no: "Η διχοτόμηση απέτυχε.", ok: "Στέφθηκε από επιτυχία (1.200.000.000 δρχ.) και επαναλήφθηκε το 1926. Όμως δεν μπόρεσε να προλάβει τη Μικρασιατική καταστροφή." }
+    ],
+    chain: ["Διχασμός & κόστος", "Ενοποίηση 1917 χωρίς πόρους", "Ιδιόμορφος δανεισμός", "Χαρτονόμισμα με συμμαχικό κάλυμμα", "Επαναφορά Κωνσταντίνου (1920)", "Απόσυρση κάλυψης", "Αδιέξοδο (Μάρτιος 1922)", "Διχοτόμηση χαρτονομίσματος"]
+  },
+
+  timeline: {
+    events: [
+      { id: "e1915", y: 1915, label: "1915", book: true, cat: "mil", title: "Διχασμός και «άσκοπη και δαπανηρή» επιστράτευση", text: "Φουντώνει η σύγκρουση παλατιού – Βενιζέλου. Ο στρατός επιστρατεύεται χωρίς να μπει η χώρα στον πόλεμο: μεγάλο κόστος χωρίς αποτέλεσμα.", q: "επιστράτευση του 1915" },
+      { id: "e1916", y: 1916, label: "1916", book: false, cat: "pol", title: "Εθνική Άμυνα στη Θεσσαλονίκη: δύο κράτη", text: "Ο Βενιζέλος σχηματίζει δική του κυβέρνηση στη Θεσσαλονίκη. Στην ουσία υπάρχουν δύο κράτη: του Βενιζέλου στη Θεσσαλονίκη και του βασιλιά στην Αθήνα.", note: "Το γεγονός είναι στο βιβλίο, η χρονιά όχι.", q: "κυβέρνησης της Εθνικής Άμυνας" },
+      { id: "e1916b", y: 1916, m: 12, label: "Δεκ. 1916", book: false, cat: "ally", title: "Συμμαχικός αποκλεισμός", text: "Ο συμμαχικός στόλος αποκλείει τα λιμάνια της φιλοβασιλικής νότιας Ελλάδας. Τα τρόφιμα σπανίζουν.", note: "Το γεγονός είναι στο βιβλίο, η χρονιά όχι.", q: "συμμαχικός αποκλεισμός" },
+      { id: "e1917", y: 1917, label: "1917", book: true, cat: "pol", title: "Ενοποίηση της χώρας υπό τον Βενιζέλο", text: "Με την επέμβαση των Συμμάχων η χώρα ενώνεται και μπαίνει στον πόλεμο. Δεν μπορεί όμως να τον πληρώσει μόνη της, και ακολουθεί ο ιδιόμορφος δανεισμός από Γαλλία, Μεγάλη Βρετανία και ΗΠΑ.", q: "ενοποιήθηκε το 1917" },
+      { id: "e1918", y: 1918, label: "1918", book: true, cat: "eco", title: "Ο κρατικός ισολογισμός κλείνει με παθητικό", text: "Από εδώ και πέρα τα έξοδα του κράτους ξεπερνούν τα έσοδα.", q: "από το 1918 και μετά" },
+      { id: "e1918b", y: 1918, m: 9, label: "Σεπ. 1918", book: false, cat: "mil", title: "Νίκη στο μακεδονικό μέτωπο", text: "Οι Σύμμαχοι, με μεγάλη ελληνική συμμετοχή, διασπούν το μέτωπο και η Βουλγαρία ζητά ανακωχή. Η ελληνική συμμετοχή πληρώθηκε με χαρτονόμισμα που είχε συμμαχικό κάλυμμα.", note: "Το μέτωπο αναφέρεται στο βιβλίο, η ημερομηνία όχι.", q: "στο μακεδονικό μέτωπο" },
+      { id: "e1919", y: 1919, label: "1919", book: false, cat: "mil", title: "Ουκρανία & Κριμαία, και μετά Μικρά Ασία", text: "Ελληνικός στρατός στέλνεται στη νότια Ουκρανία και την Κριμαία. Τον Μάιο του 1919 αρχίζει η εμπλοκή στη Μικρά Ασία με την απόβαση στη Σμύρνη. Όλα χρηματοδοτούνται με τον ίδιο τρόπο.", note: "Τα γεγονότα είναι στο βιβλίο, η χρονιά όχι.", q: "την εκστρατεία στην Ουκρανία και την Κριμαία" },
+      { id: "e1920", y: 1920, m: 11, label: "Νοέ. 1920", book: true, cat: "pol", title: "Ήττα Βενιζέλου, επιστροφή του Κωνσταντίνου", text: "Τα φιλοβασιλικά κόμματα φέρνουν πίσω τον βασιλιά που δεν ήθελαν οι Σύμμαχοι. Σε αντίποινα, οι Σύμμαχοι αποσύρουν την κάλυψη, και μεγάλο μέρος του χρήματος που κυκλοφορεί μένει χωρίς αντίκρυσμα.", q: "Το Νοέμβριο του 1920" },
+      { id: "e1922", y: 1922, m: 3, label: "Μάρ. 1922", book: true, cat: "eco", title: "Αδιέξοδο και διχοτόμηση του χαρτονομίσματος", text: "Εσωτερικό αναγκαστικό δάνειο: το αριστερό μισό κυκλοφορεί στο 50% της αξίας, το δεξί ανταλλάσσεται με ομολογίες. Το κράτος παίρνει 1.200.000.000 δραχμές.", q: "Το Μάρτιο του 1922" },
+      { id: "e1922b", y: 1922, m: 8, label: "Αύγ. 1922", book: false, cat: "mil", title: "Κατάρρευση του μετώπου: Μικρασιατική καταστροφή", text: "Λίγους μήνες μετά τη διχοτόμηση, το μέτωπο καταρρέει. Ο «νομισματικός ελιγμός» δεν μπόρεσε να προλάβει την καταστροφή.", note: "Το γεγονός είναι στο βιβλίο, ο μήνας όχι.", q: "κατάρρευση του Ελληνικού Μετώπου" },
+      { id: "e1926", y: 1926, label: "1926", book: true, cat: "eco", title: "Το «πείραμα» επαναλαμβάνεται", text: "Η διχοτόμηση του χαρτονομίσματος γίνεται ξανά.", q: "επαναλήφθηκε το 1926" }
+    ],
+    spans: [
+      { from: "e1915", to: "e1917", label: "Διχασμός", cat: "pol", book: false },
+      { from: "e1917", to: "e1920", label: "Συμμαχική κάλυψη", cat: "ally", book: true },
+      { from: "e1918", to: "e1922", label: "Παθητικό", cat: "eco", book: true },
+      { from: "e1919", to: "e1922b", label: "Μικρά Ασία", cat: "mil", book: false }
+    ]
+  },
+
+  /* m = η ακριβής φράση όπως υπάρχει στο κείμενο */
+  glossary: [
+    { m: "παλατιού", t: "Παλάτι", cat: "pol", d: "Εδώ σημαίνει ο βασιλιάς (Κωνσταντίνος) και ο κύκλος του, όχι το κτίριο." },
+    { m: "Διχασμός", t: "Διχασμός (Εθνικός Διχασμός)", cat: "pol", d: "Η βαθιά σύγκρουση του βασιλιά Κωνσταντίνου με τον Βενιζέλο για το αν θα μπει η Ελλάδα στον πόλεμο. Χώρισε τη χώρα και την κοινωνία σε δύο στρατόπεδα." },
+    { m: "άσκοπη και δαπανηρή", t: "Άσκοπη και δαπανηρή", cat: "gen", d: "Χωρίς νόημα και αποτέλεσμα (άσκοπη), και με πολλά έξοδα (δαπανηρή)." },
+    { m: "επιστράτευση", t: "Επιστράτευση", cat: "mil", d: "Όταν το κράτος καλεί τους πολίτες (κυρίως εφέδρους) να παρουσιαστούν στον στρατό για πιθανό πόλεμο." },
+    { m: "κυβέρνησης της Εθνικής Άμυνας", t: "Κυβέρνηση της Εθνικής Άμυνας", cat: "pol", d: "Η κυβέρνηση που έφτιαξε ο Βενιζέλος στη Θεσσαλονίκη (1916), αντίπαλη της κυβέρνησης της Αθήνας, για να βάλει την Ελλάδα στον πόλεμο με τους Συμμάχους." },
+    { m: "δυο ουσιαστικά κράτη", t: "Δυο ουσιαστικά κράτη", cat: "pol", d: "Στην πράξη δύο Ελλάδες: η βόρεια, με κέντρο τη Θεσσαλονίκη και επικεφαλής τον Βενιζέλο, και η νότια, με κέντρο την Αθήνα και τον βασιλιά." },
+    { m: "συμμαχικός αποκλεισμός", t: "Συμμαχικός αποκλεισμός", cat: "ally", d: "Ο στόλος των Συμμάχων έκλεισε τα λιμάνια της φιλοβασιλικής Ελλάδας για να πιέσει τον βασιλιά. Έτσι δεν έφταναν εμπορεύματα και τρόφιμα." },
+    { m: "υπονόμευσαν", t: "Υπονόμευσαν", cat: "gen", d: "Κατέστρεψαν σιγά σιγά, «έσκαψαν τα θεμέλια» κάποιου πράγματος." },
+    { m: "κεκτημένα", t: "Κεκτημένα", cat: "gen", d: "Όσα έχουν ήδη αποκτηθεί ή κερδηθεί. Εδώ: η πρόοδος που είχε πετύχει η χώρα την προηγούμενη περίοδο." },
+    { m: "επέμβαση των Συμμάχων", t: "Σύμμαχοι / επέμβαση των Συμμάχων", cat: "ally", d: "Σύμμαχοι = οι χώρες της Αντάντ (Γαλλία, Μεγάλη Βρετανία κ.ά.) που πολεμούσαν τη Γερμανία και τους συμμάχους της. Επέμβαση = ανακατεύτηκαν δυναμικά στα εσωτερικά της Ελλάδας." },
+    { m: "ενοποιήθηκε", t: "Ενοποιήθηκε", cat: "pol", d: "Έγινε ξανά ένα ενιαίο κράτος, με μία κυβέρνηση." },
+    { m: "εξωτερική αρωγή", t: "Εξωτερική αρωγή", cat: "eco", d: "Βοήθεια από το εξωτερικό, εδώ κυρίως οικονομική." },
+    { m: "ιδιόμορφο δανεισμό", t: "Ιδιόμορφος δανεισμός", cat: "eco", d: "Ασυνήθιστο, «περίεργο» δάνειο: εγκρίθηκε, αλλά τα χρήματα δεν δόθηκαν ποτέ. Χρησίμευσαν μόνο ως κάλυμμα για χαρτονόμισμα." },
+    { m: "οδυνηρές συνέπειες", t: "Οδυνηρές συνέπειες", cat: "gen", d: "Αποτελέσματα που «πονάνε», πολύ άσχημα για τη χώρα." },
+    { m: "ενέκριναν κατ' αρχήν", t: "Ενέκριναν κατ' αρχήν", cat: "eco", d: "Είπαν «ναι» καταρχάς, στα χαρτιά, χωρίς να έχει γίνει ακόμα κάτι στην πράξη." },
+    { m: "λίρες Αγγλίας", t: "Λίρες Αγγλίας", cat: "eco", d: "Το νόμισμα της Μεγάλης Βρετανίας (στερλίνα). Αντίστοιχα, τα φράγκα ήταν της Γαλλίας και τα δολάρια των ΗΠΑ." },
+    { m: "θεωρητικός", t: "Θεωρητικός", cat: "gen", d: "Που υπάρχει μόνο στη θεωρία ή στα χαρτιά, όχι στην πράξη." },
+    { m: "εκταμιεύτηκαν", t: "Εκταμιεύτηκαν", cat: "eco", d: "Βγήκαν από το ταμείο και δόθηκαν ως πραγματικά χρήματα." },
+    { m: "κάλυμμα", t: "Κάλυμμα (χαρτονομίσματος)", cat: "eco", d: "Η «εγγύηση» πίσω από το χαρτονόμισμα: απόθεμα σε χρυσό ή ξένο νόμισμα που δείχνει ότι το χαρτί αξίζει κάτι." },
+    { m: "πρόσθετου χαρτονομίσματος", t: "Έκδοση πρόσθετου χαρτονομίσματος", cat: "eco", d: "Το κράτος τυπώνει επιπλέον χαρτονομίσματα για να πληρώσει τα έξοδά του." },
+    { m: "αποθέματος", t: "Απόθεμα", cat: "eco", d: "Ποσό (π.χ. χρυσός) που φυλάγεται στην άκρη ως εγγύηση ή για ώρα ανάγκης." },
+    { m: "συνάλλαγμα", t: "Συνάλλαγμα", cat: "eco", d: "Ξένο νόμισμα, εδώ λίρες, φράγκα, δολάρια." },
+    { m: "μακεδονικό μέτωπο", t: "Μακεδονικό μέτωπο", cat: "mil", d: "Το πολεμικό μέτωπο στη Μακεδονία, όπου οι Σύμμαχοι και η Ελλάδα πολεμούσαν τη Βουλγαρία και τους συμμάχους της." },
+    { m: "εκστρατεία στην Ουκρανία και την Κριμαία", t: "Εκστρατεία στην Ουκρανία και την Κριμαία", cat: "mil", d: "Αποστολή ελληνικού στρατού το 1919 στη νότια Ρωσία, για να βοηθήσει τους Συμμάχους εναντίον των μπολσεβίκων." },
+    { m: "στρατιωτικής εμπλοκής", t: "Στρατιωτική εμπλοκή", cat: "mil", d: "Ανάμειξη σε πόλεμο ή πολεμικές επιχειρήσεις." },
+    { m: "νομισματικής ισορροπίας", t: "Νομισματική ισορροπία", cat: "eco", d: "Εδώ: η κατάσταση όπου το ελληνικό χαρτονόμισμα «στεκόταν» επειδή το στήριζε το συμμαχικό κάλυμμα. Ήταν εύθραυστη, γιατί δεν την έλεγχε η Ελλάδα." },
+    { m: "φιλοσυμμαχική", t: "Φιλοσυμμαχική", cat: "pol", d: "Υπέρ των Συμμάχων (της Αντάντ)." },
+    { m: "φιλοβασιλικά κόμματα", t: "Φιλοβασιλικά κόμματα", cat: "pol", d: "Κόμματα υπέρ του βασιλιά Κωνσταντίνου, αντίπαλοι του Βενιζέλου (αντιβενιζελικοί)." },
+    { m: "έσπευσαν", t: "Έσπευσαν", cat: "gen", d: "Βιάστηκαν, έκαναν κάτι αμέσως." },
+    { m: "ανεπιθύμητο", t: "Ανεπιθύμητος", cat: "pol", d: "Που δεν τον θέλουν. Οι Σύμμαχοι θεωρούσαν τον Κωνσταντίνο φιλογερμανό." },
+    { m: "αντίποινα", t: "Αντίποινα", cat: "ally", d: "Τιμωρία ή «εκδίκηση» ως απάντηση σε κάτι που έκανε ο άλλος." },
+    { m: "νομισματικής κυκλοφορίας", t: "Νομισματική κυκλοφορία", cat: "eco", d: "Όλα τα χρήματα (χαρτονομίσματα και κέρματα) που κυκλοφορούν στην αγορά." },
+    { m: "αντίκρυσμα", t: "Αντίκρυσμα", cat: "eco", d: "Η πραγματική αξία ή εγγύηση πίσω από κάτι. «Χωρίς αντίκρυσμα» = χαρτί χωρίς κάλυψη, που δεν στηρίζεται σε τίποτα." },
+    { m: "κρατικός ισολογισμός", t: "Κρατικός ισολογισμός", cat: "eco", d: "Ο «λογαριασμός» του κράτους: πόσα μπαίνουν (έσοδα) και πόσα βγαίνουν (έξοδα)." },
+    { m: "παθητικό", t: "Παθητικό", cat: "eco", d: "Έλλειμμα: τα έξοδα είναι περισσότερα από τα έσοδα." },
+    { m: "δημοσιονομικά δεδομένα", t: "Δημοσιονομικά δεδομένα", cat: "eco", d: "Η κατάσταση των οικονομικών του κράτους: έσοδα, έξοδα, χρέη." },
+    { m: "αδιέξοδο", t: "Αδιέξοδο", cat: "gen", d: "Κατάσταση χωρίς λύση και χωρίς «έξοδο διαφυγής»." },
+    { m: "κατάρρευση του Ελληνικού Μετώπου", t: "Κατάρρευση του Ελληνικού Μετώπου", cat: "mil", d: "Η ήττα και η υποχώρηση του ελληνικού στρατού στη Μικρά Ασία (Αύγουστος 1922)." },
+    { m: "προέβει", t: "Προέβει (σωστό: προέβη)", cat: "gen", d: "Προχώρησε σε κάτι, έκανε κάτι. Αόριστος του ρήματος «προβαίνω»." },
+    { m: "εσωτερικό αναγκαστικό δάνειο", t: "Εσωτερικό αναγκαστικό δάνειο", cat: "eco", d: "Δάνειο που το κράτος παίρνει υποχρεωτικά από τους δικούς του πολίτες, όχι από το εξωτερικό." },
+    { m: "διχοτόμηση του χαρτονομίσματος", t: "Διχοτόμηση του χαρτονομίσματος", cat: "eco", d: "Κυριολεκτικά: κόψιμο κάθε χαρτονομίσματος στα δύο. Το ένα μισό κυκλοφορούσε, το άλλο γινόταν ομολογία." },
+    { m: "αναγραφόμενης αξίας", t: "Αναγραφόμενη αξία", cat: "eco", d: "Η αξία που είναι τυπωμένη πάνω στο χαρτονόμισμα (π.χ. «100 δραχμές»)." },
+    { m: "ομολογίες του Δημοσίου", t: "Ομολογίες του Δημοσίου", cat: "eco", d: "Χαρτιά-«χρέους» του κράτους. Βεβαιώνουν ότι το κράτος σού χρωστάει και θα σου επιστρέψει τα χρήματα αργότερα." },
+    { m: "στέφθηκε από επιτυχία", t: "Στέφθηκε από επιτυχία", cat: "gen", d: "Πέτυχε." },
+    { m: "ελιγμός", t: "(Νομισματικός) ελιγμός", cat: "eco", d: "Έξυπνη κίνηση για να ξεφύγεις από μια δύσκολη κατάσταση. Εδώ: το «κόλπο» με το χαρτονόμισμα." },
+    { m: "Μικρασιατική καταστροφή", t: "Μικρασιατική καταστροφή", cat: "mil", d: "Η ήττα του ελληνικού στρατού στη Μικρά Ασία (1922) και ο ξεριζωμός του ελληνισμού της περιοχής." }
+  ],
+
+  facts: [
+    { big: "¼ εκατ.", cat: "pol", title: "Μια μαϊμού άλλαξε την ιστορία", text: "Τον Οκτώβριο του 1920 ο βασιλιάς Αλέξανδρος, γιος του Κωνσταντίνου και βασιλιάς από το 1917, δαγκώθηκε από μια μαϊμού στο Τατόι και πέθανε από τη μόλυνση. Ήταν λίγες εβδομάδες πριν από τις εκλογές. Με τον θάνατό του άνοιξε ξανά το θέμα της επιστροφής του Κωνσταντίνου. Ο Τσόρτσιλ έγραψε αργότερα ότι ένα τέταρτο του εκατομμυρίου ανθρώπων πέθαναν από το δάγκωμα εκείνης της μαϊμούς.", link: "επαναφέρουν τον ανεπιθύμητο στους Συμμάχους βασιλιά Κωνσταντίνο" },
+    { big: "Κάιζερ", cat: "pol", title: "Ο βασιλιάς ήταν γαμπρός του Κάιζερ", text: "Η σύζυγος του Κωνσταντίνου, η βασίλισσα Σοφία, ήταν αδελφή του Γερμανού αυτοκράτορα Γουλιέλμου Β΄. Γι' αυτό οι Σύμμαχοι θεωρούσαν το παλάτι φιλογερμανικό. Αυτό εξηγεί γιατί ο Κωνσταντίνος ήταν «ανεπιθύμητος στους Συμμάχους».", link: "ανεπιθύμητο στους Συμμάχους" },
+    { big: "Εκτός Βουλής", cat: "pol", title: "Ο Βενιζέλος δεν εξελέγη ούτε ο ίδιος", text: "Στις εκλογές του Νοεμβρίου 1920 ο Βενιζέλος δεν εξελέγη ούτε βουλευτής, και έφυγε από την Ελλάδα. Ο άνθρωπος που είχε μεγαλώσει τόσο τη χώρα με τους Βαλκανικούς πολέμους έμεινε εκτός Βουλής.", link: "έχασε τις εκλογές" },
+    { big: "½", cat: "eco", title: "Ο άνθρωπος με το ψαλίδι", text: "Τη διχοτόμηση του χαρτονομίσματος την εφάρμοσε ο υπουργός Οικονομικών Πέτρος Πρωτοπαπαδάκης. Λίγο αργότερα, το 1922, έγινε πρωθυπουργός. Μετά την καταστροφή καταδικάστηκε σε θάνατο και εκτελέστηκε στη «Δίκη των Έξι» (Νοέμβριος 1922).", link: "εσωτερικό αναγκαστικό δάνειο" },
+    { big: "Ανάθεμα", cat: "pol", title: "Πέτρες για τον Βενιζέλο", text: "Τον Δεκέμβριο του 1916, στην Αθήνα, οι οπαδοί του βασιλιά οργάνωσαν τελετή «αναθέματος» κατά του Βενιζέλου. Ο καθένας πετούσε μια πέτρα σε έναν σωρό, σαν κατάρα. Δείχνει πόσο βαθύς ήταν ο Διχασμός.", link: "ο Διχασμός" },
+    { big: "Πείνα", cat: "ally", title: "Ο αποκλεισμός έφερε πείνα", text: "Από τον Δεκέμβριο του 1916 ο συμμαχικός στόλος απέκλεισε τα λιμάνια της νότιας, φιλοβασιλικής Ελλάδας. Τα τρόφιμα δεν έφταναν και η Αθήνα πείνασε. Ο αποκλεισμός τελείωσε όταν ο Κωνσταντίνος έφυγε από τη χώρα (Ιούνιος 1917).", link: "ο συμμαχικός αποκλεισμός" },
+    { big: "Οδησσός", cat: "mil", title: "Έλληνες στρατιώτες στην Ουκρανία", text: "Στις αρχές του 1919 η Ελλάδα έστειλε δύο μεραρχίες στη νότια Ουκρανία και την Κριμαία, να πολεμήσουν τους μπολσεβίκους μαζί με τους Γάλλους. Ο Βενιζέλος ήλπιζε ότι έτσι οι Σύμμαχοι θα στήριζαν τις ελληνικές διεκδικήσεις στη Μικρά Ασία.", link: "την εκστρατεία στην Ουκρανία και την Κριμαία" },
+    { big: "1η", cat: "mil", title: "Η πρώτη που «έπεσε»", text: "Τον Σεπτέμβριο του 1918 οι Σύμμαχοι, με μεγάλη ελληνική συμμετοχή, διέσπασαν το μακεδονικό μέτωπο. Η Βουλγαρία ζήτησε ανακωχή, η πρώτη από τις Κεντρικές Δυνάμεις που βγήκε από τον πόλεμο.", link: "στο μακεδονικό μέτωπο" },
+    { big: "13 μέρες", cat: "gen", title: "Γιατί οι ημερομηνίες «δεν ταιριάζουν»", text: "Μέχρι το 1923 η Ελλάδα χρησιμοποιούσε το παλιό (Ιουλιανό) ημερολόγιο, 13 μέρες πίσω από το σημερινό. Γι' αυτό βλέπεις διαφορετικές ημερομηνίες για το ίδιο γεγονός: οι εκλογές του 1920 έγιναν 1 Νοεμβρίου με το παλιό ημερολόγιο, δηλαδή 14 Νοεμβρίου με το νέο. Το 1923, μετά τις 15 Φεβρουαρίου ήρθε κατευθείαν η 1η Μαρτίου.", link: "Το Νοέμβριο του 1920" },
+    { big: "Τριανδρία", cat: "pol", title: "Τρεις αρχηγοί για μία κυβέρνηση", text: "Η κυβέρνηση της Εθνικής Άμυνας στη Θεσσαλονίκη είχε τρεις επικεφαλής: τον Βενιζέλο, τον ναύαρχο Παύλο Κουντουριώτη και τον στρατηγό Παναγιώτη Δαγκλή. Την έλεγαν «Τριανδρία».", link: "κυβέρνησης της Εθνικής Άμυνας" }
+  ],
+
+  sources: {
+    intro: "Η ενότητα αυτή στο σχολικό βιβλίο δεν συνοδεύεται από πηγές. Εδώ είναι πηγές που χρησιμοποιούνται συχνά σε κριτήρια και φροντιστήρια γι' αυτήν. Τις δίνω με δικά μου λόγια, όχι αυτούσιες. Το αυτούσιο κείμενο που θα σου δώσει ο καθηγητής σου, πρόσθεσέ το πιο κάτω.",
+    list: [
+      { ref: "Mark Mazower, Η Ελλάδα και η οικονομική κρίση του μεσοπολέμου, ΜΙΕΤ", title: "Πώς έγινε στην πράξη η διχοτόμηση (1922)", cat: "eco",
+        gist: "Περιγράφει τον μηχανισμό: οι πολίτες υποχρεώθηκαν να παραδώσουν τα χαρτονομίσματά τους στις τράπεζες και οι τράπεζες τα έκοβαν στα δύο. Το ένα μισό συνέχισε να κυκλοφορεί με τη μισή αξία. Το άλλο ανταλλάχθηκε με ομολογίες του αναγκαστικού δανείου. Έτσι το κράτος βρήκε χρήματα χωρίς να αυξηθεί το χρήμα που κυκλοφορούσε.",
+        mine: "Δικό μου σχόλιο, όχι της πηγής: το βάρος ενός τέτοιου μέτρου πέφτει σε όσους κρατούν μετρητά. Είναι καλό σημείο για κριτική σκέψη.",
+        link: "διχοτόμηση του χαρτονομίσματος",
+        keep: ["Αιτία: δημοσιονομικό αδιέξοδο (απόσυρση κάλυψης, παθητικό από το 1918, δαπανηρός πόλεμος).", "Μηχανισμός: αριστερό μισό σε κυκλοφορία στο 50%, δεξί → ομολογίες του Δημοσίου.", "Αποτέλεσμα: 1.200.000.000 δρχ. και επανάληψη το 1926, αλλά δεν αποτράπηκε η καταστροφή."] },
+      { ref: "Ιστορία του Ελληνικού Έθνους, τόμ. ΙΕ΄, Εκδοτική Αθηνών, 1978", title: "Οι Σύμμαχοι απέναντι στην επιστροφή του Κωνσταντίνου", cat: "ally",
+        gist: "Οι Σύμμαχοι είχαν προειδοποιήσει ότι, αν επέστρεφε ο Κωνσταντίνος, η Ελλάδα θα έχανε την οικονομική τους στήριξη. Μετά τις εκλογές του 1920 η στάση τους απέναντι στη χώρα άλλαξε και η στήριξη κόπηκε.",
+        link: "αποσύρουν την κάλυψη του χαρτονομίσματος",
+        keep: ["Σύνδεσε: «ανεπιθύμητος στους Συμμάχους» → «σε αντίποινα» → απόσυρση κάλυψης.", "Συνέπεια από το βιβλίο: σημαντικό τμήμα της νομισματικής κυκλοφορίας χωρίς αντίκρυσμα."] },
+      { ref: "Ιστορία του Ελληνικού Έθνους, τόμ. ΙΕ΄, Εκδοτική Αθηνών, 1978", title: "Τα όρια της διχοτόμησης", cat: "eco",
+        gist: "Η διχοτόμηση έδωσε στο κράτος χρήματα για τις άμεσες υποχρεώσεις του, αλλά δεν έλυσε το βαθύτερο οικονομικό πρόβλημα.",
+        link: "δεν στάθηκε ικανός να προλάβει τη Μικρασιατική καταστροφή",
+        keep: ["Βιβλίο: «στέφθηκε από επιτυχία». Πηγή: λύση μόνο για το άμεσο πρόβλημα.", "Και τα δύο μαζί: επιτυχία ως μέτρο, αποτυχία να σώσει την κατάσταση."] }
+    ],
+    how: [
+      { t: "Ξεκίνα από το βιβλίο", b: "Γράψε πρώτα τη διατύπωση του βιβλίου για το θέμα που ρωτάει. Αυτό είναι η «ραχοκοκαλιά» της απάντησης." },
+      { t: "Δέσε με την πηγή", b: "Πρόσθεσε ό,τι συμπληρώνει ή επιβεβαιώνει η πηγή, με φράσεις όπως «όπως αναφέρεται και στην πηγή…». Βάλε σύντομα αποσπάσματα σε εισαγωγικά." },
+      { t: "Μην αντιγράφεις", b: "Μην ξαναγράφεις ολόκληρη την πηγή. Διάλεξε 2–3 σημεία και σύνθεσέ τα με το βιβλίο σε ενιαίο κείμενο." }
+    ]
+  }
+}];
+</script>
+<script>
+/* Σχεδιάγραμμα ενότητας (χρησιμοποιεί τα έτοιμα «κομμάτια» του template) */
+CHAPTERS[0].diagram = `
+<div class="dg-top">
+  <div><h2>Η οικονομική πλευρά της συμμετοχής στον Α΄ Π.Π.</h2><p>Από τον Διχασμό στη διχοτόμηση του χαρτονομίσματος · 1915 – 1926</p></div>
+  <div class="legend" data-legend></div>
+</div>
+
+<section class="st">
+  <div class="st-h"><div class="st-l">Α</div><div><h3>Δύσκολες & περίπλοκες συνθήκες συμμετοχής</h3><div class="when">1915 – 1917</div></div></div>
+  <div class="row r5">
+    <div class="n pol"><i>Πολιτικό</i><b>Διχασμός</b><span>σύγκρουση παλατιού – Βενιζέλου</span></div>
+    <div class="n mil"><i>Στρατιωτικό</i><b>Επιστράτευση <span class="yr">1915</span></b><span>άσκοπη & δαπανηρή</span></div>
+    <div class="n pol"><i>Πολιτικό</i><b>Εθνική Άμυνα</b><span>κυβέρνηση στη Θεσσαλονίκη → διάσπαση σε <b>δυο ουσιαστικά κράτη</b></span></div>
+    <div class="n ally"><i>Σύμμαχοι</i><b>Συμμαχικός αποκλεισμός</b><span>πίεση στη φιλοβασιλική Ελλάδα</span></div>
+    <div class="n mil"><i>Στρατιωτικό</i><b>Συγκρούσεις</b><span>εσωτερική αναταραχή</span></div>
+  </div>
+  <div class="fan"></div><div class="fanpad"></div>
+  <div class="result"><span class="tag">Αποτέλεσμα</span><div>Μεγάλο <b>οικονομικό</b> και <b>κοινωνικό κόστος</b>, που υπονόμευσε πολλά από τα <b>κεκτημένα της προηγούμενης περιόδου</b></div></div>
+</section>
+
+<div class="darr"><span class="ln"></span><span class="lb">1917</span><span class="ln"></span><svg viewBox="0 0 16 12"><path d="M1 1l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<section class="st">
+  <div class="st-h"><div class="st-l">Β</div><div><h3>Ενοποίηση, αλλά χωρίς πόρους</h3><div class="when">1917</div></div></div>
+  <div class="hchain">
+    <div class="n ally"><i>Σύμμαχοι</i><b>Επέμβαση των Συμμάχων</b></div>
+    <div class="ar">{{AR}}</div>
+    <div class="n pol"><i>Πολιτικό</i><b>Ενοποίηση υπό τον Βενιζέλο</b><span><span class="yr">1917</span></span></div>
+    <div class="ar">{{AR}}</div>
+    <div class="n eco"><i>Οικονομικό</i><b>Αδύνατο το κόστος του πολέμου</b><span>χωρίς <b>εξωτερική αρωγή</b></span></div>
+    <div class="ar">{{AR}}</div>
+    <div class="n ally"><i>Σύμμαχοι</i><b>Ιδιόμορφος δανεισμός</b><span>με «οδυνηρές συνέπειες στο μέλλον»</span></div>
+  </div>
+</section>
+
+<div class="darr"><span class="ln"></span><svg viewBox="0 0 16 12"><path d="M1 1l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<section class="st">
+  <div class="st-h"><div class="st-l">Γ</div><div><h3>Ο ιδιόμορφος δανεισμός</h3><div class="when">μετά το 1917</div></div></div>
+  <div class="two">
+    <div class="card">
+      <h4>Δάνεια που εγκρίθηκαν «κατ' αρχήν»</h4>
+      <table class="tbl">
+        <thead><tr><th>Χώρα</th><th>Ποσό</th><th>Νόμισμα</th></tr></thead>
+        <tbody>
+          <tr><td>Μεγάλη Βρετανία</td><td class="amt">12.000.000</td><td class="cur">λίρες Αγγλίας</td></tr>
+          <tr><td>Γαλλία</td><td class="amt">300.000.000</td><td class="cur">γαλλικά φράγκα</td></tr>
+          <tr><td>ΗΠΑ</td><td class="amt">50.000.000</td><td class="cur">δολάρια ΗΠΑ</td></tr>
+        </tbody>
+      </table>
+      <p class="fine">Στο βιβλίο οι χώρες γράφονται «Γαλλία, Μεγάλη Βρετανία, ΗΠΑ» και τα ποσά «λίρες, φράγκα, δολάρια». Εδώ κάθε ποσό μπαίνει δίπλα στη χώρα του νομίσματος.</p>
+    </div>
+    <div class="card">
+      <h4>Γιατί «ιδιόμορφος»</h4>
+      <ul class="checks">
+        <li>{{WARN}}<span>Ο δανεισμός ήταν <b>θεωρητικός</b></span></li>
+        <li>{{WARN}}<span>Τα ποσά <b>δεν εκταμιεύτηκαν</b> ούτε δόθηκαν στην Ελλάδα</span></li>
+        <li>{{WARN}}<span>Θεωρήθηκαν <b>κάλυμμα</b> για την <b>έκδοση πρόσθετου χαρτονομίσματος</b>, με το οποίο η κυβέρνηση Βενιζέλου χρηματοδοτούσε τον πόλεμο</span></li>
+        <li>{{WARN}}<span>Ήταν απόθεμα σε <b>χρυσό & συνάλλαγμα</b>, <b>όχι υπό τον έλεγχο της χώρας</b></span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="funded">
+    <p class="eyebrow">Με αυτόν τον τρόπο χρηματοδοτήθηκαν</p>
+    <div class="row r3">
+      <div class="n mil"><i>Μέτωπο</i><b>Μακεδονικό μέτωπο</b></div>
+      <div class="n mil"><i>Εκστρατεία</i><b>Ουκρανία & Κριμαία</b></div>
+      <div class="n mil"><i>Μικρά Ασία</i><b>Η πρώτη φάση της εμπλοκής</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="darr"><span class="ln"></span><span class="lb">«οι συνέπειες δεν άργησαν να φανούν»</span><span class="ln"></span><svg viewBox="0 0 16 12"><path d="M1 1l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<section class="st">
+  <div class="st-h"><div class="st-l">Δ</div><div><h3>Η κατάρρευση της «νομισματικής ισορροπίας»</h3><div class="when">1918 – 1922</div></div></div>
+  <div class="cols3">
+    <div class="vchain">
+      <div class="n pol"><i>Νοέμβριος 1920</i><b>Η φιλοσυμμαχική κυβέρνηση Βενιζέλου χάνει τις εκλογές</b></div>
+      <div class="vd">{{AD}}</div>
+      <div class="n pol"><i>Πολιτικό</i><b>Φιλοβασιλικά κόμματα → επαναφορά Κωνσταντίνου</b><span>ανεπιθύμητου στους Συμμάχους</span></div>
+      <div class="vd">{{AD}}</div>
+      <div class="n ally"><i>Σύμμαχοι · αντίποινα</i><b>Αποσύρουν την κάλυψη του χαρτονομίσματος</b></div>
+      <div class="vd">{{AD}}</div>
+      <div class="n eco"><i>Οικονομικό</i><b>Σημαντικό τμήμα της νομισματικής κυκλοφορίας χωρίς αντίκρυσμα</b></div>
+    </div>
+    <div class="n eco cause"><i>Από το 1918 και μετά</i><b>Ο κρατικός ισολογισμός κλείνει με παθητικό</b><span>έξοδα > έσοδα</span></div>
+    <div class="n mil cause"><i>Ταυτόχρονα</i><b>Μικρά Ασία: σκληρός & δαπανηρός πόλεμος</b></div>
+  </div>
+  <div class="fan"></div><div class="fanpad"></div>
+  <div class="result"><span class="tag">Μάρτιος 1922</span><div>Τα δημοσιονομικά δεδομένα φτάνουν σε <b>πλήρες αδιέξοδο</b>, που αντιμετωπίζεται «με έναν απρόσμενο τρόπο»</div></div>
+</section>
+
+<div class="darr"><span class="ln"></span><span class="lb">λίγους μήνες πριν από την κατάρρευση του μετώπου</span><span class="ln"></span><svg viewBox="0 0 16 12"><path d="M1 1l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<section class="st">
+  <div class="st-h"><div class="st-l">Ε</div><div><h3>Η λύση: πρωτότυπο εσωτερικό αναγκαστικό δάνειο</h3><div class="when">1922 · με διχοτόμηση του χαρτονομίσματος</div></div></div>
+  <div class="note100" aria-label="Διχοτόμηση χαρτονομίσματος">
+    <div class="half left">
+      <div class="den"><span>ΑΡΙΣΤΕΡΟ ΤΜΗΜΑ</span><span>100 → 50</span></div>
+      <div class="big">50%</div>
+      <div class="what">Εξακολουθεί να <b>κυκλοφορεί</b> στο 50% της <b>αναγραφόμενης αξίας</b></div>
+    </div>
+    <div class="cut"><span class="dash"></span>{{SC}}<span class="dash"></span></div>
+    <div class="half right">
+      <div class="den"><span>ΔΕΞΙΟ ΤΜΗΜΑ</span><span>→ κράτος</span></div>
+      <div class="big">Ομολογίες</div>
+      <div class="what"><b>Ανταλλάσσεται</b> με ομολογίες του Δημοσίου</div>
+    </div>
+  </div>
+  <div class="outcomes">
+    <div class="oc ok">{{OK}}<div><b>Στέφθηκε από επιτυχία</b><span>το κράτος απέκτησε <b class="mono" style="display:inline;font-size:14px">1.200.000.000</b> δραχμές</span></div></div>
+    <div class="oc re">{{RE}}<div><b>Επαναλήφθηκε το 1926</b><span>το «πείραμα» έγινε ξανά</span></div></div>
+    <div class="oc no">{{NO}}<div><b>Δεν πρόλαβε την καταστροφή</b><span>ο νομισματικός ελιγμός δεν στάθηκε ικανός να προλάβει τη Μικρασιατική καταστροφή</span></div></div>
+  </div>
+</section>
+
+<div class="dg-sum">
+  <h3>Όλη η ενότητα σε έναν πίνακα</h3>
+  <div class="tscroll">
+  <table class="tbl sumtbl">
+    <thead><tr><th>Πότε</th><th>Τι έγινε</th><th>Οικονομικό αποτέλεσμα</th></tr></thead>
+    <tbody>
+      <tr><td>1915 – 1917</td><td>Διχασμός, επιστράτευση 1915, Εθνική Άμυνα, αποκλεισμός, συγκρούσεις</td><td>Μεγάλο οικονομικό & κοινωνικό κόστος, υπονόμευση κεκτημένων</td></tr>
+      <tr><td>1917</td><td>Ενοποίηση υπό τον Βενιζέλο με επέμβαση των Συμμάχων</td><td>Αδυναμία να πληρωθεί ο πόλεμος χωρίς εξωτερική αρωγή</td></tr>
+      <tr><td>μετά το 1917</td><td>Ιδιόμορφος δανεισμός: Γαλλία, Μ. Βρετανία, ΗΠΑ</td><td>Κάλυμμα για πρόσθετο χαρτονόμισμα, χωρίς έλεγχο από τη χώρα</td></tr>
+      <tr><td>1918 →</td><td>Ο κρατικός ισολογισμός κλείνει με παθητικό</td><td>Έλλειμμα κάθε χρόνο</td></tr>
+      <tr><td>Νοέμβριος 1920</td><td>Ήττα Βενιζέλου, επαναφορά Κωνσταντίνου</td><td>Απόσυρση κάλυψης, χρήμα χωρίς αντίκρυσμα</td></tr>
+      <tr><td>Μάρτιος 1922</td><td>Πλήρες δημοσιονομικό αδιέξοδο</td><td>Εσωτερικό αναγκαστικό δάνειο, διχοτόμηση: 1.200.000.000 δρχ.</td></tr>
+      <tr><td>1926</td><td>Επανάληψη της διχοτόμησης</td><td>Το «πείραμα» ξαναγίνεται</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>`;
+</script>
+<script>
+(() => {
+"use strict";
+/* ─── icons ─── */
+const P = (d, sw = 1.8) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC = {
+  explain: P('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>'),
+  diagram: P('<rect x="3.5" y="3.5" width="7" height="5" rx="1.5"/><rect x="13.5" y="15.5" width="7" height="5" rx="1.5"/><rect x="3.5" y="15.5" width="7" height="5" rx="1.5"/><path d="M7 8.5v7M7 12h10v3.5"/>'),
+  timeline: P('<path d="M12 3v18"/><circle cx="12" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M14 6h6M4 12h6M14 18h6"/><circle cx="12" cy="12" r="2"/>'),
+  glossary: P('<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19M9 7.5h6M9 11h4"/>'),
+  facts: P('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>'),
+  text: P('<path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14 3v5h5M9 11.5h7M9 15h7M9 18.5h4.5"/>'),
+  sources: P('<path d="M6.5 7h4v4.2c0 3-1.4 5-4 6.3M14.5 7h4v4.2c0 3-1.4 5-4 6.3"/>'),
+  sun: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  moon: P('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  arrowR: P('<path d="M5 12h14M13 6l6 6-6 6"/>', 2),
+  arrowD: '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M8 1v14M2 10l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  search: P('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
+  x: P('<path d="M6 6l12 12M18 6L6 18"/>', 2.2),
+  check: P('<path d="M4 12.5l5 5L20 6.5"/>', 2.2),
+  undo: P('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'),
+  plus: P('<path d="M12 5v14M5 12h14"/>', 2),
+  warn: P('<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.6v.1"/>', 2),
+  info: P('<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>', 2),
+  okc: P('<circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.3l3 3 6-6.3"/>', 2),
+  re: P('<path d="M20 11a8 8 0 1 0-2.3 6.1"/><path d="M20 4.5V11h-6.5"/>', 2),
+  noc: P('<circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/>', 2),
+  sc: P('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.2 8.2L20 20M8.2 15.8L20 4"/>'),
+  book: P('<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>')
+};
+const CATS = { pol: "Πολιτικά", mil: "Στρατιωτικά", eco: "Οικονομικά", ally: "Σύμμαχοι", gen: "Γενικά" };
+const TABS = [
+  { id: "explain", label: "Κατάλαβέ το" }, { id: "diagram", label: "Σχεδιάγραμμα" },
+  { id: "timeline", label: "Χρονολόγιο" }, { id: "glossary", label: "Λεξικό" },
+  { id: "facts", label: "Fun facts" }, { id: "text", label: "Κείμενο" }, { id: "sources", label: "Πηγές" }
+];
+
+/* ─── helpers ─── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } }
+};
+const cat = (c, label) => `<span class="cat ${c}">${esc(label || CATS[c] || "")}</span>`;
+let toastT;
+function toast(msg, action) {
+  const t = $("#toast"); t.innerHTML = `<span>${esc(msg)}</span>` + (action ? `<button type="button">${esc(action.label)}</button>` : "");
+  t.hidden = false; clearTimeout(toastT);
+  if (action) t.querySelector("button").onclick = () => { action.fn(); t.hidden = true; };
+  toastT = setTimeout(() => t.hidden = true, action ? 5000 : 2600);
+}
+
+/* ─── state ─── */
+let CH, FULL, PSTART = [];
+let notes = { heads: [], defs: [], mine: [], updatedAt: 0 };
+let undoStack = [];
+let flags = store.get("istoria:flags", { gloss: true, sic: true });
+let flash = null;
+let pending = null;
+let tab = store.get("istoria:tab", "explain");
+if (!TABS.some(t => t.id === tab)) tab = "explain";
+let tlBookOnly = store.get("istoria:tlBookOnly", false);
+let gFilter = "all", gQuery = "";
+
+
+/* ─── chapter load ─── */
+function loadChapter(id) {
+  CH = CHAPTERS.find(c => c.id === id) || CHAPTERS[0];
+  FULL = CH.paragraphs.join("\n");
+  PSTART = []; let o = 0; CH.paragraphs.forEach(p => { PSTART.push(o); o += p.length + 1; });
+  notes = normNotes(store.get("istoria:notes:" + CH.id, null));
+  undoStack = [];
+  store.set("istoria:chapter", CH.id);
+  renderHero(); renderPanels(); switchTab(tab, true);
+  setSync(cloudOn ? "cloud" : "local");
+}
+function normNotes(n) {
+  n = n && typeof n === "object" ? n : {};
+  return { heads: Array.isArray(n.heads) ? n.heads : [], defs: Array.isArray(n.defs) ? n.defs : [], mine: Array.isArray(n.mine) ? n.mine : [], updatedAt: n.updatedAt || 0 };
+}
+
+/* ─── hero ─── */
+function renderHero() {
+  const words = FULL.split(/\s+/).filter(Boolean).length;
+  const bookDates = CH.timeline.events.filter(e => e.book).length;
+  $("#hero").innerHTML = `
+    <div>
+      <div class="crumbs">${CH.crumbs.map(c => `<span>${esc(c)}</span>`).join("")}</div>
+      <h1><span>${esc(CH.title)}</span><span class="unit">Ενότητα ${esc(CH.num)}</span></h1>
+    </div>
+    <div class="stats">
+      <div class="stat"><b class="mono">${words}</b><span>λέξεις κειμένου</span></div>
+      <div class="stat"><b class="mono">${bookDates}</b><span>χρονολογίες βιβλίου</span></div>
+      <div class="stat"><b class="mono">${CH.glossary.length}</b><span>δύσκολες λέξεις</span></div>
+    </div>`;
+  $("#chapterSel").innerHTML = CHAPTERS.map(c => `<option value="${esc(c.id)}"${c.id === CH.id ? " selected" : ""}>${esc(c.num)}. ${esc(c.title)}</option>`).join("");
+}
+$("#chapterSel").onchange = e => loadChapter(e.target.value);
+
+/* ─── tabs ─── */
+function renderTabs() {
+  $("#tabs").innerHTML = TABS.map((t, i) => `<button class="tab" role="tab" id="tab-${t.id}" aria-controls="panel-${t.id}" aria-selected="false" data-tab="${t.id}" type="button">${IC[t.id]}<span>${t.label}</span><kbd>${i + 1}</kbd></button>`).join("");
+  $$(".tab").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+}
+function switchTab(id, silent) {
+  tab = id; store.set("istoria:tab", id);
+  $$(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+  $$(".panel").forEach(p => { const on = p.id === "panel-" + id; p.hidden = !on; if (on && !silent) { p.classList.remove("enter"); void p.offsetWidth; p.classList.add("enter"); } });
+  hideSel(); closePop();
+  if (id === "text") requestAnimationFrame(layoutMargin);
+  if (id === "timeline") requestAnimationFrame(layoutSpans);
+  $("#tab-" + id)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea,select,[contenteditable]")) return;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && tab === "text") { e.preventDefault(); undo(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const n = +e.key; if (n >= 1 && n <= TABS.length) switchTab(TABS[n - 1].id);
+  if (e.key === "Escape") { closePop(); hideSel(); }
+});
+
+function renderPanels() {
+  $("#panels").innerHTML = TABS.map(t => `<section class="panel" id="panel-${t.id}" role="tabpanel" aria-labelledby="tab-${t.id}" hidden></section>`).join("");
+  renderExplain(); renderDiagram(); renderTimeline(); renderGlossary(); renderFacts(); renderText(); renderSources();
+}
+const quoteBtn = q => `<button class="quote-btn" type="button" data-goto="${esc(q)}"><span class="ql">Στο βιβλίο</span><q>«${esc(q)}»</q></button>`;
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-goto]");
+  if (g) { e.preventDefault(); goToText(g.dataset.goto); }
+});
+
+/* ─── 1. explain ─── */
+function renderExplain() {
+  const x = CH.explain;
+  $("#panel-explain").innerHTML = `
+  <div class="ex-grid">
+    <div>
+      <p class="eyebrow">Με απλά λόγια</p>
+      <p class="lede">${x.lede}</p>
+      <div class="sec">
+        <div class="sec-h"><div><p class="eyebrow">Η ιστορία βήμα βήμα</p><h2 class="h2">Τι έγινε, με τη σειρά</h2></div></div>
+        <div class="acts">
+          ${x.acts.map((a, i) => `
+          <article class="act">
+            <div class="act-n">${i + 1}</div>
+            <div>
+              <div class="act-when"><span class="mono">${esc(a.when)}</span>${cat(a.cat)}</div>
+              <h3>${esc(a.title)}</h3>
+              <p>${a.body}</p>
+              <div class="think"><span class="tl">Σκέψου το έτσι</span>${esc(a.think)}</div>
+              ${quoteBtn(a.quote)}
+            </div>
+          </article>`).join("")}
+        </div>
+      </div>
+    </div>
+    <aside class="glance">
+      <h3>Με μια ματιά</h3>
+      <dl>
+        <div><dt>Περίοδος</dt><dd class="mono" style="font-weight:700">${esc(CH.period)}</dd></div>
+        <div><dt>Πρωταγωνιστές</dt><dd>${esc(x.glance.who)}</dd></div>
+        <div><dt>Λέξεις-κλειδιά</dt><dd class="kw">${x.glance.keywords.map(k => `<span>${esc(k)}</span>`).join("")}</dd></div>
+        <div><dt>Αριθμοί που πρέπει να θυμάσαι</dt><dd class="nums">${x.glance.numbers.map(([a, b]) => `<div><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("")}</dd></div>
+      </dl>
+    </aside>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><div><p class="eyebrow">Για να το «πιάσεις»</p><h2 class="h2">Οι 3 έννοιες-κλειδιά</h2></div></div>
+    <div class="concepts">${x.concepts.map(c => `<div class="concept"><h4>${esc(c.t)}</h4><p>${c.b}</p></div>`).join("")}</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><div><p class="eyebrow">Εκεί που χάνονται μονάδες</p><h2 class="h2">Συχνά μπερδέματα</h2></div></div>
+    <div class="pitfalls">${x.pitfalls.map(p => `<div class="pit"><div><span class="no">${IC.x}</span><s>${esc(p.no)}</s></div><div><span class="ok">${IC.check}</span><span>${esc(p.ok)}</span></div></div>`).join("")}</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><div><p class="eyebrow">Αιτία → αποτέλεσμα</p><h2 class="h2">Όλη η αλυσίδα σε μία γραμμή</h2></div></div>
+    <div class="chain">${x.chain.map((c, i) => `<span class="c${i === x.chain.length - 1 ? " end" : ""}">${esc(c)}</span>${i < x.chain.length - 1 ? IC.arrowR : ""}`).join("")}</div>
+  </div>`;
+}
+
+/* ─── 2. diagram ─── */
+function renderDiagram() {
+  const html = (CH.diagram || "").replaceAll("{{AR}}", IC.arrowR).replaceAll("{{AD}}", IC.arrowD).replaceAll("{{WARN}}", IC.warn)
+    .replaceAll("{{OK}}", IC.okc).replaceAll("{{RE}}", IC.re).replaceAll("{{NO}}", IC.noc).replaceAll("{{SC}}", IC.sc);
+  $("#panel-diagram").innerHTML = `<div class="dg">${html}</div>`;
+  const lg = $("#panel-diagram [data-legend]");
+  if (lg) lg.innerHTML = ["pol", "mil", "eco", "ally"].map(c => cat(c)).join("");
+}
+
+/* ─── 3. timeline ─── */
+function gapText(a, b) {
+  if (a.m && b.m) {
+    const mo = (b.y - a.y) * 12 + (b.m - a.m);
+    if (mo < 12) return `<b>${mo}</b> ${mo === 1 ? "μήνας" : "μήνες"}`;
+    const y = Math.floor(mo / 12), r = mo % 12;
+    return `<b>${y}</b> ${y === 1 ? "χρόνος" : "χρόνια"}${r ? ` & <b>${r}</b> ${r === 1 ? "μήνας" : "μήνες"}` : ""}`;
+  }
+  const d = b.y - a.y;
+  if (d <= 0) return "την ίδια χρονιά";
+  return `${a.m || b.m ? "~" : ""}<b>${d}</b> ${d === 1 ? "χρόνος" : "χρόνια"}`;
+}
+function renderTimeline() {
+  const evs = CH.timeline.events.filter(e => !tlBookOnly || e.book);
+  let rows = "";
+  evs.forEach((e, i) => {
+    if (i > 0) { const gt = gapText(evs[i - 1], e); rows += `<div class="gap"><div></div><div class="ga">${IC.arrowD}</div><div class="gl">↳ ${gt}${gt.startsWith("την ίδια") ? "" : " μετά"}</div></div>`; }
+    rows += `<div class="ev ${e.book ? "" : "ctx"} ${e.cat}" data-ev="${e.id}">
+      <div class="yr">${esc(e.label)}</div>
+      <div class="nd"><i></i></div>
+      <div class="bd">
+        <div class="meta">${e.book ? `<span class="badge book">Χρονολογία βιβλίου</span>` : `<span class="badge ctx">Πλαίσιο</span>`}${cat(e.cat)}</div>
+        <h4>${esc(e.title)}</h4>
+        <p>${esc(e.text)}</p>
+        ${e.note ? `<p class="fine" style="margin:0">${esc(e.note)}</p>` : ""}
+        ${e.q ? `<div><button class="linkbtn" type="button" data-goto="${esc(e.q)}">${IC.book}Δες το στο κείμενο</button></div>` : ""}
+      </div>
+    </div>`;
+  });
+  $("#panel-timeline").innerHTML = `
+    <div class="tl-bar">
+      <div><p class="eyebrow">${esc(CH.period)}</p><h2 class="h2">Από το πιο παλιό στο πιο καινούργιο</h2></div>
+      <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
+        <div class="keys"><span><i class="dot"></i>Χρονολογία του βιβλίου</span><span><i class="dot hollow"></i>Πλαίσιο (η χρονιά δεν γράφεται στο βιβλίο)</span></div>
+        <label class="switch" for="tlBook"><input type="checkbox" id="tlBook" ${tlBookOnly ? "checked" : ""}>Μόνο του βιβλίου</label>
+      </div>
+    </div>
+    <div class="tlw"><div class="tl">${rows}</div><div class="spans" id="spans"></div></div>`;
+  $("#tlBook").onchange = e => { tlBookOnly = e.target.checked; store.set("istoria:tlBookOnly", tlBookOnly); renderTimeline(); layoutSpans(); };
+  $$("#panel-timeline .ev").forEach(el => { const e = CH.timeline.events.find(x => x.id === el.dataset.ev); el.style.setProperty("--c", `var(--${e.cat})`); });
+}
+function layoutSpans() {
+  const box = $("#spans"); if (!box || $("#panel-timeline").hidden) return;
+  box.innerHTML = "";
+  const base = box.getBoundingClientRect();
+  if (!base.width) return;
+  const spans = CH.timeline.spans.filter(s => !tlBookOnly || s.book);
+  spans.forEach((s, i) => {
+    const a = $(`#panel-timeline [data-ev="${s.from}"] .nd i`), b = $(`#panel-timeline [data-ev="${s.to}"] .nd i`);
+    if (!a || !b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const top = ra.top + ra.height / 2 - base.top, bottom = rb.top + rb.height / 2 - base.top;
+    const d = document.createElement("div");
+    d.className = "span " + (s.book ? "" : "ctx");
+    d.style.cssText = `top:${top}px;height:${Math.max(24, bottom - top)}px;left:${16 + i * 40}px;--c:var(--${s.cat})`;
+    const from = CH.timeline.events.find(e => e.id === s.from), to = CH.timeline.events.find(e => e.id === s.to);
+    d.innerHTML = `<span class="bar"></span><span class="lab">${esc(s.label)} <em>${esc(from.label)}–${esc(to.label)}</em></span>`;
+    d.title = `${s.label}: ${from.label} – ${to.label}${s.book ? "" : " (πλαίσιο)"}`;
+    box.append(d);
+  });
+}
+
+/* ─── 4. glossary ─── */
+function ctxSnippet(m) {
+  const i = FULL.indexOf(m); if (i < 0) return "";
+  let a = Math.max(0, i - 55), b = Math.min(FULL.length, i + m.length + 55);
+  while (a > 0 && !/\s/.test(FULL[a - 1])) a--;
+  while (b < FULL.length && !/\s/.test(FULL[b])) b++;
+  const pre = FULL.slice(a, i).replace(/\n/g, " "), post = FULL.slice(i + m.length, b).replace(/\n/g, " ");
+  return `${a > 0 ? "…" : ""}${esc(pre)}<mark>${esc(m)}</mark>${esc(post)}${b < FULL.length ? "…" : ""}`;
+}
+function renderGlossary() {
+  const counts = {}; CH.glossary.forEach(g => counts[g.cat] = (counts[g.cat] || 0) + 1);
+  $("#panel-glossary").innerHTML = `
+    <div class="sec-h"><div><p class="eyebrow">Με τη σειρά που εμφανίζονται στο κείμενο</p><h2 class="h2">Κάθε δύσκολη λέξη, απλά</h2><p class="sub">Οι ίδιες λέξεις είναι υπογραμμισμένες με τελείες στο tab «Κείμενο». Πέρνα το ποντίκι από πάνω τους για να δεις την εξήγηση.</p></div></div>
+    <div class="gl-bar">
+      <div class="search">${IC.search}<label class="sr" for="gq">Αναζήτηση λέξης</label><input id="gq" type="search" placeholder="Ψάξε λέξη ή εξήγηση…" value="${esc(gQuery)}" autocomplete="off"></div>
+      <div class="chips" role="group" aria-label="Κατηγορία">
+        <button class="chip" type="button" data-gf="all" aria-pressed="${gFilter === "all"}">Όλες · ${CH.glossary.length}</button>
+        ${Object.keys(CATS).filter(c => counts[c]).map(c => `<button class="chip" type="button" data-gf="${c}" aria-pressed="${gFilter === c}">${CATS[c]} · ${counts[c]}</button>`).join("")}
+      </div>
+      <span class="gcount mono" id="gcount"></span>
+    </div>
+    <div class="ggrid" id="ggrid"></div>`;
+  $("#gq").oninput = e => { gQuery = e.target.value; fillGlossary(); };
+  $$("[data-gf]").forEach(b => b.onclick = () => { gFilter = b.dataset.gf; $$("[data-gf]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); fillGlossary(); });
+  fillGlossary();
+}
+function fillGlossary() {
+  const q = norm(gQuery.trim());
+  const list = CH.glossary.filter(g => (gFilter === "all" || g.cat === gFilter) && (!q || norm(g.t + " " + g.d + " " + g.m).includes(q)));
+  $("#gcount").textContent = `${list.length} / ${CH.glossary.length}`;
+  $("#ggrid").innerHTML = list.length ? list.map(g => {
+    const sic = CH.sic.find(s => s.m.includes(g.m) || g.m.includes(s.m));
+    return `<article class="gcard">
+      <div class="gh"><h4>${esc(g.t)}</h4>${cat(g.cat)}</div>
+      <p class="mean">${esc(g.d)}</p>
+      ${sic ? `<div class="sicnote">Στο βιβλίο γράφεται «${esc(sic.m)}» (τυπογραφικό). Το σωστό είναι «${esc(sic.fix)}».</div>` : ""}
+      <p class="ctxline">${ctxSnippet(g.m)}</p>
+      <div><button class="linkbtn" type="button" data-goto="${esc(g.m)}">${IC.book}Δες το στο κείμενο</button></div>
+    </article>`;
+  }).join("") : `<div class="empty">Καμία λέξη δεν ταιριάζει με «${esc(gQuery)}».</div>`;
+}
+
+/* ─── 5. facts ─── */
+function renderFacts() {
+  $("#panel-facts").innerHTML = `
+    <div class="sec-h"><div><p class="eyebrow">Ιστορίες πίσω από το κείμενο</p><h2 class="h2">Πράγματα που δεν λέει το βιβλίο</h2></div></div>
+    <div class="banner">${IC.info}<div>Όλα είναι αληθινά, αλλά <b>εκτός βιβλίου</b>. Είναι για να καταλάβεις και να θυμάσαι. <b>Μην τα γράψεις στις εξετάσεις</b>, εκτός αν σου ζητηθούν.</div></div>
+    <div class="fgrid">${CH.facts.map(f => `
+      <article class="fact ${f.cat}" style="--c:var(--${f.cat === "gen" ? "ink-2" : f.cat})">
+        <div class="fh"><span class="big">${esc(f.big)}</span><span class="outside">Εκτός βιβλίου</span></div>
+        <h4>${esc(f.title)}</h4>
+        <p>${esc(f.text)}</p>
+        <div class="link"><span class="ll">Πώς δένει με το κείμενο</span><button class="quote-btn" type="button" data-goto="${esc(f.link)}"><span class="ql">Στο βιβλίο</span><q>«${esc(f.link)}»</q></button></div>
+      </article>`).join("")}
+    </div>`;
+}
+
+/* ─── 6. text (reader) ─── */
+function renderText() {
+  $("#panel-text").innerHTML = `
+  <div class="rd-grid">
+    <div class="reader" id="reader">
+      <div class="margin" id="margin" aria-hidden="true"></div>
+      <div class="rtext" id="rtext"></div>
+    </div>
+    <aside class="side" id="side"></aside>
+  </div>`;
+  renderReader(); renderSide();
+  const r = $("#rtext");
+  r.addEventListener("mouseup", () => setTimeout(checkSel, 0));
+  r.addEventListener("keyup", e => { if (e.shiftKey) checkSel(); });
+  r.addEventListener("touchend", () => setTimeout(checkSel, 250));
+  r.addEventListener("mouseover", onReaderHover);
+  r.addEventListener("mouseout", e => { if (!e.relatedTarget || !e.relatedTarget.closest?.(".seg")) hideTip(); });
+  r.addEventListener("click", onReaderClick);
+  if (window.ResizeObserver) new ResizeObserver(() => layoutMargin()).observe(r);
+}
+function buildMarks() {
+  const m = [];
+  if (flags.gloss) CH.glossary.forEach((g, i) => { const k = FULL.indexOf(g.m); if (k >= 0) m.push({ s: k, e: k + g.m.length, k: "g", id: i }); });
+  if (flags.sic) CH.sic.forEach((x, i) => { const k = FULL.indexOf(x.m); if (k >= 0) m.push({ s: k, e: k + x.m.length, k: "sic", id: i }); });
+  notes.defs.filter(d => !d.free).forEach(d => m.push({ s: d.s, e: d.e, k: "d", id: d.id }));
+  notes.heads.forEach(h => m.push({ s: h.s, e: h.e, k: "h", id: h.id }));
+  if (flash) m.push({ s: flash.s, e: flash.e, k: "f" });
+  return m;
+}
+function sortedHeads() { return [...notes.heads].sort((a, b) => a.s - b.s); }
+function renderReader() {
+  const marks = buildMarks();
+  const heads = sortedHeads(); const hn = {}; heads.forEach((h, i) => hn[h.id] = i + 1);
+  let html = `<h2 class="rhead"><span class="num">${esc(CH.num)}.</span>${esc(CH.title)}</h2>`;
+  CH.paragraphs.forEach((p, pi) => {
+    const ps = PSTART[pi], pe = ps + p.length;
+    const bset = new Set([ps, pe]);
+    marks.forEach(mk => { if (mk.s > ps && mk.s < pe) bset.add(mk.s); if (mk.e > ps && mk.e < pe) bset.add(mk.e); });
+    const bs = [...bset].sort((a, b) => a - b);
+    let out = "";
+    const markers = x => {
+      let r = "";
+      heads.filter(h => h.e === x && x > ps).forEach(h => r += `<span class="hm e" data-h="${h.id}" data-edge="e"></span>`);
+      heads.filter(h => h.s === x && x < pe).forEach(h => r += `<span class="hm s" data-h="${h.id}" data-edge="s" data-n="${hn[h.id]}" data-t="${esc(h.title)}"></span>`);
+      return r;
+    };
+    for (let i = 0; i < bs.length - 1; i++) {
+      const a = bs[i], b = bs[i + 1];
+      out += markers(a);
+      const act = marks.filter(mk => mk.s <= a && mk.e >= b);
+      const cls = ["seg"]; const attrs = [`data-s="${a}"`];
+      const gl = act.filter(x => x.k === "g").sort((x, y) => (x.e - x.s) - (y.e - y.s))[0];
+      if (gl) { cls.push("w"); attrs.push(`data-g="${gl.id}"`); }
+      const sc = act.find(x => x.k === "sic"); if (sc) { cls.push("sic"); attrs.push(`data-sic="${sc.id}"`); }
+      const df = act.find(x => x.k === "d"); if (df) { cls.push("df"); attrs.push(`data-d="${df.id}"`); }
+      const hd = act.find(x => x.k === "h"); if (hd) attrs.push(`data-h="${hd.id}"`);
+      if (act.some(x => x.k === "f")) cls.push("flash");
+      out += `<span class="${cls.join(" ")}" ${attrs.join(" ")}>${esc(FULL.slice(a, b))}</span>`;
+    }
+    out += markers(pe);
+    html += `<p data-ps="${ps}" data-pi="${pi}">${out}</p>`;
+  });
+  $("#rtext").innerHTML = html;
+  layoutMargin();
+}
+function layoutMargin() {
+  const reader = $("#reader"), margin = $("#margin");
+  if (!reader || !margin || $("#panel-text").hidden) return;
+  margin.innerHTML = "";
+  if (getComputedStyle(margin).display === "none") return;
+  const base = reader.getBoundingClientRect();
+  let last = -Infinity;
+  sortedHeads().forEach((h, i) => {
+    const sm = reader.querySelector(`.hm.s[data-h="${h.id}"]`), em = reader.querySelector(`.hm.e[data-h="${h.id}"]`);
+    if (!sm || !em) return;
+    const rs = sm.getBoundingClientRect(), re = em.getBoundingClientRect();
+    const t = rs.top - base.top - 4, b = re.bottom - base.top + 2;
+    const br = document.createElement("div"); br.className = "mbr"; br.dataset.h = h.id;
+    br.style.top = t + "px"; br.style.height = Math.max(18, b - t) + "px"; margin.append(br);
+    const lab = document.createElement("button");
+    lab.type = "button"; lab.className = "mnote"; lab.dataset.h = h.id;
+    lab.innerHTML = `<span class="mn">ΠΛΑΓΙΟΤΙΤΛΟΣ ${i + 1}</span><span class="mt">${esc(h.title)}</span>`;
+    const top = Math.max(t, last);
+    lab.style.top = top + "px"; margin.append(lab);
+    last = top + lab.offsetHeight + 12;
+    lab.onmouseenter = () => hotHead(h.id, true); lab.onmouseleave = () => hotHead(h.id, false);
+    lab.onclick = () => editHead(h.id, lab);
+  });
+  margin.style.pointerEvents = "none"; $$(".mnote", margin).forEach(l => l.style.pointerEvents = "auto");
+}
+function hotHead(id, on) {
+  $$(`#rtext .seg[data-h="${id}"]`).forEach(s => s.classList.toggle("hot", on));
+  $$(`#margin .mbr[data-h="${id}"]`).forEach(s => s.classList.toggle("hot", on));
+}
+
+/* selection → offsets */
+function offsetOf(node, off) {
+  const el = node.nodeType === 1 ? node : node.parentElement;
+  const p = el.closest("p[data-ps]");
+  if (!p) {
+    const rt = $("#rtext");
+    if (node === rt) { const kids = [...rt.children]; const nxt = kids.slice(off).find(k => k.matches("p[data-ps]")); return nxt ? +nxt.dataset.ps : FULL.length; }
+    return null;
+  }
+  const r = document.createRange(); r.setStart(p, 0);
+  try { r.setEnd(node, off); } catch { return null; }
+  return +p.dataset.ps + r.toString().length;
+}
+function snap(s, e) {
+  const L = /[\p{L}\p{N}'΄]/u;
+  while (s < e && /\s/.test(FULL[s])) s++;
+  while (e > s && /\s/.test(FULL[e - 1])) e--;
+  while (s > 0 && L.test(FULL[s - 1])) s--;
+  while (e < FULL.length && L.test(FULL[e])) e++;
+  while (e < FULL.length && /[.,;·:!»)]/.test(FULL[e])) e++;
+  return [s, e];
+}
+function checkSel() {
+  const sel = getSelection();
+  if (!sel.rangeCount || sel.isCollapsed) { hideSel(); return; }
+  const r = sel.getRangeAt(0);
+  const rt = $("#rtext");
+  if (!rt.contains(r.startContainer) || !rt.contains(r.endContainer)) { hideSel(); return; }
+  let s = offsetOf(r.startContainer, r.startOffset), e = offsetOf(r.endContainer, r.endOffset);
+  if (s == null || e == null) { hideSel(); return; }
+  if (e < s) [s, e] = [e, s];
+  [s, e] = snap(s, e);
+  if (e - s < 2) { hideSel(); return; }
+  pending = { s, e };
+  const rect = r.getBoundingClientRect();
+  const bar = $("#selbar"); bar.hidden = false;
+  const x = Math.min(Math.max(rect.left + rect.width / 2, 130), innerWidth - 130);
+  bar.style.left = x + "px"; bar.style.top = Math.max(64, rect.top - 10) + "px";
+}
+function hideSel() { const b = $("#selbar"); if (b) b.hidden = true; }
+$("#selbar").addEventListener("mousedown", e => e.preventDefault());
+$("#selHead").onclick = () => { if (pending) newHead(pending); };
+$("#selDef").onclick = () => { if (pending) newDef(pending); };
+document.addEventListener("mousedown", e => {
+  if (!e.target.closest("#selbar,#rtext")) hideSel();
+  if (!e.target.closest("#pop,.mnote,#rtext .df,[data-open-pop]")) closePop();
+});
+addEventListener("scroll", () => { hideSel(); hideTip(); }, { passive: true });
+addEventListener("resize", () => { layoutMargin(); layoutSpans(); hideSel(); });
+
+const snippet = (s, e, n = 60) => {
+  const t = FULL.slice(s, e).replace(/\n/g, " ");
+  return t.length > n * 2 + 5 ? esc(t.slice(0, n)) + " … " + esc(t.slice(-n)) : esc(t);
+};
+
+/* popover */
+function openPop(anchor, html, onMount) {
+  const pop = $("#pop"); pop.innerHTML = html; pop.hidden = false;
+  const r = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor;
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let x = Math.min(Math.max(16, r.left + (r.width || 0) / 2 - w / 2), innerWidth - w - 16);
+  let y = r.bottom + 10; if (y + h > innerHeight - 16) y = Math.max(16, r.top - h - 10);
+  pop.style.left = x + "px"; pop.style.top = y + "px";
+  onMount && onMount(pop);
+}
+function closePop() { const p = $("#pop"); if (p) p.hidden = true; }
+
+function mutate(fn) {
+  undoStack.push(JSON.stringify(notes)); if (undoStack.length > 60) undoStack.shift();
+  fn(); persist(); renderReader(); renderSide();
+}
+function undo() {
+  if (!undoStack.length) { toast("Δεν υπάρχει κάτι για αναίρεση"); return; }
+  notes = normNotes(JSON.parse(undoStack.pop())); persist(); renderReader(); renderSide(); renderMine();
+  toast("Έγινε αναίρεση");
+}
+
+function newHead({ s, e }) {
+  const clash = notes.heads.find(h => s < h.e && e > h.s);
+  hideSel();
+  if (clash) { toast(`Επικαλύπτει τον πλαγιότιτλο «${clash.title}». Σβήσ' τον ή διάλεξε άλλο κομμάτι.`); return; }
+  const rect = getSelection().rangeCount ? getSelection().getRangeAt(0).getBoundingClientRect() : $("#rtext").getBoundingClientRect();
+  openPop(rect, `
+    <h5>Νέος πλαγιότιτλος</h5>
+    <div class="pv">${snippet(s, e)}</div>
+    <label for="hTitle">Τίτλος (όπως τον έδωσε ο καθηγητής)</label>
+    <input id="hTitle" type="text" autocomplete="off" placeholder="π.χ. Ο ιδιόμορφος δανεισμός">
+    <div class="acts2"><div class="rowbtns"><button class="btn ghost" type="button" data-x>Άκυρο</button><button class="btn primary" type="button" data-ok>Προσθήκη</button></div></div>`, pop => {
+    const inp = $("#hTitle", pop); inp.focus();
+    const ok = () => { const t = inp.value.trim(); if (!t) { inp.focus(); return; } mutate(() => notes.heads.push({ id: uid(), ts: Date.now(), s, e, title: t })); closePop(); getSelection().removeAllRanges(); toast("Ο πλαγιότιτλος προστέθηκε", { label: "Αναίρεση", fn: undo }); };
+    $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
+    inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
+  });
+}
+function editHead(id, anchor) {
+  const h = notes.heads.find(x => x.id === id); if (!h) return;
+  openPop(anchor, `
+    <h5>Πλαγιότιτλος</h5>
+    <div class="pv">${snippet(h.s, h.e)}</div>
+    <label for="hEdit">Τίτλος</label>
+    <input id="hEdit" type="text" autocomplete="off" value="${esc(h.title)}">
+    <div class="acts2"><button class="btn danger sm" type="button" data-del>Διαγραφή</button><div class="rowbtns"><button class="btn ghost sm" type="button" data-x>Κλείσιμο</button><button class="btn primary sm" type="button" data-ok>Αποθήκευση</button></div></div>`, pop => {
+    const inp = $("#hEdit", pop); inp.focus(); inp.select();
+    const ok = () => { const t = inp.value.trim(); if (!t) return; mutate(() => { const h2 = notes.heads.find(x => x.id === id); h2.title = t; h2.ts = Date.now(); }); closePop(); };
+    $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
+    $("[data-del]", pop).onclick = () => { mutate(() => notes.heads = notes.heads.filter(x => x.id !== id)); closePop(); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); };
+    inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
+  });
+}
+function newDef({ s, e }) {
+  const clash = notes.defs.find(d => !d.free && s < d.e && e > d.s);
+  hideSel();
+  if (clash) { toast(`Επικαλύπτει τον ορισμό «${clash.term}». Σβήσ' τον ή διάλεξε άλλο κομμάτι.`); return; }
+  const txt = FULL.slice(s, e); const words = txt.split(/\s+/);
+  const guess = words.length <= 5 ? txt.replace(/[.,;·:]$/, "") : "";
+  const rect = getSelection().rangeCount ? getSelection().getRangeAt(0).getBoundingClientRect() : $("#rtext").getBoundingClientRect();
+  openPop(rect, `
+    <h5>Νέος ορισμός</h5>
+    <div class="pv">${snippet(s, e)}</div>
+    <label for="dTerm">Όρος</label>
+    <input id="dTerm" type="text" autocomplete="off" placeholder="π.χ. Διχασμός" value="${esc(guess)}">
+    <div class="acts2"><div class="rowbtns"><button class="btn ghost" type="button" data-x>Άκυρο</button><button class="btn primary" type="button" data-ok>Προσθήκη</button></div></div>`, pop => {
+    const inp = $("#dTerm", pop); inp.focus(); inp.select();
+    const ok = () => { const t = inp.value.trim(); if (!t) { inp.focus(); return; } mutate(() => notes.defs.push({ id: uid(), ts: Date.now(), s, e, term: t })); closePop(); getSelection().removeAllRanges(); toast("Ο ορισμός προστέθηκε", { label: "Αναίρεση", fn: undo }); };
+    $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
+    inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
+  });
+}
+function newFreeDef(anchor) {
+  openPop(anchor, `
+    <h5>Ορισμός από τον καθηγητή</h5>
+    <p class="hint" style="margin-bottom:10px">Για ορισμό που δεν υπάρχει αυτούσιος στο κείμενο.</p>
+    <label for="fTerm">Όρος</label>
+    <input id="fTerm" type="text" autocomplete="off" placeholder="π.χ. Ιδιόμορφος δανεισμός">
+    <label for="fText" style="margin-top:10px">Ορισμός</label>
+    <textarea id="fText" rows="5" placeholder="Γράψε τον ορισμό όπως σου τον έδωσε…"></textarea>
+    <div class="acts2"><div class="rowbtns"><button class="btn ghost" type="button" data-x>Άκυρο</button><button class="btn primary" type="button" data-ok>Προσθήκη</button></div></div>`, pop => {
+    const t = $("#fTerm", pop), x = $("#fText", pop); t.focus();
+    $("[data-x]", pop).onclick = closePop;
+    $("[data-ok]", pop).onclick = () => { if (!t.value.trim() || !x.value.trim()) { (t.value.trim() ? x : t).focus(); return; } mutate(() => notes.defs.push({ id: uid(), ts: Date.now(), free: true, term: t.value.trim(), text: x.value.trim() })); closePop(); toast("Ο ορισμός προστέθηκε", { label: "Αναίρεση", fn: undo }); };
+  });
+}
+function editDef(id, anchor) {
+  const d = notes.defs.find(x => x.id === id); if (!d) return;
+  const body = d.free ? esc(d.text) : snippet(d.s, d.e, 200);
+  openPop(anchor, `
+    <h5>Ορισμός</h5>
+    <label for="dEdit">Όρος</label>
+    <input id="dEdit" type="text" autocomplete="off" value="${esc(d.term)}">
+    <div class="pv" style="margin-top:10px">${body}</div>
+    <div class="acts2"><button class="btn danger sm" type="button" data-del>Διαγραφή</button><div class="rowbtns"><button class="btn ghost sm" type="button" data-x>Κλείσιμο</button><button class="btn primary sm" type="button" data-ok>Αποθήκευση</button></div></div>`, pop => {
+    const inp = $("#dEdit", pop); inp.focus(); inp.select();
+    const ok = () => { const t = inp.value.trim(); if (!t) return; mutate(() => { const d2 = notes.defs.find(x => x.id === id); d2.term = t; d2.ts = Date.now(); }); closePop(); };
+    $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
+    $("[data-del]", pop).onclick = () => { mutate(() => notes.defs = notes.defs.filter(x => x.id !== id)); closePop(); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); };
+    inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
+  });
+}
+
+function onReaderHover(e) {
+  const seg = e.target.closest(".seg"); if (!seg) return;
+  const g = seg.dataset.g, sc = seg.dataset.sic, d = seg.dataset.d;
+  if (g == null && sc == null && d == null) { hideTip(); return; }
+  let html = "";
+  if (d != null) { const df = notes.defs.find(x => x.id === d); if (df) html += `<b>Ορισμός · ${esc(df.term)}</b>`; }
+  if (g != null) { const gg = CH.glossary[+g]; html += `${d != null ? '<span class="ts" style="color:inherit;border:0;padding:0;margin-top:6px">' : ""}<b>${esc(gg.t)}</b>${esc(gg.d)}${d != null ? "</span>" : ""}`; }
+  if (sc != null) { const s = CH.sic[+sc]; html += `<span class="ts">Τυπογραφικό του βιβλίου. Το σωστό είναι «${esc(s.fix)}».</span>`; }
+  showTip(seg, html);
+}
+function showTip(el, html) {
+  const t = $("#tip"); t.innerHTML = html; t.hidden = false;
+  const r = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+  t.style.left = Math.min(Math.max(12, r.left + r.width / 2 - w / 2), innerWidth - w - 12) + "px";
+  t.style.top = (r.top - h - 10 < 60 ? r.bottom + 10 : r.top - h - 10) + "px";
+}
+function hideTip() { const t = $("#tip"); if (t) t.hidden = true; }
+function onReaderClick(e) {
+  const seg = e.target.closest(".seg.df");
+  if (seg && getSelection().isCollapsed) { hideTip(); editDef(seg.dataset.d, seg); }
+}
+
+function renderSide() {
+  const heads = sortedHeads();
+  const defs = [...notes.defs].sort((a, b) => (a.free ? 1e9 : a.s) - (b.free ? 1e9 : b.s));
+  $("#side").innerHTML = `
+    <div class="box">
+      <div class="box-h"><h4><span class="sw-h"></span>Πλαγιότιτλοι <span class="ct">${heads.length}</span></h4></div>
+      ${heads.length ? `<ol class="olist">${heads.map((h, i) => `<li><button class="go" type="button" data-jh="${h.id}"><b><span class="n2">${i + 1}</span>${esc(h.title)}</b><span>«${snippet(h.s, h.e, 22)}»</span></button><button class="xbtn" type="button" data-dh="${h.id}" aria-label="Διαγραφή πλαγιότιτλου">${IC.x}</button></li>`).join("")}</ol>`
+        : `<div class="hint"><b>Πώς βάζεις πλαγιότιτλο:</b><ol><li>Διάλεξε με το ποντίκι το κομμάτι του κειμένου, από εκεί που ξεκινά μέχρι εκεί που σου είπε ο καθηγητής.</li><li>Πάτα <b>Πλαγιότιτλος</b> στη μαύρη μπάρα.</li><li>Γράψε τον τίτλο και πάτα Enter.</li></ol></div>`}
+    </div>
+    <div class="box">
+      <div class="box-h"><h4><span class="sw-d"></span>Ορισμοί <span class="ct">${defs.length}</span></h4><button class="btn sm" type="button" id="freeDef" data-open-pop>${IC.plus}Χωρίς επιλογή</button></div>
+      ${defs.length ? `<ul class="olist">${defs.map(d => `<li><button class="go" type="button" data-jd="${d.id}"><b>${esc(d.term)}</b><span>${d.free ? esc(d.text.length > 70 ? d.text.slice(0, 70) + "…" : d.text) : "«" + snippet(d.s, d.e, 26) + "»"}</span></button><button class="xbtn" type="button" data-dd="${d.id}" aria-label="Διαγραφή ορισμού">${IC.x}</button></li>`).join("")}</ul>`
+        : `<p class="hint">Διάλεξε τον ορισμό μέσα στο κείμενο και πάτα <b>Ορισμός</b>. Θα μαρκαριστεί σαν με υπογραμμιστή και θα μπει σε αυτή τη λίστα.</p>`}
+    </div>
+    <div class="box">
+      <div class="tog"><label for="fGloss">Υπογράμμιση δύσκολων λέξεων</label><span class="switch"><input type="checkbox" id="fGloss" ${flags.gloss ? "checked" : ""}></span></div>
+      <div class="tog"><label for="fSic">Σημάδια για τυπογραφικά του βιβλίου</label><span class="switch"><input type="checkbox" id="fSic" ${flags.sic ? "checked" : ""}></span></div>
+      <div class="tog" style="margin-top:6px;border-top:1px solid var(--line);padding-top:12px">
+        <span class="sync ${syncState}" id="sync"><i></i>${syncLabel()}</span>
+        <button class="btn sm" type="button" id="undoBtn" ${undoStack.length ? "" : "disabled"}>${IC.undo}Αναίρεση</button>
+      </div>
+    </div>`;
+  $$("[data-jh]").forEach(b => b.onclick = () => { const h = notes.heads.find(x => x.id === b.dataset.jh); scrollToOffset(h.s); hotHead(h.id, true); setTimeout(() => hotHead(h.id, false), 1600); });
+  $$("[data-dh]").forEach(b => b.onclick = () => { mutate(() => notes.heads = notes.heads.filter(x => x.id !== b.dataset.dh)); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $$("[data-jd]").forEach(b => b.onclick = () => { const d = notes.defs.find(x => x.id === b.dataset.jd); if (d.free) editDef(d.id, b); else { flash = { s: d.s, e: d.e }; renderReader(); scrollToOffset(d.s); clearTimeout(flashT); flashT = setTimeout(() => { flash = null; renderReader(); }, 2300); } });
+  $$("[data-dd]").forEach(b => b.onclick = () => { mutate(() => notes.defs = notes.defs.filter(x => x.id !== b.dataset.dd)); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $("#freeDef").onclick = e => newFreeDef(e.currentTarget);
+  $("#fGloss").onchange = e => { flags.gloss = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
+  $("#fSic").onchange = e => { flags.sic = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
+  $("#undoBtn").onclick = undo;
+}
+function scrollToOffset(off) {
+  const segs = $$("#rtext .seg"); let target = segs[0];
+  for (const s of segs) { if (+s.dataset.s <= off) target = s; else break; }
+  target?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+}
+let flashT;
+function goToText(phrase) {
+  const i = FULL.indexOf(phrase); if (i < 0) return;
+  switchTab("text");
+  flash = { s: i, e: i + phrase.length }; renderReader();
+  requestAnimationFrame(() => scrollToOffset(i));
+  clearTimeout(flashT); flashT = setTimeout(() => { flash = null; renderReader(); }, 2300);
+}
+
+/* ─── 7. sources ─── */
+function renderSources() {
+  const S = CH.sources;
+  $("#panel-sources").innerHTML = `
+    <div class="sec-h"><div><p class="eyebrow">Για τα θέματα με πηγές</p><h2 class="h2">Πηγές της ενότητας</h2><p class="sub">${esc(S.intro)}</p></div></div>
+    <div class="src-grid">${S.list.map(s => `
+      <article class="src">
+        <div>
+          <div class="ref">${esc(s.ref)}</div>
+          <h4>${esc(s.title)}</h4>
+          <p class="gl2">Τι λέει (με δικά μου λόγια)</p>
+          <p class="gist">${esc(s.gist)}</p>
+          ${s.mine ? `<p class="mine-note">${esc(s.mine)}</p>` : ""}
+        </div>
+        <aside>
+          <div>${cat(s.cat)}</div>
+          <div><p class="gl2" style="margin-top:0">Δένει με το βιβλίο</p>${quoteBtn(s.link)}</div>
+          <div><p class="gl2" style="margin-top:0">Τι κρατάς για την απάντηση</p><ul class="keep">${s.keep.map(k => `<li>${IC.check}<span>${esc(k)}</span></li>`).join("")}</ul></div>
+        </aside>
+      </article>`).join("")}
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div><p class="eyebrow">Μέθοδος</p><h2 class="h2">Πώς απαντάς σε ερώτηση με πηγές</h2></div></div>
+      <div class="how">${S.how.map((h, i) => `<div><span class="k">ΒΗΜΑ ${i + 1}</span><b>${esc(h.t)}</b><p>${esc(h.b)}</p></div>`).join("")}</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div><p class="eyebrow">Από τον καθηγητή σου</p><h2 class="h2">Οι δικές σου πηγές</h2><p class="sub">Επικόλλησε εδώ το αυτούσιο κείμενο των πηγών που σας δίνει ο καθηγητής, μαζί με τις σημειώσεις σου. Αποθηκεύονται μαζί με τους πλαγιότιτλους σου.</p></div></div>
+      <div class="src-grid" id="mine"></div>
+      <form class="addsrc" id="addSrc" style="margin-top:16px">
+        <div class="fld"><label for="sTitle">Τίτλος / συγγραφέας</label><input id="sTitle" type="text" autocomplete="off" placeholder="π.χ. Mazower, Η Ελλάδα και η οικονομική κρίση του μεσοπολέμου"></div>
+        <div class="fld"><label for="sText">Κείμενο πηγής</label><textarea id="sText" rows="6" placeholder="Επικόλλησε το κείμενο της πηγής…"></textarea></div>
+        <div class="fld"><label for="sNote">Σημειώσεις (προαιρετικά)</label><textarea id="sNote" rows="3" placeholder="Με ποιο σημείο του βιβλίου δένει, τι κρατάω…"></textarea></div>
+        <div><button class="btn primary" type="submit">${IC.plus}Πρόσθεσε πηγή</button></div>
+      </form>
+    </div>`;
+  $("#addSrc").onsubmit = e => {
+    e.preventDefault();
+    const t = $("#sTitle").value.trim(), x = $("#sText").value.trim(), n = $("#sNote").value.trim();
+    if (!x) { $("#sText").focus(); toast("Γράψε ή επικόλλησε πρώτα το κείμενο της πηγής"); return; }
+    undoStack.push(JSON.stringify(notes));
+    notes.mine.push({ id: uid(), ts: Date.now(), title: t || "Πηγή χωρίς τίτλο", text: x, note: n });
+    persist(); renderMine(); e.target.reset(); toast("Η πηγή αποθηκεύτηκε");
+  };
+  renderMine();
+}
+function renderMine() {
+  const box = $("#mine"); if (!box) return;
+  box.innerHTML = notes.mine.length ? notes.mine.map(m => `
+    <article class="mysrc">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><h4>${esc(m.title)}</h4><button class="btn ghost sm danger" type="button" data-dm="${m.id}">Διαγραφή</button></div>
+      <div class="body">${esc(m.text)}</div>
+      ${m.note ? `<div class="mn2"><b>Σημειώσεις:</b> ${esc(m.note)}</div>` : ""}
+    </article>`).join("") : `<div class="empty">Δεν έχεις προσθέσει ακόμα δικές σου πηγές.</div>`;
+  $$("[data-dm]", box).forEach(b => b.onclick = () => {
+    undoStack.push(JSON.stringify(notes));
+    notes.mine = notes.mine.filter(x => x.id !== b.dataset.dm); persist(); renderMine();
+    toast("Η πηγή διαγράφηκε", { label: "Αναίρεση", fn: undo });
+  });
+}
+
+/* ─── persistence: τοπικά + cloud (db) ─── */
+let cloudOn = false, syncState = "local";
+function syncLabel() { return syncState === "cloud" ? "Αποθηκεύεται στο cloud" : syncState === "saving" ? "Αποθήκευση…" : "Αποθηκεύεται σε αυτή τη συσκευή"; }
+function setSync(s) { syncState = s; const el = $("#sync"); if (el) { el.className = "sync " + (s === "saving" ? "" : s); el.innerHTML = `<i></i>${syncLabel()}`; } const u = $("#undoBtn"); if (u) u.disabled = !undoStack.length; }
+function hasContent(n) { return n.heads.length || n.defs.length || n.mine.length; }
+function persist() {
+  notes.updatedAt = Date.now();
+  /* ⚠️ ΠΑΝΤΑ μέσα από το κανονικό save της σελίδας. Το sync.js πιάνει το
+     setItem και βγάζει tombstones· κλειδί που καθαρίζεται πίσω από την πλάτη
+     του ξαναγυρνάει από το cloud (σταθερή αρχή 11). */
+  store.set("istoria:notes:" + CH.id, notes);
+  setSync(cloudOn ? "cloud" : "local");
+}
+/* Το cloud έφερε νέα δεδομένα: ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε η σελίδα,
+   αλλιώς μια εισερχόμενη συγχώνευση χάνεται από παλιό αντίγραφο στη μνήμη. */
+function onCloud() {
+  notes = normNotes(store.get("istoria:notes:" + CH.id, null));
+  undoStack = [];
+  if ($("#rtext")) { renderReader(); renderSide(); }
+  renderMine(); setSync("cloud");
+}
+function gate(msg) { const g = $("#gate"); if (!g) return; g.textContent = msg; g.hidden = false; }
+(function initSync() {
+  let tries = 0;
+  (function wait() {
+    if (typeof initCloudSync !== "function" || !window.supabase) {
+      if (tries++ < 40) { setTimeout(wait, 200); return; }
+      /* Σταθερή αρχή 32 + 10: ένας συγχρονισμός που δεν ξεκίνησε ΠΟΤΕ δεν
+         επιτρέπεται να μοιάζει με έναν που δουλεύει. */
+      gate("Ο συγχρονισμός δεν ξεκίνησε σε αυτή τη συσκευή. Ό,τι γράφεις μένει ΕΔΩ και δεν φεύγει στο cloud. Ανανέωσε τη σελίδα.");
+      setSync("local"); return;
+    }
+    initCloudSync({ appKey: "istoria", syncedPrefixes: ["istoria:notes:"], onApplied: onCloud });
+    cloudOn = true; setSync("cloud");
+  })();
+})();
+
+/* ─── boot ─── */
+renderTabs();
+loadChapter(store.get("istoria:chapter", CHAPTERS[0].id));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layoutMargin(); layoutSpans(); });
+})();
+</script>
+
+
+</body>
+</html>

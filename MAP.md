@@ -72,11 +72,42 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 **Study** — `latinika.html` (Λατινικά, **als-v535 · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html`**), `tonos.html` (Τονισμός,
-als-v450), `istoria.html` (Ιστορία, als-v451), `arxaia.html` (Αρχαία,
+als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
+(als-v542)**), `arxaia.html` (Αρχαία,
 als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 **`homework.html` (School Studies, als-v483)** is the room above them.
+
+⭐⭐ **`istoria-voithima.html` ΕΙΝΑΙ Η ΑΛΛΗ ΜΙΣΗ ΔΟΥΛΕΙΑ ΤΗΣ ΙΣΤΟΡΙΑΣ (als-v542).**
+Η `istoria.html` ΕΞΕΤΑΖΕΙ (πλαγιότιτλος, βαθμολόγηση ανά στοιχείο)· το βοήθημα
+σε κάνει να ΚΑΤΑΛΑΒΕΙΣ πρώτα. Επτά καρτέλες ανά ενότητα — **Κατάλαβέ το ·
+Σχεδιάγραμμα · Χρονολόγιο · Λεξικό · Fun facts · Κείμενο · Πηγές** — και μία
+ενότητα προς το παρόν (Κεφ. 1 · Γ.4, «Ο Α΄ Παγκόσμιος πόλεμος»). Νέα ενότητα =
+ένα νέο αντικείμενο στον πίνακα `CHAPTERS`.
+
+- **Ο σχεδιασμός δεν είναι δικός μου** και μπήκε ΑΥΤΟΥΣΙΟΣ: τον έφτιαξε ο Αλεξ
+  με το Claude Cowork και είπε *«αυτη η δομη μαρεσει πολυ περισσοτερο απο ο,τι
+  μου χεις φτιαξει εσυ για την ιστορια»*. Οι αλλαγές γίνονται **μία-μία**.
+- **Δικές του σημειώσεις πάνω στο βιβλίο:** διαλέγεις κομμάτι του κειμένου και
+  το κάνεις **Πλαγιότιτλο** (μπαίνει στο περιθώριο) ή **Ορισμό**. Κλειδιά
+  `istoria:notes:<chapterId>`, appKey **`istoria`**, prefix δηλωμένο στο
+  `backup.html` — αλλιώς συγχρονίζονται και **δεν ανακτώνται**.
+- ⛔⛔ **ΚΑΜΙΑ `topbar.js` ΕΔΩ, ΚΑΙ ΕΙΝΑΙ ΚΑΝΟΝΑΣ.** Η σελίδα έχει τέσσερα
+  `position:fixed` παιδιά (`.selbar` · `.pop` · `.tip` · `.toast`) και το
+  `topbar.js` βάζει animation με fill-mode στο ίδιο το `<body>` (σταθερή αρχή
+  18) — και τα τέσσερα θα σχεδιάζονταν εκτός οθόνης, χωρίς κανένα σφάλμα.
+  Γι αυτό η σελίδα δίνει μόνη της τον δρόμο πίσω (`.back` → `istoria.html`),
+  ίδιο σχήμα με τα δορυφορικά πακέτα των Αρχαίων.
+- **Τα τρία τυπογραφικά του βιβλίου μένουν** («μεγάλο δάνεια» · «Το ποσά αυτά» ·
+  «προέβει») και σημειώνονται με κυματιστή υπογράμμιση. Το κείμενο είναι
+  ταυτόσημο με το ebooks.edu.gr χαρακτήρα προς χαρακτήρα, με **δύο ανεξάρτητους
+  εξαγωγείς** — `tests/istoria-voithima.source.txt` κρατάει την πηγή και το sha.
+- ⭐ **Ο φρουρός ΤΡΕΧΕΙ τη σελίδα, δεν τη διαβάζει** (`tests/istoria-voithima.test.js`
+  §9): τα αληθινά inline scripts σε `vm`, 7 καρτέλες / 7 πάνελ, και κάθε
+  καρτέλα ελέγχεται με ΔΙΚΟ ΤΗΣ σημάδι. Γεννήθηκε επειδή μια ορφανή κλήση
+  `applyThemeIcon();` άφησε τη σελίδα ΜΑΥΡΗ ενώ 64 στατικές βεβαιώσεις ήταν
+  πράσινες.
 
 ⭐⭐ **`ekthesi.html` closed the last empty 30%.** Έκθεση ties with Αρχαία for
 weight and had **zero data** until als-v495 — `homework.html` said so in as many
