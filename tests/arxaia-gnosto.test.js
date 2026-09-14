@@ -63,7 +63,12 @@ var PACKS = [
   { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js' },
   { file: 'arxaia-sokratis.html',    sha: '5e64d662e89b4c3cf671d59369fbdd0c762a1befae4fccd7e520bce901320740' },
   { file: 'arxaia-platon.html',      sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' },
-  { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' }
+  { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' },
+  /* ⭐⭐ als-v551 — ΤΟ ΠΕΜΠΤΟ ΠΑΚΕΤΟ.  Είναι ΔΥΟ κεφάλαια του ίδιου βιβλίου
+     (το μέρος «Πρωταγόρας» του «Γ. Οι σοφιστές…» + τα μέρη Β και Γ του
+     κεφαλαίου «ΠΡΩΤΑΓΟΡΑΣ») — οι πέντε σελίδες που φωτογράφησε.
+     ⛔ ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ `mine`: έστειλε ΦΩΤΟΓΡΑΦΙΕΣ, όχι αρχείο. */
+  { file: 'arxaia-protagoras.html', mine: true, ground: 'arxaia-protagoras.test.js' }
 ];
 
 var pass = 0, fail = 0;
@@ -245,7 +250,7 @@ function hayFor(u) {
   return null;
 }
 
-console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα τέσσερα πακέτα\n');
+console.log('\nΑΡΧΑΙΑ · ΓΝΩΣΤΟ — τα κείμενα + τα πέντε πακέτα\n');
 
 /* ══ 1 · ΔΟΜΗ ═══════════════════════════════════════════════════════════
    ⭐ ΚΑΝΕΝΑ ΚΑΡΦΩΤΟ ΠΛΗΘΟΣ. Το corpus ΜΕΓΑΛΩΝΕΙ — κάθε νέο κείμενο του

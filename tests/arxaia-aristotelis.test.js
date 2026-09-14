@@ -361,8 +361,8 @@ var gnStart = arx.indexOf('id="gnWrap"');
 ok(gnStart > 0, 'υπάρχει ο κόσμος του Γνωστού');
 var gnBlock = arx.slice(gnStart, arx.indexOf('id="gnLesson"'));
 ok(gnBlock.indexOf('href="' + PAGE_F + '"') > 0, 'ο Γνωστός δείχνει στο πακέτο του Αριστοτέλη');
-eq((gnBlock.match(/class="gn-pl"/g) || []).length, 4, 'οι πλάκες της εισαγωγής είναι πια ΤΕΣΣΕΡΙΣ (als-v538)');
-ok(gnBlock.indexOf('4 πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — 4 πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
+eq((gnBlock.match(/class="gn-pl"/g) || []).length, 5, 'οι πλάκες της εισαγωγής είναι πια ΠΕΝΤΕ (als-v551 — μπήκε ο Πρωταγόρας)');
+ok(gnBlock.indexOf('5 πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — 5 πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
 
 var plate = gnBlock.slice(gnBlock.indexOf('href="' + PAGE_F + '"'));
 plate = plate.slice(0, plate.indexOf('</a>'));
