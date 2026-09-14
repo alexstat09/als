@@ -47,41 +47,99 @@ const CSS     = CSS_RAW.replace(/\/\*[\s\S]*?\*\//g, '');
 const JS_RAW  = PAGE.slice(PAGE.indexOf('</style>'));
 const JS      = JS_RAW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
 
-/* ── οι παράγραφοι της σελίδας, όπως τις γράφει το CHAPTERS ── */
-const parBlock = PAGE.match(/paragraphs: \[([\s\S]*?)\n  \],/);
-const PARS = parBlock ? eval('[' + parBlock[1] + ']') : [];
+/* ── ΟΛΕΣ οι έτοιμες ενότητες, από το ίδιο το CHAPTERS ──
+   ⛔⛔ ΗΤΑΝ ΚΑΡΦΩΜΕΝΟ ΣΕ ΜΙΑ ΕΝΟΤΗΤΑ, ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ ΣΙΩΠΗΛΗ ΑΠΩΛΕΙΑ.
+   Τα `PAGE.match(/paragraphs: \[…/)` και `/sic: \[…/` έπιαναν ΤΗΝ ΠΡΩΤΗ
+   ενότητα, ενώ οι άγκυρες μαζεύονταν από ΟΛΗ τη σελίδα — άρα με τη δεύτερη
+   ενότητα ο φρουρός σύγκρινε τις άγκυρες της Γ.3 με το κείμενο της Γ.4 και
+   «έβρισκε» 70 ορφανές. Ένας φρουρός που δεν μεγαλώνει μαζί με το υλικό
+   σταματάει να φρουρεί ΑΚΡΙΒΩΣ όταν αρχίζει να χρειάζεται. */
+const chStart = PAGE.indexOf('const CHAPTERS = [');
+const chEnd   = PAGE.indexOf('\n  }\n}];', chStart);
+if (chStart < 0 || chEnd < 0) throw new Error('δεν βρήκα τον πίνακα CHAPTERS');
+const CHAPTERS = eval(PAGE.slice(chStart + 'const CHAPTERS = '.length, chEnd + '\n  }\n}]'.length));
 
-/* ── οι παράγραφοι του ΒΙΒΛΙΟΥ, από το ανεξάρτητο αρχείο ── */
-const BOOK = SRC.split(/@@P\d+/).slice(1).map(s => s.trim()).filter(Boolean);
+/* το ΑΝΕΞΑΡΤΗΤΟ αρχείο γείωσης κάθε ενότητας — ένα ανά ενότητα, ποτέ κοινό */
+const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt', 'k1-g3': 'istoria-voithima-g3.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
-is('τρεις παράγραφοι στη σελίδα', PARS.length, 3);
-is('τρεις παράγραφοι στην πηγή',  BOOK.length, 3);
-PARS.forEach((p, i) => is('παράγραφος ' + (i + 1) + ' ταυτόσημη με το βιβλίο', p, BOOK[i] || '(λείπει)'));
-ok('η πηγή δηλώνει το sha256 του κατεβάσματος', /sha256 [0-9a-f]{64}/.test(SRC));
-ok('η πηγή δηλώνει τη διεύθυνση στο ebooks.edu.gr', SRC.includes('ebooks.edu.gr'));
+ok('υπάρχει τουλάχιστον μία έτοιμη ενότητα', CHAPTERS.length >= 1);
+CHAPTERS.forEach(C => {
+  const f = SOURCES[C.id];
+  ok(C.id + ': έχει δικό της αρχείο γείωσης', !!f);
+  if (!f) return;
+  const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  const book = src.split(/@@P\d+/).slice(1).map(x => x.trim()).filter(Boolean);
+  is(C.id + ': ίδιος αριθμός παραγράφων σελίδα ↔ πηγή', C.paragraphs.length, book.length);
+  C.paragraphs.forEach((p, i) => is(C.id + ': παράγραφος ' + (i + 1) + ' ταυτόσημη με το βιβλίο', p, book[i] || '(λείπει)'));
+  ok(C.id + ': η πηγή δηλώνει το sha256 του κατεβάσματος', /sha256 [0-9a-f]{64}/.test(src));
+  ok(C.id + ': η πηγή δηλώνει τη διεύθυνση στο ebooks.edu.gr', src.includes('ebooks.edu.gr'));
+});
 
 /* ══ 2 · ΤΑ ΤΥΠΟΓΡΑΦΙΚΑ ΤΟΥ ΒΙΒΛΙΟΥ ══════════════════════════════════ */
-section('2 · ΤΑ ΤΡΙΑ ΤΥΠΟΓΡΑΦΙΚΑ ΜΕΝΟΥΝ — ΤΟ ΒΙΒΛΙΟ ΔΕΝ «ΔΙΟΡΘΩΝΕΤΑΙ»');
-const sicBlock = PAGE.match(/sic: \[([\s\S]*?)\n  \],/);
-const SIC = sicBlock ? eval('[' + sicBlock[1] + ']') : [];
-is('τρία δηλωμένα τυπογραφικά', SIC.length, 3);
-const FULL = PARS.join('\n');
-SIC.forEach(s => {
-  ok('«' + s.m + '» υπάρχει ΑΥΤΟΥΣΙΟ στο κείμενο', FULL.includes(s.m));
-  ok('και η διόρθωση «' + s.fix + '» ΔΕΝ έχει μπει στο κείμενο', !FULL.includes(s.fix));
+section('2 · ΤΑ ΤΥΠΟΓΡΑΦΙΚΑ ΜΕΝΟΥΝ — ΤΟ ΒΙΒΛΙΟ ΔΕΝ «ΔΙΟΡΘΩΝΕΤΑΙ»');
+is('η Γ.4 κρατάει και τα τρία της τυπογραφικά', (CHAPTERS.find(c => c.id === 'k1-g4') || { sic: [] }).sic.length, 3);
+CHAPTERS.forEach(C => {
+  const full = C.paragraphs.join('\n');
+  ok(C.id + ': δηλώνει τουλάχιστον ένα τυπογραφικό ή κανένα συνειδητά', Array.isArray(C.sic));
+  C.sic.forEach(x => {
+    ok(C.id + ': «' + x.m + '» υπάρχει ΑΥΤΟΥΣΙΟ στο κείμενο', full.includes(x.m));
+    ok(C.id + ': και η διόρθωση «' + x.fix + '» ΔΕΝ έχει μπει στο κείμενο', !full.includes(x.fix));
+  });
 });
+/* ⚠️ Η ΠΑΡΕΝΘΕΤΙΚΗ ΠΑΥΛΑ ΤΗΣ Γ.3 — η ΜΟΝΗ γραφή που πρέπει να επιβιώσει.
+   Ο κανόνας που ενώνει τις σπασμένες λέξεις της τυπωμένης σελίδας την είχε
+   κάνει «κράτους-αποτέλεσαν», που δεν είναι λέξη καμίας γλώσσας. */
+const G3 = CHAPTERS.find(c => c.id === 'k1-g3');
+if (G3) {
+  const f3 = G3.paragraphs.join('\n');
+  ok('⭐ η Γ.3 κρατάει την παύλα: «κράτους- αποτέλεσαν»', f3.includes('κράτους- αποτέλεσαν'));
+  ok('⛔ και ΔΕΝ έχει την ενωμένη μορφή «κράτους-αποτέλεσαν»', !f3.includes('κράτους-αποτέλεσαν'));
+  ok('⭐ η ανοιχτική παύλα υπάρχει κι αυτή', f3.includes('της -ο εκσυγχρονισμός'));
+}
 
 /* ══ 3 · ΚΑΘΕ ΑΓΚΥΡΑ ΔΕΙΧΝΕΙ ΣΕ ΠΡΑΓΜΑΤΙΚΗ ΦΡΑΣΗ ════════════════════ */
 section('3 · ΟΙ ΑΓΚΥΡΕΣ — ΚΑΝΕΝΑ ΚΟΥΜΠΙ ΔΕΝ ΔΕΙΧΝΕΙ ΣΤΟ ΠΟΥΘΕΝΑ');
-const anchors = [];
-for (const re of [/\bquote: "([^"]+)"/g, /\bq: "([^"]+)"/g, /\blink: "([^"]+)"/g, /\{ m: "([^"]+)"/g]) {
-  let m; while ((m = re.exec(PAGE))) anchors.push(m[1]);
-}
-const orphan = anchors.filter(a => !FULL.includes(a));
-is('αγκύρες που ΔΕΝ υπάρχουν αυτολεξεί στο κείμενο', orphan.length + (orphan.length ? ' → ' + orphan.join(' | ') : ''), 0);
-ok('και είναι πολλές, όχι δείγμα', anchors.length >= 40);
+/* ⭐ Η ΑΓΚΥΡΑ ΚΡΙΝΕΤΑΙ ΣΤΟ ΚΕΙΜΕΝΟ ΤΗΣ ΔΙΚΗΣ ΤΗΣ ΕΝΟΤΗΤΑΣ, ΠΟΤΕ ΣΤΟ ΣΥΝΟΛΟ:
+   αλλιώς μια άγκυρα της Γ.3 θα «περνούσε» επειδή η φράση τυχαίνει να υπάρχει
+   στη Γ.4 — και το κουμπί θα οδηγούσε στο πουθενά χωρίς κανένα σφάλμα. */
+let anchorCount = 0;
+const orphan = [];
+CHAPTERS.forEach(C => {
+  const full = C.paragraphs.join('\n');
+  const take = [];
+  C.explain.acts.forEach(a => take.push(['quote', a.quote]));
+  C.facts.forEach(f => take.push(['link', f.link]));
+  C.sources.list.forEach(x => take.push(['sources.link', x.link]));
+  C.glossary.forEach(g => take.push(['glossary.m', g.m]));
+  C.sic.forEach(x => take.push(['sic.m', x.m]));
+  C.timeline.events.forEach(e => { if (e.q) take.push(['timeline.q', e.q]); });
+  take.forEach(([k, v]) => {
+    anchorCount++;
+    if (typeof v !== 'string' || !full.includes(v)) orphan.push(C.id + ' ' + k + ' → ' + v);
+  });
+});
+is('αγκύρες που ΔΕΝ υπάρχουν αυτολεξεί στο ΔΙΚΟ ΤΟΥΣ κείμενο', orphan.length + (orphan.length ? ' → ' + orphan.join(' | ') : ''), 0);
+ok('και είναι πολλές, όχι δείγμα', anchorCount >= 40);
+
+/* ⭐ ΚΑΙ ΤΟ ΧΡΟΝΟΛΟΓΙΟ ΔΕΝ ΕΠΙΝΟΕΙ ΧΡΟΝΟΛΟΓΙΕΣ (κανόνας 3 του skill):
+   `book:true` μόνο όπου ο αριθμός γράφεται ΚΑΠΟΥ στο βιβλίο — στο κείμενο
+   της ενότητας ή σε πίνακά της· οτιδήποτε άλλο είναι «Πλαίσιο» με `note`. */
+const TABLE_YEARS = ['1896', '1900', '1901', '1905', '1906', '1910', '1911', '1915', '1916', '1920', '1921', '1925', '1926', '1930', '1931', '1935'];
+const badYears = [], noNote = [];
+CHAPTERS.forEach(C => {
+  const full = C.paragraphs.join('\n');
+  const inBook = new Set([...full.matchAll(/\b(1[89]\d\d)\b/g)].map(m => m[1]));
+  C.timeline.events.forEach(e => {
+    if (!e.book) { if (!e.note) noNote.push(C.id + ' ' + e.id); return; }
+    (String(e.label).match(/\d{4}/g) || [String(e.y)]).forEach(y => {
+      if (!inBook.has(y) && !TABLE_YEARS.includes(y)) badYears.push(C.id + ' ' + e.id + ' → ' + y);
+    });
+  });
+});
+is('⭐ book:true σε χρονολογία που ΔΕΝ γράφει το βιβλίο', badYears.join(' | '), '');
+is('⭐ «Πλαίσιο» χωρίς note (δεν λέει ότι είναι εκτός βιβλίου)', noNote.join(' | '), '');
 
 /* ══ 4 · ΤΟ ΛΑΠΤΟΠ (σταθερή αρχή 51) ═════════════════════════════════ */
 section('4 · ΤΟ ΛΑΠΤΟΠ ΕΙΝΑΙ Η ΟΘΟΝΗ ΜΕΛΕΤΗΣ');
@@ -262,8 +320,11 @@ ok('  και τον χάρτη ύλης, και με τα τρία υπόμνη�
    υπόμνημα τη λέει ήδη. Τώρα ζει ΜΟΝΟ στο υπόμνημα. */
 is('η φράση «Δεν έχει φτιαχτεί ακόμα» γράφεται ΜΙΑ φορά, στο υπόμνημα',
    ((B.painted.viewHome || '').match(/Δεν έχει φτιαχτεί ακόμα/g) || []).length, 1);
-is('⭐ κουτί φοράει ΜΟΝΟ ό,τι έχει περιεχόμενο', ((B.painted.viewHome || '').match(/class="ucard"/g) || []).length, 1);
-is('  και οι υπόλοιπες 104 είναι γραμμές λίστας', ((B.painted.viewHome || '').match(/class="urow/g) || []).length, 104);
+/* ⭐ ΤΑ ΝΟΥΜΕΡΑ ΒΓΑΙΝΟΥΝ ΑΠΟ ΤΟ ΥΛΙΚΟ, ΔΕΝ ΓΡΑΦΟΝΤΑΙ: ένα «1» καρφωμένο
+   εδώ σημαίνει ότι ο φρουρός σκάει σε ΚΑΘΕ νέα ενότητα, και η εύκολη
+   «διόρθωση» είναι να αλλάξεις το νούμερο — δηλαδή να μην ελέγχεις τίποτα. */
+is('⭐ κουτί φοράει ΜΟΝΟ ό,τι έχει περιεχόμενο', ((B.painted.viewHome || '').match(/class="ucard"/g) || []).length, CHAPTERS.length);
+is('  και οι υπόλοιπες είναι γραμμές λίστας', ((B.painted.viewHome || '').match(/class="urow/g) || []).length, 105 - CHAPTERS.length);
 ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initCloudSync κλήθηκε)', B.win.__sync === true);
 
 const C = boot('#/k1-g4/explain');     /* διαδρομή ενότητας */
@@ -297,6 +358,29 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
      (r.painted[box] || '').includes(needle));
 });
+
+/* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.
+   Δεν αρκεί «η σελίδα δεν έσκασε»: το σχεδιάγραμμα είναι ΧΕΙΡΟΓΡΑΦΟ HTML,
+   άρα ένα λάθος κλείσιμο ή ένα placeholder που δεν υπάρχει βγάζει σελίδα
+   που φορτώνει κανονικά και δείχνει σκουπίδια (ή τίποτα). */
+[['explain',   'panel-explain',  'Μια χώρα που δεν κατεβάζει ποτέ τα όπλα'],
+ ['diagram',   'panel-diagram',  'Πίνακας 8 του βιβλίου'],
+ ['timeline',  'panel-timeline', 'Πλεονασματικός προϋπολογισμός'],
+ ['glossary',  'ggrid',          'Υπερπόντια μετανάστευση'],
+ ['facts',     'panel-facts',    'Μην τα γράψεις στις εξετάσεις'],
+ ['text',      'rtext',          'Στην περίοδο 1910-1922'],
+ ['sources',   'panel-sources',  'Πηγές της ενότητας']].forEach(([id, box, needle]) => {
+  const r = boot('#/k1-g3/' + id);
+  is('Γ.3 · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
+     (r.painted[box] || '').includes(needle));
+});
+const G3D = boot('#/k1-g3/diagram');
+ok('⭐ Γ.3 · τα placeholders του σχεδιαγράμματος έγιναν εικονίδια', !/\{\{\w+\}\}/.test(G3D.painted['panel-diagram'] || 'x{{X}}'));
+ok('⭐ Γ.3 · και τα νούμερα του Πίνακα 8 είναι όντως εκεί',
+   ['11.000', '51.000', '122.000', '128.000', '67.000', '50.000', '41.000', '15.000']
+     .every(n => (G3D.painted['panel-diagram'] || '').includes(n)));
+ok('⭐ Γ.3 · ο τίτλος της μπαίνει στο hero', (G3D.painted.hero || '').includes('Οι οικονομικές συνθήκες'));
 
 /* ══ 10 · Η ΥΛΗ ΚΑΙ ΤΑ ID ════════════════════════════════════════════
    Τα id είναι ΣΥΜΒΟΛΑΙΟ: κουβαλάνε τις σημειώσεις του. Ένα διπλό id
