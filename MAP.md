@@ -601,6 +601,20 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
+  ⭐⭐ **FOUR of them since als-v550**, and three share one shape — `onlyAlign`:
+  `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*) and
+  `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — ο πρωταγόρειος μύθος). His words for
+  every one of them: *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»*.
+  ⛔ **Each unit points at ITS OWN page of the Φάκελος Υλικού** — one
+  `tests/arxaia-enotitaN.source.txt` per unit, raw PDF lines with a pinned
+  sha256, never a shared haystack (a shared one would let a period of Επίκουρος
+  "verify" inside Πλάτων).
+  ⚠️⚠️ **THE COLUMN CUT IS A MEASUREMENT, NOT AN INHERITANCE.** The book prints
+  TWO translations side by side and a different pair of translators every time
+  (2η Μπενάκης/Πέτρου · 3η Ζωγραφίδης/Σκουτερόπουλος · 4η **Τατάκης**/Σπυρόπουλος).
+  Reusing the 3rd unit's `x < 305` on σελ. 45 ate the LAST CHARACTER of every
+  line — *«καθέν»*, *«ζητ»* — and did it **silently**: the text came out whole
+  and almost right. Measure the line boxes per page, then cut.
   ⚠️ `homework.html` builds its unit index from `ARXGN.UNITS`, so the parser no
   longer resolves `gn1`…`gn6` — checked against his live homework first: **no
   row references them**, so nothing of his degraded.
