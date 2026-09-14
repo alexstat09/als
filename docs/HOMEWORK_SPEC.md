@@ -2,7 +2,7 @@
 
 **The MÉTRON study command center. Implementation contract.**
 
-Read `CLAUDE.md` first — all 57 σταθερές αρχές apply. This file does not repeat
+Read `CLAUDE.md` first — all 60 σταθερές αρχές apply. This file does not repeat
 them; it says which ones bite here and where.
 
 ---
