@@ -66,7 +66,8 @@ const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt',
                   'k1-a1': 'istoria-voithima-a1.source.txt',
                   'k1-a2': 'istoria-voithima-a2.source.txt',
                   'k1-b1': 'istoria-voithima-b1.source.txt',
-                  'k1-b2': 'istoria-voithima-b2.source.txt' };
+                  'k1-b2': 'istoria-voithima-b2.source.txt',
+                  'k1-b3': 'istoria-voithima-b3.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
@@ -218,6 +219,57 @@ is('⛔ ετικέτα HTML σε πεδίο που περνάει από esc() (
 ok('  και ο renderer ΟΝΤΩΣ κάνει esc() την εισαγωγή των πηγών',
    JS.includes('<p class="sub">${esc(S.intro)}</p>'));
 
+/* ══ 3γ · ⭐⭐ ΚΑΘΕ ΕΝΟΤΗΤΑ ΣΤΟ ΙΔΙΟ ΕΠΙΠΕΔΟ ΜΕ ΟΛΕΣ ΤΙΣ ΑΛΛΕΣ ═══════════
+   Δική του απαίτηση: «να παραμένουν σε πολύ εξαιρετικό επίπεδο ΟΛΑ».
+   ⚠️ Το βρήκε ένας οριζόντιος έλεγχος, όχι ο κάθετος: η Γ.4 — η ΠΡΩΤΗ
+   ενότητα, χτισμένη πριν σταθεροποιηθεί το σχήμα — είχε ΔΥΟ πηγές ΧΩΡΙΣ
+   «δικό μου σχόλιο», ενώ και οι 22 άλλες πηγές το είχαν. Κανένας έλεγχος
+   ανά ενότητα δεν μπορούσε να το δει: φαινόταν μόνο στη ΣΥΓΚΡΙΣΗ.
+   ⭐ Τα κατώφλια είναι ΔΑΠΕΔΑ, όχι ακριβείς αριθμοί: βγαίνουν από την
+   ασθενέστερη υπάρχουσα ενότητα και σπάνε μόνο αν μια ΝΕΑ είναι φτωχότερη
+   από ό,τι έχει ήδη ανεβεί — που είναι ακριβώς αυτό που θέλουμε να πιάνουν. */
+section('3γ · ΟΛΕΣ ΟΙ ΕΝΟΤΗΤΕΣ ΣΤΟ ΙΔΙΟ ΕΠΙΠΕΔΟ, ΟΧΙ ΜΟΝΟ Η ΤΕΛΕΥΤΑΙΑ');
+const thin = [], hollow = [], dup = [];
+CHAPTERS.forEach(C => {
+  const floor = [['πράξεις', C.explain.acts.length, 5], ['έννοιες', C.explain.concepts.length, 3],
+                 ['παγίδες', C.explain.pitfalls.length, 5], ['λεξικό', C.glossary.length, 35],
+                 ['fun facts', C.facts.length, 8], ['πηγές', C.sources.list.length, 3],
+                 ['«πώς το γράφω»', C.sources.how.length, 3], ['χρονολόγιο', C.timeline.events.length, 5],
+                 ['κρίκοι αλυσίδας', C.explain.chain.length, 5]];
+  floor.forEach(([k, got, min]) => { if (got < min) thin.push(C.id + ' ' + k + ' ' + got + '<' + min); });
+  /* κάθε πράξη και κάθε πηγή ΠΛΗΡΗΣ — εδώ κρύφτηκε το κενό της Γ.4 */
+  C.explain.acts.forEach((a, i) => ['when','cat','title','body','think','quote']
+    .forEach(f => { if (!a[f]) hollow.push(C.id + ' act[' + i + '].' + f); }));
+  C.sources.list.forEach((x, i) => ['ref','title','cat','gist','mine','link']
+    .forEach(f => { if (!x[f]) hollow.push(C.id + ' source[' + i + '].' + f); }));
+  C.sources.list.forEach((x, i) => { if (!(x.keep || []).length) hollow.push(C.id + ' source[' + i + '].keep'); });
+  C.explain.pitfalls.forEach((x, i) => { if (!x.no || !x.ok) hollow.push(C.id + ' pitfall[' + i + ']'); });
+  C.explain.concepts.forEach((x, i) => { if (!x.t || !x.b) hollow.push(C.id + ' concept[' + i + ']'); });
+  C.glossary.forEach((g, i) => { if (!g.m || !g.t || !g.d || !g.cat) hollow.push(C.id + ' glossary[' + i + ']'); });
+  ['period', 'title', 'num'].forEach(f => { if (!C[f]) hollow.push(C.id + '.' + f); });
+  if (!C.explain.lede || !C.explain.glance.who || !C.sources.intro) hollow.push(C.id + ' lede/who/intro');
+  /* ⛔ ΔΥΟ ΛΗΜΜΑΤΑ ΠΑΝΩ ΣΤΗΝ ΙΔΙΑ ΦΡΑΣΗ ΧΑΝΟΝΤΑΙ: το data-g είναι ΕΝΑ ανά
+     segment, άρα το δεύτερο σκεπάζει το πρώτο. (Λήμμα + τυπογραφικό μαζί
+     είναι ΜΙΑ ΧΑΡΑ — ο renderer είναι boundary-based και το segment φοράει
+     και «w» και «sic»· το κάνει ήδη η Γ.4 στο «προέβει».) */
+  C.paragraphs.forEach((p, pi) => {
+    const sp = [];
+    C.glossary.forEach(g => { const k = p.indexOf(g.m); if (k >= 0) sp.push([k, k + g.m.length, g.m]); });
+    sp.sort((a, b) => a[0] - b[0]);
+    for (let i = 1; i < sp.length; i++)
+      if (sp[i][0] < sp[i - 1][1]) dup.push(C.id + ' παρ.' + (pi + 1) + ' «' + sp[i - 1][2] + '» ∩ «' + sp[i][2] + '»');
+  });
+});
+is('⭐ καμία ενότητα πιο φτωχή από τις υπόλοιπες', thin.join(' | '), '');
+is('⭐ κανένα κενό πεδίο σε πράξη, πηγή, παγίδα, έννοια ή λήμμα', hollow.join(' | '), '');
+is('⛔ δύο λήμματα πάνω στην ίδια φράση (το ένα θα έσβηνε το άλλο)', dup.join(' | '), '');
+is('⛔ έμεινε «ΣΥΜΠΛΗΡΩΣΕ» από τον σκελετό του tools/istoria-unit.js',
+   CHAPTERS.filter(C => JSON.stringify(C).indexOf('ΣΥΜΠΛΗΡΩΣΕ') >= 0).map(C => C.id).join(' | '), '');
+is('⭐ κάθε ενότητα έχει το δικό της σχεδιάγραμμα στο δεύτερο <script>',
+   CHAPTERS.map((C, i) => PAGE.includes('CHAPTERS[' + i + '].diagram = `') ? '' : C.id).filter(Boolean).join(' | '), '');
+ok('  και οι πηγές είναι ΠΑΝΤΑ τρεις — πηγή/αριθμοί/διαφωνία',
+   CHAPTERS.every(C => C.sources.list.length === 3));
+
 /* ══ 4 · ΤΟ ΛΑΠΤΟΠ (σταθερή αρχή 51) ═════════════════════════════════ */
 section('4 · ΤΟ ΛΑΠΤΟΠ ΕΙΝΑΙ Η ΟΘΟΝΗ ΜΕΛΕΤΗΣ');
 is('⛔ ΚΑΝΕΝΑ @media(min-width) — η ανάποδη θραύση', (CSS.match(/@media[^{]*min-width/g) || []).length, 0);
@@ -312,7 +364,7 @@ ok('  ο σύνδεσμος λέει ΤΙ είναι, όχι «παλιά»',
 ok('  και ο service worker την κρατάει offline', SW.includes("'istoria.html'"));
 ok('ο service worker την κατεβάζει για offline', SW.includes("'istoria-voithima.html'"));
 const cache = /var CACHE = "(als-v\d+)"/.exec(SW);
-ok('και το CACHE προχώρησε (σταθ. 2)', cache && +cache[1].slice(5) >= 555);
+ok('και το CACHE προχώρησε (σταθ. 2)', cache && +cache[1].slice(5) >= 556);
 ok('σωστό <!DOCTYPE> και lang="el"', PAGE.startsWith('<!DOCTYPE html>') && PAGE.includes('<html lang="el">'));
 is('ένα <body>, ένα </body>', (PAGE.match(/\n<body>/g) || []).length + '/' + (PAGE.match(/<\/body>/g) || []).length, '1/1');
 
@@ -718,6 +770,67 @@ if (B2) {
   ok('  και οι ΔΥΟ παρενθετικές παύλες',
      B2.sic.some(x => x.m.indexOf('-ελληνικά-') >= 0)
      && B2.sic.some(x => x.m.indexOf('-όχι μόνο για τα ελληνικά μέτρα-') >= 0));
+}
+
+/* ⭐⭐ ΚΑΙ Η Β.3 — Η ΕΝΟΤΗΤΑ ΜΕ ΤΟΝ ΟΡΦΑΝΟ ΑΣΤΕΡΙΣΚΟ. */
+[['explain',   'panel-explain',  'Η λύση: δύο στόχοι που αναιρούσαν ο ένας τον άλλον'],
+ ['diagram',   'panel-diagram',  'Τα τέσσερα εμπόδια της διανομής'],
+ ['timeline',  'panel-timeline', 'Οι νομοθετικές ρυθμίσεις: η οριστική αντιμετώπιση'],
+ ['glossary',  'ggrid',          'Επάλληλα δικαιώματα'],
+ ['facts',     'panel-facts',    'Μην τα γράψεις στις εξετάσεις'],
+ ['text',      'rtext',          'Στόχος των νομοθετημάτων ήταν να εξασφαλιστούν'],
+ ['sources',   'panel-sources',  'Πηγές της ενότητας']].forEach(([id, box, needle]) => {
+  const r = boot('#/k1-b3/' + id);
+  is('Β.3 · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
+     (r.painted[box] || '').includes(needle));
+});
+const B3D = boot('#/k1-b3/diagram');
+ok('⭐ Β.3 · τα placeholders του σχεδιαγράμματος έγιναν εικονίδια', !/\{\{\w+\}\}/.test(B3D.painted['panel-diagram'] || 'x{{X}}'));
+ok('⭐ Β.3 · και τα πέντε στάδια του σχεδιαγράμματος είναι εκεί',
+   ['Τι ήταν οι «εθνικές γαίες», και πώς έγιναν εθνικές',
+    'Τα τέσσερα εμπόδια της διανομής',
+    'Πολυτεμαχισμός — και οι δύο αντίθετες συνέπειές του',
+    '1870-1871: δύο στόχοι που αναιρούσαν ο ένας τον άλλον',
+    'Τι έδωσε τελικά η διανομή']
+     .every(x => (B3D.painted['panel-diagram'] || '').includes(x)));
+ok('⭐ Β.3 · και ΟΛΑ τα νούμερα της ενότητας είναι μαζεμένα εκεί',
+   ['4.000.000 – 5.000.000 στρ.', '15%', '80 στρέμματα', '40 στρέμματα',
+    '600.000 στρ.', '2.650.000 στρ.', '370.000', '50%'].every(n => (B3D.painted['panel-diagram'] || '').includes(n)));
+ok('⭐ Β.3 · οι τρεις διαιρέσεις δηλώνονται ΡΗΤΑ ως δικές μου, όχι του βιβλίου',
+   (B3D.painted['panel-diagram'] || '').includes('7,2 στρέμματα')
+   && (B3D.painted['panel-diagram'] || '').includes('Μη γράψεις το «7,2» σαν νούμερο του βιβλίου'));
+ok('⭐ Β.3 · και τα ονόματα των «επάλληλων δικαιωμάτων» δηλώνονται ως ανάλυση, όχι ως κείμενο',
+   (B3D.painted['panel-diagram'] || '').includes('δική μου ανάλυση'));
+ok('⭐ Β.3 · ο τίτλος της μπαίνει στο hero', (B3D.painted.hero || '').includes('Η διανομή των εθνικών κτημάτων'));
+const B3S = boot('#/k1-b3/sources');
+ok('⭐ Β.3 · οι «Πηγές» φέρνουν ΞΑΝΑ τον Μανσόλα (1867), από άλλη σελίδα του ίδιου βιβλίου',
+   (B3S.painted['panel-sources'] || '').includes('Μανσόλα')
+   && (B3S.painted['panel-sources'] || '').includes('σ. 43-44'));
+ok('  και τη Γ.1, που δείχνει ότι το «καμία ένταση» ισχύει ΜΟΝΟ για την παλιά Ελλάδα',
+   (B3S.painted['panel-sources'] || '').includes('Το αγροτικό ζήτημα')
+   && (B3S.painted['panel-sources'] || '').includes('τσιφλίκια'));
+
+const B3 = CHAPTERS.find(c => c.id === 'k1-b3');
+if (B3) {
+  /* ⭐⭐ ΤΡΙΤΟ ΣΥΝΕΧΟΜΕΝΟ ΤΟΝΙΚΟ ΛΑΘΟΣ ΤΟΥ ΤΜΗΜΑΤΟΣ Β — ΜΟΤΙΒΟ.
+     Β.1 «πού όμως» · Β.2 «κενά, πού» · Β.3 «πολυπλοκότητα του». */
+  is('⭐ Β.3 · κρατάει και τα δύο τυπογραφικά του βιβλίου', B3.sic.length, 2);
+  ok('  το τονικό λάθος «πολυπλοκότητα του» (τρίτο συνεχόμενο στο τμήμα Β)',
+     B3.sic.some(x => x.m === 'πολυπλοκότητα του'));
+  /* ⭐⭐⭐ Ο ΟΡΦΑΝΟΣ ΑΣΤΕΡΙΣΚΟΣ: ο ΔΕΙΚΤΗΣ υποσημείωσης έμεινε, η ΣΗΜΕΙΩΣΗ
+     λείπει από όλο το ψηφιακό βιβλίο. Μένει ως έχει και δηλώνεται. */
+  ok('  και ο ΟΡΦΑΝΟΣ αστερίσκος υποσημείωσης', B3.sic.some(x => x.m === 'επί της γης*'));
+  ok('  ο αστερίσκος υπάρχει ΟΝΤΩΣ στο κείμενο της ενότητας',
+     B3.paragraphs.join('\n').includes('επί της γης*'));
+  ok('  και τα fun facts εξηγούν ΓΙΑΤΙ λείπει η υποσημείωση',
+     JSON.stringify(B3.facts).indexOf('υποσημείωση') >= 0);
+  /* ⛔⛔ Η ΠΗΓΗ ΤΟΥ ΜΑΝΣΟΛΑ ΔΙΝΕΙ ΤΡΕΙΣ ΧΡΟΝΟΛΟΓΙΕΣ (1836, 1859, 1867)
+     ΚΑΙ ΚΑΜΙΑ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΣΤΟ ΧΡΟΝΟΛΟΓΙΟ. */
+  is('⛔ Β.3 · καμία χρονολογία ΠΗΓΗΣ δεν γλίστρησε στο χρονολόγιο',
+     B3.timeline.events.filter(e => [1836, 1859, 1867].includes(+e.y)).map(e => e.id).join(' | '), '');
+  is('⭐ Β.3 · και οι τρεις χρονολογίες βιβλίου είναι ΟΛΕΣ της πρόζας',
+     B3.timeline.events.filter(e => e.book).map(e => e.label).join(','), '1833,1870-1871,1911');
 }
 
 /* ══ 10 · Η ΥΛΗ ΚΑΙ ΤΑ ID ════════════════════════════════════════════
