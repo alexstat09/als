@@ -63,7 +63,8 @@ const CHAPTERS = eval(PAGE.slice(chStart + 'const CHAPTERS = '.length, chEnd + '
 const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt',
                   'k1-g3': 'istoria-voithima-g3.source.txt',
                   'k1-g2': 'istoria-voithima-g2.source.txt',
-                  'k1-a1': 'istoria-voithima-a1.source.txt' };
+                  'k1-a1': 'istoria-voithima-a1.source.txt',
+                  'k1-a2': 'istoria-voithima-a2.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
@@ -302,7 +303,7 @@ ok('  ο σύνδεσμος λέει ΤΙ είναι, όχι «παλιά»',
 ok('  και ο service worker την κρατάει offline', SW.includes("'istoria.html'"));
 ok('ο service worker την κατεβάζει για offline', SW.includes("'istoria-voithima.html'"));
 const cache = /var CACHE = "(als-v\d+)"/.exec(SW);
-ok('και το CACHE προχώρησε (σταθ. 2)', cache && +cache[1].slice(5) >= 552);
+ok('και το CACHE προχώρησε (σταθ. 2)', cache && +cache[1].slice(5) >= 553);
 ok('σωστό <!DOCTYPE> και lang="el"', PAGE.startsWith('<!DOCTYPE html>') && PAGE.includes('<html lang="el">'));
 is('ένα <body>, ένα </body>', (PAGE.match(/\n<body>/g) || []).length + '/' + (PAGE.match(/<\/body>/g) || []).length, '1/1');
 
@@ -321,7 +322,7 @@ is('ένα <body>, ένα </body>', (PAGE.match(/\n<body>/g) || []).length + '/'
 section('9 · ⭐ ΤΟ BOOT ΤΡΕΧΕΙ, ΔΕΝ ΤΟ ΔΙΑΒΑΖΟΥΜΕ');
 const vm = require('vm');
 
-function boot(hash){
+function boot(hash, seed){
   const src = [...PAGE.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   const painted = {}, cache = {};
   const el = id => ({
@@ -347,7 +348,7 @@ function boot(hash){
     createElement(){ return el(); }, addEventListener(){}, removeEventListener(){},
     createRange(){ return { setStart(){}, setEnd(){}, getBoundingClientRect(){ return { top:0,left:0,width:0,height:0 }; } }; }
   };
-  const ls = {};
+  const ls = Object.assign({}, seed || {});
   const win = {
     document: doc, console: { log(){}, warn(){}, error(){} },
     localStorage: { getItem: k => (k in ls ? ls[k] : null), setItem: (k,v) => { ls[k] = String(v); },
@@ -533,6 +534,71 @@ if (A1) {
   is('⭐ Α.1 · και οι πέντε χρονολογίες βιβλίου είναι ΟΛΕΣ του κειμένου',
      A1.timeline.events.filter(e => e.book).map(e => e.label).join(','), '1828,1854,1864,1881,1911');
 }
+
+/* ⭐⭐ ΚΑΙ Η Α.2 — Η ΕΝΟΤΗΤΑ ΧΩΡΙΣ ΚΑΜΙΑ ΧΡΟΝΟΛΟΓΙΑ, ΜΕ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ. */
+[['explain',   'panel-explain',  'Έμοιαζε με την Ανατολή, ενώ κοίταζε τη Δύση'],
+ ['diagram',   'panel-diagram',  'Οι τέσσερις προϋποθέσεις που έλειπαν'],
+ ['timeline',  'panel-timeline', 'Τανζιμάτ'],
+ ['glossary',  'ggrid',          'Ανεπρόκοπος'],
+ ['facts',     'panel-facts',    'Μην τα γράψεις στις εξετάσεις'],
+ ['text',      'rtext',          'Πώς θα μπορούσαν άλλωστε να υπάρξουν'],
+ ['sources',   'panel-sources',  'Πηγές της ενότητας']].forEach(([id, box, needle]) => {
+  const r = boot('#/k1-a2/' + id);
+  is('Α.2 · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
+     (r.painted[box] || '').includes(needle));
+});
+const A2D = boot('#/k1-a2/diagram');
+ok('⭐ Α.2 · τα placeholders του σχεδιαγράμματος έγιναν εικονίδια', !/\{\{\w+\}\}/.test(A2D.painted['panel-diagram'] || 'x{{X}}'));
+ok('⭐ Α.2 · και τα πέντε στάδια του σχεδιαγράμματος είναι εκεί',
+   ['Το κενό: απουσίαζαν οι «ατμομηχανές»', 'Οι τέσσερις προϋποθέσεις που έλειπαν',
+    'Ο πλούτος υπήρχε — απλώς ζούσε έξω από τα σύνορα',
+    'Η στροφή προς την Ελλάδα — και η πραγματική της αιτία',
+    'Η «Μεγάλη Ιδέα» — εδώ εξετάζεται ΟΙΚΟΝΟΜΙΚΑ']
+     .every(x => (A2D.painted['panel-diagram'] || '').includes(x)));
+ok('⭐ Α.2 · και τα έξι άκρα του τόξου, ακριβώς όπως τα γράφει το βιβλίο',
+   ['Ουκρανία', 'Σουδάν', 'Δούναβη', 'Καύκασ', 'Σμύρνη', 'Κιλικία']
+     .every(x => (A2D.painted['panel-diagram'] || '').includes(x)));
+ok('⭐ Α.2 · ο τίτλος της μπαίνει στο hero', (A2D.painted.hero || '').includes('παραγωγικές δυνάμεις'));
+const A2S = boot('#/k1-a2/sources');
+ok('⭐ Α.2 · οι «Πηγές» φέρνουν τον Κωλέττη ΑΠΟ ΤΟ ΚΕΦ. 2 του ίδιου βιβλίου',
+   (A2S.painted['panel-sources'] || '').includes('Κωλέττης')
+   && (A2S.painted['panel-sources'] || '').includes('Τα πρώτα ελληνικά κόμματα'));
+ok('  και λένε ΡΗΤΑ ότι η Β.11 είναι ΕΚΤΟΣ εξεταστέας ύλης',
+   (A2S.painted['panel-sources'] || '').includes('ΕΚΤΟΣ εξεταστέας ύλης'));
+
+/* ⛔⛔ Η ΕΝΟΤΗΤΑ ΧΩΡΙΣ ΧΡΟΝΟΛΟΓΙΕΣ ΕΙΝΑΙ ΤΟ ΟΡΙΟ ΤΟΥ ΧΡΟΝΟΛΟΓΙΟΥ.
+   Τρεις παράγραφοι, μηδέν τετραψήφιος αριθμός → μηδέν book:true. Ο
+   διακόπτης «Μόνο του βιβλίου» ΜΕΝΕΙ στο localStorage, οπότε αν είναι
+   ανοιχτός το πάνελ ζωγράφιζε ΤΙΠΟΤΑ, χωρίς μία λέξη εξήγησης — η
+   επαναλαμβανόμενη ασθένεια του project (σιωπηλό-άδειο). */
+const A2 = CHAPTERS.find(c => c.id === 'k1-a2');
+if (A2) {
+  is('⭐ Α.2 · το ΚΕΙΜΕΝΟ της δεν γράφει ούτε έναν τετραψήφιο αριθμό',
+     (A2.paragraphs.join('\n').match(/\b1[89]\d\d\b/g) || []).join(','), '');
+  is('⭐ …άρα ΜΗΔΕΝ «Χρονολογία βιβλίου», και αυτό είναι σωστό',
+     A2.timeline.events.filter(e => e.book).length, 0);
+  ok('  και κάθε ένα από τα γεγονότα-πλαίσιο λέει ΓΙΑΤΙ δεν είναι του βιβλίου',
+     A2.timeline.events.length >= 5 && A2.timeline.events.every(e => !!e.note));
+  is('⭐ Α.2 · μηδέν τυπογραφικά, συνειδητά', A2.sic.length, 0);
+}
+ok('⛔ ΤΟ ΚΕΝΟ ΧΡΟΝΟΛΟΓΙΟ ΜΙΛΑΕΙ: ο renderer έχει μήνυμα για «καμία χρονολογία»',
+   JS.includes('ΔΕΝ γράφει καμία χρονολογία') && JS.includes('class="empty"'));
+/* ⛔⛔ ΚΑΙ ΤΟ ΑΠΟΔΕΙΚΝΥΟΥΜΕ ΟΔΗΓΩΝΤΑΣ ΤΗ ΣΕΛΙΔΑ, ΟΧΙ ΔΙΑΒΑΖΟΝΤΑΣ ΤΗΝ:
+   ο διακόπτης έρχεται από το localStorage, άρα ο μαθητής που τον άφησε
+   ανοιχτό μία φορά τον βρίσκει ανοιχτό ΠΑΝΤΟΥ. */
+const ON = { 'istoria:tlBookOnly': 'true' };
+const A2F = boot('#/k1-a2/timeline', ON);
+is('⭐ Α.2 · με «Μόνο του βιβλίου» ανοιχτό, η καρτέλα ζωγραφίζει χωρίς σφάλμα', A2F.error || 'NONE', 'NONE');
+ok('⛔ …και ΔΕΝ μένει άδεια: εξηγεί ότι η ενότητα δεν γράφει καμία χρονολογία',
+   (A2F.painted['panel-timeline'] || '').includes('ΔΕΝ γράφει καμία χρονολογία')
+   && (A2F.painted['panel-timeline'] || '').includes('Μόνο του βιβλίου'));
+const A1F = boot('#/k1-a1/timeline', ON);
+ok('⭐ …ενώ η Α.1, που ΕΧΕΙ χρονολογίες βιβλίου, εξακολουθεί να τις δείχνει στο ίδιο φίλτρο',
+   (A1F.painted['panel-timeline'] || '').includes('Χρονολογία βιβλίου')
+   && !(A1F.painted['panel-timeline'] || '').includes('ΔΕΝ γράφει καμία χρονολογία'));
+ok('  και σε αυτό το φίλτρο ΔΕΝ περνάει κανένα «Πλαίσιο» της Α.1',
+   !(A1F.painted['panel-timeline'] || '').includes('badge ctx'));
 
 /* ══ 10 · Η ΥΛΗ ΚΑΙ ΤΑ ID ════════════════════════════════════════════
    Τα id είναι ΣΥΜΒΟΛΑΙΟ: κουβαλάνε τις σημειώσεις του. Ένα διπλό id
