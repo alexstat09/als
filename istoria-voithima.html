@@ -9865,9 +9865,9 @@ function renderSide() {
       </div>
     </div>`;
   $$("[data-jh]").forEach(b => b.onclick = () => { const h = notes.heads.find(x => x.id === b.dataset.jh); scrollToOffset(h.s); hotHead(h.id, true); setTimeout(() => hotHead(h.id, false), 1600); });
-  $$("[data-dh]").forEach(b => b.onclick = () => { mutate(() => notes.heads = notes.heads.filter(x => x.id !== b.dataset.dh)); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $$("[data-dh]").forEach(b => b.onclick = () => { const gone = notes.heads.find(x => x.id === b.dataset.dh); mutate(() => notes.heads = notes.heads.filter(x => x.id !== b.dataset.dh)); dropSynced("heads", gone); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
   $$("[data-jd]").forEach(b => b.onclick = () => { const d = notes.defs.find(x => x.id === b.dataset.jd); if (d.free) editDef(d.id, b); else { flash = { s: d.s, e: d.e }; renderReader(); scrollToOffset(d.s); clearTimeout(flashT); flashT = setTimeout(() => { flash = null; renderReader(); }, 2300); } });
-  $$("[data-dd]").forEach(b => b.onclick = () => { mutate(() => notes.defs = notes.defs.filter(x => x.id !== b.dataset.dd)); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $$("[data-dd]").forEach(b => b.onclick = () => { const gone = notes.defs.find(x => x.id === b.dataset.dd); mutate(() => notes.defs = notes.defs.filter(x => x.id !== b.dataset.dd)); dropSynced("defs", gone); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
   $("#freeDef").onclick = e => newFreeDef(e.currentTarget);
   $("#fGloss").onchange = e => { flags.gloss = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
   $("#fSic").onchange = e => { flags.sic = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
@@ -9954,6 +9954,54 @@ let cloudOn = false, syncState = "local";
 function syncLabel() { return syncState === "cloud" ? "Αποθηκεύεται στο cloud" : syncState === "saving" ? "Αποθήκευση…" : "Αποθηκεύεται σε αυτή τη συσκευή"; }
 function setSync(s) { syncState = s; const el = $("#sync"); if (el) { el.className = "sync " + (s === "saving" ? "" : s); el.innerHTML = `<i></i>${syncLabel()}`; } const u = $("#undoBtn"); if (u) u.disabled = !undoStack.length; }
 function hasContent(n) { return n.heads.length || n.defs.length || n.mine.length; }
+/* ⛔⛔ ΣΤΑΘ. 11 + als-v469: ΜΙΑ ΔΙΑΓΡΑΦΗ ΠΡΙΝ ΣΗΚΩΘΕΙ Η ΜΗΧΑΝΗ ΣΥΓΧΡΟΝΙΣΜΟΥ
+   ΔΕΝ ΑΦΗΝΕΙ TOMBSTONE — ΚΑΙ Ο UNION MERGE ΤΗΝ ΕΠΑΝΑΦΕΡΕΙ ΛΙΓΟ ΑΡΓΟΤΕΡΑ.
+   Το sync.js στήνει το φίλτρο του πάνω στο localStorage.setItem ΜΕΣΑ στο
+   initCloudSync, που εδώ τρέχει με polling ως και 8 δευτερόλεπτα μετά το
+   άνοιγμα. Ένα ✕ σε εκείνο το παράθυρο έσβηνε τον ορισμό ΤΟΠΙΚΑ, δεν άφηνε
+   ίχνος, και το επόμενο pull τον ξανάφερνε από το cloud.
+   ⭐ Η σελίδα κρατάει ΤΗ ΔΙΚΗ ΤΗΣ ουρά και τη ρίχνει μόλις υπάρξει ALSSync.
+   ⚠️ Το κλειδί είναι ΕΚΤΟΣ του προθέματος «istoria:notes:» επίτηδες: δεν
+   συγχρονίζεται, είναι καθαρά τοπικό ίχνος πρόθεσης (σταθ. 16 — η σελίδα
+   που το χρειάζεται έχει το δικό της κλειδί).
+   ⭐⭐ Και ο ορισμός ζει σε ΕΝΘΕΤΟ πίνακα ({defs:[…]}), γι' αυτό το
+   ALSSync.drop παίρνει ΠΕΔΙΟ: χωρίς αυτό το tombstone θα πήγαινε ένα
+   επίπεδο ψηλά και το subTomb() δεν θα το έβρισκε ποτέ. */
+const DROPQ = "istoria:dropq";
+function dropQueue() {
+  try { const v = JSON.parse(localStorage.getItem(DROPQ) || "[]"); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+/* ⭐ Μια διαγραφή που ΑΝΑΙΡΕΘΗΚΕ δεν επιτρέπεται να εκτελεστεί αργότερα:
+   πριν ρίξει την ουρά, ο έλεγχος κοιτάζει αν το id ΞΑΝΑΖΕΙ στις σημειώσεις. */
+function flushDrops() {
+  const q = dropQueue();
+  if (!q.length) return;
+  if (!(window.ALSSync && typeof ALSSync.drop === "function")) return;   /* ξαναδοκιμάζει όταν σηκωθεί */
+  const live = {};
+  q.forEach(d => {
+    if (live[d.k]) return;
+    const n = normNotes(store.get(d.k, null));
+    const set = {};
+    [].concat(n.heads, n.defs, n.mine).forEach(x => { if (x && x.id) set[x.id] = 1; });
+    live[d.k] = set;
+  });
+  q.forEach(d => { if (!live[d.k] || !live[d.k][d.id]) { try { ALSSync.drop(d.k, d.id, d.f, d.ts); } catch (e) {} } });
+  try { localStorage.removeItem(DROPQ); } catch (e) {}
+}
+/* ⚠️ ΣΤΑΘ. 17: μια αποτυχημένη εγγραφή ΔΕΝ σιωπά — αλλιώς η διαγραφή μοιάζει
+   μόνιμη και γυρίζει πίσω χωρίς εξήγηση. */
+function dropSynced(field, item) {
+  if (!item || !item.id) return;
+  const k = "istoria:notes:" + CH.id;
+  const q = dropQueue();
+  q.push({ k, id: item.id, f: field, ts: +item.ts || 0 });
+  if (q.length > 300) q.splice(0, q.length - 300);
+  try { localStorage.setItem(DROPQ, JSON.stringify(q)); }
+  catch (e) { toast("Η διαγραφή δεν καταγράφηκε — γέμισε ο χώρος του φυλλομετρητή"); }
+  flushDrops();
+}
+
 function persist() {
   notes.updatedAt = Date.now();
   /* ⚠️ ΠΑΝΤΑ μέσα από το κανονικό save της σελίδας. Το sync.js πιάνει το
@@ -9983,6 +10031,7 @@ function gate(msg) { const g = $("#gate"); if (!g) return; g.textContent = msg; 
     }
     initCloudSync({ appKey: "istoria", syncedPrefixes: ["istoria:notes:"], onApplied: onCloud });
     cloudOn = true; setSync("cloud");
+    flushDrops();   /* ⭐ ό,τι σβήστηκε ΠΡΙΝ σηκωθεί η μηχανή παίρνει τώρα το tombstone του */
   })();
 })();
 

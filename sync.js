@@ -416,7 +416,28 @@
       // Never DOWNGRADE a tombstone: delEntry() saves the shortened array first
       // (diffTomb stamps max(now, item.ts+1)), then calls drop() — so keep the
       // larger of the two, or a future-ts item's dominating tomb would be lost.
-      drop: function (key, id) { try { if (!matches(key)) return; var t = loadTomb(); if (!t[key]) t[key] = {}; var cur = (typeof t[key]['id:' + id] === 'number') ? t[key]['id:' + id] : 0; t[key]['id:' + id] = Math.max(cur, Date.now()); saveTomb(t); schedulePush(); } catch (e) {} }
+      // `field` targets a NESTED array. A value like istoria:notes:k1-b9 is an
+      // OBJECT ({heads:[…], defs:[…], mine:[…]}), and diffTomb stores that tomb one
+      // level down (tomb[key].defs['id:x']). Stamping at the top level instead makes
+      // subTomb(tomb,'defs') find nothing, so the union merge RESURRECTS the deleted
+      // item — which is exactly what happened to a deleted ορισμός. Omit `field`
+      // for a top-level array (nut:logs, nut:favs) — the original behaviour.
+      // `minTs` lets the caller DOMINATE the item's own ts the way diffTomb does
+      // (max(now, ts+1)): a phone clock running ahead would otherwise let the item
+      // beat its own tombstone and come back forever.
+      drop: function (key, id, field, minTs) {
+        try {
+          if (!matches(key)) return;
+          var t = loadTomb();
+          if (!isPlainObj(t[key])) t[key] = {};
+          var node = t[key];
+          if (field) { if (!isPlainObj(node[field])) node[field] = {}; node = node[field]; }
+          var slot = 'id:' + id;
+          var cur = (typeof node[slot] === 'number') ? node[slot] : 0;
+          node[slot] = Math.max(cur, Date.now(), (+minTs || 0) + 1);
+          saveTomb(t); schedulePush();
+        } catch (e) {}
+      }
     };
 
     // Incoming realtime change from another device.
