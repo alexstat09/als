@@ -125,6 +125,16 @@ const t2n = t => { const m = /^(\d{1,2})\.\s*\S/.exec(t); return m ? +m[1] : nul
    άλλος όχι — γι' αυτό διαφώνησαν. Φεύγουν ΠΡΙΝ μετρήσει κανείς. */
 function stripChrome(seg) {
   return seg
+    /* ⛔⛔ Η ΤΕΛΕΥΤΑΙΑ ΕΝΟΤΗΤΑ ΚΑΘΕ ΣΕΛΙΔΑΣ ΚΑΤΑΠΙΝΕΙ ΤΟ MATOMO.
+       Το segmentFor() κόβει στο ΕΠΟΜΕΝΟ <div class="title">· όταν δεν
+       υπάρχει επόμενο (τελευταία υποενότητα της σελίδας), το παράθυρο
+       φτάνει ως το τέλος του αρχείου και μαζεύει το <script> του Matomo
+       και το <noscript> του. Ο εξαγωγέας Α δεν το έβλεπε (δεν είναι <p>),
+       ο Β το μετρούσε παράγραφο — 4 vs 5 στην k1-g9.
+       ⭐ Η διόρθωση είναι ΔΟΜΙΚΗ, όχι λίστα εξαιρέσεων: κώδικας ΔΕΝ είναι
+       ποτέ κείμενο βιβλίου, σε καμία σελίδα, για καμία ενότητα. */
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
     .replace(/<div class="image_text[^"]*">[\s\S]*?<\/div>/g, ' ')
     .replace(/<div class="box_cyan[^"]*">[\s\S]*?<\/div>/g, ' ')
     .replace(/<table class="centered[^"]*"[\s\S]*?<\/table>/g, ' ')
