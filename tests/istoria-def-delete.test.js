@@ -201,20 +201,30 @@ const LOCAL_AFTER_DELETE = { heads: [], defs: [OTHER], mine: [], updatedAt: 1758
        t['nut:logs'] && typeof t['nut:logs']['id:n1'] === 'number');
   }
 
-  section('7 · Η ΣΕΛΙΔΑ ΚΡΑΤΑΕΙ ΟΥΡΑ ΓΙΑ ΟΣΑ ΣΒΗΝΟΝΤΑΙ ΠΡΙΝ ΣΗΚΩΘΕΙ Η ΜΗΧΑΝΗ');
+  section('7 · ⭐⭐ ΤΟ ΣΧΗΜΑ ΑΛΛΑΞΕ ΣΤΗΝ als-v572 — Η ΣΕΛΙΔΑ ΔΕΝ ΠΕΡΙΜΕΝΕΙ ΠΙΑ ΤΗ ΜΗΧΑΝΗ');
   {
+    /* ⚠️⚠️ ΤΟ ΜΑΘΗΜΑ ΑΥΤΟΥ ΤΟΥ ΑΡΧΕΙΟΥ: το παλιό §7 ΟΝΟΜΑΖΕ δύο κουμπιά
+       (data-dd · data-dh) και πρασίνιζε ενώ η σελίδα είχε ΠΕΝΤΕ πόρτες
+       σβησίματος — οι άλλες τρεις έσβηναν χωρίς ταφόπλακα και ο πλαγιότιτλος
+       ξαναγύριζε. Μια απαρίθμηση ΜΕ ΟΝΟΜΑΤΑ δεν είναι απογραφή.
+       Η απογραφή ζει τώρα στο `tests/istoria-voithima-delete.test.js` §1, που
+       σαρώνει ΟΛΟ το αρχείο. Εδώ μένουν μόνο τα αναλλοίωτα του σχήματος. */
     const P = fs.readFileSync(path.join(ALS, 'istoria-voithima.html'), 'utf8');
-    ok('⭐ και οι ΔΥΟ διαγραφές (ορισμός · πλαγιότιτλος) δηλώνουν την πρόθεσή τους',
-       /data-dd[\s\S]{0,260}dropSynced\("defs", gone\)/.test(P)
-       && /data-dh[\s\S]{0,260}dropSynced\("heads", gone\)/.test(P));
-    ok('⭐ η ουρά ρίχνεται ΜΟΛΙΣ σηκωθεί η μηχανή συγχρονισμού',
-       /initCloudSync\(\{ appKey: "istoria"[\s\S]{0,200}flushDrops\(\);/.test(P));
+    ok('⭐ η σελίδα γράφει η ΙΔΙΑ την ταφόπλακα, χωρίς να περιμένει το initCloudSync',
+       /function tombNote\(field, id, ts\)/.test(P) && /const TOMB_KEY = "__synctomb__istoria"/.test(P));
+    ok('⭐ στο ΑΚΡΙΒΕΣ επίπεδο που διαβάζει το subTomb(): tomb[key][field]["id:…"]',
+       /let leaf = node\[field\];/.test(P) && /slot = "id:" \+ id/.test(P)
+       && /leaf\[slot\] = T;/.test(P));
+    ok('⭐ και ΚΥΡΙΑΡΧΕΙ πάνω στο ts του αντικειμένου (σταθ. 32, κατά λέξη)',
+       /Math\.max\(cur, Date\.now\(\), \(\+ts \|\| 0\) \+ 1\)/.test(P));
+    ok('⛔ ΚΑΜΙΑ νέα εγγραφή στην παλιά ουρά — μόνο αποστράγγιση',
+       !/dropSynced/.test(P) && /const left = q\.filter/.test(P));
+    ok('⭐ μια ΑΝΑΙΡΕΜΕΝΗ διαγραφή δεν εκτελείται αργότερα (έλεγχος «ξαναζεί»)',
+       /if \(live\[d\.k\] && live\[d\.k\]\[d\.id\]\) return false;/.test(P));
+    ok('⭐ και η αναίρεση ΣΗΚΩΝΕΙ την ταφόπλακα, αλλιώς αναιρείται μόνη της',
+       /function untombNotes\(\)/.test(P) && /untombNotes\(\);\n  repaintNotes\(\);/.test(P));
     ok('⚠️ το κλειδί της ουράς είναι ΕΚΤΟΣ του συγχρονιζόμενου προθέματος',
        /const DROPQ = "istoria:dropq"/.test(P) && P.indexOf('"istoria:notes:dropq"') < 0);
-    ok('⭐ μια ΑΝΑΙΡΕΜΕΝΗ διαγραφή δεν εκτελείται αργότερα (έλεγχος «ξαναζεί»)',
-       /if \(!live\[d\.k\] \|\| !live\[d\.k\]\[d\.id\]\)/.test(P));
-    ok('⛔ ΣΤΑΘ. 17: η αποτυχία εγγραφής της ουράς ΔΕΝ σιωπά',
-       /catch \(e\) \{ toast\("Η διαγραφή δεν καταγράφηκε/.test(P));
     ok('⭐ και το drop καλείται ΜΕ πεδίο και ΜΕ το ts του αντικειμένου',
        /ALSSync\.drop\(d\.k, d\.id, d\.f, d\.ts\)/.test(P));
   }

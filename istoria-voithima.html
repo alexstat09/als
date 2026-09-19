@@ -12073,8 +12073,144 @@ function mutate(fn) {
 }
 function undo() {
   if (!undoStack.length) { toast("Δεν υπάρχει κάτι για αναίρεση"); return; }
-  notes = normNotes(JSON.parse(undoStack.pop())); persist(); renderReader(); renderSide(); renderMine();
+  notes = normNotes(JSON.parse(undoStack.pop()));
+  persist();
+  /* ⭐⭐ Η ΑΝΑΙΡΕΣΗ ΣΗΚΩΝΕΙ ΚΑΙ ΤΗΝ ΤΑΦΟΠΛΑΚΑ. Χωρίς αυτό ο πλαγιότιτλος
+     ξαναμπαίνει στην οθόνη με το ΙΔΙΟ id και το ΙΔΙΟ (παλιό) ts, οπότε το
+     tombed() του sync.js τον κόβει ξανά στο επόμενο pull: μια αναίρεση που
+     αναιρείται μόνη της. Το recordTomb το καθαρίζει μεν στο επόμενο setItem,
+     αλλά ΜΟΝΟ αν η μηχανή έχει ήδη σηκωθεί — και εδώ μιλάμε ακριβώς για το
+     παράθυρο όπου δεν έχει. */
+  untombNotes();
+  repaintNotes();
   toast("Έγινε αναίρεση");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ⛔⛔⛔ ΣΤΑΘ. 15 + 32, ΤΡΙΤΗ ΠΛΗΡΩΜΗ — ΜΙΑ ΔΙΑΔΡΟΜΗ ΣΒΗΣΙΜΑΤΟΣ, ΠΕΝΤΕ ΚΟΥΜΠΙΑ.
+
+   Δικά του λόγια (19 Σεπ 2026): «είχα βάλει έναν λάθος πλαγιότιτλο και πήγα
+   να τον σβήσω· σβήστηκε και ξαναεμφανίστηκε 5 δευτερόλεπτα μετά — στο χα
+   ξαναπεί και είχε φτιαχτεί».
+
+   ΚΑΙ ΕΙΧΕ ΦΤΙΑΧΤΕΙ. Η als-v565 έκλεισε ΔΥΟ ΑΠΟ ΤΙΣ ΠΕΝΤΕ ΠΟΡΤΕΣ: το ✕ της
+   πλαϊνής λίστας για τον πλαγιότιτλο (data-dh) και για τον ορισμό (data-dd).
+   Οι άλλες ΤΡΕΙΣ — το «Διαγραφή» μέσα στο αναδυόμενο του πλαγιότιτλου, το ίδιο
+   του ορισμού, και η διαγραφή πηγής — έσβηναν ΜΟΝΟ τοπικά. Και το αναδυόμενο
+   είναι ακριβώς η πόρτα που χρησιμοποιεί κάποιος που μόλις έγραψε λάθος τίτλο:
+   πατάει πάνω στο σημάδι και πατάει Διαγραφή.
+
+   ⚠️⚠️ ΤΟ ΜΑΘΗΜΑ, ΚΑΙ ΓΕΝΙΚΕΥΕΤΑΙ: ΕΝΑ TEST ΠΟΥ ΑΠΑΡΙΘΜΕΙ ΔΥΟ ΑΠΟ ΤΕΣΣΕΡΑ
+   ΚΟΥΜΠΙΑ ΔΕΝ ΕΙΝΑΙ ΑΠΟΓΡΑΦΗ — ΕΙΝΑΙ ΔΕΙΓΜΑ. Το §7 της παλιάς δοκιμής
+   βεβαίωνε ονομαστικά τα data-dd/data-dh και πρασίνιζε με τις άλλες τρεις
+   πόρτες ορθάνοιχτες. Γι᾽ αυτό ο φρουρός τώρα ΔΕΝ ονομάζει κουμπιά: σαρώνει
+   ΟΛΟ το αρχείο και απαιτεί καμία αφαίρεση από τα notes.heads/defs/mine να
+   μη ζει ΕΞΩ από αυτή τη συνάρτηση.
+
+   ⭐⭐ ΚΑΙ Η ΤΑΦΟΠΛΑΚΑ ΔΕΝ ΠΕΡΙΜΕΝΕΙ ΠΛΕΟΝ ΚΑΝΕΝΑΝ. Η παλιά λύση κρατούσε
+   ΠΡΟΘΕΣΗ σε ουρά (istoria:dropq) και την εκτελούσε όταν σηκωνόταν το
+   initCloudSync — δηλαδή η μονιμότητα ενός σβησίματος εξαρτιόταν από το αν
+   θα φορτώσει μια βιβλιοθήκη. Τώρα η σελίδα γράφει η ΙΔΙΑ την ταφόπλακα στο
+   `__synctomb__istoria`, τη στιγμή του σβησίματος, στο ΑΚΡΙΒΕΣ σχήμα που
+   διαβάζει το subTomb() του sync.js: tomb[key][field]["id:" + id].
+   T = max(now, ts + 1) ώστε να ΚΥΡΙΑΡΧΕΙ πάνω στη σφραγίδα του αντικειμένου
+   και να μην τη νικάει ρολόι άλλης συσκευής που τρέχει μπροστά (σταθ. 32,
+   αντιγραμμένη ΚΑΤΑ ΛΕΞΗ από την istoria.html, ποτέ «βελτιωμένη»).
+   ⚠️ Το TOMB_KEY δεν έχει το πρόθεμα «istoria:notes:», άρα το matches() του
+   sync.js το αγνοεί: καμία ανατροφοδότηση, κανένας βρόχος push.
+   ══════════════════════════════════════════════════════════════════════ */
+const NOTE_FIELDS = ["heads", "defs", "mine"];
+const TOMB_KEY = "__synctomb__istoria";
+function notesKey() { return "istoria:notes:" + CH.id; }
+
+function tombNote(field, id, ts) {
+  const k = notesKey(), slot = "id:" + id;
+  try {
+    let t = JSON.parse(localStorage.getItem(TOMB_KEY) || "{}");
+    if (!t || typeof t !== "object" || Array.isArray(t)) t = {};
+    let node = t[k];
+    if (!node || typeof node !== "object" || Array.isArray(node)) { node = {}; t[k] = node; }
+    let leaf = node[field];
+    if (!leaf || typeof leaf !== "object" || Array.isArray(leaf)) { leaf = {}; node[field] = leaf; }
+    const cur = typeof leaf[slot] === "number" ? leaf[slot] : 0;
+    const T = Math.max(cur, Date.now(), (+ts || 0) + 1);
+    leaf[slot] = T;
+    localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+    /* ⭐ ΣΤΑΘ. 10: «σφράγισα» μόνο αν το ΞΑΝΑΔΙΑΒΑΣΑ. Σε Safari το
+       localStorage πετάει με γεμάτο χώρο ΚΑΙ σε ιδιωτική περιήγηση. */
+    const back = JSON.parse(localStorage.getItem(TOMB_KEY) || "{}");
+    return !!(back[k] && back[k][field] && back[k][field][slot] >= T);
+  } catch (e) { return false; }
+}
+
+/* Ο,τι ΞΑΝΑΖΕΙ δεν έχει ταφόπλακα. Τρέχει στην αναίρεση και σε κάθε
+   εισερχόμενη συγχώνευση από το cloud. */
+function untombNotes() {
+  const k = notesKey();
+  let t, node;
+  try { t = JSON.parse(localStorage.getItem(TOMB_KEY) || "{}"); } catch (e) { return; }
+  if (!t || typeof t !== "object" || Array.isArray(t)) return;
+  node = t[k];
+  if (!node || typeof node !== "object" || Array.isArray(node)) return;
+  let touched = false;
+  NOTE_FIELDS.forEach(f => {
+    const leaf = node[f];
+    if (!leaf || typeof leaf !== "object" || Array.isArray(leaf)) return;
+    (notes[f] || []).forEach(it => {
+      if (it && it.id != null && Object.prototype.hasOwnProperty.call(leaf, "id:" + it.id)) {
+        delete leaf["id:" + it.id]; touched = true;
+      }
+    });
+    if (!Object.keys(leaf).length) delete node[f];
+  });
+  if (!touched) return;
+  if (!Object.keys(node).length) delete t[k];
+  try { localStorage.setItem(TOMB_KEY, JSON.stringify(t)); }
+  catch (e) { toast("Η επαναφορά έγινε εδώ, αλλά ο συγχρονισμός μπορεί να την ξανασβήσει. Ανανέωσε τη σελίδα."); }
+}
+
+function repaintNotes() {
+  /* Οι καρτέλες ρεντεράρονται μία τη φορά: το #rtext ΔΕΝ υπάρχει όταν
+     κοιτάζει τις πηγές του. Χωρίς αυτόν τον έλεγχο η «Αναίρεση» από εκείνη
+     την καρτέλα έσκαγε στο renderReader(). */
+  if ($("#rtext")) { renderReader(); renderSide(); }
+  renderMine();
+}
+
+/* ⭐⭐ Η ΜΟΝΗ ΣΥΝΑΡΤΗΣΗ ΠΟΥ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΒΓΑΛΕΙ ΣΗΜΕΙΩΣΗ. Κάθε κουμπί
+   διαγραφής της σελίδας περνάει από εδώ — αλλιώς η ταφόπλακα θα μπορούσε
+   να υπάρχει στη μία πόρτα και να λείπει από την άλλη, που είναι ακριβώς
+   το σφάλμα που πληρώθηκε τρεις φορές. */
+function removeNote(field, id, label) {
+  if (NOTE_FIELDS.indexOf(field) < 0) return false;
+  const arr = Array.isArray(notes[field]) ? notes[field] : [];
+  const gone = arr.find(x => x && x.id === id);
+  if (!gone) { toast("Δεν το βρήκα — ίσως σβήστηκε ήδη."); return false; }
+  const keep = arr.slice();
+  undoStack.push(JSON.stringify(notes));
+  if (undoStack.length > 60) undoStack.shift();
+  notes[field] = arr.filter(x => x !== gone);
+  persist();
+  /* ⭐ ΤΑΦΟΠΛΑΚΑ ΜΟΝΟ ΜΕΤΑ ΑΠΟ ΕΠΙΒΕΒΑΙΩΜΕΝΟ ΓΡΑΨΙΜΟ: ταφόπλακα πάνω από
+     κάτι που είναι ΑΚΟΜΗ εκεί σβήνει αργότερα κάτι που κράτησε. */
+  const back = normNotes(store.get(notesKey(), null));
+  if ((back[field] || []).some(x => x && x.id === id)) {
+    notes[field] = keep; undoStack.pop();
+    repaintNotes();
+    toast("Δεν μπόρεσα να το σβήσω σε αυτή τη συσκευή. Δεν σφράγισα τίποτα — ξαναδοκίμασε.");
+    return false;
+  }
+  const sealed = tombNote(field, id, +gone.ts || 0);
+  /* Και ένα σπρώξιμο τώρα, αν η μηχανή είναι ήδη όρθια. Η ταφόπλακα ταξιδεύει
+     στο cloud μέσα στο `_deletes`, ώστε να μη γυρίσει ούτε από άλλη συσκευή. */
+  try {
+    if (window.ALSSync && typeof ALSSync.drop === "function") ALSSync.drop(notesKey(), id, field, +gone.ts || 0);
+    else if (window.ALSSync && typeof ALSSync.flush === "function") ALSSync.flush();
+  } catch (e) {}
+  repaintNotes();
+  if (!sealed) toast("Σβήστηκε εδώ, αλλά ΔΕΝ σφραγίστηκε για τον συγχρονισμό — μπορεί να ξαναγυρίσει. Ανανέωσε και ξαναδοκίμασε.");
+  else toast(label + " διαγράφηκε", { label: "Αναίρεση", fn: undo });
+  return sealed;
 }
 
 function newHead({ s, e }) {
@@ -12105,7 +12241,7 @@ function editHead(id, anchor) {
     const inp = $("#hEdit", pop); inp.focus(); inp.select();
     const ok = () => { const t = inp.value.trim(); if (!t) return; mutate(() => { const h2 = notes.heads.find(x => x.id === id); h2.title = t; h2.ts = Date.now(); }); closePop(); };
     $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
-    $("[data-del]", pop).onclick = () => { mutate(() => notes.heads = notes.heads.filter(x => x.id !== id)); closePop(); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); };
+    $("[data-del]", pop).onclick = () => { closePop(); removeNote("heads", id, "Ο πλαγιότιτλος"); };
     inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
   });
 }
@@ -12154,7 +12290,7 @@ function editDef(id, anchor) {
     const inp = $("#dEdit", pop); inp.focus(); inp.select();
     const ok = () => { const t = inp.value.trim(); if (!t) return; mutate(() => { const d2 = notes.defs.find(x => x.id === id); d2.term = t; d2.ts = Date.now(); }); closePop(); };
     $("[data-ok]", pop).onclick = ok; $("[data-x]", pop).onclick = closePop;
-    $("[data-del]", pop).onclick = () => { mutate(() => notes.defs = notes.defs.filter(x => x.id !== id)); closePop(); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); };
+    $("[data-del]", pop).onclick = () => { closePop(); removeNote("defs", id, "Ο ορισμός"); };
     inp.onkeydown = ev => { if (ev.key === "Enter") ok(); if (ev.key === "Escape") closePop(); };
   });
 }
@@ -12204,9 +12340,9 @@ function renderSide() {
       </div>
     </div>`;
   $$("[data-jh]").forEach(b => b.onclick = () => { const h = notes.heads.find(x => x.id === b.dataset.jh); scrollToOffset(h.s); hotHead(h.id, true); setTimeout(() => hotHead(h.id, false), 1600); });
-  $$("[data-dh]").forEach(b => b.onclick = () => { const gone = notes.heads.find(x => x.id === b.dataset.dh); mutate(() => notes.heads = notes.heads.filter(x => x.id !== b.dataset.dh)); dropSynced("heads", gone); toast("Ο πλαγιότιτλος διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $$("[data-dh]").forEach(b => b.onclick = () => removeNote("heads", b.dataset.dh, "Ο πλαγιότιτλος"));
   $$("[data-jd]").forEach(b => b.onclick = () => { const d = notes.defs.find(x => x.id === b.dataset.jd); if (d.free) editDef(d.id, b); else { flash = { s: d.s, e: d.e }; renderReader(); scrollToOffset(d.s); clearTimeout(flashT); flashT = setTimeout(() => { flash = null; renderReader(); }, 2300); } });
-  $$("[data-dd]").forEach(b => b.onclick = () => { const gone = notes.defs.find(x => x.id === b.dataset.dd); mutate(() => notes.defs = notes.defs.filter(x => x.id !== b.dataset.dd)); dropSynced("defs", gone); toast("Ο ορισμός διαγράφηκε", { label: "Αναίρεση", fn: undo }); });
+  $$("[data-dd]").forEach(b => b.onclick = () => removeNote("defs", b.dataset.dd, "Ο ορισμός"));
   $("#freeDef").onclick = e => newFreeDef(e.currentTarget);
   $("#fGloss").onchange = e => { flags.gloss = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
   $("#fSic").onchange = e => { flags.sic = e.target.checked; store.set("istoria:flags", flags); renderReader(); };
@@ -12281,11 +12417,7 @@ function renderMine() {
       <div class="body">${esc(m.text)}</div>
       ${m.note ? `<div class="mn2"><b>Σημειώσεις:</b> ${esc(m.note)}</div>` : ""}
     </article>`).join("") : `<div class="empty">Δεν έχεις προσθέσει ακόμα δικές σου πηγές.</div>`;
-  $$("[data-dm]", box).forEach(b => b.onclick = () => {
-    undoStack.push(JSON.stringify(notes));
-    notes.mine = notes.mine.filter(x => x.id !== b.dataset.dm); persist(); renderMine();
-    toast("Η πηγή διαγράφηκε", { label: "Αναίρεση", fn: undo });
-  });
+  $$("[data-dm]", box).forEach(b => b.onclick = () => removeNote("mine", b.dataset.dm, "Η πηγή"));
 }
 
 /* ─── persistence: τοπικά + cloud (db) ─── */
@@ -12293,26 +12425,30 @@ let cloudOn = false, syncState = "local";
 function syncLabel() { return syncState === "cloud" ? "Αποθηκεύεται στο cloud" : syncState === "saving" ? "Αποθήκευση…" : "Αποθηκεύεται σε αυτή τη συσκευή"; }
 function setSync(s) { syncState = s; const el = $("#sync"); if (el) { el.className = "sync " + (s === "saving" ? "" : s); el.innerHTML = `<i></i>${syncLabel()}`; } const u = $("#undoBtn"); if (u) u.disabled = !undoStack.length; }
 function hasContent(n) { return n.heads.length || n.defs.length || n.mine.length; }
-/* ⛔⛔ ΣΤΑΘ. 11 + als-v469: ΜΙΑ ΔΙΑΓΡΑΦΗ ΠΡΙΝ ΣΗΚΩΘΕΙ Η ΜΗΧΑΝΗ ΣΥΓΧΡΟΝΙΣΜΟΥ
-   ΔΕΝ ΑΦΗΝΕΙ TOMBSTONE — ΚΑΙ Ο UNION MERGE ΤΗΝ ΕΠΑΝΑΦΕΡΕΙ ΛΙΓΟ ΑΡΓΟΤΕΡΑ.
+/* ⛔⛔ ΣΤΑΘ. 11 + als-v469 + als-v572: ΜΙΑ ΔΙΑΓΡΑΦΗ ΠΡΙΝ ΣΗΚΩΘΕΙ Η ΜΗΧΑΝΗ
+   ΣΥΓΧΡΟΝΙΣΜΟΥ ΔΕΝ ΑΦΗΝΕΙ TOMBSTONE — ΚΑΙ Ο UNION MERGE ΤΗΝ ΕΠΑΝΑΦΕΡΕΙ.
    Το sync.js στήνει το φίλτρο του πάνω στο localStorage.setItem ΜΕΣΑ στο
    initCloudSync, που εδώ τρέχει με polling ως και 8 δευτερόλεπτα μετά το
-   άνοιγμα. Ένα ✕ σε εκείνο το παράθυρο έσβηνε τον ορισμό ΤΟΠΙΚΑ, δεν άφηνε
-   ίχνος, και το επόμενο pull τον ξανάφερνε από το cloud.
-   ⭐ Η σελίδα κρατάει ΤΗ ΔΙΚΗ ΤΗΣ ουρά και τη ρίχνει μόλις υπάρξει ALSSync.
+   άνοιγμα. ⭐⭐ Η als-v572 έβγαλε αυτή την εξάρτηση από τη μέση: η ταφόπλακα
+   γράφεται πλέον ΑΜΕΣΩΣ από το `tombNote()` — δες το μεγάλο σχόλιο πάνω από
+   το `removeNote`. Ό,τι μένει εδώ είναι ΑΠΟΣΤΡΑΓΓΙΣΗ: παλιές εκδόσεις της
+   σελίδας άφηναν προθέσεις σε αυτή την ουρά και δεν επιτρέπεται να χαθούν
+   από το κινητό του όταν φορτώσει τη νέα.
+   ⛔ ΚΑΝΕΝΑΣ ΝΕΟΣ ΓΡΑΦΕΑΣ ΣΕ ΑΥΤΗ ΤΗΝ ΟΥΡΑ. Ο φρουρός
+   `tests/istoria-voithima-delete.test.js` το επιβάλλει.
    ⚠️ Το κλειδί είναι ΕΚΤΟΣ του προθέματος «istoria:notes:» επίτηδες: δεν
-   συγχρονίζεται, είναι καθαρά τοπικό ίχνος πρόθεσης (σταθ. 16 — η σελίδα
-   που το χρειάζεται έχει το δικό της κλειδί).
-   ⭐⭐ Και ο ορισμός ζει σε ΕΝΘΕΤΟ πίνακα ({defs:[…]}), γι' αυτό το
-   ALSSync.drop παίρνει ΠΕΔΙΟ: χωρίς αυτό το tombstone θα πήγαινε ένα
-   επίπεδο ψηλά και το subTomb() δεν θα το έβρισκε ποτέ. */
+   συγχρονίζεται, είναι καθαρά τοπικό ίχνος πρόθεσης (σταθ. 16). */
 const DROPQ = "istoria:dropq";
 function dropQueue() {
   try { const v = JSON.parse(localStorage.getItem(DROPQ) || "[]"); return Array.isArray(v) ? v : []; }
   catch (e) { return []; }
 }
 /* ⭐ Μια διαγραφή που ΑΝΑΙΡΕΘΗΚΕ δεν επιτρέπεται να εκτελεστεί αργότερα:
-   πριν ρίξει την ουρά, ο έλεγχος κοιτάζει αν το id ΞΑΝΑΖΕΙ στις σημειώσεις. */
+   πριν ρίξει την ουρά, ο έλεγχος κοιτάζει αν το id ΞΑΝΑΖΕΙ στις σημειώσεις.
+   ⚠️⚠️ ΚΑΙ ΟΤΙ ΔΕΝ ΕΠΙΒΕΒΑΙΩΘΗΚΕ ΜΕΝΕΙ ΣΤΗΝ ΟΥΡΑ. Το παλιό σώμα έσβηνε
+   ΟΛΟΚΛΗΡΗ την ουρά ακόμη κι όταν το ALSSync.drop είχε αρνηθεί σιωπηλά
+   (λάθος μηχανή για το κλειδί) — δηλαδή η πρόθεση χανόταν οριστικά την ώρα
+   ακριβώς που απέτυχε. */
 function flushDrops() {
   const q = dropQueue();
   if (!q.length) return;
@@ -12325,20 +12461,14 @@ function flushDrops() {
     [].concat(n.heads, n.defs, n.mine).forEach(x => { if (x && x.id) set[x.id] = 1; });
     live[d.k] = set;
   });
-  q.forEach(d => { if (!live[d.k] || !live[d.k][d.id]) { try { ALSSync.drop(d.k, d.id, d.f, d.ts); } catch (e) {} } });
-  try { localStorage.removeItem(DROPQ); } catch (e) {}
-}
-/* ⚠️ ΣΤΑΘ. 17: μια αποτυχημένη εγγραφή ΔΕΝ σιωπά — αλλιώς η διαγραφή μοιάζει
-   μόνιμη και γυρίζει πίσω χωρίς εξήγηση. */
-function dropSynced(field, item) {
-  if (!item || !item.id) return;
-  const k = "istoria:notes:" + CH.id;
-  const q = dropQueue();
-  q.push({ k, id: item.id, f: field, ts: +item.ts || 0 });
-  if (q.length > 300) q.splice(0, q.length - 300);
-  try { localStorage.setItem(DROPQ, JSON.stringify(q)); }
-  catch (e) { toast("Η διαγραφή δεν καταγράφηκε — γέμισε ο χώρος του φυλλομετρητή"); }
-  flushDrops();
+  const left = q.filter(d => {
+    if (live[d.k] && live[d.k][d.id]) return false;                      /* ξαναζεί → η πρόθεση έσβησε */
+    try { return ALSSync.drop(d.k, d.id, d.f, d.ts) !== true; } catch (e) { return true; }
+  });
+  try {
+    if (left.length) localStorage.setItem(DROPQ, JSON.stringify(left));
+    else localStorage.removeItem(DROPQ);
+  } catch (e) { toast("Μια παλιά διαγραφή δεν καταγράφηκε — γέμισε ο χώρος του φυλλομετρητή"); }
 }
 
 function persist() {

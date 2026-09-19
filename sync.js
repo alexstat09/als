@@ -178,6 +178,40 @@
     return out;
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     ⭐⭐ ΤΟ `window.ALSSync` ΕΙΝΑΙ ΕΝΑ, ΟΙ ΜΗΧΑΝΕΣ ΠΟΛΛΕΣ — ΚΑΙ ΚΕΡΔΙΖΕ Η
+     ΤΕΛΕΥΤΑΙΑ ΠΟΥ ΣΗΚΩΘΗΚΕ. Κάθε initCloudSync ΞΑΝΑΕΓΡΑΦΕ το αντικείμενο με
+     δικό του closure, οπότε σε μια σελίδα με δύο engines (η topbar.js σηκώνει
+     μόνη της τη «health» σε ΚΑΘΕ σελίδα που δεν την καλύπτει) το
+     `ALSSync.drop('istoria:notes:…')` έπεφτε πάνω στη ΛΑΘΟΣ μηχανή, το
+     `matches()` της έλεγε όχι — και η συνάρτηση γύριζε ΣΙΩΠΗΛΑ, χωρίς
+     ταφόπλακα και χωρίς λέξη. Σταθ. 10 σε καθαρή μορφή: μια διαγραφή που
+     αποτυγχάνει μοιάζει ακριβώς με μια διαγραφή που πέτυχε.
+     Τώρα το αντικείμενο είναι ΔΡΟΜΟΛΟΓΗΤΗΣ: βρίσκει τη μηχανή που ΚΑΤΕΧΕΙ το
+     κλειδί και επιστρέφει ΑΛΗΘΕΣ/ΨΕΥΔΕΣ, ώστε ο καλών να ξέρει.
+     ⛔ Οι read-only εγγραφές (morning.html: δέκα μαζί) ΔΕΝ μπαίνουν: μια
+     σελίδα που δεν κατέχει τίποτα δεν έχει δουλειά να σφραγίζει διαγραφές.
+     ══════════════════════════════════════════════════════════════════ */
+  var ENGINES = [];
+  var DISPATCH = {
+    // flush() χωρίς κλειδί = ό,τι εκκρεμεί, σε όλες τις μηχανές της σελίδας.
+    flush: function (key) {
+      var hit = false, i;
+      for (i = 0; i < ENGINES.length; i++) {
+        if (key != null && !ENGINES[i].owns(key)) continue;
+        try { ENGINES[i].flush(); hit = true; } catch (e) {}
+      }
+      return hit;
+    },
+    drop: function (key, id, field, minTs) {
+      for (var i = 0; i < ENGINES.length; i++) {
+        if (!ENGINES[i].owns(key)) continue;
+        try { if (ENGINES[i].drop(key, id, field, minTs) === true) return true; } catch (e) { return false; }
+      }
+      return false;
+    }
+  };
+
   // ── per-page sync instance ───────────────────────────────
   // Report sync state to the on-screen indicator (als-sync-status.js). Defensive:
   // a no-op if that script isn't loaded, so load order never matters.
@@ -411,34 +445,45 @@
     function schedulePush() { ss('queued', appKey); clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 400); }
     // Direct API so a page can force a deletion tombstone + immediate push
     // (belt-and-suspenders beyond the setItem interception).
-    window.ALSSync = {
-      flush: function () { schedulePush(); },
-      // Never DOWNGRADE a tombstone: delEntry() saves the shortened array first
-      // (diffTomb stamps max(now, item.ts+1)), then calls drop() — so keep the
-      // larger of the two, or a future-ts item's dominating tomb would be lost.
-      // `field` targets a NESTED array. A value like istoria:notes:k1-b9 is an
-      // OBJECT ({heads:[…], defs:[…], mine:[…]}), and diffTomb stores that tomb one
-      // level down (tomb[key].defs['id:x']). Stamping at the top level instead makes
-      // subTomb(tomb,'defs') find nothing, so the union merge RESURRECTS the deleted
-      // item — which is exactly what happened to a deleted ορισμός. Omit `field`
-      // for a top-level array (nut:logs, nut:favs) — the original behaviour.
-      // `minTs` lets the caller DOMINATE the item's own ts the way diffTomb does
-      // (max(now, ts+1)): a phone clock running ahead would otherwise let the item
-      // beat its own tombstone and come back forever.
-      drop: function (key, id, field, minTs) {
-        try {
-          if (!matches(key)) return;
-          var t = loadTomb();
-          if (!isPlainObj(t[key])) t[key] = {};
-          var node = t[key];
-          if (field) { if (!isPlainObj(node[field])) node[field] = {}; node = node[field]; }
-          var slot = 'id:' + id;
-          var cur = (typeof node[slot] === 'number') ? node[slot] : 0;
-          node[slot] = Math.max(cur, Date.now(), (+minTs || 0) + 1);
-          saveTomb(t); schedulePush();
-        } catch (e) {}
-      }
-    };
+    //
+    // Never DOWNGRADE a tombstone: delEntry() saves the shortened array first
+    // (diffTomb stamps max(now, item.ts+1)), then calls drop() — so keep the
+    // larger of the two, or a future-ts item's dominating tomb would be lost.
+    // `field` targets a NESTED array. A value like istoria:notes:k1-b9 is an
+    // OBJECT ({heads:[…], defs:[…], mine:[…]}), and diffTomb stores that tomb one
+    // level down (tomb[key].defs['id:x']). Stamping at the top level instead makes
+    // subTomb(tomb,'defs') find nothing, so the union merge RESURRECTS the deleted
+    // item — which is exactly what happened to a deleted ορισμός. Omit `field`
+    // for a top-level array (nut:logs, nut:favs) — the original behaviour.
+    // `minTs` lets the caller DOMINATE the item's own ts the way diffTomb does
+    // (max(now, ts+1)): a phone clock running ahead would otherwise let the item
+    // beat its own tombstone and come back forever.
+    //
+    // ⭐ RETURNS true ONLY when the tombstone is on disk. A caller holding a
+    // deletion the user asked for must be able to tell "sealed" from "refused",
+    // and the old signature returned undefined for both.
+    function dropHere(key, id, field, minTs) {
+      try {
+        if (!matches(key) || id == null) return false;
+        var t = loadTomb();
+        if (!isPlainObj(t[key])) t[key] = {};
+        var node = t[key];
+        if (field) { if (!isPlainObj(node[field])) node[field] = {}; node = node[field]; }
+        var slot = 'id:' + id;
+        var cur = (typeof node[slot] === 'number') ? node[slot] : 0;
+        var T = Math.max(cur, Date.now(), (+minTs || 0) + 1);
+        node[slot] = T;
+        saveTomb(t);
+        // Proof, not intent: re-read it. saveTomb swallows a quota failure.
+        var back = loadTomb();
+        var leaf = back[key] && (field ? back[key][field] : back[key]);
+        if (!leaf || leaf[slot] !== T) return false;
+        schedulePush();
+        return true;
+      } catch (e) { return false; }
+    }
+    if (!readOnly) ENGINES.push({ appKey: appKey, owns: matches, drop: dropHere, flush: function () { schedulePush(); } });
+    window.ALSSync = DISPATCH;
 
     // Incoming realtime change from another device.
     async function applyRealtime(remoteData) {
