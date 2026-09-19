@@ -50,6 +50,7 @@ function section (s) { console.log('\n' + s); }
 const PAGE   = fs.readFileSync(path.join(ALS, 'istoria-themata.html'), 'utf8');
 const SW     = fs.readFileSync(path.join(ALS, 'sw.js'), 'utf8');
 const HOME   = fs.readFileSync(path.join(ALS, 'istoria.html'), 'utf8');
+const AID    = fs.readFileSync(path.join(ALS, 'istoria-voithima.html'), 'utf8');
 const SOURCE = fs.readFileSync(path.join(__dirname, 'istoria-themata.source.txt'), 'utf8');
 
 /* ΤΑ ΣΧΟΛΙΑ ΒΓΑΙΝΟΥΝ ΠΡΩΤΑ, ΠΑΝΤΑ — αλλιώς ο φρουρός «βρίσκει» την ίδια
@@ -192,7 +193,15 @@ ok('φορτώνει και τα δύο αρχεία δεδομένων',
 ok('⛔ ΚΑΜΙΑ topbar.js (σταθ. 18)', !/topbar\.js/.test(PAGE.replace(/<!--[\s\S]*?-->/g, '')));
 ok('⛔ ΚΑΝΕΝΑ sync.js — ο αναγνώστης δεν γράφει', !/sync\.js/.test(PAGE.replace(/<!--[\s\S]*?-->/g, '')));
 ok('⛔ κανένα @media (min-width) — ο Αλεξ διαβάζει από λάπτοπ', !/@media[^{]*min-width/.test(CSS));
-ok('δίνει μόνη της τον δρόμο πίσω', /class="back" href="istoria-voithima\.html"/.test(PAGE));
+/* ⛔⛔ ΕΛΕΓΧΟΣ ΘΕΣΗΣ, ΟΧΙ ΥΠΑΡΞΗΣ — και είναι το ίδιο μάθημα με τη λωρίδα
+   των 684px: ο σύνδεσμος ΥΠΗΡΧΕ, αλλά κάτω από 21 κάρτες ενοτήτων. Ο Αλεξ
+   είπε «δεν έχει back button» και είχε δίκιο: ό,τι ζει μετά από δύο οθόνες
+   κύλισης δεν υπάρχει. Ο έλεγχος απαιτεί να είναι ΠΡΙΝ τις κάρτες. */
+const backTop  = PAGE.indexOf('class="back top"');
+const unitsBox = PAGE.indexOf('id="units"');
+ok('υπάρχει δρόμος πίσω ΠΑΝΩ-ΠΑΝΩ, πριν από τις κάρτες',
+   backTop > 0 && unitsBox > 0 && backTop < unitsBox);
+ok('και ο κάτω δρόμος πίσω μένει', /class="back" href="istoria-voithima\.html"/.test(PAGE));
 ok('κάθε πρόσβαση σε localStorage είναι σε try/catch',
    (JS.match(/localStorage/g) || []).length === (JS.match(/try \{[^}]*localStorage/g) || []).length);
 ok('το υποσέλιδο εξηγεί ΤΙ σημαίνει κάθε σήμα', /δεν έχει πέσει ποτέ/.test(PAGE));
@@ -209,6 +218,13 @@ section('ΣΤ · offline + ο δρόμος προς τη σελίδα');
   ok('το sw.js προφορτώνει ' + f, SW.indexOf("'" + f + "'") !== -1);
 });
 ok('υπάρχει δρόμος προς τη σελίδα από την istoria.html', /istoria-themata\.html/.test(HOME));
+/* ⛔⛔ ΚΑΙ ΑΠΟ ΤΟ ΒΟΗΘΗΜΑ, ΠΟΥ ΕΙΝΑΙ ΤΟ ΜΟΝΟ ΠΟΥ ΜΕΤΡΑΕΙ: το «Ιστορία» της
+   School Studies ΠΡΟΣΓΕΙΩΝΕΤΑΙ στο βοήθημα (MAP: SUBJ.istoria.door), όχι
+   στην istoria.html. Μια κάρτα μόνο στην istoria.html είναι δρόμος σε
+   σελίδα που δεν βλέπει ποτέ — γι' αυτό «δεν το βρίσκω μέσα από τη Ιστορία».
+   Ο έλεγχος απαιτεί ΚΑΙ ΤΙΣ ΔΥΟ πόρτες, ώστε να μην ξανακλείσει η σωστή. */
+ok('υπάρχει δρόμος από την ΑΡΧΙΚΗ του βοηθήματος (εκεί προσγειώνεται)',
+   /href="istoria-themata\.html"/.test(AID));
 
 console.log('\n' + (fail ? '✗ ' : '✓ ') + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
