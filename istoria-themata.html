@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ράνταρ Ιστορίας">
+<title>Ιστορία · το ράνταρ των θεμάτων · MÉTRON</title>
+<meta name="theme-color" content="#0E121B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<!-- ⛔ ΚΑΜΙΑ topbar.js, ΚΑΝΕΝΑ sync.js.
+     • topbar.js: ίδιος λόγος με το βοήθημα — βάζει animation με fill-mode στο
+       ΙΔΙΟ το <body>, που γίνεται containing block και στέλνει κάθε
+       `position:fixed` παιδί εκτός οθόνης χωρίς κανένα σφάλμα.
+     • sync.js: αυτή η σελίδα ΔΕΝ ΓΡΑΦΕΙ ΤΙΠΟΤΑ. Είναι αναγνώστης, και ένας
+       αναγνώστης δεν σέρνει μαζί του μια μηχανή εγγραφής (σταθ. «ένας
+       αναγνώστης δεν πρέπει ΠΟΤΕ να γράφει»). Το μόνο που κρατάει τοπικά
+       είναι ποιο φίλτρο κοίταζες, σε localStorage, μέσα σε try/catch.
+     Ο δρόμος πίσω τον δίνει η ίδια η σελίδα (`.back`). -->
+<style>
+:root{
+  --band:#0E121B; --bg:#161B26; --surface:#1F2635; --surface-2:#1C2230; --sunk:#262E40;
+  --ink:#EDE7DA; --ink-2:#D2CBBC; --muted:#8E95A6; --faint:#5E6780;
+  --line:#2C3446; --line-2:#3B4459;
+  --pen:#F2B35B; --pen-2:#F7C987; --pen-soft:rgba(242,179,91,.14); --on-pen:#1A1408;
+  --hl:#FFE066; --hl-mark:rgba(255,222,89,.22); --hl-soft:rgba(255,222,89,.09);
+  --pol:#A9A4F2; --pol-soft:rgba(169,164,242,.13);
+  --mil:#F28B78; --mil-soft:rgba(242,139,120,.13);
+  --eco:#6FD1AE; --eco-soft:rgba(111,209,174,.12);
+  --ally:#7CB8F0; --ally-soft:rgba(124,184,240,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px -14px rgba(0,0,0,.6);
+  --f-display:"Geologica","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:24px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+     padding-inline:clamp(16px,3.2vw,44px);padding-block:0 96px;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pen);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1060px;margin-inline:auto}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ── κεφαλίδα ─────────────────────────────────────────────── */
+.hero{padding:34px 0 8px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--f-display);font-size:11.5px;font-weight:700;letter-spacing:.16em;
+         text-transform:uppercase;color:var(--pen);margin-bottom:10px}
+h1{font-family:var(--f-display);font-size:clamp(28px,5.2vw,44px);font-weight:800;line-height:1.1;margin:0 0 12px}
+.lede{color:var(--ink-2);font-size:clamp(15px,2.2vw,17px);max-width:62ch;margin:0 0 18px}
+.lede b{color:var(--ink)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px;padding:0;list-style:none}
+.stats li{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;
+          padding:5px 13px;font-size:12.5px;color:var(--muted)}
+.stats b{color:var(--ink);font-family:var(--f-mono)}
+
+/* ── το ράνταρ ────────────────────────────────────────────── */
+.radar{margin:26px 0 8px;background:var(--surface);border:1px solid var(--line-2);
+       border-radius:18px;padding:clamp(16px,3vw,26px);box-shadow:var(--shadow)}
+.radar h2{font-family:var(--f-display);font-size:19px;font-weight:700;margin:0 0 4px}
+.radar .sub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+.rin{display:flex;gap:10px;flex-wrap:wrap}
+.rin input{flex:1 1 240px;min-width:0;background:var(--sunk);border:1px solid var(--line-2);
+           border-radius:12px;padding:13px 16px;font-size:17px;color:var(--ink)}
+.rin input::placeholder{color:var(--faint)}
+.rin button{background:var(--pen);color:var(--on-pen);border:0;border-radius:12px;
+            padding:13px 20px;font-weight:700}
+.seeds{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.seed{background:transparent;border:1px solid var(--line-2);border-radius:999px;
+      padding:5px 12px;font-size:12.5px;color:var(--muted)}
+.seed:hover{border-color:var(--pen);color:var(--pen-2)}
+.verdict{margin-top:18px}
+.vhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.vtag{font-family:var(--f-display);font-size:12px;font-weight:800;letter-spacing:.1em;
+      text-transform:uppercase;padding:4px 11px;border-radius:999px}
+.vtag.point{background:var(--eco-soft);color:var(--eco);border:1px solid var(--eco)}
+.vtag.narrow{background:var(--ally-soft);color:var(--ally);border:1px solid var(--ally)}
+.vtag.trap{background:var(--mil-soft);color:var(--mil);border:1px solid var(--mil)}
+.vtag.none{background:var(--sunk);color:var(--muted);border:1px solid var(--line-2)}
+.vwhat{color:var(--ink-2);font-size:14px}
+.vwhat b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.chip{background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;
+      padding:6px 11px;font-size:13px;color:var(--ink-2);text-align:left}
+.chip:hover{border-color:var(--pen);color:var(--ink)}
+.chip b{font-family:var(--f-mono);color:var(--pen);margin-right:6px}
+.hits{margin-top:12px;font-size:13px;color:var(--muted);
+       display:flex;flex-wrap:wrap;gap:5px;align-items:baseline}
+.hits code{font-family:var(--f-mono);color:var(--ink-2);background:var(--sunk);
+           border-radius:5px;padding:1px 6px;max-width:100%;overflow-wrap:anywhere}
+
+/* ── ενότητες γενικά ──────────────────────────────────────── */
+section.blk{margin:42px 0 0}
+.sh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.sh h2{font-family:var(--f-display);font-size:clamp(19px,3vw,24px);font-weight:700;margin:0}
+.sh span{color:var(--faint);font-size:12.5px}
+.snote{color:var(--ink-2);font-size:14.5px;max-width:66ch;margin:0 0 16px}
+.snote b{color:var(--ink)}
+
+/* ── η γλώσσα της εκφώνησης ───────────────────────────────── */
+.verbs{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.verb{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--pen);
+      border-radius:12px;padding:13px 15px}
+.verb .v{font-family:var(--f-display);font-weight:700;font-size:15px;margin-bottom:4px}
+.verb .m{color:var(--muted);font-size:13.5px}
+.verb .c{color:var(--pen);font-family:var(--f-mono);font-size:12px;margin-top:7px}
+
+/* ── τα ζευγάρια ──────────────────────────────────────────── */
+.pairs{display:grid;gap:10px}
+.pair{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.pair .p{font-family:var(--f-display);font-weight:700;font-size:15px;color:var(--pen-2);margin-bottom:5px}
+.pair .p em{font-style:normal;color:var(--faint);font-weight:500}
+.pair .q{color:var(--ink-2);font-size:14px}
+
+/* ── φίλτρα ───────────────────────────────────────────────── */
+.filters{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 18px}
+.flt{background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;
+     padding:6px 14px;font-size:13px;color:var(--muted)}
+.flt[aria-pressed="true"]{background:var(--pen);border-color:var(--pen);color:var(--on-pen);font-weight:700}
+
+/* ── κάρτα ενότητας ───────────────────────────────────────── */
+.unit{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+      padding:clamp(14px,2.4vw,20px);margin-bottom:14px;scroll-margin-top:16px}
+.unit.on{border-color:var(--pen);box-shadow:0 0 0 1px var(--pen-soft)}
+.uhead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.ucode{font-family:var(--f-mono);font-weight:700;font-size:13px;color:var(--on-pen);
+       background:var(--pen);border-radius:8px;padding:4px 9px;flex:none}
+.utitle{font-family:var(--f-display);font-weight:700;font-size:17px;line-height:1.3;flex:1 1 220px;min-width:0}
+.umeta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.umeta li{font-size:11.5px;color:var(--muted);background:var(--sunk);border-radius:6px;padding:3px 9px}
+.umeta li.heat{color:var(--pen-2);background:var(--pen-soft)}
+.umeta li.cold{color:var(--mil);background:var(--mil-soft)}
+.qs{margin:14px 0 0;display:grid;gap:9px}
+.q{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.q.mine{border-style:dashed;background:transparent}
+.qh{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:6px}
+.k{font-family:var(--f-display);font-size:10.5px;font-weight:800;letter-spacing:.07em;
+   text-transform:uppercase;padding:3px 8px;border-radius:5px}
+.k.pan{background:var(--eco-soft);color:var(--eco)}
+.k.panx{background:var(--ally-soft);color:var(--ally)}
+.k.diag{background:var(--pol-soft);color:var(--pol)}
+.k.mine{background:var(--sunk);color:var(--muted);border:1px dashed var(--line-2)}
+.qwhen{font-family:var(--f-mono);font-size:11.5px;color:var(--faint)}
+.qmon{margin-left:auto;font-family:var(--f-mono);font-size:11.5px;color:var(--pen-2)}
+.qt{font-size:14.5px;line-height:1.55;color:var(--ink)}
+.qn{margin-top:7px;font-size:13px;color:var(--muted);border-left:2px solid var(--line-2);padding-left:10px}
+.qn b{color:var(--ink-2)}
+.qsrc{margin-top:7px;font-size:11.5px}
+.qsrc a{color:var(--faint);text-decoration:none;border-bottom:1px dotted var(--line-2)}
+.qsrc a:hover{color:var(--pen)}
+.sig{margin-top:12px;font-size:12.5px;color:var(--muted);
+      display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.sig b{flex:0 0 100%;color:var(--ink-2);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.sig code{font-family:var(--f-mono);background:var(--sunk);border-radius:5px;padding:2px 7px;
+          color:var(--ink-2);max-width:100%;overflow-wrap:anywhere}
+
+.legend{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+        padding:14px 16px;margin:0 0 18px;font-size:13.5px;color:var(--ink-2)}
+.legend div{margin:5px 0;display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap}
+.back{display:inline-block;margin:18px 0 0;color:var(--muted);text-decoration:none;
+      font-size:13.5px;font-weight:600}
+.back:hover{color:var(--pen)}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);
+      font-size:12.5px;color:var(--faint);line-height:1.8}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Ιστορία · Κεφάλαιο 1 · τι σε ρωτάνε</div>
+    <h1>Το ράνταρ των θεμάτων</h1>
+    <p class="lede">Η ύλη τη μαθαίνεις σε <b>21 χωριστά κουτιά</b>. Η εκφώνηση σου ζητάει
+       <b>δύο ή τρία μαζί</b>, και σχεδόν ποτέ δεν λέει ποια. Εδώ είναι τι έχει πέσει
+       αληθινά, τι μπορεί να πέσει, και <b>ποια λέξη δείχνει πού</b>.</p>
+    <ul class="stats" id="stats"></ul>
+  </header>
+
+  <!-- ⭐ ΤΟ ΡΑΝΤΑΡ ΠΡΩΤΟ, ΚΑΙ ΕΙΝΑΙ ΑΠΟΦΑΣΗ: η πρώτη οθόνη πρέπει να απαντάει
+       στην ερώτηση που τον έφερε εδώ («άκουσα ΒΙΟΜΗΧΑΝΙΑ — πού πάω;»), όχι να
+       του ζητάει να κατέβει. Οι 21 κάρτες είναι το ΜΕΤΑ. -->
+  <section class="radar">
+    <h2>Άκουσες μια λέξη. Πού σε στέλνει;</h2>
+    <p class="sub">Γράψε τη λέξη όπως την άκουσες. Ψάχνει μέσα στο <b>πραγματικό κείμενο</b> και των 21 ενοτήτων.</p>
+    <div class="rin">
+      <input id="q" type="search" autocomplete="off" spellcheck="false"
+             placeholder="π.χ. βιομηχανία, κλήριγκ, Λαύριο, δάνειο…" aria-label="λέξη της εκφώνησης">
+      <button id="go" type="button">Δες</button>
+    </div>
+    <div class="seeds" id="seeds"></div>
+    <div class="verdict" id="verdict" hidden></div>
+  </section>
+
+  <section class="blk">
+    <div class="sh"><h2>Η γλώσσα της εκφώνησης</h2><span>μετρημένο πάνω στα ίδια τα θέματα</span></div>
+    <p class="snote">Τα ρήματα είναι <b>κλειστό σύνολο</b>. Δεν χρειάζεται να μαντέψεις τι σου ζητάνε —
+       χρειάζεται να αναγνωρίσεις ποιο από αυτά μπήκε.</p>
+    <div class="verbs" id="verbs"></div>
+  </section>
+
+  <section class="blk">
+    <div class="sh"><h2>Τα ζευγάρια</h2><span>ενότητες που οι εξεταστές δένουν μαζί</span></div>
+    <p class="snote">Κάθε γραμμή εδώ είναι μία ερώτηση που <b>δεν απαντιέται από μία ενότητα</b>.
+       Αυτό είναι το σημείο που χάνεται ο μαθητής που τις διάβασε χωριστά.</p>
+    <div class="pairs" id="pairs"></div>
+  </section>
+
+  <section class="blk">
+    <div class="sh"><h2>Οι 21 ενότητες</h2><span>εντός ύλης · η Β.11 λείπει επίτηδες</span></div>
+    <div class="legend">
+      <div><span class="k pan">Πανελλαδικές</span> <span>αυτούσια εκφώνηση από το επίσημο PDF</span></div>
+      <div><span class="k panx">απόδοση</span> <span>αληθινό θέμα πανελλαδικών, <b>η φράση όμως αποδόθηκε</b>, δεν αντιγράφηκε</span></div>
+      <div><span class="k diag">Διαγώνισμα</span> <span>αυτούσιο από δημοσιευμένο κριτήριο αξιολόγησης</span></div>
+      <div><span class="k mine">Δική μου</span> <span><b>ΔΕΝ έχει πέσει.</b> Το έγραψα εγώ, στο ύφος των παραπάνω</span></div>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div id="units"></div>
+  </section>
+
+  <a class="back" href="istoria-voithima.html">&#8592; Το βοήθημα Ιστορίας</a>
+
+  <p class="foot" id="foot"></p>
+</div>
+
+<script src="istoria-themata-index.js"></script>
+<script src="istoria-themata-themes.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ⭐ Ο ΕΝΑΣ ΚΑΝΟΝΑΣ ΤΗΣ ΑΝΑΖΗΤΗΣΗΣ: τα ελληνικά δεν έχουν λειτουργικό
+     `\b` και δεν έχουν σταθερό τόνο στην εκφώνηση. Άρα ΠΟΤΕ regex με
+     όρια λέξης, ΠΟΤΕ σύγκριση με τόνους. Ατονικά + substring, που είναι
+     και το σωστό για τα ελληνικά: «βιομηχαν» πιάνει βιομηχανία,
+     βιομηχανικός, εκβιομηχάνιση. */
+  function norm (s) {
+    return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ς/g, 'σ');
+  }
+
+  var U = THI_UNITS, IDX = THI_IDX, SIG = THI_SIG, T = THI_THEMES, SRC = THI_SRC;
+  var KEYS = Object.keys(IDX);
+  var KIND = {
+    pan:  { l: 'Πανελλαδικές', real: true },
+    panx: { l: 'Πανελλαδικές · απόδοση', real: true },
+    diag: { l: 'Διαγώνισμα', real: true },
+    mine: { l: 'Δική μου — δεν έχει πέσει', real: false }
+  };
+
+  function el (tag, cls, txt) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt != null) n.textContent = txt;
+    return n;
+  }
+
+  /* ── τα νούμερα της κεφαλίδας, ΜΕΤΡΗΜΕΝΑ, ποτέ γραμμένα ──────────── */
+  var realCount = T.filter(function (t) { return KIND[t.k].real; }).length;
+  var crossCount = T.filter(function (t) { return t.u.length > 1; }).length;
+  var uniqWords = KEYS.filter(function (k) { return IDX[k].length === 1; }).length;
+  [['ενότητες εντός ύλης', U.length],
+   ['εκφωνήσεις', T.length],
+   ['από αυτές αληθινές', realCount],
+   ['ακουμπάνε >1 ενότητα', crossCount],
+   ['λέξεις-δείκτες', uniqWords]
+  ].forEach(function (p) {
+    var li = el('li'); li.innerHTML = '<b>' + p[1] + '</b> ' + p[0];
+    document.getElementById('stats').appendChild(li);
+  });
+
+  /* ── ΤΟ ΡΑΝΤΑΡ ──────────────────────────────────────────────────── */
+  var qIn = document.getElementById('q'), vBox = document.getElementById('verdict');
+
+  function look (raw) {
+    var n = norm(raw).replace(/[^a-zα-ω]/g, '');
+    if (n.length < 3) return null;
+    var units = [], words = [];
+    KEYS.forEach(function (k) {
+      if (k.indexOf(n) === -1) return;
+      words.push(k);
+      IDX[k].forEach(function (u) { if (units.indexOf(u) === -1) units.push(u); });
+    });
+    units.sort(function (a, b) { return a - b; });
+    return { n: n, units: units, words: words };
+  }
+
+  function render (raw) {
+    var r = look(raw);
+    vBox.hidden = false;
+    vBox.textContent = '';
+    if (!r) {
+      vBox.appendChild(el('p', 'vwhat', 'Γράψε τουλάχιστον τρία γράμματα.'));
+      return;
+    }
+    var c = r.units.length, cls, tag, what;
+    if (c === 0)      { cls = 'none';   tag = 'Δεν υπάρχει'; what = 'Η λέξη <b>δεν εμφανίζεται πουθενά</b> στο Κεφάλαιο 1. Ή είναι από άλλο κεφάλαιο, ή είναι δική σου διατύπωση — η εκφώνηση σπάνια αντιγράφει το βιβλίο.'; }
+    else if (c === 1) { cls = 'point';  tag = 'Δείκτης';     what = 'Ζει σε <b>μία και μόνο ενότητα</b>. Αν την ακούσεις, η πόρτα είναι μία.'; }
+    else if (c <= 3)  { cls = 'narrow'; tag = 'Στενό';       what = 'Ζει σε <b>' + c + ' ενότητες</b>. Σε στενεύει, δεν σε κλειδώνει — κοίτα και τη χρονολογία της εκφώνησης.'; }
+    else              { cls = 'trap';   tag = 'Παγίδα';      what = 'Ζει σε <b>' + c + ' ενότητες</b>. Αυτή η λέξη <b>δεν σε οδηγεί πουθενά</b> — μη στηριχτείς πάνω της· ψάξε το ρήμα και τη χρονολογία.'; }
+
+    var head = el('div', 'vhead');
+    head.appendChild(el('span', 'vtag ' + cls, tag));
+    var w = el('span', 'vwhat'); w.innerHTML = what; head.appendChild(w);
+    vBox.appendChild(head);
+
+    if (c) {
+      var chips = el('div', 'chips');
+      r.units.forEach(function (i) {
+        var b = el('button', 'chip');
+        b.type = 'button';
+        b.innerHTML = '<b>' + U[i].code + '</b>' + U[i].title;
+        b.addEventListener('click', function () { jump(i); });
+        chips.appendChild(b);
+      });
+      vBox.appendChild(chips);
+    }
+    if (r.words.length) {
+      var h = el('div', 'hits');
+      h.appendChild(el('span', null, 'ταιριάζει σε ' + r.words.length + ' τύπο' + (r.words.length === 1 ? '' : 'υς') + ' του βιβλίου: '));
+      r.words.slice(0, 14).forEach(function (k) { h.appendChild(el('code', null, k)); });
+      if (r.words.length > 14) h.appendChild(el('span', null, '…'));
+      vBox.appendChild(h);
+    }
+  }
+
+  function jump (i) {
+    var card = document.getElementById('u' + i);
+    if (!card) return;
+    document.querySelectorAll('.unit.on').forEach(function (n) { n.classList.remove('on'); });
+    card.classList.add('on');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('go').addEventListener('click', function () { render(qIn.value); });
+  qIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') render(qIn.value); });
+  qIn.addEventListener('input', function () { if (qIn.value.length >= 3) render(qIn.value); else vBox.hidden = true; });
+
+  /* Οι σπόροι δεν είναι διακόσμηση: ο καθένας είναι ΜΙΑ ΑΠΟΔΕΙΞΗ ότι το
+     μέγεθος της λέξης δεν προβλέπει το πλάτος της. Το «κράτος» ανοίγει 12
+     πόρτες, το «κλήριγκ» μία. */
+  ['βιομηχανία', 'δάνειο', 'κράτος', 'αγροτικό', 'Λαύριο', 'κλήριγκ', 'σταφίδα', 'τσιφλίκι', 'ατμόπλοιο'].forEach(function (s) {
+    var b = el('button', 'seed', s);
+    b.type = 'button';
+    b.addEventListener('click', function () { qIn.value = s; render(s); vBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+    document.getElementById('seeds').appendChild(b);
+  });
+
+  /* ── Η ΓΛΩΣΣΑ: τα ρήματα ΜΕΤΡΙΟΥΝΤΑΙ πάνω στις αληθινές εκφωνήσεις.
+     Αν αύριο μπει νέο θέμα με άλλο ρήμα, ο πίνακας το δείχνει μόνος του —
+     ένα χειρόγραφο νούμερο εδώ θα σάπιζε σιωπηλά. ─────────────────── */
+  var VERBS = [
+    { re: /Τι γνωρίζετε/i,                         v: 'Τι γνωρίζετε για…',                    m: 'Καθαρή αναπαραγωγή. Γράψε την ενότητα όπως τη διάβασες.' },
+    { re: /Να περιγράψετε|Να αναφέρετε|Ποια ήταν τα (βασικά )?χαρακτηριστικά/i, v: 'Να περιγράψετε / αναφέρετε…', m: 'Το ίδιο, αλλά θέλει σειρά. Μην πηδήξεις βήμα.' },
+    { re: /Αφού αναφερθείτε/i,                     v: 'Αφού αναφερθείτε σε Χ, να γίνει λόγος για Ψ', m: '⚠️ Δύο ενότητες σε μία ερώτηση. Και οι δύο μισές μετράνε.' },
+    { re: /Ποιοι? (παράγοντες|λόγοι|ήταν οι)|Για ποιους λόγους|Ποια ήταν η εικόνα/i, v: 'Ποιοι παράγοντες / Για ποιους λόγους…', m: 'Λίστα αιτίων. Αριθμημένη, όχι αφήγηση.' },
+    { re: /Να αποτιμήσετε/i,                       v: 'Να αποτιμήσετε…',                      m: '⚠️ Ζητάει ΚΡΙΣΗ. Θετικά και αρνητικά, όχι αντιγραφή.' },
+    { re: /κείμεν|πηγ[ώέ]|Αξιοποιώντας|Συνδυάζοντας|Αντλώντας/i, v: '…αξιοποιώντας τις πηγές, να παρουσιάσετε α) β) γ)', m: 'Πάντα Γ1/Δ1. Κάθε σκέλος θέλει ΚΑΙ βιβλίο ΚΑΙ πηγή.' },
+    { re: /περιεχόμενο των ακόλουθων|περιεχόμενο του ακόλουθου/i, v: 'Να δώσετε το περιεχόμενο των όρων', m: 'Το Α1. Τρεις όροι × 5 μονάδες — τα φθηνότερα μόρια του γραπτού.' },
+    { one: true,                                   v: 'Σωστό ή Λάθος',                        m: 'Το Α2. Μία άρνηση, μία εθνικότητα ή μία χρονολογία αλλάζει τα πάντα.' }
+  ];
+  var vbox = document.getElementById('verbs');
+  VERBS.forEach(function (V) {
+    /* ⚠️ Το Σ/Λ ΔΕΝ αναγνωρίζεται από ρήμα — οι προτάσεις του δεν έχουν ρήμα
+       εκφώνησης. Το αναγνωρίζει η σήμανση `one`. Ένα regex τύπου /^Το / θα
+       μετρούσε και κάθε άλλη ερώτηση που αρχίζει έτσι, δηλαδή θα φούσκωνε
+       σιωπηλά ένα νούμερο που ο Αλεξ θα το διάβαζε ως εύρημα. */
+    var hits = T.filter(function (t) {
+      return KIND[t.k].real && (V.one ? t.one === 1 : V.re.test(t.t));
+    });
+    if (!hits.length) return;
+    var d = el('div', 'verb');
+    d.appendChild(el('div', 'v', V.v));
+    d.appendChild(el('div', 'm', V.m));
+    d.appendChild(el('div', 'c', hits.length + '× στα αληθινά θέματα που σάρωσα'));
+    vbox.appendChild(d);
+  });
+
+  /* ── ΤΑ ΖΕΥΓΑΡΙΑ: παράγονται από τα ίδια τα θέματα. ──────────────── */
+  var pairMap = {};
+  T.forEach(function (t) {
+    if (t.u.length < 2 || !KIND[t.k].real) return;
+    var key = t.u.slice().sort(function (a, b) { return a - b; }).join('+');
+    (pairMap[key] = pairMap[key] || []).push(t);
+  });
+  var pbox = document.getElementById('pairs');
+  Object.keys(pairMap)
+    .sort(function (a, b) { return pairMap[b].length - pairMap[a].length; })
+    .forEach(function (key) {
+      var list = pairMap[key], parts = key.split('+').map(Number);
+      var d = el('div', 'pair');
+      var p = el('div', 'p');
+      p.innerHTML = parts.map(function (i) { return U[i].code + ' ' + U[i].title; }).join(' &nbsp;+&nbsp; ') +
+                    ' <em>· ' + list.length + '× </em>';
+      d.appendChild(p);
+      d.appendChild(el('div', 'q', '«' + list[0].t.slice(0, 190) + (list[0].t.length > 190 ? '…' : '') + '»'));
+      pbox.appendChild(d);
+    });
+
+  /* ── ΟΙ ΚΑΡΤΕΣ ──────────────────────────────────────────────────── */
+  var FILTERS = [
+    { id: 'all',  l: 'Όλες' },
+    { id: 'real', l: 'Μόνο ό,τι έχει πέσει' },
+    { id: 'big',  l: 'Μόνο τα 25άρια (Γ1/Δ1)' },
+    { id: 'mine', l: 'Μόνο δικές μου' }
+  ];
+  var active = 'all';
+  try { active = localStorage.getItem('istoria:themata:filter') || 'all'; } catch (e) {}
+  if (!FILTERS.some(function (f) { return f.id === active; })) active = 'all';
+
+  var fbox = document.getElementById('filters');
+  FILTERS.forEach(function (f) {
+    var b = el('button', 'flt', f.l);
+    b.type = 'button';
+    b.dataset.id = f.id;
+    b.setAttribute('aria-pressed', String(f.id === active));
+    b.addEventListener('click', function () {
+      active = f.id;
+      try { localStorage.setItem('istoria:themata:filter', active); } catch (e) {}
+      fbox.querySelectorAll('.flt').forEach(function (n) {
+        n.setAttribute('aria-pressed', String(n.dataset.id === active));
+      });
+      paint();
+    });
+    fbox.appendChild(b);
+  });
+
+  function keep (t) {
+    if (active === 'real') return KIND[t.k].real;
+    if (active === 'mine') return !KIND[t.k].real;
+    if (active === 'big')  return t.mon >= 25;
+    return true;
+  }
+
+  var ubox = document.getElementById('units');
+
+  function paint () {
+    ubox.textContent = '';
+    U.forEach(function (u, i) {
+      var mine = T.filter(function (t) { return t.u.indexOf(i) !== -1; });
+      var real = mine.filter(function (t) { return KIND[t.k].real; });
+      var show = mine.filter(keep);
+
+      var card = el('div', 'unit');
+      card.id = 'u' + i;
+
+      var head = el('div', 'uhead');
+      head.appendChild(el('span', 'ucode', u.code));
+      head.appendChild(el('span', 'utitle', u.title));
+      card.appendChild(head);
+
+      var meta = el('ul', 'umeta');
+      [u.par + ' παράγραφοι', u.words + ' λέξεις'].forEach(function (s) { meta.appendChild(el('li', null, s)); });
+      var heat = el('li', real.length ? 'heat' : 'cold',
+        real.length ? ('έχει πέσει ' + real.length + '×') : 'δεν βρέθηκε θέμα της');
+      meta.appendChild(heat);
+      card.appendChild(meta);
+
+      var qs = el('div', 'qs');
+      show.sort(function (a, b) {
+        var o = { pan: 0, diag: 1, panx: 2, mine: 3 };
+        return (o[a.k] - o[b.k]) || String(b.y || '').localeCompare(String(a.y || ''));
+      }).forEach(function (t) {
+        var q = el('div', 'q' + (KIND[t.k].real ? '' : ' mine'));
+        var qh = el('div', 'qh');
+        qh.appendChild(el('span', 'k ' + t.k, KIND[t.k].l));
+        if (t.y) qh.appendChild(el('span', 'qwhen', t.y + (t.s ? ' · ' + t.s : '') + (t.th ? ' · ' + t.th : '')));
+        else if (t.th) qh.appendChild(el('span', 'qwhen', 'πιθανό ' + t.th));
+        /* ⚠️ Το Α2 δεν έχει μονάδες ανά πρόταση. Το «2» ήταν δική μου διαίρεση
+           του 10 διά 5 — άρα λέγεται ΩΣ διαίρεση, δεν παριστάνει νούμερο του
+           γραπτού. Ένα εφευρημένο νούμερο με σιγουριά είναι χειρότερο από
+           κανένα νούμερο. */
+        qh.appendChild(el('span', 'qmon', t.one ? '1 από 5 · Α2 10 μον.' : t.mon + ' μον.'));
+        q.appendChild(qh);
+        q.appendChild(el('div', 'qt', t.t));
+        if (t.u.length > 1) {
+          var other = t.u.filter(function (x) { return x !== i; })
+                         .map(function (x) { return U[x].code + ' ' + U[x].title; }).join(' · ');
+          var cross = el('div', 'qn');
+          cross.innerHTML = '<b>Δένει επίσης με:</b> ' + other;
+          q.appendChild(cross);
+        }
+        if (t.n) { var nn = el('div', 'qn'); nn.textContent = t.n; q.appendChild(nn); }
+        if (t.src && SRC[t.src]) {
+          var s = el('div', 'qsrc');
+          var a = el('a', null, SRC[t.src].l);
+          a.href = SRC[t.src].u; a.target = '_blank'; a.rel = 'noopener';
+          s.appendChild(a);
+          q.appendChild(s);
+        }
+        qs.appendChild(q);
+      });
+      if (!show.length) {
+        qs.appendChild(el('div', 'qn', 'Καμία εκφώνηση σε αυτό το φίλτρο.'));
+      }
+      card.appendChild(qs);
+
+      if (SIG[i] && SIG[i].length) {
+        var sg = el('div', 'sig');
+        sg.appendChild(el('b', null, 'τα σημάδια της — λέξεις που ζουν ΜΟΝΟ εδώ'));
+        SIG[i].slice(0, 14).forEach(function (w) { sg.appendChild(el('code', null, w)); });
+        card.appendChild(sg);
+      }
+      ubox.appendChild(card);
+    });
+  }
+  paint();
+
+  document.getElementById('foot').innerHTML =
+    'Οι εκφωνήσεις με σήμα <b>Πανελλαδικές</b> είναι αντιγραμμένες από τα επίσημα PDF ' +
+    '(minedu.gov.gr, edu.klimaka.gr). Το σήμα <b>απόδοση</b> σημαίνει ότι το θέμα έπεσε αλήθεια, ' +
+    'αλλά η ακριβής φράση δεν αντιγράφηκε από το PDF. Το σήμα <b>Δική μου</b> σημαίνει ' +
+    'ότι <b>δεν έχει πέσει ποτέ</b>. Οι ενότητες, τα μεγέθη και οι λέξεις-δείκτες ' +
+    'παράγονται από τις ελεγμένες παραγράφους του βιβλίου (ebooks.edu.gr) με το ' +
+    '<code>tools/istoria-themata-build.js</code> — κανένα νούμερο εδώ δεν γράφτηκε με το χέρι.';
+})();
+</script>
+</body>
+</html>

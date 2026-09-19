@@ -69,11 +69,28 @@ same Back button every other page has. It keeps its own 5-tab `.rn-tabs` nav,
 which is Chrissie's whole navigation, so it is the one page that gets no All
 button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
+⭐ **`istoria-themata.html` ΕΙΝΑΙ Η ΤΡΙΤΗ ΓΩΝΙΑ ΤΗΣ ΙΣΤΟΡΙΑΣ (als-v573).**
+Η `istoria.html` ΕΞΕΤΑΖΕΙ, το βοήθημα ΕΞΗΓΕΙ, και το ράνταρ απαντάει στο
+**«τι σε ρωτάνε»**: οι αληθινές εκφωνήσεις πανελλαδικών και διαγωνισμάτων του
+Κεφ. 1 ανά ενότητα, τα ζευγάρια ενοτήτων που συνδυάζουν οι εξεταστές, και
+αναζήτηση λέξης → ενότητες (δείκτης ή παγίδα). Τρία αρχεία:
+- `istoria-themata-index.js` — **ΠΑΡΑΓΟΜΕΝΟ**, `node tools/istoria-themata-build.js`
+  (διαβάζει τις ελεγμένες παραγράφους μέσω του `tools/istoria-unit.js`). Μην το
+  πειράξεις με το χέρι.
+- `istoria-themata-themes.js` — **ΜΕ ΤΟ ΧΕΡΙ**, και κάθε εκφώνηση κουβαλάει το
+  είδος της: `pan` (αυτούσιο PDF) · `panx` (αληθινό θέμα, φράση σε απόδοση) ·
+  `diag` (αυτούσιο κριτήριο) · `mine` (**δεν έχει πέσει**).
+- ⛔⛔ **ΤΟ ΣΗΜΑ ΔΕΝ ΑΝΕΒΑΙΝΕΙ ΠΟΤΕ.** Ο φρουρός `tests/istoria-themata.test.js`
+  απαιτεί κάθε `pan`/`diag` να υπάρχει ΑΥΤΟΥΣΙΟ στο ανεξάρτητο
+  `tests/istoria-themata.source.txt` (curl από minedu/klimaka/filologika),
+  **σύγκριση ΧΩΡΙΣ ΚΕΝΑ** γιατί τα PDF σπάνε λέξεις. Έπιασε 6 δικές μου
+  αποκλείσεις με την πρώτη.
+
 **Study** — `latinika.html` (Λατινικά, **als-v535 · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
-(als-v542)**), `arxaia.html` (Αρχαία,
+(als-v542) + `istoria-themata.html` (als-v573)**), `arxaia.html` (Αρχαία,
 als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
