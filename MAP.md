@@ -101,12 +101,19 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 - ⛔ **Η σειρά βγαίνει από το `THI_THEMES`, όχι από το πλήθος των καρτών.**
   Ένα μέτρο που μετράει τον μετρητή έβαλε τη Β.2 πάνω από τη Γ.1.
 
+⭐ **`istoria-sarosi.html` — Η ΣΑΡΩΣΗ (als-v576).** Το τελευταίο δεκάλεπτο:
+ΚΑΙ ΟΙ 21 ενότητες, παράγραφο-παράγραφο — η αρχή κάθε παραγράφου (παραγόμενη)
+και από κάτω τα σημεία. 310 σημεία. Καμία αλληλεπίδραση επίτηδες.
+⛔⛔ Ο φρουρός γειώνει ΑΝΑ ΠΑΡΑΓΡΑΦΟ, όχι ανά ενότητα: ένα σωστό σημείο κάτω
+από λάθος παράγραφο δίνει λάθος ΣΕΙΡΑ — που είναι ακριβώς αυτό που η σελίδα
+ήρθε να φτιάξει.
+
 **Study** — `latinika.html` (Λατινικά, **als-v535 · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
-(als-v575)**), `arxaia.html` (Αρχαία,
+(als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία,
 als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
