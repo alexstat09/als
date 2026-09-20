@@ -12,11 +12,11 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v574";
+var CACHE = "als-v575";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
-  'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'arxaia-sokratis.html', 'arxaia-sokratis-ideas.html', 'arxaia-platon.html', 'arxaia-aristotelis.html', 'arxaia-protagoras.html', 'arxaia-klisi.html', 'arxaia-klisi-data.js', 'latinika.html', 'latinika-eisagogi.html', 'latinika-lectio16.html', 'latinika-lectio17.html', 'latinika-lectio18.html', 'latinika-lectio19.html', 'tonos.html', 'istoria.html', 'istoria-voithima.html', 'istoria-themata.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
+  'ideas.html', 'finance.html', 'morning.html', 'weekly.html', 'po-water.html', 'nova-chat.html', 'pr.html', 'measure.html', 'planner.html', 'supps.html', 'import.html', 'import-strong.html', 'movies.html', 'bills.html', 'improve.html', 'arc.html', 'coach.html', 'backup.html', 'insights.html', 'arxaia.html', 'arxaia-sokratis.html', 'arxaia-sokratis-ideas.html', 'arxaia-platon.html', 'arxaia-aristotelis.html', 'arxaia-protagoras.html', 'arxaia-klisi.html', 'arxaia-klisi-data.js', 'latinika.html', 'latinika-eisagogi.html', 'latinika-lectio16.html', 'latinika-lectio17.html', 'latinika-lectio18.html', 'latinika-lectio19.html', 'tonos.html', 'istoria.html', 'istoria-voithima.html', 'istoria-themata.html', 'istoria-grapto.html', 'run.html', 'scripture.html', 'study.html', 'homework.html',
   /* als-v490 — Η ΑΤΜΟΣΦΑΙΡΑ ΤΗΣ SCHOOL STUDIES. Οι φωτογραφίες είναι ΑΡΧΕΙΑ
      επίτηδες: bytes εικόνας μέσα σε συγχρονισμένη γραμμή σκοτώνουν σιωπηλά το
      `flushOnUnload` για ΟΛΗ την εφαρμογή (σταθ. 34).
@@ -40,7 +40,7 @@ var CORE = [
      ΠΑΡΑΓΟΜΕΝΟ από το βιβλίο, το `-themes` γραμμένο με το χέρι. Χωρίς αυτά
      στο CORE, η istoria-themata.html φορτώνει offline και είναι ΚΕΝΗ — η
      ίδια σιωπηλή μισή σελίδα με την arxaia.html (als-v460). */
-  'istoria-themata-index.js', 'istoria-themata-themes.js',
+  'istoria-themata-index.js', 'istoria-themata-themes.js', 'istoria-grapto-data.js',
   'lesson-grade.js', 'arxaia-gnosto-data.js', 'arxaia-syntax-data.js',
   /* als-v468: η σφραγίδα που κρατάει την πρόοδο των σελίδων μελέτης ζωντανή
      μέσα από το sync. Χωρίς αυτό στο CORE, μια offline εκκίνηση γράφει

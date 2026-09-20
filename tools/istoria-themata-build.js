@@ -11,6 +11,10 @@
      THI_UNITS  — οι 21 ενότητες εντός ύλης, με μέγεθος
      THI_IDX    — λέξη (χωρίς τόνους) -> [ενότητες όπου ζει]
      THI_SIG    — ανά ενότητα, οι λέξεις που ζουν ΜΟΝΟ εκεί
+     THI_PARA   — ανά ενότητα, η ΠΡΩΤΗ ΦΡΑΣΗ κάθε παραγράφου, με τη σειρά.
+                  ⭐ Είναι ο σκελετός: ξέροντας πώς ΑΝΟΙΓΕΙ κάθε παράγραφος
+                  ξέρεις πού πατάς για να ξεκινήσεις να γράφεις. Βγαίνει από
+                  το βιβλίο — ΠΟΤΕ μην πληκτρολογήσεις τέτοια φράση με το χέρι.
 
    ⛔ Μην γράψεις λέξη με το χέρι σε αυτά τα τρία. Ό,τι λέει το ευρετήριο
    πρέπει να είναι μετρήσιμο πάνω στο βιβλίο, αλλιώς η σελίδα λέει ψέματα
@@ -52,7 +56,18 @@ function unit (id) {
   return JSON.parse(raw);
 }
 
-const units = [], idx = Object.create(null), per = [];
+const units = [], idx = Object.create(null), per = [], para = [];
+
+/* Η πρώτη πρόταση μιας παραγράφου: κόβει στην πρώτη τελεία/άνω τελεία που
+   ΔΕΝ είναι μέσα σε αριθμό, συντομογραφία ή παρένθεση χρονολογίας.
+   ⚠️ Το αφελές /\./ έσπαγε στο «1821-1830).» και στο «κ.λπ.» — γι' αυτό
+   απαιτείται κενό + κεφαλαίο μετά, και ελάχιστο μήκος. */
+function firstSentence (p) {
+  const m = p.match(/^[\s\S]{40,}?[.;](?=\s+[Α-ΩΆΈΉΊΌΎΏ«])/);
+  let t = m ? m[0] : p;
+  if (t.length > 210) t = t.slice(0, 207).replace(/\s+\S*$/, '') + '…';
+  return t.trim();
+}
 
 IDS.forEach((id, k) => {
   const u = unit(id);
@@ -75,6 +90,7 @@ IDS.forEach((id, k) => {
     if (!seen.has(n)) seen.set(n, w);
   });
   per.push(seen);
+  para.push(u.paragraphs.map(firstSentence));
   seen.forEach((disp, n) => {
     /* ⭐ Το ευρετήριο κρατάει ΜΟΝΟ τον ατονικό τύπο. Ο τονισμένος τύπος
        ζει στο THI_SIG, που είναι το μόνο σημείο που τυπώνει λέξεις — έτσι
@@ -105,7 +121,8 @@ fs.writeFileSync(path.join(ROOT, 'istoria-themata-index.js'),
   head +
   'var THI_UNITS=' + JSON.stringify(units) + ';\n' +
   'var THI_IDX=' + JSON.stringify(compact) + ';\n' +
-  'var THI_SIG=' + JSON.stringify(sig) + ';\n');
+  'var THI_SIG=' + JSON.stringify(sig) + ';\n' +
+  'var THI_PARA=' + JSON.stringify(para) + ';\n');
 
 console.log('✓ istoria-themata-index.js — ' + units.length + ' ενότητες, ' + keys.length + ' λέξεις, ' +
             keys.filter(k => idx[k].length === 1).length + ' μοναδικές');

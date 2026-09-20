@@ -86,11 +86,27 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
   **σύγκριση ΧΩΡΙΣ ΚΕΝΑ** γιατί τα PDF σπάνε λέξεις. Έπιασε 6 δικές μου
   αποκλείσεις με την πρώτη.
 
+⭐ **`istoria-grapto.html` — ΤΙ ΘΑ ΑΠΟΔΩΣΕΙΣ (als-v575).** Το ράνταρ λέει τι
+ρωτάνε· αυτό λέει **τι γράφεις**. Ανά ζητούμενο: ΠΟΙΕΣ ΠΑΡΑΓΡΑΦΟΙ το
+απαντάνε, πώς ΑΝΟΙΓΕΙ η καθεμία, και τα ΣΤΟΙΧΕΙΑ που μετράει ο διορθωτής.
+- ⭐⭐ **Το Β1/Β2 δεν ζητάει ενότητα — ζητάει ΠΑΡΑΓΡΑΦΟΥΣ.** Μετρημένο:
+  μικρή ενότητα (1-3 παρ.) ζητιέται ολόκληρη, μεγάλη (4-8) σε φέτα.
+- ⛔⛔ **Η ΓΕΙΩΣΗ ΕΙΝΑΙ ΔΙΠΛΗ** (`tests/istoria-grapto.test.js`): κάθε
+  ΑΡΙΘΜΟΣ στοιχείου + τα 2/3 του λεξιλογίου του πρέπει να υπάρχουν στις
+  παράγραφους που δηλώνει, με γείωση `tests/istoria-grapto.source.txt`.
+  ⚠️ Η σύγκριση λεξιλογίου γίνεται σε **ΘΕΜΑ** (κόβει ως 3 χαρακτήρες
+  κατάληξης) — αλλιώς η ελληνική κλίση βγάζει 12 ψεύτικα σφάλματα.
+- ⛔ **Το Γ/Δ ΔΕΝ προβλέπεται** — 11/21 ενότητες έχουν ήδη σταθεί Γ1/Δ1.
+  Η σελίδα δίνει ΤΕΧΝΙΚΗ· ο φρουρός απαγορεύει να υποσχεθεί πρόβλεψη.
+- ⛔ **Η σειρά βγαίνει από το `THI_THEMES`, όχι από το πλήθος των καρτών.**
+  Ένα μέτρο που μετράει τον μετρητή έβαλε τη Β.2 πάνω από τη Γ.1.
+
 **Study** — `latinika.html` (Λατινικά, **als-v535 · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
-(als-v542) + `istoria-themata.html` (als-v573)**), `arxaia.html` (Αρχαία,
+(als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
+(als-v575)**), `arxaia.html` (Αρχαία,
 als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**) and
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
