@@ -666,10 +666,15 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
-  ⭐⭐ **FOUR of them since als-v550**, and three share one shape — `onlyAlign`:
-  `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*) and
-  `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — ο πρωταγόρειος μύθος). His words for
-  every one of them: *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»*.
+  ⭐⭐ **FIVE of them since als-v577**, and four share one shape — `onlyAlign`:
+  `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*),
+  `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα) and
+  `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς). His words for
+  every one of them: *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»*.
+  ⚠️⚠️ **`gk4` AND `gk5` ARE THE SAME WORK, THE SAME TRANSLATOR, CONSECUTIVE
+  PAGES** — which makes the separate-haystack rule below more important, not less.
+  The test locks it from both directions: the 5th haystack must NOT contain
+  *«ισορροπώντας»* (4th) and the 4th must NOT contain *«έντεχνον»* (5th).
   ⛔ **Each unit points at ITS OWN page of the Φάκελος Υλικού** — one
   `tests/arxaia-enotitaN.source.txt` per unit, raw PDF lines with a pinned
   sha256, never a shared haystack (a shared one would let a period of Επίκουρος
@@ -679,7 +684,16 @@ colour rule: **accent only when something is due**, faint otherwise.
   (2η Μπενάκης/Πέτρου · 3η Ζωγραφίδης/Σκουτερόπουλος · 4η **Τατάκης**/Σπυρόπουλος).
   Reusing the 3rd unit's `x < 305` on σελ. 45 ate the LAST CHARACTER of every
   line — *«καθέν»*, *«ζητ»* — and did it **silently**: the text came out whole
-  and almost right. Measure the line boxes per page, then cut.
+  and almost right. Measure the line boxes per page, then cut. It happened again
+  in `gk5`: σελ. 51 ends at x=279,97 and σελ. 52 at x=303,08 — **two widths in
+  one unit.** ⭐ And `gk5` added a second habit: **two independent extractors
+  (PDFKit + pypdf), compared with all whitespace stripped.** They agree only
+  where it matters, so a disagreement is always a real one.
+  ⚠️⚠️ **HIS ΦΥΛΛΑΔΙΟ CAN BE WRONG, AND THE DIVERGENCE IS DECLARED IN THREE
+  PLACES.** It prints *«Ἄτε»* with ψιλή (U+1F0C); the book has *«Ἅτε»* with
+  δασεία (U+1F0D), and the book is right — the particle is `ἅτε`. Source header,
+  test (written as **codepoints**, never letters — the two capital alphas look
+  identical), and a `srcNote` field that the page prints in its own footer.
   ⚠️ `homework.html` builds its unit index from `ARXGN.UNITS`, so the parser no
   longer resolves `gn1`…`gn6` — checked against his live homework first: **no
   row references them**, so nothing of his degraded.
