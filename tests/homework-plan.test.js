@@ -17,6 +17,28 @@ const vm = require('vm');
 const path = require('path');
 const ALS = path.resolve(__dirname, '..');
 
+/* ⭐ ΕΝΑΣ ΤΕΜΑΧΙΣΤΗΣ ΚΑΝΟΝΩΝ CSS, ΓΙΑ ΝΑ ΡΩΤΑΜΕ «ΠΟΙΟΣ ΤΟ ΦΟΡΑΕΙ» ΑΝΤΙ ΓΙΑ
+   «ΠΟΣΑ ΕΙΝΑΙ». Ένας αριθμητικός φρουρός σκάει στην επόμενη ΣΩΣΤΗ προσθήκη·
+   ένας που ονομάζει τον ένοχο λέει και τι να διορθώσεις. */
+function RULES_OF(src){
+  const css = src.slice(src.indexOf('<style>') + 7, src.indexOf('</style>'))
+                 .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const out = []; let depth = 0, sel = '', i = 0;
+  while (i < css.length){
+    const ch = css[i];
+    if (ch === '{'){
+      if (depth === 0 && /^\s*@media/.test(sel)){ depth = 1; sel = ''; i++; continue; }
+      let j = i + 1, d = 1;
+      while (j < css.length && d > 0){ if (css[j] === '{') d++; else if (css[j] === '}') d--; j++; }
+      out.push({ sel: sel, body: css.slice(i + 1, j - 1), inMedia: depth > 0 });
+      sel = ''; i = j; continue;
+    }
+    if (ch === '}'){ if (depth > 0) depth--; sel = ''; i++; continue; }
+    sel += ch; i++;
+  }
+  return out;
+}
+
 let pass = 0, fail = 0;
 function is(name, got, want) {
   const good = JSON.stringify(got) === JSON.stringify(want);
@@ -497,8 +519,12 @@ section('4b · «δεν ξέρω ποιο μάθημα» δεν γίνεται �
   /* ⚠️ als-v492: ΕΞΙ — η γραμμή του σχεδίου (`planRow`) είναι το έκτο σημείο
      που ζωγραφίζει εργασία. Ο αριθμός ΔΕΝ είναι ο κανόνας· ο κανόνας είναι ο
      μηδενικός από κάτω. Ανεβαίνει με κάθε νέα επιφάνεια, και ΠΡΕΠΕΙ. */
+  /* ⚠️ als-v580: ΟΚΤΩ — το Κέντρο πρόσθεσε ΔΥΟ επιφάνειες που ζωγραφίζουν
+     εργασία (η κάρτα της ώρας στο φροντιστήριο, και η λωρίδα της
+     εκπρόθεσμης). Ο αριθμός ΔΕΝ είναι ο κανόνας· ο κανόνας είναι ο μηδενικός
+     από κάτω, που δαγκώνει σε κάθε νέο δρόμο. */
   is('και ΟΛΑ δείχνουν στο unknown',
-    (PAGE.match(/SUBJ\[[a-z.]+\] \|\| SUBJ\.unknown/g) || []).length, 6);
+    (PAGE.match(/SUBJ\[[a-z.]+\] \|\| SUBJ\.unknown/g) || []).length, 8);
   is('κανένα fallback δεν δείχνει σε ΜΑΘΗΜΑ',
     (PAGE.match(/\|\| SUBJ\.(?!unknown)[a-z_]+/g) || []).length, 0);
 }
@@ -617,8 +643,15 @@ section('4d · the ΧΡΕΟΣ / ΑΠΟΦΑΣΗ overlap is closed');
      όταν προστίθεται ΘΕΣΗ· αν κάποτε ανέβει επειδή γράφτηκε δεύτερος handler,
      αυτός ο φρουρός δεν το βλέπει — γι' αυτό δίπλα του ζει η βεβαίωση ότι τα
      τελειωμένα καλωδιώνονται ΚΑΙ αυτά (αλλιώς κύκλοι που δεν γυρίζουν). */
+  /* ⚠️ als-v580: ΕΠΤΑ — προστέθηκε ο host των ωρών του Κέντρου (`ksSlots`).
+     Ο αριθμός ανεβαίνει ΜΟΝΟ όταν προστίθεται ΘΕΣΗ. */
   ok('and both places wire them through ONE implementation',
-    (PAGE.match(/wireTaskActs\(/g) || []).length === 6);
+    (PAGE.match(/wireTaskActs\(/g) || []).length === 7);
+  /* ⛔ ΚΑΙ Ο ΚΥΚΛΟΣ ΤΗΣ ΜΕΡΑΣ ΚΑΛΩΔΙΩΝΕΤΑΙ. Χωρίς αυτό η κάρτα της ώρας θα
+     είχε κύκλους που δέχονται το πάτημα και δεν κάνουν τίποτα — σιωπηλό
+     άδειο σε μορφή χειρονομίας. */
+  ok('και ο host των ωρών του ΚΕΝΤΡΟΥ καλωδιώνεται ΚΑΙ ΑΥΤΟΣ',
+    /host\.innerHTML = h \|\|[\s\S]{0,220}wireTaskActs\(host\);/.test(PAGE));
   ok('και ο host της ράγας καλωδιώνεται ΚΑΙ ΑΥΤΟΣ',
     /if \(dhost && dhtml\) wireTaskActs\(dhost\);/.test(PAGE));
 }
@@ -806,8 +839,15 @@ section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop 
      als-v484 ο όγκος ήταν ΕΝΑ μπλοκ, άρα 560. Τώρα οι πέντε κάρτες μπήκαν
      στην αρχική οθόνη, άρα το κέντρο φαρδαίνει στα 880 — ΚΑΙ Η ΠΡΟΖΑ ΜΕΝΕΙ
      ΣΤΑ 560, γιατί ο κανόνας των 75 χαρακτήρων δεν καταργήθηκε. */
-  ok('το ΚΕΝΤΡΟ είναι μία κεντραρισμένη στήλη, όχι δύο',
-    /body:not\(\.hw-door\) \.hw-wrap\{ max-width:880px; \}/.test(PAGE) &&
+  /* ⭐⭐ als-v580 ΞΑΝΑΓΥΡΙΖΕΙ ΤΟΝ ΙΔΙΟ ΚΑΝΟΝΑ ΓΙΑ ΤΡΙΤΗ ΦΟΡΑ, ΚΑΙ ΓΙ' ΑΥΤΟ
+     ΜΕΤΡΙΕΤΑΙ ΞΑΝΑ. Ο κανόνας δεν ήταν ποτέ «560» ούτε «880» — είναι «η
+     διάταξη απαντάει στον ΟΓΚΟ» (σταθ. 36). als-v484: ένα μπλοκ → 560.
+     als-v486: πέντε κάρτες → 880. als-v580: εξώφυλλο + ταινία + ΠΕΝΤΕ κάρτες
+     σε ΔΥΟ σειρές τριών στηλών + η μέρα → 1180. Στα 880 οι τρεις κάρτες της
+     πρώτης σειράς έβγαιναν 273px — μορφή κινητού σε λάπτοπ (σταθ. 51).
+     ⛔ ΚΑΙ Η ΠΡΟΖΑ ΜΕΝΕΙ ΣΤΑ 560: ο έλεγχος από κάτω δεν άλλαξε ούτε λέξη. */
+  ok('το ΚΕΝΤΡΟ είναι μία στήλη σε πλάτος λάπτοπ, όχι δύο',
+    /body:not\(\.hw-door\) \.hw-wrap\{ max-width:1180px; \}/.test(PAGE) &&
     /body:not\(\.hw-door\) \.hw-cols\{ display:flex; flex-direction:column; \}/.test(PAGE));
   ok('⛔ αλλά η ΠΡΟΖΑ και τα ΠΕΔΙΑ μένουν στα 560 — ένα input 880px είναι λάθος',
     /body:not\(\.hw-door\) \.hw-grab\{ width:100%; max-width:560px/.test(PAGE) &&
@@ -846,9 +886,24 @@ section('4f · φάση 2 · ONE markup tree — the phone reorders, the laptop 
      ΤΗΡΕΙΤΑΙ. Ο κανόνας που φυλάει είναι «καμία σειρά ΕΞΩ από media query»,
      άρα πρέπει να δει ΟΛΑ τα phone blocks. Δύο σταθερές, μία δουλειά η καθεμία. */
   const phoneAll = (PAGE.match(/@media \(max-width:999px\)\{[\s\S]*?\n  \}/g) || []).join('');
-  ok('καμία αναδιάταξη δεν ζει ΕΞΩ από media query',
-    (PAGE.match(ORDER_RE) || []).length ===
-    (phoneAll.match(ORDER_RE) || []).length + (laptop.match(ORDER_RE) || []).length);
+  /* ⭐⭐ als-v580 · Ο ΚΑΝΟΝΑΣ ΞΑΝΑΓΡΑΦΤΗΚΕ ΑΠΟ ΤΟ ΥΛΙΚΟ, ΟΧΙ ΧΑΛΑΡΩΣΕ.
+     Ο παλιός έλεγχος ήταν ΑΡΙΘΜΗΤΙΚΟΣ («όσα order υπάρχουν, τόσα μέσα σε
+     media query») και ο ΛΟΓΟΣ του γράφεται δύο γραμμές πιο πάνω: μια σειρά
+     έξω από media query «θα εφαρμοζόταν ΚΑΙ ΠΙΣΩ ΑΠΟ ΤΙΣ ΠΟΡΤΕΣ, όπου δεν
+     υπάρχει flex να την τιμήσει». Το Κέντρο χρειάζεται τώρα σειρά σε ΚΑΘΕ
+     πλάτος (πέντε μπλοκ, μία στήλη) — και την παίρνει σκοπευμένη σε
+     `body:not(.hw-door)`, δηλαδή ΑΚΡΙΒΩΣ εκεί που το `.hw-cols` ΕΙΝΑΙ flex.
+     Άρα ο φρουρός φυλάει πλέον τον ΛΟΓΟ αντί για το στιγμιότυπο: καμία σειρά
+     δεν επιτρέπεται να φτάσει πίσω από πόρτα. Ένα καρφωμένο νούμερο εδώ θα
+     έσκαγε στην επόμενη σειρά που θα προστεθεί σωστά. */
+  {
+    const unscoped = RULES_OF(PAGE).filter(r =>
+      ORDER_RE.test(r.body) && !r.inMedia && r.sel.indexOf('body:not(.hw-door)') < 0);
+    is('⛔ καμία αναδιάταξη δεν φτάνει πίσω από πόρτα',
+      unscoped.map(r => r.sel.trim()).join(' | ') || '(καμία)', '(καμία)');
+    ok('και όσες ζουν έξω από media query είναι ΟΛΕΣ του ΚΕΝΤΡΟΥ',
+      RULES_OF(PAGE).filter(r => ORDER_RE.test(r.body) && !r.inMedia).length > 0);
+  }
   /* ⭐ ΒΕΒΑΙΩΣΕ ΤΗΝ ΙΔΙΟΤΗΤΑ, ΟΧΙ ΕΝΑ ΣΤΙΓΜΙΟΤΥΠΟ ΤΗΣ (als-v453, ξανά). Η
      πρώτη γραφή απαιτούσε ΑΚΡΙΒΩΣ `body:not(.hw-door) .hw-x{ order:`, οπότε
      κοκκίνισε μπροστά σε `body:not(.hw-door).hw-t-capture .hw-apog{ order:3 }`
@@ -1478,8 +1533,11 @@ section('6 · ΤΑ ΜΑΘΗΜΑΤΑ — δωμάτιο, όχι πέμπτο μπ
      πάνω σε null πετάει TypeError μέσα στο `paint()` και ΣΤΑΜΑΤΑΕΙ τη ζωγραφιά
      πριν το πρόγραμμα — η σελίδα βγαίνει μισή, χωρίς κανένα ορατό σφάλμα. */
   ok('ΚΑΝΕΝΑΣ δεν γράφει στο νεκρό hwDoorsS', !/hwDoorsS'\)\s*\./.test(CODE));
+  /* ⚠️ als-v580: ΤΕΤΑΡΤΟ ΟΡΙΣΜΑ, `books` — ο μετρητής γράφει τώρα ΚΑΙ πόσα
+     τετράδια είναι, και το πλήθος βγαίνει από τις κάρτες που ΜΟΛΙΣ
+     ζωγραφίστηκαν, ποτέ από σταθερά «5». Οι τρεις καταστάσεις μένουν. */
   ok('η περίληψη βγαίνει από ΕΝΑ σημείο, με τις τρεις καταστάσεις',
-    /function l4Summary\(totalLate, anyBlind, anyStarted\)/.test(CODE) &&
+    /function l4Summary\(totalLate, anyBlind, anyStarted, books\)/.test(CODE) &&
     /anyBlind \? 'κάτι δεν διαβάστηκε'/.test(CODE) &&
     /!anyStarted \? 'δεν έχεις ξεκινήσει'/.test(CODE));
 
@@ -2040,7 +2098,13 @@ section('9c · ΤΟ ΦΩΣ ΚΑΙ Η ΦΑΣΗ');
 
 section('9d · Η ΥΛΗ ΒΓΑΙΝΕΙ ΑΠΟ CORPUS, ΠΟΤΕ ΓΡΑΜΜΕΝΗ ΣΤΟ ΧΕΡΙ');
 {
-  const face = CODE.slice(CODE.indexOf('function faceFor('), CODE.indexOf('function barFor('));
+  /* ⚠️ ΣΤΑΘ. 30: ΕΛΕΓΞΕ ΤΟ ΟΡΓΑΝΟ. Η `barFor` έγινε `dashFor` στην als-v580·
+     ένα `indexOf` που δεν βρίσκει γυρίζει -1 και το `slice` κόβει ΟΛΟ το
+     αρχείο μείον έναν χαρακτήρα — δηλαδή ο έλεγχος θα εξέταζε άλλη φέτα και
+     θα κοκκίνιζε για κάτι σωστό. */
+  const dashAt = CODE.indexOf('function dashFor(');
+  ok('η φέτα της faceFor οριοθετείται (ΣΤΑΘ. 30: το όργανο πρώτα)', dashAt > -1);
+  const face = CODE.slice(CODE.indexOf('function faceFor('), dashAt);
   ok('η faceFor διαβάζει το ΙΣΤΟΡΙΑ corpus', /ISTORIA\.UNITS/.test(face));
   ok('και το ΑΡΧΑΙΑ ΓΝΩΣΤΟ corpus', /ARXGN\.UNITS/.test(face));
   ok('και τα ΡΗΜΑΤΑ του ΑΓΝΩΣΤΟΥ', /ArxaiaData\.VERBS/.test(face));
@@ -2054,11 +2118,20 @@ section('9d · Η ΥΛΗ ΒΓΑΙΝΕΙ ΑΠΟ CORPUS, ΠΟΤΕ ΓΡΑΜΜΕΝΗ
 section('9e · ΚΑΝΕΝΑΣ ΕΠΙΝΟΗΜΕΝΟΣ ΑΡΙΘΜΟΣ (σταθ. 33)');
 {
   const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
-  vm.runInContext(CODE.slice(CODE.indexOf('function barFor(')).split('\n').slice(0, 7).join('\n'), ctx);
-  is('ΜΗΔΕΝ κομμάτια → ΚΑΜΙΑ μπάρα (μια άδεια μπάρα διαβάζεται 0%)', ctx.barFor(0, 0), '');
-  ok('με κομμάτια → μπάρα', ctx.barFor(9, 7).indexOf('hw-bar') > -1);
-  ok('και το νούμερο είναι ΞΕΚΙΝΗΜΕΝΑ, ποτέ «τα ξέρεις»', ctx.barFor(9, 7).indexOf('ΞΕΚΙΝΗΜΕΝΑ') > -1);
-  ok('7 από 9 γράφεται όπως μετρήθηκε', ctx.barFor(9, 7).indexOf('7 ΑΠΟ 9') > -1);
+  /* ⭐ als-v580 · Η ΜΠΑΡΑ ΕΓΙΝΕ ΚΟΜΜΑΤΙΑ, ΚΑΙ Ο ΚΑΝΟΝΑΣ ΕΙΝΑΙ Ο ΙΔΙΟΣ: καμία
+     μέτρηση που δεν έγινε δεν ζωγραφίζεται. Αυτό που άλλαξε είναι ΤΙ μετράει
+     — ΤΟ ΧΡΕΟΣ αντί για τα ξεκινημένα — γιατί τα ξεκινημένα τα γράφει ήδη με
+     λέξεις η γραμμή από κάτω, και δύο φορές το ίδιο είναι σταθ. 15. */
+  vm.runInContext(CODE.slice(CODE.indexOf('function dashFor(')).split('\n').slice(0, 7).join('\n'), ctx);
+  is('ΜΗΔΕΝ κομμάτια → ΚΑΜΙΑ μπάρα (μια άδεια μπάρα διαβάζεται 0%)', ctx.dashFor(0, 0), '');
+  is('ΜΙΑ ΠΑΥΛΙΤΣΑ ΑΝΑ ΚΟΜΜΑΤΙ — ποτέ ποσοστό που κρύβει το πλήθος',
+    (ctx.dashFor(9, 7).match(/<i/g) || []).length, 9);
+  is('και αναμμένες ΑΚΡΙΒΩΣ όσες έληξαν',
+    (ctx.dashFor(9, 7).match(/class="on"/g) || []).length, 7);
+  is('⛔ ΜΗΔΕΝ ΧΡΕΟΣ → ΚΑΜΙΑ ΑΝΑΜΜΕΝΗ (όχι «όλες», όχι «μία»)',
+    (ctx.dashFor(9, 0).match(/class="on"/g) || []).length, 0);
+  ok('και το τι μετράει το λέει με λέξεις, όχι μόνο με χρώμα',
+    ctx.dashFor(9, 7).indexOf('7 από 9 κομμάτια έληξαν') > -1);
 }
 
 section('9f · ΟΙ ΦΩΤΟΓΡΑΦΙΕΣ ΕΙΝΑΙ ΑΡΧΕΙΑ, ΠΟΤΕ BYTES ΣΕ ΑΠΟΘΗΚΗ (σταθ. 34)');
