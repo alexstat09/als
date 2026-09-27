@@ -510,6 +510,21 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .back{display:inline-flex;align-items:center;gap:9px;height:42px;box-sizing:border-box;padding:0 15px 0 12px;border-radius:11px;background:#121720;border:1px solid rgba(237,230,216,.08);color:var(--soft);font-size:13px;font-weight:500;text-decoration:none;white-space:nowrap;transition:color .15s,background .15s,border-color .15s}
 .back:hover{color:var(--text);background:var(--surf2);border-color:var(--line2)}
 .back svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+@keyframes needflash{0%,50%,100%{opacity:1}25%,75%{opacity:.3}}
+.pv-note.flash{animation:needflash .7s ease}
+/* ⭐⭐ ΤΟ ΠΡΑΓΜΑ ΠΟΥ ΛΕΙΠΕΙ ΦΑΙΝΕΤΑΙ (als-v583)
+   Δική του αναφορά: «πήγα να βάλω ένα διαγώνισμα και δεν με αφήνει να
+   πατήσω enter· το "διάβασέ το" δουλεύει, το "πρόσθεσέ το" όχι».
+   Το κουμπί ζωγραφιζόταν `disabled` με opacity .4 και το Enter γύριζε
+   ΣΙΩΠΗΛΑ — δηλαδή η σελίδα ήξερε ακριβώς τι της έλειπε και δεν το έλεγε.
+   Τώρα το πεδίο που λείπει βάφεται ΑΜΠΕΡ, με το ΙΔΙΟ χρώμα που η σελίδα
+   χρησιμοποιεί ήδη για «εδώ είναι η προσοχή σου». Μηδέν νέο λεξιλόγιο. */
+.pcard.need{border-color:rgba(232,178,92,.42)}
+.sel.need{border-color:var(--amber);background-color:var(--amber-soft);color:var(--text);font-weight:600}
+.ptitle.need{border-bottom-style:solid;border-bottom-color:var(--amber)}
+.ptitle::placeholder{color:var(--faint2)}
+.ptitle.need::placeholder{color:rgba(232,178,92,.75)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -1188,6 +1203,57 @@ function finalize(it){
   return x;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   ΤΙ ΛΕΙΠΕΙ ΓΙΑ ΝΑ ΜΠΕΙ — ΚΑΙ ΓΙΑΤΙ ΥΠΟΛΟΓΙΖΕΤΑΙ ΣΤΟ RENDER
+
+   ⛔⛔ Η ΣΕΛΙΔΑ ΗΞΕΡΕ ΑΚΡΙΒΩΣ ΤΙ ΤΗΣ ΕΛΕΙΠΕ ΚΑΙ ΔΕΝ ΤΟ ΕΛΕΓΕ. Το
+   `commitComposer()` είχε ΔΥΟ `return` χωρίς λέξη, και το κουμπί
+   ζωγραφιζόταν `disabled` — άρα το Enter δεν έκανε τίποτα και το κουμπί
+   διαβαζόταν ως ΧΑΛΑΣΜΕΝΟ. Είναι η ίδια αρρώστια με το σιωπηλό μηδέν
+   (σταθ. 10): «δεν μπορώ» και «δεν κατάλαβα τι θέλεις» ζωγραφίζονταν ίδια.
+
+   ⚠️⚠️ ΚΑΙ ΔΕΝ ΕΙΝΑΙ ΣΠΑΝΙΟ — ΕΙΝΑΙ Ο ΠΙΟ ΦΥΣΙΚΟΣ ΤΡΟΠΟΣ ΝΑ ΓΡΑΨΕΙ
+   ΔΙΑΓΩΝΙΣΜΑ. Στο «διαγ ιστορια τεταρτη» ΚΑΘΕ λέξη είναι λέξη-κλειδί
+   (τύπος + μάθημα + μέρα), άρα δεν περισσεύει ΤΙΠΟΤΑ για τίτλο· και το
+   μοντέλο έχει ρητή εντολή να ΜΗΝ γράφει μέσα στον τίτλο το μάθημα ή τη
+   μέρα, οπότε γυρίζει κι εκείνο κενό τίτλο → το `cleanItem` το πετάει →
+   πέφτουμε στον τοπικό parser → πάλι κενός τίτλος → νεκρό κουμπί. Τρεις
+   δρόμοι, ίδιο αδιέξοδο, καμία λέξη.
+
+   ⭐ ΥΠΟΛΟΓΙΖΕΤΑΙ ΣΤΟ RENDER, ΔΕΝ ΑΠΟΘΗΚΕΥΕΤΑΙ: μόλις διαλέξει μάθημα ή
+   γράψει τίτλο, η προειδοποίηση φεύγει ΜΟΝΗ ΤΗΣ. Μια αποθηκευμένη σημαία
+   θα ήταν δεύτερη αλήθεια που θα ξεχνούσε να σβήσει.
+   ⚠️ ΔΕΝ μαντεύουμε μάθημα ούτε γράφουμε τίτλο για λογαριασμό του: ένα
+   μαντεμένο μάθημα είναι λάθος που μπαίνει με ΒΕΒΑΙΟΤΗΤΑ. Του λέμε τι
+   λείπει και τον πάμε ΕΚΕΙ.
+   ═══════════════════════════════════════════════════════════════════════ */
+function needsOf(items){
+  const out=[];
+  (items||[]).forEach((x,i)=>{
+    if(!x.subj)out.push({i:i,f:'subj'});
+    else if(!String(x.title==null?'':x.title).trim())out.push({i:i,f:'title'});
+  });
+  return out;
+}
+/* Η πρόταση λέει ΤΙ λείπει και ΤΙ να κάνει — ποτέ «συμπλήρωσε τα πεδία». */
+function needText(needs,items){
+  if(!needs.length)return '';
+  const one=items.length===1;
+  const nS=needs.filter(n=>n.f==='subj').length;
+  const nT=needs.filter(n=>n.f==='title').length;
+  if(one){
+    const it=items[0];
+    if(nS)return 'Δεν κατάλαβα ποιο μάθημα είναι. Διάλεξέ το και μπαίνει.';
+    return it.type==='test'
+      ? 'Γράψε τι πέφτει στο διαγώνισμα — π.χ. «Ενότητες 1–4». Μπορείς και σκέτο «Διαγώνισμα».'
+      : 'Γράψε τι έχεις να κάνεις και μπαίνει.';
+  }
+  const parts=[];
+  if(nS)parts.push(nS===1?'σε μία λείπει το μάθημα':'σε '+nS+' λείπει το μάθημα');
+  if(nT)parts.push(nT===1?'σε μία λείπει ο τίτλος':'σε '+nT+' λείπει ο τίτλος');
+  return 'Από τις '+items.length+', '+parts.join(' και ')+'.';
+}
+
 /* ───────── composer ───────── */
 const comp={state:'idle',items:[],text:'',ctl:null,note:'',warn:false};
 const cIn=$('#cIn');
@@ -1214,25 +1280,33 @@ function renderComposer(){
   if(comp.state==='thinking'){b.innerHTML=`<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Το διαβάζω και το γράφω όμορφα… <button class="btn" id="cStop" style="padding:4px 10px;font-size:12px">Άκυρο</button></div>`;return}
   if(comp.state!=='preview'){b.innerHTML='';return}
   const n=comp.items.length;
-  b.innerHTML=`<div class="pv">${comp.note?`<div class="pv-note${comp.warn?' warn':''}">${esc(comp.note)}</div>`:''}${comp.items.map((it,i)=>pcard(it,i)).join('')}
-  <div class="pact"><button class="btn" id="cCancel">Άκυρο <span class="why">Esc</span></button><button class="btn primary" id="cSave" ${comp.items.some(x=>!x.subj||!x.title)?'disabled style="opacity:.4;cursor:not-allowed"':''}>${n>1?'Πρόσθεσε και τις '+n:'Πρόσθεσέ τη'} ↵</button></div></div>`;
+  /* ⭐ ΤΟ ΚΟΥΜΠΙ ΔΕΝ ΞΑΝΑΖΩΓΡΑΦΙΖΕΤΑΙ ΠΟΤΕ ΝΕΚΡΟ. Ένα `disabled` με
+     opacity .4 δεν λέει «λείπει κάτι», λέει «χάλασε» — και το Enter από
+     δίπλα δεν έκανε τίποτα, που το επιβεβαίωνε. Μένει ζωντανό: αν λείπει
+     κάτι, το πάτημα (ή το Enter) ΔΕΙΧΝΕΙ τι λείπει αντί να σωπαίνει. */
+  const needs=needsOf(comp.items);
+  const nt=needText(needs,comp.items);
+  b.innerHTML=`<div class="pv">${comp.note?`<div class="pv-note${comp.warn?' warn':''}">${esc(comp.note)}</div>`:''}${nt?`<div class="pv-note warn" id="cNeed">${esc(nt)}</div>`:''}${comp.items.map((it,i)=>pcard(it,i,needs)).join('')}
+  <div class="pact"><button class="btn" id="cCancel">Άκυρο <span class="why">Esc</span></button><button class="btn primary" id="cSave">${n>1?'Πρόσθεσε και τις '+n:'Πρόσθεσέ τη'} ↵</button></div></div>`;
 }
-function subjSelect(it,i,prefix){
-  return `<select class="sel subj" data-${prefix}="subj" data-i="${i}" aria-label="Μάθημα">${it.subj?'':'<option value="" selected>Διάλεξε μάθημα</option>'}${SUBJ.map(s=>`<option value="${s.id}"${it.subj===s.id?' selected':''}>${s.name}</option>`).join('')}</select>`;
+function subjSelect(it,i,prefix,need){
+  return `<select class="sel subj${need?' need':''}" data-${prefix}="subj" data-i="${i}" aria-label="Μάθημα">${it.subj?'':'<option value="" selected>Διάλεξε μάθημα</option>'}${SUBJ.map(s=>`<option value="${s.id}"${it.subj===s.id?' selected':''}>${s.name}</option>`).join('')}</select>`;
 }
 function catControl(it,i,prefix){
   if(!it.subj)return'';
   if(it.subj==='ist'){const n=it.cat?it.cat.replace(/\D/g,''):'';return `<label class="why" style="display:flex;gap:6px;align-items:center">Ενότητα <input class="num" type="number" min="1" max="99" data-${prefix}="unit" data-i="${i}" value="${esc(n)}" placeholder="—"></label>`}
   return `<select class="sel" data-${prefix}="cat" data-i="${i}" aria-label="Κατηγορία"><option value="">Χωρίς κατηγορία</option>${S[it.subj].cats.map(c=>`<option${it.cat===c?' selected':''}>${c}</option>`).join('')}</select>`;
 }
-function pcard(it,i){
+function pcard(it,i,needs){
   const c=it.subj?S[it.subj].c:'var(--muted)';
-  return `<div class="pcard" style="--c:${c}">${comp.items.length>1?`<button class="x" data-prm="${i}" aria-label="Αφαίρεση">×</button>`:''}
-    <div class="pctl">${subjSelect(it,i,'p')}${catControl(it,i,'p')}
+  const nd=(needs||[]).find(x=>x.i===i)||null;
+  const kS=nd&&nd.f==='subj'?' need':'', kT=nd&&nd.f==='title'?' need':'';
+  return `<div class="pcard${nd?' need':''}" style="--c:${c}">${comp.items.length>1?`<button class="x" data-prm="${i}" aria-label="Αφαίρεση">×</button>`:''}
+    <div class="pctl">${subjSelect(it,i,'p',kS)}${catControl(it,i,'p')}
       <select class="sel" data-p="src" data-i="${i}" aria-label="Από"><option value="sch"${it.src==='sch'?' selected':''}>Σχολείο</option><option value="fro"${it.src==='fro'?' selected':''}>Φροντιστήριο</option></select>
       <select class="sel" data-p="type" data-i="${i}" aria-label="Τύπος"><option value="task"${it.type==='task'?' selected':''}>Εργασία</option><option value="test"${it.type==='test'?' selected':''}>Διαγώνισμα</option></select>
     </div>
-    <input class="ptitle" data-p="title" data-i="${i}" value="${esc(it.title)}" aria-label="Τίτλος">
+    <input class="ptitle${kT}" data-p="title" data-i="${i}" value="${esc(it.title)}" aria-label="Τίτλος" placeholder="${it.type==='test'?'Τι πέφτει;':'Τι έχεις να κάνεις;'}">
     ${it.steps.length?`<div class="psteps">${it.steps.map((s,j)=>`<div class="pstep"><input data-p="step" data-i="${i}" data-j="${j}" value="${esc(s)}" aria-label="Βήμα"><button class="x" data-psrm="${i}|${j}" aria-label="Αφαίρεση βήματος">×</button></div>`).join('')}</div>`:''}
     <div class="pctl"><span class="why">Για</span><input type="date" class="dateip" data-p="date" data-i="${i}" value="${it.date}"><span class="why">${rel(it.date)}${it.dateAuto&&it.why?' · '+esc(it.why):''}</span>${it.important?'<span class="why" style="color:var(--amber)">! σημαντικό</span>':''}</div>
   </div>`;
@@ -1272,9 +1346,26 @@ function cancelComposer(clear){
   if(clear)cIn.value='';
   renderComposer();
 }
+/* ⭐⭐ ΤΟ ENTER ΑΠΑΝΤΑΕΙ ΠΑΝΤΑ. Αν λείπει κάτι, δεν σωπαίνει: αναβοσβήνει
+   τη γραμμή που λέει ΤΙ λείπει, βάφει το πεδίο και ΠΑΕΙ ΤΟΝ ΚΕΡΣΟΡΑ ΕΚΕΙ.
+   Ένα πάτημα που δεν κάνει τίποτα δεν διαβάζεται ως «λείπει κάτι» — 
+   διαβάζεται ως «χάλασε», και έτσι ακριβώς το διάβασε. */
+function nudge(needs){
+  renderComposer();
+  const n=needs[0];if(!n)return;
+  const el=document.querySelector('.pcard [data-p="'+n.f+'"][data-i="'+n.i+'"]');
+  const line=$('#cNeed');
+  if(line){line.classList.remove('flash');void line.offsetWidth;line.classList.add('flash')}
+  if(el){
+    el.focus({preventScroll:true});
+    if(el.tagName==='INPUT'){try{el.select()}catch(e){}}
+    el.scrollIntoView({block:'nearest'});
+  }
+}
 function commitComposer(){
   if(comp.state!=='preview'||!comp.items.length)return;
-  if(comp.items.some(x=>!x.subj||!x.title.trim()))return;
+  const needs=needsOf(comp.items);
+  if(needs.length){nudge(needs);return}
   const now=Date.now();const ids=[];
   comp.items.forEach((it,k)=>{
     const t={id:uid(),subj:it.subj,cat:catOk(it.subj,it.cat)?it.cat:null,src:it.src,type:it.type,title:it.title.trim(),steps:it.steps.filter(s=>s.trim()).map(s=>({t:s.trim(),d:false})),date:it.date,done:false,doneAt:null,important:!!it.important,notes:'',created:now+k};

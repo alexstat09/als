@@ -24,7 +24,8 @@
      ΣΤ · μια ρύθμιση δεν ακουμπάει το πρόγραμμα που δεν την αφορά
      Ζ · ΟΙ ΑΛΛΕΣ ΔΥΟ ΚΑΡΤΕΛΕΣ ΑΝΟΙΓΟΥΝ ΜΕ ΤΟ ΑΓΝΩΣΤΟ ΜΑΘΗΜΑ ΜΕΣΑ
      Η · Η ΕΞΟΔΟΣ ΥΠΑΡΧΕΙ, ΟΝΟΜΑΖΕΙ ΤΟΝ ΠΡΟΟΡΙΣΜΟ ΚΑΙ ΔΙΑΒΑΖΕΤΑΙ (και στα 393)
-     Θ · μηδέν exceptions σε ΟΛΗ τη διαδρομή
+     Θ · ΤΟ ΣΚΕΤΟ ΔΙΑΓΩΝΙΣΜΑ ΜΠΑΙΝΕΙ, ΚΑΙ ΤΟ ENTER ΔΕΝ ΣΩΠΑΙΝΕΙ ΠΟΤΕ
+     Ι · μηδέν exceptions σε ΟΛΗ τη διαδρομή
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 const http=require('http'),fsx=require('fs'),pathx=require('path');
@@ -102,6 +103,8 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
  const q=async e=>JSON.parse((await S('Runtime.evaluate',{expression:e,returnByValue:true})).result.value);
  const hw=()=>q(`JSON.stringify(JSON.parse(localStorage.getItem('hw:v1')))`);
  const before=await hw();
+ const T0=iso(D(0));
+ const pd=x=>{const a=String(x).split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
 
  console.log('\nΑ · ΤΟ ΤΙΚ ΓΡΑΦΕΙ ΣΤΙΓΜΗ, ΟΧΙ ΣΗΜΑΙΑ');
  await S('Runtime.evaluate',{expression:`document.querySelector('.task[data-id="t:a5"] .tick').click()`});
@@ -256,7 +259,88 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
  await S('Emulation.setDeviceMetricsOverride',{width:1440,height:2350,deviceScaleFactor:1,mobile:false});
  await sleep(400);
 
- console.log('\nΘ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
+ /* ⛔⛔⛔ ΔΙΚΟ ΤΟΥ ΕΥΡΗΜΑ (27/09/26): «πήγα να βάλω ένα διαγώνισμα και δεν με
+    αφήνει να πατήσω enter — το "διάβασέ το" δουλεύει, το "πρόσθεσέ το" όχι».
+    Το «διαγ ιστορια τεταρτη» είναι ο ΠΙΟ ΦΥΣΙΚΟΣ τρόπος να το γράψει, και
+    ΚΑΘΕ λέξη του είναι λέξη-κλειδί (τύπος + μάθημα + μέρα) — δεν περισσεύει
+    ΤΙΠΟΤΑ για τίτλο. Ο τίτλος ήταν υποχρεωτικός, άρα:
+      · το κουμπί ζωγραφιζόταν `disabled` (διαβάζεται «χάλασε», όχι «λείπει»)
+      · το Enter γύριζε ΣΙΩΠΗΛΑ από δύο διαφορετικά return
+    ⚠️ Ο έλεγχος τρέχει ΧΩΡΙΣ μοντέλο επίτηδες (ο τοπικός server γυρίζει 404
+    στο /api), δηλαδή ακριβώς στον δρόμο που πέφτει κάθε αποτυχία — και που
+    παρήγαγε το αδιέξοδο. Μηδέν εξάρτηση από δίκτυο, ντετερμινιστικό. */
+ console.log('\nΘ · ΤΟ ΣΚΕΤΟ ΔΙΑΓΩΝΙΣΜΑ ΜΠΑΙΝΕΙ, ΚΑΙ ΤΟ ENTER ΔΕΝ ΣΩΠΑΙΝΕΙ');
+ const ENTER=`(function(el){el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))})`;
+ await S('Runtime.evaluate',{expression:`(function(){
+   var i=document.getElementById('cIn');
+   i.focus(); i.value='διαγ ιστορια τεταρτη';
+   i.dispatchEvent(new Event('input',{bubbles:true}));
+   ${ENTER}(i);
+ })()`});
+ await sleep(2200);
+ const pv=await q(`(function(){
+   var need=document.getElementById('cNeed');
+   var save=document.getElementById('cSave');
+   var t=document.querySelector('.pcard [data-p="title"]');
+   var sb=document.querySelector('.pcard [data-p="subj"]');
+   return JSON.stringify({
+     preview:!!document.querySelector('.pcard'),
+     need: need?need.textContent.trim():'',
+     titleNeed: !!(t&&t.classList.contains('need')),
+     titleVal: t?t.value:null,
+     titlePh: t?t.getAttribute('placeholder'):null,
+     subjVal: sb?sb.value:null,
+     saveDisabled: save?(save.disabled||/opacity:\s*\.?4/.test(save.getAttribute('style')||'')):null
+   });})()`);
+ ok('η προεπισκόπηση άνοιξε', pv.preview, pv);
+ ok('το μάθημα ΑΝΑΓΝΩΡΙΣΤΗΚΕ (ιστορία)', pv.subjVal==='ist', pv.subjVal);
+ ok('⛔ και ο τίτλος βγήκε ΚΕΝΟΣ — αυτό ήταν όλο το αδιέξοδο', pv.titleVal==='', pv.titleVal);
+ ok('⭐ Η ΣΕΛΙΔΑ ΤΟ ΛΕΕΙ ΤΩΡΑ, ΑΠΟ ΜΟΝΗ ΤΗΣ', pv.need.length>0, pv.need);
+ ok('και η πρόταση λέει ΤΙ να κάνει, όχι «συμπλήρωσε τα πεδία»', /πέφτει|Γράψε/.test(pv.need), pv.need);
+ ok('το πεδίο που λείπει είναι ΒΑΜΜΕΝΟ', pv.titleNeed, pv);
+ ok('και ΡΩΤΑΕΙ με placeholder', /Τι πέφτει/.test(String(pv.titlePh||'')), pv.titlePh);
+ ok('⛔ ΤΟ ΚΟΥΜΠΙ ΔΕΝ ΕΙΝΑΙ ΠΙΑ ΝΕΚΡΟ', pv.saveDisabled===false, pv.saveDisabled);
+
+ /* Το Enter ΞΑΝΑ, όπως το πάτησε εκείνος: δεν σώζει, αλλά ΑΠΑΝΤΑΕΙ. */
+ const exBefore=Object.keys((await hw()).exams).length;
+ await S('Runtime.evaluate',{expression:`${ENTER}(document.getElementById('cIn'))`});
+ await sleep(500);
+ const af=await q(`(function(){var a=document.activeElement;return JSON.stringify({
+   p:a?a.getAttribute('data-p'):null, still:!!document.querySelector('.pcard')});})()`);
+ ok('δεν αποθήκευσε κάτι μισό', Object.keys((await hw()).exams).length===exBefore);
+ ok('⭐ ΑΛΛΑ ΠΗΓΕ ΤΟΝ ΚΕΡΣΟΡΑ ΣΤΟ ΠΕΔΙΟ ΠΟΥ ΛΕΙΠΕΙ', af.p==='title', af);
+ ok('και η προεπισκόπηση έμεινε ανοιχτή', af.still, af);
+
+ /* Τώρα γράφει την ύλη και πατάει Enter — ΠΡΕΠΕΙ να μπει. */
+ await S('Runtime.evaluate',{expression:`(function(){
+   var t=document.querySelector('.pcard [data-p="title"]');
+   t.focus(); t.value='Ενότητες 1–4';
+   t.dispatchEvent(new Event('input',{bubbles:true}));
+   ${ENTER}(t);
+ })()`});
+ await sleep(700);
+ h=await hw();
+ /* ⚠️ ΤΟ ΡΑΦΙ ΕΙΝΑΙ ΤΟ `tasks` ΜΕ `kind:'diagonisma'`, ΟΧΙ ΤΟ `exams`, ΚΑΙ
+    ΑΥΤΟ ΔΕΝ ΕΙΝΑΙ ΛΑΘΟΣ: έτσι ακριβώς γράφει ΗΔΗ η παλιά σελίδα ό,τι πιάνει
+    από τη «σύλληψη» — η σπορά αυτού του ελέγχου κουβαλάει τέτοια εγγραφή
+    (a8) από τα ΑΛΗΘΙΝΑ του δεδομένα. Το `exams` είναι η 5η πόρτα, όπου
+    γράφει ΕΚΕΙΝΟΣ ύλη + βαθμό με κλίμακα. Δύο σχήματα που ΥΠΑΡΧΟΥΝ ήδη και
+    τα δύο· η Ατζέντα διαβάζει και τα δύο ως διαγώνισμα (δες fromTask).
+    Ο έλεγχος κοιτάζει ΤΟ ΡΑΦΙ ΠΟΥ ΓΡΑΦΕΤΑΙ, όχι αυτό που υπέθεσα. */
+ const newT=Object.keys(h.tasks).filter(k=>!before.tasks[k]&&h.tasks[k]&&h.tasks[k].title==='Ενότητες 1–4');
+ ok('⭐⭐ ΤΟ ΔΙΑΓΩΝΙΣΜΑ ΜΠΗΚΕ', newT.length===1, Object.keys(h.tasks));
+ if(newT.length===1){
+   const e=h.tasks[newT[0]];
+   ok('στο σωστό μάθημα', e.subject==='istoria', e.subject);
+   ok('ΚΑΙ ΕΙΝΑΙ ΔΙΑΓΩΝΙΣΜΑ, όχι απλή εργασία', e.kind==='diagonisma', e.kind);
+   ok('με ημερομηνία Τετάρτης στο μέλλον', /^\d{4}-\d{2}-\d{2}$/.test(e.due)&&pd(e.due).getDay()===3&&e.due>=T0, e.due);
+   ok('άσβηστο: δεν μπήκε βαθμός από το πουθενά', e.grade===undefined, e.grade);
+   ok('με σφραγίδα για τον συγχρονισμό', typeof e._ts==='number', e._ts);
+ }
+ const barCleared=await q(`JSON.stringify({v:document.getElementById('cIn').value,pv:!!document.querySelector('.pcard')})`);
+ ok('η μπάρα καθάρισε και η προεπισκόπηση έκλεισε', barCleared.v===''&&!barCleared.pv, barCleared);
+
+ console.log('\nΙ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
  ok('μηδέν exceptions', exc.length===0, exc);
  console.log('\n'+P+' passed, '+F+' failed');
  ws.close();chrome.kill();server.close();process.exit(F?1:0);
