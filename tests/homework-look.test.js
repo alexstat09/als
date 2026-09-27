@@ -218,8 +218,11 @@ section('7c · ⭐ ΤΟ ΚΕΝΤΡΟ ΔΕΝ ΣΒΗΝΕΙ ΔΥΝΑΤΟΤΗΤΑ �
     /body\.hw-door\.hw-door-ergasies \.hw-start\{ display:block/.test(CODE));
   ok('⭐ και οι ΠΟΡΤΕΣ το ίδιο',
     /body\.hw-door\.hw-door-ergasies \.hw-doors\{ display:grid/.test(CODE));
+  /* ⭐ als-v581: ο σύνδεσμος δείχνει τώρα στην `ergasies.html`, και ο κανόνας
+     ΑΚΟΛΟΥΘΗΣΕ ΤΟ href. Ένας selector που δεν ακολουθεί το attribute που
+     διαβάζει είναι κανόνας που σταματάει να ισχύει ΣΙΩΠΗΛΑ. */
   ok('⛔ αλλά ΟΧΙ ο σύνδεσμος προς το δωμάτιο που ήδη είσαι',
-    /body\.hw-door-ergasies \.hw-doors > a\[href="#ergasies"\]\{ display:none; \}/.test(CODE));
+    /body\.hw-door-ergasies \.hw-doors > a\[href="ergasies\.html"\]\{ display:none; \}/.test(CODE));
   /* ⚠️ ΚΑΙ ΤΑ ΤΕΣΣΕΡΑ HASH ΖΟΥΝ: δύο από αυτά είναι προορισμοί PUSH (18:00
      και 21:45). Ένα σπασμένο hash εκεί είναι ειδοποίηση που πάει σε τοίχο. */
   ['capture', 'tonight', 'ergasies', 'programma', 'diagonismata'].forEach(d => {

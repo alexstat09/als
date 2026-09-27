@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ατζέντα">
+  <title>Εργασίες · MÉTRON</title>
+  <meta name="theme-color" content="#0E1219">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- ⭐ ΤΟ ΑΡΤΙΦΑΚΤ ΕΤΡΕΧΕ ΜΕΣΑ ΣΕ ΚΕΛΥΦΟΣ ΠΟΥ ΤΟΥ ΕΔΙΝΕ ΑΥΤΟ ΤΟ ΜΠΛΟΚ.
+       Χωρίς αυτό λείπουν τρία πράγματα που ΦΑΙΝΟΝΤΑΙ: το `margin:0` του body,
+       το `[hidden]{display:none!important}` (το `#cKbd`, το `#cGo` και το
+       κουτί του βαθμού κρύβονται ΜΕ ΑΥΤΟ) και το safe-area padding του
+       iPhone. Αντιγράφεται ΚΑΤΑ ΛΕΞΗ — δεν «βελτιώνεται». -->
+  <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+  <!-- Cloud sync από την πρώτη στιγμή: τα δεδομένα αυτής της σελίδας ΔΕΝ
+       είναι δικά της, είναι το `hw:v1` της School Studies. -->
+  <script src="vendor/supabase.min.js"></script>
+  <script src="sync.js" defer></script>
+  <script src="study-stamp.js"></script>
+  <script src="als-sync-status.js" defer></script>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@1,7..72,400;1,7..72,500;1,7..72,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0E1219;--bg2:#10141B;--surf:#141922;--surf2:#1C2230;--surf3:#232A38;
+  --line:rgba(237,230,216,.07);--line2:rgba(237,230,216,.12);--line3:rgba(237,230,216,.2);
+  --text:#EDE6D8;--soft:#C9C2B5;--muted:#A7A196;--faint:#8A8C94;--faint2:#7E8089;
+  --amber:#E8B25C;--amber-soft:rgba(232,178,92,.13);--late:#E8836F;--late-soft:rgba(232,131,111,.12);
+  --ink:#14110C;
+  --arx:#E8A07F;--ist:#8FC2AC;--lat:#9DB3EC;--ne:#D3A6D6;
+  --ui:"Commissioner",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --disp:"Literata",Georgia,serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --mg:84px;
+}
+html{background:var(--bg)}
+html,body{min-height:100%}
+body{background:radial-gradient(1100px 560px at 6% -10%,rgba(232,178,92,.085),rgba(232,178,92,0) 62%) no-repeat,var(--bg);color:var(--text);font-family:var(--ui);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:6px}
+::selection{background:rgba(232,178,92,.3)}
+.app{max-width:1312px;margin:0 auto;padding-inline:clamp(16px,4.4vw,64px);padding-block:36px 72px}
+
+/* header */
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:32px}
+.brand{margin-right:auto;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.brand h1{font-family:var(--disp);font-style:italic;font-weight:600;font-size:32px;line-height:1;margin:0;letter-spacing:-.015em}
+.brand .d{color:var(--muted);font-size:13.5px;display:flex;align-items:center;gap:10px}
+.wkchip{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--faint);border:1px solid var(--line2);border-radius:6px;padding:2px 6px}
+.wkchip:empty{display:none}
+.seg{display:flex;background:#121720;border:1px solid rgba(237,230,216,.08);border-radius:11px;padding:3px;gap:2px}
+.seg button{padding:8px 15px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:8px;white-space:nowrap;transition:background .15s,color .15s}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{background:var(--surf3);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.45)}
+.mk{width:8px;height:8px;border-radius:2px;display:inline-block;flex:none;box-sizing:border-box}
+.mk.sch{background:currentColor}
+.mk.fro{border:1.5px solid currentColor}
+.iconbtn{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;color:var(--muted);border:1px solid rgba(237,230,216,.08);background:#121720;transition:color .15s,background .15s}
+.iconbtn:hover{color:var(--text);background:var(--surf2)}
+.iconbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+.tabs{display:flex;gap:34px;border-bottom:1px solid rgba(237,230,216,.08);margin-bottom:28px}
+.tabs button{padding:0 0 14px;color:var(--muted);font-size:15px;font-weight:500;position:relative;display:flex;gap:10px;align-items:center;transition:color .15s}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected="true"]{color:var(--text);font-weight:600}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--amber);border-radius:2px}
+.tabs .cnt{font-family:var(--mono);font-size:11px;font-weight:500;background:rgba(237,230,216,.06);color:var(--muted);padding:2px 7px;border-radius:6px}
+.tabs button[aria-selected="true"] .cnt{background:var(--amber-soft);color:var(--amber)}
+
+/* composer */
+.composer{background:linear-gradient(180deg,#181E29,#141922);border:1px solid rgba(237,230,216,.1);border-radius:16px;margin-bottom:46px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 28px 50px -28px rgba(0,0,0,.75);transition:border-color .2s,box-shadow .2s}
+.composer:focus-within{border-color:rgba(232,178,92,.32);box-shadow:0 0 0 5px rgba(232,178,92,.06),inset 0 1px 0 rgba(255,255,255,.04),0 28px 50px -28px rgba(0,0,0,.75)}
+.cin{display:flex;align-items:center;gap:14px;padding:16px 18px 16px 16px}
+.cin .p{width:34px;height:34px;flex:none;border-radius:10px;background:var(--amber-soft);color:var(--amber);display:grid;place-items:center}
+.cin .p svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.cin input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:17px;padding:4px 0}
+.cin input::placeholder{color:var(--faint2)}
+.cin kbd{font-family:var(--mono);font-size:11px;color:var(--muted);background:rgba(237,230,216,.05);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.cin .go{background:var(--amber);color:#1A140A;font-weight:600;font-size:13px;padding:8px 14px;border-radius:9px;white-space:nowrap;box-shadow:0 8px 24px -10px rgba(232,178,92,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+.cin .go[hidden]{display:none}
+.chint{border-top:1px solid rgba(237,230,216,.06);padding:11px 18px 12px 64px;font-size:12.5px;color:var(--faint);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chint:empty{display:none}
+.chint .tag{--c:var(--muted);display:inline-flex;align-items:center;gap:7px;color:var(--text);background:rgba(237,230,216,.04);border:1px solid rgba(237,230,216,.08);border-radius:7px;padding:3px 9px;font-size:12px}
+.chint .tag i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.chint button.ex{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:rgba(237,230,216,.03);border:1px dashed rgba(237,230,216,.16);border-radius:7px;padding:4px 9px;transition:color .15s,border-color .15s}
+.chint button.ex:hover{color:var(--text);border-color:rgba(232,178,92,.45)}
+.thinking{border-top:1px solid rgba(237,230,216,.06);padding:14px 18px 16px 64px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:10px}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--amber);animation:dot 1s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.pv{border-top:1px solid rgba(237,230,216,.06);padding:16px 18px 18px 64px;display:flex;flex-direction:column;gap:14px}
+.pv-note{font-size:12.5px;color:var(--faint);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pv-note.warn{color:var(--amber)}
+.pcard{--c:var(--muted);border:1px solid rgba(237,230,216,.1);border-radius:14px;padding:18px 20px;background:var(--bg2);display:flex;flex-direction:column;gap:14px;position:relative}
+.pctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sel{appearance:none;-webkit-appearance:none;background:rgba(237,230,216,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8C94' fill='none' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--line2);border-radius:8px;padding:6px 28px 6px 10px;font-size:13px;color:var(--soft);cursor:pointer;transition:border-color .15s}
+.sel:hover{border-color:rgba(237,230,216,.28)}
+.sel.subj{font-weight:600;color:var(--c);background-color:color-mix(in srgb,var(--c) 10%,transparent);border-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.sel option{background:var(--surf);color:var(--text)}
+.num{width:64px;background:rgba(237,230,216,.04);border:1px solid var(--line2);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:var(--mono)}
+.dateip{background:var(--amber-soft);border:1px solid rgba(232,178,92,.3);border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:12px;color:var(--text)}
+.why{font-size:12.5px;color:var(--faint)}
+.ptitle{width:100%;background:none;border:0;border-bottom:1px dashed rgba(237,230,216,.14);outline:none;font-family:var(--disp);font-style:italic;font-weight:500;font-size:22px;padding:2px 0 6px}
+.ptitle:hover,.ptitle:focus{border-bottom-color:rgba(237,230,216,.3)}
+.psteps{display:flex;flex-direction:column;gap:6px}
+.pstep{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--soft)}
+.pstep::before{content:"";width:14px;height:14px;box-sizing:border-box;border-radius:4px;border:1.4px solid rgba(237,230,216,.3);flex:none}
+.pstep input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--soft);padding:1px 0;border-bottom:1px dashed transparent}
+.pstep input:focus{border-bottom-color:var(--line2)}
+.x{color:var(--faint);width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:17px;flex:none;transition:color .15s,background .15s}
+.x:hover{color:var(--text);background:rgba(237,230,216,.06)}
+.pcard>.x{position:absolute;top:10px;right:10px}
+.pact{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.btn{padding:10px 16px;border-radius:10px;font-size:13.5px;border:1px solid var(--line2);color:var(--muted);display:inline-flex;align-items:center;gap:10px;transition:color .15s,border-color .15s,filter .15s}
+.btn:hover{color:var(--text);border-color:rgba(237,230,216,.28)}
+.btn .why{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);border-radius:5px;padding:1px 5px}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1A140A;font-weight:600;box-shadow:0 8px 24px -8px rgba(232,178,92,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn.primary:hover{filter:brightness(1.06);color:#1A140A}
+
+/* layout */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:56px;align-items:start}
+@media(max-width:1020px){.main{grid-template-columns:1fr;gap:36px}}
+
+/* day list — notebook with a margin rule */
+.days{position:relative;display:flex;flex-direction:column;gap:38px}
+.days::before{content:"";position:absolute;left:var(--mg);top:4px;bottom:0;width:1px;background:linear-gradient(180deg,rgba(232,178,92,.28),rgba(232,178,92,.06));pointer-events:none}
+.day{border-radius:12px;transition:box-shadow .6s}
+.dayh{display:flex;align-items:flex-end;padding-bottom:12px}
+.mg{width:var(--mg);flex:none;display:flex;flex-direction:column;gap:3px;font-family:var(--mono)}
+.mg b{font-size:13px;font-weight:500;color:var(--soft)}
+.mg span{font-size:10px;letter-spacing:.14em;color:var(--faint2)}
+.day.today .mg b{color:var(--amber)}
+.day.late .mg b{color:var(--late)}
+.dh{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-left:26px}
+.dayh h2{font-family:var(--disp);font-style:italic;font-weight:500;font-size:27px;line-height:1.1;letter-spacing:-.01em;margin:0}
+.dayh .sub{font-size:13px;color:var(--faint)}
+.dayh .n{margin-left:auto;align-self:center;display:flex;align-items:center;gap:10px;color:var(--faint);font-size:11.5px;font-family:var(--mono)}
+.bar{width:56px;height:4px;border-radius:4px;background:rgba(237,230,216,.08);overflow:hidden;display:flex}
+.bar i{background:var(--amber);border-radius:4px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.dayh .ready{margin-left:auto;align-self:center;display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--amber);background:rgba(232,178,92,.08);border:1px solid rgba(232,178,92,.28);border-radius:999px;padding:5px 12px 5px 6px;box-shadow:0 0 24px rgba(232,178,92,.14)}
+.dayh .ready i{width:18px;height:18px;border-radius:50%;background:var(--amber);display:grid;place-items:center}
+.dayh .ready i svg{width:11px;height:11px;fill:none;stroke:#1A140A;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.day.late .dayh h2{color:var(--late)}
+.day.glow{animation:glow 1.6s ease}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(232,178,92,0)}30%{box-shadow:0 0 0 10px rgba(232,178,92,.10),0 0 40px rgba(232,178,92,.18)}100%{box-shadow:0 0 0 0 rgba(232,178,92,0)}}
+.emptyday{margin-left:var(--mg);border-top:1px solid var(--line);padding:15px 0 15px 26px;color:var(--faint);font-family:var(--disp);font-style:italic;font-size:15.5px}
+
+.task{--c:var(--muted);position:relative;margin-left:var(--mg);display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:16px;padding:16px 14px 16px 26px;border-top:1px solid var(--line);align-items:start;cursor:pointer;border-radius:0 10px 10px 0;transition:background .15s,opacity .3s}
+.task:hover{background:rgba(237,230,216,.022)}
+.task.is-test{background:linear-gradient(90deg,rgba(232,178,92,.07),rgba(232,178,92,0) 70%)}
+.days .task.is-test::before{content:"";position:absolute;left:-4px;top:22px;width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px var(--bg),0 0 12px rgba(232,178,92,.6)}
+.tick{width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:1.6px solid color-mix(in srgb,var(--c) 72%,transparent);display:grid;place-items:center;margin-top:2px;transition:background .25s,border-color .25s,transform .15s;position:relative}
+.tick:hover{background:color-mix(in srgb,var(--c) 22%,transparent);border-color:var(--c)}
+.tick:active{transform:scale(.9)}
+.tick svg{width:13px;height:13px;fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:18;stroke-dashoffset:18;transition:stroke-dashoffset .3s .1s ease}
+.done>.tick,.task.done .tick{background:var(--c);border-color:var(--c)}
+.task.done .tick svg{stroke-dashoffset:0}
+.task.pop .tick{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+.eb{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--c);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+.eb .sl{color:var(--faint2);font-weight:500}
+.eb em{font-style:normal;color:var(--muted);font-weight:500}
+.eb .tst{color:#1A140A;background:var(--amber);border-radius:4px;padding:2px 6px;letter-spacing:.1em;margin-left:4px}
+.tt{font-size:16px;line-height:1.4;overflow-wrap:anywhere;transition:color .3s}
+.tt .imp{font-family:var(--mono);color:var(--amber);font-weight:600;margin-right:7px}
+.steps{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+.stp{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--soft);text-align:left;padding:2px 0;width:max-content;max-width:100%;transition:color .2s}
+.stp .b{width:14px;height:14px;box-sizing:border-box;border-radius:4px;border:1.4px solid rgba(237,230,216,.3);flex:none;display:grid;place-items:center;transition:background .2s,border-color .2s}
+.stp .b svg{width:10px;height:10px;fill:none;stroke:var(--ink);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.stp.ok{color:var(--faint2);text-decoration:line-through}
+.stp.ok .b{background:var(--c);border-color:var(--c)}
+.stp.ok .b svg{opacity:1}
+.stp:hover:not(.ok){color:var(--text)}
+.stp:hover:not(.ok) .b{border-color:var(--c)}
+.task.done{opacity:.8}
+.task.done .tt,.task.done .stp{color:var(--faint);text-decoration:line-through;text-decoration-color:rgba(126,128,137,.7)}
+.task.done .eb{opacity:.6}
+.side-r{display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-top:1px}
+.src{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.latel{font-family:var(--mono);font-size:11.5px;color:var(--late);white-space:nowrap}
+.qa{display:flex;gap:6px}
+.qa button{font-size:12.5px;color:var(--soft);background:rgba(237,230,216,.04);border:1px solid rgba(237,230,216,.14);border-radius:8px;padding:7px 12px;white-space:nowrap;transition:color .15s,border-color .15s}
+.qa button+button{background:transparent;color:var(--muted);border-color:rgba(237,230,216,.1)}
+.qa button:hover{color:var(--text);border-color:rgba(237,230,216,.3)}
+.donesec{margin-left:var(--mg);padding-left:26px}
+.donesec summary{cursor:pointer;color:var(--muted);font-size:13px;list-style:none;display:flex;gap:8px;align-items:center;padding:8px 0}
+.donesec summary::-webkit-details-marker{display:none}
+.donesec summary::before{content:"›";display:inline-block;transition:transform .2s;font-size:16px}
+.donesec[open] summary::before{transform:rotate(90deg)}
+.donesec .task{margin-left:-26px}
+
+/* notebooks */
+.nb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+@media(max-width:820px){.nb{grid-template-columns:1fr}}
+.book{--c:var(--muted);background:linear-gradient(180deg,#161B25,#131821);border:1px solid rgba(237,230,216,.08);border-radius:18px;padding:28px 30px 20px;position:relative;scroll-margin-top:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 30px 60px -40px rgba(0,0,0,.8)}
+.book::before{content:"";position:absolute;top:-1px;right:30px;width:16px;height:34px;background:var(--c);clip-path:polygon(0 0,100% 0,100% 100%,50% 76%,0 100%);opacity:.9}
+.book.flash{animation:bflash 1.2s ease}
+@keyframes bflash{30%{box-shadow:0 0 0 2px var(--c)}}
+.bh{display:flex;align-items:baseline;gap:14px;padding-right:40px;margin-bottom:8px}
+.bh h2{font-family:var(--disp);font-style:italic;font-weight:500;font-size:30px;line-height:1.1;letter-spacing:-.01em;margin:0;color:var(--c)}
+.bh span{font-family:var(--mono);color:var(--faint);font-size:11.5px}
+.cat{margin-top:22px}
+.cat>h4{margin:0 0 4px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);font-weight:600;display:flex;gap:10px;align-items:center}
+.cat>h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.cat>h4 em{font-style:normal;font-family:var(--mono);letter-spacing:0;color:var(--faint2);font-weight:500}
+.book .task{margin-left:0;grid-template-columns:20px minmax(0,1fr) auto;gap:14px;padding:12px 6px;border-top:0;border-bottom:1px solid rgba(237,230,216,.05);border-radius:8px}
+.book .task.is-test{background:none}
+.book .tick{width:20px;height:20px;margin-top:1px}
+.book .tick svg{width:12px;height:12px}
+.book .tt{font-size:15px;margin:0}
+.book .eb{margin-bottom:4px}
+.when{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap;display:flex;gap:8px;align-items:center;padding-top:2px}
+.when .mk{width:7px;height:7px}
+.when.hot{color:var(--amber)}
+.when.late{color:var(--late)}
+.empty{color:var(--faint2);font-family:var(--disp);font-style:italic;font-size:14.5px;padding:12px 0 4px}
+.showdone{margin-top:18px;display:flex;justify-content:flex-end}
+
+/* side panel */
+.side{display:flex;flex-direction:column;position:sticky;top:20px;background:rgba(20,25,34,.72);border:1px solid rgba(237,230,216,.08);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+@media(max-width:1020px){.side{position:static}}
+.card{padding:20px 22px;border-top:1px solid var(--line)}
+.card:first-child{border-top:0;padding-top:22px}
+.card h3{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.card h3 span{font-family:var(--mono);letter-spacing:0;color:var(--faint2);font-weight:500;text-transform:none}
+.test{display:grid;grid-template-columns:62px minmax(0,1fr);gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.test:first-of-type{border-top:0;padding-top:4px}
+.test .in{display:flex;flex-direction:column;line-height:1}
+.test .in b{font-family:var(--mono);font-size:32px;font-weight:500;letter-spacing:-.04em;color:var(--soft)}
+.test .in.hot b{color:var(--amber)}
+.test .in.soon b{color:var(--late)}
+.test .in small{margin-top:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint2)}
+.test .w{display:flex;flex-direction:column;gap:3px;min-width:0}
+.test .w b{font-weight:600;font-size:14px;display:flex;gap:8px;align-items:center}
+.test .w b i{width:7px;height:7px;border-radius:50%;flex:none}
+.test .w span{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.test .w em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--faint2)}
+.subl{display:flex;flex-direction:column;gap:2px}
+.subl button{display:grid;grid-template-columns:8px minmax(0,1fr) 72px 22px;gap:12px;align-items:center;font-size:13.5px;padding:8px 6px;border-radius:8px;text-align:left;transition:background .15s}
+.subl button:hover{background:rgba(237,230,216,.04)}
+.subl i{width:8px;height:8px;border-radius:50%}
+.subl .tr{height:4px;border-radius:4px;background:rgba(237,230,216,.07);display:flex;overflow:hidden}
+.subl .tr u{border-radius:4px;opacity:.85;transition:width .5s}
+.subl em{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.wk .big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wk .big b{font-family:var(--disp);font-style:italic;font-weight:500;font-size:46px;line-height:1}
+.wk .big s{text-decoration:none;font-family:var(--mono);font-size:14px;color:var(--faint)}
+.wk .big span{font-size:13px;color:var(--muted)}
+.paint{display:grid;grid-template-columns:repeat(auto-fill,minmax(18px,1fr));gap:5px;margin-top:16px}
+.paint:empty{display:none}
+.paint i{height:22px;border-radius:5px;box-sizing:border-box;border:1.4px solid rgba(237,230,216,.14);transition:background .5s,border-color .5s}
+.muted{color:var(--faint);font-size:13px}
+.foot{font-size:12px;color:var(--faint);display:flex;gap:9px;align-items:center;padding:14px 22px;border-top:1px solid var(--line)}
+.foot .dot{width:7px;height:7px;border-radius:50%;background:var(--faint2);flex:none}
+.foot .dot.on{background:var(--ist);box-shadow:0 0 0 3px rgba(143,194,172,.15)}
+
+/* drawer + settings */
+.scrim{position:fixed;inset:0;background:rgba(6,8,12,.6);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);background:#151A23;border-left:1px solid rgba(237,230,216,.1);box-shadow:-40px 0 80px rgba(0,0,0,.5);z-index:50;transform:translateX(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer.on{transform:none}
+.dw-h{display:flex;align-items:center;gap:10px;padding:14px 14px 14px 26px;border-bottom:1px solid var(--line)}
+.dw-h h3{margin:0;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.dw-h .x{margin-left:auto;width:44px;height:44px;font-size:22px;border-radius:10px}
+.dw-b{padding:24px 26px;display:flex;flex-direction:column;gap:0;overflow:auto;flex:1}
+.dw-b .ttl{width:100%;background:none;border:0;outline:none;font-family:var(--disp);font-style:italic;font-size:28px;font-weight:500;letter-spacing:-.01em;resize:none;line-height:1.2;padding:0;margin-bottom:22px}
+.field{display:grid;grid-template-columns:104px minmax(0,1fr);align-items:center;gap:0 12px;min-height:52px;padding:8px 0;border-bottom:1px solid var(--line)}
+.field>span{font-size:13px;color:var(--faint)}
+.field.stack{display:flex;flex-direction:column;align-items:stretch;gap:10px;border-bottom:0;padding:0 0 22px}
+.field.stack>span{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;font-weight:600}
+.field.stack+.field:not(.stack){border-top:1px solid var(--line)}
+.dwdate{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+.pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{--c:var(--amber);padding:6px 11px;border-radius:8px;font-size:12.5px;border:1px solid rgba(237,230,216,.1);color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:color .15s,border-color .15s,background .15s}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.pill:hover{color:var(--text);border-color:rgba(237,230,216,.24)}
+.pill[aria-pressed="true"]{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--text);font-weight:600;background:color-mix(in srgb,var(--c) 14%,transparent)}
+.notes{width:100%;box-sizing:border-box;min-height:110px;background:var(--bg2);border:1px solid rgba(237,230,216,.08);border-radius:12px;padding:12px 14px;outline:none;resize:vertical;font-size:14px;line-height:1.5}
+.notes::placeholder,.stepin::placeholder{color:var(--faint2)}
+.notes:focus{border-color:var(--line2)}
+.dsteps{display:flex;flex-direction:column}
+.dsteps:empty{display:none}
+.dstep{--c:var(--amber);display:flex;align-items:center;gap:10px;min-height:40px;font-size:14.5px}
+.dstep .stp{font-size:14.5px}
+.dstep .x{opacity:0;margin-left:auto}
+.dstep:hover .x,.dstep .x:focus-visible{opacity:1}
+.stepin{background:none;border:0;border-bottom:1px dashed var(--line2);padding:8px 0;outline:none;font-size:14.5px;width:100%}
+.dw-f{padding:16px 26px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.del{color:var(--late);font-size:13px;padding:10px 0}
+.del.sure{background:var(--late);color:#1a0f0d;padding:9px 14px;border-radius:10px;font-weight:600}
+.dw-f .btn{margin-left:auto}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13.5px;width:max-content}
+.dw-b>.toggle{width:100%;min-height:52px;border-bottom:1px solid var(--line);color:var(--faint);font-size:13px;display:grid;grid-template-columns:104px auto;gap:12px;text-align:left}
+.dw-b>.toggle .sw{order:2}
+.dw-b>.toggle+.field.stack{padding-top:22px}
+.sw{width:38px;height:22px;box-sizing:border-box;border-radius:999px;background:var(--surf3);border:1px solid rgba(237,230,216,.14);position:relative;transition:background .2s,border-color .2s;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--faint);transition:transform .2s,background .2s}
+.toggle[aria-checked="true"] .sw{background:var(--amber-soft);border-color:var(--amber)}
+.toggle[aria-checked="true"] .sw::after{transform:translateX(16px);background:var(--amber)}
+
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%);width:min(640px,calc(100% - 32px));max-height:calc(100% - 40px);overflow:auto;background:#151A23;border:1px solid rgba(237,230,216,.1);border-radius:18px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.mh{display:flex;align-items:center;padding:20px 16px 12px 26px}
+.mh h2{font-family:var(--disp);font-style:italic;font-weight:500;font-size:28px;margin:0}
+.mh .x{margin-left:auto;width:44px;height:44px;font-size:22px;border-radius:10px}
+.mb{padding:4px 26px 26px;display:flex;flex-direction:column;gap:26px}
+.mb h4{margin:0 0 6px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mb p{margin:0 0 12px;color:var(--faint);font-size:13px}
+.sched{display:flex;flex-direction:column}
+.srow{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.srow>b{font-weight:500;font-size:13px;color:var(--muted)}
+.slots{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.slot{--c:var(--muted);display:inline-flex;align-items:center;gap:7px;background:rgba(237,230,216,.04);border:1px solid rgba(237,230,216,.08);border-radius:8px;padding:2px 2px 2px 10px;font-size:12.5px}
+.slot i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.slot .x{width:24px;height:24px;font-size:15px}
+.addslot{font-size:12px;padding:5px 26px 5px 10px;border-style:dashed}
+
+.toast{width:max-content;position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#1C2230;border:1px solid rgba(237,230,216,.12);border-radius:12px;padding:9px 10px 9px 18px;display:flex;gap:12px;align-items:center;font-size:13.5px;z-index:60;opacity:0;pointer-events:none;transition:all .25s;box-shadow:0 16px 40px rgba(0,0,0,.45);max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{color:var(--amber);font-weight:600;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.toast button:hover{background:var(--amber-soft)}
+.toast.gold{border-color:rgba(232,178,92,.5);color:var(--amber);padding-right:18px;box-shadow:0 0 30px rgba(232,178,92,.18),0 16px 40px rgba(0,0,0,.45)}
+.spark{position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:70}
+.loading{padding:40px 0;color:var(--faint);display:flex;gap:10px;align-items:center}
+.welcome{margin-left:var(--mg);border:1px dashed var(--line2);border-radius:14px;padding:22px 24px;color:var(--muted);font-size:14px;line-height:1.55}
+.welcome b{color:var(--text);font-weight:600;font-family:var(--disp);font-style:italic;font-size:17px;margin-right:4px}
+
+@media(max-width:600px){
+  :root{--mg:0px}
+  .app{padding-block:20px 56px}
+  .top{margin-bottom:20px;gap:12px}
+  .brand{gap:4px 12px;flex:1 1 0;min-width:0}
+  .iconbtn{order:2}
+  .brand h1{font-size:28px}
+  .seg{order:3;width:100%}
+  .seg button{flex:1;justify-content:center;padding:9px 8px}
+  .iconbtn{width:44px;height:44px}
+  .tabs{margin-bottom:20px}
+  .cin kbd{display:none}
+  .chint,.pv,.thinking{padding-left:18px}
+  .pv{padding-right:14px}
+  .composer{margin-bottom:32px}
+  .days{gap:28px}
+  .days::before{display:none}
+  .dayh{align-items:baseline}
+  .mg{width:auto;order:2;flex-direction:row;gap:6px;margin-left:10px}
+  .mg b,.mg span{font-size:11px;letter-spacing:.06em}
+  .dh{order:1;flex:0 1 auto;padding-left:0}
+  .dayh h2{font-size:23px;order:1}
+  .dayh .sub{display:none}
+  .dayh .ready,.dayh .n{margin-left:auto;order:3}
+  .dayh{flex-wrap:wrap}
+  .dh{display:contents}
+  .task,.book .task{grid-template-columns:24px minmax(0,1fr);gap:14px;padding:14px 2px;border-radius:0}
+  .task .side-r{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px 12px;margin-top:-6px}
+  .qa button{min-height:40px;padding:0 14px;font-size:13px;border-radius:10px}
+  .tick{width:24px;height:24px}
+  .days .task.is-test::before{display:none}
+  .emptyday{padding-left:2px}
+  .donesec{padding-left:0}
+  .donesec .task{margin-left:0}
+  .welcome{margin-left:0}
+  .book{padding:24px 18px 14px}
+  .field{grid-template-columns:88px minmax(0,1fr)}
+  .dw-b>.toggle{grid-template-columns:88px auto}
+}
+/* tests view */
+.tview{display:flex;flex-direction:column;gap:56px}
+.sech{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.sech h2{font-family:var(--disp);font-style:italic;font-weight:500;font-size:27px;letter-spacing:-.01em;margin:0}
+.sech span{font-size:13px;color:var(--faint)}
+.upg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+.tcard{--c:var(--muted);display:flex;flex-direction:column;gap:18px;padding:24px 24px 20px;border-radius:18px;background:linear-gradient(180deg,#161B25,#131821);border:1px solid rgba(237,230,216,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 30px 60px -40px rgba(0,0,0,.8);cursor:pointer;transition:border-color .2s}
+.tcard:hover{border-color:rgba(237,230,216,.18)}
+.tcard.hot{background:linear-gradient(180deg,rgba(232,178,92,.07),rgba(20,25,34,.9) 45%),#141922;border-color:rgba(232,178,92,.3)}
+.tcard.hot:hover{border-color:rgba(232,178,92,.5)}
+.tc-top{display:flex;align-items:flex-start;gap:16px}
+.tc-top>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.tc-top .eb{margin:0}
+.tc-top h3{margin:0;font-family:var(--disp);font-style:italic;font-weight:500;font-size:24px;line-height:1.15;overflow-wrap:anywhere}
+.tc-when{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.tc-n{display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.tc-n b{font-family:var(--mono);font-size:44px;font-weight:500;letter-spacing:-.05em;color:var(--soft)}
+.tcard.hot .tc-n b{color:var(--amber)}
+.tc-n small{margin-top:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint2)}
+.strip{display:flex;gap:3px}
+.strip i{flex:1;height:4px;border-radius:2px;background:rgba(237,230,216,.06)}
+.strip i.p{background:rgba(237,230,216,.16)}
+.strip i.d{background:var(--c)}
+.ylh{display:flex;align-items:center;gap:10px;margin-bottom:4px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--faint)}
+.ylh em{font-style:normal;font-family:var(--mono);letter-spacing:0;font-weight:500;color:var(--faint2)}
+.ylh::after{content:"";flex:1;height:1px;background:var(--line)}
+.tcard .steps{margin-top:0;gap:0}
+.tcard .stp{padding:8px 0;width:100%;border-bottom:1px solid rgba(237,230,216,.05)}
+.noyli{font-family:var(--disp);font-style:italic;color:var(--faint2);font-size:14.5px;padding:6px 0}
+.tempty{border:1px dashed var(--line2);border-radius:16px;padding:24px 26px;color:var(--faint);font-family:var(--disp);font-style:italic;font-size:16px}
+.sgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+@media(max-width:1180px){.sgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.scard{--c:var(--muted);display:flex;flex-direction:column;gap:14px;padding:20px 22px;border-radius:16px;background:rgba(20,25,34,.5);border:1px solid rgba(237,230,216,.07);text-align:left;transition:border-color .2s,background .2s}
+.scard:hover{border-color:rgba(237,230,216,.16);background:linear-gradient(180deg,#181E29,#141922)}
+.scard .h{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--c)}
+.scard .h em{font-style:normal;font-family:var(--mono);letter-spacing:0;font-weight:500;color:var(--faint2);text-transform:none}
+.scard .b{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;min-height:40px}
+.scard .avg{display:flex;align-items:baseline;gap:6px}
+.scard .avg b{font-family:var(--disp);font-style:italic;font-weight:500;font-size:40px;line-height:1}
+.scard .avg span{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.scard svg{width:120px;height:40px;flex:none;overflow:visible}
+.scard.none .avg b{color:var(--faint2);font-size:32px}
+.hist{margin-top:24px;background:rgba(20,25,34,.72);border:1px solid rgba(237,230,216,.08);border-radius:18px;overflow:hidden}
+.hrow{display:grid;grid-template-columns:78px 170px minmax(0,1.1fr) 150px minmax(0,1.4fr);gap:20px;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(237,230,216,.05)}
+.hrow.hd{padding:14px 24px;border-bottom-color:var(--line);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--faint)}
+.hrow:not(.hd){cursor:pointer;transition:background .15s}
+.hrow:not(.hd):hover{background:rgba(237,230,216,.022)}
+.hrow:last-child{border-bottom:0}
+.hd8{display:flex;flex-direction:column;gap:2px;font-family:var(--mono)}
+.hd8 b{font-size:12.5px;font-weight:400;color:var(--soft)}
+.hd8 span{font-size:10px;letter-spacing:.12em;color:var(--faint2)}
+.hs{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hs b{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600}
+.hs b i{width:7px;height:7px;border-radius:50%;flex:none}
+.hs span{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--faint)}
+.hs .mk{width:7px;height:7px}
+.ht{font-size:14.5px;overflow-wrap:anywhere}
+.hg{display:flex;align-items:center;gap:12px}
+.hg b{font-family:var(--mono);font-size:20px;font-weight:500;letter-spacing:-.03em;min-width:44px}
+.hg b.no{font-size:13px;color:var(--amber);font-family:var(--ui);letter-spacing:0;font-weight:600}
+.hg .tr{flex:1;height:4px;border-radius:4px;background:rgba(237,230,216,.07);display:flex;overflow:hidden}
+.hg .tr u{border-radius:4px;opacity:.85}
+.hl{display:flex;flex-wrap:wrap;gap:6px}
+.chipx{font-size:12px;color:#E8B7A8;background:rgba(232,131,111,.08);border:1px solid rgba(232,131,111,.22);border-radius:7px;padding:3px 9px}
+.hl em{font-style:italic;font-family:var(--disp);font-size:14px;color:var(--faint2)}
+@media(max-width:820px){
+  .hrow.hd{display:none}
+  .hrow{grid-template-columns:52px minmax(0,1fr) auto;gap:6px 14px;padding:14px 16px}
+  .hd8{grid-row:1/4;align-self:start}
+  .hs{grid-column:2;grid-row:1}
+  .hg{grid-column:3;grid-row:1}
+  .hg .tr{display:none}
+  .ht{grid-column:2/4}
+  .hl{grid-column:2/4}
+  .hl:has(em){display:none}
+}
+@media(max-width:600px){.sgrid{gap:12px}.scard{padding:16px}.scard svg{display:none}.tabs button:not([aria-selected="true"]) .cnt{display:none}.tc-top h3{font-size:22px}.scard .avg b{font-size:32px}.tcard{padding:20px 18px 16px}.tabs{gap:22px;overflow-x:auto;scrollbar-width:none}.tabs button{white-space:nowrap}}
+.qa button[data-open]{color:var(--amber);background:var(--amber-soft);border-color:rgba(232,178,92,.35)}
+.qa button[data-open]:hover{color:var(--amber);border-color:var(--amber)}
+/* grade box in drawer */
+.gradebox{display:flex;flex-direction:column;gap:12px;padding-bottom:26px}
+.gradebox[hidden]{display:none}
+.glbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--faint);display:flex;justify-content:space-between}
+.glbl em{font-style:normal;font-family:var(--mono);letter-spacing:0;font-weight:500}
+.gin{display:flex;align-items:baseline;gap:10px;padding:16px 20px;border-radius:14px;background:var(--bg2);border:1px solid rgba(232,178,92,.32);box-shadow:0 0 0 5px rgba(232,178,92,.06)}
+.gin input{width:110px;min-width:0;background:none;border:0;outline:none;font-family:var(--mono);font-size:48px;font-weight:500;letter-spacing:-.05em;line-height:1;padding:0}
+.gin input::placeholder{color:var(--faint2)}
+.gin>span{font-family:var(--mono);font-size:18px;color:var(--faint)}
+.gcmp{margin-left:auto;align-self:center;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--muted);text-align:right}
+.gcmp .up{color:var(--ist)}.gcmp .dn{color:var(--late)}
+.gcmp em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--faint2)}
+.lathi{display:flex;flex-wrap:wrap;gap:8px}
+.lathi:empty{display:none}
+.lchip{display:inline-flex;align-items:center;gap:2px;font-size:13px;color:#F0C2B4;background:rgba(232,131,111,.1);border:1px solid rgba(232,131,111,.3);border-radius:8px;padding:2px 2px 2px 11px}
+.lchip button{width:26px;height:26px;display:grid;place-items:center;color:var(--late);border-radius:6px}
+.lchip button:hover{background:rgba(232,131,111,.15)}
+.lsug{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:12px;background:rgba(237,230,216,.03);border:1px solid rgba(237,230,216,.07)}
+.lsug:empty{display:none}
+.lsug>span{font-size:12px;color:var(--faint)}
+.lsug div{display:flex;flex-wrap:wrap;gap:6px}
+.lsug button{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--soft);border:1px dashed rgba(237,230,216,.18);border-radius:7px;padding:5px 10px}
+.lsug button:hover{color:var(--text);border-color:rgba(232,131,111,.5)}
+.lsug button em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--late)}
+/* ⚠ Η ΜΟΝΗ ΠΡΟΣΘΗΚΗ ΣΤΗΝ ΕΜΦΑΝΙΣΗ, ΚΑΙ ΕΙΝΑΙ ΜΗΔΕΝ ΠΙΞΕΛ: ο τίτλος είναι
+   ο δρόμος πίσω στη School Studies. Μια πόρτα χωρίς έξοδο είναι αδιέξοδο,
+   και αυτή η σελίδα ΔΕΝ φοράει το topbar της εφαρμογής. */
+.brand h1 a{color:inherit;text-decoration:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app" lang="el">
+  <header class="top">
+    <div class="brand"><h1><a href="homework.html#kentro">Ατζέντα</a></h1><span class="d"><span id="todayLbl"></span><span class="wkchip" id="wkNo"></span></span></div>
+    <div class="seg" role="group" aria-label="Πηγή">
+      <button data-f="all" aria-pressed="true">Όλα</button>
+      <button data-f="sch" aria-pressed="false"><i class="mk sch"></i>Σχολείο</button>
+      <button data-f="fro" aria-pressed="false"><i class="mk fro"></i>Φροντιστήριο</button>
+    </div>
+    <button class="iconbtn" id="openSet" aria-label="Ρυθμίσεις" title="Ρυθμίσεις"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="day" aria-selected="true">Τι έχω <span class="cnt" id="cntDay">0</span></button>
+    <button role="tab" data-tab="subj" aria-selected="false">Μαθήματα <span class="cnt" id="cntSubj">0</span></button>
+    <button role="tab" data-tab="tests" aria-selected="false">Διαγωνίσματα <span class="cnt" id="cntTests">0</span></button>
+  </nav>
+
+  <section class="composer" id="composer">
+    <div class="cin">
+      <span class="p" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+      <input id="cIn" aria-label="Νέα εργασία" autocomplete="off" spellcheck="false" placeholder="Γράψε τι σου έβαλαν, όπως θες…">
+      <button class="go" id="cGo" hidden>Διάβασέ το ↵</button>
+      <kbd id="cKbd">Ctrl K</kbd>
+    </div>
+    <div class="chint" id="cHint"></div>
+    <div id="cBody"></div>
+  </section>
+
+  <div class="main">
+    <div id="view"><div class="loading"><span class="dots"><i></i><i></i><i></i></span>Φορτώνω τις εργασίες σου…</div></div>
+    <aside class="side">
+      <section class="card"><h3>Διαγωνίσματα<span id="testN"></span></h3><div id="testList"></div></section>
+      <section class="card"><h3>Εκκρεμούν ανά μάθημα<span id="pendN"></span></h3><div class="subl" id="subjList"></div></section>
+      <section class="card wk"><h3>Αυτή την εβδομάδα<span id="wkRange"></span></h3><div class="big" id="wkBig"></div><div class="paint" id="paint"></div></section>
+      <div class="foot"><span class="dot" id="syncDot"></span><span id="syncTx">Σύνδεση…</span></div>
+    </aside>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<aside lang="el" class="drawer" id="drawer" aria-label="Εργασία" aria-hidden="true">
+  <div class="dw-h"><h3 id="dwHead">Εργασία</h3><button class="x" id="dwX" aria-label="Κλείσιμο">×</button></div>
+  <div class="dw-b">
+    <textarea class="ttl" id="dwTitle" rows="2" aria-label="Τίτλος"></textarea>
+    <div class="gradebox" id="dwGrade" hidden><label class="glbl" for="dwGradeIn">Πώς πήγε;</label><div class="gin"><input id="dwGradeIn" inputmode="decimal" autocomplete="off" placeholder="—"><span>/ 20</span><div class="gcmp" id="dwGradeCmp"></div></div><span class="glbl">Πού έχασα μονάδες <em id="dwLathiN"></em></span><div class="lathi" id="dwLathi"></div><input class="stepin" id="dwLathiIn" aria-label="Πρόσθεσε λάθος" placeholder="+ Πρόσθεσε λάθος και πάτα Enter"><div class="lsug" id="dwLathiSug"></div></div>
+    <div class="field stack"><span id="dwStepsLbl">Βήματα</span><div class="dsteps" id="dwSteps"></div><input class="stepin" id="dwStepIn" placeholder="+ Πρόσθεσε βήμα και πάτα Enter"></div>
+    <div class="field"><span>Μάθημα</span><div class="pills" id="dwSubj"></div></div>
+    <div class="field" id="dwCatF"><span>Κατηγορία</span><div class="pills" id="dwCat"></div></div>
+    <div class="field"><span>Από</span><div class="pills" id="dwSrc"></div></div>
+    <div class="field"><span>Για πότε</span><div class="dwdate"><div class="pills" id="dwDateP"></div><div class="pills"><input type="date" class="dateip" id="dwDate" aria-label="Ημερομηνία"><span class="why" id="dwRel"></span></div></div></div>
+    <div class="field"><span>Τύπος</span><div class="pills" id="dwType"></div></div>
+    <button class="toggle" id="dwImp" role="switch" aria-checked="false"><span class="sw"></span>Σημαντικό</button>
+    <div class="field stack"><span>Σημειώσεις</span><textarea class="notes" id="dwNotes" placeholder="Οδηγίες του καθηγητή, σελίδες, ό,τι θες να θυμάσαι…"></textarea></div>
+  </div>
+  <div class="dw-f"><button class="del" id="dwDel">Διαγραφή</button><button class="btn" id="dwDone"></button></div>
+</aside>
+
+<section lang="el" class="modal" id="settings" role="dialog" aria-label="Ρυθμίσεις" aria-hidden="true">
+  <div class="mh"><h2>Ρυθμίσεις</h2><button class="x" id="setX" aria-label="Κλείσιμο">×</button></div>
+  <div class="mb">
+    <div>
+      <h4>Πρόγραμμα</h4>
+      <p>Από εδώ ξέρω πότε έχεις ξανά κάθε μάθημα, ώστε μια εργασία χωρίς ημερομηνία να μπαίνει για το επόμενο μάθημα.</p>
+      <div class="seg" role="group" aria-label="Πρόγραμμα" id="schedSeg" style="width:max-content;margin-bottom:10px">
+        <button data-s="fro" aria-pressed="true">Φροντιστήριο</button>
+        <button data-s="sch" aria-pressed="false">Σχολείο</button>
+      </div>
+      <div class="sched" id="sched"></div>
+    </div>
+    <div>
+      <h4>Όταν δεν γράφω από πού είναι</h4>
+      <p>Η πηγή που μπαίνει αν δεν γράψεις «σχολ» ή «φροντ».</p>
+      <div class="pills" id="defSrc"></div>
+    </div>
+    <div>
+      <h4>Ήχος</h4>
+      <button class="toggle" id="sndT" role="switch" aria-checked="true"><span class="sw"></span>Απαλός ήχος όταν τικάρεις</button>
+    </div>
+  </div>
+</section>
+
+<div lang="el" class="toast" id="toast" role="status"><span id="toastTx"></span><button id="toastBtn">Αναίρεση</button></div>
+
+<script>
+(function(){
+"use strict";
+/* ───────── constants ───────── */
+const SUBJ=[
+  {id:'arx',name:'Αρχαία',c:'var(--arx)',hex:'#E8A07F',cats:['Άγνωστο','Γνωστό']},
+  {id:'ist',name:'Ιστορία',c:'var(--ist)',hex:'#8FC2AC',cats:null},
+  {id:'lat',name:'Λατινικά',c:'var(--lat)',hex:'#9DB3EC',cats:['Κείμενα','Γραμματική','Συντακτικό']},
+  {id:'ne',name:'ΝΕ Γλώσσα',c:'var(--ne)',hex:'#D3A6D6',cats:['Έκθεση','Λογοτεχνία']}
+];
+/* ⭐ ΤΟ ΠΕΜΠΤΟ ΔΕΝ ΕΙΝΑΙ ΜΑΘΗΜΑ — ΕΙΝΑΙ «ΔΕΝ ΞΕΡΩ», ΚΑΙ ΥΠΑΡΧΕΙ ΓΙΑΤΙ
+   ΥΠΑΡΧΕΙ ΣΤΑ ΔΕΔΟΜΕΝΑ ΤΟΥ. Το `hw:v1` κρατάει `subject:'unknown'` για ό,τι
+   ο παλιός parser δεν αναγνώρισε (μετρημένο: ένα διαγώνισμα «Λατνικασ»). Αν
+   έπεφτε σε ένα από τα τέσσερα, η σελίδα θα έλεγε με βεβαιότητα ένα ψέμα
+   (σταθ. 10) — και αν το πετούσα, θα έχανε εργασία του. Άρα φαίνεται, γκρι,
+   και ο συρτάρι-διάλογος τού δίνει τα τέσσερα κουμπιά για να το διορθώσει.
+   ⚠ ΔΕΝ μπαίνει στο πλέγμα των τετραδίων ούτε στη λίστα εκκρεμών παρά
+   ΜΟΝΟ όταν υπάρχει κάτι μέσα του — δες `books()`. */
+const UNK={id:'unk',name:'Χωρίς μάθημα',c:'var(--faint)',hex:'#8A8C94',cats:null};
+const ALL=SUBJ.concat([UNK]);
+const S=Object.fromEntries(ALL.map(s=>[s.id,s]));
+const SIDX=Object.fromEntries(ALL.map((s,i)=>[s.id,i]));
+const books=()=>[...tasks.values()].some(t=>t.subj==='unk')?ALL:SUBJ;
+const SRC={sch:'Σχολείο',fro:'Φροντιστήριο'};
+const DN=['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+const DS=['Κυρ','Δευ','Τρί','Τετ','Πέμ','Παρ','Σάβ'];
+const DART=['Η','Η','Η','Η','Η','Η','Το'];
+const MON=['Ιανουαρίου','Φεβρουαρίου','Μαρτίου','Απριλίου','Μαΐου','Ιουνίου','Ιουλίου','Αυγούστου','Σεπτεμβρίου','Οκτωβρίου','Νοεμβρίου','Δεκεμβρίου'];
+const DEFAULT_SETTINGS={
+  defaultSrc:'fro',sound:true,
+  schedule:{
+    fro:{
+      '1':[{s:'arx',c:'Άγνωστο'},{s:'lat',c:null},{s:'ne',c:'Έκθεση'}],
+      '2':[{s:'ist',c:null},{s:'arx',c:'Γνωστό'},{s:'lat',c:null}],
+      '3':[{s:'ist',c:null},{s:'arx',c:'Άγνωστο'},{s:'ne',c:'Έκθεση'}],
+      '4':[{s:'ist',c:null},{s:'arx',c:'Άγνωστο'},{s:'ne',c:'Έκθεση'}],
+      '5':[{s:'ist',c:null},{s:'arx',c:'Γνωστό'},{s:'lat',c:null}]
+    },
+    sch:{}
+  }
+};
+const TICK_SVG='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5l3.2 3.2L15 7"/></svg>';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+/* ───────── dates ───────── */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const pdate=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const T=()=>iso(today());
+const diff=(a,b)=>Math.round((pdate(a)-pdate(b))/864e5);
+const isIsoDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(pdate(s))&&iso(pdate(s))===s;
+const dm=s=>{const d=pdate(s);return d.getDate()+'/'+(d.getMonth()+1)};
+function rel(s){const n=diff(s,T());if(n===0)return'σήμερα';if(n===1)return'αύριο';if(n===-1)return'χθες';if(n>1&&n<7)return DN[pdate(s).getDay()];if(n<0)return'πριν '+(-n)+' μέρες';return DS[pdate(s).getDay()]+' '+dm(s)}
+const monday=d=>addD(d,-((d.getDay()+6)%7));
+const dmp=s=>{const d=pdate(s);return pad(d.getDate())+'.'+pad(d.getMonth()+1)};
+const DU=['ΚΥΡ','ΔΕΥ','ΤΡΙ','ΤΕΤ','ΠΕΜ','ΠΑΡ','ΣΑΒ'];
+const isoWeek=d=>{const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-n);const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil(((x-y)/864e5+1)/7)};
+const X_SVG='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const fmtG=g=>String(Math.round(g*100)/100).replace('.',',');
+const parseG=v=>{const n=parseFloat(String(v).replace(',','.'));return isFinite(n)&&n>=0&&n<=20?Math.round(n*100)/100:null};
+const hasG=t=>typeof t.grade==='number';
+const CHECK='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5l3.2 3.2L15 7"/></svg>';
+
+/* ───────── state ───────── */
+let tasks=new Map();           // id -> task
+let settings=clone(DEFAULT_SETTINGS);
+let loaded=false;
+let filter='all',tab='day',showDoneSubj=false;
+const vis=t=>filter==='all'||t.src===filter;
+const catOk=(subj,cat)=>{if(cat==null)return true;if(subj==='ist')return /^Ενότητα \d{1,2}$/.test(cat);return (S[subj].cats||[]).includes(cat)};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ΑΠΟΘΗΚΗ — ΤΟ `hw:v1` ΤΗΣ SCHOOL STUDIES, ΚΑΙ ΤΙΠΟΤΑ ΚΑΙΝΟΥΡΙΟ
+
+   ⭐⭐ Η ΣΕΛΙΔΑ ΕΙΝΑΙ ΚΑΙΝΟΥΡΙΑ· ΤΑ ΔΕΔΟΜΕΝΑ ΟΧΙ. Οι ~90 εργασίες που έχει
+   γράψει ζουν στο `hw:v1` → `tasks` και τα διαγωνίσματα στο `hw:v1` →
+   `exams`. Ένα δικό της κλειδί («atzenta.tasks») θα άνοιγε ΑΔΕΙΑ σελίδα —
+   που διαβάζεται ως χαμένη δουλειά — και θα ήταν δεύτερη αλήθεια για το ίδιο
+   πράγμα. Άρα ΜΕΤΑΦΡΑΣΗ, όχι δεύτερη αποθήκη: ό,τι γράφεται εδώ το βλέπει
+   και η School Studies, και αντίστροφα.
+
+   ⛔⛔ ΤΟ `t.src` ΤΟΥ `hw:v1` ΔΕΝ ΕΙΝΑΙ Η ΠΗΓΗ — ΕΙΝΑΙ Η ΦΩΤΟΓΡΑΦΙΑ.
+   Κρατάει `{type:'photo', id}` που δείχνει στο `hw:pics`. Το αρτιφακτ λέει
+   `src` τη ΠΗΓΗ (σχολείο/φροντιστήριο), άρα η πηγή γράφεται σε ΝΕΟ πεδίο
+   `from`. Αν είχαν πέσει στο ίδιο όνομα, η πρώτη αλλαγή πηγής θα έσβηνε τον
+   δείκτη της φωτογραφίας του — σιωπηλά, και μόνιμα.
+
+   ΝΕΑ ΠΕΔΙΑ ΠΟΥ ΠΡΟΣΘΕΤΕΙ ΑΥΤΗ Η ΣΕΛΙΔΑ (κανένα δεν πειράζει τα παλιά):
+     tasks[id]: from · cat · steps[{t,d}] · important · grade · lathi
+     exams[id]: from · cat · steps[{t,d}] · important · lathi   (το `yli`
+                μένει ΣΥΓΧΡΟΝΙΣΜΕΝΟ με τα steps ώστε η παλιά σελίδα να
+                συνεχίσει να δείχνει ύλη)
+     agenda:    ΧΑΡΤΗΣ ΕΓΓΡΑΦΩΝ με `_ts` — `prefs` (προεπιλεγμένη πηγή, ήχος)
+                και `sch0…sch6` (το πρόγραμμα ΤΟΥ ΣΧΟΛΕΙΟΥ, που το `timetable`
+                δεν έχει). Ζει ΜΕΣΑ στο `hw:v1` επίτηδες: το backup.html
+                ξέρει το `hw:v1`, άρα επαναφέρεται μαζί του χωρίς νέα γραμμή.
+
+   ⚠ Η ΠΗΓΗ ΤΟΥ ΠΡΟΓΡΑΜΜΑΤΟΣ ΦΡΟΝΤΙΣΤΗΡΙΟΥ ΕΙΝΑΙ ΤΟ `timetable`, ΤΟ ΑΛΗΘΙΝΟ
+   ΤΟΥ. Το `DEFAULT_SETTINGS.schedule.fro` είναι ΑΝΤΙΓΡΑΦΟ και χρησιμοποιείται
+   ΜΟΝΟ σε συσκευή που δεν έχει ακόμη `hw:v1` — αλλιώς δύο αλήθειες.
+   ═══════════════════════════════════════════════════════════════════════ */
+const HKEY='hw:v1', PKEY='hw:pics';
+const TT_DAYS=['mon','tue','wed','thu','fri','sat','sun'];   /* δείκτης = Δευτέρα-πρώτη */
+const TT_SLOTS=['15:15','16:15','17:15'];                    /* ΦΡΟΝΤΙΣΤΗΡΙΟ ΠΥΘΑΓΟΡΑΣ */
+const ttKey=dow=>TT_DAYS[(dow+6)%7];                         /* getDay() → mon…sun */
+let hw=null;                                                 /* το ΩΜΟ `hw:v1` · null = ΑΔΙΑΒΑΣΤΟ */
+
+function readJSON(k){
+  try{const r=localStorage.getItem(k);if(r==null)return null;return JSON.parse(r)}catch(e){return null}
+}
+function hwBlank(){return{v:1,tasks:{},samples:{},lessons:{},timetable:{},exams:{},agenda:{}}}
+/* Αντιγράφει ΠΡΩΤΑ ΟΛΑ τα κλειδιά (τίποτα δεν χάνεται) και μετά κανονικοποιεί
+   ΤΥΠΟ σε όσα αγγίζει — ίδιος κανόνας με τον load() της School Studies. */
+function hwNorm(s){
+  const b={};for(const k in s)if(Object.prototype.hasOwnProperty.call(s,k))b[k]=s[k];
+  b.v=1;
+  ['tasks','samples','lessons','timetable','exams','agenda'].forEach(k=>{
+    b[k]=(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k]))?s[k]:{};
+  });
+  return b;
+}
+/* ⭐⭐ Η ΣΦΡΑΓΙΔΑ. Χωρίς `_ts` ανά εγγραφή, το mergeObject του sync.js
+   κατεβαίνει ως τα βαθμωτά και κρατάει το REMOTE: κάθε αλλαγή μετά την πρώτη
+   γυρίζει πίσω σε ~400ms, ντετερμινιστικά, και κρύβεται γιατί η ΠΡΩΤΗ
+   εγγραφή κάθε record δουλεύει πάντα. Δες study-stamp.js.
+   ⚠ Η σειρά των χαρτών ΕΙΝΑΙ ΣΥΜΒΑΣΗ με το legacyTs από κάτω. */
+const STAMP=(typeof window.StudyStamp==='function')
+  ? window.StudyStamp(
+      function(){return hw?[hw.tasks,hw.samples,hw.lessons,hw.timetable,hw.exams,hw.agenda]:[]},
+      /* Παλιές εγγραφές παίρνουν τον ΠΡΑΓΜΑΤΙΚΟ τους χρόνο, ποτέ το τώρα:
+         αλλιώς «όποια συσκευή άνοιξε τελευταία τη σελίδα κερδίζει». */
+      function(i,k,rec){return (i===0||i===4)?(+rec.done||+rec.ts||0):0}
+    )
+  : {seed:function(){},stamp:function(){}};
+const stampBroken=(typeof window.StudyStamp!=='function');
+
+function hwReload(){
+  const s=readJSON(HKEY);
+  if(s===null||typeof s!=='object'||Array.isArray(s)){
+    /* ⚠ ΑΔΙΑΒΑΣΤΗ ≠ ΑΔΕΙΑ. Η σπορά γίνεται ΚΑΙ εδώ: χωρίς αυτήν το πρώτο
+       save() μετράει ως «πρώτο» και ο STAMP σκόπιμα δεν σφραγίζει τίποτα. */
+    if(!hw){hw=hwBlank();STAMP.seed()}
+    return false;
+  }
+  hw=hwNorm(s);STAMP.seed();return true;
+}
+/* ⚠ ΣΤΑΘ. 17: ΠΟΤΕ ΑΔΕΙΟ catch ΓΥΡΩ ΑΠΟ ΕΓΓΡΑΦΗ. Επιστρέφει true ΜΟΝΟ σε
+   επιβεβαιωμένη εγγραφή — και κάθε ταφόπλακα περιμένει αυτό το true. */
+function hwSave(){
+  STAMP.stamp();
+  try{localStorage.setItem(HKEY,JSON.stringify(hw));return true}
+  catch(e){toast('Ο χώρος αυτής της συσκευής γέμισε: ΔΕΝ αποθηκεύτηκε.');return false}
+}
+/* ══ ΟΙ ΤΑΦΟΠΛΑΚΕΣ ══════════════════════════════════════════════════════
+   Το sync.js σφραγίζει ταφόπλακες από τον interceptor του setItem, και
+   εκείνος υπάρχει ΜΟΝΟ αφού τρέξει το initCloudSync — που περιμένει τη
+   συνεδρία (ως 12s). Αυτή η σελίδα είναι πλήρως διαδραστική στο boot, άρα
+   θα σβήσει εργασία μέσα στο πρώτο δευτερόλεπτο. Χωρίς ταφόπλακα το πρώτο
+   pull την ξαναφέρνει και το push κάνει την ανάσταση αλήθεια του cloud
+   (σταθ. 32). Ο κανόνας αντιγράφεται ΚΑΤΑ ΛΕΞΗ: T = max(now, ts+1). */
+const TOMB_KEY='__synctomb__homework';
+function tombPath(lsKey,path,id,ts){
+  if(id==null)return;
+  try{
+    let t=JSON.parse(localStorage.getItem(TOMB_KEY)||'{}');
+    if(!t||typeof t!=='object'||Array.isArray(t))t={};
+    let node=t[lsKey];
+    if(!node||typeof node!=='object'||Array.isArray(node)){node={};t[lsKey]=node}
+    for(let i=0;i<path.length;i++){
+      let nx=node[path[i]];
+      if(!nx||typeof nx!=='object'||Array.isArray(nx)){nx={};node[path[i]]=nx}
+      node=nx;
+    }
+    const cur=(typeof node[id]==='number')?node[id]:0;
+    node[id]=Math.max(cur,Date.now(),(+ts||0)+1);
+    localStorage.setItem(TOMB_KEY,JSON.stringify(t));
+  }catch(e){
+    toast('Το σβήσιμο έγινε εδώ αλλά ΔΕΝ σφραγίστηκε για τον συγχρονισμό. Μπορεί να ξαναεμφανιστεί.');
+  }
+}
+const tombTask=(id,ts)=>tombPath(HKEY,['tasks'],id,ts);
+const tombExam=(id,ts)=>tombPath(HKEY,['exams'],id,ts);
+
+/* ══ ΜΕΤΑΦΡΑΣΗ ΜΑΘΗΜΑΤΟΣ ════════════════════════════════════════════════
+   Τα ids του `hw:v1` είναι ΤΙΜΕΣ ΜΗΧΑΝΗΣ και παγωμένα. Τα Αρχαία είναι ΔΥΟ
+   κλειδιά εκεί (γνωστό/άγνωστο, δύο καθηγητές) και ΕΝΑ μάθημα με κατηγορία
+   εδώ — η μετάφραση είναι αμφίδρομη και χωρίς απώλεια. Το σκέτο `arxaia`
+   είναι legacy: ΔΕΝ σβήνεται ποτέ, κάθε εργασία πριν την als-v485 το φοράει. */
+function fromHwSubject(sub,cat){
+  if(sub==='arxaia_agn')return{subj:'arx',cat:'Άγνωστο'};
+  if(sub==='arxaia_gn') return{subj:'arx',cat:'Γνωστό'};
+  if(sub==='arxaia')    return{subj:'arx',cat:null};
+  if(sub==='istoria')   return{subj:'ist',cat:catOk('ist',cat)?cat:null};
+  if(sub==='latinika')  return{subj:'lat',cat:catOk('lat',cat)?cat:null};
+  if(sub==='ekthesi')   return{subj:'ne', cat:catOk('ne',cat)?(cat||'Έκθεση'):'Έκθεση'};
+  return{subj:'unk',cat:null};
+}
+function toHwSubject(subj,cat,prev){
+  if(subj==='arx'){
+    if(cat==='Γνωστό') return{subject:'arxaia_gn',cat:null};
+    if(cat==='Άγνωστο')return{subject:'arxaia_agn',cat:null};
+    /* Χωρίς κατηγορία: κρατάμε ό,τι είχε (αν ήταν Αρχαία), αλλιώς το legacy
+       κλειδί — που ζει, βάφεται σωστά και μετράει κανονικά. */
+    return{subject:(prev==='arxaia_gn'||prev==='arxaia_agn'||prev==='arxaia')?prev:'arxaia',cat:null};
+  }
+  if(subj==='ist')return{subject:'istoria', cat:cat||null};
+  if(subj==='lat')return{subject:'latinika',cat:cat||null};
+  if(subj==='ne') return{subject:'ekthesi', cat:cat||'Έκθεση'};
+  return{subject:'unknown',cat:null};
+}
+const dk=ms=>{const d=new Date(+ms);return isNaN(d.getTime())?null:iso(d)};
+const srcOf=v=>(v==='sch'||v==='fro')?v:settings.defaultSrc;
+const stepsOf=a=>Array.isArray(a)?a.map(x=>(x&&typeof x==='object')?{t:String(x.t||''),d:!!x.d}:{t:String(x||''),d:false}).filter(x=>x.t):[];
+const yliSteps=y=>String(y||'').split(/\r?\n+/).map(s=>s.trim()).filter(Boolean).map(s=>({t:s,d:false}));
+
+/* ⭐ ΜΙΑ ΕΡΓΑΣΙΑ ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ ΔΕΝ ΕΙΝΑΙ ΕΡΓΑΣΙΑ ΧΩΡΙΣ ΠΡΟΘΕΣΜΙΑ: είναι
+   «για το επόμενο μάθημα ΑΠΟ ΤΗ ΜΕΡΑ ΠΟΥ ΤΗ ΓΡΑΨΕ». Ίδιος υπολογισμός με
+   τον dueOf() της School Studies, ώστε οι δύο σελίδες να ΜΗ διαφωνούν. */
+function autoDue(rec,src,subj,cat){
+  const from=rec&&rec.ts?dk(+rec.ts):null;
+  return nextLesson(src,subj,cat,from)||from||T();
+}
+function fromTask(r){
+  const sc=fromHwSubject(r.subject,r.cat);
+  const src=srcOf(r.from);
+  const out={id:'t:'+r.id,subj:sc.subj,cat:sc.cat,src:src,
+    type:(r.kind==='diagonisma')?'test':'task',
+    title:String(r.title||''),steps:stepsOf(r.steps),
+    date:(r.due&&isIsoDate(r.due))?r.due:autoDue(r,src,sc.subj,sc.cat),
+    done:!!r.done,doneAt:r.done?dk(+r.done):null,
+    important:!!r.important,notes:String(r.note||''),created:+r.ts||0,
+    lathi:Array.isArray(r.lathi)?r.lathi.slice():[]};
+  if(typeof r.grade==='number')out.grade=r.grade;
+  return out;
+}
+function fromExam(id,r){
+  const sc=fromHwSubject(r.subject,r.cat);
+  const src=srcOf(r.from);
+  const out={id:'x:'+id,subj:sc.subj,cat:sc.cat,src:src,type:'test',
+    title:String(r.title||''),
+    steps:Array.isArray(r.steps)?stepsOf(r.steps):yliSteps(r.yli),
+    date:(r.date&&isIsoDate(r.date))?r.date:autoDue(r,src,sc.subj,sc.cat),
+    done:!!r.done,doneAt:r.done?dk(+r.done):null,
+    important:!!r.important,notes:String(r.note||''),created:+r.ts||0,
+    lathi:Array.isArray(r.lathi)?r.lathi.slice():[]};
+  /* ⚠ Ο ΒΑΘΜΟΣ ΕΧΕΙ ΚΛΙΜΑΚΑ ΚΑΙ Η ΚΛΙΜΑΚΑ ΕΙΝΑΙ ΔΙΚΗ ΤΟΥ. Η οθόνη εδώ
+     μιλάει ΠΑΝΤΑ στα 20· ένα 85/100 δεν γίνεται «85», γίνεται 17. */
+  if(typeof r.grade==='number')out.grade=(+r.scale===100)?Math.round(r.grade/5*100)/100:r.grade;
+  return out;
+}
+function importTasks(){
+  const m=new Map();
+  if(!hw)return m;
+  for(const k in hw.tasks){const r=hw.tasks[k];
+    if(!r||typeof r!=='object'||Array.isArray(r)||!r.id)continue;
+    const t=fromTask(r);if(t.title||t.steps.length)m.set(t.id,t);}
+  for(const k in hw.exams){const r=hw.exams[k];
+    if(!r||typeof r!=='object'||Array.isArray(r))continue;
+    const t=fromExam(k,r);if(t.title||t.steps.length)m.set(t.id,t);}
+  return m;
+}
+function writeTask(id,t){
+  const prev=hw.tasks[id]||null;
+  const sc=toHwSubject(t.subj,t.cat,prev&&prev.subject);
+  const r=prev?Object.assign({},prev):{id:id,ts:t.created||Date.now(),link:null,est:null,src:null,elapsed:0};
+  r.id=id;r.subject=sc.subject;
+  if(sc.cat)r.cat=sc.cat;else delete r.cat;
+  r.title=t.title;r.due=t.date;r.from=t.src;r.note=t.notes||'';
+  r.kind=(t.type==='test')?'diagonisma':((prev&&prev.kind&&prev.kind!=='diagonisma')?prev.kind:'askisi');
+  r.steps=(t.steps||[]).map(s=>({t:s.t,d:!!s.d}));
+  r.important=!!t.important;
+  /* Το `done` του `hw:v1` είναι ΣΤΙΓΜΗ, το `doneAt` εδώ είναι ΜΕΡΑ: κρατάμε
+     την ακριβή στιγμή όταν δεν άλλαξε η μέρα, αλλιώς γράφουμε νέα. */
+  r.done=t.done?((prev&&prev.done&&dk(+prev.done)===t.doneAt)?prev.done:Date.now()):0;
+  if(typeof t.grade==='number')r.grade=t.grade;else delete r.grade;
+  if(t.lathi&&t.lathi.length)r.lathi=t.lathi.slice();else delete r.lathi;
+  hw.tasks[id]=r;
+}
+function writeExam(id,t){
+  const prev=hw.exams[id]||null;
+  const sc=toHwSubject(t.subj,t.cat,prev&&prev.subject);
+  const r=prev?Object.assign({},prev):{ts:t.created||Date.now(),scale:20,note:''};
+  r.subject=sc.subject;
+  if(sc.cat)r.cat=sc.cat;else delete r.cat;
+  r.title=t.title;r.date=t.date;r.from=t.src;r.note=t.notes||'';
+  r.steps=(t.steps||[]).map(s=>({t:s.t,d:!!s.d}));
+  /* Το `yli` μένει η ΙΔΙΑ ύλη σε μορφή κειμένου, ώστε η παλιά σελίδα να μη
+     δει άδειο διαγώνισμα. Δύο αναγνώστες, ένα περιεχόμενο. */
+  r.yli=r.steps.map(s=>s.t).join('\n');
+  r.important=!!t.important;
+  r.scale=(+r.scale===100)?100:20;
+  r.done=t.done?((prev&&prev.done&&dk(+prev.done)===t.doneAt)?prev.done:Date.now()):0;
+  r.grade=(typeof t.grade==='number')?(r.scale===100?Math.round(t.grade*5*100)/100:t.grade):null;
+  if(t.lathi&&t.lathi.length)r.lathi=t.lathi.slice();else delete r.lathi;
+  hw.exams[id]=r;
+}
+
+/* ══ ΟΙ ΡΥΘΜΙΣΕΙΣ ═══════════════════════════════════════════════════════ */
+function settingsFromHw(){
+  const s=clone(DEFAULT_SETTINGS);
+  if(!hw)return s;
+  const p=hw.agenda&&hw.agenda.prefs;
+  if(p&&typeof p==='object'){
+    if(p.defaultSrc==='sch'||p.defaultSrc==='fro')s.defaultSrc=p.defaultSrc;
+    if(typeof p.sound==='boolean')s.sound=p.sound;
+  }
+  const tt=hw.timetable||{};let any=false;const fro={};
+  for(let d=0;d<7;d++){
+    const rec=tt[ttKey(d)];
+    if(!rec||typeof rec!=='object'||!Array.isArray(rec.slots))continue;
+    any=true;
+    fro[String(d)]=rec.slots.map(x=>{
+      const sc=fromHwSubject(x&&x.subject,null);return{s:sc.subj,c:sc.cat};
+    }).filter(x=>x.s!=='unk');
+  }
+  if(any)s.schedule.fro=fro;     /* ΤΟ ΑΛΗΘΙΝΟ ΤΟΥ ΠΡΟΓΡΑΜΜΑ ΝΙΚΑΕΙ ΤΟ ΑΝΤΙΓΡΑΦΟ */
+  const sch={};
+  for(let d=0;d<7;d++){
+    const rec=hw.agenda&&hw.agenda['sch'+d];
+    if(rec&&typeof rec==='object'&&Array.isArray(rec.slots))
+      sch[String(d)]=rec.slots.filter(x=>x&&S[x.s]&&x.s!=='unk').map(x=>({s:x.s,c:x.c||null}));
+  }
+  s.schedule.sch=sch;
+  return s;
+}
+
+/* ══ Η ΜΗΧΑΝΗ ═══════════════════════════════════════════════════════════ */
+let bootT=null;
+const store={
+  mode:'hw',
+  init(){
+    const read=hwReload();
+    settings=settingsFromHw();
+    if(stampBroken)toast('Δεν φόρτωσε το study-stamp.js. Ό,τι γράφεις μένει στη συσκευή, αλλά ο συγχρονισμός μπορεί να το γυρίσει πίσω. Ανανέωσε τη σελίδα.');
+    if(read){
+      tasks=importTasks();loaded=true;
+      syncUI(false,'Αποθηκεύτηκε σε αυτή τη συσκευή · συγχρονίζω…');
+    }else{
+      /* ⛔ ΣΙΩΠΗΛΟ ΜΗΔΕΝ: «δεν διάβασα ακόμη» και «δεν έχεις εργασίες»
+         ΔΕΝ ζωγραφίζονται ίδια. Μένει στο «Φορτώνω…» μέχρι να έρθει το
+         cloud — και αν δεν έρθει, το λέει με ΛΟΓΟ, δεν γυρίζει για πάντα. */
+      syncUI(false,'Φέρνω τις εργασίες σου…');
+      bootT=setTimeout(()=>{
+        if(loaded)return;
+        loaded=true;tasks=importTasks();
+        syncUI(false,'Δεν βρήκα εργασίες σε αυτή τη συσκευή. Αν δεν είσαι συνδεδεμένος, μπες από την εφαρμογή και ξαναγύρνα.');
+        renderAll();
+      },12000);
+    }
+    renderAll();
+    hookStatus();
+    startCloudSync();
+  },
+  /* Ξαναδιάβασε ΠΡΙΝ γράψει οτιδήποτε: μια εισερχόμενη συγχώνευση χάνεται
+     από παλιό αντίγραφο στη μνήμη. */
+  refresh(){
+    hwReload();
+    settings=settingsFromHw();
+    tasks=importTasks();
+    loaded=true;if(bootT){clearTimeout(bootT);bootT=null}
+    renderAll();
+    if($('#settings').classList.contains('on'))renderSettings();
+  },
+  saveTask(t){
+    tasks.set(t.id,t);
+    if(!hw){hw=hwBlank();STAMP.seed()}
+    const isX=t.id.slice(0,2)==='x:',id=t.id.slice(2);
+    const back=isX?hw.exams[id]:hw.tasks[id];
+    if(isX)writeExam(id,t);else writeTask(id,t);
+    if(!hwSave()){
+      /* Η αποτυχία δεν κρύβεται ΚΑΙ δεν αφήνει την οθόνη να λέει ψέματα. */
+      if(back)(isX?hw.exams:hw.tasks)[id]=back;else delete (isX?hw.exams:hw.tasks)[id];
+      this.refresh();
+    }
+  },
+  deleteTask(id){
+    tasks.delete(id);
+    if(!hw)return;
+    const isX=id.slice(0,2)==='x:',k=id.slice(2);
+    const map=isX?hw.exams:hw.tasks;
+    const rec=map[k];if(!rec)return;
+    delete map[k];
+    /* ⚠ Η ΤΑΦΟΠΛΑΚΑ ΜΠΑΙΝΕΙ ΜΟΝΟ ΜΕΤΑ ΑΠΟ ΕΠΙΒΕΒΑΙΩΜΕΝΗ ΕΓΓΡΑΦΗ. */
+    if(hwSave())(isX?tombExam:tombTask)(k,rec.ts);
+    else{map[k]=rec;this.refresh()}
+  },
+  saveSettings(){
+    if(!hw){hw=hwBlank();STAMP.seed()}
+    hw.agenda.prefs=Object.assign({},hw.agenda.prefs,{defaultSrc:settings.defaultSrc,sound:!!settings.sound});
+    const fro=settings.schedule.fro||{};
+    for(let d=0;d<7;d++){
+      const list=Array.isArray(fro[String(d)])?fro[String(d)]:[];
+      const key=ttKey(d),had=hw.timetable[key];
+      /* Μια μέρα που δεν υπήρξε ποτέ και μένει κενή ΔΕΝ γράφεται: μια νέα
+         άδεια εγγραφή με φρέσκια σφραγίδα θα νικούσε αληθινή μέρα του cloud. */
+      if(!had&&!list.length)continue;
+      const old=(had&&Array.isArray(had.slots))?had.slots:[];
+      hw.timetable[key]=Object.assign({},had,{slots:list.map((x,i)=>({
+        at:(old[i]&&old[i].at)||TT_SLOTS[i]||'',
+        subject:toHwSubject(x.s,x.c,old[i]&&old[i].subject).subject
+      }))});
+    }
+    const sch=settings.schedule.sch||{};
+    for(let d=0;d<7;d++){
+      const list=Array.isArray(sch[String(d)])?sch[String(d)]:[];
+      const k='sch'+d;
+      if(!hw.agenda[k]&&!list.length)continue;
+      hw.agenda[k]=Object.assign({},hw.agenda[k],{slots:list.map(x=>({s:x.s,c:x.c||null}))});
+    }
+    hwSave();
+  }
+};
+function syncUI(ok,msg){
+  $('#syncDot').classList.toggle('on',!!ok);
+  $('#syncTx').textContent=msg||(ok?'Συγχρονίζεται σε όλες τις συσκευές σου':'Σύνδεση…');
+}
+/* Ο δείκτης λέει ΤΗΝ ΑΛΗΘΕΙΑ ΤΗΣ ΜΗΧΑΝΗΣ, όχι μια ελπίδα: πράσινος μόνο
+   όταν το cloud ΕΠΙΒΕΒΑΙΩΣΕ εγγραφή (ss('ok')), και κόκκινο με την ΑΙΤΙΑ.
+   Αλυσιδώνεται πάνω από το als-sync-status.js χωρίς να το ακυρώνει. */
+function hookStatus(){
+  const prev=window.ALSSyncStatus||null;
+  if(prev&&prev.__agenda)return;
+  const mine={__agenda:1};
+  if(prev)for(const k in prev)mine[k]=prev[k];
+  mine.ok=function(app,d){if(app==='homework'){loaded=true;if(bootT){clearTimeout(bootT);bootT=null}syncUI(true)}if(prev&&prev.ok)try{prev.ok(app,d)}catch(e){}};
+  mine.fail=function(app,d){if(app==='homework')syncUI(false,'Δεν συγχρονίστηκε'+(d?' · '+d:'')+' — ξαναδοκιμάζω');if(prev&&prev.fail)try{prev.fail(app,d)}catch(e){}};
+  window.ALSSyncStatus=mine;
+}
+document.addEventListener('DOMContentLoaded',hookStatus);
+/* ⚠ Η ΑΝΑΜΟΝΗ ΕΙΝΑΙ ΣΤΙΣ ΠΡΟΫΠΟΘΕΣΕΙΣ, ΚΑΙ ΤΟ initCloudSync ΚΑΛΕΙΤΑΙ
+   ΑΚΡΙΒΩΣ ΜΙΑ ΦΟΡΑ: επιστρέφει ΣΙΩΠΗΛΑ όταν το window.supabase δεν υπάρχει
+   ακόμη, και μια δεύτερη επιτυχημένη κλήση αλυσιδώνει δεύτερο override του
+   setItem στην ίδια σελίδα. Αν δεν ξεκινήσει ποτέ, το λέμε (σταθ. 32). */
+function startCloudSync(){
+  let tries=0;
+  (function wait(){
+    if(typeof window.initCloudSync!=='function'||!window.supabase){
+      if(tries++<100){setTimeout(wait,200);return}
+      syncUI(false,'Ο συγχρονισμός δεν ξεκίνησε — ό,τι γράψεις μένει μόνο σε αυτή τη συσκευή.');
+      return;
+    }
+    window.initCloudSync({
+      /* ⚠ ΓΡΑΜΜΕΝΟ ΚΥΡΙΟΛΕΚΤΙΚΑ: ο φρουρός του smoke-test.sh ψάχνει το ΠΡΩΤΟ
+         κυριολεκτικό appKey μέσα σε 1200 χαρακτήρες από εδώ, για να
+         επιβεβαιώσει ότι κάθε συγχρονισμένο κλειδί υπάρχει στα BUNDLES του
+         backup.html. Ίδιο appKey με τη School Studies: ΙΔΙΑ δεδομένα. */
+      appKey: 'homework',
+      syncedKeys: [HKEY, PKEY],
+      onApplied: function(){ store.refresh(); }
+    });
+    if(!window.ALSSync)syncUI(false,'Ο συγχρονισμός δεν ξεκίνησε — ό,τι γράψεις μένει μόνο σε αυτή τη συσκευή.');
+  })();
+}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+/* ───────── schedule logic ───────── */
+/* ⭐⭐ ΤΟ `from` ΕΙΝΑΙ ΤΟ ΜΑΘΗΜΑ ΤΗΣ als-v492, ΚΑΙ ΔΕΝ ΕΙΝΑΙ ΠΡΟΑΙΡΕΤΙΚΗ
+   ΛΕΠΤΟΜΕΡΕΙΑ. Μια εργασία χωρίς ημερομηνία παίρνει «το επόμενο μάθημα ΑΠΟ
+   ΤΗ ΜΕΡΑ ΠΟΥ ΤΗ ΓΡΑΨΕ», ποτέ από σήμερα: αλλιώς η προθεσμία ΓΛΙΣΤΡΑΕΙ κάθε
+   μέρα μπροστά και ένα χρέος τριών εβδομάδων εμφανίζεται ως «για αύριο». */
+function nextLesson(src,subj,cat,from){
+  const sch=(settings.schedule&&settings.schedule[src])||{};
+  const has=Object.keys(sch).some(k=>Array.isArray(sch[k])&&sch[k].length);
+  if(!has)return null;
+  const t0=(from&&isIsoDate(from))?pdate(from):today();
+  const find=strict=>{for(let n=1;n<=7;n++){const d=addD(t0,n);const l=sch[String(d.getDay())]||[];if(l.some(x=>x.s===subj&&(!strict||!cat||!x.c||x.c===cat)))return iso(d)}return null};
+  return find(true)||find(false);
+}
+function autoDate(it){
+  const nl=nextLesson(it.src,it.subj,it.cat);
+  if(nl)return{date:nl,why:'επόμενο μάθημα '+(it.src==='fro'?'φροντιστηρίου':'σχολείου')};
+  return{date:iso(addD(today(),1)),why:it.src==='sch'?'αύριο · δεν έχω ακόμα πρόγραμμα σχολείου':'αύριο'};
+}
+
+/* ───────── local parser (fallback & live hint) ───────── */
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/ς/g,'σ');
+const K={
+  subj:{arx:['αρχ','αρχαια','αρχαιων','αρχαιοι'],ist:['ιστ','ιστορια','ιστοριασ','ιστοριασ'],lat:['λατ','λατινικα','λατινικων','λατιν'],ne:['νε','νεα','νεοελληνικη','γλωσσα','εκθ','εκθεση','λογοτ','λογοτεχνια']},
+  src:{sch:['σχολ','σχολειο','σχ','σχολειου'],fro:['φροντ','φροντιστηριο','φροντηστηριο','φρ','φροντιστηριου']},
+  day:{1:['δευτ','δευτερα'],2:['τριτ','τριτη'],3:['τεταρ','τεταρτη','τετ'],4:['πεμπ','πεμπτη'],5:['παρ','παρασκευη','παρασκ'],6:['σαβ','σαββατο'],0:['κυρ','κυριακη']}
+};
+const EXPAND={'σελ':'σελ.','ασκ':'ασκ.','αορ':'αορίστου','ρημ':'ρημάτων','ενοτ':'ενότητα','κεφ':'κεφάλαιο','παρ':'παρ.','μετ':'μετάφραση','κλιση':'κλίση','λεξ':'λεξιλόγιο','γραμ':'γραμματική','συντ':'συντακτικό','σχεδιαγραμμα':'σχεδιάγραμμα','περιληψη':'περίληψη','κειμενο':'κείμενο','ασκησεισ':'ασκήσεις','ασκηση':'άσκηση','φυλλαδιο':'φυλλάδιο','παραθετικα':'παραθετικά','κειμενα':'κείμενα','αντωνυμιεσ':'αντωνυμίες','μεταφραση':'μετάφραση','σελιδα':'σελίδα','σελιδεσ':'σελίδες','ενοτητα':'ενότητα','επαναληψη':'επανάληψη','ορισμοι':'ορισμοί','πηγεσ':'πηγές','β':'β΄','α':'α΄','γ':'γ΄'};
+function nextDow(dow){let n=(dow-today().getDay()+7)%7;if(n===0)n=7;return iso(addD(today(),n))}
+function localParse(str){
+  const out={subj:null,cat:null,src:null,date:null,type:'task',important:false,title:'',steps:[]};
+  const keep=[];const words=str.split(/\s+/).filter(Boolean);
+  for(let i=0;i<words.length;i++){
+    let w=words[i];let n=norm(w).replace(/[.,:;]+$/,'');
+    if(n==='!'){out.important=true;continue}
+    if(/!$/.test(n)){out.important=true;n=n.replace(/!+$/,'');w=w.replace(/!+$/,'')}
+    if(!n)continue;
+    if(n==='για'&&i<words.length-1)continue;
+    let hit=false;
+    for(const k in K.subj)if(K.subj[k].includes(n)&&!out.subj){out.subj=k;if(n.startsWith('εκθ'))out.cat='Έκθεση';if(n.startsWith('λογοτ'))out.cat='Λογοτεχνία';hit=true;break}
+    if(hit)continue;
+    if(['αγν','αγνωστο'].includes(n)){out.cat='Άγνωστο';if(!out.subj)out.subj='arx';continue}
+    if(['γν','γνωστο'].includes(n)){out.cat='Γνωστό';if(!out.subj)out.subj='arx';continue}
+    for(const k in K.src)if(K.src[k].includes(n)){out.src=k;hit=true;break}
+    if(hit)continue;
+    if(['διαγ','διαγωνισμα','τεστ','διαγωνισμ'].includes(n)){out.type='test';continue}
+    if(n==='σημερα'){out.date=T();continue}
+    if(n==='αυριο'){out.date=iso(addD(today(),1));continue}
+    if(n==='μεθαυριο'){out.date=iso(addD(today(),2));continue}
+    for(const k in K.day)if(K.day[k].includes(n)&&!(n==='παρ'&&/^\d/.test(words[i+1]||''))){out.date=nextDow(+k);hit=true;break}
+    if(hit)continue;
+    const m=n.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if(m){let d=new Date(today().getFullYear(),+m[2]-1,+m[1]);if(d<today())d.setFullYear(d.getFullYear()+1);if(iso(d)&&d.getDate()===+m[1]){out.date=iso(d);continue}}
+    keep.push(w);
+  }
+  // history unit
+  if(out.subj==='ist'){const txt=norm(keep.join(' '));const m=txt.match(/(?:ενοτ\w*|κεφ\w*)\s*(\d{1,2})/);if(m)out.cat='Ενότητα '+(+m[1])}
+  if(out.subj==='lat'&&!out.cat){const t=norm(keep.join(' '));if(/κειμ/.test(t))out.cat='Κείμενα';else if(/συντ|συνταξ/.test(t))out.cat='Συντακτικό';else if(/κλισ|γραμ|παραθετ|αντωνυμ|επιθετ/.test(t))out.cat='Γραμματική'}
+  const pretty=keep.map(w=>{const n=norm(w).replace(/[.,]+$/,'');return EXPAND[n]||w}).join(' ');
+  const parts=pretty.split(/\s*[,+]\s*|\s+και\s+/).map(s=>s.trim()).filter(Boolean).map(cap);
+  out.title=parts[0]||'';out.steps=parts.slice(1);
+  return out;
+}
+function cap(s){return s?s.charAt(0).toLocaleUpperCase('el-GR')+s.slice(1):s}
+
+/* ───────── Claude parsing ───────── */
+let sample=null,aiOff=false;
+function aiPrompt(text){
+  const t0=today();
+  const lines=[];for(let n=0;n<15;n++){const d=addD(t0,n);lines.push(`${iso(d)} ${DN[d.getDay()]}${n===0?' (σήμερα)':n===1?' (αύριο)':n===2?' (μεθαύριο)':''}`)}
+  const tm=iso(addD(t0,1));const fri=nextDow(5);const mon=nextDow(1);
+  return `Μετατρέπεις πρόχειρες σημειώσεις ενός μαθητή Γ΄ Λυκείου (Ανθρωπιστικές Σπουδές) σε καθαρές εργασίες για την ατζέντα του.
+
+ΜΑΘΗΜΑΤΑ (subj) ΚΑΙ ΚΑΤΗΓΟΡΙΕΣ (cat):
+- "arx" Αρχαία. cat: "Άγνωστο" ή "Γνωστό" (αγν/άγνωστο → "Άγνωστο", γν/γνωστό → "Γνωστό").
+- "ist" Ιστορία. cat: "Ενότητα N" (π.χ. "Ενότητα 4") μόνο αν γράφει ενότητα/κεφάλαιο με αριθμό.
+- "lat" Λατινικά. cat: "Κείμενα", "Γραμματική" ή "Συντακτικό" (κλίσεις, παραθετικά, αντωνυμίες, χρόνοι → Γραμματική· μετοχές/πλάγιος λόγος/σύνταξη → Συντακτικό· κείμενο/μετάφραση → Κείμενα).
+- "ne" Νεοελληνική Γλώσσα (έκθεση, λογοτεχνία, γλώσσα, νε). cat: "Έκθεση" ή "Λογοτεχνία".
+Αν η κατηγορία δεν προκύπτει καθαρά, cat = null.
+
+ΠΗΓΗ (src): "sch" αν λέει σχολείο (σχολ), "fro" αν λέει φροντιστήριο (φροντ), αλλιώς null.
+
+ΗΜΕΡΟΜΗΝΙΕΣ (επόμενες μέρες):
+${lines.join('\n')}
+date: "YYYY-MM-DD" ΜΟΝΟ αν ο μαθητής λέει πότε (σήμερα, αύριο, όνομα ημέρας = η ΕΠΟΜΕΝΗ τέτοια μέρα μετά από σήμερα, ημερομηνία όπως 5/10). Αλλιώς null. Μην μαντεύεις.
+
+type: "test" αν είναι διαγώνισμα/τεστ, αλλιώς "task".
+important: true μόνο αν έχει "!" ή λέει σημαντικό/προσοχή.
+
+title και steps:
+- Γράψε σε σωστά ελληνικά με τόνους, κεφαλαίο το πρώτο γράμμα, χωρίς τελεία στο τέλος.
+- Ανάπτυξε συντομογραφίες: αορ → αορίστου, ρημ → ρημάτων, ενεστ → ενεστώτα, μετ → μετοχών/μετάφραση ανάλογα, β → β΄, α → α΄, γ → γ΄. Κράτα τις καθιερωμένες: σελ. 457, ασκ. 3–6, παρ. 2. Για διαστήματα χρησιμοποίησε – (π.χ. σελ. 141–145).
+- ΜΗΝ γράφεις μέσα στο κείμενο το μάθημα, την κατηγορία, την πηγή ή την ημερομηνία.
+- ΜΗΝ προσθέτεις τίποτα που δεν έγραψε. Κράτα το σύντομο.
+- Αν μια εργασία έχει πολλά μέρη (με "και", κόμμα ή +) για το ΙΔΙΟ μάθημα: title = το πρώτο μέρος, steps = τα υπόλοιπα μέρη. Αλλιώς steps = [].
+- Αν αναφέρει ΔΙΑΦΟΡΕΤΙΚΑ μαθήματα, φτιάξε ξεχωριστό item για το καθένα. Ημερομηνία ή πηγή που λέγεται μία φορά για όλα ισχύει για όλα.
+
+ΠΑΡΑΔΕΙΓΜΑΤΑ:
+«αρχαια αγνωστο αυριο σελ 457 και κλιση αορ β ρημ» →
+{"items":[{"subj":"arx","cat":"Άγνωστο","src":null,"date":"${tm}","type":"task","important":false,"title":"Σελ. 457","steps":["Κλίση αορίστου β΄ ρημάτων"]}]}
+«λατ φροντ ασκ 3-6 σελ 20, ιστ ενοτ 5 σχεδιαγραμμα» →
+{"items":[{"subj":"lat","cat":null,"src":"fro","date":null,"type":"task","important":false,"title":"Ασκ. 3–6, σελ. 20","steps":[]},{"subj":"ist","cat":"Ενότητα 5","src":"fro","date":null,"type":"task","important":false,"title":"Σχεδιάγραμμα","steps":[]}]}
+«διαγ ιστοριας παρασκευη ενοτ 1-4 !» →
+{"items":[{"subj":"ist","cat":null,"src":null,"date":"${fri}","type":"test","important":true,"title":"Ενότητες 1–4","steps":[]}]}
+«εκθεση φροντ δευτερα περιληψη 120 λεξεων» →
+{"items":[{"subj":"ne","cat":"Έκθεση","src":"fro","date":"${mon}","type":"task","important":false,"title":"Περίληψη 120 λέξεων","steps":[]}]}
+
+Απάντησε ΜΟΝΟ με JSON της μορφής {"items":[...]}.
+
+ΣΗΜΕΙΩΣΗ ΜΑΘΗΤΗ:
+«${text.replace(/»/g,'"')}»`;
+}
+function cleanItem(r){
+  if(!r||typeof r!=='object')return null;
+  const subj=S[r.subj]?r.subj:null;
+  let title=typeof r.title==='string'?r.title.trim().replace(/\.$/,''):'';
+  let steps=Array.isArray(r.steps)?r.steps.filter(x=>typeof x==='string'&&x.trim()).map(x=>cap(x.trim().replace(/\.$/,''))).slice(0,12):[];
+  if(!title&&steps.length)title=steps.shift();
+  if(!title)return null;
+  let cat=typeof r.cat==='string'?r.cat.trim():null;
+  if(subj==='ist'&&cat){const m=cat.match(/(\d{1,2})/);cat=m?'Ενότητα '+(+m[1]):null}
+  if(!subj||!catOk(subj,cat))cat=subj&&cat&&(S[subj].cats||[]).find(c=>norm(c)===norm(cat))||null;
+  return{subj,cat,src:(r.src==='sch'||r.src==='fro')?r.src:null,date:isIsoDate(r.date)&&r.date>=T()?r.date:null,type:r.type==='test'?'test':'task',important:r.important===true,title:cap(title),steps};
+}
+function finalize(it){
+  const x=Object.assign({},it);
+  if(!x.src)x.src=settings.defaultSrc;
+  x.dateAuto=!x.date;
+  if(x.dateAuto){const a=autoDate(x);x.date=a.date;x.why=a.why}else x.why='';
+  return x;
+}
+
+/* ───────── composer ───────── */
+const comp={state:'idle',items:[],text:'',ctl:null,note:'',warn:false};
+const cIn=$('#cIn');
+function hintHTML(){
+  const v=cIn.value.trim();
+  if(!v){
+    if(!loaded||tasks.size)return '';
+    return `<span>Δοκίμασε:</span>`+['αρχαια αγνωστο αυριο σελ 457 και κλιση αορ β ρημ','λατ ασκ 3-6 σελ 20','διαγ ιστοριας παρασκευη ενοτ 1-4'].map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join('');
+  }
+  if(comp.state!=='idle')return '';
+  const p=localParse(v);const tags=[];
+  if(p.subj)tags.push(`<span class="tag" style="--c:${S[p.subj].c}"><i></i>${S[p.subj].name}${p.cat?' · '+esc(p.cat):''}</span>`);
+  if(p.src)tags.push(`<span class="tag">${SRC[p.src]}</span>`);
+  if(p.date)tags.push(`<span class="tag">${rel(p.date)}</span>`);
+  if(p.type==='test')tags.push(`<span class="tag">Διαγώνισμα</span>`);
+  return (tags.length?tags.join(''):'')+`<span>Πάτα Enter για να το διαβάσω</span>`;
+}
+function renderComposer(){
+  $('#cHint').innerHTML=hintHTML();
+  const go=$('#cGo');const hasText=!!cIn.value.trim();
+  go.hidden=!(hasText&&comp.state==='idle');
+  $('#cKbd').hidden=hasText||comp.state!=='idle';
+  const b=$('#cBody');
+  if(comp.state==='thinking'){b.innerHTML=`<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Το διαβάζω και το γράφω όμορφα… <button class="btn" id="cStop" style="padding:4px 10px;font-size:12px">Άκυρο</button></div>`;return}
+  if(comp.state!=='preview'){b.innerHTML='';return}
+  const n=comp.items.length;
+  b.innerHTML=`<div class="pv">${comp.note?`<div class="pv-note${comp.warn?' warn':''}">${esc(comp.note)}</div>`:''}${comp.items.map((it,i)=>pcard(it,i)).join('')}
+  <div class="pact"><button class="btn" id="cCancel">Άκυρο <span class="why">Esc</span></button><button class="btn primary" id="cSave" ${comp.items.some(x=>!x.subj||!x.title)?'disabled style="opacity:.4;cursor:not-allowed"':''}>${n>1?'Πρόσθεσε και τις '+n:'Πρόσθεσέ τη'} ↵</button></div></div>`;
+}
+function subjSelect(it,i,prefix){
+  return `<select class="sel subj" data-${prefix}="subj" data-i="${i}" aria-label="Μάθημα">${it.subj?'':'<option value="" selected>Διάλεξε μάθημα</option>'}${SUBJ.map(s=>`<option value="${s.id}"${it.subj===s.id?' selected':''}>${s.name}</option>`).join('')}</select>`;
+}
+function catControl(it,i,prefix){
+  if(!it.subj)return'';
+  if(it.subj==='ist'){const n=it.cat?it.cat.replace(/\D/g,''):'';return `<label class="why" style="display:flex;gap:6px;align-items:center">Ενότητα <input class="num" type="number" min="1" max="99" data-${prefix}="unit" data-i="${i}" value="${esc(n)}" placeholder="—"></label>`}
+  return `<select class="sel" data-${prefix}="cat" data-i="${i}" aria-label="Κατηγορία"><option value="">Χωρίς κατηγορία</option>${S[it.subj].cats.map(c=>`<option${it.cat===c?' selected':''}>${c}</option>`).join('')}</select>`;
+}
+function pcard(it,i){
+  const c=it.subj?S[it.subj].c:'var(--muted)';
+  return `<div class="pcard" style="--c:${c}">${comp.items.length>1?`<button class="x" data-prm="${i}" aria-label="Αφαίρεση">×</button>`:''}
+    <div class="pctl">${subjSelect(it,i,'p')}${catControl(it,i,'p')}
+      <select class="sel" data-p="src" data-i="${i}" aria-label="Από"><option value="sch"${it.src==='sch'?' selected':''}>Σχολείο</option><option value="fro"${it.src==='fro'?' selected':''}>Φροντιστήριο</option></select>
+      <select class="sel" data-p="type" data-i="${i}" aria-label="Τύπος"><option value="task"${it.type==='task'?' selected':''}>Εργασία</option><option value="test"${it.type==='test'?' selected':''}>Διαγώνισμα</option></select>
+    </div>
+    <input class="ptitle" data-p="title" data-i="${i}" value="${esc(it.title)}" aria-label="Τίτλος">
+    ${it.steps.length?`<div class="psteps">${it.steps.map((s,j)=>`<div class="pstep"><input data-p="step" data-i="${i}" data-j="${j}" value="${esc(s)}" aria-label="Βήμα"><button class="x" data-psrm="${i}|${j}" aria-label="Αφαίρεση βήματος">×</button></div>`).join('')}</div>`:''}
+    <div class="pctl"><span class="why">Για</span><input type="date" class="dateip" data-p="date" data-i="${i}" value="${it.date}"><span class="why">${rel(it.date)}${it.dateAuto&&it.why?' · '+esc(it.why):''}</span>${it.important?'<span class="why" style="color:var(--amber)">! σημαντικό</span>':''}</div>
+  </div>`;
+}
+async function startParse(){
+  const text=cIn.value.trim();if(!text)return;
+  comp.text=text;comp.state='thinking';comp.note='';comp.warn=false;renderComposer();
+  let items=null;
+  if(sample&&!aiOff){
+    const ctl=new AbortController();comp.ctl=ctl;
+    try{
+      const res=await sample.json(aiPrompt(text),{modelTier:'quick',signal:ctl.signal});
+      if(ctl.signal.aborted)return;
+      const arr=Array.isArray(res)?res:(res&&Array.isArray(res.items)?res.items:[]);
+      items=arr.map(cleanItem).filter(Boolean);
+      if(!items.length)items=null;
+    }catch(e){
+      /* ⚠ ΜΙΑ ΑΚΥΡΩΣΗ ΔΕΝ ΕΙΝΑΙ ΑΠΟΤΥΧΙΑ. Το `fetch` με `signal` ΠΕΤΑΕΙ
+         `AbortError` — χωρίς αυτόν τον έλεγχο, κάθε φορά που άλλαζε τη
+         γραμμή του εμφανιζόταν κίτρινη προειδοποίηση για κάτι που έκανε
+         ΕΚΕΙΝΟΣ επίτηδες. */
+      if(e&&(e.name==='AbortError'||e.code==='cancelled'))return;
+      if(e&&e.code==='rate_limited'){comp.note='Το μοντέλο είναι πιασμένο αυτή τη στιγμή, οπότε το διάβασα απλά. Έλεγξε τη μορφή.';}
+      else if(e&&e.code==='offline'){comp.note='Είσαι χωρίς δίκτυο, οπότε το διάβασα μόνος μου. Έλεγξε τη μορφή.';}
+      else comp.note='Δεν πήρα απάντηση από το μοντέλο, οπότε το διάβασα απλά. Έλεγξε τη μορφή.';
+      comp.warn=true;
+    }finally{if(comp.ctl===ctl)comp.ctl=null}
+  }else if(!sample){comp.note='';}
+  if(cIn.value.trim()!==text)return; // user changed text meanwhile
+  if(!items){const p=localParse(text);items=[p];if(!sample&&!comp.note){comp.note='Διάβασα απλά, χωρίς το μοντέλο. Έλεγξε τη μορφή πριν το προσθέσεις.';comp.warn=true}}
+  comp.items=items.map(finalize);
+  comp.state='preview';renderComposer();
+}
+function cancelComposer(clear){
+  if(comp.ctl){comp.ctl.abort();comp.ctl=null}
+  comp.state='idle';comp.items=[];comp.note='';
+  if(clear)cIn.value='';
+  renderComposer();
+}
+function commitComposer(){
+  if(comp.state!=='preview'||!comp.items.length)return;
+  if(comp.items.some(x=>!x.subj||!x.title.trim()))return;
+  const now=Date.now();const ids=[];
+  comp.items.forEach((it,k)=>{
+    const t={id:uid(),subj:it.subj,cat:catOk(it.subj,it.cat)?it.cat:null,src:it.src,type:it.type,title:it.title.trim(),steps:it.steps.filter(s=>s.trim()).map(s=>({t:s.trim(),d:false})),date:it.date,done:false,doneAt:null,important:!!it.important,notes:'',created:now+k};
+    store.saveTask(t);ids.push(t.id);
+  });
+  cIn.value='';comp.state='idle';comp.items=[];comp.note='';
+  renderComposer();renderAll();
+  ids.forEach(id=>{const el=document.querySelector(`.task[data-id="${id}"]`);if(el){el.classList.add('pop');if(ids[0]===id)el.scrollIntoView({block:'nearest',behavior:'smooth'})}});
+  const first=tasks.get(ids[0]);
+  toast(ids.length>1?`Προστέθηκαν ${ids.length} εργασίες`:`Προστέθηκε για ${rel(first.date)}`,()=>{ids.forEach(id=>store.deleteTask(id));renderAll()});
+}
+cIn.addEventListener('input',()=>{if(comp.state!=='idle'&&cIn.value.trim()!==comp.text){if(comp.ctl){comp.ctl.abort();comp.ctl=null}comp.state='idle';comp.items=[];comp.note=''}renderComposer()});
+cIn.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing){e.preventDefault();if(comp.state==='preview')commitComposer();else if(comp.state==='idle')startParse()}
+  if(e.key==='Escape'){if(comp.state!=='idle')cancelComposer(false);else{cIn.value='';renderComposer();cIn.blur()}}
+});
+$('#cGo').onclick=()=>startParse();
+$('#composer').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.ex){cIn.value=b.dataset.ex;renderComposer();cIn.focus();return}
+  if(b.id==='cStop'){cancelComposer(false);cIn.focus()}
+  if(b.id==='cCancel'){cancelComposer(false);cIn.focus()}
+  if(b.id==='cSave')commitComposer();
+  if(b.dataset.prm!=null){comp.items.splice(+b.dataset.prm,1);if(!comp.items.length)cancelComposer(false);else renderComposer()}
+  if(b.dataset.psrm){const[i,j]=b.dataset.psrm.split('|').map(Number);comp.items[i].steps.splice(j,1);renderComposer()}
+});
+$('#composer').addEventListener('change',e=>{
+  const el=e.target;const k=el.dataset.p;if(!k)return;const it=comp.items[+el.dataset.i];if(!it)return;
+  if(k==='subj'){it.subj=el.value||null;if(!catOk(it.subj,it.cat)||it.subj==='ist'&&it.cat&&!/^Ενότητα/.test(it.cat))it.cat=null}
+  if(k==='cat')it.cat=el.value||null;
+  if(k==='unit'){const n=parseInt(el.value,10);it.cat=n>0?'Ενότητα '+n:null}
+  if(k==='src')it.src=el.value;
+  if(k==='type')it.type=el.value;
+  if(k==='date'){if(isIsoDate(el.value)){it.date=el.value;it.dateAuto=false;it.why=''}}
+  if(['subj','cat','unit','src'].includes(k)&&it.dateAuto&&it.subj){const a=autoDate(it);it.date=a.date;it.why=a.why}
+  renderComposer();
+});
+$('#composer').addEventListener('input',e=>{
+  const el=e.target;const it=comp.items[+el.dataset.i];if(!it)return;
+  if(el.dataset.p==='title')it.title=el.value;
+  if(el.dataset.p==='step')it.steps[+el.dataset.j]=el.value;
+});
+$('#composer').addEventListener('keydown',e=>{
+  const el=e.target;if(el===cIn)return;
+  if(e.key==='Enter'&&(el.dataset.p==='title'||el.dataset.p==='step')){e.preventDefault();commitComposer()}
+  if(e.key==='Escape'){cancelComposer(false);cIn.focus()}
+});
+
+/* ───────── rendering ───────── */
+function sortTasks(a,b){return (b.type==='test')-(a.type==='test')||(b.important-a.important)||SIDX[a.subj]-SIDX[b.subj]||(a.created||0)-(b.created||0)}
+function taskRow(t,opts={}){
+  const s=S[t.subj]||S.arx;const late=!t.done&&t.date<T();
+  const right=[];
+  if(opts.book){right.push(`<span class="when${late?' late':(!t.done&&(diff(t.date,T())<=1||t.type==='test')?' hot':'')}"><i class="mk ${t.src}" title="${SRC[t.src]}"></i>${late||diff(t.date,T())<2?rel(t.date):DU[pdate(t.date).getDay()]+' '+dmp(t.date)}</span>`)}
+  else{
+    right.push(`<span class="src"><i class="mk ${t.src}"></i>${SRC[t.src]}</span>`);
+    if(late&&opts.lateActions)right.push(t.type==='test'?`<span class="latel">${rel(t.date)}</span><span class="qa"><button data-open="${t.id}">Πώς πήγε;</button></span>`:`<span class="latel">${rel(t.date)}</span><span class="qa"><button data-act="tomorrow" data-id="${t.id}">Για αύριο</button><button data-act="forget" data-id="${t.id}">Ξέχνα το</button></span>`);
+    if(opts.showDate)right.push(`<span class="latel" style="color:var(--faint)">${DU[pdate(t.date).getDay()]} ${dmp(t.date)}</span>`);
+  }
+  const eb=opts.book?(t.type==='test'?`<div class="eb"><span class="tst" style="margin:0">Διαγώνισμα</span></div>`:''):`<div class="eb"><span>${s.name}</span>${t.cat?`<span class="sl">/</span><em>${esc(t.cat)}</em>`:''}${t.type==='test'?'<span class="tst">Διαγώνισμα</span>':''}</div>`;
+  const steps=t.steps&&t.steps.length?`<div class="steps">${t.steps.map((x,j)=>`<button class="stp${x.d?' ok':''}" data-step="${t.id}|${j}"><span class="b">${TICK_SVG}</span>${esc(x.t)}</button>`).join('')}</div>`:'';
+  return `<div class="task${t.done?' done':''}${t.type==='test'?' is-test':''}" style="--c:${s.c}" data-id="${t.id}" data-date="${t.date}"><button class="tick" data-tick="${t.id}" aria-label="${t.done?'Αναίρεση':'Έγινε'}" aria-pressed="${t.done}">${TICK_SVG}</button><div>${eb}<div class="tt">${t.important?'<span class="imp">!</span>':''}${esc(t.title)}</div>${steps}</div><div class="side-r">${right.join('')}</div></div>`;
+}
+function dayReady(date){const l=[...tasks.values()].filter(t=>t.date===date&&vis(t));return l.length>0&&l.every(t=>t.done)}
+function renderDay(){
+  const t0=T();const all=[...tasks.values()].filter(vis);
+  const late=all.filter(t=>t.date<t0&&(!t.done||t.doneAt===t0)).sort((a,b)=>a.date.localeCompare(b.date)||sortTasks(a,b));
+  const tod=all.filter(t=>t.date===t0).sort((a,b)=>sortTasks(a,b));
+  const fut=all.filter(t=>t.date>t0).sort((a,b)=>a.date.localeCompare(b.date)||sortTasks(a,b));
+  const doneOld=all.filter(t=>t.done&&t.date<t0&&t.doneAt!==t0).sort((a,b)=>(b.doneAt||'').localeCompare(a.doneAt||'')||b.date.localeCompare(a.date)).slice(0,40);
+  const mg=date=>`<div class="mg"><b>${dmp(date)}</b><span>${DU[pdate(date).getDay()]}</span></div>`;
+  const prog=l=>{const dn=l.filter(t=>t.done).length;const pct=l.length?Math.round(dn/l.length*100):0;return `<span class="n">${dn} / ${l.length}<span class="bar"><i style="width:${pct}%"></i></span></span>`};
+  const ready=txt=>`<span class="ready"><i>${CHECK}</i>${txt}</span>`;
+  let h='';
+  if(!tasks.size)h+=`<div class="welcome"><b>Καλώς ήρθες.</b> Γράψε από πάνω ό,τι σου έβαλαν, όπως θα το έγραφες στο κινητό, και πάτα Enter. Θα το καταλάβω, θα το γράψω σωστά και θα το βάλω στη σωστή μέρα και στο σωστό μάθημα.</div>`;
+  const lateOpen=late.filter(t=>!t.done).length;
+  if(late.length)h+=`<section class="day late" data-day="late"><div class="dayh">${mg(late[0].date)}<div class="dh"><h2>Έμειναν πίσω</h2><span class="sub">${lateOpen===1?'1 εργασία':lateOpen?lateOpen+' εργασίες':''}</span></div></div>${late.map(t=>taskRow(t,{lateActions:true})).join('')}</section>`;
+  const tdn=tod.filter(t=>t.done).length;
+  h+=`<section class="day today" data-day="${t0}"><div class="dayh">${mg(t0)}<div class="dh"><h2>Σήμερα</h2>${tod.length&&tdn===tod.length?ready('Η μέρα έκλεισε'):(tod.length?prog(tod):'')}</div></div>${tod.length?tod.map(t=>taskRow(t)).join(''):`<div class="emptyday">${lateOpen?'Τίποτα καινούριο για σήμερα. Ξεκίνα από όσα έμειναν πίσω.':'Τίποτα για σήμερα. Απόλαυσέ το.'}</div>`}</section>`;
+  const groups=new Map();fut.forEach(t=>{if(!groups.has(t.date))groups.set(t.date,[]);groups.get(t.date).push(t)});
+  groups.forEach((l,date)=>{
+    const n=diff(date,t0);const d=pdate(date);const name=n===1?'Αύριο':DN[d.getDay()];
+    const dn=l.filter(t=>t.done).length;
+    h+=`<section class="day" data-day="${date}"><div class="dayh">${mg(date)}<div class="dh"><h2>${name}</h2><span class="sub">${n>1?'σε '+n+' μέρες':''}</span>${dn===l.length?ready('Έτοιμη'):prog(l)}</div></div>${l.map(t=>taskRow(t)).join('')}</section>`;
+  });
+  if(doneOld.length)h+=`<details class="donesec"${openDone?' open':''} id="doneSec"><summary>Έγιναν πρόσφατα (${doneOld.length})</summary>${doneOld.map(t=>taskRow(t,{showDate:true})).join('')}</details>`;
+  return `<div class="days">${h}</div>`;
+}
+let openDone=false;
+function renderSubj(){
+  const all=[...tasks.values()].filter(vis);
+  return `<div class="nb">${books().map(s=>{
+    const mine=all.filter(t=>t.subj===s.id&&(showDoneSubj||!t.done));
+    const open=all.filter(t=>t.subj===s.id&&!t.done).length;
+    let cats;
+    if(s.id==='ist'){const units=[...new Set(mine.map(t=>t.cat).filter(Boolean))].sort((a,b)=>(+a.replace(/\D/g,''))-(+b.replace(/\D/g,'')));cats=units.map(u=>[u,u]);}
+    /* ⛔ ΟΧΙ `s.cats.map`: το πέμπτο («Χωρίς μάθημα») έχει `cats:null` όπως η
+       Ιστορία, και το τετράδιό του ΕΣΚΑΓΕ ΟΛΗ την καρτέλα «Μαθήματα» —
+       TypeError, λευκή οθόνη, ενώ η καρτέλα «Τι έχω» φαινόταν τέλεια. Το
+       βρήκε ΜΟΝΟ το render (σταθ.: render πριν το πεις έτοιμο). */
+    else cats=(s.cats||[]).map(c=>[c,c]);
+    const none=mine.filter(t=>!t.cat||!catOk(s.id,t.cat));
+    const sec=(label,list,alwaysShow)=>{if(!list.length&&!alwaysShow)return'';list.sort((a,b)=>a.done-b.done||a.date.localeCompare(b.date)||sortTasks(a,b));return `<div class="cat"><h4>${esc(label)}${list.length?` <em>${list.length}</em>`:''}</h4>${list.length?list.map(t=>taskRow(t,{book:true})).join(''):'<div class="empty">Τίποτα εκκρεμές</div>'}</div>`};
+    let body=cats.map(([k,l])=>sec(l,mine.filter(t=>t.cat===k),s.id!=='ist')).join('');
+    body+=sec(s.id==='ist'?(cats.length?'Χωρίς ενότητα':'Εργασίες'):'Γενικά',none,s.id==='ist'&&!cats.length);
+    return `<article class="book" id="book-${s.id}" style="--c:${s.c}"><div class="bh"><h2>${s.name}</h2><span>${open===0?(all.some(t=>t.subj===s.id)?'όλα έγιναν':'καμία εργασία'):open===1?'1 εκκρεμεί':open+' εκκρεμούν'}</span></div>${body}</article>`;
+  }).join('')}</div><div class="showdone"><button class="toggle" id="showDoneT" role="switch" aria-checked="${showDoneSubj}"><span class="sw"></span>Δείξε και όσα έγιναν</button></div>`;
+}
+function renderTests(){
+  const t0=T();const all=[...tasks.values()].filter(vis).filter(t=>t.type==='test');
+  const up=all.filter(t=>t.date>=t0&&!hasG(t)).sort((a,b)=>a.date.localeCompare(b.date)||sortTasks(a,b));
+  const past=all.filter(t=>t.date<t0||hasG(t)).sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
+  const card=t=>{
+    const s=S[t.subj];const n=diff(t.date,t0);
+    const cr=t.created?iso(new Date(t.created)):t0;
+    const span=Math.min(Math.max(diff(t.date,cr),n,1)+1,30);const passed=span-1-n;
+    const bars=[...Array(span)].map((_,i)=>`<i${i===span-1?' class="d"':i<passed?' class="p"':''}></i>`).join('');
+    const st=t.steps||[];const ok=st.filter(x=>x.d).length;
+    const yli=st.length?`<div class="steps">${st.map((x,j)=>`<button class="stp${x.d?' ok':''}" data-step="${t.id}|${j}"><span class="b">${TICK_SVG}</span>${esc(x.t)}</button>`).join('')}</div>`:`<div class="noyli">Πρόσθεσε την ύλη από το πάνελ.</div>`;
+    return `<article class="tcard${n<=3?' hot':''}" style="--c:${s.c}" data-open="${t.id}"><div class="tc-top"><div><div class="eb"><span>${s.name}</span>${t.cat?`<span class="sl">/</span><em>${esc(t.cat)}</em>`:''}</div><h3>${t.important?'<span style="font-family:var(--mono);font-style:normal;color:var(--amber);margin-right:8px;font-size:18px">!</span>':''}${esc(t.title).replace(/[–-]/g,'\u2060$&\u2060')}</h3><span class="tc-when"><i class="mk ${t.src}"></i>${DU[pdate(t.date).getDay()]} ${dmp(t.date)} · ${SRC[t.src]}</span></div><div class="tc-n"><b>${pad(n)}</b><small>${n===0?'σήμερα':n===1?'μέρα':'μέρες'}</small></div></div><div class="strip" aria-hidden="true">${bars}</div><div><div class="ylh">Ύλη${st.length?` <em>${ok} / ${st.length}</em>`:''}</div>${yli}</div></article>`;
+  };
+  const scards=SUBJ.map(s=>{
+    const g=all.filter(t=>t.subj===s.id&&hasG(t)).sort((a,b)=>a.date.localeCompare(b.date)||(a.created||0)-(b.created||0)).map(t=>t.grade);
+    if(!g.length)return `<div class="scard none" style="--c:${s.c}"><div class="h">${s.name}<em>0 διαγ.</em></div><div class="b"><span class="avg"><b>—</b></span></div></div>`;
+    const avg=g.reduce((a,b)=>a+b,0)/g.length;
+    const pts=g.map((v,i)=>{const x=g.length===1?60:4+i*(112/(g.length-1));const y=36-((Math.min(Math.max(v,8),20)-8)/12)*32;return[x.toFixed(1),y.toFixed(1)]});
+    const last=pts[pts.length-1];
+    return `<div class="scard" style="--c:${s.c}"><div class="h">${s.name}<em>${g.length} διαγ.</em></div><div class="b"><span class="avg"><b>${fmtG(Math.round(avg*10)/10)}</b><span>μ.ό.</span></span><svg viewBox="0 0 120 40" aria-hidden="true">${g.length>1?`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${s.c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`:''}<circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${s.c}"/></svg></div></div>`;
+  }).join('');
+  const rows=past.map(t=>{const s=S[t.subj];const L=t.lathi||[];return `<div class="hrow" data-open="${t.id}"><div class="hd8"><b>${dmp(t.date)}</b><span>${DU[pdate(t.date).getDay()]}</span></div><div class="hs"><b><i style="background:${s.c}"></i>${s.name}${t.cat?' · '+esc(t.cat):''}</b><span><i class="mk ${t.src}"></i>${SRC[t.src]}</span></div><div class="ht">${esc(t.title)}</div><div class="hg">${hasG(t)?`<b>${fmtG(t.grade)}</b><span class="tr"><u style="width:${t.grade/20*100}%;background:${s.c}"></u></span>`:`<b class="no">Πώς πήγε;</b>`}</div><div class="hl">${L.length?L.map(l=>`<span class="chipx">${esc(l)}</span>`).join(''):'<em>—</em>'}</div></div>`}).join('');
+  return `<div class="tview"><section><div class="sech"><h2>Έρχονται</h2><span>${up.length===1?'1 διαγώνισμα':up.length?up.length+' διαγωνίσματα':''}</span></div>${up.length?`<div class="upg">${up.map(card).join('')}</div>`:`<div class="tempty">Κανένα διαγώνισμα στον ορίζοντα. Γράψε από πάνω π.χ. «διαγ λατινικα 5/10».</div>`}</section><section><div class="sech"><h2>Ιστορικό</h2><span>βαθμοί στα 20</span></div><div class="sgrid">${scards}</div>${past.length?`<div class="hist"><div class="hrow hd"><span>Πότε</span><span>Μάθημα</span><span>Ύλη</span><span>Βαθμός</span><span>Πού έχασα</span></div>${rows}</div>`:`<div class="tempty" style="margin-top:24px">Όταν περάσει το πρώτο σου διαγώνισμα, εδώ θα μαζεύονται οι βαθμοί και τα λάθη σου.</div>`}</section></div>`;
+}
+function renderSide(){
+  const t0=T();const all=[...tasks.values()].filter(vis);
+  const tests=all.filter(t=>t.type==='test'&&!t.done&&t.date>=t0).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  $('#testN').textContent=tests.length?pad(tests.length):'';
+  $('#testList').innerHTML=tests.length?tests.map(t=>{const s=S[t.subj];const n=diff(t.date,t0);return `<button class="test" data-open="${t.id}"><span class="in${n<=2?' soon':n<=7?' hot':''}"><b>${pad(n)}</b><small>${n===0?'σήμερα':n===1?'μέρα':'μέρες'}</small></span><span class="w"><b><i style="background:${s.c}"></i>${s.name}${t.cat?' · '+esc(t.cat):''}</b><span>${esc(t.title)}</span><em>${DU[pdate(t.date).getDay()]} ${dmp(t.date)} · ${SRC[t.src]}</em></span></button>`}).join(''):'<div class="muted">Κανένα. Γράψε π.χ. «διαγ λατινικα 5/10».</div>';
+  const bk=books();const cnts=bk.map(s=>all.filter(t=>t.subj===s.id&&!t.done).length);const mx=Math.max(1,...cnts);
+  $('#pendN').textContent=pad(cnts.reduce((a,b)=>a+b,0));
+  $('#subjList').innerHTML=bk.map((s,i)=>`<button data-goto="${s.id}"><i style="background:${s.c}"></i><span>${s.name}</span><span class="tr"><u style="width:${Math.round(cnts[i]/mx*100)}%;background:${s.c}"></u></span><em>${cnts[i]}</em></button>`).join('');
+  const m=monday(today());const days=[...Array(7)].map((_,i)=>iso(addD(m,i)));
+  $('#wkRange').textContent=pad(m.getDate())+'–'+dmp(days[6]);
+  const wk=all.filter(t=>days.includes(t.date)).sort((a,b)=>(b.done-a.done)||SIDX[a.subj]-SIDX[b.subj]);
+  const wd=wk.filter(t=>t.done).length;
+  $('#wkBig').innerHTML=wk.length?`<b>${wd}</b><s>/ ${wk.length}</s><span>ολοκληρώθηκαν</span>`:`<span>Τίποτα ακόμα αυτή την εβδομάδα</span>`;
+  $('#paint').innerHTML=wk.map(t=>`<i title="${esc(S[t.subj].name+': '+t.title)}"${t.done?` style="background:${S[t.subj].c};border-color:${S[t.subj].c}"`:''}></i>`).join('');
+  const openToday=all.filter(t=>!t.done&&t.date<=t0).length;
+  $('#cntDay').textContent=pad(openToday);
+  $('#cntSubj').textContent=pad(all.filter(t=>!t.done).length);
+  $('#cntTests').textContent=pad(all.filter(t=>t.type==='test'&&t.date>=t0&&!hasG(t)).length);
+}
+function renderAll(){
+  const d=today();$('#todayLbl').textContent=DN[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()];$('#wkNo').textContent='ΕΒΔ '+isoWeek(d);
+  if(!loaded){renderComposer();return}
+  const v=$('#view');
+  const ds=document.getElementById('doneSec');if(ds)openDone=ds.open;
+  v.innerHTML=tab==='day'?renderDay():tab==='subj'?renderSubj():renderTests();
+  renderSide();renderComposer();
+  if(drawerId)fillDrawer();
+}
+
+/* ───────── actions ───────── */
+function setTask(id,fn){const t=tasks.get(id);if(!t)return null;const c=clone(t);fn(c);store.saveTask(c);return c}
+function toggleDone(id){
+  const before=tasks.get(id);if(!before)return;
+  const date=before.date;const wasReady=dayReady(date);
+  const t=setTask(id,x=>{x.done=!x.done;x.doneAt=x.done?T():null});
+  renderAll();
+  if(!t.done)return;
+  const row=document.querySelector(`.task[data-id="${id}"]`);
+  if(row){row.classList.add('pop');burst(row.querySelector('.tick'),S[t.subj].hex)}
+  tone([659,988]);
+  if(!wasReady&&dayReady(date)){
+    setTimeout(()=>{
+      tone([523,659,784,1047],.32,.09,.055);
+      const sec=document.querySelector(`.day[data-day="${date}"]`);if(sec){sec.classList.remove('glow');void sec.offsetWidth;sec.classList.add('glow')}
+      const n=diff(date,T());const d=pdate(date);
+      toast(n===0?'Η μέρα έκλεισε. Όλα όσα είχες για σήμερα έγιναν.':`${n===1?'Το αύριο':DART[d.getDay()]+' '+DN[d.getDay()]} είναι έτοιμ${d.getDay()===6||n===1?'ο':'η'}. Όλα έγιναν.`,null,true);
+    },380);
+  }
+}
+function toggleStep(id,j){
+  const t=setTask(id,x=>{if(x.steps[j])x.steps[j].d=!x.steps[j].d});
+  if(t&&t.steps[j]&&t.steps[j].d)tone([784],.12,0,.05);
+  renderAll();
+}
+function removeTask(id,msg){
+  const t=tasks.get(id);if(!t)return;const copy=clone(t);
+  store.deleteTask(id);if(drawerId===id)closeAll();renderAll();
+  toast(msg||'Διαγράφηκε',()=>{store.saveTask(copy);renderAll()});
+}
+
+/* ───────── effects ───────── */
+let ac;
+function tone(freqs,dur=.16,gap=.07,vol=.06){
+  if(!settings.sound)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t0=ac.currentTime;
+    freqs.forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;const s=t0+i*gap;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(vol,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+dur+.25);o.connect(g).connect(ac.destination);o.start(s);o.stop(s+dur+.3)})}catch(e){}
+}
+function burst(el,col){
+  if(!el||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const r=el.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  for(let i=0;i<10;i++){const s=document.createElement('i');s.className='spark';s.style.background=i%3?col:'#E8B25C';s.style.left=cx+'px';s.style.top=cy+'px';document.body.appendChild(s);
+    const a=Math.PI*2*i/10+Math.random()*.4,d=16+Math.random()*16;
+    const an=s.animate([{transform:'translate(-50%,-50%) scale(1)',opacity:1},{transform:`translate(calc(-50% + ${Math.cos(a)*d}px),calc(-50% + ${Math.sin(a)*d}px)) scale(.3)`,opacity:0}],{duration:520,easing:'cubic-bezier(.2,.8,.2,1)'});an.onfinish=()=>s.remove()}
+}
+let toastT,toastUndo;
+function toast(msg,undo,gold){const el=$('#toast');$('#toastTx').textContent=msg;toastUndo=undo;$('#toastBtn').hidden=!undo;el.classList.toggle('gold',!!gold);el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),gold?3400:5000)}
+$('#toastBtn').onclick=()=>{const u=toastUndo;toastUndo=null;$('#toast').classList.remove('on');u&&u()};
+
+/* ───────── drawer ───────── */
+let drawerId=null,delArm=false;
+function openDrawer(id){if(!tasks.get(id))return;drawerId=id;delArm=false;fillDrawer(true);$('#drawer').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');$('#scrim').classList.add('on')}
+function fillDrawer(first){
+  const t=tasks.get(drawerId);if(!t){closeAll();return}
+  const act=document.activeElement;
+  $('#dwHead').textContent=t.type==='test'?'Διαγώνισμα':'Εργασία';
+  if(first||act!==$('#dwTitle'))$('#dwTitle').value=t.title;
+  if(first||act!==$('#dwNotes'))$('#dwNotes').value=t.notes||'';
+  $('#dwSteps').innerHTML=(t.steps||[]).map((x,j)=>`<div class="dstep"><button class="stp${x.d?' ok':''}" style="--c:${S[t.subj].c}" data-dstep="${j}"><span class="b">${TICK_SVG}</span>${esc(x.t)}</button><button class="x" data-drm="${j}" aria-label="Αφαίρεση βήματος">×</button></div>`).join('');
+  $('#dwSubj').innerHTML=(t.subj==='unk'?ALL:SUBJ).map(s=>`<button class="pill" style="--c:${s.c}" aria-pressed="${t.subj===s.id}" data-dsubj="${s.id}"><i></i>${s.name}</button>`).join('');
+  const s=S[t.subj];
+  if(t.subj==='ist'){const n=t.cat?t.cat.replace(/\D/g,''):'';if(first||act.id!=='dwUnit')$('#dwCat').innerHTML=`<label class="why" style="display:flex;gap:8px;align-items:center">Ενότητα <input class="num" id="dwUnit" type="number" min="1" max="99" value="${esc(n)}" placeholder="—"></label>`}
+  else $('#dwCat').innerHTML=`<button class="pill" style="--c:${s.c}" aria-pressed="${!t.cat}" data-dcat="">Χωρίς</button>`+(s.cats||[]).map(c=>`<button class="pill" style="--c:${s.c}" aria-pressed="${t.cat===c}" data-dcat="${c}">${c}</button>`).join('');
+  $('#dwSrc').innerHTML=['sch','fro'].map(k=>`<button class="pill" aria-pressed="${t.src===k}" data-dfrom="${k}"><i class="mk ${k}" style="background:${k==='sch'?'currentColor':'none'};border-radius:3px"></i>${SRC[k]}</button>`).join('');
+  const nl=nextLesson(t.src,t.subj,t.cat);const tm=iso(addD(today(),1));
+  $('#dwDateP').innerHTML=(nl?`<button class="pill" aria-pressed="${t.date===nl}" data-ddate="${nl}">Επόμενο μάθημα · ${rel(nl)}</button>`:'')+(nl!==tm?`<button class="pill" aria-pressed="${t.date===tm}" data-ddate="${tm}">Αύριο</button>`:'')+`<button class="pill" aria-pressed="${t.date===T()}" data-ddate="${T()}">Σήμερα</button>`;
+  $('#dwDate').value=t.date;$('#dwRel').textContent=rel(t.date);
+  $('#dwType').innerHTML=[['task','Εργασία'],['test','Διαγώνισμα']].map(([k,l])=>`<button class="pill" aria-pressed="${t.type===k}" data-dtype="${k}">${l}</button>`).join('');
+  $('#dwImp').setAttribute('aria-checked',!!t.important);
+  const isTest=t.type==='test';const gOpen=isTest&&t.date<=T();
+  $('#dwStepsLbl').textContent=isTest?'Ύλη':'Βήματα';
+  $('#dwStepIn').placeholder=isTest?'+ Πρόσθεσε κομμάτι της ύλης και πάτα Enter':'+ Πρόσθεσε βήμα και πάτα Enter';
+  $('#dwGrade').hidden=!gOpen;
+  if(gOpen){
+    if(first||act!==$('#dwGradeIn'))$('#dwGradeIn').value=hasG(t)?fmtG(t.grade):'';
+    const others=[...tasks.values()].filter(x=>x.id!==t.id&&x.type==='test'&&x.subj===t.subj&&hasG(x)).sort((a,b)=>a.date.localeCompare(b.date)||(a.created||0)-(b.created||0));
+    const prev=others.filter(x=>x.date<=t.date);let cmp='';
+    if(hasG(t)&&prev.length){const d=Math.round((t.grade-prev[prev.length-1].grade)*100)/100;cmp+=d===0?'<span>ίδιο με το προηγούμενο</span>':`<span class="${d>0?'up':'dn'}">${d>0?'+':''}${fmtG(d)} από το προηγούμενο</span>`}
+    if(others.length){const avg=others.reduce((a,x)=>a+x.grade,0)/others.length;cmp+=`<em>μ.ό. ${esc(S[t.subj].name)} ${fmtG(Math.round(avg*10)/10)}</em>`}
+    $('#dwGradeCmp').innerHTML=cmp;
+    const L=t.lathi||[];
+    $('#dwLathiN').textContent=L.length||'';
+    $('#dwLathi').innerHTML=L.map((l,i)=>`<span class="lchip">${esc(l)}<button data-lrm="${i}" aria-label="Αφαίρεση: ${esc(l)}">${X_SVG}</button></span>`).join('');
+    const cnt=new Map();tasks.forEach(x=>{if(x.id!==t.id&&x.type==='test'&&x.subj===t.subj)(x.lathi||[]).forEach(l=>{if(!L.includes(l))cnt.set(l,(cnt.get(l)||0)+1)})});
+    const sug=[...cnt].sort((a,b)=>b[1]-a[1]).slice(0,6);
+    $('#dwLathiSug').innerHTML=sug.length?`<span>Έχεις ξανασημειώσει στα ${esc(S[t.subj].name)}</span><div>${sug.map(([l,n])=>`<button data-lsug="${esc(l)}">${esc(l)}<em>×${n}</em></button>`).join('')}</div>`:'';
+  }
+  $('#dwDone').textContent=t.done?'✓ Έγινε · αναίρεση':'Σημείωσέ το ως έγινε';$('#dwDone').classList.toggle('primary',!t.done);
+  $('#dwDel').textContent=delArm?'Σίγουρα; Πάτα ξανά':'Διαγραφή';$('#dwDel').classList.toggle('sure',delArm);
+}
+function closeAll(){
+  drawerId=null;delArm=false;
+  $('#drawer').classList.remove('on');$('#drawer').setAttribute('aria-hidden','true');
+  $('#settings').classList.remove('on');$('#settings').setAttribute('aria-hidden','true');
+  $('#scrim').classList.remove('on');
+}
+const upd=fn=>{if(!drawerId)return;setTask(drawerId,fn);renderAll()};
+let titleT,notesT;
+$('#dwTitle').addEventListener('input',e=>{const v=e.target.value;const id=drawerId;clearTimeout(titleT);titleT=setTimeout(()=>{if(v.trim()){setTask(id,x=>x.title=v.trim());renderAll()}},450)});
+$('#dwTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+$('#dwTitle').addEventListener('blur',e=>{const v=e.target.value.trim();const t=tasks.get(drawerId);if(t&&v&&v!==t.title){clearTimeout(titleT);setTask(drawerId,x=>x.title=v);renderAll()}else if(t&&!v)e.target.value=t.title});
+$('#dwNotes').addEventListener('input',e=>{const v=e.target.value;const id=drawerId;clearTimeout(notesT);notesT=setTimeout(()=>{setTask(id,x=>x.notes=v)},600)});
+$('#dwDate').addEventListener('change',e=>{if(isIsoDate(e.target.value))upd(x=>x.date=e.target.value)});
+$('#dwStepIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()){e.preventDefault();const v=cap(e.target.value.trim());e.target.value='';upd(x=>{x.steps=x.steps||[];x.steps.push({t:v,d:false})})}});
+$('#dwImp').onclick=()=>upd(x=>x.important=!x.important);
+let gradeT;
+function saveGrade(id,v){
+  const t=tasks.get(id);if(!t)return;const raw=String(v).trim();
+  const g=raw===''?null:parseG(raw);if(raw!==''&&g===null)return;
+  if((hasG(t)?t.grade:null)===g)return;
+  const firstDone=g!=null&&!t.done;
+  setTask(id,x=>{if(g==null)delete x.grade;else x.grade=g;if(firstDone){x.done=true;x.doneAt=T()}});
+  renderAll();if(firstDone)tone([659,988]);
+}
+$('#dwGradeIn').addEventListener('input',e=>{const v=e.target.value;const id=drawerId;clearTimeout(gradeT);gradeT=setTimeout(()=>saveGrade(id,v),700)});
+$('#dwGradeIn').addEventListener('change',e=>{clearTimeout(gradeT);saveGrade(drawerId,e.target.value)});
+$('#dwGradeIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+$('#dwLathiIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()){e.preventDefault();const v=cap(e.target.value.trim());e.target.value='';upd(x=>{x.lathi=x.lathi||[];if(!x.lathi.includes(v))x.lathi.push(v)})}});
+$('#drawer').addEventListener('change',e=>{if(e.target.id==='dwUnit'){const n=parseInt(e.target.value,10);upd(x=>x.cat=n>0?'Ενότητα '+n:null)}});
+$('#drawer').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.dsubj)upd(x=>{if(x.subj!==d.dsubj){x.subj=d.dsubj;x.cat=null}});
+  if(d.dcat!=null)upd(x=>x.cat=d.dcat||null);
+  if(d.dfrom)upd(x=>x.src=d.dfrom);
+  if(d.ddate)upd(x=>x.date=d.ddate);
+  if(d.dtype)upd(x=>x.type=d.dtype);
+  if(d.dstep!=null)toggleStep(drawerId,+d.dstep);
+  if(d.drm!=null)upd(x=>x.steps.splice(+d.drm,1));
+  if(d.lrm!=null)upd(x=>{(x.lathi||[]).splice(+d.lrm,1)});
+  if(d.lsug)upd(x=>{x.lathi=x.lathi||[];if(!x.lathi.includes(d.lsug))x.lathi.push(d.lsug)});
+});
+$('#dwDone').onclick=()=>toggleDone(drawerId);
+$('#dwDel').onclick=()=>{if(!delArm){delArm=true;fillDrawer();return}removeTask(drawerId,'Η εργασία διαγράφηκε')};
+$('#dwX').onclick=closeAll;$('#scrim').onclick=closeAll;
+
+/* ───────── settings ───────── */
+/* ⛔ ΤΑ ΟΝΟΜΑΤΑ `data-dfrom` / `data-deffrom` / `schedFrom` ΕΙΝΑΙ ΣΚΟΠΙΜΑ.
+   Ο φρουρός συνδέσμων του smoke-test.sh ψάχνει ανάθεση σε href ή σε src
+   ΧΩΡΙΣ όριο λέξης και χωρίς διάκριση πεζών-κεφαλαίων, άρα ένα attribute ή
+   μια μεταβλητή που ΤΕΛΕΙΩΝΕΙ σε «src» διαβαζόταν ως σύνδεσμος προς αρχείο
+   που δεν υπάρχει. Άλλαξαν τα ονόματα (μηδέν πίξελ διαφορά) αντί να
+   αποδυναμωθεί ένας φρουρός που ελέγχει 583 αληθινούς συνδέσμους.
+   ⚠️ ΚΑΙ ΑΥΤΟ ΤΟ ΣΧΟΛΙΟ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΓΡΑΨΕΙ ΤΟ ΜΟΤΙΒΟ ΠΟΥ ΠΕΡΙΓΡΑΦΕΙ:
+   η πρώτη του γραφή το έγραψε, ο φρουρός διάβασε ΤΟ ΣΧΟΛΙΟ και κατηγόρησε
+   μια σελίδα που ήταν σωστή (σταθ. 19). */
+let schedFrom='fro';
+function slotOptions(){const o=[];SUBJ.forEach(s=>{o.push([s.id+'|',s.name]);if(s.cats)s.cats.forEach(c=>o.push([s.id+'|'+c,s.name+' · '+c]))});return o}
+function renderSettings(){
+  const sch=settings.schedule[schedFrom]||{};
+  $('#sched').innerHTML=[1,2,3,4,5,6].map(d=>{const l=sch[String(d)]||[];return `<div class="srow"><b>${DN[d]}</b><div class="slots">${l.map((x,i)=>S[x.s]?`<span class="slot" style="--c:${S[x.s].c}"><i></i>${S[x.s].name}${x.c?' · '+esc(x.c):''}<button class="x" data-srm="${d}|${i}" aria-label="Αφαίρεση">×</button></span>`:'').join('')}<select class="sel addslot" data-sadd="${d}" aria-label="Πρόσθεσε μάθημα"><option value="">+ μάθημα</option>${slotOptions().map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></div></div>`}).join('');
+  document.querySelectorAll('#schedSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===schedFrom));
+  $('#defSrc').innerHTML=['fro','sch'].map(k=>`<button class="pill" aria-pressed="${settings.defaultSrc===k}" data-deffrom="${k}">${SRC[k]}</button>`).join('');
+  $('#sndT').setAttribute('aria-checked',!!settings.sound);
+}
+function saveSettings(){store.saveSettings();renderSettings();renderAll()}
+$('#openSet').onclick=()=>{renderSettings();$('#settings').classList.add('on');$('#settings').setAttribute('aria-hidden','false');$('#scrim').classList.add('on')};
+$('#setX').onclick=closeAll;
+$('#settings').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.s){schedFrom=b.dataset.s;renderSettings()}
+  if(b.dataset.srm){const[d,i]=b.dataset.srm.split('|');settings.schedule[schedFrom][d].splice(+i,1);saveSettings()}
+  if(b.dataset.deffrom){settings.defaultSrc=b.dataset.deffrom;saveSettings()}
+  if(b.id==='sndT'){settings.sound=!settings.sound;saveSettings();if(settings.sound)tone([659,988])}
+});
+$('#settings').addEventListener('change',e=>{
+  const d=e.target.dataset.sadd;if(!d||!e.target.value)return;
+  const[s,c]=e.target.value.split('|');
+  settings.schedule[schedFrom]=settings.schedule[schedFrom]||{};
+  (settings.schedule[schedFrom][d]=settings.schedule[schedFrom][d]||[]).push({s,c:c||null});saveSettings();
+});
+
+/* ───────── global events ───────── */
+document.querySelector('.app').addEventListener('click',e=>{
+  const tk=e.target.closest('[data-tick]');if(tk){e.stopPropagation();toggleDone(tk.dataset.tick);return}
+  const st=e.target.closest('[data-step]');if(st){const[id,j]=st.dataset.step.split('|');toggleStep(id,+j);return}
+  const act=e.target.closest('[data-act]');if(act){const id=act.dataset.id;
+    if(act.dataset.act==='tomorrow'){setTask(id,x=>x.date=iso(addD(today(),1)));renderAll();toast('Μετακινήθηκε για αύριο')}
+    if(act.dataset.act==='forget')removeTask(id,'Το ξέχασες');return}
+  const go=e.target.closest('[data-goto]');if(go){setTab('subj');const el=document.getElementById('book-'+go.dataset.goto);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}return}
+  const op=e.target.closest('[data-open]');if(op){openDrawer(op.dataset.open);return}
+  if(e.target.closest('#showDoneT')){showDoneSubj=!showDoneSubj;renderAll();return}
+  const row=e.target.closest('.task[data-id]');if(row&&!e.target.closest('button,summary,a,input')){openDrawer(row.dataset.id)}
+});
+function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));renderAll()}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+document.querySelectorAll('.top .seg button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;document.querySelectorAll('.top .seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderAll()});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();closeAll();cIn.focus();cIn.select();return}
+  if(e.key==='Escape'&&(drawerId||$('#settings').classList.contains('on'))){closeAll();return}
+  if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();cIn.focus()}
+});
+// refresh at midnight / when coming back
+let lastDay=T();
+setInterval(()=>{if(T()!==lastDay){lastDay=T();renderAll()}},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&T()!==lastDay){lastDay=T();renderAll()}});
+
+/* ───────── boot ───────── */
+renderAll();
+store.init();
+/* ⭐ Η ΕΞΥΠΝΗ ΑΝΑΓΝΩΣΗ ΕΙΝΑΙ ΤΟ ΔΩΡΕΑΝ ΜΥΑΛΟ ΤΗΣ ΕΦΑΡΜΟΓΗΣ (Groq, μέσω
+   `api/_model.js`), με ΡΟΛΟ `text` — ποτέ όνομα μοντέλου από εδώ. Το
+   endpoint είναι κούριερ μέσα στο `run-reminders.js`: οι 12 θέσεις του
+   vercel.json είναι ΟΛΕΣ πιασμένες και μια 13η σπάει το deploy.
+   ⚠ Αν πέσει, ΔΕΝ χάνεται η γραμμή του: ο τοπικός parser τη διαβάζει και η
+   προεπισκόπηση το λέει καθαρά αντί να προσποιηθεί. */
+sample={json:async function(prompt,opt){
+  if(!navigator.onLine){const e=new Error('offline');e.code='offline';throw e}
+  const r=await fetch('/api/run-reminders?agenda=1',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prompt:prompt}),signal:opt&&opt.signal});
+  if(!r.ok){const e=new Error('http '+r.status);e.code=(r.status===429)?'rate_limited':'http';throw e}
+  const j=await r.json();
+  if(!j||!j.ok||!j.obj){const e=new Error((j&&j.error)||'model');e.code='model';throw e}
+  return j.obj;
+}};
+renderComposer();
+})();
+</script>
+
+</body>
+</html>

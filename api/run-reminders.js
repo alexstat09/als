@@ -18,6 +18,9 @@ var yt = require('./_youtube');
 var tt = require('./_tiktok');
 var prices = require('./_prices');
 var garmin = require('./_garmin');
+// The Εργασίες page (ergasies.html) asks for a ROLE, never a model — _model.js
+// picks the strongest one still alive behind the free 'text' chain.
+var model = require('./_model');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -654,6 +657,37 @@ module.exports = async function (req, res) {
       keys: Object.keys(runRow || {}).filter(function (k) { return k.indexOf('run:') === 0; }).length,
       waiting: waiting
     });
+    return;
+  }
+
+  // ── AGENDA: turn his messy one-liner into clean tasks ────────────
+  // ergasies.html POSTs {prompt} and gets back {ok, obj} — the JSON the page's
+  // own composer preview renders BEFORE anything is saved. Stateless, writes
+  // nothing, early-returns before the backup/cron logic below.
+  // It lives here because vercel.json's `functions` map is FULL at 12 entries:
+  // a 13th routed api/*.js breaks the deploy. This is the courier pattern.
+  // ⚠️ `response_format: json_object` is a VALIDATOR, not a hint — a truncated
+  // reply makes Groq reject the WHOLE call with a 400. json() already retries
+  // once with it stripped, and `reasoning: 'low'` + a generous max_tokens keep
+  // gpt-oss's hidden reasoning from eating the budget and returning EMPTY.
+  // A failure here is never silent: the page falls back to its own parser and
+  // says on screen that it read the line plainly.
+  if (req.query && req.query.agenda !== undefined) {
+    res.setHeader('Cache-Control', 'no-store');
+    var agb = req.body; if (typeof agb === 'string') { try { agb = JSON.parse(agb || '{}'); } catch (e) { agb = {}; } }
+    var agp = (agb && typeof agb.prompt === 'string') ? agb.prompt : '';
+    if (!agp || agp.length > 8000) { res.status(400).json({ ok: false, error: 'no prompt' }); return; }
+    try {
+      var agr = await model.json('text', {
+        messages: [{ role: 'user', content: agp }],
+        temperature: 0.1, max_tokens: 1600, reasoning: 'low',
+        response_format: { type: 'json_object' }
+      });
+      if (!agr || !agr.ok || !agr.obj) { res.status(502).json({ ok: false, error: (agr && agr.kind) || 'model' }); return; }
+      res.status(200).json({ ok: true, obj: agr.obj, model: agr.model });
+    } catch (e) {
+      res.status(502).json({ ok: false, error: String((e && e.message) || e) });
+    }
     return;
   }
 
