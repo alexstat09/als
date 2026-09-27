@@ -717,15 +717,26 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
-  ⭐⭐ **FIVE of them since als-v577**, and four share one shape — `onlyAlign`:
+  ⭐⭐ **SIX of them since als-v585**, and five share one shape — `onlyAlign`:
   `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*),
-  `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα) and
-  `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς). His words for
-  every one of them: *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»*.
-  ⚠️⚠️ **`gk4` AND `gk5` ARE THE SAME WORK, THE SAME TRANSLATOR, CONSECUTIVE
-  PAGES** — which makes the separate-haystack rule below more important, not less.
-  The test locks it from both directions: the 5th haystack must NOT contain
-  *«ισορροπώντας»* (4th) and the 4th must NOT contain *«έντεχνον»* (5th).
+  `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα),
+  `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς) and
+  `gk6` (Πλάτων, *Πρωταγόρας* 322a-323a — **το δώρο του Δία**, 20 περίοδοι /
+  231 ζευγάρια, the longest of the six). His words for every one of them:
+  *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»* /
+  *«όπως και για όλες τις άλλες μεταφράσεις των αρχαίων γνωστών»*.
+  ⚠️⚠️⚠️ **`gk4`, `gk5` AND `gk6` ARE THE SAME WORK, THE SAME TRANSLATOR,
+  CONSECUTIVE PAGES** — which makes the separate-haystack rule below more
+  important, not less. The test locks it from every direction: the 5th haystack
+  must NOT contain *«ισορροπώντας»* (4th), the 4th must NOT contain *«έντεχνον»*
+  (5th), and the 6th must contain neither — while neither the 4th nor the 5th
+  may contain *«μερδικό»* or *«αρρώστεια»* (6th).
+  ⭐⭐ **`gk6` ADDED A THIRD MEASUREMENT: THE HEIGHT.** Its ancient sits whole on
+  σελ. 59 at full width; the Τατάκης column runs over σελ. 60-61 — and on σελ. 61
+  the book's **commentary starts below the translator's signature and runs at
+  FULL width (x=73,02), i.e. INSIDE the column**. The cut is made with `y ≥ 525`,
+  not with the width; a lower frame would pull the footnotes silently into the
+  translation. The test pins three footnote phrases as ABSENT.
   ⛔ **Each unit points at ITS OWN page of the Φάκελος Υλικού** — one
   `tests/arxaia-enotitaN.source.txt` per unit, raw PDF lines with a pinned
   sha256, never a shared haystack (a shared one would let a period of Επίκουρος
@@ -737,7 +748,9 @@ colour rule: **accent only when something is due**, faint otherwise.
   line — *«καθέν»*, *«ζητ»* — and did it **silently**: the text came out whole
   and almost right. Measure the line boxes per page, then cut. It happened again
   in `gk5`: σελ. 51 ends at x=279,97 and σελ. 52 at x=303,08 — **two widths in
-  one unit.** ⭐ And `gk5` added a second habit: **two independent extractors
+  one unit** — and again in `gk6`, **the other way round**: σελ. 60 ends at
+  x=303,08 and σελ. 61 at x=279,98. There is no inheritance, not even from the
+  unit before. ⭐ And `gk5` added a second habit: **two independent extractors
   (PDFKit + pypdf), compared with all whitespace stripped.** They agree only
   where it matters, so a disagreement is always a real one.
   ⚠️⚠️ **HIS ΦΥΛΛΑΔΙΟ CAN BE WRONG, AND THE DIVERGENCE IS DECLARED IN THREE
@@ -745,6 +758,11 @@ colour rule: **accent only when something is due**, faint otherwise.
   δασεία (U+1F0D), and the book is right — the particle is `ἅτε`. Source header,
   test (written as **codepoints**, never letters — the two capital alphas look
   identical), and a `srcNote` field that the page prints in its own footer.
+  ⭐ **`gk6` HAS NO `srcNote`, AND THAT IS A DECISION.** No divergence was found
+  between his φυλλάδιο and the book — and «not found» is not «does not exist»:
+  the photo cannot be read letter by letter, so only PHRASE-level comparison was
+  claimed. A `srcNote` invented «for consistency» would be a lie printed on the
+  page, so the test pins its ABSENCE.
   ⚠️ `homework.html` builds its unit index from `ARXGN.UNITS`, so the parser no
   longer resolves `gn1`…`gn6` — checked against his live homework first: **no
   row references them**, so nothing of his degraded.
