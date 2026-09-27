@@ -40,7 +40,7 @@
     'money', 'bills', 'life', 'mind', 'movies', 'ideas', 'goals',
     'coach', 'insights', 'arc', 'weekly', 'morning', 'nova-chat',
     'planner', 'measure', 'supps', 'improve', 'backup', 'studio',
-    'istoria', 'arxaia', 'homework'
+    'istoria', 'arxaia', 'arxaia-agnosto', 'homework'
   ];
 
   // Alex's revision pages for the Greek Πανελλήνιες exams. They are HIS content,
@@ -52,7 +52,7 @@
   // feature and the WRONG one for his Πανελλήνιες revision — so the πλαγιότιτλοι
   // page was visible on Chrissie's account the moment it shipped. Any new study
   // page belongs in BOTH lists, in the commit that creates it.
-  var OWNER_ONLY = ['istoria', 'istoria-demo', 'arxaia', 'homework'];   // 'arxaia' rejoined als-v454; 'homework' als-v470
+  var OWNER_ONLY = ['istoria', 'istoria-demo', 'arxaia', 'arxaia-agnosto', 'homework'];   // 'arxaia' rejoined als-v454; 'homework' als-v470
 
   var DEFAULTS = {
     name: '',

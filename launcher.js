@@ -98,6 +98,8 @@
       // \u0391\u03c1\u03c7\u03b1\u03af\u03b1 came back als-v454 \u2014 rebuilt as the \u03b1\u03c1\u03c7\u03b9\u03ba\u03bf\u03af \u03c7\u03c1\u03cc\u03bd\u03bf\u03b9 drill,
       // with nothing bound to a date this time. New key `arx:v1`.
       { href: 'arxaia.html',   name: '\u0391\u03c1\u03c7\u03b1\u03af\u03b1', k: 'arx:v1' },
+      // als-v586: \u03c4\u03bf \u03b1\u03b4\u03af\u03b4\u03b1\u03ba\u03c4\u03bf \u03ba\u03b5\u03af\u03bc\u03b5\u03bd\u03bf, \u03b4\u03b9\u03ba\u03ae \u03c4\u03bf\u03c5 \u03c3\u03b5\u03bb\u03af\u03b4\u03b1.
+      { href: 'arxaia-agnosto.html', name: '\u0386\u03b3\u03bd\u03c9\u03c3\u03c4\u03bf', k: 'agn:v1' },
       { href: 'latinika.html', name: '\u039b\u03b1\u03c4\u03b9\u03bd\u03b9\u03ba\u03ac', k: 'lat:v1' },
       { href: 'tonos.html',    name: '\u03a4\u03bf\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2', k: 'ton:v1' },
       // als-v489: η σελίδα των πλαγιότιτλων ΕΓΙΝΕ η Ιστορία: μία γραμμή, μία πόρτα.

@@ -1030,7 +1030,11 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   });
   var hw = fs.readFileSync(path.join(__dirname, '..', 'homework.html'), 'utf8');
   ok(hw.indexOf("page:'arxaia.html#gn'") > 0,  'το School Studies στέλνει στο ΓΝΩΣΤΟ');
-  ok(hw.indexOf("page:'arxaia.html#ag'") > 0,  'και στον ΑΓΝΩΣΤΟ');
+  /* ⭐ als-v586: ο ΑΓΝΩΣΤΟΣ έγινε ΔΙΚΗ ΤΟΥ ΣΕΛΙΔΑ. Η κάρτα του μαθήματος
+     στέλνει εκεί· οι ΣΕΛΙΔΕΣ ΤΟΥ ΦΥΛΛΑΔΙΟΥ (αρχικοί χρόνοι) κρατούν το
+     `arxaia.html#ag`, γιατί ΕΚΕΙΝΗ η σελίδα ξέρει τα ids τους. */
+  ok(hw.indexOf("page:'arxaia-agnosto.html'") > 0, 'το School Studies στέλνει στη σελίδα του ΑΓΝΩΣΤΟΥ');
+  ok(hw.indexOf("page:'arxaia.html#ag'") > 0,  'και οι αρχικοί χρόνοι μένουν στον παλιό κόσμο');
   /* ⛔ Το ladders.js ΔΕΝ επιτρέπεται να πάρει hash: το home-live.js κάνει
      `switch` πάνω στην τιμή του `page` και ένα «arxaia.html#gn» θα έριχνε
      σιωπηλά το πλακίδιο του Home στο default. */
