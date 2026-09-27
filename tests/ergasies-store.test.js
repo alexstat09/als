@@ -23,7 +23,8 @@
      Ε · το σβήσιμο αφήνει ΤΑΦΟΠΛΑΚΑ στο φωλιασμένο μονοπάτι (σταθ. 32)
      ΣΤ · μια ρύθμιση δεν ακουμπάει το πρόγραμμα που δεν την αφορά
      Ζ · ΟΙ ΑΛΛΕΣ ΔΥΟ ΚΑΡΤΕΛΕΣ ΑΝΟΙΓΟΥΝ ΜΕ ΤΟ ΑΓΝΩΣΤΟ ΜΑΘΗΜΑ ΜΕΣΑ
-     Η · μηδέν exceptions σε ΟΛΗ τη διαδρομή
+     Η · Η ΕΞΟΔΟΣ ΥΠΑΡΧΕΙ, ΟΝΟΜΑΖΕΙ ΤΟΝ ΠΡΟΟΡΙΣΜΟ ΚΑΙ ΔΙΑΒΑΖΕΤΑΙ (και στα 393)
+     Θ · μηδέν exceptions σε ΟΛΗ τη διαδρομή
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 const http=require('http'),fsx=require('fs'),pathx=require('path');
@@ -190,7 +191,72 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
  await S('Runtime.evaluate',{expression:`document.querySelector('.tabs button[data-tab="day"]').click()`});
  await sleep(400);
 
- console.log('\nΗ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
+ /* ⛔⛔ ΑΥΤΗ Η ΕΝΟΤΗΤΑ ΕΙΝΑΙ ΔΙΚΟ ΤΟΥ ΕΥΡΗΜΑ (27/09/26): «μπήκα μέσα και δεν
+    μπορώ να πάω κάπως πίσω». Η σελίδα δεν φοράει το topbar της εφαρμογής, και
+    στο εγκατεστημένο PWA ΔΕΝ υπάρχει μπάρα browser — μια σελίδα χωρίς έξοδο
+    είναι παγίδα, όχι σελίδα. Ο έλεγχος δεν ρωτάει «υπάρχει κουμπί;» αλλά
+    ΤΕΣΣΕΡΑ πράγματα που το κάνουν να βρεθεί:
+      1 · είναι ΣΥΝΔΕΣΜΟΣ (άρα δουλεύει και από σελιδοδείκτη, όχι history.back)
+      2 · δείχνει στη `homework.html` — ΟΧΙ σε πόρτα που μπορεί να ξακριστεί
+      3 · έχει ΛΕΞΗ, όχι σκέτο βελάκι: το εικονίδιο είναι ακριβώς αυτό που
+          ΔΕΝ βρήκε, και το ίδιο το κείμενο ονομάζει τον προορισμό
+      4 · ⭐ Η ΑΝΤΙΘΕΣΗ ΜΕΤΡΙΕΤΑΙ, ΔΕΝ ΔΙΑΛΕΓΕΤΑΙ ΜΕ ΤΟ ΜΑΤΙ («δεν βρίσκω το
+          κουμπί» έχει ξαναβγεί νούμερο σε αυτό το repo: 2,38:1).
+    Και ΞΑΝΑΜΕΤΡΙΕΤΑΙ στα 393px, γιατί εκεί ζει το PWA που δεν έχει έξοδο. */
+ console.log('\nΗ · Η ΕΞΟΔΟΣ ΥΠΑΡΧΕΙ, ΟΝΟΜΑΖΕΙ ΤΟΝ ΠΡΟΟΡΙΣΜΟ ΚΑΙ ΔΙΑΒΑΖΕΤΑΙ');
+ const BACK=`(function(){
+   var a=document.querySelector('.top .back');
+   if(!a)return JSON.stringify({no:1});
+   var cs=getComputedStyle(a),r=a.getBoundingClientRect();
+   /* ⚠️⚠️ ΣΤΑΘΕΡΗ ΠΑΓΙΔΑ, ΚΑΙ ΜΕ ΔΕΥΤΕΡΟ ΔΑΓΚΩΜΑ ΑΠΟ ΜΕΣΑ ΤΗΣ:
+      ΟΛΟ ΑΥΤΟ ΖΕΙ ΜΕΣΑ ΣΕ TEMPLATE LITERAL.
+      (α) Η ακολουθία διαφυγής «ανάποδη-κάθετος d» ΓΙΝΕΤΑΙ ΣΚΕΤΟ d πριν καν
+          τη δει ο regex. Το «rgb(201, 194, 181)» δεν έχει d, άρα το match
+          γύριζε null, έπεφτε στο [0,0,0] και η αντίθεση έβγαινε ΑΚΡΙΒΩΣ 1 —
+          ένας μετρητής που λέει ψέματα με σιγουριά. Το [0-9.] δεν έχει
+          ανάποδη κάθετο, άρα δεν υπάρχει τίποτα να φαγωθεί.
+      (β) ΚΑΙ ΤΟ ΣΧΟΛΙΟ ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΝΑ ΓΡΑΨΕΙ ΤΟ ΜΟΤΙΒΟ ΠΟΥ ΠΕΡΙΓΡΑΦΕΙ
+          (σταθ. 19): η πρώτη του γραφή έβαλε ανάστροφα εισαγωγικά για να
+          δείξει τον κώδικα, εκείνα ΕΚΛΕΙΣΑΝ το template literal, και το
+          αρχείο σταμάτησε να κάνει parse. Εδώ τα ονόματα γράφονται με
+          ΛΕΞΕΙΣ, επίτηδες. */
+   var rgb=function(v){var m=String(v).match(/[0-9.]+/g)||[0,0,0];return [+m[0],+m[1],+m[2]]};
+   var lum=function(c){var f=c.map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)});
+     return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2]};
+   /* Το φόντο του ίδιου του κουμπιού είναι αδιαφανές, άρα είναι ΤΟ φόντο. */
+   var L1=lum(rgb(cs.color)),L2=lum(rgb(cs.backgroundColor));
+   var hi=Math.max(L1,L2),lo=Math.min(L1,L2);
+   return JSON.stringify({
+     tag:a.tagName, href:a.getAttribute('href'),
+     text:(a.textContent||'').trim(),
+     label:a.getAttribute('aria-label')||'',
+     ratio:Math.round(((hi+0.05)/(lo+0.05))*100)/100,
+     w:Math.round(r.width), h:Math.round(r.height),
+     vis:r.width>0&&r.height>0&&cs.visibility!=='hidden'&&cs.display!=='none'
+   });})()`;
+ let bk=await q(BACK);
+ ok('υπάρχει έξοδος μέσα στην κεφαλίδα', !bk.no&&bk.vis, bk);
+ ok('και είναι ΣΥΝΔΕΣΜΟΣ, όχι history.back()', bk.tag==='A', bk.tag);
+ ok('που δείχνει στη School Studies', /^homework\.html/.test(String(bk.href||'')), bk.href);
+ ok('⛔ ΕΧΕΙ ΛΕΞΗ, δεν είναι σκέτο βελάκι', (bk.text||'').length>=4, bk.text);
+ ok('και η λέξη ΟΝΟΜΑΖΕΙ τον προορισμό όπως ονομάζεται ΕΚΕΙΝΟΣ', bk.text.indexOf('School Studies')>=0, bk.text);
+ ok('το aria-label λέει ότι είναι επιστροφή ΚΑΙ περιέχει το ορατό κείμενο',
+    /Πίσω/.test(bk.label)&&bk.label.indexOf(bk.text)>=0, bk.label);
+ ok('⭐ Η ΑΝΤΙΘΕΣΗ ΜΕΤΡΗΘΗΚΕ: ≥4,5:1', bk.ratio>=4.5, bk.ratio);
+ ok('και ο στόχος αφής είναι ≥40px ύψος', bk.h>=40, bk.h);
+ /* ⚠ ΤΟ ΚΙΝΗΤΟ ΔΕΝ ΕΙΝΑΙ ΥΠΟΘΕΣΗ: εκεί ΑΚΡΙΒΩΣ λείπει η μπάρα του browser. */
+ await S('Emulation.setDeviceMetricsOverride',{width:393,height:800,deviceScaleFactor:1,mobile:false});
+ await sleep(500);
+ const bkm=await q(BACK);
+ ok('ΣΤΑ 393px η έξοδος είναι ακόμη εκεί', bkm.vis, bkm);
+ ok('ΚΑΙ ΚΡΑΤΑΕΙ ΤΗ ΛΕΞΗ ΤΗΣ στα 393px', bkm.text.indexOf('School Studies')>=0, bkm.text);
+ ok('με την ίδια μετρημένη αντίθεση', bkm.ratio>=4.5, bkm.ratio);
+ const nohs=await q(`JSON.stringify({b:document.documentElement.scrollWidth,w:innerWidth})`);
+ ok('και η κεφαλίδα ΔΕΝ γέννησε οριζόντια κύλιση', nohs.b<=nohs.w, nohs);
+ await S('Emulation.setDeviceMetricsOverride',{width:1440,height:2350,deviceScaleFactor:1,mobile:false});
+ await sleep(400);
+
+ console.log('\nΘ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
  ok('μηδέν exceptions', exc.length===0, exc);
  console.log('\n'+P+' passed, '+F+' failed');
  ws.close();chrome.kill();server.close();process.exit(F?1:0);
