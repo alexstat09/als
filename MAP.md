@@ -108,7 +108,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 από λάθος παράγραφο δίνει λάθος ΣΕΙΡΑ — που είναι ακριβώς αυτό που η σελίδα
 ήρθε να φτιάξει.
 
-**Study** — `latinika.html` (Λατινικά, **als-v535 · + `latinika-eisagogi.html` /
+**Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
 `latinika-lectio19.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`

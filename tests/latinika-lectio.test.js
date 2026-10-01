@@ -367,7 +367,18 @@ ok(X22.indexOf('proximan') > 0 && X22.indexOf('coniuārvit') > 0,
   '⭐⭐ και ότι ΕΔΩ δεν βρέθηκε τυπογραφικό, ονομάζοντας τα δύο προηγούμενα —\n' +
   '      ένα «δεν βρήκα» που δεν γράφεται πουθενά μοιάζει με «δεν κοίταξα».');
 
-/* ══ 3 · ⭐⭐ ΤΑ ΝΟΥΜΕΡΑ ΤΗΣ ΚΑΡΤΑΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΑ ═══════════════════ */
+/* ══ 3 · ⭐⭐ ΤΑ ΝΟΥΜΕΡΑ ΤΗΣ ΣΕΙΡΑΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΑ ═══════════════════
+   als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ: η κάρτα έγινε ΣΕΙΡΑ μέσα σε ένα πλαίσιο, και
+   κάθε νούμερο ζει πλέον ΔΥΟ φορές: ως `data-*` (τι διαβάζει Η ΜΗΧΑΝΗ για
+   τον χάρτη και την ταινία των μετρήσεων) και ως ψηφίο με ετικέτα (τι
+   διαβάζει ΑΥΤΟΣ). Αν τα δύο αποκλίνουν, η σελίδα δείχνει στον άνθρωπο
+   άλλο νούμερο από αυτό που αθροίζει ο κώδικας — και κανένα από τα δύο
+   δεν θα φαινόταν λάθος μόνο του. Άρα ελέγχονται ΚΑΙ ΤΑ ΔΥΟ, και τα δύο
+   απέναντι στο ΠΑΚΕΤΟ.
+   ⛔ ΚΑΙ Η ΕΤΙΚΕΤΑ ΕΙΝΑΙ ΤΟΥ ΠΑΚΕΤΟΥ, ΟΧΙ ΔΙΚΗ ΜΟΥ: το XVI μετράει
+   «προτάσεις», τα υπόλοιπα «ενότητες» (έτσι το λέει το lede τους), και το
+   XVII έχει ΣΗΜΕΙΩΣΕΙΣ — δεν έχει καν μπλοκ «παγίδες». Μια στήλη που τα
+   έλεγε όλα «παγίδες» θα ήταν ωραία και ψεύτικη. */
 section('3 · η βιβλιοθήκη λέει ό,τι μετράνε τα πακέτα');
 
 var HUB = R('latinika.html');
@@ -377,12 +388,21 @@ var L18 = R('latinika-lectio18.html');
 var L19 = R('latinika-lectio19.html');
 var L22 = R('latinika-lectio22.html');
 
-function chips(lec) {
+function rowBlock(lec) {
   var i = HUB.indexOf('data-lec="' + lec + '"');
-  var j = HUB.indexOf('</a>', i);
-  var block = HUB.slice(i, j);
-  var out = [], re = /<i>([^<]+)<\/i>/g, m;
-  while ((m = re.exec(block))) out.push(m[1]);
+  if (i < 0) return '';
+  var open = HUB.lastIndexOf('<a ', i), j = HUB.indexOf('</a>', i);
+  return HUB.slice(open, j);
+}
+function attrOf(block, name) {
+  var m = new RegExp(name + '="(\\d+)"').exec(block);
+  return m ? +m[1] : null;
+}
+/* Τα ψηφία της σειράς, κλειδωμένα στην ΕΤΙΚΕΤΑ τους — ποτέ σε θέση μέσα σε
+   πίνακα: μια αναδιάταξη στηλών θα περνούσε αθόρυβα έναν έλεγχο θέσης. */
+function statsOf(block) {
+  var out = {}, re = /<b>(\d+)<\/b><i>([^<]+)<\/i>/g, m;
+  while ((m = re.exec(block))) out[m[2]] = +m[1];
   return out;
 }
 function count(src, tagOpen) {
@@ -391,46 +411,53 @@ function count(src, tagOpen) {
   return n;
 }
 
-var c16 = chips('16'), c17 = chips('17'), c18 = chips('18'), c19 = chips('19'), c22 = chips('22');
-eq(c16[0], SC.length + ' σκηνές', 'XVI: οι σκηνές της κάρτας == οι σκηνές του πακέτου');
-eq(c16[1], n16 + ' προτάσεις', 'XVI: οι προτάσεις της κάρτας == οι προτάσεις του πακέτου');
-eq(c17[0], S17.length + ' σκηνές', 'XVII: οι σκηνές της κάρτας == οι σκηνές του πακέτου');
-eq(c17[1], n17 + ' ενότητες', 'XVII: οι ενότητες της κάρτας == οι ενότητες του πακέτου');
-eq(c18[0], S18.length + ' σκηνές', 'XVIII: οι σκηνές της κάρτας == οι σκηνές του πακέτου');
-eq(c18[1], n18 + ' ενότητες', 'XVIII: οι ενότητες της κάρτας == οι ενότητες του πακέτου');
-eq(c19[0], S19.length + ' σκηνές', 'XIX: οι σκηνές της κάρτας == οι σκηνές του πακέτου');
-eq(c19[1], n19 + ' ενότητες', 'XIX: οι ενότητες της κάρτας == οι ενότητες του πακέτου');
-eq(c22[0], S22.length + ' σκηνές', 'XXII: οι σκηνές της κάρτας == οι σκηνές του πακέτου');
-eq(c22[1], n22 + ' ενότητες', 'XXII: οι ενότητες της κάρτας == οι ενότητες του πακέτου');
+var ROWS = {};
+PACKS.forEach(function (pk) {
+  ROWS[pk.id] = rowBlock(pk.id);
+  ok(ROWS[pk.id].length > 0, 'υπάρχει σειρά για το ' + pk.file);
+});
 
 /* Οι «παγίδες» και οι «σημειώσεις» είναι χειροποίητες λίστες μέσα στα
-   πακέτα — μετριούνται από ΕΚΕΙ, ποτέ από το μάτι μου. */
-var traps = count(L16.slice(L16.indexOf('class="traps"'), L16.indexOf('class="plan"')), '<li>');
-var notes = count(L17.slice(L17.indexOf('class="notes"'), L17.indexOf('class="foot"')), '<li>');
-eq(c16[2], traps + ' παγίδες', 'XVI: οι παγίδες της κάρτας == οι παγίδες του πακέτου');
-eq(c17[2], notes + ' σημειώσεις', 'XVII: οι σημειώσεις της κάρτας == οι σημειώσεις του πακέτου');
-
-/* Το XVIII κουβαλάει ΚΑΙ τα δύο μπλοκ — παγίδες (σαν το XVI) και σημειώσεις
-   (σαν το XVII). Η κάρτα διαφημίζει τις παγίδες· μετριούνται κι οι δύο, για
-   να μη σβήσει ποτέ σιωπηλά το ένα. */
+   πακέτα — μετριούνται από ΕΚΕΙ, ποτέ από το μάτι μου (σταθ. 33). */
+var traps16 = count(L16.slice(L16.indexOf('class="traps"'), L16.indexOf('class="plan"')), '<li>');
+var notes17 = count(L17.slice(L17.indexOf('class="notes"'), L17.indexOf('class="foot"')), '<li>');
 var traps18 = count(L18.slice(L18.indexOf('class="traps"'), L18.indexOf('class="notes"')), '<li>');
 var notes18 = count(L18.slice(L18.indexOf('class="notes"'), L18.indexOf('class="foot"')), '<li>');
-eq(c18[2], traps18 + ' παγίδες', 'XVIII: οι παγίδες της κάρτας == οι παγίδες του πακέτου');
-ok(notes18 >= 1, 'XVIII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes18 + ')');
-
-/* Το ίδιο σχήμα και στο XIX — παγίδες ΚΑΙ σημειώσεις, μετρημένες από το
-   πακέτο. Το «8 παγίδες» της κάρτας δεν γράφτηκε με το μάτι (σταθ. 33). */
 var traps19 = count(L19.slice(L19.indexOf('class="traps"'), L19.indexOf('class="notes"')), '<li>');
 var notes19 = count(L19.slice(L19.indexOf('class="notes"'), L19.indexOf('class="foot"')), '<li>');
-eq(c19[2], traps19 + ' παγίδες', 'XIX: οι παγίδες της κάρτας == οι παγίδες του πακέτου');
-ok(notes19 >= 1, 'XIX: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes19 + ')');
-
-/* Και στο XXII. ⭐ Οι «8 παγίδες» και οι «6 σημειώσεις» μετριούνται από το
-   ΙΔΙΟ ΤΟ ΠΑΚΕΤΟ — η κάρτα δεν διαφημίζει ποτέ νούμερο που δεν μετρήθηκε. */
 var traps22 = count(L22.slice(L22.indexOf('class="traps"'), L22.indexOf('class="notes"')), '<li>');
 var notes22 = count(L22.slice(L22.indexOf('class="notes"'), L22.indexOf('class="foot"')), '<li>');
-eq(c22[2], traps22 + ' παγίδες', 'XXII: οι παγίδες της κάρτας == οι παγίδες του πακέτου');
+
+ok(L17.indexOf('class="traps"') < 0,
+  '⭐ ΤΟ XVII ΔΕΝ ΕΧΕΙ ΚΑΝ ΜΠΛΟΚ «ΠΑΓΙΔΕΣ» — γι᾽ αυτό η σειρά του λέει\n' +
+  '      «σημειώσεις». Η στήλη δεν ενοποιεί λέξεις που το υλικό ξεχωρίζει.');
+ok(notes18 >= 1, 'XVIII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes18 + ')');
+ok(notes19 >= 1, 'XIX: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes19 + ')');
 ok(notes22 >= 1, 'XXII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes22 + ')');
+
+function checkRow(id, scenes, units, unitWord, third, thirdWord) {
+  var blk = ROWS[id], st = statsOf(blk);
+  eq(st[unitWord], units, id + ': οι «' + unitWord + '» της σειράς == του πακέτου');
+  eq(st['σκηνές'], scenes, id + ': οι σκηνές της σειράς == του πακέτου');
+  eq(st[thirdWord], third, id + ': οι «' + thirdWord + '» της σειράς == του πακέτου');
+  eq(attrOf(blk, 'data-n'), units, id + ': ⭐ και το data-n — ό,τι διαβάζει Ο ΧΑΡΤΗΣ — συμφωνεί με το ψηφίο');
+  eq(attrOf(blk, 'data-sc'), scenes, id + ': ⭐ και το data-sc — ό,τι αθροίζει Η ΤΑΙΝΙΑ — συμφωνεί');
+  eq(attrOf(blk, 'data-tr'), third, id + ': ⭐ και το data-tr συμφωνεί');
+}
+checkRow('16', SC.length,  n16, 'προτάσεις', traps16, 'παγίδες');
+checkRow('17', S17.length, n17, 'ενότητες',  notes17, 'σημειώσεις');
+checkRow('18', S18.length, n18, 'ενότητες',  traps18, 'παγίδες');
+checkRow('19', S19.length, n19, 'ενότητες',  traps19, 'παγίδες');
+checkRow('22', S22.length, n22, 'ενότητες',  traps22, 'παγίδες');
+
+/* ⭐ Ο ΛΑΤΙΝΙΚΟΣ ΑΡΙΘΜΟΣ ΤΗΣ ΣΕΙΡΑΣ ΕΙΝΑΙ Η ΘΕΣΗ ΤΗΣ, όχι ο αριθμός του
+   βιβλίου — και η JS τον ΠΑΡΑΓΕΙ για την κάρτα «συνέχισε». Αν οι δύο
+   διαφωνούσαν, η κάρτα θα έδειχνε «III» για τη σειρά που γράφει «II». */
+var ORDN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+PACKS.forEach(function (pk, k) {
+  ok(ROWS[pk.id].indexOf('<div class="rn">' + ORDN[k] + '</div>') > 0,
+    pk.file + ': ο αριθμός της σειράς είναι η ΘΕΣΗ της (' + ORDN[k] + ')');
+});
 
 /* Και το σύνολο του hero. Ένα «27» γραμμένο στο χέρι θα ξεχνιόταν με την
    τρίτη ενότητα· εδώ το πληρώνει το test την ίδια μέρα. */
@@ -444,21 +471,57 @@ ok(HUB.indexOf('<b>' + TOTAL + '</b> προτάσεις') > 0,
    και ΞΑΝΑΣΚΑΣΕ μόλις μπήκε η πέμπτη ενότητα — δηλαδή το νούμερο ήταν
    καρφωμένο ΜΕΣΑ ΣΤΟΝ ΦΡΟΥΡΟ. Τώρα ο κανόνας είναι: «το hero λέει το
    αριθμητικό ΤΩΝ ΠΑΚΕΤΩΝ ΠΟΥ ΥΠΑΡΧΟΥΝ, και κανένα άλλο». Πρόσθεσε έκτη
-   ενότητα και περνάει μόνο του. */
-var ORD = { 1:'Μία', 2:'Δύο', 3:'Τρεις', 4:'Τέσσερις', 5:'Πέντε', 6:'Έξι', 7:'Επτά', 8:'Οκτώ' };
+   ενότητα και περνάει μόνο του.
+   ⚠️ als-v587: Ο ΕΛΕΓΧΟΣ ΕΙΝΑΙ ΣΤΗ ΦΡΑΣΗ, ΟΧΙ ΣΤΟ MARKUP. Ο τίτλος του
+   εξωφύλλου σπάει σε τρεις σειρές με <br>, άρα ένα σκέτο indexOf πάνω στο
+   HTML θα έλεγε «λείπει» για κάτι που ο αναγνώστης ΔΙΑΒΑΖΕΙ ολόκληρο. */
+/* ⚠️⚠️ ΚΑΙ ΤΟ ΞΕΓΥΜΝΩΜΑ ΘΕΛΕΙ ΟΡΙΟ. Ένα `replace(/<[^>]+>/g)` πάνω σε ΟΛΟ
+   το αρχείο καταβροχθίζει κώδικα: το `first < next.arr.length` μοιάζει με
+   άνοιγμα ετικέτας και σβήνει τα πάντα ως το επόμενο `>` — έφαγε ολόκληρη
+   τη φράση «Και οι πέντε ενότητες κλειδωμένες» και κατηγόρησε σωστό
+   περιεχόμενο (σταθ. 42/44 ξανά). Το markup ξεγυμνώνεται, το <script> ΟΧΙ. */
+var CUT = HUB.lastIndexOf('<script>');
+var TEXT = HUB.slice(0, CUT).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') + ' ' + HUB.slice(CUT);
+var ORD = { 1: 'Μία', 2: 'Δύο', 3: 'Τρεις', 4: 'Τέσσερις', 5: 'Πέντε', 6: 'Έξι', 7: 'Επτά', 8: 'Οκτώ' };
 var WORD = ORD[PACKS.length];
 ok(!!WORD, 'υπάρχει ελληνικό αριθμητικό για ' + PACKS.length + ' πακέτα (αλλιώς συμπλήρωσέ το)');
-ok(HUB.indexOf(WORD + ' ενότητες') > 0 && HUB.indexOf(WORD.toLowerCase() + ' ενότητες') > 0,
+ok(TEXT.indexOf(WORD + ' ενότητες') > 0 && TEXT.indexOf(WORD.toLowerCase() + ' ενότητες') > 0,
   '   το hero λέει «' + WORD.toLowerCase() + ' ενότητες», και στον τίτλο και στο κλείσιμο');
 Object.keys(ORD).forEach(function (k) {
   if (+k === PACKS.length) return;
   var w = ORD[k];
-  ok(HUB.indexOf(w + ' ενότητες') < 0 && HUB.indexOf(w.toLowerCase() + ' ενότητες') < 0,
+  ok(TEXT.indexOf(w + ' ενότητες') < 0 && TEXT.indexOf(w.toLowerCase() + ' ενότητες') < 0,
     '⛔ και ΔΕΝ λέει πουθενά «' + w.toLowerCase() + ' ενότητες» — είναι ' + WORD.toLowerCase());
 });
 ok(HUB.indexOf('Τρεις απαντήσεις') > 0,
   '⚠️ ΚΑΙ ΤΟ ΣΧΟΛΙΟ ΤΗΣ ΣΤΑΘ. 10 ΕΜΕΙΝΕ: «Τρεις απαντήσεις, όχι δύο» δεν\n' +
   '      είναι μετρητής ενοτήτων — ένα τυφλό search/replace θα το είχε φάει.');
+
+/* ⭐ Η ΤΥΠΟΓΡΑΦΙΑ ΤΟΥ ΕΞΩΦΥΛΛΟΥ (CLAUDE.md §③). Η Instrument Serif έχει
+   ΜΗΔΕΝ ελληνικά γλυφά και πέφτει στη Georgia — η αιτία του «οι τόνοι δεν
+   είναι σωστοί» (als-v504). Ο φρουρός είναι αντιγραμμένος από το
+   tests/homework-look.test.js §7b, όπως λέει το CLAUDE.md. */
+ok(HUB.indexOf('fonts.googleapis.com/css2?family=GFS+Didot') > 0,
+  '⭐ η GFS Didot φορτώνεται — η ελληνική φωνή της σελίδας');
+ok(/--lt-gr:"GFS Didot"/.test(HUB), '   και ζει σε δικό της token (--lt-gr)');
+[['.lt-h', 'ο τίτλος του εξωφύλλου'], ['.lt-sh h2', 'οι κεφαλίδες ενοτήτων'],
+ ['.lt-row .t', 'οι τίτλοι των κειμένων']].forEach(function (p) {
+  var i = HUB.indexOf('  ' + p[0] + '{');
+  ok(i > 0 && HUB.slice(i, HUB.indexOf('}', i)).indexOf('var(--lt-gr)') > 0,
+    '⛔ ' + p[1] + ' (' + p[0] + ') φοράει --lt-gr, ΠΟΤΕ --au-serif (ελληνικά)');
+});
+/* ⚠️ Ο ΕΛΕΓΧΟΣ ΘΕΛΕΙ ΤΟ ΠΛΑΙΣΙΟ, ΟΧΙ ΤΗ ΛΕΞΗ (σταθ. 19). Ένα σκέτο
+   indexOf('Georgia') θα απαγόρευε την ΙΔΙΑ ΤΗΝ ΕΞΗΓΗΣΗ στην κορυφή της
+   σελίδας — που είναι ο λόγος που ξέρουμε γιατί απαγορεύεται. */
+ok(!/font-family:[^;}]*Georgia/.test(HUB) && !/--[a-z-]+:[^;}]*Georgia/.test(HUB),
+  '⛔ και η Georgia δεν είναι ΓΡΑΜΜΑΤΟΣΕΙΡΑ πουθενά, ούτε ως fallback');
+
+/* ⭐ ΤΟ ΛΑΠΤΟΠ ΔΕΝ ΕΙΝΑΙ ΜΕΓΑΛΟ ΚΙΝΗΤΟ (σταθ. 51). */
+ok(/\.lt-wrap\{ max-width:1180px/.test(HUB), '⭐ κέλυφος 1180px, όχι στήλη κινητού');
+ok(HUB.indexOf('min-width:') >= 0, '(η σελίδα χρησιμοποιεί min-width μόνο ως ιδιότητα flex)');
+ok(!/@media \([^)]*min-width/.test(HUB),
+  '⛔ ΚΑΝΕΝΑ media query σε `min-width` — μετράει το VIEWPORT ενώ η στήλη\n' +
+  '      ζει μέσα σε ΓΟΝΕΑ (σταθ. 51)');
 
 /* Και ότι υπάρχει όντως πόρτα προς κάθε πακέτο. */
 PACKS.forEach(function (pk) {
@@ -535,31 +598,63 @@ ok(R('sync.js').indexOf('allPrim') > 0,
    `latinika.html` μέσα σε `vm`, με ψεύτικο localStorage και ένα DOM όσο
    ακριβώς χρειάζεται. Είναι το ίδιο σχήμα με το tests/ekthesi-page.test.js
    — εκεί ήταν που βρέθηκαν δύο ζωντανά bugs που 140 πράσινα assertions
-   δεν είχαν δει. Τα τρία πράγματα που πρέπει να αποδειχθούν:
-     · τα ΔΥΟ διαφορετικά σχήματα (πίνακας vs χάρτης) μετριούνται σωστά,
+   δεν είχαν δει. Τα πράγματα που πρέπει να αποδειχθούν:
+     · τα ΤΡΙΑ διαφορετικά σχήματα (πίνακας / χάρτης sN / χάρτης εισαγωγής),
      · «άδειο» και «δεν διαβάστηκε» ΔΕΝ ζωγραφίζονται ίδια (σταθ. 10),
-     · χαλασμένα δεδομένα δεν γίνονται σιωπηλό μηδέν. */
+     · χαλασμένα δεδομένα δεν γίνονται σιωπηλό μηδέν,
+     · ⭐ als-v587: ο ΧΑΡΤΗΣ βάζει ΜΙΑ ΓΡΑΜΜΗ ΑΝΑ ΠΡΟΤΑΣΗ και την ανάβει
+       ΣΤΗ ΣΩΣΤΗ ΘΕΣΗ — ένα `[0,3,7]` που θα ζωγράφιζε τις τρεις πρώτες θα
+       ήταν απολύτως αληθοφανές και εντελώς λάθος,
+     · ⭐ και η ΤΑΙΝΙΑ αθροίζει ΤΑ ΙΔΙΑ data-* που ελέγχει το §3. */
 section('6 · η ίδια η σελίδα, οδηγημένη');
 
-function drive(store) {
-  var cards = {};
-  PACKS.map(function (pk) { return pk.id; }).forEach(function (id) {
-    cards[id] = {
-      bar: { style: {} },
-      pct: { textContent: '', className: 'pct' }
-    };
-    cards[id].querySelector = function (sel) {
-      return sel === '.bar i' ? cards[id].bar : cards[id].pct;
-    };
+/* ⚠️ ΤΟ STUB ΠΡΕΠΕΙ ΝΑ ΣΥΜΠΕΡΙΦΕΡΕΤΑΙ ΣΑΝ DOM, ΟΧΙ ΣΑΝ ΑΝΤΙΚΕΙΜΕΝΟ JS:
+   το πραγματικό `textContent = 15` αποθηκεύει τη ΣΥΜΒΟΛΟΣΕΙΡΑ "15". Ένα
+   στείρο `{textContent:''}` κρατάει αριθμό και κάνει το test να βλέπει
+   διαφορά που ο browser δεν έχει — ψεύτικο κόκκινο. */
+function El() {
+  var o = { innerHTML: '', className: '', _a: {}, _t: '' };
+  Object.defineProperty(o, 'textContent', {
+    get: function () { return this._t; },
+    set: function (v) { this._t = String(v); },
+    enumerable: true
   });
-  var els = { ltHead: { innerHTML: '' }, ltSub: { innerHTML: '' }, ltN: { textContent: '' } };
-  var raf = [];
+  o.getAttribute = function (k) { return (k in this._a) ? this._a[k] : null; };
+  o.setAttribute = function (k, v) { this._a[k] = String(v); };
+  return o;
+}
+var IDS = ['ltMap', 'ltN', 'ltSub', 'ltHead', 'stKnown', 'stKnownOf', 'stDone', 'stDoneOf',
+  'stScenes', 'stTraps', 'eisPct', 'eisCnt', 'eisDash',
+  'nxKind', 'nxLec', 'nxRn', 'nxTtl', 'nxDash', 'nxNext', 'nxCnt', 'nxGo', 'nxGoT'];
+
+/* Η σειρά φτιάχνεται ΑΠΟ ΤΟ ΙΔΙΟ ΤΟ HTML της σελίδας — όχι από έναν πίνακα
+   εδώ μέσα που θα μπορούσε να διαφωνήσει μαζί της. */
+function makeRow(id) {
+  var blk = ROWS[id], r = El();
+  r._a = {
+    'data-lec': id,
+    'data-n': String(attrOf(blk, 'data-n')),
+    'data-sc': String(attrOf(blk, 'data-sc')),
+    'data-tr': String(attrOf(blk, 'data-tr')),
+    'href': /href="([^"]+)"/.exec(blk)[1]
+  };
+  r.pct = El(); r.cnt = El(); r.dash = El(); r.nxt = El(); r.ttl = El();
+  r.ttl.textContent = /<div class="t">([^<]+)<\/div>/.exec(blk)[1];
+  r.querySelector = function (sel) {
+    return sel === '.pct' ? r.pct : sel === '.cnt' ? r.cnt : sel === '.dash' ? r.dash
+         : sel === '.t' ? r.ttl : sel === '.nxt' ? r.nxt : null;
+  };
+  return r;
+}
+
+function drive(store) {
+  var rows = PACKS.map(function (pk) { return makeRow(pk.id); });
+  var byId = {}; IDS.forEach(function (k) { byId[k] = El(); });
   var doc = {
-    querySelector: function (sel) {
-      var m = sel.match(/data-lec="(\d+)"/);
-      return m ? cards[m[1]] : null;
+    querySelectorAll: function (sel) {
+      return sel === '.lt-row[data-lec]' ? rows : [];
     },
-    getElementById: function (id) { return els[id] || null; }
+    getElementById: function (id) { return byId[id] || null; }
   };
   var sandbox = {
     document: doc,
@@ -569,29 +664,76 @@ function drive(store) {
         return (k in store) ? store[k] : null;
       }
     },
-    requestAnimationFrame: function (fn) { raf.push(fn); },
     setTimeout: function () { },
+    requestAnimationFrame: function () { },
     window: {}
   };
   sandbox.window = sandbox;
   var src = HUB.slice(HUB.lastIndexOf('<script>') + 8, HUB.lastIndexOf('</script>'));
   vm.createContext(sandbox);
   vm.runInContext(src, sandbox);
-  /* Δύο περάσματα rAF — η μπάρα κινείται στο δεύτερο frame επίτηδες. */
-  for (var p = 0; p < 3; p++) { var q = raf; raf = []; q.forEach(function (fn) { fn(); }); }
-  return { cards: cards, els: els };
+  var cards = {};
+  PACKS.forEach(function (pk, i) { cards[pk.id] = rows[i]; });
+  return { cards: cards, els: byId, rows: rows };
+}
+
+/* Οι γραμμές του χάρτη, διαβασμένες όπως τις βλέπει το μάτι. */
+function lines(html) {
+  var out = [], re = /<i(?: class="([^"]*)")?><\/i>/g, m;
+  while ((m = re.exec(html))) out.push(m[1] || '');
+  return out;
+}
+function onAt(html) {
+  return lines(html).map(function (c, i) { return c === 'on' ? i : -1; })
+    .filter(function (i) { return i >= 0; });
+}
+function nowAt(html) {
+  var L = lines(html);
+  for (var i = 0; i < L.length; i++) if (L[i] === 'now') return i;
+  return -1;
 }
 
 /* — καθαρή εγκατάσταση: τίποτα δεν ξεκίνησε — */
 var A = drive({});
-eq(A.cards['16'].pct.textContent, 'δεν ξεκίνησε', 'άδειο XVI → «δεν ξεκίνησε»');
-eq(A.cards['17'].pct.textContent, 'δεν ξεκίνησε', 'άδειο XVII → «δεν ξεκίνησε»');
-eq(A.cards['18'].pct.textContent, 'δεν ξεκίνησε', 'άδειο XVIII → «δεν ξεκίνησε»');
-eq(A.cards['19'].pct.textContent, 'δεν ξεκίνησε', 'άδειο XIX → «δεν ξεκίνησε»');
-eq(A.cards['22'].pct.textContent, 'δεν ξεκίνησε', 'άδειο XXII → «δεν ξεκίνησε»');
-eq(A.els.ltN.textContent, PACKS.length + ' · ' + TOTAL + ' προτάσεις', 'ο μετρητής της ενότητας');
-ok(A.els.ltHead.innerHTML.indexOf('<b>' + TOTAL + '</b>') >= 0, 'το hero δείχνει το σύνολο, όχι πρόοδο');
-ok(A.els.ltHead.innerHTML.indexOf(WORD) >= 0, '   και το λέει «' + WORD + '»');
+PACKS.forEach(function (pk) {
+  eq(A.cards[pk.id].pct.textContent, 'δεν ξεκίνησε', 'άδειο ' + pk.id + ' → «δεν ξεκίνησε»');
+  eq(A.cards[pk.id].pct.className, 'pct', '   και χωρίς χρώμα — το μηδέν δεν βάφεται');
+});
+eq(A.cards['16'].cnt.textContent, '0 / ' + n16, 'και ο μετρητής λέει 0 / ' + n16);
+eq(lines(A.cards['16'].dash.innerHTML).length, n16,
+  '⭐ ΠΛΗΘΟΣ = ΠΛΗΘΟΣ: μία γραμμή ανά πρόταση (' + n16 + '), όχι ένα ποσοστό');
+eq(onAt(A.cards['16'].dash.innerHTML).length, 0, '   και καμία αναμμένη');
+eq(nowAt(A.cards['16'].dash.innerHTML), -1,
+  '   ⭐ ούτε «επόμενη» σε ενότητα που δεν ξεκίνησε — θα ήταν επινοημένη θέση');
+eq(A.els.ltN.textContent, PACKS.length + ' ενότητες · ' + TOTAL + ' προτάσεις', 'ο μετρητής της ενότητας');
+eq(A.els.stKnown.textContent, '0', 'η ταινία: μηδέν γνωστές');
+eq(A.els.stKnown.className, '', '   ⭐ και ΑΒΑΦΤΗ — ένα κοράλλι «0» διαβάζεται επίτευγμα');
+eq(A.els.stDone.textContent, '0', 'η ταινία: καμία ενότητα δεν έκλεισε');
+eq(A.els.stKnownOf.textContent, '/' + TOTAL, '   και το σύνολο βγαίνει από τις σειρές');
+eq(A.els.stDoneOf.textContent, '/' + PACKS.length, '   όπως και το πλήθος των ενοτήτων');
+
+/* ⭐ Η ΤΑΙΝΙΑ ΑΘΡΟΙΖΕΙ ΤΑ ΙΔΙΑ data-* ΠΟΥ ΕΛΕΓΞΕ ΤΟ §3 — ένα δεύτερο
+   άθροισμα γραμμένο με το χέρι θα διαφωνούσε σιωπηλά (σταθ. 15). */
+var SUM_SC = PACKS.reduce(function (a, pk) { return a + attrOf(ROWS[pk.id], 'data-sc'); }, 0);
+var SUM_TR = PACKS.reduce(function (a, pk) { return a + attrOf(ROWS[pk.id], 'data-tr'); }, 0);
+eq(A.els.stScenes.textContent, String(SUM_SC), 'οι σκηνές της ταινίας == το άθροισμα των σειρών (' + SUM_SC + ')');
+eq(A.els.stTraps.textContent, String(SUM_TR), 'οι παγίδες+σημειώσεις == το άθροισμα των σειρών (' + SUM_TR + ')');
+ok(HUB.indexOf('Παγίδες και σημειώσεις') > 0,
+  '⛔ και η ΕΤΙΚΕΤΑ της λέει και τα δύο: το XVII δίνει σημειώσεις, όχι παγίδες');
+
+/* — η κάρτα «συνέχισε» σε καθαρή εγκατάσταση — */
+eq(A.els.nxKind.textContent, '— ξεκίνα', '⭐ τίποτα δεν ξεκίνησε → λέει «ξεκίνα», όχι «συνέχισε»');
+eq(A.els.nxLec.textContent, 'Lectio XVI', '   και δείχνει το πρώτο κείμενο');
+eq(A.els.nxRn.textContent, 'I', '   με τη ΘΕΣΗ του, όχι τον αριθμό του βιβλίου');
+eq(A.els.nxTtl.textContent, 'Η τελευταία μάχη του Καίσαρα στη Γαλατία', '   και τον τίτλο του, από την ίδια τη σειρά');
+eq(A.els.nxNext.textContent, 'επόμενη: πρόταση 1', '   η επόμενη πράξη είναι η πρόταση 1');
+eq(A.els.nxCnt.textContent, '0 / ' + n16, '   0 / ' + n16);
+eq(A.els.nxGo.getAttribute('href'), 'latinika-lectio16.html', '   και το κουμπί πάει όντως εκεί');
+ok(A.cards['16'].className.indexOf('is-next') >= 0, '   η σειρά του σημαδεύεται ως επόμενη');
+eq(A.cards['16'].nxt.textContent, '— επόμενο', '   και το λέει με λέξεις');
+ok(A.cards['17'].className.indexOf('is-next') < 0, '⛔ και ΜΟΝΟ αυτή — όχι δεύτερη «επόμενη»');
+eq(A.els.eisPct.textContent, 'δεν ξεκίνησε', 'η εισαγωγή: δεν ξεκίνησε');
+eq(A.els.eisCnt.textContent, '0 / 8', '   0 / 8 κεφάλαια');
 
 /* — ⭐ ΤΑ ΔΥΟ ΣΧΗΜΑΤΑ. ΠΙΝΑΚΑΣ αριστερά, ΧΑΡΤΗΣ δεξιά, στην ίδια σελίδα. — */
 var B = drive({
@@ -601,64 +743,145 @@ var B = drive({
   'lectio19_known_v1': JSON.stringify({ s1: true, s4: true, s7: false, s10: true }),
   'lectio22_known_v1': JSON.stringify({ s2: true, s6: true, s8: false, s9: true, s11: true })
 });
-eq(B.cards['16'].pct.textContent, '4/16 τα ξέρεις', '⭐ ΠΙΝΑΚΑΣ: 4 δείκτες → 4');
-eq(B.cards['17'].pct.textContent, '3/11 τα ξέρεις', '⭐ ΧΑΡΤΗΣ: τα `false` ΔΕΝ μετράνε → 3');
-eq(B.cards['18'].pct.textContent, '2/11 τα ξέρεις', '⭐ και το τρίτο κλειδί μετριέται χωριστά');
-eq(B.cards['19'].pct.textContent, '3/10 τα ξέρεις', '⭐ και το ΤΕΤΑΡΤΟ — τα `false` ξανά δεν μετράνε');
-eq(B.cards['22'].pct.textContent, '4/11 τα ξέρεις', '⭐ και το ΠΕΜΠΤΟ — τα `false` ξανά δεν μετράνε');
-eq(B.cards['16'].bar.style.transform, 'scaleX(0.25)', 'και η μπάρα του XVI κινήθηκε');
-ok(B.els.ltHead.innerHTML.indexOf('<b>16</b> από <b>' + TOTAL + '</b>') >= 0, 'το hero αθροίζει και τα πέντε');
-ok(B.els.ltSub.innerHTML.indexOf('<b>' + (TOTAL - 16) + '</b>') >= 0, 'και λέει πόσα μένουν');
+eq(B.cards['16'].cnt.textContent, '4 / 16', '⭐ ΠΙΝΑΚΑΣ: 4 δείκτες → 4');
+eq(B.cards['17'].cnt.textContent, '3 / 11', '⭐ ΧΑΡΤΗΣ: τα `false` ΔΕΝ μετράνε → 3');
+eq(B.cards['18'].cnt.textContent, '2 / 11', '⭐ και το τρίτο κλειδί μετριέται χωριστά');
+eq(B.cards['19'].cnt.textContent, '3 / 10', '⭐ και το ΤΕΤΑΡΤΟ — τα `false` ξανά δεν μετράνε');
+eq(B.cards['22'].cnt.textContent, '4 / 11', '⭐ και το ΠΕΜΠΤΟ — τα `false` ξανά δεν μετράνε');
+PACKS.forEach(function (pk) {
+  eq(B.cards[pk.id].pct.textContent, 'σε εξέλιξη', pk.id + ': ξεκίνησε και δεν έκλεισε → «σε εξέλιξη»');
+  eq(B.cards[pk.id].pct.className, 'pct on', '   και ανάβει');
+});
 
-/* ⛔ ΤΟ ΠΙΟ ΕΥΚΟΛΟ ΛΑΘΟΣ ΤΗΣ ΠΡΟΣΘΗΚΗΣ: τα XVII και XVIII μοιράζονται
-   μηχανή, άρα ένα copy-paste κλειδί θα έδειχνε την ΙΔΙΑ πρόοδο σε δύο
-   κάρτες και κανείς δεν θα το πρόσεχε — και οι δύο θα ήταν «αληθινές». */
+/* ⭐⭐ Η ΘΕΣΗ, ΟΧΙ ΜΟΝΟ ΤΟ ΠΛΗΘΟΣ. Ένας χάρτης που άναβε τις 4 ΠΡΩΤΕΣ
+   γραμμές για το `[0,3,7,15]` θα έδειχνε το ίδιο νούμερο και θα έλεγε
+   ψέματα για το ΠΟΥ βρίσκεται μέσα στο κείμενο — που είναι ο λόγος που
+   υπάρχει ο χάρτης. */
+eq(onAt(B.cards['16'].dash.innerHTML).join(','), '0,3,7,15',
+  '⭐⭐ ΠΙΝΑΚΑΣ: οι αναμμένες γραμμές είναι ΑΚΡΙΒΩΣ οι δείκτες του (0-based)');
+eq(onAt(B.cards['17'].dash.innerHTML).join(','), '0,4,8',
+  '⭐⭐ ΧΑΡΤΗΣ: το `s1` είναι η ΠΡΩΤΗ γραμμή (1-based → 0-based), όχι η δεύτερη');
+eq(nowAt(B.cards['16'].dash.innerHTML), 1,
+  '⭐ και η «επόμενη» είναι η πρώτη ΑΣΒΗΣΤΗ (η 2η), όχι η επόμενη μετά την τελευταία αναμμένη');
+eq(B.els.stKnown.textContent, '16', 'η ταινία αθροίζει και τις πέντε');
+eq(B.els.stKnown.className, 'hot', '   και τώρα βάφεται, γιατί δεν είναι μηδέν');
+eq(B.els.stDone.textContent, '0', '   καμία δεν έκλεισε ακόμη');
+eq(B.els.nxRn.textContent, 'I', 'η κάρτα δείχνει την ΠΡΩΤΗ ανοιχτή ενότητα');
+eq(B.els.nxKind.textContent, '— συνέχισε', '   και τώρα λέει «συνέχισε»');
+eq(B.els.nxNext.textContent, 'επόμενη: πρόταση 2', '   με την πρώτη πρόταση που λείπει');
+
+/* Ο χάρτης: πέντε ομάδες, και η καθεμιά με τον ΛΟΓΟ της ως --n. */
+eq(count(B.els.ltMap.innerHTML, '<div class="lt-mg'), PACKS.length, 'ο χάρτης έχει μία ομάδα ανά ενότητα');
+PACKS.forEach(function (pk) {
+  ok(B.els.ltMap.innerHTML.indexOf('--n:' + attrOf(ROWS[pk.id], 'data-n')) > 0,
+    '   το πλάτος της ομάδας ' + pk.id + ' είναι ΟΙ ΠΡΟΤΑΣΕΙΣ της (--n), όχι ίσο μερίδιο');
+});
+eq(lines(B.els.ltMap.innerHTML).length, TOTAL,
+  '⭐ και όλος ο χάρτης έχει ΑΚΡΙΒΩΣ ' + TOTAL + ' γραμμές — μία ανά πρόταση');
+
+/* ⛔ ΤΟ ΠΙΟ ΕΥΚΟΛΟ ΛΑΘΟΣ ΤΗΣ ΠΡΟΣΘΗΚΗΣ: τα XVII-XXII μοιράζονται μηχανή,
+   άρα ένα copy-paste κλειδί θα έδειχνε την ΙΔΙΑ πρόοδο σε δύο σειρές και
+   κανείς δεν θα το πρόσεχε — και οι δύο θα ήταν «αληθινές». */
 var B2 = drive({ 'lectio17_known_v1': JSON.stringify({ s1: true, s2: true, s3: true }) });
-eq(B2.cards['17'].pct.textContent, '3/11 τα ξέρεις', 'το XVII βλέπει το δικό του κλειδί');
-eq(B2.cards['18'].pct.textContent, 'δεν ξεκίνησε', '⛔ και το XVIII ΔΕΝ δανείζεται την πρόοδό του');
-eq(B2.cards['19'].pct.textContent, 'δεν ξεκίνησε', '⛔ ούτε το XIX — τέσσερις κάρτες, μία μηχανή, τέσσερα κλειδιά');
-eq(B2.cards['22'].pct.textContent, 'δεν ξεκίνησε', '⛔ ούτε το XXII');
+eq(B2.cards['17'].cnt.textContent, '3 / 11', 'το XVII βλέπει το δικό του κλειδί');
+eq(B2.cards['18'].cnt.textContent, '0 / 11', '⛔ και το XVIII ΔΕΝ δανείζεται την πρόοδό του');
+eq(B2.cards['19'].cnt.textContent, '0 / 10', '⛔ ούτε το XIX');
+eq(B2.cards['22'].cnt.textContent, '0 / 11', '⛔ ούτε το XXII');
+eq(B2.els.nxRn.textContent, 'I', '   και η κάρτα δείχνει το XVI, που δεν ξεκίνησε καν');
 
-/* Και ανάποδα: πρόοδος ΜΟΝΟ στο XIX δεν ξεχειλίζει στα άλλα δύο. */
 var B3 = drive({ 'lectio19_known_v1': JSON.stringify({ s1: true, s2: true }) });
-eq(B3.cards['19'].pct.textContent, '2/10 τα ξέρεις', 'το XIX βλέπει το δικό του κλειδί');
-eq(B3.cards['17'].pct.textContent, 'δεν ξεκίνησε', '   και δεν το δανείζει στο XVII');
-eq(B3.cards['18'].pct.textContent, 'δεν ξεκίνησε', '   ούτε στο XVIII');
-eq(B3.cards['22'].pct.textContent, 'δεν ξεκίνησε', '   ούτε στο XXII');
+eq(B3.cards['19'].cnt.textContent, '2 / 10', 'το XIX βλέπει το δικό του κλειδί');
+eq(B3.cards['17'].cnt.textContent, '0 / 11', '   και δεν το δανείζει στο XVII');
+eq(B3.cards['18'].cnt.textContent, '0 / 11', '   ούτε στο XVIII');
+eq(B3.cards['22'].cnt.textContent, '0 / 11', '   ούτε στο XXII');
 
-/* Και η ΤΕΤΑΡΤΗ κατεύθυνση: πρόοδος μόνο στο XXII μένει στο XXII. */
 var B4 = drive({ 'lectio22_known_v1': JSON.stringify({ s1: true, s2: true, s3: true }) });
-eq(B4.cards['22'].pct.textContent, '3/11 τα ξέρεις', 'το XXII βλέπει το δικό του κλειδί');
-eq(B4.cards['17'].pct.textContent, 'δεν ξεκίνησε', '   και δεν το δανείζει στο XVII');
-eq(B4.cards['18'].pct.textContent, 'δεν ξεκίνησε', '   ούτε στο XVIII');
-eq(B4.cards['19'].pct.textContent, 'δεν ξεκίνησε', '   ούτε στο XIX');
+eq(B4.cards['22'].cnt.textContent, '3 / 11', 'το XXII βλέπει το δικό του κλειδί');
+eq(B4.cards['17'].cnt.textContent, '0 / 11', '   και δεν το δανείζει στο XVII');
+eq(B4.cards['18'].cnt.textContent, '0 / 11', '   ούτε στο XVIII');
+eq(B4.cards['19'].cnt.textContent, '0 / 10', '   ούτε στο XIX');
+
+/* ⭐ ΚΑΙ Η ΕΙΣΑΓΩΓΗ ΕΧΕΙ ΤΟ ΔΙΚΟ ΤΗΣ, ΤΡΙΤΟ ΣΧΗΜΑ — κλειδιά που ΔΕΝ είναι
+   `sN`. Ένας μετρητής που έψαχνε `sN` θα γύριζε σιωπηλό μηδέν εδώ. */
+var G = drive({ 'eisagogi:v1': JSON.stringify({ a: true, g: true, d: false, z: true }) });
+eq(G.els.eisPct.textContent, 'σε εξέλιξη', 'η εισαγωγή μετριέται με ΤΑ ΔΙΚΑ ΤΗΣ κλειδιά');
+eq(G.els.eisCnt.textContent, '3 / 8', '   3 από 8, και τα `false` δεν μετράνε');
+eq(G.els.stKnown.textContent, '0',
+  '⛔ και ΔΕΝ μπαίνει στο σύνολο των προτάσεων — είναι ΑΝΑΓΝΩΣΜΑ, όχι εξάσκηση');
 
 /* — ⛔ Η ΑΣΘΕΝΕΙΑ: κλειδωμένος δίσκος. ΔΕΝ επιτρέπεται «δεν ξεκίνησε». — */
-var C = drive({ 'lectio16:v1': '__THROW__', 'lectio17_known_v1': '__THROW__',
-                'lectio18_known_v1': '__THROW__', 'lectio19_known_v1': '__THROW__',
-                'lectio22_known_v1': '__THROW__' });
-eq(C.cards['16'].pct.textContent, 'δεν διαβάστηκε', '⛔ getItem πετάει → «δεν διαβάστηκε», ΟΧΙ 0');
-eq(C.cards['16'].pct.className, 'pct dead', '   και ζωγραφίζεται διαφορετικά');
-eq(C.cards['18'].pct.textContent, 'δεν διαβάστηκε', '   το ίδιο και το τρίτο');
-eq(C.cards['19'].pct.textContent, 'δεν διαβάστηκε', '   και το τέταρτο');
-eq(C.cards['22'].pct.textContent, 'δεν διαβάστηκε', '   και το πέμπτο');
-ok(C.els.ltSub.innerHTML.indexOf('Δεν μπόρεσα να διαβάσω') >= 0, '   και το λέει και το hero');
+var C = drive({
+  'lectio16:v1': '__THROW__', 'lectio17_known_v1': '__THROW__',
+  'lectio18_known_v1': '__THROW__', 'lectio19_known_v1': '__THROW__',
+  'lectio22_known_v1': '__THROW__', 'eisagogi:v1': '__THROW__'
+});
+PACKS.forEach(function (pk) {
+  eq(C.cards[pk.id].pct.textContent, 'δεν διαβάστηκε', '⛔ getItem πετάει → «δεν διαβάστηκε», ΟΧΙ 0');
+  eq(C.cards[pk.id].pct.className, 'pct dead', '   και ζωγραφίζεται στο ΔΙΚΟ του κανάλι');
+  eq(C.cards[pk.id].cnt.textContent, '— / ' + attrOf(ROWS[pk.id], 'data-n'),
+    '   και ο μετρητής λέει «—», όχι «0»');
+  ok(C.cards[pk.id].dash.className.indexOf('dead') >= 0,
+    '   ⭐ και ΟΙ ΠΑΥΛΙΤΣΕΣ το λένε κι αυτές — σβηστές γραμμές χωρίς σήμανση\n' +
+    '         διαβάζονται «δεν ξέρεις καμία», που είναι άλλο πράγμα');
+  eq(onAt(C.cards[pk.id].dash.innerHTML).length, 0, '   και καμία αναμμένη');
+});
+eq(C.els.stKnown.textContent, '—', '⛔ ούτε η ταινία επινοεί μηδέν');
+eq(C.els.stKnown.className, 'dead', '   και το λέει στο κανάλι του σφάλματος');
+eq(C.els.stDone.textContent, '—', '   το ίδιο και οι κλειστές ενότητες');
+ok(C.els.ltSub.innerHTML.indexOf('Δεν μπόρεσα να διαβάσω') >= 0, '   και το λέει και το εξώφυλλο');
+eq(C.els.nxKind.textContent, '— δεν διαβάστηκε', '⛔ και η κάρτα δεν προτείνει «ξεκίνα από το XVI»');
+eq(C.els.nxTtl.textContent, 'Δεν ξέρω πού έμεινες', '   το λέει με λέξεις');
+eq(C.els.eisPct.textContent, 'δεν διαβάστηκε', '   και η εισαγωγή το ίδιο');
+ok(C.els.ltMap.innerHTML.indexOf('lt-mg dead') > 0, '   και ο χάρτης σημαδεύει τις ομάδες του');
+
+/* ⭐ ΚΑΙ ΤΟ ΜΕΡΙΚΟ ΣΦΑΛΜΑ ΕΧΕΙ ΔΙΚΗ ΤΟΥ ΦΩΝΗ: τέσσερις σειρές αληθινές,
+   μία άγνωστη. Ένα σκέτο «όλα καλά» θα έκρυβε ότι ένα νούμερο λείπει. */
+var H = drive({ 'lectio18_known_v1': '__THROW__', 'lectio16:v1': JSON.stringify([0, 1]) });
+eq(H.cards['18'].pct.textContent, 'δεν διαβάστηκε', 'η μία σειρά λέει ότι δεν διαβάστηκε');
+eq(H.cards['16'].cnt.textContent, '2 / 16', '   και οι υπόλοιπες μετράνε κανονικά');
+ok(H.els.ltSub.innerHTML.indexOf('Κάποιες ενότητες δεν διαβάστηκαν') >= 0,
+  '⭐ και το εξώφυλλο το ΛΕΕΙ, αντί να δείξει ένα σύνολο που λείπει κομμάτι');
 
 /* — σπασμένο JSON, και λάθος σχήμα στο σωστό κλειδί — */
-var D = drive({ 'lectio16:v1': '{not json', 'lectio17_known_v1': JSON.stringify([1, 2, 3]),
-                'lectio18_known_v1': JSON.stringify([1, 2, 3]),
-                'lectio19_known_v1': JSON.stringify([1, 2, 3]),
-                'lectio22_known_v1': JSON.stringify([1, 2, 3]) });
+var D = drive({
+  'lectio16:v1': '{not json', 'lectio17_known_v1': JSON.stringify([1, 2, 3]),
+  'lectio18_known_v1': JSON.stringify([1, 2, 3]), 'lectio19_known_v1': JSON.stringify([1, 2, 3]),
+  'lectio22_known_v1': JSON.stringify([1, 2, 3]), 'eisagogi:v1': JSON.stringify([1, 2])
+});
 eq(D.cards['16'].pct.textContent, 'δεν διαβάστηκε', 'σπασμένο JSON → «δεν διαβάστηκε»');
 eq(D.cards['17'].pct.textContent, 'δεν διαβάστηκε', '⭐ ΠΙΝΑΚΑΣ σε κλειδί ΧΑΡΤΗ → «δεν διαβάστηκε», ΟΧΙ 0');
 eq(D.cards['18'].pct.textContent, 'δεν διαβάστηκε', '   και στο XVIII, που μοιράζεται τον ίδιο μετρητή');
 eq(D.cards['19'].pct.textContent, 'δεν διαβάστηκε', '   και στο XIX');
 eq(D.cards['22'].pct.textContent, 'δεν διαβάστηκε', '   και στο XXII');
+eq(D.els.eisPct.textContent, 'δεν διαβάστηκε', '   και η εισαγωγή με πίνακα αντί για χάρτη');
 
-/* — και ένα παλιό αρχείο με παραπάνω δείκτες δεν ξεχειλίζει τη μπάρα — */
+/* — και ένα παλιό αρχείο με παραπάνω δείκτες δεν ξεχειλίζει τον χάρτη — */
 var E = drive({ 'lectio16:v1': JSON.stringify([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]) });
-eq(E.cards['16'].pct.textContent, '16/16 τα ξέρεις', 'δεν ξεπερνάει ποτέ το σύνολο');
-eq(E.cards['16'].bar.style.transform, 'scaleX(1)', 'και η μπάρα σταματάει στο 100%');
+eq(E.cards['16'].cnt.textContent, '16 / 16', 'δεν ξεπερνάει ποτέ το σύνολο');
+eq(E.cards['16'].pct.textContent, 'ολοκληρώθηκε', '   και λέει ότι έκλεισε');
+eq(lines(E.cards['16'].dash.innerHTML).length, n16, '   και ο χάρτης κρατάει ' + n16 + ' γραμμές, ούτε μία παραπάνω');
+eq(nowAt(E.cards['16'].dash.innerHTML), -1, '   ⛔ και καμία «επόμενη» σε ενότητα που έκλεισε');
+eq(E.els.stDone.textContent, '1', '   η ταινία μετράει μία κλειστή');
+eq(E.els.nxRn.textContent, 'II', '⭐ και η κάρτα προχωράει μόνη της στην επόμενη ανοιχτή');
+
+/* — όλα κλειστά: ΤΟ ΜΟΝΟ ΣΗΜΕΙΟ ΠΟΥ ΛΕΕΙ «πέντε ενότητες» ΠΕΖΑ — */
+var all16 = []; for (var z = 0; z < n16; z++) all16.push(z);
+function allMap(n) { var o = {}; for (var i2 = 1; i2 <= n; i2++) o['s' + i2] = true; return o; }
+var F = drive({
+  'lectio16:v1': JSON.stringify(all16),
+  'lectio17_known_v1': JSON.stringify(allMap(n17)),
+  'lectio18_known_v1': JSON.stringify(allMap(n18)),
+  'lectio19_known_v1': JSON.stringify(allMap(n19)),
+  'lectio22_known_v1': JSON.stringify(allMap(n22))
+});
+eq(F.els.stKnown.textContent, String(TOTAL), 'όλα κλειστά → η ταινία λέει ' + TOTAL);
+eq(F.els.stDone.textContent, String(PACKS.length), '   και ' + PACKS.length + ' ενότητες έκλεισαν');
+eq(F.els.nxTtl.textContent, 'Και οι ' + WORD.toLowerCase() + ' ενότητες κλειδωμένες.',
+  '⭐ και η κάρτα αλλάζει φωνή αντί να δείχνει κενό');
+eq(F.els.nxGoT.textContent, 'Ξανά από την αρχή', '   με την επόμενη πράξη, όχι με συγχαρητήρια');
+PACKS.forEach(function (pk) {
+  ok(F.cards[pk.id].className.indexOf('is-next') < 0, '⛔ και καμία σειρά δεν είναι «επόμενη» (' + pk.id + ')');
+});
 
 console.log('\n  ' + pass + ' πέρασαν, ' + fail + ' απέτυχαν\n');
 if (fail) process.exit(1);

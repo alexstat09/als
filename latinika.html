@@ -7,10 +7,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Λατινικά">
   <title>Λατινικά · MÉTRON</title>
-  <meta name="theme-color" content="#050506">
+  <meta name="theme-color" content="#0a0908">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
+  <!-- ⛔⛔ Η Instrument Serif (`--au-serif`) έχει ΜΗΔΕΝ ελληνικά γλυφά και πέφτει
+       στη Georgia — η αιτία του «οι τόνοι δεν είναι σωστοί» (als-v504). Κάθε
+       ΕΛΛΗΝΙΚΟΣ serif αυτής της σελίδας φοράει `--lt-gr` (GFS Didot). Η
+       `--au-serif` επιτρέπεται ΜΟΝΟ σε λατινικά γράμματα και σε ΝΟΥΜΕΡΑ. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=GFS+Didot&amp;display=swap">
   <script src="water.js"></script>
   <script src="als-profile.js" defer></script>
   <script src="topbar.js" defer></script>
@@ -24,89 +29,292 @@
          · το `latin-engine.js` και τα 137 assertions του μένουν στη θέση τους.
        ⚠️ Το πλακίδιο του Home («% σωστά · κλίση», home-live.js) εξακολουθεί να
        διαβάζει το `lat:v1` — δείχνει ό,τι πραγματικά έκανε, απλώς δεν μεγαλώνει
-       πια. ΔΕΝ επινοήθηκε νούμερο για να το γεμίσει (σταθ. 33). -->
+       πια. ΔΕΝ επινοήθηκε νούμερο για να το γεμίσει (σταθ. 33).
+
+       ⭐⭐ als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ. Δική του εντολή: η βιβλιοθήκη φοράει τώρα τη
+       γλώσσα του `homework.html#kentro` (CLAUDE.md § «Η ΑΙΣΘΗΤΙΚΗ»): κέλυφος
+       1180px, διαδρομή-ψίθυρος, εξώφυλλο + ΧΑΡΤΗΣ με ΜΙΑ ΓΡΑΜΜΗ ΑΝΑ ΠΡΟΤΑΣΗ
+       (πλήθος = πλήθος, ποτέ ποσοστό), ταινία μετρήσεων, και οι ενότητες σε
+       ΕΝΑ πλαίσιο με γραμμές ανάμεσα. Καμία λειτουργία δεν αφαιρέθηκε: οι
+       τρεις απαντήσεις της σταθ. 10 ζωγραφίζονται ακόμη ΔΙΑΦΟΡΕΤΙΚΑ. -->
   <script src="vendor/supabase.min.js"></script>
   <script src="sync.js" defer></script>
   <script src="als-dialog.js" defer></script>
-  <script>window.__pmAutoSel='.lt-hero,.lt-sh,.lt-lec,.lt-foot';</script>
+  <script>window.__pmAutoSel='.lt-mast,.lt-mapw,.lt-band,.lt-sh,.lt-box,.lt-foot';</script>
   <script src="page-motion.js" defer></script>
 <style>
-  :root{ --lt:63,224,176; --warn:255,138,107; }
+  :root{
+    /* ⭐ ΕΝΑ ΧΡΩΜΑ ΑΝΑ ΟΝΤΟΤΗΤΑ, δηλωμένο ΜΙΑ φορά ως R,G,B. Τα Λατινικά
+       είναι το κοράλλι· το `--warn` είναι ΑΛΛΟ ΚΑΝΑΛΙ και δεν το δανείζεται
+       τίποτα άλλο — ζωγραφίζει ΜΟΝΟ το «δεν διαβάστηκε». */
+    --lt:224,141,110;
+    --warn:255,107,139;
+    --lt-bg:#0a0908;
+    --lt-gr:"GFS Didot","Times New Roman",Times,serif;
+  }
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ min-height:100%; }
   body{
-    background:var(--au-void,#050506); color:var(--au-ivory,#f5f2ec);
+    background:var(--lt-bg); color:var(--au-ivory,#f5f2ec);
     font-family:var(--au-sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif);
     -webkit-font-smoothing:antialiased;
     padding:0 0 calc(96px + env(safe-area-inset-bottom));
   }
-  .lt-wrap{ max-width:760px; margin:0 auto; padding:0 18px; }
+  /* ⭐ ΤΟ ΛΑΠΤΟΠ ΔΕΝ ΕΙΝΑΙ ΜΕΓΑΛΟ ΚΙΝΗΤΟ (σταθ. 51): κέλυφος 1180,
+     ΑΛΛΑ η πρόζα μένει 46–56ch. Όλα τα breakpoints σε `max-width`. */
+  .lt-wrap{ max-width:1180px; margin:0 auto; padding:0 18px; }
 
-  /* ── hero ─────────────────────────────────────────── */
-  .lt-hero{ padding:calc(env(safe-area-inset-top) + 22px) 0 4px; }
-  .lt-eyebrow{ font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:9px; font-weight:700;
-    letter-spacing:.24em; text-transform:uppercase; color:rgba(var(--lt),.92); margin-bottom:12px; }
-  .lt-h{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400;
-    font-size:clamp(27px,7vw,38px); line-height:1.06; letter-spacing:-.01em; }
+  /* ── ① Η ΔΙΑΔΡΟΜΗ ─────────────────────────────────────────────── */
+  .lt-top{ display:flex; align-items:center; gap:14px;
+    padding:calc(env(safe-area-inset-top) + 20px) 0 0;
+    font:400 9.5px/1 var(--au-mono,ui-monospace,Menlo,monospace);
+    letter-spacing:.24em; text-transform:uppercase; }
+  .lt-top .a{ color:var(--au-dim,rgba(245,242,236,.56)); flex:none; }
+  .lt-top .sl{ color:rgba(245,242,236,.18); flex:none; }
+  .lt-top .b{ color:var(--au-faint,rgba(245,242,236,.3)); min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lt-top .r{ flex:1 1 auto; min-width:24px; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+  .lt-top .c{ color:rgb(var(--lt)); flex:none; }
+
+  /* ── ② ΤΟ ΕΞΩΦΥΛΛΟ ────────────────────────────────────────────── */
+  .lt-mast{ display:grid; grid-template-columns:minmax(0,1fr) 440px; gap:0 46px;
+    align-items:start; padding:56px 0 46px; }
+  .lt-h{ font-family:var(--lt-gr); font-style:italic; font-weight:400;
+    font-size:clamp(40px,7.2vw,104px); line-height:1.02; letter-spacing:-.018em;
+    color:var(--au-ivory,#f5f2ec); }
   .lt-h b{ font-weight:400; color:rgb(var(--lt)); font-variant-numeric:tabular-nums; }
-  .lt-hsub{ font-size:13px; color:var(--au-dim,#9a97a3); margin-top:11px; line-height:1.55; max-width:52ch; }
-  .lt-hsub b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
+  .lt-lead{ font-size:14px; line-height:1.72; color:var(--au-dim,rgba(245,242,236,.56));
+    margin-top:28px; max-width:46ch; }
+  .lt-lead b{ color:var(--au-ivory,#f5f2ec); font-weight:600; }
 
-  /* ── section head ─────────────────────────────────── */
-  .lt-sh{ display:flex; align-items:baseline; gap:10px; margin:38px 0 16px; }
-  .lt-sh h2{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:21px; }
-  .lt-sh .r{ flex:1; height:1px; background:var(--au-line,#26262f); }
-  .lt-sh .n{ font-family:var(--au-mono,monospace); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
-    color:var(--au-faint,#5c5964); white-space:nowrap; }
+  /* ── ③ Η ΚΑΡΤΑ «ΣΥΝΕΧΙΣΕ» ─────────────────────────────────────── */
+  .lt-next{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:18px;
+    padding:22px 24px 24px;
+    background:linear-gradient(180deg,rgba(255,255,255,.032),rgba(255,255,255,.008)); }
+  .nx-hd{ display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    font:400 9.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.22em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .nx-ttl{ display:flex; align-items:baseline; gap:16px; margin-top:24px; min-height:52px; }
+  /* ⭐ Ο ΛΑΤΙΝΙΚΟΣ ΑΡΙΘΜΟΣ είναι λατινικά γράμματα → `--au-serif` επιτρεπτή. */
+  .nx-ttl b{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-weight:400; font-size:34px; line-height:1; color:rgba(var(--lt),.52); flex:none; }
+  .nx-ttl span{ font-family:var(--lt-gr); font-style:italic; font-size:22px; line-height:1.22;
+    color:var(--au-ivory,#f5f2ec); min-width:0; }
+  /* ── Η ΠΑΥΛΙΤΣΑ — ΜΙΑ ΑΝΑ ΠΡΟΤΑΣΗ, ΠΑΝΤΟΥ Η ΙΔΙΑ ────────────────
+     Ίδιο στοιχείο στην κάρτα «συνέχισε», στη σειρά και στον χάρτη: αν
+     άλλαζε σχήμα ανά θέση, το μάτι δεν θα τις συνέδεε μεταξύ τους. */
+  .dash{ display:flex; gap:4px; align-items:stretch; height:3px; }
+  .dash i{ flex:1 1 0; min-width:0; border-radius:2px; background:rgba(255,255,255,.08); }
+  .dash i.on{ background:rgb(var(--lt)); }
+  .dash i.now{ background:rgba(var(--lt),.36); }
+  .dash.dead i{ background:rgba(var(--warn),.2); }
+  .nx-dash{ margin-top:22px; }
+  .nx-dash.many{ gap:2px; }
+  .nx-f{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:13px;
+    font:400 10.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.06em;
+    color:var(--au-faint,rgba(245,242,236,.3)); font-variant-numeric:tabular-nums; }
+  .nx-f .dead{ color:rgb(var(--warn)); }
+  .nx-go{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:22px;
+    text-decoration:none; background:rgb(var(--lt)); color:#1a120d; border-radius:14px;
+    padding:10px 10px 10px 22px; font-size:14.5px; letter-spacing:-.002em;
+    transition:transform .4s cubic-bezier(.16,1,.3,1),filter .4s; }
+  .nx-go i{ font-style:normal; width:32px; height:32px; border-radius:50%; flex:none;
+    background:rgba(0,0,0,.24); display:flex; align-items:center; justify-content:center; font-size:12.5px; }
+  .nx-go:hover{ filter:brightness(1.07); transform:translateY(-1px); }
+  .nx-go:active{ transform:scale(.995); }
+  .nx-go:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:3px; }
 
-  /* ── η ενότητα ────────────────────────────────────
-     Η κάρτα είναι Ο ΛΟΓΟΣ ΠΟΥ ΥΠΑΡΧΕΙ Η ΣΕΛΙΔΑ: εδώ κάνει browse και
-     διαλέγει. Άρα δίνει και τα ΤΡΙΑ που χρειάζεται μια επιλογή — ΠΟΙΟ
-     κείμενο, ΠΟΣΟ είναι, και ΠΟΥ βρίσκεται μέσα του. ── */
-  .lt-lec{ position:relative; display:block; text-decoration:none; color:inherit;
-    border:1px solid var(--au-line,#26262f); border-radius:20px; padding:26px 28px 22px; margin-bottom:14px;
-    background:linear-gradient(150deg,rgba(var(--lt),.055),rgba(255,255,255,.012) 55%,transparent);
-    transition:transform .45s cubic-bezier(.16,1,.3,1),border-color .45s,background .45s; }
-  .lt-lec:before{ content:""; position:absolute; left:28px; right:28px; top:0; height:1px; opacity:0;
-    background:linear-gradient(90deg,transparent,rgba(var(--lt),.6),transparent); transition:opacity .45s; }
-  .lt-lec:hover{ transform:translateY(-2px); border-color:rgba(var(--lt),.34); }
-  .lt-lec:hover:before{ opacity:1; }
-  .lt-lec:active{ transform:scale(.994); }
-  .lt-lec:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:3px; }
-  .lt-lec .rn{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-size:34px; line-height:1;
-    color:rgba(var(--lt),.5); }
-  .lt-eis .rn{ font-size:30px; }
-  .lt-lec .src{ font-family:var(--au-mono,monospace); font-size:9px; font-weight:700; letter-spacing:.2em;
-    text-transform:uppercase; color:var(--au-faint,#5c5964); margin-top:14px; }
-  .lt-lec .t{ font-family:var(--au-serif,Georgia,serif); font-style:italic; font-weight:400; font-size:25px;
-    line-height:1.18; margin-top:7px; }
-  .lt-lec .d{ margin-top:9px; font-size:13.5px; line-height:1.6; color:var(--au-dim,#9a97a3); max-width:46ch; }
-  .lt-lec .in{ display:flex; flex-wrap:wrap; row-gap:6px; margin-top:18px; padding-top:14px;
-    border-top:1px solid var(--au-line,#26262f); }
-  .lt-lec .in i{ font-style:normal; font-size:12px; color:var(--au-faint,#5c5964); padding:0 12px;
-    border-left:1px solid var(--au-line,#26262f); }
-  .lt-lec .in i:first-child{ padding-left:0; border-left:none; }
-  .lt-lec .pr{ display:flex; align-items:center; gap:11px; margin-top:16px; }
-  .lt-lec .bar{ flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.07); overflow:hidden; }
-  /* Σταθερό πλάτος + scaleX: το app κινεί μόνο transform/opacity, ποτέ layout. */
-  .lt-lec .bar i{ display:block; height:100%; width:100%; background:rgb(var(--lt));
-    transform:scaleX(0); transform-origin:left; transition:transform .55s cubic-bezier(.16,1,.3,1); }
-  .lt-lec .pct{ font-family:var(--au-mono,monospace); font-size:10.5px; letter-spacing:.06em;
-    color:var(--au-dim,#9a97a3); font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .lt-lec .pct.dead{ color:rgb(var(--warn)); }
-  .lt-lec .go{ position:absolute; right:28px; top:26px; font-family:var(--au-mono,monospace);
-    font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(var(--lt),.9);
-    opacity:0; transition:opacity .45s; }
-  .lt-lec:hover .go{ opacity:1; }
+  /* ── ④ Ο ΧΑΡΤΗΣ — ΠΛΗΘΟΣ = ΠΛΗΘΟΣ ──────────────────────────────
+     ⭐ ΜΙΑ ΓΡΑΜΜΗ ΑΝΑ ΠΡΟΤΑΣΗ, ποτέ ένα συνεχές ποσοστό: ένα «42%»
+     κρύβει αν πίσω του είναι 5 πράγματα ή 500 (CLAUDE.md §⑦). */
+  .lt-mapw{ margin-top:8px; }
+  .lt-maphd{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; row-gap:10px; }
+  .lt-maphd .k{ font:400 9.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.22em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .lt-leg{ margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; row-gap:8px; }
+  .lt-leg span{ display:inline-flex; align-items:center; gap:7px;
+    font:400 9px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .lt-leg i{ width:7px; height:7px; border-radius:1px; flex:none; }
+  .lt-leg .l1 i{ background:rgb(var(--lt)); }
+  .lt-leg .l2 i{ box-shadow:inset 0 0 0 1px rgba(var(--lt),.85); }
+  .lt-leg .l3 i{ box-shadow:inset 0 0 0 1px rgba(255,255,255,.18); }
 
-  .lt-foot{ margin:34px 0 0; font-size:11.5px; color:var(--au-faint,#5c5964); line-height:1.7; }
-  .lt-foot b{ color:var(--au-dim,#9a97a3); font-weight:400; }
+  .lt-map{ display:flex; gap:40px; margin-top:24px; }
+  /* ⚠️ Ο ΛΟΓΟΣ ΤΗΣ ΟΜΑΔΑΣ ΕΡΧΕΤΑΙ ΩΣ `--n` INLINE, όχι ως flex inline:
+     αλλιώς κανένα media query δεν θα μπορούσε να το ξεδιπλώσει σε στήλη. */
+  .lt-mg{ flex:var(--n,1) 1 0; min-width:0; }
+  .lt-mb{ display:flex; gap:4px; height:46px; align-items:stretch; }
+  .lt-mb i{ flex:1 1 0; min-width:0; border-radius:2px; background:rgba(255,255,255,.07); }
+  .lt-mb i.on{ background:rgb(var(--lt)); }
+  .lt-mb i.now{ background:transparent; box-shadow:inset 0 0 0 1px rgba(var(--lt),.85); }
+  .lt-mg.dead .lt-mb i{ background:rgba(var(--warn),.17); }
+  .lt-mf{ display:flex; align-items:baseline; gap:9px; margin-top:16px; }
+  .lt-mf b{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-weight:400; font-size:15px; line-height:1; color:var(--au-dim,rgba(245,242,236,.56)); flex:none; }
+  .lt-mf em{ font-style:normal; font:400 9px/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.2em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3));
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lt-mf span{ margin-left:auto; flex:none; font:400 9.5px/1 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.1em; color:var(--au-faint,rgba(245,242,236,.3)); font-variant-numeric:tabular-nums; }
+  .lt-mf span.full{ color:rgb(var(--lt)); }
+  .lt-mf span.dead{ color:rgb(var(--warn)); }
 
+  /* ── ⑤ Η ΤΑΙΝΙΑ ΤΩΝ ΜΕΤΡΗΣΕΩΝ ─────────────────────────────────── */
+  .lt-band{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:56px;
+    border-top:1px solid var(--au-line,rgba(255,255,255,.06));
+    border-bottom:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  /* ⚠️ ΤΟ ΚΕΛΙ ΕΙΝΑΙ ΣΤΗΛΗ ΜΕ `margin-top:auto` ΣΤΟ ΝΟΥΜΕΡΟ: οι ετικέτες
+     έχουν άνισο μήκος και σε στενό πλάτος σπάνε σε δύο γραμμές — χωρίς
+     αυτό, τα τέσσερα μεγάλα νούμερα θα κάθονταν σε ΤΕΣΣΕΡΑ ύψη. Ο αέρας
+     στη μέση είναι σκόπιμος (CLAUDE.md §⑤). ⛔ ΟΧΙ ellipsis: μια κομμένη
+     ετικέτα είναι μια χαμένη λέξη, όχι ένα τακτοποιημένο κουτί. */
+  .lt-bc{ display:flex; flex-direction:column; min-height:116px;
+    padding:24px 26px 24px 0; min-width:0; }
+  .lt-bc + .lt-bc{ border-left:1px solid var(--au-line,rgba(255,255,255,.06)); padding-left:26px; }
+  .lt-bk{ font:400 9.5px/1.5 var(--au-mono,ui-monospace,monospace); letter-spacing:.22em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .lt-bn{ display:flex; align-items:baseline; gap:8px; margin-top:auto; padding-top:16px; }
+  .lt-bn b{ font-family:var(--au-serif,"Times New Roman",serif); font-weight:400;
+    font-size:52px; line-height:.86; letter-spacing:-.02em; color:var(--au-ivory,#f5f2ec);
+    font-variant-numeric:tabular-nums; }
+  /* ⭐ Το χρώμα μπαίνει ΜΟΝΟ στο νούμερο-πρόσωπο, και ΟΧΙ όταν είναι μηδέν ή
+     άγνωστο: ένα κοράλλι «0» διαβάζεται επίτευγμα για το αντίθετό του. */
+  .lt-bn b.hot{ color:rgb(var(--lt)); }
+  .lt-bn b.dead{ color:rgb(var(--warn)); font-size:34px; }
+  .lt-bn span{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-size:17px; color:var(--au-faint,rgba(245,242,236,.3)); font-variant-numeric:tabular-nums; }
+
+  /* ── ⑥ Η ΚΕΦΑΛΙΔΑ ΕΝΟΤΗΤΑΣ ────────────────────────────────────── */
+  .lt-sh{ display:flex; align-items:baseline; gap:20px; margin:70px 0 20px; }
+  .lt-sh h2{ font-family:var(--lt-gr); font-style:italic; font-weight:400; font-size:34px;
+    line-height:1.08; letter-spacing:-.004em; color:var(--au-ivory,#f5f2ec); flex:none; }
+  .lt-sh .r{ flex:1 1 auto; min-width:24px; height:1px; background:var(--au-line,rgba(255,255,255,.06)); }
+  .lt-sh .n{ flex:none; font:400 9.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+
+  /* ── ⑦ ΟΙ ΕΝΟΤΗΤΕΣ — ΕΝΑ ΠΛΑΙΣΙΟ, ΓΡΑΜΜΕΣ ΑΝΑΜΕΣΑ ───────────────
+     Η σειρά είναι Ο ΛΟΓΟΣ ΠΟΥ ΥΠΑΡΧΕΙ Η ΣΕΛΙΔΑ: εδώ κάνει browse και
+     διαλέγει. Δίνει και τα ΤΡΙΑ που χρειάζεται μια επιλογή — ΠΟΙΟ
+     κείμενο, ΠΟΣΟ είναι, και ΠΟΥ βρίσκεται μέσα του. */
+  .lt-box{ border:1px solid var(--au-line,rgba(255,255,255,.06)); border-radius:18px; overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.026),rgba(255,255,255,.006)); }
+  .lt-row{ position:relative; display:grid; grid-template-columns:96px minmax(0,1fr) 300px 56px;
+    gap:0 26px; align-items:start; padding:30px 30px 28px; text-decoration:none; color:inherit;
+    transition:background .4s; }
+  .lt-row + .lt-row{ border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  .lt-row:hover{ background:rgba(255,255,255,.022); }
+  .lt-row:focus-visible{ outline:2px solid rgb(var(--lt)); outline-offset:-3px; }
+  .lt-row .rn{ font-family:var(--au-serif,"Times New Roman",serif); font-style:italic;
+    font-weight:400; font-size:38px; line-height:1; color:rgba(var(--lt),.62); }
+  .lt-row .src{ font:400 9.5px/1.5 var(--au-mono,ui-monospace,monospace); letter-spacing:.2em;
+    text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .lt-row .src em{ font-style:normal; color:rgb(var(--lt)); }
+  .lt-row .t{ font-family:var(--lt-gr); font-style:italic; font-weight:400; font-size:28px;
+    line-height:1.18; margin-top:9px; color:var(--au-ivory,#f5f2ec); }
+  .lt-row .d{ margin-top:11px; font-size:13px; line-height:1.68;
+    color:var(--au-dim,rgba(245,242,236,.56)); max-width:56ch; }
+  .lt-mt{ min-width:0; }
+  .lt-sts{ display:flex; gap:26px; }
+  .lt-st{ min-width:0; }
+  .lt-st b{ display:block; font-family:var(--au-serif,"Times New Roman",serif); font-weight:400;
+    font-size:26px; line-height:1; color:var(--au-ivory,#f5f2ec); font-variant-numeric:tabular-nums; }
+  .lt-st i{ display:block; font-style:normal; font:400 8.5px/1.2 var(--au-mono,ui-monospace,monospace);
+    letter-spacing:.16em; text-transform:uppercase; color:var(--au-faint,rgba(245,242,236,.3)); margin-top:9px; }
+  .lt-rdash{ margin-top:26px; }
+  .lt-prf{ display:flex; align-items:baseline; gap:12px; margin-top:13px;
+    font:400 9.5px/1 var(--au-mono,ui-monospace,monospace);
+    color:var(--au-faint,rgba(245,242,236,.3)); font-variant-numeric:tabular-nums; }
+  /* ⛔ ΤΡΕΙΣ ΑΠΑΝΤΗΣΕΙΣ, ΟΧΙ ΔΥΟ (σταθ. 10) — και οι τρεις ζωγραφίζονται
+     ΔΙΑΦΟΡΕΤΙΚΑ: «δεν ξεκίνησε» σβηστό, «σε εξέλιξη» κοράλλι, «δεν
+     διαβάστηκε» ΡΟΖ, σε κανάλι που δεν το δανείζεται τίποτα άλλο. */
+  .lt-prf .pct{ letter-spacing:.08em; }
+  .lt-prf .pct.on{ color:rgba(var(--lt),.92); }
+  .lt-prf .pct.dead{ color:rgb(var(--warn)); }
+  .lt-prf .cnt{ margin-left:auto; letter-spacing:.14em; }
+  .lt-go{ justify-self:end; width:40px; height:40px; border-radius:50%; flex:none;
+    border:1px solid var(--au-line-2,rgba(255,255,255,.1));
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    color:var(--au-dim,rgba(245,242,236,.56));
+    transition:border-color .35s,color .35s,background .35s,transform .35s; }
+  .lt-row:hover .lt-go{ border-color:rgba(var(--lt),.5); color:rgb(var(--lt)); transform:translateY(-1px); }
+  .lt-row.is-next .lt-go{ background:rgb(var(--lt)); border-color:rgb(var(--lt)); color:#1a120d; }
+
+  /* ── ⑧ Η ΟΥΡΑ ─────────────────────────────────────────────────── */
+  .lt-foot{ display:flex; align-items:baseline; gap:20px; margin-top:54px; padding:22px 0 0;
+    border-top:1px solid var(--au-line,rgba(255,255,255,.06));
+    font-size:11.5px; line-height:1.7; color:var(--au-faint,rgba(245,242,236,.3)); }
+  .lt-foot p{ min-width:0; max-width:76ch; }
+  .lt-foot em{ font-style:italic; color:var(--au-dim,rgba(245,242,236,.56)); }
+  .lt-foot > span{ margin-left:auto; flex:none;
+    font:400 9.5px/1 var(--au-mono,ui-monospace,monospace); letter-spacing:.22em; text-transform:uppercase; }
+
+  /* ── ⑨ Η ΣΚΑΛΑ — ΟΛΑ `max-width`, ΠΟΤΕ `min-width` (σταθ. 51) ──── */
+  @media (max-width:1040px){
+    .lt-mast{ grid-template-columns:minmax(0,1fr); gap:38px 0; padding:44px 0 40px; }
+    .lt-next{ max-width:560px; }
+    .lt-row{ grid-template-columns:74px minmax(0,1fr) 256px 46px; gap:0 20px; padding:26px 24px 24px; }
+    .lt-row .rn{ font-size:32px; }
+    .lt-row .t{ font-size:25px; }
+    .lt-map{ gap:26px; }
+  }
+  @media (max-width:860px){
+    /* ⚠️ ΡΗΤΗ ΘΕΣΗ ΓΙΑ ΤΟ ΒΕΛΑΚΙ. Χωρίς αυτήν το auto-placement το έριχνε
+       στη ΔΕΥΤΕΡΗ σειρά, κάτω αριστερά κάτω από τον αριθμό — ορφανό, με
+       μισή σειρά κενή δεξιά του. Το ίδιο μάθημα με τη σταθερά του
+       `position:absolute` που γεννήθηκε σε αυτή τη σελίδα. */
+    .lt-row{ grid-template-columns:62px minmax(0,1fr) 46px; }
+    .lt-row .rn{ grid-column:1; grid-row:1; }
+    .lt-go{ grid-column:3; grid-row:1; }
+    .lt-mt{ grid-column:2 / 4; grid-row:2; margin-top:22px; }
+    .lt-sts{ gap:22px; }
+    .lt-band{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .lt-bc:nth-child(3){ border-left:0; padding-left:0; }
+    .lt-bc:nth-child(3),.lt-bc:nth-child(4){ border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
+  }
+  @media (max-width:760px){
+    /* ⚠️ Η ΚΕΦΑΛΙΔΑ ΕΙΝΑΙ ΤΡΙΑ ΑΚΑΜΠΤΑ ΚΟΜΜΑΤΙΑ (τίτλος · γραμμή · ετικέτα)
+       και σε 393px ΔΕΝ χωράνε σε μία σειρά — η ετικέτα έβγαινε 67px έξω από
+       την οθόνη και η σελίδα κυλούσε οριζόντια. Ο τίτλος παίρνει δική του
+       γραμμή· η γραμμή και η ετικέτα κατεβαίνουν μαζί. */
+    .lt-sh{ flex-wrap:wrap; row-gap:12px; }
+    .lt-sh h2{ flex:1 1 100%; }
+    .lt-sh .n{ white-space:normal; }
+    /* ⭐ Ο ΧΑΡΤΗΣ ΞΕΔΙΠΛΩΝΕΙ ΣΕ ΣΤΗΛΗ αντί να στριμώξει 59 γραμμές σε 400px:
+       πέντε πλήρεις σειρές, μία ανά ενότητα, με τη λεζάντα τους ακέραια. */
+    .lt-map{ flex-wrap:wrap; gap:20px 0; }
+    .lt-mg{ flex:1 1 100%; }
+    /* ⚠️ ΟΙ ΓΡΑΜΜΕΣ ΜΕΝΟΥΝ ΓΡΑΜΜΕΣ. Σε μία στήλη κάθε γραμμή γίνεται ~65px
+       φαρδιά· με το ύψος του desktop (46px) δεν διαβάζεται πια ως γραμμή
+       αλλά ως ΤΟΥΒΛΟ, και ο χάρτης μοιάζει με πλέγμα κάρτες. Το ύψος
+       ακολουθεί το πλάτος. */
+    .lt-mb{ height:11px; gap:4px; }
+    .lt-mf{ margin-top:11px; }
+    .lt-leg{ margin-left:0; width:100%; }
+    /* ⚠️ Η ΔΙΑΔΡΟΜΗ ΔΕΝ ΚΟΒΕΤΑΙ ΜΕ ΑΠΟΣΙΩΠΗΤΙΚΑ. Στα 393px η «Γ΄ Λυκείου ·
+       Ανθρωπιστικές Σπουδές» έπαιρνε 93px από 272 και γινόταν «Γ΄ Λυκείου ·
+       Αν…» — μια κομμένη λέξη δεν είναι τακτοποιημένο κουτί, είναι χαμένη
+       πληροφορία. Εδώ η γραμμή μαζεύεται ως το μηδέν και μετά τυλίγει. */
+    .lt-top{ flex-wrap:wrap; row-gap:9px; }
+    .lt-top .b{ white-space:normal; overflow:visible; }
+    .lt-top .r{ min-width:0; }
+    .lt-top .c{ margin-left:auto; }
+  }
   @media (max-width:560px){
-    .lt-lec{ padding:22px 20px 20px; }
-    .lt-lec:before{ left:20px; right:20px; }
-    .lt-lec .go{ position:static; display:block; margin-top:16px; opacity:1; }
-    .lt-lec .t{ font-size:22px; }
+    .lt-row{ grid-template-columns:52px minmax(0,1fr); padding:24px 20px 22px; }
+    /* ⚠️ ΡΗΤΗ ΣΕΙΡΑ: ένα `position:absolute` που γίνεται `static` κάτω από
+       breakpoint προσγειώνεται όπου το βάζει το DOM — εδώ δεν επαφίεται
+       σε καμία σιωπηλή σειρά (η σταθερά γεννήθηκε σε ΑΥΤΗ τη σελίδα). */
+    .lt-mt{ grid-column:1 / -1; grid-row:2; margin-top:20px; }
+    .lt-go{ grid-column:1 / -1; grid-row:3; justify-self:start; margin-top:18px; }
+    .lt-row .t{ font-size:23px; }
+    .lt-row .rn{ font-size:28px; }
+    .lt-bn b{ font-size:40px; }
+    .lt-bn b.dead{ font-size:26px; }
+    .lt-sh{ margin:52px 0 16px; }
+    .lt-sh h2{ font-size:28px; }
+    .lt-foot{ flex-wrap:wrap; row-gap:14px; }
+    .lt-foot > span{ margin-left:0; }
   }
   @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
 </style>
@@ -115,77 +323,185 @@
 
 <div class="lt-wrap">
 
-  <header class="lt-hero">
-    <div class="lt-eyebrow">Λατινικά · 20% των μορίων</div>
-    <h1 class="lt-h" id="ltHead">Πέντε ενότητες.<br><b>59</b> προτάσεις.</h1>
-    <p class="lt-hsub" id="ltSub">Διάλεξε ενότητα. Μέσα, κάθε λέξη δείχνει <b>πού πάει</b> και <b>τι είναι συντακτικά</b> — και μετά κρύβεις τη μια γλώσσα και δοκιμάζεσαι.</p>
+  <nav class="lt-top">
+    <span class="a">Λατινικά</span><span class="sl">/</span>
+    <span class="b">Γ΄ Λυκείου · Ανθρωπιστικές Σπουδές</span>
+    <span class="r"></span>
+    <span class="c">20% των μορίων</span>
+  </nav>
+
+  <header class="lt-mast">
+    <div>
+      <h1 class="lt-h" id="ltHead">Πέντε<br>ενότητες.<br><b>59</b> προτάσεις.</h1>
+      <p class="lt-lead" id="ltSub">Κάθε λέξη δείχνει <b>πού πάει</b> και <b>τι είναι συντακτικά</b>. Μετά κρύβεις τη μια γλώσσα και δοκιμάζεσαι — ώσπου να μη μείνει καμία πρόταση άδεια.</p>
+    </div>
+    <aside class="lt-next" id="ltNext">
+      <div class="nx-hd"><span id="nxKind">— συνέχισε</span><span id="nxLec">—</span></div>
+      <div class="nx-ttl"><b id="nxRn"></b><span id="nxTtl">Διάλεξε ενότητα</span></div>
+      <div class="dash nx-dash" id="nxDash"></div>
+      <div class="nx-f"><span id="nxNext">—</span><span id="nxCnt">—</span></div>
+      <a class="nx-go" id="nxGo" href="latinika-lectio16.html"><span id="nxGoT">Άνοιξε το κείμενο</span><i aria-hidden="true">↗</i></a>
+    </aside>
   </header>
 
-  <div class="lt-sh"><h2>Η εισαγωγή</h2><span class="r"></span><span class="n">8 κεφάλαια</span></div>
+  <section class="lt-mapw">
+    <div class="lt-maphd">
+      <span class="k">Ο χάρτης · μια γραμμή για κάθε πρόταση</span>
+      <span class="lt-leg">
+        <span class="l1"><i></i>το ξέρω</span>
+        <span class="l2"><i></i>επόμενη</span>
+        <span class="l3"><i></i>όχι ακόμα</span>
+      </span>
+    </div>
+    <div class="lt-map" id="ltMap"></div>
+  </section>
 
-  <a class="lt-lec lt-eis" href="latinika-eisagogi.html">
-    <div class="rn">§</div>
-    <div class="src">Λατινικά Γ΄ Λυκείου · Εισαγωγή</div>
-    <div class="t">Λατινική γλώσσα και λογοτεχνία</div>
-    <div class="d">Από την ινδοευρωπαϊκή ρίζα ως τον Τίτο Λίβιο: οι εποχές, τα είδη, και ένα πρόσωπο ανά κάρτα — αυτούσιο το κείμενο του φροντιστηρίου.</div>
-    <div class="in"><i>8 κεφάλαια</i><i>χρονογραμμή εποχών</i><i>χωρίς βαθμό</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct" id="eisPct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+  <section class="lt-band">
+    <div class="lt-bc">
+      <div class="lt-bk">Προτάσεις που ξέρω</div>
+      <div class="lt-bn"><b id="stKnown">—</b><span id="stKnownOf">/59</span></div>
+    </div>
+    <div class="lt-bc">
+      <div class="lt-bk">Ενότητες που έκλεισαν</div>
+      <div class="lt-bn"><b id="stDone">—</b><span id="stDoneOf">/5</span></div>
+    </div>
+    <div class="lt-bc">
+      <div class="lt-bk">Σκηνές</div>
+      <div class="lt-bn"><b id="stScenes">—</b></div>
+    </div>
+    <div class="lt-bc">
+      <div class="lt-bk">Παγίδες και σημειώσεις</div>
+      <div class="lt-bn"><b id="stTraps">—</b></div>
+    </div>
+  </section>
 
-  <div class="lt-sh"><h2>Οι ενότητες</h2><span class="r"></span><span class="n" id="ltN">—</span></div>
+  <div class="lt-sh"><h2>Πριν ξεκινήσεις</h2><span class="r"></span><span class="n">8 κεφάλαια · χωρίς βαθμό</span></div>
 
-  <a class="lt-lec" href="latinika-lectio16.html" data-lec="16">
-    <div class="rn">I</div>
-    <div class="src">Lectio XVI · Caesar, De Bello Gallico</div>
-    <div class="t">Η τελευταία μάχη του Καίσαρα στη Γαλατία</div>
-    <div class="d">Ακόντια, ξίφη, το ιππικό από τα νώτα — και η παράδοση του Βερκιγγετόριγα μπροστά στο στρατόπεδο.</div>
-    <div class="in"><i>3 σκηνές</i><i>16 προτάσεις</i><i>5 παγίδες</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+  <div class="lt-box">
+    <a class="lt-row lt-eis" href="latinika-eisagogi.html">
+      <div class="rn">§</div>
+      <div>
+        <div class="src">Prooemium · Εισαγωγή</div>
+        <div class="t">Λατινική γλώσσα και λογοτεχνία</div>
+        <div class="d">Από την ινδοευρωπαϊκή ρίζα ως τον Τίτο Λίβιο: οι εποχές, τα είδη, και ένα πρόσωπο ανά κάρτα — αυτούσιο το κείμενο του φροντιστηρίου.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>8</b><i>κεφάλαια</i></span>
+          <span class="lt-st"><b>1</b><i>χρονογραμμή</i></span>
+        </div>
+        <div class="dash lt-rdash" id="eisDash"></div>
+        <div class="lt-prf"><span class="pct" id="eisPct">—</span><span class="cnt" id="eisCnt">— / 8</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
+  </div>
 
-  <a class="lt-lec" href="latinika-lectio17.html" data-lec="17">
-    <div class="rn">II</div>
-    <div class="src">Lectio XVII · Caesar, De Bello Gallico</div>
-    <div class="t">Φόβος μπροστά στο άγνωστο</div>
-    <div class="d">Οι διαδόσεις για τους Γερμανούς σαρώνουν το στρατόπεδο: άλλοι φεύγουν, άλλοι κλαίνε κρυμμένοι, και στο τέλος ταράζονται και οι έμπειροι.</div>
-    <div class="in"><i>3 σκηνές</i><i>11 ενότητες</i><i>6 σημειώσεις</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+  <div class="lt-sh"><h2>Τα κείμενα</h2><span class="r"></span><span class="n" id="ltN">—</span></div>
 
-  <a class="lt-lec" href="latinika-lectio18.html" data-lec="18">
-    <div class="rn">III</div>
-    <div class="src">Lectio XVIII · Lectio duodevicesima</div>
-    <div class="t">Ο Ηρακλής στην Ιταλία</div>
-    <div class="d">Τα βόδια του Γηρυόνη φτάνουν εκεί όπου θα χτιστεί η Ρώμη· ο Κάκος τα σέρνει ανάποδα από τις ουρές, και το ίδιο τους το μουγκρητό τον προδίδει.</div>
-    <div class="in"><i>3 σκηνές</i><i>11 ενότητες</i><i>7 παγίδες</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+  <div class="lt-box">
 
-  <a class="lt-lec" href="latinika-lectio19.html" data-lec="19">
-    <div class="rn">IV</div>
-    <div class="src">Lectio XIX · Lectio undevicesima</div>
-    <div class="t">Η συνωμοσία του Κατιλίνα</div>
-    <div class="d">Δύο ύπατοι, ένας ξεπεσμένος αριστοκράτης και το σχέδιό του: εξορία από τη Ρώμη, στραγγαλισμοί στη φυλακή, και μια φονικότατη μάχη που την παραδίδει ο Σαλλούστιος.</div>
-    <div class="in"><i>3 σκηνές</i><i>10 ενότητες</i><i>8 παγίδες</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+    <a class="lt-row" href="latinika-lectio16.html" data-lec="16" data-n="16" data-sc="3" data-tr="5">
+      <div class="rn">I</div>
+      <div>
+        <div class="src">Lectio XVI · Sexta decima <em class="nxt"></em></div>
+        <div class="t">Η τελευταία μάχη του Καίσαρα στη Γαλατία</div>
+        <div class="d">Ακόντια, ξίφη, το ιππικό από τα νώτα — και η παράδοση του Βερκιγγετόριγα μπροστά στο στρατόπεδο.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>16</b><i>προτάσεις</i></span>
+          <span class="lt-st"><b>3</b><i>σκηνές</i></span>
+          <span class="lt-st"><b>5</b><i>παγίδες</i></span>
+        </div>
+        <div class="dash lt-rdash"></div>
+        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / 16</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
 
-  <a class="lt-lec" href="latinika-lectio22.html" data-lec="22">
-    <div class="rn">V</div>
-    <div class="src">Lectio XXII · Lectio altera et vicesima</div>
-    <div class="t">Προτροπές προς τους Ρωμαίους</div>
-    <div class="d">Ο Κικέρωνας μετράει τους προγόνους έναν έναν και τους βάζει δίπλα στους θεούς — και μετά, δέκα φορές στη σειρά, λέει «ας»: πατρίδα, Σύγκλητος, πολίτες, και στο τέλος το σώμα που πεθαίνει απέναντι στη δόξα που δεν πεθαίνει.</div>
-    <div class="in"><i>3 σκηνές</i><i>11 ενότητες</i><i>8 παγίδες</i></div>
-    <div class="pr"><span class="bar"><i></i></span><span class="pct">—</span></div>
-    <div class="go">Άνοιξε →</div>
-  </a>
+    <a class="lt-row" href="latinika-lectio17.html" data-lec="17" data-n="11" data-sc="3" data-tr="6">
+      <div class="rn">II</div>
+      <div>
+        <div class="src">Lectio XVII · Septima decima <em class="nxt"></em></div>
+        <div class="t">Φόβος μπροστά στο άγνωστο</div>
+        <div class="d">Οι διαδόσεις για τους Γερμανούς σαρώνουν το στρατόπεδο: άλλοι φεύγουν, άλλοι κλαίνε κρυμμένοι, και στο τέλος ταράζονται και οι έμπειροι.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>11</b><i>ενότητες</i></span>
+          <span class="lt-st"><b>3</b><i>σκηνές</i></span>
+          <span class="lt-st"><b>6</b><i>σημειώσεις</i></span>
+        </div>
+        <div class="dash lt-rdash"></div>
+        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / 11</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
 
-  <p class="lt-foot" id="ltFoot">Η πρόοδος κάθε ενότητας («το ξέρω») ζει <b>σε αυτή τη συσκευή</b> — έτσι το λένε και οι ίδιες οι σελίδες, και έτσι μένει αληθινό το «μηδένισε».</p>
+    <a class="lt-row" href="latinika-lectio18.html" data-lec="18" data-n="11" data-sc="3" data-tr="7">
+      <div class="rn">III</div>
+      <div>
+        <div class="src">Lectio XVIII · Duodevicesima <em class="nxt"></em></div>
+        <div class="t">Ο Ηρακλής στην Ιταλία</div>
+        <div class="d">Τα βόδια του Γηρυόνη φτάνουν εκεί όπου θα χτιστεί η Ρώμη· ο Κάκος τα σέρνει ανάποδα από τις ουρές, και το ίδιο τους το μουγκρητό τον προδίδει.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>11</b><i>ενότητες</i></span>
+          <span class="lt-st"><b>3</b><i>σκηνές</i></span>
+          <span class="lt-st"><b>7</b><i>παγίδες</i></span>
+        </div>
+        <div class="dash lt-rdash"></div>
+        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / 11</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
+
+    <a class="lt-row" href="latinika-lectio19.html" data-lec="19" data-n="10" data-sc="3" data-tr="8">
+      <div class="rn">IV</div>
+      <div>
+        <div class="src">Lectio XIX · Undevicesima <em class="nxt"></em></div>
+        <div class="t">Η συνωμοσία του Κατιλίνα</div>
+        <div class="d">Δύο ύπατοι, ένας ξεπεσμένος αριστοκράτης και το σχέδιό του: εξορία από τη Ρώμη, στραγγαλισμοί στη φυλακή, και μια φονικότατη μάχη που την παραδίδει ο Σαλλούστιος.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>10</b><i>ενότητες</i></span>
+          <span class="lt-st"><b>3</b><i>σκηνές</i></span>
+          <span class="lt-st"><b>8</b><i>παγίδες</i></span>
+        </div>
+        <div class="dash lt-rdash"></div>
+        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / 10</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
+
+    <a class="lt-row" href="latinika-lectio22.html" data-lec="22" data-n="11" data-sc="3" data-tr="8">
+      <div class="rn">V</div>
+      <div>
+        <div class="src">Lectio XXII · Altera et vicesima <em class="nxt"></em></div>
+        <div class="t">Προτροπές προς τους Ρωμαίους</div>
+        <div class="d">Ο Κικέρωνας μετράει τους προγόνους έναν έναν και τους βάζει δίπλα στους θεούς — και μετά, δέκα φορές στη σειρά, λέει «ας»: πατρίδα, Σύγκλητος, πολίτες, και στο τέλος το σώμα που πεθαίνει απέναντι στη δόξα που δεν πεθαίνει.</div>
+      </div>
+      <div class="lt-mt">
+        <div class="lt-sts">
+          <span class="lt-st"><b>11</b><i>ενότητες</i></span>
+          <span class="lt-st"><b>3</b><i>σκηνές</i></span>
+          <span class="lt-st"><b>8</b><i>παγίδες</i></span>
+        </div>
+        <div class="dash lt-rdash"></div>
+        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / 11</span></div>
+      </div>
+      <span class="lt-go" aria-hidden="true">↗</span>
+    </a>
+
+  </div>
+
+  <footer class="lt-foot" id="ltFoot">
+    <p>Η πρόοδος («το ξέρω») ζει <em>σε αυτή τη συσκευή</em> — έτσι μένει αληθινό το «μηδένισε».</p>
+    <span>Métron · Latina</span>
+  </footer>
 
 </div>
 
@@ -204,10 +520,10 @@
     try{ return { ok:true, data:JSON.parse(raw) }; }catch(e){ return { ok:false }; }
   }
 
-  /* ⭐ ΟΙ ΔΥΟ ΣΕΛΙΔΕΣ ΜΠΗΚΑΝ ΑΥΤΟΥΣΙΕΣ, ΑΡΑ ΚΡΑΤΑΝΕ ΤΑ ΔΙΚΑ ΤΟΥΣ ΚΛΕΙΔΙΑ ΚΑΙ
+  /* ⭐ ΟΙ ΠΕΝΤΕ ΣΕΛΙΔΕΣ ΜΠΗΚΑΝ ΑΥΤΟΥΣΙΕΣ, ΑΡΑ ΚΡΑΤΑΝΕ ΤΑ ΔΙΚΑ ΤΟΥΣ ΚΛΕΙΔΙΑ ΚΑΙ
      ΤΑ ΔΙΚΑ ΤΟΥΣ ΣΧΗΜΑΤΑ — κι αυτά είναι ΔΥΟ διαφορετικά σχήματα:
-       lectio16:v1        ΠΙΝΑΚΑΣ  [0,3,7]            (δείκτες προτάσεων)
-       lectio17_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (ένα κλειδί ανά ενότητα)
+       lectio16:v1        ΠΙΝΑΚΑΣ  [0,3,7]            (δείκτες προτάσεων, 0-based)
+       lectio17_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (ένα κλειδί ανά πρόταση, 1-based)
        lectio18_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (als-v516, ίδια μηχανή με το XVII)
        lectio19_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (als-v535, ίδια μηχανή ξανά)
        lectio22_known_v1  ΧΑΡΤΗΣ   {s1:true,s4:false} (als-v578, ΤΕΤΑΡΤΟ πακέτο στην ίδια μηχανή)
@@ -215,86 +531,240 @@
      ⛔ ΚΑΙ ΔΕΝ ΣΥΓΧΡΟΝΙΖΟΝΤΑΙ, ΕΠΙΤΗΔΕΣ: το `lectio16:v1` είναι πίνακας από
      πρωτόγονα, άρα το mergeArray της sync.js θα τα ΕΝΩΝΕ — και το «μηδένισε»
      θα γύριζε πίσω από την άλλη συσκευή σαν να μην έγινε ποτέ (σταθ. 31). */
-  function countMap(d){
-    if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
-    var n = 0;
-    for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k) && d[k]) n++;
-    return n;
+  var SHAPE = {
+    '16': { key:'lectio16:v1',       kind:'list' },
+    '17': { key:'lectio17_known_v1', kind:'map'  },
+    '18': { key:'lectio18_known_v1', kind:'map'  },
+    '19': { key:'lectio19_known_v1', kind:'map'  },
+    '22': { key:'lectio22_known_v1', kind:'map'  }
+  };
+
+  /* ⭐ ΜΙΑ ΠΗΓΗ ΓΙΑ ΚΑΘΕ ΝΟΥΜΕΡΟ. Το σύνολο κάθε ενότητας, οι σκηνές και οι
+     παγίδες ζουν ΣΤΗ ΣΕΙΡΑ ΤΗΣ, όχι σε δεύτερο πίνακα εδώ μέσα που μπορεί
+     να διαφωνήσει μαζί της (σταθ. 15). Το test αποδεικνύει ότι συμφωνούν
+     με τα ίδια τα πακέτα. */
+  function num(el, attr){ var v = parseInt(el.getAttribute(attr), 10); return isNaN(v) ? 0 : v; }
+
+  /* Ο λατινικός αριθμός παράγεται, δεν αντιγράφεται: μία συνάρτηση αντί για
+     πέμπτη λίστα που θα ξεχνιόταν με την έκτη ενότητα. */
+  function roman(n){
+    var T = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']], out = '';
+    for (var i = 0; i < T.length; i++){ while (n >= T[i][0]){ out += T[i][1]; n -= T[i][0]; } }
+    return out;
   }
-  var LECS = [
-    { id:'16', key:'lectio16:v1',       total:16, count:function(d){
-        return Array.isArray(d) ? d.length : null; } },
-    { id:'17', key:'lectio17_known_v1', total:11, count:countMap },
-    { id:'18', key:'lectio18_known_v1', total:11, count:countMap },
-    { id:'19', key:'lectio19_known_v1', total:10, count:countMap },
-    { id:'22', key:'lectio22_known_v1', total:11, count:countMap }
-  ];
 
-  var knownTotal = 0, grandTotal = 0, readable = 0;
-
-  for (var i = 0; i < LECS.length; i++){
-    var L = LECS[i];
-    var card = document.querySelector('.lt-lec[data-lec="' + L.id + '"]');
-    if (!card) continue;
-    var bar = card.querySelector('.bar i'), pct = card.querySelector('.pct');
-    var r = read(L.key);
-    grandTotal += L.total;
-
-    if (!r.ok){
-      pct.textContent = 'δεν διαβάστηκε';
-      pct.className = 'pct dead';
-      continue;
+  /* ΧΑΡΤΗΣ → πίνακας από booleans· ΠΙΝΑΚΑΣ → πίνακας από booleans. `null`
+     σημαίνει «λάθος σχήμα σε σωστό κλειδί» και ΔΕΝ γίνεται ποτέ μηδέν. */
+  function marks(kind, data, total){
+    var out = [], i;
+    for (i = 0; i < total; i++) out.push(false);
+    if (data === null) return out;
+    if (kind === 'list'){
+      if (!Array.isArray(data)) return null;
+      for (i = 0; i < data.length; i++){
+        var ix = data[i];
+        if (typeof ix === 'number' && ix >= 0 && ix < total) out[ix] = true;
+      }
+      return out;
     }
-    readable++;
-    var n = r.data === null ? 0 : L.count(r.data);
-    if (n === null){ pct.textContent = 'δεν διαβάστηκε'; pct.className = 'pct dead'; continue; }
-    if (n > L.total) n = L.total;          /* ένα παλιό αρχείο δεν ξεχειλίζει τη μπάρα */
-    knownTotal += n;
-    pct.textContent = n ? n + '/' + L.total + ' τα ξέρεις' : 'δεν ξεκίνησε';
-    /* Η μπάρα κινείται ΜΕΤΑ το πρώτο frame, αλλιώς δεν υπάρχει τι να κινηθεί. */
-    (function(el, frac){ requestAnimationFrame(function(){
-      requestAnimationFrame(function(){ el.style.transform = 'scaleX(' + frac + ')'; });
-    }); })(bar, n / L.total);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+    for (var k in data){
+      if (!Object.prototype.hasOwnProperty.call(data, k) || !data[k]) continue;
+      var m = /^s(\d+)$/.exec(k);
+      if (!m) continue;
+      var j = parseInt(m[1], 10) - 1;
+      if (j >= 0 && j < total) out[j] = true;
+    }
+    return out;
+  }
+  function tally(arr){ var n = 0; for (var i = 0; i < arr.length; i++) if (arr[i]) n++; return n; }
+
+  /* Οι γραμμές του χάρτη: ΜΙΑ ΑΝΑ ΠΡΟΤΑΣΗ. `now` = η πρώτη που δεν ξέρει
+     ακόμη — μόνο σε ενότητα που έχει ξεκινήσει και δεν έχει κλείσει. */
+  function dashes(arr, showNow){
+    var html = '', shown = false;
+    for (var i = 0; i < arr.length; i++){
+      if (arr[i]) html += '<i class="on"></i>';
+      else if (showNow && !shown){ html += '<i class="now"></i>'; shown = true; }
+      else html += '<i></i>';
+    }
+    return html;
+  }
+
+  var rows = document.querySelectorAll('.lt-row[data-lec]');
+  var mapHtml = '';
+  var knownTotal = 0, grandTotal = 0, scenes = 0, traps = 0, readable = 0, closed = 0, allOk = true;
+  var next = null;
+
+  for (var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    var id  = row.getAttribute('data-lec');
+    var sh  = SHAPE[id];
+    if (!sh) continue;
+
+    var total = num(row, 'data-n');
+    grandTotal += total;
+    scenes     += num(row, 'data-sc');
+    traps      += num(row, 'data-tr');
+
+    var pct  = row.querySelector('.pct');
+    var cnt  = row.querySelector('.cnt');
+    var dash = row.querySelector('.dash');
+
+    var r    = read(sh.key);
+    var arr  = r.ok ? marks(sh.kind, r.data, total) : null;
+    var ord  = roman(i + 1);              /* I … V — η θέση στη βιβλιοθήκη */
+    var num_ = roman(parseInt(id, 10));   /* XVI … XXII — ο αριθμός του βιβλίου */
+    var mDash, mFoot, mCls = '';
+
+    if (!arr){
+      /* ⛔ ΟΥΤΕ ΕΔΩ ΜΗΔΕΝ: κλειδωμένος δίσκος, σπασμένο JSON ή λάθος σχήμα
+         στο σωστό κλειδί λένε «δεν διαβάστηκε» και βάφονται στο ΔΙΚΟ τους
+         κανάλι — ποτέ στο κοράλλι της προόδου. */
+      allOk = false;
+      var blank = [], b;
+      for (b = 0; b < total; b++) blank.push(false);
+      pct.textContent = 'δεν διαβάστηκε';
+      pct.className   = 'pct dead';
+      cnt.textContent = '— / ' + total;
+      dash.innerHTML  = dashes(blank, false);
+      dash.className  = 'dash lt-rdash dead';
+      mDash = dashes(blank, false);
+      mFoot = '<span class="dead">δεν διαβάστηκε</span>';
+      mCls  = ' dead';
+    } else {
+      readable++;
+      var n       = tally(arr);
+      var full    = n >= total;
+      var started = n > 0;
+      knownTotal += n;
+      if (full) closed++;
+      if (!next && !full) next = { row:row, n:n, total:total, arr:arr, ord:ord, num:num_ };
+      pct.textContent = full ? 'ολοκληρώθηκε' : (started ? 'σε εξέλιξη' : 'δεν ξεκίνησε');
+      pct.className   = 'pct' + (started ? ' on' : '');
+      cnt.textContent = n + ' / ' + total;
+      dash.innerHTML  = dashes(arr, started && !full);
+      dash.className  = 'dash lt-rdash';
+      mDash = dash.innerHTML;
+      mFoot = '<span class="' + (full ? 'full' : '') + '">' + n + '/' + total + '</span>';
+    }
+
+    mapHtml += '<div class="lt-mg' + mCls + '" style="--n:' + total + '">' +
+      '<div class="lt-mb">' + mDash + '</div>' +
+      '<div class="lt-mf"><b>' + ord + '</b><em>' + num_ + '</em>' + mFoot + '</div>' +
+      '</div>';
+  }
+
+  document.getElementById('ltMap').innerHTML = mapHtml;
+  document.getElementById('ltN').textContent = rows.length + ' ενότητες · ' + grandTotal + ' προτάσεις';
+  document.getElementById('stKnownOf').textContent = '/' + grandTotal;
+  document.getElementById('stDoneOf').textContent  = '/' + rows.length;
+  document.getElementById('stScenes').textContent  = scenes;
+  document.getElementById('stTraps').textContent   = traps;
+
+  var stK = document.getElementById('stKnown'), stD = document.getElementById('stDone');
+  if (!readable){
+    stK.textContent = '—'; stK.className = 'dead';
+    stD.textContent = '—'; stD.className = 'dead';
+  } else {
+    /* ⭐ ΤΟ ΜΗΔΕΝ ΔΕΝ ΒΑΦΕΤΑΙ. Ένα κοράλλι «0» διαβάζεται επίτευγμα. */
+    stK.textContent = knownTotal; stK.className = knownTotal ? 'hot' : '';
+    stD.textContent = closed;     stD.className = '';
+  }
+
+  /* ⛔ ΤΟ HERO ΔΕΝ ΕΠΙΝΟΕΙ ΤΙΠΟΤΑ. Αν δεν διαβάστηκε ΤΙΠΟΤΑ, το λέει με
+     λέξεις αντί να δείξει μια σελίδα γεμάτη σβηστά μηδενικά. */
+  if (!readable){
+    document.getElementById('ltSub').innerHTML =
+      'Δεν μπόρεσα να διαβάσω την πρόοδό σου σε αυτή τη συσκευή. Οι ενότητες ανοίγουν κανονικά — απλώς ο χάρτης από κάτω δεν ξέρει τι ξέρεις.';
+  } else if (!allOk){
+    document.getElementById('ltSub').innerHTML =
+      'Κάποιες ενότητες δεν διαβάστηκαν σε αυτή τη συσκευή — στον χάρτη τους λείπει ο αριθμός. Οι υπόλοιπες λένε την αλήθεια τους.';
   }
 
   /* ⭐ Η ΕΙΣΑΓΩΓΗ ΜΕΤΡΑΕΙ ΧΩΡΙΣΤΑ ΚΑΙ ΔΕΝ ΜΠΑΙΝΕΙ ΣΤΟ ΣΥΝΟΛΟ ΤΩΝ ΠΡΟΤΑΣΕΩΝ.
      Είναι ΑΝΑΓΝΩΣΜΑ, όχι ενότητα προς εξάσκηση: το «τις λες απέξω» δεν έχει
      νόημα εδώ, και ένα ανακατεμένο σύνολο θα έλεγε ψέματα και για τα δύο.
-     Το `eisagogi:v1` είναι ΧΑΡΤΗΣ {id:true} — τρίτο σχήμα στη σελίδα. */
+     Το `eisagogi:v1` είναι ΧΑΡΤΗΣ {id:true} — ΤΡΙΤΟ σχήμα στη σελίδα, και τα
+     κλειδιά του ΔΕΝ είναι `sN`, άρα μετριέται με δικό του μετρητή. */
   (function eisagogi(){
-    var EIS_TOTAL = 8;
-    var card = document.querySelector('.lt-eis');
-    if (!card) return;
-    var bar = card.querySelector('.bar i'), pct = document.getElementById('eisPct');
-    var r = read('eisagogi:v1');
-    if (!r.ok){ pct.textContent = 'δεν διαβάστηκε'; pct.className = 'pct dead'; return; }
-    var n = 0;
-    if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)){
-      for (var k in r.data) if (Object.prototype.hasOwnProperty.call(r.data, k) && r.data[k]) n++;
-    } else if (r.data !== null){
-      pct.textContent = 'δεν διαβάστηκε'; pct.className = 'pct dead'; return;
+    var TOTAL = 8;
+    var pct = document.getElementById('eisPct'), cnt = document.getElementById('eisCnt'),
+        dash = document.getElementById('eisDash');
+    if (!pct || !cnt || !dash) return;
+    var r = read('eisagogi:v1'), n = 0;
+    if (!r.ok || (r.data !== null && (typeof r.data !== 'object' || Array.isArray(r.data)))){
+      var blank = [], b;
+      for (b = 0; b < TOTAL; b++) blank.push(false);
+      pct.textContent = 'δεν διαβάστηκε';
+      pct.className   = 'pct dead';
+      cnt.textContent = '— / ' + TOTAL;
+      dash.innerHTML  = dashes(blank, false);
+      return;
     }
-    if (n > EIS_TOTAL) n = EIS_TOTAL;
-    pct.textContent = n ? n + '/' + EIS_TOTAL + ' διαβασμένα' : 'δεν ξεκίνησε';
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      bar.style.transform = 'scaleX(' + (n / EIS_TOTAL) + ')'; }); });
+    if (r.data){
+      for (var k in r.data) if (Object.prototype.hasOwnProperty.call(r.data, k) && r.data[k]) n++;
+    }
+    if (n > TOTAL) n = TOTAL;
+    var arr = [], i2;
+    for (i2 = 0; i2 < TOTAL; i2++) arr.push(i2 < n);
+    pct.textContent = n >= TOTAL ? 'ολοκληρώθηκε' : (n ? 'σε εξέλιξη' : 'δεν ξεκίνησε');
+    pct.className   = 'pct' + (n ? ' on' : '');
+    cnt.textContent = n + ' / ' + TOTAL;
+    dash.innerHTML  = dashes(arr, n > 0 && n < TOTAL);
   })();
 
-  var head = document.getElementById('ltHead'), sub = document.getElementById('ltSub');
-  document.getElementById('ltN').textContent = LECS.length + ' · ' + grandTotal + ' προτάσεις';
+  /* ── η κάρτα «συνέχισε» ───────────────────────────────────────────
+     ⭐ ΕΝΑ ΚΟΥΜΠΙ, Η ΕΠΟΜΕΝΗ ΠΡΑΞΗ. Δείχνει την ΠΡΩΤΗ ενότητα που δεν έχει
+     κλείσει — και, όταν δεν ξέρουμε, ΤΟ ΛΕΕΙ: ένα «ξεκίνα από το XVI» πάνω
+     σε άγνωστη πρόοδο θα ήταν σιωπηλό ψέμα (σταθ. 10). */
+  (function nextCard(){
+    var kind = document.getElementById('nxKind'), lecEl = document.getElementById('nxLec'),
+        rn   = document.getElementById('nxRn'),   ttl   = document.getElementById('nxTtl'),
+        dsh  = document.getElementById('nxDash'), nx    = document.getElementById('nxNext'),
+        cn   = document.getElementById('nxCnt'),  go    = document.getElementById('nxGo'),
+        goT  = document.getElementById('nxGoT');
 
-  if (!readable){
-    /* Δεν διαβάστηκε ΤΙΠΟΤΑ: ούτε λέξη για πρόοδο. */
-    head.innerHTML = 'Πέντε ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
-    sub.innerHTML = 'Δεν μπόρεσα να διαβάσω την πρόοδό σου σε αυτή τη συσκευή. Οι ενότητες ανοίγουν κανονικά.';
-  } else if (!knownTotal){
-    head.innerHTML = 'Πέντε ενότητες.<br><b>' + grandTotal + '</b> προτάσεις.';
-  } else {
-    head.innerHTML = '<b>' + knownTotal + '</b> από <b>' + grandTotal + '</b><br>τις λες απέξω.';
-    sub.innerHTML = knownTotal >= grandTotal
-      ? 'Και οι πέντε ενότητες κλειδωμένες. Ξαναπέρασέ τες με κρυμμένα τα λατινικά — από τα ελληνικά προς το κείμενο είναι η δύσκολη κατεύθυνση.'
-      : 'Μένουν <b>' + (grandTotal - knownTotal) + '</b>. Μέσα σε κάθε ενότητα, κάθε λέξη δείχνει πού πάει και τι είναι συντακτικά.';
-  }
+    if (!readable){
+      kind.textContent = '— δεν διαβάστηκε';
+      lecEl.textContent = '';
+      rn.textContent = '';
+      ttl.textContent = 'Δεν ξέρω πού έμεινες';
+      dsh.innerHTML = '';
+      nx.innerHTML = '<span class="dead">η πρόοδος δεν διαβάστηκε σε αυτή τη συσκευή</span>';
+      cn.textContent = '';
+      goT.textContent = 'Άνοιξε την πρώτη ενότητα';
+      return;
+    }
+    if (!next){
+      var all = [], k;
+      for (k = 0; k < grandTotal; k++) all.push(true);
+      kind.textContent  = '— κλειστά';
+      lecEl.textContent = 'Omnia';
+      rn.textContent    = '';
+      ttl.textContent   = 'Και οι πέντε ενότητες κλειδωμένες.';
+      dsh.innerHTML     = dashes(all, false);
+      dsh.className     = 'dash nx-dash many';
+      nx.textContent    = 'ξαναπέρασέ τες με κρυμμένα τα λατινικά';
+      cn.textContent    = grandTotal + ' / ' + grandTotal;
+      goT.textContent   = 'Ξανά από την αρχή';
+      return;
+    }
+    var first = 0;
+    while (first < next.arr.length && next.arr[first]) first++;
+    kind.textContent  = next.n ? '— συνέχισε' : '— ξεκίνα';
+    lecEl.textContent = 'Lectio ' + next.num;
+    rn.textContent    = next.ord;
+    ttl.textContent   = next.row.querySelector('.t').textContent;
+    dsh.innerHTML     = dashes(next.arr, true);
+    nx.textContent    = 'επόμενη: πρόταση ' + (first + 1);
+    cn.textContent    = next.n + ' / ' + next.total;
+    goT.textContent   = next.n ? 'Συνέχισε το κείμενο' : 'Ξεκίνα το κείμενο';
+    go.setAttribute('href', next.row.getAttribute('href'));
+    next.row.className = next.row.className + ' is-next';
+    var tag = next.row.querySelector('.nxt');
+    if (tag) tag.textContent = '— επόμενο';
+  })();
 
   /* ── cloud sync ──────────────────────────────────────────────────
      ⭐ ΜΕΝΕΙ, ΠΑΡΟΛΟ ΠΟΥ Η ΣΕΛΙΔΑ ΔΕΝ ΓΡΑΦΕΙ ΠΙΑ ΣΤΟ `lat:v1`. Τα κελιά
