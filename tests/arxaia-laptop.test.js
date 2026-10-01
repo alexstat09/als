@@ -65,7 +65,12 @@ function collapseAt(colSel){
   const m = [...before.matchAll(/@media\(max-width:(\d+)px\)/g)].pop();
   return m ? +m[1] : null;
 }
-const gnBp = collapseAt('#gnWrap .gn-cols'), agBp = collapseAt('#agWrap .ag-cols');
+/* ⚠️ als-v588: Ο ΓΝΩΣΤΟΣ ΔΕΝ ΕΧΕΙ ΠΙΑ ΔΥΟ ΣΤΗΛΕΣ ΣΕΛΙΔΑΣ. Έγινε περιοδικό
+   σε μία στήλη, και το πολύστηλο πράγμα του είναι Η ΠΛΑΚΑ ΤΟΥ ΠΑΚΕΤΟΥ
+   (σχεδιάγραμμα · κείμενο · οθόνες). ΑΥΤΗ μαζεύεται τώρα — και ο έλεγχος
+   μένει ο ίδιος: ΤΟ ΙΔΙΟ σημείο θραύσης με τον Άγνωστο. Δύο κόσμοι που
+   σπάνε αλλού είναι δύο κόσμοι να μάθεις. */
+const gnBp = collapseAt('#gnWrap .gn-pl'), agBp = collapseAt('#agWrap .ag-cols');
 ok('ο ΓΝΩΣΤΟΣ μαζεύει τις στήλες του σε σημείο θραύσης', !!gnBp);
 ok('ο ΑΓΝΩΣΤΟΣ επίσης', !!agBp);
 is('⭐ και είναι ΤΟ ΙΔΙΟ σημείο', agBp, gnBp);

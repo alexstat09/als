@@ -113,7 +113,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 `latinika-lectio19.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
-(als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία,
+(als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
 als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**),
 **`arxaia-agnosto.html` (Αρχαία · ΑΔΙΔΑΚΤΟ, als-v586 — δικό της `agn:v1`,
