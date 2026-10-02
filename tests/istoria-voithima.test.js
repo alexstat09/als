@@ -563,7 +563,12 @@ ok('prefers-reduced-motion υπάρχει', CSS.includes('prefers-reduced-motion
 section('5 · ΕΠΤΑ ΚΑΡΤΕΛΕΣ, ΜΕ ΤΑ ΟΝΟΜΑΤΑ ΤΟΥΣ');
 const tabBlock = PAGE.match(/const TABS = \[([\s\S]*?)\];/);
 const TABS = tabBlock ? eval('[' + tabBlock[1] + ']') : [];
-is('ακριβώς 7 καρτέλες', TABS.length, 7);
+is('7 σταθερές καρτέλες', TABS.filter(t => !t.needs).length, 7);
+/* Η 8η είναι ΠΡΟΑΙΡΕΤΙΚΗ: μπαίνει ΜΕΤΑ τις επτά (τα πλήκτρα 1-7 δεν
+   μετακινούνται) και εμφανίζεται μόνο σε ενότητα με πεδίο `video`. */
+is('  + μία προαιρετική: «Βίντεο», τελευταία, μόνο με `video`',
+   JSON.stringify(TABS[7]), JSON.stringify({ id: 'video', label: 'Βίντεο', needs: 'video' }));
+is('  και καμία άλλη', TABS.length, 8);
 [['explain','Κατάλαβέ το'],['diagram','Σχεδιάγραμμα'],['timeline','Χρονολόγιο'],
  ['glossary','Λεξικό'],['facts','Fun facts'],['text','Κείμενο'],['sources','Πηγές']]
   .forEach(([id, label], i) => {
@@ -738,7 +743,8 @@ ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initClou
 
 const C = boot('#/k1-g4/explain');     /* διαδρομή ενότητας */
 is('η διαδρομή #/k1-g4 φορτώνει την ενότητα χωρίς σφάλμα', C.error || 'NONE', 'NONE');
-is('χτίζονται 7 πάνελ', ((C.painted.panels || '').match(/role="tabpanel"/g) || []).length, 7);
+is('χτίζονται 8 πάνελ (η Γ.4 έχει βίντεο)', ((C.painted.panels || '').match(/role="tabpanel"/g) || []).length, 8);
+is('  και 8 καρτέλες', ((C.painted.tabs || '').match(/role="tab"/g) || []).length, 8);
 ok('ο τίτλος της ενότητας μπαίνει στο hero', (C.painted.hero || '').includes('Παγκόσμιος πόλεμος'));
 ok('το μενού ενοτήτων γεμίζει, ομαδοποιημένο ανά κεφάλαιο', (C.painted.chapterSel || '').includes('<optgroup'));
 ok('και μπαίνει Προηγούμενη/Επόμενη στο τέλος των καρτελών', (C.painted['panel-explain'] || '').includes('class="pn"'));
@@ -767,6 +773,26 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  και το περιεχόμενό της είναι ΟΝΤΩΣ εκεί («' + needle + '»)',
      (r.painted[box] || '').includes(needle));
 });
+
+/* ⭐ ΤΟ ΒΙΝΤΕΟ. Η Γ.4 το έχει: η καρτέλα ζωγραφίζει τον player με τους
+   κανόνες που ζήτησε (controls, preload=metadata, playsinline, ΟΧΙ autoplay)
+   και το αρχείο ΥΠΑΡΧΕΙ στο repo. Μια ενότητα χωρίς `video` δεν δείχνει
+   ούτε καρτέλα ούτε πάνελ — και ένα #/…/video σε αυτήν πέφτει στο «Κατάλαβέ το». */
+{
+  const r = boot('#/k1-g4/video'), V = r.painted['panel-video'] || '';
+  is('Γ.4 · η καρτέλα «video» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  με <video controls preload="metadata" playsinline>', /<video controls preload="metadata" playsinline/.test(V));
+  ok('  ⛔ χωρίς autoplay', !/autoplay/.test(V));
+  ok('  με τη σήμανση και τον τίτλο της', V.includes('ΕΝΟΤΗΤΑ 4 · ANIMATION') && V.includes('Ο Α΄ Παγκόσμιος πόλεμος — σε εικόνες'));
+  const g4 = CHAPTERS.find(c => c.id === 'k1-g4');
+  ok('  και το αρχείο του υπάρχει', g4.video && fs.existsSync(path.join(ALS, g4.video.src)) && fs.existsSync(path.join(ALS, g4.video.poster)));
+  const n = boot('#/k1-g3/video');
+  is('Γ.3 (χωρίς βίντεο) · #/…/video φορτώνει χωρίς σφάλμα', n.error || 'NONE', 'NONE');
+  is('  με 7 καρτέλες', ((n.painted.tabs || '').match(/role="tab"/g) || []).length, 7);
+  ok('  και κανένα πάνελ βίντεο', !(n.painted.panels || '').includes('panel-video'));
+  ok('  και πέφτει στο «Κατάλαβέ το»', (n.painted['panel-explain'] || '').includes('Τι έγινε, με τη σειρά'));
+}
+CHAPTERS.forEach(c => { if (c.video) ok('το βίντεο της ' + c.id + ' υπάρχει στο repo', fs.existsSync(path.join(ALS, c.video.src))); });
 
 /* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.
    Δεν αρκεί «η σελίδα δεν έσκασε»: το σχεδιάγραμμα είναι ΧΕΙΡΟΓΡΑΦΟ HTML,

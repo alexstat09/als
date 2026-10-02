@@ -307,7 +307,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v588`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v590`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1765,6 +1765,17 @@ independent transcription** of the same photo that must agree form for form.
 Over that sit mechanical checks no eye catches on the 40th line: ending signature
 per tense, augment on the historic tenses, a breathing on every initial vowel,
 an accent on every word. Keys `arx:v1`, appKey `arxaia`. Full detail in §5.
+
+⭐⭐ **ΤΟ ΒΙΝΤΕΟ ΤΟΥ ΒΟΗΘΗΜΑΤΟΣ — `video-kit/` → `videos/istoria/<id>.mp4`** (als-v590).
+Η ΤΡΕΧΟΥΣΑ γραμμή παραγωγής, και ΑΝΤΙΚΑΘΙΣΤΑ στην πράξη το παρακάτω demo:
+MP4 ανά ενότητα, στυλ «Historically», φωνή ElevenLabs, χωρίς μουσική.
+⛔ **Βίντεο για ΟΠΟΙΑΔΗΠΟΤΕ ενότητα = ΠΑΝΤΑ skill `historically-video`
+(`.claude/skills/historically-video/`) και ανάγνωση ΟΛΩΝ των `video-kit/docs/`
+πριν την πρώτη γραμμή. Το επίπεδο της Γ.4 είναι το ΕΛΑΧΙΣΤΟ αποδεκτό** (εντολή
+του Αλεξ). Μπαίνει στη σελίδα με ένα πεδίο `video: { src, poster }` στο
+`CHAPTERS` — η καρτέλα «Βίντεο» εμφανίζεται μόνη της (`tabsFor`). Έλεγχος του kit:
+`cd video-kit && node tools/stills.mjs episodes/<ep> --every 20` → `build/stills/sheet.jpg`.
+Το `sw.js` αφήνει τα Range requests στο δίκτυο (Safari + `<video>` μέσα από worker = μαύρο).
 
 ⭐⭐ **ΤΟ ΒΙΝΤΕΟ — `istoria-video-demo.html` + `vid/<unit>/`** (als-v462→466).
 Κάθε ενότητα γίνεται animated βίντεο ~2-3 λεπτών, **στο επίπεδο του καναλιού

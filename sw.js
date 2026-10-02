@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v589";
+var CACHE = "als-v590";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -88,6 +88,9 @@ self.addEventListener('fetch', function (e) {
   var url;
   try { url = new URL(req.url); } catch (err) { return; }
   if (url.origin !== self.location.origin) return; // leave Supabase / CDN / fonts to the network
+  // <video>/<audio> stream with Range requests (206). Never proxy or cache them:
+  // Safari refuses a video whose ranges come back through the worker.
+  if (req.headers.has('range')) return;
 
   // Network-first for EVERYTHING same-origin: always fresh code online, cache
   // only as an offline fallback. This guarantees a deploy is visible on the
