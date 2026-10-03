@@ -136,7 +136,9 @@ function stripChrome(seg) {
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
     .replace(/<div class="image_text[^"]*">[\s\S]*?<\/div>/g, ' ')
-    .replace(/<div class="box_cyan[^"]*">[\s\S]*?<\/div>/g, ' ')
+    /* ⚠️ το πλαίσιο μπορεί να κουβαλάει ΚΑΙ `style` (Κεφ.1 Β.11) — άρα ό,τι
+       ακολουθεί την κλάση, όχι σκέτο `">`. */
+    .replace(/<div class="box_cyan[^"]*"[^>]*>[\s\S]*?<\/div>/g, ' ')
     .replace(/<table class="centered[^"]*"[\s\S]*?<\/table>/g, ' ')
     /* ⚠️ Η ΛΕΖΑΝΤΑ ΤΟΥ ΠΙΝΑΚΑ ΕΙΝΑΙ ΚΙ ΑΥΤΗ ΧΡΩΜΙΟ, ΚΑΙ ΖΕΙ ΕΞΩ ΑΠΟ ΤΟΝ
        ΠΙΝΑΚΑ. Ο τίτλος («Πίνακας 8 / Η μετανάστευση στο εξωτερικό κατά την
@@ -167,7 +169,45 @@ function stripChrome(seg) {
       const items = [...inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
         .map(m => clean(m[1])).filter(Boolean);
       return items.length ? '<p>' + items.join(' ') + '</p>' : ' ';
-    });
+    })
+    /* ⛔⛔ Η ΓΥΜΝΗ ΠΑΡΑΓΡΑΦΟΣ ΕΙΝΑΙ ΚΕΙΜΕΝΟ ΤΟΥ ΒΙΒΛΙΟΥ ΚΑΙ ΔΕΝ ΕΙΝΑΙ <p>.
+       Κεφ.2 Α.4: η σελίδα του ebook ανοίγει με κείμενο ΚΑΤΕΥΘΕΙΑΝ μέσα στο
+       <td> («Όλα τα κόμματα συμφωνούσαν…») και κλείνει με κείμενο ΜΕΤΑ τον
+       <table>, μέσα στο <div class="page"> («Σε ακραίες περιπτώσεις…»). Ο Α
+       μαζεύει μόνο <p>, άρα έχανε και τα δύο: 3 vs 5, σωστός ο Β.
+       ⭐ Ίδια αρχή με την κουκκιδολίστα: η διόρθωση μπαίνει ΕΔΩ, στο κοινό,
+       ώστε οι δύο να μείνουν ανεξάρτητοι μάρτυρες. Ένα ΣΥΝΕΧΕΣ τρέξιμο κειμένου
+       (μαζί με inline ετικέτες) που ζει ΕΞΩ από κάθε <p> και έχει ≥40
+       ελληνικά γράμματα τυλίγεται σε <p>. Το όριο είναι κάθε ετικέτα ΜΠΛΟΚ —
+       ποτέ το σχήμα του κειμένου. Ελέγχθηκε: καμία από τις 69 ενότητες που
+       περνούσαν δεν κουνήθηκε. */
+    /* οι ΤΙΤΛΟΙ δεν είναι κείμενο, και φεύγουν πριν τυλιχτεί τίποτα: ο τίτλος
+       της ενότητας (το στοιχείο απ' όπου ΑΡΧΙΖΕΙ το τμήμα, segmentFor) και
+       κάθε υπότιτλος «α. …» μέσα της, που ζει σε <div class="title"><em>. */
+    .replace(/^<span class="bold">[\s\S]*?<\/span>/, ' ')
+    .replace(/<div class="title">[\s\S]*?<\/div>/g, ' ')
+    .replace(/[\s\S]*/, wrapBare);
+}
+const INLINE = /^<\/?(strong|b|em|i|span|a|u|sub|br)\b/i;
+function wrapBare(seg) {
+  const toks = seg.split(/(<[^>]+>)/);
+  let out = '', run = '', inP = 0;
+  const flush = () => {
+    const greek = (run.replace(/<[^>]+>/g, '').match(/[Α-Ωα-ωΆ-Ώά-ώϊϋΐΰ]/g) || []).length;
+    out += greek >= 40 ? '<p>' + run.replace(/<br\s*\/?>/gi, ' ') + '</p>' : run;
+    run = '';
+  };
+  for (const t of toks) {
+    if (!t) continue;
+    if (t[0] !== '<') { if (inP) out += t; else run += t; continue; }
+    if (/^<p[\s>]/i.test(t)) { flush(); inP++; out += t; continue; }
+    if (/^<\/p>/i.test(t)) { inP = Math.max(0, inP - 1); out += t; continue; }
+    if (inP) { out += t; continue; }
+    if (INLINE.test(t)) { run += t; continue; }
+    flush(); out += t;
+  }
+  flush();
+  return out;
 }
 function extractA(seg) {
   seg = stripChrome(seg);
