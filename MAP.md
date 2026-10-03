@@ -110,7 +110,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1050,6 +1050,20 @@ XIX, «Η συνωμοσία του Κατιλίνα», 3 σκηνές / **10 ε
   επινοήθηκε νούμερο για να το γεμίσει (σταθ. 33). Η σκάλα των Λατινικών στο
   School Studies παγώνει με τον ίδιο τρόπο — αν χρειαστεί να ξαναζωντανέψει,
   θέλει **νέο `kind` στο `ladders.js`**, όχι μαντεψιά από το «το ξέρω».
+⭐⭐ **ΕΒΔΟΜΟ ΠΑΚΕΤΟ — `latinika-lectio21.html`, als-v594 (03/10/26).** Lectio
+XXI, «Πώς πήρε το όνομά του το Pisaurum», 3 σκηνές / **13 ενότητες** / 8
+παγίδες / 6 σημειώσεις, κλειδί `lectio21_known_v1`, ανάμεσα σε XX και XXII.
+- **ΠΗΓΗ:** `tests/latinika-lectio21.source.txt` — Β΄ Τεύχος
+  (`indexB_21.html`), sha256 καρφωμένο· μετάφραση + συντακτικό από το
+  φυλλάδιο (σελ. 39). Οι **3 αστερίσκοι = οι 3 απόλυτες αφαιρετικές**.
+- ⭐⭐ **ΤΡΙΤΟ ΤΥΠΟΓΡΑΦΙΚΟ ΤΟΥ ebooks:** «Turn Camillus» αντί «Tum» (το m
+  έγινε rn). Επιβεβαιωμένο από το φυλλάδιο ΚΑΙ από τη μετάφραση του ίδιου
+  του βιβλίου («Τότε»). Η σελίδα γράφει Tum· το test (§2στ) απαιτεί το Turn
+  να ζει στην πηγή και να λείπει από τη σελίδα.
+- Οι κανόνες του καθηγητή (νόθη αφαιρετική απόλυτη · qui/quae/quod στην αρχή
+  περιόδου) είναι μέσα· η ανάλυση του `quibus interemptis` είναι ΠΑΡΑΓΟΜΕΝΗ
+  από τον κανόνα του και δηλώνεται ως τέτοια.
+
 ⭐⭐ **ΕΚΤΟ ΠΑΚΕΤΟ — `latinika-lectio20.html`, als-v593 (03/10/26).** Lectio XX,
 «Πίσω από τις κουρτίνες ή πώς ο Κλαύδιος έγινε αυτοκράτορας», 3 σκηνές / **12
 ενότητες** / 8 παγίδες / 6 σημειώσεις. Μηχανή του XIX αυτούσια, δικό του κλειδί

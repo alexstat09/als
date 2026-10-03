@@ -75,6 +75,8 @@ var PACKS = [
   /* ⛔ ΚΑΙ ΤΟ XXII. Το φυλάει το §2δ. */
   /* ⛔ ΚΑΙ ΤΟ XX (als-v593). Το φυλάει το §2ε. */
   { id: '20', file: 'latinika-lectio20.html', v: 'S' },
+  /* ⛔ ΚΑΙ ΤΟ XXI (als-v594). Το φυλάει το §2στ. */
+  { id: '21', file: 'latinika-lectio21.html', v: 'S' },
   { id: '22', file: 'latinika-lectio22.html', v: 'S' }
 ];
 
@@ -97,7 +99,7 @@ function data(file, name) {
 }
 
 /* ══ 1 · ΤΑ ΠΑΚΕΤΑ ΜΠΗΚΑΝ ΑΥΤΟΥΣΙΑ ═══════════════════════════════════ */
-section('1 · τα έξι πακέτα (τα δύο δικά του, με hash)');
+section('1 · τα επτά πακέτα (τα δύο δικά του, με hash)');
 
 PACKS.forEach(function (pk) {
   var abs = path.join(ALS, pk.file);
@@ -126,6 +128,7 @@ var S17 = data('latinika-lectio17.html', 'S');
 var S18 = data('latinika-lectio18.html', 'S');
 var S19 = data('latinika-lectio19.html', 'S');
 var S20 = data('latinika-lectio20.html', 'S');
+var S21 = data('latinika-lectio21.html', 'S');
 var S22 = data('latinika-lectio22.html', 'S');
 
 var n16 = SC.reduce(function (a, s) { return a + s.s.length; }, 0);
@@ -133,6 +136,7 @@ var n17 = S17.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n18 = S18.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n19 = S19.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n20 = S20.reduce(function (a, s) { return a + s.s.length; }, 0);
+var n21 = S21.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n22 = S22.reduce(function (a, s) { return a + s.s.length; }, 0);
 eq(SC.length, 3, 'XVI: τρεις σκηνές');
 eq(n16, 16, 'XVI: δεκαέξι προτάσεις');
@@ -144,6 +148,8 @@ eq(S19.length, 3, 'XIX: τρεις σκηνές');
 eq(n19, 10, 'XIX: δέκα ενότητες');
 eq(S20.length, 3, 'XX: τρεις σκηνές');
 eq(n20, 12, 'XX: δώδεκα ενότητες');
+eq(S21.length, 3, 'XXI: τρεις σκηνές');
+eq(n21, 13, 'XXI: δεκατρείς ενότητες');
 eq(S22.length, 3, 'XXII: τρεις σκηνές');
 eq(n22, 11, 'XXII: έντεκα ενότητες');
 
@@ -166,7 +172,7 @@ SC.forEach(function (sc) {
 
 /* Στα XVII τα χρώματα δένουν λατινικά με ελληνικά μέσω του `g`. Ένα `g` που
    ζει μόνο στη μια πλευρά είναι ένας δεσμός που δεν ανάβει ποτέ. */
-[['XVII', S17], ['XVIII', S18], ['XIX', S19], ['XX', S20], ['XXII', S22]].forEach(function (pair) {
+[['XVII', S17], ['XVIII', S18], ['XIX', S19], ['XX', S20], ['XXI', S21], ['XXII', S22]].forEach(function (pair) {
 pair[1].forEach(function (sc) {
   sc.s.forEach(function (sn, i) {
     var tag = pair[0] + ' ' + sc.n + '/' + (i + 1);
@@ -453,6 +459,81 @@ ok(X20.indexOf('σκυθρωπό και περιδεή') > 0 && X20.indexOf('λ�
 ok(X20.indexOf('proximan') > 0 && X20.indexOf('coniuārvit') > 0,
   '⭐⭐ και ότι ΕΔΩ δεν βρέθηκε τυπογραφικό, ονομάζοντας τα προηγούμενα');
 
+/* ══ 2στ · ⭐⭐ ΤΟ XXI ΕΝΑΝΤΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΟΧΙ ΤΟΥ ΕΑΥΤΟΥ ΤΟΥ ══════════
+   als-v594. Β΄ Τεύχος (indexB_21.html). ΔΥΟ ΑΠΟΚΛΙΣΕΙΣ ΔΗΛΩΜΕΝΕΣ:
+     · οι ΤΡΕΙΣ αστερίσκοι = οι τρεις απόλυτες αφαιρετικές,
+     · ⭐ «Turn Camillus» = ΤΥΠΟΓΡΑΦΙΚΟ του βιβλίου (Tum = τότε· το m
+       τυπώθηκε rn). Τρίτο του ebooks μετά το proximan και το coniuārvit.
+   Και οι δύο επιβάλλονται ΘΕΤΙΚΑ: αν το βιβλίο πάψει να τις χρειάζεται, ο
+   μετασχηματισμός γίνεται no-op και θα έκρυβε πραγματική απόκλιση. */
+section('2στ · το XXI λέει ό,τι λέει το βιβλίο');
+
+var SRC21 = R('tests/latinika-lectio21.source.txt')
+  .split('\n').filter(function (l) { return l.charAt(0) !== '#'; }).join('\n').trim().split('@@@');
+var bookLa21 = SRC21[0].trim();
+var sheetGr21 = SRC21[1].trim();
+
+var stars21 = (bookLa21.match(/\*/g) || []).length;
+eq(stars21, 3, '⭐ η πηγή κρατάει τους ΤΡΕΙΣ αστερίσκους του βιβλίου (μία ανά απόλυτη αφαιρετική)');
+ok(bookLa21.indexOf('Turn Camillus') >= 0,
+  '⭐ η πηγή κρατάει το «Turn» του βιβλίου — το λάθος μένει ορατό στην πηγή (αλλιώς η διόρθωση είναι no-op)');
+var expectLa21 = bookLa21.replace(/\*/g, '').replace(/Turn Camillus/g, 'Tum Camillus');
+var pageLa21 = joinPack(S21, pickLa);
+var pageGr21 = joinPack(S21, pickGr);
+
+eq(pageLa21, expectLa21,
+  '⛔ ΤΟ ΛΑΤΙΝΙΚΟ ΤΟΥ XXI ΔΕΝ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ ΠΙΑ. Η πηγή είναι το\n' +
+  '      ebooks.edu.gr (Β΄ Τεύχος, ΜΑΘΗΜΑ XXI) — αν άλλαξε η σελίδα, έχει άδικο η σελίδα.');
+eq(pageGr21, sheetGr21,
+  '⛔ Η ΜΕΤΑΦΡΑΣΗ ΤΟΥ XXI ΔΕΝ ΕΙΝΑΙ ΤΟΥ ΦΥΛΛΑΔΙΟΥ ΠΙΑ — είναι τα λόγια του καθηγητή του.');
+ok(pageLa21.indexOf('Tum Camillus') >= 0, '   και η ίδια η σελίδα γράφει «Tum»');
+ok(pageLa21.indexOf('Turn') < 0, '   και ΠΟΤΕ το «Turn» του βιβλίου');
+ok(pageLa21.indexOf('*') < 0, '   και δεν κουβαλάει τους αστερίσκους');
+
+var W21 = {};
+S21.forEach(function (sc) { sc.s.forEach(function (u) { u.la.forEach(function (w) { W21[w.w] = w; }); }); });
+[['duce', 'duce*'], ['delētis', 'delētis*'], ['interemptis', 'interemptis*']].forEach(function (p) {
+  ok(bookLa21.indexOf(p[1]) >= 0, '   το βιβλίο σημαδεύει με αστερίσκο το «' + p[0] + '»');
+  ok(!!W21[p[0]] && W21[p[0]].x.indexOf('ΑΦΑΙΡΕΤΙΚΗ ΑΠΟΛΥΤΗ') >= 0, '   και η σελίδα το ονομάζει ΑΦΑΙΡΕΤΙΚΗ ΑΠΟΛΥΤΗ: ' + p[0]);
+});
+ok(W21['duce'].x.indexOf('ΙΔΙΟΜΟΡΦΗ') >= 0, '⭐ Brenno duce = ΙΔΙΟΜΟΡΦΗ (χωρίς μετοχή)');
+ok(W21['delētis'].x.indexOf('ΝΟΘΗ') >= 0 && W21['interemptis'].x.indexOf('ΝΟΘΗ') >= 0,
+  '⭐ delētis ΚΑΙ interemptis = ΝΟΘΕΣ (κανόνας του καθηγητή)');
+[['duce', 'dum Brennus dux est'], ['duce', 'cum Brennus dux erat'], ['duce', 'cum Brennus dux esset'],
+ ['delētis', 'postquam (Galli) legiones delevērunt'], ['delētis', 'cum (Galli) legiones delevissent'],
+ ['abeuntes', 'dum abeunt'], ['abeuntes', 'cum abibant'], ['abeuntes', 'cum abirent'],
+ ['absens', 'etsi aberat'], ['absens', 'licet abesset'],
+ ['divīsam,', 'quae (non aequo iure) divisa erat'],
+ ['appensum', 'quod appensum est'], ['appensum', 'quod appensum esset'], ['appensum', 'cum appensum esset'],
+ ['rogātus', 'postquam rogatus est'], ['rogātus', 'cum rogatus esset'],
+ ['diu', 'diu — diutius — diutissime']].forEach(function (p) {
+  ok(W21[p[0]].x.indexOf(p[1]) >= 0, '⭐ ανάλυση του καθηγητή στο «' + p[0] + '»: ' + p[1]);
+});
+ok(W21['Quod'].x.indexOf('Quod = id') >= 0 && W21['quod'].x.indexOf('Αιτιολογικός σύνδεσμος') >= 0,
+  '⛔ Quod (αντωνυμία = id) ≠ quod (αιτιολογικός σύνδεσμος) — λέγεται και στις δύο λέξεις');
+ok(W21['quibus'].x.indexOf('quibus = eis') >= 0, 'quibus = eis (το βιβλίο)');
+ok(W21['exilio'].x.indexOf('ΚΑΤΑΣΤΑΣΗΣ') >= 0 && W21['exilium,'].x.indexOf('ΚΙΝΗΣΗΣ') >= 0,
+  'in exilio (κατάσταση) ≠ in exilium (κίνηση)');
+ok(W21['Pisaurum'].x.indexOf('ΚΑΤΗΓΟΡΟΥΜΕΝΟ') >= 0, 'Pisaurum = κατηγορούμενο, όχι υποκείμενο');
+ok(W21['omne'].x.indexOf('ΚΑΤΗΓΟΡΗΜΑΤΙΚΟΣ') >= 0, 'omne = κατηγορηματικός προσδιορισμός');
+ok(W21['secūtus'].x.indexOf('ΑΠΟΘΕΤΙΚΟ') >= 0 && W21['reversus'].x.indexOf('ΗΜΙΑΠΟΘΕΤΙΚΟ') >= 0,
+  'secūtus = αποθετικό, reversus = ημιαποθετικό/αποθετικό (το βιβλίο)');
+ok(W21['Tum'].x.indexOf('Turn') >= 0, '⭐ και η λέξη Tum εξηγεί το τυπογραφικό του βιβλίου επιτόπου');
+
+var X21 = R('latinika-lectio21.html');
+var SRCT21 = R('tests/latinika-lectio21.source.txt');
+ok(SRCT21.indexOf('φωτογραφία') > 0, '⚠️ η πηγή ομολογεί ότι η μετάφραση ήρθε από φωτογραφία');
+ok(SRCT21.indexOf('ΣΥΝΤΑΚΤΙΚΟ') > 0, '⚠️ και ότι το ίδιο ισχύει για το ΣΥΝΤΑΚΤΙΚΟ');
+ok(SRCT21.indexOf('21.JPG') > 0, '⭐ και ονομάζει τον ΔΕΥΤΕΡΟ ΜΑΡΤΥΡΑ');
+ok(SRCT21.indexOf('19fa0e3aad656d8da907dbe765486cc665f64f1fa7d00b529a9534d17da89b07') > 0,
+  '   και κρατάει το sha256 του κατεβάσματος');
+ok(SRCT21.indexOf('interemisset') > 0 && X21.indexOf('δεν είναι γραμμένη στο φυλλάδιο') > 0,
+  '⚠️ η ανάλυση του quibus interemptis ΔΗΛΩΝΕΤΑΙ ως παραγόμενη από τον κανόνα, όχι του φυλλαδίου');
+ok(X21.indexOf('Turn Camillus') > 0 && X21.indexOf('<b>Tum</b>') > 0,
+  '⭐⭐ ΚΑΙ ΤΟ ΛΕΕΙ ΣΤΟΝ ΙΔΙΟ: το υποσέλιδο εξηγεί γιατί η σελίδα διαφωνεί με το βιβλίο');
+ok(X21.indexOf('με αρχηγό το Βρέννο') > 0 && X21.indexOf('αν και βρισκόταν μακριά') > 0,
+  '⭐⭐ και δείχνει ΚΑΙ ΤΙΣ ΔΥΟ μεταφράσεις');
+
 /* ══ 3 · ⭐⭐ ΤΑ ΝΟΥΜΕΡΑ ΤΗΣ ΣΕΙΡΑΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΑ ═══════════════════
    als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ: η κάρτα έγινε ΣΕΙΡΑ μέσα σε ένα πλαίσιο, και
    κάθε νούμερο ζει πλέον ΔΥΟ φορές: ως `data-*` (τι διαβάζει Η ΜΗΧΑΝΗ για
@@ -473,6 +554,7 @@ var L17 = R('latinika-lectio17.html');
 var L18 = R('latinika-lectio18.html');
 var L19 = R('latinika-lectio19.html');
 var L20 = R('latinika-lectio20.html');
+var L21 = R('latinika-lectio21.html');
 var L22 = R('latinika-lectio22.html');
 
 function rowBlock(lec) {
@@ -514,6 +596,8 @@ var traps19 = count(L19.slice(L19.indexOf('class="traps"'), L19.indexOf('class="
 var notes19 = count(L19.slice(L19.indexOf('class="notes"'), L19.indexOf('class="foot"')), '<li>');
 var traps20 = count(L20.slice(L20.indexOf('class="traps"'), L20.indexOf('class="notes"')), '<li>');
 var notes20 = count(L20.slice(L20.indexOf('class="notes"'), L20.indexOf('class="foot"')), '<li>');
+var traps21 = count(L21.slice(L21.indexOf('class="traps"'), L21.indexOf('class="notes"')), '<li>');
+var notes21 = count(L21.slice(L21.indexOf('class="notes"'), L21.indexOf('class="foot"')), '<li>');
 var traps22 = count(L22.slice(L22.indexOf('class="traps"'), L22.indexOf('class="notes"')), '<li>');
 var notes22 = count(L22.slice(L22.indexOf('class="notes"'), L22.indexOf('class="foot"')), '<li>');
 
@@ -523,6 +607,7 @@ ok(L17.indexOf('class="traps"') < 0,
 ok(notes18 >= 1, 'XVIII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes18 + ')');
 ok(notes19 >= 1, 'XIX: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes19 + ')');
 ok(notes20 >= 1, 'XX: και το μπλοκ των σημειώσεων στέκει (' + notes20 + ')');
+ok(notes21 >= 1, 'XXI: και το μπλοκ των σημειώσεων στέκει (' + notes21 + ')');
 ok(notes22 >= 1, 'XXII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes22 + ')');
 
 function checkRow(id, scenes, units, unitWord, third, thirdWord) {
@@ -539,6 +624,7 @@ checkRow('17', S17.length, n17, 'ενότητες',  notes17, 'σημειώσε�
 checkRow('18', S18.length, n18, 'ενότητες',  traps18, 'παγίδες');
 checkRow('19', S19.length, n19, 'ενότητες',  traps19, 'παγίδες');
 checkRow('20', S20.length, n20, 'ενότητες',  traps20, 'παγίδες');
+checkRow('21', S21.length, n21, 'ενότητες',  traps21, 'παγίδες');
 checkRow('22', S22.length, n22, 'ενότητες',  traps22, 'παγίδες');
 
 /* ⭐⭐ ΕΝΑΣ ΑΡΙΘΜΟΣ ΑΝΑ ΚΕΙΜΕΝΟ — Ο ΑΡΙΘΜΟΣ ΤΟΥ ΒΙΒΛΙΟΥ (als-v593).
@@ -568,7 +654,7 @@ ok(HUB.indexOf("'<div class=\"lt-mf\"><b>' + num_ + '</b>' + mFoot") > 0,
 
 /* Και το σύνολο του hero. Ένα «27» γραμμένο στο χέρι θα ξεχνιόταν με την
    τρίτη ενότητα· εδώ το πληρώνει το test την ίδια μέρα. */
-var TOTAL = n16 + n17 + n18 + n19 + n20 + n22;
+var TOTAL = n16 + n17 + n18 + n19 + n20 + n21 + n22;
 ok(HUB.indexOf('<b>' + TOTAL + '</b> προτάσεις') > 0,
   'το hero λέει το ΑΘΡΟΙΣΜΑ των πακέτων (' + TOTAL + ')');
 
@@ -676,6 +762,10 @@ eq(count(L20, 'lectio20_known_v1') > 0, true, 'το XX κρατάει το δι�
 ok(['lectio17_known_v1', 'lectio18_known_v1', 'lectio19_known_v1', 'lectio22_known_v1'].every(function (k) { return L20.indexOf(k) < 0; }),
   '⛔ ούτε το XX — copy-paste της μηχανής του XIX, ΕΞΙ πακέτα πια στην ίδια μηχανή');
 ok(L22.indexOf('lectio20_known_v1') < 0, '⛔ και το XXII δεν διαβάζει το κλειδί του XX');
+eq(count(L21, 'lectio21_known_v1') > 0, true, 'το XXI κρατάει το δικό του κλειδί');
+ok(['lectio17_known_v1', 'lectio18_known_v1', 'lectio19_known_v1', 'lectio20_known_v1', 'lectio22_known_v1'].every(function (k) { return L21.indexOf(k) < 0; }),
+  '⛔ ούτε το XXI — copy-paste της μηχανής του XX, ΕΠΤΑ πακέτα στη βιβλιοθήκη');
+ok(L20.indexOf('lectio21_known_v1') < 0 && L22.indexOf('lectio21_known_v1') < 0, '⛔ και κανένας γείτονας δεν διαβάζει το κλειδί του XXI');
 eq(count(L22, 'lectio22_known_v1') > 0, true, 'το XXII κρατάει το δικό του κλειδί');
 ok(L18.indexOf('lectio17_known_v1') < 0,
   '⛔ και ΔΕΝ κληρονόμησε το κλειδί του XVII με copy-paste — θα μοιράζονταν πρόοδο');
@@ -688,7 +778,7 @@ ok(L22.indexOf('lectio17_known_v1') < 0 && L22.indexOf('lectio18_known_v1') < 0 
   '      εκεί ξεχνιέται το κλειδί: η κάρτα θα έδειχνε αληθοφανή πρόοδο που δεν\n' +
   '      έγινε ποτέ σε αυτή την ενότητα');
 ['lectio16:v1', 'lectio17_known_v1', 'lectio18_known_v1', 'lectio19_known_v1',
- 'lectio20_known_v1', 'lectio22_known_v1'].forEach(function (k) {
+ 'lectio20_known_v1', 'lectio21_known_v1', 'lectio22_known_v1'].forEach(function (k) {
   ok(HUB.indexOf(k) > 0, 'η βιβλιοθήκη ΔΙΑΒΑΖΕΙ το ' + k);
 });
 
@@ -854,6 +944,7 @@ var B = drive({
   'lectio18_known_v1': JSON.stringify({ s2: true, s3: true }),
   'lectio19_known_v1': JSON.stringify({ s1: true, s4: true, s7: false, s10: true }),
   'lectio20_known_v1': JSON.stringify({ s1: true, s5: false, s12: true }),
+  'lectio21_known_v1': JSON.stringify({ s2: true, s7: false, s13: true }),
   'lectio22_known_v1': JSON.stringify({ s2: true, s6: true, s8: false, s9: true, s11: true })
 });
 eq(B.cards['16'].cnt.textContent, '4 / 16', '⭐ ΠΙΝΑΚΑΣ: 4 δείκτες → 4');
@@ -862,7 +953,9 @@ eq(B.cards['18'].cnt.textContent, '2 / 11', '⭐ και το τρίτο κλει
 eq(B.cards['19'].cnt.textContent, '3 / 10', '⭐ και το ΤΕΤΑΡΤΟ — τα `false` ξανά δεν μετράνε');
 eq(B.cards['20'].cnt.textContent, '2 / 12', '⭐ και το XX — τα `false` ξανά δεν μετράνε');
 eq(onAt(B.cards['20'].dash.innerHTML).join(','), '0,11', '⭐⭐ και στο XX η ΘΕΣΗ: s1 → πρώτη, s12 → τελευταία γραμμή');
-eq(B.cards['22'].cnt.textContent, '4 / 11', '⭐ και το ΕΚΤΟ — τα `false` ξανά δεν μετράνε');
+eq(B.cards['21'].cnt.textContent, '2 / 13', '⭐ και το XXI — τα `false` ξανά δεν μετράνε');
+eq(onAt(B.cards['21'].dash.innerHTML).join(','), '1,12', '⭐⭐ και στο XXI η ΘΕΣΗ: s2 → 2η, s13 → τελευταία γραμμή');
+eq(B.cards['22'].cnt.textContent, '4 / 11', '⭐ και το ΕΒΔΟΜΟ — τα `false` ξανά δεν μετράνε');
 PACKS.forEach(function (pk) {
   eq(B.cards[pk.id].pct.textContent, 'σε εξέλιξη', pk.id + ': ξεκίνησε και δεν έκλεισε → «σε εξέλιξη»');
   eq(B.cards[pk.id].pct.className, 'pct on', '   και ανάβει');
@@ -878,7 +971,7 @@ eq(onAt(B.cards['17'].dash.innerHTML).join(','), '0,4,8',
   '⭐⭐ ΧΑΡΤΗΣ: το `s1` είναι η ΠΡΩΤΗ γραμμή (1-based → 0-based), όχι η δεύτερη');
 eq(nowAt(B.cards['16'].dash.innerHTML), 1,
   '⭐ και η «επόμενη» είναι η πρώτη ΑΣΒΗΣΤΗ (η 2η), όχι η επόμενη μετά την τελευταία αναμμένη');
-eq(B.els.stKnown.textContent, '18', 'η ταινία αθροίζει και τις έξι');
+eq(B.els.stKnown.textContent, '20', 'η ταινία αθροίζει και τις επτά');
 eq(B.els.stKnown.className, 'hot', '   και τώρα βάφεται, γιατί δεν είναι μηδέν');
 eq(B.els.stDone.textContent, '0', '   καμία δεν έκλεισε ακόμη');
 eq(B.els.nxRn.textContent, 'XVI', 'η κάρτα δείχνει την ΠΡΩΤΗ ανοιχτή ενότητα');
@@ -902,6 +995,7 @@ eq(B2.cards['17'].cnt.textContent, '3 / 11', 'το XVII βλέπει το δικ
 eq(B2.cards['18'].cnt.textContent, '0 / 11', '⛔ και το XVIII ΔΕΝ δανείζεται την πρόοδό του');
 eq(B2.cards['19'].cnt.textContent, '0 / 10', '⛔ ούτε το XIX');
 eq(B2.cards['20'].cnt.textContent, '0 / 12', '⛔ ούτε το XX');
+eq(B2.cards['21'].cnt.textContent, '0 / 13', '⛔ ούτε το XXI');
 eq(B2.cards['22'].cnt.textContent, '0 / 11', '⛔ ούτε το XXII');
 eq(B2.els.nxRn.textContent, 'XVI', '   και η κάρτα δείχνει το XVI, που δεν ξεκίνησε καν');
 
@@ -921,7 +1015,7 @@ eq(B4.cards['20'].cnt.textContent, '0 / 12', '   ούτε στο XX');
 
 var B5 = drive({ 'lectio20_known_v1': JSON.stringify({ s1: true, s2: true, s3: true, s4: true }) });
 eq(B5.cards['20'].cnt.textContent, '4 / 12', 'το XX βλέπει το δικό του κλειδί');
-['17', '18', '19', '22'].forEach(function (id) {
+['17', '18', '19', '21', '22'].forEach(function (id) {
   eq(B5.cards[id].cnt.textContent, '0 / ' + attrOf(ROWS[id], 'data-n'), '   και δεν το δανείζει στο ' + id);
 });
 
@@ -937,7 +1031,7 @@ eq(G.els.stKnown.textContent, '0',
 var C = drive({
   'lectio16:v1': '__THROW__', 'lectio17_known_v1': '__THROW__',
   'lectio18_known_v1': '__THROW__', 'lectio19_known_v1': '__THROW__',
-  'lectio20_known_v1': '__THROW__',
+  'lectio20_known_v1': '__THROW__', 'lectio21_known_v1': '__THROW__',
   'lectio22_known_v1': '__THROW__', 'eisagogi:v1': '__THROW__'
 });
 PACKS.forEach(function (pk) {
@@ -971,7 +1065,7 @@ ok(H.els.ltSub.innerHTML.indexOf('Κάποιες ενότητες δεν δια�
 var D = drive({
   'lectio16:v1': '{not json', 'lectio17_known_v1': JSON.stringify([1, 2, 3]),
   'lectio18_known_v1': JSON.stringify([1, 2, 3]), 'lectio19_known_v1': JSON.stringify([1, 2, 3]),
-  'lectio20_known_v1': JSON.stringify([1, 2, 3]),
+  'lectio20_known_v1': JSON.stringify([1, 2, 3]), 'lectio21_known_v1': JSON.stringify([1, 2, 3]),
   'lectio22_known_v1': JSON.stringify([1, 2, 3]), 'eisagogi:v1': JSON.stringify([1, 2])
 });
 eq(D.cards['16'].pct.textContent, 'δεν διαβάστηκε', 'σπασμένο JSON → «δεν διαβάστηκε»');
@@ -979,6 +1073,7 @@ eq(D.cards['17'].pct.textContent, 'δεν διαβάστηκε', '⭐ ΠΙΝΑΚ
 eq(D.cards['18'].pct.textContent, 'δεν διαβάστηκε', '   και στο XVIII, που μοιράζεται τον ίδιο μετρητή');
 eq(D.cards['19'].pct.textContent, 'δεν διαβάστηκε', '   και στο XIX');
 eq(D.cards['20'].pct.textContent, 'δεν διαβάστηκε', '   και στο XX');
+eq(D.cards['21'].pct.textContent, 'δεν διαβάστηκε', '   και στο XXI');
 eq(D.cards['22'].pct.textContent, 'δεν διαβάστηκε', '   και στο XXII');
 eq(D.els.eisPct.textContent, 'δεν διαβάστηκε', '   και η εισαγωγή με πίνακα αντί για χάρτη');
 
@@ -1000,6 +1095,7 @@ var F = drive({
   'lectio18_known_v1': JSON.stringify(allMap(n18)),
   'lectio19_known_v1': JSON.stringify(allMap(n19)),
   'lectio20_known_v1': JSON.stringify(allMap(n20)),
+  'lectio21_known_v1': JSON.stringify(allMap(n21)),
   'lectio22_known_v1': JSON.stringify(allMap(n22))
 });
 eq(F.els.stKnown.textContent, String(TOTAL), 'όλα κλειστά → η ταινία λέει ' + TOTAL);
