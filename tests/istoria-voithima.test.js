@@ -792,6 +792,19 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  και κανένα πάνελ βίντεο', !(n.painted.panels || '').includes('panel-video'));
   ok('  και πέφτει στο «Κατάλαβέ το»', (n.painted['panel-explain'] || '').includes('Τι έγινε, με τη σειρά'));
 }
+/* Κεφ.2 Α.1 · το δεύτερο βίντεο (video-kit/episodes/k2-a1). Το ίδιο συμβόλαιο,
+   με ΤΗ ΔΙΚΗ ΤΟΥ σήμανση — ένας player που έδειχνε τον τίτλο της Γ.4 θα περνούσε
+   κάθε έλεγχο ύπαρξης. */
+{
+  const r = boot('#/k2-a1/video'), V = r.painted['panel-video'] || '';
+  is('Κεφ.2 Α.1 · η καρτέλα «video» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  με <video controls preload="metadata" playsinline>, χωρίς autoplay', /<video controls preload="metadata" playsinline/.test(V) && !/autoplay/.test(V));
+  ok('  με τη ΔΙΚΗ ΤΗΣ σήμανση και τίτλο', V.includes('ΕΝΟΤΗΤΑ 1 · ANIMATION') && V.includes('Πελατειακά δίκτυα επί τουρκοκρατίας — σε εικόνες') && !V.includes('Παγκόσμιος'));
+  /* το src μπαίνει ως ιδιότητα (όχι στο HTML) — ελέγχεται στα δεδομένα της ενότητας */
+  const k = CHAPTERS.find(c => c.id === 'k2-a1');
+  ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-a1.mp4' && k.video.poster === 'videos/istoria/k2-a1.jpg');
+  ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
+}
 CHAPTERS.forEach(c => { if (c.video) ok('το βίντεο της ' + c.id + ' υπάρχει στο repo', fs.existsSync(path.join(ALS, c.video.src))); });
 
 /* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.

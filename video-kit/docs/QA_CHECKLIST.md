@@ -25,6 +25,14 @@ Run `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then 
 - [ ] Shot boundaries 0.1–0.2 s before the phrase.
 - [ ] Map labels from a previous beat fade out when the camera moves on.
 
+- [ ] **Alignment sanity (k2-a1):** after align.py, the «~» (interpolated) rows must be only tiny phrases and every phrase
+      ≈0.15–0.18 s/syllable. At the old default −40 dB/0.12 s the ElevenLabs title pauses were missed and the first book
+      phrases slid one slot early. Compare two settings; boundaries should agree within ~0.25 s.
+- [ ] **The first book phrase HAS a subtitle:** title lines in replacements.json must KEEP their full stop, or subs.py merges
+      the first phrase into the title chunk and makeSubs({skipBefore}) silently drops it (happened in k2-a1).
+- [ ] **No literal seconds** in scenes.mjs/shots.js/audio.json — cues (C.*) and shot bounds (D.shots) only, so a new voice
+      re-times everything (k2-a1 was built on a draft voice and re-timed this way).
+
 ## Technical
 - [ ] Every expression used exists for that character (venizelos/konstantinos lacked 'happy'/'sad' → blank eyes;
       runtime now falls back to 'neutral', but ADD the expression instead).

@@ -1,6 +1,6 @@
 # k2-a1 — REVIEW (DIRECTOR_MODE loops 3–4)
-Built against the DRAFT voice (macOS Melina). Every time in scenes.mjs/shots.js/audio.json is a word cue or a shot bound,
-so the ElevenLabs voice re-times the film; re-run this review on the real timing before the final render.
+Rounds 1–3 were built against a DRAFT voice (macOS Melina); every time is a word cue or shot bound, so the real
+ElevenLabs voice (Eleni, 156.76 s) re-timed the film. Round 4 below re-ran the review on the real timing.
 
 ## Round 1 — sheet every 3 s
 - S1 0.5: network lines barely visible at the zoomed-out start → acceptable (they read as the title fills).
@@ -46,3 +46,9 @@ so the ElevenLabs voice re-times the film; re-run this review on the real timing
 - S19 side labels clear of the frame · S20 bubbles leave as the panels arrive · S21 camera beat, sign off the edge.
 - S23 webs build in 0.3 s (no empty frame) · S24 web/building no longer overlap figures, closing push-in.
 - Re-checked after the zoom beats: titles of S15/S21 stay inside the frame.
+
+## Round 4 — the real ElevenLabs voice (Eleni)
+- align.py default → −32 dB / 0.07 s: at −40 dB her soft breaths merged phrases and shifted every cue.
+- Re-bound cues that fell under 0.8 s visible on the new timing (S20 «ΖΗΤΗΜΑΤΑ» scroll pops on «ζητήματα», leaves before «διαφωνίες»).
+- Final encode: 1920×1080 · 30 fps · h264/aac 48 kHz · 159.0 s · mean −19.7 dB / peak −3.8 dB (no clipping).
+- Contact sheet of the FINAL mp4 every 6 s: every frame has its title/subtitle in frame, nothing in the subtitle band.

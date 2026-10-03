@@ -210,8 +210,10 @@ F.S19 = t => {
 };
 F.S20 = t => {
   const { a, b } = SH.S20;
-  cam('S20-cam', t, [[a, 960, 700, 1.3], [C.axiom - .4, 960, 640, 1.15], [C.axiom + .3, 960, 540, 1], [b, 960, 540, 1.03]]);
+  slide('S20-a', t, a, .5, -700, 0); slide('S20-b', t, a + .15, .5, 700, 0);
+  cam('S20-cam', t, [[a, 960, 760, 1.45], [C.diafon - .3, 960, 700, 1.25], [C.axiom - .4, 960, 640, 1.15], [C.axiom + .3, 960, 540, 1], [b, 960, 540, 1.03]]);
   ['s20a', 's20b'].forEach((id, i) => { idle(id, t, i * .5, 1.4); expr(id, t > C.diafon ? 'angry' : 'neutral'); headTilt(id, t > C.diafon ? (i ? -7 : 7) : 0); });
+  popIn('S20-zit', t, C.zit29 - .1, { rot: -6 }); if (t > C.zit29 + .3) put('S20-zit', { dy: bob(t, 2, 6), o: 1 - P(t, C.diafon - .35, C.diafon - .1) });
   popIn('S20-ba', t, C.diafon, { rot: -10 }); popIn('S20-bb', t, C.diafon + .25, { rot: 10 });
   const gone = 1 - P(t, C.axiom - .6, C.axiom - .3);
   if (t > C.diafon + .5) { put('S20-ba', { dy: bob(t, 6, 5), o: gone }); put('S20-bb', { dy: bob(t, 6, 5, 1), o: gone }); }

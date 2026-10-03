@@ -34,7 +34,7 @@ const C = {
   igesia: Wt(25, 'ηγεσία'), ploio: Wt(25, 'πλοιοκτητών'), megal25: Wt(25, 'μεγάλων'),
   katop: Wt(26, 'κατοπινά'), den26: Wt(26, 'δεν'), metex: Wt(26, 'μετεξέλιξη'),
   plaisio: Wt(27, 'πλαίσιο'), dedom: Wt(27, 'δεδομένο'), anamf: Wt(27, 'αναμφισβήτητο'), kyriarx: Wt(28, 'κυριαρχία'), othom28: Wt(28, 'οθωμανική'),
-  diafon: Wt(29, 'διαφωνίες'), axiom: Wt(29, 'αξιωμάτων'), mikro: Wt(29, 'μικροπροβλημάτων'),
+  diafon: Wt(29, 'διαφωνίες'), zit29: Wt(29, 'ζητήματα'), axiom: Wt(29, 'αξιωμάτων'), mikro: Wt(29, 'μικροπροβλημάτων'),
   texn: Wt(30, 'τεχνικής'), erga: Wt(32, 'έργων'),
   logo: Wt(33, 'λόγο'), nomoth: Wt(33, 'νομοθεσίας'), exot: Wt(33, 'εξωτερικής'),
   diamorf: Wt(34, 'διαμόρφωναν'), diaf34: Wt(34, 'διαφορετικές'), polit34: Wt(34, 'πολιτικές'), apopseis: Wt(34, 'απόψεις'),
@@ -266,7 +266,7 @@ shot('S20', b19, cut(30), `<g id="S20-cam">${sky('#a9cfe0', '#eef4ee', '#c9b98d'
   ${T('S20-e0', 'ΕΙΤΕ', 470, 145, 54, '#fff', 'middle', 9)}${T('S20-t0', 'ΔΗΜΟΣΙΑ ΑΞΙΩΜΑΤΑ', 470, 650, 58, YEL, 'middle', 10)}
   ${T('S20-e1', 'ΕΙΤΕ', 1450, 145, 54, '#fff', 'middle', 9)}${T('S20-t1', 'ΜΙΚΡΟΠΡΟΒΛΗΜΑΤΑ', 1450, 650, 58, YEL, 'middle', 10)}
   ${G('S20-a', P.villager('s20a', { start: 'angry' }), 830, 940, .82)}${G('S20-b', P.villager('s20b', { start: 'angry', coat: '#3d5a46', hairC: '#6b4a2b' }), 1090, 940, .82)}
-  ${G('S20-ba', P.bubble(220, 120, 60, 100, scrib), 740, 520, .9, 'opacity="0"')}${G('S20-bb', P.bubble(220, 120, -60, 100, scrib), 1180, 520, .9, 'opacity="0"')}
+  ${G('S20-zit', P.scroll('ΖΗΤΗΜΑΤΑ', 380), 960, 530, 1, 'opacity="0"')}${G('S20-ba', P.bubble(220, 120, 60, 100, scrib), 740, 520, .9, 'opacity="0"')}${G('S20-bb', P.bubble(220, 120, -60, 100, scrib), 1180, 520, .9, 'opacity="0"')}
   ${T('S20-l', 'ΔΙΑΦΩΝΙΕΣ', 960, 800 - 380, 64, '#fff', 'middle', 10)}</g>${vign}`);
 
 // S21 «technical» matters, e.g. public works: villagers repair a stone bridge

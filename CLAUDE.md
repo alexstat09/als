@@ -307,7 +307,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v590`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v591`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1776,6 +1776,11 @@ MP4 ανά ενότητα, στυλ «Historically», φωνή ElevenLabs, χω�
 `CHAPTERS` — η καρτέλα «Βίντεο» εμφανίζεται μόνη της (`tabsFor`). Έλεγχος του kit:
 `cd video-kit && node tools/stills.mjs episodes/<ep> --every 20` → `build/stills/sheet.jpg`.
 Το `sw.js` αφήνει τα Range requests στο δίκτυο (Safari + `<video>` μέσα από worker = μαύρο).
+⭐ **Δεύτερο βίντεο: Κεφ.2 Α.1 (als-v591), `videos/istoria/k2-a1.mp4`.** Χτίστηκε πάνω σε ΠΡΟΧΕΙΡΗ φωνή και
+ξαναχρονίστηκε στην ElevenLabs χωρίς καμία αλλαγή κώδικα, γιατί **κανένας χρόνος δεν είναι καρφωμένος** (μόνο
+`C.*` και `D.shots`). Δύο παγίδες, γραμμένες στο `video-kit/docs/QA_CHECKLIST.md`: η προεπιλογή του `align.py`
+(−40 dB) μετατόπιζε τις πρώτες φράσεις κατά μία θέση (τώρα −32/0.07), και ο τίτλος χωρίς τελεία στο
+`replacements.json` έτρωγε τον υπότιτλο της πρώτης φράσης.
 
 ⭐⭐ **ΤΟ ΒΙΝΤΕΟ — `istoria-video-demo.html` + `vid/<unit>/`** (als-v462→466).
 Κάθε ενότητα γίνεται animated βίντεο ~2-3 λεπτών, **στο επίπεδο του καναλιού

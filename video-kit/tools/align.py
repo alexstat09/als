@@ -9,7 +9,9 @@ If a phrase looks wrong (check with tools/stills.mjs or by listening): tweak NOI
 """
 import re, json, math, sys, os, subprocess
 ep = sys.argv[1]
-NOISE_DB, MIN_PAUSE = -40, 0.12
+# -32/0.07 since k2-a1: at -40/0.12 the ElevenLabs title pauses were missed and the first book phrases shifted one slot
+# early (13 interpolated boundaries). Sanity-check: «~» rows should be only tiny phrases, ≈0.15–0.18 s/syllable.
+NOISE_DB, MIN_PAUSE = -32, 0.07
 text = open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read()
 phr = [p for p in re.split(r'(?<=[,.:;·!?])\s+', ' '.join(text.split())) if p.strip()]
 vow = re.compile(r'(αι|ει|οι|υι|ου|αυ|ευ|ηυ|[αεηιουωάέήίόύώϊϋΐΰ])', re.I)
