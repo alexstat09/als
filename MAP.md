@@ -110,7 +110,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1050,6 +1050,22 @@ XIX, «Η συνωμοσία του Κατιλίνα», 3 σκηνές / **10 ε
   επινοήθηκε νούμερο για να το γεμίσει (σταθ. 33). Η σκάλα των Λατινικών στο
   School Studies παγώνει με τον ίδιο τρόπο — αν χρειαστεί να ξαναζωντανέψει,
   θέλει **νέο `kind` στο `ladders.js`**, όχι μαντεψιά από το «το ξέρω».
+⭐⭐ **ΕΚΤΟ ΠΑΚΕΤΟ — `latinika-lectio20.html`, als-v593 (03/10/26).** Lectio XX,
+«Πίσω από τις κουρτίνες ή πώς ο Κλαύδιος έγινε αυτοκράτορας», 3 σκηνές / **12
+ενότητες** / 8 παγίδες / 6 σημειώσεις. Μηχανή του XIX αυτούσια, δικό του κλειδί
+`lectio20_known_v1`. Κάθεται στη σειρά του βιβλίου, ανάμεσα σε XIX και XXII.
+- **ΠΗΓΗ:** `tests/latinika-lectio20.source.txt` — curl στο Α΄ Τεύχος
+  (`index20.htm`, το τελευταίο του), sha256 καρφωμένο· μετάφραση + συντακτικό
+  από τη φωτογραφία του φυλλαδίου (σελ. 35). Το test (§2ε) απαιτεί αυτολεξεί
+  βιβλίο ΚΑΙ φυλλάδιο, και ονομάζει τις **επτά μετοχές** που σημαδεύουν οι
+  επτά αστερίσκοι — το μάθημα ΕΙΝΑΙ η μετοχή.
+- **Δεύτερος μάρτυρας:** η μετάφραση του ebook ως εικόνα
+  (`extras/texts/metafraseis/index20/20.JPG`) — διαφέρει μόνο σε διατύπωση.
+- **Κανένα τυπογραφικό**· μόνο ασυνέπεια σήμανσης μακρού
+  (`imperatōrem` / `imperātor`), που ΔΕΝ διορθώνεται.
+- als-v593 και: ο μεγάλος αριθμός κάθε σειράς είναι πλέον ο **αριθμός του
+  βιβλίου** (XVI…XXII), όχι η θέση I…V — δική του εντολή.
+
 ⭐⭐ **ΠΕΜΠΤΟ ΠΑΚΕΤΟ — `latinika-lectio22.html`, als-v578 (25/09/26).** Lectio
 XXII, «Προτροπές προς τους Ρωμαίους» (Κικέρων), 3 σκηνές / **11 ενότητες** / 8
 παγίδες / 6 σημειώσεις. Ίδια μηχανή με τα XVII/XVIII/XIX, ίδιο σχήμα εγγύησης:

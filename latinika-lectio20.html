@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lectio XX — Πίσω από τις κουρτίνες</title>
+<style>
+:root{
+  --bg:#0f1216; --panel:#151a21; --line:#242c36;
+  --ink:#e8ecf2; --mut:#8b93a1; --dim:#5f6875;
+  --la:#8fa5f5; --la-soft:#b8c5ff;
+  --hit:#f6c177; --red:#e06c75; --ok:#79c0a8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px;margin:0 auto;padding:56px 28px 120px}
+.eyebrow{
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:12px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-bottom:22px
+}
+h1{font-size:46px;line-height:1.12;font-weight:400;margin:0 0 20px;letter-spacing:-.01em}
+.lede{color:var(--mut);font-size:17px;margin:0 0 26px;max-width:640px}
+.lede b{color:var(--ink);font-weight:600}
+.legend{
+  border:1px solid var(--line);border-radius:10px;padding:14px 18px;
+  display:flex;flex-wrap:wrap;gap:22px;align-items:center;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--mut)
+}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px}
+.d-la{background:var(--la)} .d-gr{background:var(--red)}
+
+.toolbar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin:38px 0 0;padding-bottom:18px;border-bottom:1px solid var(--line)
+}
+button{
+  font-family:inherit;font-size:15px;color:var(--mut);background:transparent;
+  border:1px solid transparent;border-radius:8px;padding:7px 14px;cursor:pointer;transition:.15s
+}
+button:hover{color:var(--ink);background:#1b212a}
+button.on{color:var(--la-soft);background:#1b2233;border-color:#2c3550}
+.spacer{flex:1}
+.count{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--mut)}
+.bar{width:90px;height:3px;background:#242c36;border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.reset{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--dim);text-decoration:underline;cursor:pointer;background:none;border:0;padding:0 0 0 6px}
+.reset:hover{color:var(--ink);background:none}
+
+.scene{margin-top:46px}
+.scene-head{display:flex;align-items:baseline;gap:14px;padding-bottom:6px}
+.scene-num{color:var(--red);font-size:16px;font-family:ui-monospace,Menlo,monospace}
+.scene-title{font-size:19px}
+.scene-flow{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--dim);text-align:right}
+
+.sent{display:flex;gap:16px;padding:20px 0;border-top:1px solid var(--line)}
+.sent:first-of-type{border-top:1px solid var(--line)}
+.num{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--dim);width:20px;flex:0 0 20px;padding-top:6px;text-align:right}
+.body{flex:1;min-width:0}
+.la{font-size:22px;color:var(--la);margin:0 0 6px}
+.gr{font-size:17px;color:var(--ink);margin:0}
+.hide-gr .gr{visibility:hidden}
+.hide-la .la{visibility:hidden}
+
+.w{cursor:pointer;border-radius:4px;padding:1px 2px;transition:background .12s,color .12s}
+.map .w[data-g]:not([data-g="0"]){border-bottom:1px dotted #39445a}
+.gr .w[data-g]:not([data-g="0"]){border-bottom-color:#4a3a3f}
+.w:hover{background:#1e2530}
+.w.hit{background:rgba(246,193,119,.16);color:var(--hit)}
+.gr .w.hit{background:rgba(246,193,119,.16);color:var(--hit)}
+
+.info{
+  margin-top:12px;border-left:2px solid var(--hit);background:#171c24;
+  border-radius:0 8px 8px 0;padding:10px 14px;display:none
+}
+.info.show{display:block}
+.info .iw{font-size:17px;color:var(--la-soft)}
+.info .ig{color:var(--mut);font-size:15px}
+.info .is{
+  margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;
+  color:var(--hit);letter-spacing:.02em;line-height:1.55
+}
+.know{
+  flex:0 0 auto;align-self:flex-start;margin-top:2px;
+  font-family:ui-monospace,Menlo,monospace;font-size:11.5px;
+  border:1px solid var(--line);color:var(--dim);padding:5px 10px;border-radius:6px;cursor:pointer
+}
+.know:hover{color:var(--ink)}
+.know.on{color:var(--ok);border-color:#2b4a41;background:#152420}
+
+.traps{margin-top:60px;border:1px solid var(--line);border-radius:12px;padding:22px 24px;background:var(--panel)}
+.traps h3{margin:0 0 4px;font-size:15px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;font-weight:400}
+.traps .sub{margin:0 0 18px;font-size:14px;color:var(--mut)}
+.traps ul{margin:0;padding:0;list-style:none}
+.traps li{padding:13px 0;border-top:1px solid var(--line)}
+.traps li:first-child{border-top:none;padding-top:0}
+.traps .lat{color:var(--la-soft);font-size:17px}
+.traps .fix{display:block;font-size:15.5px;color:var(--ink);margin-top:3px}
+.traps .why{display:block;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--hit);line-height:1.55;margin-top:5px}
+
+.notes{margin-top:34px;border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+.notes h3{margin:0 0 14px;font-size:15px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;font-weight:400}
+.notes ul{margin:0;padding-left:18px;color:var(--mut);font-size:15.5px}
+.notes li{margin-bottom:9px}
+.notes b{color:var(--la-soft);font-weight:400}
+.foot{margin-top:34px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#3f4753;line-height:1.8}
+@media(max-width:640px){
+  .wrap{padding:34px 18px 90px} h1{font-size:34px}
+  .la{font-size:19px} .gr{font-size:16px}
+  .scene-flow{display:none} .sent{gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="latinika.html" style="display:inline-block;margin:0 0 22px;color:#5f6875;text-decoration:none;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.08em">&#8592; Λατινικά</a>
+  <div class="eyebrow">Λατινικά Γ΄ Λυκείου · Lectio XX · Lectio vicesima</div>
+  <h1>Πίσω από<br>τις κουρτίνες</h1>
+  <p class="lede">Ή πώς ο Κλαύδιος έγινε αυτοκράτορας. 12 ενότητες, 3 σκηνές. Πάτα οποιαδήποτε λέξη για να δεις <b>πού πάει</b> και <b>τι είναι συντακτικά</b>. Μετά κρύψε τη μια γλώσσα και δοκιμάσου.</p>
+  <div class="legend">
+    <span><i class="dot d-la"></i>Λατινικά</span>
+    <span><i class="dot d-gr"></i>Ελληνικά + γραμματική σημείωση</span>
+    <span>Η πρόοδος αποθηκεύεται σε αυτή τη συσκευή</span>
+  </div>
+
+  <div class="toolbar">
+    <button id="bMap" class="on">Χάρτης</button>
+    <button id="bGr">Κρύψε ελληνικά</button>
+    <button id="bLa">Κρύψε λατινικά</button>
+    <span class="spacer"></span>
+    <span class="count"><span id="cNow">0</span>/<span id="cAll">12</span></span>
+    <span class="bar"><i id="cBar"></i></span>
+    <button class="reset" id="bReset">μηδένισε</button>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="traps">
+    <h3>Οι παγίδες</h3>
+    <p class="sub">Εδώ χάνονται οι μονάδες — όχι στο υπόλοιπο κείμενο.</p>
+    <ul>
+      <li><span class="lat">Paulo post</span><span class="fix">λίγο αργότερα</span><span class="why">ΔΥΟ ΛΕΞΕΙΣ, ΔΥΟ ΧΑΡΑΚΤΗΡΙΣΜΟΙ. Το post είναι ΕΠΙΡΡΗΜΑ ΧΡΟΝΟΥ· το Paulo είναι ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΜΕΤΡΟΥ ΤΗΣ ΔΙΑΦΟΡΑΣ στο post. Ισοδύναμη έκφραση με πρόθεση: post paulum (πρόθεση + αιτιατική).</span></li>
+      <li><span class="lat">cui nomen est Hermaeum</span><span class="fix">της οποίας το όνομα είναι Ερμαίο</span><span class="why">cui = ΔΟΤΙΚΗ ΚΤΗΤΙΚΗ, nomen = υποκείμενο, Hermaeum = ΚΑΤΗΓΟΡΟΥΜΕΝΟ. ⛔ Όχι αντικείμενο — το sum δεν παίρνει αντικείμενο. Και είναι ΔΕΥΤΕΡΕΥΟΥΣΑ ΑΝΑΦΟΡΙΚΗ, προσδιοριστική στο diaetam.</span></li>
+      <li><span class="lat">rumōre ≠ ab insidiatōribus</span><span class="fix">από τα νέα ≠ από τους δολοφόνους</span><span class="why">ΔΥΟ ΠΟΙΗΤΙΚΑ ΑΙΤΙΑ, ΔΥΟ ΣΥΝΤΑΞΕΙΣ: το άψυχο μπαίνει σε ΣΚΕΤΗ αφαιρετική (rumōre), το έμψυχο σε a / ab + αφαιρετική (ab insidiatōribus, ab his).</span></li>
+      <li><span class="lat">pedes eius ≠ commilitōnes suos</span><span class="fix">τα πόδια του (Κλαυδίου) ≠ τους συντρόφους του (στρατιώτη)</span><span class="why">ΑΥΤΟΠΑΘΕΙΑ. Το suus δείχνει ΠΑΝΤΑ στο υποκείμενο της πρότασης (miles)· το eius δείχνει σε ΑΛΛΟ πρόσωπο. Και τα δύο μεταφράζονται «του» — γι' αυτό μπερδεύονται.</span></li>
+      <li><span class="lat">eum latentem adgnōvit</span><span class="fix">αναγνώρισε ότι αυτός κρυβόταν</span><span class="why">ΚΑΤΗΓΟΡΗΜΑΤΙΚΗ ΜΕΤΟΧΗ (ρήμα γνώσης), με υποκείμενο το eum. ⛔ Όχι «αναγνώρισε τον κρυμμένο» — η μετοχή λέει ΤΙ αναγνώρισε, δεν περιγράφει ποιον.</span></li>
+      <li><span class="lat">extractum ... eum</span><span class="fix">αφού τον τράβηξε έξω</span><span class="why">Η μετάφραση είναι ενεργητική, η μετοχή ΠΑΘΗΤΙΚΗ (extraho). Χρονική, συνημμένη στο αντικείμενο eum, προτερόχρονη — και στην ανάλυση αλλάζει υποκείμενο: postquam extractus est / cum extractus esset.</span></li>
+      <li><span class="lat">imperatōrem ≠ imperātor</span><span class="fix">αυτοκράτορα ≠ αυτοκράτορας</span><span class="why">ΙΔΙΑ ΛΕΞΗ, ΑΛΛΗ ΛΕΙΤΟΥΡΓΙΑ. imperatōrem eum salutāvit = ΚΑΤΗΓΟΡΟΥΜΕΝΟ ΤΟΥ ΑΝΤΙΚΕΙΜΕΝΟΥ (αιτιατική)· Claudius imperātor factus est = ΚΑΤΗΓΟΡΟΥΜΕΝΟ ΤΟΥ ΥΠΟΚΕΙΜΕΝΟΥ (ονομαστική).</span></li>
+      <li><span class="lat">dum ... quasi moritūrum eum miserātur</span><span class="fix">ενώ … τον λυπόταν σαν να επρόκειτο να πεθάνει</span><span class="why">ΤΡΙΑ ΣΕ ΜΙΑ ΠΡΟΤΑΣΗ: dum + οριστική ΕΝΕΣΤΩΤΑ με σημασία παρατατικού (miserātur = miserabātur)· το miseror είναι ΑΠΟΘΕΤΙΚΟ· και το quasi moritūrum είναι αιτιολογική μετοχή μέλλοντα ΥΠΟΘΕΤΙΚΗΣ-ΥΠΟΚΕΙΜΕΝΙΚΗΣ αιτιολογίας = quasi is moriturus esset.</span></li>
+    </ul>
+  </div>
+
+  <div class="notes">
+    <h3>Σημειώσεις που επιστρέφουν συνέχεια</h3>
+    <ul>
+      <li>⭐ Οι <b>επτά αστερίσκοι</b> του βιβλίου σημαδεύουν τις <b>επτά μετοχές</b> του κειμένου — το μάθημα ΕΙΝΑΙ η μετοχή: <i>Exclūsus · exterritus · praetenta · Discurrens · latentem · extractum · moritūrum</i>.</li>
+      <li>Η <b>μετοχή του ενεστώτα</b> (Παρατηρήσεις του βιβλίου): α΄ και β΄ συζυγία = θέμα ενεστώτα + <b>ns</b> (ama-ns, ama-ntis · dele-ns, dele-ntis)· γ΄ και δ΄ = θέμα + <b>e-ns</b> (leg-e-ns · audi-e-ns). Έχει <b>ενεργητική</b> σημασία — γι' αυτό τη διαθέτουν και τα αποθετικά.</li>
+      <li>Ο <b>χρόνος της μετοχής</b> είναι σχετικός: ενεστώτα = <b>σύγχρονο</b> (Discurrens, latentem) · παθητικού παρακειμένου = <b>προτερόχρονο</b> (Exclūsus, exterritus, praetenta, extractum) · μέλλοντα = <b>υστερόχρονο</b> (moritūrum).</li>
+      <li>Οι αναλύσεις του καθηγητή: <i>Exclūsus</i> → postquam exclusus est / cum exclusus esset · <i>exterritus</i> → quod exterritus est / quod exterritus esset · <i>Discurrens</i> → qui discurrebat / dum discurrit / cum discurreret · <i>extractum</i> → postquam extractus est / cum extractus esset.</li>
+      <li><b>Αφαιρετική του χρόνου</b> δύο φορές, στην αρχή και στο τέλος: <i>quinquagesimo anno</i> και <i>Postero die</i> — απαντούν στο «πότε;», χωρίς πρόθεση.</li>
+      <li>Το πλαίσιο του βιβλίου: ο Κλαύδιος έγινε αυτοκράτορας το <b>41 μ.Χ.</b>, μετά τη δολοφονία του Καλιγούλα· κατά τον Σουητώνιο, «ο πρώτος αυτοκράτορας που εξαγόρασε με χρήματα την αφοσίωση του στρατού».</li>
+    </ul>
+  </div>
+
+  <div class="foot">Πάτα «✓ το ξέρω» σε κάθε ενότητα όταν τη λες απ’ έξω.<br>Το λατινικό κείμενο είναι αυτούσιο από το σχολικό βιβλίο (ebooks.edu.gr, ΜΑΘΗΜΑ XX) · η μετάφραση και το συντακτικό από το φυλλάδιο του φροντιστηρίου.<br>Το βιβλίο έχει και δική του μετάφραση, με άλλη διατύπωση: «έγινε αυτοκράτορας» αντί «κατέλαβε την εξουσία», «παράδοξο και τυχαίο» αντί «περίεργο κι απρόσμενο», «σκυθρωπό και περιδεή» αντί «λυπημένος κι έντρομος». Και οι δύο είναι σωστές — η σελίδα κρατάει του φυλλαδίου.<br>Εδώ δεν βρέθηκε τυπογραφικό (στα προηγούμενα: «proximan» στο XVIII, «coniuārvit» στο XIX). Το «imperatōrem» χωρίς μακρό στο ā, δίπλα στο «imperātor», είναι σήμανση του βιβλίου, όχι λάθος τύπος.</div>
+</div>
+
+<script>
+const S = [
+{n:"I", title:"Η φυγή", flow:"η εξουσία → οι δολοφόνοι → το Ερμαίο", s:[
+ {
+  la:[
+   {w:"Claudius",g:1,d:"ο Κλαύδιος",x:"Υποκείμενο του cēpit."},
+   {w:"quinquagesimo",g:2,d:"στο πεντηκοστό",x:"Επιθετικός προσδιορισμός στο anno — τακτικό αριθμητικό (quinquagesimus, -a, -um)."},
+   {w:"anno",g:2,d:"έτος",x:"⭐ ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΧΡΟΝΟΥ στο cēpit — απαντά στο «πότε έγινε;». annus, -i, β΄ κλίση."},
+   {w:"aetātis",g:3,d:"της ηλικίας",x:"⭐ ΓΕΝΙΚΗ ΔΙΑΙΡΕΤΙΚΗ στο anno: το πεντηκοστό από τα χρόνια της ηλικίας του. aetas, -ātis, γ΄ κλίση."},
+   {w:"suae",g:3,d:"του",x:"Κτητική αντωνυμία γ΄ προσώπου, επιθετικός προσδιορισμός στο aetātis — ΑΥΤΟΠΑΘΗΣ, δείχνει πίσω στο υποκείμενο Claudius."},
+   {w:"imperium",g:5,d:"την εξουσία",x:"Αντικείμενο του cēpit. imperium, -ii, ουδέτερο."},
+   {w:"cēpit",g:4,d:"κατέλαβε",x:"Ρήμα της κύριας πρότασης, οριστική ενεργητικού παρακειμένου του capio (capio, cēpi, captum, capĕre, 3)."},
+   {w:"mirabili",g:6,d:"περίεργο",x:"Επιθετικός προσδιορισμός στο casu. mirabilis, -is, -e (παράδοξος, περίεργος)."},
+   {w:"quodam",g:6,d:"κάποιο",x:"Αόριστη αντωνυμία quidam, quaedam, quoddam, επιθετικός προσδιορισμός στο casu."},
+   {w:"casu.",g:6,d:"γεγονός (χάρη σε)",x:"⭐ ΑΦΑΙΡΕΤΙΚΗ ΤΗΣ ΑΙΤΙΑΣ στο cēpit. casus, -us, δ΄ κλίση (= τυχαίο, απροσδόκητο γεγονός)."}
+  ],
+  gr:[{t:"Ο Κλαύδιος",g:1},{t:"στο πεντηκοστό έτος",g:2},{t:"της ηλικίας του",g:3},{t:"κατέλαβε",g:4},{t:"την εξουσία",g:5},{t:"χάρη σε κάποιο περίεργο κι απρόσμενο γεγονός.",g:6}]
+ },
+ {
+  la:[
+   {w:"Exclūsus",g:1,d:"όταν διώχτηκε",x:"⭐ ΧΡΟΝΙΚΗ ΜΕΤΟΧΗ (ο καθηγητής σημειώνει και ΑΙΤΙΟΛΟΓΙΚΗ) παθητικού παρακειμένου του exclūdo (ex + claudo), ΣΥΝΗΜΜΕΝΗ στο εννοούμενο υποκείμενο Claudius. Ανάλυση: postquam exclusus est / cum exclusus esset."},
+   {w:"ab",g:2,d:"από",x:"Πρόθεση + αφαιρετική — «ab» επειδή ακολουθεί φωνήεν."},
+   {w:"insidiatōribus",g:2,d:"τους δολοφόνους",x:"⭐ ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΟΥ ΠΟΙΗΤΙΚΟΥ ΑΙΤΙΟΥ (έμψυχο: a / ab + αφαιρετική) στη μετοχή Exclūsus. insidiātor, -ōris (< insidiae)."},
+   {w:"Caligulae,",g:3,d:"του Καλιγούλα",x:"ΓΕΝΙΚΗ ΑΝΤΙΚΕΙΜΕΝΙΚΗ στο insidiatōribus (το λέει και το βιβλίο): ο Καλιγούλας είναι αυτός που δέχεται τη δολοφονία. Caligula, -ae — α΄ κλίση, αλλά ΑΡΣΕΝΙΚΟ."},
+   {w:"recesserat",g:4,d:"είχε αποσυρθεί",x:"Ρήμα της κύριας πρότασης, οριστική ΥΠΕΡΣΥΝΤΕΛΙΚΟΥ του recēdo (re + cedo). Υποκείμενο εννοείται: Claudius. Ο υπερσυντέλικος δηλώνει κάτι που είχε γίνει ΠΡΙΝ από τα υπόλοιπα της αφήγησης."},
+   {w:"in",g:5,d:"σε",x:"Πρόθεση + αιτιατική — κίνηση προς τόπο."},
+   {w:"diaetam,",g:5,d:"μια θερινή κατοικία",x:"ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΗΣ ΚΙΝΗΣΗΣ ΣΕ ΤΟΠΟ στο recesserat. diaeta, -ae (< αρχ. δίαιτα)."}
+  ],
+  gr:[{t:"Όταν διώχτηκε",g:1},{t:"από τους δολοφόνους",g:2},{t:"του Καλιγούλα,",g:3},{t:"είχε αποσυρθεί",g:4},{t:"σε μια θερινή κατοικία,",g:5}]
+ },
+ {
+  la:[
+   {w:"cui",g:1,d:"της οποίας",x:"⭐ ΔΟΤΙΚΗ ΚΤΗΤΙΚΗ (το γράφει το λεξιλόγιο του βιβλίου) στο est. Η αναφορική αντωνυμία qui, quae, quod εισάγει ΔΕΥΤΕΡΕΥΟΥΣΑ ΑΝΑΦΟΡΙΚΗ πρόταση, προσδιοριστική στο diaetam."},
+   {w:"nomen",g:2,d:"το όνομα",x:"Υποκείμενο του est. nomen, -inis, ουδέτερο."},
+   {w:"est",g:3,d:"είναι",x:"Ρήμα της αναφορικής πρότασης, οριστική ΕΝΕΣΤΩΤΑ — το όνομα ισχύει ακόμη. cui nomen est = «που ονομάζεται»."},
+   {w:"Hermaeum.",g:4,d:"Ερμαίο",x:"ΚΑΤΗΓΟΡΟΥΜΕΝΟ στο nomen, μέσω του est. ⛔ ΟΧΙ αντικείμενο: το sum δεν παίρνει αντικείμενο."}
+  ],
+  gr:[{t:"της οποίας",g:1},{t:"το όνομα",g:2},{t:"είναι",g:3},{t:"Ερμαίο.",g:4}]
+ }
+]},
+{n:"II", title:"Πίσω από τις κουρτίνες", flow:"ο τρόμος → το λιακωτό → τα πόδια", s:[
+ {
+  la:[
+   {w:"Paulo",g:1,d:"λίγο",x:"⭐ ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΜΕΤΡΟΥ ΤΗΣ ΔΙΑΦΟΡΑΣ στο post. Ο καθηγητής δίνει και την ισοδύναμη: post paulum (πρόθεση + αιτιατική)."},
+   {w:"post",g:1,d:"αργότερα",x:"Επίρρημα χρόνου — επιρρηματικός προσδιορισμός του χρόνου στο prorepsit. paulo post = λίγο αργότερα."},
+   {w:"rumōre",g:3,d:"από τα νέα",x:"⭐ ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΠΟΙΗΤΙΚΟΥ ΑΙΤΙΟΥ (ΑΨΥΧΟ = σκέτη αφαιρετική, χωρίς a / ab) στη μετοχή exterritus. rumor, -ōris."},
+   {w:"caedis",g:4,d:"της σφαγής",x:"ΓΕΝΙΚΗ ΑΝΤΙΚΕΙΜΕΝΙΚΗ στο rumōre: τα νέα ΓΙΑ τη σφαγή. caedes, -is, γ΄ κλίση."},
+   {w:"exterritus",g:2,d:"τρομοκρατημένος",x:"⭐ ΑΙΤΙΟΛΟΓΙΚΗ ΜΕΤΟΧΗ παθητικού παρακειμένου του exterreo, ΣΥΝΗΜΜΕΝΗ στο εννοούμενο υποκείμενο Claudius. Ανάλυση: quod exterritus est (αντικειμενική αιτιολογία) / quod exterritus esset (υποκειμενική)."},
+   {w:"prorepsit",g:5,d:"σύρθηκε",x:"Ρήμα της κύριας πρότασης, οριστική ενεργητικού παρακειμένου του prorēpo (pro + repo, = σέρνομαι)."},
+   {w:"ad",g:6,d:"προς",x:"Πρόθεση + αιτιατική."},
+   {w:"solarium",g:6,d:"λιακωτό",x:"ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΗΣ ΚΑΤΕΥΘΥΝΣΗΣ (κίνηση σε τόπο) στο prorepsit. solarium, -ii (< sol)."},
+   {w:"proximum",g:7,d:"πιο κοντινό",x:"Επιθετικός προσδιορισμός στο solarium. ΥΠΕΡΘΕΤΙΚΟΣ: prope — propior — proximus."}
+  ],
+  gr:[{t:"Λίγο αργότερα,",g:1},{t:"τρομοκρατημένος",g:2},{t:"από τα νέα",g:3},{t:"της σφαγής,",g:4},{t:"σύρθηκε",g:5},{t:"προς το",g:6},{t:"πιο κοντινό",g:7},{t:"λιακωτό",g:6}]
+ },
+ {
+  la:[
+   {w:"et",g:1,d:"και",x:"Συμπλεκτικός σύνδεσμος — ενώνει δύο κύριες προτάσεις με ΚΟΙΝΟ υποκείμενο (Claudius)."},
+   {w:"inter",g:2,d:"ανάμεσα σε",x:"Πρόθεση + αιτιατική."},
+   {w:"vela",g:2,d:"τα παραπετάσματα",x:"ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΟΥ ΤΟΠΟΥ (στάση) στο abdidit. velum, -i, ουδέτερο (ετυμ. «βέλο»)."},
+   {w:"praetenta",g:3,d:"που κρέμονταν",x:"⭐ ΕΠΙΘΕΤΙΚΗ ΜΕΤΟΧΗ παθητικού παρακειμένου του praetendo (prae + tendo), στο vela. Ισοδυναμεί με: quae praetenta erant."},
+   {w:"foribus",g:4,d:"μπροστά στην πόρτα",x:"ΔΟΤΙΚΗ (το σημειώνει το λεξιλόγιο του βιβλίου), αντικείμενο της μετοχής praetenta — σύνθετο με prae, γι’ αυτό δοτική. fores, -ium (foris, -is), θηλυκό."},
+   {w:"se",g:5,d:"(τον εαυτό του)",x:"Αντικείμενο του abdidit — αυτοπαθής αντωνυμία: se abdo = κρύβομαι."},
+   {w:"abdidit.",g:5,d:"κρύφτηκε",x:"Ρήμα της δεύτερης κύριας πρότασης, οριστική ενεργητικού παρακειμένου του abdo (abdidi)."}
+  ],
+  gr:[{t:"και",g:1},{t:"κρύφτηκε",g:5},{t:"ανάμεσα στα παραπετάσματα",g:2},{t:"που κρέμονταν",g:3},{t:"μπροστά στην πόρτα.",g:4}]
+ },
+ {
+  la:[
+   {w:"Discurrens",g:1,d:"που έτρεχε εδώ κι εκεί",x:"⭐ ΜΕΤΟΧΗ ΕΝΕΣΤΩΤΑ του discurro, ΣΥΝΗΜΜΕΝΗ στο miles — ΕΠΙΘΕΤΙΚΗ ή ΧΡΟΝΙΚΗ. Ο ενεστώτας δηλώνει το ΣΥΓΧΡΟΝΟ. Ανάλυση: qui discurrebat (επιθετική) · dum discurrit / cum discurreret (χρονική)."},
+   {w:"miles",g:2,d:"ένας στρατιώτης",x:"Υποκείμενο του animadvertit — και, εννοούμενο, των adgnōvit, salutāvit, adduxit. miles, -itis, γ΄ κλίση."},
+   {w:"pedes",g:4,d:"τα πόδια",x:"Αντικείμενο του animadvertit. pes, pedis, γ΄ κλίση."},
+   {w:"eius",g:5,d:"του",x:"ΓΕΝΙΚΗ ΚΤΗΤΙΚΗ στο pedes (is, ea, id — δείχνει τον Κλαύδιο). ⚠️ eius και ΟΧΙ suos: δεν δείχνει στο υποκείμενο miles."},
+   {w:"animadvertit;",g:3,d:"παρατήρησε",x:"Ρήμα της κύριας πρότασης, οριστική ενεργητικού παρακειμένου του animadverto (animum + adverto). ⚠️ Ίδια μορφή με τον ενεστώτα — τον χρόνο τον δίνει η αφήγηση."}
+  ],
+  gr:[{t:"Ένας στρατιώτης",g:2},{t:"που έτρεχε εδώ κι εκεί",g:1},{t:"παρατήρησε",g:3},{t:"τα πόδια",g:4},{t:"του·",g:5}]
+ },
+ {
+  la:[
+   {w:"eum",g:1,d:"αυτός",x:"Αντικείμενο του adgnōvit — και ΥΠΟΚΕΙΜΕΝΟ της κατηγορηματικής μετοχής latentem. is, ea, id."},
+   {w:"latentem",g:2,d:"ότι κρυβόταν",x:"⭐ ΚΑΤΗΓΟΡΗΜΑΤΙΚΗ ΜΕΤΟΧΗ ενεστώτα του lateo, στο eum — εξαρτάται από ρήμα γνώσης (adgnōvit). ⛔ ΟΧΙ «τον κρυμμένο»: λέει ΤΙ αναγνώρισε. Ενεστώτας = σύγχρονο."},
+   {w:"adgnōvit;",g:3,d:"αναγνώρισε",x:"Ρήμα της κύριας πρότασης (υποκείμενο εννοείται miles), οριστική ενεργητικού παρακειμένου του adgnosco (ad + gnosco)."}
+  ],
+  gr:[{t:"αναγνώρισε",g:3},{t:"ότι",g:2},{t:"αυτός",g:1},{t:"κρυβόταν·",g:2}]
+ },
+ {
+  la:[
+   {w:"extractum",g:1,d:"αφού τον τράβηξε έξω",x:"⭐ ΧΡΟΝΙΚΗ ΜΕΤΟΧΗ παθητικού παρακειμένου του extraho, ΣΥΝΗΜΜΕΝΗ στο αντικείμενο eum — προτερόχρονο. Η μετοχή είναι ΠΑΘΗΤΙΚΗ, άρα η ανάλυση αλλάζει υποκείμενο: postquam extractus est / cum extractus esset."},
+   {w:"imperatōrem",g:3,d:"αυτοκράτορα",x:"⭐ ΚΑΤΗΓΟΡΟΥΜΕΝΟ ΤΟΥ ΑΝΤΙΚΕΙΜΕΝΟΥ eum — το salūto (προσαγορεύω) παίρνει δύο αιτιατικές. imperātor, -ōris."},
+   {w:"eum",g:2,d:"τον",x:"Αντικείμενο του salutāvit."},
+   {w:"salutāvit.",g:4,d:"προσαγόρευσε",x:"Ρήμα της κύριας πρότασης (υποκείμενο εννοείται miles), οριστική ενεργητικού παρακειμένου του salūto (1)."}
+  ],
+  gr:[{t:"αφού τον τράβηξε έξω,",g:1},{t:"τον",g:2},{t:"προσαγόρευσε",g:4},{t:"αυτοκράτορα.",g:3}]
+ }
+]},
+{n:"III", title:"Το στρατόπεδο", flow:"οι σύντροφοι → το πλήθος → ο αυτοκράτορας", s:[
+ {
+  la:[
+   {w:"Hinc",g:1,d:"από εκεί",x:"Επίρρημα τόπου — ΚΙΝΗΣΗ ΑΠΟ ΤΟΠΟ, επιρρηματικός προσδιορισμός στο adduxit."},
+   {w:"ad",g:2,d:"σε",x:"Πρόθεση + αιτιατική."},
+   {w:"commilitōnes",g:2,d:"τους συντρόφους",x:"ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΗΣ ΚΑΤΕΥΘΥΝΣΗΣ ΣΕ ΠΡΟΣΩΠΟ στο adduxit. commilito, -ōnis (< cum + miles)."},
+   {w:"suos",g:3,d:"του",x:"Κτητική αντωνυμία γ΄ προσώπου, επιθετικός προσδιορισμός στο commilitōnes — ΑΥΤΟΠΑΘΗΣ, δείχνει στο υποκείμενο (ο στρατιώτης)."},
+   {w:"eum",g:4,d:"τον",x:"Αντικείμενο του adduxit."},
+   {w:"adduxit.",g:5,d:"οδήγησε",x:"Ρήμα της κύριας πρότασης (υποκείμενο εννοείται miles), οριστική ενεργητικού παρακειμένου του addūco."}
+  ],
+  gr:[{t:"Από εκεί",g:1},{t:"τον",g:4},{t:"οδήγησε",g:5},{t:"στους συντρόφους",g:2},{t:"του.",g:3}]
+ },
+ {
+  la:[
+   {w:"Ab",g:1,d:"από",x:"Πρόθεση + αφαιρετική — «ab» επειδή ακολουθεί φωνήεν."},
+   {w:"his",g:1,d:"αυτούς",x:"⭐ ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΟΥ ΠΟΙΗΤΙΚΟΥ ΑΙΤΙΟΥ (έμψυχο) στο delātus est. hic, haec, hoc — δείχνει τους συντρόφους."},
+   {w:"in",g:2,d:"σε",x:"Πρόθεση + αιτιατική — κίνηση προς τόπο."},
+   {w:"castra",g:2,d:"το στρατόπεδο",x:"ΕΜΠΡΟΘΕΤΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΗΣ ΚΙΝΗΣΗΣ ΣΕ ΤΟΠΟ στο delātus est. castra, -ōrum, ουδέτερο — μόνο στον πληθυντικό με αυτή τη σημασία."},
+   {w:"delātus",g:3,d:"μεταφέρθηκε",x:"Μετοχή παθητικού παρακειμένου του dēfero (de + fero, ανώμαλο: -tuli, -lātum) — με το est σχηματίζει ΠΑΘΗΤΙΚΟ ΠΑΡΑΚΕΙΜΕΝΟ. Υποκείμενο εννοείται: Claudius."},
+   {w:"est",g:3,d:"(περιφραστικός τύπος)",x:"ΕΝΕΣΤΩΤΑΣ του sum: μτχ. παθ. παρακειμένου + sum = παθητικός παρακείμενος. ⛔ ΟΧΙ «μεταφέρεται»."},
+   {w:"tristis",g:4,d:"λυπημένος",x:"⭐ ΚΑΤΗΓΟΡΗΜΑΤΙΚΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΟΥ ΤΡΟΠΟΥ στο εννοούμενο υποκείμενο Claudius. tristis, -is, -e."},
+   {w:"et",g:5,d:"κι",x:"Συμπλεκτικός σύνδεσμος."},
+   {w:"trepidus,",g:6,d:"έντρομος",x:"⭐ ΚΑΤΗΓΟΡΗΜΑΤΙΚΟΣ ΠΡΟΣΔΙΟΡΙΣΜΟΣ ΤΟΥ ΤΡΟΠΟΥ, όπως το tristis — και τα δύο αναφέρονται στο υποκείμενο Claudius. trepidus, -a, -um."}
+  ],
+  gr:[{t:"Από αυτούς",g:1},{t:"μεταφέρθηκε",g:3},{t:"στο στρατόπεδο",g:2},{t:"λυπημένος",g:4},{t:"κι",g:5},{t:"έντρομος,",g:6}]
+ },
+ {
+  la:[
+   {w:"dum",g:1,d:"ενώ",x:"Χρονικός σύνδεσμος — εισάγει ΔΕΥΤΕΡΕΥΟΥΣΑ ΧΡΟΝΙΚΗ πρόταση (σύγχρονο). ⚠️ dum + οριστική ΕΝΕΣΤΩΤΑ ακόμη και όταν η αφήγηση είναι στο παρελθόν."},
+   {w:"obvia",g:3,d:"που τον συναντούσε",x:"Επιθετικός προσδιορισμός στο turba. obvius, -a, -um (< ob + via). obvia turba = το πλήθος που τον συναντούσε."},
+   {w:"turba",g:2,d:"το πλήθος",x:"Υποκείμενο του miserātur. turba, -ae."},
+   {w:"quasi",g:5,d:"σαν να",x:"Παραβολικό επίρρημα — δίνει στη μετοχή που ακολουθεί ΥΠΟΘΕΤΙΚΗ-ΥΠΟΚΕΙΜΕΝΙΚΗ αιτιολογία."},
+   {w:"moritūrum",g:6,d:"επρόκειτο να πεθάνει",x:"⭐ ΑΙΤΙΟΛΟΓΙΚΗ ΜΕΤΟΧΗ ΜΕΛΛΟΝΤΑ του αποθετικού morior, ΣΥΝΗΜΜΕΝΗ στο eum — υποθετικής-υποκειμενικής αιτιολογίας λόγω του quasi· υστερόχρονο. Ισοδυναμεί με υποθετική παραβολική πρόταση: quasi is moriturus esset."},
+   {w:"eum",g:4,d:"τον",x:"Αντικείμενο του miserātur."},
+   {w:"miserātur.",g:7,d:"λυπόταν",x:"Ρήμα της χρονικής πρότασης. miseror, ΑΠΟΘΕΤΙΚΟ (1): παθητικός τύπος, ΕΝΕΡΓΗΤΙΚΗ σημασία. ⭐ miserātur = miserabātur (το λέει το βιβλίο): ο ενεστώτας μετά το dum έχει σημασία παρατατικού."}
+  ],
+  gr:[{t:"ενώ",g:1},{t:"το πλήθος",g:2},{t:"που τον συναντούσε",g:3},{t:"τον",g:4},{t:"λυπόταν",g:7},{t:"σαν να",g:5},{t:"επρόκειτο να πεθάνει.",g:6}]
+ },
+ {
+  la:[
+   {w:"Postero",g:1,d:"την επόμενη",x:"Επιθετικός προσδιορισμός στο die. posterus, -a, -um."},
+   {w:"die",g:1,d:"μέρα",x:"⭐ ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΧΡΟΝΟΥ στο factus est. dies, -ei, ε΄ κλίση."},
+   {w:"Claudius",g:2,d:"ο Κλαύδιος",x:"Υποκείμενο του factus est."},
+   {w:"imperātor",g:4,d:"αυτοκράτορας",x:"⭐ ΚΑΤΗΓΟΡΟΥΜΕΝΟ στο Claudius — ΟΝΟΜΑΣΤΙΚΗ, γιατί το factus est (fio = γίνομαι) είναι συνδετικό. ⚠️ Σύγκρινέ το με το imperatōrem του salutāvit: εκεί κατηγορούμενο ΤΟΥ ΑΝΤΙΚΕΙΜΕΝΟΥ, σε αιτιατική."},
+   {w:"factus",g:3,d:"ανακηρύχτηκε",x:"Μετοχή παθητικού παρακειμένου του facio — στην παθητική φωνή fio, factus sum, fieri (= γίνομαι, ανακηρύσσομαι)."},
+   {w:"est.",g:3,d:"(περιφραστικός τύπος)",x:"Ενεστώτας του sum — παθητικός παρακείμενος. Ρήμα της κύριας πρότασης."}
+  ],
+  gr:[{t:"Την επόμενη μέρα",g:1},{t:"ο Κλαύδιος",g:2},{t:"ανακηρύχτηκε",g:3},{t:"αυτοκράτορας.",g:4}]
+ }
+]}
+];
+
+const box = document.getElementById('content');
+let idx = 0, total = 0;
+const KEY = 'lectio20_known_v1';
+let known = {};
+try{ known = JSON.parse(localStorage.getItem(KEY) || '{}'); }catch(e){ known = {}; }
+
+S.forEach(sc=>{
+  const sec = document.createElement('div'); sec.className='scene';
+  sec.innerHTML = '<div class="scene-head"><span class="scene-num">'+sc.n+'</span>'+
+                  '<span class="scene-title">'+sc.title+'</span>'+
+                  '<span class="scene-flow">'+sc.flow+'</span></div>';
+  sc.s.forEach(sn=>{
+    idx++; total++;
+    const id = 's'+idx;
+    const row = document.createElement('div'); row.className='sent'; row.dataset.id=id;
+    const num = document.createElement('div'); num.className='num'; num.textContent=idx;
+    const bd  = document.createElement('div'); bd.className='body';
+    const la  = document.createElement('p'); la.className='la';
+    const gr  = document.createElement('p'); gr.className='gr';
+
+    sn.la.forEach((t,i)=>{
+      const s=document.createElement('span'); s.className='w'; s.textContent=t.w;
+      s.dataset.g=t.g; s.dataset.d=t.d; s.dataset.x=t.x; s.dataset.side='la';
+      la.appendChild(s); if(i<sn.la.length-1) la.appendChild(document.createTextNode(' '));
+    });
+    sn.gr.forEach((t,i)=>{
+      const s=document.createElement('span'); s.className='w'; s.textContent=t.t;
+      s.dataset.g=t.g; s.dataset.side='gr';
+      gr.appendChild(s); if(i<sn.gr.length-1) gr.appendChild(document.createTextNode(' '));
+    });
+
+    const info=document.createElement('div'); info.className='info';
+    bd.appendChild(la); bd.appendChild(gr); bd.appendChild(info);
+
+    const kb=document.createElement('button'); kb.className='know'; kb.textContent='✓ το ξέρω';
+    if(known[id]){ kb.classList.add('on'); }
+    kb.onclick=()=>{ known[id]=!known[id]; kb.classList.toggle('on',!!known[id]); save(); tally(); };
+
+    row.appendChild(num); row.appendChild(bd); row.appendChild(kb);
+    sec.appendChild(row);
+  });
+  box.appendChild(sec);
+});
+
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(known)); }catch(e){} }
+function tally(){
+  const n = Object.values(known).filter(Boolean).length;
+  document.getElementById('cNow').textContent = n;
+  document.getElementById('cBar').style.width = (n/total*100)+'%';
+}
+document.getElementById('cAll').textContent = total;
+tally();
+
+box.addEventListener('click', e=>{
+  const w = e.target.closest('.w'); if(!w) return;
+  const row = w.closest('.sent'); const info = row.querySelector('.info');
+  const g = w.dataset.g;
+  const wasOn = w.classList.contains('hit');
+  document.querySelectorAll('.w.hit').forEach(x=>x.classList.remove('hit'));
+  document.querySelectorAll('.info.show').forEach(x=>x.classList.remove('show'));
+  if(wasOn) return;
+  if(g && g!=='0'){ row.querySelectorAll('.w[data-g="'+g+'"]').forEach(x=>x.classList.add('hit')); }
+  else { w.classList.add('hit'); }
+  if(w.dataset.side==='la'){
+    info.innerHTML = '<div><span class="iw">'+w.textContent+'</span> <span class="ig">— '+w.dataset.d+'</span></div>'+
+                     '<div class="is">'+w.dataset.x+'</div>';
+    info.classList.add('show');
+  }
+});
+
+const bMap=document.getElementById('bMap'), bGr=document.getElementById('bGr'), bLa=document.getElementById('bLa');
+box.classList.add('map');
+bMap.onclick=()=>{ box.classList.toggle('map'); bMap.classList.toggle('on'); };
+bGr.onclick=()=>{ box.classList.toggle('hide-gr'); bGr.classList.toggle('on');
+  bGr.textContent = box.classList.contains('hide-gr') ? 'Δείξε ελληνικά' : 'Κρύψε ελληνικά'; };
+bLa.onclick=()=>{ box.classList.toggle('hide-la'); bLa.classList.toggle('on');
+  bLa.textContent = box.classList.contains('hide-la') ? 'Δείξε λατινικά' : 'Κρύψε λατινικά'; };
+document.getElementById('bReset').onclick=()=>{
+  known={}; save(); tally();
+  document.querySelectorAll('.know.on').forEach(b=>b.classList.remove('on'));
+};
+</script>
+</body>
+</html>
