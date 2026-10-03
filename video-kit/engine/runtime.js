@@ -25,8 +25,10 @@ function put(id, { dx = 0, dy = 0, s = 1, sx = 1, sy = 1, r = 0, o = null, x = n
   b.e.setAttribute('transform', `translate(${X},${Y}) rotate(${r}) scale(${b.s * s * sx},${b.s * s * sy})`);
   if (o !== null) b.e.setAttribute('opacity', o);
 }
-const vis = (id, v) => { $(id).style.display = v ? 'inline' : 'none'; };
-const op = (id, v) => $(id).setAttribute('opacity', v);
+// $$ = strict lookup: a typo'd/missing id names ITSELF instead of «Cannot read properties of null» (k2-a1 lost time on that)
+const $$ = id => { const e = $(id); if (!e) throw new Error('missing element #' + id); return e; };
+const vis = (id, v) => { $$(id).style.display = v ? 'inline' : 'none'; };
+const op = (id, v) => $$(id).setAttribute('opacity', v);
 // effects
 function slam(id, t, t0, { from = 2.3, rot = 0, dur = .42, x = null, y = null } = {}) {
   if (t < t0) { op(id, 0); return; }
@@ -47,7 +49,7 @@ function drop(id, t, t0, { h = 950, fall = .34 } = {}) { // character falls from
 function slide(id, t, t0, dur, fx, fy, { o = 1 } = {}) { // from offset (fx,fy) to base
   if (t < t0) { op(id, 0); return; } const p = eOut(P(t, t0, t0 + dur)); put(id, { dx: fx * (1 - p), dy: fy * (1 - p), o });
 }
-function draw(id, t, t0, dur, ease = eOut) { $(id).setAttribute('stroke-dashoffset', 1000 * (1 - ease(P(t, t0, t0 + dur)))); }
+function draw(id, t, t0, dur, ease = eOut) { $$(id).setAttribute('stroke-dashoffset', 1000 * (1 - ease(P(t, t0, t0 + dur)))); }
 function expr(id, name) { if (!$(id + '-x-' + name)) name = 'neutral'; for (const n of ['neutral', 'angry', 'blink', 'shock', 'happy', 'sad', 'yawn', 'strain']) { const e = $(id + '-x-' + n); if (e) e.style.display = n === name ? 'inline' : 'none'; } }
 function idle(id, t, ph = 0, amp = 1) {
   const tq = q15(t), b = Math.sin((tq + ph) * Math.PI * 2 / 1.7);

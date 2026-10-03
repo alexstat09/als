@@ -23,11 +23,15 @@ const PP = Object.fromEntries(Object.entries(pl).map(([k, v]) => [k, M.pt(v)]));
 // ---------- shots (must tile 0 → C.end + 2.4) ----------
 const shots = [];
 const shot = (id, a, b, inner) => shots.push({ id, a, b, svg: `<g id="${id}" class="shot" style="display:none">${inner}</g>` });
+// cut(i) = the boundary 0.15 s before phrase i (QA «shot boundaries 0.1–0.2 s before the phrase»). Use it for EVERY bound:
+// no literal seconds anywhere, so a new voice re-times the film (k2-a1 was built on a draft voice and re-timed for free).
+// Need a shot to hold longer (a label landing late)? cut(i) + .5 — still relative, still survives a new voice.
+const cut = i => i === 0 ? 0 : +(S(i) - .15).toFixed(2);
 
-shot('S1', 0, S(2) - .15, `<g id="S1-cam">${seaLand('S1')}${greeceOne(BLUE)}${paperOver}</g>${vign}
+shot('S1', cut(0), cut(2), `<g id="S1-cam">${seaLand('S1')}${greeceOne(BLUE)}${paperOver}</g>${vign}
   ${T('S1-t1', 'ΕΝΟΤΗΤΑ NN', 960, 470, 92, YEL, 'middle', 12)}${T('S1-t2', 'ΤΙΤΛΟΣ ΕΝΟΤΗΤΑΣ', 960, 600, 128, '#fff', 'middle', 16)}`);
 
-shot('S2', S(2) - .15, C.end + 2.4, `<g id="S2-cam">${sky()}${clouds('S2')}
+shot('S2', cut(2), C.end + 2.4, `<g id="S2-cam">${sky()}${clouds('S2')}
   ${G('S2-V', V('s2v'), 960, 880, 1.2)}${T('S2-l', 'ΛΕΞΗ-ΚΛΕΙΔΙ', 960, 160, 96)}</g>${vign}
   <rect id="S2-black" width="${W}" height="${H}" fill="#000" opacity="0"/>`);
 

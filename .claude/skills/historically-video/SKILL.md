@@ -18,6 +18,8 @@ Alex's previous experience with Claude Code was "much worse" — so do NOT cut c
 4. `video-kit/docs/QA_CHECKLIST.md` — every mistake already made once. Check all of them.
 5. `video-kit/docs/ENGINE_API.md` — the helpers you build with. `video-kit/docs/catalog.jpg` — LOOK at it.
 6. `video-kit/episodes/enotita-04/scenes.mjs` + `shots.js` — the full worked example. Copy its patterns.
+   `video-kit/episodes/k2-a1/` — the second one, built the CURRENT way (`cut(i)`, `SH.Sx`, zero literal seconds,
+   draft voice → real voice). Its `REVIEW.md` lists every flaw a review round found — read it, they recur.
 Also as needed: `docs/MAPS.md` (any map), `docs/CHARACTERS_AND_PROPS.md` (new people/objects), `docs/AUDIO.md`, `docs/PIPELINE.md`.
 
 ## Non-negotiables (Alex's explicit requirements)
@@ -34,28 +36,34 @@ Also as needed: `docs/MAPS.md` (any map), `docs/CHARACTERS_AND_PROPS.md` (new pe
   ElevenLabs MP3, and listen to the final audio.
 
 ## Workflow (do these in order; see docs/PIPELINE.md for exact commands)
-0. `cd video-kit && npm install && npx playwright install chromium` (first time). Python: `pip install numpy scipy`. ffmpeg on PATH.
-1. **Text in.** Create `episodes/enotita-NN/book.txt` with the chapter EXACTLY as Alex gives it.
+0. Already installed in this repo. Node: `export PATH="$HOME/.local/node-v24.18.0-darwin-arm64/bin:$PATH"`.
+   Episode folder = the unit id in `istoria-voithima.html` (`k2-a2`), so shipping needs no renaming.
+1. **Text in.** `cp -r episodes/_template episodes/<id>`; `book.txt` = the unit's paragraphs EXACTLY as in
+   `istoria-voithima.html` (typos included). If Alex says «θα σου δώσω το speech μετά», that's the voice — start now.
 2. **Voice script.** `python3 tools/voice_script.py episodes/enotita-NN` → fix every REVIEW item by hand in `voice.txt`
    (ordinals, feminine numbers, abbreviations). Keep punctuation IDENTICAL to book.txt. Add the spoken title line at the
    top and its pair in `replacements.json`. Give Alex `voice.txt` to paste into ElevenLabs (voice: **Eleni – Soft
-   Narrational and Calm**, same as ενότητα 4). He returns `voice.mp3` → save to the episode folder.
-3. **Align.** `python3 tools/align.py …` then `python3 tools/subs.py …`. Read the printed table: phrase times must look
-   plausible (≈0.17 s/syllable). If not, tune NOISE_DB/MIN_PAUSE in align.py.
+   Narrational and Calm**, same as ενότητα 4). Title lines in `replacements.json` KEEP their full stop.
+   **Don't wait for his MP3:** `python3 tools/voice.py draft episodes/<id>` (Melina) and build the whole film on it.
+   When he sends the file (it lands as `~/Downloads/ElevenLabs_*.mp3`): `python3 tools/voice.py use episodes/<id>`.
+3. **Align.** (voice.py runs align + subs for you.) Read the table: ≈0.15–0.18 s/syllable, «~» rows only on tiny
+   phrases, and subs.py must print `VERBATIM OK`. To compare settings: `align.py <ep> --db -40 --pause 0.12 --dry`.
 4. **Storyboard first, code second.** Write `episodes/enotita-NN/STORYBOARD.md` following SCENE_DESIGN.md: list every
    shot with time range, the phrase(s), the key word cues, what we SEE, how it MOVES, labels, SFX. Research every
    historical visual. Alex wants you AUTONOMOUS: do NOT wait for his approval — apply DIRECTOR_MODE Loops 1–2 yourself
    (3 ideas per phrase, rubric, fact-check) and proceed. Only ask him if a decision is truly his (e.g. a new voice).
 5. **Build.** Copy `episodes/_template/` → fill `scenes.mjs` (cues + static SVG per shot) and `shots.js` (animation per
    shot). Reuse engine helpers & props; add new characters/props to the ENGINE (not the episode) so the library grows.
-6. **QA loop (mandatory, before any full render) — DIRECTOR_MODE Loops 3–4, incl. an independent reviewer subagent.** `node tools/stills.mjs episodes/enotita-NN --every 3` and LOOK at
+6. **QA loop (mandatory, before any full render) — DIRECTOR_MODE Loops 3–4, incl. an independent reviewer subagent.** FIRST `node tools/check.mjs episodes/<id>` until CHECK OK, then `node tools/stills.mjs episodes/<id> --every 3` and LOOK at
    `build/stills/sheet.jpg`, then targeted stills at each cue. Go through QA_CHECKLIST.md. Fix → repeat until clean.
 7. **Audio.** Write `audio.json` events (cue-keyed), run `python3 tools/mix.py …`.
-8. **Render.** `node tools/render.mjs episodes/enotita-NN` (parallel, resumable; encodes final_hq.mp4 + final_web.mp4).
-   After a fix, re-render only the affected shot: `--clear <from> <to>`.
-9. **Final check.** Contact sheet of the encoded video (`ffmpeg -i build/final_web.mp4 -vf "select='not(mod(n,90))',scale=320:180,tile=8x9" -frames:v 1 build/final_sheet.png`),
-   look at it. Then add the video to the app (see docs/PIPELINE.md → "Into the app").
-10. Update the engine library/docs with anything new you learned (new props, new QA items).
+8. **Render.** `node tools/render.mjs episodes/<id>` **in the background** — wait for the completion notification,
+   never a blocking sleep-poll (Alex rejected that). ~2 min for 2.5 min of video; stale frames are wiped automatically.
+9. **Ship.** `node tools/ship.mjs episodes/<id> <id>` → remux + poster + `build/final_sheet.jpg` (LOOK at it) + loudness.
+   It refuses a draft voice or an encode older than the last change. Then the app steps in docs/PIPELINE.md →
+   "Into the app" (CHAPTERS `video:` line, test block, SW bump, tests, smoke, push, curl the live mp4).
+10. Update the engine library/docs with anything new you learned (new props, new QA items). If a mistake cost time,
+    make a TOOL catch it (check.mjs / ship.mjs), not just a sentence — that is how k2-a1's lessons became automatic.
 
 ## Quality bar — what made ενότητα 4 good (keep doing this)
 - A **concrete visual metaphor for every abstract phrase**: "υπονόμευσαν τα κεκτημένα" → someone digs a tunnel and the

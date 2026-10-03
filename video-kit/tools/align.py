@@ -12,6 +12,11 @@ ep = sys.argv[1]
 # -32/0.07 since k2-a1: at -40/0.12 the ElevenLabs title pauses were missed and the first book phrases shifted one slot
 # early (13 interpolated boundaries). Sanity-check: «~» rows should be only tiny phrases, ≈0.15–0.18 s/syllable.
 NOISE_DB, MIN_PAUSE = -32, 0.07
+# compare settings without copying this file:  python3 tools/align.py <ep> --db -40 --pause 0.12 --dry   (--dry = print only)
+_a = sys.argv[2:]
+if '--db' in _a: NOISE_DB = float(_a[_a.index('--db') + 1])
+if '--pause' in _a: MIN_PAUSE = float(_a[_a.index('--pause') + 1])
+DRY = '--dry' in _a
 text = open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read()
 phr = [p for p in re.split(r'(?<=[,.:;·!?])\s+', ' '.join(text.split())) if p.strip()]
 vow = re.compile(r'(αι|ει|οι|υι|ου|αυ|ευ|ηυ|[αεηιουωάέήίόύώϊϋΐΰ])', re.I)
@@ -54,6 +59,6 @@ for k, j in sorted(assign.items()):
     for q in seg:
         d = (b - a) * syl[q] / ns; out.append({'i': q, 'start': round(t, 2), 'end': round(t + d, 2), 'text': phr[q], 'anch': q == k}); t += d
     pk, pt = k, (pend(j) if j < J else END)
-json.dump(out, open(os.path.join(ep, 'phrases.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+if not DRY: json.dump(out, open(os.path.join(ep, 'phrases.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print(f'{K} phrases, {J} pauses, {sum(not o["anch"] for o in out)} interpolated, speech rate {rate:.3f}s/syllable')
 for o in out: print(f"[{o['i']:2}] {o['start']:7.2f}-{o['end']:7.2f} {'  ' if o['anch'] else '~ '} {o['text'][:90]}")

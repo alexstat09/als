@@ -29,12 +29,14 @@ book_ph = [title(voice[i]) for i in range(off)] + book
 vow = re.compile(r'(αι|ει|οι|υι|ου|αυ|ευ|ηυ|[αεηιουωάέήίόύώϊϋΐΰ])', re.I)
 syl = lambda s: max(1, len(vow.findall(s)))
 units, cur = [], None
-for p, b in zip(ph, book_ph):
-    if cur and not cur['text'].endswith(('.', ':', ';', '!', '?')) and len(cur['text']) + 1 + len(b) <= 84 and p['start'] - cur['b'] < .6:
+# Title phrases (i < off) never share a chunk with book phrases: makeSubs({skipBefore}) drops title chunks, so a merged
+# first book phrase silently lost its subtitle (k2-a1, when the title line had no full stop).
+for i, (p, b) in enumerate(zip(ph, book_ph)):
+    if cur and cur['title'] == (i < off) and not cur['text'].endswith(('.', ':', ';', '!', '?')) and len(cur['text']) + 1 + len(b) <= 84 and p['start'] - cur['b'] < .6:
         cur['text'] += ' ' + b; cur['b'] = p['end']; cur['vs'] += syl(p['text'])
     else:
-        cur = {'a': p['start'], 'b': p['end'], 'text': b, 'vs': syl(p['text'])}; units.append(cur)
-chunks = []
+        cur = {'a': p['start'], 'b': p['end'], 'text': b, 'vs': syl(p['text']), 'title': i < off}; units.append(cur)
+chunks, is_title = [], []
 for u in units:
     ws = u['text'].split(' '); n = max(1, -(-len(u['text']) // 84)); target = len(u['text']) / n; groups, g, acc = [], [], 0
     for w in ws:
@@ -42,6 +44,10 @@ for u in units:
         g.append(w); acc += len(w) + 1
     groups.append(g); tl = sum(len(' '.join(x)) for x in groups); t = u['a']
     for x in groups:
-        d = (u['b'] - u['a']) * len(' '.join(x)) / tl; chunks.append({'a': round(t, 2), 'b': round(t + d, 2), 'text': ' '.join(x)}); t += d
+        d = (u['b'] - u['a']) * len(' '.join(x)) / tl; chunks.append({'a': round(t, 2), 'b': round(t + d, 2), 'text': ' '.join(x)}); is_title.append(u['title']); t += d
 json.dump({'phrases': ph, 'chunks': chunks}, open(os.path.join(ep, 'timing.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 for c in chunks: print(f"{c['a']:7.2f} {c['b']:7.2f}  {c['text']}")
+# Verbatim guard: the non-title chunks, joined, must be EXACTLY book.txt (whitespace-normalised).
+body = ' '.join(c['text'] for c, tt in zip(chunks, is_title) if not tt)
+want = ' '.join(open(os.path.join(ep, 'book.txt'), encoding='utf-8').read().split())
+print('VERBATIM OK' if body == want else f'⛔ SUBTITLES ≠ book.txt — first difference at char {next((k for k in range(min(len(body), len(want))) if body[k] != want[k]), min(len(body), len(want)))}')
