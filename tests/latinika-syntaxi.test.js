@@ -23,8 +23,8 @@ vm.runInContext(logic + '\nthis.TEXTS=TEXTS;this.parsePack=parsePack;this.slotsO
 const hub = read('latinika.html');
 const hubIds = [...hub.matchAll(/href="latinika-lectio(\d+)\.html"/g)].map(m => m[1]);
 const ids = ctx.TEXTS.map(t => t.id);
-ok(ids.length === 7, 'επτά κείμενα (' + ids.length + ')');
-[...new Set(hubIds)].forEach(id => ok(ids.includes(id), 'το XVI…XXII της βιβλιοθήκης λείπει: ' + id));
+ok(ids.length === 8, 'οκτώ κείμενα (' + ids.length + ')');
+[...new Set(hubIds)].forEach(id => ok(ids.includes(id), 'το XVI…XXIII της βιβλιοθήκης λείπει: ' + id));
 ids.forEach(id => ok(hubIds.includes(id), 'κείμενο που η βιβλιοθήκη δεν έχει: ' + id));
 ok(/href="latinika-syntaxi\.html"/.test(hub), 'η βιβλιοθήκη δείχνει στη σελίδα');
 

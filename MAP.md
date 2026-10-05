@@ -110,7 +110,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1069,6 +1069,21 @@ XIX, «Η συνωμοσία του Κατιλίνα», 3 σκηνές / **10 ε
   συγκρίνεται με κώδικα. Ο κριτής είναι εκείνος.
 - Αποθήκη `latsyn:v1`, **τοπική στη συσκευή** (όπως τα `lectioNN_known_v1`),
   με μήνυμα σε αποτυχία εγγραφής. Φρουρός: `tests/latinika-syntaxi.test.js`.
+
+⭐⭐ **ΟΓΔΟΟ ΠΑΚΕΤΟ — `latinika-lectio23.html`, als-v596 (05/10/26).** Lectio
+XXIII, «Ένας υπέροχος άνθρωπος» (Αρρία & Καικίνας Παίτος), 3 σκηνές / **14
+ενότητες** / 8 παγίδες / 7 σημειώσεις, κλειδί `lectio23_known_v1`, μετά το XXII.
+Hero 84 → **98 προτάσεις**, «Επτά» → «Οκτώ». Μπήκε και στο `TEXTS` της
+`latinika-syntaxi.html`.
+- **ΠΗΓΗ:** `tests/latinika-lectio23.source.txt` — Β΄ Τεύχος (`indexB_23.html`),
+  sha256 καρφωμένο. Οι **5 αστερίσκοι = οι 5 υποτακτικές παρατατικού** (το
+  μάθημα), μετρημένοι και ονομασμένοι στο test (§2ζ). **Κανένα τυπογραφικό** —
+  δηλωμένο σε πηγή + test + υποσέλιδο.
+- ⚠️⚠️ **ΠΡΩΤΟ ΠΑΚΕΤΟ ΧΩΡΙΣ ΦΥΛΛΑΔΙΟ.** Η μετάφραση είναι **του βιβλίου**
+  (εικόνα `metafraseis/index_23/23.JPG`, sha256 στην πηγή) και το συντακτικό
+  είναι **δικό μου**, πατημένο μόνο στο λεξιλόγιο / τις Παρατηρήσεις 1–4 / τις
+  ασκήσεις του βιβλίου. Το λέει η πηγή, το υποσέλιδο, και το test το απαιτεί.
+  🔴 **Αν στείλει τη σελίδα του φυλλαδίου, αντικαθίστανται και τα δύο.**
 
 ⭐⭐ **ΕΒΔΟΜΟ ΠΑΚΕΤΟ — `latinika-lectio21.html`, als-v594 (03/10/26).** Lectio
 XXI, «Πώς πήρε το όνομά του το Pisaurum», 3 σκηνές / **13 ενότητες** / 8
