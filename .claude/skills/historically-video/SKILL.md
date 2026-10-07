@@ -46,6 +46,11 @@ Also as needed: `docs/MAPS.md` (any map), `docs/CHARACTERS_AND_PROPS.md` (new pe
    Narrational and Calm**, same as ενότητα 4). Title lines in `replacements.json` KEEP their full stop.
    **Don't wait for his MP3:** `python3 tools/voice.py draft episodes/<id>` (Melina) and build the whole film on it.
    When he sends the file (it lands as `~/Downloads/ElevenLabs_*.mp3`): `python3 tools/voice.py use episodes/<id>`.
+   ⛔ Tell him: ElevenLabs gets **voice.txt**, never the text of the page (k2-b1 was voiced from the page → headings,
+   a footnote «10» read as «δέκα», «vέους» read as «βέους»). Then **`python3 tools/hear.py episodes/<id>`** on EVERY
+   real voice, before anything is timed to it. A wrong word = ask him for that ONE word as a re-take →
+   `retakes/<w>.mp3` + `voice_edits.json` → `python3 tools/voice_edit.py episodes/<id>` (keeps `voice_source.mp3`
+   untouched; k2-b1 is the reference). Never re-generate the whole voice for one word — every timing would move.
 3. **Align.** (voice.py runs align + subs for you.) Read the table: ≈0.15–0.18 s/syllable, «~» rows only on tiny
    phrases, and subs.py must print `VERBATIM OK`. To compare settings: `align.py <ep> --db -40 --pause 0.12 --dry`.
 4. **Storyboard first, code second.** Write `episodes/enotita-NN/STORYBOARD.md` following SCENE_DESIGN.md: list every
@@ -62,6 +67,7 @@ Also as needed: `docs/MAPS.md` (any map), `docs/CHARACTERS_AND_PROPS.md` (new pe
 9. **Ship.** `node tools/ship.mjs episodes/<id> <id>` → remux + poster + `build/final_sheet.jpg` (LOOK at it) + loudness.
    It refuses a draft voice or an encode older than the last change. Then the app steps in docs/PIPELINE.md →
    "Into the app" (CHAPTERS `video:` line, test block, SW bump, tests, smoke, push, curl the live mp4).
+   After a voice edit, also `hear.py episodes/<id> --file ../videos/istoria/<id>.mp4 --at <t>` — prove the SHIPPED file.
 10. Update the engine library/docs with anything new you learned (new props, new QA items). If a mistake cost time,
     make a TOOL catch it (check.mjs / ship.mjs), not just a sentence — that is how k2-a1's lessons became automatic.
 

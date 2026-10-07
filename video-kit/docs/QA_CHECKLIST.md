@@ -43,11 +43,20 @@ Then `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then
 - [ ] **The voice says what voice.txt says (k2-b1).** If Alex made the MP3 from the PAGE instead of voice.txt, it also
       reads the HEADINGS and the book's typos aloud: «Β. Χειραφέτηση… (1844-1880)», «ψηφοφορίας10» → «…ψηφοφορίας ΔΕΚΑ»,
       «vέους» (Latin v) → «βέους». The tell is in align.py's table: the title row at ~0.10 s/syllable and the first book
-      phrase at ~0.29. Don't guess — transcribe with Whisper (scratch venv: `pip install faster-whisper`, feed it raw PCM
-      via `ffmpeg -ac 1 -ar 16000 -f f32le`, model `small`, `language="el"`), then rewrite voice.txt's title lines to
-      what was spoken. A spoken footnote number is CUT from the audio at a measured silence (RMS per 20 ms +
-      spectral centroid to find the «ς»), never left in; keep the original in build/. ⚠️ Whisper may label the next
-      syllable after a splice as an extra «κα» — verify a cut by removing ONE more syllable and seeing what disappears.
+      phrase at ~0.29. **[auto]** `voice_script.py` now flags FOOTNOTE? and LATIN LETTER IN A GREEK WORD before the
+      voice is made, and **`python3 tools/hear.py episodes/<ep>`** (Whisper, phonetic diff vs voice.txt) lists every
+      place the voice differs — run it on EVERY real voice before aligning. Digits/letter names («1844», «V», «Γάμα»)
+      are filtered; what remains is a short list to judge (k2-b1 source: 6 blocks, 2 real).
+      Known Whisper noise, not errors: «κα» right after a splice (= the onset of the next word, proven), «σόρους»
+      for «όρους», «νικρού», «δυναμία». ⚠️ A word whose FIRST sound differs is never noise («βέους»/«νέους»).
+
+- [ ] **A wrong word is fixed by a RE-TAKE, never by re-generating the whole voice.** Alex exports ONE word from
+      ElevenLabs; it goes to `<ep>/retakes/<word>.mp3`, the untouched full file stays as `<ep>/voice_source.mp3`, and
+      the edit is a line in `<ep>/voice_edits.json` → `python3 tools/voice_edit.py episodes/<ep>`. Cut points in an
+      energy dip (`hear.py --env a b`, decoded audio — `ffmpeg -ss` on an mp3 lands ~20 ms off); trim the re-take's
+      head and its decay tail (an isolated word ends in silence → an audible gap), tempo ~1.15, gain to the
+      neighbours (~−4.5 dB). Verify with `hear.py --at <t>` — and on the SHIPPED mp4 (`--file ../videos/istoria/<id>.mp4`).
+      Cues re-time for free; the film is re-rendered whole.
 
 ## Technical
 - [ ] Every expression used exists for that character (venizelos/konstantinos lacked 'happy'/'sad' → blank eyes;
@@ -62,6 +71,11 @@ Then `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then
 ## Voice
 - [ ] **[auto]** Not shipping the draft: `VOICE_IS_DRAFT.txt` gone (check.mjs warns, ship.mjs refuses).
 - [ ] After `voice.py use`, re-run check.mjs: the real voice moves every cue, so late cues reappear in new places.
+- [ ] **[auto]** `voice.py use` skips Downloads under 30 s and refuses a file < half the text's length: the newest
+      ElevenLabs download is often a one-word RE-TAKE (k2-b1 «νέους», 0.9 s), never the narration.
+- [ ] A phrase can start ~0.3 s early on an audible in-breath (its peaks cross −32 dB; k2-b1 phrase 45). Harmless
+      (the subtitle leads by a breath). ⛔ Don't «fix» it globally in align.py — a −28 dB breath-snap was tried and
+      moved 22 phrases by 0.2–0.3 s while barely moving the one it was for. Only if a CUT then lands inside a word.
 
 ## Audio
 - [ ] No background music (Alex's choice). Never use files named *preview*/*-pr* (they contain spoken watermarks).

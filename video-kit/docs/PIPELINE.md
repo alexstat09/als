@@ -27,7 +27,11 @@ node tools/stills.mjs episodes/k2-a2 --every 3        # LOOK at build/stills/she
 node tools/stills.mjs episodes/k2-a2 21.4 22 35.8     # targeted checks
 
 # 6. the real voice arrives (newest ~/Downloads/ElevenLabs_*.mp3 is picked automatically)
-python3 tools/voice.py use episodes/k2-a2             # refuses a file that is another episode's voice
+python3 tools/voice.py use episodes/k2-a2             # refuses another episode's voice, and one-word re-takes
+python3 tools/hear.py episodes/k2-a2                  # ⭐ Whisper vs voice.txt: does the voice SAY the text? (~2 min)
+#    a wrong word → Alex exports ONLY that word → retakes/<w>.mp3 + a line in voice_edits.json, then:
+python3 tools/voice_edit.py episodes/k2-a2            # source + edits → voice.mp3 (one encode) + align + subs
+python3 tools/hear.py episodes/k2-a2 --at 201.5       # the right word at the right time?
 node tools/check.mjs episodes/k2-a2                   # re-timed film: re-check late cues + stills sheet
 
 # 7. audio + render (parallel; frames from an older page are wiped automatically)
@@ -43,6 +47,12 @@ node tools/ship.mjs episodes/k2-a2 k2-a2              # → ../videos/istoria/k2
 The DP used to scan EVERY reachable state for every (phrase, pause) pair — quadratic, and on a 4½-minute voice
 (61 phrases × 336 pauses) it never finished. States are now indexed per phrase (`byk`); same states, same costs, same
 answer — k2-a1's phrases.json comes out byte-identical — and a 4½-minute voice aligns in ~2 min.
+
+## Voice edits (k2-b1)
+`episodes/k2-b1/voice_edits.json` is the reference: one CUT (a footnote read aloud) and one REPLACE (a one-word
+re-take). The untouched ElevenLabs file is committed as `voice_source.mp3` and the re-take under `retakes/`, so the
+voice is rebuilt from source by one command — proven sample-identical to the hand-made splice (same PCM md5).
+Times in the JSON are SOURCE times. After any edit: `hear.py`, `check.mjs`, mix, full render.
 
 ## Timing: what it costs
 - 2.5–3 min video ≈ 4,800 frames; on this Mac the full render took **~2 min** (k2-a1). Cheap — prefer a full re-render
@@ -62,6 +72,10 @@ answer — k2-a1's phrases.json comes out byte-identical — and a 4½-minute vo
 | shipping the Melina draft | ship.mjs refuses while `VOICE_IS_DRAFT.txt` exists |
 | grabbing last episode's mp3 from Downloads | voice.py refuses a file identical to another episode's voice |
 | cue landing in the last 0.8 s of its shot | check.mjs lists them (reads `C.x ± n` per `F.Sx`) |
+| voice made from the PAGE: headings, «ψηφοφορίας10»→«δέκα», «vέους»→«βέους» (k2-b1) | voice_script.py flags FOOTNOTE?/LATIN LETTER; hear.py lists what the voice really says |
+| fixing one word meant hand-built ffmpeg graphs (and an mp3 padding error) | voice_edit.py + voice_edits.json: reproducible, one encode, via WAV |
+| a 0.9 s re-take is the newest download → would become the whole narration | voice.py skips < 30 s, refuses < ½ the text |
+| Whisper venv lived in a session scratchpad | `~/.cache/video-kit-whisper` (one-time install in hear.py's header); hear.py re-execs into it |
 
 ## Permissions in this environment
 - `rm -rf` is denied. Never plan around deleting: render.mjs wipes stale frames itself; scratch files go in

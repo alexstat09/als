@@ -58,6 +58,14 @@ for m in re.finditer(r'\b([Α-Ω])[΄\']\s+(\w+)', book):
     review.append(f'ORDINAL: "{m.group(0)}" — write the spoken form (e.g. Α΄ Παγκόσμιο -> Πρώτο Παγκόσμιο) in voice.txt and add the pair to replacements.json')
 for m in re.finditer(r'\b[Α-Ω]{2,}\b', book):
     review.append(f'ABBREVIATION: "{m.group(0)}" — check how the TTS says it (e.g. ΗΠΑ)')
+# k2-b1: both of these reached the real voice because ElevenLabs was fed the PAGE, but they must be caught here anyway
+for m in re.finditer(r'([Α-Ωα-ωΆ-Ώά-ώϊϋΐΰ]+)(\d{1,2})(?![\d.,])', book):
+    review.append(f'FOOTNOTE? "{m.group(0)}" — a footnote number glued to a word is read aloud («ψηφοφορίας10» → «δέκα»): '
+                  f'remove "{m.group(2)}" from voice.txt (book.txt and the subtitles keep the book as is)')
+for m in re.finditer(r'\S*[Α-Ωα-ωΆ-Ώά-ώ]\S*', book):
+    if re.search(r'[A-Za-z]', m.group(0)):
+        review.append(f'LATIN LETTER IN A GREEK WORD: "{m.group(0)}" — the book has a typo the voice will read literally '
+                      f'(«vέους» → «βέους»): write the Greek letter in voice.txt')
 for m in re.finditer(r'\d+ος\b|\d+ης\b|\d+ο\b', voice):
     review.append(f'ORDINAL NUMBER: "{m.group(0)}" — write it out by hand')
 open(os.path.join(ep, 'voice.txt'), 'w', encoding='utf-8').write(voice + '\n')
@@ -66,4 +74,6 @@ json.dump(repl, open(os.path.join(ep, 'replacements.json'), 'w', encoding='utf-8
 print('voice.txt + replacements.json written.')
 print('\nREVIEW (fix voice.txt by hand, and keep replacements.json in sync):' if review else '\nNothing to review.')
 for r in dict.fromkeys(review): print('  -', r)
+print('\n⛔ ElevenLabs gets voice.txt — NEVER the text of the page (k2-b1 was voiced from the page: headings, «δέκα», «βέους»).')
+print('   When the real voice arrives:  python3 tools/hear.py ' + ep + '   (before aligning to it)')
 print('\nTip: add a spoken title line at the top of voice.txt, e.g. "Ενότητα πέντε. <τίτλος>." — and the pair ["Ενότητα πέντε.", "Ενότητα 5"] to replacements.json.')

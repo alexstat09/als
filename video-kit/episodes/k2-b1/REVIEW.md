@@ -50,3 +50,10 @@ Fixed:
 - S40 «ΚΡΑΤΟΣ ΔΙΚΑΙΟΥ» completed only in S41, crowd floating → blocks start at «σταδιακή», roof 1.05 s later; everyone on the ground.
 - S42 empty first frame → title lands at the shot start.
 - check.mjs OK after the changes; targeted stills on every fixed shot: clean.
+
+## Round 3 — «βέους» → «νέους» (07/10, Alex's one-word re-take)
+- Source «βέους» at 201.715–202.225 s (energy dips on decoded audio); re-take trimmed 0.035–0.765 s (its tail decays to
+  silence → an audible gap), tempo 1.15, −4.5 dB to the neighbours. Built from voice_source.mp3 by voice_edit.py
+  (sample-identical to the hand splice). Whisper on the SHIPPED mp4: «δημιούργησε νέους όρους».
+- Re-aligned: every phrase after 201 s moved +0.11 s; phrase 45 starts on an in-breath (−0.18) — harmless, documented.
+  check.mjs OK, stills around the splice clean, full re-render.

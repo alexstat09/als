@@ -7,6 +7,7 @@
    python3 tools/voice.py use episodes/<ep> [file.mp3]
        The real ElevenLabs file. With no path: the NEWEST ~/Downloads/ElevenLabs_*.mp3 (that is how it arrives).
        Copies it to <ep>/voice.mp3, removes VOICE_IS_DRAFT.txt, runs align + subs, prints the table to check.
+   A wrong WORD in the real voice is never fixed by re-generating everything: tools/voice_edit.py splices a re-take.
 ⛔ ship.mjs refuses to publish while VOICE_IS_DRAFT.txt exists — a draft voice must never reach the app.
 """
 import glob, os, shutil, subprocess, sys
@@ -28,8 +29,18 @@ elif mode == 'use':
     if not src:
         c = glob.glob(os.path.expanduser('~/Downloads/ElevenLabs_*.mp3'))
         if not c: sys.exit('no ~/Downloads/ElevenLabs_*.mp3 — pass the file path explicitly')
+        # a one-word RE-TAKE (voice_edit.py) is also an ElevenLabs_*.mp3 and is usually the newest download (k2-b1,
+        # «νέους», 0.9 s) — skip anything shorter than 30 s instead of making it the whole narration
+        c = [f for f in c if dur(f) >= 30]
+        if not c: sys.exit('no full-length ~/Downloads/ElevenLabs_*.mp3 (only short re-takes) — pass the file path explicitly')
         src = max(c, key=os.path.getmtime)
     print('voice ←', src)
+    # and an explicit path is checked against the text: ~0.14–0.18 s per syllable is how Eleni reads
+    vow = r'(αι|ει|οι|υι|ου|αυ|ευ|ηυ|[αεηιουωάέήίόύώϊϋΐΰ])'
+    import re
+    est = len(re.findall(vow, open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read(), re.I)) * 0.14
+    if dur(src) < 0.5 * est:
+        sys.exit(f'⛔ {dur(src):.1f} s is far too short for voice.txt (~{est:.0f} s) — a re-take goes through voice_edit.py, not here')
     # the newest download may still be the PREVIOUS episode's voice (Alex has not exported the new one yet):
     # refuse a file that is byte-identical to another episode's voice.mp3 instead of silently re-using it
     import hashlib
