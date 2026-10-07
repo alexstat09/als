@@ -813,6 +813,17 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-a1.mp4' && k.video.poster === 'videos/istoria/k2-a1.jpg');
   ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
 }
+/* Κεφ.2 Β.1 · το τρίτο βίντεο (video-kit/episodes/k2-b1). Ίδιο συμβόλαιο, ΔΙΚΑ ΤΟΥ σημάδια:
+   το num είναι πάλι «1» (όπως της Α.1), άρα ο ΤΙΤΛΟΣ είναι αυτό που τα ξεχωρίζει. */
+{
+  const r = boot('#/k2-b1/video'), V = r.painted['panel-video'] || '';
+  is('Κεφ.2 Β.1 · η καρτέλα «video» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  με <video controls preload="metadata" playsinline>, χωρίς autoplay', /<video controls preload="metadata" playsinline/.test(V) && !/autoplay/.test(V));
+  ok('  με τη ΔΙΚΗ ΤΗΣ σήμανση και τίτλο (όχι της Α.1)', V.includes('ΕΝΟΤΗΤΑ 1 · ANIMATION') && V.includes('Το σύνταγμα του 1844 — σε εικόνες') && !V.includes('Πελατειακά'));
+  const k = CHAPTERS.find(c => c.id === 'k2-b1');
+  ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-b1.mp4' && k.video.poster === 'videos/istoria/k2-b1.jpg');
+  ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
+}
 CHAPTERS.forEach(c => { if (c.video) ok('το βίντεο της ' + c.id + ' υπάρχει στο repo', fs.existsSync(path.join(ALS, c.video.src))); });
 
 /* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.

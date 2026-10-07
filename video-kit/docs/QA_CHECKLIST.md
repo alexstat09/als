@@ -40,6 +40,15 @@ Then `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then
 - [ ] **No literal seconds** in scenes.mjs/shots.js/audio.json — cues (C.*) and shot bounds (D.shots) only, so a new voice
       re-times everything (k2-a1 was built on a draft voice and re-timed this way).
 
+- [ ] **The voice says what voice.txt says (k2-b1).** If Alex made the MP3 from the PAGE instead of voice.txt, it also
+      reads the HEADINGS and the book's typos aloud: «Β. Χειραφέτηση… (1844-1880)», «ψηφοφορίας10» → «…ψηφοφορίας ΔΕΚΑ»,
+      «vέους» (Latin v) → «βέους». The tell is in align.py's table: the title row at ~0.10 s/syllable and the first book
+      phrase at ~0.29. Don't guess — transcribe with Whisper (scratch venv: `pip install faster-whisper`, feed it raw PCM
+      via `ffmpeg -ac 1 -ar 16000 -f f32le`, model `small`, `language="el"`), then rewrite voice.txt's title lines to
+      what was spoken. A spoken footnote number is CUT from the audio at a measured silence (RMS per 20 ms +
+      spectral centroid to find the «ς»), never left in; keep the original in build/. ⚠️ Whisper may label the next
+      syllable after a splice as an extra «κα» — verify a cut by removing ONE more syllable and seeing what disappears.
+
 ## Technical
 - [ ] Every expression used exists for that character (venizelos/konstantinos lacked 'happy'/'sad' → blank eyes;
       runtime now falls back to 'neutral', but ADD the expression instead).

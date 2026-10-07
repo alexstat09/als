@@ -54,6 +54,10 @@ export function person(o) {
     <path d="M -96 -290 Q 0 -262 98 -312 M -92 -314 Q 0 -290 90 -334 M -60 -338 Q 10 -318 60 -346" fill="none" stroke="#cfc6b4" stroke-width="5" stroke-linecap="round"/>`;
   if (o.hat === 'fesi') hat = `<path d="M -80 -262 Q -86 -328 -10 -336 Q 70 -340 96 -300 Q 92 -270 80 -262 Q 0 -278 -80 -262 Z" fill="${o.hatC ?? '#c0392b'}" ${st(lw)}/>
     <path d="M 64 -326 Q 108 -306 106 -250" fill="none" stroke="${INK}" stroke-width="4"/><path d="M 100 -254 L 112 -254 L 118 -212 L 94 -212 Z" fill="${o.tasselC ?? '#1d1a17'}" ${st(3)}/>`;
+  // βασιλικό στέμμα (Όθων) — gold circlet with five points + jewels; sits on the hair line
+  if (o.hat === 'crown') hat = `<path d="M -66 -284 L -76 -360 L -40 -322 L -20 -376 L 0 -330 L 20 -376 L 40 -322 L 76 -360 L 66 -284 Q 0 -298 -66 -284 Z" fill="#F2C14E" ${st(lw)}/>
+    <path d="M -64 -296 Q 0 -310 64 -296" fill="none" stroke="#c99a2e" stroke-width="6"/>${[-40, 0, 40].map((x, i) => `<circle cx="${x}" cy="${-300 + (i === 1 ? -6 : 0)}" r="8" fill="${i === 1 ? '#c0392b' : '#2b5fa8'}" ${st(3)}/>`).join('')}
+    ${[-76, -20, 20, 76].map(x => `<circle cx="${x}" cy="${x === -76 || x === 76 ? -362 : -378}" r="7" fill="#fff3c4" ${st(3)}/>`).join('')}`;
   if (o.hat === 'scarf') hat = `<path d="M -96 -226 Q -104 -332 0 -334 Q 104 -332 96 -226 L 92 -150 Q 70 -132 56 -156 Q 76 -248 0 -268 Q -76 -248 -56 -156 Q -70 -132 -92 -150 Z" fill="${o.hatC ?? '#7a3b5a'}" ${st(lw)}/>`;
   if (o.face === 'stache') face += `<path d="M 0 -196 Q -18 -206 -40 -196 Q -34 -184 -12 -188 Q -2 -190 0 -192 Q 2 -190 12 -188 Q 34 -184 40 -196 Q 18 -206 0 -196 Z" fill="${o.faceC ?? hairC}" ${st(lw * .6)}/>`;
   if (o.face === 'goatee') face += `<path d="M -22 -176 Q -20 -130 0 -112 Q 20 -130 22 -176 Q 0 -168 -22 -176 Z" fill="${o.faceC ?? '#eee'}" ${st(lw * .7)}/>`;
@@ -108,6 +112,8 @@ export function flag(kind, w = 90, h = 60) {
   if (kind === 'fr') return `<g><rect width="${w / 3}" height="${h}" fill="#0055A4"/><rect x="${w / 3}" width="${w / 3}" height="${h}" fill="#fff"/><rect x="${2 * w / 3}" width="${w / 3}" height="${h}" fill="#EF4135"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   if (kind === 'uk') return `<g><rect width="60" height="36" fill="url(#ukflag)" transform="scale(${w / 60},${h / 36})"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   if (kind === 'us') return `<g>${`<rect width="${w}" height="${h}" fill="#fff"/>` + Array.from({ length: 7 }, (_, i) => `<rect y="${2 * i * h / 13}" width="${w}" height="${h / 13}" fill="#B22234"/>`).join('')}<rect width="${w * .42}" height="${h * .54}" fill="#3C3B6E"/>${Array.from({ length: 9 }, (_, i) => `<circle cx="${6 + (i % 3) * 12}" cy="${6 + Math.floor(i / 3) * 10}" r="2.2" fill="#fff"/>`).join('')}<rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
+  // σημαία ξηράς 1822–1978: λευκός σταυρός σε μπλε (το 1843 τα κτίρια ξηράς ΔΕΝ ύψωναν τη ριγωτή ναυτική)
+  if (kind === 'grland') return `<g><rect width="${w}" height="${h}" fill="#0D5EAF"/><rect x="${w / 2 - h / 10}" width="${h / 5}" height="${h}" fill="#fff"/><rect y="${h * .4}" width="${w}" height="${h / 5}" fill="#fff"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   if (kind === 'gr') return `<g>${Array.from({ length: 9 }, (_, i) => `<rect y="${i * h / 9}" width="${w}" height="${h / 9}" fill="${i % 2 ? '#fff' : '#0D5EAF'}"/>`).join('')}<rect width="${h * 5 / 9}" height="${h * 5 / 9}" fill="#0D5EAF"/><rect x="${h * 2 / 9}" width="${h / 9}" height="${h * 5 / 9}" fill="#fff"/><rect y="${h * 2 / 9}" width="${h * 5 / 9}" height="${h / 9}" fill="#fff"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   return '';
 }
@@ -139,12 +145,12 @@ export function ship(fl, s = 1) {
   <path d="M 110 0 V -150" ${st(5)}/><g transform="translate(110,-150)">${flag(fl, 66, 44)}</g>
   <g class="smoke" opacity=".8"><circle cx="-44" cy="-122" r="16" fill="#ddd" ${st(3)}/><circle cx="-58" cy="-150" r="20" fill="#e9e9e9" ${st(3)}/></g></g>`;
 }
-export function palace() {
+export function palace(fl = 'gr') {
   const cols = Array.from({ length: 6 }, (_, i) => `<rect x="${-150 + i * 56}" y="-230" width="24" height="200" fill="#f4ecd8" ${st(4)}/>`).join('');
   return `<g><rect x="-260" y="-260" width="520" height="260" fill="#e9dcc0" ${st(5)}/><path d="M -290 -260 L 0 -360 L 290 -260 Z" fill="#efe4c9" ${st(5)}/>
   <rect x="-180" y="-250" width="360" height="20" fill="#d8c8a6" ${st(4)}/>${cols}<rect x="-210" y="-30" width="420" height="30" fill="#d8c8a6" ${st(4)}/>
   <rect x="-240" y="-200" width="50" height="70" fill="#7a8fa6" ${st(4)}/><rect x="190" y="-200" width="50" height="70" fill="#7a8fa6" ${st(4)}/>
-  <path d="M 0 -360 V -420" ${st(5)}/><g transform="translate(0,-420)">${flag('gr', 70, 46)}</g>
+  <path d="M 0 -360 V -420" ${st(5)}/>${fl ? `<g transform="translate(0,-420)">${flag(fl, 70, 46)}</g>` : ''}
   <rect x="-150" y="-140" width="300" height="20" fill="#cdbb95" ${st(4)}/></g>`;
 }
 export function cloudStorm() {
@@ -277,4 +283,82 @@ export function shield(c = '#5D8BD0') {
 // small village house (bottom-centre origin)
 export function house(c = '#efe4c9', roof = '#b0563a') {
   return `<g><rect x="-90" y="-130" width="180" height="130" fill="${c}" ${st(5)}/><path d="M -112 -126 L 0 -210 L 112 -126 Z" fill="${roof}" ${st(5)}/><rect x="-24" y="-74" width="48" height="74" fill="#7a5232" ${st(4)}/><rect x="40" y="-100" width="32" height="32" fill="#9fc3d6" ${st(4)}/></g>`;
+}
+
+/* ---------- characters & props added for k2-b1 (το σύνταγμα του 1844) ---------- */
+// Όθων (βασ. 1833–1862): νέος, μουστάκι, ντυνόταν με ελληνική φορεσιά (φουστανέλα) — σήμα: στέμμα + φουστανέλα + γαλάζια ζώνη
+export const otto = (id, extra = {}) => person({ id, coat: '#2b4a8b', vest: '#D8A93B', sleeveC: '#fbf8f0', legs: 'fustanella', hat: 'crown', face: 'stache', hair: 'short', hairC: '#4a3020', sash: ['#5D8BD0', '#ffffff'], ...extra });
+// άνδρας κόμματος της δεκαετίας 1840: kind 'en' = δυτικό ρεντινγκότ + στρογγυλά γυαλιά · 'fr' = φουστανέλα + φέσι · 'ru' = γένι + καλπάκι.
+// ΔΕΝ ονομάζεται κανείς (το βιβλίο εδώ δεν λέει ονόματα): ταυτότητα = το χρώμα της ζώνης του κόμματος.
+export function partyMan(id, kind, c, extra = {}) {
+  if (kind === 'en') return person({ id, coat: '#2a2d3a', pants: '#2a2d3a', vest: '#e9e3d6', hair: 'short', hairC: '#2a1e18', face: 'stache', glasses: true, sash: [c], ...extra });
+  if (kind === 'fr') return person({ id, coat: '#7a2f24', vest: '#1f2a44', sleeveC: '#fbf8f0', legs: 'fustanella', hat: 'fesi', bigStache: true, hairC: '#2a1e18', sash: [c], ...extra });
+  return person({ id, coat: '#4a3a2a', pants: '#3a2e22', hat: 'kalpak', beard: true, beardC: '#5a4636', face: 'stache', hairC: '#3a2e22', sash: [c], ...extra });
+}
+// φιάλη χημείας (bottom-centre) — το «καταλυτικά»: id prefix για το υγρό/τις φυσαλίδες
+export function flask(label = '', c = '#7fc1e8', pre = 'fl') {
+  return `<g><path d="M -40 -260 L -40 -170 L -150 -20 Q -160 0 -136 0 L 136 0 Q 160 0 150 -20 L 40 -170 L 40 -260 Z" fill="rgba(255,255,255,.55)" ${st(6)}/>
+  <clipPath id="${pre}-clip"><path d="M -40 -260 L -40 -170 L -150 -20 Q -160 0 -136 0 L 136 0 Q 160 0 150 -20 L 40 -170 L 40 -260 Z"/></clipPath>
+  <g clip-path="url(#${pre}-clip)"><rect id="${pre}-liq" x="-170" y="-110" width="340" height="120" fill="${c}"/>${[0, 1, 2, 3, 4].map(i => `<circle id="${pre}-b${i}" cx="${-70 + i * 35}" cy="-30" r="${10 + (i % 3) * 5}" fill="#fff" opacity=".8"/>`).join('')}</g>
+  <rect x="-54" y="-284" width="108" height="28" rx="8" fill="#d8c8a6" ${st(5)}/>
+  ${label ? `<text x="0" y="-48" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="34" fill="#fff" stroke="${INK}" stroke-width="6" paint-order="stroke">${label}</text>` : ''}</g>`;
+}
+// φτερό-πένα (tip at origin, pointing down-left)
+export function quill(c = '#fbf8f0') {
+  return `<g><path d="M 0 0 L 30 -40 Q 120 -170 210 -220 Q 150 -110 40 -30 Z" fill="${c}" ${st(5)}/><path d="M 4 -6 Q 100 -110 200 -214" fill="none" stroke="${INK}" stroke-width="4"/><path d="M 0 0 L 12 -18 L 22 -12 Z" fill="${INK}"/></g>`;
+}
+// γρανάζι (centre) — n δόντια
+export function gear(r = 90, c = '#9aa1aa', n = 10) {
+  const teeth = Array.from({ length: n }, (_, i) => `<rect x="-14" y="${-r - 26}" width="28" height="36" rx="5" fill="${c}" ${st(5)} transform="rotate(${i * 360 / n})"/>`).join('');
+  return `<g>${teeth}<circle r="${r}" fill="${c}" ${st(6)}/><circle r="${r * .35}" fill="#5e646c" ${st(5)}/></g>`;
+}
+// κλειδί (centre of the bow at origin, shaft to the right)
+export function key(c = '#F2C14E') {
+  return `<g><circle r="46" fill="${c}" ${st(6)}/><circle r="18" fill="#2f3b4a" ${st(4)}/><rect x="40" y="-12" width="190" height="24" rx="8" fill="${c}" ${st(5)}/><rect x="190" y="10" width="20" height="36" fill="${c}" ${st(5)}/><rect x="150" y="10" width="20" height="26" fill="${c}" ${st(5)}/></g>`;
+}
+// δέντρο με ρίζες (ground at origin): canopy above, roots below (id pre-r0..r4 drawable paths)
+export function tree(pre = 'tr', leaf = '#6aa84f') {
+  const roots = [[-160, 120], [-80, 170], [0, 190], [80, 170], [160, 120]].map(([x, y], i) => `<path id="${pre}-r${i}" d="M ${x * .15} 0 Q ${x * .5} ${y * .4} ${x} ${y}" fill="none" stroke="#7a5232" stroke-width="14" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000 1000" stroke-dashoffset="1000"/>`).join('');
+  return `<g>${roots}<path d="M -34 0 Q -26 -120 -30 -220 L 30 -220 Q 26 -120 34 0 Z" fill="#8a5a36" ${st(6)}/>
+  <path d="M -230 -250 Q -260 -380 -150 -420 Q -120 -520 0 -510 Q 120 -520 150 -420 Q 260 -380 230 -250 Q 140 -190 0 -200 Q -140 -190 -230 -250 Z" fill="${leaf}" ${st(6)}/>
+  <path d="M -120 -330 q 30 -20 60 0 M 40 -400 q 30 -20 60 0 M -40 -270 q 30 -20 60 0" fill="none" stroke="#4f8a38" stroke-width="7" stroke-linecap="round"/></g>`;
+}
+// κληρωτίδα (bottom-centre): περιστρεφόμενο τύμπανο σε βάση· id pre-drum περιστρέφεται
+export function lotteryDrum(pre = 'ld') {
+  return `<g><path d="M -120 0 L -70 -150 L 70 -150 L 120 0 Z" fill="#7a5232" ${st(6)}/><g id="${pre}-drum" transform="translate(0,-210)"><circle r="120" fill="#e9dcc0" ${st(6)}/>
+  ${[0, 60, 120].map(a => `<rect x="-6" y="-120" width="12" height="240" fill="#c9b892" transform="rotate(${a})"/>`).join('')}<circle r="120" fill="none" ${st(6)}/><circle r="16" fill="#a8823c" ${st(5)}/></g>
+  <path d="M 120 -210 H 190 V -150" fill="none" ${st(8)}/></g>`;
+}
+// ταμπέλα σε κοντάρι (bottom-centre), κείμενο στην πινακίδα
+export function signpost(text, dir = 1, c = '#f1e2bc') {
+  const w = Math.max(220, text.length * 30);
+  return `<g><rect x="-8" y="-300" width="16" height="300" fill="#7a5232" ${st(5)}/><path d="M ${-w / 2 * dir} -300 L ${w / 2 * dir} -300 L ${(w / 2 + 40) * dir} -255 L ${w / 2 * dir} -210 L ${-w / 2 * dir} -210 Z" fill="${c}" ${st(6)}/>
+  <text x="${20 * dir}" y="-240" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="44" fill="${INK}">${text}</text></g>`;
+}
+// μεγεθυντικός φακός (centre of the lens)
+export function magnifier() {
+  return `<g><rect x="70" y="60" width="34" height="150" rx="14" fill="#6b4a2b" ${st(6)} transform="rotate(-45,70,60)"/><circle r="100" fill="rgba(190,225,240,.35)" stroke="${INK}" stroke-width="30"/><circle r="100" fill="none" stroke="#9aa1aa" stroke-width="18"/><path d="M -50 -40 Q -30 -70 10 -76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></g>`;
+}
+// σπασμένη αλυσίδα (centre): two halves ids pre-L / pre-R
+export function brokenChain(pre = 'ch') {
+  const link = (x, rot) => `<rect x="${x - 34}" y="-20" width="68" height="40" rx="20" fill="none" stroke="${INK}" stroke-width="20" transform="rotate(${rot},${x},0)"/><rect x="${x - 34}" y="-20" width="68" height="40" rx="20" fill="none" stroke="#9aa1aa" stroke-width="11" transform="rotate(${rot},${x},0)"/>`;
+  return `<g><g id="${pre}-L">${link(-150, 0)}${link(-100, 90)}${link(-52, 0)}</g><g id="${pre}-R">${link(52, 0)}${link(100, 90)}${link(150, 0)}</g></g>`;
+}
+// εφημερίδα (centre)
+export function newspaper(title = 'ΕΦΗΜΕΡΙΣ') {
+  return `<g><rect x="-140" y="-180" width="280" height="360" fill="#f6f1e4" ${st(6)}/><text x="0" y="-122" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="46" fill="${INK}">${title}</text>
+  <path d="M -120 -100 H 120" ${st(5)}/>${[0, 1, 2, 3, 4, 5].map(i => `<path d="M -110 ${-70 + i * 34} H ${i % 2 ? 40 : 110}" stroke="#9a9384" stroke-width="10" stroke-linecap="round"/>`).join('')}<rect x="50" y="-60" width="70" height="80" fill="#cfc7b2" ${st(4)}/></g>`;
+}
+// ανοιχτό βιβλίο (bottom-centre)
+export function book(c = '#3e6fb0') {
+  return `<g><path d="M -160 0 L -160 -150 Q -80 -180 0 -150 Q 80 -180 160 -150 L 160 0 Q 80 -30 0 0 Q -80 -30 -160 0 Z" fill="${c}" ${st(6)}/><path d="M -146 -14 L -146 -146 Q -74 -168 -4 -142 L -4 -10 Q -74 -36 -146 -14 Z M 146 -14 L 146 -146 Q 74 -168 4 -142 L 4 -10 Q 74 -36 146 -14 Z" fill="#fbf8f0" ${st(4)}/>
+  ${[0, 1, 2, 3].map(i => `<path d="M -126 ${-120 + i * 26} Q -70 ${-136 + i * 26} -24 ${-118 + i * 26} M 24 ${-118 + i * 26} Q 70 ${-136 + i * 26} 126 ${-120 + i * 26}" fill="none" stroke="#b9b09a" stroke-width="6" stroke-linecap="round"/>`).join('')}</g>`;
+}
+// διάταγμα / έγγραφο με σφραγίδα (centre); pre-seal = the seal group (pop it), pre-sig = signature path (draw it)
+export function decree(title = 'ΔΙΑΤΑΓΜΑ', pre = 'dc', paper = '#F1E2BC') {
+  return `<g><rect x="-160" y="-210" width="320" height="420" fill="${paper}" ${st(6)}/><text x="0" y="-150" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="44" fill="${INK}">${title}</text>
+  ${[0, 1, 2, 3, 4].map(i => `<path d="M -120 ${-100 + i * 36} H ${i % 2 ? 80 : 120}" stroke="#b9a57c" stroke-width="9" stroke-linecap="round"/>`).join('')}
+  <path id="${pre}-sig" d="M -120 150 q 20 -30 40 0 q 20 30 40 -10 q 14 -20 30 4" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000 1000" stroke-dashoffset="1000"/>
+  <path id="${pre}-sig2" d="M 10 150 q 16 -26 34 0 q 16 26 34 -8 q 12 -16 26 2" fill="none" stroke="#2b4a8b" stroke-width="6" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000 1000" stroke-dashoffset="1000"/>
+  <g id="${pre}-seal" data-x="110" data-y="120" data-s="1" transform="translate(110,120)"><circle r="38" fill="#c0392b" ${st(5)}/><circle r="24" fill="none" stroke="#f2c14e" stroke-width="5"/></g></g>`;
 }

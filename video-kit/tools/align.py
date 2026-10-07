@@ -36,13 +36,16 @@ strong = [p.endswith(('.', ':', ';', '!', '?', '·')) for p in phr]
 def pstart(j): return END if j == J else P[j][0]
 def pend(j): return START if j == -1 else P[j][1]
 f = {(-1, -1): (0.0, None)}
+# byk[k] = [(j, cost)] — index of reachable states per phrase. Scanning ALL of f for every (k, j) was quadratic and
+# never finished on a 4½-minute voice (k2-b1: ~70 phrases × ~300 pauses). Same states, same costs, same answer.
+byk = {-1: [(-1, 0.0)]}
 for k in range(K):
     for j in ([J] if k == K - 1 else range(J)):
         best = (1e18, None)
         for kp in range(max(-1, k - 5), k):
             nsyl = sum(syl[kp + 1:k + 1]); un = sum((3.0 if strong[q] else .25) for q in range(kp + 1, k))
-            for (kk, jj), (c, _) in list(f.items()):
-                if kk != kp or jj >= j: continue
+            for jj, c in byk.get(kp, ()):
+                if jj >= j: continue
                 a, b = pend(jj), pstart(j); sk = P[jj + 1:j]
                 sp = (b - a) - sum(e - s for s, e in sk)
                 if sp <= .2: continue
@@ -50,7 +53,7 @@ for k in range(K):
                 if j < J and not strong[k] and (P[j][1] - P[j][0]) > .3: cost += 1.0
                 if j < J and strong[k] and (P[j][1] - P[j][0]) < .2: cost += 1.5
                 if cost < best[0]: best = (cost, (kp, jj))
-        if best[0] < 1e18: f[(k, j)] = best
+        if best[0] < 1e18: f[(k, j)] = best; byk.setdefault(k, []).append((j, best[0]))
 node, assign = (K - 1, J), {}
 while node and node != (-1, -1): assign[node[0]] = node[1]; node = f[node][1]
 out, pk, pt = [], -1, START

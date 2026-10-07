@@ -39,6 +39,11 @@ node tools/render.mjs episodes/k2-a2 --clear 52.8 60.5   # after fixing ONE shot
 node tools/ship.mjs episodes/k2-a2 k2-a2              # → ../videos/istoria/k2-a2.mp4 + .jpg + build/final_sheet.jpg
 ```
 
+## align.py on a long voice (k2-b1)
+The DP used to scan EVERY reachable state for every (phrase, pause) pair — quadratic, and on a 4½-minute voice
+(61 phrases × 336 pauses) it never finished. States are now indexed per phrase (`byk`); same states, same costs, same
+answer — k2-a1's phrases.json comes out byte-identical — and a 4½-minute voice aligns in ~2 min.
+
 ## Timing: what it costs
 - 2.5–3 min video ≈ 4,800 frames; on this Mac the full render took **~2 min** (k2-a1). Cheap — prefer a full re-render
   over clever partial ones unless one shot changed.
