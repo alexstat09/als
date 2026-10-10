@@ -793,14 +793,23 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
-  ⭐⭐ **SIX of them since als-v585**, and five share one shape — `onlyAlign`:
+  ⭐⭐ **SEVEN of them since als-v600**, and six share one shape — `onlyAlign`:
   `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*),
   `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα),
-  `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς) and
+  `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς),
   `gk6` (Πλάτων, *Πρωταγόρας* 322a-323a — **το δώρο του Δία**, 20 περίοδοι /
-  231 ζευγάρια, the longest of the six). His words for every one of them:
+  231 ζευγάρια, the longest) and `gk7` (Αριστοτέλης, *Πολιτικά* 1253a29-39 —
+  **η συγκρότηση της πόλεως**, 8 περίοδοι / 65 ζευγάρια, μτφρ. **Β. Μοσκόβης**,
+  σελ. 68 — ancient AND translation on ONE page; Λεκατσάς is the right column
+  and stays out). His words for every one of them:
   *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»* /
-  *«όπως και για όλες τις άλλες μεταφράσεις των αρχαίων γνωστών»*.
+  *«όπως και για όλες τις άλλες μεταφράσεις των αρχαίων γνωστών»* /
+  *«ακριβώς όπως μου έκανες τα άλλα ολοιδιο»*.
+  ⭐ `gk7` is the first unit he sent as TEXT, not a photo — compared to the PDF
+  character by character, identical, so no `srcNote`. Moskovis is FREE: he
+  merges «ἡ δὲ δικαιοσύνη πολιτικόν· ἡ γὰρ δίκη …» into one sentence, so
+  «ἡ … δίκη» carries key `0` and the loss is explained on pair `g3`. No
+  Tatakis lowercase-after-period pattern — locked as 0.
   ⚠️⚠️⚠️ **`gk4`, `gk5` AND `gk6` ARE THE SAME WORK, THE SAME TRANSLATOR,
   CONSECUTIVE PAGES** — which makes the separate-haystack rule below more
   important, not less. The test locks it from every direction: the 5th haystack
