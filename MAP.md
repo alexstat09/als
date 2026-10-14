@@ -118,6 +118,11 @@ als-v454, **+ `arxaia-sokratis-ideas.html` (als-v538) / `arxaia-sokratis.html` /
 `arxaia-platon.html` (als-v497) / `arxaia-aristotelis.html` (als-v536)**),
 **`arxaia-agnosto.html` (Αρχαία · ΑΔΙΔΑΚΤΟ, als-v586 — δικό της `agn:v1`,
 appKey `arxaia-agn`, τα κείμενα ζουν ως JSON στο `data/`)** and
+**`arxaia-lexilogio.html` (Αρχαία · ΛΕΞΙΛΟΓΙΟ, als-v601 — το φυλλάδιο του
+Πυθαγόρα σελίδα-σελίδα· λογική = `lexilogio-core.js` (το core του kit,
+sha256 καρφωμένο), σελίδες = `data/lexilogio.json` + `S.extra`, πρόοδος =
+`metron.lexilogio.v2`, appKey `lexilogio`· ράφι + «Για αύριο» στο
+`arxaia.html#ag`, μόνο ανάγνωση)**,
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 **`homework.html` (School Studies, als-v483)** is the room above them.
 

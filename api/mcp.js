@@ -64,6 +64,7 @@ var BUNDLE = {
   'arx:gn': 'arxaia-gn',
   'arx:kl': 'arxaia-kl',
   'arx:syn': 'arxaia-syn',
+  'metron.lexilogio.v2': 'lexilogio',
   /* ⚠️ ΤΙΠΟΤΑ ΔΕΝ ΕΠΙΒΑΛΛΕΙ ΑΥΤΟΝ ΤΟΝ ΧΑΡΤΗ. Ένα κλειδί που λείπει από εδώ
      απαντάει `Unknown key`, που διαβάζεται ΑΚΡΙΒΩΣ σαν «δεν υπάρχει εργασία». */
   'hw:v1': 'homework', 'hw:pics': 'homework'

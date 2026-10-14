@@ -307,7 +307,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v599`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v601`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1854,6 +1854,52 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-14 — `als-v601` — ΤΟ ΛΕΞΙΛΟΓΙΟ: `arxaia-lexilogio.html`**
+(`tests/lexilogio-page.test.js` **83/0** — οδηγεί ΑΛΗΘΙΝΟ Chrome μόνο με
+πλήκτρα · `lexilogio-core.test.js` **13/0** (τα τεστ του kit) ·
+`lexilogio-data.test.js` **73/0** (δεύτερη μεταγραφή) · `smoke-test.sh` OK.)
+
+Kit «Ερυθρόμορφο» από `~/Downloads/kit-lexilogio.zip`: μία σελίδα του
+φυλλαδίου τη μέρα → γνωριμία → ανάκληση → σκάλα 1·3·7·21·30. **Η όψη είναι
+ΔΙΚΗ ΤΗΣ** (τερακότα σε μαύρο, GFS Didot + Commissioner), επιλεγμένη από τον
+ίδιο — γι' αυτό δεν φοράει aurora.css/topbar και δεν ακολουθεί «ΤΟ ΕΞΩΦΥΛΛΟ».
+
+### ⚠️ ΤΑ ΚΕΝΑ ΚΑΙ ΤΑ ΕΥΡΗΜΑΤΑ ΠΡΩΤΑ
+- 🔴 **Αδοκίμαστο σε συσκευή του.** Πλήρες reopen του PWA για την als-v601.
+- ⭐ **Η δεύτερη μεταγραφή βρήκε 4 ΑΔΗΛΩΤΕΣ αλλαγές** στα `front` (το kit
+  δήλωνε 4): «ἀγαθά»→«ἀγαθὰ» ×2, «και»→«καὶ», «είς»→«εἰς». Σωστές γλωσσικά,
+  αλλά σιωπηλές — πήραν `note` και τις κλειδώνει το test. Τα `back`: 50/50
+  αυτολεξεί.
+- **Ο core του kit ΑΥΤΟΥΣΙΟΣ** (sha256 στο test). Ό,τι λείπει από το
+  πρωτότυπο ζει στη σελίδα: `_ts` ανά εγγραφή μέσω `study-stamp.js`
+  (σταθ. 31 — αλλιώς η 2η επανάληψη γυρνάει πίσω) · **ταφόπλακα** όταν λέξη
+  φεύγει από τις Δύσκολες, γραμμένη από τη σελίδα (σταθ. 32/61) — αποδείχθηκε
+  πάνω στο ΑΛΗΘΙΝΟ `mergeValue` του sync.js · αδιάβαστη αποθήκη **δεν
+  ξαναγράφεται** · save που δεν κρατήθηκε **το λέει** (σταθ. 10/17) · fetch
+  που αποτυγχάνει λέει «οι σελίδες δεν ήρθαν», ποτέ «καμία σελίδα».
+- Δύο μετρημένες αποκλίσεις από το CSS του πρωτοτύπου: `--faint` #827B71 →
+  **#8A8377** (4,18:1 → 4,66:1 στην κάρτα) · το modal έγινε `<dialog>`
+  (σταθ. 4). Η έξοδος πάει στο `arxaia.html#ag`, όχι σκέτο `arxaia.html`.
+- Το εικονίδιο μικροφώνου είναι **μόνο εικόνα** («πες το δυνατά») — η σελίδα
+  ΔΕΝ ακούει (σταθ. 42).
+- ⚠️ Το `data/lexilogio.json` μπήκε στη λίστα δομών του
+  `tests/agnosto-page.test.js` — αλλιώς το αδίδακτο το θεωρούσε ορφανό κείμενο.
+- ⚠️ Το `tests/tonos-page.test.js` Ε3 ήταν **ήδη κόκκινο στη v600** (regex
+  `als-v5\d\d`)· έγινε «≥ v510».
+- **Δεν χτίστηκε (kit §6/§8):** sync των σελίδων `extra` πέρα από το ίδιο
+  κλειδί (ήδη συγχρονίζονται μαζί του) · μεταφορά `extra`→`data/` (όταν το
+  πει) · λέξεις από τα Κείμενα (αργότερα). ⚠️ Το `extra` μεγαλώνει το κλειδί·
+  μετά από ~4 σελίδες ξεπερνά τα 64 KiB του `keepalive` (σταθ. 34) — ζει σε
+  δικό του appKey, άρα πλήττει μόνο το flush αυτής της σελίδας. Η λύση είναι η
+  μεταφορά στο `data/`.
+
+Καλωδίωση: `backup.html` BUNDLES · `api/mcp.js` BUNDLE · `als-profile.js`
+ALL_PAGES **και** OWNER_ONLY · `sw.js` CORE (σελίδα + core + JSON) ·
+ράφι «Λεξιλόγιο» + πλευρικό «Για αύριο» στο `arxaia.html#ag` (μόνο ανάγνωση,
+δική του κλάση `.lx-side` — το `.ar-due` είναι στο `__pmAutoSel`, σταθ. 39).
+
+---
 
 **2026-09-27 — `als-v586` — ΤΟ ΑΔΙΔΑΚΤΟ ΕΓΙΝΕ ΣΕΛΙΔΑ: `arxaia-agnosto.html`**
 (`tests/agnosto-page.test.js` **64/0** — νέο, οδηγεί ΑΛΗΘΙΝΟ Chrome ·

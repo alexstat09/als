@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Λεξιλόγιο">
+<meta name="theme-color" content="#0C0B0A">
+<title>Λεξιλόγιο · MÉTRON</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- ════════════════════════════════════════════════════════════════════
+     ΛΕΞΙΛΟΓΙΟ — Αρχαία · άγνωστο (kit «Ερυθρόμορφο», 14/10/26).
+     Η σελίδα έχει τη ΔΙΚΗ ΤΗΣ ταυτότητα (τερακότα σε μαύρο), που τη διάλεξε
+     ο ίδιος· γι' αυτό δεν φοράει aurora.css ούτε topbar, και κουβαλάει δική
+     της έξοδο με λέξη (σταθ. 64). Το CSS είναι του πρωτοτύπου αυτούσιο, με
+     δύο μετρημένες αλλαγές (αντίθεση του --faint, <dialog>).
+     Η λογική είναι το core.js του kit ΑΥΤΟΥΣΙΟ → lexilogio-core.js.
+     Οι σελίδες του φυλλαδίου → data/lexilogio.json. Η πρόοδος → το κλειδί
+     metron.lexilogio.v2, appKey 'lexilogio'. Το arxaia.html το ΔΙΑΒΑΖΕΙ
+     μόνο (σταθ. 16).
+     ════════════════════════════════════════════════════════════════════ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=GFS+Didot&family=Commissioner:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="vendor/supabase.min.js"></script>
+<script src="sync.js" defer></script>
+<script src="study-stamp.js"></script>
+<script src="lexilogio-core.js"></script>
+<style>
+/* «Ερυθρόμορφο»: τερακότα πάνω σε μαύρο, όπως τα ερυθρόμορφα αγγεία */
+:root{
+  --bg:#0C0B0A; --surface:#151311; --raise:#1C1916; --line:#2A2622; --line-2:#3A342E; --line-3:#221F1C;
+  --text:#EEE7DC; --muted:#A8A096; --faint:#8A8377; /* ήταν #827B71: 4,18:1 στο --raise, κάτω από το 4,5 */
+  --terra:#E2774A; --terra-hi:#EE8D63; --terra-text:#F2A07C; --terra-bg:rgba(226,119,74,.10); --terra-line:rgba(226,119,74,.40);
+  --claude:#9DB3C9; --claude-text:#CFDAE5; --claude-bg:rgba(157,179,201,.06); --claude-line:rgba(157,179,201,.40);
+  --serif:'GFS Didot','Noto Serif',Georgia,serif;
+  --sans:'Commissioner',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{color:var(--text);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:var(--muted);text-decoration:none}a:hover{color:var(--text)}
+:focus-visible{outline:2px solid var(--terra);outline-offset:3px;border-radius:8px}
+.gr{font-family:var(--serif)}
+.k{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:5px;border:1px solid currentColor;font:600 11px/1 var(--sans);opacity:.6}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:16px;height:16px;flex:none}
+
+.btn{height:56px;padding:0 26px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:12px;font-weight:600;font-size:16px;white-space:nowrap}
+.btn-terra{background:var(--terra);color:#1A0A04;font-weight:700}.btn-terra:hover{background:var(--terra-hi)}
+.btn-terra .k{opacity:.55}
+.btn-line{border:1px solid var(--line-2)}.btn-line:hover{border-color:var(--faint)}
+.btn-sm{height:44px;padding:0 16px;font-size:14px;border-radius:10px}
+
+/* ======= αρχική ======= */
+.wrap{max-width:1180px;margin:0 auto;padding:0 56px 80px}
+nav{display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid var(--line)}
+nav .brand{font-family:var(--serif);font-size:22px}
+nav .tools{margin-left:auto;display:flex;gap:12px;align-items:center}
+.search{display:flex;align-items:center;gap:10px;width:300px;height:44px;padding:0 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--faint)}
+.search:focus-within{border-color:var(--terra-line)}
+.search input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--text);font:14px var(--sans)}
+.search input::placeholder{color:var(--faint)}
+
+section{padding:40px 0;border-top:1px solid var(--line)}
+section.first{border-top:0;padding:56px 0 48px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.sh h2{display:flex;align-items:baseline;gap:12px;font-family:var(--serif);font-weight:400;font-size:32px}
+.sh h2 .n,.dateline .n{font-size:20px;color:var(--terra);font-family:var(--serif)}
+.sh .aside{font-size:13px;color:var(--faint)}
+
+/* Α′ σήμερα */
+.today{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.dateline{display:flex;align-items:baseline;gap:12px;font-size:14px;color:var(--muted)}
+.today h1{font-family:var(--serif);font-weight:400;font-size:64px;line-height:1.04;letter-spacing:-.01em;margin:18px 0 0;text-wrap:balance}
+.today .sub{color:var(--muted);font-size:16px;margin-top:16px}
+.today .go{margin-top:26px;display:flex;gap:12px}
+.steps{list-style:none;border-left:1px solid var(--line);padding:8px 0}
+.steps li{position:relative;padding:16px 0 16px 28px}
+.steps li::before{content:"";position:absolute;left:-6px;top:24px;width:11px;height:11px;border-radius:50%;background:var(--terra)}
+.steps li.hard::before{background:var(--bg);border:2px solid var(--terra-hi)}
+.steps li.fresh::before{background:var(--bg);border:2px solid var(--faint)}
+.steps li.done::before{background:var(--line-2)}
+.steps .row{display:flex;justify-content:space-between;gap:16px}
+.steps .t{font-weight:600;font-size:17px}.steps .c{color:var(--muted)}
+.steps .g{font-family:var(--serif);font-size:18px;color:var(--muted)}
+.steps .s{font-size:13px;color:var(--faint)}
+
+/* Β′ εβδομάδα */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.day{display:flex;flex-direction:column;gap:8px;padding:14px 14px;border-radius:12px;border:1px solid var(--line-3);min-height:112px}
+.day .wd{font-size:12px;color:var(--faint)}
+.day .dn{font-family:var(--serif);font-size:28px;line-height:1;color:var(--muted)}
+.day .m{margin-top:auto;font-size:14px;color:var(--muted)}
+.day .m.none{color:var(--line-2)}
+.day.today{background:var(--terra-bg);border-color:var(--terra-line)}
+.day.today .wd,.day.today .m{color:var(--terra-hi);font-weight:600}.day.today .dn{color:var(--text)}
+.day.pred{border-style:dashed;border-color:#3A342E}
+.legend{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--faint);margin-top:14px}
+.legend span{display:flex;align-items:center;gap:8px}
+.sw{width:14px;height:10px;border-radius:3px}
+
+/* Γ′ σελίδες */
+.thead,.prow{display:grid;grid-template-columns:64px minmax(0,1fr) 260px 120px 24px;gap:24px;align-items:center}
+.thead{padding:8px 0;font-size:12px;color:var(--faint);border-bottom:1px solid var(--line)}
+.pitem{border-bottom:1px solid var(--line)}
+.prow{width:100%;text-align:left;padding:20px 0}
+.prow:hover .rg{color:var(--terra-text)}
+.prow .pn{font-family:var(--serif);font-size:34px;line-height:1}
+.prow .rg{font-family:var(--serif);font-size:24px;line-height:1.2;transition:color .15s}
+.prow .rg .d{color:var(--faint)}
+.prow .meta{display:block;font-size:12px;color:var(--faint);margin-top:2px}
+.prow .when{text-align:right;font-size:14px;color:var(--muted)}
+.prow .when.hot{color:var(--terra);font-weight:600}
+.prow .chev{color:var(--faint);font-size:18px;transition:transform .2s}
+.pitem.open .chev{transform:rotate(90deg)}
+.ladder{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.ladder span{display:flex;flex-direction:column;gap:6px;font-size:11px;text-align:center;color:var(--faint)}
+.ladder span::before{content:"";height:6px;border-radius:2px;background:var(--line-2)}
+.ladder span.on{color:var(--muted)}.ladder span.on::before{background:var(--terra)}
+.ladder span.now{color:var(--terra-hi);font-weight:600}.ladder span.now::before{background:var(--terra-hi);box-shadow:0 0 0 3px rgba(226,119,74,.25)}
+.ladder-note{font-size:13px;color:var(--faint)}
+.pdetail{display:none;padding:4px 0 30px 88px}
+.pitem.open .pdetail{display:block}
+.pdetail .line{color:var(--muted);margin-bottom:16px;max-width:72ch}
+.pdetail .acts{display:flex;gap:10px;margin-bottom:22px}
+.words{display:grid;grid-template-columns:1fr 1fr;column-gap:48px}
+.words div{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:9px 0;border-bottom:1px solid var(--line-3)}
+.words .gr{font-size:19px}.words .m{color:var(--muted);font-size:14px;text-align:right}
+.note{font-size:13px;color:var(--faint);margin-top:14px}
+
+/* Δ′ δύσκολες */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.hc{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);text-align:left}
+.hc:hover{border-color:var(--line-2)}
+.hc .top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px}
+.hc .gr{font-size:21px}
+.hc .m{font-size:13px;color:var(--faint)}
+.hc.open .m{color:var(--text)}
+.hc.open{border-color:var(--line-2);background:var(--raise)}
+.dots{display:flex;gap:4px}.dots i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--faint)}.dots i.on{background:var(--terra-hi);border-color:var(--terra-hi)}
+.empty{color:var(--faint);font-size:14px}
+
+footer{padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--faint)}
+footer span{max-width:72ch}
+footer button{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.testday{font-size:12px;color:var(--faint);border:1px dashed var(--line-2);border-radius:99px;padding:2px 10px}
+
+/* αναζήτηση */
+.results .words div{padding:11px 0}
+
+/* παράθυρο */
+dialog.dialog{width:min(640px,92vw);max-width:none;margin:auto;padding:0;color:var(--text);background:var(--surface);border:1px solid var(--line-2);border-radius:20px}
+dialog.dialog::backdrop{background:rgba(0,0,0,.65)}
+.dialog .dbody{padding:30px}
+.dialog h3{font-family:var(--serif);font-weight:400;font-size:32px}
+.dialog p{color:var(--muted);margin:6px 0 18px}
+.dialog textarea{width:100%;min-height:210px;padding:14px;border-radius:12px;background:var(--bg);border:1px solid var(--line-2);color:var(--text);font:12px/1.5 ui-monospace,Menlo,monospace;resize:vertical}
+.dialog textarea:focus{outline:none;border-color:var(--terra-line)}
+.dialog .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.msg{font-size:14px;margin-top:12px}.msg.err{color:var(--terra-text)}
+
+/* ======= συνεδρία ======= */
+.session{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:30;overflow:auto}
+.session.on{display:flex}
+.bar{height:3px;background:var(--line);flex:none}.bar b{display:block;height:100%;width:0;background:var(--terra);transition:width .3s}
+.s-top{flex:none;max-width:1120px;width:100%;margin:0 auto;padding:20px 48px 0;display:flex;align-items:center;gap:16px}
+.s-close{display:flex;align-items:center;gap:10px;height:44px;color:var(--muted);font-size:14px}.s-close:hover{color:var(--text)}
+.s-where{flex:1;text-align:center;font-size:14px;color:var(--muted)}.s-where span{color:var(--faint)}
+.s-count{min-width:90px;text-align:right;font-size:14px;color:var(--faint)}
+.s-body{flex:1;max-width:1120px;width:100%;margin:0 auto;padding:36px 48px 24px;display:flex;flex-direction:column;justify-content:center}
+.s-foot{flex:none;max-width:1120px;width:100%;margin:0 auto;padding:0 48px 36px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.s-foot .acts{display:flex;gap:12px}
+.s-foot .btn{min-width:240px}
+.toast{height:20px;font-size:13px;color:var(--faint)}
+
+/* κάρτα */
+.card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:520px;border:1px solid var(--line);border-radius:22px;background:var(--surface);overflow:hidden}
+.c-l{position:relative;display:flex;align-items:center;justify-content:center;padding:56px 48px;border-right:1px solid var(--line);background:var(--raise)}
+.c-fam{position:absolute;top:24px;left:28px;font-family:var(--serif);font-style:italic;font-size:17px;color:var(--faint)}
+.c-need{position:absolute;bottom:24px;left:28px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--faint)}
+.c-word{font-family:var(--serif);font-size:104px;line-height:1.05;text-align:center}
+.c-word.l{font-size:78px}.c-word.xl{font-size:60px}
+.c-r{display:flex;flex-direction:column;justify-content:center;gap:22px;padding:48px 52px}
+.c-ask{align-items:center;text-align:center;gap:16px}
+.c-ask .big{font-size:20px;font-weight:500}
+.c-ask .sm{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.lbl{font-size:13px;color:var(--faint)}
+.meaning{font-size:36px;font-weight:600;line-height:1.2;letter-spacing:-.01em;margin-top:4px}
+.box{display:flex;gap:12px;padding:14px 16px;border-radius:12px;font-size:14px}
+.box .h{font-weight:600}
+.box .body{display:flex;flex-direction:column;gap:2px}
+.box.trap{background:var(--terra-bg);border:1px solid var(--terra-line);color:var(--terra-text)}.box.trap .h{color:var(--terra-hi)}
+.box.hook{background:var(--claude-bg);border:1px dashed var(--claude-line);color:var(--claude-text)}.box.hook .h{color:var(--claude)}
+.box.note{padding:0;color:var(--faint);font-size:13px}
+.reveal>*{animation:rise .22s ease both}
+.reveal>*:nth-child(2){animation-delay:.04s}.reveal>*:nth-child(3){animation-delay:.08s}.reveal>*:nth-child(4){animation-delay:.12s}
+@keyframes rise{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* γνωριμία */
+.eyebrow{font-size:14px;color:var(--terra);font-weight:600}
+.intro h1{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1.1;margin:4px 0 30px}
+.fam{margin-bottom:22px}
+.famh{display:flex;align-items:baseline;gap:14px;padding-bottom:10px;border-bottom:1px solid var(--line-2)}
+.famh .gr{font-style:italic;font-size:22px}.famh span:last-child{font-size:13px;color:var(--faint)}
+.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:56px}
+.iw{padding:16px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.iw .top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.iw .gr{font-size:30px;line-height:1.15}.iw .mn{font-weight:600;font-size:17px;text-align:right}
+.iw .ln{display:flex;gap:8px;font-size:13px}.iw .ln svg{margin-top:3px;width:14px;height:14px}
+.iw .ln.t{color:var(--terra-hi)}.iw .ln.c{color:var(--claude)}
+.ilegend{display:flex;gap:20px;font-size:12px;color:var(--faint)}
+.ilegend span{display:flex;align-items:center;gap:6px}.ilegend i{width:8px;height:8px;border-radius:50%}
+
+/* τέλος */
+.end{max-width:620px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:32px;text-align:center}
+.end .score{font-family:var(--serif);font-size:120px;line-height:1;letter-spacing:-.02em}
+.end .score small{font-size:56px;color:var(--faint)}
+.end .word{font-family:var(--serif);font-size:84px;line-height:1}
+.end .under{color:var(--muted);margin-top:8px}
+.endbox{width:100%;max-width:460px;display:flex;flex-direction:column;gap:14px;padding:22px 24px;border:1px solid var(--line);border-radius:16px;background:var(--surface);text-align:left}
+.endbox .row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.endbox .row b{font-weight:600}.endbox .row span{font-size:14px;color:var(--muted)}.endbox .row em{font-style:normal;color:var(--text);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.chips span{font:18px var(--serif);padding:6px 14px;border-radius:99px;border:1px solid var(--line-2)}
+.chipsl{font-size:14px;color:var(--muted);margin-bottom:12px}
+
+@media (max-width:900px){
+  .wrap{padding:0 20px 56px}nav{flex-wrap:wrap}.search{width:100%}
+  .today{grid-template-columns:1fr;gap:28px}.today h1{font-size:44px}
+  .week{grid-template-columns:repeat(4,1fr)}
+  .thead{display:none}.prow{grid-template-columns:44px 1fr auto;gap:8px 14px}.prow .ladder,.prow .ladder-note{grid-column:2/-1}.prow .chev{display:none}
+  .pdetail{padding-left:0}.words,.igrid{grid-template-columns:1fr}
+  .card{grid-template-columns:1fr}.c-l{border-right:0;border-bottom:1px solid var(--line);min-height:240px}.c-word{font-size:64px}
+  .s-top,.s-body,.s-foot{padding-left:18px;padding-right:18px}.s-foot .btn{min-width:0;flex:1}.k{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ── προσθήκες του MÉTRON ── */
+.c-ask>svg{color:var(--faint)}
+.words .pg{color:var(--faint)}
+.warn{margin:24px 0 0;padding:14px 18px;border-radius:12px;border:1px solid var(--terra-line);background:var(--terra-bg);color:var(--terra-text);font-size:14px}
+.warn p+p{margin-top:6px}
+nav .back{display:inline-flex;align-items:center;min-height:44px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="back" href="arxaia.html#ag" aria-label="Πίσω στα Αρχαία, άγνωστο">‹ Αρχαία, άγνωστο</a>
+    <span class="brand">Λεξιλόγιο</span>
+    <span id="testday"></span>
+    <div class="tools">
+      <label class="search"><svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="q" placeholder="Βρες λέξη ή σημασία" aria-label="Αναζήτηση λέξης" autocomplete="off"><span class="k">/</span></label>
+      <button class="btn btn-line btn-sm" id="openAdd"><svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Νέα σελίδα</button>
+    </div>
+  </nav>
+  <div class="warn" id="warn" role="alert" hidden></div>
+  <div id="main"></div>
+</div>
+
+<dialog class="dialog" id="modal" aria-labelledby="mT"><div class="dbody">
+  <h3 id="mT">Νέα σελίδα</h3>
+  <p>Στείλε στο Claude τη φωτογραφία της σελίδας και επικόλλησε εδώ αυτό που σου δίνει.</p>
+  <textarea id="imp" placeholder='{"page": { … }}' aria-label="Το block της σελίδας"></textarea>
+  <div class="msg" id="impMsg" role="status"></div>
+  <div class="acts"><button class="btn btn-line btn-sm" id="impCancel">Άκυρο</button><button class="btn btn-line btn-sm" id="impBtn">Έλεγξέ τη</button></div>
+</div></dialog>
+
+<div class="session" id="session">
+  <div class="bar"><b id="sBar"></b></div>
+  <div class="s-top"><button class="s-close" id="sClose"><span class="k">Esc</span>Κλείσιμο</button><div class="s-where" id="sWhere"></div><div class="s-count num" id="sCount"></div></div>
+  <div class="s-body" id="sBody"></div>
+  <div class="s-foot"><div class="toast" id="toast" role="status"></div><div class="acts" id="sFoot"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ════════════════════════════════════════════════════════════════════
+   ΛΕΞΙΛΟΓΙΟ — η σελίδα. Η ΛΟΓΙΚΗ ζει αυτούσια στο `lexilogio-core.js`
+   (το core.js του kit, byte προς byte)· εδώ ζει μόνο η οθόνη και η
+   αποθήκη. Τρία πράγματα εδώ ΔΕΝ υπήρχαν στο πρωτότυπο και είναι όλα
+   άμυνα για το sync (CLAUDE.md §3):
+   1. ⭐ ΣΦΡΑΓΙΔΑ `_ts` σε κάθε εγγραφή του `pages` και του `hard`
+      (σταθ. 31). Χωρίς αυτή, η ΔΕΥΤΕΡΗ επανάληψη μιας σελίδας γυρνάει
+      πίσω από το cloud μέσα σε 400ms. Τη βάζει το `save()`, μέσω του
+      `study-stamp.js`, όχι κάθε ανάθεση.
+   2. ⭐ ΤΑΦΟΠΛΑΚΑ όταν μια λέξη φεύγει από τις Δύσκολες (σταθ. 32/61),
+      γραμμένη από τη σελίδα τη στιγμή του σβησίματος, αλλιώς το cloud
+      την ξαναφέρνει.
+   3. ⭐ ΚΑΜΙΑ ΣΙΩΠΗΛΗ ΑΠΟΤΥΧΙΑ (σταθ. 10/17): μια αποθήκη που δεν
+      διαβάζεται ΔΕΝ ξαναγράφεται από πάνω με κενή, και ένα save που
+      δεν έπιασε το λέει, όσο ισχύει.
+   ════════════════════════════════════════════════════════════════════ */
+const C = window.LexCore, rng = Math.random;
+const KEY = 'metron.lexilogio.v2';
+const APP = 'lexilogio';
+const TOMB_KEY = '__synctomb__' + APP;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const words = n => n === 1 ? '1 λέξη' : `${n} λέξεις`;
+const cardsWord = n => n === 1 ? '1 κάρτα' : `${n} κάρτες`;
+const NUMS = ['μία','δύο','τρεις','τέσσερις','πέντε','έξι','επτά','οκτώ','εννέα','δέκα'];
+const countWord = n => n <= 10 ? NUMS[n-1] : String(n);
+const ICON = {
+  trap:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  hook:'<svg class="i" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>',
+  /* Μόνο εικονίδιο: «πες το δυνατά, στον εαυτό σου». Η σελίδα ΔΕΝ ακούει
+     (σταθ. 42 — η αναγνώριση φωνής ζει μόνο στην istoria.html). */
+  mic:'<svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>'
+};
+const MONTHS = ['Ιανουαρίου','Φεβρουαρίου','Μαρτίου','Απριλίου','Μαΐου','Ιουνίου','Ιουλίου','Αυγούστου','Σεπτεμβρίου','Οκτωβρίου','Νοεμβρίου','Δεκεμβρίου'];
+const WD = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+
+const qp = new URLSearchParams(location.search).get('today');
+const TODAY = /^\d{4}-\d{2}-\d{2}$/.test(qp || '') ? qp : C.toISO(new Date());
+const dObj = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d, 12); };
+if (qp) $('testday').innerHTML = `<span class="testday">δοκιμή: ${C.prettyDate(TODAY)}</span>`;
+
+/* ===================== η αποθήκη ===================== */
+/* Δύο λόγοι να ΜΗΝ γράψουμε, κρατημένοι χωριστά γιατί λύνονται αλλιώς:
+   BLOCK = η αποθήκη υπάρχει αλλά δεν διαβάζεται (ένα save θα την έσβηνε) ·
+   SAVE_ERR = το τελευταίο save δεν έπιασε (λύνεται με το επόμενο που πιάνει). */
+let BLOCK = '', SAVE_ERR = '', SYNC_NOTE = '';
+const blank = () => ({ v:2, pages:{}, hard:{}, extra:[] });
+const isMap = o => !!o && typeof o === 'object' && !Array.isArray(o);
+function load(){
+  let raw;
+  try { raw = localStorage.getItem(KEY); }
+  catch(e){ BLOCK = `Δεν μπορώ να διαβάσω την αποθήκη αυτής της συσκευής (${e.name || 'σφάλμα'}). Δεν γράφω τίποτα, για να μη σβήσω την πρόοδό σου.`; return blank(); }
+  if (raw == null){ BLOCK = ''; return blank(); }
+  let s = null; try { s = JSON.parse(raw); } catch(e){}
+  if (!isMap(s) || s.v !== 2){
+    BLOCK = 'Η πρόοδός σου υπάρχει σε αυτή τη συσκευή αλλά δεν διαβάζεται. Δεν γράφω από πάνω της· κατέβασε αντίγραφο από το backup πριν κάνεις οτιδήποτε άλλο.';
+    return blank();
+  }
+  BLOCK = '';
+  /* Σταθ. 35: κρατάμε ΟΛΑ τα πεδία όπως ήρθαν και φτιάχνουμε μόνο όσα
+     ξέρουμε ότι λείπουν. Ένα πεδίο που θα προσθέσει αύριο άλλη έκδοση
+     δεν χάνεται στο πρώτο save. */
+  if (!isMap(s.pages)) s.pages = {};
+  if (!isMap(s.hard)) s.hard = {};
+  if (!Array.isArray(s.extra)) s.extra = [];
+  return s;
+}
+let S = blank();
+/* Καινούριο κλειδί → καμία εγγραφή χωρίς `_ts` από παλιά, άρα ο παλιός χρόνος είναι 0. */
+const STAMP = window.StudyStamp ? window.StudyStamp(() => [S.pages, S.hard], () => 0) : null;
+const NO_STAMP = 'Δεν φόρτωσε το study-stamp.js, που κρατάει την πρόοδο ζωντανή μέσα από τον συγχρονισμό. Ανανέωσε τη σελίδα· μέχρι τότε δεν γράφω τίποτα.';
+function reload(){ S = load(); if (STAMP) STAMP.seed(); else BLOCK = NO_STAMP; }
+
+/* Επιστρέφει true ΜΟΝΟ αν ξαναδιαβάσαμε αυτό που γράψαμε: ένα localStorage
+   που σωπαίνει αντί να πετάξει (Safari, γεμάτος χώρος) περνάει κάθε catch. */
+function save(){
+  if (BLOCK){ paintWarn(); return false; }
+  STAMP.stamp();
+  const txt = JSON.stringify(S);
+  let back = null;
+  try { localStorage.setItem(KEY, txt); back = localStorage.getItem(KEY); }
+  catch(e){ SAVE_ERR = `Δεν αποθηκεύτηκε (${e.name || 'σφάλμα'}). Η συσκευή μάλλον δεν έχει χώρο· ό,τι κάνεις τώρα δεν κρατιέται μέχρι να ελευθερωθεί.`; paintWarn(); return false; }
+  if (back !== txt){ SAVE_ERR = 'Δεν αποθηκεύτηκε: η συσκευή δέχτηκε την εγγραφή αλλά δεν την κράτησε. Ό,τι κάνεις τώρα δεν κρατιέται.'; paintWarn(); return false; }
+  if (SAVE_ERR){ SAVE_ERR = ''; paintWarn(); }
+  return true;
+}
+/* Η ταφόπλακα μιας λέξης που έφυγε από τις Δύσκολες. Μόνο ΜΕΤΑ από
+   επιβεβαιωμένο save, στο ακριβές επίπεδο που διαβάζει το sync.js
+   (tomb[KEY].hard[id]), με T = max(now, _ts + 1) (σταθ. 32, κατά λέξη). */
+function tombHard(ids, recs){
+  if (!ids.length) return;
+  try {
+    let t = JSON.parse(localStorage.getItem(TOMB_KEY) || '{}'); if (!isMap(t)) t = {};
+    if (!isMap(t[KEY])) t[KEY] = {};
+    if (!isMap(t[KEY].hard)) t[KEY].hard = {};
+    const node = t[KEY].hard, now = Date.now();
+    ids.forEach(id => {
+      const cur = typeof node[id] === 'number' ? node[id] : 0;
+      const ts = recs[id] && +recs[id]._ts || 0;
+      node[id] = Math.max(cur, now, ts + 1);
+    });
+    const txt = JSON.stringify(t);
+    localStorage.setItem(TOMB_KEY, txt);
+    if (localStorage.getItem(TOMB_KEY) !== txt) throw new Error('δεν κρατήθηκε');
+  } catch(e){
+    SAVE_ERR = 'Οι λέξεις που έφυγαν από τις Δύσκολες ίσως ξαναγυρίσουν από άλλη συσκευή: δεν μπόρεσα να το σημειώσω (' + (e.message || e.name) + ').';
+    paintWarn();
+  }
+}
+function paintWarn(){
+  const box = $('warn'); if (!box) return;
+  const msgs = [BLOCK, SAVE_ERR].filter(Boolean);
+  box.hidden = !msgs.length;
+  box.innerHTML = msgs.map(m => `<p>${esc(m)}</p>`).join('');
+}
+
+/* ===================== τα δεδομένα ===================== */
+/* Οι σελίδες του φυλλαδίου ζουν στο data/lexilogio.json· όσες εισάγει ο
+   ίδιος, στο S.extra. Μια αποτυχία φόρτωσης ΛΕΓΕΤΑΙ — δεν ζωγραφίζεται
+   ως «καμία σελίδα» (σταθ. 10). */
+let DATA = null, DATA_ERR = '';
+const allPages = () => (DATA ? DATA.pages : []).concat(S.extra || []).slice().sort((a,b) => a.n - b.n);
+const pageById = id => allPages().find(p => p.id === id);
+const title = p => `Σελίδα ${p.n}`;
+const titleGen = p => `Σελίδας ${p.n}`;
+let CARDS = {}, openPage = null, openHard = new Set();
+function index(){ CARDS = {}; allPages().forEach(p => p.cards.forEach(c => { CARDS[c.id] = Object.assign({ pageN: p.n, pageId: p.id }, c); })); }
+
+function plan(){
+  const pages = allPages().map(p => ({ p, st: C.pageStatus(S.pages[p.id], TODAY) }));
+  return {
+    pages,
+    due: pages.filter(x => x.st.kind === 'due' || x.st.kind === 'waiting'),
+    first: pages.find(x => x.st.kind === 'learning') || pages.find(x => x.st.kind === 'new'),
+    hard: C.hardPendingToday(S.hard, TODAY).filter(id => CARDS[id])
+  };
+}
+const joinGr = arr => arr.length <= 1 ? (arr[0] || '') : arr.slice(0, -1).join(', ') + ' και ' + arr[arr.length - 1];
+
+/* ===================== αρχική ===================== */
+function secToday(P){
+  const reviewN = P.due.reduce((a,x) => a + x.p.cards.length, 0) + P.hard.length;
+  const firstMin = P.first ? (P.first.st.kind === 'learning' ? Math.max(1, Math.round(C.minutes(P.first.p.cards.length, 'first') * (1 - P.first.st.progress.pct / 100))) : C.minutes(P.first.p.cards.length, 'first')) : 0;
+  const totalMin = (reviewN ? C.minutes(reviewN) : 0) + firstMin;
+  const d = dObj(TODAY);
+  const date = `<div class="dateline"><span class="n">Α′</span>${WD[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}</div>`;
+
+  if (!P.pages.length){
+    return `<section class="first"><div class="today"><div>${date}<h1>Ξεκίνα με την πρώτη σελίδα.</h1><p class="sub">Στείλε στο Claude τη φωτογραφία της και επικόλλησε εδώ αυτό που σου δίνει.</p><div class="go"><button class="btn btn-terra" data-go="add">Νέα σελίδα</button></div></div><div></div></div></section>`;
+  }
+  if (!reviewN && !P.first){
+    const next = P.pages.filter(x => x.st.kind === 'later').sort((a,b) => a.st.inDays - b.st.inDays)[0];
+    return `<section class="first"><div class="today"><div>${date}<h1>Για σήμερα είσαι εντάξει.</h1>
+      <p class="sub">${next ? `Η επόμενη επανάληψη είναι η ${title(next.p)}, ${C.whenText(TODAY, next.st.next)}.` : ''} Αν θες κάτι παραπάνω, άνοιξε μια σελίδα από κάτω για εξάσκηση.</p></div><div></div></div></section>`;
+  }
+
+  // τίτλος-πρόταση
+  const parts = [];
+  P.due.forEach(x => parts.push(`η ${title(x.p)}`));
+  if (P.hard.length) parts.push(`${countWord(P.hard.length)} ${P.hard.length === 1 ? 'δύσκολη' : 'δύσκολες'}`);
+  if (P.first) parts.push(P.first.st.kind === 'learning' ? `το υπόλοιπο της ${titleGen(P.first.p)}` : `η νέα ${title(P.first.p)}`);
+  const h1 = `Σήμερα, ${joinGr(parts)}.`;
+
+  const steps = [];
+  P.due.forEach(x => steps.push(`<li><div class="row"><span class="t">${title(x.p)} · επανάληψη</span><span class="c">${words(x.p.cards.length)}</span></div>
+    <div class="g">${esc(x.p.range)}</div><div class="s">${x.st.kind === 'waiting' ? 'Θα ήταν καλό να την ξαναπεράσεις. Σε περίμενε και δεν πειράζει: το πρόγραμμα συνεχίζει από σήμερα.' : `Με 80% σωστά με την πρώτη ανεβαίνει σκαλί: επόμενη σε ${C.intervalFor(x.st.stage + 1)} μέρες.`}</div></li>`));
+  if (P.hard.length){
+    const sample = P.hard.slice(0, 3).map(id => esc(CARDS[id].front)).join(' · ') + (P.hard.length > 3 ? ' · …' : '');
+    steps.push(`<li class="hard"><div class="row"><span class="t">Δύσκολες</span><span class="c">${words(P.hard.length)}</span></div><div class="g">${sample}</div><div class="s">Όσες έχασες, από όλες τις σελίδες.</div></li>`);
+  }
+  if (P.first){
+    const lr = P.first.st.kind === 'learning';
+    steps.push(`<li class="fresh"><div class="row"><span class="t">${title(P.first.p)} · ${lr ? 'συνέχεια πρώτου περάσματος' : 'νέα σελίδα'}</span><span class="c">${lr ? `${P.first.st.progress.pct}%` : words(P.first.p.cards.length)}</span></div>
+      <div class="g">${esc(P.first.p.range)}</div><div class="s">${lr ? 'Συνεχίζεις από εκεί που σταμάτησες.' : `Γνωριμία και πρώτο πέρασμα, ${C.minutesText(P.first.p.cards.length, 'first')}. Το ρολόι της ξεκινάει μόλις την τελειώσεις.`}${reviewN ? ' Έρχεται τελευταία, μετά από ένα διάλειμμα αν θες.' : ''}</div></li>`);
+  }
+  const cards = reviewN + (P.first ? P.first.p.cards.length : 0);
+  /* Η νέα σελίδα έχει ΚΑΙ δικό της κουμπί όταν υπάρχει επανάληψη (kit §2):
+     το «Ξεκίνα» την προτείνει στο τέλος, αυτό την ανοίγει κατευθείαν. */
+  const second = reviewN && P.first
+    ? `<button class="btn btn-line" data-go="first" data-page="${esc(P.first.p.id)}">${P.first.st.kind === 'learning' ? 'Συνέχισε' : 'Ξεκίνα'} τη ${title(P.first.p)}</button>` : '';
+  return `<section class="first"><div class="today"><div>${date}<h1>${h1}</h1>
+    <p class="sub">${cardsWord(cards)} · περίπου ${totalMin} λεπτά · ό,τι τελειώσεις κρατιέται, κι αν κλείσεις στη μέση.</p>
+    <div class="go"><button class="btn btn-terra" data-go="today">Ξεκίνα <span class="k">Enter</span></button>${second}</div></div>
+    <ol class="steps">${steps.join('')}</ol></div></section>`;
+}
+
+function secWeek(P){
+  const f = C.forecast(P.pages.map(x => ({ state: S.pages[x.p.id], nCards: x.p.cards.length })), TODAY, 7);
+  const hardToday = P.hard.length, firstToday = P.first ? P.first.p.cards.length : 0;
+  const cells = f.map((d, i) => {
+    const dt = dObj(d.date);
+    let min = i === 0 ? (d.cards + hardToday ? C.minutes(d.cards + hardToday) : 0) + (firstToday ? C.minutes(firstToday, 'first') : 0) : (d.cards ? C.minutes(d.cards) : 0);
+    const cls = i === 0 ? 'today' : (d.cards ? 'pred' : '');
+    return `<div class="day ${cls}"><span class="wd">${i === 0 ? 'σήμερα' : WD[dt.getDay()].slice(0,3)}</span><span class="dn">${dt.getDate()}</span><span class="m ${min ? '' : 'none'}">${min ? `~${min}΄` : '—'}</span></div>`;
+  }).join('');
+  return `<section><div class="sh"><h2><span class="n">Β′</span>Η εβδομάδα σου</h2><span class="aside">Μόνο οι επαναλήψεις που ήδη ξέρουμε, σε λεπτά</span></div>
+    <div class="week">${cells}</div>
+    <div class="legend"><span><i class="sw" style="background:var(--terra-bg);border:1px solid var(--terra-line)"></i>σήμερα</span><span><i class="sw" style="border:1px dashed #6A6158"></i>πρόβλεψη, αν ανεβαίνει σκαλί</span><span>Δεν περιλαμβάνει τις νέες σελίδες που θα σας δώσει ο καθηγητής.</span></div></section>`;
+}
+
+function ladderHTML(st){
+  if (st.kind === 'new') return '<span class="ladder-note">Ξεκινάει με το πρώτο πέρασμα</span>';
+  if (st.kind === 'learning') return `<span class="ladder-note">Πρώτο πέρασμα, ${st.progress.pct}%</span>`;
+  const on = Math.min(st.stage + 1, C.LADDER.length);
+  return `<span class="ladder" aria-label="σκαλί ${on} από 5">${C.LADDER.map((d,i) => `<span class="${i < on ? 'on' : ''}">${d}</span>`).join('')}</span>`;
+}
+function whenShort(st){
+  if (st.kind === 'new') return ['νέα', true];
+  if (st.kind === 'learning') return ['μισή', true];
+  if (st.kind === 'later') return [st.inDays === 1 ? 'αύριο' : `σε ${st.inDays} μέρες`, false];
+  return ['σήμερα', true];
+}
+function detailHTML(p, st){
+  let line, act;
+  if (st.kind === 'new'){ line = 'Δεν την έχεις ξεκινήσει. Το ρολόι της ξεκινάει όταν την περάσεις πρώτη φορά.'; act = `<button class="btn btn-terra btn-sm" data-go="first" data-page="${esc(p.id)}">Ξεκίνα τη ${title(p)}</button>`; }
+  else if (st.kind === 'learning'){ line = `Είσαι στο ${st.progress.pct}% του πρώτου περάσματος.`; act = `<button class="btn btn-terra btn-sm" data-go="first" data-page="${esc(p.id)}">Συνέχισε</button>`; }
+  else if (st.kind === 'later'){ line = `Επόμενη επανάληψη ${C.whenText(TODAY, st.next)}. Τελευταία φορά: ${C.prettyDate(S.pages[p.id].lastDone)}.`; act = `<button class="btn btn-line btn-sm" data-go="practice" data-page="${esc(p.id)}">Εξάσκηση, χωρίς να αλλάξει το πρόγραμμα</button>`; }
+  else { line = st.kind === 'waiting' ? 'Θα ήταν καλό να την ξαναπεράσεις. Μπαίνει στο «Ξεκίνα» από πάνω.' : 'Είναι για επανάληψη σήμερα και μπαίνει στο «Ξεκίνα» από πάνω.'; act = ''; }
+  return `<p class="line">${line}</p>${act ? `<div class="acts">${act}</div>` : ''}
+    <div class="words">${p.cards.map(c => `<div><span class="gr">${esc(c.front)}</span><span class="m">${esc(c.back)}</span></div>`).join('')}</div>
+    ${p.continues ? `<p class="note">${esc(p.continues)}</p>` : ''}`;
+}
+function secPages(P){
+  const total = P.pages.reduce((a,x) => a + x.p.cards.length, 0);
+  const rows = P.pages.map(({p, st}) => {
+    const [w, hot] = whenShort(st), [a, b] = String(p.range || '').split('→').map(s => s.trim());
+    return `<div class="pitem ${openPage === p.id ? 'open' : ''}"><button class="prow" data-toggle="${esc(p.id)}" aria-expanded="${openPage === p.id}">
+      <span class="pn">${p.n}</span>
+      <span><span class="rg">${esc(a)}${b ? ` <span class="d">—</span> ${esc(b)}` : ''}</span><span class="meta">φυλλάδιο σ. ${esc(p.bookPage)} · ${words(p.cards.length)}</span></span>
+      ${ladderHTML(st)}<span class="when ${hot ? 'hot' : ''}">${w}</span><span class="chev">›</span>
+    </button><div class="pdetail">${openPage === p.id ? detailHTML(p, st) : ''}</div></div>`;
+  }).join('');
+  return `<section><div class="sh"><h2><span class="n">Γ′</span>Οι σελίδες του φυλλαδίου</h2><span class="aside">${P.pages.length} ${P.pages.length === 1 ? 'σελίδα' : 'σελίδες'} · ${words(total)}</span></div>
+    <div class="thead"><span>Σελ.</span><span>Από – ως</span><span>Σκάλα επανάληψης (μέρες)</span><span style="text-align:right">Επόμενη</span><span></span></div>${rows}</section>`;
+}
+function secHard(){
+  const ids = Object.keys(S.hard).filter(id => CARDS[id]);
+  const body = ids.length ? `<div class="hgrid">${ids.map(id => { const c = CARDS[id], h = S.hard[id], open = openHard.has(id);
+      return `<button class="hc ${open ? 'open' : ''}" data-hard="${esc(id)}" aria-expanded="${open}"><span class="top"><span class="gr">${esc(c.front)}</span><span class="dots" aria-label="${h.streak} από 2 μέρες"><i class="${h.streak >= 1 ? 'on' : ''}"></i><i></i></span></span><span class="m">${open ? esc(c.back) : `Σελ. ${c.pageN} · πάτα για σημασία`}</span></button>`; }).join('')}</div>`
+    : '<p class="empty">Άδειες. Όποια λέξη χάσεις σε επανάληψη έρχεται εδώ από την επόμενη μέρα.</p>';
+  return `<section><div class="sh"><h2><span class="n">Δ′</span>Δύσκολες</h2><span class="aside">Φεύγουν όταν τις πεις σωστά με την πρώτη, δύο διαφορετικές μέρες στη σειρά</span></div>${body}</section>`;
+}
+function secSearch(q){
+  const hits = Object.values(CARDS).filter(c => C.fold(c.front).includes(q) || C.fold(c.back).includes(q)).slice(0, 80);
+  return `<section class="first results"><div class="sh"><h2>Αναζήτηση</h2><span class="aside">${hits.length ? words(hits.length) : ''} · Esc για να κλείσει</span></div>
+    ${hits.length ? `<div class="words">${hits.map(c => `<div><span class="gr">${esc(c.front)}</span><span class="m">${esc(c.back)} <span class="pg">· Σελ. ${c.pageN}</span></span></div>`).join('')}</div>` : '<p class="empty">Καμία λέξη δεν ταιριάζει. Δοκίμασε χωρίς τόνους ή με τη νεοελληνική σημασία.</p>'}</section>`;
+}
+function footerHTML(){
+  return `<footer><span>Η σημασία κάθε λέξης είναι αυτολεξεί από το φυλλάδιο. Ό,τι έχει μπλε διακεκομμένο πλαίσιο το έγραψε το Claude για να σε βοηθήσει να τη θυμάσαι.${SYNC_NOTE ? ' ' + esc(SYNC_NOTE) : ''}</span><button data-go="export">Κατέβασε αντίγραφο της προόδου</button></footer>`;
+}
+function render(){
+  paintWarn();
+  if (!DATA){
+    $('main').innerHTML = DATA_ERR
+      ? `<section class="first"><div class="today"><div><div class="dateline"><span class="n">Α′</span>Το φυλλάδιο δεν φόρτωσε</div><h1>Οι σελίδες δεν ήρθαν.</h1><p class="sub">Το data/lexilogio.json δεν διαβάστηκε (${esc(DATA_ERR)}). Η πρόοδός σου δεν πειράχτηκε· ανανέωσε τη σελίδα όταν έχεις σύνδεση.</p></div><div></div></div></section>`
+      : '<section class="first"><p class="empty">Φορτώνει το φυλλάδιο…</p></section>';
+    return;
+  }
+  index();
+  const q = C.fold($('q').value.trim());
+  if (q.length >= 2){ $('main').innerHTML = secSearch(q); return; }
+  const P = plan();
+  $('main').innerHTML = secToday(P) + secWeek(P) + secPages(P) + secHard() + footerHTML();
+}
+$('q').addEventListener('input', render);
+
+document.addEventListener('click', e => {
+  const h = e.target.closest('[data-hard]'); if (h){ const id = h.dataset.hard; openHard.has(id) ? openHard.delete(id) : openHard.add(id); render(); return; }
+  const tg = e.target.closest('[data-toggle]'); if (tg){ openPage = openPage === tg.dataset.toggle ? null : tg.dataset.toggle; render(); return; }
+  const t = e.target.closest('[data-go]'); if (!t) return;
+  const go = t.dataset.go;
+  if (go === 'today') startToday();
+  else if (go === 'first') startFirst(t.dataset.page);
+  else if (go === 'practice') startPractice(t.dataset.page);
+  else if (go === 'add') openModal();
+  else if (go === 'export'){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type:'application/json' })); a.download = `lexilogio-${TODAY}.json`; a.click(); }
+});
+
+/* ===================== νέα σελίδα (native <dialog>, σταθ. 4) ===================== */
+let pending = null;
+const modal = $('modal');
+function openModal(){ pending = null; $('imp').value = ''; $('impMsg').textContent = ''; $('impMsg').className = 'msg'; setImp(false); if (!modal.open) modal.showModal(); $('imp').focus(); }
+function closeModal(){ if (modal.open) modal.close(); }
+function setImp(ready){ $('impBtn').textContent = ready ? 'Πρόσθεσέ τη' : 'Έλεγξέ τη'; $('impBtn').className = 'btn btn-sm ' + (ready ? 'btn-terra' : 'btn-line'); }
+$('openAdd').addEventListener('click', openModal);
+$('impCancel').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+$('imp').addEventListener('input', () => { pending = null; setImp(false); });
+$('impBtn').addEventListener('click', () => {
+  const m = $('impMsg');
+  /* Σταθ. 65: όταν δεν μπορούμε, λέμε ΓΙΑΤΙ — ποτέ σιωπηλό return. */
+  if (!DATA){ m.className = 'msg err'; m.textContent = 'Πρώτα πρέπει να φορτώσει το φυλλάδιο, για να ελέγξω ότι η σελίδα δεν υπάρχει ήδη. Ανανέωσε τη σελίδα και ξαναδοκίμασε.'; return; }
+  if (BLOCK){ m.className = 'msg err'; m.textContent = BLOCK; return; }
+  if (pending){
+    const before = S.extra;
+    S.extra = (S.extra || []).concat(pending);
+    if (!save()){ S.extra = before; m.className = 'msg err'; m.textContent = SAVE_ERR || 'Δεν αποθηκεύτηκε.'; return; }
+    closeModal(); render(); return;
+  }
+  const raw = $('imp').value.trim();
+  if (!raw){ m.className = 'msg err'; m.textContent = 'Το πλαίσιο είναι άδειο. Επικόλλησε εδώ το block που σου έδωσε το Claude.'; $('imp').focus(); return; }
+  let obj; try { obj = JSON.parse(raw); } catch(e){ m.className = 'msg err'; m.textContent = 'Δεν διαβάζεται. Αντέγραψε ολόκληρο το block από το Claude, από την πρώτη ως την τελευταία αγκύλη.'; return; }
+  const existing = allPages().flatMap(p => [p.id].concat(p.cards.map(c => c.id)));
+  const r = C.validateImport(obj, existing);
+  if (!r.ok){ m.className = 'msg err'; m.innerHTML = r.errors.slice(0,4).map(esc).join('<br>'); return; }
+  const n = allPages().reduce((a,p) => Math.max(a, p.n), 0);
+  pending = r.pages.map((p,i) => Object.assign({ n: p.n || n + 1 + i }, p));
+  m.className = 'msg'; m.innerHTML = pending.map(p => `Σελίδα ${p.n}: φυλλάδιο σ. ${esc(p.bookPage)}, ${words(p.cards.length)}, από <span class="gr">${esc(p.cards[0].front)}</span> ως <span class="gr">${esc(p.cards[p.cards.length-1].front)}</span>.`).join('<br>');
+  setImp(true);
+});
+
+/* ===================== συνεδρία ===================== */
+let R = null;
+function openSession(){ $('session').classList.add('on'); document.body.style.overflow = 'hidden'; }
+function closeSession(){ $('session').classList.remove('on'); document.body.style.overflow = ''; R = null; render(); }
+$('sClose').addEventListener('click', closeSession);
+/* Ένα sync που ήρθε στη μέση μπορεί να έχει αντικαταστήσει την εγγραφή της
+   σελίδας· το πέρασμα που τρέχει είναι πάντα αυτό που γράφεται. */
+function putPass(){ const ps = S.pages[R.pageId]; if (ps && ps.status === 'learning') ps.pass = R.s; else S.pages[R.pageId] = { status:'learning', pass:R.s }; save(); }
+
+function startToday(){
+  const P = plan();
+  const s = C.newDaily(P.due.map(x => ({ id: x.p.id, cardIds: x.p.cards.map(c => c.id) })), P.hard, rng);
+  if (s.total){ R = { kind:'daily', s, then: P.first ? P.first.p.id : null }; openSession(); step(); }
+  else if (P.first) startFirst(P.first.p.id);
+}
+function startFirst(pageId){
+  const p = pageById(pageId); if (!p) return;
+  const ps = S.pages[pageId];
+  const s = ps && ps.status === 'learning' && ps.pass ? ps.pass : C.newFirstPass(p.cards);
+  R = { kind:'first', s, pageId, page:p }; putPass(); openSession(); step();
+}
+function startPractice(pageId){
+  const p = pageById(pageId); if (!p) return;
+  R = { kind:'practice', s: C.newDaily([{ id: p.id, cardIds: p.cards.map(c => c.id) }], [], rng), page:p };
+  openSession(); step();
+}
+const current = () => R.kind === 'first' ? C.firstCurrent(R.s) : C.dailyCurrent(R.s);
+const progress = () => R.kind === 'first' ? C.firstProgress(R.s) : C.dailyProgress(R.s);
+const foot = html => { $('sFoot').innerHTML = html; };
+
+function step(){
+  const cur = current(), pr = progress();
+  $('sBar').style.width = pr.pct + '%'; $('sCount').textContent = `${pr.done} / ${pr.total}`; $('toast').textContent = '';
+  if (!cur) return finish();
+  if (cur.type === 'preview') return showPreview(cur);
+  showCard(cur);
+}
+function where(cur){
+  if (R.kind === 'first') return `${title(R.page)} · πρώτο πέρασμα · ${R.s.step === 'consolidate' ? 'όλη η σελίδα ανακατεμένη' : `κομμάτι ${R.s.ci + 1} από ${R.s.chunks.length}`}`;
+  if (R.kind === 'practice') return `${title(R.page)} · εξάσκηση`;
+  const sg = cur.seg, nx = R.s.segs[R.s.si + 1];
+  const here = sg.kind === 'hard' ? 'Δύσκολες' : `${title(pageById(sg.pageId))} · επανάληψη`;
+  const after = nx ? (nx.kind === 'hard' ? 'Δύσκολες' : title(pageById(nx.pageId))) : (R.then ? `νέα ${title(pageById(R.then))}` : '');
+  return esc(here) + (after ? ` <span>· μετά: ${esc(after)}</span>` : '');
+}
+const lineHTML = (cls, icon, text) => `<div class="ln ${cls}">${icon}<span>${esc(text)}</span></div>`;
+
+function showPreview(cur){
+  $('sWhere').innerHTML = where(cur);
+  const fams = cur.chunk.groups.map(g => `<div class="fam"><div class="famh"><span class="gr">${esc(g.family)}</span><span>οικογένεια · ${words(g.ids.length)}</span></div>
+    <div class="igrid">${g.ids.map(id => { const c = CARDS[id]; return `<div class="iw"><div class="top"><span class="gr">${esc(c.front)}</span><span class="mn">${esc(c.back)}</span></div>${c.trap ? lineHTML('t', ICON.trap, c.trap) : ''}${c.hook ? lineHTML('c', ICON.hook, c.hook) : ''}</div>`; }).join('')}</div></div>`).join('');
+  $('sBody').innerHTML = `<div class="intro"><div class="eyebrow">Γνωριμία</div><h1>Διάβασέ τες μία φορά, με την ησυχία σου</h1>${fams}
+    <div class="ilegend"><span><i style="background:var(--terra-hi)"></i>παγίδα</span><span><i style="background:var(--claude)"></i>γάντζος του Claude</span></div></div>`;
+  $('sBody').style.justifyContent = 'flex-start';
+  $('session').scrollTop = 0;
+  foot(`<button class="btn btn-terra" id="ack"><span class="k">Enter</span>Τις είδα, ρώτα με</button>`);
+  $('ack').addEventListener('click', ackPreview);
+}
+function ackPreview(){ C.firstAckPreview(R.s, rng); putPass(); step(); }
+
+function wordSize(t){ return t.length > 16 ? 'xl' : t.length > 10 ? 'l' : ''; }
+function showCard(cur){
+  R.revealed = false; R.cur = cur;
+  const c = CARDS[cur.id];
+  $('sWhere').innerHTML = where(cur);
+  const fam = cur.seg && cur.seg.kind === 'hard' ? `Σελίδα ${c.pageN} · ${c.family}` : c.family;
+  let need = '';
+  if (R.kind === 'first'){ const r = Math.min(R.s.right[cur.id], 3); need = `<div class="c-need"><span class="dots">${[0,1,2].map(i => `<i class="${i < r ? 'on' : ''}"></i>`).join('')}</span>σωστή ${r} από 3</div>`; }
+  $('sBody').style.justifyContent = 'center';
+  $('sBody').innerHTML = `<div class="card"><div class="c-l"><div class="c-fam">${esc(fam)}</div><div class="c-word ${wordSize(c.front)}">${esc(c.front)}</div>${need}</div>
+    <div class="c-r c-ask" id="cR">${ICON.mic}<div class="big">Πες τη σημασία δυνατά</div><div class="sm">και μετά πάτα <span class="k">Space</span></div></div></div>`;
+  foot(`<button class="btn btn-line" id="show"><span class="k">Space</span>Δείξε τη σημασία</button>`);
+  $('show').addEventListener('click', reveal);
+}
+function reveal(){
+  if (!R || R.revealed || !R.cur) return; R.revealed = true;
+  const c = CARDS[R.cur.id];
+  let a = `<div><div class="lbl">φυλλάδιο</div><div class="meaning">${esc(c.back)}</div></div>`;
+  if (c.trap) a += `<div class="box trap">${ICON.trap}<div class="body"><span class="h">Παγίδα</span><span>${esc(c.trap)}</span></div></div>`;
+  if (c.hook) a += `<div class="box hook">${ICON.hook}<div class="body"><span class="h">Γάντζος του Claude</span><span>${esc(c.hook)}</span></div></div>`;
+  if (c.note) a += `<div class="box note">Σημείωση του Claude: ${esc(c.note)}</div>`;
+  const r = $('cR'); r.className = 'c-r reveal'; r.innerHTML = a;
+  foot(`<button class="btn btn-line" id="no"><span class="k">1</span>Δεν το ήξερα</button><button class="btn btn-terra" id="yes"><span class="k">2</span>Το ήξερα</button>`);
+  $('no').addEventListener('click', () => grade(false)); $('yes').addEventListener('click', () => grade(true));
+}
+function grade(ok){
+  if (!R || !R.revealed) return; R.cur = null;
+  if (R.kind === 'first'){ C.firstAnswer(R.s, ok, rng); putPass(); step(); if (!ok && R && R.kind === 'first') $('toast').textContent = 'Θα την ξαναδείς σε λίγο.'; return; }
+  const res = C.dailyAnswer(R.s, ok, rng);
+  if (res.segDone && R.kind === 'daily') return segmentDone(res.segDone, res.finished);
+  if (res.finished) return finish();
+  step(); if (!ok) $('toast').textContent = 'Θα την ξαναδείς σε λίγο.';
+}
+
+/* οθόνες τέλους */
+const chips = (label, ids) => ids.length ? `<div><div class="chipsl">${label}</div><div class="chips">${ids.map(id => `<span>${esc(CARDS[id].front)}</span>`).join('')}</div></div>` : '';
+function ladderEnd(stageIdx){ return `<div class="ladder">${C.LADDER.map((d,i) => `<span class="${i < stageIdx ? 'on' : i === stageIdx ? 'now' : ''}">${d}</span>`).join('')}</div>`; }
+function endScreen(html, label, onGo, second){
+  $('sBar').style.width = progress().pct + '%'; $('sCount').textContent = ''; $('sWhere').innerHTML = ''; $('toast').textContent = '';
+  $('sBody').style.justifyContent = 'center';
+  $('sBody').innerHTML = `<div class="end">${html}</div>`;
+  foot((second ? `<button class="btn btn-line" id="later"><span class="k">Esc</span>${second}</button>` : '') + `<button class="btn btn-terra" id="cont"><span class="k">Enter</span>${label}</button>`);
+  $('cont').addEventListener('click', onGo); if (second) $('later').addEventListener('click', closeSession);
+}
+function segmentDone(sg, finished){
+  let html;
+  if (sg.kind === 'page'){
+    const p = pageById(sg.pageId), acc = C.segAccuracy(sg), miss = C.segMisses(sg), before = S.pages[p.id].stage;
+    S.pages[p.id] = C.finishReview(S.pages[p.id], acc, TODAY); S.hard = C.addHard(S.hard, miss, TODAY); save();
+    const st = C.pageStatus(S.pages[p.id], TODAY), up = S.pages[p.id].stage > before;
+    html = `<div><div class="eyebrow">${title(p)} · επανάληψη</div><div class="score num">${sg.ids.length - miss.length}<small> / ${sg.ids.length}</small></div><div class="under">σωστές με την πρώτη</div></div>
+      <div class="endbox"><div class="row"><b>${up ? 'Ανέβηκε σκαλί' : 'Μένει στο ίδιο σκαλί, για να δέσει'}</b><span>επόμενη <em>${st.inDays === 1 ? 'αύριο' : `σε ${st.inDays} μέρες`}</em>, ${C.prettyDate(st.next)}</span></div>${ladderEnd(Math.min(S.pages[p.id].stage, 4))}</div>
+      ${chips('Πάνε στις Δύσκολες', miss)}`;
+  } else {
+    const prev = S.hard, r = C.applyHardSeg(S.hard, sg, TODAY); S.hard = r.hard;
+    if (save()) tombHard(r.graduated, prev);
+    const miss = C.segMisses(sg);
+    html = `<div><div class="eyebrow">Δύσκολες</div><div class="score num">${sg.ids.length - miss.length}<small> / ${sg.ids.length}</small></div><div class="under">σωστές με την πρώτη</div></div>
+      ${r.graduated.length ? chips('Αυτές έφυγαν από τις Δύσκολες', r.graduated) : '<p class="under">Όσες είπες σωστά θέλουν άλλη μία μέρα για να φύγουν.</p>'}`;
+  }
+  if (!finished){
+    const nx = R.s.segs[R.s.si];
+    return endScreen(html, `Συνέχεια: ${nx.kind === 'hard' ? 'Δύσκολες' : title(pageById(nx.pageId))}`, step);
+  }
+  if (R.then){
+    const p = pageById(R.then), lr = S.pages[p.id] && S.pages[p.id].status === 'learning';
+    html += `<p class="under">Οι επαναλήψεις τελείωσαν. Αν θες, κάνε ένα διάλειμμα· η ${title(p)} σε περιμένει όποτε την ξεκινήσεις.</p>`;
+    return endScreen(html, lr ? `Συνέχεια: ${title(p)}` : `Νέα ${title(p)}`, () => startFirst(p.id), 'Αργότερα');
+  }
+  endScreen(html, 'Τέλος για σήμερα', closeSession);
+}
+function finish(){
+  if (R.kind === 'first'){
+    const hardIds = C.passHardCards(R.s);
+    S.pages[R.pageId] = C.finishFirstPass(TODAY); S.hard = C.addHard(S.hard, hardIds, TODAY); save();
+    const st = C.pageStatus(S.pages[R.pageId], TODAY);
+    return endScreen(`<div><div class="eyebrow">${title(R.page)} · πρώτο πέρασμα</div><div class="word">Ξεκίνησε.</div><div class="under">${words(R.page.cards.length)}, κάθε μία σωστή τρεις φορές</div></div>
+      <div class="endbox"><div class="row"><b>Το ρολόι ξεκίνησε</b><span>πρώτη επανάληψη <em>αύριο</em>, ${C.prettyDate(st.next)}</span></div>${ladderEnd(0)}</div>
+      ${hardIds.length ? chips('Αυτές σε δυσκόλεψαν και πάνε στις Δύσκολες', hardIds) : '<p class="under">Καμία δεν σε δυσκόλεψε ιδιαίτερα.</p>'}`, 'Τέλος για σήμερα', closeSession);
+  }
+  const sg = R.s.segs[0], miss = C.segMisses(sg);
+  endScreen(`<div><div class="eyebrow">${title(R.page)} · εξάσκηση</div><div class="score num">${sg.ids.length - miss.length}<small> / ${sg.ids.length}</small></div><div class="under">σωστές με την πρώτη · το πρόγραμμα της σελίδας δεν άλλαξε</div></div>`, 'Τέλος', closeSession);
+}
+
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+  if (e.key === 'Escape'){
+    if (R){ e.preventDefault(); closeSession(); } else if (modal.open) closeModal();
+    else if ($('q').value){ $('q').value = ''; $('q').blur(); render(); } else if (typing) e.target.blur();
+    return;
+  }
+  if (modal.open) return;
+  if (!R){
+    if (typing) return;
+    if (e.key === '/'){ e.preventDefault(); $('q').focus(); }
+    else if (e.key === 'Enter' && e.target === document.body){ const b = document.querySelector('[data-go="today"]'); if (b){ e.preventDefault(); b.click(); } }
+    return;
+  }
+  if (e.key === ' ' || e.key === 'Enter'){
+    e.preventDefault();
+    if ($('ack')) ackPreview(); else if ($('show')) reveal(); else if ($('cont')) $('cont').click();
+  } else if (R.revealed && (e.key === '1' || e.key === 'ArrowLeft')) grade(false);
+  else if (R.revealed && (e.key === '2' || e.key === 'ArrowRight')) grade(true);
+});
+
+/* ===================== εκκίνηση ===================== */
+reload();
+render();
+fetch('data/lexilogio.json', { cache:'no-cache' })
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })   /* fetch() δεν πέφτει στα 4xx */
+  .then(d => { if (!d || !Array.isArray(d.pages)) throw new Error('χωρίς "pages"'); DATA = d; },
+        e => { DATA_ERR = String(e && e.message || e); })
+  .then(() => { if (!R) render(); });
+
+/* Συγχρονισμός: μία μηχανή, ένα κλειδί, μία κλήση (σταθ. 32). Αν δεν
+   σηκωθεί ποτέ, το λέμε — η πρόοδος μένει μόνο σε αυτή τη συσκευή. */
+(function(){
+  let tries = 0;
+  (function wait(){
+    if (typeof initCloudSync !== 'function' || !window.supabase){
+      if (tries++ < 40) setTimeout(wait, 200);
+      else { SYNC_NOTE = 'Ο συγχρονισμός δεν ξεκίνησε· η πρόοδος μένει σε αυτή τη συσκευή.'; if (!R) render(); }
+      return;
+    }
+    initCloudSync({
+      appKey:'lexilogio',
+      syncedKeys:['metron.lexilogio.v2'],
+      onApplied:function(){ reload(); if (!R) render(); else paintWarn(); }
+    });
+  })();
+})();
+})();
+</script>
+</body>
+</html>

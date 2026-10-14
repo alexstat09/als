@@ -70,7 +70,7 @@ const SEED=`
  ok('κάθε JSON του φακέλου είναι στον κατάλογο ή είναι δομή',
    fsx.readdirSync(pathx.join(ROOT,'data')).filter(function(f){ return /\.json$/.test(f); })
      .every(function(f){ var id=f.replace(/\.json$/,'');
-       return id==='index'||id==='pinakakia'||id==='arxikoi-xronoi'||ix.texts.indexOf(id)>=0; }));
+       return id==='index'||id==='pinakakia'||id==='arxikoi-xronoi'||id==='lexilogio'||ix.texts.indexOf(id)>=0; }));
 
  await new Promise(r=>server.listen(0,'127.0.0.1',r)); const HTTP=server.address().port;
  const chrome=spawn(CHROME,['--headless=new','--remote-debugging-port='+PORT,'--no-first-run','--user-data-dir=/tmp/cdp-agn-test','--hide-scrollbars','about:blank'],{stdio:'ignore'});

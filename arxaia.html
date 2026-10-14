@@ -82,6 +82,9 @@
        Η ΜΗΧΑΝΗ του τονισμού ΔΕΝ φορτώνεται εδώ — δεν τρέχει τίποτα. -->
   <script src="tonos-fyllo.js"></script>
   <script src="arxaia-klisi-data.js"></script>
+  <!-- Λεξιλόγιο: ΜΟΝΟ η καθαρή λογική (σκάλα, Δύσκολες) για το ράφι και το
+       «Για αύριο». Το κλειδί το κατέχει η arxaia-lexilogio.html (σταθ. 16). -->
+  <script src="lexilogio-core.js"></script>
   <!-- ⭐ als-v468: και οι ΔΥΟ κόσμοι της σελίδας κρατούσαν την πρόοδό τους σε
        χάρτη εγγραφών, που το sync.js συγχώνευε ανά πεδίο με «κερδίζει το
        remote». Δες το κεφάλαιο του study-stamp.js. -->
@@ -1398,6 +1401,7 @@
   #agWrap .ag-main > .sh + .sh{ margin-top:52px; }
   #agWrap .ag-side > * + *{ margin-top:38px; }
   #agWrap .ar-next{ margin:0; }
+  #agWrap .lx-side{ margin-top:30px; }
   #agWrap .ar-cta{ border-color:rgba(var(--ar),.24); border-radius:18px; padding:22px 24px 20px;
     background:linear-gradient(180deg, rgba(var(--ar),.085), rgba(var(--ar),.02) 55%, transparent); }
   #agWrap .ar-cta:hover{ border-color:rgba(var(--ar),.44); }
@@ -1730,6 +1734,15 @@
         <p class="sh-note">Ο χάρτης του φυλλαδίου και οι διακόπτες. Δεν λήγει — μετράει μόνο τι έφυγε.</p>
       </section>
 
+      <!-- ⭐ ΛΕΞΙΛΟΓΙΟ — als-v601. Τελευταίο ράφι: σελ. 170+ του φυλλαδίου.
+           ⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ του `metron.lexilogio.v2` — το κατέχει η
+           arxaia-lexilogio.html (σταθ. 16). -->
+      <section class="sh">
+        <div class="gn-sh"><span class="t">Λεξιλόγιο</span><span class="r"></span><span class="n" id="lxShN"></span></div>
+        <div class="ar-rows sh-rows" id="lxSh"></div>
+        <p class="sh-note">Μία σελίδα του φυλλαδίου τη μέρα. Ξεκινάει όταν την περάσεις και περιμένει όσο χρειαστεί.</p>
+      </section>
+
     </div>
 
     <div class="ag-side">
@@ -1740,6 +1753,14 @@
           <div class="ar-cta-t" id="arCtaT">—</div>
           <div class="ar-cta-m" id="arCtaM">—</div>
         </button>
+      </section>
+
+      <!-- Λεξιλόγιο «για αύριο»: δική του κλάση επίτηδες — το .ar-due είναι στο
+           __pmAutoSel και ένα μπλοκ που γεννιέται hidden δεν ξαναπαρατηρείται
+           (σταθ. 39). -->
+      <section class="lx-side" id="lxSide" hidden>
+        <div class="gn-sh"><span class="t">Λεξιλόγιο</span><span class="r"></span><span class="n" id="lxSideN"></span></div>
+        <div class="ar-rows sh-rows" id="lxSideRows"></div>
       </section>
 
       <section class="ar-due" id="arDueSec" hidden>
@@ -3659,6 +3680,70 @@
         '<span class="t">' + esc(stt) + '</span>' +
       '</a>';
     cnt.textContent = 'σελ. 8 → 21';
+  })();
+
+  /* ══ ΤΟ ΡΑΦΙ ΤΟΥ ΛΕΞΙΛΟΓΙΟΥ + «ΓΙΑ ΑΥΡΙΟ» ══════════════════════════════
+     ⛔⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ (σταθ. 16): το `metron.lexilogio.v2` το κατέχει η
+     arxaia-lexilogio.html. Οι σελίδες του φυλλαδίου έρχονται από το
+     data/lexilogio.json, όσες εισάγει ο ίδιος από το `extra` της αποθήκης.
+     Τρεις καταστάσεις, τρεις προτάσεις (σταθ. 10/33): δεν διαβάστηκε ·
+     δεν ξεκίνησε · ζωντανό. Οι ημέρες με τη λογική του ΙΔΙΟΥ core. */
+  (function lxShelf(){
+    var box = document.getElementById('lxSh'), cnt = document.getElementById('lxShN');
+    var side = document.getElementById('lxSide'), sideRows = document.getElementById('lxSideRows'), sideN = document.getElementById('lxSideN');
+    var C = window.LexCore;
+    if (!box) return;
+    function rowHTML(l, sub, tag, hot){
+      return '<a class="ar-row" href="arxaia-lexilogio.html">' +
+        '<span class="tx"><span class="l">' + l + '</span>' + (sub ? '<span class="g">' + esc(sub) + '</span>' : '') + '</span>' +
+        '<span class="t' + (hot ? ' due' : '') + '">' + esc(tag) + '</span></a>';
+    }
+    function fail(why){
+      box.innerHTML = rowHTML('<span class="rn">I</span>Βασικό λεξιλόγιο', why, 'δεν διαβάστηκε', false);
+      cnt.textContent = 'σελ. 170 →';
+    }
+    if (!C){ fail('Δεν φόρτωσε το lexilogio-core.js — η πρόοδος δεν πειράχτηκε.'); return; }
+    var st = null;
+    try { st = JSON.parse(localStorage.getItem('metron.lexilogio.v2') || 'null'); } catch(e){ st = undefined; }
+    if (st === undefined || (st && (typeof st !== 'object' || st.v !== 2))){
+      fail('Η πρόοδος υπάρχει — δεν μπόρεσα να τη διαβάσω από αυτή τη συσκευή.'); return;
+    }
+    fetch('data/lexilogio.json', { cache:'no-cache' })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(d){
+        var pagesSt = (st && st.pages) || {}, hard = (st && st.hard) || {};
+        var pages = (d.pages || []).concat((st && Array.isArray(st.extra)) ? st.extra : [])
+          .slice().sort(function(a, b){ return a.n - b.n; });
+        var today = C.toISO(new Date()), tomorrow = C.addDays(today, 1);
+        var words = 0, live = 0, cardIds = {};
+        pages.forEach(function(p){ words += p.cards.length; p.cards.forEach(function(c){ cardIds[c.id] = 1; }); if (pagesSt[p.id] && pagesSt[p.id].status === 'active') live++; });
+
+        box.innerHTML = pages.map(function(p){
+          var s = C.pageStatus(pagesSt[p.id], today), tag, hot = false;
+          if (s.kind === 'new'){ tag = 'νέα'; hot = true; }
+          else if (s.kind === 'learning'){ tag = 'μισή · ' + s.progress.pct + '%'; hot = true; }
+          else if (s.kind === 'later'){ tag = s.inDays === 1 ? 'αύριο' : 'σε ' + s.inDays + ' μέρες'; }
+          else { tag = 'σήμερα'; hot = true; }
+          var r = String(p.range || '').split('→').map(function(x){ return x.trim(); });
+          return rowHTML('Σελίδα ' + p.n + (r[0] ? ' · ' + esc(r[0]) + (r[1] ? ' — ' + esc(r[1]) : '') : ''),
+            'φυλλάδιο σ. ' + p.bookPage + ' · ' + p.cards.length + ' λέξεις', tag, hot);
+        }).join('');
+        cnt.textContent = pages.length + (pages.length === 1 ? ' σελίδα · ' : ' σελίδες · ') + words + ' λέξεις';
+
+        /* «Για αύριο»: ό,τι λήγει σήμερα ή αύριο + οι Δύσκολες. Μια σελίδα
+           που δεν ξεκίνησε ΔΕΝ μπαίνει εδώ — δεν έχει ρολόι (kit §1). */
+        var rows = [];
+        pages.forEach(function(p){
+          var s = C.pageStatus(pagesSt[p.id], today);
+          if (s.kind === 'due' || s.kind === 'waiting') rows.push(rowHTML('Σελίδα ' + p.n + ' · επανάληψη', p.cards.length + ' λέξεις', 'σήμερα', true));
+          else if (s.kind === 'later' && s.next === tomorrow) rows.push(rowHTML('Σελίδα ' + p.n + ' · επανάληψη', p.cards.length + ' λέξεις', 'αύριο', false));
+        });
+        var hardN = Object.keys(hard).filter(function(id){ return cardIds[id]; }).length;
+        if (hardN) rows.push(rowHTML('Δύσκολες', 'από όλες τις σελίδες', hardN === 1 ? '1 λέξη' : hardN + ' λέξεις', false));
+        side.hidden = !rows.length;
+        sideRows.innerHTML = rows.join('');
+        sideN.textContent = live ? live + (live === 1 ? ' σελίδα στη σκάλα' : ' σελίδες στη σκάλα') : '';
+      }, function(e){ fail('Το φυλλάδιο δεν φόρτωσε (' + (e && e.message || e) + ').'); });
   })();
 
   /* ⛔ ΧΩΡΙΣ ΤΟΝΟΥΣ ΚΑΙ ΧΩΡΙΣ ΠΝΕΥΜΑΤΑ, ΓΙΑ ΤΗΝ ΑΝΑΖΗΤΗΣΗ ΜΟΝΟ.
