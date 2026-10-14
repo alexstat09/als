@@ -307,7 +307,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v601`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v602`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1854,6 +1854,19 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-14 — `als-v602` — ⛔ Η v601 ΤΟ ΕΒΑΛΕ ΣΤΗ ΛΑΘΟΣ ΠΟΡΤΑ.** Ο Αλεξ:
+*«δεν μου φαίνεται καθόλου ίδιο»*. Μπαίνει από School Studies → «Αρχαία ·
+άγνωστο» = **`arxaia-agnosto.html`**, όπου η κάρτα **04 Λεξιλόγιο** άνοιγε ακόμα
+την ΠΑΛΙΑ οθόνη Leitner. Ο «χώρος Λεξιλόγιο» του kit ήταν ΑΥΤΗ η κάρτα — εγώ
+είχα καλωδιώσει μόνο το `arxaia.html#ag`, που δεν το ανοίγει. Τώρα: η κάρτα 04
+ανοίγει το `arxaia-lexilogio.html` με ζωντανή γραμμή «σήμερα» (μόνο ανάγνωση),
+οι 21 λέξεις του ΚΕΙΜΕΝΟΥ (`#/lexilogio`, `agn:v1`) **μένουν** ως σύνδεσμος στο
+κάτω μέρος της κάρτας, και η έξοδος του Λεξιλογίου γυρνάει στο Άγνωστο.
+⭐ **Μάθημα: πριν πεις «μπήκε στο Χ», ακολούθησε τη ΔΙΑΔΡΟΜΗ ΠΟΥ ΠΑΤΑΕΙ ο ίδιος**
+(`homework.html` `SUBJ.page`), όχι το όνομα που λέει το brief. Το test οδηγεί
+πλέον ΚΑΙ αυτή την πόρτα (ενότητα Κ, και έπιασε αμέσως ένα `ReferenceError` —
+δύο `renderHome` στο ίδιο αρχείο).
 
 **2026-10-14 — `als-v601` — ΤΟ ΛΕΞΙΛΟΓΙΟ: `arxaia-lexilogio.html`**
 (`tests/lexilogio-page.test.js` **83/0** — οδηγεί ΑΛΗΘΙΝΟ Chrome μόνο με

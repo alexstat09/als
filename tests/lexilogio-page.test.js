@@ -65,7 +65,10 @@ const SHOTS=process.env.LEX_SHOTS||'';
  const ev=async e=>{const r=await S('Runtime.evaluate',{expression:e,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(e+' → '+JSON.stringify(r.exceptionDetails.exception&&r.exceptionDetails.exception.description));return r.result.value};
  /* ⚠️ Το query ΑΛΛΑΖΕΙ σε κάθε πλοήγηση (μνήμη: ένα σκέτο #hash δεν ξαναφορτώνει). */
  let nav=0;
- const open=async(today)=>{ await S('Page.navigate',{url:BASE+'?today='+today+'&n='+(++nav)}); await sleep(900); };
+ /* Περιμένει να ΖΩΓΡΑΦΙΣΤΕΙ η αρχική (όχι σταθερό sleep — υπό φόρτο ένα 900ms
+    έβγαζε σπάνιο κόκκινο που δεν ήταν της σελίδας). */
+ const open=async(today)=>{ await S('Page.navigate',{url:BASE+'?today='+today+'&n='+(++nav)}); await sleep(150);
+   for(let i=0;i<60;i++){ try{ if(await ev(`document.readyState==='complete'&&!!document.querySelector('#main section')&&!/Φορτώνει/.test(document.getElementById('main').textContent)`)) break; }catch(e){} await sleep(100); } await sleep(120); };
  const VK={Enter:13,' ':32,Escape:27,'1':49,'2':50,'/':191};
  const CODE={Enter:'Enter',' ':'Space',Escape:'Escape','1':'Digit1','2':'Digit2','/':'Slash'};
  const key=async k=>{ const p={key:k,code:CODE[k],windowsVirtualKeyCode:VK[k],nativeVirtualKeyCode:VK[k]};
@@ -265,7 +268,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
    const L=c=>{const m=c.match(/\\d+(\\.\\d+)?/g).map(Number).slice(0,3).map(v=>v/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*m[0]+.7152*m[1]+.0722*m[2]};
    const fg=L(getComputedStyle(a).color),bg=L(getComputedStyle(document.body).backgroundColor);
    return {href:a.getAttribute('href'),text:a.textContent.trim(),h:r.height,cr:(Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05)}})()`);
- ok('έξοδος: σύνδεσμος στο arxaia.html#ag, με λέξη', ex.href==='arxaia.html#ag'&&/Αρχαία, άγνωστο/.test(ex.text), ex);
+ ok('έξοδος: σύνδεσμος στο arxaia-agnosto.html (από εκεί μπαίνει), με λέξη', ex.href==='arxaia-agnosto.html'&&/Αρχαία, άγνωστο/.test(ex.text), ex);
  ok('στόχος ≥ 44px και αντίθεση ≥ 4.5:1 ('+ex.cr.toFixed(2)+')', ex.h>=44&&ex.cr>=4.5, ex);
  const fonts=await ev(`[getComputedStyle(document.querySelector('.prow .rg')).fontFamily, getComputedStyle(document.body).fontFamily]`);
  ok('τα αρχαία σε GFS Didot, ποτέ Georgia πρώτη (σταθ. 43)', /^"?GFS Didot/.test(fonts[0]), fonts);
@@ -307,6 +310,21 @@ const SHOTS=process.env.LEX_SHOTS||'';
  await ev(`localStorage.removeItem('${KEY}')`);
  await S('Page.navigate',{url:'http://127.0.0.1:'+HTTP+'/arxaia.html?n='+(++nav)+'#ag'}); await sleep(1500);
  ok('χωρίς πρόοδο: «νέα», και το «Για αύριο» ΔΕΝ εμφανίζεται (δεν υπάρχει ρολόι)', /νέα/.test(await txt('#lxSh'))&&await ev(`document.getElementById('lxSide').hidden`)===true);
+
+ console.log('\nΚ · Η ΠΟΡΤΑ ΠΟΥ ΧΡΗΣΙΜΟΠΟΙΕΙ: School Studies → arxaia-agnosto.html → κάρτα 04');
+ await ev(`localStorage.setItem('${KEY}',${JSON.stringify(seeded)})`);
+ await S('Page.navigate',{url:'http://127.0.0.1:'+HTTP+'/arxaia-agnosto.html?n='+(++nav)}); await sleep(2200);
+ const c4=await ev(`(()=>{const c=[...document.querySelectorAll('#cards .card')].find(x=>/Λεξιλόγιο/.test(x.querySelector('h2').textContent));return c?{href:c.querySelector('a.open').getAttribute('href'),sub:c.querySelector('.sub').textContent,mini:c.querySelector('#miniL').textContent,foot:(c.querySelector('a.lxk')||{}).textContent||'',fhref:(c.querySelector('a.lxk')||{getAttribute:()=>''}).getAttribute('href')}:null})()`);
+ ok('η κάρτα 04 «Λεξιλόγιο» ανοίγει το arxaia-lexilogio.html', c4&&c4.href==='arxaia-lexilogio.html', c4);
+ ok('…με τη γραμμή του kit', c4&&/Μία σελίδα του φυλλαδίου τη μέρα/.test(c4.sub), c4&&c4.sub);
+ ok('…και λέει το σωστό «σήμερα» (η Σελίδα 1 λήγει αύριο → μόνο οι δύο δύσκολες)', c4&&/^Σήμερα, δύο δύσκολες\./.test(c4.mini)&&!/Σελίδα 1 και/.test(c4.mini), c4&&c4.mini);
+ ok('οι λέξεις του ΚΕΙΜΕΝΟΥ δεν χάθηκαν: σύνδεσμος στο #/lexilogio', c4&&c4.fhref==='#/lexilogio'&&/Λέξεις του κειμένου/.test(c4.foot), c4);
+ await ev(`location.hash='#/lexilogio'`); await sleep(700);
+ ok('…και η παλιά οθόνη ζει ακόμα με τις 21 λέξεις του Λυσία', await ev(`document.querySelectorAll('#scr-lexilogio .vrow').length`)===21);
+ ok('ΜΟΝΟ ΑΝΑΓΝΩΣΗ και εδώ: η αποθήκη ίδια', await ev(`localStorage.getItem('${KEY}')`)===seeded);
+ await ev(`location.hash='#/'`); await sleep(600);
+ await shot('14-agnosto-1440');
+ await ev(`localStorage.removeItem('${KEY}')`);
  ok('κανένα script που σηκώνει sync δεν έτρεξε (μπλοκαρίστηκαν: '+otherStripped.length+')', await ev('typeof window.ALSSync')==='undefined');
  ok('ο κοινός αριθμός «Δευ 19/10» κ.λπ. — μηδέν exceptions σε ΟΛΗ τη διαδρομή', exc.length===0, exc.slice(0,5));
 

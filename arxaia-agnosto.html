@@ -31,6 +31,9 @@
   <script src="vendor/supabase.min.js"></script>
   <script src="sync.js" defer></script>
   <script src="study-stamp.js"></script>
+  <!-- Λεξιλόγιο (als-v602): μόνο η καθαρή λογική, για τη γραμμή «σήμερα» της
+       κάρτας 04. Το κλειδί το κατέχει η arxaia-lexilogio.html (σταθ. 16). -->
+  <script src="lexilogio-core.js"></script>
   <script src="als-sync-status.js" defer></script>
   <script src="als-dialog.js" defer></script>
 </head>
@@ -167,6 +170,9 @@ textarea{resize:vertical}
 
 /* ── ΜΙΝΙ-ΑΣΚΗΣΕΙΣ ΜΕΣΑ ΣΤΙΣ ΚΑΡΤΕΣ (σελ. 4 του σχεδίου) ─────────── */
 .mini{margin-top:26px}
+.lxm .t{font-family:var(--gr);font-size:26px;line-height:1.2;color:var(--ivory)}
+.lxm .s{margin-top:8px;color:var(--dim);font-size:14px}
+.card .foot a.lxk{color:var(--dim)}.card .foot a.lxk:hover{color:var(--ivory)}
 .mini .q{font-family:var(--anc);font-size:26px;line-height:1.2;color:var(--ivory);display:flex;align-items:baseline;gap:14px}
 .mini .q .cnt{margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--faint);white-space:nowrap}
 .mini .ask{font-family:var(--body);font-size:13.5px;color:var(--dim);margin-top:8px;line-height:1.5}
@@ -573,7 +579,7 @@ function renderStats(){
     statHTML('Περίοδοι', esc(done) + '<span class="of">/' + esc(tot) + '</span>',
       name.trim() + (done === tot ? ' · μεταφρασμένο' : ' · σε εξέλιξη'), { href:'#/keimeno/' + t.id }) +
     statHTML('Λάθη σε επανάληψη', esc(rep), 'Γραμματική', { href:'#/grammatiki', hot: rep > 0 }) +
-    statHTML('Κάρτες σήμερα', esc(v.due), 'Λεξιλόγιο · ' + v.total + ' σύνολο', { href:'#/lexilogio' }) +
+    statHTML('Κάρτες σήμερα', esc(v.due), 'Λέξεις κειμένου · ' + v.total + ' σύνολο', { href:'#/lexilogio' }) +
     statHTML('Τελ. διόρθωση', fx ? esc(fx.score) : '<span class="of">[—]</span>',
       (fx ? '/ 20 · ' : 'μόλις υποβάλεις · ') + (t.author || ''), { href:'#/diorthosi/' + t.id });
 }
@@ -617,6 +623,7 @@ function renderHome(){
   renderStats();
   var t = activeText(), box = el('cards');
   if (!box) return;
+  var vt = vocabDue(t);   /* οι λέξεις του ΚΕΙΜΕΝΟΥ, για τη γραμμή της κάρτας 04 */
   var libFoot = '';
   if (DATA.texts.length){
     var inprog = 0, fresh = 0, fixed = 0;
@@ -636,8 +643,12 @@ function renderHome(){
       '#/grammatiki', '<div class="mini" id="miniG"></div>', '') +
     card('03', 'Συντακτικό', 'Συντακτική θέση ανά λέξη · δευτερεύουσες σε 4 πεδία · μετατροπές',
       '#/syntaktiko', '<div class="mini" id="miniS"></div>', '') +
-    card('04', 'Λεξιλόγιο', 'Κάρτες επανάληψης · πολύσημες λέξεις και λέξεις που δεν ήξερα',
-      '#/lexilogio', '<div class="mini" id="miniV"></div>', '') +
+    /* ⭐ als-v602: ο χώρος «Λεξιλόγιο» είναι πλέον η σελίδα του φυλλαδίου
+       (arxaia-lexilogio.html, kit «Ερυθρόμορφο»). ⛔ Οι λέξεις του ΚΕΙΜΕΝΟΥ
+       (#/lexilogio, agn:v1) ΔΕΝ σβήστηκαν — μένουν ένα πάτημα μακριά. */
+    card('04', 'Λεξιλόγιο', 'Μία σελίδα του φυλλαδίου τη μέρα. Ξεκινάει όταν την περάσεις και περιμένει όσο χρειαστεί.',
+      'arxaia-lexilogio.html', '<div class="mini lxm" id="miniL"><div class="s">Φορτώνει…</div></div>',
+      '<a class="lxk" href="#/lexilogio">Λέξεις του κειμένου · ' + esc(vt.due) + ' / ' + esc(vt.total) + ' σήμερα</a>') +
     card('05', 'Πινακάκια', 'Γραμματική και Συντακτικό · διάβασμα, κρυμμένα κελιά, τεστ συμπλήρωσης',
       '#/pinakakia', '<div class="bot" id="miniP"></div>', '') +
     card('06', 'Αρχικοί χρόνοι', 'Οι στήλες θα έρθουν από το βιβλίο σου',
@@ -656,7 +667,41 @@ window.AGN = {
   cur:function(){ return CUR; }
 };
 
-function buildMinis(){ if (window.AGN.buildMinis) window.AGN.buildMinis(); }
+function buildMinis(){ if (window.AGN.buildMinis) window.AGN.buildMinis(); paintLexMini(); }
+
+/* ⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ του `metron.lexilogio.v2` (σταθ. 16). Τρεις καταστάσεις,
+   τρεις προτάσεις — δεν διαβάστηκε · δεν ξεκίνησε · σήμερα (σταθ. 10/33). */
+function paintLexMini(){
+  var box = el('miniL'), C = window.LexCore; if (!box) return;
+  function say(t, s){ box.innerHTML = '<div class="t">' + esc(t) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : ''); }
+  if (!C){ say('Δεν φόρτωσε', 'Το lexilogio-core.js δεν έφτασε. Η πρόοδός σου δεν πειράχτηκε.'); return; }
+  var st = null;
+  try { st = JSON.parse(localStorage.getItem('metron.lexilogio.v2') || 'null'); } catch(e){ st = undefined; }
+  if (st === undefined || (st && (typeof st !== 'object' || st.v !== 2))){ say('Δεν διαβάστηκε', 'Η πρόοδος υπάρχει — δεν μπόρεσα να τη διαβάσω από αυτή τη συσκευή.'); return; }
+  fetch('data/lexilogio.json', { cache:'no-cache' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){
+      var ps = (st && st.pages) || {}, hard = (st && st.hard) || {}, today = C.toISO(new Date());
+      var pages = (d.pages || []).concat(st && Array.isArray(st.extra) ? st.extra : []).sort(function(a, b){ return a.n - b.n; });
+      var ids = {}; pages.forEach(function(p){ p.cards.forEach(function(c){ ids[c.id] = 1; }); });
+      var due = [], first = null, later = null;
+      pages.forEach(function(p){
+        var s = C.pageStatus(ps[p.id], today);
+        if (s.kind === 'due' || s.kind === 'waiting') due.push(p);
+        else if ((s.kind === 'learning' || s.kind === 'new') && !first) first = { p:p, s:s };
+        else if (s.kind === 'later' && (!later || s.inDays < later.s.inDays)) later = { p:p, s:s };
+      });
+      var hn = C.hardPendingToday(hard, today).filter(function(id){ return ids[id]; }).length;
+      var parts = due.map(function(p){ return 'Σελίδα ' + p.n; });
+      var NUMS = ['μία','δύο','τρεις','τέσσερις','πέντε','έξι','επτά','οκτώ','εννέα','δέκα'];   /* ίδια με τη σελίδα */
+      if (hn) parts.push((hn <= 10 ? NUMS[hn - 1] : hn) + (hn === 1 ? ' δύσκολη' : ' δύσκολες'));
+      if (first) parts.push(first.s.kind === 'learning' ? 'το υπόλοιπο της Σελίδας ' + first.p.n : 'η νέα Σελίδα ' + first.p.n);
+      if (!parts.length) return say('Για σήμερα είσαι εντάξει', later ? 'Επόμενη επανάληψη: Σελίδα ' + later.p.n + ', ' + C.whenText(today, later.s.next) + '.' : '');
+      var words = pages.reduce(function(a, p){ return a + p.cards.length; }, 0);
+      say('Σήμερα, ' + (parts.length > 1 ? parts.slice(0, -1).join(', ') + ' και ' + parts[parts.length - 1] : parts[0]) + '.',
+          pages.length + (pages.length === 1 ? ' σελίδα' : ' σελίδες') + ' · ' + words + ' λέξεις στο φυλλάδιο');
+    }, function(e){ say('Το φυλλάδιο δεν φόρτωσε', String(e && e.message || e) + ' — η πρόοδός σου δεν πειράχτηκε.'); });
+}
 
 /* ── εκκίνηση ───────────────────────────────────────────────────── */
 load();
