@@ -58,19 +58,18 @@ Object.assign(C, {
   epev: Wt(43, 'επέβαλε'), proer: Wt(43, 'προέρχεται'), kyv43: Wt(43, 'κυβέρνηση'), pleio43: Wt(43, 'πλειοψηφία'),
   saf44: Wt(44, 'σαφήνεια'), dioti: S(45), afton: Wt(45, 'αυτονόητο'),
   ofeile46: Wt(46, 'όφειλε'), entoli46: Wt(46, 'εντολή'), vouleft46: Wt(46, 'βουλευτή'), empist46: Wt(46, 'εμπιστοσύνη'), pleio46: Wt(46, 'πλειοψηφίας'),
-  rep47: S(47), entoli47: Wt(47, 'εντολή'), vouleft47: Wt(47, 'βουλευτή'), pleio47: Wt(47, 'πλειοψηφίας'),
-  georg48: S(48), ekmet: Wt(48, 'εκμεταλλεύτηκε'), asaf: Wt(48, 'ασάφεια'), dior49: Wt(49, 'διορίζει'), aresk: Wt(49, 'αρεσκείας'),
-  psif50: Wt(50, 'ψήφιση'), dedil50: Wt(50, 'δεδηλωμένης'), y1875: Wt(50, 'χίλια'),
-  idea: S(51), neo51: Wt(51, 'νέο'), trik51: Wt(51, 'Χαρίλαο'),
-  dimos52: Wt(52, 'δημόσια'), moni: Wt(52, 'μόνη'), asta52: Wt(52, 'αστάθειας'), dyo52: Wt(52, 'δύο'), exous52: Wt(52, 'εξουσίας'),
-  agl: Wt(53, 'Αγγλίας'), protyp: Wt(53, 'πρότυπο'),
-  dynat54: S(54), anath: Wt(55, 'αναθέτει'), entoli55: Wt(55, 'εντολή'), mono55: Wt(55, 'μόνο'),
-  mid55: mid(55, 'ο οποίος σαφώς'), safos: Wt(55, 'σαφώς'), dedil55: Wt(55, 'δεδηλωμένη'), pleio55: Wt(55, 'πλειοψηφίας'),
-  ster: Wt(56, 'στερούσε'), meio: Wt(56, 'μειοψηφίας'), dyn56: Wt(56, 'δυνατότητα'), kyv56: Wt(56, 'κυβέρνηση'),
-  oth: Wt(57, 'ωθούσε'), synen: Wt(57, 'συνένωση'), apotel: Wt(57, 'αποτέλεσμα'), stath57: Wt(57, 'σταθερότερες'),
-  vas58: S(58), piesi: Wt(59, 'πίεση'), antip: Wt(59, 'αντιπολίτευσης'), anavr: Wt(59, 'αναβρασμού'),
-  yiot: Wt(60, 'υιοθέτησε'), trik60: Wt(60, 'Τρικούπη'),
-  tomi: Wt(61, 'τομή'), istor: Wt(61, 'ιστορία'), metav: Wt(62, 'μεταβολή'), topio: Wt(62, 'τοπίου'),
+  georg48: S(47), ekmet: Wt(47, 'εκμεταλλεύτηκε'), asaf: Wt(47, 'ασάφεια'), dior49: Wt(48, 'διορίζει'), aresk: Wt(48, 'αρεσκείας'),
+  psif50: Wt(49, 'ψήφιση'), dedil50: Wt(49, 'δεδηλωμένης'), y1875: Wt(49, 'χίλια'),
+  idea: S(50), neo51: Wt(50, 'νέο'), trik51: Wt(50, 'Χαρίλαο'),
+  dimos52: Wt(51, 'δημόσια'), moni: Wt(51, 'μόνη'), asta52: Wt(51, 'αστάθειας'), dyo52: Wt(51, 'δύο'), exous52: Wt(51, 'εξουσίας'),
+  agl: Wt(52, 'Αγγλίας'), protyp: Wt(52, 'πρότυπο'),
+  dynat54: S(53), anath: Wt(54, 'αναθέτει'), entoli55: Wt(54, 'εντολή'), mono55: Wt(54, 'μόνο'),
+  mid55: mid(54, 'ο οποίος σαφώς'), safos: Wt(54, 'σαφώς'), dedil55: Wt(54, 'δεδηλωμένη'), pleio55: Wt(54, 'πλειοψηφίας'),
+  ster: Wt(55, 'στερούσε'), meio: Wt(55, 'μειοψηφίας'), dyn56: Wt(55, 'δυνατότητα'), kyv56: Wt(55, 'κυβέρνηση'),
+  oth: Wt(56, 'ωθούσε'), synen: Wt(56, 'συνένωση'), apotel: Wt(56, 'αποτέλεσμα'), stath57: Wt(56, 'σταθερότερες'),
+  vas58: S(57), piesi: Wt(58, 'πίεση'), antip: Wt(58, 'αντιπολίτευσης'), anavr: Wt(58, 'αναβρασμού'),
+  yiot: Wt(59, 'υιοθέτησε'), trik60: Wt(59, 'Τρικούπη'),
+  tomi: Wt(60, 'τομή'), istor: Wt(60, 'ιστορία'), metav: Wt(61, 'μεταβολή'), topio: Wt(61, 'τοπίου'),
   end: E(PH.length - 1),
 });
 const cut = i => i === 0 ? 0 : +(S(i) - .15).toFixed(2);
@@ -468,17 +467,8 @@ shot('S40', cut(46), cut(47), `<g id="S40-cam">${hall(-400, 3200, '#d2c09a', 880
   ${G('S40-bar', `<rect x="0" y="0" width="760" height="50" rx="25" fill="#efe4c9" ${st(6)}/><rect id="S40-fill" x="5" y="5" width="0" height="40" rx="20" fill="${YEL}"/><path d="M 380 -14 V 64" stroke="${INK}" stroke-width="6" stroke-dasharray="10 8"/>`, 1220, 300, 1, 'opacity="0"')}</g>${vign}
   ${T('S40-l', 'ΟΦΕΙΛΕ', 64, 120, 92, YEL, 'start', 14)}${T('S40-l2', 'ΕΝΤΟΛΗ ΣΧΗΜΑΤΙΣΜΟΥ ΚΥΒΕΡΝΗΣΗΣ', 960, 210, 72, '#fff', 'middle', 11)}${T('S40-l3', 'ΠΛΕΙΟΨΗΦΙΑ ΤΗΣ ΒΟΥΛΗΣ', 1380, 260, 70, YEL, 'middle', 11)}`);
 
-// S41 the same sentence again (the book repeats it) — the rule seen from above: the hemicycle
-const seats = Array.from({ length: 5 }, (_, r) => Array.from({ length: 9 + r * 2 }, (_, k) => { const n = 9 + r * 2, a = Math.PI * (1 - (k + .5) / n), R = 220 + r * 90; return [Math.cos(a) * R, -Math.sin(a) * R, k / (n - 1)]; })).flat();
-shot('S41', cut(47), cut(48), `<g id="S41-cam">${night('#2f3b4a')}${stars('S41')}
-  ${G('S41-hemi', seats.map(([x, y, f], i) => `<circle id="S41-s${i}" data-f="${f.toFixed(3)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="26" fill="#8a8f98" ${st(4)}/>`).join(''), 960, 800, 1)}
-  ${G('S41-cr', `<path d="M -66 0 L -76 -76 L -40 -38 L -20 -90 L 0 -44 L 20 -90 L 40 -38 L 76 -76 L 66 0 Q 0 -12 -66 0 Z" fill="#F2C14E" ${st(6)}/>`, 960, 860, .9)}
-  <path id="S41-arr" d="M 960 780 Q 820 560 640 470" fill="none" stroke="${YEL}" stroke-width="14" stroke-linecap="round" marker-end="url(#ah)" pathLength="1000" stroke-dasharray="1000 1000" stroke-dashoffset="1000"/>
-  ${G('S41-lead', dep('s41lead', 2, { arms: 'up', sash: [YEL] }), 640, 520, .36, 'opacity="0"')}${G('S41-rep', `<path d="M 40 -10 A 44 44 0 1 0 30 34" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"/><path d="M 22 -40 L 52 -8 L 12 4 Z" fill="#fff"/>`, 1800, 130, 1, 'opacity="0"')}</g>${vign}
-  ${T('S41-l', 'ΕΝΤΟΛΗ', 330, 330, 70, YEL, 'middle', 11)}${T('S41-l2', 'ΠΛΕΙΟΨΗΦΙΑ', 960, 160, 96, '#fff', 'middle', 14)}`);
-
 // S42 «εκμεταλλεύτηκε αυτήν την ασάφεια … κυβερνήσεις της αρεσκείας του»
-shot('S42', cut(48), cut(50), `<g id="S42-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
+shot('S42', cut(47), cut(49), `<g id="S42-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
   ${G('S42-fog', [-260, -90, 80, 250, -170, 160].map((x, i) => `<circle cx="${x}" cy="${i > 3 ? -110 : 0}" r="${130 + (i % 3) * 30}" fill="#e3e6ea" ${st(5)}/>`).join(''), 1300, 560, 1)}
   ${G('S42-g', CH.georgeI('s42g', { arms: 'hold' }), 520, 900, 1.05)}
   ${G('S42-ch', chair('#B8323A', 'ΚΥΒ.'), 860, 930, 1.05)}
@@ -487,19 +477,19 @@ shot('S42', cut(48), cut(50), `<g id="S42-cam">${hall(-400, W + 800, '#c9b0d0', 
   ${T('S42-l', 'ΑΣΑΦΕΙΑ', 1300, 250, 100, '#fff', 'middle', 15)}${T('S42-l2', 'ΤΗΣ ΑΡΕΣΚΕΙΑΣ ΤΟΥ', 64, 120, 80, YEL, 'start', 12)}`);
 
 // S43 «μέχρι την ψήφιση της αρχής της δεδηλωμένης το 1875» — the stamp
-shot('S43', cut(50), cut(51), `<g id="S43-cam">${night('#2f3b4a')}${stars('S43')}
+shot('S43', cut(49), cut(50), `<g id="S43-cam">${night('#2f3b4a')}${stars('S43')}
   ${G('S43-doc', `${paper(900, 560, '#fbf3dc')}${[0, 1, 2, 3, 4].map(i => `<path d="M -360 ${-180 + i * 80} H ${[360, 300, 360, 260, 340][i]}" stroke="#b9a877" stroke-width="16" stroke-linecap="round"/>`).join('')}`, 960, 600, 1)}
   ${G('S43-st', P.stamp('ΑΡΧΗ ΤΗΣ ΔΕΔΗΛΩΜΕΝΗΣ', '#C0392B', 860, 76), 960, 600, 1, 'opacity="0"')}</g>${vign}
   ${T('S43-d', '1875', 64, 130, 110, YEL, 'start', 15)}${T('S43-l', 'ΨΗΦΙΣΗ', 960, 220, 84, '#fff', 'middle', 13)}`);
 
 // S44 «Η ιδέα ανήκε στον νέο τότε πολιτικό Χαρίλαο Τρικούπη»
-shot('S44', cut(51), cut(52), `<g id="S44-cam">${skyW(-400, 2720, 880, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S44', [[300, 150, .9], [1600, 120, 1]])}
+shot('S44', cut(50), cut(51), `<g id="S44-cam">${skyW(-400, 2720, 880, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S44', [[300, 150, .9], [1600, 120, 1]])}
   ${G('S44-t', CH.trikoupis('s44t'), 960, 920, 1.3)}${G('S44-bulb', P.bulb(), 960, 330, 1.2, 'opacity="0"')}</g>${vign}
   ${T('S44-l', 'Η ΙΔΕΑ', 64, 120, 92, YEL, 'start', 14)}${T('S44-n', 'ΧΑΡΙΛΑΟΣ ΤΡΙΚΟΥΠΗΣ', 1440, 430, 80, '#fff', 'middle', 13)}${T('S44-l2', 'ΝΕΟΣ ΤΟΤΕ ΠΟΛΙΤΙΚΟΣ', 1440, 530, 56, YEL, 'middle', 9)}`);
 
 // S45 «υποστήριξε δημόσια … πολιτικής αστάθειας … δύο μεγάλων κομμάτων εξουσίας»
 const pillar = (s, c) => `<g><rect x="-110" y="-520" width="220" height="520" fill="${c}" ${st(7)}/>${[-60, 0, 60].map(x => `<path d="M ${x} -500 V -20" stroke="${INK}" stroke-width="4" opacity=".3"/>`).join('')}<rect x="-140" y="-560" width="280" height="50" rx="8" fill="#efe4c9" ${st(6)}/><rect x="-140" y="-20" width="280" height="40" rx="8" fill="#efe4c9" ${st(6)}/>${txt(s, 0, -260, 52, '#fff', 'middle', `stroke="${INK}" stroke-width="8" paint-order="stroke"`)}</g>`;
-shot('S45', cut(52), cut(53), `<g id="S45-cam">${hall(-400, 3200, '#d9c8a4', 880)}
+shot('S45', cut(51), cut(52), `<g id="S45-cam">${hall(-400, 3200, '#d9c8a4', 880)}
   ${G('S45-t', CH.trikoupis('s45t', { arms: 'hold' }), 420, 900, 1.05)}${G('S45-np', `<g transform="scale(.8)">${P.newspaper('ΕΦΗΜΕΡΙΣ')}</g>`, 560, 640, 1, 'opacity="0"')}
   ${Array.from({ length: 6 }, (_, i) => G(`S45-c${i}`, chair(['#8a5a32', '#6e4524', '#a87444', '#5a3a1e', '#8a5a32', '#6e4524'][i]), 950 + i * 130, 880, .62)).join('')}
   ${[0, 1].map(i => G(`S45-p${i}`, pillar('ΚΟΜΜΑ', ['#5d7aa8', '#b0563a'][i]), [1050, 1450][i], 880, 1, 'opacity="0"')).join('')}</g>${vign}
@@ -508,7 +498,7 @@ shot('S45', cut(52), cut(53), `<g id="S45-cam">${hall(-400, 3200, '#d9c8a4', 880
 // S46 «σύμφωνα με το πρότυπο της Αγγλίας» — John Bull before a Gothic hall with two facing benches
 const gothic = `<g><rect x="-420" y="-360" width="840" height="360" fill="#d9c49a" ${st(7)}/>${Array.from({ length: 7 }, (_, i) => `<path d="M ${-360 + i * 120} -40 V -260 Q ${-330 + i * 120} -310 ${-300 + i * 120} -260 V -40 Z" fill="#a8916a" ${st(4)}/>`).join('')}
   <rect x="300" y="-760" width="160" height="760" fill="#d9c49a" ${st(7)}/><path d="M 290 -760 L 380 -900 L 470 -760 Z" fill="#a8916a" ${st(6)}/><circle cx="380" cy="-640" r="54" fill="#fbf8f0" ${st(6)}/><path d="M 380 -640 V -676 M 380 -640 H 404" ${st(5)}/></g>`;
-shot('S46', cut(53), cut(54), `<g id="S46-cam">${skyW(-400, 2720, 880, '#b9cbd8', '#eef0ee', '#a9a48c')}${clouds('S46', [[300, 140, .9], [1500, 110, 1]])}
+shot('S46', cut(52), cut(53), `<g id="S46-cam">${skyW(-400, 2720, 880, '#b9cbd8', '#eef0ee', '#a9a48c')}${clouds('S46', [[300, 140, .9], [1500, 110, 1]])}
   ${G('S46-h', gothic, 1180, 880, .8)}${G('S46-fl', `<rect x="-5" y="-240" width="10" height="240" fill="#7a5232" ${st(4)}/><g transform="translate(5,-240)">${P.flag('uk', 120, 72)}</g>`, 920, 592, 1, 'opacity="0"')}
   ${G('S46-bA', `<rect x="-200" y="-60" width="400" height="60" rx="10" fill="#3e7a4a" ${st(6)}/>`, 600, 960, 1)}${G('S46-bB', `<rect x="-200" y="-60" width="400" height="60" rx="10" fill="#3e7a4a" ${st(6)}/>`, 1300, 960, 1)}
   ${G('S46-jb', P.johnbull('s46jb'), 380, 900, 1)}</g>${vign}
@@ -516,14 +506,14 @@ shot('S46', cut(53), cut(54), `<g id="S46-cam">${skyW(-400, 2720, 880, '#b9cbd8'
 
 // S47 «Για να καταστεί αυτό δυνατόν, έπρεπε ο βασιλιάς να αναθέτει την εντολή … μόνο σε πολιτικό»
 const gate = `<g><rect x="-30" y="-460" width="60" height="460" fill="#7a5232" ${st(6)}/><rect x="270" y="-460" width="60" height="460" fill="#7a5232" ${st(6)}/><rect x="-40" y="-500" width="380" height="60" rx="10" fill="#8a5a32" ${st(6)}/></g>`;
-shot('S47', cut(54), C.mid55, `<g id="S47-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
+shot('S47', cut(53), C.mid55, `<g id="S47-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
   ${G('S47-g', CH.georgeI('s47g', { arms: 'hold' }), 340, 900, 1)}${G('S47-env', envelope(), 450, 760, 1)}
   ${G('S47-gate', gate, 860, 880, 1)}${G('S47-door', `<rect x="0" y="-440" width="240" height="440" fill="#5a3a1e" ${st(6)}/>${Array.from({ length: 5 }, (_, i) => `<path d="M ${30 + i * 45} -430 V -10" stroke="#3a2a1e" stroke-width="10"/>`).join('')}`, 890, 880, 1)}
   ${[0, 1, 2].map(i => G(`S47-q${i}`, P.minister(`s47q${i}`), 1360 + i * 190, 900, .7)).join('')}</g>${vign}
   ${T('S47-l', 'ΑΝΑΘΕΤΕΙ ΤΗΝ ΕΝΤΟΛΗ', 960, 160, 88, '#fff', 'middle', 13)}${T('S47-l2', 'ΜΟΝΟ', 1050, 290, 72, YEL, 'middle', 12)}`);
 
 // S48 «ο οποίος σαφώς είχε τη «δεδηλωμένη» εμπιστοσύνη της πλειοψηφίας των βουλευτών» — hands go up, the bar passes half, the gate opens
-shot('S48', C.mid55, cut(56), `<g id="S48-cam">${hall(-400, W + 800, '#b9c9d6', 880)}
+shot('S48', C.mid55, cut(55), `<g id="S48-cam">${hall(-400, W + 800, '#b9c9d6', 880)}
   ${[0, 1, 2, 3, 4, 5, 6].map(i => G(`S48-d${i}`, dep(`s48d${i}`, i), 180 + i * 165, 930, .58) + G(`S48-u${i}`, dep(`s48u${i}`, i, { arms: 'up', start: 'happy' }), 180 + i * 165, 930, .58, 'opacity="0"')).join('')}
   ${G('S48-bar', `<rect x="0" y="0" width="760" height="54" rx="27" fill="#efe4c9" ${st(6)}/><rect id="S48-fill" x="5" y="5" width="0" height="44" rx="22" fill="${GRN}"/><path d="M 380 -16 V 70" stroke="${INK}" stroke-width="6" stroke-dasharray="10 8"/>`, 300, 380, 1)}
   ${G('S48-tk', tick(GRN, 70), 1150, 400, 1, 'opacity="0"')}
@@ -531,7 +521,7 @@ shot('S48', C.mid55, cut(56), `<g id="S48-cam">${hall(-400, W + 800, '#b9c9d6', 
   ${T('S48-l', '«ΔΕΔΗΛΩΜΕΝΗ» ΕΜΠΙΣΤΟΣΥΝΗ', 960, 160, 84, YEL, 'middle', 13)}${T('S48-l2', 'ΠΛΕΙΟΨΗΦΙΑ', 680, 340, 56, '#fff', 'middle', 9)}`);
 
 // S49 «θα στερούσε από τα κόμματα μειοψηφίας τη δυνατότητα να σχηματίζουν κυβέρνηση» — padlocked door
-shot('S49', cut(56), cut(57), `<g id="S49-cam">${hall(-400, W + 800, '#d6c2b9', 880)}
+shot('S49', cut(55), cut(56), `<g id="S49-cam">${hall(-400, W + 800, '#d6c2b9', 880)}
   ${G('S49-door', `<rect x="-170" y="-520" width="340" height="520" fill="#6e4524" ${st(7)}/><rect x="-140" y="-490" width="280" height="460" fill="#8a5a32" ${st(5)}/>${txt('ΚΥΒΕΡΝΗΣΗ', 0, -540, 56, '#fff', 'middle', `stroke="${INK}" stroke-width="8" paint-order="stroke"`)}`, 1300, 880, 1)}
   ${G('S49-lock', P.padlock(), 1300, 600, 1.1, 'opacity="0"')}
   ${[0, 1, 2].map(i => G(`S49-s${i}`, P.minister(`s49s${i}`, { sash: [['#5d7aa8', '#c9661f', '#3E9C94'][i]] }), 360 + i * 200, 900, .55)).join('')}
@@ -540,7 +530,7 @@ shot('S49', cut(56), cut(57), `<g id="S49-cam">${hall(-400, W + 800, '#d6c2b9', 
 
 // S50 «θα τα ωθούσε σε συνένωση με τα μεγάλα … σταθερότερες κυβερνήσεις πλειοψηφίας»
 const blob = (c, r) => `<circle r="${r}" fill="${c}" ${st(6)}/><circle cx="${-r * .3}" cy="${-r * .25}" r="${r * .12}" fill="${INK}"/><circle cx="${r * .3}" cy="${-r * .25}" r="${r * .12}" fill="${INK}"/><path d="M ${-r * .25} ${r * .2} Q 0 ${r * .4} ${r * .25} ${r * .2}" fill="none" stroke="${INK}" stroke-width="5"/>`;
-shot('S50', cut(57), cut(58), `<g id="S50-cam">${skyW(-400, 4000, 880, '#c9dde6', '#f3efe4', '#c9b98d')}
+shot('S50', cut(56), cut(57), `<g id="S50-cam">${skyW(-400, 4000, 880, '#c9dde6', '#f3efe4', '#c9b98d')}
   ${G('S50-A', blob('#5d7aa8', 170), 560, 700, 1)}${G('S50-B', blob('#b0563a', 170), 1360, 700, 1)}
   ${[0, 1, 2, 3].map(i => G(`S50-s${i}`, blob(['#3E9C94', '#c9661f', '#8a6a9a', '#e8a23b'][i], 60), [240, 860, 1060, 1680][i], 820, 1)).join('')}
   ${G('S50-tab', table('ΚΥΒΕΡΝΗΣΗ'), 2500, 880, 1.3)}${G('S50-tA', blob('#5d7aa8', 90), 2320, 760, 1)}${G('S50-tB', blob('#b0563a', 90), 2680, 760, 1)}</g>${vign}
@@ -548,7 +538,7 @@ shot('S50', cut(57), cut(58), `<g id="S50-cam">${skyW(-400, 4000, 880, '#c9dde6'
 
 // S51 «Ο βασιλιάς, υπό την πίεση της αντιπολίτευσης και του επαναστατικού αναβρασμού του λαού» — squeezed; the crowd boils
 const gauge = `<g><circle r="120" fill="#fbf8f0" ${st(8)}/><path d="M -90 40 A 100 100 0 1 1 90 40" fill="none" stroke="#e3d6b6" stroke-width="22"/><path d="M 40 -92 A 100 100 0 0 1 90 40" fill="none" stroke="${RED}" stroke-width="22"/><g id="S51-ndl"><path d="M 0 0 L 0 -96" stroke="${INK}" stroke-width="10" stroke-linecap="round"/></g><circle r="16" fill="${INK}"/></g>`;
-shot('S51', cut(58), cut(60), `<g id="S51-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
+shot('S51', cut(57), cut(59), `<g id="S51-cam">${hall(-400, W + 800, '#c9b0d0', 880)}
   ${G('S51-wl', `<rect x="-60" y="-640" width="120" height="640" fill="#7a7f88" ${st(7)}/>${txt('ΑΝΤΙΠΟΛΙΤΕΥΣΗ', 0, -300, 46, '#fff', 'middle', `transform="rotate(-90 0 -300)" stroke="${INK}" stroke-width="7" paint-order="stroke"`)}`, 420, 880, 1)}
   ${G('S51-pr', `<rect x="-16" y="-700" width="32" height="680" fill="#7a7f88" ${st(6)}/><rect x="-170" y="-30" width="340" height="44" rx="8" fill="#5e646c" ${st(6)}/>`, 760, 360, 1)}${G('S51-g', CH.georgeI('s51g'), 760, 900, 1.05)}
   ${G('S51-cau', `<path d="M -330 -260 L 330 -260 L 290 0 Q 0 40 -290 0 Z" fill="#3a3a40" ${st(8)}/>${[0, 1, 2, 3, 4].map(i => `<g transform="translate(${-240 + i * 120},-250)">${people(`s51p${i}`, i, { arms: 'up', start: 'angry' }).replace(/<g id="(s51p\d)"/, '<g id="$1" transform="scale(.55)"')}</g>`).join('')}<path d="M -330 -270 L 330 -270 L 320 -230 L -320 -230 Z" fill="#2a2a30" ${st(6)}/>`, 1450, 920, 1)}
@@ -557,14 +547,14 @@ shot('S51', cut(58), cut(60), `<g id="S51-cam">${hall(-400, W + 800, '#c9b0d0', 
   ${T('S51-l', 'ΠΙΕΣΗ', 64, 120, 92, RED, 'start', 14)}${T('S51-l2', 'ΑΝΑΒΡΑΣΜΟΣ ΤΟΥ ΛΑΟΥ', 1450, 300, 70, YEL, 'middle', 11)}`);
 
 // S52 «υιοθέτησε τελικά την άποψη του Τρικούπη»
-shot('S52', cut(60), cut(61), `<g id="S52-cam">${skyW(-400, 2720, 880, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S52', [[300, 140, .9], [1500, 110, 1]])}
+shot('S52', cut(59), cut(60), `<g id="S52-cam">${skyW(-400, 2720, 880, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S52', [[300, 140, .9], [1500, 110, 1]])}
   ${G('S52-g', CH.georgeI('s52g', { arms: 'hold' }), 600, 900, 1.1)}${G('S52-t', CH.trikoupis('s52t', { arms: 'hold', start: 'happy' }), 1340, 900, 1.1)}
   ${G('S52-pp', `${paper(260, 190, '#fbf3dc')}${txt('Η ΑΠΟΨΗ', 0, -30, 44, INK)}${txt('ΤΟΥ ΤΡΙΚΟΥΠΗ', 0, 30, 38, INK)}`, 1180, 560, 1)}
   ${G('S52-st', `${tick(GRN, 60)}`, 1320, 470, 1, 'opacity="0"')}</g>${vign}
   ${T('S52-l', 'ΥΙΟΘΕΤΗΣΕ', 960, 170, 110, YEL, 'middle', 15)}`);
 
 // S53 «τομή στην πολιτική ιστορία … μεταβολή του πολιτικού τοπίου» — the timeline is cut; the landscape changes; fade
-shot('S53', cut(61), C.end + 2.4, `<g id="S53-cam">${skyW(-400, 2720, 860, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S53', [[300, 140, .9], [1500, 110, 1]])}
+shot('S53', cut(60), C.end + 2.4, `<g id="S53-cam">${skyW(-400, 2720, 860, '#bfe0ea', '#f2f7f1', '#c9b98d')}${clouds('S53', [[300, 140, .9], [1500, 110, 1]])}
   ${G('S53-rib', `<g id="S53-ra"><rect x="-820" y="-34" width="820" height="68" rx="8" fill="${PAPER}" ${st(6)}/></g><g id="S53-rb"><rect x="0" y="-34" width="820" height="68" rx="8" fill="${PAPER}" ${st(6)}/></g>`, 960, 330, 1)}
   ${G('S53-sc', P.scissors(), 830, 330, 1)}
   ${Array.from({ length: 7 }, (_, i) => G(`S53-hl${i}`, `<path d="M -110 0 Q 0 -160 110 0 Z" fill="${['#9fbf6a', '#b98a5a', '#c9661f', '#8a6a9a', '#5d7aa8', '#e8a23b', '#3E9C94'][i]}" ${st(6)}/>`, 200 + i * 250, 870, 1)).join('')}

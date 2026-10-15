@@ -2,11 +2,11 @@
 Voice: Eleni (Alex's ElevenLabs file 15/10, 08_39_46), 286.7 s, made from voice.txt. hear.py: 5 blocks, all Whisper
 noise («Δ.» is read as a short initial — the book says «Δ. Γρίβα»). No cuts, no re-takes. 63 phrases (the initial «Δ.»
 no longer splits a phrase: align.py + subs.py fixed, see REVIEW.md Round 0).
-⚠️ The book repeats one sentence («ήταν ότι ο βασιλιάς όφειλε … της Βουλής.») — Alex keeps the book's typos, so the
-voice says it twice and the subtitles show it twice. The film answers the repetition with a DIFFERENT picture of the same
-rule (S39: the hemicycle), never with an invented word.
+⛔ als-v608: the e-book prints «ήταν ότι ο βασιλιάς όφειλε … της Βουλής.» TWICE; the printed book says it ONCE
+(Alex). Removed from page, book.txt, voice.txt; the second reading is CUT from the audio (voice_edits.json); S41 (the
+hemicycle) is gone. 62 phrases, 279.0 s.
 Book typos kept in the subtitles: «ποτ εκλέχθηκαν», «(υπό τον Δ. Γρίβα και τον με κοινό στόχο», the asterisks.
-Shots: 53 · no music · sparse SFX.
+Shots: 52 · no music · sparse SFX.
 
 ## Colour meaning in this episode
 - **ΠΕΔΙΝΟΙ** = GREEN `#7FAF4A` (the plain) — flags, sashes, the plain under Βούλγαρης.

@@ -47,3 +47,11 @@ Fixed:
 - Same-hall fatigue: S5/S14/S26/S48/S49 recoloured, S52 moved outdoors.
 Left: S11→S12 (continuation of one sentence, same soldiers by design), S27/S50 end states (motion carries them).
 check.mjs OK after the changes; targeted stills on every fixed shot: clean.
+
+## Round 3 — the repeated sentence goes (als-v608, Alex 15/10: «δεν το λέει διπλά»)
+- The e-book index2_3 prints «ήταν ότι ο βασιλιάς όφειλε … της Βουλής.» twice; the printed book once. Removed from
+  istoria-voithima.html (sic entry dropped, a test now asserts ONE occurrence), the grounding source, book.txt, voice.txt.
+- Audio: CUT [206.30, 216.22] of voice_source.mp3 (both points in digital silence, −87 dB; 0.48 s pause left) via
+  voice_edits.json → 276.7 s. Re-aligned: 62 phrases, VERBATIM OK.
+- scenes.mjs: phrase indices ≥48 shifted by −1 (one regex over Wt/S/E/cut/mid), the phrase-47 cues and S41 (hemicycle)
+  removed, 3 SFX removed. check.mjs OK, stills S40–S53 each on its own phrase, one full re-render.

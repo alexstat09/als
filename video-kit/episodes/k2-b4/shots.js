@@ -415,20 +415,6 @@ F.S40 = t => {
   slam('S40-l', t, C.ofeile46, { from: 2.2, rot: -4 }); slam('S40-l2', t, C.entoli46, { from: 1.8 }); fadeOut('S40-l2', t, C.empist46 - .4);
   slam('S40-l3', t, C.pleio46, { from: 2.2, rot: 3 });
 };
-F.S41 = t => {
-  const { a, b } = SH.S41; twinkle('S41', t);
-  cam('S41-cam', t, [[a, 960, 600, 1.12], [C.entoli47, 820, 560, 1.04], [C.vouleft47 + .5, 720, 520, 1.1], [C.pleio47, 960, 540, 1.0], [b, 960, 520, 1.04]]);
-  const N = D.seats || 0;
-  for (let i = 0; ; i++) {
-    const e = $('S41-s' + i); if (!e) break;
-    const f = +e.dataset.f, t0 = a + f * .35, lit = t > C.pleio47 - .8 + f * 1.2 && f < .62;
-    e.setAttribute('r', 26 * Math.max(0, eBack(P(t, t0, t0 + .3), 2)));
-    e.setAttribute('fill', lit ? YEL_ : (f < .62 && t > C.vouleft47 && Math.abs(f - .3) < .03 ? YEL_ : '#8a8f98'));
-  }
-  popIn('S41-cr', t, a); popIn('S41-lead', t, C.vouleft47); idle('s41lead', t, 0, 1.4); expr('s41lead', 'happy'); popIn('S41-rep', t, a + .1, { rot: -180 });
-  draw('S41-arr', t, C.entoli47, C.vouleft47 - C.entoli47 + .2);
-  slam('S41-l', t, C.entoli47, { from: 1.8 }); slam('S41-l2', t, C.pleio47, { from: 2.2, rot: -4 });
-};
 const YEL_ = '#FFD54A';
 F.S42 = t => {
   const { a, b } = SH.S42;
