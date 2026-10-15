@@ -75,6 +75,7 @@ Times in the JSON are SOURCE times. After any edit: `hear.py`, `check.mjs`, mix,
 | voice made from the PAGE: headings, «ψηφοφορίας10»→«δέκα», «vέους»→«βέους» (k2-b1) | voice_script.py flags FOOTNOTE?/LATIN LETTER; hear.py lists what the voice really says |
 | fixing one word meant hand-built ffmpeg graphs (and an mp3 padding error) | voice_edit.py + voice_edits.json: reproducible, one encode, via WAV |
 | a 0.9 s re-take is the newest download → would become the whole narration | voice.py skips < 30 s, refuses < ½ the text |
+| a background render hung forever after «frames done» (k2-b3, twice) | render.mjs passes `-nostdin` to ffmpeg: in a background job ffmpeg reading the keyboard gets stopped (SIGTTIN) |
 | Whisper venv lived in a session scratchpad | `~/.cache/video-kit-whisper` (one-time install in hear.py's header); hear.py re-execs into it |
 
 ## Permissions in this environment

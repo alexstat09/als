@@ -59,6 +59,10 @@ Then `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then
       Cues re-time for free; the film is re-rendered whole.
 
 ## Technical
+- [ ] **`put`/`fly` scale is RELATIVE to the G's own `data-s` (k2-b3).** `G('x', …, x, y, .32)` + `fly('x', …, { s: .32 })`
+      draws at .32×.32 ≈ 0.1 — newspapers, books and a sapling vanished. Pass `s`/`sx`/`sy` only as a change from the base.
+- [ ] **Phrase split (k2-b3):** a full stop glued to a capital («καταβολές.Οι») is a phrase end, «…» ends a phrase;
+      align.py/subs.py share the rule and subs.py writes `glue:''` so the verbatim guard rebuilds the missing space.
 - [ ] Every expression used exists for that character (venizelos/konstantinos lacked 'happy'/'sad' → blank eyes;
       runtime now falls back to 'neutral', but ADD the expression instead).
 - [ ] clipPaths/gradients used by more than one shot live in global defs (`extraDefs`), not inside a shot `<g>`

@@ -11,9 +11,18 @@ Writes <ep>/timing.json  {phrases, chunks}  — phrases keep the VOICE text (for
 import json, re, sys, os
 ep = sys.argv[1]
 ph = json.load(open(os.path.join(ep, 'phrases.json'), encoding='utf-8'))
-# an initial («Δ. Γρίβα», k2-b4) is not a phrase end — same rule in align.py, or book and voice drift apart
-split = lambda s: [p for p in re.split(r'(?<=[,.:;·!?])(?<![\s(][Α-ΩA-Z]\.)\s+', ' '.join(s.split())) if p.strip()]
-book = split(open(os.path.join(ep, 'book.txt'), encoding='utf-8').read())
+# an initial («Δ. Γρίβα», k2-b4) is not a phrase end; a full stop glued to a capital («καταβολές.Οι», k2-b3) IS one,
+# and «…» ends a phrase like «.» — same rule in align.py, or book and voice drift apart.
+SPLIT = r'(?<=[,.:;·!?…])(?<![\s(][Α-ΩA-Z]\.)\s+|(?<=[α-ωάέήίόύώϊϋΐΰςa-z]\.)(?=[Α-ΩΆΈΉΊΌΎΏA-Z])'
+def split(s, glue=None):
+    s, out, i = ' '.join(s.split()), [], 0
+    for m in re.finditer(SPLIT, s):
+        out.append((s[i:m.start()], ' ' if m.end() > m.start() else '')); i = m.end()
+    out = [x for x in out + [(s[i:], ' ')] if x[0].strip()]
+    if glue is not None: glue.extend(g for _, g in out)   # '' = the book prints no space after this phrase
+    return [p for p, _ in out]
+book_glue = []
+book = split(open(os.path.join(ep, 'book.txt'), encoding='utf-8').read(), book_glue)
 voice = split(open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read())
 repl = json.load(open(os.path.join(ep, 'replacements.json'), encoding='utf-8')) if os.path.exists(os.path.join(ep, 'replacements.json')) else []
 off = len(voice) - len(book)
@@ -37,7 +46,8 @@ for i, (p, b) in enumerate(zip(ph, book_ph)):
         cur['text'] += ' ' + b; cur['b'] = p['end']; cur['vs'] += syl(p['text'])
     else:
         cur = {'a': p['start'], 'b': p['end'], 'text': b, 'vs': syl(p['text']), 'title': i < off}; units.append(cur)
-chunks, is_title = [], []
+    cur['glue'] = book_glue[i - off] if i >= off else ' '
+chunks, is_title, glue = [], [], []
 for u in units:
     ws = u['text'].split(' '); n = max(1, -(-len(u['text']) // 84)); target = len(u['text']) / n; groups, g, acc = [], [], 0
     for w in ws:
@@ -45,10 +55,13 @@ for u in units:
         g.append(w); acc += len(w) + 1
     groups.append(g); tl = sum(len(' '.join(x)) for x in groups); t = u['a']
     for x in groups:
-        d = (u['b'] - u['a']) * len(' '.join(x)) / tl; chunks.append({'a': round(t, 2), 'b': round(t + d, 2), 'text': ' '.join(x)}); is_title.append(u['title']); t += d
+        d = (u['b'] - u['a']) * len(' '.join(x)) / tl; chunks.append({'a': round(t, 2), 'b': round(t + d, 2), 'text': ' '.join(x)}); is_title.append(u['title']); glue.append(' '); t += d
+    glue[-1] = u['glue']
+for c, g in zip(chunks, glue):
+    if g == '': c['glue'] = ''   # the book prints no space after this chunk («καταβολές.Οι», k2-b3) — check.mjs reads it
 json.dump({'phrases': ph, 'chunks': chunks}, open(os.path.join(ep, 'timing.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 for c in chunks: print(f"{c['a']:7.2f} {c['b']:7.2f}  {c['text']}")
 # Verbatim guard: the non-title chunks, joined, must be EXACTLY book.txt (whitespace-normalised).
-body = ' '.join(c['text'] for c, tt in zip(chunks, is_title) if not tt)
+body = ''.join(c['text'] + g for c, tt, g in zip(chunks, is_title, glue) if not tt).strip()
 want = ' '.join(open(os.path.join(ep, 'book.txt'), encoding='utf-8').read().split())
 print('VERBATIM OK' if body == want else f'⛔ SUBTITLES ≠ book.txt — first difference at char {next((k for k in range(min(len(body), len(want))) if body[k] != want[k]), min(len(body), len(want)))}')

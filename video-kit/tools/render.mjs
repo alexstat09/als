@@ -52,8 +52,10 @@ if (have < total) console.log(`NOTE: ${have}/${total} frames present (partial re
 const mix = path.join(ep, 'build/mix.wav');
 if (!args.includes('--no-encode') && have >= total && fs.existsSync(mix)) {
   const hq = path.join(ep, 'build/final_hq.mp4'), web = path.join(ep, 'build/final_web.mp4');
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(dir, 'f%05d.jpg'), '-i', mix, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', '-tune', 'animation', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', hq], { stdio: 'inherit' });
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', hq, '-c:v', 'libx264', '-crf', '26', '-preset', 'medium', '-tune', 'animation', '-maxrate', '2500k', '-bufsize', '5000k', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', web], { stdio: 'inherit' });
+  execFileSync('ffmpeg', ['-nostdin', '-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(dir, 'f%05d.jpg'), '-i', mix, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', '-tune', 'animation', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', hq], { stdio: 'inherit' });
+  execFileSync('ffmpeg', ['-nostdin', '-y', '-loglevel', 'error', '-i', hq, '-c:v', 'libx264', '-crf', '26', '-preset', 'medium', '-tune', 'animation', '-maxrate', '2500k', '-bufsize', '5000k', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', web], { stdio: 'inherit' });
+  // -nostdin: ffmpeg reads the keyboard; in a BACKGROUND job that stops the process (SIGTTIN) and the encode hangs
+  // forever after «frames done» (k2-b3 lost two 30/60-min runs to it).
   // what this encode was made FROM — ship.mjs refuses to publish it once the page or the mix has moved on
   const h = f => crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex');
   fs.writeFileSync(path.join(ep, 'build/final.stamp'), h(html) + ' ' + h(mix));

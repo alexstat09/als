@@ -130,3 +130,9 @@ export const georgeI = (id, extra = {}) => person({ id, coat: '#15213d', pants: 
 // και λευκό ψηλό κολάρο με μαύρο παπιγιόν. Χωρίς καπέλο (ο γενικός «πολιτικός» φοράει ψηλό καπέλο).
 export const trikoupis = (id, extra = {}) => person({ id, coat: '#1e2026', pants: '#1e2026', vest: '#f4efe4', hair: 'short', hairC: '#1d1a17', bigStache: true, faceC: '#1d1a17',
   chest: `<path d="M -14 -150 L 0 -142 L -14 -134 Z M 14 -150 L 0 -142 L 14 -134 Z" fill="#1d1a17"/>`, ...extra });
+// Αλέξανδρος Κουμουνδούρος (1815–1883), από τη Μάνη· εξέφρασε τα αιτήματα της «νέας γενιάς» (k2-b3). Πορτρέτο (Wikimedia
+// «Alexandros_Koumoundouros.png»): κοντά ΓΚΡΙΖΑ μαλλιά, μεγάλο ΛΕΥΚΟ μουστάκι + λευκή ΤΟΥΦΑ κάτω από τα χείλη, μαύρο σακάκι,
+// λευκό πουκάμισο, μαύρο παπιγιόν → ΣΗΜΑ: γκρίζα μαλλιά χωρίς καπέλο · λευκό μουστάκι + τούφα · παπιγιόν πάνω σε ΛΕΥΚΟ στήθος.
+// (Ο Βούλγαρης έχει κι αυτός λευκό μουστάκι, αλλά κόκκινο φέσι + τζουμπέ· ο Τρικούπης μαύρο μουστάκι + λευκό γιλέκο.)
+export const koumoundouros = (id, extra = {}) => person({ id, coat: '#24201e', pants: '#24201e', vest: '#fbf8f0', hair: 'short', hairC: '#a9a49b', bigStache: true, faceC: '#f4f1ea', tuft: true,
+  chest: `<path d="M -18 -152 L 0 -143 L -18 -134 Z M 18 -152 L 0 -143 L 18 -134 Z" fill="#1d1a17"/><circle cx="0" cy="-143" r="4" fill="#1d1a17"/>`, ...extra });

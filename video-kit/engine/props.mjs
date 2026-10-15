@@ -63,6 +63,7 @@ export function person(o) {
   if (o.face === 'goatee') face += `<path d="M -22 -176 Q -20 -130 0 -112 Q 20 -130 22 -176 Q 0 -168 -22 -176 Z" fill="${o.faceC ?? '#eee'}" ${st(lw * .7)}/>`;
   if (o.face === 'sideburns') face += `<path d="M -84 -232 q -6 40 18 54 l 8 -10 q -14 -18 -12 -44 Z M 84 -232 q 6 40 -18 54 l -8 -10 q 14 -18 12 -44 Z" fill="${o.faceC ?? '#b5651d'}" ${st(lw * .6)}/>`;
   if (o.beard) face += `<path d="M -64 -198 Q -62 -126 0 -110 Q 62 -126 64 -198 Q 52 -168 22 -164 Q 0 -162 -22 -164 Q -52 -168 -64 -198 Z" fill="${o.beardC ?? hairC}" ${st(lw * .7)}/>`;
+  if (o.tuft) face += `<path d="M -11 -170 Q -8 -146 0 -138 Q 8 -146 11 -170 Q 0 -164 -11 -170 Z" fill="${o.tuftC ?? o.faceC ?? '#eee'}" ${st(lw * .55)}/>`;   // small tuft under the lower lip (Κουμουνδούρος)
   if (o.bigStache) face += `<path d="M 0 -194 Q -26 -210 -56 -196 Q -78 -186 -72 -212 Q -84 -174 -48 -178 Q -18 -182 0 -188 Q 18 -182 48 -178 Q 84 -174 72 -212 Q 78 -186 56 -196 Q 26 -210 0 -194 Z" fill="${o.faceC ?? hairC}" ${st(lw * .6)}/>`;
   const brow = (l, r, w = 1.1) => `<path d="${l}" stroke="${INK}" stroke-width="${lw * w}" stroke-linecap="round" fill="none"/><path d="${r}" stroke="${INK}" stroke-width="${lw * w}" stroke-linecap="round" fill="none"/>`;
   const E = (n, inner) => `<g id="${id}-x-${n}" style="display:${(o.start ?? 'neutral') === n ? 'inline' : 'none'}">${inner}</g>`;
@@ -110,6 +111,7 @@ export const ukFlagPattern = `<pattern id="ukflag" width="60" height="36" patter
 export function flag(kind, w = 90, h = 60) {
   const r = `stroke="${INK}" stroke-width="3"`;
   if (kind === 'fr') return `<g><rect width="${w / 3}" height="${h}" fill="#0055A4"/><rect x="${w / 3}" width="${w / 3}" height="${h}" fill="#fff"/><rect x="${2 * w / 3}" width="${w / 3}" height="${h}" fill="#EF4135"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
+  if (kind === 'ru') return `<g><rect width="${w}" height="${h / 3}" fill="#fff"/><rect y="${h / 3}" width="${w}" height="${h / 3}" fill="#0039A6"/><rect y="${2 * h / 3}" width="${w}" height="${h / 3}" fill="#D52B1E"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;   // Russia (white-blue-red), k2-b3
   if (kind === 'uk') return `<g><rect width="60" height="36" fill="url(#ukflag)" transform="scale(${w / 60},${h / 36})"/><rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   if (kind === 'us') return `<g>${`<rect width="${w}" height="${h}" fill="#fff"/>` + Array.from({ length: 7 }, (_, i) => `<rect y="${2 * i * h / 13}" width="${w}" height="${h / 13}" fill="#B22234"/>`).join('')}<rect width="${w * .42}" height="${h * .54}" fill="#3C3B6E"/>${Array.from({ length: 9 }, (_, i) => `<circle cx="${6 + (i % 3) * 12}" cy="${6 + Math.floor(i / 3) * 10}" r="2.2" fill="#fff"/>`).join('')}<rect width="${w}" height="${h}" fill="none" ${r}/></g>`;
   // σημαία ξηράς 1822–1978: λευκός σταυρός σε μπλε (το 1843 τα κτίρια ξηράς ΔΕΝ ύψωναν τη ριγωτή ναυτική)

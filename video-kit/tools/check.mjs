@@ -69,7 +69,8 @@ late.length ? warn(`cues visible < 0.8 s — check each one with stills (bind th
 const T = JSON.parse(fs.readFileSync(path.join(ep, 'timing.json'), 'utf8'));
 const want = fs.readFileSync(path.join(ep, 'book.txt'), 'utf8').split(/\s+/).filter(Boolean).join(' ');
 const ch = T.chunks.map(c => c.text), k0 = ch.findIndex(c => want.startsWith(c));
-const body = k0 < 0 ? '' : ch.slice(k0).join(' ');
+// a chunk with glue:'' is followed by NO space in the book («καταβολές.Οι», k2-b3 — subs.py writes it)
+const body = k0 < 0 ? '' : ch.slice(k0).map((c, j) => c + (j < ch.length - k0 - 1 ? (T.chunks[k0 + j].glue ?? ' ') : '')).join('');
 if (body === want) console.log(`✓ subtitles == book.txt verbatim (${ch.length - k0} chunks after ${k0} title chunks)`);
 else { const i = [...want].findIndex((c, j) => body[j] !== c); no(`subtitles ≠ book.txt at char ${i}: «${body.slice(Math.max(0, i - 20), i + 30)}» vs «${want.slice(Math.max(0, i - 20), i + 30)}»`); }
 

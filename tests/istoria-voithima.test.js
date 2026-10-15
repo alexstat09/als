@@ -842,6 +842,16 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-b4.mp4' && k.video.poster === 'videos/istoria/k2-b4.jpg');
   ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
 }
+/* Κεφ.2 Β.3 · video-kit/episodes/k2-b3. num «3» → σήμανση «ΕΝΟΤΗΤΑ 3»· ΔΙΚΟΣ ΤΗΣ τίτλος, όχι της Β.4. */
+{
+  const r = boot('#/k2-b3/video'), V = r.painted['panel-video'] || '';
+  is('Κεφ.2 Β.3 · η καρτέλα «video» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  με <video controls preload="metadata" playsinline>, χωρίς autoplay', /<video controls preload="metadata" playsinline/.test(V) && !/autoplay/.test(V));
+  ok('  με τη ΔΙΚΗ ΤΗΣ σήμανση και τίτλο (όχι της Β.4)', V.includes('ΕΝΟΤΗΤΑ 3 · ANIMATION') && V.includes('Η «νέα γενιά» — σε εικόνες') && !V.includes('<h2 class="h2">Η Εθνοσυνέλευση'));   // η Β.4 είναι ΝΟΜΙΜΑ στο «Επόμενη ενότητα →»
+  const k = CHAPTERS.find(c => c.id === 'k2-b3');
+  ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-b3.mp4' && k.video.poster === 'videos/istoria/k2-b3.jpg');
+  ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
+}
 CHAPTERS.forEach(c => { if (c.video) ok('το βίντεο της ' + c.id + ' υπάρχει στο repo', fs.existsSync(path.join(ALS, c.video.src))); });
 
 /* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.
