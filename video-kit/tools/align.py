@@ -18,7 +18,8 @@ if '--db' in _a: NOISE_DB = float(_a[_a.index('--db') + 1])
 if '--pause' in _a: MIN_PAUSE = float(_a[_a.index('--pause') + 1])
 DRY = '--dry' in _a
 text = open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read()
-phr = [p for p in re.split(r'(?<=[,.:;·!?])\s+', ' '.join(text.split())) if p.strip()]
+# an initial («Δ. Γρίβα», k2-b4) is not a phrase end — same rule in subs.py
+phr = [p for p in re.split(r'(?<=[,.:;·!?])(?<![\s(][Α-ΩA-Z]\.)\s+', ' '.join(text.split())) if p.strip()]
 vow = re.compile(r'(αι|ει|οι|υι|ου|αυ|ευ|ηυ|[αεηιουωάέήίόύώϊϋΐΰ])', re.I)
 syl = [max(1, len(vow.findall(p))) for p in phr]
 audio = os.path.join(ep, 'voice.mp3')

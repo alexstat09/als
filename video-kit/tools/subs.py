@@ -11,7 +11,8 @@ Writes <ep>/timing.json  {phrases, chunks}  — phrases keep the VOICE text (for
 import json, re, sys, os
 ep = sys.argv[1]
 ph = json.load(open(os.path.join(ep, 'phrases.json'), encoding='utf-8'))
-split = lambda s: [p for p in re.split(r'(?<=[,.:;·!?])\s+', ' '.join(s.split())) if p.strip()]
+# an initial («Δ. Γρίβα», k2-b4) is not a phrase end — same rule in align.py, or book and voice drift apart
+split = lambda s: [p for p in re.split(r'(?<=[,.:;·!?])(?<![\s(][Α-ΩA-Z]\.)\s+', ' '.join(s.split())) if p.strip()]
 book = split(open(os.path.join(ep, 'book.txt'), encoding='utf-8').read())
 voice = split(open(os.path.join(ep, 'voice.txt'), encoding='utf-8').read())
 repl = json.load(open(os.path.join(ep, 'replacements.json'), encoding='utf-8')) if os.path.exists(os.path.join(ep, 'replacements.json')) else []

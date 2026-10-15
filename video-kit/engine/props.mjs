@@ -362,3 +362,20 @@ export function decree(title = 'ΔΙΑΤΑΓΜΑ', pre = 'dc', paper = '#F1E2BC'
   <path id="${pre}-sig2" d="M 10 150 q 16 -26 34 0 q 16 26 34 -8 q 12 -16 26 2" fill="none" stroke="#2b4a8b" stroke-width="6" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000 1000" stroke-dashoffset="1000"/>
   <g id="${pre}-seal" data-x="110" data-y="120" data-s="1" transform="translate(110,120)"><circle r="38" fill="#c0392b" ${st(5)}/><circle r="24" fill="none" stroke="#f2c14e" stroke-width="5"/></g></g>`;
 }
+
+/* ---------- props added for k2-b4 (η Εθνοσυνέλευση 1862-64) ---------- */
+// κάλπη με σφαιρίδια (Σύνταγμα 1864): μία τσίγκινη κάλπη ΑΝΑ ΥΠΟΨΗΦΙΟ, χωρισμένη στα δύο — δεξιά ΛΕΥΚΟ «ΝΑΙ», αριστερά ΜΑΥΡΟ «ΟΧΙ».
+// Ο ψηφοφόρος έβαζε το χέρι στον ΣΩΛΗΝΑ (κανείς δεν έβλεπε πού άφηνε το μολυβένιο σφαιρίδιο) → μυστική ψήφος. Origin bottom-centre.
+export function ballBox(pre = 'bb') {
+  return `<g><rect x="-170" y="-250" width="340" height="250" rx="14" fill="#aab3bd" ${st(6)}/>
+   <rect x="-150" y="-200" width="140" height="180" rx="8" fill="#22252b" ${st(4)}/><rect x="10" y="-200" width="140" height="180" rx="8" fill="#fbf8f0" ${st(4)}/>
+   <text x="-80" y="-96" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="54" fill="#fbf8f0">ΟΧΙ</text>
+   <text x="80" y="-96" text-anchor="middle" font-family="Fira Sans Extra Condensed" font-weight="900" font-size="54" fill="${INK}">ΝΑΙ</text>
+   <path d="M -60 -250 Q -60 -330 0 -340 Q 60 -330 60 -250 Z" fill="#9aa3ad" ${st(6)}/>
+   <path d="M -36 -330 L -50 -440 L 50 -440 L 36 -330 Z" fill="#c4cbd3" ${st(6)}/><ellipse cx="0" cy="-440" rx="50" ry="14" fill="#2a2d33" ${st(5)}/>
+   <circle id="${pre}-ball" cx="0" cy="-470" r="14" fill="#6e747c" ${st(4)}/></g>`;
+}
+// φτυάρι (το «υπονόμευε»): origin = the handle top
+export function shovel() {
+  return `<g><rect x="-7" y="0" width="14" height="220" rx="6" fill="#8a6a46" ${st(5)}/><path d="M -46 210 L 46 210 L 40 290 Q 0 320 -40 290 Z" fill="#9aa1aa" ${st(5)}/></g>`;
+}

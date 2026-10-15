@@ -105,3 +105,28 @@ export function konstantinos(opts = {}) {
    </g>
   </g>`;
 }
+
+/* ---------- named people of Κεφ.2 Β.4 (k2-b4, η Εθνοσυνέλευση 1862-64) — ONE design per person, registry: engine/CAST.md ----------
+   Built on props.person() (same chibi proportions + all 8 expressions). ⛔ Never draw these people with P.person({...})
+   by hand in an episode: call these, so every video shows the SAME face for the same man (PLAN-K2 «ένα σχέδιο = ένα πρόσωπο»). */
+import { person } from './props.mjs';
+const INK_ = '#1d1a17';
+const epaulettes = (c = '#E8B83A') => `<path d="M -66 -160 Q -50 -176 -28 -164 L -34 -148 Q -52 -152 -66 -144 Z M 66 -160 Q 50 -176 28 -164 L 34 -148 Q 52 -152 66 -144 Z" fill="${c}" stroke="${INK_}" stroke-width="3.5"/>${[-58, -48, -38, 38, 48, 58].map(x => `<path d="M ${x} -146 v 12" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`).join('')}`;
+const buttons = (c = '#E8B83A') => [-140, -118, -96, -74].map(y => `<circle cx="0" cy="${y}" r="5" fill="${c}" stroke="${INK_}" stroke-width="2.5"/>`).join('');
+const sabre = `<g transform="translate(-58,-70) rotate(14)"><rect x="-4" y="0" width="8" height="120" rx="4" fill="#c9ccd2" stroke="${INK_}" stroke-width="3.5"/><path d="M -14 0 L 14 0" stroke="#D8A93B" stroke-width="8" stroke-linecap="round"/></g>`;
+// Δημήτριος Βούλγαρης (1802–1877), Υδραίος, ηγέτης των πεδινών. Τον έλεγαν «Τζουμπέ» γιατί φορούσε πάντα τον τζουμπέ
+// (μακρύ ανατολίτικο πανωφόρι ως τον αστράγαλο) → ΣΗΜΑ: σκούρος τζουμπές με γούνινη μπορντούρα + κόκκινο φέσι + λευκό μεγάλο μουστάκι.
+export const voulgaris = (id, extra = {}) => person({ id, coat: '#3b2b4a', sleeveC: '#3b2b4a', legs: 'robe', robeC: '#3b2b4a', trimC: '#d9c7a0', vest: '#d9c7a0', hat: 'fesi', hatC: '#b8322a', bigStache: true, faceC: '#f1eee8', hairC: '#e8e4dc', ...extra });
+// Δημήτριος Γρίβας (1829–1889), αξιωματικός, από τους ηγέτες των ορεινών → ΣΗΜΑ: στολή αξιωματικού με ΧΡΥΣΕΣ ΕΠΩΜΙΔΕΣ +
+// κόκκινη ζώνη + σπαθί + μαύρο μεγάλο μουστάκι (οι απλοί στρατιώτες του επεισοδίου δεν έχουν ούτε επωμίδες ούτε σπαθί).
+export const grivas = (id, extra = {}) => person({ id, coat: '#1f2f52', pants: '#d8d2c4', hat: 'kepi', hatC: '#1d2a44', bigStache: true, faceC: '#1d1a17', hairC: '#1d1a17', sash: ['#B8323A'], chest: epaulettes() + buttons(), prop: sabre, ...extra });
+// Επαμεινώνδας Δεληγιώργης (1829–1879), Εθνικόν Κομιτάτον, δυτικοντυμένος → ΣΗΜΑ: πυκνά ΜΑΥΡΑ ΓΕΝΙΑ + φαλάκρα με πλαϊνά μαλλιά + μαύρο φουλάρι.
+export const deligiorgis = (id, extra = {}) => person({ id, coat: '#2c3340', pants: '#2c3340', vest: '#c9c1b0', hair: 'side', hairC: '#1d1a17', beard: true, beardC: '#1d1a17', face: 'stache', faceC: '#1d1a17',
+  chest: `<path d="M -16 -158 L 16 -158 L 10 -136 L -10 -136 Z" fill="#1d1a17"/>`, ...extra });
+// Γεώργιος Α΄ (βασ. 1863–1913), ήρθε 17 χρονών· Δανός πρίγκιπας με ναυτική εκπαίδευση → ΣΗΜΑ: στέμμα + ΞΑΝΘΑ μαλλιά/μουστάκι +
+// ναυτική μπλε στολή με επωμίδες και γαλανόλευκη ταινία. (Ο Όθων = στέμμα + ΦΟΥΣΤΑΝΕΛΑ + καστανό μουστάκι — δεν μοιάζουν.)
+export const georgeI = (id, extra = {}) => person({ id, coat: '#15213d', pants: '#f4efe4', hat: 'crown', hair: 'short', hairC: '#d9b066', face: 'stache', faceC: '#d9b066', sash: ['#5D8BD0', '#ffffff'], chest: epaulettes() + buttons(), ...extra });
+// Χαρίλαος Τρικούπης (1832–1896), «η αρχή της δεδηλωμένης» → ΣΗΜΑ: ΜΑΥΡΟ ΠΑΧΥ ΜΟΥΣΤΑΚΙ χωρίς γένια + μαύρη ρεντιγκότα με λευκό γιλέκο
+// και λευκό ψηλό κολάρο με μαύρο παπιγιόν. Χωρίς καπέλο (ο γενικός «πολιτικός» φοράει ψηλό καπέλο).
+export const trikoupis = (id, extra = {}) => person({ id, coat: '#1e2026', pants: '#1e2026', vest: '#f4efe4', hair: 'short', hairC: '#1d1a17', bigStache: true, faceC: '#1d1a17',
+  chest: `<path d="M -14 -150 L 0 -142 L -14 -134 Z M 14 -150 L 0 -142 L 14 -134 Z" fill="#1d1a17"/>`, ...extra });

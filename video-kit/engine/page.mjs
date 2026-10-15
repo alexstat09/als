@@ -5,6 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { fontCSS } from './render.mjs';
 import { venizelos, konstantinos } from './chars.mjs';
+import * as CH from './chars.mjs';
+export { CH };
 import * as P from './props.mjs';
 export { P };
 

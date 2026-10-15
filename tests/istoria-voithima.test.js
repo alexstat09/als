@@ -832,6 +832,16 @@ ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδ
   ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-b1.mp4' && k.video.poster === 'videos/istoria/k2-b1.jpg');
   ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
 }
+/* Κεφ.2 Β.4 · video-kit/episodes/k2-b4. num «4» → σήμανση «ΕΝΟΤΗΤΑ 4»· ΔΙΚΟΣ ΤΗΣ τίτλος, όχι της Β.1. */
+{
+  const r = boot('#/k2-b4/video'), V = r.painted['panel-video'] || '';
+  is('Κεφ.2 Β.4 · η καρτέλα «video» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  με <video controls preload="metadata" playsinline>, χωρίς autoplay', /<video controls preload="metadata" playsinline/.test(V) && !/autoplay/.test(V));
+  ok('  με τη ΔΙΚΗ ΤΗΣ σήμανση και τίτλο (όχι της Β.1)', V.includes('ΕΝΟΤΗΤΑ 4 · ANIMATION') && V.includes('Η Εθνοσυνέλευση του 1862-1864 — σε εικόνες') && !V.includes('Το σύνταγμα του 1844'));
+  const k = CHAPTERS.find(c => c.id === 'k2-b4');
+  ok('  δείχνει το δικό της αρχείο', k.video && k.video.src === 'videos/istoria/k2-b4.mp4' && k.video.poster === 'videos/istoria/k2-b4.jpg');
+  ok('  και το αρχείο + η αφίσα υπάρχουν', k.video && fs.existsSync(path.join(ALS, k.video.src)) && fs.existsSync(path.join(ALS, k.video.poster)));
+}
 CHAPTERS.forEach(c => { if (c.video) ok('το βίντεο της ' + c.id + ' υπάρχει στο repo', fs.existsSync(path.join(ALS, c.video.src))); });
 
 /* ⭐⭐ ΚΑΙ Η ΝΕΑ ΕΝΟΤΗΤΑ ΖΩΓΡΑΦΙΖΕΙ ΜΕ ΤΑ ΔΙΚΑ ΤΗΣ ΣΗΜΑΔΙΑ.

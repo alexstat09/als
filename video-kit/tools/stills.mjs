@@ -1,6 +1,8 @@
 // QA: render stills at given times + one contact sheet you can LOOK at (always do this before a full render).
 //   node tools/stills.mjs episodes/<ep> 8 13 19.5 44 ...        (times in seconds)
 //   node tools/stills.mjs episodes/<ep> --every 3                (one still every 3 s over the whole video)
+//   node tools/stills.mjs episodes/<ep> --shots S1-S27 [--at -.6] (one still PER SHOT, 0.6 s before its cut = everything landed;
+//        k2-b4: a --every 20 sheet saw 15 of 53 shots — this sees all of them, two sheets of ~27)
 // Output: <ep>/build/stills/t0008.00.jpg ... and <ep>/build/stills/sheet.jpg (labelled grid)
 import { chromium } from 'playwright';
 import { execFileSync } from 'child_process';
@@ -12,6 +14,13 @@ execFileSync('node', [path.join(ep, 'scenes.mjs')], { stdio: 'inherit' });
 const cues = JSON.parse(fs.readFileSync(path.join(ep, 'build/cues.json')));
 let times = rest.map(Number);
 if (rest[0] === '--every') { const s = Number(rest[1]); times = []; for (let t = 0.5; t < cues.DUR; t += s) times.push(+t.toFixed(2)); }
+if (rest[0] === '--shots') {   // shot bounds come from the built page (D.shots), labels say which shot
+  const html = fs.readFileSync(path.join(ep, 'build/video.html'), 'utf8');
+  const shots = [...html.matchAll(/"id":"(S\d+)","a":([\d.]+),"b":([\d.]+)/g)].map(m => [m[1], +m[2], +m[3]]);
+  const [lo, hi] = (rest[1] || 'S1-S999').split('-').map(s => +s.replace('S', '')); const at = rest.includes('--at') ? +rest[rest.indexOf('--at') + 1] : -.6;
+  if (!shots.length) throw new Error('no D.shots found in build/video.html');
+  times = shots.filter(([id]) => { const n = +id.slice(1); return n >= lo && n <= hi; }).map(([, a, b]) => +(at < 0 ? b + at : a + at).toFixed(2));
+}
 const dir = path.join(ep, 'build/stills'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
