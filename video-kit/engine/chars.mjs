@@ -136,3 +136,12 @@ export const trikoupis = (id, extra = {}) => person({ id, coat: '#1e2026', pants
 // (Ο Βούλγαρης έχει κι αυτός λευκό μουστάκι, αλλά κόκκινο φέσι + τζουμπέ· ο Τρικούπης μαύρο μουστάκι + λευκό γιλέκο.)
 export const koumoundouros = (id, extra = {}) => person({ id, coat: '#24201e', pants: '#24201e', vest: '#fbf8f0', hair: 'short', hairC: '#a9a49b', bigStache: true, faceC: '#f4f1ea', tuft: true,
   chest: `<path d="M -18 -152 L 0 -143 L -18 -134 Z M 18 -152 L 0 -143 L 18 -134 Z" fill="#1d1a17"/><circle cx="0" cy="-143" r="4" fill="#1d1a17"/>`, ...extra });
+// Ιωάννης Κωλέττης (1773–1847), αρχηγός του γαλλικού κόμματος. Πορτρέτα: «Ioannis_Kolettis.JPG» (ελαιογραφία) και
+// «Ioannis Kolettis in Paris, 1842» (φωτογραφία) → μαύρα σγουρά μαλλιά, ΜΕΓΑΛΟ ΜΑΥΡΟ στριφτό μουστάκι, μπορντό ΓΟΥΝΙΝΗ κάπα
+// πάνω από φουστανέλα, λευκή-κόκκινη ταινία παρασήμου με αστέρι. ⚠️ Στην ελαιογραφία φοράει ΚΟΚΚΙΝΟ φέσι, αλλά το κόκκινο φέσι
+// είναι σήμα του Βούλγαρη (CAST.md) → παίρνει το ΜΑΥΡΟ ψηλό φέσι της φωτογραφίας του 1842.
+// ΣΗΜΑ: μαύρο φέσι · μαύρο μεγάλο μουστάκι · μπορντό κάπα με γούνα πάνω σε φουστανέλα. (Γρίβας: μαύρο μουστάκι αλλά κεπί + στολή·
+// Όθων: φουστανέλα αλλά στέμμα + μπλε.)
+export const kolettis = (id, extra = {}) => person({ id, coat: '#6b1f2a', sleeveC: '#6b1f2a', vest: '#efe2c4', legs: 'fustanella', hat: 'fesi', hatC: '#1d1a17', tasselC: '#1d1a17',
+  hair: 'short', hairC: '#1d1a17', bigStache: true, faceC: '#1d1a17', sash: ['#f4efe4', '#B8323A'],
+  chest: `<path d="M -46 -156 Q -62 -110 -56 -56 L -40 -56 Q -46 -108 -32 -154 Z M 46 -156 Q 62 -110 56 -56 L 40 -56 Q 46 -108 32 -154 Z" fill="#8a6a46" stroke="${INK_}" stroke-width="3"/><path d="M -22 -112 l 4 9 l 10 1 l -8 6 l 3 10 l -9 -6 l -9 6 l 3 -10 l -8 -6 l 10 -1 Z" fill="#E8B83A" stroke="${INK_}" stroke-width="2.5"/>`, ...extra });

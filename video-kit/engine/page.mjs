@@ -29,7 +29,16 @@ export function cueTools(timingPath) {
     const pre = p.text.slice(0, after ? k + sub.length : k);
     return +(p.start + (p.end - p.start) * ((pre.trim() ? syl(pre) : 0) / syl(p.text))).toFixed(2);
   }
-  return { timing, PH, S, E, Wt };
+  // k2-b2: a phrase whose numbers are read as words («(1844-1864)» → eight words) makes one syllable ruler over the whole
+  // phrase drift ~2 s. CK(prefix) = the ALIGNED start of the subtitle chunk that starts with prefix; Wr = Wt measured only
+  // inside the text span [from, to) of phrase i, between times ta → tb (e.g. S(i) → CK(..) and CK(..) → E(i)).
+  const CK = p => { const c = timing.chunks.find(c => c.text.startsWith(p)); if (!c) throw new Error('no chunk starts with: ' + p); return c.a; };
+  function Wr(i, sub, from, to, ta, tb) {
+    const tx = PH[i].text, seg = tx.slice(from ? tx.indexOf(from) : 0, to ? tx.indexOf(to) : tx.length), k = seg.indexOf(sub);
+    if (k < 0) throw new Error(`cue word not found in span of phrase ${i}: "${sub}"`);
+    return +(ta + (tb - ta) * ((seg.slice(0, k).trim() ? syl(seg.slice(0, k)) : 0) / syl(seg))).toFixed(2);
+  }
+  return { timing, PH, S, E, Wt, CK, Wr };
 }
 
 /* ---------- element builders ---------- */

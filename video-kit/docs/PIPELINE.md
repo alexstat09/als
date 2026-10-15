@@ -76,6 +76,7 @@ Times in the JSON are SOURCE times. After any edit: `hear.py`, `check.mjs`, mix,
 | fixing one word meant hand-built ffmpeg graphs (and an mp3 padding error) | voice_edit.py + voice_edits.json: reproducible, one encode, via WAV |
 | a 0.9 s re-take is the newest download → would become the whole narration | voice.py skips < 30 s, refuses < ½ the text |
 | a background render hung forever after «frames done» (k2-b3, twice) | render.mjs passes `-nostdin` to ffmpeg: in a background job ffmpeg reading the keyboard gets stopped (SIGTTIN) |
+| numbers read as words («(1844-1864)» = 8 spoken words) pushed every later `Wt` cue in that phrase ~2 s late (k2-b2) | `cueTools` → `CK(prefix)` (aligned chunk start) + `Wr(i, w, from, to, ta, tb)` (Wt inside one span) |
 | Whisper venv lived in a session scratchpad | `~/.cache/video-kit-whisper` (one-time install in hear.py's header); hear.py re-execs into it |
 
 ## Permissions in this environment
