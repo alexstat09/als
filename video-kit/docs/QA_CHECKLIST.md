@@ -85,3 +85,18 @@ Then `node tools/stills.mjs episodes/<ep> --every 3` and LOOK at sheet.jpg; then
 - [ ] No background music (Alex's choice). Never use files named *preview*/*-pr* (they contain spoken watermarks).
 - [ ] ≤ ~1 SFX per 4 s; no SFX on top of an important spoken number/term.
 - [ ] Final loudness −16 LUFS (mix.py does it); listen-check requested from Alex (Claude cannot hear).
+
+## Recurring reviewer findings — check WHILE WRITING, before the first sheet (k2-b1/b3/b4/b2 all repeated them)
+- [ ] **First frame never empty:** main character + key prop exist at the cut; a tag/label only after its owner lands;
+      use a short drop (k2-b2 `dropQ`: 600 px / 0.26 s); things that «build» (bars, timelines) start at `a+.3`.
+- [ ] **Camera at `a`:** zoom > 1.0 crops props near the edges — start at s ≤ 1.0 if anything matters beyond x≈300/1620;
+      at the end of a pan every countable thing (7 doors) is fully in frame.
+- [ ] **A cut inside a phrase (`mid(i,w)`) lands ≥ 1 s after the shot's LAST beat** (incl. its +.1/+.15 slams) — check.mjs
+      only sees the cue itself.
+- [ ] **New named person → re-check every generic of the episode by SILHOUETTE**, not colour (armatolos = Κωλέττης).
+- [ ] **Labels agree with the sentence** (gender/case: «αδύνατο τον έλεγχο» → ΑΔΥΝΑΤΟ).
+- [ ] **A special object inside a positional loop** (the «empty» seat) — remove its x from the loop.
+- [ ] **Rotations about a base** (falling flag): the cloth hangs below the pole → small angle, stays out of the subtitle band.
+- [ ] **No placeholder labels**, and no second `stroke-dasharray` in `line()`'s `extra`.
+- [ ] **Numbers spoken as words** in a phrase → compare `cues.json` with `timing.chunks[].a`; use `CK`/`Wr` (page.mjs).
+- [ ] **No portrait, no person:** an unverified name (Πατσίφικο) becomes a symbol (dossier), never a face.
