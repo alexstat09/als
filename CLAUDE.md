@@ -186,6 +186,38 @@ Supabase table `app_state`, primary key **`(user_id, key)`**.
   flag or nowhere at all, and "I have not read it yet" must never be resolved
   into "there is nothing here" — constraint 10 with a write on the end.
 
+### Navigation & page transitions (als-v616 → v623, settled — he said «τέλεια»)
+- ⭐ **ONE exit to the Κέντρο, everywhere.** Every page opened from School Studies wears
+  `<a class="kx-exit" href="homework.html" aria-label="Πίσω στο School Studies">School Studies</a>`,
+  styled ONLY by `kentro-exit.css` (1px hairline surface, arrow in its own cell via
+  `::before`, 40px tall). Pages: `arxaia.html` (both worlds) · `arxaia-agnosto.html` ·
+  `istoria-voithima.html` · `istoria.html` · `latinika.html` · `ekthesi.html` · `ergasies.html`.
+  ⛔ Pack/text pages (lectio, Γνωστό packs, λεξιλόγιο) go back to their PARENT, not the
+  Κέντρο — pack back links point at `arxaia.html#gn` (bare `arxaia.html` lands in Άγνωστος).
+  A new Κέντρο page = add the link + `<link rel="stylesheet" href="kentro-exit.css">` in `<head>`
+  (+ `kentro-exit.js` if it has no `topbar.js`). Never restyle it per page.
+- **Back motion is a BACK.** `ALSTopbar.goBack(href)` (topbar.js) plays the reverse motion;
+  topbar's Back, the kx-exit (intercepted in topbar / `kentro-exit.js`) and `arxaia.html`'s
+  capture-handler (Back from Αρχαία → Κέντρο, or lesson → list) all route through it.
+- ⭐ **Cross-document View Transitions** do the page-to-page motion (Chrome 126+/Safari 18.2+;
+  older → topbar's own fade). The VT block lives in **static CSS** (`aurora.css` AND
+  `kentro-exit.css`, byte-identical — `tests/page-transition.test.js`), because the opt-in must
+  exist BEFORE first paint; `topbar.js` is `defer` and would be too late. Tuned to his taste:
+  old .62s / new .78s with 60ms overlap, soft curves, 5px movement, `.topbar` held still
+  (`view-transition-name: als-topbar`).
+  - Under VT topbar navigates IMMEDIATELY (its own fade would turn the old snapshot black) —
+    EXCEPT to pages in `NO_VT` (pages with no aurora/kentro-exit CSS), which keep the fade.
+    The test fails if a new page neither opts in nor is listed.
+  - ⛔⛔ **Never suppress body's entrance with `:active-view-transition`** — it stops matching
+    when the transition ends and `_tbIn` then starts from opacity 0 (page appears twice). Use the
+    permanent `html.vt-in`, set BEFORE topbar's CSS exists; set `vt-back` ONLY inside
+    `pagereveal` (later = the running animation restarts).
+- **Google Calendar must never pop a sign-in by itself.** `gcal.js` keeps the access token in
+  **sessionStorage** (`gcal:tok`, ⛔ never localStorage — sync.js watches that), skips silent
+  refresh when events are <15′ old, and backs off 6h after a FAILED silent attempt (`gcal:try`).
+  ⛔ `homework.html` calls NO `GCal.refresh` at all — GIS opens a popup even with
+  `prompt:'none'`, and in the PWA it failed every time, so it retried on every visit.
+
 ### Auth / security
 `api/_auth.js` gates endpoints (same-origin + rate limit + cron secret). RLS and
 service-role are live. Rows are keyed `(user_id, key)` — **never hardcode "Alex",
@@ -307,7 +339,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v612`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v623`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
