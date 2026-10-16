@@ -569,9 +569,17 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
 /* a leaving hub tile "opens" — zooms up + brightens as the page dissolves into the aurora */
 .tb-tile-open { animation: _tbTileOpen 0.2s cubic-bezier(.2,.8,.2,1) forwards !important; position: relative; z-index: 6; }
 @keyframes _tbTileOpen { to { transform: scale(1.07); filter: brightness(1.18); } }
+/* BACK is the reverse of forward (als-v617): the leaving page sinks away
+   (scale down, not up) a little slower, and the page you return to settles
+   DOWN into place instead of rising up. Same easing family, so the pair reads
+   as one motion played backwards. */
+body.tb-back-out { animation: _tbBackOut 0.24s cubic-bezier(.4,0,.2,1) forwards !important; pointer-events:none; }
+html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
+@keyframes _tbBackOut { from { opacity:1; transform:none; } to { opacity:0; transform:scale(.985); } }
+@keyframes _tbBackIn  { from { opacity:0; transform:translateY(-9px) scale(1.006); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) {
-  body, body.tb-out, .tb-tile-open { animation: none !important; }
-  body.tb-out { opacity: 0; }
+  body, body.tb-out, body.tb-back-out, html.tb-back-in body, .tb-tile-open { animation: none !important; }
+  body.tb-out, body.tb-back-out { opacity: 0; }
 }
 /* scan line */
 .tb-scan {
@@ -769,9 +777,9 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
           const prev = sessionStorage.getItem('_tbPrev');
           if (prev) {
             sessionStorage.removeItem('_tbPrev');
-            window.location.href = prev;
+            goBack(prev);
           } else {
-            window.location.href = 'index.html';
+            goBack('index.html');
           }
         });
       }
@@ -920,7 +928,30 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
     sync();
   }
 
+  /* BACK navigation with the reverse motion. Any page may call it
+     (arxaia.html does, for its fixed Back to the Κέντρο). */
+  function goBack(href) {
+    try { sessionStorage.setItem('_tbBackIn', '1'); } catch (e) {}
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.body.classList.add('tb-back-out');
+    setTimeout(() => { window.location.href = href; }, reduce ? 0 : 230);
+  }
+  window.ALSTopbar = Object.assign(window.ALSTopbar || {}, { goBack: goBack });
+
   function initTransitions() {
+    // Arriving from a BACK: play the reverse entrance, once.
+    try {
+      if (sessionStorage.getItem('_tbBackIn')) {
+        sessionStorage.removeItem('_tbBackIn');
+        document.documentElement.classList.add('tb-back-in');
+        setTimeout(() => document.documentElement.classList.remove('tb-back-in'), 600);
+      }
+    } catch (e) {}
+    // A page restored from the back/forward cache still wears its exit class
+    // (forwards fill = invisible). Take it off.
+    window.addEventListener('pageshow', (ev) => {
+      if (ev.persisted) document.body.classList.remove('tb-out', 'tb-back-out');
+    });
     // Scan line on every page enter
     const scan = document.createElement('div');
     scan.className = 'tb-scan';
