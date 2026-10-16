@@ -68,7 +68,18 @@ var PACKS = [
      (το μέρος «Πρωταγόρας» του «Γ. Οι σοφιστές…» + τα μέρη Β και Γ του
      κεφαλαίου «ΠΡΩΤΑΓΟΡΑΣ») — οι πέντε σελίδες που φωτογράφησε.
      ⛔ ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ `mine`: έστειλε ΦΩΤΟΓΡΑΦΙΕΣ, όχι αρχείο. */
-  { file: 'arxaia-protagoras.html', mine: true, ground: 'arxaia-protagoras.test.js' }
+  { file: 'arxaia-protagoras.html', mine: true, ground: 'arxaia-protagoras.test.js' },
+  /* ⭐⭐ als-v614 — ΤΟ ΕΚΤΟ ΠΑΚΕΤΟ: το artifact «Πρωταγόρας · Εισαγωγή»
+     (claude.ai/artifact/Sr9bZrCa3ELc93aWQexdHv).  Δικά του: «ακριβώς όπως
+     είναι τέλειο και ωραίο».  Άρα `sha`, ΟΧΙ γείωση (σταθ. 50): το έδωσε
+     ΕΚΕΙΝΟΣ, και η εγγύηση είναι «δεν άλλαξα ούτε λέξη».
+     ΔΥΟ δηλωμένες διαφορές από το artifact: η γραμμή «← Αρχαία» (βγαίνει
+     πριν το hash, όπως παντού) και το `lang="el"` στο <html> (μέσα στο hash).
+     ⛔⛔ ΚΑΙ Η ΜΟΝΗ ΕΞΑΙΡΕΣΗ ΣΤΟ «τα πακέτα δεν γράφουν τίποτα»: το κουίζ
+     του κρατάει τις απαντήσεις Σ/Λ σε ΕΝΑ κλειδί της συσκευής, γιατί έτσι
+     ήταν το artifact που ενέκρινε.  Δεν συγχρονίζεται, δεν φτάνει σε καμία
+     άλλη σελίδα.  `stores` = το ΜΟΝΟ κλειδί που επιτρέπεται. */
+  { file: 'arxaia-protagoras-eisagogi.html', sha: '0e8712605ff24dea1844a2d25814b8865ea7643910bb550ccfa05b5ad28fea8f', stores: 'protag-intro-v1' }
 ];
 
 var pass = 0, fail = 0;
@@ -1327,7 +1338,13 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
         pk.file + ': η γείωσή του ζει στο tests/' + pk.ground + ' — ΤΡΕΞΕ ΚΑΙ ΑΥΤΟ');
     }
 
-    ok(raw.indexOf('localStorage') < 0, pk.file + ': ⛔ δεν αποθηκεύει τίποτα — καμία πρόοδος, κανένας βαθμός');
+    if (pk.stores) {
+      var keys = (raw.match(/const KEY="([^"]+)"/g) || []);
+      eq(keys.join('|'), 'const KEY="' + pk.stores + '"', pk.file + ': γράφει ΜΟΝΟ το δηλωμένο κλειδί ' + pk.stores);
+      eq((raw.match(/localStorage\.setItem\(/g) || []).length, 1, pk.file + ': και από ΕΝΑ μόνο σημείο');
+    } else {
+      ok(raw.indexOf('localStorage') < 0, pk.file + ': ⛔ δεν αποθηκεύει τίποτα — καμία πρόοδος, κανένας βαθμός');
+    }
     ok(raw.indexOf('arx:gn') < 0, pk.file + ': δεν αγγίζει το κλειδί του Γνωστού');
     ok(/<html lang="el">/.test(raw), pk.file + ': είναι αυτοτελής σελίδα στα ελληνικά');
 

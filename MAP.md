@@ -688,6 +688,9 @@ colour rule: **accent only when something is due**, faint otherwise.
   στην als-v539: ίδιες 4 καρτέλες, ίδιος υπότιτλος, ίδιο CSS), **`arxaia-sokratis.html`** (η δίκη
   και ο θάνατος του Σωκράτη), **`arxaia-platon.html`** (ο βίος του Πλάτωνα)
   and **`arxaia-aristotelis.html`** (ο βίος και τα έργα — als-v536).
+  ⭐⭐ **ΕΞΙ από την als-v614**: **`arxaia-protagoras-eisagogi.html`** (πλάκα **6**) =
+  το artifact «Πρωταγόρας · Εισαγωγή» αυτούσιο (sha256), με κουίζ Σ/Λ που κρατά
+  απαντήσεις στο `protag-intro-v1` — η μόνη δηλωμένη εξαίρεση στο «δεν γράφουν».
   ⭐⭐ **ΠΕΝΤΕ από την als-v551**: μπήκε το **`arxaia-protagoras.html`** (πλάκα
   **V** — ο σοφιστής και ο διάλογος), ίδιο σχήμα με τη δίκη, CSS byte-για-byte.
   ⛔ **ΕΙΝΑΙ ΔΥΟ ΚΕΦΑΛΑΙΑ ΤΟΥ ΒΙΒΛΙΟΥ, ΟΧΙ ΕΝΑ** — το μέρος «Πρωταγόρας» του
