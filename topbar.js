@@ -583,10 +583,10 @@ body.topbar-modal-open { overflow: hidden; }
    ⚠️ No backticks in this comment. It lives inside a template literal, and a
    stray one terminates the whole stylesheet — smoke-test.sh catches it, but
    only after it has already wasted a render. */
-body { animation: _tbIn 0.38s cubic-bezier(0.16,1,0.3,1); }
+body { animation: _tbIn 0.6s cubic-bezier(0.25,0.1,0.25,1); }
 @keyframes _tbIn  { from { opacity:0; transform:translateY(11px) scale(.993); } to { opacity:1; transform:none; } }
 @keyframes _tbOut { from { opacity:1; transform:scale(1); } to { opacity:0; transform:scale(1.018); } }
-body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important; pointer-events:none; }
+body.tb-out { animation: _tbOut 0.26s cubic-bezier(.45,0,.25,1) forwards !important; pointer-events:none; }
 /* a leaving hub tile "opens" — zooms up + brightens as the page dissolves into the aurora */
 .tb-tile-open { animation: _tbTileOpen 0.2s cubic-bezier(.2,.8,.2,1) forwards !important; position: relative; z-index: 6; }
 @keyframes _tbTileOpen { to { transform: scale(1.07); filter: brightness(1.18); } }
@@ -594,8 +594,8 @@ body.tb-out { animation: _tbOut 0.18s cubic-bezier(.4,0,1,1) forwards !important
    (scale down, not up) a little slower, and the page you return to settles
    DOWN into place instead of rising up. Same easing family, so the pair reads
    as one motion played backwards. */
-body.tb-back-out { animation: _tbBackOut 0.24s cubic-bezier(.4,0,.2,1) forwards !important; pointer-events:none; }
-html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
+body.tb-back-out { animation: _tbBackOut 0.28s cubic-bezier(.45,0,.25,1) forwards !important; pointer-events:none; }
+html.tb-back-in body { animation: _tbBackIn 0.62s cubic-bezier(0.25,0.1,0.25,1); }
 @keyframes _tbBackOut { from { opacity:1; transform:none; } to { opacity:0; transform:scale(.985); } }
 @keyframes _tbBackIn  { from { opacity:0; transform:translateY(-9px) scale(1.006); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) {
@@ -977,7 +977,7 @@ html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
     }
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.body.classList.add('tb-back-out');
-    setTimeout(() => { window.location.href = href; }, reduce ? 0 : 230);
+    setTimeout(() => { window.location.href = href; }, reduce ? 0 : 270);
   }
   window.ALSTopbar = Object.assign(window.ALSTopbar || {}, { goBack: goBack });
 
@@ -1028,7 +1028,7 @@ html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
       // morph cue: a tapped hub tile zooms/brightens as the page dissolves
       if (a.classList && a.classList.contains('tile')) a.classList.add('tb-tile-open');
       document.body.classList.add('tb-out');
-      setTimeout(() => { window.location.href = href; }, 170);
+      setTimeout(() => { window.location.href = href; }, 250);
     });
   }
 

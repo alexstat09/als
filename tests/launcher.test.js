@@ -211,7 +211,9 @@ section('body must not become a containing block for the fixed control');
   const rule = TOP.match(/\nbody \{ animation: _tbIn[^}]*\}/)[0];
   ok('the body entrance animation carries no fill mode',
     !/\b(both|forwards)\b/.test(rule));
-  ok('and it is still the same entrance, not deleted', /_tbIn 0\.38s/.test(rule));
+  /* als-v623: the duration is a design dial (it was 0.38s, now 0.6s) — pin the
+     entrance's EXISTENCE, not one value of it, or every retune breaks this guard. */
+  ok('and it is still the same entrance, not deleted', /_tbIn \d*\.\d+s/.test(rule));
   // The exit fade is the deliberate exception: it must persist through the
   // navigation that removes it.
   ok('body.tb-out keeps its forwards fill on purpose',
