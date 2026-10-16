@@ -1855,6 +1855,16 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
+**2026-10-16 — `als-v618` — ΤΟ ΠΑΡΑΘΥΡΑΚΙ ΤΗΣ GOOGLE ΣΤΟ ΚΕΝΤΡΟ.** Ο Αλεξ: *«κάθε φορά που μπαίνω ή
+πατάω back στο κέντρο, μου πετάει το google calendar sign in για 2″ και κολλάει»*. Το
+`gcal.js` κρατούσε το access token ΜΟΝΟ στη μνήμη → κάθε φόρτωση `homework.html` ζητούσε
+καινούργιο, και το GIS ανοίγει popup ΑΚΟΜΗ ΚΑΙ με `prompt:'none'`. Τώρα: token στο
+**sessionStorage** (`gcal:tok`, ως τη λήξη — ⛔ ΠΟΤΕ localStorage, το sync.js το παρακολουθεί)
++ η ΣΙΩΠΗΛΗ `GCal.refresh()` παραλείπεται όταν τα events είναι < 15′ (`FRESH_MS`).
+`refresh(cb, true)` = ρητό (το ↻ του `morning.html`). 401 σβήνει και το αποθηκευμένο token.
+Οδηγήθηκε σε vm: φρέσκα → 0 φορτώσεις GIS · παλιά + token συνεδρίας → 0 · παλιά χωρίς → 1.
+⚠️ Μία φορά ανά ~ώρα (λήξη token) ή ανά νέο άνοιγμα του app μπορεί ακόμα να φανεί.
+
 **2026-10-16 — `als-v617` — ΤΟ BACK ΕΧΕΙ ΔΙΚΗ ΤΟΥ ΚΙΝΗΣΗ.** Ο Αλεξ: *«πιο smooth το transition,
 ας δοκιμάσουμε πρώτα το back»*. Το Back της als-v616 άλλαζε σελίδα ΑΠΟΤΟΜΑ (σκέτο
 `location.href`). Τώρα `ALSTopbar.goBack(href)` στο `topbar.js`: η σελίδα που φεύγει σβήνει

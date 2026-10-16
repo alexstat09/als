@@ -44,6 +44,21 @@
   var MIN_GAP     = 30;   // minutes — below this it isn't free time, it's a hallway
 
   var _tokenClient = null, _token = null, _tokenExp = 0, _readyCbs = [];
+
+  /* ⭐ als-v618 — ΤΟ ΠΑΡΑΘΥΡΑΚΙ ΣΥΝΔΕΣΗΣ ΠΟΥ ΑΝΑΒΟΣΒΗΝΕ.
+     Το κλειδί ζούσε μόνο στη ΜΝΗΜΗ, άρα κάθε φόρτωση σελίδας (κάθε Back στο
+     Κέντρο) ξαναζητούσε καινούργιο — και το GIS ανοίγει popup ακόμη και με
+     `prompt:'none'`: ~2″ παράθυρο σύνδεσης που κολλάει τη σελίδα.
+     Δύο φρένα: (1) το κλειδί κρατιέται στο sessionStorage ως τη λήξη του
+     (ΠΟΤΕ localStorage — το sync.js παρακολουθεί εκείνο, και ένα access token
+     δεν πρέπει να φτάσει ποτέ στο cloud)· (2) η ΣΙΩΠΗΛΗ ανανέωση δεν τρέχει αν
+     τα events είναι φρέσκα (< FRESH_MS). Το «↻» και το «Σύνδεση» περνάνε πάντα. */
+  var TOK_KEY  = 'gcal:tok';
+  var FRESH_MS = 15 * 60 * 1000;
+  try {
+    var _st = JSON.parse(sessionStorage.getItem(TOK_KEY) || 'null');
+    if (_st && _st.t && _st.exp > Date.now()) { _token = _st.t; _tokenExp = _st.exp; }
+  } catch (e) {}
   var _calList = [];      // [{id, name}] from the last successful calendarList read
 
   /* ── auth ─────────────────────────────────────────────────── */
@@ -78,6 +93,7 @@
           _token = resp.access_token;
           _tokenExp = Date.now() + ((resp.expires_in ? resp.expires_in : 3600) * 1000);
           try { localStorage.setItem(CONN_KEY, '1'); } catch (e) {}
+          try { sessionStorage.setItem(TOK_KEY, JSON.stringify({ t: _token, exp: _tokenExp })); } catch (e) {}
           cb(_token);
         } else {
           cb(null, (resp && resp.error) || 'no_token');
@@ -178,7 +194,7 @@
       + '&singleEvents=true&orderBy=startTime&maxResults=250';
     return fetch(url, { headers: { Authorization: 'Bearer ' + tok } })
       .then(function (r) {
-        if (r.status === 401) { _token = null; _tokenExp = 0; return null; }
+        if (r.status === 401) { _token = null; _tokenExp = 0; try { sessionStorage.removeItem(TOK_KEY); } catch (e) {} return null; }
         return r.ok ? r.json() : null;
       })
       .then(function (d) {
@@ -340,7 +356,15 @@
 
   window.GCal = {
     connect: function (cb) { fetchEvents(true, cb); },
-    refresh: function (cb) { fetchEvents(false, cb); },
+    /* refresh(cb)        → σιωπηλό· παραλείπεται αν τα events είναι φρέσκα
+       refresh(cb, true)  → ρητό (κουμπί ↻): τρέχει πάντα */
+    refresh: function (cb, force) {
+      if (!force) {
+        var c = cached();
+        if (c && c.ts && Date.now() - c.ts < FRESH_MS) { if (cb) cb(c.events); return; }
+      }
+      fetchEvents(false, cb);
+    },
     cached: cached,
     isConnected: isConnected,
     eventsForDay: eventsForDay,
