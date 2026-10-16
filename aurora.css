@@ -321,3 +321,31 @@ button:active { transform: scale(0.96); }
 .au-mood-hot   { --au-glow-c: var(--au-emerald); --au-glow-rgb: 52,226,176; }
 .au-mood-alert { --au-glow-c: var(--au-violet);  --au-glow-rgb: 155,140,255; }
 .au-mood-low   { --au-glow-c: var(--au-amber);   --au-glow-rgb: 242,192,99; }
+
+/* ═══ VT-BEGIN — ΟΙ ΜΕΤΑΒΑΣΕΙΣ ΑΝΑΜΕΣΑ ΣΤΙΣ ΣΕΛΙΔΕΣ (als-v622) ═══════════════
+   Δικά του: «κάνε το transition πάρα πολύ smooth, όσο πιο γίνεται».
+   Cross-document View Transitions: ο browser κρατάει τη ΠΑΛΙΑ σελίδα ως
+   εικόνα και τη σβήνει ΠΑΝΩ στη νέα — συνεχές crossfade, ΚΑΝΕΝΑ μαύρο κενό.
+   ⚠️ Ζει σε ΣΤΑΤΙΚΟ CSS στο <head> επίτηδες: η δήλωση πρέπει να ισχύει ΠΡΙΝ
+   ζωγραφιστεί η νέα σελίδα· στο topbar.js (defer) θα έφτανε αργά και η
+   μετάβαση θα έκοβε απότομα.
+   ⛔ ΙΔΙΟ ΜΠΛΟΚ σε aurora.css ΚΑΙ kentro-exit.css — το
+   tests/page-transition.test.js απαιτεί να είναι byte-για-byte ίδια.
+   Κατεύθυνση: το topbar.js βάζει html.vt-back στο Back (και τις δύο πλευρές). */
+@view-transition { navigation: auto; }
+.topbar { view-transition-name: als-topbar; }
+::view-transition-old(root) { animation: _vtOut .32s cubic-bezier(.4,0,.2,1) both; }
+::view-transition-new(root) { animation: _vtIn .5s cubic-bezier(.16,1,.3,1) both; }
+html.vt-back::view-transition-old(root) { animation-name: _vtBackOut; }
+html.vt-back::view-transition-new(root) { animation-name: _vtBackIn; }
+::view-transition-group(als-topbar) { animation-duration: .4s; animation-timing-function: cubic-bezier(.16,1,.3,1); }
+@keyframes _vtOut     { to   { opacity: 0; transform: scale(1.012); } }
+@keyframes _vtIn      { from { opacity: 0; transform: translateY(10px) scale(.996); } }
+@keyframes _vtBackOut { to   { opacity: 0; transform: scale(.986); } }
+@keyframes _vtBackIn  { from { opacity: 0; transform: translateY(-10px) scale(1.004); } }
+html.vt-in body, html.vt-in.tb-back-in body { animation: none !important; }
+html.vt-in .tb-scan { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+/* ═══ VT-END ═══════════════════════════════════════════════════════════ */

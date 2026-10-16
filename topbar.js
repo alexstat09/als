@@ -10,6 +10,27 @@
 (function () {
   'use strict';
 
+  /* ⭐ als-v622 — ARRIVED BY A VIEW TRANSITION? Mark it FOR THE LIFE OF THE PAGE.
+     The browser's crossfade IS the entrance, so body's own entrance (_tbIn /
+     _tbBackIn, injected below) must not run. ⚠️ Not with :active-view-transition:
+     that matches only WHILE the transition runs, so the instant it ends the
+     body animation would start from opacity 0 — the page would fade in TWICE.
+     A class that stays put cannot do that. Set here, before the CSS exists.
+     Direction (vt-back) is applied only inside pagereveal, i.e. BEFORE the
+     animation starts — adding it later would RESTART the running animation. */
+  (function markViewTransitionArrival(){
+    const root = document.documentElement;
+    try {
+      if (root.matches(':active-view-transition')) root.classList.add('vt-in');
+    } catch (e) {}
+    if (!('onpagereveal' in window)) return;
+    window.addEventListener('pagereveal', function (e) {
+      if (!e.viewTransition) return;
+      root.classList.add('vt-in');
+      try { if (sessionStorage.getItem('_tbBackIn')) root.classList.add('vt-back'); } catch (err) {}
+    });
+  })();
+
   // ── Aurora motion engine: load the shared animation engine on every page.
   // One injection here → every page that includes topbar.js gets motion.
   // The engine is self-sufficient (no GSAP needed for its core primitives).
@@ -930,8 +951,30 @@ html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
 
   /* BACK navigation with the reverse motion. Any page may call it
      (arxaia.html does, for its fixed Back to the Κέντρο). */
+  /* ⭐ als-v622 — όπου ο browser κάνει cross-document View Transitions
+     (Chrome 126+, Safari 18.2+), ΔΕΝ παίζουμε δικό μας fade: η πλοήγηση
+     γίνεται ΑΜΕΣΑ και ο browser κάνει crossfade παλιάς→νέας (aurora.css /
+     kentro-exit.css, μπλοκ VT). Δικό μας fade + VT = η εικόνα της παλιάς
+     σελίδας θα ήταν ήδη μαύρη, δηλαδή «βουτιά» αντί για crossfade.
+     ⚠️ Μόνο προς σελίδες που ΔΗΛΩΝΟΥΝ μετάβαση. Οι σελίδες πακέτων/κειμένων
+     (χωρίς topbar, χωρίς aurora/kentro-exit — μερικές κλειδωμένες με sha)
+     δεν δηλώνουν, και εκεί άμεση πλοήγηση = απότομο κόψιμο → κρατούν το fade. */
+  const VT = ('onpagereveal' in window);
+  const NO_VT = /^(arxaia-(aristotelis|lexilogio|platon|protagoras-eisagogi|sokratis|sokratis-ideas|metafrasi-demo|typo-demo)|latinika-(eisagogi|lectio\d+|syntaxi)|istoria-(themata|grapto|sarosi|video-demo|dania-demo)|movies-demo|study|trends|bills|health)\.html/;
+  function vtTo(href) {
+    if (!VT) return false;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    const file = String(href).split(/[?#]/)[0].split('/').pop() || 'index.html';
+    return !NO_VT.test(file);
+  }
+
   function goBack(href) {
     try { sessionStorage.setItem('_tbBackIn', '1'); } catch (e) {}
+    if (vtTo(href)) {
+      document.documentElement.classList.add('vt-back');
+      window.location.href = href;
+      return;
+    }
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.body.classList.add('tb-back-out');
     setTimeout(() => { window.location.href = href; }, reduce ? 0 : 230);
@@ -944,13 +987,19 @@ html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
       if (sessionStorage.getItem('_tbBackIn')) {
         sessionStorage.removeItem('_tbBackIn');
         document.documentElement.classList.add('tb-back-in');
+        // (the View Transition's direction is set in pagereveal, above — never here,
+        // where it could land mid-animation and restart it)
+        setTimeout(() => document.documentElement.classList.remove('vt-back'), 900);
         setTimeout(() => document.documentElement.classList.remove('tb-back-in'), 600);
       }
     } catch (e) {}
     // A page restored from the back/forward cache still wears its exit class
     // (forwards fill = invisible). Take it off.
     window.addEventListener('pageshow', (ev) => {
-      if (ev.persisted) document.body.classList.remove('tb-out', 'tb-back-out');
+      if (ev.persisted) {
+        document.body.classList.remove('tb-out', 'tb-back-out');
+        document.documentElement.classList.remove('vt-back');
+      }
     });
     // Scan line on every page enter
     const scan = document.createElement('div');
@@ -966,8 +1015,16 @@ html.tb-back-in body { animation: _tbBackIn 0.46s cubic-bezier(0.16,1,0.3,1); }
       if (!href || href.startsWith('#') || href.startsWith('http') ||
           href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
       if (a.target === '_blank') return;
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0) return;
       e.preventDefault();
+      // The exit to the Κέντρο is a BACK, and moves like one.
+      if (a.classList && a.classList.contains('kx-exit')) {
+        try { sessionStorage.removeItem('_tbPrev'); } catch (err) {}
+        goBack(href);
+        return;
+      }
       sessionStorage.setItem('_tbPrev', window.location.href);
+      if (vtTo(href)) { window.location.href = href; return; }
       // morph cue: a tapped hub tile zooms/brightens as the page dissolves
       if (a.classList && a.classList.contains('tile')) a.classList.add('tb-tile-open');
       document.body.classList.add('tb-out');
