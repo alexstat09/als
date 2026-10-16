@@ -442,7 +442,7 @@ section('Λ · ΚΑΝΕΝΑ ΛΕΙΨΑΝΟ ΤΗΣ ΠΟΡΤΑΣ');
   ['agDoor', 'ag-door', 'ag-pick', 'paintDoorStatus', 'openDoor', '__synDoorStatus', 'data-door', 'synWrap']
     .forEach(t => ok('δεν υπάρχει «' + t + '»', PAGE.indexOf(t) === -1));
   is('δύο σύνδεσμοι πίσω στο School Studies (ένας ανά κόσμο)',
-     (PAGE.match(/class="ag-back" href="homework\.html"/g) || []).length, 2);
+     (PAGE.match(/class="kx-exit" href="homework\.html"/g) || []).length, 2);
 }
 
 console.log(`\n${fail ? '✗' : '✓'} arxaia-syntax-page: ${pass} πέρασαν, ${fail} έπεσαν\n`);

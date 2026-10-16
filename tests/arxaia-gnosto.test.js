@@ -1064,7 +1064,7 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   ok(page.indexOf('agDoor') === -1, 'η πόρτα επιλογής ΔΕΝ υπάρχει πια');
   ok(/h === 'gn' \|\| h === 'gnosto'/.test(page), 'το #gn οδηγεί στον Γνωστό');
   ok(/h === 'ag' \|\| h === 'agnosto'/.test(page), 'το #ag οδηγεί στον Άγνωστο');
-  ok(/class="ag-back" href="homework\.html"/.test(page), 'και γυρνάς πίσω στο School Studies');
+  ok(/class="kx-exit" href="homework\.html"/.test(page), 'και γυρνάς πίσω στο School Studies');
 
   /* Η ΕΙΣΑΓΩΓΗ ΕΙΝΑΙ ΜΕΣΑ ΣΤΟΝ ΓΝΩΣΤΟ ΚΟΣΜΟ, ΟΧΙ ΚΡΕΜΑΣΜΕΝΗ ΚΑΠΟΥ.
      Ελέγχεται στο ΚΟΜΜΑΤΙ του `#gnWrap`, όχι σε ολόκληρη τη σελίδα: ένας

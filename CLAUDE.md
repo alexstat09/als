@@ -1855,6 +1855,18 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
+**2026-10-16 — `als-v620` — ΜΙΑ ΕΞΟΔΟΣ ΠΡΟΣ ΤΟ ΚΕΝΤΡΟ, ΙΔΙΑ ΠΑΝΤΟΥ.** Ο Αλεξ: *«πάρε το κουμπί back
+του αρχαία άγνωστου… και βάλ' το να το έχει κάθε σελίδα»*. `kentro-exit.css` (SW CORE) =
+οι τιμές του `.nav .exit` της `arxaia-agnosto.html` ΑΥΤΟΥΣΙΕΣ + στόχος αφής 44px + «←» στο
+`::before` (ώστε το aria-label να περιέχει το ορατό κείμενο — το απαιτεί το test της Ατζέντας).
+Markup, ΕΝΑ σχήμα: `<a class="kx-exit" href="homework.html" aria-label="Πίσω στο School Studies">School Studies</a>`.
+Σελίδες: `arxaia.html` (Γνωστό + Άγνωστο, ήταν «← Μαθήματα»), `istoria-voithima.html`
+(`#backLink`· στη ενότητα λέει «Αρχική»), `ergasies.html` (ήταν πλακίδιο με SVG), και ΝΕΑ σε
+`istoria.html` · `latinika.html` · `ekthesi.html` (δεν είχαν ΚΑΜΙΑ έξοδο προς το Κέντρο).
+⛔ Οι σελίδες ΠΑΚΕΤΩΝ γυρνάνε στον ΓΟΝΕΑ τους, όχι στο Κέντρο — δεν το φοράνε. Το πρότυπο
+(`arxaia-agnosto.html`) δεν αγγίχτηκε. Tests: ag-back→kx-exit σε gnosto/syntax-page, `.top .back`
+→`.top .kx-exit` στο ergasies-store (60/0, Chrome, 1440+393). Render 7 όψεων, χωρίς sync scripts.
+
 **2026-10-16 — `als-v619` — ΤΟ SCHOOL STUDIES ΔΕΝ ΑΓΓΙΖΕΙ ΠΙΑ ΤΗ GOOGLE.** Η v618 ΔΕΝ το έλυσε: ο Αλεξ
 *«το βλέπω κάθε φορά, μόνο στο school studies»*. Η σιωπηλή ανανέωση εκεί **αποτύγχανε** στο
 PWA, άρα η cache δεν γινόταν ποτέ φρέσκια και το φρένο των 15′ δεν ενεργοποιούνταν ΠΟΤΕ.

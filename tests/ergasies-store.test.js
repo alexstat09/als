@@ -215,7 +215,7 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
     Και ΞΑΝΑΜΕΤΡΙΕΤΑΙ στα 393px, γιατί εκεί ζει το PWA που δεν έχει έξοδο. */
  console.log('\nΗ · Η ΕΞΟΔΟΣ ΥΠΑΡΧΕΙ, ΟΝΟΜΑΖΕΙ ΤΟΝ ΠΡΟΟΡΙΣΜΟ ΚΑΙ ΔΙΑΒΑΖΕΤΑΙ');
  const BACK=`(function(){
-   var a=document.querySelector('.top .back');
+   var a=document.querySelector('.top .kx-exit');
    if(!a)return JSON.stringify({no:1});
    var cs=getComputedStyle(a),r=a.getBoundingClientRect();
    /* ⚠️⚠️ ΣΤΑΘΕΡΗ ΠΑΓΙΔΑ, ΚΑΙ ΜΕ ΔΕΥΤΕΡΟ ΔΑΓΚΩΜΑ ΑΠΟ ΜΕΣΑ ΤΗΣ:
