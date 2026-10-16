@@ -810,18 +810,25 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
-  ⭐⭐ **SEVEN of them since als-v600**, and six share one shape — `onlyAlign`:
+  ⭐⭐ **EIGHT of them since als-v613**, and seven share one shape — `onlyAlign`:
   `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*),
   `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα),
   `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς),
   `gk6` (Πλάτων, *Πρωταγόρας* 322a-323a — **το δώρο του Δία**, 20 περίοδοι /
-  231 ζευγάρια, the longest) and `gk7` (Αριστοτέλης, *Πολιτικά* 1253a29-39 —
+  231 ζευγάρια, the longest by text), `gk7` (Αριστοτέλης, *Πολιτικά* 1253a29-39 —
   **η συγκρότηση της πόλεως**, 8 περίοδοι / 65 ζευγάρια, μτφρ. **Β. Μοσκόβης**,
   σελ. 68 — ancient AND translation on ONE page; Λεκατσάς is the right column
-  and stays out). His words for every one of them:
+  and stays out) and `gk8` (Πλάτων, *Πολιτεία* 514a-515c — **η αλληγορία του
+  σπηλαίου: οι δεσμώτες**, μτφρ. **Ν. Μ. Σκουτερόπουλος**, σελ. 79-81 — the FIRST
+  DIALOGUE: 14 ατάκες = 14 paragraphs per side, 22 περίοδοι / 186 ζευγάρια;
+  Γρυπάρης is the right column and stays out; the left column ends at x=303 on
+  p.80 but x=280 on p.81). His words for every one of them:
   *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»* /
   *«όπως και για όλες τις άλλες μεταφράσεις των αρχαίων γνωστών»* /
-  *«ακριβώς όπως μου έκανες τα άλλα ολοιδιο»*.
+  *«ακριβώς όπως μου έκανες τα άλλα ολοιδιο»* /
+  *«φτιαξε … αυτο που φτιαχνεις και για τις αλλες ενοτητες»*.
+  ⭐ `gk8`: his photo zoomed and compared — iota subscripts printed, same text,
+  no `srcNote`. Skouteropoulos HAS the lowercase-after-period pattern (3×, locked).
   ⭐ `gk7` is the first unit he sent as TEXT, not a photo — compared to the PDF
   character by character, identical, so no `srcNote`. Moskovis is FREE: he
   merges «ἡ δὲ δικαιοσύνη πολιτικόν· ἡ γὰρ δίκη …» into one sentence, so
