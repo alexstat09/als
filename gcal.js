@@ -54,6 +54,8 @@
      δεν πρέπει να φτάσει ποτέ στο cloud)· (2) η ΣΙΩΠΗΛΗ ανανέωση δεν τρέχει αν
      τα events είναι φρέσκα (< FRESH_MS). Το «↻» και το «Σύνδεση» περνάνε πάντα. */
   var TOK_KEY  = 'gcal:tok';
+  var TRY_KEY  = 'gcal:try';          // ts της τελευταίας ΑΠΟΤΥΧΗΜΕΝΗΣ σιωπηλής προσπάθειας (device-local)
+  var RETRY_MS = 6 * 60 * 60 * 1000;  // μια αποτυχημένη σιωπηλή δεν ξαναδοκιμάζεται για 6 ώρες
   var FRESH_MS = 15 * 60 * 1000;
   try {
     var _st = JSON.parse(sessionStorage.getItem(TOK_KEY) || 'null');
@@ -362,8 +364,17 @@
       if (!force) {
         var c = cached();
         if (c && c.ts && Date.now() - c.ts < FRESH_MS) { if (cb) cb(c.events); return; }
+        /* ⭐ als-v619: ένα popup που ΑΠΕΤΥΧΕ θα ξαναποτύχει — μην το ξαναδείξεις σε κάθε σελίδα. */
+        var lastTry = 0; try { lastTry = +localStorage.getItem(TRY_KEY) || 0; } catch (e) {}
+        if (!_token && Date.now() - lastTry < RETRY_MS) { if (cb) cb(c ? c.events : null, 'throttled'); return; }
       }
-      fetchEvents(false, cb);
+      fetchEvents(false, function (evs, err) {
+        try {
+          if (err && !force) localStorage.setItem(TRY_KEY, String(Date.now()));
+          else if (!err) localStorage.removeItem(TRY_KEY);
+        } catch (e) {}
+        if (cb) cb(evs, err);
+      });
     },
     cached: cached,
     isConnected: isConnected,

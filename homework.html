@@ -6107,10 +6107,12 @@
   document.addEventListener('visibilitychange', function(){ if (!document.hidden){ reload(); paint(); } });
   window.addEventListener('focus', function(){ reload(); paint(); });
 
-  /* Το ημερολόγιο ανανεώνεται σιωπηλά αν έχει ήδη δοθεί άδεια σε αυτή τη
-     συσκευή. Αν όχι, ΔΕΝ ζητάμε τίποτα — η άδεια θέλει κλικ, και η σελίδα
-     λέει καθαρά ότι δουλεύει με το πρόγραμμα. */
-  try { if (window.GCal && GCal.isConnected()) GCal.refresh(function(){ paint(); }); } catch(e){}
+  /* ⛔ als-v619 — ΤΟ SCHOOL STUDIES ΔΕΝ ΑΓΓΙΖΕΙ ΤΗ GOOGLE. Δικά του: «κάθε φορά
+     που μπαίνω στο school studies μου πετάει το google calendar sign in για 2″».
+     Η σιωπηλή ανανέωση εδώ ήταν η ΜΟΝΗ αιτία: το GIS ανοίγει popup ακόμη και με
+     `prompt:'none'`, και στο PWA αποτύγχανε → η cache δεν φρεσκαριζόταν ποτέ →
+     ξαναδοκίμαζε σε ΚΑΘΕ άνοιγμα. Η σελίδα ΔΙΑΒΑΖΕΙ μόνο την cache (`gcal:events`),
+     που την ανανεώνει το Morning· το πρόγραμμα κάνει τη δουλειά όταν λείπει. */
 
   /* ══════════════════════════════════════════════════════════════════
      CLOUD SYNC
