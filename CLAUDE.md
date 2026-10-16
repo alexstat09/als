@@ -1855,6 +1855,13 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
+**2026-10-16 — `als-v616` — ΤΟ BACK ΤΩΝ ΑΡΧΑΙΩΝ ΒΓΑΖΕΙ ΣΤΟ ΚΕΝΤΡΟ.** Ο Αλεξ: *«όταν πατάω το
+back στο αρχαία γνωστό με βγάζει στο αρχαία άγνωστο, θέλω στο κέντρο»*. ΔΥΟ αιτίες:
+(1) το «← Αρχαία» των 5 πακέτων πήγαινε σε ΣΚΕΤΟ `arxaia.html` = Άγνωστος → τώρα
+`arxaia.html#gn` (η γραμμή επιστροφής μένει ΕΚΤΟΣ sha, τα tests ψάχνουν πια `#gn"`)·
+(2) το Back του topbar.js γυρνάει στο `_tbPrev` (μετά από πακέτο = ξανά Αρχαία) →
+στην `arxaia.html` capture-handler: μάθημα ανοιχτό → λίστα Γνωστού, αλλιώς → `homework.html`.
+
 **2026-10-16 — `als-v615` — ΤΟ ΠΑΛΙΟ ΠΑΚΕΤΟ ΤΟΥ ΠΡΩΤΑΓΟΡΑ ΕΦΥΓΕ.** Ο Αλεξ: *«σβήσε το άλλο»*.
 `arxaia-protagoras.html` + `tests/arxaia-protagoras.{test.js,source.txt}` → `archive/`
 (όχι διαγραφή). Το artifact (`arxaia-protagoras-eisagogi.html`) είναι πια το **Πακέτο 5**,

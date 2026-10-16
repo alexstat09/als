@@ -382,7 +382,7 @@ ok(page.indexOf('arx:gn') < 0, 'δεν αγγίζει το κλειδί του �
 ok(page.indexOf('arx:v1') < 0, 'ούτε του Αγνώστου');
 ok(page.indexOf('sync.js') < 0, 'δεν σέρνει μαζί του τη μηχανή συγχρονισμού');
 ok(/<html lang="el">/.test(page), 'είναι αυτοτελής σελίδα στα ελληνικά');
-var backs = page.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') >= 0; });
+var backs = page.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html#gn"') >= 0; });
 eq(backs.length, 1, 'ακριβώς μία γραμμή επιστροφής «← Αρχαία», όπως και στα άλλα τρία πακέτα');
 
 /* ══ 6 · ΤΟ CSS ΕΙΝΑΙ ΤΟ ΙΔΙΟ ΑΡΧΕΙΟ ΜΕ ΤΟΥ ΠΛΑΤΩΝΑ ══════════════════

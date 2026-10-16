@@ -3466,6 +3466,22 @@
      άδεια οθόνη — silent-empty, η ασθένεια αυτού του project. */
   fromHash();
 
+  /* ⭐ als-v616 — ΤΟ «BACK» ΤΗΣ ΜΠΑΡΑΣ ΒΓΑΖΕΙ ΣΤΟ ΚΕΝΤΡΟ. Δικά του: «όταν
+     πατάω το back στο αρχαία γνωστό με βγάζει στο αρχαία άγνωστο, θέλω να με
+     βγάζει στο κέντρο». Το topbar.js γυρνάει στο `_tbPrev` = ΟΠΟΙΑ σελίδα
+     ήταν πριν — μετά από ένα πακέτο αυτό ήταν ξανά τα Αρχαία, και το σκέτο
+     `arxaia.html` προσγειώνεται στον Άγνωστο. Εδώ ο προορισμός είναι ΣΤΑΘΕΡΟΣ:
+     μέσα σε μάθημα του Γνωστού → πίσω στη λίστα· αλλιώς → homework.html
+     (το Κέντρο). Capture στο document = τρέχει ΠΡΙΝ από τον handler του
+     topbar.js πάνω στο κουμπί. */
+  document.addEventListener('click', function(e){
+    if (!e.target.closest || !e.target.closest('#topbarBack')) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (document.getElementById('gnLesson').classList.contains('on')) { hide('gnLesson'); renderHome(); return; }
+    try { sessionStorage.removeItem('_tbPrev'); } catch(err){}
+    location.href = 'homework.html';
+  }, true);
+
   /* ── cloud sync ───────────────────────────────────
      ⚠️ ΞΕΧΩΡΙΣΤΟ appKey ΚΑΙ ΞΕΧΩΡΙΣΤΟ ΚΛΕΙΔΙ από τον Άγνωστο. Το `arx:gn`
      είναι ΝΕΟ· το `arx:v1` δεν αγγίζεται. Πρέπει να δηλωθεί σε τρία μέρη

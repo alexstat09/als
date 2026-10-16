@@ -1323,11 +1323,11 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
     var raw = fs.readFileSync(abs, 'utf8');
 
     /* Η μία δηλωμένη προσθήκη, και ΑΚΡΙΒΩΣ μία. */
-    var backs = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') >= 0; });
+    var backs = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html#gn"') >= 0; });
     eq(backs.length, 1, pk.file + ': ακριβώς μία γραμμή επιστροφής «← Αρχαία»');
 
     if (pk.sha) {
-      var stripped = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html"') < 0; }).join('\n');
+      var stripped = raw.split('\n').filter(function (l) { return l.indexOf('href="arxaia.html#gn"') < 0; }).join('\n');
       var sum = crypto.createHash('sha256').update(stripped, 'utf8').digest('hex');
       eq(sum, pk.sha,
         '⛔ ΤΟ ΠΑΚΕΤΟ ' + pk.file + ' ΑΛΛΑΞΕ. Μπήκε αυτούσιο κατόπιν ρητής εντολής.\n' +
