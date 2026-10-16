@@ -1855,6 +1855,11 @@ which shoe it is drawing (§5).
 
 ## 5 · Open
 
+**2026-10-16 — `als-v615` — ΤΟ ΠΑΛΙΟ ΠΑΚΕΤΟ ΤΟΥ ΠΡΩΤΑΓΟΡΑ ΕΦΥΓΕ.** Ο Αλεξ: *«σβήσε το άλλο»*.
+`arxaia-protagoras.html` + `tests/arxaia-protagoras.{test.js,source.txt}` → `archive/`
+(όχι διαγραφή). Το artifact (`arxaia-protagoras-eisagogi.html`) είναι πια το **Πακέτο 5**,
+κεφαλίδα «5 πακέτα». Βγήκε και από το SW CORE. gnosto 1883/0 · SMOKE_OK.
+
 **2026-10-16 — `als-v614` — ΑΡΧΑΙΑ / ΓΝΩΣΤΟ: ΤΟ ΕΚΤΟ ΠΑΚΕΤΟ ΕΙΝΑΙ ΕΝΑ ARTIFACT, ΑΥΤΟΥΣΙΟ.**
 Ο Αλεξ: *«μπορείς να προσθέσεις αυτό το artifact στο app, αρχαία γνωστό
 πατζ, ακριβώς όπως είναι τέλειο και ωραίο»* (claude.ai/artifact/Sr9bZrCa3ELc93aWQexdHv).
