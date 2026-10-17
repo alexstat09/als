@@ -87,6 +87,24 @@ ok('όλα σε NFC (front, back, hook, trap, note)', cards.every(c => ['front',
 ok('ids μοναδικά, μορφή s170-<στήλη>-<αα>', new Set(cards.map(c => c.id)).size === 50 && cards.every(c => /^s170-[12]-\d\d$/.test(c.id)));
 ok('καμία ΟΞΕΙΑ-OXIA (U+1F71…) — μόνο tonos μετά το NFC', !cards.some(c => /[άέήίόύώ]/.test(c.front + c.back)));
 
+console.log('\nΕ · ΣΕΛΙΔΕΣ 171–173 (από το extra στο data/, als-v627, ΙΔΙΑ ids)');
+/* Μεταγράφηκαν από φωτογραφία, μία-μία, και μπήκαν πρώτα στο S.extra του
+   Αλεξ με αυτά ακριβώς τα ids· αν άλλαζε ένα id, η πρόοδός του θα χανόταν. */
+const LATER = { p171: [2, 171, 50, 8], p172: [3, 172, 50, 7], p173: [4, 173, 52, 11] };
+Object.keys(LATER).forEach(id => {
+  const [n, bp, len, notes] = LATER[id], pg = data.pages.find(p => p.id === id), cs = pg ? pg.cards : [];
+  ok(`${id}: Σελίδα ${n}, φυλλάδιο σ. ${bp}, ${len} λέξεις`, !!pg && pg.n === n && pg.bookPage === bp && cs.length === len, pg && { n: pg.n, bp: pg.bookPage, len: cs.length });
+  ok(`${id}: ids s${bp}-<στήλη>-<αα>, κάθε κάρτα έχει front/back/family`, cs.every(c => new RegExp('^s' + bp + '-[12]-\\d\\d$').test(c.id) && c.front && c.back && c.family));
+  ok(`${id}: NFC, καμία OXIA`, cs.every(c => ['front', 'back', 'hook', 'trap', 'note'].every(k => c[k] == null || c[k] === c[k].normalize('NFC'))) && !cs.some(c => /[\u1F71\u1F73\u1F75\u1F77\u1F79\u1F7B\u1F7D]/.test(c.front + c.back)));
+  const ns = cs.filter(c => c.note);
+  ok(`${id}: ${notes} δηλωμένες διορθώσεις, καθεμία λέει τι τυπώνει το φυλλάδιο ή η φωτογραφία`, ns.length === notes && ns.every(c => /φυλλάδιο|φωτογραφία/.test(c.note)), ns.length);
+});
+const allIds = data.pages.flatMap(p => [p.id].concat(p.cards.map(c => c.id)));
+ok('κανένα διπλό id σε όλο το αρχείο', new Set(allIds).size === allIds.length);
+ok('οι σελίδες είναι 1, 2, 3, 4 στη σειρά', data.pages.map(p => p.n).join() === '1,2,3,4');
+const later = crypto.createHash('sha256').update(JSON.stringify(data.pages.filter(p => LATER[p.id]))).digest('hex');
+ok('περιεχόμενο 171–173 κλειδωμένο (sha256) — νόμιμη αλλαγή = νέος αριθμός στο ΙΔΙΟ commit', later === '85cf49afd7eba84ac6a97bcae8423c24a5397d44152baf3d81ba37bf7d39b908', later.slice(0, 12));
+
 console.log('\nΔ · Ο CORE ΕΙΝΑΙ ΤΟΥ KIT, ΑΥΤΟΥΣΙΟΣ');
 const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'lexilogio-core.js'))).digest('hex');
 ok('lexilogio-core.js = core.js του kit, byte προς byte (sha256)', sha === '0449b70213b6d5440c7331b8881be534a1889c2e3a619ab4dce12c9c5977c3d9', sha.slice(0, 12));

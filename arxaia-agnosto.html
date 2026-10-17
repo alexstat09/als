@@ -683,7 +683,9 @@ function paintLexMini(){
     .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(d){
       var ps = (st && st.pages) || {}, hard = (st && st.hard) || {}, today = C.toISO(new Date());
-      var pages = (d.pages || []).concat(st && Array.isArray(st.extra) ? st.extra : []).sort(function(a, b){ return a.n - b.n; });
+      var have = {}; (d.pages || []).forEach(function(p){ have[p.id] = 1; });
+      /* μια σελίδα που πέρασε από το extra στο data/ μετράει μία φορά */
+      var pages = (d.pages || []).concat((st && Array.isArray(st.extra) ? st.extra : []).filter(function(p){ return !have[p.id]; })).sort(function(a, b){ return a.n - b.n; });
       var ids = {}; pages.forEach(function(p){ p.cards.forEach(function(c){ ids[c.id] = 1; }); });
       var due = [], first = null, later = null;
       pages.forEach(function(p){

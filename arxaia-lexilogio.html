@@ -358,6 +358,7 @@ function reload(){ S = load(); if (STAMP) STAMP.seed(); else BLOCK = NO_STAMP; }
 function save(){
   if (BLOCK){ paintWarn(); return false; }
   STAMP.stamp();
+  if (DATA) S.extra = ownExtra();
   const txt = JSON.stringify(S);
   let back = null;
   try { localStorage.setItem(KEY, txt); back = localStorage.getItem(KEY); }
@@ -401,7 +402,11 @@ function paintWarn(){
    ίδιος, στο S.extra. Μια αποτυχία φόρτωσης ΛΕΓΕΤΑΙ — δεν ζωγραφίζεται
    ως «καμία σελίδα» (σταθ. 10). */
 let DATA = null, DATA_ERR = '';
-const allPages = () => (DATA ? DATA.pages : []).concat(S.extra || []).slice().sort((a,b) => a.n - b.n);
+/* Μια σελίδα που πέρασε από το S.extra στο data/ (ίδιο id) μετράει μία φορά:
+   κερδίζει το data/, και το αντίγραφο του extra φεύγει με το επόμενο save. */
+const dataIds = () => new Set(DATA ? DATA.pages.map(p => p.id) : []);
+const ownExtra = () => { const have = dataIds(); return (S.extra || []).filter(p => !have.has(p.id)); };
+const allPages = () => (DATA ? DATA.pages : []).concat(ownExtra()).slice().sort((a,b) => a.n - b.n);
 const pageById = id => allPages().find(p => p.id === id);
 const title = p => `Σελίδα ${p.n}`;
 const titleGen = p => `Σελίδας ${p.n}`;

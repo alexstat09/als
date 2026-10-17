@@ -3733,7 +3733,9 @@
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){
         var pagesSt = (st && st.pages) || {}, hard = (st && st.hard) || {};
-        var pages = (d.pages || []).concat((st && Array.isArray(st.extra)) ? st.extra : [])
+        var have = {}; (d.pages || []).forEach(function(p){ have[p.id] = 1; });
+        /* μια σελίδα που πέρασε από το extra στο data/ μετράει μία φορά */
+        var pages = (d.pages || []).concat(((st && Array.isArray(st.extra)) ? st.extra : []).filter(function(p){ return !have[p.id]; }))
           .slice().sort(function(a, b){ return a.n - b.n; });
         var today = C.toISO(new Date()), tomorrow = C.addDays(today, 1);
         var words = 0, live = 0, cardIds = {};

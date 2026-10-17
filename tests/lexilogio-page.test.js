@@ -23,11 +23,17 @@ const http=require('http'),fsx=require('fs'),pathx=require('path');
 const ROOT=pathx.resolve(__dirname,'..');
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css','.json':'application/json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml'};
 const STRIPPED=['/sync.js','/vendor/supabase.min.js'];
-let syncHits=0, failData=false; const otherStripped=[];
+let syncHits=0, failData=false, fullData=false; const otherStripped=[];
+/* Τα σενάρια Α–Κ γράφτηκαν για φυλλάδιο μιας σελίδας («Για σήμερα είσαι
+   εντάξει» προϋποθέτει ότι δεν περιμένει νέα σελίδα). Από την als-v627 το
+   data/ έχει 4· ο harness σερβίρει μόνο την p170, εκτός από την ενότητα Λ
+   που διαβάζει το ΑΛΗΘΙΝΟ αρχείο. */
+const ONE_PAGE=(()=>{const d=JSON.parse(fsx.readFileSync(pathx.join(ROOT,'data/lexilogio.json'),'utf8'));d.pages=d.pages.filter(p=>p.id==='p170');return JSON.stringify(d)})();
 const server=http.createServer((req,res)=>{
   const u=decodeURIComponent(req.url.split('?')[0]);
   if(STRIPPED.indexOf(u)>=0||/sync|supabase|topbar|nova/i.test(u)){ if(STRIPPED.indexOf(u)>=0) syncHits++; else otherStripped.push(u); res.writeHead(200,{'Content-Type':MIME['.js']}); res.end('/* stripped by harness */'); return; }
   if(u==='/data/lexilogio.json'&&failData){ res.writeHead(503); res.end('down'); return; }
+  if(u==='/data/lexilogio.json'&&!fullData){ res.writeHead(200,{'Content-Type':MIME['.json']}); res.end(ONE_PAGE); return; }
   const f=pathx.join(ROOT,u);
   if(f.indexOf(ROOT)!==0||!fsx.existsSync(f)||fsx.statSync(f).isDirectory()){res.writeHead(404);res.end('no');return}
   res.writeHead(200,{'Content-Type':MIME[pathx.extname(f)]||'application/octet-stream'});
@@ -325,6 +331,37 @@ const SHOTS=process.env.LEX_SHOTS||'';
  await ev(`location.hash='#/'`); await sleep(600);
  await shot('14-agnosto-1440');
  await ev(`localStorage.removeItem('${KEY}')`);
+ console.log('\nΛ · ΟΙ ΣΕΛΙΔΕΣ ΠΕΡΑΣΑΝ ΑΠΟ ΤΟ extra ΣΤΟ data/ (als-v627)');
+ /* Ο Αλεξ είχε ήδη επικολλήσει τις 171–173 στο extra· τώρα ζουν και στο data/
+    με τα ΙΔΙΑ ids. Καμία οθόνη δεν τις μετράει διπλές, και το αντίγραφο του
+    extra φεύγει με το πρώτο save — η πρόοδος (κλειδωμένη στο id) μένει. */
+ fullData=true;
+ const real=JSON.parse(fsx.readFileSync(pathx.join(ROOT,'data/lexilogio.json'),'utf8'));
+ const dup=real.pages.filter(p=>p.id!=='p170');
+ const realWords=real.pages.reduce((a,p)=>a+p.cards.length,0);
+ const migr=JSON.stringify({v:2,pages:{p170:{status:'active',stage:1,lastDone:iso(y2),started:iso(y2),history:[],_ts:1},p171:{status:'active',stage:0,lastDone:iso(y2),started:iso(y2),history:[],_ts:1}},hard:{},extra:dup});
+ await ev(`localStorage.setItem('${KEY}',${JSON.stringify(migr)})`);
+ await open(iso(today));
+ ok('arxaia-lexilogio: '+real.pages.length+' σελίδες, όχι '+(real.pages.length+dup.length), await ev(`document.querySelectorAll('.prow').length`)===real.pages.length, await ev(`document.querySelectorAll('.prow').length`));
+ ok('…ο πίνακας δεν γράφει τίποτα μόνο που άνοιξε', await ev(`localStorage.getItem('${KEY}')`)===migr);
+ await ev(`document.getElementById('openAdd').click()`); await sleep(120);
+ await ev(`(()=>{const t=document.getElementById('imp');t.value=${JSON.stringify(JSON.stringify({page:{id:'p999',bookPage:999,cards:[{id:'s999-1-01',front:'ἄκων',back:'x',family:'y'}]}}))};t.dispatchEvent(new Event('input'));document.getElementById('impBtn').click()})()`); await sleep(80);
+ ok('νέα σελίδα μετά τη μεταφορά → Σελίδα '+(real.pages.length+1), new RegExp('Σελίδα '+(real.pages.length+1)+': φυλλάδιο σ\\. 999').test(await txt('#impMsg')), await txt('#impMsg'));
+ await ev(`document.getElementById('impBtn').click()`); await sleep(150);
+ const after=await store();
+ ok('το πρώτο save καθαρίζει τα αντίγραφα: extra = μόνο η p999', after&&after.extra.length===1&&after.extra[0].id==='p999', after&&after.extra.map(p=>p.id));
+ ok('…και η πρόοδος της p171 έμεινε', after&&after.pages.p171&&after.pages.p171.status==='active'&&after.pages.p171.started===iso(y2));
+ await ev(`localStorage.setItem('${KEY}',${JSON.stringify(migr)})`);
+ await S('Page.navigate',{url:'http://127.0.0.1:'+HTTP+'/arxaia-agnosto.html?n='+(++nav)}); await sleep(2200);
+ const mini4=await ev(`(document.getElementById('miniL')||{}).textContent||''`);
+ ok('κάρτα 04: «'+real.pages.length+' σελίδες · '+realWords+' λέξεις», όχι διπλές', new RegExp(real.pages.length+' σελίδες · '+realWords+' λέξεις').test(mini4), mini4);
+ await S('Page.navigate',{url:'http://127.0.0.1:'+HTTP+'/arxaia.html?n='+(++nav)+'#ag'}); await sleep(1800);
+ const shelf=await txt('#lxSh');
+ ok('ράφι arxaia.html#ag: η Σελίδα 2 μία φορά', (shelf.match(/Σελίδα 2 ·/g)||[]).length===1, shelf);
+ ok('…και κανείς αναγνώστης δεν έγραψε', await ev(`localStorage.getItem('${KEY}')`)===migr);
+ fullData=false;
+ await ev(`localStorage.removeItem('${KEY}')`);
+
  ok('κανένα script που σηκώνει sync δεν έτρεξε (μπλοκαρίστηκαν: '+otherStripped.length+')', await ev('typeof window.ALSSync')==='undefined');
  ok('ο κοινός αριθμός «Δευ 19/10» κ.λπ. — μηδέν exceptions σε ΟΛΗ τη διαδρομή', exc.length===0, exc.slice(0,5));
 
