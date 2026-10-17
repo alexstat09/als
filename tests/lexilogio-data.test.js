@@ -90,7 +90,7 @@ ok('καμία ΟΞΕΙΑ-OXIA (U+1F71…) — μόνο tonos μετά το NFC'
 console.log('\nΕ · ΣΕΛΙΔΕΣ 171–173 (από το extra στο data/, als-v627, ΙΔΙΑ ids)');
 /* Μεταγράφηκαν από φωτογραφία, μία-μία, και μπήκαν πρώτα στο S.extra του
    Αλεξ με αυτά ακριβώς τα ids· αν άλλαζε ένα id, η πρόοδός του θα χανόταν. */
-const LATER = { p171: [2, 171, 50, 8], p172: [3, 172, 50, 7], p173: [4, 173, 52, 11], p174: [5, 174, 49, 5], p175: [6, 175, 52, 14] };
+const LATER = { p171: [2, 171, 50, 8], p172: [3, 172, 50, 7], p173: [4, 173, 52, 11], p174: [5, 174, 49, 5], p175: [6, 175, 52, 14], p176: [7, 176, 50, 9] };
 Object.keys(LATER).forEach(id => {
   const [n, bp, len, notes] = LATER[id], pg = data.pages.find(p => p.id === id), cs = pg ? pg.cards : [];
   ok(`${id}: Σελίδα ${n}, φυλλάδιο σ. ${bp}, ${len} λέξεις`, !!pg && pg.n === n && pg.bookPage === bp && cs.length === len, pg && { n: pg.n, bp: pg.bookPage, len: cs.length });
@@ -101,11 +101,11 @@ Object.keys(LATER).forEach(id => {
 });
 const allIds = data.pages.flatMap(p => [p.id].concat(p.cards.map(c => c.id)));
 ok('κανένα διπλό id σε όλο το αρχείο', new Set(allIds).size === allIds.length);
-ok('οι σελίδες είναι 1–6 στη σειρά', data.pages.map(p => p.n).join() === '1,2,3,4,5,6');
+ok('οι σελίδες είναι 1–7 στη σειρά', data.pages.map(p => p.n).join() === '1,2,3,4,5,6,7');
 const eik = (data.pages.find(p => p.id === 'p174') || { cards: [] }).cards.find(c => c.id === 's174-1-10');
 ok('p174: η υποσημείωση 25 (εἰκός ← ἔοικα) ζει στο hook του «εἰκός ἐστι», αυτολεξεί', !!eik && eik.front === 'εἰκός ἐστι' && eik.hook.includes('εἰκός = μετοχή ΠΡΚ του ἔοικα (παρακείμενος με σημασία ΕΝΣ) που σημαίνει «μοιάζω», «φαίνομαι».') && eik.hook.includes('ΑΠΡ: ἐοικέναι/εἰκέναι, ΥΠΤ: ἐοίκω, ΕΥΚ: ἐοίκοιμι.'), eik && eik.hook);
 const later = crypto.createHash('sha256').update(JSON.stringify(data.pages.filter(p => LATER[p.id]))).digest('hex');
-ok('περιεχόμενο 171–175 κλειδωμένο (sha256) — νόμιμη αλλαγή = νέος αριθμός στο ΙΔΙΟ commit', later === 'beda4a3fde5bae6c18184a2f2b1afcc6cd56d68bdd4ae3de090f16428e4acb49', later.slice(0, 12));
+ok('περιεχόμενο 171–176 κλειδωμένο (sha256) — νόμιμη αλλαγή = νέος αριθμός στο ΙΔΙΟ commit', later === '6886aadba9e65d42fe17b9ec8c9fc5a9d3d80aa492c14a8de4e4d9ae84e380a1', later.slice(0, 12));
 
 console.log('\nΔ · Ο CORE ΕΙΝΑΙ ΤΟΥ KIT, ΑΥΤΟΥΣΙΟΣ');
 const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'lexilogio-core.js'))).digest('hex');
