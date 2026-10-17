@@ -200,6 +200,13 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .tbl td.t{color:var(--dim)}
 .tbl td.tr{color:rgb(var(--hit));font-size:13.5px}
 .tbl tr:hover td{background:rgba(255,255,255,.02)}
+/* «Κατά κατηγορία»: η κεφαλίδα κάθε ομάδας — ετικέτα (mono), όχι πινακίδα */
+.tbl tr.gh td{padding:26px 12px 9px;border-bottom:1px solid var(--line2);font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--lat));line-height:1.4}
+.tbl tr.gh:nth-child(2) td{padding-top:16px}
+.tbl tr.gh i{font-style:normal;color:var(--faint);margin-left:10px;letter-spacing:.1em}
+.tbl tr.gh:hover td{background:none}
+.gtools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:40px}
+.gtools + .sec{margin-top:0}
 .hidecol .lem{position:relative;cursor:pointer}
 .hidecol .lem>span{filter:blur(7px);opacity:.5;transition:filter .2s,opacity .2s}
 .hidecol .lem.rv>span{filter:none;opacity:1}
@@ -763,19 +770,57 @@ function conjTable(s){
   }
   return h + '</table></div>';
 }
+/* ══ ΚΑΤΗΓΟΡΙΑ ΛΗΜΜΑΤΟΣ — για την «Κατά κατηγορία» της Γραμματικής ══════
+   Βγαίνει ΜΟΝΟ από το `k` του λήμματος — καμία δεύτερη λίστα που θα
+   διαφωνούσε με τη στήλη «Συζυγία» δίπλα της (σταθ. 15).
+   ord = η σειρά της ομάδας: συζυγίες/κλίσεις με τη σειρά του βιβλίου, μετά
+   τα ιδιόμορφα (βοηθητικά · ανώμαλα · ελλειπτικά), και οι αντωνυμίες ανά είδος. */
+function catOf(L){
+  const k = String((L && L.k) || '');
+  const plur = s => s.replace(/ή$/, 'ές').replace(/η$/, 'ες').replace(/ό$/, 'ά').replace(/ο$/, 'α');
+  let m;
+  if (L.p === 'v'){
+    if ((m = /^([αβγδ])΄ συζυγία/.exec(k))) return {ord:'αβγδ'.indexOf(m[1]), label:m[1] + '΄ συζυγία'};
+    const w = k.split(' · ')[0].split(' ')[0], i = ['βοηθητικό', 'ανώμαλο', 'ελλειπτικό'].indexOf(w);
+    return {ord:10 + (i < 0 ? 9 : i), label:w ? plur(w) : 'άλλα ρήματα'};
+  }
+  if (L.p === 'n' || L.p === 'a'){
+    const pre = L.p === 'a' ? 'Επίθετα · ' : '';
+    if ((m = /^([αβγδε])΄ κλίση/.exec(k))) return {ord:(L.p === 'a' ? 20 : 0) + 'αβγδε'.indexOf(m[1]), label:pre + m[1] + '΄ κλίση'};
+    return {ord:(L.p === 'a' ? 29 : 9), label:pre + (k || 'άλλα')};
+  }
+  if (L.p === 'p'){
+    const w = k.split(/[\s-]/)[0], i = ['προσωπική', 'δεικτική', 'οριστική', 'κτητική', 'ερωτηματική', 'αναφορική', 'αόριστη'].indexOf(w);
+    return {ord:30 + (i < 0 ? 9 : i), label:'Αντωνυμίες · ' + (w ? plur(w) : 'άλλες')};
+  }
+  return {ord:99, label:'άλλα'};
+}
+/* ΤΕΛΟΣ ΚΑΤΗΓΟΡΙΑΣ */
+
+/* Οι γραμμές ενός πίνακα: με τη σειρά του κειμένου, ή σε ομάδες με κεφαλίδα.
+   Μέσα σε κάθε ομάδα μένει η σειρά του κειμένου (η ταξινόμηση είναι σταθερή). */
+function gramRows(list, cols){
+  if (ui.grp !== 'cat') return list.map(x => x.html).join('');
+  const gs = new Map();
+  list.forEach(x => { const c = catOf(x.L); if (!gs.has(c.label)) gs.set(c.label, {c, a:[]}); gs.get(c.label).a.push(x); });
+  return Array.from(gs.values()).sort((a, b) => a.c.ord - b.c.ord || a.c.label.localeCompare(b.c.label, 'el'))
+    .map(g => '<tr class="gh"><td colspan="'+cols+'">'+esc(g.c.label)+'<i>'+g.a.length+'</i></td></tr>' + g.a.map(x => x.html).join('')).join('');
+}
+
 function buildGram(){
   const verbs = WORDS.filter(w => w.m && M[w.m] && M[w.m].p === 'v');
   const lemmaCount = new Set(verbs.map(w => w.m)).size;
   let h = '';
   /* Ρήματα */
-  h += '<div class="sec"><div class="sh"><h2>Όλα τα ρήματα, με τη σειρά</h2><span class="sp"></span><button class="tbtn" id="hideV" type="button" aria-pressed="false">Κρύψε τους αρχικούς χρόνους</button>' +
+  h += '<div class="gtools"><span class="lbl">Ομαδοποίηση</span><div class="seg" role="group" aria-label="Ομαδοποίηση πινάκων">' +
+       '<button type="button" data-grp="txt">Σειρά κειμένου</button><button type="button" data-grp="cat">Κατά κατηγορία</button></div></div>';
+  h += '<div class="sec"><div class="sh"><h2 id="gVh"></h2><span class="sp"></span><button class="tbtn" id="hideV" type="button" aria-pressed="false">Κρύψε τους αρχικούς χρόνους</button>' +
        '<p class="sub">'+verbs.length+' ρηματικοί τύποι από '+lemmaCount+' ρήματα. Πάτα έναν τύπο για να τον δεις μέσα στο κείμενο. Με κρυμμένους τους αρχικούς χρόνους, πάτα το θολό κελί αφού τους πεις.</p></div>' +
-       '<div class="tw"><table class="tbl" id="tV"><tr><th>#</th><th>Στο κείμενο</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Τύπος</th></tr>';
-  verbs.forEach((w, k) => {
+       '<div class="tw"><table class="tbl" id="tV"></table></div></div>';
+  const vList = verbs.map((w, k) => {
     const L = M[w.m];
-    h += '<tr><td class="n">'+(k+1)+'</td><td class="f"><button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button></td><td class="lem"><span>'+esc(L.l)+'</span></td><td class="t hm">'+esc(L.k)+'</td><td class="t">'+esc(w.f)+'</td></tr>';
+    return {L, html:'<tr><td class="n">'+(k+1)+'</td><td class="f"><button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button></td><td class="lem"><span>'+esc(L.l)+'</span></td><td class="t hm">'+esc(L.k)+'</td><td class="t">'+esc(w.f)+'</td></tr>'};
   });
-  h += '</table></div></div>';
 
   /* Ουσιαστικά — ομαδοποιημένα ανά λήμμα, με όλους τους τύπους του κειμένου */
   function groupBy(p){
@@ -789,22 +834,22 @@ function buildGram(){
   }
   const nouns = groupBy('n');
   h += '<div class="sec"><div class="sh"><h2>Ουσιαστικά</h2><p class="sub">Ονομαστική και γενική, γένος, κλίση, και η πτώση του τύπου μέσα στο κείμενο.</p></div>' +
-       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Ονομ. – Γεν.</th><th>Γένος · κλίση</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+       '<div class="tw"><table class="tbl" id="tN"></table></div></div>';
+  const nList = [];
   nouns.forEach((arr, m) => {
     const L = M[m];
-    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.g)+' · '+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+    nList.push({L, html:'<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.g)+' · '+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>'});
   });
-  h += '</table></div></div>';
 
   /* Επίθετα και αντωνυμίες */
   const adjs = groupBy('a'), prons = groupBy('p');
   h += '<div class="sec"><div class="sh"><h2>Επίθετα και αντωνυμίες</h2><p class="sub">Οι αντωνυμίες με γενική σε -ius και δοτική σε -i (illīus, ipsīus, cuius) είναι αγαπημένη ερώτηση.</p></div>' +
-       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Από</th><th>Είδος</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+       '<div class="tw"><table class="tbl" id="tA"></table></div></div>';
+  const aList = [];
   [adjs, prons].forEach(map => map.forEach((arr, m) => {
     const L = M[m];
-    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+    aList.push({L, html:'<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>'});
   }));
-  h += '</table></div></div>';
 
   /* Το φαινόμενο του μαθήματος */
   /* Το μάθημα — ΜΟΝΟ αν το κείμενο έχει δικό του φαινόμενο (JSON `lesson`, προαιρετικό). */
@@ -833,6 +878,22 @@ function buildGram(){
 
   const g = document.getElementById('gram');
   g.innerHTML = h;
+  /* Οι τρεις πίνακες ξαναγεμίζουν ΣΤΗ ΘΕΣΗ ΤΟΥΣ — ο πίνακας των ρημάτων δεν
+     αντικαθίσταται, άρα το «Κρύψε τους αρχικούς χρόνους» μένει όπως ήταν. */
+  const HEAD = {
+    tV:'<tr><th>#</th><th>Στο κείμενο</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Τύπος</th></tr>',
+    tN:'<tr><th>Στο κείμενο</th><th>Ονομ. – Γεν.</th><th>Γένος · κλίση</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>',
+    tA:'<tr><th>Στο κείμενο</th><th>Από</th><th>Είδος</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>'
+  };
+  function fillGram(){
+    if (ui.grp !== 'cat') ui.grp = 'txt';
+    g.querySelectorAll('[data-grp]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.grp === ui.grp)));
+    document.getElementById('gVh').textContent = ui.grp === 'cat' ? 'Όλα τα ρήματα, ανά συζυγία' : 'Όλα τα ρήματα, με τη σειρά';
+    document.getElementById('tV').innerHTML = HEAD.tV + gramRows(vList, 5);
+    document.getElementById('tN').innerHTML = HEAD.tN + gramRows(nList, 5);
+    document.getElementById('tA').innerHTML = HEAD.tA + gramRows(aList, 5);
+  }
+  fillGram();
   const hideV = document.getElementById('hideV');
   hideV.addEventListener('click', () => {
     const on = hideV.getAttribute('aria-pressed') !== 'true';
@@ -842,6 +903,8 @@ function buildGram(){
     document.querySelectorAll('#tV td.lem.rv').forEach(td => td.classList.remove('rv'));
   });
   g.addEventListener('click', e => {
+    const gb = e.target.closest('[data-grp]');
+    if (gb){ if (ui.grp !== gb.dataset.grp){ ui.grp = gb.dataset.grp; lsSet(UI_KEY, ui); fillGram(); } return; }
     const lem = e.target.closest('#tV.hidecol td.lem'); if (lem){ lem.classList.toggle('rv'); return; }
     const go = e.target.closest('[data-go]'); if (go){ const [u, i] = go.dataset.go.split(',').map(Number); goWord(u, i); }
   });

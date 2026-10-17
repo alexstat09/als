@@ -123,6 +123,8 @@ function firstDiff(a, b) {
 }
 
 const GREEK = /[Ͱ-Ͽἀ-῿]/;
+/* Τα είδη αντωνυμιών — η ΙΔΙΑ σειρά με το catOf του προτύπου. */
+const PRON_KINDS = ['προσωπική', 'δεικτική', 'οριστική', 'κτητική', 'ερωτηματική', 'αναφορική', 'αόριστη'];
 /* Emoji / σύμβολα διεπαφής (CLAUDE.md §④). Τα βελάκια → ↔ ΕΠΙΤΡΕΠΟΝΤΑΙ: είναι
    σημειογραφία του συντακτικού, όχι διακόσμηση. */
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}⭐️]/u;
@@ -189,6 +191,13 @@ function rules(p, ctx) {
     ok(!!L.l && !!L.k, 'λήμμα ' + k + ': έχει l και k');
     ok(!GREEK.test(L.l), '⛔ λήμμα ' + k + ': ελληνικά μέσα στο l («' + L.l + '») — τυπώνεται σε λατινικό serif → Georgia (als-v504)');
     if (L.p === 'n') ok(!!L.g, 'λήμμα ' + k + ': ουσιαστικό με γένος');
+    /* Η «Κατά κατηγορία» της Γραμματικής ομαδοποιεί ΑΠΟ ΤΟ k — ένα k εκτός
+       σχήματος θα έπεφτε σιωπηλά σε ομάδα «άλλα». */
+    if (L.p === 'v') ok(/^[αβγδ]΄ συζυγία/.test(L.k) || /^(βοηθητικό|ανώμαλο|ελλειπτικό)/.test(L.k),
+      'λήμμα ' + k + ': το k («' + L.k + '») ξεκινά με «α΄/β΄/γ΄/δ΄ συζυγία» ή «βοηθητικό/ανώμαλο/ελλειπτικό»');
+    if (L.p === 'n' || L.p === 'a') ok(/^[αβγδε]΄ κλίση/.test(L.k), 'λήμμα ' + k + ': το k («' + L.k + '») ξεκινά με «α΄…ε΄ κλίση»');
+    if (L.p === 'p') ok(PRON_KINDS.indexOf(L.k.split(/[\s-]/)[0]) >= 0,
+      'λήμμα ' + k + ': το k («' + L.k + '») ξεκινά με είδος αντωνυμίας (' + PRON_KINDS.join('/') + ')');
     ok(!EMOJI.test(JSON.stringify(L)), 'λήμμα ' + k + ': κανένα emoji');
     ok(usedM[k] === 1, 'λήμμα ' + k + ': το χρησιμοποιεί κάποια λέξη (αλλιώς είναι νεκρό)');
   });
@@ -283,5 +292,5 @@ module.exports = {
   jsonPath, s4ePath, htmlPath, srcPath, load, loadS4e, listPacks,
   parseSource, readSource, expectBook, clean, stars,
   units, words, tagsOf, lensWords, joinLa, joinGr, norm, firstDiff,
-  rules, runChecks, splitLemma, GREEK, EMOJI
+  rules, runChecks, splitLemma, GREEK, EMOJI, PRON_KINDS
 };

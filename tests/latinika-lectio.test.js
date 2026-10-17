@@ -711,6 +711,20 @@ AUTO.forEach(function (nn) {
   ok(!!s4e, RN + ': υπάρχει το πρόχειρο του study4exams (tools/latinika/lectio' + nn + '.s4e.json, fetch-s4e)');
   LIB.rules(P, { src: src, s4e: s4e }).concat(LIB.runChecks(P, X, src)).forEach(function (r) { ok(r.ok, r.msg); });
   ok(Object.keys(P.checks || {}).length > 0, RN + ': το πακέτο έχει δικά του `checks`');
+
+  /* ⭐ «Κατά κατηγορία» (als-v626): τρέχει το ΑΛΗΘΙΝΟ catOf της σελίδας πάνω
+     σε ΚΑΘΕ λήμμα — κανένα σε ομάδα «άλλα», κάθε ρήμα στη συζυγία που γράφει. */
+  ok(X.indexOf('data-grp="txt"') > 0 && X.indexOf('data-grp="cat"') > 0, RN + ': ο διακόπτης «Σειρά κειμένου / Κατά κατηγορία» υπάρχει');
+  var ca = X.indexOf('function catOf(L){'), cb = X.indexOf('/* ΤΕΛΟΣ ΚΑΤΗΓΟΡΙΑΣ */');
+  ok(ca > 0 && cb > ca, RN + ': βρέθηκε το catOf');
+  var cctx = {}; vm.createContext(cctx); vm.runInContext(X.slice(ca, cb) + '\nthis.catOf = catOf;', cctx);
+  Object.keys(P.M).forEach(function (k) {
+    var L = P.M[k]; if (L.p === 'x') return;
+    var c = cctx.catOf(L), m;
+    ok(!!c.label && !/άλλ/.test(c.label) && isFinite(c.ord), RN + ' ' + k + ': ομάδα «' + c.label + '»');
+    if ((m = /^([αβγδ])΄ συζυγία/.exec(L.k)) && L.p === 'v') eq(c.label, m[1] + '΄ συζυγία', RN + ' ' + k + ': στη συζυγία του');
+    if ((m = /^([αβγδε])΄ κλίση/.exec(L.k)) && L.p === 'n') eq(c.label, m[1] + '΄ κλίση', RN + ' ' + k + ': στην κλίση του');
+  });
 });
 
 /* ══ 3 · ⭐⭐ ΤΑ ΝΟΥΜΕΡΑ ΤΗΣ ΣΕΙΡΑΣ ΕΙΝΑΙ ΜΕΤΡΗΜΕΝΑ ═══════════════════
