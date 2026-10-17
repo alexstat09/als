@@ -1126,6 +1126,14 @@ syntaxi + sw. Νέο κείμενο = **μηδέν γραμμές στο test** 
 βεβαιώσεις. Η ροή (fetch-book → fetch-s4e → crop-photo → JSON → validate → build →
 wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.md`.
 
+⭐⭐ **als-v635 (17/10/26) — ΤΟ XXIII ΠΕΡΑΣΕ ΣΤΗ ΝΕΑ ΜΟΡΦΗ (πρώτη μετατροπή, §8 του skill).**
+`tools/latinika/lectio23.json` (+ `lectio23.s4e.json`, study4exams course **33**,
+βρέθηκε από τη λίστα `latin/course/index.php`, όχι σάρωση): τα w/d/g/gr του παλιού
+`S` αυτούσια, + m/f/q/n, 79 λήμματα, 25 προτάσεις, 14 κάρτες σημειώσεων, 9 παγίδες,
+μάθημα = υποτακτική παρατατικού. Δύο «Να ρωτήσεις τον καθηγητή» (suae άμεση/έμμεση ·
+ακολουθία στο ut ignorarētur). Κλειδί προόδου ΙΔΙΟ (`lectio23_known_v1`). Στο test:
+το XXIII βγήκε από τη στατική `PACKS`/`NS`/§3 (μπαίνει ως JSON), το §2ζ ΕΜΕΙΝΕ και περνάει.
+
 ⭐⭐⭐ **ΕΝΑΤΟ ΠΑΚΕΤΟ — `latinika-lectio24.html`, als-v624 (17/10/26) — ΤΟ ΠΡΩΤΟ «ΟΡΓΑΝΟ ΜΕΛΕΤΗΣ».**
 Lectio XXIV, «Το πάθημα ενός ψεύτη» (Νασικάς & Έννιος), 3 σκηνές / **12 ενότητες**
 / 9 παγίδες / **13 κάρτες σημειώσεων**, κλειδί `lectio24_known_v1`. Hero 98 →
