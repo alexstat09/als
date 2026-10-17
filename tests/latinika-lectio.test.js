@@ -76,9 +76,10 @@ var PACKS = [
   /* ⛔ ΚΑΙ ΤΟ XX (als-v593). Το φυλάει το §2ε. */
   { id: '20', file: 'latinika-lectio20.html', v: 'S' },
   /* ⛔ ΚΑΙ ΤΟ XXI (als-v594). Το φυλάει το §2στ. */
-  { id: '21', file: 'latinika-lectio21.html', v: 'S' },
-  { id: '22', file: 'latinika-lectio22.html', v: 'S' }
-  /* Το XXIII έγινε πακέτο από JSON (als-v635): μπαίνει μόνο του παρακάτω.
+  { id: '21', file: 'latinika-lectio21.html', v: 'S' }
+  /* Τα XXII (als-v636) και XXIII (als-v635) έγιναν πακέτα από JSON: μπαίνουν μόνα
+     τους παρακάτω. Τα §2δ / §2ζ τα φυλάνε ακόμη έναντι βιβλίου + φυλλαδίου.
+     Το XXIII έγινε πακέτο από JSON (als-v635): μπαίνει μόνο του παρακάτω.
      Το §2ζ το φυλάει ακόμη έναντι βιβλίου + φυλλαδίου. */
 ];
 
@@ -157,7 +158,7 @@ var n21 = S21.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n22 = S22.reduce(function (a, s) { return a + s.s.length; }, 0);
 var n23 = S23.reduce(function (a, s) { return a + s.s.length; }, 0);
 /* ΤΟ ΠΛΗΘΟΣ ΚΑΘΕ ΠΑΚΕΤΟΥ, ΜΕΤΡΗΜΕΝΟ — ΜΙΑ ΠΗΓΗ για το TOTAL, τη σειρά, τον χάρτη. */
-var NS = { '16': n16, '17': n17, '18': n18, '19': n19, '20': n20, '21': n21, '22': n22 };
+var NS = { '16': n16, '17': n17, '18': n18, '19': n19, '20': n20, '21': n21 };
 AUTO.forEach(function (nn) { NS[String(nn)] = SD[nn].reduce(function (a, s) { return a + s.s.length; }, 0); });
 eq(SC.length, 3, 'XVI: τρεις σκηνές');
 eq(n16, 16, 'XVI: δεκαέξι προτάσεις');
@@ -196,7 +197,7 @@ SC.forEach(function (sc) {
 
 /* Στα XVII τα χρώματα δένουν λατινικά με ελληνικά μέσω του `g`. Ένα `g` που
    ζει μόνο στη μια πλευρά είναι ένας δεσμός που δεν ανάβει ποτέ. */
-[['XVII', S17], ['XVIII', S18], ['XIX', S19], ['XX', S20], ['XXI', S21], ['XXII', S22]].concat(
+[['XVII', S17], ['XVIII', S18], ['XIX', S19], ['XX', S20], ['XXI', S21]].concat(
   AUTO.map(function (nn) { return [LIB.roman(nn), SD[nn]]; })).forEach(function (pair) {
 pair[1].forEach(function (sc) {
   sc.s.forEach(function (sn, i) {
@@ -792,8 +793,6 @@ var traps20 = count(L20.slice(L20.indexOf('class="traps"'), L20.indexOf('class="
 var notes20 = count(L20.slice(L20.indexOf('class="notes"'), L20.indexOf('class="foot"')), '<li>');
 var traps21 = count(L21.slice(L21.indexOf('class="traps"'), L21.indexOf('class="notes"')), '<li>');
 var notes21 = count(L21.slice(L21.indexOf('class="notes"'), L21.indexOf('class="foot"')), '<li>');
-var traps22 = count(L22.slice(L22.indexOf('class="traps"'), L22.indexOf('class="notes"')), '<li>');
-var notes22 = count(L22.slice(L22.indexOf('class="notes"'), L22.indexOf('class="foot"')), '<li>');
 
 ok(L17.indexOf('class="traps"') < 0,
   '⭐ ΤΟ XVII ΔΕΝ ΕΧΕΙ ΚΑΝ ΜΠΛΟΚ «ΠΑΓΙΔΕΣ» — γι᾽ αυτό η σειρά του λέει\n' +
@@ -802,7 +801,6 @@ ok(notes18 >= 1, 'XVIII: και το μπλοκ των σημειώσεων στ
 ok(notes19 >= 1, 'XIX: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes19 + ')');
 ok(notes20 >= 1, 'XX: και το μπλοκ των σημειώσεων στέκει (' + notes20 + ')');
 ok(notes21 >= 1, 'XXI: και το μπλοκ των σημειώσεων στέκει (' + notes21 + ')');
-ok(notes22 >= 1, 'XXII: και το μπλοκ των σημειώσεων στέκει ακόμη (' + notes22 + ')');
 
 function checkRow(id, scenes, units, unitWord, third, thirdWord) {
   var blk = ROWS[id], st = statsOf(blk);
@@ -819,7 +817,6 @@ checkRow('18', S18.length, n18, 'ενότητες',  traps18, 'παγίδες');
 checkRow('19', S19.length, n19, 'ενότητες',  traps19, 'παγίδες');
 checkRow('20', S20.length, n20, 'ενότητες',  traps20, 'παγίδες');
 checkRow('21', S21.length, n21, 'ενότητες',  traps21, 'παγίδες');
-checkRow('22', S22.length, n22, 'ενότητες',  traps22, 'παγίδες');
 /* Τα πακέτα από JSON: παγίδες + σημειώσεις μετρημένες ΑΠΟ ΤΗ ΣΕΛΙΔΑ.
    ⚠️ Οι σημειώσεις τους είναι κάρτες με id (`<li class="nt" id="n-…">`), όχι σκέτο <li>. */
 AUTO.forEach(function (nn) {
@@ -1171,8 +1168,7 @@ var B = drive({
   'lectio18_known_v1': JSON.stringify({ s2: true, s3: true }),
   'lectio19_known_v1': JSON.stringify({ s1: true, s4: true, s7: false, s10: true }),
   'lectio20_known_v1': JSON.stringify({ s1: true, s5: false, s12: true }),
-  'lectio21_known_v1': JSON.stringify({ s2: true, s7: false, s13: true }),
-  'lectio22_known_v1': JSON.stringify({ s2: true, s6: true, s8: false, s9: true, s11: true })
+  'lectio21_known_v1': JSON.stringify({ s2: true, s7: false, s13: true })
 }, function (st) {
   /* κάθε πακέτο από JSON: η ΠΡΩΤΗ και η ΤΕΛΕΥΤΑΙΑ ενότητα, και ένα `false` στη μέση */
   AUTO.forEach(function (nn) {
@@ -1188,7 +1184,6 @@ eq(B.cards['20'].cnt.textContent, '2 / 12', '⭐ και το XX — τα `false`
 eq(onAt(B.cards['20'].dash.innerHTML).join(','), '0,11', '⭐⭐ και στο XX η ΘΕΣΗ: s1 → πρώτη, s12 → τελευταία γραμμή');
 eq(B.cards['21'].cnt.textContent, '2 / 13', '⭐ και το XXI — τα `false` ξανά δεν μετράνε');
 eq(onAt(B.cards['21'].dash.innerHTML).join(','), '1,12', '⭐⭐ και στο XXI η ΘΕΣΗ: s2 → 2η, s13 → τελευταία γραμμή');
-eq(B.cards['22'].cnt.textContent, '4 / 11', '⭐ και το ΕΒΔΟΜΟ — τα `false` ξανά δεν μετράνε');
 eq(B.cards['23'].cnt.textContent, '2 / 14', '⭐ και το XXIII — τα `false` ξανά δεν μετράνε');
 eq(onAt(B.cards['23'].dash.innerHTML).join(','), '0,13', '⭐⭐ και στο XXIII η ΘΕΣΗ: s1 → πρώτη, s14 → τελευταία γραμμή');
 AUTO.forEach(function (nn) {
@@ -1211,7 +1206,7 @@ eq(onAt(B.cards['17'].dash.innerHTML).join(','), '0,4,8',
   '⭐⭐ ΧΑΡΤΗΣ: το `s1` είναι η ΠΡΩΤΗ γραμμή (1-based → 0-based), όχι η δεύτερη');
 eq(nowAt(B.cards['16'].dash.innerHTML), 1,
   '⭐ και η «επόμενη» είναι η πρώτη ΑΣΒΗΣΤΗ (η 2η), όχι η επόμενη μετά την τελευταία αναμμένη');
-eq(B.els.stKnown.textContent, String(20 + 2 * AUTO.length), 'η ταινία αθροίζει όλες (20 + 2 ανά πακέτο από JSON)');
+eq(B.els.stKnown.textContent, String(16 + 2 * AUTO.length), 'η ταινία αθροίζει όλες (16 + 2 ανά πακέτο από JSON)');
 eq(B.els.stKnown.className, 'hot', '   και τώρα βάφεται, γιατί δεν είναι μηδέν');
 eq(B.els.stDone.textContent, '0', '   καμία δεν έκλεισε ακόμη');
 eq(B.els.nxRn.textContent, 'XVI', 'η κάρτα δείχνει την ΠΡΩΤΗ ανοιχτή ενότητα');
