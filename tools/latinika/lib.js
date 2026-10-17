@@ -43,7 +43,8 @@ function ordF(n) { return cap(numWord(n, false)); }
 /* Φακοί: [ετικέτα, άρθρο]. Η ΙΔΙΑ λίστα με το LENSES του προτύπου. */
 const LENS = {
   sub: ['Υποτακτικές', 'τις'], inf: ['Απαρέμφατα', 'τα'], part: ['Μετοχές', 'τις'], dep: ['Αποθετικά', 'τα'],
-  verb: ['Ρήματα', 'τα'], noun: ['Ουσιαστικά', 'τα'], adj: ['Επίθετα', 'τα'], pron: ['Αντωνυμίες', 'τις']
+  verb: ['Ρήματα', 'τα'], noun: ['Ουσιαστικά', 'τα'], adj: ['Επίθετα', 'τα'], pron: ['Αντωνυμίες', 'τις'],
+  abl: ['Απόλυτες αφαιρετικές', 'τις']
 };
 
 function tefxos(nn) { return nn <= 20 ? 'Α΄' : 'Β΄'; }
@@ -95,6 +96,8 @@ function tagsOf(w, M) {
   if (/υποτ\./.test(f)) tags.push('sub');
   if (/απαρ\./.test(f)) tags.push('inf');
   if (/μτχ\./.test(f)) tags.push('part');
+  /* η απόλυτη αφαιρετική σημαδεύεται στο f της λέξης-πυρήνα (XXI: Brenno duce = χωρίς μετοχή) */
+  if (/απόλ\. αφαιρ\./.test(f)) tags.push('abl');
   return tags;
 }
 function words(p) {
