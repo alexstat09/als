@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0908">
+<title>{{TITLE}}</title>
+<!-- ⛔ Η Instrument Serif έχει ΜΗΔΕΝ ελληνικά γλυφά (πέφτει σε Georgia = «οι τόνοι
+     δεν είναι σωστοί», als-v504). Εδώ μπαίνει ΜΟΝΟ σε λατινικά και σε νούμερα.
+     Τα ελληνικά (τίτλοι + μετάφραση του φυλλαδίου) είναι GFS Didot. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">
+<style>
+:root{
+  --bg:#0a0908;
+  --ink:#f5f2ec;
+  --dim:rgba(245,242,236,.64);
+  --faint:rgba(245,242,236,.36);
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.12);
+  --lat:24,200,192;          /* Λατινικά · teal — η ταυτότητα του μαθήματος */
+  --hit:246,193,119;         /* η λέξη που διάλεξες */
+  --warn:255,107,139;        /* ✗ — το ΜΟΝΟ κανάλι για «ξανά» */
+  --ok:121,192,168;          /* ✓ */
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --gr:"GFS Didot","Times New Roman",Times,serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,.w:focus-visible,a:focus-visible{outline:2px solid rgba(var(--lat),.7);outline-offset:2px;border-radius:4px}
+.shell{max-width:1180px;margin:0 auto;padding:22px 32px 120px}
+
+/* ── διαδρομή ─────────────────────────────────────────────── */
+.top{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);min-height:40px}
+.top a{color:var(--dim);text-decoration:none;letter-spacing:.12em}
+.top a:hover{color:var(--ink)}
+.top .sl{color:rgba(245,242,236,.18)}
+.top .wh{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── εξώφυλλο ─────────────────────────────────────────────── */
+.cover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:end;padding:46px 0 34px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);margin-bottom:18px}
+.eyebrow b{font-weight:400;color:rgba(var(--lat),.9)}
+h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-height:.98;letter-spacing:-.01em}
+.lead{margin-top:22px;max-width:620px;font-size:15px;line-height:1.72;color:var(--dim)}
+.lead b{color:var(--ink);font-weight:500}
+.face{text-align:right}
+.face .n{font-family:var(--serif);font-size:128px;line-height:.82;color:rgb(var(--lat))}
+.face .l{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);line-height:1.7}
+
+/* ── ταινία μετρήσεων ─────────────────────────────────────── */
+.band{display:grid;grid-template-columns:1.3fr 1fr 1fr;margin-top:28px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.band>div{padding:20px 24px;min-width:0}
+.band>div+div{border-left:1px solid var(--line)}
+.band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.band .bn{margin-top:8px;font-family:var(--serif);font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.band .bn small{font-size:22px;color:var(--faint)}
+.band .bs{margin-top:6px;font-size:12.5px;color:var(--dim)}
+.dash{display:flex;gap:4px;margin-top:12px}
+.dash i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08)}
+.dash i.on{background:rgb(var(--ok))}
+.dash i.x{background:rgb(var(--warn))}
+.dash i.r{background:rgb(var(--hit))}
+
+/* ── καρτέλες ─────────────────────────────────────────────── */
+.tabs{display:flex;gap:30px;margin-top:44px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;padding:12px 0 14px;font-size:13.5px;color:var(--dim);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink)}
+.tab .c{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:6px}
+.panel{display:none;padding-top:34px}
+.panel.on{display:block}
+
+/* ── γραμμή εργαλείων κειμένου ────────────────────────────── */
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:11px;padding:3px}
+.seg button{padding:7px 15px;border-radius:8px;font-size:13px;color:var(--dim)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.07);color:var(--ink)}
+.tools .sp{flex:1}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+.chk[hidden]{display:none}
+.chk input{accent-color:rgb(var(--warn))}
+.modehint{margin-top:14px;font-size:13px;color:var(--dim);max-width:680px;line-height:1.6}
+.lenses{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.lenses .lbl{margin-right:6px}
+.lens{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:12.5px;color:var(--dim)}
+.lens:hover{color:var(--ink);border-color:rgba(255,255,255,.22)}
+.lens i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.lens[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.lens[aria-pressed="true"] i{color:rgba(10,9,8,.6)}
+.lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+
+/* ── κείμενο + λήμμα ──────────────────────────────────────── */
+.read{display:grid;grid-template-columns:minmax(0,700px) minmax(0,1fr);gap:56px;align-items:start}
+.scene{margin-top:40px}
+.scene-head{display:flex;align-items:baseline;gap:14px;padding-bottom:10px}
+.scene-num{font-family:var(--serif);font-size:22px;color:rgb(var(--lat))}
+.scene-title{font-family:var(--gr);font-style:italic;font-size:26px}
+.scene-flow{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:right}
+.sent{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
+.sent.gone{display:none}
+.num{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:9px;text-align:right}
+.la{font-family:var(--serif);font-size:27px;line-height:1.42;color:var(--ink)}
+.gr{margin-top:6px;font-family:var(--gr);font-size:19px;line-height:1.55;color:var(--dim);word-spacing:-.06em}
+.w{cursor:pointer;border-radius:5px;padding:0 2px;transition:background .14s,color .14s,box-shadow .14s}
+.la .w{border-bottom:1px dotted rgba(var(--lat),.28)}
+.w:hover{background:rgba(255,255,255,.05)}
+.w.hit{background:rgba(var(--hit),.16);color:rgb(var(--hit))}
+.gr .w.hit{color:rgb(var(--hit))}
+/* φακοί: καθαρό CSS — η λέξη ξέρει τις ετικέτες της */
+.text[data-lens="sub"] .la .w[data-tags~="sub"],
+.text[data-lens="inf"] .la .w[data-tags~="inf"],
+.text[data-lens="part"] .la .w[data-tags~="part"],
+.text[data-lens="dep"] .la .w[data-tags~="dep"],
+.text[data-lens="verb"] .la .w[data-tags~="verb"],
+.text[data-lens="noun"] .la .w[data-tags~="noun"],
+.text[data-lens="adj"] .la .w[data-tags~="adj"],
+.text[data-lens="pron"] .la .w[data-tags~="pron"]{background:rgba(var(--lat),.16);color:rgb(var(--lat));border-bottom:2px solid rgb(var(--lat))}
+.text[data-lens]:not([data-lens=""]) .la .w:not(.hit){opacity:.5}
+.text[data-lens="sub"] .la .w[data-tags~="sub"],.text[data-lens="inf"] .la .w[data-tags~="inf"],.text[data-lens="part"] .la .w[data-tags~="part"],.text[data-lens="dep"] .la .w[data-tags~="dep"],.text[data-lens="verb"] .la .w[data-tags~="verb"],.text[data-lens="noun"] .la .w[data-tags~="noun"],.text[data-lens="adj"] .la .w[data-tags~="adj"],.text[data-lens="pron"] .la .w[data-tags~="pron"]{opacity:1}
+
+/* Μετάφρασε */
+.veil{display:none;margin-top:8px;width:100%;text-align:left;padding:12px 16px;border:1px dashed var(--line2);border-radius:11px;font-size:13px;color:var(--dim)}
+.veil:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.m-tr .sent:not(.shown) .gr{display:none}
+.m-tr .sent:not(.shown) .veil{display:block}
+.side{display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding-top:6px}
+.know{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:6px 11px;border:1px solid var(--line2);border-radius:8px;color:var(--faint);white-space:nowrap}
+.know:hover{color:var(--ink)}
+.know.on{color:rgb(var(--ok));border-color:rgba(var(--ok),.4);background:rgba(var(--ok),.08)}
+.grade{display:none;gap:6px}
+.m-tr .sent.shown .grade{display:flex}
+.m-tr .know{display:none}
+.m-st .know{display:none}
+.g3{width:38px;height:34px;border:1px solid var(--line2);border-radius:9px;font-size:15px;color:var(--dim)}
+.g3:hover{color:var(--ink)}
+.g3.x[aria-pressed="true"]{background:rgba(var(--warn),.16);border-color:rgba(var(--warn),.5);color:rgb(var(--warn))}
+.g3.r[aria-pressed="true"]{background:rgba(var(--hit),.14);border-color:rgba(var(--hit),.5);color:rgb(var(--hit))}
+.g3.k[aria-pressed="true"]{background:rgba(var(--ok),.14);border-color:rgba(var(--ok),.5);color:rgb(var(--ok))}
+.sent .mark{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Δομή: οι αγκύλες σου, όπως στο χαρτί */
+.m-st .gr{display:none}
+.br{font-family:var(--mono);font-size:22px;font-weight:300;color:var(--faint);padding:0 1px}
+.br.d{color:rgb(var(--lat))}
+.br sup{font-size:10px;letter-spacing:0;margin-left:1px;vertical-align:top}
+.cl.on .w{background:rgba(var(--lat),.12)}
+.clauses{display:none;margin-top:14px;list-style:none;border-left:1px solid var(--line2)}
+.m-st .clauses{display:block}
+.clauses li{padding:6px 0 6px 14px;font-size:13.5px;color:var(--dim);cursor:pointer;line-height:1.55}
+.clauses li:hover,.clauses li.on{color:var(--ink)}
+.clauses li b{font-family:var(--mono);font-weight:400;font-size:11px;color:rgb(var(--lat));margin-right:6px}
+.clauses li .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.clauses li .k.d{color:rgb(var(--lat))}
+.clauses li em{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink)}
+
+/* η καρτέλα της λέξης */
+.aside{position:sticky;top:20px;margin-top:40px}
+.wc{border:1px solid var(--line);border-radius:18px;padding:26px 26px 22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
+.wc.empty{color:var(--dim);font-size:14px;line-height:1.7}
+.wc.empty .big{font-family:var(--gr);font-style:italic;font-size:28px;color:var(--ink);line-height:1.2;margin-bottom:12px}
+.wc-la{font-family:var(--serif);font-size:44px;line-height:1;color:rgb(var(--hit))}
+.wc-d{margin-top:8px;font-family:var(--gr);font-size:19px;color:var(--dim)}
+.wc-sec{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.wc-sec p{margin-top:8px;font-size:14px;line-height:1.66;color:var(--ink)}
+.wc-lem{margin-top:8px;font-family:var(--serif);font-size:23px;line-height:1.25;color:rgb(var(--lat))}
+.wc dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:10px;font-size:13.5px}
+.wc dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);padding-top:3px}
+.wc dd{color:var(--ink);line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{padding:5px 11px;border:1px solid var(--line2);border-radius:999px;font-size:12px;color:var(--dim)}
+.chip:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.info{display:none;margin-top:14px}
+.info.show{display:block}
+.info .wc{padding:20px}
+.info .wc-la{font-size:34px}
+
+/* ── Γραμματική ───────────────────────────────────────────── */
+.sec{margin-top:58px}
+.sec:first-child{margin-top:0}
+.sh{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.sh h2{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;line-height:1.1}
+.sh .sp{flex:1}
+.sh .sub{flex-basis:100%;width:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
+.tbl th{text-align:left;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding:14px 12px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5;color:var(--ink)}
+.tbl td.n{font-family:var(--mono);font-size:11px;color:var(--faint);width:36px}
+.tbl td.f{font-family:var(--serif);font-size:20px;white-space:nowrap}
+.tbl td.f button{color:var(--ink);border-bottom:1px dotted rgba(var(--lat),.4)}
+.tbl td.f button:hover{color:rgb(var(--hit))}
+.tbl td.lem{font-family:var(--serif);font-size:19px;color:rgb(var(--lat))}
+.tbl td.t{color:var(--dim)}
+.tbl td.tr{color:rgb(var(--hit));font-size:13.5px}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.hidecol .lem{position:relative;cursor:pointer}
+.hidecol .lem>span{filter:blur(7px);opacity:.5;transition:filter .2s,opacity .2s}
+.hidecol .lem.rv>span{filter:none;opacity:1}
+.tbtn{padding:7px 13px;border:1px solid var(--line2);border-radius:9px;font-size:12.5px;color:var(--dim)}
+.tbtn:hover{color:var(--ink)}
+.tbtn[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}
+.box{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));min-width:0}
+.box h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:23px}
+.box .rule{margin-top:6px;font-size:13px;color:var(--dim)}
+.box .rule b{color:rgb(var(--lat));font-weight:400;font-family:var(--mono);font-size:12px}
+.conj{width:100%;border-collapse:collapse;margin-top:12px;font-family:var(--serif);font-size:17px}
+.conj th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);text-align:left;padding:4px 6px 8px}
+.conj td{padding:3px 6px;white-space:nowrap}
+.conj td:first-child{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.conj .ix{color:rgb(var(--lat))}
+.conjw{overflow-x:auto}
+.seqt{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.seqt th,.seqt td{border:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:top}
+.seqt th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.seqt td b{display:block;font-weight:500;color:var(--ink)}
+.seqt td .ex{display:block;margin-top:4px;font-family:var(--serif);font-size:16px;color:var(--dim)}
+.seqt .ch{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid rgba(var(--lat),.4);border-radius:999px;font-family:var(--serif);font-size:15px;color:rgb(var(--lat))}
+.seqt .ch:hover{background:rgba(var(--lat),.12)}
+.akl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px;margin-top:10px}
+.akl div{padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--dim)}
+.akl div b{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--ink);margin-right:8px}
+.attn{margin-top:20px;padding:18px 22px;border-left:2px solid rgb(var(--hit));background:rgba(var(--hit),.05);border-radius:0 12px 12px 0;font-size:14px;line-height:1.75;color:var(--ink);max-width:820px}
+.attn b{color:rgb(var(--hit));font-weight:500}
+
+/* παγίδες (static — τις μετράει η βιβλιοθήκη) */
+.traps{margin-top:58px}
+.traps h3,.notes h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.traps .sub{margin-top:12px;font-size:13.5px;color:var(--dim)}
+.traps ul{list-style:none;margin-top:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px}
+.traps li{padding:18px 0;border-bottom:1px solid var(--line);min-width:0}
+.traps li .n{font-family:var(--serif);font-size:30px;line-height:1;color:rgb(var(--hit))}
+.traps .lat{display:block;margin-top:8px;font-family:var(--serif);font-size:20px;line-height:1.25}
+.traps .fix{display:block;margin-top:6px;font-size:14px;color:var(--ink);line-height:1.55}
+.traps .why{display:block;margin-top:6px;font-size:13px;color:var(--dim);line-height:1.6}
+
+/* ── Σημειώσεις ───────────────────────────────────────────── */
+.notes .sub{margin-top:12px;font-size:13.5px;color:var(--dim);max-width:720px}
+.notes ul{list-style:none;margin-top:22px;columns:2;column-gap:20px}
+.nt{break-inside:avoid;margin-bottom:20px;border:1px solid var(--line);border-radius:18px;padding:22px 24px 20px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));transition:border-color .5s,background .5s}
+.nt.flash{border-color:rgba(var(--hit),.7);background:rgba(var(--hit),.07)}
+.nt .src{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.nt .src .me{color:rgb(var(--warn))}
+.nt h4{margin-top:8px;font-family:var(--gr);font-style:italic;font-weight:400;font-size:26px;line-height:1.15}
+.nt h4 .la{font-family:var(--serif);font-style:normal;font-size:26px}
+.nt p{margin-top:10px;font-size:14px;line-height:1.7;color:var(--ink)}
+.nt p.d{color:var(--dim)}
+.nt .lat,.nt i.lat{font-family:var(--serif);font-style:normal;font-size:17px;color:rgb(var(--lat))}
+.nt table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13.5px}
+.nt td{padding:9px 8px 9px 0;border-top:1px solid var(--line);vertical-align:top;line-height:1.5}
+.nt td:first-child{font-family:var(--serif);font-size:19px;color:rgb(var(--lat));white-space:nowrap;padding-right:14px}
+.nt td .q{display:block;font-family:var(--gr);font-size:16px;color:var(--dim)}
+.nt .ans{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.nt .ans span{font-family:var(--serif);font-size:18px;color:var(--ink)}
+.nt .ans span em{font-family:var(--sans);font-style:normal;font-size:12.5px;color:var(--dim);margin-left:8px}
+.nt .ask{margin-top:12px;padding:12px 14px;border:1px dashed rgba(var(--hit),.5);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.6}
+.nt .ask b{color:rgb(var(--hit));font-weight:500}
+
+/* ── Κάρτες ───────────────────────────────────────────────── */
+.deck{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dk{padding:16px 16px 14px;text-align:left;border-left:1px solid var(--line);min-width:0}
+.dk:first-child{border-left:0}
+.dk:hover{background:rgba(255,255,255,.025)}
+.dk[aria-pressed="true"]{background:rgba(var(--lat),.09);box-shadow:inset 0 -2px 0 rgb(var(--lat))}
+.dk .t{font-family:var(--gr);font-style:italic;font-size:20px;color:var(--ink)}
+.dk .s{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);line-height:1.7}
+.dk .s b{font-weight:400;color:rgb(var(--lat))}
+.stage{max-width:680px;margin:40px auto 0}
+.cmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card{margin-top:12px;min-height:340px;border:1px solid var(--line2);border-radius:22px;padding:34px 36px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));display:flex;flex-direction:column;cursor:pointer;user-select:none}
+.card .ask{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--lat))}
+.card .form{margin-top:22px;font-family:var(--serif);font-size:72px;line-height:1;text-align:center}
+.card .ctx{margin-top:22px;text-align:center;font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--dim)}
+.card .ctx b{font-weight:400;color:rgb(var(--hit))}
+.card .tap{margin-top:auto;padding-top:24px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card .back{display:none;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+.card.flip .back{display:block}
+.card.flip .tap{display:none}
+.card.flip .form{font-size:44px;margin-top:14px}
+.card.flip .ctx{display:none}
+.back .lem{font-family:var(--serif);font-size:32px;line-height:1.2;color:rgb(var(--lat));text-align:center}
+.back .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+.back .facts span{padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:13px;color:var(--ink)}
+.back .facts span b{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.back .tr{margin-top:14px;text-align:center;font-size:13.5px;color:rgb(var(--hit));line-height:1.6}
+.back .sx{font-size:15px;line-height:1.7;color:var(--ink)}
+.back .gd{margin-top:12px;text-align:center;font-family:var(--gr);font-size:18px;color:var(--dim)}
+.rate{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.rate.on{display:grid}
+.rate button{padding:14px 10px 12px;border:1px solid var(--line2);border-radius:14px;text-align:center}
+.rate button .k{display:block;font-size:20px}
+.rate button .l{display:block;margin-top:4px;font-size:13px;color:var(--ink)}
+.rate button .i{display:block;margin-top:3px;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.rate .x{color:rgb(var(--warn))} .rate .x:hover{background:rgba(var(--warn),.08)}
+.rate .r{color:rgb(var(--hit))} .rate .r:hover{background:rgba(var(--hit),.08)}
+.rate .k3{color:rgb(var(--ok))} .rate .k3:hover{background:rgba(var(--ok),.08)}
+.keys{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint)}
+.done{text-align:center;padding:60px 20px}
+.done .big{font-family:var(--gr);font-style:italic;font-size:40px}
+.done p{margin-top:12px;color:var(--dim);font-size:14px}
+.done .tbtn{margin-top:22px}
+.cfoot{display:flex;justify-content:center;gap:18px;margin-top:26px}
+.cfoot button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
+.cfoot button:hover{color:var(--ink)}
+
+.foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;line-height:1.85;color:var(--dim);max-width:860px}
+.foot b{color:var(--dim);font-weight:500}
+
+/* ── πλάτη (ΜΟΝΟ max-width — σταθ. 51) ───────────────────── */
+@media (max-width:1040px){
+  .read{grid-template-columns:minmax(0,1fr)}
+  .aside{display:none}
+  .notes ul{columns:1}
+  .traps ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .deck{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dk:nth-child(4){border-left:0}
+  .dk:nth-child(n+4){border-top:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .shell{padding:16px 16px 90px}
+  .cover{grid-template-columns:minmax(0,1fr);gap:22px;padding-top:30px}
+  .face{text-align:left;display:flex;align-items:flex-end;gap:16px}
+  .face .n{font-size:84px}
+  h1{font-size:54px}
+  .band{grid-template-columns:minmax(0,1fr)}
+  .band>div+div{border-left:0;border-top:1px solid var(--line)}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .akl{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scene-flow{display:none}
+  .tbl .hm{display:none}
+  .tbl td.f{white-space:normal}
+}
+@media (max-width:560px){
+  .top .wm{display:none}
+  .tabs{gap:22px}
+  .tab .c{display:none}
+  .seqt th,.seqt td{padding:9px 8px;font-size:13px}
+  .seqt td .ex{font-size:14px}
+  h1{font-size:44px}
+  .la{font-size:23px}
+  .gr{font-size:17px}
+  .sent{grid-template-columns:18px minmax(0,1fr);gap:10px}
+  .side{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;padding-top:2px}
+  .traps ul{grid-template-columns:minmax(0,1fr)}
+  .deck{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dk:nth-child(n){border-left:1px solid var(--line);border-top:1px solid var(--line)}
+  .dk:nth-child(odd){border-left:0}
+  .dk:nth-child(-n+2){border-top:0}
+  .card{padding:26px 20px;min-height:300px}
+  .card .form{font-size:54px}
+  .tbl{font-size:13px}
+  .tbl td{padding:10px 6px}
+  .sh h2,.traps h3,.notes h3{font-size:28px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <a href="latinika.html">&#8592; Λατινικά</a>
+    <span class="sl">/</span>
+    <span class="wh"><span class="wm">MÉTRON · </span>Λατινικά · Lectio {{ROMAN}}</span>
+  </div>
+
+  <header class="cover">
+    <div>
+      <div class="eyebrow"><b>Lectio {{ROMAN}}</b> · Lectio {{ORDINAL}} · {{TEFXOS}} Τεύχος</div>
+      <h1>{{H1}}</h1>
+      <p class="lead">{{LEAD}}</p>
+    </div>
+    <div class="face">
+      <div class="n" id="faceN">{{FACE_N}}</div>
+      <div class="l">{{FACE_LABEL}}<br>το μάθημα</div>
+    </div>
+  </header>
+
+  <section class="band" aria-label="Μετρήσεις">
+    <div>
+      <div class="bl">Ενότητες που λες απ’ έξω</div>
+      <div class="bn"><span id="bKnown">0</span><small>/<span id="bAll">{{UNITS}}</span></small></div>
+      <div class="dash" id="bDash"></div>
+    </div>
+    <div>
+      <div class="bl">Κάρτες για σήμερα</div>
+      <div class="bn" id="bDue">—</div>
+      <div class="bs" id="bDueS">όλες οι κατηγορίες</div>
+    </div>
+    <div>
+      <div class="bl">Για ξανά</div>
+      <div class="bn" id="bRed">0</div>
+      <div class="bs">ενότητες με ✗ ή ↻ στη μετάφραση</div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Ενότητες σελίδας">
+    <button class="tab" role="tab" data-tab="keimeno" aria-selected="true">Κείμενο</button>
+    <button class="tab" role="tab" data-tab="grammatiki" aria-selected="false">Γραμματική<span class="c" id="tcG"></span></button>
+    <button class="tab" role="tab" data-tab="simeioseis" aria-selected="false">Σημειώσεις<span class="c" id="tcN"></span></button>
+    <button class="tab" role="tab" data-tab="kartes" aria-selected="false">Κάρτες<span class="c" id="tcK"></span></button>
+  </nav>
+
+  <!-- ══ ΚΕΙΜΕΝΟ ══════════════════════════════════════════════ -->
+  <section class="panel on" id="p-keimeno" role="tabpanel">
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Τρόπος">
+        <button data-mode="rd" aria-pressed="true">Ανάγνωση</button>
+        <button data-mode="tr" aria-pressed="false">Μετάφρασε</button>
+        <button data-mode="st" aria-pressed="false">Δομή</button>
+      </div>
+      <span class="sp"></span>
+      <label class="chk" id="onlyRed" hidden><input type="checkbox" id="onlyRedI"> Μόνο τα κόκκινα (✗ και ↻)</label>
+      <button class="know" id="bReset" title="Μηδενίζει ✓ και ✗/↻ αυτής της σελίδας">μηδένισε</button>
+    </div>
+    <p class="modehint" id="modeHint"></p>
+    <div class="lenses" id="lenses"><span class="lbl">Φακοί</span></div>
+    <div class="read">
+      <div class="text" id="content" data-lens=""></div>
+      <aside class="aside" id="aside" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ══ ΚΑΡΤΕΣ ═══════════════════════════════════════════════ -->
+  <section class="panel" id="p-kartes" role="tabpanel">
+    <div class="deck" id="deck" role="group" aria-label="Κατηγορία"></div>
+    <div class="stage" id="stage"></div>
+  </section>
+
+  <!-- ══ ΓΡΑΜΜΑΤΙΚΗ ═══════════════════════════════════════════ -->
+  <section class="panel" id="p-grammatiki" role="tabpanel">
+    <div id="gram"></div>
+
+    <div class="traps">
+      <h3>Οι μεγάλες παγίδες</h3>
+      <p class="sub">Εδώ χάνονται οι μονάδες, όχι στο υπόλοιπο κείμενο.</p>
+      <ul>
+{{TRAPS}}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══ ΣΗΜΕΙΩΣΕΙΣ ═══════════════════════════════════════════ -->
+  <section class="panel" id="p-simeioseis" role="tabpanel">
+    <div class="notes">
+      <h3>Σημειώσεις που επιστρέφουν συνέχεια</h3>
+      <p class="sub">{{NOTES_SUB}}</p>
+      <ul>
+{{NOTES}}
+      </ul>
+    </div>
+  </section>
+
+  <div class="foot">
+    Πάτα «✓ το ξέρω» σε κάθε ενότητα όταν τη λες απ’ έξω. Η πρόοδος, τα ✗/↻ και οι κάρτες αποθηκεύονται <b>σε αυτή τη συσκευή</b>.<br>
+    {{FOOT}}
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   LECTIO {{ROMAN}} — ΤΑ ΔΕΔΟΜΕΝΑ
+   Ίδιο σχήμα με τα XVII–{{PREV_ROMAN}} (σκηνές → ενότητες → la/gr με ομάδες `g`), ώστε
+   να το διαβάζουν αυτούσιο η βιβλιοθήκη, η «Σύνταξε μόνος σου» και το test.
+   ΝΕΑ πεδία, προσθετικά: `m` = το λήμμα στο M, `f` = ο τύπος εδώ,
+   `q` = η πρόταση (CL) στην οποία ανήκει, `n` = οι σημειώσεις που την αφορούν.
+   ══════════════════════════════════════════════════════════════════════ */
+{{S}}
+
+/* ══ ΤΑ ΛΗΜΜΑΤΑ ══════════════════════════════════════════════════════════
+   p: v ρήμα · n ουσιαστικό · a επίθετο · p αντωνυμία · x άκλιτο.
+   l = το λήμμα όπως το γράφεις στο γραπτό· g = γένος· k = κλίση/συζυγία·
+   t = τι είναι · tr = η παγίδα. Αρχικοί χρόνοι: του βιβλίου (λεξιλόγιο {{ROMAN}})
+   όπου τους δίνει, αλλιώς του study4exams. */
+{{M}}
+
+/* ══ ΟΙ ΠΡΟΤΑΣΕΙΣ — οι αγκύλες σου: [ ] κύρια · ( ) δευτερεύουσα ══════════ */
+{{CL}}
+
+{{NOTE_T}}
+
+/* ══ Η ΜΗΧΑΝΗ ═══════════════════════════════════════════════════════════ */
+const KEY = 'lectio{{NN}}_known_v1';     /* ⛔ δικό του κλειδί — ΟΧΙ copy-paste από άλλο πακέτο */
+const TR_KEY = 'lectio{{NN}}_tr_v1';     /* ✗ / ↻ / ✓ του «Μετάφρασε», ανά ενότητα */
+const CARD_KEY = 'lectio{{NN}}_cards_v1';/* η επανάληψη των καρτών */
+const UI_KEY = 'lectio{{NN}}_ui_v1';     /* καρτέλα + τρόπος: μόνο ευκολία */
+function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : (JSON.parse(v) || d); }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function clean(w){ return w.replace(/[«»"“”.,;:?!]/g,''); }
+
+let known = lsGet(KEY, {}); if (typeof known !== 'object' || Array.isArray(known)) known = {};
+let trm = lsGet(TR_KEY, {}); if (typeof trm !== 'object' || Array.isArray(trm)) trm = {};
+const ui = Object.assign({tab:'keimeno', mode:'rd'}, lsGet(UI_KEY, {}));
+
+/* Η επίπεδη λίστα των λέξεων, με τις ετικέτες τους για φακούς και κάρτες. */
+const UNITS = [], WORDS = [];
+S.forEach(sc => sc.s.forEach(u => UNITS.push(u)));
+UNITS.forEach((u, ui_) => u.la.forEach((w, i) => {
+  const lem = w.m && M[w.m];
+  const tags = [];
+  if (lem){
+    tags.push({v:'verb', n:'noun', a:'adj', p:'pron', x:'akl'}[lem.p]);
+    if (lem.dep) tags.push('dep');
+  }
+  const f = w.f || '';
+  if (/υποτ\./.test(f)) tags.push('sub');
+  if (/απαρ\./.test(f)) tags.push('inf');
+  if (/μτχ\./.test(f)) tags.push('part');
+  WORDS.push(Object.assign({u:ui_, i, tags}, w));
+}));
+
+const LENSES = [
+  ['sub','Υποτακτικές'],['inf','Απαρέμφατα'],['part','Μετοχές'],['dep','Αποθετικά'],
+  ['verb','Ρήματα'],['noun','Ουσιαστικά'],['adj','Επίθετα'],['pron','Αντωνυμίες']
+];
+document.getElementById('faceN').textContent = WORDS.filter(w => w.tags.includes('{{FACE_LENS}}')).length;
+
+/* ── το κείμενο ── */
+const box = document.getElementById('content');
+const aside = document.getElementById('aside');
+let sel = null;   /* {u,i} */
+
+function laHTML(u, ui_, mode){
+  if (mode !== 'st'){
+    return u.la.map((w, i) => '<span class="w" tabindex="0" role="button" data-side="la" data-u="'+ui_+'" data-i="'+i+'" data-g="'+w.g+'" data-tags="'+WORDS.find(x=>x.u===ui_&&x.i===i).tags.join(' ')+'">'+esc(w.w)+'</span>').join(' ');
+  }
+  /* Δομή: κάθε συνεχόμενο κομμάτι μιας πρότασης παίρνει τις αγκύλες του */
+  let out = '', cur = null;
+  u.la.forEach((w, i) => {
+    if (w.q !== cur){
+      if (cur !== null) out += closeBr(cur) + '</span> ';
+      cur = w.q;
+      out += '<span class="cl" data-q="'+cur+'">' + openBr(cur);
+    } else out += ' ';
+    out += '<span class="w" tabindex="0" role="button" data-side="la" data-u="'+ui_+'" data-i="'+i+'" data-g="'+w.g+'" data-tags="'+WORDS.find(x=>x.u===ui_&&x.i===i).tags.join(' ')+'">'+esc(w.w)+'</span>';
+  });
+  if (cur !== null) out += closeBr(cur) + '</span>';
+  return out;
+}
+function openBr(q){ const c = CL[q]; return '<span class="br'+(c.d?' d':'')+'">'+(c.d?'(':'[')+'<sup>'+q+'</sup></span>'; }
+function closeBr(q){ const c = CL[q]; return '<span class="br'+(c.d?' d':'')+'">'+(c.d?')':']')+'</span>'; }
+function grHTML(u, ui_){
+  return u.gr.map(g => '<span class="w" data-side="gr" data-u="'+ui_+'" data-g="'+g.g+'">'+esc(g.t)+'</span>').join(' ');
+}
+function clausesHTML(u){
+  const seen = [];
+  u.la.forEach(w => { if (!seen.includes(w.q)) seen.push(w.q); });
+  return seen.map(q => {
+    const c = CL[q];
+    const words = WORDS.filter(w => w.q === q).map(w => w.w).join(' ');
+    return '<li data-q="'+q+'"><b>'+q+'</b><span class="k'+(c.d?' d':'')+'">'+(c.d?'( ':'[ ')+esc(c.t)+(c.d?' )':' ]')+'</span><em>'+esc(words)+'</em><br>'+esc(c.s)+'</li>';
+  }).join('');
+}
+
+function build(){
+  box.innerHTML = '';
+  let idx = 0;
+  S.forEach(sc => {
+    const sec = document.createElement('div'); sec.className = 'scene';
+    sec.innerHTML = '<div class="scene-head"><span class="scene-num">'+sc.n+'</span><span class="scene-title">'+esc(sc.title)+'</span><span class="scene-flow">'+esc(sc.flow)+'</span></div>';
+    sc.s.forEach(u => {
+      const ui_ = idx; idx++;
+      const id = 's' + idx;
+      const row = document.createElement('div');
+      row.className = 'sent'; row.dataset.id = id; row.dataset.u = ui_;
+      row.innerHTML =
+        '<div class="num">'+idx+'</div>' +
+        '<div class="body"><p class="la">'+laHTML(u, ui_, ui.mode)+'</p>' +
+        '<button class="veil" type="button">Πες τη δυνατά και πάτα για να δεις τη μετάφραση</button>' +
+        '<p class="gr">'+grHTML(u, ui_)+'</p>' +
+        '<ul class="clauses">'+clausesHTML(u)+'</ul>' +
+        '<div class="info"></div></div>' +
+        '<div class="side">' +
+          '<button class="know'+(known[id]?' on':'')+'" type="button">✓ το ξέρω</button>' +
+          '<div class="grade" role="group" aria-label="Πώς πήγε">' +
+            '<button class="g3 x" type="button" data-v="x" title="Λάθος" aria-pressed="'+(trm[id]==='x')+'">✗</button>' +
+            '<button class="g3 r" type="button" data-v="r" title="Με δυσκολία" aria-pressed="'+(trm[id]==='r')+'">↻</button>' +
+            '<button class="g3 k" type="button" data-v="k" title="Μόνος μου" aria-pressed="'+(trm[id]==='k')+'">✓</button>' +
+          '</div>' +
+        '</div>';
+      sec.appendChild(row);
+    });
+    box.appendChild(sec);
+  });
+  applyFilter();
+}
+
+function rowsOf(){ return Array.from(box.querySelectorAll('.sent')); }
+function tally(){
+  const all = UNITS.length;
+  const n = Object.keys(known).filter(k => known[k] === true).length;
+  document.getElementById('bKnown').textContent = n;
+  document.getElementById('bAll').textContent = all;
+  let d = '';
+  for (let k = 1; k <= all; k++){
+    const id = 's' + k, t = trm[id];
+    d += '<i class="'+(known[id] ? 'on' : t === 'x' ? 'x' : t === 'r' ? 'r' : '')+'"></i>';
+  }
+  document.getElementById('bDash').innerHTML = d;
+  document.getElementById('bRed').textContent = Object.keys(trm).filter(k => trm[k] === 'x' || trm[k] === 'r').length;
+}
+function save(){ lsSet(KEY, known); lsSet(TR_KEY, trm); tally(); }
+
+/* ── η καρτέλα της λέξης ── */
+function wordCard(ui_, i){
+  const w = WORDS.find(x => x.u === ui_ && x.i === i);
+  const lem = w.m && M[w.m];
+  let h = '<div class="wc"><div class="wc-la">'+esc(clean(w.w))+'</div><div class="wc-d">'+esc(w.d)+'</div>';
+  h += '<div class="wc-sec"><span class="lbl">Συντακτικό</span><p>'+esc(w.x)+'</p></div>';
+  if (lem && lem.p !== 'x'){
+    h += '<div class="wc-sec"><span class="lbl">Γραμματική</span><div class="wc-lem">'+esc(lem.l)+'</div><dl>';
+    const kind = {v:'Ρήμα', n:'Ουσιαστικό', a:'Επίθετο', p:'Αντωνυμία'}[lem.p];
+    h += '<dt>Τι είναι</dt><dd>'+kind+(lem.g ? ', '+esc(lem.g) : '')+' · '+esc(lem.k)+'</dd>';
+    if (w.f) h += '<dt>Εδώ</dt><dd>'+esc(w.f)+'</dd>';
+    if (lem.tr) h += '<dt>Προσοχή</dt><dd>'+esc(lem.tr)+'</dd>';
+    h += '</dl></div>';
+  } else if (lem){
+    h += '<div class="wc-sec"><span class="lbl">Γραμματική</span><dl><dt>Τι είναι</dt><dd>'+esc(lem.k)+'</dd>'+(lem.tr?'<dt>Παραθετικά</dt><dd>'+esc(lem.tr)+'</dd>':'')+'</dl></div>';
+  }
+  const c = CL[w.q];
+  if (c) h += '<div class="wc-sec"><span class="lbl">Πρόταση '+w.q+'</span><p>'+(c.d?'( ':'[ ')+esc(c.t)+(c.d?' )':' ]')+' — '+esc(c.s)+'</p></div>';
+  if (w.n && w.n.length){
+    h += '<div class="wc-sec"><span class="lbl">Σημειώσεις</span><div class="chips">' + w.n.map(k => '<button class="chip" type="button" data-note="'+k+'">'+esc(NOTE_T[k])+' ↗</button>').join('') + '</div></div>';
+  }
+  return h + '</div>';
+}
+function emptyCard(){
+  return '<div class="wc empty"><div class="big">Πάτα μια λέξη.</div>Εδώ βλέπεις τι είναι συντακτικά, από ποιο λήμμα βγαίνει (αρχικοί χρόνοι, γένος, κλίση), σε ποια πρόταση ανήκει και ποια σημείωση την αφορά.<br><br>Οι <b>Φακοί</b> ανάβουν μια κατηγορία μέσα στο κείμενο, π.χ. {{FACE_EX}}.</div>';
+}
+const wide = window.matchMedia('(max-width:1040px)');
+function clearSel(){
+  box.querySelectorAll('.w.hit').forEach(x => x.classList.remove('hit'));
+  box.querySelectorAll('.info.show').forEach(x => { x.classList.remove('show'); x.innerHTML = ''; });
+  box.querySelectorAll('.cl.on, .clauses li.on').forEach(x => x.classList.remove('on'));
+  sel = null;
+  aside.innerHTML = emptyCard();
+}
+function select(ui_, i){
+  const was = sel && sel.u === ui_ && sel.i === i;
+  clearSel();
+  if (was) return;
+  sel = {u:ui_, i};
+  const row = box.querySelector('.sent[data-u="'+ui_+'"]');
+  const w = UNITS[ui_].la[i];
+  row.querySelectorAll('.w[data-g="'+w.g+'"]').forEach(x => x.classList.add('hit'));
+  const html = wordCard(ui_, i);
+  if (wide.matches){ const info = row.querySelector('.info'); info.innerHTML = html; info.classList.add('show'); }
+  else aside.innerHTML = html;
+}
+function selectGr(ui_, g){
+  if (!g || g === '0') return;
+  const i = UNITS[ui_].la.findIndex(w => String(w.g) === String(g));
+  if (i >= 0) select(ui_, i);
+}
+
+box.addEventListener('click', e => {
+  const chip = e.target.closest('[data-note]');
+  if (chip){ goNote(chip.dataset.note); return; }
+  const row = e.target.closest('.sent'); if (!row) return;
+  const id = row.dataset.id;
+  if (e.target.closest('.know')){
+    known[id] = !known[id]; if (!known[id]) delete known[id];
+    e.target.closest('.know').classList.toggle('on', !!known[id]); save(); return;
+  }
+  if (e.target.closest('.veil')){ row.classList.add('shown'); return; }
+  const g3 = e.target.closest('.g3');
+  if (g3){
+    const v = g3.dataset.v;
+    if (trm[id] === v){ delete trm[id]; } else trm[id] = v;
+    if (trm[id] === 'k') known[id] = true;
+    else if (trm[id] === 'x' || trm[id] === 'r') delete known[id];
+    row.querySelectorAll('.g3').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === trm[id])));
+    row.querySelector('.know').classList.toggle('on', !!known[id]);
+    save(); applyFilter(); return;
+  }
+  const li = e.target.closest('.clauses li');
+  if (li){
+    const q = li.dataset.q, on = li.classList.contains('on');
+    clearSel();
+    if (!on){ li.classList.add('on'); row.querySelectorAll('.cl[data-q="'+q+'"]').forEach(x => x.classList.add('on')); }
+    return;
+  }
+  const w = e.target.closest('.w'); if (!w) return;
+  if (w.dataset.side === 'gr') selectGr(+w.dataset.u, w.dataset.g);
+  else select(+w.dataset.u, +w.dataset.i);
+});
+box.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('w')){ e.preventDefault(); e.target.click(); }
+});
+aside.addEventListener('click', e => { const c = e.target.closest('[data-note]'); if (c) goNote(c.dataset.note); });
+
+/* ── τρόποι ── */
+const HINT = {
+  rd:'Πάτα μια λέξη: ανάβει το ελληνικό της ζευγάρι και δεξιά βλέπεις συντακτικό, λήμμα, πρόταση και σημειώσεις.',
+  tr:'Η μετάφραση κρύβεται ανά ενότητα. Πες την δυνατά, άνοιξέ την και βαθμολόγησε τον εαυτό σου: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Το ✓ κλειδώνει την ενότητα. Με το «Μόνο τα κόκκινα» μένουν μόνο οι ✗ και ↻.',
+  st:'Οι αγκύλες σου, όπως στο χαρτί: [ ] κύρια, ( ) δευτερεύουσα, με τον αριθμό της πρότασης. Κάτω από κάθε ενότητα: τι πρόταση είναι, πώς εκφέρεται και από πού εξαρτάται. Πάτα μια γραμμή για να την ανάψεις μέσα στο κείμενο.'
+};
+function setMode(m){
+  ui.mode = m; lsSet(UI_KEY, ui);
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  box.classList.toggle('m-tr', m === 'tr');
+  box.classList.toggle('m-st', m === 'st');
+  document.getElementById('onlyRed').hidden = m !== 'tr';
+  document.getElementById('modeHint').textContent = HINT[m];
+  rowsOf().forEach(r => {
+    const u = +r.dataset.u;
+    r.querySelector('.la').innerHTML = laHTML(UNITS[u], u, m);
+    r.classList.remove('shown');
+  });
+  clearSel(); applyFilter();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+const onlyRedI = document.getElementById('onlyRedI');
+onlyRedI.addEventListener('change', applyFilter);
+function applyFilter(){
+  const on = ui.mode === 'tr' && onlyRedI.checked;
+  rowsOf().forEach(r => { const t = trm[r.dataset.id]; r.classList.toggle('gone', on && !(t === 'x' || t === 'r')); });
+}
+document.getElementById('bReset').addEventListener('click', () => {
+  known = {}; trm = {}; save(); build(); setMode(ui.mode);
+});
+
+/* ── φακοί ── */
+const lensBox = document.getElementById('lenses');
+LENSES.forEach(([k, label]) => {
+  const n = WORDS.filter(w => w.tags.includes(k)).length;
+  const b = document.createElement('button');
+  b.className = 'lens'; b.type = 'button'; b.dataset.lens = k; b.setAttribute('aria-pressed','false');
+  b.innerHTML = esc(label) + ' <i>' + n + '</i>';
+  b.addEventListener('click', () => {
+    const on = box.dataset.lens === k;
+    box.dataset.lens = on ? '' : k;
+    lensBox.querySelectorAll('.lens').forEach(x => x.setAttribute('aria-pressed', String(!on && x.dataset.lens === k)));
+  });
+  lensBox.appendChild(b);
+});
+
+/* ══ ΓΡΑΜΜΑΤΙΚΗ — παράγεται από τα ίδια δεδομένα, άρα δεν διαφωνεί ποτέ με το κείμενο ══ */
+const LESSON = {{LESSON}};
+const ATTN = {{ATTN}};
+const PERS = ['α΄ ενικ.','β΄ ενικ.','γ΄ ενικ.','α΄ πληθ.','β΄ πληθ.','γ΄ πληθ.'];
+function conjTable(s){
+  let h = '<div class="conjw"><table class="conj"><tr><th></th>' + s.st.map(x => '<th>'+x[0]+'</th>').join('') + '</tr>';
+  for (let p = 0; p < 6; p++){
+    h += '<tr><td>'+PERS[p]+'</td>';
+    s.st.forEach(([, st]) => {
+      if (s.aux){
+        const end = p < 3 ? 'us' : 'i';
+        h += '<td>'+st+end+' <span class="ix">'+s.aux[p]+'</span></td>';
+      } else {
+        let ix = s.ix;
+        if (s.ix === 'isse' && (p === 3 || p === 4)) ix = 'issē';
+        h += '<td>'+st+'<span class="ix">'+ix+'</span>'+s.en[p]+'</td>';
+      }
+    });
+    h += '</tr>';
+  }
+  return h + '</table></div>';
+}
+function buildGram(){
+  const verbs = WORDS.filter(w => w.m && M[w.m] && M[w.m].p === 'v');
+  const lemmaCount = new Set(verbs.map(w => w.m)).size;
+  let h = '';
+  /* Ρήματα */
+  h += '<div class="sec"><div class="sh"><h2>Όλα τα ρήματα, με τη σειρά</h2><span class="sp"></span><button class="tbtn" id="hideV" type="button" aria-pressed="false">Κρύψε τους αρχικούς χρόνους</button>' +
+       '<p class="sub">'+verbs.length+' ρηματικοί τύποι από '+lemmaCount+' ρήματα. Πάτα έναν τύπο για να τον δεις μέσα στο κείμενο. Με κρυμμένους τους αρχικούς χρόνους, πάτα το θολό κελί αφού τους πεις.</p></div>' +
+       '<div class="tw"><table class="tbl" id="tV"><tr><th>#</th><th>Στο κείμενο</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Τύπος</th></tr>';
+  verbs.forEach((w, k) => {
+    const L = M[w.m];
+    h += '<tr><td class="n">'+(k+1)+'</td><td class="f"><button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button></td><td class="lem"><span>'+esc(L.l)+'</span></td><td class="t hm">'+esc(L.k)+'</td><td class="t">'+esc(w.f)+'</td></tr>';
+  });
+  h += '</table></div></div>';
+
+  /* Ουσιαστικά — ομαδοποιημένα ανά λήμμα, με όλους τους τύπους του κειμένου */
+  function groupBy(p){
+    const map = new Map();
+    WORDS.filter(w => w.m && M[w.m] && M[w.m].p === p).forEach(w => {
+      if (!map.has(w.m)) map.set(w.m, []);
+      const arr = map.get(w.m), c = clean(w.w);
+      if (!arr.some(x => clean(x.w).toLowerCase() === c.toLowerCase() && x.f === w.f)) arr.push(w);
+    });
+    return map;
+  }
+  const nouns = groupBy('n');
+  h += '<div class="sec"><div class="sh"><h2>Ουσιαστικά</h2><p class="sub">Ονομαστική και γενική, γένος, κλίση, και η πτώση του τύπου μέσα στο κείμενο.</p></div>' +
+       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Ονομ. – Γεν.</th><th>Γένος · κλίση</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+  nouns.forEach((arr, m) => {
+    const L = M[m];
+    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.g)+' · '+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+  });
+  h += '</table></div></div>';
+
+  /* Επίθετα και αντωνυμίες */
+  const adjs = groupBy('a'), prons = groupBy('p');
+  h += '<div class="sec"><div class="sh"><h2>Επίθετα και αντωνυμίες</h2><p class="sub">Οι αντωνυμίες με γενική σε -ius και δοτική σε -i (illīus, ipsīus, cuius) είναι αγαπημένη ερώτηση.</p></div>' +
+       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Από</th><th>Είδος</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+  [adjs, prons].forEach(map => map.forEach((arr, m) => {
+    const L = M[m];
+    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+  }));
+  h += '</table></div></div>';
+
+  /* Το φαινόμενο του μαθήματος */
+  /* Το μάθημα — ΜΟΝΟ αν το κείμενο έχει δικό του φαινόμενο (JSON `lesson`, προαιρετικό). */
+  if (LESSON.conj){
+    h += '<div class="sec"><div class="sh"><h2>'+LESSON.conj.h2+'</h2><p class="sub">'+LESSON.conj.sub+'</p></div><div class="grid2">';
+    LESSON.conj.boxes.forEach(s => { h += '<div class="box"><h3>'+s.t+'</h3><div class="rule">'+s.r+'</div>'+conjTable(s)+'<div class="rule" style="margin-top:12px">'+s.note+'</div></div>'; });
+    h += '</div></div>';
+  }
+
+  /* Η ακολουθία των χρόνων (ή όποιος πίνακας του μαθήματος), με τις λέξεις του κειμένου στη θέση τους */
+  if (LESSON.seq){
+    const q = LESSON.seq;
+    const chip = w => '<button class="ch" type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>';
+    const cell = (re) => WORDS.filter(w => re.test(w.f || '')).map(chip).join('');
+    h += '<div class="sec"><div class="sh"><h2>'+q.h2+'</h2><p class="sub">'+q.sub+'</p></div>' +
+         '<div class="tw"><table class="seqt"><tr>'+q.head.map(x => '<th>'+x+'</th>').join('')+'</tr>' +
+         q.rows.map(r => '<tr>'+r.map(c => '<td>'+(c.h != null ? c.h : '<b>'+c.b+'</b><span class="ex">'+c.ex+'</span>'+(c.re ? cell(new RegExp(c.re)) : ''))+'</td>').join('')+'</tr>').join('') +
+         '</table></div></div>';
+  }
+
+  /* Άκλιτα */
+  const akl = Object.keys(M).filter(k => M[k].p === 'x');
+  h += '<div class="sec"><div class="sh"><h2>Άκλιτα</h2><p class="sub">Επιρρήματα, προθέσεις, σύνδεσμοι. Όπου υπάρχουν παραθετικά, γράφονται δίπλα.</p></div><div class="akl">' +
+       akl.map(k => '<div><b>'+esc(M[k].l)+'</b>'+esc(M[k].k)+(M[k].tr ? ' · '+esc(M[k].tr) : '')+'</div>').join('') + '</div>';
+  h += (ATTN ? '<div class="attn">' + ATTN + '</div>' : '') + '</div>';
+
+  const g = document.getElementById('gram');
+  g.innerHTML = h;
+  const hideV = document.getElementById('hideV');
+  hideV.addEventListener('click', () => {
+    const on = hideV.getAttribute('aria-pressed') !== 'true';
+    hideV.setAttribute('aria-pressed', String(on));
+    hideV.textContent = on ? 'Δείξε τους αρχικούς χρόνους' : 'Κρύψε τους αρχικούς χρόνους';
+    document.getElementById('tV').classList.toggle('hidecol', on);
+    document.querySelectorAll('#tV td.lem.rv').forEach(td => td.classList.remove('rv'));
+  });
+  g.addEventListener('click', e => {
+    const lem = e.target.closest('#tV.hidecol td.lem'); if (lem){ lem.classList.toggle('rv'); return; }
+    const go = e.target.closest('[data-go]'); if (go){ const [u, i] = go.dataset.go.split(',').map(Number); goWord(u, i); }
+  });
+  document.getElementById('tcG').textContent = verbs.length;
+}
+
+/* ══ ΚΑΡΤΕΣ — επανάληψη τύπου Anki, με τα δικά σου ✗ ↻ ✓ ══════════════
+   Κάθε μορφή του κειμένου είναι ΜΙΑ κάρτα (το «domi» 4 φορές = 1 κάρτα).
+   Στο «Συντακτικό» κάθε ΘΕΣΗ είναι κάρτα, γιατί η ίδια λέξη αλλάζει ρόλο. */
+const DECKS = [
+  {k:'v', t:'Ρήματα', ask:'Ρήμα · αρχικοί χρόνοι και τύπος;'},
+  {k:'n', t:'Ουσιαστικά', ask:'Ουσιαστικό · ονομ. – γεν., γένος, κλίση, πτώση;'},
+  {k:'a', t:'Επίθετα', ask:'Επίθετο · από πού, κλίση, πτώση;'},
+  {k:'p', t:'Αντωνυμίες', ask:'Αντωνυμία · κλίση, είδος, πτώση;'},
+  {k:'x', t:'Συντακτικό', ask:'Τι είναι συντακτικά;'},
+  {k:'all', t:'Όλα', ask:''}
+];
+const CARDS = [];
+const CARDS_AKL = {{CARDS_AKL}};   /* τα άκλιτα που παίρνουν κάρτα «Συντακτικό» */
+(function(){
+  const seen = {};
+  WORDS.forEach(w => {
+    const L = w.m && M[w.m];
+    if (L && L.p !== 'x'){
+      const id = L.p + ':' + clean(w.w).toLowerCase() + ':' + (w.f || '');
+      if (!seen[id]){ seen[id] = 1; CARDS.push({id, k:L.p, w}); }
+    }
+    if (L && (L.p !== 'x' || CARDS_AKL.includes(w.m))){
+      CARDS.push({id:'x:'+w.u+':'+w.i, k:'x', w});
+    }
+  });
+})();
+let cst = lsGet(CARD_KEY, {}); if (typeof cst !== 'object' || Array.isArray(cst)) cst = {};
+function today(){ const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 864e5); }
+function isDue(c){ const s = cst[c.id]; return s && s.d <= today(); }
+function isNew(c){ return !cst[c.id]; }
+function inDeck(c, k){ return k === 'all' || c.k === k; }
+function ivlText(days){ return days <= 0 ? 'σήμερα ξανά' : days === 1 ? 'αύριο' : 'σε ' + days + ' μέρες'; }
+function plan(c, v){
+  const s = cst[c.id] || {i:0, e:2.5, n:0, l:0};
+  if (v === 'x') return {i:0, e:Math.max(1.3, s.e - .2), n:0, l:s.l + 1};
+  if (v === 'r') return {i:s.n === 0 ? 1 : Math.max(1, Math.round(s.i * 1.2)), e:Math.max(1.3, s.e - .15), n:s.n + 1, l:s.l};
+  return {i:s.n === 0 ? 1 : s.n === 1 ? 3 : Math.max(s.i + 1, Math.round(s.i * s.e)), e:s.e, n:s.n + 1, l:s.l};
+}
+let deckK = 'all', queue = [], cur = null, flipped = false, doneN = 0;
+
+function deckStats(k){
+  const cs = CARDS.filter(c => inDeck(c, k));
+  return {all:cs.length, due:cs.filter(isDue).length, nw:cs.filter(isNew).length, lock:cs.filter(c => cst[c.id] && cst[c.id].i >= 7).length};
+}
+function renderDeck(){
+  document.getElementById('deck').innerHTML = DECKS.map(d => {
+    const s = deckStats(d.k);
+    return '<button class="dk" type="button" data-k="'+d.k+'" aria-pressed="'+(d.k === deckK)+'"><div class="t">'+d.t+'</div><div class="s"><b>'+(s.due + s.nw)+'</b> για τώρα · '+s.all+' κάρτες<br>'+s.lock+' κλειδωμένες</div></button>';
+  }).join('');
+  const all = deckStats('all');
+  document.getElementById('bDue').textContent = all.due + all.nw;
+  document.getElementById('bDueS').textContent = all.due + ' επανάληψη · ' + all.nw + ' νέες · ' + all.lock + ' κλειδωμένες';
+  document.getElementById('tcK').textContent = all.due + all.nw;
+}
+function startDeck(k){
+  deckK = k; doneN = 0;
+  const cs = CARDS.filter(c => inDeck(c, k));
+  queue = cs.filter(isDue).sort((a, b) => cst[a.id].d - cst[b.id].d).concat(cs.filter(isNew));
+  renderDeck(); next();
+}
+function next(){
+  cur = queue.shift() || null; flipped = false;
+  const st = document.getElementById('stage');
+  if (!cur){
+    const s = deckStats(deckK);
+    const fut = CARDS.filter(c => inDeck(c, deckK) && cst[c.id]).map(c => cst[c.id].d).sort((a, b) => a - b)[0];
+    st.innerHTML = '<div class="done"><div class="big">Τέλος για τώρα.</div><p>'+(doneN ? doneN + ' κάρτες σε αυτόν τον γύρο. ' : '')+s.lock+' από '+s.all+' κλειδωμένες (επόμενη επανάληψη σε 7+ μέρες).'+(fut != null ? ' Η επόμενη κάρτα ' + ivlText(fut - today()) + '.' : '')+'</p><button class="tbtn" type="button" id="again">Ξανά όλες οι κάρτες αυτής της κατηγορίας</button></div>';
+    document.getElementById('again').onclick = () => { queue = CARDS.filter(c => inDeck(c, deckK)); next(); };
+    return;
+  }
+  st.innerHTML = cardHTML(cur) + rateHTML(cur) + '<div class="keys">Space: γύρνα · 1 ✗ · 2 ↻ · 3 ✓</div>' +
+    '<div class="cfoot"><button type="button" id="cReset">μηδένισε τις κάρτες αυτής της κατηγορίας</button></div>';
+  document.getElementById('cReset').onclick = () => {
+    CARDS.filter(c => inDeck(c, deckK)).forEach(c => delete cst[c.id]);
+    lsSet(CARD_KEY, cst); startDeck(deckK);
+  };
+}
+function cardHTML(c){
+  const w = c.w, L = M[w.m], u = UNITS[w.u];
+  const ctx = u.la.map((x, i) => i === w.i ? '<b>'+esc(x.w)+'</b>' : esc(x.w)).join(' ');
+  const deck = DECKS.find(d => d.k === c.k);
+  const left = queue.length + 1;
+  let back = '';
+  if (c.k === 'x'){
+    back = '<div class="sx">'+esc(w.x)+'</div>';
+    const cl = CL[w.q]; if (cl) back += '<div class="tr">Πρόταση: '+(cl.d?'( ':'[ ')+esc(cl.t)+(cl.d?' )':' ]')+'</div>';
+  } else {
+    back = '<div class="lem">'+esc(L.l)+'</div><div class="facts">';
+    if (c.k === 'v') back += '<span><b>Συζυγία</b>'+esc(L.k)+'</span>';
+    if (c.k === 'n') back += '<span><b>Γένος</b>'+esc(L.g)+'</span><span><b>Κλίση</b>'+esc(L.k)+'</span>';
+    if (c.k === 'a' || c.k === 'p') back += '<span><b>Είδος</b>'+esc(L.k)+'</span>';
+    if (w.f) back += '<span><b>Εδώ</b>'+esc(w.f)+'</span>';
+    back += '</div>';
+    if (L.tr) back += '<div class="tr">'+esc(L.tr)+'</div>';
+  }
+  back += '<div class="gd">'+esc(w.d)+'</div>';
+  return '<div class="cmeta"><span>'+esc(deck.t)+'</span><span>'+left+' ακόμα</span></div>' +
+    '<div class="card" id="card" tabindex="0" role="button" aria-label="Γύρνα την κάρτα"><div class="ask">'+esc(deck.ask)+'</div><div class="form">'+esc(clean(w.w))+'</div><div class="ctx">'+ctx+'</div><div class="tap">πάτα ή Space για να τη γυρίσεις</div><div class="back">'+back+'</div></div>';
+}
+function rateHTML(c){
+  const p = v => ivlText(plan(c, v).i);
+  return '<div class="rate" id="rate"><button class="x" type="button" data-v="x"><span class="k">✗</span><span class="l">Λάθος</span><span class="i">'+p('x')+'</span></button>' +
+    '<button class="r" type="button" data-v="r"><span class="k">↻</span><span class="l">Με δυσκολία</span><span class="i">'+p('r')+'</span></button>' +
+    '<button class="k3" type="button" data-v="k"><span class="k">✓</span><span class="l">Το ήξερα</span><span class="i">'+p('k')+'</span></button></div>';
+}
+function flip(){
+  if (!cur || flipped) return;
+  flipped = true;
+  document.getElementById('card').classList.add('flip');
+  document.getElementById('rate').classList.add('on');
+}
+function rate(v){
+  if (!cur || !flipped) return;
+  const wasNew = isNew(cur) || cst[cur.id].n === 0;
+  const p = plan(cur, v);
+  cst[cur.id] = {i:p.i, e:Math.round(p.e * 100) / 100, n:p.n, l:p.l, d:today() + p.i};
+  lsSet(CARD_KEY, cst);
+  doneN++;
+  if (v === 'x') queue.splice(Math.min(3, queue.length), 0, cur);
+  else if (v === 'r' && wasNew) queue.splice(Math.min(6, queue.length), 0, cur);
+  renderDeck(); next();
+}
+document.getElementById('deck').addEventListener('click', e => { const b = e.target.closest('.dk'); if (b) startDeck(b.dataset.k); });
+document.getElementById('stage').addEventListener('click', e => {
+  if (e.target.closest('#card')) { flip(); return; }
+  const r = e.target.closest('#rate button'); if (r) rate(r.dataset.v);
+});
+document.addEventListener('keydown', e => {
+  if (ui.tab !== 'kartes' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input,textarea')) return;
+  if (e.key === ' ' || e.key === 'Enter'){ if (!flipped){ e.preventDefault(); flip(); } }
+  else if (e.key === '1') rate('x'); else if (e.key === '2') rate('r'); else if (e.key === '3') rate('k');
+});
+
+/* ══ ΚΑΡΤΕΛΕΣ + ΠΛΟΗΓΗΣΗ ══════════════════════════════════════════════ */
+function setTab(t, noScroll){
+  ui.tab = t; lsSet(UI_KEY, ui);
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  if (history.replaceState) history.replaceState(null, '', '#' + t);
+  if (t === 'kartes' && !document.getElementById('card') && !document.querySelector('#stage .done')) startDeck(deckK);
+  if (!noScroll){ const tabs = document.querySelector('.tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView({block:'start'}); }
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+function goNote(k){
+  setTab('simeioseis', true);
+  const el = document.getElementById('n-' + k); if (!el) return;
+  el.scrollIntoView({block:'center'});
+  el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400);
+}
+function goWord(u, i){
+  setTab('keimeno', true);
+  if (ui.mode === 'tr') setMode('rd');
+  const row = box.querySelector('.sent[data-u="'+u+'"]');
+  row.scrollIntoView({block:'center'});
+  if (!(sel && sel.u === u && sel.i === i)) select(u, i);
+}
+
+/* ══ ΕΚΚΙΝΗΣΗ ═════════════════════════════════════════════════════════ */
+document.getElementById('tcN').textContent = document.querySelectorAll('.nt').length;
+build();
+buildGram();
+setMode(ui.mode === 'tr' || ui.mode === 'st' ? ui.mode : 'rd');
+tally();
+renderDeck();
+const h0 = (location.hash || '').slice(1);
+setTab(['keimeno','grammatiki','simeioseis','kartes'].includes(h0) ? h0 : (ui.tab || 'keimeno'), true);
+/* Όταν αλλάζει πλάτος (π.χ. γυρνάς το κινητό), η καρτέλα της λέξης ΜΕΤΑΚΟΜΙΖΕΙ
+   (πλάι ↔ κάτω από την ενότητα) — δεν σβήνει αυτό που διάβαζες. */
+function relocate(){ const s = sel; clearSel(); if (s) select(s.u, s.i); }
+wide.addEventListener ? wide.addEventListener('change', relocate) : wide.addListener(relocate);
+</script>
+</body>
+</html>

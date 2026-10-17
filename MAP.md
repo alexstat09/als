@@ -1112,6 +1112,20 @@ XIX, «Η συνωμοσία του Κατιλίνα», 3 σκηνές / **10 ε
 - Αποθήκη `latsyn:v1`, **τοπική στη συσκευή** (όπως τα `lectioNN_known_v1`),
   με μήνυμα σε αποτυχία εγγραφής. Φρουρός: `tests/latinika-syntaxi.test.js`.
 
+⭐⭐⭐ **als-v625 (17/10/26) — ΤΑ ΠΑΚΕΤΑ ΠΑΡΑΓΟΝΤΑΙ: `tools/latinika/` + skill `latinika-lectio`.**
+Ένα πακέτο είναι πλέον ΔΕΔΟΜΕΝΑ: `tools/latinika/lectioNN.json` → `build.js` + το
+**ΠΑΓΩΜΕΝΟ πρότυπο `tools/latinika/lectio.tpl`** (CSS + μηχανή του XXIV) →
+`latinika-lectioNN.html`. ⛔ Η HTML δεν αγγίζεται με το χέρι: το
+`tests/latinika-lectio.test.js` απαιτεί `build(json) === αρχείο`. Οι κανόνες
+(βιβλίο/φυλλάδιο αυτολεξεί · m/q/n/g/f · ελληνικά σε λήμμα · φακός = αστερίσκοι ·
+αρχικοί χρόνοι/γένη = πρόχειρο study4exams `lectioNN.s4e.json`) ζουν ΜΙΑ φορά στο
+`lib.js`, κοινοί σε `validate.js` και test· τα ειδικά κάθε κειμένου στα `checks` του
+JSON. `wire.js` = σειρά βιβλιοθήκης + SHAPE + σύνολα (υπολογισμένα) + TEXTS της
+syntaxi + sw. Νέο κείμενο = **μηδέν γραμμές στο test** (αποδείχτηκε με ψεύτικο XXV:
+5.045/0, test byte-ίδιο). Το XXIV ξαναπαράχθηκε: DOM ίδιο σε 8 όψεις, 2.490 → 3.396
+βεβαιώσεις. Η ροή (fetch-book → fetch-s4e → crop-photo → JSON → validate → build →
+wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.md`.
+
 ⭐⭐⭐ **ΕΝΑΤΟ ΠΑΚΕΤΟ — `latinika-lectio24.html`, als-v624 (17/10/26) — ΤΟ ΠΡΩΤΟ «ΟΡΓΑΝΟ ΜΕΛΕΤΗΣ».**
 Lectio XXIV, «Το πάθημα ενός ψεύτη» (Νασικάς & Έννιος), 3 σκηνές / **12 ενότητες**
 / 9 παγίδες / **13 κάρτες σημειώσεων**, κλειδί `lectio24_known_v1`. Hero 98 →
