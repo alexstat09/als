@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0908">
+<title>Lectio XXIV — Το πάθημα ενός ψεύτη</title>
+<!-- ⛔ Η Instrument Serif έχει ΜΗΔΕΝ ελληνικά γλυφά (πέφτει σε Georgia = «οι τόνοι
+     δεν είναι σωστοί», als-v504). Εδώ μπαίνει ΜΟΝΟ σε λατινικά και σε νούμερα.
+     Τα ελληνικά (τίτλοι + μετάφραση του φυλλαδίου) είναι GFS Didot. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">
+<style>
+:root{
+  --bg:#0a0908;
+  --ink:#f5f2ec;
+  --dim:rgba(245,242,236,.64);
+  --faint:rgba(245,242,236,.36);
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.12);
+  --lat:24,200,192;          /* Λατινικά · teal — η ταυτότητα του μαθήματος */
+  --hit:246,193,119;         /* η λέξη που διάλεξες */
+  --warn:255,107,139;        /* ✗ — το ΜΟΝΟ κανάλι για «ξανά» */
+  --ok:121,192,168;          /* ✓ */
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --gr:"GFS Didot","Times New Roman",Times,serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,.w:focus-visible,a:focus-visible{outline:2px solid rgba(var(--lat),.7);outline-offset:2px;border-radius:4px}
+.shell{max-width:1180px;margin:0 auto;padding:22px 32px 120px}
+
+/* ── διαδρομή ─────────────────────────────────────────────── */
+.top{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);min-height:40px}
+.top a{color:var(--dim);text-decoration:none;letter-spacing:.12em}
+.top a:hover{color:var(--ink)}
+.top .sl{color:rgba(245,242,236,.18)}
+.top .wh{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── εξώφυλλο ─────────────────────────────────────────────── */
+.cover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:end;padding:46px 0 34px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);margin-bottom:18px}
+.eyebrow b{font-weight:400;color:rgba(var(--lat),.9)}
+h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-height:.98;letter-spacing:-.01em}
+.lead{margin-top:22px;max-width:620px;font-size:15px;line-height:1.72;color:var(--dim)}
+.lead b{color:var(--ink);font-weight:500}
+.face{text-align:right}
+.face .n{font-family:var(--serif);font-size:128px;line-height:.82;color:rgb(var(--lat))}
+.face .l{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);line-height:1.7}
+
+/* ── ταινία μετρήσεων ─────────────────────────────────────── */
+.band{display:grid;grid-template-columns:1.3fr 1fr 1fr;margin-top:28px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.band>div{padding:20px 24px;min-width:0}
+.band>div+div{border-left:1px solid var(--line)}
+.band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.band .bn{margin-top:8px;font-family:var(--serif);font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.band .bn small{font-size:22px;color:var(--faint)}
+.band .bs{margin-top:6px;font-size:12.5px;color:var(--dim)}
+.dash{display:flex;gap:4px;margin-top:12px}
+.dash i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08)}
+.dash i.on{background:rgb(var(--ok))}
+.dash i.x{background:rgb(var(--warn))}
+.dash i.r{background:rgb(var(--hit))}
+
+/* ── καρτέλες ─────────────────────────────────────────────── */
+.tabs{display:flex;gap:30px;margin-top:44px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;padding:12px 0 14px;font-size:13.5px;color:var(--dim);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink)}
+.tab .c{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:6px}
+.panel{display:none;padding-top:34px}
+.panel.on{display:block}
+
+/* ── γραμμή εργαλείων κειμένου ────────────────────────────── */
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:11px;padding:3px}
+.seg button{padding:7px 15px;border-radius:8px;font-size:13px;color:var(--dim)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.07);color:var(--ink)}
+.tools .sp{flex:1}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+.chk[hidden]{display:none}
+.chk input{accent-color:rgb(var(--warn))}
+.modehint{margin-top:14px;font-size:13px;color:var(--dim);max-width:680px;line-height:1.6}
+.lenses{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.lenses .lbl{margin-right:6px}
+.lens{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:12.5px;color:var(--dim)}
+.lens:hover{color:var(--ink);border-color:rgba(255,255,255,.22)}
+.lens i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.lens[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.lens[aria-pressed="true"] i{color:rgba(10,9,8,.6)}
+.lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+
+/* ── κείμενο + λήμμα ──────────────────────────────────────── */
+.read{display:grid;grid-template-columns:minmax(0,700px) minmax(0,1fr);gap:56px;align-items:start}
+.scene{margin-top:40px}
+.scene-head{display:flex;align-items:baseline;gap:14px;padding-bottom:10px}
+.scene-num{font-family:var(--serif);font-size:22px;color:rgb(var(--lat))}
+.scene-title{font-family:var(--gr);font-style:italic;font-size:26px}
+.scene-flow{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:right}
+.sent{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
+.sent.gone{display:none}
+.num{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:9px;text-align:right}
+.la{font-family:var(--serif);font-size:27px;line-height:1.42;color:var(--ink)}
+.gr{margin-top:6px;font-family:var(--gr);font-size:19px;line-height:1.55;color:var(--dim);word-spacing:-.06em}
+.w{cursor:pointer;border-radius:5px;padding:0 2px;transition:background .14s,color .14s,box-shadow .14s}
+.la .w{border-bottom:1px dotted rgba(var(--lat),.28)}
+.w:hover{background:rgba(255,255,255,.05)}
+.w.hit{background:rgba(var(--hit),.16);color:rgb(var(--hit))}
+.gr .w.hit{color:rgb(var(--hit))}
+/* φακοί: καθαρό CSS — η λέξη ξέρει τις ετικέτες της */
+.text[data-lens="sub"] .la .w[data-tags~="sub"],
+.text[data-lens="inf"] .la .w[data-tags~="inf"],
+.text[data-lens="part"] .la .w[data-tags~="part"],
+.text[data-lens="dep"] .la .w[data-tags~="dep"],
+.text[data-lens="verb"] .la .w[data-tags~="verb"],
+.text[data-lens="noun"] .la .w[data-tags~="noun"],
+.text[data-lens="adj"] .la .w[data-tags~="adj"],
+.text[data-lens="pron"] .la .w[data-tags~="pron"]{background:rgba(var(--lat),.16);color:rgb(var(--lat));border-bottom:2px solid rgb(var(--lat))}
+.text[data-lens]:not([data-lens=""]) .la .w:not(.hit){opacity:.5}
+.text[data-lens="sub"] .la .w[data-tags~="sub"],.text[data-lens="inf"] .la .w[data-tags~="inf"],.text[data-lens="part"] .la .w[data-tags~="part"],.text[data-lens="dep"] .la .w[data-tags~="dep"],.text[data-lens="verb"] .la .w[data-tags~="verb"],.text[data-lens="noun"] .la .w[data-tags~="noun"],.text[data-lens="adj"] .la .w[data-tags~="adj"],.text[data-lens="pron"] .la .w[data-tags~="pron"]{opacity:1}
+
+/* Μετάφρασε */
+.veil{display:none;margin-top:8px;width:100%;text-align:left;padding:12px 16px;border:1px dashed var(--line2);border-radius:11px;font-size:13px;color:var(--dim)}
+.veil:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.m-tr .sent:not(.shown) .gr{display:none}
+.m-tr .sent:not(.shown) .veil{display:block}
+.side{display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding-top:6px}
+.know{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:6px 11px;border:1px solid var(--line2);border-radius:8px;color:var(--faint);white-space:nowrap}
+.know:hover{color:var(--ink)}
+.know.on{color:rgb(var(--ok));border-color:rgba(var(--ok),.4);background:rgba(var(--ok),.08)}
+.grade{display:none;gap:6px}
+.m-tr .sent.shown .grade{display:flex}
+.m-tr .know{display:none}
+.m-st .know{display:none}
+.g3{width:38px;height:34px;border:1px solid var(--line2);border-radius:9px;font-size:15px;color:var(--dim)}
+.g3:hover{color:var(--ink)}
+.g3.x[aria-pressed="true"]{background:rgba(var(--warn),.16);border-color:rgba(var(--warn),.5);color:rgb(var(--warn))}
+.g3.r[aria-pressed="true"]{background:rgba(var(--hit),.14);border-color:rgba(var(--hit),.5);color:rgb(var(--hit))}
+.g3.k[aria-pressed="true"]{background:rgba(var(--ok),.14);border-color:rgba(var(--ok),.5);color:rgb(var(--ok))}
+.sent .mark{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Δομή: οι αγκύλες σου, όπως στο χαρτί */
+.m-st .gr{display:none}
+.br{font-family:var(--mono);font-size:22px;font-weight:300;color:var(--faint);padding:0 1px}
+.br.d{color:rgb(var(--lat))}
+.br sup{font-size:10px;letter-spacing:0;margin-left:1px;vertical-align:top}
+.cl.on .w{background:rgba(var(--lat),.12)}
+.clauses{display:none;margin-top:14px;list-style:none;border-left:1px solid var(--line2)}
+.m-st .clauses{display:block}
+.clauses li{padding:6px 0 6px 14px;font-size:13.5px;color:var(--dim);cursor:pointer;line-height:1.55}
+.clauses li:hover,.clauses li.on{color:var(--ink)}
+.clauses li b{font-family:var(--mono);font-weight:400;font-size:11px;color:rgb(var(--lat));margin-right:6px}
+.clauses li .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.clauses li .k.d{color:rgb(var(--lat))}
+.clauses li em{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink)}
+
+/* η καρτέλα της λέξης */
+.aside{position:sticky;top:20px;margin-top:40px}
+.wc{border:1px solid var(--line);border-radius:18px;padding:26px 26px 22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
+.wc.empty{color:var(--dim);font-size:14px;line-height:1.7}
+.wc.empty .big{font-family:var(--gr);font-style:italic;font-size:28px;color:var(--ink);line-height:1.2;margin-bottom:12px}
+.wc-la{font-family:var(--serif);font-size:44px;line-height:1;color:rgb(var(--hit))}
+.wc-d{margin-top:8px;font-family:var(--gr);font-size:19px;color:var(--dim)}
+.wc-sec{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.wc-sec p{margin-top:8px;font-size:14px;line-height:1.66;color:var(--ink)}
+.wc-lem{margin-top:8px;font-family:var(--serif);font-size:23px;line-height:1.25;color:rgb(var(--lat))}
+.wc dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:10px;font-size:13.5px}
+.wc dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);padding-top:3px}
+.wc dd{color:var(--ink);line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{padding:5px 11px;border:1px solid var(--line2);border-radius:999px;font-size:12px;color:var(--dim)}
+.chip:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.info{display:none;margin-top:14px}
+.info.show{display:block}
+.info .wc{padding:20px}
+.info .wc-la{font-size:34px}
+
+/* ── Γραμματική ───────────────────────────────────────────── */
+.sec{margin-top:58px}
+.sec:first-child{margin-top:0}
+.sh{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.sh h2{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;line-height:1.1}
+.sh .sp{flex:1}
+.sh .sub{flex-basis:100%;width:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
+.tbl th{text-align:left;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding:14px 12px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5;color:var(--ink)}
+.tbl td.n{font-family:var(--mono);font-size:11px;color:var(--faint);width:36px}
+.tbl td.f{font-family:var(--serif);font-size:20px;white-space:nowrap}
+.tbl td.f button{color:var(--ink);border-bottom:1px dotted rgba(var(--lat),.4)}
+.tbl td.f button:hover{color:rgb(var(--hit))}
+.tbl td.lem{font-family:var(--serif);font-size:19px;color:rgb(var(--lat))}
+.tbl td.t{color:var(--dim)}
+.tbl td.tr{color:rgb(var(--hit));font-size:13.5px}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.hidecol .lem{position:relative;cursor:pointer}
+.hidecol .lem>span{filter:blur(7px);opacity:.5;transition:filter .2s,opacity .2s}
+.hidecol .lem.rv>span{filter:none;opacity:1}
+.tbtn{padding:7px 13px;border:1px solid var(--line2);border-radius:9px;font-size:12.5px;color:var(--dim)}
+.tbtn:hover{color:var(--ink)}
+.tbtn[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}
+.box{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));min-width:0}
+.box h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:23px}
+.box .rule{margin-top:6px;font-size:13px;color:var(--dim)}
+.box .rule b{color:rgb(var(--lat));font-weight:400;font-family:var(--mono);font-size:12px}
+.conj{width:100%;border-collapse:collapse;margin-top:12px;font-family:var(--serif);font-size:17px}
+.conj th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);text-align:left;padding:4px 6px 8px}
+.conj td{padding:3px 6px;white-space:nowrap}
+.conj td:first-child{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.conj .ix{color:rgb(var(--lat))}
+.conjw{overflow-x:auto}
+.seqt{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.seqt th,.seqt td{border:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:top}
+.seqt th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.seqt td b{display:block;font-weight:500;color:var(--ink)}
+.seqt td .ex{display:block;margin-top:4px;font-family:var(--serif);font-size:16px;color:var(--dim)}
+.seqt .ch{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid rgba(var(--lat),.4);border-radius:999px;font-family:var(--serif);font-size:15px;color:rgb(var(--lat))}
+.seqt .ch:hover{background:rgba(var(--lat),.12)}
+.akl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px;margin-top:10px}
+.akl div{padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--dim)}
+.akl div b{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--ink);margin-right:8px}
+.attn{margin-top:20px;padding:18px 22px;border-left:2px solid rgb(var(--hit));background:rgba(var(--hit),.05);border-radius:0 12px 12px 0;font-size:14px;line-height:1.75;color:var(--ink);max-width:820px}
+.attn b{color:rgb(var(--hit));font-weight:500}
+
+/* παγίδες (static — τις μετράει η βιβλιοθήκη) */
+.traps{margin-top:58px}
+.traps h3,.notes h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.traps .sub{margin-top:12px;font-size:13.5px;color:var(--dim)}
+.traps ul{list-style:none;margin-top:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px}
+.traps li{padding:18px 0;border-bottom:1px solid var(--line);min-width:0}
+.traps li .n{font-family:var(--serif);font-size:30px;line-height:1;color:rgb(var(--hit))}
+.traps .lat{display:block;margin-top:8px;font-family:var(--serif);font-size:20px;line-height:1.25}
+.traps .fix{display:block;margin-top:6px;font-size:14px;color:var(--ink);line-height:1.55}
+.traps .why{display:block;margin-top:6px;font-size:13px;color:var(--dim);line-height:1.6}
+
+/* ── Σημειώσεις ───────────────────────────────────────────── */
+.notes .sub{margin-top:12px;font-size:13.5px;color:var(--dim);max-width:720px}
+.notes ul{list-style:none;margin-top:22px;columns:2;column-gap:20px}
+.nt{break-inside:avoid;margin-bottom:20px;border:1px solid var(--line);border-radius:18px;padding:22px 24px 20px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));transition:border-color .5s,background .5s}
+.nt.flash{border-color:rgba(var(--hit),.7);background:rgba(var(--hit),.07)}
+.nt .src{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.nt .src .me{color:rgb(var(--warn))}
+.nt h4{margin-top:8px;font-family:var(--gr);font-style:italic;font-weight:400;font-size:26px;line-height:1.15}
+.nt h4 .la{font-family:var(--serif);font-style:normal;font-size:26px}
+.nt p{margin-top:10px;font-size:14px;line-height:1.7;color:var(--ink)}
+.nt p.d{color:var(--dim)}
+.nt .lat,.nt i.lat{font-family:var(--serif);font-style:normal;font-size:17px;color:rgb(var(--lat))}
+.nt table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13.5px}
+.nt td{padding:9px 8px 9px 0;border-top:1px solid var(--line);vertical-align:top;line-height:1.5}
+.nt td:first-child{font-family:var(--serif);font-size:19px;color:rgb(var(--lat));white-space:nowrap;padding-right:14px}
+.nt td .q{display:block;font-family:var(--gr);font-size:16px;color:var(--dim)}
+.nt .ans{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.nt .ans span{font-family:var(--serif);font-size:18px;color:var(--ink)}
+.nt .ans span em{font-family:var(--sans);font-style:normal;font-size:12.5px;color:var(--dim);margin-left:8px}
+.nt .ask{margin-top:12px;padding:12px 14px;border:1px dashed rgba(var(--hit),.5);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.6}
+.nt .ask b{color:rgb(var(--hit));font-weight:500}
+
+/* ── Κάρτες ───────────────────────────────────────────────── */
+.deck{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dk{padding:16px 16px 14px;text-align:left;border-left:1px solid var(--line);min-width:0}
+.dk:first-child{border-left:0}
+.dk:hover{background:rgba(255,255,255,.025)}
+.dk[aria-pressed="true"]{background:rgba(var(--lat),.09);box-shadow:inset 0 -2px 0 rgb(var(--lat))}
+.dk .t{font-family:var(--gr);font-style:italic;font-size:20px;color:var(--ink)}
+.dk .s{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);line-height:1.7}
+.dk .s b{font-weight:400;color:rgb(var(--lat))}
+.stage{max-width:680px;margin:40px auto 0}
+.cmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card{margin-top:12px;min-height:340px;border:1px solid var(--line2);border-radius:22px;padding:34px 36px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));display:flex;flex-direction:column;cursor:pointer;user-select:none}
+.card .ask{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--lat))}
+.card .form{margin-top:22px;font-family:var(--serif);font-size:72px;line-height:1;text-align:center}
+.card .ctx{margin-top:22px;text-align:center;font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--dim)}
+.card .ctx b{font-weight:400;color:rgb(var(--hit))}
+.card .tap{margin-top:auto;padding-top:24px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card .back{display:none;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+.card.flip .back{display:block}
+.card.flip .tap{display:none}
+.card.flip .form{font-size:44px;margin-top:14px}
+.card.flip .ctx{display:none}
+.back .lem{font-family:var(--serif);font-size:32px;line-height:1.2;color:rgb(var(--lat));text-align:center}
+.back .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+.back .facts span{padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:13px;color:var(--ink)}
+.back .facts span b{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.back .tr{margin-top:14px;text-align:center;font-size:13.5px;color:rgb(var(--hit));line-height:1.6}
+.back .sx{font-size:15px;line-height:1.7;color:var(--ink)}
+.back .gd{margin-top:12px;text-align:center;font-family:var(--gr);font-size:18px;color:var(--dim)}
+.rate{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.rate.on{display:grid}
+.rate button{padding:14px 10px 12px;border:1px solid var(--line2);border-radius:14px;text-align:center}
+.rate button .k{display:block;font-size:20px}
+.rate button .l{display:block;margin-top:4px;font-size:13px;color:var(--ink)}
+.rate button .i{display:block;margin-top:3px;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.rate .x{color:rgb(var(--warn))} .rate .x:hover{background:rgba(var(--warn),.08)}
+.rate .r{color:rgb(var(--hit))} .rate .r:hover{background:rgba(var(--hit),.08)}
+.rate .k3{color:rgb(var(--ok))} .rate .k3:hover{background:rgba(var(--ok),.08)}
+.keys{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint)}
+.done{text-align:center;padding:60px 20px}
+.done .big{font-family:var(--gr);font-style:italic;font-size:40px}
+.done p{margin-top:12px;color:var(--dim);font-size:14px}
+.done .tbtn{margin-top:22px}
+.cfoot{display:flex;justify-content:center;gap:18px;margin-top:26px}
+.cfoot button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
+.cfoot button:hover{color:var(--ink)}
+
+.foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;line-height:1.85;color:var(--dim);max-width:860px}
+.foot b{color:var(--dim);font-weight:500}
+
+/* ── πλάτη (ΜΟΝΟ max-width — σταθ. 51) ───────────────────── */
+@media (max-width:1040px){
+  .read{grid-template-columns:minmax(0,1fr)}
+  .aside{display:none}
+  .notes ul{columns:1}
+  .traps ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .deck{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dk:nth-child(4){border-left:0}
+  .dk:nth-child(n+4){border-top:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .shell{padding:16px 16px 90px}
+  .cover{grid-template-columns:minmax(0,1fr);gap:22px;padding-top:30px}
+  .face{text-align:left;display:flex;align-items:flex-end;gap:16px}
+  .face .n{font-size:84px}
+  h1{font-size:54px}
+  .band{grid-template-columns:minmax(0,1fr)}
+  .band>div+div{border-left:0;border-top:1px solid var(--line)}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .akl{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scene-flow{display:none}
+  .tbl .hm{display:none}
+  .tbl td.f{white-space:normal}
+}
+@media (max-width:560px){
+  .top .wm{display:none}
+  .tabs{gap:22px}
+  .tab .c{display:none}
+  .seqt th,.seqt td{padding:9px 8px;font-size:13px}
+  .seqt td .ex{font-size:14px}
+  h1{font-size:44px}
+  .la{font-size:23px}
+  .gr{font-size:17px}
+  .sent{grid-template-columns:18px minmax(0,1fr);gap:10px}
+  .side{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;padding-top:2px}
+  .traps ul{grid-template-columns:minmax(0,1fr)}
+  .deck{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dk:nth-child(n){border-left:1px solid var(--line);border-top:1px solid var(--line)}
+  .dk:nth-child(odd){border-left:0}
+  .dk:nth-child(-n+2){border-top:0}
+  .card{padding:26px 20px;min-height:300px}
+  .card .form{font-size:54px}
+  .tbl{font-size:13px}
+  .tbl td{padding:10px 6px}
+  .sh h2,.traps h3,.notes h3{font-size:28px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <a href="latinika.html">&#8592; Λατινικά</a>
+    <span class="sl">/</span>
+    <span class="wh"><span class="wm">MÉTRON · </span>Λατινικά · Lectio XXIV</span>
+  </div>
+
+  <header class="cover">
+    <div>
+      <div class="eyebrow"><b>Lectio XXIV</b> · Lectio quarta et vicesima · Β΄ Τεύχος</div>
+      <h1>Το πάθημα<br>ενός ψεύτη</h1>
+      <p class="lead">Ο Νασικάς πάει να δει τον Έννιο κι η υπηρέτρια του λέει ότι δεν είναι σπίτι. Λίγες μέρες μετά του το ανταποδίδει: φωνάζει ο ίδιος από μέσα ότι «δεν είναι σπίτι». <b>12 ενότητες σε 3 σκηνές.</b> Πάτα οποιαδήποτε λέξη για να δεις τι είναι, από πού βγαίνει και πού πάει.</p>
+    </div>
+    <div class="face">
+      <div class="n" id="faceN">7</div>
+      <div class="l">υποτακτικές<br>το μάθημα</div>
+    </div>
+  </header>
+
+  <section class="band" aria-label="Μετρήσεις">
+    <div>
+      <div class="bl">Ενότητες που λες απ’ έξω</div>
+      <div class="bn"><span id="bKnown">0</span><small>/<span id="bAll">12</span></small></div>
+      <div class="dash" id="bDash"></div>
+    </div>
+    <div>
+      <div class="bl">Κάρτες για σήμερα</div>
+      <div class="bn" id="bDue">—</div>
+      <div class="bs" id="bDueS">όλες οι κατηγορίες</div>
+    </div>
+    <div>
+      <div class="bl">Για ξανά</div>
+      <div class="bn" id="bRed">0</div>
+      <div class="bs">ενότητες με ✗ ή ↻ στη μετάφραση</div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Ενότητες σελίδας">
+    <button class="tab" role="tab" data-tab="keimeno" aria-selected="true">Κείμενο</button>
+    <button class="tab" role="tab" data-tab="grammatiki" aria-selected="false">Γραμματική<span class="c" id="tcG"></span></button>
+    <button class="tab" role="tab" data-tab="simeioseis" aria-selected="false">Σημειώσεις<span class="c" id="tcN"></span></button>
+    <button class="tab" role="tab" data-tab="kartes" aria-selected="false">Κάρτες<span class="c" id="tcK"></span></button>
+  </nav>
+
+  <!-- ══ ΚΕΙΜΕΝΟ ══════════════════════════════════════════════ -->
+  <section class="panel on" id="p-keimeno" role="tabpanel">
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Τρόπος">
+        <button data-mode="rd" aria-pressed="true">Ανάγνωση</button>
+        <button data-mode="tr" aria-pressed="false">Μετάφρασε</button>
+        <button data-mode="st" aria-pressed="false">Δομή</button>
+      </div>
+      <span class="sp"></span>
+      <label class="chk" id="onlyRed" hidden><input type="checkbox" id="onlyRedI"> Μόνο τα κόκκινα (✗ και ↻)</label>
+      <button class="know" id="bReset" title="Μηδενίζει ✓ και ✗/↻ αυτής της σελίδας">μηδένισε</button>
+    </div>
+    <p class="modehint" id="modeHint"></p>
+    <div class="lenses" id="lenses"><span class="lbl">Φακοί</span></div>
+    <div class="read">
+      <div class="text" id="content" data-lens=""></div>
+      <aside class="aside" id="aside" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ══ ΚΑΡΤΕΣ ═══════════════════════════════════════════════ -->
+  <section class="panel" id="p-kartes" role="tabpanel">
+    <div class="deck" id="deck" role="group" aria-label="Κατηγορία"></div>
+    <div class="stage" id="stage"></div>
+  </section>
+
+  <!-- ══ ΓΡΑΜΜΑΤΙΚΗ ═══════════════════════════════════════════ -->
+  <section class="panel" id="p-grammatiki" role="tabpanel">
+    <div id="gram"></div>
+
+    <div class="traps">
+      <h3>Οι μεγάλες παγίδες</h3>
+      <p class="sub">Εδώ χάνονται οι μονάδες, όχι στο υπόλοιπο κείμενο.</p>
+      <ul>
+        <li><div class="n">1</div><span class="lat">Nasīca · poēta</span><span class="fix">Αρσενικά, παρόλο που είναι α΄ κλίση.</span><span class="why">Το επίθετο που τα συνοδεύει μπαίνει σε αρσενικό (Nasīca impudens, poēta clarus). Το poēta είναι θηλυκό μόνο όταν πρόκειται για ποιήτρια.</span></li>
+        <li><div class="n">2</div><span class="lat">domi · domum · domo</span><span class="fix">Στάση · κίνηση · απομάκρυνση, ΧΩΡΙΣ πρόθεση.</span><span class="why">Το domi είναι η παλιά τοπική πτώση (= γενική ενικού) και λειτουργεί σαν επίρρημα. Η domus είναι θηλυκό δ΄ κλίσης αλλά παίρνει και τύπους της β΄: domo, domorum, domos.</span></li>
+        <li><div class="n">3</div><span class="lat">fecerit · responderit</span><span class="fix">Υποτακτική παρακειμένου, όχι οριστική συντελεσμένου μέλλοντα.</span><span class="why">Οι δύο χρόνοι έχουν ίδιους τύπους σε όλα τα πρόσωπα εκτός από το α΄ ενικό (fecerim / fecero). Εδώ τους κρίνει η σύνταξη: πλάγια ερώτηση = υποτακτική.</span></li>
+        <li><div class="n">4</div><span class="lat">venisset ≠ quaereret</span><span class="fix">Υπερσυντέλικος = προτερόχρονο · παρατατικός = σύγχρονο.</span><span class="why">Δύο cum στην ίδια περίοδο με διαφορετικό χρόνο: πρώτα είχε έρθει (venisset) και μετά, ενώ τον ζητούσε (quaereret), ο Νασικάς φώναξε. Ο χρόνος της υποτακτικής σου λέει τη χρονική βαθμίδα.</span></li>
+        <li><div class="n">5</div><span class="lat">se domi non esse</span><span class="fix">Ταυτοπροσωπία με υποκείμενο σε αιτιατική: λατινισμός.</span><span class="why">Στα αρχαία το υποκείμενο θα έλειπε. Στα λατινικά το υποκείμενο του ειδικού απαρεμφάτου γράφεται πάντα, σε αιτιατική, με την αυτοπαθή se όταν είναι το ίδιο πρόσωπο.</span></li>
+        <li><div class="n">6</div><span class="lat">ancillae credidi · mihi credis</span><span class="fix">Το credo θέλει ΔΟΤΙΚΗ.</span><span class="why">Τα ρήματα που σημαίνουν πίστη, υποταγή, ευπείθεια και τα αντίθετά τους συντάσσονται με δοτική, όχι με αιτιατική. Το ancillae είναι δοτική ενικού, όχι γενική.</span></li>
+        <li><div class="n">7</div><span class="lat">indignātus · mentiebātur</span><span class="fix">Αποθετικά: παθητική μορφή, ενεργητική σημασία.</span><span class="why">Δεν μετατρέπονται σε παθητική φωνή. Οι αρχικοί χρόνοι δίνονται σε παθητική μορφή: indignor, indignātus sum, indignāri · mentior, mentītus sum, mentīri.</span></li>
+        <li><div class="n">8</div><span class="lat">Paucis post diēbus</span><span class="fix">post = ΕΠΙΡΡΗΜΑ + αφαιρετική του μέτρου.</span><span class="why">Ισοδυναμεί με post paucos dies (πρόθεση + αιτιατική, εμπρόθετος του χρόνου). Μη μεταφράσεις το post σαν πρόθεση της αφαιρετικής.</span></li>
+        <li><div class="n">9</div><span class="lat">Visne · inquit</span><span class="fix">vis από το volo · inquit από το inquam.</span><span class="why">Το volo είναι ανώμαλο (volo, volui, —, velle), το inquam ελλειπτικό. Το -ne είναι εγκλιτικό ερωτηματικό μόριο, κολλημένο στη λέξη που ανοίγει την ερώτηση.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ══ ΣΗΜΕΙΩΣΕΙΣ ═══════════════════════════════════════════ -->
+  <section class="panel" id="p-simeioseis" role="tabpanel">
+    <div class="notes">
+      <h3>Σημειώσεις που επιστρέφουν συνέχεια</h3>
+      <p class="sub">Οι κόκκινες και μπλε σημειώσεις σου από τη σελ. 54, οργανωμένες ανά θέμα και συμπληρωμένες από το study4exams και τους «Κανόνες XVI–XXII» του φακέλου σου. Κάθε κάρτα λέει από πού είναι.</p>
+      <ul>
+        <li class="nt" id="n-domi">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span> · study4exams</div>
+          <h4>Το σπίτι, χωρίς πρόθεση</h4>
+          <table>
+            <tr><td>domi</td><td>απρόθετη γενική (τοπική) · <b>στάση</b> σε τόπο<span class="q">eum domi non esse — δεν ήταν στο σπίτι</span></td></tr>
+            <tr><td>domum</td><td>απρόθετη αιτιατική · <b>κίνηση</b> σε τόπο<span class="q">domum venit — ήρθε στο σπίτι</span></td></tr>
+            <tr><td>domo</td><td>απρόθετη αφαιρετική · <b>απομάκρυνση</b> από τόπο<span class="q">domo exiit — βγήκε από το σπίτι</span></td></tr>
+          </table>
+          <p class="d">Η domus, -us είναι θηλυκό δ΄ κλίσης, αλλά παίρνει και τύπους της β΄: την αφαιρετική ενικού domo, τη γενική πληθυντικού domorum, την αιτιατική πληθυντικού domos. Το domi είναι υπόλειμμα της παλιάς τοπικής πτώσης και λειτουργεί ως επίρρημα. Στο κείμενο εμφανίζεται 4 φορές, και τις 4 ως στάση σε τόπο.</p>
+        </li>
+        <li class="nt" id="n-subj">
+          <div class="src">Το βιβλίο · study4exams</div>
+          <h4>Οι 7 υποτακτικές του κειμένου</h4>
+          <table>
+            <tr><td>venisset</td><td>υπερσ. · ιστορικός cum<span class="q">προτερόχρονο στο παρελθόν (→ sensit)</span></td></tr>
+            <tr><td>dixisset</td><td>υπερσ. · ιστορικός cum<span class="q">προτερόχρονο στο παρελθόν (→ sensit)</span></td></tr>
+            <tr><td>fecerit</td><td>παρακ. · πλάγια ερώτηση<span class="q">προτερόχρονο στο παρόν (→ Accipe)</span></td></tr>
+            <tr><td>venisset</td><td>υπερσ. · ιστορικός cum<span class="q">προτερόχρονο στο παρελθόν (→ exclamāvit)</span></td></tr>
+            <tr><td>quaereret</td><td>παρατ. · ιστορικός cum<span class="q">σύγχρονο στο παρελθόν (→ exclamāvit)</span></td></tr>
+            <tr><td>responderit</td><td>παρακ. · πλάγια ερώτηση<span class="q">προτερόχρονο στο παρόν (→ scire, vis)</span></td></tr>
+            <tr><td>quaererem</td><td>παρατ. · ιστορικός cum<span class="q">σύγχρονο στο παρελθόν (→ credidi)</span></td></tr>
+          </table>
+          <p class="d">Πέντε με ιστορικό cum, δύο πλάγιες ερωτήσεις. Είναι ακριβώς οι 7 λέξεις με αστερίσκο στο βιβλίο, και όλες ακολουθούν την ακολουθία των χρόνων.</p>
+        </li>
+        <li class="nt" id="n-quest">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span> · study4exams</div>
+          <h4>Οι ερωτήσεις ολικής άγνοιας</h4>
+          <table>
+            <tr><td>num</td><td>περιμένουμε <b>αρνητική</b> απάντηση<span class="q">Num vis …? — Non!</span></td></tr>
+            <tr><td>nonne</td><td>περιμένουμε <b>καταφατική</b> απάντηση<span class="q">Nonne vis …? — Sane!</span></td></tr>
+            <tr><td>-ne</td><td><b>δεν ξέρουμε</b> την απάντηση· κολλημένο στη λέξη (συνήθως το ρήμα) που μπαίνει στην αρχή της πρότασης<span class="q">Visne scire …?</span></td></tr>
+          </table>
+          <p class="d">Στο κείμενο υπάρχουν και ευθείες ερωτήσεις ολικής άγνοιας χωρίς μόριο, για έμφαση: «Ego non cognosco vocem tuam?» και «tu mihi ipsi non credis?». Το «Quid?» είναι ερώτηση μερικής άγνοιας, ελλειπτική: εννοείται το dicis.</p>
+        </li>
+        <li class="nt" id="n-cum">
+          <div class="src">Το βιβλίο (Παρατήρηση 6) · study4exams</div>
+          <h4>Ο ιστορικός (διηγηματικός) <span class="la">cum</span></h4>
+          <p>Χρησιμοποιείται στις διηγήσεις του παρελθόντος, με <b>υποτακτική παρατατικού</b> για το σύγχρονο και <b>υποτακτικής υπερσυντελίκου</b> για το προτερόχρονο. Μεταφράζεται «όταν» και δεν έχει αντίστοιχο στα αρχαία ελληνικά.</p>
+          <p class="d">Ο χρονικός cum με οριστική λέει απλώς πότε έγινε κάτι (cum vēnit = τότε που ήρθε). Ο ιστορικός cum δένει τη δευτερεύουσα με την κύρια σε σχέση αιτίου και αιτιατού: «cum venisset» σημαίνει «όταν ήρθε, και επειδή ήρθε». Η υποτακτική δείχνει αυτό το υποκειμενικό στοιχείο.</p>
+          <p class="d">Στο κείμενο: τέσσερις χρονικές προτάσεις και τρία ρητά cum. Η 2η (eique … dixisset) και η 5η (et eum … quaereret) συνδέονται με -que / et με την προηγούμενη, και το cum εννοείται.</p>
+        </li>
+        <li class="nt" id="n-seq">
+          <div class="src">Το βιβλίο (Παρατήρηση 5)</div>
+          <h4>Η ακολουθία των χρόνων</h4>
+          <p><b>Αρκτικός χρόνος</b> εξάρτησης (ενεστώτας, μέλλοντας, συντ. μέλλοντας, προστακτική, παρακείμενος με σημασία ενεστώτα) → υποτ. ενεστώτα (σύγχρονο) · υποτ. παρακειμένου (προτερόχρονο) · -ūrus sim (υστερόχρονο).</p>
+          <p><b>Ιστορικός χρόνος</b> εξάρτησης (παρατατικός, παρακείμενος με σημασία αορίστου, υπερσυντέλικος) → υποτ. παρατατικού (σύγχρονο) · υποτ. υπερσυντελίκου (προτερόχρονο) · -ūrus essem (υστερόχρονο).</p>
+          <div class="ans"><span>Rogat quid agam · egerim · actūrus sim<em>ρωτά τι κάνω · τι έκανα · τι θα κάνω</em></span><span>Rogābat quid agerem · egissem · actūrus essem<em>ρωτούσε τι έκανα · τι είχα κάνει · τι θα έκανα</em></span></div>
+          <p class="d">Η Γραμματική έχει τον ίδιο πίνακα, με τις 7 υποτακτικές του κειμένου τοποθετημένες στη θέση τους.</p>
+        </li>
+        <li class="nt" id="n-plagia">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span> · study4exams</div>
+          <h4>Από πλάγιο σε ευθύ λόγο</h4>
+          <table>
+            <tr><td>quid postea Nasīca fecerit</td><td>πλάγια ερώτηση μερικής άγνοιας, αντικείμενο του Accipe<span class="q">→ Quid postea Nasīca fecit?</span></td></tr>
+            <tr><td>quid Nasīca responderit</td><td>πλάγια ερώτηση μερικής άγνοιας, αντικείμενο του scire<span class="q">→ Quid Nasīca respondit?</span></td></tr>
+            <tr><td>se domi non esse</td><td>ειδικό απαρέμφατο του exclamāvit<span class="q">→ Non domi sum ego!</span></td></tr>
+          </table>
+          <p class="d">Στον ευθύ λόγο η υποτακτική παρακειμένου γίνεται οριστική παρακειμένου. Η πλάγια ερώτηση παίρνει υποτακτική επειδή η εξάρτηση δίνει υποκειμενική χροιά στο περιεχόμενό της.</p>
+        </li>
+        <li class="nt" id="n-indignatus">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span> · study4exams · Κανόνες XVI–XXII</div>
+          <h4><span class="la">indignātus</span>: οι τρεις αναλύσεις</h4>
+          <p>Αιτιολογική επιρρηματική μετοχή, συνημμένη στο Ennius. Είναι μετοχή παρακειμένου <b>αποθετικού</b> ρήματος, με ενεργητική σημασία («αγανακτισμένος»).</p>
+          <div class="ans">
+            <span>quod indignātus est<em>αντικειμενική αιτιολογία (οριστική)</em></span>
+            <span>quod indignātus esset<em>υποκειμενική αιτιολογία (υποτακτική)</em></span>
+            <span>cum indignātus esset<em>με cum: γράψε αυτό αν η εκφώνηση δεν λέει</em></span>
+          </div>
+          <p class="d">Ίδιο με το Μοτίβο 1 των «Κανόνων» σου: -tus → cum … esset.</p>
+          <div class="ask"><b>Να ρωτήσεις τον καθηγητή.</b> Οι σημειώσεις σου γράφουν «quod indignātus <b>est</b>». Το study4exams γράφει «quod indignātus <b>erat</b>», γιατί παίρνει το inquit ως παρακείμενο, δηλαδή ιστορικό χρόνο, άρα το προτερόχρονο θέλει υπερσυντέλικο. Το «cum indignātus esset» το δίνουν και οι δύο, οπότε είναι η ασφαλής απάντηση.</div>
+        </li>
+        <li class="nt" id="n-quod">
+          <div class="src">study4exams</div>
+          <h4><span class="la">quod … mentiebātur</span>: αιτιολογική ουσιαστική</h4>
+          <p>Δευτερεύουσα <b>αιτιολογική ουσιαστική</b> πρόταση. Λειτουργεί ως <b>αντικείμενο</b> στη μετοχή indignātus, που προέρχεται από ρήμα ψυχικού πάθους.</p>
+          <p class="d">Εκφέρεται με οριστική (παρατατικού), γιατί η αιτιολογία είναι αντικειμενικά αποδεκτή. Με υποτακτική θα ήταν υποκειμενική, δηλαδή η γνώμη του Έννιου.</p>
+        </li>
+        <li class="nt" id="n-post">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span> · Κανόνες XVI–XXII</div>
+          <h4><span class="la">Paucis post diēbus</span></h4>
+          <table>
+            <tr><td>post</td><td>επίρρημα· επιρρ. προσδ. του χρόνου στο venisset</td></tr>
+            <tr><td>diēbus</td><td>αφαιρετική του μέτρου ή της διαφοράς στο post, που έχει παραθετική σημασία</td></tr>
+            <tr><td>paucis</td><td>επιθετικός προσδιορισμός στο diēbus</td></tr>
+          </table>
+          <div class="ans"><span>= post paucos dies<em>πρόθεση + αιτιατική: εμπρόθετος του χρόνου</em></span></div>
+          <p class="d">Ίδιο με το «paulo post = post paulum» και το «uno die post = post unum diem» του πίνακα post / ante στους Κανόνες σου.</p>
+        </li>
+        <li class="nt" id="n-inf">
+          <div class="src">study4exams · <span class="me">τα λάθη σου (#4)</span></div>
+          <h4>Τα 6 απαρέμφατα: ποιος είναι το υποκείμενο</h4>
+          <table>
+            <tr><td>eum … non esse</td><td>ειδικό · αντικ. του dixisset · <b>ετεροπροσωπία</b></td></tr>
+            <tr><td>illam … dixisse</td><td>ειδικό, παρακ. · αντικ. του sensit · ετεροπροσωπία · προτερόχρονο</td></tr>
+            <tr><td>illum … esse</td><td>ειδικό · αντικ. του sensit · ετεροπροσωπία</td></tr>
+            <tr><td>se … non esse</td><td>ειδικό · αντικ. του exclamāvit · <b>ταυτοπροσωπία</b> με se (λατινισμός)</td></tr>
+            <tr><td>scire</td><td><b>τελικό</b> · αντικ. του vis · ταυτοπροσωπία (tu)</td></tr>
+            <tr><td>te … non esse</td><td>ειδικό · αντικ. του credidi · ετεροπροσωπία</td></tr>
+          </table>
+          <p class="d">Το υποκείμενο του ειδικού απαρεμφάτου είναι <b>πάντα σε αιτιατική</b>, και στην ταυτοπροσωπία. Αυτό είναι το λάθος #4 της λίστας σου («esse + ονομαστική αντί για αιτιατική»).</p>
+        </li>
+        <li class="nt" id="n-dat">
+          <div class="src">study4exams</div>
+          <h4>Δοτική: <span class="la">credo</span> και <span class="la">dico</span></h4>
+          <p><b>credo + δοτική</b>: τα ρήματα που δηλώνουν προσταγή, υποταγή, ευπείθεια, απείθεια, πίστη, υποχώρηση και τις αντίθετες έννοιες δεν συντάσσονται με αιτιατική αλλά με δοτική. Γι’ αυτό ancillae credidi και mihi … non credis.</p>
+          <p class="d"><b>Τα λεκτικά ρήματα (dico)</b> είναι δίπτωτα: δοτική προσώπου (ei) ως έμμεσο αντικείμενο και αιτιατική πράγματος ως άμεσο. Συχνά στη θέση της αιτιατικής μπαίνει απαρέμφατο: eique … dixisset eum domi non esse.</p>
+        </li>
+        <li class="nt" id="n-iussu">
+          <div class="src">study4exams · <span class="me">οι σημειώσεις σου</span></div>
+          <h4><span class="la">domini iussu</span></h4>
+          <table>
+            <tr><td>iussu</td><td>αφαιρετική οργανική του <b>εσωτερικού αναγκαστικού αιτίου</b>, στο dixisse</td></tr>
+            <tr><td>domini</td><td>γενική <b>υποκειμενική</b> στο iussu: ο κύριος είναι αυτός που διατάζει</td></tr>
+          </table>
+          <p class="d">iussus, -us: αρσενικό δ΄ κλίσης, εύχρηστο σχεδόν μόνο στην αφαιρετική ενικού (iussu).</p>
+        </li>
+        <li class="nt" id="n-ktit">
+          <div class="src"><span class="me">Οι σημειώσεις σου</span></div>
+          <h4>Κτητικές: <span class="la">suus · meus · tuus</span></h4>
+          <p>Οι κτητικές αντωνυμίες είναι <b>επιθετικοί προσδιορισμοί</b> και συμφωνούν με το ουσιαστικό: vocem <i class="lat">tuam</i> (αιτ.) · ancillae <i class="lat">tuae</i> (δοτ.).</p>
+          <p class="d">Το tuus κλίνεται σαν το bonus. Το suus δείχνει το υποκείμενο (αυτοπάθεια). Όταν ο κάτοχος δεν είναι το υποκείμενο, μπαίνει η γενική eius (Κανόνες, «suus ή eius»).</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="foot">
+    Πάτα «✓ το ξέρω» σε κάθε ενότητα όταν τη λες απ’ έξω. Η πρόοδος, τα ✗/↻ και οι κάρτες αποθηκεύονται <b>σε αυτή τη συσκευή</b>.<br>
+    Το λατινικό κείμενο είναι αυτούσιο από το σχολικό βιβλίο (ebooks.edu.gr, Β΄ Τεύχος, ΜΑΘΗΜΑ XXIV). Το «P.» του βιβλίου είναι το Publius, που το φυλλάδιό σου γράφει ολογράφως. Εδώ δεν βρέθηκε τυπογραφικό: το κείμενο ελέγχθηκε λέξη-λέξη, όπως και στα XVIII (proximan), XIX (coniuārvit) και XXI (Turn), όπου βρέθηκε.<br>
+    Η μετάφραση είναι <b>του φυλλαδίου σου</b> (Φροντιστήριο Πυθαγόρας, σελ. 54), λέξη προς λέξη. Το συντακτικό πάνω στις λέξεις είναι <b>οι σημειώσεις σου</b> πάνω στη σελίδα, συμπληρωμένες από τη «Συντακτική ανάλυση» και την «Ερμηνεία και γραμματική αναγνώριση» του <b>study4exams.gr</b> (Ψηφιακό Εκπαιδευτικό Βοήθημα, ΙΤΥΕ «Διόφαντος», επιμέλεια Μ. Βενούτσου, άδεια CC BY-NC-SA). Όπου οι δύο πηγές διαφωνούν, το λέει η σελίδα (δες «indignātus»).<br>
+    Η μετάφραση του study4exams λέει τα ίδια με περισσότερες παρενθέσεις («Τι (λοιπόν) (λες ή συμβαίνει);», «τι (του) απάντησε»). Στο γραπτό γράψε όποια σου ζητήσει ο καθηγητής σου.
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   LECTIO XXIV — ΤΑ ΔΕΔΟΜΕΝΑ
+   Ίδιο σχήμα με τα XVII–XXIII (σκηνές → ενότητες → la/gr με ομάδες `g`), ώστε
+   να το διαβάζουν αυτούσιο η βιβλιοθήκη, η «Σύνταξε μόνος σου» και το test.
+   ΝΕΑ πεδία, προσθετικά: `m` = το λήμμα στο M, `f` = ο τύπος εδώ,
+   `q` = η πρόταση (CL) στην οποία ανήκει, `n` = οι σημειώσεις που την αφορούν.
+   ══════════════════════════════════════════════════════════════════════ */
+const S = [
+{n:"I", title:"Στην πόρτα του Έννιου", flow:"η επίσκεψη → η υπηρέτρια → ο Νασικάς καταλαβαίνει", s:[
+ {
+  la:[
+   {w:"Cum",g:1,d:"όταν",x:"ΙΣΤΟΡΙΚΟΣ (διηγηματικός) cum. Εισάγει δευτερεύουσα ΧΡΟΝΙΚΗ επιρρηματική πρόταση, επιρρηματικό προσδιορισμό του χρόνου στο sensit. Θέλει ΥΠΟΤΑΚΤΙΚΗ: παρατατικού για το σύγχρονο, υπερσυντελίκου για το προτερόχρονο στο παρελθόν.",m:"cum",q:1,n:["cum"]},
+   {w:"P.",g:2,d:"ο Πόπλιος",x:"Υποκείμενο του venisset, μαζί με το Cornēlius Nasīca. P. = Publius (το φυλλάδιο το γράφει ολογράφως).",m:"Publius",f:"ονομ. ενικ.",q:1},
+   {w:"Cornēlius",g:3,d:"Κορνήλιος",x:"Υποκείμενο του venisset (όνομα γένους). Γενική ενικού σε -ii ή συνηρημένη σε -i, κλητική Corneli.",m:"Cornelius",f:"ονομ. ενικ.",q:1},
+   {w:"Nasīca",g:4,d:"Νασικάς",x:"Υποκείμενο του venisset (προσωνύμιο). Προσοχή: Nasīca, -ae είναι ΑΡΣΕΝΙΚΟ της α΄ κλίσης.",m:"Nasica",f:"ονομ. ενικ.",q:1},
+   {w:"ad",g:5,d:"στον",x:"Πρόθεση + αιτιατική. ad Ennium = εμπρόθετος προσδιορισμός της κατεύθυνσης σε πρόσωπο, στο venisset.",m:"ad",q:1},
+   {w:"Ennium",g:6,d:"Έννιο",x:"ad Ennium: εμπρόθετος προσδιορισμός της ΚΙΝΗΣΗΣ / ΚΑΤΕΥΘΥΝΣΗΣ ΣΕ ΠΡΟΣΩΠΟ, στο venisset.",m:"Ennius",f:"αιτ. ενικ.",q:1},
+   {w:"poētam",g:7,d:"τον ποιητή",x:"ΠΑΡΑΘΕΣΗ στο Ennium (ομοιόπτωτος προσδιορισμός). Προσοχή: poēta, -ae είναι ΑΡΣΕΝΙΚΟ της α΄ κλίσης.",m:"poeta",f:"αιτ. ενικ.",q:1},
+   {w:"venisset",g:8,d:"είχε πάει",x:"Ρήμα της χρονικής πρότασης. ΥΠΟΤΑΚΤΙΚΗ ΥΠΕΡΣΥΝΤΕΛΙΚΟΥ (ιστορικός cum) → ΠΡΟΤΕΡΟΧΡΟΝΟ στο παρελθόν, γιατί εξαρτάται από το sensit, που είναι ιστορικός χρόνος. Σχηματισμός: θέμα παρακειμένου vēn- + -isse- + -t.",m:"venio",f:"γ΄ ενικ. υποτ. υπερσ. ενεργ.",q:1,n:["subj","cum","seq"]}
+  ],
+  gr:[{t:"Όταν",g:1},{t:"ο Πόπλιος",g:2},{t:"Κορνήλιος",g:3},{t:"Νασικάς",g:4},{t:"είχε πάει",g:8},{t:"στον",g:5},{t:"Έννιο",g:6},{t:"τον ποιητή",g:7}]
+ },
+ {
+  la:[
+   {w:"eique",g:1,d:"και σ’ αυτόν",x:"ei + -que. ei: δοτική της is, ea, id, ΕΜΜΕΣΟ ΑΝΤΙΚΕΙΜΕΝΟ του dixisset (ei = Nasīcae). -que: εγκλιτικός συμπλεκτικός σύνδεσμος· συνδέει αυτή τη χρονική πρόταση με την προηγούμενη, και το cum εννοείται.",m:"is",f:"δοτ. ενικ. αρσ.",q:2,n:["dat"]},
+   {w:"ab",g:2,d:"από",x:"Πρόθεση + αφαιρετική. ab πριν από φωνήεν ή h, a πριν από σύμφωνο, abs πριν από το te.",m:"ab",q:2},
+   {w:"ostio",g:3,d:"την πόρτα",x:"ab ostio: εμπρόθετος προσδιορισμός της ΣΤΑΣΗΣ ΣΕ ΤΟΠΟ (τοπική αφετηρία), στη μετοχή quaerenti.",m:"ostium",f:"αφαιρ. ενικ.",q:2},
+   {w:"quaerenti",g:4,d:"που … ζητούσε",x:"ΕΠΙΘΕΤΙΚΗ (αναφορική) ΜΕΤΟΧΗ ΕΝΕΣΤΩΤΑ, συνημμένη στο ei, όπου λειτουργεί ως επιθετικός προσδιορισμός. Σύγχρονο στο παρελθόν. Ανάλυση: qui ab ostio quaerebat Ennium (έτσι και στο περιθώριό σου).",m:"quaero",f:"μτχ. ενεστ., δοτ. ενικ. αρσ.",q:2},
+   {w:"Ennium",g:5,d:"τον Έννιο",x:"ΑΝΤΙΚΕΙΜΕΝΟ της μετοχής quaerenti.",m:"Ennius",f:"αιτ. ενικ.",q:2},
+   {w:"ancilla",g:6,d:"η υπηρέτρια",x:"Υποκείμενο του dixisset.",m:"ancilla",f:"ονομ. ενικ.",q:2},
+   {w:"dixisset",g:7,d:"είχε πει",x:"Ρήμα της δεύτερης χρονικής πρότασης. ΥΠΟΤΑΚΤΙΚΗ ΥΠΕΡΣΥΝΤΕΛΙΚΟΥ (ιστορικός cum) → προτερόχρονο στο παρελθόν, με εξάρτηση από το sensit. Λεκτικό ρήμα, δίπτωτο: δοτική (ei) ως έμμεσο αντικείμενο και απαρέμφατο (non esse) ως άμεσο.",m:"dico",f:"γ΄ ενικ. υποτ. υπερσ. ενεργ.",q:2,n:["subj","cum","dat"]},
+   {w:"eum",g:8,d:"αυτός",x:"ΥΠΟΚΕΙΜΕΝΟ του απαρεμφάτου non esse, σε αιτιατική. ΕΤΕΡΟΠΡΟΣΩΠΙΑ: αυτός (ο Έννιος) ≠ ancilla.",m:"is",f:"αιτ. ενικ. αρσ.",q:2,n:["inf"]},
+   {w:"domi",g:9,d:"στο σπίτι",x:"ΑΠΡΟΘΕΤΗ ΓΕΝΙΚΗ (η παλιά τοπική πτώση) με ΕΠΙΡΡΗΜΑΤΙΚΗ χρήση: επιρρηματικός προσδιορισμός της ΣΤΑΣΗΣ ΣΕ ΤΟΠΟ, στο non esse.",m:"domus",f:"τοπική (= γεν. ενικ.)",q:2,n:["domi"]},
+   {w:"non",g:10,d:"δεν",x:"Αρνητικό μόριο, στο esse.",m:"non",q:2},
+   {w:"esse,",g:11,d:"ήταν",x:"ΕΙΔΙΚΟ ΑΠΑΡΕΜΦΑΤΟ, ΑΜΕΣΟ ΑΝΤΙΚΕΙΜΕΝΟ του dixisset. Υποκείμενο: eum → ετεροπροσωπία. Ενεστώτας → σύγχρονο.",m:"sum",f:"απαρ. ενεστ.",q:2,n:["inf"]}
+  ],
+  gr:[{t:"και σ’ αυτόν",g:1},{t:"που",g:4},{t:"από",g:2},{t:"την πόρτα",g:3},{t:"ζητούσε",g:4},{t:"τον Έννιο,",g:5},{t:"η υπηρέτρια",g:6},{t:"είχε πει",g:7},{t:"ότι",g:0},{t:"αυτός",g:8},{t:"δεν",g:10},{t:"ήταν",g:11},{t:"στο σπίτι,",g:9}]
+ },
+ {
+  la:[
+   {w:"Nasīca",g:1,d:"ο Νασικάς",x:"Υποκείμενο του sensit.",m:"Nasica",f:"ονομ. ενικ.",q:3},
+   {w:"sensit",g:2,d:"κατάλαβε",x:"Ρήμα της ΚΥΡΙΑΣ πρότασης κρίσεως, οριστική παρακειμένου → πραγματικό γεγονός. Αισθητικό ρήμα: τα αντικείμενά του είναι δύο ΕΙΔΙΚΑ ΑΠΑΡΕΜΦΑΤΑ (dixisse, esse). Είναι ιστορικός χρόνος, γι’ αυτό οι δύο χρονικές πριν από αυτό είναι σε υποτακτική υπερσυντελίκου.",m:"sentio",f:"γ΄ ενικ. οριστ. παρακ. ενεργ.",q:3,n:["seq"]},
+   {w:"illam",g:3,d:"εκείνη",x:"ΥΠΟΚΕΙΜΕΝΟ του απαρεμφάτου dixisse, σε αιτιατική. Ετεροπροσωπία: εκείνη (η υπηρέτρια) ≠ Nasīca.",m:"ille",f:"αιτ. ενικ. θηλ.",q:3,n:["inf"]},
+   {w:"domini",g:4,d:"του αφεντικού (της)",x:"ΓΕΝΙΚΗ ΥΠΟΚΕΙΜΕΝΙΚΗ στο iussu: το αφεντικό είναι αυτός που διατάζει.",m:"dominus",f:"γεν. ενικ.",q:3,n:["iussu"]},
+   {w:"iussu",g:5,d:"με διαταγή",x:"ΑΦΑΙΡΕΤΙΚΗ ΟΡΓΑΝΙΚΗ ΤΟΥ ΕΣΩΤΕΡΙΚΟΥ ΑΝΑΓΚΑΣΤΙΚΟΥ ΑΙΤΙΟΥ, στο dixisse.",m:"iussus",f:"αφαιρ. ενικ.",q:3,n:["iussu"]},
+   {w:"id",g:6,d:"αυτό",x:"ΑΝΤΙΚΕΙΜΕΝΟ (σύστοιχο) του απαρεμφάτου dixisse.",m:"is",f:"αιτ. ενικ. ουδ.",q:3},
+   {w:"dixisse",g:7,d:"είχε πει",x:"ΕΙΔΙΚΟ ΑΠΑΡΕΜΦΑΤΟ ΠΑΡΑΚΕΙΜΕΝΟΥ, αντικείμενο του sensit. Υποκείμενο: illam → ετεροπροσωπία. Παρακείμενος → ΠΡΟΤΕΡΟΧΡΟΝΟ.",m:"dico",f:"απαρ. παρακ. ενεργ.",q:3,n:["inf"]},
+   {w:"et",g:8,d:"και",x:"Συμπλεκτικός σύνδεσμος· συνδέει τα δύο ειδικά απαρέμφατα (dixisse — esse).",m:"et",q:3},
+   {w:"illum",g:9,d:"εκείνος",x:"ΥΠΟΚΕΙΜΕΝΟ του απαρεμφάτου esse. Ετεροπροσωπία. illum = Ennium (λεξιλόγιο του βιβλίου).",m:"ille",f:"αιτ. ενικ. αρσ.",q:3,n:["inf"]},
+   {w:"intus",g:10,d:"μέσα",x:"Τοπικό επίρρημα: επιρρηματικός προσδιορισμός της ΣΤΑΣΗΣ ΣΕ ΤΟΠΟ, στο esse.",m:"intus",q:3},
+   {w:"esse.",g:11,d:"ήταν",x:"ΕΙΔΙΚΟ ΑΠΑΡΕΜΦΑΤΟ ΕΝΕΣΤΩΤΑ, δεύτερο αντικείμενο του sensit. Υποκείμενο: illum → ετεροπροσωπία. Ενεστώτας → σύγχρονο.",m:"sum",f:"απαρ. ενεστ.",q:3,n:["inf"]}
+  ],
+  gr:[{t:"ο Νασικάς",g:1},{t:"κατάλαβε",g:2},{t:"ότι",g:0},{t:"εκείνη",g:3},{t:"είχε πει",g:7},{t:"αυτό",g:6},{t:"με διαταγή",g:5},{t:"του αφεντικού (της)",g:4},{t:"και",g:8},{t:"ότι",g:0},{t:"εκείνος",g:9},{t:"ήταν",g:11},{t:"μέσα.",g:10}]
+ },
+ {
+  la:[
+   {w:"Accipe",g:1,d:"Μάθε",x:"Ρήμα της ΚΥΡΙΑΣ πρότασης ΕΠΙΘΥΜΙΑΣ: προστακτική, για προτροπή. Υποκείμενο εννοείται το tu. Εδώ accipio = μαθαίνω· είναι ένα από τα 15 ρήματα της γ΄ συζυγίας σε -io. Αντικείμενό του είναι η πλάγια ερώτηση quid … fecerit. Η προστακτική ενεστώτα είναι ΑΡΚΤΙΚΟΣ χρόνος.",m:"accipio",f:"β΄ ενικ. προστ. ενεστ. ενεργ.",q:4,n:["seq"]},
+   {w:"nunc",g:2,d:"τώρα",x:"Χρονικό επίρρημα: επιρρηματικός προσδιορισμός του χρόνου στο Accipe.",m:"nunc",q:4},
+   {w:"quid",g:3,d:"τι",x:"Ερωτηματική αντωνυμία· εισάγει ΠΛΑΓΙΑ ΕΡΩΤΗΣΗ ΜΕΡΙΚΗΣ ΑΓΝΟΙΑΣ, αντικείμενο του Accipe. Μέσα στην πρόταση είναι ΣΥΣΤΟΙΧΟ ΑΝΤΙΚΕΙΜΕΝΟ του fecerit.",m:"quis",f:"αιτ. ενικ. ουδ.",q:5,n:["plagia"]},
+   {w:"postea",g:4,d:"αργότερα",x:"Χρονικό επίρρημα: επιρρηματικός προσδιορισμός του χρόνου (της χρονικής ακολουθίας) στο fecerit.",m:"postea",q:5},
+   {w:"Nasīca",g:5,d:"ο Νασικάς",x:"Υποκείμενο του fecerit.",m:"Nasica",f:"ονομ. ενικ.",q:5},
+   {w:"fecerit.",g:6,d:"έκανε",x:"Ρήμα της πλάγιας ερώτησης. ΥΠΟΤΑΚΤΙΚΗ ΠΑΡΑΚΕΙΜΕΝΟΥ: εξαρτάται από ΑΡΚΤΙΚΟ χρόνο (Accipe, προστακτική ενεστώτα) → ΠΡΟΤΕΡΟΧΡΟΝΟ ΣΤΟ ΠΑΡΟΝ. Σε ευθύ λόγο: Quid postea Nasīca fecit? Προσοχή: ο τύπος fecerit είναι και οριστική συντελεσμένου μέλλοντα· εδώ η πλάγια ερώτηση θέλει υποτακτική.",m:"facio",f:"γ΄ ενικ. υποτ. παρακ. ενεργ.",q:5,n:["subj","plagia","seq"]}
+  ],
+  gr:[{t:"Μάθε",g:1},{t:"τώρα",g:2},{t:"τι",g:3},{t:"έκανε",g:6},{t:"αργότερα",g:4},{t:"ο Νασικάς.",g:5}]
+ }
+]},
+{n:"II", title:"Ο Νασικάς ανταποδίδει", flow:"λίγες μέρες μετά → ο Έννιος στην πόρτα → «δεν είμαι σπίτι»", s:[
+ {
+  la:[
+   {w:"Paucis",g:1,d:"λίγες",x:"Επιθετικός προσδιορισμός στο diēbus.",m:"paucus",f:"αφαιρ. πληθ. αρσ.",q:6,n:["post"]},
+   {w:"post",g:2,d:"μετά από",x:"ΕΠΙΡΡΗΜΑ εδώ, ΟΧΙ πρόθεση: επιρρηματικός προσδιορισμός του χρόνου στο venisset. Έχει παραθετική σημασία, γι’ αυτό παίρνει αφαιρετική του μέτρου. = post paucos dies (πρόθεση + αιτιατική, εμπρόθετος του χρόνου).",m:"post",q:6,n:["post"]},
+   {w:"diēbus",g:3,d:"μέρες,",x:"ΑΦΑΙΡΕΤΙΚΗ ΤΟΥ ΜΕΤΡΟΥ Ή ΤΗΣ ΔΙΑΦΟΡΑΣ στο επίρρημα post. Προσοχή: dies είναι ΑΡΣΕΝΙΚΟ της ε΄ κλίσης.",m:"dies",f:"αφαιρ. πληθ.",q:6,n:["post"]},
+   {w:"cum",g:4,d:"όταν",x:"Ιστορικός cum: δευτερεύουσα χρονική επιρρηματική πρόταση, επιρρηματικός προσδιορισμός του χρόνου στο exclamāvit.",m:"cum",q:6,n:["cum"]},
+   {w:"Ennius",g:5,d:"ο Έννιος",x:"Υποκείμενο του venisset, και εννοείται και του quaereret.",m:"Ennius",f:"ονομ. ενικ.",q:6},
+   {w:"ad",g:6,d:"στον",x:"Πρόθεση + αιτιατική.",m:"ad",q:6},
+   {w:"Nasīcam",g:7,d:"Νασικά",x:"ad Nasīcam: εμπρόθετος προσδιορισμός της ΚΙΝΗΣΗΣ / ΚΑΤΕΥΘΥΝΣΗΣ ΣΕ ΠΡΟΣΩΠΟ, στο venisset.",m:"Nasica",f:"αιτ. ενικ.",q:6},
+   {w:"venisset",g:8,d:"είχε έρθει",x:"ΥΠΟΤΑΚΤΙΚΗ ΥΠΕΡΣΥΝΤΕΛΙΚΟΥ (ιστορικός cum) → ΠΡΟΤΕΡΟΧΡΟΝΟ στο παρελθόν, με εξάρτηση από το exclamāvit (ιστορικός χρόνος).",m:"venio",f:"γ΄ ενικ. υποτ. υπερσ. ενεργ.",q:6,n:["subj","cum","seq"]},
+   {w:"et",g:9,d:"και",x:"Συμπλεκτικός σύνδεσμος· συνδέει τις δύο χρονικές προτάσεις (στη δεύτερη το cum εννοείται).",m:"et",q:7},
+   {w:"eum",g:10,d:"τον",x:"ΑΝΤΙΚΕΙΜΕΝΟ του quaereret. eum = Nasīcam.",m:"is",f:"αιτ. ενικ. αρσ.",q:7},
+   {w:"a",g:11,d:"από",x:"Πρόθεση + αφαιρετική (a πριν από σύμφωνο).",m:"ab",q:7},
+   {w:"ianuā",g:12,d:"την πόρτα,",x:"a ianuā: εμπρόθετος προσδιορισμός της ΣΤΑΣΗΣ ΣΕ ΤΟΠΟ (τοπική αφετηρία), στο quaereret. Πρβ. ab ostio στην αρχή.",m:"ianua",f:"αφαιρ. ενικ.",q:7},
+   {w:"quaereret,",g:13,d:"ζητούσε",x:"ΥΠΟΤΑΚΤΙΚΗ ΠΑΡΑΤΑΤΙΚΟΥ (ιστορικός cum) → ΣΥΓΧΡΟΝΟ στο παρελθόν, με εξάρτηση από το exclamāvit. Υποκείμενο εννοείται το Ennius.",m:"quaero",f:"γ΄ ενικ. υποτ. παρατ. ενεργ.",q:7,n:["subj","cum","seq"]}
+  ],
+  gr:[{t:"Μετά από",g:2},{t:"λίγες",g:1},{t:"μέρες,",g:3},{t:"όταν",g:4},{t:"ο Έννιος",g:5},{t:"είχε έρθει",g:8},{t:"στον",g:6},{t:"Νασικά",g:7},{t:"και",g:9},{t:"τον",g:10},{t:"ζητούσε",g:13},{t:"από",g:11},{t:"την πόρτα,",g:12}]
+ },
+ {
+  la:[
+   {w:"exclamāvit",g:1,d:"φώναξε δυνατά",x:"Ρήμα της ΚΥΡΙΑΣ πρότασης κρίσεως, οριστική παρακειμένου (ιστορικός χρόνος). Αντικείμενο: το ειδικό απαρέμφατο non esse. Σε ευθύ λόγο ο Νασικάς φώναξε: «Non domi sum ego!» (περιθώριό σου).",m:"exclamo",f:"γ΄ ενικ. οριστ. παρακ. ενεργ.",q:8,n:["plagia","seq"]},
+   {w:"Nasīca",g:2,d:"ο Νασικάς",x:"Υποκείμενο του exclamāvit.",m:"Nasica",f:"ονομ. ενικ.",q:8},
+   {w:"se",g:3,d:"(ο ίδιος)",x:"ΛΑΤΙΝΙΣΜΟΣ: ΥΠΟΚΕΙΜΕΝΟ του non esse σε αιτιατική, ενώ υπάρχει ΤΑΥΤΟΠΡΟΣΩΠΙΑ (ο Νασικάς λέει για τον εαυτό του). Στα λατινικά το υποκείμενο του ειδικού απαρεμφάτου γράφεται πάντα, εδώ με την αυτοπαθή se. Η se δεν έχει ονομαστική.",m:"se",f:"αιτ. ενικ.",q:8,n:["inf"]},
+   {w:"domi",g:4,d:"στο σπίτι,",x:"Απρόθετη γενική (τοπική) με επιρρηματική χρήση: στάση σε τόπο, στο non esse.",m:"domus",f:"τοπική (= γεν. ενικ.)",q:8,n:["domi"]},
+   {w:"non",g:5,d:"δεν",x:"Αρνητικό μόριο, στο esse.",m:"non",q:8},
+   {w:"esse,",g:6,d:"ήταν",x:"ΕΙΔΙΚΟ ΑΠΑΡΕΜΦΑΤΟ, αντικείμενο του exclamāvit. Υποκείμενο: se → ΤΑΥΤΟΠΡΟΣΩΠΙΑ (λατινισμός). Ενεστώτας → σύγχρονο.",m:"sum",f:"απαρ. ενεστ.",q:8,n:["inf"]},
+   {w:"etsi",g:7,d:"αν και",x:"Εναντιωματικός σύνδεσμος. Εισάγει δευτερεύουσα ΕΝΑΝΤΙΩΜΑΤΙΚΗ επιρρηματική πρόταση (επιρρηματικός προσδιορισμός της εναντίωσης στο exclamāvit), με ΟΡΙΣΤΙΚΗ γιατί δηλώνει πραγματική κατάσταση.",m:"etsi",q:9},
+   {w:"domi",g:8,d:"στο σπίτι.",x:"Απρόθετη γενική (τοπική) με επιρρηματική χρήση: στάση σε τόπο, στο erat.",m:"domus",f:"τοπική (= γεν. ενικ.)",q:9,n:["domi"]},
+   {w:"erat.",g:9,d:"ήταν",x:"Ρήμα της εναντιωματικής πρότασης, οριστική παρατατικού του sum (πραγματικό). Υποκείμενο εννοείται το Nasīca.",m:"sum",f:"γ΄ ενικ. οριστ. παρατ.",q:9}
+  ],
+  gr:[{t:"ο Νασικάς",g:2},{t:"φώναξε δυνατά",g:1},{t:"ότι",g:0},{t:"δεν",g:5},{t:"ήταν",g:6},{t:"στο σπίτι,",g:4},{t:"αν και",g:7},{t:"ήταν",g:9},{t:"στο σπίτι.",g:8}]
+ }
+]},
+{n:"III", title:"«Δεν αναγνωρίζω τη φωνή σου;»", flow:"η αγανάκτηση → η ερώτηση → η απάντηση του Νασικά", s:[
+ {
+  la:[
+   {w:"Tum",g:1,d:"Τότε",x:"Χρονικό επίρρημα: επιρρηματικός προσδιορισμός του χρόνου στο inquit.",m:"tum",q:10},
+   {w:"Ennius",g:2,d:"ο Έννιος",x:"Υποκείμενο του inquit.",m:"Ennius",f:"ονομ. ενικ.",q:10},
+   {w:"indignātus",g:3,d:"αγανακτισμένος",x:"ΑΙΤΙΟΛΟΓΙΚΗ ΕΠΙΡΡΗΜΑΤΙΚΗ ΜΕΤΟΧΗ, συνημμένη στο Ennius. Είναι μετοχή παρακειμένου ΑΠΟΘΕΤΙΚΟΥ ρήματος: παθητική μορφή, ενεργητική σημασία. Αντικείμενό της είναι η πρόταση quod … mentiebātur (ρήμα ψυχικού πάθους). Τρεις αναλύσεις: δες τη σημείωση «indignātus».",m:"indignor",f:"μτχ. παρακ., ονομ. ενικ. αρσ.",q:10,n:["indignatus","quod"]},
+   {w:"quod",g:4,d:"επειδή",x:"Αιτιολογικός σύνδεσμος. Εισάγει δευτερεύουσα ΑΙΤΙΟΛΟΓΙΚΗ ΟΥΣΙΑΣΤΙΚΗ πρόταση, ΑΝΤΙΚΕΙΜΕΝΟ της μετοχής indignātus. Οριστική → αιτιολογία αντικειμενικά αποδεκτή.",m:"quod",q:11,n:["quod"]},
+   {w:"Nasīca",g:5,d:"ο Νασικάς",x:"Υποκείμενο του mentiebātur.",m:"Nasica",f:"ονομ. ενικ.",q:11},
+   {w:"tam",g:6,d:"τόσο",x:"Ποσοτικό επίρρημα: επιρρηματικός προσδιορισμός του ΠΟΣΟΥ στο aperte (επιτείνει τη σημασία του).",m:"tam",q:11},
+   {w:"aperte",g:7,d:"φανερά",x:"Τροπικό επίρρημα: επιρρηματικός προσδιορισμός του ΤΡΟΠΟΥ στο mentiebātur.",m:"aperte",q:11},
+   {w:"mentiebātur:",g:8,d:"ψευδόταν",x:"Ρήμα της αιτιολογικής πρότασης. ΑΠΟΘΕΤΙΚΟ της δ΄ συζυγίας, οριστική παρατατικού (το -iēba- της δ΄). Οριστική → αιτιολογία αντικειμενικά αποδεκτή.",m:"mentior",f:"γ΄ ενικ. οριστ. παρατ. (αποθετικό)",q:11,n:["quod"]}
+  ],
+  gr:[{t:"Τότε",g:1},{t:"ο Έννιος",g:2},{t:"αγανακτισμένος",g:3},{t:"επειδή",g:4},{t:"ο Νασικάς",g:5},{t:"τόσο",g:6},{t:"φανερά",g:7},{t:"ψευδόταν",g:8}]
+ },
+ {
+  la:[
+   {w:"«Quid?»",g:1,d:"«Τι (συμβαίνει);",x:"Κύρια πρόταση, ΕΥΘΕΙΑ ΕΡΩΤΗΣΗ ΜΕΡΙΚΗΣ ΑΓΝΟΙΑΣ, ΕΛΛΕΙΠΤΙΚΗ: εννοείται το dicis (tu), όπως έγραψες από πάνω. quid = σύστοιχο αντικείμενο του εννοούμενου dicis.",m:"quis",f:"αιτ. ενικ. ουδ.",q:12,n:["quest"]},
+   {w:"inquit",g:2,d:"είπε:",x:"Ρήμα της κύριας πρότασης Tum Ennius … inquit. Το inquam είναι ΕΛΛΕΙΠΤΙΚΟ ρήμα και μπαίνει ΜΕΣΑ στα λόγια που μεταφέρει. Ο τύπος inquit είναι ίδιος για ενεστώτα και παρακείμενο (το study4exams τον αναγνωρίζει ως παρακείμενο). Εννοούμενο έμμεσο αντικείμενο: Nasīcae.",m:"inquam",f:"γ΄ ενικ. οριστ. ενεστ. / παρακ.",q:10,n:["indignatus"]},
+   {w:"«Ego",g:3,d:"Εγώ",x:"Υποκείμενο του cognosco. Γράφεται για έμφαση (εγώ, ο φίλος σου).",m:"ego",f:"ονομ. ενικ.",q:13},
+   {w:"non",g:4,d:"δεν",x:"Αρνητικό μόριο, στο cognosco.",m:"non",q:13},
+   {w:"cognosco",g:5,d:"αναγνωρίζω",x:"Ρήμα κύριας πρότασης: ΕΥΘΕΙΑ ΕΡΩΤΗΣΗ ΟΛΙΚΗΣ ΑΓΝΟΙΑΣ, ΧΩΡΙΣ ερωτηματικό μόριο, για έμφαση. Οριστική ενεστώτα → πραγματική απορία.",m:"cognosco",f:"α΄ ενικ. οριστ. ενεστ. ενεργ.",q:13,n:["quest"]},
+   {w:"vocem",g:6,d:"τη φωνή",x:"Αντικείμενο του cognosco.",m:"vox",f:"αιτ. ενικ.",q:13},
+   {w:"tuam?»",g:7,d:"σου;»",x:"Επιθετικός προσδιορισμός στο vocem (κτητική αντωνυμία β΄ προσώπου, για έναν κτήτορα).",m:"tuus",f:"αιτ. ενικ. θηλ.",q:13,n:["ktit"]}
+  ],
+  gr:[{t:"είπε:",g:2},{t:"«Τι (συμβαίνει);",g:1},{t:"Εγώ",g:3},{t:"δεν",g:4},{t:"αναγνωρίζω",g:5},{t:"τη φωνή",g:6},{t:"σου;»",g:7}]
+ },
+ {
+  la:[
+   {w:"Visne",g:1,d:"Μήπως θέλεις",x:"vis + -ne. Κύρια πρόταση: ΕΥΘΕΙΑ ΕΡΩΤΗΣΗ ΟΛΙΚΗΣ ΑΓΝΟΙΑΣ με το εγκλιτικό -ne (δεν ξέρουμε αν η απάντηση θα είναι ναι ή όχι). vis = β΄ ενικό οριστικής ενεστώτα του ΑΝΩΜΑΛΟΥ volo. Υποκείμενο εννοείται το tu.",m:"volo",f:"β΄ ενικ. οριστ. ενεστ.",q:14,n:["quest"]},
+   {w:"scire",g:2,d:"να μάθεις",x:"ΤΕΛΙΚΟ ΑΠΑΡΕΜΦΑΤΟ, αντικείμενο του vis. ΤΑΥΤΟΠΡΟΣΩΠΙΑ: υποκείμενο το tu. Αντικείμενό του είναι η πλάγια ερώτηση quid … responderit.",m:"scio",f:"απαρ. ενεστ. ενεργ.",q:14,n:["inf"]},
+   {w:"quid",g:3,d:"τι",x:"Ερωτηματική αντωνυμία· εισάγει ΠΛΑΓΙΑ ΕΡΩΤΗΣΗ ΜΕΡΙΚΗΣ ΑΓΝΟΙΑΣ, αντικείμενο του scire. Μέσα στην πρόταση: σύστοιχο αντικείμενο του responderit.",m:"quis",f:"αιτ. ενικ. ουδ.",q:15,n:["plagia"]},
+   {w:"Nasīca",g:4,d:"ο Νασικάς;",x:"Υποκείμενο του responderit.",m:"Nasica",f:"ονομ. ενικ.",q:15},
+   {w:"responderit?",g:5,d:"απάντησε",x:"ΥΠΟΤΑΚΤΙΚΗ ΠΑΡΑΚΕΙΜΕΝΟΥ (πλάγια ερώτηση). Εξαρτάται από το scire, που εξαρτάται από το vis: ΑΡΚΤΙΚΟΣ χρόνος → ΠΡΟΤΕΡΟΧΡΟΝΟ ΣΤΟ ΠΑΡΟΝ. Σε ευθύ λόγο: Quid Nasīca respondit? Προσοχή: ίδιος τύπος με την οριστική συντελεσμένου μέλλοντα.",m:"respondeo",f:"γ΄ ενικ. υποτ. παρακ. ενεργ.",q:15,n:["subj","plagia","seq"]}
+  ],
+  gr:[{t:"Μήπως θέλεις",g:1},{t:"να μάθεις",g:2},{t:"τι",g:3},{t:"απάντησε",g:5},{t:"ο Νασικάς;",g:4}]
+ },
+ {
+  la:[
+   {w:"«Homo",g:1,d:"άνθρωπος",x:"ΚΑΤΗΓΟΡΟΥΜΕΝΟ του εννοούμενου υποκειμένου tu, μέσω του συνδετικού es. Το homo είναι κοινού γένους· εδώ αρσενικό.",m:"homo",f:"ονομ. ενικ.",q:16},
+   {w:"es",g:2,d:"Είσαι",x:"Ρήμα κύριας πρότασης κρίσεως, οριστική ενεστώτα του sum (συνδετικό). Υποκείμενο εννοείται το tu.",m:"sum",f:"β΄ ενικ. οριστ. ενεστ.",q:16},
+   {w:"impudens.",g:3,d:"αναιδής.",x:"Επιθετικός προσδιορισμός στο Homo. impudens, -entis: τριγενές ΜΟΝΟΚΑΤΑΛΗΚΤΟ επίθετο της γ΄ κλίσης.",m:"impudens",f:"ονομ. ενικ. αρσ.",q:16}
+  ],
+  gr:[{t:"«Είσαι",g:2},{t:"άνθρωπος",g:1},{t:"αναιδής.",g:3}]
+ },
+ {
+  la:[
+   {w:"Ego",g:1,d:"Εγώ",x:"Υποκείμενο του credidi (και εννοείται και του quaererem). Εμφατικό: εγώ ↔ εσύ.",m:"ego",f:"ονομ. ενικ.",q:17},
+   {w:"cum",g:2,d:"όταν",x:"Ιστορικός cum: δευτερεύουσα χρονική επιρρηματική πρόταση, επιρρηματικός προσδιορισμός του χρόνου στο credidi.",m:"cum",q:18,n:["cum"]},
+   {w:"te",g:3,d:"σε",x:"Αντικείμενο του quaererem.",m:"tu",f:"αιτ. ενικ.",q:18},
+   {w:"quaererem,",g:4,d:"ζητούσα,",x:"ΥΠΟΤΑΚΤΙΚΗ ΠΑΡΑΤΑΤΙΚΟΥ (ιστορικός cum) → ΣΥΓΧΡΟΝΟ στο παρελθόν, με εξάρτηση από το credidi (ιστορικός χρόνος).",m:"quaero",f:"α΄ ενικ. υποτ. παρατ. ενεργ.",q:18,n:["subj","cum","seq"]},
+   {w:"ancillae",g:5,d:"την υπηρέτριά",x:"ΕΜΜΕΣΟ ΑΝΤΙΚΕΙΜΕΝΟ του credidi, σε ΔΟΤΙΚΗ: τα ρήματα πίστης θέλουν δοτική, όχι αιτιατική. Μην το πάρεις για γενική.",m:"ancilla",f:"δοτ. ενικ.",q:17,n:["dat"]},
+   {w:"tuae",g:6,d:"σου",x:"Επιθετικός προσδιορισμός στο ancillae (κτητική αντωνυμία).",m:"tuus",f:"δοτ. ενικ. θηλ.",q:17,n:["ktit"]},
+   {w:"credidi",g:7,d:"πίστεψα",x:"Ρήμα της ΚΥΡΙΑΣ πρότασης κρίσεως, οριστική παρακειμένου (ιστορικός χρόνος). Σύνταξη: credo + δοτική (ancillae) + ειδικό απαρέμφατο (non esse).",m:"credo",f:"α΄ ενικ. οριστ. παρακ. ενεργ.",q:17,n:["dat","seq"]},
+   {w:"te",g:8,d:"εσύ",x:"ΥΠΟΚΕΙΜΕΝΟ του non esse σε αιτιατική. Ετεροπροσωπία: εσύ ≠ εγώ.",m:"tu",f:"αιτ. ενικ.",q:17,n:["inf"]},
+   {w:"domi",g:9,d:"στο σπίτι.",x:"Απρόθετη γενική (τοπική) με επιρρηματική χρήση: στάση σε τόπο, στο non esse.",m:"domus",f:"τοπική (= γεν. ενικ.)",q:17,n:["domi"]},
+   {w:"non",g:10,d:"δεν",x:"Αρνητικό μόριο, στο esse.",m:"non",q:17},
+   {w:"esse;",g:11,d:"ήσουν",x:"ΕΙΔΙΚΟ ΑΠΑΡΕΜΦΑΤΟ, άμεσο αντικείμενο του credidi. Υποκείμενο: te → ετεροπροσωπία. Ενεστώτας → σύγχρονο.",m:"sum",f:"απαρ. ενεστ.",q:17,n:["inf"]}
+  ],
+  gr:[{t:"Εγώ",g:1},{t:"όταν",g:2},{t:"σε",g:3},{t:"ζητούσα,",g:4},{t:"πίστεψα",g:7},{t:"την υπηρέτριά",g:5},{t:"σου",g:6},{t:"ότι",g:0},{t:"εσύ",g:8},{t:"δεν",g:10},{t:"ήσουν",g:11},{t:"στο σπίτι.",g:9}]
+ },
+ {
+  la:[
+   {w:"tu",g:1,d:"Εσύ",x:"Υποκείμενο του credis. Εμφατικό: εσύ ↔ εγώ.",m:"tu",f:"ονομ. ενικ.",q:19},
+   {w:"mihi",g:2,d:"εμένα",x:"ΑΝΤΙΚΕΙΜΕΝΟ του credis σε ΔΟΤΙΚΗ (ρήμα πίστης).",m:"ego",f:"δοτ. ενικ.",q:19,n:["dat"]},
+   {w:"ipsi",g:3,d:"τον ίδιο;»",x:"Επιθετικός προσδιορισμός στο mihi: η οριστική αντωνυμία συμφωνεί σε δοτική.",m:"ipse",f:"δοτ. ενικ. αρσ.",q:19},
+   {w:"non",g:4,d:"δεν",x:"Αρνητικό μόριο, στο credis.",m:"non",q:19},
+   {w:"credis?»",g:5,d:"πιστεύεις",x:"Ρήμα κύριας πρότασης: ΕΥΘΕΙΑ ΕΡΩΤΗΣΗ ΟΛΙΚΗΣ ΑΓΝΟΙΑΣ χωρίς μόριο, για έμφαση. Οριστική ενεστώτα → πραγματική απορία.",m:"credo",f:"β΄ ενικ. οριστ. ενεστ. ενεργ.",q:19,n:["quest","dat"]}
+  ],
+  gr:[{t:"Εσύ",g:1},{t:"δεν",g:4},{t:"πιστεύεις",g:5},{t:"εμένα",g:2},{t:"τον ίδιο;»",g:3}]
+ }
+]}
+];
+
+/* ══ ΤΑ ΛΗΜΜΑΤΑ ══════════════════════════════════════════════════════════
+   p: v ρήμα · n ουσιαστικό · a επίθετο · p αντωνυμία · x άκλιτο.
+   l = το λήμμα όπως το γράφεις στο γραπτό· g = γένος· k = κλίση/συζυγία·
+   t = τι είναι · tr = η παγίδα. Αρχικοί χρόνοι: του βιβλίου (λεξιλόγιο XXIV)
+   όπου τους δίνει, αλλιώς του study4exams. */
+const M = {
+  venio:{p:"v",l:"venio, vēni, ventum, venīre",k:"δ΄ συζυγία"},
+  dico:{p:"v",l:"dico, dixi, dictum, dicĕre",k:"γ΄ συζυγία",tr:"Προστακτική: dic (όχι dice)."},
+  sum:{p:"v",l:"sum, fui, —, esse",k:"βοηθητικό",tr:"Δεν έχει σουπίνο. Υποτ. παρακ. fuerim, υπερσ. fuissem."},
+  quaero:{p:"v",l:"quaero, quaesīvi, quaesītum, quaerĕre",k:"γ΄ συζυγία"},
+  sentio:{p:"v",l:"sentio, sensi, sensum, sentīre",k:"δ΄ συζυγία"},
+  accipio:{p:"v",l:"accipio, accēpi, acceptum, accipĕre",k:"γ΄ συζυγία (σε -io)",tr:"Ένα από τα 15 ρήματα της γ΄ σε -io. Εδώ = μαθαίνω."},
+  facio:{p:"v",l:"facio, fēci, factum, facĕre",k:"γ΄ συζυγία (σε -io)",tr:"Προστακτική: fac. Ένα από τα 15 ρήματα της γ΄ σε -io."},
+  exclamo:{p:"v",l:"exclāmo, exclamāvi, exclamātum, exclamāre",k:"α΄ συζυγία"},
+  indignor:{p:"v",l:"indignor, indignātus sum, indignāri",k:"α΄ συζυγία · αποθετικό",dep:1,tr:"Αποθετικό: δεν γίνεται παθητικό."},
+  mentior:{p:"v",l:"mentior, mentītus sum, mentīri",k:"δ΄ συζυγία · αποθετικό",dep:1,tr:"Αποθετικό: δεν γίνεται παθητικό."},
+  inquam:{p:"v",l:"inquam",k:"γ΄ συζυγία · ελλειπτικό",tr:"Μπαίνει μέσα στα λόγια που μεταφέρει (≈ ἔφη)."},
+  cognosco:{p:"v",l:"cognosco, cognōvi, cognĭtum, cognoscĕre",k:"γ΄ συζυγία"},
+  volo:{p:"v",l:"volo, volui, —, velle",k:"ανώμαλο",tr:"vis = β΄ ενικ. οριστ. ενεστ. Δεν έχει σουπίνο."},
+  scio:{p:"v",l:"scio, scīvi, scītum, scīre",k:"δ΄ συζυγία",tr:"Προστακτική ενεστώτα: scito, scitote."},
+  respondeo:{p:"v",l:"respondeo, respondi, responsum, respondēre",k:"β΄ συζυγία"},
+  credo:{p:"v",l:"credo, credĭdi, credĭtum, credĕre",k:"γ΄ συζυγία",tr:"+ δοτική (ρήμα πίστης) και απαρέμφατο."},
+
+  Publius:{p:"n",l:"Publius, -ii / -i",g:"αρσενικό",k:"β΄ κλίση",tr:"Κύριο όνομα: κατά κανόνα χωρίς πληθυντικό."},
+  Cornelius:{p:"n",l:"Cornēlius, -ii / -i",g:"αρσενικό",k:"β΄ κλίση",tr:"Υπερδισύλλαβο σε -ius: γενική -ii ή -i, κλητική Corneli."},
+  Nasica:{p:"n",l:"Nasīca, -ae",g:"αρσενικό",k:"α΄ κλίση",tr:"Αρσενικό της α΄ κλίσης."},
+  Ennius:{p:"n",l:"Ennius, -ii / -i",g:"αρσενικό",k:"β΄ κλίση",tr:"Γενική -ii ή -i, κλητική Enni (όπως το Cornēlius)."},
+  poeta:{p:"n",l:"poēta, -ae",g:"αρσενικό",k:"α΄ κλίση",tr:"Αρσενικό της α΄ κλίσης (θηλυκό μόνο για ποιήτρια)."},
+  ostium:{p:"n",l:"ostium, -ii / -i",g:"ουδέτερο",k:"β΄ κλίση",tr:"Υπερδισύλλαβο σε -ium: γενική -ii ή -i."},
+  ancilla:{p:"n",l:"ancilla, -ae",g:"θηλυκό",k:"α΄ κλίση"},
+  dominus:{p:"n",l:"dominus, -i",g:"αρσενικό",k:"β΄ κλίση"},
+  iussus:{p:"n",l:"iussus, -us",g:"αρσενικό",k:"δ΄ κλίση",tr:"Εύχρηστο σχεδόν μόνο στην αφαιρετική ενικού: iussu."},
+  domus:{p:"n",l:"domus, -us",g:"θηλυκό",k:"δ΄ κλίση (και τύποι β΄)",tr:"domi = στάση · domum = κίνηση · domo = απομάκρυνση. Τύποι β΄: domo, domorum, domos."},
+  ianua:{p:"n",l:"ianua, -ae",g:"θηλυκό",k:"α΄ κλίση"},
+  dies:{p:"n",l:"dies, diēi",g:"αρσενικό",k:"ε΄ κλίση",tr:"Αρσενικό στην ε΄ κλίση."},
+  vox:{p:"n",l:"vox, vocis",g:"θηλυκό",k:"γ΄ κλίση"},
+  homo:{p:"n",l:"homo, homĭnis",g:"αρσενικό (κοινό)",k:"γ΄ κλίση",tr:"Κοινού γένους· εδώ αρσενικό."},
+
+  paucus:{p:"a",l:"paucus, -a, -um",k:"β΄ κλίση · τρικατάληκτο",tr:"Εύχρηστο στον πληθυντικό: pauci — pauciores — paucissimi."},
+  impudens:{p:"a",l:"impudens, -entis",k:"γ΄ κλίση · μονοκατάληκτο",tr:"impudentior, -ior, -ius — impudentissimus, -a, -um."},
+
+  is:{p:"p",l:"is, ea, id",k:"δεικτική-επαναληπτική",tr:"Γεν. eius, δοτ. ei · ονομ. πληθ. ei / ii."},
+  ille:{p:"p",l:"ille, illa, illud",k:"δεικτική",tr:"Γεν. illīus, δοτ. illi · ουδέτερο illud (όχι illum)."},
+  quis:{p:"p",l:"quis, quis, quid",k:"ερωτηματική ουσιαστική",tr:"Γεν. cuius, δοτ. cui."},
+  tuus:{p:"p",l:"tuus, tua, tuum",k:"κτητική β΄ προσώπου (ένας κτήτορας)",tr:"Κλίνεται σαν το bonus· στη σύνταξη = επιθετικός προσδιορισμός."},
+  ipse:{p:"p",l:"ipse, ipsa, ipsum",k:"οριστική",tr:"Γεν. ipsīus, δοτ. ipsi · ουδέτερο ipsum (όχι ipsud)."},
+  ego:{p:"p",l:"ego, mei, mihi, me, me",k:"προσωπική α΄ προσώπου",tr:"Πληθυντικός: nos."},
+  tu:{p:"p",l:"tu, tui, tibi, te, te",k:"προσωπική β΄ προσώπου",tr:"Πληθυντικός: vos."},
+  se:{p:"p",l:"—, sui, sibi, se, se",k:"προσωπική γ΄ προσώπου (αυτοπαθής)",tr:"Δεν έχει ονομαστική· ίδιοι τύποι σε ενικό και πληθυντικό."},
+
+  cum:{p:"x",l:"cum",k:"υποτακτικός χρονικός σύνδεσμος (εδώ ιστορικός)"},
+  ad:{p:"x",l:"ad",k:"πρόθεση + αιτιατική"},
+  ab:{p:"x",l:"ab / a / abs",k:"πρόθεση + αφαιρετική"},
+  non:{p:"x",l:"non",k:"αρνητικό μόριο"},
+  et:{p:"x",l:"et",k:"παρατακτικός συμπλεκτικός"},
+  intus:{p:"x",l:"intus",k:"τοπικό επίρρημα"},
+  nunc:{p:"x",l:"nunc",k:"χρονικό επίρρημα"},
+  postea:{p:"x",l:"postea",k:"χρονικό επίρρημα"},
+  post:{p:"x",l:"post",k:"χρονικό επίρρημα (εδώ)",tr:"posterius — postremo / postremum"},
+  etsi:{p:"x",l:"etsi",k:"υποτακτικός εναντιωματικός"},
+  tum:{p:"x",l:"tum",k:"χρονικό επίρρημα"},
+  quod:{p:"x",l:"quod",k:"υποτακτικός αιτιολογικός"},
+  tam:{p:"x",l:"tam",k:"ποσοτικό επίρρημα"},
+  aperte:{p:"x",l:"aperte",k:"τροπικό επίρρημα",tr:"apertius — apertissime"}
+};
+
+/* ══ ΟΙ ΠΡΟΤΑΣΕΙΣ — οι αγκύλες σου: [ ] κύρια · ( ) δευτερεύουσα ══════════ */
+const CL = {
+  1:{d:1,t:"δευτ. χρονική",s:"ιστορικός cum + υποτ. υπερσ. → προτερόχρονο στο παρελθόν · στο sensit"},
+  2:{d:1,t:"δευτ. χρονική",s:"συνδέεται με -que με την 1η, το cum εννοείται · υποτ. υπερσ. → προτερόχρονο · στο sensit"},
+  3:{d:0,t:"κύρια κρίσεως",s:"οριστ. παρακειμένου (sensit) → πραγματικό"},
+  4:{d:0,t:"κύρια επιθυμίας",s:"προστακτική (Accipe) → προτροπή"},
+  5:{d:1,t:"δευτ. πλάγια ερώτηση",s:"μερικής άγνοιας, αντικείμενο του Accipe · υποτ. παρακ. → προτερόχρονο στο παρόν"},
+  6:{d:1,t:"δευτ. χρονική",s:"ιστορικός cum + υποτ. υπερσ. → προτερόχρονο στο παρελθόν · στο exclamāvit"},
+  7:{d:1,t:"δευτ. χρονική",s:"συνδέεται με et, το cum εννοείται · υποτ. παρατ. → σύγχρονο στο παρελθόν · στο exclamāvit"},
+  8:{d:0,t:"κύρια κρίσεως",s:"οριστ. παρακειμένου (exclamāvit)"},
+  9:{d:1,t:"δευτ. εναντιωματική",s:"etsi + οριστ. παρατατικού → πραγματική κατάσταση · στο exclamāvit"},
+  10:{d:0,t:"κύρια κρίσεως",s:"Tum Ennius indignātus … inquit · οριστική"},
+  11:{d:1,t:"δευτ. αιτιολογική ουσιαστική",s:"quod + οριστ. παρατ. · αντικείμενο της μετοχής indignātus"},
+  12:{d:0,t:"κύρια · ευθεία ερώτηση",s:"μερικής άγνοιας, ελλειπτική (ενν. dicis)"},
+  13:{d:0,t:"κύρια · ευθεία ερώτηση",s:"ολικής άγνοιας, χωρίς μόριο (έμφαση) · οριστ. ενεστώτα"},
+  14:{d:0,t:"κύρια · ευθεία ερώτηση",s:"ολικής άγνοιας με -ne · οριστ. ενεστώτα"},
+  15:{d:1,t:"δευτ. πλάγια ερώτηση",s:"μερικής άγνοιας, αντικείμενο του scire · υποτ. παρακ. → προτερόχρονο στο παρόν"},
+  16:{d:0,t:"κύρια κρίσεως",s:"οριστ. ενεστώτα (es)"},
+  17:{d:0,t:"κύρια κρίσεως",s:"Ego … credidi … non esse · οριστ. παρακειμένου"},
+  18:{d:1,t:"δευτ. χρονική",s:"ιστορικός cum + υποτ. παρατ. → σύγχρονο στο παρελθόν · στο credidi"},
+  19:{d:0,t:"κύρια · ευθεία ερώτηση",s:"ολικής άγνοιας, χωρίς μόριο · οριστ. ενεστώτα"}
+};
+
+const NOTE_T = {
+  domi:"domi · domum · domo", subj:"Οι 7 υποτακτικές", quest:"Οι ερωτήσεις", cum:"Ιστορικός cum",
+  seq:"Ακολουθία των χρόνων", plagia:"Πλάγιος → ευθύς", indignatus:"indignātus", quod:"quod … mentiebātur",
+  post:"Paucis post diēbus", inf:"Τα απαρέμφατα", dat:"Δοτική με credo / dico", iussu:"domini iussu", ktit:"Κτητικές"
+};
+
+/* ══ Η ΜΗΧΑΝΗ ═══════════════════════════════════════════════════════════ */
+const KEY = 'lectio24_known_v1';     /* ⛔ δικό του κλειδί — ΟΧΙ copy-paste από άλλο πακέτο */
+const TR_KEY = 'lectio24_tr_v1';     /* ✗ / ↻ / ✓ του «Μετάφρασε», ανά ενότητα */
+const CARD_KEY = 'lectio24_cards_v1';/* η επανάληψη των καρτών */
+const UI_KEY = 'lectio24_ui_v1';     /* καρτέλα + τρόπος: μόνο ευκολία */
+function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : (JSON.parse(v) || d); }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function clean(w){ return w.replace(/[«»"“”.,;:?!]/g,''); }
+
+let known = lsGet(KEY, {}); if (typeof known !== 'object' || Array.isArray(known)) known = {};
+let trm = lsGet(TR_KEY, {}); if (typeof trm !== 'object' || Array.isArray(trm)) trm = {};
+const ui = Object.assign({tab:'keimeno', mode:'rd'}, lsGet(UI_KEY, {}));
+
+/* Η επίπεδη λίστα των λέξεων, με τις ετικέτες τους για φακούς και κάρτες. */
+const UNITS = [], WORDS = [];
+S.forEach(sc => sc.s.forEach(u => UNITS.push(u)));
+UNITS.forEach((u, ui_) => u.la.forEach((w, i) => {
+  const lem = w.m && M[w.m];
+  const tags = [];
+  if (lem){
+    tags.push({v:'verb', n:'noun', a:'adj', p:'pron', x:'akl'}[lem.p]);
+    if (lem.dep) tags.push('dep');
+  }
+  const f = w.f || '';
+  if (/υποτ\./.test(f)) tags.push('sub');
+  if (/απαρ\./.test(f)) tags.push('inf');
+  if (/μτχ\./.test(f)) tags.push('part');
+  WORDS.push(Object.assign({u:ui_, i, tags}, w));
+}));
+
+const LENSES = [
+  ['sub','Υποτακτικές'],['inf','Απαρέμφατα'],['part','Μετοχές'],['dep','Αποθετικά'],
+  ['verb','Ρήματα'],['noun','Ουσιαστικά'],['adj','Επίθετα'],['pron','Αντωνυμίες']
+];
+document.getElementById('faceN').textContent = WORDS.filter(w => w.tags.includes('sub')).length;
+
+/* ── το κείμενο ── */
+const box = document.getElementById('content');
+const aside = document.getElementById('aside');
+let sel = null;   /* {u,i} */
+
+function laHTML(u, ui_, mode){
+  if (mode !== 'st'){
+    return u.la.map((w, i) => '<span class="w" tabindex="0" role="button" data-side="la" data-u="'+ui_+'" data-i="'+i+'" data-g="'+w.g+'" data-tags="'+WORDS.find(x=>x.u===ui_&&x.i===i).tags.join(' ')+'">'+esc(w.w)+'</span>').join(' ');
+  }
+  /* Δομή: κάθε συνεχόμενο κομμάτι μιας πρότασης παίρνει τις αγκύλες του */
+  let out = '', cur = null;
+  u.la.forEach((w, i) => {
+    if (w.q !== cur){
+      if (cur !== null) out += closeBr(cur) + '</span> ';
+      cur = w.q;
+      out += '<span class="cl" data-q="'+cur+'">' + openBr(cur);
+    } else out += ' ';
+    out += '<span class="w" tabindex="0" role="button" data-side="la" data-u="'+ui_+'" data-i="'+i+'" data-g="'+w.g+'" data-tags="'+WORDS.find(x=>x.u===ui_&&x.i===i).tags.join(' ')+'">'+esc(w.w)+'</span>';
+  });
+  if (cur !== null) out += closeBr(cur) + '</span>';
+  return out;
+}
+function openBr(q){ const c = CL[q]; return '<span class="br'+(c.d?' d':'')+'">'+(c.d?'(':'[')+'<sup>'+q+'</sup></span>'; }
+function closeBr(q){ const c = CL[q]; return '<span class="br'+(c.d?' d':'')+'">'+(c.d?')':']')+'</span>'; }
+function grHTML(u, ui_){
+  return u.gr.map(g => '<span class="w" data-side="gr" data-u="'+ui_+'" data-g="'+g.g+'">'+esc(g.t)+'</span>').join(' ');
+}
+function clausesHTML(u){
+  const seen = [];
+  u.la.forEach(w => { if (!seen.includes(w.q)) seen.push(w.q); });
+  return seen.map(q => {
+    const c = CL[q];
+    const words = WORDS.filter(w => w.q === q).map(w => w.w).join(' ');
+    return '<li data-q="'+q+'"><b>'+q+'</b><span class="k'+(c.d?' d':'')+'">'+(c.d?'( ':'[ ')+esc(c.t)+(c.d?' )':' ]')+'</span><em>'+esc(words)+'</em><br>'+esc(c.s)+'</li>';
+  }).join('');
+}
+
+function build(){
+  box.innerHTML = '';
+  let idx = 0;
+  S.forEach(sc => {
+    const sec = document.createElement('div'); sec.className = 'scene';
+    sec.innerHTML = '<div class="scene-head"><span class="scene-num">'+sc.n+'</span><span class="scene-title">'+esc(sc.title)+'</span><span class="scene-flow">'+esc(sc.flow)+'</span></div>';
+    sc.s.forEach(u => {
+      const ui_ = idx; idx++;
+      const id = 's' + idx;
+      const row = document.createElement('div');
+      row.className = 'sent'; row.dataset.id = id; row.dataset.u = ui_;
+      row.innerHTML =
+        '<div class="num">'+idx+'</div>' +
+        '<div class="body"><p class="la">'+laHTML(u, ui_, ui.mode)+'</p>' +
+        '<button class="veil" type="button">Πες τη δυνατά και πάτα για να δεις τη μετάφραση</button>' +
+        '<p class="gr">'+grHTML(u, ui_)+'</p>' +
+        '<ul class="clauses">'+clausesHTML(u)+'</ul>' +
+        '<div class="info"></div></div>' +
+        '<div class="side">' +
+          '<button class="know'+(known[id]?' on':'')+'" type="button">✓ το ξέρω</button>' +
+          '<div class="grade" role="group" aria-label="Πώς πήγε">' +
+            '<button class="g3 x" type="button" data-v="x" title="Λάθος" aria-pressed="'+(trm[id]==='x')+'">✗</button>' +
+            '<button class="g3 r" type="button" data-v="r" title="Με δυσκολία" aria-pressed="'+(trm[id]==='r')+'">↻</button>' +
+            '<button class="g3 k" type="button" data-v="k" title="Μόνος μου" aria-pressed="'+(trm[id]==='k')+'">✓</button>' +
+          '</div>' +
+        '</div>';
+      sec.appendChild(row);
+    });
+    box.appendChild(sec);
+  });
+  applyFilter();
+}
+
+function rowsOf(){ return Array.from(box.querySelectorAll('.sent')); }
+function tally(){
+  const all = UNITS.length;
+  const n = Object.keys(known).filter(k => known[k] === true).length;
+  document.getElementById('bKnown').textContent = n;
+  document.getElementById('bAll').textContent = all;
+  let d = '';
+  for (let k = 1; k <= all; k++){
+    const id = 's' + k, t = trm[id];
+    d += '<i class="'+(known[id] ? 'on' : t === 'x' ? 'x' : t === 'r' ? 'r' : '')+'"></i>';
+  }
+  document.getElementById('bDash').innerHTML = d;
+  document.getElementById('bRed').textContent = Object.keys(trm).filter(k => trm[k] === 'x' || trm[k] === 'r').length;
+}
+function save(){ lsSet(KEY, known); lsSet(TR_KEY, trm); tally(); }
+
+/* ── η καρτέλα της λέξης ── */
+function wordCard(ui_, i){
+  const w = WORDS.find(x => x.u === ui_ && x.i === i);
+  const lem = w.m && M[w.m];
+  let h = '<div class="wc"><div class="wc-la">'+esc(clean(w.w))+'</div><div class="wc-d">'+esc(w.d)+'</div>';
+  h += '<div class="wc-sec"><span class="lbl">Συντακτικό</span><p>'+esc(w.x)+'</p></div>';
+  if (lem && lem.p !== 'x'){
+    h += '<div class="wc-sec"><span class="lbl">Γραμματική</span><div class="wc-lem">'+esc(lem.l)+'</div><dl>';
+    const kind = {v:'Ρήμα', n:'Ουσιαστικό', a:'Επίθετο', p:'Αντωνυμία'}[lem.p];
+    h += '<dt>Τι είναι</dt><dd>'+kind+(lem.g ? ', '+esc(lem.g) : '')+' · '+esc(lem.k)+'</dd>';
+    if (w.f) h += '<dt>Εδώ</dt><dd>'+esc(w.f)+'</dd>';
+    if (lem.tr) h += '<dt>Προσοχή</dt><dd>'+esc(lem.tr)+'</dd>';
+    h += '</dl></div>';
+  } else if (lem){
+    h += '<div class="wc-sec"><span class="lbl">Γραμματική</span><dl><dt>Τι είναι</dt><dd>'+esc(lem.k)+'</dd>'+(lem.tr?'<dt>Παραθετικά</dt><dd>'+esc(lem.tr)+'</dd>':'')+'</dl></div>';
+  }
+  const c = CL[w.q];
+  if (c) h += '<div class="wc-sec"><span class="lbl">Πρόταση '+w.q+'</span><p>'+(c.d?'( ':'[ ')+esc(c.t)+(c.d?' )':' ]')+' — '+esc(c.s)+'</p></div>';
+  if (w.n && w.n.length){
+    h += '<div class="wc-sec"><span class="lbl">Σημειώσεις</span><div class="chips">' + w.n.map(k => '<button class="chip" type="button" data-note="'+k+'">'+esc(NOTE_T[k])+' ↗</button>').join('') + '</div></div>';
+  }
+  return h + '</div>';
+}
+function emptyCard(){
+  return '<div class="wc empty"><div class="big">Πάτα μια λέξη.</div>Εδώ βλέπεις τι είναι συντακτικά, από ποιο λήμμα βγαίνει (αρχικοί χρόνοι, γένος, κλίση), σε ποια πρόταση ανήκει και ποια σημείωση την αφορά.<br><br>Οι <b>Φακοί</b> ανάβουν μια κατηγορία μέσα στο κείμενο, π.χ. τις 7 υποτακτικές.</div>';
+}
+const wide = window.matchMedia('(max-width:1040px)');
+function clearSel(){
+  box.querySelectorAll('.w.hit').forEach(x => x.classList.remove('hit'));
+  box.querySelectorAll('.info.show').forEach(x => { x.classList.remove('show'); x.innerHTML = ''; });
+  box.querySelectorAll('.cl.on, .clauses li.on').forEach(x => x.classList.remove('on'));
+  sel = null;
+  aside.innerHTML = emptyCard();
+}
+function select(ui_, i){
+  const was = sel && sel.u === ui_ && sel.i === i;
+  clearSel();
+  if (was) return;
+  sel = {u:ui_, i};
+  const row = box.querySelector('.sent[data-u="'+ui_+'"]');
+  const w = UNITS[ui_].la[i];
+  row.querySelectorAll('.w[data-g="'+w.g+'"]').forEach(x => x.classList.add('hit'));
+  const html = wordCard(ui_, i);
+  if (wide.matches){ const info = row.querySelector('.info'); info.innerHTML = html; info.classList.add('show'); }
+  else aside.innerHTML = html;
+}
+function selectGr(ui_, g){
+  if (!g || g === '0') return;
+  const i = UNITS[ui_].la.findIndex(w => String(w.g) === String(g));
+  if (i >= 0) select(ui_, i);
+}
+
+box.addEventListener('click', e => {
+  const chip = e.target.closest('[data-note]');
+  if (chip){ goNote(chip.dataset.note); return; }
+  const row = e.target.closest('.sent'); if (!row) return;
+  const id = row.dataset.id;
+  if (e.target.closest('.know')){
+    known[id] = !known[id]; if (!known[id]) delete known[id];
+    e.target.closest('.know').classList.toggle('on', !!known[id]); save(); return;
+  }
+  if (e.target.closest('.veil')){ row.classList.add('shown'); return; }
+  const g3 = e.target.closest('.g3');
+  if (g3){
+    const v = g3.dataset.v;
+    if (trm[id] === v){ delete trm[id]; } else trm[id] = v;
+    if (trm[id] === 'k') known[id] = true;
+    else if (trm[id] === 'x' || trm[id] === 'r') delete known[id];
+    row.querySelectorAll('.g3').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === trm[id])));
+    row.querySelector('.know').classList.toggle('on', !!known[id]);
+    save(); applyFilter(); return;
+  }
+  const li = e.target.closest('.clauses li');
+  if (li){
+    const q = li.dataset.q, on = li.classList.contains('on');
+    clearSel();
+    if (!on){ li.classList.add('on'); row.querySelectorAll('.cl[data-q="'+q+'"]').forEach(x => x.classList.add('on')); }
+    return;
+  }
+  const w = e.target.closest('.w'); if (!w) return;
+  if (w.dataset.side === 'gr') selectGr(+w.dataset.u, w.dataset.g);
+  else select(+w.dataset.u, +w.dataset.i);
+});
+box.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('w')){ e.preventDefault(); e.target.click(); }
+});
+aside.addEventListener('click', e => { const c = e.target.closest('[data-note]'); if (c) goNote(c.dataset.note); });
+
+/* ── τρόποι ── */
+const HINT = {
+  rd:'Πάτα μια λέξη: ανάβει το ελληνικό της ζευγάρι και δεξιά βλέπεις συντακτικό, λήμμα, πρόταση και σημειώσεις.',
+  tr:'Η μετάφραση κρύβεται ανά ενότητα. Πες την δυνατά, άνοιξέ την και βαθμολόγησε τον εαυτό σου: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Το ✓ κλειδώνει την ενότητα. Με το «Μόνο τα κόκκινα» μένουν μόνο οι ✗ και ↻.',
+  st:'Οι αγκύλες σου, όπως στο χαρτί: [ ] κύρια, ( ) δευτερεύουσα, με τον αριθμό της πρότασης. Κάτω από κάθε ενότητα: τι πρόταση είναι, πώς εκφέρεται και από πού εξαρτάται. Πάτα μια γραμμή για να την ανάψεις μέσα στο κείμενο.'
+};
+function setMode(m){
+  ui.mode = m; lsSet(UI_KEY, ui);
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  box.classList.toggle('m-tr', m === 'tr');
+  box.classList.toggle('m-st', m === 'st');
+  document.getElementById('onlyRed').hidden = m !== 'tr';
+  document.getElementById('modeHint').textContent = HINT[m];
+  rowsOf().forEach(r => {
+    const u = +r.dataset.u;
+    r.querySelector('.la').innerHTML = laHTML(UNITS[u], u, m);
+    r.classList.remove('shown');
+  });
+  clearSel(); applyFilter();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+const onlyRedI = document.getElementById('onlyRedI');
+onlyRedI.addEventListener('change', applyFilter);
+function applyFilter(){
+  const on = ui.mode === 'tr' && onlyRedI.checked;
+  rowsOf().forEach(r => { const t = trm[r.dataset.id]; r.classList.toggle('gone', on && !(t === 'x' || t === 'r')); });
+}
+document.getElementById('bReset').addEventListener('click', () => {
+  known = {}; trm = {}; save(); build(); setMode(ui.mode);
+});
+
+/* ── φακοί ── */
+const lensBox = document.getElementById('lenses');
+LENSES.forEach(([k, label]) => {
+  const n = WORDS.filter(w => w.tags.includes(k)).length;
+  const b = document.createElement('button');
+  b.className = 'lens'; b.type = 'button'; b.dataset.lens = k; b.setAttribute('aria-pressed','false');
+  b.innerHTML = esc(label) + ' <i>' + n + '</i>';
+  b.addEventListener('click', () => {
+    const on = box.dataset.lens === k;
+    box.dataset.lens = on ? '' : k;
+    lensBox.querySelectorAll('.lens').forEach(x => x.setAttribute('aria-pressed', String(!on && x.dataset.lens === k)));
+  });
+  lensBox.appendChild(b);
+});
+
+/* ══ ΓΡΑΜΜΑΤΙΚΗ — παράγεται από τα ίδια δεδομένα, άρα δεν διαφωνεί ποτέ με το κείμενο ══ */
+const SUBJ = [
+  {t:'Υποτακτική ενεργητικού παρακειμένου', r:'θέμα παρακειμένου + <b>-eri-</b> + καταλήξεις ενεργητικής', ix:'eri',
+   st:[['α΄','amav'],['β΄','delev'],['γ΄','leg'],['δ΄','audiv'],['sum','fu']], en:['m','s','t','mus','tis','nt'], note:'Εκτός από το α΄ ενικό, ίδια με την οριστική συντελεσμένου μέλλοντα (amavero).'},
+  {t:'Υποτακτική ενεργητικού υπερσυντελίκου', r:'θέμα παρακειμένου + <b>-isse-</b> + καταλήξεις ενεργητικής', ix:'isse',
+   st:[['α΄','amav'],['β΄','delev'],['γ΄','leg'],['δ΄','audiv'],['sum','fu']], en:['m','s','t','mus','tis','nt'], note:'Πρακτικά: απαρέμφατο παρακειμένου + κατάληξη (amavisse-m). Τονίζεται amavissēmus.'},
+  {t:'Υποτακτική παθητικού παρακειμένου', r:'μετοχή παθητικού παρακειμένου + <b>sim</b>', aux:['sim','sis','sit','simus','sitis','sint'],
+   st:[['α΄','amat'],['β΄','delet'],['γ΄','lect'],['δ΄','audit']], note:'Η μετοχή συμφωνεί με το υποκείμενο: amatus, -a, -um sim · amati, -ae, -a simus.'},
+  {t:'Υποτακτική παθητικού υπερσυντελίκου', r:'μετοχή παθητικού παρακειμένου + <b>essem</b>', aux:['essem','esses','esset','essēmus','essētis','essent'],
+   st:[['α΄','amat'],['β΄','delet'],['γ΄','lect'],['δ΄','audit']], note:'Περιφραστικός τύπος, όπως ο παθητικός παρακείμενος.'}
+];
+const PERS = ['α΄ ενικ.','β΄ ενικ.','γ΄ ενικ.','α΄ πληθ.','β΄ πληθ.','γ΄ πληθ.'];
+function conjTable(s){
+  let h = '<div class="conjw"><table class="conj"><tr><th></th>' + s.st.map(x => '<th>'+x[0]+'</th>').join('') + '</tr>';
+  for (let p = 0; p < 6; p++){
+    h += '<tr><td>'+PERS[p]+'</td>';
+    s.st.forEach(([, st]) => {
+      if (s.aux){
+        const end = p < 3 ? 'us' : 'i';
+        h += '<td>'+st+end+' <span class="ix">'+s.aux[p]+'</span></td>';
+      } else {
+        let ix = s.ix;
+        if (s.ix === 'isse' && (p === 3 || p === 4)) ix = 'issē';
+        h += '<td>'+st+'<span class="ix">'+ix+'</span>'+s.en[p]+'</td>';
+      }
+    });
+    h += '</tr>';
+  }
+  return h + '</table></div>';
+}
+function buildGram(){
+  const verbs = WORDS.filter(w => w.m && M[w.m] && M[w.m].p === 'v');
+  const lemmaCount = new Set(verbs.map(w => w.m)).size;
+  let h = '';
+  /* Ρήματα */
+  h += '<div class="sec"><div class="sh"><h2>Όλα τα ρήματα, με τη σειρά</h2><span class="sp"></span><button class="tbtn" id="hideV" type="button" aria-pressed="false">Κρύψε τους αρχικούς χρόνους</button>' +
+       '<p class="sub">'+verbs.length+' ρηματικοί τύποι από '+lemmaCount+' ρήματα. Πάτα έναν τύπο για να τον δεις μέσα στο κείμενο. Με κρυμμένους τους αρχικούς χρόνους, πάτα το θολό κελί αφού τους πεις.</p></div>' +
+       '<div class="tw"><table class="tbl" id="tV"><tr><th>#</th><th>Στο κείμενο</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Τύπος</th></tr>';
+  verbs.forEach((w, k) => {
+    const L = M[w.m];
+    h += '<tr><td class="n">'+(k+1)+'</td><td class="f"><button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button></td><td class="lem"><span>'+esc(L.l)+'</span></td><td class="t hm">'+esc(L.k)+'</td><td class="t">'+esc(w.f)+'</td></tr>';
+  });
+  h += '</table></div></div>';
+
+  /* Ουσιαστικά — ομαδοποιημένα ανά λήμμα, με όλους τους τύπους του κειμένου */
+  function groupBy(p){
+    const map = new Map();
+    WORDS.filter(w => w.m && M[w.m] && M[w.m].p === p).forEach(w => {
+      if (!map.has(w.m)) map.set(w.m, []);
+      const arr = map.get(w.m), c = clean(w.w);
+      if (!arr.some(x => clean(x.w).toLowerCase() === c.toLowerCase() && x.f === w.f)) arr.push(w);
+    });
+    return map;
+  }
+  const nouns = groupBy('n');
+  h += '<div class="sec"><div class="sh"><h2>Ουσιαστικά</h2><p class="sub">Ονομαστική και γενική, γένος, κλίση, και η πτώση του τύπου μέσα στο κείμενο.</p></div>' +
+       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Ονομ. – Γεν.</th><th>Γένος · κλίση</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+  nouns.forEach((arr, m) => {
+    const L = M[m];
+    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.g)+' · '+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+  });
+  h += '</table></div></div>';
+
+  /* Επίθετα και αντωνυμίες */
+  const adjs = groupBy('a'), prons = groupBy('p');
+  h += '<div class="sec"><div class="sh"><h2>Επίθετα και αντωνυμίες</h2><p class="sub">Οι αντωνυμίες με γενική σε -ius και δοτική σε -i (illīus, ipsīus, cuius) είναι αγαπημένη ερώτηση.</p></div>' +
+       '<div class="tw"><table class="tbl"><tr><th>Στο κείμενο</th><th>Από</th><th>Είδος</th><th>Πτώση εδώ</th><th class="hm">Προσοχή</th></tr>';
+  [adjs, prons].forEach(map => map.forEach((arr, m) => {
+    const L = M[m];
+    h += '<tr><td class="f">'+arr.map(w => '<button type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>').join(' · ')+'</td><td class="lem"><span>'+esc(L.l)+'</span></td><td>'+esc(L.k)+'</td><td class="t">'+arr.map(w => esc(w.f)).join(' · ')+'</td><td class="tr hm">'+esc(L.tr||'')+'</td></tr>';
+  }));
+  h += '</table></div></div>';
+
+  /* Το φαινόμενο του μαθήματος */
+  h += '<div class="sec"><div class="sh"><h2>Το μάθημα: υποτακτική παρακειμένου και υπερσυντελίκου</h2><p class="sub">Και στις τέσσερις συζυγίες, ενεργητική και παθητική (Παρατηρήσεις 1–4 του βιβλίου · study4exams).</p></div><div class="grid2">';
+  SUBJ.forEach(s => { h += '<div class="box"><h3>'+s.t+'</h3><div class="rule">'+s.r+'</div>'+conjTable(s)+'<div class="rule" style="margin-top:12px">'+s.note+'</div></div>'; });
+  h += '</div></div>';
+
+  /* Ακολουθία των χρόνων, με τις 7 του κειμένου στη θέση τους */
+  const sub = WORDS.filter(w => w.tags.includes('sub'));
+  const chip = w => '<button class="ch" type="button" data-go="'+w.u+','+w.i+'">'+esc(clean(w.w))+'</button>';
+  const cell = (re) => sub.filter(w => re.test(w.f)).map(chip).join('');
+  h += '<div class="sec"><div class="sh"><h2>Η ακολουθία των χρόνων</h2><p class="sub">Ο χρόνος του ρήματος εξάρτησης διαλέγει τον χρόνο της υποτακτικής (Παρατήρηση 5). Οι 7 υποτακτικές του κειμένου κάθονται εκεί όπου ανήκουν.</p></div>' +
+       '<div class="tw"><table class="seqt"><tr><th>Ρήμα εξάρτησης</th><th>Σύγχρονο</th><th>Προτερόχρονο</th><th>Υστερόχρονο</th></tr>' +
+       '<tr><td><b>Αρκτικός χρόνος</b>ενεστώτας, μέλλοντας, συντ. μέλλοντας, προστακτική, παρακείμενος με σημασία ενεστώτα</td><td><b>υποτ. ενεστώτα</b><span class="ex">Rogat quid agam</span></td><td><b>υποτ. παρακειμένου</b><span class="ex">Rogat quid egerim</span>'+cell(/υποτ\. παρακ/)+'</td><td><b>-ūrus sim</b><span class="ex">Rogat quid actūrus sim</span></td></tr>' +
+       '<tr><td><b>Ιστορικός χρόνος</b>παρατατικός, παρακείμενος με σημασία αορίστου, υπερσυντέλικος</td><td><b>υποτ. παρατατικού</b><span class="ex">Rogābat quid agerem</span>'+cell(/υποτ\. παρατ/)+'</td><td><b>υποτ. υπερσυντελίκου</b><span class="ex">Rogābat quid egissem</span>'+cell(/υποτ\. υπερσ/)+'</td><td><b>-ūrus essem</b><span class="ex">Rogābat quid actūrus essem</span></td></tr></table></div></div>';
+
+  /* Άκλιτα */
+  const akl = Object.keys(M).filter(k => M[k].p === 'x');
+  h += '<div class="sec"><div class="sh"><h2>Άκλιτα</h2><p class="sub">Επιρρήματα, προθέσεις, σύνδεσμοι. Όπου υπάρχουν παραθετικά, γράφονται δίπλα.</p></div><div class="akl">' +
+       akl.map(k => '<div><b>'+esc(M[k].l)+'</b>'+esc(M[k].k)+(M[k].tr ? ' · '+esc(M[k].tr) : '')+'</div>').join('') + '</div>';
+  h += '<div class="attn"><b>Προσοχή.</b> Σχεδόν όλα τα ρήματα των δευτερευουσών είναι σε <b>υποτακτική</b>: αυτό είναι το μάθημα. Ο υπερσυντέλικος (venisset, dixisset) δείχνει το <b>προτερόχρονο</b>, ο παρατατικός (quaereret, quaererem) το <b>σύγχρονο</b>. Ο παρακείμενος (fecerit, responderit) εμφανίζεται <b>μετά από αρκτικό χρόνο</b>. Τα δύο αποθετικά (indignātus, mentiebātur) έχουν παθητική μορφή και ενεργητική σημασία. Οι αρχικοί χρόνοι δίνονται σε <b>ενεργητική</b> μορφή, αφού από αυτούς βγαίνουν και οι παθητικοί τύποι· τα αποθετικά δίνονται σε <b>παθητική</b>.</div></div>';
+
+  const g = document.getElementById('gram');
+  g.innerHTML = h;
+  const hideV = document.getElementById('hideV');
+  hideV.addEventListener('click', () => {
+    const on = hideV.getAttribute('aria-pressed') !== 'true';
+    hideV.setAttribute('aria-pressed', String(on));
+    hideV.textContent = on ? 'Δείξε τους αρχικούς χρόνους' : 'Κρύψε τους αρχικούς χρόνους';
+    document.getElementById('tV').classList.toggle('hidecol', on);
+    document.querySelectorAll('#tV td.lem.rv').forEach(td => td.classList.remove('rv'));
+  });
+  g.addEventListener('click', e => {
+    const lem = e.target.closest('#tV.hidecol td.lem'); if (lem){ lem.classList.toggle('rv'); return; }
+    const go = e.target.closest('[data-go]'); if (go){ const [u, i] = go.dataset.go.split(',').map(Number); goWord(u, i); }
+  });
+  document.getElementById('tcG').textContent = verbs.length;
+}
+
+/* ══ ΚΑΡΤΕΣ — επανάληψη τύπου Anki, με τα δικά σου ✗ ↻ ✓ ══════════════
+   Κάθε μορφή του κειμένου είναι ΜΙΑ κάρτα (το «domi» 4 φορές = 1 κάρτα).
+   Στο «Συντακτικό» κάθε ΘΕΣΗ είναι κάρτα, γιατί η ίδια λέξη αλλάζει ρόλο. */
+const DECKS = [
+  {k:'v', t:'Ρήματα', ask:'Ρήμα · αρχικοί χρόνοι και τύπος;'},
+  {k:'n', t:'Ουσιαστικά', ask:'Ουσιαστικό · ονομ. – γεν., γένος, κλίση, πτώση;'},
+  {k:'a', t:'Επίθετα', ask:'Επίθετο · από πού, κλίση, πτώση;'},
+  {k:'p', t:'Αντωνυμίες', ask:'Αντωνυμία · κλίση, είδος, πτώση;'},
+  {k:'x', t:'Συντακτικό', ask:'Τι είναι συντακτικά;'},
+  {k:'all', t:'Όλα', ask:''}
+];
+const CARDS = [];
+(function(){
+  const seen = {};
+  WORDS.forEach(w => {
+    const L = w.m && M[w.m];
+    if (L && L.p !== 'x'){
+      const id = L.p + ':' + clean(w.w).toLowerCase() + ':' + (w.f || '');
+      if (!seen[id]){ seen[id] = 1; CARDS.push({id, k:L.p, w}); }
+    }
+    if (L && (L.p !== 'x' || ['cum','quod','etsi','post','postea','intus','tam','aperte','nunc','tum'].includes(w.m))){
+      CARDS.push({id:'x:'+w.u+':'+w.i, k:'x', w});
+    }
+  });
+})();
+let cst = lsGet(CARD_KEY, {}); if (typeof cst !== 'object' || Array.isArray(cst)) cst = {};
+function today(){ const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 864e5); }
+function isDue(c){ const s = cst[c.id]; return s && s.d <= today(); }
+function isNew(c){ return !cst[c.id]; }
+function inDeck(c, k){ return k === 'all' || c.k === k; }
+function ivlText(days){ return days <= 0 ? 'σήμερα ξανά' : days === 1 ? 'αύριο' : 'σε ' + days + ' μέρες'; }
+function plan(c, v){
+  const s = cst[c.id] || {i:0, e:2.5, n:0, l:0};
+  if (v === 'x') return {i:0, e:Math.max(1.3, s.e - .2), n:0, l:s.l + 1};
+  if (v === 'r') return {i:s.n === 0 ? 1 : Math.max(1, Math.round(s.i * 1.2)), e:Math.max(1.3, s.e - .15), n:s.n + 1, l:s.l};
+  return {i:s.n === 0 ? 1 : s.n === 1 ? 3 : Math.max(s.i + 1, Math.round(s.i * s.e)), e:s.e, n:s.n + 1, l:s.l};
+}
+let deckK = 'all', queue = [], cur = null, flipped = false, doneN = 0;
+
+function deckStats(k){
+  const cs = CARDS.filter(c => inDeck(c, k));
+  return {all:cs.length, due:cs.filter(isDue).length, nw:cs.filter(isNew).length, lock:cs.filter(c => cst[c.id] && cst[c.id].i >= 7).length};
+}
+function renderDeck(){
+  document.getElementById('deck').innerHTML = DECKS.map(d => {
+    const s = deckStats(d.k);
+    return '<button class="dk" type="button" data-k="'+d.k+'" aria-pressed="'+(d.k === deckK)+'"><div class="t">'+d.t+'</div><div class="s"><b>'+(s.due + s.nw)+'</b> για τώρα · '+s.all+' κάρτες<br>'+s.lock+' κλειδωμένες</div></button>';
+  }).join('');
+  const all = deckStats('all');
+  document.getElementById('bDue').textContent = all.due + all.nw;
+  document.getElementById('bDueS').textContent = all.due + ' επανάληψη · ' + all.nw + ' νέες · ' + all.lock + ' κλειδωμένες';
+  document.getElementById('tcK').textContent = all.due + all.nw;
+}
+function startDeck(k){
+  deckK = k; doneN = 0;
+  const cs = CARDS.filter(c => inDeck(c, k));
+  queue = cs.filter(isDue).sort((a, b) => cst[a.id].d - cst[b.id].d).concat(cs.filter(isNew));
+  renderDeck(); next();
+}
+function next(){
+  cur = queue.shift() || null; flipped = false;
+  const st = document.getElementById('stage');
+  if (!cur){
+    const s = deckStats(deckK);
+    const fut = CARDS.filter(c => inDeck(c, deckK) && cst[c.id]).map(c => cst[c.id].d).sort((a, b) => a - b)[0];
+    st.innerHTML = '<div class="done"><div class="big">Τέλος για τώρα.</div><p>'+(doneN ? doneN + ' κάρτες σε αυτόν τον γύρο. ' : '')+s.lock+' από '+s.all+' κλειδωμένες (επόμενη επανάληψη σε 7+ μέρες).'+(fut != null ? ' Η επόμενη κάρτα ' + ivlText(fut - today()) + '.' : '')+'</p><button class="tbtn" type="button" id="again">Ξανά όλες οι κάρτες αυτής της κατηγορίας</button></div>';
+    document.getElementById('again').onclick = () => { queue = CARDS.filter(c => inDeck(c, deckK)); next(); };
+    return;
+  }
+  st.innerHTML = cardHTML(cur) + rateHTML(cur) + '<div class="keys">Space: γύρνα · 1 ✗ · 2 ↻ · 3 ✓</div>' +
+    '<div class="cfoot"><button type="button" id="cReset">μηδένισε τις κάρτες αυτής της κατηγορίας</button></div>';
+  document.getElementById('cReset').onclick = () => {
+    CARDS.filter(c => inDeck(c, deckK)).forEach(c => delete cst[c.id]);
+    lsSet(CARD_KEY, cst); startDeck(deckK);
+  };
+}
+function cardHTML(c){
+  const w = c.w, L = M[w.m], u = UNITS[w.u];
+  const ctx = u.la.map((x, i) => i === w.i ? '<b>'+esc(x.w)+'</b>' : esc(x.w)).join(' ');
+  const deck = DECKS.find(d => d.k === c.k);
+  const left = queue.length + 1;
+  let back = '';
+  if (c.k === 'x'){
+    back = '<div class="sx">'+esc(w.x)+'</div>';
+    const cl = CL[w.q]; if (cl) back += '<div class="tr">Πρόταση: '+(cl.d?'( ':'[ ')+esc(cl.t)+(cl.d?' )':' ]')+'</div>';
+  } else {
+    back = '<div class="lem">'+esc(L.l)+'</div><div class="facts">';
+    if (c.k === 'v') back += '<span><b>Συζυγία</b>'+esc(L.k)+'</span>';
+    if (c.k === 'n') back += '<span><b>Γένος</b>'+esc(L.g)+'</span><span><b>Κλίση</b>'+esc(L.k)+'</span>';
+    if (c.k === 'a' || c.k === 'p') back += '<span><b>Είδος</b>'+esc(L.k)+'</span>';
+    if (w.f) back += '<span><b>Εδώ</b>'+esc(w.f)+'</span>';
+    back += '</div>';
+    if (L.tr) back += '<div class="tr">'+esc(L.tr)+'</div>';
+  }
+  back += '<div class="gd">'+esc(w.d)+'</div>';
+  return '<div class="cmeta"><span>'+esc(deck.t)+'</span><span>'+left+' ακόμα</span></div>' +
+    '<div class="card" id="card" tabindex="0" role="button" aria-label="Γύρνα την κάρτα"><div class="ask">'+esc(deck.ask)+'</div><div class="form">'+esc(clean(w.w))+'</div><div class="ctx">'+ctx+'</div><div class="tap">πάτα ή Space για να τη γυρίσεις</div><div class="back">'+back+'</div></div>';
+}
+function rateHTML(c){
+  const p = v => ivlText(plan(c, v).i);
+  return '<div class="rate" id="rate"><button class="x" type="button" data-v="x"><span class="k">✗</span><span class="l">Λάθος</span><span class="i">'+p('x')+'</span></button>' +
+    '<button class="r" type="button" data-v="r"><span class="k">↻</span><span class="l">Με δυσκολία</span><span class="i">'+p('r')+'</span></button>' +
+    '<button class="k3" type="button" data-v="k"><span class="k">✓</span><span class="l">Το ήξερα</span><span class="i">'+p('k')+'</span></button></div>';
+}
+function flip(){
+  if (!cur || flipped) return;
+  flipped = true;
+  document.getElementById('card').classList.add('flip');
+  document.getElementById('rate').classList.add('on');
+}
+function rate(v){
+  if (!cur || !flipped) return;
+  const wasNew = isNew(cur) || cst[cur.id].n === 0;
+  const p = plan(cur, v);
+  cst[cur.id] = {i:p.i, e:Math.round(p.e * 100) / 100, n:p.n, l:p.l, d:today() + p.i};
+  lsSet(CARD_KEY, cst);
+  doneN++;
+  if (v === 'x') queue.splice(Math.min(3, queue.length), 0, cur);
+  else if (v === 'r' && wasNew) queue.splice(Math.min(6, queue.length), 0, cur);
+  renderDeck(); next();
+}
+document.getElementById('deck').addEventListener('click', e => { const b = e.target.closest('.dk'); if (b) startDeck(b.dataset.k); });
+document.getElementById('stage').addEventListener('click', e => {
+  if (e.target.closest('#card')) { flip(); return; }
+  const r = e.target.closest('#rate button'); if (r) rate(r.dataset.v);
+});
+document.addEventListener('keydown', e => {
+  if (ui.tab !== 'kartes' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input,textarea')) return;
+  if (e.key === ' ' || e.key === 'Enter'){ if (!flipped){ e.preventDefault(); flip(); } }
+  else if (e.key === '1') rate('x'); else if (e.key === '2') rate('r'); else if (e.key === '3') rate('k');
+});
+
+/* ══ ΚΑΡΤΕΛΕΣ + ΠΛΟΗΓΗΣΗ ══════════════════════════════════════════════ */
+function setTab(t, noScroll){
+  ui.tab = t; lsSet(UI_KEY, ui);
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  if (history.replaceState) history.replaceState(null, '', '#' + t);
+  if (t === 'kartes' && !document.getElementById('card') && !document.querySelector('#stage .done')) startDeck(deckK);
+  if (!noScroll){ const tabs = document.querySelector('.tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView({block:'start'}); }
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+function goNote(k){
+  setTab('simeioseis', true);
+  const el = document.getElementById('n-' + k); if (!el) return;
+  el.scrollIntoView({block:'center'});
+  el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400);
+}
+function goWord(u, i){
+  setTab('keimeno', true);
+  if (ui.mode === 'tr') setMode('rd');
+  const row = box.querySelector('.sent[data-u="'+u+'"]');
+  row.scrollIntoView({block:'center'});
+  if (!(sel && sel.u === u && sel.i === i)) select(u, i);
+}
+
+/* ══ ΕΚΚΙΝΗΣΗ ═════════════════════════════════════════════════════════ */
+document.getElementById('tcN').textContent = document.querySelectorAll('.nt').length;
+build();
+buildGram();
+setMode(ui.mode === 'tr' || ui.mode === 'st' ? ui.mode : 'rd');
+tally();
+renderDeck();
+const h0 = (location.hash || '').slice(1);
+setTab(['keimeno','grammatiki','simeioseis','kartes'].includes(h0) ? h0 : (ui.tab || 'keimeno'), true);
+/* Όταν αλλάζει πλάτος (π.χ. γυρνάς το κινητό), η καρτέλα της λέξης ΜΕΤΑΚΟΜΙΖΕΙ
+   (πλάι ↔ κάτω από την ενότητα) — δεν σβήνει αυτό που διάβαζες. */
+function relocate(){ const s = sel; clearSel(); if (s) select(s.u, s.i); }
+wide.addEventListener ? wide.addEventListener('change', relocate) : wide.addListener(relocate);
+</script>
+</body>
+</html>
