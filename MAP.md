@@ -813,7 +813,7 @@ colour rule: **accent only when something is due**, faint otherwise.
 - **ΤΑ ΚΕΙΜΕΝΑ** = what stayed behind the recall engine, and it belongs there:
   ancient original + official translation, and the translation genuinely is
   said out loud. `gk1` (Αριστοτέλης, *Μετὰ τὰ Φυσικά*) is the first.
-  ⭐⭐ **EIGHT of them since als-v613**, and seven share one shape — `onlyAlign`:
+  ⭐⭐ **NINE of them since als-v639**, and eight share one shape — `onlyAlign`:
   `gk2` (Αριστοτέλης, *Προτρεπτικός*), `gk3` (Επίκουρος, *πρὸς Μενοικέα*),
   `gk4` (Πλάτων, *Πρωταγόρας* 320c-321b — η διανομή των ιδιοτήτων στα ζώα),
   `gk5` (Πλάτων, *Πρωταγόρας* 321b-322a — η κλοπή της φωτιάς),
@@ -825,11 +825,22 @@ colour rule: **accent only when something is due**, faint otherwise.
   σπηλαίου: οι δεσμώτες**, μτφρ. **Ν. Μ. Σκουτερόπουλος**, σελ. 79-81 — the FIRST
   DIALOGUE: 14 ατάκες = 14 paragraphs per side, 22 περίοδοι / 186 ζευγάρια;
   Γρυπάρης is the right column and stays out; the left column ends at x=303 on
-  p.80 but x=280 on p.81). His words for every one of them:
+  p.80 but x=280 on p.81) and `gk9` (Πλάτων, *Πολιτεία* 518b-519a — **η
+  αλληγορία του σπηλαίου: η παιδεία**, Σκουτερόπουλος again, σελ. 89-90 —
+  7 ατάκες = 7 paragraphs per side, 17 περίοδοι / 154 ζευγάρια; the column
+  widths are gk8's mirrored: x=280 on p.89, x=303 on p.90). His words for every
+  one of them:
   *«φτιάξε ακριβώς το ίδιο»* / *«ΟΛΟΙΔΙΟ»* / *«ακριβώς όπως τα άλλα»* /
   *«όπως και για όλες τις άλλες μεταφράσεις των αρχαίων γνωστών»* /
   *«ακριβώς όπως μου έκανες τα άλλα ολοιδιο»* /
-  *«φτιαξε … αυτο που φτιαχνεις και για τις αλλες ενοτητες»*.
+  *«φτιαξε … αυτο που φτιαχνεις και για τις αλλες ενοτητες»* /
+  *«φτιαξε … ακριβως οπως τα προηγουμενα τη μεταφραση»*.
+  ⭐ `gk9`: he sent TEXT, and his translation paste had **Γρυπάρης lines
+  interleaved** (copy from PDF reads page order, not column order) plus the
+  unit header and page number «89». Without those it matched the PDF
+  character for character → no `srcNote`. The PDF's «¯» is the book's
+  parenthetical dash (checked on a render) → normalisation 5, like gk3/gk5.
+  The test names the leaked Γρυπάρης lines explicitly as absent.
   ⭐ `gk8`: his photo zoomed and compared — iota subscripts printed, same text,
   no `srcNote`. Skouteropoulos HAS the lowercase-after-period pattern (3×, locked).
   ⭐ `gk7` is the first unit he sent as TEXT, not a photo — compared to the PDF
