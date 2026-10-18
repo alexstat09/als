@@ -960,7 +960,7 @@ html.tb-back-in body { animation: _tbBackIn 0.62s cubic-bezier(0.25,0.1,0.25,1);
      (χωρίς topbar, χωρίς aurora/kentro-exit — μερικές κλειδωμένες με sha)
      δεν δηλώνουν, και εκεί άμεση πλοήγηση = απότομο κόψιμο → κρατούν το fade. */
   const VT = ('onpagereveal' in window);
-  const NO_VT = /^(arxaia-(aristotelis|lexilogio|platon|protagoras-eisagogi|sokratis|sokratis-ideas|metafrasi-demo|typo-demo)|latinika-(eisagogi|lectio\d+|syntaxi)|istoria-(themata|grapto|sarosi|video-demo|dania-demo)|movies-demo|study|trends|bills|health)\.html/;
+  const NO_VT = /^(arxaia-(aristotelis|lexilogio|platon|protagoras-eisagogi|sokratis|sokratis-ideas|metafrasi-demo|typo-demo|gk\d+)|latinika-(eisagogi|lectio\d+|syntaxi)|istoria-(themata|grapto|sarosi|video-demo|dania-demo)|movies-demo|study|trends|bills|health)\.html/;
   function vtTo(href) {
     if (!VT) return false;
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;

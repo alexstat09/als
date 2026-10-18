@@ -339,7 +339,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v623`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v640`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1886,6 +1886,21 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-18 — `als-v640` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: ΤΟ «ΟΡΓΑΝΟ» ΤΗΣ ΕΝΟΤΗΤΑΣ 9 (`arxaia-gk9.html`).**
+Δική του εντολή: «κάτι παρόμοιο με το λατινικά, εξίσου καλό και καλύτερο», στην ενότητα 9, ερμηνευτικά με
+υποδείγματα. Η σελίδα έχει το σχήμα του διαγωνίσματος, όχι του υλικού: Μετάφραση · Σχόλια · Ερμηνευτικά ·
+Λεξιλογικά — τα 4 μέρη του δικού του «Πρόγραμμα_Αρχαία» (`~/School study /Αρχαία Ελληνικά/`).
+⛔ ΠΑΡΑΓΕΤΑΙ από `tools/gnosto/` (tpl + json + validate + build, ίδιο σχήμα με `tools/latinika/`), και το
+κείμενο ΔΕΝ αντιγράφεται: διαβάζεται αυτούσιο από το `arxaia-gnosto-data.js`. ⭐ Ο Φάκελος Υλικού έχει
+ΑΝΑ ΕΝΟΤΗΤΑ εισαγωγή + 2η μετάφραση + σχόλια + δραστηριότητες + παράλληλα — ο Γνωστός δεν τα είχε καθόλου.
+Μπήκαν αυτολεξεί από `pageAtIndex(89-94)` με καρφωμένο sha. ⚠️ Στις 92-94 το rect(60,…,480) ΕΤΡΩΓΕ τον
+τελευταίο χαρακτήρα γραμμής («χαρακτηστικά») — η als-v550 ξανά· πάρθηκε ολόκληρη η σελίδα. ⚠️ Ο validator
+έπιασε 19 δικά μου «παραθέματα» (εννοούμενες λέξεις, οξεία αντί βαρείας, κεφαλαίο)· οι εννοούμενες πάνε σε
+[αγκύλες]. ⚠️ ΤΟ RENDER έπιασε «{{H1}}» στον τίτλο (το μοτίβο placeholder δεν δεχόταν ψηφία) και «Α.3» σε
+Instrument Serif (σταθ. 43) — αόρατα σε 120 βεβαιώσεις. Πρόοδος ΜΟΝΟ στη συσκευή. `tests/arxaia-gk9.test.js`
+**123/0** (CDP 1440→393 + iframe 393) · smoke OK · ladders/insights κόκκινα και στο καθαρό HEAD.
+🔴 Αδοκίμαστο σε συσκευή του. Επόμενη ενότητα = νέο `tools/gnosto/gkN.json` + πηγή Φακέλου + build.
 
 **2026-10-17 — `als-v638` — Η ΕΙΣΑΓΩΓΗ ΤΩΝ ΛΑΤΙΝΙΚΩΝ: ΤΟ ΤΗΛΕΣΚΟΠΙΟ (brief `~/eisagogi prompt.md`).**
 Η `latinika-eisagogi.html` ξαναχτίστηκε ΚΑΙ ΠΑΡΑΓΕΤΑΙ από `tools/eisagogi/` (json + tpl → build,
