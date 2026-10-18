@@ -700,7 +700,12 @@ colour rule: **accent only when something is due**, faint otherwise.
   (sha), και κάθε πολυτονικό «…» δικό μου που δεν υπάρχει στο αρχαίο.
   Πρόοδος ΜΟΝΟ στη συσκευή (`gk9_tr_v1`, `gk9_sx_v1`, `gk9_ans_v1`, `gk9_ui_v1`)· η
   πόρτα είναι το `INSTRUMENT` στο μάθημα του Γνωστού (`arxaia.html#gn/gk9`).
-  Φρουρός: `tests/arxaia-gk9.test.js` (στατικά + Chrome/CDP 1440→393).
+  Φρουρός: `tests/arxaia-gnosto-organo.test.js` — ΓΕΝΙΚΟ, κάθε `tools/gnosto/gkN.json` μόνο του
+  (στατικά + μεταλλάξεις + Chrome/CDP 1440→393· `GK_ONLY=gkN`, `GK_SHOTS=φάκελος`).
+  ⭐⭐ **als-v641 — Η ΜΗΧΑΝΗ:** νέα ενότητα = skill **`arxaia-gnosto-organo`**
+  (`.claude/skills/`). `scaffold.js` (2 φάσεις) → `source.js` (PDFKit μέσω `fakelos.swift`,
+  sha του PDF, κάθε rect διασταυρωμένο με τη σελίδα) → το μοντέλο γράφει ΜΟΝΟ τα «δικά μου»
+  στο JSON → `fmt.js` · `validate.js` · `build.js` → `wire.js` (πόρτα, sw CORE + bump, launcher).
   ⭐⭐ **als-v615: το παλιό `arxaia-protagoras.html` → `archive/`** («σβήσε το άλλο»)· η πλάκα **5** είναι πια **`arxaia-protagoras-eisagogi.html`** =
   το artifact «Πρωταγόρας · Εισαγωγή» αυτούσιο (sha256), με κουίζ Σ/Λ που κρατά
   απαντήσεις στο `protag-intro-v1` — η μόνη δηλωμένη εξαίρεση στο «δεν γράφουν».

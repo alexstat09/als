@@ -359,7 +359,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
       </div>
       <span class="sp"></span>
       <label class="chk" id="onlyRed" hidden><input type="checkbox" id="onlyRedI"> Μόνο τα κόκκινα (✗ και ↻)</label>
-      <label class="chk" id="grypT" hidden><input type="checkbox" id="grypI"> Και η μετάφραση Ι. Γρυπάρη</label>
+      <label class="chk" id="grypT" hidden><input type="checkbox" id="grypI"> Και η 2η μετάφραση (<span id="secName"></span>)</label>
       <button class="tbtn" type="button" id="bReset" title="Μηδενίζει τα ✗ / ↻ / ✓ της μετάφρασης">μηδένισε</button>
     </div>
     <p class="modehint" id="modeHint"></p>
@@ -427,7 +427,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 /* ══════════════════════════════════════════════════════════════════════
    ΤΟ ΟΡΓΑΝΟ ΤΗΣ ΕΝΟΤΗΤΑΣ — ΤΑ ΔΕΔΟΜΕΝΑ (παραγόμενα, βλ. κεφαλίδα).
    segs/pairs/simple/anc/skout = ΑΥΤΟΥΣΙΑ από το arxaia-gnosto-data.js.
-   intro/gryp/scholia/acts/pars = ΑΥΤΟΛΕΞΕΙ από τον Φάκελο Υλικού.
+   intro/second/scholia/acts/pars = ΑΥΤΟΛΕΞΕΙ από τον Φάκελο Υλικού.
    l/f/s, clauses, model, lexika = ΔΙΚΑ ΜΟΥ, με ετικέτα στην οθόνη.
    ══════════════════════════════════════════════════════════════════════ */
 const D = {{DATA}};
@@ -625,10 +625,10 @@ aside.addEventListener('click', e => { const c = e.target.closest('[data-sch]');
 /* ── τρόποι ── */
 const HINT = {
   si:'Τι λέει η ενότητα, πριν από κάθε λέξη. Δεν αποστηθίζεις ό,τι δεν κατάλαβες. (Δικά μου λόγια — όχι του βιβλίου.)',
-  rd:'Πάτα μια λέξη του αρχαίου ή της μετάφρασης: ανάβει το ζευγάρι της και βλέπεις λήμμα, τύπο, συντακτικό. Η μετάφραση είναι του Ν. Μ. Σκουτερόπουλου — αυτή μαθαίνεις.',
+  rd:'Πάτα μια λέξη του αρχαίου ή της μετάφρασης: ανάβει το ζευγάρι της και βλέπεις λήμμα, τύπο, συντακτικό.' + (D.translator ? ' Η μετάφραση που μαθαίνεις: ' + D.translator + '.' : ''),
   tr:'Η μετάφραση κρύβεται ανά περίοδο. Πες τη δυνατά, άνοιξέ τη και κρίνε: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Με το «Μόνο τα κόκκινα» μένουν μόνο οι ✗ και ↻.',
   st:'Οι αγκύλες, όπως στο χαρτί: [ ] κύρια, ( ) δευτερεύουσα, με τον αριθμό της πρότασης. Κάτω από κάθε περίοδο: τι πρόταση είναι και πώς εκφέρεται. Πάτα μια γραμμή για να την ανάψεις. (Η ανάλυση είναι δική μου.)',
-  wh:'Ολόκληρο, χωρίς κοψίματα: το αρχαίο δίπλα στη μετάφραση που μαθαίνεις. Άναψε και τον Γρυπάρη — τη δεύτερη μετάφραση του Φακέλου, που τη ζητάει η δραστηριότητα Γ.1.'
+  wh:'Ολόκληρο, χωρίς κοψίματα: το αρχαίο δίπλα στη μετάφραση που μαθαίνεις. Άναψε και τη 2η μετάφραση του Φακέλου (' + D.secondName + ') — για τις ερωτήσεις που ρωτάνε «πώς απέδωσαν οι δύο μεταφραστές».'
 };
 const simpleBox = document.getElementById('simple');
 const wholeBox = document.getElementById('wholeBox');
@@ -690,10 +690,11 @@ function buildWhole(){
   wholeBox.innerHTML = '<div class="whole' + (g ? '' : ' two') + '">' +
     '<div class="anc"><h3>Το αρχαίο · ' + esc(D.cite) + '</h3>' + D.anc.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
     '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.translator) + '</h3>' + D.skout.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
-    '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · Ι. Γρυπάρης</h3>' + D.gryp.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
+    '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
   '</div>';
 }
 const grypI = document.getElementById('grypI');
+document.getElementById('secName').textContent = D.secondName;
 grypI.checked = !!ui.gryp;
 grypI.addEventListener('change', () => { ui.gryp = grypI.checked; lsSet(UI_KEY, ui); buildWhole(); });
 
@@ -753,7 +754,7 @@ function modelHTML(list){
     if (b.k === 'p') return '<p>' + esc(b.x) + '</p>';
     if (b.k === 's') return '<div class="so"><span class="lbl">Και γι’ αυτό</span><p>' + esc(b.x) + '</p></div>';
     if (b.k === 'q') return '<div class="qt"><span class="g">«' + esc(b.an) + '»</span><span class="x">' + esc(b.x) + '</span></div>';
-    if (b.k === 'tq') return '<div class="qt"><span class="g mod">«' + esc(b.an) + '»</span><span class="who lbl">' + (b.who === 'gryp' ? 'Ι. Γρυπάρης' : esc(D.translator)) + '</span><span class="x">' + esc(b.x) + '</span></div>';
+    if (b.k === 'tq') return '<div class="qt"><span class="g mod">«' + esc(b.an) + '»</span><span class="who lbl">' + (b.who === 'second' || b.who === 'gryp' ? esc(D.secondName) : esc(D.translator)) + '</span><span class="x">' + esc(b.x) + '</span></div>';
     if (b.k === 'pq') return '<div class="qt"><span class="g mod">«' + esc(b.an) + '»</span><span class="x">' + esc(b.x) + '</span></div>';
     if (b.k === 'iq') return '<div class="qt"><span class="g mod">«' + esc(b.an) + '»</span><span class="who lbl">εισαγωγή του βιβλίου</span><span class="x">' + esc(b.x) + '</span></div>';
     return '';

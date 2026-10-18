@@ -1,12 +1,12 @@
 /* ══════════════════════════════════════════════════════════════════════
    ΑΡΧΑΙΑ · ΓΝΩΣΤΟ — ΤΟ «ΟΡΓΑΝΟ» ΜΙΑΣ ΕΝΟΤΗΤΑΣ: οι κανόνες.
-   ΚΟΙΝΟΙ σε validate.js, build.js και tests/arxaia-gk9.test.js — ένας
+   ΚΟΙΝΟΙ σε validate.js, build.js και tests/arxaia-gnosto-organo.test.js — ένας
    κανόνας γραμμένος δύο φορές αποκλίνει σιωπηλά (σταθ. 10).
 
    ΤΡΙΑ ΕΠΙΠΕΔΑ ΑΛΗΘΕΙΑΣ, όπως παντού στα Αρχαία:
-     1. ΤΟ ΚΕΙΜΕΝΟ (αρχαίο + Σκουτερόπουλος + `align`) — ΔΕΝ γράφεται εδώ.
+     1. ΤΟ ΚΕΙΜΕΝΟ (αρχαίο + η μετάφραση που μαθαίνει + `align`) — ΔΕΝ γράφεται εδώ.
         Διαβάζεται ΑΥΤΟΥΣΙΟ από το arxaia-gnosto-data.js (μία πηγή).
-     2. ΟΣΑ ΤΥΠΩΝΕΙ Ο ΦΑΚΕΛΟΣ (εισαγωγή, Γρυπάρης, σχόλια, δραστηριότητες,
+     2. ΟΣΑ ΤΥΠΩΝΕΙ Ο ΦΑΚΕΛΟΣ (εισαγωγή, 2η μετάφραση, σχόλια, δραστηριότητες,
         παράλληλα) — πρέπει να υπάρχουν ΑΥΤΟΛΕΞΕΙ στην καρφωμένη πηγή.
      3. ΔΙΚΑ ΜΟΥ (κάρτα λέξης, δομή, υποδείγματα, ομόρριζα) — φέρουν
         ετικέτα στη σελίδα. Κάθε «…» με πολυτονικό μέσα σε δικό μου κείμενο
@@ -30,8 +30,11 @@ function norm(s){
     .trim();
 }
 
-/* Η πηγή: γραμμές «#» = σχόλια· το σώμα κόβεται σε μπλοκ «@@όνομα». */
-function readSource(file){
+/* Η πηγή: γραμμές «#» = σχόλια· το σώμα κόβεται σε μπλοκ «@@όνομα».
+   Ονόματα μπλοκ: `intro` · `second` (η 2η μετάφραση — στην gk9 λέγεται
+   `grypari`, κρατήθηκε για να μην αλλάξει το καρφωμένο sha) · `scholia` ·
+   `pNN` = ολόκληρη σελίδα (δραστηριότητες, παράλληλα). */
+function readSource(file, joins){
   var raw = fs.readFileSync(file, 'utf8');
   var body = raw.split('\n').filter(function(l){ return l[0] !== '#'; }).join('\n');
   var sha = crypto.createHash('sha256').update(body, 'utf8').digest('hex');
@@ -43,13 +46,23 @@ function readSource(file){
   });
   /* 4 · ΔΗΛΩΜΕΝΕΣ ενώσεις λέξεων που έσπασαν με ΟΡΑΤΗ παύλα στο τέλος
      γραμμής (όχι soft hyphen, άρα δεν τις πιάνει το 2). Μία-μία, με όνομα. */
-  var JOIN = [['ανθρώ- πινη', 'ανθρώπινη']];
+  var JOIN = joins || [];
   Object.keys(blocks).forEach(function(k){
     var t = norm(blocks[k].join('\n'));
     JOIN.forEach(function(j){ t = t.split(j[0]).join(j[1]); });
     blocks[k] = t;
   });
   return { sha: sha, blocks: blocks };
+}
+function secondText(src){ return src.blocks.second || src.blocks.grypari || ''; }
+function pagesText(src){
+  return Object.keys(src.blocks).filter(function(k){ return /^p\d+$/.test(k); })
+    .sort(function(a, b){ return +a.slice(1) - +b.slice(1); })
+    .map(function(k){ return src.blocks[k]; }).join(' ');
+}
+/* Η πηγή μιας ενότητας, με τις ΔΗΛΩΜΕΝΕΣ ενώσεις του δικού της JSON. */
+function sourceOf(spec){
+  return readSource(path.join(ROOT, spec.source), (spec.fakelos && spec.fakelos.joins) || []);
 }
 
 /* Πολυτονικό = εκτεταμένα ελληνικά ή συνδυαστικά σημάδια. */
@@ -88,7 +101,8 @@ function check(spec, unit, src){
   var P = unit.align.pairs, segs = unit.align.segs;
   var ANC = norm(unit.ancient.map(function(b){ return b.p; }).join(' '));
   var MOD = norm(unit.text.map(function(b){ return b.p; }).join(' '));
-  var GRY = src.blocks.grypari || '';
+  var GRY = secondText(src);
+  var SEC = spec.second || {};
 
   /* 1 · η πηγή ΕΙΝΑΙ αυτή που καρφώθηκε */
   if (src.sha !== spec.sourceSha) e('η πηγή άλλαξε: sha ' + src.sha + ' ≠ ' + spec.sourceSha);
@@ -129,8 +143,30 @@ function check(spec, unit, src){
   /* 5 · ΤΟΥ ΦΑΚΕΛΟΥ = ΑΥΤΟΛΕΞΕΙ */
   function verb(x, where, hay){ if (norm(hay).indexOf(norm(x)) < 0) e('ΔΕΝ είναι αυτολεξεί στον Φάκελο (' + where + '): «' + norm(x).slice(0, 70) + '…»'); }
   verb(spec.intro, 'εισαγωγή', src.blocks.intro);
-  if (spec.grypari.length !== unit.ancient.length) e('ο Γρυπάρης έχει ' + spec.grypari.length + ' παραγράφους, το αρχαίο ' + unit.ancient.length);
-  if (norm(spec.grypari.join(' ')) !== GRY) e('ο Γρυπάρης, ενωμένος, ΔΕΝ είναι ακριβώς η στήλη του PDF');
+  if (!SEC.name) e('λείπει το όνομα της 2ης μετάφρασης (second.name)');
+  if (!GRY) e('η πηγή δεν έχει μπλοκ 2ης μετάφρασης (@@second)');
+  if (!Array.isArray(SEC.paras) || SEC.paras.length !== unit.ancient.length) e('η 2η μετάφραση έχει ' + (SEC.paras || []).length + ' παραγράφους, το αρχαίο ' + unit.ancient.length + ' — μία ανά παράγραφο/ατάκα του αρχαίου');
+  else if (norm(SEC.paras.join(' ')) !== GRY) e('η 2η μετάφραση, ενωμένη, ΔΕΝ είναι ακριβώς η στήλη του PDF');
+  if (GRY && SEC.name && norm(GRY).indexOf(norm(SEC.name)) >= 0) e('η υπογραφή «' + SEC.name + '» μπήκε ΜΕΣΑ στο κείμενο της 2ης μετάφρασης');
+  /* ⛔ ΑΝΑΜΕΙΞΗ ΣΤΗΛΩΝ (το κείμενο που επικόλλησε για την 9η είχε ακριβώς αυτό):
+     καμία σειρά 10 ΣΥΝΕΧΟΜΕΝΩΝ λέξεων της μετάφρασης που μαθαίνει, ούτε του
+     αρχαίου, μέσα στη 2η μετάφραση. ΜΕΤΡΗΜΕΝΟ: δύο νόμιμες μεταφράσεις
+     (Τατάκης / Σπυρόπουλος, ενότητα 5) μοιράζονται ως 7 λέξεις στη σειρά —
+     γι' αυτό 10, όχι 8. Μια ανακατεμένη στήλη συμπίπτει σε ολόκληρες γραμμές. */
+  if (GRY){
+    var words = function(t){ return norm(t).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean); };
+    var gw = words(GRY), gset = {};
+    for (var gi = 0; gi + 10 <= gw.length; gi++) gset[gw.slice(gi, gi + 10).join(' ')] = 1;
+    [[MOD, 'της μετάφρασης που μαθαίνει'], [ANC, 'του αρχαίου']].forEach(function(pair){
+      var mw = words(pair[0]);
+      for (var mi = 0; mi + 10 <= mw.length; mi++){
+        var g8 = mw.slice(mi, mi + 10).join(' ');
+        if (gset[g8]){ e('η 2η μετάφραση περιέχει κομμάτι ' + pair[1] + ': «' + g8 + '» — το rect πιάνει λάθος στήλη'); break; }
+      }
+    });
+  }
+  if (!spec.scholia.length) e('κανένα σχόλιο — κάθε ενότητα του Φακέλου έχει');
+  if (!spec.activities.length) e('καμία δραστηριότητα');
   spec.scholia.forEach(function(s, i){
     verb(s.lemma + ': ' + s.body, 'σχόλιο ' + (i + 1), src.blocks.scholia);
     (s.keys || []).forEach(function(k){ if (!P[k]) e('σχόλιο ' + (i + 1) + ': άγνωστο κλειδί ' + k); });
@@ -138,13 +174,14 @@ function check(spec, unit, src){
   });
   var sch = spec.scholia.map(function(s){ return s.lemma + ': ' + s.body; }).join(' ');
   if (norm(sch) !== src.blocks.scholia) e('τα σχόλια, ενωμένα, ΔΕΝ είναι ΟΛΑ τα σχόλια του βιβλίου (λείπει ή περισσεύει κάτι)');
-  var PAGES = src.blocks.p92 + ' ' + src.blocks.p93 + ' ' + src.blocks.p94;
+  var PAGES = pagesText(src);
   spec.activities.forEach(function(g){
     verb(g.title, 'ομάδα ' + g.id, PAGES);
     g.items.forEach(function(it){ verb(it.q, 'ερώτηση ' + it.id, PAGES); });
   });
   spec.parallels.forEach(function(p){
-    [p.head, p.intro, p.text, '(' + p.translator + ')'].forEach(function(x){ verb(x, 'παράλληλο ' + p.id, PAGES); });
+    [p.head, p.text].concat(p.intro ? [p.intro] : []).concat(p.translator ? ['(' + p.translator + ')'] : [])
+      .forEach(function(x){ verb(x, 'παράλληλο ' + p.id, PAGES); });
     p.items.forEach(function(it){ verb(it.q, 'ερώτηση ' + it.id, PAGES); });
   });
 
@@ -167,13 +204,26 @@ function check(spec, unit, src){
         if (!bits.every(function(x){ return ANC.indexOf(x) >= 0; })) e(where + ': το παράθεμα «' + b.an + '» ΔΕΝ υπάρχει στο αρχαίο');
       }
       if (b.k === 'tq'){
-        var hay = b.who === 'gryp' ? GRY : MOD;
-        if (hay.indexOf(norm(b.an)) < 0) e(where + ': η μετάφραση «' + b.an + '» ΔΕΝ είναι αυτολεξεί του ' + (b.who === 'gryp' ? 'Γρυπάρη' : 'Σκουτερόπουλου'));
+        var two = b.who === 'second' || b.who === 'gryp';
+        if (b.who && !two && b.who !== 'main' && b.who !== 'skout') e(where + ': άγνωστο who «' + b.who + '» (second | main)');
+        if ((two ? GRY : MOD).indexOf(norm(b.an)) < 0) e(where + ': η μετάφραση «' + b.an + '» ΔΕΝ είναι αυτολεξεί της ' + (two ? '2ης μετάφρασης (' + SEC.name + ')' : 'μετάφρασης που μαθαίνει (' + (unit.translator || '?') + ')'));
       }
       if (b.k === 'pq' && norm(pText || '').indexOf(norm(b.an)) < 0) e(where + ': το παράθεμα «' + b.an + '» ΔΕΝ υπάρχει στο παράλληλο κείμενο');
       if (b.k === 'iq' && src.blocks.intro.indexOf(norm(b.an)) < 0) e(where + ': το «' + b.an + '» ΔΕΝ υπάρχει στην εισαγωγή του βιβλίου');
     });
   }
+  /* Το σχήμα του υποδείγματος (το δικό του «θέση → παράθεμα → και γι' αυτό»):
+     τουλάχιστον ΕΝΑ παράθεμα και ΕΝΑ «Και γι' αυτό». */
+  function shape(it){
+    var ks = (it.model || []).map(function(b){ return b.k; });
+    if (!ks.some(function(k){ return /^(q|tq|pq|iq)$/.test(k); })) e('υπόδειγμα ' + it.id + ': κανένα παράθεμα');
+    if (ks.indexOf('s') < 0) e('υπόδειγμα ' + it.id + ': λείπει το «Και γι’ αυτό» (k:"s")');
+    ks.forEach(function(k){ if (!/^(t|h|p|s|q|tq|pq|iq)$/.test(k)) e('υπόδειγμα ' + it.id + ': άγνωστο μπλοκ «' + k + '»'); });
+  }
+  var ids = {};
+  spec.activities.concat(spec.parallels).forEach(function(g){ (g.items || []).forEach(function(it){
+    if (ids[it.id]) e('διπλό id ερώτησης ' + it.id); ids[it.id] = 1; shape(it);
+  }); });
   spec.activities.forEach(function(g){ g.items.forEach(function(it){
     if (!it.model || !it.model.length) e('η ' + it.id + ' δεν έχει υπόδειγμα');
     blocks(it.model, 'υπόδειγμα ' + it.id);
@@ -200,5 +250,5 @@ function loadUnit(id){
 }
 function loadSpec(id){ return JSON.parse(fs.readFileSync(path.join(__dirname, id + '.json'), 'utf8')); }
 
-module.exports = { ROOT: ROOT, norm: norm, readSource: readSource, tagsOf: tagsOf, LENSES: LENSES,
-  check: check, loadUnit: loadUnit, loadSpec: loadSpec, POLY: POLY };
+module.exports = { ROOT: ROOT, norm: norm, readSource: readSource, sourceOf: sourceOf, secondText: secondText,
+  pagesText: pagesText, tagsOf: tagsOf, LENSES: LENSES, check: check, loadUnit: loadUnit, loadSpec: loadSpec, POLY: POLY };

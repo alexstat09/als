@@ -6,7 +6,7 @@ var L = require('./lib.js');
 var id = process.argv[2] || 'gk9';
 var spec = L.loadSpec(id), unit = L.loadUnit(id);
 if (!unit) { console.error('✗ δεν υπάρχει ενότητα ' + id + ' στο arxaia-gnosto-data.js'); process.exit(1); }
-var src = L.readSource(path.join(L.ROOT, spec.source));
+var src = L.sourceOf(spec);
 var errs = L.check(spec, unit, src);
 if (errs.length){
   errs.forEach(function(e){ console.error('✗ ' + e); });

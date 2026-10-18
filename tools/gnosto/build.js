@@ -3,7 +3,7 @@
      node tools/gnosto/build.js gk9          → γράφει arxaia-gk9.html
      node tools/gnosto/build.js gk9 --check  → μόνο συγκρίνει (για το test)
 
-   ⭐ ΜΙΑ ΠΗΓΗ ΓΙΑ ΤΟ ΚΕΙΜΕΝΟ: το αρχαίο, η μετάφραση του Σκουτερόπουλου,
+   ⭐ ΜΙΑ ΠΗΓΗ ΓΙΑ ΤΟ ΚΕΙΜΕΝΟ: το αρχαίο, η μετάφραση που μαθαίνει,
    τα ζευγάρια και τα «γιατί» διαβάζονται ΑΥΤΟΥΣΙΑ από το
    arxaia-gnosto-data.js — δεν αντιγράφονται σε δεύτερο αρχείο, άρα δεν
    μπορούν να αποκλίνουν σιωπηλά (σταθ. 10). Ο validator τρέχει ΠΡΩΤΟΣ:
@@ -51,7 +51,8 @@ function dataOf(spec, unit){
     simple: unit.simple || [],
     anc: unit.ancient.map(function(b){ return b.p; }),
     skout: unit.text.map(function(b){ return b.p; }),
-    gryp: spec.grypari,
+    second: spec.second.paras,
+    secondName: spec.second.name,
     intro: spec.intro,
     segs: unit.align.segs.map(function(s){
       return { n: s.n, p: para[s.n], a: s.a, m: s.m, runs: spec.structure.runs[s.n] };
@@ -66,16 +67,29 @@ function dataOf(spec, unit){
   };
 }
 
-var FOOT = [
-  '<b>Τι είναι του βιβλίου.</b> Το αρχαίο και η μετάφραση του Ν. Μ. Σκουτερόπουλου είναι τα ΙΔΙΑ με την ενότητα του Γνωστού, ελεγμένα πάνω στο PDF του Φακέλου Υλικού. Η εισαγωγή, η μετάφραση του Ι. Γρυπάρη, τα σχόλια, οι δραστηριότητες και τα παράλληλα κείμενα είναι αυτολεξεί από τον Φάκελο (σελ. 89–94) — και ένα test αρνείται ό,τι δεν βρίσκει εκεί.',
-  '<b>Τι είναι δικό μου.</b> Λήμμα, τύπος και συντακτικό κάθε λέξης, η ανάλυση σε προτάσεις, τα υποδείγματα απαντήσεων και τα ομόρριζα. Φέρουν ετικέτα «δικά μου»· αν κάτι διαφωνεί με τον καθηγητή σου, κερδίζει ο καθηγητής.',
-  '<b>Όπως τυπώθηκαν.</b> Στον Γρυπάρη το βιβλίο γράφει «άλλα για να» (αντί «αλλά») και ξεκινά προτάσεις με πεζό μετά από τελεία — μένουν όπως είναι. Στο κείμενο του Ρουσό η λέξη «ανθρώ-πινη» είναι σπασμένη σε αλλαγή γραμμής και ενώθηκε.'
-].join('<br>');
+/* Το υποσέλιδο: δύο γραμμές ΙΔΙΕΣ σε κάθε ενότητα (τι είναι του βιβλίου, τι
+   δικό μου) + ό,τι δηλώνει το JSON της (`foot`: τυπογραφικά που μένουν,
+   ενωμένες λέξεις). Οι σελίδες βγαίνουν από τη ΔΙΚΗ της πηγή. */
+function footOf(spec, unit){
+  var pages = [];
+  (spec.fakelos.blocks || []).forEach(function(b){
+    if (b.page != null) pages.push(b.page);
+    (b.parts || []).forEach(function(p){ pages.push(p.page); });
+  });
+  var lo = Math.min.apply(null, pages), hi = Math.max.apply(null, pages);
+  return [
+    '<b>Τι είναι του βιβλίου.</b> Το αρχαίο και η μετάφραση που μαθαίνεις' + (unit.translator ? ' (' + unit.translator + ')' : '') +
+      ' είναι τα ΙΔΙΑ με την ενότητα του Γνωστού, ελεγμένα πάνω στο PDF του Φακέλου Υλικού. Η εισαγωγή, η 2η μετάφραση (' + spec.second.name +
+      '), τα σχόλια, οι δραστηριότητες και τα παράλληλα κείμενα είναι αυτολεξεί από τον Φάκελο (σελ. ' + (lo === hi ? lo : lo + '–' + hi) +
+      ') — και ένα test αρνείται ό,τι δεν βρίσκει εκεί.',
+    '<b>Τι είναι δικό μου.</b> Λήμμα, τύπος και συντακτικό κάθε λέξης, η ανάλυση σε προτάσεις, τα υποδείγματα απαντήσεων και τα ομόρριζα. Φέρουν ετικέτα «δικά μου»· αν κάτι διαφωνεί με τον καθηγητή σου, κερδίζει ο καθηγητής.'
+  ].concat(spec.foot || []).join('<br>');
+}
 
 function render(id){
   var spec = L.loadSpec(id), unit = L.loadUnit(id);
   if (!unit) throw new Error('δεν υπάρχει ενότητα ' + id);
-  var src = L.readSource(path.join(L.ROOT, spec.source));
+  var src = L.sourceOf(spec);
   var errs = L.check(spec, unit, src);
   if (errs.length) throw new Error('ο validator αρνήθηκε:\n  ✗ ' + errs.join('\n  ✗ '));
   var tpl = fs.readFileSync(path.join(__dirname, 'gk.tpl'), 'utf8');
@@ -92,7 +106,7 @@ function render(id){
     LEAD: spec.lead,
     FACE: esc(spec.face),
     FACE_LABEL: spec.faceLabel,
-    FOOT: FOOT,
+    FOOT: footOf(spec, unit),
     DATA: json
   };
   var out = tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m, k){

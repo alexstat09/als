@@ -339,7 +339,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v640`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v641`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1886,6 +1886,17 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-18 — `als-v641` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: Η ΜΗΧΑΝΗ ΤΟΥ «ΟΡΓΑΝΟΥ» + skill `arxaia-gnosto-organo`.**
+Νέα ενότητα (1–12) = `.claude/skills/arxaia-gnosto-organo/SKILL.md`, ⛔ ΠΟΤΕ HTML με το χέρι. `tools/gnosto/`:
+`scaffold.js` (φάση 1: σελίδες + προτεινόμενα rect από γεωμετρία· φάση 2: γεμίζει ΜΟΝΟ τα κενά —
+εισαγωγή/δραστηριότητες/παράλληλα αυτολεξεί) · `source.js` (PDFKit, sha του PDF, κάθε rect διασταυρώνεται
+με το page.string — η als-v550/640 δεν ξαναγίνεται σιωπηλά) · `fmt` · `validate` · `build` · `wire.js`
+(πόρτα `INSTRUMENT`, sw CORE + CACHE HEAD+1, launcher CHILDREN). Αποδείξεις: το `source.js` ξαναβγάζει
+το sha της gk9, η φάση 1 ξαναβρίσκει και τα 6 μπλοκ της, και ένα dry run στη gk5 πέρασε τους ελέγχους
+αυτολεξεί. ⭐ Νέος κανόνας στο `lib.check`: καμία σειρά **10** λέξεων της άλλης στήλης/του αρχαίου μέσα
+στη 2η μετάφραση (μετρημένο: δύο νόμιμες μεταφράσεις μοιράζονται ως 7). `tests/arxaia-gk9.test.js` →
+**`tests/arxaia-gnosto-organo.test.js`** (γενικό, 135/0). ⚠️ gk1/gk2 δεν έχουν `translator`/`cite`.
 
 **2026-10-18 — `als-v640` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: ΤΟ «ΟΡΓΑΝΟ» ΤΗΣ ΕΝΟΤΗΤΑΣ 9 (`arxaia-gk9.html`).**
 Δική του εντολή: «κάτι παρόμοιο με το λατινικά, εξίσου καλό και καλύτερο», στην ενότητα 9, ερμηνευτικά με
