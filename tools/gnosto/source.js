@@ -109,7 +109,7 @@ function header(spec, c){
   ]).join('\n');
 }
 
-module.exports = { compose: compose, run: run, checkPdf: checkPdf, PDF_DEFAULT: PDF_DEFAULT, PDF_SHA: PDF_SHA, pageBlock: pageBlock };
+module.exports = { compose: compose, run: run, checkPdf: checkPdf, rectBlock: rectBlock, squash: squash, PDF_DEFAULT: PDF_DEFAULT, PDF_SHA: PDF_SHA, pageBlock: pageBlock };
 
 if (require.main === module){
   var a = process.argv.slice(2);

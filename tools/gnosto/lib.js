@@ -245,6 +245,19 @@ function check(spec, unit, src){
   return errs;
 }
 
+/* Το CACHE του sw.js: HEAD+1, ΜΙΑ φορά ανά commit (συγκρίνει με το HEAD).
+   ΚΟΙΝΟ για wire.js (όργανο) και keimeno.js (κείμενο) — όποιος τρέξει πρώτος
+   το ανεβάζει, ο δεύτερος βλέπει ότι είναι ήδη > HEAD και δεν το ξαναγγίζει. */
+function bumpCache(s){
+  var cp = require('child_process');
+  var cur = +(/var CACHE = "als-v(\d+)";/.exec(s) || [])[1];
+  var head = 0;
+  try { head = +(/var CACHE = "als-v(\d+)";/.exec(cp.execFileSync('git', ['show', 'HEAD:sw.js'], { cwd: ROOT, encoding: 'utf8' })) || [])[1]; } catch (e){}
+  if (!cur) throw new Error('δεν βρέθηκε το CACHE στο sw.js');
+  if (head && cur <= head) return { s: s.replace('var CACHE = "als-v' + cur + '";', 'var CACHE = "als-v' + (head + 1) + '";'), msg: 'sw.js: CACHE als-v' + (head + 1) };
+  return { s: s, msg: '' };
+}
+
 function loadUnit(id){
   var G = require(path.join(ROOT, 'arxaia-gnosto-data.js'));
   return G.unit(id);
@@ -252,4 +265,4 @@ function loadUnit(id){
 function loadSpec(id){ return JSON.parse(fs.readFileSync(path.join(__dirname, id + '.json'), 'utf8')); }
 
 module.exports = { ROOT: ROOT, norm: norm, readSource: readSource, sourceOf: sourceOf, secondText: secondText,
-  pagesText: pagesText, tagsOf: tagsOf, LENSES: LENSES, check: check, loadUnit: loadUnit, loadSpec: loadSpec, POLY: POLY };
+  pagesText: pagesText, tagsOf: tagsOf, LENSES: LENSES, check: check, bumpCache: bumpCache, loadUnit: loadUnit, loadSpec: loadSpec, POLY: POLY };

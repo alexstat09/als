@@ -4,12 +4,16 @@
 //   page  PDF i            → page.string (ολόκληρη η σελίδα)
 //   lines PDF i            → γραμμή-γραμμή: minX minY maxX maxY | κείμενο
 //   rect  PDF i x y w h    → selection(for: rect).string
+//   render PDF i x y w h out.png → ΕΙΚΟΝΑ του rect (×3) — για να ΔΕΙΣ τι τυπώνει
+//                            το βιβλίο εκεί που το κείμενο του PDF είναι ύποπτο
+//                            (κενό μέσα σε λέξη, «.» που είναι άνω τελεία).
 // ⚠️ Το πλάτος ενός rect είναι ΜΕΤΡΗΣΗ ανά σελίδα, όχι κληρονομιά (als-v550/640):
 // ένα rect που τελειώνει λίγο πριν από τη δεξιά άκρη ΤΡΩΕΙ σιωπηλά τον τελευταίο
 // χαρακτήρα κάθε γραμμής. Γι' αυτό το source.js διασταυρώνει κάθε rect με το page.string.
 // ══════════════════════════════════════════════════════════════════════
 import PDFKit
 import Foundation
+import ImageIO
 
 let a = CommandLine.arguments
 guard a.count >= 3, let doc = PDFDocument(url: URL(fileURLWithPath: a[2])) else {
@@ -45,6 +49,22 @@ case "rect":
   let p = page(Int(a[3])!)
   let r = CGRect(x: Double(a[4])!, y: Double(a[5])!, width: Double(a[6])!, height: Double(a[7])!)
   print(p.selection(for: r)?.string ?? "", terminator: "")
+case "render":
+  let p = page(Int(a[3])!)
+  let r = CGRect(x: Double(a[4])!, y: Double(a[5])!, width: Double(a[6])!, height: Double(a[7])!)
+  let k: CGFloat = 3
+  guard let ctx = CGContext(data: nil, width: Int(r.width * k), height: Int(r.height * k), bitsPerComponent: 8,
+                            bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { exit(4) }
+  ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+  ctx.fill(CGRect(x: 0, y: 0, width: r.width * k, height: r.height * k))
+  ctx.scaleBy(x: k, y: k)
+  ctx.translateBy(x: -r.minX, y: -r.minY)
+  p.draw(with: .mediaBox, to: ctx)
+  guard let img = ctx.makeImage(),
+        let dst = CGImageDestinationCreateWithURL(URL(fileURLWithPath: a[8]) as CFURL, "public.png" as CFString, 1, nil) else { exit(4) }
+  CGImageDestinationAddImage(dst, img, nil)
+  if !CGImageDestinationFinalize(dst) { exit(4) }
 default:
   exit(2)
 }

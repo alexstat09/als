@@ -339,7 +339,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v646`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v647`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1886,6 +1886,17 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-19 — `als-v647` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: Η ΜΗΧΑΝΗ ΤΟΥ ΚΕΙΜΕΝΟΥ (skill `arxaia-gnosto-enotita`).**
+Νέα ενότητα (κείμενο ΚΑΙ όργανο) = το skill· το μοντέλο γράφει ΜΟΝΟ `tools/gnosto/gkN.text.json`, ⛔ ΠΟΤΕ το block στο
+`arxaia-gnosto-data.js` με το χέρι (`keimeno.js wire` το γράφει ανάμεσα σε ⟪gkN⟫…⟪/gkN⟫ και αρνείται πάνω σε χειροποίητο).
+Αποδείξεις: encode→decode **και** block→eval deep-equal για gk1–gk10 · τα **προτεινόμενα** rect της gk10 ξαναβγάζουν το
+καρφωμένο sha `8d40ce62…` · το αρχαίο βγαίνει ακριβώς σε gk2–gk10 και η μετάφραση διαφέρει ΜΟΝΟ σε τεχνουργήματα του PDF
+που ο σαρωτής σημαδεύει (με PNG) · 4 μεταλλάξεις (κλειδί, τόνος, fix, rect) σκάνε και στο `check` και στο test.
+⚠️ Το `page.string` διαβάζει σε μερικές σελίδες τις στήλες ΕΝΑΛΛΑΞ ανά γραμμή (gk2 σελ. 23) → δεύτερη διασταύρωση με τις
+γραμμές της γεωμετρίας. ⚠️ Γραμμές μετάφρασης με soft hyphen/«¯» είναι 15,5pt όσο το αρχαίο → η στήλη βγαίνει από
+ΓΕΩΜΕΤΡΙΑ (δύο στήλες στο ίδιο ύψος), ποτέ από ύψος. Το scaffold του οργάνου βρίσκει πλέον 2η μτφρ. + σχόλια στην ίδια σελίδα.
+🔴 ΑΝΟΙΧΤΟ: οι «. πεζό» των gk4/5/6/8/9 (σαρωτής: ~30) είναι μάλλον ΑΝΩ ΤΕΛΕΙΕΣ — render, μία-μία.
 
 **2026-10-19 — `als-v646` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: Η ΔΕΚΑΤΗ ΕΝΟΤΗΤΑ (Πολιτεία 519b-520a, οι φιλόσοφοι), κείμενο + όργανο.**
 `gk10` στο `arxaia-gnosto-data.js` (8 ατάκες, 20 περίοδοι, 170 ζευγάρια, Σκουτερόπουλος) + `arxaia-gk10.html` (skill `arxaia-gnosto-organo`).

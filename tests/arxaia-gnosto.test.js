@@ -427,6 +427,17 @@ var HAY_K10 = (function () {
   return { sha: sha, anc: parts[0], mod: parts[1], raw: body };
 })();
 
+/* ══ ΟΙ ΕΝΟΤΗΤΕΣ ΑΠΟ tools/gnosto/gkN.text.json (als-v647) ═════════════
+   ⭐ Από τη 10η και μετά ΚΑΜΙΑ ενότητα δεν γράφει εδώ δικό της αχυρώνα: η πηγή
+   είναι η καρφωμένη `tests/arxaia-enotitaN.source.txt`, οι κανονικοποιήσεις
+   είναι τα ΔΗΛΩΜΕΝΑ `fixes` του JSON (με αιτιολογία), και ο αχυρώνας ΠΑΡΑΓΕΤΑΙ
+   με το ΙΔΙΟ `keimeno.js` που τρέχει το `check` — ένας κανόνας γραμμένος δύο
+   φορές αποκλίνει σιωπηλά (σταθ. 10). Νέα ενότητα = ΜΗΔΕΝ χειροποίητες γραμμές. */
+var KEIM = require(path.join(__dirname, '..', 'tools', 'gnosto', 'keimeno.js'));
+var TEXTS = KEIM.listTexts();
+var HAY_TXT = {};
+TEXTS.forEach(function (t) { HAY_TXT[t.id] = KEIM.hayOf(t.J, t.body); });
+
 /* Κάθε ενότητα δείχνει στη ΔΙΚΗ ΤΗΣ πηγή.
    ⚠️ ΜΕ ΤΟ `id`, ΟΧΙ ΜΕ ΤΟ `chapter`. Και οι δύο ενότητες κάθονται στο ίδιο
    κεφάλαιο «Τα κείμενα · γνωστό», οπότε ένας έλεγχος κατά κεφάλαιο θα
@@ -444,6 +455,7 @@ function hayFor(u) {
   if (u.id === 'gk8') return { anc: HAY_K8.anc, mod: HAY_K8.mod };
   if (u.id === 'gk9') return { anc: HAY_K9.anc, mod: HAY_K9.mod };
   if (u.id === 'gk10') return { anc: HAY_K10.anc, mod: HAY_K10.mod };
+  if (HAY_TXT[u.id]) return { anc: HAY_TXT[u.id].anc, mod: HAY_TXT[u.id].mod };   /* ⟪gkN⟫ από το JSON */
   return null;
 }
 
@@ -1163,6 +1175,58 @@ eq(HAY_K3.sha, SRC3_SHA, 'το arxaia-enotita3.source.txt είναι ΑΚΡΙΒ�
 
   /* ⭐ ΚΑΝΕΝΑ ΦΥΛΛΑΔΙΟ — ΜΟΝΟ Ο ΦΑΚΕΛΟΣ. Άρα ΚΑΝΕΝΑ srcNote. */
   ok(!GN.unit('gk10').srcNote, '⛔ η 10η ΔΕΝ κουβαλάει srcNote — πηγή μόνο το βιβλίο, κανένα φυλλάδιο να διαφέρει');
+})();
+
+/* ══ 2δ · ⭐⭐ Ο ΓΕΝΙΚΟΣ ΦΡΟΥΡΟΣ ΤΩΝ gkN.text.json (als-v647) ═══════════
+   Ό,τι η 10η είχε ως χειροποίητες γραμμές (sha, κανονικοποιήσεις που
+   «χτυπάνε», κανένα χρώμιο σελίδας, μετρημένοι αριθμοί, section, onlyAlign),
+   εδώ ισχύει για ΚΑΘΕ ενότητα που έχει JSON — χωρίς ούτε μία γραμμή ανά ενότητα. */
+(function () {
+  var assert = require('assert');
+  function diff(a, b) { try { assert.deepStrictEqual(a, b); return ''; } catch (x) { return '\n      ' + x.message.split('\n').slice(0, 8).join('\n      '); } }
+  /* Ο PARSER: κάθε ζωντανό unit — και τα χειροποίητα gk1–gk10 — κωδικοποιείται
+     και ξαναβγαίνει deep-equal, ΚΑΙ από το JSON ΚΑΙ από το block που θα έγραφε το wire. */
+  GN.UNITS.forEach(function (u) {
+    var J = KEIM.encode(u), viaBlock;
+    ok(!diff(KEIM.decode(J).unit, u), u.id + ': συμπαγής μορφή → unit, round-trip deep-equal' + diff(KEIM.decode(J).unit, u));
+    var m = { exports: null };
+    require('vm').runInNewContext('module.exports = [\n' + KEIM.blockOf(Object.assign({ source: '-' }, J)) + '\n];', { module: m });
+    viaBlock = JSON.parse(JSON.stringify(m.exports[0]));
+    ok(!diff(viaBlock, JSON.parse(JSON.stringify(u))), u.id + ': το block του wire ξαναδίνει το unit deep-equal' + diff(viaBlock, JSON.parse(JSON.stringify(u))));
+  });
+  ok(TEXTS.length >= 1 && TEXTS.some(function (t) { return t.id === 'gk10'; }), 'υπάρχει το πρότυπο tools/gnosto/gk10.text.json');
+  TEXTS.forEach(function (t) {
+    var J = t.J, id = t.id, N = +id.slice(2), H = HAY_TXT[id], u = GN.unit(id);
+    ok(!!t.body, id + ': η πηγή ' + J.source + ' υπάρχει');
+    eq(KEIM.sha(t.body), J.sourceSha, id + ': η πηγή είναι ΑΚΡΙΒΩΣ αυτή που καρφώθηκε (sourceSha του JSON)');
+    /* Τα rect του JSON είναι ΑΥΤΑ που έκοψαν την πηγή (η κεφαλίδα τα γράφει) — αλλιώς
+       ένα rect που άλλαξε χωρίς `source --force` θα περνούσε εδώ, όπου δεν υπάρχει PDF. */
+    ['anc', 'mod'].forEach(function (k) {
+      ((J.src || {})[k] || []).forEach(function (p) {
+        ok(t.head.indexOf('rect(' + p.rect.join(', ') + ')') >= 0, id + ': το rect ' + k + ' σελ. ' + p.page + ' [' + p.rect.join(', ') + '] είναι αυτό που έκοψε την πηγή (κεφαλίδα)');
+      });
+    });
+    var errs = KEIM.checkText(J, t.body);
+    ok(errs.length === 0, id + ': όλοι οι κανόνες του keimeno.js check\n      → ' + errs.join('\n      → '));
+    (J.fixes || []).forEach(function (f) {
+      ok(H.raw.anc.indexOf(f[0]) >= 0 || H.raw.mod.indexOf(f[0]) >= 0, id + ': η διόρθωση «' + f[0] + '» ΥΠΑΡΧΕΙ στην ωμή πηγή — αλλιώς δεν χτυπάει τίποτα');
+      ok(H.anc.indexOf(KEIM.fold(f[0])) < 0 && H.mod.indexOf(KEIM.fold(f[0])) < 0, id + ': και ΛΕΙΠΕΙ από τον αχυρώνα μετά');
+      ok(!!f[2], id + ': η διόρθωση «' + f[0] + '» λέει ΓΙΑΤΙ');
+    });
+    ok(!/\d/.test(H.anc + H.mod) && !/ΕΝ[ΟΌ]ΤΗΤΑ|ΚΕΙΜΕΝΟ ΑΝΑΦΟΡΑΣ/.test(H.anc + H.mod) && !/\(?μετάφραση\s/.test(H.mod),
+      id + ': ούτε ψηφίο, ούτε κεφαλίδα, ούτε υπογραφή μέσα στα μπλοκ');
+    (J.counts || []).forEach(function (c) {
+      eq((H[c[3] === 'm' ? 'mod' : 'anc'].match(new RegExp(c[0], 'gu')) || []).length, c[1], id + ': ' + c[2]);
+    });
+    ok(!!u, id + ': υπάρχει στο arxaia-gnosto-data.js (`keimeno.js wire ' + id + '`)');
+    if (!u) return;
+    eq(u.section, 'Ενότητα ' + N + 'η', id + ': κάθεται στην «Ενότητα ' + N + 'η»');
+    ok(u.onlyAlign === true, id + ': ενότητα ΜΟΝΟ-ΑΝΤΙΣΤΟΙΧΙΑΣ, ίδιο σχήμα με τις 2η-10η');
+    eq(norm(u.ancient.map(function (b) { return b.p; }).join(' ')), H.anc, id + ': το αρχαίο, ενωμένο, ΕΙΝΑΙ η πηγή αυτολεξεί');
+    eq(norm(u.text.map(function (b) { return b.p; }).join(' ')), H.mod, id + ': η μετάφραση, ενωμένη, ΕΙΝΑΙ η πηγή αυτολεξεί');
+    var live = JSON.parse(JSON.stringify(u)), fromJ = JSON.parse(JSON.stringify(KEIM.decode(J).unit));
+    ok(!diff(live, fromJ), id + ': το unit στο arxaia-gnosto-data.js = το JSON — κανένα χέρι στο block' + diff(live, fromJ));
+  });
 })();
 
 /* ══ 3 · ⭐ ΚΑΘΕ ΣΗΜΕΙΟ ΚΟΥΒΑΛΑΕΙ ΑΓΚΥΡΑ, ΚΑΙ Η ΑΓΚΥΡΑ ΕΙΝΑΙ ΑΛΗΘΙΝΗ ═══

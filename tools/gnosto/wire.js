@@ -46,11 +46,7 @@ var said = [];
     s = s.replace(at, at + "'" + page + "', ");
     said.push('sw.js: ' + page + ' στο CORE');
   }
-  var cur = +(/var CACHE = "als-v(\d+)";/.exec(s) || [])[1];
-  var head = 0;
-  try { head = +(/var CACHE = "als-v(\d+)";/.exec(cp.execFileSync('git', ['show', 'HEAD:sw.js'], { cwd: ROOT, encoding: 'utf8' })) || [])[1]; } catch (e){}
-  if (!cur) die('δεν βρέθηκε το CACHE στο sw.js');
-  if (head && cur <= head){ s = s.replace('var CACHE = "als-v' + cur + '";', 'var CACHE = "als-v' + (head + 1) + '";'); said.push('sw.js: CACHE als-v' + (head + 1)); }
+  var b = L.bumpCache(s); s = b.s; if (b.msg) said.push(b.msg);
   fs.writeFileSync(f, s);
 })();
 

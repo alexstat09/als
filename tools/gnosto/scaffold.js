@@ -120,24 +120,35 @@ if (!fs.existsSync(specFile)){
     pages[pi].forEach(function(l){ sheet.push((l.role ? '[' + l.role + ']' : '     ') + ' ' + [l.x0, l.y0, l.x1, l.y1].map(function(v){ return v.toFixed(1); }).join(' ') + ' | ' + l.t.replace(/\n/g, '⏎').slice(0, 110)); });
   });
   blocks.push({ name: 'intro', parts: introL.length ? [{ page: start, rect: bbox(introL) }] : [{ page: start, rect: null }] });
-  var secParts = [], schPages = [], actPages = [], seenAct = false;
+  var secParts = [], schPages = [], schShared = [], actPages = [], seenAct = false;
   for (i = start; i <= end; i++){
     var gl = pages[i], txt = gl.map(function(l){ return l.t; }).join('\n');
     var ai = txt.search(AUT);
     if (ai >= 0 && !/Ενδεικτικ|παρ[αά]λληλα/i.test(txt.slice(0, ai))) break;
     var hasMath = gl.some(function(l){ return l.role === 'ΜΑΘ'; });
     if (hasMath){
-      var other = gl.filter(function(l){ return !l.role && sq(l.t) && l.h < 16.5; });
+      /* ⚠️ als-v647: όταν η 2η μετάφραση ΤΕΛΕΙΩΝΕΙ στη σελίδα των σχολίων (gk10 σελ. 98),
+         ένα bbox όλων των «άλλων» γραμμών έπιανε σχόλια + αριστερή στήλη, και τα σχόλια
+         έμεναν κενά. Η γεωμετρία το λέει: η υπογραφή ΤΗΣ ΔΕΞΙΑΣ στήλης («(μετάφραση
+         Ι. Γρυπάρης)») είναι το ΚΑΤΩ όριο της 2ης· ό,τι κάθεται κάτω από ΟΛΕΣ τις
+         υπογραφές είναι σχόλια. */
+      var sigs = gl.filter(function(l){ return l.role === 'ΥΠΟ'; });
+      var sigR = sigs.filter(function(l){ return l.x0 >= 300; }).sort(function(a, b){ return a.y0 - b.y0; })[0];
+      var floor = sigs.length ? Math.min.apply(null, sigs.map(function(l){ return l.y0; })) : -1;
+      var cut = sigR ? sigR.y1 - 1 : floor;
+      var other = gl.filter(function(l){ return !l.role && sq(l.t) && l.h < 16.5 && l.y0 > cut; });
       if (other.length) secParts.push({ page: i, rect: bbox(other) });
+      var under = sigs.length ? gl.filter(function(l){ return l.role !== 'ΣΕΛ' && l.role !== 'ΥΠΟ' && sq(l.t) && l.y1 < floor; }) : [];
+      if (under.length && !seenAct) schShared.push({ page: i, rect: bbox(under) });
       continue;
     }
     if (/^Ενδεικτικ/m.test(txt) || /^παρ[αά]λληλα/im.test(txt)){ actPages.push(i); seenAct = true; continue; }
     if (!seenAct && i > start) schPages.push(i);
   }
   blocks.push({ name: 'second', parts: secParts });
-  blocks.push({ name: 'scholia', parts: schPages.map(function(p){
+  blocks.push({ name: 'scholia', parts: schShared.concat(schPages.map(function(p){
     return { page: p, rect: bbox(pages[p].filter(function(l){ return l.role !== 'ΣΕΛ' && sq(l.t); })) };
-  }) });
+  })).sort(function(a, b){ return a.page - b.page; }) });
   actPages.forEach(function(p){ blocks.push({ name: 'p' + p, page: p }); });
   var cite = (unit.cite || '').replace(/-/g, '–');
   var spec = {
@@ -153,7 +164,7 @@ if (!fs.existsSync(specFile)){
   var ws = path.join(WORK, 'geometry.txt');
   fs.writeFileSync(ws, sheet.join('\n') + '\n');
   console.log('✓ ΦΑΣΗ 1 · ' + id + '.json · σελ. ' + start + '–' + end + ' · προτάσεις: intro ' + (introL.length ? 'ok' : '⚠️ ΚΕΝΟ') +
-    ' · 2η μετάφραση σε ' + secParts.length + ' σελ. · σχόλια ' + schPages.join(',') + ' · δραστηριότητες/παράλληλα ' + actPages.join(','));
+    ' · 2η μετάφραση σε ' + secParts.length + ' σελ. · σχόλια ' + schShared.map(function(x){ return x.page + ' (κάτω από τις υπογραφές)'; }).concat(schPages).join(',') + ' · δραστηριότητες/παράλληλα ' + actPages.join(','));
   console.log('  φύλλο γεωμετρίας: ' + ws);
   console.log('  → έλεγξε τα rect (και ότι η 2η μετάφραση ΔΕΝ πιάνει [ΜΑΘ] γραμμές), μετά: node tools/gnosto/source.js ' + id);
   process.exit(0);
