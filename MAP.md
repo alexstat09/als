@@ -707,6 +707,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   γραμμή διαβάζει την πρόοδο από το `gk9_tr_v1` (✓ ανά περίοδο).
   Φρουρός: `tests/arxaia-gnosto-organo.test.js` — ΓΕΝΙΚΟ, κάθε `tools/gnosto/gkN.json` μόνο του
   (στατικά + μεταλλάξεις + Chrome/CDP 1440→393· `GK_ONLY=gkN`, `GK_SHOTS=φάκελος`).
+  ⭐⭐ **als-v646 — gk10 (Πολιτεία 519b-520a, οι φιλόσοφοι): κείμενο στον Γνωστό ΚΑΙ όργανο `arxaia-gk10.html`** — πηγή `tests/arxaia-enotita10.source.txt` (κείμενο) + `tests/arxaia-gk10-fakelos.source.txt` (όργανο)· το PDF γράφει «.» όπου το βιβλίο τυπώνει ΑΝΩ ΤΕΛΕΙΑ (ελεγμένο σε render) — βλ. CLAUDE.md §5.
   ⭐⭐ **als-v641 — Η ΜΗΧΑΝΗ:** νέα ενότητα = skill **`arxaia-gnosto-organo`**
   (`.claude/skills/`). `scaffold.js` (2 φάσεις) → `source.js` (PDFKit μέσω `fakelos.swift`,
   sha του PDF, κάθε rect διασταυρωμένο με τη σελίδα) → το μοντέλο γράφει ΜΟΝΟ τα «δικά μου»

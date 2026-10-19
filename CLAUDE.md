@@ -339,7 +339,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v644`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v646`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1886,6 +1886,14 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-19 — `als-v646` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: Η ΔΕΚΑΤΗ ΕΝΟΤΗΤΑ (Πολιτεία 519b-520a, οι φιλόσοφοι), κείμενο + όργανο.**
+`gk10` στο `arxaia-gnosto-data.js` (8 ατάκες, 20 περίοδοι, 170 ζευγάρια, Σκουτερόπουλος) + `arxaia-gk10.html` (skill `arxaia-gnosto-organo`).
+⚠️⚠️ **ΕΥΡΗΜΑ: Η «ΤΕΛΕΙΑ-ΜΕ-ΠΕΖΟ» ΤΟΥ ΦΑΚΕΛΟΥ ΕΙΝΑΙ ΑΝΩ ΤΕΛΕΙΑ.** Το text layer του PDF γράφει «.» εκεί όπου το βιβλίο
+τυπώνει «·» (render σελ. 97, 98, 101: «είπε· το είχα ξεχάσει», «πόλη· και», «θέλησης· το»). Στη gk10 μπαίνει ό,τι τυπώνεται
+(κανονικοποίηση 7 του test, `fakelos.joins` στο όργανο). 🔴 ΑΝΟΙΧΤΟ: οι «τελείες-με-πεζό» που κλειδώθηκαν ως «τυπωμένες έτσι» στις
+gk4/gk5/gk8/gk9 είναι πιθανότατα κι αυτές άνω τελείες — render πριν αγγίξεις, μία-μία, με το sha της κάθε πηγής.
+Επίσης: το βιβλίο τυπώνει το «δίνουν» δύο φορές στην αλλαγή σελ. 97→98 (κανονικοποίηση 6). `lib.js` INF_END += «ην» (ζῆν).
 
 **2026-10-19 — `als-v645` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: Η gk9 ΜΠΑΙΝΕΙ ΚΑΤΕΥΘΕΙΑΝ ΣΤΟ ΟΡΓΑΝΟ.**
 Δική του εντολή: «να σβηστεί το παλιό και να μπαίνω κατευθείαν στο τέλειο καινούργιο». Η γραμμή IX της λίστας
