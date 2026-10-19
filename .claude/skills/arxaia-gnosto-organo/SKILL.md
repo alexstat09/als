@@ -54,7 +54,7 @@ shasum -a 256 ~/.cache/metron-arxaia/fakelos.pdf   # 7ae3f28f…
 6. **Έλεγχος** — `node tools/gnosto/fmt.js gkN && node tools/gnosto/validate.js gkN` ως **0 ✗**.
    Κάθε ✗ λέει πού. **Διορθώνεις το JSON, ποτέ τον κανόνα.**
 7. **Build** — `node tools/gnosto/build.js gkN` → `arxaia-gkN.html` (τρέχει πρώτα το check· αρνείται σε σφάλμα).
-8. **Wire** — `node tools/gnosto/wire.js gkN` (ιδεμπότητο): πόρτα στο `arxaia.html` (`INSTRUMENT`),
+8. **Wire** — `node tools/gnosto/wire.js gkN` (ιδεμπότητο): η γραμμή της ενότητας στη λίστα του Γνωστού γίνεται σύνδεσμος ΚΑΤΕΥΘΕΙΑΝ στο όργανο (`arxaia.html` `INSTRUMENT`· als-v645: το παλιό μάθημα της ενότητας δεν ανοίγει πια, ούτε το `#gn/gkN`),
    σελίδα στο `sw.js` CORE + bump CACHE (HEAD+1, μία φορά ανά commit), `tests/launcher.test.js` CHILDREN.
 9. **Test + μάτι** —
    ```bash

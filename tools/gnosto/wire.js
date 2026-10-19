@@ -1,8 +1,9 @@
 /* ══════════════════════════════════════════════════════════════════════
    ΚΑΛΩΔΙΩΣΗ ΤΟΥ «ΟΡΓΑΝΟΥ» — `node tools/gnosto/wire.js gkN`
    Ίδια εντολή όσες φορές θες: γράφει ΜΟΝΟ ό,τι λείπει.
-     1. arxaia.html  → η πόρτα στο μάθημα του Γνωστού (`INSTRUMENT`),
-        ξαναχτισμένο από τα gk*.json που έχουν σελίδα — με τη σειρά.
+     1. arxaia.html  → η γραμμή της ενότητας στη λίστα του Γνωστού γίνεται
+        σύνδεσμος ΚΑΤΕΥΘΕΙΑΝ στο όργανο (`INSTRUMENT`, als-v645 — το παλιό
+        μάθημα δεν ανοίγει πια), ξαναχτισμένο από τα gk*.json που έχουν σελίδα — με τη σειρά.
      2. sw.js        → η σελίδα στο CORE (αλλιώς χάνεται offline) + bump του
         CACHE ΜΙΑ φορά ανά commit (συγκρίνει με το HEAD).
      3. tests/launcher.test.js → η σελίδα στα CHILDREN (ο γονιός της).
@@ -29,8 +30,7 @@ var said = [];
     .filter(function(x){ return x && fs.existsSync(path.join(ROOT, 'arxaia-' + x + '.html')); })
     .sort(function(x, y){ return +x.slice(2) - +y.slice(2); });
   var body = ids.map(function(x){
-    return "    " + x + ": '<a class=\"gn-inst\" href=\"arxaia-" + x + ".html\"><span><span class=\"t\">Το όργανο της ενότητας</span>' +\n" +
-           "         '<span class=\"s\">μετάφραση · σχόλια · ερμηνευτικά · λεξιλογικά</span></span><span class=\"ar\" aria-hidden=\"true\">→</span></a>'";
+    return "    " + x + ": 'href=\"arxaia-" + x + ".html\"'";
   }).join(',\n');
   var next = s.slice(0, a) + '  var INSTRUMENT = {\n' + body + s.slice(b);
   if (next !== s){ fs.writeFileSync(f, next); said.push('arxaia.html: πόρτα για ' + ids.join(', ')); }

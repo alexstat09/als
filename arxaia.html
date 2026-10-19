@@ -413,6 +413,8 @@
   #gnWrap .gw-tr{ width:100%; text-align:left; background:none; border:0; border-radius:0;
     padding:24px 28px; color:inherit; font:inherit; cursor:pointer;
     transition:background .35s; }
+  /* ⭐ als-v645 — ενότητα με «όργανο»: η γραμμή είναι ΣΥΝΔΕΣΜΟΣ (<a>), όχι κουμπί. */
+  #gnWrap a.gw-tr{ text-decoration:none; }
   #gnWrap .gw-tr + .gw-tr{ border-top:1px solid var(--au-line,rgba(255,255,255,.06)); }
   #gnWrap .gw-tr:hover{ background:rgba(255,255,255,.022); }
   #gnWrap .gw-tr:focus-visible{ outline:2px solid rgb(var(--gn)); outline-offset:-3px; }
@@ -604,18 +606,6 @@
     font-family:var(--au-mono,ui-monospace,Menlo,monospace); font-size:11.5px;
     letter-spacing:.03em; color:var(--au-faint); }
   #gnLesson .gn-credits b{ font-weight:500; color:var(--au-dim); }
-  /* ⭐ als-v640 — Η ΠΟΡΤΑ ΣΤΟ «ΟΡΓΑΝΟ» ΤΗΣ ΕΝΟΤΗΤΑΣ (arxaia-gkN.html): μετάφραση,
-     σχόλια, ερμηνευτικά, λεξιλογικά. Επιφάνεια με τρίχα 1px, όπως η έξοδος του
-     Κέντρου (§④: καμία σκιά). Μπαίνει ΜΟΝΟ σε ενότητα που έχει όργανο. */
-  #gnLesson .gn-inst{ display:flex; align-items:center; gap:18px; max-width:640px;
-    margin:28px 0 0; padding:16px 20px; border:1px solid rgba(124,128,247,.35);
-    border-radius:14px; text-decoration:none; color:var(--au-ivory);
-    background:linear-gradient(180deg,rgba(124,128,247,.07),rgba(124,128,247,.02)); }
-  #gnLesson .gn-inst:hover{ border-color:rgba(124,128,247,.6); }
-  #gnLesson .gn-inst .t{ display:block; font-family:var(--ar-gr); font-style:italic; font-size:21px; line-height:1.2; }
-  #gnLesson .gn-inst .s{ display:block; margin-top:4px; font-family:var(--au-mono,ui-monospace,Menlo,monospace);
-    font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--au-dim); }
-  #gnLesson .gn-inst .ar{ margin-left:auto; font-size:20px; color:rgb(124,128,247); }
   /* ⭐⭐ als-v531 — ΦΕΥΓΕΙ ΤΟ ΚΟΥΤΙ. Ήταν η τελευταία «κάρτα εφαρμογής»
      πάνω από ένα κείμενο που θέλει να διαβαστεί: περίγραμμα, χρωματιστό
      φόντο, radius 14. Στο artifact η ίδια πληροφορία ήταν ΚΕΙΜΕΝΟ κάτω από
@@ -2461,11 +2451,45 @@
      με την Ιστορία: χωρίς `_ts` το sync.js επανέφερε κάθε δεύτερη ανάκληση.
      Εδώ οι χάρτες είναι `units` και `els`. Δες το `study-stamp.js`. */
   function blank(){ return { v:1, units:{}, els:{}, per:{}, days:[], heard:{} }; }
+
+  /* ⭐⭐ als-v645 — ΕΝΟΤΗΤΑ ΜΕ «ΟΡΓΑΝΟ» (tools/gnosto/) = ΜΠΑΙΝΕΙΣ ΚΑΤΕΥΘΕΙΑΝ ΕΚΕΙ.
+     Δική του εντολή για τη gk9: «να σβηστεί το παλιό και να μπαίνω κατευθείαν
+     στο καινούργιο». Η γραμμή της λίστας γίνεται σύνδεσμος, και το παλιό μάθημα
+     ΔΕΝ ανοίγει πια — ούτε από βαθύ σύνδεσμο (#gn/gk9 → η σελίδα του οργάνου).
+     Ο σύνδεσμος γράφεται ΑΥΤΟΛΕΞΕΙ (το tests/launcher.test.js αποδεικνύει την
+     πρόσβαση ψάχνοντάς τον μέσα στον γονιό· το γράφει το tools/gnosto/wire.js).
+     ⛔ ΤΑ ΔΕΔΟΜΕΝΑ ΤΟΥ ΠΑΛΙΟΥ ΜΑΘΗΜΑΤΟΣ ΔΕΝ ΣΒΗΣΤΗΚΑΝ — είναι δικά του· απλώς
+     δεν διαβάζονται πια για αυτή την ενότητα.
+     ⭐ Η ΠΡΟΟΔΟΣ ΤΗΣ ΓΡΑΜΜΗΣ ΕΡΧΕΤΑΙ ΑΠΟ ΤΟ ΟΡΓΑΝΟ (`gkN_tr_v1`, ✓ «μόνος» ανά
+     περίοδο), γιατί αυτό είναι πια το μόνο μέρος όπου κρίνει περιόδους. Η παλιά
+     επανάληψη (due) δεν γίνεται πουθενά, άρα δεν επιτρέπεται να «λήγει» — ένα
+     «Έληξε» που δεν σβήνει με καμία κίνηση θα ήταν ψέμα (σταθ. 10). */
+  var INSTRUMENT = {
+    gk9: 'href="arxaia-gk9.html"'
+  };
+  function instHref(id){ return String(INSTRUMENT[id] || '').split('"')[1] || ''; }
+  function instTr(id){
+    try { var v = JSON.parse(localStorage.getItem(id + '_tr_v1') || '{}');
+          return v && typeof v === 'object' ? v : {}; } catch (e){ return {}; }
+  }
+  function instTally(un){
+    var segs = (un.align && un.align.segs) || [], tr = instTr(un.id), got = 0, seen = 0, i;
+    for (i = 0; i < segs.length; i++){
+      if (tr[segs[i].n] === 'k') got++;
+      if (tr[segs[i].n]) seen++;
+    }
+    return { got:got, seen:seen, all:segs.length };
+  }
+  function learnedUn(un){
+    if (!INSTRUMENT[un.id]) return !!u(un.id).learnedAt;
+    var t = instTally(un); return t.all > 0 && t.got === t.all;
+  }
   function u(id){
     if (!state.units[id]) state.units[id] = { learnedAt:0, reviews:0, due:0, best:0, last:0, runs:0, claimed:0 };
     return state.units[id];
   }
   function claimedOnly(s){ return !!s.claimed && !s.runs; }
+  function claimedUn(un){ return !INSTRUMENT[un.id] && claimedOnly(u(un.id)); }
   /* ⭐ als-v524 — Η ΜΝΗΜΗ ΑΝΑ ΠΕΡΙΟΔΟ.
      Επίπεδος χάρτης `unitId:n`, ίδιο σχήμα με το `els` — όχι φωλιά, ώστε να
      μη γεννιέται ενδιάμεσο αντικείμενο που κανείς δεν σφραγίζει.
@@ -2479,8 +2503,14 @@
     if (!state.per[k]) state.per[k] = { g:0, m:0 };
     return state.per[k];
   }
-  function prGot(id, n){ var p = state.per[id + ':' + n]; return !!p && p.g > p.m; }
-  function prSeen(id, n){ var p = state.per[id + ':' + n]; return !!p && (p.g || p.m); }
+  function prGot(id, n){
+    if (INSTRUMENT[id]) return instTr(id)[n] === 'k';
+    var p = state.per[id + ':' + n]; return !!p && p.g > p.m;
+  }
+  function prSeen(id, n){
+    if (INSTRUMENT[id]) return !!instTr(id)[n];
+    var p = state.per[id + ':' + n]; return !!p && (p.g || p.m);
+  }
   function prTally(un){
     var segs = (un.align && un.align.segs) || [], got = 0, seen = 0, i;
     for (i = 0; i < segs.length; i++){
@@ -2572,7 +2602,7 @@
     var out = [], i, un;
     for (i = 0; i < G.UNITS.length; i++){
       un = G.UNITS[i];
-      if (!u(un.id).learnedAt) out.push(un);
+      if (!learnedUn(un)) out.push(un);
     }
     return out;
   }
@@ -2580,6 +2610,7 @@
     var out = [], i, un, s;
     for (i = 0; i < G.UNITS.length; i++){
       un = G.UNITS[i]; s = u(un.id);
+      if (INSTRUMENT[un.id]) continue;
       if (s.learnedAt && s.due && Date.now() >= s.due) out.push(un);
     }
     return out.sort(function(a,b){ return u(a.id).due - u(b.id).due; });
@@ -2587,6 +2618,7 @@
   function nearestDue(){
     var t = 0, i, s;
     for (i = 0; i < G.UNITS.length; i++){
+      if (INSTRUMENT[G.UNITS[i].id]) continue;
       s = u(G.UNITS[i].id);
       if (s.learnedAt && s.due && (!t || s.due < t)) t = s.due;
     }
@@ -2621,6 +2653,8 @@
          καμία περίοδο — ένα «0» εκεί θα ήταν μέτρηση που δεν έγινε ποτέ
          (σταθ. 33), όχι πληροφορία. */
       var t = prTally(un);
+      if (INSTRUMENT[un.id]) return un.align.segs.length + ' περίοδοι, ' +
+        Object.keys(un.align.pairs).length + ' ζευγάρια' + (t.seen ? ' · ✓ ' + t.got : '');
       return un.align.segs.length + ' περίοδοι, ' +
         Object.keys(un.align.pairs).length + ' ζευγάρια' +
         (t.seen ? ' · τις έχεις ' + t.got : ' λέξεων');
@@ -2674,11 +2708,10 @@
 
   function renderHome(){
     if (!G) return;
-    var f = fresh(), d = due(), learned = 0, decN = 0, i, st;
+    var f = fresh(), d = due(), learned = 0, decN = 0, i;
     for (i = 0; i < G.UNITS.length; i++){
-      st = u(G.UNITS[i].id);
-      if (st.learnedAt) learned++;
-      if (claimedOnly(st)) decN++;
+      if (learnedUn(G.UNITS[i])) learned++;
+      if (claimedUn(G.UNITS[i])) decN++;
     }
     var N = G.UNITS.length;
 
@@ -2718,10 +2751,17 @@
 
   function row(un, idx, nextId){
     var s = u(un.id), p = parts(un), acc = s.best || 0;
-    var learned = !!s.learnedAt, dec = claimedOnly(s);
-    var isDue = !!(s.due && s.due <= Date.now());
+    var inst = !!INSTRUMENT[un.id], it = inst ? instTally(un) : null;
+    var learned = learnedUn(un), dec = claimedUn(un);
+    var isDue = !inst && !!(s.due && s.due <= Date.now());
     var isNext = un.id === nextId;
     var cls, txt;
+    if (inst){
+      if (learned)      { cls = 'ok';  txt = 'Όλες ✓ · ' + it.all + '/' + it.all; }
+      else if (it.seen) { cls = isNext ? 'hot' : ''; txt = '✓ ' + it.got + '/' + it.all; }
+      else if (isNext)  { cls = 'hot'; txt = 'Επόμενο'; }
+      else              { cls = '';    txt = 'Νέο'; }
+    } else
     /* ⭐ Σταθερή αρχή 10: μια ΔΗΛΩΣΗ και μια ΜΕΤΡΗΣΗ δεν τυπώνονται ίδια. */
     if (dec)          { cls = 'late'; txt = 'Δηλωμένο · ' + inDays(s.due); }
     else if (isDue)   { cls = 'late'; txt = 'Έληξε ' + ago(s.due); }
@@ -2729,8 +2769,10 @@
     else if (isNext)  { cls = 'hot';  txt = 'Επόμενο'; }
     else              { cls = '';     txt = 'Νέο'; }
 
-    return '<button class="gw-tr' + (isNext ? ' is-next' : '') + '" type="button"' +
-      ' data-gngo="lesson:' + esc(un.id) + '">' +
+    return (inst
+        ? '<a class="gw-tr' + (isNext ? ' is-next' : '') + '" ' + INSTRUMENT[un.id] + '>'
+        : '<button class="gw-tr' + (isNext ? ' is-next' : '') + '" type="button"' +
+          ' data-gngo="lesson:' + esc(un.id) + '">') +
       '<span class="gw-rn">' + roman(idx + 1) + '</span>' +
       '<span class="gw-tx">' +
         '<span class="gw-ref">' + esc(p.ref) + '</span>' +
@@ -2741,7 +2783,7 @@
         (un.mark ? ' · ' + esc(un.mark) : '') + '</span></span>' +
       '<span class="gw-st"><span class="gw-stt ' + cls + '">' + esc(txt) + '</span>' +
         '<span class="gw-go" aria-hidden="true">↗</span></span>' +
-      '</button>';
+      (inst ? '</a>' : '</button>');
   }
 
 
@@ -3022,16 +3064,12 @@
         : '');
   }
 
-  /* ⭐ als-v640 — ενότητες με δικό τους «όργανο» (tools/gnosto/). Ο σύνδεσμος
-     γράφεται ΑΥΤΟΛΕΞΕΙ, γιατί το tests/launcher.test.js αποδεικνύει την
-     πρόσβαση ψάχνοντάς τον μέσα στον γονιό (⚠️ το σχόλιο ΔΕΝ γράφει το
-     μοτίβο του — ο φρουρός του smoke-test θα το διάβαζε ως σύνδεσμο). */
-  var INSTRUMENT = {
-    gk9: '<a class="gn-inst" href="arxaia-gk9.html"><span><span class="t">Το όργανο της ενότητας</span>' +
-         '<span class="s">μετάφραση · σχόλια · ερμηνευτικά · λεξιλογικά</span></span><span class="ar" aria-hidden="true">→</span></a>'
-  };
   function openLesson(id){
     var un = G.unit(id); if (!un) return;
+    /* ⭐ als-v645 — το παλιό μάθημα μιας ενότητας με όργανο ΔΕΝ ανοίγει.
+       `replace`, όχι `assign`: αλλιώς το «πίσω» της συσκευής θα ξαναγύριζε
+       στο #gn/gkN και θα τον ξανάστελνε μπροστά — παγίδα. */
+    if (INSTRUMENT[un.id]){ location.replace(instHref(un.id)); return; }
     cur = un; alnLit = null;
 
     var h = '<div class="ar-lhead">' +
@@ -3049,7 +3087,6 @@
       '<h2 class="ar-lh">' + esc(un.short || un.title) + '</h2>' +
       (un.gist ? '<p class="gn-sub">' + esc(un.gist) + '</p>' : '') +
       '<div class="gn-credits">' + credits(un) + '</div>' +
-      (INSTRUMENT[un.id] || '') +
       /* ⚠️ ΤΟ `verbatim` ΕΦΥΓΕ ΜΑΖΙ ΜΕ ΤΗΝ ΕΙΣΑΓΩΓΗ (als-v497).  Σήμαινε
          ΑΠΟΚΛΕΙΣΤΙΚΑ τις δύο παραγράφους που ζήτησε ο ΓΤΠ αυτολεξεί, και
          αυτές ζουν πλέον στο archive.  Ό,τι έμεινε εδώ είναι ΚΕΙΜΕΝΑ, και
@@ -3473,6 +3510,11 @@
     for (i = 0; i < v.length; i++) v[i].classList.remove('on');
     document.body.style.overflow = '';
     fromHash();
+  });
+  /* ⭐ als-v645 — γυρνώντας από το όργανο (πίσω της συσκευής = bfcache) η
+     γραμμή ξαναδιαβάζει την πρόοδό του· αλλιώς θα έδειχνε την παλιά. */
+  window.addEventListener('pageshow', function(e){
+    if (e.persisted && WGN && !WGN.hidden) renderHome();
   });
   document.addEventListener('click', function(e){
     var b = e.target.closest('[data-gngo]');

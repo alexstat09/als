@@ -702,7 +702,9 @@ colour rule: **accent only when something is due**, faint otherwise.
   Ο `lib.check` αρνείται ό,τι δεν είναι αυτολεξεί στο `tests/arxaia-gk9-fakelos.source.txt`
   (sha), και κάθε πολυτονικό «…» δικό μου που δεν υπάρχει στο αρχαίο.
   Πρόοδος ΜΟΝΟ στη συσκευή (`gk9_tr_v1`, `gk9_sx_v1`, `gk9_ans_v1`, `gk9_ui_v1`)· η
-  πόρτα είναι το `INSTRUMENT` στο μάθημα του Γνωστού (`arxaia.html#gn/gk9`).
+  πόρτα: ⭐ als-v645 η γραμμή IX της λίστας του Γνωστού ΕΙΝΑΙ σύνδεσμος εδώ (`INSTRUMENT` στο
+  `arxaia.html`)· το παλιό μάθημα της gk9 δεν ανοίγει πια, το `#gn/gk9` κάνει `replace` εδώ, και η
+  γραμμή διαβάζει την πρόοδο από το `gk9_tr_v1` (✓ ανά περίοδο).
   Φρουρός: `tests/arxaia-gnosto-organo.test.js` — ΓΕΝΙΚΟ, κάθε `tools/gnosto/gkN.json` μόνο του
   (στατικά + μεταλλάξεις + Chrome/CDP 1440→393· `GK_ONLY=gkN`, `GK_SHOTS=φάκελος`).
   ⭐⭐ **als-v641 — Η ΜΗΧΑΝΗ:** νέα ενότητα = skill **`arxaia-gnosto-organo`**

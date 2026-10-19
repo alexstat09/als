@@ -249,7 +249,12 @@ function gnEnv(stored){
   };
   sb.toast = m => sb.toasts.push(m);
   vm.createContext(sb);
-  ['blank','pr','prGot','prSeen','prTally','tallyText'].forEach(n => vm.runInContext(fn(n), sb, {filename:'arxaia.html#'+n}));
+  /* ⭐ als-v645 — το `INSTRUMENT` (ενότητες με «όργανο») διαβάζεται ΑΠΟ ΤΟ ΑΡΧΕΙΟ:
+     το prGot/prSeen το ρωτάνε πρώτα. */
+  const INST = /  var INSTRUMENT = \{[\s\S]*?\n  \};/.exec(GN);
+  if (!INST) throw new Error('δεν βρέθηκε το var INSTRUMENT μέσα στον Γνωστό');
+  vm.runInContext(INST[0], sb, {filename:'arxaia.html#INSTRUMENT'});
+  ['blank','pr','prGot','prSeen','prTally','tallyText','instTr','instTally'].forEach(n => vm.runInContext(fn(n), sb, {filename:'arxaia.html#'+n}));
   vm.runInContext(gnostoLoad(), sb, {filename:'arxaia.html#gnLoad'});
   vm.runInContext('state = load();', sb);
   return sb;
@@ -292,6 +297,36 @@ section('ΣΤ2 · Η ΜΝΗΜΗ ΑΝΑ ΠΕΡΙΟΔΟ');
      run(`(prGot('gk3',9), prSeen('gk3',9), state.per['gk3:9'] === undefined)`), true);
   const t = run(`prTally({ id:'gk3', align:{ segs:[{n:1},{n:2},{n:3},{n:4},{n:5}] } })`);
   is('ο μετρητής μετράει σωστά', JSON.stringify(t), JSON.stringify({got:2, seen:4, all:5}));
+}
+
+section('ΣΤ2β · ⭐ als-v645 — ΕΝΟΤΗΤΑ ΜΕ ΟΡΓΑΝΟ: Η ΠΡΟΟΔΟΣ ΕΡΧΕΤΑΙ ΑΠΟ ΤΟ ΟΡΓΑΝΟ');
+{
+  const E = gnEnv({ v:1, per:{'gk9:1':{g:5,m:0}, 'gk9:2':{g:5,m:0}} });
+  const run = expr => vm.runInContext(expr, E);
+  ok('η gk9 έχει όργανο', run(`!!INSTRUMENT.gk9`));
+  is('χωρίς τίποτα στο όργανο → 0, ΑΣΧΕΤΑ με το παλιό `per`', run(`prGot('gk9',1)`), false);
+  E.localStorage.setItem('gk9_tr_v1', JSON.stringify({1:'k', 2:'x', 3:'r'}));
+  is('✓ «μόνος» στο όργανο → την έχει', run(`prGot('gk9',1)`), true);
+  is('✗ στο όργανο → δεν την έχει (αλλά την είδε)', run(`[prGot('gk9',2), prSeen('gk9',2)].join()`), 'false,true');
+  is('ο μετρητής μετράει από το όργανο',
+     JSON.stringify(run(`prTally({ id:'gk9', align:{ segs:[{n:1},{n:2},{n:3},{n:4}] } })`)),
+     JSON.stringify({got:1, seen:3, all:4}));
+  E.localStorage.setItem('gk9_tr_v1', '{σκουπίδια');
+  is('⛔ χαλασμένο JSON στο όργανο → 0, δεν σκάει', run(`prSeen('gk9',1)`), false);
+  is('οι άλλες ενότητες μένουν στο `per`', run(`(pr('gk3',1).g = 1, prGot('gk3',1))`), true);
+}
+
+section('ΣΤ2γ · ⭐ als-v645 — ΤΟ ΠΑΛΙΟ ΜΑΘΗΜΑ ΤΗΣ gk9 ΔΕΝ ΑΝΟΙΓΕΙ ΠΙΑ');
+{
+  const ol = fn('openLesson');
+  ok('το openLesson στέλνει ενότητα με όργανο ΚΑΤΕΥΘΕΙΑΝ εκεί, με replace',
+     /if \(INSTRUMENT\[un\.id\]\)\{ location\.replace\(instHref\(un\.id\)\); return; \}/.test(ol));
+  ok('και ΠΡΙΝ χτίσει οτιδήποτε', ol.indexOf('location.replace') < ol.indexOf('ar-lhead'));
+  const rw = fn('row');
+  ok('η γραμμή μιας ενότητας με όργανο είναι <a>, όχι κουμπί', /inst\s*\? '<a class="gw-tr'/.test(rw));
+  ok('ο σύνδεσμος της gk9 είναι γραμμένος αυτολεξεί', GN.indexOf(`gk9: 'href="arxaia-gk9.html"'`) > 0);
+  ok('η παλιά πόρτα (.gn-inst) έφυγε', PAGE.indexOf('gn-inst') < 0);
+  ok('η ενότητα με όργανο δεν «λήγει» ποτέ', /if \(INSTRUMENT\[un\.id\]\) continue;/.test(fn('due')));
 }
 
 section('ΣΤ3 · ⛔ ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ, ΤΡΕΙΣ ΠΡΟΤΑΣΕΙΣ, ΚΑΜΙΑ ΒΑΘΜΟΛΟΓΙΑ');
