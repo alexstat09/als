@@ -122,9 +122,10 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .text[data-lens="noun"] .la .w[data-tags~="noun"],
 .text[data-lens="adj"] .la .w[data-tags~="adj"],
 .text[data-lens="pron"] .la .w[data-tags~="pron"],
-.text[data-lens="abl"] .la .w[data-tags~="abl"]{background:rgba(var(--lat),.16);color:rgb(var(--lat));border-bottom:2px solid rgb(var(--lat))}
+.text[data-lens="abl"] .la .w[data-tags~="abl"],
+.text[data-lens="imp"] .la .w[data-tags~="imp"]{background:rgba(var(--lat),.16);color:rgb(var(--lat));border-bottom:2px solid rgb(var(--lat))}
 .text[data-lens]:not([data-lens=""]) .la .w:not(.hit){opacity:.5}
-.text[data-lens="sub"] .la .w[data-tags~="sub"],.text[data-lens="inf"] .la .w[data-tags~="inf"],.text[data-lens="part"] .la .w[data-tags~="part"],.text[data-lens="dep"] .la .w[data-tags~="dep"],.text[data-lens="verb"] .la .w[data-tags~="verb"],.text[data-lens="noun"] .la .w[data-tags~="noun"],.text[data-lens="adj"] .la .w[data-tags~="adj"],.text[data-lens="pron"] .la .w[data-tags~="pron"],.text[data-lens="abl"] .la .w[data-tags~="abl"]{opacity:1}
+.text[data-lens="sub"] .la .w[data-tags~="sub"],.text[data-lens="inf"] .la .w[data-tags~="inf"],.text[data-lens="part"] .la .w[data-tags~="part"],.text[data-lens="dep"] .la .w[data-tags~="dep"],.text[data-lens="verb"] .la .w[data-tags~="verb"],.text[data-lens="noun"] .la .w[data-tags~="noun"],.text[data-lens="adj"] .la .w[data-tags~="adj"],.text[data-lens="pron"] .la .w[data-tags~="pron"],.text[data-lens="abl"] .la .w[data-tags~="abl"],.text[data-lens="imp"] .la .w[data-tags~="imp"]{opacity:1}
 
 /* Μετάφρασε */
 .veil{display:none;margin-top:8px;width:100%;text-align:left;padding:12px 16px;border:1px dashed var(--line2);border-radius:11px;font-size:13px;color:var(--dim)}
@@ -521,12 +522,13 @@ UNITS.forEach((u, ui_) => u.la.forEach((w, i) => {
   if (/απαρ\./.test(f)) tags.push('inf');
   if (/μτχ\./.test(f)) tags.push('part');
   if (/απόλ\. αφαιρ\./.test(f)) tags.push('abl');
+  if (/προστ\.|απαγόρ\./.test(f)) tags.push('imp');
   WORDS.push(Object.assign({u:ui_, i, tags}, w));
 }));
 
 const LENSES = [
   ['sub','Υποτακτικές'],['inf','Απαρέμφατα'],['part','Μετοχές'],['dep','Αποθετικά'],
-  ['verb','Ρήματα'],['noun','Ουσιαστικά'],['adj','Επίθετα'],['pron','Αντωνυμίες'],['abl','Απόλυτες αφαιρετικές']
+  ['verb','Ρήματα'],['noun','Ουσιαστικά'],['adj','Επίθετα'],['pron','Αντωνυμίες'],['abl','Απόλυτες αφαιρετικές'],['imp','Προσταγές']
 ];
 document.getElementById('faceN').textContent = WORDS.filter(w => w.tags.includes('{{FACE_LENS}}')).length;
 
@@ -739,7 +741,7 @@ document.getElementById('bReset').addEventListener('click', () => {
 const lensBox = document.getElementById('lenses');
 LENSES.forEach(([k, label]) => {
   const n = WORDS.filter(w => w.tags.includes(k)).length;
-  if (k === 'abl' && !n) return;   /* μόνο όπου το κείμενο έχει απόλυτες αφαιρετικές (XXI) */
+  if ((k === 'abl' || k === 'imp') && !n) return;   /* μόνο όπου το κείμενο έχει απόλυτες αφαιρετικές (XXI) ή προσταγές (XXV) */
   const b = document.createElement('button');
   b.className = 'lens'; b.type = 'button'; b.dataset.lens = k; b.setAttribute('aria-pressed','false');
   b.innerHTML = esc(label) + ' <i>' + n + '</i>';

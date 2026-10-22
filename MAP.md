@@ -110,7 +110,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1169,6 +1169,16 @@ wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.
 μάθημα = υποτακτική παρατατικού. Δύο «Να ρωτήσεις τον καθηγητή» (suae άμεση/έμμεση ·
 ακολουθία στο ut ignorarētur). Κλειδί προόδου ΙΔΙΟ (`lectio23_known_v1`). Στο test:
 το XXIII βγήκε από τη στατική `PACKS`/`NS`/§3 (μπαίνει ως JSON), το §2ζ ΕΜΕΙΝΕ και περνάει.
+
+⭐⭐ **als-v648 (22/10/26) — ΔΕΚΑΤΟ ΠΑΚΕΤΟ `latinika-lectio25.html` (Κάτων, το σύκο) + ΦΑΚΟΣ «Προσταγές».**
+`tools/latinika/lectio25.json` (+ `lectio25.s4e.json`, study4exams course **35**, id από `latin/course/index.php`):
+3 σκηνές / 11 ενότητες / 18 προτάσεις / 12 κάρτες / 10 παγίδες, 64 λήμματα (αρχικοί χρόνοι από το λεξιλόγιο του
+βιβλίου), μάθημα = `seq` «προσταγή και απαγόρευση». Μετάφραση = όσα έστειλε σε ΚΕΙΜΕΝΟ (η μτφρ. του s4e με τις δικές
+του επιλογές), μείον δύο δηλωμένα υπολείμματα αντιγραφής («)», διπλό κενό). Χωρίς φωτογραφία/PDF. Τυπογραφικό ΔΕΝ
+βρέθηκε. ⭐ Οι 7 αστερίσκοι = προστακτικές + η απαγόρευση `credideritis` (υποτ.) → ΝΕΟΣ φακός `imp` σε `lectio.tpl` +
+`lib.js`: ανάβει «προστ.» ή «απαγόρ.» στο `f`, κρύβεται όπου 0 (XXI–XXIV ξαναχτίστηκαν· το XXIV δείχνει πλέον
+«Προσταγές 1», το Accipe). s4eDiffs: tutor/confido (σουπίνο), scio (scīvi/scii), ficus (β΄+δ΄). Πρόχειρο s4e: «–»→«-»,
+ελληνικό «ο» στο Cato, scito/sum (bugs του fetch-s4e). Δύο «Να ρωτήσεις»: memento (μέλλ./παρακ.) · ex Carthagine.
 
 ⭐⭐ **als-v637 (17/10/26) — ΤΟ XXI ΠΕΡΑΣΕ ΣΤΗ ΝΕΑ ΜΟΡΦΗ (τρίτη μετατροπή, §8) + ΝΕΟΣ ΦΑΚΟΣ.**
 `tools/latinika/lectio21.json` (+ `lectio21.s4e.json`, study4exams course **30**): w/d/g/gr αυτούσια,

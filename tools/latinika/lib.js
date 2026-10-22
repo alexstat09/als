@@ -44,7 +44,7 @@ function ordF(n) { return cap(numWord(n, false)); }
 const LENS = {
   sub: ['Υποτακτικές', 'τις'], inf: ['Απαρέμφατα', 'τα'], part: ['Μετοχές', 'τις'], dep: ['Αποθετικά', 'τα'],
   verb: ['Ρήματα', 'τα'], noun: ['Ουσιαστικά', 'τα'], adj: ['Επίθετα', 'τα'], pron: ['Αντωνυμίες', 'τις'],
-  abl: ['Απόλυτες αφαιρετικές', 'τις']
+  abl: ['Απόλυτες αφαιρετικές', 'τις'], imp: ['Προσταγές', 'τις']
 };
 
 function tefxos(nn) { return nn <= 20 ? 'Α΄' : 'Β΄'; }
@@ -98,6 +98,8 @@ function tagsOf(w, M) {
   if (/μτχ\./.test(f)) tags.push('part');
   /* η απόλυτη αφαιρετική σημαδεύεται στο f της λέξης-πυρήνα (XXI: Brenno duce = χωρίς μετοχή) */
   if (/απόλ\. αφαιρ\./.test(f)) tags.push('abl');
+  /* XXV: προστακτική ή απαγόρευση (nolite + απαρ. · ne/nemo + υποτ. παρακ.) — σημάδι «απαγόρ.» στο f */
+  if (/προστ\.|απαγόρ\./.test(f)) tags.push('imp');
   return tags;
 }
 function words(p) {
