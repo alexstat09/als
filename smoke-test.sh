@@ -29,12 +29,13 @@ trap 'rm -f "$LIST" "$PROG"' EXIT
 # throwaways a headless render leaves behind, and tests/garmin-probe-out/
 # (pages Garmin served US — foreign HTML full of absolute links to their CDN,
 # never deployed, and it is not this guard's job to police Garmin's markup),
-# and video-kit/ (the local animation toolchain + its node_modules — never deployed).
+# video-kit/ (the local animation toolchain + its node_modules — never deployed), and
+# tools/latinika/skill/ (a git mirror of the latinika-lectio skill; its scripts carry #! shebangs).
 find . -type f \( -name '*.html' -o -name '*.js' \) \
   -not -path './vendor/*' -not -path './node_modules/*' \
   -not -path './archive/*' -not -path './docs/*' -not -path './als/*' \
   -not -path './_quarantine/*' -not -path './tests/garmin-probe-out/*' \
-  -not -path './video-kit/*' \
+  -not -path './video-kit/*' -not -path './tools/latinika/skill/*' \
   -not -name '_*.html' -not -name 'render-*.html' \
   | sed 's|^\./||' | sort > "$LIST"
 
