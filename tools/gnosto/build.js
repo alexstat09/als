@@ -42,7 +42,7 @@ function dataOf(spec, unit){
     var p = unit.align.pairs[k], w = spec.words[k];
     var t = L.tagsOf(w[1], w[3]);
     if (sch[k]) t.push('sch');
-    pairs[k] = { a: p.a, m: p.m, w: p.w || '', l: w[0], f: w[1], s: w[2], t: t, sch: sch[k] || [] };
+    pairs[k] = { a: p.a, m: p.m, w: p.w || '', l: w[0], f: w[1], s: w[2], t: t, sch: sch[k] || [], e: (spec.easy || {})[k] || '' };
   });
   return {
     id: unit.id,

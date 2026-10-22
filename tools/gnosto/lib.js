@@ -242,6 +242,27 @@ function check(spec, unit, src){
     else if (norm(P[x.key].a).indexOf(norm(x.w)) < 0) e('λεξιλογικό «' + x.w + '»: δεν είναι η λέξη του ' + x.key);
     if (!x.rel || x.rel.length < 3) e('λεξιλογικό «' + x.w + '»: λιγότερα από 3 ομόρριζα');
   });
+
+  /* 8 · «πες το απλά» (`easy`, προαιρετικό): { κλειδί: απλή απόδοση }. Δικά μου,
+     και μπαίνουν ΜΕΣΑ στην περίοδο στη θέση της λέξης του μεταφραστή — άρα ένα
+     κομμάτι ανά κομμάτι της μετάφρασης («α … β» όταν το ζευγάρι είναι σπασμένο),
+     κεφαλαίο όπου κι εκείνο, μονοτονικό, και ποτέ ίδιο με του βιβλίου. */
+  var EZ = spec.easy || {};
+  Object.keys(EZ).forEach(function(k){
+    var x = EZ[k];
+    if (!P[k]) return e('απλή λέξη για κλειδί που δεν υπάρχει: ' + k);
+    if (typeof x !== 'string' || !x.trim() || x !== x.trim()) return e('απλή λέξη ' + k + ': κενή ή με κενά στις άκρες');
+    if (POLY.test(x)) e('απλή λέξη ' + k + ': πολυτονικό στο «' + x + '»');
+    if (norm(x) === norm(P[k].m)) e('απλή λέξη ' + k + ': ίδια με του μεταφραστή («' + x + '»)');
+    var parts = x.split(' … '), chunks = [];
+    segs.forEach(function(s){ s.m.forEach(function(c){ if (c[1] === k) chunks.push(c[0].trim()); }); });
+    if (parts.length !== chunks.length) return e('απλή λέξη ' + k + ': ' + parts.length + ' κομμάτι(α), η μετάφραση έχει ' + chunks.length + ' («' + P[k].m + '»)');
+    parts.forEach(function(p, i){
+      if (!p.trim()) e('απλή λέξη ' + k + ': κενό κομμάτι ' + (i + 1));
+      var up = function(t){ var c = t.charAt(0); return c !== c.toLowerCase(); };
+      if (up(p) !== up(chunks[i])) e('απλή λέξη ' + k + ': το «' + p + '» δεν έχει το κεφαλαίο του «' + chunks[i] + '»');
+    });
+  });
   return errs;
 }
 

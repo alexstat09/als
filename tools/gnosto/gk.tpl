@@ -121,6 +121,10 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .an .w{border-bottom:1px dotted rgba(var(--gn),.32)}
 .w:hover{background:rgba(255,255,255,.05)}
 .w.hit{background:rgba(var(--hit),.16);color:rgb(var(--hit))}
+/* «πες το απλά»: οι δύσκολες λέξεις του μεταφραστή έχουν τελίτσες από κάτω·
+   με το «Απλές λέξεις» η απλή μπαίνει ΣΤΗ ΘΕΣΗ τους, υπογραμμισμένη. */
+.md .w.hd{border-bottom:1px dotted rgba(var(--mine),.55)}
+.md .w.ez:not(.hit){color:var(--ink);border-bottom:1px solid rgba(var(--mine),.7)}
 .text[data-lens]:not([data-lens=""]) .an .w{opacity:.45}
 .text[data-lens="verb"] .an .w[data-tags~="verb"],
 .text[data-lens="part"] .an .w[data-tags~="part"],
@@ -180,6 +184,8 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .wc.empty .big{font-family:var(--gr);font-style:italic;font-size:28px;color:var(--ink);line-height:1.2;margin-bottom:12px}
 .wc-an{font-family:var(--gr);font-size:36px;line-height:1.15;color:rgb(var(--hit))}
 .wc-md{margin-top:8px;font-family:var(--gr);font-size:19px;color:var(--dim)}
+.wc-ez{margin-top:14px;padding:12px 14px;border:1px solid var(--line2);border-radius:11px}
+.wc-ez .ezw{margin-top:6px;font-family:var(--gr);font-size:20px;line-height:1.35;color:var(--ink)}
 .wc-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .wc-sec p{margin-top:8px;font-size:14px;line-height:1.66;color:var(--ink)}
 .wc dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin-top:10px;font-size:14px}
@@ -359,7 +365,8 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
       </div>
       <span class="sp"></span>
       <label class="chk" id="onlyRed" hidden><input type="checkbox" id="onlyRedI"> Μόνο τα κόκκινα (✗ και ↻)</label>
-      <label class="chk" id="grypT" hidden><input type="checkbox" id="grypI"> Και η 2η μετάφραση (<span id="secName"></span>)</label>
+      <label class="chk" id="easyT" hidden><input type="checkbox" id="easyI"><span>Απλές λέξεις (<span id="easyN"></span>)</span></label>
+      <label class="chk" id="grypT" hidden><input type="checkbox" id="grypI"><span>Και η 2η μετάφραση (<span id="secName"></span>)</span></label>
       <button class="tbtn" type="button" id="bReset" title="Μηδενίζει τα ✗ / ↻ / ✓ της μετάφρασης">μηδένισε</button>
     </div>
     <p class="modehint" id="modeHint"></p>
@@ -453,7 +460,8 @@ const PUNCT = /^[\s,.;:·’'—–()«»!?]+$/;
 let trm = obj(lsGet(TR_KEY, {}));
 let sxm = obj(lsGet(SX_KEY, {}));
 let ans = obj(lsGet(ANS_KEY, {}));
-const ui = Object.assign({tab:'metafrasi', mode:'rd', gryp:false, sx:'read'}, obj(lsGet(UI_KEY, {})));
+const ui = Object.assign({tab:'metafrasi', mode:'rd', gryp:false, sx:'read', easy:false}, obj(lsGet(UI_KEY, {})));
+const EASY_N = Object.keys(D.pairs).filter(k => D.pairs[k].e).length;
 
 /* κλειδί → περίοδος (για άλματα από σχόλια/λεξιλογικά) */
 const KEY_SEG = {};
@@ -474,13 +482,15 @@ const box = document.getElementById('content');
 const aside = document.getElementById('aside');
 let sel = null;   /* {n, k} */
 
-function chunkSpan(side, n, c, i, noTail){
+function chunkSpan(side, n, c, i, noTail, ez){
   const t = c[0], k = c[1];
   const core = t.replace(/\s+$/, ''), tail = noTail ? '' : t.slice(core.length);
   if (!k || PUNCT.test(core)) return esc(noTail ? core : t);
   const p = D.pairs[k] || {};
   const tags = side === 'an' ? ' data-tags="' + (p.t || []).join(' ') + '"' : '';
-  return '<span class="w" tabindex="0" role="button" data-side="' + side + '" data-n="' + n + '" data-k="' + k + '" data-i="' + i + '"' + tags + '>' + esc(core) + '</span>' + esc(tail);
+  /* ez = το κομμάτι της απλής απόδοσης που μπαίνει στη θέση του (ή null) */
+  const cls = side === 'md' && p.e ? (ez != null ? ' ez' : ' hd') : '';
+  return '<span class="w' + cls + '" tabindex="0" role="button" data-side="' + side + '" data-n="' + n + '" data-k="' + k + '" data-i="' + i + '"' + tags + '>' + esc(ez != null ? ez : core) + '</span>' + esc(tail);
 }
 function clauseOf(s, i){ let c = null; s.runs.forEach(r => { if (r[0] <= i) c = r[1]; }); return c; }
 function anHTML(s, mode){
@@ -512,7 +522,17 @@ function anHTML(s, mode){
 }
 function openBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? ' d' : '') + '">' + (c.d ? '(' : '[') + '<sup>' + q + '</sup></span>'; }
 function closeBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? ' d' : '') + '">' + (c.d ? ')' : ']') + '</span>'; }
-function mdHTML(s){ return s.m.map((c, i) => chunkSpan('md', s.n, c, i)).join(''); }
+/* Η απλή απόδοση «α … β» μοιράζεται στα κομμάτια του ίδιου ζευγαριού με τη σειρά
+   τους (ο validator εγγυάται ίδιο πλήθος). */
+function mdHTML(s){
+  const seen = {};
+  return s.m.map((c, i) => {
+    const p = c[1] && D.pairs[c[1]];
+    let ez = null;
+    if (ui.easy && p && p.e){ const j = seen[c[1]] = (seen[c[1]] || 0) + 1; ez = p.e.split(' … ')[j - 1]; if (ez === undefined) ez = null; }
+    return chunkSpan('md', s.n, c, i, false, ez);
+  }).join('');
+}
 function clausesHTML(s){
   const ids = [];
   s.runs.forEach(r => { if (ids.indexOf(r[1]) < 0) ids.push(r[1]); });
@@ -553,6 +573,7 @@ function segOf(n){ return D.segs.find(s => s.n === +n); }
 function wordCard(k){
   const p = D.pairs[k];
   let h = '<div class="wc"><div class="wc-an">' + esc(p.a) + '</div><div class="wc-md">' + esc(p.m) + '</div>';
+  if (p.e) h += '<div class="wc-ez"><span class="lbl tag-mine">Πες το απλά · δικά μου</span><div class="ezw">' + esc(p.e) + '</div></div>';
   h += '<div class="wc-sec"><span class="lbl tag-mine">Γραμματική · δικά μου</span><dl>' +
     '<dt>Λήμμα</dt><dd class="lem">' + esc(p.l) + '</dd>' +
     '<dt>Τύπος</dt><dd>' + esc(p.f) + '</dd>' +
@@ -625,7 +646,8 @@ aside.addEventListener('click', e => { const c = e.target.closest('[data-sch]');
 /* ── τρόποι ── */
 const HINT = {
   si:'Τι λέει η ενότητα, πριν από κάθε λέξη. Δεν αποστηθίζεις ό,τι δεν κατάλαβες. (Δικά μου λόγια — όχι του βιβλίου.)',
-  rd:'Πάτα μια λέξη του αρχαίου ή της μετάφρασης: ανάβει το ζευγάρι της και βλέπεις λήμμα, τύπο, συντακτικό.' + (D.translator ? ' Η μετάφραση που μαθαίνεις: ' + D.translator + '.' : ''),
+  rd:'Πάτα μια λέξη του αρχαίου ή της μετάφρασης: ανάβει το ζευγάρι της και βλέπεις λήμμα, τύπο, συντακτικό.' + (D.translator ? ' Η μετάφραση που μαθαίνεις: ' + D.translator + '.' : '') +
+    (EASY_N ? ' Οι λέξεις του μεταφραστή με τελίτσες από κάτω έχουν και απλή απόδοση — με το «Απλές λέξεις» διαβάζεις όλη την περίοδο απλά.' : ''),
   tr:'Η μετάφραση κρύβεται ανά περίοδο. Πες τη δυνατά, άνοιξέ τη και κρίνε: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Με το «Μόνο τα κόκκινα» μένουν μόνο οι ✗ και ↻.',
   st:'Οι αγκύλες, όπως στο χαρτί: [ ] κύρια, ( ) δευτερεύουσα, με τον αριθμό της πρότασης. Κάτω από κάθε περίοδο: τι πρόταση είναι και πώς εκφέρεται. Πάτα μια γραμμή για να την ανάψεις. (Η ανάλυση είναι δική μου.)',
   wh:'Ολόκληρο, χωρίς κοψίματα: το αρχαίο δίπλα στη μετάφραση που μαθαίνεις. Άναψε και τη 2η μετάφραση του Φακέλου (' + D.secondName + ') — για τις ερωτήσεις που ρωτάνε «πώς απέδωσαν οι δύο μεταφραστές».'
@@ -647,6 +669,7 @@ function setMode(m){
   box.classList.toggle('m-st', m === 'st');
   document.getElementById('onlyRed').hidden = m !== 'tr';
   document.getElementById('grypT').hidden = m !== 'wh';
+  document.getElementById('easyT').hidden = !EASY_N || !(m === 'rd' || m === 'tr');
   document.getElementById('bReset').hidden = m !== 'tr';
   document.getElementById('modeHint').textContent = HINT[m];
   rows().forEach(r => { r.querySelector('.an').innerHTML = anHTML(segOf(r.dataset.n), m); r.classList.remove('shown'); });
@@ -655,6 +678,16 @@ function setMode(m){
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 const onlyRedI = document.getElementById('onlyRedI');
 onlyRedI.addEventListener('change', applyFilter);
+const easyI = document.getElementById('easyI');
+document.getElementById('easyN').textContent = EASY_N;
+easyI.checked = !!ui.easy;
+easyI.addEventListener('change', () => {
+  ui.easy = easyI.checked; lsSet(UI_KEY, ui);
+  const keep = sel;
+  rows().forEach(r => { r.querySelector('.md').innerHTML = mdHTML(segOf(r.dataset.n)); });
+  clearSel();
+  if (keep) select(keep.n, keep.k, true);
+});
 function applyFilter(){
   const on = ui.mode === 'tr' && onlyRedI.checked;
   rows().forEach(r => { const t = trm[r.dataset.n]; r.classList.toggle('gone', on && !(t === 'x' || t === 'r')); });

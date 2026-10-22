@@ -117,6 +117,15 @@ if (U.gk9){
   ok(mut(s => { s.structure.runs['9'] = []; }) > 0, 'περίοδος χωρίς Δομή → σφάλμα');
   ok(mut(s => { s.lexika[0].rel = ['παιδί']; }) > 0, 'λεξιλογικό με λιγότερα από 3 ομόρριζα → σφάλμα');
   ok(mut(s => { s.sourceSha = '0'.repeat(64); }) > 0, 'άλλη πηγή → σφάλμα');
+  {
+    const P = unit.align.pairs, one = Object.keys(P).find(k => unit.align.segs.reduce((a, g) => a + g.m.filter(c => c[1] === k).length, 0) === 1 && /^[α-ω]/.test(P[k].m));
+    ok(mut(s => { s.easy = { [one]: 'κάτι απλό' }; }) === 0, '«πες το απλά» σωστό (' + one + ') → κανένα σφάλμα');
+    ok(mut(s => { s.easy = { zz: 'κάτι' }; }) > 0, '«πες το απλά» σε κλειδί που δεν υπάρχει → σφάλμα');
+    ok(mut(s => { s.easy = { [one]: P[one].m }; }) > 0, '«πες το απλά» ίδιο με του μεταφραστή → σφάλμα');
+    ok(mut(s => { s.easy = { [one]: 'κάτι … άλλο' }; }) > 0, '«πες το απλά» με λάθος πλήθος κομματιών → σφάλμα');
+    ok(mut(s => { s.easy = { [one]: 'Κάτι' }; }) > 0, '«πες το απλά» με κεφαλαίο που δεν έχει η μετάφραση → σφάλμα');
+    ok(mut(s => { s.easy = { [one]: 'τὸ ἁπλό' }; }) > 0, '«πες το απλά» σε πολυτονικό → σφάλμα');
+  }
   /* ανάμειξη στηλών: η πηγή αλλάζει, όχι το JSON — όπως το κείμενο που επικόλλησε για την 9η */
   const src2 = JSON.parse(JSON.stringify(src));
   src2.blocks.grypari += ' ' + L.norm('Απεναντίας, η τωρινή διερεύνησή μας, είπα εγώ, δείχνει αυτή τη δύναμη της γνώσης');
@@ -224,6 +233,34 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         ok(JSON.stringify(lit) === JSON.stringify(want2), 'ο φακός «' + lk + '» ανάβει ΑΚΡΙΒΩΣ ' + want2.length + ' λέξεις', { lit: lit.length });
         if (lk === 'part') await shot(gid + '-03-lens');
         await ev(`document.querySelector('.lens[data-lens="${lk}"]').click()`);
+      }
+
+      section('Β · ' + gid + ' — ΠΕΣ ΤΟ ΑΠΛΑ (απλές λέξεις)');
+      const EZ = spec.easy || {}, ezK = Object.keys(EZ).sort();
+      const hdK = (await ev(`[...new Set([...document.querySelectorAll('.md .w.hd')].map(w=>w.dataset.k))]`)).sort();
+      eq(JSON.stringify(hdK), JSON.stringify(ezK), 'τελίτσες ΑΚΡΙΒΩΣ στις ' + ezK.length + ' λέξεις που έχουν απλή απόδοση');
+      if (!ezK.length) {
+        ok(await ev(`document.getElementById('easyT').hidden`), 'χωρίς απλές λέξεις, κανένας διακόπτης');
+      } else {
+        ok(!(await ev(`document.getElementById('easyT').hidden`)), 'ο διακόπτης «Απλές λέξεις» φαίνεται στο «Διάβασε»');
+        eq(await ev(`document.getElementById('easyN').textContent`), String(ezK.length), 'και λέει πόσες είναι');
+        const ezText = segs.map(g => { const seen = {}; return g.m.map(c => { if (!c[1] || !EZ[c[1]]) return c[0]; const j = seen[c[1]] = (seen[c[1]] || 0) + 1; return EZ[c[1]].split(' … ')[j - 1] + c[0].slice(c[0].replace(/\s+$/, '').length); }).join(''); }).join(' ');
+        await ev(`document.getElementById('easyI').click()`);
+        eq(nz(await ev(`[...document.querySelectorAll('.md')].map(p=>p.textContent).join(' ')`)), nz(ezText), 'με τον διακόπτη, κάθε περίοδος διαβάζεται με τις απλές λέξεις στη θέση τους');
+        eq(await ev(`document.querySelectorAll('.md .w.hd').length`), 0, 'και καμία δύσκολη δεν έμεινε');
+        const multi = ezK.find(k => / … /.test(EZ[k])) || ezK[0];
+        const segM = segs.find(g => g.m.some(c => c[1] === multi));
+        await ev(`document.querySelector('.md .w.ez[data-k="${multi}"]').click()`);
+        const c2 = await ev(`document.getElementById('aside').textContent`);
+        ok(c2.indexOf(EZ[multi]) >= 0 && c2.indexOf(unit.align.pairs[multi].m) >= 0, 'πατώντας μια απλή, η κάρτα δείχνει ΚΑΙ τη λέξη του βιβλίου («' + unit.align.pairs[multi].m + '»)');
+        eq(await ev(`document.querySelectorAll('.w.hit').length`), segM.a.filter(c => c[1] === multi).length + EZ[multi].split(' … ').length, 'και ανάβει το ζευγάρι σε αρχαίο ΚΑΙ απλή απόδοση');
+        await shotAt(gid + '-05-easy', '.sent[data-n="' + segM.n + '"]');
+        await open();
+        ok(await ev(`document.getElementById('easyI').checked && document.querySelectorAll('.md .w.ez').length>0`), 'ο διακόπτης θυμάται τη θέση του μετά το reload');
+        await ev(`document.querySelector('[data-mode="st"]').click()`);
+        ok(await ev(`document.getElementById('easyT').hidden`), 'στη «Δομή» (χωρίς μετάφραση) ο διακόπτης κρύβεται');
+        await ev(`document.querySelector('[data-mode="rd"]').click(); document.getElementById('easyI').click()`);
+        eq(nz(await ev(`[...document.querySelectorAll('.md')].map(p=>p.textContent).join(' ')`)), nz(unit.text.map(b => b.p).join(' ')), 'κλειστός ξανά: η μετάφραση του βιβλίου, γράμμα-γράμμα');
       }
 
       section('Β · ' + gid + ' — ΜΕΤΑΦΡΑΣΕ (✗ ↻ ✓) ΚΑΙ RELOAD');
