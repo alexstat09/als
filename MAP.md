@@ -110,7 +110,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1170,6 +1170,13 @@ wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.
 μάθημα = υποτακτική παρατατικού. Δύο «Να ρωτήσεις τον καθηγητή» (suae άμεση/έμμεση ·
 ακολουθία στο ut ignorarētur). Κλειδί προόδου ΙΔΙΟ (`lectio23_known_v1`). Στο test:
 το XXIII βγήκε από τη στατική `PACKS`/`NS`/§3 (μπαίνει ως JSON), το §2ζ ΕΜΕΙΝΕ και περνάει.
+
+⭐⭐ **als-v659 (24/10/26) — ΔΩΔΕΚΑΤΟ ΠΑΚΕΤΟ `latinika-lectio27.html` (Άκκιος και Πακούβιος, «Το πνεύμα ωριμάζει όπως οι καρποί»).**
+`tools/latinika/lectio27.json` (+ `lectio27.s4e.json`, study4exams course **37**): 3 σκηνές / 9 ενότητες / 20 προτάσεις /
+14 σημειώσεις. Φακός `deg` «Παραθετικά» = οι 4 αστερίσκοι (multo · minor · duriōra · meliōra: ανώμαλα + απόλυτη σύγκριση)·
+το acerbiōra ΔΕΝ έχει αστερίσκο στο βιβλίο, άρα δεν ανάβει (εξηγείται στην κάρτα «Οι 4 αστερίσκοι»). Μετάφραση από τη φωτογραφία
+του φυλλαδίου (σελ. 68), χωρίς χειρόγραφες σημειώσεις → σύνταξη από study4exams, δηλωμένο. ΤΥΠΟΓΡΑΦΙΚΟ: δεν βρέθηκε.
+Δύο «Να ρωτήσεις τον καθηγητή»: προσωπική/απρόσωπη σύνταξη του vidēri · quae = ea quae (προσδιοριστική ή ουσιαστική).
 
 ⭐⭐ **als-v658 (24/10/26) — ΕΝΔΕΚΑΤΟ ΠΑΚΕΤΟ `latinika-lectio26.html` (Πλίνιος, «Ένα θλιβερό γεγονός») + ΦΑΚΟΣ «Παραθετικά».**
 `tools/latinika/lectio26.json` (+ `lectio26.s4e.json`, study4exams course **36**): 3 σκηνές / 12 ενότητες / 12 προτάσεις /
