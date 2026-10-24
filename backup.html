@@ -922,6 +922,11 @@
 
     function renderVault(){
       var idx = vaultIndex;
+      if (vaultReadErr){
+        $('vlLast').textContent = '?'; $('vlDays').textContent = '?'; $('vlRecs').textContent = '?';
+        $('dayList').innerHTML = '<div class="rp-none rp-gone">' + vaultReadErr + '</div>';
+        return;
+      }
       if (!idx || !idx.lastAt){
         $('vlLast').textContent = '—'; $('vlDays').textContent = '0'; $('vlRecs').textContent = '—';
         $('dayList').innerHTML = '<div class="rp-none">No snapshots yet. Tap “Back up now” above and this fills in.</div>';
@@ -1035,11 +1040,19 @@
     $('dpAdd').addEventListener('click', function(){ if (activeDay) showCompare(activeDay); });
     $('dpRestore').addEventListener('click', function(){ if (activeDay) restoreDay(activeDay); });
 
+    /* ⛔ als-v653 — "No snapshots yet" was the SILENT-EMPTY lie: with no token
+       the anon read returns nothing, and that rendered exactly like a vault with
+       no backups. Now a missing session or a failed read says so, in words. */
+    var vaultReadErr = null;
     async function loadVault(){
-      await ensureToken();                 // RLS needs the caller's JWT or every read returns nothing
-      try {
-        vaultIndex = await readVaultRow('backup:index');
-      } catch(e){ vaultIndex = null; }
+      var tok = await ensureToken();       // RLS needs the caller's JWT or every read returns nothing
+      vaultReadErr = null;
+      if (!tok) vaultReadErr = 'This page can\'t see you signed in, so it can\'t read your backups. They are safe on GitHub. Sign in (tap your initial, top right), then reload this page.';
+      else {
+        try { vaultIndex = await readVaultRow('backup:index'); }
+        catch(e){ vaultIndex = null; }
+        if (!vaultIndex) vaultReadErr = 'Could not read your backup list right now. That is a failed read, not missing backups. Reload this page.';
+      }
       renderStatus();
       renderVault();
     }
