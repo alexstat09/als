@@ -1021,7 +1021,8 @@
         // A file-backed "day". snapshotFor() will use .snap instead of Supabase,
         // so look / compare / put-back / restore all work on it unchanged.
         activeDay = null;
-        currentRows = await loadCurrentRows();          // always diff against LIVE data
+        try { currentRows = await loadCurrentRows(); }  // always diff against LIVE data
+        catch(err){ currentRows = {}; note.innerHTML = '<span class="vl-flag">Could not compare: ' + err.message + '. Nothing was changed.</span>'; return; }
         openDay({
           date: snap.date, records: records, bytes: bytes,
           github: false, fromFile: true, fileName: f.name, snap: snap
@@ -1286,13 +1287,27 @@
 
     var repairSnap = null, repairPlan = [], changedPlan = [], currentRows = {};
 
+    /* ⛔ als-v652 — A FAILED READ IS NOT "YOU HAVE NOTHING". This used to read
+       with `SESSION_TOKEN || KEY` and never called ensureToken() first, so on a
+       cold open it asked as the anon role, RLS answered 200 + [], and Compare
+       told Alex «389 workouts then, 0 now» for EVERY store. Worse, doHeal()
+       builds each row from currentRows, so one «Bring back» on that screen would
+       have written rows holding only the backup's keys — wiping everything else
+       in them. Now: no token, a non-OK answer, or zero rows → THROW, and every
+       caller shows the error instead of a diff. */
     async function loadCurrentRows(){
+      var tok = await ensureToken();
+      if (!tok) throw new Error('you are not signed in on this page, so your current data could not be read');
       var r = await fetch(SUPA + '/rest/v1/app_state?select=key,data', { headers: headers() });
-      var rows = r.ok ? await r.json() : [];
+      if (!r.ok) throw new Error('reading your current data failed (http ' + r.status + ')');
+      var rows = await r.json();
+      if (!Array.isArray(rows) || !rows.length) throw new Error('your current data came back empty, which is a failed read, not an empty account');
       var map = {};
-      (rows || []).forEach(function(row){ if (row && row.key) map[row.key] = row.data || {}; });
+      rows.forEach(function(row){ if (row && row.key) map[row.key] = row.data || {}; });
       return map;
     }
+    // Writes rebuild whole rows from currentRows — never on a read we did not trust.
+    function rowsTrusted(){ return !!SESSION_TOKEN && Object.keys(currentRows || {}).length > 0; }
 
     // Renders into the day panel. Same engine, one picker.
     async function showCompare(d){
@@ -1408,7 +1423,8 @@
           body.appendChild(note);
         }
       } catch(e){
-        body.innerHTML = '<div class="rp-none rp-gone">Could not compare: ' + ((e && e.message) || e) + '</div>';
+        currentRows = {}; repairPlan = []; changedPlan = [];
+        body.innerHTML = '<div class="rp-none rp-gone">Could not compare: ' + ((e && e.message) || e) + '. Nothing was changed.</div>';
       }
     }
 
@@ -1418,6 +1434,7 @@
     // pass through untouched; nothing is deleted; other stores are not opened.
     async function doPutBack(date){
       await ensureToken();                 // repair writes need a valid JWT or RLS rejects them
+      if (!rowsTrusted()){ var dd = $('dpDone'); dd.innerHTML = '<span class="vl-flag">Your current data was not read safely, so nothing was written. Reload the page and try again.</span>'; dd.classList.remove('hidden'); return; }
       var picked = [];
       $('dpBody').querySelectorAll('input[data-c]').forEach(function(cb){
         if (cb.checked) picked.push(changedPlan[+cb.getAttribute('data-c')]);
@@ -1480,6 +1497,7 @@
 
     async function doHeal(date){
       await ensureToken();                 // repair writes need a valid JWT or RLS rejects them
+      if (!rowsTrusted()){ var dd = $('dpDone'); dd.innerHTML = '<span class="vl-flag">Your current data was not read safely, so nothing was written. Reload the page and try again.</span>'; dd.classList.remove('hidden'); return; }
       var picked = [];
       $('dpBody').querySelectorAll('input[data-i]').forEach(function(cb){
         if (cb.checked) picked.push(repairPlan[+cb.getAttribute('data-i')]);
