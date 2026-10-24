@@ -54,13 +54,23 @@
   /* The engines retry every 15s. Two minutes of unbroken failure is ~8 straight
      attempts — long past any blip, and far short of nagging. */
   var STRANDED_MS = 2 * 60 * 1000;
+  /* ── als-v656: A DOT FIRST, THE BANNER ONLY FOR REAL DANGER ──────────────
+     Alex (24/10/26): the full-width banner «pops up every minute, it ruins the
+     look». It was honest (a write really had failed for 2+ min), but a short
+     stall heals on its own and does not deserve the whole top of the screen.
+     So: stuck ≥ 2 min → a small amber dot on the account button (tap it for the
+     details + Retry). Stuck ≥ 30 min → the banner, uninvited, as before — that
+     is the July 2026 weigh-in loss, the one case he must not miss.
+     ⛔ Do NOT remove the 30-minute banner to make it quieter still. */
+  var BANNER_MS = 30 * 60 * 1000;
   var TICK_MS = 20 * 1000;
   var STORE = 'als:sync-stuck';          // { engine: firstFailedAtMs }
   var ESTORE = 'als:sync-errd';          // { engine: lastErrorDetail } — kept separate
                                           // so STORE stays a pure {engine:ms} map (stuckSince
                                           // does +s[k]; mixing a string in would poison it).
 
-  var el = null, txtEl = null, detEl = null, tick = null;
+  var el = null, txtEl = null, detEl = null, hideBtn = null, tick = null;
+  var dotEl = null, dotCss = false, manualOpen = false;
 
   function isOnline() { try { return navigator.onLine !== false; } catch (e) { return true; } }
 
@@ -118,9 +128,9 @@
      a tunnel is not a bug, the data is safe locally, and it will heal on its
      own the moment there is signal. Interrupting for that would teach him to
      ignore this — and then it is worthless on the day it matters. */
-  function stranded() {
+  function stuckFor() {
     var since = stuckSince();
-    return since > 0 && isOnline() && (Date.now() - since) >= STRANDED_MS;
+    return (since > 0 && isOnline()) ? Date.now() - since : 0;
   }
 
   function human(ms) {
@@ -164,7 +174,13 @@
     btn.addEventListener('click', retry);
     detEl = document.createElement('span'); detEl.className = 'als-str-det';
 
-    el.appendChild(dot); el.appendChild(txtEl); el.appendChild(btn); el.appendChild(detEl);
+    /* Only offered when HE opened it from the dot. The 30-minute banner has no
+       close button on purpose: it goes away when the data reaches the cloud. */
+    hideBtn = document.createElement('button');
+    hideBtn.type = 'button'; hideBtn.className = 'als-str-btn'; hideBtn.textContent = 'Hide';
+    hideBtn.addEventListener('click', function () { manualOpen = false; render(); });
+
+    el.appendChild(dot); el.appendChild(txtEl); el.appendChild(btn); el.appendChild(hideBtn); el.appendChild(detEl);
     (document.body || document.documentElement).appendChild(el);
   }
 
@@ -174,9 +190,55 @@
     try { document.dispatchEvent(new Event('visibilitychange')); } catch (e) {}
   }
 
+  /* The dot sits on the account button (#topbarAcct, built by topbar.js). On a
+     page without the top bar it floats in the top-right corner instead. It is
+     re-attached on every render, because the top bar can appear after us. */
+  function setDot(on) {
+    if (!on) { if (dotEl) dotEl.style.display = 'none'; return; }
+    if (!dotCss) {
+      dotCss = true;
+      var css = document.createElement('style');
+      css.textContent =
+        '.als-sync-dot{position:absolute;top:-7px;right:-7px;width:20px;height:20px;z-index:2;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;}' +
+        '.als-sync-dot::before{content:"";width:9px;height:9px;border-radius:50%;background:#F2C063;' +
+        'box-shadow:0 0 0 2px #0A0A0A;}' +
+        '.als-sync-dot--float{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:9998;}';
+      document.head.appendChild(css);
+    }
+    var host = document.getElementById('topbarAcct');
+    if (dotEl && (!dotEl.isConnected || (host && dotEl.parentNode !== host))) { dotEl.remove(); dotEl = null; }
+    if (!dotEl) {
+      dotEl = document.createElement('span');
+      dotEl.className = 'als-sync-dot' + (host ? '' : ' als-sync-dot--float');
+      dotEl.setAttribute('role', 'button');
+      dotEl.setAttribute('tabindex', '0');
+      dotEl.setAttribute('aria-label', 'Some changes have not reached the cloud yet. Show details');
+      dotEl.title = 'Some changes have not reached the cloud yet';
+      /* Inside the account button: stop the tap here so it shows the details
+         instead of also opening the account sheet. */
+      var toggle = function (e) { e.preventDefault(); e.stopPropagation(); manualOpen = !manualOpen; render(); };
+      dotEl.addEventListener('click', toggle);
+      dotEl.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') toggle(e); });
+      if (host) {
+        if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+        host.appendChild(dotEl);
+      } else {
+        (document.body || document.documentElement).appendChild(dotEl);
+      }
+    }
+    dotEl.style.display = '';
+  }
+
   function render() {
-    if (stranded()) {
+    var ms = stuckFor();
+    var dotOn = ms >= STRANDED_MS;
+    var urgent = ms >= BANNER_MS;
+    if (!dotOn) manualOpen = false;
+    setDot(dotOn && !urgent);
+    if (urgent || (dotOn && manualOpen)) {
       build();
+      if (hideBtn) hideBtn.style.display = urgent ? 'none' : '';
       /* Say what is actually at stake — "Not saved" is a status, and a status is
          easy to dismiss. The thing he needs to know is WHERE his data is. */
       txtEl.textContent = 'Some changes from the last ' + human(Date.now() - stuckSince()) +
