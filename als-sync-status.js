@@ -59,10 +59,10 @@
      look». It was honest (a write really had failed for 2+ min), but a short
      stall heals on its own and does not deserve the whole top of the screen.
      So: stuck ≥ 2 min → a small amber dot on the account button (tap it for the
-     details + Retry). Stuck ≥ 30 min → the banner, uninvited, as before — that
-     is the July 2026 weigh-in loss, the one case he must not miss.
-     ⛔ Do NOT remove the 30-minute banner to make it quieter still. */
-  var BANNER_MS = 30 * 60 * 1000;
+     details + Retry). als-v657: the same day he asked for the 30-minute banner
+     to go too («στα 30 λεπτά να μοιάζει σαν τα 2») — his call, made knowing the
+     July weigh-in story. The banner now ONLY opens from the dot. The dot is the
+     whole alarm, so never make it quieter than it is. */
   var TICK_MS = 20 * 1000;
   var STORE = 'als:sync-stuck';          // { engine: firstFailedAtMs }
   var ESTORE = 'als:sync-errd';          // { engine: lastErrorDetail } — kept separate
@@ -174,8 +174,7 @@
     btn.addEventListener('click', retry);
     detEl = document.createElement('span'); detEl.className = 'als-str-det';
 
-    /* Only offered when HE opened it from the dot. The 30-minute banner has no
-       close button on purpose: it goes away when the data reaches the cloud. */
+    /* It only ever opens from the dot, so it can always be closed again. */
     hideBtn = document.createElement('button');
     hideBtn.type = 'button'; hideBtn.className = 'als-str-btn'; hideBtn.textContent = 'Hide';
     hideBtn.addEventListener('click', function () { manualOpen = false; render(); });
@@ -233,12 +232,10 @@
   function render() {
     var ms = stuckFor();
     var dotOn = ms >= STRANDED_MS;
-    var urgent = ms >= BANNER_MS;
     if (!dotOn) manualOpen = false;
-    setDot(dotOn && !urgent);
-    if (urgent || (dotOn && manualOpen)) {
+    setDot(dotOn);
+    if (dotOn && manualOpen) {
       build();
-      if (hideBtn) hideBtn.style.display = urgent ? 'none' : '';
       /* Say what is actually at stake — "Not saved" is a status, and a status is
          easy to dismiss. The thing he needs to know is WHERE his data is. */
       txtEl.textContent = 'Some changes from the last ' + human(Date.now() - stuckSince()) +
