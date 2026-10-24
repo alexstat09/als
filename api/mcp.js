@@ -152,7 +152,7 @@ var TOOLS = [
   { name: 'get_money', description: 'Monthly bill commitments, paid vs open, no-spend days.', inputSchema: { type: 'object', properties: {} } },
   { name: 'get_mind', description: 'Habits done today, learning queue, habits being adopted.', inputSchema: { type: 'object', properties: {} } },
   { name: 'get_life', description: 'Films watched, taste rating, watchlist.', inputSchema: { type: 'object', properties: {} } },
-  { name: 'get_raw', description: 'Read raw stored JSON for one data key (power tool). See list_keys. Or pass app (a cloud row name) + offset to page through a whole row, 12k chars at a time.', inputSchema: { type: 'object', properties: { key: { type: 'string' }, app: { type: 'string' }, offset: { type: 'number' } } } },
+  { name: 'get_raw', description: 'Read raw stored JSON for one data key (power tool). See list_keys. Or pass app (a cloud row name) + offset to page through a whole row, 12k chars at a time.', inputSchema: { type: 'object', properties: { key: { type: 'string' }, app: { type: 'string' }, offset: { type: 'number' }, size: { type: 'number' } } } },
   { name: 'list_keys', description: 'List the data keys available to read with get_raw.', inputSchema: { type: 'object', properties: {} } },
   // writes
   { name: 'log_meal', description: 'Log a meal/food to nutrition. Provide calories; protein/carbs/fat optional.', inputSchema: { type: 'object', properties: { name: { type: 'string' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' }, meal: { type: 'string', description: 'Breakfast/Lunch/Dinner/Snacks' }, date: { type: 'string', description: 'YYYY-MM-DD, default today' } }, required: ['name', 'kcal'] } },
@@ -225,7 +225,8 @@ async function callTool(name, a) {
     if (a.app) {
       var rowS = JSON.stringify(await getBundle(String(a.app)));
       var off = Math.max(0, +a.offset || 0);
-      return 'row ' + a.app + ' len=' + rowS.length + ' offset=' + off + ':\n' + rowS.slice(off, off + 12000);
+      var size = Math.min(3000000, Math.max(12000, +a.size || 12000));   // under Vercel's 4.5 MB response cap
+      return 'row ' + a.app + ' len=' + rowS.length + ' offset=' + off + ':\n' + rowS.slice(off, off + size);
     }
     var key = String(a.key || '').trim();
     if (!key) return 'Provide a "key" (see list_keys).';
