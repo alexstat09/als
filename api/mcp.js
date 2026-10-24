@@ -152,7 +152,7 @@ var TOOLS = [
   { name: 'get_money', description: 'Monthly bill commitments, paid vs open, no-spend days.', inputSchema: { type: 'object', properties: {} } },
   { name: 'get_mind', description: 'Habits done today, learning queue, habits being adopted.', inputSchema: { type: 'object', properties: {} } },
   { name: 'get_life', description: 'Films watched, taste rating, watchlist.', inputSchema: { type: 'object', properties: {} } },
-  { name: 'get_raw', description: 'Read raw stored JSON for one data key (power tool). See list_keys.', inputSchema: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'] } },
+  { name: 'get_raw', description: 'Read raw stored JSON for one data key (power tool). See list_keys. Or pass app (a cloud row name) + offset to page through a whole row, 12k chars at a time.', inputSchema: { type: 'object', properties: { key: { type: 'string' }, app: { type: 'string' }, offset: { type: 'number' } } } },
   { name: 'list_keys', description: 'List the data keys available to read with get_raw.', inputSchema: { type: 'object', properties: {} } },
   // writes
   { name: 'log_meal', description: 'Log a meal/food to nutrition. Provide calories; protein/carbs/fat optional.', inputSchema: { type: 'object', properties: { name: { type: 'string' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' }, meal: { type: 'string', description: 'Breakfast/Lunch/Dinner/Snacks' }, date: { type: 'string', description: 'YYYY-MM-DD, default today' } }, required: ['name', 'kcal'] } },
@@ -219,6 +219,14 @@ async function callTool(name, a) {
   if (name === 'list_keys') return 'Readable keys (use with get_raw):\n' + READABLE.join('\n');
 
   if (name === 'get_raw') {
+    /* als-v654: `app` + `offset` read a WHOLE cloud row in 12k pages — the only
+       way to diff every store against a vault snapshot from outside the app.
+       Read-only, same owner, same bearer. */
+    if (a.app) {
+      var rowS = JSON.stringify(await getBundle(String(a.app)));
+      var off = Math.max(0, +a.offset || 0);
+      return 'row ' + a.app + ' len=' + rowS.length + ' offset=' + off + ':\n' + rowS.slice(off, off + 12000);
+    }
     var key = String(a.key || '').trim();
     if (!key) return 'Provide a "key" (see list_keys).';
     if (!bundleFor(key)) return 'Unknown key. See list_keys.';
