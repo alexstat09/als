@@ -26,7 +26,10 @@ if (ps.length !== 1) { console.error('⛔ βρέθηκαν ' + ps.length + ' <p 
 if (!new RegExp('ΜΑΘΗΜΑ\\s+' + R + '\\b').test(H)) { console.error('⛔ η σελίδα δεν γράφει «ΜΑΘΗΜΑ ' + R + '»'); process.exit(1); }
 
 const ENT = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', laquo: '«', raquo: '»', rsquo: '’', lsquo: '‘', hellip: '…', ndash: '–', mdash: '—' };
-let t = ps[0].replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
+/* XXVI: η προσφώνηση της επιστολής («C. Plinius Marcelllno suo salūtem.») ζει σε ΧΩΡΙΣΤΟ
+   <p class="latintxt"> ακριβώς πριν — είναι κείμενο του βιβλίου και μεταφράζεται στο φυλλάδιο. */
+const pre = new RegExp('<p class="latintxt"[^>]*>([^<]+)</p>\\s*' + ps[0].slice(0, 40).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).exec(H);
+let t = ((pre ? pre[1].trim() + ' ' : '') + ps[0]).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
   .replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16)))
   .replace(/&([a-z]+);/gi, (m, e) => ENT[e] != null ? ENT[e] : m);
 t = t.normalize('NFC').replace(/\s+/g, ' ').trim();

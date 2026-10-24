@@ -78,7 +78,7 @@ let mode = null, decl = null, conj = null;
 const head = s => L.norm(s.split(/[\s,(-]/)[0]);
 /* ελληνικά «διπλότυπα» λατινικών γραμμάτων που γράφει το s4e μέσα σε λήμματα */
 const GL = { 'ο': 'o', 'Ο': 'O', 'α': 'a', 'Α': 'A', 'ε': 'e', 'Ε': 'E', 'ι': 'i', 'Ι': 'I', 'κ': 'k', 'Κ': 'K', 'τ': 't', 'Τ': 'T', 'ν': 'v', 'Ν': 'N', 'Μ': 'M', 'Β': 'B', 'Η': 'H', 'Χ': 'X', 'Ρ': 'P', 'Ζ': 'Z', 'υ': 'u' };
-const clean = l => l.replace(/[–—‒]/g, '-').replace(/[\u0370-\u03ff]/g, (c, i, w) => /[a-zāēīōūăĕĭŏŭ]/i.test(w.slice(Math.max(0, i - 2), i + 3).replace(c, '')) && GL[c] ? GL[c] : c).replace(/\s+/g, ' ').trim();
+const clean = l => l.replace(/[–—‒]/g, '-').replace(/-{2,}/g, '-').replace(/[\u0370-\u03ff]/g, (c, i, w) => /[a-zāēīōūăĕĭŏŭ]/i.test(w.slice(Math.max(0, i - 2), i + 3).replace(c, '')) && GL[c] ? GL[c] : c).replace(/\s+/g, ' ').trim();
 let cont = false;
 vocab.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
   if (/^ΟΥΣΙΑΣΤΙΚΑ/.test(line)) { mode = 'n'; return; }
