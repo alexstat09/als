@@ -8,6 +8,10 @@ Separate Supabase accounts, one codebase.
 - ⭐ **Cold start? Read `START-HERE.md` first** — 60 seconds, then come back.
 - **Read `MAP.md` first** for what every page and script is. This file is the
   operating contract: stack, systems, rules, state.
+- 🎨⭐⭐⭐ **Κάθε δουλειά εμφάνισης ή κίνησης → φόρτωσε ΠΡΩΤΑ το skill `metron-design`**
+  (`.claude/skills/metron-design/`). Είναι φτιαγμένο από τις τυφλές επιλογές του Αλεξ
+  (24/10/26: δομή impeccable × πάνελ/κίνηση emil × ΤΑ ΔΙΚΑ ΤΟΥ χρώματα) και έχει έτοιμο
+  κώδικα + `scripts/check.mjs`. Τα άλλα design skills κόπηκαν· μένουν impeccable/emil μόνο για βάθος.
 - ⭐⭐⭐ **Πριν σχεδιάσεις ΟΤΙΔΗΠΟΤΕ, διάβασε «Η ΑΙΣΘΗΤΙΚΗ — ΤΟ ΕΞΩΦΥΛΛΟ»**
   (αμέσως μετά το §2). Είναι η γλώσσα σχεδιασμού που ενέκρινε ο Αλεξ ρητά
   («το λάτρεψα»), με νούμερα. Κάθε νέα σελίδα ξεκινάει από εκεί.
