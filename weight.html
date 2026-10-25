@@ -6,1130 +6,1235 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Weight · MÉTRON</title>
-  <meta name="theme-color" content="#050507">
+  <meta name="theme-color" content="#0A0F17">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="aurora.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&family=Literata:ital,opsz,wght@1,7..72,400;1,7..72,500&display=swap">
   <script src="water.js"></script>
   <script src="topbar.js" defer></script>
-  <script src="page-motion.js" defer></script>
   <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    html, body { min-height:100%; }
-    body { padding:0 0 calc(86px + env(safe-area-inset-bottom)); --sec-rgb:52,226,176; }
-    .hidden{ display:none !important; }
-
-    /* ── Hero ─────────────────────────────────────── */
-    .wp-hero{ max-width:600px; margin:0 auto; padding:24px 18px 8px; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
-    .wp-hero-eyebrow{ margin-bottom:12px; }
-    .wp-hero-line{ font-family:var(--au-serif); font-style:italic; font-weight:400; color:var(--au-ivory); font-size:clamp(24px,6vw,32px); line-height:1.1; letter-spacing:-.01em; max-width:22ch; }
-    .wp-hero .nova{ flex-shrink:0; width:74px; height:74px; margin-top:2px; }
-
-    .wp-wrap{ padding:14px 18px; display:flex; flex-direction:column; gap:14px; max-width:600px; margin:0 auto; }
-
-    /* ── Glass card ───────────────────────────────── */
-    .wt-card{ position:relative; background:var(--au-glass); border:1px solid var(--au-line); border-radius:18px; overflow:hidden; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:20px 18px 18px; }
-    .wt-card::before{ content:''; position:absolute; top:0; left:8%; right:8%; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--sec-rgb),.55),transparent); pointer-events:none; }
-
-    /* ── Headline ─────────────────────────────────── */
-    .wt-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .wt-row{ display:flex; align-items:baseline; gap:8px; }
-    .wt-num{ font-family:var(--au-serif); font-style:italic; font-size:56px; font-weight:400; letter-spacing:-.02em; line-height:1; color:var(--au-ivory); }
-    .wt-unit{ font-size:16px; color:var(--au-faint); font-family:var(--au-mono); }
-    .wt-trend{ font-family:var(--au-mono); font-size:12px; font-weight:700; margin-top:9px; letter-spacing:.01em; font-variant-numeric:tabular-nums; color:var(--au-dim); }
-    .wt-trend.good{ color:var(--au-emerald); } .wt-trend.off{ color:var(--au-amber); }
-    .wt-streak{ flex-shrink:0; display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:5px 11px; border-radius:999px; background:rgba(var(--sec-rgb),.08); border:1px solid rgba(var(--sec-rgb),.22); color:rgb(var(--sec-rgb)); font-family:var(--au-mono); font-size:10px; font-weight:700; letter-spacing:.08em; white-space:nowrap; }
-
-    /* ── Stat trio ────────────────────────────────── */
-    .wt-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:18px; background:var(--au-line); border-radius:13px; overflow:hidden; border:1px solid var(--au-line); }
-    .wt-stat{ background:rgba(255,255,255,.022); padding:11px 10px 10px; text-align:center; }
-    .wt-stat-lbl{ font-family:var(--au-mono); font-size:8.5px; font-weight:700; letter-spacing:.16em; color:var(--au-faint); text-transform:uppercase; }
-    .wt-stat-val{ font-family:var(--au-mono); font-size:17px; font-weight:700; color:var(--au-ivory); margin-top:5px; font-variant-numeric:tabular-nums; line-height:1; }
-    .wt-stat-val.good{ color:var(--au-emerald); } .wt-stat-val.off{ color:var(--au-amber); }
-    .wt-stat-sub{ font-family:var(--au-mono); font-size:9px; color:var(--au-faint); margin-top:4px; }
-
-    .wt-empty{ text-align:center; padding:26px 16px; color:var(--au-dim); font-family:var(--au-serif); font-style:italic; font-size:15px; border:1px dashed var(--au-line); border-radius:14px; margin-top:16px; }
-
-    /* ── Chart ────────────────────────────────────── */
-    .wt-chart-wrap{ position:relative; margin:18px 0 4px; }
-    .wt-range-row{ display:flex; justify-content:flex-end; margin-bottom:12px; }
-    .wt-pills{ position:relative; display:inline-flex; gap:2px; padding:2px; border-radius:999px; background:rgba(255,255,255,.035); border:1px solid var(--au-line); }
-    /* Equal-width segments so the indicator only ever needs translateX —
-       animating its width would relayout and smear the 1px border. */
-    .wt-pill-ind{ position:absolute; top:2px; bottom:2px; left:2px; width:52px; border-radius:999px; background:rgba(var(--sec-rgb),.16); border:1px solid rgba(var(--sec-rgb),.42); transition:transform .34s var(--au-ease); pointer-events:none; }
-    .wt-range-btn{ position:relative; width:52px; padding:5px 0; border-radius:999px; font-size:10.5px; font-weight:700; border:none; background:transparent; color:var(--au-faint); cursor:pointer; font-family:var(--au-mono); letter-spacing:.06em; text-align:center; -webkit-tap-highlight-color:transparent; transition:color .3s var(--au-ease); }
-    .wt-range-btn.active{ color:rgb(var(--sec-rgb)); }
-
-    /* pan-y, not none: a 214px-tall chart must not become a dead zone that
-       swallows the page scroll. Horizontal drags scrub, vertical ones scroll. */
-    .wt-chart{ display:block; width:100%; height:214px; cursor:crosshair; touch-action:pan-y; overflow:visible; }
-    #wtChartContent{ transition:opacity .14s linear; }
-    .wt-grid{ stroke:rgba(255,255,255,.055); stroke-width:1; shape-rendering:crispEdges; }
-    .wt-ylabel{ font-size:9.5px; fill:rgba(245,242,236,.30); font-family:var(--au-mono); }
-    /* Each reading is tethered to the trend it deviates from. There is only ever
-       ONE path through the chart; the dots are scatter around it, not a second
-       route. (An earlier build drew a thread joining the dots — two competing
-       lines, which is what made the chart confusing.) */
-    .wt-whisk{ stroke:rgba(var(--sec-rgb),.34); stroke-width:1; }
-    .wt-daily{ fill:rgba(245,242,236,.42); }
-    .wt-line{ fill:none; stroke:url(#wtLineGrad); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
-    .wt-last-halo{ fill:rgba(var(--sec-rgb),.16); }
-    .wt-last{ fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.4; }
-    .wt-goal{ stroke:var(--au-amber); stroke-width:1; stroke-dasharray:5 4; opacity:.55; }
-    .wt-goal-lbl{ font-size:9px; font-family:var(--au-mono); font-weight:700; letter-spacing:.12em; fill:rgba(242,192,99,.8); }
-    .wt-xlabel{ font-size:9.5px; fill:rgba(245,242,236,.30); font-family:var(--au-mono); }
-    .wt-crosshair{ stroke:rgba(255,255,255,.26); stroke-width:1; stroke-dasharray:3 3; }
-    .wt-tip-bg{ fill:rgba(6,6,7,.96); stroke:rgba(var(--sec-rgb),.38); stroke-width:1; }
-    .wt-tip-date{ fill:rgba(245,242,236,.52); font-size:9.5px; font-family:var(--au-mono); letter-spacing:.08em; }
-    .wt-tip-weight{ fill:#fff; font-size:14px; font-weight:700; font-family:var(--au-mono); }
-    .wt-tip-sub{ font-size:9.5px; font-family:var(--au-mono); fill:rgba(245,242,236,.45); }
-    .wt-tip-dot{ fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.4; }
-    .wt-meta{ text-align:center; font-size:10.5px; color:var(--au-faint); font-family:var(--au-mono); margin-top:10px; letter-spacing:.02em; }
-    .wt-meta.warn{ color:var(--au-amber); }
-    .wt-legend{ display:flex; justify-content:center; gap:16px; margin-top:10px; flex-wrap:wrap; }
-    .wt-legend-item{ display:inline-flex; align-items:center; gap:6px; font-size:8.5px; letter-spacing:.16em; font-weight:700; color:var(--au-faint); font-family:var(--au-mono); }
-    .wt-lg-trend{ width:15px; height:2.6px; background:rgb(var(--sec-rgb)); border-radius:2px; }
-    /* dot on a tether — the legend swatch mirrors the mark exactly */
-    .wt-lg-daily{ position:relative; width:5px; height:11px; }
-    .wt-lg-daily::before{ content:''; position:absolute; left:2px; top:4px; width:1px; height:7px; background:rgba(var(--sec-rgb),.45); }
-    .wt-lg-daily::after{ content:''; position:absolute; left:0; top:0; width:5px; height:5px; border-radius:50%; background:rgba(245,242,236,.48); }
-    .wt-lg-goal{ width:15px; height:0; border-top:1.5px dashed rgba(242,192,99,.8); }
-    .wt-tap-hint{ text-align:center; font-size:9.5px; color:var(--au-faint); font-family:var(--au-mono); letter-spacing:.08em; margin-top:7px; }
-
-    /* ── Month rail ───────────────────────────────── */
-    .wt-months{ margin-top:20px; padding-top:16px; border-top:1px solid var(--au-line); }
-    .wt-sub-title{ font-size:9px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--au-faint); font-family:var(--au-mono); margin-bottom:2px; }
-    .wt-months-svg{ display:block; width:100%; height:74px; overflow:visible; }
-    .wt-mo-link{ fill:none; stroke:rgba(var(--sec-rgb),.28); stroke-width:1.4; stroke-linejoin:round; }
-    .wt-mo-dot{ fill:rgb(var(--sec-rgb)); opacity:.55; }
-    .wt-mo-dot.now{ opacity:1; fill:#fff; stroke:rgb(var(--sec-rgb)); stroke-width:2.2; }
-    .wt-mo-lbl{ font-size:8.5px; font-family:var(--au-mono); font-weight:700; letter-spacing:.12em; fill:rgba(245,242,236,.30); }
-    .wt-mo-val{ font-size:11px; font-family:var(--au-mono); font-weight:700; fill:rgba(245,242,236,.62); }
-    .wt-mo-val.now{ fill:var(--au-ivory); }
-
-    /* ── Logged-today lock ────────────────────────── */
-    .wt-locked{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:18px; padding:12px 14px; border-radius:14px; background:rgba(var(--sec-rgb),.06); border:1px solid rgba(var(--sec-rgb),.22); }
-    .wt-locked-info{ display:flex; align-items:center; gap:11px; }
-    .wt-locked-check{ width:30px; height:30px; background:rgba(var(--sec-rgb),.14); color:rgb(var(--sec-rgb)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; }
-    .wt-locked-label{ font-size:10px; letter-spacing:.14em; font-weight:700; color:var(--au-faint); font-family:var(--au-mono); margin-bottom:2px; }
-    .wt-locked-value{ font-size:16px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); }
-    .wt-edit-btn{ background:transparent; border:1px solid rgba(var(--sec-rgb),.35); color:rgb(var(--sec-rgb)); font-family:var(--au-sans); font-size:13px; font-weight:700; cursor:pointer; padding:8px 16px; border-radius:999px; -webkit-tap-highlight-color:transparent; }
-    .wt-edit-btn:active{ opacity:.7; }
-
-    /* ── Log a weigh-in ───────────────────────────── */
-    /* Was a form: a raw date picker, a bare field, a generic button. It's a
-       daily ritual, so it opens with a question, defaults to today, and the
-       browser's date chrome stays folded away until it's actually wanted. */
-    .wt-input-row{ margin-top:20px; padding-top:18px; border-top:1px solid var(--au-line); }
-    .wt-ask{ font-family:var(--au-serif); font-style:italic; font-size:19px; line-height:1.25; color:var(--au-ivory); margin-bottom:14px; }
-    .wt-entry{ display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:stretch; }
-    .wt-step{ width:46px; border-radius:14px; border:1px solid var(--au-line-2); background:rgba(255,255,255,.035); color:var(--au-ivory); font-size:24px; font-family:var(--au-mono); font-weight:300; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color .25s var(--au-ease), color .25s var(--au-ease), background .25s var(--au-ease); }
-    .wt-step:active{ background:rgba(var(--sec-rgb),.13); border-color:rgba(var(--sec-rgb),.42); color:rgb(var(--sec-rgb)); }
-    .wt-input-field{ position:relative; }
-    .wt-input{ width:100%; min-width:0; height:54px; background:rgba(255,255,255,.05); border:1px solid rgba(var(--sec-rgb),.28); border-radius:14px; color:var(--au-ivory); font-family:var(--au-mono); font-size:25px; font-weight:700; padding:0 40px 0 14px; outline:none; text-align:center; -webkit-appearance:none; font-variant-numeric:tabular-nums; transition:border-color .25s var(--au-ease); }
-    .wt-input::placeholder{ color:rgba(245,242,236,.16); font-weight:400; }
-    .wt-input:focus{ border-color:rgba(var(--sec-rgb),.62); }
-    .wt-unit-static{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--au-faint); font-size:13px; font-family:var(--au-mono); pointer-events:none; }
-    /* Reads back what he just typed BEFORE he commits it — catches a 7.04 or a
-       704 that would otherwise land in the log and bend the whole chart. */
-    .wt-feedback{ min-height:15px; margin-top:10px; text-align:center; font-family:var(--au-mono); font-size:10.5px; letter-spacing:.02em; color:var(--au-faint); transition:color .25s var(--au-ease); }
-    .wt-feedback.warn{ color:var(--au-amber); }
-    .wt-feedback.bad{ color:#FF6B8B; }
-    /* A gradient in the emerald→teal family, not a flat slab of full-saturation
-       green — at full width the solid fill out-shouted the chart above it. */
-    .wt-save-btn{ display:block; width:100%; margin-top:12px; background:linear-gradient(112deg,#34E2B0,#20CFC2 62%,#18C8C0); color:#04130D; border:none; border-radius:14px; padding:15px 22px; font-family:var(--au-sans); font-size:15px; font-weight:700; letter-spacing:.01em; cursor:pointer; box-shadow:0 4px 16px rgba(var(--sec-rgb),.18); -webkit-tap-highlight-color:transparent; transition:box-shadow .25s var(--au-ease), opacity .2s var(--au-ease); }
-    .wt-save-btn:active{ opacity:.84; box-shadow:0 2px 8px rgba(var(--sec-rgb),.16); }
-    .wt-when{ display:block; width:100%; margin-top:11px; padding:6px; background:transparent; border:none; color:var(--au-faint); font-family:var(--au-mono); font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:color .25s var(--au-ease); }
-    .wt-when:active{ color:var(--au-ivory); }
-    .wt-when.other{ color:rgb(var(--sec-rgb)); }
-    .wt-date-row{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
-    .wt-date-label{ font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--au-faint); white-space:nowrap; font-family:var(--au-mono); }
-    .wt-date-input{ flex:1; min-width:120px; background:rgba(255,255,255,.05); border:1px solid var(--au-line); border-radius:10px; color:var(--au-ivory); font-family:var(--au-mono); font-size:13px; padding:9px 11px; outline:none; transition:border-color .2s; color-scheme:dark; }
-    .wt-date-input:focus{ border-color:rgba(var(--sec-rgb),.5); }
-    .wt-today-btn{ padding:9px 12px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid var(--au-line); background:rgba(255,255,255,.04); color:var(--au-dim); cursor:pointer; font-family:var(--au-mono); white-space:nowrap; transition:all .15s; -webkit-tap-highlight-color:transparent; }
-    .wt-today-btn:active{ background:rgba(var(--sec-rgb),.12); color:rgb(var(--sec-rgb)); }
-
-    /* ── History list ─────────────────────────────── */
-    .wt-history{ margin-top:22px; }
-    .wt-history-title{ font-size:9px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--au-faint); font-family:var(--au-mono); margin-bottom:10px; }
-    .wt-history-list{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px; overscroll-behavior:contain; }
-    .wt-history-list::-webkit-scrollbar{ width:4px; }
-    .wt-history-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:2px; }
-    /* Matches the card surface (canvas + its glass tint), not the raw page
-       canvas — otherwise the sticky header reads as a dark seam. */
-    .wt-mo-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:12px 2px 5px; position:sticky; top:0; background:linear-gradient(180deg,rgba(12,12,14,.97) 62%,rgba(12,12,14,.7)); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); z-index:2; }
-    .wt-mo-head:first-child{ padding-top:2px; }
-    .wt-mo-head-name{ font-family:var(--au-serif); font-style:italic; font-size:15px; color:var(--au-ivory); }
-    .wt-mo-head-meta{ font-family:var(--au-mono); font-size:9.5px; color:var(--au-faint); letter-spacing:.04em; font-variant-numeric:tabular-nums; }
-    .wt-mo-head-meta .up{ color:var(--au-amber); } .wt-mo-head-meta .down{ color:var(--au-emerald); }
-    /* 149 rows × 2 permanently-visible buttons is what made this read as an
-       admin table. The actions now live behind a tap on the row, and the space
-       they freed carries a position marker — so scrolling the list shows the
-       SHAPE of a month, not just its digits. */
-    .wt-history-row{ position:relative; display:flex; align-items:center; gap:10px; padding:11px 12px 16px; border-radius:11px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color .25s var(--au-ease), background .25s var(--au-ease); }
-    /* The track has to be VISIBLE, or the marker reads as a dash at a random
-       spot instead of a value on a scale. */
-    .wt-history-row::after{ content:''; position:absolute; left:12px; right:12px; bottom:7px; height:1px; background:rgba(255,255,255,.10); }
-    .wt-row-pos{ position:absolute; bottom:5.5px; width:13px; height:3px; border-radius:2px; background:rgb(var(--sec-rgb)); opacity:.6; transform:translateX(-50%); }
-    .wt-history-row.today-row .wt-row-pos, .wt-history-row.open .wt-row-pos{ opacity:1; }
-    .wt-history-row.today-row{ border-color:rgba(var(--sec-rgb),.28); background:rgba(var(--sec-rgb),.05); }
-    .wt-history-row.open{ border-color:rgba(var(--sec-rgb),.34); background:rgba(var(--sec-rgb),.06); }
-    /* The date is the only thing allowed to give up room. Revealing Edit +
-       Delete used to squeeze the value until "70.6 kg" wrapped onto two lines. */
-    .wt-history-date{ flex:1; min-width:0; font-size:13px; color:var(--au-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .wt-history-val{ flex-shrink:0; white-space:nowrap; font-size:15px; font-weight:700; color:var(--au-ivory); font-family:var(--au-mono); font-variant-numeric:tabular-nums; }
-    .wt-history-delta{ flex-shrink:0; font-size:11px; font-family:var(--au-mono); min-width:42px; text-align:right; font-variant-numeric:tabular-nums; }
-    /* the delta yields to the actions — it's still one row above and below */
-    .wt-history-row.open .wt-history-delta{ display:none; }
-    .wt-history-delta.up{ color:var(--au-amber); } .wt-history-delta.down{ color:var(--au-emerald); }
-    .wt-row-chev{ flex-shrink:0; width:10px; text-align:center; color:var(--au-faint); font-size:14px; line-height:1; transition:transform .25s var(--au-ease), color .25s var(--au-ease); }
-    .wt-history-row.open .wt-row-chev{ transform:rotate(90deg); color:rgb(var(--sec-rgb)); }
-    .wt-history-edit-wrap{ display:none; gap:5px; }
-    .wt-history-row.open .wt-history-edit-wrap{ display:flex; }
-    .wt-history-row.open .wt-row-chev{ display:none; }
-    .wt-h-btn{ padding:5px 9px; border-radius:7px; font-size:11px; font-weight:700; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:var(--au-faint); cursor:pointer; font-family:var(--au-sans); -webkit-tap-highlight-color:transparent; }
-    .wt-h-btn:active{ background:rgba(255,255,255,.09); color:var(--au-ivory); }
-    .wt-h-btn.del{ color:rgba(255,107,139,.75); border-color:rgba(255,107,139,.2); }
-    .wt-h-btn.del:active{ background:rgba(255,107,139,.14); color:#FF6B8B; }
-
-    @media (prefers-reduced-motion: reduce){
-      .wt-pill-ind, #wtChartContent{ transition:none !important; }
+    /* als-v662 — the approved design (design-mockups/weight-v2.html), on his real data.
+       Laptop: hero + full-width ruler, then main (chart, calendar) beside a 340px sticky
+       column (log, stats, months). Under 1020 the columns dissolve and the cards re-order
+       for the thumb: log → stats → chart → months → calendar. */
+    :root{
+      --bg:oklch(13.2% .022 258);--surf:oklch(16.4% .022 258);--surf2:oklch(19.5% .022 258);--surf3:oklch(23% .022 258);
+      --metal-hi:oklch(44% .013 258);--metal-lo:oklch(25% .014 258);--edge-light:inset 0 1px 0 rgba(255,255,255,.08);
+      --text:#EDE6D8;--soft:#C9C2B5;--muted:#A7A196;--faint:#8A8C94;
+      --line:rgba(237,230,216,.07);--line2:rgba(237,230,216,.12);--line3:rgba(237,230,216,.2);
+      --amber:#E8B25C;--amber-deep:oklch(60% .08 62);--amber-glow:rgba(232,178,92,.18);--amber-wash:rgba(232,178,92,.09);
+      --good:#8FC2AC;--good-wash:rgba(143,194,172,.12);--late:#E8836F;
+      --sans:"Commissioner",system-ui,sans-serif;--disp:"Literata",Georgia,serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+      --lbl:10.5px;
+      color-scheme:dark;
     }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{overflow-x:clip}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+    [hidden]{display:none!important}
+    button{font:inherit;color:inherit}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .num{font-variant-numeric:tabular-nums}
+    .lbl{font:600 var(--lbl)/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+    .shell{max-width:1240px;margin:0 auto;padding-block:20px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+    /* route */
+    .route{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:44px}
+    .route b{color:var(--soft);font-weight:600}
+    .nav{display:flex;gap:26px}
+    .nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;color:inherit;text-decoration:none}
+    .nav a:hover{color:var(--soft)}
+    .nav a.on{color:var(--text);box-shadow:inset 0 -1px 0 var(--amber)}
+
+    /* the read guard: "couldn't read" never looks like "nothing there" */
+    .alarm{margin:18px 0 0;padding:16px 18px;border:1px solid rgba(232,131,111,.4);border-radius:14px;background:rgba(232,131,111,.07);color:var(--text);font-size:15px;line-height:1.5}
+    .alarm b{color:var(--late)}
+    .alarm a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;color:var(--text)}
+
+    /* hero */
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:32px;padding-block:36px 28px}
+    h1{margin:0;font:italic 500 92px/.92 var(--disp);letter-spacing:-.02em}
+    .answer{margin:18px 0 0;max-width:560px;font-size:19px;line-height:1.45;color:var(--soft);text-wrap:pretty}
+    .answer em{font-style:normal;color:var(--text)}
+    .face{text-align:right}
+    .face .v{font:600 104px/.85 var(--mono);letter-spacing:-.05em;color:var(--amber);font-variant-numeric:tabular-nums}
+    .face .v small{font-size:26px;letter-spacing:0;color:var(--muted);margin-left:6px}
+    .face .lbl{margin-top:14px}
+
+    /* THE RULER — the signature */
+    .ruler{position:relative;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:16px 0 40px}
+    .ruler .head{display:flex;justify-content:space-between;gap:12px;margin-bottom:84px}
+    .scale{position:relative;height:30px;margin-inline:2px;--n:3}
+    .scale::before{content:"";position:absolute;inset:auto 0 0 0;height:30px;
+      background:
+        repeating-linear-gradient(90deg,var(--line3) 0 1px,transparent 1px calc(100%/var(--n))) bottom/100% 30px no-repeat,
+        repeating-linear-gradient(90deg,var(--line2) 0 1px,transparent 1px calc(100%/(var(--n)*2))) bottom/100% 18px no-repeat,
+        repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100%/(var(--n)*10))) bottom/100% 9px no-repeat}
+    .scale::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line3)}
+    .kg{position:absolute;top:calc(100% + 10px);transform:translateX(-50%);font:600 12px/1 var(--mono);color:var(--faint)}
+    .kg.first{transform:none}.kg.end{transform:translateX(-100%)}
+    .noise{position:absolute;bottom:0;height:30px;background:var(--amber-wash);border-left:1px solid rgba(232,178,92,.28);border-right:1px solid rgba(232,178,92,.28)}
+    .morn{position:absolute;bottom:36px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--soft);opacity:.7}
+    .needle{position:absolute;bottom:0;width:2px;margin-left:-1px}
+    .needle.trend{height:52px;background:var(--amber);box-shadow:0 0 14px var(--amber-glow)}
+    .needle.trend::before{content:"";position:absolute;top:-5px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 5px var(--amber-glow)}
+    .needle.goal{height:44px;background:var(--good)}
+    .needle.ago{height:30px;background:var(--line3)}
+    .needle.trend,.tag.t{transition:left .6s cubic-bezier(.16,1,.3,1)}
+    .tag{position:absolute;white-space:nowrap;font:600 11px/1 var(--mono);letter-spacing:.08em}
+    .tag.t{bottom:66px;transform:translateX(-50%);color:var(--amber)}
+    .tag.g{bottom:52px;transform:translateX(-50%);color:var(--good)}
+    .tag.a{bottom:38px;transform:translateX(-50%);color:var(--faint)}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:38px;font-size:13.5px;color:var(--muted)}
+    .legend span{display:inline-flex;align-items:center;gap:8px}
+    .legend i{display:inline-block}
+    .lg-n{width:18px;height:10px;background:var(--amber-wash);border:1px solid rgba(232,178,92,.35)}
+    .lg-m{width:6px;height:6px;border-radius:50%;background:var(--soft)}
+    .lg-t{width:2px;height:12px;background:var(--amber)}
+    .lg-g{width:2px;height:12px;background:var(--good)}
+    .lg-a{width:2px;height:12px;background:var(--line3)}
+
+    /* body grid */
+    .body{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px;align-items:start;margin-top:48px}
+    .main,.side{display:flex;flex-direction:column;gap:40px;min-width:0}
+    .side{position:sticky;top:72px}
+    .card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(237,230,216,.025),rgba(237,230,216,.006))}
+    .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+    h2{margin:0;font:italic 500 32px/1.1 var(--disp);letter-spacing:-.01em}
+    .sec-sub{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:560px}
+    section{scroll-margin-top:72px}
+
+    /* chart */
+    .tabs{display:flex;gap:4px}
+    .tabs button{min-height:44px;min-width:44px;padding:16px 10px 15px;border:0;background:none;cursor:pointer;font:600 11px/1 var(--mono);letter-spacing:.16em;color:var(--faint);transition:color .2s ease-out,box-shadow .2s ease-out}
+    .tabs button:hover{color:var(--soft)}
+    .tabs button[aria-pressed="true"]{color:var(--text);box-shadow:inset 0 -1px 0 var(--amber)}
+    .tabs button:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:4px}
+    .readout{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;min-height:86px;padding:2px 6px 16px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+    .ro-l .lbl,.ro-r .lbl{display:block;margin-bottom:10px}
+    .ro-w{display:flex;align-items:baseline;gap:12px}
+    #roW{font:600 34px/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+    #roW small{font-size:14px;color:var(--muted);margin-left:4px;letter-spacing:0;font-weight:500}
+    #roU{font:500 14px var(--mono);color:var(--muted)}
+    .ro-r{display:flex;gap:26px;text-align:right}
+    .ro-r b{font:600 21px/1 var(--mono);font-variant-numeric:tabular-nums}
+    .ro-note{flex-basis:100%;margin:0;font-size:13.5px;color:var(--amber)}
+    .amb{color:var(--amber)}
+    .c-month{stroke:var(--line2)}
+    .c-flag{fill:var(--good)}.c-flag-t{fill:var(--good);font:600 11px var(--mono);letter-spacing:.1em}
+    .c-eta{fill:var(--bg);stroke:var(--good);stroke-width:2}
+    .c-win{fill:rgba(232,178,92,.08);stroke:rgba(232,178,92,.3)}
+    .c-wdot{fill:#F3D9A6;stroke:var(--bg);stroke-width:1.5}
+    .c-tpin{fill:var(--amber);stroke:var(--bg);stroke-width:2}
+    .c-dots,.c-area{transition:opacity .2s ease-out}
+    #chart.scrub .c-dots{opacity:.25}#chart.scrub .c-area{opacity:.45}
+    #chart:focus-visible{outline:2px solid var(--amber);outline-offset:4px;border-radius:8px}
+    .lgd{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted)}
+    .lgd span{display:inline-flex;align-items:center;gap:7px}
+    .lgd i{display:inline-block}
+    .g-t{width:16px;height:3px;border-radius:2px;background:var(--amber)}
+    .g-d{width:6px;height:6px;border-radius:50%;background:var(--soft)}
+    .g-o{width:11px;height:11px;border-radius:50%;border:1.2px solid rgba(232,178,92,.7)}
+    .g-a{width:16px;border-top:2px dotted var(--amber)}
+    .chart{margin-top:14px;padding:20px 14px 12px}
+    .chart svg{display:block;width:100%;height:auto}
+    .c-grid{stroke:var(--line2)}.c-grid.half{stroke:var(--line)}
+    .c-zone{fill:var(--good-wash);opacity:.5}
+    .c-week{fill:rgba(237,230,216,.022)}
+    .c-future{fill:rgba(237,230,216,.018)}
+    .c-ahead{stroke:var(--amber);stroke-width:2.2;stroke-dasharray:2 6;stroke-linecap:round;fill:none;opacity:.8}
+    .c-ahead-t{fill:var(--good);font:600 12px var(--mono)}
+    .c-ahead-s{fill:var(--faint);font:600 11px var(--mono);letter-spacing:.1em}
+    .c-today{stroke:rgba(232,178,92,.35);stroke-dasharray:3 4}
+    .c-today-t{fill:var(--amber);font:600 11px var(--mono);letter-spacing:.12em}
+    .c-slot{fill:var(--bg);stroke:var(--amber);stroke-width:1.5;stroke-dasharray:3 3}
+    .c-odd{fill:none;stroke:rgba(232,178,92,.6);stroke-width:1.2}
+    .c-miss{stroke:var(--faint);stroke-width:1.5}
+    .c-chip{fill:var(--amber)}
+    .c-chip-t{fill:#1A1408;font:700 12px var(--mono)}
+    .c-pin{fill:var(--text);stroke:var(--bg);stroke-width:2}
+    #chart{touch-action:pan-y;cursor:crosshair;-webkit-user-select:none;user-select:none}
+    .c-tick{fill:var(--faint);font:500 12px var(--mono)}
+    .c-goal{stroke:var(--good);stroke-dasharray:3 5;opacity:.8}
+    .c-goal-t{fill:var(--good);font:600 11px var(--mono);letter-spacing:.12em}
+    .c-teth{stroke:var(--line3)}
+    .c-dot{fill:var(--soft);opacity:.85}
+    .c-glow{stroke:var(--amber-glow);stroke-width:12;fill:none;stroke-linecap:round}
+    .c-trend{stroke:var(--amber);stroke-width:3;fill:none;stroke-linecap:round}
+    .c-area{fill:url(#wtFade)}
+    .c-now{fill:var(--amber)}.c-halo{fill:var(--amber-glow)}
+    .c-cross{stroke:var(--line3)}
+    .foot-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:10px;padding:14px 6px 4px}
+    .empty{padding:34px 22px;text-align:center;color:var(--soft);font-size:15px;line-height:1.55}
+    .empty b{display:block;margin-bottom:6px;font:italic 500 22px/1.2 var(--disp);color:var(--text)}
+
+    /* calendar */
+    .cal{margin-top:16px;padding:16px}
+    .cal-nav{display:flex;gap:6px}
+    .cal-nav button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--surf);font:500 18px/1 var(--mono);color:var(--soft);cursor:pointer}
+    .cal-nav button:hover:not(:disabled){border-color:var(--line3);color:var(--text)}
+    .cal-h{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:8px}
+    .cal-h span{text-align:center}
+    .cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+    .day{position:relative;aspect-ratio:1/.82;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surf);display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:7px 8px;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .day:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+    .day .n{font:600 11px/1 var(--mono);color:var(--faint)}
+    .day .w{font:600 15px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--soft)}
+    .day .d{position:absolute;right:8px;top:7px;font:500 11px/1 var(--mono)}
+    .day .d.up{color:var(--amber)}.day .d.dn{color:var(--good)}
+    .day.odd{border-color:rgba(232,178,92,.4)}
+    .day.miss{background:transparent;border-style:dashed}
+    .day.miss .w{color:var(--faint);font-size:12px}
+    .day.before{background:transparent}
+    .day.today{border-color:var(--amber);background:var(--amber-wash)}
+    .day.today .w{color:var(--amber);font-size:12px}
+    .day.today.has .w{font-size:15px}
+    .day.fut{background:transparent;border-color:transparent;cursor:default}
+    .day.blank{visibility:hidden}
+    .day.sel{outline:2px solid var(--text);outline-offset:1px}
+    .day.stamp{animation:wtStamp .62s cubic-bezier(.16,1,.3,1)}
+    @keyframes wtStamp{0%{transform:scale(.3);opacity:0}55%{transform:scale(1.18);opacity:1;box-shadow:0 0 18px var(--amber-glow)}100%{transform:none}}
+    .cal-key{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;font-size:13.5px;color:var(--muted)}
+    .cal-key i{display:inline-block;width:14px;height:12px;border-radius:4px;margin-right:8px;vertical-align:-1px}
+    .k-odd{border:1px solid rgba(232,178,92,.6)}.k-miss{border:1px dashed var(--line3)}.k-today{border:1px solid var(--amber);background:var(--amber-wash)}
+    .edit{margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--surf2)}
+    .edit.one{grid-template-columns:minmax(0,1fr) auto}
+    .edit p{margin:0;font-size:14.5px;color:var(--soft)}
+    .edit p b{color:var(--text);font-family:var(--mono)}
+    .btn-s{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line2);background:var(--surf3);font-size:14px;cursor:pointer}
+    .btn-s.del{color:var(--late);border-color:rgba(232,131,111,.3);background:transparent}
+    .btn-s.del.armed{background:var(--late);color:#1A0B07;border-color:var(--late)}
+
+    /* log card */
+    .log{padding:22px 18px 16px;background:linear-gradient(180deg,var(--surf2),var(--surf));border-color:var(--line2);box-shadow:var(--edge-light),0 24px 48px -20px rgba(0,0,0,.55)}
+    .log .top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px}
+    .log .last{font:500 12px var(--mono);color:var(--muted)}
+    .ask{margin:14px 0 16px;font:italic 500 25px/1.15 var(--disp)}
+    .well{display:grid;grid-template-columns:58px minmax(0,1fr) 58px;gap:8px;padding:8px;border-radius:16px;background:var(--bg);box-shadow:inset 0 2px 8px rgba(0,0,0,.5)}
+    .part{height:66px;border-radius:11px;border:1px solid var(--line2);background:linear-gradient(180deg,var(--metal-hi),var(--metal-lo));box-shadow:var(--edge-light),0 6px 12px -6px rgba(0,0,0,.6);font:400 26px/1 var(--mono);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .part:active{transform:translateY(1px)}
+    .read{display:flex;align-items:baseline;justify-content:center;gap:6px;padding-top:10px;min-width:0}
+    .read input{width:4.6ch;min-width:0;padding:0;border:0;background:none;outline:none;text-align:right;color:var(--text);font:600 40px/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none}
+    .read input::placeholder{color:rgba(237,230,216,.26)}
+    .well:focus-within{box-shadow:inset 0 2px 8px rgba(0,0,0,.5),0 0 0 1px rgba(232,178,92,.45)}
+    .read span{font:500 13px var(--mono);color:var(--muted)}
+    .fb{margin:12px 2px 0;display:flex;gap:8px;align-items:center;min-height:22px;font-size:14.5px;color:var(--good)}
+    .fb::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+    .fb:empty::before{display:none}
+    .fb small{color:var(--muted);font-size:13.5px}
+    .fb.warn{color:var(--amber)}.fb.bad{color:var(--late)}.fb.plain{color:var(--soft)}
+    .save{margin-top:16px;width:100%;height:54px;border:0;border-radius:12px;background:var(--amber);color:#1A1408;font:600 16px/1 var(--sans);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 18px -8px rgba(0,0,0,.7);cursor:pointer}
+    .save:active{transform:scale(.97)}
+    .when{width:100%;min-height:44px;margin-top:4px;border:0;background:none;color:var(--muted);font-size:14px;cursor:pointer}
+    .when u{text-decoration-color:var(--line3);text-underline-offset:3px}
+    .when.other{color:var(--amber)}
+    .date-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+    .date-row input{flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:500 15px var(--mono);color-scheme:dark}
+    .say{margin:10px 2px 0;font-size:14px;color:var(--soft)}
+    .say:empty{display:none}
+    .say.bad{color:var(--late)}
+    .done{display:flex;align-items:center;gap:14px;margin-top:16px}
+    .tick{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--good-wash);color:var(--good)}
+    .tick svg{width:22px;height:22px}
+    .tick path{stroke-dasharray:24;stroke-dashoffset:0}
+    .log.just .tick path{animation:wtTick .5s cubic-bezier(.65,0,.35,1) .1s backwards}
+    .log.just .tick{animation:wtPop .45s cubic-bezier(.16,1,.3,1)}
+    @keyframes wtTick{from{stroke-dashoffset:24}}
+    @keyframes wtPop{0%{transform:scale(.6)}60%{transform:scale(1.08)}100%{transform:none}}
+    .done .dv{flex:1;min-width:0}
+    .done .dv b{display:block;font:600 34px/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+    .done .dv b small{font-size:13px;color:var(--muted);margin-left:5px;letter-spacing:0;font-weight:500}
+    .done .dv span{display:block;margin-top:6px;font-size:14px;color:var(--soft)}
+
+    /* stats */
+    .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stat{padding:16px 16px 15px;display:flex;flex-direction:column;gap:8px;min-width:0}
+    .stat:nth-child(odd){border-right:1px solid var(--line)}
+    .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+    .stat .v{font:600 26px/1 var(--mono);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+    .stat .v.g{color:var(--good)}
+    .stat .s{font-size:13.5px;color:var(--muted)}
+
+    /* months (Hallmark's) */
+    .months{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));align-items:end;gap:6px;margin-top:20px}
+    .mo{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+    .mo .v{font:600 12px/1 var(--mono);color:var(--soft);font-variant-numeric:tabular-nums}
+    .mo .col{width:100%;height:var(--h);border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--metal-hi),var(--metal-lo));box-shadow:var(--edge-light)}
+    .mo.goal .col{box-shadow:var(--edge-light),inset 0 2px 0 var(--good)}
+    .mo.now .col{background:linear-gradient(180deg,var(--amber),var(--amber-deep));box-shadow:0 0 18px var(--amber-glow)}
+    .mo.now .v{color:var(--amber)}
+    .mo .m{font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+    .mo-note{margin:14px 0 0;font-size:13.5px;color:var(--muted)}
+    .mo-note i{display:inline-block;width:14px;height:2px;background:var(--good);vertical-align:3px;margin-right:6px}
+
+    @media (max-width:1240px){h1{font-size:78px}.face .v{font-size:88px}}
+    @media (max-width:1020px){
+      .body{display:flex;flex-direction:column;gap:36px}
+      .main,.side{display:contents}
+      .side{position:static}
+      #logCard{order:1}#stats{order:2}#chartSec{order:3}#monthSec{order:4}#calSec{order:5}
+      #logCard,#stats,#chartSec,#monthSec,#calSec{width:100%;align-self:stretch}
+    }
+    @media (max-width:860px){.nav{display:none}}
+    @media (max-width:600px){
+      :root{--lbl:11px}
+      .shell{padding-top:10px}
+      .hero{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:22px 22px}
+      h1{font-size:48px}
+      .answer{font-size:17px;margin-top:12px}
+      .face{text-align:left;order:-1}
+      .face .v{font-size:76px}
+      .face .lbl{margin-top:10px}
+      .ruler{padding:14px 0 36px}
+      .ruler .head{margin-bottom:56px}
+      .ruler .head span:last-child,.tag.a,.tag.g{display:none}
+      .tag.t{font-size:13px}
+      .legend{margin-top:34px;font-size:13.5px;gap:8px 16px}
+      h2{font-size:26px}
+      .tabs{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid var(--line)}
+      .tabs button{font-size:12px}
+      #roW{font-size:28px}
+      .ro-r{width:100%;gap:28px;text-align:left;padding-top:12px;border-top:1px dashed var(--line)}
+      .ro-r b{font-size:18px}
+      .foot-row .lbl{display:none}
+      .chart{padding:14px 8px 8px}
+      .months{grid-template-columns:repeat(6,minmax(0,1fr))}
+      .mo.old{display:none}
+      .mo .v{font-size:13px}
+      .cal{padding:10px}
+      .cal-h,.cal-g{gap:4px}
+      .day{padding:6px 5px;border-radius:8px;aspect-ratio:1/1.05}
+      .day .w,.day.today.has .w{font-size:12.5px}
+      .day.today .w{font-size:11px}
+      .day .d{display:none}
+      .edit,.edit.one{grid-template-columns:1fr 1fr}
+      .edit.one .btn-s{grid-column:1/-1}
+      .edit p{grid-column:1/-1}
+    }
+    @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
   </style>
 </head>
-<body data-page="weight" class="au-bg au-mood-hot" id="root">
+<body data-page="weight" id="root">
+<div class="shell">
+  <div class="route lbl">
+    <span>MÉTRON · <b>WEIGHT</b> · <span id="routeDay">TODAY</span></span>
+    <nav class="nav" aria-label="On this page"><a href="#chartSec" class="on">TREND</a><a href="#calSec">CALENDAR</a><a href="#monthSec">MONTHS</a></nav>
+  </div>
 
-  <div class="wp-hero" data-rise>
+  <div class="alarm" id="wtAlarm" role="alert" hidden></div>
+
+  <header class="hero">
     <div>
-      <div class="au-eyebrow wp-hero-eyebrow"><span class="au-dot"></span>WEIGHT<span class="au-sep">&middot;</span><span id="heroDate">TODAY</span></div>
-      <p class="wp-hero-line" id="novaSays">Every weigh-in, tracked.</p>
+      <h1>Weight</h1>
+      <p class="answer" id="wtAnswer">Reading your weigh-ins…</p>
     </div>
-    <div class="nova" id="nova" aria-hidden="true">
-      <svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="novaGradWt" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#34E2B0"/><stop offset="55%" stop-color="#22CBC6"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient><radialGradient id="novaGradWtF" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="#34E2B0" stop-opacity=".16"/><stop offset="100%" stop-color="#34E2B0" stop-opacity="0"/></radialGradient><clipPath id="novaGradWtC"><circle cx="50" cy="50" r="40"/></clipPath></defs><g class="nova-glow"><circle cx="50" cy="50" r="40" fill="url(#novaGradWtF)"/><circle class="nova-ring" cx="50" cy="50" r="40" fill="none" stroke="url(#novaGradWt)" stroke-width="2.2" opacity=".55"/><g clip-path="url(#novaGradWtC)"><path class="nova-track" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#novaGradWt)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".2"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#novaGradWt)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="#EAFFF7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></g><g class="nova-node"><circle cx="48.8" cy="25" r="4.4" fill="#EAFFF7"/></g></g></svg>
-    </div>
+    <div class="face"><div class="v" id="wtFace">—<small id="wtFaceU">kg</small></div><div class="lbl">7-day trend</div></div>
+  </header>
+
+  <div class="ruler" id="wtRuler" hidden>
+    <div class="head"><span class="lbl" id="rulerHead">The scale</span><span class="lbl" id="rulerHead2">Last 7 mornings</span></div>
+    <div class="scale" id="scale"></div>
+    <div class="legend" id="rulerLegend"></div>
   </div>
 
-  <div class="wp-wrap">
-    <div class="wt-card" data-rise>
-      <div class="wt-head">
-        <div>
-          <div class="wt-row">
-            <span class="wt-num" id="wtNum">&mdash;</span>
-            <span class="wt-unit" id="wtUnit">kg</span>
+  <div class="body">
+    <div class="main">
+      <section id="chartSec">
+        <div class="sec-h"><h2>The trend, not the morning</h2>
+          <div class="tabs" role="group" aria-label="Range"><button type="button" data-r="7" aria-pressed="false">7D</button><button type="button" data-r="30" aria-pressed="true">30D</button><button type="button" data-r="91" aria-pressed="false">3M</button><button type="button" data-r="0" aria-pressed="false">ALL</button></div></div>
+        <p class="sec-sub" id="chartSub">The amber line is the 7-day average. That's the one to watch.</p>
+        <div class="card chart" id="chartCard" hidden>
+          <div class="readout" aria-live="polite">
+            <div class="ro-l"><span class="lbl" id="roD">LAST 30 DAYS</span><div class="ro-w"><b id="roW">—</b><span id="roU"></span></div></div>
+            <div class="ro-r"><div id="roA"></div><div id="roB"></div></div>
+            <p class="ro-note" id="roNote" hidden></p>
           </div>
-          <div class="wt-trend hidden" id="wtDelta"></div>
+          <svg id="chart" tabindex="0" role="img" aria-label="7-day trend"></svg>
+          <div class="foot-row"><div class="lgd" id="chartLgd"></div><span class="lbl">Drag: see the 7 mornings behind any day</span></div>
         </div>
-        <div class="wt-streak hidden" id="wtStreak"><span id="wtStreakNum">0 day streak</span></div>
-      </div>
+        <div class="card empty" id="chartEmpty" hidden></div>
+      </section>
 
-      <div class="wt-stats hidden" id="wtStats"></div>
-
-      <div class="wt-empty" id="wtEmpty">Log your first weight to start tracking.</div>
-
-      <div class="wt-chart-wrap hidden" id="wtChartWrap">
-        <div class="wt-range-row">
-          <div class="wt-pills" id="wtPills">
-            <span class="wt-pill-ind" id="wtPillInd"></span>
-            <button type="button" class="wt-range-btn" data-wrange="7">7D</button>
-            <button type="button" class="wt-range-btn active" data-wrange="30">30D</button>
-            <button type="button" class="wt-range-btn" data-wrange="90">3M</button>
-            <button type="button" class="wt-range-btn" data-wrange="0">ALL</button>
-          </div>
+      <section id="calSec">
+        <div class="sec-h"><h2 id="calTitle">This month</h2>
+          <div class="cal-nav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><button type="button" id="calNext" aria-label="Next month">›</button></div></div>
+        <p class="sec-sub" id="calSub">Every weigh-in, by day. Tap a day to fix or delete it.</p>
+        <div class="card cal">
+          <div class="cal-h lbl"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+          <div class="cal-g" id="cal"></div>
+          <div class="cal-key"><span><i class="k-odd"></i>Far off the trend</span><span><i class="k-miss"></i>Missed</span><span><i class="k-today"></i>Today</span></div>
+          <div class="edit" id="calEdit" aria-live="polite" hidden></div>
         </div>
-        <svg class="wt-chart" id="wtSvg" viewBox="0 0 320 214">
-          <defs>
-            <linearGradient id="wtLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#18C8C0"/>
-              <stop offset="60%" stop-color="#34E2B0"/>
-              <stop offset="100%" stop-color="#5BF0C4"/>
-            </linearGradient>
-            <filter id="wtGlow" x="-20%" y="-40%" width="140%" height="180%">
-              <feGaussianBlur stdDeviation="3" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <g id="wtChartContent"></g>
-          <rect id="wtHit" x="0" y="0" width="320" height="214" fill="transparent"/>
-          <g id="wtTip" style="display:none" pointer-events="none">
-            <line id="wtTipLine" class="wt-crosshair" x1="0" y1="0" x2="0" y2="0"/>
-            <circle id="wtTipDot" r="4.2" class="wt-tip-dot" cx="0" cy="0"/>
-            <rect id="wtTipBg" x="0" y="0" width="100" height="54" rx="8" class="wt-tip-bg"/>
-            <text id="wtTipDate" x="0" y="0" class="wt-tip-date"></text>
-            <text id="wtTipWeight" x="0" y="0" class="wt-tip-weight"></text>
-            <text id="wtTipSub" x="0" y="0" class="wt-tip-sub"></text>
-          </g>
-        </svg>
-        <div class="wt-meta" id="wtMeta">0 entries</div>
-        <div class="wt-legend" id="wtLegend"></div>
-        <div class="wt-tap-hint">Tap or drag the chart to read any day</div>
-      </div>
-
-      <div class="wt-months hidden" id="wtMonthsWrap">
-        <div class="wt-sub-title">MONTH BY MONTH</div>
-        <svg class="wt-months-svg" id="wtMonthsSvg" viewBox="0 0 320 74"></svg>
-      </div>
-
-      <div class="wt-locked hidden" id="wtLocked">
-        <div class="wt-locked-info">
-          <span class="wt-locked-check">✓</span>
-          <div>
-            <div class="wt-locked-label">LOGGED TODAY</div>
-            <div class="wt-locked-value" id="wtLockedValue">&mdash; kg</div>
-          </div>
-        </div>
-        <button type="button" class="wt-edit-btn" id="wtEditBtn">Edit</button>
-      </div>
-
-      <div class="wt-input-row" id="wtInputRow">
-        <div class="wt-ask" id="wtAsk">What did the scale say?</div>
-        <div class="wt-entry">
-          <button type="button" class="wt-step" data-wstep="-0.1" aria-label="0.1 lower">&minus;</button>
-          <div class="wt-input-field">
-            <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" class="wt-input" id="wtInput" placeholder="0.0" aria-label="Weight">
-            <span class="wt-unit-static" id="wtUnitStatic">kg</span>
-          </div>
-          <button type="button" class="wt-step" data-wstep="0.1" aria-label="0.1 higher">+</button>
-        </div>
-        <div class="wt-feedback" id="wtFeedback" aria-live="polite"></div>
-        <button type="button" class="wt-save-btn" id="wtSaveBtn">Save weigh-in</button>
-        <button type="button" class="wt-when" id="wtWhen">Logging for today · change</button>
-        <div class="wt-date-row hidden" id="wtDateRow">
-          <span class="wt-date-label">Date</span>
-          <input type="date" class="wt-date-input" id="wtDateInput">
-          <button type="button" class="wt-today-btn" id="wtTodayBtn">Today</button>
-        </div>
-      </div>
-
-      <div class="wt-history" id="wtHistory"></div>
+      </section>
     </div>
+
+    <aside class="side">
+      <div class="card log" id="logCard">
+        <div class="top"><span class="lbl" id="logState">Today · not weighed yet</span><span class="last" id="logLast"></span></div>
+
+        <div id="logDone" hidden>
+          <div class="done">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+            <div class="dv"><b id="doneV">—</b><span id="doneS"></span></div>
+          </div>
+          <button class="btn-s" type="button" id="wtEditBtn" style="width:100%;margin-top:14px">Edit today's weigh-in</button>
+        </div>
+
+        <div id="logForm">
+          <p class="ask" id="wtAsk">What did the scale say?</p>
+          <div class="well">
+            <button class="part" type="button" data-wstep="-0.1" aria-label="0.1 lower">−</button>
+            <label class="read num"><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" id="wtInput" placeholder="0.0" autocomplete="off" aria-label="Weight"><span id="wtUnitStatic">kg</span></label>
+            <button class="part" type="button" data-wstep="0.1" aria-label="0.1 higher">+</button>
+          </div>
+          <p class="fb" id="wtFeedback" aria-live="polite"></p>
+          <button class="save" type="button" id="wtSaveBtn">Save weigh-in</button>
+          <button class="when" type="button" id="wtWhen">Logging for today · <u>change</u></button>
+          <div class="date-row" id="wtDateRow" hidden>
+            <input type="date" id="wtDateInput" aria-label="Date of this weigh-in">
+            <button type="button" class="btn-s" id="wtTodayBtn">Today</button>
+          </div>
+        </div>
+        <p class="say" id="wtSay" aria-live="polite"></p>
+      </div>
+
+      <div class="card stats" id="stats" hidden></div>
+
+      <section id="monthSec" hidden>
+        <div class="sec-h"><h2>Month by month</h2></div>
+        <div class="months" id="months"></div>
+        <p class="mo-note" id="moNote"></p>
+      </section>
+    </aside>
   </div>
-
-  <script>
-  (function () {
-    'use strict';
-    var WT_KEY = 'po_coach_weights';
-    function $(id){ return document.getElementById(id); }
-    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
-    function units(){ return (ls('po_coach_v1') || {}).units || 'kg'; }
-
-    var reduceMotion = false;
-    try{ reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
-
-    function wtDateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    function wtParseKey(key){ var p=key.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
-    function wtLoad(){
-      try{ var raw=localStorage.getItem(WT_KEY); var arr=raw?JSON.parse(raw):[];
-        return Array.isArray(arr) ? arr.filter(function(e){return e&&e.dateKey&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);}) : [];
-      }catch(e){ return []; }
-    }
-    function wtSave(arr){ try{ localStorage.setItem(WT_KEY, JSON.stringify(arr)); }catch(e){} }
-    /* Accept "70.5" or "70,5" — iOS decimal pads differ by locale. */
-    function parseWeight(s){ return parseFloat(String(s == null ? '' : s).trim().replace(',', '.')); }
-
-    /* Whole days since epoch — an integer, so gaps in the log are real gaps on the x axis. */
-    function dayNum(key){ var p=key.split('-').map(Number); return Math.floor(Date.UTC(p[0],p[1]-1,p[2])/86400000); }
-
-    /* Read his bodyweight target from main.html's outcome goals. Absent is a
-       valid state: no goal line is drawn and nothing pretends one exists. */
-    function goalWeight(){
-      var a=ls('goals_outcomes_v1');
-      if(!Array.isArray(a)) return null;
-      for(var i=0;i<a.length;i++){
-        var g=a[i];
-        if(g && g.type==='bodyweight' && typeof g.target==='number' && g.target>0) return g.target;
-      }
-      return null;
-    }
-
-    function wtSmoothPath(points){
-      if(!points.length) return '';
-      if(points.length===1) return 'M '+points[0].x.toFixed(2)+' '+points[0].y.toFixed(2);
-      var d='M '+points[0].x.toFixed(2)+' '+points[0].y.toFixed(2);
-      for(var i=1;i<points.length;i++){
-        var prev=points[i-1], curr=points[i];
-        var cx=(prev.x+curr.x)/2;
-        d+=' Q '+cx.toFixed(2)+' '+prev.y.toFixed(2)+', '+cx.toFixed(2)+' '+((prev.y+curr.y)/2).toFixed(2);
-        d+=' T '+curr.x.toFixed(2)+' '+curr.y.toFixed(2);
-      }
-      return d;
-    }
-    /* Straight polyline — used for the raw daily thread, which must never
-       imply a reading he didn't take. */
-    function wtLinePath(points){
-      if(!points.length) return '';
-      var d='M '+points[0].x.toFixed(2)+' '+points[0].y.toFixed(2);
-      for(var i=1;i<points.length;i++) d+=' L '+points[i].x.toFixed(2)+' '+points[i].y.toFixed(2);
-      return d;
-    }
-
-    var wtEntries = wtLoad();
-    var wtRange = 30;
-    var wtChartPoints = [];
-    var wtChartRecent = [];
-    var wtChartTrend = [];
-    var wtGeom = null;
-    var wtDrewOnce = false;
-    var wtLastW = 0;
-    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-    var CH = { H:214, PL:34, PR:14, PT:16, PB:26 };
-
-    function wtGetSelectedDate(){ var v=$('wtDateInput')&&$('wtDateInput').value; return v?v:wtDateKey(new Date()); }
-
-    function wtSaveEntry(weight){
-      var key=wtGetSelectedDate();
-      var existing=wtEntries.find(function(e){return e.dateKey===key;});
-      if(existing){ existing.weight=weight; existing.ts=Date.now(); }
-      else { wtEntries.push({ dateKey:key, weight:weight, ts:Date.now() }); }
-      wtEntries.sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);});
-      wtSave(wtEntries);
-      wtRender();
-    }
-    function wtDeleteEntry(key){ wtEntries=wtEntries.filter(function(e){return e.dateKey!==key;}); wtSave(wtEntries); wtRender(); }
-    function wtEditEntry(key){
-      var entry=wtEntries.find(function(e){return e.dateKey===key;});
-      if(!entry) return;
-      if($('wtDateInput')) $('wtDateInput').value=key;
-      $('wtLocked').classList.add('hidden');
-      $('wtInputRow').classList.remove('hidden');
-      /* Editing a past day must SAY it's a past day, and show the picker. */
-      if($('wtDateRow')) $('wtDateRow').classList.toggle('hidden', key===wtDateKey(new Date()));
-      wtSyncWhen();
-      if($('wtAsk')) $('wtAsk').textContent = key===wtDateKey(new Date()) ? 'What did the scale say?' : 'Fix this weigh-in.';
-      if($('wtInput')){ $('wtInput').value=entry.weight.toFixed(1); $('wtInput').focus(); $('wtInput').select(); }
-      wtRenderFeedback();
-    }
-
-    function wtFmtDateLabel(key){
-      var p=key.split('-').map(Number); var date=new Date(p[0],p[1]-1,p[2]);
-      var diff=Math.floor((new Date(wtDateKey(new Date())) - new Date(key))/86400000);
-      if(diff===1) return 'Yesterday';
-      if(diff<7) return date.toLocaleDateString([],{weekday:'long'});
-      return date.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
-    }
-
-    /* ── Analysis ───────────────────────────────────────────────────────────
-       Two numbers matter and neither is on the page today: the smoothed trend
-       (his day-to-day noise averages 0.3 kg, which is most of a month's real
-       movement) and the rate that trend is moving. ─────────────────────── */
-
-    /* Trailing 7-CALENDAR-DAY mean + spread. Window is by date, not by index,
-       so a missed day widens the gap instead of silently shifting the window. */
-    function trendSeries(rows){
-      var out=[];
-      for(var i=0;i<rows.length;i++){
-        var lo=rows[i].t-6, vals=[];
-        for(var j=i;j>=0;j--){ if(rows[j].t<lo) break; vals.push(rows[j].weight); }
-        var n=vals.length, sum=0, k;
-        for(k=0;k<n;k++) sum+=vals[k];
-        var mean=sum/n, sd=0;
-        if(n>=2){ var v=0; for(k=0;k<n;k++) v+=(vals[k]-mean)*(vals[k]-mean); sd=Math.sqrt(v/(n-1)); }
-        out.push({ t:rows[i].t, mean:mean, sd:sd, n:n });
-      }
-      return out;
-    }
-
-    /* Least-squares kg/week over the last `days` of data, WITH the standard
-       error of that slope. Returns null when there genuinely isn't enough to
-       say — never a fabricated 0.
-
-       The error matters: his readings scatter ~0.3 kg a day, so a slope of
-       −0.07 kg/week is smaller than its own uncertainty. Announcing that as
-       "losing" would be the page inventing a story out of noise. */
-    function trendRate(rows, days){
-      if(rows.length<4) return null;
-      var last=rows[rows.length-1].t, lo=last-(days-1), w=[];
-      for(var i=rows.length-1;i>=0;i--){ if(rows[i].t<lo) break; w.unshift(rows[i]); }
-      if(w.length<4) return null;
-      var n=w.length, mx=0, my=0, i2;
-      for(i2=0;i2<n;i2++){ mx+=w[i2].t; my+=w[i2].weight; }
-      mx/=n; my/=n;
-      var num=0, den=0;
-      for(i2=0;i2<n;i2++){ num+=(w[i2].t-mx)*(w[i2].weight-my); den+=(w[i2].t-mx)*(w[i2].t-mx); }
-      if(den===0) return null;
-      var b=num/den, a=my-b*mx, ss=0;
-      for(i2=0;i2<n;i2++){ var res=w[i2].weight-(a+b*w[i2].t); ss+=res*res; }
-      var se = n>2 ? Math.sqrt((ss/(n-2))/den) : 0;
-      return { rate:b*7, se:se*7, n:n };
-    }
-    /* A slope smaller than its own uncertainty is not a trend, it's a wobble. */
-    function isSteady(tr){ return Math.abs(tr.rate) < Math.max(0.05, tr.se*1.5); }
-
-    /* His typical morning-to-morning move, so "is this reading odd?" is judged
-       against HIS body rather than a hardcoded threshold. ~0.335 kg for Alex. */
-    function typicalSwing(){
-      if(wtEntries.length<4) return null;
-      var n=Math.min(31,wtEntries.length), d=[];
-      for(var i=wtEntries.length-n+1;i<wtEntries.length;i++) d.push(Math.abs(wtEntries[i].weight-wtEntries[i-1].weight));
-      if(!d.length) return null;
-      var s=0; for(var j=0;j<d.length;j++) s+=d[j];
-      return s/d.length;
-    }
-
-    function monthlyAverages(rows){
-      var order=[], byKey={};
-      rows.forEach(function(e){
-        var k=e.dateKey.slice(0,7);
-        if(!byKey[k]){ byKey[k]=[]; order.push(k); }
-        byKey[k].push(e.weight);
-      });
-      return order.map(function(k){
-        var v=byKey[k], s=0;
-        for(var i=0;i<v.length;i++) s+=v[i];
-        return { key:k, avg:s/v.length, n:v.length };
-      });
-    }
-
-    /* ── Scale ──────────────────────────────────────────────────────────── */
-    function niceStep(raw){
-      var steps=[0.1,0.25,0.5,1,2,2.5,5,10,20];
-      for(var i=0;i<steps.length;i++) if(raw<=steps[i]) return steps[i];
-      return 50;
-    }
-    /* The old chart auto-scaled to the visible min/max, so a 0.6 kg wobble
-       filled the whole plot and read as a crisis. A floor of 3 kg keeps noise
-       looking like noise no matter which range is on screen. */
-    var MIN_SPAN = 3.0;
-    function yDomain(lo, hi){
-      var span=Math.max((hi-lo)*1.35, MIN_SPAN);
-      var mid=(lo+hi)/2;
-      var y0=mid-span/2, y1=mid+span/2;
-      var step=niceStep((y1-y0)/5);
-      var ticks=makeTicks(y0,y1,step);
-      if(ticks.length<3){ step=step/2; ticks=makeTicks(y0,y1,step); }
-      return { y0:y0, y1:y1, ticks:ticks, step:step };
-    }
-    function makeTicks(y0,y1,step){
-      var out=[], v=Math.ceil((y0/step)-1e-9)*step;
-      for(; v<=y1+1e-9; v+=step){ out.push(Math.round(v*100)/100); if(out.length>14) break; }
-      return out;
-    }
-    function fmtTick(v, step){ return step<1 ? v.toFixed(1) : String(Math.round(v*10)/10); }
-
-    function svgWidth(svg){
-      var w=0;
-      try{ w=svg.getBoundingClientRect().width; }catch(e){}
-      return Math.max(240, Math.round(w||320));
-    }
-
-    /* ── Chart ──────────────────────────────────────────────────────────── */
-    function wtRenderChart(){
-      var svg=$('wtSvg'); if(!svg) return;
-      var W=svgWidth(svg);
-      wtLastW=W;
-      svg.setAttribute('viewBox','0 0 '+W+' '+CH.H);
-      $('wtHit').setAttribute('width', W);
-      $('wtHit').setAttribute('height', CH.H);
-
-      var u=units();
-      var goal=goalWeight();
-
-      /* Window by DATE, not by entry count — "30D" means the last 30 days.
-         Entries are sorted ascending, so every window is a suffix; keep its
-         start index because the trend must be computed from the FULL history. */
-      var allRows=wtEntries.map(function(e){ return { dateKey:e.dateKey, weight:e.weight, t:dayNum(e.dateKey) }; });
-      var todayT=dayNum(wtDateKey(new Date()));
-      var startIdx=0, fellBack=false;
-      if(wtRange!==0){
-        var lo=todayT-(wtRange-1);
-        while(startIdx<allRows.length && allRows[startIdx].t<lo) startIdx++;
-        if(allRows.length-startIdx<2){ startIdx=Math.max(0,allRows.length-14); fellBack=true; }
-      }
-
-      var rows=allRows.slice(startIdx);
-      wtChartRecent=rows;
-      wtChartPoints=[]; wtChartTrend=[];
-      if(rows.length<2){ $('wtChartContent').innerHTML=''; return; }
-
-      /* Computed over everything, then sliced to the window. Computing it from
-         the window alone made the line "warm up" from a single sample at the
-         left edge, so the 7D trend started wherever that one morning happened
-         to land instead of continuing from the days before it. */
-      var trend=trendSeries(allRows).slice(startIdx);
-      wtChartTrend=trend;
-
-      var weights=rows.map(function(r){ return r.weight; });
-      var dMin=Math.min.apply(null,weights), dMax=Math.max.apply(null,weights);
-      var lo2=dMin, hi2=dMax;
-      /* Pull the goal into view when it's within reach, so the chart can show
-         the distance instead of hiding it off-canvas. */
-      var goalInView = goal!=null && goal>=dMin-6 && goal<=dMax+6;
-      if(goalInView){ lo2=Math.min(lo2,goal); hi2=Math.max(hi2,goal); }
-
-      var dom=yDomain(lo2,hi2);
-      var xL=CH.PL, xR=W-CH.PR, yT=CH.PT, yB=CH.H-CH.PB;
-      var t0=rows[0].t, t1=rows[rows.length-1].t;
-      var xFor=function(t){ return t1===t0 ? (xL+xR)/2 : xL+((t-t0)/(t1-t0))*(xR-xL); };
-      var yFor=function(w){ return yB-((w-dom.y0)/(dom.y1-dom.y0))*(yB-yT); };
-      wtGeom={ xL:xL, xR:xR, yT:yT, yB:yB };
-
-      var points=rows.map(function(r){ return { x:xFor(r.t), y:yFor(r.weight), e:r }; });
-      wtChartPoints=points;
-      var trendPts=trend.map(function(s){ return { x:xFor(s.t), y:yFor(s.mean) }; });
-
-      var html='';
-
-      /* Gridlines sit ON real weight values now, and carry their own labels
-         inside the SVG so the two can never drift apart. */
-      dom.ticks.forEach(function(v){
-        var y=yFor(v);
-        html+='<line class="wt-grid" x1="'+xL+'" y1="'+y.toFixed(1)+'" x2="'+xR+'" y2="'+y.toFixed(1)+'"/>';
-        html+='<text class="wt-ylabel" x="'+(xL-7)+'" y="'+(y+3.4).toFixed(1)+'" text-anchor="end">'+fmtTick(v,dom.step)+'</text>';
-      });
-
-      if(goalInView){
-        var gy=yFor(goal);
-        html+='<line class="wt-goal" x1="'+xL+'" y1="'+gy.toFixed(1)+'" x2="'+xR+'" y2="'+gy.toFixed(1)+'"/>';
-        var gLblY = gy<yT+14 ? gy+12 : gy-6;
-        html+='<text class="wt-goal-lbl" x="'+xR+'" y="'+gLblY.toFixed(1)+'" text-anchor="end">GOAL '+goal.toFixed(1)+'</text>';
-      }
-
-      /* Each morning: a hairline back to the trend, then the dot. Drawn BEFORE
-         the trend line so the line stays the unobstructed hero and a reading
-         that landed exactly on it simply disappears into it — which is the
-         truth about that day. */
-      var r=points.length>90?1.4:points.length>45?1.8:2.3;
-      /* Fade the tethers as they crowd, or 149 of them wash the plot in green. */
-      var wOp=points.length>90?0.5:points.length>45?0.75:1;
-      html+='<g opacity="'+wOp+'">';
-      points.forEach(function(p,i){
-        var ty=trendPts[i].y;
-        if(Math.abs(p.y-ty)>1.2)
-          html+='<line class="wt-whisk" x1="'+p.x.toFixed(2)+'" y1="'+p.y.toFixed(2)+'" x2="'+p.x.toFixed(2)+'" y2="'+ty.toFixed(2)+'"/>';
-      });
-      html+='</g>';
-      points.forEach(function(p){
-        html+='<circle class="wt-daily" cx="'+p.x.toFixed(2)+'" cy="'+p.y.toFixed(2)+'" r="'+r+'"/>';
-      });
-
-      html+='<path class="wt-line" id="wtTrendPath" filter="url(#wtGlow)" d="'+wtSmoothPath(trendPts)+'"/>';
-
-      var lp=points[points.length-1];
-      html+='<circle class="wt-last-halo" cx="'+lp.x.toFixed(2)+'" cy="'+lp.y.toFixed(2)+'" r="9"/>';
-      html+='<circle class="wt-last" cx="'+lp.x.toFixed(2)+'" cy="'+lp.y.toFixed(2)+'" r="4.4"/>';
-
-      var labelCount=Math.min(4,rows.length);
-      for(var li=0;li<labelCount;li++){
-        var idx=labelCount===1?0:Math.round(li/(labelCount-1)*(rows.length-1));
-        var d=wtParseKey(rows[idx].dateKey);
-        var anchor=li===0?'start':li===labelCount-1?'end':'middle';
-        html+='<text class="wt-xlabel" x="'+xFor(rows[idx].t).toFixed(1)+'" y="'+(CH.H-8)+'" text-anchor="'+anchor+'">'+MONTHS[d.getMonth()]+' '+d.getDate()+'</text>';
-      }
-
-      $('wtChartContent').innerHTML=html;
-
-      var rangeLabel = wtRange===0 ? 'all time' : 'last '+wtRange+' days';
-      var meta=$('wtMeta');
-      if(fellBack){
-        meta.textContent='No weigh-ins in the last '+wtRange+' days — showing your most recent '+rows.length+'.';
-        meta.classList.add('warn');
-      } else {
-        meta.textContent=rows.length+(rows.length===1?' weigh-in · ':' weigh-ins · ')+rangeLabel+' · '+dMin.toFixed(1)+'–'+dMax.toFixed(1)+' '+u;
-        meta.classList.remove('warn');
-      }
-
-      var lg='<span class="wt-legend-item"><span class="wt-lg-trend"></span>THE TREND</span>'
-           + '<span class="wt-legend-item"><span class="wt-lg-daily"></span>EACH MORNING</span>';
-      if(goalInView) lg+='<span class="wt-legend-item"><span class="wt-lg-goal"></span>GOAL</span>';
-      $('wtLegend').innerHTML=lg;
-
-      if(!wtDrewOnce && !reduceMotion) drawInTrend();
-      wtDrewOnce=true;
-    }
-
-    /* The trend draws itself in once, on arrival. Range changes cross-fade
-       instead — re-drawing on every tap would read as a stutter. */
-    function drawInTrend(){
-      var p=$('wtTrendPath'); if(!p || !p.getTotalLength) return;
-      var len=0;
-      try{ len=p.getTotalLength(); }catch(e){ return; }
-      if(!len || !isFinite(len)) return;
-      p.style.strokeDasharray=len+' '+len;
-      p.style.strokeDashoffset=len;
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          p.style.transition='stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1)';
-          p.style.strokeDashoffset='0';
-        });
-      });
-    }
-
-    /* ── Month rail ─────────────────────────────────────────────────────── */
-    function wtRenderMonths(){
-      var wrap=$('wtMonthsWrap'), svg=$('wtMonthsSvg'); if(!wrap||!svg) return;
-      var months=monthlyAverages(wtEntries);
-      if(months.length<2){ wrap.classList.add('hidden'); return; }
-      wrap.classList.remove('hidden');
-      if(months.length>12) months=months.slice(-12);
-
-      var W=svgWidth(svg), H=74;
-      svg.setAttribute('viewBox','0 0 '+W+' '+H);
-      var padX=Math.max(20, W*0.055);
-      var avgs=months.map(function(m){ return m.avg; });
-      var lo=Math.min.apply(null,avgs), hi=Math.max.apply(null,avgs);
-      var span=Math.max(hi-lo, 0.8), mid=(lo+hi)/2;
-      var y0=mid-span*0.85, y1=mid+span*0.85;
-      var tTop=26, tBot=50;
-      var xFor=function(i){ return months.length===1 ? W/2 : padX+(i/(months.length-1))*(W-padX*2); };
-      var yFor=function(v){ return tBot-((v-y0)/(y1-y0))*(tBot-tTop); };
-
-      /* A "70.7" is ~26px wide, so past ~9 months the labels would collide.
-         Thin them from the newest end, which always keeps the current month. */
-      var spacing = months.length>1 ? (W-padX*2)/(months.length-1) : W;
-      var everyN = spacing<32 ? (spacing<20 ? 3 : 2) : 1;
-
-      var pts=months.map(function(m,i){ return { x:xFor(i), y:yFor(m.avg) }; });
-      var html='<path class="wt-mo-link" d="'+wtLinePath(pts)+'"/>';
-      months.forEach(function(m,i){
-        var isLast=i===months.length-1;
-        var d=new Date(m.key+'-01T00:00:00');
-        html+='<circle class="wt-mo-dot'+(isLast?' now':'')+'" cx="'+pts[i].x.toFixed(1)+'" cy="'+pts[i].y.toFixed(1)+'" r="'+(isLast?4:3.2)+'"/>';
-        if((months.length-1-i)%everyN!==0) return;
-        html+='<text class="wt-mo-lbl" x="'+pts[i].x.toFixed(1)+'" y="14" text-anchor="middle">'+MONTHS[d.getMonth()].toUpperCase()+'</text>';
-        html+='<text class="wt-mo-val'+(isLast?' now':'')+'" x="'+pts[i].x.toFixed(1)+'" y="68" text-anchor="middle">'+m.avg.toFixed(1)+'</text>';
-      });
-      svg.innerHTML=html;
-    }
-
-    /* ── Headline trend verdict ─────────────────────────────────────────── */
-    function wtRenderTrendLine(){
-      var el=$('wtDelta');
-      var rows=wtEntries.map(function(e){ return { weight:e.weight, t:dayNum(e.dateKey) }; });
-      if(rows.length<2){ el.classList.add('hidden'); return; }
-      var u=units();
-      var tr=trendRate(rows,21);
-      el.classList.remove('good','off');
-      if(tr==null){
-        el.textContent='Not enough days yet for a trend.';
-        el.classList.remove('hidden');
-        return;
-      }
-      var rate=tr.rate, mag=Math.abs(rate), steady=isSteady(tr);
-      if(steady) el.textContent='→ holding steady · ±'+Math.max(mag,tr.se).toFixed(2)+' '+u+' / week';
-      else el.textContent=(rate>0?'↑ +':'↓ −')+mag.toFixed(2)+' '+u+' / week · '+(rate>0?'gaining':'losing');
-
-      /* Up is not automatically bad. Colour by whether he's moving TOWARD his
-         own target — the old page painted every gain amber, which is simply
-         wrong for someone climbing to 72 kg. */
-      var goal=goalWeight();
-      if(goal!=null && !steady){
-        var tr=trendSeries(rows);
-        var need=goal-tr[tr.length-1].mean;          // same basis as the TO GOAL cell
-        if(Math.abs(need)>=0.3) el.classList.add((need>0)===(rate>0) ? 'good' : 'off');
-      }
-      el.classList.remove('hidden');
-    }
-
-    /* ── Stat trio ──────────────────────────────────────────────────────── */
-    function wtRenderStats(){
-      var el=$('wtStats');
-      if(wtEntries.length<2){ el.classList.add('hidden'); el.innerHTML=''; return; }
-      var u=units();
-      var rows=wtEntries.map(function(e){ return { dateKey:e.dateKey, weight:e.weight, t:dayNum(e.dateKey) }; });
-      var trend=trendSeries(rows);
-      var tNow=trend[trend.length-1].mean;
-      var goal=goalWeight();
-
-      var cells=[];
-      cells.push({ lbl:'7-DAY TREND', val:tNow.toFixed(1), sub:u });
-
-      /* Distance to goal is measured from the TREND, not the last reading —
-         otherwise this cell and Nova quote two different numbers for the same
-         question, and the one from a single noisy morning is the wrong one. */
-      if(goal!=null){
-        var need=goal-tNow;
-        var cls=Math.abs(need)<0.3 ? 'good' : '';
-        cells.push({ lbl:'TO GOAL', val:(need>0?'+':need<0?'−':'')+Math.abs(need).toFixed(1), sub:goal.toFixed(1)+' '+u, cls:cls });
-      } else {
-        var ws=rows.map(function(r){ return r.weight; });
-        cells.push({ lbl:'LOWEST', val:Math.min.apply(null,ws).toFixed(1), sub:u });
-      }
-
-      /* 96% of days logged is the most impressive fact in his data and the
-         page never said it. */
-      var firstT=rows[0].t, lastT=rows[rows.length-1].t;
-      var spanDays=lastT-firstT+1;
-      var pct=spanDays>0 ? Math.round(rows.length/spanDays*100) : 100;
-      cells.push({ lbl:'LOGGED', val:String(rows.length), sub:Math.min(100,pct)+'% of days' });
-
-      el.innerHTML=cells.map(function(c){
-        return '<div class="wt-stat"><div class="wt-stat-lbl">'+c.lbl+'</div>'
-             + '<div class="wt-stat-val'+(c.cls?' '+c.cls:'')+'">'+c.val+'</div>'
-             + '<div class="wt-stat-sub">'+c.sub+'</div></div>';
-      }).join('');
-      el.classList.remove('hidden');
-    }
-
-    /* ── The logging ritual ─────────────────────────────────────────────── */
-
-    /* Which day is being logged, stated in words. Silently logging to the wrong
-       date is the one mistake this form can make. */
-    function wtSyncWhen(){
-      var b=$('wtWhen'); if(!b) return;
-      var key=wtGetSelectedDate(), today=wtDateKey(new Date());
-      var label;
-      if(key===today) label='today';
-      else { var d=wtParseKey(key); label=DAYS[d.getDay()]+' '+MONTHS[d.getMonth()]+' '+d.getDate(); }
-      b.textContent='Logging for '+label+' · change';
-      b.classList.toggle('other', key!==today);
-    }
-
-    /* The entry the new reading will be compared against: the last one logged
-       BEFORE the selected date, so back-dating and editing both read correctly. */
-    function wtPrevOf(key){
-      for(var i=wtEntries.length-1;i>=0;i--) if(wtEntries[i].dateKey<key) return wtEntries[i];
-      return null;
-    }
-
-    function wtRenderFeedback(){
-      var el=$('wtFeedback'); if(!el) return;
-      el.classList.remove('warn','bad');
-      var raw=String($('wtInput').value||'').trim();
-      if(!raw){ el.textContent=''; return; }
-      var v=parseWeight(raw);
-      if(isNaN(v)){ el.textContent=''; return; }
-      var u=units();
-      if(v<=0 || v>500){ el.textContent='That is not a weight.'; el.classList.add('bad'); return; }
-      var prev=wtPrevOf(wtGetSelectedDate());
-      if(!prev){ el.textContent=wtEntries.length?'Earlier than anything you have logged.':'Your first weigh-in.'; return; }
-      var d=v-prev.weight, sw=typicalSwing();
-      var big = Math.abs(d) > Math.max(1.2, (sw==null?0.4:sw)*3.5);
-      var txt = Math.abs(d)<0.05
-        ? 'No change from '+prev.weight.toFixed(1)+' '+u+'.'
-        : (d>0?'+':'−')+Math.abs(d).toFixed(1)+' '+u+' from '+prev.weight.toFixed(1)+' '+u+'.';
-      if(big){ txt+=' Double-check that.'; el.classList.add('warn'); }
-      el.textContent=txt;
-    }
-
-    function wtStepBy(delta){
-      var cur=parseWeight($('wtInput').value);
-      if(isNaN(cur)){
-        var last=wtEntries[wtEntries.length-1];
-        cur=(last?last.weight:70)+delta;                 // seed from where he was
-      } else cur+=delta;
-      cur=Math.round(cur*10)/10;
-      if(cur<20) cur=20;
-      if(cur>400) cur=400;
-      $('wtInput').value=cur.toFixed(1);
-      wtRenderFeedback();
-    }
-
-    function wtRenderStreak(){
-      var el=$('wtStreak'); var streak=0; var cursor=new Date();
-      if(!wtEntries.find(function(e){return e.dateKey===wtDateKey(cursor);})) cursor.setDate(cursor.getDate()-1);
-      while(wtEntries.find(function(e){return e.dateKey===wtDateKey(cursor);})){ streak++; cursor.setDate(cursor.getDate()-1); }
-      if(streak>=2){ $('wtStreakNum').textContent=streak+' DAY STREAK'; el.classList.remove('hidden'); }
-      else el.classList.add('hidden');
-    }
-
-    /* ── History, grouped by month ──────────────────────────────────────── */
-    function wtRenderHistory(){
-      var el=$('wtHistory'); if(!el) return;
-      var u=units();
-      var todayKey=wtDateKey(new Date());
-      var desc=wtEntries.slice().sort(function(a,b){return b.dateKey.localeCompare(a.dateKey);});
-      if(!desc.length){ el.innerHTML=''; return; }
-
-      /* Deltas are computed on the flat list first, so a month boundary never
-         swallows the change from the previous day. */
-      var deltas=desc.map(function(e,i){ var p=desc[i+1]; return p ? e.weight-p.weight : null; });
-
-      var order=[], byMonth={};
-      desc.forEach(function(e,i){
-        var k=e.dateKey.slice(0,7);
-        if(!byMonth[k]){ byMonth[k]=[]; order.push(k); }
-        byMonth[k].push({ e:e, delta:deltas[i] });
-      });
-
-      var body=order.map(function(k){
-        var list=byMonth[k];
-        var sum=0; list.forEach(function(it){ sum+=it.e.weight; });
-        var avg=sum/list.length;
-        /* Each row's marker is placed within THIS month's range, so a month of
-           tiny wobbles still reads as a shape instead of a flat line. */
-        var ws=list.map(function(it){ return it.e.weight; });
-        var mn=Math.min.apply(null,ws), mx=Math.max.apply(null,ws);
-        var net=list[0].e.weight-list[list.length-1].e.weight;   // list is newest-first
-        var netCls=net>0.05?'up':net<-0.05?'down':'';
-        var netTxt=Math.abs(net)<0.05 ? 'flat' : (net>0?'+':'−')+Math.abs(net).toFixed(1);
-        var d=new Date(k+'-01T00:00:00');
-        var head='<div class="wt-mo-head"><span class="wt-mo-head-name">'+MONTHS_LONG[d.getMonth()]+' '+d.getFullYear()+'</span>'
-               + '<span class="wt-mo-head-meta">avg '+avg.toFixed(1)+' · <span class="'+netCls+'">'+netTxt+'</span></span></div>';
-        var rows=list.map(function(it){
-          var entry=it.e, deltaHtml='';
-          if(it.delta!=null){
-            var diff=it.delta, sign=diff>0?'+':'', cls=diff>0?'up':diff<0?'down':'';
-            deltaHtml='<span class="wt-history-delta '+cls+'">'+sign+diff.toFixed(1)+'</span>';
-          }
-          var isToday=entry.dateKey===todayKey;
-          var label=isToday?'Today':wtFmtDateLabel(entry.dateKey);
-          var frac = mx>mn ? (entry.weight-mn)/(mx-mn) : 0.5;
-          return '<div class="wt-history-row '+(isToday?'today-row':'')+'" data-wrow="'+entry.dateKey+'">'+
-            '<span class="wt-history-date">'+label+'</span>'+
-            '<span class="wt-history-val">'+entry.weight.toFixed(1)+' '+u+'</span>'+
-            deltaHtml+
-            '<span class="wt-row-chev" aria-hidden="true">›</span>'+
-            '<div class="wt-history-edit-wrap">'+
-              '<button type="button" class="wt-h-btn" data-wedit="'+entry.dateKey+'">Edit</button>'+
-              '<button type="button" class="wt-h-btn del" data-wdel="'+entry.dateKey+'">Delete</button>'+
-            '</div>'+
-            '<i class="wt-row-pos" style="left:calc(12px + (100% - 24px) * '+frac.toFixed(3)+')"></i>'+
-            '</div>';
-        }).join('');
-        return head+rows;
-      }).join('');
-
-      el.innerHTML='<div class="wt-history-title">ALL WEIGH-INS ('+desc.length+')</div><div class="wt-history-list">'+body+'</div>';
-    }
-
-    function wtRender(){
-      var last=wtEntries[wtEntries.length-1]||null;
-      var todayKey=wtDateKey(new Date());
-      var todayEntry=wtEntries.find(function(e){return e.dateKey===todayKey;});
-      var u=units();
-      $('wtUnit').textContent=u; $('wtUnitStatic').textContent=u;
-      (function(){var n=$('wtNum'); if(last){ n.setAttribute('data-to',last.weight.toFixed(1)); n.setAttribute('data-dec','1'); n.removeAttribute('data-done'); n.textContent=last.weight.toFixed(1); if(window.PageMotion&&n.closest('[data-rise].in')) PageMotion.countUp(n);} else n.textContent='—';})();
-
-      if(todayEntry){
-        $('wtEmpty').classList.add('hidden');
-        $('wtLockedValue').textContent=todayEntry.weight.toFixed(1)+' '+u;
-        $('wtLocked').classList.remove('hidden');
-        $('wtInputRow').classList.add('hidden');
-      } else {
-        if(wtEntries.length===0) $('wtEmpty').classList.remove('hidden'); else $('wtEmpty').classList.add('hidden');
-        $('wtLocked').classList.add('hidden');
-        $('wtInputRow').classList.remove('hidden');
-      }
-
-      wtRenderStats();
-      if(wtEntries.length>=2){
-        $('wtChartWrap').classList.remove('hidden');
-        wtRenderChart(); wtRenderTrendLine(); movePill();
-      } else {
-        $('wtChartWrap').classList.add('hidden');
-        $('wtDelta').classList.add('hidden');
-      }
-      wtRenderMonths();
-      wtRenderStreak();
-      wtRenderHistory();
-
-      var di=$('wtDateInput'); if(di && !di.value) di.value=todayKey;
-      /* A ghost of his last reading, so the field isn't a void to type into.
-         Deliberately a PLACEHOLDER, not a value — a pre-filled number could be
-         committed unread, and a stale weigh-in is worse than an empty field. */
-      var inp=$('wtInput'); if(inp) inp.placeholder = last ? last.weight.toFixed(1) : '0.0';
-      wtSyncWhen(); wtRenderFeedback();
-      updateNova(last, todayEntry);
-    }
-
-    /* ── Nova hero ── */
-    function updateNova(last, todayEntry){
-      var dd=new Date();
-      var de=$('heroDate'); if(de) de.textContent=['SUN','MON','TUE','WED','THU','FRI','SAT'][dd.getDay()]+' '+dd.getDate();
-      var ns=$('novaSays'); if(!ns) return;
-      var u=units();
-      if(!last){ ns.textContent='Log your first weight to start tracking.'; return; }
-
-      /* Every number Nova says here is computed from his own log. */
-      var goal=goalWeight();
-      if(goal!=null && wtEntries.length>=4){
-        var rows=wtEntries.map(function(e){ return { weight:e.weight, t:dayNum(e.dateKey) }; });
-        var trend=trendSeries(rows);
-        var tNow=trend[trend.length-1].mean;
-        var need=goal-tNow;
-        if(Math.abs(need)<0.3){ ns.textContent='Sitting right on '+goal.toFixed(0)+' '+u+'. Hold it here.'; return; }
-        var dir=need>0?'to go':'over';
-        ns.textContent='Trending at '+tNow.toFixed(1)+' '+u+' — '+Math.abs(need).toFixed(1)+' '+u+' '+dir+'.';
-        return;
-      }
-      if(todayEntry){ ns.textContent='Logged today at '+todayEntry.weight.toFixed(1)+' '+u+'. Nice and consistent.'; return; }
-      ns.textContent='Last weigh-in: '+last.weight.toFixed(1)+' '+u+'. Drop today’s in below.';
-    }
-
-    /* ── Chart readout (tap + drag) ── */
-    (function(){
-      var svg=$('wtSvg'); if(!svg) return;
-      function toSvgX(cx){ try{ var pt=svg.createSVGPoint(); pt.x=cx; pt.y=0; return pt.matrixTransform(svg.getScreenCTM().inverse()).x; }catch(e){ return -1; } }
-      function nearest(sx){ if(!wtChartPoints.length) return -1; var bi=0,bd=Infinity; wtChartPoints.forEach(function(p,i){ var d=Math.abs(p.x-sx); if(d<bd){bd=d;bi=i;} }); return bi; }
-      function show(cx){
-        if(!wtChartPoints.length || !wtGeom) return;
-        var i=nearest(toSvgX(cx)); if(i<0) return;
-        var p=wtChartPoints[i], e=wtChartRecent[i];
-        var dd=wtParseKey(e.dateKey);
-        var u=units();
-
-        var tip=$('wtTip');
-        tip.style.display='';                                   // measure needs it rendered
-
-        var dText=DAYS[dd.getDay()]+' · '+MONTHS[dd.getMonth()]+' '+dd.getDate();
-        var wText=e.weight.toFixed(1)+' '+u;
-        var sText='';
-        if(wtChartTrend[i]){
-          var off=e.weight-wtChartTrend[i].mean;
-          sText=(off>0?'+':off<0?'−':'')+Math.abs(off).toFixed(1)+' vs trend';
-        }
-        var tD=$('wtTipDate'), tW=$('wtTipWeight'), tS=$('wtTipSub');
-        tD.textContent=dText; tW.textContent=wText; tS.textContent=sText;
-
-        /* Real text metrics — the old tooltip used a hardcoded 74px box on a
-           non-uniformly stretched canvas, which is why it looked squashed. */
-        function widthOf(node){ try{ return node.getComputedTextLength(); }catch(err){ return 70; } }
-        var bw=Math.ceil(Math.max(widthOf(tD), widthOf(tW), widthOf(tS))+22);
-        var bh=sText?54:40, pad=10;
-
-        var bx=p.x+pad; if(bx+bw>wtGeom.xR) bx=p.x-bw-pad;
-        if(bx<wtGeom.xL) bx=Math.min(wtGeom.xL, p.x+pad);
-        var by=Math.max(wtGeom.yT-8, Math.min(p.y-bh/2, wtGeom.yB-bh));
-
-        $('wtTipLine').setAttribute('x1',p.x); $('wtTipLine').setAttribute('x2',p.x);
-        $('wtTipLine').setAttribute('y1',wtGeom.yT-6); $('wtTipLine').setAttribute('y2',wtGeom.yB+4);
-        $('wtTipDot').setAttribute('cx',p.x); $('wtTipDot').setAttribute('cy',p.y);
-        $('wtTipBg').setAttribute('x',bx); $('wtTipBg').setAttribute('y',by);
-        $('wtTipBg').setAttribute('width',bw); $('wtTipBg').setAttribute('height',bh);
-        tD.setAttribute('x',bx+11); tD.setAttribute('y',by+16);
-        tW.setAttribute('x',bx+11); tW.setAttribute('y',by+33);
-        tS.setAttribute('x',bx+11); tS.setAttribute('y',by+47);
-      }
-      function hide(){ $('wtTip').style.display='none'; }
-      svg.addEventListener('mousemove', function(e){ show(e.clientX); });
-      svg.addEventListener('mouseleave', hide);
-
-      /* Decide from the gesture, not from the element: a mostly-vertical drag
-         belongs to the page, a mostly-horizontal one is him reading a day. */
-      var sx=0, sy=0, mode=0;                       // 0 undecided · 1 scrub · 2 scroll
-      svg.addEventListener('touchstart', function(e){
-        var t=e.touches[0]; sx=t.clientX; sy=t.clientY; mode=0;
-        show(t.clientX);
-      }, { passive:true });
-      svg.addEventListener('touchmove', function(e){
-        var t=e.touches[0], dx=Math.abs(t.clientX-sx), dy=Math.abs(t.clientY-sy);
-        if(mode===0 && (dx>6 || dy>6)) mode = dx>dy ? 1 : 2;
-        if(mode===2){ hide(); return; }             // let the page scroll away
-        if(e.cancelable) e.preventDefault();
-        show(t.clientX);
-      }, { passive:false });
-      svg.addEventListener('touchend', hide);
-      svg.addEventListener('touchcancel', hide);
-    })();
-
-    /* ── Range selector ── */
-    /* Transform only — the segments are equal width, and the indicator's own
-       left:2px already matches the first button's offset. */
-    function movePill(){
-      var ind=$('wtPillInd'), btn=document.querySelector('[data-wrange].active');
-      if(!ind||!btn) return;
-      ind.style.transform='translateX('+(btn.offsetLeft-2)+'px)';
-    }
-    document.querySelectorAll('[data-wrange]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var r=parseInt(btn.dataset.wrange,10);
-        document.querySelectorAll('[data-wrange]').forEach(function(b){ b.classList.toggle('active', b===btn); });
-        movePill();
-        if(r===wtRange) return;
-        $('wtTip').style.display='none';
-        var c=$('wtChartContent');
-        if(reduceMotion || wtEntries.length<2){ wtRange=r; if(wtEntries.length>=2) wtRenderChart(); return; }
-        c.style.opacity='0';
-        setTimeout(function(){ wtRange=r; wtRenderChart(); c.style.opacity='1'; }, 140);
-      });
-    });
-
-    /* ── Add / edit wiring ── */
-    function doSave(){
-      var v=parseWeight($('wtInput').value);
-      if(isNaN(v) || v<=0 || v>500) return;
-      wtSaveEntry(Math.round(v*10)/10);
-      $('wtInput').value='';
-      if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date());
-      /* UI reset only — the write above is untouched. */
-      if($('wtDateRow')) $('wtDateRow').classList.add('hidden');
-      if($('wtAsk')) $('wtAsk').textContent='What did the scale say?';
-      wtSyncWhen(); wtRenderFeedback();
-    }
-    $('wtSaveBtn').addEventListener('click', doSave);
-    $('wtInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
-    /* keep only digits + a single separator as the user types */
-    $('wtInput').addEventListener('input', function(){
-      var clean=this.value.replace(/[^0-9.,]/g,'').replace(/([.,]).*?([.,])/g,'$1');
-      if(clean!==this.value) this.value=clean;
-      wtRenderFeedback();
-    });
-    document.querySelectorAll('[data-wstep]').forEach(function(b){
-      b.addEventListener('click', function(){ wtStepBy(parseFloat(b.getAttribute('data-wstep'))); });
-    });
-    $('wtWhen').addEventListener('click', function(){ $('wtDateRow').classList.toggle('hidden'); });
-    $('wtDateInput').addEventListener('change', function(){ wtSyncWhen(); wtRenderFeedback(); });
-    $('wtTodayBtn').addEventListener('click', function(){
-      if($('wtDateInput')) $('wtDateInput').value=wtDateKey(new Date());
-      wtSyncWhen(); wtRenderFeedback();
-    });
-    $('wtEditBtn').addEventListener('click', function(){
-      $('wtLocked').classList.add('hidden'); $('wtInputRow').classList.remove('hidden');
-      var todayEntry=wtEntries.find(function(e){return e.dateKey===wtDateKey(new Date());});
-      if(todayEntry) $('wtInput').value=todayEntry.weight.toFixed(1);
-      wtSyncWhen(); wtRenderFeedback();
-      $('wtInput').focus();
-    });
-
-    /* delegated edit/delete on history rows (iOS-reliable).
-       The buttons are checked FIRST — they sit inside the row, so a plain row
-       tap must be the last case or Edit would only ever toggle the row open. */
-    $('wtHistory').addEventListener('click', async function(ev){
-      var ed=ev.target.closest('[data-wedit]'); var dl=ev.target.closest('[data-wdel]');
-      if(ed){ wtEditEntry(ed.getAttribute('data-wedit')); return; }
-      if(dl){ var k=dl.getAttribute('data-wdel'); if(await ALSConfirm({title:'Delete weigh-in?',confirmText:'Delete',danger:true})) wtDeleteEntry(k); return; }
-      var row=ev.target.closest('[data-wrow]');
-      if(row){
-        var wasOpen=row.classList.contains('open');
-        this.querySelectorAll('.wt-history-row.open').forEach(function(r){ r.classList.remove('open'); });
-        if(!wasOpen) row.classList.add('open');
-      }
-    });
-
-    /* ── Redraw on width change ── */
-    /* 1 SVG unit == 1 CSS pixel is what makes the strokes uniform and the type
-       crisp, so the viewBox has to follow the real width. */
-    (function(){
-      var timer=null;
-      /* Compared against the width the chart was last DRAWN at, not a captured
-         local — otherwise the observer's own first callback (which fires before
-         the chart has ever been painted) re-renders and kills the draw-in. */
-      function onResize(){
-        if(svgWidth($('wtSvg'))===wtLastW) return;
-        clearTimeout(timer);
-        timer=setTimeout(function(){
-          if(wtEntries.length>=2) wtRenderChart();
-          wtRenderMonths(); movePill();
-        }, 90);
-      }
-      if(window.ResizeObserver){
-        try{ new ResizeObserver(onResize).observe(document.querySelector('.wt-card')); }catch(e){ window.addEventListener('resize', onResize); }
-      } else window.addEventListener('resize', onResize);
-      window.addEventListener('orientationchange', function(){ setTimeout(onResize, 220); });
-    })();
-
-    /* ── Boot ── */
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var WT_KEY = 'po_coach_weights';
+  function $(id){ return document.getElementById(id); }
+  function ls(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+  function units(){ return (ls('po_coach_v1') || {}).units || 'kg'; }
+
+  var reduceMotion = false;
+  try{ reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+  /* ── Storage. These functions are byte-identical to als-v423 and the suite
+     compares them against git HEAD. The redesign never changes what is written,
+     how, or the sync path (pocoach-sync.js diffs every setItem for tombstones). */
+  function wtDateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function wtParseKey(key){ var p=key.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+  function wtLoad(){
+    try{ var raw=localStorage.getItem(WT_KEY); var arr=raw?JSON.parse(raw):[];
+      return Array.isArray(arr) ? arr.filter(function(e){return e&&e.dateKey&&typeof e.weight==='number';}).sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);}) : [];
+    }catch(e){ return []; }
+  }
+  function wtSave(arr){ try{ localStorage.setItem(WT_KEY, JSON.stringify(arr)); }catch(e){} }
+  /* Accept "70.5" or "70,5" — iOS decimal pads differ by locale. */
+  function parseWeight(s){ return parseFloat(String(s == null ? '' : s).trim().replace(',', '.')); }
+
+  function wtGetSelectedDate(){ var v=$('wtDateInput')&&$('wtDateInput').value; return v?v:wtDateKey(new Date()); }
+
+  function wtSaveEntry(weight){
+    var key=wtGetSelectedDate();
+    var existing=wtEntries.find(function(e){return e.dateKey===key;});
+    if(existing){ existing.weight=weight; existing.ts=Date.now(); }
+    else { wtEntries.push({ dateKey:key, weight:weight, ts:Date.now() }); }
+    wtEntries.sort(function(a,b){return a.dateKey.localeCompare(b.dateKey);});
+    wtSave(wtEntries);
     wtRender();
-    /* Safety net for a first paint measured before layout settled. Skips when
-       the width is already correct, so the trend keeps drawing itself in. */
-    requestAnimationFrame(function(){
-      movePill();
-      if(wtEntries.length>=2 && svgWidth($('wtSvg'))!==wtLastW){ wtRenderChart(); wtRenderMonths(); }
+  }
+  function wtDeleteEntry(key){ wtEntries=wtEntries.filter(function(e){return e.dateKey!==key;}); wtSave(wtEntries); wtRender(); }
+
+  /* ── The guards around those writes (read-only — they never write).
+     1) Before any write: was the stored array read IN FULL? wtLoad() drops rows it
+        does not recognise and returns [] on a parse error, and wtSave() would then
+        write that smaller array over the real one. So if the key holds anything
+        wtLoad would lose, every write control is switched off and the page says so.
+     2) After every write: read the key back. wtSave() swallows a full or blocked
+        storage, which would otherwise look exactly like a successful save. */
+  function wtCheckRead(){
+    var raw;
+    try{ raw=localStorage.getItem(WT_KEY); }catch(e){ return { ok:false, why:'blocked' }; }
+    if(raw==null || raw==='') return { ok:true };
+    var arr;
+    try{ arr=JSON.parse(raw); }catch(e){ return { ok:false, why:'unreadable' }; }
+    if(arr==null) return { ok:true };
+    if(!Array.isArray(arr)) return { ok:false, why:'shape' };
+    var bad=0, seen={}, dup=0;
+    for(var i=0;i<arr.length;i++){
+      var e=arr[i];
+      if(!(e&&e.dateKey&&typeof e.weight==='number')){ bad++; continue; }
+      if(seen[e.dateKey]) dup++; seen[e.dateKey]=1;
+    }
+    if(bad) return { ok:false, why:'rows', bad:bad, total:arr.length };
+    if(dup) return { ok:false, why:'dups', bad:dup, total:arr.length };
+    return { ok:true };
+  }
+  function wtStored(key){
+    var raw, arr;
+    try{ raw=localStorage.getItem(WT_KEY); arr=raw?JSON.parse(raw):[]; }catch(e){ return { readable:false }; }
+    if(!Array.isArray(arr)) return { readable:false };
+    for(var i=0;i<arr.length;i++) if(arr[i]&&arr[i].dateKey===key) return { readable:true, entry:arr[i] };
+    return { readable:true, entry:null };
+  }
+
+  /* Whole days since epoch — an integer, so gaps in the log are real gaps on the x axis. */
+  function dayNum(key){ var p=key.split('-').map(Number); return Math.floor(Date.UTC(p[0],p[1]-1,p[2])/86400000); }
+  function keyOfT(t){ return new Date(t*86400000).toISOString().slice(0,10); }
+  function dateOfT(t){ return new Date(t*86400000); }
+
+  /* Read his bodyweight target from main.html's outcome goals. Absent is a
+     valid state: no goal line is drawn and nothing pretends one exists. */
+  function goalWeight(){
+    var a=ls('goals_outcomes_v1');
+    if(!Array.isArray(a)) return null;
+    for(var i=0;i<a.length;i++){
+      var g=a[i];
+      if(g && g.type==='bodyweight' && typeof g.target==='number' && g.target>0) return g.target;
+    }
+    return null;
+  }
+
+  /* Least-squares kg/week over the last `days` of data, WITH the standard
+     error of that slope. Returns null when there genuinely isn't enough to
+     say — never a fabricated 0. A slope smaller than its own uncertainty is
+     not a trend, it's a wobble (isSteady). */
+  function trendRate(rows, days){
+    if(rows.length<4) return null;
+    var last=rows[rows.length-1].t, lo=last-(days-1), w=[];
+    for(var i=rows.length-1;i>=0;i--){ if(rows[i].t<lo) break; w.unshift(rows[i]); }
+    if(w.length<4) return null;
+    var n=w.length, mx=0, my=0, i2;
+    for(i2=0;i2<n;i2++){ mx+=w[i2].t; my+=w[i2].weight; }
+    mx/=n; my/=n;
+    var num=0, den=0;
+    for(i2=0;i2<n;i2++){ num+=(w[i2].t-mx)*(w[i2].weight-my); den+=(w[i2].t-mx)*(w[i2].t-mx); }
+    if(den===0) return null;
+    var b=num/den, a=my-b*mx, ss=0;
+    for(i2=0;i2<n;i2++){ var res=w[i2].weight-(a+b*w[i2].t); ss+=res*res; }
+    var se = n>2 ? Math.sqrt((ss/(n-2))/den) : 0;
+    return { rate:b*7, se:se*7, n:n };
+  }
+  function isSteady(tr){ return Math.abs(tr.rate) < Math.max(0.05, tr.se*1.5); }
+
+  /* His typical morning-to-morning move, so "is this reading odd?" is judged
+     against HIS body rather than a hardcoded threshold. */
+  function typicalSwing(){
+    if(wtEntries.length<4) return null;
+    var n=Math.min(31,wtEntries.length), d=[];
+    for(var i=wtEntries.length-n+1;i<wtEntries.length;i++) d.push(Math.abs(wtEntries[i].weight-wtEntries[i-1].weight));
+    if(!d.length) return null;
+    var s=0; for(var j=0;j<d.length;j++) s+=d[j];
+    return s/d.length;
+  }
+
+  function monthlyAverages(rows){
+    var order=[], byKey={};
+    rows.forEach(function(e){
+      var k=e.dateKey.slice(0,7);
+      if(!byKey[k]){ byKey[k]=[]; order.push(k); }
+      byKey[k].push(e.weight);
     });
-    window._weightRerender = function(){ wtEntries=wtLoad(); wtRender(); };
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ wtEntries=wtLoad(); wtRender(); } });
-    window.addEventListener('focus', function(){ wtEntries=wtLoad(); wtRender(); });
-    window.addEventListener('storage', function(){ wtEntries=wtLoad(); wtRender(); });
+    return order.map(function(k){
+      var v=byKey[k], s=0;
+      for(var i=0;i<v.length;i++) s+=v[i];
+      return { key:k, avg:s/v.length, n:v.length };
+    });
+  }
+
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTHS_LONG=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var DOW_LONG=['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+
+  /* Every flag the renderers read is declared here, above the first render,
+     with var (a let below the first render throws a TDZ error). */
+  var wtEntries = wtLoad();
+  var wtRead = wtCheckRead();
+  var C = null;                 // everything computed from the log, rebuilt per render
+  var RANGE = 30, pin = null, G = null, chartLastW = 0, drewOnce = false;
+  var calY = null, calM = null, calSel = null, armTimer = null, undoEntry = null;
+  var editing = false, justSaved = null, lastNeedle = null, sayTimer = null;
+
+  function fmt(v){ return v.toFixed(1); }
+  function sg(v){ return (v>=0?'+':'−')+Math.abs(v).toFixed(1); }
+  function fmtT(t){ var d=dateOfT(t); return DOW[d.getUTCDay()]+' '+d.getUTCDate()+' '+MON[d.getUTCMonth()]; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ── Analysis: one per-day series from the first weigh-in to today ──────
+     The 7-day trend of a day is the mean of the weigh-ins whose DATE falls in
+     that day and the 6 before it — so a missed morning widens the window's gap
+     instead of shifting it, and the line keeps going through a missed day.
+     It is computed over the FULL history; every range is a slice of it. */
+  function compute(){
+    var c={ u:units(), goal:goalWeight(), todayKey:wtDateKey(new Date()) };
+    c.todayT=dayNum(c.todayKey);
+    c.rows=wtEntries.map(function(e){ return { dateKey:e.dateKey, weight:e.weight, t:dayNum(e.dateKey) }; })
+                    .filter(function(r){ return r.t<=c.todayT; });
+    c.n=c.rows.length;
+    c.todayEntry=wtEntries.find(function(e){ return e.dateKey===c.todayKey; })||null;
+    if(!c.n) return c;
+    var byT={}; c.rows.forEach(function(r){ byT[r.t]=r.weight; });
+    c.t0=c.rows[0].t;
+    var days=[];
+    for(var t=c.t0;t<=c.todayT;t++){
+      var s=0,n=0; for(var j=t-6;j<=t;j++) if(byT[j]!=null){ s+=byT[j]; n++; }
+      days.push({ t:t, w:byT[t]!=null?byT[t]:null, tr:n?s/n:null });
+    }
+    c.days=days;
+    c.last=c.rows[c.n-1];
+    c.tNow=days[c.last.t-c.t0].tr;
+    c.stale=c.todayT-c.last.t;
+    c.tr=trendRate(c.rows,21);
+    c.steady=c.tr?isSteady(c.tr):null;
+    c.perDay=c.tr?(c.steady?0:c.tr.rate/7):null;
+    c.perMonth=c.tr?c.tr.rate*30.44/7:null;
+    if(c.goal!=null){
+      c.need=c.goal-c.tNow;
+      c.atGoal=Math.abs(c.need)<0.3;
+      c.toward=!!(c.tr && !c.steady && !c.atGoal && (c.need>0)===(c.tr.rate>0));
+      c.away=!!(c.tr && !c.steady && !c.atGoal && !c.toward);
+      if(c.toward){
+        var eta=c.last.t+Math.round(c.need/(c.tr.rate/7));
+        if(eta>c.todayT){ c.etaT=eta; c.etaFar=eta-c.todayT>365; }
+      }
+      var first=null; for(var i=0;i<days.length;i++) if(days[i].tr!=null){ first=days[i].tr; break; }
+      c.dir = c.goal>=first ? 1 : -1;
+      c.metGoal=function(v){ return v!=null && (c.dir>0 ? v>=c.goal : v<=c.goal); };
+      for(var k=1;k<days.length;k++){
+        if(days[k-1].tr!=null && !c.metGoal(days[k-1].tr) && c.metGoal(days[k].tr)){ c.reachedT=days[k].t; break; }
+      }
+    }
+    return c;
+  }
+
+  /* ── Hero: route, the answer, the face ───────────────────────────────── */
+  function etaPhrase(t){
+    var d=dateOfT(t), dd=d.getUTCDate();
+    var part = dd<=10 ? 'early ' : dd<=20 ? 'mid-' : 'late ';
+    var yr = d.getUTCFullYear()!==new Date().getFullYear() ? ' '+d.getUTCFullYear() : '';
+    return part+MONTHS_LONG[d.getUTCMonth()]+yr;
+  }
+  function renderHero(){
+    var now=new Date();
+    $('routeDay').textContent=DOW_LONG[now.getDay()]+' '+now.getDate()+' '+MON[now.getMonth()].toUpperCase();
+    var u=C.u, ans=$('wtAnswer');
+    $('wtFaceU').textContent=u;
+    if(!wtRead.ok && !C.n){
+      $('wtFace').firstChild.nodeValue='—';
+      ans.textContent='I couldn’t read your weigh-ins on this device, so nothing below is a real number. Your data has not been touched.';
+      return;
+    }
+    if(!C.n){
+      $('wtFace').firstChild.nodeValue='—';
+      ans.textContent='No weigh-ins yet. Step on the scale tomorrow morning and log it below; the trend draws itself after a few mornings.';
+      return;
+    }
+    $('wtFace').firstChild.nodeValue=fmt(C.tNow);
+    var t='<em>'+fmt(C.tNow)+' '+u+'</em>';
+    if(C.stale>7){
+      ans.innerHTML='Your last weigh-in was '+C.stale+' days ago ('+fmtT(C.last.t)+'), with the trend at '+t+'. Log this morning to pick it back up.';
+      return;
+    }
+    var s;
+    if(!C.tr){
+      ans.innerHTML='Early days: '+C.n+(C.n===1?' morning':' mornings')+' logged, trend so far '+t+'. The pace shows once there are a few more.';
+      return;
+    }
+    if(C.steady) s='You’re trending at '+t+', holding steady (within ±'+Math.max(Math.abs(C.perMonth),C.tr.se*30.44/7).toFixed(1)+' '+u+' a month).';
+    else s='You’re trending at '+t+', '+(C.perMonth<0?'dropping':'climbing')+' about '+Math.abs(C.perMonth).toFixed(1)+' '+u+' a month.';
+    if(C.goal!=null){
+      var g=fmt(C.goal)+' '+u;
+      if(C.atGoal) s+=' Right on your goal of <em>'+g+'</em>.';
+      else if(C.toward){
+        s+=' <em>'+Math.abs(C.need).toFixed(1)+' '+u+'</em> to go';
+        s+= C.etaT ? (C.etaFar ? ', and at this pace that’s more than a year away.' : ', and at this pace you reach it in '+etaPhrase(C.etaT)+'.') : '.';
+      }
+      else if(C.away) s+=' Your goal is <em>'+g+'</em>, and right now you’re moving away from it.';
+      else s+=' <em>'+Math.abs(C.need).toFixed(1)+' '+u+'</em> from your goal of '+g+'.';
+    }
+    ans.innerHTML=s;
+  }
+
+  /* ── The ruler ──────────────────────────────────────────────────────── */
+  function renderRuler(){
+    var box=$('wtRuler');
+    if(!C.n){ box.hidden=true; return; }
+    box.hidden=false;
+    var u=C.u, D=C.days, recent=[], head2='Last 7 mornings';
+    D.slice(-7).forEach(function(d){ if(d.w!=null) recent.push(d.w); });
+    if(!recent.length){ recent=C.rows.slice(-7).map(function(r){ return r.weight; }); head2='Last '+recent.length+' weigh-ins'; }
+    var agoI=D.length-1-30, ago=agoI>=0?D[agoI].tr:null;
+    var goalIn = C.goal!=null && Math.abs(C.goal-C.tNow)<=6;
+    var vals=recent.concat([C.tNow]); if(ago!=null) vals.push(ago); if(goalIn) vals.push(C.goal);
+    var lo=Math.floor(Math.min.apply(null,vals)-0.2), hi=Math.ceil(Math.max.apply(null,vals)+0.2), flip=0;
+    while(hi-lo<3){ if(flip++%2===0) hi++; else lo--; }
+    var N=hi-lo, pct=function(v){ return ((v-lo)/N*100).toFixed(3); };
+    $('rulerHead').textContent='The scale, '+lo+' to '+hi+' '+u;
+    $('rulerHead2').textContent=head2;
+    var sc=$('scale'); sc.style.setProperty('--n', N);
+    var h='';
+    for(var v=lo;v<=hi;v++) h+='<span class="kg'+(v===lo?' first':v===hi?' end':'')+'" style="left:'+pct(v)+'%">'+v+'</span>';
+    var mn=Math.min.apply(null,recent), mx=Math.max.apply(null,recent);
+    h+='<span class="noise" style="left:'+pct(mn)+'%;width:'+((mx-mn)/N*100).toFixed(3)+'%"></span>';
+    recent.forEach(function(w){ h+='<span class="morn" style="left:'+pct(w)+'%"></span>'; });
+    if(ago!=null) h+='<span class="needle ago" style="left:'+pct(ago)+'%"></span><span class="tag a" style="left:'+pct(ago)+'%">30D AGO</span>';
+    if(goalIn) h+='<span class="needle goal" style="left:'+pct(C.goal)+'%"></span><span class="tag g" style="left:'+pct(C.goal)+'%">GOAL '+fmt(C.goal)+'</span>';
+    var to=pct(C.tNow), from=(justSaved && lastNeedle!=null && !reduceMotion) ? lastNeedle : to;
+    h+='<span class="needle trend" id="needleT" style="left:'+from+'%"></span><span class="tag t" id="tagT" style="left:'+from+'%">'+fmt(C.tNow)+'</span>';
+    sc.innerHTML=h;
+    if(from!==to) requestAnimationFrame(function(){ requestAnimationFrame(function(){ $('needleT').style.left=to+'%'; $('tagT').style.left=to+'%'; }); });
+    lastNeedle=to;
+    box.setAttribute('aria-label','The scale from '+lo+' to '+hi+' '+u+': trend '+fmt(C.tNow)+(goalIn?', goal '+fmt(C.goal):'')+', this week’s mornings between '+fmt(mn)+' and '+fmt(mx)+'.');
+    var lg='<span><i class="lg-n"></i>Normal wobble this week</span><span><i class="lg-m"></i>Each morning</span><span><i class="lg-t"></i>Your trend</span>';
+    if(goalIn) lg+='<span><i class="lg-g"></i>Goal</span>';
+    if(ago!=null) lg+='<span><i class="lg-a"></i>30 days ago</span>';
+    $('rulerLegend').innerHTML=lg;
+  }
+
+  /* ── THE TREND CHART (draw / idle / over — the design's logic, on real days) ── */
+  var svg=$('chart');
+  function chartView(){
+    var D=C.days, n=RANGE?Math.min(RANGE,D.length):D.length, s=D.length-n, fell=false;
+    var cnt=0; for(var i=s;i<D.length;i++) if(D[i].w!=null) cnt++;
+    if(cnt<2 && C.n>=2){
+      var from=C.rows[Math.max(0,C.n-14)].t; s=from-C.t0; fell=true;
+    }
+    return { V:D.slice(s), fell:fell };
+  }
+  function draw(animate){
+    if(!C || C.n<2) return;
+    var W=Math.max(300,Math.round(svg.getBoundingClientRect().width)), ph=W<520, H=ph?280:340;
+    chartLastW=W;
+    var vw=chartView(), V=vw.V, n=V.length, goal=C.goal, u=C.u;
+    var pd=C.perDay, ETA=C.etaT!=null&&!C.etaFar ? C.etaT-C.todayT : null;
+    var FUT=RANGE===7?2:RANGE===30?7:RANGE===91?21:(ETA!=null?Math.min(ETA+4,70):14);
+    var xL=ph?30:38, xR=W-(ph?46:56), yT=20, yB=H-34;
+    var ws=[]; V.forEach(function(d){ if(d.w!=null) ws.push(d.w); if(d.tr!=null) ws.push(d.tr); });
+    var goalIn = goal!=null && goal>=Math.min.apply(null,ws)-6 && goal<=Math.max.apply(null,ws)+6;
+    if(goalIn) ws.push(goal);
+    var lo=Math.floor((Math.min.apply(null,ws)-.15)*2)/2, hi=Math.ceil((Math.max.apply(null,ws)+.15)*2)/2;
+    while(hi-lo<3){ if(goalIn ? (hi-goal)<(goal-lo) : (hi+lo)/2<=C.tNow) hi+=.5; else lo-=.5; }
+    var step=(xR-xL)/Math.max(1,n-1+FUT);
+    function X(k){ return xL+step*k; } function Y(v){ return yB-(yB-yT)*(v-lo)/(hi-lo); }
+    var dense=step<6, rr=Math.max(1.4,Math.min(ph?2.9:3.4,step*.36)), g='';
+    g+='<defs><linearGradient id="wtFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8B25C" stop-opacity=".17"/><stop offset="1" stop-color="#E8B25C" stop-opacity="0"/></linearGradient>'+
+       '<clipPath id="wtPlot"><rect x="'+(xL-6)+'" y="'+yT+'" width="'+(xR-xL+12)+'" height="'+(yB-yT)+'"/></clipPath></defs>';
+    if(goalIn){
+      var gy=Y(goal);
+      if(C.dir>0) g+='<rect class="c-zone" x="'+xL+'" y="'+yT+'" width="'+(xR-xL)+'" height="'+Math.max(0,gy-yT)+'"/>';
+      else g+='<rect class="c-zone" x="'+xL+'" y="'+gy+'" width="'+(xR-xL)+'" height="'+Math.max(0,yB-gy)+'"/>';
+    }
+    V.forEach(function(d,k){ var dt=dateOfT(d.t), dw=dt.getUTCDay();
+      if(!dense&&dw===1&&Math.floor(k/7)%2===0) g+='<rect class="c-week" x="'+(X(k)-step/2)+'" y="'+yT+'" width="'+(step*7)+'" height="'+(yB-yT)+'"/>';
+      if(dense&&dt.getUTCDate()===1) g+='<line class="c-month" x1="'+X(k)+'" x2="'+X(k)+'" y1="'+yT+'" y2="'+yB+'"/>'; });
+    for(var v=lo;v<=hi+1e-9;v+=.5){ var whole=Math.abs(v-Math.round(v))<1e-9; g+='<line class="c-grid'+(whole?'':' half')+'" x1="'+xL+'" x2="'+xR+'" y1="'+Y(v)+'" y2="'+Y(v)+'"/>'; if(whole) g+='<text class="c-tick" x="'+(xL-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+Math.round(v)+'</text>'; }
+    if(goalIn) g+='<line class="c-goal" x1="'+xL+'" x2="'+xR+'" y1="'+Y(goal)+'" y2="'+Y(goal)+'"/><text class="c-goal-t" x="'+(dense?xR-8:xL+8)+'" y="'+(dense?Y(goal)+16:Y(goal)-8)+'" text-anchor="'+(dense?'end':'start')+'">GOAL '+fmt(goal)+'</text>';
+    var xT=X(n-1)+step*.5; g+='<rect class="c-future" x="'+xT+'" y="'+yT+'" width="'+Math.max(0,xR-xT)+'" height="'+(yB-yT)+'"/>';
+    // the one line (a gap of 7+ days with no weigh-in breaks it — never bridged)
+    var p='', area='', seg=null;
+    V.forEach(function(d,k){ if(d.tr==null){ seg=null; return; } var x=X(k), y=Y(d.tr);
+      if(seg==null){ p+=(p?' ':'')+'M'+x.toFixed(1)+' '+y.toFixed(1); seg={k:k}; }
+      else { var px=X(k-1), py=Y(V[k-1].tr), cx=(px+x)/2; p+=' C'+cx.toFixed(1)+' '+py.toFixed(1)+' '+cx.toFixed(1)+' '+y.toFixed(1)+' '+x.toFixed(1)+' '+y.toFixed(1); } });
+    var firstK=-1, lastK=-1; V.forEach(function(d,k){ if(d.tr!=null){ if(firstK<0) firstK=k; lastK=k; } });
+    var single = p.indexOf('M',1)<0;
+    if(single && firstK>=0) area=p+' L'+X(lastK)+' '+yB+' L'+X(firstK)+' '+yB+' Z';
+    if(area) g+='<path class="c-area" id="cArea" d="'+area+'"/>';
+    var odd=0, miss=0, mm='';
+    V.forEach(function(d,k){ var x=X(k);
+      if(d.w==null){ if(k<n-1){ miss++; g+='<line class="c-miss" x1="'+x+'" x2="'+x+'" y1="'+(yB-6)+'" y2="'+yB+'"/>'; } return; }
+      var y=Y(d.w), ty=d.tr!=null?Y(d.tr):y, o=d.tr!=null&&Math.abs(d.w-d.tr)>=.4; if(o) odd++;
+      if(!dense&&Math.abs(y-ty)>3) mm+='<line class="c-teth" x1="'+x+'" x2="'+x+'" y1="'+y+'" y2="'+ty+'"/>';
+      if(o&&!dense) mm+='<circle class="c-odd" cx="'+x+'" cy="'+y+'" r="'+(rr+3.6)+'"/>';
+      mm+='<circle class="c-dot" cx="'+x+'" cy="'+y+'" r="'+rr+'"/>'; });
+    g+='<g id="cDots" class="c-dots">'+mm+'</g>';
+    g+='<g clip-path="url(#wtPlot)"><path class="c-glow" id="cGlow" d="'+p+'"/><path class="c-trend" id="cTrend" d="'+p+'"/></g>';
+    if(goalIn && C.reachedT!=null){ var rk=C.reachedT-V[0].t;
+      if(rk>=0&&rk<n){ var gx=X(rk), gd=dateOfT(C.reachedT); g+='<circle class="c-flag" cx="'+gx+'" cy="'+Y(goal)+'" r="4.5"/><text class="c-flag-t" x="'+Math.min(Math.max(gx,xL+60),xR-60)+'" y="'+(C.dir>0?Y(goal)-26:Y(goal)+30)+'" text-anchor="middle">REACHED · '+gd.getUTCDate()+' '+MON[gd.getUTCMonth()].toUpperCase()+'</text>'; } }
+    // at this pace: the SAME line carried forward from today, not a second one
+    var last=V[n-1], lx=X(n-1), ltr=last.tr!=null?last.tr:C.tNow, ly=Y(ltr);
+    if(pd!=null && C.stale<=7){
+      var fv=ltr+FUT*pd; g+='<path class="c-ahead" d="M'+lx+' '+ly+' L'+X(n-1+FUT)+' '+Y(Math.max(lo,Math.min(fv,hi)))+'"/>';
+      if(goalIn && ETA!=null){
+        if(ETA<=FUT){ var ex=X(n-1+ETA), ed=dateOfT(C.etaT); g+='<circle class="c-eta" cx="'+ex+'" cy="'+Y(goal)+'" r="5"/><text class="c-flag-t" x="'+(ex+5)+'" y="'+(C.dir>0?Y(goal)-12:Y(goal)+22)+'" text-anchor="end">≈ '+ed.getUTCDate()+' '+MON[ed.getUTCMonth()].toUpperCase()+'</text>'; }
+        else { var ed2=dateOfT(C.etaT); g+='<text class="c-ahead-t" x="'+(W-(ph?23:28))+'" y="'+(yT+2)+'" text-anchor="middle">'+fmt(goal)+'</text><text class="c-ahead-s" x="'+(W-(ph?23:28))+'" y="'+(yT+16)+'" text-anchor="middle">≈ '+MON[ed2.getUTCMonth()].toUpperCase()+'</text>'; }
+      }
+    }
+    // today: an empty slot waiting for the weigh-in
+    var tx=X(n-1), todayIn=last.t===C.todayT;
+    if(todayIn){
+      g+='<line class="c-today" x1="'+tx+'" x2="'+tx+'" y1="'+yT+'" y2="'+yB+'"/>';
+      if(last.w==null) g+='<circle class="c-slot" cx="'+tx+'" cy="'+Y(Math.max(lo,Math.min(hi,ltr+(pd||0))))+'" r="'+(dense?4:6)+'"/>';
+    }
+    g+='<circle class="c-halo" cx="'+lx+'" cy="'+ly+'" r="10"/><circle class="c-now" cx="'+lx+'" cy="'+ly+'" r="4.6"/>';
+    var cw=ph?40:46; g+='<rect class="c-chip" x="'+(W-cw-2)+'" y="'+(ly-11)+'" width="'+cw+'" height="22" rx="6"/><text class="c-chip-t" x="'+(W-2-cw/2)+'" y="'+(ly+4)+'" text-anchor="middle">'+fmt(ltr)+'</text>';
+    var lab='';
+    V.forEach(function(d,k){ var dt=dateOfT(d.t), dd=dt.getUTCDate(), dw=dt.getUTCDay(), t=null;
+      if(RANGE===7) t=(ph?DOW[dw].slice(0,1):DOW[dw])+' '+dd;
+      else if(RANGE===30){ if(dw===1) t=ph?String(dd):MON[dt.getUTCMonth()]+' '+dd; }
+      else if(dd===1&&!(ph&&RANGE===0&&dt.getUTCMonth()%2===1)) t=MON[dt.getUTCMonth()];
+      if(t&&todayIn&&Math.abs(X(k)-tx)<(ph?34:44)) t=null;
+      if(t) lab+='<text class="c-tick" x="'+X(k)+'" y="'+(H-12)+'" text-anchor="middle">'+t+'</text>'; });
+    g+=lab;
+    if(todayIn) g+='<text class="c-today-t" x="'+tx+'" y="'+(H-12)+'" text-anchor="middle">TODAY</text>';
+    g+='<g id="cOver"></g>';
+    svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.innerHTML=g;
+    var a0=null; for(var q=0;q<n;q++) if(V[q].tr!=null){ a0=V[q].tr; break; }
+    G={ X:X, Y:Y, V:V, n:n, step:step, yT:yT, yB:yB, rr:rr, odd:odd, miss:miss, a0:a0, b0:ltr, fell:vw.fell };
+    svg.setAttribute('aria-label','7-day trend over '+(RANGE?RANGE+' days':'all time')+': '+(a0!=null?fmt(a0):'—')+' to '+fmt(ltr)+' '+u+(goalIn?', goal '+fmt(goal):'')+'. Use the arrow keys to read each day.');
+    var lgd='<span><i class="g-t"></i>7-day trend</span><span><i class="g-d"></i>Morning</span>';
+    if(!dense) lgd+='<span><i class="g-o"></i>0.4+ off</span>';
+    if(pd!=null && C.stale<=7) lgd+='<span><i class="g-a"></i>At this pace</span>';
+    $('chartLgd').innerHTML=lgd;
+    idle(); if(pin!=null && pin<n) over(pin); else pin=null;
+    if(animate && !reduceMotion && $('cTrend').animate){
+      var tp=$('cTrend'), gl=$('cGlow'), L=0, ease='cubic-bezier(.16,1,.3,1)';
+      try{ L=tp.getTotalLength(); }catch(e){}
+      if(L) [tp,gl].forEach(function(qq){ qq.animate([{strokeDasharray:L,strokeDashoffset:L},{strokeDasharray:L,strokeDashoffset:0}],{duration:950,easing:ease}); });
+      if($('cArea')) $('cArea').animate([{opacity:0},{opacity:1}],{duration:700,delay:350,easing:ease,fill:'backwards'});
+      $('cDots').animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:500,delay:550,easing:ease,fill:'backwards'});
+    }
+  }
+  // the readout at the top: the period when idle, the day when you touch
+  function idle(){
+    if(!G) return;
+    var u=C.u;
+    $('roD').textContent= G.fell ? 'SINCE '+fmtT(G.V[0].t).slice(4).toUpperCase() : RANGE ? 'LAST '+(RANGE===91?'3 MONTHS':RANGE+' DAYS') : 'SINCE '+fmtT(C.t0).slice(4).toUpperCase();
+    $('roW').innerHTML=(G.a0!=null?sg(G.b0-G.a0):'—')+'<small>'+u+'</small>';
+    $('roU').textContent=G.a0!=null?fmt(G.a0)+' → '+fmt(G.b0):'';
+    $('roA').innerHTML='<span class="lbl">Off the trend</span><b>'+G.odd+'</b>';
+    $('roB').innerHTML='<span class="lbl">Missed</span><b>'+G.miss+'</b>';
+    var note=$('roNote');
+    if(G.fell){ note.textContent='No weigh-ins in the last '+RANGE+' days, so this shows your most recent ones.'; note.hidden=false; }
+    else note.hidden=true;
+    svg.classList.remove('scrub');
+  }
+  function over(k){
+    var V=G.V, d=V[k], dt=dateOfT(d.t), X=G.X, Y=G.Y, o='', u=C.u;
+    var a=Math.max(0,k-6);
+    o+='<rect class="c-win" x="'+(X(a)-G.step/2)+'" y="'+G.yT+'" width="'+(X(k)-X(a)+G.step)+'" height="'+(G.yB-G.yT)+'" rx="6"/>';
+    for(var j=a;j<=k;j++) if(V[j].w!=null) o+='<circle class="c-wdot" cx="'+X(j)+'" cy="'+Y(V[j].w)+'" r="'+(G.rr+1.4)+'"/>';
+    o+='<line class="c-cross" x1="'+X(k)+'" x2="'+X(k)+'" y1="'+G.yT+'" y2="'+G.yB+'"/>';
+    if(d.tr!=null) o+='<circle class="c-tpin" cx="'+X(k)+'" cy="'+Y(d.tr)+'" r="5"/>';
+    if(d.w!=null) o+='<circle class="c-pin" cx="'+X(k)+'" cy="'+Y(d.w)+'" r="'+(G.rr+2.6)+'"/>';
+    $('cOver').innerHTML=o; svg.classList.add('scrub');
+    $('roD').textContent=DOW[dt.getUTCDay()].toUpperCase()+' '+dt.getUTCDate()+' '+MON[dt.getUTCMonth()].toUpperCase();
+    if(d.w!=null){ $('roW').innerHTML=fmt(d.w)+'<small>'+u+'</small>'; $('roU').textContent='that morning'; }
+    else { $('roW').innerHTML='—'; $('roU').textContent=d.t===C.todayT?'not weighed yet':'not weighed'; }
+    $('roA').innerHTML='<span class="lbl">vs trend</span><b>'+(d.w!=null&&d.tr!=null?sg(d.w-d.tr):'—')+'</b>';
+    $('roB').innerHTML='<span class="lbl">Trend</span><b class="amb">'+(d.tr!=null?fmt(d.tr):'—')+'</b>';
+  }
+  function clearPin(){ pin=null; if($('cOver')) $('cOver').innerHTML=''; idle(); }
+  function at(e){ var r=svg.getBoundingClientRect(), x=(e.clientX-r.left)*(svg.viewBox.baseVal.width/r.width); return Math.max(0,Math.min(G.n-1,Math.round((x-G.X(0))/G.step))); }
+  svg.addEventListener('pointermove',function(e){ if(!G) return; if(e.pointerType==='mouse'||e.buttons){ var k=at(e); if(k!==pin){ pin=k; over(k); } } });
+  svg.addEventListener('pointerdown',function(e){ if(!G) return; pin=at(e); over(pin); });
+  svg.addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') clearPin(); });
+  svg.addEventListener('pointercancel',function(){ clearPin(); });   // a vertical drag became a page scroll
+  svg.addEventListener('pointerleave',function(e){ if(e.pointerType==='mouse') clearPin(); });
+  svg.addEventListener('keydown',function(e){ if(!G) return;
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); pin=pin==null?G.n-1:Math.max(0,Math.min(G.n-1,pin+(e.key==='ArrowRight'?1:-1))); over(pin); }
+    else if(e.key==='Escape') clearPin(); });
+  svg.addEventListener('blur',clearPin);
+  [].forEach.call(document.querySelectorAll('.tabs button'),function(b){ b.addEventListener('click',function(){
+    [].forEach.call(document.querySelectorAll('.tabs button'),function(x){ x.setAttribute('aria-pressed',String(x===b)); });
+    RANGE=+b.dataset.r; pin=null; draw(true); }); });
+
+  function renderChart(animate){
+    var card=$('chartCard'), empty=$('chartEmpty');
+    if(C.n>=2){
+      card.hidden=false; empty.hidden=true;
+      var sw=typicalSwing();
+      $('chartSub').textContent=(sw!=null?'A morning moves '+sw.toFixed(2)+' '+C.u+' on its own: water, salt, sleep. ':'')+'The amber line is the 7-day average. That’s the one to watch.';
+      draw(animate);
+    } else {
+      card.hidden=true; empty.hidden=false; G=null;
+      empty.innerHTML = !wtRead.ok && !C.n
+        ? '<b>Couldn’t read the log</b>The chart is off until your weigh-ins can be read on this device.'
+        : C.n===1 ? '<b>One morning in</b>The line needs a second weigh-in to start. Log tomorrow’s.'
+        : '<b>Your trend line starts here</b>Log a couple of mornings and it draws itself.';
+    }
+  }
+
+  /* ── The log card ───────────────────────────────────────────────────── */
+  function wtSyncWhen(){
+    var b=$('wtWhen'), key=wtGetSelectedDate(), today=wtDateKey(new Date());
+    var label = key===today ? 'today' : fmtT(dayNum(key));
+    b.innerHTML='Logging for '+esc(label)+' · <u>change</u>';
+    b.classList.toggle('other', key!==today);
+  }
+  function wtPrevOf(key){
+    for(var i=wtEntries.length-1;i>=0;i--) if(wtEntries[i].dateKey<key) return wtEntries[i];
+    return null;
+  }
+  /* The trend the new reading is judged against: the 7 days BEFORE the selected date. */
+  function trendBefore(key){
+    var t=dayNum(key), s=0, n=0;
+    for(var i=0;i<wtEntries.length;i++){ var et=dayNum(wtEntries[i].dateKey); if(et>=t-7 && et<t){ s+=wtEntries[i].weight; n++; } }
+    return n ? s/n : null;
+  }
+  function wtRenderFeedback(){
+    var el=$('wtFeedback'); el.className='fb';
+    var raw=String($('wtInput').value||'').trim();
+    if(!raw){ el.innerHTML=''; return; }
+    var v=parseWeight(raw), u=units();
+    if(isNaN(v)){ el.innerHTML=''; return; }
+    if(v<=0 || v>500){ el.textContent='That is not a weight.'; el.classList.add('bad'); return; }
+    var key=wtGetSelectedDate(), prev=wtPrevOf(key);
+    if(!prev){ el.textContent=wtEntries.length?'Earlier than anything you have logged.':'Your first weigh-in.'; el.classList.add('plain'); return; }
+    var d=v-prev.weight, sw=typicalSwing();
+    if(Math.abs(d) > Math.max(1.2, (sw==null?0.4:sw)*3.5)){
+      el.innerHTML=esc(sg(d)+' '+u+' from '+fmt(prev.weight)+' on '+fmtT(dayNum(prev.dateKey))+'. Double-check that.'); el.classList.add('warn'); return;
+    }
+    var tb=trendBefore(key);
+    if(tb==null){ el.innerHTML=esc(Math.abs(d)<0.05?'No change from '+fmt(prev.weight)+' '+u+'.':sg(d)+' '+u+' from '+fmt(prev.weight)+' '+u+'.'); el.classList.add('plain'); return; }
+    var dev=v-tb, txt;
+    if(Math.abs(dev)<0.15) txt='Right on your trend.';
+    else txt=(dev<0?'Under':'Over')+' your trend by '+Math.abs(dev).toFixed(1)+'.';
+    if(Math.abs(dev)>=0.4){ txt+=' A bigger wobble than usual.'; el.classList.add('warn'); }
+    el.innerHTML=esc(txt)+' <small>('+sg(dev)+')</small>';
+  }
+  function wtStepBy(delta){
+    var cur=parseWeight($('wtInput').value);
+    if(isNaN(cur)){
+      var last=wtEntries[wtEntries.length-1];
+      cur=(last?last.weight:70)+delta;                 // seed from where he was
+    } else cur+=delta;
+    cur=Math.round(cur*10)/10;
+    if(cur<20) cur=20;
+    if(cur>400) cur=400;
+    $('wtInput').value=cur.toFixed(1);
+    wtRenderFeedback();
+  }
+  function say(msg, bad, keep){
+    var el=$('wtSay'); el.textContent=msg||''; el.classList.toggle('bad',!!bad);
+    clearTimeout(sayTimer); if(msg && !keep) sayTimer=setTimeout(function(){ el.textContent=''; }, 6000);
+  }
+  function renderLog(){
+    var u=C.u, te=C.todayEntry, last=wtEntries[wtEntries.length-1]||null;
+    $('wtUnitStatic').textContent=u;
+    var inp=$('wtInput');
+    /* A ghost of his last reading. Deliberately a PLACEHOLDER, not a value — a
+       pre-filled number could be committed unread. */
+    inp.placeholder = last ? fmt(last.weight) : '0.0';
+    $('logLast').textContent = last && (!te || editing) ? 'last '+fmt(last.weight)+' · '+fmtT(dayNum(last.dateKey)).slice(0,3) : '';
+    var showDone = !!te && !editing;
+    $('logDone').hidden=!showDone; $('logForm').hidden=showDone;
+    if(showDone){
+      $('logState').textContent='Today · logged';
+      $('doneV').innerHTML=fmt(te.weight)+'<small>'+u+'</small>';
+      var tb=trendBefore(te.dateKey), dev=tb!=null?te.weight-tb:null;
+      $('doneS').textContent = dev==null ? 'Saved. The trend starts after a few mornings.'
+        : Math.abs(dev)<0.15 ? 'Right on your trend.'
+        : Math.abs(dev).toFixed(1)+' '+(dev<0?'under':'over')+' your trend. '+(Math.abs(dev)>=0.4?'A bigger wobble than usual.':'Normal noise.');
+    } else {
+      var key=wtGetSelectedDate(), today=C.todayKey;
+      $('logState').textContent = editing ? (key===today?'Today · editing':'Editing '+fmtT(dayNum(key))) : 'Today · not weighed yet';
+    }
+    $('logCard').classList.toggle('just', !!(justSaved && showDone));
+    var off=!wtRead.ok;
+    $('wtSaveBtn').disabled=off; $('wtEditBtn').disabled=off;
+    wtSyncWhen(); wtRenderFeedback();
+  }
+
+  /* ── Stats 2×2 ──────────────────────────────────────────────────────── */
+  function streak(){
+    var s=0, cursor=new Date();
+    var has=function(d){ var k=wtDateKey(d); return wtEntries.some(function(e){ return e.dateKey===k; }); };
+    if(!has(cursor)) cursor.setDate(cursor.getDate()-1);
+    while(has(cursor)){ s++; cursor.setDate(cursor.getDate()-1); }
+    return s;
+  }
+  function renderStats(){
+    var el=$('stats');
+    if(!C.n){ el.hidden=true; el.innerHTML=''; return; }
+    el.hidden=false;
+    var u=C.u, cells=[];
+    if(C.goal!=null){
+      cells.push({ l:'To goal', v:C.atGoal?'0.0':(C.need>0?'+':'−')+Math.abs(C.need).toFixed(1), s:fmt(C.goal)+' '+u+' goal', g:C.atGoal||C.toward });
+    } else {
+      var mi=C.rows[0]; C.rows.forEach(function(r){ if(r.weight<mi.weight) mi=r; });
+      cells.push({ l:'Lowest', v:fmt(mi.weight), s:u+' · '+fmtT(mi.t).slice(4) });
+    }
+    if(!C.tr) cells.push({ l:'Pace', v:'—', s:'needs a few more mornings' });
+    else if(C.steady) cells.push({ l:'Pace', v:'Flat', s:'within ±'+Math.max(Math.abs(C.perMonth),C.tr.se*30.44/7).toFixed(1)+' '+u+' a month' });
+    else cells.push({ l:'Pace', v:sg(C.perMonth), s:u+' a month' });
+    var span=C.todayT-C.t0+1, pct=Math.min(100,Math.round(C.n/span*100));
+    cells.push({ l:'Logged', v:String(C.n), s:pct+'% of days' });
+    var st=streak();
+    cells.push({ l:'Streak', v:String(st), s:st===1?'morning':'mornings' });
+    el.innerHTML=cells.map(function(c){ return '<div class="stat"><span class="lbl">'+c.l+'</span><span class="v'+(c.g?' g':'')+'">'+c.v+'</span><span class="s">'+esc(c.s)+'</span></div>'; }).join('');
+  }
+
+  /* ── Month by month (Hallmark's columns) ────────────────────────────── */
+  function renderMonths(){
+    var sec=$('monthSec'), months=monthlyAverages(C.rows||[]);
+    if(months.length<2){ sec.hidden=true; return; }
+    sec.hidden=false;
+    var curKey=C.todayKey.slice(0,7), list=months.slice(-9), u=C.u;
+    var avgs=list.map(function(m){ return m.avg; }), lo=Math.min.apply(null,avgs), hi=Math.max.apply(null,avgs), rng=hi-lo||1;
+    var goalMonths={};
+    if(C.goal!=null) C.days.forEach(function(d){ if(C.metGoal(d.tr)) goalMonths[keyOfT(d.t).slice(0,7)]=1; });
+    $('months').innerHTML=list.map(function(m,i){
+      var cl=(m.key===curKey?' now':goalMonths[m.key]?' goal':'')+(i<list.length-6?' old':'');
+      var mm=+m.key.slice(5)-1;
+      return '<div class="mo'+cl+'" title="'+MONTHS_LONG[mm]+': '+m.n+' weigh-ins"><span class="v">'+fmt(m.avg)+'</span><span class="col" style="--h:'+Math.round(12+(m.avg-lo)/rng*64)+'px"></span><span class="m">'+MON[mm]+'</span></div>';
+    }).join('');
+    var nm=function(k){ return MONTHS_LONG[+k.slice(5)-1]; }, note='';
+    var cur=months[months.length-1], prev=months[months.length-2];
+    if(C.goal!=null){
+      var gk=Object.keys(goalMonths).sort();
+      if(gk.length){
+        var lastG=gk[gk.length-1];
+        if(goalMonths[cur.key]) note='<i></i>'+nm(cur.key)+' is at the goal.';
+        else {
+          note='<i></i>'+nm(lastG)+' touched the goal.';
+          var after=months.filter(function(m){ return m.key>lastG; });
+          if(after.length && after.every(function(m){ return Math.abs(cur.avg-C.goal)<=Math.abs(m.avg-C.goal); })) note+=' '+nm(cur.key)+' is the closest since.';
+        }
+      } else note=nm(cur.key)+' averages '+fmt(cur.avg)+' '+u+', '+Math.abs(cur.avg-C.goal).toFixed(1)+' from the goal.';
+    } else {
+      var dlt=cur.avg-prev.avg;
+      note=nm(cur.key)+' averages '+fmt(cur.avg)+' '+u+', '+(Math.abs(dlt)<0.05?'level with ':sg(dlt)+' vs ')+nm(prev.key)+'.';
+    }
+    $('moNote').innerHTML=note;
+  }
+
+  /* ── Calendar of a month, Monday first ((getDay()+6)%7) ─────────────── */
+  function renderCal(){
+    var now=new Date();
+    if(calY==null){ calY=now.getFullYear(); calM=now.getMonth(); }
+    var first=new Date(calY,calM,1), lead=(first.getDay()+6)%7, dim=new Date(calY,calM+1,0).getDate();
+    var todayKey=C.todayKey, byKey={}; wtEntries.forEach(function(e){ byKey[e.dateKey]=e; });
+    var trAt={}; if(C.days) C.days.forEach(function(d){ trAt[d.t]=d.tr; });
+    var firstKey=C.n?C.rows[0].dateKey:null, logged=0, elapsed=0;
+    var h=''; for(var b=0;b<lead;b++) h+='<div class="day blank" aria-hidden="true"></div>';
+    for(var d=1;d<=dim;d++){
+      var key=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), e=byKey[key], t=dayNum(key);
+      var cls='day', inner='<span class="n">'+d+'</span>', lab=fmtT(t);
+      if(key>todayKey){ h+='<div class="day fut" aria-hidden="true"><span class="n">'+d+'</span></div>'; continue; }
+      if(!firstKey || key>=firstKey) elapsed++;
+      if(e){
+        logged++;
+        var tr=trAt[t], dev=tr!=null?e.weight-tr:null;
+        if(dev!=null&&Math.abs(dev)>=.4) cls+=' odd';
+        if(dev!=null&&Math.abs(dev)>=.05) inner+='<span class="d '+(dev>0?'up':'dn')+'">'+sg(dev)+'</span>';
+        inner+='<span class="w">'+fmt(e.weight)+'</span>';
+        lab+=', '+fmt(e.weight)+' '+C.u;
+        if(key===todayKey) cls+=' today has';
+      } else if(key===todayKey){ cls+=' today'; inner+='<span class="w">Today</span>'; lab+=', not weighed yet'; }
+      else if(firstKey && key>firstKey){ cls+=' miss'; inner+='<span class="w">—</span>'; lab+=', missed'; }
+      else { cls+=' before'; lab+=', before your first weigh-in'; }
+      if(key===calSel) cls+=' sel';
+      if(key===justSaved) cls+=' stamp';
+      h+='<button type="button" class="'+cls+'" data-day="'+key+'" aria-label="'+esc(lab)+'">'+inner+'</button>';
+    }
+    $('cal').innerHTML=h;
+    var isCur = calY===now.getFullYear() && calM===now.getMonth();
+    $('calTitle').textContent=MONTHS_LONG[calM]+(calY!==now.getFullYear()?' '+calY:'');
+    var firstM = firstKey ? firstKey.slice(0,7) : todayKey.slice(0,7), thisM=calY+'-'+String(calM+1).padStart(2,'0');
+    $('calPrev').disabled = thisM<=firstM;
+    $('calNext').disabled = isCur;
+    $('calSub').textContent = (C.n ? logged+' of '+elapsed+(elapsed===1?' morning':' mornings')+' logged. ' : '')+'Tap a day to fix, delete or back-fill it.';
+    renderEdit();
+  }
+  function renderEdit(){
+    var bar=$('calEdit'), u=C.u;
+    clearTimeout(armTimer);
+    if(undoEntry){
+      bar.className='edit one'; bar.hidden=false;
+      bar.innerHTML='<p>Deleted '+esc(fmtT(dayNum(undoEntry.dateKey)))+' · <b>'+fmt(undoEntry.weight)+' '+u+'</b></p><button class="btn-s" type="button" data-act="undo"'+(wtRead.ok?'':' disabled')+'>Undo</button>';
+      return;
+    }
+    if(!calSel){ bar.hidden=true; bar.innerHTML=''; return; }
+    var e=wtEntries.find(function(x){ return x.dateKey===calSel; }), t=dayNum(calSel), dis=wtRead.ok?'':' disabled';
+    bar.hidden=false;
+    if(e){
+      var tr=null; if(C.days&&t>=C.t0&&t<=C.todayT) tr=C.days[t-C.t0].tr;
+      var off=tr!=null?e.weight-tr:null;
+      bar.className='edit';
+      bar.innerHTML='<p>'+esc(fmtT(t))+' · <b>'+fmt(e.weight)+' '+u+'</b>'+(off!=null?' · '+(Math.abs(off)<0.05?'on the trend':Math.abs(off).toFixed(1)+(off>=0?' over':' under')+' the trend'):'')+'</p>'+
+        '<button class="btn-s" type="button" data-act="edit"'+dis+'>Edit</button><button class="btn-s del" type="button" data-act="del"'+dis+'>Delete</button>';
+    } else {
+      bar.className='edit one';
+      bar.innerHTML='<p>'+esc(fmtT(t))+' · not weighed</p><button class="btn-s" type="button" data-act="log"'+dis+'>Log this day</button>';
+    }
+  }
+
+  /* ── Render everything ──────────────────────────────────────────────── */
+  function renderAlarm(){
+    var el=$('wtAlarm');
+    if(wtRead.ok){ el.hidden=true; el.innerHTML=''; return; }
+    var why = wtRead.why==='blocked' ? 'This browser is blocking storage, so the page can’t read your weigh-ins.'
+            : wtRead.why==='rows' ? wtRead.bad+' of your '+wtRead.total+' saved weigh-ins are in a shape this page doesn’t recognise.'
+            : wtRead.why==='dups' ? 'Some days appear twice in your saved weigh-ins.'
+            : 'Your saved weigh-ins on this device couldn’t be read.';
+    el.innerHTML='<b>Saving is paused.</b> '+why+' Nothing has been changed or deleted, and saving stays off so nothing gets overwritten. The nightly Vault keeps a copy too: <a href="backup.html">Backup</a>.';
+    el.hidden=false;
+  }
+  function wtRender(opts){
+    C=compute();
+    renderAlarm(); renderHero(); renderRuler(); renderLog(); renderStats();
+    renderChart(!!(opts&&opts.animate)); renderMonths(); renderCal();
+    justSaved=null;
+  }
+
+  /* ── Saving, editing, deleting — every write goes through wtSaveEntry /
+     wtDeleteEntry above, and is read back before the page says it worked. */
+  function doSave(){
+    if(!wtRead.ok){ say('Saving is paused: your weigh-ins couldn’t be read safely.', true, true); return; }
+    var v=parseWeight($('wtInput').value);
+    if(isNaN(v) || v<=0 || v>500){ say(isNaN(v)?'Type a weight first.':'That is not a weight.', true); $('wtInput').focus(); return; }
+    var w=Math.round(v*10)/10, key=wtGetSelectedDate();
+    justSaved=key; editing=false; undoEntry=null;
+    wtSaveEntry(w);
+    var chk=wtStored(key);
+    if(!(chk.readable && chk.entry && Math.abs(chk.entry.weight-w)<1e-9)){
+      wtEntries=wtLoad(); wtRead=wtCheckRead(); editing=true; wtRender();
+      $('wtInput').value=fmt(w);
+      say('Couldn’t save on this device (storage full or blocked). '+fmt(w)+' was NOT stored. Try again.', true, true);
+      return;
+    }
+    $('wtInput').value='';
+    $('wtDateInput').value=C.todayKey; $('wtDateRow').hidden=true; $('wtAsk').textContent='What did the scale say?';
+    calSel=null;
+    wtRender();
+    say(key===C.todayKey ? 'Saved.' : 'Saved '+fmt(w)+' '+units()+' for '+fmtT(dayNum(key))+'.');
+  }
+  function wtEditEntry(key){
+    var entry=wtEntries.find(function(e){ return e.dateKey===key; });
+    if(!entry || !wtRead.ok) return;
+    editing=true;
+    $('wtDateInput').value=key;
+    $('wtDateRow').hidden = key===C.todayKey;
+    $('wtAsk').textContent = key===C.todayKey ? 'What did the scale say?' : 'Fix this weigh-in.';
+    renderLog();
+    $('wtInput').value=fmt(entry.weight);
+    wtRenderFeedback();
+    $('logCard').scrollIntoView({ behavior:reduceMotion?'auto':'smooth', block:'center' });
+    try{ $('wtInput').focus({ preventScroll:true }); $('wtInput').select(); }catch(e){}
+  }
+  function logDay(key){
+    if(!wtRead.ok) return;
+    editing=true;
+    $('wtDateInput').value=key; $('wtDateRow').hidden = key===C.todayKey;
+    $('wtAsk').textContent = key===C.todayKey ? 'What did the scale say?' : 'What did it say that morning?';
+    $('wtInput').value='';
+    renderLog();
+    $('logCard').scrollIntoView({ behavior:reduceMotion?'auto':'smooth', block:'center' });
+    try{ $('wtInput').focus({ preventScroll:true }); }catch(e){}
+  }
+  function doDelete(key){
+    if(!wtRead.ok) return;
+    var entry=wtEntries.find(function(e){ return e.dateKey===key; });
+    if(!entry) return;
+    var copy={ dateKey:entry.dateKey, weight:entry.weight };
+    calSel=null; wtDeleteEntry(key);
+    var chk=wtStored(key);
+    if(!chk.readable || chk.entry){
+      wtEntries=wtLoad(); wtRead=wtCheckRead(); calSel=key; wtRender();
+      say('Couldn’t delete on this device. The weigh-in is still there.', true, true);
+      return;
+    }
+    undoEntry=copy; renderEdit();
+  }
+  /* Undo re-logs the same weight on the same day through the normal save — a newer
+     ts is exactly what pocoach-sync needs to retire the delete's tombstone. */
+  function doUndo(){
+    if(!undoEntry || !wtRead.ok) return;
+    var e=undoEntry, prevDate=$('wtDateInput').value;
+    $('wtDateInput').value=e.dateKey; justSaved=e.dateKey; undoEntry=null;
+    wtSaveEntry(e.weight);
+    $('wtDateInput').value=prevDate||C.todayKey;
+    var chk=wtStored(e.dateKey);
+    if(!(chk.readable && chk.entry)){ undoEntry=e; wtEntries=wtLoad(); wtRender(); say('Couldn’t restore it on this device. Try Undo again.', true, true); return; }
+    calSel=e.dateKey; wtRender();
+  }
+
+  $('wtSaveBtn').addEventListener('click', doSave);
+  $('wtInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
+  /* keep only digits + a single separator as the user types */
+  $('wtInput').addEventListener('input', function(){
+    var clean=this.value.replace(/[^0-9.,]/g,'').replace(/([.,]).*?([.,])/g,'$1');
+    if(clean!==this.value) this.value=clean;
+    wtRenderFeedback();
+  });
+  [].forEach.call(document.querySelectorAll('[data-wstep]'), function(b){
+    b.addEventListener('click', function(){ wtStepBy(parseFloat(b.getAttribute('data-wstep'))); });
+  });
+  $('wtWhen').addEventListener('click', function(){ $('wtDateRow').hidden=!$('wtDateRow').hidden; });
+  $('wtDateInput').addEventListener('change', function(){
+    if(!this.value) this.value=wtDateKey(new Date());
+    var k=this.value, e=wtEntries.find(function(x){ return x.dateKey===k; });
+    $('wtAsk').textContent = k===wtDateKey(new Date()) ? 'What did the scale say?' : e ? 'Fix this weigh-in.' : 'What did it say that morning?';
+    wtSyncWhen(); wtRenderFeedback();
+  });
+  $('wtTodayBtn').addEventListener('click', function(){
+    $('wtDateInput').value=wtDateKey(new Date()); $('wtAsk').textContent='What did the scale say?';
+    wtSyncWhen(); wtRenderFeedback();
+  });
+  $('wtEditBtn').addEventListener('click', function(){ if(C.todayEntry) wtEditEntry(C.todayKey); });
+  $('cal').addEventListener('click', function(ev){
+    var b=ev.target.closest('[data-day]'); if(!b) return;
+    undoEntry=null; var k=b.getAttribute('data-day');
+    calSel = calSel===k ? null : k;
+    [].forEach.call(this.querySelectorAll('.day.sel'), function(x){ x.classList.remove('sel'); });
+    if(calSel) b.classList.add('sel');
+    renderEdit();
+  });
+  $('calEdit').addEventListener('click', function(ev){
+    var b=ev.target.closest('[data-act]'); if(!b || b.disabled) return;
+    var act=b.getAttribute('data-act');
+    if(act==='edit') wtEditEntry(calSel);
+    else if(act==='log') logDay(calSel);
+    else if(act==='undo') doUndo();
+    else if(act==='del'){
+      /* two steps: the first tap arms it, the second deletes */
+      if(!b.classList.contains('armed')){
+        b.classList.add('armed'); b.textContent='Tap again to delete';
+        clearTimeout(armTimer); armTimer=setTimeout(function(){ b.classList.remove('armed'); b.textContent='Delete'; }, 4000);
+      } else doDelete(calSel);
+    }
+  });
+  $('calPrev').addEventListener('click', function(){ calM--; if(calM<0){ calM=11; calY--; } calSel=null; undoEntry=null; renderCal(); });
+  $('calNext').addEventListener('click', function(){ calM++; if(calM>11){ calM=0; calY++; } calSel=null; undoEntry=null; renderCal(); });
+
+  /* ── Redraw on width change: 1 SVG unit == 1 CSS pixel. Compared against the
+     width the chart was last DRAWN at, so the observer's own first callback
+     (before any paint) can't re-render and kill the draw-in. The viewBox is
+     never stretched to fit: strokes and dots stay round. */
+  (function(){
+    var timer=null;
+    function onResize(){
+      if(!G) return;
+      if(Math.max(300,Math.round(svg.getBoundingClientRect().width))===chartLastW) return;
+      clearTimeout(timer); timer=setTimeout(function(){ draw(false); }, 90);
+    }
+    if(window.ResizeObserver){ try{ new ResizeObserver(onResize).observe(svg); }catch(e){ window.addEventListener('resize', onResize); } }
+    else window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', function(){ setTimeout(onResize, 220); });
   })();
-  </script>
 
-  <!-- Cross-device sync for weigh-ins (shared with gym.html + body.html) -->
-  <script src="vendor/supabase.min.js"></script>
-  <script src="pocoach-sync.js?v=4"></script>
+  /* ── Boot ── */
+  $('wtDateInput').value=wtDateKey(new Date());
+  wtRender({ animate:true });
+  requestAnimationFrame(function(){ if(G && Math.max(300,Math.round(svg.getBoundingClientRect().width))!==chartLastW) draw(!drewOnce); drewOnce=true; });
+  function reload(){ wtEntries=wtLoad(); wtRead=wtCheckRead(); if(!editing && !wtDateInputTouched()) $('wtDateInput').value=wtDateKey(new Date()); wtRender(); }
+  function wtDateInputTouched(){ return !$('wtDateRow').hidden; }
+  window._weightRerender = reload;
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) reload(); });
+  window.addEventListener('focus', reload);
+  window.addEventListener('storage', function(e){ if(!e || !e.key || e.key===WT_KEY || e.key==='goals_outcomes_v1' || e.key==='po_coach_v1') reload(); });
+})();
+</script>
 
-  <script src="nova.js" defer></script>
-  <script src="nova-coach.js?v=20" defer></script>
+<!-- Cross-device sync for weigh-ins (shared with gym.html + body.html) -->
+<script src="vendor/supabase.min.js"></script>
+<script src="pocoach-sync.js?v=4"></script>
+
+<script src="nova.js" defer></script>
+<script src="nova-coach.js?v=20" defer></script>
 </body>
 </html>

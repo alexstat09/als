@@ -1,376 +1,339 @@
-/* Exercises weight.html across all four ranges and the states Alex's own data
-   never reaches: no goal, one entry, two entries, a long gap, imperial units. */
-const fs=require('fs'), vm=require('vm'), assert=require('assert');
-const HTML=fs.readFileSync('/Users/alexstathatos/ALS DASHBOARD ALL FILES/als/weight.html','utf8');
-const SRC=[...HTML.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1])[0];
-/* Fixture of choice is Alex's real 149 weigh-ins (Feb–Jul 2026): near-daily,
-   a 4 kg range, and 0.335 kg of day-to-day noise — the exact shape the chart
-   has to render honestly. It lives outside the repo, so fall back to a
-   synthetic stand-in with the same statistics rather than failing. */
-const FIXTURE='/Users/alexstathatos/ALS DASHBOARD ALL FILES/BACKUPS/2026-07-14_device-export_538-keys.json';
-let REALDATA=null;
-try{
-  let _r=JSON.parse(fs.readFileSync(FIXTURE,'utf8')).data.po_coach_weights;
-  _r=typeof _r==='string'?JSON.parse(_r):_r;
-  if(Array.isArray(_r) && _r.length>100) REALDATA=_r;
-}catch(e){}
-if(!REALDATA){
-  console.log('  (real-data fixture absent — using a synthetic stand-in)');
-  /* 149 consecutive days ending on the suite's "today" (2026-07-13), so the
-     7-day window is populated exactly as the real log's is. */
-  REALDATA=[]; const d=new Date('2026-02-15T12:00:00');
-  for(let i=0;i<149;i++){
-    REALDATA.push({ dateKey:d.toISOString().slice(0,10),
-      weight:Math.round((70.5+Math.sin(i/24)*1.4+((i*7919)%13-6)/20)*10)/10, ts:1 });
-    d.setDate(d.getDate()+1);
-  }
-}
+/* weight.html (als-v662 — the approved Midnight design) driven in real Chrome.
+   Every network and sync script is removed from the page before it loads
+   (σταθ. 8/19: plain string containment on the src= context), the data is
+   seeded per scenario and the clock is frozen. Covers all four ranges, the
+   states his own data never reaches (empty, one, three, no goal, toward/away
+   from a goal, a broken row, a full disk) and — first — DATA SAFETY: the
+   storage functions are identical to als-v423, rendering never writes, and
+   every write the page makes is exactly the one it was asked for. */
+const fs=require('fs'), path=require('path'), os=require('os'), cp=require('child_process');
+const REPO=path.resolve(__dirname,'..');
+const HTML=fs.readFileSync(path.join(REPO,'weight.html'),'utf8');
+const SRC=[...HTML.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n');
+const CSS=[...HTML.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
 
 let pass=0, fail=0;
 function ok(c,m){ if(c) pass++; else { fail++; console.log('  ✗ '+m); } }
 
-function run(opts){
-  const els={}, clicks=[];
-  function makeEl(id){
-    const el={ id, _cls:new Set(), _attr:{}, innerHTML:'', textContent:'', value:'', style:{},
-      offsetWidth:52, offsetLeft:2, dataset:{},
-      classList:{ add:(...c)=>c.forEach(x=>el._cls.add(x)), remove:(...c)=>c.forEach(x=>el._cls.delete(x)),
-                  toggle:(c,f)=>{ f?el._cls.add(c):el._cls.delete(c); }, contains:c=>el._cls.has(c) },
-      setAttribute:(k,v)=>{el._attr[k]=String(v);}, getAttribute:k=>el._attr[k]==null?null:el._attr[k],
-      removeAttribute:k=>{delete el._attr[k];}, hasAttribute:k=>k in el._attr,
-      addEventListener:(ev,fn)=>{ el._h=el._h||{}; el._h[ev]=fn; }, closest:()=>null,
-      focus:()=>{}, select:()=>{}, querySelectorAll:()=>[], appendChild:()=>{},
-      getBoundingClientRect:()=>({width:opts.w||530,height:214,left:0,top:0}),
-      createSVGPoint:()=>({x:0,y:0,matrixTransform:()=>({x:opts.probeX||0})}),
-      getScreenCTM:()=>({inverse:()=>({})}),
-      getComputedTextLength:()=>70, getTotalLength:()=>800 };
-    return el;
+/* ── his data ── The real log, if a device export is lying around; otherwise a
+   stand-in with his shape: near-daily since 8 Feb, a few missed days, a climb to
+   ~72 in April, a slide to ~66 by late September, flat since. */
+const TODAY='2026-10-21';
+function synth(){
+  const out=[], d=new Date('2026-02-08T12:00:00Z'), miss=new Set(['2026-03-01','2026-03-02','2026-03-03','2026-03-04','2026-03-05','2026-03-06','2026-04-18','2026-07-19','2026-10-14']);
+  for(let i=0;;i++){
+    const k=d.toISOString().slice(0,10); if(k>'2026-10-20') break;
+    const base= i<60 ? 69.6+i*0.042 : i<160 ? 72.1-(i-60)*0.019 : i<230 ? 70.2-(i-160)*0.065 : 65.9+((i*37)%7)/20;
+    if(!miss.has(k)) out.push({ dateKey:k, weight:Math.round((base+((i*7919)%11-5)/22)*10)/10, ts:1 });
+    d.setUTCDate(d.getUTCDate()+1);
   }
-  const get=id=>{ if(!els[id]) els[id]=makeEl(id); return els[id]; };
-  const store={};
-  const localStorage={ getItem:k=>k in store?store[k]:null, setItem:(k,v)=>{store[k]=String(v);}, removeItem:k=>{delete store[k];} };
-  const pills=['7','30','90','0'].map((r,i)=>{ const e=makeEl('pill'+r); e.dataset.wrange=r; e.offsetLeft=2+i*54; if(r==='30') e._cls.add('active'); return e; });
-  const steps=['-0.1','0.1'].map(v=>{ const e=makeEl('step'+v); e._attr['data-wstep']=v; return e; });
-  const document={ getElementById:get,
-    querySelector:sel=>sel==='[data-wrange].active'?(pills.find(p=>p._cls.has('active'))||null):get('q:'+sel),
-    querySelectorAll:sel=>sel==='[data-wrange]'?pills:sel==='[data-wstep]'?steps:[],
-    addEventListener:()=>{}, createElement:()=>makeEl('n'), head:{appendChild:()=>{}},
-    documentElement:makeEl('html'), body:makeEl('body'), hidden:false };
-  const sandbox={ document, localStorage, console,
-    window:{ addEventListener:()=>{}, matchMedia:()=>({matches:!!opts.reduce}), ResizeObserver:null },
-    requestAnimationFrame:f=>{ if(opts.raf!==false) f(); }, setTimeout:f=>{ f(); return 0; }, clearTimeout:()=>{},
-    Math, JSON, parseInt, parseFloat, isNaN, isFinite, String, Number, Array, Object, RegExp, Error };
-  sandbox.window.document=document; sandbox.window.localStorage=localStorage;
-  const R=Date, NOW=new R(opts.today+'T09:00:00').getTime();
-  class FD extends R{ constructor(...a){ if(!a.length) super(NOW); else super(...a); } static now(){ return NOW; } }
-  FD.UTC=R.UTC; FD.parse=R.parse; sandbox.Date=FD;
-
-  store['po_coach_weights']=JSON.stringify(opts.data);
-  if(opts.goal!=null) store['goals_outcomes_v1']=JSON.stringify([{id:'og-weight',type:'bodyweight',target:opts.goal,unit:'kg'}]);
-  if(opts.units) store['po_coach_v1']=JSON.stringify({units:opts.units});
-
-  vm.createContext(sandbox);
-  let threw=null;
-  try{ vm.runInContext(SRC, sandbox, {filename:'inline.js'}); }catch(e){ threw=e; }
-  return { els, store, threw, pills, steps, get,
-    type:v=>{ els['wtInput'].value=String(v); els['wtInput']._h.input.call(els['wtInput']); },
-    press:i=>steps[i]._h.click(),
-    /* Drive the delegated history handler with a synthetic row. */
-    tapRow:()=>{
-      const row={ _cls:new Set(['wt-history-row']) };
-      row.classList={ add:c=>row._cls.add(c), remove:c=>row._cls.delete(c), contains:c=>row._cls.has(c) };
-      row.closest=sel=>sel==='[data-wrow]'?row:null;
-      const ev={ target:{ closest:sel=>sel==='[data-wrow]'?row:null } };
-      els['wtHistory']._h.click.call({ querySelectorAll:()=>[] }, ev);
-      return row;
-    },
-    tapEdit:key=>{
-      let edited=null;
-      const btn={ getAttribute:()=>key, closest:sel=>sel==='[data-wedit]'?btn:null };
-      const row={ _cls:new Set(), classList:{ add:c=>row._cls.add(c), remove:()=>{}, contains:c=>row._cls.has(c) } };
-      const ev={ target:{ closest:sel=>sel==='[data-wedit]'?btn:(sel==='[data-wrow]'?row:null) } };
-      els['wtHistory']._h.click.call({ querySelectorAll:()=>[] }, ev);
-      return { rowOpened:row._cls.has('open') };
-    },
-    chart:()=>(els['wtChartContent']||{}).innerHTML||'',
-    all:()=>Object.keys(els).map(k=>(els[k].innerHTML||'')+' '+(els[k].textContent||'')).join(' ') };
-}
-
-function gen(startKey,n,fn){
-  const out=[]; const d=new Date(startKey+'T12:00:00');
-  for(let i=0;i<n;i++){ out.push({dateKey:d.toISOString().slice(0,10), weight:fn(i), ts:1}); d.setDate(d.getDate()+1); }
   return out;
 }
-
-console.log('── RANGES on his real 149 ─────────────────');
-['7','30','90','0'].forEach(r=>{
-  const t=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  ok(!t.threw, 'range '+r+': no throw');
-  if(t.threw){ console.log('    '+t.threw.message); return; }
-  // click the range pill
-  const btn=t.pills.find(p=>p.dataset.wrange===r);
-  btn._h.click();
-  const c=t.chart(), meta=t.els['wtMeta'].textContent;
-  const ticks=[...c.matchAll(/class="wt-ylabel"[^>]*>([^<]*)</g)].map(m=>parseFloat(m[1]));
-  const dots=(c.match(/class="wt-daily"/g)||[]).length;
-  const span=ticks.length?Math.max(...ticks)-Math.min(...ticks):0;
-  console.log('  '+(r==='0'?'ALL':r+'D').padEnd(4)+' dots='+String(dots).padEnd(4)+' ticks=['+ticks.join(' ')+'] | '+meta);
-  ok(dots>=2, 'range '+r+': drew dots');
-  ok(/class="wt-line"/.test(c), 'range '+r+': trend line');
-  ok(ticks.length>=3, 'range '+r+': >=3 gridlines (got '+ticks.length+')');
-  ok(span>=2, 'range '+r+': y span >= 2kg (got '+span.toFixed(1)+')');
-  ok(!/NaN|undefined|Infinity/.test(c), 'range '+r+': clean numbers');
-  ok(!/warn/.test(t.els['wtMeta']._cls.size?[...t.els['wtMeta']._cls].join():''), 'range '+r+': no fallback warning');
-});
-
-console.log('\n── EDGE STATES ────────────────────────────');
-function edge(name, opts, checks){
-  const t=run(opts);
-  ok(!t.threw, name+': no throw'+(t.threw?' → '+t.threw.message:''));
-  if(t.threw) return;
-  ok(!/NaN|undefined|Infinity/.test(t.all()), name+': no NaN/undefined painted');
-  checks(t);
+let REAL=synth();
+for(const f of [path.join(REPO,'..','BACKUPS','weights-fixture.json')]){
+  try{ const a=JSON.parse(fs.readFileSync(f,'utf8')); if(Array.isArray(a)&&a.length>100){ REAL=a; console.log('  (fixture: '+f+')'); } }catch(e){}
 }
+const tOf=k=>Math.floor(Date.UTC(+k.slice(0,4),+k.slice(5,7)-1,+k.slice(8,10))/864e5);
+function trendAt(rows,key){ const t=tOf(key); let s=0,n=0; rows.forEach(r=>{ const rt=tOf(r.dateKey); if(rt<=t&&rt>=t-6){ s+=r.weight; n++; } }); return n?s/n:null; }
 
-edge('empty log', {data:[], goal:72, today:'2026-07-13'}, t=>{
-  ok(t.els['wtNum'].textContent==='—', 'empty: hero is an em dash');
-  ok(!t.els['wtEmpty']._cls.has('hidden'), 'empty: empty-state shown');
-  ok(t.els['wtChartWrap']._cls.has('hidden'), 'empty: chart hidden');
-  ok(t.els['wtStats']._cls.has('hidden'), 'empty: stats hidden');
-  ok(t.els['wtMonthsWrap']._cls.has('hidden'), 'empty: month rail hidden');
-  ok(/first weight/.test(t.els['novaSays'].textContent), 'empty: nova asks for a first weigh-in');
-});
-
-edge('one entry', {data:[{dateKey:'2026-07-13',weight:70.4,ts:1}], goal:72, today:'2026-07-13'}, t=>{
-  ok(t.els['wtNum'].textContent==='70.4', 'one: hero shows it');
-  ok(t.els['wtChartWrap']._cls.has('hidden'), 'one: chart still hidden');
-  ok(t.els['wtMonthsWrap']._cls.has('hidden'), 'one: month rail hidden');
-  ok(/data-wdel/.test(t.els['wtHistory'].innerHTML), 'one: history row present');
-});
-
-edge('two entries', {data:[{dateKey:'2026-07-12',weight:70.0,ts:1},{dateKey:'2026-07-13',weight:70.4,ts:1}], goal:72, today:'2026-07-13'}, t=>{
-  ok(!t.els['wtChartWrap']._cls.has('hidden'), 'two: chart appears');
-  ok(/class="wt-line"/.test(t.chart()), 'two: trend line drawn');
-  ok(!/class="wt-band"/.test(t.chart()), 'two: NO fluctuation band (too few points to claim a spread)');
-  ok(/Not enough days/.test(t.els['wtDelta'].textContent), 'two: says trend is not established yet');
-  ok(!/NORMAL SWING/.test(t.els['wtLegend'].innerHTML), 'two: legend omits the band');
-});
-
-edge('no goal set', {data:REALDATA, today:'2026-07-13'}, t=>{
-  ok(!/class="wt-goal"/.test(t.chart()), 'no goal: no goal line invented');
-  ok(!/GOAL/.test(t.els['wtLegend'].innerHTML), 'no goal: legend omits GOAL');
-  ok(/LOWEST/.test(t.els['wtStats'].innerHTML), 'no goal: falls back to LOWEST cell');
-  ok(!/TO GOAL/.test(t.els['wtStats'].innerHTML), 'no goal: no TO GOAL cell');
-  ok(!/to go|over/.test(t.els['novaSays'].textContent), 'no goal: nova does not mention a target');
-});
-
-edge('stale log — nothing for 60 days', {data:REALDATA, goal:72, today:'2026-09-20'}, t=>{
-  const m=t.els['wtMeta'];
-  ok(/No weigh-ins in the last 30 days/.test(m.textContent), 'stale: says so in words (got: '+m.textContent+')');
-  ok(m._cls.has('warn'), 'stale: flagged, not silently empty');
-  ok(/class="wt-line"/.test(t.chart()), 'stale: still draws the most recent data');
-  ok(t.els['wtStreak']._cls.has('hidden'), 'stale: streak hidden');
-});
-
-edge('goal far out of reach', {data:REALDATA, goal:95, today:'2026-07-13'}, t=>{
-  ok(!/class="wt-goal"/.test(t.chart()), 'far goal: not forced into the scale');
-  ok(/TO GOAL/.test(t.els['wtStats'].innerHTML), 'far goal: still stated as a number');
-  const ticks=[...t.chart().matchAll(/class="wt-ylabel"[^>]*>([^<]*)</g)].map(m=>parseFloat(m[1]));
-  ok(Math.max(...ticks)-Math.min(...ticks)<12, 'far goal: scale stays readable (span '+(Math.max(...ticks)-Math.min(...ticks))+')');
-});
-
-edge('at goal exactly', {data:gen('2026-06-14',30,()=>72.0), goal:72, today:'2026-07-13'}, t=>{
-  ok(/holding steady/.test(t.els['wtDelta'].textContent), 'at goal: reads holding steady');
-  ok(/right on 72/.test(t.els['novaSays'].textContent), 'at goal: nova says hold it');
-  ok(!t.els['wtDelta']._cls.has('off'), 'at goal: not painted as a problem');
-  const ticks=[...t.chart().matchAll(/class="wt-ylabel"[^>]*>([^<]*)</g)].map(m=>parseFloat(m[1]));
-  ok(Math.max(...ticks)-Math.min(...ticks)>=2, 'at goal: a flat line does not collapse the scale');
-});
-
-edge('losing while goal is below (good direction)', {data:gen('2026-06-14',30,i=>78-i*0.05), goal:74, today:'2026-07-13'}, t=>{
-  ok(t.els['wtDelta']._cls.has('good'), 'cutting toward a lower goal reads as good');
-});
-edge('gaining while goal is below (wrong direction)', {data:gen('2026-06-14',30,i=>70+i*0.05), goal:68, today:'2026-07-13'}, t=>{
-  ok(t.els['wtDelta']._cls.has('off'), 'gaining away from a lower goal reads as off');
-});
-edge('gaining toward a higher goal (good)', {data:gen('2026-06-14',30,i=>70+i*0.05), goal:75, today:'2026-07-13'}, t=>{
-  ok(t.els['wtDelta']._cls.has('good'), 'bulking toward a higher goal reads as good — the old page painted this amber');
-});
-
-edge('imperial units', {data:gen('2026-06-14',30,i=>155+Math.sin(i)*1.5), goal:null, units:'lb', today:'2026-07-13'}, t=>{
-  ok(t.els['wtUnit'].textContent==='lb', 'lb: unit label follows the profile');
-  ok(/lb/.test(t.els['wtDelta'].textContent), 'lb: trend rate carries the unit');
-});
-
-edge('narrow width phone', {data:REALDATA, goal:72, today:'2026-07-13', w:330}, t=>{
-  ok(t.els['wtSvg'].getAttribute('viewBox')==='0 0 330 214', 'narrow: viewBox follows the real width');
-  const xs=[...t.chart().matchAll(/class="wt-daily" cx="([\d.]+)"/g)].map(m=>parseFloat(m[1]));
-  ok(Math.min(...xs)>=34 && Math.max(...xs)<=330-14+0.01, 'narrow: every point stays inside the plot');
-});
-
-edge('reduced motion', {data:REALDATA, goal:72, today:'2026-07-13', reduce:true}, t=>{
-  ok(/class="wt-line"/.test(t.chart()), 'reduced motion: chart still fully drawn');
-});
-
-edge('duplicate + out-of-order + junk rows', {data:[
-  {dateKey:'2026-07-13',weight:70.4,ts:3},{dateKey:'2026-07-11',weight:70.0,ts:1},
-  {dateKey:'2026-07-12',weight:70.2,ts:2},{dateKey:'2026-07-10',weight:'bad',ts:1},
-  null,{weight:70},{dateKey:'2026-07-09',weight:69.8,ts:1}
-], goal:72, today:'2026-07-13'}, t=>{
-  ok((t.chart().match(/class="wt-daily"/g)||[]).length===4, 'junk: only the 4 valid rows plotted');
-  ok(t.els['wtNum'].textContent==='70.4', 'junk: newest valid row is the hero');
-});
-
-console.log('\n── THE LOGGING RITUAL ─────────────────────');
-{
-  const t=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  ok(!t.threw, 'ritual: no throw');
-  const last=REALDATA.slice().sort((a,b)=>a.dateKey.localeCompare(b.dateKey)).pop().weight;
-
-  ok(t.els['wtInput'].placeholder===last.toFixed(1),
-     'field ghosts his last reading ('+t.els['wtInput'].placeholder+' vs '+last.toFixed(1)+')');
-  ok(t.els['wtInput'].value==='', 'field is EMPTY, never pre-filled — a stale number must not be committable by one tap');
-  ok(/Logging for today/.test(t.els['wtWhen'].textContent), 'says which day it will log (got: '+t.els['wtWhen'].textContent+')');
-  ok(!t.els['wtWhen']._cls.has('other'), 'today is not flagged as another day');
-  /* the default lives in the markup, and nothing on boot un-hides it */
-  ok(/id="wtDateRow"[^>]*class="wt-date-row hidden"|class="wt-date-row hidden"[^>]*id="wtDateRow"/.test(HTML),
-     'the date picker ships folded away');
-  ok(t.els['wtDateRow']===undefined, 'and boot never touches it, so it stays folded');
-  ok(t.els['wtFeedback'].textContent==='', 'no feedback before he types');
-
-  /* steppers */
-  t.press(1);
-  ok(t.els['wtInput'].value===(last+0.1).toFixed(1), '+ seeds from his last reading → '+t.els['wtInput'].value);
-  t.press(1);
-  ok(t.els['wtInput'].value===(last+0.2).toFixed(1), '+ again steps by 0.1 → '+t.els['wtInput'].value);
-  t.press(0); t.press(0); t.press(0);
-  ok(t.els['wtInput'].value===(last-0.1).toFixed(1), '− steps back down → '+t.els['wtInput'].value);
-  ok(!/NaN|undefined/.test(t.els['wtInput'].value), 'stepper never produces NaN');
-
-  const t2=run({data:[], goal:null, today:'2026-07-13'});
-  t2.press(1);
-  ok(t2.els['wtInput'].value==='70.1', 'stepper on an EMPTY log falls back to a sane 70 (got '+t2.els['wtInput'].value+')');
-
-  /* live feedback */
-  const t3=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  /* Today (13th) is already logged at 70.4, so the day BEFORE it — the 12th at
-     70.6 — is the correct reference. Comparing today against itself would say
-     nothing. */
-  t3.type('70.8');
-  ok(/from 70\.6 kg/.test(t3.els['wtFeedback'].textContent), 'feedback compares to the previous DAY, not to today\'s own entry (got: '+t3.els['wtFeedback'].textContent+')');
-  ok(/\+0\.2 kg/.test(t3.els['wtFeedback'].textContent), 'feedback states the delta');
-  ok(!t3.els['wtFeedback']._cls.has('warn'), 'a normal 0.2 kg move is not flagged');
-  t3.type('70.6');
-  ok(/No change/.test(t3.els['wtFeedback'].textContent), 'an identical reading says so');
-  t3.type('74.0');
-  ok(t3.els['wtFeedback']._cls.has('warn'), '+3.6 kg overnight IS flagged against his own 0.34 kg typical swing');
-  ok(/Double-check/.test(t3.els['wtFeedback'].textContent), 'the flag tells him what to do');
-  t3.type('704');
-  ok(t3.els['wtFeedback']._cls.has('bad'), 'a fat-fingered 704 is caught before saving');
-  t3.type('7.04');
-  ok(t3.els['wtFeedback']._cls.has('warn'), 'a fat-fingered 7.04 is flagged too');
-  t3.type('');
-  ok(t3.els['wtFeedback'].textContent==='', 'clearing the field clears the feedback');
-  ok(!t3.els['wtFeedback']._cls.has('warn') && !t3.els['wtFeedback']._cls.has('bad'), 'and clears its colour');
-
-  /* editing a past day must announce itself */
-  const t4=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  t4.els['wtHistory']._h.click.call({ querySelectorAll:()=>[] },
-    { target:{ closest:sel=>sel==='[data-wedit]'?{ getAttribute:()=>'2026-06-20' }:null } });
-  ok(t4.els['wtDateInput'].value==='2026-06-20', 'editing a past day selects that date');
-  ok(!t4.els['wtDateRow']._cls.has('hidden'), 'and reveals the date picker');
-  ok(/Sat Jun 20/.test(t4.els['wtWhen'].textContent), 'and names the day in words (got: '+t4.els['wtWhen'].textContent+')');
-  ok(t4.els['wtWhen']._cls.has('other'), 'and flags that it is not today');
-  ok(/Fix this weigh-in/.test(t4.els['wtAsk'].textContent), 'and the prompt changes from asking to fixing');
-  ok(t4.els['wtInput'].value==='71.2', 'and loads that day\'s real value (got '+t4.els['wtInput'].value+')');
-
-  /* row tap reveals actions; the Edit button must not be swallowed by it */
-  const t5=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  const row=t5.tapRow();
-  ok(row._cls.has('open'), 'tapping a row opens it');
-  ok(!t5.tapEdit('2026-06-20').rowOpened, 'tapping Edit inside a row does NOT merely toggle the row');
-  ok(t5.els['wtDateInput'].value==='2026-06-20', 'tapping Edit actually edits');
+/* ════════════════ A · STATIC: the storage path is untouched ════════════════ */
+console.log('── A · STORAGE PATH (static) ─────────────');
+const BASE='18729af';   // als-v423, the last weight.html before this redesign
+let OLD=null; try{ OLD=cp.execSync('git show '+BASE+':weight.html',{cwd:REPO,encoding:'utf8',stdio:['ignore','pipe','ignore']}); }catch(e){}
+ok(!!OLD, 'can read the als-v423 page from git ('+BASE+')');
+function fnText(src,name){
+  const i=src.indexOf('function '+name+'('); if(i<0) return null;
+  let j=src.indexOf('{',i), depth=0;
+  for(let k=j;k<src.length;k++){ if(src[k]==='{') depth++; else if(src[k]==='}'){ depth--; if(!depth) return src.slice(i,k+1).split('\n').map(l=>l.trim()).join('\n'); } }
+  return null;
 }
+if(OLD) ['wtDateKey','wtParseKey','wtLoad','wtSave','parseWeight','wtGetSelectedDate','wtSaveEntry','wtDeleteEntry','dayNum','goalWeight','trendRate','isSteady','typicalSwing','monthlyAverages'].forEach(n=>{
+  const a=fnText(OLD,n), b=fnText(HTML,n);
+  ok(a && b && a===b, n+'() is identical to als-v423 (indentation aside)');
+});
+ok((HTML.match(/localStorage\.setItem\(/g)||[]).length===1, 'exactly ONE localStorage.setItem in the page');
+ok(/function wtSave\(arr\)\{ try\{ localStorage\.setItem\(WT_KEY, JSON\.stringify\(arr\)\); \}catch\(e\)\{\} \}/.test(HTML), '…and it is wtSave(), writing po_coach_weights');
+ok(!/localStorage\.removeItem|localStorage\.clear/.test(SRC), 'the page never removes or clears a key');
+ok(!/goals_outcomes_v1['"]\s*,/.test(SRC.replace(/ls\('goals_outcomes_v1'\)/g,'')), 'goals_outcomes_v1 is only ever read');
+ok(HTML.includes('<script src="vendor/supabase.min.js"></script>') && HTML.includes('<script src="pocoach-sync.js?v=4"></script>'), 'sync wiring (supabase + pocoach-sync) is unchanged');
+ok(/window\._weightRerender\s*=/.test(SRC), 'pocoach-sync\'s re-render hook still exists');
+ok(!/alsconfirm/i.test(SRC.replace(/\/\*[\s\S]*?\*\//g,'')), 'delete no longer depends on ALSConfirm (σταθ. 56)');
 
-console.log('\n── THE HISTORY LIST ───────────────────────');
-{
-  const t=run({data:REALDATA, goal:72, today:'2026-07-13'});
-  const h=t.els['wtHistory'].innerHTML;
-  ok((h.match(/data-wrow=/g)||[]).length===149, 'every row is tappable (got '+(h.match(/data-wrow=/g)||[]).length+')');
-  ok((h.match(/wt-row-pos/g)||[]).length===149, 'every row carries a position marker');
-  ok((h.match(/wt-row-chev/g)||[]).length===149, 'every row shows there is more behind it');
-  ok((h.match(/data-wedit=/g)||[]).length===149 && (h.match(/data-wdel=/g)||[]).length===149,
-     'edit + delete survive for every entry — hidden by CSS, never removed');
-  ok(/>Delete</.test(h), 'delete is a word now, not a bare glyph');
+console.log('\n── A · DESIGN CONTRACT (static) ──────────');
+ok(!/preserveAspectRatio/.test(HTML), 'never preserveAspectRatio');
+ok(!/@media[^{]*min-width/.test(CSS), 'no min-width media query');
+ok(/#chart\{[^}]*touch-action:pan-y/.test(CSS), '#chart is touch-action:pan-y');
+ok(/prefers-reduced-motion:reduce/.test(CSS) && /reduceMotion/.test(SRC), 'reduced motion in CSS and JS');
+ok(CSS.includes('--bg:oklch(13.2% .022 258)'), 'Midnight ground');
+ok(/Commissioner/.test(HTML)&&/Literata/.test(HTML)&&/JetBrains\+Mono/.test(HTML), 'Commissioner · Literata · JetBrains Mono');
+ok(/\(first\.getDay\(\)\+6\)%7/.test(SRC), 'calendar is Monday-first ((getDay()+6)%7)');
+// σταθ. 12: every class toggled from JS exists in CSS
+const toggled=new Set(); for(const m of SRC.matchAll(/classList\.(?:add|toggle|remove)\('([a-z-]+)'/g)) toggled.add(m[1]);
+toggled.forEach(c=>ok(new RegExp('\\.'+c+'\\b').test(CSS), 'class .'+c+' toggled in JS exists in CSS'));
 
-  /* the marker must actually encode the weight */
-  const fracs=[...h.matchAll(/wt-row-pos" style="left:calc\(12px \+ \(100% - 24px\) \* ([\d.]+)\)/g)].map(m=>parseFloat(m[1]));
-  ok(fracs.length===149, 'a fraction for every row');
-  ok(fracs.every(f=>f>=0 && f<=1), 'every fraction is inside 0..1');
-  ok(fracs.some(f=>f===0) && fracs.some(f=>f===1), 'each month pins its own lowest to 0 and highest to 1');
-  /* July 2026: rows are newest-first, weights 70.4(13th) .. and the month min/max */
-  const july=REALDATA.filter(e=>e.dateKey.slice(0,7)==='2026-07');
-  const jw=july.map(e=>e.weight), jmn=Math.min(...jw), jmx=Math.max(...jw);
-  const expected=((july.find(e=>e.dateKey==='2026-07-13').weight-jmn)/(jmx-jmn)).toFixed(3);
-  ok(fracs[0]===parseFloat(expected), 'the newest row\'s marker matches its place in July ('+fracs[0]+' vs '+expected+')');
-
-  /* a flat month must not divide by zero */
-  const flat=[]; const d=new Date('2026-07-01T12:00:00');
-  for(let i=0;i<10;i++){ flat.push({dateKey:d.toISOString().slice(0,10),weight:70,ts:1}); d.setDate(d.getDate()+1); }
-  const t6=run({data:flat, goal:72, today:'2026-07-13'});
-  const f6=[...t6.els['wtHistory'].innerHTML.matchAll(/\* ([\d.]+)\)/g)].map(m=>parseFloat(m[1]));
-  ok(f6.length===10 && f6.every(f=>f===0.5), 'a month with zero variation centres every marker instead of NaN');
-  ok(!/NaN/.test(t6.els['wtHistory'].innerHTML), 'no NaN in a flat month');
+/* ════════════════ B · DRIVEN in real Chrome ════════════════ */
+const vk=path.join(REPO,'video-kit','package.json');
+if(!fs.existsSync(path.join(REPO,'video-kit','node_modules','playwright'))){
+  ok(false,'Playwright missing: run `npm i && npx playwright install chromium` in video-kit/');
+  console.log('\n'+pass+' passed, '+fail+' failed'); process.exit(1);
 }
+const { chromium }=require(require.resolve('playwright',{paths:[path.dirname(vk)]}));
+const STRIP=['src="water.js"','src="topbar.js"','src="vendor/supabase.min.js"','src="pocoach-sync.js','src="nova.js"','src="nova-coach.js'];
+let page_=HTML.split('\n').filter(l=>!STRIP.some(s=>l.includes(s))).join('\n');
+const survivors=STRIP.filter(s=>page_.includes(s));
+ok(!survivors.length && !/<script[^>]+src=/.test(page_), 'harness: no sync/network script survives ('+survivors.join(',')+')');
+page_=page_.replace('<meta charset="UTF-8">','<meta charset="UTF-8"><base href="file://'+REPO+'/">');
+const TMP=path.join(os.tmpdir(),'wt-harness-'+process.pid+'.html'); fs.writeFileSync(TMP,page_);
 
-console.log('\n── CSS CONTRACT (constraint 11) ───────────');
+(async()=>{
+const browser=await chromium.launch();
+async function open(o){
+  o=o||{};
+  const w=o.w||1440;
+  const ctx=await browser.newContext({ viewport:{width:w,height:o.h||900}, hasTouch:w<500 });
+  await ctx.route('**/*', r=>{ const u=r.request().url(); (u.startsWith('file:')||/fonts\.(googleapis|gstatic)\.com/.test(u)) ? r.continue() : r.abort(); });
+  const seed={};
+  if(o.raw!=null) seed.po_coach_weights=o.raw; else if(o.data) seed.po_coach_weights=JSON.stringify(o.data);
+  if(o.goal!=null) seed.goals_outcomes_v1=JSON.stringify([{id:'og-weight',type:'bodyweight',target:o.goal,unit:'kg'}]);
+  if(o.units) seed.po_coach_v1=JSON.stringify({units:o.units});
+  await ctx.addInitScript(({S,NOW})=>{
+    if(!sessionStorage.getItem('__seeded')){ localStorage.clear(); for(const k in S) localStorage.setItem(k,S[k]); sessionStorage.setItem('__seeded','1'); }
+    const R=Date; function F(...a){ if(!(this instanceof F)) return new R(NOW).toString(); return a.length?new R(...a):new R(NOW); }
+    F.prototype=R.prototype; F.now=()=>NOW; F.UTC=R.UTC; F.parse=R.parse; window.Date=F;
+  },{S:seed,NOW:new Date(TODAY+'T09:00:00').getTime()});
+  const page=await ctx.newPage(); const errs=[];
+  page.on('pageerror',e=>errs.push(e.message)); page.on('console',m=>{ if(m.type()==='error'&&!/net::ERR/.test(m.text())) errs.push(m.text()); });
+  await page.goto('file://'+TMP); await page.waitForTimeout(o.wait||400);
+  return { page, ctx, errs, store:()=>page.evaluate(()=>{ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); o[k]=localStorage.getItem(k); } return o; }) };
+}
+const txt=(p,sel)=>p.evaluate(s=>{ const e=document.querySelector(s); return e?e.textContent:null; },sel);
+const vis=(p,sel)=>p.evaluate(s=>{ const e=document.querySelector(s); return !!e && !e.closest('[hidden]') && e.getBoundingClientRect().height>0; },sel);
+const sorted=a=>a.slice().sort((x,y)=>x.dateKey.localeCompare(y.dateKey));
+
+console.log('\n── B1 · RANGES on his data ───────────────');
 {
-  /* A class toggled from JS but defined nowhere fails SILENTLY — the exact
-     bug that left Home's arc band permanently lit. Every class this page
-     switches on must resolve in its own <style> or in aurora.css. */
-  const STYLE=HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
-  const AURORA=fs.readFileSync('/Users/alexstathatos/ALS DASHBOARD ALL FILES/als/aurora.css','utf8');
-  const CSS=STYLE+'\n'+AURORA;
-  const toggled=new Set();
-  for(const m of SRC.matchAll(/classList\.(?:add|remove|toggle)\(([^)]*)\)/g)){
-    for(const q of m[1].matchAll(/'([A-Za-z][\w-]*)'/g)) toggled.add(q[1]);
+  const t=await open({data:REAL});
+  for(const r of ['7','30','91','0']){
+    await t.page.click('.tabs button[data-r="'+r+'"]'); await t.page.waitForTimeout(150);
+    const m=await t.page.evaluate(()=>{ const s=document.getElementById('chart'); const vb=s.viewBox.baseVal;
+      return { trends:s.querySelectorAll('.c-trend').length, dots:s.querySelectorAll('.c-dot').length, ticks:[...s.querySelectorAll('.c-tick')].map(x=>x.textContent).filter(x=>/^\d+$/.test(x)).map(Number),
+        vbw:vb.width, cw:Math.round(s.getBoundingClientRect().width), html:s.innerHTML, ro:document.getElementById('roD').textContent, pressed:document.querySelector('.tabs [aria-pressed="true"]').dataset.r }; });
+    const name=r==='0'?'ALL':r==='91'?'3M':r+'D';
+    const span=m.ticks.length?Math.max(...m.ticks)-Math.min(...m.ticks):0;
+    console.log('  '+name.padEnd(4)+' dots='+String(m.dots).padEnd(4)+' ticks=['+m.ticks.join(' ')+'] '+m.ro);
+    ok(m.pressed===r, name+': tab pressed');
+    ok(m.trends===1, name+': exactly ONE trend line');
+    ok(m.dots>=2, name+': mornings drawn');
+    ok(span>=2, name+': y spans ≥3 kg of gridlines (whole-kg ticks span '+span+')');
+    ok(Math.abs(m.vbw-m.cw)<=1, name+': 1 SVG unit = 1 CSS px ('+m.vbw+' vs '+m.cw+')');
+    ok(!/NaN|undefined|Infinity/.test(m.html), name+': clean numbers');
   }
-  /* classes emitted inside generated markup */
-  for(const m of SRC.matchAll(/class="([^"'{}]*?)"/g)){
-    for(const c of m[1].trim().split(/\s+/)) if(c) toggled.add(c);
-  }
-  ok(toggled.size>15, 'found the page\'s class vocabulary ('+toggled.size+' names)');
-  const missing=[...toggled].filter(c=>!new RegExp('\\.'+c.replace(/[-]/g,'\\-')+'(?![\\w-])').test(CSS));
-  ok(missing.length===0, 'every JS-toggled class is defined in CSS — missing: '+missing.join(', '));
-
-  /* the specific rules this redesign depends on */
-  const need=[
-    [/\.wt-history-row\.open[\s\S]{0,120}?\.wt-history-edit-wrap\s*\{[^}]*display:\s*flex/, 'opening a row reveals its actions'],
-    [/\.wt-history-edit-wrap\s*\{[^}]*display:\s*none/, 'and they are hidden until then'],
-    [/\.wt-history-val\s*\{[^}]*white-space:\s*nowrap/, 'the weight can never wrap onto two lines'],
-    [/\.wt-history-date\s*\{[^}]*text-overflow:\s*ellipsis/, 'only the date gives up room'],
-    [/\.wt-history-row\.open\s+\.wt-history-delta\s*\{[^}]*display:\s*none/, 'the delta yields to the actions'],
-    [/\.wt-row-pos\s*\{[^}]*position:\s*absolute/, 'the position marker is positioned'],
-    [/\.wt-chart\s*\{[^}]*touch-action:\s*pan-y/, 'the chart lets a vertical drag scroll the page'],
-    [/\.wt-pill-ind\s*\{[^}]*transition:\s*transform[^;}]*;/, 'the range pill animates transform only'],
-    [/\.wt-whisk\s*\{/, 'the tether to the trend is styled'],
-    [/\.wt-feedback\.warn\s*\{/, 'the warn state is styled'],
-    [/\.wt-feedback\.bad\s*\{/, 'the bad state is styled'],
-    [/\.wt-when\.other\s*\{/, 'a non-today date is styled']
-  ];
-  for(const [re,label] of need) ok(re.test(STYLE), label);
-  ok(!/\.wt-thread\b/.test(STYLE), 'the second competing line is gone from CSS');
-  ok(!/wt-thread/.test(SRC), 'and gone from the JS');
-  ok(!/wt-band\b/.test(SRC), 'the old envelope band is fully removed, not just unused');
+  const inView=REAL.filter(e=>tOf(e.dateKey)>tOf(TODAY)-30).length;
+  await t.page.click('.tabs button[data-r="30"]'); await t.page.waitForTimeout(150);
+  ok(await t.page.evaluate(()=>document.querySelectorAll('#chart .c-dot').length)===inView, '30D: one dot per weigh-in in the last 30 days ('+inView+')');
+  ok((await txt(t.page,'#roD'))==='LAST 30 DAYS', '30D: readout names the period');
+  ok(!t.errs.length, 'no JS errors ('+t.errs.join(' / ')+')');
+  const st=await t.store();
+  ok(st.po_coach_weights===JSON.stringify(REAL), 'DATA SAFETY: rendering + 4 range changes leave the weigh-ins byte-identical');
+  ok(Object.keys(st).length===1, 'DATA SAFETY: rendering writes no new key ('+Object.keys(st).join(',')+')');
+  await t.ctx.close();
 }
 
-console.log('\n── DATA SAFETY ────────────────────────────');
-const t2=run({data:REALDATA, goal:72, today:'2026-07-13'});
-const after=JSON.parse(t2.store['po_coach_weights']);
-ok(after.length===149, 'rendering never adds or drops a weigh-in');
-ok(JSON.stringify(after)===JSON.stringify(REALDATA.slice().sort((a,b)=>a.dateKey.localeCompare(b.dateKey))), 'weigh-in rows are byte-identical after render');
-ok(!('goals_outcomes_v1' in t2.store) || t2.store['goals_outcomes_v1']===JSON.stringify([{id:'og-weight',type:'bodyweight',target:72,unit:'kg'}]), 'the goals row is only ever read, never written');
-ok(Object.keys(t2.store).length===2, 'render writes no new localStorage keys (got '+Object.keys(t2.store).join(',')+')');
+console.log('\n── B2 · THE TREND is from the full history, by date ──');
+{
+  const t=await open({data:REAL});
+  await t.page.click('.tabs button[data-r="7"]'); await t.page.waitForTimeout(150);
+  // the first day on 7D must carry the trend of ITS 7 calendar days, not a warm-up from one sample
+  const k0=new Date(tOf(TODAY)*864e5-6*864e5).toISOString().slice(0,10);
+  await t.page.locator('#chart').scrollIntoViewIfNeeded();
+  const b=await t.page.locator('#chart').boundingBox();
+  await t.page.mouse.move(b.x+48, b.y+b.height/2);
+  const ro=await t.page.evaluate(()=>({ d:document.getElementById('roD').textContent, tr:document.querySelector('#roB b').textContent }));
+  const want=trendAt(REAL,k0).toFixed(1);
+  ok(ro.tr===want, '7D first day trend = mean of its 7 calendar days ('+ro.d+': '+ro.tr+' vs '+want+')');
+  await t.ctx.close();
+  // a missed day widens the window instead of shifting it
+  const gap=[{dateKey:'2026-10-10',weight:70,ts:1},{dateKey:'2026-10-11',weight:70,ts:1},{dateKey:'2026-10-12',weight:70,ts:1},{dateKey:'2026-10-16',weight:72,ts:1},{dateKey:'2026-10-20',weight:72,ts:1}];
+  const g=await open({data:gap});
+  const face=(await txt(g.page,'#wtFace')).replace('kg','');
+  ok(face==='72.0', 'missed days: trend on 20 Oct uses only 14–20 Oct (got '+face+', index-based would say 71.2)');
+  await g.ctx.close();
+}
 
+console.log('\n── B3 · HONEST SENTENCES ─────────────────');
+{
+  const flat=[]; for(let i=0;i<40;i++){ const d=new Date(tOf(TODAY)*864e5-(40-i)*864e5); flat.push({dateKey:d.toISOString().slice(0,10),weight:66+((i*7)%5-2)/10,ts:1}); }
+  let t=await open({data:flat});
+  let a=await txt(t.page,'#wtAnswer');
+  ok(/holding steady/.test(a) && !/dropping|climbing/.test(a), 'flat data: "holding steady", no direction ('+a+')');
+  ok(!/goal/i.test(a), 'no goal set: the sentence says nothing about a goal');
+  ok(!(await t.page.$('#chart .c-goal')) && /Lowest/i.test(await txt(t.page,'#stats')), 'no goal: no goal line, stat falls back to Lowest');
+  await t.ctx.close();
+  const down=[]; for(let i=0;i<40;i++){ const d=new Date(tOf(TODAY)*864e5-(40-i)*864e5); down.push({dateKey:d.toISOString().slice(0,10),weight:Math.round((70-i*0.05+((i*7)%3-1)/20)*10)/10,ts:1}); }
+  t=await open({data:down, goal:66});
+  a=await txt(t.page,'#wtAnswer');
+  ok(/dropping about/.test(a) && /to go/.test(a) && /reach it in (early|mid-|late) /.test(a), 'losing toward a lower goal: pace + distance + when ('+a+')');
+  ok(!!(await t.page.$('#chart .c-goal')) && !!(await t.page.$('#chart .c-ahead')), 'goal line + the dashed continuation are drawn');
+  ok(await t.page.evaluate(()=>!!document.querySelector('#chart .c-eta')||[...document.querySelectorAll('#chart .c-ahead-s')].some(x=>/≈/.test(x.textContent))), 'the ETA is marked on the chart');
+  await t.ctx.close();
+  t=await open({data:down, goal:72});
+  a=await txt(t.page,'#wtAnswer');
+  ok(/moving away from it/.test(a) && !/reach it/.test(a), 'losing while the goal is above: says so honestly ('+a+')');
+  ok(!(await t.page.$('#chart .c-eta')), 'moving away: no ETA invented');
+  await t.ctx.close();
+  t=await open({data:REAL, goal:72});
+  ok(await t.page.evaluate(()=>[...document.querySelectorAll('#chart .c-flag-t')].length===0), '30D: REACHED only appears when that day is in view');
+  await t.page.click('.tabs button[data-r="0"]'); await t.page.waitForTimeout(150);
+  ok(await t.page.evaluate(()=>[...document.querySelectorAll('#chart .c-flag-t')].some(x=>/^REACHED · \d+ [A-Z]{3}$/.test(x.textContent))), 'ALL: "REACHED · <date>" the first time the trend crossed the goal');
+  ok(await t.page.evaluate(()=>document.querySelectorAll('.mo.goal').length>=1), 'month columns mark a month that met the goal');
+  await t.ctx.close();
+}
+
+console.log('\n── B4 · EMPTY AND EARLY STATES ───────────');
+{
+  let t=await open({data:[]});
+  ok((await txt(t.page,'#wtFace')).startsWith('—'), 'empty: face is an em dash');
+  ok(/No weigh-ins yet/.test(await txt(t.page,'#wtAnswer')), 'empty: says what to do');
+  ok(!(await vis(t.page,'#wtRuler')) && !(await vis(t.page,'#stats')) && !(await vis(t.page,'#chartCard')) && await vis(t.page,'#chartEmpty'), 'empty: ruler/stats/chart hidden, empty card shown');
+  ok(!(await vis(t.page,'#wtAlarm')), 'empty is NOT shown as a read failure');
+  ok(!t.errs.length, 'empty: no JS errors ('+t.errs.join(' / ')+')');
+  await t.ctx.close();
+  t=await open({data:REAL.slice(-1)});
+  ok(/Early days: 1 morning/.test(await txt(t.page,'#wtAnswer')) && await vis(t.page,'#chartEmpty'), 'one weigh-in: early days, chart waits for a second');
+  await t.ctx.close();
+  t=await open({data:REAL.slice(-3)});
+  ok(/Early days: 3 mornings/.test(await txt(t.page,'#wtAnswer')) && /needs a few more/.test(await txt(t.page,'#stats')) && await vis(t.page,'#chartCard'), 'three weigh-ins: line drawn, no pace claimed');
+  ok(!t.errs.length, 'early: no JS errors');
+  await t.ctx.close();
+}
+
+console.log('\n── B5 · CALENDAR reaches every weigh-in ──');
+{
+  const t=await open({data:REAL});
+  ok(await t.page.evaluate(()=>document.querySelectorAll('#cal .day.blank').length)===3, 'October 2026 starts on Thursday: 3 leading blanks (Monday first)');
+  const seen=new Set();
+  for(let i=0;i<24;i++){
+    (await t.page.evaluate(()=>[...document.querySelectorAll('#cal [data-day]')].filter(b=>b.querySelector('.w')&&/\d/.test(b.querySelector('.w').textContent)).map(b=>b.dataset.day))).forEach(k=>seen.add(k));
+    if(await t.page.isDisabled('#calPrev')) break;
+    await t.page.click('#calPrev');
+  }
+  ok(seen.size===REAL.length, 'paging back reaches every weigh-in ('+seen.size+'/'+REAL.length+')');
+  ok(await t.page.isDisabled('#calPrev'), 'the back arrow stops at the first month');
+  await t.ctx.close();
+}
+
+console.log('\n── B6 · WRITES: save, back-fill, edit, delete, undo ──');
+{
+  const t=await open({data:REAL});
+  await t.page.fill('#wtInput','66.4'); await t.page.click('#wtSaveBtn'); await t.page.waitForTimeout(100);
+  let after=JSON.parse((await t.store()).po_coach_weights);
+  const want=sorted(REAL.concat([{dateKey:TODAY,weight:66.4}]));
+  ok(after.length===REAL.length+1 && after.find(e=>e.dateKey===TODAY).weight===66.4, 'save: today stored as 66.4');
+  ok(JSON.stringify(after.filter(e=>e.dateKey!==TODAY))===JSON.stringify(REAL), 'save: every other row untouched');
+  ok(await vis(t.page,'#logDone') && /66\.4/.test(await txt(t.page,'#doneV')), 'save: card turns into "Today · logged"');
+  await t.page.click('#wtEditBtn');
+  ok((await t.page.inputValue('#wtInput'))==='66.4' && await vis(t.page,'#logForm'), 'Edit reopens with the saved value');
+  await t.page.fill('#wtInput','66.2'); await t.page.click('#wtSaveBtn');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  ok(after.length===REAL.length+1 && after.find(e=>e.dateKey===TODAY).weight===66.2, 'edit today: replaced, not duplicated');
+  // back-fill a missed day from the calendar
+  await t.page.click('#cal [data-day="2026-10-14"]'); await t.page.click('#calEdit [data-act="log"]');
+  ok(/14 Oct/.test(await txt(t.page,'#wtWhen')), 'back-fill: the card names the day in words');
+  await t.page.fill('#wtInput','66.0'); await t.page.click('#wtSaveBtn');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  ok(after.find(e=>e.dateKey==='2026-10-14')?.weight===66.0 && after.length===REAL.length+2, 'back-fill: 14 Oct stored');
+  ok((await t.page.inputValue('#wtDateInput'))===TODAY, 'after a back-fill the card returns to today');
+  // edit a past day
+  const past=REAL[REAL.length-5];
+  await t.page.click('#cal [data-day="'+past.dateKey+'"]'); await t.page.click('#calEdit [data-act="edit"]');
+  ok((await t.page.inputValue('#wtInput'))===past.weight.toFixed(1), 'edit past day: value loaded');
+  await t.page.fill('#wtInput','64.9'); await t.page.click('#wtSaveBtn');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  ok(after.find(e=>e.dateKey===past.dateKey).weight===64.9 && after.length===REAL.length+2, 'edit past day: changed in place');
+  // delete: two steps
+  const victim=REAL[REAL.length-2];
+  await t.page.click('#cal [data-day="'+victim.dateKey+'"]');
+  await t.page.click('#calEdit [data-act="del"]');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  ok(after.some(e=>e.dateKey===victim.dateKey), 'delete: the FIRST tap deletes nothing');
+  ok(/Tap again/.test(await txt(t.page,'#calEdit [data-act="del"]')), 'delete: first tap arms the button');
+  await t.page.click('#calEdit [data-act="del"]');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  ok(!after.some(e=>e.dateKey===victim.dateKey) && after.length===REAL.length+1, 'delete: the second tap removes exactly that day');
+  ok(/Deleted/.test(await txt(t.page,'#calEdit')), 'delete: says what went, offers Undo');
+  await t.page.click('#calEdit [data-act="undo"]');
+  after=JSON.parse((await t.store()).po_coach_weights);
+  const back=after.find(e=>e.dateKey===victim.dateKey);
+  ok(back && back.weight===victim.weight && after.length===REAL.length+2, 'Undo brings the same weight back on the same day');
+  ok(back && back.ts>1, 'Undo stamps a fresh ts (retires pocoach-sync\'s tombstone)');
+  ok(!t.errs.length, 'writes: no JS errors ('+t.errs.join(' / ')+')');
+  await t.ctx.close();
+}
+
+console.log('\n── B7 · GUARDS: a broken read pauses writes; a failed write says so ──');
+{
+  const raw=JSON.stringify(REAL.slice(0,-1).concat([{dateKey:'2026-10-20',weight:'66.5'}]));
+  let t=await open({raw});
+  ok(await vis(t.page,'#wtAlarm') && /Saving is paused/.test(await txt(t.page,'#wtAlarm')), 'unrecognised row: the page says so');
+  ok(await t.page.isDisabled('#wtSaveBtn'), 'unrecognised row: Save is off');
+  await t.page.evaluate(()=>{ document.getElementById('wtInput').value='66.1'; document.getElementById('wtSaveBtn').disabled=false; document.getElementById('wtSaveBtn').click(); });
+  ok((await t.store()).po_coach_weights===raw, 'unrecognised row: even a forced Save leaves the stored text byte-identical');
+  await t.ctx.close();
+  t=await open({raw:'{not json'});
+  ok(await vis(t.page,'#wtAlarm') && /couldn’t read/i.test(await txt(t.page,'#wtAnswer')), 'unreadable: "couldn’t read", never "no weigh-ins yet"');
+  ok((await t.store()).po_coach_weights==='{not json', 'unreadable: nothing written over it');
+  await t.ctx.close();
+  t=await open({raw:JSON.stringify(REAL.concat([{dateKey:REAL[3].dateKey,weight:70,ts:2}]))});
+  ok(await t.page.isDisabled('#wtSaveBtn'), 'a day stored twice: Save is off (a write would collapse it)');
+  await t.ctx.close();
+  t=await open({data:REAL});
+  await t.page.evaluate(()=>{ const o=Storage.prototype.setItem; Storage.prototype.setItem=function(k,v){ if(k==='po_coach_weights') throw new DOMException('full','QuotaExceededError'); return o.call(this,k,v); }; });
+  await t.page.fill('#wtInput','66.3'); await t.page.click('#wtSaveBtn');
+  ok(/NOT stored/.test(await txt(t.page,'#wtSay')), 'full disk: "was NOT stored", not a tick');
+  ok(!(await vis(t.page,'#logDone')), 'full disk: the card does not pretend it was logged');
+  ok((await t.store()).po_coach_weights===JSON.stringify(REAL), 'full disk: stored data unchanged');
+  await t.ctx.close();
+}
+
+console.log('\n── B8 · DRAG reads a day; the page still scrolls ──');
+{
+  const t=await open({data:REAL, w:390, h:844});
+  const b=await t.page.locator('#chart').boundingBox();
+  await t.page.evaluate(({x,y})=>{ document.getElementById('chart').dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'touch',buttons:1,bubbles:true})); },{x:b.x+b.width/2,y:b.y+b.height/2});
+  const m=await t.page.evaluate(()=>({ d:document.getElementById('roD').textContent, a:document.querySelector('#roA .lbl').textContent, win:document.querySelectorAll('#chart .c-win').length, wd:document.querySelectorAll('#chart .c-wdot').length, scrub:document.getElementById('chart').classList.contains('scrub') }));
+  ok(/^[A-Z]{3} \d+ [A-Z]{3}$/.test(m.d) && /vs trend/i.test(m.a), 'drag: the readout becomes that day ('+m.d+')');
+  ok(m.win===1 && m.wd>=1 && m.wd<=7 && m.scrub, 'drag: the 7 mornings behind that trend light up ('+m.wd+'), the rest dim');
+  await t.page.evaluate(()=>document.getElementById('chart').dispatchEvent(new PointerEvent('pointercancel',{pointerType:'touch',bubbles:true})));
+  ok((await txt(t.page,'#roD'))==='LAST 30 DAYS' && !(await t.page.$('#chart .c-win')), 'a vertical scroll (pointercancel) clears the readout');
+  await t.page.focus('#chart'); await t.page.keyboard.press('ArrowLeft');
+  ok(/^[A-Z]{3} \d+ [A-Z]{3}$/.test(await txt(t.page,'#roD')), 'keyboard: ← reads a day');
+  await t.page.keyboard.press('Escape');
+  ok((await txt(t.page,'#roD'))==='LAST 30 DAYS', 'keyboard: Esc returns to the period');
+  await t.ctx.close();
+}
+
+console.log('\n── B9 · PHONE 390 · LAPTOP 1180 / 1440 ───');
+for(const [w,h] of [[390,844],[1180,900],[1440,900]]){
+  const t=await open({data:REAL, w, h, wait:900});
+  const m=await t.page.evaluate(()=>{
+    const de=document.documentElement, small=[], taps=[];
+    for(const el of document.querySelectorAll('body *')){
+      const r=el.getBoundingClientRect(); if(!r.width||!r.height||el.closest('[hidden]')) continue;
+      const cs=getComputedStyle(el); if(cs.visibility==='hidden'||cs.display==='none') continue;
+      if([...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()) && parseFloat(cs.fontSize)<11) small.push(el.tagName+':'+cs.fontSize);
+      if(/^(BUTTON|A|INPUT)$/.test(el.tagName) && el.id!=='wtInput' && (r.width<44||r.height<44)) taps.push((el.id||el.className||el.tagName)+' '+Math.round(r.width)+'×'+Math.round(r.height));
+    }
+    return { over:de.scrollWidth-de.clientWidth, small, taps };
+  });
+  ok(m.over===0, w+': no horizontal scroll ('+m.over+'px)');
+  ok(m.taps.length===0, w+': every tap target ≥44×44 ('+m.taps.slice(0,4).join(', ')+')');
+  if(w<600) ok(m.small.length===0, w+': no text under 11px ('+m.small.slice(0,4).join(', ')+')');
+  ok(!t.errs.length, w+': no JS errors');
+  await t.ctx.close();
+}
+
+await browser.close();
+try{ fs.unlinkSync(TMP); }catch(e){}
 console.log('\n'+pass+' passed, '+fail+' failed');
 process.exit(fail?1:0);
+})().catch(e=>{ console.log('  ✗ harness crashed: '+e.message); try{ fs.unlinkSync(TMP); }catch(_){} process.exit(1); });

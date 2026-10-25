@@ -1550,12 +1550,14 @@ drifted every time a page shipped; it is not a fact worth maintaining by hand.)
 
 **Body & training** — `gym.html` (246 seeded exercises, templates, folders),
 `body.html`, `measure.html`, `pr.html`,
-`weight.html` — weigh-ins, rebuilt als-v422/423 (§5). The page's argument is that
-his 0.335 kg of daily noise is not the signal: the **7-day trend is the hero
-line**, each morning hangs off it as scatter, the y-axis never zooms tighter than
-3 kg, his 72 kg goal is drawn, and a rate is only called a direction when it
-exceeds its own standard error. Logging is a ritual (steppers + live sanity
-feedback) rather than a form,
+`weight.html` — weigh-ins, **rebuilt als-v662 as the approved Midnight design**
+(`design-mockups/weight-v2.html`, §5) on top of the als-v422/423 lessons. The page's
+argument is that his daily noise is not the signal: the **7-day trend is the big
+number and the one line**, each morning hangs off it by a hairline, the y-axis never
+zooms tighter than 3 kg, a goal (if `goals_outcomes_v1` has one) is drawn, and a rate
+is only called a direction when it exceeds its own standard error. The Ruler, the
+logging ritual, a 2×2, month columns and a Monday-first calendar that reaches every
+weigh-in (Edit · two-step Delete · Undo · back-fill),
 `sleep.html` (score is MEASURED only; feelings are an outcome, never an input —
 and for Chrissie it now draws her watch's whole night: measured window,
 hypnogram, stage split, continuity, overnight body. Three states that must LOOK
@@ -1890,6 +1892,27 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-25 — `als-v662` — WEIGHT: ΤΟ ΕΓΚΕΚΡΙΜΕΝΟ ΣΧΕΔΙΟ (`design-mockups/weight-v2.html`), ΣΤΑ ΔΙΚΑ ΤΟΥ ΔΕΔΟΜΕΝΑ.**
+Δική του εντολή: «ΑΚΡΙΒΩΣ όπως το σχέδιο… μην χάσεις ζυγίσεις μου». CSS + `draw()/over()/idle()` πάρθηκαν από το
+σχέδιο αυτούσια· η μόνη αλλαγή στη λογική: τροφοδοτείται από ΕΝΑΝ πίνακα ΑΝΑ ΗΜΕΡΑ (πρώτη ζύγιση → σήμερα, `null` στις
+χαμένες), τάση = μέσος όρος των ζυγίσεων στις 7 ΗΜΕΡΟΜΗΝΙΕΣ, από όλο το ιστορικό, μετά κομμένη στο εύρος· κενό ≥7 μερών
+ΣΠΑΕΙ τη γραμμή (ποτέ γέφυρα). Ο ρυθμός/ETA = `trendRate(21)` + `isSteady` όπως πριν· «moving away» λέγεται τίμια, χωρίς
+στόχο τίποτα για στόχο. Λάπτοπ 2 στήλες (340 sticky), ≤1020 μία στήλη με σειρά αντίχειρα.
+- ⛔ **DATA PATH ΑΘΙΚΤΟ:** `wtLoad/wtSave/wtSaveEntry/wtDeleteEntry/parseWeight/wtDateKey/wtGetSelectedDate` (+ οι αναλυτές)
+  ταυτίζονται με την als-v423 (`18729af`) — το test τις συγκρίνει. ΕΝΑ `setItem` στη σελίδα. `pocoach-sync.js` ίδιο.
+- ⭐ **ΔΥΟ ΦΡΟΥΡΟΙ ΓΥΡΩ ΑΠΟ ΤΙΣ ΕΓΓΡΑΦΕΣ (μόνο διαβάζουν):** (1) `wtCheckRead()` — αν το `po_coach_weights` έχει ΟΤΙΔΗΠΟΤΕ
+  που το `wtLoad()` θα πετούσε (μη-JSON, όχι πίνακας, γραμμή χωρίς αριθμό, ίδια μέρα δύο φορές) ή το storage είναι
+  μπλοκαρισμένο → κόκκινο banner «Saving is paused» και ΚΑΘΕ εγγραφή κλειστή, γιατί ένα Save θα έγραφε τον
+  φιλτραρισμένο πίνακα πάνω στον αληθινό. (2) `wtStored()` — μετά από κάθε save/delete/undo ξαναδιαβάζει το κλειδί·
+  το `wtSave` καταπίνει το QuotaExceeded (σταθ. 17), οπότε χωρίς αυτό γεμάτος δίσκος = ψεύτικο ✓.
+- ⭐ **Delete σε δύο βήματα + Undo.** Το Undo ξαναγράφει την ίδια ζύγιση από το κανονικό `wtSaveEntry` → νέο `ts` →
+  το `mergeWeights` αποσύρει το tombstone. Το ALSConfirm έφυγε (σταθ. 56 δεν ισχύει πια εδώ).
+- Nova: το avatar `#nova` έφυγε → το `nova.js` βάζει μόνο του το πλωτό κουμπί (coach ένα tap μακριά).
+- `tests/weight-chart.test.js` ξαναγράφτηκε: **132/0**, οδηγεί την αληθινή σελίδα σε Chrome (Playwright του video-kit),
+  χωρίς κανένα sync script. 4 μεταλλάξεις (φρουρός ανάγνωσης off · έλεγχος εγγραφής off · delete ενός βήματος ·
+  παράθυρο 10 ημερών) → όλες κόκκινες. smoke OK · `check.mjs` καθαρό · render 390/1440 με τις 246 αληθινές ζυγίσεις του.
+- ⚠️ Το `get_raw po_coach_weights` του MCP κόβεται στους ~12k χαρακτήρες (≈20 Οκτ.)· η πλήρης λίστα (251) ζει στο Vault.
 
 **2026-10-22 — `als-v650` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ: «ΠΕΣ ΤΟ ΑΠΛΑ» — ΑΠΛΕΣ ΛΕΞΕΙΣ ΣΤΗ ΘΕΣΗ ΤΩΝ ΔΥΣΚΟΛΩΝ ΤΟΥ ΜΕΤΑΦΡΑΣΤΗ.**
 Δική του εντολή: «κάποιες μεταφράσεις στη νεοελληνική είναι πανδύσκολες… να ξέρω τι λέει χωρίς τις πανδύσκολες λέξεις».
@@ -8348,11 +8371,10 @@ changes — page, merge and tests carry over untouched.
   in headless Chrome. Also his call: do **Lift** and **Hours** earn their place, or
   is **Curve** alone enough? And name any drink still missing so it gets a real
   number instead of a guess.
-- 🔴 **`weight.html` (als-v423) has never been opened on a phone.** Two calls are
-  his, not mine: does **tap-to-open** on a history row annoy him, and do the
-  **position markers** in the list read as useful or fussy? Also unproven on iOS:
-  the chart's gesture split (vertical drag scrolls, horizontal scrubs). Details
-  at the top of this section.
+- 🔴 **`weight.html` (als-v662) — the drag on his iPhone.** The history list and its
+  two open questions are gone (the calendar replaced them). Still only proven in
+  Chrome: `touch-action:pan-y` + `pointercancel` = vertical drag scrolls, horizontal
+  reads a day. Ask him once he has used it.
 - 🔴 **Did her 25 Jul 16.3 km run finally land?** It was re-delivered into her
   inbox in production on 2026-07-27 (`redelivered: 1`, 136 KB of FIT waiting),
   and auto-import is pull-on-open, so it reaches her app the next time she opens

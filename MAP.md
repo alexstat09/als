@@ -26,7 +26,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 |---|---|
 | `gym.html` | Fitness — the big one (164 KB). Workouts, sessions, lifts. |
 | `body.html` | Body hub. |
-| `weight.html` | Weigh-ins. Trend-first chart (7-day trend is the line, each morning is scatter on it), 3 kg minimum y-span, goal line from `goals_outcomes_v1`. Rebuilt als-v422/423 — see CLAUDE.md §5 before changing the chart. |
+| `weight.html` | Weigh-ins, the approved Midnight design (als-v662, `design-mockups/weight-v2.html`): trend-first answer, the Ruler, logging card, 2×2, ONE-line trend chart (7-day trend by calendar date, mornings tethered, drag reads the 7 mornings), month columns, Monday-first calendar (Edit · two-step Delete · Undo · back-fill). Read guard + write read-back around the untouched als-v423 storage functions. See CLAUDE.md §5 before changing it. |
 | `measure.html` | Body measurements. |
 | `pr.html` | PR board. |
 | `health.html` | Health. |
