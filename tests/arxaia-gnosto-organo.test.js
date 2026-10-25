@@ -344,9 +344,13 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         await ev(`${R(g1.n)}.querySelector('[data-apx="edit"]').click(); ${R(g1.n)}.querySelector('.ape').value='  Δική μου   απόδοση  '; ${R(g1.n)}.querySelector('[data-apx="save"]').click()`);
         eq(await ev(`${R(g1.n)}.querySelector('.md').textContent.trim()`), 'Δική μου απόδοση', 'δική του απόδοση (με τα κενά καθαρισμένα)');
         ok((await ev(`${R(g1.n)}.querySelector('.apx').textContent`)).indexOf('Δική σου') >= 0, 'και σημαδεύεται «Δική σου»');
+        /* παγίδα: «Απλές λέξεις» ανοιχτό από την ακριβή — η «κανονική» περίοδος της απλής πρέπει να μείνει ο μεταφραστής */
+        await ev(`document.querySelector('[data-ver="ak"]').click(); if(!document.getElementById('easyI').checked) document.getElementById('easyI').click(); document.querySelector('[data-ver="ap"]').click()`);
         await ev(`${R(g2.n)}.querySelector('[data-apx="book"]').click()`);
+        eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w.ez').length`), 0, '«Εδώ η κανονική» μένει ο μεταφραστής ΑΚΟΜΗ κι αν το «Απλές λέξεις» είχε μείνει ανοιχτό');
         eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), '«Εδώ θέλω την κανονική» βάζει τον ' + unit.translator + ' σε ΑΥΤΗ την περίοδο');
         eq(await ev(`${R(segs[3].n)}.querySelector('.md').textContent`), AP.segs[segs[3].n], 'και οι άλλες περίοδοι μένουν όπως ήταν');
+        await ev(`document.querySelector('[data-ver="ak"]').click(); if(document.getElementById('easyI').checked) document.getElementById('easyI').click(); document.querySelector('[data-ver="ap"]').click()`);
         eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w').length`), g2.m.filter(c => c[1] && !/^[\s,.;:·’'—–()«»!?]+$/.test(c[0].replace(/\s+$/, ''))).length, 'και η «κανονική» περίοδος έχει όλες τις λέξεις-κουμπιά του βιβλίου');
         await ev(`${R(g2.n)}.querySelector('[data-apx="edit"]').click(); ${R(g2.n)}.querySelector('.ape').value='κάτι'; ${R(g2.n)}.querySelector('[data-apx="cancel"]').click()`);
         eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), 'το «Άκυρο» δεν αλλάζει τίποτα');
@@ -480,6 +484,23 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         await size(393, 860); await open('#metafrasi');
         await ev(`document.querySelector('[data-mode="rd"]').click(); document.querySelector('.an .w[data-k="${k0}"]').click()`);
         await shotAt(gid + '-09-phone-read', '.sent[data-n="' + segK.n + '"]');
+      }
+
+      if (spec.aplh) {
+        section('Β · ' + gid + ' — Η ΑΠΛΗ ΣΤΟ ΚΙΝΗΤΟ (393)');
+        await size(393, 860); await open('#metafrasi');
+        await ev(`document.querySelector('[data-mode="rd"]').click(); document.querySelector('[data-ver="ap"]').click()`);
+        await noScroll('393 · απλή · Διάβασε (με τα κουμπιά διόρθωσης)');
+        await ev(`document.querySelector('.sent .an .w').click()`);
+        await noScroll('393 · απλή · ανοιχτή κάρτα λέξης');
+        await shotAt(gid + '-10-phone-aplh', '.sent');
+        await ev(`document.querySelector('.sent [data-apx="edit"]').click()`);
+        await noScroll('393 · απλή · Διόρθωσε (πεδίο κειμένου)');
+        await shotAt(gid + '-10-phone-edit', '.sent');
+        await ev(`document.querySelector('.sent [data-apx="cancel"]').click(); document.querySelector('[data-mode="wh"]').click()`);
+        await noScroll('393 · απλή · Ολόκληρο + πίνακας «τι άλλαξε»');
+        await shotAt(gid + '-10-phone-chg', '#wholeBox .chg');
+        await ev(`document.querySelector('[data-mode="rd"]').click(); document.querySelector('[data-ver="ak"]').click()`);
       }
 
       section('Β · ' + gid + ' — ΓΡΑΜΜΑΤΟΣΕΙΡΑ ΑΝΑ ΣΤΟΙΧΕΙΟ (7b σε Chrome)');

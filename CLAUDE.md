@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v665`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v666`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,12 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-25 — `als-v666` — gk10: ΕΛΕΓΧΟΣ ΤΗΣ ΑΠΛΗΣ ΑΠΟ ΑΚΡΗ ΣΕ ΑΚΡΗ.** Βρέθηκε ΕΝΑ σφάλμα: με το «Απλές λέξεις» αποθηκευμένο
+ανοιχτό, μια περίοδος «Εδώ η κανονική» μέσα στην απλή έβγαζε τις απλές λέξεις μέσα στον Σκουτερόπουλο («δεν έχουν ένα στόχο»),
+με τον διακόπτη κρυμμένο → `ui.easy && ui.ver !== 'ap'`. Φρουρός δοκιμασμένος ανάποδα (χωρίς τη διόρθωση: 3 κόκκινα). + 393px
+στην απλή (Διάβασε · κάρτα · Διόρθωσε · Ολόκληρο+πίνακας): μηδέν κύλιση. «με τον καθηγητή» → «με την καθηγήτρια». organo **305/0** ·
+gnosto 2460/0 · gnosto-page 56/0 · launcher 80/0 · page-transition 136/0 · smoke OK.
 
 **2026-10-25 — `als-v664` — gk10: Η ΑΠΛΗ ΑΝΑΒΕΙ ΖΕΥΓΑΡΙΑ ΟΠΩΣ Η ΚΑΝΟΝΙΚΗ.** «ακριβώς τα ίδια εφέ». Νέο `aplh.align`
 `{n: [[κείμενο, κλειδί|0], …]}` = ΙΔΙΟ σχήμα με το `s.m` του βιβλίου, γραμμένο στο χέρι για τις 20 περιόδους (179 κομμάτια)·

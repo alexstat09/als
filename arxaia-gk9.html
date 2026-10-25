@@ -570,7 +570,7 @@ function mdHTML(s){
   return s.m.map((c, i) => {
     const p = c[1] && D.pairs[c[1]];
     let ez = null;
-    if (ui.easy && p && p.e){ const j = seen[c[1]] = (seen[c[1]] || 0) + 1; ez = p.e.split(' … ')[j - 1]; if (ez === undefined) ez = null; }
+    if (ui.easy && ui.ver !== 'ap' && p && p.e){ const j = seen[c[1]] = (seen[c[1]] || 0) + 1; ez = p.e.split(' … ')[j - 1]; if (ez === undefined) ez = null; }
     return chunkSpan('md', s.n, c, i, false, ez);
   }).join('');
 }
@@ -849,7 +849,7 @@ function buildWhole(){
     '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
   '</div>' +
   (ui.ver === 'ap' && D.aplh.changes.length
-    ? '<div class="chg"><span class="lbl tag-mine">Τι άλλαξε και γιατί · για να το τσεκάρεις με τον καθηγητή</span><table><thead><tr><th>' + esc(D.translator || 'Βιβλίο') + '</th><th>Εδώ</th><th>Γιατί</th></tr></thead><tbody>' +
+    ? '<div class="chg"><span class="lbl tag-mine">Τι άλλαξε και γιατί · για να το τσεκάρεις με την καθηγήτρια</span><table><thead><tr><th>' + esc(D.translator || 'Βιβλίο') + '</th><th>Εδώ</th><th>Γιατί</th></tr></thead><tbody>' +
       D.aplh.changes.map(c => '<tr><td>' + esc(c[0]) + '</td><td>' + esc(c[1]) + '</td><td>' + esc(c[2]) + '</td></tr>').join('') + '</tbody></table></div>'
     : '');
 }
