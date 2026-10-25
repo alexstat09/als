@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v669`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v670`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-25 — `als-v670` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ gk8: ΟΡΓΑΝΟ + ΑΠΛΗ + ΟΙ ΑΝΩ ΤΕΛΕΙΕΣ ΤΗΣ.** `arxaia-gk8.html` από `tools/gnosto/gk8.json`: 186 κάρτες, Δομή 32 προτάσεων, 4 σχόλια, 7+4 υποδείγματα, 11 λεξιλογικά, 2η μτφρ Γρυπάρη σε 14 ατάκες. Απλή: 22/22 περίοδοι, 40 αλλαγές, `none` κενό (ἰδέ = δες, οἴει = νομίζεις, εἰ = αν, η Γ.3 «θα θεωρούσαν πραγματικά όντα αυτά ακριβώς που βλέπουν», η ερώτηση της ηχούς χωρίς το «δεν» → «Όχι, μα τον Δία»). Render σελ. 80/84/85/86: ΚΑΙ οι 15 «. πεζό» είναι ΑΝΩ ΤΕΛΕΙΕΣ → Σκουτερόπουλος ×3 (data.js text + align.m + κανονικοποίηση 7 στο HAY_K8, φρουρός 3→0, κάρτες e2/l1) · Γρυπάρης ×4 + Όμηρος ×4 + Βάκων ×3 + Ντεκάρτ ×1 + «λο-γικού» → `fakelos.joins`, στο `foot`. gnosto **2464/0** · organo **501/0** · gnosto-page 56/0 · launcher 81/0 · smoke OK. 🔴 Μένουν οι «. πεζό» των gk4/gk5. 🔴 Αδοκίμαστο σε συσκευή του.
 
 **2026-10-25 — `als-v669` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ gk9: ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ (ύφος gk10) + ΟΙ ΑΝΩ ΤΕΛΕΙΕΣ ΤΗΣ.** Πρώτη ενότητα μετά τη gk10 με `aplh`:
 13 από 17 περιόδους αλλαγμένες, 22 γραμμές στον πίνακα «τι άλλαξε», `none` κενό· γραμμένη πάνω στο ΑΡΧΑΙΟ (φασί = λένε, νομίσαι = θεωρήσουμε,

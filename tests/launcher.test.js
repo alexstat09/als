@@ -88,6 +88,7 @@ const CHILDREN = {
   'arxaia-sokratis.html': 'arxaia.html', 'arxaia-platon.html': 'arxaia.html',
   'arxaia-gk9.html': 'arxaia.html',
   'arxaia-gk10.html': 'arxaia.html',
+  'arxaia-gk8.html': 'arxaia.html',
   'latinika-eisagogi.html': 'latinika.html',
   'latinika-lectio16.html': 'latinika.html', 'latinika-lectio17.html': 'latinika.html'
 };
