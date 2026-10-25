@@ -99,7 +99,6 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .ver{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:16px}
 .ver[hidden]{display:none}
 .vernote{flex-basis:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
-.md .ap{color:var(--ink)}
 /* διόρθωσε την απλή, ανά περίοδο — μόνο στο «Διάβασε» */
 .apx{display:none;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:10px}
 .v-ap.m-rd .apx{display:flex}
