@@ -15,6 +15,11 @@ description: Φτιάχνει ΟΛΟΚΛΗΡΗ μια νέα ενότητα το
   `arxaia-gnosto-data.js` ή στο `gk10.text.json` — `sed -n`/`node -e` σε κομμάτια (π.χ. 5 ζευγάρια της gk10).
 - ⛔ Χωρίς υποπράκτορες. **Δεν ρωτάς τίποτα** — ό,τι δεν διαβάζεται γίνεται `fixes` με «γιατί».
 - Το ακριβό κομμάτι είναι οι **εξηγήσεις των ζευγαριών** (`pairs[k][2]`). Τα PNG των υπόπτων κοστίζουν ελάχιστα.
+  Μήκος όπως στη gk10 (που λάτρεψε): **1–3 προτάσεις, μέσος όρος ~180 χαρακτήρες**· μακρύτερη ΜΟΝΟ στα ⭐ (ό,τι εξετάζεται).
+- ⭐ Το `geometry.txt` είναι ~50 KB: ⛔ ποτέ ολόκληρο — `grep -n "⚠" …` και, μόνο αν υπάρχουν, οι σελίδες τους.
+- ⭐ Το `gkN.text.json` γράφεται σε **λίγες μεγάλες δόσεις** (`Write` ολόκληρο, ή ένα `node` που γεμίζει `segs`/`pairs`
+  μαζί) — όχι δεκάδες `Edit`. Μετά από κάθε δόση: `node tools/gnosto/keimeno.js check gkN | tail -8`.
+- ⭐ Tests, smoke, wire του οργάνου: τα κάνει ΟΛΑ μαζί το `node tools/gnosto/finish.js gkN` στο τέλος — ⛔ μην τα τρέχεις χωριστά.
 
 ## 1 · Προϋποθέσεις (10 δευτερόλεπτα)
 ```bash
@@ -26,24 +31,26 @@ node -e "console.log(!!require('./arxaia-gnosto-data.js').unit('gkN'))"   # πρ
 Σελίδες (pageAtIndex): 11:104 · 12:115. Η ενότητα **υπάρχει ήδη** → σταμάτα, πήγαινε στο skill του οργάνου.
 
 ## 2 · Η ροή (εντολή → push)
-1. `node tools/gnosto/keimeno.js scaffold gkN` — βρίσκει σελίδες, **προτείνει** rect αρχαίου (ζώνη ανάμεσα στην
+1. ⭐ **ΜΙΑ εντολή:** `node tools/gnosto/keimeno.js scaffold gkN && node tools/gnosto/keimeno.js source gkN`
+   (~10 γραμμές output). Αν το `source` αρνηθεί → rect (παρακάτω) και ξανά μόνο το `source`.
+   **scaffold** — βρίσκει σελίδες, **προτείνει** rect αρχαίου (ζώνη ανάμεσα στην
    παραπομπή και την 1η γραμμή δύο στηλών) και αριστερής στήλης ανά σελίδα (w = μέσο ανάμεσα στις στήλες, κάτω
    όριο = η υπογραφή, επαληθευμένο με πραγματικό κόψιμο), title/short/cite/translator. Γράφει σκελετό + φύλλο
    `$TMPDIR/gnosto-gkN/geometry.txt` (`[ΑΡΧ] [ΜΑΘ] [ΥΠΟ] [ΣΕΛ]`). Διάβασε ΜΟΝΟ τις ⚠️ και, αν υπάρχουν, τις σελίδες τους.
    ⭐ Η μετάφραση που μαθαίνει = **η αριστερή στήλη** (ελεγμένο gk2–gk10). Βάλε το πλήρες όνομα (π.χ. «Γιώργος»).
-2. `node tools/gnosto/keimeno.js source gkN` — κόβει, διασταυρώνει κάθε rect (page.string ή γραμμές της
+   **source** — κόβει, διασταυρώνει κάθε rect (page.string ή γραμμές της
    γεωμετρίας), γράφει `tests/arxaia-enotitaN.source.txt` + `sourceSha`, και **σαρώνει ύποπτα** με ένα PNG ανά
    γραμμή στο `$TMPDIR/gnosto-gkN/sNN-*.png`. **`Read` κάθε PNG** και δήλωσε ό,τι ισχύει στο `fixes`.
-3. Γράφεις `simple`, `gist`, `segs`, `pairs`, `counts` (§3, §4). Κείμενο = **αντιγραφή από την πηγή**, ποτέ πληκτρολόγηση.
-4. `node tools/gnosto/keimeno.js check gkN` ως **0 ✗**. Κάθε ✗ λέει πού (`S7.m`, `pairs.c3`, `fixes[2]`) και
+2. Γράφεις `simple`, `gist`, `segs`, `pairs`, `counts` (§3, §4). Κείμενο = **αντιγραφή από την πηγή**, ποτέ πληκτρολόγηση.
+3. `node tools/gnosto/keimeno.js check gkN | tail -8` ως **0 ✗**. Κάθε ✗ λέει πού (`S7.m`, `pairs.c3`, `fixes[2]`) και
    δείχνει το σημείο απόκλισης `⟦…`. **Διορθώνεις το JSON, ποτέ τον κανόνα.**
-5. `node tools/gnosto/keimeno.js wire gkN` — block `⟪gkN⟫ … ⟪/gkN⟫` στο τέλος του UNITS (ιδεμπότητο,
+4. `node tools/gnosto/keimeno.js wire gkN` — block `⟪gkN⟫ … ⟪/gkN⟫` στο τέλος του UNITS (ιδεμπότητο,
    ξαναδιαβάζει το αρχείο και απαιτεί deep-equal με το JSON, αλλιώς επαναφέρει) + CACHE HEAD+1.
-6. `node tests/arxaia-gnosto.test.js | tail -1` — ο γενικός φρουρός (§2δ) πιάνει τη νέα ενότητα μόνος του.
-7. **Συνέχισε με το skill `arxaia-gnosto-organo`** (§3 βήματα 1–10) για την ΙΔΙΑ ενότητα. Ίδιο commit.
+5. **Συνέχισε με το skill `arxaia-gnosto-organo`** (§3 βήματα 1–9) για την ΙΔΙΑ ενότητα. Ίδιο commit.
+   (Το test του κειμένου τρέχει μέσα στο `finish.js` του οργάνου — όχι εδώ.)
    ⭐⭐⭐ Μαζί και η **ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ** (βήμα 5β / §4β εκεί, ΥΠΟΧΡΕΩΤΙΚΗ, στο ύφος της gk10) — καμία ενότητα δεν βγαίνει χωρίς αυτήν.
-8. Όλα: `for f in tests/arxaia-*.js; do node "$f" | tail -1; done; node tests/launcher.test.js | tail -1; node tests/sync-regression.js | tail -1; ./smoke-test.sh`
-9. MAP.md μία γραμμή · CLAUDE.md §5 μία εγγραφή · μνήμη `als_arxaia_page.md` μία γραμμή.
+6. Όλα: `node tools/gnosto/finish.js gkN` (το βήμα 7 του οργάνου — ΕΝΑ τρέξιμο για κείμενο + όργανο + tests + smoke).
+7. MAP.md μία γραμμή · CLAUDE.md §5 μία εγγραφή · μνήμη `als_arxaia_page.md` μία γραμμή.
    `git add` ΜΟΝΟ τα αρχεία της ενότητας. **ΕΝΑ commit, push στο main, poll ότι η παραγωγή σερβίρει το νέο CACHE.**
 
 ## 3 · Η μορφή του JSON

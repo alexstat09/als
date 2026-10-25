@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v667`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v668`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,16 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-25 — `als-v668` — SKILLS ΓΝΩΣΤΟΥ: ΤΟ ΜΗΧΑΝΙΚΟ = ΔΥΟ ΕΝΤΟΛΕΣ (λιγότερο usage, ίδιο επίπεδο).** Νέο `tools/gnosto/finish.js gkN`:
+(κείμενο check+wire αν νέα) → fmt → validate+απλή → build → wire → tests (gnosto · όργανο όλες · σελίδα Γνωστού · launcher) → smoke,
+σταματάει στο πρώτο σφάλμα πριν τα tests, τυπώνει ΜΟΝΟ ✓/✗ + τις 4 φωτογραφίες + τα αρχεία του commit (~20 γραμμές αντί για
+εκατοντάδες· logs στο `$TMPDIR/gnosto-gkN/finish-NN.log`). `aplh.js --patch Φ.json` (μόνο οι περίοδοι που αλλάζουν· λάθος σχήμα →
+τίποτα δεν γράφεται) · `--init` ακίνδυνο σε ξανατρέξιμο. Skills: αλυσίδες μίας εντολής στην αρχή, γράψιμο σε μεγάλες δόσεις, 4
+φωτογραφίες, geometry.txt μόνο με grep, εξηγήσεις ~180 χαρ. όπως η gk10. ⚠️ Το `\b` της JS δεν ξέρει ελληνικά — «0 απέτυχαν\b» δεν
+ταιριάζει ποτέ (βρέθηκε στο finish). Αποδείξεις: finish στη gk10 όλο πράσινο · χαλασμένη απλή → σταματάει στο validate, η σελίδα
+άθικτη · patch σε gk9 → 0 ✗ και επαναφορά byte-ίδια. ⚠️ Δοκιμαστικό `keimeno scaffold/source gk11` άφησε 2 αρχεία που έριχναν το
+test του Γνωστού (μετακινήθηκαν έξω από το repo) → μια δοκιμή «στα ψέματα» σε νέα ενότητα ΚΑΘΑΡΙΖΕΙ αμέσως.
 
 **2026-10-25 — `als-v667` — ΤΟ SKILL ΤΟΥ ΓΝΩΣΤΟΥ ΒΑΖΕΙ ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ ΣΕ ΚΑΘΕ ΕΝΟΤΗΤΑ (ύφος gk10).** Δική του εντολή («με αυτήν
 συμφώνησα, την έμαθα και τη λάτρεψα — ίδιο στυλ»). `.claude/skills/arxaia-gnosto-organo` νέο βήμα 5β + §4β: 9 κανόνες ύφους βγαλμένοι
