@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v668`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v669`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,15 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-25 — `als-v669` — ΑΡΧΑΙΑ ΓΝΩΣΤΟ gk9: ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ (ύφος gk10) + ΟΙ ΑΝΩ ΤΕΛΕΙΕΣ ΤΗΣ.** Πρώτη ενότητα μετά τη gk10 με `aplh`:
+13 από 17 περιόδους αλλαγμένες, 22 γραμμές στον πίνακα «τι άλλαξε», `none` κενό· γραμμένη πάνω στο ΑΡΧΑΙΟ (φασί = λένε, νομίσαι = θεωρήσουμε,
+ὄμμα = το μάτι, τῶν τοῦ σώματος = «εκείνες του σώματος», ἡ τοῦ φρονῆσαι = «η αρετή της φρόνησης»). Δύο εξηγήσεις ΜΕΣΑ στο κείμενο, δηλωμένες
+στον πίνακα: «το όργανο» (περ. 11) και «μέρος» (περ. 7). ⭐ Render σελ. 90/93: και οι ΕΞΙ «τελείες-με-πεζό» της gk9 είναι ΑΝΩ ΤΕΛΕΙΕΣ →
+Σκουτερόπουλος «το ον· και» (data.js + κανονικοποίηση 7 στο HAY_K9, ο φρουρός «ΜΙΑ τελεία-με-πεζό» έγινε «καμία») · Γρυπάρης ×4 +
+παράλληλο Επίκουρου ×1 → `fakelos.joins`, δηλωμένα στο `foot`. Διορθώθηκε και η κάρτα του «δ’» που έλεγε το ανάποδο. `aplh.js --init`: το
+`note` έβαζε τον μεταφραστή σε ονομαστική («του … Σκουτερόπουλος») → γενική. gnosto **2461/0** · organo **355/0** · gnosto-page 56/0 ·
+launcher 80/0 · smoke OK. 🔴 Ανοιχτές ακόμα οι «. πεζό» των gk4/gk5/gk8. 🔴 Αδοκίμαστο σε συσκευή του.
 
 **2026-10-25 — `als-v668` — SKILLS ΓΝΩΣΤΟΥ: ΤΟ ΜΗΧΑΝΙΚΟ = ΔΥΟ ΕΝΤΟΛΕΣ (λιγότερο usage, ίδιο επίπεδο).** Νέο `tools/gnosto/finish.js gkN`:
 (κείμενο check+wire αν νέα) → fmt → validate+απλή → build → wire → tests (gnosto · όργανο όλες · σελίδα Γνωστού · launcher) → smoke,
