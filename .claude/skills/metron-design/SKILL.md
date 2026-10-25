@@ -27,21 +27,29 @@ discussing taste.
 | **Task panel** | E · emil | centred dialog, sans title, steps editable in place, dropdowns, segmented controls, «Σημαντικό» card, Κλείσιμο |
 | **Wanted more** | (none of them) | «κάτι αισθητικά ευχάριστο όταν τελειώνω»: the strike line must be **drawn, stay, and feel good** |
 | Rejected | A · redesign-existing-projects | grain, tinted shadows, lowercase-italic headers, one-accent purge |
+| **Ground** (25/10) | Hallmark · Ribbon «two-in-the-morning» | **«λάτρεψα το χρώμα στο πίσω»** → the **Midnight** blue-black replaced `#0E1219`. Offered Midnight / Ember / Pine as a switcher: he said **«κρατάμε το midnight μόνο»**. No theme picker, ever |
+| **Month by month** (25/10) | Hallmark | metal-gradient columns, current month amber with a glow (§4.6) |
+| Rejected (25/10) | Hallmark type · Linear DESIGN.md | Instrument Sans / Figtree («δεν μ' αρέσει η γραμματοσειρά, προτιμώ τη δική μου»); Linear's black + lavender lost outright |
 
 ⇒ Default recipe for any MÉTRON surface: **impeccable layout × emil interaction ×
-his palette × a satisfaction moment on every completion.**
+his palette on the Midnight ground × a satisfaction moment on every completion.**
 
 ## 2 · Palette and type (his, keep them)
-The Ατζέντα tokens (`ergasies.html :root`) are the proven "F" palette:
+The ground is **Midnight** (his pick 25/10/26, from Hallmark): one hue (258°) climbing in lightness, so cards
+read as lit, not grey. Ink, accent and subjects are the Ατζέντα "F" palette (`ergasies.html :root`), unchanged:
 ```
---bg:#0E1219 --surf:#141922 --surf2:#1C2230 --surf3:#232A38
+--bg:oklch(13.2% .022 258) --surf:oklch(16.4% .022 258) --surf2:oklch(19.5% .022 258) --surf3:oklch(23% .022 258)
+--metal-hi:oklch(44% .013 258) --metal-lo:oklch(25% .014 258)   (machined parts: steppers, month columns)
+--edge-light:inset 0 1px 0 rgba(255,255,255,.08)                  (the lit top edge on raised parts)
 --text:#EDE6D8 --soft:#C9C2B5 --muted:#A7A196 --faint:#8A8C94   (faint = labels/counters ONLY)
 --line:rgba(237,230,216,.07) --line2:.12 --line3:.2
 --amber:#E8B25C (the one accent) --late:#E8836F (debt only; 0 is never red)
 subjects: --arx:#E8A07F --ist:#8FC2AC --lat:#9DB3EC --ne:#D3A6D6  (one colour per entity, declared once)
 ```
-Site-wide MÉTRON pages use `aurora.css` (`--au-canvas #060607`, ivory/dim/faint). Same spirit: neutral dark ground,
-colour = identity, never decoration.
+Site-wide MÉTRON pages still use `aurora.css` (`--au-canvas #060607`, near-pure black with see-through white
+cards, which read grey and flat). A NEW or REDESIGNED page takes Midnight. Moving `aurora.css` itself to Midnight
+touches all 31 pages: that is his call, a demo first (Nova's greens and per-page colours need a look one by one).
+Colour = identity, never decoration.
 - **Type:** Commissioner (UI, has Greek) · Literata italic or GFS Didot for Greek display · JetBrains Mono for
   numbers/labels. ⛔ **Never Instrument Serif (or any Latin-only face) on Greek**: it falls back to Georgia
   and the accents break (lived hidden 94 versions).
@@ -77,6 +85,30 @@ colour = identity, never decoration.
    (2 on phone), chips with subject dot and ×, a dashed «+ μάθημα» select.
 5. **Quick add that explains itself:** while typing, show what was understood (chips) and mark guesses
    differently («υπόθεση»/amber). After Enter say what went in, what was assumed, and offer «Διόρθωσε». Never fail silently.
+6. **Month by month (Hallmark's, he preferred it 25/10):** a 6-column grid, `align-items:end`, gap 8px. Each
+   month = value on top (mono 14px, `--soft`) · a column `height:var(--h)` (12–76px, scaled to the range shown),
+   `border-radius:6px 6px 2px 2px`, `linear-gradient(180deg,var(--metal-hi),var(--metal-lo))` + `--edge-light` ·
+   the month in mono caps below. The current month: `linear-gradient(180deg,var(--amber),oklch(60% .08 62))`,
+   `box-shadow:0 0 18px rgba(232,178,92,.18)`, its value in amber. No frame around the row.
+7. **Logging as a ritual (Weight, phone):** answer + big trend number first, then the entry card right under it
+   (thumb reach): −/+ 56×64, big mono value, live feedback line, amber Save 54px, «change date» as a 44px text
+   button. One trend line in any chart; mornings tethered to it.
+8. **The trend chart (Weight, «το λατρεύω» 25/10) — the bar every new chart starts at.** Reference code:
+   `design-mockups/weight-v2.html` (outside the repo, `../design-mockups/`) and live `weight.html` (als-v662);
+   copy `draw()/over()/idle()` from there, don't reinvent.
+   - **ONE line** = the smoothed signal, computed from the FULL history then sliced to the range; raw points are
+     dots hung off it by hairlines. A forecast is the SAME line carried forward dashed, never a second line.
+   - **Readout on top of the card (Stocks-style):** idle = the period summary (sign, change, a→b, counts);
+     scrubbing = that day. ⛔ never a tooltip label on the data.
+   - **Scrub shows the WHY:** dragging lights the points that made that day's value (an amber window band), the
+     rest dim to .25. `touch-action:pan-y` so iPhone vertical scroll still works; ← → Esc on laptop.
+   - **Ranges 7D/30D/3M/ALL as 44px buttons**, `aria-pressed`. Dense ranges adapt: smaller dots, no tethers,
+     month rules instead of week bands, every other label on phone, nothing within ~40px of TODAY.
+   - **Meaning marks, not decoration:** goal line + soft zone · «REACHED · date» flag the first time · «≈ date»
+     ETA · ring on outliers · axis tick for missed days · empty slot circle for «today, not yet».
+   - **Motion:** draw-in on load and range change only (WAAPI dashoffset, 950ms `cubic-bezier(.16,1,.3,1)`),
+     never on scrub; full `prefers-reduced-motion`. SVG in real pixels (ResizeObserver), never
+     `preserveAspectRatio="none"`; y-span floor so noise can't look like a cliff.
 
 ## 5 · Satisfaction moments (his explicit ask: «να με κάνει να χαίρομαι»)
 Every completion is a small reward. **Data-driven and native to MÉTRON, never copied.**
@@ -104,6 +136,10 @@ Errors say what happened and how to fix it. Counts as words where natural («Μ�
   (fix `flex-shrink:0`); a height-limited **grid** shrinks `auto` rows to their minimum (fix
   `grid-auto-rows:max-content`). Test: no child with `scrollHeight > clientHeight` and `overflow:visible`.
 - **Contrast:** reading text ≥4.5:1 and ≥13.5px; `--faint`-type colours only on labels/counters.
+- **Phone floor (Apple HIG, `apple-design` audit 25/10):** under 600px no text below **11px** (mono labels
+  9–10.5px are laptop-only; strip labels were 8.5px, chart ticks ~9px), every tap target **44×44** (range tabs
+  were 38px), SVG text sized for the width it really renders at. List rows: tap to open AND swipe left.
+  Don't repeat the hero number in a stat cell.
 - **Silent-empty:** never render "no data" and "failed to read" the same way.
 - **Feature parity:** a redesign is an upgrade. Inventory every control first; keep quick dates, two-step delete,
   undo, grades, mistakes, filters, shortcuts.
@@ -126,8 +162,16 @@ Errors say what happened and how to fix it. Counts as words where natural («Μ�
    that says what he will see; push when he said push. Update the page's memory file.
 5. **Big new direction / unclear taste →** a blind test on a WHOLE page with real data, one isolated designer per
    option, his current page hidden among them, knockout duels instead of Love/Like. That is how these verdicts were found.
+6. **«Θέλω να δω μόνο το design» → a STATIC mockup, cheap (≤5% usage).** One HTML file in the scratchpad, sample
+   data shaped like his (never his real data, no sync, no storage), no working logic, published as an Artifact.
+   No render loop. Ask «κυρίως κινητό;» and build that width first. Only after he approves does it go into the
+   real page (then §8.1–4 apply in full). Several options → one blind page, phones side by side, Pick + Reveal.
 
 ## 9 · Which other skill, if any
 This skill comes first. Call a specialist only for depth on its own area:
 **impeccable** `audit` / `polish` for a full heuristic pass · **emil-design-eng** for a complex gesture
-(drag, swipe, hold-to-delete). The rest of the design skills are folded in here and not needed.
+(drag, swipe, hold-to-delete) · **apple-design** as a REVIEWER for anything used on the iPhone (HIG sizes,
+targets, Dynamic Type); where it collides with this skill's palette or type, this skill wins.
+**hallmark** (installed 25/10) lost the blind test as a builder: only its ground and its month columns survived,
+both now in here. Don't run it on MÉTRON unless he names it. `~/.claude/design-md/` holds brand DESIGN.md files
+(Linear lost); reference only. The rest of the design skills are folded in here and not needed.
