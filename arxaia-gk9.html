@@ -100,6 +100,13 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .ver[hidden]{display:none}
 .vernote{flex-basis:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
 .md .ap{color:var(--ink)}
+/* διόρθωσε την απλή, ανά περίοδο — μόνο στο «Διάβασε» */
+.apx{display:none;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:10px}
+.v-ap.m-rd .apx{display:flex}
+.apx .apk{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--mine));margin-right:4px}
+.apx .tbtn{padding:5px 11px;font-size:12.5px}
+.ape{width:100%;min-height:96px;margin-top:8px;padding:12px 14px;border:1px solid var(--line2);border-radius:11px;background:rgba(255,255,255,.03);color:var(--ink);font-family:var(--gr);font-size:18px;line-height:1.6;resize:vertical}
+.ape:focus{outline:none;border-color:rgb(var(--gn))}
 .chg{margin-top:34px;max-width:900px}
 .chg table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;line-height:1.55}
 .chg th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);text-align:left;padding:0 14px 10px 0;border-bottom:1px solid var(--line)}
@@ -463,6 +470,7 @@ const ID = D.id;
 const TR_KEY = ID + '_tr_v1';    /* ✗ / ↻ / ✓ ανά περίοδο */
 const SX_KEY = ID + '_sx_v1';    /* σχόλια: k (ξέρω) / x (ξανά) */
 const ANS_KEY = ID + '_ans_v1';  /* οι απαντήσεις του στα ερμηνευτικά */
+const AP_KEY = ID + '_ap_v1';   /* οι διορθώσεις του στην απλή: {n: κείμενο | true = η κανονική} */
 const UI_KEY = ID + '_ui_v1';    /* καρτέλα + τρόπος: μόνο ευκολία */
 
 /* ⚠️ σταθ. 10/17: ένα save που δεν κρατήθηκε ΤΟ ΛΕΕΙ, και το λέει όσο ισχύει. */
@@ -477,6 +485,7 @@ function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace
 const PUNCT = /^[\s,.;:·’'—–()«»!?]+$/;
 
 let trm = obj(lsGet(TR_KEY, {}));
+let apm = obj(lsGet(AP_KEY, {}));
 let sxm = obj(lsGet(SX_KEY, {}));
 let ans = obj(lsGet(ANS_KEY, {}));
 const ui = Object.assign({tab:'metafrasi', mode:'rd', gryp:false, sx:'read', easy:false, ver:'ak'}, obj(lsGet(UI_KEY, {})));
@@ -547,7 +556,7 @@ function closeBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? '
    τους (ο validator εγγυάται ίδιο πλήθος). */
 function mdHTML(s){
   /* Η απλή δεν έχει ζευγάρια — είναι άλλη μετάφραση, όχι οι λέξεις του βιβλίου. */
-  if (ui.ver === 'ap') return '<span class="ap">' + esc(D.aplh.segs[s.n]) + '</span>';
+  if (ui.ver === 'ap') return '<span class="ap">' + esc(apText(s)) + '</span>';
   const seen = {};
   return s.m.map((c, i) => {
     const p = c[1] && D.pairs[c[1]];
@@ -555,6 +564,19 @@ function mdHTML(s){
     if (ui.easy && p && p.e){ const j = seen[c[1]] = (seen[c[1]] || 0) + 1; ez = p.e.split(' … ')[j - 1]; if (ez === undefined) ez = null; }
     return chunkSpan('md', s.n, c, i, false, ez);
   }).join('');
+}
+/* Η απλή μιας περιόδου: η δική του διόρθωση, ή η κανονική (true), ή αυτή του αρχείου. */
+function bookText(s){ return s.m.map(c => c[0]).join('').trim(); }
+function apText(s){ const v = apm[s.n]; return v === true ? bookText(s) : (typeof v === 'string' && v.trim()) ? v : D.aplh.segs[s.n]; }
+function apxHTML(s){
+  if (!D.aplh) return '';
+  const v = apm[s.n], mine = typeof v === 'string' && v.trim();
+  return '<div class="apx">' +
+    (v === true ? '<span class="apk">Εδώ η κανονική</span>' : mine ? '<span class="apk">Δική σου</span>' : '') +
+    '<button class="tbtn" type="button" data-apx="edit">Διόρθωσε</button>' +
+    (v === true ? '' : '<button class="tbtn" type="button" data-apx="book">Εδώ θέλω την κανονική</button>') +
+    (v === true || mine ? '<button class="tbtn" type="button" data-apx="undo">Γύρνα στην απλή</button>' : '') +
+  '</div>';
 }
 function clausesHTML(s){
   const ids = [];
@@ -576,7 +598,7 @@ function build(){
       '<div class="num">' + s.n + '</div>' +
       '<div class="body"><p class="an">' + anHTML(s, ui.mode) + '</p>' +
       '<button class="veil" type="button">Πες τη μετάφραση δυνατά και πάτα για να την ελέγξεις</button>' +
-      '<p class="md">' + mdHTML(s) + '</p>' +
+      '<p class="md">' + mdHTML(s) + '</p>' + apxHTML(s) +
       '<ul class="clauses">' + clausesHTML(s) + '</ul>' +
       '<div class="info"></div></div>' +
       '<div class="side"><span class="mkw">' + markHTML(s.n) + '</span>' +
@@ -642,6 +664,8 @@ box.addEventListener('click', e => {
   const row = e.target.closest('.sent'); if (!row) return;
   const n = +row.dataset.n;
   if (e.target.closest('.veil')){ row.classList.add('shown'); return; }
+  const ax = e.target.closest('[data-apx]');
+  if (ax){ apAct(row, n, ax.dataset.apx); return; }
   const g3 = e.target.closest('.g3');
   if (g3){
     const v = g3.dataset.v;
@@ -690,6 +714,8 @@ function setMode(m){
   wholeBox.hidden = m !== 'wh';
   box.classList.toggle('m-tr', m === 'tr');
   box.classList.toggle('m-st', m === 'st');
+  box.classList.toggle('m-rd', m === 'rd');
+  box.classList.toggle('v-ap', ui.ver === 'ap');
   document.getElementById('onlyRed').hidden = m !== 'tr';
   document.getElementById('grypT').hidden = m !== 'wh';
   document.getElementById('easyT').hidden = !EASY_N || ui.ver === 'ap' || !(m === 'rd' || m === 'tr');
@@ -730,6 +756,37 @@ function setVer(v){
   if (keep) select(keep.n, keep.k, true);
 }
 document.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => setVer(b.dataset.ver)));
+function apSave(n, v){
+  const prev = apm[n];
+  if (v === undefined) delete apm[n]; else apm[n] = v;
+  if (!lsSet(AP_KEY, apm)){ if (prev === undefined) delete apm[n]; else apm[n] = prev; return false; }
+  return true;
+}
+function apPaint(row){
+  const s = segOf(row.dataset.n);
+  row.querySelector('.md').innerHTML = mdHTML(s);
+  const old = row.querySelector('.apx, .ape-w'); if (old) old.outerHTML = apxHTML(s);
+  buildWhole();
+}
+function apAct(row, n, act){
+  const s = segOf(n);
+  if (act === 'book'){ apSave(n, true); return apPaint(row); }
+  if (act === 'undo'){ apSave(n, undefined); return apPaint(row); }
+  if (act === 'edit'){
+    const box2 = row.querySelector('.apx');
+    box2.outerHTML = '<div class="ape-w"><textarea class="ape" aria-label="Η δική σου απόδοση της περιόδου ' + n + '">' + esc(apText(s)) + '</textarea>' +
+      '<div class="apx" style="display:flex"><button class="tbtn" type="button" data-apx="save">Κράτα τη</button><button class="tbtn" type="button" data-apx="cancel">Άκυρο</button></div></div>';
+    const ta = row.querySelector('.ape'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    return;
+  }
+  if (act === 'save'){
+    const t = row.querySelector('.ape').value.replace(/\s+/g, ' ').trim();
+    /* άδειο = καμία διόρθωση· ίδιο με του αρχείου = καμία διόρθωση· ίδιο με του βιβλίου = «η κανονική» */
+    apSave(n, !t || t === D.aplh.segs[n] ? undefined : t === bookText(s) ? true : t);
+    return apPaint(row);
+  }
+  if (act === 'cancel') return apPaint(row);
+}
 function applyFilter(){
   const on = ui.mode === 'tr' && onlyRedI.checked;
   rows().forEach(r => { const t = trm[r.dataset.n]; r.classList.toggle('gone', on && !(t === 'x' || t === 'r')); });
@@ -765,7 +822,7 @@ function buildWhole(){
   wholeBox.innerHTML = '<div class="whole' + (g ? '' : ' two') + '">' +
     '<div class="anc"><h3>Το αρχαίο · ' + esc(D.cite) + '</h3>' + D.anc.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
     (ui.ver === 'ap'
-      ? '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.aplh.name) + '</h3>' + D.aplh.paras.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>'
+      ? '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.aplh.name) + '</h3>' + D.anc.map((x, i) => '<p>' + esc(D.segs.filter(s => s.p === i).map(apText).join(' ')) + '</p>').join('') + '</div>'
       : '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.translator) + '</h3>' + D.skout.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>') +
     '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
   '</div>' +
