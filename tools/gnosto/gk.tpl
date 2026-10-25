@@ -512,14 +512,14 @@ const box = document.getElementById('content');
 const aside = document.getElementById('aside');
 let sel = null;   /* {n, k} */
 
-function chunkSpan(side, n, c, i, noTail, ez){
+function chunkSpan(side, n, c, i, noTail, ez, plain){
   const t = c[0], k = c[1];
   const core = t.replace(/\s+$/, ''), tail = noTail ? '' : t.slice(core.length);
   if (!k || PUNCT.test(core)) return esc(noTail ? core : t);
   const p = D.pairs[k] || {};
   const tags = side === 'an' ? ' data-tags="' + (p.t || []).join(' ') + '"' : '';
   /* ez = το κομμάτι της απλής απόδοσης που μπαίνει στη θέση του (ή null) */
-  const cls = side === 'md' && p.e ? (ez != null ? ' ez' : ' hd') : '';
+  const cls = side === 'md' && p.e && !plain ? (ez != null ? ' ez' : ' hd') : '';
   return '<span class="w' + cls + '" tabindex="0" role="button" data-side="' + side + '" data-n="' + n + '" data-k="' + k + '" data-i="' + i + '"' + tags + '>' + esc(ez != null ? ez : core) + '</span>' + esc(tail);
 }
 function clauseOf(s, i){ let c = null; s.runs.forEach(r => { if (r[0] <= i) c = r[1]; }); return c; }
@@ -556,7 +556,17 @@ function closeBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? '
    τους (ο validator εγγυάται ίδιο πλήθος). */
 function mdHTML(s){
   /* Η απλή δεν έχει ζευγάρια — είναι άλλη μετάφραση, όχι οι λέξεις του βιβλίου. */
-  if (ui.ver === 'ap') return '<span class="ap">' + esc(apText(s)) + '</span>';
+  if (ui.ver === 'ap'){
+    /* η απλή του αρχείου, στοιχισμένη → ίδιες λέξεις-κουμπιά με την κανονική (χωρίς τελίτσες «πες το απλά»).
+       «Εδώ η κανονική» → πέφτει παρακάτω στη μετάφραση του βιβλίου. Δική του απόδοση → απλό κείμενο. */
+    const v = apm[s.n];
+    if (v !== true){
+      if (typeof v === 'string' && v.trim()) return '<span class="ap">' + esc(v) + '</span>';
+      const al = D.aplh.align && D.aplh.align[s.n];
+      if (!al) return '<span class="ap">' + esc(D.aplh.segs[s.n]) + '</span>';
+      return '<span class="ap">' + al.map((c, i) => chunkSpan('md', s.n, c, i, false, null, true)).join('') + '</span>';
+    }
+  }
   const seen = {};
   return s.m.map((c, i) => {
     const p = c[1] && D.pairs[c[1]];
@@ -615,10 +625,23 @@ function rows(){ return Array.from(box.querySelectorAll('.sent')); }
 function segOf(n){ return D.segs.find(s => s.n === +n); }
 
 /* ── η καρτέλα της λέξης ── */
-function wordCard(k){
+/* Πώς το λέει η απλή ΣΕ ΑΥΤΗ την περίοδο: τα κομμάτια του κλειδιού, «α … β» όταν είναι σπασμένο.
+   null = η περίοδος δεν δείχνει τη στοιχισμένη απλή (ακριβής, «εδώ η κανονική», ή δική του απόδοση). */
+function apRender(n, k){
+  if (ui.ver !== 'ap' || !D.aplh || !D.aplh.align || apm[n] !== undefined) return null;
+  return (D.aplh.align[n] || []).filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
+}
+function wordCard(k, n){
   const p = D.pairs[k];
-  let h = '<div class="wc"><div class="wc-an">' + esc(p.a) + '</div><div class="wc-md">' + esc(p.m) + '</div>';
-  if (p.e) h += '<div class="wc-ez"><span class="lbl tag-mine">Πες το απλά · δικά μου</span><div class="ezw">' + esc(p.e) + '</div></div>';
+  const ap = n == null ? null : apRender(n, k);
+  let h = '<div class="wc"><div class="wc-an">' + esc(p.a) + '</div>';
+  if (ap === null) h += '<div class="wc-md">' + esc(p.m) + '</div>';
+  else {
+    h += '<div class="wc-md">' + (ap ? esc(ap) : '—') + '</div>';
+    if (!ap && D.aplh.none[k]) h += '<div class="wc-sec"><span class="lbl tag-mine">Στην απλή</span><p>' + esc(D.aplh.none[k]) + '</p></div>';
+    h += '<div class="wc-sec"><span class="lbl tag-book">Ακριβής · ' + esc(D.translator || 'βιβλίο') + '</span><p>' + esc(p.m) + '</p></div>';
+  }
+  if (p.e && ap === null) h += '<div class="wc-ez"><span class="lbl tag-mine">Πες το απλά · δικά μου</span><div class="ezw">' + esc(p.e) + '</div></div>';
   h += '<div class="wc-sec"><span class="lbl tag-mine">Γραμματική · δικά μου</span><dl>' +
     '<dt>Λήμμα</dt><dd class="lem">' + esc(p.l) + '</dd>' +
     '<dt>Τύπος</dt><dd>' + esc(p.f) + '</dd>' +
@@ -653,7 +676,7 @@ function select(n, k, keep){
   const row = box.querySelector('.sent[data-n="' + n + '"]');
   if (!row) return;
   row.querySelectorAll('.w[data-k="' + k + '"]').forEach(x => x.classList.add('hit'));
-  const html = wordCard(k);
+  const html = wordCard(k, n);
   if (narrow.matches){ const info = row.querySelector('.info'); info.innerHTML = html; info.classList.add('show'); }
   else aside.innerHTML = html;
 }

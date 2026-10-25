@@ -135,6 +135,16 @@ if (U.gk9){
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({ 999: 'κάτι' }, full) }; }) > 0, 'απλή μετάφραση σε περίοδο που δεν υπάρχει → σφάλμα');
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full, { [ns[0]]: 'τὸ ἁπλό' }) }; }) > 0, 'απλή μετάφραση σε πολυτονικό → σφάλμα');
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full), changes: [['α', 'β']] }; }) > 0, 'αλλαγή χωρίς «γιατί» → σφάλμα');
+    if (U.gk10 && U.gk10.spec.aplh && U.gk10.spec.aplh.align && unit === U.gk10.unit) {
+      const AL = U.gk10.spec.aplh.align;
+      ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'a1'], ['!', 0]]; }) > 0, 'στοίχιση που δεν δίνει την απλή → σφάλμα');
+      ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'b1'], [';', 0]]; }) > 0, 'στοίχιση με λέξη ΑΛΛΗΣ περιόδου → σφάλμα');
+      ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν;', 0]]; }) > 0, 'λέξη του αρχαίου που δεν ανάβει τίποτα (χωρίς `none`) → σφάλμα');
+      ok(mut(s => { s.aplh.none = {}; }) > 0, 'σβήνοντας την εξήγηση του «πράττειν» → σφάλμα');
+      ok(mut(s => { s.aplh.none.a1 = 'κάτι'; }) > 0, 'λέξη που ανάβει ΚΑΙ γράφει ότι δεν ανάβει → σφάλμα');
+      ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'a1'], [';', 'a1']]; }) > 0, 'στίξη με κλειδί → σφάλμα');
+      ok(Object.keys(AL).length === unit.align.segs.length, 'η απλή της gk10 είναι στοιχισμένη σε ΟΛΕΣ τις ' + unit.align.segs.length + ' περιόδους');
+    }
   }
   /* ανάμειξη στηλών: η πηγή αλλάζει, όχι το JSON — όπως το κείμενο που επικόλλησε για την 9η */
   const src2 = JSON.parse(JSON.stringify(src));
@@ -286,6 +296,38 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         ok(await ev(`document.getElementById('easyT').hidden`), 'και ο διακόπτης «Απλές λέξεις» κρύβεται (δεν μπλέκονται δύο)');
         await ev(`document.querySelector('.an .w').click()`);
         ok(await ev(`document.getElementById('aside').textContent.length>20`), 'η λέξη του αρχαίου ανοίγει ακόμη την κάρτα της');
+        if (AP.align) {
+          /* ΙΔΙΑ ΕΦΕ ΜΕ ΤΗΝ ΚΑΝΟΝΙΚΗ: λέξη-κουμπί σε κάθε στοιχισμένο κομμάτι, ζευγάρι που ανάβει από τις δύο μεριές */
+          const keyed = segs.reduce((a, g) => a + AP.align[g.n].filter(c => c[1] && !/^[\s,.;:·’'—–()«»!?]+$/.test(c[0])).length, 0);
+          eq(await ev(`document.querySelectorAll('.md .w').length`), keyed, 'στην απλή, κάθε στοιχισμένο κομμάτι είναι λέξη που πατιέται (' + keyed + ')');
+          eq(await ev(`document.querySelectorAll('.md .w.hd, .md .w.ez').length`), 0, 'χωρίς τις τελίτσες του «πες το απλά» (αυτές είναι της κανονικής)');
+          /* σπασμένο ζευγάρι: πατάς το αρχαίο, ανάβουν ΟΛΑ τα κομμάτια και στις δύο μεριές */
+          let split = null;
+          for (const g of segs) { const cnt = {}; AP.align[g.n].forEach(c => { if (c[1]) cnt[c[1]] = (cnt[c[1]] || 0) + 1; }); const k = Object.keys(cnt).find(k => cnt[k] > 1 && g.a.filter(c => c[1] === k).length > 1); if (k) { split = { g, k }; break; } }
+          ok(!!split, 'βρέθηκε σπασμένο ζευγάρι για δοκιμή' + (split ? ' (' + split.k + ')' : ''));
+          if (split) {
+            const { g, k } = split, nA = g.a.filter(c => c[1] === k).length, nM = AP.align[g.n].filter(c => c[1] === k).length;
+            const rend = AP.align[g.n].filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
+            await ev(`document.querySelector('.sent[data-n="${g.n}"] .an .w[data-k="${k}"]').click()`);
+            eq(await ev(`document.querySelectorAll('.sent[data-n="${g.n}"] .w.hit').length`), nA + nM, 'πατώντας «' + unit.align.pairs[k].a + '» ανάβουν ' + nA + ' στο αρχαίο + ' + nM + ' στην απλή');
+            eq(await ev(`document.querySelector('#aside .wc-md').textContent`), rend, 'η κάρτα λέει πώς το αποδίδει η απλή: «' + rend + '»');
+            ok((await ev(`document.getElementById('aside').textContent`)).indexOf(unit.align.pairs[k].m) >= 0, 'και από κάτω η ακριβής: «' + unit.align.pairs[k].m + '»');
+            ok((await ev(`document.getElementById('aside').textContent`)).indexOf('Λήμμα') >= 0, 'με λήμμα, τύπο, συντακτικό όπως πάντα');
+            await shotAt(gid + '-06-aplh-pair', '.sent[data-n="' + g.n + '"]');
+          }
+          /* και ανάποδα: πατάς λέξη της απλής, ανάβει το αρχαίο */
+          const g1 = segs.find(g => AP.align[g.n].some(c => c[1])), c1 = AP.align[g1.n].find(c => c[1]);
+          await ev(`document.querySelector('.sent[data-n="${g1.n}"] .md .w[data-k="${c1[1]}"]').click()`);
+          ok(await ev(`document.querySelectorAll('.sent[data-n="${g1.n}"] .an .w.hit[data-k="${c1[1]}"]').length>0`), 'πατώντας «' + c1[0].trim() + '» στην απλή, ανάβει το «' + unit.align.pairs[c1[1]].a + '» στο αρχαίο');
+          await ev(`document.querySelector('.sent[data-n="${g1.n}"] .md .w[data-k="${c1[1]}"]').click()`);
+          eq(await ev(`document.querySelectorAll('.w.hit').length`), 0, 'δεύτερο πάτημα το σβήνει, όπως στην κανονική');
+          for (const k of Object.keys(AP.none || {})) {
+            const g = segs.find(x => x.a.some(c => c[1] === k));
+            await ev(`document.querySelector('.sent[data-n="${g.n}"] .an .w[data-k="${k}"]').click()`);
+            ok((await ev(`document.getElementById('aside').textContent`)).indexOf(AP.none[k]) >= 0, 'το «' + unit.align.pairs[k].a + '» δεν ανάβει τίποτα στην απλή — και η κάρτα λέει ΓΙΑΤΙ');
+            await ev(`document.querySelector('.sent[data-n="${g.n}"] .an .w[data-k="${k}"]').click()`);
+          }
+        }
         await shotAt(gid + '-06-aplh', '.sent[data-n="' + segs[1].n + '"]');
         /* ΔΙΟΡΘΩΣΕ: το δικό του παράδειγμα — «Τι λοιπόν;» → «Τότε;» (= ο Σκουτερόπουλος) */
         const g0 = segs[0], g1 = segs[1], g2 = segs[2];
@@ -295,18 +337,19 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         await ev(`${R(g0.n)}.querySelector('[data-apx="edit"]').click()`);
         eq(await ev(`${R(g0.n)}.querySelector('.ape').value`), AP.segs[g0.n], 'το «Διόρθωσε» ανοίγει το κείμενο της απλής για αλλαγή');
         await ev(`${R(g0.n)}.querySelector('.ape').value=${JSON.stringify(book(g0))}; ${R(g0.n)}.querySelector('[data-apx="save"]').click()`);
-        eq(await ev(`${R(g0.n)}.querySelector('.md').textContent`), book(g0), 'γράφει «' + book(g0) + '» και η περίοδος το δείχνει');
+        eq(await ev(`${R(g0.n)}.querySelector('.md').textContent.trim()`), book(g0), 'γράφει «' + book(g0) + '» και η περίοδος το δείχνει');
         ok((await ev(`${R(g0.n)}.querySelector('.apx').textContent`)).indexOf('Εδώ η κανονική') >= 0, 'και αφού είναι ίδιο με του βιβλίου, λέγεται «Εδώ η κανονική»');
         await ev(`${R(g1.n)}.querySelector('[data-apx="edit"]').click(); ${R(g1.n)}.querySelector('.ape').value='  Δική μου   απόδοση  '; ${R(g1.n)}.querySelector('[data-apx="save"]').click()`);
-        eq(await ev(`${R(g1.n)}.querySelector('.md').textContent`), 'Δική μου απόδοση', 'δική του απόδοση (με τα κενά καθαρισμένα)');
+        eq(await ev(`${R(g1.n)}.querySelector('.md').textContent.trim()`), 'Δική μου απόδοση', 'δική του απόδοση (με τα κενά καθαρισμένα)');
         ok((await ev(`${R(g1.n)}.querySelector('.apx').textContent`)).indexOf('Δική σου') >= 0, 'και σημαδεύεται «Δική σου»');
         await ev(`${R(g2.n)}.querySelector('[data-apx="book"]').click()`);
-        eq(await ev(`${R(g2.n)}.querySelector('.md').textContent`), book(g2), '«Εδώ θέλω την κανονική» βάζει τον ' + unit.translator + ' σε ΑΥΤΗ την περίοδο');
+        eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), '«Εδώ θέλω την κανονική» βάζει τον ' + unit.translator + ' σε ΑΥΤΗ την περίοδο');
         eq(await ev(`${R(segs[3].n)}.querySelector('.md').textContent`), AP.segs[segs[3].n], 'και οι άλλες περίοδοι μένουν όπως ήταν');
+        eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w').length`), g2.m.filter(c => c[1] && !/^[\s,.;:·’'—–()«»!?]+$/.test(c[0].replace(/\s+$/, ''))).length, 'και η «κανονική» περίοδος έχει όλες τις λέξεις-κουμπιά του βιβλίου');
         await ev(`${R(g2.n)}.querySelector('[data-apx="edit"]').click(); ${R(g2.n)}.querySelector('.ape').value='κάτι'; ${R(g2.n)}.querySelector('[data-apx="cancel"]').click()`);
-        eq(await ev(`${R(g2.n)}.querySelector('.md').textContent`), book(g2), 'το «Άκυρο» δεν αλλάζει τίποτα');
+        eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), 'το «Άκυρο» δεν αλλάζει τίποτα');
         await open();
-        eq(JSON.stringify(await ev(`[${g0.n},${g1.n},${g2.n}].map(n=>document.querySelector('.sent[data-n="'+n+'"] .md').textContent)`)), JSON.stringify([book(g0), 'Δική μου απόδοση', book(g2)]), 'οι διορθώσεις μένουν μετά το reload');
+        eq(JSON.stringify(await ev(`[${g0.n},${g1.n},${g2.n}].map(n=>document.querySelector('.sent[data-n="'+n+'"] .md').textContent.trim())`)), JSON.stringify([book(g0), 'Δική μου απόδοση', book(g2)]), 'οι διορθώσεις μένουν μετά το reload');
         await ev(`document.querySelector('[data-mode="wh"]').click()`);
         ok((await ev(`document.querySelector('#wholeBox .mod:not(.gry)').textContent`)).indexOf('Δική μου απόδοση') >= 0, 'και φαίνονται και στο «Ολόκληρο»');
         await ev(`document.querySelector('[data-mode="tr"]').click()`);
@@ -314,7 +357,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         await ev(`document.querySelector('[data-mode="rd"]').click()`);
         await shotAt(gid + '-06-aplh-edit', '.sent[data-n="' + g0.n + '"]');
         for (const g of [g0, g1, g2]) await ev(`${R(g.n)}.querySelector('[data-apx="undo"]').click()`);
-        eq(JSON.stringify(await ev(`[${g0.n},${g1.n},${g2.n}].map(n=>document.querySelector('.sent[data-n="'+n+'"] .md').textContent)`)), JSON.stringify([g0, g1, g2].map(g => AP.segs[g.n])), '«Γύρνα στην απλή» φέρνει πίσω την απλή του αρχείου');
+        eq(JSON.stringify(await ev(`[${g0.n},${g1.n},${g2.n}].map(n=>document.querySelector('.sent[data-n="'+n+'"] .md').textContent.trim())`)), JSON.stringify([g0, g1, g2].map(g => AP.segs[g.n])), '«Γύρνα στην απλή» φέρνει πίσω την απλή του αρχείου');
         eq(await ev(`localStorage.getItem('${gid}_ap_v1')`), '{}', 'και δεν μένει τίποτα αποθηκευμένο');
         await ev(`document.querySelector('[data-mode="wh"]').click()`);
         ok(!(await ev(`document.getElementById('verRow').hidden`)), 'ο επιλογέας φαίνεται και στο «Ολόκληρο»');

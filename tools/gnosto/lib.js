@@ -277,6 +277,34 @@ function check(spec, unit, src){
     });
     have.forEach(function(n){ if (ns.indexOf(n) < 0) e('απλή μετάφραση: περίοδος ' + n + ' που δεν υπάρχει'); });
     if (typeof AP.name !== 'string' || !AP.name.trim()) e('απλή μετάφραση: χωρίς όνομα');
+    /* 9β · η ΣΤΟΙΧΙΣΗ της απλής (`align`, προαιρετική): ίδιο σχήμα με τη μετάφραση του βιβλίου —
+       [[κείμενο, κλειδί|0], …] ανά περίοδο. Ενωμένα τα κομμάτια ΔΙΝΟΥΝ ΑΚΡΙΒΩΣ την απλή, κάθε κλειδί
+       είναι λέξη του αρχαίου ΣΕ ΑΥΤΗ την περίοδο, και κάθε λέξη του αρχαίου ανάβει κάτι — ή γράφει
+       στο `none` ΓΙΑΤΙ δεν ανάβει (η κάρτα το λέει). */
+    if (AP.align){
+      var NONE = AP.none || {};
+      ns.forEach(function(n){
+        var al = AP.align[n], s = segs.filter(function(g){ return String(g.n) === n; })[0];
+        if (!Array.isArray(al) || !al.length) return e('στοίχιση απλής: η περίοδος ' + n + ' λείπει');
+        var bad = al.filter(function(c){ return !Array.isArray(c) || c.length !== 2 || typeof c[0] !== 'string' || !c[0] || !(c[1] === 0 || typeof c[1] === 'string'); });
+        if (bad.length) return e('στοίχιση απλής, περίοδος ' + n + ': κομμάτι που δεν είναι [κείμενο, κλειδί|0]');
+        var joined = al.map(function(c){ return c[0]; }).join('');
+        if (joined !== AP.segs[n]) e('στοίχιση απλής, περίοδος ' + n + ': τα κομμάτια δεν δίνουν την απλή («' + joined + '»)');
+        var ak = {}; s.a.forEach(function(c){ if (c[1]) ak[c[1]] = 1; });
+        var mk = {};
+        al.forEach(function(c){
+          if (!c[1]) return;
+          if (!ak[c[1]]) e('στοίχιση απλής, περίοδος ' + n + ': το «' + c[0] + '» δείχνει σε ' + c[1] + ', που δεν είναι λέξη αυτής της περιόδου');
+          if (/^[\s,.;:·’'—–()«»!?]+$/.test(c[0])) e('στοίχιση απλής, περίοδος ' + n + ': στίξη με κλειδί (' + c[1] + ')');
+          mk[c[1]] = 1;
+        });
+        Object.keys(ak).forEach(function(k){
+          if (!mk[k] && !NONE[k]) e('στοίχιση απλής, περίοδος ' + n + ': η λέξη ' + k + ' («' + P[k].a + '») δεν ανάβει τίποτα και δεν γράφει γιατί (`none`)');
+          if (mk[k] && NONE[k]) e('στοίχιση απλής: το ' + k + ' ανάβει ΚΑΙ γράφει ότι δεν ανάβει');
+        });
+      });
+      Object.keys(NONE).forEach(function(k){ if (!P[k]) e('στοίχιση απλής: `none` για κλειδί που δεν υπάρχει: ' + k); else if (typeof NONE[k] !== 'string' || !NONE[k].trim()) e('στοίχιση απλής: `none` ' + k + ' χωρίς εξήγηση'); });
+    }
     (AP.changes || []).forEach(function(c, i){
       if (!Array.isArray(c) || c.length !== 3 || c.some(function(x){ return typeof x !== 'string' || !x.trim(); })) e('απλή μετάφραση: η αλλαγή ' + (i + 1) + ' δεν είναι [βιβλίο, εδώ, γιατί]');
     });

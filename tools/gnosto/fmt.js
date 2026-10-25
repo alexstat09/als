@@ -8,7 +8,19 @@ var fs = require('fs'), path = require('path');
 
 function prim(v){ return v === null || typeof v !== 'object'; }
 function simple(v){ return prim(v) || (Array.isArray(v) && v.every(function(x){ return prim(x) || (Array.isArray(x) && x.every(prim)); })); }
-function one(v){ return JSON.stringify(v).replace(/","/g, '", "').replace(/\],\[/g, '], ['); }
+/* Ίδια όψη με το παλιό replace(/","/ , /],[/) πάνω σε όλο το JSON — αλλά ΜΟΝΟ στη δομή:
+   ένα κείμενο που ΕΙΝΑΙ «,» (κόμμα-κομμάτι στοίχισης) δεν γίνεται πια «, ». */
+function one(v){
+  var t = JSON.stringify(v), out = '', inStr = false;
+  for (var i = 0; i < t.length; i++){
+    var c = t[i];
+    if (inStr){ out += c; if (c === '\\'){ out += t[++i]; } else if (c === '"') inStr = false; continue; }
+    if (c === '"'){ inStr = true; out += c; continue; }
+    if (c === ',' && ((t[i - 1] === '"' && t[i + 1] === '"') || (t[i - 1] === ']' && t[i + 1] === '['))){ out += ', '; continue; }
+    out += c;
+  }
+  return out;
+}
 
 function fmt(v, ind){
   ind = ind || '';

@@ -61,7 +61,7 @@ function dataOf(spec, unit){
     /* η απλή μετάφραση: ανά περίοδο, και ενωμένη ανά ατάκα για το «Ολόκληρο» */
     aplh: spec.aplh ? {
       name: spec.aplh.name, note: spec.aplh.note || '', changes: spec.aplh.changes || [],
-      segs: spec.aplh.segs,
+      segs: spec.aplh.segs, align: spec.aplh.align || null, none: spec.aplh.none || {},
       paras: unit.ancient.map(function(b, i){
         return unit.align.segs.filter(function(s){ return para[s.n] === i; }).map(function(s){ return spec.aplh.segs[s.n]; }).join(' ');
       })
