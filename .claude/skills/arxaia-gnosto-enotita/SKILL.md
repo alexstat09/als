@@ -41,6 +41,7 @@ node -e "console.log(!!require('./arxaia-gnosto-data.js').unit('gkN'))"   # πρ
    ξαναδιαβάζει το αρχείο και απαιτεί deep-equal με το JSON, αλλιώς επαναφέρει) + CACHE HEAD+1.
 6. `node tests/arxaia-gnosto.test.js | tail -1` — ο γενικός φρουρός (§2δ) πιάνει τη νέα ενότητα μόνος του.
 7. **Συνέχισε με το skill `arxaia-gnosto-organo`** (§3 βήματα 1–10) για την ΙΔΙΑ ενότητα. Ίδιο commit.
+   ⭐⭐⭐ Μαζί και η **ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ** (βήμα 5β / §4β εκεί, ΥΠΟΧΡΕΩΤΙΚΗ, στο ύφος της gk10) — καμία ενότητα δεν βγαίνει χωρίς αυτήν.
 8. Όλα: `for f in tests/arxaia-*.js; do node "$f" | tail -1; done; node tests/launcher.test.js | tail -1; node tests/sync-regression.js | tail -1; ./smoke-test.sh`
 9. MAP.md μία γραμμή · CLAUDE.md §5 μία εγγραφή · μνήμη `als_arxaia_page.md` μία γραμμή.
    `git add` ΜΟΝΟ τα αρχεία της ενότητας. **ΕΝΑ commit, push στο main, poll ότι η παραγωγή σερβίρει το νέο CACHE.**

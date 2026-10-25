@@ -709,6 +709,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   Φρουρός: `tests/arxaia-gnosto-organo.test.js` — ΓΕΝΙΚΟ, κάθε `tools/gnosto/gkN.json` μόνο του
   (στατικά + μεταλλάξεις + Chrome/CDP 1440→393· `GK_ONLY=gkN`, `GK_SHOTS=φάκελος`).
   ⭐⭐ **als-v646 — gk10 (Πολιτεία 519b-520a, οι φιλόσοφοι): κείμενο στον Γνωστό ΚΑΙ όργανο `arxaia-gk10.html`** — πηγή `tests/arxaia-enotita10.source.txt` (κείμενο) + `tests/arxaia-gk10-fakelos.source.txt` (όργανο)· το PDF γράφει «.» όπου το βιβλίο τυπώνει ΑΝΩ ΤΕΛΕΙΑ (ελεγμένο σε render) — βλ. CLAUDE.md §5.
+  ⭐⭐⭐ **als-v667 — ΚΑΘΕ όργανο έχει ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ δίπλα στην ακριβή** (πεδίο `aplh` του `gkN.json`, πρότυπο gk10, ΥΠΟΧΡΕΩΤΙΚΟ — skill `arxaia-gnosto-organo` §4β): `tools/gnosto/aplh.js gkN --init` (στήνει από τον μεταφραστή) → αλλάζεις ΜΟΝΟ `aplh.align` → `--segs` → φύλλο ως 0 ✗· validator `lib.check` 9/9β.
   ⭐⭐ **als-v647 — ΤΟ ΚΕΙΜΕΝΟ ΜΙΑΣ ΝΕΑΣ ΕΝΟΤΗΤΑΣ = skill `arxaia-gnosto-enotita`:** το μοντέλο γράφει ΜΟΝΟ `tools/gnosto/gkN.text.json` (συμπαγή `segs` ⟨κείμενο|κλειδί⟩ + `pairs` + `fixes` + `counts`)· `tools/gnosto/keimeno.js` scaffold → source (κόψιμο + σάρωση υπόπτων με PNG) → check → wire (block ⟪gkN⟫ στο UNITS, deep-equal) · πρότυπο `gk10.text.json` · γενικός φρουρός §2δ στο `tests/arxaia-gnosto.test.js`.
   ⭐⭐ **als-v641 — Η ΜΗΧΑΝΗ:** νέα ενότητα = skill **`arxaia-gnosto-organo`**
   (`.claude/skills/`). `scaffold.js` (2 φάσεις) → `source.js` (PDFKit μέσω `fakelos.swift`,

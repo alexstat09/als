@@ -135,8 +135,12 @@ if (U.gk9){
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({ 999: 'κάτι' }, full) }; }) > 0, 'απλή μετάφραση σε περίοδο που δεν υπάρχει → σφάλμα');
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full, { [ns[0]]: 'τὸ ἁπλό' }) }; }) > 0, 'απλή μετάφραση σε πολυτονικό → σφάλμα');
     ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full), changes: [['α', 'β']] }; }) > 0, 'αλλαγή χωρίς «γιατί» → σφάλμα');
-    if (U.gk10 && U.gk10.spec.aplh && U.gk10.spec.aplh.align && unit === U.gk10.unit) {
-      const AL = U.gk10.spec.aplh.align;
+    /* ⚠️ το `mut` εδώ πάνω τρέχει πάνω στη gk9 — η στοίχιση της απλής ελέγχεται πάνω στη gk10 με ΔΙΚΟ της mut
+       (als-v666: το παλιό `unit === U.gk10.unit` ήταν πάντα ψευδές και οι 7 μεταλλάξεις δεν έτρεχαν ποτέ) */
+    if (U.gk10 && U.gk10.spec.aplh && U.gk10.spec.aplh.align) {
+      const AL = U.gk10.spec.aplh.align, unit = U.gk10.unit;
+      const mut = fn => { const s = JSON.parse(JSON.stringify(U.gk10.spec)); fn(s); return L.check(s, unit, U.gk10.src).length; };
+      ok(mut(() => {}) === 0, 'η gk10 όπως είναι → κανένα σφάλμα (βάση για τις μεταλλάξεις)');
       ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'a1'], ['!', 0]]; }) > 0, 'στοίχιση που δεν δίνει την απλή → σφάλμα');
       ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'b1'], [';', 0]]; }) > 0, 'στοίχιση με λέξη ΑΛΛΗΣ περιόδου → σφάλμα');
       ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν;', 0]]; }) > 0, 'λέξη του αρχαίου που δεν ανάβει τίποτα (χωρίς `none`) → σφάλμα');
@@ -144,6 +148,7 @@ if (U.gk9){
       ok(mut(s => { s.aplh.none.a1 = 'κάτι'; }) > 0, 'λέξη που ανάβει ΚΑΙ γράφει ότι δεν ανάβει → σφάλμα');
       ok(mut(s => { s.aplh.align['1'] = [['Τι λοιπόν', 'a1'], [';', 'a1']]; }) > 0, 'στίξη με κλειδί → σφάλμα');
       ok(Object.keys(AL).length === unit.align.segs.length, 'η απλή της gk10 είναι στοιχισμένη σε ΟΛΕΣ τις ' + unit.align.segs.length + ' περιόδους');
+      ok(mut(s => { unit.align.segs.forEach(g => { const b = g.m.map(c => c[0]).join('').trim(); s.aplh.segs[g.n] = b; s.aplh.align[g.n] = [[b, 0]]; }); s.aplh.none = {}; }) > 0, 'απλή ίδια με τον μεταφραστή ΠΑΝΤΟΥ (ξεχασμένο μετά το --init) → σφάλμα');
     }
   }
   /* ανάμειξη στηλών: η πηγή αλλάζει, όχι το JSON — όπως το κείμενο που επικόλλησε για την 9η */
@@ -306,7 +311,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
           /* σπασμένο ζευγάρι: πατάς το αρχαίο, ανάβουν ΟΛΑ τα κομμάτια και στις δύο μεριές */
           let split = null;
           for (const g of segs) { const cnt = {}; AP.align[g.n].forEach(c => { if (c[1]) cnt[c[1]] = (cnt[c[1]] || 0) + 1; }); const k = Object.keys(cnt).find(k => cnt[k] > 1 && g.a.filter(c => c[1] === k).length > 1); if (k) { split = { g, k }; break; } }
-          ok(!!split, 'βρέθηκε σπασμένο ζευγάρι για δοκιμή' + (split ? ' (' + split.k + ')' : ''));
+          if (!split) console.log('  · καμία λέξη σπασμένη ΚΑΙ στις δύο μεριές σε αυτή την ενότητα — η δοκιμή σπασμένου ζευγαριού παραλείπεται');
           if (split) {
             const { g, k } = split, nA = g.a.filter(c => c[1] === k).length, nM = AP.align[g.n].filter(c => c[1] === k).length;
             const rend = AP.align[g.n].filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
@@ -332,8 +337,10 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         }
         await shotAt(gid + '-06-aplh', '.sent[data-n="' + segs[1].n + '"]');
         /* ΔΙΟΡΘΩΣΕ: το δικό του παράδειγμα — «Τι λοιπόν;» → «Τότε;» (= ο Σκουτερόπουλος) */
-        const g0 = segs[0], g1 = segs[1], g2 = segs[2];
         const book = g => g.m.map(c => c[0]).join('').trim();
+        /* g0 = μια περίοδος όπου η απλή ΔΙΑΦΕΡΕΙ από τον μεταφραστή (αλλιώς «γράφω τον μεταφραστή» = καμία αλλαγή) */
+        const g0 = segs.find(g => AP.segs[g.n] !== book(g)), rest = segs.filter(g => g !== g0);
+        const g1 = rest[0], g2 = rest[1];
         const R = n => `document.querySelector('.sent[data-n="${n}"]')`;
         ok(await ev(`getComputedStyle(${R(g0.n)}.querySelector('.apx')).display!=='none'`), 'στην απλή, κάθε περίοδος έχει «Διόρθωσε»');
         await ev(`${R(g0.n)}.querySelector('[data-apx="edit"]').click()`);
@@ -349,7 +356,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         await ev(`${R(g2.n)}.querySelector('[data-apx="book"]').click()`);
         eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w.ez').length`), 0, '«Εδώ η κανονική» μένει ο μεταφραστής ΑΚΟΜΗ κι αν το «Απλές λέξεις» είχε μείνει ανοιχτό');
         eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), '«Εδώ θέλω την κανονική» βάζει τον ' + unit.translator + ' σε ΑΥΤΗ την περίοδο');
-        eq(await ev(`${R(segs[3].n)}.querySelector('.md').textContent`), AP.segs[segs[3].n], 'και οι άλλες περίοδοι μένουν όπως ήταν');
+        eq(await ev(`${R(rest[2].n)}.querySelector('.md').textContent`), AP.segs[rest[2].n], 'και οι άλλες περίοδοι μένουν όπως ήταν');
         await ev(`document.querySelector('[data-ver="ak"]').click(); if(document.getElementById('easyI').checked) document.getElementById('easyI').click(); document.querySelector('[data-ver="ap"]').click()`);
         eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w').length`), g2.m.filter(c => c[1] && !/^[\s,.;:·’'—–()«»!?]+$/.test(c[0].replace(/\s+$/, ''))).length, 'και η «κανονική» περίοδος έχει όλες τις λέξεις-κουμπιά του βιβλίου');
         await ev(`${R(g2.n)}.querySelector('[data-apx="edit"]').click(); ${R(g2.n)}.querySelector('.ape').value='κάτι'; ${R(g2.n)}.querySelector('[data-apx="cancel"]').click()`);
