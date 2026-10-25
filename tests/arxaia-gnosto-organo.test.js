@@ -126,6 +126,16 @@ if (U.gk9){
     ok(mut(s => { s.easy = { [one]: 'Κάτι' }; }) > 0, '«πες το απλά» με κεφαλαίο που δεν έχει η μετάφραση → σφάλμα');
     ok(mut(s => { s.easy = { [one]: 'τὸ ἁπλό' }; }) > 0, '«πες το απλά» σε πολυτονικό → σφάλμα');
   }
+  {
+    /* «απλή μετάφραση»: μία ανά περίοδο, ούτε λείπει ούτε περισσεύει */
+    const ns = unit.align.segs.map(g => String(g.n)), full = {};
+    ns.forEach(n => { full[n] = 'κάτι απλό ' + n; });
+    ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full) }; }) === 0, 'απλή μετάφραση σε κάθε περίοδο → κανένα σφάλμα');
+    ok(mut(s => { const x = Object.assign({}, full); delete x[ns[0]]; s.aplh = { name: 'Απλή', segs: x }; }) > 0, 'απλή μετάφραση που ξεχνά μια περίοδο → σφάλμα');
+    ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({ 999: 'κάτι' }, full) }; }) > 0, 'απλή μετάφραση σε περίοδο που δεν υπάρχει → σφάλμα');
+    ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full, { [ns[0]]: 'τὸ ἁπλό' }) }; }) > 0, 'απλή μετάφραση σε πολυτονικό → σφάλμα');
+    ok(mut(s => { s.aplh = { name: 'Απλή', segs: Object.assign({}, full), changes: [['α', 'β']] }; }) > 0, 'αλλαγή χωρίς «γιατί» → σφάλμα');
+  }
   /* ανάμειξη στηλών: η πηγή αλλάζει, όχι το JSON — όπως το κείμενο που επικόλλησε για την 9η */
   const src2 = JSON.parse(JSON.stringify(src));
   src2.blocks.grypari += ' ' + L.norm('Απεναντίας, η τωρινή διερεύνησή μας, είπα εγώ, δείχνει αυτή τη δύναμη της γνώσης');
@@ -261,6 +271,35 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         ok(await ev(`document.getElementById('easyT').hidden`), 'στη «Δομή» (χωρίς μετάφραση) ο διακόπτης κρύβεται');
         await ev(`document.querySelector('[data-mode="rd"]').click(); document.getElementById('easyI').click()`);
         eq(nz(await ev(`[...document.querySelectorAll('.md')].map(p=>p.textContent).join(' ')`)), nz(unit.text.map(b => b.p).join(' ')), 'κλειστός ξανά: η μετάφραση του βιβλίου, γράμμα-γράμμα');
+      }
+
+      section('Β · ' + gid + ' — ΑΚΡΙΒΗΣ / ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ');
+      if (!spec.aplh) {
+        ok(await ev(`document.getElementById('verRow').hidden`), 'χωρίς απλή μετάφραση, κανένας επιλογέας');
+      } else {
+        const AP = spec.aplh;
+        ok(!(await ev(`document.getElementById('verRow').hidden`)), 'ο επιλογέας φαίνεται στο «Διάβασε»');
+        ok(await ev(`document.querySelector('[data-ver="ak"]').getAttribute('aria-pressed')==='true'`), 'ξεκινά στην ακριβή');
+        ok((await ev(`document.querySelector('[data-ver="ak"]').textContent`)).indexOf(unit.translator) >= 0, 'και η ακριβής λέει ποιος την έγραψε (' + unit.translator + ')');
+        await ev(`document.querySelector('[data-ver="ap"]').click()`);
+        eq(JSON.stringify(await ev(`[...document.querySelectorAll('.sent')].map(r=>r.querySelector('.md').textContent)`)), JSON.stringify(segs.map(g => AP.segs[g.n])), 'στην απλή, ΚΑΘΕ περίοδος δείχνει τη δική της απλή απόδοση, αυτολεξεί');
+        ok(await ev(`document.getElementById('easyT').hidden`), 'και ο διακόπτης «Απλές λέξεις» κρύβεται (δεν μπλέκονται δύο)');
+        await ev(`document.querySelector('.an .w').click()`);
+        ok(await ev(`document.getElementById('aside').textContent.length>20`), 'η λέξη του αρχαίου ανοίγει ακόμη την κάρτα της');
+        await shotAt(gid + '-06-aplh', '.sent[data-n="' + segs[1].n + '"]');
+        await ev(`document.querySelector('[data-mode="wh"]').click()`);
+        ok(!(await ev(`document.getElementById('verRow').hidden`)), 'ο επιλογέας φαίνεται και στο «Ολόκληρο»');
+        eq(nz(await ev(`[...document.querySelectorAll('#wholeBox .mod:not(.gry) p')].map(p=>p.textContent).join(' ')`)), nz(segs.map(g => AP.segs[g.n]).join(' ')), 'στο «Ολόκληρο» η στήλη «Μαθαίνεις» είναι η απλή, ολόκληρη');
+        eq(await ev(`document.querySelectorAll('#wholeBox .mod:not(.gry) p').length`), unit.ancient.length, 'σε τόσες παραγράφους όσες οι ατάκες του αρχαίου (' + unit.ancient.length + ')');
+        eq(await ev(`document.querySelectorAll('#wholeBox .chg tbody tr').length`), (AP.changes || []).length, 'και από κάτω ο πίνακας «τι άλλαξε» (' + (AP.changes || []).length + ' γραμμές)');
+        await shotAt(gid + '-06-aplh-whole', '#wholeBox');
+        await ev(`document.querySelector('[data-mode="st"]').click()`);
+        ok(await ev(`document.getElementById('verRow').hidden`), 'στη «Δομή» (χωρίς μετάφραση) ο επιλογέας κρύβεται');
+        await open();
+        ok(await ev(`document.querySelector('[data-ver="ap"]').getAttribute('aria-pressed')==='true'`), 'θυμάται την επιλογή μετά το reload');
+        await ev(`document.querySelector('[data-mode="rd"]').click(); document.querySelector('[data-ver="ak"]').click()`);
+        eq(nz(await ev(`[...document.querySelectorAll('.md')].map(p=>p.textContent).join(' ')`)), nz(unit.text.map(b => b.p).join(' ')), 'πίσω στην ακριβή: η μετάφραση του βιβλίου, γράμμα-γράμμα');
+        eq(nz(await ev(`[...document.querySelectorAll('#wholeBox .mod:not(.gry) p')].map(p=>p.textContent).join(' ')`)), nz(unit.text.map(b => b.p).join(' ')), 'και στο «Ολόκληρο» ξανά ο ' + unit.translator);
       }
 
       section('Β · ' + gid + ' — ΜΕΤΑΦΡΑΣΕ (✗ ↻ ✓) ΚΑΙ RELOAD');

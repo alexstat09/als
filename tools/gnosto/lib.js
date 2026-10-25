@@ -263,6 +263,24 @@ function check(spec, unit, src){
       if (up(p) !== up(chunks[i])) e('απλή λέξη ' + k + ': το «' + p + '» δεν έχει το κεφαλαίο του «' + chunks[i] + '»');
     });
   });
+
+  /* 9 · «απλή μετάφραση» (`aplh`, προαιρετικό): ΟΛΟΚΛΗΡΗ δεύτερη απόδοση, μία
+     ανά περίοδο — ούτε περίοδος που λείπει ούτε που περισσεύει, μονοτονικό.
+     Δεν έχει ζευγάρια· τα ζευγάρια ανήκουν μόνο στη μετάφραση του βιβλίου. */
+  var AP = spec.aplh;
+  if (AP){
+    var ns = segs.map(function(s){ return String(s.n); }), have = Object.keys(AP.segs || {});
+    ns.forEach(function(n){
+      var x = (AP.segs || {})[n];
+      if (typeof x !== 'string' || !x.trim() || x !== x.trim()) return e('απλή μετάφραση: η περίοδος ' + n + ' λείπει ή έχει κενά στις άκρες');
+      if (POLY.test(x)) e('απλή μετάφραση, περίοδος ' + n + ': πολυτονικό');
+    });
+    have.forEach(function(n){ if (ns.indexOf(n) < 0) e('απλή μετάφραση: περίοδος ' + n + ' που δεν υπάρχει'); });
+    if (typeof AP.name !== 'string' || !AP.name.trim()) e('απλή μετάφραση: χωρίς όνομα');
+    (AP.changes || []).forEach(function(c, i){
+      if (!Array.isArray(c) || c.length !== 3 || c.some(function(x){ return typeof x !== 'string' || !x.trim(); })) e('απλή μετάφραση: η αλλαγή ' + (i + 1) + ' δεν είναι [βιβλίο, εδώ, γιατί]');
+    });
+  }
   return errs;
 }
 

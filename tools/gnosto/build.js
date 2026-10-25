@@ -58,6 +58,14 @@ function dataOf(spec, unit){
       return { n: s.n, p: para[s.n], a: s.a, m: s.m, runs: spec.structure.runs[s.n] };
     }),
     pairs: pairs,
+    /* η απλή μετάφραση: ανά περίοδο, και ενωμένη ανά ατάκα για το «Ολόκληρο» */
+    aplh: spec.aplh ? {
+      name: spec.aplh.name, note: spec.aplh.note || '', changes: spec.aplh.changes || [],
+      segs: spec.aplh.segs,
+      paras: unit.ancient.map(function(b, i){
+        return unit.align.segs.filter(function(s){ return para[s.n] === i; }).map(function(s){ return spec.aplh.segs[s.n]; }).join(' ');
+      })
+    } : null,
     clauses: spec.structure.clauses,
     scholia: spec.scholia.map(function(s){ return { lemma: s.lemma, body: s.body, keys: s.keys }; }),
     acts: spec.activities,

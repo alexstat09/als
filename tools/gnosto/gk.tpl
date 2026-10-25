@@ -95,6 +95,17 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .chk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
 .chk[hidden]{display:none}
 .chk input{accent-color:rgb(var(--warn))}
+/* ποια μετάφραση: η του βιβλίου ή η απλή — πάνω από τους τρόπους */
+.ver{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:16px}
+.ver[hidden]{display:none}
+.vernote{flex-basis:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
+.md .ap{color:var(--ink)}
+.chg{margin-top:34px;max-width:900px}
+.chg table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;line-height:1.55}
+.chg th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);text-align:left;padding:0 14px 10px 0;border-bottom:1px solid var(--line)}
+.chg td{padding:10px 14px 10px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--dim)}
+.chg td:nth-child(2){color:var(--ink)}
+@media (max-width:560px){ .chg table{font-size:13.5px} .chg td{padding-right:8px} }
 .modehint{margin-top:14px;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
 .lenses{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px;padding-bottom:22px;border-bottom:1px solid var(--line)}
 .lenses[hidden]{display:none}
@@ -355,6 +366,14 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 
   <!-- ══ ΜΕΤΑΦΡΑΣΗ ═══════════════════════════════════════════ -->
   <section class="panel on" id="p-metafrasi" role="tabpanel">
+    <div class="ver" id="verRow" hidden>
+      <span class="lbl">Μετάφραση</span>
+      <div class="seg" role="group" aria-label="Ποια μετάφραση">
+        <button type="button" data-ver="ak" aria-pressed="true">Ακριβής · <span id="verAk"></span></button>
+        <button type="button" data-ver="ap" aria-pressed="false" id="verAp"></button>
+      </div>
+      <p class="vernote" id="verNote"></p>
+    </div>
     <div class="tools">
       <div class="seg" role="group" aria-label="Τρόπος">
         <button type="button" data-mode="si" aria-pressed="false">Απλά λόγια</button>
@@ -460,7 +479,9 @@ const PUNCT = /^[\s,.;:·’'—–()«»!?]+$/;
 let trm = obj(lsGet(TR_KEY, {}));
 let sxm = obj(lsGet(SX_KEY, {}));
 let ans = obj(lsGet(ANS_KEY, {}));
-const ui = Object.assign({tab:'metafrasi', mode:'rd', gryp:false, sx:'read', easy:false}, obj(lsGet(UI_KEY, {})));
+const ui = Object.assign({tab:'metafrasi', mode:'rd', gryp:false, sx:'read', easy:false, ver:'ak'}, obj(lsGet(UI_KEY, {})));
+/* ui.ver: 'ak' = η μετάφραση του βιβλίου · 'ap' = η απλή (μόνο όπου η ενότητα έχει) */
+if (!D.aplh || ui.ver !== 'ap') ui.ver = 'ak';
 const EASY_N = Object.keys(D.pairs).filter(k => D.pairs[k].e).length;
 
 /* κλειδί → περίοδος (για άλματα από σχόλια/λεξιλογικά) */
@@ -525,6 +546,8 @@ function closeBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? '
 /* Η απλή απόδοση «α … β» μοιράζεται στα κομμάτια του ίδιου ζευγαριού με τη σειρά
    τους (ο validator εγγυάται ίδιο πλήθος). */
 function mdHTML(s){
+  /* Η απλή δεν έχει ζευγάρια — είναι άλλη μετάφραση, όχι οι λέξεις του βιβλίου. */
+  if (ui.ver === 'ap') return '<span class="ap">' + esc(D.aplh.segs[s.n]) + '</span>';
   const seen = {};
   return s.m.map((c, i) => {
     const p = c[1] && D.pairs[c[1]];
@@ -669,7 +692,8 @@ function setMode(m){
   box.classList.toggle('m-st', m === 'st');
   document.getElementById('onlyRed').hidden = m !== 'tr';
   document.getElementById('grypT').hidden = m !== 'wh';
-  document.getElementById('easyT').hidden = !EASY_N || !(m === 'rd' || m === 'tr');
+  document.getElementById('easyT').hidden = !EASY_N || ui.ver === 'ap' || !(m === 'rd' || m === 'tr');
+  document.getElementById('verRow').hidden = !D.aplh || !(m === 'rd' || m === 'tr' || m === 'wh');
   document.getElementById('bReset').hidden = m !== 'tr';
   document.getElementById('modeHint').textContent = HINT[m];
   rows().forEach(r => { r.querySelector('.an').innerHTML = anHTML(segOf(r.dataset.n), m); r.classList.remove('shown'); });
@@ -688,6 +712,24 @@ easyI.addEventListener('change', () => {
   clearSel();
   if (keep) select(keep.n, keep.k, true);
 });
+/* ── ποια μετάφραση ── */
+if (D.aplh){
+  document.getElementById('verAk').textContent = D.translator || 'του βιβλίου';
+  document.getElementById('verAp').textContent = D.aplh.name;
+}
+function setVer(v){
+  if (!D.aplh || v !== 'ap') v = 'ak';
+  ui.ver = v; lsSet(UI_KEY, ui);
+  document.querySelectorAll('[data-ver]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ver === v)));
+  document.getElementById('verNote').textContent = v === 'ap' ? D.aplh.note
+    : 'Η μετάφραση του βιβλίου' + (D.translator ? ' (' + D.translator + ')' : '') + ': πάτα μια λέξη και ανάβει το ζευγάρι της στο αρχαίο.';
+  const keep = sel;
+  rows().forEach(r => { r.querySelector('.md').innerHTML = mdHTML(segOf(r.dataset.n)); });
+  buildWhole();
+  setMode(ui.mode);
+  if (keep) select(keep.n, keep.k, true);
+}
+document.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => setVer(b.dataset.ver)));
 function applyFilter(){
   const on = ui.mode === 'tr' && onlyRedI.checked;
   rows().forEach(r => { const t = trm[r.dataset.n]; r.classList.toggle('gone', on && !(t === 'x' || t === 'r')); });
@@ -722,9 +764,15 @@ function buildWhole(){
   const g = !!ui.gryp;
   wholeBox.innerHTML = '<div class="whole' + (g ? '' : ' two') + '">' +
     '<div class="anc"><h3>Το αρχαίο · ' + esc(D.cite) + '</h3>' + D.anc.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
-    '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.translator) + '</h3>' + D.skout.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
+    (ui.ver === 'ap'
+      ? '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.aplh.name) + '</h3>' + D.aplh.paras.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>'
+      : '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.translator) + '</h3>' + D.skout.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>') +
     '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
-  '</div>';
+  '</div>' +
+  (ui.ver === 'ap' && D.aplh.changes.length
+    ? '<div class="chg"><span class="lbl tag-mine">Τι άλλαξε και γιατί · για να το τσεκάρεις με τον καθηγητή</span><table><thead><tr><th>' + esc(D.translator || 'Βιβλίο') + '</th><th>Εδώ</th><th>Γιατί</th></tr></thead><tbody>' +
+      D.aplh.changes.map(c => '<tr><td>' + esc(c[0]) + '</td><td>' + esc(c[1]) + '</td><td>' + esc(c[2]) + '</td></tr>').join('') + '</tbody></table></div>'
+    : '');
 }
 const grypI = document.getElementById('grypI');
 document.getElementById('secName').textContent = D.secondName;
@@ -891,6 +939,7 @@ function tally(){
 build(); buildWhole(); buildScholia(); buildActs(); tally();
 setSx(ui.sx);
 setMode(ui.mode);
+if (D.aplh) setVer(ui.ver);
 const h0 = (location.hash || '').slice(1);
 setTab(TABS.indexOf(h0) >= 0 ? h0 : ui.tab);
 </script>
