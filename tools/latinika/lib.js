@@ -135,6 +135,18 @@ const PRON_KINDS = ['προσωπική', 'δεικτική', 'οριστική'
 /* Emoji / σύμβολα διεπαφής (CLAUDE.md §④). Τα βελάκια → ↔ ΕΠΙΤΡΕΠΟΝΤΑΙ: είναι
    σημειογραφία του συντακτικού, όχι διακόσμηση. */
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}⭐️]/u;
+/* Η ανάλυση μετοχής (als-v672): είδος με ΚΕΦΑΛΑΙΑ στο x → οι σύνδεσμοι που
+   ΠΡΕΠΕΙ να εμφανιστούν στην ανάλυση (στο x ή σε σημείωση της λέξης). Κάθε
+   ομάδα = «τουλάχιστον ένας από αυτούς». Το XXVII (desideranti) έμεινε
+   χωρίς ανάλυση επειδή δεν την έδινε το s4e — η ανάλυση είναι κανόνας, όχι πηγή. */
+const PART_KINDS = [
+  ['ΑΙΤΙΟΛΟΓΙΚΗ', /\b(quod|quia|quoniam)\b/, /\bcum\b/],
+  ['ΧΡΟΝΙΚΗ', /\bcum\b/],
+  ['ΕΝΑΝΤΙΩΜΑΤΙΚΗ', /\b(etsi|quamquam|tametsi)\b/, /\b(cum|licet|quamvis)\b/],
+  ['ΥΠΟΘΕΤΙΚΗ', /\b(si|nisi)\b/],
+  ['ΤΕΛΙΚΗ', /\b(ut|ne)\b/],
+  ['ΕΠΙΘΕΤΙΚΗ', /\b(qui|quae|quod)\b/],
+];
 
 /* ══ ΟΙ ΚΑΝΟΝΕΣ ═══════════════════════════════════════════════════════════
    Επιστρέφει ΟΛΟΥΣ τους ελέγχους ως [{ok, msg}] — το test μετράει κάθε έναν,
@@ -184,6 +196,17 @@ function rules(p, ctx) {
       usedQ[w.q] = 1;
       (w.n || []).forEach(k => ok(NT[k] != null && noteIds.indexOf(k) >= 0, t + ': η σημείωση «' + k + '» υπάρχει (NOTE_T + notes)'));
       ok(!EMOJI.test([w.w, w.d, w.x, w.f || ''].join(' ')), t + ': κανένα emoji');
+      if (tagsOf(w, M).includes('part')) {
+        if (/Δεν αναλύεται/.test(w.x)) ok(/Δεν αναλύεται:\s*\S/.test(w.x), t + ': το «Δεν αναλύεται» λέει γιατί («Δεν αναλύεται: …»)');
+        else {
+          const notes = (w.n || []).map(k => (p.notes || []).find(n => n.id === k)).filter(Boolean);
+          const an = [w.x].concat(notes.map(n => n.body.join(' '))).join(' ');
+          ok(/Ανάλυση|αναλύεται|αναλύσεις/.test(w.x), t + ': ⛔ μετοχή χωρίς ανάλυση στο x («Ανάλυση: …» ή «Δεν αναλύεται: γιατί»)');
+          const kinds = PART_KINDS.filter(K => w.x.indexOf(K[0]) >= 0);
+          ok(kinds.length > 0, t + ': το είδος της μετοχής με ΚΕΦΑΛΑΙΑ στο x (' + PART_KINDS.map(K => K[0]).join('/') + ')');
+          kinds.forEach(K => K.slice(1).forEach(re => ok(re.test(an), t + ': ' + K[0] + ' — η ανάλυση έχει ' + re.source.replace(/\\b|[()]/g, '').replace(/\|/g, '/'))));
+        }
+      }
     });
     u.gr.forEach(g => {
       ok(typeof g.t === 'string' && g.t.length > 0, tag + ': ελληνικό κομμάτι με κείμενο');

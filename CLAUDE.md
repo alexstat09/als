@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v671`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v672`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-26 — `als-v672` — ΛΑΤΙΝΙΚΑ: ΚΑΘΕ ΜΕΤΟΧΗ ΠΑΙΡΝΕΙ ΑΝΑΛΥΣΗ, ΚΑΙ ΤΟ ΑΠΑΙΤΕΙ Ο VALIDATOR.** Δική του αναφορά: το *desideranti* (XXVII) δεν είχε ανάλυση — το s4e δίνει μόνο το είδος, και «δεν τη δίνει η πηγή» είχε γίνει «δεν μπαίνει». Η ανάλυση είναι ΚΑΝΟΝΑΣ, όχι πηγή. `tools/latinika/lib.js` `PART_KINDS`: κάθε λέξη με `μτχ.` θέλει είδος με ΚΕΦΑΛΑΙΑ + «Ανάλυση:» στο `x`, και η ανάλυση (στο `x` ή στις σημειώσεις της λέξης) πρέπει να έχει τους συνδέσμους του είδους (αιτιολογική = quod/quia/quoniam ΚΑΙ cum · χρονική = cum · εναντιωματική = etsi/quamquam ΚΑΙ cum/licet/quamvis · επιθετική = qui/quae/quod)· κομμάτι ρηματικού τύπου → «Δεν αναλύεται: γιατί». XXVII *desideranti* → quod desiderabat / quod desideraret / cum desideraret (κάρτα σαν το *indignātus*, «κατά τον κανόνα»)· XXV *ostendens* → + cum ostendebat (ο καθηγητής στο XXI)· XXIII mortuus/secūta/ascensūrus → «Δεν αναλύεται». XXI/22/24/26 byte-ίδια. Μετάλλαξη (σβησμένο cum) → 2 ✗. `latinika-lectio` **12929/0** · syntaxi 229/0 · smoke OK · render 27 μηδέν υπερχείλιση. Skill: κανόνας στο §3 + `render.mjs --note ID`. 🔴 XVI–XX (παλιά HTML, όχι JSON) ΔΕΝ ελέγχθηκαν ακόμα — βήμα 3.
 
 **2026-10-26 — `als-v671` — ΙΣΤΟΡΙΑ ΒΟΗΘΗΜΑ: Κεφ.2 · Δ.4 «Ο εθνικός διχασμός (1915-1922)», 36 ενότητες.** Skill `istoria-enotita`. Ίδιο `index2_5`/sha, τρεις εξαγωγείς 8/8, οι υπότιτλοι α./β. (class title) ΕΞΩ. ⛔ 4 τυπογραφικά που το script είπε 0: «Γης κυβέρνησης» · «ήτανυπέρ» · «του Νοέμβριοι» · «Γερμανούς.)». Πηγές = οι 4 λεζάντες (καμία υποσημείωση) σε 3 κάρτες· το 1918 της αφίσας ΕΞΩ από το χρονολόγιο. Χρονολόγιο 9 book + Πλαίσιο 1917 (καμία χρονιά στην πρόζα) και 1922 (μόνο ο τίτλος)· Σέβρες (Αυγ.) πριν από την απόπειρα, που ΔΕΝ παίρνει μήνα. Αντιπαραβολή Βενιζελικοί · Αντιβενιζελικοί · βασιλιάς. 61 λήμματα · 11 facts. φρουρός **1952/0** · render 1440/500 × 7 μηδέν υπερχείλιση. ΕΠΟΜΕΝΟ: Δ.5 «Το Σοσιαλιστικό κόμμα». 🔴 Αδοκίμαστο σε συσκευή του.
 

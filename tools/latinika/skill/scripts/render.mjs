@@ -20,10 +20,11 @@ import { spawn } from 'node:child_process';
 const REPO = '/Users/alexstathatos/ALS DASHBOARD ALL FILES/als';
 const args = process.argv.slice(2);
 const NN = +args[0];
-if (!NN) { console.error('χρήση: node render.mjs NN [--file X.html] [--dump out.json] [--out DIR]'); process.exit(2); }
+if (!NN) { console.error('χρήση: node render.mjs NN [--file X.html] [--dump out.json] [--out DIR] [--note ID]'); process.exit(2); }
 const opt = k => { const i = args.indexOf(k); return i > 0 ? args[i + 1] : null; };
 const FILE = opt('--file') || path.join(REPO, 'latinika-lectio' + NN + '.html');
 const DUMP = opt('--dump');
+const NOTE = opt('--note');   // + 5η εικόνα: η κάρτα σημείωσης ID στα 1440 (π.χ. μια νέα ανάλυση μετοχής)
 const OUT = opt('--out') || path.join(os.tmpdir(), 'latinika-render-' + NN);
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -142,9 +143,16 @@ await ev(`document.querySelector('[data-grp="cat"]').click()`); await sleep(200)
 await ev(`window.scrollTo(0, document.querySelector('.gtools').getBoundingClientRect().top + scrollY - 20)`); await sleep(200);
 const s4 = await shot('4-grammatiki-katigoria.png', 1440, 900);
 await ev(`document.querySelector('[data-grp="txt"]').click()`);
+let s5 = '';
+if (NOTE) {
+  await ev(`document.querySelector('.tab[data-tab="simeioseis"]').click()`); await sleep(250);
+  const found = await ev(`(() => { const n = document.getElementById('n-${NOTE}'); if (!n) return false; window.scrollTo(0, n.getBoundingClientRect().top + scrollY - 40); return true; })()`);
+  if (!found) { console.error('⛔ --note ' + NOTE + ': δεν υπάρχει κάρτα #n-' + NOTE); issues++; }
+  else { await sleep(200); s5 = await shot('5-note-' + NOTE + '.png', 1440, 900); }
+}
 await open(393);
 const s3 = await shot('3-kinito.png', 393, 900);
-console.log('εικόνες:', s1, s2, s3, s4);
+console.log('εικόνες:', s1, s2, s3, s4, s5);
 
 /* ── DOM κάθε όψης στα 1440 (απόδειξη ότι δύο αρχεία ζωγραφίζουν το ίδιο) ── */
 if (DUMP) {
