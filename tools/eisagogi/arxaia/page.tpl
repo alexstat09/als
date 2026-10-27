@@ -63,12 +63,18 @@ b{font-weight:500;color:var(--text)}
 .seal .rim2{fill:none;stroke:var(--line2);stroke-width:1}
 .seal .ring{font:400 13.5px var(--gr);letter-spacing:.32em;fill:var(--muted)}
 .seal .mark{font:400 italic 92px var(--gr);fill:var(--text)}
+.seal{position:relative;overflow:hidden}
+.seal img{position:absolute;inset:7%;width:86%;height:86%;border-radius:50%;object-fit:cover;
+  filter:invert(1) sepia(.35) saturate(.8) brightness(.93);mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(circle,#000 58%,transparent 71%);mask-image:radial-gradient(circle,#000 58%,transparent 71%)}
+.seal svg{position:relative}
 .seal .pip{fill:var(--surf3);stroke:var(--line3);stroke-width:1;transition:fill .4s,stroke .4s}
 .seal .pip.lit{fill:var(--amber);stroke:var(--amber);filter:drop-shadow(0 0 4px rgba(232,178,92,.6))}
 /* ⭐ από τη 2η επίσκεψη: το εξώφυλλο μαζεύει, ο σταθμός ανεβαίνει στην πρώτη οθόνη */
 html.ret .cover{padding:30px 0 26px;gap:30px}
 html.ret .seal{width:104px;height:104px}
 html.ret .seal .ring{display:none}
+html.ret .seal img{inset:4%;width:92%;height:92%}
 html.ret .cover h1{font-size:clamp(34px,4.2vw,54px);margin:8px 0 6px}
 html.ret .cover .sub{display:none}
 html.ret .motto{font-size:21px}
@@ -565,13 +571,16 @@ function mapSVG(box, opt) {
 /* ⭐ Η ΣΦΡΑΓΙΔΑ: μονόγραμμα + επιγραφή σε κύκλο (σαν νόμισμα) + μία κουκκίδα ανά σταθμό,
    που ανάβει όταν τον διαβάσεις. Από το json (cover.seal) — κάθε κεφάλαιο τη δική του. */
 function sealSVG() {
-  var sl = D.cover.seal, h = '<svg viewBox="0 0 200 200" aria-hidden="true">' +
-    '<circle class="rim" cx="100" cy="100" r="97"/><circle class="rim2" cx="100" cy="100" r="70"/>' +
+  /* ⭐ με `img` (προτομή-χαρακτικό, κοινό κτήμα) η εικόνα γεμίζει τον κύκλο και οι κουκκίδες κάθονται στο χείλος·
+     χωρίς `img` μένει το μονόγραμμα + η επιγραφή (`mark`/`ring`). */
+  var sl = D.cover.seal, R = sl.img ? 91 : 70, h = (sl.img ? '<img src="' + esc(sl.img) + '" alt="" decoding="async">' : '') +
+    '<svg viewBox="0 0 200 200" aria-hidden="true">' +
+    '<circle class="rim" cx="100" cy="100" r="97"/>' + (sl.img ? '' : '<circle class="rim2" cx="100" cy="100" r="70"/>' +
     '<path id="sealPath" fill="none" d="M100 18a82 82 0 1 1 -0.01 0"/>' +
     '<text class="ring"><textPath href="#sealPath" textLength="505" lengthAdjust="spacing">' + esc(sl.ring) + '</textPath></text>' +
-    '<text class="mark" x="100" y="131" text-anchor="middle">' + esc(sl.mark) + '</text>';
+    '<text class="mark" x="100" y="131" text-anchor="middle">' + esc(sl.mark) + '</text>');
   ST.forEach(function (st, i) {
-    var t = -Math.PI / 2 + i * 2 * Math.PI / N, x = 100 + 70 * Math.cos(t), y = 100 + 70 * Math.sin(t);
+    var t = -Math.PI / 2 + i * 2 * Math.PI / N, x = 100 + R * Math.cos(t), y = 100 + R * Math.sin(t);
     h += '<circle class="pip' + (S.read[st.n] ? ' lit' : '') + '" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.6"/>';
   });
   return h + '</svg>';
@@ -815,7 +824,7 @@ function route(fromHash) {
 }
 function paint(scroll) {
   var rd = view === 'read';
-  if ($('seal')) $('seal').innerHTML = sealSVG();
+  if ($('seal')) [].forEach.call($('seal').querySelectorAll('.pip'), function (c, i) { c.classList.toggle('lit', !!S.read[ST[i].n]); });
   $('vRead').hidden = !rd; $('vCheck').hidden = rd;
   $('tabRead').setAttribute('aria-selected', rd); $('tabCheck').setAttribute('aria-selected', !rd);
   if (rd) {

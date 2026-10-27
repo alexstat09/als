@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v674`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v675`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,14 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v675` — Η ΠΡΟΤΟΜΗ ΓΥΡΙΣΕ, ΩΣ ΑΛΗΘΙΝΟ ΧΑΡΑΚΤΙΚΟ.** «φέρε πίσω την προτομή και κάνε την τέλεια». Η σχεδιασμένη στο χέρι SVG
+δεν επέστρεψε· μπήκε **ξυλογραφία του W. Meyer (Illustrerad Verldshistoria τ. I, εικ. 146, κοινό κτήμα, Wikimedia Commons)**, κομμένη
+γύρω από το κεφάλι, μία κουκκίδα βρωμιάς σβησμένη, `eisagogi-sokratis.webp` (65 KB, στο SW CORE). Η σελίδα την αντιστρέφει με CSS
+(`invert + sepia`, `mix-blend-mode:screen`, μάσκα κύκλου) → φωτεινές γραμμές πάνω στο Midnight. `cover.seal.img` (+ `credit`) στο json·
+με `img` οι 8 κουκκίδες κάθονται στο χείλος (r=91) και η επιγραφή/μονόγραμμα δεν ζωγραφίζονται (μένουν ως fallback χωρίς `img`).
+⚠️ Το Gemini image (nanobanana) είχε όριο 0 στο δωρεάν πλάνο → για επόμενα κεφάλαια: προτομή = χαρακτικό κοινού κτήματος από Commons.
+sokratis 407/0 · gnosto 2465/0 · page-transition 137/0 · smoke OK · check.mjs ✓ · render 3× στην προτομή.
 
 **2026-10-27 — `als-v674` — ΕΙΣΑΓΩΓΗ Δ2: ΤΟ ΓΥΑΛΙΣΜΑ ΣΤΟ ΚΑΛΟΥΠΙ (περνάει σε κάθε επόμενο κεφάλαιο).** (1) Η προτομή-χαρακτικό
 έφυγε → **σφραγίδα** από το json (`cover.seal` = μονόγραμμα + επιγραφή σε κύκλο + ΜΙΑ κουκκίδα ανά σταθμό που ανάβει όταν τον
