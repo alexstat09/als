@@ -19,6 +19,8 @@ function build(name) {
   const json = JSON.stringify(payload).replace(/</g, '\\u003c');
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const marks = { '/*@@DATA@@*/null': json, '@@KEY@@': d.key, '@@TITLE@@': esc(d.title), '@@NAME@@': name,
+    /* ο τίτλος του χάρτη· χωρίς mapTitle = του Δ2 (byte-ίδιος). Κάθε ΝΕΟ κεφάλαιο τον δίνει (validate). */
+    '@@MAPTITLE@@': esc(d.mapTitle || 'Από τον χρησμό ως το συμπέρασμα'),
     /* ⭐ Η ΜΙΑ γραμμή επιστροφής του πακέτου (το arxaia-gnosto.test.js μετράει ακριβώς μία). */
     '@@BACK@@': '<a class="back" href="' + esc(d.back.href) + '" aria-label="Πίσω στα ' + esc(d.back.label) + '">← ' + esc(d.back.label) + '</a>' };
   let out = tpl;

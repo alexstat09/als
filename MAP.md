@@ -696,6 +696,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   and **`arxaia-aristotelis.html`** (ο βίος και τα έργα — als-v536).
   ⭐ ΚΕΦΑΛΑΙΑ ΤΟΥ ΚΑΛΟΥΠΙΟΥ (μία γραμμή το καθένα, τη γράφει το `tools/eisagogi/arxaia/wire.js`):
   - `arxaia-sokratis-ideas.html` — Δ2 «Οι φιλοσοφικές ιδέες του Σωκράτη» · `tools/eisagogi/arxaia/sokratis-d2.json` · κλειδί `eisarx-d2-v1`
+  - `arxaia-sokratis.html` — Δ3 «Η δίκη και ο θάνατος του Σωκράτη» · `tools/eisagogi/arxaia/sokratis-d3.json` · κλειδί `eisarx-sokratis-d3-v1`
   ⭐⭐⭐ **als-v640 — ΤΟ «ΟΡΓΑΝΟ» ΜΙΑΣ ΕΝΟΤΗΤΑΣ: `arxaia-gk9.html`** (Πολιτεία 518b-519a).
   Τα 4 μέρη που εξετάζεται, ένα ανά καρτέλα: **Μετάφραση** (Απλά λόγια · Διάβασε με
   κάρτα λέξης λήμμα/τύπος/συντακτικό · Μετάφρασε ✗/↻/✓ · Δομή με αγκύλες · Ολόκληρο

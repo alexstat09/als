@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v676`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v677`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,19 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v677` — ΕΙΣΑΓΩΓΗ Δ3 «Η δίκη και ο θάνατος του Σωκράτη» ΜΕ ΤΟ SKILL (αντικαθιστά το `arxaia-sokratis.html`, το παλιό → `archive/`).**
+`tools/eisagogi/arxaia/sokratis-d3.json`, κλειδί `eisarx-sokratis-d3-v1` (μόνο συσκευή, όπως το Δ2). 39 προτάσεις → 8 σταθμοί, ένας ανά παράγραφο
+(γραφή · κατήγοροι · αθεΐα/ασέβεια · το πρόσχημα · οι «μαθητές» · οι ψηφοφορίες · η αντιπρόταση · το κώνειο), σχέδια flow/dialogue/fork/descent/
+split/fork/ladder/flow· ανάκληση 26 · Σ/Λ 19 · πολλαπλή 24 · 7 παγίδες. Η γραφή του Μελήτου μπαίνει ως `quote` (cite = «Μέλητος Μελήτου Πιτθεὺς»)·
+οι δήμοι Πιτθό/Αλωπεκή στο `names`, δηλωμένοι στο colophon. Προτομή = ΤΟ ΙΔΙΟ `eisagogi-sokratis.webp` του Δ2 (ένα πρόσωπο = ένα σχέδιο).
+⚠️⚠️ **ΤΟ ΚΑΛΟΥΠΙ ΚΟΥΒΑΛΟΥΣΕ ΚΕΙΜΕΝΟ ΤΟΥ Δ2** — βρέθηκε στο PNG, όχι σε test: ο τίτλος του χάρτη «Από τον χρησμό ως το συμπέρασμα» ήταν
+καρφωμένος στο `page.tpl`, το `dialogue` είχε λωρίδες «Ο συνομιλητής / Ο Σωκράτης» και πλευρά από regex `/Σωκράτης/`, το `descent` λεζάντες
+«Πριν / Με τον Σωκράτη». Τώρα: `mapTitle` (→ `@@MAPTITLE@@` στο build) · `lanes` + `side:"R"` + `resCap` · `topCap`/`bottomCap`, όλα με
+προεπιλογή το κείμενο του Δ2 (σελίδα Δ2: αλλάζει ΜΟΝΟ ο κώδικας του renderer, δεδομένα ίδια, 432/0). `lib.validate` τα ΑΠΑΙΤΕΙ σε κάθε
+κεφάλαιο εκτός Δ2· skill `reference/schema.md`+`diagrams.md` ενημερωμένα. ⚠️ Το `w` του dialogue δεν ζωγραφίζεται → το όνομα μέσα στο `t`.
+⚠️ Στο Σ/Λ ο κανόνας «λέει την άγκυρα» διαβάζει και το `why`. finish όλο πράσινο: eisagogi 137/0 · gnosto 2467/0 · aristotelis 650/0 ·
+page-transition 137/0 · Δ2 432/0 · smoke OK · check.mjs ✓ · 3 PNG + 2 σχέδια κοιταγμένα. 🔴 Αδοκίμαστο σε συσκευή του. ΕΠΟΜΕΝΟ: Ε1 Πλάτων.
 
 **2026-10-27 — `als-v676` — SKILL `arxaia-eisagogi`: ΚΑΘΕ ΚΕΦΑΛΑΙΟ ΤΗΣ ΕΙΣΑΓΩΓΗΣ ΜΕ ΔΥΟ ΕΝΤΟΛΕΣ (brief `~/eisagogi skill prompt.md`).**
 Νέο κεφάλαιο (Δ3, Ε1 Πλάτων, Πρωταγόρας Β+Γ, Πολιτεία, Αριστοτέλης, Ηθ. Νικομάχεια, Πολιτικά) = skill `.claude/skills/arxaia-eisagogi/`

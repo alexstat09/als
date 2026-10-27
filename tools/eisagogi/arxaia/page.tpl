@@ -426,7 +426,7 @@ html.anim .enter > *:nth-child(4){animation-delay:.12s}html.anim .enter > *:nth-
     <section class="cover" id="cover"></section>
     <section class="map" aria-labelledby="mapH">
       <span class="lbl">Ο χάρτης του κεφαλαίου</span>
-      <h2 class="h2" id="mapH">Από τον χρησμό ως το συμπέρασμα</h2>
+      <h2 class="h2" id="mapH">@@MAPTITLE@@</h2>
       <p class="lead">Κάθε αστέρι είναι ένας σταθμός. Όσα διάβασες ανάβουν. Πάτα ένα για να πας εκεί.</p>
       <div class="mapbox" id="map"></div>
     </section>
@@ -624,20 +624,21 @@ var DG = {
       g.rows.map(function (r, i) { return '<div class="row fade" style="animation-delay:' + (.15 + i * .12) + 's"><div>' + md(r.l.t) + '</div><div>' + md(r.r.t) + '</div></div>'; }).join('') + '</div>';
   },
   dialogue: function (g) {
-    var h = '<div class="dlg"><div class="lanes"><span class="cap">Ο συνομιλητής</span><span class="cap">Ο Σωκράτης</span>';
+    var ln = g.lanes || ['Ο συνομιλητής', 'Ο Σωκράτης'];   /* οι λωρίδες· χωρίς lanes = του Δ2 */
+    var h = '<div class="dlg"><div class="lanes"><span class="cap">' + esc(ln[0]) + '</span><span class="cap">' + esc(ln[1]) + '</span>';
     g.steps.forEach(function (s, i) {
       (g.phases || []).forEach(function (p) { if (p.from === i) h += '<div class="ph cap">' + esc(plain(p.t)) + '</div>'; });
-      h += '<div class="bub ' + (/Σωκράτης/.test(s.w) ? 'S' : 'C') + ' fade" style="animation-delay:' + (i * .22) + 's">' + md(s.t) + '</div>';
+      h += '<div class="bub ' + ((s.side ? s.side === 'R' : /Σωκράτης/.test(s.w)) ? 'S' : 'C') + ' fade" style="animation-delay:' + (i * .22) + 's">' + md(s.t) + '</div>';
     });
-    return h + '<div class="res fade" style="animation-delay:' + (g.steps.length * .22) + 's"><span class="cap">Εκεί καταλήγει</span><div class="big">' + md(g.result.t) + '</div></div></div></div>';
+    return h + '<div class="res fade" style="animation-delay:' + (g.steps.length * .22) + 's"><span class="cap">' + esc(g.resCap || 'Εκεί καταλήγει') + '</span><div class="big">' + md(g.result.t) + '</div></div></div></div>';
   },
   descent: function (g) {
     var stars = '';
     [[30, 14], [80, 30], [140, 10], [205, 24], [260, 8], [318, 28], [372, 14]].forEach(function (p, i) { stars += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i % 3 ? 1.3 : 2) + '"/>'; });
     return '<div class="desc"><div class="sky"><svg viewBox="0 0 400 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + stars + '</svg>' +
-      '<span class="cap">Πριν</span><div class="big">' + md(g.top.t) + '</div><div class="sm">' + md(g.topNote.t) + '</div><span class="gk">' + md(g.topGr.t) + '</span></div>' +
+      '<span class="cap">' + esc(g.topCap || 'Πριν') + '</span><div class="big">' + md(g.top.t) + '</div><div class="sm">' + md(g.topNote.t) + '</div><span class="gk">' + md(g.topGr.t) + '</span></div>' +
       '<div class="arrow growy" aria-hidden="true"></div>' +
-      '<div class="earth fade" style="animation-delay:.5s"><span class="cap">Με τον Σωκράτη</span><div class="big amb">' + md(g.bottom.t) + '</div><span class="gk">' + md(g.bottomGr.t) + '</span></div></div>';
+      '<div class="earth fade" style="animation-delay:.5s"><span class="cap">' + esc(g.bottomCap || 'Με τον Σωκράτη') + '</span><div class="big amb">' + md(g.bottom.t) + '</div><span class="gk">' + md(g.bottomGr.t) + '</span></div></div>';
   },
   ladder: function (g) {
     return '<div class="lad"><span class="rise">' + md(g.rise.t) + '</span><span class="cap">Ένα σκαλί τη φορά</span>' +
