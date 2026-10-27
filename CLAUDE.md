@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v672`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v673`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,29 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v673` — ΕΙΣΑΓΩΓΗ ΑΡΧΑΙΩΝ: Δ2 ΣΩΚΡΑΤΗΣ ΣΤΟ ΚΑΛΟΥΠΙ (brief `~/eisagogi arxaia prompt.md`, demo claude.ai/artifact/6PrYVCizzrqyHYPH6p1QSb).**
+Η `arxaia-sokratis-ideas.html` ΠΑΡΑΓΕΤΑΙ: `tools/eisagogi/arxaia/` (`sokratis-d2.json` + `page.tpl` → `build.js`, `validate.js`, `lib.js`).
+⛔ HTML με το χέρι = κόκκινο (το test συγκρίνει με την έξοδο του build). **Επόμενο κεφάλαιο (Δ3, Πλάτων, Πρωταγόρας, Πολιτεία,
+Αριστοτέλης, Ηθ. Νικομάχεια, Πολιτικά) = ΕΝΑ νέο json + πηγή με sha** — νέος τύπος σχεδίου μπαίνει στο `DG` του tpl.
+Δύο χώροι: **Διάβασμα** (εξώφυλλο με προτομή-χαρακτικό SVG · αστερισμός 8 σταθμών, ό,τι διάβασε ανάβει · ένας σταθμός ανά
+οθόνη με το δικό του σχέδιο: flow/repeat/split/fork/dialogue/descent/ladder/scales · Λεξιλόγιο + μνημονικό δεξιά · «Ο Σωκράτης
+έκλεισε.») και **Έλεγχος** (Ανάκληση 43 · Σ/Λ Πανελληνίων 24 · Πολλαπλή 42 · Τα κενά μου ανά σταθμό · Με μια ματιά: νούμερα,
+παγίδες, μνημονικά, μεγάλη ιδέα · Σημείωμα με τις δηλωμένες αποκλίσεις). 8 σταθμοί, όχι 7: η σειρά του βιβλίου (τα «άστρα στη γη»
+προηγούνται της επαγωγής, τα 6 ζεύγη είναι μέσα στην πρόταση της επαγωγής).
+⭐⭐ **Ο ΕΛΕΓΧΟΣ ΕΙΝΑΙ ΑΟΡΑΤΟΣ** (εντολή του: καμία πρόταση βιβλίου δίπλα στα σημεία): κάθε κομμάτι έχει άγκυρες `a` αυτολεξεί στο
+βιβλίο· ο validator απαιτεί (α) κάθε πρόταση της πηγής (59) να πιάνεται από άγκυρες του Διαβάσματος σε ≥75% των λέξεών της,
+(β) το κείμενο να ΛΕΕΙ την άγκυρά του (κοινό πρόθεμα, όχι κατάληξη — νομίζω/νομίζει), νούμερα/ονόματα/πολυτονικό να υπάρχουν στο
+βιβλίο, καμία παγίδα ως αλήθεια. Τα αποσπάσματα ΔΕΝ πληκτρολογούνται (`quote.from/to`, κόβονται από την πηγή). 12 μεταλλάξεις στο
+test, όλες πιάνονται. ⚠️ Ο validator βρήκε δικό του κενό: το αυτούσιο απόσπασμα πιάνει ΠΟΛΛΕΣ προτάσεις → «πρόταση μέσα σε άγκυρα»
+μετράει κι αυτό (χωρίς «»).
+⭐ **ΚΛΕΙΔΙ `eisarx-d2-v1`** (ρωτήθηκε, «ναι» 27/10/26): μόνο συσκευή, εκτός sync, ΕΝΑ `setItem`, ξαναδιάβασμα μετά από κάθε εγγραφή,
+χαλασμένη τιμή → banner και ΚΑΜΙΑ εγγραφή από πάνω. Δηλωμένο ως `stores` στο PACKS του `arxaia-gnosto.test.js`.
+⚠️ Το `.dg` έχει `overflow:hidden` → κομμένο κείμενο ΔΕΝ φαίνεται ως κύλιση· το test μετράει άκρες κειμένου μέσα σε κάθε σχέδιο
+(έπιασε «η δεσποτεία» κομμένη στα 390). Πλάκα του Γνωστού: Σταθμοί 8 · Ερωτήσεις 109.
+`tests/arxaia-sokratis-ideas.test.js` **407/0** (Playwright του video-kit: 8 σταθμοί, διάβασα→reload, κενό→χάρτης, Didot ανά κόμβο,
+1440/1180/390, 11px/44px) · gnosto 2465/0 · launcher 81/0 · page-transition 137/0 · aristotelis 650/0 · smoke OK · check.mjs ✓.
+⚠️ ladders 98/4 + insights-page ΠΡΟΫΠΑΡΧΟΥΝ (istoria/homework). 🔴 Αδοκίμαστο σε συσκευή του.
 
 **2026-10-26 — `als-v672` — ΛΑΤΙΝΙΚΑ: ΚΑΘΕ ΜΕΤΟΧΗ ΠΑΙΡΝΕΙ ΑΝΑΛΥΣΗ, ΚΑΙ ΤΟ ΑΠΑΙΤΕΙ Ο VALIDATOR.** Δική του αναφορά: το *desideranti* (XXVII) δεν είχε ανάλυση — το s4e δίνει μόνο το είδος, και «δεν τη δίνει η πηγή» είχε γίνει «δεν μπαίνει». Η ανάλυση είναι ΚΑΝΟΝΑΣ, όχι πηγή. `tools/latinika/lib.js` `PART_KINDS`: κάθε λέξη με `μτχ.` θέλει είδος με ΚΕΦΑΛΑΙΑ + «Ανάλυση:» στο `x`, και η ανάλυση (στο `x` ή στις σημειώσεις της λέξης) πρέπει να έχει τους συνδέσμους του είδους (αιτιολογική = quod/quia/quoniam ΚΑΙ cum · χρονική = cum · εναντιωματική = etsi/quamquam ΚΑΙ cum/licet/quamvis · επιθετική = qui/quae/quod)· κομμάτι ρηματικού τύπου → «Δεν αναλύεται: γιατί». XXVII *desideranti* → quod desiderabat / quod desideraret / cum desideraret (κάρτα σαν το *indignātus*, «κατά τον κανόνα»)· XXV *ostendens* → + cum ostendebat (ο καθηγητής στο XXI)· XXIII mortuus/secūta/ascensūrus → «Δεν αναλύεται». XXI/22/24/26 byte-ίδια. Μετάλλαξη (σβησμένο cum) → 2 ✗. `latinika-lectio` **12929/0** · syntaxi 229/0 · smoke OK · render 27 μηδέν υπερχείλιση. Skill: κανόνας στο §3 + `render.mjs --note ID`. 🔴 XVI–XX (παλιά HTML, όχι JSON) ΔΕΝ ελέγχθηκαν ακόμα — βήμα 3.
 

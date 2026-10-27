@@ -60,7 +60,11 @@ var PACKS = [
      ⛔ ΚΑΙ ΑΥΤΟ ΕΙΝΑΙ `mine`: ο Άλεξ έστειλε ΦΩΤΟΓΡΑΦΙΕΣ, όχι αρχείο, άρα
      δεν υπάρχει «δικό του» sha να φυλαχτεί.  Η γείωσή του ζει ολόκληρη στο
      tests/arxaia-sokratis-ideas.test.js, απέναντι στο ebooks.edu.gr. */
-  { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js' },
+  /* ⭐⭐ als-v673 — ΞΑΝΑΧΤΙΣΤΗΚΕ ΣΤΟ ΚΑΛΟΥΠΙ ΤΗΣ ΕΙΣΑΓΩΓΗΣ (tools/eisagogi/arxaia/,
+     εγκεκριμένο demo 27/10/26). Δεύτερη εξαίρεση στο «τα πακέτα δεν γράφουν»:
+     τους διαβασμένους σταθμούς και «τα κενά μου» σε ΕΝΑ κλειδί της συσκευής,
+     εκτός sync — δική του απόφαση, ρωτήθηκε πριν μπει (27/10/26). */
+  { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js', stores: 'eisarx-d2-v1' },
   { file: 'arxaia-sokratis.html',    sha: '5e64d662e89b4c3cf671d59369fbdd0c762a1befae4fccd7e520bce901320740' },
   { file: 'arxaia-platon.html',      sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' },
   { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' },
