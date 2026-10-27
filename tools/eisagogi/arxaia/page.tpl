@@ -56,9 +56,26 @@ b{font-weight:500;color:var(--text)}
 
 /* ── εξώφυλλο ── */
 .cover{display:grid;grid-template-columns:auto minmax(0,1fr);gap:48px;align-items:center;padding:64px 0 58px;border-bottom:1px solid var(--line)}
-.bust{width:184px;height:184px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;color:var(--soft);
-  background:radial-gradient(circle at 50% 36%,oklch(25% .03 258),var(--surf) 72%);box-shadow:inset 0 0 0 7px var(--bg),inset 0 0 0 8px var(--line)}
-.bust svg{width:76%;height:auto;display:block}
+.seal{width:196px;height:196px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 50% 40%,oklch(22% .03 258),var(--surf) 74%);transition:width .4s var(--ease),height .4s var(--ease)}
+.seal svg{width:100%;height:100%;display:block;overflow:visible}
+.seal .rim{fill:none;stroke:var(--line3);stroke-width:1}
+.seal .rim2{fill:none;stroke:var(--line2);stroke-width:1}
+.seal .ring{font:400 13.5px var(--gr);letter-spacing:.32em;fill:var(--muted)}
+.seal .mark{font:400 italic 92px var(--gr);fill:var(--text)}
+.seal .pip{fill:var(--surf3);stroke:var(--line3);stroke-width:1;transition:fill .4s,stroke .4s}
+.seal .pip.lit{fill:var(--amber);stroke:var(--amber);filter:drop-shadow(0 0 4px rgba(232,178,92,.6))}
+/* ⭐ από τη 2η επίσκεψη: το εξώφυλλο μαζεύει, ο σταθμός ανεβαίνει στην πρώτη οθόνη */
+html.ret .cover{padding:30px 0 26px;gap:30px}
+html.ret .seal{width:104px;height:104px}
+html.ret .seal .ring{display:none}
+html.ret .cover h1{font-size:clamp(34px,4.2vw,54px);margin:8px 0 6px}
+html.ret .cover .sub{display:none}
+html.ret .motto{font-size:21px}
+html.ret .motto small{display:none}
+html.ret .map{padding:30px 0 30px}
+html.ret .map .lead,html.ret .map .h2{display:none}
+html.ret .map .mapbox{margin-top:14px}
 .cover h1{font:400 italic clamp(46px,6.6vw,92px)/1.02 var(--gr);margin:14px 0 14px;letter-spacing:-.005em;text-wrap:balance}
 .cover .sub{color:var(--muted);margin:0 0 22px;max-width:60ch;font-size:15px}
 .motto{font:400 clamp(22px,2.5vw,30px)/1.3 var(--gr);color:var(--amber)}
@@ -250,6 +267,7 @@ aside h3{font:400 italic 22px var(--gr);margin:8px 0 12px}
 .ck-head{padding:56px 0 34px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr);gap:28px}
 .ck-head .say{font:400 italic 34px/1.2 var(--gr);margin:10px 0 0;text-wrap:balance}
 .ck-head .say + p{color:var(--muted);margin:10px 0 0}
+.mapbox.strip .node text.nm{font-size:15px}
 .subnav{display:flex;gap:26px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0}
 .subnav button{background:none;border:0;cursor:pointer;padding:16px 0 13px;font:500 13px var(--sans);color:var(--muted);border-bottom:1px solid transparent;margin-bottom:-1px;min-height:44px}
 .subnav button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
@@ -264,11 +282,11 @@ aside h3{font:400 italic 22px var(--gr);margin:8px 0 12px}
 .rc .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .rc .go{font:500 13px var(--sans);color:var(--soft);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin-left:auto}
 .rc .go:hover{color:var(--text)}
-.ticks{display:flex;flex-wrap:wrap;gap:4px;max-width:720px;margin:0 0 18px}
-.ticks i{width:10px;height:18px;border-radius:3px;border:1px solid var(--line3);display:block}
-.ticks i.k{background:var(--amber);border-color:var(--amber)}
-.ticks i.n{background:var(--late);border-color:var(--late)}
-.ticks i.here{outline:1px solid var(--text);outline-offset:2px}
+.ticks{display:flex;gap:2px;max-width:720px;margin:0 0 18px}
+.ticks i{flex:1;height:4px;border-radius:2px;background:var(--line2);display:block;transition:background .3s}
+.ticks i.k{background:var(--amber)}
+.ticks i.n{background:var(--late)}
+.ticks i.here{background:var(--text);transform:scaleY(1.75)}
 .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;max-width:720px}
 .bar .pos{font:500 12px var(--mono);color:var(--faint);margin-left:auto}
 
@@ -319,8 +337,6 @@ aside h3{font:400 italic 22px var(--gr);margin:8px 0 12px}
 .mlist div{border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .mlist .k{font:500 13px var(--mono);letter-spacing:.1em;color:var(--amber)}
 .mlist p{margin:6px 0 0;color:var(--soft);font-size:14px}
-.colophon{margin-top:60px;border-top:1px solid var(--line);padding-top:20px;max-width:820px}
-.colophon p{color:var(--muted);font-size:13.5px;margin:6px 0 0}
 
 /* ── κίνηση εισόδου (μόνο κάτω από html.anim, πάντα με ορατή κατάληξη) ── */
 html.anim .enter > *{animation:rise .55s var(--ease) both}
@@ -362,7 +378,8 @@ html.anim .enter > *:nth-child(4){animation-delay:.12s}html.anim .enter > *:nth-
   .tabs button{min-height:44px;padding:0 14px}
   .back{min-height:44px}
   .cover{grid-template-columns:minmax(0,1fr);gap:22px;padding:36px 0 40px}
-  .bust{width:124px;height:124px}
+  .seal{width:132px;height:132px}
+  html.ret .seal{width:84px;height:84px}
   .map{padding:40px 0 36px}
   .h2,.st h2,.ck-head .say{font-size:28px}
   .num{font-size:84px;margin-bottom:-14px}
@@ -413,11 +430,10 @@ html.anim .enter > *:nth-child(4){animation-delay:.12s}html.anim .enter > *:nth-
   <main id="vCheck" role="tabpanel" aria-labelledby="tabCheck" hidden>
     <section class="ck-head">
       <div><span class="lbl">Έλεγχος · ό,τι μπορεί να ρωτηθεί</span><p class="say" id="say"></p><p id="say2"></p></div>
-      <div class="mapbox" id="map2"></div>
+      <div class="mapbox strip" id="map2"></div>
     </section>
     <nav class="subnav" role="tablist" aria-label="Τρόποι ελέγχου" id="subnav"></nav>
     <section class="pane" id="pane"></section>
-    <footer class="colophon" id="colophon"></footer>
   </main>
 </div>
 
@@ -457,6 +473,8 @@ function load() {
   } catch (e) { store.readable = false; store.why = 'corrupt'; return blank(); }
 }
 var S = load();
+var RET = (function () { var k; for (k in S.read) if (S.read[k]) return true; return S.at > 1; })();
+if (RET) document.documentElement.classList.add('ret');
 function save() {
   if (!store.readable) { banner(); return false; }
   var txt = JSON.stringify(S), back = null;
@@ -495,7 +513,11 @@ function gapsBy() {
 function mapSVG(box, opt) {
   opt = opt || {};
   var w = box.clientWidth || 1000, narrow = w < 620, P = [], W, H;
-  if (!narrow) {
+  if (opt.strip) {
+    narrow = false; W = w < 620 ? 520 : 1100; H = w < 620 ? 74 : 128;
+    var mx = w < 620 ? 30 : 92;
+    ST.forEach(function (s, i) { P.push([mx + i * (W - 2 * mx) / (N - 1), 44]); });
+  } else if (!narrow) {
     W = 1100; H = 380;
     ST.forEach(function (s) { P.push([s.xy[0], s.xy[1]]); });
   } else {
@@ -510,18 +532,18 @@ function mapSVG(box, opt) {
                    : 'M' + a[0] + ' ' + a[1] + ' C ' + (a[0] + 60) + ' ' + a[1] + ', ' + (b[0] - 60) + ' ' + b[1] + ', ' + b[0] + ' ' + b[1];
     h += '<path class="edge' + (lit ? ' lit' : '') + '" d="' + d + '"/>';
   }
-  if (!narrow) h += '<text class="core" x="' + (W / 2) + '" y="' + (H - 16) + '" text-anchor="middle">' + esc(D.core) + '</text>';
+  if (!narrow && !opt.strip) h += '<text class="core" x="' + (W / 2) + '" y="' + (H - 16) + '" text-anchor="middle">' + esc(D.core) + '</text>';
   ST.forEach(function (s, i) {
-    var p = P[i], up = narrow ? false : p[1] < 170, lit = opt.all || !!S.read[s.n];
+    var p = P[i], up = narrow || opt.strip ? false : p[1] < 170, lit = opt.all || !!S.read[s.n];
     var cls = 'node' + (lit ? ' lit' : '') + (here === s.n ? ' here' : '') + (justRead === s.n && !opt.all ? ' stamp' : '');
     var tx = narrow ? (p[0] < 180 ? p[0] + 22 : p[0] - 22) : p[0], anchor = narrow ? (p[0] < 180 ? 'start' : 'end') : 'middle';
-    var y1 = narrow ? p[1] - 4 : (up ? p[1] - 46 : p[1] + 34), y2 = narrow ? p[1] + 16 : (up ? p[1] - 24 : p[1] + 56);
+    var y1 = narrow ? p[1] - 4 : opt.strip ? p[1] - 20 : (up ? p[1] - 46 : p[1] + 34), y2 = narrow ? p[1] + 16 : opt.strip ? p[1] + (i % 2 ? 62 : 36) : (up ? p[1] - 24 : p[1] + 56);
     h += '<a class="' + cls + '" href="#s' + s.n + '" aria-label="' + esc(stName(s.n) + ': ' + s.short + (lit ? ', διαβασμένος' : '')) + '">';
     h += '<circle class="hit" cx="' + p[0] + '" cy="' + p[1] + '" r="26"/>';
     h += '<circle class="ring" cx="' + p[0] + '" cy="' + p[1] + '" r="13"/>';
     h += '<circle class="dot" cx="' + p[0] + '" cy="' + p[1] + '" r="7"/>';
     h += '<text class="n" x="' + tx + '" y="' + y1 + '" text-anchor="' + anchor + '">' + ROM[s.n] + (here === s.n ? ' · ΕΔΩ' : '') + '</text>';
-    h += '<text class="nm" x="' + tx + '" y="' + y2 + '" text-anchor="' + anchor + '">' + esc(s.short) + '</text>';
+    if (!(opt.strip && w < 620)) h += '<text class="nm" x="' + tx + '" y="' + y2 + '" text-anchor="' + anchor + '">' + esc(s.short) + '</text>';
     if (gaps && gaps[s.n]) {
       h += '<circle class="gapdot" cx="' + (p[0] + 12) + '" cy="' + (p[1] - 12) + '" r="4"/>';
       h += '<text class="gapn" x="' + (p[0] + 19) + '" y="' + (p[1] - 16) + '">' + gaps[s.n] + '</text>';
@@ -540,28 +562,24 @@ function mapSVG(box, opt) {
 }
 
 /* ── εξώφυλλο ───────────────────────────────────────────────────────── */
-var BUST = '<svg viewBox="0 0 120 140" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  '<g stroke-width="1.15">' +
-  '<path d="M33 62C29 34 44 15 61 15c18 0 31 16 28 45"/>' +
-  '<path d="M33 60c-7-3-9 9-2 15M89 59c7-3 9 9 2 15"/>' +
-  '<path d="M41 53c6-5 13-5 17-1M65 52c5-4 12-4 17 1"/>' +
-  '<path d="M45 61c3-3 8-3 11 0M67 60c3-3 8-3 11 0"/>' +
-  '<path d="M61 57c-1 7-5 13-8 18 4 4 12 4 15 0-2-5-5-10-6-18"/>' +
-  '<path d="M53 75c-3 1-4 4-2 5M68 75c3 1 4 4 2 5"/>' +
-  '<path d="M47 86c5-4 9-3 14-1 5-2 9-3 14 1"/>' +
-  '<path d="M33 70c0 26 10 46 28 50 18-4 28-24 27-50"/>' +
-  '<path d="M51 120l-3 10M71 120l3 10M18 140c6-14 20-19 34-17M102 140c-6-14-20-19-34-17M40 140c5-7 11-10 18-10"/>' +
-  '</g><g stroke-width=".7" opacity=".65">' +
-  '<path d="M45 33c10-4 22-4 32 0M43 40c12-4 25-4 37 0"/>' +
-  '<path d="M37 48l3-7M36 54l3-8M85 47l-3-7M86 53l-3-8"/>' +
-  '<path d="M40 93c2-3 5-3 7 0s5 3 7 0M60 93c2-3 5-3 7 0s5 3 7 0M43 101c2-3 5-3 7 0s5 3 7 0 5 3 7 0 5 3 7 0M47 109c2-3 5-3 7 0s5 3 7 0 5 3 7 0M53 115c2-2 4-2 6 0s4 2 6 0"/>' +
-  '<path d="M37 82c1 4 2 7 4 10M84 82c-1 4-2 7-4 10M26 133l6-6M30 137l6-6M94 133l-6-6M90 137l-6-6"/>' +
-  '<circle cx="50.5" cy="62" r=".9"/><circle cx="72.5" cy="61" r=".9"/>' +
-  '</g></svg>';
+/* ⭐ Η ΣΦΡΑΓΙΔΑ: μονόγραμμα + επιγραφή σε κύκλο (σαν νόμισμα) + μία κουκκίδα ανά σταθμό,
+   που ανάβει όταν τον διαβάσεις. Από το json (cover.seal) — κάθε κεφάλαιο τη δική του. */
+function sealSVG() {
+  var sl = D.cover.seal, h = '<svg viewBox="0 0 200 200" aria-hidden="true">' +
+    '<circle class="rim" cx="100" cy="100" r="97"/><circle class="rim2" cx="100" cy="100" r="70"/>' +
+    '<path id="sealPath" fill="none" d="M100 18a82 82 0 1 1 -0.01 0"/>' +
+    '<text class="ring"><textPath href="#sealPath" textLength="505" lengthAdjust="spacing">' + esc(sl.ring) + '</textPath></text>' +
+    '<text class="mark" x="100" y="131" text-anchor="middle">' + esc(sl.mark) + '</text>';
+  ST.forEach(function (st, i) {
+    var t = -Math.PI / 2 + i * 2 * Math.PI / N, x = 100 + 70 * Math.cos(t), y = 100 + 70 * Math.sin(t);
+    h += '<circle class="pip' + (S.read[st.n] ? ' lit' : '') + '" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.6"/>';
+  });
+  return h + '</svg>';
+}
 function renderCover() {
   $('crumbs').textContent = 'MÉTRON · Αρχαία · Εισαγωγή · ' + D.route;
   var c = D.cover;
-  $('cover').innerHTML = '<div class="bust" role="img" aria-label="Ο Σωκράτης, σε ύφος χαρακτικού">' + BUST + '</div>' +
+  $('cover').innerHTML = '<div class="seal" id="seal" role="img" aria-label="' + esc(D.cover.seal.label) + '">' + sealSVG() + '</div>' +
     '<div><span class="lbl">' + esc(c.kicker) + '</span><h1>' + esc(D.title) + '</h1>' +
     '<p class="sub">' + md(c.sub.t) + '</p>' +
     '<div class="motto" lang="grc">' + esc(c.motto.gr) + '<small lang="el">' + esc(c.motto.tr) + '</small></div></div>';
@@ -688,7 +706,7 @@ function headCheck() {
     (a === 0 ? 'Δεν έχεις ελέγξει τίποτα ακόμα.' : g === 0 ? 'Κανένα κενό σε όσα έλεγξες.' : (g === 1 ? 'Ένα κενό.' : g + ' κενά.'));
   $('say2').textContent = a === 0 ? 'Ξεκίνα από την Ανάκληση: σκέψου την απάντηση, μετά δες την.' :
     'Έλεγξες ' + a + ' από ' + (C.recall.length + C.tf.length + C.mc.length) + '. Οι κόκκινες τελείες στον χάρτη είναι τα κενά κάθε σταθμού.';
-  mapSVG($('map2'), { gaps: true });
+  mapSVG($('map2'), { gaps: true, strip: true });
 }
 var MODES = [['rc', 'Ανάκληση'], ['tf', 'Σωστό ή λάθος'], ['mc', 'Πολλαπλή επιλογή'], ['gaps', 'Τα κενά μου'], ['glance', 'Με μια ματιά']];
 function renderSubnav() {
@@ -783,7 +801,6 @@ function renderPane() {
 }
 function renderCheck() {
   headCheck(); renderPane();
-  $('colophon').innerHTML = '<span class="lbl">Σημείωμα</span>' + D.colophon.map(function (p) { return '<p>' + md(p) + '</p>'; }).join('');
 }
 
 /* ── δρομολόγηση: #s3 · #fin · #elegxos ─────────────────────────────── */
@@ -798,11 +815,12 @@ function route(fromHash) {
 }
 function paint(scroll) {
   var rd = view === 'read';
+  if ($('seal')) $('seal').innerHTML = sealSVG();
   $('vRead').hidden = !rd; $('vCheck').hidden = rd;
   $('tabRead').setAttribute('aria-selected', rd); $('tabCheck').setAttribute('aria-selected', !rd);
   if (rd) {
     if (typeof cur === 'number' && S.at !== cur) { S.at = cur; save(); }
-    mapSVG($('map'), { here: cur });
+    mapSVG($('map'), { here: cur, strip: RET });
     $('stage').innerHTML = cur === 'fin' ? finHTML() : stationHTML(ST[cur - 1]);
     if (cur === 'fin') mapSVG($('mapFin'), { all: true });
     if (scroll) { var t = $(cur === 'fin' ? 'stfin' : 'st' + cur); if (t) t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
@@ -851,7 +869,7 @@ var rw = 0, lastW = window.innerWidth;
 window.addEventListener('resize', function () {
   if (window.innerWidth === lastW) return;
   lastW = window.innerWidth; clearTimeout(rw);
-  rw = setTimeout(function () { mapSVG($('map'), { here: cur }); if ($('mapFin')) mapSVG($('mapFin'), { all: true }); if (view === 'check') mapSVG($('map2'), { gaps: true }); }, 180);
+  rw = setTimeout(function () { mapSVG($('map'), { here: cur, strip: RET }); if ($('mapFin')) mapSVG($('mapFin'), { all: true }); if (view === 'check') mapSVG($('map2'), { gaps: true, strip: true }); }, 180);
 });
 
 renderCover();

@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v673`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v674`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,16 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v674` — ΕΙΣΑΓΩΓΗ Δ2: ΤΟ ΓΥΑΛΙΣΜΑ ΣΤΟ ΚΑΛΟΥΠΙ (περνάει σε κάθε επόμενο κεφάλαιο).** (1) Η προτομή-χαρακτικό
+έφυγε → **σφραγίδα** από το json (`cover.seal` = μονόγραμμα + επιγραφή σε κύκλο + ΜΙΑ κουκκίδα ανά σταθμό που ανάβει όταν τον
+διαβάσεις)· κάθε κεφάλαιο δίνει τα δικά του `mark`/`ring`/`label`. (2) **Δεύτερη επίσκεψη** (`RET`: κάποιος σταθμός διαβασμένος ή
+`at>1`) → `html.ret`: εξώφυλλο μαζεμένο σε μία γραμμή, ο αστερισμός γίνεται **λωρίδα** (`mapSVG({strip:true})`, ονόματα σε δύο
+σειρές), ο σταθμός μπαίνει στην πρώτη οθόνη στα 1440×900. Η πρώτη επίσκεψη και το τέλος κρατάνε τον μεγάλο αστερισμό. (3) **Έλεγχος:**
+λωρίδα αντί για ολόκληρο χάρτη (οι τελείες κενών μένουν, `#map2 .gapdot`), οι 43 κουτάκια έγιναν λεπτή γραμμή προόδου, το «Σημείωμα»
+ΔΕΝ ζωγραφίζεται πια (τα δεδομένα `colophon` μένουν στο json για τον έλεγχο). (4) Σταθμός I: η κουκκίδα που επαναλάμβανε το
+«ἁπάντων σοφώτατος» ξαναγράφτηκε ως «το παράδοξο». sokratis 407/0 · gnosto 2465/0 · page-transition 137/0 · smoke OK · check.mjs ✓ ·
+render 1440 (πρώτη/δεύτερη επίσκεψη/Έλεγχος/σταθμός I). 🔴 Το sync της προόδου (`eisarx-d2-v1`, μόνο συσκευή) ΑΝΟΙΧΤΟ — δική του απόφαση.
 
 **2026-10-27 — `als-v673` — ΕΙΣΑΓΩΓΗ ΑΡΧΑΙΩΝ: Δ2 ΣΩΚΡΑΤΗΣ ΣΤΟ ΚΑΛΟΥΠΙ (brief `~/eisagogi arxaia prompt.md`, demo claude.ai/artifact/6PrYVCizzrqyHYPH6p1QSb).**
 Η `arxaia-sokratis-ideas.html` ΠΑΡΑΓΕΤΑΙ: `tools/eisagogi/arxaia/` (`sokratis-d2.json` + `page.tpl` → `build.js`, `validate.js`, `lib.js`).
