@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v675`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v676`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,28 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v676` — SKILL `arxaia-eisagogi`: ΚΑΘΕ ΚΕΦΑΛΑΙΟ ΤΗΣ ΕΙΣΑΓΩΓΗΣ ΜΕ ΔΥΟ ΕΝΤΟΛΕΣ (brief `~/eisagogi skill prompt.md`).**
+Νέο κεφάλαιο (Δ3, Ε1 Πλάτων, Πρωταγόρας Β+Γ, Πολιτεία, Αριστοτέλης, Ηθ. Νικομάχεια, Πολιτικά) = skill `.claude/skills/arxaia-eisagogi/`
+(SKILL + `reference/schema.md` + `reference/diagrams.md`)· το μοντέλο γράφει ΜΟΝΟ `tools/eisagogi/arxaia/<id>.json`. Αρχή:
+`scaffold.js <id> "<url>::Δ3." [--file] [--lead]` (curl → `tests/arxaia-eisagogi-<id>.source.txt` + sha + σκελετός με «⟪…⟫», περίληψη
+~15 γραμμές· υποσημειώσεις μόνο όσες δείχνει η ενότητα ή το LEAD της) && `bust.js <id> "<όνομα>"` (Commons API, ΜΟΝΟ pd/cc0 από το
+`extmetadata`, φύλλο 3 υποψηφίων σε ΕΝΑ PNG · `--pick N --crop x,y,s` → sips → `despeckle.py` (καθαρή python) → cwebp 480² → seal.img+credit).
+Τέλος: `finish.js <id>` = fmt → validate → archive παλιού → build → wire → tests (γενικό · gnosto · aristotelis · page-transition) →
+smoke → check.mjs → 3 PNG, ~20 γραμμές. `fmt.js` = η μορφή του Δ2 ως κανόνας (byte-ίδια· διόρθωσε μία στραβή γραμμή του χειροποίητου json,
+δεδομένα deep-equal, σελίδα byte-ίδια). `wire.js` (ιδεμπότητο): πλάκα σε σειρά `BOOK` + ξαναμέτρημα «Πακέτο/Σχεδιάγραμμα/N πακέτα»,
+PACKS (`sha` → `mine/ground/stores`), SW CORE + CACHE HEAD+1, NO_VT, μία γραμμή στο MAP «ΚΕΦΑΛΑΙΑ ΤΟΥ ΚΑΛΟΥΠΙΟΥ»· παλιό πακέτο →
+`archive/` ΠΡΙΝ το build (+ η γείωσή του). `lib.validate` +4 κανόνες: «⟪…⟫» · τύπος σχεδίου που δεν υπάρχει στο `DG` · ίδια φράση
+3 λέξεων σε ≥3 σημεία σταθμού · `@@NOTEn@@` (όχι μόνο NOTE2). ⭐ `tests/arxaia-eisagogi.test.js` = το γενικό (κάθε json, `EIS_ONLY`,
+`EIS_SHOTS`): build=σελίδα, fmt, validator + 15 μεταλλάξεις, ποσότητες (ανάκληση ≥ προτάσεις/2, Σ/Λ ≥ max(8,/3), πολλαπλή ≥ /2,
+traps ≥3), αποθήκη, πλάκα/PACKS/SW/NO_VT, Chrome 1440/1180/390 + 11px/44px + άκρες `.dg`. Το `arxaia-sokratis-ideas.test.js` έγινε
+λεπτό (130 γεγονότα, σημειώσεις του, ισοτιμία v538, θέση I) και τρέχει το γενικό για το Δ2: **407 → 432/0**· 113 μηνύματα αυτολεξεί +
+16 γενικευμένα (ίδιος έλεγχος, ουδέτερο φορτίο). aristotelis: το «5 πλάκες» έγινε «όσες λέει η κεφαλίδα, ≥5».
+Αποδείξεις: `finish sokratis-d2` όλο πράσινο, σελίδα byte-ίδια (eisagogi 137/0 · Δ2 432/0 · gnosto 2465/0 · aristotelis 650/0 ·
+page-transition 137/0 · smoke OK · check.mjs ✓) · πρόβα Δ3 (scaffold: 39 προτάσεις/8 παράγραφοι· bust: Meyer + 2 Rijksmuseum CC0)
+→ finish σταματά στο validate, η `arxaia-sokratis.html` άθικτη, αρχεία στο scratchpad · 4 μεταλλάξεις μέσω finish (άγκυρα · πρόταση ·
+7777 · σβησμένος σταθμός) → exit 1, σελίδα άθικτη. ⚠️ Το BOOK βάζει Πρωταγόρα πριν από Αριστοτέλη: η ΠΡΩΤΗ νέα πλάκα ταξινομεί όλες.
+🔴 Το sync της προόδου (`eisarx-*`) μένει ΑΝΟΙΧΤΟ — δική του απόφαση. ΕΠΟΜΕΝΟ: Δ3 με το skill.
 
 **2026-10-27 — `als-v675` — Η ΠΡΟΤΟΜΗ ΓΥΡΙΣΕ, ΩΣ ΑΛΗΘΙΝΟ ΧΑΡΑΚΤΙΚΟ.** «φέρε πίσω την προτομή και κάνε την τέλεια». Η σχεδιασμένη στο χέρι SVG
 δεν επέστρεψε· μπήκε **ξυλογραφία του W. Meyer (Illustrerad Verldshistoria τ. I, εικ. 146, κοινό κτήμα, Wikimedia Commons)**, κομμένη

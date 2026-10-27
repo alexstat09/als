@@ -361,8 +361,11 @@ var gnStart = arx.indexOf('id="gnWrap"');
 ok(gnStart > 0, 'υπάρχει ο κόσμος του Γνωστού');
 var gnBlock = arx.slice(gnStart, arx.indexOf('id="gnLesson"'));
 ok(gnBlock.indexOf('href="' + PAGE_F + '"') > 0, 'ο Γνωστός δείχνει στο πακέτο του Αριστοτέλη');
-eq((gnBlock.match(/class="gn-pl"/g) || []).length, 5, 'οι πλάκες της εισαγωγής είναι ΠΕΝΤΕ (als-v615 — το artifact αντικατέστησε τον παλιό Πρωταγόρα)');
-ok(gnBlock.indexOf('5 πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — 5 πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
+/* als-v676: το πλήθος ΔΕΝ καρφώνεται πια (κάθε νέο κεφάλαιο του καλουπιού προσθέτει πλάκα, wire.js)·
+   φυλάγεται ότι η κεφαλίδα λέει ΟΣΕΣ πλάκες υπάρχουν, και ότι είναι τουλάχιστον οι πέντε της als-v615. */
+const nPl = (gnBlock.match(/class="gn-pl"/g) || []).length;
+ok(nPl >= 5, 'οι πλάκες της εισαγωγής είναι τουλάχιστον ΠΕΝΤΕ (als-v615 — το artifact αντικατέστησε τον παλιό Πρωταγόρα): ' + nPl);
+ok(gnBlock.indexOf(nPl + ' πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — ' + nPl + ' πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
 
 var plate = gnBlock.slice(gnBlock.indexOf('href="' + PAGE_F + '"'));
 plate = plate.slice(0, plate.indexOf('</a>'));

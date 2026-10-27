@@ -1,29 +1,23 @@
 /* ══════════════════════════════════════════════════════════════════════
    tests/arxaia-sokratis-ideas.test.js — Δ2 «Οι φιλοσοφικές ιδέες του
-   Σωκράτη», ΤΟ ΠΡΩΤΟ ΚΕΦΑΛΑΙΟ ΤΟΥ ΚΑΛΟΥΠΙΟΥ (als-v673).
+   Σωκράτη», ΤΟ ΠΡΩΤΟ ΚΕΦΑΛΑΙΟ ΤΟΥ ΚΑΛΟΥΠΙΟΥ (als-v673). ΛΕΠΤΟ από την als-v676.
 
-   Η σελίδα ΠΑΡΑΓΕΤΑΙ: tools/eisagogi/arxaia/sokratis-d2.json + page.tpl
-   → build.js. Η εγγύηση είναι ΓΕΙΩΣΗ (σταθ. 50: την έγραψα εγώ, από το
-   βιβλίο), σε τρία σκέλη:
-     Α · η πηγή είναι το βιβλίο (sha) και η σελίδα = η έξοδος του build
-     Β · ο validator (κάλυψη + κανένα δικό μου γεγονός) περνάει — ΚΑΙ
-         ΔΑΓΚΩΝΕΙ: κάθε κανόνας σπάει επίτηδες και πρέπει να ουρλιάξει
-     Γ · τα 130 γεγονότα της als-v538 υπάρχουν ΚΑΙ στο βιβλίο ΚΑΙ στο
-         Διάβασμα (το δεύτερο, ανεξάρτητο σκέλος)
-     Δ · παγίδες, αποθήκη (ΕΝΑ κλειδί, δική του απόφαση 27/10/26), καλώδιο
-     Ε · ΑΛΗΘΙΝΟ Chrome (Playwright του video-kit), χωρίς κανένα sync:
-         διάβασμα, ανάκληση, κενά, χαλασμένη αποθήκη, γραμματοσειρές,
-         υπερχείλιση 1440/1180/390, στόχοι αφής στο κινητό.
+   Ό,τι ισχύει για ΚΑΘΕ κεφάλαιο (build = σελίδα, validator + μεταλλάξεις,
+   αποθήκη, καλώδιο, αληθινό Chrome) ζει πια στο tests/arxaia-eisagogi.test.js
+   — και ΤΡΕΧΕΙ ΑΠΟ ΕΔΩ στο τέλος για το sokratis-d2, οπότε αυτό το αρχείο
+   μόνο του καλύπτει ό,τι κάλυπτε πριν (407 → μετρημένο στην als-v676).
+   Εδώ μένει ΜΟΝΟ ό,τι είναι του Δ2:
+     Α · η πηγή είναι ΑΥΤΗ η σελίδα του βιβλίου (sha καρφωμένο)
+     Γ · τα 130 γεγονότα της als-v538 υπάρχουν ΚΑΙ στο βιβλίο ΚΑΙ στο Διάβασμα
+     Δ · οι παγίδες του, οι σημειώσεις του, η ισοτιμία με την als-v538, θέση I
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
 const ROOT = path.join(__dirname, '..');
 const PAGE_F = 'arxaia-sokratis-ideas.html';
 const L = require(path.join(ROOT, 'tools', 'eisagogi', 'arxaia', 'lib.js'));
-const { build } = require(path.join(ROOT, 'tools', 'eisagogi', 'arxaia', 'build.js'));
 const SRC_SHA = 'f1752db36a4477ec588c587fe2beaba0b12c54be38541af06998ae1c02439bbb';
 
 let pass = 0, fail = 0;
@@ -31,47 +25,17 @@ function ok(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m); }
 function eq(a, b, m) { ok(a === b, m + '\n      περίμενα: ' + b + '\n      πήρα:     ' + a); }
 function section(t) { console.log('\n── ' + t); }
 
-const page = fs.readFileSync(path.join(ROOT, PAGE_F), 'utf8');
 const D = L.load('sokratis-d2');
 const SRC = L.readSource(D.source.file);
 
-/* ══ Α · η πηγή, και η σελίδα = build ═════════════════════════════════ */
-section('Α · η πηγή και το build');
+
+/* ══ Α · η πηγή ═══════════════════════════════════════════════════════ */
+section('Α · η πηγή');
 eq(SRC.sha, SRC_SHA, '⛔ ΑΛΛΑΞΕ Η ΠΗΓΗ — είναι το κατέβασμα του σχολικού βιβλίου, δεν διορθώνεται με το χέρι');
 eq(D.source.sha, SRC_SHA, 'το json δείχνει στην ίδια πηγή');
 ok(SRC.raw.indexOf('4510,20309') > 0, 'η πηγή λέει ΠΟΙΑ σελίδα του ebooks.edu.gr είναι');
 ok(SRC.flat.indexOf('Δ3. Η δίκη') < 0, '⛔ το Δ3 ανήκει στο arxaia-sokratis.html, όχι εδώ');
-const OXIA = /[άέήίόύώΆΈΉΊΎΌΏΐΰ]/;
-ok(!OXIA.test(SRC.raw) && !OXIA.test(page), '⛔ OXIA (U+1F71…) στην πηγή ή στη σελίδα');
-let built = null;
-try { built = build('sokratis-d2'); } catch (e) { ok(false, 'το build απέτυχε: ' + e.message); }
-if (built) {
-  eq(built.file, PAGE_F, 'το build γράφει ΑΥΤΟ το αρχείο (filename == URL)');
-  ok(built.html === page, '⛔ Η ΣΕΛΙΔΑ ΔΕΝ ΕΙΝΑΙ Η ΕΞΟΔΟΣ ΤΟΥ BUILD — γράφτηκε με το χέρι; Τρέξε node tools/eisagogi/arxaia/build.js sokratis-d2');
-}
-
-/* ══ Β · ο validator περνάει, και δαγκώνει ════════════════════════════ */
-section('Β · κάλυψη + κανένα δικό μου γεγονός (και οι μεταλλάξεις)');
-const errs0 = L.validate(L.load('sokratis-d2'), SRC);
-eq(errs0.length, 0, 'ο validator περνάει καθαρά' + (errs0.length ? ':\n      ' + errs0.slice(0, 5).join('\n      ') : ''));
 ok(SRC.sentences.length >= 55, 'η πηγή σπάει σε ' + SRC.sentences.length + ' προτάσεις (όχι σε μία μεγάλη)');
-function mutant(label, fn, needle) {
-  const d = L.load('sokratis-d2'); fn(d);
-  const e = L.validate(d, SRC);
-  ok(e.some(x => x.indexOf(needle) >= 0), '⭐ ΜΕΤΑΛΛΑΞΗ «' + label + '» ΔΕΝ πιάστηκε (περίμενα «' + needle + '»)');
-}
-mutant('σβήνω ένα σημείο → μένει κενό', d => { d.stations[5].points.splice(0, 1); }, 'ΚΕΝΟ');
-mutant('άγκυρα που δεν είναι στο βιβλίο', d => { d.stations[0].points[0].a.push('ο Σωκράτης ήταν γλύπτης'); }, 'ΔΕΝ είναι αυτολεξεί');
-mutant('σημείο χωρίς άγκυρα', d => { d.stations[3].points.push({ t: 'Κάτι εύλογο που δεν δένεται πουθενά.', a: [] }); }, 'καμία άγκυρα');
-mutant('το κείμενο δεν λέει την άγκυρά του', d => { d.stations[3].points[0].t = 'Ο Σωκράτης περπατούσε στην αγορά κάθε πρωί.'; }, 'δεν λέει την άγκυρά του');
-mutant('νούμερο που δεν υπάρχει', d => { d.stations[6].points[0].t += ' Το έγραψε το 399.'; }, 'το νούμερο «399»');
-mutant('όνομα που δεν υπάρχει', d => { d.stations[4].points[0].t += ' Το ίδιο έλεγε και ο Ξενοφών.'; }, 'το όνομα «Ξενοφών»');
-mutant('αρχαία λέξη που δεν υπάρχει', d => { d.stations[6].points[1].t += ' Δηλαδή *γνῶθι σαυτόν*.'; }, 'η αρχαία λέξη');
-mutant('παγίδα γραμμένη ως αλήθεια', d => { d.stations[3].points[0].t += ' Άρα ο Σωκράτης ήταν άθεος.'; }, 'ΠΑΓΙΔΑ');
-mutant('απόσπασμα που δεν βρίσκεται', d => { d.stations[1].quote.to = 'λέξη που δεν υπάρχει'; }, 'δεν βρέθηκε στο βιβλίο');
-mutant('σταθμός χωρίς σχέδιο', d => { delete d.stations[2].diagram; }, 'το δικό του σχέδιο');
-mutant('πολλαπλή με επιλογή μέσα στην ερώτηση', d => { d.check.mc[0].q = 'Είναι το μότο το «Γνῶθι σαυτόν»;'; }, 'μέσα στην ερώτηση');
-mutant('Σ/Λ σε σταθμό που δεν υπάρχει', d => { d.check.tf[0].s = 12; }, 'σταθμό που δεν υπάρχει');
 
 /* ══ Γ · τα 130 γεγονότα της als-v538: στο βιβλίο ΚΑΙ στο Διάβασμα ═════ */
 section('Γ · κάθε γεγονός στο βιβλίο ΚΑΙ στο Διάβασμα');
@@ -229,18 +193,6 @@ ok(/κατ' αποκλειστικότητα/.test(READ), "και ότι η δι
 ok(/μητέρας του, που ήταν μαία/.test(READ), 'και ότι μαία ήταν η ΜΗΤΕΡΑ του');
 ok(/ο ίδιος ο Σωκράτης το ονόμαζε/.test(READ), 'και ότι το όνομα «μαιευτική» το έδωσε ο ίδιος');
 ok(D.traps.length >= 8, 'οι παγίδες του validator είναι δηλωμένες στο json (' + D.traps.length + ')');
-/* ⚠️ Δεν γράφεται ούτε η λέξη αποθήκευσης σε σχόλια (σταθ. 19): μετριέται ο ΚΩΔΙΚΑΣ. */
-eq((page.match(/const KEY="([^"]+)"/g) || []).join('|'), 'const KEY="eisarx-d2-v1"', 'ΕΝΑ κλειδί, το δηλωμένο (δική του απόφαση 27/10/26)');
-eq((page.match(/localStorage\.setItem\(/g) || []).length, 1, 'και γράφεται από ΕΝΑ μόνο σημείο');
-ok(page.indexOf('sessionStorage') < 0 && page.indexOf('indexedDB') < 0, '⛔ καμία άλλη αποθήκη');
-ok(page.indexOf('arx:gn') < 0 && page.indexOf('arx:v1') < 0, 'δεν αγγίζει τα κλειδιά του Γνωστού/Αγνώστου');
-ok(!/src=["'][^"']*sync\.js/.test(page) && page.indexOf('initCloudSync') < 0, '⛔ καμία μηχανή συγχρονισμού — το κλειδί μένει στη συσκευή');
-ok(!/@media[^{]*min-width/.test(page), '⛔ κανένα min-width (σταθ. 51)');
-ok(page.indexOf('Instrument Serif') < 0 && page.indexOf('--au-serif') < 0, '⛔ καμία λατινική γραμματοσειρά (7b)');
-ok(!/\b\d{1,2}\/\d{1,2}\/\d{2}\b/.test(READALL), '⛔ καμία ημερομηνία φροντιστηρίου στο κεφάλαιο');
-const backs = page.split('\n').filter(l => l.indexOf('href="arxaia.html#gn"') >= 0);
-eq(backs.length, 1, 'ακριβώς μία γραμμή επιστροφής «← Αρχαία»');
-ok(/<html lang="el">/.test(page), 'αυτοτελής σελίδα στα ελληνικά');
 /* οι δηλωμένες αποκλίσεις (als-v538), τώρα στο Σημείωμα του Ελέγχου — ποτέ στο Διάβασμα */
 ok(SRC.flat.indexOf('οἱ φιλοσοφοῦντες ( Περὶ ζῴων μορίων') >= 0, 'το βιβλίο όντως αφήνει ανοιχτά τα εισαγωγικά του Αριστοτέλη');
 ok(D.stations[5].quote.close === true, 'η σελίδα τα κλείνει');
@@ -268,126 +220,17 @@ const arx = fs.readFileSync(path.join(ROOT, 'arxaia.html'), 'utf8');
 const gn = arx.slice(arx.indexOf('id="gnWrap"'), arx.indexOf('id="gnLesson"'));
 const plates = gn.split('<a class="gn-pl"').slice(1);
 ok(plates[0] && plates[0].indexOf('href="' + PAGE_F + '"') >= 0, 'η ΠΡΩΤΗ πλάκα του Γνωστού είναι αυτό το πακέτο (θέση I)');
-const pl = plates[0] ? plates[0].slice(0, plates[0].indexOf('</a>')) : '';
-ok(pl.indexOf('<i>Σταθμοί</i><u>' + D.stations.length + '</u>') > 0, '⛔ η πλάκα διαφημίζει άλλο πλήθος σταθμών');
-ok(pl.indexOf('<i>Ερωτήσεις</i><u>' + (D.check.recall.length + D.check.tf.length + D.check.mc.length) + '</u>') > 0, '⛔ η πλάκα διαφημίζει άλλο πλήθος ερωτήσεων');
-const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-ok(sw.indexOf("'" + PAGE_F + "'") > 0, 'είναι στο SW CORE');
-ok(/sokratis-ideas/.test(fs.readFileSync(path.join(ROOT, 'topbar.js'), 'utf8')), 'και στο NO_VT του topbar (δεν φοράει aurora/kentro-exit)');
 
-/* ══ Ε · ΑΛΗΘΙΝΟ CHROME ═══════════════════════════════════════════════ */
-(async function chrome() {
-  section('Ε · αληθινό Chrome — διάβασμα, έλεγχος, αποθήκη, γεωμετρία');
-  let chromium;
-  try { chromium = require(path.join(ROOT, 'video-kit', 'node_modules', 'playwright')).chromium; }
-  catch (e) { ok(false, 'δεν βρέθηκε Playwright στο video-kit — ΤΟ Ε ΔΕΝ ΕΤΡΕΞΕ'); return finish(); }
-  const url = 'file://' + path.join(ROOT, PAGE_F);
-  const b = await chromium.launch();
-  try {
-    /* Ε1 · κάθε σταθμός ζωγραφίζεται με ΔΙΚΟ ΤΟΥ σημάδι (σταθ. 57) */
-    let ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
-    let p = await ctx.newPage(); const errs = [];
-    p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/fonts\.g/.test(m.text())) errs.push(m.text()); });
-    await p.goto(url + '#s1'); await p.waitForTimeout(500);
-    for (const s of D.stations) {
-      await p.evaluate(n => { location.hash = 's' + n; }, s.n); await p.waitForTimeout(120);
-      const r = await p.evaluate(() => ({ h: (document.querySelector('.st h2') || {}).textContent || '', dg: document.querySelectorAll('.st .dg').length, li: document.querySelectorAll('.st .keys li').length, here: !!document.querySelector('#map .node.here') }));
-      eq(r.h, L.plain(s.title), 'σταθμός ' + s.n + ': ζωγραφίζεται ο τίτλος του');
-      ok(r.dg === 1 && r.li === (s.points || []).length && r.here, 'σταθμός ' + s.n + ': ένα σχέδιο, ' + (s.points || []).length + ' σημεία, δαχτυλίδι στον χάρτη');
-    }
-    const readTxt = await p.evaluate(() => document.getElementById('vRead').innerText);
-    ok(!/πηγή:|Πηγή:/.test(readTxt), '⛔ κανένα «πηγή:» μέσα στο Διάβασμα');
-    ok(!/\d+\s*\/\s*\d+/.test(readTxt), '⛔ κανένας μετρητής «n / N» μέσα στο Διάβασμα');
-    /* Ε2 · «Το διάβασα» → γράφει ΜΟΝΟ το κλειδί, ανάβει, επιβιώνει reload */
-    await p.evaluate(() => { location.hash = 's3'; }); await p.waitForTimeout(150);
-    await p.click('[data-read="3"]'); await p.waitForTimeout(150);
-    let st = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), D.key);
-    ok(st && st.read && st.read['3'] > 0, 'το «Το διάβασα» γράφει read[3] στο ' + D.key);
-    const keys = await p.evaluate(() => Object.keys(localStorage));
-    eq(keys.join(','), D.key, 'και δεν γράφεται κανένα άλλο κλειδί');
-    await p.reload(); await p.waitForTimeout(300);
-    ok(await p.evaluate(() => document.querySelectorAll('#map .node.lit').length === 1), 'μετά από reload ο σταθμός III μένει αναμμένος (και μόνο αυτός)');
-    /* Ε3 · έλεγχος: ανάκληση «όχι ακόμα» → κενό, με τον σταθμό του, και τελεία στον χάρτη */
-    await p.click('#tabCheck'); await p.waitForTimeout(200);
-    ok(await p.evaluate(() => /Δεν έχεις ελέγξει τίποτα/.test(document.getElementById('say').textContent)), 'πριν από απάντηση: «δεν έχεις ελέγξει τίποτα» (όχι «0 κενά», σταθ. 33)');
-    await p.click('[data-rc="show"]'); await p.click('[data-rc="no"]'); await p.waitForTimeout(100);
-    await p.click('[data-mode="gaps"]'); await p.waitForTimeout(100);
-    const gp = await p.evaluate(() => ({ n: document.querySelectorAll('.gapst li').length, link: (document.querySelector('.gapst .hd a') || {}).getAttribute && document.querySelector('.gapst .hd a').getAttribute('href'), dot: document.querySelectorAll('#map2 .gapdot').length }));
-    ok(gp.n === 1 && gp.link === '#s' + D.check.recall[0].s && gp.dot === 1, 'ένα κενό, με σύνδεσμο στον σταθμό του και τελεία στον αστερισμό');
-    await p.click('[data-clear]'); await p.waitForTimeout(100);
-    ok(await p.evaluate(() => /Κανένα κενό/.test(document.getElementById('pane').textContent)), '«Το ξέρω πια» το σβήνει — και η σελίδα λέει «κανένα κενό», όχι «δεν έλεγξες»');
-    await p.click('[data-mode="tf"]'); await p.waitForTimeout(80);
-    const wrong = String(!D.check.tf[0].ok);
-    await p.click('[data-tf="' + D.check.tf[0].id + '"][data-v="' + wrong + '"]'); await p.waitForTimeout(80);
-    ok(await p.evaluate(() => !!document.querySelector('.qi .ex .v.no')), 'Σ/Λ: λάθος απάντηση δείχνει εξήγηση');
-    await p.click('[data-mode="mc"]'); await p.click('[data-mode="glance"]'); await p.waitForTimeout(80);
-    ok(await p.evaluate(() => document.querySelectorAll('.nums > div').length === 6 && document.querySelectorAll('.mlist > div').length === 5), 'Με μια ματιά: 6 νούμερα, 5 μνημονικά');
-    eq(errs.length, 0, 'μηδέν σφάλματα JS' + (errs.length ? ': ' + errs.join(' | ') : ''));
-    /* Ε4 · κάθε πολυτονικό ζωγραφίζεται σε GFS Didot (7b, ανά στοιχείο) */
-    await p.click('#tabRead'); await p.waitForTimeout(100);
-    let bad = [];
-    for (const s of D.stations) {
-      await p.evaluate(n => { location.hash = 's' + n; }, s.n); await p.waitForTimeout(80);
-      bad = bad.concat(await p.evaluate(() => {
-        const out = [], POLY = /[ἀ-῿]/, w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        let n; while ((n = w.nextNode())) {
-          if (!POLY.test(n.nodeValue) || !n.parentElement || n.parentElement.closest('[hidden],svg,script,style,noscript')) continue;
-          const f = getComputedStyle(n.parentElement).fontFamily;
-          if (!/^"?GFS Didot/.test(f)) out.push(n.nodeValue.trim().slice(0, 30) + ' → ' + f.slice(0, 30));
-        } return out;
-      }));
-    }
-    eq(bad.length, 0, '⛔ πολυτονικό σε γραμματοσειρά χωρίς πολυτονικό: ' + bad.slice(0, 4).join(' | '));
-    /* Ε5 · χαλασμένη αποθήκη: banner, και ΚΑΜΙΑ εγγραφή από πάνω */
-    await p.evaluate(k => localStorage.setItem(k, '{σπασμένο'), D.key);
-    await p.reload(); await p.waitForTimeout(200);
-    ok(await p.evaluate(() => !document.getElementById('banner').hidden), 'χαλασμένη πρόοδος → φαίνεται banner');
-    await p.evaluate(() => { location.hash = 's1'; }); await p.waitForTimeout(100);
-    await p.click('[data-read="1"]'); await p.waitForTimeout(100);
-    eq(await p.evaluate(k => localStorage.getItem(k), D.key), '{σπασμένο', '⛔ και η σελίδα ΔΕΝ γράφει από πάνω της (μπορεί να είναι η πρόοδός του)');
-    await ctx.close();
-    /* Ε6 · γεωμετρία: 1440 / 1180 / 390, και στο κινητό 11px + 44px */
-    for (const W of [1440, 1180, 390]) {
-      ctx = await b.newContext({ viewport: { width: W, height: 860 } }); p = await ctx.newPage();
-      let worst = 0;
-      for (const h of ['#s1', '#s2', '#s3', '#s4', '#s5', '#s6', '#s7', '#s8', '#fin', '#elegxos']) {
-        await p.goto(url + '?w=' + W + h); await p.waitForTimeout(220);
-        worst = Math.max(worst, await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth));
-        /* ⚠️ το .dg έχει overflow:hidden — ένα κομμένο «η δεσποτεία» δεν φαίνεται ως κύλιση.
-           Μετριέται η ΔΕΞΙΑ άκρη κάθε κειμένου απέναντι στο πλαίσιο του σχεδίου. */
-        const spill = await p.evaluate(() => {
-          const out = [];
-          document.querySelectorAll('.dg').forEach(dg => {
-            const R = dg.getBoundingClientRect();
-            dg.querySelectorAll('*').forEach(el => {
-              if (!el.childNodes.length || el.closest('svg')) return;
-              const r = el.getBoundingClientRect();
-              if (r.width && (r.right > R.right + 1 || r.left < R.left - 1)) out.push(el.textContent.trim().slice(0, 24));
-            });
-          });
-          return out;
-        });
-        ok(!spill.length, h + ' @' + W + ': κείμενο ξεχειλίζει από το σχέδιο: ' + spill.slice(0, 3).join(' | '));
-        if (W === 390) {
-          const r = await p.evaluate(() => {
-            const small = [], tiny = [];
-            document.querySelectorAll('body *').forEach(el => {
-              if (el.closest('[hidden],svg') || !el.offsetParent) return;
-              const own = [...el.childNodes].some(n => n.nodeType === 3 && n.nodeValue.trim());
-              if (own && parseFloat(getComputedStyle(el).fontSize) < 11) small.push(el.className + ':' + el.textContent.trim().slice(0, 20));
-              if (el.matches('button,a.back,.tabs button,.subnav button')) { const b = el.getBoundingClientRect(); if (b.height < 40 || b.width < 40) tiny.push((el.textContent || '').trim().slice(0, 20) + ' ' + Math.round(b.width) + '×' + Math.round(b.height)); }
-            });
-            return { small, tiny };
-          });
-          ok(!r.small.length, h + ' @390: κείμενο κάτω από 11px: ' + r.small.slice(0, 3).join(' | '));
-          ok(!r.tiny.length, h + ' @390: στόχος αφής κάτω από 44: ' + r.tiny.slice(0, 3).join(' | '));
-        }
-      }
-      eq(worst, 0, 'μηδέν οριζόντια κύλιση στα ' + W + 'px (σε όλους τους σταθμούς, στο τέλος και στον Έλεγχο)');
-      await ctx.close();
-    }
-  } catch (e) { ok(false, 'το σενάριο του Chrome έσκασε: ' + e.message); }
-  await b.close();
+/* ══ ΚΑΙ ΤΟ ΓΕΝΙΚΟ, ΓΙΑ ΤΟ Δ2: build, validator + μεταλλάξεις, αποθήκη, καλώδιο, Chrome ══ */
+(function generic() {
+  section('Το γενικό test του καλουπιού, για το sokratis-d2');
+  const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'arxaia-eisagogi.test.js')],
+    { env: Object.assign({}, process.env, { EIS_ONLY: 'sokratis-d2' }), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  const out = (r.stdout || '') + (r.stderr || '');
+  out.split('\n').filter(l => /^\s*✗/.test(l)).forEach(l => console.error(l));
+  const m = /(\d+) πέρασαν, (\d+) απέτυχαν/.exec(out);
+  ok(!!m, 'το γενικό test έτρεξε και έδωσε σύνοψη');
+  if (m) { pass += +m[1]; fail += +m[2]; }
   finish();
 })();
 

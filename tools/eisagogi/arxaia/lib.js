@@ -39,10 +39,10 @@ const OXIA = /[άέήίόύώΆΈΉΊΎΌΏΐΰ]/;
 function readSource(file) {
   const raw = fs.readFileSync(path.join(REPO, file), 'utf8');
   const sha = crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
-  /* Τα μπλοκ: @@LEAD@@ … @@/LEAD@@, @@NOTE2@@ …, και το σώμα. Οι γραμμές
-     με # είναι κεφαλίδα. Οι @@B@@ σημάνσεις φεύγουν (είναι έντονα). */
+  /* Τα μπλοκ: @@LEAD@@ … @@/LEAD@@, @@NOTEn@@ … (υποσημειώσεις), και το σώμα.
+     Οι γραμμές με # είναι κεφαλίδα. Οι @@B@@ σημάνσεις φεύγουν (είναι έντονα). */
   const lines = raw.split('\n').filter(l => l.charAt(0) !== '#');
-  const text = lines.join('\n').replace(/@@\/?(LEAD|NOTE2)@@/g, '\n').replace(/@@\/?B@@/g, '');
+  const text = lines.join('\n').replace(/@@\/?(LEAD|NOTE\d+)@@/g, '\n').replace(/@@\/?B@@/g, '');
   const flat = norm(text);
   return { raw, sha, text, flat, sentences: sentences(text) };
 }
@@ -169,6 +169,13 @@ function diagramTexts(dg) {
   return out;
 }
 
+/* οι τύποι σχεδίου που ξέρει το καλούπι: τα κλειδιά του `var DG = {` στο page.tpl */
+function dgTypes() {
+  const t = fs.readFileSync(path.join(__dirname, 'page.tpl'), 'utf8');
+  const a = t.indexOf('var DG = {'), b = t.indexOf('\n};', a);
+  return (t.slice(a, b).match(/^  ([a-z]+): function/gm) || []).map(x => x.trim().split(':')[0]);
+}
+
 /* ── ο έλεγχος ──────────────────────────────────────────────────────── */
 const STOP = new Set('και του της την τον των τους τις στο στη στην στον στα στις στους ενώ αλλά όμως ότι πως που από για με σε ως ένα μια μία είναι ήταν δεν θα να τα το τη οι ο η ένας αυτό αυτή αυτός αυτοί όπως ούτε είτε ακόμα μόνο κάθε δηλαδή'.split(' ').map(bare));
 function words(s) { return bare(plain(s)).split(/[^\p{Ll}0-9]+/u).filter(w => w.length >= 4 && !STOP.has(w)); }
@@ -188,6 +195,8 @@ function validate(d, src) {
   if (src.sha !== d.source.sha) E('πηγή', 'το sha της πηγής άλλαξε (' + src.sha + ') — το βιβλίο δεν διορθώνεται με το χέρι');
   if (OXIA.test(JSON.stringify(d))) E('json', 'OXIA μέσα στα δεδομένα (U+1F71 κ.λπ.) — NFC');
   if (!/^[a-z0-9-]+$/.test(d.key || '')) E('key', 'λείπει/άκυρο το κλειδί προόδου');
+  /* ο σκελετός του scaffold.js: κάθε «⟪…⟫» είναι κενό που δεν γέμισε */
+  (JSON.stringify(d).match(/⟪[^⟫]*⟫/g) || []).slice(0, 8).forEach(x => E('ασυμπλήρωτο', x + ' — γέμισέ το (reference/schema.md)'));
 
   const S = src.flat, SB = bare(S);
   const srcNums = new Set((S.match(/\d+/g) || []));
@@ -289,7 +298,20 @@ function validate(d, src) {
   if ((d.check.mc || []).length >= 8 && spread.size < 4) E('πολλαπλή', 'η σωστή δεν κάθεται σε όλες τις θέσεις');
   (d.check.tf || []).forEach(c => { if (typeof c.ok !== 'boolean') E('Σ/Λ ' + c.id, 'ok πρέπει να είναι true/false'); });
   d.stations.forEach(s => { if (!s.diagram || !s.diagram.type) E('σταθμός ' + s.n, 'κάθε σταθμός έχει το δικό του σχέδιο'); });
+  /* ο τύπος σχεδίου ΥΠΑΡΧΕΙ στο DG του καλουπιού — αλλιώς η σελίδα γράφει «Λείπει ο σχεδιαστής» */
+  const dg = dgTypes();
+  d.stations.forEach(s => { if (s.diagram && s.diagram.type && dg.indexOf(s.diagram.type) < 0 && !/⟪/.test(s.diagram.type)) E('σταθμός ' + s.n, 'ο τύπος σχεδίου «' + s.diagram.type + '» δεν υπάρχει στο DG του page.tpl (' + dg.join(' · ') + ') — νέος τύπος = DG + CSS + test στο ίδιο commit'); });
+  /* ίδια φράση (3 λέξεις) σε ΤΡΙΑ ή περισσότερα σημεία του ίδιου σταθμού = επανάληψη, όχι διάβασμα (als-v674) */
+  d.stations.forEach(s => {
+    const seen = {};
+    (s.points || []).forEach((p, i) => {
+      const w = bare(plain(p.t)).split(/[^\p{Ll}0-9]+/u).filter(x => x.length >= 3), g = new Set();
+      for (let k = 0; k + 2 < w.length; k++) g.add(w.slice(k, k + 3).join(' '));
+      g.forEach(x => { (seen[x] = seen[x] || new Set()).add(i); });
+    });
+    Object.keys(seen).filter(x => seen[x].size >= 3).slice(0, 2).forEach(x => E('σταθμός ' + s.n, 'η φράση «' + x + '» επαναλαμβάνεται σε ' + seen[x].size + ' σημεία — πες την μία φορά'));
+  });
   return errs;
 }
 
-module.exports = { REPO, load, readSource, sentences, resolve, validate, items, plain, norm, bare, words };
+module.exports = { REPO, load, readSource, sentences, resolve, validate, items, plain, norm, bare, words, dgTypes };
