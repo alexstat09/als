@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v677`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v678`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,17 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-27 — `als-v678` — ΕΙΣΑΓΩΓΗ Ε1 «Ο βίος του» (Πλάτων) ΜΕ ΤΟ SKILL (αντικαθιστά το `arxaia-platon.html`, το παλιό → `archive/`).**
+`tools/eisagogi/arxaia/platon-e1.json`, κλειδί `eisarx-platon-e1-v1` (μόνο συσκευή). 40 προτάσεις → 9 σταθμοί (γενιά · θείοι · ποίηση ·
+πολιτική · 1ο ταξίδι · Διονύσιος I · Διονύσιος II/3 ταξίδια · Ακαδημία · μαθήματα+μαθητές), σχέδια flow/fork/ladder/split/fork/dialogue/
+repeat/flow/ladder· ανάκληση 29 · Σ/Λ 17 · πολλαπλή 25 · 7 παγίδες· μότο = «ἀγεωμέτρητος μηδεὶς εἰσίτω». Προτομή: Vorsterman 1620 (Met), CC0.
+⚠️ Το βιβλίο γράφει «E1.» με ΛΑΤΙΝΙΚΟ E → το `scaffold` (regex `[Α-Ω]\d+`) δεν βρήκε το route· γράφτηκε «Ε1» με το χέρι, δηλωμένο στο colophon.
+⚠️⚠️ **ΚΙ ΑΛΛΟ ΚΕΙΜΕΝΟ ΤΟΥ Δ2 στο καλούπι** (βρέθηκε στο PNG): το `repeat` είχε καρφωμένα «Το ερώτημα / Το εύρημα» (του χρησμού). Τώρα
+`topCap`/`resCap` με προεπιλογή του Δ2 (σελίδες Σωκράτη: αλλάζουν ΜΟΝΟ 2 γραμμές renderer)· `lib.validate` τα ΑΠΑΙΤΕΙ εκτός Δ2· `diagrams.md`
+ενημερωμένο. ⚠️ `tests/arxaia-aristotelis.test.js` §6 συγκρίνει με το ΠΑΛΙΟ πακέτο Πλάτωνα → διαβάζει πια `archive/arxaia-platon.html`.
+⚠️ Στο PNG του finish το αποτέλεσμα του `repeat` φαίνεται κενό = fade 1,35s, όχι bug (Playwright στα 3,5s: opacity 1). finish πράσινο:
+gnosto 2469/0 · aristotelis 650/0 · page-transition 137/0 · smoke OK · check.mjs ✓. 🔴 Αδοκίμαστο σε συσκευή του. ΕΠΟΜΕΝΟ: Ε2 Πλάτων.
 
 **2026-10-27 — `als-v677` — ΕΙΣΑΓΩΓΗ Δ3 «Η δίκη και ο θάνατος του Σωκράτη» ΜΕ ΤΟ SKILL (αντικαθιστά το `arxaia-sokratis.html`, το παλιό → `archive/`).**
 `tools/eisagogi/arxaia/sokratis-d3.json`, κλειδί `eisarx-sokratis-d3-v1` (μόνο συσκευή, όπως το Δ2). 39 προτάσεις → 8 σταθμοί, ένας ανά παράγραφο

@@ -311,7 +311,8 @@ eq(backs.length, 1, 'ακριβώς μία γραμμή επιστροφής «�
 /* ══ 6 · Η ΔΟΜΗ ΕΙΝΑΙ Η ΙΔΙΑ ΜΕ ΤΟΥ ΠΛΑΤΩΝΑ ══════════════════════════
    «οπως ακριβως και τα αλλα με τον ιδιο ακριβως τροπο». */
 section('6 · ίδια δομή με το πακέτο του Πλάτωνα');
-var platon = fs.readFileSync(path.join(ROOT, 'arxaia-platon.html'), 'utf8');
+/* als-v678: το πρότυπο πακέτο ζει πια στο archive/ — το arxaia-platon.html είναι τώρα το Ε1 της εισαγωγής */
+var platon = fs.readFileSync(path.join(ROOT, 'archive', 'arxaia-platon.html'), 'utf8');
 function secs(h) { return (h.match(/<section id="(\w+)"/g) || []).join(','); }
 eq(secs(page), secs(platon), 'οι πέντε οθόνες, με την ίδια σειρά και τα ίδια id');
 ['📖 Σύνοψη', '🗓️ Χρονολόγιο', '🔑 Μνημονικά', '🃏 Κάρτες', '✅ Κουίζ'].forEach(function (t) {

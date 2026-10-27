@@ -603,11 +603,11 @@ var DG = {
     }).join('') + '</div>';
   },
   repeat: function (g) {
-    return '<div class="rep"><div class="top"><span class="cap">Το ερώτημα</span><div class="big">' + md(g.top.t) + '</div></div>' +
+    return '<div class="rep"><div class="top"><span class="cap">' + esc(g.topCap || 'Το ερώτημα') + '</span><div class="big">' + md(g.top.t) + '</div></div>' +
       '<div class="stops">' + g.stops.map(function (s, i) {
         return '<div class="stop fade" style="animation-delay:' + (.2 + i * .35) + 's"><span class="cap">Στάση ' + (i + 1) + '</span><div class="who">' + md(s.t) + '</div><div class="find">' + md(s.find.t) + '</div></div>';
       }).join('') + '</div>' +
-      '<div class="res fade" style="animation-delay:' + (.3 + g.stops.length * .35) + 's"><span class="cap">Το εύρημα</span><div class="big">' + md(g.result.t) + '</div></div>' +
+      '<div class="res fade" style="animation-delay:' + (.3 + g.stops.length * .35) + 's"><span class="cap">' + esc(g.resCap || 'Το εύρημα') + '</span><div class="big">' + md(g.result.t) + '</div></div>' +
       (g.cost ? '<div class="cost">' + md(g.cost.t) + '</div>' : '') + '</div>';
   },
   split: function (g) {

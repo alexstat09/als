@@ -66,7 +66,7 @@ var PACKS = [
      εκτός sync — δική του απόφαση, ρωτήθηκε πριν μπει (27/10/26). */
   { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js', stores: 'eisarx-d2-v1' },
   { file: 'arxaia-sokratis.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-sokratis-d3-v1' },
-  { file: 'arxaia-platon.html',      sha: 'cef926e3c30fb9fb9b99a7beb4e5c5d7a02601980c6e6d8a14bdc73db4bf0fc7' },
+  { file: 'arxaia-platon.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-platon-e1-v1' },
   { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' },
   /* ⭐⭐ als-v551 — ΤΟ ΠΕΜΠΤΟ ΠΑΚΕΤΟ.  Είναι ΔΥΟ κεφάλαια του ίδιου βιβλίου
      (το μέρος «Πρωταγόρας» του «Γ. Οι σοφιστές…» + τα μέρη Β και Γ του

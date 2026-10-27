@@ -199,6 +199,7 @@ function validate(d, src) {
   if (d.key !== 'eisarx-d2-v1' && !(d.mapTitle || '').trim()) E('mapTitle', 'λείπει ο τίτλος του χάρτη — δικός σου, του κεφαλαίου (όχι «Από τον χρησμό ως το συμπέρασμα»)');
   (d.stations || []).forEach(st => { const g = st.diagram || {};
     if (d.key !== 'eisarx-d2-v1' && g.type === 'dialogue' && !(g.lanes && g.lanes.length === 2)) E('σταθμός ' + st.n, 'dialogue χωρίς lanes [αριστερά, δεξιά] — η προεπιλογή «Ο συνομιλητής / Ο Σωκράτης» είναι του Δ2');
+    if (d.key !== 'eisarx-d2-v1' && g.type === 'repeat' && !(g.topCap && g.resCap)) E('σταθμός ' + st.n, 'repeat χωρίς topCap/resCap — η προεπιλογή «Το ερώτημα / Το εύρημα» είναι του χρησμού του Δ2');
     if (d.key !== 'eisarx-d2-v1' && g.type === 'descent' && !(g.topCap && g.bottomCap)) E('σταθμός ' + st.n, 'descent χωρίς topCap/bottomCap — η προεπιλογή «Πριν / Με τον Σωκράτη» είναι του Δ2'); });
   /* ο σκελετός του scaffold.js: κάθε «⟪…⟫» είναι κενό που δεν γέμισε */
   (JSON.stringify(d).match(/⟪[^⟫]*⟫/g) || []).slice(0, 8).forEach(x => E('ασυμπλήρωτο', x + ' — γέμισέ το (reference/schema.md)'));
