@@ -83,7 +83,8 @@ var PACKS = [
      του κρατάει τις απαντήσεις Σ/Λ σε ΕΝΑ κλειδί της συσκευής, γιατί έτσι
      ήταν το artifact που ενέκρινε.  Δεν συγχρονίζεται, δεν φτάνει σε καμία
      άλλη σελίδα.  `stores` = το ΜΟΝΟ κλειδί που επιτρέπεται. */
-  { file: 'arxaia-protagoras-eisagogi.html', sha: '0e8712605ff24dea1844a2d25814b8865ea7643910bb550ccfa05b5ad28fea8f', stores: 'protag-intro-v1' }
+  { file: 'arxaia-protagoras-eisagogi.html', sha: '0e8712605ff24dea1844a2d25814b8865ea7643910bb550ccfa05b5ad28fea8f', stores: 'protag-intro-v1' },
+  { file: 'arxaia-platon-erga.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-platon-e2-v1' }
 ];
 
 var pass = 0, fail = 0;

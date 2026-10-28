@@ -17,7 +17,7 @@ const cp = require('child_process');
 const L = require('./lib');
 
 /* η σειρά του βιβλίου (Φιλοσοφικός Λόγος, εισαγωγή): ό,τι λείπει από εδώ μπαίνει στο τέλος */
-const BOOK = ['arxaia-sokratis-ideas.html', 'arxaia-sokratis.html', 'arxaia-platon.html', 'arxaia-protagoras-eisagogi.html',
+const BOOK = ['arxaia-sokratis-ideas.html', 'arxaia-sokratis.html', 'arxaia-platon.html', 'arxaia-platon-erga.html', 'arxaia-protagoras-eisagogi.html',
   'arxaia-politeia-eisagogi.html', 'arxaia-aristotelis.html', 'arxaia-ithika-eisagogi.html', 'arxaia-politika-eisagogi.html'];
 const SCREENS = '<div class="pl-sc"><i>Διάβασμα</i><i>Ανάκληση</i><i>Σωστό ή λάθος</i><i>Τα κενά μου</i></div>';
 const R = f => path.join(L.REPO, f);

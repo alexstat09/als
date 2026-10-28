@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Το έργο του · Εισαγωγή Αρχαίων</title>
+<!-- ⛔ ΠΑΡΑΓΕΤΑΙ: node tools/eisagogi/arxaia/build.js platon-e2 — μην τη γράψεις με το χέρι.
+     Το κεφάλαιο ζει στο tools/eisagogi/arxaia/platon-e2.json· το καλούπι εδώ (page.tpl). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600&family=GFS+Didot&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ══ ΤΟ ΚΑΛΟΥΠΙ ΤΗΣ ΕΙΣΑΓΩΓΗΣ ΤΩΝ ΑΡΧΑΙΩΝ ═══════════════════════════════
+   Midnight (metron-design §2) · τρεις φωνές: Commissioner για πρόζα,
+   GFS Didot για κάθε ελληνικό τίτλο/όρο/αρχαίο, JetBrains Mono για ετικέτες.
+   ⛔ Κανένα min-width· το λάπτοπ γράφεται πρώτο και μαζεύει με max-width.
+   ⛔ Τίποτα δεν γεννιέται αόρατο περιμένοντας JS (σταθ. 39): η κίνηση
+   προστίθεται κάτω από html.anim και έχει πάντα τελική κατάσταση ορατή. */
+:root{
+  color-scheme:dark;
+  --bg:oklch(13.2% .022 258); --surf:oklch(16.4% .022 258); --surf2:oklch(19.5% .022 258); --surf3:oklch(23% .022 258);
+  --metal-hi:oklch(44% .013 258); --metal-lo:oklch(25% .014 258);
+  --text:#EDE6D8; --soft:#C9C2B5; --muted:#A7A196; --faint:#8A8C94;
+  --line:rgba(237,230,216,.07); --line2:rgba(237,230,216,.12); --line3:rgba(237,230,216,.2);
+  --amber:#E8B25C; --late:#E8836F; --arx:#E8A07F;
+  --gr:"GFS Didot","Literata",serif;
+  --sans:"Commissioner",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:16px}
+body{margin:0;background:var(--bg);color:var(--text);font:400 15.5px/1.72 var(--sans);-webkit-font-smoothing:antialiased;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) 96px max(16px,env(safe-area-inset-left,0px))}
+.shell{max-width:1180px;margin:0 auto}
+button{font:inherit;color:inherit}
+a{color:inherit}
+.lbl{font:500 10px/1.3 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.gr,.t{font-family:var(--gr)}
+em.t{font-style:italic;font-size:1.1em;color:var(--arx)}
+b{font-weight:500;color:var(--text)}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:6px}
+
+/* ── διαδρομή + καρτέλες ── */
+.route{display:flex;align-items:center;gap:18px;padding:20px 0;border-bottom:1px solid var(--line)}
+.back{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px 0 12px;border:1px solid var(--line2);border-radius:10px;
+  text-decoration:none;font:500 13px var(--sans);color:var(--soft);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.back:hover{color:var(--text);border-color:var(--line3)}
+.crumbs{flex:1;min-width:0}
+.tabs{display:flex;gap:4px;background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:3px}
+.tabs button{border:0;background:none;cursor:pointer;font:500 13px var(--sans);padding:8px 16px;border-radius:8px;color:var(--muted);min-height:36px}
+.tabs button[aria-selected="true"]{background:var(--surf3);color:var(--text)}
+.tabs button:active{transform:scale(.97)}
+.banner{margin:18px 0 0;border:1px solid rgba(232,131,111,.4);border-radius:12px;padding:12px 16px;color:var(--text);background:rgba(232,131,111,.08);font-size:14px}
+
+/* ── εξώφυλλο ── */
+.cover{display:grid;grid-template-columns:auto minmax(0,1fr);gap:48px;align-items:center;padding:64px 0 58px;border-bottom:1px solid var(--line)}
+.seal{width:196px;height:196px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 50% 40%,oklch(22% .03 258),var(--surf) 74%);transition:width .4s var(--ease),height .4s var(--ease)}
+.seal svg{width:100%;height:100%;display:block;overflow:visible}
+.seal .rim{fill:none;stroke:var(--line3);stroke-width:1}
+.seal .rim2{fill:none;stroke:var(--line2);stroke-width:1}
+.seal .ring{font:400 13.5px var(--gr);letter-spacing:.32em;fill:var(--muted)}
+.seal .mark{font:400 italic 92px var(--gr);fill:var(--text)}
+.seal{position:relative;overflow:hidden}
+.seal img{position:absolute;inset:7%;width:86%;height:86%;border-radius:50%;object-fit:cover;
+  filter:invert(1) sepia(.35) saturate(.8) brightness(.93);mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(circle,#000 58%,transparent 71%);mask-image:radial-gradient(circle,#000 58%,transparent 71%)}
+.seal svg{position:relative}
+.seal .pip{fill:var(--surf3);stroke:var(--line3);stroke-width:1;transition:fill .4s,stroke .4s}
+.seal .pip.lit{fill:var(--amber);stroke:var(--amber);filter:drop-shadow(0 0 4px rgba(232,178,92,.6))}
+/* ⭐ από τη 2η επίσκεψη: το εξώφυλλο μαζεύει, ο σταθμός ανεβαίνει στην πρώτη οθόνη */
+html.ret .cover{padding:30px 0 26px;gap:30px}
+html.ret .seal{width:104px;height:104px}
+html.ret .seal .ring{display:none}
+html.ret .seal img{inset:4%;width:92%;height:92%}
+html.ret .cover h1{font-size:clamp(34px,4.2vw,54px);margin:8px 0 6px}
+html.ret .cover .sub{display:none}
+html.ret .motto{font-size:21px}
+html.ret .motto small{display:none}
+html.ret .map{padding:30px 0 30px}
+html.ret .map .lead,html.ret .map .h2{display:none}
+html.ret .map .mapbox{margin-top:14px}
+.cover h1{font:400 italic clamp(46px,6.6vw,92px)/1.02 var(--gr);margin:14px 0 14px;letter-spacing:-.005em;text-wrap:balance}
+.cover .sub{color:var(--muted);margin:0 0 22px;max-width:60ch;font-size:15px}
+.motto{font:400 clamp(22px,2.5vw,30px)/1.3 var(--gr);color:var(--amber)}
+.motto small{display:block;font:300 italic 15px/1.5 var(--sans);color:var(--muted);margin-top:6px}
+
+/* ── ο αστερισμός ── */
+.map{padding:56px 0 50px;border-bottom:1px solid var(--line)}
+.h2{font:400 italic 34px/1.15 var(--gr);margin:10px 0 8px;text-wrap:balance}
+.map .lead{color:var(--muted);margin:0 0 24px;max-width:62ch}
+.mapbox{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.006));border:1px solid var(--line);border-radius:18px}
+.mapbox svg{display:block;width:100%;height:auto}
+.edge{stroke:var(--line2);stroke-width:1.2;fill:none}
+.edge.lit{stroke:var(--amber);stroke-opacity:.72}
+html.anim .mapbox:not(.drawn) .edge.lit{stroke-dashoffset:var(--len)}
+.edge.lit{stroke-dasharray:var(--len) var(--len);stroke-dashoffset:0;transition:stroke-dashoffset 1.3s var(--ease)}
+.node{cursor:pointer}
+.node circle.dot{fill:var(--bg);stroke:var(--line3);stroke-width:1.3;transition:fill .3s,stroke .3s}
+.node.lit circle.dot{fill:var(--amber);stroke:var(--amber);filter:drop-shadow(0 0 7px rgba(232,178,92,.55))}
+.node circle.ring{fill:none;stroke:var(--amber);stroke-width:1.4;opacity:0}
+.node.here circle.ring{opacity:1}
+.node circle.hit{fill:transparent;stroke:none}
+.node text.nm{font:400 italic 17px var(--gr);fill:var(--soft)}
+.node.lit text.nm,.node.here text.nm{fill:var(--text)}
+.node text.n{font:500 10px var(--mono);letter-spacing:.2em;fill:var(--faint)}
+.node .gapdot{fill:var(--late)}
+.node text.gapn{font:500 10px var(--mono);fill:var(--late)}
+.node:hover text.nm{fill:var(--text)}
+.node:focus-visible{outline:none}
+.node:focus-visible circle.ring{opacity:1;stroke:var(--text)}
+.core{font:400 24px var(--gr);fill:var(--amber);opacity:.9}
+.node.stamp circle.dot{animation:stamp .7s var(--ease)}
+@keyframes stamp{0%{transform:scale(.3)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.node circle.dot{transform-box:fill-box;transform-origin:center}
+
+/* ── σταθμός ── */
+.st{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:60px;padding:66px 0 40px}
+.st-main{min-width:0}
+.num{font:400 italic 124px/.8 var(--gr);color:var(--surf3);margin:0 0 -22px;user-select:none}
+.st h2{font:400 italic 36px/1.14 var(--gr);margin:10px 0 0;text-wrap:balance}
+.mine{margin:12px 0 0;color:var(--muted);font-size:13.5px}
+.mine .lbl{margin-right:8px}
+.prose{max-width:660px;margin-top:26px}
+.prose p{margin:0 0 18px;color:var(--soft)}
+.quote{margin:30px 0;max-width:700px;padding:4px 0 4px 26px;position:relative}
+.quote::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--line3)}
+.quote .lbl{display:block;margin-bottom:10px}
+.quote blockquote{margin:0;font:400 italic 19px/1.62 var(--gr);color:var(--text)}
+.quote cite{display:block;margin-top:12px;font:500 10px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.quote cite .gr{font:400 italic 14px var(--gr);letter-spacing:0;text-transform:none}
+.keys{display:grid;gap:16px;margin:30px 0 0;padding:0;list-style:none;max-width:680px}
+.keys li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;color:var(--soft)}
+.keys li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--arx);margin-top:11px;justify-self:center}
+.done{margin-top:36px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.btn{font:500 14px var(--sans);border-radius:10px;padding:0 20px;min-height:46px;cursor:pointer;border:1px solid var(--line2);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));color:var(--text);transition:transform .12s,background .2s,border-color .2s}
+.btn:hover{border-color:var(--line3)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--amber);border-color:var(--amber);color:#1a1408}
+.btn.ghost{background:none}
+.btn.small{min-height:40px;padding:0 14px;font-size:13px}
+.done .ok{color:var(--muted);font-size:13.5px}
+.done a.next{font:500 14px var(--sans);color:var(--amber);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.done a.next:hover{text-decoration:underline}
+
+/* ── το σχέδιο: ένα πλαίσιο, ό,τι κι αν είναι μέσα ── */
+.dg{margin:32px 0;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:16px;padding:26px 26px 24px;position:relative;overflow:hidden}
+.dg .cap{font:500 10px/1.3 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.dg .big{font:400 italic 21px/1.25 var(--gr);color:var(--text)}
+.dg .sm{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.dg .amb{color:var(--amber)}
+html.anim .dg .grow{transform:scaleX(0);transform-origin:left;animation:grow .9s var(--ease) forwards}
+html.anim .dg .growy{transform:scaleY(0);transform-origin:top;animation:growy .9s var(--ease) forwards}
+html.anim .dg .fade{opacity:0;animation:fade .7s var(--ease) forwards}
+@keyframes grow{to{transform:scaleX(1)}}
+@keyframes growy{to{transform:scaleY(1)}}
+@keyframes fade{to{opacity:1}}
+
+/* flow: Α → Β → Γ */
+.flow{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr) 54px minmax(0,1fr);align-items:start}
+.flow .nd{text-align:center;padding:0 6px}
+.flow .nd i{display:block;width:12px;height:12px;border-radius:50%;margin:4px auto 14px;border:1.3px solid var(--line3);background:var(--bg)}
+.flow .nd:last-child i{background:var(--amber);border-color:var(--amber);box-shadow:0 0 12px rgba(232,178,92,.5)}
+.flow .cn{height:1px;background:var(--amber);opacity:.65;margin-top:10px;position:relative}
+.flow .cn::after{content:"";position:absolute;right:-1px;top:-3px;border:3.5px solid transparent;border-left:6px solid var(--amber);border-right:0}
+.flow .sm{margin-top:6px}
+
+/* repeat: ίδιο εύρημα σε κάθε στάση */
+.rep .top{text-align:center;max-width:560px;margin:0 auto}
+.rep .stops{display:grid;gap:18px;margin:24px 0 0}
+.rep .stop{border-top:1px solid var(--line2);padding-top:14px;display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:baseline}
+.rep .stop .who{color:var(--soft)}
+.rep .stop .find{color:var(--amber);font:400 italic 18px/1.3 var(--gr)}
+.rep .res{margin-top:22px;border-top:1px solid var(--line3);padding-top:16px;display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;align-items:baseline}
+.rep .cost{margin-top:10px;color:var(--muted);font-size:13.5px;padding-left:128px}
+
+/* split: δύο πλευρές, ένα αποτέλεσμα */
+.split .cols{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:26px}
+.split .bar{background:var(--line2)}
+.split h4{margin:6px 0 12px;font:400 italic 22px/1.2 var(--gr)}
+.split .L h4{color:var(--amber)}
+.split ul{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+.split li{display:grid;grid-template-columns:14px minmax(0,1fr);gap:8px;color:var(--soft);font-size:14.5px;line-height:1.45}
+.split li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--faint);margin-top:8px}
+.split .L li::before{background:var(--amber)}
+.split .R li::before{background:var(--late)}
+.split .res{margin-top:22px;padding-top:16px;border-top:1px solid var(--line3);text-align:center}
+
+/* fork: μία ρίζα, δύο δρόμοι */
+.fork .root{text-align:center;max-width:520px;margin:0 auto}
+.fork svg{display:block;width:100%;height:46px;margin:10px 0 4px}
+.fork svg path{stroke:var(--line3);stroke-width:1.2;fill:none;vector-effect:non-scaling-stroke}
+.fork svg path.r{stroke:var(--amber);stroke-opacity:.8}
+.fork .heads,.fork .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px}
+.fork .heads{margin-bottom:6px}
+.fork .heads .big{font-size:22px}
+.fork .heads div:last-child .big{color:var(--amber)}
+.fork .row{border-top:1px solid var(--line);padding:11px 0;font-size:14.5px;line-height:1.5}
+.fork .row div:first-child{color:var(--muted)}
+.fork .row div:last-child{color:var(--text)}
+
+/* dialogue: δύο φωνές */
+.dlg .lanes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 30px}
+.dlg .lanes .cap{padding-bottom:6px;border-bottom:1px solid var(--line2)}
+.dlg .ph{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:10px 0 0}
+.dlg .ph::before,.dlg .ph::after{content:"";flex:1;height:1px;background:var(--line2)}
+.dlg .bub{border:1px solid var(--line2);border-radius:14px;padding:11px 14px;font-size:14.5px;line-height:1.5;color:var(--soft);background:var(--surf)}
+.dlg .bub.S{grid-column:2;border-color:rgba(232,160,127,.3)}
+.dlg .bub.C{grid-column:1}
+.dlg .res{grid-column:1/-1;text-align:center;margin-top:16px;padding:16px 10px 4px;border-top:1px solid var(--line3)}
+.dlg .res .big{color:var(--amber)}
+
+/* descent: από τα άστρα στη γη */
+.desc{text-align:center}
+.desc .sky{position:relative;padding:8px 0 4px}
+.desc .sky svg{display:block;width:100%;height:40px;margin-bottom:6px}
+.desc .sky circle{fill:var(--soft)}
+.desc .arrow{width:1px;height:58px;margin:14px auto;background:linear-gradient(var(--line3),var(--amber));position:relative}
+.desc .arrow::after{content:"";position:absolute;left:-4px;bottom:-1px;border:4px solid transparent;border-top:7px solid var(--amber);border-bottom:0}
+.desc .earth{border-top:1px solid var(--amber);padding-top:14px;max-width:520px;margin:0 auto}
+.desc .gk{display:block;font:400 italic 17px/1.4 var(--gr);color:var(--arx);margin-top:4px}
+
+/* ladder: τα σκαλιά της επαγωγής */
+.lad .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:0;margin-top:14px}
+.lad .stp{border-top:1px solid var(--line3);border-left:1px solid var(--line3);padding:12px 14px 0 14px;position:relative}
+.lad .stp::before{content:"";position:absolute;left:-1px;right:0;top:-1px;height:1.5px;background:var(--amber)}
+html.anim .lad .stp::before{transform:scaleX(0);transform-origin:left;animation:grow .7s var(--ease) forwards}
+.lad .stp:nth-child(1){height:96px}.lad .stp:nth-child(2){height:156px}.lad .stp:nth-child(3){height:216px}
+html.anim .lad .stp:nth-child(2)::before{animation-delay:.45s}html.anim .lad .stp:nth-child(3)::before{animation-delay:.9s}
+.lad .stp:last-child .big{color:var(--amber)}
+.lad .caps{display:flex;justify-content:space-between;gap:12px;margin-top:12px;border-top:1px solid var(--line2);padding-top:10px}
+.lad .rise{float:right;font:400 italic 18px var(--gr);color:var(--arx)}
+
+/* scales: έξι ζυγαριές */
+.scl .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 18px}
+.scl .pair{text-align:center}
+.scl svg{display:block;width:100%;max-width:180px;height:auto;margin:0 auto}
+.scl svg path,.scl svg line{stroke:var(--metal-hi);stroke-width:1.2;fill:none}
+.scl svg .beam{stroke:var(--soft)}
+.scl svg .pv{fill:var(--amber);stroke:none}
+.scl .w{display:grid;grid-template-columns:1fr 1fr;gap:8px;font:400 italic 16.5px/1.25 var(--gr);color:var(--text);margin-top:4px}
+.scl .no{font:500 10px var(--mono);letter-spacing:.2em;color:var(--faint)}
+.scl .thread{margin-top:24px;padding-top:16px;border-top:1px solid var(--line3);display:flex;align-items:center;justify-content:center;gap:12px;text-align:center}
+.scl .thread i{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 12px rgba(232,178,92,.55);flex:none}
+
+/* ── η πλαϊνή κάρτα ── */
+aside{min-width:0}
+aside .card{position:sticky;top:22px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:22px}
+aside h3{font:400 italic 22px var(--gr);margin:8px 0 12px}
+.gloss{display:grid;gap:14px}
+.gloss div{border-top:1px solid var(--line);padding-top:12px}
+.gloss .gk{font:400 19px/1.3 var(--gr);color:var(--arx)}
+.gloss .gl{color:var(--soft);font-size:13.5px;line-height:1.5}
+.gloss .yours{display:block;margin-top:4px}
+.mnem{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.mnem .k{font:500 13px/1.4 var(--mono);letter-spacing:.1em;color:var(--amber);margin:6px 0}
+.mnem p{margin:0;color:var(--soft);font-size:13.5px;line-height:1.55}
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
+.pager a{font:500 13px var(--sans);color:var(--soft);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.pager a:hover{color:var(--text)}
+.pager a.r{text-align:right;margin-left:auto}
+
+/* ── τέλος κεφαλαίου ── */
+.fin{padding:70px 0 40px;text-align:center}
+.fin p.line{font:400 italic clamp(40px,5.4vw,68px)/1.05 var(--gr);margin:18px 0 22px;color:var(--text);max-width:none}
+.fin p{color:var(--muted);max-width:52ch;margin:0 auto 26px}
+.fin .mapbox{max-width:900px;margin:0 auto 34px}
+
+/* ── ο έλεγχος ── */
+.ck-head{padding:56px 0 34px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr);gap:28px}
+.ck-head .say{font:400 italic 34px/1.2 var(--gr);margin:10px 0 0;text-wrap:balance}
+.ck-head .say + p{color:var(--muted);margin:10px 0 0}
+.mapbox.strip .node text.nm{font-size:15px}
+.subnav{display:flex;gap:26px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0}
+.subnav button{background:none;border:0;cursor:pointer;padding:16px 0 13px;font:500 13px var(--sans);color:var(--muted);border-bottom:1px solid transparent;margin-bottom:-1px;min-height:44px}
+.subnav button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.subnav button span{font:500 10px var(--mono);color:var(--faint);margin-left:6px;letter-spacing:.08em}
+.pane{padding:38px 0 20px}
+.pane .intro{color:var(--muted);max-width:64ch;margin:0 0 24px}
+
+.rc{max-width:720px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:18px;padding:30px 30px 26px}
+.rc .q{font:400 italic 26px/1.3 var(--gr);margin:12px 0 20px;text-wrap:balance}
+.rc .think{color:var(--muted);font-size:14px;margin:0 0 18px}
+.rc .ans{border-top:1px solid var(--line2);padding-top:18px;color:var(--text);font-size:15.5px}
+.rc .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.rc .go{font:500 13px var(--sans);color:var(--soft);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;margin-left:auto}
+.rc .go:hover{color:var(--text)}
+.ticks{display:flex;gap:2px;max-width:720px;margin:0 0 18px}
+.ticks i{flex:1;height:4px;border-radius:2px;background:var(--line2);display:block;transition:background .3s}
+.ticks i.k{background:var(--amber)}
+.ticks i.n{background:var(--late)}
+.ticks i.here{background:var(--text);transform:scaleY(1.75)}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;max-width:720px}
+.bar .pos{font:500 12px var(--mono);color:var(--faint);margin-left:auto}
+
+.qs{display:grid;gap:14px;max-width:760px}
+.qi{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.006))}
+.qi .qt{color:var(--text);margin:6px 0 12px}
+.qi .opts{display:grid;gap:8px}
+.qi .opt{text-align:left;width:100%;min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--surf);color:var(--soft);cursor:pointer;font:400 14.5px/1.45 var(--sans)}
+.qi .opt:hover:not(:disabled){border-color:var(--line3);color:var(--text)}
+.qi .opt:disabled{cursor:default}
+.qi .opt.ok{border-color:rgba(232,178,92,.7);color:var(--text);background:rgba(232,178,92,.09)}
+.qi .opt.no{border-color:rgba(232,131,111,.6);color:var(--text);background:rgba(232,131,111,.08)}
+.qi .tfrow{display:flex;gap:8px}
+.qi .tfrow .opt{width:auto;min-width:96px;text-align:center}
+.qi .ex{margin-top:12px;color:var(--soft);font-size:14px;border-top:1px solid var(--line);padding-top:10px}
+.qi .ex .v{font:500 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-right:8px}
+.qi .ex .v.ok{color:var(--amber)}.qi .ex .v.no{color:var(--late)}
+.qi .ex a{color:var(--muted)}
+.score{max-width:760px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 18px}
+.score .n{font:500 30px var(--mono);color:var(--text)}
+.score .n small{font-size:14px;color:var(--faint)}
+
+.gaps{display:grid;gap:22px;max-width:820px}
+.gapst{border-top:1px solid var(--line2);padding-top:14px}
+.gapst .hd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.gapst .hd .big{font:400 italic 22px var(--gr)}
+.gapst .hd a{margin-left:auto;font:500 13px var(--sans);color:var(--amber);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.gapst ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.gapst li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.gapst li .kind{font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--late);display:block}
+.gapst li .tx{color:var(--soft);font-size:14.5px}
+.empty{max-width:640px;border:1px dashed var(--line3);border-radius:14px;padding:18px 20px;color:var(--soft)}
+
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;max-width:1000px}
+.nums div{padding:20px 22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.nums div:nth-child(3n){border-right:0}
+.nums .v{font:500 30px/1.1 var(--mono);color:var(--amber)}
+.nums .l{color:var(--soft);font-size:13.5px;margin-top:6px}
+.glance h3{font:400 italic 26px var(--gr);margin:44px 0 14px}
+.glance .note{color:var(--muted);font-size:13.5px;margin:12px 0 0}
+.pits{list-style:none;margin:0;padding:0;display:grid;gap:12px;max-width:820px}
+.pits li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;color:var(--soft);align-items:start}
+.pits li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--late);margin-top:10px;justify-self:center}
+.pits a,.mlist a{font:500 12px var(--mono);color:var(--faint);text-decoration:none;white-space:nowrap;min-height:32px;display:inline-flex;align-items:center}
+.pits a:hover,.mlist a:hover{color:var(--text)}
+.idea{max-width:760px;font:400 italic 20px/1.6 var(--gr);color:var(--text);margin:0}
+.mlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:1000px}
+.mlist div{border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.mlist .k{font:500 13px var(--mono);letter-spacing:.1em;color:var(--amber)}
+.mlist p{margin:6px 0 0;color:var(--soft);font-size:14px}
+
+/* ── κίνηση εισόδου (μόνο κάτω από html.anim, πάντα με ορατή κατάληξη) ── */
+html.anim .enter > *{animation:rise .55s var(--ease) both}
+html.anim .enter > *:nth-child(2){animation-delay:.04s}html.anim .enter > *:nth-child(3){animation-delay:.08s}
+html.anim .enter > *:nth-child(4){animation-delay:.12s}html.anim .enter > *:nth-child(n+5){animation-delay:.16s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html.anim .mapbox:not(.drawn) .edge.lit{stroke-dashoffset:0}
+}
+
+/* ── μόνο max-width ── */
+@media (max-width:1040px){
+  .st{grid-template-columns:minmax(0,1fr);gap:30px}
+  aside .card{position:static}
+}
+@media (max-width:760px){
+  .flow{grid-template-columns:minmax(0,1fr)}
+  .flow .cn{width:1px;height:28px;margin:10px auto}
+  .flow .cn::after{right:-3px;top:auto;bottom:-1px;border:3.5px solid transparent;border-top:6px solid var(--amber);border-bottom:0}
+  .rep .stop{grid-template-columns:minmax(0,1fr);gap:4px}
+  .rep .res{grid-template-columns:minmax(0,1fr);gap:4px}
+  .rep .cost{padding-left:0}
+  .split .cols{grid-template-columns:minmax(0,1fr);gap:18px}
+  .split .bar{height:1px}
+  .scl .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums div:nth-child(3n){border-right:1px solid var(--line)}
+  .nums div:nth-child(2n){border-right:0}
+  .mlist{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  body{font-size:15px}
+  .lbl,.dg .cap,.quote cite,.node text.n,.subnav button span,.scl .no{font-size:11px}
+  .route{flex-wrap:wrap;gap:10px 12px;padding:14px 0}
+  .crumbs{order:3;flex-basis:100%}
+  .tabs{margin-left:auto}
+  .tabs button{min-height:44px;padding:0 14px}
+  .back{min-height:44px}
+  .cover{grid-template-columns:minmax(0,1fr);gap:22px;padding:36px 0 40px}
+  .seal{width:132px;height:132px}
+  html.ret .seal{width:84px;height:84px}
+  .map{padding:40px 0 36px}
+  .h2,.st h2,.ck-head .say{font-size:28px}
+  .num{font-size:84px;margin-bottom:-14px}
+  .st{padding:44px 0 30px}
+  .dg{padding:20px 16px 18px}
+  .fork .heads,.fork .row{gap:14px}
+  .dlg .lanes{gap:8px 12px}
+  .lad .stp{padding:10px 8px 0}
+  .lad .stp:nth-child(1){height:110px}.lad .stp:nth-child(2){height:170px}.lad .stp:nth-child(3){height:230px}
+  .lad .big{font-size:17px}
+  .rc{padding:22px 18px 20px}
+  .rc .q{font-size:22px}
+  .subnav{gap:18px}
+  .gapst li{grid-template-columns:minmax(0,1fr)}
+  .pits li{grid-template-columns:20px minmax(0,1fr)}
+  .pits li a{grid-column:2}
+  .scl .grid{grid-template-columns:minmax(0,1fr);gap:18px}
+  .scl svg{max-width:170px}
+  .scl .w{font-size:15.5px;max-width:300px;margin:4px auto 0}
+  .scl .w span{white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="route">
+    <a class="back" href="arxaia.html#gn" aria-label="Πίσω στα Αρχαία">← Αρχαία</a>
+    <span class="lbl crumbs" id="crumbs"></span>
+    <div class="tabs" role="tablist" aria-label="Χώροι">
+      <button type="button" role="tab" id="tabRead" aria-controls="vRead" aria-selected="true">Διάβασμα</button>
+      <button type="button" role="tab" id="tabCheck" aria-controls="vCheck" aria-selected="false">Έλεγχος</button>
+    </div>
+  </header>
+  <div class="banner" id="banner" role="status" hidden></div>
+  <noscript><p class="banner">Η σελίδα χρειάζεται JavaScript για να ζωγραφίσει το κεφάλαιο.</p></noscript>
+
+  <main id="vRead" role="tabpanel" aria-labelledby="tabRead">
+    <section class="cover" id="cover"></section>
+    <section class="map" aria-labelledby="mapH">
+      <span class="lbl">Ο χάρτης του κεφαλαίου</span>
+      <h2 class="h2" id="mapH">Από τον κατάλογο των έργων ως το παίγνιον</h2>
+      <p class="lead">Κάθε αστέρι είναι ένας σταθμός. Όσα διάβασες ανάβουν. Πάτα ένα για να πας εκεί.</p>
+      <div class="mapbox" id="map"></div>
+    </section>
+    <div id="stage"></div>
+  </main>
+
+  <main id="vCheck" role="tabpanel" aria-labelledby="tabCheck" hidden>
+    <section class="ck-head">
+      <div><span class="lbl">Έλεγχος · ό,τι μπορεί να ρωτηθεί</span><p class="say" id="say"></p><p id="say2"></p></div>
+      <div class="mapbox strip" id="map2"></div>
+    </section>
+    <nav class="subnav" role="tablist" aria-label="Τρόποι ελέγχου" id="subnav"></nav>
+    <section class="pane" id="pane"></section>
+  </main>
+</div>
+
+<script>
+/* ══ Η ΜΗΧΑΝΗ ΤΟΥ ΚΑΛΟΥΠΙΟΥ ════════════════════════════════════════════
+   Τα δεδομένα του κεφαλαίου μπαίνουν από το build (ένα json). Κανένα
+   κείμενο του κεφαλαίου δεν ζει μέσα σε αυτόν τον κώδικα.
+   Πρόοδος: ΕΝΑ κλειδί, ΜΟΝΟ σε αυτή τη συσκευή, εκτός sync (δική του
+   απόφαση, 27/10/26). Γράφεται από ΕΝΑ σημείο, ξαναδιαβάζεται μετά από
+   κάθε εγγραφή, και αν δεν διαβάζεται σωστά ΔΕΝ ξαναγράφεται ποτέ από πάνω. */
+(function () {
+'use strict';
+var D = {"route":"Ε2","title":"Το έργο του","cover":{"kicker":"Κεφάλαιο Ε2 · 12 σταθμοί","sub":{"t":"Το έργο του Πλάτωνα: ο κατάλογος των γνήσιων πλατωνικών έργων σε τρεις φάσεις, και γιατί έγραψε διαλόγους.","a":["Ε2. Το έργο του","κατάλογο γνήσιων πλατωνικών έργων","Η διαλογική μορφή των πλατωνικών έργων."]},"motto":{"gr":"Η φιλοσοφία και το παίγνιον","tr":"Η φιλοσοφία και το παιχνίδι.","a":["Η φιλοσοφία και το παίγνιον"]},"seal":{"img":"eisagogi-platon-e1.webp","credit":"Λ. Φόρστερμαν, χαλκογραφία «Η προτομή του Πλάτωνα σε κόγχη» (1620), από έργο του Ρούμπενς · CC0 · Wikimedia Commons","mark":"Π","ring":"ΠΛΑΤΩΝ · Η ΦΙΛΟΣΟΦΙΑ ΚΑΙ ΤΟ ΠΑΙΓΝΙΟΝ ·","label":"Η προτομή του Πλάτωνα, σε χαρακτικό, με μία κουκκίδα για κάθε σταθμό που διάβασες"}},"mapTitle":"Από τον κατάλογο των έργων ως το παίγνιον","core":"φιλοσοφία και παίγνιον","fin":{"line":"Το έργο του Πλάτωνα έκλεισε.","next":"Πέρνα στον Έλεγχο: ό,τι δεν ξέρεις ακόμα θα βρει μόνο του τον σταθμό του."},"stations":[{"n":1,"short":"Γνήσια και νόθα","xy":[110,248],"label":"Η αρχαία παράδοση","title":"Γνήσια, νόθα, και τρεις φάσεις","prose":[{"t":"Η αρχαία παράδοση διέσωσε έναν **σημαντικό αριθμό έργων** που αποδίδονται στον Πλάτωνα· δεν είναι όμως όλα γνήσια.","a":["Η αρχαία παράδοση διέσωσε έναν σημαντικό αριθμό έργων που αποδίδονται στον Πλάτωνα, δεν είναι όμως όλα γνήσια."]},{"t":"Ακολουθώντας μια **κατά προσέγγιση** χρονολόγηση, το βιβλίο δίνει τον κατάλογο των γνήσιων πλατωνικών έργων, χωρισμένο σε τρεις ομάδες.","a":["Ακολουθώντας μια κατά προσέγγιση χρονολόγηση, έχουμε τον εξής κατάλογο γνήσιων πλατωνικών έργων:"]}],"diagram":{"type":"flow","nodes":[{"t":"η αρχαία παράδοση","a":["Η αρχαία παράδοση διέσωσε"],"sub":{"t":"διέσωσε πολλά έργα","a":["διέσωσε έναν σημαντικό αριθμό έργων"]}},{"t":"κείμενα άλλων φιλοσόφων","a":["Πολλά κείμενα άλλων Ακαδημεικών φιλοσόφων"],"sub":{"t":"με το όνομα του ιδρυτή","a":["σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας"]}},{"t":"η σύγχρονη φιλολογία","a":["έργο της σύγχρονης φιλολογίας"],"sub":{"t":"ξεχωρίζει γνήσια και νόθα","a":["η οριστική διάκριση μεταξύ γνήσιων και νόθων έργων"]}}]},"points":[{"t":"Η σύγχυση: πολλά κείμενα **άλλων Ακαδημαϊκών φιλοσόφων** σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας, δηλαδή του ίδιου του Πλάτωνα.","a":["Πολλά κείμενα άλλων Ακαδημεικών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας"]},{"t":"Η δουλειά της σύγχρονης φιλολογίας, μεταξύ άλλων: η **οριστική διάκριση** γνήσιων και νόθων έργων, καθώς και η χρονολόγησή τους.","a":["έργο της σύγχρονης φιλολογίας, μεταξύ άλλων, είναι η οριστική διάκριση μεταξύ γνήσιων και νόθων έργων, καθώς επίσης και η χρονολόγησή τους."]},{"t":"Η λέξη-κλειδί: **προσέγγιση**. Η σειρά είναι πιθανή χρονολόγηση, όχι βέβαιη.","a":["μια κατά προσέγγιση χρονολόγηση"]},{"t":"Ο κατάλογος έχει μόνο τα **γνήσια** πλατωνικά έργα, σε τρεις ομάδες: νεανικά, της ωριμότητας, της τελευταίας φάσης.","a":["κατάλογο γνήσιων πλατωνικών έργων"]}],"mnem":{"k":"ΓΝΗΣΙΑ / ΝΟΘΑ","t":"Το όνομα στο εξώφυλλο δεν αρκεί: ό,τι σώθηκε ως «του Πλάτωνα» το ξεχωρίζει η φιλολογία.","a":["γνήσιων και νόθων έργων"]},"gloss":[{"k":"νόθων έργων","d":"έργα που φέρουν το όνομά του, χωρίς να τα έχει γράψει ο ίδιος","a":["νόθων έργων"]}]},{"n":2,"short":"Νεανικά έργα","xy":[190,112],"label":"α. Νεανικά έργα","la":["α. Νεανικά έργα"],"title":"Ο δάσκαλος, οι αρετές, η ποίηση","prose":[{"t":"Τα πρώτα νεανικά έργα στέκονται ακόμα κοντά στον δάσκαλο: η *Ἀπολογία Σωκράτους* είναι η απολογία του ίδιου του δασκάλου.","a":["Ἀπολογία Σωκράτους (η απολογία του δασκάλου)"]},{"t":"Η νεανική ομάδα κλείνει με τέσσερις διαλόγους· ανάμεσά τους ο Πρωταγόρας, που ρωτά αν η αρετή μπορεί καν να διδαχθεί.","a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή)"]}],"diagram":{"type":"repeat","topCap":"Νεανικά έργα","resCap":"Η ομάδα κλείνει","top":{"t":"ένας διάλογος, ένα ζήτημα","a":["πάνω στο φιλοσοφικό ζήτημα"]},"stops":[{"t":"*Ἀπολογία Σωκράτους*","a":["Ἀπολογία Σωκράτους"],"find":{"t":"η απολογία του δασκάλου","a":["(η απολογία του δασκάλου)"]}},{"t":"Κρίτων","a":["Κρίτων (για την υπακοή"],"find":{"t":"η υπακοή στους νόμους","a":["για την υπακοή στους νόμους"]}},{"t":"*Ἴων*","a":["Ἴων (για"],"find":{"t":"η συγκίνηση που προκαλεί η ποίηση","a":["για τη συγκίνηση που προκαλεί η ποίηση"]}},{"t":"Λάχης","a":["Λάχης (για τη ανδρεία)"],"find":{"t":"η ανδρεία","a":["για τη ανδρεία"]}},{"t":"Χαρμίδης","a":["Χαρμίδης (για τη σωφροσύνη)"],"find":{"t":"η σωφροσύνη","a":["για τη σωφροσύνη"]}},{"t":"Λύσις","a":["Λύσις (για τη φιλία)"],"find":{"t":"η φιλία","a":["Λύσις (για τη φιλία)"]}},{"t":"Πρωταγόρας","a":["Πρωταγόρας (για τη δυνατότητα"],"find":{"t":"αν μπορεί να διδαχθεί η αρετή","a":["για τη δυνατότητα να διδαχθεί η αρετή"]}},{"t":"*Εὐθύφρων*","a":["Εὐθύφρων (για την ευσέβεια)"],"find":{"t":"η ευσέβεια","a":["για την ευσέβεια"]}}],"result":{"t":"οκτώ νεανικά έργα, από την *Ἀπολογία* ως τον *Εὐθύφρων*","a":["α. Νεανικά έργα"]}},"points":[{"t":"Ο *Ἴων* είναι ο διάλογος της **ποίησης**: για τη συγκίνηση που προκαλεί.","a":["Ἴων (για τη συγκίνηση που προκαλεί η ποίηση)"]},{"t":"Ο Λάχης ζητά μία μόνο αρετή, την **ανδρεία**· ο Κρίτων μιλά για την υπακοή στους νόμους.","a":["Λάχης (για τη ανδρεία)","Κρίτων (για την υπακοή στους νόμους)"]},{"t":"Προσοχή: ο Πρωταγόρας ανήκει στα **νεανικά έργα**, εκεί όπου εξετάζεται αν η αρετή διδάσκεται.","a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή)"]},{"t":"Ο *Εὐθύφρων* κλείνει την ομάδα με την **ευσέβεια**· πριν από αυτόν, ο Χαρμίδης για τη σωφροσύνη και ο Λύσις για τη φιλία.","a":["Εὐθύφρων (για την ευσέβεια)","Χαρμίδης (για τη σωφροσύνη)"]}],"mnem":{"k":"Χ · Λ · Π · Ε","t":"Χαρμίδης μετριάζεται, Λύσις αγαπά, Πρωταγόρας διδάσκει, Ευθύφρων σέβεται τους θεούς.","a":["Χαρμίδης (για τη σωφροσύνη)"]},"gloss":[{"k":"ανδρεία","d":"η γενναιότητα, το θάρρος","a":["Λάχης (για τη ανδρεία)"]},{"k":"σωφροσύνη","d":"το μέτρο, η αυτοκυριαρχία","a":["Χαρμίδης (για τη σωφροσύνη)"]},{"k":"ευσέβεια","d":"ο σεβασμός προς τους θεούς","a":["Εὐθύφρων (για την ευσέβεια)"]}]},{"n":3,"short":"Η ωριμότητα","xy":[269,230],"label":"β. Έργα της ωριμότητας","la":["β. Έργα της ωριμότητας"],"title":"Ρητορική, σοφιστική, κακία, ωραίο, γλώσσα","prose":[{"t":"Η ωριμότητα ανοίγει με τον Γοργία: **κριτική της ρητορικής** και λόγος περί πολιτικής. Ακολουθούν διάλογοι που χτυπούν τη σοφιστική και ψάχνουν ορισμούς.","a":["Γοργίας (κριτική της ρητορικής και περί πολιτικής)"]}],"diagram":{"type":"fork","root":{"t":"Έργα της ωριμότητας","a":["β. Έργα της ωριμότητας"]},"lh":{"t":"ο διάλογος","a":["Η διαλογική μορφή των πλατωνικών έργων."]},"rh":{"t":"το ζήτημα","a":["το φιλοσοφικό ζήτημα που συζητήθηκε"]},"rows":[{"l":{"t":"Γοργίας","a":["Γοργίας (κριτική"]},"r":{"t":"κριτική της ρητορικής, περί πολιτικής","a":["κριτική της ρητορικής και περί πολιτικής"]}},{"l":{"t":"*Εὐθύδημος*","a":["Εὐθύδημος (κατά"]},"r":{"t":"κατά της σοφιστικής σκέψης","a":["κατά της σοφιστικής σκέψης"]}},{"l":{"t":"*Ἱππίας ἐλάσσων*","a":["Ἱππίας ἐλάσσων"]},"r":{"t":"η κακία ως άγνοια του καλού","a":["για την κακία ως άγνοια του καλού"]}},{"l":{"t":"*Ἱππίας μείζων*","a":["Ἱππίας μείζων"]},"r":{"t":"ορισμός του ωραίου","a":["Ἱππίας μείζων (ορισμός του ωραίου)"]}},{"l":{"t":"Κρατύλος","a":["Κρατύλος (για"]},"r":{"t":"η φιλοσοφία της γλώσσας","a":["για τη φιλοσοφία της γλώσσας"]}}]},"points":[{"t":"Δύο Ιππίες, μην τους μπερδέψεις: ο ελάσσων για την κακία ως **άγνοια του καλού**, ο μείζων για τον ορισμό του ωραίου.","a":["Ἱππίας ἐλάσσων (για την κακία ως άγνοια του καλού)","Ἱππίας μείζων (ορισμός του ωραίου)"]},{"t":"Ο *Εὐθύδημος* στρέφεται κατά της **σοφιστικής** σκέψης· ο Κρατύλος ανοίγει τη φιλοσοφία της γλώσσας.","a":["Εὐθύδημος (κατά της σοφιστικής σκέψης)","Κρατύλος (για τη φιλοσοφία της γλώσσας)"]}],"gloss":[{"k":"ρητορικής","d":"της τέχνης του πειστικού λόγου","a":["κριτική της ρητορικής"]},{"k":"Ἱππίας ἐλάσσων","d":"ο μικρότερος Ιππίας· ο μείζων είναι ο μεγαλύτερος","a":["Ἱππίας ἐλάσσων"]}]},{"n":4,"short":"Ψυχή και Ιδέες","xy":[349,100],"label":"Έργα της ωριμότητας, συνέχεια","title":"Από την ανάμνηση ως την ιδεώδη πολιτεία","prose":[{"t":"Το δεύτερο μισό της ωριμότητας είναι η καρδιά της πλατωνικής σκέψης: η **ψυχή**, οι Ιδέες, η δικαιοσύνη και η ιδεώδης πολιτεία.","a":["για τη δικαιοσύνη και την ιδεώδη πολιτεία"]}],"diagram":{"type":"repeat","topCap":"Η ωριμότητα, συνέχεια","resCap":"Η κορυφή","top":{"t":"από την ψυχή ως την ιδεώδη πολιτεία","a":["την ιδεώδη πολιτεία"]},"stops":[{"t":"Μένων","a":["Μένων (για τη θεωρία"],"find":{"t":"η θεωρία της ανάμνησης της ψυχής","a":["για τη θεωρία της ανάμνησης της ψυχής"]}},{"t":"Μενέξενος","a":["Μενέξενος (περί πολιτείας"],"find":{"t":"περί πολιτείας, με πλαστό επιτάφιο","a":["κύριο μέρος του διαλόγου είναι ένας πλαστός επιτάφιος λόγος"]}},{"t":"Συμπόσιο","a":["Συμπόσιο (για τον έρωτα"],"find":{"t":"ο έρωτας ως κίνηση της ψυχής","a":["για τον έρωτα ως κίνηση της ψυχής"]}},{"t":"Φαίδων","a":["Φαίδων (για την αθανασία"],"find":{"t":"η αθανασία της ψυχής","a":["για την αθανασία της ψυχής"]}},{"t":"Πολιτεία","a":["Πολιτεία (για τη δικαιοσύνη"],"find":{"t":"η δικαιοσύνη","a":["για τη δικαιοσύνη"]}}],"result":{"t":"η Πολιτεία κλείνει τα έργα της ωριμότητας","a":["β. Έργα της ωριμότητας"]}},"points":[{"t":"Φαίδων δεν σημαίνει *Φαῖδρος*: ο Φαίδων, της ωριμότητας, είναι για την **αθανασία** της ψυχής· ο *Φαῖδρος* ανήκει στην τελευταία φάση.","a":["Φαίδων (για την αθανασία της ψυχής)"]},{"t":"Ο Μενέξενος είναι περί πολιτείας, αλλά κύριο μέρος του είναι ένας **πλαστός** επιτάφιος λόγος.","a":["Μενέξενος (περί πολιτείας· κύριο μέρος του διαλόγου είναι ένας πλαστός επιτάφιος λόγος)"]},{"t":"Στο Συμπόσιο ο έρωτας είναι κίνηση της ψυχής που οδηγεί **προς τις Ιδέες**.","a":["Συμπόσιο (για τον έρωτα ως κίνηση της ψυχής που οδηγεί προς τις Ιδέες)"]}],"gloss":[{"k":"ανάμνησης","d":"η μάθηση ως θύμηση όσων η ψυχή γνώριζε","a":["θεωρία της ανάμνησης της ψυχής"]},{"k":"επιτάφιος λόγος","d":"λόγος για τους νεκρούς του πολέμου","a":["επιτάφιος λόγος"]}]},{"n":5,"short":"Η τελευταία φάση","xy":[428,248],"label":"γ. Έργα της τελευταίας φάσης","la":["γ. Έργα της τελευταίας φάσης"],"title":"Γνώση, ον, ωραίο, πολιτικός","prose":[{"t":"Στην τελευταία φάση επιστρέφουν οι **ορισμοί**, από τον ορισμό της γνώσης στον Θεαίτητο ως τον ορισμό του πολιτικού, και η κριτική θεωριών για το ον.","a":["Θεαίτητος (ορισμός της γνώσης)","Πολιτικός (ορισμός του πολιτικού)"]}],"diagram":{"type":"fork","root":{"t":"Έργα της τελευταίας φάσης","a":["γ. Έργα της τελευταίας φάσης"]},"lh":{"t":"ο διάλογος","a":["Η διαλογική μορφή των πλατωνικών έργων."]},"rh":{"t":"το ζήτημα","a":["το φιλοσοφικό ζήτημα που συζητήθηκε"]},"rows":[{"l":{"t":"Θεαίτητος","a":["Θεαίτητος (ορισμός"]},"r":{"t":"ορισμός της γνώσης","a":["(ορισμός της γνώσης)"]}},{"l":{"t":"Παρμενίδης","a":["Παρμενίδης (κριτική"]},"r":{"t":"κριτική της παρμενίδειας θεωρίας","a":["κριτική της παρμενίδειας θεωρίας περί του όντος"]}},{"l":{"t":"Σοφιστής","a":["Σοφιστής (κριτική"]},"r":{"t":"κριτική των σοφιστικών θεωριών","a":["κριτική των σοφιστικών θεωριών περί του όντος"]}},{"l":{"t":"*Φαῖδρος*","a":["Φαῖδρος (για το ωραίο"]},"r":{"t":"το ωραίο και ο έρωτας","a":["για το ωραίο και τον έρωτα"]}},{"l":{"t":"Πολιτικός","a":["Πολιτικός (ορισμός"]},"r":{"t":"ορισμός του πολιτικού","a":["ορισμός του πολιτικού"]}}]},"points":[{"t":"Παρμενίδης και Σοφιστής, ένα ζευγάρι: και οι δύο ασκούν κριτική σε θεωρίες **περί του όντος**, ο ένας στην παρμενίδεια, ο άλλος στις σοφιστικές.","a":["κριτική της παρμενίδειας θεωρίας περί του όντος","κριτική των σοφιστικών θεωριών περί του όντος"]},{"t":"Ο *Φαῖδρος* είναι **ύστερο** έργο, για το ωραίο και τον έρωτα· όχι ο Φαίδων της ωριμότητας.","a":["Φαῖδρος (για το ωραίο και τον έρωτα)"]}],"gloss":[{"k":"παρμενίδειας θεωρίας","d":"της θεωρίας του Παρμενίδη για το ον","a":["παρμενίδειας θεωρίας"]},{"k":"όντος","d":"του «είναι», αυτού που υπάρχει","a":["θεωριών περί του όντος"]}]},{"n":6,"short":"Ως τους Νόμους","xy":[508,112],"label":"Έργα της τελευταίας φάσης, τέλος","title":"Ηδονή, κόσμος, Ατλαντίδα, νόμοι","prose":[{"t":"Ο κατάλογος κλείνει με τέσσερα ύστερα έργα· τα δύο τελευταία στήνουν μια **ιδανική πολιτεία**, το ένα μέσα από μύθο, το άλλο μέσα από νομοθεσία.","a":["Νόμοι (η νομοθεσία μιας ιδανικής πολιτείας)"]}],"diagram":{"type":"split","lh":{"t":"Φίληβος και Τίμαιος","a":["Φίληβος (για","Τίμαιος (κοσμολογία"]},"rh":{"t":"Κριτίας και Νόμοι","a":["Κριτίας (ατελείωτο","Νόμοι (η νομοθεσία"]},"left":[{"t":"ηδονή και γνώση, σκοποί της ζωής","a":["για τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής"]},{"t":"κοσμολογία και φυσική φιλοσοφία","a":["κοσμολογία και φυσική φιλοσοφία"]}],"right":[{"t":"ο μύθος της χαμένης Ατλαντίδας","a":["τον μύθο της χαμένης Ατλαντίδας"]},{"t":"η νομοθεσία μιας ιδανικής πολιτείας","a":["η νομοθεσία μιας ιδανικής πολιτείας"]}],"result":{"t":"ο κατάλογος κλείνει με τους Νόμους","a":["Νόμοι (η νομοθεσία"]}},"points":[{"t":"Ο Κριτίας είναι **ατελείωτος**· περιέχει τον μύθο της Ατλαντίδας, με την οποία, υποτίθεται, ήρθε σε σύγκρουση μια ιδανική αρχαία Αθήνα.","a":["ατελείωτο έργο που περιέχει και τον μύθο","με την οποία, υποτίθεται, ήρθε σε σύγκρουση μια ιδανική αρχαία Αθήνα"]},{"t":"Ο Φίληβος ζυγίζει **ηδονή** και γνώση ως σκοπούς της ζωής· ο Τίμαιος είναι κοσμολογία και φυσική φιλοσοφία.","a":["Φίληβος (για τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής)","Τίμαιος (κοσμολογία και φυσική φιλοσοφία)"]}],"mnem":{"k":"ΦΙΛΗΒΟΣ → ΝΟΜΟΙ","t":"Από την ηδονή ενός ανθρώπου ως τους νόμους μιας ολόκληρης πόλης: ο κατάλογος τελειώνει στην πολιτεία.","a":["Νόμοι (η νομοθεσία"]},"gloss":[{"k":"κοσμολογία","d":"λόγος για τη γένεση και την τάξη του κόσμου","a":["κοσμολογία"]}]},{"n":7,"short":"Επιστολές","xy":[587,230],"label":"Επιστολές και επιγράμματα","title":"Ό,τι σώζεται ακόμα, και ό,τι λείπει","prose":[{"t":"Πέρα από τους διαλόγους σώζονται ακόμα **13 Επιστολές**, 32 επιγράμματα και κάποια αποσπάσματα.","a":["Σώζονται ακόμα 13 Επιστολές","32 επιγράμματα και κάποια αποσπάσματα"]}],"diagram":{"type":"flow","nodes":[{"t":"13 Επιστολές","a":["Σώζονται ακόμα 13 Επιστολές"],"sub":{"t":"γνήσια μόνον η 7η","a":["μόνον η 7η θεωρείται γνήσια"]}},{"t":"32 επιγράμματα","a":["32 επιγράμματα"],"sub":{"t":"μικρά ποιήματα, επιγράμματα","a":["32 επιγράμματα"]}},{"t":"κάποια αποσπάσματα","a":["κάποια αποσπάσματα"],"sub":{"t":"και ένα προφορικό μέρος","a":["ένα σημαντικό μέρος της οποίας ήταν προφορικό"]}}]},"points":[{"t":"Από τις 13 Επιστολές θεωρείται γνήσια **μόνον η 7η**.","a":["από τις οποίες μόνον η 7η θεωρείται γνήσια"]},{"t":"Όπως πληροφορεί ο ίδιος ο Πλάτωνας, τα γραπτά του **δεν** περιέχουν το σύνολο της διδασκαλίας του: ένα σημαντικό μέρος ήταν προφορικό, μέσα στα πλαίσια της Ακαδημίας.","a":["Όπως μας πληροφορεί πάντως ο ίδιος ο Πλάτωνας","τα γραπτά κείμενά του δεν περιέχουν το σύνολο της διδασκαλίας του","μέσα στα πλαίσια της Ακαδημίας"]}],"mnem":{"k":"13 · 7 · 32","t":"Δεκατρείς Επιστολές, μία γνήσια, η έβδομη· τριάντα δύο επιγράμματα.","a":["Σώζονται ακόμα 13 Επιστολές"]},"gloss":[{"k":"επιγράμματα","d":"σύντομα ποιήματα","a":["επιγράμματα"]}]},{"n":8,"short":"Η διαλογική μορφή","xy":[667,100],"label":"Η διαλογική μορφή των πλατωνικών έργων","la":["Η διαλογική μορφή των πλατωνικών έργων."],"title":"Ποιος μιλά σε έναν πλατωνικό διάλογο","prose":[{"t":"Όλα τα έργα του Πλάτωνα είναι γραμμένα σε **διαλογική μορφή**, εκτός από την Απολογία του Σωκράτη και τις Επιστολές.","a":["τα έργα του Πλάτωνα, εκτός από την Απολογία του Σωκράτη και τις Επιστολές, είναι γραμμένα σε διαλογική μορφή."]}],"diagram":{"type":"dialogue","lanes":["Γύρω του","Ο Σωκράτης"],"resCap":"Ο τίτλος","phases":[{"t":"η συζήτηση","a":["στη συζήτηση που διαμείβεται"],"from":0,"to":1},{"t":"στο περιθώριο","a":["Στο περιθώριο του κάθε διαλόγου"],"from":2,"to":3}],"steps":[{"w":"ο Σωκράτης","side":"R","t":"ο Σωκράτης: ο βασικός συζητητής, κατά κανόνα","a":["Βασικός συζητητής είναι κατά κανόνα ο μεγάλος δάσκαλος, ο Σωκράτης"]},{"w":"ο αντίπαλος","t":"ο βασικός φιλοσοφικός «αντίπαλος»","a":["το όνομα του βασικού φιλοσοφικού"]},{"w":"οι μαθητές","t":"μαθητές του Σωκράτη","a":["μαθητές του Σωκράτη"]},{"w":"οι Αθηναίοι","t":"διανοούμενοι ή γνωστοί Αθηναίοι της εποχής","a":["διανοούμενοι ή γνωστοί Αθηναίοι της εποχής"]}],"result":{"t":"ο «αντίπαλος» δίνει στο έργο το όνομά του","a":["το κάθε έργο έχει ως τίτλο το όνομα"]}},"points":[{"t":"Ο τίτλος του κάθε έργου είναι το όνομα του βασικού φιλοσοφικού **«αντίπαλου»** του Σωκράτη στη συζήτηση.","a":["το κάθε έργο έχει ως τίτλο το όνομα του βασικού φιλοσοφικού"]},{"t":"Οι δύο εξαιρέσεις: η *Ἀπολογία* και οι **Επιστολές** δεν είναι διάλογοι.","a":["εκτός από την Απολογία του Σωκράτη και τις Επιστολές"]}],"gloss":[{"k":"διαμείβεται","d":"γίνεται, ανταλλάσσεται (η συζήτηση)","a":["διαμείβεται"]}]},{"n":9,"short":"Γιατί διάλογος","xy":[746,248],"label":"Η επιλογή του διαλόγου","title":"Η σοφία θέλει ζωντανή σχέση","prose":[{"t":"Πολύ πιθανόν η **νεανική ενασχόληση** του Πλάτωνα με την τραγωδία να εξηγεί σε μεγάλο βαθμό και τη λογοτεχνική μορφή που επέλεξε για να διατυπώσει τις φιλοσοφικές θέσεις του.","a":["Είναι πολύ πιθανόν η νεανική ενασχόληση του Πλάτωνα με την τραγωδία να εξηγεί σε μεγάλο βαθμό και τη λογοτεχνική μορφή την οποία επέλεξε για να διατυπώσει τις φιλοσοφικές θέσεις του."]},{"t":"Γιατί επέλεξε τη μορφή του διαλόγου, ο φιλόσοφος το εξηγεί ο ίδιος στην **7η Επιστολή**, που αποτελεί τρόπον τινά μια αυτοβιογραφία.","a":["Στην 7η Επιστολή του, που αποτελεί τρόπον τινά μια αυτοβιογραφία, ο φιλόσοφος εξηγεί γιατί επέλεξε τη μορφή του διαλόγου για τα έργα του."]}],"diagram":{"type":"fork","root":{"t":"τη σοφία την αναζητεί κανείς","a":["τη σοφία μπορεί να την αναζητήσει κανείς"]},"lh":{"t":"η προφορική συζήτηση","a":["μόνον μέσα από την προφορική συζήτηση"]},"rh":{"t":"τα γραπτά κείμενα","a":["Αντίθετα, τα γραπτά κείμενα"]},"rows":[{"l":{"t":"ζωντανή σχέση, φιλία","a":["τη ζωντανή σχέση, τη φιλία"]},"r":{"t":"σαν σε μονόλογο","a":["σαν σε μονόλογο"]}},{"l":{"t":"μεταξύ των συνδιαλεγομένων","a":["μεταξύ των συνδιαλεγομένων"]},"r":{"t":"ένας αναγνώστης ανίκανος να αντιδράσει","a":["σε έναν αναγνώστη ανίκανο να αντιδράσει"]}},{"l":{"t":"μπορείς να ρωτήσεις, να ελέγξεις","a":["να ρωτήσει, να ελέγξει"]},"r":{"t":"**μηδαμινή** αξία","a":["έχουν μηδαμινή αξία"]}}]},"points":[{"t":"Η θέση του: τη σοφία την αναζητεί κανείς **μόνον** μέσα από την προφορική συζήτηση και τη ζωντανή σχέση, τη φιλία, μεταξύ των συνδιαλεγομένων.","a":["Όπως λέει λοιπόν ο ίδιος, τη σοφία μπορεί να την αναζητήσει κανείς μόνον μέσα από την προφορική συζήτηση και τη ζωντανή σχέση, τη φιλία, μεταξύ των συνδιαλεγομένων."]},{"t":"Το γραπτό: ο συγγραφέας εκθέτει τις θέσεις του σε έναν αναγνώστη που δεν μπορεί να αντιδράσει, να ρωτήσει, να ελέγξει· γι’ αυτό τα γραπτά έχουν **μηδαμινή** αξία.","a":["ο συγγραφέας εκθέτει τις θέσεις του σε έναν αναγνώστη ανίκανο να αντιδράσει, να ρωτήσει, να ελέγξει, έχουν μηδαμινή αξία."]}],"mnem":{"k":"ΣΥΖΗΤΗΣΗ / ΜΟΝΟΛΟΓΟΣ","t":"Το χαρτί δεν σου απαντά, ο φίλος σού απαντά. Γι’ αυτό η σοφία ζει στη συζήτηση.","a":["σαν σε μονόλογο"]},"gloss":[{"k":"τρόπον τινά","d":"κατά κάποιον τρόπο","a":["τρόπον τινά"]},{"k":"μηδαμινή","d":"σχεδόν μηδενική","a":["έχουν μηδαμινή αξία"]}]},{"n":10,"short":"Ο γραπτός λόγος","xy":[826,112],"label":"Η επίθεση στον γραπτό λόγο","title":"Γραπτός λόγος που μένει ζωντανός","prose":[{"t":"Στον διάλογο *Φαῖδρος* (275c κ.εξ.) ο Πλάτωνας κάνει μια **μοναδική επίθεση** στον γραπτό λόγο: η γραφή έχει εντελώς περιορισμένη αξία.","a":["ο Πλάτωνας κάνει μια μοναδική επίθεση στον γραπτό λόγο, ισχυριζόμενος ότι η γραφή έχει εντελώς περιορισμένη αξία"]}],"diagram":{"type":"descent","topCap":"Η σοφία ζωντανή","bottomCap":"Στο χαρτί","top":{"t":"η προφορική μετάδοση της σοφίας","a":["μόνον η προφορική μετάδοση της σοφίας"]},"topNote":{"t":"γονιμοποιεί την ψυχή του μαθητή","a":["μπορεί πραγματικά να γονιμοποιήσει την ψυχή του μαθητή"]},"topGr":{"t":"*Φαῖδρος*, 275c κ.εξ.","a":["Στον Φαίδρο άλλωστε (275c κ.εξ.)"]},"bottom":{"t":"η μορφή του διαλόγου","a":["προτίμησε τη μορφή του διαλόγου"]},"bottomGr":{"t":"ευελιξία και κριτική αμεσότητα","a":["τη διανοητική ευελιξία και την κριτική αμεσότητα της προφορικής συζήτησης"]}},"points":[{"t":"Ο συμβιβασμός: ο Πλάτωνας κατέφυγε τελικά στον γραπτό λόγο για να αποτυπώσει τις θέσεις του, αλλά προτίμησε τον διάλογο, που κρατά τη **διανοητική ευελιξία** της προφορικής συζήτησης.","a":["Παρ' όλο λοιπόν που ο Πλάτωνας κατέφυγε τελικά στον γραπτό λόγο για να αποτυπώσει τις φιλοσοφικές θέσεις του"]},{"t":"Η **πλατωνική διαλεκτική**, η αναζήτηση της φιλοσοφικής αλήθειας μέσα από τη ζωντανή αντιπαράθεση και τον άμεσο έλεγχο κάθε άποψης, βρήκε στη διαλογική μορφή την ιδανική λογοτεχνική της έκφραση.","a":["Η πλατωνική διαλεκτική, η μέθοδος αυτή της αναζήτησης της φιλοσοφικής αλήθειας μέσα από τη ζωντανή αντιπαράθεση και τον άμεσο έλεγχο κάθε άποψης που διατυπώνεται, βρήκε στη διαλογική μορφή των έργων του την ιδανική λογοτεχνική της έκφραση."]}],"gloss":[{"k":"γονιμοποιήσει","d":"να κάνει την ψυχή να γεννήσει δική της γνώση","a":["γονιμοποιήσει"]},{"k":"διαλεκτική","d":"η αναζήτηση της αλήθειας με ερωτήσεις και απαντήσεις","a":["διαλεκτική"]}]},{"n":11,"short":"Το παίγνιον","xy":[905,230],"label":"Η φιλοσοφία και το παίγνιον","la":["Η φιλοσοφία και το παίγνιον."],"title":"Σοβαρά θέματα, ανοιχτό τέλος","prose":[{"t":"Παρά τη **σοβαρότητα** των θεμάτων τους και τη σπουδαιότητα των λεγομένων, οι πλατωνικοί διάλογοι διανθίζονται από τη ζωή γύρω τους.","a":["Παρά τη σοβαρότητα των θεμάτων τους και τη σπουδαιότητα των λεγομένων, οι πλατωνικοί διάλογοι διανθίζονται"]},{"t":"Στον Πρωταγόρα, για παράδειγμα, ο ένας συνομιλητής **δεν** πείθει τον άλλο, ώστε να καταδειχθεί η αλήθεια της μιας από τις δύο αρχικά αντιτιθέμενες απόψεις.","a":["Στον Πρωταγόρα, για παράδειγμα, όχι μόνον ο ένας συνομιλητής δεν κατορθώνει να πείσει τον άλλο προκειμένου να καταδειχθεί η αλήθεια της μιας από τις δύο αρχικά αντιτιθέμενες απόψεις"]}],"diagram":{"type":"scales","pairs":[{"l":"σοβαρά θέματα","r":"η καθημερινή ζωή","a":["από περιγραφές της καθημερινής ζωής"]},{"l":"σπουδαία λόγια","r":"πειράγματα","a":["εύθυμες παρατηρήσεις ή πειράγματα μεταξύ των συνομιλητών"]},{"l":"το ζήτημα","r":"χωρίς σαφή κατάληξη","a":["δεν μας προσφέρει μια σαφή κατάληξη"]}],"thread":{"t":"η αγορά, τα γυμνάσια, τα συμπόσια","a":["της αγοράς, των γυμνασίων και των συμποσίων"]}},"points":[{"t":"Το σκηνικό: περιγραφές της καθημερινής ζωής, της **αγοράς**, των γυμνασίων και των συμποσίων, μαζί με εύθυμες παρατηρήσεις.","a":["από περιγραφές της καθημερινής ζωής, της αγοράς, των γυμνασίων και των συμποσίων, καθώς και από εύθυμες παρατηρήσεις"]},{"t":"Το τέλος: πολύ συχνά **δεν** μας προσφέρει σαφή κατάληξη ή ξεκάθαρα συμπεράσματα πάνω στο ζήτημα που συζητήθηκε.","a":["Και πολύ συχνά, το τέλος τους δεν μας προσφέρει μια σαφή κατάληξη ή ξεκάθαρα συμπεράσματα πάνω στο φιλοσοφικό ζήτημα που συζητήθηκε."]},{"t":"Η ανατροπή: οι δυο βασικοί «αντίπαλοι» καταλήγουν να υιοθετήσουν σχεδόν **ο ένας την άποψη του άλλου**.","a":["καταλήγουν να υιοθετήσουν σχεδόν ο ένας την αρχική άποψη του άλλου"]},{"t":"Το κλείσιμο: τη συζήτηση την αφήνουν με την **υπόσχεση** να την επιχειρήσουν ξανά.","a":["με την υπόσχεση να την επιχειρήσουν ξανά"]}],"mnem":{"k":"ΑΓΟΡΑ · ΓΥΜΝΑΣΙΑ · ΣΥΜΠΟΣΙΑ","t":"Οι τρεις τόποι της αθηναϊκής ζωής όπου στήνεται η φιλοσοφία.","a":["της αγοράς, των γυμνασίων και των συμποσίων"]},"gloss":[{"k":"παίγνιον","d":"το παιχνίδι","a":["Η φιλοσοφία και το παίγνιον"]},{"k":"διανθίζονται","d":"στολίζονται, ζωντανεύουν","a":["διανθίζονται"]},{"k":"αντιτιθέμενες απόψεις","d":"αντίθετες θέσεις","a":["αντιτιθέμενες απόψεις"]}]},{"n":12,"short":"Ο αναγνώστης","xy":[985,100],"label":"Παιχνίδι με παιδευτική αξία","title":"Το συμπέρασμα μένει στον αναγνώστη","prose":[{"t":"Αυτό φάνηκε **παράξενο** στους σύγχρονους μελετητές· πολλοί ισχυρίστηκαν πως οι διάλογοι αποτελούν απλώς ένα φιλοσοφικό παιχνίδι, ελαφρό και ανώδυνο, και πως το πραγματικό φιλοσοφικό έργο του ο Αθηναίος στοχαστής θα πρέπει να το διατύπωσε στην προφορική διδασκαλία του στην Ακαδημία.","a":["Το πράγμα αυτό φάνηκε παράξενο στους σύγχρονους μελετητές και πολλοί είναι αυτοί που ισχυρίστηκαν πως οι διάλογοι του Πλάτωνα αποτελούν απλώς ένα φιλοσοφικό παιχνίδι, ελαφρό και ανώδυνο","ενώ το πραγματικό φιλοσοφικό έργο του θα πρέπει προφανώς ο Αθηναίος στοχαστής να το διατύπωσε στην προφορική διδασκαλία του στην Ακαδημία."]},{"t":"Η αλήθεια είναι πως πολύ συχνά μέσα στους διάλογους, τόσο ο Σωκράτης όσο και άλλοι ομιλητές, χαρακτηρίζουν τη συζήτηση ως **παιδιά**, ως παιχνίδι.","a":["Η αλήθεια είναι πως πολύ συχνά μέσα στους διάλογους, τόσο ο Σωκράτης όσο και άλλοι ομιλητές, χαρακτηρίζουν τη συζήτηση που διεξάγεται ως παιδιά, ως παιχνίδι."]}],"diagram":{"type":"ladder","lo":{"t":"το παιχνίδι","a":["ως παιδιά, ως παιχνίδι"]},"hi":{"t":"ο αναγνώστης","a":["για να το εξάγει μόνος του ο αναγνώστης"]},"rise":{"t":"*παίγνιον*","a":["Η φιλοσοφία και το παίγνιον."]},"steps":[{"t":"μια θέση σπουδαιότατη","a":["το παιχνίδι κατέχει μια θέση σπουδαιότατη στον κόσμο"],"sub":{"t":"στον κόσμο, για τον Πλάτωνα","a":["για τον Πλάτωνα το παιχνίδι κατέχει"]}},{"t":"παιδευτική αξία","a":["Το παιχνίδι έχει παιδευτική αξία"],"sub":{"t":"μαθήματα σε μορφή παιχνιδιού","a":["να έχουν τη μορφή παιχνιδιού"]}},{"t":"άρρητο, σχεδόν μετέωρο","a":["μένει άρρητο, σχεδόν μετέωρο"],"sub":{"t":"το συμπέρασμα, όχι «μάθημα»","a":["το συμπέρασμα δεν δίνεται με την πληκτική μορφή"]}}]},"points":[{"t":"Μην ξεχνάς: για τον Πλάτωνα το παιχνίδι **δεν** είναι ελαφρό· κατέχει μια θέση σπουδαιότατη στον κόσμο και έχει παιδευτική αξία.","a":["Αλλά δεν πρέπει να ξεχνούμε πως για τον Πλάτωνα το παιχνίδι κατέχει μια θέση σπουδαιότατη στον κόσμο."]},{"t":"Σε μια **ιδανική κοινωνία**, τα μαθήματα θα έπρεπε να έχουν τη μορφή παιχνιδιού.","a":["τα μαθήματα θα έπρεπε, σε μια ιδανική κοινωνία, να έχουν τη μορφή παιχνιδιού"]},{"t":"Ίσως λοιπόν σε αυτό το **παράδοξο** οφείλεται ότι οι πλατωνικοί διάλογοι υιοθετούν μια μορφή διανοητικού παιχνιδιού.","a":["Ίσως λοιπόν στο παράδοξο αυτό να οφείλεται και το γεγονός πως οι πλατωνικοί διάλογοι υιοθετούν μια μορφή διανοητικού παιχνιδιού"]},{"t":"Γι’ αυτό το συμπέρασμα δεν δίνεται με την **πληκτική** μορφή του «μαθήματος»: μένει άρρητο, για να το εξάγει μόνος του ο αναγνώστης.","a":["στο τέλος του οποίου το συμπέρασμα δεν δίνεται με την πληκτική μορφή του","για να το εξάγει μόνος του ο αναγνώστης"]}],"mnem":{"k":"ΠΑΙΔΙΑ → ΠΑΙΔΕΙΑ","t":"Το παιχνίδι (παιδιά) είναι δρόμος για την παιδεία· γι’ αυτό ο διάλογος μένει ανοιχτός.","a":["Το παιχνίδι έχει παιδευτική αξία"]},"gloss":[{"k":"άρρητο","d":"ανείπωτο, που δεν λέγεται ρητά","a":["μένει άρρητο, σχεδόν μετέωρο"]},{"k":"παιδευτική αξία","d":"αξία για την παιδεία, για τη μόρφωση","a":["παιδευτική αξία"]}]}],"check":{"recall":[{"id":"r01","s":1,"q":"Τι διέσωσε η αρχαία παράδοση, και ποιο είναι το πρόβλημα;","r":"Έναν σημαντικό αριθμό έργων που αποδίδονται στον Πλάτωνα· δεν είναι όμως όλα γνήσια.","a":["διέσωσε έναν σημαντικό αριθμό έργων που αποδίδονται στον Πλάτωνα, δεν είναι όμως όλα γνήσια"]},{"id":"r02","s":1,"q":"Πώς βρέθηκαν νόθα έργα ανάμεσα στα πλατωνικά;","r":"Πολλά κείμενα άλλων Ακαδημαϊκών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας.","a":["κείμενα άλλων Ακαδημεικών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας"]},{"id":"r03","s":1,"q":"Ποιο είναι, μεταξύ άλλων, έργο της σύγχρονης φιλολογίας για τα πλατωνικά κείμενα;","r":"Η οριστική διάκριση μεταξύ γνήσιων και νόθων έργων, καθώς και η χρονολόγησή τους.","a":["έργο της σύγχρονης φιλολογίας, μεταξύ άλλων, είναι η οριστική διάκριση μεταξύ γνήσιων και νόθων έργων"]},{"id":"r04","s":1,"q":"Σε ποιες τρεις ομάδες χωρίζεται ο κατάλογος των γνήσιων έργων, και με τι χρονολόγηση;","r":"Νεανικά έργα, έργα της ωριμότητας, έργα της τελευταίας φάσης· με κατά προσέγγιση χρονολόγηση.","a":["Ακολουθώντας μια κατά προσέγγιση χρονολόγηση","Έργα της τελευταίας φάσης"]},{"id":"r05","s":2,"q":"Τι πραγματεύονται η *Ἀπολογία Σωκράτους* και ο Κρίτων;","r":"Η Ἀπολογία είναι η απολογία του δασκάλου· ο Κρίτων είναι για την υπακοή στους νόμους.","a":["Ἀπολογία Σωκράτους (η απολογία του δασκάλου) Κρίτων (για την υπακοή στους νόμους)"]},{"id":"r06","s":2,"q":"Για τι μιλούν ο *Ἴων* και ο Λάχης;","r":"Ο *Ἴων* για τη συγκίνηση που προκαλεί η ποίηση· ο Λάχης για την ανδρεία.","a":["Ἴων (για τη συγκίνηση που προκαλεί η ποίηση) Λάχης (για τη ανδρεία)"]},{"id":"r07","s":2,"q":"Τι εξετάζει ο Χαρμίδης και τι ο Λύσις;","r":"Ο Χαρμίδης τη σωφροσύνη· ο Λύσις τη φιλία.","a":["Χαρμίδης (για τη σωφροσύνη) Λύσις (για τη φιλία)"]},{"id":"r08","s":2,"q":"Ποιο ερώτημα έχει ο Πρωταγόρας, και ποιο θέμα ο *Εὐθύφρων*;","r":"Ο Πρωταγόρας τη δυνατότητα να διδαχθεί η αρετή· ο *Εὐθύφρων* την ευσέβεια.","a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή) Εὐθύφρων (για την ευσέβεια)"]},{"id":"r09","s":3,"q":"Τι κάνει ο Γοργίας και τι ο *Εὐθύδημος*;","r":"Ο Γοργίας: κριτική της ρητορικής και περί πολιτικής. Ο *Εὐθύδημος*: κατά της σοφιστικής σκέψης.","a":["Γοργίας (κριτική της ρητορικής και περί πολιτικής) Εὐθύδημος (κατά της σοφιστικής σκέψης)"]},{"id":"r10","s":3,"q":"Πώς ξεχωρίζουν οι δύο Ιππίες;","r":"Ο *Ἱππίας ἐλάσσων* για την κακία ως άγνοια του καλού· ο *Ἱππίας μείζων* δίνει ορισμό του ωραίου.","a":["Ἱππίας ἐλάσσων (για την κακία ως άγνοια του καλού) Ἱππίας μείζων (ορισμός του ωραίου)"]},{"id":"r11","s":3,"q":"Ποιο είναι το θέμα του Κρατύλου;","r":"Η φιλοσοφία της γλώσσας.","a":["Κρατύλος (για τη φιλοσοφία της γλώσσας)"]},{"id":"r12","s":4,"q":"Ποια θεωρία έχει ο Μένων, και τι είναι κύριο μέρος του Μενέξενου;","r":"Ο Μένων τη θεωρία της ανάμνησης της ψυχής. Ο Μενέξενος είναι περί πολιτείας· κύριο μέρος του είναι ένας πλαστός επιτάφιος λόγος.","a":["Μένων (για τη θεωρία της ανάμνησης της ψυχής)","κύριο μέρος του διαλόγου είναι ένας πλαστός επιτάφιος λόγος"]},{"id":"r13","s":4,"q":"Πώς βλέπει τον έρωτα το Συμπόσιο;","r":"Ως κίνηση της ψυχής που οδηγεί προς τις Ιδέες.","a":["Συμπόσιο (για τον έρωτα ως κίνηση της ψυχής που οδηγεί προς τις Ιδέες)"]},{"id":"r14","s":4,"q":"Ποιο είναι το θέμα του Φαίδωνα και της Πολιτείας;","r":"Ο Φαίδων: η αθανασία της ψυχής. Η Πολιτεία: η δικαιοσύνη και η ιδεώδης πολιτεία.","a":["Φαίδων (για την αθανασία της ψυχής) Πολιτεία (για τη δικαιοσύνη και την ιδεώδη πολιτεία)"]},{"id":"r15","s":5,"q":"Τι ορισμό δίνουν ο Θεαίτητος και ο Πολιτικός;","r":"Ο Θεαίτητος ορισμό της γνώσης· ο Πολιτικός ορισμό του πολιτικού.","a":["Θεαίτητος (ορισμός της γνώσης)","Πολιτικός (ορισμός του πολιτικού)"]},{"id":"r16","s":5,"q":"Ποιες θεωρίες περί του όντος κρίνουν ο Παρμενίδης και ο Σοφιστής;","r":"Ο Παρμενίδης την παρμενίδεια θεωρία· ο Σοφιστής τις σοφιστικές θεωρίες.","a":["κριτική της παρμενίδειας θεωρίας περί του όντος","κριτική των σοφιστικών θεωριών περί του όντος"]},{"id":"r17","s":5,"q":"Για τι μιλά ο *Φαῖδρος*;","r":"Για το ωραίο και τον έρωτα.","a":["Φαῖδρος (για το ωραίο και τον έρωτα)"]},{"id":"r18","s":6,"q":"Τι εξετάζει ο Φίληβος και τι ο Τίμαιος;","r":"Ο Φίληβος τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής· ο Τίμαιος είναι κοσμολογία και φυσική φιλοσοφία.","a":["Φίληβος (για τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής)","Τίμαιος (κοσμολογία και φυσική φιλοσοφία)"]},{"id":"r19","s":6,"q":"Τι ξέρουμε για τον Κριτία και τους Νόμους;","r":"Ο Κριτίας είναι ατελείωτο έργο, με τον μύθο της χαμένης Ατλαντίδας· οι Νόμοι είναι η νομοθεσία μιας ιδανικής πολιτείας.","a":["Κριτίας (ατελείωτο έργο που περιέχει και τον μύθο της χαμένης Ατλαντίδας","Νόμοι (η νομοθεσία μιας ιδανικής πολιτείας)"]},{"id":"r20","s":6,"q":"Με ποια πόλη, υποτίθεται, ήρθε σε σύγκρουση η Ατλαντίδα;","r":"Με μια ιδανική αρχαία Αθήνα.","a":["ήρθε σε σύγκρουση μια ιδανική αρχαία Αθήνα"]},{"id":"r21","s":7,"q":"Τι άλλο σώζεται, πέρα από τους διαλόγους;","r":"13 Επιστολές, από τις οποίες μόνον η 7η θεωρείται γνήσια, 32 επιγράμματα και κάποια αποσπάσματα.","a":["Σώζονται ακόμα 13 Επιστολές, από τις οποίες μόνον η 7η θεωρείται γνήσια, 32 επιγράμματα και κάποια αποσπάσματα."]},{"id":"r22","s":7,"q":"Περιέχουν τα γραπτά κείμενα το σύνολο της διδασκαλίας του;","r":"Όχι· όπως πληροφορεί ο ίδιος, ένα σημαντικό μέρος της ήταν προφορικό, μέσα στα πλαίσια της Ακαδημίας.","a":["ένα σημαντικό μέρος της οποίας ήταν προφορικό μέσα στα πλαίσια της Ακαδημίας"]},{"id":"r23","s":8,"q":"Ποια έργα του Πλάτωνα δεν είναι γραμμένα σε διαλογική μορφή;","r":"Η Απολογία του Σωκράτη και οι Επιστολές.","a":["εκτός από την Απολογία του Σωκράτη και τις Επιστολές"]},{"id":"r24","s":8,"q":"Ποιος είναι κατά κανόνα ο βασικός συζητητής, και από πού παίρνει τον τίτλο του το κάθε έργο;","r":"Ο Σωκράτης· ο τίτλος είναι το όνομα του βασικού φιλοσοφικού «αντίπαλου» του Σωκράτη.","a":["Βασικός συζητητής είναι κατά κανόνα ο μεγάλος δάσκαλος, ο Σωκράτης","το κάθε έργο έχει ως τίτλο το όνομα του βασικού φιλοσοφικού"]},{"id":"r25","s":8,"q":"Ποιοι συμμετέχουν στο περιθώριο του κάθε διαλόγου;","r":"Μαθητές του Σωκράτη και διανοούμενοι ή γνωστοί Αθηναίοι της εποχής.","a":["Στο περιθώριο του κάθε διαλόγου, συμμετέχουν και άλλα πρόσωπα, μαθητές του Σωκράτη και διανοούμενοι ή γνωστοί Αθηναίοι της εποχής."]},{"id":"r26","s":9,"q":"Τι εξηγεί, πολύ πιθανόν, τη λογοτεχνική μορφή που επέλεξε ο Πλάτωνας;","r":"Η νεανική ενασχόλησή του με την τραγωδία.","a":["η νεανική ενασχόληση του Πλάτωνα με την τραγωδία"]},{"id":"r27","s":9,"q":"Πού εξηγεί ο ίδιος γιατί επέλεξε τη μορφή του διαλόγου;","r":"Στην 7η Επιστολή του, που αποτελεί τρόπον τινά μια αυτοβιογραφία.","a":["Στην 7η Επιστολή του, που αποτελεί τρόπον τινά μια αυτοβιογραφία"]},{"id":"r28","s":9,"q":"Πού μπορεί κανείς να αναζητήσει τη σοφία, κατά τον Πλάτωνα;","r":"Μόνον μέσα από την προφορική συζήτηση και τη ζωντανή σχέση, τη φιλία, μεταξύ των συνδιαλεγομένων.","a":["τη σοφία μπορεί να την αναζητήσει κανείς μόνον μέσα από την προφορική συζήτηση και τη ζωντανή σχέση, τη φιλία, μεταξύ των συνδιαλεγομένων"]},{"id":"r29","s":9,"q":"Γιατί τα γραπτά κείμενα έχουν μηδαμινή αξία;","r":"Γιατί εκεί, σαν σε μονόλογο, ο συγγραφέας εκθέτει τις θέσεις του σε έναν αναγνώστη ανίκανο να αντιδράσει, να ρωτήσει, να ελέγξει.","a":["σαν σε μονόλογο, ο συγγραφέας εκθέτει τις θέσεις του σε έναν αναγνώστη ανίκανο να αντιδράσει"]},{"id":"r30","s":10,"q":"Τι ισχυρίζεται ο Πλάτωνας στον Φαίδρο (275c κ.εξ.);","r":"Ότι η γραφή έχει εντελώς περιορισμένη αξία και μόνον η προφορική μετάδοση της σοφίας μπορεί να γονιμοποιήσει την ψυχή του μαθητή.","a":["η γραφή έχει εντελώς περιορισμένη αξία και μόνον η προφορική μετάδοση της σοφίας μπορεί πραγματικά να γονιμοποιήσει την ψυχή του μαθητή"]},{"id":"r31","s":10,"q":"Αφού κατέφυγε τελικά στον γραπτό λόγο, γιατί προτίμησε τη μορφή του διαλόγου;","r":"Του επέτρεπε να διατηρήσει τη διανοητική ευελιξία και την κριτική αμεσότητα της προφορικής συζήτησης.","a":["που του επέτρεπε να διατηρήσει τη διανοητική ευελιξία και την κριτική αμεσότητα της προφορικής συζήτησης"]},{"id":"r32","s":10,"q":"Τι είναι η πλατωνική διαλεκτική, και πού βρήκε την ιδανική λογοτεχνική της έκφραση;","r":"Η αναζήτηση της φιλοσοφικής αλήθειας μέσα από τη ζωντανή αντιπαράθεση και τον άμεσο έλεγχο κάθε άποψης· βρήκε την έκφρασή της στη διαλογική μορφή.","a":["η μέθοδος αυτή της αναζήτησης της φιλοσοφικής αλήθειας μέσα από τη ζωντανή αντιπαράθεση"]},{"id":"r33","s":11,"q":"Από τι διανθίζονται οι πλατωνικοί διάλογοι;","r":"Από περιγραφές της καθημερινής ζωής, της αγοράς, των γυμνασίων και των συμποσίων, και από εύθυμες παρατηρήσεις ή πειράγματα μεταξύ των συνομιλητών.","a":["από περιγραφές της καθημερινής ζωής, της αγοράς, των γυμνασίων και των συμποσίων","εύθυμες παρατηρήσεις ή πειράγματα μεταξύ των συνομιλητών"]},{"id":"r34","s":11,"q":"Πώς τελειώνουν πολύ συχνά οι διάλογοι;","r":"Χωρίς σαφή κατάληξη ή ξεκάθαρα συμπεράσματα πάνω στο φιλοσοφικό ζήτημα που συζητήθηκε.","a":["σαφή κατάληξη ή ξεκάθαρα συμπεράσματα πάνω στο φιλοσοφικό ζήτημα που συζητήθηκε"]},{"id":"r35","s":11,"q":"Πώς τελειώνει η συζήτηση στον Πρωταγόρα;","r":"Κανείς δεν πείθει τον άλλο· καταλήγουν να υιοθετήσουν σχεδόν ο ένας την αρχική άποψη του άλλου και την αφήνουν με την υπόσχεση να την επιχειρήσουν ξανά.","a":["καταλήγουν να υιοθετήσουν σχεδόν ο ένας την αρχική άποψη του άλλου","με την υπόσχεση να την επιχειρήσουν ξανά"]},{"id":"r36","s":12,"q":"Τι ισχυρίστηκαν πολλοί σύγχρονοι μελετητές για τους διαλόγους;","r":"Ότι αποτελούν απλώς ένα φιλοσοφικό παιχνίδι, ελαφρό και ανώδυνο, και ότι το πραγματικό φιλοσοφικό έργο του διατυπώθηκε στην προφορική διδασκαλία στην Ακαδημία.","a":["αποτελούν απλώς ένα φιλοσοφικό παιχνίδι, ελαφρό και ανώδυνο","στην προφορική διδασκαλία του στην Ακαδημία"]},{"id":"r37","s":12,"q":"Ποια θέση έχει το παιχνίδι για τον Πλάτωνα;","r":"Μια θέση σπουδαιότατη στον κόσμο· έχει παιδευτική αξία, και σε μια ιδανική κοινωνία τα μαθήματα θα έπρεπε να έχουν τη μορφή παιχνιδιού.","a":["το παιχνίδι κατέχει μια θέση σπουδαιότατη στον κόσμο","Το παιχνίδι έχει παιδευτική αξία"]},{"id":"r38","s":12,"q":"Γιατί το συμπέρασμα ενός διαλόγου μένει άρρητο;","r":"Για να το εξάγει μόνος του ο αναγνώστης, αντί να δοθεί με την πληκτική μορφή του «μαθήματος».","a":["μένει άρρητο, σχεδόν μετέωρο, για να το εξάγει μόνος του ο αναγνώστης"]}],"tf":[{"id":"t01","s":1,"ok":false,"t":"Όλα τα έργα που σώθηκαν με το όνομα του Πλάτωνα είναι δικά του.","why":"Λάθος. Δεν είναι όλα γνήσια· πολλά κείμενα άλλων Ακαδημαϊκών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας.","a":["Πολλά κείμενα άλλων Ακαδημεικών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας"]},{"id":"t02","s":1,"ok":true,"t":"Η διάκριση γνήσιων και νόθων έργων είναι, μεταξύ άλλων, έργο της σύγχρονης φιλολογίας.","why":"Σωστό. Όπως και η χρονολόγησή τους.","a":["έργο της σύγχρονης φιλολογίας, μεταξύ άλλων"]},{"id":"t03","s":1,"ok":false,"t":"Η σειρά του καταλόγου είναι βέβαιη, τεκμηριωμένη χρονολογία.","why":"Λάθος. Ο κατάλογος ακολουθεί μια κατά προσέγγιση χρονολόγηση.","a":["μια κατά προσέγγιση χρονολόγηση"]},{"id":"t04","s":2,"ok":true,"t":"Ο *Ἴων* είναι νεανικό έργο, για τη συγκίνηση που προκαλεί η ποίηση.","why":"Σωστό. Ανήκει στα νεανικά έργα.","a":["Ἴων (για τη συγκίνηση που προκαλεί η ποίηση)"]},{"id":"t05","s":2,"ok":false,"t":"Ο Πρωταγόρας ανήκει στα έργα της ωριμότητας.","why":"Λάθος. Είναι νεανικό έργο, για τη δυνατότητα να διδαχθεί η αρετή.","a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή)"]},{"id":"t06","s":2,"ok":true,"t":"Ο Λύσις είναι για τη φιλία και ο Χαρμίδης για τη σωφροσύνη.","why":"Σωστό. Και οι δύο είναι νεανικά έργα.","a":["Χαρμίδης (για τη σωφροσύνη) Λύσις (για τη φιλία)"]},{"id":"t07","s":3,"ok":false,"t":"Ο *Ἱππίας μείζων* είναι για την κακία ως άγνοια του καλού.","why":"Λάθος. Αυτό είναι ο *Ἱππίας ἐλάσσων*· ο μείζων δίνει ορισμό του ωραίου.","a":["Ἱππίας μείζων (ορισμός του ωραίου)"]},{"id":"t08","s":3,"ok":true,"t":"Ο *Εὐθύδημος* στρέφεται κατά της σοφιστικής σκέψης.","why":"Σωστό. Είναι έργο της ωριμότητας.","a":["Εὐθύδημος (κατά της σοφιστικής σκέψης)"]},{"id":"t09","s":4,"ok":false,"t":"Ο Φαίδων, έργο της τελευταίας φάσης, μιλά για το ωραίο και τον έρωτα.","why":"Λάθος. Ο Φαίδων είναι της ωριμότητας, για την αθανασία της ψυχής· για το ωραίο και τον έρωτα είναι ο *Φαῖδρος*.","a":["Φαίδων (για την αθανασία της ψυχής)"]},{"id":"t10","s":4,"ok":true,"t":"Στο Συμπόσιο ο έρωτας είναι κίνηση της ψυχής που οδηγεί προς τις Ιδέες.","why":"Σωστό. Έργο της ωριμότητας.","a":["για τον έρωτα ως κίνηση της ψυχής που οδηγεί προς τις Ιδέες"]},{"id":"t11","s":5,"ok":true,"t":"Ο Παρμενίδης και ο Σοφιστής κρίνουν θεωρίες περί του όντος.","why":"Σωστό. Ο ένας την παρμενίδεια θεωρία, ο άλλος τις σοφιστικές θεωρίες.","a":["κριτική της παρμενίδειας θεωρίας περί του όντος","κριτική των σοφιστικών θεωριών περί του όντος"]},{"id":"t12","s":6,"ok":false,"t":"Ο Κριτίας είναι ολοκληρωμένο έργο για τη νομοθεσία μιας ιδανικής πολιτείας.","why":"Λάθος. Ο Κριτίας είναι ατελείωτος και περιέχει τον μύθο της Ατλαντίδας· τη νομοθεσία μιας ιδανικής πολιτείας την έχουν οι Νόμοι.","a":["Κριτίας (ατελείωτο έργο που περιέχει και τον μύθο","Νόμοι (η νομοθεσία μιας ιδανικής πολιτείας)"]},{"id":"t13","s":7,"ok":false,"t":"Από τις 13 Επιστολές θεωρούνται γνήσιες όλες.","why":"Λάθος. Μόνον η 7η θεωρείται γνήσια.","a":["από τις οποίες μόνον η 7η θεωρείται γνήσια"]},{"id":"t14","s":7,"ok":true,"t":"Εκτός από τους διαλόγους σώζονται και 32 επιγράμματα.","why":"Σωστό. Και κάποια αποσπάσματα.","a":["32 επιγράμματα και κάποια αποσπάσματα"]},{"id":"t15","s":7,"ok":false,"t":"Τα γραπτά κείμενα του Πλάτωνα περιέχουν όλη του τη διδασκαλία.","why":"Λάθος. Ένα σημαντικό μέρος της ήταν προφορικό, μέσα στα πλαίσια της Ακαδημίας.","a":["ένα σημαντικό μέρος της οποίας ήταν προφορικό"]},{"id":"t16","s":8,"ok":false,"t":"Η *Ἀπολογία Σωκράτους* είναι γραμμένη σε διαλογική μορφή.","why":"Λάθος. Η Απολογία του Σωκράτη και οι Επιστολές είναι οι εξαιρέσεις.","a":["εκτός από την Απολογία του Σωκράτη και τις Επιστολές"]},{"id":"t17","s":8,"ok":false,"t":"Κάθε διάλογος παίρνει τον τίτλο του από τον Σωκράτη.","why":"Λάθος. Ο τίτλος είναι το όνομα του βασικού φιλοσοφικού «αντίπαλου» του Σωκράτη.","a":["το κάθε έργο έχει ως τίτλο το όνομα του βασικού φιλοσοφικού"]},{"id":"t18","s":9,"ok":true,"t":"Η 7η Επιστολή αποτελεί τρόπον τινά μια αυτοβιογραφία.","why":"Σωστό. Εκεί εξηγεί γιατί επέλεξε τη μορφή του διαλόγου.","a":["Στην 7η Επιστολή του, που αποτελεί τρόπον τινά μια αυτοβιογραφία"]},{"id":"t19","s":9,"ok":false,"t":"Κατά τον Πλάτωνα, η σοφία αναζητείται καλύτερα μέσα από τα γραπτά κείμενα.","why":"Λάθος. Μόνον μέσα από την προφορική συζήτηση· τα γραπτά κείμενα έχουν μηδαμινή αξία.","a":["μόνον μέσα από την προφορική συζήτηση","έχουν μηδαμινή αξία"]},{"id":"t20","s":10,"ok":false,"t":"Στον Φαίδρο ο Πλάτωνας υπερασπίζεται τη γραφή.","why":"Λάθος. Κάνει μια μοναδική επίθεση στον γραπτό λόγο: η γραφή έχει εντελώς περιορισμένη αξία.","a":["κάνει μια μοναδική επίθεση στον γραπτό λόγο"]},{"id":"t21","s":11,"ok":true,"t":"Πολύ συχνά το τέλος των διαλόγων δεν προσφέρει ξεκάθαρα συμπεράσματα.","why":"Σωστό. Ούτε σαφή κατάληξη πάνω στο φιλοσοφικό ζήτημα που συζητήθηκε.","a":["δεν μας προσφέρει μια σαφή κατάληξη ή ξεκάθαρα συμπεράσματα"]},{"id":"t22","s":11,"ok":false,"t":"Στον Πρωταγόρα ο Σωκράτης πείθει τελικά τον Πρωταγόρα.","why":"Λάθος. Κανείς δεν κατορθώνει να πείσει τον άλλο· καταλήγουν σχεδόν να υιοθετήσουν ο ένας την αρχική άποψη του άλλου.","a":["δεν κατορθώνει να πείσει τον άλλο"]},{"id":"t23","s":12,"ok":false,"t":"Για τον Πλάτωνα το παιχνίδι δεν έχει παιδευτική αξία.","why":"Λάθος. Το παιχνίδι έχει παιδευτική αξία και κατέχει μια θέση σπουδαιότατη στον κόσμο.","a":["Το παιχνίδι έχει παιδευτική αξία"]},{"id":"t24","s":12,"ok":true,"t":"Πολλοί μελετητές θεώρησαν ότι το πραγματικό φιλοσοφικό έργο του Πλάτωνα ήταν η προφορική διδασκαλία του στην Ακαδημία.","why":"Σωστό. Γι’ αυτό είδαν τους διαλόγους ως απλό φιλοσοφικό παιχνίδι.","a":["το πραγματικό φιλοσοφικό έργο του θα πρέπει προφανώς ο Αθηναίος στοχαστής να το διατύπωσε στην προφορική διδασκαλία του"]}],"mc":[{"id":"m01","s":1,"q":"Ποιος κάνει την οριστική διάκριση γνήσιων και νόθων έργων;","o":["Η αρχαία παράδοση","Η σύγχρονη φιλολογία","Η Ακαδημία","Ο ίδιος ο Πλάτωνας, στην 7η Επιστολή"],"ok":1,"why":"Είναι, μεταξύ άλλων, έργο της σύγχρονης φιλολογίας· η αρχαία παράδοση απλώς διέσωσε τα έργα.","a":["έργο της σύγχρονης φιλολογίας"]},{"id":"m02","s":1,"q":"Πώς βρέθηκαν νόθα έργα με το όνομα του Πλάτωνα;","o":["Ήταν προφορικά μαθήματα της Ακαδημίας","Ήταν πλαστοί επιτάφιοι λόγοι","Τα έγραψαν μαθητές του Σωκράτη","Ήταν κείμενα άλλων Ακαδημαϊκών φιλοσόφων"],"ok":3,"why":"Κείμενα άλλων Ακαδημαϊκών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας.","a":["κείμενα άλλων Ακαδημεικών φιλοσόφων σώθηκαν με το όνομα του ιδρυτή της Ακαδημίας"]},{"id":"m03","s":1,"q":"Πώς χρονολογείται ο κατάλογος των γνήσιων έργων;","o":["Κατά προσέγγιση","Με βεβαιότητα, από τις Επιστολές","Με βάση τους τίτλους των έργων","Όπως τα κατέταξε ο ίδιος"],"ok":0,"why":"Το βιβλίο ακολουθεί μια κατά προσέγγιση χρονολόγηση.","a":["μια κατά προσέγγιση χρονολόγηση"]},{"id":"m04","s":2,"q":"Ποιο έργο είναι για την υπακοή στους νόμους;","o":["Νόμοι","Πολιτικός","Κρίτων","Γοργίας"],"ok":2,"why":"Ο Κρίτων, νεανικό έργο· οι Νόμοι είναι για τη νομοθεσία μιας ιδανικής πολιτείας.","a":["Κρίτων (για την υπακοή στους νόμους)"]},{"id":"m05","s":2,"q":"Ποιο νεανικό έργο είναι για τη συγκίνηση που προκαλεί η ποίηση;","o":["Φαῖδρος","Ἴων","Συμπόσιο","Κρατύλος"],"ok":1,"why":"Ο *Ἴων*· το Συμπόσιο και ο *Φαῖδρος* μιλούν για τον έρωτα.","a":["Ἴων (για τη συγκίνηση που προκαλεί η ποίηση)"]},{"id":"m06","s":2,"q":"Ποιος διάλογος είναι για την ανδρεία;","o":["Χαρμίδης","Λύσις","Εὐθύφρων","Λάχης"],"ok":3,"why":"Ο Λάχης· ο Χαρμίδης είναι για τη σωφροσύνη, ο Λύσις για τη φιλία, ο *Εὐθύφρων* για την ευσέβεια.","a":["Λάχης (για τη ανδρεία)"]},{"id":"m07","s":2,"q":"Ποιος διάλογος είναι για τη σωφροσύνη;","o":["Χαρμίδης","Λάχης","Φίληβος","Μένων"],"ok":0,"why":"Ο Χαρμίδης, νεανικό έργο.","a":["Χαρμίδης (για τη σωφροσύνη)"]},{"id":"m08","s":2,"q":"Ποιο είναι το θέμα του Λύσι;","o":["Η ευσέβεια","Η φιλία","Η σωφροσύνη","Ο έρωτας"],"ok":1,"why":"Ο Λύσις είναι για τη φιλία.","a":["Λύσις (για τη φιλία)"]},{"id":"m09","s":2,"q":"Σε ποια ομάδα ανήκει ο Πρωταγόρας, ο διάλογος για τη δυνατότητα να διδαχθεί η αρετή;","o":["Στα έργα της ωριμότητας","Στα έργα της τελευταίας φάσης","Στα νεανικά έργα","Στα νόθα έργα"],"ok":2,"why":"Στα νεανικά έργα.","a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή)"]},{"id":"m10","s":2,"q":"Ποιο έργο είναι για την ευσέβεια;","o":["Θεαίτητος","Εὐθύδημος","Ἱππίας ἐλάσσων","Εὐθύφρων"],"ok":3,"why":"Ο *Εὐθύφρων*· ο *Εὐθύδημος* είναι κατά της σοφιστικής σκέψης.","a":["Εὐθύφρων (για την ευσέβεια)"]},{"id":"m11","s":3,"q":"Ποιο έργο ασκεί κριτική της ρητορικής και μιλά περί πολιτικής;","o":["Γοργίας","Πολιτικός","Μενέξενος","Σοφιστής"],"ok":0,"why":"Ο Γοργίας, έργο της ωριμότητας.","a":["Γοργίας (κριτική της ρητορικής και περί πολιτικής)"]},{"id":"m12","s":3,"q":"Ποιο έργο στρέφεται κατά της σοφιστικής σκέψης;","o":["Σοφιστής","Εὐθύδημος","Πρωταγόρας","Παρμενίδης"],"ok":1,"why":"Ο *Εὐθύδημος*· ο Σοφιστής κρίνει τις σοφιστικές θεωρίες περί του όντος.","a":["Εὐθύδημος (κατά της σοφιστικής σκέψης)"]},{"id":"m13","s":3,"q":"Ποιος διάλογος είναι για την κακία ως άγνοια του καλού;","o":["Ἱππίας μείζων","Γοργίας","Ἱππίας ἐλάσσων","Φίληβος"],"ok":2,"why":"Ο *Ἱππίας ἐλάσσων*· ο μείζων δίνει ορισμό του ωραίου.","a":["Ἱππίας ἐλάσσων (για την κακία ως άγνοια του καλού)"]},{"id":"m14","s":3,"q":"Τι δίνει ο *Ἱππίας μείζων*;","o":["Ορισμό της γνώσης","Ορισμό του πολιτικού","Κριτική της ρητορικής","Ορισμό του ωραίου"],"ok":3,"why":"Ορισμό του ωραίου.","a":["Ἱππίας μείζων (ορισμός του ωραίου)"]},{"id":"m15","s":3,"q":"Ποιος διάλογος είναι για τη φιλοσοφία της γλώσσας;","o":["Κρατύλος","Τίμαιος","Θεαίτητος","Μένων"],"ok":0,"why":"Ο Κρατύλος, έργο της ωριμότητας.","a":["Κρατύλος (για τη φιλοσοφία της γλώσσας)"]},{"id":"m16","s":4,"q":"Ποιος διάλογος έχει τη θεωρία της ανάμνησης της ψυχής;","o":["Φαίδων","Μένων","Συμπόσιο","Θεαίτητος"],"ok":1,"why":"Ο Μένων· ο Φαίδων είναι για την αθανασία της ψυχής.","a":["Μένων (για τη θεωρία της ανάμνησης της ψυχής)"]},{"id":"m17","s":4,"q":"Σε ποιον διάλογο κύριο μέρος είναι ένας πλαστός επιτάφιος λόγος;","o":["Κριτίας","Γοργίας","Μενέξενος","Νόμοι"],"ok":2,"why":"Στον Μενέξενο, που είναι περί πολιτείας.","a":["Μενέξενος (περί πολιτείας· κύριο μέρος του διαλόγου είναι ένας πλαστός επιτάφιος λόγος)"]},{"id":"m18","s":4,"q":"Στο Συμπόσιο ο έρωτας είναι…","o":["μια ηδονή αντίθετη στη γνώση","ένα πείραγμα μεταξύ των συνομιλητών","η συγκίνηση που προκαλεί η ποίηση","κίνηση της ψυχής που οδηγεί προς τις Ιδέες"],"ok":3,"why":"Κίνηση της ψυχής που οδηγεί προς τις Ιδέες.","a":["Συμπόσιο (για τον έρωτα ως κίνηση της ψυχής που οδηγεί προς τις Ιδέες)"]},{"id":"m19","s":4,"q":"Ποιο έργο είναι για την αθανασία της ψυχής;","o":["Φαίδων","Φαῖδρος","Μένων","Τίμαιος"],"ok":0,"why":"Ο Φαίδων, της ωριμότητας· ο *Φαῖδρος* είναι της τελευταίας φάσης.","a":["Φαίδων (για την αθανασία της ψυχής)"]},{"id":"m20","s":4,"q":"Ποιο έργο είναι για τη δικαιοσύνη και την ιδεώδη πολιτεία;","o":["Νόμοι","Πολιτεία","Πολιτικός","Μενέξενος"],"ok":1,"why":"Η Πολιτεία· οι Νόμοι είναι για τη νομοθεσία μιας ιδανικής πολιτείας.","a":["Πολιτεία (για τη δικαιοσύνη και την ιδεώδη πολιτεία)"]},{"id":"m21","s":5,"q":"Ποιο έργο της τελευταίας φάσης δίνει ορισμό της γνώσης;","o":["Φίληβος","Μένων","Θεαίτητος","Σοφιστής"],"ok":2,"why":"Ο Θεαίτητος.","a":["Θεαίτητος (ορισμός της γνώσης)"]},{"id":"m22","s":5,"q":"Τι κρίνει ο Παρμενίδης;","o":["Τις σοφιστικές θεωρίες περί του όντος","Τη ρητορική","Τον γραπτό λόγο","Την παρμενίδεια θεωρία περί του όντος"],"ok":3,"why":"Την παρμενίδεια θεωρία περί του όντος· τις σοφιστικές τις κρίνει ο Σοφιστής.","a":["Παρμενίδης (κριτική της παρμενίδειας θεωρίας περί του όντος)"]},{"id":"m23","s":5,"q":"Σε ποια ομάδα ανήκει ο *Φαῖδρος*, ο διάλογος για το ωραίο και τον έρωτα;","o":["Στα έργα της τελευταίας φάσης","Στα νεανικά έργα","Στα έργα της ωριμότητας","Στα νόθα έργα"],"ok":0,"why":"Στα έργα της τελευταίας φάσης.","a":["Φαῖδρος (για το ωραίο και τον έρωτα)"]},{"id":"m24","s":5,"q":"Ποιο έργο δίνει τον ορισμό του πολιτικού;","o":["Γοργίας","Πολιτικός","Πολιτεία","Νόμοι"],"ok":1,"why":"Ο Πολιτικός, της τελευταίας φάσης.","a":["Πολιτικός (ορισμός του πολιτικού)"]},{"id":"m25","s":6,"q":"Ποιος διάλογος είναι για τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής;","o":["Συμπόσιο","Θεαίτητος","Φίληβος","Χαρμίδης"],"ok":2,"why":"Ο Φίληβος, της τελευταίας φάσης.","a":["Φίληβος (για τη σχέση της ηδονής και της γνώσης ως σκοπών της ζωής)"]},{"id":"m26","s":6,"q":"Ποιο έργο είναι κοσμολογία και φυσική φιλοσοφία;","o":["Κρατύλος","Παρμενίδης","Κριτίας","Τίμαιος"],"ok":3,"why":"Ο Τίμαιος.","a":["Τίμαιος (κοσμολογία και φυσική φιλοσοφία)"]},{"id":"m27","s":6,"q":"Ποιο ατελείωτο έργο περιέχει τον μύθο της χαμένης Ατλαντίδας;","o":["Κριτίας","Τίμαιος","Μενέξενος","Νόμοι"],"ok":0,"why":"Ο Κριτίας.","a":["Κριτίας (ατελείωτο έργο που περιέχει και τον μύθο της χαμένης Ατλαντίδας"]},{"id":"m28","s":6,"q":"Οι Νόμοι είναι για…","o":["την υπακοή στους νόμους","τη νομοθεσία μιας ιδανικής πολιτείας","τη δικαιοσύνη και την ιδεώδη πολιτεία","τον ορισμό του πολιτικού"],"ok":1,"why":"Τη νομοθεσία μιας ιδανικής πολιτείας· την υπακοή στους νόμους την έχει ο Κρίτων.","a":["Νόμοι (η νομοθεσία μιας ιδανικής πολιτείας)"]},{"id":"m29","s":7,"q":"Πόσες Επιστολές του Πλάτωνα σώζονται;","o":["7","32","13","27"],"ok":2,"why":"Σώζονται 13 Επιστολές· γνήσια θεωρείται μόνον η 7η.","a":["Σώζονται ακόμα 13 Επιστολές"]},{"id":"m30","s":7,"q":"Ποια Επιστολή θεωρείται γνήσια;","o":["Η 13η","Η 7η","Καμία","Όλες"],"ok":1,"why":"Μόνον η 7η θεωρείται γνήσια.","a":["μόνον η 7η θεωρείται γνήσια"]},{"id":"m31","s":7,"q":"Πόσα επιγράμματα του Πλάτωνα σώζονται;","o":["13","7","27","32"],"ok":3,"why":"Σώζονται 32 επιγράμματα και κάποια αποσπάσματα.","a":["32 επιγράμματα και κάποια αποσπάσματα"]},{"id":"m32","s":8,"q":"Ποιος είναι κατά κανόνα ο βασικός συζητητής των διαλόγων;","o":["Ο Σωκράτης","Ο Πρωταγόρας","Ο Πλάτωνας","Ένας γνωστός Αθηναίος"],"ok":0,"why":"Ο μεγάλος δάσκαλος, ο Σωκράτης.","a":["Βασικός συζητητής είναι κατά κανόνα ο μεγάλος δάσκαλος, ο Σωκράτης"]},{"id":"m33","s":8,"q":"Από πού παίρνει τον τίτλο του το κάθε έργο;","o":["Από το θέμα του","Από το όνομα του βασικού φιλοσοφικού «αντίπαλου» του Σωκράτη","Από τον τόπο της συζήτησης","Από έναν μαθητή του Σωκράτη"],"ok":1,"why":"Από το όνομα του βασικού φιλοσοφικού «αντίπαλου» του Σωκράτη στη συζήτηση.","a":["το κάθε έργο έχει ως τίτλο το όνομα του βασικού φιλοσοφικού"]},{"id":"m34","s":8,"q":"Ποια έργα δεν είναι γραμμένα σε διαλογική μορφή;","o":["Ο Μενέξενος και ο Κριτίας","Τα νεανικά έργα","Η Απολογία του Σωκράτη και οι Επιστολές","Ο Φαῖδρος και ο Φαίδων"],"ok":2,"why":"Η Απολογία του Σωκράτη και οι Επιστολές· όλα τα άλλα είναι διάλογοι.","a":["εκτός από την Απολογία του Σωκράτη και τις Επιστολές"]},{"id":"m35","s":9,"q":"Τι εξηγεί, πολύ πιθανόν, τη λογοτεχνική μορφή των έργων του;","o":["Η διδασκαλία του στην Ακαδημία","Τα πειράγματα των συμποσίων","Η κριτική της ρητορικής","Η νεανική ενασχόλησή του με την τραγωδία"],"ok":3,"why":"Η νεανική ενασχόληση του Πλάτωνα με την τραγωδία.","a":["η νεανική ενασχόληση του Πλάτωνα με την τραγωδία"]},{"id":"m36","s":9,"q":"Πού εξηγεί ο ίδιος γιατί επέλεξε τη μορφή του διαλόγου;","o":["Στην 7η Επιστολή","Στον Φαίδρο","Στην Πολιτεία","Στην Απολογία"],"ok":0,"why":"Στην 7η Επιστολή, που αποτελεί τρόπον τινά μια αυτοβιογραφία.","a":["Στην 7η Επιστολή του, που αποτελεί τρόπον τινά μια αυτοβιογραφία"]},{"id":"m37","s":9,"q":"Κατά τον Πλάτωνα, τα γραπτά κείμενα έχουν…","o":["την ίδια αξία με τη συζήτηση","μηδαμινή αξία","παιδευτική αξία","αξία μόνο για τους μαθητές"],"ok":1,"why":"Μηδαμινή αξία, γιατί ο αναγνώστης δεν μπορεί να αντιδράσει, να ρωτήσει, να ελέγξει· παιδευτική αξία έχει το παιχνίδι.","a":["έχουν μηδαμινή αξία"]},{"id":"m38","s":10,"q":"Πού κάνει ο Πλάτωνας μια μοναδική επίθεση στον γραπτό λόγο;","o":["Στον Φαίδωνα","Στον Κρατύλο","Στον Φαίδρο (275c κ.εξ.)","Στον Γοργία"],"ok":2,"why":"Στον Φαίδρο (275c κ.εξ.)· όχι στον Φαίδωνα, που είναι για την αθανασία της ψυχής.","a":["Στον Φαίδρο άλλωστε (275c κ.εξ.) ο Πλάτωνας κάνει μια μοναδική επίθεση στον γραπτό λόγο"]},{"id":"m39","s":10,"q":"Τι κράτησε ο διάλογος από την προφορική συζήτηση;","o":["Τη διανοητική ευελιξία και την κριτική αμεσότητα","Τον μύθο και την ποίηση","Τα σαφή συμπεράσματα","Την πληκτική μορφή του μαθήματος"],"ok":0,"why":"Τη διανοητική ευελιξία και την κριτική αμεσότητα της προφορικής συζήτησης.","a":["τη διανοητική ευελιξία και την κριτική αμεσότητα της προφορικής συζήτησης"]},{"id":"m40","s":10,"q":"Η πλατωνική διαλεκτική βρήκε την ιδανική λογοτεχνική της έκφραση…","o":["στους επιτάφιους λόγους","στη διαλογική μορφή","στις Επιστολές","στην τραγωδία"],"ok":1,"why":"Στη διαλογική μορφή των έργων του.","a":["βρήκε στη διαλογική μορφή των έργων του την ιδανική λογοτεχνική της έκφραση"]},{"id":"m41","s":11,"q":"Από τι διανθίζονται οι πλατωνικοί διάλογοι;","o":["Από αποσπάσματα τραγωδιών","Από μύθους για την Ατλαντίδα","Από περιγραφές της καθημερινής ζωής και πειράγματα","Από επιγράμματα"],"ok":2,"why":"Από περιγραφές της καθημερινής ζωής και από εύθυμες παρατηρήσεις ή πειράγματα.","a":["από περιγραφές της καθημερινής ζωής"]},{"id":"m42","s":11,"q":"Πώς τελειώνει η συζήτηση στον Πρωταγόρα;","o":["Ο Σωκράτης πείθει τον Πρωταγόρα","Ο Πρωταγόρας πείθει τον Σωκράτη","Με ένα ξεκάθαρο συμπέρασμα για την αρετή","Υιοθετούν σχεδόν ο ένας την άποψη του άλλου"],"ok":3,"why":"Καταλήγουν να υιοθετήσουν σχεδόν ο ένας την αρχική άποψη του άλλου, και την αφήνουν για άλλη φορά.","a":["καταλήγουν να υιοθετήσουν σχεδόν ο ένας την αρχική άποψη του άλλου"]},{"id":"m43","s":12,"q":"Τι είναι το παιχνίδι για τον Πλάτωνα;","o":["Κάτι σπουδαιότατο, με παιδευτική αξία","Κάτι ελαφρό και ανώδυνο","Το αντίθετο της φιλοσοφίας","Μόνο ένα πείραγμα"],"ok":0,"why":"Κατέχει μια θέση σπουδαιότατη στον κόσμο και έχει παιδευτική αξία· το «ελαφρό και ανώδυνο» είναι η άποψη των μελετητών.","a":["κατέχει μια θέση σπουδαιότατη στον κόσμο","Το παιχνίδι έχει παιδευτική αξία"]},{"id":"m44","s":12,"q":"Ποιος εξάγει τελικά το συμπέρασμα ενός διαλόγου;","o":["Ο Σωκράτης","Ο αναγνώστης, μόνος του","Ο βασικός «αντίπαλος»","Η Ακαδημία, στην προφορική διδασκαλία"],"ok":1,"why":"Ο αναγνώστης: το συμπέρασμα μένει άρρητο, για να το εξάγει μόνος του.","a":["για να το εξάγει μόνος του ο αναγνώστης"]}],"numbers":[{"v":"13","l":"οι Επιστολές που σώζονται","s":7,"a":["Σώζονται ακόμα 13 Επιστολές"]},{"v":"7η","l":"η μόνη γνήσια Επιστολή, τρόπον τινά αυτοβιογραφία","s":7,"a":["μόνον η 7η θεωρείται γνήσια"]},{"v":"32","l":"τα επιγράμματα","s":7,"a":["32 επιγράμματα"]},{"v":"275c","l":"Φαίδρος: η επίθεση στον γραπτό λόγο","s":10,"a":["Στον Φαίδρο άλλωστε (275c κ.εξ.)"]},{"v":"8","l":"τα νεανικά έργα του καταλόγου","s":2,"a":["α. Νεανικά έργα"]},{"v":"10","l":"τα έργα της ωριμότητας","s":3,"a":["β. Έργα της ωριμότητας"]},{"v":"9","l":"τα έργα της τελευταίας φάσης","s":5,"a":["γ. Έργα της τελευταίας φάσης"]}],"numbersNote":"Τα 8, 10 και 9 είναι μέτρημα του καταλόγου του βιβλίου (27 γνήσια έργα), όχι αριθμοί γραμμένοι μέσα του· το «κ.εξ.» σημαίνει «και εξής».","pitfalls":[{"s":4,"t":"«Φαίδων και Φαῖδρος είναι το ίδιο»: όχι. Ο Φαίδων, της ωριμότητας, για την αθανασία της ψυχής· ο *Φαῖδρος*, της τελευταίας φάσης, για το ωραίο και τον έρωτα.","claim":true,"a":["Φαίδων (για την αθανασία της ψυχής)","Φαῖδρος (για το ωραίο και τον έρωτα)"]},{"s":3,"t":"«Ο Σοφιστής είναι κατά της σοφιστικής σκέψης»: προσοχή, αυτό το βιβλίο το λέει για το έργο *Εὐθύδημος*· ο Σοφιστής κρίνει σοφιστικές θεωρίες περί του όντος.","claim":true,"a":["Εὐθύδημος (κατά της σοφιστικής σκέψης)"]},{"s":2,"t":"«Ο Πρωταγόρας είναι ώριμο έργο»: όχι, ο κατάλογος τον βάζει στα νεανικά, για τη δυνατότητα να διδαχθεί η αρετή.","claim":true,"a":["Πρωταγόρας (για τη δυνατότητα να διδαχθεί η αρετή)"]},{"s":8,"t":"«Όλα τα έργα του είναι διάλογοι»: εκτός από την Απολογία του Σωκράτη και τις Επιστολές.","claim":true,"a":["εκτός από την Απολογία του Σωκράτη και τις Επιστολές"]},{"s":7,"t":"«Σώζονται 13 γνήσιες Επιστολές»: σώζονται 13, γνήσια θεωρείται μόνον η 7η.","claim":true,"a":["μόνον η 7η θεωρείται γνήσια"]},{"s":12,"t":"«Οι διάλογοι είναι απλώς παιχνίδι, άρα ελαφροί»: για τον Πλάτωνα το παιχνίδι έχει παιδευτική αξία.","claim":true,"a":["Το παιχνίδι έχει παιδευτική αξία"]}],"idea":{"t":"Ο Πλάτωνας εμπιστεύεται τη σοφία στην προφορική συζήτηση· γι’ αυτό, όταν γράφει, γράφει **διαλόγους**, που κρατούν τη ζωντανή αντιπαράθεση και αφήνουν το συμπέρασμα στον αναγνώστη, σαν ένα σοβαρό παιχνίδι με παιδευτική αξία.","a":["τη σοφία μπορεί να την αναζητήσει κανείς μόνον μέσα από την προφορική συζήτηση","για να το εξάγει μόνος του ο αναγνώστης"]}},"colophon":["Το κείμενο είναι το «Ε2. Το έργο του» του σχολικού βιβλίου (Φιλοσοφικός Λόγος Γ΄ Λυκείου), κατεβασμένο 2026-10-28, από την ίδια σελίδα με το Ε1.","Οι αβλεψίες του βιβλίου («Ακαδημεικών», «για τη ανδρεία», «'Ολα») μένουν αυτούσιες μόνο στις άγκυρες· στο κείμενο της σελίδας γράφονται σωστά.","Τα πλήθη 8, 10, 9 και 27 είναι μέτρημα του καταλόγου, όχι αριθμοί του βιβλίου.","Η προτομή είναι η ίδια με του Ε1 (ίδιο πρόσωπο, ίδιο σχέδιο): χαλκογραφία του Lucas Vorsterman I (1620) από έργο του Rubens, CC0.","Τα μνημονικά, η «μεγάλη ιδέα» και η απόδοση του μότο είναι βοηθήματα, όχι λόγια του βιβλίου."]};
+const KEY="eisarx-platon-e2-v1";
+var ROM = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+var ST = D.stations, N = ST.length;
+var $ = function (id) { return document.getElementById(id); };
+var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+var justRead = 0;
+document.documentElement.classList.add('anim');
+
+/* ── αποθήκη ─────────────────────────────────────────────────────────── */
+var store = { readable: true, why: '', fail: '' };
+function blank() { return { v: 1, at: 1, read: {}, rc: {}, tf: {}, mc: {} }; }
+function load() {
+  var raw;
+  try { raw = localStorage.getItem(KEY); }
+  catch (e) { store.readable = false; store.why = 'blocked'; return blank(); }
+  if (raw === null) return blank();
+  try {
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('σχήμα');
+    var b = blank(), k;
+    for (k in o) b[k] = o[k];                        /* σταθ. 35: τίποτα δεν χάνεται */
+    ['read', 'rc', 'tf', 'mc'].forEach(function (x) { if (!b[x] || typeof b[x] !== 'object') throw new Error(x); });
+    return b;
+  } catch (e) { store.readable = false; store.why = 'corrupt'; return blank(); }
+}
+var S = load();
+var RET = (function () { var k; for (k in S.read) if (S.read[k]) return true; return S.at > 1; })();
+if (RET) document.documentElement.classList.add('ret');
+function save() {
+  if (!store.readable) { banner(); return false; }
+  var txt = JSON.stringify(S), back = null;
+  try { localStorage.setItem(KEY, txt); back = localStorage.getItem(KEY); }
+  catch (e) { store.fail = 'full'; banner(); return false; }
+  if (back !== txt) { store.fail = 'readback'; banner(); return false; }
+  store.fail = ''; banner(); return true;
+}
+function banner() {
+  var b = $('banner'), msg = '';
+  if (!store.readable && store.why === 'corrupt') msg = 'Η αποθηκευμένη πρόοδος αυτής της συσκευής δεν διαβάζεται σωστά. Για να μη χαθεί, η σελίδα δεν γράφει τίποτα από πάνω της· ό,τι κάνεις τώρα κρατιέται μόνο όσο είναι ανοιχτή.';
+  else if (!store.readable) msg = 'Αυτός ο browser δεν επιτρέπει αποθήκευση. Η πρόοδος κρατιέται μόνο όσο είναι ανοιχτή η σελίδα.';
+  else if (store.fail) msg = 'Η τελευταία αλλαγή δεν αποθηκεύτηκε (ο χώρος της συσκευής μπορεί να είναι γεμάτος). Φαίνεται εδώ, αλλά θα χαθεί στο κλείσιμο.';
+  b.textContent = msg; b.hidden = !msg;
+}
+
+/* ── κείμενο: *όρος*, **έμφαση**, και κάθε πολυτονική λέξη σε GFS Didot ── */
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+var POLY = /[ἀ-῿̓̔͂]/;
+function md(s) {
+  var h = esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\*([^*]+)\*/g, '<em class="t">$1</em>');
+  return h.split(/(<em class="t">[\s\S]*?<\/em>|<[^>]+>)/).map(function (part) {
+    if (!part || part.charAt(0) === '<') return part;
+    return part.replace(/[^\s<>]+/g, function (w) { return POLY.test(w) ? '<span class="gr">' + w + '</span>' : w; });
+  }).join('');
+}
+function plain(s) { return String(s || '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1'); }
+function stName(n) { return 'Σταθμός ' + ROM[n]; }
+
+/* ── ο αστερισμός ───────────────────────────────────────────────────── */
+function gapsBy() {
+  var g = {}; ST.forEach(function (s) { g[s.n] = 0; });
+  gapList().forEach(function (x) { g[x.s]++; });
+  return g;
+}
+function mapSVG(box, opt) {
+  opt = opt || {};
+  var w = box.clientWidth || 1000, narrow = w < 620, P = [], W, H;
+  if (opt.strip) {
+    narrow = false; W = w < 620 ? 520 : 1100; H = w < 620 ? 74 : 128;
+    var mx = w < 620 ? 30 : 92;
+    ST.forEach(function (s, i) { P.push([mx + i * (W - 2 * mx) / (N - 1), 44]); });
+  } else if (!narrow) {
+    W = 1100; H = 380;
+    ST.forEach(function (s) { P.push([s.xy[0], s.xy[1]]); });
+  } else {
+    W = 360; H = 78 * N + 70;
+    ST.forEach(function (s, i) { P.push([i % 2 ? 250 : 110, 52 + i * 78]); });
+  }
+  var here = opt.here, gaps = opt.gaps ? gapsBy() : null, h = '';
+  h += '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Ο αστερισμός των ' + N + ' σταθμών">';
+  for (var i = 0; i < N - 1; i++) {
+    var a = P[i], b = P[i + 1], lit = opt.all || (S.read[ST[i].n] && S.read[ST[i + 1].n]);
+    var d = narrow ? 'M' + a[0] + ' ' + a[1] + ' C ' + a[0] + ' ' + (a[1] + 40) + ', ' + b[0] + ' ' + (b[1] - 40) + ', ' + b[0] + ' ' + b[1]
+                   : 'M' + a[0] + ' ' + a[1] + ' C ' + (a[0] + 60) + ' ' + a[1] + ', ' + (b[0] - 60) + ' ' + b[1] + ', ' + b[0] + ' ' + b[1];
+    h += '<path class="edge' + (lit ? ' lit' : '') + '" d="' + d + '"/>';
+  }
+  if (!narrow && !opt.strip) h += '<text class="core" x="' + (W / 2) + '" y="' + (H - 16) + '" text-anchor="middle">' + esc(D.core) + '</text>';
+  ST.forEach(function (s, i) {
+    var p = P[i], up = narrow || opt.strip ? false : p[1] < 170, lit = opt.all || !!S.read[s.n];
+    var cls = 'node' + (lit ? ' lit' : '') + (here === s.n ? ' here' : '') + (justRead === s.n && !opt.all ? ' stamp' : '');
+    var tx = narrow ? (p[0] < 180 ? p[0] + 22 : p[0] - 22) : p[0], anchor = narrow ? (p[0] < 180 ? 'start' : 'end') : 'middle';
+    var y1 = narrow ? p[1] - 4 : opt.strip ? p[1] - 20 : (up ? p[1] - 46 : p[1] + 34), y2 = narrow ? p[1] + 16 : opt.strip ? p[1] + (i % 2 ? 62 : 36) : (up ? p[1] - 24 : p[1] + 56);
+    h += '<a class="' + cls + '" href="#s' + s.n + '" aria-label="' + esc(stName(s.n) + ': ' + s.short + (lit ? ', διαβασμένος' : '')) + '">';
+    h += '<circle class="hit" cx="' + p[0] + '" cy="' + p[1] + '" r="26"/>';
+    h += '<circle class="ring" cx="' + p[0] + '" cy="' + p[1] + '" r="13"/>';
+    h += '<circle class="dot" cx="' + p[0] + '" cy="' + p[1] + '" r="7"/>';
+    h += '<text class="n" x="' + tx + '" y="' + y1 + '" text-anchor="' + anchor + '">' + ROM[s.n] + (here === s.n ? ' · ΕΔΩ' : '') + '</text>';
+    if (!(opt.strip && w < 620)) h += '<text class="nm" x="' + tx + '" y="' + y2 + '" text-anchor="' + anchor + '">' + esc(s.short) + '</text>';
+    if (gaps && gaps[s.n]) {
+      h += '<circle class="gapdot" cx="' + (p[0] + 12) + '" cy="' + (p[1] - 12) + '" r="4"/>';
+      h += '<text class="gapn" x="' + (p[0] + 19) + '" y="' + (p[1] - 16) + '">' + gaps[s.n] + '</text>';
+    }
+    h += '</a>';
+  });
+  h += '</svg>';
+  box.innerHTML = h;
+  box.classList.remove('drawn');
+  [].forEach.call(box.querySelectorAll('.edge'), function (e) {
+    var L = 400; try { L = Math.ceil(e.getTotalLength()) + 2; } catch (x) {}
+    e.style.setProperty('--len', L);
+  });
+  requestAnimationFrame(function () { requestAnimationFrame(function () { box.classList.add('drawn'); }); });
+  setTimeout(function () { box.classList.add('drawn'); }, 900);   /* δίχτυ (σταθ. 39) */
+}
+
+/* ── εξώφυλλο ───────────────────────────────────────────────────────── */
+/* ⭐ Η ΣΦΡΑΓΙΔΑ: μονόγραμμα + επιγραφή σε κύκλο (σαν νόμισμα) + μία κουκκίδα ανά σταθμό,
+   που ανάβει όταν τον διαβάσεις. Από το json (cover.seal) — κάθε κεφάλαιο τη δική του. */
+function sealSVG() {
+  /* ⭐ με `img` (προτομή-χαρακτικό, κοινό κτήμα) η εικόνα γεμίζει τον κύκλο και οι κουκκίδες κάθονται στο χείλος·
+     χωρίς `img` μένει το μονόγραμμα + η επιγραφή (`mark`/`ring`). */
+  var sl = D.cover.seal, R = sl.img ? 91 : 70, h = (sl.img ? '<img src="' + esc(sl.img) + '" alt="" decoding="async">' : '') +
+    '<svg viewBox="0 0 200 200" aria-hidden="true">' +
+    '<circle class="rim" cx="100" cy="100" r="97"/>' + (sl.img ? '' : '<circle class="rim2" cx="100" cy="100" r="70"/>' +
+    '<path id="sealPath" fill="none" d="M100 18a82 82 0 1 1 -0.01 0"/>' +
+    '<text class="ring"><textPath href="#sealPath" textLength="505" lengthAdjust="spacing">' + esc(sl.ring) + '</textPath></text>' +
+    '<text class="mark" x="100" y="131" text-anchor="middle">' + esc(sl.mark) + '</text>');
+  ST.forEach(function (st, i) {
+    var t = -Math.PI / 2 + i * 2 * Math.PI / N, x = 100 + R * Math.cos(t), y = 100 + R * Math.sin(t);
+    h += '<circle class="pip' + (S.read[st.n] ? ' lit' : '') + '" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.6"/>';
+  });
+  return h + '</svg>';
+}
+function renderCover() {
+  $('crumbs').textContent = 'MÉTRON · Αρχαία · Εισαγωγή · ' + D.route;
+  var c = D.cover;
+  $('cover').innerHTML = '<div class="seal" id="seal" role="img" aria-label="' + esc(D.cover.seal.label) + '">' + sealSVG() + '</div>' +
+    '<div><span class="lbl">' + esc(c.kicker) + '</span><h1>' + esc(D.title) + '</h1>' +
+    '<p class="sub">' + md(c.sub.t) + '</p>' +
+    '<div class="motto" lang="grc">' + esc(c.motto.gr) + '<small lang="el">' + esc(c.motto.tr) + '</small></div></div>';
+}
+
+/* ── τα σχέδια ──────────────────────────────────────────────────────── */
+var DG = {
+  flow: function (g) {
+    return '<div class="flow">' + g.nodes.map(function (n, i) {
+      return (i ? '<span class="cn grow" style="animation-delay:' + (i * .35) + 's"></span>' : '') +
+        '<div class="nd fade" style="animation-delay:' + (i * .35) + 's"><i></i><div class="big">' + md(n.t) + '</div>' + (n.sub ? '<div class="sm">' + md(n.sub.t) + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  },
+  repeat: function (g) {
+    return '<div class="rep"><div class="top"><span class="cap">' + esc(g.topCap || 'Το ερώτημα') + '</span><div class="big">' + md(g.top.t) + '</div></div>' +
+      '<div class="stops">' + g.stops.map(function (s, i) {
+        return '<div class="stop fade" style="animation-delay:' + (.2 + i * .35) + 's"><span class="cap">Στάση ' + (i + 1) + '</span><div class="who">' + md(s.t) + '</div><div class="find">' + md(s.find.t) + '</div></div>';
+      }).join('') + '</div>' +
+      '<div class="res fade" style="animation-delay:' + (.3 + g.stops.length * .35) + 's"><span class="cap">' + esc(g.resCap || 'Το εύρημα') + '</span><div class="big">' + md(g.result.t) + '</div></div>' +
+      (g.cost ? '<div class="cost">' + md(g.cost.t) + '</div>' : '') + '</div>';
+  },
+  split: function (g) {
+    var col = function (cls, head, list) {
+      return '<div class="' + cls + '"><h4>' + md(head.t) + '</h4><ul>' + list.map(function (x) { return '<li><span>' + md(x.t) + '</span></li>'; }).join('') + '</ul></div>';
+    };
+    return '<div class="split"><div class="cols">' + col('L', g.lh, g.left) + '<span class="bar growy"></span>' + col('R', g.rh, g.right) + '</div>' +
+      '<div class="res fade" style="animation-delay:.6s"><span class="cap">Με αποτέλεσμα</span><div class="big">' + md(g.result.t) + '</div></div></div>';
+  },
+  fork: function (g) {
+    return '<div class="fork"><div class="root"><span class="cap">Κοινό σημείο</span><div class="big">' + md(g.root.t) + '</div></div>' +
+      '<svg viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M200 0V16H100V46"/><path class="r" d="M200 16H300V46"/></svg>' +
+      '<div class="heads"><div><div class="big">' + md(g.lh.t) + '</div></div><div><div class="big">' + md(g.rh.t) + '</div></div></div>' +
+      g.rows.map(function (r, i) { return '<div class="row fade" style="animation-delay:' + (.15 + i * .12) + 's"><div>' + md(r.l.t) + '</div><div>' + md(r.r.t) + '</div></div>'; }).join('') + '</div>';
+  },
+  dialogue: function (g) {
+    var ln = g.lanes || ['Ο συνομιλητής', 'Ο Σωκράτης'];   /* οι λωρίδες· χωρίς lanes = του Δ2 */
+    var h = '<div class="dlg"><div class="lanes"><span class="cap">' + esc(ln[0]) + '</span><span class="cap">' + esc(ln[1]) + '</span>';
+    g.steps.forEach(function (s, i) {
+      (g.phases || []).forEach(function (p) { if (p.from === i) h += '<div class="ph cap">' + esc(plain(p.t)) + '</div>'; });
+      h += '<div class="bub ' + ((s.side ? s.side === 'R' : /Σωκράτης/.test(s.w)) ? 'S' : 'C') + ' fade" style="animation-delay:' + (i * .22) + 's">' + md(s.t) + '</div>';
+    });
+    return h + '<div class="res fade" style="animation-delay:' + (g.steps.length * .22) + 's"><span class="cap">' + esc(g.resCap || 'Εκεί καταλήγει') + '</span><div class="big">' + md(g.result.t) + '</div></div></div></div>';
+  },
+  descent: function (g) {
+    var stars = '';
+    [[30, 14], [80, 30], [140, 10], [205, 24], [260, 8], [318, 28], [372, 14]].forEach(function (p, i) { stars += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i % 3 ? 1.3 : 2) + '"/>'; });
+    return '<div class="desc"><div class="sky"><svg viewBox="0 0 400 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + stars + '</svg>' +
+      '<span class="cap">' + esc(g.topCap || 'Πριν') + '</span><div class="big">' + md(g.top.t) + '</div><div class="sm">' + md(g.topNote.t) + '</div><span class="gk">' + md(g.topGr.t) + '</span></div>' +
+      '<div class="arrow growy" aria-hidden="true"></div>' +
+      '<div class="earth fade" style="animation-delay:.5s"><span class="cap">' + esc(g.bottomCap || 'Με τον Σωκράτη') + '</span><div class="big amb">' + md(g.bottom.t) + '</div><span class="gk">' + md(g.bottomGr.t) + '</span></div></div>';
+  },
+  ladder: function (g) {
+    return '<div class="lad"><span class="rise">' + md(g.rise.t) + '</span><span class="cap">Ένα σκαλί τη φορά</span>' +
+      '<div class="steps">' + g.steps.map(function (s) { return '<div class="stp"><div class="big">' + md(s.t) + '</div><div class="sm">' + md(s.sub.t) + '</div></div>'; }).join('') + '</div>' +
+      '<div class="caps"><span class="cap">' + esc(plain(g.lo.t)) + '</span><span class="cap">' + esc(plain(g.hi.t)) + '</span></div></div>';
+  },
+  scales: function (g) {
+    var sv = '<svg viewBox="0 0 120 54" aria-hidden="true"><line class="beam" x1="14" y1="16" x2="106" y2="16"/><path d="M60 16L52 50H68Z"/><path d="M14 16L6 34H22ZM106 16L98 34H114Z"/><circle class="pv" cx="60" cy="16" r="2.6"/></svg>';
+    return '<div class="scl"><div class="grid">' + g.pairs.map(function (p, i) {
+      return '<div class="pair fade" style="animation-delay:' + (i * .1) + 's"><span class="no">' + (i + 1) + '</span>' + sv + '<div class="w"><span>' + esc(p.l) + '</span><span>' + esc(p.r) + '</span></div></div>';
+    }).join('') + '</div><div class="thread fade" style="animation-delay:.7s"><i></i><div class="big">' + md(g.thread.t) + '</div></div></div>';
+  }
+};
+function diagram(g) {
+  var f = DG[g.type];
+  if (!f) return '<div class="dg"><p class="sm">Λείπει ο σχεδιαστής «' + esc(g.type) + '» από το καλούπι.</p></div>';
+  return '<figure class="dg dg-' + g.type + '" aria-label="Σχέδιο του σταθμού">' + f(g) + '</figure>';
+}
+
+/* ── σταθμός ────────────────────────────────────────────────────────── */
+function stationHTML(s) {
+  var i = s.n - 1, prev = ST[i - 1], next = ST[i + 1], read = !!S.read[s.n];
+  var h = '<section class="st" id="st' + s.n + '" aria-labelledby="sth' + s.n + '"><div class="st-main enter">';
+  h += '<div class="num" aria-hidden="true">' + ROM[s.n] + '</div>';
+  h += '<span class="lbl">' + esc(stName(s.n) + ' · ' + s.label) + '</span>';
+  h += '<h2 id="sth' + s.n + '">' + md(s.title) + '</h2>';
+  if (s.mine) h += '<p class="mine"><span class="lbl">Στο χαρτί σου</span>«' + esc(s.mine) + '»</p>';
+  h += '<div class="prose">' + (s.prose || []).map(function (p) { return '<p>' + md(p.t) + '</p>'; }).join('') + '</div>';
+  if (s.quote) {
+    var q = s.quote.t + (s.quote.close ? '»' : '');
+    h += '<figure class="quote">' + (s.quote.lead ? '<span class="lbl">' + esc(s.quote.lead) + '</span>' : '') +
+      '<blockquote>' + (s.quote.close ? '«' : '') + md(q) + '</blockquote><cite>' + md(s.quote.cite) + '</cite></figure>';
+  }
+  h += diagram(s.diagram);
+  h += '<ul class="keys">' + (s.points || []).map(function (p) { return '<li><span>' + md(p.t) + '</span></li>'; }).join('') + '</ul>';
+  h += '<div class="done">';
+  if (read) h += '<span class="ok">Διαβάστηκε. Ο σταθμός φωτίζει στον χάρτη.</span><button type="button" class="btn ghost small" data-unread="' + s.n + '">Δεν το διάβασα ακόμα</button>';
+  else h += '<button type="button" class="btn pri" data-read="' + s.n + '">Το διάβασα</button>';
+  if (read) h += next ? '<a class="next" href="#s' + next.n + '">' + esc(ROM[next.n] + ' · ' + next.short) + ' →</a>' : '<a class="next" href="#fin">Το τέλος του κεφαλαίου →</a>';
+  h += '</div></div>';
+  h += '<aside><div class="card"><span class="lbl">Οι όροι του σταθμού</span><h3>Λεξιλόγιο</h3><div class="gloss">';
+  h += (s.gloss || []).map(function (g) {
+    return '<div><div class="gk">' + md(g.k) + '</div><div class="gl">' + md(g.d) + (g.mine ? '<span class="lbl yours">δική σου σημείωση</span>' : '') + '</div></div>';
+  }).join('') + '</div>';
+  if (s.mnem) h += '<div class="mnem"><span class="lbl">Για να το θυμάσαι</span><div class="k">' + esc(s.mnem.k) + '</div><p>' + md(s.mnem.t) + '</p></div>';
+  h += '<nav class="pager" aria-label="Σταθμοί">' + (prev ? '<a href="#s' + prev.n + '">← ' + esc(ROM[prev.n] + ' ' + prev.short) + '</a>' : '<span></span>') +
+    (next ? '<a class="r" href="#s' + next.n + '">' + esc(ROM[next.n] + ' ' + next.short) + ' →</a>' : '<a class="r" href="#fin">Τέλος →</a>') + '</nav>';
+  h += '</div></aside></section>';
+  return h;
+}
+function finHTML() {
+  return '<section class="fin" id="stfin"><span class="lbl">Τέλος του κεφαλαίου</span><p class="line">' + esc(D.fin.line) + '</p>' +
+    '<div class="mapbox" id="mapFin"></div><p>' + esc(D.fin.next) + '</p>' +
+    '<button type="button" class="btn pri" data-go="check">Πήγαινε στον Έλεγχο</button></section>';
+}
+
+/* ── ο έλεγχος ──────────────────────────────────────────────────────── */
+var C = D.check, mode = 'rc', rcOrder = C.recall.map(function (_, i) { return i; }), rcAt = 0, rcShown = false;
+function gapList() {
+  var out = [];
+  C.recall.forEach(function (c) { if (S.rc[c.id] === 0) out.push({ id: c.id, k: 'rc', s: c.s, tx: c.q, kind: 'Ανάκληση · όχι ακόμα' }); });
+  C.tf.forEach(function (c) { if (typeof S.tf[c.id] === 'boolean' && S.tf[c.id] !== c.ok) out.push({ id: c.id, k: 'tf', s: c.s, tx: c.t, kind: 'Σωστό ή λάθος · λάθος απάντηση' }); });
+  C.mc.forEach(function (c) { if (typeof S.mc[c.id] === 'number' && S.mc[c.id] !== c.ok) out.push({ id: c.id, k: 'mc', s: c.s, tx: c.q, kind: 'Πολλαπλή επιλογή · λάθος απάντηση' }); });
+  return out;
+}
+function answered() {
+  var n = 0, k;
+  for (k in S.rc) n++; for (k in S.tf) n++; for (k in S.mc) n++;
+  return n;
+}
+function headCheck() {
+  var r = 0, k; for (k in S.read) if (S.read[k]) r++;
+  var g = gapList().length, a = answered();
+  $('say').textContent = (r === N ? 'Διάβασες και τους ' + N + ' σταθμούς.' : 'Διάβασες ' + r + ' από τους ' + N + ' σταθμούς.') + ' ' +
+    (a === 0 ? 'Δεν έχεις ελέγξει τίποτα ακόμα.' : g === 0 ? 'Κανένα κενό σε όσα έλεγξες.' : (g === 1 ? 'Ένα κενό.' : g + ' κενά.'));
+  $('say2').textContent = a === 0 ? 'Ξεκίνα από την Ανάκληση: σκέψου την απάντηση, μετά δες την.' :
+    'Έλεγξες ' + a + ' από ' + (C.recall.length + C.tf.length + C.mc.length) + '. Οι κόκκινες τελείες στον χάρτη είναι τα κενά κάθε σταθμού.';
+  mapSVG($('map2'), { gaps: true, strip: true });
+}
+var MODES = [['rc', 'Ανάκληση'], ['tf', 'Σωστό ή λάθος'], ['mc', 'Πολλαπλή επιλογή'], ['gaps', 'Τα κενά μου'], ['glance', 'Με μια ματιά']];
+function renderSubnav() {
+  /* σταθ. 33: πριν από την πρώτη απάντηση τα κενά ΔΕΝ είναι «0» — δεν έχουν μετρηθεί */
+  var cnt = { rc: C.recall.length, tf: C.tf.length, mc: C.mc.length, gaps: answered() ? gapList().length : '', glance: '' };
+  $('subnav').innerHTML = MODES.map(function (m) {
+    return '<button type="button" role="tab" data-mode="' + m[0] + '" aria-selected="' + (mode === m[0]) + '">' + m[1] + (cnt[m[0]] !== '' ? '<span>' + cnt[m[0]] + '</span>' : '') + '</button>';
+  }).join('');
+}
+function stLink(n) { return '<a href="#s' + n + '">' + esc(ROM[n] + ' · ' + ST[n - 1].short) + ' →</a>'; }
+function paneRC() {
+  var c = C.recall[rcOrder[rcAt]], v = S.rc[c.id];
+  var ticks = '<div class="ticks" aria-hidden="true">' + rcOrder.map(function (ix, j) {
+    var x = C.recall[ix], st = S.rc[x.id]; return '<i class="' + (st === 1 ? 'k' : st === 0 ? 'n' : '') + (j === rcAt ? ' here' : '') + '"></i>';
+  }).join('') + '</div>';
+  var h = '<p class="intro">Μία ερώτηση τη φορά. Σκέψου την απάντηση πριν τη δεις, και πες τίμια αν την ήξερες. Ό,τι δεν ήξερες πάει στα «κενά μου».</p>' + ticks +
+    '<div class="bar"><button type="button" class="btn small" data-rc="prev">← Προηγούμενη</button><button type="button" class="btn small" data-rc="next">Επόμενη →</button>' +
+    '<button type="button" class="btn small ghost" data-rc="shuf">Ανακάτεψε</button><span class="pos">' + (rcAt + 1) + ' / ' + C.recall.length + '</span></div>';
+  h += '<div class="rc"><span class="lbl">' + esc(stName(c.s) + ' · ' + ST[c.s - 1].short) + '</span><p class="q">' + md(c.q) + '</p>';
+  if (!rcShown) h += '<p class="think">Σκέψου την απάντηση.</p><div class="row"><button type="button" class="btn pri" data-rc="show">Δείξε την απάντηση</button></div>';
+  else {
+    h += '<div class="ans">' + md(c.r) + '</div><div class="row">' +
+      '<button type="button" class="btn' + (v === 1 ? ' pri' : '') + '" data-rc="yes" aria-pressed="' + (v === 1) + '">Το ήξερα</button>' +
+      '<button type="button" class="btn' + (v === 0 ? ' pri' : '') + '" data-rc="no" aria-pressed="' + (v === 0) + '">Όχι ακόμα</button>' +
+      '<a class="go" href="#s' + c.s + '">Ξαναδιάβασε τον σταθμό →</a></div>';
+  }
+  return h + '</div>';
+}
+function scoreOf(list, ans) {
+  var a = 0, ok = 0; list.forEach(function (c) { var v = ans[c.id]; if (v !== undefined) { a++; if (v === c.ok) ok++; } });
+  return { a: a, ok: ok };
+}
+function scoreHTML(sc, total, k) {
+  return '<div class="score">' + (sc.a ? '<span class="n">' + sc.ok + '<small> σωστές από ' + sc.a + '</small></span>' : '<span class="intro" style="margin:0">Καμία απάντηση ακόμα · ' + total + ' ερωτήσεις.</span>') +
+    (sc.a ? '<button type="button" class="btn small ghost" data-reset="' + k + '">Ξανά από την αρχή</button>' : '') + '</div>';
+}
+function exHTML(okv, why, s) {
+  return '<div class="ex"><span class="v ' + (okv ? 'ok' : 'no') + '">' + (okv ? 'Σωστά' : 'Όχι') + '</span>' + md(why) + ' <a href="#s' + s + '">' + esc(ROM[s]) + ' →</a></div>';
+}
+function paneTF() {
+  var h = '<p class="intro">Όπως στις Πανελλήνιες: γράψε Σ ή Λ για κάθε πρόταση. Οι προτάσεις έχουν τις παγίδες του κεφαλαίου.</p>' + scoreHTML(scoreOf(C.tf, S.tf), C.tf.length, 'tf') + '<div class="qs">';
+  C.tf.forEach(function (c, i) {
+    var v = S.tf[c.id], done = typeof v === 'boolean';
+    h += '<div class="qi"><span class="lbl">' + (i + 1) + ' · ' + esc(ROM[c.s]) + '</span><p class="qt">' + md(c.t) + '</p><div class="tfrow">' +
+      [true, false].map(function (b) {
+        var cls = done ? (b === c.ok ? ' ok' : (b === v ? ' no' : '')) : '';
+        return '<button type="button" class="opt' + cls + '" data-tf="' + c.id + '" data-v="' + b + '"' + (done ? ' disabled' : '') + '>' + (b ? 'Σωστό' : 'Λάθος') + '</button>';
+      }).join('') + '</div>' + (done ? exHTML(v === c.ok, c.why, c.s) : '') + '</div>';
+  });
+  return h + '</div>';
+}
+function paneMC() {
+  var h = '<p class="intro">Μία σωστή σε κάθε ερώτηση. Μετά την απάντηση βλέπεις γιατί, και πού το λέει.</p>' + scoreHTML(scoreOf(C.mc, S.mc), C.mc.length, 'mc') + '<div class="qs">';
+  C.mc.forEach(function (c, i) {
+    var v = S.mc[c.id], done = typeof v === 'number';
+    h += '<div class="qi"><span class="lbl">' + (i + 1) + ' · ' + esc(ROM[c.s]) + '</span><p class="qt">' + md(c.q) + '</p><div class="opts">' +
+      c.o.map(function (o, j) {
+        var cls = done ? (j === c.ok ? ' ok' : (j === v ? ' no' : '')) : '';
+        return '<button type="button" class="opt' + cls + '" data-mc="' + c.id + '" data-v="' + j + '"' + (done ? ' disabled' : '') + '>' + md(o) + '</button>';
+      }).join('') + '</div>' + (done ? exHTML(v === c.ok, c.why, c.s) : '') + '</div>';
+  });
+  return h + '</div>';
+}
+function paneGaps() {
+  var g = gapList();
+  if (!answered()) return '<div class="empty">Δεν υπάρχουν κενά ακόμα, γιατί δεν έχεις ελέγξει τίποτα. Ξεκίνα από την <b>Ανάκληση</b>: ό,τι πεις «όχι ακόμα» έρχεται εδώ, με τον σταθμό του.</div>';
+  if (!g.length) return '<div class="empty">Κανένα κενό. Ό,τι έλεγξες το ήξερες. Συνέχισε με όσα δεν έχεις ελέγξει ακόμα.</div>';
+  var by = {}; g.forEach(function (x) { (by[x.s] = by[x.s] || []).push(x); });
+  return '<p class="intro">Μόνο ό,τι δεν ήξερες, ομαδοποιημένο ανά σταθμό. Ένα πάτημα και είσαι εκεί· όταν το μάθεις, πάτα «Το ξέρω πια».</p><div class="gaps">' +
+    Object.keys(by).sort(function (a, b) { return a - b; }).map(function (n) {
+      return '<div class="gapst"><div class="hd"><span class="lbl">' + esc(stName(+n)) + '</span><span class="big">' + esc(ST[n - 1].short) + '</span>' +
+        '<a href="#s' + n + '">Ξαναδιάβασέ τον →</a></div><ul>' + by[n].map(function (x) {
+          return '<li><div><span class="kind">' + esc(x.kind) + '</span><span class="tx">' + md(x.tx) + '</span></div>' +
+            '<button type="button" class="btn small" data-clear="' + x.k + ':' + x.id + '">Το ξέρω πια</button></li>';
+        }).join('') + '</ul></div>';
+    }).join('') + '</div>';
+}
+function paneGlance() {
+  var h = '<div class="glance"><p class="intro">Ό,τι αξίζει να ξέρεις απ’ έξω χωρίς να το ψάξεις: οι αριθμοί, οι παγίδες, τα μνημονικά, και η μεγάλη ιδέα αν σου ζητήσουν ανάπτυξη.</p>';
+  h += '<div class="nums">' + C.numbers.map(function (x) { return '<div><div class="v">' + esc(x.v) + '</div><div class="l">' + md(x.l) + '</div></div>'; }).join('') + '</div>';
+  if (C.numbersNote) h += '<p class="note">' + md(C.numbersNote) + '</p>';
+  h += '<h3>Οι παγίδες του κεφαλαίου</h3><ul class="pits">' + C.pitfalls.map(function (p) { return '<li><span>' + md(p.t) + '</span>' + stLink(p.s) + '</li>'; }).join('') + '</ul>';
+  h += '<h3>Τα μνημονικά</h3><div class="mlist">' + ST.filter(function (s) { return s.mnem; }).map(function (s) {
+    return '<div><div class="k">' + esc(s.mnem.k) + '</div><p>' + md(s.mnem.t) + '</p>' + stLink(s.n) + '</div>';
+  }).join('') + '</div>';
+  h += '<h3>Η μεγάλη ιδέα</h3><p class="idea">' + md(C.idea.t) + '</p></div>';
+  return h;
+}
+function renderPane() {
+  renderSubnav();
+  $('pane').innerHTML = mode === 'rc' ? paneRC() : mode === 'tf' ? paneTF() : mode === 'mc' ? paneMC() : mode === 'gaps' ? paneGaps() : paneGlance();
+}
+function renderCheck() {
+  headCheck(); renderPane();
+}
+
+/* ── δρομολόγηση: #s3 · #fin · #elegxos ─────────────────────────────── */
+var view = 'read', cur = 1;
+function route(fromHash) {
+  var hsh = (location.hash || '').slice(1), m = /^s(\d+)$/.exec(hsh);
+  if (hsh === 'elegxos') view = 'check';
+  else if (m && +m[1] >= 1 && +m[1] <= N) { view = 'read'; cur = +m[1]; }
+  else if (hsh === 'fin') { view = 'read'; cur = 'fin'; }
+  else { view = 'read'; cur = (S.at >= 1 && S.at <= N) ? S.at : 1; }
+  paint(fromHash);
+}
+function paint(scroll) {
+  var rd = view === 'read';
+  if ($('seal')) [].forEach.call($('seal').querySelectorAll('.pip'), function (c, i) { c.classList.toggle('lit', !!S.read[ST[i].n]); });
+  $('vRead').hidden = !rd; $('vCheck').hidden = rd;
+  $('tabRead').setAttribute('aria-selected', rd); $('tabCheck').setAttribute('aria-selected', !rd);
+  if (rd) {
+    if (typeof cur === 'number' && S.at !== cur) { S.at = cur; save(); }
+    mapSVG($('map'), { here: cur, strip: RET });
+    $('stage').innerHTML = cur === 'fin' ? finHTML() : stationHTML(ST[cur - 1]);
+    if (cur === 'fin') mapSVG($('mapFin'), { all: true });
+    if (scroll) { var t = $(cur === 'fin' ? 'stfin' : 'st' + cur); if (t) t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  } else { renderCheck(); if (scroll) window.scrollTo(0, 0); }
+  justRead = 0;
+}
+function go(h) { if (location.hash === '#' + h) route(true); else location.hash = h; }
+
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('button,[data-mode]'); if (!t) return;
+  var ds = t.dataset;
+  if (t.id === 'tabRead') return go(typeof cur === 'number' ? 's' + cur : cur === 'fin' ? 'fin' : 's1');
+  if (t.id === 'tabCheck' || ds.go === 'check') return go('elegxos');
+  if (ds.read) { S.read[ds.read] = Date.now(); save(); justRead = +ds.read; paint(false); var b = document.querySelector('.done .next'); if (b) b.focus({ preventScroll: true }); return; }
+  if (ds.unread) { delete S.read[ds.unread]; save(); paint(false); return; }
+  if (ds.mode) { mode = ds.mode; rcShown = false; renderPane(); return; }
+  if (ds.rc) {
+    var c = C.recall[rcOrder[rcAt]];
+    if (ds.rc === 'show') rcShown = true;
+    else if (ds.rc === 'yes' || ds.rc === 'no') { S.rc[c.id] = ds.rc === 'yes' ? 1 : 0; save(); rcAt = (rcAt + 1) % rcOrder.length; rcShown = false; headCheck(); }
+    else if (ds.rc === 'next') { rcAt = (rcAt + 1) % rcOrder.length; rcShown = false; }
+    else if (ds.rc === 'prev') { rcAt = (rcAt - 1 + rcOrder.length) % rcOrder.length; rcShown = false; }
+    else if (ds.rc === 'shuf') { for (var i = rcOrder.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = rcOrder[i]; rcOrder[i] = rcOrder[j]; rcOrder[j] = x; } rcAt = 0; rcShown = false; }
+    renderPane(); return;
+  }
+  if (ds.tf) { S.tf[ds.tf] = ds.v === 'true'; save(); headCheck(); renderPane(); return; }
+  if (ds.mc) { S.mc[ds.mc] = +ds.v; save(); headCheck(); renderPane(); return; }
+  if (ds.reset) { S[ds.reset] = {}; save(); headCheck(); renderPane(); return; }
+  if (ds.clear) {
+    var p = ds.clear.split(':');
+    if (p[0] === 'rc') S.rc[p[1]] = 1; else delete S[p[0]][p[1]];
+    save(); headCheck(); renderPane(); return;
+  }
+});
+document.addEventListener('keydown', function (e) {
+  if (view !== 'read' || e.altKey || e.metaKey || e.ctrlKey) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) return;
+  var n = cur === 'fin' ? N + 1 : cur;
+  if (e.key === 'ArrowRight' && n <= N) go(n === N ? 'fin' : 's' + (n + 1));
+  if (e.key === 'ArrowLeft' && n > 1) go('s' + (n - 1));
+});
+window.addEventListener('hashchange', function () { route(true); });
+/* Ο χάρτης αλλάζει σχήμα κάτω από 620px — ξαναζωγραφίζεται ΜΟΝΟ όταν αλλάξει
+   το ΠΛΑΤΟΣ. Στο iPhone η μπάρα διευθύνσεων αλλάζει το ύψος σε κάθε κύλιση. */
+var rw = 0, lastW = window.innerWidth;
+window.addEventListener('resize', function () {
+  if (window.innerWidth === lastW) return;
+  lastW = window.innerWidth; clearTimeout(rw);
+  rw = setTimeout(function () { mapSVG($('map'), { here: cur, strip: RET }); if ($('mapFin')) mapSVG($('mapFin'), { all: true }); if (view === 'check') mapSVG($('map2'), { gaps: true, strip: true }); }, 180);
+});
+
+renderCover();
+banner();
+route(false);
+})();
+</script>
+</body>
+</html>

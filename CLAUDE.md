@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v678`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v679`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,22 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-28 — `als-v679` — ΕΙΣΑΓΩΓΗ Ε2 «Το έργο του» (Πλάτων) ΜΕ ΤΟ SKILL — ΝΕΟ αρχείο `arxaia-platon-erga.html` (το Ε1 έμεινε byte-ίδιο).**
+`tools/eisagogi/arxaia/platon-e2.json`, κλειδί `eisarx-platon-e2-v1` (μόνο συσκευή). Πηγή: ίδια σελίδα με το Ε1, «::Ε2.» (ελληνικό Ε, το route
+βγήκε μόνο του). 29 προτάσεις (ο κατάλογος = 3 τεράστιες) → **12 σταθμοί**: γνήσια/νόθα+3 φάσεις · 8 νεανικά · ωριμότητα I/II · τελευταία φάση I/II ·
+Επιστολές · διαλογική μορφή · γιατί διάλογος · Φαίδρος/γραπτός λόγος · παίγνιον+Πρωταγόρας · σοβαρό παιχνίδι· σχέδια flow/repeat/fork/repeat/
+fork/split/flow/dialogue/fork/descent/scales/ladder. Και τα 27 έργα σε σταθμό ΚΑΙ σε ερώτηση. Ανάκληση 38 · Σ/Λ 24 (14 λάθος) · πολλαπλή 44
+(σωστή 11/13/10/10) · 11 παγίδες · 6 pitfalls. Μότο = ο πλαγιότιτλος «Η φιλοσοφία και το παίγνιον» (το βιβλίο δεν έχει αρχαίο παράθεμα).
+Προτομή = ΤΟ ΙΔΙΟ `eisagogi-platon-e1.webp` (καμία `bust.js`). `wire.js` BOOK: +1 γραμμή μετά το `arxaia-platon.html`.
+⚠️⚠️ **ΤΟ ΚΑΛΟΥΠΙ ΧΩΡΑΕΙ ΩΣ XII ΣΤΑΘΜΟΥΣ**: ο μεγάλος λατινικός αριθμός (`.num`, 84px italic στο κινητό) — XIII/XIV/XV ξεχείλιζαν 3px στα 390
+(βρέθηκε με Range πάνω στα text nodes· κανένα element δεν έβγαινε έξω). Λύθηκε στο json (15 → 12 σταθμοί), όχι στο tpl.
+⚠️ Ο validator ΔΕΝ πιάνει δύο διαδοχικούς σταθμούς με ίδιο σχέδιο· το πιάνει μόνο το Chrome test (κόστισε ένα finish).
+⚠️ `flow` = ΑΚΡΙΒΩΣ 3 κόμβοι, `ladder` = ως 3 σκαλιά (CSS grid 3 στηλών) — για καταλόγους μένουν fork/repeat/split.
+⚠️ **ΠΡΩΤΗ ΝΕΑ πλάκα (όχι αντικατάσταση) → το wire ταξινόμησε ΟΛΕΣ με το BOOK**: ο Πρωταγόρας πέρασε πριν από τον Αριστοτέλη, που πήγε
+από «Πακέτο 4» σε «Πακέτο 6» → `tests/arxaia-aristotelis.test.js` §6 ενημερώθηκε (η θέση είναι θέση, όχι ταυτότητα).
+finish πράσινο: eisagogi 164/0 · gnosto 2482/0 · aristotelis 650/0 · page-transition 138/0 · smoke OK · check.mjs ✓ · 3 PNG κοιταγμένα.
+🔴 Αδοκίμαστο σε συσκευή του. ΕΠΟΜΕΝΟ: Πρωταγόρας εισαγωγή.
 
 **2026-10-27 — `als-v678` — ΕΙΣΑΓΩΓΗ Ε1 «Ο βίος του» (Πλάτων) ΜΕ ΤΟ SKILL (αντικαθιστά το `arxaia-platon.html`, το παλιό → `archive/`).**
 `tools/eisagogi/arxaia/platon-e1.json`, κλειδί `eisarx-platon-e1-v1` (μόνο συσκευή). 40 προτάσεις → 9 σταθμοί (γενιά · θείοι · ποίηση ·
