@@ -5,7 +5,7 @@
 <script>window.AuroraBG=1;window.AuroraMotion=1;window.Nova=1;/* home has its own bg+motion — suppress the global aurora/nova-life layers */</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#060607">
+<meta name="theme-color" content="#08090B">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- The name under the icon on iOS. Without this, "Add to Home Screen" falls
@@ -17,11 +17,9 @@
 <script>document.documentElement.className+=' js';</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<!-- Nova's one heartbeat lives here — linked before the inline <style> so the
-     home's own tokens/sizing still win, and only the .nova* animation classes
-     are borrowed. aurora.css is fully class-scoped (.au-*/.nova), so nothing
-     else on the home page is touched. -->
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Commissioner:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- aurora.css carries the cross-page View Transition block (als-v622) and the
+     shared tokens; everything the home draws is styled below and wins. -->
 <link rel="stylesheet" href="aurora.css">
 <script src="vendor/supabase.min.js"></script>
 <script src="sync.js" defer></script>
@@ -34,349 +32,330 @@
 <script src="insights-engine.js" defer></script>
 <script src="chapters-engine.js" defer></script>
 <script src="forecast-engine.js" defer></script>
+<!-- als-v684: read-only. The School Studies row needs the five ladders; without
+     this file metric('homework.html') returned null and the tile sat on "—". -->
+<script src="ladders.js" defer></script>
 <style>
-
 /* ══════════════════════════════════════════════════════════════
-   MÉTRON — motion-elevated home (ISOLATED DEMO, self-contained)
-   Physical, responsive motion: scroll-reveal cascade, count-up data,
-   self-drawing sparklines, pointer-tracked glass, spring press,
-   cross-page view transitions. No-JS + reduced-motion safe.
+   MÉTRON — HOME (als-v684, the approved "v5" mockup, made real)
+   Near-black, hairlines instead of boxes, Instrument Serif for figures,
+   Commissioner for words, ONE home-only accent (champagne).
+   Every number is painted by home-live.js from his real stores; the markup
+   carries placeholders only ("—"), never a value nobody measured.
+   ⛔ Instrument Serif has no Greek: Greek text is never set in --serif.
    ══════════════════════════════════════════════════════════════ */
-/* als-v622: οι μεταβάσεις σελίδων ζουν πια στο μπλοκ VT του aurora.css — ΜΙΑ πηγή. */
-
 :root{
-  --canvas:#060607; --ivory:#F5F2EC;
-  --dim:rgba(245,242,236,0.56); --faint:rgba(245,242,236,0.30); --ghost:rgba(245,242,236,0.13);
-  --line:rgba(255,255,255,0.06); --line-2:rgba(255,255,255,0.10); --glass:rgba(255,255,255,0.022); --glass-2:rgba(255,255,255,0.04);
-  --emerald:#3FE0B0; --teal:#18C8C0; --violet:#9B8CFF; --amber:#F2C063; --coral:#FF8A6B;
-  --glow:63,224,176; --gradient:linear-gradient(118deg,var(--emerald),var(--teal) 48%,var(--violet));
-  --serif:"Instrument Serif",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
-  --settle:cubic-bezier(0.16,1,0.3,1);   /* slow settle — entrances/decorative */
-  --snap:cubic-bezier(0.22,1,0.36,1);    /* fast, no overshoot — interaction   */
-  --s1:8px;--s2:16px;--s3:24px;--s4:36px;--s5:56px;
+  --bg:#08090B; --s1:#0F1013; --s2:#15171B; --s3:#1C1F24;
+  --hair:rgba(255,255,255,.075); --hair2:rgba(255,255,255,.13);
+  --ink:#F2EEE6; --ink2:#BDB8AE; --ink3:#8E8A83; --ink4:#5F5C58;
+  --acc:#D9C49A;   /* champagne — the home page's own accent, used nowhere else */
+  --fuel:#E59A7C; --rest:#93A8E0; --train:#7FCFA4; --wt:#C9A3CF; --h2o:#86BFD0; --caf:#E8B25C; --late:#E8836F;
+  --serif:"Instrument Serif",Georgia,serif; --sans:Commissioner,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --out:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
-body{background:var(--canvas); color:var(--dim); font-family:var(--sans); -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden; padding:0 0 116px; position:relative; letter-spacing:0.005em;}
-body::before{content:''; position:fixed; inset:-15%; z-index:-2; pointer-events:none; background:radial-gradient(30% 22% at 14% 2%, rgba(63,224,176,0.09), transparent 62%),radial-gradient(26% 22% at 90% 98%, rgba(155,140,255,0.05), transparent 66%); filter:blur(34px); animation:drift 30s ease-in-out infinite alternate;}
-body::after{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size:3px 3px;}
-@keyframes drift{0%{transform:translate3d(-1.2%,-0.8%,0);}100%{transform:translate3d(1.2%,0.8%,0);}}
-.wrap{max-width:1120px; margin:0 auto; padding:0 22px;}
-
-/* `.hidden` was used by home-live.js (the arc band, the "new chapter" pip) but
-   NEVER DEFINED on this page — aurora.css is the only stylesheet and it has no
-   such rule. So the green NEW CHAPTER badge was permanently lit, and a failed
-   chapter computation rendered an EMPTY purple band instead of nothing. One
-   rule fixes both. */
+html{background:var(--bg);}
+body{background:var(--bg); color:var(--ink2); font:15px/1.5 var(--sans); -webkit-font-smoothing:antialiased; font-feature-settings:"tnum" 1; overflow-x:hidden; min-height:100vh;}
+a{color:inherit; text-decoration:none;}
+button{font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:0;}
+/* `.hidden` is toggled by home-live.js (the arc band/rail, the "new chapter"
+   pip). It must exist here — a no-op class fails silently (constraint 12). */
 .hidden{display:none !important;}
+[hidden]{display:none !important;}
+.wrap{max-width:1240px; margin:0 auto; padding:0 48px;}
+.k{font:500 11px/1.2 var(--sans); letter-spacing:.08em; text-transform:uppercase; color:var(--ink3);}
+.fig{font-family:var(--serif); font-style:italic; font-weight:400; color:var(--ink); letter-spacing:-.01em; line-height:.92;}
+.unit{font:400 13px var(--sans); font-style:normal; color:var(--ink3); margin-left:5px; letter-spacing:0;}
+.gr{font-family:var(--sans) !important; font-style:normal !important; letter-spacing:-.01em;}
+h1,h2{text-wrap:balance;} .lede,.line,.more p,.fc .line{text-wrap:pretty;}
 
-/* ── the arc band ── */
-.arcband{ position:relative; display:block; margin:18px 0 4px; padding:20px 20px 18px; border-radius:20px; text-decoration:none; overflow:hidden;
-  background:linear-gradient(135deg, rgba(155,140,255,.16), rgba(52,226,176,.05) 62%, rgba(255,255,255,.02));
-  border:1px solid rgba(155,140,255,.26); }
-.arcband-glow{ position:absolute; inset:-40% -10% auto -10%; height:180%; pointer-events:none;
-  background:radial-gradient(60% 50% at 18% 0%, rgba(155,140,255,.20), rgba(155,140,255,0) 70%); }
-.arcband>*{ position:relative; }
-.arcband-eyebrow{ display:flex; align-items:center; gap:9px; font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  font-size:9px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:rgba(155,140,255,.95); }
-.arcband-new{ padding:3px 7px; border-radius:6px; background:rgba(52,226,176,.16); border:1px solid rgba(52,226,176,.36); color:#34E2B0; letter-spacing:.12em; }
-.arcband-title{ display:block; margin-top:11px; font-family:var(--au-serif,Georgia),serif; font-style:italic; font-weight:400;
-  font-size:clamp(26px,7vw,38px); line-height:1.02; letter-spacing:-.02em; color:var(--text-primary,#F4F1EA); }
-.arcband-meta{ display:block; margin-top:8px; font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  font-size:9.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-tertiary,#8A8A93); }
-.arcband-body{ display:block; margin-top:12px; max-width:56ch; font-size:13.5px; line-height:1.55; color:var(--text-secondary,#B9B9C2); }
-.arcband-go{ display:block; margin-top:14px; font-size:12.5px; font-weight:700; color:rgba(155,140,255,.95); }
-.arcband:active{ transform:scale(.995); }
-@media(min-width:720px){ .arcband{ padding:26px 28px 24px; } }
+/* entrance — content is VISIBLE by default; motion is added only once the
+   script has committed to reveal it (constraint 39). */
+html.anim .rv{opacity:0; transform:translateY(8px);}
+html.anim .rv.in{opacity:1; transform:none; transition:opacity .9s var(--out),transform .9s var(--out); transition-delay:calc(var(--i,0)*70ms);}
 
-/* ── the arc RAIL — the arc's resting state ──────────────────
-   The band is an ANNOUNCEMENT: its whole job is to say a chapter turned. But a
-   chapter turns maybe six times a year, and the band was standing there ~200px
-   tall every single day to carry it. Two italic serif headlines stacked (the
-   chapter title at 38px, then "Good morning" at 66px) means the eye lands on
-   the chapter, not on him, and half the first screen is gone before the
-   greeting starts.
-   So the arc rests as one quiet line under the dateline: mono for the machine
-   facts, serif italic for the one word that is actually narrative. ~30px, and
-   it reads as a kicker rather than a headline. The band comes back, full size,
-   only in the days after a chapter actually turns. */
-.arcrail{ display:inline-flex; align-items:baseline; flex-wrap:wrap; gap:9px; margin-top:11px;
-  font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:0.18em;
-  text-transform:uppercase; color:var(--faint); text-decoration:none;
-  transition:color .28s var(--snap); }
-.arcrail:hover{ color:var(--dim); }
-.arcrail-dot{ align-self:center; width:5px; height:5px; border-radius:50%; flex-shrink:0;
-  background:#9B8CFF; }
-.arcrail-title{ font-family:var(--serif); font-style:italic; font-weight:400;
-  font-size:15.5px; line-height:1; letter-spacing:0; text-transform:none; color:var(--ivory); }
-.arcrail-sep{ opacity:.38; }
-.arcrail-go{ opacity:.5; letter-spacing:0; }
-.arcrail:hover .arcrail-go{ opacity:.9; }
+/* ── top bar ── */
+.bar{display:flex; align-items:center; gap:14px; min-height:76px; padding-top:env(safe-area-inset-top); border-bottom:1px solid var(--hair);}
+.brand{font:500 12.5px var(--sans); letter-spacing:.42em; color:var(--ink);}
+.brand i{font-style:normal; color:var(--acc);}
+.bar .right{margin-left:auto; display:flex; align-items:center; gap:10px; margin-right:52px; /* room for the account button topbar.js floats here */}
+.srch{display:flex; align-items:center; gap:10px; height:38px; width:260px; padding:0 12px; border-radius:9px; background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair); font-size:13.5px; color:var(--ink3); text-align:left;}
+.srch kbd{margin-left:auto; font:500 11px var(--sans); color:var(--ink3);}
+.srch:hover{box-shadow:inset 0 0 0 1px var(--hair2);}
+.wchip{display:flex; align-items:center; height:38px; border-radius:9px; background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair); font-size:13.5px; color:var(--ink2);}
+.wchip-main{display:flex; align-items:center; gap:8px; height:100%; padding:0 10px 0 12px;}
+.wchip-main i{width:6px; height:6px; border-radius:50%; background:var(--h2o);}
+.wchip-n{display:inline-flex;} .wchip-n b{font-weight:500; color:var(--ink);} .wchip-n em{font-style:normal; color:var(--ink3);}
+.wchip-add{width:38px; height:38px; border-left:1px solid var(--hair) !important; color:var(--ink); font-size:17px; transition:color .2s;}
+.wchip-add:hover{color:var(--acc);}
+#wCount.pop{animation:wpop .45s var(--out);}
+@keyframes wpop{40%{transform:scale(1.25); color:var(--acc);}}
+/* topbar.js injects the shell on every page. Home strips it to ONE control —
+   the account button, the only clean way to hand this device to someone else —
+   and seats it at the end of the bar above. ⚠️ Never hide #bottombar here and
+   never draw a private nav: two bottom navs on one page was als-v438. */
+#topbar{display:flex !important; position:absolute; top:0; right:0; left:auto; width:auto; z-index:50; background:transparent !important; border-bottom:0 !important;
+  padding:calc(env(safe-area-inset-top) + 19px) max(48px, calc((100vw - 1240px)/2 + 48px)) 0 0 !important; pointer-events:none;}
+#topbar > *{display:none !important;}
+#topbar .topbar-acct{display:inline-flex !important; pointer-events:auto;}
+body.has-alxfab{ padding-bottom:calc(78px + env(safe-area-inset-bottom)) !important; }
 
-/* ── scroll-reveal (JS-gated so no-JS shows everything) ── */
-.js [data-rise]{opacity:0; transform:translateY(20px); transition:opacity .7s var(--settle), transform .7s var(--settle); will-change:opacity,transform;}
-.js [data-rise].in{opacity:1; transform:none;}
+/* ── the arc: one quiet line under the bar; the full band only for the three
+   days after a chapter turns (home-live.js decides which is on screen) ── */
+.arcrail{display:flex; align-items:center; gap:12px; min-height:44px; border-bottom:1px solid var(--hair); font-size:13.5px; color:var(--ink3);}
+.arcrail-dot{width:6px; height:6px; border-radius:50%; background:var(--acc);}
+.arcrail-title{color:var(--ink); font-weight:500;}
+.arcrail-go{margin-left:auto; color:var(--ink3); transition:color .2s;}
+.arcrail:hover .arcrail-go{color:var(--acc);}
+.arcband{display:block; margin-top:18px; padding:20px 22px; border-radius:16px; background:var(--s1); box-shadow:inset 0 0 0 1px rgba(217,196,154,.3);}
+.arcband-eyebrow{display:flex; gap:10px; align-items:center; font:500 11px var(--sans); letter-spacing:.08em; text-transform:uppercase; color:var(--acc);}
+.arcband-new{padding:2px 8px; border-radius:6px; background:rgba(217,196,154,.14);}
+.arcband-glow{display:none;}
+.arcband-title{display:block; margin-top:10px; font:italic 400 34px/1.05 var(--serif); color:var(--ink);}
+.arcband-meta{display:block; margin-top:6px; font-size:13px; color:var(--ink3);}
+.arcband-body{display:block; margin-top:10px; font-size:15px; color:var(--ink2); max-width:640px;}
+.arcband-go{display:inline-block; margin-top:12px; font-size:13.5px; color:var(--acc);}
 
-/* ── Header + Nova mascot ───────────────────────────────── */
-.head{padding:max(38px,env(safe-area-inset-top)) 0 0; display:flex; justify-content:space-between; align-items:flex-start; gap:20px;}
-.greeting{font-family:var(--serif); font-style:italic; font-weight:400; color:var(--ivory); line-height:1.0; letter-spacing:-0.015em; font-size:clamp(42px,7.6vw,66px); margin:14px 0 8px;}
-.greeting .grn{color:var(--emerald);}
-.sub{font-family:var(--mono); font-size:12px; letter-spacing:0.05em; color:var(--faint);}
-/* Nova's beat, float and life-states live in aurora.css (linked in <head>) —
-   ONE heartbeat for the whole app, so it can never drift between pages and the
-   smoke-test can pin it. Here we only override her size for the home header;
-   the animation classes on the inline SVG are driven by aurora.css. */
-.nova{width:58px; height:58px; flex-shrink:0; margin-top:6px;}
+/* ── head: the answer first ── */
+.head{display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:64px; padding:64px 0 52px; align-items:end;}
+.date{display:flex; gap:14px; align-items:center;}
+.date .now{color:var(--acc);}
+h1.greeting{font:italic 400 clamp(54px,6.2vw,84px)/.98 var(--serif); color:var(--ink); letter-spacing:-.022em; margin:22px 0 26px;}
+h1.greeting em{font-style:italic; color:var(--acc);}
+.lede{font-size:19px; line-height:1.6; color:var(--ink2); max-width:600px; margin:0;}
+.lede b{font-weight:500; color:var(--ink);}
+.acts{display:flex; gap:10px; margin-top:32px; flex-wrap:wrap;}
+.btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 18px; border-radius:11px; font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair2); transition:transform .15s var(--out),box-shadow .25s,background .25s;}
+.btn:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); background:var(--s2);}
+.btn:active{transform:scale(.97);}
+.btn.pri{background:var(--acc); color:#16130D; box-shadow:none;}
+.btn.pri:hover{background:#E4D2AC;}
+.btn.pri small{font-size:12.5px; font-weight:500; color:rgba(22,19,13,.66); padding-left:10px; border-left:1px solid rgba(22,19,13,.2);}
 
-/* ── Launch row ─────────────────────────────────────────── */
-.launch{display:flex; flex-wrap:wrap; gap:10px; margin-top:var(--s3);}
-.lbtn{display:inline-flex; align-items:center; gap:9px; padding:11px 16px; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); text-decoration:none; transition:border-color .28s var(--snap), color .28s var(--snap), transform .28s var(--snap);}
+/* ── the day card (what is left, read from his stores — never ticked here) ── */
+.today{border-radius:16px; background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair); transition:box-shadow .8s var(--out);}
+.today.closed{box-shadow:inset 0 0 0 1px rgba(217,196,154,.38),0 0 0 6px rgba(217,196,154,.04);}
+.td-h{display:flex; align-items:baseline; justify-content:space-between; padding:20px 22px 14px;}
+.td-h .fig{font-size:44px;}
+.td-h .fig small{font-size:20px; color:var(--ink4);}
+.td-meter{display:flex; gap:3px; padding:0 22px 18px;}
+.td-meter i{flex:1; height:3px; border-radius:2px; background:var(--s3); transition:background .5s var(--out);}
+.td-meter i.on{background:var(--acc);}
+.item{display:flex; align-items:center; gap:14px; min-height:50px; padding:12px 22px; border-top:1px solid var(--hair); transition:background .2s;}
+.item:hover{background:rgba(255,255,255,.018);}
+.box{width:22px; height:22px; flex:none; border-radius:7px; box-shadow:inset 0 0 0 1.5px var(--hair2); display:grid; place-items:center; transition:background .35s var(--out),box-shadow .35s var(--out);}
+.box svg{width:13px; height:13px; stroke:var(--bg); stroke-width:2.4; fill:none; stroke-dasharray:20; stroke-dashoffset:20; transition:stroke-dashoffset .4s var(--out) .05s;}
+.item.done .box{background:var(--acc); box-shadow:none;}
+.item.done .box svg{stroke-dashoffset:0;}
+.ttl{font-size:15px; color:var(--ink); background:linear-gradient(var(--ink3),var(--ink3)) no-repeat 0 55%/0 1px; transition:background-size .55s cubic-bezier(.65,0,.35,1),color .4s;}
+.item.done .ttl{background-size:100% 1px; color:var(--ink3);}
+.item .when{margin-left:auto; white-space:nowrap; font-size:12.5px; color:var(--ink3);}
+.item .plus{margin-left:12px; width:32px; height:32px; flex:none; border-radius:8px; box-shadow:inset 0 0 0 1px var(--hair2); display:grid; place-items:center; color:var(--ink); font-size:16px; transition:background .2s,transform .15s;}
+.item .plus:hover{background:var(--s3);} .item .plus:active{transform:scale(.9);}
+.td-empty{padding:16px 22px 20px; border-top:1px solid var(--hair); font-size:14px; color:var(--ink2);}
 
-/* water quick-log chip — the old topbar pill, reborn in the home voice */
-.wchip{display:inline-flex; align-items:stretch; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); overflow:hidden; transition:border-color .28s var(--snap);}
-.wchip:hover{border-color:rgba(24,200,192,0.35);}
-.wchip-main{display:inline-flex; align-items:center; gap:9px; padding:10px 13px; text-decoration:none; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); transition:color .28s var(--snap);}
-.wchip-main:hover{color:var(--ivory);}
-.wchip-main .i{width:15px; height:15px; color:var(--teal); display:flex;}
-.wchip-main .i svg{width:100%; height:100%;}
-.wchip-n{font-family:var(--serif); font-style:italic; display:inline-flex; align-items:baseline; gap:4px; line-height:1; letter-spacing:0; text-transform:none;}
-.wchip-n b{font-weight:400; font-size:17px; color:var(--ivory);}
-.wchip-n em{font-style:normal; font-family:var(--mono); font-size:9px; color:var(--faint); letter-spacing:0.08em;}
-.wchip-lbl{color:var(--faint);}
-.wchip-add{width:40px; display:flex; align-items:center; justify-content:center; background:rgba(24,200,192,0.07); border:none; border-left:1px solid var(--line); color:var(--emerald); cursor:pointer; transition:background .28s var(--snap); -webkit-tap-highlight-color:transparent;}
-.wchip-add:hover{background:rgba(24,200,192,0.16);}
-.wchip-add:active{background:rgba(24,200,192,0.24);}
-.wchip-add svg{width:14px; height:14px;}
+/* ── the ruler: today in 24 hours, from what he logged ── */
+.ru-h{display:flex; align-items:baseline; gap:18px; margin-bottom:16px;}
+.ru-h .k:first-child{color:var(--ink2);}
+.ro{font-size:13.5px; color:var(--ink3); min-height:20px;}
+.ro b{font-weight:500; color:var(--ink);}
+.ru-legend{margin-left:auto; display:flex; gap:20px;}
+.ru-legend span{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink3);}
+.ru-legend i{width:10px; height:10px; border-radius:3px;}
+#ru{display:block; width:100%; height:120px; touch-action:pan-y; cursor:crosshair; outline:none; border-radius:6px; overflow:visible;}
+#ru:focus-visible{box-shadow:0 0 0 2px rgba(217,196,154,.35);}
+#ru text{font:400 11px var(--sans); fill:var(--ink4);}
+#ru .lab{font:400 12px var(--sans); fill:var(--ink2);}
+#ru .lab.dk{fill:#0B0C10; font-weight:500;}
+#ru .nowt{font:500 11px var(--sans); fill:var(--acc); letter-spacing:.06em;}
 
-/* ── Quick row ───────────────────────────────────────────────
-   Controls, not reports. Own row at every width, so it can never wrap up
-   into the launch buttons. The shortcuts borrow the water chip's exact
-   tokens (glass, line-2, 13px) so they read as its siblings. */
-.quick{display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; margin-top:10px;}
-.qlinks{display:inline-flex; align-items:stretch; border-radius:13px; background:var(--glass); border:1px solid var(--line-2); overflow:hidden; transition:border-color .28s var(--snap);}
-.qlinks:hover{border-color:rgba(var(--glow),0.3);}
-.qlink{display:inline-flex; align-items:center; gap:9px; padding:10px 15px; text-decoration:none; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); -webkit-tap-highlight-color:transparent; transition:color .28s var(--snap), background .28s var(--snap);}
-.qlink + .qlink{border-left:1px solid var(--line);}
-.qlink .i{width:15px; height:15px; display:flex; color:var(--faint); transition:color .28s var(--snap);}
-.qlink .i svg{width:100%; height:100%;}
-.qlink:hover{color:var(--ivory); background:var(--glass-2);}
-.qlink:hover .i{color:var(--emerald);}
-.qlink:active{background:rgba(255,255,255,0.06);}
-/* On a phone the controls go compact so they hold ONE line — the count already
-   says "water", and the two glyphs carry the rest. Words return on desktop. */
-@media (max-width:560px){
-  .wchip-lbl{display:none;}
-  .qlink-lbl{display:none;}
-  .qlink{padding:10px 14px;}
-}
-@keyframes wpop{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
-.wchip-n b.pop{display:inline-block; animation:wpop .32s var(--snap);}
-.lbtn .i{width:15px; height:15px; color:var(--faint); transition:color .28s var(--snap);}
-.lbtn:hover{border-color:rgba(var(--glow),0.3); color:var(--ivory); transform:translateY(-2px);}
-.lbtn:hover .i{color:var(--emerald);}
-.lbtn:active{transform:translateY(0) scale(0.97);}
-.lbtn.primary{background:rgba(var(--glow),0.06);}
-.lbtn.primary .i{color:var(--emerald);}
+/* ── sections ── */
+.sec{padding-top:72px;}
+.sec-h{display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding-bottom:16px; border-bottom:1px solid var(--hair);}
+.sec-h h2{margin:0; font:italic 400 32px var(--serif); color:var(--ink); letter-spacing:-.01em;}
+.sec-h a{font-size:13.5px; color:var(--ink3);}
+.sec-h a:hover{color:var(--acc);}
 
-/* ── Focal card ─────────────────────────────────────────── */
-.focus{position:relative; margin-top:var(--s3); border-radius:22px; padding:24px 26px; overflow:hidden; background:var(--glass-2); border:1px solid var(--line-2); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); display:block; text-decoration:none; transition:transform .3s var(--snap);}
-.focus:active{transform:scale(0.992);}
-.focus::before{content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; background:var(--gradient); background-size:220% 220%; -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:0.5; animation:flow 10s ease infinite;}
-@keyframes flow{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
-.focus>*{position:relative;}
-.focus .label{font-family:var(--mono); font-size:10px; letter-spacing:0.24em; text-transform:uppercase; color:var(--emerald); opacity:0.9;}
-.focus .line{font-family:var(--serif); font-style:italic; font-size:clamp(21px,3.6vw,28px); color:var(--ivory); margin:10px 0 6px; line-height:1.18;}
-.focus .meta{font-size:13.5px; color:var(--dim); line-height:1.55; max-width:64ch;}
+/* metrics — hairline columns, no boxes */
+.metrics{display:grid; grid-template-columns:repeat(4,1fr);}
+.m{display:block; padding:28px 28px 26px; border-right:1px solid var(--hair); transition:background .3s var(--out); min-width:0;}
+.m:first-child{padding-left:0;} .m:last-child{border-right:0; padding-right:0;}
+.m:hover{background:linear-gradient(180deg,rgba(255,255,255,.015),transparent);}
+.m .top{display:flex; align-items:center; gap:8px;}
+.m .top i{width:6px; height:6px; border-radius:50%;}
+.m .top .go{margin-left:auto; color:var(--ink4); transition:transform .3s var(--out),color .3s;}
+.m:hover .go{transform:translateX(3px); color:var(--ink2);}
+.m .fig{font-size:58px; margin-top:22px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.m .fig.txt{font-size:46px;}
+.m .line{margin-top:10px; font-size:14px; color:var(--ink2); min-height:21px;}
+.m .line b{font-weight:500; color:var(--ink);}
+.m svg{display:block; width:100%; height:48px; margin-top:22px; overflow:visible;}
+.m .foot{display:flex; justify-content:space-between; gap:10px; margin-top:12px; font-size:12px; color:var(--ink3);}
+.m.err .fig{color:var(--ink4);} .m.err .line{color:var(--late);}
 
-/* ── Command palette ────────────────────────────────────── */
-.palette{margin-top:var(--s3); position:relative;}
-.palette-box{display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--line-2); border-radius:14px; background:var(--glass); transition:border-color .28s var(--snap);}
-.palette-box:focus-within{border-color:rgba(var(--glow),0.3);}
-.palette-box .ic{width:16px; height:16px; color:var(--faint);}
-.palette-box input{flex:1; background:none; border:0; outline:0; color:var(--ivory); font-family:var(--sans); font-size:14.5px; letter-spacing:0.01em;}
-.palette-box input::placeholder{color:var(--faint);}
-.palette-hint{font-family:var(--mono); font-size:9px; letter-spacing:0.12em; color:var(--ghost); border:1px solid var(--line); border-radius:6px; padding:3px 6px;}
-.palette-results{margin-top:8px; border:1px solid var(--line); border-radius:14px; overflow:hidden; display:none;}
-.palette-results.on{display:block;}
-.pr-item{display:flex; align-items:center; gap:12px; padding:12px 15px; text-decoration:none; color:var(--dim); border-top:1px solid var(--line); transition:background .2s; animation:prIn .32s var(--settle) both;}
-.pr-item:first-child{border-top:0;}
-.pr-item:hover{background:rgba(var(--glow),0.05); color:var(--ivory);}
-.pr-item .ic{width:15px;height:15px;color:var(--faint);}
-.pr-item .k{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ghost);margin-left:auto;}
-@keyframes prIn{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+/* week + nova */
+.duo{display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);}
+.week{padding:30px 40px 30px 0; border-right:1px solid var(--hair);}
+.wk-h{display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;}
+.wk-h .fig{font-size:52px;}
+.wk-h p{margin:0; font-size:14.5px; color:var(--ink2);}
+.grid7{display:grid; grid-template-columns:72px repeat(7,1fr); gap:8px 6px; margin-top:26px; align-items:center;}
+.grid7 .rl{font-size:12.5px; color:var(--ink3);}
+.grid7 .dl{font-size:11.5px; color:var(--ink3); text-align:center; padding-bottom:4px;}
+.grid7 .dl.t{color:var(--acc);}
+.c{display:block; height:22px; border-radius:5px; background:var(--s2);}
+.c.f{background:var(--cc);}
+.c.t{box-shadow:inset 0 0 0 1px rgba(217,196,154,.5);}
+.c.fut{background:transparent; box-shadow:inset 0 0 0 1px var(--hair);}
+.c.stamp{animation:stamp .7s var(--out) both; box-shadow:0 0 0 1px rgba(217,196,154,.6),0 0 18px rgba(217,196,154,.22);}
+@keyframes stamp{0%{transform:scale(.3);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
+.nv{padding:30px 0 30px 40px; display:flex; flex-direction:column; min-width:0;}
+.nv .who{display:flex; align-items:center; gap:10px;}
+.mark{width:22px; height:22px; border-radius:50%; background:conic-gradient(from 210deg,var(--acc),#8E7A55,var(--acc)); position:relative; flex:none;}
+.mark::after{content:""; position:absolute; inset:6px; border-radius:50%; background:var(--bg);}
+.nv blockquote{margin:20px 0 0; font:400 21px/1.45 var(--sans); color:var(--ink); letter-spacing:-.005em;}
+.nv .src{margin-top:12px; font-size:13px; color:var(--ink3);}
+.more{margin-top:18px; border-top:1px solid var(--hair);}
+.more p{margin:0; padding:12px 0; border-bottom:1px solid var(--hair); font-size:14px; color:var(--ink2);}
+.lnk{display:inline-block; margin-top:16px; font-size:13.5px; color:var(--acc);}
+.lnk:hover{text-decoration:underline; text-underline-offset:4px;}
+.ask{margin-top:20px; display:flex; align-items:center; min-height:46px; padding:0 16px; border-radius:12px; background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair); font-size:14px; color:var(--ink3);}
+.ask span{margin-left:auto; color:var(--ink3);}
+.ask:hover{box-shadow:inset 0 0 0 1px var(--hair2); color:var(--ink2);}
 
-/* ── Intelligence sections ──────────────────────────────── */
-.intel-sec{margin-top:var(--s4);}
-.intel-hd{display:flex; align-items:baseline; gap:12px; margin-bottom:var(--s2); padding-left:2px;}
-.intel-hd .n{font-family:var(--serif); font-style:italic; font-size:22px; color:var(--ivory);}
-.intel-hd .s{font-family:var(--mono); font-size:9.5px; letter-spacing:0.22em; text-transform:uppercase; color:var(--faint);}
-.intel-hd .rule{flex:1; height:1px; background:linear-gradient(90deg,var(--line-2),transparent);}
-.intel-cards{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-.icard{background:var(--glass); border:1px solid var(--line); border-radius:16px; padding:16px 17px; transition:border-color .4s var(--settle);}
-.icard:hover{border-color:var(--line-2);}
-.icard .top{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:var(--emerald); opacity:0.85;}
-.icard .top .conf{margin-left:auto; color:var(--faint);}
-.icard .body{color:var(--ivory); font-size:14px; line-height:1.5; margin-top:9px;}
-.icard .body b{font-family:var(--serif); font-style:italic; font-weight:400; color:var(--emerald); font-size:17px;}
-.icard.f .top{color:var(--violet);} .icard.f .body b{color:var(--violet);}
-.seeall{font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--emerald); opacity:0.8; text-decoration:none; display:inline-block; margin-top:12px;}
+/* forecasts */
+.fc{display:grid; grid-template-columns:repeat(3,1fr);}
+.fc > div{padding:26px 28px 24px; border-right:1px solid var(--hair); min-width:0;}
+.fc > div:first-child{padding-left:0;} .fc > div:last-child{border-right:0;}
+.fc .line{margin-top:14px; font-size:16px; line-height:1.5; color:var(--ink);}
 
-/* ── Space sections + instrument tiles ──────────────────── */
-.space{margin-top:var(--s5);}
-.space-hd{display:flex; align-items:baseline; gap:12px; margin-bottom:var(--s2); padding-left:2px;}
-.space-hd .n{font-family:var(--serif); font-style:italic; font-size:22px; color:var(--ivory);}
-.space-hd .s{font-family:var(--mono); font-size:9.5px; letter-spacing:0.22em; text-transform:uppercase; color:var(--faint);}
-.space-hd .rule{flex:1; height:1px; background:linear-gradient(90deg,var(--line-2),transparent);}
-.grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;}
-.tile{position:relative; isolation:isolate; display:flex; flex-direction:column; min-height:148px; text-decoration:none; background:var(--glass); border:1px solid var(--line); border-radius:18px; padding:16px 17px; overflow:hidden; transition:transform .3s var(--snap), border-color .3s var(--snap), box-shadow .3s var(--snap), background .3s var(--snap);}
-.tile.w2{grid-column:span 2;}
-.tile.wall{grid-column:1/-1;} /* als-v651: a space with ONE tile — full row at 4 cols and at 2 */
-.tile>*{position:relative; z-index:1;}
-.tile::before{content:''; position:absolute; inset:0; z-index:0; background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.06), transparent 55%); opacity:0; transition:opacity .3s var(--snap);}
-.tile:hover::before{opacity:1;}
-.tile .ic{width:22px; height:22px; color:var(--faint); transition:color .3s var(--snap), transform .3s var(--snap);}
-.tile .ic svg{width:100%; height:100%; display:block;}
-.tile .spacer{flex:1;}
-.tile .val{font-family:var(--serif); font-style:italic; color:var(--ivory); font-size:36px; line-height:0.95; letter-spacing:-0.01em;}
-.tile .val em{font-style:normal; font-family:var(--sans); font-size:13px; color:var(--dim); font-weight:400; letter-spacing:0; margin-left:3px;}
-.tile .val.txt{font-size:26px;}
-.tile .name{color:var(--ivory); font-size:14.5px; font-weight:500; letter-spacing:-0.01em; margin-top:9px;}
-.tile .sub{font-family:var(--mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint); margin-top:4px;}
-.tile .spark{margin-top:10px; height:24px; width:100%; color:var(--emerald); opacity:0.72;}
-.tile .spark svg{width:100%; height:100%; display:block;}
-.js .tile .spark polyline{stroke-dasharray:200; stroke-dashoffset:200;}
-.tile .spark .pt{opacity:0; animation:none;}
-.tile.lit .spark .pt{opacity:1; animation:ptPulse 2.4s ease-in-out infinite;}
-@keyframes ptPulse{0%,100%{r:1.6;opacity:0.6;}50%{r:2.4;opacity:1;}}
-.tile::after{content:''; position:absolute; left:17px; right:17px; bottom:0; height:1px; z-index:2; background:linear-gradient(90deg,transparent,rgba(var(--glow),0.55),transparent); transform:scaleX(0); transform-origin:center; transition:transform .35s var(--snap);}
-.tile:hover{transform:translateY(-4px); border-color:rgba(var(--glow),0.24); background:var(--glass-2); box-shadow:0 18px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(var(--glow),0.06);}
-.tile:hover .ic{color:var(--emerald); transform:translateY(-1px);}
-.tile:hover::after{transform:scaleX(1);}
-.tile:active{transform:translateY(-1px) scale(0.975);}
-.space[data-a="coral"] .tile:hover .ic{color:var(--coral);} .space[data-a="coral"] .tile:hover{border-color:rgba(255,138,107,0.24);}
-.space[data-a="violet"] .tile:hover .ic{color:var(--violet);} .space[data-a="violet"] .tile:hover{border-color:rgba(155,140,255,0.24);}
-.space[data-a="amber"] .tile:hover .ic{color:var(--amber);} .space[data-a="amber"] .tile:hover{border-color:rgba(242,192,99,0.24);}
+/* everything — index lists */
+.index{display:grid; grid-template-columns:repeat(4,1fr); column-gap:40px;}
+.col{min-width:0;}   /* a grid item defaults to min-width:auto: long values widened the column (3px at 1180) */
+.col .k{display:block; padding:26px 0 8px;}
+.row{display:flex; align-items:baseline; gap:12px; min-height:48px; padding:14px 0; border-bottom:1px solid var(--hair);}
+.row .n{white-space:nowrap; font-size:15.5px; color:var(--ink); transition:transform .3s var(--out),color .3s;}
+.row .v{min-width:0; margin-left:auto; font-size:13.5px; color:var(--ink3); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;}
+.row .v.good{color:var(--train);} .row .v.err{color:var(--late);}
+.row .ar{color:var(--acc); opacity:0; transform:translateX(-6px); transition:opacity .3s var(--out),transform .3s var(--out);}
+.row:hover .n{transform:translateX(4px); color:#fff;}
+.row:hover .ar{opacity:1; transform:none;}
 
-/* ── Where you stand ────────────────────────────────────── */
-/* This whole block is gone (als-v438), and with it the last of the game layer.
-   .badge / .agent-title / .agent-sub / .xpbar* went first with the LVL pill and
-   the XP bar; .ms-grid / .ms / .streak followed in als-v435; .agent / .agent-hd
-   / .agent-week / .week-* / .wrow* leave now with "This week vs last".
-   The reason is in the markup below where the section stood. */
+/* School Studies — the one door to every subject (als-v651) */
+.school{display:flex; align-items:center; gap:40px; margin-top:48px; padding:26px 28px; border-radius:16px; background:var(--s1); box-shadow:inset 0 0 0 1px var(--hair);}
+.school .fig{font-size:44px;}
+.school .name{margin-top:10px; font-size:17px; font-weight:500; color:var(--ink);}
+.school .sub{margin-left:auto; font-size:14.5px; color:var(--ink2); text-align:right;}
+.school:hover{box-shadow:inset 0 0 0 1px var(--hair2);}
 
-/* ── Vault + reminder ───────────────────────────────────── */
-.vault{margin-top:14px; display:flex; align-items:center; gap:14px; padding:17px 20px; border:1px solid var(--line); border-radius:16px; text-decoration:none; transition:border-color .28s var(--snap), transform .28s var(--snap);}
-.vault:hover{border-color:var(--line-2);} .vault:active{transform:scale(0.99);}
-.vault .vi{width:20px;height:20px;color:var(--faint);}
-.vault .vt{color:var(--ivory); font-size:14.5px; font-weight:500;}
-.vault .vm{font-family:var(--mono); font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint); margin-top:3px;}
-.vault .vgo{margin-left:auto; color:var(--faint); font-size:18px;}
-.remind{margin-top:14px;}
-.remind summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:11px; padding:15px 18px; border:1px solid var(--line); border-radius:16px; font-family:var(--mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dim); transition:border-color .28s var(--snap);}
+/* the vault + reminder setup */
+.vault{display:flex; align-items:center; gap:12px; margin-top:56px; padding:18px 0; border-top:1px solid var(--hair); border-bottom:1px solid var(--hair); font-size:14.5px; color:var(--ink);}
+.vault .vm{color:var(--ink3); font-size:13.5px;}
+.vault .vgo{margin-left:auto; color:var(--ink3);}
+.vault:hover .vgo{color:var(--acc);}
+.remind{padding:4px 0 64px; color:var(--ink2); font-size:14px;}
+.remind summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; min-height:48px; color:var(--ink2);}
 .remind summary::-webkit-details-marker{display:none;}
-.remind summary:hover{border-color:var(--line-2);}
-.remind summary .ri{width:16px;height:16px;color:var(--faint);}
-.remind summary .chev{margin-left:auto; color:var(--faint); transition:transform .3s var(--snap);}
-.remind[open] summary .chev{transform:rotate(90deg);}
-.remind-body{padding:16px 18px; font-size:13px; line-height:1.6; color:var(--dim);}
-.remind-body .st{display:flex; gap:11px; margin-top:10px;}
-.remind-body .st .num{width:20px; height:20px; flex-shrink:0; border:1px solid var(--line-2); border-radius:6px; font-family:var(--mono); font-size:10px; color:var(--emerald); display:flex; align-items:center; justify-content:center;}
+.remind .chev{margin-left:auto; color:var(--ink3); transition:transform .25s var(--out);}
+.remind[open] .chev{transform:rotate(90deg);}
+.remind-body{max-width:640px; line-height:1.6;}
+.remind .st{display:flex; gap:12px; margin-top:10px;}
+.remind .num{width:22px; height:22px; flex:none; border-radius:50%; display:grid; place-items:center; background:var(--s3); font-size:12px; color:var(--ink);}
 
-/* ── Bottom nav ─────────────────────────────────────────── */
-/* .nav / .nav a / .nav a.on lived here — Home's private floating bottom nav.
-   Deleted with the markup (als-v438). See the #topbar block below for why. */
+/* ⌘K — native <dialog> (constraint 4). #q and #res are driven by home-motion.js,
+   the one list of pages (and it hides pages this account does not have). */
+#pal{margin:13vh auto auto; width:min(620px,calc(100% - 32px)); padding:0; border:0; border-radius:16px; background:var(--s1); color:var(--ink2); box-shadow:inset 0 0 0 1px var(--hair2),0 30px 80px rgba(0,0,0,.6);}
+#pal::backdrop{background:rgba(4,5,6,.62);}
+#pal[open]{animation:palin .22s var(--out);}
+@keyframes palin{from{opacity:0; transform:translateY(-6px) scale(.985);}}
+.pal-in{display:flex; align-items:center; gap:12px; height:60px; padding:0 18px; border-bottom:1px solid var(--hair); color:var(--ink3);}
+.pal-in input{flex:1; height:100%; background:none; border:0; outline:0; font:400 16px var(--sans); color:var(--ink);}
+.pal-in input::placeholder{color:var(--ink3);}
+.pal-in kbd{font:500 11px var(--sans); color:var(--ink3);}
+.pal-acts:empty{display:none;}
+.pal-acts{padding:6px 6px 0;}
+.opt{display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:0 12px; border-radius:10px; text-align:left; font-size:14.5px; color:var(--ink);}
+.opt .h{margin-left:auto; font-size:12.5px; color:var(--ink3);}
+.opt:hover,.opt:focus-visible{background:var(--s3); outline:none;}
+.opt .ic{width:20px; text-align:center; color:var(--acc);}
+#res{max-height:min(380px,50vh); overflow:auto; padding:6px;}
+#res:not(.on){display:none;}
+#res .pr-item{display:flex; align-items:center; gap:12px; min-height:46px; padding:0 12px; border-radius:10px; font-size:14.5px; color:var(--ink);}
+#res a.pr-item:first-child,#res a.pr-item:hover{background:var(--s3);}
+#res .pr-item .ic{width:16px; height:16px; color:var(--ink3);}
+#res .pr-item .ic svg{width:100%; height:100%; display:block;}
+#res .pr-item .k{margin-left:auto; letter-spacing:.06em;}
+.pal-hint{padding:14px 18px; font-size:13px; color:var(--ink3);}
+.pal-f{display:flex; gap:18px; padding:12px 18px; border-top:1px solid var(--hair); font-size:12px; color:var(--ink3);}
 
-@media (max-width:720px){
-  .grid{grid-template-columns:repeat(2,1fr);}
-  .intel-cards{grid-template-columns:1fr;}
-  .nova{width:48px;height:48px;}
+#toast{position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:70; display:flex; align-items:center; gap:10px; padding:11px 16px; border-radius:12px; background:var(--s3); box-shadow:inset 0 0 0 1px var(--hair2),0 16px 40px rgba(0,0,0,.5); font-size:14px; color:var(--ink); opacity:0; transform:translate(-50%,8px); pointer-events:none; transition:opacity .25s var(--out),transform .35s var(--out); max-width:calc(100% - 32px);}
+#toast.on{opacity:1; transform:translate(-50%,0);}
+#toast::before{content:""; width:6px; height:6px; flex:none; border-radius:50%; background:var(--acc);}
+
+/* rolling digits */
+.roll{display:inline-flex;}
+.dg{display:inline-block; height:1.08em; overflow:hidden; vertical-align:bottom; padding-right:.04em;}
+.dg .col{display:flex; flex-direction:column; line-height:1.08em; transition:transform .7s var(--out);}
+
+/* ── laptop first; the phone collapses it (max-width only — constraint 51) ── */
+@media (max-width:1100px){ .head{grid-template-columns:minmax(0,1fr) 320px; gap:40px;} .index{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:900px){
+  .head{grid-template-columns:1fr; padding:44px 0 36px;}
+  .metrics{grid-template-columns:1fr 1fr;}
+  .m{padding:26px 22px;} .m:nth-child(2){border-right:0; padding-right:0;} .m:nth-child(odd){padding-left:0;} .m:nth-child(-n+2){border-bottom:1px solid var(--hair);}
+  .duo{grid-template-columns:1fr;} .week{padding-right:0; border-right:0; border-bottom:1px solid var(--hair);} .nv{padding-left:0;}
+  .fc{grid-template-columns:1fr;} .fc > div{padding:24px 0; border-right:0; border-bottom:1px solid var(--hair);} .fc > div:last-child{border-bottom:0;}
+  .school{flex-direction:column; align-items:flex-start; gap:14px;} .school .sub{margin-left:0; text-align:left;}
+}
+@media (max-width:600px){
+  .wrap{padding:0 20px;}
+  .bar{min-height:64px;}
+  .srch{width:44px; height:44px; padding:0; justify-content:center;} .srch .st,.srch kbd{display:none;}
+  .wchip{height:44px;} .wchip-add{width:44px; height:44px;} .wchip-lbl{display:none;}
+  #topbar{padding:calc(env(safe-area-inset-top) + 13px) 20px 0 0 !important;}
+  .bar .right{gap:8px;}
+  h1.greeting{font-size:48px; margin:16px 0 18px;} .lede{font-size:17px;}
+  .acts .btn{flex:1; justify-content:center; padding:0 12px;} .acts .btn.pri{flex-basis:100%;}
+  .ru-legend{display:none;} #ru{height:140px;}
+  .metrics{grid-template-columns:1fr;} .m,.m:nth-child(odd),.m:nth-child(2){padding:24px 0; border-right:0; border-bottom:1px solid var(--hair);} .m:last-child{border-bottom:0;}
+  .m .fig{font-size:52px;}
+  .grid7{grid-template-columns:56px repeat(7,1fr); gap:6px 4px;} .c{height:24px;}
+  .nv blockquote{font-size:19px;}
+  .index{grid-template-columns:1fr;}
+  .sec{padding-top:56px;} .sec-h h2{font-size:28px;}
+  .k,.grid7 .dl,.m .foot,#ru text{font-size:11px;}
+  .pal-f{display:none;}
 }
 @media (prefers-reduced-motion:reduce){
-  *{animation:none!important;}
-  .js [data-rise]{opacity:1!important; transform:none!important; transition:none!important;}
-  .js .tile .spark polyline{stroke-dashoffset:0!important;}
-  .focus .ring .rf{stroke-dashoffset:92.5!important; transition:none!important;}
+  html.anim .rv{opacity:1; transform:none;}
+  *,*::before,*::after{transition:none !important; animation:none !important;}
 }
-/* ── Readiness ring (inside focus card) ── */
-.focus{display:flex; gap:22px; align-items:center;}
-.focus .ring{flex-shrink:0; width:104px; height:104px; position:relative;}
-.focus .ring svg{width:100%; height:100%; transform:rotate(-90deg);}
-.focus .ring circle{fill:none; stroke-width:6;}
-.focus .ring .rt{stroke:rgba(255,255,255,0.08);}
-.focus .ring .rf{stroke:url(#rg); stroke-linecap:round; stroke-dasharray:289; stroke-dashoffset:289; transition:stroke-dashoffset 1.4s var(--settle) .25s;}
-.focus.in .ring .rf{stroke-dashoffset:92.5;}
-.focus .ring .rc{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
-.focus .ring .rc .rn{font-family:var(--serif); font-style:italic; font-size:34px; color:var(--ivory); line-height:1;}
-.focus .ring .rc .rl{font-family:var(--mono); font-size:7.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-top:3px;}
-.focus .ftext{flex:1;}
-@media (max-width:560px){ .focus{flex-direction:column; align-items:flex-start; gap:16px;} }
-
-
-/* ── Peek (progressive disclosure) ── */
-.tile .peek{position:absolute; top:10px; right:10px; z-index:3; width:26px; height:26px; border-radius:8px; border:1px solid var(--line-2); background:rgba(0,0,0,0.25); color:var(--faint); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .3s var(--snap), color .3s var(--snap), border-color .3s var(--snap); cursor:pointer; padding:0;}
-.tile:hover .peek{opacity:1;}
-@media (hover:none){ .tile .peek{opacity:.45;} }
-.tile .peek:hover{color:var(--emerald); border-color:rgba(var(--glow),0.4);}
-.tile .peek svg{width:13px; height:13px;}
-/* peek dialog — pinned to the VIEWPORT (top layer), immune to ancestor
-   transforms and iOS's document-top placement; settles into frame. */
-.peekdlg{position:fixed; inset:0; margin:auto; width:min(380px, calc(100vw - 44px)); height:max-content; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line-2); background:#0b0b0d; color:var(--dim); border-radius:20px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,0.6);
-  opacity:0; transform:translateY(16px) scale(0.94); transition:opacity .2s ease, transform .34s cubic-bezier(.34,1.56,.45,1);}
-.peekdlg.on{opacity:1; transform:none;}
-.peekdlg::backdrop{background:rgba(4,4,5,0.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);}
-@media (prefers-reduced-motion:reduce){ .peekdlg{transition:none; opacity:1; transform:none;} }
-.peekbody{padding:24px;}
-.peek-ey{font-family:var(--mono); font-size:9px; letter-spacing:0.2em; text-transform:uppercase; color:var(--emerald);}
-.peek-val{font-family:var(--serif); font-style:italic; font-size:42px; color:var(--ivory); margin:9px 0 2px; line-height:1;}
-.peek-val em{font-style:normal; font-family:var(--sans); font-size:14px; color:var(--dim); margin-left:3px;}
-.peek-name{color:var(--ivory); font-size:15px; font-weight:500;}
-.peek-spark{height:42px; margin:16px 0 6px; color:var(--emerald); opacity:.8;} .peek-spark svg{width:100%; height:100%;}
-.peek-dir{font-size:14px; line-height:1.55; color:var(--dim); border-top:1px solid var(--line); padding-top:14px; margin-top:14px;}
-.peek-open{display:inline-flex; align-items:center; gap:7px; margin-top:18px; font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--canvas); background:var(--emerald); border:0; border-radius:11px; padding:11px 16px; text-decoration:none; cursor:pointer;}
-.peek-x{position:absolute; top:13px; right:13px; width:28px; height:28px; border-radius:9px; border:1px solid var(--line); background:none; color:var(--faint); cursor:pointer; font-size:15px; line-height:1;}
-.peek-x:hover{color:var(--ivory);}
-
-.ribbon{position:fixed; top:0; left:0; right:0; z-index:9; text-align:center; font-family:var(--mono); font-size:9.5px; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); padding:6px; background:rgba(0,0,0,0.45); border-bottom:1px solid var(--line);}
-
-/* ── topbar.js injects the shell on every page. The home page strips the top bar
-   to a single control: signing out is the only way to hand this device to another
-   person cleanly, so the account button must be reachable from the page everyone
-   lands on. It floats to sit just LEFT of the header's Nova crystal (which owns
-   the top-right corner) — the 88px right offset clears Nova on phones, where
-   .wrap is full-width and Nova hugs the edge; on wide screens Nova sits inboard,
-   so the button simply rides near the corner. The top offset matches the header
-   padding so the button lines up with Nova.
-
-   ⚠️ `#bottombar{display:none}` lived here and was the real cause of "the home
-   page doesn't have anything" (als-v438). Home hid the shared bottom bar and
-   drew a private <nav class="nav"> of its own — Home / Body / Mind / Money /
-   Nova, with no All button and a Mind that pointed at identity.html while the
-   shared bar's pointed at main.html. TWO bottom navs on one page, the visible
-   one a stale copy. Both are gone; the All button is the only one now, and it
-   is topbar's, so this page can no longer drift from every other page. ── */
-#topbar{
-  display:flex !important; position:fixed; top:0; right:0; left:auto; width:auto;
-  z-index:50; background:transparent !important; border-bottom:0 !important;
-  padding:calc(max(38px, env(safe-area-inset-top)) + 8px) 88px 0 0 !important;
-  pointer-events:none;
-}
-#topbar > *{ display:none !important; }
-#topbar .topbar-acct{ display:inline-flex !important; pointer-events:auto; }
-/* Home ran 116px to clear the bar AND its own floating .nav stacked above it.
-   One control now, so this is the shared reservation plus a little air under
-   the last card. */
-body.has-alxfab{ padding-bottom:calc(78px + env(safe-area-inset-bottom)) !important; }
 </style>
 </head>
 <body id="root">
 <div class="wrap">
-  <!-- THE ARC — the band above everything.
-       It was a tile among twenty, the same size and shape as Water and Bills,
-       and nothing in the app ever mentioned it: ALSChapters was read by exactly
-       one file, arc.html. So you could enter a whole new chapter of your life
-       and only find out by opening the page and noticing. It frames the day
-       now, and it says when the chapter turns. -->
+  <header class="bar">
+    <div class="brand">M<i>É</i>TRON</div>
+    <div class="right">
+      <button type="button" class="srch" id="srch" aria-label="Search Métron (⌘K)">⌕ <span class="st">Search Métron</span><kbd>⌘K</kbd></button>
+      <div class="wchip" id="wChip">
+        <a class="wchip-main" href="po-water.html" aria-label="Open water tracker"><i></i><span class="wchip-lbl">Water</span><span class="wchip-n"><b id="wCount">—</b><em id="wGoal"></em></span></a>
+        <button type="button" class="wchip-add" id="wAdd" aria-label="Log one water">+</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- THE ARC. At rest a single line; for three days after a chapter turns, the
+       band. Exactly one is on screen — home-live.js paintArcBand() decides. -->
+  <a class="arcrail hidden" id="arcRail" href="arc.html">
+    <span class="arcrail-dot" aria-hidden="true"></span>
+    <span id="arcRailN">Chapter</span>
+    <span class="arcrail-title" id="arcRailTitle"></span>
+    <span class="arcrail-sep" aria-hidden="true">·</span>
+    <span id="arcRailMeta"></span>
+    <span class="arcrail-go" aria-hidden="true">Arc →</span>
+  </a>
   <a class="arcband hidden" id="arcBand" href="arc.html">
     <span class="arcband-glow" aria-hidden="true"></span>
     <span class="arcband-eyebrow"><span id="arcBandN">Chapter</span><span class="arcband-new hidden" id="arcBandNew">New chapter</span></span>
@@ -386,240 +365,138 @@ body.has-alxfab{ padding-bottom:calc(78px + env(safe-area-inset-bottom)) !import
     <span class="arcband-go">read your arc →</span>
   </a>
 
-  <!-- HERO (cascades on load) -->
-  <div data-reveal>
-    <header class="head">
-      <div>
-        <h1 class="greeting" id="homeGreeting" data-rise>Good morning<span class="grn" id="homeGreetingName"></span></h1>
-        <div class="sub" id="sub" data-rise>Friday, 4 July 2026 · 07:14</div>
-        <!-- The arc, at rest. Under the dateline on purpose: the chapter is
-             context for today, so it belongs where the date is, and nothing
-             now stands above the greeting. -->
-        <a class="arcrail hidden" id="arcRail" href="arc.html" data-rise>
-          <span class="arcrail-dot" aria-hidden="true"></span>
-          <span id="arcRailN">Chapter</span>
-          <span class="arcrail-title" id="arcRailTitle"></span>
-          <span class="arcrail-sep" aria-hidden="true">·</span>
-          <span id="arcRailMeta"></span>
-          <span class="arcrail-go" aria-hidden="true">→</span>
-        </a>
+  <section class="head">
+    <div>
+      <div class="date rv" style="--i:0"><span class="k" id="sub"></span></div>
+      <h1 class="greeting rv" style="--i:1" id="homeGreeting">Good morning<span id="homeGreetingName"></span></h1>
+      <p class="lede rv" style="--i:2" id="lede"></p>
+      <div class="acts rv" style="--i:3" id="acts">
+        <a class="btn" href="morning.html" data-k="m">Morning briefing</a>
+        <a class="btn" href="weekly.html" data-k="w">Weekly review</a>
+        <a class="btn" href="coach.html" data-k="c">Coach</a>
       </div>
-      <div class="nova" id="nova" data-rise title="Nova">
-        <svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="ng" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#34E2B0"/><stop offset="55%" stop-color="#22CBC6"/><stop offset="100%" stop-color="#9B8CFF"/></linearGradient><radialGradient id="ngF" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="#34E2B0" stop-opacity=".16"/><stop offset="100%" stop-color="#34E2B0" stop-opacity="0"/></radialGradient><clipPath id="ngC"><circle cx="50" cy="50" r="40"/></clipPath></defs><g class="nova-glow"><circle cx="50" cy="50" r="40" fill="url(#ngF)"/><circle class="nova-ring" cx="50" cy="50" r="40" fill="none" stroke="url(#ng)" stroke-width="2.2" opacity=".55"/><g clip-path="url(#ngC)"><path class="nova-track" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#ng)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".2"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="url(#ng)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path class="nova-trace" d="M18.8 50 H38.3 L42.2 55.1 L48.8 25 L56.3 75 L62.1 46.1 L66.8 50 H81.3" fill="none" stroke="#EAFFF7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></g><g class="nova-node"><circle cx="48.8" cy="25" r="4.4" fill="#EAFFF7"/></g></g></svg>
-      </div>
-    </header>
+    </div>
+    <div class="today rv" style="--i:3" id="today">
+      <div class="td-h"><span class="k" style="color:var(--ink2)" id="tdK">Today</span><span class="fig"><span class="roll" id="tdN">—</span><small id="tdOf"></small></span></div>
+      <div class="td-meter" id="tdMeter"></div>
+      <div id="tdList"></div>
+    </div>
+  </section>
 
-    <div class="launch" data-rise>
-      <a class="lbtn primary" href="morning.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></span> Morning briefing →</a>
-      <a class="lbtn" href="weekly.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7L19.5 8.5l-3.75 3.65.9 5.15L12 14.9l-4.65 2.4.9-5.15L4.5 8.5l5.2-.8Z"/></svg></span> Weekly review →</a>
-      <a class="lbtn" href="coach.html"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.3"/><circle cx="16.5" cy="7" r="2.3"/><circle cx="12" cy="16.5" r="2.3"/><line x1="8.8" y1="9.3" x2="10.5" y2="14.6"/><line x1="14.7" y1="8.8" x2="13" y2="14.6"/></svg></span> Coach →</a>
+  <section class="ruler rv" style="--i:4">
+    <div class="ru-h"><span class="k">Your day</span><span class="ro" id="ro"></span>
+      <div class="ru-legend"><span><i style="background:var(--rest)"></i>Sleep</span><span><i style="background:var(--fuel)"></i>Food logged</span><span><i style="background:var(--caf)"></i>Caffeine</span><span><i style="background:var(--train)"></i>Training</span></div>
+    </div>
+    <svg id="ru" tabindex="0" role="img" aria-label="Your day in 24 hours. Use the arrow keys to move through it."></svg>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Today</h2><a href="insights.html">All insights</a></div>
+    <div class="metrics">
+      <a class="m" id="mNut" href="nutrition.html"><div class="top"><i style="background:var(--fuel)"></i><span class="k">Nutrition</span><span class="go">→</span></div><div class="fig">—</div><div class="line"></div><svg></svg><div class="foot"></div></a>
+      <a class="m" id="mSleep" href="sleep.html"><div class="top"><i style="background:var(--rest)"></i><span class="k">Sleep</span><span class="go">→</span></div><div class="fig">—</div><div class="line"></div><svg></svg><div class="foot"></div></a>
+      <a class="m" id="mTrain" href="gym.html"><div class="top"><i style="background:var(--train)"></i><span class="k">Training</span><span class="go">→</span></div><div class="fig">—</div><div class="line"></div><svg></svg><div class="foot"></div></a>
+      <a class="m" id="mWeight" href="weight.html"><div class="top"><i style="background:var(--wt)"></i><span class="k">Weight</span><span class="go">→</span></div><div class="fig">—</div><div class="line"></div><svg></svg><div class="foot"></div></a>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>This week</h2><a href="weekly.html">Weekly review</a></div>
+    <div class="duo">
+      <div class="week">
+        <div class="wk-h"><span class="fig"><span class="roll" id="wkN">—</span><span class="unit" id="wkOf"></span></span><p id="wkP"></p></div>
+        <div class="grid7" id="g7"></div>
+      </div>
+      <div class="nv" id="novaNoticed">
+        <div class="who"><span class="mark" aria-hidden="true"></span><span class="k" style="color:var(--ink2)">What Nova noticed</span></div>
+        <!-- Fallback only. paintInsights() overwrites this with real correlations
+             from ALSInsights. It must never assert a pattern of its own. -->
+        <blockquote id="novaQ">Nova is still learning your patterns. Keep logging and correlations will appear here.</blockquote>
+        <div class="src" id="novaSrc"></div>
+        <div class="more" id="novaMore"></div>
+        <a class="lnk" href="insights.html">Open the Insight Engine →</a>
+        <a class="ask" href="nova-chat.html">Ask Nova<span>→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="headed">
+    <div class="sec-h"><h2>Where you’re headed</h2><a href="insights.html">See all forecasts</a></div>
+    <!-- Fallback only. paintForecasts() overwrites this with real projections
+         from ALSForecast. No invented trajectory. -->
+    <div class="fc" id="fc"><div><span class="k">Trajectory</span><div class="line">A few more days of data and Nova will project where your trends are heading.</div></div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Everything</h2><a href="#" id="srch2">⌘K to jump</a></div>
+    <div class="index">
+      <div class="col"><span class="k">Train</span>
+        <a class="row" href="gym.html"><span class="n">Fitness</span><span class="v">your training</span><span class="ar">→</span></a>
+        <a class="row" href="pr.html"><span class="n">PR Board</span><span class="v">best lift</span><span class="ar">→</span></a>
+        <!-- ?peek=1 on purpose: for Alex this is only ever a read-only window into
+             Chrissie's app (see run.html peekFetch). -->
+        <a class="row" href="run.html?peek=1"><span class="n">Running</span><span class="v">Χριστίνα · read-only</span><span class="ar">→</span></a>
+      </div>
+      <div class="col"><span class="k">Body</span>
+        <a class="row" href="nutrition.html"><span class="n">Nutrition</span><span class="v">today</span><span class="ar">→</span></a>
+        <a class="row" href="sleep.html"><span class="n">Sleep</span><span class="v">last night</span><span class="ar">→</span></a>
+        <a class="row" href="weight.html"><span class="n">Weight</span><span class="v">latest</span><span class="ar">→</span></a>
+        <a class="row" href="po-water.html"><span class="n">Water</span><span class="v">hydration</span><span class="ar">→</span></a>
+        <a class="row" href="caffeine.html"><span class="n">Caffeine</span><span class="v">today</span><span class="ar">→</span></a>
+        <a class="row" href="supps.html"><span class="n">Supplements</span><span class="v">your stack</span><span class="ar">→</span></a>
+        <a class="row" href="measure.html"><span class="n">Measure</span><span class="v">measure up</span><span class="ar">→</span></a>
+      </div>
+      <div class="col"><span class="k">Mind</span>
+        <a class="row" href="main.html"><span class="n">Goals</span><span class="v">daily plan</span><span class="ar">→</span></a>
+        <a class="row" href="identity.html"><span class="n">Identity</span><span class="v">north star · habits</span><span class="ar">→</span></a>
+        <a class="row" href="ideas.html"><span class="n">Ideas</span><span class="v">capture</span><span class="ar">→</span></a>
+        <a class="row" href="improve.html"><span class="n">Library</span><span class="v">videos &amp; TikToks</span><span class="ar">→</span></a>
+      </div>
+      <div class="col"><span class="k">Life</span>
+        <a class="row" href="finance.html"><span class="n">Money</span><span class="v">what you hold</span><span class="ar">→</span></a>
+        <a class="row" href="scripture.html"><span class="n">Scripture</span><span class="v">read · reflect</span><span class="ar">→</span></a>
+        <a class="row" href="arc.html"><span class="n">Your Arc</span><span class="v">your story</span><span class="ar">→</span></a>
+        <a class="row" href="insights.html"><span class="n">Insight Engine</span><span class="v">connecting</span><span class="ar">→</span></a>
+        <a class="row" href="movies.html"><span class="n">Movies</span><span class="v">rate · watchlist</span><span class="ar">→</span></a>
+      </div>
     </div>
 
-    <!-- QUICK ROW — the controls: log a drink, jump to the two pages he opens most.
-         Its own row on purpose: these are not "reports" like the launch buttons
-         above, and on a phone they must never share a line with them. -->
-    <div class="quick" data-rise>
-      <div class="wchip" id="wChip">
-        <a class="wchip-main" href="po-water.html" aria-label="Open water tracker">
-          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2s5.8 6.4 5.8 10.6a5.8 5.8 0 0 1-11.6 0C6.2 9.6 12 3.2 12 3.2z"/></svg></span>
-          <span class="wchip-n"><b id="wCount">0</b><em id="wGoal">/ 8</em></span>
-          <span class="wchip-lbl">Water</span>
-        </a>
-        <button type="button" class="wchip-add" id="wAdd" aria-label="Log one water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-      </div>
-      <nav class="qlinks" aria-label="Shortcuts">
-        <a class="qlink" href="nutrition.html">
-          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 11h16.8a8.4 8.4 0 0 1-16.8 0z"/><path d="M2.5 11h19"/><path d="M12 7.6c-1.6-1-1.6-2.6 0-4.1"/></svg></span>
-          <span class="qlink-lbl">Nutrition</span>
-        </a>
-        <a class="qlink" href="sleep.html">
-          <span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg></span>
-          <span class="qlink-lbl">Sleep</span>
-        </a>
-      </nav>
-    </div>
-
-    <a class="focus" href="morning.html" data-rise>
-      <div class="ring">
-        <svg viewBox="0 0 100 100"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3FE0B0"/><stop offset="100%" stop-color="#18C8C0"/></linearGradient></defs><circle class="rt" cx="50" cy="50" r="46"/><circle class="rf" cx="50" cy="50" r="46"/></svg>
-        <div class="rc"><div class="rn"><span class="cnt">—</span></div><div class="rl">Readiness</div></div>
-      </div>
-      <div class="ftext">
-        <div class="label">Today's focus · primed</div>
-        <div class="line">Reading your recovery…</div>
-        <div class="meta">Your readiness appears here once the sleep page has data.</div>
-      </div>
+    <!-- als-v651: ONE DOOR. Every subject lives inside School Studies; nothing was
+         deleted (the pages, their stores and launcher.js rows are untouched). -->
+    <a class="school" href="homework.html" id="school">
+      <div><span class="k">School studies</span><div class="name">School Studies</div></div>
+      <div class="fig" id="schoolN">—</div>
+      <div class="sub" id="schoolNote">εργασίες · ανάκληση</div>
     </a>
 
-    <div class="palette" data-rise>
-      <div class="palette-box">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span>
-        <input id="q" type="text" placeholder="Jump to anything…" aria-label="Jump to any page" autocomplete="off" spellcheck="false">
-        <span class="palette-hint">↵</span>
+    <a class="vault" href="backup.html"><span>Back up &amp; restore</span><span class="vm" id="vaultLast">back up your data</span><span class="vgo">→</span></a>
+
+    <details class="remind">
+      <summary>Set up daily reminder <span class="chev">›</span></summary>
+      <div class="remind-body">
+        A one-time iOS Shortcut opens your Morning Briefing automatically each day.
+        <div class="st"><span class="num">1</span><span>Open the <b style="color:var(--ink)">Shortcuts</b> app → Automation.</span></div>
+        <div class="st"><span class="num">2</span><span>New automation → <b style="color:var(--ink)">Time of Day</b>, set 7:00 AM, repeat Daily.</span></div>
+        <div class="st"><span class="num">3</span><span>Add action <b style="color:var(--ink)">Open URLs</b>, paste your dashboard link, turn off "Ask Before Running".</span></div>
       </div>
-      <div class="palette-results" id="res"></div>
-    </div>
-  </div>
-
-  <!-- WHAT NOVA NOTICED -->
-  <section class="intel-sec" id="novaNoticed" data-reveal>
-    <div class="intel-hd" data-rise><span class="n">What Nova noticed</span><span class="s">patterns across your data</span><span class="rule"></span></div>
-    <div class="intel-cards">
-      <!-- Fallback only. paintInsights() overwrites this with real correlations
-           from ALSInsights. It must never assert a pattern of its own: the old
-           markup stated a sleep-to-training-volume correlation, with a
-           confidence percentage, that nobody had ever measured — and it stayed
-           on screen whenever the paint failed. -->
-      <div class="icard" data-rise><div class="top"><span>Learning</span><span class="conf">building</span></div><div class="body">Nova is still learning your patterns. Keep logging and correlations will appear here.</div></div>
-    </div>
-    <a class="seeall" href="insights.html" data-rise>Open the Insight Engine →</a>
+    </details>
   </section>
-
-  <!-- WHERE YOU'RE HEADED -->
-  <section class="intel-sec" id="headed" data-reveal>
-    <div class="intel-hd" data-rise><span class="n">Where you're headed</span><span class="s">projected from your trends</span><span class="rule"></span></div>
-    <div class="intel-cards">
-      <!-- Fallback only. paintForecasts() overwrites this with real projections
-           from ALSForecast. Same rule as above: no invented trajectory. -->
-      <div class="icard f" data-rise><div class="top"><span>Trajectory</span><span class="conf">building</span></div><div class="body">A few more days of data and Nova will project where your trends are heading.</div></div>
-    </div>
-    <a class="seeall" href="insights.html" data-rise style="color:var(--violet);">See all forecasts →</a>
-  </section>
-
-  <!-- TRAIN -->
-  <section class="space" data-a="coral" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Train</span><span class="s">what you do</span><span class="rule"></span></div>
-    <div class="grid">
-      <a class="tile w2" href="gym.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="4.5" y="10" width="2" height="4" rx=".5"/><rect x="17.5" y="10" width="2" height="4" rx=".5"/><line x1="6.5" y1="12" x2="17.5" y2="12"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Fitness</div><div class="sub">your training</div><div class="spark"></div></a>
-      <a class="tile w2" href="pr.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0Z"/><path d="M7 6H4.2v.8A3 3 0 0 0 7 10"/><path d="M17 6h2.8v.8A3 3 0 0 1 17 10"/><line x1="12" y1="13" x2="12" y2="16.5"/><path d="M8.5 20h7"/><path d="M9.5 20a2.5 2.5 0 0 1 5 0"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">PR Board</div><div class="sub">best lift</div></a>
-    </div>
-  </section>
-
-  <!-- RUNNING (mum's coach programme) -->
-  <section class="space" data-a="emerald" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Running</span><span class="s">coach programme · mum</span><span class="rule"></span></div>
-    <div class="grid">
-      <!-- ?peek=1 on purpose. Alex does not run: this tile is only ever a read-only
-           window into Chrissie's app, so ask for that explicitly instead of relying
-           on run.html working out who is signed in (it guessed wrong on his laptop).
-           If a non-owner ever taps it, the server answers 403 and run.html drops the
-           param and loads her normal app — see peekFetch. -->
-      <a class="tile w2" href="run.html?peek=1" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6"/><path d="M6 21l3-5 3 2 1-4M9 16l-1.5-4L12 9l3 2 3 .5"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Running</div><div class="sub">Χριστίνα · read-only</div></a>
-    </div>
-  </section>
-
-  <!-- BODY (full cockpit) -->
-  <section class="space" data-a="emerald" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Body</span><span class="s">fuel · recovery · vitals</span><span class="rule"></span></div>
-    <div class="grid">
-      <a class="tile w2" href="nutrition.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-2-3.2-6.2-2-6.2 2.2 0 4.3 3.2 8.3 6.2 8.3s6.2-4 6.2-8.3C18.2 5 14 3.8 12 7Z"/><path d="M12 7V3.8"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Nutrition</div><div class="sub">today</div><div class="spark"></div></a>
-      <a class="tile w2" href="sleep.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8 8 0 1 1 11.2 3 6 6 0 0 0 21 12.8Z"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Sleep</div><div class="sub">last night</div><div class="spark"></div></a>
-      <a class="tile" href="weight.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3" width="17" height="18" rx="2.5"/><path d="M8 3c0 2 1.6 3.4 4 3.4S16 5 16 3"/><path d="M12 13l2.6-3.2"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Weight</div><div class="sub">latest</div></a>
-      <a class="tile" href="caffeine.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h12v4.5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M16 9h2.2a2.2 2.2 0 0 1 0 4.4H16"/><path d="M7 2.5v2M10.5 2.5v2"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Caffeine</div><div class="sub">today</div></a>
-      <a class="tile" href="supps.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><line x1="8" y1="8" x2="16" y2="16"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Supplements</div><div class="sub">your stack</div></a>
-      <a class="tile" href="measure.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v3M10.5 7v4M14 7v3M17.5 7v4"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Measure</div><div class="sub">measure up</div></a>
-    </div>
-  </section>
-
-  <!-- MIND -->
-  <section class="space" data-a="violet" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Mind</span><span class="s">goals · identity · growth</span><span class="rule"></span></div>
-    <div class="grid">
-      <a class="tile w2" href="main.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Goals</div><div class="sub">daily plan</div></a>
-      <a class="tile w2" href="identity.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><polygon points="12,7 14,14 8,10.5 16,10.5 10,14" fill="currentColor" stroke="none"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Identity</div><div class="sub">north star · habits · journal</div></a>
-      <a class="tile" href="ideas.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.8 10.6c.8.7 1.3 1.4 1.3 2.4h5c0-1 .5-1.7 1.3-2.4A6 6 0 0 0 12 3Z"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Ideas</div><div class="sub">capture · organise</div></a>
-      <a class="tile" href="improve.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Library</div><div class="sub">videos &amp; TikToks</div></a>
-    </div>
-  </section>
-
-  <!-- MONEY -->
-  <section class="space" data-a="amber" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Money</span><span class="s">net worth · bills</span><span class="rule"></span></div>
-    <div class="grid">
-      <a class="tile w2" href="finance.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><circle cx="17" cy="14.5" r="1.1"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Money</div><div class="sub">what you hold</div></a>
-    </div>
-  </section>
-
-  <!-- LIFE -->
-  <section class="space" data-a="violet" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Life</span><span class="s">off the clock · your story</span><span class="rule"></span></div>
-    <div class="grid">
-      <a class="tile w2" href="scripture.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.5 4.5 5v12c3.5-.5 6 0 7.5 1.5C13.5 17 16 16.5 19.5 17V5C16 4.5 13.5 5 12 6.5z"/><path d="M12 6.5v12"/></svg></span><div class="spacer"></div><div class="val txt">The Word</div><div class="name">Scripture</div><div class="sub">read · reflect · the road</div></a>
-      <a class="tile w2" href="arc.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Your Arc</div><div class="sub">your story</div></a>
-      <a class="tile" href="insights.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.3"/><circle cx="16.5" cy="7" r="2.3"/><circle cx="12" cy="16.5" r="2.3"/><line x1="8.8" y1="9.3" x2="10.5" y2="14.6"/><line x1="14.7" y1="8.8" x2="13" y2="14.6"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Insight Engine</div><div class="sub">connecting</div></a>
-      <a class="tile" href="movies.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">Movies</div><div class="sub">rate · watchlist</div></a>
-    </div>
-  </section>
-
-  <!-- STUDY -->
-  <section class="space" data-a="emerald" data-reveal>
-    <div class="space-hd" data-rise><span class="n">Study</span><span class="s">Πανελλήνιες · exam prep</span><span class="rule"></span></div>
-    <div class="grid">
-      <!-- als-v651: ONE DOOR. Alex (24/10/26): every subject lives inside School
-           Studies, so the six tiles that sat beside it (Αρχαία · Ιστορία · Η Χρονιά ·
-           Λατινικά · Τονισμός · Έκθεση) came off Home. NOTHING was deleted: the pages,
-           their stores and their launcher.js rows are untouched, and metric() still
-           handles every href (tests/home-tiles.test.js DESTS). The lone tile is
-           `wall` (grid-column 1/-1), not `w2`: on the 4-column laptop grid a `w2`
-           would leave half its row empty.
-           Adding a Study tile back means re-doing that sum, in a render. -->
-      <a class="tile wall" href="homework.html" data-rise><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4.5" y1="7" x2="19.5" y2="7"/><circle cx="12" cy="4" r="1.2"/><path d="M4.5 7 2 13.5a2.6 2.6 0 0 0 5 0Z"/><path d="M19.5 7 17 13.5a2.6 2.6 0 0 0 5 0Z"/><line x1="8.5" y1="20" x2="15.5" y2="20"/></svg></span><div class="spacer"></div><div class="val txt">—</div><div class="name">School Studies</div><div class="sub">εργασίες · ανάκληση</div></a>
-    </div>
-  </section>
-
-  <!-- WHERE YOU STAND / "This week vs last" — the last of the game layer, gone.
-       als-v435 deleted the LVL pill, the XP bar, the Recruit-to-Legend ladder,
-       the 20 milestone badges and the streak chip, and kept this panel on the
-       grounds that it was a measurement rather than a game.
-
-       It was not much of one. Its headline "Performance" score came from
-       xp.js's weekWindow(), and 45% of that score is `goals:` to-do completion,
-       a store he has never used: it reads 0 every week, so the number was
-       structurally capped at 55 and could not reach the top no matter how good
-       the week was. A score you cannot win is a game after all, and a worse one
-       than the ladder, because it looked like an instrument.
-
-       Deleting it retires xp.js entirely: ALS.XP had no other caller
-       (als-v438). Nothing else was reading it, and nothing measured here is
-       lost — training volume lives on gym.html and in the outcome goals on
-       main.html, sleep on sleep.html, nutrition days on nutrition.html, and
-       coach.html already grades a real week against real data. -->
-
-
-  <!-- INTELLIGENCE FEED -->
-  <!-- The "Intelligence feed" was here. It showed the top 2 insights and the
-       top forecast — i.e. a subset of "What Nova noticed" and "Where you're
-       headed", the two sections ~100px above it, from the same two engines.
-       Its only unique line was a count of recurring bills that read the same
-       every day. Removed; nothing moved, because nothing was lost. -->
-
-  <!-- DATA VAULT -->
-  <a class="vault" href="backup.html" data-reveal data-rise>
-    <span class="vi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><circle cx="12" cy="14.5" r="2"/></svg></span>
-    <span><span class="vt" style="display:block">Back up &amp; restore</span><span class="vm" id="vaultLast">back up your data</span></span>
-    <span class="vgo">→</span>
-  </a>
-
-  <!-- iOS REMINDER SETUP -->
-  <details class="remind" data-reveal data-rise>
-    <summary><span class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg></span> Set up daily reminder <span class="chev">›</span></summary>
-    <div class="remind-body">
-      A one-time iOS Shortcut opens your Morning Briefing automatically each day.
-      <div class="st"><span class="num">1</span><span>Open the <b style="color:var(--ivory)">Shortcuts</b> app → Automation.</span></div>
-      <div class="st"><span class="num">2</span><span>New automation → <b style="color:var(--ivory)">Time of Day</b>, set 7:00 AM, repeat Daily.</span></div>
-      <div class="st"><span class="num">3</span><span>Add action <b style="color:var(--ivory)">Open URLs</b>, paste your dashboard link, turn off "Ask Before Running".</span></div>
-    </div>
-  </details>
 </div>
 
-<!-- Home's private <nav class="nav"> stood here: a second bottom nav, stacked
-     under the shared one this page was hiding. Gone (als-v438) — topbar.js's All
-     button is the only bottom control on any page now. -->
+<!-- Home's private <nav class="nav"> is gone for good (als-v438): topbar.js's
+     All button is the only bottom control on any page. -->
 
-<dialog id="peek" class="peekdlg"></dialog>
+<dialog id="pal" aria-label="Search Métron">
+  <div class="pal-in"><span aria-hidden="true">⌕</span><input id="q" type="text" placeholder="Jump to a page, or type “water”" aria-label="Jump to any page" autocomplete="off" spellcheck="false"><kbd>esc</kbd></div>
+  <div class="pal-acts" id="palActs"></div>
+  <div id="res"></div>
+  <div class="pal-hint" id="palHint">Type a page name: Nutrition, Sleep, School Studies…</div>
+  <div class="pal-f"><span>↵ open</span><span>M · W · C — briefing, weekly, coach</span></div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
 <label id="iosHaptic" aria-hidden="true" style="position:absolute; left:-9999px; width:0; height:0; overflow:hidden;"><input type="checkbox" switch></label>
 
-<script src="home-live.js?v=214" defer></script>
+<script src="home-live.js?v=215" defer></script>
 <script src="home-motion.js?v=206" defer></script>
 </body>
 </html>

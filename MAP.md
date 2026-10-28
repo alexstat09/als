@@ -15,7 +15,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 **Home & shell**
 | Page | What it is |
 |---|---|
-| `index.html` | **The home screen.** Hero, quick row (water · nutrition · sleep), Focus card, Nova noticings, forecasts. |
+| `index.html` | **The home screen** (als-v684). Answer + day card («Tonight», read-only) · 24h ruler · Nutrition/Sleep/Training/Weight · week · Nova · forecasts · every page. Painted by `home-live.js`; ⌘K list in `home-motion.js`; test `tests/home-page.test.js`. |
 | `main.html` | The "Mind" hub — reached from the bottom-nav Mind tab. |
 | `identity.html` | Identity / who-you're-becoming. |
 | `arc.html` | Your Arc — the long-view story of your data. |
