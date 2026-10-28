@@ -2735,15 +2735,19 @@
 
   /* ── als-v681 · ΟΙ ΟΜΑΔΕΣ ΑΝΑ ΕΡΓΟ ──────────────────────────────────
      «Πλάτων, Πρωταγόρας 320c-321b — …» → συγγραφέας «Πλάτων», έργο
-     «Πρωταγόρας» (χωρίς το χωρίο). Έργο με ≥2 κείμενα γίνεται δική του
-     ομάδα («Πλάτων · Πρωταγόρας»)· τα μοναχικά έργα ενός συγγραφέα
-     μαζεύονται κάτω από το όνομά του («Αριστοτέλης»: I, II, VII). Τίτλος
+     «Πρωταγόρας» (χωρίς το χωρίο, και χωρίς το γράμμα του βιβλίου:
+     «Πολιτικά Θ 1.3-2.1, 1337a33-b11» → «Πολιτικά»). Έργο με ≥2 κείμενα
+     λέγεται «Συγγραφέας · Έργο»· τα μοναχικά, σκέτο «Συγγραφέας». Τίτλος
      εκτός μοτίβου → δική του ομάδα με το `parts().ref`, ποτέ τρύπα.
+     ⭐ als-v683 (δική του εντολή): οι ομάδες ακολουθούν ΤΗ ΣΕΙΡΑ ΤΩΝ
+     ΕΝΟΤΗΤΩΝ — νέα κεφαλίδα κάθε φορά που αλλάζει η ετικέτα από τη μία
+     ενότητα στην επόμενη, άρα η ίδια ετικέτα μπορεί να ξαναβγεί (I·II
+     Αριστοτέλης … VII Αριστοτέλης · Πολιτικά … XI ξανά).
      ⛔ Λέξεις ΜΟΝΟ από τον τίτλο — καμία δική μου (σταθ. 49). */
   function workOf(un){
     var m = /^([^,]+),\s*([^—]+?)\s*—/.exec(String(un.title || ''));
     if (!m) return null;
-    return { a: m[1].trim(), w: m[2].replace(/\s+\d[0-9a-zA-Z.\-–]*$/, '').trim() };
+    return { a: m[1].trim(), w: m[2].replace(/\s+(?:[Α-Ω]\s+)?\d[\s\S]*$/, '').trim() };
   }
   function groupLabel(un){
     var me = workOf(un), n = 0, i, o;
@@ -2755,11 +2759,11 @@
     return n >= 2 ? me.a + ' · ' + me.w : me.a;
   }
   function groups(){
-    var out = [], at = {}, i, lab;
+    var out = [], i, lab;
     for (i = 0; i < G.UNITS.length; i++){
       lab = groupLabel(G.UNITS[i]);
-      if (!(lab in at)){ at[lab] = out.length; out.push({ label: lab, idx: [] }); }
-      out[at[lab]].idx.push(i);
+      if (!out.length || out[out.length - 1].label !== lab) out.push({ label: lab, idx: [] });
+      out[out.length - 1].idx.push(i);
     }
     return out;
   }
@@ -2824,6 +2828,8 @@
     var lab = groupLabel(un), rf = p.ref;
     if (rf.indexOf(lab) === 0) rf = rf.slice(lab.length).replace(/^\s*·?\s*/, '');
     var mono = [rf, p.name].filter(function(x){ return x; }).join(' · ');
+    /* als-v683: «Αριστοτέλης · Πολιτικά 1253a29-39» κάτω από την κεφαλίδα «Αριστοτέλης · Πολιτικά» → μόνο το χωρίο */
+    if (mono.indexOf(lab + ' ') === 0) mono = mono.slice(lab.length).replace(/^\s*·?\s*/, '');
     var tip = bits(un) + (un.mark ? ' · ' + un.mark : '');
 
     return (inst

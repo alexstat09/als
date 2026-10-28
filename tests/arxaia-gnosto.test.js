@@ -1816,9 +1816,14 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   grs.forEach(function (g) { all = all.concat(g.idx); });
   eq(all.slice().sort(function (a, b) { return a - b; }).join(), GN.UNITS.map(function (_, i) { return i; }).join(),
     '⛔ κάθε κείμενο μπαίνει σε ΑΚΡΙΒΩΣ μία ομάδα — κανένα δεν χάνεται, κανένα διπλό');
-  eq(grs.map(function (g) { return g.label; }).slice(0, 4).join(' | '),
-    ['Αριστοτέλης', 'Επίκουρος', 'Πλάτων · Πρωταγόρας', 'Πλάτων · Πολιτεία'].join(' | '),
-    '⭐ οι ομάδες είναι οι εγκεκριμένες: Αριστοτέλης · Επίκουρος · Πρωταγόρας · Πολιτεία');
+  eq(grs.map(function (g) { return g.label; }).slice(0, 6).join(' | '),
+    ['Αριστοτέλης', 'Επίκουρος', 'Πλάτων · Πρωταγόρας', 'Αριστοτέλης · Πολιτικά', 'Πλάτων · Πολιτεία', 'Αριστοτέλης · Πολιτικά'].join(' | '),
+    '⭐ οι ομάδες ακολουθούν τη σειρά των ενοτήτων (als-v683, δική του εντολή): I·II · III · IV–VI · VII · VIII–X · XI');
+  eq(all.join(), GN.UNITS.map(function (_, i) { return i; }).join(),
+    '⭐ διαβασμένες από πάνω προς τα κάτω, οι ενότητες βγαίνουν 1, 2, 3, … — καμία δεν πηδάει πίσω σε παλιότερη ομάδα');
+  grs.forEach(function (g, i) {
+    if (i) ok(g.label !== grs[i - 1].label, '   ⛔ δύο διαδοχικές ομάδες «' + g.label + '» — έπρεπε να είναι μία');
+  });
   grs.forEach(function (g) {
     g.label.split(' · ').forEach(function (w) {
       ok(GN.UNITS[g.idx[0]].title.indexOf(w) >= 0, '   ⛔ «' + w + '» βγαίνει αυτολεξεί από τον τίτλο');
