@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v685`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v686`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,22 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-28 — `als-v686` — ΤΟ «ALL» ΞΑΝΑΣΧΕΔΙΑΣΤΗΚΕ (εγκεκριμένο demo v1→v5, artifact 7F2MrBqnVwGvWJwewr2h96) + ΤΟ ΚΟΥΜΠΙ.**
+Γλώσσα της αρχικής (σχεδόν μαύρο, γραμμές 1px, Instrument Serif νούμερα, champagne). Laptop = κεντραρισμένο πάνελ 1100px (αναζήτηση 22px · 6 πλακίδια «today»
+με ΑΛΗΘΙΝΕΣ τιμές · School Studies ΜΕΓΑΛΗ κάρτα · Body / Train+Life / Mind με λωρίδα 14 ημερών ανά ομάδα · «Gone quiet» + εργαλεία + πλήκτρα ↑↓ ↵ 1–6 esc)·
+κινητό = bottom sheet, 3×2 πλακίδια, η κάρτα πρώτη, καρτέλες Body/Train/Life/Mind, τράβα-κάτω-να-κλείσει. ⛔ **Δική του εντολή: στο Study ΜΟΝΟ το School Studies**
+(Αρχαία/Άγνωστο/Λατινικά/Τονισμός/Ιστορία/Έκθεση ζουν μέσα του· η αναζήτηση «λατ» → School Studies «Λατινικά is in here»)· το `study.html` (Notion) μένει ΜΟΝΟ
+στην αναζήτηση, γιατί τίποτα άλλο δεν το συνδέει. Το test αποδεικνύει την προσβασιμότητα των μαθημάτων από το `page:'…'` του SUBJ της `homework.html`.
+⭐⭐ **ΤΑ ΔΕΔΟΜΕΝΑ**: `launcher-data.js` = byte-ίδιο αντίγραφο του `home-live.js` (`ls … sparkPts`, δηλαδή το `metric()`) — το `tests/launcher.test.js` §10 το συγκρίνει
+και μια αλλαγή ενός χαρακτήρα το ρίχνει. Φορτώνεται ΜΟΝΟ στο πρώτο άνοιγμα (+ `ladders.js`/`water.js` αν λείπουν· όλα αγνά). ΚΑΝΕΝΑ `setItem` πουθενά. «Τελευταία
+χρήση» και λωρίδα 14 ημερών βγαίνουν από ΕΝΑΝ σαρωτή ημερομηνιών (μελλοντικές = όχι χρήση)· σελίδα χωρίς αποθήκη → «no history kept», ποτέ 0. Η κάρτα: ανοιχτές
+εργασίες (`hw:v1.tasks` !done) + ανάκληση (`ladders` overdue) ανά `exam`, επόμενο διαγώνισμα (`hw:v1.exams`, όχι done, ημερομηνία ≥ σήμερα).
+**Το κουμπί** (topbar.js `.alx-fab`): pill 48px με φωτισμένη πάνω άκρη, πηγάδι 38px με τις 9 champagne τελείες, «All», «/» μόνο σε laptop· κατεβαίνεις → μαζεύεται
+στο πηγάδι, ανεβαίνεις → γυρίζει· ανοιχτό → οι τελείες μαζεύονται και το πάνελ ζωγραφίζει δικό του «✕ Close» στην ίδια θέση (≥1360px· κάτω από αυτό το ✕ στην κεφαλίδα).
+`has-alxfab` 64→76px. Tests: launcher 123/0 (+ μετάλλαξη του αντιγράφου → 1 fail) · home-page 55/0 · home-tiles 85/0 · homework-plan 599/0 · organo 647/0 ·
+page-transition 139/0 · egress 11/0 · sync-regression 15/0 · weight-chart 132/0 · auth-localonly 19/0 · ladders 98/4 (ΙΔΙΑ 4 με το HEAD) · smoke OK · check.mjs ✓.
+Render με δεδομένα σε σχήμα δικό του (κανένα sync script) σε 1440/1180/500. 🔴 Αδοκίμαστο σε iPhone (drag-to-close, scroll-tuck).
 
 **2026-10-28 — `als-v685` — Ο ΑΡΙΘΜΟΣ ΤΑΞΙΔΕΥΕΙ ΣΤΗ ΣΕΛΙΔΑ (`hero-vt.js`).** Πατάς ένα νούμερο στις στήλες Today της αρχικής και πηγαίνει στη θέση του στην κορυφή
 της σελίδας που ανοίγει (και πίσω). Nutrition → `#sumCard .sum-kcal` · Sleep → `#recBody .rec-score` · Weight → `#wtFace` · Gym → `.w-hero-title` (στα τρία τελευταία

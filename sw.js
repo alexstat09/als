@@ -12,7 +12,7 @@
      it's backgrounded; the SW fires a notification when rest is up.
    ════════════════════════════════════════════════════════════════ */
 'use strict';
-var CACHE = "als-v685";
+var CACHE = "als-v686";
 var CORE = [
   './', 'index.html', 'main.html', 'gym.html', 'body.html', 'sleep.html',
   'weight.html', 'trends.html', 'health.html', 'caffeine.html', 'nutrition.html',
@@ -50,7 +50,7 @@ var CORE = [
      offline εκκίνηση αφήνει το Home ΚΑΙ το homework.html χωρίς καμία σκάλα —
      και τα τέσσερα πλακίδια μελέτης μένουν σιωπηλά στην προηγούμενη τιμή. */
   'ladders.js',
-  'water.js', 'topbar.js', 'launcher.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
+  'water.js', 'topbar.js', 'launcher.js', 'launcher-data.js', 'nova.js', 'nova-coach.js', 'sync.js', 'tdee.js', 'pocoach-sync.js',
   /* xp.js was here. Deleted als-v438 with "This week vs last", its last caller. */
   'insights.js', 'lock.js', 'push.js', 'reminders.js', 'aurora-motion.js', 'page-motion.js', 'aurora-bg.js', 'insights-engine.js', 'forecast-engine.js', 'chapters-engine.js', 'error-toast.js', 'als-dialog.js', 'nova-actions.js', 'gcal.js', 'als-sync-status.js',
   'vendor/supabase.min.js', 'vendor/html5-qrcode.min.js', 'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/Flip.min.js', 'vendor/SplitText.min.js', 'vendor/lenis.min.js',

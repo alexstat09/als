@@ -507,36 +507,71 @@
    the document font, and the sibling-matching trap from als-v437 does not apply
    here — this button has no siblings left to match. */
 .alx-fab {
-  position: fixed; right: 14px; z-index: 39;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  display: inline-flex; align-items: center; gap: 8px;
-  margin: 0; padding: 11px 16px 11px 13px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.13);
-  background: rgba(9,9,11,0.80);
-  backdrop-filter: blur(22px) saturate(1.4);
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  color: rgba(245,242,236,0.9);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  position: fixed; right: 18px; z-index: 39;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: inline-flex; align-items: center;
+  margin: 0; height: 48px; padding: 5px 7px 5px 5px;
+  border-radius: 999px; border: 0;
+  background: linear-gradient(180deg, rgba(38,40,46,0.80), rgba(17,18,22,0.88));
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  color: #F2EEE6;
+  font-family: Commissioner, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14.5px; font-weight: 500; line-height: 1; letter-spacing: 0.005em;
   cursor: pointer; -webkit-appearance: none; appearance: none;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05) inset;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.10),
+              0 1px 1px rgba(0,0,0,0.55), 0 20px 44px -14px rgba(0,0,0,0.75);
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.22s cubic-bezier(0.2,0.8,0.3,1), background 0.2s, border-color 0.2s;
-  animation: _alxFabIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.24s both;
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), opacity 0.2s, padding 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s;
+  animation: _alxFabIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.25s both;
 }
-.alx-fab svg { width: 18px; height: 18px; display: block; color: #3FE0B0; }
-.alx-fab:hover { background: rgba(17,17,20,0.9); border-color: rgba(255,255,255,0.2); }
-.alx-fab:active { transform: scale(0.94); }
-@keyframes _alxFabIn { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+.alx-fab:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 1px rgba(0,0,0,0.55), 0 24px 48px -14px rgba(0,0,0,0.8); }
+.alx-fab:active { transform: scale(0.96); transition-duration: 0.1s; }
+.alx-fab:focus-visible { outline: 2px solid #D9C49A; outline-offset: 3px; }
+.alx-fab .alx-well { position: relative; width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.07), rgba(255,255,255,0.015));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.35); }
+.alx-fab .alx-dots { display: grid; grid-template-columns: repeat(3,4px); gap: 3.5px; transition: gap 0.35s cubic-bezier(0.22,1,0.36,1); }
+.alx-fab .alx-dots i { width: 4px; height: 4px; border-radius: 50%; background: #D9C49A; transition: transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.22s; }
+.alx-fab .alx-dots i:nth-child(5) { background: #F2EEE6; }
+.alx-fab:hover .alx-dots { gap: 4.2px; }
+.alx-fab .alx-lbl { overflow: hidden; max-width: 64px; margin-left: 11px; white-space: nowrap; transition: max-width 0.4s cubic-bezier(0.22,1,0.36,1), margin 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.25s; }
+.alx-fab kbd { font: 500 11.5px/1 Commissioner, -apple-system, sans-serif; color: #8E8A83; height: 24px; min-width: 24px; max-width: 30px; margin-left: 10px;
+  display: grid; place-items: center; border-radius: 7px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.4);
+  transition: max-width 0.4s cubic-bezier(0.22,1,0.36,1), min-width 0.4s, margin 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.25s; }
+.alx-fab .alx-end { width: 7px; flex: none; transition: width 0.4s cubic-bezier(0.22,1,0.36,1); }
+/* open: the panel draws its own Close pill in this exact spot, inside the
+   dialog (the top layer sits above everything, this button included), so the
+   button steps aside and the nine dots gather into the centre as it goes. */
+.alx-fab.open { opacity: 0; pointer-events: none; transition-duration: 0.15s; }
+.alx-fab.open .alx-dots i { opacity: 0; }
+.alx-fab.open .alx-dots i:nth-child(1) { transform: translate(7.5px,7.5px) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(2) { transform: translate(0,7.5px) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(3) { transform: translate(-7.5px,7.5px) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(4) { transform: translate(7.5px,0) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(6) { transform: translate(-7.5px,0) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(7) { transform: translate(7.5px,-7.5px) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(8) { transform: translate(0,-7.5px) scale(.3); }
+.alx-fab.open .alx-dots i:nth-child(9) { transform: translate(-7.5px,-7.5px) scale(.3); }
+/* tucked while he scrolls down; back the moment he scrolls up */
+.alx-fab.mini { padding-right: 5px; }
+.alx-fab.mini .alx-lbl, .alx-fab.mini kbd { max-width: 0; min-width: 0; margin-left: 0; opacity: 0; }
+.alx-fab.mini .alx-end { width: 0; }
+@keyframes _alxFabIn { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (max-width: 600px) {
+  .alx-fab { right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); height: 52px; padding: 6px 8px 6px 6px; font-size: 15px; }
+  .alx-fab .alx-well { width: 40px; height: 40px; }
+  .alx-fab kbd { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .alx-fab { animation: none; transition: none; }
+  .alx-fab, .alx-fab .alx-dots, .alx-fab .alx-dots i, .alx-fab .alx-lbl, .alx-fab kbd { animation: none; transition: none; }
 }
 /* The bar's 72px reservation, kept as a smaller one so the last row of a page
    can never sit under the button. gym.html never carried the bar's padding and
    still does not — its own layout already ends clear of the corner. */
 body.has-alxfab {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
 }
 @media (max-width: 480px) {
   .topbar { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); gap: 6px; }
@@ -650,9 +685,8 @@ html.tb-back-in body { animation: _tbBackIn 0.62s cubic-bezier(0.25,0.1,0.25,1);
 </header>`;
 
   const tbIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  // The nine dots. Same glyph the "All" tab wore in the bar, so nothing he has
-  // already learned to look for changed shape.
-  const ALL_GLYPH = '<circle cx="6" cy="6" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="18" cy="6" r="2.1"/><circle cx="6" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="18" cy="12" r="2.1"/><circle cx="6" cy="18" r="2.1"/><circle cx="12" cy="18" r="2.1"/><circle cx="18" cy="18" r="2.1"/>';
+  // The nine dots now live as real elements in makeAllButton (als-v686), in
+  // the same 3x3 shape, so nothing he has learned to look for changed.
   // ⚠️ Built as an element, never as an HTML string appended to the page — the
   // "All" control is a <button>, and the shell's link interceptor walks anchors.
   function makeAllButton() {
@@ -661,11 +695,30 @@ html.tb-back-in body { animation: _tbBackIn 0.62s cubic-bezier(0.25,0.1,0.25,1);
     b.className = 'alx-fab';
     b.id = 'tbAll';
     b.setAttribute('aria-label', 'All pages');
-    b.innerHTML = tbIco(ALL_GLYPH) + '<span>All</span>';
+    b.setAttribute('aria-haspopup', 'dialog');
+    b.setAttribute('aria-expanded', 'false');
+    // als-v686: the nine dots sit in a recessed well; the label and the "/"
+    // hint tuck away while he scrolls down (wireFabTuck) and come back on up.
+    b.innerHTML = '<span class="alx-well" aria-hidden="true"><span class="alx-dots">' +
+      '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>' +
+      '<span class="alx-lbl">All</span><kbd aria-hidden="true">/</kbd><span class="alx-end"></span>';
     b.addEventListener('click', () => {
       try { window.ALSLauncher ? window.ALSLauncher.toggle() : loadLauncher(true); } catch (e) {}
     });
     return b;
+  }
+
+  // Scroll down → the button tucks to its round well; scroll up (or reach the
+  // top) → it comes back. Passive and rAF-free: one class toggle per scroll event.
+  function wireFabTuck() {
+    let last = window.scrollY || 0;
+    window.addEventListener('scroll', function () {
+      const f = document.getElementById('tbAll'); if (!f) return;
+      const y = window.scrollY || 0;
+      if (y > last + 6 && y > 80) f.classList.add('mini');
+      else if (y < last - 6 || y <= 80) f.classList.remove('mini');
+      last = y;
+    }, { passive: true });
   }
 
   function isEmbedded() {
@@ -714,6 +767,7 @@ html.tb-back-in body { animation: _tbBackIn 0.62s cubic-bezier(0.25,0.1,0.25,1);
     // own 5-tab nav.
     if (!isRunSolo()) {
       document.body.appendChild(makeAllButton());
+      wireFabTuck();
       // gym.html never carried the bar's bottom padding and does not need the
       // button's — it ends clear of the corner on its own. Everywhere else
       // inherits the reservation the bar used to make, 8px smaller.

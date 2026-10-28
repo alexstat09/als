@@ -1465,6 +1465,14 @@ index, one press, from anywhere. It is loaded lazily by `topbar.js` and **owns
 no state** — no storage write, no key, no network — so it can be reverted with
 nothing to migrate. ⚠️ Adding a new live page means adding it to `GROUPS` there;
 `tests/launcher.test.js` fails if a root `.html` page is unreachable from it.
+⭐ **als-v686 — the redesign.** The panel is the home's own language (near-black,
+hairlines, Instrument Serif figures, champagne): six live "today" tiles, School
+Studies as ONE big card (the subject pages are NOT rows — his rule, they live
+inside it; searching «λατ» lands on it), Body · Train · Life · Mind with a
+14-day activity strip each, rows that say where the page stands, and "Gone
+quiet". Its numbers come from **`launcher-data.js`** = a BYTE-IDENTICAL copy of
+`home-live.js` `ls … sparkPts` (the test fails on any drift — re-paste, never
+edit), loaded lazily on first open together with `ladders.js` / `water.js`.
 
 ⚠️ **There is no bottom BAR any more (als-v438).** The five tabs (Home · Mind ·
 All · Money · Nova) are gone and the single floating `.alx-fab` that `gym.html`

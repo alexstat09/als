@@ -78,6 +78,14 @@ live.forEach(f => {
     if (m[1] !== f) linkedFrom.add(m[1]);
   });
 });
+// ⭐ als-v686: ΤΑ ΜΑΘΗΜΑΤΑ ΖΟΥΝ ΜΕΣΑ ΣΤΟ SCHOOL STUDIES (δική του εντολή,
+// 28/10/26). Η πόρτα τους είναι ο πίνακας SUBJ της homework.html (`page:'…'`),
+// που χτίζει τους συνδέσμους στην οθόνη — άρα η προσβασιμότητα ΑΠΟΔΕΙΚΝΥΕΤΑΙ
+// από εκεί, όχι από λίστα.
+{
+  const hw = fs.readFileSync(ALS + '/homework.html', 'utf8');
+  [...hw.matchAll(/page:\s*'([^'#?]+\.html)/g)].forEach(m => linkedFrom.add(m[1]));
+}
 const unreachable = live.filter(f =>
   !EXEMPT.has(f) && hrefs.indexOf(f) < 0 && !linkedFrom.has(f));
 is('no live page is unreachable from the launcher', unreachable, []);
@@ -125,9 +133,11 @@ ok('the sheet bounds it with a max-height', /\.alx-sheet\s*\{[^}]*max-height/.te
 
 /* ── 6 · every class toggled from JS exists in CSS (constraint 12) ─ */
 section('no class is toggled that CSS never defines');
-['alx-sheet', 'alx-body', 'alx-pins', 'alx-pin', 'alx-g', 'alx-gh',
- 'alx-rows', 'alx-r', 'alx-none', 'alx-search', 'alx-x', 'alx-grab',
- 'alx-a-coral', 'alx-a-emerald', 'alx-a-violet', 'alx-a-amber', 'here']
+['alx-sheet', 'alx-body', 'alx-pins', 'alx-pin', 'alx-g', 'alx-idx', 'alx-col',
+ 'alx-rows', 'alx-r', 'alx-none', 'alx-search', 'alx-x', 'alx-grab', 'alx-hd',
+ 'alx-home', 'alx-esc', 'alx-ss', 'alx-sb', 'alx-strip', 'alx-sx', 'alx-tabs',
+ 'alx-res', 'alx-ft', 'alx-quiet', 'alx-tools', 'alx-keys', 'alx-close',
+ 'here', 'quiet', 'old', 'focus', 'sel', 'out', 'drag', 'on', 'rise']
   .forEach(c => ok('.' + c + ' is defined', new RegExp('\\.' + c + '[\\s,{:.]').test(SRC)));
 // .alx-fab is the exception: topbar.js creates that element, so topbar.js owns
 // its CSS. It must NOT also be styled here — launcher.js arrives on a separate
@@ -151,7 +161,11 @@ section('encoding — Greek page names cannot mojibake');
      It exists so the check above cannot pass vacuously by every Greek name
      being deleted, so a COUNT is what it should have been asking for. */
   const escaped = rendered.filter(s => /\\u03[0-9a-f]{2}/i.test(s));
-  ok('the Greek names are still present, as escapes', escaped.length >= 4);
+  /* als-v686: the subject rows left the list by his rule (they live inside
+     School Studies), so Η Χρονιά is the one Greek NAME left. The Greek the
+     panel prints is now the School Studies card, also escaped. */
+  ok('the Greek names are still present, as escapes', escaped.length >= 1);
+  ok('and the School Studies card speaks Greek through escapes', /\\u03c3\\u03ae\\u03bc\\u03b5\\u03c1\\u03b1/.test(SRC) && !/[^\x00-\x7F]/.test(SRC));
 }
 
 /* ── 8 · the shell wiring: ONE control, one code path (als-v438) ─── */
@@ -167,7 +181,7 @@ ok('it is a <button>, so the shell link interceptor cannot navigate on it',
   /\bb\.type = 'button'/.test(TOPCODE));
 ok('it keeps the id the launcher wiring already used', /b\.id = 'tbAll'/.test(TOPCODE));
 ok('it is labelled for screen readers', /aria-label', 'All pages'/.test(TOPCODE));
-ok('it carries a visible ALL label, not the icon alone', /<span>All<\/span>/.test(TOPCODE));
+ok('it carries a visible ALL label, not the icon alone', /class="alx-lbl">All</.test(TOPCODE));
 {
   // A <button> does not inherit the document font. Unlike the bar's tab (where
   // setting font-family DROPPED "ALL" out of its siblings' mono stack), this
@@ -226,6 +240,47 @@ section('body must not become a containing block for the fixed control');
 ok('launcher.js is lazy-loaded, not hard-required', /s\.src = 'launcher\.js'/.test(TOP));
 ok('a tap before the script lands still opens it', /loadLauncher\(true\)/.test(TOP));
 ok('launcher.js is precached by the service worker', /'launcher\.js'/.test(SW));
+
+/* ── 10 · als-v686: the redesign's own guarantees ───────────────────── */
+section('the numbers come from the HOME\'s readers, byte for byte');
+{
+  const DATA = fs.readFileSync(ALS + '/launcher-data.js', 'utf8');
+  const HL = fs.readFileSync(ALS + '/home-live.js', 'utf8').split('\n');
+  const a = HL.findIndex(l => l.startsWith('  function ls(k, d)'));
+  const sp = HL.findIndex(l => l.startsWith('  function sparkPts(arr) {'));
+  const b = HL.findIndex((l, i) => i > sp && l === '  }');
+  const want = HL.slice(a, b + 1).join('\n');
+  const m = DATA.match(/BEGIN COPY of home-live\.js \(do not edit here\) ===== \*\/\n([\s\S]*?)\n  \/\* ===== END COPY/);
+  ok('the copy block is there', !!m);
+  ok('and it is IDENTICAL to home-live.js (ls … sparkPts)', m && m[1] === want);
+  const DCODE = DATA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  ok('launcher-data.js never writes storage', !/setItem|removeItem|localStorage\s*\.\s*clear/.test(DCODE));
+  ok('launcher-data.js makes no network call', !/\bfetch\s*\(|XMLHttpRequest|sendBeacon/.test(DCODE));
+  ok('launcher-data.js is precached', /'launcher-data\.js'/.test(SW));
+}
+section('read lazily: nothing is fetched or parsed until he opens it');
+{
+  ok('loadData() exists', /function loadData\(\)/.test(CODE));
+  const calls = [...CODE.matchAll(/\bloadData\(\)/g)].length;
+  is('loadData is declared once and called once (from open)', calls, 2);
+  ok('and that call sits inside open()', /function open\(\) \{[\s\S]{0,200}loadData\(\);/.test(CODE));
+}
+section('Study is ONE door: School Studies (his rule, 28/10/26)');
+{
+  ['arxaia.html', 'arxaia-agnosto.html', 'latinika.html', 'tonos.html', 'istoria.html', 'ekthesi.html']
+    .forEach(h => ok('no row for ' + h, hrefs.indexOf(h) < 0));
+  ok('School Studies is the card', /var SCHOOL = \{ href: 'homework\.html', name: 'School Studies'/.test(SRC));
+  ok('Η Χρονιά stays reachable, by search only', /SEARCH_ONLY = \[[\s\S]{0,200}href: 'study\.html'/.test(SRC));
+  // and searching a subject still lands somewhere: the card owns their names
+  ['\\u039b\\u03b1\\u03c4\\u03b9\\u03bd\\u03b9\\u03ba\\u03ac', '\\u0399\\u03c3\\u03c4\\u03bf\\u03c1\\u03af\\u03b1']
+    .forEach(w => ok('search knows ' + JSON.parse('"' + w + '"') + ' lives in School Studies', SRC.indexOf(w) > -1 && /var SUBJECTS = \[/.test(SRC)));
+}
+section('silent-empty: unread is never zero');
+{
+  ok('an unreadable store contributes no day', /unreadable \u2192 contributes nothing|unreadable \\u2192 contributes nothing/.test(SRC));
+  ok('a page with no store says "no history kept"', /no history kept/.test(SRC));
+  ok('a missing reader leaves a dash, not a 0', /'\\u2014'/.test(SRC));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
