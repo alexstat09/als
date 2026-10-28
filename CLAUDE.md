@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v686`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v687`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,20 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-28 — `als-v687` — NUTRITION ΞΑΝΑΣΧΕΔΙΑΣΤΗΚΕ (εγκεκριμένη μακέτα, artifact MDMNQWkTNXJ1Anr2Gfxw48 — «perfect»).**
+Midnight + η σειρά του ΕΞΩΦΥΛΛΟΥ, ΑΓΓΛΙΚΑ: διαδρομή (μέρα ‹ › · Gym/Rest day · «+ Add food ⌘K») → εξώφυλλο (Nutrition · lead = `heroLine()` · ΕΝΑ νούμερο = kcal που μένουν/over, streak από κάτω)
+→ ταινία `#sumCard` (Eaten `.sum-kcal` — το `hero-vt.js` το βρίσκει ακόμη — + μπάρα kcal ανά macro + Protein/Carbs/Fat/Fiber) → γεύματα σε κάρτες 2 στηλών (κενό γεύμα = η πρωτεΐνη του usual
+ως γεγονός· move/copy στη γραμμή meta, usual + «+» κάτω) + πλάι What now (`nextAction` + «Log it») · μικρά νούμερα · Νερό (ΜΟΝΟ ανάγνωση `ALSWater.count/target`, γράφει το po-water) →
+This week (Δε–Κυ, στόχοι ανά μέρα από `weekFuelPlan`, πάτημα = εκείνη η μέρα, `day-go`) → Month by month (μέσος όρος ανά ΚΑΤΑΓΕΓΡΑΜΜΕΝΗ μέρα, 6 μήνες) + Last 30 days (+ run/best/logged/on target)
+→ Your targets (Cut/Maintain/Bulk + 5 πλακίδια) → Meal Planner / Import. Τα στοιχεία σου (stats) ανοίγουν πλέον σε ΔΙΚΟ ΤΟΥΣ `<dialog id="statsSheet">` με τα ΙΔΙΑ ids/handlers·
+χτίζεται μία φορά ανά άνοιγμα (ένα renderAll σε focus δεν σβήνει ό,τι πληκτρολογεί). `--nu` = κεχριμπάρι, οπότε κάθε παλιό inline `rgb(var(--nu))` των παραθύρων βάφτηκε μόνο του.
+Παράθυρα: κεντραρισμένα στο λάπτοπ, φύλλα από κάτω στο κινητό (καρτέλες 4×2, 44px). Κίνηση: είσοδος παραθύρων, crossfade καρτελών, crossfade όταν αλλάζει η ΜΕΡΑ, μπάρες που μεγαλώνουν ΜΟΝΟ στο
+πρώτο paint (`html.nu-boot`), χρυσό toast streak (όχι 🔥), reduced-motion παντού· το scroll-reveal του `page-motion.js` μένει (στο full-page PNG ΠΡΕΠΕΙ να κυλήσεις, αλλιώς κάρτες «λείπουν»).
+⛔ **ΔΕΔΟΜΕΝΑ ΑΘΙΚΤΑ**: κανένας γραφέας/sync/streak/tombstone δεν άλλαξε — μόνο renderers + CSS (+ `day-go`, ⌘K, κλείσιμο του stats dialog). Το κρύσταλλο Nova της κεφαλίδας έφυγε → το `nova.js`
+βάζει το δικό του Nova κουμπί όπως σε άλλες σελίδες. ⚠️ `dialog` με `inset:0` + `height:auto` ΤΕΝΤΩΝΕΤΑΙ ως το max-height → `max-content`. ⚠️ Το `renderStreak` το κόβει σε vm το `nut-streak.test.js` → καμία
+εξάρτηση από `fmtK` εκεί. Tests: nut-meals 48/0 · nut-streak 36/0 · nutrition-deleted 11/0 · lookup ✓ · mcp-tombstones 23/0 · home-page 55/0 · home-tiles 85/0 · launcher 123/0 · page-transition 139/0 · smoke OK.
+Render (Playwright, sync/topbar/nova αφαιρεμένα) 1440/1180/390 × γεμάτη/άδεια μέρα/αλλαγή μέρας + Add food/Portion/Stats/Move: 0 JS σφάλματα, 0 υπερχείλιση, τίποτα <11px στο κινητό. 🔴 Αδοκίμαστο σε iPhone.
 
 **2026-10-28 — `als-v686` — ΤΟ «ALL» ΞΑΝΑΣΧΕΔΙΑΣΤΗΚΕ (εγκεκριμένο demo v1→v5, artifact 7F2MrBqnVwGvWJwewr2h96) + ΤΟ ΚΟΥΜΠΙ.**
 Γλώσσα της αρχικής (σχεδόν μαύρο, γραμμές 1px, Instrument Serif νούμερα, champagne). Laptop = κεντραρισμένο πάνελ 1100px (αναζήτηση 22px · 6 πλακίδια «today»
