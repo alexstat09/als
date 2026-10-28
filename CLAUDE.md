@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v679`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v680`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,26 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-28 — `als-v680` — ΕΙΣΑΓΩΓΗ ΠΡΩΤΑΓΟΡΑ ΜΕ ΤΟ SKILL (αντικαθιστά το artifact-πακέτο `arxaia-protagoras-eisagogi.html`, το παλιό → `archive/`) + ΔΥΟ ΕΠΕΚΤΑΣΕΙΣ ΕΡΓΑΛΕΙΩΝ.**
+`tools/eisagogi/arxaia/protagoras.json`, κλειδί `eisarx-protagoras-v1` (μόνο συσκευή· το παλιό `protag-intro-v1` έμεινε άθικτο στη συσκευή). ΔΥΟ σελίδες
+= ΜΙΑ πηγή: ο Πρωταγόρας μέσα στο Γ3 (`4510,20308`, ως πριν τον Πρόδικο) + Β+Γ του κεφαλαίου (`4511,20312`, ως πριν «ΗΣΙΟΔΟΥ»). 92 προτάσεις → **12
+σταθμοί** (βίος · Περὶ θεῶν · μέτρον · δισσοί λόγοι · δύο θέματα · δύο μέθοδοι · μύθος · διάλεξη · σχολιασμός · αρετή · Ησίοδος · πολιτική αρετή), σχέδια
+split/scales/descent/flow/split/fork/ladder/dialogue/flow/scales/split/ladder· ladder XII = Ησίοδος → Αισχύλος → Πρωταγόρας. Ανάκληση 56 · Σ/Λ 36 (19
+λάθος) · πολλαπλή 52 (13/13/13/13) · 10 παγίδες · 5 pitfalls. Validator πράσινος με την ΠΡΩΤΗ πλήρη δόση.
+⭐ **`scaffold.js` «::αρχή..τέλος»**: από το block ΟΠΟΙΟΥΔΗΠΟΤΕ είδους που αρχίζει με «αρχή» ως ΠΡΙΝ από το block που αρχίζει με «τέλος» (ενότητες χωρίς
+επικεφαλίδα: `<p class="paragraph"><strong>`, `<p><u>`, `style="text-align:center"`). Το απλό «::Δ3.» απαράλλακτο — ξανατρέχτηκε σε πρόβα-id, πηγή ίδια
+πλην του ονόματος του json (αρχεία στο scratchpad). Χωρίς επικεφαλίδα δεν βγαίνει route/title → γράφτηκαν «Πρωταγόρας» με το χέρι.
+⭐⭐ **`fixes: [{from,to,why}]`** για εκεί που η ΗΛΕΚΤΡΟΝΙΚΗ έκδοση έχει άδικο (εδώ «ὤν»/«ἤ» με οξεία, «ΙΙρωταγόρας»): `lib.fixSource` εφαρμόζει πάνω στην
+πηγή ΠΡΙΝ από άγκυρες/quote/πολυτονικά· η πηγή μένει ωμή (sha). Ο validator αρνείται fix χωρίς `from` στην πηγή, fix που καμία άγκυρα (εκτός του ίδιου
+του quote) δεν κουβαλά, και fix που το `colophon` δεν δηλώνει. `build` βγάζει το `fixes` από το payload. Test: ωμή πηγή = λάθος μορφή · σώμα = σωστή ·
+σώμα ΧΩΡΙΣ λάθος μορφή + 3 μεταλλάξεις (σβήνω τα fixes → «ΔΕΝ είναι αυτολεξεί»). Δ2–Ε2 χωρίς `fixes` → byte-ίδια.
+⚠️ **Πολυτονικό σε `short`/`label` σταθμού = ✗** (χάρτης/πλοήγηση σε Commissioner/Mono, χωρίς πολυτονικό) — μόνο νεοελληνικά εκεί.
+⚠️⚠️ **Προτομή από ΠΙΝΑΚΑ (Ribera 1637), όχι χαρακτικό**: το `.seal img` κάνει `invert` (φτιαγμένο για μαύρες γραμμές σε λευκό) → ο σκούρος πίνακας
+βγήκε χλωμό φάντασμα. Λύση στο ΑΡΧΕΙΟ, όχι στο tpl: η webp αποθηκεύτηκε ως ΑΡΝΗΤΙΚΟ με +contrast (ffmpeg `eq…,negate`), οπότε η σελίδα το ξαναγυρίζει
+θετικό και το `screen` λιώνει το σκούρο φόντο στο Midnight. Για επόμενο πίνακα: το ίδιο.
+finish πράσινο: eisagogi (protagoras) 177/0 · gnosto 2483/0 · aristotelis 650/0 · page-transition 138/0 · smoke OK · check.mjs ✓ · 3 PNG + ζουμ προτομής.
+🔴 Αδοκίμαστο σε συσκευή του. ΕΠΟΜΕΝΟ: Πολιτεία εισαγωγή (`arxaia-politeia-eisagogi.html`).
 
 **2026-10-28 — `als-v679` — ΕΙΣΑΓΩΓΗ Ε2 «Το έργο του» (Πλάτων) ΜΕ ΤΟ SKILL — ΝΕΟ αρχείο `arxaia-platon-erga.html` (το Ε1 έμεινε byte-ίδιο).**
 `tools/eisagogi/arxaia/platon-e2.json`, κλειδί `eisarx-platon-e2-v1` (μόνο συσκευή). Πηγή: ίδια σελίδα με το Ε1, «::Ε2.» (ελληνικό Ε, το route

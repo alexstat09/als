@@ -93,6 +93,19 @@ function statics(id) {
   mutant('Σ/Λ σε σταθμό που δεν υπάρχει', d => { d.check.tf[0].s = 99; }, 'σταθμό που δεν υπάρχει');
   mutant('ξεχασμένο κενό του σκελετού', d => { d.core = '⟪η φράση στη μέση⟫'; }, 'ασυμπλήρωτο');
   mutant('ίδια φράση σε τρία σημεία', d => { const s = d.stations[0]; while (s.points.length < 3) s.points.push(JSON.parse(JSON.stringify(s.points[0]))); s.points.slice(0, 3).forEach(p => { p.t += ' Η πορεία της σκέψης.'; }); }, 'επαναλαμβάνεται');
+  /* als-v680 · fixes: η ΗΛΕΚΤΡΟΝΙΚΗ έκδοση έχει άδικο, το τυπωμένο δίκιο. Η πηγή μένει ωμή· η σελίδα γράφει το σωστό. */
+  if ((D0.fixes || []).length) {
+    mutant('σβήνω τα fixes → η σελίδα θα έδειχνε τη λάθος μορφή', d => { delete d.fixes; }, 'ΔΕΝ είναι αυτολεξεί');
+    mutant('fix σε λέξη που δεν γράφει το βιβλίο', d => { d.fixes[0].from = 'λέξη που δεν υπάρχει'; }, 'δεν βρίσκω στην πηγή');
+    mutant('fix που δεν δηλώνεται στο colophon', d => { d.colophon = []; }, 'colophon δεν δηλώνει');
+    const dR = L.load(id); L.validate(dR, SRC);
+    const BODY = L.items(dR).filter(it => it.reading).map(it => it.text).join('\n');
+    D0.fixes.forEach(f => {
+      ok(SRC.raw.indexOf(f.from) >= 0, 'fix «' + f.from + '»: η ΩΜΗ πηγή έχει τη λάθος μορφή (δεν τη διορθώσαμε με το χέρι)');
+      ok(BODY.indexOf(f.to) >= 0, 'fix «' + f.to + '»: η σελίδα γράφει τη σωστή μορφή');
+      ok(BODY.indexOf(f.from) < 0, 'fix «' + f.from + '»: το ΣΩΜΑ της σελίδας δεν έχει τη λάθος μορφή (μόνο το colophon τη δηλώνει)');
+    });
+  }
 
   /* ποσότητες-στόχοι (από το Δ2: 59 προτάσεις → 43 ανάκληση · 24 Σ/Λ · 42 πολλαπλή) */
   const C = D0.check;

@@ -189,9 +189,33 @@ function said(word, pool, need) {
   return pool.some(t => prefix(word, t) >= need);
 }
 
+/* ⭐ als-v680 · Εκεί που η ΗΛΕΚΤΡΟΝΙΚΗ έκδοση έχει άδικο και το ΤΥΠΩΜΕΝΟ δίκιο (Πρωταγόρας: «ὤν ὁ βίος» με οξεία
+   αντί για βαρεία), η πηγή μένει ΩΜΗ (sha) και το json δηλώνει `fixes: [{from, to, why}]`. Εφαρμόζονται ΕΔΩ, πάνω
+   στο κείμενο, ΠΡΙΝ από άγκυρες/quote/πολυτονικά. Μόνο δηλωμένα: κάθε άλλη λέξη μένει όπως στο βιβλίο. */
+function fixSource(d, src) {
+  const errs = [], fx = d.fixes || [];
+  if (!fx.length) return { src, errs };
+  let text = src.text;
+  fx.forEach((f, i) => {
+    const w = 'fixes[' + i + ']';
+    if (!f.from || !f.to || f.from === f.to || !(f.why || '').trim()) { errs.push(w + ': θέλει from, to (διαφορετικά) και why'); return; }
+    if (text.indexOf(f.from) < 0) { errs.push(w + ': δεν βρίσκω στην πηγή το «' + f.from + '» — fix μόνο σε ό,τι γράφει το βιβλίο'); return; }
+    text = text.split(f.from).join(f.to);
+  });
+  return { src: Object.assign({}, src, { text, flat: norm(text), sentences: sentences(text) }), errs };
+}
+
 function validate(d, src) {
-  const errs = resolve(d, src);
+  const fx = fixSource(d, src);
+  src = fx.src;
+  const errs = fx.errs.concat(resolve(d, src));
   const E = (w, m) => errs.push(w + ': ' + m);
+  (d.fixes || []).forEach((f, i) => {
+    /* το fix ΦΑΙΝΕΤΑΙ (μια άγκυρα ΕΚΤΟΣ από το ίδιο το απόσπασμα το κουβαλά — σβήσιμό του = άγκυρα όχι αυτολεξεί) και το colophon ΤΟ ΔΗΛΩΝΕΙ */
+    const used = items(d).some(it => !/\.quote$/.test(it.where) && it.a.some(a => norm(a).indexOf(norm(f.to)) >= 0));
+    if (f.to && !used) E('fixes[' + i + ']', 'καμία άγκυρα δεν περιέχει το διορθωμένο «' + f.to + '» — ένα fix που δεν φαίνεται δεν χρειάζεται');
+    if (f.from && !(d.colophon || []).some(c => c.indexOf(f.from) >= 0)) E('fixes[' + i + ']', 'το colophon δεν δηλώνει την απόκλιση «' + f.from + '» → «' + f.to + '»');
+  });
   if (src.sha !== d.source.sha) E('πηγή', 'το sha της πηγής άλλαξε (' + src.sha + ') — το βιβλίο δεν διορθώνεται με το χέρι');
   if (OXIA.test(JSON.stringify(d))) E('json', 'OXIA μέσα στα δεδομένα (U+1F71 κ.λπ.) — NFC');
   if (!/^[a-z0-9-]+$/.test(d.key || '')) E('key', 'λείπει/άκυρο το κλειδί προόδου');
@@ -320,4 +344,4 @@ function validate(d, src) {
   return errs;
 }
 
-module.exports = { REPO, load, readSource, sentences, resolve, validate, items, plain, norm, bare, words, dgTypes };
+module.exports = { REPO, load, readSource, fixSource, sentences, resolve, validate, items, plain, norm, bare, words, dgTypes };

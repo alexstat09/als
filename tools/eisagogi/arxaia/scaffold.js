@@ -1,12 +1,13 @@
 /* tools/eisagogi/arxaia/scaffold.js — ΠΗΓΗ + ΣΚΕΛΕΤΟΣ ενός νέου κεφαλαίου, με μία εντολή.
-     node tools/eisagogi/arxaia/scaffold.js <id> "<url>[::<αρχή επικεφαλίδας>]" [άλλο url…] [--lead] [--file x.html]
+     node tools/eisagogi/arxaia/scaffold.js <id> "<url>[::<αρχή επικεφαλίδας>|::<αρχή>..<τέλος>]" [άλλο url…] [--lead] [--file x.html]
    π.χ. node tools/eisagogi/arxaia/scaffold.js sokratis-d3 \
           "https://old.ebooks.edu.gr/modules/ebook/show.php/DSGL-C128/680/4510,20309/::Δ3." --file arxaia-sokratis.html
 
    Τι κάνει (κανένα βήμα δεν θέλει κρίση):
      1 · curl κάθε σελίδα του βιβλίου (στο $TMPDIR, ποτέ στο repo) → το <div id="eclass_ebook_body">
      2 · κόβει την ενότητα: από την κεντραρισμένη επικεφαλίδα που αρχίζει με «<αρχή>» ως την επόμενη
-         επικεφαλίδα (χωρίς «::» = όλη η σελίδα). Οι λεζάντες εικόνων ΔΕΝ μπαίνουν (μετριούνται).
+         επικεφαλίδα (χωρίς «::» = όλη η σελίδα). «::αρχή..τέλος» = από το block (κάθε είδους) που
+         αρχίζει με «αρχή» ως ΠΡΙΝ από το block που αρχίζει με «τέλος» (ενότητα χωρίς επικεφαλίδα). Οι λεζάντες εικόνων ΔΕΝ μπαίνουν (μετριούνται).
          Οι υποσημειώσεις μπαίνουν ΜΟΝΟ όσες δείχνει η ενότητα (<sup>), ως @@NOTEn@@.
          --lead = και η τελευταία παράγραφος ΠΡΙΝ από την ενότητα, ως @@LEAD@@ (όπως στο Δ2).
      3 · <strong>/<b> → @@B@@…@@/B@@ · markup έξω · NFC (oxia → tonos) · μία παράγραφος ανά γραμμή
@@ -91,7 +92,17 @@ urls.forEach((u, k) => {
   if (r.status !== 0 || !fs.existsSync(f)) { console.error('⛔ curl απέτυχε για ' + url + ': ' + (r.stderr || '').trim()); process.exit(1); }
   const all = blocks(fs.readFileSync(f, 'utf8'));
   let from = 0, to = all.length;
-  if (sec) {
+  const bare = b => b.t.replace(/@@\/?B@@/g, '');
+  if (sec && sec.includes('..')) {
+    /* «αρχή..τέλος»: από το block (ΟΠΟΙΟΥΔΗΠΟΤΕ είδους) που αρχίζει με «αρχή» ως ΠΡΙΝ από το block που αρχίζει με «τέλος»
+       — για ενότητες που δεν ανοίγουν με επικεφαλίδα (ο Πρωταγόρας μέσα στο Γ3: <p class="paragraph"><strong>) */
+    const [a, z] = sec.split('..');
+    from = all.findIndex(b => bare(b).startsWith(a));
+    if (from < 0) { console.error('⛔ στη σελίδα ' + (k + 1) + ' δεν υπάρχει block που αρχίζει με «' + a + '»'); process.exit(1); }
+    to = all.findIndex((b, i) => i > from && bare(b).startsWith(z));
+    if (to < 0) { console.error('⛔ στη σελίδα ' + (k + 1) + ' δεν υπάρχει, μετά το «' + a + '», block που αρχίζει με «' + z + '»'); process.exit(1); }
+    if (!k && args.includes('--lead')) lead = all.slice(0, from).filter(b => b.kind === 'p').slice(-1)[0] || null;
+  } else if (sec) {
     from = all.findIndex(b => b.kind === 'h' && b.t.replace(/@@\/?B@@/g, '').startsWith(sec));
     if (from < 0) { console.error('⛔ στη σελίδα ' + (k + 1) + ' δεν υπάρχει επικεφαλίδα που αρχίζει με «' + sec + '». Υπάρχουν:\n  ' + all.filter(b => b.kind === 'h').map(b => b.t.slice(0, 70)).join('\n  ')); process.exit(1); }
     const nx = all.findIndex((b, i) => i > from && (b.kind === 'h' || b.kind === 'note'));

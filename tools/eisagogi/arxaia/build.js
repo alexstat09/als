@@ -13,7 +13,7 @@ function build(name) {
   if (errs.length) throw new Error('ο validator αρνείται (' + errs.length + '):\n  ' + errs.join('\n  '));
   const tpl = fs.readFileSync(path.join(__dirname, 'page.tpl'), 'utf8');
   const payload = Object.assign({}, d);
-  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate'].forEach(k => delete payload[k]);
+  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate', 'fixes'].forEach(k => delete payload[k]);
   /* ⚠️ σταθ. 58: ποτέ .replace(string, string) — τα $ τρώγονται· εδώ split/join.
      Κάθε «<» του json γίνεται escape u003c, ώστε ένα «</script>» μέσα σε κείμενο να μη σπάσει τη σελίδα. */
   const json = JSON.stringify(payload).replace(/</g, '\\u003c');
