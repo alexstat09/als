@@ -324,6 +324,8 @@ const sleep = n => new Promise(r => setTimeout(r, n));
           }
           /* και ανάποδα: πατάς λέξη της απλής, ανάβει το αρχαίο */
           const g1 = segs.find(g => AP.align[g.n].some(c => c[1])), c1 = AP.align[g1.n].find(c => c[1]);
+          /* καθαρή αφετηρία: αν μείνει επιλεγμένο το ίδιο κλειδί από πριν (π.χ. καμία σπασμένη λέξη → το προηγούμενο «.an .w» πάτημα), το πάτημα θα το ΕΣΒΗΝΕ — gk11 */
+          await ev(`document.querySelectorAll('.w.hit').length && document.querySelector('.w.hit').click()`);
           await ev(`document.querySelector('.sent[data-n="${g1.n}"] .md .w[data-k="${c1[1]}"]').click()`);
           ok(await ev(`document.querySelectorAll('.sent[data-n="${g1.n}"] .an .w.hit[data-k="${c1[1]}"]').length>0`), 'πατώντας «' + c1[0].trim() + '» στην απλή, ανάβει το «' + unit.align.pairs[c1[1]].a + '» στο αρχαίο');
           await ev(`document.querySelector('.sent[data-n="${g1.n}"] .md .w[data-k="${c1[1]}"]').click()`);
@@ -411,7 +413,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       const br = await ev(`[...document.querySelectorAll('.sent .an')].map(p=>{const t=[...p.querySelectorAll('.br')].map(b=>b.textContent.replace(/\\d/g,''));let o=0,ok=true;t.forEach(c=>{if(c==='['||c==='(')o++;else{o--;if(o<0)ok=false}});return ok&&o===0})`);
       ok(br.every(Boolean), 'σε κάθε περίοδο οι αγκύλες ανοίγουν και κλείνουν σωστά');
       eq(await ev(`new Set([...document.querySelectorAll('.cl')].map(c=>c.dataset.q)).size`), Object.keys(spec.structure.clauses).length, 'όλες οι προτάσεις εμφανίζονται');
-      eq(nz((await ev(`[...document.querySelectorAll('.an')].map(p=>p.textContent).join(' ')`)).replace(/[\[\]()]\d*/g, '')), nz(unit.ancient.map(b => b.p).join(' ').replace(/[()]/g, '')), 'οι αγκύλες δεν έφαγαν ούτε πρόσθεσαν γράμμα');
+      eq(nz((await ev(`[...document.querySelectorAll('.an')].map(p=>p.textContent).join(' ')`)).replace(/[\[\]()]\d*/g, '')), nz(unit.ancient.map(b => b.p).join(' ').replace(/[\[\]()]/g, '')), 'οι αγκύλες δεν έφαγαν ούτε πρόσθεσαν γράμμα');
       const dep = segs.find(s => s.a.length && spec.structure.runs[s.n].some(r => spec.structure.clauses[r[1]].d));
       if (dep) {
         const q = spec.structure.runs[dep.n].find(r => spec.structure.clauses[r[1]].d)[1];
