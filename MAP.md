@@ -721,6 +721,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   ⭐ **als-v669 — gk9 ΑΠΛΗ** (`aplh`, 13/17 περίοδοι, 22 αλλαγές) + οι 6 «. πεζό» της = ΑΝΩ ΤΕΛΕΙΕΣ (render σελ. 90/93).
   ⭐⭐⭐ **als-v667 — ΚΑΘΕ όργανο έχει ΑΠΛΗ ΜΕΤΑΦΡΑΣΗ δίπλα στην ακριβή** (πεδίο `aplh` του `gkN.json`, πρότυπο gk10, ΥΠΟΧΡΕΩΤΙΚΟ — skill `arxaia-gnosto-organo` §4β): `tools/gnosto/aplh.js gkN --init` (στήνει από τον μεταφραστή) → αλλάζεις ΜΟΝΟ `aplh.align` → `--segs` → φύλλο ως 0 ✗· validator `lib.check` 9/9β. ⭐ als-v668: τέλος κάθε ενότητας = `tools/gnosto/finish.js gkN` (όλο το μηχανικό + tests, σύντομο output).
   ⭐⭐ **als-v647 — ΤΟ ΚΕΙΜΕΝΟ ΜΙΑΣ ΝΕΑΣ ΕΝΟΤΗΤΑΣ = skill `arxaia-gnosto-enotita`:** το μοντέλο γράφει ΜΟΝΟ `tools/gnosto/gkN.text.json` (συμπαγή `segs` ⟨κείμενο|κλειδί⟩ + `pairs` + `fixes` + `counts`)· `tools/gnosto/keimeno.js` scaffold → source (κόψιμο + σάρωση υπόπτων με PNG) → check → wire (block ⟪gkN⟫ στο UNITS, deep-equal) · πρότυπο `gk10.text.json` · γενικός φρουρός §2δ στο `tests/arxaia-gnosto.test.js`.
+  ⭐⭐⭐ **als-v681 — Η ΑΡΧΙΚΗ ΤΟΥ ΓΝΩΣΤΟΥ ΑΠΛΗ:** «Επόμενο» πάνω-πάνω · εισαγωγή σε κάρτες φιλοσόφων (`.gn-phs`, τη γράφει το `tools/eisagogi/arxaia/wire.js` από το `BOOK` = [αρχείο, φιλόσοφος]) · κείμενα ανά έργο (`groups()`). Δες CLAUDE.md §5.
   ⭐⭐ **als-v641 — Η ΜΗΧΑΝΗ:** νέα ενότητα = skill **`arxaia-gnosto-organo`**
   (`.claude/skills/`). `scaffold.js` (2 φάσεις) → `source.js` (PDFKit μέσω `fakelos.swift`,
   sha του PDF, κάθε rect διασταυρωμένο με τη σελίδα) → το μοντέλο γράφει ΜΟΝΟ τα «δικά μου»

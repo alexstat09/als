@@ -41,7 +41,7 @@ node tools/eisagogi/arxaia/finish.js <id>
   πριν (όταν η ενότητα ανοίγει με αναφορά σε κάτι προηγούμενο, όπως ο χρησμός στο Δ2). ⛔ Ποτέ μεταγραφή από φωτογραφία.
 - **--file:** κεφάλαιο που ΑΝΤΙΚΑΘΙΣΤΑ υπάρχον πακέτο κρατάει το URL του (`arxaia-sokratis.html`, `arxaia-platon.html`,
   `arxaia-aristotelis.html`, `arxaia-protagoras-eisagogi.html`). Το παλιό πάει στο `archive/` από το finish (ποτέ σβήσιμο).
-  Νέα: `arxaia-politeia-eisagogi.html`, `arxaia-ithika-eisagogi.html`, `arxaia-politika-eisagogi.html` (η σειρά = `BOOK` στο wire.js).
+  Νέα: `arxaia-politeia-eisagogi.html`, `arxaia-ithika-eisagogi.html`, `arxaia-politika-eisagogi.html` (η σειρά = `BOOK` στο wire.js, που κρατάει ΚΑΙ τον φιλόσοφο κάθε αρχείου — η κάρτα όπου μπαίνει στον Γνωστό, als-v681· αρχείο εκτός BOOK → το wire σταματάει).
 - **bust:** μόνο Public domain/CC0 (το λέει το `extmetadata`). `--crop x,y,s` = κλάσματα του ΠΛΑΤΟΥΣ, τετράγωνο γύρω από
   το κεφάλι (Meyer/Σωκράτης: `0.1,0.02,0.8`). Κεφάλαιο χωρίς πρόσωπο (Ηθικά, Πολιτικά) → **καμία** προτομή: `seal.mark` +
   `seal.ring` (υπάρχουν ως fallback). Credit: γράψ' το στα ελληνικά, όπως του Δ2. ⚠️ Gemini image = 0 όριο, δεν χρησιμοποιείται.

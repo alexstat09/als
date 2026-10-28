@@ -70,7 +70,8 @@ function collapseAt(colSel){
    (σχεδιάγραμμα · κείμενο · οθόνες). ΑΥΤΗ μαζεύεται τώρα — και ο έλεγχος
    μένει ο ίδιος: ΤΟ ΙΔΙΟ σημείο θραύσης με τον Άγνωστο. Δύο κόσμοι που
    σπάνε αλλού είναι δύο κόσμοι να μάθεις. */
-const gnBp = collapseAt('#gnWrap .gn-pl'), agBp = collapseAt('#agWrap .ag-cols');
+/* als-v681: το πολύστηλο του Γνωστού είναι πια οι ΚΑΡΤΕΣ ΤΩΝ ΦΙΛΟΣΟΦΩΝ (`.gn-phs`, 3 → 2 → 1). */
+const gnBp = collapseAt('#gnWrap .gn-phs'), agBp = collapseAt('#agWrap .ag-cols');
 ok('ο ΓΝΩΣΤΟΣ μαζεύει τις στήλες του σε σημείο θραύσης', !!gnBp);
 ok('ο ΑΓΝΩΣΤΟΣ επίσης', !!agBp);
 is('⭐ και είναι ΤΟ ΙΔΙΟ σημείο', agBp, gnBp);

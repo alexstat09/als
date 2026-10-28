@@ -1765,27 +1765,64 @@ eq(LG.LADDER.join(','), IST.LADDER.join(','), 'ίδια σκάλα με την �
   var page = fs.readFileSync(path.join(__dirname, '..', 'arxaia.html'), 'utf8');
   var gn = page.slice(page.indexOf('id="gnWrap"'), page.indexOf('id="gnLesson"'));
 
-  /* ⭐⭐ ΤΟ ΠΡΟΣΩΠΟ ΤΗΣ ΚΑΡΤΑΣ ΕΙΝΑΙ Η ΙΔΙΑ Η ΥΛΗ. Το σχεδιάγραμμα έχει ΜΙΑ
-     φύλλο-κουτί ανά μέρος του κεφαλαίου — δηλαδή ανά κόμμα της περιγραφής
-     από δίπλα. Ένα σχήμα με «περίπου τέσσερα κουτάκια» θα ήταν ωραίο και
-     ΨΕΥΤΙΚΟ: πλήθος = πλήθος, όπως η μπάρα των μορίων. */
+  /* ⭐⭐ als-v681 — Η ΕΙΣΑΓΩΓΗ ΕΙΝΑΙ ΑΝΑ ΦΙΛΟΣΟΦΟ (εγκεκριμένη μακέτα «v1»).
+     Το σχεδιάγραμμα, η περιγραφή, το «Πακέτο N» και οι οθόνες έφυγαν κατ'
+     εντολή του («μπερδεμένα»)· οι φρουροί τους έφυγαν μαζί τους. Μένει ό,τι
+     ΜΠΟΡΕΙ να πει ψέματα: σε ΠΟΙΑ κάρτα κάθεται κάθε κεφάλαιο, με ΠΟΙΑ σειρά,
+     και αν τα νούμερα κάθε κάρτας και της κεφαλίδας είναι ΜΕΤΡΗΜΕΝΑ.
+     Η αλήθεια για τον φιλόσοφο κάθε αρχείου ζει ΜΙΑ φορά: στο BOOK του
+     wire.js, που γράφει και τη σελίδα — το test τη ΔΙΑΒΑΖΕΙ, δεν την ξαναγράφει. */
+  var WIRE = require(path.join(__dirname, '..', 'tools', 'eisagogi', 'arxaia', 'wire.js'));
   var plates = gn.split('<a class="gn-pl"').slice(1);
-  eq(plates.length, PACKS.length, 'οι πλάκες της εισαγωγής είναι ' + PACKS.length);
-  plates.forEach(function (pl, i) {
-    var body = pl.slice(0, pl.indexOf('</a>'));
-    var dm = /<span class="d">([^<]+)<\/span>/.exec(body);
-    ok(!!dm, 'πλάκα ' + (i + 1) + ': έχει περιγραφή');
-    if (!dm) return;
-    var parts = dm[1].split(', ').length;
-    /* Τα φύλλα είναι ΜΟΝΟ όσα κάθονται στη σειρά y="52" — η ρίζα (y="8")
-       δεν είναι μέρος του κεφαλαίου, είναι το ίδιο το κεφάλαιο. */
-    var leaves = (body.match(/<rect class="nd" x="[\d.-]+" y="52"/g) || []).length;
-    eq(leaves, parts,
-      '⭐ πλάκα ' + (i + 1) + ': το σχεδιάγραμμα έχει ΜΙΑ φύλλο-κουτί ανά μέρος\n' +
-      '      του κεφαλαίου (' + parts + '), όχι «περίπου τόσα»');
-    ok(/<rect class="nd" x="56" y="8"/.test(body), '   και μία ρίζα, το κεφάλαιο το ίδιο');
-    ok(body.indexOf('<em>Σχεδιάγραμμα · ' + (i + 1) + '</em>') > 0,
-      '   και η λεζάντα του λέει ΠΟΙΟ είναι');
+  eq(plates.length, PACKS.length, 'οι γραμμές της εισαγωγής είναι ' + PACKS.length);
+  ok(gn.indexOf('<span class="k">' + plates.length + ' κεφάλαια · χωρίς βαθμό</span>') > 0,
+    '⭐ η κεφαλίδα λέει ' + plates.length + ' κεφάλαια — όσες γραμμές υπάρχουν, ΧΩΡΙΣ ΒΑΘΜΟ');
+  ok(!/class="pl-th"|class="pl-k"|class="pl-sc"|Σχεδιάγραμμα · \d/.test(gn),
+    '⛔ δεν έμεινε κομμάτι της παλιάς πλάκας (σχέδιο · «Πακέτο N» · οθόνες)');
+  var secs = gn.split('<section class="gn-ph">').slice(1).map(function (x) { return x.slice(0, x.indexOf('</section>')); });
+  ok(secs.length >= 3, 'η εισαγωγή είναι κάρτες φιλοσόφων (' + secs.length + ')');
+  var seen = [], lastAt = -1;
+  secs.forEach(function (sec) {
+    var who = (/<h3>([^<]+)<\/h3>/.exec(sec) || [])[1];
+    var cnt = +((/<\/h3><span>(\d+)<\/span>/.exec(sec) || [])[1]);
+    var rows = sec.split('<a class="gn-pl"').slice(1);
+    eq(cnt, rows.length, '⭐ η κάρτα «' + who + '» λέει ' + cnt + ' — και έχει ' + rows.length + ' γραμμές');
+    rows.forEach(function (r) {
+      var f = (/href="([^"]+)"/.exec(r) || [])[1], at = WIRE.BOOK.findIndex(function (b) { return b[0] === f; });
+      ok(at >= 0, '   ' + f + ' είναι στο BOOK του wire.js');
+      if (at < 0) return;
+      eq(WIRE.BOOK[at][1], who, '   ⛔ το ' + f + ' κάθεται στον φιλόσοφό του (' + WIRE.BOOK[at][1] + ')');
+      ok(at > lastAt, '   και με τη σειρά του βιβλίου');
+      lastAt = at; seen.push(f);
+      var body = r.slice(0, r.indexOf('</a>'));
+      ok(/<span class="t">[^<]{3,}<\/span>/.test(body), '   έχει τίτλο');
+      eq((body.match(/<b><i>[^<]+<\/i><u>\d+<\/u><\/b>/g) || []).length, 2, '   και ΔΥΟ μετρημένα νούμερα');
+    });
+  });
+  eq(seen.length, plates.length, '⛔ ΚΑΘΕ γραμμή είναι μέσα σε κάρτα φιλοσόφου — καμία στο πάτωμα (σταθ. 40)');
+  PACKS.forEach(function (pk) { ok(seen.indexOf(pk.file) >= 0, '   ' + pk.file + ' φαίνεται σε κάρτα'); });
+
+  /* ⭐ Η ΟΜΑΔΟΠΟΙΗΣΗ ΤΩΝ ΚΕΙΜΕΝΩΝ ΤΡΕΧΕΙ — ΔΕΝ ΔΙΑΒΑΖΕΤΑΙ (σταθ. 57).
+     Το `workOf/groupLabel/groups` κόβεται ΑΥΤΟΥΣΙΟ από τη σελίδα και
+     τρέχει πάνω στα αληθινά UNITS: κάθε κείμενο σε ΑΚΡΙΒΩΣ μία ομάδα, και
+     οι ομάδες είναι αυτές που ενέκρινε στη μακέτα. */
+  var mk = page.indexOf('function prBars(un){');
+  var js = page.slice(page.lastIndexOf('<script>', mk) + 8, page.indexOf('</script>', mk));
+  var g0 = js.indexOf('  function workOf(un){'), g1 = js.indexOf('  function gwNext(');
+  ok(g0 > 0 && g1 > g0, 'βρέθηκε το μπλοκ της ομαδοποίησης μέσα στη σελίδα');
+  var p0 = js.indexOf('function capFirst'), p1 = js.indexOf('function prBars(');
+  var GR = new Function('G', js.slice(p0, p1) + '\n' + js.slice(g0, g1) + '\nreturn { groups: groups, groupLabel: groupLabel };')(GN);
+  var grs = GR.groups(), all = [];
+  grs.forEach(function (g) { all = all.concat(g.idx); });
+  eq(all.slice().sort(function (a, b) { return a - b; }).join(), GN.UNITS.map(function (_, i) { return i; }).join(),
+    '⛔ κάθε κείμενο μπαίνει σε ΑΚΡΙΒΩΣ μία ομάδα — κανένα δεν χάνεται, κανένα διπλό');
+  eq(grs.map(function (g) { return g.label; }).slice(0, 4).join(' | '),
+    ['Αριστοτέλης', 'Επίκουρος', 'Πλάτων · Πρωταγόρας', 'Πλάτων · Πολιτεία'].join(' | '),
+    '⭐ οι ομάδες είναι οι εγκεκριμένες: Αριστοτέλης · Επίκουρος · Πρωταγόρας · Πολιτεία');
+  grs.forEach(function (g) {
+    g.label.split(' · ').forEach(function (w) {
+      ok(GN.UNITS[g.idx[0]].title.indexOf(w) >= 0, '   ⛔ «' + w + '» βγαίνει αυτολεξεί από τον τίτλο');
+    });
   });
 
   /* ⛔ ΤΟ ΧΡΩΜΑ ΤΟΥ ΓΝΩΣΤΟΥ ΖΕΙ ΜΟΝΟ ΜΕΣΑ ΣΤΟΝ ΓΝΩΣΤΟ. Ένα καθολικό

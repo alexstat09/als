@@ -1,9 +1,10 @@
 /* tools/eisagogi/arxaia/wire.js — ΚΑΛΩΔΙΩΝΕΙ ένα κεφάλαιο στην εφαρμογή. Ιδεμπότητο: δεύτερο τρέξιμο = καμία αλλαγή.
      node tools/eisagogi/arxaia/wire.js <id>
-   1 · arxaia.html: η πλάκα στο #gnWrap, στη ΣΕΙΡΑ ΤΟΥ ΒΙΒΛΙΟΥ (BOOK), και ξαναμέτρημα «Πακέτο N» /
-       «Σχεδιάγραμμα · N» / «N πακέτα». Το σχεδιάγραμμα έχει ΜΙΑ φύλλο-κουτί ανά κόμμα της περιγραφής
-       (το απαιτεί το arxaia-gnosto.test.js). Πλάκα που είναι ήδη του καλουπιού κρατάει περιγραφή+σχέδιο
-       (εκτός αν το json δίνει plate.d)· τίτλος, μετρητές και οθόνες ξαναγράφονται πάντα από το json.
+   1 · arxaia.html: η γραμμή του κεφαλαίου στο #gnWrap, ΜΕΣΑ ΣΤΗΝ ΚΑΡΤΑ ΤΟΥ ΦΙΛΟΣΟΦΟΥ ΤΗΣ, στη ΣΕΙΡΑ
+       ΤΟΥ ΒΙΒΛΙΟΥ (BOOK), και ξαναμέτρημα «N κεφάλαια» + το πλήθος κάθε φιλοσόφου. als-v681: η
+       πλάκα έγινε ΓΡΑΜΜΗ (τίτλος + δύο νούμερα) — έφυγαν σχεδιάγραμμα, περιγραφή, «Πακέτο N» και οι
+       οθόνες· το `plate.d` του json δεν διαβάζεται πια. Τίτλος και μετρητές ξαναγράφονται πάντα από το
+       json· οι χειροποίητες γραμμές (Πρωταγόρας, Αριστοτέλης) μένουν όπως είναι.
    2 · tests/arxaia-gnosto.test.js: η γραμμή του PACKS → { mine, ground: arxaia-eisagogi.test.js, stores }
    3 · sw.js: η σελίδα (+ η προτομή) στο CORE, και CACHE = HEAD+1 (ποτέ πίσω, ποτέ +2)
    4 · topbar.js: η σελίδα στο NO_VT, αν δεν πιάνεται ήδη (δεν φοράει aurora/kentro-exit — page-transition.test)
@@ -16,78 +17,64 @@ const path = require('path');
 const cp = require('child_process');
 const L = require('./lib');
 
-/* η σειρά του βιβλίου (Φιλοσοφικός Λόγος, εισαγωγή): ό,τι λείπει από εδώ μπαίνει στο τέλος */
-const BOOK = ['arxaia-sokratis-ideas.html', 'arxaia-sokratis.html', 'arxaia-platon.html', 'arxaia-platon-erga.html', 'arxaia-protagoras-eisagogi.html',
-  'arxaia-politeia-eisagogi.html', 'arxaia-aristotelis.html', 'arxaia-ithika-eisagogi.html', 'arxaia-politika-eisagogi.html'];
-const SCREENS = '<div class="pl-sc"><i>Διάβασμα</i><i>Ανάκληση</i><i>Σωστό ή λάθος</i><i>Τα κενά μου</i></div>';
+/* η σειρά του βιβλίου (Φιλοσοφικός Λόγος, εισαγωγή) ΚΑΙ ο φιλόσοφος κάθε κεφαλαίου — η κάρτα όπου μπαίνει.
+   ⛔ Κεφάλαιο που λείπει από εδώ ΣΤΑΜΑΤΑΕΙ το wire (σταθ. 40: ποτέ σιωπηλή ομάδα «άλλα»). */
+const BOOK = [
+  ['arxaia-sokratis-ideas.html', 'Σωκράτης'], ['arxaia-sokratis.html', 'Σωκράτης'],
+  ['arxaia-platon.html', 'Πλάτων'], ['arxaia-platon-erga.html', 'Πλάτων'], ['arxaia-protagoras-eisagogi.html', 'Πλάτων'],
+  ['arxaia-politeia-eisagogi.html', 'Πλάτων'],
+  ['arxaia-aristotelis.html', 'Αριστοτέλης'], ['arxaia-ithika-eisagogi.html', 'Αριστοτέλης'], ['arxaia-politika-eisagogi.html', 'Αριστοτέλης']];
+const BOOK_AT = f => BOOK.findIndex(b => b[0] === f);
+const START = '<div class="gn-phs">', END = '<!-- /gn-phs -->';
 const R = f => path.join(L.REPO, f);
 const read = f => fs.readFileSync(R(f), 'utf8');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const isTpl = f => fs.existsSync(R(f)) && read(f).indexOf('const KEY="eisarx-') >= 0;
 
-function leavesSVG(n) {
-  const rw = n <= 4 ? 30 : n === 5 ? 24 : Math.max(12, Math.floor((150 - (n - 1) * 6) / n));
-  const xs = Array.from({ length: n }, (_, i) => n === 1 ? 80 - rw / 2 : Math.round(5 + (n === 4 ? 3 : 0) + i * (150 - (n === 4 ? 6 : 0) - rw) / (n - 1)));
-  const cs = xs.map(x => x + rw / 2);
-  let s = '<svg viewBox="0 0 160 104" aria-hidden="true"><rect class="nd" x="56" y="8" width="48" height="14" rx="3"/><path class="ln" d="M80 22V40"/>';
-  if (n > 1) s += '<path class="ln" d="M' + cs[0] + ' 40H' + cs[n - 1] + '"/>';
-  cs.forEach(c => { s += '<path class="ln" d="M' + c + ' 40V52"/>'; });
-  xs.forEach(x => { s += '<rect class="nd" x="' + x + '" y="52" width="' + rw + '" height="13" rx="3"/>'; });
-  return s + '</svg>';
-}
-function plateHTML(d, desc, svg, i) {
+function plateHTML(d) {
   const q = d.check.recall.length + d.check.tf.length + d.check.mc.length;
   return '      <a class="gn-pl" href="' + d.file + '">\n' +
-    '        <div class="pl-th">' + svg + '<em>Σχεδιάγραμμα · ' + i + '</em></div>\n' +
-    '        <div>\n' +
-    '          <span class="pl-k">Πακέτο ' + i + '</span>\n' +
-    '          <span class="t">' + esc(L.plain(d.title)) + '</span>\n' +
-    '          <span class="d">' + esc(desc) + '</span>\n' +
-    '          <span class="pl-n"><b><i>Σταθμοί</i><u>' + d.stations.length + '</u></b><b><i>Ερωτήσεις</i><u>' + q + '</u></b></span>\n' +
-    '        </div>\n' +
-    '        ' + SCREENS + '\n' +
+    '        <span class="t">' + esc(L.plain(d.title)) + '</span>\n' +
+    '        <span class="pl-n"><b><i>Σταθμοί</i><u>' + d.stations.length + '</u></b><b><i>Ερωτήσεις</i><u>' + q + '</u></b></span>\n' +
     '        <span class="pl-go" aria-hidden="true">↗</span>\n' +
     '      </a>\n';
 }
-function descFrom(d) {
-  if (d.plate && d.plate.d) return d.plate.d;
-  const parts = d.stations.map((s, i) => { const t = L.plain(s.label).replace(/\.$/, ''); return i ? t.charAt(0).toLowerCase() + t.slice(1) : t; });
-  if (parts.some(p => p.indexOf(', ') >= 0)) throw new Error('μια ετικέτα σταθμού έχει «, » — δώσε plate.d στο json (ένα κόμμα ανά μέρος του κεφαλαίου)');
-  return parts.join(', ');
+const fileOf = x => (/href="([^"]+)"/.exec(x) || [])[1];
+/* Οι γραμμές, ταξινομημένες στη σειρά του βιβλίου, μοιρασμένες στις κάρτες των φιλοσόφων. */
+function blockHTML(pl) {
+  const miss = pl.map(fileOf).filter(f => BOOK_AT(f) < 0);
+  if (miss.length) throw new Error('το ' + miss.join(', ') + ' δεν είναι στο BOOK του wire.js — γράψ\' το εκεί με τον φιλόσοφό του');
+  const rows = pl.slice().sort((x, y) => BOOK_AT(fileOf(x)) - BOOK_AT(fileOf(y)));
+  const groups = [];
+  rows.forEach(x => {
+    const who = BOOK[BOOK_AT(fileOf(x))][1];
+    let g = groups.find(g => g.who === who);
+    if (!g) groups.push(g = { who, rows: [] });
+    g.rows.push(x);
+  });
+  return START + '\n' + groups.map(g =>
+    '    <section class="gn-ph">\n' +
+    '      <div class="gn-who"><h3>' + esc(g.who) + '</h3><span>' + g.rows.length + '</span></div>\n' +
+    g.rows.join('') +
+    '    </section>\n').join('') + '    </div>' + END;
 }
 
-/* ── 1 · η πλάκα ── */
+/* ── 1 · η γραμμή του κεφαλαίου ── */
 function wirePlate(d) {
   let page = read('arxaia.html');
-  const a = page.indexOf('<span class="k">'), s0 = page.lastIndexOf('\n', page.indexOf('<a class="gn-pl"')) + 1, s1 = page.indexOf('<p class="gn-note">');
-  if (s0 < 0 || s1 < s0 || a < 0 || a > s0) throw new Error('arxaia.html: δεν βρέθηκε το μπλοκ των πλακών (#gnWrap)');
-  const head = page.slice(0, s0), block = page.slice(s0, s1), tail = page.slice(s1);
-  const pl = block.split(/(?=      <a class="gn-pl")/).map(x => x.replace(/^\s+/, '')).filter(Boolean)
-    .map(x => '      ' + x.replace(/\s*$/, '\n'));
-  const fileOf = x => (/href="([^"]+)"/.exec(x) || [])[1];
+  const g0 = page.indexOf('id="gnWrap"'), s0 = page.indexOf(START, g0), s1 = page.indexOf(END, g0);
+  if (g0 < 0 || s0 < 0 || s1 < s0 || page.indexOf(START, s0 + 1) >= 0) throw new Error('arxaia.html: δεν βρέθηκε ΕΝΑ μπλοκ «' + START + '» … «' + END + '» στο #gnWrap');
+  const head = page.slice(0, s0), tail = page.slice(s1 + END.length);
+  const pl = (page.slice(s0, s1).match(/<a class="gn-pl"[\s\S]*?<\/a>/g) || []).map(x => '      ' + x + '\n');
   const at = pl.findIndex(x => fileOf(x) === d.file);
-  let desc, svg;
-  if (at >= 0 && isTpl(d.file) && !(d.plate && d.plate.d)) {
-    desc = (/<span class="d">([^<]*)<\/span>/.exec(pl[at]) || [])[1].replace(/&amp;/g, '&');
-    svg = (/<div class="pl-th">(<svg[\s\S]*?<\/svg>)/.exec(pl[at]) || [])[1];
-  } else { desc = descFrom(d); svg = leavesSVG(desc.split(', ').length); }
-  const mine = plateHTML(d, desc, svg, 0);
-  if (at >= 0) pl[at] = mine;
-  else {
-    const bi = f => { const k = BOOK.indexOf(f); return k < 0 ? 1e9 : k; };
-    pl.push(mine);
-    /* νέα πλάκα → ΟΛΕΣ στη σειρά του βιβλίου (σταθερή ταξινόμηση· ό,τι λείπει από το BOOK μένει στο τέλος).
-       Ένα ξανατρέξιμο σε υπάρχουσα πλάκα δεν μετακινεί τίποτα. */
-    pl.sort((x, y) => bi(fileOf(x)) - bi(fileOf(y)));
-  }
-  /* ξαναμέτρημα, όλες οι πλάκες */
-  const out = pl.map((x, i) => x.replace(/<em>Σχεδιάγραμμα · \d+<\/em>/, '<em>Σχεδιάγραμμα · ' + (i + 1) + '</em>')
-    .replace(/<span class="pl-k">Πακέτο \d+<\/span>/, '<span class="pl-k">Πακέτο ' + (i + 1) + '</span>'));
-  const h2 = head.replace(/<span class="k">\d+ πακέτα · χωρίς βαθμό<\/span>/, '<span class="k">' + out.length + ' πακέτα · χωρίς βαθμό</span>');
-  /* το διάστημα ανάμεσα στις πλάκες: μία κενή γραμμή, όπως ήταν */
-  const next = h2 + out.join('\n') + '\n    ' + tail;
+  if (at >= 0) pl[at] = plateHTML(d); else pl.push(plateHTML(d));
+  const block = blockHTML(pl);
+  const N = (block.match(/<a class="gn-pl"/g) || []).length;
+  const h2 = head.replace(/<span class="k">\d+ κεφάλαια · χωρίς βαθμό<\/span>/, '<span class="k">' + N + ' κεφάλαια · χωρίς βαθμό</span>');
+  if (h2.indexOf('<span class="k">' + N + ' κεφάλαια · χωρίς βαθμό</span>') < 0) throw new Error('arxaia.html: δεν βρέθηκε η κεφαλίδα «N κεφάλαια · χωρίς βαθμό»');
+  const next = h2 + block + tail;
   if (next !== page) fs.writeFileSync(R('arxaia.html'), next);
-  return { n: out.length, changed: next !== page };
+  return { n: N, changed: next !== page };
 }
 
 /* ── 2 · PACKS ── */
@@ -209,4 +196,4 @@ if (require.main === module) {
     console.log('✓ wire ' + id + ': ' + r.plates + ' πλάκες · ' + r.cache + ' · ' + (r.changed.length ? 'άλλαξαν ' + r.changed.join(', ') : 'τίποτα δεν άλλαξε'));
   } catch (e) { console.error('⛔ ' + e.message); process.exit(1); }
 }
-module.exports = { wire, archive, leavesSVG, BOOK };
+module.exports = { wire, archive, blockHTML, BOOK };

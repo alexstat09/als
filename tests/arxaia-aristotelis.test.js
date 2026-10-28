@@ -366,7 +366,7 @@ ok(gnBlock.indexOf('href="' + PAGE_F + '"') > 0, 'ο Γνωστός δείχνε
    φυλάγεται ότι η κεφαλίδα λέει ΟΣΕΣ πλάκες υπάρχουν, και ότι είναι τουλάχιστον οι πέντε της als-v615. */
 const nPl = (gnBlock.match(/class="gn-pl"/g) || []).length;
 ok(nPl >= 5, 'οι πλάκες της εισαγωγής είναι τουλάχιστον ΠΕΝΤΕ (als-v615 — το artifact αντικατέστησε τον παλιό Πρωταγόρα): ' + nPl);
-ok(gnBlock.indexOf(nPl + ' πακέτα · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — ' + nPl + ' πακέτα, ΧΩΡΙΣ ΒΑΘΜΟ');
+ok(gnBlock.indexOf(nPl + ' κεφάλαια · χωρίς βαθμό') > 0, 'και η κεφαλίδα το λέει — ' + nPl + ' κεφάλαια, ΧΩΡΙΣ ΒΑΘΜΟ');
 
 var plate = gnBlock.slice(gnBlock.indexOf('href="' + PAGE_F + '"'));
 plate = plate.slice(0, plate.indexOf('</a>'));
@@ -383,7 +383,10 @@ ok(plate.indexOf('<i>Ερωτήσεις</i><u>' + QUIZ.length + '</u>') > 0,
    είναι ΤΕΤΑΡΤΟΣ. Το νούμερο είναι ΘΕΣΗ, όχι ταυτότητα.
    als-v679: μπήκε το Ε2 (έργα του Πλάτωνα) και το wire έβαλε όλες τις πλάκες στη
    σειρά του βιβλίου (BOOK) — Πρωταγόρας πριν από τον Αριστοτέλη → ΕΚΤΟΣ. */
-ok(plate.indexOf('<span class="pl-k">Πακέτο 6</span>') > 0, 'είναι το έκτο πακέτο, με νούμερο VI');
+/* als-v681: το «Πακέτο N» έφυγε — η εισαγωγή είναι ΑΝΑ ΦΙΛΟΣΟΦΟ. Η θέση του είναι η κάρτα του. */
+var phSec = gnBlock.slice(gnBlock.lastIndexOf('<section class="gn-ph">', gnBlock.indexOf('href="' + PAGE_F + '"')));
+ok(phSec.indexOf('<h3>Αριστοτέλης</h3>') > 0 && phSec.indexOf('<h3>Αριστοτέλης</h3>') < phSec.indexOf('href="' + PAGE_F + '"'),
+  'κάθεται στην κάρτα «Αριστοτέλης»');
 
 var sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 ok(sw.indexOf("'" + PAGE_F + "'") > 0, '⛔ το πακέτο ΛΕΙΠΕΙ από το SW CORE — θα πεθάνει offline');
