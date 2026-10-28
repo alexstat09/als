@@ -36,6 +36,25 @@ ok('the day card never writes: no setItem in the paint layer except the water wr
   (live.split('/* ── paint one tile')[1] || '').match(/setItem\(/g).length === 3);
 ok('"as needed" supplements are never owed (mirrors supps.html dailyItems)', live.indexOf("(i.window || 'anytime') !== 'occasional'") > -1);
 
+/* ── 1b · the number that travels (hero-vt.js, als-v685) ───────────── */
+section('1b · hero-vt: one named element per side, present before the first frame');
+{
+  const vt = fs.readFileSync(path.join(ALS, 'hero-vt.js'), 'utf8');
+  ok('home loads hero-vt.js, not defer', /<script src="hero-vt.js"><\/script>/.test(html));
+  ['nutrition.html', 'sleep.html', 'weight.html', 'gym.html'].forEach(pg => {
+    ok('home column carries data-vt-hero="' + pg + '" (once)', (html.match(new RegExp('data-vt-hero="' + pg.replace('.', '\\.') + '"', 'g')) || []).length === 1);
+    const P = fs.readFileSync(path.join(ALS, pg), 'utf8'), head = P.split('</head>')[0];
+    ok(pg + ': hero-vt.js + render-blocking expect link in <head>', /<script src="hero-vt.js"><\/script>/.test(head) && /<link rel="expect" href="#vtReady" blocking="render">/.test(head));
+    ok(pg + ': exactly one #vtReady marker, in <body>', (P.match(/id="vtReady"/g) || []).length === 1 && P.indexOf('id="vtReady"') > P.indexOf('</head>'));
+    const sel = (vt.match(new RegExp("'" + pg.replace('.', '\\.') + "':\\s*'([^']+)'")) || [])[1];
+    const last = sel ? sel.split(' ').pop() : '';
+    ok(pg + ': the selector hero-vt.js uses (' + sel + ') exists in the page', !!sel && P.indexOf(last.replace(/^[.#]/, '').replace(/^/, '')) > -1);
+  });
+  ok('the name is never written in CSS (two of it on one page aborts the transition)', !/view-transition-name:\s*hero-fig/.test(html + fs.readFileSync(path.join(ALS, 'aurora.css'), 'utf8')));
+  ok('every name it sets is taken off again', /setTimeout\(off, 2000\)/.test(vt) && /pageshow/.test(vt));
+  ok('hero-vt.js is in the SW CORE', fs.readFileSync(path.join(ALS, 'sw.js'), 'utf8').indexOf("'hero-vt.js'") > -1);
+}
+
 if (!CHROME) { console.log('\n  ✗ FAIL Chrome not found — the render half did not run'); console.log(`\n${pass} passed, ${fail + 1} failed`); process.exit(1); }
 
 /* ── harness ─────────────────────────────────────────────────────── */

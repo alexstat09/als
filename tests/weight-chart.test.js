@@ -78,7 +78,8 @@ if(!fs.existsSync(path.join(REPO,'video-kit','node_modules','playwright'))){
   console.log('\n'+pass+' passed, '+fail+' failed'); process.exit(1);
 }
 const { chromium }=require(require.resolve('playwright',{paths:[path.dirname(vk)]}));
-const STRIP=['src="water.js"','src="topbar.js"','src="vendor/supabase.min.js"','src="pocoach-sync.js','src="nova.js"','src="nova-coach.js'];
+// hero-vt.js (als-v685) is local and network-free, but it is not the chart: strip it with the rest so "no script src survives" stays absolute.
+const STRIP=['src="water.js"','src="topbar.js"','src="vendor/supabase.min.js"','src="pocoach-sync.js','src="nova.js"','src="nova-coach.js','src="hero-vt.js"'];
 let page_=HTML.split('\n').filter(l=>!STRIP.some(s=>l.includes(s))).join('\n');
 const survivors=STRIP.filter(s=>page_.includes(s));
 ok(!survivors.length && !/<script[^>]+src=/.test(page_), 'harness: no sync/network script survives ('+survivors.join(',')+')');

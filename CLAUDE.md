@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v684`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v685`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,17 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-10-28 — `als-v685` — Ο ΑΡΙΘΜΟΣ ΤΑΞΙΔΕΥΕΙ ΣΤΗ ΣΕΛΙΔΑ (`hero-vt.js`).** Πατάς ένα νούμερο στις στήλες Today της αρχικής και πηγαίνει στη θέση του στην κορυφή
+της σελίδας που ανοίγει (και πίσω). Nutrition → `#sumCard .sum-kcal` · Sleep → `#recBody .rec-score` · Weight → `#wtFace` · Gym → `.w-hero-title` (στα τρία τελευταία
+ταξιδεύει το κουτί και το περιεχόμενο κάνει crossfade: η αρχική δείχνει ώρες/τελευταία ζύγιση/συνεδρία, η σελίδα σκορ/τάση/τίτλο).
+Πώς: ΕΝΑ αρχείο, ΟΧΙ defer, στο `<head>` 5 σελίδων· βάζει `view-transition-name: hero-fig` σε ΕΝΑ στοιχείο ανά πλευρά (`pageswap` στην παλιά — μόνο αν είναι ΣΤΗΝ
+ΟΘΟΝΗ —, `pagereveal` στη νέα) και το βγάζει στο `finished` + δίχτυ 2s + `pageshow` (bfcache). ⛔ Ποτέ σε CSS: δύο ίδια ονόματα σε μία σελίδα ακυρώνουν ΟΛΗ τη
+μετάβαση. Οι 4 σελίδες ζωγραφίζουν το νούμερο κατά το parse· ένα `<i id="vtReady" hidden>` ΜΕΤΑ από εκείνο το script + `<link rel="expect" href="#vtReady"
+blocking="render">` εγγυάται ότι υπάρχει στο πρώτο καρέ. Χωρίς υποστήριξη / reduced motion / χωρίς στοιχείο → το συνηθισμένο fade, ποτέ σφάλμα.
+Επαληθευμένο σε Chrome πάνω από HTTP (το `file://` δεν κάνει cross-document VT): SWAP=hero-fig, REVEAL=hero-fig. `tests/home-page.test.js` **55/0** (+20: σενάριο
+ανά σελίδα, μοναδικότητα, selector που υπάρχει, κανένα όνομα σε CSS, SW CORE). ⚠️ `tests/weight-chart.test.js` απαιτεί «κανένα script src στο harness» → το
+`hero-vt.js` μπήκε στη λίστα STRIP του (αφαιρεί ένα ακόμη, δεν χαλαρώνει τίποτα)· 132/0. smoke OK. 🔴 Αδοκίμαστο σε iPhone (Safari 18.2+ υποστηρίζει cross-document VT).
 
 **2026-10-28 — `als-v684` — Η ΑΡΧΙΚΗ (index.html) ΞΑΝΑΣΧΕΔΙΑΣΤΗΚΕ: η εγκεκριμένη μακέτα «v5» (artifact BtUcbySCGoArxqwiYA7nYk), με ΑΛΗΘΙΝΑ δεδομένα.**
 Δικά του: «i love it … U MUST NOT LOSE MY DATA, NO FAKE DATA FROM THE ARTIFACT». Γλώσσα: σχεδόν μαύρο `#08090B`, γραμμές 1px αντί για κουτιά,
