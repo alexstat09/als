@@ -554,6 +554,15 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .x0 li span{color:var(--muted);font-size:13.5px}
 .xfoot .xgo{background:var(--amber);color:var(--ink);border-color:transparent;font-weight:600}
 .xfoot .xgo:hover{color:var(--ink);filter:brightness(1.06)}
+.xs .tx span[contenteditable]{outline:none;border-radius:4px;cursor:text}
+.xs .tx span[contenteditable]:focus{background-color:var(--surf2);box-shadow:0 0 0 4px var(--surf2)}
+.xdel{flex:none;width:32px;height:32px;border-radius:8px;font:400 18px/1 var(--ui);color:var(--faint);opacity:0;transition:opacity .15s,color .15s,background .15s}
+.xs:hover .xdel,.xdel:focus-visible{opacity:1}
+.xdel:hover{color:var(--late);background:var(--late-soft)}
+@media(hover:none){.xdel{opacity:1}}
+.xfoot .xrm{margin-left:auto;color:var(--muted)}
+.xfoot .xrm:hover{color:var(--late);border-color:rgba(232,131,111,.45)}
+.xfoot .xrm.armed{color:var(--late);border-color:var(--late);background:var(--late-soft)}
 .xfoot button:hover{color:var(--text);border-color:rgba(237,230,216,.32)}
 @media(max-width:900px){
   .xw{grid-template-columns:minmax(0,1fr)}
@@ -569,6 +578,8 @@ button{cursor:pointer;background:none;border:0;padding:0}
   .xs{font-size:15px}
   .xs .xt{width:26px;height:26px}
   .xday{padding:9px 10px;font-size:12px}
+  .xdel{width:44px;height:44px;margin-right:-8px}
+  .xfoot{flex-wrap:wrap}
 }
 @media(prefers-reduced-motion:reduce){.xs .tx span,.xs .xt svg,.xr .pb i,.xp .pb i{transition:none}.xfin{animation:none}}
 .tview{display:flex;flex-direction:column;gap:56px}
@@ -1717,14 +1728,14 @@ function xWrap(up,t0){
   const span=[];for(let k=0;k<Math.max(n,1)&&k<60;k++)span.push(iso(addD(today(),k)));
   const opts=w=>{const list=span.slice();if(w&&!list.includes(w))list.unshift(w);return `<option value="">πότε;</option>`+list.map(d=>`<option value="${d}"${d===w?' selected':''}>${whenLbl(d,t0)}</option>`).join('')};
   const rows=st.map((x,j)=>{const key=t.id+'|'+j;const shown=key===justStep?!x.d:x.d;const late=x.w&&!x.d&&x.w<t0;
-    return `<li class="xs${shown?' ok':''}" data-xs="${key}"><button class="xt" data-step="${key}" aria-label="${x.d?'Ξετσέκαρε':'Τσέκαρε'}: ${esc(x.t)}" aria-pressed="${!!x.d}"><svg viewBox="0 0 12 12"><path d="M2 6.5 5 9l5-6"/></svg></button><span class="tx"><span>${esc(x.t)}</span></span><select class="xday${x.w?(late?' late':''):' none'}" data-xday="${key}" aria-label="Πότε θα το διαβάσεις">${opts(x.w)}</select></li>`}).join('');
+    return `<li class="xs${shown?' ok':''}" data-xs="${key}"><button class="xt" data-step="${key}" aria-label="${x.d?'Ξετσέκαρε':'Τσέκαρε'}: ${esc(x.t)}" aria-pressed="${!!x.d}"><svg viewBox="0 0 12 12"><path d="M2 6.5 5 9l5-6"/></svg></button><span class="tx"><span data-xedit="${key}" contenteditable="true" spellcheck="false" role="textbox" aria-label="Διόρθωσε: ${esc(x.t)}">${esc(x.t)}</span></span><select class="xday${x.w?(late?' late':''):' none'}" data-xday="${key}" aria-label="Πότε θα το διαβάσεις">${opts(x.w)}</select><button class="xdel" data-xdel="${key}" aria-label="Σβήσε: ${esc(x.t)}" title="Σβήσε">×</button></li>`}).join('');
   const page=`<section class="xp" style="--c:${s.c}" aria-label="${esc(s.name+': '+t.title)}"><div class="xp-h"><div><span class="k">● ${s.name}${t.cat?' · '+esc(t.cat):''}</span><h2>${t.important?'<span class="imp">!</span>':''}${esc(t.title)}</h2><div class="when"><i class="mk ${t.src}"></i>${DN[pdate(t.date).getDay()]} ${dmp(t.date)} · ${SRC[t.src]}</div></div><div class="big"><b>${n}</b><small>${xDays(n)}</small></div></div>
     <div class="xp-p"><span class="pb"><i style="transform:scaleX(${pc(t)})"></i></span><span>${st.length?ok+' από '+st.length:'καμία ύλη ακόμη'}</span></div>
     <ul class="xl">${rows}</ul>
     <div class="xnew"><span></span><input data-xadd="${t.id}" placeholder="${st.length?'Νέο κομμάτι ύλης + Enter':'Η ύλη, π.χ. «Δ.1–Δ.5» + Enter'}" aria-label="Νέο κομμάτι ύλης" enterkeyhint="done"></div>
     <div class="xnote"><label for="xn-${t.id}">Σημειώσεις</label><textarea id="xn-${t.id}" data-xnotes="${t.id}" placeholder="Ό,τι είπε ο καθηγητής, τι να προσέξεις…">${esc(t.notes||'')}</textarea></div>
     ${st.length&&ok===st.length?'<div class="xfin">✓ Όλη η ύλη έτοιμη. Καλή επιτυχία.</div>':''}
-    <div class="xfoot"><button data-open="${t.id}">Όλα τα στοιχεία</button></div></section>`;
+    <div class="xfoot"><button data-open="${t.id}">Όλα τα στοιχεία</button><button class="xrm" data-xrm="${t.id}">Διαγραφή διαγωνίσματος</button></div></section>`;
   return `<div class="xw"><aside class="xrail" aria-label="Διαγωνίσματα που έρχονται">${rail}</aside>${page}</div>`;
 }
 function renderSide(){
@@ -1757,9 +1768,9 @@ function renderAll(){
   if(!loaded){renderComposer();return}
   const v=$('#view');
   const ds=document.getElementById('doneSec');if(ds)openDone=ds.open;
-  const ae=document.activeElement;const keep=ae&&ae.closest&&ae.closest('#view')&&(ae.dataset.xadd||ae.dataset.xnotes)?{k:ae.dataset.xadd?'xadd':'xnotes',id:ae.dataset.xadd||ae.dataset.xnotes,v:ae.value,a:ae.selectionStart,b:ae.selectionEnd}:null;
+  const ae=document.activeElement;const keep=ae&&ae.closest&&ae.closest('#view')&&(ae.dataset.xadd||ae.dataset.xnotes||ae.dataset.xedit)?(ae.dataset.xedit?{k:'xedit',id:ae.dataset.xedit,txt:ae.textContent}:{k:ae.dataset.xadd?'xadd':'xnotes',id:ae.dataset.xadd||ae.dataset.xnotes,v:ae.value,a:ae.selectionStart,b:ae.selectionEnd}):null;
   v.innerHTML=tab==='day'?renderDay():tab==='subj'?renderSubj():renderTests();
-  if(keep){const el=v.querySelector(`[data-${keep.k}="${keep.id}"]`);if(el){el.value=keep.v;el.focus();try{el.setSelectionRange(keep.a,keep.b)}catch(e){}}}
+  if(keep){const el=v.querySelector(`[data-${keep.k}="${keep.id}"]`);if(el){if(keep.k==='xedit'){el.textContent=keep.txt;el.focus()}else{el.value=keep.v;el.focus();try{el.setSelectionRange(keep.a,keep.b)}catch(e){}}}}
   renderSide();renderComposer();
   if(drawerId)fillDrawer();
 }
@@ -1957,6 +1968,16 @@ document.querySelector('.app').addEventListener('click',e=>{
     if(act.dataset.act==='tomorrow'){setTask(id,x=>x.date=iso(addD(today(),1)));renderAll();toast('Μετακινήθηκε για αύριο')}
     if(act.dataset.act==='forget')removeTask(id,'Το ξέχασες');return}
   const go=e.target.closest('[data-goto]');if(go){setTab('subj');const el=document.getElementById('book-'+go.dataset.goto);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}return}
+  /* ΛΑΘΟΣ; σβήσε τη γραμμή — με Αναίρεση */
+  const xd=e.target.closest('[data-xdel]');if(xd){const[id,j]=xd.dataset.xdel.split('|');const t0s=tasks.get(id);if(!t0s||!t0s.steps||!t0s.steps[+j])return;
+    const copy=clone(t0s.steps);const gone=t0s.steps[+j].t;
+    setTask(id,x=>{x.steps.splice(+j,1)});renderAll();
+    toast(`Σβήστηκε: ${gone}`,()=>{setTask(id,x=>{x.steps=copy});renderAll()});return}
+  /* το διαγώνισμα: δύο πατήματα, και μετά Αναίρεση από το removeTask */
+  const xm=e.target.closest('[data-xrm]');if(xm){
+    if(!xm.classList.contains('armed')){xm.classList.add('armed');xm.textContent='Πάτα ξανά για διαγραφή';setTimeout(()=>{if(xm.isConnected){xm.classList.remove('armed');xm.textContent='Διαγραφή διαγωνίσματος'}},3500);return}
+    selX=null;removeTask(xm.dataset.xrm,'Το διαγώνισμα σβήστηκε');return}
+  if(e.target.closest('[data-xedit]'))return;
   if(e.target.closest('[data-xnew]')){cIn.focus();cIn.value='διαγ ';cIn.dispatchEvent(new Event('input',{bubbles:true}));try{cIn.setSelectionRange(5,5)}catch(_){}window.scrollTo({top:0,behavior:'smooth'});return}
   const xs=e.target.closest('[data-xsel]');if(xs){selX=xs.dataset.xsel;renderAll();const p=document.querySelector('.xp');if(p&&window.innerWidth<=900)p.scrollIntoView({behavior:'smooth',block:'start'});return}
   const op=e.target.closest('[data-open]');if(op){openDrawer(op.dataset.open);return}
@@ -1974,6 +1995,22 @@ document.querySelector('.app').addEventListener('keydown',e=>{
   a.value='';setTask(id,x=>{x.steps=x.steps||[];add.forEach(z=>x.steps.push({t:cap(z),d:false}))});renderAll();
   const el=document.querySelector(`[data-xadd="${id}"]`);if(el)el.focus();
   if(add.length>1)toast(`Έγιναν ${add.length} γραμμές: ${add[0]} ως ${add[add.length-1]}`);
+});
+/* διόρθωση γραμμής: κλικ στο κείμενο, Enter ή κλικ έξω = αποθήκευση, Esc = άκυρο */
+document.querySelector('.app').addEventListener('keydown',e=>{
+  const ed=e.target.closest('[data-xedit]');if(!ed)return;
+  if(e.key==='Enter'&&!e.isComposing){e.preventDefault();ed.blur()}
+  if(e.key==='Escape'){e.stopPropagation();const[id,j]=ed.dataset.xedit.split('|');const t=tasks.get(id);if(t&&t.steps[+j])ed.textContent=t.steps[+j].t;ed.blur()}
+});
+document.querySelector('.app').addEventListener('focusout',e=>{
+  const ed=e.target.closest('[data-xedit]');if(!ed)return;const[id,j]=ed.dataset.xedit.split('|');const t=tasks.get(id);if(!t||!t.steps||!t.steps[+j])return;
+  const v=ed.textContent.replace(/\s+/g,' ').trim();
+  if(!v){ed.textContent=t.steps[+j].t;return}
+  if(v!==t.steps[+j].t){setTask(id,x=>{if(x.steps[+j])x.steps[+j].t=v});renderAll()}
+});
+document.querySelector('.app').addEventListener('paste',e=>{
+  const ed=e.target.closest('[data-xedit]');if(!ed)return;e.preventDefault();
+  const tx=(e.clipboardData&&e.clipboardData.getData('text/plain')||'').replace(/\s+/g,' ');document.execCommand('insertText',false,tx);
 });
 let xnT;
 document.querySelector('.app').addEventListener('input',e=>{

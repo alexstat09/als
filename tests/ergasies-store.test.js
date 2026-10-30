@@ -420,6 +420,29 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
  ok('οι σημειώσεις γράφτηκαν στο note', h.exams.e5.note==='Οι πηγές δεν μπαίνουν.', h.exams.e5.note);
  ok('σφραγίστηκε με _ts', typeof h.exams.e5._ts==='number', h.exams.e5._ts);
 
+ // ΛΑΘΟΣ; διόρθωσε, σβήσε, αναίρεσε (als-v690)
+ await S('Runtime.evaluate',{expression:`(function(){var e=document.querySelector('[data-xedit="x:e5|2"]');e.focus();e.textContent='Δ.3 · Κρητικό';e.blur()})()`});
+ await sleep(400);h=await hw();
+ ok('η διόρθωση γραμμής γράφτηκε (και στο yli)', h.exams.e5.steps[2].t==='Δ.3 · Κρητικό'&&h.exams.e5.yli.split('\n')[2]==='Δ.3 · Κρητικό', h.exams.e5.steps[2]);
+ await S('Runtime.evaluate',{expression:`(function(){var e=document.querySelector('[data-xedit="x:e5|3"]');e.focus();e.textContent='   ';e.blur()})()`});
+ await sleep(400);h=await hw();
+ ok('μια ΑΔΕΙΑ διόρθωση δεν σβήνει τη γραμμή', h.exams.e5.steps[3].t==='Δ.4', h.exams.e5.steps[3]);
+ await S('Runtime.evaluate',{expression:`document.querySelector('[data-xdel="x:e5|5"]').click()`});
+ await sleep(400);h=await hw();
+ ok('το × σβήνει τη γραμμή', h.exams.e5.steps.length===5&&!h.exams.e5.yli.includes('Σελ. 64'), h.exams.e5.steps);
+ await S('Runtime.evaluate',{expression:`document.getElementById('toastBtn').click()`});
+ await sleep(400);h=await hw();
+ ok('η Αναίρεση τη φέρνει πίσω', h.exams.e5.steps.length===6&&h.exams.e5.steps[5].t==='Σελ. 64–67'&&h.exams.e5.steps[0].w===W, h.exams.e5.steps);
+ await S('Runtime.evaluate',{expression:`document.querySelector('[data-xrm="x:e5"]').click()`});
+ await sleep(300);h=await hw();
+ ok('το ΠΡΩΤΟ πάτημα της διαγραφής ΔΕΝ σβήνει', !!h.exams.e5, Object.keys(h.exams));
+ await S('Runtime.evaluate',{expression:`document.querySelector('[data-xrm="x:e5"]').click()`});
+ await sleep(400);h=await hw();
+ ok('το δεύτερο σβήνει το διαγώνισμα', !h.exams.e5, Object.keys(h.exams));
+ await S('Runtime.evaluate',{expression:`document.getElementById('toastBtn').click()`});
+ await sleep(400);h=await hw();
+ ok('και η Αναίρεση το φέρνει πίσω ΜΕ την ύλη του', !!h.exams.e5&&h.exams.e5.steps.length===6, h.exams.e5);
+
  console.log('\nΚ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
  ok('μηδέν exceptions', exc.length===0, exc);
  console.log('\n'+P+' passed, '+F+' failed');
