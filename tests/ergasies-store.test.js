@@ -26,6 +26,8 @@
      Η · Η ΕΞΟΔΟΣ ΥΠΑΡΧΕΙ, ΟΝΟΜΑΖΕΙ ΤΟΝ ΠΡΟΟΡΙΣΜΟ ΚΑΙ ΔΙΑΒΑΖΕΤΑΙ (και στα 393)
      Θ · ΤΟ ΣΚΕΤΟ ΔΙΑΓΩΝΙΣΜΑ ΜΠΑΙΝΕΙ, ΚΑΙ ΤΟ ENTER ΔΕΝ ΣΩΠΑΙΝΕΙ ΠΟΤΕ
      Ι · ΤΟ ΨΗΛΟ ΣΥΡΤΑΡΙ ΚΥΛΑΕΙ, ΔΕΝ ΣΥΜΠΙΕΖΕΤΑΙ (σε ΑΛΗΘΙΝΟ ύψος οθόνης)
+     Λ · «Η ΥΛΗ ΜΟΥ»: Δ.1–Δ.5 = 5 γραμμές, «σελ.» = 1, η μέρα `w` γράφεται
+         χωρίς να αγγίξει το `yli`, το τικ και οι σημειώσεις μένουν (als-v688)
      Κ · μηδέν exceptions σε ΟΛΗ τη διαδρομή
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
@@ -66,8 +68,10 @@ const HW={v:1,samples:{},lessons:{},
      είναι το ΜΟΝΟ περιεχόμενο του συρταριού που ξεπερνάει το ύψος μιας
      αληθινής οθόνης — και μόνο τότε το flexbox αρχίζει να συμπιέζει. */
   e4:{subject:'arxaia_gn',title:'Διαγώνισμα Αρχαίων',ts:ms(-25),date:iso(D(-19)),done:0,grade:null,scale:20,note:'',from:'fro',
-   yli:['ΓΝΩΣΤΟ','Ενότητες 1, 2, 3','Εισαγωγή σελ. 3-13 (Σωκράτης · Πλάτων · Αριστοτέλης)','ΑΓΝΩΣΤΟ','Τονισμός','Από α΄, β΄, γ΄ κλίση','λύω - λύομαι','Μέλλοντας των ρημάτων σε -ίζω','Αρχικοί χρόνοι, σελ. 141-153','Συντακτικό (δεν ήταν στον πίνακα, μπαίνει σίγουρα)'].join('\n')}
+   yli:['ΓΝΩΣΤΟ','Ενότητες 1, 2, 3','Εισαγωγή σελ. 3-13 (Σωκράτης · Πλάτων · Αριστοτέλης)','ΑΓΝΩΣΤΟ','Τονισμός','Από α΄, β΄, γ΄ κλίση','λύω - λύομαι','Μέλλοντας των ρημάτων σε -ίζω','Αρχικοί χρόνοι, σελ. 141-153','Συντακτικό (δεν ήταν στον πίνακα, μπαίνει σίγουρα)'].join('\n')},
+  e5:{subject:'istoria',title:'Όλο το πορτοκαλί',yli:'',date:iso(D(11)),ts:ms(-1),done:0,grade:null,scale:20,note:''}
  },
+ /* als-v688 — ένα διαγώνισμα που ΕΡΧΕΤΑΙ, χωρίς ύλη: η «Η ύλη μου» το ανοίγει */
  timetable:{
   mon:{slots:[{at:'15:15',subject:'arxaia_agn'},{at:'16:15',subject:'latinika'},{at:'17:15',subject:'ekthesi'}],_ts:ms(-40)},
   tue:{slots:[{at:'15:15',subject:'istoria'},{at:'16:15',subject:'arxaia_gn'},{at:'17:15',subject:'latinika'}],_ts:ms(-40)},
@@ -387,6 +391,34 @@ const ok=(n,c,extra)=>{c?P++:F++;console.log((c?'  ✓ ':'  ✗ FAIL ')+n+(c?'':
  }
  await S('Emulation.setDeviceMetricsOverride',{width:1440,height:2350,deviceScaleFactor:1,mobile:false});
  await sleep(300);
+
+ console.log('\nΛ · «Η ΥΛΗ ΜΟΥ» (als-v688)');
+ await S('Runtime.evaluate',{expression:`document.querySelector('.tabs button[data-tab="tests"]').click()`});
+ await sleep(400);
+ const L0=await q(`JSON.stringify({rail:document.querySelectorAll('.xr').length,page:!!document.querySelector('.xp'),hist:!!document.querySelector('.hist')})`);
+ ok('η καρτέλα δείχνει στήλη διαγωνισμάτων + σελίδα + το Ιστορικό από κάτω', L0.rail>=1&&L0.page&&L0.hist, L0);
+ await S('Runtime.evaluate',{expression:`document.querySelector('[data-xsel="x:e5"]').click()`});
+ await sleep(300);
+ const enter=v=>S('Runtime.evaluate',{expression:`(function(){var i=document.querySelector('[data-xadd="x:e5"]');i.value=${JSON.stringify(v)};i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))})()`});
+ await enter('Δ.1–Δ.5');await sleep(400);h=await hw();
+ ok('«Δ.1–Δ.5» → 5 γραμμές', (h.exams.e5.steps||[]).length===5&&h.exams.e5.steps[4].t==='Δ.5', h.exams.e5.steps);
+ ok('και το yli ακολουθεί για την παλιά σελίδα', h.exams.e5.yli==='Δ.1\nΔ.2\nΔ.3\nΔ.4\nΔ.5', h.exams.e5.yli);
+ await enter('σελ. 64–67');await sleep(400);h=await hw();
+ ok('«σελ. 64–67» μένει ΜΙΑ γραμμή', h.exams.e5.steps.length===6&&h.exams.e5.steps[5].t==='Σελ. 64–67', h.exams.e5.steps);
+ const W=await q(`JSON.stringify((function(){var s=document.querySelector('[data-xday="x:e5|0"]');var v=s.options[2].value;s.value=v;s.dispatchEvent(new Event('change',{bubbles:true}));return v})())`);
+ await sleep(400);h=await hw();
+ ok('η μέρα «πότε;» γράφτηκε στο κομμάτι ως w', h.exams.e5.steps[0].w===W, [W,h.exams.e5.steps[0]]);
+ ok('χωρίς να αλλάξει το yli', h.exams.e5.yli.split('\n').length===6&&h.exams.e5.yli.indexOf(W)<0, h.exams.e5.yli);
+ await S('Runtime.evaluate',{expression:`document.querySelector('[data-xs="x:e5|1"] .xt').click()`});
+ await sleep(800);h=await hw();
+ ok('το τικ μένει d:true', h.exams.e5.steps[1].d===true, h.exams.e5.steps[1]);
+ ok('και η μέρα του ΑΛΛΟΥ κομματιού επέζησε', h.exams.e5.steps[0].w===W, h.exams.e5.steps[0]);
+ const L1=await q(`JSON.stringify({sel:document.querySelector('[data-xday="x:e5|0"]').value,ok:document.querySelector('[data-xs="x:e5|1"]').classList.contains('ok')})`);
+ ok('η οθόνη δείχνει τη μέρα και τη σβησμένη γραμμή', L1.sel===W&&L1.ok, L1);
+ await S('Runtime.evaluate',{expression:`(function(){var a=document.querySelector('[data-xnotes="x:e5"]');a.focus();a.value='Οι πηγές δεν μπαίνουν.';a.dispatchEvent(new Event('input',{bubbles:true}));a.blur()})()`});
+ await sleep(400);h=await hw();
+ ok('οι σημειώσεις γράφτηκαν στο note', h.exams.e5.note==='Οι πηγές δεν μπαίνουν.', h.exams.e5.note);
+ ok('σφραγίστηκε με _ts', typeof h.exams.e5._ts==='number', h.exams.e5._ts);
 
  console.log('\nΚ · ΚΑΜΙΑ ΕΞΑΙΡΕΣΗ ΣΕ ΟΛΗ ΤΗ ΔΙΑΔΡΟΜΗ');
  ok('μηδέν exceptions', exc.length===0, exc);
