@@ -546,10 +546,19 @@ button{cursor:pointer;background:none;border:0;padding:0}
 @keyframes xin{from{opacity:0;transform:translateY(6px)}}
 .xfoot{display:flex;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
 .xfoot button{font-size:13px;font-weight:500;color:var(--soft);border:1px solid var(--line3);border-radius:10px;padding:10px 16px;min-height:44px}
+.xr0{display:block;border-style:dashed;background:transparent}
+.xr0 .k{color:var(--faint)}.xr0 b{display:block;color:var(--muted);font-weight:500;margin-top:6px}
+.x0{list-style:none;counter-reset:x0;margin:22px 0 0;padding:0;max-width:700px;display:flex;flex-direction:column;gap:16px}
+.x0 li{counter-increment:x0;display:grid;grid-template-columns:30px minmax(0,1fr);gap:2px 12px;font-size:15px}
+.x0 li::before{content:counter(x0);grid-row:1/3;width:26px;height:26px;border-radius:50%;border:1px solid rgba(232,178,92,.5);color:var(--amber);display:grid;place-items:center;font:500 12px var(--mono)}
+.x0 li span{color:var(--muted);font-size:13.5px}
+.xfoot .xgo{background:var(--amber);color:var(--ink);border-color:transparent;font-weight:600}
+.xfoot .xgo:hover{color:var(--ink);filter:brightness(1.06)}
 .xfoot button:hover{color:var(--text);border-color:rgba(237,230,216,.32)}
 @media(max-width:900px){
   .xw{grid-template-columns:minmax(0,1fr)}
   .xrail{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .xr0{display:none}
 }
 @media(max-width:600px){
   .xrail{grid-template-columns:minmax(0,1fr)}
@@ -1668,7 +1677,7 @@ function renderTests(){
     return `<div class="scard" style="--c:${s.c}"><div class="h">${s.name}<em>${g.length} διαγ.</em></div><div class="b"><span class="avg"><b>${fmtG(Math.round(avg*10)/10)}</b><span>μ.ό.</span></span><svg viewBox="0 0 120 40" aria-hidden="true">${g.length>1?`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${s.c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`:''}<circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${s.c}"/></svg></div></div>`;
   }).join('');
   const rows=past.map(t=>{const s=S[t.subj];const L=t.lathi||[];return `<div class="hrow" data-open="${t.id}"><div class="hd8"><b>${dmp(t.date)}</b><span>${DU[pdate(t.date).getDay()]}</span></div><div class="hs"><b><i style="background:${s.c}"></i>${s.name}${t.cat?' · '+esc(t.cat):''}</b><span><i class="mk ${t.src}"></i>${SRC[t.src]}</span></div><div class="ht">${esc(t.title)}</div><div class="hg">${hasG(t)?`<b>${fmtG(t.grade)}</b><span class="tr"><u style="width:${t.grade/20*100}%;background:${s.c}"></u></span>`:`<b class="no">Πώς πήγε;</b>`}</div><div class="hl">${L.length?L.map(l=>`<span class="chipx">${esc(l)}</span>`).join(''):'<em>—</em>'}</div></div>`}).join('');
-  return `<div class="tview"><section><div class="sech"><h2>Έρχονται</h2><span>${up.length===1?'1 διαγώνισμα':up.length?up.length+' διαγωνίσματα':''}</span></div>${up.length?xWrap(up,t0):`<div class="tempty">Κανένα διαγώνισμα στον ορίζοντα. Γράψε από πάνω π.χ. «διαγ λατινικα 5/10».</div>`}</section><section><div class="sech"><h2>Ιστορικό</h2><span>βαθμοί στα 20</span></div><div class="sgrid">${scards}</div>${past.length?`<div class="hist"><div class="hrow hd"><span>Πότε</span><span>Μάθημα</span><span>Ύλη</span><span>Βαθμός</span><span>Πού έχασα</span></div>${rows}</div>`:`<div class="tempty" style="margin-top:24px">Όταν περάσει το πρώτο σου διαγώνισμα, εδώ θα μαζεύονται οι βαθμοί και τα λάθη σου.</div>`}</section></div>`;
+  return `<div class="tview"><section><div class="sech"><h2>Έρχονται</h2><span>${up.length===1?'1 διαγώνισμα':up.length?up.length+' διαγωνίσματα':''}</span></div>${up.length?xWrap(up,t0):xEmpty()}</section><section><div class="sech"><h2>Ιστορικό</h2><span>βαθμοί στα 20</span></div><div class="sgrid">${scards}</div>${past.length?`<div class="hist"><div class="hrow hd"><span>Πότε</span><span>Μάθημα</span><span>Ύλη</span><span>Βαθμός</span><span>Πού έχασα</span></div>${rows}</div>`:`<div class="tempty" style="margin-top:24px">Όταν περάσει το πρώτο σου διαγώνισμα, εδώ θα μαζεύονται οι βαθμοί και τα λάθη σου.</div>`}</section></div>`;
 }
 /* ══ «Η ΥΛΗ ΜΟΥ» — als-v688 ══════════════════════════════════════════════
    Η ύλη είναι τα ΙΔΙΑ `steps` του διαγωνίσματος (το `yli` μένει συγχρονισμένο
@@ -1685,6 +1694,18 @@ function expandRange(v){
   if(!m||/\d/.test(m[1]))return[v];
   const a=+m[2],b=+m[3];if(!(b>a)||b-a>15)return[v];
   const out=[];for(let k=a;k<=b;k++)out.push(m[1]+k);return out;
+}
+/* Χωρίς διαγώνισμα που έρχεται, η καρτέλα ΔΕΝ γυρίζει στο παλιό μήνυμα: δείχνει
+   την ίδια σελίδα, άδεια, με το πώς ξεκινάς (σταθ.: την άδεια κατάσταση τη
+   σχεδιάζεις ΠΡΩΤΗ — αυτή είδε ο ίδιος στις 30/10 και νόμισε ότι δεν άλλαξε τίποτα). */
+function xEmpty(){
+  return `<div class="xw"><aside class="xrail" aria-label="Διαγωνίσματα που έρχονται"><div class="xr xr0"><span class="k">Κανένα ακόμη</span><b>Όταν σας πουν διαγώνισμα, γράψ' το εδώ.</b></div></aside><section class="xp xp0" style="--c:var(--amber)"><div class="xp-h"><div><span class="k">● Νέο διαγώνισμα</span><h2>Η ύλη μου</h2><div class="when">Κανένα διαγώνισμα στον ορίζοντα.</div></div></div>
+    <ol class="x0">
+      <li><b>Γράψε μία γραμμή.</b><span>π.χ. «διαγ ιστορια 10/11 όλο το πορτοκαλί»</span></li>
+      <li><b>Βάλε την ύλη κομμάτι-κομμάτι.</b><span>«Δ.1–Δ.5» γίνεται πέντε γραμμές μόνο του.</span></li>
+      <li><b>Διάλεξε μέρα, αν θες, και τσέκαρε όσα διαβάζεις.</b><span>Οι σημειώσεις του καθηγητή μένουν στη σελίδα.</span></li>
+    </ol>
+    <div class="xfoot"><button class="xgo" data-xnew>+ Νέο διαγώνισμα</button></div></section></div>`;
 }
 function xWrap(up,t0){
   if(!up.some(t=>t.id===selX))selX=up[0].id;
@@ -1936,6 +1957,7 @@ document.querySelector('.app').addEventListener('click',e=>{
     if(act.dataset.act==='tomorrow'){setTask(id,x=>x.date=iso(addD(today(),1)));renderAll();toast('Μετακινήθηκε για αύριο')}
     if(act.dataset.act==='forget')removeTask(id,'Το ξέχασες');return}
   const go=e.target.closest('[data-goto]');if(go){setTab('subj');const el=document.getElementById('book-'+go.dataset.goto);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}return}
+  if(e.target.closest('[data-xnew]')){cIn.focus();cIn.value='διαγ ';cIn.dispatchEvent(new Event('input',{bubbles:true}));try{cIn.setSelectionRange(5,5)}catch(_){}window.scrollTo({top:0,behavior:'smooth'});return}
   const xs=e.target.closest('[data-xsel]');if(xs){selX=xs.dataset.xsel;renderAll();const p=document.querySelector('.xp');if(p&&window.innerWidth<=900)p.scrollIntoView({behavior:'smooth',block:'start'});return}
   const op=e.target.closest('[data-open]');if(op){openDrawer(op.dataset.open);return}
   if(e.target.closest('#showDoneT')){showDoneSubj=!showDoneSubj;renderAll();return}
