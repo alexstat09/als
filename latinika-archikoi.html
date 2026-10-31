@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0908">
+<title>Λατινικά · Αρχικοί χρόνοι XVI–XXVII</title>
+<!-- ⛔ Η Instrument Serif έχει ΜΗΔΕΝ ελληνικά γλυφά (πέφτει σε Georgia = «οι τόνοι
+     δεν είναι σωστοί», als-v504). Εδώ μπαίνει ΜΟΝΟ σε λατινικά και σε νούμερα.
+     Τα ελληνικά (τίτλοι + μετάφραση του φυλλαδίου) είναι GFS Didot. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">
+<style>
+:root{
+  --bg:#0a0908;
+  --ink:#f5f2ec;
+  --dim:rgba(245,242,236,.64);
+  --faint:rgba(245,242,236,.36);
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.12);
+  --lat:24,200,192;          /* Λατινικά · teal — η ταυτότητα του μαθήματος */
+  --hit:246,193,119;         /* η λέξη που διάλεξες */
+  --warn:255,107,139;        /* ✗ — το ΜΟΝΟ κανάλι για «ξανά» */
+  --ok:121,192,168;          /* ✓ */
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --gr:"GFS Didot","Times New Roman",Times,serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,.w:focus-visible,a:focus-visible{outline:2px solid rgba(var(--lat),.7);outline-offset:2px;border-radius:4px}
+.shell{max-width:1180px;margin:0 auto;padding:22px 32px 120px}
+
+/* ── διαδρομή ─────────────────────────────────────────────── */
+.top{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);min-height:40px}
+.top a{color:var(--dim);text-decoration:none;letter-spacing:.12em}
+.top a:hover{color:var(--ink)}
+.top .sl{color:rgba(245,242,236,.18)}
+.top .wh{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── εξώφυλλο ─────────────────────────────────────────────── */
+.cover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:end;padding:46px 0 34px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);margin-bottom:18px}
+.eyebrow b{font-weight:400;color:rgba(var(--lat),.9)}
+h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-height:.98;letter-spacing:-.01em}
+.lead{margin-top:22px;max-width:620px;font-size:15px;line-height:1.72;color:var(--dim)}
+.lead b{color:var(--ink);font-weight:500}
+.face{text-align:right}
+.face .n{font-family:var(--serif);font-size:128px;line-height:.82;color:rgb(var(--lat))}
+.face .l{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);line-height:1.7}
+
+/* ── ταινία μετρήσεων ─────────────────────────────────────── */
+.band{display:grid;grid-template-columns:1.3fr 1fr 1fr;margin-top:28px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.band>div{padding:20px 24px;min-width:0}
+.band>div+div{border-left:1px solid var(--line)}
+.band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.band .bn{margin-top:8px;font-family:var(--serif);font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.band .bn small{font-size:22px;color:var(--faint)}
+.band .bs{margin-top:6px;font-size:12.5px;color:var(--dim)}
+.dash{display:flex;gap:4px;margin-top:12px}
+.dash i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08)}
+.dash i.on{background:rgb(var(--ok))}
+.dash i.x{background:rgb(var(--warn))}
+.dash i.r{background:rgb(var(--hit))}
+
+/* ── καρτέλες ─────────────────────────────────────────────── */
+.tabs{display:flex;gap:30px;margin-top:44px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;padding:12px 0 14px;font-size:13.5px;color:var(--dim);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink)}
+.tab .c{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:6px}
+.panel{display:none;padding-top:34px}
+.panel.on{display:block}
+
+/* ── γραμμή εργαλείων κειμένου ────────────────────────────── */
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:11px;padding:3px}
+.seg button{padding:7px 15px;border-radius:8px;font-size:13px;color:var(--dim)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.07);color:var(--ink)}
+.tools .sp{flex:1}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+.chk[hidden]{display:none}
+.chk input{accent-color:rgb(var(--warn))}
+.modehint{margin-top:14px;font-size:13px;color:var(--dim);max-width:680px;line-height:1.6}
+.lenses{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.lenses .lbl{margin-right:6px}
+.lens{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:12.5px;color:var(--dim)}
+.lens:hover{color:var(--ink);border-color:rgba(255,255,255,.22)}
+.lens i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.lens[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.lens[aria-pressed="true"] i{color:rgba(10,9,8,.6)}
+.lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+
+/* ── κείμενο + λήμμα ──────────────────────────────────────── */
+.read{display:grid;grid-template-columns:minmax(0,700px) minmax(0,1fr);gap:56px;align-items:start}
+.scene{margin-top:40px}
+.scene-head{display:flex;align-items:baseline;gap:14px;padding-bottom:10px}
+.scene-num{font-family:var(--serif);font-size:22px;color:rgb(var(--lat))}
+.scene-title{font-family:var(--gr);font-style:italic;font-size:26px}
+.scene-flow{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:right}
+.sent{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
+.sent.gone{display:none}
+.num{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:9px;text-align:right}
+.la{font-family:var(--serif);font-size:27px;line-height:1.42;color:var(--ink)}
+.gr{margin-top:6px;font-family:var(--gr);font-size:19px;line-height:1.55;color:var(--dim);word-spacing:-.06em}
+.w{cursor:pointer;border-radius:5px;padding:0 2px;transition:background .14s,color .14s,box-shadow .14s}
+.la .w{border-bottom:1px dotted rgba(var(--lat),.28)}
+.w:hover{background:rgba(255,255,255,.05)}
+.w.hit{background:rgba(var(--hit),.16);color:rgb(var(--hit))}
+.gr .w.hit{color:rgb(var(--hit))}
+/* φακοί: καθαρό CSS — η λέξη ξέρει τις ετικέτες της */
+.text[data-lens="sub"] .la .w[data-tags~="sub"],
+.text[data-lens="inf"] .la .w[data-tags~="inf"],
+.text[data-lens="part"] .la .w[data-tags~="part"],
+.text[data-lens="dep"] .la .w[data-tags~="dep"],
+.text[data-lens="verb"] .la .w[data-tags~="verb"],
+.text[data-lens="noun"] .la .w[data-tags~="noun"],
+.text[data-lens="adj"] .la .w[data-tags~="adj"],
+.text[data-lens="pron"] .la .w[data-tags~="pron"],
+.text[data-lens="abl"] .la .w[data-tags~="abl"],
+.text[data-lens="imp"] .la .w[data-tags~="imp"],
+.text[data-lens="deg"] .la .w[data-tags~="deg"]{background:rgba(var(--lat),.16);color:rgb(var(--lat));border-bottom:2px solid rgb(var(--lat))}
+.text[data-lens]:not([data-lens=""]) .la .w:not(.hit){opacity:.5}
+.text[data-lens="sub"] .la .w[data-tags~="sub"],.text[data-lens="inf"] .la .w[data-tags~="inf"],.text[data-lens="part"] .la .w[data-tags~="part"],.text[data-lens="dep"] .la .w[data-tags~="dep"],.text[data-lens="verb"] .la .w[data-tags~="verb"],.text[data-lens="noun"] .la .w[data-tags~="noun"],.text[data-lens="adj"] .la .w[data-tags~="adj"],.text[data-lens="pron"] .la .w[data-tags~="pron"],.text[data-lens="abl"] .la .w[data-tags~="abl"],.text[data-lens="imp"] .la .w[data-tags~="imp"],.text[data-lens="deg"] .la .w[data-tags~="deg"]{opacity:1}
+
+/* Μετάφρασε */
+.veil{display:none;margin-top:8px;width:100%;text-align:left;padding:12px 16px;border:1px dashed var(--line2);border-radius:11px;font-size:13px;color:var(--dim)}
+.veil:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.m-tr .sent:not(.shown) .gr{display:none}
+.m-tr .sent:not(.shown) .veil{display:block}
+.side{display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding-top:6px}
+.know{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:6px 11px;border:1px solid var(--line2);border-radius:8px;color:var(--faint);white-space:nowrap}
+.know:hover{color:var(--ink)}
+.know.on{color:rgb(var(--ok));border-color:rgba(var(--ok),.4);background:rgba(var(--ok),.08)}
+.grade{display:none;gap:6px}
+.m-tr .sent.shown .grade{display:flex}
+.m-tr .know{display:none}
+.m-st .know{display:none}
+.g3{width:38px;height:34px;border:1px solid var(--line2);border-radius:9px;font-size:15px;color:var(--dim)}
+.g3:hover{color:var(--ink)}
+.g3.x[aria-pressed="true"]{background:rgba(var(--warn),.16);border-color:rgba(var(--warn),.5);color:rgb(var(--warn))}
+.g3.r[aria-pressed="true"]{background:rgba(var(--hit),.14);border-color:rgba(var(--hit),.5);color:rgb(var(--hit))}
+.g3.k[aria-pressed="true"]{background:rgba(var(--ok),.14);border-color:rgba(var(--ok),.5);color:rgb(var(--ok))}
+.sent .mark{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Δομή: οι αγκύλες σου, όπως στο χαρτί */
+.m-st .gr{display:none}
+.br{font-family:var(--mono);font-size:22px;font-weight:300;color:var(--faint);padding:0 1px}
+.br.d{color:rgb(var(--lat))}
+.br sup{font-size:10px;letter-spacing:0;margin-left:1px;vertical-align:top}
+.cl.on .w{background:rgba(var(--lat),.12)}
+.clauses{display:none;margin-top:14px;list-style:none;border-left:1px solid var(--line2)}
+.m-st .clauses{display:block}
+.clauses li{padding:6px 0 6px 14px;font-size:13.5px;color:var(--dim);cursor:pointer;line-height:1.55}
+.clauses li:hover,.clauses li.on{color:var(--ink)}
+.clauses li b{font-family:var(--mono);font-weight:400;font-size:11px;color:rgb(var(--lat));margin-right:6px}
+.clauses li .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.clauses li .k.d{color:rgb(var(--lat))}
+.clauses li em{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink)}
+
+/* η καρτέλα της λέξης */
+.aside{position:sticky;top:20px;margin-top:40px}
+.wc{border:1px solid var(--line);border-radius:18px;padding:26px 26px 22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
+.wc.empty{color:var(--dim);font-size:14px;line-height:1.7}
+.wc.empty .big{font-family:var(--gr);font-style:italic;font-size:28px;color:var(--ink);line-height:1.2;margin-bottom:12px}
+.wc-la{font-family:var(--serif);font-size:44px;line-height:1;color:rgb(var(--hit))}
+.wc-d{margin-top:8px;font-family:var(--gr);font-size:19px;color:var(--dim)}
+.wc-sec{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.wc-sec p{margin-top:8px;font-size:14px;line-height:1.66;color:var(--ink)}
+.wc-lem{margin-top:8px;font-family:var(--serif);font-size:23px;line-height:1.25;color:rgb(var(--lat))}
+.wc dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:10px;font-size:13.5px}
+.wc dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);padding-top:3px}
+.wc dd{color:var(--ink);line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{padding:5px 11px;border:1px solid var(--line2);border-radius:999px;font-size:12px;color:var(--dim)}
+.chip:hover{color:var(--ink);border-color:rgba(255,255,255,.24)}
+.info{display:none;margin-top:14px}
+.info.show{display:block}
+.info .wc{padding:20px}
+.info .wc-la{font-size:34px}
+
+/* ── Γραμματική ───────────────────────────────────────────── */
+.sec{margin-top:58px}
+.sec:first-child{margin-top:0}
+.sh{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.sh h2{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;line-height:1.1}
+.sh .sp{flex:1}
+.sh .sub{flex-basis:100%;width:100%;font-size:13.5px;color:var(--dim);max-width:700px;line-height:1.6}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
+.tbl th{text-align:left;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding:14px 12px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5;color:var(--ink)}
+.tbl td.n{font-family:var(--mono);font-size:11px;color:var(--faint);width:36px}
+.tbl td.f{font-family:var(--serif);font-size:20px;white-space:nowrap}
+.tbl td.f button{color:var(--ink);border-bottom:1px dotted rgba(var(--lat),.4)}
+.tbl td.f button:hover{color:rgb(var(--hit))}
+.tbl td.lem{font-family:var(--serif);font-size:19px;color:rgb(var(--lat))}
+.tbl td.t{color:var(--dim)}
+.tbl td.tr{color:rgb(var(--hit));font-size:13.5px}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+/* «Κατά κατηγορία»: η κεφαλίδα κάθε ομάδας — ετικέτα (mono), όχι πινακίδα */
+.tbl tr.gh td{padding:26px 12px 9px;border-bottom:1px solid var(--line2);font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--lat));line-height:1.4}
+.tbl tr.gh:nth-child(2) td{padding-top:16px}
+.tbl tr.gh i{font-style:normal;color:var(--faint);margin-left:10px;letter-spacing:.1em}
+.tbl tr.gh:hover td{background:none}
+.gtools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:40px}
+.gtools + .sec{margin-top:0}
+.hidecol .lem{position:relative;cursor:pointer}
+.hidecol .lem>span{filter:blur(7px);opacity:.5;transition:filter .2s,opacity .2s}
+.hidecol .lem.rv>span{filter:none;opacity:1}
+.tbtn{padding:7px 13px;border:1px solid var(--line2);border-radius:9px;font-size:12.5px;color:var(--dim)}
+.tbtn:hover{color:var(--ink)}
+.tbtn[aria-pressed="true"]{color:var(--bg);background:rgb(var(--lat));border-color:rgb(var(--lat))}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}
+.box{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));min-width:0}
+.box h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:23px}
+.box .rule{margin-top:6px;font-size:13px;color:var(--dim)}
+.box .rule b{color:rgb(var(--lat));font-weight:400;font-family:var(--mono);font-size:12px}
+.conj{width:100%;border-collapse:collapse;margin-top:12px;font-family:var(--serif);font-size:17px}
+.conj th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);text-align:left;padding:4px 6px 8px}
+.conj td{padding:3px 6px;white-space:nowrap}
+.conj td:first-child{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.conj .ix{color:rgb(var(--lat))}
+.conjw{overflow-x:auto}
+.seqt{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.seqt th,.seqt td{border:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:top}
+.seqt th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.seqt td b{display:block;font-weight:500;color:var(--ink)}
+.seqt td .ex{display:block;margin-top:4px;font-family:var(--serif);font-size:16px;color:var(--dim)}
+.seqt .ch{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid rgba(var(--lat),.4);border-radius:999px;font-family:var(--serif);font-size:15px;color:rgb(var(--lat))}
+.seqt .ch:hover{background:rgba(var(--lat),.12)}
+.akl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px;margin-top:10px}
+.akl div{padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--dim)}
+.akl div b{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--ink);margin-right:8px}
+.attn{margin-top:20px;padding:18px 22px;border-left:2px solid rgb(var(--hit));background:rgba(var(--hit),.05);border-radius:0 12px 12px 0;font-size:14px;line-height:1.75;color:var(--ink);max-width:820px}
+.attn b{color:rgb(var(--hit));font-weight:500}
+
+/* παγίδες (static — τις μετράει η βιβλιοθήκη) */
+.traps{margin-top:58px}
+.traps h3,.notes h3{font-family:var(--gr);font-style:italic;font-weight:400;font-size:34px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.traps .sub{margin-top:12px;font-size:13.5px;color:var(--dim)}
+.traps ul{list-style:none;margin-top:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 28px}
+.traps li{padding:18px 0;border-bottom:1px solid var(--line);min-width:0}
+.traps li .n{font-family:var(--serif);font-size:30px;line-height:1;color:rgb(var(--hit))}
+.traps .lat{display:block;margin-top:8px;font-family:var(--serif);font-size:20px;line-height:1.25}
+.traps .fix{display:block;margin-top:6px;font-size:14px;color:var(--ink);line-height:1.55}
+.traps .why{display:block;margin-top:6px;font-size:13px;color:var(--dim);line-height:1.6}
+
+/* ── Σημειώσεις ───────────────────────────────────────────── */
+.notes .sub{margin-top:12px;font-size:13.5px;color:var(--dim);max-width:720px}
+.notes ul{list-style:none;margin-top:22px;columns:2;column-gap:20px}
+.nt{break-inside:avoid;margin-bottom:20px;border:1px solid var(--line);border-radius:18px;padding:22px 24px 20px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));transition:border-color .5s,background .5s}
+.nt.flash{border-color:rgba(var(--hit),.7);background:rgba(var(--hit),.07)}
+.nt .src{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.nt .src .me{color:rgb(var(--warn))}
+.nt h4{margin-top:8px;font-family:var(--gr);font-style:italic;font-weight:400;font-size:26px;line-height:1.15}
+.nt h4 .la{font-family:var(--serif);font-style:normal;font-size:26px}
+.nt p{margin-top:10px;font-size:14px;line-height:1.7;color:var(--ink)}
+.nt p.d{color:var(--dim)}
+.nt .lat,.nt i.lat{font-family:var(--serif);font-style:normal;font-size:17px;color:rgb(var(--lat))}
+.nt table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13.5px}
+.nt td{padding:9px 8px 9px 0;border-top:1px solid var(--line);vertical-align:top;line-height:1.5}
+.nt td:first-child{font-family:var(--serif);font-size:19px;color:rgb(var(--lat));white-space:nowrap;padding-right:14px}
+.nt td .q{display:block;font-family:var(--gr);font-size:16px;color:var(--dim)}
+.nt .ans{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.nt .ans span{font-family:var(--serif);font-size:18px;color:var(--ink)}
+.nt .ans span em{font-family:var(--sans);font-style:normal;font-size:12.5px;color:var(--dim);margin-left:8px}
+.nt .ask{margin-top:12px;padding:12px 14px;border:1px dashed rgba(var(--hit),.5);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.6}
+.nt .ask b{color:rgb(var(--hit));font-weight:500}
+
+/* ── Κάρτες ───────────────────────────────────────────────── */
+.deck{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dk{padding:16px 16px 14px;text-align:left;border-left:1px solid var(--line);min-width:0}
+.dk:first-child{border-left:0}
+.dk:hover{background:rgba(255,255,255,.025)}
+.dk[aria-pressed="true"]{background:rgba(var(--lat),.09);box-shadow:inset 0 -2px 0 rgb(var(--lat))}
+.dk .t{font-family:var(--gr);font-style:italic;font-size:20px;color:var(--ink)}
+.dk .s{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);line-height:1.7}
+.dk .s b{font-weight:400;color:rgb(var(--lat))}
+.stage{max-width:680px;margin:40px auto 0}
+.cmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card{margin-top:12px;min-height:340px;border:1px solid var(--line2);border-radius:22px;padding:34px 36px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));display:flex;flex-direction:column;cursor:pointer;user-select:none}
+.card .ask{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--lat))}
+.card .form{margin-top:22px;font-family:var(--serif);font-size:72px;line-height:1;text-align:center}
+.card .ctx{margin-top:22px;text-align:center;font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--dim)}
+.card .ctx b{font-weight:400;color:rgb(var(--hit))}
+.card .tap{margin-top:auto;padding-top:24px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.card .back{display:none;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+.card.flip .back{display:block}
+.card.flip .tap{display:none}
+.card.flip .form{font-size:44px;margin-top:14px}
+.card.flip .ctx{display:none}
+.back .lem{font-family:var(--serif);font-size:32px;line-height:1.2;color:rgb(var(--lat));text-align:center}
+.back .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+.back .facts span{padding:6px 12px;border:1px solid var(--line2);border-radius:999px;font-size:13px;color:var(--ink)}
+.back .facts span b{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.back .tr{margin-top:14px;text-align:center;font-size:13.5px;color:rgb(var(--hit));line-height:1.6}
+.back .sx{font-size:15px;line-height:1.7;color:var(--ink)}
+.back .gd{margin-top:12px;text-align:center;font-family:var(--gr);font-size:18px;color:var(--dim)}
+.rate{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.rate.on{display:grid}
+.rate button{padding:14px 10px 12px;border:1px solid var(--line2);border-radius:14px;text-align:center}
+.rate button .k{display:block;font-size:20px}
+.rate button .l{display:block;margin-top:4px;font-size:13px;color:var(--ink)}
+.rate button .i{display:block;margin-top:3px;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.rate .x{color:rgb(var(--warn))} .rate .x:hover{background:rgba(var(--warn),.08)}
+.rate .r{color:rgb(var(--hit))} .rate .r:hover{background:rgba(var(--hit),.08)}
+.rate .k3{color:rgb(var(--ok))} .rate .k3:hover{background:rgba(var(--ok),.08)}
+.keys{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint)}
+.done{text-align:center;padding:60px 20px}
+.done .big{font-family:var(--gr);font-style:italic;font-size:40px}
+.done p{margin-top:12px;color:var(--dim);font-size:14px}
+.done .tbtn{margin-top:22px}
+.cfoot{display:flex;justify-content:center;gap:18px;margin-top:26px}
+.cfoot button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
+.cfoot button:hover{color:var(--ink)}
+
+.foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;line-height:1.85;color:var(--dim);max-width:860px}
+.foot b{color:var(--dim);font-weight:500}
+
+/* ── πλάτη (ΜΟΝΟ max-width — σταθ. 51) ───────────────────── */
+@media (max-width:1040px){
+  .read{grid-template-columns:minmax(0,1fr)}
+  .aside{display:none}
+  .notes ul{columns:1}
+  .traps ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .deck{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dk:nth-child(4){border-left:0}
+  .dk:nth-child(n+4){border-top:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .shell{padding:16px 16px 90px}
+  .cover{grid-template-columns:minmax(0,1fr);gap:22px;padding-top:30px}
+  .face{text-align:left;display:flex;align-items:flex-end;gap:16px}
+  .face .n{font-size:84px}
+  h1{font-size:54px}
+  .band{grid-template-columns:minmax(0,1fr)}
+  .band>div+div{border-left:0;border-top:1px solid var(--line)}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .akl{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scene-flow{display:none}
+  .tbl .hm{display:none}
+  .tbl td.f{white-space:normal}
+}
+@media (max-width:560px){
+  .top .wm{display:none}
+  .tabs{gap:22px}
+  .tab .c{display:none}
+  .seqt th,.seqt td{padding:9px 8px;font-size:13px}
+  .seqt td .ex{font-size:14px}
+  h1{font-size:44px}
+  .la{font-size:23px}
+  .gr{font-size:17px}
+  .sent{grid-template-columns:18px minmax(0,1fr);gap:10px}
+  .side{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;padding-top:2px}
+  .traps ul{grid-template-columns:minmax(0,1fr)}
+  .deck{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dk:nth-child(n){border-left:1px solid var(--line);border-top:1px solid var(--line)}
+  .dk:nth-child(odd){border-left:0}
+  .dk:nth-child(-n+2){border-top:0}
+  .card{padding:26px 20px;min-height:300px}
+  .card .form{font-size:54px}
+  .tbl{font-size:13px}
+  .tbl td{padding:10px 6px}
+  .sh h2,.traps h3,.notes h3{font-size:28px}
+}
+
+/* ══ ΑΡΧΙΚΟΙ ΧΡΟΝΟΙ — ό,τι ΔΕΝ έχει το καλούπι των κειμένων (πάνω από εδώ: αυτούσιο το lectio.tpl) ══ */
+.dg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dg.d6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.dg .dk{border-left:0;background:var(--bg)}
+.dg .dk:hover{background:#121110}
+.dg .dk[aria-pressed="true"]{background:#0d1918}
+.dg .dk .t.la{font-family:var(--serif);font-style:normal;font-size:24px}
+.dlbl{margin:34px 0 10px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.dlbl:first-child{margin-top:0}
+.tbl td.f a{color:var(--ink);text-decoration:none;border-bottom:1px dotted rgba(var(--lat),.4)}
+.tbl td.f a:hover{color:rgb(var(--hit))}
+.tbl td.f small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--faint)}
+.tbl td.wh{color:var(--dim);font-size:13.5px}
+.tbl td.wh b{font-family:var(--serif);font-weight:400;font-size:17px;color:var(--ink)}
+.tbl td.wh i{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);margin-left:4px}
+.tbl td.st{width:28px;font-family:var(--mono);font-size:12px;text-align:center}
+.st .ok{color:rgb(var(--ok))} .st .no{color:rgb(var(--warn))}
+.jump{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-18px 0 34px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em}
+.jump a{color:var(--dim);text-decoration:none}
+.jump a:hover{color:var(--ink)}
+.card .form.lg{font-size:50px}
+.card .also{margin-top:10px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+a.tbtn{text-decoration:none;color:inherit}
+@media (max-width:1040px){
+  .dg.d6{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .dg,.dg.d6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card .form.lg{font-size:36px}
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <a href="latinika.html">&#8592; Λατινικά</a>
+    <span class="sl">/</span>
+    <span class="wh"><span class="wm">MÉTRON · </span>Λατινικά · Αρχικοί χρόνοι</span>
+  </div>
+
+  <header class="cover">
+    <div>
+      <div class="eyebrow"><b>Lectio XVI–XXVII</b> · 12 κείμενα · 255 τύποι</div>
+      <h1>Αρχικοί χρόνοι</h1>
+      <p class="lead">Κάθε ρήμα των κειμένων, όπως εμφανίζεται μέσα τους, με τους αρχικούς του χρόνους. Δες τα ανά κείμενο ή ανά κατηγορία, και κάνε κάρτες μέχρι να τα πεις όλα απέξω.</p>
+    </div>
+    <div class="face">
+      <div class="n">156</div>
+      <div class="l">ρήματα<br>όλα μαζί</div>
+    </div>
+  </header>
+
+  <section class="band" aria-label="Μετρήσεις">
+    <div>
+      <div class="bl">Ρήματα κλειδωμένα</div>
+      <div class="bn"><span id="bLock">0</span><small>/156</small></div>
+      <div class="bs">✓ ξανά και ξανά, ως επανάληψη σε 7+ μέρες</div>
+    </div>
+    <div>
+      <div class="bl">Κάρτες για σήμερα</div>
+      <div class="bn" id="bDue">—</div>
+      <div class="bs" id="bDueS">όλα τα ρήματα</div>
+    </div>
+    <div>
+      <div class="bl">Για ξανά</div>
+      <div class="bn" id="bRed">0</div>
+      <div class="bs">ρήματα που η τελευταία κάρτα τους ήταν ✗</div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Ενότητες σελίδας">
+    <button class="tab" role="tab" data-tab="pinakes" aria-selected="true">Πίνακες<span class="c">255</span></button>
+    <button class="tab" role="tab" data-tab="kartes" aria-selected="false">Κάρτες<span class="c" id="tcK"></span></button>
+  </nav>
+
+  <!-- ══ ΠΙΝΑΚΕΣ ══════════════════════════════════════════════ -->
+  <section class="panel on" id="p-pinakes" role="tabpanel">
+    <div class="gtools">
+      <span class="lbl">Ομαδοποίηση</span>
+      <div class="seg" role="group" aria-label="Ομαδοποίηση">
+        <button type="button" data-grp="txt">Ανά κείμενο</button><button type="button" data-grp="cat">Κατά κατηγορία</button>
+      </div>
+      <span class="sp"></span>
+      <button class="tbtn" id="hideV" type="button" aria-pressed="false">Κρύψε τους αρχικούς χρόνους</button>
+    </div>
+    <div id="tabs"></div>
+  </section>
+
+  <!-- ══ ΚΑΡΤΕΣ ═══════════════════════════════════════════════ -->
+  <section class="panel" id="p-kartes" role="tabpanel">
+    <div class="dlbl">Ανά κατηγορία</div>
+    <div class="dg" id="deckC" role="group" aria-label="Κατηγορία"></div>
+    <div class="dlbl">Ανά κείμενο</div>
+    <div class="dg d6" id="deckT" role="group" aria-label="Κείμενο"></div>
+    <div class="stage" id="stage"></div>
+  </section>
+
+  <footer class="foot">
+    <b>Από πού είναι.</b> XXI–XXVII: ο πίνακας «Αρχικοί χρόνοι» της σελίδας κάθε κειμένου, αυτούσιος (ίδιοι τύποι, ίδια σειρά). XVI–XX: study4exams, «Ερμηνεία και γραμματική αναγνώριση των λέξεων» κάθε μαθήματος· η γραφή του τύπου είναι του βιβλίου. Ένα ρήμα που υπάρχει σε πολλά κείμενα γράφεται παντού με την ίδια μορφή. Στα αποθετικά κρατιέται η μορφή του βιβλίου (χωρίς σουπίνο)· όπου το study4exams δίνει σουπίνο, γράφεται στη σημείωση της κάρτας. Στο XIX το βιβλίο τυπώνει «coniuārvit» — εδώ γράφεται coniurāvit. Οι κάρτες μένουν σε αυτή τη συσκευή.
+  </footer>
+</div>
+
+<script>
+/* ══ ΤΑ ΔΕΔΟΜΕΝΑ — παράγονται από tools/latinika/archikoi.js. ⛔ Όχι με το χέρι. ══ */
+const LEX = {"deleo":{"l":"deleo, delēvi, delētum, delēre","k":"β΄ συζυγία","tr":"","from":21},"everto":{"l":"everto, everti, eversum, evertĕre","k":"γ΄ συζυγία","tr":"ex + verto = καταστρέφω εντελώς.","from":21},"accipio":{"l":"accipio, accēpi, acceptum, accipĕre","k":"γ΄ συζυγία (σε -io)","tr":"ad + capio: -i- στον ενεστώτα, -ē- στον παρακείμενο.","from":21},"sum":{"l":"sum, fui, —, esse","k":"βοηθητικό","tr":"","from":21},"divido":{"l":"divĭdo, divīsi, divīsum, dividĕre","k":"γ΄ συζυγία","tr":"","from":21},"absum":{"l":"absum, afui, —, abesse","k":"βοηθητικό · σύνθετο του sum","tr":"ab + sum. Μτχ. ενεστ. absens, absentis.","from":21},"fio":{"l":"fio, factus sum, fieri","k":"ανώμαλο · το παθητικό του facio","tr":"facio, feci, factum, facĕre (3, σε -io)· fio = γίνομαι, εκλέγομαι.","from":21},"abeo":{"l":"abeo, abii, abĭtum, abīre","k":"ανώμαλο · σύνθετο του eo","tr":"ab + eo. Μτχ. ενεστ. abiens, abeuntis — όχι abientes.","from":21},"sequor":{"l":"sequor, secūtus sum, sequi","k":"γ΄ συζυγία · αποθετικό","tr":"Παθητική μορφή, ενεργητική σημασία.","from":21},"interimo":{"l":"interĭmo, interēmi, interemptum, interimĕre","k":"γ΄ συζυγία","tr":"inter + emo.","from":21},"recipio":{"l":"recipio, recēpi, receptum, recipĕre","k":"γ΄ συζυγία (σε -io)","tr":"re + capio = παίρνω πίσω.","from":21},"appendo":{"l":"appendo, appendi, appensum, appendĕre","k":"γ΄ συζυγία","tr":"ad + pendo = ζυγίζω.","from":21},"do":{"l":"do, dedi, dătum, dăre","k":"α΄ συζυγία","tr":"Βραχύ -a- (dăre, dătum): εξαίρεση της α΄ συζυγίας.","from":21},"dico":{"l":"dico, dixi, dictum, dicĕre","k":"γ΄ συζυγία","tr":"Προστ. ενεστ. dic. Παθητ. dicor = λέγομαι, ονομάζομαι.","from":21},"penso":{"l":"penso, pensāvi, pensātum, pensāre","k":"α΄ συζυγία","tr":"Θαμιστικό του pendo.","from":21},"redeo":{"l":"redeo, redii, redĭtum, redīre","k":"ανώμαλο · σύνθετο του eo","tr":"red + eo. Παρακ. σε -ii: rediit.","from":21},"rogo":{"l":"rogo, rogāvi, rogātum, rogāre","k":"α΄ συζυγία","tr":"","from":21},"revertor":{"l":"revertor, reverti (reversus sum), reverti","k":"γ΄ συζυγία · ημιαποθετικό ή αποθετικό","tr":"Το βιβλίο: ημιαποθετικό ή αποθετικό, ανάλογα με τον παρακείμενο (reverti ή reversus sum).","from":21},"imitor":{"l":"imĭtor, imitātus sum, imitāri","k":"α΄ συζυγία · αποθετικό","tr":"Παθητική μορφή, ενεργητική σημασία.","from":22},"stabilio":{"l":"stabilio, stabilīvi, stabilītum, stabilīre","k":"δ΄ συζυγία","tr":"","from":22},"repono":{"l":"repōno, reposui, reposĭtum, reponĕre","k":"γ΄ συζυγία","tr":"re + pono.","from":22},"amo":{"l":"amo, amāvi, amātum, amāre","k":"α΄ συζυγία","tr":"","from":22},"pareo":{"l":"pareo, parui, parĭtum, parēre","k":"β΄ συζυγία","tr":"+ δοτική.","from":22},"consulo":{"l":"consŭlo, consului, consultum, consulĕre","k":"γ΄ συζυγία","tr":"+ δοτική = φροντίζω για · + αιτιατική = συμβουλεύομαι.","from":22},"neglego":{"l":"neglĕgo, neglexi, neglectum, neglegĕre","k":"γ΄ συζυγία","tr":"nec + lego.","from":22},"servio":{"l":"servio, servīvi, servītum, servīre","k":"δ΄ συζυγία","tr":"+ δοτική.","from":22},"puto":{"l":"puto, putāvi, putātum, putāre","k":"α΄ συζυγία","tr":"","from":22},"spero":{"l":"spero, sperāvi, sperātum, sperāre","k":"α΄ συζυγία","tr":"","from":22},"volo":{"l":"volo, volui, —, velle","k":"ανώμαλο","tr":"Οριστ. ενεστ. volo, vis, vult, volumus, vultis, volunt.","from":22},"fero":{"l":"fero, tuli, latum, ferre","k":"ανώμαλο","tr":"Οριστ. ενεστ. fero, fers, fert, ferimus, fertis, ferunt· η υποτακτική ομαλά: feram, ferās, ferat …","from":22},"accido":{"l":"accĭdo, accĭdi, —, accidĕre","k":"γ΄ συζυγία","tr":"ad + cado.","from":22},"arbitror":{"l":"arbĭtror, arbitrātus sum, arbitrāri","k":"α΄ συζυγία · αποθετικό","tr":"Παθητική μορφή, ενεργητική σημασία.","from":22},"aegroto":{"l":"aegrōto, aegrotāvi, aegrotātum, aegrotāre","k":"α΄ συζυγία","tr":"","from":23},"morior":{"l":"morior, mortuus sum, mori","k":"γ΄ συζυγία (σε -io) · αποθετικό","tr":"Μετοχή μέλλοντα: moritūrus. Παθητική μορφή, ενεργητική σημασία.","from":23},"paro":{"l":"paro, parāvi, parātum, parāre","k":"α΄ συζυγία","tr":"","from":23},"ignoro":{"l":"ignōro, ignorāvi, ignorātum, ignorāre","k":"α΄ συζυγία","tr":"","from":23},"intro":{"l":"intro, intrāvi, intrātum, intrāre","k":"α΄ συζυγία","tr":"intro + αιτιατική: μπαίνω κάπου.","from":23},"vivo":{"l":"vivo, vixi, victum, vivĕre","k":"γ΄ συζυγία","tr":"","from":23},"simulo":{"l":"simŭlo, simulāvi, simulātum, simulāre","k":"α΄ συζυγία","tr":"simulo + απαρέμφατο = προσποιούμαι ότι.","from":23},"interrogo":{"l":"interrŏgo, interrogāvi, interrogātum, interrogāre","k":"α΄ συζυγία","tr":"","from":23},"ago":{"l":"ago, egi, actum, agĕre","k":"γ΄ συζυγία","tr":"Quid agit? = Πώς είναι; τι κάνει;","from":23},"respondeo":{"l":"respondeo, respondi, responsum, respondēre","k":"β΄ συζυγία","tr":"respondeo + δοτική προσώπου.","from":23},"quiesco":{"l":"quiesco, quiēvi, quiētum, quiescĕre","k":"γ΄ συζυγία","tr":"","from":23},"sumo":{"l":"sumo, sumpsi, sumptum, sumĕre","k":"γ΄ συζυγία","tr":"cibum sumo = τρώω.","from":23},"cohibeo":{"l":"cohibeo, cohibui, cohibĭtum, cohibēre","k":"β΄ συζυγία","tr":"cum + habeo.","from":23},"vinco":{"l":"vinco, vici, victum, vincĕre","k":"γ΄ συζυγία","tr":"","from":23},"prorumpo":{"l":"prorumpo, prorūpi, proruptum, prorumpĕre","k":"γ΄ συζυγία","tr":"pro + rumpo.","from":23},"egredior":{"l":"egredior, egressus sum, egrĕdi","k":"γ΄ συζυγία (σε -io) · αποθετικό","tr":"e + gradior. Παθητική μορφή, ενεργητική σημασία.","from":23},"moveo":{"l":"moveo, movi, motum, movēre","k":"β΄ συζυγία","tr":"arma moveo = στασιάζω.","from":23},"occido":{"l":"occīdo, occīdi, occīsum, occīdĕre","k":"γ΄ συζυγία","tr":"ob + caedo (σκοτώνω)· ≠ occĭdo (πέφτω, < ob + cado).","from":23},"traho":{"l":"traho, traxi, tractum, trahĕre","k":"γ΄ συζυγία","tr":"","from":23},"ascendo":{"l":"ascendo, ascendi, ascensum, ascendĕre","k":"γ΄ συζυγία","tr":"ascendo + αιτιατική: ανεβαίνω σε. Μτχ. μέλλ. ascensūrus.","from":23},"oro":{"l":"oro, orāvi, orātum, orāre","k":"α΄ συζυγία","tr":"","from":23},"impono":{"l":"impōno, imposui, imposĭtum, impōnĕre","k":"γ΄ συζυγία","tr":"in + pono. Παθητικό: επιβιβάζομαι.","from":23},"impetro":{"l":"impetro, impetrāvi, impetrātum, impetrāre","k":"α΄ συζυγία","tr":"","from":23},"conduco":{"l":"condūco, condūxi, conductum, condūcĕre","k":"γ΄ συζυγία","tr":"Προστακτική: conduc (όπως το duc).","from":23},"venio":{"l":"venio, vēni, ventum, venīre","k":"δ΄ συζυγία","tr":"","from":24},"quaero":{"l":"quaero, quaesīvi, quaesītum, quaerĕre","k":"γ΄ συζυγία","tr":"","from":24},"sentio":{"l":"sentio, sensi, sensum, sentīre","k":"δ΄ συζυγία","tr":"","from":24},"facio":{"l":"facio, fēci, factum, facĕre","k":"γ΄ συζυγία (σε -io)","tr":"Προστακτική: fac. Ένα από τα 15 ρήματα της γ΄ σε -io.","from":24},"exclamo":{"l":"exclāmo, exclamāvi, exclamātum, exclamāre","k":"α΄ συζυγία","tr":"","from":24},"indignor":{"l":"indignor, indignātus sum, indignāri","k":"α΄ συζυγία · αποθετικό","tr":"Αποθετικό: δεν γίνεται παθητικό.","from":24},"mentior":{"l":"mentior, mentītus sum, mentīri","k":"δ΄ συζυγία · αποθετικό","tr":"Αποθετικό: δεν γίνεται παθητικό.","from":24},"inquam":{"l":"inquam","k":"γ΄ συζυγία · ελλειπτικό","tr":"Μπαίνει μέσα στα λόγια που μεταφέρει (≈ ἔφη).","from":24},"cognosco":{"l":"cognosco, cognōvi, cognĭtum, cognoscĕre","k":"γ΄ συζυγία","tr":"","from":24},"scio":{"l":"scio, scīvi, scītum, scīre","k":"δ΄ συζυγία","tr":"Προστακτική ενεστώτα: scito, scitote.","from":24},"credo":{"l":"credo, credĭdi, credĭtum, credĕre","k":"γ΄ συζυγία","tr":"+ δοτική (ρήμα πίστης) και απαρέμφατο.","from":24},"affero":{"l":"affero, attuli, allātum, afferre","k":"ανώμαλο","tr":"ad + fero. Προστακτική: affer (όχι affere).","from":25},"ostendo":{"l":"ostendo, ostendi, ostentum/ostensum, ostendĕre","k":"γ΄ συζυγία","tr":"+ αιτιατική και δοτική.","from":25},"decerpo":{"l":"decerpo, decerpsi, decerptum, decerpĕre","k":"γ΄ συζυγία","tr":"de + carpo.","from":25},"habeo":{"l":"habeo, habui, habĭtum, habēre","k":"β΄ συζυγία","tr":"","from":25},"caveo":{"l":"caveo, cavi, cautum, cavēre","k":"β΄ συζυγία","tr":"+ αιτιατική: φυλάγομαι από κάτι.","from":25},"tutor":{"l":"tutor, tutātus sum, tutāri","k":"α΄ συζυγία · αποθετικό","tr":"Προστακτική: tutāre, tutamini.","from":25},"nolo":{"l":"nolo, nolui, —, nolle","k":"ανώμαλο","tr":"Προστακτική: noli, nolīte (+ απαρέμφατο = απαγόρευση).","from":25},"confido":{"l":"confīdo, confīsus sum, confidĕre","k":"γ΄ συζυγία · ημιαποθετικό","tr":"+ αφαιρετική. Ενεστώτας ενεργητικός, παρακείμενος παθητικής μορφής.","from":25},"depono":{"l":"depōno, deposui, deposĭtum, deponĕre","k":"γ΄ συζυγία","tr":"de + pono.","from":25},"memini":{"l":"memĭni, meminisse","k":"ελλειπτικό","tr":"Παρακείμενος με σημασία ενεστώτα. Προστακτική: memento, mementōte.","from":25},"scribo":{"l":"scribo, scripsi, scriptum, scribĕre","k":"γ΄ συζυγία","tr":"","from":26},"video":{"l":"video, vidi, visum, vidēre","k":"β΄ συζυγία","tr":"","from":26},"impleo":{"l":"impleo, implēvi, implētum, implēre","k":"β΄ συζυγία","tr":"Πρβ. com-pleo, plēnus.","from":26},"inhaereo":{"l":"inhaereo, inhaesi, inhaesum, inhaerēre","k":"β΄ συζυγία","tr":"in + haereo · + δοτική: κρεμιέμαι από.","from":26},"complector":{"l":"complector, complexus sum, complecti","k":"γ΄ συζυγία · αποθετικό","tr":"","from":26},"diligo":{"l":"diligo, dilexi, dilectum, diligĕre","k":"γ΄ συζυγία","tr":"dis + lego.","from":26},"lectito":{"l":"lectito, lectitāvi, lectitātum, lectitāre","k":"α΄ συζυγία","tr":"Θαμιστικό του lego: διαβάζω συχνά, με προθυμία (πρβ. scriptito).","from":26},"ludo":{"l":"ludo, lusi, lusum, ludĕre","k":"γ΄ συζυγία","tr":"","from":26},"recedo":{"l":"recedo, recessi, recessum, recedĕre","k":"γ΄ συζυγία","tr":"re + cedo.","from":27},"deverto":{"l":"deverto, deverti, deversum, devertĕre","k":"γ΄ συζυγία","tr":"Και ημιαποθετικό: devertor, deverti, deversus sum, deverti. Καταλύω, μένω.","from":27},"desidero":{"l":"desidero, desiderāvi, desiderātum, desiderāre","k":"α΄ συζυγία","tr":"","from":27},"lego":{"l":"lego, lēgi, lectum, legĕre","k":"γ΄ συζυγία","tr":"+ αιτ. και δοτ. lēgit (παρακ.) ≠ lĕgit (ενεστ.). Θαμιστικό: lectito.","from":27},"videor":{"l":"videor, visus sum, vidēri","k":"β΄ συζυγία · παθητικό του video","tr":"+ δοτ. προσ. και απαρ. (ενν. esse): φαίνομαι, μου φαίνεται.","from":27},"paenitet":{"l":"paenitet, paenituit, paenitēre","k":"β΄ συζυγία · απρόσωπο","tr":"me id paenitet = μετανιώνω γι' αυτό (βλ. μάθ. XXIX).","from":27},"aio":{"l":"aio","k":"ελλειπτικό","tr":"aio, ais, ait, aiunt = λέω (πρβ. ἠμί, ἦν).","from":27},"nascor":{"l":"nascor, natus sum, nasci","k":"γ΄ συζυγία · αποθετικό","tr":"< *gnascor (πρβ. γί-γνο-μαι). Μετοχή μέλλοντα nascitūrus.","from":27},"gigno":{"l":"gigno, genui, genitum, gignĕre","k":"γ΄ συζυγία","tr":"Γεννώ· εδώ παθητικό: γεννιέμαι.","from":27},"mitto":{"l":"mitto, misi, missum, mittĕre","k":"γ΄ συζυγία","tr":"","from":16},"gero":{"l":"gero, gessi, gestum, gerĕre","k":"γ΄ συζυγία","tr":"rem gero = μάχομαι.","from":16},"cerno":{"l":"cerno, crevi, cretum, cernĕre","k":"γ΄ συζυγία","tr":"","from":16},"appropinquo":{"l":"appropinquo, appropinquavi, appropinquatum, appropinquāre","k":"α΄ συζυγία","tr":"","from":16},"verto":{"l":"verto, verti, versum, vertĕre","k":"γ΄ συζυγία","tr":"","from":16},"fugio":{"l":"fugio, fugi, fugitum, fugĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":16},"occurro":{"l":"occurro, occurri/occucurri, occursum, occurrĕre","k":"γ΄ συζυγία","tr":"Με δοτική = επιτίθεμαι.","from":16},"comprehendo":{"l":"comprehendo, comprehendi, comprehensum, comprehendĕre","k":"γ΄ συζυγία","tr":"Και comprendo (< cum + prehendo).","from":16},"refero":{"l":"refero, retuli/rettuli, relatum, referre","k":"ανώμαλο · σύνθετο του fero","tr":"","from":16},"capio":{"l":"capio, cepi, captum, capĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":16},"interficio":{"l":"interficio, interfeci, interfectum, interficĕre","k":"γ΄ συζυγία (σε -io)","tr":"Προστακτική: interfice.","from":16},"discedo":{"l":"discedo, discessi, discessum, discedĕre","k":"γ΄ συζυγία","tr":"","from":16},"iubeo":{"l":"iubeo, iussi, iussum, iubēre","k":"β΄ συζυγία","tr":"","from":16},"trado":{"l":"trado, tradidi, traditum, tradĕre","k":"γ΄ συζυγία","tr":"","from":16},"produco":{"l":"produco, produxi, productum, producĕre","k":"γ΄ συζυγία","tr":"Προστακτική: produc (όπως το duc).","from":16},"consido":{"l":"consido, consedi, consessum, considĕre","k":"γ΄ συζυγία","tr":"","from":16},"dedo":{"l":"dedo, dedidi, deditum, dedĕre","k":"γ΄ συζυγία","tr":"","from":16},"proicio":{"l":"proicio, proieci, proiectum, proicĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":16},"occupo":{"l":"occupo, occupavi, occupatum, occupāre","k":"α΄ συζυγία","tr":"","from":17},"praedico":{"l":"praedico, praedicavi, praedicatum, praedicāre","k":"α΄ συζυγία","tr":"Όχι το praedīco, -dixi (γ΄ συζ.) = προλέγω.","from":17},"cupio":{"l":"cupio, cupivi/cupii, cupitum, cupĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":17},"adduco":{"l":"adduco, adduxi, adductum, adducĕre","k":"γ΄ συζυγία","tr":"Προστακτική: adduc.","from":17},"remaneo":{"l":"remaneo, remansi, —, remanēre","k":"β΄ συζυγία","tr":"Δεν έχει σουπίνο.","from":17},"fingo":{"l":"fingo, finxi, fictum, fingĕre","k":"γ΄ συζυγία","tr":"vultum fingo = προσποιούμαι.","from":17},"teneo":{"l":"teneo, tenui, tentum, tenēre","k":"β΄ συζυγία","tr":"","from":17},"possum":{"l":"possum, potui, —, posse","k":"βοηθητικό · σύνθετο του sum","tr":"","from":17},"abdo":{"l":"abdo, abdidi, abditum, abdĕre","k":"γ΄ συζυγία","tr":"Το do σύνθετο με μονοσύλλαβη πρόθεση γίνεται γ΄ συζυγίας.","from":17},"queror":{"l":"queror, questus sum, queri","k":"γ΄ συζυγία · αποθετικό","tr":"Το study4exams δίνει και σουπίνο: questum.","from":17},"miseror":{"l":"miseror, miseratus sum, miserāri","k":"α΄ συζυγία · αποθετικό","tr":"Το study4exams δίνει και σουπίνο: miseratum.","from":17},"obsigno":{"l":"obsigno, obsignavi, obsignatum, obsignāre","k":"α΄ συζυγία","tr":"","from":17},"perturbo":{"l":"perturbo, perturbavi, perturbatum, perturbāre","k":"α΄ συζυγία","tr":"","from":17},"condo":{"l":"condo, condidi, conditum, condĕre","k":"γ΄ συζυγία","tr":"","from":18},"reficio":{"l":"reficio, refeci, refectum, reficĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":18},"dormio":{"l":"dormio, dormivi, dormitum, dormīre","k":"δ΄ συζυγία","tr":"","from":18},"averto":{"l":"averto, averti, aversum, avertĕre","k":"γ΄ συζυγία","tr":"","from":18},"excito":{"l":"excito, excitavi, excitatum, excitāre","k":"α΄ συζυγία","tr":"","from":18},"aspicio":{"l":"aspicio, aspexi, aspectum, aspicĕre","k":"γ΄ συζυγία (σε -io)","tr":"","from":18},"pergo":{"l":"pergo, perrexi, perrectum, pergĕre","k":"γ΄ συζυγία","tr":"","from":18},"confundo":{"l":"confundo, confudi, confusum, confundĕre","k":"γ΄ συζυγία","tr":"","from":18},"amoveo":{"l":"amoveo, amovi, amotum, amovēre","k":"β΄ συζυγία","tr":"","from":18},"coepi":{"l":"coepi, coepisse","k":"ελλειπτικό","tr":"Έχει μόνο τους χρόνους του συντελεσμένου (= άρχισα).","from":18},"audio":{"l":"audio, audivi, auditum, audīre","k":"δ΄ συζυγία","tr":"","from":18},"converto":{"l":"converto, converti, conversum, convertĕre","k":"γ΄ συζυγία","tr":"","from":18},"prohibeo":{"l":"prohibeo, prohibui, prohibitum, prohibēre","k":"β΄ συζυγία","tr":"","from":18},"conor":{"l":"conor, conatus sum, conāri","k":"α΄ συζυγία · αποθετικό","tr":"Το study4exams δίνει και σουπίνο: conatum.","from":18},"coniuro":{"l":"coniuro, coniuravi, coniuratum, coniurāre","k":"α΄ συζυγία","tr":"Το βιβλίο τυπώνει «coniuārvit» — τυπογραφικό· σωστό coniurāvit.","from":19},"consequor":{"l":"consequor, consecutus sum, consequi","k":"γ΄ συζυγία · αποθετικό","tr":"","from":19},"expello":{"l":"expello, expuli, expulsum, expellĕre","k":"γ΄ συζυγία","tr":"","from":19},"deprehendo":{"l":"deprehendo, deprehendi, deprehensum, deprehendĕre","k":"γ΄ συζυγία","tr":"Και deprendo.","from":19},"strangulo":{"l":"strangulo, strangulavi, strangulatum, strangulāre","k":"α΄ συζυγία","tr":"","from":19},"vulnero":{"l":"vulnero, vulneravi, vulneratum, vulnerāre","k":"α΄ συζυγία","tr":"","from":19},"excludo":{"l":"excludo, exclusi, exclusum, excludĕre","k":"γ΄ συζυγία","tr":"","from":20},"exterreo":{"l":"exterreo, exterrui, exterritum, exterrēre","k":"β΄ συζυγία","tr":"","from":20},"prorepo":{"l":"prorepo, prorepsi, proreptum, prorepĕre","k":"γ΄ συζυγία","tr":"","from":20},"praetendo":{"l":"praetendo, praetendi, praetentum, praetendĕre","k":"γ΄ συζυγία","tr":"Λόγω της πρόθεσης prae συντάσσεται με δοτική.","from":20},"discurro":{"l":"discurro, discucurri/discurri, discursum, discurrĕre","k":"γ΄ συζυγία","tr":"","from":20},"animadverto":{"l":"animadverto, animadverti, animadversum, animadvertĕre","k":"γ΄ συζυγία","tr":"","from":20},"lateo":{"l":"lateo, latui, —, latēre","k":"β΄ συζυγία","tr":"Δεν έχει σουπίνο.","from":20},"adgnosco":{"l":"adgnosco, adgnovi, adgnitum, adgnoscĕre","k":"γ΄ συζυγία","tr":"","from":20},"extraho":{"l":"extraho, extraxi, extractum, extrahĕre","k":"γ΄ συζυγία","tr":"","from":20},"saluto":{"l":"saluto, salutavi, salutatum, salutāre","k":"α΄ συζυγία","tr":"","from":20},"defero":{"l":"defero, detuli, delatum, deferre","k":"ανώμαλο · σύνθετο του fero","tr":"Προστακτική: defer.","from":20}};
+const TEXTS = [{"n":16,"r":"XVI","t":"Η τελευταία μάχη του Καίσαρα στη Γαλατία","rows":[{"w":"miserunt","m":"mitto","f":"γ΄ πληθ. οριστ. παρακ. ενεργ.","d":"έριξαν","ctx":"Nostri, postquam pila in hostes <b>miserunt,</b> gladiis rem gerunt."},{"w":"gerunt","m":"gero","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"(rem gerunt) μάχονται","ctx":"Nostri, postquam pila in hostes miserunt, gladiis rem <b>gerunt.</b>"},{"w":"cernitur","m":"cerno","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"διακρίνεται","ctx":"Repente post tergum equitatus <b>cernitur;</b>"},{"w":"appropinquant","m":"appropinquo","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"πλησιάζουν","ctx":"cohortes <b>appropinquant;</b>"},{"w":"vertunt","m":"verto","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"στρέφουν","ctx":"hostes terga <b>vertunt</b> ac fugiunt;"},{"w":"fugiunt","m":"fugio","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"τρέπονται σε φυγή","ctx":"hostes terga vertunt ac <b>fugiunt;</b>"},{"w":"occurrunt","m":"occurro","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"επιτίθενται","ctx":"eis equites <b>occurrunt.</b>"},{"w":"Fit","m":"fio","f":"γ΄ ενικ. οριστ. ενεστ.","d":"γίνεται","ctx":"<b>Fit</b> magna caedes."},{"w":"occiditur","m":"occido","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"σκοτώνεται","ctx":"Sedulius, dux et princeps Lemovicum, <b>occiditur;</b>"},{"w":"comprehenditur","m":"comprehendo","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"συλλαμβάνεται","ctx":"dux Arvernorum vivus in fugā <b>comprehenditur;</b>"},{"w":"referuntur","m":"refero","f":"γ΄ πληθ. οριστ. ενεστ. παθ.","d":"παραδίδονται","ctx":"signa militaria LXXIIII (septuaginta quattuor) ad Caesarem <b>referuntur;</b>"},{"w":"capitur","m":"capio","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"πιάνεται","ctx":"magnus numerus hostium <b>capitur</b> atque interficitur;"},{"w":"interficitur","m":"interficio","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"σκοτώνεται","ctx":"magnus numerus hostium capitur atque <b>interficitur;</b>"},{"w":"discedunt","m":"discedo","f":"γ΄ πληθ. οριστ. ενεστ. ενεργ.","d":"σκορπίζονται","ctx":"reliqui ex fugā in civitates <b>discedunt.</b>"},{"w":"mittuntur","m":"mitto","f":"γ΄ πληθ. οριστ. ενεστ. παθ.","d":"στέλνονται","ctx":"Postero die ad Caesarem legati <b>mittuntur.</b>"},{"w":"iubet","m":"iubeo","f":"γ΄ ενικ. οριστ. ενεστ. ενεργ.","d":"διατάζει","ctx":"Caesar <b>iubet</b> arma tradi ac principes produci."},{"w":"tradi","m":"trado","f":"απαρ. ενεστ. παθ.","d":"να παραδοθούν","ctx":"Caesar iubet arma <b>tradi</b> ac principes produci."},{"w":"produci","m":"produco","f":"απαρ. ενεστ. παθ.","d":"να οδηγηθούν μπροστά","ctx":"Caesar iubet arma tradi ac principes <b>produci.</b>"},{"w":"consedit","m":"consido","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κάθισε, πήρε θέση","ctx":"Ipse pro castris <b>consedit;</b>"},{"w":"producuntur","m":"produco","f":"γ΄ πληθ. οριστ. ενεστ. παθ.","d":"οδηγούνται μπροστά","ctx":"eo duces <b>producuntur.</b>"},{"w":"deditur","m":"dedo","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"παραδίδεται","ctx":"Vercingetorix <b>deditur,</b> arma proiciuntur."},{"w":"proiciuntur","m":"proicio","f":"γ΄ πληθ. οριστ. ενεστ. παθ.","d":"κατατίθενται","ctx":"Vercingetorix deditur, arma <b>proiciuntur.</b>"}]},{"n":17,"r":"XVII","t":"Φόβος μπροστά στο άγνωστο","rows":[{"w":"occupāvit","m":"occupo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κατέλαβε","ctx":"Magnus timor exercitum <b>occupāvit</b> ex vocibus Gallōrum ac mercatōrum, qui Germānos ingenti magnitudine corporum et incredibili virtūte esse praedicābant."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ότι ήταν","ctx":"Magnus timor exercitum occupāvit ex vocibus Gallōrum ac mercatōrum, qui Germānos ingenti magnitudine corporum et incredibili virtūte <b>esse</b> praedicābant."},{"w":"praedicābant","m":"praedico","f":"γ΄ πληθ. οριστ. παρατ. ενεργ.","d":"διακήρυτταν","ctx":"Magnus timor exercitum occupāvit ex vocibus Gallōrum ac mercatōrum, qui Germānos ingenti magnitudine corporum et incredibili virtūte esse <b>praedicābant.</b>"},{"w":"discedere","m":"discedo","f":"απαρ. ενεστ. ενεργ.","d":"να φύγει","ctx":"Alius aliā de causā <b>discedere</b> cupiēbat."},{"w":"cupiēbat","m":"cupio","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"ήθελε","ctx":"Alius aliā de causā discedere <b>cupiēbat.</b>"},{"w":"adducti","m":"adduco","f":"μτχ. παρακ. παθ., ονομ. πληθ. αρσ.","d":"παρασυρμένοι","ctx":"Nonnulli pudōre <b>adducti</b> remanēbant."},{"w":"remanēbant","m":"remaneo","f":"γ΄ πληθ. οριστ. παρατ. ενεργ.","d":"έμεναν","ctx":"Nonnulli pudōre adducti <b>remanēbant.</b>"},{"w":"fingere","m":"fingo","f":"απαρ. ενεστ. ενεργ.","d":"(vultum fingere) να προσποιηθούν","ctx":"Hi neque vultum <b>fingere</b> neque lacrimas tenēre poterant;"},{"w":"tenēre","m":"teneo","f":"απαρ. ενεστ. ενεργ.","d":"να κρατήσουν","ctx":"Hi neque vultum fingere neque lacrimas <b>tenēre</b> poterant;"},{"w":"poterant","m":"possum","f":"γ΄ πληθ. οριστ. παρατ.","d":"μπορούσαν","ctx":"Hi neque vultum fingere neque lacrimas tenēre <b>poterant;</b>"},{"w":"abditi","m":"abdo","f":"μτχ. παρακ. παθ., ονομ. πληθ. αρσ.","d":"κρυμμένοι","ctx":"<b>abditi</b> in tabernaculis aut suum fatum querebantur aut cum familiaribus suis commūne periculum miserabantur."},{"w":"querebantur","m":"queror","f":"γ΄ πληθ. οριστ. παρατ.","d":"παραπονιούνταν","ctx":"abditi in tabernaculis aut suum fatum <b>querebantur</b> aut cum familiaribus suis commūne periculum miserabantur."},{"w":"miserabantur","m":"miseror","f":"γ΄ πληθ. οριστ. παρατ.","d":"θρηνούσαν","ctx":"abditi in tabernaculis aut suum fatum querebantur aut cum familiaribus suis commūne periculum <b>miserabantur.</b>"},{"w":"obsignabantur","m":"obsigno","f":"γ΄ πληθ. οριστ. παρατ. παθ.","d":"υπογράφονταν και σφραγίζονταν","ctx":"Totis castris testamenta <b>obsignabantur.</b>"},{"w":"habebantur","m":"habeo","f":"γ΄ πληθ. οριστ. παρατ. παθ.","d":"θεωρούνταν","ctx":"Horum vocibus ac timōre paulātim etiam ii, qui rei militaris perīti <b>habebantur,</b> perturbabantur."},{"w":"perturbabantur","m":"perturbo","f":"γ΄ πληθ. οριστ. παρατ. παθ.","d":"ταράζονταν","ctx":"Horum vocibus ac timōre paulātim etiam ii, qui rei militaris perīti habebantur, <b>perturbabantur.</b>"}]},{"n":18,"r":"XVIII","t":"Ο Ηρακλής στην Ιταλία","rows":[{"w":"adduxisse","m":"adduco","f":"απαρ. παρακ. ενεργ.","d":"ότι οδήγησε","ctx":"Hercules boves Geryŏnis ex Hispaniā in eum locum <b>adduxisse</b> dicitur, ubi postea Rōmulus urbem Rōmam condidit."},{"w":"dicitur","m":"dico","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"λέγεται","ctx":"Hercules boves Geryŏnis ex Hispaniā in eum locum adduxisse <b>dicitur,</b> ubi postea Rōmulus urbem Rōmam condidit."},{"w":"condidit","m":"condo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έχτισε","ctx":"Hercules boves Geryŏnis ex Hispaniā in eum locum adduxisse dicitur, ubi postea Rōmulus urbem Rōmam <b>condidit.</b>"},{"w":"refecisse","m":"reficio","f":"απαρ. παρακ. ενεργ.","d":"ότι ξεκούρασε","ctx":"Prope Tiberim fluvium Hercules boves <b>refecisse</b> fertur et ipse de viā fessus ibi dormivisse."},{"w":"fertur","m":"fero","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"λέγεται","ctx":"Prope Tiberim fluvium Hercules boves refecisse <b>fertur</b> et ipse de viā fessus ibi dormivisse."},{"w":"dormivisse","m":"dormio","f":"απαρ. παρακ. ενεργ.","d":"ότι κοιμήθηκε","ctx":"Prope Tiberim fluvium Hercules boves refecisse fertur et ipse de viā fessus ibi <b>dormivisse.</b>"},{"w":"traxit","m":"traho","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έσυρε","ctx":"Tum Cacus pastor, fretus viribus, boves quosdam in speluncam caudis <b>traxit</b> aversos."},{"w":"aversos","m":"averto","f":"μτχ. παρακ. παθ., αιτ. πληθ. αρσ.","d":"γυρισμένους ανάποδα","ctx":"Tum Cacus pastor, fretus viribus, boves quosdam in speluncam caudis traxit <b>aversos.</b>"},{"w":"excitātus","m":"excito","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"αφού ξύπνησε","ctx":"Ubi Hercules, e somno <b>excitātus,</b> gregem aspexit et partem abesse sensit, pergit ad proximan speluncam;"},{"w":"aspexit","m":"aspicio","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κοίταξε","ctx":"Ubi Hercules, e somno excitātus, gregem <b>aspexit</b> et partem abesse sensit, pergit ad proximan speluncam;"},{"w":"abesse","m":"absum","f":"απαρ. ενεστ.","d":"ότι λείπει","ctx":"Ubi Hercules, e somno excitātus, gregem aspexit et partem <b>abesse</b> sensit, pergit ad proximan speluncam;"},{"w":"sensit","m":"sentio","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κατάλαβε","ctx":"Ubi Hercules, e somno excitātus, gregem aspexit et partem abesse <b>sensit,</b> pergit ad proximan speluncam;"},{"w":"pergit","m":"pergo","f":"γ΄ ενικ. οριστ. ενεστ. ενεργ.","d":"κατευθύνεται","ctx":"Ubi Hercules, e somno excitātus, gregem aspexit et partem abesse sensit, <b>pergit</b> ad proximan speluncam;"},{"w":"versa","m":"verto","f":"μτχ. παρακ. παθ., αιτ. πληθ. ουδ.","d":"στραμμένα","ctx":"sed postquam boum vestigia foras <b>versa</b> vidit, confūsus gregem ex loco infesto amovēre coepit."},{"w":"vidit","m":"video","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"είδε","ctx":"sed postquam boum vestigia foras versa <b>vidit,</b> confūsus gregem ex loco infesto amovēre coepit."},{"w":"confūsus","m":"confundo","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"σε αμηχανία","ctx":"sed postquam boum vestigia foras versa vidit, <b>confūsus</b> gregem ex loco infesto amovēre coepit."},{"w":"amovēre","m":"amoveo","f":"απαρ. ενεστ. ενεργ.","d":"να απομακρύνει","ctx":"sed postquam boum vestigia foras versa vidit, confūsus gregem ex loco infesto <b>amovēre</b> coepit."},{"w":"coepit","m":"coepi","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"άρχισε","ctx":"sed postquam boum vestigia foras versa vidit, confūsus gregem ex loco infesto amovēre <b>coepit.</b>"},{"w":"audītus","m":"audio","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"που ακούστηκε","ctx":"Sed bovum mugītus ex speluncā <b>audītus</b> Herculem convertit."},{"w":"convertit","m":"converto","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έκανε να γυρίσει","ctx":"Sed bovum mugītus ex speluncā audītus Herculem <b>convertit.</b>"},{"w":"prohibēre","m":"prohibeo","f":"απαρ. ενεστ. ενεργ.","d":"να εμποδίσει","ctx":"Tum Cacus, vi <b>prohibēre</b> eum conātus, Herculis clavā interficitur."},{"w":"conātus","m":"conor","f":"μτχ. παρακ., ονομ. ενικ. αρσ.","d":"αφού προσπάθησε","ctx":"Tum Cacus, vi prohibēre eum <b>conātus,</b> Herculis clavā interficitur."},{"w":"interficitur","m":"interficio","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"σκοτώνεται","ctx":"Tum Cacus, vi prohibēre eum conātus, Herculis clavā <b>interficitur.</b>"}]},{"n":19,"r":"XIX","t":"Η συνωμοσία του Κατιλίνα","rows":[{"w":"coniurāvit","m":"coniuro","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"συνωμότησε","ctx":"Marco Tullio Cicerōne et Gaio Antōnio consulibus, Lucius Sergius Catilīna, nobilissimi generis vir sed ingenii pravissimi, contra rem publicam <b>coniuārvit.</b>"},{"w":"consecūti erant","m":"consequor","f":"γ΄ πληθ. οριστ. υπερσ.","d":"είχαν ακολουθήσει","ctx":"Eum clari quidam sed improbi viri <b>consecūti</b> erant."},{"w":"expulsus est","m":"expello","f":"γ΄ ενικ. οριστ. παρακ. παθ.","d":"διώχτηκε","ctx":"Catilīna a Cicerōne ex urbe <b>expulsus</b> est."},{"w":"deprehensi sunt","m":"deprehendo","f":"γ΄ πληθ. οριστ. παρακ. παθ.","d":"συνελήφθησαν","ctx":"Socii eius <b>deprehensi</b> sunt et in carcere strangulāti sunt."},{"w":"strangulāti sunt","m":"strangulo","f":"γ΄ πληθ. οριστ. παρακ. παθ.","d":"στραγγαλίστηκαν","ctx":"Socii eius deprehensi sunt et in carcere <b>strangulāti</b> sunt."},{"w":"victus","m":"vinco","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"αφού νικήθηκε","ctx":"Ab Antōnio, altero consule, Catilīna ipse cum exercitu suo, proelio <b>victus,</b> interfectus est."},{"w":"interfectus est","m":"interficio","f":"γ΄ ενικ. οριστ. παρακ. παθ.","d":"σκοτώθηκε","ctx":"Ab Antōnio, altero consule, Catilīna ipse cum exercitu suo, proelio victus, <b>interfectus</b> est."},{"w":"tradit","m":"trado","f":"γ΄ ενικ. οριστ. ενεστ. ενεργ.","d":"παραδίδει, αναφέρει","ctx":"Gaius Sallustius <b>tradit</b> multos etiam milites Rōmānos in eādem cruentissimā pugnā occīsos esse, multos autem graviter vulnerātos esse."},{"w":"occīsos esse","m":"occido","f":"απαρ. παρακ. παθ.","d":"ότι σκοτώθηκαν","ctx":"Gaius Sallustius tradit multos etiam milites Rōmānos in eādem cruentissimā pugnā <b>occīsos</b> esse, multos autem graviter vulnerātos esse."},{"w":"vulnerātos esse","m":"vulnero","f":"απαρ. παρακ. παθ.","d":"ότι τραυματίστηκαν","ctx":"Gaius Sallustius tradit multos etiam milites Rōmānos in eādem cruentissimā pugnā occīsos esse, multos autem graviter <b>vulnerātos</b> esse."}]},{"n":20,"r":"XX","t":"Πίσω από τις κουρτίνες","rows":[{"w":"cēpit","m":"capio","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"πήρε","ctx":"Claudius quinquagesimo anno aetātis suae imperium <b>cēpit</b> mirabili quodam casu."},{"w":"Exclūsus","m":"excludo","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"αφού αποκλείστηκε","ctx":"<b>Exclūsus</b> ab insidiatōribus Caligulae, recesserat in diaetam, cui nomen est Hermaeum."},{"w":"recesserat","m":"recedo","f":"γ΄ ενικ. οριστ. υπερσ. ενεργ.","d":"είχε αποσυρθεί","ctx":"Exclūsus ab insidiatōribus Caligulae, <b>recesserat</b> in diaetam, cui nomen est Hermaeum."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"είναι","ctx":"Exclūsus ab insidiatōribus Caligulae, recesserat in diaetam, cui nomen <b>est</b> Hermaeum."},{"w":"exterritus","m":"exterreo","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"τρομοκρατημένος","ctx":"Paulo post rumōre caedis <b>exterritus</b> prorepsit ad solarium proximum et inter vela praetenta foribus se abdidit."},{"w":"prorepsit","m":"prorepo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"σύρθηκε","ctx":"Paulo post rumōre caedis exterritus <b>prorepsit</b> ad solarium proximum et inter vela praetenta foribus se abdidit."},{"w":"praetenta","m":"praetendo","f":"μτχ. παρακ. παθ., αιτ. πληθ. ουδ.","d":"που κρέμονταν μπροστά","ctx":"Paulo post rumōre caedis exterritus prorepsit ad solarium proximum et inter vela <b>praetenta</b> foribus se abdidit."},{"w":"abdidit","m":"abdo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έκρυψε","ctx":"Paulo post rumōre caedis exterritus prorepsit ad solarium proximum et inter vela praetenta foribus se <b>abdidit.</b>"},{"w":"Discurrens","m":"discurro","f":"μτχ. ενεστ. ενεργ., ονομ. ενικ. αρσ.","d":"τρέχοντας εδώ κι εκεί","ctx":"<b>Discurrens</b> miles pedes eius animadvertit;"},{"w":"animadvertit","m":"animadverto","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"πρόσεξε","ctx":"Discurrens miles pedes eius <b>animadvertit;</b>"},{"w":"latentem","m":"lateo","f":"μτχ. ενεστ. ενεργ., αιτ. ενικ. αρσ.","d":"που κρυβόταν","ctx":"eum <b>latentem</b> adgnōvit;"},{"w":"adgnōvit","m":"adgnosco","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"αναγνώρισε","ctx":"eum latentem <b>adgnōvit;</b>"},{"w":"extractum","m":"extraho","f":"μτχ. παρακ. παθ., αιτ. ενικ. αρσ.","d":"αφού τον τράβηξε έξω","ctx":"<b>extractum</b> imperatōrem eum salutāvit."},{"w":"salutāvit","m":"saluto","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"προσαγόρευσε","ctx":"extractum imperatōrem eum <b>salutāvit.</b>"},{"w":"adduxit","m":"adduco","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"οδήγησε","ctx":"Hinc ad commilitōnes suos eum <b>adduxit.</b>"},{"w":"delātus est","m":"defero","f":"γ΄ ενικ. οριστ. παρακ. παθ.","d":"μεταφέρθηκε","ctx":"Ab his in castra <b>delātus</b> est tristis et trepidus, dum obvia turba quasi moritūrum eum miserātur."},{"w":"moritūrum","m":"morior","f":"μτχ. μέλλ. ενεργ., αιτ. ενικ. αρσ.","d":"ότι θα πεθάνει","ctx":"Ab his in castra delātus est tristis et trepidus, dum obvia turba quasi <b>moritūrum</b> eum miserātur."},{"w":"miserātur","m":"miseror","f":"γ΄ ενικ. οριστ. ενεστ.","d":"λυπάται","ctx":"Ab his in castra delātus est tristis et trepidus, dum obvia turba quasi moritūrum eum <b>miserātur.</b>"},{"w":"factus est","m":"fio","f":"γ΄ ενικ. οριστ. παρακ.","d":"έγινε","ctx":"Postero die Claudius imperātor <b>factus</b> est."}]},{"n":21,"r":"XXI","t":"Πώς πήρε το όνομά του το Pisaurum","rows":[{"w":"delētis","m":"deleo","f":"μτχ. παρακ. παθ., αφαιρ. πληθ. θηλ. (απόλ. αφαιρ., νόθη)","d":"αφού κατατρόπωσαν","ctx":"Brenno duce Galli, apud Alliam flumen <b>delētis</b> legiōnibus Rōmanōrum,"},{"w":"evertērunt","m":"everto","f":"γ΄ πληθ. οριστ. παρακ. ενεργ.","d":"κατέστρεψαν εντελώς","ctx":"<b>evertērunt</b> urbem Romam praeter Capitōlium,"},{"w":"accepērunt","m":"accipio","f":"γ΄ πληθ. οριστ. παρακ. ενεργ.","d":"πήραν","ctx":"pro quo immensam pecuniam <b>accepērunt.</b>"},{"w":"fuerat","m":"sum","f":"γ΄ ενικ. οριστ. υπερσ.","d":"είχε παραμείνει","ctx":"Tum Camillus, qui diu apud Ardeam in exilio <b>fuerat</b>"},{"w":"divīsam","m":"divido","f":"μτχ. παρακ. παθ., αιτ. ενικ. θηλ.","d":"η οποία είχε μοιραστεί","ctx":"propter Vēientānam praedam non aequo iure <b>divīsam,</b>"},{"w":"absens","m":"absum","f":"μτχ. ενεστ., ονομ. ενικ. αρσ.","d":"αν και απουσίαζε","ctx":"<b>absens</b> dictātor est factus;"},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του est factus)","d":"(περιφραστικός τύπος)","ctx":"absens dictātor <b>est</b> factus;"},{"w":"factus","m":"fio","f":"γ΄ ενικ. οριστ. παρακ. (μαζί με το est)","d":"εξελέγη","ctx":"absens dictātor est <b>factus;</b>"},{"w":"abeuntes","m":"abeo","f":"μτχ. ενεστ., αιτ. πληθ. αρσ.","d":"ενώ αποχωρούσαν","ctx":"is Gallos iam <b>abeuntes</b> secūtus est:"},{"w":"secūtus","m":"sequor","f":"γ΄ ενικ. οριστ. παρακ. (μαζί με το est)","d":"ακολούθησε","ctx":"is Gallos iam abeuntes <b>secūtus</b> est:"},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του secūtus est)","d":"(περιφραστικός τύπος)","ctx":"is Gallos iam abeuntes secūtus <b>est:</b>"},{"w":"interemptis","m":"interimo","f":"μτχ. παρακ. παθ., αφαιρ. πληθ. αρσ. (απόλ. αφαιρ., νόθη)","d":"αφού εξολόθρευσε","ctx":"quibus <b>interemptis</b> aurum omne recēpit."},{"w":"recēpit","m":"recipio","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"πήρε πίσω","ctx":"quibus interemptis aurum omne <b>recēpit.</b>"},{"w":"appensum","m":"appendo","f":"μτχ. παρακ. παθ., ονομ. ενικ. ουδ.","d":"επειδή ζυγίστηκε","ctx":"Quod illic <b>appensum</b> civitāti nomen dedit:"},{"w":"dedit","m":"do","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έδωσε","ctx":"Quod illic appensum civitāti nomen <b>dedit:</b>"},{"w":"dicitur","m":"dico","f":"γ΄ ενικ. οριστ. ενεστ. παθ.","d":"ονομάζεται","ctx":"nam Pisaurum <b>dicitur,</b>"},{"w":"pensātum","m":"penso","f":"γ΄ ενικ. οριστ. παρακ. παθ. (μαζί με το est)","d":"ζυγίστηκε","ctx":"quod illic aurum <b>pensātum</b> est."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του pensātum est)","d":"(περιφραστικός τύπος)","ctx":"quod illic aurum pensātum <b>est.</b>"},{"w":"rediit","m":"redeo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"επέστρεψε","ctx":"Post hoc factum <b>rediit</b> in exilium,"},{"w":"rogātus","m":"rogo","f":"μτχ. παρακ. παθ., ονομ. ενικ. αρσ.","d":"αφού τον παρακάλεσαν","ctx":"unde tamen <b>rogātus</b> reversus est."},{"w":"reversus","m":"revertor","f":"γ΄ ενικ. οριστ. παρακ. (μαζί με το est)","d":"γύρισε","ctx":"unde tamen rogātus <b>reversus</b> est."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του reversus est)","d":"(περιφραστικός τύπος)","ctx":"unde tamen rogātus reversus <b>est.</b>"}]},{"n":22,"r":"XXII","t":"Προτροπές προς τους Ρωμαίους","rows":[{"w":"Imitēmur","m":"imitor","f":"α΄ πληθ. υποτ. ενεστ.","d":"ας μιμούμαστε","ctx":"<b>Imitēmur</b> nostros Brutos, Camillos, Decios, Curios, Fabricios, Scipiōnes, innumerabiles alios"},{"w":"stabilivērunt","m":"stabilio","f":"γ΄ πληθ. οριστ. παρακ. ενεργ.","d":"στερέωσαν","ctx":"qui hanc rem publicam <b>stabilivērunt;</b>"},{"w":"repōno","m":"repono","f":"α΄ ενικ. οριστ. ενεστ. ενεργ.","d":"τοποθετώ","ctx":"quos equidem in deōrum immortalium coĕtu ac numero <b>repōno.</b>"},{"w":"Amēmus","m":"amo","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας αγαπάμε","ctx":"<b>Amēmus</b> patriam,"},{"w":"pareāmus","m":"pareo","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας υπακούουμε","ctx":"<b>pareāmus</b> senatui,"},{"w":"consulāmus","m":"consulo","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας φροντίζουμε","ctx":"<b>consulāmus</b> bonis;"},{"w":"neglegāmus","m":"neglego","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας αδιαφορούμε","ctx":"praesentes fructus <b>neglegāmus,</b>"},{"w":"serviāmus","m":"servio","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας υπηρετούμε","ctx":"posteritātis gloriae <b>serviāmus;</b>"},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ότι είναι","ctx":"id <b>esse</b> optimum putēmus, quod est rectissimum;"},{"w":"putēmus","m":"puto","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας θεωρούμε","ctx":"id esse optimum <b>putēmus,</b> quod est rectissimum;"},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"είναι","ctx":"id esse optimum putēmus, quod <b>est</b> rectissimum;"},{"w":"sperēmus","m":"spero","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας ελπίζουμε","ctx":"<b>sperēmus</b> quae volumus, sed ferāmus quod acciderit;"},{"w":"volumus","m":"volo","f":"α΄ πληθ. οριστ. ενεστ.","d":"θέλουμε","ctx":"sperēmus quae <b>volumus,</b> sed ferāmus quod acciderit;"},{"w":"ferāmus","m":"fero","f":"α΄ πληθ. υποτ. ενεστ. ενεργ.","d":"ας υπομένουμε","ctx":"sperēmus quae volumus, sed <b>ferāmus</b> quod acciderit;"},{"w":"acciderit","m":"accido","f":"γ΄ ενικ. οριστ. συντελ. μέλλ. ενεργ.","d":"μας συμβεί","ctx":"sperēmus quae volumus, sed ferāmus quod <b>acciderit;</b>"},{"w":"arbitrēmur","m":"arbitror","f":"α΄ πληθ. υποτ. ενεστ.","d":"ας πιστεύουμε","ctx":"<b>arbitrēmur</b> denique corpus virōrum fortium magnorumque hominum esse mortāle, animi vero motus et virtūtis gloriam sempiternam esse."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ότι είναι","ctx":"arbitrēmur denique corpus virōrum fortium magnorumque hominum <b>esse</b> mortāle, animi vero motus et virtūtis gloriam sempiternam esse."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"είναι","ctx":"arbitrēmur denique corpus virōrum fortium magnorumque hominum esse mortāle, animi vero motus et virtūtis gloriam sempiternam <b>esse.</b>"}]},{"n":23,"r":"XXIII","t":"Ένας υπέροχος άνθρωπος","rows":[{"w":"Aegrotābat","m":"aegroto","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"ήταν άρρωστος","ctx":"<b>Aegrotābat</b> Caecīna Paetus, marītus Arriae, aegrotābat et filius."},{"w":"aegrotābat","m":"aegroto","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"ήταν άρρωστος","ctx":"Aegrotābat Caecīna Paetus, marītus Arriae, <b>aegrotābat</b> et filius."},{"w":"mortuus","m":"morior","f":"μτχ. παρακ., ονομ. ενικ. αρσ. (mortuus est = γ΄ ενικ. οριστ. παρακ.)","d":"πέθανε","ctx":"Filius <b>mortuus</b> est."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του mortuus est)","d":"(περιφραστικός τύπος)","ctx":"Filius mortuus <b>est.</b>"},{"w":"parāvit","m":"paro","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"ετοίμασε","ctx":"Huic Arria funus ita <b>parāvit,</b> ut ignorarētur a marīto;"},{"w":"ignorarētur","m":"ignoro","f":"γ΄ ενικ. υποτ. παρατ. παθ.","d":"να αγνοείται","ctx":"Huic Arria funus ita parāvit, ut <b>ignorarētur</b> a marīto;"},{"w":"intraverat","m":"intro","f":"γ΄ ενικ. οριστ. υπερσ. ενεργ.","d":"έμπαινε","ctx":"quin immo cum illa cubiculum marīti <b>intraverat,</b> vivere filium simulābat,"},{"w":"vivere","m":"vivo","f":"απαρ. ενεστ. ενεργ.","d":"ότι … ζούσε","ctx":"quin immo cum illa cubiculum marīti intraverat, <b>vivere</b> filium simulābat,"},{"w":"simulābat","m":"simulo","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"προσποιείτο","ctx":"quin immo cum illa cubiculum marīti intraverat, vivere filium <b>simulābat,</b>"},{"w":"interroganti","m":"interrogo","f":"μτχ. ενεστ., δοτ. ενικ. αρσ.","d":"που ρωτούσε","ctx":"ac marīto persaepe <b>interroganti,</b> quid ageret puer, respondēbat:"},{"w":"ageret","m":"ago","f":"γ΄ ενικ. υποτ. παρατ. ενεργ.","d":"κάνει","ctx":"ac marīto persaepe interroganti, quid <b>ageret</b> puer, respondēbat:"},{"w":"respondēbat","m":"respondeo","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"απαντούσε","ctx":"ac marīto persaepe interroganti, quid ageret puer, <b>respondēbat:</b>"},{"w":"quiēvit","m":"quiesco","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κοιμήθηκε","ctx":"«Bene <b>quiēvit,</b> libenter cibum sumpsit»."},{"w":"sumpsit","m":"sumo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"πήρε","ctx":"«Bene quiēvit, libenter cibum <b>sumpsit».</b>"},{"w":"cohibitae","m":"cohibeo","f":"μτχ. παρακ. παθ., ονομ. πληθ. θηλ.","d":"που … συγκρατούσε","ctx":"Deinde, cum lacrimae suae, diu <b>cohibitae,</b> vincerent prorumperentque, egrediebātur;"},{"w":"vincerent","m":"vinco","f":"γ΄ πληθ. υποτ. παρατ. ενεργ.","d":"νικούσαν","ctx":"Deinde, cum lacrimae suae, diu cohibitae, <b>vincerent</b> prorumperentque, egrediebātur;"},{"w":"prorumperentque","m":"prorumpo","f":"γ΄ πληθ. υποτ. παρατ. ενεργ.","d":"και ξεσπούσαν","ctx":"Deinde, cum lacrimae suae, diu cohibitae, vincerent <b>prorumperentque,</b> egrediebātur;"},{"w":"egrediebātur","m":"egredior","f":"γ΄ ενικ. οριστ. παρατ. (αποθετικό)","d":"έβγαινε έξω","ctx":"Deinde, cum lacrimae suae, diu cohibitae, vincerent prorumperentque, <b>egrediebātur;</b>"},{"w":"dabat","m":"do","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"παραδινόταν","ctx":"tum se dolōri <b>dabat</b> et paulo post siccis oculis redībat."},{"w":"redībat","m":"redeo","f":"γ΄ ενικ. οριστ. παρατ.","d":"γύριζε πίσω","ctx":"tum se dolōri dabat et paulo post siccis oculis <b>redībat.</b>"},{"w":"moverat","m":"moveo","f":"γ΄ ενικ. οριστ. υπερσ. ενεργ.","d":"είχε στασιάσει","ctx":"Scribōniānus arma in Illyrico contra Claudium <b>moverat;</b>"},{"w":"fuerat","m":"sum","f":"γ΄ ενικ. οριστ. υπερσ.","d":"είχε πάει","ctx":"<b>fuerat</b> Paetus in partibus eius et, occīso Scribōniāno, Rōmam trahebātur."},{"w":"occīso","m":"occido","f":"μτχ. παρακ. παθ., αφαιρ. ενικ. αρσ.","d":"αφού σκοτώθηκε","ctx":"fuerat Paetus in partibus eius et, <b>occīso</b> Scribōniāno, Rōmam trahebātur."},{"w":"trahebātur","m":"traho","f":"γ΄ ενικ. οριστ. παρατ. παθ.","d":"τον οδηγούσαν σιδεροδέσμιο","ctx":"fuerat Paetus in partibus eius et, occīso Scribōniāno, Rōmam <b>trahebātur.</b>"},{"w":"Erat","m":"sum","f":"γ΄ ενικ. οριστ. παρατ. (με το ascensūrus: ενεργ. περιφραστική)","d":"επρόκειτο","ctx":"<b>Erat</b> ascensūrus navem;"},{"w":"ascensūrus","m":"ascendo","f":"μτχ. μέλλ. ενεργ., ονομ. ενικ. αρσ.","d":"να επιβιβασθεί","ctx":"Erat <b>ascensūrus</b> navem;"},{"w":"orābat","m":"oro","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"παρακαλούσε","ctx":"Arria milites <b>orābat,</b> ut simul imponerētur."},{"w":"imponerētur","m":"impono","f":"γ΄ ενικ. υποτ. παρατ. παθ.","d":"(να) επιβιβαστεί","ctx":"Arria milites orābat, ut simul <b>imponerētur.</b>"},{"w":"impetrāvit","m":"impetro","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"το κατόρθωσε","ctx":"Non <b>impetrāvit:</b>"},{"w":"conduxit","m":"conduco","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"νοίκιασε","ctx":"<b>conduxit</b> piscatoriam naviculam ingentemque navem secūta est."},{"w":"secūta","m":"sequor","f":"μτχ. παρακ., ονομ. ενικ. θηλ. (secūta est = γ΄ ενικ. οριστ. παρακ.)","d":"ακολούθησε","ctx":"conduxit piscatoriam naviculam ingentemque navem <b>secūta</b> est."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ. (βοηθητικό του secūta est)","d":"(περιφραστικός τύπος)","ctx":"conduxit piscatoriam naviculam ingentemque navem secūta <b>est.</b>"}]},{"n":24,"r":"XXIV","t":"Το πάθημα ενός ψεύτη","rows":[{"w":"venisset","m":"venio","f":"γ΄ ενικ. υποτ. υπερσ. ενεργ.","d":"είχε πάει","ctx":"Cum P. Cornēlius Nasīca ad Ennium poētam <b>venisset</b>"},{"w":"quaerenti","m":"quaero","f":"μτχ. ενεστ., δοτ. ενικ. αρσ.","d":"που … ζητούσε","ctx":"eique ab ostio <b>quaerenti</b> Ennium ancilla dixisset eum domi non esse,"},{"w":"dixisset","m":"dico","f":"γ΄ ενικ. υποτ. υπερσ. ενεργ.","d":"είχε πει","ctx":"eique ab ostio quaerenti Ennium ancilla <b>dixisset</b> eum domi non esse,"},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ήταν","ctx":"eique ab ostio quaerenti Ennium ancilla dixisset eum domi non <b>esse,</b>"},{"w":"sensit","m":"sentio","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κατάλαβε","ctx":"Nasīca <b>sensit</b> illam domini iussu id dixisse et illum intus esse."},{"w":"dixisse","m":"dico","f":"απαρ. παρακ. ενεργ.","d":"είχε πει","ctx":"Nasīca sensit illam domini iussu id <b>dixisse</b> et illum intus esse."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ήταν","ctx":"Nasīca sensit illam domini iussu id dixisse et illum intus <b>esse.</b>"},{"w":"Accipe","m":"accipio","f":"β΄ ενικ. προστ. ενεστ. ενεργ.","d":"Μάθε","ctx":"<b>Accipe</b> nunc quid postea Nasīca fecerit."},{"w":"fecerit","m":"facio","f":"γ΄ ενικ. υποτ. παρακ. ενεργ.","d":"έκανε","ctx":"Accipe nunc quid postea Nasīca <b>fecerit.</b>"},{"w":"venisset","m":"venio","f":"γ΄ ενικ. υποτ. υπερσ. ενεργ.","d":"είχε έρθει","ctx":"Paucis post diēbus cum Ennius ad Nasīcam <b>venisset</b> et eum a ianuā quaereret,"},{"w":"quaereret","m":"quaero","f":"γ΄ ενικ. υποτ. παρατ. ενεργ.","d":"ζητούσε","ctx":"Paucis post diēbus cum Ennius ad Nasīcam venisset et eum a ianuā <b>quaereret,</b>"},{"w":"exclamāvit","m":"exclamo","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"φώναξε δυνατά","ctx":"<b>exclamāvit</b> Nasīca se domi non esse, etsi domi erat."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ήταν","ctx":"exclamāvit Nasīca se domi non <b>esse,</b> etsi domi erat."},{"w":"erat","m":"sum","f":"γ΄ ενικ. οριστ. παρατ.","d":"ήταν","ctx":"exclamāvit Nasīca se domi non esse, etsi domi <b>erat.</b>"},{"w":"indignātus","m":"indignor","f":"μτχ. παρακ., ονομ. ενικ. αρσ.","d":"αγανακτισμένος","ctx":"Tum Ennius <b>indignātus</b> quod Nasīca tam aperte mentiebātur:"},{"w":"mentiebātur","m":"mentior","f":"γ΄ ενικ. οριστ. παρατ. (αποθετικό)","d":"ψευδόταν","ctx":"Tum Ennius indignātus quod Nasīca tam aperte <b>mentiebātur:</b>"},{"w":"inquit","m":"inquam","f":"γ΄ ενικ. οριστ. ενεστ. / παρακ.","d":"είπε:","ctx":"«Quid?» <b>inquit</b> «Ego non cognosco vocem tuam?»"},{"w":"cognosco","m":"cognosco","f":"α΄ ενικ. οριστ. ενεστ. ενεργ.","d":"αναγνωρίζω","ctx":"«Quid?» inquit «Ego non <b>cognosco</b> vocem tuam?»"},{"w":"Visne","m":"volo","f":"β΄ ενικ. οριστ. ενεστ.","d":"Μήπως θέλεις","ctx":"<b>Visne</b> scire quid Nasīca responderit?"},{"w":"scire","m":"scio","f":"απαρ. ενεστ. ενεργ.","d":"να μάθεις","ctx":"Visne <b>scire</b> quid Nasīca responderit?"},{"w":"responderit","m":"respondeo","f":"γ΄ ενικ. υποτ. παρακ. ενεργ.","d":"απάντησε","ctx":"Visne scire quid Nasīca <b>responderit?</b>"},{"w":"es","m":"sum","f":"β΄ ενικ. οριστ. ενεστ.","d":"Είσαι","ctx":"«Homo <b>es</b> impudens."},{"w":"quaererem","m":"quaero","f":"α΄ ενικ. υποτ. παρατ. ενεργ.","d":"ζητούσα,","ctx":"Ego cum te <b>quaererem,</b> ancillae tuae credidi te domi non esse;"},{"w":"credidi","m":"credo","f":"α΄ ενικ. οριστ. παρακ. ενεργ.","d":"πίστεψα","ctx":"Ego cum te quaererem, ancillae tuae <b>credidi</b> te domi non esse;"},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ήσουν","ctx":"Ego cum te quaererem, ancillae tuae credidi te domi non <b>esse;</b>"},{"w":"credis","m":"credo","f":"β΄ ενικ. οριστ. ενεστ. ενεργ.","d":"πιστεύεις","ctx":"tu mihi ipsi non <b>credis?»</b>"}]},{"n":25,"r":"XXV","t":"Ένα σύκο από την Καρχηδόνα","rows":[{"w":"attulit","m":"affero","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"έφερε","ctx":"Cato <b>attulit</b> quodam die in curiam ficum praecocem ex Carthagine"},{"w":"ostendensque","m":"ostendo","f":"μτχ. ενεστ. ενεργ., ονομ. ενικ. αρσ.","d":"και δείχνοντάς (το)","ctx":"<b>ostendensque</b> patribus «Interrogo vos» inquit «quando hanc ficum decerptam esse putētis ex arbore»."},{"w":"Interrogo","m":"interrogo","f":"α΄ ενικ. οριστ. ενεστ. ενεργ.","d":"ρωτώ","ctx":"ostendensque patribus <b>«Interrogo</b> vos» inquit «quando hanc ficum decerptam esse putētis ex arbore»."},{"w":"inquit","m":"inquam","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"είπε","ctx":"ostendensque patribus «Interrogo vos» <b>inquit</b> «quando hanc ficum decerptam esse putētis ex arbore»."},{"w":"decerptam","m":"decerpo","f":"απαρ. παθ. παρακ. (decerptam esse)","d":"κόπηκε","ctx":"ostendensque patribus «Interrogo vos» inquit «quando hanc ficum <b>decerptam</b> esse putētis ex arbore»."},{"w":"esse","m":"decerpo","f":"απαρ. παθ. παρακ. (decerptam esse)","d":"(κόπηκε)","ctx":"ostendensque patribus «Interrogo vos» inquit «quando hanc ficum decerptam <b>esse</b> putētis ex arbore»."},{"w":"putētis","m":"puto","f":"β΄ πληθ. υποτ. ενεστ. ενεργ.","d":"νομίζετε","ctx":"ostendensque patribus «Interrogo vos» inquit «quando hanc ficum decerptam esse <b>putētis</b> ex arbore»."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ήταν","ctx":"Cum omnes recentem <b>esse</b> dixissent,"},{"w":"dixissent","m":"dico","f":"γ΄ πληθ. υποτ. υπερσ. ενεργ.","d":"απάντησαν","ctx":"Cum omnes recentem esse <b>dixissent,</b>"},{"w":"inquit","m":"inquam","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"είπε","ctx":"«Atqui ante tertium diem» <b>inquit</b> «scitōte decerptam esse Carthagine."},{"w":"scitōte","m":"scio","f":"β΄ πληθ. προστ. μέλλ. ενεργ. (με σημασία ενεστ.)","d":"μάθετε","ctx":"«Atqui ante tertium diem» inquit <b>«scitōte</b> decerptam esse Carthagine."},{"w":"decerptam","m":"decerpo","f":"απαρ. παθ. παρακ. (decerptam esse)","d":"κόπηκε","ctx":"«Atqui ante tertium diem» inquit «scitōte <b>decerptam</b> esse Carthagine."},{"w":"esse","m":"decerpo","f":"απαρ. παθ. παρακ. (decerptam esse)","d":"(κόπηκε)","ctx":"«Atqui ante tertium diem» inquit «scitōte decerptam <b>esse</b> Carthagine."},{"w":"habēmus","m":"habeo","f":"α΄ πληθ. οριστ. ενεστ. ενεργ.","d":"έχουμε","ctx":"Tam prope a muris <b>habēmus</b> hostem!"},{"w":"cavēte","m":"caveo","f":"β΄ πληθ. προστ. ενεστ. ενεργ.","d":"φυλαχτείτε","ctx":"Itaque <b>cavēte</b> periculum, tutamini patriam."},{"w":"tutamini","m":"tutor","f":"β΄ πληθ. προστ. ενεστ. αποθ.","d":"προστατέψτε","ctx":"Itaque cavēte periculum, <b>tutamini</b> patriam."},{"w":"nolīte","m":"nolo","f":"β΄ πληθ. προστ. ενεστ. (απαγόρ. · nolite + απαρ.)","d":"μην","ctx":"Opibus urbis <b>nolīte</b> confidere."},{"w":"confidere","m":"confido","f":"απαρ. ενεστ.","d":"έχετε εμπιστοσύνη","ctx":"Opibus urbis nolīte <b>confidere.</b>"},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"είναι","ctx":"Fiduciam, quae nimia vobis <b>est,</b> deponite."},{"w":"deponite","m":"depono","f":"β΄ πληθ. προστ. ενεστ. ενεργ.","d":"να αποβάλετε","ctx":"Fiduciam, quae nimia vobis est, <b>deponite.</b>"},{"w":"credideritis","m":"credo","f":"β΄ πληθ. υποτ. παρακ. ενεργ. (απαγόρ. · υποτ. παρακ.)","d":"μην πιστέψετε","ctx":"Neminem <b>credideritis</b> patriae consultūrum esse, nisi vos ipsi patriae consulueritis."},{"w":"consultūrum","m":"consulo","f":"απαρ. μέλλ. ενεργ. (consultūrum esse)","d":"θα ενδιαφερθεί","ctx":"Neminem credideritis patriae <b>consultūrum</b> esse, nisi vos ipsi patriae consulueritis."},{"w":"esse","m":"consulo","f":"απαρ. μέλλ. ενεργ. (consultūrum esse)","d":"(θα ενδιαφερθεί)","ctx":"Neminem credideritis patriae consultūrum <b>esse,</b> nisi vos ipsi patriae consulueritis."},{"w":"consulueritis","m":"consulo","f":"β΄ πληθ. υποτ. παρακ. ενεργ.","d":"φροντίσετε","ctx":"Neminem credideritis patriae consultūrum esse, nisi vos ipsi patriae <b>consulueritis.</b>"},{"w":"Mementōte","m":"memini","f":"β΄ πληθ. προστ. μέλλ. (με σημασία ενεστ.)","d":"θυμηθείτε","ctx":"<b>Mementōte</b> rem publicam in extrēmo discrimine quondam fuisse!»"},{"w":"fuisse","m":"sum","f":"απαρ. παρακ.","d":"βρέθηκε","ctx":"Mementōte rem publicam in extrēmo discrimine quondam <b>fuisse!»</b>"},{"w":"sumptum","m":"sumo","f":"γ΄ ενικ. οριστ. παρακ. παθ. (sumptum est)","d":"άρχισε","ctx":"Statimque <b>sumptum</b> est Punicum bellum tertium, quo Carthāgo delēta est."},{"w":"est","m":"sumo","f":"γ΄ ενικ. οριστ. παρακ. παθ. (sumptum est)","d":"(άρχισε)","ctx":"Statimque sumptum <b>est</b> Punicum bellum tertium, quo Carthāgo delēta est."},{"w":"delēta","m":"deleo","f":"γ΄ ενικ. οριστ. παρακ. παθ. (delēta est)","d":"καταστράφηκε","ctx":"Statimque sumptum est Punicum bellum tertium, quo Carthāgo <b>delēta</b> est."},{"w":"est","m":"deleo","f":"γ΄ ενικ. οριστ. παρακ. παθ. (delēta est)","d":"(καταστράφηκε)","ctx":"Statimque sumptum est Punicum bellum tertium, quo Carthāgo delēta <b>est.</b>"}]},{"n":26,"r":"XXVI","t":"Ο Πλίνιος αναγγέλλει ένα θλιβερό γεγονός","rows":[{"w":"scribo","m":"scribo","f":"α΄ ενικ. οριστ. ενεστ. ενεργ.","d":"γράφω","ctx":"Tristissimus haec tibi <b>scribo:</b>"},{"w":"mortua","m":"morior","f":"γ΄ ενικ. οριστ. παρακ.","d":"πέθανε","ctx":"Fundāni nostri filia minor <b>mortua</b> est."},{"w":"est","m":"morior","f":"γ΄ ενικ. οριστ. παρακ.","d":"(πέθανε)","ctx":"Fundāni nostri filia minor mortua <b>est.</b>"},{"w":"vidi","m":"video","f":"α΄ ενικ. οριστ. παρακ. ενεργ.","d":"είδα","ctx":"Eā puellā nihil umquam festivius, nihil amabilius nec longiōre vitā dignius <b>vidi.</b>"},{"w":"impleverat","m":"impleo","f":"γ΄ ενικ. οριστ. υπερσ. ενεργ.","d":"είχε συμπληρώσει","ctx":"Nondum annos XIII <b>impleverat,</b>"},{"w":"erat","m":"sum","f":"γ΄ ενικ. οριστ. παρατ.","d":"διέθετε","ctx":"et iam illi anīlis prudentia, matronālis gravitas <b>erat</b> et tamen suavitas puellāris."},{"w":"inhaerēbat","m":"inhaereo","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"κρεμιόταν","ctx":"Ut illa patris cervicibus <b>inhaerēbat!</b>"},{"w":"complectebātur","m":"complector","f":"γ΄ ενικ. οριστ. παρατ.","d":"αγκάλιαζε","ctx":"ut nos amīcos paternos et amanter et modeste <b>complectebātur!</b>"},{"w":"diligēbat","m":"diligo","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"αγαπούσε","ctx":"ut nutrīces, ut paedagōgos, ut praeceptōres <b>diligēbat!</b>"},{"w":"lectitābat","m":"lectito","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"διάβαζε (με προθυμία)","ctx":"quam studiōse, quam intellegenter <b>lectitābat!</b>"},{"w":"ludēbat","m":"ludo","f":"γ΄ ενικ. οριστ. παρατ. ενεργ.","d":"έπαιζε","ctx":"ut parce <b>ludēbat!</b>"},{"w":"tulit","m":"fero","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"υπέμεινε","ctx":"Quā illa patientiā, quā etiam constantiā novissimam valetudinem <b>tulit!</b>"}]},{"n":27,"r":"XXVII","t":"Το πνεύμα ωριμάζει όπως οι καρποί","rows":[{"w":"venisset","m":"venio","f":"γ΄ ενικ. υποτ. υπερσ. ενεργ.","d":"είχε έλθει","ctx":"Cum Accius ex urbe Rōmā Tarentum <b>venisset,</b> ubi Pacuvius grandi iam aetāte recesserat, devertit ad eum."},{"w":"recesserat","m":"recedo","f":"γ΄ ενικ. οριστ. υπερσ. ενεργ.","d":"είχε αποσυρθεί","ctx":"Cum Accius ex urbe Rōmā Tarentum venisset, ubi Pacuvius grandi iam aetāte <b>recesserat,</b> devertit ad eum."},{"w":"devertit","m":"deverto","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"κατέλυσε","ctx":"Cum Accius ex urbe Rōmā Tarentum venisset, ubi Pacuvius grandi iam aetāte recesserat, <b>devertit</b> ad eum."},{"w":"erat","m":"sum","f":"γ΄ ενικ. οριστ. παρατ.","d":"ήταν","ctx":"Accius, qui multo minor natu <b>erat,</b> tragoediam suam, cui «Atreus» nomen est, ei desideranti lēgit."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"είναι","ctx":"Accius, qui multo minor natu erat, tragoediam suam, cui «Atreus» nomen <b>est,</b> ei desideranti lēgit."},{"w":"desideranti","m":"desidero","f":"μτχ. ενεστ., δοτ. ενικ. αρσ.","d":"επειδή το επιθυμούσε","ctx":"Accius, qui multo minor natu erat, tragoediam suam, cui «Atreus» nomen est, ei <b>desideranti</b> lēgit."},{"w":"lēgit","m":"lego","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"διάβασε","ctx":"Accius, qui multo minor natu erat, tragoediam suam, cui «Atreus» nomen est, ei desideranti <b>lēgit.</b>"},{"w":"dixit","m":"dico","f":"γ΄ ενικ. οριστ. παρακ. ενεργ.","d":"είπε","ctx":"Tum Pacuvius <b>dixit</b> sonōra quidem esse et grandia quae scripsisset, sed vidēri tamen ea sibi duriōra et acerbiōra."},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"ότι ήταν","ctx":"Tum Pacuvius dixit sonōra quidem <b>esse</b> et grandia quae scripsisset, sed vidēri tamen ea sibi duriōra et acerbiōra."},{"w":"scripsisset","m":"scribo","f":"γ΄ ενικ. υποτ. υπερσ. ενεργ.","d":"είχε γράψει","ctx":"Tum Pacuvius dixit sonōra quidem esse et grandia quae <b>scripsisset,</b> sed vidēri tamen ea sibi duriōra et acerbiōra."},{"w":"vidēri","m":"videor","f":"απαρ. ενεστ. παθ.","d":"(ότι) φαίνονταν","ctx":"Tum Pacuvius dixit sonōra quidem esse et grandia quae scripsisset, sed <b>vidēri</b> tamen ea sibi duriōra et acerbiōra."},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"είναι","ctx":"«Ita <b>est»</b> inquit Accius «ut dicis;"},{"w":"inquit","m":"inquam","f":"γ΄ ενικ. οριστ. παρακ. (ή ενεστ.)","d":"είπε","ctx":"«Ita est» <b>inquit</b> Accius «ut dicis;"},{"w":"dicis","m":"dico","f":"β΄ ενικ. οριστ. ενεστ. ενεργ.","d":"λες","ctx":"«Ita est» inquit Accius «ut <b>dicis;</b>"},{"w":"paenitet","m":"paenitet","f":"γ΄ ενικ. οριστ. ενεστ.","d":"μετανιώνω","ctx":"neque id me sane <b>paenitet;</b>"},{"w":"fore","m":"sum","f":"απαρ. μέλλ. (= futūra esse)","d":"θα είναι","ctx":"meliōra enim <b>fore</b> spero, quae deinceps scribam."},{"w":"spero","m":"spero","f":"α΄ ενικ. οριστ. ενεστ. ενεργ.","d":"ελπίζω","ctx":"meliōra enim fore <b>spero,</b> quae deinceps scribam."},{"w":"scribam","m":"scribo","f":"α΄ ενικ. οριστ. μέλλ. ενεργ.","d":"θα γράψω","ctx":"meliōra enim fore spero, quae deinceps <b>scribam.</b>"},{"w":"est","m":"sum","f":"γ΄ ενικ. οριστ. ενεστ.","d":"συμβαίνει","ctx":"Nam quod in pomis <b>est,</b> idem esse aiunt in ingeniis:"},{"w":"esse","m":"sum","f":"απαρ. ενεστ.","d":"(ότι) συμβαίνει","ctx":"Nam quod in pomis est, idem <b>esse</b> aiunt in ingeniis:"},{"w":"aiunt","m":"aio","f":"γ΄ πληθ. οριστ. ενεστ.","d":"λένε","ctx":"Nam quod in pomis est, idem esse <b>aiunt</b> in ingeniis:"},{"w":"nascuntur","m":"nascor","f":"γ΄ πληθ. οριστ. ενεστ.","d":"γεννιούνται","ctx":"quae dura et acerba <b>nascuntur,</b> post fiunt mitia et iucunda;"},{"w":"fiunt","m":"fio","f":"γ΄ πληθ. οριστ. ενεστ.","d":"γίνονται","ctx":"quae dura et acerba nascuntur, post <b>fiunt</b> mitia et iucunda;"},{"w":"gignuntur","m":"gigno","f":"γ΄ πληθ. οριστ. ενεστ. παθ.","d":"γεννιούνται","ctx":"sed quae <b>gignuntur</b> statim viēta et mollia, non matūra mox fiunt sed putria»."},{"w":"fiunt","m":"fio","f":"γ΄ πληθ. οριστ. ενεστ.","d":"γίνονται","ctx":"sed quae gignuntur statim viēta et mollia, non matūra mox <b>fiunt</b> sed putria»."}]}];
+
+/* ══ Η ΜΗΧΑΝΗ ═══════════════════════════════════════════════════════════ */
+const CARD_KEY = 'latarx_cards_v1';   /* η επανάληψη: ένα ρήμα = μία κάρτα */
+const UI_KEY = 'latarx_ui_v1';        /* καρτέλα + ομαδοποίηση + τράπουλα: μόνο ευκολία */
+function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : (JSON.parse(v) || d); }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ showSaveErr(); return false; } }
+function showSaveErr(){ const b = document.getElementById('bDueS'); if (b) b.textContent = '⚠ Δεν σώθηκε: η αποθήκη της συσκευής είναι γεμάτη.'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const ui = Object.assign({tab:'pinakes', grp:'txt', deck:'all'}, lsGet(UI_KEY, {}));
+let cst = lsGet(CARD_KEY, {}); if (typeof cst !== 'object' || Array.isArray(cst)) cst = {};
+
+/* ══ ΚΑΤΗΓΟΡΙΑ — ΜΟΝΟ από το `k` του λήμματος (το ίδιο που γράφει η στήλη «Συζυγία») ══
+   Τα αποθετικά/ημιαποθετικά είναι δική τους ομάδα (εκεί χάνονται μονάδες)·
+   βοηθητικά · ανώμαλα · ελλειπτικά μαζί, γιατί δεν ακολουθούν συζυγία. */
+const CATS = [
+  {id:'a', t:'α΄ συζυγία'}, {id:'b', t:'β΄ συζυγία'}, {id:'g', t:'γ΄ συζυγία'}, {id:'gio', t:'γ΄ σε -io'},
+  {id:'d', t:'δ΄ συζυγία'}, {id:'dep', t:'Αποθετικά'}, {id:'irr', t:'Ανώμαλα κ.ά.'}
+];
+function catOf(L){
+  const k = String(L.k || '');
+  if (/αποθετικό/.test(k)) return 'dep';
+  if (/^(βοηθητικό|ανώμαλο|ελλειπτικό)/.test(k)) return 'irr';
+  if (/^γ΄ συζυγία \(σε -io\)/.test(k)) return 'gio';
+  const m = /^([αβγδ])΄ συζυγία/.exec(k);
+  return m ? {α:'a', β:'b', γ:'g', δ:'d'}[m[1]] : 'irr';
+}
+/* ΤΕΛΟΣ ΚΑΤΗΓΟΡΙΑΣ */
+
+/* Ένα ρήμα, όλες οι εμφανίσεις του (με τη σειρά των κειμένων). */
+const VERBS = {};
+TEXTS.forEach(T => T.rows.forEach(r => {
+  const v = VERBS[r.m] || (VERBS[r.m] = {m:r.m, L:LEX[r.m], cat:catOf(LEX[r.m]), occ:[]});
+  v.occ.push(Object.assign({n:T.n, r:T.r}, r));
+}));
+const ORDER = Object.keys(VERBS);   /* σειρά πρώτης εμφάνισης */
+function href(n){ return 'latinika-lectio' + n + '.html' + (n >= 21 ? '#grammatiki' : ''); }
+
+/* ══ ΠΙΝΑΚΕΣ ══════════════════════════════════════════════════════════════ */
+function mark(m){
+  const s = cst['v:' + m];
+  if (!s) return '';
+  return s.i >= 7 ? '<span class="ok" title="κλειδωμένο">✓</span>' : s.i === 0 ? '<span class="no" title="τελευταία φορά ✗">✗</span>' : '';
+}
+function tablesByText(){
+  let h = '<div class="jump">' + TEXTS.map(T => '<a href="#t' + T.n + '">' + T.r + '</a>').join('') + '</div>';
+  TEXTS.forEach(T => {
+    const lem = new Set(T.rows.map(r => r.m)).size;
+    h += '<div class="sec" id="t' + T.n + '"><div class="sh"><h2>' + esc(T.t) + '</h2><span class="sp"></span>' +
+         '<a class="tbtn" href="' + href(T.n) + '">Lectio ' + T.r + ' ↗</a>' +
+         '<p class="sub">Lectio ' + T.r + ' · ' + T.rows.length + ' ρηματικοί τύποι από ' + lem + ' ρήματα, με τη σειρά του κειμένου.</p></div>' +
+         '<div class="tw"><table class="tbl vt"><tr><th>#</th><th>Στο κείμενο</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Τύπος</th></tr>' +
+         T.rows.map((r, k) => '<tr><td class="n">' + (k + 1) + '</td><td class="f">' + esc(r.w) + '</td><td class="lem"><span>' + esc(LEX[r.m].l) + '</span></td><td class="t hm">' + esc(LEX[r.m].k) + '</td><td class="t">' + esc(r.f) + '</td></tr>').join('') +
+         '</table></div></div>';
+  });
+  return h;
+}
+function tablesByCat(){
+  let h = '';
+  CATS.forEach(c => {
+    const vs = ORDER.filter(m => VERBS[m].cat === c.id);
+    if (!vs.length) return;
+    h += '<div class="sec"><div class="sh"><h2>' + esc(c.t) + '</h2>' +
+         '<p class="sub">' + vs.length + ' ρήματα. Δίπλα, κάθε τύπος με τον οποίο εμφανίζεται και σε ποιο κείμενο.</p></div>' +
+         '<div class="tw"><table class="tbl vt"><tr><th>#</th><th>Αρχικοί χρόνοι</th><th class="hm">Συζυγία</th><th>Στα κείμενα</th><th></th></tr>' +
+         vs.map((m, k) => { const v = VERBS[m];
+           return '<tr><td class="n">' + (k + 1) + '</td><td class="lem"><span>' + esc(v.L.l) + '</span></td><td class="t hm">' + esc(v.L.k) + '</td>' +
+             '<td class="wh">' + v.occ.map(o => '<b>' + esc(o.w) + '</b><i>' + o.r + '</i>').join(' · ') + '</td><td class="st">' + mark(m) + '</td></tr>'; }).join('') +
+         '</table></div></div>';
+  });
+  return h;
+}
+function fillTables(){
+  if (ui.grp !== 'cat') ui.grp = 'txt';
+  document.querySelectorAll('[data-grp]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.grp === ui.grp)));
+  const box = document.getElementById('tabs');
+  box.innerHTML = ui.grp === 'cat' ? tablesByCat() : tablesByText();
+  const on = document.getElementById('hideV').getAttribute('aria-pressed') === 'true';
+  box.querySelectorAll('table.vt').forEach(t => t.classList.toggle('hidecol', on));
+}
+document.querySelector('.gtools').addEventListener('click', e => {
+  const gb = e.target.closest('[data-grp]');
+  if (gb && ui.grp !== gb.dataset.grp){ ui.grp = gb.dataset.grp; lsSet(UI_KEY, ui); fillTables(); }
+});
+const hideV = document.getElementById('hideV');
+hideV.addEventListener('click', () => {
+  const on = hideV.getAttribute('aria-pressed') !== 'true';
+  hideV.setAttribute('aria-pressed', String(on));
+  hideV.textContent = on ? 'Δείξε τους αρχικούς χρόνους' : 'Κρύψε τους αρχικούς χρόνους';
+  document.querySelectorAll('#tabs table.vt').forEach(t => t.classList.toggle('hidecol', on));
+  document.querySelectorAll('#tabs td.lem.rv').forEach(td => td.classList.remove('rv'));
+});
+document.getElementById('tabs').addEventListener('click', e => {
+  const lem = e.target.closest('table.hidecol td.lem'); if (lem) lem.classList.toggle('rv');
+});
+
+/* ══ ΚΑΡΤΕΣ — ίδια επανάληψη με τα κείμενα (✗ ↻ ✓), ένα ρήμα = μία κάρτα ══
+   Μπροστά: ο τύπος όπως είναι στο κείμενο + η πρότασή του. Πίσω: οι αρχικοί
+   χρόνοι, η συζυγία, τι τύπος είναι, η σημασία. */
+const CARDS = ORDER.map(m => ({id:'v:' + m, m, v:VERBS[m]}));
+const DECKS = [{k:'all', t:'Όλα', la:false}].concat(CATS.map(c => ({k:'c:' + c.id, t:c.t, la:false})));
+const TDECKS = TEXTS.map(T => ({k:'t:' + T.n, t:T.r, la:true}));
+function inDeck(c, k){
+  if (k === 'all') return true;
+  if (k.startsWith('c:')) return c.v.cat === k.slice(2);
+  if (k.startsWith('t:')) return c.v.occ.some(o => String(o.n) === k.slice(2));
+  return false;
+}
+function today(){ const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 864e5); }
+function isDue(c){ const s = cst[c.id]; return s && s.d <= today(); }
+function isNew(c){ return !cst[c.id]; }
+function ivlText(days){ return days <= 0 ? 'σήμερα ξανά' : days === 1 ? 'αύριο' : 'σε ' + days + ' μέρες'; }
+function plan(c, v){
+  const s = cst[c.id] || {i:0, e:2.5, n:0, l:0};
+  if (v === 'x') return {i:0, e:Math.max(1.3, s.e - .2), n:0, l:s.l + 1};
+  if (v === 'r') return {i:s.n === 0 ? 1 : Math.max(1, Math.round(s.i * 1.2)), e:Math.max(1.3, s.e - .15), n:s.n + 1, l:s.l};
+  return {i:s.n === 0 ? 1 : s.n === 1 ? 3 : Math.max(s.i + 1, Math.round(s.i * s.e)), e:s.e, n:s.n + 1, l:s.l};
+}
+let queue = [], cur = null, flipped = false, doneN = 0;
+function deckStats(k){
+  const cs = CARDS.filter(c => inDeck(c, k));
+  return {all:cs.length, due:cs.filter(isDue).length, nw:cs.filter(isNew).length, lock:cs.filter(c => cst[c.id] && cst[c.id].i >= 7).length};
+}
+function deckBtn(d){
+  const s = deckStats(d.k);
+  return '<button class="dk" type="button" data-k="'+d.k+'" aria-pressed="'+(d.k === ui.deck)+'"><div class="t'+(d.la ? ' la' : '')+'">'+esc(d.t)+'</div><div class="s"><b>'+(s.due + s.nw)+'</b> για τώρα · '+s.all+' ρήματα<br>'+s.lock+' κλειδωμένα</div></button>';
+}
+function renderDeck(){
+  document.getElementById('deckC').innerHTML = DECKS.map(deckBtn).join('');
+  document.getElementById('deckT').innerHTML = TDECKS.map(deckBtn).join('');
+  const all = deckStats('all');
+  document.getElementById('bDue').textContent = all.due + all.nw;
+  document.getElementById('bDueS').textContent = all.due + ' επανάληψη · ' + all.nw + ' νέες';
+  document.getElementById('tcK').textContent = all.due + all.nw;
+  document.getElementById('bLock').textContent = all.lock;
+  document.getElementById('bRed').textContent = CARDS.filter(c => cst[c.id] && cst[c.id].i === 0).length;
+}
+function startDeck(k){
+  if (![...DECKS, ...TDECKS].some(d => d.k === k)) k = 'all';
+  ui.deck = k; lsSet(UI_KEY, ui); doneN = 0;
+  let cs = CARDS.filter(c => inDeck(c, k));
+  /* τράπουλα κειμένου: με τη σειρά ΑΥΤΟΥ του κειμένου, όχι της πρώτης εμφάνισης */
+  if (k.startsWith('t:')){ const T = TEXTS.find(t => 't:' + t.n === k), pos = m => T.rows.findIndex(r => r.m === m); cs = cs.sort((x, y) => pos(x.m) - pos(y.m)); }
+  queue = cs.filter(isDue).sort((a, b) => cst[a.id].d - cst[b.id].d).concat(cs.filter(isNew));
+  renderDeck(); next();
+}
+function deckName(k){ const d = [...DECKS, ...TDECKS].find(x => x.k === k); return d ? (d.la ? 'Lectio ' + d.t : d.t) : ''; }
+function next(){
+  cur = queue.shift() || null; flipped = false;
+  const st = document.getElementById('stage');
+  if (!cur){
+    const s = deckStats(ui.deck);
+    const fut = CARDS.filter(c => inDeck(c, ui.deck) && cst[c.id]).map(c => cst[c.id].d).sort((a, b) => a - b)[0];
+    st.innerHTML = '<div class="done"><div class="big">Τέλος για τώρα.</div><p>'+(doneN ? doneN + ' κάρτες σε αυτόν τον γύρο. ' : '')+s.lock+' από '+s.all+' ρήματα κλειδωμένα (επόμενη επανάληψη σε 7+ μέρες).'+(fut != null ? ' Η επόμενη κάρτα ' + ivlText(fut - today()) + '.' : '')+'</p><button class="tbtn" type="button" id="again">Ξανά όλες οι κάρτες: '+esc(deckName(ui.deck))+'</button></div>';
+    document.getElementById('again').onclick = () => { queue = CARDS.filter(c => inDeck(c, ui.deck)); next(); };
+    return;
+  }
+  st.innerHTML = cardHTML(cur) + rateHTML(cur) + '<div class="keys">Space: γύρνα · 1 ✗ · 2 ↻ · 3 ✓</div>' +
+    '<div class="cfoot"><button type="button" id="cReset">μηδένισε τις κάρτες: '+esc(deckName(ui.deck))+'</button></div>';
+  document.getElementById('cReset').onclick = () => {
+    CARDS.filter(c => inDeck(c, ui.deck)).forEach(c => delete cst[c.id]);
+    lsSet(CARD_KEY, cst); startDeck(ui.deck); fillTables();
+  };
+}
+function cardHTML(c){
+  /* σε τράπουλα κειμένου, ο τύπος ΑΥΤΟΥ του κειμένου */
+  const occ = (ui.deck.startsWith('t:') && c.v.occ.find(o => String(o.n) === ui.deck.slice(2))) || c.v.occ[0];
+  const L = c.v.L, more = c.v.occ.filter(o => o !== occ);
+  let back = '<div class="lem">'+esc(L.l)+'</div><div class="facts"><span><b>Συζυγία</b>'+esc(L.k)+'</span><span><b>Εδώ</b>'+esc(occ.f)+'</span></div>';
+  if (L.tr) back += '<div class="tr">'+esc(L.tr)+'</div>';
+  if (occ.d) back += '<div class="gd">'+esc(occ.d)+'</div>';
+  if (more.length) back += '<div class="also" style="display:block;margin-top:16px">επίσης: '+more.map(o => esc(o.w)+' ('+o.r+')').join(' · ')+'</div>';
+  return '<div class="cmeta"><span>'+esc(deckName(ui.deck))+(ui.deck.startsWith('t:') ? '' : ' · Lectio '+occ.r)+'</span><span>'+(queue.length + 1)+' ακόμα</span></div>' +
+    '<div class="card" id="card" tabindex="0" role="button" aria-label="Γύρνα την κάρτα"><div class="ask">Αρχικοί χρόνοι και συζυγία;</div>' +
+    '<div class="form'+(occ.w.length > 11 ? ' lg' : '')+'">'+esc(occ.w)+'</div><div class="ctx">'+occ.ctx+'</div>' +
+    '<div class="tap">πάτα ή Space για να τη γυρίσεις</div><div class="back">'+back+'</div></div>';
+}
+function rateHTML(c){
+  const p = v => ivlText(plan(c, v).i);
+  return '<div class="rate" id="rate"><button class="x" type="button" data-v="x"><span class="k">✗</span><span class="l">Λάθος</span><span class="i">'+p('x')+'</span></button>' +
+    '<button class="r" type="button" data-v="r"><span class="k">↻</span><span class="l">Με δυσκολία</span><span class="i">'+p('r')+'</span></button>' +
+    '<button class="k3" type="button" data-v="k"><span class="k">✓</span><span class="l">Το ήξερα</span><span class="i">'+p('k')+'</span></button></div>';
+}
+function flip(){
+  if (!cur || flipped) return;
+  flipped = true;
+  document.getElementById('card').classList.add('flip');
+  document.getElementById('rate').classList.add('on');
+}
+function rate(v){
+  if (!cur || !flipped) return;
+  const wasNew = isNew(cur) || cst[cur.id].n === 0;
+  const p = plan(cur, v);
+  cst[cur.id] = {i:p.i, e:Math.round(p.e * 100) / 100, n:p.n, l:p.l, d:today() + p.i};
+  lsSet(CARD_KEY, cst);
+  doneN++;
+  if (v === 'x') queue.splice(Math.min(3, queue.length), 0, cur);
+  else if (v === 'r' && wasNew) queue.splice(Math.min(6, queue.length), 0, cur);
+  renderDeck(); next();
+}
+['deckC', 'deckT'].forEach(id => document.getElementById(id).addEventListener('click', e => { const b = e.target.closest('.dk'); if (b) startDeck(b.dataset.k); }));
+document.getElementById('stage').addEventListener('click', e => {
+  if (e.target.closest('#card')) { flip(); return; }
+  const r = e.target.closest('#rate button'); if (r) rate(r.dataset.v);
+});
+document.addEventListener('keydown', e => {
+  if (ui.tab !== 'kartes' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input,textarea,a')) return;
+  if (e.key === ' ' || e.key === 'Enter'){ if (!flipped){ e.preventDefault(); flip(); } }
+  else if (e.key === '1') rate('x'); else if (e.key === '2') rate('r'); else if (e.key === '3') rate('k');
+});
+
+/* ══ ΚΑΡΤΕΛΕΣ ══════════════════════════════════════════════════════════ */
+function setTab(t, noScroll){
+  ui.tab = t; lsSet(UI_KEY, ui);
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  if (history.replaceState) history.replaceState(null, '', '#' + t);
+  if (t === 'kartes' && !document.getElementById('card') && !document.querySelector('#stage .done')) startDeck(ui.deck);
+  if (t === 'pinakes') fillTables();
+  if (!noScroll){ const tabs = document.querySelector('.tabs'); if (tabs.getBoundingClientRect().top < 0) tabs.scrollIntoView({block:'start'}); }
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+/* ══ ΕΚΚΙΝΗΣΗ ═════════════════════════════════════════════════════════ */
+fillTables();
+renderDeck();
+const h0 = (location.hash || '').slice(1);
+setTab(['pinakes','kartes'].includes(h0) ? h0 : (ui.tab === 'kartes' ? 'kartes' : 'pinakes'), true);
+</script>
+</body>
+</html>
