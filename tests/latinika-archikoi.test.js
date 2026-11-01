@@ -55,7 +55,7 @@ const mk = () => ({ document:doc, localStorage:{ getItem:k => (k in store ? stor
   location:{hash:''}, history:{replaceState(){}}, console, Date, Math, JSON, Set, Map, Object, Array, String, Number });
 const ctx = mk();
 try { vm.runInNewContext(script, ctx); ok(true, ''); } catch (e) { ok(false, 'η σελίδα σκάει στη φόρτωση: ' + e.message); }
-const rows = h => (h.match(/<tr><td class="n">/g) || []).length;
+const rows = h => (h.match(/<tr[^>]*><td class="n">/g) || []).length;
 ok(rows(els.tabs.innerHTML) === 255, 'ανά κείμενο: 255 γραμμές (' + rows(els.tabs.innerHTML) + ')');
 ok(data.TEXTS.every(t => els.tabs.innerHTML.includes(t.t)), 'κάθε κείμενο έχει τον τίτλο του');
 ok(els.bDue.textContent === 156, 'κάρτες για σήμερα = 156 νέες');
@@ -70,6 +70,23 @@ ok(rows(ctx2.__cat || '') === 156, 'κατά κατηγορία: 156 ρήματ�
 ok(/coniurāvit/.test(ctx2.__xix || ''), 'η τράπουλα του XIX ξεκινάει από την 1η λέξη του κειμένου');
 ok(ctx2.__red === 1, 'ένα ✗ → «Για ξανά» = 1');
 ok(/"v:coniuro"/.test(store.latarx_cards_v1 || ''), 'η κάρτα σώθηκε στο latarx_cards_v1');
+
+/* 4 · «μου είναι δύσκολο»: ανά ρήμα, ανάβει σε κάθε γραμμή του, δική του τράπουλα + φίλτρο */
+const ctx3 = mk();
+try {
+  vm.runInNewContext(script + `;this.__e=document.getElementById('hsum').innerHTML;
+    toggleHard('coniuro');toggleHard('fio');
+    this.__n=document.getElementById('bHard').textContent;this.__s=document.getElementById('hsum').innerHTML;
+    ui.onlyH=true;ui.grp='txt';fillTables();this.__f=document.getElementById('tabs').innerHTML;
+    startDeck('hard');this.__q=queue.length+(cur?1:0);
+    toggleHard('fio');this.__n2=document.getElementById('bHard').textContent;`, ctx3);
+} catch (e) { ok(false, 'δύσκολα: ' + e.message); }
+ok(/Τι σε δυσκολεύει/.test(ctx3.__e || ''), 'χωρίς δύσκολα: η κάρτα λέει τι να κάνει');
+ok(ctx3.__n === 2 && /data-find="coniuro"/.test(ctx3.__s || '') && /hcr/.test(ctx3.__s || ''), 'δύο σημειωμένα → 2, chips + κατηγορίες');
+const occN = data.TEXTS.reduce((a, t) => a + t.rows.filter(r => r.m === 'coniuro' || r.m === 'fio').length, 0);
+ok(rows(ctx3.__f || '') === occN && /class="hard"/.test(ctx3.__f || ''), 'μόνο τα δύσκολα: ' + occN + ' γραμμές (' + rows(ctx3.__f || '') + ')');
+ok(ctx3.__q === 2, 'η τράπουλα «Δύσκολα» = 2 κάρτες');
+ok(ctx3.__n2 === 1 && /"coniuro"/.test(store.latarx_hard_v1) && !/"fio"/.test(store.latarx_hard_v1), 'το ξε-σημείωμα σβήνει από το latarx_hard_v1');
 
 console.log('latinika-archikoi: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
