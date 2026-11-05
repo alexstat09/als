@@ -121,7 +121,9 @@ const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt',
                   'k2-d3': 'istoria-voithima-k2d3.source.txt',
                   /* ίδιο αρχείο βιβλίου (index2_5), ίδιο sha· τρεις εξαγωγείς 8/8
                      — οι δύο υπότιτλοι α./β. ΕΞΩ· καμία υποσημείωση, 4 λεζάντες */
-                  'k2-d4': 'istoria-voithima-k2d4.source.txt' };
+                  'k2-d4': 'istoria-voithima-k2d4.source.txt',
+                  /* ίδιο αρχείο βιβλίου (index2_5), ίδιο sha· η τελευταία του */
+                  'k2-d5': 'istoria-voithima-k2d5.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
@@ -321,7 +323,8 @@ const proseYears = C => [...new Set((C.paragraphs.join('\n')
 const thin = [], hollow = [], dup = [];
 CHAPTERS.forEach(C => {
   const floor = [['πράξεις', C.explain.acts.length, 5], ['έννοιες', C.explain.concepts.length, 3],
-                 ['παγίδες', C.explain.pitfalls.length, 5], ['λεξικό', C.glossary.length, 35],
+                 ['παγίδες', C.explain.pitfalls.length, 5], /* το 35 ήταν καρφωμένο: η Δ.5 έχει 132 λέξεις. Το κατώφλι βγαίνει από το υλικό, ένα λήμμα ανά 6 λέξεις, ως 35. */
+                 ['λεξικό', C.glossary.length, Math.min(35, Math.ceil(C.paragraphs.join(' ').split(/\s+/).length / 6))],
                  ['fun facts', C.facts.length, 8], ['πηγές', C.sources.list.length, 3],
                  ['«πώς το γράφω»', C.sources.how.length, 3],
                  /* ⛔⛔ ΤΟ «5» ΕΔΩ ΗΤΑΝ ΚΑΡΦΩΜΕΝΟ, ΚΑΙ ΤΟ ΕΔΕΙΞΕ Η ΠΡΩΤΗ ΕΝΟΤΗΤΑ
@@ -4161,6 +4164,39 @@ ok('  και κρατούν τις λέξεις του βιβλίου',
 ok('η σελίδα ονομάζει την Υ.Α. που στηρίζει τη σήμανση', PAGE.includes('90176/Δ2/06-07-2026'));
 ok('⛔ κανένα @media(min-width) μπήκε με τις νέες οθόνες',
    !/@media[^{]*min-width/.test(CSS));
+
+/* ══ Κεφ.2 · Δ.5 «Το Σοσιαλιστικό κόμμα» ═══════════════════════════════
+   Η ΤΕΛΕΥΤΑΙΑ του index2_5, ίδιο sha. Δύο παράγραφοι, 132 λέξεις.
+   ⛔ ΕΝΑ τυπογραφικό: «προγράμματος του». Μηδέν υποσημειώσεις, μία λεζάντα.
+   Πηγές = τρεις σελίδες του ΙΔΙΟΥ βιβλίου (Κεφ.1 Γ.2 ×2, Κεφ.2 Ε.1). */
+[['explain',   'panel-explain',  'Γιατί γεννιέται και τι ζητά'],
+ ['diagram',   'panel-diagram',  'Τρία νέα κόμματα με μια ματιά'],
+ ['timeline',  'panel-timeline', 'Ιδρύεται το Σ.Ε.Κ.Ε.'],
+ ['glossary',  'ggrid',          'Δικτατορία του προλεταριάτου'],
+ ['facts',     'panel-facts',    'Πότε ψήφισαν οι γυναίκες'],
+ ['text',      'rtext',          'πλούσιοι γίνονταν πλουσιότεροι'],
+ ['sources',   'panel-sources',  'η εργασία τους διαρκεί 12 ή 14 ώρες']].forEach(([id, key, mark]) => {
+  const r = boot('#/k2-d5/' + id);
+  is('Κεφ.2 Δ.5 · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  …και ζωγραφίζει ΤΟ ΔΙΚΟ ΤΗΣ σημάδι: «' + mark + '»', (r.painted[key] || '').includes(mark));
+});
+const K2D5 = CHAPTERS.find(c => c.id === 'k2-d5');
+const K2D5D = boot('#/k2-d5/diagram').painted['panel-diagram'] || '';
+ok('⭐⭐ Κεφ.2 Δ.5 · η αντιπαραβολή είναι ΤΕΛΕΥΤΑΙΑ', K2D5D.indexOf('Τρία νέα κόμματα με μια ματιά') > K2D5D.indexOf('Από το Σ.Ε.Κ.Ε. στο Κ.Κ.Ε.'));
+ok('  ⛔ …και ό,τι δεν λέει το βιβλίο ΔΗΛΩΝΕΤΑΙ', (K2D5D.match(/το βιβλίο δεν το λέει/g) || []).length >= 3);
+ok('⛔ Κεφ.2 Δ.5 · κριτήρια ≤25 χαρακτήρες', [...K2D5D.matchAll(/<tr><td>([^<]*)<\/td>/g)].every(m => m[1].length <= 25));
+if (K2D5) {
+  const f5 = K2D5.paragraphs.join('\n');
+  is('⭐ Κεφ.2 Δ.5 · ΔΥΟ παράγραφοι', K2D5.paragraphs.length, 2);
+  ok('  ⭐ ξεκινά «Οι υψηλοί δείκτες» και τελειώνει με το Κ.Κ.Ε.', K2D5.paragraphs[0].indexOf('Οι υψηλοί δείκτες ανεργίας') === 0 && /\(Κ\.Κ\.Ε\.\)\.$/.test(K2D5.paragraphs[1]));
+  ok('  ⛔ καμία λεζάντα στην πρόζα', !/Αξελός|_paq|matomo/i.test(f5));
+  ok('  ⛔ κανένα λατινικό γράμμα μέσα στην πρόζα', !/[A-Za-z]/.test(f5));
+  is('⛔ Κεφ.2 Δ.5 · ΕΝΑ τυπογραφικό', K2D5.sic.map(x => x.m).join(','), 'προγράμματος του');
+  is('⛔⛔ Κεφ.2 Δ.5 · οι χρονολογίες βιβλίου είναι ΑΚΡΙΒΩΣ της πρόζας', K2D5.timeline.events.filter(e => e.book).map(e => e.label).join(','), '1918,1919,1924');
+  ok('  ⭐ ό,τι δεν χρονολογεί η πρόζα μπαίνει ΜΟΝΟ ως «Πλαίσιο»', K2D5.timeline.events.filter(e => !e.book).every(e => /δεν γράφεται στο βιβλίο/.test(e.note || '')));
+  ok('⭐ Κεφ.2 Δ.5 · fun fact `big` χωρίς λέξη >11 χαρακτήρων', K2D5.facts.every(f => String(f.big).split(/\s+/).every(w => w.length <= 11)));
+  is('⛔ Κεφ.2 Δ.5 · κανένας όρος Α1 γραμμένος από μένα', (K2D5.terms || []).length, 0);
+}
 
 /* ═══ «Κατάλαβέ το» γραμμή γραμμή (CH.grammi) ═══
    Το βιβλίο κόβεται από τα paragraphs με το `to`, άρα εδώ απαιτούμε: να μη μένει τίποτα ακάλυπτο,
