@@ -4029,7 +4029,7 @@ if (K2D3) {
    ⛔ ΤΕΣΣΕΡΑ τυπογραφικά που το script ΔΕΝ είδε: «Γης» · «ήτανυπέρ» ·
    «Νοέμβριοι» · «Γερμανούς.)».
    Πηγές = οι ΤΕΣΣΕΡΙΣ λεζάντες (καμία υποσημείωση), σε τρεις κάρτες. */
-[['explain',   'panel-explain',  'Δύο ισχυροί χωρίς σύγκρουση'],
+[['explain',   'panel-explain',  'Δύο δυνατοί, χωρίς σύγκρουση'],
  ['diagram',   'panel-diagram',  'Οι τρεις στάσεις με μια ματιά'],
  ['timeline',  'panel-timeline', 'Η Αναθεωρητική γίνεται Συντακτική'],
  ['glossary',  'ggrid',          'Διπολισμός'],
@@ -4161,6 +4161,61 @@ ok('  και κρατούν τις λέξεις του βιβλίου',
 ok('η σελίδα ονομάζει την Υ.Α. που στηρίζει τη σήμανση', PAGE.includes('90176/Δ2/06-07-2026'));
 ok('⛔ κανένα @media(min-width) μπήκε με τις νέες οθόνες',
    !/@media[^{]*min-width/.test(CSS));
+
+/* ═══ «Κατάλαβέ το» γραμμή γραμμή (CH.grammi) ═══
+   Το βιβλίο κόβεται από τα paragraphs με το `to`, άρα εδώ απαιτούμε: να μη μένει τίποτα ακάλυπτο,
+   καμία γραμμή να μην έχει περισσότερες λέξεις από το βιβλίο (δική του απαίτηση: «5 λέξεις, εσύ 50»),
+   κάθε κίτρινο να είναι του βιβλίου, κάθε [[λέξη]] να έχει εξήγηση. */
+section('«Κατάλαβέ το» γραμμή γραμμή');
+const grFlat = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
+const grPlain = s => s.replace(/\{[^}]+\}/g, ' ').replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, '$1').replace(/\*\*/g, '');
+const GRC = CHAPTERS.filter(c => c.grammi);
+ok('υπάρχει τουλάχιστον μία ενότητα με γραμμές', GRC.length >= 1);
+GRC.forEach(C => {
+  const G = C.grammi, bad = [], book = grFlat(C.paragraphs.join(' '));
+  is(C.id + ': ένας κρίκος ανά παράγραφο', G.acts.length, C.paragraphs.length);
+  G.acts.forEach((a, i) => {
+    const p = C.paragraphs[i]; let cur = 0;
+    a.lines.forEach((l, j) => {
+      const at = p.indexOf(l.to, cur), tag = `κρίκος ${i + 1} γρ. ${j + 1}`;
+      if (at < 0) return bad.push(`${tag}: δεν βρέθηκε «${l.to}»`);
+      const end = at + l.to.length, nb = p.slice(cur, end).trim().split(/\s+/).length, np = grPlain(l.s).trim().split(/\s+/).length;
+      cur = end;
+      if (np > nb) bad.push(`${tag}: ${np} λέξεις, το βιβλίο ${nb}`);
+      if (/[<>]/.test(l.s)) bad.push(`${tag}: ετικέτα μέσα στο κείμενο`);
+      (l.s.match(/\*\*(.+?)\*\*/g) || []).forEach(b => {
+        if (!grFlat(p).includes(grFlat(grPlain(b)))) bad.push(`${tag}: κίτρινο εκτός παραγράφου «${grPlain(b)}»`);
+      });
+      for (const m of l.s.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)) {
+        const k = m[2] || m[1];
+        if (!C.glossary.some(g => g.m === k) && !G.words[k]) bad.push(`${tag}: χωρίς εξήγηση «${k}»`);
+      }
+    });
+    if (p.slice(cur).trim()) bad.push(`κρίκος ${i + 1}: ακάλυπτο βιβλίο «${p.slice(cur).trim().slice(0, 50)}»`);
+    if (!a.box || !a.verdict || !a.title) bad.push(`κρίκος ${i + 1}: λείπει τίτλος/κουτί`);
+  });
+  Object.keys(G.words).forEach(k => { if (C.glossary.some(g => g.m === k)) bad.push(`words: «${k}» υπάρχει ήδη στο λεξικό, δεν θα φανεί ποτέ`); });
+  G.questions.forEach(q => {
+    [q.start, ...q.take].forEach(w => { if (!book.includes(grFlat(w))) bad.push(`ερώτηση: εκτός βιβλίου «${w}»`); });
+    q.at.forEach(n => { if (!(n >= 1 && n <= G.acts.length)) bad.push(`ερώτηση: κρίκος ${n} δεν υπάρχει`); });
+  });
+  G.index.forEach(r => { if (!(r.to >= 1 && r.to <= G.acts.length)) bad.push(`ευρετήριο: κρίκος ${r.to} δεν υπάρχει`); });
+  G.acts.forEach((a, i) => { if (!G.index.some(r => r.to === i + 1)) bad.push(`ευρετήριο: κανένας δρόμος στον κρίκο ${i + 1}`); });
+  ok(C.id + ': βιβλίο καλυμμένο, λέξεις εντός ορίου, κίτρινα του βιβλίου, κάθε λέξη με εξήγηση' + (bad.length ? '\n      ' + bad.join('\n      ') : ''), !bad.length);
+  const H = boot('#/' + C.id + '/explain').painted['panel-explain'] || '';
+  ok(C.id + ': ζωγραφίζονται τα κουτιά και οι δύο πλευρές', H.includes('class="gr-map"') && H.includes('Οι δύο πλευρές'));
+  is(C.id + ': τόσοι κρίκοι όσοι στα δεδομένα', (H.match(/class="act gr-act"/g) || []).length, G.acts.length);
+  is(C.id + ': ένα κουμπί «βιβλίο» ανά γραμμή', (H.match(/class="gr-bk"/g) || []).length, G.acts.reduce((n, a) => n + a.lines.length, 0));
+  ok(C.id + ': η πρώτη πρόταση του βιβλίου είναι πίσω από το κουμπί', H.includes(esc4test(C.paragraphs[0].split('. ')[0])));
+  ok(C.id + ': το «Με μια ματιά» μένει', H.includes('Με μια ματιά'));
+  ok(C.id + ': οι ερωτήσεις μένουν πίσω από κουμπί', H.includes('data-grqs') && /id="grQs" hidden/.test(H));
+  ok(C.id + ': ⛔ κανένα «Σκέψου το έτσι»', !H.includes('Σκέψου το έτσι'));
+  ok(C.id + ': καμία σκέτη σήμανση στην οθόνη', !/\*\*|\[\[|\]\]|\{ΟΜΩΣ\}/.test(H));
+});
+function esc4test(s){ return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const GRO = boot('#/k2-d3/explain').painted['panel-explain'] || '';
+ok('ενότητα χωρίς γραμμές μένει στο παλιό «Κατάλαβέ το»', !CHAPTERS.find(c => c.id === 'k2-d3').grammi && GRO.includes('Τι έγινε, με τη σειρά'));
+ok('⛔ το `hidden` νικάει στις κάρτες ερωτήσεων (dl με display:grid)', CSS.includes('.gr-q dl[hidden]{display:none}'));
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
