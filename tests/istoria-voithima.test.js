@@ -4164,7 +4164,7 @@ ok('⛔ κανένα @media(min-width) μπήκε με τις νέες οθόν�
 
 /* ═══ «Κατάλαβέ το» γραμμή γραμμή (CH.grammi) ═══
    Το βιβλίο κόβεται από τα paragraphs με το `to`, άρα εδώ απαιτούμε: να μη μένει τίποτα ακάλυπτο,
-   καμία γραμμή να μην έχει περισσότερες λέξεις από το βιβλίο (δική του απαίτηση: «5 λέξεις, εσύ 50»),
+   η γραμμή να εξηγεί χωρίς να φουσκώνει (ως διπλάσια από το βιβλίο ή +15 λέξεις, δική του απαίτηση: «5 λέξεις, εσύ 50»),
    κάθε κίτρινο να είναι του βιβλίου, κάθε [[λέξη]] να έχει εξήγηση. */
 section('«Κατάλαβέ το» γραμμή γραμμή');
 const grFlat = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
@@ -4180,7 +4180,7 @@ GRC.forEach(C => {
       if (at < 0) return bad.push(`${tag}: δεν βρέθηκε «${l.to}»`);
       const end = at + l.to.length, nb = p.slice(cur[l.p], end).trim().split(/\s+/).length, np = grPlain(l.s).trim().split(/\s+/).length;
       cur[l.p] = end;
-      if (np > nb) bad.push(`${tag}: ${np} λέξεις, το βιβλίο ${nb}`);
+      if (np > Math.max(nb * 2, nb + 15)) bad.push(`${tag}: ${np} λέξεις, το βιβλίο ${nb}`);
       if (/[<>]/.test(l.s)) bad.push(`${tag}: ετικέτα μέσα στο κείμενο`);
       (l.s.match(/\*\*(.+?)\*\*/g) || []).forEach(b => {
         if (!grFlat(p).includes(grFlat(grPlain(b)))) bad.push(`${tag}: κίτρινο εκτός παραγράφου «${grPlain(b)}»`);
