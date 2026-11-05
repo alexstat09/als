@@ -6,6 +6,7 @@
    ξαναγράφει το πεδίο `grammi` του κεφαλαίου στην istoria-voithima.html.
 
      node tools/istoria-grammi.js show <id>     οι προτάσεις + τα κλειδιά του Λεξικού
+     node tools/istoria-grammi.js check [id…]   μόνο έλεγχος, η σελίδα δεν αλλάζει
      node tools/istoria-grammi.js build [id…]   έλεγχος και εγγραφή (χωρίς id: όλα)
 
    Στο json κάθε κρίκος έχει `ps` (πόσες παραγράφους πιάνει, 1 αν λείπει) και
@@ -13,7 +14,7 @@
    {"to":"…","s":"…"} = δικό σου όριο. Στο κείμενο: **κίτρινο** (λέξεις του βιβλίου),
    [[λέξη|κλειδί Λεξικού]], {ΟΜΩΣ} {ΓΙΑΤΙ} {ΑΡΑ}.
    ⭐ Η γραμμή ΕΞΗΓΕΙ («δηλαδή τι σημαίνει, γιατί οδηγεί στο επόμενο»), δεν συμπυκνώνει: δική του
-   ετυμηγορία, η σύνοψη δεν τον βοήθησε. Όριο: ως διπλάσια από το βιβλίο ή +15 λέξεις. Καμία αιτία εκτός βιβλίου.
+   ετυμηγορία, η σύνοψη δεν τον βοήθησε. Δική του εντολή: «μη φοβάσαι, απλά μην υπερβάλεις». Το όριο (3× ή +30 λέξεις) πιάνει μόνο το φούσκωμα. Καμία αιτία εκτός βιβλίου.
    Σταματά χωρίς να γράψει αν κάτι δεν στέκει. Ο φρουρός του app είναι το
    tests/istoria-voithima.test.js.
    ══════════════════════════════════════════════════════════════════════ */
@@ -60,8 +61,13 @@ function expand(C, u, errs) {
       const tag = `${C.id} κρίκος ${ai + 1} γρ. ${li + 1}`;
       if (l && l.to) {
         const p = pi; lines.push({ p, to: l.to, s: l.s });
-        const at = C.paragraphs[p].indexOf(l.to);
-        if (at < 0) errs.push(`${tag}: δεν βρέθηκε «${l.to}»`);
+        const para = C.paragraphs[p];
+        if (para.indexOf(l.to) < 0) errs.push(`${tag}: δεν βρέθηκε «${l.to}»`);
+        (l.s.match(/\*\*(.+?)\*\*/g) || []).forEach(b => { if (!flat(para).includes(flat(plain(b)))) errs.push(`${tag}: κίτρινο εκτός «${plain(b)}»`); });
+        for (const m of l.s.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)) {
+          const key = m[2] || m[1];
+          if (!C.glossary.some(g => g.m === key) && !(u.words || {})[key]) errs.push(`${tag}: χωρίς εξήγηση «${key}»`);
+        }
         return;
       }
       const [s, take] = Array.isArray(l) ? l : [l, 1], got = q.slice(qi, qi + take);
@@ -70,7 +76,7 @@ function expand(C, u, errs) {
       if (got[0].p !== got[got.length - 1].p) errs.push(`${tag}: η γραμμή πιάνει δύο παραγράφους`);
       const bk = got.map(x => x.s).join(' ');
       const nb = bk.split(/\s+/).length, np = plain(s).trim().split(/\s+/).length;
-      if (np > Math.max(nb * 2, nb + 15)) errs.push(`${tag}: ${np} λέξεις, το βιβλίο ${nb} «${bk.slice(0, 50)}»`);
+      if (np > Math.max(nb * 3, nb + 30)) errs.push(`${tag}: ${np} λέξεις, το βιβλίο ${nb} «${bk.slice(0, 50)}»`);
       const para = C.paragraphs[got[0].p];
       (s.match(/\*\*(.+?)\*\*/g) || []).forEach(b => { if (!flat(para).includes(flat(plain(b)))) errs.push(`${tag}: κίτρινο εκτός «${plain(b)}»`); });
       for (const m of s.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)) {
@@ -123,7 +129,7 @@ if (cmd === 'show') {
   ids.forEach(id => { const c = CH.find(x => x.id === id); console.log('\n## ' + id + ' ' + c.title);
     c.paragraphs.forEach((p, i) => { console.log('P' + (i + 1)); sentences(p).forEach((s, j) => console.log(' ' + (j + 1) + '. ' + s)); });
     console.log('M: ' + c.glossary.map(g => g.m).join(' | ')); });
-} else if (cmd === 'build') {
+} else if (cmd === 'build' || cmd === 'check') {
   const all = ids.length ? ids : fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5));
   const errs = [], out = {}; let tb = 0, tp = 0;
   all.forEach(id => {
@@ -134,6 +140,7 @@ if (cmd === 'show') {
     tb += b; tp += w; console.log(`  ${id}: ${out[id].acts.length} κρίκοι · ${w}/${b} λέξεις (${Math.round(w * 100 / b)}%) · ${out[id].questions.length} ερωτήσεις`);
   });
   if (errs.length) { console.error('✗\n' + errs.join('\n')); process.exit(1); }
+  if (cmd === 'check') { console.log(`✓ έλεγχος χωρίς εγγραφή · ${tp}/${tb} λέξεις (${Math.round(tp * 100 / tb)}%)`); process.exit(0); }
   let s = src; all.forEach(id => { s = write(s, id, out[id]); });
   fs.writeFileSync(PAGE, s); console.log(`✓ ${all.length} ενότητες · ${tp}/${tb} λέξεις (${Math.round(tp * 100 / tb)}%)`);
 } else { console.error('show <id> | build [id…]'); process.exit(1); }
