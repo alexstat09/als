@@ -3441,7 +3441,7 @@ if (K2B3) {
    μετά το «και τον» · (η διπλή πρόταση του e-book ΑΦΑΙΡΕΘΗΚΕ, als-v608) · οι δύο ορφανοί
    αστερίσκοι («πραιτωριανών»*, σφαιρίδια*) — που ΕΔΩ παίρνουν λήμμα.
    Πηγές = οι ΤΡΕΙΣ υποσημ. δίπλα της (15 · 16 · 17). */
-[['explain',   'panel-explain',  'Οι εκλογές του 1862 και το τέλος των ξενικών'],
+[['explain',   'panel-explain',  'Οι εκλογές του 1862 και η χρεοκοπία των ξενικών'],
  ['diagram',   'panel-diagram',  'Οι παρατάξεις με μια ματιά'],
  ['timeline',  'panel-timeline', 'Εκλογές για Εθνοσυνέλευση'],
  ['glossary',  'ggrid',          'Αρχή της δεδηλωμένης'],
@@ -4237,7 +4237,9 @@ GRC.forEach(C => {
   if (!G.plag) bad.push('χωρίς πλαγιότιτλο ανά παράγραφο');
   if (G.plag) {
     /* Ένας πλαγιότιτλος ανά παράγραφο, και ερωτήσεις μόνο ολόκληρης παραγράφου (Β θέμα) ή ολόκληρης ενότητας (Γ θέμα). */
-    const paraOf = a => { const ps = [...new Set(a.lines.map(l => l.p))]; return { first: C.paragraphs[ps[0]], text: ps.map(p => C.paragraphs[p]).join(' ') }; };
+    const cur2 = {};
+    const texts = new Map(G.acts.map(a => [a, a.lines.map(l => { const p = C.paragraphs[l.p], from = cur2[l.p] || 0, end = p.indexOf(l.to, from) + l.to.length; cur2[l.p] = end; return p.slice(from, end).trim(); }).join(' ')]));
+    const paraOf = a => ({ first: texts.get(a), text: texts.get(a) });
     G.acts.forEach((a, i) => { if (a.title.length > 60) bad.push(`πλαγιότιτλος ${i + 1}: πολύ μακρύς`); });
     if (new Set(G.acts.map(a => a.title)).size !== G.acts.length) bad.push('δύο ίδιοι πλαγιότιτλοι');
     G.acts.forEach((a, i) => {
