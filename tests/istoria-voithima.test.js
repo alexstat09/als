@@ -3204,7 +3204,7 @@ if (K2A3) {
    τους ένα ΛΑΤΙΝΙΚΟ «v» («vέους») και ο αριθμός υποσημείωσης κολλημένος
    στη λέξη («ψηφοφορίας10»). ΜΙΑ υποσημείωση δίπλα της (10)· οι άλλες δύο
    πηγές (12 · 16) είναι του ίδιου αρχείου, από τη Β.2 και τη Β.4, δηλωμένα. */
-[['explain',   'panel-explain',  'Μετά την επανάσταση του 1843'],
+[['explain',   'panel-explain',  'Τα κόμματα μετά την επανάσταση του 1843'],
  ['diagram',   'panel-diagram',  'Οι τρεις ηγέτες στο τιμόνι'],
  ['timeline',  'panel-timeline', 'Η Εθνοσυνέλευση με τους τρεις ηγέτες'],
  ['glossary',  'ggrid',          'Προσυπογραφή'],
@@ -4234,8 +4234,28 @@ GRC.forEach(C => {
     [q.start, ...q.take].forEach(w => { if (!book.includes(grFlat(w))) bad.push(`ερώτηση: εκτός βιβλίου «${w}»`); });
     q.at.forEach(n => { if (!(n >= 1 && n <= G.acts.length)) bad.push(`ερώτηση: κρίκος ${n} δεν υπάρχει`); });
   });
-  G.acts.forEach((a, i) => { if (a.groups) { if (a.groups.reduce((n, g) => n + g.n, 0) !== a.lines.length) bad.push(`κρίκος ${i + 1}: οι πλαγιότιτλοι δεν πιάνουν όλες τις γραμμές`); a.groups.forEach(g => { if (!g.t || g.t.length > 40 || g.n < 1) bad.push(`πλαγιότιτλος «${g.t}»`); }); } });
-  G.questions.forEach(q => (q.where || []).forEach(([n, g]) => { const A = G.acts[n - 1]; if (!A || !A.groups || !A.groups[g]) bad.push(`ερώτηση: «Πού είναι» χωρίς πλαγιότιτλο ${n}/${g}`); }));
+  if (G.plag) {
+    /* Ένας πλαγιότιτλος ανά παράγραφο, και ερωτήσεις μόνο ολόκληρης παραγράφου (Β θέμα) ή ολόκληρης ενότητας (Γ θέμα). */
+    const paraOf = a => { const ps = [...new Set(a.lines.map(l => l.p))]; return { first: C.paragraphs[ps[0]], text: ps.map(p => C.paragraphs[p]).join(' ') }; };
+    G.acts.forEach((a, i) => { if (a.title.length > 60) bad.push(`πλαγιότιτλος ${i + 1}: πολύ μακρύς`); });
+    if (new Set(G.acts.map(a => a.title)).size !== G.acts.length) bad.push('δύο ίδιοι πλαγιότιτλοι');
+    G.acts.forEach((a, i) => {
+      const qs = G.questions.filter(q => q.at.length === 1 && q.at[0] === i + 1);
+      if (qs.length !== 1) bad.push(`παράγραφος ${i + 1}: ${qs.length} ερωτήσεις Β θέματος, θέλει μία`);
+      const P = paraOf(a);
+      qs.forEach(q => {
+        if (!grFlat(P.first).startsWith(grFlat(q.start))) bad.push(`ερώτηση ${i + 1}: δεν ξεκινά από την αρχή της παραγράφου`);
+        q.take.forEach(w => { if (!grFlat(P.text).includes(grFlat(w))) bad.push(`ερώτηση ${i + 1}: «${w}» εκτός παραγράφου`); });
+      });
+    });
+    const W = G.questions.filter(q => q.whole);
+    if (W.length !== 1 || W[0].at.length) bad.push('θέλει μία ερώτηση Γ θέματος, όλης της ενότητας');
+    if (G.questions.some(q => !q.whole && q.at.length !== 1)) bad.push('ερώτηση που δεν είναι ούτε μία παράγραφος ούτε όλη η ενότητα');
+    W.forEach(q => {
+      if (!grFlat(paraOf(G.acts[0]).first).startsWith(grFlat(q.start))) bad.push('Γ θέμα: δεν ξεκινά από την αρχή της ενότητας');
+      G.acts.forEach((a, i) => { if (!q.take.some(w => grFlat(paraOf(a).text).includes(grFlat(w)))) bad.push(`Γ θέμα: τίποτα από την παράγραφο ${i + 1}`); });
+    });
+  }
   G.index.forEach(r => { if (!(r.to >= 1 && r.to <= G.acts.length)) bad.push(`ευρετήριο: κρίκος ${r.to} δεν υπάρχει`); });
   G.acts.forEach((a, i) => { if (!G.index.some(r => r.to === i + 1)) bad.push(`ευρετήριο: κανένας δρόμος στον κρίκο ${i + 1}`); });
   ok(C.id + ': βιβλίο καλυμμένο, λέξεις εντός ορίου, κίτρινα του βιβλίου, κάθε λέξη με εξήγηση' + (bad.length ? '\n      ' + bad.join('\n      ') : ''), !bad.length);
@@ -4255,8 +4275,10 @@ const GRO = boot('#/k1-g4/explain').painted['panel-explain'] || '';
 ok('ενότητα χωρίς γραμμές μένει στο παλιό «Κατάλαβέ το»', !CHAPTERS.find(c => c.id === 'k1-g4').grammi && GRO.includes('Τι έγινε, με τη σειρά'));
 GRC.forEach(C => C.grammi.acts.forEach(a => { if (a.tone) ok(C.id + ': χρώμα κρίκου από τη σελίδα, ' + a.tone, ['pol','mil','eco','ally'].includes(a.tone) && CSS.includes('--' + a.tone + '-soft:')); }));
 const GRB1 = boot('#/k2-b1/explain').painted['panel-explain'] || '';
-ok('Β.1: οι πλαγιότιτλοι ζωγραφίζονται δίπλα στις γραμμές', (GRB1.match(/class="gr-side"/g) || []).length === 14 && GRB1.includes('Βουλή και Γερουσία') && GRB1.includes('id="gr3g3"'));
-ok('Β.1: το «Πού είναι» πηγαίνει στον πλαγιότιτλο', GRB1.includes('data-grj="3" data-grg="3"'));
+ok('Β.1: ένας πλαγιότιτλος ανά παράγραφο, δίπλα στις γραμμές', (GRB1.match(/class="gr-side"/g) || []).length === 6 && GRB1.includes('Οι βασικές διατάξεις του συντάγματος') && !GRB1.includes('<h3>Οι βασικές διατάξεις του συντάγματος</h3></div>\n              <h3>'));
+ok('Β.1: οι ερωτήσεις χωρίζονται σε Β θέμα (μία παράγραφος) και Γ θέμα (όλη η ενότητα)', GRB1.includes('>Β θέμα</h2>') && GRB1.includes('>Γ θέμα</h2>') && GRB1.includes('>3 · Οι βασικές διατάξεις του συντάγματος</button>'));
+const GRA1 = boot('#/k2-a1/explain').painted['panel-explain'] || '';
+ok('Οι ενότητες χωρίς πλαγιότιτλους μένουν όπως ήταν', !GRA1.includes('class="gr-side"') && GRA1.includes('>Τι σε ρωτάνε</h2>') && GRA1.includes('>Κρίκος 1</button>'));
 const GRA3 = boot('#/k2-a3/explain').painted['panel-explain'] || '';
 ok('Α.3: τα τρία κόμματα έχουν τρία διαφορετικά χρώματα', new Set(CHAPTERS.find(c => c.id === 'k2-a3').grammi.acts.map(a => a.tone)).size === 3 && GRA3.includes('--t:var(--ally)') && GRA3.includes('--t:var(--mil)') && GRA3.includes('--t:var(--pol)'));
 ok('⛔ το `hidden` νικάει στις κάρτες ερωτήσεων (dl με display:grid)', CSS.includes('.gr-q dl[hidden]{display:none}'));
