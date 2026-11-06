@@ -4234,6 +4234,8 @@ GRC.forEach(C => {
     [q.start, ...q.take].forEach(w => { if (!book.includes(grFlat(w))) bad.push(`ερώτηση: εκτός βιβλίου «${w}»`); });
     q.at.forEach(n => { if (!(n >= 1 && n <= G.acts.length)) bad.push(`ερώτηση: κρίκος ${n} δεν υπάρχει`); });
   });
+  G.acts.forEach((a, i) => { if (a.groups) { if (a.groups.reduce((n, g) => n + g.n, 0) !== a.lines.length) bad.push(`κρίκος ${i + 1}: οι πλαγιότιτλοι δεν πιάνουν όλες τις γραμμές`); a.groups.forEach(g => { if (!g.t || g.t.length > 40 || g.n < 1) bad.push(`πλαγιότιτλος «${g.t}»`); }); } });
+  G.questions.forEach(q => (q.where || []).forEach(([n, g]) => { const A = G.acts[n - 1]; if (!A || !A.groups || !A.groups[g]) bad.push(`ερώτηση: «Πού είναι» χωρίς πλαγιότιτλο ${n}/${g}`); }));
   G.index.forEach(r => { if (!(r.to >= 1 && r.to <= G.acts.length)) bad.push(`ευρετήριο: κρίκος ${r.to} δεν υπάρχει`); });
   G.acts.forEach((a, i) => { if (!G.index.some(r => r.to === i + 1)) bad.push(`ευρετήριο: κανένας δρόμος στον κρίκο ${i + 1}`); });
   ok(C.id + ': βιβλίο καλυμμένο, λέξεις εντός ορίου, κίτρινα του βιβλίου, κάθε λέξη με εξήγηση' + (bad.length ? '\n      ' + bad.join('\n      ') : ''), !bad.length);
@@ -4252,6 +4254,9 @@ function esc4test(s){ return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&
 const GRO = boot('#/k1-g4/explain').painted['panel-explain'] || '';
 ok('ενότητα χωρίς γραμμές μένει στο παλιό «Κατάλαβέ το»', !CHAPTERS.find(c => c.id === 'k1-g4').grammi && GRO.includes('Τι έγινε, με τη σειρά'));
 GRC.forEach(C => C.grammi.acts.forEach(a => { if (a.tone) ok(C.id + ': χρώμα κρίκου από τη σελίδα, ' + a.tone, ['pol','mil','eco','ally'].includes(a.tone) && CSS.includes('--' + a.tone + '-soft:')); }));
+const GRB1 = boot('#/k2-b1/explain').painted['panel-explain'] || '';
+ok('Β.1: οι πλαγιότιτλοι ζωγραφίζονται δίπλα στις γραμμές', (GRB1.match(/class="gr-side"/g) || []).length === 14 && GRB1.includes('Βουλή και Γερουσία') && GRB1.includes('id="gr3g3"'));
+ok('Β.1: το «Πού είναι» πηγαίνει στον πλαγιότιτλο', GRB1.includes('data-grj="3" data-grg="3"'));
 const GRA3 = boot('#/k2-a3/explain').painted['panel-explain'] || '';
 ok('Α.3: τα τρία κόμματα έχουν τρία διαφορετικά χρώματα', new Set(CHAPTERS.find(c => c.id === 'k2-a3').grammi.acts.map(a => a.tone)).size === 3 && GRA3.includes('--t:var(--ally)') && GRA3.includes('--t:var(--mil)') && GRA3.includes('--t:var(--pol)'));
 ok('⛔ το `hidden` νικάει στις κάρτες ερωτήσεων (dl με display:grid)', CSS.includes('.gr-q dl[hidden]{display:none}'));

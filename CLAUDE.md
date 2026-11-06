@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v698`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v699`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-11-06 — `als-v699` — Β.1: ΠΛΑΓΙΟΤΙΤΛΟΙ ΣΤΟ «ΚΑΤΑΛΑΒΕ ΤΟ» (δική του ιδέα, δοκιμή σε μία ενότητα).** Για να ξέρει πού βρίσκεται όταν πέσει ερώτηση. Προαιρετικό `groups: [{t, n}]` σε κρίκο (n γραμμές κάτω από τον τίτλο t) και `where: [[κρίκος, ομάδα]]` σε ερώτηση: το «Πού είναι» σε πάει στον πλαγιότιτλο. Sticky στο λάπτοπ, πάνω από τις γραμμές στο κινητό. ⚠️ Δεν είναι οι πλαγιότιτλοι του καθηγητή στην καρτέλα «Κείμενο»: εκείνοι είναι δικοί του, αυτοί δικοί μου, στο `grammi`. Οι άλλες 15 περιμένουν την ετυμηγορία του.
 
 **2026-11-05 — `als-v698` — ΚΕΦ.2 · Δ.5 «Το Σοσιαλιστικό κόμμα», ΤΟ ΤΜΗΜΑ Δ ΚΛΕΙΣΕ (37 ενότητες).** Ολόκληρη ενότητα με το skill + `grammi`: και οι 16 του φροντ. στη νέα μορφή. Η τελευταία του `index2_5`, ίδιο sha, εξαγωγείς 2/2, 132 λέξεις, ένα τυπογραφικό («προγράμματος του»). Πηγές = Κεφ.1 Γ.2 ×2 + Κεφ.2 Ε.1, ελεγμένες αυτολεξεί στο cached HTML. ⚠️ Το «≥35 λήμματα» ήταν καρφωμένο: τώρα `min(35, λέξεις/6)`. 🔴 Αδοκίμαστο σε συσκευή του.
 
