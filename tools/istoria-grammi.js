@@ -21,7 +21,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const ROOT = path.resolve(__dirname, '..'), PAGE = path.join(ROOT, 'istoria-voithima.html'), DIR = path.join(__dirname, 'istoria-grammi');
+const ROOT = path.resolve(__dirname, '..'), PAGE = path.join(ROOT, 'istoria-voithima.html'), DIR = path.join(__dirname, 'istoria-grammi'), STORY = 'k2-story.json';
 
 function chapters(src) {
   const ctx = {}; vm.createContext(ctx);
@@ -131,7 +131,7 @@ if (cmd === 'show') {
     c.paragraphs.forEach((p, i) => { console.log('P' + (i + 1)); sentences(p).forEach((s, j) => console.log(' ' + (j + 1) + '. ' + s)); });
     console.log('M: ' + c.glossary.map(g => g.m).join(' | ')); });
 } else if (cmd === 'build' || cmd === 'check') {
-  const all = ids.length ? ids : fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5));
+  const all = ids.length ? ids : fs.readdirSync(DIR).filter(f => f.endsWith('.json') && f !== STORY).map(f => f.slice(0, -5));
   const errs = [], out = {}; let tb = 0, tp = 0;
   all.forEach(id => {
     const C = CH.find(x => x.id === id); if (!C) return errs.push('χωρίς κεφάλαιο ' + id);
@@ -144,4 +144,12 @@ if (cmd === 'show') {
   if (cmd === 'check') { console.log(`✓ έλεγχος χωρίς εγγραφή · ${tp}/${tb} λέξεις (${Math.round(tp * 100 / tb)}%)`); process.exit(0); }
   let s = src; all.forEach(id => { s = write(s, id, out[id]); });
   fs.writeFileSync(PAGE, s); console.log(`✓ ${all.length} ενότητες · ${tp}/${tb} λέξεις (${Math.round(tp * 100 / tb)}%)`);
-} else { console.error('show <id> | build [id…]'); process.exit(1); }
+} else if (cmd === 'story') {
+  /* «Το κεφάλαιο σαν μία ιστορία» (#/kefalaio-2): το κείμενο ζει στο k2-story.json και μπαίνει
+     στη σελίδα ως μία γραμμή `const K2STORY = …;`. Ο έλεγχος (έντονα + αριθμοί μέσα στο βιβλίο)
+     είναι στο tests/istoria-voithima.test.js. */
+  const j = JSON.stringify(JSON.parse(fs.readFileSync(path.join(DIR, STORY), 'utf8')));
+  const re = /\nconst K2STORY = .*;\n/;
+  if (!re.test(src)) { console.error('✗ δεν βρέθηκε η γραμμή const K2STORY'); process.exit(1); }
+  fs.writeFileSync(PAGE, src.replace(re, () => '\nconst K2STORY = ' + j + ';\n')); console.log('✓ K2STORY · ' + j.length + ' χαρακτήρες');
+} else { console.error('show <id> | build [id…] | story'); process.exit(1); }

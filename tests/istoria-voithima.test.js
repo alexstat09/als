@@ -4284,5 +4284,42 @@ const GRA3 = boot('#/k2-a3/explain').painted['panel-explain'] || '';
 ok('Α.3: τα τρία κόμματα έχουν τρία διαφορετικά χρώματα', new Set(CHAPTERS.find(c => c.id === 'k2-a3').grammi.acts.map(a => a.tone)).size === 3 && GRA3.includes('--t:var(--ally)') && GRA3.includes('--t:var(--mil)') && GRA3.includes('--t:var(--pol)'));
 ok('⛔ το `hidden` νικάει στις κάρτες ερωτήσεων (dl με display:grid)', CSS.includes('.gr-q dl[hidden]{display:none}'));
 
+
+/* ═══ «Το κεφάλαιο σαν μία ιστορία» (#/kefalaio-2) ═══
+   Δική του εντολή: κάτι που ΔΙΑΒΑΖΕΙ για να συνδέσει τις ενότητες, όχι εξέταση. Το κείμενο είναι δικό μου,
+   άρα ο φρουρός είναι η γείωση: κάθε **έντονο** και κάθε αριθμός πρέπει να υπάρχει στο βιβλίο της ενότητας
+   (ή μιας ενότητας που ονομάζει, π.χ. «Β.4»). Τίποτα δεν μπαίνει από μνήμης. */
+section('Το κεφάλαιο σαν μία ιστορία');
+const ksM = PAGE.match(/\nconst K2STORY = (.*);\n/);
+ok('υπάρχει η γραμμή K2STORY', !!ksM);
+const KS = ksM ? JSON.parse(ksM[1]) : { units: {}, acts: [], threads: [], pairs: [] };
+is('⭐ η σελίδα έχει ΑΚΡΙΒΩΣ το k2-story.json', ksM && ksM[1], JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tools', 'istoria-grammi', 'k2-story.json'), 'utf8'))));
+const ksIds = KS.acts.flatMap(a => a.units), ksLmap = { Α: 'a', Β: 'b', Γ: 'g', Δ: 'd' };
+is('και οι 16 ενότητες, με τη σειρά του βιβλίου', ksIds.join(','), 'a1,a2,a3,a4,b1,b2,b3,b4,g1,g2,g3,d1,d2,d3,d4,d5');
+ok('κάθε ενότητα έχει κείμενο', ksIds.every(id => KS.units[id] && KS.units[id].body.length && KS.units[id].q));
+const ksTxt = id => { const c = CHAPTERS.find(x => x.id === 'k2-' + id); return c ? grFlat([c.title, c.period, ...c.paragraphs].join(' ')) : ''; };
+const ksBad = [];
+const ksChk = (where, id, str) => {
+  const ids = new Set([id]); for (const m of str.matchAll(/([ΑΒΓΔ])\.(\d)/g)) ids.add(ksLmap[m[1]] + m[2]);
+  const T = [...ids].map(ksTxt).join(' ');
+  if (!T) ksBad.push(where + ': χωρίς βιβλίο');
+  for (const m of str.matchAll(/\*\*(.+?)\*\*/g)) if (!T.includes(grFlat(m[1]))) ksBad.push(where + ': έντονο εκτός βιβλίου «' + m[1] + '»');
+  for (const m of str.replace(/[ΑΒΓΔ]\.\d/g, '').matchAll(/\d+/g)) if (!T.includes(m[0])) ksBad.push(where + ': αριθμός εκτός βιβλίου ' + m[0]);
+  if (/[<>]/.test(str)) ksBad.push(where + ': ετικέτα μέσα στο κείμενο');
+};
+ksIds.forEach(id => { const u = KS.units[id]; [u.q, ...u.body, ...u.echo.map(e => e.s), u.next].forEach((x, i) => ksChk(id + '#' + i, id, x)); u.echo.forEach(e => { if (!KS.labels[e.t]) ksBad.push(id + ': νήμα χωρίς όνομα ' + e.t); }); });
+KS.threads.forEach(t => t.steps.forEach((x, i) => ksChk('νήμα ' + t.id + '#' + i, x.u, x.s)));
+KS.pairs.forEach(p => { const m = p.s.match(/([ΑΒΓΔ])\.(\d)/); if (!m) ksBad.push('ζευγάρι χωρίς ενότητα: ' + p.t); else ksChk('ζευγάρι ' + p.t, ksLmap[m[1]] + m[2], p.s); });
+ok('⛔ κάθε έντονο και κάθε αριθμός υπάρχει στο βιβλίο' + (ksBad.length ? '\n      ' + ksBad.join('\n      ') : ''), !ksBad.length);
+const ksH = boot('#/kefalaio-2').painted['viewList'] || '';
+is('ζωγραφίζονται 16 ενότητες', (ksH.match(/class="ks-u"/g) || []).length, 16);
+is('…και 16 + 2 γραμμές στο «Πού είμαι»', (ksH.match(/data-ksgo="/g) || []).length, 18);
+ok('τα τρία νήματα και τα ζευγάρια ζωγραφίζονται', (ksH.match(/class="ks-thread"/g) || []).length === 3 && (ksH.match(/class="ks-pair"/g) || []).length === KS.pairs.length);
+ok('⛔ καμία σκέτη σήμανση στην οθόνη', ksH.length > 1000 && !/\*\*/.test(ksH));
+ok('⛔ όχι εξέταση: κανένα κρυμμένο κουτί, καμία βαθμολογία', !/ hidden|data-grqs|σωστ|λάθος/i.test(ksH));
+ok('κάθε ενότητα ανοίγει την καρτέλα της', ksIds.every(id => ksH.includes('href="#/k2-' + id + '/explain"')));
+ok('η κλάση που ανάβει η JS υπάρχει στο CSS (.ks-rail button.on)', CSS.includes('.ks-rail button.on{'));
+ok('η αρχική έχει κάρτα προς το κεφάλαιο', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2"'));
+
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
