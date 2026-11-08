@@ -851,6 +851,30 @@ button{cursor:pointer}
 .ks-pair{display:grid;grid-template-columns:200px minmax(0,1fr);gap:6px 18px;padding:14px 0;border-top:1px solid var(--line)}
 .ks-pair h4{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:-.01em;margin:0;line-height:1.35}
 .ks-pair p{margin:0;color:var(--ink-2);font-size:15.5px;line-height:1.6}
+/* ═══ «Οι χρονολογίες ανά ενότητα» (#/kefalaio-2-xronia) · kc- ═══ */
+.kc-lead{font-size:18px;line-height:1.65;color:var(--ink);margin:0;max-width:70ch}
+.kc-act{margin:64px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+.kc-act:first-of-type{margin-top:40px}
+.kc-u{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0 36px;padding:26px 0;border-bottom:1px solid var(--line)}
+.kc-u:last-child{border-bottom:0}
+.kc-n{font-family:var(--f-mono);font-size:13px;font-weight:700;color:var(--pen)}
+.kc-u h3{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.02em;line-height:1.25;margin:4px 0 6px}
+.kc-per{font-family:var(--f-mono);font-size:12px;color:var(--muted);line-height:1.5}
+.kc-u .kc-open{display:inline-block;margin-top:10px;color:var(--pen);font-size:14px;text-decoration:none}
+.kc-u .kc-open:hover{text-decoration:underline}
+.kc-line{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px 20px}
+.kc-line li{position:relative;padding-top:18px;border-top:2px solid var(--line-2)}
+.kc-line li::before{content:"";position:absolute;top:-7px;left:0;width:12px;height:12px;border-radius:50%;background:var(--pen);box-shadow:0 0 0 4px var(--bg)}
+.kc-y{display:block;font-family:var(--f-mono);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:-.01em}
+.kc-t{display:block;margin-top:4px;color:var(--ink-2);font-size:15px;line-height:1.45}
+.kc-same{margin-top:16px}
+.kc-row{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 20px;padding:14px 0;border-top:1px solid var(--line);align-items:baseline}
+.kc-row b{font-family:var(--f-mono);font-size:18px;color:var(--pen)}
+.kc-row ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.kc-row li{color:var(--ink-2);font-size:15.5px;line-height:1.5}
+.kc-row li span{font-family:var(--f-mono);font-size:12.5px;color:var(--ink);font-weight:700;margin-right:8px}
+.ks-xlink{display:inline-flex;margin-top:14px;color:var(--pen);font-size:15px;text-decoration:none}
+.ks-xlink:hover{text-decoration:underline}
 @media (max-width:1020px){
   .ks{grid-template-columns:minmax(0,1fr)}
   .ks-rail{position:static;max-height:none;overflow:visible;order:-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;margin-bottom:8px}
@@ -862,6 +886,9 @@ button{cursor:pointer}
   .ks-L{font-size:44px}
   .ks-lead{font-size:17px}
   .ks-tl,.ks-rk{font-size:11px}
+  .kc-u,.kc-row{grid-template-columns:minmax(0,1fr)}
+  .kc-u h3{margin-bottom:2px}
+  .kc-line{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:14px}
 }
 </style>
 <link rel="stylesheet" href="kentro-exit.css">
@@ -18788,6 +18815,7 @@ function route() {
   if (parts[0] === "orismoi")     { showView("list"); renderOrismoi();  window.scrollTo(0, 0); return; }
   if (parts[0] === "xronologies") { showView("list"); renderXron();     window.scrollTo(0, 0); return; }
   if (parts[0] === "kefalaio-2")  { showView("list"); renderStory();    window.scrollTo(0, 0); return; }
+  if (parts[0] === "kefalaio-2-xronia") { showView("list"); renderXronK2(); window.scrollTo(0, 0); return; }
   if (!hasHref(parts[0])) { location.replace("#/"); showView("home"); renderHome(); return; }
   showView("chapter");
   const wantTab = TABS.some(t => t.id === parts[1]) ? parts[1] : tab;
@@ -18823,6 +18851,7 @@ function renderStory() {
   $("#viewList").innerHTML = `<div class="ks">
     <div class="ks-main">
       <p class="ks-lead">${esc(S.lead)}</p>
+      <a class="ks-xlink" href="#/kefalaio-2-xronia">Οι χρονολογίες ανά ενότητα →</a>
       <div class="ks-threads"><p>${esc(S.threadsLead)}</p>${S.threads.map(t => `<div class="ks-th" data-t="${t.id}"><span class="ks-tl">${esc(S.labels[t.id])}</span><span>${esc(t.q)}</span></div>`).join("")}</div>
       ${S.acts.map(a => `<section class="ks-act"><div class="ks-al"><span class="ks-L">${esc(a.L)}</span><div><h2>${esc(a.name)}</h2><div class="ks-yr">${esc(a.years)}</div></div></div><p>${esc(a.line)}</p></section>${a.units.map(unit).join("")}`).join("")}
       <section class="ks-end" id="ks-end"><h2>Τα τρία νήματα, από την αρχή ως το τέλος</h2>
@@ -18840,6 +18869,28 @@ function renderStory() {
   </div>`;
   $$("[data-ksgo]", $("#viewList")).forEach(b => b.onclick = () => ksGo(b.dataset.ksgo));
   if (typeof requestAnimationFrame === "function") ksSpy();
+}
+/* «Οι χρονολογίες ανά ενότητα»: ΜΟΝΟ οι χρονολογίες βιβλίου (timeline.events με book), που ο φρουρός
+   του test ήδη δένει με την πρόζα κάθε ενότητας. Στο τέλος, οι χρονιές που βγαίνουν σε πάνω από μία ενότητα. */
+function renderXronK2() {
+  const S = K2STORY, ch = id => CHAPTERS.find(c => c.id === "k2-" + id), evs = id => { const c = ch(id); return c ? c.timeline.events.filter(e => e.book) : []; };
+  const ids = S.acts.flatMap(a => a.units), total = ids.reduce((n, id) => n + evs(id).length, 0);
+  listHero("Κεφάλαιο 2 · Τα πολιτικά κόμματα", "Οι χρονολογίες ανά ενότητα", total + " χρονολογίες");
+  const same = {};
+  ids.forEach(id => evs(id).forEach(e => { const y = (String(e.label).match(/1[789]\d\d/) || [])[0]; if (y) (same[y] = same[y] || []).push({ id, e }); }));
+  const multi = Object.keys(same).filter(y => new Set(same[y].map(x => x.id)).size > 1).sort();
+  $("#viewList").innerHTML = `<div class="ks-main" style="max-width:1100px">
+    <p class="kc-lead">Κάθε ενότητα με τις χρονολογίες που γράφει το βιβλίο, με τη σειρά. Στο τέλος, οι χρονιές που βγαίνουν σε πάνω από μία ενότητα, γιατί εκεί μπερδεύεται κανείς πιο εύκολα.</p>
+    <a class="ks-xlink" href="#/kefalaio-2">← Το κεφάλαιο σαν μία ιστορία</a>
+    ${S.acts.map(a => `<section class="kc-act"><div class="ks-al"><span class="ks-L">${esc(a.L)}</span><div><h2 class="h2" style="margin:0">${esc(a.name)}</h2><div class="ks-yr">${esc(a.years)}</div></div></div>
+      ${a.units.map(id => { const c = ch(id); return `<div class="kc-u" id="kc-${id}">
+        <div><span class="kc-n">${ksLab(id)}</span><h3>${esc(S.units[id].short)}</h3><div class="kc-per">${esc(c ? c.period : "")}</div>${c ? `<a class="kc-open" href="#/k2-${id}/timeline">Άνοιξε το χρονολόγιο →</a>` : ""}</div>
+        <ol class="kc-line">${evs(id).map(e => `<li><span class="kc-y">${esc(e.label)}</span><span class="kc-t">${esc(e.title)}</span></li>`).join("")}</ol>
+      </div>`; }).join("")}</section>`).join("")}
+    <section class="kc-act" id="kc-same"><h2 class="h2">Ίδια χρονιά, άλλη ενότητα</h2>
+      <div class="kc-same">${multi.map(y => `<div class="kc-row"><b>${y}</b><ul>${same[y].map(x => `<li><span>${ksLab(x.id)}</span>${esc(x.e.label)} · ${esc(x.e.title)}</li>`).join("")}</ul></div>`).join("")}</div>
+    </section>
+  </div>`;
 }
 function ksGo(id) {
   const el = document.getElementById(id); if (!el) return;
@@ -18920,6 +18971,14 @@ function renderHome() {
         <div class="where">Κάθε ενότητα ξεκινά από το πρόβλημα που άφησε η προηγούμενη, και τρία <b>νήματα</b>
           περνούν από όλο το κεφάλαιο: ποιος κυβερνά, τι είναι κόμμα, η Μεγάλη Ιδέα.<br>
           Δεξιά βλέπεις πάντα σε ποια ενότητα βρίσκεσαι.</div>
+        <span class="go">Άνοιγμα →</span>
+      </a>
+
+      <a class="kard wide" href="#/kefalaio-2-xronia">
+        <span class="kl">Κεφάλαιο 2 — οι χρονολογίες ανά ενότητα</span>
+        <h3>Κάθε ενότητα με τις χρονολογίες της, με τη σειρά του βιβλίου</h3>
+        <div class="where">Μόνο ό,τι γράφει το βιβλίο, οργανωμένο σε Α · Β · Γ · Δ.<br>
+          Στο τέλος, οι χρονιές που βγαίνουν σε <b>πάνω από μία ενότητα</b>, εκεί που μπερδεύεσαι.</div>
         <span class="go">Άνοιγμα →</span>
       </a>
 

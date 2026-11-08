@@ -4319,6 +4319,14 @@ ok('⛔ καμία σκέτη σήμανση στην οθόνη', ksH.length > 
 ok('⛔ όχι εξέταση: κανένα κρυμμένο κουτί, καμία βαθμολογία', !/ hidden|data-grqs|σωστ|λάθος/i.test(ksH));
 ok('κάθε ενότητα ανοίγει την καρτέλα της', ksIds.every(id => ksH.includes('href="#/k2-' + id + '/explain"')));
 ok('η κλάση που ανάβει η JS υπάρχει στο CSS (.ks-rail button.on)', CSS.includes('.ks-rail button.on{'));
+/* «Οι χρονολογίες ανά ενότητα» (#/kefalaio-2-xronia): ΜΟΝΟ χρονολογίες βιβλίου, και όλες. */
+const kxH = boot('#/kefalaio-2-xronia').painted['viewList'] || '';
+const kxBook = ksIds.reduce((n, id) => n + CHAPTERS.find(c => c.id === 'k2-' + id).timeline.events.filter(e => e.book).length, 0);
+is('χρονολογίες: 16 ενότητες', (kxH.match(/class="kc-u"/g) || []).length, 16);
+is('χρονολογίες: κάθε χρονολογία βιβλίου, και μόνο αυτές', (kxH.match(/class="kc-y"/g) || []).length, kxBook);
+ok('χρονολογίες: «ίδια χρονιά, άλλη ενότητα» με το 1844 και το 1910', kxH.includes('<b>1844</b>') && kxH.includes('<b>1910</b>'));
+ok('⛔ χρονολογίες: καμία κλάση kx- εκτός από το kx-exit (το kentro-exit.css ορίζει .kx-row)', !/kx-(?!exit)/.test(PAGE));
+ok('η αρχική έχει κάρτα προς τις χρονολογίες', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-xronia"'));
 ok('η αρχική έχει κάρτα προς το κεφάλαιο', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2"'));
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
