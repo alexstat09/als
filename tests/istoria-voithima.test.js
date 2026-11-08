@@ -797,7 +797,7 @@ ok('και μπαίνει Προηγούμενη/Επόμενη στο τέλο�
 
 const D = boot('#/orismoi'), E = boot('#/xronologies');
 is('η διαδρομή #/orismoi ζωγραφίζει', D.error || 'NONE', 'NONE');
-ok('  με τον τίτλο της', (D.painted.hero || '').includes('Όλοι οι ορισμοί μου'));
+ok('  με τον τίτλο της', (D.painted.hero || '').includes('Όλοι οι ορισμοί'));
 is('η διαδρομή #/xronologies ζωγραφίζει', E.error || 'NONE', 'NONE');
 ok('  και δείχνει ΜΟΝΟ χρονολογίες βιβλίου', (E.painted.viewList || '').includes('Χρονολογία βιβλίου'));
 ok('⛔ ΚΑΜΙΑ «undefined» στις τρεις νέες οθόνες (εδώ έγραψα IC.gap αντί για IC.arrowD)',
@@ -4339,10 +4339,17 @@ const KO = koM ? JSON.parse(koM[1]) : [];
 is('ορισμοί: η σελίδα έχει ΑΚΡΙΒΩΣ το k2-orismoi.json', koM && koM[1], JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tools', 'istoria-grammi', 'k2-orismoi.json'), 'utf8'))));
 const koBad = KO.filter(o => { const c = CHAPTERS.find(x => x.id === 'k2-' + o.u); if (!c) return true; const T = c.paragraphs.join('\n'), a = T.indexOf(o.from); return a < 0 || T.split(o.from).length !== 2 || T.indexOf(o.to, a) < 0; }).map(o => o.t);
 ok('⛔ ορισμοί: κάθε αρχή υπάρχει ΜΙΑ φορά και κάθε τέλος μετά από αυτήν' + (koBad.length ? ' → ' + koBad.join(', ') : ''), KO.length >= 19 && !koBad.length);
-const koH = boot('#/kefalaio-2-orismoi').painted['viewList'] || '';
-is('ορισμοί: μία κάρτα ανά ορισμό', (koH.match(/class="ko-card"/g) || []).length, KO.length);
+/* ⭐ als-v710 — ΜΙΑ σελίδα ορισμών: το #/kefalaio-2-orismoi είναι η ίδια με φίλτρο Κεφ.2. */
+const koB = boot('#/kefalaio-2-orismoi'), koH = koB.painted['orList'] || '', koAll = boot('#/orismoi').painted['orList'] || '';
+is('ορισμοί: η σελίδα του Κεφ.2 φορτώνει χωρίς σφάλμα', koB.error || 'NONE', 'NONE');
+is('ορισμοί: μία κάρτα ανά ορισμό της λίστας', (koH.match(/class="or-card/g) || []).length, KO.length);
+ok('  και είναι η ΙΔΙΑ σελίδα με το φίλτρο Κεφ.2 πατημένο', (koB.painted['orSeg'] || '').includes('data-f="c2" aria-pressed="true"'));
 ok('ορισμοί: κανένα «Δεν βρέθηκε»', koH.length > 1000 && !koH.includes('Δεν βρέθηκε το κείμενο'));
-ok('ορισμοί: το «Μόνο οι όροι» κρύβει με κλάση που υπάρχει στο CSS', CSS.includes('.ko-hide .ko-card:not(.open) .ko-txt{display:none}'));
+ok('⭐ το «Όλοι οι ορισμοί» περιέχει και τη λίστα του Κεφ.2', KO.every(o => koAll.includes(o.t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])))));
+ok('  ομαδοποιημένη με τα μεγάλα γράμματα του Κεφ.2', koAll.includes('class="ks-L">Α<') && koAll.includes('Πώς γεννιούνται τα κόμματα'));
+ok('ορισμοί: το «Μόνο οι όροι» κρύβει με κλάση που υπάρχει στο CSS', CSS.includes('.or-recall .or-card:not(.open) .or-txt'));
+ok('⛔ τα γράμματα πηδήματος είναι ΚΟΥΜΠΙΑ, όχι href="#…" (θα άλλαζαν διαδρομή)', (koB.painted['orJump'] || '').includes('data-to="or-2-0"') && !/href="#or-/.test(koB.painted['orJump'] || ''));
+ok('⛔ ΚΑΜΙΑ «undefined» στη σελίδα ορισμών', !/undefined/.test(koH + koAll + (koB.painted['orJump'] || '')));
 ok('η αρχική έχει κάρτα προς τους ορισμούς', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-orismoi"'));
 /* «Γ1 2026 λυμένο»: βιβλίο αυτολεξεί, κάθε «…» μέσα στις πηγές, κάθε σημάδι μέσα στην πηγή του. */
 const kgM = PAGE.match(/\nconst K2G1 = (.*);\n/), KG = kgM ? JSON.parse(kgM[1]) : { sources: [], answer: [] };
