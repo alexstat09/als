@@ -103,7 +103,7 @@ ok('υπάρχει πλοήγηση ΟΛΩΝ των ενοτήτων για γρ
 section('Δ · offline + ο δρόμος');
 ['istoria-sarosi.html', 'istoria-sarosi-data.js'].forEach(f =>
   ok('το sw.js προφορτώνει ' + f, SW.indexOf("'" + f + "'") !== -1));
-ok('υπάρχει δρόμος από την ΑΡΧΙΚΗ του βοηθήματος', /href="istoria-sarosi\.html"/.test(AID));
+ok('υπάρχει δρόμος από την ΑΡΧΙΚΗ του βοηθήματος', /href="istoria-sarosi\.html"|href: "istoria-sarosi\.html"/.test(AID));   /* als-v709: η πόρτα ζει στο HOME_TOOLS της αρχικής */
 
 console.log('\n' + (fail ? '✗ ' : '✓ ') + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
