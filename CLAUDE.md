@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v707`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v708`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-11-08 — `als-v708` — «Γ1 ΠΑΝΕΛΛΗΝΙΕΣ 2026, ΛΥΜΕΝΟ» (`#/kefalaio-2-g1-2026`, κάρτα στην αρχική).** Εκφώνηση και πηγές από το PDF του υπουργείου. Απάντηση = βιβλίο αυτολεξεί (from/to στην Α.1) + φράσεις των πηγών σε «…» + δικές του συνδέσεις, σε τρία χρώματα. Ο φρουρός βρίσκει κάθε «…» μέσα στις πηγές. ⚠️ Λύση που κυκλοφόρησε έγραφε για το Κείμενο Α πράγματα που δεν έχει («συγγενείς έως δεύτερο βαθμό»): δεν αντιγράφεται ποτέ ξένη λύση χωρίς έλεγχο στην πηγή.
 
 **2026-11-08 — `als-v707` — + ορισμός «Κοινοβουλευτική δικτατορία (Κωλέττη)» (Β.2, «Το 1846/1847 κατείχε» → «κοινοβουλευτικής δικτατορίας.»), δική του προσθήκη· 20 ορισμοί.**
 

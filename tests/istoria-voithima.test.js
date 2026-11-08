@@ -4338,6 +4338,16 @@ is('ορισμοί: μία κάρτα ανά ορισμό', (koH.match(/class="k
 ok('ορισμοί: κανένα «Δεν βρέθηκε»', koH.length > 1000 && !koH.includes('Δεν βρέθηκε το κείμενο'));
 ok('ορισμοί: το «Μόνο οι όροι» κρύβει με κλάση που υπάρχει στο CSS', CSS.includes('.ko-hide .ko-card:not(.open) .ko-txt{display:none}'));
 ok('η αρχική έχει κάρτα προς τους ορισμούς', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-orismoi"'));
+/* «Γ1 2026 λυμένο»: βιβλίο αυτολεξεί, κάθε «…» μέσα στις πηγές, κάθε σημάδι μέσα στην πηγή του. */
+const kgM = PAGE.match(/\nconst K2G1 = (.*);\n/), KG = kgM ? JSON.parse(kgM[1]) : { sources: [], answer: [] };
+is('Γ1 2026: η σελίδα έχει ΑΚΡΙΒΩΣ το k2-g1-2026.json', kgM && kgM[1], JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tools', 'istoria-grammi', 'k2-g1-2026.json'), 'utf8'))));
+const kgW = s => s.replace(/\s+/g, ' '), kgS = KG.sources.map(s => kgW(s.text)), kgA1 = CHAPTERS.find(c => c.id === 'k2-a1').paragraphs.join('\n'), kgBad = [];
+KG.answer.forEach(a => a.parts.forEach(p => { if (p.book) { const i = kgA1.indexOf(p.book.from); if (i < 0 || kgA1.indexOf(p.book.to, i) < 0) kgBad.push('βιβλίο: ' + p.book.from); } else for (const m of p.src.matchAll(/«([^»]+)»/g)) if (!kgS.some(s => s.includes(kgW(m[1])))) kgBad.push('«' + m[1] + '»'); }));
+KG.sources.forEach(s => s.take.forEach(t => { if (!kgW(s.text).includes(t)) kgBad.push('σημάδι: ' + t); }));
+ok('⛔ Γ1 2026: βιβλίο αυτολεξεί, κάθε «…» υπάρχει στις πηγές' + (kgBad.length ? ' → ' + kgBad.join(' | ') : ''), KG.answer.length === 2 && !kgBad.length);
+const kgH = boot('#/kefalaio-2-g1-2026').painted['viewList'] || '';
+ok('Γ1 2026: ζωγραφίζονται εκφώνηση, 2 πηγές, απάντηση α και β', (kgH.match(/class="kg-src"/g) || []).length === 2 && (kgH.match(/class="kg-ans"/g) || []).length === 2 && kgH.includes('πελατειακά δίκτυα'));
+ok('Γ1 2026: η αρχική έχει κάρτα', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-g1-2026"'));
 ok('η αρχική έχει κάρτα προς το κεφάλαιο', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2"'));
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
