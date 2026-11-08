@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v704`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v705`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-11-08 — `als-v705` — «ΟΙ ΟΡΙΣΜΟΙ» Κεφ.2 (`#/kefalaio-2-orismoi`, κάρτα στην αρχική).** Η λίστα είναι ΔΙΚΗ ΤΟΥ (19 όροι, από πού ως πού στο βιβλίο) στο `tools/istoria-grammi/k2-orismoi.json` = η γραμμή `const K2ORISMOI`. Το κείμενο ΔΕΝ γράφεται: κόβεται αυτολεξεί από τα `paragraphs` με `from`/`to` (`koText`). Σήματα «Πανελλήνιες ΧΧΧΧ» μόνο για επιβεβαιωμένες χρονιές, «ΣΟΣ φροντ.» για τους Ιάπωνες. «Μόνο οι όροι» = `.ko-hide`, πάτημα στον όρο ανοίγει την κάρτα. Λαϊκό Κόμμα: από «Πράγματι, στα μέσα του 1910» (το «Για να επιτευχθούν αυτοί οι στόχοι» κρέμεται χωρίς τα προηγούμενα). ⚠️ `.ko-grid` θέλει `align-items:start`, αλλιώς η κλειστή κάρτα δίπλα σε ανοιχτή τεντώνεται άδεια. Ο φρουρός «καμία kx-» έπιασε ένα δικό μου `kx-lead` αμέσως. Test 2188/0.
 
 **2026-11-08 — `als-v704` — «ΟΙ ΧΡΟΝΟΛΟΓΙΕΣ ΑΝΑ ΕΝΟΤΗΤΑ» Κεφ.2 (`#/kefalaio-2-xronia`, κάρτα στην αρχική + σύνδεσμος από το «Το κεφάλαιο σαν μία ιστορία»).** Δική του εντολή το πρωί του διαγωνίσματος. ΜΟΝΟ οι χρονολογίες βιβλίου (`timeline.events` με `book`, ήδη δεμένες με την πρόζα από τον φρουρό), ανά τμήμα και ενότητα, και στο τέλος «Ίδια χρονιά, άλλη ενότητα» (χρονιές σε ≥2 ενότητες). ⚠️⚠️ Το πρόθεμα `kx-` ήταν πιασμένο: το `kentro-exit.css` ορίζει `.kx-row` (σταθ. 26) → οι κλάσεις είναι `kc-`, και ο φρουρός απαγορεύει κάθε `kx-` εκτός από το `kx-exit`. Test 2182/0, render 1440/390: 0 σφάλματα, 0 υπερχείλιση.
 

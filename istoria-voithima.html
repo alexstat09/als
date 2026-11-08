@@ -873,7 +873,23 @@ button{cursor:pointer}
 .kc-row ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .kc-row li{color:var(--ink-2);font-size:15.5px;line-height:1.5}
 .kc-row li span{font-family:var(--f-mono);font-size:12.5px;color:var(--ink);font-weight:700;margin-right:8px}
-.ks-xlink{display:inline-flex;margin-top:14px;color:var(--pen);font-size:15px;text-decoration:none}
+.ks-xlink{display:inline-flex;margin-top:14px;margin-right:22px;color:var(--pen);font-size:15px;text-decoration:none}
+/* ═══ «Οι ορισμοί του Κεφ.2» (#/kefalaio-2-orismoi) · ko- ═══ */
+.ko-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:22px}
+.ko-tog{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:15px;padding:10px 16px;border-radius:10px;cursor:pointer;min-height:44px}
+.ko-tog[aria-pressed="true"]{background:var(--pen-soft);border-color:var(--pen);color:var(--ink)}
+.ko-hint{color:var(--muted);font-size:14.5px}
+.ko-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px;align-items:start}
+.ko-card{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.ko-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;width:100%;border:0;background:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.ko-u{font-family:var(--f-mono);font-size:12.5px;font-weight:700;color:var(--pen)}
+.ko-term{flex-basis:100%;font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.02em;line-height:1.25;color:var(--ink)}
+.ko-pan{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.04em;color:var(--good);border:1px solid rgba(111,209,174,.35);border-radius:999px;padding:2px 9px}
+.ko-sos{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.04em;color:var(--bad);border:1px solid rgba(242,139,120,.45);border-radius:999px;padding:2px 9px}
+.ko-txt{margin:12px 0 0;color:var(--ink-2);font-size:16px;line-height:1.7}
+.ko-hide .ko-card:not(.open) .ko-txt{display:none}
+.ko-hide .ko-card:not(.open){background:none}
+.ko-act{margin:52px 0 0;padding-top:20px;border-top:1px solid var(--line)}
 .ks-xlink:hover{text-decoration:underline}
 @media (max-width:1020px){
   .ks{grid-template-columns:minmax(0,1fr)}
@@ -887,6 +903,7 @@ button{cursor:pointer}
   .ks-lead{font-size:17px}
   .ks-tl,.ks-rk{font-size:11px}
   .kc-u,.kc-row{grid-template-columns:minmax(0,1fr)}
+  .ko-grid{grid-template-columns:minmax(0,1fr)}
   .kc-u h3{margin-bottom:2px}
   .kc-line{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-top:14px}
 }
@@ -18816,6 +18833,7 @@ function route() {
   if (parts[0] === "xronologies") { showView("list"); renderXron();     window.scrollTo(0, 0); return; }
   if (parts[0] === "kefalaio-2")  { showView("list"); renderStory();    window.scrollTo(0, 0); return; }
   if (parts[0] === "kefalaio-2-xronia") { showView("list"); renderXronK2(); window.scrollTo(0, 0); return; }
+  if (parts[0] === "kefalaio-2-orismoi") { showView("list"); renderOrismoiK2(); window.scrollTo(0, 0); return; }
   if (!hasHref(parts[0])) { location.replace("#/"); showView("home"); renderHome(); return; }
   showView("chapter");
   const wantTab = TABS.some(t => t.id === parts[1]) ? parts[1] : tab;
@@ -18851,7 +18869,7 @@ function renderStory() {
   $("#viewList").innerHTML = `<div class="ks">
     <div class="ks-main">
       <p class="ks-lead">${esc(S.lead)}</p>
-      <a class="ks-xlink" href="#/kefalaio-2-xronia">Οι χρονολογίες ανά ενότητα →</a>
+      <a class="ks-xlink" href="#/kefalaio-2-xronia">Οι χρονολογίες ανά ενότητα →</a><a class="ks-xlink" href="#/kefalaio-2-orismoi">Οι ορισμοί →</a>
       <div class="ks-threads"><p>${esc(S.threadsLead)}</p>${S.threads.map(t => `<div class="ks-th" data-t="${t.id}"><span class="ks-tl">${esc(S.labels[t.id])}</span><span>${esc(t.q)}</span></div>`).join("")}</div>
       ${S.acts.map(a => `<section class="ks-act"><div class="ks-al"><span class="ks-L">${esc(a.L)}</span><div><h2>${esc(a.name)}</h2><div class="ks-yr">${esc(a.years)}</div></div></div><p>${esc(a.line)}</p></section>${a.units.map(unit).join("")}`).join("")}
       <section class="ks-end" id="ks-end"><h2>Τα τρία νήματα, από την αρχή ως το τέλος</h2>
@@ -18891,6 +18909,33 @@ function renderXronK2() {
       <div class="kc-same">${multi.map(y => `<div class="kc-row"><b>${y}</b><ul>${same[y].map(x => `<li><span>${ksLab(x.id)}</span>${esc(x.e.label)} · ${esc(x.e.title)}</li>`).join("")}</ul></div>`).join("")}</div>
     </section>
   </div>`;
+}
+/* «Οι ορισμοί του Κεφ.2»: η λίστα είναι ΔΙΚΗ ΤΟΥ (όρος + από πού ως πού στο βιβλίο). Το κείμενο ΔΕΝ γράφεται
+   εδώ: κόβεται αυτολεξεί από τα paragraphs με from/to. Πηγή: tools/istoria-grammi/k2-orismoi.json.
+   «Πανελλήνιες» = έπεσε ως θέμα (μόνο επιβεβαιωμένες χρονιές), «ΣΟΣ φροντ.» = το είπε ο καθηγητής του. */
+const K2ORISMOI = [{"t":"Πελατειακά δίκτυα","u":"a1","from":"Κατά την προεπαναστατική περίοδο","to":"αβεβαιότητας στους ανθρώπους.","pan":["2026 · Γ1"]},{"t":"Γενικός Οργανισμός της Πελοποννήσου","u":"a2","from":"Τα γεγονότα αυτά συνδέονται","to":"αποσοβήθηκε η σύρραξη."},{"t":"Το «Προσωρινόν Πολίτευμα» της Επιδαύρου (Α' Εθνοσυνέλευση)","u":"a2","from":"Το «Προσωρινόν Πολίτευμα» της Επιδαύρου","to":"πολυαρχικής εξουσίας."},{"t":"«Πανελλήνιον»","u":"a2","from":"Η ύπαρξη των πρώτων κομμάτων","to":"εσωτερική ειρήνη."},{"t":"Αντιπολιτευτικοί όμιλοι","u":"b3","from":"Περί τα τέλη της δεκαετίας του 1850","to":"ο Αλέξανδρος Κουμουνδούρος."},{"t":"Η επανάσταση του 1862 και η έξωση του Όθωνα","u":"b3","from":"Το Φεβρουάριο του 1862","to":"να εγκαταλείψει τη χώρα."},{"t":"Πεδινοί","u":"b4","from":"Οι πεδινοί είχαν ως ηγέτη","to":"και στους μικροκαλλιεργητές.","pan":["2012"]},{"t":"Ορεινοί","u":"b4","from":"Οι ορεινοί απαρτίστηκαν","to":"και των πλοιοκτητών.","pan":["2015","2012 επαν."]},{"t":"Εθνικόν Κομιτάτον","u":"b4","from":"Το Εθνικόν Κομιτάτον","to":"στην Οθωμανική αυτοκρατορία.","pan":["2026","2018"]},{"t":"Εκλεκτικοί","u":"b4","from":"Οι Εκλεκτικοί ήταν","to":"σταθερές κυβερνήσεις.","pan":["2017"]},{"t":"Ομάδα των Ιαπώνων","u":"g3","from":"Το μοναδικό νέο πολιτικό στοιχείο","to":"διαλύθηκε το 1908.","sos":true},{"t":"Στρατιωτικός Σύνδεσμος","u":"g3","from":"Στις 15 Αυγούστου 1909","to":"έχοντας επιτύχει τις επιδιώξεις του.","pan":["2017"]},{"t":"Αντιβενιζελικά κόμματα","u":"d2","from":"Ως αντιβενιζελικά θεωρούνταν","to":"ήταν πιο διαλλακτικό.","pan":["2018 · Β1"]},{"t":"Ραλλικό κόμμα","u":"d2","from":"Το ραλλικό κόμμα ήταν αντίθετο","to":"για την οικονομική ανάπτυξη."},{"t":"Εθνικό Κόμμα (Κ. Μαυρομιχάλη)","u":"d2","from":"Το Εθνικό Κόμμα του Κ. Μαυρομιχάλη","to":"οι Βενιζελικοί.","pan":["2012"]},{"t":"Κόμμα του Γ. Θεοτόκη","u":"d2","from":"Το κόμμα του Γ. Θεοτόκη","to":"τον πυρήνα των Αντιβενιζελικών.","pan":["2023","2016"]},{"t":"Λαϊκό Κόμμα (1910)","u":"d3","from":"Πράγματι, στα μέσα του 1910","to":"στους Φιλελευθέρους."},{"t":"Συντακτική Εθνοσυνέλευση (1921)","u":"d4","from":"Στις 25 Ιανουαρίου 1921","to":"εξ ολοκλήρου το σύνταγμα."},{"t":"Σ.Ε.Κ.Ε. (Σοσιαλιστικό Εργατικό Κόμμα Ελλάδος)","u":"d5","from":"Οι υψηλοί δείκτες ανεργίας","to":"(Κ.Κ.Ε.)."}];
+function koText(o) {
+  const c = CHAPTERS.find(x => x.id === "k2-" + o.u); if (!c) return "";
+  const T = c.paragraphs.join("\n"), a = T.indexOf(o.from), b = a < 0 ? -1 : T.indexOf(o.to, a);
+  return a < 0 || b < 0 ? "" : T.slice(a, b + o.to.length).replace(/\n/g, " ");
+}
+let koHide = false;
+function renderOrismoiK2() {
+  const S = K2STORY, by = id => K2ORISMOI.filter(o => o.u === id);
+  listHero("Κεφάλαιο 2 · Τα πολιτικά κόμματα", "Οι ορισμοί", K2ORISMOI.length + " ορισμοί");
+  const card = o => { const t = koText(o); return `<article class="ko-card">
+      <button type="button" class="ko-head" aria-expanded="${koHide ? "false" : "true"}"><span class="ko-u">${ksLab(o.u)}</span>${(o.pan || []).map(p => `<span class="ko-pan">Πανελλήνιες ${esc(p)}</span>`).join("")}${o.sos ? '<span class="ko-sos">ΣΟΣ φροντ.</span>' : ""}<span class="ko-term">${esc(o.t)}</span></button>
+      <p class="ko-txt">${t ? esc(t) : "Δεν βρέθηκε το κείμενο στο βιβλίο. Πες το μου να το διορθώσω."}</p></article>`; };
+  $("#viewList").innerHTML = `<div class="ks-main" style="max-width:1100px">
+    <p class="kc-lead">Οι ορισμοί της λίστας σου, αυτολεξεί από το βιβλίο, με τη σειρά του κεφαλαίου. Πάτα «Μόνο οι όροι», πες τον ορισμό, και πάτα τον όρο για να ελέγξεις.</p>
+    <div class="ko-bar"><button type="button" class="ko-tog" id="koTog" aria-pressed="${koHide}">Μόνο οι όροι</button><span class="ko-hint">${K2ORISMOI.filter(o => o.pan).length} έχουν πέσει στις Πανελλήνιες</span><a class="ks-xlink" href="#/kefalaio-2">← Το κεφάλαιο σαν μία ιστορία</a></div>
+    <div id="koWrap" class="${koHide ? "ko-hide" : ""}">
+    ${S.acts.map(a => { const list = a.units.flatMap(by); return list.length ? `<section class="ko-act"><div class="ks-al"><span class="ks-L">${esc(a.L)}</span><div><h2 class="h2" style="margin:0">${esc(a.name)}</h2><div class="ks-yr">${esc(a.years)}</div></div></div>
+      <div class="ko-grid">${list.map(card).join("")}</div></section>` : ""; }).join("")}
+    </div></div>`;
+  const wrap = $("#koWrap"), tog = $("#koTog");
+  tog.onclick = () => { koHide = !koHide; tog.setAttribute("aria-pressed", String(koHide)); wrap.classList.toggle("ko-hide", koHide); $$(".ko-card", wrap).forEach(c => { c.classList.remove("open"); $(".ko-head", c).setAttribute("aria-expanded", String(!koHide)); }); };
+  $$(".ko-card", wrap).forEach(c => { const h = $(".ko-head", c); h.onclick = () => { if (!koHide) return; const on = !c.classList.contains("open"); c.classList.toggle("open", on); h.setAttribute("aria-expanded", String(on)); }; });
 }
 function ksGo(id) {
   const el = document.getElementById(id); if (!el) return;
@@ -18971,6 +19016,14 @@ function renderHome() {
         <div class="where">Κάθε ενότητα ξεκινά από το πρόβλημα που άφησε η προηγούμενη, και τρία <b>νήματα</b>
           περνούν από όλο το κεφάλαιο: ποιος κυβερνά, τι είναι κόμμα, η Μεγάλη Ιδέα.<br>
           Δεξιά βλέπεις πάντα σε ποια ενότητα βρίσκεσαι.</div>
+        <span class="go">Άνοιγμα →</span>
+      </a>
+
+      <a class="kard wide" href="#/kefalaio-2-orismoi">
+        <span class="kl">Κεφάλαιο 2 — οι ορισμοί</span>
+        <h3>Οι 19 ορισμοί σου, αυτολεξεί από το βιβλίο</h3>
+        <div class="where">Με τη σειρά του κεφαλαίου, σημαδεμένοι όσοι <b>έχουν πέσει στις Πανελλήνιες</b>.<br>
+          «Μόνο οι όροι»: λες τον ορισμό και πατάς για να ελέγξεις.</div>
         <span class="go">Άνοιγμα →</span>
       </a>
 

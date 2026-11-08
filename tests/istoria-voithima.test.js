@@ -4327,6 +4327,17 @@ is('χρονολογίες: κάθε χρονολογία βιβλίου, και
 ok('χρονολογίες: «ίδια χρονιά, άλλη ενότητα» με το 1844 και το 1910', kxH.includes('<b>1844</b>') && kxH.includes('<b>1910</b>'));
 ok('⛔ χρονολογίες: καμία κλάση kx- εκτός από το kx-exit (το kentro-exit.css ορίζει .kx-row)', !/kx-(?!exit)/.test(PAGE));
 ok('η αρχική έχει κάρτα προς τις χρονολογίες', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-xronia"'));
+/* «Οι ορισμοί του Κεφ.2» (#/kefalaio-2-orismoi): η λίστα είναι δική του, το κείμενο κόβεται από το βιβλίο. */
+const koM = PAGE.match(/\nconst K2ORISMOI = (.*);\n/);
+const KO = koM ? JSON.parse(koM[1]) : [];
+is('ορισμοί: η σελίδα έχει ΑΚΡΙΒΩΣ το k2-orismoi.json', koM && koM[1], JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tools', 'istoria-grammi', 'k2-orismoi.json'), 'utf8'))));
+const koBad = KO.filter(o => { const c = CHAPTERS.find(x => x.id === 'k2-' + o.u); if (!c) return true; const T = c.paragraphs.join('\n'), a = T.indexOf(o.from); return a < 0 || T.split(o.from).length !== 2 || T.indexOf(o.to, a) < 0; }).map(o => o.t);
+ok('⛔ ορισμοί: κάθε αρχή υπάρχει ΜΙΑ φορά και κάθε τέλος μετά από αυτήν' + (koBad.length ? ' → ' + koBad.join(', ') : ''), KO.length >= 19 && !koBad.length);
+const koH = boot('#/kefalaio-2-orismoi').painted['viewList'] || '';
+is('ορισμοί: μία κάρτα ανά ορισμό', (koH.match(/class="ko-card"/g) || []).length, KO.length);
+ok('ορισμοί: κανένα «Δεν βρέθηκε»', koH.length > 1000 && !koH.includes('Δεν βρέθηκε το κείμενο'));
+ok('ορισμοί: το «Μόνο οι όροι» κρύβει με κλάση που υπάρχει στο CSS', CSS.includes('.ko-hide .ko-card:not(.open) .ko-txt{display:none}'));
+ok('η αρχική έχει κάρτα προς τους ορισμούς', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-orismoi"'));
 ok('η αρχική έχει κάρτα προς το κεφάλαιο', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2"'));
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
