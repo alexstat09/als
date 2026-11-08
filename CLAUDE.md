@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v706`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v707`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-11-08 — `als-v707` — + ορισμός «Κοινοβουλευτική δικτατορία (Κωλέττη)» (Β.2, «Το 1846/1847 κατείχε» → «κοινοβουλευτικής δικτατορίας.»), δική του προσθήκη· 20 ορισμοί.**
 
 **2026-11-08 — `als-v706` — ΣΗΜΑΤΑ «ΠΑΝΕΛΛΗΝΙΕΣ» ΣΤΟΥΣ ΟΡΙΣΜΟΥΣ, ΑΠΟ ΤΑ ΙΔΙΑ ΤΑ PDF 2019–2026.** Τα κενά χρόνια (2019, 2021, 2022, 2025) διαβάστηκαν από τα PDF του υπουργείου (pymupdf), το 2024 από το αρχείο απαντήσεων (methodiko), το 2020 από τη λύση του alfavita. Νέα: «Πανελλήνιον» 2025, Γενικός Οργανισμός 2024 Δ1 + 2021 Σ/Λ, Επίδαυρος 2024 Δ1, Ιάπωνες 2022/2020, Εθνικόν Κομιτάτον 2022, Ορεινοί 2019, Πεδινοί/Λαϊκό Κόμμα 2020, Σ.Ε.Κ.Ε. 2025 Β2, Στρατιωτικός Σύνδεσμος 2025 Σ/Λ. ⭐ Το Δ1 του διαγωνίσματος φροντ. του Σεπτεμβρίου = αυτούσιο το Δ1 των Πανελληνίων 2019 (οδικό δίκτυο): ο καθηγητής του παίρνει θέματα Πανελληνίων όπως είναι.
 
