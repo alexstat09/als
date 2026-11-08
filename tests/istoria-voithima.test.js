@@ -683,7 +683,7 @@ ok('⭐ η μηχανή ανάκλησης υπάρχει ακόμη ως αρχ
    fs.existsSync(path.join(ALS, 'istoria.html')));
 ok('  κρατάει το μικρόφωνο (σταθ. 42)', HOME.includes('greek-ear.js'));
 ok('  και το βοήθημα δίνει ΡΗΤΗ πόρτα προς αυτήν',
-   PAGE.includes('class="oldlink" href="istoria.html"') && CSS.includes('.oldlink{'));
+   PAGE.includes('class="hm-rv" href="istoria.html"') && CSS.includes('.hm-rv{'));
 ok('  ο σύνδεσμος λέει ΤΙ είναι, όχι «παλιά»',
    PAGE.includes('Η μηχανή ανάκλησης') && !PAGE.includes('Η παλιά σελίδα'));
 ok('  και ο service worker την κρατάει offline', SW.includes("'istoria.html'"));
@@ -766,19 +766,25 @@ const B = boot('');                    /* καμία διαδρομή → η Α�
 is('⭐ ΚΑΝΕΝΑ σφάλμα στη φόρτωση', B.error || 'NONE', 'NONE');
 is('χτίζονται 7 καρτέλες', ((B.painted.tabs || '').match(/role="tab"/g) || []).length, 7);
 ok('η ΑΡΧΙΚΗ ζωγραφίζει τον τίτλο της', (B.painted.hero || '').includes('Όλη η ύλη,'));
-ok('  και τις τρεις κάρτες', (B.painted.viewHome || '').includes('Συνέχισε από εκεί που σταμάτησες')
-   && (B.painted.viewHome || '').includes('Όλοι οι ορισμοί μου') && (B.painted.viewHome || '').includes('Όλες οι χρονολογίες'));
-ok('  και τον χάρτη ύλης, και με τα τρία υπόμνημα', (B.painted.viewHome || '').includes('Κεφάλαια &amp; ενότητες')
-   && (B.painted.viewHome || '').includes('Δεν έχει φτιαχτεί ακόμα') && (B.painted.viewHome || '').includes('Εκτός ύλης'));
-/* ⭐ Η ΦΡΑΣΗ ΤΥΠΩΝΟΤΑΝ 68 ΦΟΡΕΣ — μία ανά άφτιαχτη ενότητα — ενώ το
-   υπόμνημα τη λέει ήδη. Τώρα ζει ΜΟΝΟ στο υπόμνημα. */
-is('η φράση «Δεν έχει φτιαχτεί ακόμα» γράφεται ΜΙΑ φορά, στο υπόμνημα',
-   ((B.painted.viewHome || '').match(/Δεν έχει φτιαχτεί ακόμα/g) || []).length, 1);
+/* ⭐ als-v709 — Η ΑΡΧΙΚΗ ΞΑΝΑΣΤΗΘΗΚΕ (δική του έγκριση 08/11/26). Ό,τι είχε
+   πόρτα πριν, έχει πόρτα και τώρα: κάθε href της παλιάς αρχικής ελέγχεται εδώ. */
+const HV = B.painted.viewHome || '', HH = B.painted.hero || '';
+ok('  με μία πρόταση-απάντηση και το νούμερο', HH.includes('class="hm-lead"') && HH.includes('ενότητες έτοιμες') && /Κεφάλαιο \d/.test(HH));
+ok('  το «Συνέχισε» και οι κάρτες όλης της ύλης', HV.includes('>Συνέχισε<')
+   && HV.includes('Όλοι οι ορισμοί μου') && HV.includes('Όλες οι χρονολογίες') && HV.includes('Η μηχανή ανάκλησης'));
+ok('  και τον χάρτη ύλης, με το «Εκτός ύλης»', HV.includes('Κεφάλαια &amp; ενότητες') && HV.includes('Εκτός ύλης'));
+['#/orismoi', '#/xronologies', '#/kefalaio-2', '#/kefalaio-2-orismoi', '#/kefalaio-2-xronia', '#/kefalaio-2-g1-2026',
+ 'istoria-sarosi.html', 'istoria-grapto.html', 'istoria-themata.html', 'istoria.html']
+  .forEach(h => ok('  ⭐ η πόρτα ' + h + ' υπάρχει ακόμα', HV.includes('href="' + h + '"')));
+ok('  κάθε κεφάλαιο ανοιγοκλείνει, και ΕΝΑ είναι ανοιχτό', (HV.match(/<details class="hm-chap/g) || []).length === 5
+   && (HV.match(/<details class="hm-chap[^"]*" open>/g) || []).length === 1);
 /* ⭐ ΤΑ ΝΟΥΜΕΡΑ ΒΓΑΙΝΟΥΝ ΑΠΟ ΤΟ ΥΛΙΚΟ, ΔΕΝ ΓΡΑΦΟΝΤΑΙ: ένα «1» καρφωμένο
    εδώ σημαίνει ότι ο φρουρός σκάει σε ΚΑΘΕ νέα ενότητα, και η εύκολη
    «διόρθωση» είναι να αλλάξεις το νούμερο — δηλαδή να μην ελέγχεις τίποτα. */
-is('⭐ κουτί φοράει ΜΟΝΟ ό,τι έχει περιεχόμενο', ((B.painted.viewHome || '').match(/class="ucard"/g) || []).length, CHAPTERS.length);
-is('  και οι υπόλοιπες είναι γραμμές λίστας', ((B.painted.viewHome || '').match(/class="urow/g) || []).length, 105 - CHAPTERS.length);
+is('⭐ σύνδεσμος ΜΟΝΟ ό,τι έχει περιεχόμενο', (HV.match(/class="hm-u ready"/g) || []).length, CHAPTERS.length);
+is('  και οι υπόλοιπες είναι γραμμές λίστας', (HV.match(/class="hm-u (todo|out)"/g) || []).length, 105 - CHAPTERS.length);
+is('  και η μπάρα έχει μία πορτοκαλί παυλίτσα ανά έτοιμη ενότητα',
+   ((/class="hm-strip"[\s\S]*?<\/div>\s*\n\s*\n/.exec(HV) || [''])[0].match(/<i><\/i>/g) || []).length, CHAPTERS.length);
 ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initCloudSync κλήθηκε)', B.win.__sync === true);
 
 const C = boot('#/k1-g4/explain');     /* διαδρομή ενότητας */
@@ -4148,7 +4154,7 @@ ok('και το εκτός ύλης ΔΕΝ κρύβεται — απλώς ση�
    allU.some(u => !u.yli) && PAGE.includes('>Εκτός ύλης<'));
 /* ⚠️ ΑΝΤΙΘΕΣΗ: το --faint μετράει 2,69:1 πάνω σε κάρτα. Απαγορεύεται
    σε ΟΤΙΔΗΠΟΤΕ διαβάζεται ή πατιέται (σταθ. 52 · als-v525). */
-ok('⭐ η ετικέτα «Εκτός ύλης» ΔΕΝ φοράει το --faint', /\.urow \.tag\{[^}]*color:var\(--muted\)/.test(CSS));
+ok('⭐ η ετικέτα «Εκτός ύλης» ΔΕΝ φοράει το --faint', /\.hm-u \.ur\{[^}]*color:var\(--muted\)/.test(CSS) && !/\.hm-u\.out \.ur\{[^}]*color:/.test(CSS));
 ok('⭐ ούτε το ✕ που σβήνει πλαγιότιτλο', /\.xbtn\{[^}]*color:var\(--muted\)/.test(CSS));
 /* ⚠️ Το κεχριμπαρένιο φόντο της έτοιμης κάρτας ρίχνει το --muted σε
    4,34:1. ΜΕΣΑ σε αυτό το κουτί τίποτα δεν το φοράει. */
