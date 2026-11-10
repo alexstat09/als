@@ -111,7 +111,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html` / `latinika-lectio29.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html` / `latinika-lectio28.html` / `latinika-lectio29.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1194,6 +1194,14 @@ wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.
 μάθημα = υποτακτική παρατατικού. Δύο «Να ρωτήσεις τον καθηγητή» (suae άμεση/έμμεση ·
 ακολουθία στο ut ignorarētur). Κλειδί προόδου ΙΔΙΟ (`lectio23_known_v1`). Στο test:
 το XXIII βγήκε από τη στατική `PACKS`/`NS`/§3 (μπαίνει ως JSON), το §2ζ ΕΜΕΙΝΕ και περνάει.
+
+⭐⭐ **als-v716 (10/11/26) — ΔΕΚΑΤΟ ΤΕΤΑΡΤΟ ΠΑΚΕΤΟ `latinika-lectio28.html` (Στα ίχνη ενός δραπέτη δούλου) + ΦΑΚΟΣ «Τόπος και χρόνος».**
+`tools/latinika/lectio28.json` (+ `lectio28.s4e.json`, study4exams): 3 σκηνές / 7 ενότητες / 16 προτάσεις / 13 κάρτες /
+7 παγίδες, 67 λήμματα, μάθημα = `seq` «ο τόπος και ο χρόνος». Μετάφραση + σημειώσεις από τη ΦΩΤΟΓΡΑΦΙΑ (Πυθαγόρας, σελ. 73).
+Οι 8 αστερίσκοι = 7 ονόματα τόπου + menses → νέος φακός `loc` (σημάδι «(τόπ. · …)» / «(χρόν. · …)» στο `f`)· XXI–XXVII, XXIX
+ξαναχτίστηκαν, diff = μόνο οι γραμμές του φακού. ΤΥΠΟΓΡΑΦΙΚΟ: δεν βρέθηκε. mitto/fugio/comprehendo/trado/possum βγήκαν από το
+`archikoi.xvi-xx.json`. ⚠️ Το test της βιβλιοθήκης έψαχνε «τέσσερις ενότητες» ως κομμάτι λέξης (σκάει στο «Δεκατέσσερις»)·
+τώρα ελέγχει ολόκληρη λέξη.
 
 ⭐⭐ **als-v715 (10/11/26) — ΔΕΚΑΤΟ ΤΡΙΤΟ ΠΑΚΕΤΟ `latinika-lectio29.html` (Ο Οκταβιανός, ο παπουτσής και το κοράκι) + ΦΑΚΟΣ «Γενικές».**
 `tools/latinika/lectio29.json` (+ `lectio29.s4e.json`, study4exams course **158**): 3 σκηνές / 9 ενότητες / 21 προτάσεις /

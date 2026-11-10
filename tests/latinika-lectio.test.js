@@ -878,7 +878,9 @@ ok(TEXT.indexOf(WORD + ' ενότητες') > 0 && TEXT.indexOf(WORD.toLowerCase
 Object.keys(ORD).forEach(function (k) {
   if (+k === PACKS.length) return;
   var w = ORD[k];
-  ok(TEXT.indexOf(w + ' ενότητες') < 0 && TEXT.indexOf(w.toLowerCase() + ' ενότητες') < 0,
+  /* ΟΛΟΚΛΗΡΗ λέξη (XXVIII, 14 πακέτα): το «Δεκατέσσερις ενότητες» περιέχει το «τέσσερις ενότητες» */
+  var whole = new RegExp('(^|[^Α-Ωα-ωΆ-ώ])(' + w + '|' + w.toLowerCase() + ') ενότητες');
+  ok(!whole.test(TEXT),
     '⛔ και ΔΕΝ λέει πουθενά «' + w.toLowerCase() + ' ενότητες» — είναι ' + WORD.toLowerCase());
 });
 ok(HUB.indexOf('Τρεις απαντήσεις') > 0,
