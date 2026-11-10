@@ -56,6 +56,9 @@ const EXEMPT = new Set([
   'index.html',       // the Home tab
   'nova-chat.html',   // the Nova tab
   'health.html', 'bills.html', 'trends.html', // retired to redirects
+  // als-v717 — ΚΡΥΦΕΣ με δική του εντολή («κρύψε», 10/11/26): το αρχείο μένει,
+  // καμία πόρτα. Το test τους (istoria-*.test.js) απαιτεί να ΜΗΝ έχουν πόρτα.
+  'istoria-themata.html', 'istoria-sarosi.html', 'istoria-grapto.html',
   // study.html is NOT exempt: it is a redirect stub, but it is also the app's
   // only door to the Notion «Η ΧΡΟΝΙΑ», so it carries a real launcher entry.
 ]);

@@ -774,8 +774,11 @@ ok('  το «Συνέχισε» και οι κάρτες όλης της ύλη�
    && HV.includes('Όλοι οι ορισμοί μου') && HV.includes('Όλες οι χρονολογίες') && HV.includes('Η μηχανή ανάκλησης'));
 ok('  και τον χάρτη ύλης, με το «Εκτός ύλης»', HV.includes('Κεφάλαια &amp; ενότητες') && HV.includes('Εκτός ύλης'));
 ['#/orismoi', '#/xronologies', '#/kefalaio-2', '#/kefalaio-2-orismoi', '#/kefalaio-2-xronia', '#/kefalaio-2-g1-2026',
- 'istoria-sarosi.html', 'istoria-grapto.html', 'istoria-themata.html', 'istoria.html']
+ 'istoria.html']
   .forEach(h => ok('  ⭐ η πόρτα ' + h + ' υπάρχει ακόμα', HV.includes('href="' + h + '"')));
+/* als-v717 — δική του εντολή «κρύψε»: αυτές οι τρεις ΔΕΝ έχουν πόρτα πια. */
+['istoria-sarosi.html', 'istoria-grapto.html', 'istoria-themata.html']
+  .forEach(h => ok('  κρυφή: καμία πόρτα προς ' + h, !HV.includes('href="' + h + '"')));
 ok('  κάθε κεφάλαιο ανοιγοκλείνει, και ΕΝΑ είναι ανοιχτό', (HV.match(/<details class="hm-chap/g) || []).length === 5
    && (HV.match(/<details class="hm-chap[^"]*" open>/g) || []).length === 1);
 /* ⭐ ΤΑ ΝΟΥΜΕΡΑ ΒΓΑΙΝΟΥΝ ΑΠΟ ΤΟ ΥΛΙΚΟ, ΔΕΝ ΓΡΑΦΟΝΤΑΙ: ένα «1» καρφωμένο

@@ -217,14 +217,14 @@ section('ΣΤ · offline + ο δρόμος προς τη σελίδα');
 ['istoria-themata.html', 'istoria-themata-index.js', 'istoria-themata-themes.js'].forEach(f => {
   ok('το sw.js προφορτώνει ' + f, SW.indexOf("'" + f + "'") !== -1);
 });
-ok('υπάρχει δρόμος προς τη σελίδα από την istoria.html', /istoria-themata\.html/.test(HOME));
+ok('κρυφή (als-v717): καμία κάρτα στην istoria.html', !/href="istoria-themata\.html"/.test(HOME));
 /* ⛔⛔ ΚΑΙ ΑΠΟ ΤΟ ΒΟΗΘΗΜΑ, ΠΟΥ ΕΙΝΑΙ ΤΟ ΜΟΝΟ ΠΟΥ ΜΕΤΡΑΕΙ: το «Ιστορία» της
    School Studies ΠΡΟΣΓΕΙΩΝΕΤΑΙ στο βοήθημα (MAP: SUBJ.istoria.door), όχι
    στην istoria.html. Μια κάρτα μόνο στην istoria.html είναι δρόμος σε
    σελίδα που δεν βλέπει ποτέ — γι' αυτό «δεν το βρίσκω μέσα από τη Ιστορία».
    Ο έλεγχος απαιτεί ΚΑΙ ΤΙΣ ΔΥΟ πόρτες, ώστε να μην ξανακλείσει η σωστή. */
-ok('υπάρχει δρόμος από την ΑΡΧΙΚΗ του βοηθήματος (εκεί προσγειώνεται)',
-   /href="istoria-themata\.html"|href: "istoria-themata\.html"/.test(AID));   /* als-v709: η πόρτα ζει στο HOME_TOOLS της αρχικής */
+ok('κρυφή (als-v717, δική του εντολή): καμία πόρτα από την αρχική του βοηθήματος',
+   !/href="istoria-themata\.html"|href: "istoria-themata\.html"/.test(AID));   /* als-v709: η πόρτα ζει στο HOME_TOOLS της αρχικής */
 
 console.log('\n' + (fail ? '✗ ' : '✓ ') + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);

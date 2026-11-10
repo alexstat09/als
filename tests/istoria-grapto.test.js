@@ -179,7 +179,7 @@ ok('η θερμοκρασία μετριέται στο THI_THEMES, όχι στ�
 section('Ε · offline + ο δρόμος');
 ['istoria-grapto.html', 'istoria-grapto-data.js'].forEach(f =>
   ok('το sw.js προφορτώνει ' + f, SW.indexOf("'" + f + "'") !== -1));
-ok('υπάρχει δρόμος από την ΑΡΧΙΚΗ του βοηθήματος', /href="istoria-grapto\.html"|href: "istoria-grapto\.html"/.test(AID));   /* als-v709: η πόρτα ζει στο HOME_TOOLS της αρχικής */
+ok('κρυφή (als-v717, δική του εντολή): καμία πόρτα από την αρχική του βοηθήματος', !/href="istoria-grapto\.html"|href: "istoria-grapto\.html"/.test(AID));   /* als-v709: η πόρτα ζει στο HOME_TOOLS της αρχικής */
 
 console.log('\n' + (fail ? '✗ ' : '✓ ') + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
