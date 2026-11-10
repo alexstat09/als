@@ -7,13 +7,16 @@ const ROOT = path.resolve(__dirname, '..');
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.log('✗ ' + m); } };
+/* XXIX: τα κείμενα = XVI–XX + κάθε lectioNN.json (όχι σκληρή λίστα ως το XXVII) */
+const JS = require(path.join(ROOT, 'tools/latinika/lib')).listPacks().filter(n => n >= 21);
+const WANT = [16, 17, 18, 19, 20].concat(JS);
 
 /* 1 · έλεγχοι δεδομένων + η σελίδα είναι ΑΚΡΙΒΩΣ το build */
 const before = read('latinika-archikoi.html');
 let out = '';
 try { out = cp.execFileSync(process.execPath, [path.join(ROOT, 'tools/latinika/archikoi.js')], {encoding:'utf8'}); ok(true, ''); }
 catch (e) { ok(false, 'ο builder έσκασε: ' + (e.stdout || e.message)); }
-ok(/✓ 12 κείμενα/.test(out), 'ο builder βλέπει 12 κείμενα');
+ok(new RegExp('✓ ' + WANT.length + ' κείμενα').test(out), 'ο builder βλέπει ' + WANT.length + ' κείμενα');
 const PAGE = read('latinika-archikoi.html');
 ok(PAGE === before, 'η σελίδα στο repo = το build (μην την αγγίζεις με το χέρι)');
 ok(!/\{\{[A-Z_]+\}\}/.test(PAGE), 'κανένα placeholder δεν έμεινε');
@@ -25,11 +28,11 @@ ok(PAGE.includes('<a href="latinika.html">'), 'έξοδος προς τα Λατ
 /* 2 · τα δεδομένα */
 const script = PAGE.slice(PAGE.lastIndexOf('<script>') + 8, PAGE.lastIndexOf('</script>'));
 const data = new Function(script.slice(0, script.indexOf('/* ══ Η ΜΗΧΑΝΗ')) + '; return {LEX, TEXTS};')();
-ok(data.TEXTS.map(t => t.n).join() === '16,17,18,19,20,21,22,23,24,25,26,27', 'XVI…XXVII με τη σειρά');
+ok(data.TEXTS.map(t => t.n).join() === WANT.join(), 'XVI…XX + ' + JS.join(',') + ' με τη σειρά');
 ok(data.TEXTS.every(t => t.rows.length && t.rows.every(r => data.LEX[r.m] && r.f && r.ctx.includes('<b>'))), 'κάθε τύπος: λήμμα + τύπος + πρόταση με τη λέξη');
 /* ένα ρήμα = μία μορφή: τα κοινά παίρνουν τη μορφή των XXI–XXVII */
 const first = {};
-for (let n = 21; n <= 27; n++){ const M = JSON.parse(read('tools/latinika/lectio' + n + '.json')).M; for (const k in M) if (M[k].p === 'v' && !first[k]) first[k] = M[k].l; }
+for (const n of JS){ const M = JSON.parse(read('tools/latinika/lectio' + n + '.json')).M; for (const k in M) if (M[k].p === 'v' && !first[k]) first[k] = M[k].l; }
 ok(Object.keys(first).every(k => data.LEX[k] && data.LEX[k].l === first[k]), 'κάθε ρήμα των XXI–XXVII = ίδια μορφή με τη σελίδα του (ένα ρήμα, μία μορφή)');
 ok(data.LEX.fio && data.TEXTS[4].rows.find(r => r.w === 'factus est').m === 'fio', 'XX factus est → fio (όχι sum)');
 ok(data.LEX.miseror.l === 'miseror, miseratus sum, miserāri', 'αποθετικό χωρίς σουπίνο, όπως το βιβλίο');
@@ -56,9 +59,11 @@ const mk = () => ({ document:doc, localStorage:{ getItem:k => (k in store ? stor
 const ctx = mk();
 try { vm.runInNewContext(script, ctx); ok(true, ''); } catch (e) { ok(false, 'η σελίδα σκάει στη φόρτωση: ' + e.message); }
 const rows = h => (h.match(/<tr[^>]*><td class="n">/g) || []).length;
-ok(rows(els.tabs.innerHTML) === 255, 'ανά κείμενο: 255 γραμμές (' + rows(els.tabs.innerHTML) + ')');
+/* XXIX: τα πλήθη ΥΠΟΛΟΓΙΖΟΝΤΑΙ από τα δεδομένα (ήταν 255 / 156 ως το XXVII) */
+const N_FORMS = data.TEXTS.reduce((a, t) => a + t.rows.length, 0), N_LEM = Object.keys(data.LEX).length;
+ok(rows(els.tabs.innerHTML) === N_FORMS, 'ανά κείμενο: ' + N_FORMS + ' γραμμές (' + rows(els.tabs.innerHTML) + ')');
 ok(data.TEXTS.every(t => els.tabs.innerHTML.includes(t.t)), 'κάθε κείμενο έχει τον τίτλο του');
-ok(els.bDue.textContent === 156, 'κάρτες για σήμερα = 156 νέες');
+ok(els.bDue.textContent === N_LEM, 'κάρτες για σήμερα = ' + N_LEM + ' νέες');
 /* κατά κατηγορία: κάθε ρήμα ΜΙΑ φορά */
 const ctx2 = mk();
 try {
@@ -66,7 +71,7 @@ try {
     startDeck('t:19');this.__xix=document.getElementById('stage').innerHTML;
     flip();rate('x');this.__red=document.getElementById('bRed').textContent;`, ctx2);
 } catch (e) { ok(false, 'οδήγηση: ' + e.message); }
-ok(rows(ctx2.__cat || '') === 156, 'κατά κατηγορία: 156 ρήματα, το καθένα μία φορά (' + rows(ctx2.__cat || '') + ')');
+ok(rows(ctx2.__cat || '') === N_LEM, 'κατά κατηγορία: ' + N_LEM + ' ρήματα, το καθένα μία φορά (' + rows(ctx2.__cat || '') + ')');
 ok(/coniurāvit/.test(ctx2.__xix || ''), 'η τράπουλα του XIX ξεκινάει από την 1η λέξη του κειμένου');
 ok(ctx2.__red === 1, 'ένα ✗ → «Για ξανά» = 1');
 ok(/"v:coniuro"/.test(store.latarx_cards_v1 || ''), 'η κάρτα σώθηκε στο latarx_cards_v1');

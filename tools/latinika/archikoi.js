@@ -16,7 +16,11 @@
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
-const ROMAN = {16:'XVI',17:'XVII',18:'XVIII',19:'XIX',20:'XX',21:'XXI',22:'XXII',23:'XXIII',24:'XXIV',25:'XXV',26:'XXVI',27:'XXVII'};
+/* XXIX (als-v714): όχι πια σκληρό «ως το 27» — όποιο lectioNN.json υπάρχει, μπαίνει (και με κενά: XXVIII πριν φτιαχτεί). */
+const LIB = require('./lib');
+const LAST = Math.max(27, ...LIB.listPacks());
+const ROMAN = {}; for (let n = 16; n <= LAST; n++) ROMAN[n] = LIB.roman(n);
+const RANGE = 'XVI–' + ROMAN[LAST];
 const strip = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const fails = [];
 const need = (c, m) => { if (!c) fails.push(m); };
@@ -37,7 +41,7 @@ const LEX = {}, TEXTS = [];
 function addLemma(k, L, n){
   if (!LEX[k]) LEX[k] = {l:L.l, k:L.k, tr:L.tr || '', from:n};
 }
-for (let n = 16; n <= 27; n++){
+for (let n = 16; n <= LAST; n++){
   if (!HAS(n)) continue;
   const j = JSON.parse(rd('tools/latinika/lectio' + n + '.json'));
   const rows = [];
@@ -111,10 +115,10 @@ if (process.argv.includes('--check')) process.exit(0);
 
 /* ── 5 · η σελίδα ── */
 const tpl = rd('tools/latinika/lectio.tpl');
-const head = tpl.slice(0, tpl.indexOf('</style>')).replace('{{TITLE}}', 'Λατινικά · Αρχικοί χρόνοι XVI–XXVII');
+const head = tpl.slice(0, tpl.indexOf('</style>')).replace('{{TITLE}}', 'Λατινικά · Αρχικοί χρόνοι ' + RANGE);
 const page = rd('tools/latinika/archikoi.tpl')
   .replace('{{HEAD}}', () => head)
-  .replaceAll('{{N_LEM}}', String(nLem)).replaceAll('{{N_FORMS}}', String(nForms)).replaceAll('{{N_TEXTS}}', String(TEXTS.length))
+  .replaceAll('{{N_LEM}}', String(nLem)).replaceAll('{{N_FORMS}}', String(nForms)).replaceAll('{{N_TEXTS}}', String(TEXTS.length)).replaceAll('{{RANGE}}', RANGE).replaceAll('{{LAST}}', ROMAN[LAST])
   .replace('{{DATA}}', () => 'const LEX = ' + JSON.stringify(LEX) + ';\nconst TEXTS = ' + JSON.stringify(TEXTS) + ';');
 if (/\{\{[A-Z_]+\}\}/.test(page)){ console.log('✗ έμεινε placeholder: ' + page.match(/\{\{[A-Z_]+\}\}/)[0]); process.exit(1); }
 fs.writeFileSync(path.join(ROOT, 'latinika-archikoi.html'), page);

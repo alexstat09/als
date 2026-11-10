@@ -96,7 +96,8 @@ vocab.split('\n').map(s => s.trim()).filter(Boolean).forEach(line => {
   }
   if (mode === 'v' && /,/.test(line) || mode === 'v' && /^inquam/.test(line)) {
     if (/\([^)]*$/.test(line)) cont = true;
-    const l = clean(line.replace(/\([^)]*\)/g, '').replace(/\([^)]*$/, '').replace(/\s+\d+\s*$/, ''));
+    /* XXIX: το s4e κολλάει σχόλιο μετά από «&rarr;» / «→» (π.χ. «dicĕre &rarr; β’ ενικό προστακτικής … dic») και «affero , attuli» */
+    const l = clean(line.split(/\s*(?:&rarr;|→)/)[0].replace(/\([^)]*\)/g, '').replace(/\([^)]*$/, '').replace(/\s+\d+\s*$/, '')).replace(/\s+,/g, ',');
     draft.v[head(l)] = conj ? { l, conj } : { l };
     return;
   }

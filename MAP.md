@@ -111,7 +111,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html` / `latinika-lectio29.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1194,6 +1194,14 @@ wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.
 μάθημα = υποτακτική παρατατικού. Δύο «Να ρωτήσεις τον καθηγητή» (suae άμεση/έμμεση ·
 ακολουθία στο ut ignorarētur). Κλειδί προόδου ΙΔΙΟ (`lectio23_known_v1`). Στο test:
 το XXIII βγήκε από τη στατική `PACKS`/`NS`/§3 (μπαίνει ως JSON), το §2ζ ΕΜΕΙΝΕ και περνάει.
+
+⭐⭐ **als-v715 (10/11/26) — ΔΕΚΑΤΟ ΤΡΙΤΟ ΠΑΚΕΤΟ `latinika-lectio29.html` (Ο Οκταβιανός, ο παπουτσής και το κοράκι) + ΦΑΚΟΣ «Γενικές».**
+`tools/latinika/lectio29.json` (+ `lectio29.s4e.json`, study4exams course **158**): 3 σκηνές / 9 ενότητες / 21 προτάσεις /
+14 κάρτες / 7 παγίδες, 69 λήμματα, μάθημα = `seq` «η γενική». Μετάφραση + κόκκινες/μπλε σημειώσεις από τη ΦΩΤΟΓΡΑΦΙΑ του
+φυλλαδίου (Πυθαγόρας, σελ. 79). Οι 6 αστερίσκοι = γενικές → νέος φακός `gen` (σημάδι «(γεν. …)» στο `f`) σε `lectio.tpl` +
+`lib.js`· XXI–XXVII ξαναχτίστηκαν, diff = μόνο οι γραμμές του φακού. ΤΥΠΟΓΡΑΦΙΚΟ: «Turn vēnit» → Tum (`fixes`). Το XXVIII
+ΔΕΝ υπάρχει ακόμα (έρχεται μετά). Η `archikoi.js` + το test της παίρνουν πια ΚΑΘΕ lectioNN.json (όχι «ως το 27»)· occurro/
+teneo/audio βγήκαν από το `archikoi.xvi-xx.json` (τα δίνει το XXIX). `fetch-s4e` κόβει πια το «&rarr; …» από τους αρχικούς χρόνους.
 
 ⭐⭐ **als-v659 (24/10/26) — ΔΩΔΕΚΑΤΟ ΠΑΚΕΤΟ `latinika-lectio27.html` (Άκκιος και Πακούβιος, «Το πνεύμα ωριμάζει όπως οι καρποί»).**
 `tools/latinika/lectio27.json` (+ `lectio27.s4e.json`, study4exams course **37**): 3 σκηνές / 9 ενότητες / 20 προτάσεις /
