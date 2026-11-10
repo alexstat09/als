@@ -84,7 +84,9 @@ function compose(spec){
     body += '@@' + b.name + '\n' + t + '\n';
   });
   ['intro', 'scholia'].forEach(function(n){ if (!names[n]) die('λείπει το μπλοκ ' + n); });
-  if (!names.second && !names.grypari) die('λείπει το μπλοκ second (η 2η μετάφραση)');
+  /* «second»: null = ο Φάκελος ΔΕΝ τυπώνει 2η μετάφραση (gk12: μόνο Λυπουρλής) — ρητό, όχι ξεχασμένο */
+  if (spec.second === null){ if (names.second || names.grypari) die('second: null αλλά υπάρχει μπλοκ 2ης μετάφρασης'); }
+  else if (!names.second && !names.grypari) die('λείπει το μπλοκ second (η 2η μετάφραση) — αν ο Φάκελος δεν τυπώνει, γράψε "second": null');
   if (!Object.keys(names).some(function(n){ return /^p\d+$/.test(n); })) die('λείπει σελίδα δραστηριοτήτων (pNN)');
   return { body: body, sha: crypto.createHash('sha256').update(body, 'utf8').digest('hex'),
     lo: Math.min.apply(null, pages), hi: Math.max.apply(null, pages) };

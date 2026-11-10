@@ -51,8 +51,8 @@ function dataOf(spec, unit){
     simple: unit.simple || [],
     anc: unit.ancient.map(function(b){ return b.p; }),
     skout: unit.text.map(function(b){ return b.p; }),
-    second: spec.second.paras,
-    secondName: spec.second.name,
+    second: spec.second ? spec.second.paras : [],          /* null = ο Φάκελος δεν τυπώνει 2η (gk12) */
+    secondName: spec.second ? spec.second.name : '',
     intro: spec.intro,
     segs: unit.align.segs.map(function(s){
       return { n: s.n, p: para[s.n], a: s.a, m: s.m, runs: spec.structure.runs[s.n] };
@@ -87,8 +87,8 @@ function footOf(spec, unit){
   var lo = Math.min.apply(null, pages), hi = Math.max.apply(null, pages);
   return [
     '<b>Τι είναι του βιβλίου.</b> Το αρχαίο και η μετάφραση που μαθαίνεις' + (unit.translator ? ' (' + unit.translator + ')' : '') +
-      ' είναι τα ΙΔΙΑ με την ενότητα του Γνωστού, ελεγμένα πάνω στο PDF του Φακέλου Υλικού. Η εισαγωγή, η 2η μετάφραση (' + spec.second.name +
-      '), τα σχόλια, οι δραστηριότητες και τα παράλληλα κείμενα είναι αυτολεξεί από τον Φάκελο (σελ. ' + (lo === hi ? lo : lo + '–' + hi) +
+      ' είναι τα ΙΔΙΑ με την ενότητα του Γνωστού, ελεγμένα πάνω στο PDF του Φακέλου Υλικού. Η εισαγωγή, ' + (spec.second ? 'η 2η μετάφραση (' + spec.second.name + '), ' : '') +
+      'τα σχόλια, οι δραστηριότητες και τα παράλληλα κείμενα είναι αυτολεξεί από τον Φάκελο (σελ. ' + (lo === hi ? lo : lo + '–' + hi) +
       ') — και ένα test αρνείται ό,τι δεν βρίσκει εκεί.',
     '<b>Τι είναι δικό μου.</b> Λήμμα, τύπος και συντακτικό κάθε λέξης, η ανάλυση σε προτάσεις, τα υποδείγματα απαντήσεων και τα ομόρριζα. Φέρουν ετικέτα «δικά μου»· αν κάτι διαφωνεί με τον καθηγητή σου, κερδίζει ο καθηγητής.'
   ].concat(spec.foot || []).join('<br>');

@@ -144,9 +144,13 @@ function check(spec, unit, src){
   /* 5 · ΤΟΥ ΦΑΚΕΛΟΥ = ΑΥΤΟΛΕΞΕΙ */
   function verb(x, where, hay){ if (norm(hay).indexOf(norm(x)) < 0) e('ΔΕΝ είναι αυτολεξεί στον Φάκελο (' + where + '): «' + norm(x).slice(0, 70) + '…»'); }
   verb(spec.intro, 'εισαγωγή', src.blocks.intro);
-  if (!SEC.name) e('λείπει το όνομα της 2ης μετάφρασης (second.name)');
-  if (!GRY) e('η πηγή δεν έχει μπλοκ 2ης μετάφρασης (@@second)');
-  if (!Array.isArray(SEC.paras) || SEC.paras.length !== unit.ancient.length) e('η 2η μετάφραση έχει ' + (SEC.paras || []).length + ' παραγράφους, το αρχαίο ' + unit.ancient.length + ' — μία ανά παράγραφο/ατάκα του αρχαίου');
+  /* «second»: null = ο Φάκελος ΔΕΝ τυπώνει 2η μετάφραση (gk12). Ρητό: σκέτη απουσία = σφάλμα όπως πριν. */
+  var NOSEC = spec.second === null;
+  if (NOSEC){ if (GRY) e('second: null αλλά η πηγή έχει μπλοκ 2ης μετάφρασης'); }
+  else if (!SEC.name) e('λείπει το όνομα της 2ης μετάφρασης (second.name)');
+  if (!NOSEC && !GRY) e('η πηγή δεν έχει μπλοκ 2ης μετάφρασης (@@second)');
+  if (NOSEC){ /* καμία 2η μετάφραση να ελεγχθεί */ }
+  else if (!Array.isArray(SEC.paras) || SEC.paras.length !== unit.ancient.length) e('η 2η μετάφραση έχει ' + (SEC.paras || []).length + ' παραγράφους, το αρχαίο ' + unit.ancient.length + ' — μία ανά παράγραφο/ατάκα του αρχαίου');
   else if (norm(SEC.paras.join(' ')) !== GRY) e('η 2η μετάφραση, ενωμένη, ΔΕΝ είναι ακριβώς η στήλη του PDF');
   if (GRY && SEC.name && norm(GRY).indexOf(norm(SEC.name)) >= 0) e('η υπογραφή «' + SEC.name + '» μπήκε ΜΕΣΑ στο κείμενο της 2ης μετάφρασης');
   /* ⛔ ΑΝΑΜΕΙΞΗ ΣΤΗΛΩΝ (το κείμενο που επικόλλησε για την 9η είχε ακριβώς αυτό):
@@ -206,6 +210,7 @@ function check(spec, unit, src){
       }
       if (b.k === 'tq'){
         var two = b.who === 'second' || b.who === 'gryp';
+        if (two && NOSEC) e(where + ': παράθεμα 2ης μετάφρασης, αλλά η ενότητα δεν έχει (second: null)');
         if (b.who && !two && b.who !== 'main' && b.who !== 'skout') e(where + ': άγνωστο who «' + b.who + '» (second | main)');
         if ((two ? GRY : MOD).indexOf(norm(b.an)) < 0) e(where + ': η μετάφραση «' + b.an + '» ΔΕΝ είναι αυτολεξεί της ' + (two ? '2ης μετάφρασης (' + SEC.name + ')' : 'μετάφρασης που μαθαίνει (' + (unit.translator || '?') + ')'));
       }

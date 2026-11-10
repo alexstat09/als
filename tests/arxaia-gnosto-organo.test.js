@@ -315,6 +315,8 @@ const sleep = n => new Promise(r => setTimeout(r, n));
           if (split) {
             const { g, k } = split, nA = g.a.filter(c => c[1] === k).length, nM = AP.align[g.n].filter(c => c[1] === k).length;
             const rend = AP.align[g.n].filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
+            /* καθαρή αφετηρία: το προηγούμενο «.an .w» πάτημα μπορεί να είναι ΤΟ ΙΔΙΟ κλειδί (gk12: «Διττῆς» = a1, σπασμένο) — αλλιώς το πάτημα το ΣΒΗΝΕΙ */
+            await ev(`document.querySelectorAll('.w.hit').length && document.querySelector('.w.hit').click()`);
             await ev(`document.querySelector('.sent[data-n="${g.n}"] .an .w[data-k="${k}"]').click()`);
             eq(await ev(`document.querySelectorAll('.sent[data-n="${g.n}"] .w.hit').length`), nA + nM, 'πατώντας «' + unit.align.pairs[k].a + '» ανάβουν ' + nA + ' στο αρχαίο + ' + nM + ' στην απλή');
             eq(await ev(`document.querySelector('#aside .wc-md').textContent`), rend, 'η κάρτα λέει πώς το αποδίδει η απλή: «' + rend + '»');
@@ -426,9 +428,17 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       await ev(`document.querySelector('[data-mode="si"]').click()`);
       eq(await ev(`document.querySelectorAll('#simple p').length`), (unit.simple || []).length, 'τα «απλά λόγια» όλα');
       await ev(`document.querySelector('[data-mode="wh"]').click()`);
-      eq(await ev(`document.getElementById('secName').textContent`), spec.second.name, 'ο διακόπτης ονομάζει τη 2η μετάφραση');
-      await ev(`document.getElementById('grypI').checked || document.getElementById('grypI').click()`);
-      ok(nz(await ev(`document.querySelector('.whole .gry').textContent`)).indexOf(nz(spec.second.paras.join(' '))) >= 0, 'όταν ανοίξει, είναι ΟΛΗ η 2η μετάφραση, αυτολεξεί');
+      if (spec.second) {
+        eq(await ev(`document.getElementById('secName').textContent`), spec.second.name, 'ο διακόπτης ονομάζει τη 2η μετάφραση');
+        await ev(`document.getElementById('grypI').checked || document.getElementById('grypI').click()`);
+        ok(nz(await ev(`document.querySelector('.whole .gry').textContent`)).indexOf(nz(spec.second.paras.join(' '))) >= 0, 'όταν ανοίξει, είναι ΟΛΗ η 2η μετάφραση, αυτολεξεί');
+      } else {
+        /* «second»: null — ο Φάκελος δεν τυπώνει 2η μετάφραση (gk12): ούτε διακόπτης ούτε άδεια στήλη */
+        eq(spec.second, null, 'χωρίς 2η μετάφραση = ΡΗΤΟ «second»: null');
+        ok(await ev(`document.getElementById('grypT').hidden`), 'χωρίς 2η μετάφραση: ο διακόπτης «Και η 2η μετάφραση» ΔΕΝ φαίνεται');
+        eq(await ev(`document.querySelectorAll('.whole .gry').length`), 0, 'χωρίς 2η μετάφραση: καμία στήλη «Δεύτερη»');
+        ok(!/2η μετάφραση/.test(await ev(`document.getElementById('modeHint') ? document.getElementById('modeHint').textContent : ''`)), 'η οδηγία του «Ολόκληρο» δεν υπόσχεται 2η μετάφραση');
+      }
       await shotAt(gid + '-05-whole', '#wholeBox');
 
       section('Β · ' + gid + ' — ΣΧΟΛΙΑ');

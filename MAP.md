@@ -719,6 +719,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   Φρουρός: `tests/arxaia-gnosto-organo.test.js` — ΓΕΝΙΚΟ, κάθε `tools/gnosto/gkN.json` μόνο του
   (στατικά + μεταλλάξεις + Chrome/CDP 1440→393· `GK_ONLY=gkN`, `GK_SHOTS=φάκελος`).
   ⭐⭐ **als-v646 — gk10 (Πολιτεία 519b-520a, οι φιλόσοφοι): κείμενο στον Γνωστό ΚΑΙ όργανο `arxaia-gk10.html`** — πηγή `tests/arxaia-enotita10.source.txt` (κείμενο) + `tests/arxaia-gk10-fakelos.source.txt` (όργανο)· το PDF γράφει «.» όπου το βιβλίο τυπώνει ΑΝΩ ΤΕΛΕΙΑ (ελεγμένο σε render) — βλ. CLAUDE.md §5.
+  ⭐⭐ **als-v713 — gk12 (Αριστοτέλης, Ηθικά Νικομάχεια Β1, 1-4, η ηθική αρετή): κείμενο (Δ. Λυπουρλής) + όργανο `arxaia-gk12.html` + απλή** — `tools/gnosto/gk12.text.json` + `tools/gnosto/gk12.json`· ΠΡΩΤΗ ενότητα χωρίς 2η μετάφραση (`"second": null`)· βλ. CLAUDE.md §5.
   ⭐⭐ **als-v682 — gk11 (Αριστοτέλης, Πολιτικά Θ 1.3-2.1, η παιδεία): κείμενο (Β. Μοσκόβης) στον Γνωστό ΚΑΙ όργανο `arxaia-gk11.html`** με τα skills `arxaia-gnosto-enotita` + `arxaia-gnosto-organo` — `tools/gnosto/gk11.text.json` + `tools/gnosto/gk11.json`· βλ. CLAUDE.md §5.
   ⭐⭐ **als-v670 — gk8 ΟΡΓΑΝΟ `arxaia-gk8.html` + ΑΠΛΗ** (186 κάρτες, 32 προτάσεις, 11 υποδείγματα, 11 λεξιλογικά· απλή 22/22, 40 αλλαγές) + οι 15 «. πεζό» = ΑΝΩ ΤΕΛΕΙΕΣ (render σελ. 80/84–86).
   ⭐ **als-v669 — gk9 ΑΠΛΗ** (`aplh`, 13/17 περίοδοι, 22 αλλαγές) + οι 6 «. πεζό» της = ΑΝΩ ΤΕΛΕΙΕΣ (render σελ. 90/93).

@@ -719,7 +719,7 @@ const HINT = {
     (EASY_N ? ' Οι λέξεις του μεταφραστή με τελίτσες από κάτω έχουν και απλή απόδοση — με το «Απλές λέξεις» διαβάζεις όλη την περίοδο απλά.' : ''),
   tr:'Η μετάφραση κρύβεται ανά περίοδο. Πες τη δυνατά, άνοιξέ τη και κρίνε: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Με το «Μόνο τα κόκκινα» μένουν μόνο οι ✗ και ↻.',
   st:'Οι αγκύλες, όπως στο χαρτί: [ ] κύρια, ( ) δευτερεύουσα, με τον αριθμό της πρότασης. Κάτω από κάθε περίοδο: τι πρόταση είναι και πώς εκφέρεται. Πάτα μια γραμμή για να την ανάψεις. (Η ανάλυση είναι δική μου.)',
-  wh:'Ολόκληρο, χωρίς κοψίματα: το αρχαίο δίπλα στη μετάφραση που μαθαίνεις. Άναψε και τη 2η μετάφραση του Φακέλου (' + D.secondName + ') — για τις ερωτήσεις που ρωτάνε «πώς απέδωσαν οι δύο μεταφραστές».'
+  wh:'Ολόκληρο, χωρίς κοψίματα: το αρχαίο δίπλα στη μετάφραση που μαθαίνεις.' + (D.second.length ? ' Άναψε και τη 2η μετάφραση του Φακέλου (' + D.secondName + ') — για τις ερωτήσεις που ρωτάνε «πώς απέδωσαν οι δύο μεταφραστές».' : '')
 };
 const simpleBox = document.getElementById('simple');
 const wholeBox = document.getElementById('wholeBox');
@@ -739,7 +739,7 @@ function setMode(m){
   box.classList.toggle('m-rd', m === 'rd');
   box.classList.toggle('v-ap', ui.ver === 'ap');
   document.getElementById('onlyRed').hidden = m !== 'tr';
-  document.getElementById('grypT').hidden = m !== 'wh';
+  document.getElementById('grypT').hidden = m !== 'wh' || !D.second.length;   /* gk12: ο Φάκελος δεν τυπώνει 2η */
   document.getElementById('easyT').hidden = !EASY_N || ui.ver === 'ap' || !(m === 'rd' || m === 'tr');
   document.getElementById('verRow').hidden = !D.aplh || !(m === 'rd' || m === 'tr' || m === 'wh');
   document.getElementById('bReset').hidden = m !== 'tr';
@@ -840,13 +840,13 @@ D.lenses.forEach(L => {
 /* ── απλά λόγια · ολόκληρο ── */
 simpleBox.innerHTML = D.simple.map(p => '<p>' + esc(p) + '</p>').join('');
 function buildWhole(){
-  const g = !!ui.gryp;
+  const g = !!ui.gryp && D.second.length > 0;
   wholeBox.innerHTML = '<div class="whole' + (g ? '' : ' two') + '">' +
     '<div class="anc"><h3>Το αρχαίο · ' + esc(D.cite) + '</h3>' + D.anc.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
     (ui.ver === 'ap'
       ? '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.aplh.name) + '</h3>' + D.anc.map((x, i) => '<p>' + esc(D.segs.filter(s => s.p === i).map(apText).join(' ')) + '</p>').join('') + '</div>'
       : '<div class="mod"><h3>Μαθαίνεις · ' + esc(D.translator) + '</h3>' + D.skout.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>') +
-    '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' +
+    (D.second.length ? '<div class="mod gry"' + (g ? '' : ' hidden') + '><h3>Δεύτερη · ' + esc(D.secondName) + '</h3>' + D.second.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>' : '') +
   '</div>' +
   (ui.ver === 'ap' && D.aplh.changes.length
     ? '<div class="chg"><span class="lbl tag-mine">Τι άλλαξε και γιατί · για να το τσεκάρεις με την καθηγήτρια</span><table><thead><tr><th>' + esc(D.translator || 'Βιβλίο') + '</th><th>Εδώ</th><th>Γιατί</th></tr></thead><tbody>' +
