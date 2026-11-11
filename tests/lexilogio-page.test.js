@@ -362,6 +362,40 @@ const SHOTS=process.env.LEX_SHOTS||'';
  fullData=false;
  await ev(`localStorage.removeItem('${KEY}')`);
 
+ /* Μ · 11/11/26, σελ. 177: ένα δεύτερο «2» πάνω στη Γνωριμία βαθμολογούσε
+    κάρτα που δεν υπήρχε → `"undefined"` στην ουρά → η σελίδα κολλούσε στο
+    ανακάτεμα, κάθε φορά που ξανάνοιγε. */
+ console.log('\nΜ · ΔΙΠΛΟ «2» ΔΕΝ ΓΕΝΝΑΕΙ ΨΕΥΤΙΚΗ ΚΑΡΤΑ · ΚΟΛΛΗΜΕΝΟ ΠΕΡΑΣΜΑ ΞΕΚΟΛΛΑΕΙ');
+ const excM=exc.length;
+ await open('2026-11-11');
+ await key('Enter');
+ let sawAck=0;
+ for(let i=0;i<40;i++){
+   const st=await ev(`({ack:!!document.getElementById('ack'),show:!!document.getElementById('show'),no:!!document.getElementById('no')})`);
+   if(st.ack){ if(++sawAck===2) break; await key('Enter'); continue; }
+   if(st.show){ await key(' '); continue; }
+   if(st.no){ await key('2'); continue; }
+   await sleep(50);
+ }
+ ok('έφτασε στη Γνωριμία του 2ου κομματιού', sawAck===2);
+ await key('2'); await key('2'); await key('ArrowRight'); await sleep(80);
+ ok('…τα επιπλέον «2» δεν έκαναν τίποτα: μένει στη Γνωριμία', await ev(`!!document.getElementById('ack')`));
+ let sm=await store(), pm=sm&&sm.pages.p170&&sm.pages.p170.pass;
+ ok('…και καμία ψεύτικη κάρτα στην αποθήκη', pm&&!('undefined' in pm.right)&&!('undefined' in pm.wrongs)&&pm.queue.indexOf('undefined')<0, pm&&{q:pm.queue,u:pm.right.undefined});
+ const realIds=Object.keys(pm.right), done1=realIds.filter(k=>pm.right[k]>0);
+ pm.step='consolidate'; pm.ci=pm.chunks.length; pm.queue=['undefined'].concat(realIds.slice(0,3)); pm.right.undefined=null; pm.wrongs.undefined=null;
+ await ev(`localStorage.setItem('${KEY}',${JSON.stringify(JSON.stringify(sm))})`);
+ await open('2026-11-11');
+ await key('Enter'); await sleep(80);
+ const wM=await txt('.c-word');
+ ok('κολλημένο πέρασμα (όπως της 177) ανοίγει σε ΑΛΗΘΙΝΗ λέξη: «'+wM+'»', !!wM&&wM!=='undefined');
+ sm=await store(); pm=sm.pages.p170.pass;
+ ok('…η αποθήκη καθάρισε: ούτε στην ουρά ούτε στα σωστά/λάθη', pm.queue.indexOf('undefined')<0&&!('undefined' in pm.right)&&!('undefined' in pm.wrongs), {q:pm.queue});
+ ok('…και η πρόοδος των αληθινών λέξεων έμεινε ('+done1.length+')', done1.every(k=>pm.right[k]>0)&&pm.queue.length===3, pm.right);
+ ok('…μηδέν exceptions σε όλο το σενάριο', exc.length===excM, exc.slice(excM));
+ await key('Escape');
+ await ev(`localStorage.removeItem('${KEY}')`);
+
  ok('κανένα script που σηκώνει sync δεν έτρεξε (μπλοκαρίστηκαν: '+otherStripped.length+')', await ev('typeof window.ALSSync')==='undefined');
  ok('ο κοινός αριθμός «Δευ 19/10» κ.λπ. — μηδέν exceptions σε ΟΛΗ τη διαδρομή', exc.length===0, exc.slice(0,5));
 

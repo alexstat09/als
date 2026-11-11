@@ -614,8 +614,26 @@ function startToday(){
 function startFirst(pageId){
   const p = pageById(pageId); if (!p) return;
   const ps = S.pages[pageId];
-  const s = ps && ps.status === 'learning' && ps.pass ? ps.pass : C.newFirstPass(p.cards);
+  const s = ps && ps.status === 'learning' && ps.pass ? cleanPass(ps.pass, p) : C.newFirstPass(p.cards);
   R = { kind:'first', s, pageId, page:p }; putPass(); openSession(); step();
+}
+/* Ένα πέρασμα που συνεχίζει κρατάει ΜΟΝΟ λέξεις της σελίδας του. Ό,τι άλλο
+   (π.χ. το `"undefined"` του παλιού bug) φεύγει· η πρόοδος των αληθινών μένει. */
+function cleanPass(s, p){
+  const ok = new Set(p.cards.map(c => c.id)), keep = id => ok.has(id);
+  s.queue = (Array.isArray(s.queue) ? s.queue : []).filter(keep);
+  ['right','wrongs'].forEach(f => {
+    const src = isMap(s[f]) ? s[f] : {}, out = {};
+    ok.forEach(id => { const n = +src[id]; out[id] = Number.isFinite(n) ? n : 0; });
+    s[f] = out;
+  });
+  if (Array.isArray(s.chunks)) s.chunks.forEach(ch => {
+    ch.ids = (ch.ids || []).filter(keep);
+    (ch.groups || []).forEach(g => { g.ids = (g.ids || []).filter(keep); });
+  });
+  /* Άδεια ουρά στη μέση κομματιού = ξαναδείξε τη Γνωριμία, ΟΧΙ «τέλος». */
+  if (s.step === 'learn' && !s.queue.length) s.step = 'preview';
+  return s;
 }
 function startPractice(pageId){
   const p = pageById(pageId); if (!p) return;
@@ -682,7 +700,10 @@ function reveal(){
   $('no').addEventListener('click', () => grade(false)); $('yes').addEventListener('click', () => grade(true));
 }
 function grade(ok){
-  if (!R || !R.revealed) return; R.cur = null;
+  /* Μία βαθμολόγηση ανά κάρτα που ΦΑΙΝΕΤΑΙ. Το `revealed` σβήνει εδώ, αλλιώς
+     ένα δεύτερο «2» πάνω στη Γνωριμία (ή σε οθόνη τέλους) βαθμολογούσε κάρτα
+     που δεν υπήρχε, και η ουρά κουβαλούσε για πάντα το `"undefined"` (σελ. 177, 11/11). */
+  if (!R || !R.revealed || !R.cur) return; R.revealed = false; R.cur = null;
   if (R.kind === 'first'){ C.firstAnswer(R.s, ok, rng); putPass(); step(); if (!ok && R && R.kind === 'first') $('toast').textContent = 'Θα την ξαναδείς σε λίγο.'; return; }
   const res = C.dailyAnswer(R.s, ok, rng);
   if (res.segDone && R.kind === 'daily') return segmentDone(res.segDone, res.finished);
