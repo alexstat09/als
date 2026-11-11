@@ -502,6 +502,71 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       await open('#sxolia');
       ok(await ev(`document.getElementById('p-sxolia').classList.contains('on')`), '#sxolia ανοίγει τα Σχόλια');
 
+      if (spec.flow) {
+        /* «ΤΙ ΓΙΝΕΤΑΙ ΕΔΩ» (als-v723) — δική του ζήτηση: «κάτι που συνδέει τις περιόδους σιγά σιγά, γιατί δεν
+           καταλαβαίνω τίποτα όσο διαβάζω τη μετάφραση». Η κάρτα ακολουθεί το διάβασμα, δίνει τη θέση της στη λέξη,
+           κρύβεται στο «Μετάφρασε», και στο κινητό ανοίγει από κουμπί. */
+        section('Β · ' + gid + ' — «ΤΙ ΓΙΝΕΤΑΙ ΕΔΩ» (λάπτοπ)');
+        const F = spec.flow, Nn = segs.length, plain = t => String(t).replace(/\{\{|\}\}/g, '');
+        const fcN = () => ev(`(()=>{const c=document.querySelector('#aside .fc');return c?+c.dataset.fc:0})()`);
+        const asideT = () => ev(`document.getElementById('aside').textContent`);
+        await size(1440, 900); await open('#metafrasi');
+        await ev(`document.querySelector('[data-mode="rd"]').click()`);
+        eq(await fcN(), segs[0].n, 'στην αρχή η κάρτα δείχνει την 1η περίοδο');
+        ok((await asideT()).indexOf(plain(F.segs[segs[0].n].say)) >= 0, 'με το «τι λέει» της');
+        const mid = segs[Math.floor(Nn / 2)].n, nx = segs[Math.floor(Nn / 2) + 1].n;
+        await ev(`(()=>{document.documentElement.style.scrollBehavior='auto';const r=document.querySelector('.sent[data-n="${mid}"]');scrollTo(0,r.getBoundingClientRect().top+scrollY-innerHeight*0.3);return 1})()`);
+        await sleep(300);
+        eq(await fcN(), mid, 'κατεβαίνοντας ως την περ. ' + mid + ', η κάρτα την ακολουθεί');
+        ok(await ev(`document.querySelector('.sent[data-n="${mid}"]').classList.contains('cur') && document.querySelectorAll('.sent.cur').length===1`), 'και ανάβει ο αριθμός ΜΟΝΟ αυτής της περιόδου');
+        ok((await asideT()).indexOf(F.segs[mid].to.an) >= 0, 'η κάρτα δείχνει τον αρχαίο σύνδεσμο με την επόμενη («' + F.segs[mid].to.an + '»)');
+        if (F.who) eq(await ev(`document.querySelector('#aside .fc-who').textContent`), F.who[await ev(`D.segs.find(s=>s.n===${mid}).p`) % 2], 'και ποιος μιλάει');
+        await ev(`document.querySelector('#aside [data-go="${nx}"]').click()`); await sleep(1100);
+        eq(await fcN(), nx, '«περ. ' + nx + ' →» πηγαίνει στην επόμενη');
+        const kx = segs.find(s => s.n === nx).a.find(c => c[1])[1];
+        await ev(`document.querySelector('.sent[data-n="${nx}"] .an .w[data-k="${kx}"]').click()`);
+        ok(await ev(`!!document.querySelector('#aside .wc-an') && !document.querySelector('#aside .fc')`), 'πάτημα λέξης → η κάρτα της λέξης παίρνει τη θέση της');
+        await ev(`window.scrollBy(0, 400)`); await sleep(300);
+        ok(await ev(`!!document.querySelector('#aside .wc-an')`), 'και η κύλιση ΔΕΝ τη διώχνει όσο η λέξη είναι πατημένη');
+        await ev(`document.querySelector('.sent[data-n="${nx}"] .an .w[data-k="${kx}"]').click()`);
+        eq(await fcN(), nx, 'ξανά πάτημα → γυρίζει η περίοδος της λέξης');
+        const sx = segs.find(s => /σχόλιο «/.test(F.segs[s.n].why + F.segs[s.n].say));
+        if (sx) {
+          await ev(`document.querySelector('#aside [data-go]') && 1`);
+          await ev(`goPeriod(${sx.n})`); await sleep(1100);
+          ok(await ev(`!!document.querySelector('#aside .fc [data-sch]')`), 'περ. ' + sx.n + ': το «σχόλιο «…»» είναι κουμπί');
+          await ev(`document.querySelector('#aside .fc [data-sch]').click()`); await sleep(150);
+          ok(await ev(`document.getElementById('p-sxolia').classList.contains('on')`), 'και ανοίγει το σχόλιο του βιβλίου');
+          await ev(`document.querySelector('.tab[data-tab="metafrasi"]').click()`);
+        }
+        const before = await ev(`cur`);
+        await ev(`document.querySelector('.tab[data-tab="sxolia"]').click()`); await sleep(100); await ev(`window.scrollBy(0, 600)`); await sleep(300);
+        eq(await ev(`cur`), before, 'κύλιση ενώ είναι ανοιχτή ΑΛΛΗ καρτέλα δεν αλλάζει περίοδο (εκεί όλες οι περίοδοι «είναι στο 0»)');
+        await ev(`document.querySelector('.tab[data-tab="metafrasi"]').click()`); await sleep(100);
+        await ev(`document.querySelector('[data-mode="tr"]').click()`);
+        const trT = await asideT();
+        ok(!(await ev(`!!document.querySelector('#aside .fc')`)) && /Μετάφρασε μόνος/.test(trT) && segs.every(s => trT.indexOf(plain(F.segs[s.n].say)) < 0),
+          'στο «Μετάφρασε» η κάρτα ΚΡΥΒΕΤΑΙ (δεν προδίδει τη μετάφραση) και το λέει');
+        await ev(`document.querySelector('[data-mode="rd"]').click()`);
+        ok(await ev(`!!document.querySelector('#aside .fc')`), 'και γυρίζει στο «Διάβασε»');
+        await ev(`goPeriod(${segs[1].n})`); await sleep(200);
+        await shotAt(gid + '-07-flow', '.sent[data-n="' + segs[1].n + '"]');
+        section('Β · ' + gid + ' — «ΤΙ ΓΙΝΕΤΑΙ ΕΔΩ» (κινητό 393)');
+        await size(393, 860); await open('#metafrasi');
+        await ev(`document.querySelector('[data-mode="rd"]').click()`);
+        ok(await ev(`getComputedStyle(document.querySelector('.sent .fx')).display!=='none'`), 'κάτω από κάθε περίοδο: κουμπί «Τι γίνεται εδώ»');
+        await ev(`document.querySelector('.sent[data-n="${segs[0].n}"] [data-flow]').click()`);
+        ok(await ev(`(()=>{const i=document.querySelector('.sent[data-n="${segs[0].n}"] .info');return i.classList.contains('show')&&!!i.querySelector('.fc')})()`), 'πάτημα → ανοίγει η κάρτα της περιόδου μέσα στη σελίδα');
+        await noScroll('393 · «Τι γίνεται εδώ» ανοιχτό');
+        await shotAt(gid + '-11-phone-flow', '.sent[data-n="' + segs[0].n + '"]');
+        await ev(`document.querySelector('.sent[data-n="${segs[0].n}"] [data-flow]').click()`);
+        ok(await ev(`!document.querySelector('.sent[data-n="${segs[0].n}"] .info').classList.contains('show')`), 'δεύτερο πάτημα → κλείνει');
+        await ev(`document.querySelector('[data-mode="tr"]').click()`);
+        ok(await ev(`getComputedStyle(document.querySelector('.sent .fx')).display==='none'`), 'στο «Μετάφρασε» το κουμπί κρύβεται και στο κινητό');
+        await ev(`document.querySelector('[data-mode="rd"]').click()`);
+        await size(1440, 900);
+      }
+
       section('Β · ' + gid + ' — ΠΛΑΤΗ 1440 → 393');
       for (const w of [1440, 1180, 1040, 860, 760, 560]) {
         await size(w, 900);

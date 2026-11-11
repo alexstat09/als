@@ -95,6 +95,25 @@ function lastWordMatching(phrase, re){
   return bare(phrase).split(/\s+/).filter(Boolean).some(function(w){ return re.test(w); });
 }
 
+function bareNoSpace(s){ return norm(s).replace(/\s+/g, ''); }
+/* Κάθε περίοδος ανήκει σε μία ΑΤΑΚΑ (παράγραφο του αρχαίου). Βγαίνει από
+   το ίδιο το κείμενο: οι περίοδοι, ενωμένες χωρίς κενά, πρέπει να δίνουν
+   ακριβώς τις παραγράφους, με τη σειρά. Αλλιώς σκάει. */
+function paraOf(unit){
+  var paras = unit.ancient.map(function(b){ return bareNoSpace(b.p); });
+  var out = {}, pi = 0, acc = '';
+  unit.align.segs.forEach(function(s){
+    var t = bareNoSpace(s.a.map(function(c){ return c[0]; }).join(''));
+    if (pi >= paras.length) throw new Error('η περίοδος ' + s.n + ' περισσεύει από τις παραγράφους');
+    acc += t;
+    out[s.n] = pi;
+    if (paras[pi].indexOf(acc) !== 0) throw new Error('η περίοδος ' + s.n + ' δεν ταιριάζει στην παράγραφο ' + (pi + 1));
+    if (acc === paras[pi]){ pi++; acc = ''; }
+  });
+  if (pi !== paras.length || acc) throw new Error('οι περίοδοι δεν καλύπτουν ακριβώς τις ' + paras.length + ' παραγράφους');
+  return out;
+}
+
 /* Όλοι οι κανόνες. Επιστρέφει λίστα σφαλμάτων· κενή = περνάει. */
 function check(spec, unit, src){
   var errs = [];
@@ -321,6 +340,68 @@ function check(spec, unit, src){
       if (!Array.isArray(c) || c.length !== 3 || c.some(function(x){ return typeof x !== 'string' || !x.trim(); })) e('απλή μετάφραση: η αλλαγή ' + (i + 1) + ' δεν είναι [βιβλίο, εδώ, γιατί]');
     });
   }
+  /* 10 · «ΤΙ ΓΙΝΕΤΑΙ ΕΔΩ» (`flow`, προαιρετικό — als-v723). Δικά μου λόγια ανά περίοδο: τι λέει ·
+     γιατί είναι εκεί · πώς δένει με την επόμενη. Επειδή είναι δικά μου, ό,τι ΜΠΟΡΕΙ να ελεγχθεί
+     μηχανικά ελέγχεται: κάθε περίοδος ακριβώς μία φορά · αρχαίο ΜΟΝΟ μέσα σε {{ }} και αυτολεξεί ·
+     ο σύνδεσμος (`to.an`) ζει μέσα στην ΕΠΟΜΕΝΗ περίοδο · «περ. N» = υπαρκτή περίοδος ·
+     «σχόλιο «Χ»» = λήμμα σχολίου της ενότητας · οι κόμβοι καλύπτουν 1→N χωρίς κενό ·
+     και σε διάλογο, ο ομιλητής (ζυγή/μονή ατάκα) συμφωνεί με τα «ἔφη» / «ἦν δ’ ἐγώ» / «εἶπον». */
+  var FL = spec.flow;
+  if (FL){
+    var fns = segs.map(function(s){ return String(s.n); }), FS = FL.segs || {}, NS = segs.length;
+    var segA = {}; segs.forEach(function(s){ segA[s.n] = norm(s.a.map(function(c){ return c[0]; }).join('')); });
+    var lemmas = spec.scholia.map(function(s){ return s.lemma; });
+    var words = function(t){ return String(t).replace(/\{\{.+?\}\}/g, ' x ').split(/\s+/).filter(Boolean).length; };
+    var mine = function(t, where){
+      if (typeof t !== 'string' || !t.trim() || t !== t.trim()) return e('Τι γίνεται εδώ, ' + where + ': κενό ή με κενά στις άκρες');
+      if (POLY.test(String(t).replace(/\{\{.+?\}\}/g, '').replace(/σχόλιο «[^»]+»/g, ''))) e('Τι γίνεται εδώ, ' + where + ': αρχαίο έξω από {{ }} («' + t + '»)');
+      (t.match(/\{\{(.+?)\}\}/g) || []).forEach(function(m){ var a = norm(m.slice(2, -2)); if (ANC.indexOf(a) < 0) e('Τι γίνεται εδώ, ' + where + ': το «' + m.slice(2, -2) + '» δεν είναι αυτολεξεί στο αρχαίο'); });
+      (t.match(/περ\. (\d+)/g) || []).forEach(function(m){ var k = +m.slice(5); if (!(k >= 1 && k <= NS)) e('Τι γίνεται εδώ, ' + where + ': «' + m + '» δεν υπάρχει (1–' + NS + ')'); });
+      (t.match(/σχόλιο «([^»]+)»/g) || []).forEach(function(m){ var x = m.slice(8, -1); if (!lemmas.some(function(l){ return l.indexOf(x) >= 0; })) e('Τι γίνεται εδώ, ' + where + ': δεν υπάρχει σχόλιο «' + x + '»'); });
+      if (/[⭐⚠️]/.test(t)) e('Τι γίνεται εδώ, ' + where + ': σύμβολο αντί για λέξη');
+    };
+    fns.forEach(function(n, i){
+      var f = FS[n];
+      if (!f) return e('Τι γίνεται εδώ: λείπει η περίοδος ' + n);
+      mine(f.say, 'περ. ' + n + ' «τι λέει»'); mine(f.why, 'περ. ' + n + ' «γιατί εδώ»');
+      if (words(f.say) > 40) e('Τι γίνεται εδώ, περ. ' + n + ': «τι λέει» πάνω από 40 λέξεις');
+      if (words(f.why) > 55) e('Τι γίνεται εδώ, περ. ' + n + ': «γιατί εδώ» πάνω από 55 λέξεις');
+      var last = i === fns.length - 1;
+      if (last){
+        if (f.to) e('Τι γίνεται εδώ: η τελευταία περίοδος δεν έχει «επόμενη» (`to`)· γράφει `end`');
+        mine(f.end, 'περ. ' + n + ' «τέλος»');
+      } else {
+        if (!f.to || typeof f.to.an !== 'string' || !f.to.an.trim()) return e('Τι γίνεται εδώ, περ. ' + n + ': λείπει ο σύνδεσμος με την επόμενη (`to.an`)');
+        if (segA[fns[i + 1]].indexOf(norm(f.to.an)) < 0) e('Τι γίνεται εδώ, περ. ' + n + ': ο σύνδεσμος «' + f.to.an + '» δεν είναι μέσα στην περίοδο ' + fns[i + 1]);
+        mine(f.to.x, 'περ. ' + n + ' «με την επόμενη»');
+        if (words(f.to.x) > 30) e('Τι γίνεται εδώ, περ. ' + n + ': «με την επόμενη» πάνω από 30 λέξεις');
+        if (f.end) e('Τι γίνεται εδώ, περ. ' + n + ': `end` μόνο στην τελευταία');
+      }
+    });
+    Object.keys(FS).forEach(function(n){ if (fns.indexOf(n) < 0) e('Τι γίνεται εδώ: περίοδος ' + n + ' που δεν υπάρχει'); });
+    var NO = FL.nodes || [], at = 1;
+    if (!NO.length) e('Τι γίνεται εδώ: λείπουν οι κόμβοι (`nodes`)');
+    NO.forEach(function(x, i){
+      if (!x || typeof x.t !== 'string' || !x.t.trim() || POLY.test(x.t)) e('Τι γίνεται εδώ: κόμβος ' + (i + 1) + ' χωρίς τίτλο (ή με πολυτονικό)');
+      if (x.from !== at || !(x.to >= x.from)) e('Τι γίνεται εδώ: ο κόμβος ' + (i + 1) + ' πρέπει να αρχίζει στην περ. ' + at + ' (αρχίζει ' + x.from + '–' + x.to + ')');
+      at = x.to + 1;
+    });
+    if (NO.length && at !== NS + 1) e('Τι γίνεται εδώ: οι κόμβοι σταματούν στην περ. ' + (at - 1) + ', όχι στην ' + NS);
+    if (FL.who){
+      if (!Array.isArray(FL.who) || FL.who.length !== 2 || FL.who.some(function(x){ return typeof x !== 'string' || !x.trim(); })) e('Τι γίνεται εδώ: `who` = [ζυγές ατάκες, μονές ατάκες]');
+      else {
+        var para = {};
+        try { para = paraOf(unit); } catch (x){ e('Τι γίνεται εδώ: ' + x.message); }
+        unit.ancient.forEach(function(b, pi){
+          var t = norm(b.p), sayer = pi % 2;   /* 0 = ο πρώτος ομιλητής (ζυγή ατάκα), 1 = ο δεύτερος */
+          var toks = t.split(/[^\u0370-\u03FF\u1F00-\u1FFF]+/);   /* ⚠️ το \\b ΔΕΝ δουλεύει με ελληνικά */
+          if (toks.indexOf('ἔφη') >= 0 && sayer !== 1) e('Τι γίνεται εδώ: η ατάκα ' + (pi + 1) + ' έχει «ἔφη» αλλά βγαίνει του ' + FL.who[sayer]);
+          if ((/ἦν δ' ἐγώ/.test(t) || toks.indexOf('εἶπον') >= 0) && sayer !== 0)   /* το norm() κάνει το ’ σε ' */ e('Τι γίνεται εδώ: η ατάκα ' + (pi + 1) + ' είναι του αφηγητή αλλά βγαίνει του ' + FL.who[sayer]);
+        });
+        if (Object.keys(para).length !== NS) e('Τι γίνεται εδώ: δεν βρέθηκε ατάκα για κάθε περίοδο');
+      }
+    }
+  }
   return errs;
 }
 
@@ -343,5 +424,5 @@ function loadUnit(id){
 }
 function loadSpec(id){ return JSON.parse(fs.readFileSync(path.join(__dirname, id + '.json'), 'utf8')); }
 
-module.exports = { ROOT: ROOT, norm: norm, readSource: readSource, sourceOf: sourceOf, secondText: secondText,
+module.exports = { ROOT: ROOT, norm: norm, paraOf: paraOf, readSource: readSource, sourceOf: sourceOf, secondText: secondText,
   pagesText: pagesText, tagsOf: tagsOf, LENSES: LENSES, check: check, bumpCache: bumpCache, loadUnit: loadUnit, loadSpec: loadSpec, POLY: POLY };

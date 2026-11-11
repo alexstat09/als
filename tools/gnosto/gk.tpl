@@ -195,7 +195,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .whole .gry[hidden]{display:none}
 
 /* η καρτέλα της λέξης */
-.aside{position:sticky;top:20px;margin-top:22px}
+.aside{position:sticky;top:20px;margin-top:22px;max-height:calc(100dvh - 40px);overflow-y:auto;scrollbar-width:thin}   /* κάρτα ψηλότερη από την οθόνη: κυλάει μέσα της, δεν κόβεται */
 .wc{border:1px solid var(--line);border-radius:18px;padding:26px 26px 22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
 .wc.empty{color:var(--dim);font-size:14px;line-height:1.7}
 .wc.empty .big{font-family:var(--gr);font-style:italic;font-size:28px;color:var(--ink);line-height:1.2;margin-bottom:12px}
@@ -290,10 +290,33 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 .foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;line-height:1.85;color:var(--dim);max-width:860px}
 .foot b{color:var(--ink);font-weight:500}
 
+/* «Τι γίνεται εδώ» (als-v723): η κάρτα της ΠΕΡΙΟΔΟΥ — ακολουθεί το διάβασμα, δίνει τη θέση της στην κάρτα της λέξης */
+.fc-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fc-who{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;border:1px solid var(--line2);border-radius:999px;color:var(--dim);white-space:nowrap}
+.fc-who.g2{color:rgb(var(--hit));border-color:rgba(var(--hit),.35)}
+.fc-road{display:flex;gap:4px;margin-top:16px}
+.fc-road i{flex:1;height:3px;border-radius:2px;background:var(--line2)}
+.fc-road i.done{background:rgba(var(--gn),.45)}
+.fc-road i.on{background:rgb(var(--gn))}
+.fc-node{margin-top:12px}
+.fc-node div{margin-top:4px;font-family:var(--gr);font-style:italic;font-size:25px;line-height:1.2;color:var(--ink)}
+.fc .wc-sec p{font-size:15px;line-height:1.62;color:var(--ink)}
+.fc .wc-sec p.fc-say{font-family:var(--gr);font-size:19.5px;line-height:1.5}
+.fc-g{font-family:var(--gr);color:rgb(var(--hit))}
+.fc-link{margin-top:8px;font-family:var(--gr);font-size:23px;line-height:1.2;color:rgb(var(--hit))}
+.fc .chip{display:inline-block;white-space:nowrap;padding:0 8px;margin:0 1px;line-height:1.55;vertical-align:baseline}
+.fc-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+.fc-nav button{font-size:13.5px;color:var(--dim);padding:8px 2px;min-height:40px}
+.fc-nav button:hover{color:var(--ink)}
+.fc-hint{margin-top:10px;font-size:13.5px;color:var(--dim)}
+.sent.cur .num{color:rgb(var(--gn))}
+.fx{display:none;margin-top:10px}
+
 /* ── πλάτη (ΜΟΝΟ max-width — σταθ. 51) ───────────────────── */
 @media (max-width:1040px){
   .read{grid-template-columns:minmax(0,1fr)}
   .aside{display:none}
+  .m-rd .fx,.m-st .fx{display:flex}
   .sx{grid-template-columns:minmax(0,1fr)}
   .whole{grid-template-columns:minmax(0,1fr)}
   .whole.two{grid-template-columns:minmax(0,1fr)}
@@ -509,6 +532,8 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
 /* ══ ΜΕΤΑΦΡΑΣΗ ══════════════════════════════════════════════════════════ */
 const box = document.getElementById('content');
 const aside = document.getElementById('aside');
+const FL = D.flow;   /* «Τι γίνεται εδώ» — null σε ενότητα χωρίς */
+let cur = 1;
 let sel = null;   /* {n, k} */
 
 function chunkSpan(side, n, c, i, noTail, ez, plain){
@@ -657,6 +682,7 @@ function build(){
       '<div class="body"><p class="an">' + anHTML(s, ui.mode) + '</p>' +
       '<button class="veil" type="button">Πες τη μετάφραση δυνατά και πάτα για να την ελέγξεις</button>' +
       '<p class="md">' + mdHTML(s) + '</p>' + apxHTML(s) +
+      (FL ? '<div class="fx"><button class="tbtn" type="button" data-flow>Τι γίνεται εδώ</button></div>' : '') +
       '<ul class="clauses">' + clausesHTML(s) + '</ul>' +
       '<div class="info"></div></div>' +
       '<div class="side"><span class="mkw">' + markHTML(s.n) + '</span>' +
@@ -668,6 +694,7 @@ function build(){
   });
   box.innerHTML = h;
   applyFilter();
+  if (FL) rows().forEach(r => r.classList.toggle('cur', +r.dataset.n === cur));
 }
 function rows(){ return Array.from(box.querySelectorAll('.sent')); }
 function segOf(n){ return D.segs.find(s => s.n === +n); }
@@ -705,6 +732,52 @@ function wordCard(k, n){
 /* Τα «⭐»/«⚠️» της ύλης του Γνωστού είναι σημάδια σημασίας στον πίνακα· εδώ
    η γλώσσα δεν έχει emoji (§⑧). Το ⚠️ γίνεται λέξη, για να μη χαθεί. */
 function plainW(t){ return String(t).replace(/⭐+\s*/g, '').replace(/⚠️\s*/g, 'Προσοχή: ').replace(/\s{2,}/g, ' ').trim(); }
+/* ── «Τι γίνεται εδώ» (als-v723) ── δικά μου λόγια ανά περίοδο, ελεγμένα από τον validator §10:
+   αρχαίο ΜΟΝΟ μέσα σε διπλές αγκύλες (αυτολεξεί), «σχόλιο «Χ»» = κουμπί προς το σχόλιο του βιβλίου. */
+function flowTxt(t){
+  return esc(t).replace(/\{\{(.+?)\}\}/g, '<span class="fc-g">$1</span>').replace(/σχόλιο «([^»]+)»/g, (m, x) => {
+    const i = D.scholia.findIndex(s => s.lemma.indexOf(x) >= 0);
+    return i < 0 ? m : 'σχόλιο <button class="chip" type="button" data-sch="' + i + '"><span class="g">' + x + '</span> ↗</button>';
+  });
+}
+function flowCard(n){
+  const s = segOf(n), f = FL.segs[n], N = D.segs.length;
+  const ni = FL.nodes.findIndex(x => n >= x.from && n <= x.to), nd = FL.nodes[ni];
+  const who = FL.who ? FL.who[s.p % 2] : '';
+  let h = '<div class="wc fc" data-fc="' + n + '">' +
+    '<div class="fc-top"><span class="lbl">Περίοδος ' + n + ' / ' + N + '</span>' + (who ? '<span class="fc-who' + (s.p % 2 ? ' g2' : '') + '">' + esc(who) + '</span>' : '') + '</div>' +
+    '<div class="fc-road" aria-hidden="true">' + FL.nodes.map((x, i) => '<i class="' + (i < ni ? 'done' : i === ni ? 'on' : '') + '"></i>').join('') + '</div>' +
+    '<div class="fc-node"><span class="lbl">Κόμβος ' + (ni + 1) + ' / ' + FL.nodes.length + '</span><div>' + esc(nd.t) + '</div></div>' +
+    '<div class="wc-sec"><span class="lbl tag-mine">Τι λέει · δικά μου</span><p class="fc-say">' + flowTxt(f.say) + '</p></div>' +
+    '<div class="wc-sec"><span class="lbl tag-mine">Γιατί εδώ · δικά μου</span><p>' + flowTxt(f.why) + '</p></div>' +
+    (f.to ? '<div class="wc-sec"><span class="lbl tag-mine">Με την επόμενη →</span><div class="fc-link">' + esc(f.to.an) + '</div><p>' + flowTxt(f.to.x) + '</p></div>'
+          : '<div class="wc-sec"><span class="lbl tag-mine">Μετά →</span><p>' + flowTxt(f.end) + '</p></div>') +
+    '<div class="fc-nav">' + (n > 1 ? '<button type="button" data-go="' + (n - 1) + '">← περ. ' + (n - 1) + '</button>' : '<span></span>') +
+      (n < N ? '<button type="button" data-go="' + (n + 1) + '">περ. ' + (n + 1) + ' →</button>' : '<span></span>') + '</div>';
+  return h + '<p class="fc-hint">Πάτα μια λέξη: λήμμα, τύπος, συντακτικό.</p></div>';
+}
+/* Η κάρτα όταν δεν έχει πατηθεί λέξη: η περίοδος (αν η ενότητα έχει `flow`), αλλιώς η παλιά οδηγία.
+   Στο «Μετάφρασε» η περίοδος ΔΕΝ φαίνεται — θα πρόδιδε τη μετάφραση που πρέπει να πει μόνος. */
+function restCard(){
+  if (!FL) return emptyCard();
+  if (ui.mode === 'tr') return '<div class="wc empty"><div class="big">Μετάφρασε μόνος σου.</div>Το «Τι γίνεται εδώ» κρύβεται εδώ, για να μη σου πει τη μετάφραση. Γύρνα στο «Διάβασε» για να το δεις.</div>';
+  return flowCard(cur);
+}
+function setCur(n){
+  if (!FL) return;
+  cur = n;
+  rows().forEach(r => r.classList.toggle('cur', +r.dataset.n === n));
+  if (!sel && !narrow.matches) aside.innerHTML = restCard();
+}
+let navHold = 0;   /* μετά από «περ. N →»: η κύλιση που προκαλέσαμε εμείς δεν αλλάζει περίοδο */
+function goPeriod(n){
+  const row = box.querySelector('.sent[data-n="' + n + '"]'); if (!row) return;
+  navHold = Date.now() + 900;
+  /* στο πάνω τρίτο, εκεί όπου η παρακολούθηση «διαβάζει» (38%) — όχι στη μέση, όπου θα κέρδιζε η προηγούμενη */
+  window.scrollTo({top: row.getBoundingClientRect().top + scrollY - innerHeight * 0.22, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
+  if (narrow.matches){ clearSel(); const info = row.querySelector('.info'); info.innerHTML = flowCard(n); info.dataset.k = 'flow'; info.classList.add('show'); }
+  else { clearSel(); setCur(n); }
+}
 function emptyCard(){
   return '<div class="wc empty"><div class="big">Πάτα μια λέξη.</div>Ανάβει το ζευγάρι της στη μετάφραση, και εδώ βλέπεις λήμμα, τύπο, συντακτικό, το «γιατί» της απόδοσης και αν έχει σχόλιο στο βιβλίο.<br><br>Οι <b>Φακοί</b> ανάβουν μια κατηγορία μέσα στο κείμενο — π.χ. όλες τις μετοχές.</div>';
 }
@@ -714,7 +787,7 @@ function clearSel(){
   box.querySelectorAll('.info.show').forEach(x => { x.classList.remove('show'); x.innerHTML = ''; });
   box.querySelectorAll('.cl.on, .clauses li.on').forEach(x => x.classList.remove('on'));
   sel = null;
-  aside.innerHTML = emptyCard();
+  aside.innerHTML = restCard();
 }
 function select(n, k, keep){
   const was = sel && sel.n === +n && sel.k === k;
@@ -722,19 +795,28 @@ function select(n, k, keep){
   if (was && !keep) return;
   if (!D.pairs[k]) return;
   sel = {n:+n, k};
+  if (FL){ cur = +n; rows().forEach(r => r.classList.toggle('cur', +r.dataset.n === cur)); }
   const row = box.querySelector('.sent[data-n="' + n + '"]');
   if (!row) return;
   row.querySelectorAll('.w[data-k="' + k + '"]').forEach(x => x.classList.add('hit'));
   const html = wordCard(k, n);
-  if (narrow.matches){ const info = row.querySelector('.info'); info.innerHTML = html; info.classList.add('show'); }
+  if (narrow.matches){ const info = row.querySelector('.info'); info.innerHTML = html; info.dataset.k = ''; info.classList.add('show'); }
   else aside.innerHTML = html;
 }
 
 box.addEventListener('click', e => {
   const chip = e.target.closest('[data-sch]');
   if (chip){ goScholio(+chip.dataset.sch); return; }
+  const go = e.target.closest('[data-go]');
+  if (go){ goPeriod(+go.dataset.go); return; }
   const row = e.target.closest('.sent'); if (!row) return;
   const n = +row.dataset.n;
+  if (e.target.closest('[data-flow]')){
+    const info = row.querySelector('.info'), open = info.classList.contains('show') && info.dataset.k === 'flow';
+    clearSel();
+    if (!open){ info.innerHTML = flowCard(n); info.dataset.k = 'flow'; info.classList.add('show'); setCur(n); }
+    return;
+  }
   if (e.target.closest('.veil')){ row.classList.add('shown'); return; }
   const ax = e.target.closest('[data-apx]');
   if (ax){ apAct(row, n, ax.dataset.apx); return; }
@@ -760,7 +842,7 @@ box.addEventListener('click', e => {
 box.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('w')){ e.preventDefault(); e.target.click(); }
 });
-aside.addEventListener('click', e => { const c = e.target.closest('[data-sch]'); if (c) goScholio(+c.dataset.sch); });
+aside.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) return goPeriod(+g.dataset.go); const c = e.target.closest('[data-sch]'); if (c) goScholio(+c.dataset.sch); });
 
 /* ── τρόποι ── */
 const HINT = {
@@ -1065,9 +1147,28 @@ function tally(){
 }
 
 /* ══ ΕΚΚΙΝΗΣΗ ═══════════════════════════════════════════════════════════ */
+/* «Τι γίνεται εδώ»: η κάρτα ακολουθεί την περίοδο που διαβάζεις (η τελευταία που πέρασε το 38% της οθόνης).
+   Δεν αλλάζει ενώ κοιτάς λέξη, ούτε στο κινητό (εκεί ανοίγει με το κουμπί κάτω από κάθε περίοδο). */
+if (FL){
+  HINT.rd += ' Το «Τι γίνεται εδώ» (δεξιά — στο κινητό, κουμπί κάτω από κάθε περίοδο) λέει τι κάνει η περίοδος, γιατί είναι εκεί και πώς δένει με την επόμενη.';
+  let tick = 0;   /* χρονοδιακόπτης, όχι requestAnimationFrame: δεν τρέχει σε σελίδα που δεν ζωγραφίζεται */
+  const track = () => {
+    tick = 0;
+    if (sel || narrow.matches || readGrid.hidden || !box.offsetParent || Date.now() < navHold) return;   /* άλλη καρτέλα: όλες οι περίοδοι «στο 0» */
+    const y = innerHeight * 0.38;
+    let pick = null;
+    for (const r of rows()){
+      if (r.classList.contains('gone')) continue;
+      if (!pick || r.getBoundingClientRect().top <= y) pick = r; else break;
+    }
+    if (pick && +pick.dataset.n !== cur) setCur(+pick.dataset.n);
+  };
+  addEventListener('scroll', () => { if (!tick) tick = setTimeout(track, 60); }, {passive:true});
+}
 build(); buildWhole(); buildScholia(); buildActs(); tally();
 setSx(ui.sx);
 setMode(ui.mode);
+if (FL) setCur(cur);
 if (D.aplh) setVer(ui.ver);
 const h0 = (location.hash || '').slice(1);
 setTab(TABS.indexOf(h0) >= 0 ? h0 : ui.tab);

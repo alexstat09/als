@@ -13,25 +13,9 @@
 var fs = require('fs'), path = require('path');
 var L = require('./lib.js');
 
-function bareNoSpace(s){ return L.norm(s).replace(/\s+/g, ''); }
-
-/* Κάθε περίοδος ανήκει σε μία ΑΤΑΚΑ (παράγραφο του αρχαίου). Βγαίνει από
-   το ίδιο το κείμενο: οι περίοδοι, ενωμένες χωρίς κενά, πρέπει να δίνουν
-   ακριβώς τις παραγράφους, με τη σειρά. Αλλιώς σκάει. */
-function paraOf(unit){
-  var paras = unit.ancient.map(function(b){ return bareNoSpace(b.p); });
-  var out = {}, pi = 0, acc = '';
-  unit.align.segs.forEach(function(s){
-    var t = bareNoSpace(s.a.map(function(c){ return c[0]; }).join(''));
-    if (pi >= paras.length) throw new Error('η περίοδος ' + s.n + ' περισσεύει από τις παραγράφους');
-    acc += t;
-    out[s.n] = pi;
-    if (paras[pi].indexOf(acc) !== 0) throw new Error('η περίοδος ' + s.n + ' δεν ταιριάζει στην παράγραφο ' + (pi + 1));
-    if (acc === paras[pi]){ pi++; acc = ''; }
-  });
-  if (pi !== paras.length || acc) throw new Error('οι περίοδοι δεν καλύπτουν ακριβώς τις ' + paras.length + ' παραγράφους');
-  return out;
-}
+/* Κάθε περίοδος ανήκει σε μία ΑΤΑΚΑ: ο υπολογισμός ζει στο lib.js (τον χρειάζεται και ο validator
+   για το «ποιος μιλάει» της κάρτας «Τι γίνεται εδώ»)· εδώ μόνο τον δανειζόμαστε. */
+var paraOf = L.paraOf;
 
 function dataOf(spec, unit){
   var para = paraOf(unit);
@@ -58,6 +42,8 @@ function dataOf(spec, unit){
       return { n: s.n, p: para[s.n], a: s.a, m: s.m, runs: spec.structure.runs[s.n] };
     }),
     pairs: pairs,
+    /* «Τι γίνεται εδώ»: ανά περίοδο τι λέει, γιατί είναι εκεί, πώς δένει με την επόμενη (δικά μου, ελεγμένα στον validator §10) */
+    flow: spec.flow || null,
     /* η απλή μετάφραση: ανά περίοδο, και ενωμένη ανά ατάκα για το «Ολόκληρο» */
     aplh: spec.aplh ? {
       name: spec.aplh.name, note: spec.aplh.note || '', changes: spec.aplh.changes || [],
@@ -102,7 +88,8 @@ function render(id){
   if (errs.length) throw new Error('ο validator αρνήθηκε:\n  ✗ ' + errs.join('\n  ✗ '));
   var tpl = fs.readFileSync(path.join(__dirname, 'gk.tpl'), 'utf8');
   var D = dataOf(spec, unit);
-  var json = JSON.stringify(D).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  /* οι διπλές αγκύλες του `flow` γράφονται \u007b ώστε να μη μοιάζουν με κενό του προτύπου (ζουν ΜΟΝΟ μέσα σε JSON strings — δομικά δύο αγκύλες στη σειρά δεν υπάρχουν σε JSON) */
+  var json = JSON.stringify(D).replace(/</g, '\\u003c').replace(/\{\{/g, '\\u007b\\u007b').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   var esc = function(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
   var map = {
     TITLE: 'Αρχαία · ' + esc(unit.section) + ' · ' + esc(unit.short),

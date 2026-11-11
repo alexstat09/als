@@ -72,6 +72,8 @@ if (!step('wire', node, ['tools/gnosto/wire.js', id])) stop();
 step('test · arxaia-gnosto', node, ['tests/arxaia-gnosto.test.js'], null, zeroFail);
 step('test · όργανο (όλες, Chrome)', node, ['tests/arxaia-gnosto-organo.test.js'], { GK_SHOTS: SHOTS }, zeroFail);
 step('test · σελίδα Γνωστού', node, ['tests/arxaia-gnosto-page.test.js'], null, zeroFail);
+step('test · Διόρθωσε → ζευγάρια', node, ['tests/arxaia-aplh-edit.test.js'], null, zeroFail);
+step('test · Τι γίνεται εδώ', node, ['tests/arxaia-flow.test.js'], null, zeroFail);
 step('test · launcher', node, ['tests/launcher.test.js'], null, zeroFail);
 step('smoke', 'bash', ['smoke-test.sh'], null, function(o){ return /SMOKE_OK/.test(o); });
 
