@@ -551,6 +551,54 @@ function anHTML(s, mode){
 }
 function openBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? ' d' : '') + '">' + (c.d ? '(' : '[') + '<sup>' + q + '</sup></span>'; }
 function closeBr(q){ const c = D.clauses[q]; return '<span class="br' + (c.d ? ' d' : '') + '">' + (c.d ? ')' : ']') + '</span>'; }
+/* ⟪apAlign */
+/* ⭐⭐ Η ΔΙΚΗ ΤΟΥ ΔΙΟΡΘΩΣΗ ΔΕΝ ΣΠΑΕΙ ΠΟΤΕ ΤΑ ΖΕΥΓΑΡΙΑ (als-v722). Δική του αναφορά: «πήγα να αλλάξω
+   μια λέξη και σταμάτησε να δουλεύει όλο το sync μεταξύ αρχαίων και μετάφρασης». Η διόρθωση μένει
+   αποθηκευμένη ΑΥΤΟΥΣΙΑ (κείμενο)· τα ζευγάρια ξαναβρίσκονται εδώ, λέξη-λέξη, από την απόδοση από
+   την οποία ξεκίνησε (η απλή του αρχείου ή ο μεταφραστής — όποια ταιριάζει περισσότερο):
+   ό,τι έμεινε ίδιο κρατά το κλειδί του · ό,τι ΑΝΤΙΚΑΤΕΣΤΗΣΕ λέξη παίρνει το κλειδί ΕΚΕΙΝΗΣ ·
+   ό,τι προστέθηκε μέσα σε ένα κομμάτι μένει στο κομμάτι · ό,τι προστέθηκε ανάμεσα σε δύο είναι
+   απλό κείμενο. Εξαρτάται ΜΟΝΟ από το D (το test τρέχει αυτό το μπλοκ αυτούσιο). */
+function apAlign(text, s){
+  const TOK = /\s+|[,.;·:!?«»()\[\]—–’'…]|[^\s,.;·:!?«»()\[\]—–’'…]+/g;
+  const bases = [D.aplh && D.aplh.align && D.aplh.align[s.n], s.m].filter(Boolean);
+  let best = null;
+  bases.forEach(base => {
+    const O = [], N = (text.match(TOK) || []).map(t => ({ t: t, ci: -1 }));
+    base.forEach((c, ci) => (c[0].match(TOK) || []).forEach(t => O.push({ t: t, ci: ci })));
+    const n = O.length, m = N.length, L = [];
+    for (let i = 0; i <= n; i++) L.push(new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      L[i][j] = O[i].t === N[j].t ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    let i = 0, j = 0, score = 0, gO = [], gN = [];
+    const flush = () => {
+      if (gN.length) gN.forEach((x, k) => { x.ci = gO.length ? gO[Math.min(gO.length - 1, Math.floor(k * gO.length / gN.length))].ci : -2; });
+      gO = []; gN = [];
+    };
+    while (i < n || j < m){
+      if (i < n && j < m && O[i].t === N[j].t){ flush(); N[j].ci = O[i].ci; if (/\S/.test(O[i].t)) score++; i++; j++; }
+      else if (j < m && (i >= n || L[i][j + 1] >= L[i + 1][j])){ gN.push(N[j]); j++; }
+      else { gO.push(O[i]); i++; }
+    }
+    flush();
+    /* καθαρή προσθήκη: μένει στο κομμάτι μόνο αν και οι δύο γείτονες είναι του ΙΔΙΟΥ κομματιού */
+    for (let k = 0; k < m; k++) if (N[k].ci === -2){
+      let p = k - 1; while (p >= 0 && N[p].ci < 0) p--;
+      let q = k + 1; while (q < m && N[q].ci < 0) q++;
+      N[k].ci = p >= 0 && q < m && N[p].ci === N[q].ci ? N[p].ci : -1;
+    }
+    const out = [];
+    let last = null;
+    N.forEach(x => {
+      if (last && last.ci === x.ci){ last.c[0] += x.t; return; }
+      last = { ci: x.ci, c: [x.t, x.ci >= 0 ? base[x.ci][1] : 0] }; out.push(last.c);
+    });
+    const exact = base.map(c => c[0]).join('').replace(/\s+/g, ' ').trim() === text;
+    if (!best || exact && !best.exact || exact === best.exact && score > best.score) best = { score: score, exact: exact, chunks: out };
+  });
+  return best ? best.chunks : [[text, 0]];
+}
+/* apAlign⟫ */
 /* Η απλή απόδοση «α … β» μοιράζεται στα κομμάτια του ίδιου ζευγαριού με τη σειρά
    τους (ο validator εγγυάται ίδιο πλήθος). */
 function mdHTML(s){
@@ -560,7 +608,8 @@ function mdHTML(s){
        «Εδώ η κανονική» → πέφτει παρακάτω στη μετάφραση του βιβλίου. Δική του απόδοση → απλό κείμενο. */
     const v = apm[s.n];
     if (v !== true){
-      if (typeof v === 'string' && v.trim()) return '<span class="ap">' + esc(v) + '</span>';
+      /* η δική του απόδοση: ΙΔΙΕΣ λέξεις-κουμπιά, τα ζευγάρια ξαναβρίσκονται από το apAlign */
+      if (typeof v === 'string' && v.trim()) return '<span class="ap">' + apAlign(v, s).map((c, i) => chunkSpan('md', s.n, c, i, false, null, true)).join('') + '</span>';
       const al = D.aplh.align && D.aplh.align[s.n];
       if (!al) return '<span class="ap">' + esc(D.aplh.segs[s.n]) + '</span>';
       return '<span class="ap">' + al.map((c, i) => chunkSpan('md', s.n, c, i, false, null, true)).join('') + '</span>';
@@ -627,8 +676,9 @@ function segOf(n){ return D.segs.find(s => s.n === +n); }
 /* Πώς το λέει η απλή ΣΕ ΑΥΤΗ την περίοδο: τα κομμάτια του κλειδιού, «α … β» όταν είναι σπασμένο.
    null = η περίοδος δεν δείχνει τη στοιχισμένη απλή (ακριβής, «εδώ η κανονική», ή δική του απόδοση). */
 function apRender(n, k){
-  if (ui.ver !== 'ap' || !D.aplh || !D.aplh.align || apm[n] !== undefined) return null;
-  return (D.aplh.align[n] || []).filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
+  if (ui.ver !== 'ap' || !D.aplh || !D.aplh.align || apm[n] === true) return null;
+  const v = apm[n], al = typeof v === 'string' && v.trim() ? apAlign(v, segOf(n)) : D.aplh.align[n];
+  return (al || []).filter(c => c[1] === k).map(c => c[0].trim()).join(' … ');
 }
 function wordCard(k, n){
   const p = D.pairs[k];

@@ -365,6 +365,26 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         eq(await ev(`${R(g2.n)}.querySelectorAll('.md .w').length`), g2.m.filter(c => c[1] && !/^[\s,.;:·’'—–()«»!?]+$/.test(c[0].replace(/\s+$/, ''))).length, 'και η «κανονική» περίοδος έχει όλες τις λέξεις-κουμπιά του βιβλίου');
         await ev(`${R(g2.n)}.querySelector('[data-apx="edit"]').click(); ${R(g2.n)}.querySelector('.ape').value='κάτι'; ${R(g2.n)}.querySelector('[data-apx="cancel"]').click()`);
         eq(await ev(`${R(g2.n)}.querySelector('.md').textContent.trim()`), book(g2), 'το «Άκυρο» δεν αλλάζει τίποτα');
+        /* ⭐⭐ ΔΙΟΡΘΩΣΕ ΜΙΑ ΛΕΞΗ → ΤΑ ΖΕΥΓΑΡΙΑ ΜΕΝΟΥΝ (als-v722, δική του αναφορά: «πήγα να αλλάξω μια λέξη
+           και σταμάτησε να δουλεύει όλο το sync μεταξύ αρχαίων και μετάφρασης») */
+        {
+          const gx = rest[3], alx = AP.align[gx.n];
+          const WR = /[^\s,.;:·’'—–()«»!?\[\]…]+/g;
+          const cx = alx.find(c => c[1] && (c[0].match(WR) || []).some(w => w.length >= 3));
+          const wx = (cx[0].match(WR) || []).filter(w => w.length >= 3).pop();
+          const tx = alx.map(c => c === cx ? c[0].replace(wx, 'ΝΕΑΛΕΞΗ') : c[0]).join('').replace(/\s+/g, ' ').trim();
+          const nBefore = await ev(`${R(gx.n)}.querySelectorAll('.md .w').length`);
+          await ev(`${R(gx.n)}.querySelector('[data-apx="edit"]').click(); ${R(gx.n)}.querySelector('.ape').value=${JSON.stringify(tx)}; ${R(gx.n)}.querySelector('[data-apx="save"]').click()`);
+          eq(await ev(`${R(gx.n)}.querySelector('.md').textContent.trim()`), tx, 'διόρθωση μιας λέξης («' + wx + '» → «ΝΕΑΛΕΞΗ»): φαίνεται αυτολεξεί');
+          eq(await ev(`${R(gx.n)}.querySelectorAll('.md .w').length`), nBefore, 'και η περίοδος κρατάει ΟΛΕΣ τις λέξεις-κουμπιά της (' + nBefore + ')');
+          await ev(`document.querySelectorAll('.w.hit').length && document.querySelector('.w.hit').click()`);
+          await ev(`${R(gx.n)}.querySelector('.md .w[data-k="${cx[1]}"]').click()`);
+          ok(await ev(`${R(gx.n)}.querySelectorAll('.an .w.hit[data-k="${cx[1]}"]').length>0`), 'πατώντας τη ΝΕΑ λέξη ανάβει ΤΟ ΙΔΙΟ «' + unit.align.pairs[cx[1]].a + '» στο αρχαίο');
+          ok((await ev(`document.getElementById('aside').textContent`)).indexOf('ΝΕΑΛΕΞΗ') >= 0, 'και η κάρτα της λέξης λέει τη ΔΙΚΗ του απόδοση');
+          await ev(`${R(gx.n)}.querySelector('.md .w[data-k="${cx[1]}"]').click()`);
+          await ev(`${R(gx.n)}.querySelector('[data-apx="undo"]').click()`);
+          eq(await ev(`${R(gx.n)}.querySelector('.md').textContent`), AP.segs[gx.n], '«Γύρνα στην απλή» μετά τη διόρθωση της λέξης');
+        }
         await open();
         eq(JSON.stringify(await ev(`[${g0.n},${g1.n},${g2.n}].map(n=>document.querySelector('.sent[data-n="'+n+'"] .md').textContent.trim())`)), JSON.stringify([book(g0), 'Δική μου απόδοση', book(g2)]), 'οι διορθώσεις μένουν μετά το reload');
         await ev(`document.querySelector('[data-mode="wh"]').click()`);
