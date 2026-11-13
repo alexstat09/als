@@ -124,6 +124,10 @@ appKey `arxaia-agn`, τα κείμενα ζουν ως JSON στο `data/`)** an
 sha256 καρφωμένο), σελίδες = `data/lexilogio.json` + `S.extra`, πρόοδος =
 `metron.lexilogio.v2`, appKey `lexilogio`· ράφι + «Για αύριο» στο
 `arxaia.html#ag`, μόνο ανάγνωση)**,
+**`arxaia-grammatiki.html` (Αρχαία · ΓΡΑΜΜΑΤΙΚΗ, als-v725 — το βιβλίο γραμματικής
+του Πυθαγόρα ενότητα-ενότητα, «Γραφίτης»· λογική = `grammatiki-core.js`, ενότητες =
+`data/grammatiki/<id>.json` + `index.json` (τα περιεχόμενα του βιβλίου), πρόοδος =
+`metron.grammatiki.v1`, appKey `grammatiki`· πόρτα = κάρτα 02 της `arxaia-agnosto.html`)**,
 `ekthesi.html` (Έκθεση, als-v495) are the study pages, and
 **`homework.html` (School Studies, als-v483)** is the room above them.
 

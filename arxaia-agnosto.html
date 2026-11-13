@@ -640,8 +640,12 @@ function renderHome(){
     card('01', 'Κείμενα & Μετάφραση',
       'Βιβλιοθήκη αδιδάκτων · καθοδήγηση ανά περίοδο · διόρθωση με μονάδες',
       t ? ('#/keimeno/' + t.id) : '#/', libraryHTML(), libFoot) +
-    card('02', 'Γραμματική', 'Drill τύπων με πολυτονικό πληκτρολόγιο · τα λάθη ξαναέρχονται ώσπου 2 σωστές στη σειρά',
-      '#/grammatiki', '<div class="mini" id="miniG"></div>', '') +
+    /* ⭐ als-v725: ο χώρος «Γραμματική» είναι πλέον η σελίδα του βιβλίου
+       (arxaia-grammatiki.html, «Γραφίτης»). ⛔ Η παλιά άσκηση τύπων
+       (#/grammatiki) ΔΕΝ σβήστηκε — μένει ένα πάτημα μακριά. */
+    card('02', 'Γραμματική', 'Το βιβλίο σου ενότητα ενότητα: οι κλίσεις με το «γιατί» τους, και καρτούλες κάθε μέρα.',
+      'arxaia-grammatiki.html', '<div class="mini lxm" id="miniGr"><div class="s">Φορτώνει…</div></div>',
+      '<a class="lxk" href="arxaia-grammatiki.html" style="display:block;margin-bottom:8px">Άνοιξε τη Γραμματική</a><a class="lxk" href="#/grammatiki">Η παλιά άσκηση τύπων</a>') +
     card('03', 'Συντακτικό', 'Συντακτική θέση ανά λέξη · δευτερεύουσες σε 4 πεδία · μετατροπές',
       '#/syntaktiko', '<div class="mini" id="miniS"></div>', '') +
     /* ⭐ als-v602: ο χώρος «Λεξιλόγιο» είναι πλέον η σελίδα του φυλλαδίου
@@ -668,7 +672,26 @@ window.AGN = {
   cur:function(){ return CUR; }
 };
 
-function buildMinis(){ if (window.AGN.buildMinis) window.AGN.buildMinis(); paintLexMini(); }
+function buildMinis(){ if (window.AGN.buildMinis) window.AGN.buildMinis(); paintLexMini(); paintGramMini(); }
+
+/* ⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ του `metron.grammatiki.v1` (σταθ. 16) — τον γράφει μόνο η
+   arxaia-grammatiki.html. Τρεις καταστάσεις, τρεις προτάσεις (σταθ. 10/33).
+   Μετράει ΜΟΝΟ τις επαναλήψεις που έληξαν· τις νέες τις ξέρει η σελίδα. */
+function paintGramMini(){
+  var box = el('miniGr'); if (!box) return;
+  function say(t, s){ box.innerHTML = '<div class="t">' + esc(t) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : ''); }
+  var st = null;
+  try { st = JSON.parse(localStorage.getItem('metron.grammatiki.v1') || 'null'); } catch(e){ st = undefined; }
+  if (st === undefined || (st && (typeof st !== 'object' || st.v !== 1))){ say('Δεν διαβάστηκε', 'Η πρόοδος υπάρχει — δεν μπόρεσα να τη διαβάσω από αυτή τη συσκευή.'); return; }
+  var started = st && st.started ? Object.keys(st.started).filter(function(k){ return st.started[k] && st.started[k].at; }) : [];
+  if (!started.length){ say('Α΄ κλίση', 'Δεν ξεκίνησε ακόμα. Άνοιξέ τη και πάτα «Ξεκίνα την ενότητα».'); return; }
+  var d = new Date(), m = d.getMonth() + 1, x = d.getDate();
+  var today = d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (x < 10 ? '0' : '') + x;
+  var cards = (st && st.cards) || {}, due = 0;
+  Object.keys(cards).forEach(function(k){ var r = cards[k]; if (r && r.due && r.due <= today) due++; });
+  say(due ? due + (due === 1 ? ' επανάληψη σήμερα' : ' επαναλήψεις σήμερα') : 'Καμία επανάληψη σήμερα',
+      'και οι νέες κάρτες της μέρας · ' + started.length + (started.length === 1 ? ' ενότητα' : ' ενότητες') + ' σε εξέλιξη');
+}
 
 /* ⛔ ΜΟΝΟ ΑΝΑΓΝΩΣΗ του `metron.lexilogio.v2` (σταθ. 16). Τρεις καταστάσεις,
    τρεις προτάσεις — δεν διαβάστηκε · δεν ξεκίνησε · σήμερα (σταθ. 10/33). */

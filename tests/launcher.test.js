@@ -96,6 +96,7 @@ is('no live page is unreachable from the launcher', unreachable, []);
 // …και ό,τι γλιτώνει έτσι πρέπει να έχει ΟΝΤΩΣ γονιό, ονομαστικά.
 const CHILDREN = {
   'arxaia-sokratis-ideas.html': 'arxaia.html',
+  'arxaia-grammatiki.html': 'arxaia-agnosto.html',
   'arxaia-sokratis.html': 'arxaia.html', 'arxaia-platon.html': 'arxaia.html',
   'arxaia-gk9.html': 'arxaia.html',
   'arxaia-gk10.html': 'arxaia.html',
