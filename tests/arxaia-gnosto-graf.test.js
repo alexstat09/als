@@ -1,5 +1,6 @@
 /* tests/arxaia-gnosto-graf.test.js — η στρώση «Γραφίτης» + τα ΠΛΟΥΣΙΑ ετυμολογικά (als-v726).
-   ΓΙΑ ΚΑΘΕ ενότητα του `SKIN` του build.js (gk8 als-v726, gk9 als-v730, gk10 als-v731) — τίποτα καρφωμένο.
+   ΓΙΑ ΚΑΘΕ ενότητα του `SKIN` του build.js (gk8 als-v726, gk9 als-v730, gk10 als-v731, gk11 als-v732) — τίποτα καρφωμένο.
+   Χωρίς διάλογο (gk11: `flow.who` = null) → κανένας ομιλητής, και η μετάλλαξη του `who` δεν τρέχει.
    1 · στατικά: ποιες ενότητες φοράνε τη στρώση, κάθε ομόρριζο έχει τεκμήριο ΛΚΝ, μεταλλάξεις.
    2 · οδηγημένα σε Chrome (sync δεν υπάρχει σε αυτές τις σελίδες — μόνο localStorage):
        η διαδρομή πατάει τα ΙΔΙΑ tab/mode, οι κόμβοι, ο ομιλητής, ο πίνακας, η Στήλη Α–Β. */
@@ -15,8 +16,8 @@ const J = f => JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 const build = fs.readFileSync(path.join(ROOT, 'tools/gnosto/build.js'), 'utf8');
 const SKIN = (build.match(/var SKIN = (\{[^}]*\});/) || [])[1];
 const IDS = SKIN ? (SKIN.match(/gk\d+(?=:\s*true)/g) || []) : [];
-ok(['gk8', 'gk9', 'gk10'].every(g => IDS.indexOf(g) >= 0), 'η gk8, η gk9 και η gk10 φοράνε τη στρώση', SKIN);
-['gk11', 'gk12'].filter(g => IDS.indexOf(g) < 0).forEach(g => {
+ok(['gk8', 'gk9', 'gk10', 'gk11'].every(g => IDS.indexOf(g) >= 0), 'η gk8, η gk9, η gk10 και η gk11 φοράνε τη στρώση', SKIN);
+['gk12'].filter(g => IDS.indexOf(g) < 0).forEach(g => {
   const h = fs.readFileSync(path.join(ROOT, 'arxaia-' + g + '.html'), 'utf8');
   ok(!/skin-graf/.test(h) && !/\{\{G2_/.test(h), g + ': ΔΕΝ φοράει τη στρώση (μένει όπως ήταν)');
 });
@@ -26,7 +27,9 @@ const inLKN = w => Object.keys(LKN).some(k => k !== '_' && LKN[k] && w in LKN[k]
 /* ⛔ λέξεις που ΔΕΝ υπάρχουν στο ΛΚΝ ή δεν είναι ομόρριζες (βρέθηκαν και βγήκαν) δεν ξαναμπαίνουν */
 const BANNED = ['τρισκέλιο', 'πρόσπτωση', 'σιγοκαίω', 'τειχογραφία', 'οίκηση', 'αναπόφευκτος', 'ειδοποίηση', 'φημολογία', 'πρόοψη', 'έθος', 'μεγαλοφροσύνη',
   /* gk10 (als-v731): το ΛΚΝ δεν τις έχει ως λήμματα */
-  'ανατριβή', 'πολυτριμμένος', 'αστόχημα', 'ευπραγία', 'εκουσίως', 'ακουσίως', 'Πελοπόννησος', 'βέλτιστος', 'πονεμένος', 'εκουσιότητα', 'ακουσιότητα', 'εκτριβή', 'τριμμένος'];
+  'ανατριβή', 'πολυτριμμένος', 'αστόχημα', 'ευπραγία', 'εκουσίως', 'ακουσίως', 'Πελοπόννησος', 'βέλτιστος', 'πονεμένος', 'εκουσιότητα', 'ακουσιότητα', 'εκτριβή', 'τριμμένος',
+  /* gk11 (als-v732): το ΛΚΝ δεν τις έχει ως λήμματα (οι 5 τελευταίες σε δοκιμή για το «βάναυσον») */
+  'επίληψη', 'αριστεία', 'ηθοπλάστης', 'βάναυσα', 'σωματοδομή', 'βαναυσία', 'βαναυσουργία', 'βαναυσουργός', 'βαναυσουργώ', 'βαναυσολογία'];
 global.window = global; try { require('../greek-ear.js'); } catch (e) {} try { require('../lesson-grade.js'); } catch (e) {}
 const UNITS = require('../arxaia-gnosto-data.js').UNITS;
 const SPEC = {};
@@ -59,7 +62,7 @@ IDS.forEach(g => {
   ok(mut(s => { s.lexika[3].syn.push(s.lexika[3].apl[0]); s.lexika[3].rel = s.lexika[3].apl.concat(s.lexika[3].syn); }) > 0, g + ' μετάλλαξη: διπλό ομόρριζο → σφάλμα');
   ok(mut(s => { delete s.flow.segs['2']; }) > 0, g + ' μετάλλαξη: λείπει περίοδος από το «Τι γίνεται εδώ» → σφάλμα');
   ok(mut(s => { s.flow.nodes[1].from += 1; }) > 0, g + ' μετάλλαξη: κενό ανάμεσα στους κόμβους → σφάλμα');
-  ok(mut(s => { s.flow.who = [s.flow.who[0]]; }) > 0, g + ' μετάλλαξη: ένας μόνο ομιλητής σε διάλογο → σφάλμα');
+  if (spec.flow.who) ok(mut(s => { s.flow.who = [s.flow.who[0]]; }) > 0, g + ' μετάλλαξη: ένας μόνο ομιλητής σε διάλογο → σφάλμα');
 });
 
 /* ── 2 · οδηγημένα ── */
@@ -104,7 +107,8 @@ const server = http.createServer((q, r) => {
     ok(await ev("document.querySelectorAll('#content .nodeh').length") === FLn, 'οι κόμβοι μπαίνουν μέσα στο κείμενο');
     ok(await ev("document.querySelectorAll('#content .sent').length") === NSEG, 'οι ' + NSEG + ' περίοδοι ανέπαφες');
     const spk = await ev("[...document.querySelectorAll('.spk')].map(s=>s.textContent)");
-    ok(spk.length >= 4 && spk.every((w, i) => i === 0 || w !== spk[i - 1]), 'ο ομιλητής μπαίνει ΜΟΝΟ όταν αλλάζει', spk);
+    if (SP.flow.who) ok(spk.length >= 4 && spk.every((w, i) => i === 0 || w !== spk[i - 1]), 'ο ομιλητής μπαίνει ΜΟΝΟ όταν αλλάζει', spk);
+    else ok(spk.length === 0, 'χωρίς διάλογο: κανένας ομιλητής', spk);
     const MAP = { si: ['metafrasi', 'si'], rd: ['metafrasi', 'rd'], st: ['metafrasi', 'st'], tr: ['metafrasi', 'tr'], sxolia: ['sxolia'], ermineia: ['ermineia'], lexika: ['lexika'] };
     for (const k of Object.keys(MAP)) {
       await ev(`document.querySelector('[data-gstep="${k}"]').click()`); await sl(80);
