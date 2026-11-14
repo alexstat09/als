@@ -57,7 +57,8 @@ const server = http.createServer((q, r) => {
 (async () => {
   if (!fs.existsSync(CHROME)) { console.log('  ✗ χωρίς Chrome — δεν έτρεξε το οδηγημένο μέρος'); process.exit(1); }
   await new Promise(r => server.listen(0, '127.0.0.1', r));
-  const PORT = 9398, { spawn } = require('child_process');
+  /* τυχαία θύρα: ένα Chrome που ξέμεινε από προηγούμενο τρέξιμο δεν «κλέβει» το test (14/11) */
+  const PORT = 9400 + Math.floor(Math.random() * 500), { spawn } = require('child_process');
   const ch = spawn(CHROME, ['--headless=new', '--remote-debugging-port=' + PORT, '--user-data-dir=/tmp/cdp-graf-' + process.pid, 'about:blank'], { stdio: 'ignore' });
   const sl = n => new Promise(r => setTimeout(r, n));
   let info; for (let i = 0; i < 60; i++) { try { info = await (await fetch('http://127.0.0.1:' + PORT + '/json/version')).json(); break; } catch (e) { await sl(300); } }
@@ -89,7 +90,10 @@ const server = http.createServer((q, r) => {
       const st = await ev("({tab:document.querySelector('.tab[aria-selected=true]').dataset.tab, mode:document.querySelector('[data-mode][aria-pressed=true]').dataset.mode, cur:document.querySelector('.gstep[aria-current]').dataset.gstep})");
       ok(st.tab === MAP[k][0] && (!MAP[k][1] || st.mode === MAP[k][1]) && st.cur === k, 'η στάση «' + k + '» = ' + MAP[k].join('/'), st);
     }
+    await ev("localStorage.clear()"); await open();
+    ok(await ev("document.querySelector('.gstep[aria-current]').dataset.gstep") === 'si', 'η πρώτη φορά ανοίγει στο «Κατάλαβέ το»');
     await ev(`document.querySelector('[data-gstep="si"]').click()`); await sl(60);
+    ok(await ev("document.getElementById('readGrid').getBoundingClientRect().height === 0 && document.getElementById('simple').getBoundingClientRect().height > 100"), '«Κατάλαβέ το»: ΜΟΝΟ τα απλά λόγια — το κείμενο ΔΕΝ φαίνεται');
     ok(await ev("!document.getElementById('gIntro').hidden && /Σωκράτης/.test(document.getElementById('gIntroTxt').textContent)"), '«Κατάλαβέ το»: απλά λόγια + η εισαγωγή του βιβλίου');
     await ev(`document.querySelector('[data-gstep="rd"]').click()`); await sl(60);
     await ev("document.getElementById('gWholeI').click()"); await sl(60);
@@ -129,7 +133,7 @@ const server = http.createServer((q, r) => {
     }
     ok(exc.length === 0, 'μηδέν εξαιρέσεις', exc);
   } catch (e) { ok(false, 'το οδηγημένο μέρος έσκασε: ' + e.message); }
-  ch.kill(); server.close();
+  ch.kill('SIGKILL'); server.close();
   console.log((F ? '✗ ' : '✓ ') + 'gnosto-graf: ' + P + '/' + F);
   process.exit(F ? 1 : 0);
 })();

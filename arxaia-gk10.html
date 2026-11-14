@@ -127,6 +127,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 
 /* ── ΜΕΤΑΦΡΑΣΗ: κείμενο + κάρτα λέξης ─────────────────────── */
 .read{display:grid;grid-template-columns:minmax(0,720px) minmax(0,1fr);gap:56px;align-items:start}
+.read[hidden]{display:none}   /* ⚠️ χωρίς αυτό το display:grid νικάει το hidden: στα «Απλά λόγια» φαινόταν ΟΛΟ το κείμενο (als-v728) */
 .text{margin-top:22px}
 .sent{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
 .sent.turn{border-top-color:var(--line2);padding-top:40px}

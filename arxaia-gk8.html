@@ -11,6 +11,7 @@
      ⛔ Η Instrument Serif έχει ΜΗΔΕΝ ελληνικά γλυφά (σταθ. 43, als-v504): μπαίνει
      ΜΟΝΟ σε αριθμούς. Κάθε ελληνικό — αρχαίο και νέο — είναι GFS Didot. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">
+<script>/* πρώτη επίσκεψη; — διαβάζεται ΠΡΙΝ η σελίδα σώσει τις ρυθμίσεις της στην εκκίνηση */try{window.__g2first=localStorage.getItem(location.pathname.replace(/^.*arxaia-|\.html$/g,"")+"_ui_v1")==null}catch(e){window.__g2first=false}</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&amp;family=Commissioner:wght@400;500;600;700&amp;display=swap">
 <style>
 :root{
@@ -128,6 +129,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
 
 /* ── ΜΕΤΑΦΡΑΣΗ: κείμενο + κάρτα λέξης ─────────────────────── */
 .read{display:grid;grid-template-columns:minmax(0,720px) minmax(0,1fr);gap:56px;align-items:start}
+.read[hidden]{display:none}   /* ⚠️ χωρίς αυτό το display:grid νικάει το hidden: στα «Απλά λόγια» φαινόταν ΟΛΟ το κείμενο (als-v728) */
 .text{margin-top:22px}
 .sent{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
 .sent.turn{border-top-color:var(--line2);padding-top:40px}
@@ -430,7 +432,9 @@ body.skin-graf .wc.empty{background:none;border:0;border-top:1px solid var(--lin
 body.skin-graf .wc.empty .big{font-family:var(--rd);font-style:normal;font-weight:500;font-size:21px}
 /* κείμενα: Literata για τα νέα, Didot για τα αρχαία */
 body.skin-graf .sh h2{font-family:var(--rd);font-style:normal;font-weight:500;font-size:27px}
-body.skin-graf .simple p{font-family:var(--rd);font-size:18px;line-height:1.72;color:var(--dim)}
+body.skin-graf .simple{counter-reset:s;max-width:72ch;border-top:1px solid var(--line)}
+body.skin-graf .simple p{counter-increment:s;display:grid;grid-template-columns:34px minmax(0,1fr);margin:0;padding:16px 0;border-bottom:1px solid var(--line);font-family:var(--rd);font-size:18px;line-height:1.72;color:var(--dim)}
+body.skin-graf .simple p::before{content:counter(s);font:500 13px/2.1 var(--sans);color:var(--faint)}
 body.skin-graf .intro{font-family:var(--rd);font-size:18px;line-height:1.75;color:var(--dim)}
 body.skin-graf .whole p{font-family:var(--rd)}
 body.skin-graf .whole .anc p{font-family:var(--gr)}
@@ -1528,7 +1532,8 @@ setTab(TABS.indexOf(h0) >= 0 ? h0 : ui.tab);
     gb.addEventListener('click', () => setGry(true));
     seg.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => setGry(false)));
   }
-  setMode(ui.mode);
+  /* η ΠΡΩΤΗ φορά ξεκινάει από την 1η στάση, «Κατάλαβέ το» — όχι από όλο το κείμενο */
+  if (window.__g2first && !location.hash){ setTab('metafrasi'); setMode('si'); } else setMode(ui.mode);
   nmap.hidden = !FL;
   paint();
 })();

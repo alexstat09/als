@@ -216,7 +216,10 @@ const sleep = n => new Promise(r => setTimeout(r, n));
     const PAGE = 'arxaia-' + gid + '.html';
     const open = async (hash) => { await S('Page.navigate', { url: BASE + PAGE + '?n=' + (++nav) + (hash || '') }); await sleep(150);
       for (let i = 0; i < 80; i++) { try { if (await ev(`document.readyState==='complete' && document.querySelectorAll('.sent').length>0`)) break; } catch (e) {} await sleep(100); }
-      await ev(`document.fonts ? document.fonts.ready.then(()=>1) : 1`); await sleep(200); };
+      await ev(`document.fonts ? document.fonts.ready.then(()=>1) : 1`); await sleep(200);
+      /* στρώση «Γραφίτης»: η ΠΡΩΤΗ επίσκεψη ανοίγει στο «Κατάλαβέ το» (ελέγχεται στο arxaia-gnosto-graf).
+         Οι έλεγχοι εδώ ξεκινούν, όπως πάντα, από το «Διάβασε». */
+      await ev(`document.body.classList.contains('skin-graf') && document.querySelector('[data-mode="si"][aria-pressed="true"]') && !location.hash && document.querySelector('[data-mode="rd"]').click()`); };
     const segs = unit.align.segs, n1 = segs[0].n, n2 = segs[Math.min(1, segs.length - 1)].n;
     const allQ = spec.activities.reduce((a, g) => a.concat(g.items), []).concat(spec.parallels.reduce((a, p) => a.concat(p.items), []));
     try {
@@ -447,6 +450,8 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       section('Β · ' + gid + ' — ΑΠΛΑ ΛΟΓΙΑ · ΟΛΟΚΛΗΡΟ (+ 2η μετάφραση)');
       await ev(`document.querySelector('[data-mode="si"]').click()`);
       eq(await ev(`document.querySelectorAll('#simple p').length`), (unit.simple || []).length, 'τα «απλά λόγια» όλα');
+      /* als-v728: το .read{display:grid} νικούσε το hidden — στα «Απλά λόγια» φαινόταν ΟΛΟ το κείμενο από πάνω */
+      ok(await ev(`document.getElementById('readGrid').getBoundingClientRect().height === 0`), 'στα «απλά λόγια» το κείμενο ΔΕΝ φαίνεται');
       await ev(`document.querySelector('[data-mode="wh"]').click()`);
       if (spec.second) {
         eq(await ev(`document.getElementById('secName').textContent`), spec.second.name, 'ο διακόπτης ονομάζει τη 2η μετάφραση');
