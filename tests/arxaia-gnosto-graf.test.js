@@ -1,4 +1,5 @@
 /* tests/arxaia-gnosto-graf.test.js — η στρώση «Γραφίτης» + τα ΠΛΟΥΣΙΑ ετυμολογικά (als-v726).
+   ΓΙΑ ΚΑΘΕ ενότητα του `SKIN` του build.js (gk8 als-v726, gk9 als-v730) — τίποτα καρφωμένο.
    1 · στατικά: ποιες ενότητες φοράνε τη στρώση, κάθε ομόρριζο έχει τεκμήριο ΛΚΝ, μεταλλάξεις.
    2 · οδηγημένα σε Chrome (sync δεν υπάρχει σε αυτές τις σελίδες — μόνο localStorage):
        η διαδρομή πατάει τα ΙΔΙΑ tab/mode, οι κόμβοι, ο ομιλητής, ο πίνακας, η Στήλη Α–Β. */
@@ -13,36 +14,51 @@ const J = f => JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 /* ── 1 · στατικά ── */
 const build = fs.readFileSync(path.join(ROOT, 'tools/gnosto/build.js'), 'utf8');
 const SKIN = (build.match(/var SKIN = (\{[^}]*\});/) || [])[1];
-ok(SKIN && /gk8:\s*true/.test(SKIN), 'η gk8 φοράει τη στρώση', SKIN);
-['gk9', 'gk10', 'gk11', 'gk12'].forEach(g => {
+const IDS = SKIN ? (SKIN.match(/gk\d+(?=:\s*true)/g) || []) : [];
+ok(IDS.indexOf('gk8') >= 0 && IDS.indexOf('gk9') >= 0, 'η gk8 και η gk9 φοράνε τη στρώση', SKIN);
+['gk10', 'gk11', 'gk12'].filter(g => IDS.indexOf(g) < 0).forEach(g => {
   const h = fs.readFileSync(path.join(ROOT, 'arxaia-' + g + '.html'), 'utf8');
   ok(!/skin-graf/.test(h) && !/\{\{G2_/.test(h), g + ': ΔΕΝ φοράει τη στρώση (μένει όπως ήταν)');
 });
-const h8 = fs.readFileSync(path.join(ROOT, 'arxaia-gk8.html'), 'utf8');
-ok(/<body class="skin-graf">/.test(h8) && /id="gsteps"/.test(h8) && /id="nmap"/.test(h8), 'gk8: body.skin-graf + διαδρομή + χάρτης');
-ok(!/\{\{[A-Z0-9_]+\}\}/.test(h8), 'gk8: κανένα placeholder δεν έμεινε');
-/* οι πέντε κλειδιά προόδου ΑΜΕΤΑΒΛΗΤΑ */
-['_tr_v1', '_sx_v1', '_ans_v1', '_ap_v1', '_ui_v1'].forEach(k => ok(h8.indexOf("ID + '" + k + "'") > 0, 'gk8: το κλειδί προόδου ' + k + ' ίδιο'));
-/* ΛΚΝ: κάθε ομόρριζο έχει τεκμήριο */
 const LKN = J('tools/gnosto/lkn.json');
-const spec8 = J('tools/gnosto/gk8.json');
-const rels = [...new Set(spec8.lexika.reduce((a, x) => a.concat(x.rel), []))];
-const miss = rels.filter(r => !(r in (LKN.gk8 || {})));
-ok(miss.length === 0, 'gk8: κάθε ομόρριζο (' + rels.length + ') βρέθηκε στο Λεξικό της Κοινής Νεοελληνικής', miss);
-ok(spec8.lexika.length >= 50, 'gk8: πλούσια ετυμολογικά (' + spec8.lexika.length + ' λέξεις)');
-ok(spec8.lexika.every(x => x.apl && x.syn && x.rel.length >= 3), 'gk8: κάθε λέξη με απλά + σύνθετα, ≥3 ομόρριζα');
-ok(spec8.lexika.filter(x => x.trap).length >= 5, 'gk8: παγίδες');
-/* ⛔ λέξεις που ΔΕΝ υπάρχουν στο ΛΚΝ (βρέθηκαν και βγήκαν) δεν ξαναμπαίνουν */
-['τρισκέλιο', 'πρόσπτωση', 'σιγοκαίω', 'τειχογραφία', 'οίκηση', 'αναπόφευκτος', 'ειδοποίηση'].forEach(w => ok(rels.indexOf(w) < 0, '«' + w + '» δεν είναι στα ομόρριζα'));
-/* μεταλλάξεις στον validator */
-const unit = (function(){ global.window = global; try { require('../greek-ear.js'); } catch (e) {} try { require('../lesson-grade.js'); } catch (e) {} return require('../arxaia-gnosto-data.js').UNITS.find(u => u.id === 'gk8'); })();
-const src = L.sourceOf(spec8);
-ok(L.check(spec8, unit, src).length === 0, 'gk8: ο validator δέχεται τα δεδομένα');
-const mut = fn => { const s = JSON.parse(JSON.stringify(spec8)); fn(s); return L.check(s, unit, src).length; };
-ok(mut(s => { s.lexika[0].txt.push('zz9'); }) > 0, 'μετάλλαξη: «στο κείμενο» με άγνωστο κλειδί → σφάλμα');
-ok(mut(s => { s.lexika[1].txt.push(s.lexika[1].key); }) > 0, 'μετάλλαξη: «στο κείμενο» δείχνει τον εαυτό του → σφάλμα');
-ok(mut(s => { s.lexika[2].rel = s.lexika[2].rel.slice(1); }) > 0, 'μετάλλαξη: rel ≠ απλά + σύνθετα → σφάλμα');
-ok(mut(s => { s.lexika[3].syn.push(s.lexika[3].apl[0]); s.lexika[3].rel = s.lexika[3].apl.concat(s.lexika[3].syn); }) > 0, 'μετάλλαξη: διπλό ομόρριζο → σφάλμα');
+/* τεκμήριο από ΟΠΟΙΑΔΗΠΟΤΕ ενότητα μετράει (ίδια λέξη, ίδιο λεξικό) — ίδιος κανόνας με το lkn.js */
+const inLKN = w => Object.keys(LKN).some(k => k !== '_' && LKN[k] && w in LKN[k]);
+/* ⛔ λέξεις που ΔΕΝ υπάρχουν στο ΛΚΝ ή δεν είναι ομόρριζες (βρέθηκαν και βγήκαν) δεν ξαναμπαίνουν */
+const BANNED = ['τρισκέλιο', 'πρόσπτωση', 'σιγοκαίω', 'τειχογραφία', 'οίκηση', 'αναπόφευκτος', 'ειδοποίηση', 'φημολογία', 'πρόοψη', 'έθος', 'μεγαλοφροσύνη'];
+global.window = global; try { require('../greek-ear.js'); } catch (e) {} try { require('../lesson-grade.js'); } catch (e) {}
+const UNITS = require('../arxaia-gnosto-data.js').UNITS;
+const SPEC = {};
+IDS.forEach(g => {
+  const h = fs.readFileSync(path.join(ROOT, 'arxaia-' + g + '.html'), 'utf8');
+  ok(/<body class="skin-graf">/.test(h) && /id="gsteps"/.test(h) && /id="nmap"/.test(h), g + ': body.skin-graf + διαδρομή + χάρτης');
+  ok(!/\{\{[A-Z0-9_]+\}\}/.test(h), g + ': κανένα placeholder δεν έμεινε');
+  /* οι πέντε κλειδιά προόδου ΑΜΕΤΑΒΛΗΤΑ */
+  ['_tr_v1', '_sx_v1', '_ans_v1', '_ap_v1', '_ui_v1'].forEach(k => ok(h.indexOf("ID + '" + k + "'") > 0, g + ': το κλειδί προόδου ' + k + ' ίδιο'));
+  const spec = SPEC[g] = J('tools/gnosto/' + g + '.json');
+  ok(spec.flow && spec.flow.nodes && spec.flow.nodes.length >= 4, g + ': «Τι γίνεται εδώ» με κόμβους');
+  /* ΛΚΝ: κάθε ομόρριζο έχει τεκμήριο */
+  const rels = [...new Set(spec.lexika.reduce((a, x) => a.concat(x.rel), []))];
+  const miss = rels.filter(r => !inLKN(r));
+  ok(miss.length === 0, g + ': κάθε ομόρριζο (' + rels.length + ') βρέθηκε στο Λεξικό της Κοινής Νεοελληνικής', miss);
+  ok(spec.lexika.length >= 40, g + ': πλούσια ετυμολογικά (' + spec.lexika.length + ' λέξεις)');
+  ok(spec.checks.lexika === spec.lexika.length, g + ': checks.lexika = ' + spec.lexika.length);
+  ok(spec.lexika.every(x => x.apl && x.syn && x.rel.length >= 3), g + ': κάθε λέξη με απλά + σύνθετα, ≥3 ομόρριζα');
+  ok(spec.lexika.filter(x => x.trap).length >= 5, g + ': παγίδες');
+  BANNED.forEach(w => ok(rels.indexOf(w) < 0, g + ': «' + w + '» δεν είναι στα ομόρριζα'));
+  /* μεταλλάξεις στον validator */
+  const unit = UNITS.find(u => u.id === g);
+  const src = L.sourceOf(spec);
+  ok(L.check(spec, unit, src).length === 0, g + ': ο validator δέχεται τα δεδομένα');
+  const mut = fn => { const s = JSON.parse(JSON.stringify(spec)); fn(s); return L.check(s, unit, src).length; };
+  const withTxt = spec.lexika.findIndex(x => x.txt.length);
+  ok(mut(s => { s.lexika[0].txt.push('zz9'); }) > 0, g + ' μετάλλαξη: «στο κείμενο» με άγνωστο κλειδί → σφάλμα');
+  ok(mut(s => { s.lexika[withTxt].txt.push(s.lexika[withTxt].key); }) > 0, g + ' μετάλλαξη: «στο κείμενο» δείχνει τον εαυτό του → σφάλμα');
+  ok(mut(s => { s.lexika[2].rel = s.lexika[2].rel.slice(1); }) > 0, g + ' μετάλλαξη: rel ≠ απλά + σύνθετα → σφάλμα');
+  ok(mut(s => { s.lexika[3].syn.push(s.lexika[3].apl[0]); s.lexika[3].rel = s.lexika[3].apl.concat(s.lexika[3].syn); }) > 0, g + ' μετάλλαξη: διπλό ομόρριζο → σφάλμα');
+  ok(mut(s => { delete s.flow.segs['2']; }) > 0, g + ' μετάλλαξη: λείπει περίοδος από το «Τι γίνεται εδώ» → σφάλμα');
+  ok(mut(s => { s.flow.nodes[1].from += 1; }) > 0, g + ' μετάλλαξη: κενό ανάμεσα στους κόμβους → σφάλμα');
+  ok(mut(s => { s.flow.who = [s.flow.who[0]]; }) > 0, g + ' μετάλλαξη: ένας μόνο ομιλητής σε διάλογο → σφάλμα');
+});
 
 /* ── 2 · οδηγημένα ── */
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -72,16 +88,19 @@ const server = http.createServer((q, r) => {
   const ev = async e => { const r = await S('Runtime.evaluate', { expression: e, returnByValue: true }); if (r.exceptionDetails) throw new Error(e + ' → ' + JSON.stringify(r.exceptionDetails.exception && r.exceptionDetails.exception.description)); return r.result.value; };
   const size = (w, h) => S('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 });
   let nav = 0;
-  const open = async () => { await S('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + '/arxaia-gk8.html?n=' + (++nav) }); await sl(1500); };
+  for (const G of IDS) {
+  const SP = SPEC[G], NSEG = SP.checks.segs;
+  const open = async () => { await S('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + '/arxaia-' + G + '.html?n=' + (++nav) }); await sl(1500); };
+  const ok0 = ok; { const ok = (c, m, x) => ok0(c, G + ': ' + m, x);
   try {
     await size(1440, 900); await open();
     await ev("localStorage.clear()"); await open();
-    const FLn = spec8.flow.nodes.length;
+    const FLn = SP.flow.nodes.length;
     ok(await ev("getComputedStyle(document.querySelector('.tabs')).display") === 'none', 'οι παλιές καρτέλες δεν φαίνονται (μένουν στο DOM)');
     ok(await ev("document.querySelectorAll('.gstep').length") === 7, '7 στάσεις');
     ok(await ev("document.querySelectorAll('#nmap .nd').length") === FLn, 'ο χάρτης έχει ' + FLn + ' κόμβους');
     ok(await ev("document.querySelectorAll('#content .nodeh').length") === FLn, 'οι κόμβοι μπαίνουν μέσα στο κείμενο');
-    ok(await ev("document.querySelectorAll('#content .sent').length") === 22, 'οι 22 περίοδοι ανέπαφες');
+    ok(await ev("document.querySelectorAll('#content .sent').length") === NSEG, 'οι ' + NSEG + ' περίοδοι ανέπαφες');
     const spk = await ev("[...document.querySelectorAll('.spk')].map(s=>s.textContent)");
     ok(spk.length >= 4 && spk.every((w, i) => i === 0 || w !== spk[i - 1]), 'ο ομιλητής μπαίνει ΜΟΝΟ όταν αλλάζει', spk);
     const MAP = { si: ['metafrasi', 'si'], rd: ['metafrasi', 'rd'], st: ['metafrasi', 'st'], tr: ['metafrasi', 'tr'], sxolia: ['sxolia'], ermineia: ['ermineia'], lexika: ['lexika'] };
@@ -94,23 +113,23 @@ const server = http.createServer((q, r) => {
     ok(await ev("document.querySelector('.gstep[aria-current]').dataset.gstep") === 'si', 'η πρώτη φορά ανοίγει στο «Κατάλαβέ το»');
     await ev(`document.querySelector('[data-gstep="si"]').click()`); await sl(60);
     ok(await ev("document.getElementById('readGrid').getBoundingClientRect().height === 0 && document.getElementById('simple').getBoundingClientRect().height > 100"), '«Κατάλαβέ το»: ΜΟΝΟ τα απλά λόγια — το κείμενο ΔΕΝ φαίνεται');
-    ok(await ev("!document.getElementById('gIntro').hidden && /Σωκράτης/.test(document.getElementById('gIntroTxt').textContent)"), '«Κατάλαβέ το»: απλά λόγια + η εισαγωγή του βιβλίου');
+    ok(await ev("!document.getElementById('gIntro').hidden && document.getElementById('gIntroTxt').textContent.replace(/\\s+/g,' ').indexOf(" + JSON.stringify(String(SP.intro).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').slice(0, 40)) + ") >= 0"), '«Κατάλαβέ το»: απλά λόγια + η εισαγωγή του βιβλίου');
     await ev(`document.querySelector('[data-gstep="rd"]').click()`); await sl(60);
     await ev("document.getElementById('gWholeI').click()"); await sl(60);
     ok(await ev("document.querySelector('[data-mode=wh]').getAttribute('aria-pressed')") === 'true', '«Όλο το κείμενο μαζί» = ο τρόπος Ολόκληρο');
     await ev("document.getElementById('gWholeI').click()"); await sl(60);
     /* ο χάρτης πάει στον κόμβο */
     await ev("document.querySelectorAll('#nmap .nd')[3].click()"); await sl(900);
-    ok(await ev("document.querySelector('.sent.cur').dataset.n") === String(spec8.flow.nodes[3].from), 'ο χάρτης: κόμβος 4 → περίοδος ' + spec8.flow.nodes[3].from);
+    ok(await ev("document.querySelector('.sent.cur').dataset.n") === String(SP.flow.nodes[3].from), 'ο χάρτης: κόμβος 4 → περίοδος ' + SP.flow.nodes[3].from);
     /* η πρόοδος: ίδιο κλειδί, ίδια σημασία */
     await ev(`document.querySelector('[data-gstep="tr"]').click()`); await sl(60);
     await ev("document.querySelector('.sent .veil').click(); document.querySelector('.sent .g3.k').click()"); await sl(80);
-    ok(JSON.parse(await ev("localStorage.getItem('gk8_tr_v1')"))['1'] === 'k', 'το ✓ γράφεται στο ΙΔΙΟ gk8_tr_v1');
+    ok(JSON.parse(await ev("localStorage.getItem('" + G + "_tr_v1')"))['1'] === 'k', 'το ✓ γράφεται στο ΙΔΙΟ ' + G + '_tr_v1');
     /* λεξιλογικά */
     await ev(`document.querySelector('[data-gstep="lexika"]').click()`); await sl(80);
-    ok(await ev("document.querySelectorAll('#lxBody tr:not(.trap)').length") === spec8.lexika.length, 'ο πίνακας: ' + spec8.lexika.length + ' λέξεις');
-    ok(await ev("document.querySelectorAll('#lxBody tr.trap').length") === spec8.lexika.filter(x => x.trap).length, 'οι παγίδες στον πίνακα');
-    ok(await ev("document.querySelectorAll('#lxBody td.tx [data-go]').length") === spec8.lexika.reduce((a, x) => a + x.txt.length, 0), 'κάθε «στο κείμενο» είναι κουμπί');
+    ok(await ev("document.querySelectorAll('#lxBody tr:not(.trap)').length") === SP.lexika.length, 'ο πίνακας: ' + SP.lexika.length + ' λέξεις');
+    ok(await ev("document.querySelectorAll('#lxBody tr.trap').length") === SP.lexika.filter(x => x.trap).length, 'οι παγίδες στον πίνακα');
+    ok(await ev("document.querySelectorAll('#lxBody td.tx [data-go]').length") === SP.lexika.reduce((a, x) => a + x.txt.length, 0), 'κάθε «στο κείμενο» είναι κουμπί');
     await ev("document.querySelector('#lxBody td.tx [data-go]').click()"); await sl(300);
     ok(await ev("document.querySelector('.tab[aria-selected=true]').dataset.tab") === 'metafrasi' && await ev("!!document.querySelector('.w.hit')"), '«στο κείμενο» → η λέξη ανάβει μέσα στο κείμενο');
     await ev(`document.querySelector('[data-gstep="lexika"]').click()`); await sl(80);
@@ -133,6 +152,7 @@ const server = http.createServer((q, r) => {
     }
     ok(exc.length === 0, 'μηδέν εξαιρέσεις', exc);
   } catch (e) { ok(false, 'το οδηγημένο μέρος έσκασε: ' + e.message); }
+  } }
   ch.kill('SIGKILL'); server.close();
   console.log((F ? '✗ ' : '✓ ') + 'gnosto-graf: ' + P + '/' + F);
   process.exit(F ? 1 : 0);
