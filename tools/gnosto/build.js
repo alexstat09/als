@@ -17,6 +17,18 @@ var L = require('./lib.js');
    για το «ποιος μιλάει» της κάρτας «Τι γίνεται εδώ»)· εδώ μόνο τον δανειζόμαστε. */
 var paraOf = L.paraOf;
 
+/* Ποιες ενότητες φοράνε τη στρώση «Γραφίτης» (tools/gnosto/skin-graf.html).
+   ⭐ Εγκρίθηκε στην ενότητα 8 (14/11/26)· «για όλα» = μία γραμμή εδώ. */
+var SKIN = { gk8: true };
+function parts(){
+  var src = fs.readFileSync(path.join(__dirname, 'skin-graf.html'), 'utf8'), out = {};
+  src.split(/<!--@([A-Z]+)-->/).forEach(function(chunk, i, arr){ if (i % 2) out[chunk] = arr[i + 1].replace(/^\n+|\s+$/g, ''); });
+  out.HEAD = '\n' + out.HEAD; out.CSS = out.CSS + '\n';
+  out.MAP = '\n    ' + out.MAP; out.PATH = '\n  ' + out.PATH; out.TOOLS = '\n      ' + out.TOOLS;
+  out.INTRO = '\n    ' + out.INTRO; out.JS = out.JS + '\n';
+  return out;
+}
+
 function dataOf(spec, unit){
   var para = paraOf(unit);
   var sch = {};
@@ -104,6 +116,14 @@ function render(id){
     FOOT: footOf(spec, unit),
     DATA: json
   };
+  /* Η στρώση «Γραφίτης» (als-v726): ΜΟΝΟ στις ενότητες του SKIN. Στις άλλες κάθε
+     {{G2_*}} γίνεται '' και η σελίδα βγαίνει byte προς byte όπως πριν. */
+  var skin = SKIN[id] ? parts() : null;
+  map.BODY = skin ? ' class="skin-graf"' : '';
+  ['HEAD', 'CSS', 'MAP', 'PATH', 'TOOLS', 'INTRO', 'JS'].forEach(function(k){
+    if (skin && !(k in skin)) throw new Error('skin-graf.html: λείπει το τμήμα @' + k);
+    map['G2_' + k] = skin ? skin[k] : '';
+  });
   var out = tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m, k){
     if (!(k in map)) throw new Error('άγνωστο placeholder ' + m);
     return map[k];

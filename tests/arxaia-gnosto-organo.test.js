@@ -492,7 +492,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
 
       section('Β · ' + gid + ' — ΛΕΞΙΛΟΓΙΚΑ · HASH');
       await ev(`document.querySelector('.tab[data-tab="lexika"]').click()`);
-      eq(await ev(`document.querySelectorAll('#lxBody tr').length`), spec.lexika.length, spec.lexika.length + ' λέξεις');
+      eq(await ev(`document.querySelectorAll('#lxBody tr:not(.trap)').length`), spec.lexika.length, spec.lexika.length + ' λέξεις');   /* οι γραμμές «Παγίδα» (Γραφίτης) δεν είναι λέξεις */
       await ev(`document.getElementById('lxHide').click()`);
       ok(await ev(`document.getElementById('lxTbl').classList.contains('hidecol')`), '«Κρύψε τα ομόρριζα»');
       await shotAt(gid + '-08-lexika', '#p-lexika');
@@ -610,7 +610,11 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       section('Β · ' + gid + ' — ΓΡΑΜΜΑΤΟΣΕΙΡΑ ΑΝΑ ΣΤΟΙΧΕΙΟ (7b σε Chrome)');
       await size(1440, 900); await open();
       const fams = await ev(`[...document.querySelectorAll('.an .w, .md .w, h1, .wc-an, .qa .qn')].slice(0,60).map(e=>getComputedStyle(e).fontFamily.split(',')[0].replace(/["']/g,'').trim())`);
-      ok(fams.length && fams.every(f => f === 'GFS Didot'), 'κάθε ελληνικό στοιχείο ζητάει πρώτα GFS Didot', [...new Set(fams)]);
+      /* σταθ. 43: ΠΟΤΕ γραμματοσειρά χωρίς ελληνικά πρώτη. Η Literata (στρώση «Γραφίτης», als-v726) ΕΧΕΙ
+         greek + greek-ext (ελέγχθηκε στο css2 του Google Fonts) — επιτρέπεται για τα ΝΕΑ· το ΑΡΧΑΙΟ μένει Didot. */
+      ok(fams.length && fams.every(f => f === 'GFS Didot' || f === 'Literata'), 'κάθε ελληνικό στοιχείο ζητάει πρώτα γραμματοσειρά ΜΕ ελληνικά (GFS Didot · Literata)', [...new Set(fams)]);
+      const famsAn = await ev(`[...document.querySelectorAll('.an .w')].slice(0,40).map(e=>getComputedStyle(e).fontFamily.split(',')[0].replace(/["']/g,'').trim())`);
+      ok(famsAn.length && famsAn.every(f => f === 'GFS Didot'), 'το ΑΡΧΑΙΟ είναι πάντα GFS Didot', [...new Set(famsAn)]);
       eq(exc.length, 0, 'και μηδέν εξαιρέσεις σε ΟΛΗ τη διαδρομή' + (exc.length ? ' — ' + exc[0] : ''));
     } catch (e) {
       ok(false, gid + ': το Β σταμάτησε: ' + e.message);

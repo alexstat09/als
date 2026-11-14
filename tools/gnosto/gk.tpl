@@ -10,7 +10,7 @@
      Το test συγκρίνει αυτό το αρχείο με την έξοδο του build.
      ⛔ Η Instrument Serif έχει ΜΗΔΕΝ ελληνικά γλυφά (σταθ. 43, als-v504): μπαίνει
      ΜΟΝΟ σε αριθμούς. Κάθε ελληνικό — αρχαίο και νέο — είναι GFS Didot. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=GFS+Didot&amp;display=swap">{{G2_HEAD}}
 <style>
 :root{
   --bg:#0a0908;
@@ -345,9 +345,9 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
   .lx td.rt{white-space:normal}
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .w,.sxc{transition:none} }
-</style>
+{{G2_CSS}}</style>
 </head>
-<body>
+<body{{BODY}}>
 <div class="shell">
   <div class="top">
     <a href="arxaia.html#gn">&#8592; Αρχαία · γνωστό</a>
@@ -364,7 +364,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
     <div class="face">
       <div class="n">{{FACE}}</div>
       <div class="l">{{FACE_LABEL}}</div>
-    </div>
+    </div>{{G2_MAP}}
   </header>
 
   <section class="band" aria-label="Μετρήσεις">
@@ -384,7 +384,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
       <div class="bs">δική σου απάντηση πριν από το υπόδειγμα</div>
     </div>
   </section>
-  <div class="saveerr" id="saveErr" role="alert"></div>
+  <div class="saveerr" id="saveErr" role="alert"></div>{{G2_PATH}}
 
   <nav class="tabs" role="tablist" aria-label="Τα μέρη της ενότητας">
     <button class="tab" role="tab" data-tab="metafrasi" aria-selected="true">Μετάφραση<span class="c" id="tcM"></span></button>
@@ -415,7 +415,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
       <label class="chk" id="onlyRed" hidden><input type="checkbox" id="onlyRedI"> Μόνο τα κόκκινα (✗ και ↻)</label>
       <label class="chk" id="easyT" hidden><input type="checkbox" id="easyI"><span>Απλές λέξεις (<span id="easyN"></span>)</span></label>
       <label class="chk" id="grypT" hidden><input type="checkbox" id="grypI"><span>Και η 2η μετάφραση (<span id="secName"></span>)</span></label>
-      <button class="tbtn" type="button" id="bReset" title="Μηδενίζει τα ✗ / ↻ / ✓ της μετάφρασης">μηδένισε</button>
+      <button class="tbtn" type="button" id="bReset" title="Μηδενίζει τα ✗ / ↻ / ✓ της μετάφρασης">μηδένισε</button>{{G2_TOOLS}}
     </div>
     <p class="modehint" id="modeHint"></p>
     <div class="lenses" id="lenses"><span class="lbl">Φακοί</span></div>
@@ -424,7 +424,7 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
       <aside class="aside" id="aside" aria-live="polite"></aside>
     </div>
     <div class="simple" id="simple" hidden></div>
-    <div id="wholeBox" hidden></div>
+    <div id="wholeBox" hidden></div>{{G2_INTRO}}
   </section>
 
   <!-- ══ ΣΧΟΛΙΑ ══════════════════════════════════════════════ -->
@@ -1172,6 +1172,6 @@ if (FL) setCur(cur);
 if (D.aplh) setVer(ui.ver);
 const h0 = (location.hash || '').slice(1);
 setTab(TABS.indexOf(h0) >= 0 ? h0 : ui.tab);
-</script>
+{{G2_JS}}</script>
 </body>
 </html>
