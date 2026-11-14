@@ -1,5 +1,5 @@
 /* tests/arxaia-gnosto-graf.test.js — η στρώση «Γραφίτης» + τα ΠΛΟΥΣΙΑ ετυμολογικά (als-v726).
-   ΓΙΑ ΚΑΘΕ ενότητα του `SKIN` του build.js (gk8 als-v726, gk9 als-v730) — τίποτα καρφωμένο.
+   ΓΙΑ ΚΑΘΕ ενότητα του `SKIN` του build.js (gk8 als-v726, gk9 als-v730, gk10 als-v731) — τίποτα καρφωμένο.
    1 · στατικά: ποιες ενότητες φοράνε τη στρώση, κάθε ομόρριζο έχει τεκμήριο ΛΚΝ, μεταλλάξεις.
    2 · οδηγημένα σε Chrome (sync δεν υπάρχει σε αυτές τις σελίδες — μόνο localStorage):
        η διαδρομή πατάει τα ΙΔΙΑ tab/mode, οι κόμβοι, ο ομιλητής, ο πίνακας, η Στήλη Α–Β. */
@@ -15,8 +15,8 @@ const J = f => JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 const build = fs.readFileSync(path.join(ROOT, 'tools/gnosto/build.js'), 'utf8');
 const SKIN = (build.match(/var SKIN = (\{[^}]*\});/) || [])[1];
 const IDS = SKIN ? (SKIN.match(/gk\d+(?=:\s*true)/g) || []) : [];
-ok(IDS.indexOf('gk8') >= 0 && IDS.indexOf('gk9') >= 0, 'η gk8 και η gk9 φοράνε τη στρώση', SKIN);
-['gk10', 'gk11', 'gk12'].filter(g => IDS.indexOf(g) < 0).forEach(g => {
+ok(['gk8', 'gk9', 'gk10'].every(g => IDS.indexOf(g) >= 0), 'η gk8, η gk9 και η gk10 φοράνε τη στρώση', SKIN);
+['gk11', 'gk12'].filter(g => IDS.indexOf(g) < 0).forEach(g => {
   const h = fs.readFileSync(path.join(ROOT, 'arxaia-' + g + '.html'), 'utf8');
   ok(!/skin-graf/.test(h) && !/\{\{G2_/.test(h), g + ': ΔΕΝ φοράει τη στρώση (μένει όπως ήταν)');
 });
@@ -24,7 +24,9 @@ const LKN = J('tools/gnosto/lkn.json');
 /* τεκμήριο από ΟΠΟΙΑΔΗΠΟΤΕ ενότητα μετράει (ίδια λέξη, ίδιο λεξικό) — ίδιος κανόνας με το lkn.js */
 const inLKN = w => Object.keys(LKN).some(k => k !== '_' && LKN[k] && w in LKN[k]);
 /* ⛔ λέξεις που ΔΕΝ υπάρχουν στο ΛΚΝ ή δεν είναι ομόρριζες (βρέθηκαν και βγήκαν) δεν ξαναμπαίνουν */
-const BANNED = ['τρισκέλιο', 'πρόσπτωση', 'σιγοκαίω', 'τειχογραφία', 'οίκηση', 'αναπόφευκτος', 'ειδοποίηση', 'φημολογία', 'πρόοψη', 'έθος', 'μεγαλοφροσύνη'];
+const BANNED = ['τρισκέλιο', 'πρόσπτωση', 'σιγοκαίω', 'τειχογραφία', 'οίκηση', 'αναπόφευκτος', 'ειδοποίηση', 'φημολογία', 'πρόοψη', 'έθος', 'μεγαλοφροσύνη',
+  /* gk10 (als-v731): το ΛΚΝ δεν τις έχει ως λήμματα */
+  'ανατριβή', 'πολυτριμμένος', 'αστόχημα', 'ευπραγία', 'εκουσίως', 'ακουσίως', 'Πελοπόννησος', 'βέλτιστος', 'πονεμένος', 'εκουσιότητα', 'ακουσιότητα', 'εκτριβή', 'τριμμένος'];
 global.window = global; try { require('../greek-ear.js'); } catch (e) {} try { require('../lesson-grade.js'); } catch (e) {}
 const UNITS = require('../arxaia-gnosto-data.js').UNITS;
 const SPEC = {};
