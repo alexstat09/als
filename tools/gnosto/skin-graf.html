@@ -161,6 +161,33 @@ body.skin-graf .lx td.rt{font-size:16px;white-space:normal;min-width:150px}
   .lxg td.rt::before{content:"Ρίζα";display:block;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
   body.skin-graf .band .bs{display:none}
 }
+/* ── ίδιο με το εγκεκριμένο demo (14/11, «είναι διαφορετικό από αυτό που μου έδειξες») ── */
+body.skin-graf .top .sl,body.skin-graf .top .wm{display:none}
+body.skin-graf .top .wh{margin-left:auto;font-size:13px;color:var(--faint)}
+body.skin-graf .band .bs{display:none}
+body.skin-graf .band .bn small{margin-left:4px}
+body.skin-graf .vernote{display:none}
+.gtools{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;padding:12px 0 18px;border-bottom:1px solid var(--line)}
+.gtools .ver{margin:0}
+.gtools .lenses{margin:0;padding:0;border:0}
+body.skin-graf .tools:empty,body.skin-graf .tools.gone{display:none}
+/* ⚠️ ΟΧΙ κλάση .md: τα tests διαβάζουν ΚΑΘΕ .md ως «η μετάφραση που μαθαίνει» (σταθ. 50) */
+.gryp{display:none;font-family:var(--rd);font-style:italic;font-size:17px;line-height:1.72;color:var(--dim);max-width:64ch}
+.text.gry-on .sent .md,.text.gry-on .sent .apx{display:none}
+.text.gry-on .gryp{display:block;margin:0 0 4px 44px;padding:14px 0 18px;border-bottom:1px solid var(--line)}
+body.skin-graf .fc-road{display:none}
+body.skin-graf .fc-who{border:0;padding:0;font-family:var(--sans);font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--dim)}
+body.skin-graf .fc-who.g2{color:rgb(var(--ok))}
+body.skin-graf .fc-node .lbl{display:none}
+body.skin-graf .fc-nav{border-top:1px solid var(--line)}
+body.skin-graf .fc-nav button{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:9px;font-size:13.5px}
+body.skin-graf .fc-nav button:hover{background:var(--s1)}
+body.skin-graf .fc-hint{font-size:12.5px;color:var(--faint)}
+body.skin-graf .num{display:flex;justify-content:flex-end;align-items:flex-start;padding-top:6px}
+.numb{display:inline-grid;place-items:center;min-width:30px;height:30px;border-radius:7px}
+body.skin-graf .sent.cur .numb{background:rgb(174,182,238);color:var(--bg)}
+body.skin-graf .wc dt{font-family:var(--sans);font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--faint)}
+body.skin-graf .wc dd.lem{color:var(--ink)}
 <!--@MAP-->
 <aside class="nmap" id="nmap" aria-label="Ο χάρτης του κειμένου" hidden></aside>
 <!--@PATH-->
@@ -292,6 +319,62 @@ body.skin-graf .lx td.rt{font-size:16px;white-space:normal;min-width:150px}
     });
     deal();
   }
+
+  /* ── όπως το demo: πάνω μπάρα, τίτλος σε μία γραμμή, η ουσία, μετρήσεις, μία γραμμή εργαλείων ── */
+  const topA = document.querySelector('.top a'); if (topA) topA.textContent = '‹ Αρχαία · Γνωστό';
+  const wh = document.querySelector('.top .wh'); if (wh) wh.textContent = 'Αρχαία · Γνωστό · ' + document.querySelector('.eyebrow b').textContent;
+  const h1 = document.querySelector('h1'); h1.innerHTML = h1.innerHTML.replace(/<br\s*\/?>/g, ' ');
+  if (D.gist) document.querySelector('.cover .lead').textContent = D.gist;
+  const bl = document.querySelectorAll('.band .lbl');
+  if (bl[1]) bl[1].textContent = 'Σχόλια που ξέρεις απέξω';
+  if (bl[2]) bl[2].textContent = 'Ερμηνευτικά που έγραψες μόνος';
+  const panel = document.getElementById('p-metafrasi'), hintEl = document.getElementById('modeHint');
+  const verRow = document.getElementById('verRow'), tools = panel.querySelector('.tools');
+  const gt = document.createElement('div'); gt.className = 'gtools';
+  panel.insertBefore(hintEl, panel.firstChild);
+  hintEl.insertAdjacentElement('afterend', gt);
+  gt.appendChild(verRow); gt.appendChild(lensBox); gt.appendChild(tools);
+  /* η εξήγηση κάθε στάσης — τα λόγια του demo */
+  const WHAT = {
+    si:'Πρώτα η ιστορία με απλά λόγια, και η εισαγωγή του βιβλίου. <b>Δεν απομνημονεύεις τίποτα ακόμα</b>: απλώς μαθαίνεις τι γίνεται.',
+    rd:'Το αρχαίο με τη μετάφραση από κάτω, κόμβο προς κόμβο. <b>Πάτα μια λέξη</b> και ανάβει το ζευγάρι της. <b>Πάτα τον αριθμό</b> μιας περιόδου για να δεις τι κάνει, γιατί είναι εκεί και πώς δένει με την επόμενη.',
+    wh:'Όλο το κείμενο μαζί: το αρχαίο δίπλα στη μετάφραση.',
+    st:'Οι αγκύλες όπως στο χαρτί: <b>[ ] κύρια</b>, <b>( ) δευτερεύουσα</b>, με τον αριθμό της πρότασης. Κάτω από κάθε περίοδο: τι πρόταση είναι και πώς εκφέρεται.',
+    tr:'Η μετάφραση κρύβεται. <b>Πες τη δυνατά</b>, άνοιξέ τη και κρίνε τον εαυτό σου: ✗ λάθος · ↻ με δυσκολία · ✓ μόνος μου. Τα κόκκινα ξαναέρχονται.'
+  };
+  const _setMode2 = setMode;
+  let gryOff = () => {};
+  setMode = function(m){
+    _setMode2(m);
+    if (WHAT[ui.mode]) hintEl.innerHTML = WHAT[ui.mode];
+    /* η γραμμή εργαλείων μόνο όταν έχει κάτι ορατό (η παλιά επιλογή τρόπου είναι κρυμμένη) */
+    tools.classList.toggle('gone', !Array.from(tools.children).some(c => !c.hidden && !c.matches('.seg')));
+    if (ui.mode !== 'rd') gryOff();   /* ⛔ ο Γρυπάρης ΜΟΝΟ στο «Διάβασε» — στο «Μετάφρασε» θα πρόδιδε τη μετάφραση */
+    const g = document.getElementById('gGry'); if (g) g.hidden = ui.mode !== 'rd';
+  };
+  /* ο αριθμός της ενεργής περιόδου σε γεμάτο τετραγωνάκι */
+  rows().forEach(r => { const n = r.querySelector('.num'); if (n && !n.querySelector('.numb')) n.innerHTML = '<span class="numb">' + n.textContent + '</span>'; });
+  /* Γρυπάρης ως τρίτη μετάφραση (όπως το demo): ανά παράγραφο, κάτω από την τελευταία περίοδό της.
+     Δεν αγγίζει το ui.ver — είναι μόνο εμφάνιση. */
+  if (D.second && D.second.length){
+    const seg = verRow.querySelector('.seg');
+    const gb = document.createElement('button'); gb.type = 'button'; gb.id = 'gGry'; gb.textContent = D.secondName; gb.setAttribute('aria-pressed', 'false');
+    seg.appendChild(gb);
+    D.segs.forEach((s, i) => {
+      const last = !D.segs.some(x => x.p === s.p && x.n > s.n); if (!last) return;
+      const row = box.querySelector('.sent[data-n="' + s.n + '"]'); if (!row) return;
+      const p = document.createElement('p'); p.className = 'gryp'; p.textContent = D.second[s.p] || '';
+      row.insertAdjacentElement('afterend', p);
+    });
+    const setGry = on => {
+      box.classList.toggle('gry-on', on); gb.setAttribute('aria-pressed', String(on));
+      seg.querySelectorAll('[data-ver]').forEach(b => b.setAttribute('aria-pressed', String(!on && b.dataset.ver === ui.ver)));
+    };
+    gryOff = () => setGry(false);
+    gb.addEventListener('click', () => setGry(true));
+    seg.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => setGry(false)));
+  }
+  setMode(ui.mode);
   nmap.hidden = !FL;
   paint();
 })();

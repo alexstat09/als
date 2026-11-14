@@ -100,6 +100,7 @@ function render(id){
   if (errs.length) throw new Error('ο validator αρνήθηκε:\n  ✗ ' + errs.join('\n  ✗ '));
   var tpl = fs.readFileSync(path.join(__dirname, 'gk.tpl'), 'utf8');
   var D = dataOf(spec, unit);
+  if (SKIN[id]) D.gist = unit.gist || '';   /* η ουσία σε μία πρόταση, κάτω από τον τίτλο (μόνο στη στρώση — οι άλλες byte-ίδιες) */
   /* οι διπλές αγκύλες του `flow` γράφονται \u007b ώστε να μη μοιάζουν με κενό του προτύπου (ζουν ΜΟΝΟ μέσα σε JSON strings — δομικά δύο αγκύλες στη σειρά δεν υπάρχουν σε JSON) */
   var json = JSON.stringify(D).replace(/</g, '\\u003c').replace(/\{\{/g, '\\u007b\\u007b').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   var esc = function(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
