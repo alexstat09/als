@@ -65,7 +65,8 @@ function dataOf(spec, unit){
       })
     } : null,
     clauses: spec.structure.clauses,
-    scholia: spec.scholia.map(function(s){ return { lemma: s.lemma, body: s.body, keys: s.keys }; }),
+    /* `book` = ό,τι ΠΡΟΣΘΕΤΕΙ το Βιβλίο Μαθητή στο ίδιο λήμμα — αυτολεξεί, δηλωμένο, ΧΩΡΙΣ να αγγίζει το σχόλιο του Φακέλου (που ελέγχεται αυτολεξεί) */
+    scholia: spec.scholia.map(function(s){ var o = { lemma: s.lemma, body: s.body, keys: s.keys }; if (s.book) o.book = s.book; return o; }),
     acts: spec.activities,
     pars: spec.parallels,
     lexika: spec.lexika,
