@@ -18,12 +18,21 @@ const cp = require('child_process');
 const L = require('./lib');
 
 /* η σειρά του βιβλίου (Φιλοσοφικός Λόγος, εισαγωγή) ΚΑΙ ο φιλόσοφος κάθε κεφαλαίου — η κάρτα όπου μπαίνει.
-   ⛔ Κεφάλαιο που λείπει από εδώ ΣΤΑΜΑΤΑΕΙ το wire (σταθ. 40: ποτέ σιωπηλή ομάδα «άλλα»). */
+   ⛔ Κεφάλαιο που λείπει από εδώ ΣΤΑΜΑΤΑΕΙ το wire (σταθ. 40: ποτέ σιωπηλή ομάδα «άλλα»).
+   als-v748: [2] = η ΕΤΙΚΕΤΑ της γραμμής στη λίστα (λέει πρώτα το ΕΡΓΟ, «Πολιτεία · εισαγωγή 1/2»),
+   [3] = προαιρετική υπογραμμή (τι έχει μέσα). Ο τίτλος ΜΕΣΑ στη σελίδα μένει ο αυτολεξεί του json.
+   Τις ξαναγράφει ΣΕ ΟΛΕΣ τις γραμμές κάθε wire — εδώ αλλάζεις όνομα, πουθενά αλλού. */
 const BOOK = [
-  ['arxaia-sokratis-ideas.html', 'Σωκράτης'], ['arxaia-sokratis.html', 'Σωκράτης'],
-  ['arxaia-platon.html', 'Πλάτων'], ['arxaia-protagoras-eisagogi.html', 'Πλάτων'],
-  ['arxaia-politeia-eisagogi.html', 'Πλάτων'], ['arxaia-politeia-dikaiosyni.html', 'Πλάτων'],
-  ['arxaia-aristotelis.html', 'Αριστοτέλης'], ['arxaia-aristotelis-periodoi.html', 'Αριστοτέλης'], ['arxaia-ithika-eisagogi.html', 'Αριστοτέλης'], ['arxaia-politika-eisagogi.html', 'Αριστοτέλης']];
+  ['arxaia-sokratis-ideas.html', 'Σωκράτης', 'Οι ιδέες του'],
+  ['arxaia-sokratis.html', 'Σωκράτης', 'Η δίκη και ο θάνατος'],
+  ['arxaia-platon.html', 'Πλάτων', 'Ο βίος του'],
+  ['arxaia-protagoras-eisagogi.html', 'Πλάτων', 'Πρωταγόρας · εισαγωγή'],
+  ['arxaia-politeia-eisagogi.html', 'Πλάτων', 'Πολιτεία · εισαγωγή 1/2', 'απογοητεύσεις, τρεις τάξεις, αγωγή φυλάκων'],
+  ['arxaia-politeia-dikaiosyni.html', 'Πλάτων', 'Πολιτεία · εισαγωγή 2/2', 'φιλόσοφοι-βασιλείς, δικαιοσύνη, σπήλαιο'],
+  ['arxaia-aristotelis.html', 'Αριστοτέλης', 'Ο βίος του 1/2', 'Στάγειρα, Ακαδημία'],
+  ['arxaia-aristotelis-periodoi.html', 'Αριστοτέλης', 'Ο βίος του 2/2', 'Μακεδονία, Λύκειο, τέλος'],
+  ['arxaia-ithika-eisagogi.html', 'Αριστοτέλης', 'Ηθικά Νικομάχεια · εισαγωγή'],
+  ['arxaia-politika-eisagogi.html', 'Αριστοτέλης', 'Πολιτικά · εισαγωγή']];
 const BOOK_AT = f => BOOK.findIndex(b => b[0] === f);
 const START = '<div class="gn-phs">', END = '<!-- /gn-phs -->';
 const R = f => path.join(L.REPO, f);
@@ -34,17 +43,27 @@ const isTpl = f => fs.existsSync(R(f)) && read(f).indexOf('const KEY="eisarx-') 
 function plateHTML(d) {
   const q = d.check.recall.length + d.check.tf.length + d.check.mc.length;
   return '      <a class="gn-pl" href="' + d.file + '">\n' +
-    '        <span class="t">' + esc(L.plain(d.title)) + '</span>\n' +
+    labelHTML(d.file) +
     '        <span class="pl-n"><b><i>Σταθμοί</i><u>' + d.stations.length + '</u></b><b><i>Ερωτήσεις</i><u>' + q + '</u></b></span>\n' +
     '        <span class="pl-go" aria-hidden="true">↗</span>\n' +
     '      </a>\n';
 }
+/* η ετικέτα (+ υπογραμμή) της γραμμής, από το BOOK — ΟΧΙ ο τίτλος του json */
+function labelHTML(f) {
+  const b = BOOK[BOOK_AT(f)];
+  if (!b || !b[2]) throw new Error('το ' + f + ' δεν έχει ετικέτα στο BOOK του wire.js');
+  return '        <span class="t">' + esc(b[2]) + '</span>\n' + (b[3] ? '        <span class="pl-s">' + esc(b[3]) + '</span>\n' : '');
+}
+const LABEL_RE = /        <span class="t">[^<]*<\/span>\n(?:        <span class="pl-s">[^<]*<\/span>\n)?/;
 const fileOf = x => (/href="([^"]+)"/.exec(x) || [])[1];
 /* Οι γραμμές, ταξινομημένες στη σειρά του βιβλίου, μοιρασμένες στις κάρτες των φιλοσόφων. */
 function blockHTML(pl) {
   const miss = pl.map(fileOf).filter(f => BOOK_AT(f) < 0);
   if (miss.length) throw new Error('το ' + miss.join(', ') + ' δεν είναι στο BOOK του wire.js — γράψ\' το εκεί με τον φιλόσοφό του');
-  const rows = pl.slice().sort((x, y) => BOOK_AT(fileOf(x)) - BOOK_AT(fileOf(y)));
+  const rows = pl.slice().sort((x, y) => BOOK_AT(fileOf(x)) - BOOK_AT(fileOf(y))).map(x => {
+    if (!LABEL_RE.test(x)) throw new Error('arxaia.html: η γραμμή του ' + fileOf(x) + ' δεν έχει «<span class="t">»');
+    return x.replace(LABEL_RE, () => labelHTML(fileOf(x)));
+  });
   const groups = [];
   rows.forEach(x => {
     const who = BOOK[BOOK_AT(fileOf(x))][1];
