@@ -707,6 +707,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   - `arxaia-protagoras-eisagogi.html` — Πρωταγόρας «Πρωταγόρας» · `tools/eisagogi/arxaia/protagoras.json` · κλειδί `eisarx-protagoras-v1`
   - `arxaia-aristotelis-periodoi.html` — Αριστοτέλης «Ο Αριστοτέλης στη Μακεδονία» · `tools/eisagogi/arxaia/aristotelis-b.json` · κλειδί `eisarx-aristotelis-b-v1`
   - `arxaia-aristotelis.html` — Αριστοτέλης «Ο Αριστοτέλης στην Ακαδημία του Πλάτωνα» · `tools/eisagogi/arxaia/aristotelis-a.json` · κλειδί `eisarx-aristotelis-a-v1`
+  - `arxaia-politeia-eisagogi.html` — Πολιτεία «Οι τρεις τάξεις» · `tools/eisagogi/arxaia/politeia-a.json` · κλειδί `eisarx-politeia-a-v1`
   ⭐⭐⭐ **als-v640 — ΤΟ «ΟΡΓΑΝΟ» ΜΙΑΣ ΕΝΟΤΗΤΑΣ: `arxaia-gk9.html`** (Πολιτεία 518b-519a).
   Τα 4 μέρη που εξετάζεται, ένα ανά καρτέλα: **Μετάφραση** (Απλά λόγια · Διάβασε με
   κάρτα λέξης λήμμα/τύπος/συντακτικό · Μετάφρασε ✗/↻/✓ · Δομή με αγκύλες · Ολόκληρο

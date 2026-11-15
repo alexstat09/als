@@ -84,7 +84,8 @@ var PACKS = [
      ήταν το artifact που ενέκρινε.  Δεν συγχρονίζεται, δεν φτάνει σε καμία
      άλλη σελίδα.  `stores` = το ΜΟΝΟ κλειδί που επιτρέπεται. */
   { file: 'arxaia-protagoras-eisagogi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-protagoras-v1' },
-  { file: 'arxaia-aristotelis-periodoi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-b-v1' }
+  { file: 'arxaia-aristotelis-periodoi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-b-v1' },
+  { file: 'arxaia-politeia-eisagogi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-politeia-a-v1' }
 ];
 
 var pass = 0, fail = 0;
