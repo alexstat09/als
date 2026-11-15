@@ -22,7 +22,7 @@ const L = require('./lib');
 const BOOK = [
   ['arxaia-sokratis-ideas.html', 'Σωκράτης'], ['arxaia-sokratis.html', 'Σωκράτης'],
   ['arxaia-platon.html', 'Πλάτων'], ['arxaia-protagoras-eisagogi.html', 'Πλάτων'],
-  ['arxaia-politeia-eisagogi.html', 'Πλάτων'],
+  ['arxaia-politeia-eisagogi.html', 'Πλάτων'], ['arxaia-politeia-dikaiosyni.html', 'Πλάτων'],
   ['arxaia-aristotelis.html', 'Αριστοτέλης'], ['arxaia-aristotelis-periodoi.html', 'Αριστοτέλης'], ['arxaia-ithika-eisagogi.html', 'Αριστοτέλης'], ['arxaia-politika-eisagogi.html', 'Αριστοτέλης']];
 const BOOK_AT = f => BOOK.findIndex(b => b[0] === f);
 const START = '<div class="gn-phs">', END = '<!-- /gn-phs -->';
