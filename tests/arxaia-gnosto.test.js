@@ -67,7 +67,7 @@ var PACKS = [
   { file: 'arxaia-sokratis-ideas.html', mine: true, ground: 'arxaia-sokratis-ideas.test.js', stores: 'eisarx-d2-v1' },
   { file: 'arxaia-sokratis.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-sokratis-d3-v1' },
   { file: 'arxaia-platon.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-platon-e1-v1' },
-  { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-aristotelis.test.js' },
+  { file: 'arxaia-aristotelis.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-a-v1' },
   /* ⭐⭐ als-v551 — ΤΟ ΠΕΜΠΤΟ ΠΑΚΕΤΟ.  Είναι ΔΥΟ κεφάλαια του ίδιου βιβλίου
      (το μέρος «Πρωταγόρας» του «Γ. Οι σοφιστές…» + τα μέρη Β και Γ του
      κεφαλαίου «ΠΡΩΤΑΓΟΡΑΣ») — οι πέντε σελίδες που φωτογράφησε.
