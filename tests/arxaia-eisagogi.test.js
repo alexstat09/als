@@ -117,7 +117,9 @@ function statics(id) {
   ok(D0.traps.length >= 3, 'οι παγίδες του κεφαλαίου είναι δηλωμένες για τον validator (' + D0.traps.length + ', θέλω ≥3)');
   ok(C.pitfalls.length >= 2 && !!(C.idea && C.idea.t), 'οι παγίδες στο «Με μια ματιά» και η «μεγάλη ιδέα»');
   ok(D0.stations.every(s => (s.points || []).length >= 1), 'κάθε σταθμός έχει τουλάχιστον ένα σημείο');
-  ok(D0.stations.every((s, i) => !i || s.diagram.type !== D0.stations[i - 1].diagram.type), 'δύο διαδοχικοί σταθμοί δεν έχουν το ίδιο σχέδιο');
+  /* als-v746: ο κανόνας έβγαζε σχέδια ΧΩΡΙΣ ΝΟΗΜΑ (τύπος από τη σειρά, όχι από την ιδέα). Επανάληψη επιτρέπεται
+     ΜΟΝΟ δηλωμένη στον σταθμό: "sameAsPrev": "<γιατί η ιδέα έχει το ίδιο σχήμα>" (≥10 χαρακτήρες). */
+  ok(D0.stations.every((s, i) => !i || s.diagram.type !== D0.stations[i - 1].diagram.type || (typeof s.sameAsPrev === 'string' && s.sameAsPrev.trim().length >= 10)), 'δύο διαδοχικοί σταθμοί δεν έχουν το ίδιο σχέδιο (εκτός αν δηλώνεται "sameAsPrev")');
   ok(D0.stations.every((s, i) => s.n === i + 1), 'οι σταθμοί είναι 1…N, στη σειρά');
   ok(D0.stations.every(s => Array.isArray(s.xy) && s.xy[0] >= 60 && s.xy[0] <= 1040 && s.xy[1] >= 70 && s.xy[1] <= 290), 'ο αστερισμός χωράει στο πλαίσιο 1100×380 (xy)');
 
