@@ -213,8 +213,9 @@ eq(D.check.numbers.map(n => n.v).join('|'), '20-21|113|642 a 28|1078 b 27|2|6', 
 eq(D.stations.filter(s => s.mnem).length, 5, 'τα πέντε μνημονικά (ΔΙΑ-ΜΑΙ, ΑΡΝΗΣΗ/ΑΝΑΖΗΤΗΣΗ, Π→Κ→Ο, ΚΑ-ΑΔ…, ΑΠΟΛΥΤΟ)');
 ok(D.check.pitfalls.length >= 4 && !!D.check.idea, 'οι παγίδες και η «μεγάλη ιδέα»');
 const sp = new Set(D.check.mc.map(c => c.ok)); eq(sp.size, 4, 'η σωστή κάθεται σε ΟΛΕΣ τις θέσεις');
-const types = new Set(D.stations.map(s => s.diagram.type));
-eq(types.size, D.stations.length, 'κάθε σταθμός έχει το ΔΙΚΟ του σχέδιο (' + [...types].join(', ') + ')');
+/* als-v750: ίδιος κανόνας με το tests/arxaia-eisagogi.test.js (als-v746) — ο τύπος από το ΝΟΗΜΑ· επανάληψη
+   σε διαδοχικούς σταθμούς ΜΟΝΟ δηλωμένη: "sameAsPrev": "<γιατί η ιδέα έχει το ίδιο σχήμα>" (≥10 χαρακτήρες). */
+ok(D.stations.every((s, i) => !i || s.diagram.type !== D.stations[i - 1].diagram.type || (typeof s.sameAsPrev === 'string' && s.sameAsPrev.trim().length >= 10)), 'δύο διαδοχικοί σταθμοί δεν έχουν το ίδιο σχέδιο (εκτός αν δηλώνεται "sameAsPrev")');
 
 const arx = fs.readFileSync(path.join(ROOT, 'arxaia.html'), 'utf8');
 const gn = arx.slice(arx.indexOf('id="gnWrap"'), arx.indexOf('id="gnLesson"'));
