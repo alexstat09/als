@@ -704,10 +704,8 @@ colour rule: **accent only when something is due**, faint otherwise.
   - `arxaia-sokratis-ideas.html` — Δ2 «Οι φιλοσοφικές ιδέες του Σωκράτη» · `tools/eisagogi/arxaia/sokratis-d2.json` · κλειδί `eisarx-d2-v1`
   - `arxaia-sokratis.html` — Δ3 «Η δίκη και ο θάνατος του Σωκράτη» · `tools/eisagogi/arxaia/sokratis-d3.json` · κλειδί `eisarx-sokratis-d3-v1`
   - `arxaia-platon.html` — Ε1 «Ο βίος του» · `tools/eisagogi/arxaia/platon-e1.json` · κλειδί `eisarx-platon-e1-v1`
-  - `arxaia-platon-erga.html` — Ε2 «Το έργο του» · `tools/eisagogi/arxaia/platon-e2.json` · κλειδί `eisarx-platon-e2-v1`
   - `arxaia-protagoras-eisagogi.html` — Πρωταγόρας «Πρωταγόρας» · `tools/eisagogi/arxaia/protagoras.json` · κλειδί `eisarx-protagoras-v1`
   - `arxaia-aristotelis-periodoi.html` — Αριστοτέλης «Στην Άσσο αρχίζει η δεύτερη περίοδος» · `tools/eisagogi/arxaia/aristotelis-b.json` · κλειδί `eisarx-aristotelis-b-v1`
-  - `arxaia-aristotelis-erga.html` — Αριστοτέλης «Το συγγραφικό έργο του Αριστοτέλη» · `tools/eisagogi/arxaia/aristotelis-erga.json` · κλειδί `eisarx-aristotelis-erga-v1`
   - `arxaia-aristotelis.html` — Αριστοτέλης «Ο Αριστοτέλης στην Ακαδημία του Πλάτωνα» · `tools/eisagogi/arxaia/aristotelis-a.json` · κλειδί `eisarx-aristotelis-a-v1`
   ⭐⭐⭐ **als-v640 — ΤΟ «ΟΡΓΑΝΟ» ΜΙΑΣ ΕΝΟΤΗΤΑΣ: `arxaia-gk9.html`** (Πολιτεία 518b-519a).
   Τα 4 μέρη που εξετάζεται, ένα ανά καρτέλα: **Μετάφραση** (Απλά λόγια · Διάβασε με
