@@ -707,6 +707,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   - `arxaia-platon-erga.html` — Ε2 «Το έργο του» · `tools/eisagogi/arxaia/platon-e2.json` · κλειδί `eisarx-platon-e2-v1`
   - `arxaia-protagoras-eisagogi.html` — Πρωταγόρας «Πρωταγόρας» · `tools/eisagogi/arxaia/protagoras.json` · κλειδί `eisarx-protagoras-v1`
   - `arxaia-aristotelis-periodoi.html` — Αριστοτέλης «Στην Άσσο αρχίζει η δεύτερη περίοδος» · `tools/eisagogi/arxaia/aristotelis-b.json` · κλειδί `eisarx-aristotelis-b-v1`
+  - `arxaia-aristotelis-erga.html` — Αριστοτέλης «Το συγγραφικό έργο του Αριστοτέλη» · `tools/eisagogi/arxaia/aristotelis-erga.json` · κλειδί `eisarx-aristotelis-erga-v1`
   ⭐⭐⭐ **als-v640 — ΤΟ «ΟΡΓΑΝΟ» ΜΙΑΣ ΕΝΟΤΗΤΑΣ: `arxaia-gk9.html`** (Πολιτεία 518b-519a).
   Τα 4 μέρη που εξετάζεται, ένα ανά καρτέλα: **Μετάφραση** (Απλά λόγια · Διάβασε με
   κάρτα λέξης λήμμα/τύπος/συντακτικό · Μετάφρασε ✗/↻/✓ · Δομή με αγκύλες · Ολόκληρο

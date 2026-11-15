@@ -85,7 +85,8 @@ var PACKS = [
      άλλη σελίδα.  `stores` = το ΜΟΝΟ κλειδί που επιτρέπεται. */
   { file: 'arxaia-protagoras-eisagogi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-protagoras-v1' },
   { file: 'arxaia-platon-erga.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-platon-e2-v1' },
-  { file: 'arxaia-aristotelis-periodoi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-b-v1' }
+  { file: 'arxaia-aristotelis-periodoi.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-b-v1' },
+  { file: 'arxaia-aristotelis-erga.html', mine: true, ground: 'arxaia-eisagogi.test.js', stores: 'eisarx-aristotelis-erga-v1' }
 ];
 
 var pass = 0, fail = 0;

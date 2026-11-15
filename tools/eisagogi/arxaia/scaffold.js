@@ -99,7 +99,8 @@ urls.forEach((u, k) => {
     const [a, z] = sec.split('..');
     from = all.findIndex(b => bare(b).startsWith(a));
     if (from < 0) { console.error('⛔ στη σελίδα ' + (k + 1) + ' δεν υπάρχει block που αρχίζει με «' + a + '»'); process.exit(1); }
-    to = all.findIndex((b, i) => i > from && bare(b).startsWith(z));
+    /* κενό «τέλος» («αρχή..») = ως το τέλος της σελίδας (als-v735, Αριστοτέλης Γ: «Το συγγραφικό έργο» είναι το τελευταίο) */
+    to = z === '' ? all.length : all.findIndex((b, i) => i > from && bare(b).startsWith(z));
     if (to < 0) { console.error('⛔ στη σελίδα ' + (k + 1) + ' δεν υπάρχει, μετά το «' + a + '», block που αρχίζει με «' + z + '»'); process.exit(1); }
     if (!k && args.includes('--lead')) lead = all.slice(0, from).filter(b => b.kind === 'p').slice(-1)[0] || null;
   } else if (sec) {
