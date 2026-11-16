@@ -27,7 +27,7 @@ Everything in the root is live. Anything retired is in `archive/`.
 |---|---|
 | `gym.html` | Fitness — the big one (164 KB). Workouts, sessions, lifts. |
 | `body.html` | Body hub. |
-| `weight.html` | Weigh-ins, the approved Midnight design (als-v662, `design-mockups/weight-v2.html`): trend-first answer, the Ruler, logging card, 2×2, ONE-line trend chart (7-day trend by calendar date, mornings tethered, drag reads the 7 mornings), month columns, Monday-first calendar (Edit · two-step Delete · Undo · back-fill). Read guard + write read-back around the untouched als-v423 storage functions. See CLAUDE.md §5 before changing it. |
+| `weight.html` | Weigh-ins, **als-v759 — the approved mockup v3 (amber, Home/Sleep family)**: answer headline + morning card, the Ruler, ONE-line trend chart (Weight · Fat % · Muscle once the scale sends them), «What the number is made of» (muscle/fat/bone bar vs 12 weeks ago), calendar + month columns + stats, Every weigh-in list (source per row). Logging = native `<dialog>`. Withings data is READ ONLY from `wt:withings` (not yet filled by anything). Storage functions untouched since als-v423 (`tests/weight-chart.test.js`). See CLAUDE.md §5. |
 | `measure.html` | Body measurements. |
 | `pr.html` | PR board. |
 | `health.html` | Health. |

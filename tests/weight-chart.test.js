@@ -64,8 +64,10 @@ ok(!/preserveAspectRatio/.test(HTML), 'never preserveAspectRatio');
 ok(!/@media[^{]*min-width/.test(CSS), 'no min-width media query');
 ok(/#chart\{[^}]*touch-action:pan-y/.test(CSS), '#chart is touch-action:pan-y');
 ok(/prefers-reduced-motion:reduce/.test(CSS) && /reduceMotion/.test(SRC), 'reduced motion in CSS and JS');
-ok(CSS.includes('--bg:oklch(13.2% .022 258)'), 'Midnight ground');
-ok(/Commissioner/.test(HTML)&&/Literata/.test(HTML)&&/JetBrains\+Mono/.test(HTML), 'Commissioner · Literata · JetBrains Mono');
+ok(CSS.includes('--bg:#07080B'), 'the Home/Sleep ground (als-v759)');
+ok(/Instrument\+Serif/.test(HTML)&&/Commissioner/.test(HTML), 'Instrument Serif · Commissioner');
+ok(!/[\u0370-\u03FF\u1F00-\u1FFF]/.test(HTML.replace(/<!--[\s\S]*?-->/g,'').replace(/\/\*[\s\S]*?\*\//g,'').replace(/σταθ\./g,'')), 'no Greek anywhere a Latin-only serif could draw it');
+ok(!/localStorage\.setItem\([^)]*COMP_KEY|wt:withings['"]\s*,/.test(SRC), 'wt:withings is only ever read');
 ok(/\(first\.getDay\(\)\+6\)%7/.test(SRC), 'calendar is Monday-first ((getDay()+6)%7)');
 // σταθ. 12: every class toggled from JS exists in CSS
 const toggled=new Set(); for(const m of SRC.matchAll(/classList\.(?:add|toggle|remove)\('([a-z-]+)'/g)) toggled.add(m[1]);
@@ -226,7 +228,9 @@ console.log('\n── B5 · CALENDAR reaches every weigh-in ──');
 console.log('\n── B6 · WRITES: save, back-fill, edit, delete, undo ──');
 {
   const t=await open({data:REAL});
+  await t.page.click('#wtOpenBtn');
   await t.page.fill('#wtInput','66.4'); await t.page.click('#wtSaveBtn'); await t.page.waitForTimeout(100);
+  ok(!(await t.page.evaluate(()=>document.getElementById('logDlg').open)), 'save closes the dialog');
   let after=JSON.parse((await t.store()).po_coach_weights);
   const want=sorted(REAL.concat([{dateKey:TODAY,weight:66.4}]));
   ok(after.length===REAL.length+1 && after.find(e=>e.dateKey===TODAY).weight===66.4, 'save: today stored as 66.4');
@@ -289,7 +293,9 @@ console.log('\n── B7 · GUARDS: a broken read pauses writes; a failed write 
   await t.ctx.close();
   t=await open({data:REAL});
   await t.page.evaluate(()=>{ const o=Storage.prototype.setItem; Storage.prototype.setItem=function(k,v){ if(k==='po_coach_weights') throw new DOMException('full','QuotaExceededError'); return o.call(this,k,v); }; });
+  await t.page.click('#wtOpenBtn');
   await t.page.fill('#wtInput','66.3'); await t.page.click('#wtSaveBtn');
+  ok(await t.page.evaluate(()=>document.getElementById('logDlg').open) && /NOT stored/.test(await txt(t.page,'#dlgSay')), 'full disk: the dialog stays open and says so');
   ok(/NOT stored/.test(await txt(t.page,'#wtSay')), 'full disk: "was NOT stored", not a tick');
   ok(!(await vis(t.page,'#logDone')), 'full disk: the card does not pretend it was logged');
   ok((await t.store()).po_coach_weights===JSON.stringify(REAL), 'full disk: stored data unchanged');
