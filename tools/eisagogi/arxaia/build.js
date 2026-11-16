@@ -11,13 +11,16 @@ const L = require('./lib');
    ώστε να βγαίνει byte-ίδια από το ίδιο json (και ο Δ2, που δεν τα έχει, πάντα). */
 const V2_TOP = ['acts', 'eye', 'outline'], V2_ST = ['fig', 'sl', 'match', 'bridge'];
 function build(name, opt) {
-  opt = opt || {};
+  opt = Object.assign({}, opt || {});
   const d = L.load(name), src = L.readSource(d.source.file);
+  /* `"tpl": 2` = το κεφάλαιο ΖΕΙ στο νέο καλούπι, στο ΙΔΙΟ URL (Πολιτεία 1/2 από als-v761· το παλιό στο archive/) */
+  const home2 = d.tpl === 2;
+  if (home2) opt.v2 = true;
   const errs = L.validate(d, src);          /* γεμίζει και τα quote.t από την πηγή */
   if (errs.length) throw new Error('ο validator αρνείται (' + errs.length + '):\n  ' + errs.join('\n  '));
   const tpl = fs.readFileSync(path.join(__dirname, opt.v2 ? 'page2.tpl' : 'page.tpl'), 'utf8');
   const payload = Object.assign({}, d);
-  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate', 'fixes'].forEach(k => delete payload[k]);
+  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate', 'fixes', 'tpl'].forEach(k => delete payload[k]);
   if (!opt.v2) {
     V2_TOP.forEach(k => delete payload[k]);
     payload.stations = d.stations.map(st => { const c = Object.assign({}, st); V2_ST.forEach(k => delete c[k]); return c; });
@@ -36,7 +39,7 @@ function build(name, opt) {
     if (out.indexOf(m) < 0) throw new Error('λείπει το σημάδι ' + m + ' από το πρότυπο');
     out = out.split(m).join(marks[m]);       /* split/join: κανένα $ δεν ερμηνεύεται */
   });
-  return { html: out, file: opt.v2 ? d.file.replace(/\.html$/, '-v2.html') : d.file };
+  return { html: out, file: opt.v2 && !home2 ? d.file.replace(/\.html$/, '-v2.html') : d.file };
 }
 
 if (require.main === module) {

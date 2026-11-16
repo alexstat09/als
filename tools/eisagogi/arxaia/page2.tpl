@@ -361,14 +361,14 @@ mark{color:var(--ink);background:linear-gradient(180deg,transparent 54%,var(--hl
 <script>
 /* ══ Η ΜΗΧΑΝΗ ΤΟΥ ΚΑΛΟΥΠΙΟΥ v2 ══════════════════════════════════════════
    Τα δεδομένα μπαίνουν από το build (ένα json)· κανένα κείμενο κεφαλαίου εδώ.
-   Πρόοδος του ΕΛΕΓΧΟΥ μόνο, σε αυτή τη συσκευή, εκτός sync. Το διάβασμα δεν καταγράφεται.
-   · K1 = το κλειδί της παλιάς σελίδας: rc/tf/mc με το ΙΔΙΟ σχήμα, ώστε οι απαντήσεις να είναι κοινές.
-   · K2 = δικό της, για ό,τι νέο (οι απαντήσεις της Αντιστοίχισης). Η παλιά σελίδα δεν το ξέρει.
+   Πρόοδος του ΕΛΕΓΧΟΥ μόνο, σε ΕΝΑ κλειδί, σε αυτή τη συσκευή, εκτός sync. Το διάβασμα δεν καταγράφεται.
+   Ίδιο σχήμα με το παλιό καλούπι (rc/tf/mc) + `mt` (Αντιστοίχιση): ό,τι είχε απαντήσει εκεί, το βρίσκει εδώ.
    Κάθε εγγραφή ξαναδιαβάζεται· αποθήκη που δεν διαβάζεται ΔΕΝ γράφεται ποτέ από πάνω. */
 (function () {
 'use strict';
 var D = /*@@DATA@@*/null;
-var K1 = "@@KEY@@", K2 = K1.replace(/-v1$/, '') + '-v2';
+const KEY="@@KEY@@";
+var K1 = KEY, K2 = K1.replace(/-v1$/, '') + '-v2';   /* K2: μόνο ΑΝΑΓΝΩΣΗ, μία φορά (η προεπισκόπηση της 16/11 έγραφε εκεί την Αντιστοίχιση) */
 var ST = D.stations, N = ST.length, BY = {}, C = D.check;
 ST.forEach(function (s) { BY[s.n] = s; });
 var $ = function (id) { return document.getElementById(id); };
@@ -376,8 +376,7 @@ var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
 
 /* ── αποθήκη ─────────────────────────────────────────────────────────── */
 var store = { readable: true, why: '', fail: '' };
-function blank1() { return { v: 1, at: 1, read: {}, rc: {}, tf: {}, mc: {} }; }
-function blank2() { return { v: 1, mt: {} }; }
+function blank1() { return { v: 1, at: 1, read: {}, rc: {}, tf: {}, mc: {}, mt: {} }; }
 function load(key, blank, must) {
   var raw;
   try { raw = localStorage.getItem(key); }
@@ -392,8 +391,13 @@ function load(key, blank, must) {
     return b;
   } catch (e) { store.readable = false; store.why = 'corrupt'; return blank(); }
 }
-var S = load(K1, blank1, ['read', 'rc', 'tf', 'mc']);
-var V = load(K2, blank2, ['mt']);
+var S = load(K1, blank1, ['read', 'rc', 'tf', 'mc', 'mt']);
+/* παλιές απαντήσεις Αντιστοίχισης από το K2: αντιγράφονται χωρίς να πατήσουν τίποτα· το K2 δεν γράφεται ποτέ.
+   Αν δεν διαβάζεται, απλώς δεν υπάρχει τίποτα να φέρει — οι απαντήσεις του K1 μένουν ανέγγιχτες. */
+(function () {
+  if (!store.readable) return;
+  try { var o = JSON.parse(localStorage.getItem(K2) || 'null'), k; if (o && o.mt && typeof o.mt === 'object') for (k in o.mt) if (S.mt[k] === undefined) S.mt[k] = o.mt[k]; } catch (e) { /* βλ. πάνω */ }
+})();
 function put(key, obj) {
   var txt = JSON.stringify(obj), back = null;
   try { localStorage.setItem(key, txt); back = localStorage.getItem(key); }
@@ -401,9 +405,9 @@ function put(key, obj) {
   if (back !== txt) { store.fail = 'readback'; return false; }
   return true;
 }
-function save(which) {
+function save() {
   if (!store.readable) { banner(); return false; }
-  var ok = which === 2 ? put(K2, V) : put(K1, S);
+  var ok = put(K1, S);
   if (ok) store.fail = '';
   banner(); return ok;
 }
@@ -640,10 +644,10 @@ function gapList() {
   C.recall.forEach(function (c) { if (S.rc[c.id] === 0) out.push({ id: c.id, k: 'rc', s: c.s, tx: c.q, kind: 'Ανάκληση · όχι ακόμα' }); });
   C.tf.forEach(function (c) { if (typeof S.tf[c.id] === 'boolean' && S.tf[c.id] !== c.ok) out.push({ id: c.id, k: 'tf', s: c.s, tx: c.t, kind: 'Σωστό ή λάθος · λάθος απάντηση' }); });
   C.mc.forEach(function (c) { if (typeof S.mc[c.id] === 'number' && S.mc[c.id] !== c.ok) out.push({ id: c.id, k: 'mc', s: c.s, tx: c.q, kind: 'Πολλαπλή επιλογή · λάθος απάντηση' }); });
-  SETS.forEach(function (x) { x.rows.forEach(function (r) { if (V.mt[x.id + '|' + plain(r.k)] === 0) out.push({ id: x.id + '|' + plain(r.k), k: 'mt', s: x.s, tx: r.k + ' → ' + r.d, kind: 'Αντιστοίχιση · λάθος ζευγάρι' }); }); });
+  SETS.forEach(function (x) { x.rows.forEach(function (r) { if (S.mt[x.id + '|' + plain(r.k)] === 0) out.push({ id: x.id + '|' + plain(r.k), k: 'mt', s: x.s, tx: r.k + ' → ' + r.d, kind: 'Αντιστοίχιση · λάθος ζευγάρι' }); }); });
   return out;
 }
-function answered() { var n = 0, k; for (k in S.rc) n++; for (k in S.tf) n++; for (k in S.mc) n++; for (k in V.mt) n++; return n; }
+function answered() { var n = 0, k; for (k in S.rc) n++; for (k in S.tf) n++; for (k in S.mc) n++; for (k in S.mt) n++; return n; }
 function total() { var t = C.recall.length + C.tf.length + C.mc.length; SETS.forEach(function (x) { t += x.rows.length; }); return t; }
 function headCheck() {
   var g = gapList().length, a = answered();
@@ -821,15 +825,15 @@ document.addEventListener('click', function (e) {
   if (ds.rc) {
     var c = C.recall[rcOrder[rcAt]];
     if (ds.rc === 'show') rcShown = true;
-    else if (ds.rc === 'yes' || ds.rc === 'no') { S.rc[c.id] = ds.rc === 'yes' ? 1 : 0; save(1); rcAt = (rcAt + 1) % rcOrder.length; rcShown = false; headCheck(); }
+    else if (ds.rc === 'yes' || ds.rc === 'no') { S.rc[c.id] = ds.rc === 'yes' ? 1 : 0; save(); rcAt = (rcAt + 1) % rcOrder.length; rcShown = false; headCheck(); }
     else if (ds.rc === 'next') { rcAt = (rcAt + 1) % rcOrder.length; rcShown = false; }
     else if (ds.rc === 'prev') { rcAt = (rcAt - 1 + rcOrder.length) % rcOrder.length; rcShown = false; }
     else if (ds.rc === 'shuf') { rcOrder = shuffle(rcOrder); rcAt = 0; rcShown = false; }
     renderPane(); return;
   }
-  if (ds.tf) { S.tf[ds.tf] = ds.v === 'true'; save(1); headCheck(); renderPane(); return; }
-  if (ds.mc) { S.mc[ds.mc] = +ds.v; save(1); headCheck(); renderPane(); return; }
-  if (ds.reset) { S[ds.reset] = {}; save(1); headCheck(); renderPane(); return; }
+  if (ds.tf) { S.tf[ds.tf] = ds.v === 'true'; save(); headCheck(); renderPane(); return; }
+  if (ds.mc) { S.mc[ds.mc] = +ds.v; save(); headCheck(); renderPane(); return; }
+  if (ds.reset) { S[ds.reset] = {}; save(); headCheck(); renderPane(); return; }
   if (ds.mtset) { mtStart(ds.mtset); renderPane(); return; }
   if (ds.mtagain !== undefined) { mtStart(mtSet); renderPane(); return; }
   if (ds.mtl) { mt.sel = +ds.mtl; renderPane(); return; }
@@ -837,14 +841,14 @@ document.addEventListener('click', function (e) {
     if (mt.sel < 0) return;
     var x = setBy(mtSet), r = x.rows[mt.sel], okp = ds.mtr === r.d;
     mt.res[mt.sel] = okp ? 'ok' : { w: ds.mtr };
-    V.mt[x.id + '|' + plain(r.k)] = okp ? 1 : 0; save(2);
+    S.mt[x.id + '|' + plain(r.k)] = okp ? 1 : 0; save();
     mt.sel = -1; headCheck(); renderPane(); return;
   }
   if (ds.clear) {
     var p = ds.clear.split(':'), kind = p.shift(), id = p.join(':');
-    if (kind === 'rc') { S.rc[id] = 1; save(1); }
-    else if (kind === 'mt') { V.mt[id] = 1; save(2); }
-    else { delete S[kind][id]; save(1); }
+    if (kind === 'rc') { S.rc[id] = 1; save(); }
+    else if (kind === 'mt') { S.mt[id] = 1; save(); }
+    else { delete S[kind][id]; save(); }
     headCheck(); renderPane(); return;
   }
 });

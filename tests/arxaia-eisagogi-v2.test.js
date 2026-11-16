@@ -45,7 +45,21 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
     ok('καμία Instrument Serif / Georgia (σταθ. 43)', !/Instrument Serif|Georgia/i.test(disk));
     ok('κανένα εξωτερικό script, κανένα sync (σταθ. 8)', !/<script[^>]+src=/i.test(disk));
     /* κάθε ερώτηση του σημερινού Ελέγχου υπάρχει και στον νέο — από τα δεδομένα των ΔΥΟ σελίδων */
-    const oldD = dataOf(fs.readFileSync(path.join(REPO, d.file), 'utf8')), newD = dataOf(disk);
+    /* η παλιά μορφή: ζωντανή δίπλα (προεπισκόπηση -v2) ή στο archive/ όταν η νέα πήρε τη θέση της (tpl:2) */
+    const oldF = d.tpl === 2 ? path.join(REPO, 'archive', path.basename(d.file)) : path.join(REPO, d.file);
+    ok('η παλιά μορφή σώζεται (' + path.relative(REPO, oldF) + ')', fs.existsSync(oldF));
+    if (d.tpl === 2) {
+      ok('η νέα μορφή κάθεται στο ΙΔΙΟ URL', r.file === d.file);
+      ok('καμία ορφανή προεπισκόπηση -v2', !fs.existsSync(path.join(REPO, d.file.replace(/\.html$/, '-v2.html'))));
+      ok('…και η παλιά στο archive είναι όντως το παλιό καλούπι', /Η ΜΗΧΑΝΗ ΤΟΥ ΚΑΛΟΥΠΙΟΥ ═/.test(fs.readFileSync(oldF, 'utf8')) && !/page2\.tpl/.test(fs.readFileSync(oldF, 'utf8')));
+      const SW = fs.readFileSync(path.join(REPO, 'sw.js'), 'utf8'), ARX = fs.readFileSync(path.join(REPO, 'arxaia.html'), 'utf8');
+      const NO_VT = eval(/const NO_VT = (\/.*\/);/.exec(fs.readFileSync(path.join(REPO, 'topbar.js'), 'utf8'))[1]); // eslint-disable-line no-eval
+      ok('στο SW CORE', SW.indexOf("'" + d.file + "'") > 0);
+      ok('στο NO_VT (δεν φοράει aurora/kentro-exit)', NO_VT.test(d.file));
+      ok('η κάρτα του Γνωστού (arxaia.html) δείχνει εδώ', ARX.indexOf('href="' + d.file + '"') > 0);
+      ok('ακριβώς ένα const KEY, το δικό του (σταθ. του Γνωστού)', (disk.match(/const KEY="([^"]+)"/g) || []).join('|') === 'const KEY="' + d.key + '"');
+    }
+    const oldD = fs.existsSync(oldF) ? dataOf(fs.readFileSync(oldF, 'utf8')) : null, newD = dataOf(disk);
     ok('τα δεδομένα των δύο σελίδων διαβάζονται', !!oldD && !!newD);
     if (oldD && newD) ['recall', 'tf', 'mc'].forEach(k => {
       const sig = x => JSON.stringify([x.id, x.q || x.t, x.r || x.ok, x.o || null]);
@@ -122,7 +136,8 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
           ok('…και πάει στα «κενά μου»', /Αντιστοίχιση · λάθος ζευγάρι/.test(await p.$eval('#pane', e => e.innerText)));
         }
         const ls = await p.evaluate(() => Object.keys(localStorage));
-        ok('η αποθήκη γράφει ΜΟΝΟ τα δικά της κλειδιά (' + ls.join(', ') + ')', ls.every(k => k === K1 || k === K2));
+        ok('η αποθήκη γράφει ΜΟΝΟ το δικό της κλειδί (' + ls.join(', ') + ')', ls.every(k => k === K1));
+        ok('…και η Αντιστοίχιση γράφτηκε εκεί (mt)', await p.evaluate(k => Object.keys(JSON.parse(localStorage.getItem(k)).mt || {}).length > 0, K1));
         await p.reload(); await p.waitForTimeout(300);
         const s1 = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), K1);
         ok('η απάντηση Σ/Λ επιβιώνει το reload', s1.tf[falseTf.id] === true);
@@ -151,6 +166,17 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
         await p2.click('[data-mode="tf"]'); await p2.click('[data-tf="' + falseTf.id + '"][data-v="false"]');
         ok('…και δεν γράφεται από πάνω', await p2.evaluate(k => localStorage.getItem(k), K1) === '{χαλασμένο');
         await c2.close();
+        /* η προεπισκόπηση της 16/11 έγραφε την Αντιστοίχιση στο K2: διαβάζεται, δεν χάνεται, δεν γράφεται ποτέ */
+        const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+        const p3 = await c3.newPage();
+        const seedK2 = JSON.stringify({ v: 1, mt: { 'm6|Κέφαλος': 0 } });
+        await p3.addInitScript(([k, v]) => localStorage.setItem(k, v), [K2, seedK2]);
+        await p3.goto(url + '#elegxos'); await p3.waitForTimeout(300); await p3.click('[data-mode="gaps"]');
+        ok('οι απαντήσεις του K2 φαίνονται στα «κενά μου»', /Κέφαλος/.test(await p3.$eval('#pane', e => e.innerText)));
+        await p3.click('[data-mode="tf"]'); await p3.click('[data-tf="' + falseTf.id + '"][data-v="false"]');
+        ok('…περνάνε στο K1 με την πρώτη εγγραφή', await p3.evaluate(k => JSON.parse(localStorage.getItem(k)).mt['m6|Κέφαλος'] === 0, K1));
+        ok('…και το K2 δεν αγγίζεται', await p3.evaluate(k => localStorage.getItem(k), K2) === seedK2);
+        await c3.close();
         continue;
       }
       ok(w + ': μηδέν σφάλματα JS' + (errs.length ? ' — ' + errs[0] : ''), errs.length === 0);

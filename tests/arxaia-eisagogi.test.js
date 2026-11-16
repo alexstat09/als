@@ -32,7 +32,9 @@ function eq(a, b, m) { ok(a === b, m + '\n      περίμενα: ' + b + '\n   
 function section(t) { console.log('\n── ' + t); }
 
 const IDS = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, ''))
-  .filter(id => !process.env.EIS_ONLY || id === process.env.EIS_ONLY).sort();
+  .filter(id => !process.env.EIS_ONLY || id === process.env.EIS_ONLY)
+  /* `"tpl": 2` = το κεφάλαιο ζει στο νέο καλούπι (page2.tpl)· το φυλάει το tests/arxaia-eisagogi-v2.test.js */
+  .filter(id => JSON.parse(fs.readFileSync(path.join(DIR, id + '.json'), 'utf8')).tpl !== 2).sort();
 if (!IDS.length) { console.error('✗ κανένα κεφάλαιο' + (process.env.EIS_ONLY ? ' με id ' + process.env.EIS_ONLY : '')); process.exit(1); }
 
 const OXIA = /[άέήίόύώΆΈΉΐΊΰΎΌΏ]/;
