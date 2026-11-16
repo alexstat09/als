@@ -130,7 +130,17 @@ function items(d) {
       add(w + '.λεξ' + (i + 1), g.d, g.a, { reading: true, gloss: true });
     });
     if (st.mnem) add(w + '.μνημονικό', st.mnem.k + ' ' + st.mnem.t, st.mnem.a, { mnem: true });
+    /* ⭐ v2 (page2.tpl): το σχέδιο, οι παγίδες Σ/Λ και η αντιστοίχιση είναι ΥΛΗ → άγκυρες όπως όλα.
+       Γέφυρα / ερώτηση του δρόμου / why = δικό μου συνδετικό, χωρίς άγκυρα (ελέγχονται στο validateV2). */
+    if (st.fig) diagramTexts(st.fig).forEach((x, i) => add(w + '.v2σχέδιο' + (i + 1), x.t, x.a, { reading: true, short: true }));
+    (st.sl || []).forEach((t, i) => {
+      add(w + '.παγίδα' + (i + 1) + '.ψευδής', t.f, t.a, { claim: true });
+      add(w + '.παγίδα' + (i + 1) + '.σωστή', t.t, t.a, { reading: true });
+    });
+    if (st.match) st.match.rows.forEach((r, i) => add(w + '.αντιστοίχιση' + (i + 1), r.k + ' ' + r.d, r.a, { reading: true, short: true }));
   });
+  (d.acts || []).forEach((a, i) => { if (a.head) add('ενότητα ' + (i + 1), a.head.t, a.head.a, { reading: true, short: true }); });
+  if (d.outline) diagramTexts(d.outline).forEach((x, i) => add('σχεδιάγραμμα ' + (i + 1), x.t, x.a, { reading: true, short: true }));
   /* Η ΕΡΩΤΗΣΗ μπορεί νόμιμα να γράφει την παγίδα («Ήταν ο πρώτος…;») — ο
      φρουρός των παγίδων κοιτάει την ΑΠΑΝΤΗΣΗ. Το «λέει την άγκυρά του»
      μετράει ερώτηση + απάντηση μαζί, γιατί μαζί διαβάζονται. */
@@ -289,27 +299,7 @@ function validate(d, src) {
   });
 
   /* (α) ΚΑΝΕΝΑ ΚΕΝΟ: κάθε πρόταση του βιβλίου πιάνεται από το ΔΙΑΒΑΣΜΑ */
-  const anchors = all.filter(it => it.reading).reduce((acc, it) => acc.concat(it.a.map(norm)), []);
-  const gaps = [];
-  /* ⭐ Όχι «μία άγκυρα ανά πρόταση» — μια μακριά πρόταση με ΜΙΑ άγκυρα θα
-     άφηνε τα μισά της απ' έξω. Οι άγκυρες ΜΕΣΑ στην πρόταση πρέπει μαζί να
-     πιάνουν το COVER των λέξεών της (λέξεις ≥4 γραμμάτων, χωρίς τόνους). */
-  const COVER = 0.75;
-  src.sentences.forEach((s, i) => {
-    const ns = norm(s);
-    /* μια άγκυρα μέσα στην πρόταση, Ή η πρόταση ολόκληρη μέσα σε άγκυρα
-       (το αυτούσιο απόσπασμα της Ἀπολογίας πιάνει όλες τις προτάσεις του) */
-    const nq = x => x.replace(/[«»"]/g, '').replace(/\s+/g, ' ').trim();
-    const inside = anchors.filter(a => ns.indexOf(a) >= 0 || nq(a).indexOf(nq(ns)) >= 0);
-    const sw = words(ns).map(stem);
-    const got = new Set(words(inside.join(' ')).map(stem));
-    const hit = sw.filter(x => got.has(x)).length;
-    if (!inside.length || (sw.length && hit / sw.length < COVER)) {
-      const miss = words(ns).filter(x => !got.has(stem(x)));
-      gaps.push('[' + i + '] ' + Math.round(100 * hit / (sw.length || 1)) + '% · ' + s.slice(0, 90) + '…\n        λείπουν: ' + miss.join(' '));
-    }
-  });
-  gaps.forEach(g => E('ΚΕΝΟ', 'η πρόταση του βιβλίου δεν καλύπτεται από κανένα σημείο του Διαβάσματος:\n      ' + g));
+  gapsOf(all, src).forEach(g => E('ΚΕΝΟ', 'η πρόταση του βιβλίου δεν καλύπτεται από κανένα σημείο του Διαβάσματος:\n      ' + g));
 
   /* ids του ελέγχου: μοναδικά, και δείχνουν σε σταθμό που υπάρχει */
   const st = new Set(d.stations.map(s => s.n));
@@ -341,7 +331,63 @@ function validate(d, src) {
     });
     Object.keys(seen).filter(x => seen[x].size >= 3).slice(0, 2).forEach(x => E('σταθμός ' + s.n, 'η φράση «' + x + '» επαναλαμβάνεται σε ' + seen[x].size + ' σημεία — πες την μία φορά'));
   });
+  validateV2(d, E, all, src);
   return errs;
+}
+
+/* (α) η κάλυψη ως συνάρτηση: την τρέχει και η v2 χωρίς τα παλιά σχέδια */
+function gapsOf(list, src) {
+  const anchors = list.filter(it => it.reading).reduce((acc, it) => acc.concat(it.a.map(norm)), []);
+  const gaps = [];
+  /* ⭐ Όχι «μία άγκυρα ανά πρόταση» — μια μακριά πρόταση με ΜΙΑ άγκυρα θα
+     άφηνε τα μισά της απ' έξω. Οι άγκυρες ΜΕΣΑ στην πρόταση πρέπει μαζί να
+     πιάνουν το COVER των λέξεών της (λέξεις ≥4 γραμμάτων, χωρίς τόνους). */
+  const COVER = 0.75;
+  src.sentences.forEach((s, i) => {
+    const ns = norm(s);
+    /* μια άγκυρα μέσα στην πρόταση, Ή η πρόταση ολόκληρη μέσα σε άγκυρα
+       (το αυτούσιο απόσπασμα της Ἀπολογίας πιάνει όλες τις προτάσεις του) */
+    const nq = x => x.replace(/[«»"]/g, '').replace(/\s+/g, ' ').trim();
+    const inside = anchors.filter(a => ns.indexOf(a) >= 0 || nq(a).indexOf(nq(ns)) >= 0);
+    const sw = words(ns).map(stem);
+    const got = new Set(words(inside.join(' ')).map(stem));
+    const hit = sw.filter(x => got.has(x)).length;
+    if (!inside.length || (sw.length && hit / sw.length < COVER)) {
+      const miss = words(ns).filter(x => !got.has(stem(x)));
+      gaps.push('[' + i + '] ' + Math.round(100 * hit / (sw.length || 1)) + '% · ' + s.slice(0, 90) + '…\n        λείπουν: ' + miss.join(' '));
+    }
+  });
+  return gaps;
+}
+
+/* v2: ό,τι το page2.tpl χρειάζεται για να μη ζωγραφίσει ψέματα ή τρύπες */
+function validateV2(d, E, all, src) {
+  if (!d.acts) return;
+  /* ⭐ Η v2 ΔΕΝ ζωγραφίζει τα παλιά `diagram` → κάθε πρόταση του βιβλίου πρέπει να καλύπτεται ΧΩΡΙΣ αυτά */
+  gapsOf(all.filter(it => !/\.σχέδιο\d+$/.test(it.where)), src).forEach(g => E('ΚΕΝΟ v2', 'χωρίς τα παλιά σχέδια, η πρόταση δεν φαίνεται στη νέα σελίδα:\n      ' + g));
+  const seen = [];
+  d.acts.forEach((a, i) => {
+    if (!(a.q || '').trim() || a.q.length > 40) E('acts[' + i + ']', 'η ερώτηση του δρόμου θέλει 1–40 χαρακτήρες');
+    (a.st || []).forEach(n => seen.push(n));
+  });
+  const nums = d.stations.map(s => s.n);
+  if (seen.join() !== nums.join()) E('acts', 'ο δρόμος πρέπει να περνάει από ΟΛΕΣ τις στάσεις με τη σειρά (' + seen.join(',') + ')');
+  if (d.acts.length < 2 || d.acts.length > 4) E('acts', 'ο δρόμος θέλει 2–4 ενότητες');
+  d.stations.forEach(st => {
+    const w = 'στάση ' + st.n, f = st.fig;
+    if (st.bridge && st.bridge.length > 90) E(w, 'η γέφυρα είναι μία σύντομη γραμμή (≤90)');
+    (st.sl || []).forEach((t, i) => { if (!t.f || !t.t) E(w + '.sl' + i, 'θέλει f (ψευδής) και t (σωστή)');
+      if (t.tf && !(d.check.tf || []).some(x => x.id === t.tf && x.ok === false)) E(w + '.sl' + i, 'το tf «' + t.tf + '» δεν είναι ψευδές Σ/Λ του Ελέγχου'); });
+    if (!f) return;
+    if (f.type !== 'none' && (f.why || '').length < 30) E(w, 'σχέδιο χωρίς why: πες σε μία πρόταση τι βλέπει που δεν βλέπει στο κείμενο');
+    if (f.type === 'scene') {
+      const ids = new Set((st.prose || []).map((_, i) => 'p' + (i + 1)).concat((st.points || []).map((_, i) => 'k' + (i + 1))));
+      (f.steps || []).forEach((p, i) => {
+        if (p.n !== i + 1) E(w, 'τα νούμερα της σκηνής πάνε 1, 2, 3… (βρήκα ' + p.n + ')');
+        if (!ids.has(p.at)) E(w, 'το νούμερο ' + p.n + ' δείχνει σε παράγραφο που δεν υπάρχει: ' + p.at);
+      });
+    }
+  });
 }
 
 module.exports = { REPO, load, readSource, fixSource, sentences, resolve, validate, items, plain, norm, bare, words, dgTypes };

@@ -708,6 +708,7 @@ colour rule: **accent only when something is due**, faint otherwise.
   - `arxaia-aristotelis-periodoi.html` — Αριστοτέλης «Ο Αριστοτέλης στη Μακεδονία» · `tools/eisagogi/arxaia/aristotelis-b.json` · κλειδί `eisarx-aristotelis-b-v1`
   - `arxaia-aristotelis.html` — Αριστοτέλης «Ο Αριστοτέλης στην Ακαδημία του Πλάτωνα» · `tools/eisagogi/arxaia/aristotelis-a.json` · κλειδί `eisarx-aristotelis-a-v1`
   - `arxaia-politeia-eisagogi.html` — Πολιτεία «Οι τρεις τάξεις» · `tools/eisagogi/arxaia/politeia-a.json` · κλειδί `eisarx-politeia-a-v1`
+  - `arxaia-politeia-eisagogi-v2.html` — η ΝΕΑ μορφή (μπλε του Β, μία συνεχής σελίδα, σκηνή/όροφοι/σκαλιά/ροή/σύγκριση, Σχεδιάγραμμα, Έλεγχος + Αντιστοίχιση) · `build.js politeia-a --v2` από `page2.tpl` · ίδιο json · κλειδιά `eisarx-politeia-a-v1` (Έλεγχος, κοινό με την παλιά) + `-v2` (Αντιστοίχιση) · test `tests/arxaia-eisagogi-v2.test.js` · ⏳ ο σύνδεσμος στο arxaia.html ΔΕΝ άλλαξε
   - `arxaia-politeia-dikaiosyni.html` — Πολιτεία «Η δικαιοσύνη» · `tools/eisagogi/arxaia/politeia-b.json` · κλειδί `eisarx-politeia-b-v1`
   - `arxaia-ithika-eisagogi.html` — Ηθικά Νικομάχεια «Ηθικά Νικομάχεια» · `tools/eisagogi/arxaia/ithika.json` · κλειδί `eisarx-ithika-v1`
   - `arxaia-politika-eisagogi.html` — Πολιτικά «Πολιτικά» · `tools/eisagogi/arxaia/politika.json` · κλειδί `eisarx-politika-v1`
