@@ -19,7 +19,7 @@ var paraOf = L.paraOf;
 
 /* Ποιες ενότητες φοράνε τη στρώση «Γραφίτης» (tools/gnosto/skin-graf.html).
    ⭐ Εγκρίθηκε στην ενότητα 8 (14/11/26)· «για όλα» = μία γραμμή εδώ. */
-var SKIN = { gk4: true, gk8: true, gk9: true, gk10: true, gk11: true, gk12: true };
+var SKIN = { gk4: true, gk5: true, gk8: true, gk9: true, gk10: true, gk11: true, gk12: true };
 function parts(){
   var src = fs.readFileSync(path.join(__dirname, 'skin-graf.html'), 'utf8'), out = {};
   src.split(/<!--@([A-Z]+)-->/).forEach(function(chunk, i, arr){ if (i % 2) out[chunk] = arr[i + 1].replace(/^\n+|\s+$/g, ''); });
