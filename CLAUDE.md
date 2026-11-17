@@ -348,7 +348,7 @@ Each one was paid for once already. **When you add one, update
 count is a brief someone reads as complete.
 
 1. **≤12 routed `api/*.js`.** All 12 slots are full.
-2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v765`. Never
+2. **Bump `CACHE` in `sw.js:15` on every deploy.** Currently `als-v766`. Never
    move it backwards.
 3. **`on_conflict=user_id,key`.** Never `key` alone.
 4. **Modals:** native `<dialog>` + `showModal()`, or the `als-dialog.js` helpers
@@ -1897,6 +1897,8 @@ which shoe it is drawing (§5).
 ---
 
 ## 5 · Open
+
+**2026-11-17 — `als-v766` — Ο ΠΡΩΤΑΓΟΡΑΣ ΣΤΗ ΜΟΡΦΗ v2, ΣΤΗ ΘΕΣΗ ΤΗΣ ΠΑΛΙΑΣ (δικό του «ναι» στη Φάση 1).** `"tpl": 2` στο `protagoras.json` → `arxaia-protagoras-eisagogi.html` στο ΙΔΙΟ URL (η κάρτα του Γνωστού ανέγγιχτη). 8 στάσεις σε 2 σειρές του δρόμου (Β 1–6 · Γ 7–8). Σχέδια: compare (1, 2, 6) · flow (4: «κακή μνήμη» → δεν προλαβαίνει → πειθώ) · σκηνή (7: Ησίοδος — Προμηθέας/φωτιά, Δίας, Πανδώρα, νούμερα 1→k3, 2·3·4→k4) · stairs (8) · `none` με `why` (3, 5). ⚠️ Η εισαγωγή ΔΕΝ διηγείται τον μύθο (Επιμηθέας/αιδώς/δίκη) → καμία σκηνή του μύθου. 12 παγίδες `sl` (όλες οι ψευδείς του Σ/Λ) · 3 `match` (τρόπος→κρίση, κείμενο→ποιητής, Ησίοδος/Αισχύλος/Πρωταγόρας) · `outline` Α/Β. Δύο προτάσεις του Ησιόδου ζούσαν μόνο στο παλιό `diagram` → στο σχεδιάγραμμα. ⭐ **ARCHIVE ΜΕ ΗΜΕΡΟΜΗΝΙΑ:** το `archive/arxaia-protagoras-eisagogi.html` υπήρχε ήδη (πριν την als-v680) και διαφέρει → η σημερινή πήγε στο `archive/arxaia-protagoras-eisagogi.2026-11-17.html` μέσω νέου προαιρετικού πεδίου `archived` στο json, που το διαβάζουν `wire.archive()` (αρχειοθετεί και σελίδα του παλιού καλουπιού, μία φορά), `build.js` (το αφαιρεί από τα δεδομένα) και `tests/arxaia-eisagogi-v2.test.js`. `page2.tpl`: μία γραμμή, `.stp.top{padding-right:44px}` κάτω από τα 640px — ο κίτρινος κύκλος της κορυφής των σκαλιών πατούσε πάνω στο κείμενο (και στην Πολιτεία, ξαναχτίστηκε, διαφέρει μόνο σε αυτή τη γραμμή). Το test v2 είχε καρφωμένο `m6|Κέφαλος` της Πολιτείας → τώρα από τον πρώτο `match` κάθε κεφαλαίου. Κλειδί `eisarx-protagoras-v1` (+ `mt`) ανέγγιχτο. Tests: v2 161/0 · eisagogi 1143/0 · Γνωστό 2997/0 · page-transition 152/0 · smoke OK · check.mjs overflow 0/0/0 · `page.tpl` ούτε byte.
 
 **2026-11-16 — `als-v761` — Η ΝΕΑ ΠΟΛΙΤΕΙΑ 1/2 ΠΗΡΕ ΤΗ ΘΕΣΗ ΤΗΣ ΠΑΛΙΑΣ (δικό του «push στη θέση της»).** `"tpl": 2` στο `politeia-a.json` → το `build.js` χτίζει με `page2.tpl` στο ΙΔΙΟ URL `arxaia-politeia-eisagogi.html` (άρα και ο σύνδεσμος του Γνωστού). Η παλιά μορφή: `archive/arxaia-politeia-eisagogi.html`· το `-v2.html` σβήστηκε (SW/NO_VT/MAP καθαρά). ⭐ Δική του εντολή: ό,τι αντικαθίσταται πάει ΠΑΝΤΑ στο `archive/`. Μία αποθήκη πλέον: `eisarx-politeia-a-v1` (+ `mt`· το `-v2` της προεπισκόπησης διαβάζεται μία φορά, δεν γράφεται). Το `arxaia-eisagogi.test.js` παραλείπει όσα έχουν `tpl:2`· τα φυλάει το `arxaia-eisagogi-v2.test.js` (86/0, μαζί SW/NO_VT/κάρτα/archive). Γνωστό 2976/0 · page-transition 148/0 · smoke OK.
 

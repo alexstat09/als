@@ -175,10 +175,13 @@ function wireMap(d, id) {
 
 /* ── το παλιό πακέτο στο archive/, ΠΡΙΝ το build ── */
 function archive(d) {
-  if (!fs.existsSync(R(d.file)) || isTpl(d.file)) return [];
+  /* `archived` (προαιρετικό): άλλο όνομα στο archive/, όταν το archive/<ίδιο όνομα> υπάρχει ήδη από παλιότερη εκδοχή
+     (Πρωταγόρας 17/11). Με αυτό αρχειοθετείται ΚΑΙ σελίδα του παλιού καλουπιού που περνάει στο page2.tpl· μία φορά. */
+  if (d.archived && fs.existsSync(R(d.archived))) return [];
+  if (!fs.existsSync(R(d.file)) || (isTpl(d.file) && !d.archived)) return [];
   const moved = [];
   const keep = (rel) => {
-    const to = path.join('archive', path.basename(rel));
+    const to = rel === d.file && d.archived ? d.archived : path.join('archive', path.basename(rel));
     if (fs.existsSync(R(to))) {
       if (fs.readFileSync(R(to), 'utf8') !== read(rel)) throw new Error('archive/' + path.basename(rel) + ' υπάρχει ήδη και ΔΙΑΦΕΡΕΙ — δεν γράφω από πάνω (δες το με το μάτι)');
     } else fs.copyFileSync(R(rel), R(to));

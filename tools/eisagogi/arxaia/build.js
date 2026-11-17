@@ -20,7 +20,7 @@ function build(name, opt) {
   if (errs.length) throw new Error('ο validator αρνείται (' + errs.length + '):\n  ' + errs.join('\n  '));
   const tpl = fs.readFileSync(path.join(__dirname, opt.v2 ? 'page2.tpl' : 'page.tpl'), 'utf8');
   const payload = Object.assign({}, d);
-  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate', 'fixes', 'tpl'].forEach(k => delete payload[k]);
+  ['_', 'source', 'traps', 'counted', 'names', 'file', 'key', 'back', 'plate', 'fixes', 'tpl', 'archived'].forEach(k => delete payload[k]);
   if (!opt.v2) {
     V2_TOP.forEach(k => delete payload[k]);
     payload.stations = d.stations.map(st => { const c = Object.assign({}, st); V2_ST.forEach(k => delete c[k]); return c; });

@@ -297,6 +297,7 @@ mark{color:var(--ink);background:linear-gradient(180deg,transparent 54%,var(--hl
   .stairs{display:flex;flex-direction:column-reverse;height:auto}
   .stp{height:auto;padding:10px 12px;margin-left:calc(var(--i)*12px);border-left:2px solid var(--ink)!important}
   .stp.top::before{left:auto;right:10px;top:10px;width:22px;height:22px;margin:0}
+  .stp.top{padding-right:44px}
   .flow{flex-direction:column}.flow .ar{width:auto;padding:4px 0}.flow .ar::before{content:"↓"}.flow .ar span{display:none}
   .cmp{grid-template-columns:minmax(0,1fr);gap:18px}
   .sym div{grid-template-columns:minmax(0,1fr)}.sym div i{display:none}

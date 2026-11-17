@@ -46,7 +46,7 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
     ok('κανένα εξωτερικό script, κανένα sync (σταθ. 8)', !/<script[^>]+src=/i.test(disk));
     /* κάθε ερώτηση του σημερινού Ελέγχου υπάρχει και στον νέο — από τα δεδομένα των ΔΥΟ σελίδων */
     /* η παλιά μορφή: ζωντανή δίπλα (προεπισκόπηση -v2) ή στο archive/ όταν η νέα πήρε τη θέση της (tpl:2) */
-    const oldF = d.tpl === 2 ? path.join(REPO, 'archive', path.basename(d.file)) : path.join(REPO, d.file);
+    const oldF = d.tpl === 2 ? path.join(REPO, d.archived || path.join('archive', path.basename(d.file))) : path.join(REPO, d.file);
     ok('η παλιά μορφή σώζεται (' + path.relative(REPO, oldF) + ')', fs.existsSync(oldF));
     if (d.tpl === 2) {
       ok('η νέα μορφή κάθεται στο ΙΔΙΟ URL', r.file === d.file);
@@ -169,12 +169,14 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
         /* η προεπισκόπηση της 16/11 έγραφε την Αντιστοίχιση στο K2: διαβάζεται, δεν χάνεται, δεν γράφεται ποτέ */
         const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
         const p3 = await c3.newPage();
-        const seedK2 = JSON.stringify({ v: 1, mt: { 'm6|Κέφαλος': 0 } });
+        /* το κλειδί βγαίνει από το ίδιο το κεφάλαιο (ο πρώτος πίνακας αντιστοίχισης), όχι καρφωμένο της Πολιτείας */
+        const mSt = d.stations.find(s => s.match), mK = plain(mSt.match.rows[0].k);
+        const seedK2 = JSON.stringify({ v: 1, mt: { ['m' + mSt.n + '|' + mK]: 0 } });
         await p3.addInitScript(([k, v]) => localStorage.setItem(k, v), [K2, seedK2]);
         await p3.goto(url + '#elegxos'); await p3.waitForTimeout(300); await p3.click('[data-mode="gaps"]');
-        ok('οι απαντήσεις του K2 φαίνονται στα «κενά μου»', /Κέφαλος/.test(await p3.$eval('#pane', e => e.innerText)));
+        ok('οι απαντήσεις του K2 φαίνονται στα «κενά μου»', (await p3.$eval('#pane', e => e.innerText)).indexOf(mK) >= 0);
         await p3.click('[data-mode="tf"]'); await p3.click('[data-tf="' + falseTf.id + '"][data-v="false"]');
-        ok('…περνάνε στο K1 με την πρώτη εγγραφή', await p3.evaluate(k => JSON.parse(localStorage.getItem(k)).mt['m6|Κέφαλος'] === 0, K1));
+        ok('…περνάνε στο K1 με την πρώτη εγγραφή', await p3.evaluate(([k, mk]) => JSON.parse(localStorage.getItem(k)).mt[mk] === 0, [K1, 'm' + mSt.n + '|' + mK]));
         ok('…και το K2 δεν αγγίζεται', await p3.evaluate(k => localStorage.getItem(k), K2) === seedK2);
         await c3.close();
         continue;
