@@ -208,6 +208,41 @@ mark{color:var(--ink);background:linear-gradient(180deg,transparent 54%,var(--hl
 .ol .l3 li{display:flex;gap:10px;font-size:16px;line-height:1.5;color:var(--dim);padding:3px 0}
 .ol .l3 li i{font-style:normal;color:var(--faint);min-width:20px}
 .ol.bare .l3{display:none}
+/* σχεδιάγραμμα-χάρτης (17/11): ενότητα = γράμμα + κομμάτια· κάθε κομμάτι στο σχήμα του νοήματος (vs · row · chain) + «Άρα».
+   Χρώμα = πρόσωπο (outlineKey), ίδιο σε όλο τον χάρτη. Κεφάλαιο χωρίς `blocks` → η λίστα από πάνω, ανέγγιχτη. */
+.ol.map{max-width:none}
+.okey{display:flex;flex-wrap:wrap;gap:8px 18px;margin:-6px 0 30px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.okey span{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--dim)}
+.okey span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.c1,.oc.c1{--c:#7FC8F8} .c2,.oc.c2{--c:#B9A7F5} .c3,.oc.c3{--c:#6FD1AE} .c4,.oc.c4{--c:#E7A8C4}
+.osec{padding:6px 0 4px}
+.osec-h{display:flex;align-items:baseline;gap:16px;margin-bottom:22px}
+.osec-h b{font-family:var(--title);font-weight:700;font-size:44px;line-height:1;color:var(--acc);min-width:34px}
+.osec-h a{text-decoration:none;font-family:var(--title);font-weight:600;font-size:25px;line-height:1.25;color:var(--ink)}
+.osec-h small{display:block;margin-top:6px;font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--faint)}
+.ob{margin:0 0 30px 50px}
+.ob-h{margin-bottom:12px}
+.ob-h a{display:inline-flex;align-items:center;gap:10px;min-height:44px;text-decoration:none;font-size:18px;font-weight:600;color:var(--ink)}
+.ob-h a i{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--faint);border:1px solid var(--line2);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.ob-h a:hover i{color:var(--acc);border-color:var(--acc)}
+.og{display:grid;gap:12px;grid-template-columns:repeat(var(--n,2),minmax(0,1fr))}
+.og.chain{display:flex;align-items:stretch;gap:0}
+.og.chain .oc{flex:1 1 0;min-width:0}
+.og.chain .oa{flex:none;width:36px;display:grid;place-items:center;color:var(--faint);font-size:20px}
+.oc{--c:var(--line2);display:flex;flex-direction:column;gap:6px;padding:14px 16px 15px;border-radius:14px;border:1px solid color-mix(in srgb,var(--c) 34%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);text-decoration:none;color:var(--ink)}
+a.oc:hover{border-color:var(--c)}
+.oc small{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--c)}
+.oc:not([class*=" c"]) small{color:var(--faint)}
+.oc b{font-size:17px;font-weight:600;line-height:1.35}
+.oc ul{list-style:none;display:grid;gap:5px;margin-top:2px}
+.oc li{position:relative;padding-left:15px;font-size:15.5px;line-height:1.45;color:var(--dim)}
+.oc li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--c)}
+.ores{display:flex;gap:14px;align-items:baseline;margin-top:12px;padding:13px 16px;border-radius:14px;border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);background:color-mix(in srgb,var(--acc) 7%,transparent);font-size:16.5px;line-height:1.5;color:var(--ink)}
+.ores i{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--acc);white-space:nowrap}
+.onext{display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 26px;color:var(--line2)}
+.onext::before,.onext::after{content:"";width:2px;height:20px;background:currentColor}
+.onext span{font-size:14px;font-weight:600;color:var(--dim);border:1px solid var(--line2);border-radius:999px;padding:5px 14px;background:var(--surf)}
+.ol.bare .oc ul{display:none}
 
 /* ── ο έλεγχος ── */
 .ck{padding-top:44px}
@@ -304,6 +339,10 @@ mark{color:var(--ink);background:linear-gradient(180deg,transparent 54%,var(--hl
   .mt{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
   .mt button,.mt .pr{font-size:14.5px;padding:9px 10px}
   .ol .l2{margin-left:14px}.ol .l3{margin-left:16px}
+  .ob{margin-left:0}.osec-h{gap:12px}.osec-h b{font-size:34px;min-width:26px}.osec-h a{font-size:21px}
+  .og{grid-template-columns:minmax(0,1fr)}
+  .og.chain{flex-direction:column}.og.chain .oa{width:auto;height:30px}.og.chain .oa span{transform:rotate(90deg)}
+  .ores{flex-direction:column;gap:4px}
   .gp li{flex-direction:column;align-items:flex-start}
 }
 @media (max-width:400px){.back span{display:none}}
@@ -623,8 +662,37 @@ function reviewHTML() {
 /* ── σχεδιάγραμμα όλης της εισαγωγής ── */
 var GL = ['α', 'β', 'γ', 'δ', 'ε', 'στ', 'ζ', 'η'];
 var olBare = false;
+/* χάρτης: ενότητα (γράμμα) → κομμάτια (ob) → κάρτες (oc, χρώμα = πρόσωπο του outlineKey) → «Άρα» (ores) → βέλος προς την επόμενη */
+var OKEY = {}; (D.outlineKey || []).forEach(function (x, i) { OKEY[x.id] = { n: i + 1, t: x.t }; });
+function stRange(sec) {
+  var ns = []; (sec.blocks || []).forEach(function (b) { ns.push(b.s); (b.cards || []).forEach(function (c) { if (c.s) ns.push(c.s); }); });
+  var lo = Math.min.apply(null, ns), hi = Math.max.apply(null, ns);
+  return lo === hi ? 'ΣΤΑΣΗ ' + lo : 'ΣΤΑΣΕΙΣ ' + lo + '–' + hi;
+}
+function cardHTML(c) {
+  var k = c.c && OKEY[c.c], tag = c.tag ? c.tag.t : (k ? k.t : '');
+  var inner = (tag ? '<small>' + esc(plain(tag)) + '</small>' : '') + '<b>' + md(c.t) + '</b>' +
+    (c.d && c.d.length ? '<ul>' + c.d.map(function (x) { return '<li>' + md(x.t) + '</li>'; }).join('') + '</ul>' : '');
+  var cls = 'oc' + (k ? ' c' + k.n : '');
+  return c.s ? '<a class="' + cls + '" href="#s' + c.s + '">' + inner + '</a>' : '<div class="' + cls + '">' + inner + '</div>';
+}
+function mapHTML(O) {
+  return (D.outlineKey ? '<div class="okey" aria-label="Τα χρώματα">' + D.outlineKey.map(function (x, i) { return '<span class="c' + (i + 1) + '">' + md(x.t) + '</span>'; }).join('') + '</div>' : '') +
+    O.map(function (a, i) {
+      return '<section class="osec"><div class="osec-h"><b>' + esc(a.k) + '</b><div><a href="#s' + a.s + '">' + md(a.t) + '</a><small>' + stRange(a) + '</small></div></div>' +
+        a.blocks.map(function (b) {
+          var cards = b.cards || [], g;
+          if (b.shape === 'chain') g = '<div class="og chain">' + cards.map(function (c, j) { return (j ? '<div class="oa" aria-hidden="true"><span>→</span></div>' : '') + cardHTML(c); }).join('') + '</div>';
+          else g = '<div class="og" style="--n:' + cards.length + '">' + cards.map(cardHTML).join('') + '</div>';
+          return '<div class="ob"><div class="ob-h"><a href="#s' + b.s + '"><span>' + md(b.h.t) + '</span><i>Στάση ' + b.s + ' →</i></a></div>' + g +
+            (b.res ? '<p class="ores"><i>ΑΡΑ</i><span>' + md(b.res.t) + '</span></p>' : '') + '</div>';
+        }).join('') + '</section>' + (a.next && i < O.length - 1 ? '<div class="onext"><span>' + md(a.next) + '</span></div>' : '');
+    }).join('');
+}
 function outlineHTML() {
-  var O = D.outline || [];
+  var O = D.outline || [], MAP = O.length && O.every(function (a) { return a.blocks; });
+  if (MAP) return '<div class="hd"><div><p class="lbl">Όλη η εισαγωγή σε μία οθόνη</p><h2>Σχεδιάγραμμα</h2><p>Κρύψε τα υποσημεία, πες τα μόνος σου από τους τίτλους, και ξάνοιξέ τα για να δεις τι ξέχασες.</p></div>' +
+    '<button type="button" class="tg" data-bare aria-pressed="' + olBare + '">' + (olBare ? 'Δείξε τα υποσημεία' : 'Κρύψε τα υποσημεία') + '</button></div>' + mapHTML(O);
   return '<div class="hd"><div><p class="lbl">Όλη η εισαγωγή σε μία οθόνη</p><h2>Σχεδιάγραμμα</h2><p>Κρύψε τα υποσημεία, πες τα μόνος σου από τους τίτλους, και ξάνοιξέ τα για να δεις τι ξέχασες.</p></div>' +
     '<button type="button" class="tg" data-bare aria-pressed="' + olBare + '">' + (olBare ? 'Δείξε τα υποσημεία' : 'Κρύψε τα υποσημεία') + '</button></div>' +
     '<ol class="l1">' + O.map(function (a) {
@@ -634,7 +702,7 @@ function outlineHTML() {
       }).join('') + '</ol></li>';
     }).join('') + '</ol>';
 }
-function paintOutline() { var o = $('ol'); o.innerHTML = outlineHTML(); o.classList.toggle('bare', olBare); }
+function paintOutline() { var o = $('ol'); o.innerHTML = outlineHTML(); o.classList.toggle('bare', olBare); o.classList.toggle('map', !!(D.outline && D.outline.length && D.outline.every(function (a) { return a.blocks; }))); }
 
 /* ── ο έλεγχος ──────────────────────────────────────────────────────── */
 var mode = 'rc', rcOrder = C.recall.map(function (_, i) { return i; }), rcAt = 0, rcShown = false;

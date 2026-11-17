@@ -141,6 +141,7 @@ function items(d) {
   });
   (d.acts || []).forEach((a, i) => { if (a.head) add('ενότητα ' + (i + 1), a.head.t, a.head.a, { reading: true, short: true }); });
   if (d.outline) diagramTexts(d.outline).forEach((x, i) => add('σχεδιάγραμμα ' + (i + 1), x.t, x.a, { reading: true, short: true }));
+  (d.outlineKey || []).forEach((x, i) => add('σχεδιάγραμμα.χρώμα ' + (i + 1), x.t, x.a, { reading: true, short: true }));
   /* Η ΕΡΩΤΗΣΗ μπορεί νόμιμα να γράφει την παγίδα («Ήταν ο πρώτος…;») — ο
      φρουρός των παγίδων κοιτάει την ΑΠΑΝΤΗΣΗ. Το «λέει την άγκυρά του»
      μετράει ερώτηση + απάντηση μαζί, γιατί μαζί διαβάζονται. */
@@ -373,6 +374,23 @@ function validateV2(d, E, all, src) {
   const nums = d.stations.map(s => s.n);
   if (seen.join() !== nums.join()) E('acts', 'ο δρόμος πρέπει να περνάει από ΟΛΕΣ τις στάσεις με τη σειρά (' + seen.join(',') + ')');
   if (d.acts.length < 2 || d.acts.length > 4) E('acts', 'ο δρόμος θέλει 2–4 ενότητες');
+  /* σχεδιάγραμμα-χάρτης: ή ΟΛΕΣ οι ενότητες με blocks ή καμία· κάθε κομμάτι/κάρτα δείχνει σε στάση που υπάρχει */
+  const OL = d.outline || [], key = new Set((d.outlineKey || []).map(x => x.id));
+  if (OL.some(a => a.blocks) && !OL.every(a => a.blocks)) E('outline', 'ή όλες οι ενότητες με blocks ή καμία');
+  OL.forEach((a, i) => {
+    if (a.next && a.next.length > 40) E('outline[' + i + ']', 'το βέλος προς την επόμενη ενότητα θέλει ≤40 χαρακτήρες');
+    (a.blocks || []).forEach((b, j) => {
+      const w = 'outline[' + i + '].blocks[' + j + ']';
+      if (nums.indexOf(b.s) < 0) E(w, 'δείχνει σε στάση που δεν υπάρχει: ' + b.s);
+      if (!b.h || !b.h.t) E(w, 'θέλει επικεφαλίδα h');
+      if (['vs', 'row', 'chain'].indexOf(b.shape) < 0) E(w, 'σχήμα vs / row / chain');
+      if (!(b.cards || []).length) E(w, 'κομμάτι χωρίς κάρτες');
+      (b.cards || []).forEach((c, k) => {
+        if (c.s != null && nums.indexOf(c.s) < 0) E(w + '.cards[' + k + ']', 'δείχνει σε στάση που δεν υπάρχει: ' + c.s);
+        if (c.c && !key.has(c.c)) E(w + '.cards[' + k + ']', 'χρώμα «' + c.c + '» που δεν είναι στο outlineKey');
+      });
+    });
+  });
   d.stations.forEach(st => {
     const w = 'στάση ' + st.n, f = st.fig;
     if (st.bridge && st.bridge.length > 90) E(w, 'η γέφυρα είναι μία σύντομη γραμμή (≤90)');

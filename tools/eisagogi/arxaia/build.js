@@ -9,7 +9,7 @@ const L = require('./lib');
 
 /* ⭐ v2 (16/11/26): τα νέα πεδία ζουν ΜΟΝΟ στη σελίδα -v2. Η παλιά σελίδα δεν τα βλέπει,
    ώστε να βγαίνει byte-ίδια από το ίδιο json (και ο Δ2, που δεν τα έχει, πάντα). */
-const V2_TOP = ['acts', 'eye', 'outline'], V2_ST = ['fig', 'sl', 'match', 'bridge'];
+const V2_TOP = ['acts', 'eye', 'outline', 'outlineKey'], V2_ST = ['fig', 'sl', 'match', 'bridge'];
 function build(name, opt) {
   opt = Object.assign({}, opt || {});
   const d = L.load(name), src = L.readSource(d.source.file);

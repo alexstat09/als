@@ -150,10 +150,21 @@ const NAMES = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).map(f => f.sl
         ok('ο σύνδεσμος γυρίζει στο Διάβασμα', await p.$eval('#v-read', e => !e.hidden));
         /* σχεδιάγραμμα */
         await p.click('#t-sx'); await p.waitForTimeout(150);
-        const nl2 = (d.outline || []).reduce((a, x) => a + (x.items || []).length, 0);
-        ok('Σχεδιάγραμμα: ' + nl2 + ' σημεία δεύτερου επιπέδου, όλα σύνδεσμοι', await p.$$eval('#ol .l2 > li > a[href^="#s"]', e => e.length) === nl2);
-        await p.click('[data-bare]');
-        ok('«Κρύψε τα υποσημεία» κρύβει το τρίτο επίπεδο', await p.$$eval('#ol .l3', e => e.every(x => getComputedStyle(x).display === 'none')));
+        if ((d.outline || []).every(x => x.blocks)) {
+          /* χάρτης: κάθε κομμάτι έχει σύνδεσμο στη στάση του, κάθε κάρτα που ζωγραφίζεται, και το «Κρύψε» κρύβει ΜΟΝΟ τα υποσημεία */
+          const nb = d.outline.reduce((a, x) => a + x.blocks.length, 0), nc = d.outline.reduce((a, x) => a + x.blocks.reduce((b, y) => b + y.cards.length, 0), 0);
+          ok('Σχεδιάγραμμα (χάρτης): ' + nb + ' κομμάτια, όλα σύνδεσμοι σε στάση', await p.$$eval('#ol .ob-h a[href^="#s"]', e => e.length) === nb);
+          ok('…' + nc + ' κάρτες ζωγραφισμένες', await p.$$eval('#ol .oc', e => e.length) === nc);
+          ok('…κάθε κάρτα με πρόσωπο παίρνει το χρώμα του (όχι το γκρι της κάρτας)', await p.$$eval('#ol .oc[class*=" c"]', e => e.length > 0 && e.every(x => getComputedStyle(x).getPropertyValue('--c').trim() !== getComputedStyle(document.documentElement).getPropertyValue('--line2').trim())));
+          await p.click('[data-bare]');
+          ok('«Κρύψε τα υποσημεία» κρύβει τα υποσημεία των καρτών', await p.$$eval('#ol .oc ul', e => e.length > 0 && e.every(x => getComputedStyle(x).display === 'none')));
+          ok('…και αφήνει τους τίτλους', await p.$$eval('#ol .oc b', e => e.length === e.filter(x => x.getClientRects().length).length && e.length > 0));
+        } else {
+          const nl2 = (d.outline || []).reduce((a, x) => a + (x.items || []).length, 0);
+          ok('Σχεδιάγραμμα: ' + nl2 + ' σημεία δεύτερου επιπέδου, όλα σύνδεσμοι', nl2 > 0 && await p.$$eval('#ol .l2 > li > a[href^="#s"]', e => e.length) === nl2);
+          await p.click('[data-bare]');
+          ok('«Κρύψε τα υποσημεία» κρύβει το τρίτο επίπεδο', await p.$$eval('#ol .l3', e => e.length > 0 && e.every(x => getComputedStyle(x).display === 'none')));
+        }
         ok(w + ': μηδέν σφάλματα JS' + (errs.length ? ' — ' + errs[0] : ''), errs.length === 0);
         await ctx.close();
         /* αποθήκη που δεν διαβάζεται: ΔΕΝ γράφεται από πάνω, και λέει άλλη πρόταση από το «τίποτα» */
