@@ -215,6 +215,7 @@ mark{color:var(--ink);background:linear-gradient(180deg,transparent 54%,var(--hl
 .okey span{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--dim)}
 .okey span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
 .c1,.oc.c1{--c:#7FC8F8} .c2,.oc.c2{--c:#B9A7F5} .c3,.oc.c3{--c:#6FD1AE} .c4,.oc.c4{--c:#E7A8C4}
+.ct1,.oc.ct1{--c:var(--t1)} .ct2,.oc.ct2{--c:var(--t2)} .ct3,.oc.ct3{--c:var(--t3)}
 .osec{padding:6px 0 4px}
 .osec-h{display:flex;align-items:baseline;gap:16px;margin-bottom:22px}
 .osec-h b{font-family:var(--title);font-weight:700;font-size:44px;line-height:1;color:var(--acc);min-width:34px}
@@ -663,7 +664,8 @@ function reviewHTML() {
 var GL = ['α', 'β', 'γ', 'δ', 'ε', 'στ', 'ζ', 'η'];
 var olBare = false;
 /* χάρτης: ενότητα (γράμμα) → κομμάτια (ob) → κάρτες (oc, χρώμα = πρόσωπο του outlineKey) → «Άρα» (ores) → βέλος προς την επόμενη */
-var OKEY = {}; (D.outlineKey || []).forEach(function (x, i) { OKEY[x.id] = { n: i + 1, t: x.t }; });
+/* `tint: 1|2|3` = το χρώμα της τάξης (ίδιο με τους ορόφους των σχεδίων) αντί για χρώμα προσώπου */
+var OKEY = {}; (D.outlineKey || []).forEach(function (x, i) { OKEY[x.id] = { cls: x.tint ? 'ct' + x.tint : 'c' + (i + 1), t: x.t }; });
 function stRange(sec) {
   var ns = []; (sec.blocks || []).forEach(function (b) { ns.push(b.s); (b.cards || []).forEach(function (c) { if (c.s) ns.push(c.s); }); });
   var lo = Math.min.apply(null, ns), hi = Math.max.apply(null, ns);
@@ -673,11 +675,11 @@ function cardHTML(c) {
   var k = c.c && OKEY[c.c], tag = c.tag ? c.tag.t : (k ? k.t : '');
   var inner = (tag ? '<small>' + esc(plain(tag)) + '</small>' : '') + '<b>' + md(c.t) + '</b>' +
     (c.d && c.d.length ? '<ul>' + c.d.map(function (x) { return '<li>' + md(x.t) + '</li>'; }).join('') + '</ul>' : '');
-  var cls = 'oc' + (k ? ' c' + k.n : '');
+  var cls = 'oc' + (k ? ' ' + k.cls : '');
   return c.s ? '<a class="' + cls + '" href="#s' + c.s + '">' + inner + '</a>' : '<div class="' + cls + '">' + inner + '</div>';
 }
 function mapHTML(O) {
-  return (D.outlineKey ? '<div class="okey" aria-label="Τα χρώματα">' + D.outlineKey.map(function (x, i) { return '<span class="c' + (i + 1) + '">' + md(x.t) + '</span>'; }).join('') + '</div>' : '') +
+  return (D.outlineKey ? '<div class="okey" aria-label="Τα χρώματα">' + D.outlineKey.map(function (x) { return '<span class="' + OKEY[x.id].cls + '">' + md(x.t) + '</span>'; }).join('') + '</div>' : '') +
     O.map(function (a, i) {
       return '<section class="osec"><div class="osec-h"><b>' + esc(a.k) + '</b><div><a href="#s' + a.s + '">' + md(a.t) + '</a><small>' + stRange(a) + '</small></div></div>' +
         a.blocks.map(function (b) {
@@ -685,7 +687,7 @@ function mapHTML(O) {
           if (b.shape === 'chain') g = '<div class="og chain">' + cards.map(function (c, j) { return (j ? '<div class="oa" aria-hidden="true"><span>→</span></div>' : '') + cardHTML(c); }).join('') + '</div>';
           else g = '<div class="og" style="--n:' + cards.length + '">' + cards.map(cardHTML).join('') + '</div>';
           return '<div class="ob"><div class="ob-h"><a href="#s' + b.s + '"><span>' + md(b.h.t) + '</span><i>Στάση ' + b.s + ' →</i></a></div>' + g +
-            (b.res ? '<p class="ores"><i>ΑΡΑ</i><span>' + md(b.res.t) + '</span></p>' : '') + '</div>';
+            (b.res ? '<p class="ores"><i>' + esc(b.res.lbl || 'ΑΡΑ') + '</i><span>' + md(b.res.t) + '</span></p>' : '') + '</div>';
         }).join('') + '</section>' + (a.next && i < O.length - 1 ? '<div class="onext"><span>' + md(a.next) + '</span></div>' : '');
     }).join('');
 }
