@@ -123,7 +123,10 @@ const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt',
                      — οι δύο υπότιτλοι α./β. ΕΞΩ· καμία υποσημείωση, 4 λεζάντες */
                   'k2-d4': 'istoria-voithima-k2d4.source.txt',
                   /* ίδιο αρχείο βιβλίου (index2_5), ίδιο sha· η τελευταία του */
-                  'k2-d5': 'istoria-voithima-k2d5.source.txt' };
+                  'k2-d5': 'istoria-voithima-k2d5.source.txt',
+                  /* ΝΕΟ αρχείο βιβλίου (index2_6), νέο sha· τρεις εξαγωγείς 10/10 —
+                     η υποσημ. 23 σε box_cyan_full ΕΞΩ, το «Γι' αυτούς…» χωρίζεται από το <li> */
+                  'k2-e1': 'istoria-voithima-k2e1.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
@@ -4207,6 +4210,58 @@ if (K2D5) {
   is('⛔ Κεφ.2 Δ.5 · κανένας όρος Α1 γραμμένος από μένα', (K2D5.terms || []).length, 0);
 }
 
+/* ══ Κεφ.2 · Ε.1 «Οι συνέπειες της Μικρασιατικής καταστροφής» ══════════
+   Η ΠΡΩΤΗ του τμήματος Ε, ΝΕΟ αρχείο βιβλίου (index2_6). Δέκα κομμάτια σελίδας,
+   οκτώ παράγραφοι του έντυπου. ⛔ ΔΥΟ τυπογραφικά που βρέθηκαν ΜΟΝΟ με το PDF:
+   «του πολιτικού η οποία» (λείπει «συστήματος,») · «έλεγχο τους».
+   Πηγές = οι ΤΡΕΙΣ υποσημ. δίπλα της (23 · 24 · 25). */
+[['explain',   'panel-explain',  'Το τέλος της Μεγάλης Ιδέας και οι πρόσφυγες'],
+ ['diagram',   'panel-diagram',  'Στρατός, κόμματα, κοινωνία με μια ματιά'],
+ ['timeline',  'panel-timeline', 'Ο διχασμός: οι ρίζες της κρίσης'],
+ ['glossary',  'ggrid',          'Υπερκομματικός φορέας εξουσίας'],
+ ['facts',     'panel-facts',    'Γιατί λέγεται «δίκη των Έξι»'],
+ ['text',      'rtext',          'Το τηλεγράφημα του Βενιζέλου'],
+ ['sources',   'panel-sources',  'εθνικής σκοπιμότητας']].forEach(([id, key, mark]) => {
+  const r = boot('#/k2-e1/' + id);
+  is('Κεφ.2 Ε.1 · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  …και ζωγραφίζει ΤΟ ΔΙΚΟ ΤΗΣ σημάδι: «' + mark + '»', (r.painted[key] || '').includes(mark));
+});
+const K2E1 = CHAPTERS.find(c => c.id === 'k2-e1');
+const K2E1D = boot('#/k2-e1/diagram').painted['panel-diagram'] || '';
+ok('⭐ Κεφ.2 Ε.1 · το σχεδιάγραμμα: Μεγάλη Ιδέα, κοινωνία, στρατός, κόμματα, αντιπαραβολή',
+   ['Το τέλος της Μεγάλης Ιδέας', 'Η κοινωνία κουράζεται', 'Κρίση νομιμότητας και ο στρατός',
+    'Κόμματα και «ομάδες» αξιωματικών', 'Στρατός, κόμματα, κοινωνία με μια ματιά'].every(x => K2E1D.includes(x)));
+ok('⭐⭐ Κεφ.2 Ε.1 · η αντιπαραβολή είναι ΤΕΛΕΥΤΑΙΑ', K2E1D.indexOf('Στρατός, κόμματα, κοινωνία με μια ματιά') > K2E1D.indexOf('Κόμματα και «ομάδες» αξιωματικών'));
+ok('  ⛔ …και ό,τι δεν λέει το βιβλίο ΔΗΛΩΝΕΤΑΙ', (K2E1D.match(/το βιβλίο δεν το λέει/g) || []).length >= 3);
+ok('⛔ Κεφ.2 Ε.1 · κριτήρια ≤25 χαρακτήρες', [...K2E1D.matchAll(/<tr><td>([^<]*)<\/td>/g)].every(m => m[1].length <= 25));
+ok('⭐ Κεφ.2 Ε.1 · η λέξη που λείπει από το ebook εξηγείται στο σχεδιάγραμμα', K2E1D.includes('του πολιτικού <b>συστήματος</b>, η οποία'));
+ok('⭐ Κεφ.2 Ε.1 · οι τέσσερις λόγοι αριθμημένοι στο σχεδιάγραμμα', ['1. Να', '2. ', '3. Πίστη', '4. '].every(x => K2E1D.includes(x)));
+const K2E1S = boot('#/k2-e1/sources').painted['panel-sources'] || '';
+ok('⭐⭐ Κεφ.2 Ε.1 · οι «Πηγές» είναι οι ΤΡΕΙΣ υποσημειώσεις δίπλα της, ονομαστικά',
+   ['υποσημείωση 23 του βιβλίου', 'υποσημείωση 24 του βιβλίου', 'υποσημείωση 25 του βιβλίου'].every(x => K2E1S.includes(x)));
+ok('  ⛔ …και λέει ρητά ότι πίνακας και ιστορικός που διαφωνεί ΔΕΝ υπάρχουν', K2E1S.includes('Πίνακας με νούμερα και ιστορικός που διαφωνεί ΔΕΝ υπάρχουν'));
+if (K2E1) {
+  const fE = K2E1.paragraphs.join('\n');
+  is('⭐ Κεφ.2 Ε.1 · ΔΕΚΑ κομμάτια σελίδας', K2E1.paragraphs.length, 10);
+  ok('  ⭐ ξεκινά «Με τη Μικρασιατική καταστροφή» και τελειώνει «κατά τις ανάγκες τους.»',
+     K2E1.paragraphs[0].indexOf('Με τη Μικρασιατική καταστροφή (1922)') === 0 && /κατά τις ανάγκες τους\.$/.test(K2E1.paragraphs[9]));
+  ok('  ⭐⭐ το «Γι’ αυτούς τους λόγους» είναι ΔΙΚΗ ΤΟΥ παράγραφος, όχι μέσα στη λίστα',
+     K2E1.paragraphs[9].indexOf("Γι' αυτούς τους λόγους") === 0 && !K2E1.paragraphs[8].includes('Γι\' αυτούς'));
+  ok('  ⛔ καμία υποσημείωση, λεζάντα ή αρχή της Ε.2 στην πρόζα',
+     !/Στρατιωτικά κινήματα|Γιαννουλόπουλος|Δημοκρατική Ένωσις|Σμύρνης|δίκη των Εξ|ΕΚΣΥΓΧΡΟΝΙΣΜΟΣ|Και κατά την περίοδο αυτή|_paq|matomo/i.test(fE));
+  ok('  ⛔ κανένα λατινικό γράμμα, κανένας αριθμός υποσημείωσης κολλημένος σε λέξη', !/[A-Za-z]/.test(fE) && !/[α-ω]2[345]\b/.test(fE));
+  is('⛔ Κεφ.2 Ε.1 · ΔΥΟ τυπογραφικά', K2E1.sic.map(x => x.m).join(','), 'του πολιτικού η οποία,έλεγχο τους');
+  ok('  …και μένουν ΟΠΩΣ τα τυπώνει το ebook', fE.includes('αποτελεσματικότητα του πολιτικού η οποία') && fE.includes('υπό τον έλεγχο τους'));
+  is('⛔⛔ Κεφ.2 Ε.1 · οι χρονολογίες βιβλίου είναι ΑΚΡΙΒΩΣ της πρόζας', K2E1.timeline.events.filter(e => e.book).map(e => e.label).join(','), '1910-20,1922,1936');
+  ok('  ⛔ καμία χρονολογία ΠΗΓΗΣ (τα κινήματα της υποσημ. 23) στο χρονολόγιο',
+     !K2E1.timeline.events.some(e => /1923|1925|1926|1933|1935|Πάγκαλ|Κονδύλη/.test(e.label + ' ' + e.title + ' ' + e.text)));
+  ok('  ⭐ ό,τι δεν χρονολογεί η πρόζα μπαίνει ΜΟΝΟ ως «Πλαίσιο»', K2E1.timeline.events.filter(e => !e.book).every(e => /δεν γράφεται στο βιβλίο/.test(e.note || '')));
+  ok('⭐⭐ Κεφ.2 Ε.1 · ο Μεταξάς ΧΩΡΙΣ βία — pitfall', K2E1.explain.pitfalls.some(p => /με τη βία/.test(p.no) && /δεν χρειάστηκε να ασκήσει βία/.test(p.ok)));
+  ok('⭐ Κεφ.2 Ε.1 · fun fact `big` χωρίς λέξη >11 χαρακτήρων', K2E1.facts.every(f => String(f.big).split(/\s+/).every(w => w.length <= 11)));
+  is('⛔ Κεφ.2 Ε.1 · κανένας όρος Α1 γραμμένος από μένα', (K2E1.terms || []).length, 0);
+  is('⭐ Κεφ.2 Ε.1 · οκτώ πλαγιότιτλοι = οκτώ παράγραφοι του έντυπου', K2E1.grammi.acts.length, 8);
+}
+
 /* ═══ «Κατάλαβέ το» γραμμή γραμμή (CH.grammi) ═══
    Το βιβλίο κόβεται από τα paragraphs με το `to`, άρα εδώ απαιτούμε: να μη μένει τίποτα ακάλυπτο,
    η γραμμή να εξηγεί χωρίς να φουσκώνει (ως 3× το βιβλίο ή +30 λέξεις: «μη φοβάσαι, απλά μην υπερβάλεις»),
@@ -4284,7 +4339,7 @@ GRC.forEach(C => {
 });
 function esc4test(s){ return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 const GRO = boot('#/k1-g4/explain').painted['panel-explain'] || '';
-/* als-v720: και οι 37 ενότητες έχουν γραμμές — το παλιό renderExplain μένει στον κώδικα για ενότητα χωρίς grammi, αλλά καμία δεν το φτάνει. */
+/* als-v720: και οι 37 (από την als-v774: 38) ενότητες έχουν γραμμές — το παλιό renderExplain μένει στον κώδικα για ενότητα χωρίς grammi, αλλά καμία δεν το φτάνει. */
 ok('⭐ ΚΑΘΕ ενότητα έχει γραμμές και πλαγιότιτλο ανά παράγραφο' + (CHAPTERS.filter(c => !(c.grammi && c.grammi.plag)).map(c => ' ' + c.id).join('') || ''), CHAPTERS.every(c => c.grammi && c.grammi.plag) && GRO.includes('class="gr-map"'));
 GRC.forEach(C => C.grammi.acts.forEach(a => { if (a.tone) ok(C.id + ': χρώμα κρίκου από τη σελίδα, ' + a.tone, ['pol','mil','eco','ally'].includes(a.tone) && CSS.includes('--' + a.tone + '-soft:')); }));
 const GRB1 = boot('#/k2-b1/explain').painted['panel-explain'] || '';
@@ -4302,10 +4357,10 @@ ok('⛔ το `hidden` νικάει στις κάρτες ερωτήσεων (dl 
 section('Το κεφάλαιο σαν μία ιστορία');
 /* als-v718 — ΙΔΙΟΣ φρουρός για ΚΑΘΕ κεφάλαιο (Κεφ.1 = 21 ενότητες, με «Β.10»: γι' αυτό \d+, όχι \d —
    αλλιώς το «Β.10» διαβάζεται «Β.1» + αριθμός «0» και ελέγχεται η λάθος ενότητα). */
-const ksLmap = { Α: 'a', Β: 'b', Γ: 'g', Δ: 'd' };
+const ksLmap = { Α: 'a', Β: 'b', Γ: 'g', Δ: 'd', Ε: 'e' };
 let KS = { units: {}, acts: [], threads: [], pairs: [] }, ksIds = [];
 [[1, 'a1,a2,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,g1,g2,g3,g4,g5,g6,g7,g8,g9', ['1864', '1881', '1910']],
- [2, 'a1,a2,a3,a4,b1,b2,b3,b4,g1,g2,g3,d1,d2,d3,d4,d5', ['1844', '1910']]].forEach(([N, IDS, SAME]) => {
+ [2, 'a1,a2,a3,a4,b1,b2,b3,b4,g1,g2,g3,d1,d2,d3,d4,d5,e1', ['1844', '1910']]].forEach(([N, IDS, SAME]) => {
   const K = 'Κεφ.' + N + ' · ';
   const m = PAGE.match(new RegExp('\\nconst K' + N + 'STORY = (.*);\\n'));
   ok(K + 'υπάρχει η γραμμή K' + N + 'STORY', !!m);
@@ -4317,16 +4372,16 @@ let KS = { units: {}, acts: [], threads: [], pairs: [] }, ksIds = [];
   const txt = id => { const c = CHAPTERS.find(x => x.id === 'k' + N + '-' + id); return c ? grFlat([c.title, c.period, ...c.paragraphs].join(' ')) : ''; };
   const bad = [];
   const chk = (where, id, str) => {
-    const set = new Set([id]); for (const x of str.matchAll(/([ΑΒΓΔ])\.(\d+)/g)) { const r = ksLmap[x[1]] + x[2]; if (!txt(r)) bad.push(where + ': ενότητα που δεν υπάρχει ' + x[0]); set.add(r); }
+    const set = new Set([id]); for (const x of str.matchAll(/([ΑΒΓΔΕ])\.(\d+)/g)) { const r = ksLmap[x[1]] + x[2]; if (!txt(r)) bad.push(where + ': ενότητα που δεν υπάρχει ' + x[0]); set.add(r); }
     const T = [...set].map(txt).join(' ');
     if (!T) bad.push(where + ': χωρίς βιβλίο');
     for (const x of str.matchAll(/\*\*(.+?)\*\*/g)) if (!T.includes(grFlat(x[1]))) bad.push(where + ': έντονο εκτός βιβλίου «' + x[1] + '»');
-    for (const x of str.replace(/[ΑΒΓΔ]\.\d+/g, '').matchAll(/\d+/g)) if (!T.includes(x[0])) bad.push(where + ': αριθμός εκτός βιβλίου ' + x[0]);
+    for (const x of str.replace(/[ΑΒΓΔΕ]\.\d+/g, '').matchAll(/\d+/g)) if (!T.includes(x[0])) bad.push(where + ': αριθμός εκτός βιβλίου ' + x[0]);
     if (/[<>]/.test(str)) bad.push(where + ': ετικέτα μέσα στο κείμενο');
   };
   ids.forEach(id => { const u = S.units[id]; if (!u) return; [u.q, ...u.body, ...u.echo.map(e => e.s), u.next].forEach((x, i) => chk(id + '#' + i, id, x)); u.echo.forEach(e => { if (!S.labels[e.t]) bad.push(id + ': νήμα χωρίς όνομα ' + e.t); }); });
   S.threads.forEach(t => t.steps.forEach((x, i) => chk('νήμα ' + t.id + '#' + i, x.u, x.s)));
-  S.pairs.forEach(p => { const x = p.s.match(/([ΑΒΓΔ])\.(\d+)/); if (!x) bad.push('ζευγάρι χωρίς ενότητα: ' + p.t); else chk('ζευγάρι ' + p.t, ksLmap[x[1]] + x[2], p.s); });
+  S.pairs.forEach(p => { const x = p.s.match(/([ΑΒΓΔΕ])\.(\d+)/); if (!x) bad.push('ζευγάρι χωρίς ενότητα: ' + p.t); else chk('ζευγάρι ' + p.t, ksLmap[x[1]] + x[2], p.s); });
   ok(K + '⛔ κάθε έντονο και κάθε αριθμός υπάρχει στο βιβλίο' + (bad.length ? '\n      ' + bad.join('\n      ') : ''), !bad.length);
   const B = boot('#/kefalaio-' + N), H = B.painted['viewList'] || '';
   is(K + 'η σελίδα φορτώνει χωρίς σφάλμα', B.error || 'NONE', 'NONE');

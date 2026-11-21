@@ -173,10 +173,22 @@ function stripChrome(seg) {
        ⭐ Δομικά: δύο λίστες ίδιου είδους με ΜΟΝΟ ετικέτες/κενά ανάμεσα (όχι <p>,
        όχι κείμενο) γίνονται μία — εδώ, στο κοινό, όπως η κουκκιδολίστα. */
     .replace(/<\/([uo])l>((?:\s|&nbsp;|<(?!\/?(?:p|[uo]l|li)\b)[^>]*>)*)<\1l[^>]*>/gi, (_, k, mid) => mid)
+    /* ⛔ ΤΟ <br> ΜΕΣΑ ΣΕ <li> ΕΙΝΑΙ ΤΕΛΟΣ ΛΙΣΤΑΣ. Κεφ.2 Ε.1 (index2_6): μετά
+       το 4ο <li> το ebook συνεχίζει ΜΕΣΑ στο ίδιο <li>, μετά από <br>, με την
+       επόμενη παράγραφο («Γι' αυτούς τους λόγους…» — εσοχή στο έντυπο, νέα
+       παράγραφος). Ό,τι ακολουθεί <br> μέσα σε <li> γίνεται δική του <p>. */
     .replace(/<[uo]l[^>]*>([\s\S]*?)<\/[uo]l>/gi, (_, inner) => {
-      const items = [...inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
-        .map(m => clean(m[1])).filter(Boolean);
-      return items.length ? '<p>' + items.join(' ') + '</p>' : ' ';
+      const out = []; let items = [];
+      for (const m of inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)) {
+        const [head, ...rest] = m[1].split(/<br\s*\/?>/i);
+        if (clean(head)) items.push(clean(head));
+        for (const r of rest) if (clean(r)) {
+          if (items.length) out.push('<p>' + items.join(' ') + '</p>'); items = [];
+          out.push('<p>' + clean(r) + '</p>');
+        }
+      }
+      if (items.length) out.push('<p>' + items.join(' ') + '</p>');
+      return out.length ? out.join('') : ' ';
     })
     /* ⛔⛔ Η ΓΥΜΝΗ ΠΑΡΑΓΡΑΦΟΣ ΕΙΝΑΙ ΚΕΙΜΕΝΟ ΤΟΥ ΒΙΒΛΙΟΥ ΚΑΙ ΔΕΝ ΕΙΝΑΙ <p>.
        Κεφ.2 Α.4: η σελίδα του ebook ανοίγει με κείμενο ΚΑΤΕΥΘΕΙΑΝ μέσα στο
