@@ -29,7 +29,7 @@ const need = (c, m) => { if (!c) fails.push(m); };
 const hub = rd('latinika.html');
 function titleOf(n){
   const i = hub.indexOf('data-lec="' + n + '"');
-  const m = i < 0 ? null : /<div class="t">([^<]+)<\/div>/.exec(hub.slice(i, i + 900));
+  const m = i < 0 ? null : /<span class="t">([^<]+)<\/span>/.exec(hub.slice(i, i + 900));
   need(m, 'τίτλος του ' + ROMAN[n] + ' στη latinika.html');
   return m ? m[1].trim() : ROMAN[n];
 }

@@ -767,7 +767,8 @@ var L23 = R('latinika-lectio23.html');
 function rowBlock(lec) {
   var i = HUB.indexOf('data-lec="' + lec + '"');
   if (i < 0) return '';
-  var open = HUB.lastIndexOf('<a ', i), j = HUB.indexOf('</a>', i);
+  /* als-v773: κάθε κείμενο είναι ένα <details class="lt-row"> */
+  var open = HUB.lastIndexOf('<details ', i), j = HUB.indexOf('</details>', i);
   return HUB.slice(open, j);
 }
 function attrOf(block, name) {
@@ -849,7 +850,7 @@ eq(romanOf(38), 'XXXVIII', 'το όργανο: 38 → XXXVIII');
 eq(romanOf(49), 'XLIX', 'το όργανο: 49 → XLIX (η ύλη φτάνει ως το L)');
 PACKS.forEach(function (pk) {
   var R_ = romanOf(+pk.id);
-  ok(ROWS[pk.id].indexOf('<div class="rn">' + R_ + '</div>') > 0,
+  ok(ROWS[pk.id].indexOf('<span class="rn">' + R_ + '</span>') > 0,
     pk.file + ': ο μεγάλος αριθμός της σειράς είναι ο αριθμός του ΒΙΒΛΙΟΥ (' + R_ + ')');
   ok(!/Lectio [IVXL]+ ·/.test(ROWS[pk.id]),
     pk.file + ': ⛔ καμία δεύτερη αρίθμηση στη γραμμή «Lectio …» της σειράς');
@@ -906,15 +907,33 @@ ok(HUB.indexOf('Τρεις απαντήσεις') > 0,
    ΜΗΔΕΝ ελληνικά γλυφά και πέφτει στη Georgia — η αιτία του «οι τόνοι δεν
    είναι σωστοί» (als-v504). Ο φρουρός είναι αντιγραμμένος από το
    tests/homework-look.test.js §7b, όπως λέει το CLAUDE.md. */
-ok(HUB.indexOf('fonts.googleapis.com/css2?family=GFS+Didot') > 0,
-  '⭐ η GFS Didot φορτώνεται — η ελληνική φωνή της σελίδας');
-ok(/--lt-gr:"GFS Didot"/.test(HUB), '   και ζει σε δικό της token (--lt-gr)');
-[['.lt-h', 'ο τίτλος του εξωφύλλου'], ['.lt-sh h2', 'οι κεφαλίδες ενοτήτων'],
- ['.lt-row .t', 'οι τίτλοι των κειμένων']].forEach(function (p) {
-  var i = HUB.indexOf('  ' + p[0] + '{');
-  ok(i > 0 && HUB.slice(i, HUB.indexOf('}', i)).indexOf('var(--lt-gr)') > 0,
-    '⛔ ' + p[1] + ' (' + p[0] + ') φοράει --lt-gr, ΠΟΤΕ --au-serif (ελληνικά)');
+/* als-v773 — Η ΓΛΩΣΣΑ ΤΟΥ ΒΟΗΘΗΜΑΤΟΣ ΙΣΤΟΡΙΑΣ: οι ελληνικοί τίτλοι φοράνε
+   Geologica (`--f-display`, έχει ελληνικά), και η Instrument Serif (`--f-lat`)
+   επιτρέπεται ΜΟΝΟ σε στοιχεία που γράφουν λατινικά γράμματα ή αριθμούς.
+   Ο κατάλογος είναι ΚΛΕΙΣΤΟΣ: ένας νέος κανόνας με --f-lat πρέπει να μπει εδώ
+   με λόγο, αλλιώς κοκκινίζει. */
+ok(/family=Geologica/.test(HUB) && /family=IBM\+Plex\+Sans/.test(HUB) && /family=JetBrains\+Mono/.test(HUB),
+  '⭐ φορτώνονται οι τρεις φωνές του βοηθήματος Ιστορίας (Geologica · IBM Plex · JetBrains Mono)');
+ok(HUB.indexOf('GFS+Didot') < 0 && HUB.indexOf('--lt-gr') < 0, '   και η παλιά GFS Didot δεν φορτώνεται πια (archive/latinika.html)');
+var CSS_ = HUB.slice(HUB.indexOf('<style>'), HUB.indexOf('</style>')).replace(/\/\*[\s\S]*?\*\//g, '');
+[['.lt-h', 'ο τίτλος της μπάντας'], ['.lt-sec h2', 'οι κεφαλίδες ενοτήτων'],
+ ['.lt-row .t', 'οι τίτλοι των κειμένων'], ['.nx-ttl span', 'ο τίτλος στο «Συνέχισε»'],
+ ['.tc b', 'οι τίτλοι των καρτελών'], ['.ac b', 'οι τίτλοι «Σε όλη την ύλη»']].forEach(function (p) {
+  var i = CSS_.indexOf('  ' + p[0] + '{');
+  ok(i > 0 && CSS_.slice(i, CSS_.indexOf('}', i)).indexOf('var(--f-display)') > 0,
+    '⛔ ' + p[1] + ' (' + p[0] + ') φοράει Geologica (--f-display), ΠΟΤΕ Instrument Serif');
 });
+var LAT_OK = ['.lt-logo', '.lt-mf b', '.nx-ttl b', '.nx-la', '.lt-row .rn', '.lt-open .la', '.tc .g.lat',
+  '.lt-scn li i', '.nx-scn li i', '.lt-foot > span'];
+var latRules = CSS_.match(/[^{}]+\{[^}]*var\(--f-lat\)[^}]*\}/g) || [];
+ok(latRules.length >= LAT_OK.length, '   (βρέθηκαν ' + latRules.length + ' κανόνες με --f-lat)');
+latRules.forEach(function (r) {
+  var sel = r.slice(0, r.indexOf('{')).trim();
+  ok(LAT_OK.indexOf(sel) >= 0, '⛔ Instrument Serif μόνο σε λατινικά/αριθμούς — «' + sel + '» είναι στον κατάλογο');
+});
+ok(fs.existsSync(path.join(ALS, 'archive', 'latinika.html')) &&
+   R('archive/latinika.html').indexOf('GFS+Didot') > 0,
+  '⭐ η προηγούμενη μορφή (als-v587, «ΤΟ ΕΞΩΦΥΛΛΟ») σώζεται στο archive/latinika.html');
 /* ⚠️ Ο ΕΛΕΓΧΟΣ ΘΕΛΕΙ ΤΟ ΠΛΑΙΣΙΟ, ΟΧΙ ΤΗ ΛΕΞΗ (σταθ. 19). Ένα σκέτο
    indexOf('Georgia') θα απαγόρευε την ΙΔΙΑ ΤΗΝ ΕΞΗΓΗΣΗ στην κορυφή της
    σελίδας — που είναι ο λόγος που ξέρουμε γιατί απαγορεύεται. */
@@ -1068,12 +1087,13 @@ function makeRow(id) {
     'data-n': String(attrOf(blk, 'data-n')),
     'data-sc': String(attrOf(blk, 'data-sc')),
     'data-tr': String(attrOf(blk, 'data-tr')),
-    'href': (/href="([^"]+)"/.exec(blk) || [])[1] || ''
+    'href': (/href="([^"]+)"/.exec(blk) || [])[1] || '',
+    'data-href': (/data-href="([^"]+)"/.exec(blk) || [])[1] || ''
   };
   r.pct = El(); r.cnt = El(); r.dash = El(); r.nxt = El(); r.ttl = El(); r.lo = El();
   /* ⚠️ Πακέτο χωρίς σειρά (δεν τρέχτηκε wire): το §3 το λέει ήδη με βεβαίωση —
      εδώ δεν επιτρέπεται να γίνει crash που κρύβει όλα τα υπόλοιπα. */
-  r.ttl.textContent = (/<div class="t">([^<]+)<\/div>/.exec(blk) || [])[1] || '';
+  r.ttl.textContent = (/<span class="t">([^<]+)<\/span>/.exec(blk) || [])[1] || '';
   r.lo.textContent  = (/<span class="lo">([^<]+)<\/span>/.exec(blk) || [])[1] || '';
   r.querySelector = function (sel) {
     return sel === '.pct' ? r.pct : sel === '.cnt' ? r.cnt : sel === '.dash' ? r.dash
@@ -1154,12 +1174,12 @@ var SUM_SC = PACKS.reduce(function (a, pk) { return a + attrOf(ROWS[pk.id], 'dat
 var SUM_TR = PACKS.reduce(function (a, pk) { return a + attrOf(ROWS[pk.id], 'data-tr'); }, 0);
 eq(A.els.stScenes.textContent, String(SUM_SC), 'οι σκηνές της ταινίας == το άθροισμα των σειρών (' + SUM_SC + ')');
 eq(A.els.stTraps.textContent, String(SUM_TR), 'οι παγίδες+σημειώσεις == το άθροισμα των σειρών (' + SUM_TR + ')');
-ok(HUB.indexOf('Παγίδες και σημειώσεις') > 0,
+ok(HUB.indexOf('παγίδες και σημειώσεις') > 0,
   '⛔ και η ΕΤΙΚΕΤΑ της λέει και τα δύο: το XVII δίνει σημειώσεις, όχι παγίδες');
 
 /* — η κάρτα «συνέχισε» σε καθαρή εγκατάσταση — */
-eq(A.els.nxKind.textContent, '— ξεκίνα', '⭐ τίποτα δεν ξεκίνησε → λέει «ξεκίνα», όχι «συνέχισε»');
-eq(A.els.nxLec.textContent, 'Lectio sexta decima', '   και δείχνει το πρώτο κείμενο, με το τακτικό ολογράφως');
+eq(A.els.nxKind.textContent, 'Ξεκίνα', '⭐ τίποτα δεν ξεκίνησε → λέει «ξεκίνα», όχι «συνέχισε»');
+eq(A.els.nxLec.textContent, 'Lectio sexta decima · XVI', '   και δείχνει το πρώτο κείμενο, με το τακτικό ολογράφως');
 eq(A.els.nxRn.textContent, 'XVI', '   ⭐ με τον αριθμό του ΒΙΒΛΙΟΥ — ποτέ πια τη θέση «I»');
 eq(A.els.nxTtl.textContent, 'Η τελευταία μάχη του Καίσαρα στη Γαλατία', '   και τον τίτλο του, από την ίδια τη σειρά');
 eq(A.els.nxNext.textContent, 'επόμενη: πρόταση 1', '   η επόμενη πράξη είναι η πρόταση 1');
@@ -1217,7 +1237,7 @@ eq(B.els.stKnown.textContent, String(14 + 2 * AUTO.length), 'η ταινία α�
 eq(B.els.stKnown.className, 'hot', '   και τώρα βάφεται, γιατί δεν είναι μηδέν');
 eq(B.els.stDone.textContent, '0', '   καμία δεν έκλεισε ακόμη');
 eq(B.els.nxRn.textContent, 'XVI', 'η κάρτα δείχνει την ΠΡΩΤΗ ανοιχτή ενότητα');
-eq(B.els.nxKind.textContent, '— συνέχισε', '   και τώρα λέει «συνέχισε»');
+eq(B.els.nxKind.textContent, 'Συνέχισε', '   και τώρα λέει «συνέχισε»');
 eq(B.els.nxNext.textContent, 'επόμενη: πρόταση 2', '   με την πρώτη πρόταση που λείπει');
 
 /* Ο χάρτης: πέντε ομάδες, και η καθεμιά με τον ΛΟΓΟ της ως --n. */
@@ -1303,7 +1323,7 @@ eq(C.els.stKnown.textContent, '—', '⛔ ούτε η ταινία επινοε�
 eq(C.els.stKnown.className, 'dead', '   και το λέει στο κανάλι του σφάλματος');
 eq(C.els.stDone.textContent, '—', '   το ίδιο και οι κλειστές ενότητες');
 ok(C.els.ltSub.innerHTML.indexOf('Δεν μπόρεσα να διαβάσω') >= 0, '   και το λέει και το εξώφυλλο');
-eq(C.els.nxKind.textContent, '— δεν διαβάστηκε', '⛔ και η κάρτα δεν προτείνει «ξεκίνα από το XVI»');
+eq(C.els.nxKind.textContent, 'Δεν διαβάστηκε', '⛔ και η κάρτα δεν προτείνει «ξεκίνα από το XVI»');
 eq(C.els.nxTtl.textContent, 'Δεν ξέρω πού έμεινες', '   το λέει με λέξεις');
 eq(C.els.eisPct.textContent, 'δεν διαβάστηκε', '   και η εισαγωγή το ίδιο');
 ok(C.els.ltMap.innerHTML.indexOf('lt-mg dead') > 0, '   και ο χάρτης σημαδεύει τις ομάδες του');
@@ -1313,7 +1333,7 @@ ok(C.els.ltMap.innerHTML.indexOf('lt-mg dead') > 0, '   και ο χάρτης �
 var H = drive({ 'lectio18_known_v1': '__THROW__', 'lectio16:v1': JSON.stringify([0, 1]) });
 eq(H.cards['18'].pct.textContent, 'δεν διαβάστηκε', 'η μία σειρά λέει ότι δεν διαβάστηκε');
 eq(H.cards['16'].cnt.textContent, '2 / 16', '   και οι υπόλοιπες μετράνε κανονικά');
-ok(H.els.ltSub.innerHTML.indexOf('Κάποιες ενότητες δεν διαβάστηκαν') >= 0,
+ok(H.els.ltSub.innerHTML.indexOf('Κάποια κείμενα δεν διαβάστηκαν') >= 0,
   '⭐ και το εξώφυλλο το ΛΕΕΙ, αντί να δείξει ένα σύνολο που λείπει κομμάτι');
 
 /* — σπασμένο JSON, και λάθος σχήμα στο σωστό κλειδί — */
@@ -1366,6 +1386,60 @@ eq(F.els.nxGoT.textContent, 'Ξανά από την αρχή', '   με την �
 PACKS.forEach(function (pk) {
   ok(F.cards[pk.id].className.indexOf('is-next') < 0, '⛔ και καμία σειρά δεν είναι «επόμενη» (' + pk.id + ')');
 });
+
+/* ══ 7 · als-v773 — Η ΑΠΑΝΤΗΣΗ ΣΕ ΜΙΑ ΠΡΟΤΑΣΗ + ΤΑ ΧΡΩΜΑΤΑ ΤΩΝ ΚΟΥΤΙΩΝ ══
+   Όπως η αρχική του βοηθήματος Ιστορίας («Το Κεφάλαιο 1 είναι ολόκληρο…»):
+   βγαίνει ΜΟΝΟ από ό,τι διαβάστηκε. Οι σειρές συνεχόμενων αριθμών γίνονται
+   «XVIII–XX», και ένα κείμενο που δεν διαβάστηκε δεν μπαίνει σε καμία λίστα. */
+section('7 · η απάντηση της μπάντας και τα χρώματα');
+var LAST = LIB.roman(+PACKS[PACKS.length - 1].id);
+ok(A.els.ltSub.innerHTML.indexOf('Δεν έχεις ξεκινήσει ακόμα') === 0, 'άδειο → «Δεν έχεις ξεκινήσει ακόμα»');
+ok(A.els.ltSub.innerHTML.indexOf('<b>XVI</b>') > 0, '   και δείχνει το πρώτο κείμενο (XVI)');
+eq(E.els.ltSub.innerHTML, 'Το <b>XVI είναι ολόκληρο</b>. Τα XVII–' + LAST + ' δεν έχουν ξεκινήσει.',
+  '⭐ ένα κλειστό → «Το XVI είναι ολόκληρο. Τα XVII–' + LAST + ' δεν έχουν ξεκινήσει.»');
+var J = drive({ 'lectio16:v1': JSON.stringify(all16), 'lectio17_known_v1': JSON.stringify({ s1: true, s2: true }),
+  'lectio21_known_v1': JSON.stringify({ s1: true }) });
+eq(J.els.ltSub.innerHTML,
+  'Το <b>XVI είναι ολόκληρο</b>. Στο XVII μένουν <b>9 από 11</b> και στο XXI <b>' + (NS['21'] - 1) + ' από ' + NS['21'] + '</b>. Τα XVIII–XX και XXII–' + LAST + ' δεν έχουν ξεκινήσει.',
+  '⭐⭐ μικτό: ολόκληρο · μένουν (με πραγματικά νούμερα) · σειρές «XVIII–XX και XXII–…»');
+ok(F.els.ltSub.innerHTML.indexOf('Όλα τα κείμενα είναι ολόκληρα') > 0, 'όλα κλειστά → «Όλα τα κείμενα είναι ολόκληρα»');
+eq(H.els.ltSub.innerHTML, '<span class="dead">Κάποια κείμενα δεν διαβάστηκαν σε αυτή τη συσκευή</span> — στον χάρτη τους λείπει ο αριθμός. ' +
+  'Στο XVI μένουν <b>14 από 16</b>. Τα XVII και XIX–' + LAST + ' δεν έχουν ξεκινήσει.',
+  '⛔⭐ το κείμενο που δεν διαβάστηκε (XVIII) ΔΕΝ λέγεται «δεν ξεκίνησε» — η σειρά σπάει γύρω του');
+ok(J.cards['16'].className.indexOf('is-full') >= 0, 'το ολόκληρο κουτί παίρνει is-full (πράσινο σήμα)');
+ok(J.cards['17'].className.indexOf('is-on') >= 0, 'το ξεκινημένο παίρνει is-on (τιρκουάζ)');
+ok(J.cards['18'].className.indexOf('is-on') < 0 && J.cards['18'].className.indexOf('is-full') < 0, '   ⭐ και το μηδέν δεν βάφεται');
+ok(J.cards['17'].open === true, '⭐ το «επόμενο» κουτί ανοίγει μόνο του');
+ok(!J.cards['16'].open, '   και ΜΟΝΟ αυτό');
+eq(J.els.nxGo.getAttribute('href'), 'latinika-lectio17.html', '   και το κουμπί «Συνέχισε» πάει στο data-href του');
+ok(J.els.ltMap.innerHTML.indexOf('<div class="lt-mg full"') >= 0, 'στον χάρτη το ολόκληρο κείμενο είναι πράσινο (full)');
+eq(count(J.els.ltMap.innerHTML, '<div class="lt-vg"'), 2, '⭐ ο χάρτης χωρίζεται σε δύο τεύχη');
+ok(J.els.ltMap.innerHTML.indexOf('Α΄ τεύχος') > 0 && J.els.ltMap.innerHTML.indexOf('Β΄ τεύχος') > 0, '   με τις ετικέτες τους');
+
+/* ⭐ Το wire.js γράφει τις σειρές XXI+: κάθε μία έχει την ΑΡΧΗ ΤΟΥ ΚΕΙΜΕΝΟΥ αυτολεξεί
+   από το JSON, τις σκηνές του με τη σειρά, και τις τέσσερις καρτέλες με το σωστό #hash. */
+AUTO.forEach(function (nn) {
+  var id = String(nn), blk = ROWS[id], P_ = LIB.load(nn), file = 'latinika-lectio' + id + '.html';
+  var la = P_.S[0].s[0].la.map(function (w) { return w.w; }).join(' ');
+  ok(blk.indexOf('<span class="la">' + la + '</span>') > 0, LIB.roman(nn) + ': η αρχή του κειμένου == η 1η ενότητα του JSON');
+  var scn = P_.S.map(function (sc, i) { return '<li><i>' + LIB.roman(i + 1) + '</i><span>' + sc.title + '</span></li>'; }).join('');
+  ok(blk.indexOf('<ol class="scn">' + scn + '</ol>') > 0, '   οι σκηνές του, με τη σειρά');
+  ['keimeno', 'grammatiki', 'simeioseis', 'kartes'].forEach(function (h) {
+    ok(blk.indexOf('href="' + file + '#' + h + '"') > 0, '   η καρτέλα #' + h);
+  });
+  ok(blk.indexOf('data-href="' + file + '"') > 0, '   και το data-href για το «Συνέχισε»');
+});
+/* ⭐ Τα νούμερα των καρτών «Σε όλη την ύλη» ΜΕΤΡΙΟΥΝΤΑΙ (η als-v587 έλεγε «7 κείμενα»
+   και «156 ρήματα · XVI–XXVII» ενώ είχαν γίνει 14 και 173 — σταθ. 33 ξανά). */
+var SYN = R('latinika-syntaxi.html'), synN = (/var TEXTS = \[\n([\s\S]*?)\n\];/.exec(SYN)[1].match(/file:'/g) || []).length;
+ok(HUB.indexOf('<span class="g" id="synN">' + synN + '</span>') > 0, '«Σύνταξε μόνος σου» λέει ' + synN + ' κείμενα, όσα έχει το TEXTS της');
+var ARX = R('latinika-archikoi.html'), arxLast = LIB.roman(Math.max.apply(null, (ARX.match(/"r":"[IVXL]+"/g) || []).map(function (x) {
+  var r = x.slice(5, -1), v = { I: 1, V: 5, X: 10, L: 50 }, n = 0;
+  for (var q = 0; q < r.length; q++) n += (v[r[q + 1]] > v[r[q]] ? -1 : 1) * v[r[q]];
+  return n; })));
+ok(HUB.indexOf('των κειμένων XVI–' + arxLast + ' με') > 0, '«Αρχικοί χρόνοι» λέει XVI–' + arxLast + ', όσα κείμενα έχει η σελίδα του');
+ok(R('tools/latinika/lectio.tpl').indexOf("['keimeno','grammatiki','simeioseis','kartes'].includes(h0)") > 0,
+  '   (το πακέτο ανοίγει όντως την καρτέλα από το #hash)');
 
 console.log('\n  ' + pass + ' πέρασαν, ' + fail + ' απέτυχαν\n');
 if (fail) process.exit(1);

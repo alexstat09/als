@@ -31,38 +31,52 @@ must(fs.existsSync(F(file)), 'δεν υπάρχει το ' + file + ' — τρέ
 const U = L.units(p).length, SC = p.S.length, T = p.traps.length;
 const title = p.h1.replace(/<br>/g, ' ');
 
-/* ── 1 · latinika.html ── */
+/* ── 1 · latinika.html ── (als-v773: η γλώσσα του βοηθήματος Ιστορίας — ένα
+   <details> ανά κείμενο. Το καλούπι ζει ΕΔΩ· ποτέ μία σειρά με το χέρι.
+   Η «αρχή του κειμένου» = η 1η ενότητα ΑΥΤΟΛΕΞΕΙ από το JSON· οι σκηνές = οι
+   τίτλοι των S· η Γραμματική = ο τίτλος (h2) του μαθήματος του πακέτου.) */
 let hub = rd('latinika.html'); const hub0 = hub;
+const LA = p.S[0].s[0].la.map(w => w.w).join(' ');
+const LES = (Object.values(p.lesson || {}).find(x => x && x.h2) || {}).h2 || 'Η γραμματική του κειμένου';
+const NOTES = (p.notes || []).length;
+const SCN = p.S.map((sc, i) => '<li><i>' + L.roman(i + 1) + '</i><span>' + sc.title + '</span></li>').join('');
 const row =
-  '    <a class="lt-row" href="' + file + '" data-lec="' + nn + '" data-n="' + U + '" data-sc="' + SC + '" data-tr="' + T + '">\n' +
-  '      <div class="rn">' + R + '</div>\n' +
-  '      <div>\n' +
-  '        <div class="src"><span class="lo">Lectio ' + p.ordinal + '</span> <em class="nxt"></em></div>\n' +
-  '        <div class="t">' + title + '</div>\n' +
-  '        <div class="d">' + p.row.d + '</div>\n' +
-  '      </div>\n' +
-  '      <div class="lt-mt">\n' +
-  '        <div class="lt-sts">\n' +
-  '          <span class="lt-st"><b>' + U + '</b><i>ενότητες</i></span>\n' +
-  '          <span class="lt-st"><b>' + SC + '</b><i>σκηνές</i></span>\n' +
-  '          <span class="lt-st"><b>' + T + '</b><i>παγίδες</i></span>\n' +
+  '    <details class="lt-row" data-lec="' + nn + '" data-n="' + U + '" data-sc="' + SC + '" data-tr="' + T + '" data-href="' + file + '">\n' +
+  '      <summary>\n' +
+  '        <span class="rn">' + R + '</span>\n' +
+  '        <span class="tt"><span class="t">' + title + '</span><span class="src"><span class="lo">Lectio ' + p.ordinal + '</span> · <span class="pct">—</span><em class="nxt"></em></span></span>\n' +
+  '        <span class="mb"><span class="dash lt-rdash"></span><span class="cnt">— / ' + U + '</span></span>\n' +
+  '        <span class="chev" aria-hidden="true"></span>\n' +
+  '      </summary>\n' +
+  '      <div class="lt-body">\n' +
+  '        <div class="lt-bt">\n' +
+  '          <p class="d">' + p.row.d + '</p>\n' +
+  '          <span class="lt-sts"><span class="lt-st"><b>' + U + '</b><i>ενότητες</i></span><span class="lt-st"><b>' + SC + '</b><i>σκηνές</i></span><span class="lt-st"><b>' + T + '</b><i>παγίδες</i></span></span>\n' +
   '        </div>\n' +
-  '        <div class="dash lt-rdash"></div>\n' +
-  '        <div class="lt-prf"><span class="pct">—</span><span class="cnt">— / ' + U + '</span></div>\n' +
+  '        <a class="lt-open" href="' + file + '"><span class="lt-k">Η αρχή του κειμένου</span><span class="la">' + LA + '</span><span class="go">Άνοιξε το κείμενο <i>→</i></span></a>\n' +
+  '        <div class="lt-tools">\n' +
+  '          <a class="tc" href="' + file + '#keimeno"><span class="g lat">I–' + L.roman(SC) + '</span><b>Κείμενο</b><small>' + U + ' ενότητες σε ' + SC + ' σκηνές</small></a>\n' +
+  '          <a class="tc" href="' + file + '#grammatiki"><span class="g">§</span><b>Γραμματική</b><small>' + LES + '</small></a>\n' +
+  '          <a class="tc" href="' + file + '#simeioseis"><span class="g">' + (T + NOTES) + '</span><b>Σημειώσεις</b><small>' + T + ' παγίδες · ' + NOTES + ' σημειώσεις</small></a>\n' +
+  '          <a class="tc" href="' + file + '#kartes"><span class="g">?</span><b>Κάρτες</b><small>Επανάληψη ώσπου να μη μείνει καμία</small></a>\n' +
+  '        </div>\n' +
+  '        <div class="lt-scn"><span class="lt-k">Οι σκηνές</span><ol class="scn">' + SCN + '</ol></div>\n' +
   '      </div>\n' +
-  '      <span class="lt-go" aria-hidden="true">↗</span>\n' +
-  '    </a>\n';
-const open = '    <a class="lt-row" href="' + file + '"';
+  '    </details>\n';
+const open = '    <details class="lt-row" data-lec="' + nn + '"';
 const at = hub.indexOf(open);
 if (at >= 0) {
-  const end = hub.indexOf('    </a>\n', at) + '    </a>\n'.length;
+  const end = hub.indexOf('    </details>\n', at) + '    </details>\n'.length;
   hub = hub.slice(0, at) + row + hub.slice(end);
 } else {
-  /* μετά από τη σειρά με το μεγαλύτερο data-lec < nn */
-  const rows = [...hub.matchAll(/    <a class="lt-row" href="latinika-lectio(\d+)\.html"[\s\S]*?    <\/a>\n/g)];
+  /* μετά από τη σειρά με το μεγαλύτερο data-lec < nn· αλλιώς στη θέση του Β΄ τεύχους */
+  const rows = [...hub.matchAll(/    <details class="lt-row" data-lec="(\d+)"[\s\S]*?    <\/details>\n/g)];
   must(rows.length, 'δεν βρέθηκε καμία σειρά στη latinika.html');
   const prev = rows.filter(m => +m[1] < nn).pop();
-  const ins = prev ? prev.index + prev[0].length : rows[0].index;
+  const mark = hub.indexOf('<!--LT-ROWS-B-->');
+  let ins;
+  if (prev && +prev[1] <= 20 && nn > 20) { must(mark >= 0, 'δεν βρέθηκε το <!--LT-ROWS-B-->'); ins = mark; }
+  else ins = prev ? prev.index + prev[0].length : rows[0].index;
   hub = hub.slice(0, ins) + (prev ? '\n' : '') + row + (prev ? '' : '\n') + hub.slice(ins);
 }
 /* SHAPE */
@@ -76,13 +90,13 @@ if (hub.indexOf("'" + nn + "': { key:'lectio" + nn + "_known_v1'") < 0) {
   hub = hub.replace(sh[0], () => '  var SHAPE = {\n' + lines.join(',\n') + '\n  };');
 }
 /* σύνολα, από ΟΛΕΣ τις σειρές */
-const all = [...hub.matchAll(/<a class="lt-row" href="latinika-lectio(\d+)\.html" data-lec="\d+" data-n="(\d+)"/g)];
-const N = all.length, TOTAL = all.reduce((a, m) => a + +m[2], 0), W = L.ordF(N);
+const all = [...hub.matchAll(/<details class="lt-row" data-lec="\d+" data-n="(\d+)"/g)];
+const N = all.length, TOTAL = all.reduce((a, m) => a + +m[1], 0), W = L.ordF(N);
 const rep = (re, by, what) => { must(re.test(hub), 'δεν βρέθηκε ' + what); hub = hub.replace(re, () => by); };
-rep(/<h1 class="lt-h" id="ltHead">[^<]*<br>ενότητες\.<br><b>\d+<\/b> προτάσεις\.<\/h1>/, '<h1 class="lt-h" id="ltHead">' + W + '<br>ενότητες.<br><b>' + TOTAL + '</b> προτάσεις.</h1>', 'τον τίτλο ltHead');
+rep(/<span class="lt-tot" id="ltHead">[^<]* ενότητες · <b>\d+<\/b> προτάσεις<\/span>/, '<span class="lt-tot" id="ltHead">' + W + ' ενότητες · <b>' + TOTAL + '</b> προτάσεις</span>', 'τον τίτλο ltHead');
 rep(/<span id="stKnownOf">\/\d+<\/span>/, '<span id="stKnownOf">/' + TOTAL + '</span>', 'το stKnownOf');
+rep(/<span id="stDoneOf">\/\d+<\/span>/, '<span id="stDoneOf">/' + N + '</span>', 'το stDoneOf');
 rep(/'Και οι [^']+ ενότητες κλειδωμένες\.'/, "'Και οι " + W.toLowerCase() + " ενότητες κλειδωμένες.'", 'το «Και οι … κλειδωμένες»');
-hub = hub.replace(/στριμώξει \d+ γραμμές σε 400px:\n       [^ ]+ πλήρεις σειρές/, () => 'στριμώξει ' + TOTAL + ' γραμμές σε 400px:\n       ' + W.toLowerCase() + ' πλήρεις σειρές');
 wr('latinika.html', hub0, hub);
 
 /* ── 2 · latinika-syntaxi.html ── */
