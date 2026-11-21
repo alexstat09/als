@@ -94,7 +94,8 @@ D.people.forEach(p => ok(SUBS.has(p.genre), 'το «είδος» του ' + p.id
 ok(D.pairs.length >= 7, D.pairs.length + ' ζεύγη Ελλάδα → Ρώμη, όλα με τα δύο άκρα στην ίδια πρόταση');
 
 section('Α5 · Η ΣΕΛΙΔΑ ΓΡΑΦΕΙ ΜΟΝΟ ΤΑ ΔΙΚΑ ΤΗΣ, ΚΑΙ ΚΑΝΕΝΑΣ ΑΝΑΓΝΩΣΤΗΣ ΔΕΝ ΓΡΑΦΕΙ');
-ok(html.indexOf("var READ_KEY = 'eisagogi:v1'") > 0, 'το «το διάβασα» είναι το eisagogi:v1');
+ok(html.indexOf("'eisagogi:v1'") < 0 && html.indexOf('data-read') < 0 && html.indexOf('το διάβασα<') < 0,
+   '⛔ «το διάβασα» ΒΓΗΚΕ (δική του εντολή, als-v771) — και η σελίδα ούτε διαβάζει ούτε σβήνει το παλιό eisagogi:v1');
 ok(html.indexOf("var NKEY = 'eis:notes:'") > 0, 'οι σημειώσεις μένουν στο πρόθεμα eis:notes:');
 ok(/initCloudSync\(\{\s*appKey:\s*'eisagogi'/.test(html.replace(/\s+/g, ' ')), 'σηκώνει engine με δικό της appKey');
 ok(/syncedPrefixes:\s*\[\s*NKEY\s*\]/.test(html), 'συγχρονίζει το πρόθεμα των σημειώσεων');
@@ -106,9 +107,10 @@ ok(!/syncedKeys[^\]]*eisagogi:v1/.test(html.replace(/\s+/g, ' ')), '⛔ το «�
 const CODE = html.replace(/\/\*[\s\S]*?\*\//g, '');
 {
   const sites = CODE.match(/localStorage\.setItem\(/g) || [];
-  eq(sites.length, 4, 'τέσσερις γραφείς: οι σημειώσεις, οι δύο της ταφόπλακας, το «το διάβασα»');
+  eq(sites.length, 3, 'τρεις γραφείς: οι σημειώσεις και οι δύο της ταφόπλακας — οι παγίδες/ο Έλεγχος ΔΕΝ γράφουν');
   ['function render(', 'function renderLine(', 'function renderChapter(', 'function paintBar(', 'function paintSummary(',
-   'function paintTables(', 'function portraitHTML(', 'function tick('].forEach(fn => {
+   'function paintTables(', 'function portraitHTML(', 'function tick(', 'function paintRoad(', 'function paintCheck(',
+   'function trapCard(', 'function matchBlock(', 'function mcqCard(', 'function again('].forEach(fn => {
     const a = CODE.indexOf(fn);
     ok(a > 0, 'υπάρχει ο ' + fn.slice(9, -1));
     if (a < 0) return;
@@ -149,20 +151,25 @@ section('Α7 · ⭐⭐ ΦΡΟΥΡΟΣ 7b — ΕΛΛΗΝΙΚΗ SERIF ΣΤΑ ΕΛ�
 {
   const RULES = CSS.split('}').map(ch => { const i = ch.indexOf('{'); return i < 0 ? null : { sel: ch.slice(0, i).trim(), body: ch.slice(i + 1) }; }).filter(Boolean);
   const decl = sel => { const r = RULES.find(x => x.sel === sel || x.sel.split('\n').pop().trim() === sel); return r ? r.body : null; };
+  /* als-v771: τρεις ελληνικές φωνές (Geologica τίτλοι · Commissioner κείμενο · Literata έργα/αποσπάσματα),
+     όλες ΜΕ ελληνικά γλυφά. Η Instrument Serif μένει ΜΟΝΟ στα λατινικά. */
+  const GREEK_OK = /font-family:var\(--f-(head|sans|rd)\)/;
   const GREEK_SERIF = ['.cover h1', '.cover .lead', '.ch-h h2', '.sub h3', '.gen h4', '.m-gr', '.m-ro', '.m-wk', '.m-era',
-    '.port-h .nm', '.th .tg', '.th .tr', '.legend .k b', '.cmp .hd b', '.sum h2', '.tb-h h2', '.ruler .now'];
-  const LATIN_SERIF = ['.m-la', '.meet .big', '.duo .l', '.plate .l', '.ruler .now .nb', '.port-h .cnt b'];
+    '.port-h .nm', '.legend .k b', '.cmp .hd b', '.sum h2', '.tb-h h2', '.ruler .now', '.ruler .now .nb', '.meet .big', '.port-h .cnt b'];
+  const LATIN_SERIF = ['.m-la', '.duo .l', '.plate .l'];
   GREEK_SERIF.forEach(sel => {
     const d = decl(sel);
-    ok(!!d && /font-family:var\(--f-gr\)/.test(d) && !/--f-lat/.test(d), 'ο «' + sel + '» φοράει την ΕΛΛΗΝΙΚΗ στοίβα, ποτέ την Instrument Serif');
+    ok(!!d && GREEK_OK.test(d) && !/--f-lat/.test(d), 'ο «' + sel + '» φοράει στοίβα με ΕΛΛΗΝΙΚΑ, ποτέ την Instrument Serif');
   });
+  ['--f-head', '--f-sans', '--f-rd'].forEach(v => ok(new RegExp(v + ':"(Geologica|Commissioner|Literata)"').test(CSS), v + ' = γραμματοσειρά με ελληνικά γλυφά'));
+  ok(/family=Geologica[^"]*family=Commissioner[^"]*family=Literata[^"]*family=Instrument\+Serif/.test(html), 'φορτώνονται και οι τέσσερις');
   LATIN_SERIF.forEach(sel => {
     const d = decl(sel);
     ok(!!d && /font-family:var\(--f-lat\)/.test(d), 'ο «' + sel + '» φοράει τη ΛΑΤΙΝΙΚΗ στοίβα');
   });
-  ok(!/--f-gr:[^;]*Georgia/i.test(CSS), '⛔ η ελληνική στοίβα δεν έχει Georgia ούτε ως fallback');
+  ok(!/--f-(head|sans|rd):[^;]*Georgia/i.test(CSS), '⛔ καμία ελληνική στοίβα δεν έχει Georgia ούτε ως fallback');
   /* ⛔ ΚΑΝΕΝΑΣ άλλος κανόνας δεν φοράει την Instrument Serif */
-  const ALLOW = new Set(LATIN_SERIF.concat(['.ch-h h2 sup', '.fn sup,.row sup', '.row.ni p::before', '.facts .no .nb', ':root']));
+  const ALLOW = new Set(LATIN_SERIF.concat(['.ch-h h2 sup', '.fn sup,.row sup', ':root']));
   const stray = RULES.filter(r => /var\(--f-lat\)/.test(r.body) && !ALLOW.has(r.sel.split('\n').pop().trim())).map(r => r.sel);
   eq(stray.length, 0, '⛔ καμία άλλη δήλωση με Instrument Serif' + (stray.length ? ' — ' + stray.join(' | ') : ''));
 }
@@ -270,10 +277,11 @@ const sleep = n => new Promise(r => setTimeout(r, n));
         if(/[\\u0370-\\u03ff\\u1f00-\\u1fff]/.test(own)) bad.push((el.className||el.tagName)+': '+own.slice(0,30));});
       const ro=getComputedStyle(document.querySelector('.m-ro')).fontFamily, gr=getComputedStyle(document.querySelector('.m-gr'));
       const la=getComputedStyle(document.querySelector('.m-la')).fontFamily;
-      return {bad, ro, grF:gr.fontFamily, grS:gr.fontStyle, la, loaded:document.fonts.check('16px "GFS Didot"') && document.fonts.check('16px "Instrument Serif"')}})()`);
+      return {bad, ro, grF:gr.fontFamily, grS:gr.fontStyle, la, h2:getComputedStyle(document.querySelector('.ch-h h2')).fontFamily}})()`);
     eq(fonts.bad.length, 0, '⛔ κανένα ελληνικό γράμμα σε Instrument Serif' + (fonts.bad.length ? ' — ' + fonts.bad[0] : ''));
-    ok(/^"?GFS Didot/.test(fonts.ro), 'Ρώμη (ονόματα) = GFS Didot όρθια', fonts.ro);
-    ok(/^"?GFS Didot/.test(fonts.grF) && fonts.grS === 'italic', 'Ελλάδα (πρότυπα) = GFS Didot πλάγια', fonts.grF);
+    ok(/^"?Commissioner/.test(fonts.ro), 'Ρώμη (ονόματα) = Commissioner, χρώμα τιρκουάζ', fonts.ro);
+    ok(/^"?Commissioner/.test(fonts.grF) && fonts.grS === 'normal', 'Ελλάδα (πρότυπα) = Commissioner, χρώμα σομόν', fonts.grF);
+    ok(/^"?Geologica/.test(fonts.h2), 'οι τίτλοι των στάσεων = Geologica', fonts.h2);
     ok(/^"?Instrument Serif/.test(fonts.la), 'λατινικοί όροι = Instrument Serif', fonts.la);
 
     section('Β3 · ⭐ ΟΙ ΣΗΜΕΙΩΣΕΙΣ ΤΟΥ ΑΠΟ ΤΗΝ als-v579 ΠΕΦΤΟΥΝ ΣΤΙΣ ΙΔΙΕΣ ΛΕΞΕΙΣ');
@@ -309,7 +317,7 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       await ev(`localStorage.removeItem('eis:notes:klasiki'); localStorage.removeItem('__synctomb__eisagogi')`);
     }
 
-    section('Β4 · «ΣΚΕΠΑΣΕ», ΠΟΡΤΡΕΤΟ, ΧΑΡΑΚΑΣ, «ΤΟ ΔΙΑΒΑΣΑ», ΟΙ ΠΙΝΑΚΕΣ');
+    section('Β4 · «ΣΚΕΠΑΣΕ», ΠΟΡΤΡΕΤΟ, ΧΑΡΑΚΑΣ, ΔΡΟΜΟΣ, ΠΑΓΙΔΕΣ, ΑΝΤΙΣΤΟΙΧΙΣΗ, ΠΙΝΑΚΕΣ, ΕΛΕΓΧΟΣ');
     await open(BASE + PAGE);
     /* η σελίδα κυλάει «smooth» — ο οδηγός θέλει να φτάσει ΑΜΕΣΩΣ εκεί που μετράει */
     await ev(`document.documentElement.style.scrollBehavior='auto'`);
@@ -335,9 +343,26 @@ const sleep = n => new Promise(r => setTimeout(r, n));
     eq(r2, '31 π.Χ.-14 μ.Χ.', 'στην τελευταία παράγραφο λέει «31 π.Χ.-14 μ.Χ.»');
     eq(await ev(`document.querySelector('#nums [aria-current="true"]').dataset.bar`), 'klasiki', 'η μπάρα ξέρει σε ποιο κεφάλαιο είσαι');
     await shot('4-chapter-VI-1440');
-    await ev(`document.querySelector('[data-read="klasiki"]').click()`);
-    eq(await ev(`JSON.parse(localStorage.getItem('eisagogi:v1')).klasiki`), true, '«το διάβασα» γράφει μόνο στο eisagogi:v1');
-    ok(await ev(`!!document.querySelector('#nums [data-bar="klasiki"] u')`), '…και βάζει την τελεία στη μπάρα');
+    eq(await ev(`document.querySelector('#road [aria-current="true"]').dataset.bar`), 'klasiki', '…και ο δρόμος το ίδιο');
+    eq(await ev(`[...document.querySelectorAll('#road .st i')].map(i=>i.textContent).join(',')`), 'I,II,III,IV,V,VI,VII,VIII', 'ο δρόμος: οκτώ στάσεις με τη σειρά');
+    ok(await ev(`!document.querySelector('[data-read]') && !/το διάβασα/.test(document.body.innerText)`), '⛔ πουθενά «το διάβασα»');
+    /* οι παγίδες: η απάντηση είναι ΛΕΞΕΙΣ ΤΟΥ ΒΙΒΛΙΟΥ, και τίποτα δεν γράφεται */
+    eq(await ev(`document.querySelectorAll('#chapters .trp').length`), D.traps.length, 'κάθε παγίδα κάθεται στη στάση της (' + D.traps.length + ')');
+    const lsBefore = await ev(`JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))`);
+    { const i = D.traps.findIndex(T => T.ch === 'IV' && !T.a), T = D.traps[i];
+      await ev(`document.querySelector('#chapters [data-t="${i}"] [data-ta="1"]').click()`);
+      const r = await ev(`(()=>{const c=document.querySelector('#chapters [data-t="${i}"]');return {cls:c.className, q:c.querySelector('.res q').textContent}})()`);
+      ok(/done/.test(r.cls) && /bad/.test(r.cls), 'λάθος απάντηση σε παγίδα → «ξαναδές το»', r.cls);
+      eq(r.q, T.fix.t, 'η διόρθωση είναι ΑΥΤΟΛΕΞΕΙ η πηγή'); }
+    /* αντιστοίχιση: ένα σωστό ζεύγος κλειδώνει, ένα λάθος μετράει */
+    { const ok1 = await ev(`(()=>{const b=document.querySelector('#ch-genika [data-m]');const L=[...b.querySelectorAll('[data-ml]')];const g=L.find(x=>x.textContent==='Όμηρος');g.click();
+        const b2=document.querySelector('#ch-genika [data-m]');const R=[...b2.querySelectorAll('[data-mr]')];R.find(x=>x.textContent==='Πλαύτος').click();
+        const b3=document.querySelector('#ch-genika [data-m]');[...b3.querySelectorAll('[data-ml]')].find(x=>x.textContent==='Όμηρος').click();
+        const b4=document.querySelector('#ch-genika [data-m]');[...b4.querySelectorAll('[data-mr]')].find(x=>x.textContent==='Βεργίλιος').click();
+        const b5=document.querySelector('#ch-genika [data-m]');return {ok:[...b5.querySelectorAll('[data-ml].ok')].map(x=>x.textContent).join(), row:b5.querySelector('.mrow').textContent}})()`);
+      eq(ok1.ok, 'Όμηρος', 'αντιστοίχιση: Όμηρος → Βεργίλιος κλειδώνει (Όμηρος → Πλαύτος όχι)');
+      ok(/1 λάθος/.test(ok1.row), 'και το λάθος μετριέται', ok1.row); }
+    eq(await ev(`JSON.stringify(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)]))`), lsBefore, '⛔ παγίδες και αντιστοίχιση ΔΕΝ γράφουν τίποτα στη συσκευή');
     await ev(`document.getElementById('wB').click()`); await sleep(60);
     eq(await ev(`document.querySelectorAll('#tables table')[0].querySelectorAll('tbody tr').length`), D.pairs.length, '«Οι πίνακες»: μία γραμμή ανά ζεύγος, παραγόμενη');
     { const ph = await ev(`document.querySelector('#tables td.ph').textContent`);
@@ -345,7 +370,25 @@ const sleep = n => new Promise(r => setTimeout(r, n));
          'η φράση κόβεται ΜΟΝΟ σε όριο πρότασης — το «(Ν. Ιταλία)» δεν είναι τέλος', ph.slice(0, 90)); }
     eq(await ev(`document.querySelectorAll('#tables table')[1].querySelectorAll('tbody tr').length`), 3, '«Ποιος ανήκει πού»: τρία κεφάλαια με πρόσωπα');
     ok(await ev(`document.getElementById('numsBar').hidden && document.getElementById('worldA').hidden`), 'ο δεύτερος κόσμος κρύβει τον πρώτο και τη μπάρα');
+    eq(await ev(`document.querySelectorAll('#tables table')[2].querySelectorAll('tbody tr').length`), D.band.eras.length, '«Οι εποχές»: μία γραμμή ανά εποχή');
     await shot('5-tables');
+    await ev(`document.getElementById('wC').click()`); await sleep(60);
+    ok(await ev(`!document.getElementById('worldC').hidden && document.getElementById('worldA').hidden && document.getElementById('worldB').hidden`), 'ο Έλεγχος είναι τρίτος κόσμος');
+    eq(await ev(`document.querySelectorAll('#ck-tf .trp').length`), D.traps.length, 'Έλεγχος: όλες οι παγίδες');
+    eq(await ev(`document.querySelectorAll('#ck-ch .mq').length`), D.people.length, 'Έλεγχος: «σε ποια στάση» για κάθε πρόσωπο');
+    eq(await ev(`document.querySelectorAll('#ck-gen .mq').length`), D.people.length, 'Έλεγχος: «ποιο είδος» για κάθε πρόσωπο');
+    eq(await ev(`document.querySelectorAll('#ck-era .mq').length`), D.band.eras.length, 'Έλεγχος: οι εποχές');
+    /* σταθ. 27: καμία ερώτηση δεν περιέχει την απάντησή της */
+    ok(await ev(`[...document.querySelectorAll('#check .mq')].every(m=>{const q=m.querySelector('.q').textContent;return [...m.querySelectorAll('[data-op]')].every(b=>q.indexOf(b.textContent)<0)})`), '⛔ καμία επιλογή δεν γράφεται μέσα στην ερώτηση (σταθ. 27)');
+    { const r = await ev(`(()=>{const m=document.querySelector('#ck-gen .mq');const n=m.querySelectorAll('[data-op]').length;m.querySelector('[data-op="0"]').click();
+        const m2=document.querySelector('#ck-gen .mq');return {n, done:m2.querySelectorAll('[data-op][disabled]').length, ok:m2.querySelectorAll('.ok').length, sc:document.getElementById('sc-gen').textContent}})()`);
+      ok(r.done === r.n && r.ok === 1, 'μία απάντηση κλειδώνει την ερώτηση και δείχνει τη σωστή', r);
+      ok(/στις 1/.test(r.sc), 'το σκορ μετράει', r.sc); }
+    await shot('5b-check');
+    { const i = D.traps.findIndex(T => T.ch === 'VI');
+      await ev(`document.querySelector('#ck-tf [data-t="${i}"] [data-ta="0"]').click()`);
+      await ev(`document.querySelector('#ck-tf [data-t="${i}"] [data-tl]').click()`); await sleep(80);
+      ok(await ev(`!document.getElementById('worldA').hidden`), '«Δες το στο κείμενο» γυρίζει στην εισαγωγή, στη γραμμή της πηγής'); }
     await ev(`document.getElementById('wA').click()`);
 
     section('Β5 · ΛΑΠΤΟΠ ΠΡΩΤΑ — ΚΑΙ ΜΗΔΕΝ ΟΡΙΖΟΝΤΙΑ ΚΥΛΙΣΗ ΩΣ ΤΟ ΚΙΝΗΤΟ (CDP)');

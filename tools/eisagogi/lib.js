@@ -163,6 +163,18 @@ function validate(d, src) {
     if (P.forms.indexOf(P.name.t) < 0) errs.push('πρόσωπο ' + P.id + ': το όνομα δεν είναι στις μορφές του');
     if (!d.chapters.some(c => c.n === P.ch)) errs.push('πρόσωπο ' + P.id + ': άγνωστο κεφάλαιο');
   });
+
+  /* 8. οι παγίδες Σ/Λ (als-v771): η ερώτηση είναι δική μου, η ΔΙΟΡΘΩΣΗ είναι δείκτης
+     αυτολεξεί (τον έλεγξε ήδη το 1) και ζει ΜΕΣΑ στο κεφάλαιο της παγίδας */
+  (d.traps || []).forEach((T, i) => {
+    const w = 'traps[' + i + ']', c = d.chapters.find(x => x.n === T.ch);
+    if (!c) { errs.push(w + ': άγνωστο κεφάλαιο «' + T.ch + '»'); return; }
+    if (typeof T.q !== 'string' || T.q.trim().length < 12) errs.push(w + ': κενή ή πολύ μικρή ερώτηση');
+    if (typeof T.a !== 'boolean') errs.push(w + ': η απάντηση πρέπει να είναι true/false');
+    if (!isPtr(T.fix)) { errs.push(w + ': η διόρθωση δεν είναι δείκτης {l,t}'); return; }
+    if (T.fix.l < c.lines[0] || T.fix.l > c.lines[1]) errs.push(w + ': η διόρθωση (γραμμή ' + T.fix.l + ') είναι έξω από το κεφ. ' + c.n);
+    if (T.q === T.fix.t) errs.push(w + ': η ερώτηση είναι η ίδια η απάντηση');
+  });
   return errs;
 }
 

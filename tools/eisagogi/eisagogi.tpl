@@ -3,36 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1A2030">
 <title>Εισαγωγή · Λατινικά · MÉTRON</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=GFS+Didot&amp;family=Instrument+Serif:ital@0;1&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@500;600;700&amp;family=Commissioner:wght@400;500;600;700&amp;family=Literata:ital,opsz,wght@0,7..72,400;1,7..72,400&amp;family=Instrument+Serif:ital@0;1&amp;display=swap">
 <style>
 /* ══════════════════════════════════════════════════════════════════
-   Η ΕΙΣΑΓΩΓΗ ΤΩΝ ΛΑΤΙΝΙΚΩΝ — ΤΟ ΤΗΛΕΣΚΟΠΙΟ
+   Η ΕΙΣΑΓΩΓΗ ΤΩΝ ΛΑΤΙΝΙΚΩΝ — v2 «ΤΟ ΜΠΛΕ ΤΟΥ Β» (als-v771, 21/11/26)
    ⛔⛔ ΠΑΡΑΓΕΤΑΙ από tools/eisagogi/ (node tools/eisagogi/build.js).
    ΜΗΝ ΤΟ ΓΡΑΨΕΙΣ ΜΕ ΤΟ ΧΕΡΙ — άλλαξε το eisagogi.json ή το eisagogi.tpl.
+   Εγκρίθηκε πάνω στη μακέτα της στάσης IV (artifact EK5oHKDQWXZeyWdui6nSKY),
+   η ίδια γλώσσα με τις εισαγωγές Αρχαίων v2 (page2.tpl).
+   Παλιά μορφή («Τηλεσκόπιο»): archive/latinika-eisagogi.html.
 
-   ΔΥΟ ΦΩΝΕΣ:
-     Ελλάδα = GFS Didot ΠΛΑΓΙΑ, χρώμα --gr (τα ελληνικά πρότυπα)
-     Ρώμη   = GFS Didot ΟΡΘΙΑ, χρώμα --ro (ρωμαϊκά ονόματα, γραμμένα ελληνικά)
-              Instrument Serif ΜΟΝΟ σε λατινικούς χαρακτήρες και ψηφία.
-     ⛔ ΠΟΤΕ --f-lat σε ελληνικά (σταθ. 43 · φρουρός 7b στο test).
+   ΧΡΩΜΑ = ΠΟΙΟΣ ΕΙΝΑΙ:
+     Ελλάδα (τα πρότυπα) = σομόν  --gr
+     Ρώμη (Ρωμαίοι + λατινικοί όροι) = τιρκουάζ --ro
+     κεχριμπάρι --acc = ο δρόμος, οι αριθμοί, οι ετικέτες που οδηγούν
+   ΓΡΑΜΜΑΤΟΣΕΙΡΕΣ: Geologica (τίτλοι) · Commissioner (κείμενο) · Literata
+     (αποσπάσματα/έργα) — όλες έχουν ελληνικά. Instrument Serif ΜΟΝΟ σε
+     λατινικούς χαρακτήρες (σταθ. 43 · φρουρός 7b στο test).
    ⛔ Κανένα @media(min-width) (σταθ. 51). ⛔ Τίποτα δεν γεννιέται σβηστό (σταθ. 39).
    ══════════════════════════════════════════════════════════════════ */
 :root{
-  --bg:#060607; --ivory:#F5F2EC; --text:rgba(245,242,236,.86); --dim:rgba(245,242,236,.62);
-  --faint:rgba(245,242,236,.36); --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
-  --gr:132,178,214;  /* Ελλάδα */
-  --ro:222,132,104;  /* Ρώμη   */
-  --hl:255,224,102;  /* οι ορισμοί σου */
-  --f-gr:"GFS Didot","Times New Roman",Times,serif;
+  --bg:#1A2030; --surf:#232B3D; --surf2:#2A3348; --ivory:#EDE7DA; --text:#DCD6C9; --dim:#BDB7AA;
+  --faint:#8E95A6; --line:#313A4F; --line2:#3D4862;
+  --gr:232,160,127;  /* Ελλάδα */
+  --ro:111,211,203;  /* Ρώμη   */
+  --hl:242,179,91;   /* οι ορισμοί σου (μαρκαδόρος) */
+  --acc:#F2B35B; --no:#F08A7E; --ok:#8FD1B0;
+  --f-head:"Geologica",system-ui,-apple-system,sans-serif;
+  --f-sans:"Commissioner",system-ui,-apple-system,sans-serif;
+  --f-rd:"Literata","Noto Serif",serif;
   --f-lat:"Instrument Serif","Times New Roman",serif;
-  --f-sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --col:64ch;
+  --col:64ch; --barh:60px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -40,388 +47,526 @@ html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);
   -webkit-font-smoothing:antialiased;overflow-x:clip}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
-:focus-visible{outline:2px solid rgba(var(--ro),.8);outline-offset:3px;border-radius:3px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:4px}
 .wrap{max-width:1180px;margin-inline:auto;padding-inline:24px}
-.lbl{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
-.sec{margin-top:72px}
+.lbl{font-family:var(--f-sans);font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+.sec{margin-top:64px}
 .world[hidden],.nums[hidden],.banner[hidden],.cv-hint[hidden]{display:none}
 
-/* ─── διαδρομή ─── */
-.route{display:flex;align-items:center;gap:20px;padding-block:20px 0;flex-wrap:wrap}
-.back{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--dim);text-decoration:none;padding:9px 0}
-.back:hover{color:var(--ivory)}
-.route .crumb{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
-.tabs{margin-left:auto;display:flex;gap:22px}
-.tabs button{font-size:13px;color:var(--dim);padding:6px 0;border-bottom:1px solid transparent}
+/* ─── η πάνω μπάρα: έξοδος + οι τρεις κόσμοι ─── */
+.top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--bg) 92%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.route{display:flex;align-items:center;gap:16px;min-height:var(--barh)}
+.back{font-size:14px;font-weight:600;color:var(--ivory);text-decoration:none;padding:12px 0;white-space:nowrap}
+.back:hover{color:var(--acc)}
+.route .crumb{font-size:13.5px;color:var(--faint);white-space:nowrap}
+.tabs{margin-left:auto;display:flex;gap:4px}
+.tabs button{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:600;color:var(--dim);white-space:nowrap}
 .tabs button:hover{color:var(--ivory)}
-.tabs button[aria-selected="true"]{color:var(--ivory);border-bottom-color:var(--ivory)}
+.tabs button[aria-selected="true"]{background:var(--surf);border-color:var(--line);color:var(--ivory)}
 
-/* ─── η μπάρα των κεφαλαίων ─── */
-.nums{position:sticky;top:0;z-index:40;background:rgba(6,6,7,.93);
-  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);margin-top:14px}
+/* ─── η μπάρα των στάσεων (κολλάει κάτω από την πάνω) ─── */
+.nums{position:sticky;top:var(--barh);z-index:40;background:color-mix(in oklab,var(--bg) 92%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nums .bar{display:flex;align-items:center;gap:12px}
-.nums-in{display:flex;align-items:flex-end;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+.nums-in{display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
 .nums-in::-webkit-scrollbar{display:none}
-.nums-in button{position:relative;flex:none;padding:15px 13px 11px;font-family:var(--f-mono);font-size:13px;
-  letter-spacing:.06em;color:var(--dim);border-bottom:1px solid transparent;line-height:1}
+.nums-in button{position:relative;flex:none;display:flex;align-items:center;justify-content:center;gap:4px;min-height:46px;padding:0 12px;
+  font-family:var(--f-head);font-size:13.5px;font-weight:600;color:var(--dim);border-bottom:2px solid transparent;line-height:1}
 .nums-in button:hover{color:var(--ivory)}
-.nums-in button[aria-current="true"]{color:var(--ivory);border-bottom-color:var(--ivory)}
-.nums-in button i{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-style:normal;
-  font-size:9px;letter-spacing:.1em;color:rgba(var(--ro),.9)}
-.nums-in button u{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;
-  border-radius:50%;background:rgb(var(--ro));text-decoration:none}
-.nums-in .brk{flex:none;align-self:stretch;display:flex;align-items:center;margin:0 6px 0 10px;padding-left:12px;
-  border-left:1px solid var(--line2);font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--faint);white-space:nowrap;line-height:1}
-.cvbtn{flex:none;font-size:13px;color:var(--dim);padding:8px 13px;border:1px solid var(--line2);border-radius:11px}
+.nums-in button[aria-current="true"]{color:var(--ivory);border-bottom-color:var(--acc)}
+.nums-in button i{font-style:normal;font-size:11px;font-weight:700;color:var(--acc)}
+.nums-in .brk{flex:none;align-self:center;margin:0 6px 0 10px;padding-left:12px;border-left:1px solid var(--line2);
+  font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);white-space:nowrap}
+.cvbtn{flex:none;min-height:40px;font-size:13.5px;font-weight:600;color:var(--dim);padding:0 14px;border:1px solid var(--line2);border-radius:10px}
 .cvbtn:hover{color:var(--ivory)}
-.cvbtn[aria-pressed="true"]{color:var(--ivory);border-color:rgba(var(--ro),.7)}
-.cv-hint{margin:0;padding:0 0 12px;font-size:13.5px;color:var(--dim)}
+.cvbtn[aria-pressed="true"]{color:var(--bg);background:var(--acc);border-color:var(--acc)}
+.cv-hint{margin:0;padding:0 0 12px;font-size:14px;color:var(--dim)}
 
 /* ─── εξώφυλλο ─── */
-.cover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:end;
-  padding-block:60px 44px;border-bottom:1px solid var(--line)}
-.cover h1{margin:0;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:clamp(60px,8.6vw,104px);
-  line-height:.95;letter-spacing:-.01em;color:var(--ivory)}
-.cover .lead{margin:22px 0 0;max-width:30ch;font-family:var(--f-gr);font-style:italic;font-size:26px;line-height:1.35;color:var(--dim)}
+.cover{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:end;padding-block:52px 34px;border-bottom:1px solid var(--line)}
+.cover .eye{margin:0 0 8px;font-size:14px;color:var(--dim)}
+.cover h1{margin:0;font-family:var(--f-head);font-weight:700;font-size:clamp(48px,6vw,68px);line-height:1.04;letter-spacing:-.01em;color:var(--ivory)}
+.cover .lead{margin:14px 0 0;max-width:34ch;font-family:var(--f-rd);font-style:italic;font-size:23px;line-height:1.5;color:var(--acc)}
 .meet{text-align:right}
-.meet .big{font-family:var(--f-lat);font-size:clamp(72px,9vw,112px);line-height:.9;color:var(--ivory);letter-spacing:-.02em}
-.meet .big small{font-family:var(--f-gr);font-size:.32em;color:var(--dim);margin-left:.18em;letter-spacing:0}
-.meet .cap{margin-top:10px;font-family:var(--f-gr);font-style:italic;font-size:16px;color:var(--dim);max-width:24ch;margin-left:auto}
-.meet .dots{display:flex;gap:6px;justify-content:flex-end;margin-top:14px}
-.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.meet .big{font-family:var(--f-head);font-weight:600;font-size:clamp(48px,5.4vw,62px);line-height:1;color:var(--ivory);letter-spacing:-.01em}
+.meet .big small{font-size:.38em;font-weight:500;color:var(--dim);margin-left:.18em;letter-spacing:0}
+.meet .cap{margin-top:10px;font-size:14.5px;line-height:1.5;color:var(--dim);max-width:24ch;margin-left:auto}
+.meet .dots{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .dot.g{background:rgb(var(--gr))} .dot.r{background:rgb(var(--ro))}
-.duo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:28px;margin-top:34px;
-  border:1px solid var(--line);border-radius:16px;padding:22px 28px;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
-.duo .g{font-family:var(--f-gr);font-style:italic;font-size:17px;color:var(--dim)}
+.duo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:28px;margin-top:30px;
+  border:1px solid var(--line);border-radius:16px;padding:22px 28px;background:var(--surf)}
+.duo .g{font-size:15px;color:var(--dim)}
 .duo .l{display:block;margin-top:2px;font-family:var(--f-lat);font-style:italic;font-size:40px;line-height:1.05;color:rgb(var(--ro))}
-.duo .ar{width:72px;height:1px;background:linear-gradient(90deg,rgba(var(--ro),.25),rgba(var(--ro),.8))}
+.duo .ar{width:90px;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(var(--ro),.25),rgb(var(--ro)))}
 .duo .it:last-child{text-align:right}
+
+/* ─── ο δρόμος των στάσεων ─── */
+.road{padding:34px 0 38px;border-bottom:1px solid var(--line)}
+.road-in{position:relative;margin-top:20px;padding-right:var(--rw,84px)}
+.rleg{display:block;margin:0 0 10px 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.rleg.r2{margin-top:18px;text-align:right}
+.rrow{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-height:100px}
+.rrow::before{content:"";position:absolute;left:0;right:0;top:0;height:32px;border-radius:999px 0 0 999px;background:var(--surf)}
+.rrow.r2{direction:rtl}
+.rrow.r2 > *{direction:ltr}
+.road-in::after{content:"";position:absolute;right:0;top:var(--r1,26px);height:var(--rh,168px);width:var(--rw,84px);
+  border:32px solid var(--surf);border-left:0;border-radius:0 999px 999px 0;box-sizing:border-box}
+.st{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;padding:0 6px 6px;text-align:center}
+.st i{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--faint);background:var(--bg);
+  font:700 12.5px/1 var(--f-head);font-style:normal;color:var(--dim);transition:background .2s,border-color .2s,color .2s,box-shadow .2s}
+.st span{font-size:13.5px;font-weight:600;line-height:1.32;color:var(--dim)}
+.st:hover span{color:var(--ivory)}
+.st:hover i{border-color:var(--ivory);color:var(--ivory)}
+.st[aria-current="true"] i{background:var(--acc);border-color:var(--acc);color:var(--bg);box-shadow:0 0 0 6px rgba(242,179,91,.18)}
+.st[aria-current="true"] span{color:var(--ivory)}
 
 /* ─── η ταινία των εποχών ─── */
 .band-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px;flex-wrap:wrap}
-.chs{position:relative;height:56px}
-.chb{position:absolute;height:22px;border-top:1px solid var(--line2);border-left:1px solid var(--line2);border-right:1px solid var(--line2);
-  border-radius:4px 4px 0 0;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;color:var(--dim);
-  display:flex;justify-content:center;padding-top:4px;white-space:nowrap;overflow:hidden}
-.chb.r0{top:4px} .chb.r1{top:32px}
-.chb:hover{color:var(--ivory);border-color:rgba(var(--ro),.8)}
-.band{display:flex;height:64px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
-.era{position:relative;padding:0;border-right:1px solid var(--line);
-  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));min-width:0}
+.chs{position:relative;height:60px}
+.chb{position:absolute;height:24px;border:1px solid var(--line2);border-bottom:0;border-radius:6px 6px 0 0;
+  font-family:var(--f-head);font-size:12px;font-weight:600;color:var(--dim);display:flex;justify-content:center;align-items:center;white-space:nowrap;overflow:hidden}
+.chb.r0{top:2px} .chb.r1{top:32px}
+.chb:hover{color:var(--ivory);border-color:var(--acc)}
+.band{display:flex;height:66px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.era{position:relative;padding:0;border-right:1px solid var(--line);background:var(--surf2);min-width:0}
 .era:last-child{border-right:0}
-.era.off{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.008))}
+.era.off{background:var(--surf)}
 .era.fade{-webkit-mask-image:linear-gradient(90deg,#000 62%,transparent);mask-image:linear-gradient(90deg,#000 62%,transparent)}
-.era .nm{padding:12px 12px 0;font-family:var(--f-gr);font-style:italic;font-size:17px;line-height:1.15;color:var(--ivory);white-space:nowrap;overflow:hidden}
+.era .nm{padding:12px 12px 0;font-family:var(--f-head);font-weight:600;font-size:15px;line-height:1.2;color:var(--ivory);white-space:nowrap;overflow:hidden}
 .era.off .nm{color:var(--dim)}
 .ticks{position:relative;height:30px}
-.tick{position:absolute;top:8px;transform:translateX(-50%);font-family:var(--f-mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.tick{position:absolute;top:8px;transform:translateX(-50%);font-size:12px;font-weight:500;color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
 .tick::before{content:"";position:absolute;left:50%;top:-9px;height:6px;width:1px;background:var(--line2)}
 .tick.first{transform:none} .tick.first::before{left:0}
 .legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-top:22px}
-.legend .k{display:flex;gap:9px;align-items:baseline}
-.legend .k b{font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:17px;color:var(--ivory)}
+.legend .k{display:flex;gap:10px;align-items:baseline}
+.legend .k b{font-family:var(--f-head);font-weight:600;font-size:16px;color:var(--ivory)}
 .legend .k.off b{color:var(--dim)}
-.legend p{margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--dim)}
-.sw{width:10px;height:10px;border-radius:3px;flex:none;background:rgba(255,255,255,.22)}
-.legend .off .sw{background:rgba(255,255,255,.07)}
+.legend p{margin:6px 0 0;font-size:14px;line-height:1.55;color:var(--dim)}
+.sw{width:10px;height:10px;border-radius:3px;flex:none;background:var(--acc)}
+.legend .off .sw{background:var(--line2)}
 
-/* ─── το κεφάλαιο ─── */
-.chap{margin-top:84px;scroll-margin-top:58px}
-.part{display:flex;align-items:center;gap:18px;margin:96px 0 0}
-.part b{font-family:var(--f-mono);font-size:10.5px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+/* ─── η στάση ─── */
+.chap{margin-top:76px;scroll-margin-top:118px}
+.part{display:flex;align-items:center;gap:18px;margin:92px 0 0}
+.part b{font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--acc);white-space:nowrap}
 .part i{flex:1;height:1px;background:var(--line2)}
-.ch-h{display:flex;align-items:flex-end;gap:24px;padding-bottom:22px;border-bottom:1px solid var(--line)}
-.ch-h h2{margin:8px 0 0;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:clamp(30px,3.4vw,40px);line-height:1.1;color:var(--ivory);text-wrap:balance}
-.ch-h h2 sup{font-family:var(--f-lat);font-style:normal;font-size:.42em;color:rgb(var(--ro));margin-left:3px}
-.ch-h .per{margin-top:9px;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--dim)}
-.ch-h .num{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:var(--faint)}
-.rd{margin-left:auto;flex:none;font-size:13px;color:var(--dim);padding:8px 13px;border:1px solid var(--line2);border-radius:11px}
-.rd:hover{color:var(--ivory)}
-.rd.on{color:var(--ivory);border-color:rgba(var(--ro),.7)}
+.ch-h{padding-bottom:20px;border-bottom:1px solid var(--line)}
+.ch-h .num{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.ch-h .num b{color:var(--acc);font-weight:700}
+.ch-h h2{margin:8px 0 0;max-width:24ch;font-family:var(--f-head);font-weight:700;font-size:clamp(30px,3.4vw,40px);line-height:1.12;color:var(--ivory);text-wrap:balance}
+.ch-h h2 sup{font-family:var(--f-lat);font-weight:400;font-size:.42em;color:var(--acc);margin-left:3px}
+.ch-h .per{margin-top:8px;font-size:14px;font-weight:500;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* το σχέδιο της στάσης: ποιος εμπνέει ποιον */
+.insp{margin-top:28px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:24px 28px 22px}
+.insp .why{font-size:14.5px;color:var(--dim)}
+.insp .why b{color:var(--ivory);font-weight:600}
+.flow{display:grid;grid-template-columns:minmax(0,1fr) 110px minmax(0,1fr);margin-top:16px}
+.flow h4{margin:0;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding-bottom:10px;border-bottom:2px solid}
+.flow h4.g{color:rgb(var(--gr));border-color:rgb(var(--gr))}
+.flow h4.r{color:rgb(var(--ro));border-color:rgb(var(--ro));text-align:right}
+.flow .fg,.flow .fr{display:flex;align-items:center;min-height:50px;border-bottom:1px solid var(--line);font-size:16.5px;font-weight:500;min-width:0}
+.flow .fg{color:rgb(var(--gr))}
+.flow .fr{color:rgb(var(--ro));justify-content:flex-end;text-align:right}
+.flow .far{display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.flow .far::before{content:"";flex:1;height:1.5px;background:linear-gradient(90deg,rgb(var(--gr)),rgb(var(--ro)));margin-left:10px}
+.flow .far::after{content:"";border-left:8px solid rgb(var(--ro));border-top:5px solid transparent;border-bottom:5px solid transparent;margin-right:10px}
 
 .stage{display:grid;grid-template-columns:150px minmax(0,1fr);gap:40px;margin-top:34px}
-.ruler{position:sticky;top:66px;align-self:start;padding-top:4px}
-.ruler .now{font-family:var(--f-gr);font-size:17px;line-height:1.1;color:var(--dim);min-height:2.4em}
-.ruler .now .nb{font-family:var(--f-lat);font-size:44px;letter-spacing:-.02em;color:var(--ivory)}
+.ruler{position:sticky;top:126px;align-self:start;padding-top:4px}
+.ruler .now{font-family:var(--f-head);font-weight:500;font-size:15px;line-height:1.15;color:var(--dim);min-height:2.4em}
+.ruler .now .nb{font-family:var(--f-head);font-weight:600;font-size:40px;letter-spacing:-.01em;color:var(--ivory)}
 .ruler .now.pre .nb{color:var(--dim)}
-.axis{position:relative;height:250px;margin-top:30px;margin-left:13px;border-left:1px solid var(--line2)}
-.axis .pt{position:absolute;left:-4px;width:7px;height:7px;border-radius:50%;background:var(--bg);border:1px solid var(--dim);
+.axis{position:relative;height:250px;margin-top:28px;margin-left:13px;border-left:1px solid var(--line2)}
+.axis .pt{position:absolute;left:-5px;width:9px;height:9px;border-radius:50%;background:var(--bg);border:1.5px solid var(--dim);
   transform:translateY(-50%);transition:background .25s,border-color .25s}
-.axis .rg{position:absolute;left:-11px;width:2px;border-radius:2px;background:rgba(245,242,236,.3);transition:background .25s}
-.axis .pt.on{background:rgb(var(--ro));border-color:rgb(var(--ro))}
-.axis .rg.on{background:rgb(var(--ro))}
-.axis .al{position:absolute;left:12px;transform:translateY(-50%);font-family:var(--f-mono);font-size:10px;color:var(--faint);white-space:nowrap}
+.axis .rg{position:absolute;left:-12px;width:3px;border-radius:2px;background:var(--line2);transition:background .25s}
+.axis .pt.on{background:var(--acc);border-color:var(--acc)}
+.axis .rg.on{background:var(--acc)}
+.axis .al{position:absolute;left:14px;transform:translateY(-50%);font-size:12px;font-weight:500;color:var(--faint);white-space:nowrap}
 .axis .al.on{color:var(--ivory)}
 
 .rows{min-width:0}
-.row{display:grid;grid-template-columns:minmax(0,var(--col)) minmax(0,1fr);gap:36px;margin-bottom:1.25em}
-.row p{margin:0;font-size:18px;line-height:1.85;text-wrap:pretty}
+.row{display:grid;grid-template-columns:minmax(0,var(--col)) minmax(0,1fr);gap:36px;margin-bottom:1.3em}
+.row p{margin:0;font-size:17.5px;line-height:1.85;color:var(--text);text-wrap:pretty}
 .row.more{padding-left:22px}
-.row.more p{font-size:17px;color:var(--dim)}
+.row.more p{font-size:16.5px;color:var(--dim)}
 .row.lead{padding-left:20px}
-.row.lead p::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(var(--ro),.75);
-  margin:0 12px 0 -20px;vertical-align:.18em}
+.row.lead p::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);
+  margin:0 13px 0 -20px;vertical-align:.18em}
 .row.ni{padding-left:46px}
 .row.ni p{position:relative}
-.row.ni p::before{content:attr(data-n);position:absolute;left:-46px;top:-.05em;font-family:var(--f-lat);font-size:34px;line-height:1;color:rgba(var(--ro),.7)}
+.row.ni p::before{content:attr(data-n);position:absolute;left:-46px;top:.2em;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:var(--acc);color:var(--bg);font:700 12.5px/1 var(--f-head)}
 .row.sos p{position:relative}
-.row.sos p::after{content:"SOS";position:absolute;left:-52px;top:.55em;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;color:#F58B7B}
+.row.sos p::after{content:"SOS";position:absolute;left:-52px;top:.5em;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--no)}
 .marg{padding-top:.4em;display:grid;gap:12px;align-content:start;min-width:0}
 .inl{display:none}
 .sub{margin:44px 0 22px;display:flex;align-items:center;gap:16px}
-.sub h3{margin:0;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:26px;color:var(--ivory);white-space:nowrap}
+.sub h3{margin:0;font-family:var(--f-head);font-weight:700;font-size:22px;color:var(--ivory);white-space:nowrap}
 .sub i{flex:1;height:1px;background:var(--line)}
 .gen{margin:40px 0 0;padding-top:22px;border-top:1px solid var(--line)}
-.gen h4{margin:0 0 18px;display:flex;align-items:baseline;gap:14px;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:24px;color:var(--ivory)}
-.gen h4 .sostag{font-family:var(--f-mono);font-style:normal;font-size:9.5px;letter-spacing:.14em;color:#F58B7B}
-.who{display:flex;flex-wrap:wrap;gap:8px 18px;margin:4px 0 8px}
-.who button{font-family:var(--f-gr);font-size:17px;color:rgb(var(--ro));border-bottom:1px solid rgba(var(--ro),.35);padding-bottom:1px}
-.who button:hover{border-bottom-color:rgb(var(--ro))}
-.who .lbl{align-self:center}
-.fig{margin:6px 0 26px;padding:12px 0 12px 16px;border-left:1px solid var(--line2);font-size:13.5px;line-height:1.55;color:var(--dim);max-width:var(--col)}
+.gen h4{margin:0 0 18px;display:flex;align-items:baseline;gap:14px;font-family:var(--f-head);font-weight:700;font-size:21px;color:var(--ivory)}
+.gen h4 .sostag{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--no)}
+.who{display:flex;flex-wrap:wrap;gap:8px 10px;margin:4px 0 10px;align-items:center}
+.who button{min-height:36px;padding:0 13px;border:1px solid rgba(var(--ro),.45);border-radius:999px;font-size:15px;font-weight:500;color:rgb(var(--ro))}
+.who button:hover{background:rgba(var(--ro),.1)}
+.who .lbl{margin-right:4px}
+.fig{margin:6px 0 26px;padding:12px 16px;border-radius:12px;background:var(--surf);font-size:14px;line-height:1.55;color:var(--dim);max-width:var(--col)}
 .fig .lbl{display:block;margin-bottom:4px}
-.fn{margin:30px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:14px;line-height:1.75;color:var(--dim);max-width:var(--col)}
-.fn sup,.row sup{font-family:var(--f-lat);color:rgb(var(--ro));font-size:.7em;margin:0 3px 0 1px}
-.plates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:4px 0 26px;max-width:var(--col)}
-.plate{border:1px solid var(--line);border-radius:14px;padding:16px 20px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
-.plate .g{font-family:var(--f-gr);font-style:italic;font-size:16px;color:var(--dim)}
+.fn{margin:30px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:14.5px;line-height:1.75;color:var(--dim);max-width:var(--col)}
+.fn sup,.row sup{font-family:var(--f-lat);color:var(--acc);font-size:.75em;margin:0 3px 0 1px}
+.plates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:4px 0 26px;max-width:var(--col)}
+.plate{border:1px solid var(--line);border-radius:14px;padding:16px 20px;background:var(--surf)}
+.plate .g{font-size:14.5px;color:var(--dim)}
 .plate .l{display:block;margin-top:2px;font-family:var(--f-lat);font-style:italic;font-size:32px;line-height:1.1;color:rgb(var(--ro))}
 .tlr p{font-size:16.5px;line-height:1.7;color:var(--dim)}
-.tlr{margin-bottom:22px}
-.notes{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);max-width:var(--col)}
+.tlr{margin-bottom:20px}
+.notes{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);max-width:var(--col)}
 .nlist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:2px}
 .nlist li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;border-radius:10px;padding:7px 8px}
-.nlist li:hover{background:rgba(255,255,255,.03)}
+.nlist li:hover{background:var(--surf)}
 .nlist .go{display:grid;gap:2px}
-.nlist .g1{font-size:14.5px;font-weight:500;line-height:1.35;color:var(--ivory)}
-.nlist .g2{font-size:13.5px;line-height:1.45;color:var(--dim)}
+.nlist .g1{font-size:15px;font-weight:600;line-height:1.35;color:var(--ivory)}
+.nlist .g2{font-size:14px;line-height:1.45;color:var(--dim)}
 /* ⛔ ΤΟ × ΔΕΝ ΚΡΥΒΕΤΑΙ ΠΙΣΩ ΑΠΟ HOVER (σταθ. 56) */
-.nlist .x{color:var(--dim);width:30px;height:30px;border-radius:8px;font-size:17px;line-height:1;text-align:center}
-.nlist .x:hover{color:#F58B7B;background:rgba(245,139,123,.12)}
+.nlist .x{color:var(--dim);width:36px;height:36px;border-radius:8px;font-size:18px;line-height:1;text-align:center}
+.nlist .x:hover{color:var(--no);background:rgba(240,138,126,.12)}
 .sw2{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:8px;vertical-align:0}
-.sw-h{background:rgb(var(--ro))} .sw-d{background:rgb(var(--hl))}
+.sw-h{background:var(--acc)} .sw-d{background:rgb(var(--hl))}
 
 /* οι πλαγιότιτλοί σου, στο περιθώριο */
-.mnote{display:grid;gap:3px;text-align:left;padding-left:12px;border-left:1px solid rgba(var(--ro),.7)}
-.mnote .mn{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
-.mnote .mt{font-size:14.5px;font-weight:500;line-height:1.35;color:var(--ivory)}
-.mnote:hover .mt{text-decoration:underline;text-underline-offset:3px}
+.mnote{display:grid;gap:3px;text-align:left;padding:10px 12px;border-radius:10px;background:var(--surf);border:1px solid var(--line)}
+.mnote .mn{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.mnote .mt{font-size:15px;font-weight:600;line-height:1.35;color:var(--ivory)}
+.mnote:hover{border-color:var(--acc)}
 
-/* κλωστές */
+/* κλωστές Ελλάδα → Ρώμη */
 .th{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;line-height:1.3}
-.th .tg{font-family:var(--f-gr);font-style:italic;font-size:16px;color:rgb(var(--gr))}
-.th .tl{flex:none;width:28px;height:1px;background:linear-gradient(90deg,rgb(var(--gr)),rgb(var(--ro)))}
-.th .tr{font-family:var(--f-gr);font-size:17px;color:rgb(var(--ro))}
+.th .tg{font-size:15px;font-weight:500;color:rgb(var(--gr))}
+.th .tl{flex:none;width:28px;height:1.5px;background:linear-gradient(90deg,rgb(var(--gr)),rgb(var(--ro)))}
+.th .tr{font-size:15px;font-weight:500;color:rgb(var(--ro))}
 .th .tg,.th .tr{min-width:0;overflow-wrap:anywhere}
-.th .src{flex-basis:100%;margin-top:1px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:var(--faint)}
-.th-h{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}
+.th .src{flex-basis:100%;margin-top:1px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--faint)}
+.th-h{font-size:11.5px;font-weight:700;letter-spacing:.09em;color:var(--faint);text-transform:uppercase}
 
 /* ─── σημάδια μέσα στο κείμενο ─── */
-.m-gr{font-family:var(--f-gr);font-style:italic;font-size:1.06em;color:rgb(var(--gr))}
-.m-ro{font-family:var(--f-gr);font-size:1.06em;color:rgb(var(--ro))}
-button.m-ro{border-bottom:1px dotted rgba(var(--ro),.55);line-height:inherit}
+.m-gr{font-family:var(--f-sans);font-weight:500;color:rgb(var(--gr))}
+.m-ro{font-family:var(--f-sans);font-weight:500;color:rgb(var(--ro))}
+button.m-ro{border-bottom:1px dotted rgba(var(--ro),.6);line-height:inherit}
 button.m-ro:hover{border-bottom-style:solid}
-.m-la{font-family:var(--f-lat);font-style:italic;font-size:1.12em;color:rgb(var(--ro))}
-.m-wk{font-family:var(--f-gr);font-style:italic;font-size:1.06em;color:var(--ivory)}
-.m-era{display:block;font-family:var(--f-gr);font-style:italic;font-size:1.45em;line-height:1.3;color:var(--ivory)}
-.m-date{color:var(--ivory);font-variant-numeric:tabular-nums;border-bottom:1px dotted rgba(245,242,236,.4)}
+.m-la{font-family:var(--f-lat);font-style:italic;font-size:1.16em;color:rgb(var(--ro))}
+.m-wk{font-family:var(--f-rd);font-style:italic;color:var(--ivory)}
+.m-era{display:block;font-family:var(--f-head);font-weight:600;font-size:1.3em;line-height:1.35;color:var(--ivory)}
+.m-date{color:var(--ivory);font-weight:500;font-variant-numeric:tabular-nums;border-bottom:1px dotted rgba(237,231,218,.45)}
 .m-st,.m-ax{color:var(--ivory);font-weight:600}
-.df{background:linear-gradient(transparent 12%,rgba(var(--hl),.2) 12%,rgba(var(--hl),.2) 90%,transparent 90%);
-  border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone;cursor:help}
-.hdr{text-decoration:underline;text-decoration-color:rgba(var(--ro),.55);text-underline-offset:5px}
-.lit,.hot{background:rgba(var(--ro),.18);border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.df{background:linear-gradient(transparent 55%,rgba(var(--hl),.30) 55%);color:var(--ivory);
+  box-decoration-break:clone;-webkit-box-decoration-break:clone;cursor:help}
+.hdr{text-decoration:underline;text-decoration-color:rgba(242,179,91,.6);text-underline-offset:5px}
+.lit,.hot{background:rgba(242,179,91,.2);border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 
 /* «Σκέπασε»: κενά ΜΕΣΑ στο κείμενο — το κείμενο κρατάει τη θέση του */
-.cov .cvable:not(.rv){color:transparent!important;background:rgba(245,242,236,.09);border-radius:4px;
+.cov .cvable:not(.rv){color:transparent!important;background:rgba(237,231,218,.10);border-radius:4px;
   border-bottom-color:transparent;cursor:pointer;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.cov .cvable:not(.rv):hover{background:rgba(245,242,236,.15)}
+.cov .cvable:not(.rv):hover{background:rgba(237,231,218,.17)}
 .cov .ruler .now,.cov .ruler .now .nb,.cov .axis .al,.cov .ch-h .per{color:transparent}
-.cov .ruler .now{background:rgba(245,242,236,.06);border-radius:6px}
-.cov .axis .al{background:rgba(245,242,236,.06)}
+.cov .ruler .now{background:rgba(237,231,218,.07);border-radius:6px}
+.cov .axis .al{background:rgba(237,231,218,.07)}
+
+/* ─── παγίδες σωστό / λάθος ─── */
+.trp-w{margin-top:40px;padding-top:22px;border-top:1px solid var(--line)}
+.trp-w > .lbl{color:var(--no)}
+.trps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.trp{border:1px solid rgba(240,138,126,.42);border-radius:14px;padding:18px 20px;background:var(--surf);min-width:0}
+.trp .q{margin:0;font-size:16px;line-height:1.55;color:var(--ivory)}
+.trp .ans{display:flex;gap:8px;margin-top:14px}
+.trp .ans button{flex:1;text-align:center;min-height:44px;border:1px solid var(--line2);border-radius:10px;font-weight:600;font-size:14.5px;color:var(--dim)}
+.trp .ans button:hover{color:var(--ivory);border-color:var(--ivory)}
+.trp .res{display:none;margin-top:12px;font-size:15px;line-height:1.6;color:var(--text)}
+.trp .res b{display:block;margin-bottom:4px;font-size:12px;font-weight:700;letter-spacing:.09em}
+.trp .res q{font-family:var(--f-rd);font-style:italic;quotes:"«" "»";color:var(--ivory)}
+.trp .res .to{display:inline-block;margin-top:8px;min-height:36px;font-size:13.5px;font-weight:600;color:var(--acc)}
+.trp.done .ans{display:none}
+.trp.done .res{display:block}
+.trp.done.f .q{text-decoration:line-through;text-decoration-color:rgba(240,138,126,.75);color:var(--dim)}
+.trp.good{border-color:rgba(143,209,176,.55)}
+.trp.good .res b{color:var(--ok)}
+.trp.bad .res b{color:var(--no)}
+
+/* ─── αντιστοίχιση ─── */
+.mtw{margin-top:36px;padding-top:22px;border-top:1px solid var(--line)}
+.mtw h3{margin:6px 0 0;font-family:var(--f-head);font-weight:700;font-size:22px;color:var(--ivory)}
+.mtw .s{margin:4px 0 0;font-size:14.5px;color:var(--dim)}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:10px 26px;margin-top:16px;max-width:780px}
+.mg > div{display:grid;gap:8px;align-content:start}
+.mb{min-height:48px;padding:6px 16px;border:1px solid var(--line2);border-radius:10px;text-align:left;font-size:15.5px;font-weight:500;line-height:1.35}
+.mb.g{color:rgb(var(--gr))} .mb.r{color:rgb(var(--ro))}
+.mb:hover{border-color:var(--ivory)}
+.mb.sel{border-color:var(--acc);background:rgba(242,179,91,.10)}
+.mb.ok{border-color:rgba(143,209,176,.6);background:rgba(143,209,176,.08);cursor:default}
+.mb.ok::after{content:" ✓";color:var(--ok)}
+.mb.no{border-color:var(--no);background:rgba(240,138,126,.10)}
+.mrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;font-size:14.5px;color:var(--dim)}
+.mrow b{color:var(--ivory)}
 
 /* ─── πορτρέτο ─── */
-.port{margin:56px 0 0;padding-top:26px;border-top:1px solid var(--line)}
+.port{margin:52px 0 0;padding-top:24px;border-top:1px solid var(--line)}
 .port-h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:28px}
-.port-h .nm{font-family:var(--f-gr);font-size:clamp(48px,5.6vw,72px);line-height:1;color:rgb(var(--ro))}
+.port-h .nm{font-family:var(--f-head);font-weight:700;font-size:clamp(40px,4.6vw,56px);line-height:1.05;color:rgb(var(--ro))}
 .port-h .cnt{text-align:right}
-.port-h .cnt b{display:block;font-family:var(--f-lat);font-weight:400;font-size:46px;line-height:.95;color:var(--ivory)}
-.port-h .cnt span{display:block;margin-top:5px;font-size:13.5px;color:var(--dim)}
-.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;margin:22px 0 26px;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.port-h .cnt b{display:block;font-family:var(--f-head);font-weight:600;font-size:42px;line-height:1;color:var(--ivory)}
+.port-h .cnt span{display:block;margin-top:5px;font-size:14px;color:var(--dim)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;margin:20px 0 24px;background:var(--surf)}
 .facts > div{padding:16px 20px;min-width:0}
 .facts > div + div{border-left:1px solid var(--line)}
-.facts .v{margin-top:8px;font-family:var(--f-gr);font-size:19px;line-height:1.3;color:var(--ivory)}
-.facts .v.it{font-style:italic}
-.facts .w{display:block;margin-top:6px;line-height:1.25}
-.facts .w .m-wk{font-size:18px}
+.facts .v{margin-top:8px;font-size:17px;font-weight:500;line-height:1.35;color:var(--ivory)}
+.facts .v.it{font-family:var(--f-rd);font-style:italic;font-weight:400}
+.facts .w{display:block;margin-top:6px;line-height:1.3}
+.facts .w .m-wk{font-size:16.5px}
 .facts .w .m-la{display:block;font-size:20px}
-.facts .no{margin-top:8px;font-size:13.5px;line-height:1.5;color:var(--dim)}
-.facts .no .nb{font-family:var(--f-lat);font-size:1.15em}
+.facts .no{margin-top:8px;font-size:14px;line-height:1.5;color:var(--dim)}
+.facts .no .nb{font-family:var(--f-head);font-weight:600}
 .facts ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
-.facts li{font-size:14px;line-height:1.45;color:var(--text)}
+.facts li{font-size:14.5px;line-height:1.45;color:var(--text)}
 .facts .threads{display:grid;gap:8px;margin-top:8px}
 .meetl{margin:8px 0 0}
-.meetl summary{cursor:pointer;font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);padding:8px 0;list-style:none}
+.meetl summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);list-style:none}
 .meetl summary::-webkit-details-marker{display:none}
-.meetl summary::before{content:"+";display:inline-block;width:16px;color:rgb(var(--ro))}
+.meetl summary::before{content:"+";display:inline-block;width:18px;color:var(--acc)}
 .meetl[open] summary::before{content:"−"}
 .ml{display:grid;grid-template-columns:52px minmax(0,1fr);gap:16px;padding:12px 0;border-top:1px solid var(--line);max-width:calc(var(--col) + 68px)}
-.ml .c{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--dim);padding-top:3px}
-.ml p{margin:0;font-size:15px;line-height:1.7}
+.ml .c{font-family:var(--f-head);font-size:13px;font-weight:600;color:var(--acc);padding-top:3px}
+.ml p{margin:0;font-size:15.5px;line-height:1.7}
 
 /* ─── ο συγκριτικός πίνακας ─── */
-.cmpw{margin:64px 0 8px}
-.cmpw h3{margin:6px 0 20px;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:28px;color:var(--ivory)}
-.cmp{display:grid;grid-template-columns:130px minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--line)}
-.cmp > div{padding:22px 24px 24px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
-.cmp > .rl,.cmp > .h0{border-left:0;padding-left:0}
-.cmp .hd .lbl{display:block;margin-bottom:8px}
-.cmp .hd b{display:block;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:26px;line-height:1.15;color:var(--ivory)}
-.cmp .hd span{display:block;margin-top:8px;font-size:13.5px;line-height:1.5;color:var(--dim)}
-.cmp .rl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding-top:26px}
+.cmpw{margin:60px 0 8px}
+.cmpw h3{margin:6px 0 18px;font-family:var(--f-head);font-weight:700;font-size:24px;color:var(--ivory)}
+.cmp{display:grid;grid-template-columns:140px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surf)}
+.cmp > div{padding:20px 22px 22px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
+.cmp > .rl,.cmp > .h0{border-left:0}
+.cmp > div:nth-last-child(-n+3){border-bottom:0}
+.cmp .hd{background:var(--surf2)}
+.cmp .hd .lbl{display:block;margin-bottom:8px;color:var(--acc)}
+.cmp .hd b{display:block;font-family:var(--f-head);font-weight:700;font-size:20px;line-height:1.2;color:var(--ivory)}
+.cmp .hd span{display:block;margin-top:8px;font-size:14px;line-height:1.5;color:var(--dim)}
+.cmp .rl{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--acc);padding-top:24px}
 .cmp p{margin:0 0 .9em;font-size:15.5px;line-height:1.72}
 .cmp p:last-child{margin-bottom:0}
 .cmp .k{display:none}
 
 /* ─── η σύνοψη ─── */
-.sum h2{margin:8px 0 22px;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:40px;color:var(--ivory)}
-.sgrid{display:grid;border-top:1px solid var(--line)}
+.sum h2{margin:8px 0 22px;font-family:var(--f-head);font-weight:700;font-size:36px;color:var(--ivory)}
+.sgrid{display:grid;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surf)}
 .sgrid > div{padding:16px 16px 18px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
-.sgrid > .ln{border-left:0;padding-left:0;font-family:var(--f-gr);font-style:italic;font-size:20px;color:var(--ivory)}
-.sgrid .hd{padding-top:14px}
-.sgrid .hd b{display:block;font-family:var(--f-mono);font-size:11px;font-weight:400;letter-spacing:.12em;color:var(--ivory)}
-.sgrid .hd span{display:block;margin-top:4px;font-size:12.5px;line-height:1.4;color:var(--dim)}
+.sgrid > .ln{border-left:0;font-family:var(--f-head);font-weight:600;font-size:17px;color:var(--ivory);background:var(--surf2)}
+.sgrid .hd{padding-top:14px;background:var(--surf2)}
+.sgrid .hd b{display:block;font-family:var(--f-head);font-size:14px;font-weight:700;color:var(--acc)}
+.sgrid .hd span{display:block;margin-top:4px;font-size:13.5px;line-height:1.4;color:var(--dim)}
 .sgrid .h0{border-left:0}
-.sgrid .cl{display:none;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--faint);margin-bottom:8px}
+.sgrid .cl{display:none;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--acc);margin-bottom:8px}
 .au{display:block;margin-bottom:12px}
 .au:last-child{margin-bottom:0}
-.au button{font-family:var(--f-gr);font-size:18px;color:rgb(var(--ro));border-bottom:1px dotted rgba(var(--ro),.5)}
-.au .md{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-top:3px;font-family:var(--f-gr);font-style:italic;font-size:14.5px;color:rgb(var(--gr))}
-.au .md i{flex:none;width:18px;height:1px;background:linear-gradient(90deg,rgb(var(--ro)),rgb(var(--gr)))}
+.au button{font-size:16.5px;font-weight:600;color:rgb(var(--ro));border-bottom:1px dotted rgba(var(--ro),.55)}
+.au .md{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-top:4px;font-size:14px;font-weight:500;color:rgb(var(--gr))}
+.au .md i{flex:none;width:18px;height:1.5px;background:linear-gradient(90deg,rgb(var(--ro)),rgb(var(--gr)))}
 
 /* ─── οι πίνακες (δεύτερος κόσμος) ─── */
 .tb-h{margin:56px 0 18px}
-.tb-h h2{margin:6px 0 0;font-family:var(--f-gr);font-style:italic;font-weight:400;font-size:36px;color:var(--ivory)}
-.tb-h p{margin:10px 0 0;max-width:66ch;font-size:15px;line-height:1.7;color:var(--dim)}
-.tbwrap{overflow-x:auto}
+.tb-h:first-child{margin-top:44px}
+.tb-h h2{margin:6px 0 0;font-family:var(--f-head);font-weight:700;font-size:34px;color:var(--ivory)}
+.tb-h p{margin:10px 0 0;max-width:66ch;font-size:15.5px;line-height:1.7;color:var(--dim)}
+.tbwrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surf)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;font-family:var(--f-mono);font-size:10px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
-  border-bottom:1px solid var(--line2);padding:0 18px 11px 0}
-td{border-bottom:1px solid var(--line);padding:16px 18px 16px 0;vertical-align:top;line-height:1.6}
-td.c{font-family:var(--f-mono);font-size:12px;color:var(--dim);white-space:nowrap}
-td.ph{font-size:14.5px;color:var(--text);min-width:20ch}
-td.ar{color:var(--faint);padding-right:12px}
-td button.m-ro{border-bottom:1px dotted rgba(var(--ro),.55)}
-.rule{margin-top:26px;max-width:74ch;font-size:14.5px;line-height:1.75;color:var(--dim)}
-.rule b{color:var(--ivory);font-weight:500}
+th{text-align:left;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+  background:var(--surf2);border-bottom:1px solid var(--line2);padding:14px 18px 12px}
+td{border-bottom:1px solid var(--line);padding:16px 18px;vertical-align:top;line-height:1.6}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:rgba(237,231,218,.03)}
+td.c{font-family:var(--f-head);font-size:14px;font-weight:600;color:var(--acc);white-space:nowrap}
+td.ph{font-family:var(--f-rd);font-size:15px;color:var(--dim);min-width:22ch}
+td.ar{color:rgb(var(--ro));padding-right:6px;font-weight:700}
+td .m-gr,td .m-ro{font-size:16px}
+td button.m-ro{border-bottom:1px dotted rgba(var(--ro),.6)}
+td .m-wk{font-family:var(--f-head);font-style:normal;font-weight:600}
+td .ppl{display:flex;flex-wrap:wrap;gap:6px}
+td .ppl button{min-height:34px;padding:0 12px;border:1px solid rgba(var(--ro),.45);border-radius:999px;font-size:14.5px;font-weight:500;color:rgb(var(--ro))}
+td .ppl button:hover{background:rgba(var(--ro),.1)}
+td .no{font-size:14px;color:var(--faint)}
+td .ppl button[data-goch]{border-color:rgba(242,179,91,.5);color:var(--acc);font-family:var(--f-head);font-weight:600}
+td .ppl button[data-goch]:hover{background:rgba(242,179,91,.1)}
+.rule{margin-top:24px;max-width:74ch;font-size:15px;line-height:1.75;color:var(--dim)}
+.rule b{color:var(--ivory);font-weight:600}
+
+/* ─── ο έλεγχος (τρίτος κόσμος) ─── */
+.ck-h{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+.ck-h h2{margin:6px 0 0;font-family:var(--f-head);font-weight:700;font-size:44px;line-height:1.08;color:var(--ivory)}
+.ck-h p{margin:10px 0 0;max-width:62ch;font-size:16px;line-height:1.65;color:var(--dim)}
+.ck-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.ck-nav button{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;font-size:14px;font-weight:600;color:var(--dim)}
+.ck-nav button:hover{color:var(--ivory);border-color:var(--ivory)}
+.ck{margin-top:52px;scroll-margin-top:80px}
+.ck-t{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.ck-t h3{margin:0;font-family:var(--f-head);font-weight:700;font-size:26px;color:var(--ivory)}
+.ck-t .sc{margin-left:auto;font-size:15px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+.ck-t .sc b{color:var(--acc)}
+.ck-t .again{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;font-size:14px;font-weight:600;color:var(--dim)}
+.ck-t .again:hover{color:var(--ivory)}
+.ck > .s{margin:6px 0 0;font-size:15px;color:var(--dim)}
+.mcq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}
+.mq{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--surf);min-width:0}
+.mq .q{margin:0;font-size:16px;line-height:1.5;color:var(--ivory)}
+.mq .q .m-ro{font-weight:600}
+.mq .q .m-gr{font-weight:600}
+.mq .op{display:grid;gap:8px;margin-top:12px}
+.mq .op button{min-height:44px;padding:8px 14px;border:1px solid var(--line2);border-radius:10px;font-size:15px;line-height:1.35;color:var(--text);text-align:left}
+.mq .op button:hover:not([disabled]){border-color:var(--ivory)}
+.mcq.k-gen .op{grid-template-columns:1fr 1fr}
+.mq .op button.ok{border-color:rgba(143,209,176,.65);background:rgba(143,209,176,.10);color:var(--ivory)}
+.mq .op button.ok::after{content:" ✓";color:var(--ok)}
+.mq .op button.no{border-color:var(--no);background:rgba(240,138,126,.10)}
+.mq .op button[disabled]{cursor:default}
+.mq.good{border-color:rgba(143,209,176,.5)}
+.mq.bad{border-color:rgba(240,138,126,.5)}
 
 /* ─── επιλογή · παράθυρο · σύννεφο · μήνυμα · διάλογος ─── */
 .selbar{position:fixed;z-index:70;display:flex;gap:4px;background:var(--ivory);border-radius:12px;padding:5px;transform:translate(-50%,-100%)}
 .selbar[hidden],.pop[hidden],.tip[hidden],.toast[hidden]{display:none}
-.selbar button{color:#0d111a;font-size:13.5px;font-weight:600;padding:7px 11px;border-radius:8px;display:flex;align-items:center;gap:7px;white-space:nowrap}
-.selbar button:hover{background:rgba(13,17,26,.1)}
-.pop{position:fixed;z-index:80;width:min(380px,calc(100vw - 32px));background:#16161a;border:1px solid var(--line2);border-radius:16px;padding:17px}
-.pop h5{margin:0;font-family:var(--f-mono);font-size:10px;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-.pop .pv{margin:9px 0 13px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.04);font-size:14px;line-height:1.55;color:var(--text);max-height:112px;overflow:auto}
-.pop input{width:100%;border:1px solid var(--line2);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:15.5px;font-family:inherit;color:var(--ivory)}
-.pop input:focus{outline:none;border-color:rgba(var(--ro),.8)}
+.selbar button{color:#141A27;font-size:14px;font-weight:600;padding:8px 12px;border-radius:8px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.selbar button:hover{background:rgba(20,26,39,.1)}
+.pop{position:fixed;z-index:80;width:min(380px,calc(100vw - 32px));background:var(--surf2);border:1px solid var(--line2);border-radius:16px;padding:18px}
+.pop h5{margin:0;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--acc)}
+.pop .pv{margin:9px 0 13px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:14.5px;line-height:1.55;color:var(--text);max-height:112px;overflow:auto}
+.pop input{width:100%;border:1px solid var(--line2);background:var(--bg);border-radius:10px;padding:11px 12px;font-size:15.5px;font-family:inherit;color:var(--ivory)}
+.pop input:focus{outline:none;border-color:var(--acc)}
 .pop .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
-.btn{border:1px solid var(--line2);border-radius:10px;padding:9px 15px;font-size:14px;font-weight:500;color:var(--ivory)}
-.btn.primary{background:var(--ivory);border-color:var(--ivory);color:#0d111a}
+.btn{min-height:42px;border:1px solid var(--line2);border-radius:10px;padding:0 16px;font-size:14.5px;font-weight:600;color:var(--ivory)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#141A27}
 .btn.ghost{border-color:transparent;color:var(--dim)}
-.tip{position:fixed;z-index:75;max-width:330px;background:var(--ivory);color:#0d111a;border-radius:12px;padding:11px 14px;font-size:14px;line-height:1.5;pointer-events:none}
-.tip b{display:block;font-family:var(--f-gr);font-weight:400;font-size:17px;margin-bottom:2px}
-.tip .t2{display:block;margin-top:5px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#40444d}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:90;background:var(--ivory);color:#0d111a;border-radius:12px;
-  padding:12px 17px;font-size:14px;font-weight:500;display:flex;gap:14px;align-items:center;max-width:calc(100vw - 32px)}
-.toast button{color:#8A3A1E;font-weight:600}
+.tip{position:fixed;z-index:75;max-width:330px;background:var(--ivory);color:#141A27;border-radius:12px;padding:11px 14px;font-size:14px;line-height:1.5;pointer-events:none}
+.tip b{display:block;font-family:var(--f-head);font-weight:700;font-size:16px;margin-bottom:2px}
+.tip .t2{display:block;margin-top:5px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#4A5163}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:90;background:var(--ivory);color:#141A27;border-radius:12px;
+  padding:12px 17px;font-size:14.5px;font-weight:500;display:flex;gap:14px;align-items:center;max-width:calc(100vw - 32px)}
+.toast button{color:#8A4A10;font-weight:700}
 dialog.ptd{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;width:min(860px,calc(100vw - 32px));
-  max-height:calc(100dvh - 48px);overflow:auto;background:#0b0b0d;color:var(--text);border:1px solid var(--line2);border-radius:18px;padding:28px 30px 30px}
-dialog.ptd::backdrop{background:rgba(0,0,0,.7)}
+  max-height:calc(100dvh - 48px);overflow:auto;background:var(--bg);color:var(--text);border:1px solid var(--line2);border-radius:18px;padding:28px 30px 30px}
+dialog.ptd::backdrop{background:rgba(6,8,14,.72)}
 dialog.ptd:focus{outline:none}
 dialog.ptd .port{margin:0;padding:0;border:0}
-dialog.ptd .x{display:block;margin:-8px -6px 10px auto;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--dim);padding:8px 6px}
+dialog.ptd .x{display:block;margin:-8px -6px 10px auto;min-height:40px;font-size:14px;font-weight:600;color:var(--dim);padding:0 8px}
 dialog.ptd .x:hover{color:var(--ivory)}
 dialog.ptd .ptxt p{margin:0 0 1em;font-size:17px;line-height:1.8}
-.banner{margin:18px 0 0;padding:13px 16px;border-radius:12px;border:1px solid var(--line2);font-size:14px;line-height:1.6;color:var(--text)}
+.banner{margin:18px 0 0;padding:13px 16px;border-radius:12px;border:1px solid var(--line2);background:var(--surf);font-size:14.5px;line-height:1.6;color:var(--text)}
 .banner b{color:var(--ivory)}
-.foot{margin:96px 0 72px;padding-top:22px;border-top:1px solid var(--line);font-size:14px;line-height:1.8;color:var(--dim);max-width:74ch}
-.foot b{color:var(--ivory);font-weight:500}
+.foot{margin:92px 0 72px;padding-top:22px;border-top:1px solid var(--line);font-size:14.5px;line-height:1.8;color:var(--dim);max-width:74ch}
+.foot b{color:var(--ivory);font-weight:600}
 
 /* ══ ΤΟ ΤΗΛΕΦΩΝΟ ΜΑΖΕΥΕΙ — μόνο max-width ══ */
 @media (max-width:1040px){
   .legend{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stage{grid-template-columns:120px minmax(0,1fr);gap:28px}
   .row{grid-template-columns:minmax(0,1fr) 210px;gap:26px}
-  .ruler .now .nb{font-size:36px}
+  .ruler .now .nb{font-size:32px}
   .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
   .facts > div:nth-child(3){border-left:0}
   .facts > div:nth-child(n+3){border-top:1px solid var(--line)}
+  .trps,.mcq{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:860px){
   .wrap{padding-inline:16px}
-  .cover{grid-template-columns:minmax(0,1fr);gap:28px}
+  .route .crumb{display:none}
+  .cover{grid-template-columns:minmax(0,1fr);gap:24px}
   .meet{text-align:left} .meet .cap{margin-left:0} .meet .dots{justify-content:flex-start}
   .duo{grid-template-columns:minmax(0,1fr);gap:14px;padding:18px 20px}
-  .duo .ar{width:1px;height:22px;margin-left:12px;background:linear-gradient(180deg,rgba(var(--ro),.25),rgba(var(--ro),.8))}
+  .duo .ar{width:2px;height:22px;margin-left:12px;background:linear-gradient(180deg,rgba(var(--ro),.25),rgb(var(--ro)))}
   .duo .it:last-child{text-align:left}
+  /* ο δρόμος γίνεται λίστα */
+  .road-in{padding-right:0}
+  .road-in::after,.rrow::before{display:none}
+  .rrow,.rrow.r2{direction:ltr;grid-template-columns:minmax(0,1fr);min-height:0}
+  .rleg.r2{text-align:left;margin-top:20px}
+  .st{flex-direction:row;gap:14px;text-align:left;min-height:50px;padding:0 4px;border-bottom:1px solid var(--line)}
+  .st span{font-size:15px}
   .era .nm{display:none}
-  .chb{font-size:10px}
+  .chb{font-size:11px}
   .tick.mid{display:none}
-  .ch-h{flex-wrap:wrap}
-  .rd{margin-left:0}
   .stage{grid-template-columns:minmax(0,1fr);gap:0}
-  .ruler{top:44px;z-index:30;background:rgba(6,6,7,.95);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  .ruler{top:106px;z-index:30;background:color-mix(in oklab,var(--bg) 95%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     padding:8px 0;margin-bottom:18px;border-bottom:1px solid var(--line)}
   .ruler:empty{display:none}
   .ruler .now{min-height:0;font-size:14px}
-  .ruler .now .nb{font-size:26px}
+  .ruler .now .nb{font-size:24px}
   .axis{display:none}
   .row{grid-template-columns:minmax(0,1fr);gap:10px}
   .marg .mnote{display:none}
   .inl{display:grid;margin-bottom:8px}
   .marg{padding-top:0}
   .row.sos p::after{position:static;display:inline-block;margin-left:9px;vertical-align:2px}
+  .flow{grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr)}
+  .flow .far::before{margin-left:4px} .flow .far::after{margin-right:4px}
+  .flow h4{font-size:11px;letter-spacing:.05em}
+  .flow .fg,.flow .fr{font-size:15px}
+  .insp{padding:18px 16px}
   .cmp{grid-template-columns:minmax(0,1fr)}
-  .cmp > div{padding:16px 0;border-left:0}
+  .cmp > div{padding:16px 18px;border-left:0}
+  .cmp > div:nth-last-child(-n+3){border-bottom:1px solid var(--line)}
+  .cmp > div:last-child{border-bottom:0}
   .cmp .hd,.cmp .h0{display:none}
-  .cmp .k{display:block;font-family:var(--f-gr);font-style:italic;font-size:19px;color:var(--ivory);margin-bottom:8px}
+  .cmp .k{display:block;font-family:var(--f-head);font-weight:700;font-size:17px;color:var(--ivory);margin-bottom:8px}
   .port-h{grid-template-columns:minmax(0,1fr)} .port-h .cnt{text-align:left}
   .sgrid{grid-template-columns:minmax(0,1fr)!important}
-  .sgrid > div{border-left:0;padding-left:0}
+  .sgrid > div{border-left:0}
   .sgrid .hd,.sgrid .h0{display:none}
   .sgrid .cl{display:block}
-  .tabs{margin-left:0}
+  .mg{grid-template-columns:minmax(0,1fr)}
   dialog.ptd{padding:22px 18px}
+}
+@media (max-width:640px){
+  :root{--barh:104px}
+  .route{flex-wrap:wrap;gap:0 12px;padding-bottom:6px}
+  .tabs{margin-left:0;width:100%}
+  .tabs button{flex:1;padding:0 8px;font-size:13.5px}
+  /* οι πίνακες: κάθε γραμμή γίνεται κάρτα — η φράση/τα πρόσωπα παίρνουν όλο το πλάτος */
+  .tbwrap thead{display:none}
+  .tbwrap tr{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:baseline;border-bottom:1px solid var(--line)}
+  .tbwrap tbody tr:last-child{border-bottom:0}
+  .tbwrap td{border:0;padding:14px 10px 4px}
+  .tbwrap td.ph,.tbwrap td:has(.ppl),.tbwrap td:has(.no){grid-column:1/-1;padding-top:2px;padding-bottom:14px}
+  .tbwrap td.ph,.tbwrap td:has(.ppl),.tbwrap td:has(.no){order:9}
+  .tbwrap td.c{text-align:right}
 }
 @media (max-width:560px){
   .row p{font-size:17px;line-height:1.8}
-  .cover .lead{font-size:21px}
+  .cover .lead{font-size:19px}
   .duo .l{font-size:32px}
   .legend{grid-template-columns:minmax(0,1fr)}
   .facts{grid-template-columns:minmax(0,1fr)}
   .facts > div + div{border-left:0;border-top:1px solid var(--line)}
   .plates{grid-template-columns:minmax(0,1fr)}
-  .row.ni{padding-left:36px} .row.ni p::before{left:-36px;font-size:28px}
+  .row.ni{padding-left:38px} .row.ni p::before{left:-38px}
   .nums-in .brk{display:none}
+  .ck-h h2{font-size:34px}
+  .tb-h h2{font-size:28px}
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style>
 </head>
 <body>
 
-<div class="wrap route">
+<header class="top"><div class="wrap route">
   <a class="back" href="latinika.html">&#8592; Λατινικά</a>
-  <span class="crumb">MÉTRON · Λατινικά · Εισαγωγή</span>
+  <span class="crumb">Λατινικά · Εισαγωγή</span>
   <div class="tabs" role="tablist" aria-label="Κόσμοι">
     <button type="button" id="wA" role="tab" aria-selected="true" aria-controls="worldA">Η εισαγωγή</button>
     <button type="button" id="wB" role="tab" aria-selected="false" aria-controls="worldB">Οι πίνακες</button>
+    <button type="button" id="wC" role="tab" aria-selected="false" aria-controls="worldC">Έλεγχος</button>
   </div>
-</div>
+</div></header>
 
-<nav class="nums" id="numsBar" aria-label="Κεφάλαια"><div class="wrap bar">
+<nav class="nums" id="numsBar" aria-label="Στάσεις"><div class="wrap bar">
   <div class="nums-in" id="nums"></div>
   <button type="button" class="cvbtn" id="cvbtn" aria-pressed="false">Σκέπασε</button>
 </div><div class="wrap"><p class="cv-hint" id="cvhint" hidden>Ονόματα, χρονολογίες, τίτλοι και όροι έγιναν κενά μέσα στο κείμενο. Πάτα ένα κενό για να το δεις.</p></div></nav>
@@ -430,16 +575,21 @@ dialog.ptd .ptxt p{margin:0 0 1em;font-size:17px;line-height:1.8}
   <div class="banner" id="gate" hidden></div>
   <header class="cover" id="cover"></header>
   <div class="duo" id="duo"></div>
+  <section class="road" id="road" aria-label="Ο δρόμος της εισαγωγής"></section>
   <section class="sec" id="eras" aria-label="Οι εποχές"></section>
   <div id="chapters"></div>
   <section class="sec sum" id="summary" aria-label="Όλη η εισαγωγή"></section>
   <p class="foot">Το κείμενο είναι <b>αυτούσιο</b> από τις σημειώσεις σου — κάθε σημάδι πάνω του δείχνει σε θέση της πηγής.
   Διάλεξε κείμενο με το ποντίκι για να βάλεις <b>πλαγιότιτλο</b> ή <b>ορισμό</b>· πάτα ένα όνομα για τον <b>φάκελό</b> του.
-  Τα κόκκινα <b>SOS</b> είναι δικά σου. Οι σημειώσεις σου <b>συγχρονίζονται</b>· η ένδειξη «το διάβασα» ζει σε αυτή τη συσκευή.</p>
+  Τα κόκκινα <b>SOS</b> είναι δικά σου. Οι σημειώσεις σου <b>συγχρονίζονται</b>. Στις <b>παγίδες</b> η πρόταση είναι ερώτηση· η απάντηση είναι πάντα λέξεις του βιβλίου.</p>
 </main>
 
 <main class="world wrap" id="worldB" role="tabpanel" aria-labelledby="wB" hidden>
   <div id="tables"></div>
+</main>
+
+<main class="world wrap" id="worldC" role="tabpanel" aria-labelledby="wC" hidden>
+  <div id="check"></div>
 </main>
 
 <div class="selbar" id="selbar" hidden role="toolbar" aria-label="Επιλογή κειμένου">
@@ -530,12 +680,11 @@ D.chapters.forEach(function(ch){
 
 /* ══════════════════════════════════════════════════════════════════
    ΟΙ ΣΗΜΕΙΩΣΕΙΣ — ΣΥΓΧΡΟΝΙΖΟΝΤΑΙ. Μία κλείδα ανά κεφάλαιο, πρόθεμα
-   `eis:notes:`, πίνακες από {id,ts}. ⛔ Το `eisagogi:v1` («το διάβασα»)
-   ΜΕΝΕΙ device-local — χάρτης από booleans (σταθ. 31).
+   `eis:notes:`, πίνακες από {id,ts}. ⛔ Το παλιό `eisagogi:v1` («το διάβασα»)
+   ΒΓΗΚΕ με δική του εντολή (als-v771): δεν διαβάζεται, δεν γράφεται, δεν σβήνεται.
    ══════════════════════════════════════════════════════════════════ */
 var NKEY = 'eis:notes:', TOMB_KEY = '__synctomb__eisagogi';
 var NOTE_FIELDS = ['heads','defs'];
-var READ_KEY = 'eisagogi:v1';
 var NOTES = {}, undoStack = [], cloudOn = false;
 
 function lsGet(k, d){ try{ var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } }
@@ -613,15 +762,6 @@ function addNote(ch, field, rec){
   if(!saveNotes(ch)){ NOTES[ch][field].pop(); return false; }
   renderChapter(ch); return true;
 }
-/* «το διάβασα» — device-local */
-function readMap(){ var m = lsGet(READ_KEY, {}); return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {}; }
-function toggleRead(id){
-  var m = readMap(); m[id] = !m[id];
-  try{ localStorage.setItem(READ_KEY, JSON.stringify(m)); }
-  catch(e){ toast('Δεν αποθηκεύτηκε σε αυτή τη συσκευή'); return; }
-  paintBar(); paintRead();
-}
-
 /* ══ ΜΙΑ ΓΡΑΜΜΗ ΤΗΣ ΠΗΓΗΣ → HTML, με όλα τα στρώματα: σημάδια + δικές σου
    σημειώσεις. Με κεφάλαιο, κάθε κομμάτι κουβαλάει data-o (θέση στο κείμενο
    του κεφαλαίου) ώστε η επιλογή να γίνει πλαγιότιτλος. ══ */
@@ -881,15 +1021,98 @@ function notesListHTML(chId){
              + '<button class="x" type="button" data-del="' + chId + ':defs:' + Df.id + '" aria-label="σβήσε τον ορισμό">×</button></li>'; }).join('')
     + '</ul></div>';
 }
+/* ══ ΤΑ ΖΕΥΓΗ ΜΙΑΣ ΣΤΑΣΗΣ — ό,τι ζευγαρώνει το ΙΔΙΟ το κείμενό της.
+   Η ρωμαϊκή πλευρά δείχνει το ΟΝΟΜΑ του προσώπου («Βεργίλιος»), όχι την
+   πτώση της πρότασης («Βεργίλιο»)· ό,τι δεν είναι πρόσωπο μένει αυτολεξεί. ══ */
+function roName(pr){ var who = personOf(pr.ro.t); return who ? P(who.name) : P(pr.ro); }
+function pairsOf(ch){
+  var out = [], seen = {};
+  D.pairs.forEach(function(pr, i){
+    var c = chapterOfLine(pr.gr.l); if(ch && (!c || c.id !== ch.id)) return;
+    var g = P(pr.gr), r = roName(pr), k = g + '→' + r;
+    if(seen[k]) return; seen[k] = 1;
+    out.push({ g:g, r:r, p:(personOf(pr.ro.t) || {}).id || '', i:i });
+  });
+  return out;
+}
+/* το σχέδιο της στάσης: πρώτα η εικόνα, μετά το κείμενο */
+function inspHTML(ch){
+  var ps = pairsOf(ch); if(ps.length < 2) return '';
+  return '<div class="insp"><div class="why"><b>Ποιος εμπνέει ποιον.</b> Αριστερά το ελληνικό πρότυπο, δεξιά ο Ρωμαίος που το παίρνει — όπως τα ζευγαρώνει το κείμενο αυτής της στάσης.</div>'
+    + '<div class="flow"><h4 class="g">Ελλάδα · πρότυπο</h4><span aria-hidden="true"></span><h4 class="r">Ρώμη</h4>'
+    + ps.map(function(x){
+        return '<div class="fg"><span class="cvable">' + esc(x.g) + '</span></div><div class="far" aria-hidden="true"></div>'
+             + '<div class="fr">' + (x.p ? '<button type="button" class="cvable" data-p="' + x.p + '">' + esc(x.r) + '</button>' : '<span class="cvable">' + esc(x.r) + '</span>') + '</div>';
+      }).join('') + '</div></div>';
+}
+
+/* ══ ΠΑΓΙΔΕΣ ΣΩΣΤΟ / ΛΑΘΟΣ — η ερώτηση είναι πρόταση, η ΑΠΑΝΤΗΣΗ είναι
+   λέξεις του βιβλίου (δείκτης fix, τον ελέγχει ο validator). Καμία αποθήκευση:
+   εξάσκηση, όχι βαθμός. ══ */
+var TRS = {};
+function trapCard(i){
+  var T = D.traps[i], got = TRS[i], done = got !== undefined, good = done && got === T.a;
+  return '<div class="trp' + (done ? ' done ' + (good ? 'good' : 'bad') : '') + (done && !T.a ? ' f' : '') + '" data-t="' + i + '">'
+    + '<p class="q">' + esc(T.q) + '</p>'
+    + '<div class="ans"><button type="button" data-ta="1">Σωστό</button><button type="button" data-ta="0">Λάθος</button></div>'
+    + '<div class="res"><b>' + (T.a ? 'ΣΩΣΤΟ' : 'ΛΑΘΟΣ') + (done ? (good ? ' · το βρήκες' : ' · ξαναδές το') : '') + '</b>'
+    + 'Το κείμενο: <q>' + esc(P(T.fix)) + '</q><br><button type="button" class="to" data-tl="' + T.fix.l + '">Δες το στο κείμενο →</button></div></div>';
+}
+function trapsOf(ch){ var out = []; (D.traps || []).forEach(function(T, i){ if(!ch || T.ch === ch.n) out.push(i); }); return out; }
+function trapsHTML(ch){
+  var ix = trapsOf(ch); if(!ix.length) return '';
+  return '<div class="trp-w"><span class="lbl">Παγίδες σωστό / λάθος · ' + ix.length + '</span><div class="trps">' + ix.map(trapCard).join('') + '</div></div>';
+}
+
+/* ══ ΑΝΤΙΣΤΟΙΧΙΣΗ — πάτα αριστερά, μετά το ζευγάρι δεξιά. Ένας Ρωμαίος μπορεί
+   να έχει δύο πρότυπα (ο Βεργίλιος: Θεόκριτος ΚΑΙ Όμηρος) — σωστό είναι κάθε
+   ζεύγος που υπάρχει στο κείμενο. ══ */
+var MS = {};
+function shuffled(a){ a = a.slice(); for(var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function matchState(key, list){
+  if(MS[key]) return MS[key];
+  var L = [], R = [];
+  list.forEach(function(x){ if(L.indexOf(x.g) < 0) L.push(x.g); if(R.indexOf(x.r) < 0) R.push(x.r); });
+  return MS[key] = { list:list, L:shuffled(L), R:shuffled(R), sel:-1, okL:{}, bad:-1, tries:0 };
+}
+function isPair(st, g, r){ return st.list.some(function(x){ return x.g === g && x.r === r; }); }
+function matchBlock(key, list, title, sub){
+  var st = matchState(key, list), n = 0;
+  var lefts = st.L.map(function(g, i){ var ok = st.okL[i]; if(ok) n++;
+    return '<button type="button" class="mb g' + (ok ? ' ok' : st.sel === i ? ' sel' : '') + '" data-ml="' + i + '"' + (ok ? ' disabled' : '') + '>' + esc(g) + '</button>'; }).join('');
+  var rights = st.R.map(function(r, j){
+    var all = st.L.every(function(g, i){ return !isPair(st, g, r) || st.okL[i]; });
+    return '<button type="button" class="mb r' + (all ? ' ok' : st.bad === j ? ' no' : '') + '" data-mr="' + j + '"' + (all ? ' disabled' : '') + '>' + esc(r) + '</button>'; }).join('');
+  return '<div class="mtw" data-m="' + key + '"><span class="lbl">Αντιστοίχιση</span><h3>' + esc(title) + '</h3><p class="s">' + esc(sub) + '</p>'
+    + '<div class="mg"><div>' + lefts + '</div><div>' + rights + '</div></div>'
+    + '<div class="mrow"><span><b>' + n + '</b> από ' + st.L.length + (st.tries ? ' · ' + st.tries + (st.tries === 1 ? ' λάθος' : ' λάθη') : '') + '</span>'
+    + (n ? '<button type="button" class="btn ghost" data-mx="' + key + '">Ξανά</button>' : '') + '</div></div>';
+}
+var MLIST = {};
+function matchHTML(ch){
+  var ps = pairsOf(ch), L = {};
+  ps.forEach(function(x){ L[x.g] = 1; });
+  if(Object.keys(L).length < 3) return '';
+  MLIST['m-' + ch.id] = ps;
+  return matchBlock('m-' + ch.id, ps, 'Ποιο πρότυπο, ποιος Ρωμαίος', 'Πάτα ένα πρότυπο αριστερά και μετά τον Ρωμαίο του δεξιά.');
+}
+function repaintMatch(key){
+  var el = document.querySelector('[data-m="' + key + '"]'); if(!el) return;
+  var tmp = document.createElement('div');
+  var t = el.querySelector('h3').textContent, sb = el.querySelector('.s').textContent;
+  tmp.innerHTML = matchBlock(key, MLIST[key], t, sb);
+  el.parentNode.replaceChild(tmp.firstChild, el);
+}
+
 function chapterHTML(ch){
-  var read = readMap()[ch.id];
   return '<section class="chap" id="ch-' + ch.id + '" data-ch="' + ch.id + '">'
     + (ch.part ? '<div class="part"><b>' + esc(ch.part) + '</b><i></i></div>' : '')
-    + '<div class="ch-h"><div><span class="num">ΚΕΦΑΛΑΙΟ ' + esc(ch.n) + (ch.pre ? ' · ' + esc(ch.pre) : '') + '</span>'
+    + '<div class="ch-h"><span class="num"><b>Στάση ' + esc(ch.n) + '</b>' + (ch.pre ? ' · ' + esc(ch.pre) : '') + '</span>'
     + '<h2>' + esc(ch.title) + (ch.fnMark ? '<sup>' + esc(ch.fnMark) + '</sup>' : '') + '</h2>'
     + (ch.sup ? '<div class="per">' + esc(ch.sup) + '</div>' : '') + '</div>'
-    + '<button type="button" class="rd' + (read ? ' on' : '') + '" data-read="' + ch.id + '">' + (read ? '✓ το διάβασα' : 'το διάβασα') + '</button></div>'
-    + '<div class="stage">' + rulerHTML(ch) + '<div class="rows" data-ch="' + ch.id + '">' + blocksHTML(ch) + notesListHTML(ch.id) + '</div></div>'
+    + inspHTML(ch)
+    + '<div class="stage">' + rulerHTML(ch) + '<div class="rows" data-ch="' + ch.id + '">' + blocksHTML(ch)
+    + trapsHTML(ch) + matchHTML(ch) + notesListHTML(ch.id) + '</div></div>'
     + '</section>';
 }
 function renderChapter(id){
@@ -902,18 +1125,13 @@ function render(){
   $('#chapters').innerHTML = D.chapters.map(chapterHTML).join('');
   lastNow = {}; tick();
 }
-function paintRead(){
-  var m = readMap();
-  $$('[data-read]').forEach(function(b){ var on = !!m[b.dataset.read]; b.classList.toggle('on', on); b.textContent = on ? '✓ το διάβασα' : 'το διάβασα'; });
-}
-
-/* ══ ΜΠΑΡΑ ΚΕΦΑΛΑΙΩΝ — το χώρισμα πριν το V, τα Α./Β., το «το διάβασα» ══ */
+/* ══ ΜΠΑΡΑ ΣΤΑΣΕΩΝ — το χώρισμα πριν το V, τα Α./Β. ══ */
 function paintBar(){
-  var m = readMap(), h = '';
+  var h = '';
   D.chapters.forEach(function(c){
     if(c.part) h += '<span class="brk" aria-hidden="true">' + esc(c.part) + '</span>';
     h += '<button type="button" data-go="ch-' + c.id + '" data-bar="' + c.id + '" aria-label="Κεφάλαιο ' + esc(c.n) + '">' + (c.pre ? '<i>' + esc(c.pre) + '</i>' : '') + esc(c.n)
-       + (m[c.id] ? '<u></u>' : '') + '</button>';
+       + '</button>';
   });
   $('#nums').innerHTML = h; curBar = null; tick();
 }
@@ -921,7 +1139,7 @@ function paintBar(){
 /* ══ ΕΞΩΦΥΛΛΟ ══ */
 function paintCover(){
   var C = D.cover, n = P(C.num), m = n.match(/^(\d+)\s*(.*)$/) || [n, n, ''];
-  $('#cover').innerHTML = '<div><h1>Εισαγωγή</h1><p class="lead">' + esc(P(C.lead)) + '</p></div>'
+  $('#cover').innerHTML = '<div><p class="eye">Λατινικά · η εισαγωγή του βιβλίου</p><h1>Εισαγωγή</h1><p class="lead">' + esc(P(C.lead)) + '</p></div>'
     + '<div class="meet"><div class="big">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>'
     + '<div class="cap">' + esc(P(C.cap)) + '</div><div class="dots"><span class="dot g"></span><span class="dot r"></span></div></div>';
   $('#duo').innerHTML = C.duo.map(function(x, i){
@@ -998,11 +1216,38 @@ function paintSummary(){
   $('#summary').innerHTML = h + '</div>';
 }
 
-/* ══ ΟΙ ΠΙΝΑΚΕΣ (δεύτερος κόσμος) — και οι δύο ΠΑΡΑΓΟΝΤΑΙ ══ */
+/* ══ Ο ΔΡΟΜΟΣ ΤΩΝ ΣΤΑΣΕΩΝ — δύο σειρές: ό,τι είναι πριν το χώρισμα του
+   φυλλαδίου (το «part» του V) και ό,τι είναι μετά. Η στροφή ζωγραφίζεται
+   ανάμεσά τους· το fitRoad τη μετράει, γιατί το ύψος των τίτλων αλλάζει. ══ */
+function paintRoad(){
+  var A = [], B = [], after = false;
+  D.chapters.forEach(function(c){ if(c.part) after = true; (after ? B : A).push(c); });
+  var st = function(c){ return '<button type="button" class="st" data-go="ch-' + c.id + '" data-bar="' + c.id + '" aria-label="Στάση ' + esc(c.n) + '">'
+    + '<i>' + esc(c.n) + '</i><span>' + (c.pre ? esc(c.pre) + ' ' : '') + esc(c.title) + '</span></button>'; };
+  var h = '<span class="lbl">Ο δρόμος της εισαγωγής · ' + D.chapters.length + ' στάσεις</span><div class="road-in">'
+    + '<span class="rleg">Στάσεις ' + esc(A[0].n) + '–' + esc(A[A.length - 1].n) + '</span><div class="rrow r1">' + A.map(st).join('') + '</div>';
+  if(B.length) h += '<span class="rleg r2">' + esc(B[0].part) + '</span><div class="rrow r2">' + B.map(st).join('') + '</div>';
+  $('#road').innerHTML = h + '</div>';
+  fitRoad();
+}
+function fitRoad(){
+  var r = $('#road .road-in'), a = $('#road .r1'), b = $('#road .r2'); if(!r || !a || !b) return;
+  var top = r.getBoundingClientRect().top, t1 = a.getBoundingClientRect().top - top, t2 = b.getBoundingClientRect().top - top;
+  r.style.setProperty('--r1', t1.toFixed(1) + 'px');
+  var rh = t2 - t1 + 32;
+  r.style.setProperty('--rh', rh.toFixed(1) + 'px');
+  r.style.setProperty('--rw', Math.round(rh / 2) + 'px');
+}
+
+/* ══ ΟΙ ΠΙΝΑΚΕΣ (δεύτερος κόσμος) — όλοι ΠΑΡΑΓΟΝΤΑΙ από την πηγή ══ */
+function roCell(pr){
+  var who = personOf(pr.ro.t);
+  return who ? '<button type="button" class="m-ro" data-p="' + who.id + '">' + esc(P(pr.ro)) + '</button>' : '<span class="m-ro">' + esc(P(pr.ro)) + '</span>';
+}
 function paintTables(){
-  var h = '<div class="tb-h"><span class="lbl">Οι πίνακες</span><h2>Ποιος επηρεάζει ποιον</h2>'
-        + '<p>Μόνο ζεύγη που ονομάζει το ίδιο το φυλλάδιο — και τα δύο ονόματα στην ίδια πρόταση.</p></div>'
-        + '<div class="tbwrap"><table><thead><tr><th>Ελληνικό πρότυπο</th><th></th><th>Ρωμαίος</th><th>Η φράση του κειμένου</th><th>Κεφ.</th></tr></thead><tbody>';
+  var h = '<div class="tb-h"><span class="lbl">Οι πίνακες · 1</span><h2>Ποιος επηρεάζει ποιον</h2>'
+        + '<p>Μόνο ζεύγη που ονομάζει το ίδιο το φυλλάδιο — και τα δύο ονόματα στην ίδια πρόταση. Πάτα έναν Ρωμαίο για το πορτρέτο του.</p></div>'
+        + '<div class="tbwrap"><table><thead><tr><th>Ελληνικό πρότυπο</th><th></th><th>Ρωμαίος</th><th>Η φράση του κειμένου</th><th>Στάση</th></tr></thead><tbody>';
   D.pairs.forEach(function(pr){
     var line = SRC[pr.gr.l - 1], ga = find(line, pr.gr.t, pr.gr.n), ra = find(line, pr.ro.t, pr.ro.n);
     var a0 = Math.min(ga, ra), b0 = Math.max(ga + pr.gr.t.length, ra + pr.ro.t.length), s = sentence(line, a0, b0), c = chapterOfLine(pr.gr.l);
@@ -1010,25 +1255,129 @@ function paintTables(){
     var ph = '', pos = 0;
     parts.forEach(function(x){ ph += esc(seg.slice(pos, x[0])) + '<span class="' + x[2] + '">' + esc(seg.substr(x[0], x[1])) + '</span>'; pos = x[0] + x[1]; });
     ph += esc(seg.slice(pos));
-    h += '<tr><td><span class="m-gr">' + esc(P(pr.gr)) + '</span></td><td class="ar">→</td><td><span class="m-ro">' + esc(P(pr.ro)) + '</span></td>'
+    h += '<tr><td><span class="m-gr cvable">' + esc(P(pr.gr)) + '</span></td><td class="ar" aria-hidden="true">→</td><td>' + roCell(pr) + '</td>'
        + '<td class="ph">' + ph + '</td><td class="c">' + esc(c ? c.n : '') + '</td></tr>';
   });
   h += '</tbody></table></div>';
   var withP = D.chapters.filter(function(c){ return D.people.some(function(p){ return p.ch === c.n; }); });
-  h += '<div class="tb-h"><span class="lbl">Οι πίνακες</span><h2>Ποιος ανήκει πού</h2>'
+  h += '<div class="tb-h"><span class="lbl">Οι πίνακες · 2</span><h2>Ποιος ανήκει πού</h2>'
      + '<p>Δεν είναι γραμμένο πουθενά ως πίνακας — παράγεται από τη θέση του καθενός μέσα στην ίδια την εισαγωγή.</p></div>'
-     + '<div class="tbwrap"><table><thead><tr><th>Κεφάλαιο</th><th>Εποχή</th><th>Χρόνοι</th><th>Πρόσωπα</th></tr></thead><tbody>'
+     + '<div class="tbwrap"><table><thead><tr><th>Στάση</th><th>Εποχή</th><th>Χρόνοι</th><th>Πρόσωπα</th></tr></thead><tbody>'
      + withP.map(function(c){
          return '<tr><td class="c">' + esc(c.n + (c.pre ? ' · ' + c.pre : '')) + '</td><td><span class="m-wk">' + esc(c.title) + '</span></td>'
-              + '<td class="c">' + esc(c.sup || '—') + '</td><td>' + D.people.filter(function(p){ return p.ch === c.n; }).map(function(p){
-                  return '<button type="button" class="m-ro" data-p="' + p.id + '">' + esc(P(p.name)) + '</button>'; }).join(', ') + '</td></tr>';
+              + '<td class="c">' + esc(c.sup || '—') + '</td><td><div class="ppl">' + D.people.filter(function(p){ return p.ch === c.n; }).map(function(p){
+                  return '<button type="button" class="m-ro" data-p="' + p.id + '">' + esc(P(p.name)) + '</button>'; }).join('') + '</div></td></tr>';
        }).join('') + '</tbody></table></div>';
   h += '<p class="rule"><b>Τρία κεφάλαια, και είναι πληροφορία.</b> Και τα ' + D.people.length + ' πρόσωπα της εισαγωγής ζουν σε <b>' + withP.length
      + '</b> κεφάλαια. Η χρονογραμμή του κεφ. III δηλώνει τέσσερις εποχές, αλλά η Μετακλασική και η Ύστερη Αρχαιότητα δεν έχουν κεφάλαιο: '
-     + '<b>το φυλλάδιο σταματά στο 14 μ.Χ.</b> — το δείχνει και η ταινία των εποχών.</p>'
-     + '<p class="rule"><b>Ο κανόνας του πίνακα.</b> Κανένα κελί δεν γεμίζει από δική μου γνώση. Ο Κάτουλλος και ο Λουκρήτιος δεν έχουν '
+     + '<b>το φυλλάδιο σταματά στο 14 μ.Χ.</b> — το δείχνει και η ταινία των εποχών.</p>';
+  /* 3 · οι εποχές: όνομα · χρόνοι (αυτούσια) · ποιες στάσεις ζουν μέσα τους */
+  h += '<div class="tb-h"><span class="lbl">Οι πίνακες · 3</span><h2>Οι εποχές</h2>'
+     + '<p>Οι τέσσερις εποχές της ρωμαϊκής λογοτεχνίας με τα λόγια του κεφ. III, και ποιες στάσεις της εισαγωγής πέφτουν μέσα σε καθεμία.</p></div>'
+     + '<div class="tbwrap"><table><thead><tr><th>Εποχή</th><th>Από πότε ως πότε</th><th>Στάσεις</th><th>Πρόσωπα</th></tr></thead><tbody>'
+     + D.band.eras.map(function(e){
+         var cs = D.chapters.filter(function(c){ return c.era && c.era[0] >= e.a && c.era[1] <= e.b; });
+         var np = D.people.filter(function(p){ return cs.some(function(c){ return c.n === p.ch; }); }).length;
+         return '<tr><td><span class="m-wk">' + esc(P(e.name)) + '</span></td><td class="ph">' + esc(P(e.span)) + '</td>'
+              + '<td>' + (cs.length ? '<div class="ppl">' + cs.map(function(c){ return '<button type="button" data-goch="ch-' + c.id + '">' + esc((c.pre ? c.pre + ' ' : '') + c.n) + '</button>'; }).join('') + '</div>' : '<span class="no">καμία — το φυλλάδιο σταματά πριν</span>') + '</td>'
+              + '<td class="c">' + (np || '—') + '</td></tr>';
+       }).join('') + '</tbody></table></div>';
+  h += '<p class="rule"><b>Ο κανόνας των πινάκων.</b> Κανένα κελί δεν γεμίζει από δική μου γνώση. Ο Κάτουλλος και ο Λουκρήτιος δεν έχουν '
      + 'γραμμή στον πρώτο πίνακα γιατί το κείμενό σου <b>δεν</b> ονομάζει ελληνικό πρότυπο για αυτούς. Αν λείπει γραμμή, λείπει από το φυλλάδιο.</p>';
   $('#tables').innerHTML = h;
+}
+
+/* ══ Ο ΕΛΕΓΧΟΣ (τρίτος κόσμος) — πέντε ασκήσεις, ΟΛΕΣ από τα δεδομένα.
+   Σταθ. 27: καμία ερώτηση δεν δείχνει την απάντηση — η στάση δίνεται με
+   τους ΧΡΟΝΟΥΣ της (ο τίτλος του VII λέει «Κικέρωνα»), το είδος και η
+   εποχή δεν γράφονται στο όνομα. Τίποτα δεν αποθηκεύεται: εξάσκηση. ══ */
+var CK = {};
+function buildCK(key){
+  var qs = [];
+  if(key === 'ch'){
+    var chs = D.chapters.filter(function(c){ return D.people.some(function(p){ return p.ch === c.n; }); });
+    var lab = function(c){ return 'Στάση ' + (c.pre ? c.pre + ' ' : '') + c.n + ' · ' + (c.sup || c.title); };
+    shuffled(D.people).forEach(function(p){
+      var ops = shuffled(chs.map(lab)), right = lab(chs.filter(function(c){ return c.n === p.ch; })[0]);
+      qs.push({ q:'<span class="m-ro">' + esc(P(p.name)) + '</span> — σε ποια στάση ανήκει;', ops:ops, a:ops.indexOf(right) });
+    });
+  } else if(key === 'gen'){
+    var lanes = []; D.people.forEach(function(p){ if(lanes.indexOf(p.genre) < 0) lanes.push(p.genre); });
+    shuffled(D.people).forEach(function(p){
+      qs.push({ q:'<span class="m-ro">' + esc(P(p.name)) + '</span> — ποιο είδος;', ops:lanes.slice(), a:lanes.indexOf(p.genre) });
+    });
+  } else if(key === 'era'){
+    var spans = D.band.eras.map(function(e){ return P(e.span); });
+    shuffled(D.band.eras).forEach(function(e){
+      var ops = shuffled(spans);
+      qs.push({ q:'<b>' + esc(P(e.name)) + '</b> — από πότε ως πότε;', ops:ops, a:ops.indexOf(P(e.span)) });
+    });
+  }
+  return CK[key] = { qs:qs, got:{} };
+}
+function mcqCard(key, i){
+  var Q = CK[key].qs[i], got = CK[key].got[i], done = got !== undefined;
+  return '<div class="mq' + (done ? (got === Q.a ? ' good' : ' bad') : '') + '" data-q="' + key + ':' + i + '"><p class="q">' + Q.q + '</p><div class="op">'
+    + Q.ops.map(function(o, k){
+        var c = done ? (k === Q.a ? ' class="ok"' : k === got ? ' class="no"' : '') : '';
+        return '<button type="button" data-op="' + k + '"' + c + (done ? ' disabled' : '') + '>' + esc(o) + '</button>';
+      }).join('') + '</div></div>';
+}
+/* οι γύροι της μεγάλης αντιστοίχισης: ένα ελληνικό πρότυπο μία φορά ανά γύρο */
+function rounds(){
+  var R = [];
+  shuffled(pairsOf(null)).forEach(function(x){
+    for(var k = 0; ; k++){
+      if(!R[k]) R[k] = [];
+      if(R[k].length < 6 && !R[k].some(function(y){ return y.g === x.g; })){ R[k].push(x); break; }
+    }
+  });
+  return R;
+}
+var CK_ROUNDS = null;
+function ckSection(id, title, sub, again, body){
+  return '<section class="ck" id="ck-' + id + '"><div class="ck-t"><h3>' + esc(title) + '</h3><span class="sc" id="sc-' + id + '"></span>'
+    + '<button type="button" class="again" data-again="' + again + '">Ξανά</button></div><p class="s">' + esc(sub) + '</p>' + body + '</section>';
+}
+function paintCheck(){
+  ['ch', 'gen', 'era'].forEach(function(k){ if(!CK[k]) buildCK(k); });
+  if(!CK_ROUNDS){ CK_ROUNDS = rounds(); CK_ROUNDS.forEach(function(r, i){ MLIST['all' + i] = r; }); }
+  var mcq = function(k){ return '<div class="mcq k-' + k + '">' + CK[k].qs.map(function(q, i){ return mcqCard(k, i); }).join('') + '</div>'; };
+  var h = '<header class="ck-h"><span class="lbl">Έλεγχος</span><h2>Ξέρεις την εισαγωγή;</h2>'
+    + '<p>Πέντε ασκήσεις, όλες φτιαγμένες από το κείμενο της εισαγωγής. Δεν βαθμολογείται ούτε αποθηκεύεται — είναι εξάσκηση. Το «Ξανά» ανακατεύει.</p>'
+    + '<div class="ck-nav">' + [['tf', 'Σωστό / λάθος'], ['mt', 'Ελλάδα → Ρώμη'], ['ch', 'Ποια στάση'], ['gen', 'Ποιο είδος'], ['era', 'Οι εποχές']].map(function(x){
+        return '<button type="button" data-ckgo="ck-' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></header>';
+  h += ckSection('tf', 'Σωστό ή λάθος', 'Οι παγίδες όλων των στάσεων. Μετά την απάντηση βλέπεις τα λόγια του βιβλίου.', 'tf',
+    '<div class="trps">' + trapsOf(null).map(trapCard).join('') + '</div>');
+  h += ckSection('mt', 'Ποιος εμπνέει ποιον', 'Όλα τα ζεύγη της εισαγωγής, σε ' + CK_ROUNDS.length + ' γύρους. Πάτα ένα πρότυπο και μετά τον Ρωμαίο του.', 'mt',
+    CK_ROUNDS.map(function(r, i){ return matchBlock('all' + i, r, 'Γύρος ' + (i + 1) + ' από ' + CK_ROUNDS.length, 'Ένα πρότυπο, ένας Ρωμαίος — όπως τα ζευγαρώνει το κείμενο.'); }).join(''));
+  h += ckSection('ch', 'Σε ποια στάση ανήκει', 'Τα δεκαπέντε πρόσωπα της εισαγωγής. Οι στάσεις δίνονται με τους χρόνους τους.', 'ch', mcq('ch'));
+  h += ckSection('gen', 'Ποιο είδος γράφει', 'Έπος, κωμωδία, πεζογραφία ή ποίηση — όπως τα χωρίζουν οι σημειώσεις σου.', 'gen', mcq('gen'));
+  h += ckSection('era', 'Οι εποχές', 'Τα όρια των τεσσάρων εποχών, με τα λόγια του κεφ. III.', 'era', mcq('era'));
+  $('#check').innerHTML = h;
+  paintScores();
+}
+function paintScores(){
+  var set = function(id, good, done, all){ var e = document.getElementById('sc-' + id); if(e) e.innerHTML = done ? '<b>' + good + '</b> ' + (good === 1 ? 'σωστό' : 'σωστά') + ' στις ' + done + ' · ' + all + ' ερωτήσεις' : all + ' ερωτήσεις'; };
+  var ti = trapsOf(null), tg = 0, td = 0;
+  ti.forEach(function(i){ if(TRS[i] !== undefined){ td++; if(TRS[i] === D.traps[i].a) tg++; } });
+  set('tf', tg, td, ti.length);
+  ['ch', 'gen', 'era'].forEach(function(k){
+    if(!CK[k]) return; var g = 0, d = 0;
+    CK[k].qs.forEach(function(Q, i){ var x = CK[k].got[i]; if(x !== undefined){ d++; if(x === Q.a) g++; } });
+    set(k, g, d, CK[k].qs.length);
+  });
+  if(CK_ROUNDS){
+    var mg = 0, ml = 0, mt = 0;
+    CK_ROUNDS.forEach(function(r, i){ var st = MS['all' + i]; if(!st) return; ml += st.L.length; mt += st.tries; for(var k in st.okL) if(st.okL[k]) mg++; });
+    var e = document.getElementById('sc-mt'); if(e) e.innerHTML = '<b>' + mg + '</b> από ' + ml + ' ζεύγη' + (mt ? ' · ' + mt + (mt === 1 ? ' λάθος' : ' λάθη') : '');
+  }
+}
+function again(key){
+  if(key === 'tf'){ TRS = {}; render(); }
+  else if(key === 'mt'){ CK_ROUNDS.forEach(function(r, i){ delete MS['all' + i]; delete MLIST['all' + i]; }); CK_ROUNDS = null; }
+  else delete CK[key];
+  var y = window.scrollY; paintCheck(); window.scrollTo(0, y);
 }
 
 /* ══ Ο ΧΑΡΑΚΑΣ ΚΑΙ Η ΜΠΑΡΑ ΑΚΟΛΟΥΘΟΥΝ ΤΗΝ ΑΝΑΓΝΩΣΗ — scroll + rAF,
@@ -1056,11 +1405,11 @@ function tick(){
   $$('.chap').forEach(function(sec){ if(sec.getBoundingClientRect().top < innerHeight * 0.32) act = sec.dataset.ch; });
   if(act !== curBar){
     curBar = act;
-    $$('#nums [data-bar]').forEach(function(b){ b.setAttribute('aria-current', String(b.dataset.bar === act)); });
+    $$('#nums [data-bar], #road [data-bar]').forEach(function(b){ b.setAttribute('aria-current', String(b.dataset.bar === act)); });
   }
 }
 addEventListener('scroll', function(){ if(!raf) raf = requestAnimationFrame(tick); }, { passive:true });
-addEventListener('resize', function(){ lastNow = {}; fitBand(); tick(); });
+addEventListener('resize', function(){ lastNow = {}; fitBand(); fitRoad(); tick(); });
 
 /* ══ ΠΑΤΗΜΑΤΑ — ένας ακροατής για όλη τη σελίδα ══ */
 function jump(kind, id, chId){
@@ -1081,7 +1430,43 @@ document.addEventListener('click', function(e){
   if((x = t.closest('[data-close]'))){ var d = $('#ptd'); if(d.close) d.close(); else d.removeAttribute('open'); return; }
   if((x = t.closest('[data-p]'))){ hideTip(); openPortrait(x.dataset.p); return; }
   if((x = t.closest('[data-go]'))){ var g = document.getElementById(x.dataset.go); if(g) g.scrollIntoView({ block:'start' }); return; }
-  if((x = t.closest('[data-read]'))){ toggleRead(x.dataset.read); return; }
+  /* παγίδα: απάντηση → η ίδια κάρτα παντού (στάση + Έλεγχος) */
+  if((x = t.closest('[data-ta]'))){
+    var card = x.closest('[data-t]'), ti = +card.dataset.t;
+    TRS[ti] = x.dataset.ta === '1';
+    $$('[data-t="' + ti + '"]').forEach(function(c){ var tmp = document.createElement('div'); tmp.innerHTML = trapCard(ti); c.parentNode.replaceChild(tmp.firstChild, c); });
+    paintScores(); return;
+  }
+  /* «Δες το στο κείμενο» — και από τον Έλεγχο */
+  if((x = t.closest('[data-tl]'))){
+    var tl = x.dataset.tl; if(CUR_W !== 'A') world('A');
+    var rw = $('#chapters .row[data-l="' + tl + '"]');
+    if(rw){ rw.scrollIntoView({ block:'center' }); var pp = $('p', rw); if(pp){ pp.classList.add('hot'); setTimeout(function(){ pp.classList.remove('hot'); }, 1800); } }
+    return;
+  }
+  /* αντιστοίχιση */
+  if((x = t.closest('[data-ml]'))){
+    var mk = x.closest('[data-m]').dataset.m, ms = MS[mk];
+    ms.sel = +x.dataset.ml; ms.bad = -1; repaintMatch(mk); return;
+  }
+  if((x = t.closest('[data-mr]'))){
+    var mk2 = x.closest('[data-m]').dataset.m, m2 = MS[mk2], j = +x.dataset.mr;
+    if(m2.sel < 0) return;
+    if(isPair(m2, m2.L[m2.sel], m2.R[j])){ m2.okL[m2.sel] = true; m2.sel = -1; m2.bad = -1; }
+    else { m2.bad = j; m2.tries++; }
+    repaintMatch(mk2); paintScores(); return;
+  }
+  if((x = t.closest('[data-mx]'))){ delete MS[x.dataset.mx]; repaintMatch(x.dataset.mx); paintScores(); return; }
+  /* έλεγχος: πολλαπλή επιλογή */
+  if((x = t.closest('[data-op]'))){
+    var q = x.closest('[data-q]'), sk = q.dataset.q.split(':');
+    CK[sk[0]].got[+sk[1]] = +x.dataset.op;
+    var tq = document.createElement('div'); tq.innerHTML = mcqCard(sk[0], +sk[1]); q.parentNode.replaceChild(tq.firstChild, q);
+    paintScores(); return;
+  }
+  if((x = t.closest('[data-again]'))){ again(x.dataset.again); return; }
+  if((x = t.closest('[data-ckgo]'))){ var cg = document.getElementById(x.dataset.ckgo); if(cg) cg.scrollIntoView({ block:'start' }); return; }
+  if((x = t.closest('[data-goch]'))){ world('A'); var gc = document.getElementById(x.dataset.goch); if(gc) gc.scrollIntoView({ block:'start' }); return; }
   if((x = t.closest('[data-jh]'))){ jump('h', x.dataset.jh, x.dataset.ch); return; }
   if((x = t.closest('[data-jd]'))){ jump('d', x.dataset.jd, x.dataset.ch); return; }
   if((x = t.closest('[data-del]'))){
@@ -1208,14 +1593,18 @@ function toast(msg, label, fn){
   toT = setTimeout(function(){ t.hidden = true; }, label ? 5200 : 2800);
 }
 
-/* ══ ΟΙ ΔΥΟ ΚΟΣΜΟΙ ══ */
-function world(a){
-  $('#worldA').hidden = !a; $('#worldB').hidden = a; $('#numsBar').hidden = !a;
-  $('#wA').setAttribute('aria-selected', String(a)); $('#wB').setAttribute('aria-selected', String(!a));
-  hideSel(); hideTip(); closePop(); window.scrollTo(0, 0); if(a){ lastNow = {}; tick(); }
+/* ══ ΟΙ ΤΡΕΙΣ ΚΟΣΜΟΙ ══ */
+var CUR_W = 'A';
+function world(w){
+  CUR_W = w;
+  ['A', 'B', 'C'].forEach(function(k){ $('#world' + k).hidden = k !== w; $('#w' + k).setAttribute('aria-selected', String(k === w)); });
+  $('#numsBar').hidden = w !== 'A';
+  hideSel(); hideTip(); closePop(); window.scrollTo({ top:0, behavior:'instant' });
+  if(w === 'A'){ lastNow = {}; fitRoad(); fitBand(); tick(); }
 }
-$('#wA').onclick = function(){ world(true); };
-$('#wB').onclick = function(){ world(false); };
+$('#wA').onclick = function(){ world('A'); };
+$('#wB').onclick = function(){ world('B'); };
+$('#wC').onclick = function(){ world('C'); };
 
 /* ══ ΣΥΓΧΡΟΝΙΣΜΟΣ — και ένας που δεν ξεκίνησε ΤΟ ΛΕΕΙ (σταθ. 10/32) ══ */
 function gate(msg){ var g = $('#gate'); if(!g) return; g.innerHTML = msg; g.hidden = false; }
@@ -1237,8 +1626,8 @@ function gate(msg){ var g = $('#gate'); if(!g) return; g.innerHTML = msg; g.hidd
 
 /* ══ εκκίνηση ══ */
 D.chapters.forEach(function(c){ loadNotes(c.id); });
-paintCover(); paintBand(); render(); paintBar(); paintSummary(); paintTables();
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitBand(); lastNow = {}; tick(); });
+paintCover(); paintRoad(); paintBand(); render(); paintBar(); paintSummary(); paintTables(); paintCheck();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitBand(); fitRoad(); lastNow = {}; tick(); });
 if(ERR.length) gate('<b>Σημάδια εκτός πηγής:</b> ' + esc(ERR.join(' · ')));
 window.__EIS_OK = !ERR.length;
 })();
