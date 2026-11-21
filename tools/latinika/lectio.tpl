@@ -372,8 +372,126 @@ h1{font-family:var(--gr);font-style:italic;font-weight:400;font-size:82px;line-h
   .sh h2,.traps h3,.notes h3{font-size:28px}
 }
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&amp;family=Commissioner:wght@400;500;600;700&amp;display=swap">
+<style>
+/* ══ ΓΡΑΦΙΤΗΣ (als-v770, 21/11/26) — η γλώσσα του Γνωστού (tools/gnosto/skin-graf.html)
+   στα Λατινικά. Εγκρίθηκε πάνω στο demo του XXIX (artifact RGdrNYbgKcVpfvDJwoL1jT).
+   ΜΟΝΟ εμφάνιση: η μηχανή, τα κλειδιά προόδου και τα δεδομένα ανέγγιχτα. Ζει σε
+   ΔΕΥΤΕΡΟ μπλοκ στυλ ώστε το archikoi.js (κόβει ως το κλείσιμο του ΠΡΩΤΟΥ) να μένει ίδιο.
+   ⚠️ ΠΟΤΕ η λέξη του tag μέσα σε σχόλιο εδώ: ο browser την παίρνει για κλείσιμο του στυλ.
+   Παλιά εκδοχή: archive/latinika-pre-grafitis/. ══ */
+body.skin-graf{--bg:oklch(23.5% .010 262);--s1:oklch(26.5% .010 262);--s2:oklch(29.5% .010 262);--s3:oklch(33% .010 262);
+  --ink:#EEE9DF;--dim:rgba(238,233,223,.80);--faint:rgba(238,233,223,.56);--line:rgba(238,233,223,.08);--line2:rgba(238,233,223,.15);
+  --lat:92,206,198;--rd:"Literata","Noto Serif",Georgia,serif;--sans:"Commissioner",system-ui,-apple-system,sans-serif}
+body.skin-graf .shell{max-width:1240px;padding:0 clamp(18px,3.4vw,48px) 120px}
+body.skin-graf .lbl{font-family:var(--sans);font-size:11.5px;font-weight:600;letter-spacing:.09em;color:var(--faint)}
+/* πάνω γραμμή */
+body.skin-graf .top{font-family:var(--sans);font-size:13.5px;letter-spacing:0;text-transform:none;min-height:60px;border-bottom:1px solid var(--line)}
+body.skin-graf .top a{letter-spacing:0;font-weight:500;color:var(--ink)}
+body.skin-graf .top .sl,body.skin-graf .top .wm{display:none}
+body.skin-graf .top .wh{margin-left:auto;font-size:13px;color:var(--faint)}
+/* εξώφυλλο: τίτλος αριστερά, ο χάρτης των σκηνών δεξιά */
+body.skin-graf .cover{grid-template-columns:minmax(0,1fr) 380px;align-items:start;gap:64px;padding:40px 0 36px;border-bottom:0}
+body.skin-graf .face{display:none}
+body.skin-graf .eyebrow{font-family:var(--sans);font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--dim);margin-bottom:12px}
+body.skin-graf .eyebrow b{color:rgb(var(--lat));font-weight:600}
+body.skin-graf h1{font-style:normal;font-size:56px;line-height:1.06}
+body.skin-graf h1 br{display:none}
+body.skin-graf .lead{font-family:var(--rd);font-size:18px;line-height:1.68;color:var(--dim);max-width:60ch}
+body.skin-graf .lead b{font-family:var(--sans);font-size:15px;font-weight:600}
+.lmap{display:none}
+body.skin-graf .lmap{display:block}
+.lmap .lbl{display:flex;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.lmap .lbl span{text-transform:none;letter-spacing:0;font-weight:400}
+.nd{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:12px;align-items:baseline;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--line)}
+.nd .i{font-family:var(--serif);font-size:18px;color:rgb(var(--lat))}
+.nd .t{font-family:var(--rd);font-size:16px;line-height:1.35;color:var(--dim)}
+.nd .r{font-size:12.5px;color:var(--faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+.nd:hover .t,.nd.on .t{color:var(--ink)}
+.nd .r b{color:rgb(var(--ok));font-weight:600}
+/* μετρήσεις: μία ήσυχη ταινία */
+body.skin-graf .band{margin-top:0;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:none}
+body.skin-graf .band>div{padding:16px 22px 16px 0}
+body.skin-graf .band>div+div{padding-left:22px}
+body.skin-graf .band .bl{font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:13px;color:var(--dim)}
+body.skin-graf .band .bn{font-family:var(--sans);font-size:26px;font-weight:600;margin-top:4px}
+body.skin-graf .band .bn small{font-size:14px;font-weight:400;margin-left:4px}
+body.skin-graf .band .bs{display:none}
+body.skin-graf .dash i{height:3px}
+/* καρτέλες: κολλάνε πάνω όσο διαβάζεις */
+body.skin-graf .tabs{position:sticky;top:0;z-index:20;margin-top:26px;gap:28px;background:color-mix(in oklab,var(--bg) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+body.skin-graf .tab{font-size:14.5px;min-height:52px;padding:0}
+body.skin-graf .tab[aria-selected="true"]{font-weight:600}
+body.skin-graf .tab .c{font-family:var(--sans);font-size:12.5px}
+body.skin-graf .panel{padding-top:22px}
+/* εργαλεία */
+body.skin-graf .tools{gap:10px 20px}
+body.skin-graf .seg{border-radius:9px;padding:2px}
+body.skin-graf .seg button{border-radius:7px;font-size:13.5px;min-height:34px}
+body.skin-graf .seg button[aria-pressed="true"]{background:var(--s3);font-weight:600}
+body.skin-graf .know{font-family:var(--sans);font-size:12.5px;letter-spacing:0;border-radius:8px}
+body.skin-graf .chk{font-size:13.5px}
+body.skin-graf .modehint{font-size:15px;color:var(--dim);max-width:78ch;margin-top:10px}
+body.skin-graf .lenses{padding-bottom:18px;margin-top:14px}
+body.skin-graf .lens{font-size:13px;min-height:32px}
+body.skin-graf .lens i{font-family:var(--sans);font-size:11.5px}
+/* η ανάγνωση */
+body.skin-graf .read{grid-template-columns:minmax(0,1fr) 360px;gap:56px}
+body.skin-graf .scene{margin-top:44px;scroll-margin-top:70px}
+body.skin-graf .scene:first-child{margin-top:12px}
+body.skin-graf .scene-head{gap:14px;padding-bottom:12px;border-bottom:1px solid var(--line2)}
+body.skin-graf .scene-num{font-size:20px}
+body.skin-graf .scene-title{font-family:var(--rd);font-style:normal;font-weight:500;font-size:21px}
+body.skin-graf .scene-flow{font-family:var(--sans);font-size:12.5px;letter-spacing:0;text-transform:none}
+body.skin-graf .sent{border-top:0;border-bottom:1px solid var(--line);padding:24px 0}
+body.skin-graf .num{font-family:var(--sans);font-size:13px;display:flex;justify-content:flex-end;align-items:flex-start;padding-top:6px}
+.numb{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:7px;transition:background .2s,color .2s}
+body.skin-graf .sent.cur .numb{background:rgb(var(--lat));color:var(--bg);font-weight:700}
+body.skin-graf .la{font-size:29px;line-height:1.5}
+body.skin-graf .gr{margin-top:8px;font-family:var(--rd);font-size:17.5px;line-height:1.72;word-spacing:-.03em;max-width:64ch}
+body.skin-graf .gr .w{padding:0 1px}
+body.skin-graf .veil{border-radius:10px;font-size:14px;padding:13px 16px}
+body.skin-graf .g3{border-radius:8px}
+body.skin-graf .sent .mark{font-family:var(--sans);letter-spacing:.06em}
+body.skin-graf .clauses li{font-size:15px;font-family:var(--rd)}
+body.skin-graf .clauses li b,body.skin-graf .clauses li .k{font-family:var(--sans);letter-spacing:.04em}
+/* η καρτέλα της λέξης */
+body.skin-graf .aside{top:68px}
+body.skin-graf .wc{background:var(--s1);border-color:var(--line2);border-radius:14px}
+body.skin-graf .wc.empty{background:none;border:0;border-top:1px solid var(--line2);border-radius:0;padding:22px 0 0;font-family:var(--rd);font-size:16px;line-height:1.68}
+body.skin-graf .wc.empty .big{font-family:var(--rd);font-style:normal;font-weight:500;font-size:21px}
+body.skin-graf .wc-d{font-family:var(--rd);font-size:17px}
+body.skin-graf .wc-sec p{font-family:var(--rd);font-size:15.5px;line-height:1.68}
+body.skin-graf .wc dt{font-family:var(--sans);font-size:12.5px;letter-spacing:0;text-transform:none}
+body.skin-graf .wc dd{font-size:14.5px}
+body.skin-graf .chip{font-size:13px}
+/* Γραμματική · Σημειώσεις · Κάρτες: Literata για τα ελληνικά, ήσυχες επιφάνειες */
+body.skin-graf .sh h2,body.skin-graf .traps h3,body.skin-graf .notes h3{font-family:var(--rd);font-style:normal;font-weight:500;font-size:27px}
+body.skin-graf .sh .sub,body.skin-graf .traps .sub,body.skin-graf .notes .sub{font-size:15px}
+body.skin-graf .tbl{font-size:15px}
+body.skin-graf .tbl th,body.skin-graf .conj th,body.skin-graf .seqt th{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.06em}
+body.skin-graf .tbl td.n,body.skin-graf .conj td:first-child{font-family:var(--sans);font-size:12.5px}
+body.skin-graf .tbl tr.gh td{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.08em}
+body.skin-graf .box,body.skin-graf .nt{background:var(--s1);border-color:var(--line2);border-radius:14px}
+body.skin-graf .box h3,body.skin-graf .nt h4{font-family:var(--rd);font-style:normal;font-weight:500;font-size:21px}
+body.skin-graf .nt h4 .la{font-size:23px}
+body.skin-graf .nt p,body.skin-graf .traps .fix{font-family:var(--rd);font-size:15.5px}
+body.skin-graf .nt td .q,body.skin-graf .back .gd{font-family:var(--rd)}
+body.skin-graf .nt .src{font-family:var(--sans);font-size:12px;letter-spacing:.02em;text-transform:none}
+body.skin-graf .attn{border-left:0;border-radius:12px;font-family:var(--rd);font-size:15.5px}
+body.skin-graf .deck{border-color:var(--line2);border-radius:14px}
+body.skin-graf .dk .t{font-family:var(--rd);font-style:normal;font-weight:500;font-size:17px}
+body.skin-graf .dk .s,body.skin-graf .cmeta,body.skin-graf .card .ask,body.skin-graf .card .tap,body.skin-graf .keys,body.skin-graf .cfoot button,body.skin-graf .rate button .i,body.skin-graf .back .facts span b{font-family:var(--sans);letter-spacing:.04em}
+body.skin-graf .card{background:var(--s1);border-color:var(--line2);border-radius:18px}
+body.skin-graf .done .big{font-family:var(--rd);font-style:normal;font-weight:500}
+body.skin-graf .foot{font-size:14px}
+@media (max-width:1180px){ body.skin-graf .cover{grid-template-columns:minmax(0,1fr) 330px;gap:40px} body.skin-graf .read{grid-template-columns:minmax(0,1fr) 320px;gap:36px} }
+@media (max-width:1040px){ body.skin-graf .cover{grid-template-columns:minmax(0,1fr);gap:26px} body.skin-graf .read{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:760px){ body.skin-graf h1{font-size:40px} body.skin-graf .band{grid-template-columns:repeat(3,minmax(0,1fr))} body.skin-graf .band>div+div{border-left:1px solid var(--line);border-top:0;padding-left:12px} body.skin-graf .band>div{padding-right:10px} body.skin-graf .band .bn{font-size:21px} body.skin-graf .band .bl{font-size:12px} body.skin-graf .la{font-size:24px} body.skin-graf .gr{font-size:17px} body.skin-graf .lead{font-size:17px} }
+@media (max-width:560px){ body.skin-graf .tabs{gap:20px} body.skin-graf .scene-flow{display:none} }
+</style>
 </head>
-<body>
+<body class="skin-graf">
 <div class="shell">
   <div class="top">
     <a href="latinika.html">&#8592; Λατινικά</a>
@@ -1093,6 +1211,31 @@ setTab(['keimeno','grammatiki','simeioseis','kartes'].includes(h0) ? h0 : (ui.ta
    (πλάι ↔ κάτω από την ενότητα) — δεν σβήνει αυτό που διάβαζες. */
 function relocate(){ const s = sel; clearSel(); if (s) select(s.u, s.i); }
 wide.addEventListener ? wide.addEventListener('change', relocate) : wide.addListener(relocate);
+</script>
+<script>
+/* ΓΡΑΦΙΤΗΣ (als-v770): χάρτης σκηνών στο εξώφυλλο, αριθμός ενότητας σε κουτάκι.
+   Διαβάζει ΜΟΝΟ το DOM που έφτιαξε η μηχανή· δεν γράφει τίποτα στο storage. */
+(function(){
+  var body=document.body; body.classList.add('skin-graf');
+  /* αριθμός ενότητας σε κουτάκι (για να ξέρεις πού είσαι) */
+  function numbs(){ document.querySelectorAll('.sent .num').forEach(function(n){ if(!n.querySelector('.numb')) n.innerHTML='<span class="numb">'+n.textContent+'</span>'; }); }
+  numbs(); new MutationObserver(numbs).observe(document.getElementById('content'),{childList:true});
+  document.getElementById('content').addEventListener('click',function(e){ var s=e.target.closest('.sent'); if(!s) return; document.querySelectorAll('.sent.cur').forEach(function(x){x.classList.remove('cur')}); s.classList.add('cur'); });
+  /* ο χάρτης των σκηνών στο εξώφυλλο — από τα ίδια δεδομένα, πατάς και πας */
+  var cover=document.querySelector('.cover'), m=document.createElement('nav'); m.className='lmap'; m.setAttribute('aria-label','Οι σκηνές');
+  function map(){
+    var sc=[].slice.call(document.querySelectorAll('#content .scene')); if(!sc.length) return;
+    var tot=0, rows=sc.map(function(s,i){ var h=s.querySelector('.scene-head'), n=s.querySelectorAll('.sent').length, k=s.querySelectorAll('.know.on').length; tot+=n;
+      var a=+s.querySelector('.sent .num').textContent.trim(), b=a+n-1;
+      return '<button class="nd" data-i="'+i+'"><span class="i">'+h.querySelector('.scene-num').textContent+'</span><span class="t">'+h.querySelector('.scene-title').textContent+'</span><span class="r">'+(k?'<b>'+k+'✓</b> · ':'')+'ενότ. '+(a===b?a:a+'–'+b)+'</span></button>'; });
+    m.innerHTML='<div class="lbl">Ο ΧΑΡΤΗΣ ΤΟΥ ΚΕΙΜΕΝΟΥ<span>'+sc.length+' σκηνές · '+tot+' ενότητες</span></div>'+rows.join('');
+  }
+  map(); cover.appendChild(m);
+  new MutationObserver(map).observe(document.getElementById('content'),{subtree:true,attributes:true,attributeFilter:['class'],childList:true});
+  m.addEventListener('click',function(e){ var b=e.target.closest('.nd'); if(!b) return; var t=document.querySelector('.tab[data-tab="keimeno"]'); if(t&&t.getAttribute('aria-selected')!=='true') t.click(); document.querySelectorAll('#content .scene')[+b.dataset.i].scrollIntoView({behavior:'smooth',block:'start'}); });
+  /* η μπάρα του browser στο χρώμα του γραφίτη */
+  var tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content='#26282e';
+})();
 </script>
 </body>
 </html>

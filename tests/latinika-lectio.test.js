@@ -696,6 +696,21 @@ ok(!/@media\s*\(\s*min-width/.test(TEMPLATE), '⛔ κανένα min-width στο
 ok(!/font-family:[^;]*Georgia/.test(TEMPLATE.slice(0, TEMPLATE.indexOf('</style>'))) && /--serif:"Instrument Serif",Georgia/.test(TEMPLATE),
   '   Georgia μόνο ως fallback του λατινικού serif');
 ok(!/<script[^>]*\ssrc=/i.test(TEMPLATE), '⛔ το πρότυπο δεν φορτώνει κανένα <script src> (σταθ. 8)');
+/* ⭐ ΓΡΑΦΙΤΗΣ (als-v770): η στρώση ζει σε ΔΕΥΤΕΡΟ μπλοκ στυλ. Ένα «</style>» γραμμένο
+   μέσα σε σχόλιο CSS έκλεινε το μπλοκ νωρίς και ΟΛΟ το look χανόταν σιωπηλά (πιάστηκε
+   μόνο μετρώντας το computed φόντο). Άρα: ίσα ανοίγματα/κλεισίματα, και το μπλοκ περιέχει
+   ολόκληρη τη στρώση ως το τέλος του. */
+(function(){
+  var op = (TEMPLATE.match(/<style>/g) || []).length, cl = (TEMPLATE.match(/<\/style>/g) || []).length;
+  eq(op, 2, 'ΓΡΑΦΙΤΗΣ: ακριβώς δύο μπλοκ στυλ (μηχανή + στρώση)');
+  eq(cl, 2, 'ΓΡΑΦΙΤΗΣ: ακριβώς δύο κλεισίματα στυλ — κανένα κρυμμένο σε σχόλιο');
+  var a2 = TEMPLATE.indexOf('<style>', TEMPLATE.indexOf('<style>') + 1), b2 = TEMPLATE.indexOf('</style>', a2);
+  var blk = TEMPLATE.slice(a2, b2);
+  ok(blk.indexOf('body.skin-graf{--bg:') > 0 && blk.indexOf('@media (max-width:560px)') > 0, 'ΓΡΑΦΙΤΗΣ: ολόκληρη η στρώση μέσα στο δεύτερο μπλοκ');
+  ok(/<body class="skin-graf">/.test(TEMPLATE), 'ΓΡΑΦΙΤΗΣ: το body φοράει τη στρώση');
+  ok(/family=Literata[^"]*family=Commissioner/.test(TEMPLATE), 'ΓΡΑΦΙΤΗΣ: φορτώνονται Literata + Commissioner (ελληνικά γλυφά)');
+  ok(!/localStorage|lsSet/.test(TEMPLATE.slice(TEMPLATE.lastIndexOf('<script>'))), 'ΓΡΑΦΙΤΗΣ: το script της στρώσης δεν γράφει storage');
+})();
 ok(AUTO.length >= 1 && AUTO.indexOf(24) >= 0, '⭐ το XXIV είναι πακέτο από JSON (το πρώτο)');
 
 AUTO.forEach(function (nn) {
