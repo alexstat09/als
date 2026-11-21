@@ -175,6 +175,30 @@ function validate(d, src) {
     if (T.fix.l < c.lines[0] || T.fix.l > c.lines[1]) errs.push(w + ': η διόρθωση (γραμμή ' + T.fix.l + ') είναι έξω από το κεφ. ' + c.n);
     if (T.q === T.fix.t) errs.push(w + ': η ερώτηση είναι η ίδια η απάντηση');
   });
+
+  /* 9. το σχεδιάγραμμα (als-v772): ΚΑΘΕ υποσημείο (li) και κάθε «ΑΡΑ» (res) είναι
+     φράση αυτολεξεί μέσα στις γραμμές της ΙΔΙΑΣ στάσης· οι τίτλοι είναι σύντομοι */
+  const SHAPES = ['row', 'chain', 'vs'], TINTS = ['gr', 'ro'];
+  (d.outline || []).forEach((O, i) => {
+    const w = 'outline[' + i + ']', c = d.chapters.find(x => x.n === O.ch);
+    if (!c) { errs.push(w + ': άγνωστη στάση «' + O.ch + '»'); return; }
+    const text = src.slice(c.lines[0] - 1, c.lines[1]).join('\n');
+    (O.blocks || []).forEach((B, j) => {
+      const wb = w + '.blocks[' + j + ']';
+      if (SHAPES.indexOf(B.shape) < 0) errs.push(wb + ': άγνωστο σχήμα «' + B.shape + '»');
+      if (!B.h || B.h.length > 48) errs.push(wb + ': τίτλος κενός ή πάνω από 48 χαρακτήρες');
+      if (B.shape === 'vs' && (B.cards || []).length !== 2) errs.push(wb + ': το «vs» θέλει ακριβώς δύο κάρτες');
+      if (!(B.cards || []).length) errs.push(wb + ': χωρίς κάρτες');
+      (B.cards || []).forEach((K, k) => {
+        const wk = wb + '.cards[' + k + ']';
+        if (!K.t || K.t.length > 40) errs.push(wk + ': τίτλος κάρτας κενός ή πάνω από 40 χαρακτήρες');
+        if (K.tint && TINTS.indexOf(K.tint) < 0) errs.push(wk + ': άγνωστο χρώμα «' + K.tint + '»');
+        if (!(K.li || []).length) errs.push(wk + ': χωρίς υποσημεία');
+        (K.li || []).forEach(li => { if (text.indexOf(li) < 0) errs.push(wk + ': «' + li + '» ΔΕΝ είναι αυτολεξεί στη στάση ' + c.n); });
+      });
+      if (B.res && text.indexOf(B.res) < 0) errs.push(wb + ': το «ΑΡΑ» ΔΕΝ είναι αυτολεξεί στη στάση ' + c.n);
+    });
+  });
   return errs;
 }
 

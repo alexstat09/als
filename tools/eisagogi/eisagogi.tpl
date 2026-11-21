@@ -431,6 +431,51 @@ td .ppl button[data-goch]:hover{background:rgba(242,179,91,.1)}
 .mq.good{border-color:rgba(143,209,176,.5)}
 .mq.bad{border-color:rgba(240,138,126,.5)}
 
+/* ─── το σχεδιάγραμμα (als-v772): ένας χάρτης ανά στάση — τίτλοι δικοί μου,
+   υποσημεία ΑΥΤΟΛΕΞΕΙ (κανόνας 9 του validator) ─── */
+.ol-h{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end;padding:44px 0 22px;border-bottom:1px solid var(--line)}
+.ol-h h2{margin:6px 0 0;font-family:var(--f-head);font-weight:700;font-size:44px;line-height:1.08;color:var(--ivory)}
+.ol-h p{margin:10px 0 0;max-width:60ch;font-size:16px;line-height:1.6;color:var(--dim)}
+.olbtn{min-height:44px;padding:0 18px;border:1px solid var(--line2);border-radius:999px;font-size:14px;font-weight:600;color:var(--ivory);white-space:nowrap}
+.olbtn:hover{border-color:var(--ivory)}
+.olbtn[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.ol-key{display:flex;flex-wrap:wrap;gap:8px 22px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px;font-weight:600}
+.ol-key span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+.ol-key .g{color:rgb(var(--gr))} .ol-key .g::before{background:rgb(var(--gr))}
+.ol-key .r{color:rgb(var(--ro))} .ol-key .r::before{background:rgb(var(--ro))}
+.ol-key .a{color:var(--acc)} .ol-key .a::before{background:var(--acc)}
+.ols{margin-top:54px;scroll-margin-top:84px}
+.ols-h{display:flex;gap:18px;align-items:flex-start}
+.ols-h > b{flex:none;min-width:66px;font-family:var(--f-head);font-weight:700;font-size:44px;line-height:1;color:var(--acc)}
+.ols-h h3{margin:2px 0 0;font-family:var(--f-head);font-weight:700;font-size:24px;line-height:1.2;color:var(--ivory)}
+.olgo{margin-top:8px;min-height:34px;padding:0 12px;border:1px solid var(--line2);border-radius:999px;font-size:13px;font-weight:600;color:var(--dim)}
+.olgo:hover{color:var(--ivory);border-color:var(--ivory)}
+.olb{margin:26px 0 0 84px}
+.olb h4{margin:0 0 12px;font-size:17px;font-weight:600;color:var(--ivory)}
+.olc{display:grid;gap:12px}
+.s-row{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.s-vs{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.s-chain{display:flex;align-items:stretch;gap:0}
+.s-chain .olk{flex:1 1 0;min-width:0}
+.olar{flex:none;width:34px;display:grid;place-items:center;color:var(--acc);font-weight:700}
+.olar::before{content:"→"}
+.olk{border:1px solid var(--line2);border-radius:14px;padding:16px 18px;background:var(--surf);min-width:0}
+.olk.t-gr{border-color:rgba(var(--gr),.5);background:color-mix(in oklab,var(--surf) 90%,rgb(var(--gr)))}
+.olk.t-ro{border-color:rgba(var(--ro),.45);background:color-mix(in oklab,var(--surf) 92%,rgb(var(--ro)))}
+.olk .tag{display:block;margin-bottom:5px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.olk.t-gr .tag{color:rgb(var(--gr))} .olk.t-ro .tag{color:rgb(var(--ro))}
+.olk h5{margin:0;font-family:var(--f-head);font-weight:700;font-size:17px;line-height:1.3;color:var(--ivory)}
+.olk ul{margin:9px 0 0;padding:0;list-style:none;display:grid;gap:7px}
+.olk li{position:relative;padding-left:15px;font-size:15px;line-height:1.5;color:var(--text)}
+.olk li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.olk.t-gr li::before{background:rgb(var(--gr))} .olk.t-ro li::before{background:rgb(var(--ro))}
+.ol-hide .olk ul{display:none}
+.olres{margin-top:12px;display:flex;gap:14px;align-items:baseline;padding:14px 18px;border:1px solid rgba(242,179,91,.5);border-radius:12px;background:rgba(242,179,91,.06);font-size:15.5px;line-height:1.55;color:var(--ivory)}
+.olres b{flex:none;font-size:12px;font-weight:700;letter-spacing:.09em;color:var(--acc)}
+.ch-h .tochol{margin-top:12px;min-height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;font-size:13.5px;font-weight:600;color:var(--dim)}
+.ch-h .tochol:hover{color:var(--ivory);border-color:var(--acc)}
+.cov .ch-h .tochol{color:var(--dim)}
+
 /* ─── επιλογή · παράθυρο · σύννεφο · μήνυμα · διάλογος ─── */
 .selbar{position:fixed;z-index:70;display:flex;gap:4px;background:var(--ivory);border-radius:12px;padding:5px;transform:translate(-50%,-100%)}
 .selbar[hidden],.pop[hidden],.tip[hidden],.toast[hidden]{display:none}
@@ -523,12 +568,19 @@ dialog.ptd .ptxt p{margin:0 0 1em;font-size:17px;line-height:1.8}
   .sgrid .cl{display:block}
   .mg{grid-template-columns:minmax(0,1fr)}
   dialog.ptd{padding:22px 18px}
+  .ol-h{grid-template-columns:minmax(0,1fr)}
+  .olb{margin-left:0}
+  .s-vs{grid-template-columns:minmax(0,1fr)}
+  .s-chain{flex-direction:column}
+  .olar{width:auto;height:28px}
+  .olar::before{content:"↓"}
+  .ols-h > b{min-width:0;font-size:36px}
 }
 @media (max-width:640px){
   :root{--barh:104px}
   .route{flex-wrap:wrap;gap:0 12px;padding-bottom:6px}
   .tabs{margin-left:0;width:100%}
-  .tabs button{flex:1;padding:0 8px;font-size:13.5px}
+  .tabs button{flex:1;padding:0 4px;font-size:12.5px}
   /* οι πίνακες: κάθε γραμμή γίνεται κάρτα — η φράση/τα πρόσωπα παίρνουν όλο το πλάτος */
   .tbwrap thead{display:none}
   .tbwrap tr{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:baseline;border-bottom:1px solid var(--line)}
@@ -561,6 +613,7 @@ dialog.ptd .ptxt p{margin:0 0 1em;font-size:17px;line-height:1.8}
   <span class="crumb">Λατινικά · Εισαγωγή</span>
   <div class="tabs" role="tablist" aria-label="Κόσμοι">
     <button type="button" id="wA" role="tab" aria-selected="true" aria-controls="worldA">Η εισαγωγή</button>
+    <button type="button" id="wD" role="tab" aria-selected="false" aria-controls="worldD">Σχεδιάγραμμα</button>
     <button type="button" id="wB" role="tab" aria-selected="false" aria-controls="worldB">Οι πίνακες</button>
     <button type="button" id="wC" role="tab" aria-selected="false" aria-controls="worldC">Έλεγχος</button>
   </div>
@@ -582,6 +635,10 @@ dialog.ptd .ptxt p{margin:0 0 1em;font-size:17px;line-height:1.8}
   <p class="foot">Το κείμενο είναι <b>αυτούσιο</b> από τις σημειώσεις σου — κάθε σημάδι πάνω του δείχνει σε θέση της πηγής.
   Διάλεξε κείμενο με το ποντίκι για να βάλεις <b>πλαγιότιτλο</b> ή <b>ορισμό</b>· πάτα ένα όνομα για τον <b>φάκελό</b> του.
   Τα κόκκινα <b>SOS</b> είναι δικά σου. Οι σημειώσεις σου <b>συγχρονίζονται</b>. Στις <b>παγίδες</b> η πρόταση είναι ερώτηση· η απάντηση είναι πάντα λέξεις του βιβλίου.</p>
+</main>
+
+<main class="world wrap" id="worldD" role="tabpanel" aria-labelledby="wD" hidden>
+  <div id="outline"></div>
 </main>
 
 <main class="world wrap" id="worldB" role="tabpanel" aria-labelledby="wB" hidden>
@@ -1109,7 +1166,8 @@ function chapterHTML(ch){
     + (ch.part ? '<div class="part"><b>' + esc(ch.part) + '</b><i></i></div>' : '')
     + '<div class="ch-h"><span class="num"><b>Στάση ' + esc(ch.n) + '</b>' + (ch.pre ? ' · ' + esc(ch.pre) : '') + '</span>'
     + '<h2>' + esc(ch.title) + (ch.fnMark ? '<sup>' + esc(ch.fnMark) + '</sup>' : '') + '</h2>'
-    + (ch.sup ? '<div class="per">' + esc(ch.sup) + '</div>' : '') + '</div>'
+    + (ch.sup ? '<div class="per">' + esc(ch.sup) + '</div>' : '')
+    + (olOf(ch) ? '<button type="button" class="tochol" data-olgo="ol-' + ch.id + '">Σχεδιάγραμμα της στάσης →</button>' : '') + '</div>'
     + inspHTML(ch)
     + '<div class="stage">' + rulerHTML(ch) + '<div class="rows" data-ch="' + ch.id + '">' + blocksHTML(ch)
     + trapsHTML(ch) + matchHTML(ch) + notesListHTML(ch.id) + '</div></div>'
@@ -1380,6 +1438,34 @@ function again(key){
   var y = window.scrollY; paintCheck(); window.scrollTo(0, y);
 }
 
+/* ══ ΤΟ ΣΧΕΔΙΑΓΡΑΜΜΑ (τέταρτος κόσμος) — ένας χάρτης ανά στάση. Οι τίτλοι
+   είναι δικοί μου· τα υποσημεία και το «ΑΡΑ» είναι λέξεις του βιβλίου (κανόνας 9). ══ */
+function olOf(ch){ var r = null; (D.outline || []).forEach(function(O){ if(O.ch === ch.n) r = O; }); return r; }
+function olCard(K){
+  return '<div class="olk' + (K.tint ? ' t-' + K.tint : '') + '">' + (K.tag ? '<span class="tag">' + esc(K.tag) + '</span>' : '')
+    + '<h5>' + esc(K.t) + '</h5><ul>' + K.li.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+}
+function paintOutline(){
+  var h = '<header class="ol-h"><div><span class="lbl">Όλη η εισαγωγή σε μία οθόνη</span><h2>Σχεδιάγραμμα</h2>'
+    + '<p>Κρύψε τα υποσημεία, πες τα μόνος σου από τους τίτλους, και ξάνοιξέ τα για να δεις τι ξέχασες. Κάθε υποσημείο είναι λέξεις του βιβλίου.</p></div>'
+    + '<button type="button" class="olbtn" data-olh aria-pressed="false">Κρύψε τα υποσημεία</button></header>'
+    + '<div class="ol-key"><span class="g">Ελλάδα</span><span class="r">Ρώμη</span><span class="a">ΑΡΑ = το συμπέρασμα</span></div>';
+  D.chapters.forEach(function(ch){
+    var O = olOf(ch); if(!O) return;
+    if(ch.part) h += '<div class="part"><b>' + esc(ch.part) + '</b><i></i></div>';
+    h += '<section class="ols" id="ol-' + ch.id + '"><div class="ols-h"><b>' + esc(ch.n) + '</b><div><h3>' + esc((ch.pre ? ch.pre + ' ' : '') + ch.title) + '</h3>'
+       + '<button type="button" class="olgo" data-goch="ch-' + ch.id + '">Στάση ' + esc(ch.n) + ' · στο κείμενο →</button></div></div>';
+    O.blocks.forEach(function(B){
+      var cards = B.cards.map(olCard);
+      h += '<div class="olb"><h4>' + esc(B.h) + '</h4><div class="olc s-' + B.shape + '">'
+         + (B.shape === 'chain' ? cards.join('<i class="olar" aria-hidden="true"></i>') : cards.join('')) + '</div>'
+         + (B.res ? '<div class="olres"><b>ΑΡΑ</b><span>' + esc(B.res) + '</span></div>' : '') + '</div>';
+    });
+    h += '</section>';
+  });
+  $('#outline').innerHTML = h;
+}
+
 /* ══ Ο ΧΑΡΑΚΑΣ ΚΑΙ Η ΜΠΑΡΑ ΑΚΟΛΟΥΘΟΥΝ ΤΗΝ ΑΝΑΓΝΩΣΗ — scroll + rAF,
    χωρίς παρατηρητή (σταθ. 39): τίποτα δεν περιμένει κώδικα για να φανεί ══ */
 var lastNow = {}, curBar = null, raf = 0;
@@ -1465,6 +1551,8 @@ document.addEventListener('click', function(e){
     paintScores(); return;
   }
   if((x = t.closest('[data-again]'))){ again(x.dataset.again); return; }
+  if((x = t.closest('[data-olh]'))){ var on = x.getAttribute('aria-pressed') !== 'true'; x.setAttribute('aria-pressed', String(on)); x.textContent = on ? 'Δείξε τα υποσημεία' : 'Κρύψε τα υποσημεία'; $('#outline').classList.toggle('ol-hide', on); return; }
+  if((x = t.closest('[data-olgo]'))){ world('D'); var og = document.getElementById(x.dataset.olgo); if(og) og.scrollIntoView({ block:'start' }); return; }
   if((x = t.closest('[data-ckgo]'))){ var cg = document.getElementById(x.dataset.ckgo); if(cg) cg.scrollIntoView({ block:'start' }); return; }
   if((x = t.closest('[data-goch]'))){ world('A'); var gc = document.getElementById(x.dataset.goch); if(gc) gc.scrollIntoView({ block:'start' }); return; }
   if((x = t.closest('[data-jh]'))){ jump('h', x.dataset.jh, x.dataset.ch); return; }
@@ -1597,7 +1685,7 @@ function toast(msg, label, fn){
 var CUR_W = 'A';
 function world(w){
   CUR_W = w;
-  ['A', 'B', 'C'].forEach(function(k){ $('#world' + k).hidden = k !== w; $('#w' + k).setAttribute('aria-selected', String(k === w)); });
+  ['A', 'D', 'B', 'C'].forEach(function(k){ $('#world' + k).hidden = k !== w; $('#w' + k).setAttribute('aria-selected', String(k === w)); });
   $('#numsBar').hidden = w !== 'A';
   hideSel(); hideTip(); closePop(); window.scrollTo({ top:0, behavior:'instant' });
   if(w === 'A'){ lastNow = {}; fitRoad(); fitBand(); tick(); }
@@ -1605,6 +1693,7 @@ function world(w){
 $('#wA').onclick = function(){ world('A'); };
 $('#wB').onclick = function(){ world('B'); };
 $('#wC').onclick = function(){ world('C'); };
+$('#wD').onclick = function(){ world('D'); };
 
 /* ══ ΣΥΓΧΡΟΝΙΣΜΟΣ — και ένας που δεν ξεκίνησε ΤΟ ΛΕΕΙ (σταθ. 10/32) ══ */
 function gate(msg){ var g = $('#gate'); if(!g) return; g.innerHTML = msg; g.hidden = false; }
@@ -1626,7 +1715,7 @@ function gate(msg){ var g = $('#gate'); if(!g) return; g.innerHTML = msg; g.hidd
 
 /* ══ εκκίνηση ══ */
 D.chapters.forEach(function(c){ loadNotes(c.id); });
-paintCover(); paintRoad(); paintBand(); render(); paintBar(); paintSummary(); paintTables(); paintCheck();
+paintCover(); paintRoad(); paintBand(); render(); paintBar(); paintSummary(); paintTables(); paintCheck(); paintOutline();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitBand(); fitRoad(); lastNow = {}; tick(); });
 if(ERR.length) gate('<b>Σημάδια εκτός πηγής:</b> ' + esc(ERR.join(' · ')));
 window.__EIS_OK = !ERR.length;

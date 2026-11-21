@@ -110,7 +110,7 @@ const CODE = html.replace(/\/\*[\s\S]*?\*\//g, '');
   eq(sites.length, 3, 'τρεις γραφείς: οι σημειώσεις και οι δύο της ταφόπλακας — οι παγίδες/ο Έλεγχος ΔΕΝ γράφουν');
   ['function render(', 'function renderLine(', 'function renderChapter(', 'function paintBar(', 'function paintSummary(',
    'function paintTables(', 'function portraitHTML(', 'function tick(', 'function paintRoad(', 'function paintCheck(',
-   'function trapCard(', 'function matchBlock(', 'function mcqCard(', 'function again('].forEach(fn => {
+   'function trapCard(', 'function matchBlock(', 'function mcqCard(', 'function again(', 'function paintOutline(', 'function olCard('].forEach(fn => {
     const a = CODE.indexOf(fn);
     ok(a > 0, 'υπάρχει ο ' + fn.slice(9, -1));
     if (a < 0) return;
@@ -389,6 +389,23 @@ const sleep = n => new Promise(r => setTimeout(r, n));
       await ev(`document.querySelector('#ck-tf [data-t="${i}"] [data-ta="0"]').click()`);
       await ev(`document.querySelector('#ck-tf [data-t="${i}"] [data-tl]').click()`); await sleep(80);
       ok(await ev(`!document.getElementById('worldA').hidden`), '«Δες το στο κείμενο» γυρίζει στην εισαγωγή, στη γραμμή της πηγής'); }
+    /* ⭐ το σχεδιάγραμμα (als-v772): ένας χάρτης ανά στάση, υποσημεία αυτολεξεί */
+    { const OL = D.outline || [], nLi = OL.reduce((a, O) => a + O.blocks.reduce((b, B) => b + B.cards.reduce((c, K) => c + K.li.length, 0), 0), 0);
+      eq(OL.length, 8, 'το σχεδιάγραμμα καλύπτει και τις οκτώ στάσεις');
+      eq(await ev(`document.querySelectorAll('#ch-klasiki .tochol').length`), 1, 'κάθε στάση έχει «Σχεδιάγραμμα της στάσης →»');
+      await ev(`document.querySelector('#ch-klasiki .tochol').click()`); await sleep(80);
+      ok(await ev(`!document.getElementById('worldD').hidden && document.getElementById('worldA').hidden && document.getElementById('numsBar').hidden`), '…και ανοίγει τον τέταρτο κόσμο');
+      eq(await ev(`document.querySelectorAll('#outline .ols').length`), OL.length, 'μία ενότητα ανά στάση');
+      eq(await ev(`document.querySelectorAll('#outline .olk li').length`), nLi, 'κάθε υποσημείο των δεδομένων είναι στην οθόνη (' + nLi + ')');
+      ok(await ev(`(()=>{const src=EIS.src.join('\\n');return [...document.querySelectorAll('#outline .olk li, #outline .olres span')].every(x=>src.indexOf(x.textContent)>=0)})()`), '⭐ κάθε υποσημείο και κάθε «ΑΡΑ» στην οθόνη είναι αυτολεξεί στην πηγή');
+      eq(await ev(`document.querySelectorAll('#outline .s-chain .olar').length`), OL.reduce((a, O) => a + O.blocks.filter(B => B.shape === 'chain').reduce((b, B) => b + B.cards.length - 1, 0), 0), 'οι αλυσίδες έχουν ένα βέλος ανάμεσα σε κάθε δύο κάρτες');
+      await ev(`document.querySelector('[data-olh]').click()`);
+      eq(await ev(`[...document.querySelectorAll('#outline .olk ul')].filter(u=>u.offsetHeight>0).length`), 0, '«Κρύψε τα υποσημεία» τα κρύβει όλα');
+      await ev(`document.querySelector('[data-olh]').click()`);
+      ok(await ev(`[...document.querySelectorAll('#outline .olk ul')].every(u=>u.offsetHeight>0)`), '…και τα ξαναδείχνει');
+      await shot('5c-outline');
+      await ev(`document.querySelector('#ol-klasiki .olgo').click()`); await sleep(80);
+      ok(await ev(`!document.getElementById('worldA').hidden`), '«στο κείμενο →» γυρίζει στη στάση'); }
     await ev(`document.getElementById('wA').click()`);
 
     section('Β5 · ΛΑΠΤΟΠ ΠΡΩΤΑ — ΚΑΙ ΜΗΔΕΝ ΟΡΙΖΟΝΤΙΑ ΚΥΛΙΣΗ ΩΣ ΤΟ ΚΙΝΗΤΟ (CDP)');
