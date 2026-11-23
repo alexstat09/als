@@ -8,10 +8,16 @@
    ⛔ ΚΑΝΕΝΑ SYNC ΣΕ HARNESS (σταθ. 8): ο server σερβίρει ΑΔΕΙΑ τα `sync.js`
    και `vendor/supabase.min.js`, και το `initCloudSync` είναι στουμπωμένο.
 
-     Α · πρώτο πέρασμα: γνωριμία ΠΡΙΝ από ερώτηση, κλείσιμο στη μέση → συνέχεια
-     Β · το ρολόι ξεκινάει στο τέλος· οι νέες Δύσκολες ΟΧΙ την ίδια μέρα
-     Γ · +2 μέρες: «Θα ήταν καλό…» χωρίς αριθμό → σελίδα → Δύσκολες → τέλος
-     Δ · η αποφοίτηση από τις Δύσκολες γράφει ΤΑΦΟΠΛΑΚΑ (σταθ. 32/61)
+   ⭐ als-v778 (23/11/26): η αρχική ΔΕΝ έχει πια «Σήμερα»/μέρες/σκαλιά — διαλέγει
+   ελεύθερα. Τα σενάρια ξεκινούν με ΚΛΙΚ στα κουμπιά της σελίδας (Διάβασε ·
+   Ρώτα με · Ρώτα με τις δύσκολες)· μέσα στη συνεδρία όλα με ΠΛΗΚΤΡΑ, όπως πριν.
+     Α · «Διάβασε»: γνωριμία ΠΡΙΝ από ερώτηση, κλείσιμο στη μέση → «Συνέχισε»
+     Β · στο τέλος: καμία ημερομηνία· η Δύσκολη φαίνεται στην αρχική/καρτέλα
+     Γ · «Ρώτα με»: η χαμένη πάει ΑΜΕΣΩΣ στις Δύσκολες, το πρόγραμμα ΔΕΝ αλλάζει
+         → «Ρώτα με τις δύσκολες»: σωστή την ίδια μέρα δεν αποφοιτά
+     Δ · η αποφοίτηση (2η μέρα) γράφει ΤΑΦΟΠΛΑΚΑ (σταθ. 32/61)
+     Ν · «Διάβασε» σε σελίδα που έχει ήδη περαστεί ΔΕΝ αγγίζει το ιστορικό ·
+         Ανά ρίζα · ανάποδα (νέα → αρχαία) · Σκέπασε · καμία μέρα στην αρχική
      Ε · `_ts` σε κάθε εγγραφή (σταθ. 31) · άγνωστο πεδίο επιβιώνει (σταθ. 35)
      ΣΤ · εισαγωγή σελίδας: λάθος → μήνυμα · σωστή → προστίθεται
      Ζ · χαλασμένη αποθήκη ΔΕΝ ξαναγράφεται · αποτυχία fetch ΛΕΓΕΤΑΙ (σταθ. 10)
@@ -74,7 +80,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
  /* Περιμένει να ΖΩΓΡΑΦΙΣΤΕΙ η αρχική (όχι σταθερό sleep — υπό φόρτο ένα 900ms
     έβγαζε σπάνιο κόκκινο που δεν ήταν της σελίδας). */
  const open=async(today)=>{ await S('Page.navigate',{url:BASE+'?today='+today+'&n='+(++nav)}); await sleep(150);
-   for(let i=0;i<60;i++){ try{ if(await ev(`document.readyState==='complete'&&!!document.querySelector('#main section')&&!/Φορτώνει/.test(document.getElementById('main').textContent)`)) break; }catch(e){} await sleep(100); } await sleep(120); };
+   for(let i=0;i<60;i++){ try{ if(await ev(`document.readyState==='complete'&&!!document.querySelector('#main section')&&!!document.querySelector('#hero').children.length&&!/Φορτώνει/.test(document.getElementById('main').textContent)`)) break; }catch(e){} await sleep(100); } await sleep(120); };
  const VK={Enter:13,' ':32,Escape:27,'1':49,'2':50,'/':191};
  const CODE={Enter:'Enter',' ':'Space',Escape:'Escape','1':'Digit1','2':'Digit2','/':'Slash'};
  const key=async k=>{ const p={key:k,code:CODE[k],windowsVirtualKeyCode:VK[k],nativeVirtualKeyCode:VK[k]};
@@ -97,11 +103,10 @@ const SHOTS=process.env.LEX_SHOTS||'';
  console.log('\nΑ · ΠΡΩΤΟ ΠΕΡΑΣΜΑ — ΜΟΝΟ ΜΕ ΠΛΗΚΤΡΟΛΟΓΙΟ');
  await open('2026-10-14');
  ok('το sync δεν φορτώθηκε: ο server έδωσε άδεια τα sync.js/supabase', syncHits>=2 && syncHits%2===0 && await ev('typeof window.ALSSync')==='undefined', {syncHits});
- ok('η αρχική λέει «Σήμερα, η νέα Σελίδα 1.»', (await txt('.today h1'))==='Σήμερα, η νέα Σελίδα 1.', await txt('.today h1'));
- ok('…και «50 κάρτες · περίπου 18 λεπτά»', /^50 κάρτες · περίπου 18 λεπτά/.test(await txt('.today .sub')), await txt('.today .sub'));
- ok('η εβδομάδα δεν λέει ονόματα σελίδων ούτε λέξεις', !/Σελίδα|λέξ/.test(await txt('.week')), await txt('.week'));
+ ok('η αρχική: 50 λέξεις, 1 σελίδα, χωρίς «Σήμερα»/μέρες/σκαλιά', (await txt('.lx-score .n'))==='50' && await ev(`document.querySelectorAll('.prow').length`)===1 && !/Σήμερα,|σκαλί|σε \d+ μέρες|αύριο/.test(await txt('#main')), await txt('#main'));
+ ok('καμία εβδομάδα, καμία σκάλα στο DOM', await ev(`!document.querySelector('.week,.ladder,.steps,.today')`));
  await shot('1-home-new-1440');
- await key('Enter');
+ await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120);
  ok('Enter → Γνωριμία (όχι ερώτηση)', (await txt('.eyebrow'))==='Γνωριμία' && !(await ev('!!document.querySelector(".card")')));
  const famHead=await ev(`[...document.querySelectorAll('.famh .gr')].map(e=>e.textContent)`);
  ok('η γνωριμία δείχνει οικογένειες', famHead.length>=1, famHead);
@@ -132,9 +137,9 @@ const SHOTS=process.env.LEX_SHOTS||'';
        ok('η μισή σελίδα είναι σωσμένη (learning)', s1&&s1.pages.p170&&s1.pages.p170.status==='learning', s1&&s1.pages);
        ok('…με σφραγίδα _ts', s1&&typeof s1.pages.p170._ts==='number');
        await open('2026-10-14');
-       ok('η αρχική λέει «το υπόλοιπο της Σελίδας 1»', /το υπόλοιπο της Σελίδας 1/.test(await txt('.today h1')), await txt('.today h1'));
-       ok('ο πίνακας λέει «μισή» και «Πρώτο πέρασμα, Ν%»', /μισή/.test(await txt('.prow .when')) && /Πρώτο πέρασμα, \d+%/.test(await txt('.prow .ladder-note')));
-       await key('Enter');
+       ok('η σειρά λέει «διάβασμα στη μέση, Ν%»', /διάβασμα στη μέση, \d+%/.test(await txt('.prow .lx-src')), await txt('.prow .lx-src'));
+       ok('…και το κουμπί γίνεται «Συνέχισε»', /^Συνέχισε/.test(await txt('[data-go="first"][data-page="p170"]')), await txt('[data-go="first"][data-page="p170"]'));
+       await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120);
        const after=await ev(`document.getElementById('sCount').textContent`);
        ok('Enter → συνεχίζει από το ίδιο σημείο ('+before+')', after===before, {before,after});
        if(await ev(`!!document.getElementById('ack')`)) (await ev(`[...document.querySelectorAll('.iw .top .gr')].map(e=>e.textContent)`)).forEach(w=>seen.add(w));
@@ -146,7 +151,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
  ok('το πέρασμα τελείωσε μέσα σε όριο κινήσεων ('+steps+')', steps<900);
  ok('έγινε το κλείσιμο-συνέχεια', resumed);
  const endTxt=await txt('.end');
- ok('τέλος: «Ξεκίνησε.» και «πρώτη επανάληψη αύριο, Πέμ 15/10»', /Ξεκίνησε\./.test(endTxt)&&/πρώτη επανάληψη αύριο, Πέμ 15\/10/.test(endTxt), endTxt);
+ ok('τέλος: «Έγινε.» — καμία ημερομηνία, κανένα ρολόι', /Έγινε\./.test(endTxt)&&!/αύριο|επανάληψη|ρολόι|\d+\/\d+/.test(endTxt), endTxt);
  ok('…και η λέξη που χάθηκε δύο φορές πάει στις Δύσκολες', endTxt.indexOf(target)>=0, {target,endTxt});
  await shot('5-first-end-1440');
  await key('Enter');
@@ -156,59 +161,63 @@ const SHOTS=process.env.LEX_SHOTS||'';
  const hid=Object.keys(s.hard)[0];
  ok('σελίδα active από 14/10, σκαλί 0', s.pages.p170.status==='active'&&s.pages.p170.lastDone==='2026-10-14'&&s.pages.p170.stage===0, s.pages.p170);
  ok('ΜΙΑ Δύσκολη, η σωστή, με _ts', Object.keys(s.hard).length===1&&typeof s.hard[hid]._ts==='number', s.hard);
- ok('η αρχική: «Για σήμερα είσαι εντάξει.» (οι νέες Δύσκολες δεν ξαναμπαίνουν σήμερα)', (await txt('.today h1'))==='Για σήμερα είσαι εντάξει.', await txt('.today h1'));
- ok('…με την επόμενη ημερομηνία', /αύριο, Πέμ 15\/10/.test(await txt('.today .sub')), await txt('.today .sub'));
- ok('οι Δύσκολες φαίνονται ως κάρτα με τη λέξη', (await txt('.hc .gr'))===target);
- await ev(`document.querySelector('.hc').click()`); await sleep(100);
- ok('κλικ στη Δύσκολη → σημασία', !/πάτα για σημασία/.test(await txt('.hc .m')) && (await txt('.hc .m')).length>0);
+ ok('η αρχική: «1 δύσκολη» και η λέξη στο «Από πού να ξεκινήσεις»', /1\s*δύσκολη/.test(await txt('.lx-facts')) && (await txt('.lx-sample')).indexOf(target)>=0, {f:await txt('.lx-facts'),s:await txt('.lx-sample')});
+ ok('…καμία ημερομηνία πουθενά στην αρχική', !/αύριο|Πέμ|\d+\/\d+/.test(await txt('#main')));
+ await ev(`document.querySelector('[data-tab="hard"]').click()`); await sleep(120);
+ ok('καρτέλα Δύσκολες: η λέξη, με τη σημασία ΚΡΥΜΜΕΝΗ', (await txt('.hardlist .lx-w .lx-gr'))===target && await ev(`getComputedStyle(document.querySelector('.hardlist .lx-w .m')).display`)==='none');
+ await ev(`document.querySelector('.hardlist .lx-w').click()`); await sleep(120);
+ ok('κλικ στη Δύσκολη → σημασία', await ev(`getComputedStyle(document.querySelector('.hardlist .lx-w .m')).display`)!=='none' && (await txt('.hardlist .lx-w .m')).length>0);
  /* σταθ. 35: ένα άγνωστο πεδίο επιβιώνει load + save */
  await ev(`(()=>{const s=JSON.parse(localStorage.getItem('${KEY}'));s.future={kept:1};s.pages.p170.mine='x';localStorage.setItem('${KEY}',JSON.stringify(s))})()`);
  await shot('6-home-done-1440');
 
- console.log('\nΓ · +2 ΜΕΡΕΣ: Η ΣΕΛΙΔΑ ΠΕΡΙΜΕΝΕΙ ΧΩΡΙΣ ΝΑ ΜΕΤΡΑΕΙ');
+ console.log('\nΓ · «ΡΩΤΑ ΜΕ»: Η ΧΑΜΕΝΗ ΠΑΕΙ ΑΜΕΣΩΣ ΣΤΙΣ ΔΥΣΚΟΛΕΣ, ΤΟ ΠΡΟΓΡΑΜΜΑ ΔΕΝ ΑΛΛΑΖΕΙ');
  await open('2026-10-16');
- const h1=await txt('.today h1'), stp=await txt('.steps li .s');
- ok('«Σήμερα, η Σελίδα 1 και μία δύσκολη.»', h1==='Σήμερα, η Σελίδα 1 και μία δύσκολη.', h1);
- ok('«Θα ήταν καλό να την ξαναπεράσεις» — χωρίς αριθμό ημερών', /Θα ήταν καλό να την ξαναπεράσεις/.test(stp)&&!/\d/.test(stp), stp);
- ok('ο πίνακας: «σήμερα», όχι «καθυστέρηση»', (await txt('.prow .when'))==='σήμερα' && !/καθυστ|έληξε/.test(await txt('#main')));
+ ok('+2 μέρες: η αρχική δεν λέει «Θα ήταν καλό», «σήμερα», «καθυστέρηση»', !/Θα ήταν καλό|καθυστ|έληξε|σκαλί|Σήμερα,/.test(await txt('#main')));
  await shot('7-home-waiting-1440');
- await key('Enter');
- ok('η μπάρα λέει «Σελίδα 1 · επανάληψη · μετά: Δύσκολες»', /Σελίδα 1 · επανάληψη\s*· μετά: Δύσκολες/.test(await txt('#sWhere')), await txt('#sWhere'));
- ok('ο μετρητής ξεκινά από 0 / 51', (await txt('#sCount'))==='0 / 51', await txt('#sCount'));
- let missed=null;
+ const pBefore=JSON.stringify((await store()).pages.p170);
+ await ev(`document.querySelector('[data-go="practice"][data-page="p170"]').click()`); await sleep(120);
+ ok('η μπάρα λέει «Σελίδα 1 · ρώτα με»', (await txt('#sWhere'))==='Σελίδα 1 · ρώτα με', await txt('#sWhere'));
+ ok('ο μετρητής ξεκινά από 0 / 50', (await txt('#sCount'))==='0 / 50', await txt('#sCount'));
+ let missed=null, savedAtOnce=false;
  for(let i=0;i<200;i++){
    const st=await ev(`({show:!!document.getElementById('show'),no:!!document.getElementById('no'),cont:!!document.getElementById('cont'),w:(document.querySelector('.c-word')||{}).textContent||''})`);
    if(st.cont) break;
    if(st.show){ await key(' '); continue; }
    /* Χάνει την πρώτη λέξη που ΔΕΝ είναι ήδη Δύσκολη: αν χάσει την ίδια (1/50
       τυχαία), το σερί της σωστά μηδενίζεται και το σενάριο του Δ δεν στήνεται. */
-   if(st.no){ const bad=!missed&&st.w!==target; if(bad) missed=st.w; await key(bad?'1':'2'); continue; }
+   if(st.no){ const bad=!missed&&st.w!==target; if(bad) missed=st.w; await key(bad?'1':'2');
+     if(bad){ const s0=await store(); savedAtOnce=Object.keys(s0.hard).some(k=>k!==hid&&s0.hard[k].lastDay==='2026-10-16'&&typeof s0.hard[k]._ts==='number'); }
+     continue; }
    await sleep(50);
  }
+ ok('η χαμένη γράφτηκε στις Δύσκολες ΑΜΕΣΩΣ (πριν το τέλος), με _ts', savedAtOnce);
  const seg=await txt('.end');
- ok('ενδιάμεση οθόνη σελίδας: «49 / 50»', /49\s*\/\s*50/.test(seg), seg);
- ok('«Ανέβηκε σκαλί» · «επόμενη σε 3 μέρες, Δευ 19/10»', /Ανέβηκε σκαλί/.test(seg)&&/επόμενη σε 3 μέρες, Δευ 19\/10/.test(seg), seg);
- ok('το χαμένο πάει στις Δύσκολες', seg.indexOf(missed)>=0, {missed});
+ ok('τέλος: «49 / 50», χωρίς σκαλί/ημερομηνία', /49\s*\/\s*50/.test(seg)&&!/σκαλί|επόμενη|αύριο/.test(seg), seg);
+ ok('το χαμένο φαίνεται στο «Πάνε στις Δύσκολες»', /Πάνε στις Δύσκολες/.test(seg)&&seg.indexOf(missed)>=0, {missed,seg});
+ ok('κουμπί «Ξανά μόνο τις 1»', /Ξανά μόνο τις 1/.test(await txt('#again')), await txt('#again'));
  ok('το σκορ είναι σε ουδέτερο χρώμα, όχι κόκκινο', await ev(`getComputedStyle(document.querySelector('.score')).color`)==='rgb(238, 231, 220)');
  await shot('8-seg-end-1440');
  s=await store();
- ok('η σελίδα ΚΛΕΙΔΩΣΕ πριν τις Δύσκολες: σκαλί 1, 16/10', s.pages.p170.stage===1&&s.pages.p170.lastDone==='2026-10-16', s.pages.p170);
+ ok('το πρόγραμμα της σελίδας ΔΕΝ άλλαξε (byte προς byte)', JSON.stringify(s.pages.p170)===pBefore, {before:pBefore,after:s.pages.p170});
  ok('σταθ. 35: το άγνωστο πεδίο (και μέσα στην εγγραφή) επιβίωσε', s.future&&s.future.kept===1&&s.pages.p170.mine==='x', {future:s.future,mine:s.pages.p170.mine});
  await key('Enter');
- ok('Συνέχεια → Δύσκολες με τη λέξη της 14/10 (όχι τη σημερινή)', (await txt('#sWhere'))==='Δύσκολες'&&(await txt('.c-word'))===target, {w:await txt('#sWhere'),c:await txt('.c-word')});
- await key(' '); await key('2'); await sleep(100);
+ ok('Enter → «Τέλος» κλείνει τη συνεδρία', !(await ev(`document.getElementById('session').classList.contains('on')`)));
+ await ev(`document.querySelector('[data-go="hard"]').click()`); await sleep(120);
+ ok('«Ρώτα με τις δύσκολες» → Δύσκολες, και οι 2 (και η σημερινή)', (await txt('#sWhere'))==='Δύσκολες'&&(await txt('#sCount'))==='0 / 2', {w:await txt('#sWhere'),c:await txt('#sCount')});
+ for(let i=0;i<20;i++){ const st=await ev(`({show:!!document.getElementById('show'),no:!!document.getElementById('no'),cont:!!document.getElementById('cont')})`); if(st.cont)break; if(st.show){await key(' ');continue} if(st.no){await key('2');continue} await sleep(50); }
  const hEnd=await txt('.end');
- ok('τέλος Δυσκόλων: «1 / 1» και «θέλουν άλλη μία μέρα»', /1\s*\/\s*1/.test(hEnd)&&/άλλη μία μέρα/.test(hEnd), hEnd);
- ok('κουμπί «Τέλος για σήμερα»', /Τέλος για σήμερα/.test(await txt('#cont')));
+ ok('τέλος Δυσκόλων: «2 / 2» και «φεύγουν … σε άλλη μέρα» (καμία δεν αποφοιτά σήμερα)', /2\s*\/\s*2/.test(hEnd)&&/σε άλλη μέρα/.test(hEnd)&&!/έφυγαν/.test(hEnd), hEnd);
+ ok('κουμπί «Τέλος»', /Τέλος/.test(await txt('#cont')));
  await key('Enter');
  s=await store();
- ok('streak 1 για τη λέξη της 14/10, καινούρια για τη σημερινή', s.hard[hid].streak===1&&s.hard[Object.keys(s.hard).find(k=>k!==hid)].lastDay==='2026-10-16', s.hard);
+ ok('streak 1 για τη λέξη της 14/10, η σημερινή ανέγγιχτη (lastDay 16/10, streak 0)', s.hard[hid].streak===1&&s.hard[Object.keys(s.hard).find(k=>k!==hid)].lastDay==='2026-10-16'&&s.hard[Object.keys(s.hard).find(k=>k!==hid)].streak===0, s.hard);
 
  console.log('\nΔ · Η ΑΠΟΦΟΙΤΗΣΗ ΓΡΑΦΕΙ ΤΑΦΟΠΛΑΚΑ');
  await open('2026-10-17');
- ok('17/10: μόνο Δύσκολες («δύο δύσκολες»)', /^Σήμερα, δύο δύσκολες\.$/.test(await txt('.today h1')), await txt('.today h1'));
+ ok('17/10: η αρχική μετράει «2 δύσκολες»', /2\s*δύσκολες/.test(await txt('.lx-facts')), await txt('.lx-facts'));
  const tsBefore=s.hard[hid]._ts;
- await key('Enter');
+ await ev(`document.querySelector('[data-go="hard"]').click()`); await sleep(120);
  for(let i=0;i<20;i++){ const st=await ev(`({show:!!document.getElementById('show'),no:!!document.getElementById('no'),cont:!!document.getElementById('cont')})`); if(st.cont)break; if(st.show){await key(' ');continue} if(st.no){await key('2');continue} await sleep(50); }
  ok('«Αυτές έφυγαν από τις Δύσκολες» με τη λέξη', /έφυγαν/.test(await txt('.end'))&&(await txt('.end')).indexOf(target)>=0, await txt('.end'));
  await key('Enter');
@@ -226,8 +235,11 @@ const SHOTS=process.env.LEX_SHOTS||'';
  const remote=JSON.parse(JSON.stringify(s)); remote.hard[hid]={added:'2026-10-14',streak:1,lastDay:'2026-10-16',_ts:tsBefore};
  const merged=sb.__mv(s,remote,tomb[KEY]);
  ok('mergeValue του sync.js: το παλιό αντίγραφο του cloud ΔΕΝ ξαναζωντανεύει', merged&&!merged.hard[hid], merged&&Object.keys(merged.hard));
- const remote2=JSON.parse(JSON.stringify(s)); remote2.pages.p170=Object.assign({},s.pages.p170,{stage:0,lastDone:'2026-10-14',_ts:s.pages.p170._ts-1000});
- ok('mergeValue: η ΔΕΥΤΕΡΗ επανάληψη δεν γυρνάει πίσω από παλιό cloud (σταθ. 31)', sb.__mv(s,remote2,null).pages.p170.stage===1);
+ /* als-v778: το «Ρώτα με» δεν αλλάζει πια σκαλί· ο έλεγχος μένει: ένα ΠΑΛΙΟ αντίγραφο
+    του cloud (μικρότερο _ts) με άλλη τιμή ΔΕΝ νικάει το τοπικό (σταθ. 31). */
+ const remote2=JSON.parse(JSON.stringify(s)); remote2.pages.p170=Object.assign({},s.pages.p170,{stage:s.pages.p170.stage+5,lastDone:'2026-10-01',_ts:s.pages.p170._ts-1000});
+ const m2=sb.__mv(s,remote2,null).pages.p170;
+ ok('mergeValue: παλιό αντίγραφο του cloud δεν γυρνάει πίσω την εγγραφή της σελίδας (σταθ. 31)', m2.stage===s.pages.p170.stage&&m2.lastDone===s.pages.p170.lastDone, m2);
  await shot('9-home-graduated-1440');
 
  console.log('\nΕ · ΕΙΣΑΓΩΓΗ ΣΕΛΙΔΑΣ');
@@ -242,7 +254,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
  await ev(`document.getElementById('impBtn').click()`); await sleep(150);
  s=await store();
  ok('προστέθηκε στο extra και ο πίνακας έχει 2 σελίδες', s.extra.length===1&&await ev(`document.querySelectorAll('.prow').length`)===2);
- ok('η αρχική προτείνει τη νέα Σελίδα 2', /η νέα Σελίδα 2/.test(await txt('.today h1')), await txt('.today h1'));
+ ok('η νέα σελίδα είναι η Σελίδα 2 στη λίστα και στην ταινία', (await txt('#row-p171 .lx-rn'))==='2'&&await ev(`document.querySelectorAll('.lx-sg').length`)===2);
  await ev(`document.getElementById('openAdd').click()`); await sleep(100);
  await ev(`(()=>{const t=document.getElementById('imp');t.value=${JSON.stringify(JSON.stringify(pg))};t.dispatchEvent(new Event('input'));document.getElementById('impBtn').click()})()`); await sleep(80);
  ok('η ίδια σελίδα ξανά → «υπάρχει ήδη»', /υπάρχει ήδη/.test(await txt('#impMsg')), await txt('#impMsg'));
@@ -253,13 +265,13 @@ const SHOTS=process.env.LEX_SHOTS||'';
  await ev(`(()=>{const q=document.getElementById('q');q.value='αιρουμαι';q.dispatchEvent(new Event('input'))})()`); await sleep(80);
  ok('αναζήτηση χωρίς τόνους βρίσκει το αἱροῦμαι', /αἱροῦμαι/.test(await txt('#main')));
  await key('Escape');
- ok('Esc καθαρίζει την αναζήτηση', (await ev(`document.getElementById('q').value`))===''&&!!(await ev(`document.querySelector('.today')`)));
+ ok('Esc καθαρίζει την αναζήτηση', (await ev(`document.getElementById('q').value`))===''&&!!(await ev(`document.querySelector('.lx-tabs')`)));
 
  console.log('\nΖ · ΣΙΩΠΗΛΗ ΑΠΟΤΥΧΙΑ: ΚΑΜΙΑ');
  await ev(`localStorage.setItem('${KEY}','{χαλασμένο')`);
  await open('2026-10-17');
  ok('χαλασμένη αποθήκη → προειδοποίηση στην οθόνη', await ev(`!document.getElementById('warn').hidden`) && /δεν διαβάζεται/.test(await txt('#warn')), await txt('#warn'));
- await key('Enter'); await sleep(100);
+ await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120);
  for(let i=0;i<6;i++){ if(await ev(`!!document.getElementById('ack')`)) await key('Enter'); else if(await ev(`!!document.getElementById('show')`)) await key(' '); else await key('2'); }
  ok('…και ΔΕΝ γράφτηκε από πάνω της', await ev(`localStorage.getItem('${KEY}')`)==='{χαλασμένο');
  await key('Escape');
@@ -277,7 +289,8 @@ const SHOTS=process.env.LEX_SHOTS||'';
  ok('έξοδος: σύνδεσμος στο arxaia-agnosto.html (από εκεί μπαίνει), με λέξη', ex.href==='arxaia-agnosto.html'&&/Αρχαία, άγνωστο/.test(ex.text), ex);
  ok('στόχος ≥ 44px και αντίθεση ≥ 4.5:1 ('+ex.cr.toFixed(2)+')', ex.h>=44&&ex.cr>=4.5, ex);
  const fonts=await ev(`[getComputedStyle(document.querySelector('.prow .rg')).fontFamily, getComputedStyle(document.body).fontFamily]`);
- ok('τα αρχαία σε GFS Didot, ποτέ Georgia πρώτη (σταθ. 43)', /^"?GFS Didot/.test(fonts[0]), fonts);
+ ok('τα αρχαία σε Literata (greek-ext), ποτέ Georgia πρώτη (σταθ. 43)', /^"?Literata/.test(fonts[0]) && !/Georgia/.test(fonts[0]), fonts);
+ ok('η Literata φόρτωσε πραγματικά πολυτονικό (ἀ ῷ ῥ)', await ev(`document.fonts.load('22px Literata','ἀῷῥ').then(f=>f.length>0)`));
 
  console.log('\nΘ · ΠΛΑΤΗ');
  /* ένα γεμάτο σενάριο για να μετρηθεί: σελίδα σε επανάληψη + Δύσκολες + νέα */
@@ -285,8 +298,14 @@ const SHOTS=process.env.LEX_SHOTS||'';
  for(const [w,h] of [[1440,900],[1280,800],[390,844]]){
    await size(w,h); await open('2026-10-16');
    await noScroll('αρχική '+w);
+   await ev(`document.querySelectorAll('details').forEach(d=>d.open=true)`); await sleep(80);
+   await noScroll('αρχική, όλες οι σελίδες ανοιχτές '+w);
+   for(const tb of ['hard','roots']){ await ev(`document.querySelector('[data-tab="${tb}"]').click()`); await sleep(120); await noScroll('καρτέλα '+tb+' '+w); }
+   await ev(`document.querySelector('.lx-rc').click()`); await sleep(150);
+   await noScroll('φύλλο ρίζας '+w);
+   await key('Escape'); await ev(`document.querySelector('[data-tab="pages"]').click()`); await sleep(80);
    await shot('11-home-full-'+w);
-   await key('Enter'); await sleep(150);
+   await ev(`document.querySelector('[data-go="practice"][data-page="p170"]').click()`); await sleep(150);
    // η μεγαλύτερη φράση του φυλλαδίου, πάνω στην κάρτα
    await ev(`(()=>{const c=document.querySelector('.c-word');c.textContent='καθίστημί τινα εἰς ἀγῶνα';c.className='c-word xl'})()`);
    await noScroll('κάρτα, μεγάλη φράση '+w);
@@ -368,7 +387,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
  console.log('\nΜ · ΔΙΠΛΟ «2» ΔΕΝ ΓΕΝΝΑΕΙ ΨΕΥΤΙΚΗ ΚΑΡΤΑ · ΚΟΛΛΗΜΕΝΟ ΠΕΡΑΣΜΑ ΞΕΚΟΛΛΑΕΙ');
  const excM=exc.length;
  await open('2026-11-11');
- await key('Enter');
+ await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120);
  let sawAck=0;
  for(let i=0;i<40;i++){
    const st=await ev(`({ack:!!document.getElementById('ack'),show:!!document.getElementById('show'),no:!!document.getElementById('no')})`);
@@ -386,7 +405,7 @@ const SHOTS=process.env.LEX_SHOTS||'';
  pm.step='consolidate'; pm.ci=pm.chunks.length; pm.queue=['undefined'].concat(realIds.slice(0,3)); pm.right.undefined=null; pm.wrongs.undefined=null;
  await ev(`localStorage.setItem('${KEY}',${JSON.stringify(JSON.stringify(sm))})`);
  await open('2026-11-11');
- await key('Enter'); await sleep(80);
+ await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120); await sleep(80);
  const wM=await txt('.c-word');
  ok('κολλημένο πέρασμα (όπως της 177) ανοίγει σε ΑΛΗΘΙΝΗ λέξη: «'+wM+'»', !!wM&&wM!=='undefined');
  sm=await store(); pm=sm.pages.p170.pass;
@@ -395,6 +414,45 @@ const SHOTS=process.env.LEX_SHOTS||'';
  ok('…μηδέν exceptions σε όλο το σενάριο', exc.length===excM, exc.slice(excM));
  await key('Escape');
  await ev(`localStorage.removeItem('${KEY}')`);
+
+console.log('\nΝ · ΔΙΑΒΑΣΕ ΧΩΡΙΣ ΝΑ ΣΒΗΣΕΙ ΙΣΤΟΡΙΚΟ · ΑΝΑ ΡΙΖΑ · ΑΝΑΠΟΔΑ · ΣΚΕΠΑΣΕ');
+ const excN=exc.length;
+ const hist=JSON.stringify({v:2,pages:{p170:{status:'active',stage:2,lastDone:'2026-10-20',started:'2026-10-12',history:[{date:'2026-10-12',type:'first'},{date:'2026-10-13',type:'review',acc:.9},{date:'2026-10-16',type:'review',acc:.85}],_ts:5}},hard:{},extra:[]});
+ await ev(`localStorage.setItem('${KEY}',${JSON.stringify(hist)})`);
+ await open('2026-11-23');
+ ok('σελίδα με ιστορικό: η αρχική δεν δείχνει «σκαλί» ούτε «σε Ν μέρες»', !/σκαλί|σε \d+ μέρες|αύριο|Σήμερα,/.test(await txt('#main')));
+ await ev(`document.querySelector('[data-go="first"][data-page="p170"]').click()`); await sleep(120);
+ ok('«Διάβασε» ανοίγει Γνωριμία', (await txt('.eyebrow'))==='Γνωριμία');
+ await key('Enter'); await key(' '); await key('1'); await key(' '); await key('2');
+ await key('Escape');
+ ok('…και η αποθήκη της σελίδας ΕΜΕΙΝΕ ίδια (κανένα pass, κανένα σβήσιμο ιστορικού)', JSON.stringify((await store()).pages.p170)===JSON.stringify(JSON.parse(hist).pages.p170), (await store()).pages.p170);
+ await ev(`document.querySelector('[data-tab="roots"]').click()`); await sleep(120);
+ const nRc=await ev(`document.querySelectorAll('.lx-rc').length`);
+ ok('Ανά ρίζα: κάρτες ριζών ('+nRc+'), το «Μεμονωμένες» ΔΕΝ είναι ρίζα', nRc>=3 && !(await ev(`[...document.querySelectorAll('.lx-rc .lx-root,.lx-chip')].some(e=>/Μεμονωμένες/.test(e.textContent))`)));
+ const rc=await ev(`(()=>{const c=document.querySelector('.lx-rc');return {name:c.querySelector('.lx-root').textContent,n:+c.querySelector('.lx-rf b').textContent}})()`);
+ await ev(`document.querySelector('.lx-rc').click()`); await sleep(120);
+ ok('φύλλο ρίζας «'+rc.name+'»: όλες οι '+rc.n+' λέξεις της, με σελίδα', (await txt('.rooth'))===rc.name && await ev(`document.querySelectorAll('#sBody .iw').length`)===rc.n && await ev(`document.querySelectorAll('#sBody .iw .pgt').length`)===rc.n);
+ await key('Enter');
+ ok('Enter → «Ρώτα με αυτή τη ρίζα»: '+rc.n+' ερωτήσεις', (await txt('#sWhere')).indexOf('Ρίζα '+rc.name)===0 && (await txt('#sCount'))==='0 / '+rc.n, {w:await txt('#sWhere'),c:await txt('#sCount')});
+ await key('Escape');
+ await ev(`document.querySelector('#rev').click()`); await sleep(120);
+ ok('διακόπτης «ανάποδα»: aria-pressed και μνήμη συσκευής', await ev(`document.getElementById('rev').getAttribute('aria-pressed')`)==='true' && await ev(`localStorage.getItem('metron.lexilogio.dir')`)==='rev');
+ await ev(`document.querySelector('[data-tab="pages"]').click()`); await sleep(120);
+ await ev(`document.querySelector('[data-go="practice"][data-page="p170"]').click()`); await sleep(120);
+ ok('ανάποδα: η κάρτα δείχνει ΝΕΑ σημασία (σε sans) και ζητάει την αρχαία', await ev(`!!document.querySelector('.c-word.nw')`) && /αρχαία λέξη/.test(await txt('.c-ask .big')));
+ await key(' ');
+ ok('…η αποκάλυψη δείχνει την αρχαία λέξη', await ev(`!!document.querySelector('.meaning.gr')`) && (await txt('.meaning.gr')).length>0);
+ await key('Escape');
+ await ev(`document.querySelector('#rev').click()`); await sleep(120);
+ await ev(`document.querySelector('[data-go="practice"][data-page="p170"]').click()`); await sleep(120);
+ ok('πίσω σε κανονικό: αρχαίο μπροστά', !(await ev(`!!document.querySelector('.c-word.nw')`)) && /σημασία/.test(await txt('.c-ask .big')));
+ await key('Escape');
+ await ev(`document.querySelector('[data-go="cover"][data-page="p170"]').click()`); await sleep(120);
+ ok('«Σκέπασε»: οι σημασίες κρύβονται', await ev(`getComputedStyle(document.querySelector('#row-p170 .lx-w .m')).display`)==='none');
+ await ev(`document.querySelector('#row-p170 .lx-w').click()`); await sleep(120);
+ ok('…κλικ σε μία ανοίγει μόνο αυτή', await ev(`getComputedStyle(document.querySelector('#row-p170 .lx-w .m')).display`)!=='none' && await ev(`getComputedStyle(document.querySelectorAll('#row-p170 .lx-w .m')[1]).display`)==='none');
+ ok('μηδέν exceptions στο Ν', exc.length===excN, exc.slice(excN));
+ await ev(`localStorage.removeItem('${KEY}');localStorage.removeItem('metron.lexilogio.dir')`);
 
  ok('κανένα script που σηκώνει sync δεν έτρεξε (μπλοκαρίστηκαν: '+otherStripped.length+')', await ev('typeof window.ALSSync')==='undefined');
  ok('ο κοινός αριθμός «Δευ 19/10» κ.λπ. — μηδέν exceptions σε ΟΛΗ τη διαδρομή', exc.length===0, exc.slice(0,5));
