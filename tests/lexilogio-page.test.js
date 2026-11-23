@@ -167,6 +167,8 @@ const SHOTS=process.env.LEX_SHOTS||'';
  ok('καρτέλα Δύσκολες: η λέξη, με τη σημασία ΚΡΥΜΜΕΝΗ', (await txt('.hardlist .lx-w .lx-gr'))===target && await ev(`getComputedStyle(document.querySelector('.hardlist .lx-w .m')).display`)==='none');
  await ev(`document.querySelector('.hardlist .lx-w').click()`); await sleep(120);
  ok('κλικ στη Δύσκολη → σημασία', await ev(`getComputedStyle(document.querySelector('.hardlist .lx-w .m')).display`)!=='none' && (await txt('.hardlist .lx-w .m')).length>0);
+ await ev(`window.dispatchEvent(new Event('x'))`); await ev(`document.getElementById('q').dispatchEvent(new Event('input'))`); await sleep(60);
+ ok('…και μένει ανοιχτή μετά από νέο render (όπως όταν φέρνει κάτι το sync)', await ev(`getComputedStyle(document.querySelector('.hardlist .lx-w .m')).display`)!=='none');
  /* σταθ. 35: ένα άγνωστο πεδίο επιβιώνει load + save */
  await ev(`(()=>{const s=JSON.parse(localStorage.getItem('${KEY}'));s.future={kept:1};s.pages.p170.mine='x';localStorage.setItem('${KEY}',JSON.stringify(s))})()`);
  await shot('6-home-done-1440');
