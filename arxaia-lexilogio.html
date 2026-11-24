@@ -311,6 +311,8 @@ body{ background:var(--lx-bg); }
   .lx-band nav .tools{ margin-left:0; flex-basis:100%; }
   .lx-band .search{ width:100%; }
   .lx-band .search .k{ display:none; }
+  /* als-v781: το iPhone κάνει ζουμ όταν πατάς πεδίο <16px — 16px στο κινητό */
+  .lx-band .search input,.dialog textarea{ font-size:16px; }
   .lx-brand small{ display:none; }
   .lx-band{ padding-bottom:70px; }
   .lx-hero{ grid-template-columns:minmax(0,1fr); gap:20px; margin-top:28px; }
@@ -352,6 +354,7 @@ body{ background:var(--lx-bg); }
   .lx-k,.lx-src,.lx-cnt,.lx-rk i,.lx-chip b,.lx-nr li small,.lx-lk,.testday{ font-size:11px; }
   .lx-foot{ flex-direction:column; }
 }
+@media (max-width:360px){ .lx-tc{ padding:12px; } .lx-tc .g{ font-size:18px; } }
 
 /* παράθυρο */
 dialog.dialog{width:min(640px,92vw);max-width:none;margin:auto;padding:0;color:var(--text);background:var(--surface);border:1px solid var(--line-2);border-radius:20px}
@@ -1106,6 +1109,18 @@ function showRoot(f){
 }
 
 function wordSize(t){ return t.length > 16 ? 'xl' : t.length > 10 ? 'l' : ''; }
+/* als-v781: η λέξη της κάρτας ΧΩΡΑΕΙ πάντα — στο κινητό η «ἀφικνοῦμαι» κοβόταν δεξιά-αριστερά.
+   Μετά το «/» επιτρέπεται αλλαγή γραμμής· ό,τι πάλι δεν χωράει μικραίνει ώσπου να χωρέσει. */
+const wordHTML = t => esc(t).replace(/\//g, '/<wbr>');
+function fitWord(){
+  const w = document.querySelector('#card .c-word'); if (!w) return;
+  w.style.fontSize = '';
+  const box = w.parentElement, cs = getComputedStyle(box);
+  const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  let px = parseFloat(getComputedStyle(w).fontSize), n = 0;
+  while (w.scrollWidth > avail + 1 && px > 22 && n++ < 40){ px -= 2; w.style.fontSize = px + 'px'; }
+}
+addEventListener('resize', fitWord);
 /* «Ανάποδα» (REV) μόνο στις ερωτήσεις, ποτέ στη Γνωριμία/«Διάβασε». */
 const revNow = () => REV && R.kind !== 'first';
 function showCard(cur){
@@ -1119,22 +1134,23 @@ function showCard(cur){
   $('sBody').style.justifyContent = 'center';
   const shown = rv ? c.back : c.front;
   $('sBody').innerHTML = `<div class="card" id="card"><div class="chd"><span class="cfam">${famHTML}</span><span class="cpg">Σελ. ${c.pageN}</span></div>
-    <div class="cbody" id="cR"><div class="c-word ${rv ? 'nw' : ''} ${wordSize(shown)}">${esc(shown)}</div><div class="c-ask">${ICON.mic}<span class="big">${rv ? 'Πες την αρχαία λέξη δυνατά' : 'Πες τη σημασία δυνατά'}</span></div></div>
+    <div class="cbody" id="cR"><div class="c-word ${rv ? 'nw' : ''} ${wordSize(shown)}">${wordHTML(shown)}</div><div class="c-ask">${ICON.mic}<span class="big">${rv ? 'Πες την αρχαία λέξη δυνατά' : 'Πες τη σημασία δυνατά'}</span></div></div>
     <div class="cft">${need}<span class="hint">Space για να τη δεις</span></div></div>`;
   foot(`<button class="btn btn-line" id="show"><span class="k">Space</span>${rv ? 'Δείξε τη λέξη' : 'Δείξε τη σημασία'}</button>`);
   $('show').addEventListener('click', reveal);
+  fitWord();
 }
 function reveal(){
   if (!R || R.revealed || !R.cur) return; R.revealed = true;
   const c = CARDS[R.cur.id];
   const rv = revNow(), shown = rv ? c.back : c.front;
-  let a = `<div class="c-word ${rv ? 'nw' : ''} ${wordSize(shown)}">${esc(shown)}</div>` + (rv
+  let a = `<div class="c-word ${rv ? 'nw' : ''} ${wordSize(shown)}">${wordHTML(shown)}</div>` + (rv
     ? `<div class="mean"><span class="lbl">η λέξη · ${esc(c.family === LONE ? 'χωρίς οικογένεια' : c.family)}</span><span class="meaning gr">${esc(c.front)}</span></div>`
     : `<div class="mean"><span class="lbl">φυλλάδιο</span><span class="meaning">${esc(c.back)}</span></div>`);
   if (c.trap) a += `<div class="box trap">${ICON.trap}<div class="body"><span class="h">Παγίδα</span><span>${esc(c.trap)}</span></div></div>`;
   if (c.hook) a += `<div class="box hook">${ICON.hook}<div class="body"><span class="h">Γάντζος του Claude</span><span>${esc(c.hook)}</span></div></div>`;
   if (c.note) a += `<div class="box note">Σημείωση του Claude: ${esc(c.note)}</div>`;
-  $('card').classList.add('rev'); $('cR').innerHTML = a;
+  $('card').classList.add('rev'); $('cR').innerHTML = a; fitWord();
   const ft = document.querySelector('.cft .hint'); if (ft) ft.textContent = '1 δεν το ήξερα · 2 το ήξερα';
   foot(`<button class="btn btn-line" id="no"><span class="k">1</span>Δεν το ήξερα</button><button class="btn btn-terra" id="yes"><span class="k">2</span>Το ήξερα</button>`);
   $('no').addEventListener('click', () => grade(false)); $('yes').addEventListener('click', () => grade(true));
