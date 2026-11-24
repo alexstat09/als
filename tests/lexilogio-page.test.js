@@ -359,7 +359,8 @@ const SHOTS=process.env.LEX_SHOTS||'';
  console.log('\nΚ · Η ΠΟΡΤΑ ΠΟΥ ΧΡΗΣΙΜΟΠΟΙΕΙ: School Studies → arxaia-agnosto.html → κάρτα 04');
  await ev(`localStorage.setItem('${KEY}',${JSON.stringify(seeded)})`);
  await S('Page.navigate',{url:'http://127.0.0.1:'+HTTP+'/arxaia-agnosto.html?n='+(++nav)}); await sleep(2200);
- const c4=await ev(`(()=>{const c=[...document.querySelectorAll('#cards .card')].find(x=>/Λεξιλόγιο/.test(x.querySelector('h2').textContent));return c?{href:c.querySelector('a.open').getAttribute('href'),sub:c.querySelector('.sub').textContent,mini:c.querySelector('#miniL').textContent,miniT:(c.querySelector('#miniL .t')||{}).textContent,foot:(c.querySelector('a.lxk')||{}).textContent||'',fhref:(c.querySelector('a.lxk')||{getAttribute:()=>''}).getAttribute('href')}:null})()`);
+ /* als-v782: η «κάρτα 04» είναι πλέον η γραμμή «Λεξιλόγιο» της αρχικής v5· οι λέξεις του ΚΕΙΜΕΝΟΥ ζουν στο εργαλείο «Λέξεις του κειμένου». */
+ const c4=await ev(`(()=>{const c=[...document.querySelectorAll('#scr-home .ah-row')].find(x=>/^Λεξιλόγιο$/.test(x.querySelector('h3').textContent));const f=document.querySelector('#scr-home a.lxk');return c?{href:c.querySelector('a.go').getAttribute('href'),sub:c.querySelector('.sub').textContent,mini:c.querySelector('#miniL').textContent,miniT:(c.querySelector('#miniL .t')||{}).textContent,foot:(f||{}).textContent||'',fhref:(f||{getAttribute:()=>''}).getAttribute('href')}:null})()`);
  ok('η κάρτα 04 «Λεξιλόγιο» ανοίγει το arxaia-lexilogio.html', c4&&c4.href==='arxaia-lexilogio.html', c4);
  ok('…η γραμμή «Μία σελίδα τη μέρα» ΕΦΥΓΕ, μπήκαν οι ενότητες', c4&&!/τη μέρα/.test(c4.sub)&&/ενότητες/.test(c4.sub), c4&&c4.sub);
  ok('…και η περίληψη: «534 λέξεις · 2 δύσκολες · '+NU+' ενότητες»', c4&&c4.miniT==='534 λέξεις · 2 δύσκολες · '+NU+' ενότητες', c4&&c4.mini);

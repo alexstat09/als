@@ -96,9 +96,25 @@ const SEED=`
  ok('ένα κείμενο στη βιβλιοθήκη', await ev("document.querySelectorAll('#scr-home .librow').length")===1);
  ok('ο τίτλος του έργου αυτολεξεί από το JSON',
    (await ev("document.querySelector('#scr-home .librow .what').textContent"))==='Περὶ τοῦ Σηκοῦ Ἀπολογία');
- ok('έξι κάρτες', await ev("document.querySelectorAll('#scr-home .card').length")===6);
+ /* als-v782: η αρχική v5 — 3 ζωντανά εργαλεία + 4 γραμμές (οι έξι χώροι ΟΛΟΙ μέσα). */
+ ok('τρία ζωντανά εργαλεία + τέσσερις γραμμές', await ev("document.querySelectorAll('#scr-home .ah-tool').length")===3 && await ev("document.querySelectorAll('#scr-home .ah-row').length")===4);
  ok('ο μετρητής περιόδων μετράει το JSON, όχι σταθερά',
-   (await ev("document.querySelector('#stats .stat .v').textContent")).indexOf('/6')>0);
+   (await ev("document.querySelector('#stats .ah-sc .n').textContent")).indexOf('/6')>0);
+ ok('η απάντηση λέει την ΕΠΟΜΕΝΗ περίοδο (καθαρή αποθήκη → 1 από 6)',
+   /περίοδο 1 από 6/.test(await ev("document.getElementById('ahAns').textContent")), await ev("document.getElementById('ahAns').textContent"));
+ ok('«Συνέχισε»: η περίοδος 1 ΑΥΤΟΛΕΞΕΙ από το JSON',
+   await ev("(function(){var p=document.querySelector('#ahCont .anc');return !!p&&p.textContent===window.AGN.DATA.texts[0].periods[0].text})()"));
+ ok('το γραπτό: τέσσερα θέματα Γ1–Γ4', (await ev("[...document.querySelectorAll('#ahExam .ah-ex .id')].map(e=>e.textContent).join(',')"))==='Γ1,Γ2,Γ3,Γ4');
+ ok('τα μίνι ζωντανά: τύπος, επιλογές συντακτικού, επιλογές λέξης',
+   await ev("!!document.querySelector('#miniG .anc')&&document.querySelectorAll('#miniS .opt').length===4&&document.querySelectorAll('#miniV .opt').length>=2"));
+ const links=await ev("[...document.querySelectorAll('#scr-home a[href]')].map(a=>a.getAttribute('href'))");
+ ['arxaia-grammatiki.html','arxaia-lexilogio.html','#/grammatiki','#/syntaktiko','#/lexilogio','#/pinakakia','#/xronoi'].forEach(h=>
+   ok('ισοτιμία: η αρχική ανοίγει ακόμα το '+h, links.indexOf(h)>=0));
+ ok('ισοτιμία: το κείμενο ανοίγει από τη βιβλιοθήκη ΚΑΙ από το «Συνέχισε»', links.filter(h=>/^#\/keimeno\//.test(h)).length>=3);
+ ok('η παλέτα της αρχικής ανάβει στην αρχική', await ev("document.documentElement.classList.contains('ah-on')"));
+ await ev("location.hash='#/syntaktiko'"); await sleep(500);
+ ok('…και ΣΒΗΝΕΙ στις μέσα οθόνες (μένουν όπως ήταν)', await ev("!document.documentElement.classList.contains('ah-on')"));
+ await ev("location.hash='#/'"); await sleep(500);
 
  console.log('\nΓ · Η ΕΞΟΔΟΣ (σταθ. 64)');
  const exit=await ev(`(function(){var a=document.querySelector('.nav .exit');if(!a)return null;
