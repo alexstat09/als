@@ -122,8 +122,9 @@ appKey `arxaia-agn`, τα κείμενα ζουν ως JSON στο `data/`)** an
 **`arxaia-lexilogio.html` (Αρχαία · ΛΕΞΙΛΟΓΙΟ, als-v601 — το φυλλάδιο του
 Πυθαγόρα σελίδα-σελίδα· λογική = `lexilogio-core.js` (το core του kit,
 sha256 καρφωμένο), σελίδες = `data/lexilogio.json` + `S.extra`, πρόοδος =
-`metron.lexilogio.v2`, appKey `lexilogio`· ράφι + «Για αύριο» στο
-`arxaia.html#ag`, μόνο ανάγνωση)**,
+`metron.lexilogio.v2`, appKey `lexilogio`· als-v780: καρτέλα «Ενότητες» =
+`data/lexilogio-units.json` (μόνο ids, χτίζεται από `tools/lexilogio/units.js`)·
+περίληψη χωρίς πρόγραμμα στο ράφι `arxaia.html#ag` και στην κάρτα 04, μόνο ανάγνωση)**,
 **`arxaia-grammatiki.html` (Αρχαία · ΓΡΑΜΜΑΤΙΚΗ, als-v725 — το βιβλίο γραμματικής
 του Πυθαγόρα ενότητα-ενότητα, «Γραφίτης»· λογική = `grammatiki-core.js`, ενότητες =
 `data/grammatiki/<id>.json` + `index.json` (τα περιεχόμενα του βιβλίου), πρόοδος =

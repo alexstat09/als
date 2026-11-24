@@ -214,6 +214,12 @@ body{ background:var(--lx-bg); }
 .lx-chev{ width:38px; height:38px; border-radius:10px; border:1px solid var(--lx-line2); display:grid; place-items:center; color:var(--lx-muted); transition:transform .3s var(--lx-ease),color .2s,border-color .2s; }
 .lx-chev::before{ content:""; width:7px; height:7px; border:solid currentColor; border-width:0 1.8px 1.8px 0; transform:translateY(-2px) rotate(45deg); }
 .lx-row[open] .lx-chev{ transform:rotate(180deg); color:var(--lx-pen); border-color:var(--lx-penline); }
+/* ενότητες (als-v780): ο τίτλος σπάει στο «:» — η πράξη πάνω, οι ρίζες της από κάτω */
+.lx-t.ut{ font-size:21px; }
+.lx-ur{ display:block; margin-top:4px; font:400 15.5px/1.4 var(--lx-gr); color:var(--lx-ink2); }
+.lx-uroots{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.lx-uroots span{ font:500 13.5px/1 var(--lx-gr); color:var(--lx-ink2); padding:5px 9px; border:1px solid var(--lx-line); border-radius:8px; }
+.lx-uroots .more{ font-family:var(--lx-m); font-size:11.5px; letter-spacing:.06em; color:var(--lx-muted); }
 .lx-body{ border-top:1px solid var(--lx-line); padding:22px 22px 26px 102px; }
 .lx-tools{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
 .lx-tc{ display:flex; flex-direction:column; min-height:148px; padding:18px; border-radius:12px; border:1px solid var(--lx-line); background:var(--lx-surf2); text-align:left; transition:border-color .2s,transform .3s var(--lx-ease); }
@@ -320,6 +326,12 @@ body{ background:var(--lx-bg); }
   .lx-tabs{ margin-top:28px; }
   .lx-seg{ width:100%; }
   .lx-seg button{ flex:1 1 0; justify-content:center; padding:0 8px; font-size:14px; gap:6px; }
+  /* als-v780: τέσσερις καρτέλες δεν χωράνε σε μία γραμμή → 2×2· και η μπάρα
+     ΔΕΝ κολλάει στο κινητό (2 σειρές + διακόπτης = ~1/5 της οθόνης, σκέπαζε τον
+     τίτλο της ανοιχτής ενότητας). */
+  .lx-tabs{ position:static; background:none; }
+  .lx-seg{ display:grid; grid-template-columns:1fr 1fr; }
+  .lx-seg button{ white-space:nowrap; }
   .lx-rev{ width:100%; justify-content:center; }
   .lx-sech{ flex-direction:column; align-items:flex-start; gap:8px; }
   .lx-sech h2{ font-size:26px; } .lx-sech p{ text-align:left; }
@@ -328,6 +340,7 @@ body{ background:var(--lx-bg); }
   .lx-row > summary{ grid-template-columns:50px minmax(0,1fr) 44px; gap:14px; padding:14px; }
   .lx-rn{ height:50px; font-size:21px; }
   .lx-t{ font-size:19px; }
+  .lx-t.ut{ font-size:18.5px; } .lx-ur{ font-size:15px; } .lx-uroots span{ font-size:13.5px; }
   .lx-mb{ grid-column:2/4; grid-row:2; align-items:flex-start; }
   .lx-dash{ max-width:none; height:12px; }
   .lx-chev{ grid-column:3; grid-row:1; width:44px; height:44px; }
@@ -676,7 +689,25 @@ const dataIds = () => new Set(DATA ? DATA.pages.map(p => p.id) : []);
 const ownExtra = () => { const have = dataIds(); return (S.extra || []).filter(p => !have.has(p.id)); };
 const allPages = () => (DATA ? DATA.pages : []).concat(ownExtra()).slice().sort((a,b) => a.n - b.n);
 const pageById = id => allPages().find(p => p.id === id);
-const title = p => `Σελίδα ${p.n}`;
+const title = p => p.unit ? `Ενότητα ${p.n}` : `Σελίδα ${p.n}`;
+
+/* ===================== οι ενότητες (als-v780) ===================== */
+/* data/lexilogio-units.json: ΜΟΝΟ ομαδοποίηση (ids), οι λέξεις μένουν στο
+   data/lexilogio.json. Κάθε οικογένεια ολόκληρη σε μία ενότητα (το εγγυάται το
+   tests/lexilogio-data.test.js). ⛔ Καμία αποθήκευση ανά ενότητα: μια ενότητα δεν
+   έχει δική της εγγραφή, ό,τι κρατιέται είναι οι Δύσκολες (κοινά ids). Αν το
+   αρχείο δεν φορτώσει, η καρτέλα το ΛΕΕΙ· οι άλλες δουλεύουν (σταθ. 10). */
+let UNITS = null, UNITS_ERR = '', openUnit = null;
+function unitList(){
+  if (!UNITS) return [];
+  return UNITS.units.map(u => {
+    const cards = u.ids.map(id => CARDS[id]).filter(Boolean);
+    return { id: u.id, n: u.n, title: u.title, cards, missing: u.ids.length - cards.length, unit: true };
+  });
+}
+/* Η «σελίδα» που τρέχει η μηχανή του «Διάβασε» για μια ενότητα: ψεύτικο id,
+   ΠΑΝΤΑ R.eph (δεν γράφει ποτέ στο S.pages). */
+const unitPage = u => ({ id: 'unit:' + u.id, n: u.n, unit: true, utitle: u.title, cards: u.cards });
 let CARDS = {};
 function index(){ CARDS = {}; allPages().forEach(p => p.cards.forEach(c => { CARDS[c.id] = Object.assign({ pageN: p.n, pageId: p.id }, c); })); }
 
@@ -687,7 +718,7 @@ const joinGr = arr => arr.length <= 1 ? (arr[0] || '') : arr.slice(0, -1).join('
    διαλέγει ελεύθερα σελίδα ή ρίζα. Το πρόγραμμα της μηχανής (S.pages:
    stage/history) ΔΕΝ σβήνεται· απλώς δεν ζωγραφίζεται. */
 /* Ό,τι έχει ανοίξει ζει ΕΔΩ, όχι στο DOM: ένα render από το sync (onApplied) δεν το ξανακρύβει. */
-let TAB = 'pages', covered = new Set(), openRow = null, shownW = new Set();
+let TAB = 'units', covered = new Set(), openRow = null, shownW = new Set();
 const REV_KEY = 'metron.lexilogio.dir';   /* προτίμηση οθόνης, μόνο σε αυτή τη συσκευή */
 let REV = false; try { REV = localStorage.getItem(REV_KEY) === 'rev'; } catch(e){}
 const LONE = 'Μεμονωμένες';                /* οικογένεια «χωρίς ρίζα» του φυλλαδίου */
@@ -711,7 +742,7 @@ const firstPct = p => { const ps = S.pages[p.id]; return ps && ps.status === 'le
 function heroHTML(nP, nW, nF, nH){
   return `<div><span class="lx-k">Αρχαία · άγνωστο</span>
       <h1 class="lx-hh">Όλο το λεξιλόγιο,<br><em>σε μία σελίδα.</em></h1>
-      <p class="lx-lead">${nP} ${nP === 1 ? 'σελίδα' : 'σελίδες'} του φυλλαδίου, <b>${words(nW)}</b> από <b>${nF} ρίζες</b>. Διάλεξε όποια σελίδα θέλεις, όποτε θέλεις, ή μάθε τες ανά ρίζα, όλες μαζί.</p></div>
+      <p class="lx-lead">${nP} ${nP === 1 ? 'σελίδα' : 'σελίδες'} του φυλλαδίου, <b>${words(nW)}</b> από <b>${nF} ρίζες</b>. Διάλεξε ενότητα, όπου οι συγγενικές λέξεις είναι μαζί, ή σελίδα του φυλλαδίου, όποτε θέλεις.</p></div>
     <div class="lx-score"><div class="n num">${nW}</div><span class="lx-k">λέξεις, όλη η ύλη</span>
       <div class="lx-facts"><span><b class="p">${nH}</b>${hardWord(nH)}</span><span><b>${nF}</b>ρίζες</span></div></div>`;
 }
@@ -725,7 +756,7 @@ function stripHTML(pages){
 }
 function tabsHTML(nP, nH, nF){
   const b = (id, label, n) => `<button role="tab" id="tab-${id}" aria-selected="${TAB === id}" data-tab="${id}">${label} <b>${n}</b></button>`;
-  return `<div class="lx-tabs"><div class="lx-seg" role="tablist" aria-label="Προβολή">${b('pages','Σελίδες',nP)}${b('hard','Δύσκολες',nH)}${b('roots','Ανά ρίζα',nF)}</div>
+  return `<div class="lx-tabs"><div class="lx-seg" role="tablist" aria-label="Προβολή">${b('units','Ενότητες',UNITS ? UNITS.units.length : '·')}${b('pages','Σελίδες',nP)}${b('hard','Δύσκολες',nH)}${b('roots','Ανά ρίζα',nF)}</div>
     <button class="lx-rev" id="rev" aria-pressed="${REV}" data-go="rev"><i aria-hidden="true"></i>Ρώτα με ανάποδα: νέα → αρχαία</button></div>`;
 }
 const wordBtn = (c, withPage) => `<button class="lx-w${isHard(c.id) ? ' hd' : ''}${shownW.has(c.id) ? ' on' : ''}" data-w="${esc(c.id)}"><span class="lx-gr">${esc(c.front)}</span><span class="m">${esc(c.back)}${withPage ? ` <span class="pg">· Σελ. ${c.pageN}</span>` : ''}</span></button>`;
@@ -776,6 +807,48 @@ function rowHTML(p){
 function panePages(pages, nH){
   return paneStart(nH) + `<section class="lx-sec"><div class="lx-sech"><div><span class="lx-k">Το φυλλάδιο</span><h2>Οι σελίδες</h2></div><p>Πάτα μια σελίδα για να δεις τις λέξεις της και να διαλέξεις πώς θα τη διαβάσεις. Χωρίς πρόγραμμα, όσες φορές θες.</p></div>
     ${pages.map(rowHTML).join('')}</section>`;
+}
+/* Οι ρίζες μιας ενότητας, για τη σειρά της: οι οικογένειες με τη σειρά που
+   μπαίνουν, χωρίς τις «Μεμονωμένες» (δεν είναι ρίζα). */
+function unitRoots(u){
+  const seen = [], lone = u.cards.filter(c => c.family === LONE).length;
+  u.cards.forEach(c => { if (c.family !== LONE && seen.indexOf(c.family) < 0) seen.push(c.family); });
+  return { fams: seen, lone };
+}
+function unitRowHTML(u){
+  const h = u.cards.filter(c => isHard(c.id)).length;
+  const r = unitRoots(u), show = r.fams.slice(0, 4), more = r.fams.length - show.length;
+  const cov = covered.has(u.id), open = openUnit === u.id;
+  const [head, tail] = (() => { const i = u.title.indexOf(': '); return i > 0 ? [u.title.slice(0, i), u.title.slice(i + 2)] : [u.title, '']; })();
+  return `<details class="lx-row urow ${h ? 'has-h' : ''}" id="row-${esc(u.id)}" data-urow="${esc(u.id)}" ${open ? 'open' : ''}>
+  <summary>
+    <span class="lx-rn num">${u.n}</span>
+    <span class="lx-tt"><span class="lx-t ut">${esc(head)}${tail ? `<span class="lx-ur">${esc(tail)}</span>` : ''}</span><span class="lx-src">${words(u.cards.length)} · ${r.fams.length} ${r.fams.length === 1 ? 'ρίζα' : 'ρίζες'}${r.lone ? ` · ${r.lone} χωρίς οικογένεια` : ''}</span><span class="lx-uroots">${show.map(f => `<span>${esc(f)}</span>`).join('')}${more > 0 ? `<span class="more">+${more}</span>` : ''}</span></span>
+    <span class="lx-mb"><span class="lx-dash" aria-hidden="true">${u.cards.map(c => `<i class="${isHard(c.id) ? 'hd' : ''}"></i>`).join('')}</span><span class="lx-cnt">${h ? `<b>${h}</b> ${hardWord(h)}` : 'καμία δύσκολη'}</span></span>
+    <span class="lx-chev" aria-hidden="true"></span>
+  </summary>
+  <div class="lx-body">
+    <div class="lx-tools">
+      <button class="lx-tc pri" data-go="ufirst" data-unit="${esc(u.id)}"><span class="g">Διάβασε</span><b>Μάθε την ενότητα</b><small>Οι συγγενικές λέξεις μαζί, ανά οικογένεια, με το μνημονικό και την παγίδα, και μετά ερωτήσεις.</small></button>
+      <button class="lx-tc" data-go="upractice" data-unit="${esc(u.id)}"><span class="g">Ρώτα με</span><b>Έλεγξε τον εαυτό σου</b><small>Ανακατεμένα. Λες τη σημασία δυνατά, μετά τη βλέπεις.</small></button>
+      <button class="lx-tc" data-go="ucover" data-unit="${esc(u.id)}" aria-pressed="${cov}"><span class="g">${cov ? 'Ξεσκέπασε' : 'Σκέπασε'}</span><b>Σαν το φυλλάδιο</b><small>${cov ? 'Οι σημασίες είναι κρυμμένες. Πάτα μια λέξη για να δεις τη δική της.' : 'Κρύβει τις σημασίες από κάτω. Πατάς μία μία.'}</small></button>
+      ${h ? `<button class="lx-tc" data-go="uhard" data-unit="${esc(u.id)}"><span class="g">${h}</span><b>Μόνο οι ${hardWord(h)}</b><small>Όσες έχεις χάσει από αυτή την ενότητα.</small></button>`
+          : `<div class="lx-tc dim"><span class="g">0</span><b>Καμία δύσκολη</b><small>Ό,τι χάσεις εδώ θα εμφανιστεί σε αυτό το κουτί.</small></div>`}
+    </div>
+    <div class="lx-lk">Οι λέξεις της ενότητας, ανά οικογένεια${cov ? ' <span>· πάτα για σημασία</span>' : ''}</div>
+    <div class="lx-words ${cov ? 'cover' : ''}">${u.cards.map(c => wordBtn(c, true)).join('')}</div>
+  </div>
+</details>`;
+}
+function paneUnits(nH){
+  const start = paneStart(nH);
+  if (UNITS_ERR) return start + `<section class="lx-sec"><div class="lx-sech"><div><span class="lx-k">Οι συγγενικές μαζί</span><h2>Ενότητες</h2></div></div>
+    <p class="lx-empty"><b>Οι ενότητες δεν φόρτωσαν.</b>Το data/lexilogio-units.json δεν διαβάστηκε (${esc(UNITS_ERR)}). Οι λέξεις και η πρόοδός σου είναι εντάξει· οι καρτέλες Σελίδες, Δύσκολες και Ανά ρίζα δουλεύουν κανονικά. Ανανέωσε τη σελίδα όταν έχεις σύνδεση.</p></section>`;
+  if (!UNITS) return start + `<section class="lx-sec"><p class="lx-empty">Έρχονται οι ενότητες…</p></section>`;
+  const us = unitList(), shown = us.filter(u => u.cards.length), lost = us.reduce((a, u) => a + u.missing, 0);
+  return start + `<section class="lx-sec"><div class="lx-sech"><div><span class="lx-k">Οι συγγενικές μαζί</span><h2>Οι ενότητες</h2></div><p>Το φυλλάδιο πάει αλφαβητικά, οπότε μια ρίζα σκορπίζει σε πολλές σελίδες. Εδώ κάθε οικογένεια είναι ολόκληρη σε μία ενότητα, μαζί με τις λέξεις που μπερδεύονται μαζί της.</p></div>
+    ${lost ? `<p class="lx-note">${lost === 1 ? 'Μία λέξη' : lost + ' λέξεις'} των ενοτήτων δεν ${lost === 1 ? 'βρέθηκε' : 'βρέθηκαν'} στο φυλλάδιο που φόρτωσε. Οι ενότητες δείχνουν όσες υπάρχουν.</p>` : ''}
+    ${shown.map(unitRowHTML).join('')}</section>`;
 }
 function paneHard(pages, nH){
   if (!nH) return `<section class="lx-sec"><div class="lx-sech"><div><span class="lx-k">Όσες έχεις χάσει</span><h2>Δύσκολες</h2></div></div>
@@ -832,12 +905,14 @@ function render(){
   $('brandSub').textContent = 'Φυλλάδιο Πυθαγόρα' + (bps.length ? ` · σελ. ${Math.min(...bps)}–${Math.max(...bps)}` : '');
   const q = C.fold($('q').value.trim());
   if (q.length >= 2){ $('main').innerHTML = secSearch(q); return; }
-  const pane = TAB === 'hard' ? paneHard(pages, nH) : TAB === 'roots' ? paneRoots(nW) : panePages(pages, nH);
+  const pane = TAB === 'hard' ? paneHard(pages, nH) : TAB === 'roots' ? paneRoots(nW) : TAB === 'pages' ? panePages(pages, nH) : paneUnits(nH);
   $('main').innerHTML = stripHTML(pages) + tabsHTML(pages.length, nH, nF) + `<div class="lx-pane" id="pane-${TAB}" role="tabpanel" aria-labelledby="tab-${TAB}">${pane}</div>` + footerHTML();
 }
 $('q').addEventListener('input', render);
 /* Το <details> ανοιγοκλείνει μόνο του· κρατάμε ποιο είναι ανοιχτό για το επόμενο render. */
-document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.row){ if (d.open) openRow = d.dataset.row; else if (openRow === d.dataset.row) openRow = null; } }, true);
+document.addEventListener('toggle', e => { const d = e.target; if (!d || !d.dataset) return;
+  if (d.dataset.row){ if (d.open) openRow = d.dataset.row; else if (openRow === d.dataset.row) openRow = null; }
+  if (d.dataset.urow){ if (d.open) openUnit = d.dataset.urow; else if (openUnit === d.dataset.urow) openUnit = null; } }, true);
 
 document.addEventListener('click', e => {
   if (R) return;
@@ -849,7 +924,12 @@ document.addEventListener('click', e => {
   const rt = e.target.closest('[data-root]'); if (rt){ const f = FAMS[+rt.dataset.root]; if (f) showRoot(f); return; }
   const t = e.target.closest('[data-go]'); if (!t) return;
   const go = t.dataset.go, pid = t.dataset.page;
+  const un = t.dataset.unit ? unitList().find(u => u.id === t.dataset.unit) : null;
   if (go === 'first') startFirst(pid);
+  else if (go === 'ufirst'){ if (un) startUnitFirst(un); }
+  else if (go === 'upractice'){ if (un) startQuiz(un.cards.map(c => c.id), `${title(un)} · ρώτα με`); }
+  else if (go === 'uhard'){ if (un) startQuiz(un.cards.map(c => c.id).filter(isHard), `${title(un)} · οι δύσκολες`); }
+  else if (go === 'ucover'){ const k = t.dataset.unit; covered.has(k) ? covered.delete(k) : covered.add(k); openUnit = k; render(); }
   else if (go === 'practice'){ const p = pageById(pid); if (p) startQuiz(p.cards.map(c => c.id), `${title(p)} · ρώτα με`); }
   else if (go === 'pagehard'){ const p = pageById(pid); if (p) startQuiz(p.cards.map(c => c.id).filter(isHard), `${title(p)} · οι δύσκολες`); }
   else if (go === 'cover'){ covered.has(pid) ? covered.delete(pid) : covered.add(pid); openRow = pid; render(); }
@@ -908,12 +988,28 @@ $('impBtn').addEventListener('click', () => {
    · root — φύλλο ρίζας (μόνο προβολή) → «Ρώτα με αυτή τη ρίζα» = quiz. */
 let R = null;
 function openSession(){ $('session').classList.add('on'); document.body.style.overflow = 'hidden'; }
-function closeSession(){ $('session').classList.remove('on'); document.body.style.overflow = ''; R = null; render(); }
+function closeSession(){ keepEphHard(); $('session').classList.remove('on'); document.body.style.overflow = ''; R = null; render(); }
+/* «Διάβασε» που ΔΕΝ γράφει S.pages (ενότητα, ή σελίδα ήδη περασμένη = R.eph):
+   αν κλείσει στη μέση, οι λέξεις που τον δυσκόλεψαν ΩΣ ΕΚΕΙ πάνε στις
+   Δύσκολες, αλλιώς χάνονται μαζί με το R. Μία φορά ανά συνεδρία (το addHard
+   μηδενίζει το σερί μιας ήδη δύσκολης· το finish το κάνει ήδη στο τέλος). */
+function keepEphHard(){
+  if (!R || R.kind !== 'first' || !R.eph || R.done) return;
+  R.done = true;
+  const ids = C.passHardCards(R.s).filter(id => CARDS[id]);
+  if (!ids.length) return;
+  const before = S.hard; S.hard = C.addHard(S.hard, ids, TODAY); if (!save()) S.hard = before;
+}
 $('sClose').addEventListener('click', closeSession);
 /* Ένα sync που ήρθε στη μέση μπορεί να έχει αντικαταστήσει την εγγραφή της
    σελίδας· το πέρασμα που τρέχει είναι πάντα αυτό που γράφεται. */
 function putPass(){ if (R.eph) return; const ps = S.pages[R.pageId]; if (ps && ps.status === 'learning') ps.pass = R.s; else S.pages[R.pageId] = { status:'learning', pass:R.s }; save(); }
 
+function startUnitFirst(u){
+  if (!u.cards.length) return;
+  const p = unitPage(u);
+  R = { kind:'first', s: C.newFirstPass(p.cards), pageId: p.id, page: p, eph: true }; openSession(); step();
+}
 function startFirst(pageId){
   const p = pageById(pageId); if (!p) return;
   const ps = S.pages[pageId];
@@ -973,7 +1069,7 @@ function railHTML(cur){
 }
 const endRail = oks => `<div class="endrail" aria-hidden="true">${oks.map((ok,i) => `<i style="--i:${i}" class="${ok ? '' : 'no'}"></i>`).join('')}</div>`;
 function where(){
-  if (R.kind === 'first') return `${title(R.page)} · διάβασμα · ${R.s.step === 'consolidate' ? 'όλη η σελίδα ανακατεμένη' : `κομμάτι ${R.s.ci + 1} από ${R.s.chunks.length}`}`;
+  if (R.kind === 'first') return `${title(R.page)} · διάβασμα · ${R.s.step === 'consolidate' ? (R.page.unit ? 'όλη η ενότητα ανακατεμένη' : 'όλη η σελίδα ανακατεμένη') : `κομμάτι ${R.s.ci + 1} από ${R.s.chunks.length}`}`;
   return esc(R.label) + (REV ? ' <span>· ανάποδα</span>' : '');
 }
 const lineHTML = (cls, icon, text) => `<div class="ln ${cls}">${icon}<span>${esc(text)}</span></div>`;
@@ -1082,12 +1178,13 @@ function hardDone(sg){
 function finish(){
   if (R.kind === 'first'){
     const hardIdsNow = C.passHardCards(R.s);
+    R.done = true;
     if (!R.eph) S.pages[R.pageId] = C.finishFirstPass(TODAY);
     S.hard = C.addHard(S.hard, hardIdsNow, TODAY); save();
     const hs = new Set(hardIdsNow);
     return endScreen(`<div><div class="eyebrow">${title(R.page)} · διάβασμα</div><div class="word">Έγινε.</div><div class="under">${words(R.page.cards.length)}, κάθε μία σωστή τρεις φορές</div></div>${endRail(R.page.cards.map(c => !hs.has(c.id)))}
       ${hardIdsNow.length ? chips('Αυτές σε δυσκόλεψαν και πάνε στις Δύσκολες', hardIdsNow) : '<p class="under">Καμία δεν σε δυσκόλεψε ιδιαίτερα.</p>'}`,
-      'Τέλος', closeSession, 'Ρώτα με τη σελίδα', ((p) => () => startQuiz(p.cards.map(c => c.id), `${title(p)} · ρώτα με`))(R.page));
+      'Τέλος', closeSession, R.page.unit ? 'Ρώτα με την ενότητα' : 'Ρώτα με τη σελίδα', ((p) => () => startQuiz(p.cards.map(c => c.id), `${title(p)} · ρώτα με`))(R.page));
   }
   const sg = R.s.segs[0], miss = C.segMisses(sg), label = R.label;
   endScreen(scoreHTML(esc(label), sg.ids.length - miss.length, sg.ids.length, miss.length ? 'σωστές με την πρώτη' : 'όλες σωστές με την πρώτη') + endRail(R.hist || [])
@@ -1122,6 +1219,11 @@ fetch('data/lexilogio.json', { cache:'no-cache' })
   .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })   /* fetch() δεν πέφτει στα 4xx */
   .then(d => { if (!d || !Array.isArray(d.pages)) throw new Error('χωρίς "pages"'); DATA = d; },
         e => { DATA_ERR = String(e && e.message || e); })
+  .then(() => { if (!R) render(); });
+fetch('data/lexilogio-units.json', { cache:'no-cache' })
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(d => { if (!d || !Array.isArray(d.units) || !d.units.every(u => u && Array.isArray(u.ids))) throw new Error('χωρίς "units"'); UNITS = d; },
+        e => { UNITS_ERR = String(e && e.message || e); })
   .then(() => { if (!R) render(); });
 
 /* Συγχρονισμός: μία μηχανή, ένα κλειδί, μία κλήση (σταθ. 32). Αν δεν

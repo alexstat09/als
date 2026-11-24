@@ -111,5 +111,34 @@ console.log('\nΔ · Ο CORE ΕΙΝΑΙ ΤΟΥ KIT, ΑΥΤΟΥΣΙΟΣ');
 const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'lexilogio-core.js'))).digest('hex');
 ok('lexilogio-core.js = core.js του kit, byte προς byte (sha256)', sha === '0449b70213b6d5440c7331b8881be534a1889c2e3a619ab4dce12c9c5977c3d9', sha.slice(0, 12));
 
+console.log('\nΣΤ · ΟΙ ΕΝΟΤΗΤΕΣ (data/lexilogio-units.json, als-v780)');
+/* Μόνο ομαδοποίηση: ids που δείχνουν στο data/lexilogio.json. Οι κανόνες είναι
+   δικοί του (24/11): κάθε λέξη ΑΚΡΙΒΩΣ μία φορά · μια οικογένεια ΠΟΤΕ σε δύο
+   ενότητες (οι «Μεμονωμένες» δεν είναι ρίζα, μοιράζονται σε θέματα) · 20–30
+   λέξεις. Τα «δίδυμα» είναι κρίση ανάγνωσης, άρα κλειδώνονται ΟΝΟΜΑΣΤΙΚΑ. */
+let U = null;
+try { U = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/lexilogio-units.json'), 'utf8')); } catch (e) { ok('το data/lexilogio-units.json διαβάζεται', false, String(e.message)); }
+if (U) {
+  const units = Array.isArray(U.units) ? U.units : [];
+  const byId = {}; data.pages.forEach(p => p.cards.forEach(c => { byId[c.id] = c; }));
+  const all = units.flatMap(u => u.ids || []);
+  ok(`${units.length} ενότητες (περίπου 20)`, units.length >= 18 && units.length <= 24, units.length);
+  ok('και οι 534 λέξεις μπαίνουν: ' + new Set(all).size + '/' + Object.keys(byId).length, Object.keys(byId).length === 534 && Object.keys(byId).every(id => all.includes(id)), Object.keys(byId).filter(id => !all.includes(id)));
+  ok('κανένα διπλό id (' + all.length + ' εγγραφές)', all.length === new Set(all).size, all.filter((id, i) => all.indexOf(id) !== i));
+  ok('κανένα ανύπαρκτο id', all.every(id => byId[id]), all.filter(id => !byId[id]));
+  const famUnit = {}, broken = new Set();
+  units.forEach(u => (u.ids || []).forEach(id => { const f = byId[id] && byId[id].family; if (!f || f === 'Μεμονωμένες') return; if (famUnit[f] && famUnit[f] !== u.id) broken.add(f); famUnit[f] = famUnit[f] || u.id; }));
+  ok('καμία οικογένεια σπασμένη σε δύο ενότητες (εκτός «Μεμονωμένες»)', broken.size === 0, [...broken]);
+  units.forEach(u => ok(`${u.id} «${u.title}»: ${(u.ids || []).length} λέξεις (20–30)`, (u.ids || []).length >= 20 && (u.ids || []).length <= 30, (u.ids || []).length));
+  ok('ids u01…, αριθμοί 1…N στη σειρά', units.every((u, i) => u.id === 'u' + String(i + 1).padStart(2, '0') && u.n === i + 1));
+  ok('τίτλοι μοναδικοί, μη κενοί, NFC', new Set(units.map(u => u.title)).size === units.length && units.every(u => typeof u.title === 'string' && u.title.trim().length > 5 && u.title === u.title.normalize('NFC')));
+  const unitOfFront = f => { const c = Object.values(byId).find(k => k.front === f); return c && units.find(u => u.ids.includes(c.id)); };
+  const together = [['ἵημι', 'ἵστημι'], ['αἴρω', 'αἱρῶ'], ['ἑκών', 'ἄκων'], ['εἰμί', 'εἶμι'], ['ἥκω', 'οἴχομαι'], ['μέλλω', 'μέλω'], ['σπονδή', 'σπουδή'], ['ἄκρατος', 'ἀκρατής'], ['ἔθος', 'εὐήθης'], ['εὖ ποιῶ', 'εὖ πάσχω'], ['εὖ λέγω', 'εὖ ἀκούω'], ['γιγνώσκω', 'παραγίγνομαι'], ['λανθάνω', 'λαγχάνω'], ['ἀποκάμνω', 'ἀπαυδῶ'], ['πιπράσκω', 'ὠνοῦμαι'], ['ἀβουλία', 'εὐβουλία'], ['οἰμωγή (από το οἰμώζω)', 'κλαυθμός'], ['ἀνάντης', 'ἀνωφερής'], ['ἀγαπῶ τινι', 'στέργω']];
+  together.forEach(([a, b]) => { const ua = unitOfFront(a), ub = unitOfFront(b); ok(`«${a}» και «${b}» στην ΙΔΙΑ ενότητα`, !!ua && ua === ub, [ua && ua.id, ub && ub.id]); });
+  const sizes = units.map(u => u.ids.reduce((m, id) => { const f = byId[id].family; m[f] = (m[f] || 0) + 1; return m; }, {}));
+  ok('οι 4 πρώτες ενότητες ξεκινούν από τις μεγάλες ρίζες (εἰμί · ἵστημι · ἄγω · γιγνώσκω)', ['εἰμί', 'ἵστημι', 'ἄγω', 'γιγνώσκω'].every((f, i) => byId[units[i].ids[0]].family === f));
+  ok('οι 3 τελευταίες είναι θέματα από μικρές οικογένειες (καμία οικογένεια > 3 λέξεις)', sizes.slice(-3).every(m => Object.keys(m).every(f => { const tot = Object.values(byId).filter(c => c.family === f).length; return f === 'Μεμονωμένες' || tot <= 3; })));
+}
+
 console.log('\nlexilogio-data: ' + P + ' πέρασαν, ' + F + ' έπεσαν');
 process.exit(F ? 1 : 0);
