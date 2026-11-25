@@ -117,6 +117,15 @@ function segmentFor(h, n) {
   const end = after.length ? after[0].i : h.length;
   return h.slice(start.i, end);
 }
+/* ⭐ ΕΙΣΑΓΩΓΗ ΚΕΦΑΛΑΙΟΥ (Κεφ.3, als-v783): ΟΛΗ η σελίδα είναι μία ενότητα χωρίς
+   αριθμό («ΕΙΣΑΓΩΓΗ», index3_1). Στο YLI ζει σε δικό της τμήμα με `intro:true`,
+   `n:0`. Το τμήμα αρχίζει στον ΠΡΩΤΟ τίτλο της σελίδας (όχι στο header_r, που
+   είναι τρεχούσα κεφαλίδα) και φτάνει ως το τέλος· το Matomo το τρώει το stripChrome.
+   ⛔ Δεν αγγίζει το segmentFor: καμία αριθμημένη ενότητα δεν περνάει από εδώ. */
+function introSegment(h) {
+  const i = h.indexOf('<div class="title">');
+  return i < 0 ? null : h.slice(i);
+}
 const t2n = t => { const m = /^(\d{1,2})\.\s*\S/.exec(t); return m ? +m[1] : null; };
 
 /* ⛔ ΤΟ ΧΡΩΜΙΟ ΤΟΥ ΒΙΒΛΙΟΥ ΔΕΝ ΕΙΝΑΙ ΚΕΙΜΕΝΟ ΤΟΥ ΒΙΒΛΙΟΥ.
@@ -292,7 +301,7 @@ function paraOf(pars, phrase) {
   const YLI = loadYli();
   if (!args.length || args[0] === '--list') {
     YLI.forEach(c => c.secs.forEach(s => s.units.forEach(u =>
-      console.log(u.id.padEnd(9) + (u.yli ? '   ' : ' ⊘ ') + 'Κεφ.' + c.n + ' ' + s.L + '. ' + u.n + '. ' + u.title))));
+      console.log(u.id.padEnd(9) + (u.yli ? '   ' : ' ⊘ ') + 'Κεφ.' + c.n + ' ' + (s.intro ? 'Εισαγωγή' : s.L + '. ' + u.n) + '. ' + u.title))));
     process.exit(0);
   }
   const id = args[0];
@@ -300,7 +309,7 @@ function paraOf(pars, phrase) {
   const { c, s, u } = findUnit(YLI, id);
 
   const h = await page(s.src);
-  const seg = segmentFor(h, u.n);
+  const seg = s.intro ? introSegment(h) : segmentFor(h, u.n);
   if (!seg) die('δεν βρήκα την ενότητα ' + u.n + ' μέσα στο ' + s.src + '.html');
   const A = extractA(seg), B = extractB(seg);
   /* ⭐⭐ ΤΡΙΤΟΣ ΜΑΡΤΥΡΑΣ. Όπου υπάρχει παλιό corpus, οι παράγραφοί του
@@ -372,7 +381,7 @@ function paraOf(pars, phrase) {
 
   const chapter = {
     id, num: String(u.n), title: u.title,
-    crumbs: ['Κεφ. ' + c.n + ' · ' + c.title, s.L + '. ' + s.title],
+    crumbs: ['Κεφ. ' + c.n + ' · ' + c.title, s.intro ? 'Εισαγωγή' : s.L + '. ' + s.title],
     period: tl.length ? tl[0].y + ' – ' + tl[tl.length - 1].y : 'ΣΥΜΠΛΗΡΩΣΕ',
     paragraphs: pars,
     sic: findSic(full),

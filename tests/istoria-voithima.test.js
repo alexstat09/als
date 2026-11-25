@@ -129,7 +129,10 @@ const SOURCES = { 'k1-g4': 'istoria-voithima.source.txt',
                   'k2-e1': 'istoria-voithima-k2e1.source.txt',
                   /* ίδιο αρχείο βιβλίου (index2_6), ίδιο sha, ως το τέλος του· τρεις εξαγωγείς 9/9 —
                      οι 4 υπότιτλοι φάσεων (class title) ΕΞΩ, υποσημ. 26-29 ΕΞΩ */
-                  'k2-e2': 'istoria-voithima-k2e2.source.txt' };
+                  'k2-e2': 'istoria-voithima-k2e2.source.txt',
+                  /* ⭐ Η ΠΡΩΤΗ ΕΙΣΑΓΩΓΗ ΚΕΦΑΛΑΙΟΥ (als-v783): ΝΕΟ αρχείο (index3_1), όλη η
+                     πρόζα της σελίδας· τρεις εξαγωγείς 2/2 (το ex3 έμαθε το div.bordered) */
+                  'k3-eis': 'istoria-voithima-k3eis.source.txt' };
 
 /* ══ 1 · Η ΓΕΙΩΣΗ ════════════════════════════════════════════════════ */
 section('1 · ΤΟ ΚΕΙΜΕΝΟ ΕΙΝΑΙ ΤΟΥ ΒΙΒΛΙΟΥ, ΧΑΡΑΚΤΗΡΑ ΠΡΟΣ ΧΑΡΑΚΤΗΡΑ');
@@ -791,7 +794,9 @@ ok('  κάθε κεφάλαιο ανοιγοκλείνει, και ΕΝΑ είν
    εδώ σημαίνει ότι ο φρουρός σκάει σε ΚΑΘΕ νέα ενότητα, και η εύκολη
    «διόρθωση» είναι να αλλάξεις το νούμερο — δηλαδή να μην ελέγχεις τίποτα. */
 is('⭐ σύνδεσμος ΜΟΝΟ ό,τι έχει περιεχόμενο', (HV.match(/class="hm-u ready"/g) || []).length, CHAPTERS.length);
-is('  και οι υπόλοιπες είναι γραμμές λίστας', (HV.match(/class="hm-u (todo|out)"/g) || []).length, 105 - CHAPTERS.length);
+is('  και οι υπόλοιπες είναι γραμμές λίστας', (HV.match(/class="hm-u (todo|out)"/g) || []).length,
+   /* als-v783: από το ΥΛΙΚΟ — 105 αριθμημένες + όσες εισαγωγές μπουν στο YLI */
+   JSON.parse((PAGE.match(/const YLI = (\[[\s\S]*?\]);\n<\/script>/) || [])[1] || "[]").reduce((n, c) => n + c.secs.reduce((m, x) => m + x.units.length, 0), 0) - CHAPTERS.length);
 is('  και η μπάρα έχει μία πορτοκαλί παυλίτσα ανά έτοιμη ενότητα',
    ((/class="hm-strip"[\s\S]*?<\/div>\s*\n\s*\n/.exec(HV) || [''])[0].match(/<i><\/i>/g) || []).length, CHAPTERS.length);
 ok('⭐ και ο συγχρονισμός ΟΝΤΩΣ ξεκινάει (initCloudSync κλήθηκε)', B.win.__sync === true);
@@ -2871,7 +2876,8 @@ if (G9) {
 {
   const yli = JSON.parse((PAGE.match(/const YLI = (\[[\s\S]*?\]);\n<\/script>/) || [])[1] || '[]');
   const label = {};
-  yli.forEach(k => k.secs.forEach(s => s.units.forEach(u => { label[u.id] = s.L + '.' + u.n; })));
+  /* ⭐ εισαγωγή κεφαλαίου (intro:true, χωρίς γράμμα/αριθμό) → «Κεφ. N · Εισαγωγή» */
+  yli.forEach(k => k.secs.forEach(s => s.units.forEach(u => { label[u.id] = s.intro ? 'Κεφ. ' + k.n + ' · Εισαγωγή' : s.L + '.' + u.n; })));
   const missing = CHAPTERS.map(c => label[c.id])
     .filter(l => !l || !new RegExp(l.replace('.', '\\.') + '(?!\\d)').test(HOME));
   is('⭐⭐ η κάρτα «Το βοήθημα» ονομάζει ΚΑΘΕ έτοιμη ενότητα', missing.join(',') || 'ΚΑΜΙΑ ΛΕΙΠΕΙ', 'ΚΑΜΙΑ ΛΕΙΠΕΙ');
@@ -4137,9 +4143,18 @@ section('10 · Ο ΣΚΕΛΕΤΟΣ ΟΛΟΥ ΤΟΥ ΒΙΒΛΙΟΥ');
 const yliBlock = PAGE.match(/const YLI = (\[[\s\S]*?\]);\n<\/script>/);
 const Y = yliBlock ? JSON.parse(yliBlock[1]) : [];
 is('πέντε κεφάλαια', Y.length, 5);
-const allU = Y.flatMap(c => c.secs.flatMap(sx => sx.units));
+/* ⭐ als-v783: οι ΕΙΣΑΓΩΓΕΣ κεφαλαίων ζουν σε δικό τους τμήμα (intro:true). Τα
+   105/69 είναι οι ΑΡΙΘΜΗΜΕΝΕΣ ενότητες του βιβλίου και μένουν· οι εισαγωγές
+   μετριούνται χωριστά, ώστε μια νέα να μη «διορθώνει» τον σκελετό. */
+const allU = Y.flatMap(c => c.secs.filter(sx => !sx.intro).flatMap(sx => sx.units));
+const introU = Y.flatMap(c => c.secs.filter(sx => sx.intro).flatMap(sx => sx.units));
 is('105 ενότητες συνολικά', allU.length, 105);
-const ids = allU.map(u => u.id);
+ok('⭐ κάθε εισαγωγή: id «-eis», n 0, L κενό, δική της σελίδα, ΠΡΩΤΟ τμήμα του μέρους της',
+   Y.every(c => c.secs.every((sx, i) => !sx.intro || (sx.L === '' && sx.units.length === 1 && sx.units[0].n === 0
+     && /-eis$/.test(sx.units[0].id) && /^index\d+_\d+$/.test(sx.src) && (i === 0 || c.secs[i - 1].p20 !== sx.p20)))));
+ok('  …και η k3-eis είναι ΠΡΙΝ από την k3-a1', (() => { const c3 = Y.find(c => c.n === 3); return c3 && c3.secs[0].units[0].id === 'k3-eis' && c3.secs[1].units[0].id === 'k3-a1'; })());
+ok('  …και κανένα id εισαγωγής δεν συγκρούεται με ενότητα', introU.every(u => !allU.some(x => x.id === u.id)));
+const ids = allU.concat(introU).map(u => u.id);
 const dups = ids.filter((x, i) => ids.indexOf(x) !== i);
 is('⭐ ΜΗΔΕΝ διπλά id', dups.length + (dups.length ? ' → ' + [...new Set(dups)].join(', ') : ''), 0);
 ok('⭐ το «k1-g4» υπάρχει και είναι η έτοιμη ενότητα', ids.includes('k1-g4'));
@@ -4502,6 +4517,72 @@ const kgH = boot('#/kefalaio-2-g1-2026').painted['viewList'] || '';
 ok('Γ1 2026: ζωγραφίζονται εκφώνηση, 2 πηγές, απάντηση α και β', (kgH.match(/class="kg-src"/g) || []).length === 2 && (kgH.match(/class="kg-ans"/g) || []).length === 2 && kgH.includes('πελατειακά δίκτυα'));
 ok('Γ1 2026: η αρχική έχει κάρτα', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2-g1-2026"'));
 ok('η αρχική έχει κάρτα προς το κεφάλαιο', (boot('#/').painted['viewHome'] || '').includes('href="#/kefalaio-2"'));
+
+/* ══ Κεφ.3 · ΕΙΣΑΓΩΓΗ «Πρόσφυγες στην Ελλάδα κατά το 19ο αιώνα» (als-v783) ══
+   ⭐ Η ΠΡΩΤΗ ΕΙΣΑΓΩΓΗ ΚΕΦΑΛΑΙΟΥ ΣΤΟ ΒΟΗΘΗΜΑ. ΝΕΟ αρχείο βιβλίου (index3_1),
+   όλη η πρόζα της σελίδας, δύο παράγραφοι, τρεις εξαγωγείς 2/2. Στο YLI ζει
+   σε δικό της τμήμα (intro:true, L:"", n:0) ΠΡΙΝ από το τμήμα Α.
+   ⛔ ΔΥΟ τυπογραφικά που το script ΔΕΝ είδε: τα έβγαλε η σύγκριση με το
+   έντυπο PDF («τον 1821» · «τον Αιγαίον»). Χωρίς υποσημειώσεις → Πηγές από
+   την Α.1–Α.4 (index3_2), κάθε παράθεμα ελεγμένο αυτολεξεί. */
+[['explain',   'panel-explain',  'Η αφετηρία του προσφυγικού και τα αίτιά του'],
+ ['diagram',   'panel-diagram',  'Οι τρεις χώροι με μια ματιά'],
+ ['timeline',  'panel-timeline', 'Οι πρώτες προσφυγικές μετακινήσεις'],
+ ['glossary',  'ggrid',          'Γεωγραφικός κατακερματισμός'],
+ ['facts',     'panel-facts',    'Ένα όνομα που περίμενε έναν αιώνα'],
+ ['text',      'rtext',          'μπορεί να θεωρηθούν'],
+ ['sources',   'panel-sources',  'Προστρέχομεν λοιπόν']].forEach(([id, key, mark]) => {
+  const r = boot('#/k3-eis/' + id);
+  is('Κεφ.3 Εισαγωγή · η καρτέλα «' + id + '» ζωγραφίζει χωρίς σφάλμα', r.error || 'NONE', 'NONE');
+  ok('  …και ζωγραφίζει ΤΟ ΔΙΚΟ ΤΗΣ σημάδι: «' + mark + '»', (r.painted[key] || '').includes(mark));
+});
+{
+  const K3E = CHAPTERS.find(c => c.id === 'k3-eis');
+  const D = boot('#/k3-eis/diagram').painted['panel-diagram'] || '';
+  const H = boot('#/k3-eis/explain').painted.hero || '';
+  const S = boot('#/k3-eis/sources').painted['panel-sources'] || '';
+  const HOMEP = boot('#/').painted['viewHome'] || '';
+  ok('⭐ Κεφ.3 Εισαγωγή · το hero λέει «Εισαγωγή κεφαλαίου», ΟΧΙ «Ενότητα Εισαγωγή»',
+     H.includes('Εισαγωγή κεφαλαίου') && !H.includes('Ενότητα Εισαγωγή') && H.includes('Πρόσφυγες στην Ελλάδα κατά το 19ο αιώνα'));
+  ok('⭐ Κεφ.3 Εισαγωγή · η Αρχική τη δείχνει έτοιμη, χωρίς «0» στη θέση του αριθμού',
+     HOMEP.includes('href="#/k3-eis"') && !/<span class="un">0<\/span>/.test(HOMEP));
+  ok('  …και ο τίτλος του τμήματος γράφεται ΧΩΡΙΣ γράμμα («ΕΙΣΑΓΩΓΗ», όχι «. ΕΙΣΑΓΩΓΗ»)',
+     HOMEP.includes('<div class="hm-s"><h4>ΕΙΣΑΓΩΓΗ</h4>') && !HOMEP.includes('<span class="L">.</span>'));
+  ok('⭐ Κεφ.3 Εισαγωγή · το σχεδιάγραμμα: αφετηρία, αιτίες, σύγκριση, σημασία, αντιπαραβολή ΤΕΛΕΥΤΑΙΑ',
+     ['Η αφετηρία', 'Τρεις χώροι προέλευσης, δύο αιτίες', 'Όχι σχέδιο εκρίζωσης — όχι ακόμα', 'Γιατί μετρούν', 'Οι τρεις χώροι με μια ματιά'].every(x => D.includes(x))
+     && D.indexOf('Οι τρεις χώροι με μια ματιά') > D.indexOf('Γιατί μετρούν'));
+  ok('  ⛔ …ό,τι δεν λέει η εισαγωγή ΔΗΛΩΝΕΤΑΙ (≥3 «το βιβλίο δεν το λέει»)', (D.match(/το βιβλίο δεν το λέει/g) || []).length >= 3);
+  ok('⛔ Κεφ.3 Εισαγωγή · στάδια ΜΟΝΟ Α–Ε', [...D.matchAll(/st-l">([^<]*)</g)].every(m => /^[ΑΒΓΔΕ]$/.test(m[1])));
+  ok('⛔ Κεφ.3 Εισαγωγή · κριτήρια ≤25 χαρακτήρες', [...D.matchAll(/<tr><td>([^<]*)<\/td>/g)].every(m => m[1].length <= 25));
+  ok('⭐⭐ Κεφ.3 Εισαγωγή · οι Πηγές λένε ΡΗΤΑ ότι η σελίδα δεν έχει υποσημειώσεις και από πού ήρθαν',
+     S.includes('ΔΕΝ έχει καμία υποσημείωση') && S.includes('υποσημείωση 1 του βιβλίου') && S.includes('υποσημείωση 2 του βιβλίου')
+     && S.includes('Αιτήματα προσφύγων τέθηκαν, αλλά όχι προσφυγικό ζήτημα συνολικά.') && S.includes('Πίνακας αριθμών και ιστορικός που διαφωνεί ΔΕΝ υπάρχουν'));
+  if (K3E) {
+    const fF = K3E.paragraphs.join('\n');
+    is('⭐ Κεφ.3 Εισαγωγή · ΔΥΟ παράγραφοι', K3E.paragraphs.length, 2);
+    ok('  ⭐ ξεκινά «Στη διάρκεια της Επανάστασης» και τελειώνει στη «συγκρότηση του νέου ελληνικού κράτους»',
+       K3E.paragraphs[0].indexOf('Στη διάρκεια της Επανάστασης') === 0 && /συγκρότηση του νέου ελληνικού κράτους\.$/.test(K3E.paragraphs[1]));
+    ok('  ⛔ ούτε ο τίτλος, ούτε το «ΕΙΣΑΓΩΓΗ», ούτε η κεφαλίδα, ούτε κώδικας στην πρόζα',
+       !/ΠΡΟΣΦΥΓΕΣ ΣΤΗΝ|ΕΙΣΑΓΩΓΗ|ΤΟ ΠΡΟΣΦΥΓΙΚΟ ΖΗΤΗΜΑ|_paq|matomo/i.test(fF));
+    ok('  ⛔ κανένα λατινικό γράμμα μέσα στην πρόζα', !/[A-Za-z]/.test(fF));
+    is('⛔ Κεφ.3 Εισαγωγή · ΔΥΟ τυπογραφικά (από το PDF)', K3E.sic.map(x => x.m).join(','), 'τον 1821,τον Αιγαίον');
+    ok('  …και μένουν ΟΠΩΣ τα τυπώνει το ebook', fF.includes('Επανάστασης τον 1821') && fF.includes('τα νησιά τον Αιγαίον'));
+    is('⛔⛔ Κεφ.3 Εισαγωγή · οι χρονολογίες βιβλίου είναι ΑΚΡΙΒΩΣ της πρόζας',
+       K3E.timeline.events.filter(e => e.book).map(e => e.label).join(','), '1821,1914,1922');
+    ok('  ⭐ το 1914-1922 γράφεται ΩΣ ΣΥΓΚΡΙΣΗ (τίτλος + span), όχι ως γεγονός της εισαγωγής',
+       K3E.timeline.events.filter(e => e.y >= 1914).every(e => /Σύγκριση/.test(e.title))
+       && K3E.timeline.spans.some(sp => sp.from === 'e1914' && sp.to === 'e1922' && /σύγκριση/.test(sp.label)));
+    ok('  ⛔ καμία χρονολογία ΠΗΓΗΣ (1825 · 1827)', !K3E.timeline.events.some(e => /1825|1827/.test(e.label + e.title + e.text)));
+    ok('⭐⭐ Κεφ.3 Εισαγωγή · pitfall: ΔΕΝ ήταν σχέδιο εκρίζωσης το 1821',
+       K3E.explain.pitfalls.some(p => /σχέδιο εκρίζωσης/.test(p.no) && /1914-1922/.test(p.ok)));
+    ok('⭐ Κεφ.3 Εισαγωγή · pitfall: δύο αιτίες, όχι μία',
+       K3E.explain.pitfalls.some(p => /ίδιο λόγο/.test(p.no) && /αποτυχίας του απελευθερωτικού κινήματος/.test(p.ok)));
+    ok('⭐ Κεφ.3 Εισαγωγή · fun fact `big` χωρίς λέξη >11 χαρακτήρων', K3E.facts.every(f => String(f.big).split(/\s+/).every(w => w.length <= 11)));
+    ok('⭐ Κεφ.3 Εισαγωγή · ετικέτες χρονολογίου ≤9 χαρακτήρες', K3E.timeline.events.every(e => String(e.label).replace(/​/g, '').length <= 9));
+    is('⛔ Κεφ.3 Εισαγωγή · κανένας όρος Α1 γραμμένος από μένα', (K3E.terms || []).length, 0);
+    ok('⭐ Κεφ.3 Εισαγωγή · η grammi έχει δύο κρίκους = οι δύο παράγραφοι του έντυπου', !!K3E.grammi && K3E.grammi.acts.length === 2);
+  }
+}
 
 console.log('\n' + (fail ? '✗' : '✓') + ' ' + pass + ' πέρασαν · ' + fail + ' απέτυχαν');
 process.exit(fail ? 1 : 0);
