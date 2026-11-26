@@ -84,7 +84,7 @@ function build(p, template) {
   const nFace = L.lensWords(p, p.face.lens).length;
   const V = {
     NN: String(p.nn), ROMAN: R, PREV_ROMAN: L.roman(p.nn - 1), ORDINAL: p.ordinal, TEFXOS: L.tefxos(p.nn),
-    TITLE: 'Lectio ' + R + ' — ' + p.h1.replace(/<br>/g, ' '),
+    TITLE: 'Lectio ' + R + ' — ' + p.h1.replace(/\s*<br>\s*/g, ' '),
     H1: p.h1, LEAD: p.lead,
     FACE_N: String(nFace), FACE_LENS: p.face.lens, FACE_LABEL: lens[0].toLowerCase(),
     FACE_EX: lens[1] + ' ' + nFace + ' ' + lens[0].toLowerCase(),

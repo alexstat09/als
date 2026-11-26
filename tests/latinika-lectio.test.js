@@ -1393,18 +1393,26 @@ PACKS.forEach(function (pk) {
    «XVIII–XX», και ένα κείμενο που δεν διαβάστηκε δεν μπαίνει σε καμία λίστα. */
 section('7 · η απάντηση της μπάντας και τα χρώματα');
 var LAST = LIB.roman(+PACKS[PACKS.length - 1].id);
+/* XXXI: οι αριθμοί ΔΕΝ είναι πάντα συνεχόμενοι (το XXX έλειπε όταν μπήκε το XXXI) — οι «σειρές» που περιμένουμε
+   βγαίνουν από τα ΠΡΑΓΜΑΤΙΚΑ πακέτα. Χωρίς τρύπα δίνει ακριβώς τις παλιές προτάσεις («XVII–' + LAST + '»). */
+var PNUMS = PACKS.map(function (p) { return +p.id; }).sort(function (a, b) { return a - b; });
+function OFF(skip) {
+  var l = PNUMS.filter(function (n) { return skip.indexOf(n) < 0; }), o = [], s0 = 0;
+  for (var k = 1; k <= l.length; k++) if (k === l.length || l[k] !== l[k - 1] + 1) { o.push(k - 1 > s0 ? LIB.roman(l[s0]) + '–' + LIB.roman(l[k - 1]) : LIB.roman(l[s0])); s0 = k; }
+  return o.length < 2 ? o.join('') : o.slice(0, -1).join(', ') + ' και ' + o[o.length - 1];
+}
 ok(A.els.ltSub.innerHTML.indexOf('Δεν έχεις ξεκινήσει ακόμα') === 0, 'άδειο → «Δεν έχεις ξεκινήσει ακόμα»');
 ok(A.els.ltSub.innerHTML.indexOf('<b>XVI</b>') > 0, '   και δείχνει το πρώτο κείμενο (XVI)');
-eq(E.els.ltSub.innerHTML, 'Το <b>XVI είναι ολόκληρο</b>. Τα XVII–' + LAST + ' δεν έχουν ξεκινήσει.',
+eq(E.els.ltSub.innerHTML, 'Το <b>XVI είναι ολόκληρο</b>. Τα ' + OFF([16]) + ' δεν έχουν ξεκινήσει.',
   '⭐ ένα κλειστό → «Το XVI είναι ολόκληρο. Τα XVII–' + LAST + ' δεν έχουν ξεκινήσει.»');
 var J = drive({ 'lectio16:v1': JSON.stringify(all16), 'lectio17_known_v1': JSON.stringify({ s1: true, s2: true }),
   'lectio21_known_v1': JSON.stringify({ s1: true }) });
 eq(J.els.ltSub.innerHTML,
-  'Το <b>XVI είναι ολόκληρο</b>. Στο XVII μένουν <b>9 από 11</b> και στο XXI <b>' + (NS['21'] - 1) + ' από ' + NS['21'] + '</b>. Τα XVIII–XX και XXII–' + LAST + ' δεν έχουν ξεκινήσει.',
+  'Το <b>XVI είναι ολόκληρο</b>. Στο XVII μένουν <b>9 από 11</b> και στο XXI <b>' + (NS['21'] - 1) + ' από ' + NS['21'] + '</b>. Τα ' + OFF([16, 17, 21]) + ' δεν έχουν ξεκινήσει.',
   '⭐⭐ μικτό: ολόκληρο · μένουν (με πραγματικά νούμερα) · σειρές «XVIII–XX και XXII–…»');
 ok(F.els.ltSub.innerHTML.indexOf('Όλα τα κείμενα είναι ολόκληρα') > 0, 'όλα κλειστά → «Όλα τα κείμενα είναι ολόκληρα»');
 eq(H.els.ltSub.innerHTML, '<span class="dead">Κάποια κείμενα δεν διαβάστηκαν σε αυτή τη συσκευή</span> — στον χάρτη τους λείπει ο αριθμός. ' +
-  'Στο XVI μένουν <b>14 από 16</b>. Τα XVII και XIX–' + LAST + ' δεν έχουν ξεκινήσει.',
+  'Στο XVI μένουν <b>14 από 16</b>. Τα ' + OFF([16, 18]) + ' δεν έχουν ξεκινήσει.',
   '⛔⭐ το κείμενο που δεν διαβάστηκε (XVIII) ΔΕΝ λέγεται «δεν ξεκίνησε» — η σειρά σπάει γύρω του');
 ok(J.cards['16'].className.indexOf('is-full') >= 0, 'το ολόκληρο κουτί παίρνει is-full (πράσινο σήμα)');
 ok(J.cards['17'].className.indexOf('is-on') >= 0, 'το ξεκινημένο παίρνει is-on (τιρκουάζ)');

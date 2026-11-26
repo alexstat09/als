@@ -29,7 +29,7 @@ function must(cond, msg) { if (!cond) { console.error('⛔ ' + msg); process.exi
 const file = 'latinika-lectio' + nn + '.html';
 must(fs.existsSync(F(file)), 'δεν υπάρχει το ' + file + ' — τρέξε πρώτα build');
 const U = L.units(p).length, SC = p.S.length, T = p.traps.length;
-const title = p.h1.replace(/<br>/g, ' ');
+const title = p.h1.replace(/\s*<br>\s*/g, ' ');
 
 /* ── 1 · latinika.html ── (als-v773: η γλώσσα του βοηθήματος Ιστορίας — ένα
    <details> ανά κείμενο. Το καλούπι ζει ΕΔΩ· ποτέ μία σειρά με το χέρι.
@@ -117,6 +117,11 @@ st = st.replace(/ok\(ids\.length === \d+, '[^']+ κείμενα \(' \+ ids\.leng
   () => "ok(ids.length === " + nTexts + ", '" + L.numWord(nTexts, true) + " κείμενα (' + ids.length + ')');");
 must(/ok\(ids\.length === \d+, /.test(st), 'δεν βρέθηκε το πλήθος στο tests/latinika-syntaxi.test.js');
 wr('tests/latinika-syntaxi.test.js', st0, st);
+/* XXXI: η κάρτα «Σύνταξε μόνος σου» της βιβλιοθήκης μετράει τα TEXTS (το test το ελέγχει) */
+{ let h = rd('latinika.html'); const h0 = h;
+  must(/<span class="g" id="synN">\d+<\/span>/.test(h), 'δεν βρέθηκε το synN στη latinika.html');
+  h = h.replace(/<span class="g" id="synN">\d+<\/span>/, '<span class="g" id="synN">' + nTexts + '</span>');
+  wr('latinika.html', h0, h); }
 
 /* ── 3 · sw.js ── */
 let sw = rd('sw.js'); const sw0 = sw;
@@ -128,8 +133,13 @@ if (sw.indexOf("'" + file + "'") < 0) {
 if (!process.argv.includes('--no-bump')) {
   const v = /var CACHE = "als-v(\d+)";/.exec(sw);
   must(v, 'δεν βρέθηκε το CACHE στο sw.js');
+  /* XXXI: ΕΝΑ bump ανά commit — δεύτερο τρέξιμο του wire δεν ξαναπηδάει (έβγαζε v787 αντί v786) */
+  let head = null; try { head = /var CACHE = "als-v(\d+)";/.exec(require('child_process').execSync('git show HEAD:sw.js', { cwd: L.REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })); } catch (e) {}
+  if (head && +v[1] > +head[1]) console.log('  sw.js: ήδη als-v' + v[1] + ' (HEAD als-v' + head[1] + ') — κανένα δεύτερο bump');
+  else {
   sw = sw.replace(v[0], () => 'var CACHE = "als-v' + (+v[1] + 1) + '";');
   console.log('  sw.js: als-v' + v[1] + ' → als-v' + (+v[1] + 1));
+  }
 }
 wr('sw.js', sw0, sw);
 

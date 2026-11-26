@@ -123,3 +123,9 @@ const page = rd('tools/latinika/archikoi.tpl')
 if (/\{\{[A-Z_]+\}\}/.test(page)){ console.log('✗ έμεινε placeholder: ' + page.match(/\{\{[A-Z_]+\}\}/)[0]); process.exit(1); }
 fs.writeFileSync(path.join(ROOT, 'latinika-archikoi.html'), page);
 console.log('→ latinika-archikoi.html (' + Math.round(page.length / 1024) + ' KB)');
+/* XXXI: η κάρτα «Αρχικοί χρόνοι» της βιβλιοθήκης λέει πόσα ρήματα και ως ποιο κείμενο (το test το ελέγχει) */
+{ const hp = path.join(ROOT, 'latinika.html'), h0 = fs.readFileSync(hp, 'utf8');
+  const re = /Τα \d+ ρήματα των κειμένων XVI–[IVXL]+ με/;
+  if (!re.test(h0)) { console.log('✗ δεν βρέθηκε «Τα N ρήματα των κειμένων XVI–…» στη latinika.html'); process.exit(1); }
+  const h = h0.replace(re, 'Τα ' + nLem + ' ρήματα των κειμένων XVI–' + ROMAN[LAST] + ' με');
+  if (h !== h0) { fs.writeFileSync(hp, h); console.log('→ latinika.html: ' + nLem + ' ρήματα · XVI–' + ROMAN[LAST]); } }

@@ -111,7 +111,7 @@ button (als-v438). The page sizes itself to the bar via `--tbh` / `setTbh()`.
 
 **Study** — `latinika.html` (Λατινικά, **als-v587 — ΤΟ ΕΞΩΦΥΛΛΟ · + `latinika-eisagogi.html` /
 `latinika-lectio16.html` / `latinika-lectio17.html` / `latinika-lectio18.html` /
-`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html` / `latinika-lectio28.html` / `latinika-lectio29.html`**), `tonos.html` (Τονισμός,
+`latinika-lectio19.html` / `latinika-lectio20.html` / `latinika-lectio21.html` / `latinika-lectio22.html` / `latinika-lectio23.html` / `latinika-lectio24.html` / `latinika-lectio25.html` / `latinika-lectio26.html` / `latinika-lectio27.html` / `latinika-lectio28.html` / `latinika-lectio29.html` / `latinika-lectio31.html`**), `tonos.html` (Τονισμός,
 als-v450), `istoria.html` (Ιστορία, als-v451, **+ `istoria-voithima.html`
 (als-v542) + `istoria-themata.html` (als-v573) + `istoria-grapto.html`
 (als-v575) + `istoria-sarosi.html` (als-v576)**), `arxaia.html` (Αρχαία, **ΓΝΩΣΤΟ = ΤΟ ΕΞΩΦΥΛΛΟ, als-v588**,
@@ -1227,6 +1227,16 @@ wire → test → render) ζει στο `~/.claude/skills/latinika-lectio/SKILL.
 ξαναχτίστηκαν, diff = μόνο οι γραμμές του φακού. ΤΥΠΟΓΡΑΦΙΚΟ: δεν βρέθηκε. mitto/fugio/comprehendo/trado/possum βγήκαν από το
 `archikoi.xvi-xx.json`. ⚠️ Το test της βιβλιοθήκης έψαχνε «τέσσερις ενότητες» ως κομμάτι λέξης (σκάει στο «Δεκατέσσερις»)·
 τώρα ελέγχει ολόκληρη λέξη.
+
+⭐⭐ **als-v786 (26/11/26) — `latinika-lectio31.html` (Η γενναιότητα δε βγαίνει πάντα σε καλό) + ΦΑΚΟΣ «Αφαιρετικές».**
+`tools/latinika/lectio31.json` (+ `lectio31.s4e.json`, study4exams course **170**): 3 σκηνές / 9 ενότητες / 16 προτάσεις /
+12 κάρτες / 9 παγίδες, 69 λήμματα, μάθημα = `seq` «η αφαιρετική» (κυρίως · οργανική · τοπική). Μετάφραση αυτολεξεί (μήνυμα + φωτογραφία
+φυλλαδίου, Πυθαγόρας σελ. 89) + οι σημειώσεις του (viribus = πάντα οργανικού μέσου · cuius operā → auxilio / per quem / beneficio ·
+βουλητικές = ουσιαστικές · πτώσεις γερουνδίου). Οι 19 αστερίσκοι = αφαιρετικές → νέος φακός `afr` (σημάδι «(αφαιρ. …)» στο `f`).
+ΤΥΠΟΓΡΑΦΙΚΑ: «Turn» → Tum · «Τ. Manlius» με ελληνικό Ταυ → T. ΤΟ XXX ΔΕΝ ΥΠΑΡΧΕΙ ΑΚΟΜΑ (πρώτη τρύπα στη σειρά). Μαζί:
+κενό πριν από το `<br>` στο `h1` ΟΛΩΝ των XXI–XXIX (το skin Γραφίτης κρύβει το `<br>` → «παπουτσήςκαι»)· wire/archikoi
+γράφουν μόνα τους τα `synN` + «Τα N ρήματα…» της latinika.html· το wire δεν ξανακάνει bump· το SKILL.md ξεκολλήθηκε
+(ήταν δύο αντίγραφα από το c44f4ed).
 
 ⭐⭐ **als-v715 (10/11/26) — ΔΕΚΑΤΟ ΤΡΙΤΟ ΠΑΚΕΤΟ `latinika-lectio29.html` (Ο Οκταβιανός, ο παπουτσής και το κοράκι) + ΦΑΚΟΣ «Γενικές».**
 `tools/latinika/lectio29.json` (+ `lectio29.s4e.json`, study4exams course **158**): 3 σκηνές / 9 ενότητες / 21 προτάσεις /
