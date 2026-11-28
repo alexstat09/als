@@ -156,7 +156,7 @@ var TEXTS = [
   { id:'26', num:'XXVI',  file:'latinika-lectio26.html' },
   { id:'27', num:'XXVII', file:'latinika-lectio27.html' },
   { id:'28', num:'XXVIII', file:'latinika-lectio28.html' },
-  { id:'29', num:'XXIX',  file:'latinika-lectio29.html' },
+  { id:'29', num:'XXIX',  file:'latinika-lectio29.html', v2:'latinika-syntaxi-v2.html' },
   { id:'31', num:'XXXI',  file:'latinika-lectio31.html' }
 ];
 var KEY = 'latsyn:v1';
@@ -245,6 +245,25 @@ function lockedCount(id, pack) {
   return n;
 }
 
+/* ═══ Η ΝΕΑ ΜΟΡΦΗ (als-v787) ═══════════════════════════════════════════
+   Όσα κείμενα έχουν `v2:` ανοίγουν στη latinika-syntaxi-v2.html και η πρόοδός
+   τους ζει στο `latsyn:v2` — η λίστα εδώ τη ΔΙΑΒΑΖΕΙ μόνο (κλειδωμένες που δεν
+   έχουν βγει ακόμα για επανάληψη, ίδιος κανόνας με τη v2). */
+var V2_DAYS = [3, 7, 21, 60];
+function v2Rec(id) {
+  try { var d = JSON.parse(localStorage.getItem('latsyn:v2') || '{}'); return (d && d[id] && typeof d[id] === 'object') ? d[id] : null; }
+  catch (e) { return null; }
+}
+function v2Locked(id) {
+  var r = v2Rec(id), n = 0, now = Date.now();
+  if (r && r.locked && typeof r.locked === 'object') Object.keys(r.locked).forEach(function (i) {
+    var l = r.locked[i];
+    if (l && typeof l.t === 'number' && now < l.t + V2_DAYS[Math.min(l.n || 0, V2_DAYS.length - 1)] * 86400000) n++;
+  });
+  return n;
+}
+function v2Rounds(id) { var r = v2Rec(id); return r && typeof r.round === 'number' ? r.round - 1 : 0; }
+
 /* ═══ ΖΩΓΡΑΦΙΚΗ ═══════════════════════════════════════════════════════ */
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 var view = document.getElementById('view');
@@ -274,11 +293,12 @@ function renderList() {
   var list = document.getElementById('list');
   TEXTS.forEach(function (t) {
     var a = document.createElement('a');
-    a.className = 'item'; a.href = '?l=' + t.id;
+    a.className = 'item'; a.href = t.v2 ? t.v2 + '?l=' + t.id : '?l=' + t.id;
     a.innerHTML = '<div class="rn">' + t.num + '</div><div><div class="t">…</div><div class="s">διαβάζω το κείμενο</div></div><div class="pr">—</div>';
     list.appendChild(a);
     fetchPack(t).then(function (p) {
-      var n = askable(p), k = lockedCount(t.id, p), r = rec(t.id);
+      var n = askable(p), k = t.v2 ? v2Locked(t.id) : lockedCount(t.id, p), r = rec(t.id);
+      if (t.v2) { k = Math.min(k, n); r = { rounds: v2Rounds(t.id) }; }
       a.querySelector('.t').textContent = p.title;
       a.querySelector('.s').textContent = n + ' λέξεις προς σύνταξη' + (r.rounds ? ' · ' + r.rounds + (r.rounds === 1 ? ' γύρος' : ' γύροι') : '');
       var pr = a.querySelector('.pr');
@@ -421,7 +441,8 @@ function wire(t, p) {
 load();
 var q = /[?&]l=(\d+)/.exec(location.search);
 var cur = q && TEXTS.filter(function (t) { return t.id === q[1]; })[0];
-if (cur) renderText(cur); else renderList();
+if (cur && cur.v2) location.replace(cur.v2 + '?l=' + cur.id);
+else if (cur) renderText(cur); else renderList();
 </script>
 </body>
 </html>
